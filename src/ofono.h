@@ -27,3 +27,8 @@
 
 int __ofono_log_init(void);
 void __ofono_log_cleanup(void);
+
+#include <ofono/plugin.h>
+
+int __ofono_plugin_init(const char *pattern, const char *exclude);
+void __ofono_plugin_cleanup(void);

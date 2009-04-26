@@ -1,7 +1,7 @@
 
 sbin_PROGRAMS = ofonod
 
-ofonod_SOURCES = main.c ofono.h log.c
+ofonod_SOURCES = main.c ofono.h log.c plugin.c
 
 ofonod_LDADD = @GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
 
