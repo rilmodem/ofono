@@ -42,6 +42,9 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 AC_ARG_ENABLE(threads, AC_HELP_STRING([--enable-threads],
 		[enable threading support]), [enable_threads=${enableval}])
 
+AC_CHECK_LIB(dl, dlopen, dummy=yes,
+			AC_MSG_ERROR(dynamic linking loader is required))
+
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.16, dummy=yes,
 				AC_MSG_ERROR(GLib >= 2.16 is required))
 AC_SUBST(GLIB_CFLAGS)
