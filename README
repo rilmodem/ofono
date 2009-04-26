@@ -1,0 +1,21 @@
+oFono - Open Telephony stack for Linux
+**************************************
+
+Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
+
+
+Compilation and installation
+============================
+
+In order to compile Telephony stack you need following software packages:
+	- GCC compiler
+	- GLib library
+	- D-Bus library
+
+To configure run:
+	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+
+Configure automatically searches for all required components and packages.
+
+To compile and install run:
+	make && make install
