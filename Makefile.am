@@ -1,5 +1,5 @@
 
-SUBDIRS = gdbus include src plugins
+SUBDIRS = gdbus include src plugins doc
 
 MAINTAINERCLEANFILES = Makefile.in \
 	aclocal.m4 configure config.h.in config.sub config.guess \

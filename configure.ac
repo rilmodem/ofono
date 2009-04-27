@@ -77,4 +77,4 @@ AC_SUBST([GDBUS_CFLAGS], ['$(DBUS_CFLAGS) -I$(top_srcdir)/gdbus'])
 AC_SUBST([GDBUS_LIBS], ['$(top_builddir)/gdbus/libgdbus.la $(DBUS_LIBS)'])
 
 AC_OUTPUT(Makefile gdbus/Makefile include/Makefile include/version.h
-					src/Makefile plugins/Makefile)
+				src/Makefile plugins/Makefile doc/Makefile)
