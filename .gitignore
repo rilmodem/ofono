@@ -20,3 +20,9 @@ ltmain.sh
 missing
 stamp-h1
 autom4te.cache
+
+include/ofono
+include/version.h
+src/ofonod
+src/ofono.exp
+src/ofono.ver
