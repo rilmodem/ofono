@@ -1,4 +1,10 @@
 
+if DATAFILES
+dbusdir = @DBUS_DATADIR@
+
+dbus_DATA = ofono.conf
+endif
+
 sbin_PROGRAMS = ofonod
 
 ofonod_SOURCES = main.c ofono.h log.c plugin.c
@@ -21,6 +27,8 @@ AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@ @GDBUS_CFLAGS@ \
 					-DPLUGINDIR=\""$(plugindir)"\"
 
 INCLUDES = -I$(top_builddir)/include
+
+EXTRA_DIST = ofono.conf
 
 MAINTAINERCLEANFILES = Makefile.in
 
