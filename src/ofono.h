@@ -1,6 +1,6 @@
 /*
  *
- *  oFono - Open Telephony stack for Linux
+ *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
  *
@@ -25,8 +25,10 @@
 
 #include <ofono/log.h>
 
-int __ofono_log_init(void);
+int __ofono_log_init(gboolean detach, gboolean debug);
 void __ofono_log_cleanup(void);
+
+void __ofono_toggle_debug(void);
 
 #include <ofono/plugin.h>
 
