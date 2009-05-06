@@ -1,6 +1,6 @@
 /*
  *
- *  oFono - Open Telephony stack for Linux
+ *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
  *

@@ -1,6 +1,6 @@
 /*
  *
- *  oFono - Open Telephony stack for Linux
+ *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
  *
@@ -90,15 +90,26 @@ void ofono_debug(const char *format, ...)
 	va_end(ap);
 }
 
-int __ofono_log_init(void)
+void __ofono_toggle_debug(void)
+{
+	if (debug_enabled == TRUE)
+		debug_enabled = FALSE;
+	else
+		debug_enabled = TRUE;
+}
+
+int __ofono_log_init(gboolean detach, gboolean debug)
 {
 	int option = LOG_NDELAY | LOG_PID;
+
+	if (detach == FALSE)
+		option |= LOG_PERROR;
 
 	openlog("ofonod", option, LOG_DAEMON);
 
 	syslog(LOG_INFO, "oFono version %s", VERSION);
 
-	debug_enabled = TRUE;
+	debug_enabled = debug;
 
 	return 0;
 }
