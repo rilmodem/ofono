@@ -19,21 +19,21 @@
  *
  */
 
-#include <glib.h>
+struct ussd_data {
+	struct ofono_ussd_ops *ops;
+	int state;
+	DBusMessage *pending;
+	int flags;
+};
 
-#define OFONO_API_SUBJECT_TO_CHANGE
+typedef gboolean (*ss_control_cb_t)(struct ofono_modem *modem, int type,
+					const char *sc,
+					const char *sia, const char *sib,
+					const char *sic, const char *dn,
+					DBusMessage *msg);
 
-int __ofono_manager_init();
-void __ofono_manager_cleanup();
+gboolean ss_control_register(struct ofono_modem *modem, const char *str,
+				ss_control_cb_t cb);
 
-#include <ofono/log.h>
-
-int __ofono_log_init(gboolean detach, gboolean debug);
-void __ofono_log_cleanup(void);
-
-void __ofono_toggle_debug(void);
-
-#include <ofono/plugin.h>
-
-int __ofono_plugin_init(const char *pattern, const char *exclude);
-void __ofono_plugin_cleanup(void);
+void ss_control_unregister(struct ofono_modem *modem, const char *str,
+				ss_control_cb_t cb);

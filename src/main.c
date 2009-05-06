@@ -31,6 +31,8 @@
 
 #include "ofono.h"
 
+#include "dbus-gsm.h"
+
 static GMainLoop *event_loop;
 
 static void sig_debug(int sig)
@@ -100,6 +102,12 @@ int main(int argc, char **argv)
 
 	__ofono_log_init(option_detach, option_debug);
 
+	if (dbus_gsm_init() != 0)
+		goto cleanup;
+
+	if (__ofono_manager_init() < 0)
+		goto cleanup;
+
 	__ofono_plugin_init(NULL, NULL);
 
 	memset(&sa, 0, sizeof(sa));
@@ -118,6 +126,11 @@ int main(int argc, char **argv)
 
 	__ofono_plugin_cleanup();
 
+	__ofono_manager_cleanup();
+
+	dbus_gsm_exit();
+
+cleanup:
 	g_main_loop_unref(event_loop);
 
 	__ofono_log_cleanup();
