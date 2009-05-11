@@ -53,7 +53,7 @@ static gboolean add_plugin(void *handle, struct ofono_plugin_desc *desc)
 		return FALSE;
 
 	if (g_str_equal(desc->version, OFONO_VERSION) == FALSE) {
-		DBG("version mismatch for %s", desc->description);
+		ofono_error("Version mismatch for %s", desc->description);
 		return FALSE;
 	}
 
@@ -70,14 +70,43 @@ static gboolean add_plugin(void *handle, struct ofono_plugin_desc *desc)
 	return TRUE;
 }
 
+static gboolean check_plugin(struct ofono_plugin_desc *desc,
+				const char *pattern, const char *exclude)
+{
+	if (exclude != NULL &&
+			g_pattern_match_simple(exclude, desc->name) == TRUE) {
+		ofono_info("Excluding %s", desc->description);
+		return FALSE;
+	}
+
+	if (pattern != NULL &&
+			g_pattern_match_simple(pattern, desc->name) == FALSE) {
+		ofono_info("Ignoring %s", desc->description);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+#include "plugins/builtin.h"
+
 int __ofono_plugin_init(const char *pattern, const char *exclude)
 {
 	GSList *list;
 	GDir *dir;
 	const gchar *file;
 	gchar *filename;
+	unsigned int i;
 
 	DBG("");
+
+	for (i = 0; __ofono_builtin[i]; i++) {
+		if (check_plugin(__ofono_builtin[i],
+						pattern, exclude) == FALSE)
+			continue;
+
+		add_plugin(NULL, __ofono_builtin[i]);
+	}
 
 	dir = g_dir_open(PLUGINDIR, 0, NULL);
 	if (dir != NULL) {
@@ -93,8 +122,8 @@ int __ofono_plugin_init(const char *pattern, const char *exclude)
 
 			handle = dlopen(filename, RTLD_NOW);
 			if (handle == NULL) {
-				g_warning("Can't load %s: %s", filename,
-								dlerror());
+				ofono_error("Can't load %s: %s",
+							filename, dlerror());
 				g_free(filename);
 				continue;
 			}
@@ -103,21 +132,13 @@ int __ofono_plugin_init(const char *pattern, const char *exclude)
 
 			desc = dlsym(handle, "ofono_plugin_desc");
 			if (desc == NULL) {
-				g_warning("Can't load symbol: %s", dlerror());
+				ofono_error("Can't load symbol: %s",
+								dlerror());
 				dlclose(handle);
 				continue;
 			}
 
-			if (exclude != NULL && g_pattern_match_simple(exclude,
-							desc->name) == TRUE) {
-				DBG("excluding %s", desc->description);
-				dlclose(handle);
-				continue;
-			}
-
-			if (pattern != NULL && g_pattern_match_simple(pattern,
-							desc->name) == FALSE) {
-				DBG("ignoring %s", desc->description);
+			if (check_plugin(desc, pattern, exclude) == FALSE) {
 				dlclose(handle);
 				continue;
 			}
@@ -153,7 +174,8 @@ void __ofono_plugin_cleanup(void)
 		if (plugin->active == TRUE && plugin->desc->exit)
 			plugin->desc->exit();
 
-		dlclose(plugin->handle);
+		if (plugin->handle)
+			dlclose(plugin->handle);
 
 		g_free(plugin);
 	}

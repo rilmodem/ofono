@@ -1,5 +1,5 @@
 
-SUBDIRS = gdbus gatchat include src plugins doc
+SUBDIRS = gdbus gatchat include plugins src doc
 
 DISTCHECK_CONFIGURE_FLAGS = --disable-datafiles
 

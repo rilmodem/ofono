@@ -26,3 +26,4 @@ include/version.h
 src/ofonod
 src/ofono.exp
 src/ofono.ver
+plugins/builtin.h

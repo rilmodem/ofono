@@ -62,12 +62,18 @@ struct ofono_plugin_desc {
  *
  * Macro for defining a plugin descriptor
  */
+#ifdef OFONO_PLUGIN_BUILTIN
+		struct ofono_plugin_desc __ofono_builtin_ ## name = { \
+			#name, description, version, priority, init, exit \
+		};
+#else
 #define OFONO_PLUGIN_DEFINE(name, description, version, priority, init, exit) \
 		extern struct ofono_plugin_desc ofono_plugin_desc \
 				__attribute__ ((visibility("default"))); \
 		struct ofono_plugin_desc ofono_plugin_desc = { \
 			#name, description, version, priority, init, exit \
 		};
+#endif
 
 #ifdef __cplusplus
 }

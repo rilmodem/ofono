@@ -13,7 +13,8 @@ ofonod_SOURCES = main.c ofono.h log.c plugin.c \
 		network.c voicecall.c ussd.h ussd.c \
 		call-settings.c call-waiting.c call-forwarding.c call-meter.c
 
-ofonod_LDADD = @GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
+ofonod_LDADD = $(top_builddir)/plugins/libbuiltin.la \
+				@GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
 
 ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=ofono.ver
 
@@ -30,7 +31,7 @@ endif
 AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@ @GDBUS_CFLAGS@ \
 					-DPLUGINDIR=\""$(plugindir)"\"
 
-INCLUDES = -I$(top_builddir)/include
+INCLUDES = -I$(top_builddir)/include -I$(top_builddir)
 
 EXTRA_DIST = ofono.conf
 
