@@ -1,0 +1,247 @@
+/*
+ *
+ *  oFono - Open Source Telephony
+ *
+ *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#define _GNU_SOURCE
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <glib.h>
+
+#include <ofono/log.h>
+#include "driver.h"
+
+#include "gatchat.h"
+#include "gatresult.h"
+
+#include "at.h"
+
+static const char *none_prefix[] = { NULL };
+static const char *ccfc_prefix[] = { "+CCFC:", NULL };
+
+static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_call_forwarding_query_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	GAtResultIter iter;
+	int num = 0;
+	struct ofono_cf_condition *list = NULL;
+	int i;
+
+	dump_response("ccfc_query_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok)
+		goto out;
+
+	g_at_result_iter_init(&iter, result);
+
+	while (g_at_result_iter_next(&iter, "+CCFC:"))
+		num += 1;
+
+	/* Specification is really unclear about this
+	 * generate status=0 for all classes just in case
+	 */
+	if (num == 0) {
+		list = g_new0(struct ofono_cf_condition, 1);
+		num = 1;
+
+		list->status = 0;
+		list->cls = GPOINTER_TO_INT(cbd->user);
+
+		goto out;
+	}
+
+	list = g_new(struct ofono_cf_condition, num);
+
+	g_at_result_iter_init(&iter, result);
+
+	for (num = 0; g_at_result_iter_next(&iter, "+CCFC:"); num++) {
+		const char *str;
+
+		g_at_result_iter_next_number(&iter, &(list[num].status));
+		g_at_result_iter_next_number(&iter, &(list[num].cls));
+
+		list[num].phone_number[0] = '\0';
+		list[num].number_type = 129;
+		list[num].time = 20;
+
+		if (!g_at_result_iter_next_string(&iter, &str))
+			continue;
+
+		strncpy(list[num].phone_number, str,
+			OFONO_MAX_PHONE_NUMBER_LENGTH);
+		list[num].phone_number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+
+		g_at_result_iter_next_number(&iter, &(list[num].number_type));
+
+		if (!g_at_result_iter_skip_next(&iter))
+			continue;
+
+		if (!g_at_result_iter_skip_next(&iter))
+			continue;
+
+		g_at_result_iter_next_number(&iter, &(list[num].time));
+	}
+
+	for (i = 0; i < num; i++)
+		ofono_debug("ccfc_cb: %d, %d, %s(%d) - %d sec",
+				list[i].status, list[i].cls,
+				list[i].phone_number, list[i].number_type,
+				list[i].time);
+
+out:
+	cb(&error, num, list, cbd->data);
+	g_free(list);
+}
+
+static void at_ccfc_query(struct ofono_modem *modem, int type, int cls,
+				ofono_call_forwarding_query_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char buf[64];
+
+	if (!cbd)
+		goto error;
+
+	cbd->user = GINT_TO_POINTER(cls);
+
+	if (cls == 7)
+		sprintf(buf, "AT+CCFC=%d,2", type);
+	else
+		sprintf(buf, "AT+CCFC=%d,2,,,%d", type, cls);
+
+	if (g_at_chat_send(at->parser, buf, ccfc_prefix,
+				ccfc_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, 0, NULL, data);
+	}
+}
+
+static void ccfc_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_generic_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	dump_response("ccfc_set_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	cb(&error, cbd->data);
+}
+
+static void at_ccfc_set(struct ofono_modem *modem, const char *buf,
+				ofono_generic_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+
+	if (!cbd)
+		goto error;
+
+	if (g_at_chat_send(at->parser, buf, none_prefix,
+				ccfc_set_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, data);
+	}
+}
+
+static void at_ccfc_erasure(struct ofono_modem *modem, int type, int cls,
+				ofono_generic_cb_t cb, void *data)
+{
+	char buf[128];
+
+	sprintf(buf, "AT+CCFC=%d,4,,,%d", type, cls);
+	at_ccfc_set(modem, buf, cb, data);
+}
+
+static void at_ccfc_deactivation(struct ofono_modem *modem, int type, int cls,
+					ofono_generic_cb_t cb, void *data)
+{
+	char buf[128];
+
+	sprintf(buf, "AT+CCFC=%d,0,,,%d", type, cls);
+	at_ccfc_set(modem, buf, cb, data);
+}
+
+static void at_ccfc_activation(struct ofono_modem *modem, int type, int cls,
+				ofono_generic_cb_t cb, void *data)
+{
+	char buf[128];
+
+	sprintf(buf, "AT+CCFC=%d,1,,,%d", type, cls);
+	at_ccfc_set(modem, buf, cb, data);
+}
+
+static void at_ccfc_registration(struct ofono_modem *modem, int type, int cls,
+					const char *number, int number_type,
+					int time, ofono_generic_cb_t cb,
+					void *data)
+{
+	char buf[128];
+	int offset;
+
+	offset = sprintf(buf, "AT+CCFC=%d,3,%s,%d,%d", type,
+				number, number_type, cls);
+
+	if (type == 2 || type == 4 || type == 5)
+		sprintf(buf+offset, ",,,%d", time);
+
+	at_ccfc_set(modem, buf, cb, data);
+}
+
+static struct ofono_call_forwarding_ops ops = {
+	.registration	= at_ccfc_registration,
+	.activation	= at_ccfc_activation,
+	.query		= at_ccfc_query,
+	.deactivation	= at_ccfc_deactivation,
+	.erasure	= at_ccfc_erasure
+};
+
+void at_call_forwarding_init(struct ofono_modem *modem)
+{
+	ofono_call_forwarding_register(modem, &ops);
+}
+
+void at_call_forwarding_exit(struct ofono_modem *modem)
+{
+	ofono_call_forwarding_unregister(modem);
+}

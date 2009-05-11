@@ -4,13 +4,19 @@ builtin_sources =
 builtin_cflags =
 
 builtin_modules += atmodem
-builtin_sources += atmodem/main.c
+builtin_sources += atmodem/main.c atmodem/at.h \
+			atmodem/session.h atmodem/session.c \
+			atmodem/call-settings.c atmodem/call-waiting.c \
+			atmodem/call-forwarding.c atmodem/call-meter.c \
+			atmodem/network-registration.c \
+			atmodem/ussd.c atmodem/voicecall.c
 
 noinst_LTLIBRARIES = libbuiltin.la
  
 libbuiltin_la_SOURCES = $(builtin_sources)
 libbuiltin_la_LDFLAGS =
-libbuiltin_la_CFLAGS = $(AM_CFLAGS) $(builtin_cflags) -DOFONO_PLUGIN_BUILTIN
+libbuiltin_la_CFLAGS = $(AM_CFLAGS) $(builtin_cflags) \
+			-DOFONO_PLUGIN_BUILTIN -DOFONO_API_SUBJECT_TO_CHANGE
 
 BUILT_SOURCES = builtin.h
 
@@ -18,7 +24,7 @@ nodist_libbuiltin_la_SOURCES = $(BUILT_SOURCES)
 
 AM_CFLAGS = -fvisibility=hidden @GLIB_CFLAGS@ @GDBUS_CFLAGS@ @GATCHAT_CFLAGS@
 
-INCLUDES = -I$(top_builddir)/include
+INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/src
 
 CLEANFILES = $(BUILT_SOURCES)
 

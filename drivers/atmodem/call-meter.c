@@ -1,0 +1,387 @@
+/*
+ *
+ *  oFono - Open Source Telephony
+ *
+ *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#define _GNU_SOURCE
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <glib.h>
+
+#include <ofono/log.h>
+#include "driver.h"
+
+#include "gatchat.h"
+#include "gatresult.h"
+
+#include "at.h"
+
+static const char *none_prefix[] = { NULL };
+static const char *caoc_prefix[] = { "+CAOC:", NULL };
+static const char *cacm_prefix[] = { "+CACM:", NULL };
+static const char *camm_prefix[] = { "+CAMM:", NULL };
+static const char *cpuc_prefix[] = { "+CPUC:", NULL };
+
+static void caoc_cacm_camm_query_cb(gboolean ok,
+		GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_call_meter_query_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	GAtResultIter iter;
+	const char *meter_hex;
+	char *end;
+	int meter;
+
+	dump_response("caoc_cacm_camm_query_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, cbd->user)) {
+		DECLARE_FAILURE(e);
+
+		cb(&e, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_next_string(&iter, &meter_hex);
+	meter = strtol(meter_hex, &end, 16);
+	if (*end) {
+		DECLARE_FAILURE(e);
+
+		cb(&e, -1, cbd->data);
+		return;
+	}
+
+	cb(&error, meter, cbd->data);
+}
+
+static void cccm_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	GAtResultIter iter;
+	const char *meter_hex;
+	char *end;
+	int meter;
+
+	dump_response("cccm_notify", TRUE, result);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CCCM:"))
+		return;
+
+	g_at_result_iter_next_string(&iter, &meter_hex);
+	meter = strtol(meter_hex, &end, 16);
+	if (*end) {
+		ofono_error("Invalid CCCM value");
+		return;
+	}
+
+	ofono_call_meter_changed_notify(modem, meter);
+}
+
+static void at_caoc_query(struct ofono_modem *modem, ofono_call_meter_query_cb_t cb,
+				void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+
+	if (!cbd)
+		goto error;
+
+	cbd->user = "+CAOC:";
+	if (g_at_chat_send(at->parser, "AT+CAOC=0", caoc_prefix,
+				caoc_cacm_camm_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, -1, modem);
+	}
+}
+
+static void at_cacm_query(struct ofono_modem *modem, ofono_call_meter_query_cb_t cb,
+				void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+
+	if (!cbd)
+		goto error;
+
+	cbd->user = "+CACM:";
+	if (g_at_chat_send(at->parser, "AT+CACM?", cacm_prefix,
+				caoc_cacm_camm_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, -1, modem);
+	}
+}
+
+static void generic_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_generic_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	dump_response("generic_set_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	cb(&error, cbd->data);
+}
+
+static void at_cacm_set(struct ofono_modem *modem, const char *passwd,
+			ofono_generic_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char buf[64];
+
+	if (!cbd)
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CACM=\"%s\"", passwd);
+
+	if (g_at_chat_send(at->parser, buf, none_prefix,
+				generic_set_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, modem);
+	}
+}
+
+static void at_camm_query(struct ofono_modem *modem, ofono_call_meter_query_cb_t cb,
+				void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+
+	if (!cbd)
+		goto error;
+
+	cbd->user = "+CAMM:";
+	if (g_at_chat_send(at->parser, "AT+CAMM?", camm_prefix,
+				caoc_cacm_camm_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, -1, modem);
+	}
+}
+
+static void at_camm_set(struct ofono_modem *modem,	int accmax, const char *passwd,
+			ofono_generic_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char buf[64];
+
+	if (!cbd)
+		goto error;
+
+	sprintf(buf, "AT+CAMM=\"%06X\",\"%s\"", accmax, passwd);
+
+	if (g_at_chat_send(at->parser, buf, none_prefix,
+				generic_set_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, modem);
+	}
+}
+
+static void cpuc_query_cb(gboolean ok,
+				GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_call_meter_puct_query_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	GAtResultIter iter;
+	const char *currency, *ppu;
+	char currency_buf[64];
+	double ppuval;
+
+	dump_response("cpuc_query_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, 0, 0, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, cbd->user)) {
+		DECLARE_FAILURE(e);
+
+		cb(&e, 0, 0, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_next_string(&iter, &currency);
+	strncpy(currency_buf, currency, sizeof(currency_buf));
+
+	g_at_result_iter_next_string(&iter, &ppu);
+	ppuval = strtod(ppu, NULL);
+
+	cb(&error, currency_buf, ppuval, cbd->data);
+}
+
+static void at_cpuc_query(struct ofono_modem *modem,
+				ofono_call_meter_puct_query_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+
+	if (!cbd)
+		goto error;
+
+	cbd->user = "+CPUC:";
+	if (g_at_chat_send(at->parser, "AT+CPUC?", cpuc_prefix,
+				cpuc_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, 0, 0, modem);
+	}
+}
+
+static void at_cpuc_set(struct ofono_modem *modem, const char *currency,
+			double ppu, const char *passwd, ofono_generic_cb_t cb,
+			void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char buf[64];
+
+	if (!cbd)
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CPUC=\"%s\",\"%f\",\"%s\"",
+			currency, ppu, passwd);
+
+	if (g_at_chat_send(at->parser, buf, none_prefix,
+				generic_set_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, modem);
+	}
+}
+
+static void ccwv_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	GAtResultIter iter;
+
+	dump_response("ccwv_notify", TRUE, result);
+
+	g_at_result_iter_init(&iter, result);
+	if (!g_at_result_iter_next(&iter, "+CCWV"))
+		return;
+
+	ofono_call_meter_maximum_notify(modem);
+}
+
+static struct ofono_call_meter_ops ops = {
+	.call_meter_query = at_caoc_query,
+	.acm_query = at_cacm_query,
+	.acm_reset = at_cacm_set,
+	.acm_max_query = at_camm_query,
+	.acm_max_set = at_camm_set,
+	.puct_query = at_cpuc_query,
+	.puct_set = at_cpuc_set,
+};
+
+static void at_call_meter_initialized(gboolean ok, GAtResult *result,
+					gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	g_at_chat_register(at->parser, "+CCCM:",
+			cccm_notify, FALSE, modem, NULL);
+	g_at_chat_register(at->parser, "+CCWV",
+			ccwv_notify, FALSE, modem, NULL);
+
+	ofono_call_meter_register(modem, &ops);
+}
+
+void at_call_meter_init(struct ofono_modem *modem)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	g_at_chat_send(at->parser, "AT+CAOC=2", NULL, NULL, NULL, NULL);
+	g_at_chat_send(at->parser, "AT+CCWE=1", NULL,
+			at_call_meter_initialized, modem, NULL);
+}
+
+void at_call_meter_exit(struct ofono_modem *modem)
+{
+	ofono_call_meter_unregister(modem);
+}
