@@ -15,7 +15,7 @@ ofonod_SOURCES = main.c ofono.h log.c plugin.c \
 
 ofonod_LDADD = $(top_builddir)/plugins/libbuiltin.la \
 		$(top_builddir)/drivers/libbuiltin.la \
-				@GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
+		@GATCHAT_LIBS@ @GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
 
 ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=ofono.ver
 
@@ -29,8 +29,8 @@ else
 plugindir = $(libdir)/ofono/plugins
 endif
 
-AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@ @GDBUS_CFLAGS@ \
-					-DPLUGINDIR=\""$(plugindir)"\"
+AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@ @GDBUS_CFLAGS@ @GATCHAT_CFLAGS@ \
+						-DPLUGINDIR=\""$(plugindir)"\"
 
 INCLUDES = -I$(top_builddir)/include -I$(top_builddir)
 
