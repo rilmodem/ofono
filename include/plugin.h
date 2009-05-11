@@ -63,6 +63,7 @@ struct ofono_plugin_desc {
  * Macro for defining a plugin descriptor
  */
 #ifdef OFONO_PLUGIN_BUILTIN
+#define OFONO_PLUGIN_DEFINE(name, description, version, priority, init, exit) \
 		struct ofono_plugin_desc __ofono_builtin_ ## name = { \
 			#name, description, version, priority, init, exit \
 		};
