@@ -14,6 +14,7 @@ ofonod_SOURCES = main.c ofono.h log.c plugin.c \
 		call-settings.c call-waiting.c call-forwarding.c call-meter.c
 
 ofonod_LDADD = $(top_builddir)/plugins/libbuiltin.la \
+		$(top_builddir)/drivers/libbuiltin.la \
 				@GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
 
 ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=ofono.ver

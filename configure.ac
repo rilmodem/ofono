@@ -86,5 +86,5 @@ AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
 
 AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile
-				include/Makefile include/version.h
-				src/Makefile plugins/Makefile doc/Makefile)
+			include/Makefile include/version.h src/Makefile
+			plugins/Makefile drivers/Makefile doc/Makefile)

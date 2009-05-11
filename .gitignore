@@ -27,3 +27,4 @@ src/ofonod
 src/ofono.exp
 src/ofono.ver
 plugins/builtin.h
+drivers/builtin.h

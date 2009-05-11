@@ -22,7 +22,7 @@ builtin.h:
 	list='$(builtin_modules)'; for i in $$list; \
 	  do echo "extern struct ofono_plugin_desc __ofono_builtin_$$i;" >> $@; done
 	echo "" >> $@
-	echo "static struct ofono_plugin_desc *__ofono_plugins[] = {" >> $@
+	echo "static struct ofono_plugin_desc *__ofono_drivers[] = {" >> $@
 	list='$(builtin_modules)'; for i in $$list; \
 	  do echo "&__ofono_builtin_$$i," >> $@; done
 	echo "NULL };" >> $@
