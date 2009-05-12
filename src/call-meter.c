@@ -53,7 +53,6 @@ struct call_meter_data {
 	int acm_max;
 	double ppu;
 	char currency[4];
-	char *passwd;
 };
 
 static struct call_meter_data *call_meter_create(void)
@@ -168,7 +167,6 @@ static void set_currency(struct ofono_modem *modem, const char *value)
 static void cm_get_properties_reply(struct ofono_modem *modem)
 {
 	struct call_meter_data *cm = modem->call_meter;
-	//struct call_meter_property *property;
 	DBusMessage *reply;
 	DBusMessageIter iter, dict;
 	const char *currency = cm->currency;
@@ -234,7 +232,6 @@ static void query_acm_callback(const struct ofono_error *error, int value,
 					void *data)
 {
 	struct ofono_modem *modem = data;
-	//struct call_meter_data *cm = modem->call_meter;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		set_acm(modem, value);
