@@ -11,7 +11,8 @@ ofonod_SOURCES = main.c ofono.h log.c plugin.c \
 		driver.h modem.h modem.c common.h common.c \
 		manager.c dbus-gsm.h dbus-gsm.c util.h util.c \
 		network.c voicecall.c ussd.h ussd.c \
-		call-settings.c call-waiting.c call-forwarding.c call-meter.c
+		call-settings.c call-waiting.c call-forwarding.c call-meter.c \
+		smsutil.h smsutil.c
 
 ofonod_LDADD = $(top_builddir)/plugins/libbuiltin.la \
 		$(top_builddir)/drivers/libbuiltin.la \
