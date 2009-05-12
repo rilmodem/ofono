@@ -335,9 +335,28 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 	return NULL;
 }
 
-static void ussd_cancel_callback(const struct ofono_error *err, void *data)
+static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 {
-	//struct ussd_data *ussd = data;
+	struct ussd_data *ussd = data;
+	DBusMessage *reply;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		ofono_debug("ussd cancel failed with error: %s",
+				telephony_error_to_str(error));
+
+	ussd->flags &= ~USSD_FLAG_PENDING;
+
+	if (!ussd->pending)
+		return;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
+		ussd->state = USSD_STATE_IDLE;
+
+		reply = dbus_message_new_method_return(ussd->pending);
+	} else
+		reply = dbus_gsm_failed(ussd->pending);
+
+	dbus_gsm_pending_reply(&ussd->pending, reply);
 }
 
 static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,
