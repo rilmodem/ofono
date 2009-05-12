@@ -48,7 +48,7 @@ static const char *clcc_prefix[] = { "+CLCC:", NULL };
 static const char *none_prefix[] = { NULL };
 
 /* According to 27.007 COLP is an intermediate status for ATD */
-static const char *aofono_prefix[] = { "+COLP:", NULL };
+static const char *atd_prefix[] = { "+COLP:", NULL };
 
 struct voicecall_data {
 	gboolean poll_clcc;
@@ -383,7 +383,7 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	/* We have to callback after we schedule a poll if required */
 	cb(&error, cbd->data);
 }
-static void aofono_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct at_data *at = ofono_modem_userdata(cbd->modem);
@@ -395,7 +395,7 @@ static void aofono_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	struct ofono_call *call;
 
-	dump_response("aofono_cb", ok, result);
+	dump_response("atd_cb", ok, result);
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -475,8 +475,8 @@ static void at_dial(struct ofono_modem *modem, const char *number, int number_ty
 
 	strcat(buf, ";");
 
-	if (g_at_chat_send(at->parser, buf, aofono_prefix,
-				aofono_cb, cbd, g_free) > 0)
+	if (g_at_chat_send(at->parser, buf, atd_prefix,
+				atd_cb, cbd, g_free) > 0)
 		return;
 
 error:
