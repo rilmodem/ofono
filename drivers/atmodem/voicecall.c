@@ -969,6 +969,74 @@ static void busy_notify(GAtResult *result, gpointer user_data)
 					clcc_poll_cb, modem, NULL);
 }
 
+static void cssi_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	GAtResultIter iter;
+	int code1, index;
+
+	dump_response("cssi_notify", TRUE, result);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSSI:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &code1))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &index))
+		index = 0;
+
+	ofono_cssi_notify(modem, code1, index);
+}
+
+static void cssu_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	GAtResultIter iter;
+	int code2, index, num_type, satype;
+	const char *num, *subaddr;
+	char num_buf[OFONO_MAX_PHONE_NUMBER_LENGTH];
+
+	dump_response("cssu_notify", TRUE, result);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSSU:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &code2))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &index)) {
+		index = 0;
+		num = NULL;
+		num_type = 0;
+		subaddr = NULL;
+		satype = 0;
+	} else if (!g_at_result_iter_next_string(&iter, &num)) {
+		num = NULL;
+		num_type = 0;
+		subaddr = NULL;
+		satype = 0;
+	} else {
+		strncpy(num_buf, num, OFONO_MAX_PHONE_NUMBER_LENGTH);
+		num = num_buf;
+
+		if (!g_at_result_iter_next_number(&iter, &num_type))
+			return;
+
+		if (!g_at_result_iter_next_string(&iter, &subaddr)) {
+			subaddr = NULL;
+			satype = 0;
+		} else if (!g_at_result_iter_next_number(&iter, &satype))
+			return;
+	}
+
+	ofono_cssu_notify(modem, code2, index, num, num_type);
+}
+
 static struct ofono_voicecall_ops ops = {
 	.dial			= at_dial,
 	.answer			= at_answer,
@@ -1003,6 +1071,10 @@ static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 				clip_notify, FALSE, modem, NULL);
 	g_at_chat_register(at->parser, "+CCWA:",
 				ccwa_notify, FALSE, modem, NULL);
+	g_at_chat_register(at->parser, "+CSSI:",
+				cssi_notify, FALSE, modem, NULL);
+	g_at_chat_register(at->parser, "+CSSU:",
+				cssu_notify, FALSE, modem, NULL);
 
 	/* Modems with 'better' call progress indicators should
 	 * probably not even bother registering to these
@@ -1033,6 +1105,7 @@ void at_voicecall_init(struct ofono_modem *modem)
 	g_at_chat_send(at->parser, "AT+CRC=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(at->parser, "AT+CLIP=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(at->parser, "AT+COLP=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(at->parser, "AT+CSSN=1,1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(at->parser, "AT+CCWA=1", NULL,
 				at_voicecall_initialized, modem, NULL);
 }
