@@ -142,6 +142,32 @@ enum ss_control_type {
 	SS_CONTROL_TYPE_ERASURE,
 };
 
+/* TS 27.007 Supplementary service notifications +CSSN */
+enum ss_cssi {
+	SS_MO_UNCONDITIONAL_FORWARDING	= 0,
+	SS_MO_CONDITIONAL_FORWARDING	= 1,
+	SS_MO_CALL_FORWARDED		= 2,
+	SS_MO_CALL_WAITING		= 3,
+	SS_MO_CUG_CALL			= 4,
+	SS_MO_OUTGOING_BARRING		= 5,
+	SS_MO_INCOMING_BARRING		= 6,
+	SS_MO_CLIR_SUPPRESSION_REJECTED	= 7,
+	SS_MO_CALL_DEFLECTED		= 8,
+};
+
+enum ss_cssu {
+	SS_MT_CALL_FORWARDED		= 0,
+	SS_MT_CUG_CALL			= 1,
+	SS_MT_VOICECALL_ON_HOLD		= 2,
+	SS_MT_VOICECALL_RETRIEVED	= 3,
+	SS_MT_MULTIPARTY_VOICECALL	= 4,
+	SS_MT_VOICECALL_HOLD_RELEASED	= 5,
+	SS_MT_FORWARD_CHECK_SS_MESSAGE	= 6,
+	SS_MT_VOICECALL_IN_TRANSFER	= 7,
+	SS_MT_VOICECALL_TRANSFERRED	= 8,
+	SS_MT_CALL_DEFLECTED		= 9,
+};
+
 const char *telephony_error_to_str(const struct ofono_error *error);
 
 gboolean valid_phone_number_format(const char *number);

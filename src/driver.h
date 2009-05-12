@@ -198,8 +198,8 @@ int ofono_network_registration_register(struct ofono_modem *modem,
 				struct ofono_network_registration_ops *ops);
 void ofono_network_registration_unregister(struct ofono_modem *modem);
 
-/* Voice call related functionality, including ATD, ATA, +CHLD, CTFR, CLCC,
- * SSN notifications (CSSI and CSSU) and VTS.
+/* Voice call related functionality, including ATD, ATA, +CHLD, CTFR, CLCC
+ * and VTS.
  *
  * It is up to the plugin to implement polling of CLCC if the modem does
  * not support vendor extensions for call progress indication.
@@ -243,12 +243,14 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 				enum ofono_disconnect_reason reason,
 				const struct ofono_error *error);
-void ofono_voicecall_cssi(struct ofono_modem *modem, int code, int index);
-void ofono_voicecall_cssu(struct ofono_modem *modem, int code, int index,
-				const char *number, int number_type);
 
 int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_ops *ops);
 void ofono_voicecall_unregister(struct ofono_modem *modem);
+
+/* SSN notifications (CSSI and CSSU).  */
+void ofono_cssi_notify(struct ofono_modem *modem, int code, int index);
+void ofono_cssu_notify(struct ofono_modem *modem, int code, int index,
+		const char *number, int number_type);
 
 struct ofono_call_forwarding_ops {
 	void (*activation)(struct ofono_modem *modem, int type, int cls,

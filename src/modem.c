@@ -35,6 +35,7 @@
 #include "dbus-gsm.h"
 #include "modem.h"
 #include "driver.h"
+#include "cssn.h"
 
 #define MODEM_INTERFACE "org.ofono.Modem"
 
@@ -411,6 +412,8 @@ struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 		return NULL;
 	}
 
+	ofono_cssn_init(modem);
+
 	modem->modem_info->flags |= MODEM_FLAG_INITIALIZING_ATTRS;
 	g_timeout_add(ATTRIBUTE_QUERY_DELAY, query_manufacturer, modem);
 
@@ -424,6 +427,8 @@ void modem_remove(struct ofono_modem *modem)
 	char *path = g_strdup(modem->path);
 
 	ofono_debug("Removing modem: %s", modem->path);
+
+	ofono_cssn_exit(modem);
 
 	g_dbus_unregister_interface(conn, path, MODEM_INTERFACE);
 

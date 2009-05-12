@@ -37,6 +37,7 @@
 #include "common.h"
 #include "dbus-gsm.h"
 #include "modem.h"
+#include "cssn.h"
 
 #define VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
 #define VOICECALL_INTERFACE "org.ofono.VoiceCall"
@@ -1299,17 +1300,6 @@ err:
 
 	if (v)
 		g_free(v);
-}
-
-void ofono_voicecall_cssi(struct ofono_modem *modem, int code, int index)
-{
-
-}
-
-void ofono_voicecall_cssu(struct ofono_modem *modem, int code, int index,
-			const char *number, int number_type)
-{
-
 }
 
 static void generic_callback(const struct ofono_error *error, void *data)
