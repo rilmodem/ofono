@@ -267,7 +267,6 @@ static inline const char *network_operator_build_path(struct ofono_modem *modem,
 
 static void network_operator_emit_available_operators(struct ofono_modem *modem)
 {
-	//struct network_registration_data *netreg = modem->network_registration;
 	DBusConnection *conn = dbus_gsm_connection();
 	char **network_operators;
 
@@ -287,7 +286,6 @@ static void set_network_operator_status(struct ofono_modem *modem,
 					int status)
 {
 	DBusConnection *conn = dbus_gsm_connection();
-	//struct network_registration_data *netreg = modem->network_registration;
 	const char *status_str;
 	const char *path;
 
@@ -308,7 +306,6 @@ static void set_network_operator_technology(struct ofono_modem *modem,
 						struct ofono_network_operator *op,
 						int tech)
 {
-	//struct network_registration_data *netreg = modem->network_registration;
 	DBusConnection *conn = dbus_gsm_connection();
 	const char *tech_str;
 	const char *path;

@@ -116,7 +116,6 @@ static gint ss_control_entry_compare(gconstpointer a, gconstpointer b)
 static gint ss_control_entry_find_by_service(gconstpointer a, gconstpointer b)
 {
 	const struct ss_control_entry *ca = a;
-	//const char *cb = b;
 
 	return strcmp(ca->service, b);
 }
@@ -124,7 +123,6 @@ static gint ss_control_entry_find_by_service(gconstpointer a, gconstpointer b)
 gboolean ss_control_register(struct ofono_modem *modem, const char *str,
 				ss_control_cb_t cb)
 {
-	//struct ussd_data *ussd = modem->ussd;
 	struct ss_control_entry *entry;
 
 	if (!modem)
@@ -143,7 +141,6 @@ gboolean ss_control_register(struct ofono_modem *modem, const char *str,
 void ss_control_unregister(struct ofono_modem *modem, const char *str,
 				ss_control_cb_t cb)
 {
-	//struct ussd_data *ussd = modem->ussd;
 	const struct ss_control_entry entry = { (char *)str, cb };
 	GSList *l;
 
@@ -165,7 +162,6 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 						const char *ss_str,
 						DBusMessage *msg)
 {
-	//struct ussd_data *ussd = modem->ussd;
 	char *str = g_strdup(ss_str);
 	char *sc, *sia, *sib, *sic, *dn;
 	int type;

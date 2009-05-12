@@ -327,7 +327,6 @@ static gboolean cw_ss_control(struct ofono_modem *modem, int type,
 	DBusConnection *conn = dbus_gsm_connection();
 	int cls = BEARER_CLASS_DEFAULT;
 	DBusMessage *reply;
-	//void *op;
 
 	if (!cw)
 		return FALSE;
@@ -411,8 +410,6 @@ static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-	//int i;
-	//GSList *l;
 
 	reply = dbus_message_new_method_return(msg);
 

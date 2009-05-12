@@ -595,7 +595,6 @@ static void property_set_query_callback(const struct ofono_error *error, int tot
 	struct set_cf_request *req = data;
 	struct ofono_modem *modem = req->modem;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	//DBusConnection *conn = dbus_gsm_connection();
 	DBusMessage *reply;
 	GSList *new_cf_list;
 
@@ -768,7 +767,6 @@ static void disable_conditional_callback(const struct ofono_error *error,
 {
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	//DBusConnection *conn = dbus_gsm_connection();
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
@@ -795,7 +793,6 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	//DBusConnection *conn = dbus_gsm_connection();
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
@@ -953,8 +950,6 @@ static void cf_ss_control_query_callback(const struct ofono_error *error,
 {
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	//DBusConnection *conn = dbus_gsm_connection();
-	//DBusMessage *reply;
 	GSList *new_cf_list;
 
 	/* Strange, set succeeded but query failed, fallback to direct method */
@@ -1221,7 +1216,6 @@ static void cf_not_reachable_callback(const struct ofono_error *error, int total
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
 	GSList *l = NULL;
-	//DBusConnection *conn = dbus_gsm_connection();
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error during not reachable CF query");

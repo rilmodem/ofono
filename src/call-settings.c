@@ -450,7 +450,6 @@ static gboolean clir_ss_control(struct ofono_modem *modem, int type,
 {
 	struct call_settings_data *cs = modem->call_settings;
 	DBusConnection *conn = dbus_gsm_connection();
-	//void *op;
 
 	if (!cs)
 		return FALSE;
@@ -587,7 +586,6 @@ static void cs_clir_callback(const struct ofono_error *error,
 {
 	struct ofono_modem *modem = data;
 	struct call_settings_data *cs = modem->call_settings;
-	//DBusConnection *conn = dbus_gsm_connection();
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		goto out;

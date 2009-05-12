@@ -150,7 +150,6 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	const char *status;
 	const char *callerid;
-	//char timebuf[512];
 	const char *timestr = "";
 
 	reply = dbus_message_new_method_return(msg);
@@ -1139,9 +1138,9 @@ static gboolean real_emit_call_list_changed(void *data)
 
 static void emit_call_list_changed(struct ofono_modem *modem)
 {
-	//struct voicecalls_data *calls = modem->voicecalls;
-
 #ifdef DELAY_EMIT
+	struct voicecalls_data *calls = modem->voicecalls;
+
 	if (!(calls->flags & VOICECALLS_FLAG_UPDATING_CALL_LIST)) {
 		calls->flags |= VOICECALLS_FLAG_UPDATING_CALL_LIST;
 		g_timeout_add(0, real_emit_call_list_changed, modem);
@@ -1174,9 +1173,9 @@ static gboolean real_emit_multiparty_call_list_changed(void *data)
 
 static void emit_multiparty_call_list_changed(struct ofono_modem *modem)
 {
-	//struct voicecalls_data *calls = modem->voicecalls;
-
 #ifdef DELAY_EMIT
+	struct voicecalls_data *calls = modem->voicecalls;
+
 	if (!(calls->flags & VOICECALLS_FLAG_UPDATING_MPTY_CALL_LIST)) {
 		calls->flags |= VOICECALLS_FLAG_UPDATING_MPTY_CALL_LIST;
 		g_timeout_add(0, real_emit_multiparty_call_list_changed, modem);
@@ -1242,7 +1241,6 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 	struct voicecalls_data *calls = modem->voicecalls;
 	struct voicecall *v;
 	struct ofono_call *newcall = NULL;
-	//const char *member;
 
 	ofono_debug("Got a voicecall event, status: %d, id: %u, number: %s",
 			call->status, call->id, call->phone_number);

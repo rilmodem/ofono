@@ -261,7 +261,6 @@ void modem_remove_interface(struct ofono_modem *modem, const char *interface)
 
 static void finish_attr_query(struct ofono_modem *modem)
 {
-	//struct ofono_modem_data *info = modem->modem_info;
 	DBusConnection *conn = dbus_gsm_connection();
 	DBusMessage *reply;
 
