@@ -1,27 +1,17 @@
 
-noinst_PROGRAMS = test-util test-common test-sms
+noinst_PROGRAMS = test-common test-util test-sms
 
-test_util_SOURCES = test-util.c ../src/util.c
+test_common_SOURCES = test-common.c $(top_builddir)/src/common.c
 
-test_util_LDADD = @GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
+test_util_SOURCES = test-util.c $(top_builddir)/src/util.c
 
-test_util_LDFLAGS = -Wl,--export-dynamic
+test_sms_SOURCES = test-sms.c $(top_builddir)/src/util.c \
+					$(top_builddir)/src/smsutil.c
 
-test_common_SOURCES = test-common.c ../src/common.c
+LDADD = @GLIB_LIBS@ @GTHREAD_LIBS@
 
-test_common_LDADD = @GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
+AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@
 
-test_common_LDFLAGS = -Wl,--export-dynamic
-
-test_sms_SOURCES = test-sms.c ../src/util.c ../src/smsutil.c
-
-test_sms_LDADD = @GDBUS_LIBS@ @GLIB_LIBS@ @GTHREAD_LIBS@ -ldl
-
-test_sms_LDFLAGS = -Wl,--export-dynamic
-
-AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@ @GDBUS_CFLAGS@ \
-		-DOFONO_API_SUBJECT_TO_CHANGE
-
-INCLUDES = -I$(top_builddir)/include -I$(top_builddir) -I$(top_builddir)/src
+INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/src
 
 MAINTAINERCLEANFILES = Makefile.in

@@ -87,5 +87,5 @@ AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
 
 AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile
 			include/Makefile include/version.h src/Makefile
-			plugins/Makefile drivers/Makefile doc/Makefile
-			unit/Makefile)
+			plugins/Makefile drivers/Makefile unit/Makefile
+								doc/Makefile)

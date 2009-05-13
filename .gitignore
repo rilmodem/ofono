@@ -28,3 +28,7 @@ src/ofono.exp
 src/ofono.ver
 plugins/builtin.h
 drivers/builtin.h
+
+unit/test-common
+unit/test-util
+unit/test-sms
