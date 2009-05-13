@@ -1,12 +1,12 @@
 
 noinst_PROGRAMS = test-common test-util test-sms
 
-test_common_SOURCES = test-common.c $(top_builddir)/src/common.c
+test_common_SOURCES = test-common.c $(top_srcdir)/src/common.c
 
-test_util_SOURCES = test-util.c $(top_builddir)/src/util.c
+test_util_SOURCES = test-util.c $(top_srcdir)/src/util.c
 
-test_sms_SOURCES = test-sms.c $(top_builddir)/src/util.c \
-					$(top_builddir)/src/smsutil.c
+test_sms_SOURCES = test-sms.c $(top_srcdir)/src/util.c \
+					$(top_srcdir)/src/smsutil.c
 
 LDADD = @GLIB_LIBS@ @GTHREAD_LIBS@
 
