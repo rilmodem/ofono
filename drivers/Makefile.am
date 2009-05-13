@@ -4,7 +4,7 @@ builtin_sources =
 builtin_cflags =
 
 builtin_modules += atmodem
-builtin_sources += atmodem/main.c atmodem/at.h \
+builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/session.h atmodem/session.c \
 			atmodem/call-settings.c atmodem/call-waiting.c \
 			atmodem/call-forwarding.c atmodem/call-meter.c \
