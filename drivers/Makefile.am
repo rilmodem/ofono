@@ -11,6 +11,9 @@ builtin_sources += atmodem/main.c atmodem/at.h \
 			atmodem/network-registration.c \
 			atmodem/ussd.c atmodem/voicecall.c
 
+builtin_modules += phonet
+builtin_sources += phonet/phonet.c
+
 noinst_LTLIBRARIES = libbuiltin.la
  
 libbuiltin_la_SOURCES = $(builtin_sources)
