@@ -150,6 +150,9 @@ typedef void (*ofono_call_meter_puct_query_cb_t)(const struct ofono_error *error
 					const char *currency, double ppu,
 					void *data);
 
+typedef void (*ofono_call_barring_cb_t)(const struct ofono_error *error,
+					int status, void *data);
+
 struct ofono_modem_attribute_ops {
 	void (*query_manufacturer)(struct ofono_modem *modem,
 			ofono_modem_attribute_query_cb_t cb, void *data);
@@ -332,3 +335,15 @@ int ofono_call_meter_register(struct ofono_modem *modem,
 void ofono_call_meter_unregister(struct ofono_modem *modem);
 void ofono_call_meter_maximum_notify(struct ofono_modem *modem);
 void ofono_call_meter_changed_notify(struct ofono_modem *modem, int new_value);
+
+struct ofono_call_barring_ops {
+	void (*set)(struct ofono_modem *modem, const char *lock,
+			int enable, const char *passwd, int cls,
+			ofono_generic_cb_t cb, void *data);
+	void (*query)(struct ofono_modem *modem, const char *lock,
+			ofono_call_barring_cb_t cb, void *data);
+};
+
+int ofono_call_barring_register(struct ofono_modem *modem,
+				struct ofono_call_barring_ops *ops);
+void ofono_call_barring_unregister(struct ofono_modem *modem);

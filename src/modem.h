@@ -37,6 +37,7 @@ struct ofono_modem {
 	struct call_settings_data *call_settings;
 	struct call_waiting_data *call_waiting;
 	struct call_meter_data *call_meter;
+	struct call_barring_data *call_barring;
 	struct cssn_data *cssn;
 };
 
