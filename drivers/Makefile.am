@@ -9,7 +9,8 @@ builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/call-settings.c atmodem/call-waiting.c \
 			atmodem/call-forwarding.c atmodem/call-meter.c \
 			atmodem/network-registration.c \
-			atmodem/ussd.c atmodem/voicecall.c
+			atmodem/ussd.c atmodem/voicecall.c \
+			atmodem/call-barring.c
 
 builtin_modules += phonet
 builtin_sources += phonet/phonet.c

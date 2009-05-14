@@ -109,6 +109,7 @@ static void manager_free(gpointer user)
 		at_voicecall_exit(at->modem);
 		at_ussd_exit(at->modem);
 		at_call_meter_exit(at->modem);
+		at_call_barring_exit(at->modem);
 		ofono_modem_unregister(at->modem);
 
 		at_destroy(at);
@@ -342,6 +343,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	at_network_registration_init(at->modem);
 	at_voicecall_init(at->modem);
 	at_call_meter_init(at->modem);
+	at_call_barring_init(at->modem);
 
 	at->io = io;
 	at->driver = g_strdup(driver);
