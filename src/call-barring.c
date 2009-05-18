@@ -19,6 +19,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,9 +32,10 @@
 #include <glib.h>
 #include <gdbus.h>
 
+#include "ofono.h"
+
 #include "driver.h"
 #include "common.h"
-#include "log.h"
 #include "dbus-gsm.h"
 #include "modem.h"
 #include "cssn.h"
@@ -40,85 +45,197 @@
 
 #define CALL_BARRING_FLAG_CACHED 0x1
 
+static gboolean cb_ss_query_next_lock(gpointer user);
+static gboolean get_query_next_lock(gpointer user);
+static gboolean set_query_next_lock(gpointer user);
+
 struct call_barring_data {
 	struct ofono_call_barring_ops *ops;
 	int flags;
 	DBusMessage *pending;
-
-	int *lock_enable;
+	int *cur_locks;
+	int *new_locks;
+	int query_start;
+	int query_end;
 	int query_next;
 	int ss_req_type;
 	int ss_req_cls;
+	int ss_req_lock;
 };
 
 struct call_barring_lock {
 	const char *name;
+	const char *value;
 	const char *fac;
 };
 
 static struct call_barring_lock cb_locks[] = {
-	{ "BarrAllOutgoingCalls",	"AO" },
-	{ "BarrOutgoingIntl",		"OI" },
-	{ "BarrOutgoingIntlExceptHome",	"OX" },
-	{ "BarrAllIncomingCalls",	"AI" },
-	{ "BarrIncomingWhenRoaming",	"IR" },
-	{ NULL,				NULL },
+	{ "AllOutgoing",			"always",		"AO" },
+	{ "InternationalOutgoing",		"international",	"OI" },
+	{ "InternationalOutgoingExceptHome",	"internationalnothome",	"OX" },
+	{ "AllIncoming",			"always",		"AI" },
+	{ "IncomingWhenRoaming",		"whenroaming",		"IR" },
+	{ "AllBarringServices",			NULL,			"AB" },
+	{ "AllOutgoingServices",		NULL,			"AG" },
+	{ "AllIncomingServices",		NULL,			"AC" },
+	{ NULL,					NULL,			NULL },
 };
 
-enum bearer_class cb_bearer_cls[] = {
-	BEARER_CLASS_VOICE,
-	BEARER_CLASS_DATA,
-	BEARER_CLASS_FAX,
-	0
-};
+/* These are inclusive */
+#define CB_OUTGOING_START 0
+#define CB_OUTGOING_END 2
+#define CB_INCOMING_START 3
+#define CB_INCOMING_END 4
+#define CB_ALL_START 0
+#define CB_ALL_END 4
+#define CB_ALL_OUTGOING 6
+#define CB_ALL_INCOMING 7
 
-static void set_lock(struct ofono_modem *modem, int value, int which)
+static inline void emit_barring_changed(struct ofono_modem *modem, int start,
+					int end, const char *type, int cls)
 {
 	struct call_barring_data *cb = modem->call_barring;
-	enum bearer_class *cls;
+	DBusConnection *conn = dbus_gsm_connection();
 	char property_name[64];
+	const char *value;
+	int i;
+	int j;
 
-	for (cls = cb_bearer_cls; *cls; cls++)
-		if (*cls & (cb->lock_enable[which] ^ value)) {
-			DBusConnection *conn = dbus_gsm_connection();
-			dbus_bool_t dbusval = !!(*cls & value);
+	for (i = start; i <= end; i++)
+		if (cb->cur_locks[i] & cls)
+			break;
 
-			snprintf(property_name, sizeof(property_name), "%s%s",
-					bearer_class_to_string(*cls),
-					cb_locks[which].name);
-			dbus_gsm_signal_property_changed(conn, modem->path,
-							CALL_BARRING_INTERFACE,
-							property_name,
-							DBUS_TYPE_BOOLEAN,
-							&dbusval);
-	}
+	for (j = start; j <= end; j++)
+		if (cb->new_locks[j] & cls)
+			break;
 
-	cb->lock_enable[which] = value;
+	if (i == j)
+		return;
+
+	if (j > end)
+		value = "disabled";
+	else
+		value = cb_locks[j].value;
+
+	snprintf(property_name, sizeof(property_name), "%s%s",
+			bearer_class_to_string(cls), type);
+
+	dbus_gsm_signal_property_changed(conn, modem->path,
+						CALL_BARRING_INTERFACE,
+						property_name, DBUS_TYPE_STRING,
+						&value);
 }
 
-static void cb_ss_dict_append(struct call_barring_data *cb,
-		DBusMessageIter *dict, int which)
+static void update_barrings(struct ofono_modem *modem)
 {
-	dbus_bool_t dbus_value;
+	struct call_barring_data *cb = modem->call_barring;
+	int cls;
+	int i;
 
-	dbus_value = !!(cb->lock_enable[which] & cb->ss_req_cls);
-	dbus_gsm_dict_append(dict, cb_locks[which].name,
-			DBUS_TYPE_BOOLEAN, &dbus_value);
+	/* We're only interested in emitting signals for Voice, Fax & Data */
+	for (cls = 1; cls <= BEARER_CLASS_FAX; cls = cls << 1) {
+		emit_barring_changed(modem, cb->query_start, CB_OUTGOING_END,
+					"Outgoing", cls);
+		emit_barring_changed(modem, CB_INCOMING_START, cb->query_end,
+					"Incoming", cls);
+	}
+
+	for (i = cb->query_start; i <= cb->query_end; i++) {
+		cb->cur_locks[i] = cb->new_locks[i];
+		cb->new_locks[i] = 0;
+	}
+}
+
+static void cb_ss_property_append(struct call_barring_data *cb,
+					DBusMessageIter *dict, int lock,
+					int mask)
+{
+	int i;
+	char property_name[64];
+	const char *strvalue;
+
+	for (i = 1; i <= BEARER_CLASS_PAD; i = i << 1) {
+		if (!(mask & i))
+			continue;
+
+		strvalue = (cb->cur_locks[lock] & i) ? "enabled" : "disabled";
+
+		snprintf(property_name, sizeof(property_name), "%s%s",
+				bearer_class_to_string(i),
+				cb_locks[lock].name);
+
+		dbus_gsm_dict_append(dict, property_name, DBUS_TYPE_STRING,
+					&strvalue);
+	}
+}
+
+static void cb_set_query_bounds(struct call_barring_data *cb,
+				const char *fac, gboolean fac_only)
+{
+	int i;
+
+	if (!strcmp("AB", fac)) {
+		cb->query_start = CB_ALL_START;
+		cb->query_end = CB_ALL_END;
+		cb->query_next = CB_ALL_START;
+		return;
+	}
+
+	if (!strcmp("AG", fac))
+		goto outgoing;
+
+	if (!strcmp("AC", fac))
+		goto incoming;
+
+	for (i = 0; cb_locks[i].name; i++) {
+		if (strcmp(cb_locks[i].fac, fac))
+			continue;
+
+		if (fac_only) {
+			cb->query_start = i;
+			cb->query_end = i;
+			cb->query_next = i;
+			return;
+		}
+
+		if ((i >= CB_OUTGOING_START) &&
+			(i <= CB_OUTGOING_END))
+			goto outgoing;
+		else if ((i >= CB_INCOMING_START) &&
+				(i <= CB_INCOMING_END))
+			goto incoming;
+	}
+
+	ofono_error("Unable to set query boundaries for %s", fac);
+	return;
+
+outgoing:
+	cb->query_start = CB_OUTGOING_START;
+	cb->query_end = CB_OUTGOING_END;
+	cb->query_next = CB_OUTGOING_START;
+	return;
+
+incoming:
+	cb->query_start = CB_INCOMING_START;
+	cb->query_end = CB_INCOMING_END;
+	cb->query_next = CB_INCOMING_START;
+	return;
 }
 
 static void generate_ss_query_reply(struct ofono_modem *modem)
 {
 	struct call_barring_data *cb = modem->call_barring;
 	const char *context = "CallBarring";
-	const char *sig = "(sa{sv})";
+	const char *sig = "(ssa{sv})";
 	const char *ss_type = ss_control_type_to_string(cb->ss_req_type);
-	DBusConnection *conn = dbus_gsm_connection();
+	const char *ss_fac = cb_locks[cb->ss_req_lock].name;
 	DBusMessageIter iter;
 	DBusMessageIter variant;
 	DBusMessageIter vstruct;
 	DBusMessageIter dict;
 	DBusMessage *reply;
-	int lck;
+	int lock;
+	int start, end;
 
 	reply = dbus_message_new_method_return(cb->pending);
 
@@ -132,17 +249,24 @@ static void generate_ss_query_reply(struct ofono_modem *modem)
 	dbus_message_iter_open_container(&variant, DBUS_TYPE_STRUCT, NULL,
 						&vstruct);
 
-	dbus_message_iter_append_basic(&vstruct, DBUS_TYPE_STRING,
-					&ss_type);
+	dbus_message_iter_append_basic(&vstruct, DBUS_TYPE_STRING, &ss_type);
+
+	dbus_message_iter_append_basic(&vstruct, DBUS_TYPE_STRING, &ss_fac);
 
 	dbus_message_iter_open_container(&vstruct, DBUS_TYPE_ARRAY,
 					PROPERTIES_ARRAY_SIGNATURE, &dict);
 
-	if (cb_locks[cb->query_next].name)
-		cb_ss_dict_append(cb, &dict, cb->query_next);
-	else
-		for (lck = 0; cb_locks[lck].name; lck++)
-			cb_ss_dict_append(cb, &dict, lck);
+	/* We report all affected locks only for the special case ones */
+	if (cb->ss_req_lock <= CB_ALL_END) {
+		start = cb->ss_req_lock;
+		end = cb->ss_req_lock;
+	} else {
+		start = cb->query_start;
+		end = cb->query_end;
+	}
+
+	for (lock = start; lock <= end; lock++)
+		cb_ss_property_append(cb, &dict, lock, cb->ss_req_cls);
 
 	dbus_message_iter_close_container(&vstruct, &dict);
 
@@ -150,68 +274,52 @@ static void generate_ss_query_reply(struct ofono_modem *modem)
 
 	dbus_message_iter_close_container(&iter, &variant);
 
-	g_dbus_send_message(conn, reply);
-	cb->pending = NULL;
+	dbus_gsm_pending_reply(&cb->pending, reply);
 }
 
-static void cb_ss_query_lock_callback(const struct ofono_error *error,
+static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 				int status, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_barring_data *cb = modem->call_barring;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Querrying a CB service via SS failed");
-		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
+		if (cb->ss_req_type != SS_CONTROL_TYPE_QUERY) {
+			ofono_error("Enabling/disabling Call Barring via SS "
+					"successful, but query was not");
+
+			cb->flags &= ~CALL_BARRING_FLAG_CACHED;
+		}
 
 		dbus_gsm_pending_reply(&cb->pending,
 					dbus_gsm_failed(cb->pending));
 		return;
 	}
 
-	if (cb_locks[cb->query_next].name)
-		set_lock(modem, status, cb->query_next);
+	cb->new_locks[cb->query_next] = status;
+
+	if (cb->query_next < cb->query_end) {
+		cb->query_next += 1;
+		g_timeout_add(0, cb_ss_query_next_lock, modem);
+		return;
+	}
 
 	generate_ss_query_reply(modem);
+	update_barrings(modem);
 }
 
-static gboolean cb_ss_query_all(gpointer user);
-static void cb_ss_query_all_callback(const struct ofono_error *error,
-				int status, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct call_barring_data *cb = modem->call_barring;
-
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_lock(modem, status, cb->query_next);
-	else {
-		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
-		ofono_debug("Enabling/disabling Call Barring via SS "
-				"successful, but query was not");
-
-		dbus_gsm_pending_reply(&cb->pending,
-					dbus_gsm_failed(cb->pending));
-		return;
-	}
-
-	if (cb_locks[++cb->query_next].name)
-		g_timeout_add(0, cb_ss_query_all, modem);
-	else
-		generate_ss_query_reply(modem);
-}
-
-static gboolean cb_ss_query_all(gpointer user)
+static gboolean cb_ss_query_next_lock(gpointer user)
 {
 	struct ofono_modem *modem = user;
 	struct call_barring_data *cb = modem->call_barring;
 
 	cb->ops->query(modem, cb_locks[cb->query_next].fac,
-			cb_ss_query_all_callback, modem);
+			cb_ss_query_next_lock_callback, modem);
 
 	return FALSE;
 }
 
-static void cb_ss_enable_lock_callback(const struct ofono_error *error,
+static void cb_ss_set_lock_callback(const struct ofono_error *error,
 		void *data)
 {
 	struct ofono_modem *modem = data;
@@ -219,18 +327,13 @@ static void cb_ss_enable_lock_callback(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Enabling/disabling Call Barring via SS failed");
-		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
-
 		dbus_gsm_pending_reply(&cb->pending,
 					dbus_gsm_failed(cb->pending));
 		return;
 	}
 
-	if (cb->ops->query) {
-		cb->flags |= CALL_BARRING_FLAG_CACHED;
-		cb->query_next = 0;
-		cb_ss_query_all(modem);
-	}
+	/* Assume we have query always */
+	cb_ss_query_next_lock(modem);
 }
 
 static gboolean cb_ss_control(struct ofono_modem *modem,
@@ -245,6 +348,7 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 	const char *fac;
 	DBusMessage *reply;
 	void *operation;
+	int i;
 
 	if (cb->pending) {
 		reply = dbus_gsm_busy(msg);
@@ -272,17 +376,31 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 		fac = "AB";
 	else if (!strcmp(sc, "333"))
 		fac = "AG";
-	else if (!strcmp(sc, "335"))
-		fac = "AI";
+	else if (!strcmp(sc, "353"))
+		fac = "AC";
 	else
 		return FALSE;
 
-	for (cb->query_next = 0;
-		cb_locks[cb->query_next].name &&
-		strcmp(fac, cb_locks[cb->query_next].fac);
-		cb->query_next++);
+	cb_set_query_bounds(cb, fac, type == SS_CONTROL_TYPE_QUERY);
+
+	i = 0;
+	while (cb_locks[i].name && strcmp(cb_locks[i].fac, fac))
+		i++;
+
+	cb->ss_req_lock = i;
+
+	if (strlen(sic) > 0)
+		goto bad_format;
+
+	if (strlen(dn) > 0)
+		goto bad_format;
+
+	if (!is_valid_pin(sia))
+		goto bad_format;
 
 	switch (type) {
+	case SS_CONTROL_TYPE_ACTIVATION:
+	case SS_CONTROL_TYPE_DEACTIVATION:
 	case SS_CONTROL_TYPE_REGISTRATION:
 	case SS_CONTROL_TYPE_ERASURE:
 		operation = cb->ops->set;
@@ -290,9 +408,6 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 	case SS_CONTROL_TYPE_QUERY:
 		operation = cb->ops->query;
 		break;
-	case SS_CONTROL_TYPE_ACTIVATION:
-	case SS_CONTROL_TYPE_DEACTIVATION:
-		goto bad_format;
 	}
 
 	if (!operation) {
@@ -301,6 +416,15 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 
 		return TRUE;
 	}
+
+	/* According to 27.007, AG, AC and AB only work with mode = 0
+	 * We support query by querying all relevant types, since we must
+	 * do this for the deactivation case anyway
+	 */
+	if ((!strcmp(fac, "AG") || !strcmp(fac, "AC") || !strcmp(fac, "AB")) &&
+		(type == SS_CONTROL_TYPE_ACTIVATION ||
+			type == SS_CONTROL_TYPE_REGISTRATION))
+		goto bad_format;
 
 	if (strlen(sib) > 0) {
 		long service_code;
@@ -317,26 +441,25 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 			goto bad_format;
 	}
 
-	if (strlen(sic) > 0)
-		goto bad_format;
-
 	cb->ss_req_cls = cls;
 	cb->pending = dbus_message_ref(msg);
 
 	switch (type) {
+	case SS_CONTROL_TYPE_ACTIVATION:
 	case SS_CONTROL_TYPE_REGISTRATION:
-		cb->ss_req_type = SS_CONTROL_TYPE_ACTIVATION;
+		cb->ss_req_type = SS_CONTROL_TYPE_REGISTRATION;
 		cb->ops->set(modem, fac, 1, sia, cls,
-				cb_ss_enable_lock_callback, modem);
+				cb_ss_set_lock_callback, modem);
 		break;
 	case SS_CONTROL_TYPE_ERASURE:
-		cb->ss_req_type = SS_CONTROL_TYPE_DEACTIVATION;
+	case SS_CONTROL_TYPE_DEACTIVATION:
+		cb->ss_req_type = SS_CONTROL_TYPE_ERASURE;
 		cb->ops->set(modem, fac, 0, sia, cls,
-				cb_ss_enable_lock_callback, modem);
+				cb_ss_set_lock_callback, modem);
 		break;
 	case SS_CONTROL_TYPE_QUERY:
 		cb->ss_req_type = SS_CONTROL_TYPE_QUERY;
-		cb->ops->query(modem, fac, cb_ss_query_lock_callback, modem);
+		cb_ss_query_next_lock(modem);
 		break;
 	}
 
@@ -357,7 +480,7 @@ static void cb_register_ss_controls(struct ofono_modem *modem)
 	ss_control_register(modem, "351", cb_ss_control);
 	ss_control_register(modem, "330", cb_ss_control);
 	ss_control_register(modem, "333", cb_ss_control);
-	ss_control_register(modem, "335", cb_ss_control);
+	ss_control_register(modem, "353", cb_ss_control);
 }
 
 static void cb_unregister_ss_controls(struct ofono_modem *modem)
@@ -369,17 +492,18 @@ static void cb_unregister_ss_controls(struct ofono_modem *modem)
 	ss_control_unregister(modem, "351", cb_ss_control);
 	ss_control_unregister(modem, "330", cb_ss_control);
 	ss_control_unregister(modem, "333", cb_ss_control);
-	ss_control_unregister(modem, "335", cb_ss_control);
+	ss_control_unregister(modem, "353", cb_ss_control);
 }
 
 static struct call_barring_data *call_barring_create(void)
 {
 	int lcount;
-	struct call_barring_data *cb = g_try_new0(struct call_barring_data, 1);
+	struct call_barring_data *cb = g_new0(struct call_barring_data, 1);
 
-	for (lcount = 0; cb_locks[lcount].name; lcount++);
+	lcount = CB_ALL_END - CB_ALL_START + 1;
 
-	cb->lock_enable = g_try_new0(int, lcount);
+	cb->cur_locks = g_new0(int, lcount);
+	cb->new_locks = g_new0(int, lcount);
 
 	return cb;
 }
@@ -389,28 +513,44 @@ static void call_barring_destroy(gpointer userdata)
 	struct ofono_modem *modem = userdata;
 	struct call_barring_data *cb = modem->call_barring;
 
-	g_free(cb->lock_enable);
+	g_free(cb->cur_locks);
+	g_free(cb->new_locks);
 	g_free(cb);
 
 	modem->call_barring = NULL;
 }
 
+static inline void cb_append_property(struct call_barring_data *cb,
+					DBusMessageIter *dict, int start,
+					int end, int cls, const char *property)
+{
+	char property_name[64];
+	const char *value = "disabled";
+	int i;
+
+	for (i = start; i <= end; i++)
+		if (cb->cur_locks[i] & cls)
+			break;
+
+	if (i <= end)
+		value = cb_locks[i].value;
+
+	snprintf(property_name, sizeof(property_name), "%s%s",
+			bearer_class_to_string(cls), property);
+
+	dbus_gsm_dict_append(dict, property_name, DBUS_TYPE_STRING,
+				&value);
+}
+
 static void cb_get_properties_reply(struct ofono_modem *modem)
 {
 	struct call_barring_data *cb = modem->call_barring;
-	struct call_barring_lock *lock;
 	DBusMessage *reply;
 	DBusMessageIter iter, dict;
-	int *enable;
-	enum bearer_class *cls;
-	char property_name[64];
-	dbus_bool_t dbus_value;
+	int j;
 
-	if (!(cb->flags & CALL_BARRING_FLAG_CACHED)) {
-		dbus_gsm_pending_reply(&cb->pending,
-					dbus_gsm_failed(cb->pending));
-		return;
-	}
+	if (!(cb->flags & CALL_BARRING_FLAG_CACHED))
+		ofono_error("Generating a get_properties reply with no cache");
 
 	reply = dbus_message_new_method_return(cb->pending);
 	if (!reply)
@@ -421,48 +561,48 @@ static void cb_get_properties_reply(struct ofono_modem *modem)
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
 			PROPERTIES_ARRAY_SIGNATURE, &dict);
 
-	for (lock = cb_locks, enable = cb->lock_enable; lock->name;
-			lock++, enable++)
-		for (cls = cb_bearer_cls; *cls; cls ++) {
-			dbus_value = !!(*enable & *cls);
-
-			snprintf(property_name, sizeof(property_name), "%s%s",
-					bearer_class_to_string(*cls),
-					lock->name);
-			dbus_gsm_dict_append(&dict, property_name,
-					DBUS_TYPE_BOOLEAN, &dbus_value);
-		}
+	for (j = 1; j <= BEARER_CLASS_FAX; j = j << 1) {
+		cb_append_property(cb, &dict, CB_OUTGOING_START,
+					CB_OUTGOING_END, j, "Outgoing");
+		cb_append_property(cb, &dict, CB_INCOMING_START,
+					CB_INCOMING_END, j, "Incoming");
+	}
 
 	dbus_message_iter_close_container(&iter, &dict);
 
 	dbus_gsm_pending_reply(&cb->pending, reply);
 }
 
-static gboolean query_lock(gpointer user);
-static void query_lock_callback(const struct ofono_error *error,
-				int status, void *data)
+static void get_query_lock_callback(const struct ofono_error *error,
+					int status, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_barring_data *cb = modem->call_barring;
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_lock(modem, status, cb->query_next);
-	else
-		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
+		cb->new_locks[cb->query_next] = status;
 
-	if (cb_locks[++cb->query_next].name)
-		g_timeout_add(0, query_lock, modem);
-	else if (cb->pending)
-		cb_get_properties_reply(modem);
+		if (cb->query_next == CB_ALL_END)
+			cb->flags |= CALL_BARRING_FLAG_CACHED;
+	}
+
+	if (cb->query_next < CB_ALL_END) {
+		cb->query_next = cb->query_next + 1;
+		g_timeout_add(0, get_query_next_lock, modem);
+		return;
+	}
+
+	cb_get_properties_reply(modem);
+	update_barrings(modem);
 }
 
-static gboolean query_lock(gpointer user)
+static gboolean get_query_next_lock(gpointer user)
 {
 	struct ofono_modem *modem = user;
 	struct call_barring_data *cb = modem->call_barring;
 
 	cb->ops->query(modem, cb_locks[cb->query_next].fac,
-			query_lock_callback, modem);
+			get_query_lock_callback, modem);
 
 	return FALSE;
 }
@@ -484,26 +624,21 @@ static DBusMessage *cb_get_properties(DBusConnection *conn, DBusMessage *msg,
 	if (cb->flags & CALL_BARRING_FLAG_CACHED)
 		cb_get_properties_reply(modem);
 	else {
-		cb->flags |= CALL_BARRING_FLAG_CACHED;
-		cb->query_next = 0;
-		query_lock(modem);
+		cb->query_next = CB_ALL_START;
+		get_query_next_lock(modem);
 	}
 
 	return NULL;
 }
 
-static void set_lock_query_callback(const struct ofono_error *error, int value,
-					void *data)
+static void set_query_lock_callback(const struct ofono_error *error,
+				int status, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_barring_data *cb = modem->call_barring;
-	DBusMessage *reply;
-
-	if (!cb->pending)
-		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("Enabling/disabling a lock successful, "
+		ofono_error("Disabling all barring successful, "
 				"but query was not");
 
 		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
@@ -513,10 +648,28 @@ static void set_lock_query_callback(const struct ofono_error *error, int value,
 		return;
 	}
 
-	reply = dbus_message_new_method_return(cb->pending);
-	dbus_gsm_pending_reply(&cb->pending, reply);
+	cb->new_locks[cb->query_next] = status;
 
-	set_lock(modem, value, cb->query_next);
+	if (cb->query_next < cb->query_end) {
+		cb->query_next += 1;
+		g_timeout_add(0, set_query_next_lock, modem);
+		return;
+	}
+
+	dbus_gsm_pending_reply(&cb->pending,
+				dbus_message_new_method_return(cb->pending));
+	update_barrings(modem);
+}
+
+static gboolean set_query_next_lock(gpointer user)
+{
+	struct ofono_modem *modem = user;
+	struct call_barring_data *cb = modem->call_barring;
+
+	cb->ops->query(modem, cb_locks[cb->query_next].fac,
+			set_query_lock_callback, modem);
+
+	return FALSE;
 }
 
 static void set_lock_callback(const struct ofono_error *error, void *data)
@@ -531,38 +684,75 @@ static void set_lock_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	cb->ops->query(modem, cb_locks[cb->query_next].fac,
-			set_lock_query_callback, modem);
+	/* If we successfully set the value, we must query it back
+	 * Call Barring is a special case, since according to 22.088 2.2.1:
+	 * "The PLMN will ensure that only one of the barring programs is
+	 * active per basic service group. The activation of one specific
+	 * barring program will override an already active one (i.e. the
+	 * old one will be permanently deactivated)."
+	 * So we actually query all outgoing / incoming barrings depending
+	 * on what kind we set.
+	 */
+	set_query_next_lock(modem);
 }
 
-static gboolean cb_lock_property_lookup(const char *property,
-		int *out_which, enum bearer_class *out_cls)
+static gboolean cb_lock_property_lookup(const char *property, const char *value,
+					int *out_which, int *out_cls,
+					int *out_mode)
 {
-	enum bearer_class *cls;
+	int i, j;
 	const char *prefix;
-	int which;
 	size_t len;
+	int start, end;
 
-	/* We check the bearer classes here, e.g. voice, data, fax, sms */
-	for (cls = cb_bearer_cls; *cls; cls++) {
-		prefix = bearer_class_to_string(*cls);
+	for (i = 1; i <= BEARER_CLASS_FAX; i = i << 1) {
+		prefix = bearer_class_to_string(i);
 		len = strlen(prefix);
 
 		if (!strncmp(property, prefix, len))
 			break;
 	}
-	if (!*cls)
+
+	if (i > BEARER_CLASS_FAX)
 		return FALSE;
 
 	property += len;
 
-	/* We look up the lock category now */
-	for (which = 0; cb_locks[which].name; which++)
-		if (!strcmp(property, cb_locks[which].name)) {
-			*out_which = which;
-			*out_cls = *cls;
-			return TRUE;
-		}
+	if (!strcmp(property, "Outgoing")) {
+		start = CB_OUTGOING_START;
+		end = CB_OUTGOING_END;
+	} else if (!strcmp(property, "Incoming")) {
+		start = CB_INCOMING_START;
+		end = CB_INCOMING_END;
+	} else
+		return FALSE;
+
+	/* Gah, this is a special case.  If we're setting a barring to
+	 * disabled, then generate a disable all outgoing/incoming
+	 * request for a particular basic service
+	 */
+	if (!strcmp(value, "disabled")) {
+		*out_mode = 0;
+		*out_cls = i;
+
+		if (!strcmp(property, "Outgoing"))
+			*out_which = CB_ALL_OUTGOING;
+		else
+			*out_which = CB_ALL_INCOMING;
+
+		return TRUE;
+	}
+
+	for (j = start; j <= end; j++) {
+		if (strcmp(value, cb_locks[j].value))
+			continue;
+
+		*out_mode = 1;
+		*out_cls = i;
+		*out_which = j;
+
+		return TRUE;
+	}
 
 	return FALSE;
 }
@@ -575,8 +765,10 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 	DBusMessageIter iter;
 	DBusMessageIter var;
 	const char *name, *passwd = "";
-	enum bearer_class cls;
-	dbus_bool_t value;
+	const char *value;
+	int lock;
+	int cls;
+	int mode;
 
 	if (cb->pending)
 		return dbus_gsm_busy(msg);
@@ -588,18 +780,21 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 		return dbus_gsm_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &name);
-	if (!cb_lock_property_lookup(name, &cb->query_next, &cls))
-		return dbus_gsm_invalid_args(msg);
 
 	dbus_message_iter_next(&iter);
+
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
 		return dbus_gsm_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
-	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
+
+	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 		return dbus_gsm_invalid_format(msg);
 
 	dbus_message_iter_get_basic(&var, &value);
+
+	if (!cb_lock_property_lookup(name, value, &lock, &cls, &mode))
+		return dbus_gsm_invalid_format(msg);
 
 	if (dbus_message_iter_next(&iter)) {
 		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
@@ -613,49 +808,13 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 	if (!cb->ops->set)
 		return dbus_gsm_not_implemented(msg);
 
+	cb_set_query_bounds(cb, cb_locks[lock].fac, FALSE);
+
 	cb->pending = dbus_message_ref(msg);
-	cb->ops->set(modem, cb_locks[cb->query_next].fac, value, passwd,
-			cls, set_lock_callback, modem);
+	cb->ops->set(modem, cb_locks[lock].fac, mode, passwd, cls,
+			set_lock_callback, modem);
 
 	return NULL;
-}
-
-static gboolean disable_all_query(gpointer user);
-static void disable_all_query_callback(const struct ofono_error *error,
-				int status, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct call_barring_data *cb = modem->call_barring;
-	DBusMessage *reply;
-
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_lock(modem, status, cb->query_next);
-	else
-		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
-
-	if (cb_locks[++cb->query_next].name)
-		g_timeout_add(0, disable_all_query, modem);
-	else if (cb->pending) {
-		if (!(cb->flags & CALL_BARRING_FLAG_CACHED)) {
-			ofono_error("Disabling all barring successful, "
-					"but query was not");
-			reply = dbus_gsm_failed(cb->pending);
-		} else
-			reply = dbus_message_new_method_return(cb->pending);
-
-		dbus_gsm_pending_reply(&cb->pending, reply);
-	}
-}
-
-static gboolean disable_all_query(gpointer user)
-{
-	struct ofono_modem *modem = user;
-	struct call_barring_data *cb = modem->call_barring;
-
-	cb->ops->query(modem, cb_locks[cb->query_next].fac,
-			disable_all_query_callback, modem);
-
-	return FALSE;
 }
 
 static void disable_all_callback(const struct ofono_error *error, void *data)
@@ -670,12 +829,8 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	/* Re-query all */
-	if (cb->ops->query) {
-		cb->flags |= CALL_BARRING_FLAG_CACHED;
-		cb->query_next = 0;
-		disable_all_query(modem);
-	}
+	/* Assume if we have set, we have query */
+	set_query_next_lock(modem);
 }
 
 static DBusMessage *cb_disable_all(DBusConnection *conn, DBusMessage *msg,
@@ -701,6 +856,8 @@ static DBusMessage *cb_disable_all(DBusConnection *conn, DBusMessage *msg,
 
 	if (!cb->ops->set)
 		return dbus_gsm_not_implemented(msg);
+
+	cb_set_query_bounds(cb, fac, FALSE);
 
 	cb->pending = dbus_message_ref(msg);
 	cb->ops->set(modem, fac, 0, passwd,
