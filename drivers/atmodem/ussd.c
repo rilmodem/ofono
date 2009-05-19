@@ -59,7 +59,6 @@ static void at_ussd_request(struct ofono_modem *modem, const char *str,
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	unsigned char *converted;
-	//struct ofono_error error;
 	int dcs;
 	int max_len;
 	long written;

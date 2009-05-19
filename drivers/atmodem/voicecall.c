@@ -192,7 +192,6 @@ static GSList *parse_clcc(GAtResult *result)
 	GAtResultIter iter;
 	GSList *l = NULL;
 	int id, dir, status, type, number_type;
-	//const char *str;
 	struct ofono_call *call;
 
 	g_at_result_iter_init(&iter, result);
@@ -776,7 +775,6 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	const char *line;
 	int type;
 	struct ofono_call *call;
-	//GSList *l;
 
 	dump_response("cring_notify", TRUE, result);
 

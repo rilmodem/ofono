@@ -287,7 +287,6 @@ error:
 static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	//struct at_data *at = ofono_modem_userdata(cbd->modem);
 	ofono_operator_list_cb_t cb = cbd->cb;
 	struct ofono_network_operator *list;
 	GAtResultIter iter;
@@ -505,7 +504,6 @@ error:
 static void csq_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	//struct at_data *at = ofono_modem_userdata(modem);
 	int strength;
 	GAtResultIter iter;
 
