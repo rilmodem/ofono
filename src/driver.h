@@ -340,7 +340,7 @@ struct ofono_call_barring_ops {
 	void (*set)(struct ofono_modem *modem, const char *lock,
 			int enable, const char *passwd, int cls,
 			ofono_generic_cb_t cb, void *data);
-	void (*query)(struct ofono_modem *modem, const char *lock,
+	void (*query)(struct ofono_modem *modem, const char *lock, int cls,
 			ofono_call_barring_cb_t cb, void *data);
 };
 

@@ -312,8 +312,11 @@ static gboolean cb_ss_query_next_lock(gpointer user)
 {
 	struct ofono_modem *modem = user;
 	struct call_barring_data *cb = modem->call_barring;
+	int cls;
 
-	cb->ops->query(modem, cb_locks[cb->query_next].fac,
+	cls = cb->ss_req_cls | BEARER_CLASS_DEFAULT;
+
+	cb->ops->query(modem, cb_locks[cb->query_next].fac, cls,
 			cb_ss_query_next_lock_callback, modem);
 
 	return FALSE;
@@ -602,7 +605,7 @@ static gboolean get_query_next_lock(gpointer user)
 	struct call_barring_data *cb = modem->call_barring;
 
 	cb->ops->query(modem, cb_locks[cb->query_next].fac,
-			get_query_lock_callback, modem);
+			BEARER_CLASS_DEFAULT, get_query_lock_callback, modem);
 
 	return FALSE;
 }
@@ -667,7 +670,7 @@ static gboolean set_query_next_lock(gpointer user)
 	struct call_barring_data *cb = modem->call_barring;
 
 	cb->ops->query(modem, cb_locks[cb->query_next].fac,
-			set_query_lock_callback, modem);
+			BEARER_CLASS_DEFAULT, set_query_lock_callback, modem);
 
 	return FALSE;
 }

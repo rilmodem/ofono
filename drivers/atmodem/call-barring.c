@@ -78,16 +78,21 @@ static void clck_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 }
 
 static void at_call_barring_query(struct ofono_modem *modem, const char *lock,
-			ofono_call_barring_cb_t cb, void *data)
+					int cls, ofono_call_barring_cb_t cb,
+					void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
+	int len;
 
 	if (!cbd || strlen(lock) != 2)
 		goto error;
 
-	sprintf(buf, "AT+CLCK=\"%s\",2", lock);
+	len = sprintf(buf, "AT+CLCK=\"%s\",2", lock);
+
+	if (cls != 7)
+		sprintf(buf + len, ",%d", cls);
 
 	if (g_at_chat_send(at->parser, buf, clck_prefix,
 				clck_query_cb, cbd, g_free) > 0)
@@ -115,8 +120,8 @@ static void clck_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 }
 
 static void at_call_barring_set(struct ofono_modem *modem, const char *lock,
-			int enable, const char *passwd, int cls,
-			ofono_generic_cb_t cb, void *data)
+				int enable, const char *passwd, int cls,
+				ofono_generic_cb_t cb, void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
