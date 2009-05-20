@@ -56,7 +56,7 @@ static void clck_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	line = 0;
 	g_at_result_iter_init(&iter, result);
 	while (g_at_result_iter_next(&iter, "+CLCK:")) {
-		line ++;
+		line++;
 
 		if (!g_at_result_iter_next_number(&iter, &status))
 			continue;
@@ -126,12 +126,12 @@ static void at_call_barring_set(struct ofono_modem *modem, const char *lock,
 	if (!cbd || strlen(lock) != 2 || (cls && !passwd))
 		goto error;
 
-	len = snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",%i", lock, !!enable);
+	len = snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",%i", lock, enable);
 	if (passwd) {
 		len += snprintf(buf + len, sizeof(buf) - len,
 				",\"%s\"", passwd);
-		/* Assume cls == 0 means use defaults */
-		if (cls)
+		/* Assume cls == 7 means use defaults */
+		if (cls != 7)
 			len += snprintf(buf + len, sizeof(buf) - len,
 					",%i", cls);
 	}
