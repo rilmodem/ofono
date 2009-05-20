@@ -284,12 +284,11 @@ static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 	struct call_barring_data *cb = modem->call_barring;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		if (cb->ss_req_type != SS_CONTROL_TYPE_QUERY) {
+		if (cb->ss_req_type != SS_CONTROL_TYPE_QUERY)
 			ofono_error("Enabling/disabling Call Barring via SS "
 					"successful, but query was not");
 
-			cb->flags &= ~CALL_BARRING_FLAG_CACHED;
-		}
+		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
 
 		dbus_gsm_pending_reply(&cb->pending,
 					dbus_gsm_failed(cb->pending));
