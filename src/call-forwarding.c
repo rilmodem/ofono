@@ -1145,6 +1145,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *s
 	cf->ss_req->cls = cls;
 
 	cf->pending = dbus_message_ref(msg);
+	cls |= BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS;
 
 	switch (cf->ss_req->ss_type) {
 	case SS_CONTROL_TYPE_REGISTRATION:

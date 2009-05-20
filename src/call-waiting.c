@@ -306,6 +306,7 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_waiting_data *cw = modem->call_waiting;
+	int cls;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting CW via SS failed");
@@ -314,6 +315,8 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 
 		return;
 	}
+
+	cls = cw->ss_req_cls | BEARER_CLASS_DEFAULT;
 
 	cw->ops->query(modem, cw->ss_req_cls, cw_ss_query_callback, modem);
 }
@@ -364,6 +367,8 @@ static gboolean cw_ss_control(struct ofono_modem *modem, int type,
 
 	cw->ss_req_cls = cls;
 	cw->pending = dbus_message_ref(msg);
+
+	cls |= BEARER_CLASS_DEFAULT;
 
 	switch (type) {
 	case SS_CONTROL_TYPE_REGISTRATION:
