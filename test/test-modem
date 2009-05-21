@@ -1,0 +1,42 @@
+#!/usr/bin/python
+
+import gobject
+
+import dbus
+import dbus.mainloop.glib
+
+def property_changed(name, value):
+	print "Modem property %s changed to %s" % (name, value)
+
+if __name__ == "__main__":
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	modems = manager.GetProperties()['Modems']
+	print modems
+
+	modem = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+							'org.ofono.Modem')
+
+	modem.connect_to_signal("PropertyChanged", property_changed)
+
+	properties = modem.GetProperties()
+
+	if properties.has_key('Manufacturer'):
+		print "Manufacturer: %s" % (properties['Manufacturer'])
+
+	if properties.has_key('Model'):
+		print "Model: %s" % (properties['Model'])
+
+	if properties.has_key('Revision'):
+		print "Revision: %s" % (properties['Revision'])
+
+	if properties.has_key('Serial'):
+		print "Serial: %s" % (properties['Serial'])
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
