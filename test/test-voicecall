@@ -4,6 +4,11 @@ import gobject
 
 import dbus
 import dbus.mainloop.glib
+import sys
+
+def hangup_all():
+	print "Hanging up"
+	vcmanager.HangupAll()
 
 def print_calls(value):
 	for p in value:
@@ -33,6 +38,12 @@ def voicecall_property_changed(name, value):
 if __name__ == "__main__":
 	global vcmanager
 
+	if (len(sys.argv) < 2):
+		print "Useage: %s <number>" % (sys.argv[0])
+		sys.exit(1)
+
+	number = sys.argv[1]
+
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
 	bus = dbus.SystemBus()
@@ -56,7 +67,7 @@ if __name__ == "__main__":
 	voicecalls_property_changed('Calls', properties['Calls'])
 
 	print "Dialing...."
-	obj = vcmanager.Dial("444555", "enabled")
+	obj = vcmanager.Dial(number, "")
 	print "Dialing in progress, got obj: %s" % (obj)
 
 	call = dbus.Interface(bus.get_object('org.ofono', obj),
@@ -68,6 +79,8 @@ if __name__ == "__main__":
 		(properties['State'], properties['LineIdentification'])
 
 	call.connect_to_signal("PropertyChanged", voicecall_property_changed)
+
+	gobject.timeout_add(5000, hangup_all)
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()
