@@ -188,8 +188,13 @@ static void at_ccfc_erasure(struct ofono_modem *modem, int type, int cls,
 				ofono_generic_cb_t cb, void *data)
 {
 	char buf[128];
+	int len;
 
-	sprintf(buf, "AT+CCFC=%d,4,,,%d", type, cls);
+	len = sprintf(buf, "AT+CCFC=%d,4", type);
+
+	if (cls != 7)
+		sprintf(buf + len, ",,,%d", cls);
+
 	at_ccfc_set(modem, buf, cb, data);
 }
 
@@ -197,8 +202,13 @@ static void at_ccfc_deactivation(struct ofono_modem *modem, int type, int cls,
 					ofono_generic_cb_t cb, void *data)
 {
 	char buf[128];
+	int len;
 
-	sprintf(buf, "AT+CCFC=%d,0,,,%d", type, cls);
+	len = sprintf(buf, "AT+CCFC=%d,0", type);
+
+	if (cls != 7)
+		sprintf(buf + len, ",,,%d", cls);
+
 	at_ccfc_set(modem, buf, cb, data);
 }
 
@@ -206,8 +216,13 @@ static void at_ccfc_activation(struct ofono_modem *modem, int type, int cls,
 				ofono_generic_cb_t cb, void *data)
 {
 	char buf[128];
+	int len;
 
-	sprintf(buf, "AT+CCFC=%d,1,,,%d", type, cls);
+	len = sprintf(buf, "AT+CCFC=%d,1", type);
+
+	if (cls != 7)
+		sprintf(buf + len, ",,,%d", cls);
+
 	at_ccfc_set(modem, buf, cb, data);
 }
 
@@ -219,7 +234,7 @@ static void at_ccfc_registration(struct ofono_modem *modem, int type, int cls,
 	char buf[128];
 	int offset;
 
-	offset = sprintf(buf, "AT+CCFC=%d,3,%s,%d,%d", type,
+	offset = sprintf(buf, "AT+CCFC=%d,3,\"%s\",%d,%d", type,
 				number, number_type, cls);
 
 	if (type == 2 || type == 4 || type == 5)
