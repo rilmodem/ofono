@@ -294,19 +294,34 @@ int mmi_service_code_to_bearer_class(int code)
 {
 	int cls = 0;
 
+	/* Teleservices according to 22.004
+	 * 1 - Voice
+	 * 2 - SMS
+	 * 3,4,5 - Unallocated
+	 * 6 - Fax
+	 * 7 - All Data Async
+	 * 8 - All Data Sync
+	 * 12 - Voice Group
+	 */
+
 	switch (code) {
+	/* 22.030: 1 to 6, 12 */
 	case 10:
-		cls = BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS;
+		cls = BEARER_CLASS_VOICE | BEARER_CLASS_FAX | BEARER_CLASS_SMS;
 		break;
+	/* 22.030: 1 */
 	case 11:
 		cls = BEARER_CLASS_VOICE;
 		break;
+	/* 22.030: 2-6 */
 	case 12:
-		cls = BEARER_CLASS_DATA;
+		cls = BEARER_CLASS_SMS | BEARER_CLASS_FAX;
 		break;
+	/* 22.030: 6 */
 	case 13:
 		cls = BEARER_CLASS_FAX;
 		break;
+	/* 22.030: 2 */
 	case 16:
 		cls = BEARER_CLASS_SMS;
 		break;
@@ -314,14 +329,15 @@ int mmi_service_code_to_bearer_class(int code)
 	case 17:
 	case 18:
 		break;
+	/* 22.030: 1, 3 to 6, 12 */
 	case 19:
-		cls = BEARER_CLASS_DEFAULT;
+		cls = BEARER_CLASS_VOICE | BEARER_CLASS_FAX;
 		break;
 
-	/* Funny, according to 22.030, 20 implies BS 7-11 */
+	/* 22.030: 7-11 */
 	/* 22.004 only defines BS 7 (Data Sync) & BS 8 (Data Async) */
 	case 20:
-		cls = BEARER_CLASS_DATA_SYNC | BEARER_CLASS_DATA_ASYNC;
+		cls = BEARER_CLASS_DATA_ASYNC | BEARER_CLASS_DATA_SYNC;
 		break;
 	/* According to 22.030: All Async */
 	case 21:
@@ -555,6 +571,7 @@ const char *bearer_class_to_string(enum bearer_class cls)
 	case BEARER_CLASS_PAD:
 		return bearer_class_lut[7];
 	case BEARER_CLASS_DEFAULT:
+	case BEARER_CLASS_SS_DEFAULT:
 		break;
 	};
 
