@@ -51,25 +51,15 @@ struct call_forwarding_data {
 	GSList *cf_conditions[4];
 	int flags;
 	DBusMessage *pending;
+	int query_next;
+	int query_end;
 	struct cf_ss_request *ss_req;
 };
 
-static void cf_busy_callback(const struct ofono_error *error, int total,
-				const struct ofono_cf_condition *list, void *data);
-static void cf_unconditional_callback(const struct ofono_error *error, int total,
-				const struct ofono_cf_condition *list, void *data);
-
-static void cf_register_ss_controls(struct ofono_modem *modem);
+static gboolean get_query_next_cf_cond(gpointer user);
+static gboolean set_query_next_cf_cond(gpointer user);
+static gboolean ss_set_query_next_cf_cond(gpointer user);
 static void cf_unregister_ss_controls(struct ofono_modem *modem);
-
-struct set_cf_request {
-	struct ofono_modem *modem;
-	int type;
-	int cls;
-	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
-	int number_type;
-	int timeout;
-};
 
 struct cf_ss_request {
 	int ss_type;
@@ -244,9 +234,10 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 
 		/* New condition lists might have attributes we don't care about
 		 * triggered by e.g. ss control magic strings just skip them
-		 * here
+		 * here.  For now we only support Voice, although Fax & all Data
+		 * basic services are applicable as well.
 		 */
-		if (lc->cls > BEARER_CLASS_SMS)
+		if (lc->cls > BEARER_CLASS_VOICE)
 			continue;
 
 		timeout = lc->time;
@@ -402,14 +393,53 @@ static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
 						&dict);
 
 	for (i = 0; i < 4; i++)
-		property_append_cf_conditions(&dict,
-				cf->cf_conditions[i],
-				BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS,
-				cf_type_lut[i]);
+		property_append_cf_conditions(&dict, cf->cf_conditions[i],
+						BEARER_CLASS_VOICE,
+						cf_type_lut[i]);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
+}
+
+static void get_query_cf_callback(const struct ofono_error *error, int total,
+					const struct ofono_cf_condition *list,
+					void *data)
+{
+	struct ofono_modem *modem = data;
+	struct call_forwarding_data *cf = modem->call_forwarding;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
+		GSList *l;
+		l = cf_cond_list_create(total, list);
+		set_new_cond_list(modem, cf->query_next, l);
+
+		ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
+		cf_cond_list_print(l);
+
+		if (cf->query_next == CALL_FORWARDING_TYPE_NOT_REACHABLE)
+			cf->flags |= CALL_FORWARDING_FLAG_CACHED;
+	}
+
+	if (cf->query_next == CALL_FORWARDING_TYPE_NOT_REACHABLE) {
+		DBusMessage *reply = cf_get_properties_reply(cf->pending, cf);
+		dbus_gsm_pending_reply(&cf->pending, reply);
+		return;
+	}
+
+	cf->query_next++;
+	g_timeout_add(0, get_query_next_cf_cond, modem);
+}
+
+static gboolean get_query_next_cf_cond(gpointer user)
+{
+	struct ofono_modem *modem = user;
+	struct call_forwarding_data *cf = modem->call_forwarding;
+
+	cf->ops->query(modem, cf->query_next, BEARER_CLASS_DEFAULT,
+			get_query_cf_callback, modem);
+
+	return FALSE;
 }
 
 static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
@@ -421,8 +451,16 @@ static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
 	if (cf->flags & CALL_FORWARDING_FLAG_CACHED)
 		return cf_get_properties_reply(msg, cf);
 
-	/* We kicked off the query during interface creation, wait for it */
+	if (!cf->ops->query)
+		return dbus_gsm_not_implemented(msg);
+
+	if (cf->pending)
+		return dbus_gsm_busy(msg);
+
 	cf->pending = dbus_message_ref(msg);
+	cf->query_next = 0;
+
+	get_query_next_cf_cond(modem);
 
 	return NULL;
 }
@@ -435,9 +473,8 @@ static gboolean cf_condition_enabled_property(struct call_forwarding_data *cf,
 	int len;
 	const char *prefix;
 
-	/* We check the 4 bearer classes here, e.g. voice, data, fax, sms */
-	for (i = 0; i < 4; i++) {
-		prefix = bearer_class_to_string(1 << i);
+	for (i = 1; i <= BEARER_CLASS_VOICE; i = i << 1) {
+		prefix = bearer_class_to_string(i);
 
 		len = strlen(prefix);
 
@@ -450,7 +487,7 @@ static gboolean cf_condition_enabled_property(struct call_forwarding_data *cf,
 		for (j = 0; j < 4; j++)
 			if (!strcmp(property+len, cf_type_lut[j])) {
 				*out_type = j;
-				*out_cls = 1 << i;
+				*out_cls = i;
 				return TRUE;
 			}
 	}
@@ -465,8 +502,8 @@ static gboolean cf_condition_timeout_property(const char *property,
 	int len;
 	const char *prefix;
 
-	for (i = 0; i < 4; i++) {
-		prefix = bearer_class_to_string(1 << i);
+	for (i = 1; i <= BEARER_CLASS_VOICE; i = i << 1) {
+		prefix = bearer_class_to_string(i);
 
 		len = strlen(prefix);
 
@@ -474,7 +511,7 @@ static gboolean cf_condition_timeout_property(const char *property,
 			continue;
 
 		if (!strcmp(property+len, "NoReplyTimeout")) {
-			*out_cls = 1 << i;
+			*out_cls = i;
 			return TRUE;
 		}
 	}
@@ -482,162 +519,63 @@ static gboolean cf_condition_timeout_property(const char *property,
 	return FALSE;
 }
 
-static void cf_condition_manual_set(struct set_cf_request *req)
-{
-	struct ofono_modem *modem = req->modem;
-	struct call_forwarding_data *cf = modem->call_forwarding;
-	DBusConnection *conn = dbus_gsm_connection();
-	int status = req->number[0] == '\0' ? 0 : 1;
-	GSList *l;
-	struct ofono_cf_condition *c;
-	char attr[64];
-	char tattr[64];
-	const char *number = "";
-	dbus_uint16_t timeout;
-
-	l = g_slist_find_custom(cf->cf_conditions[req->type],
-					GINT_TO_POINTER(req->cls),
-					cf_condition_find_with_cls);
-
-	ofono_debug("L is: %p, status is: %d", l, status);
-
-	if (!l && !status)
-		return;
-
-	sprintf(attr, "%s%s", bearer_class_to_string(req->cls),
-					cf_type_lut[req->type]);
-
-	if (req->type == CALL_FORWARDING_TYPE_NO_REPLY)
-		sprintf(tattr, "%sTimeout", attr);
-
-	if (l && !status) {
-		c = l->data;
-		timeout = DEFAULT_NO_REPLY_TIMEOUT;
-
-		dbus_gsm_signal_property_changed(conn, modem->path,
-			CALL_FORWARDING_INTERFACE,
-			attr, DBUS_TYPE_STRING, &number);
-
-		if (req->type == CALL_FORWARDING_TYPE_NO_REPLY &&
-			c->time != DEFAULT_NO_REPLY_TIMEOUT)
-			dbus_gsm_signal_property_changed(conn, modem->path,
-				CALL_FORWARDING_INTERFACE, tattr,
-				DBUS_TYPE_UINT16, &timeout);
-
-		ofono_debug("Removing condition");
-
-		g_free(c);
-		cf->cf_conditions[req->type] =
-			g_slist_remove(cf->cf_conditions[req->type], c);
-
-		return;
-	}
-
-	if (l)
-		c = l->data;
-	else {
-		c = g_try_new0(struct ofono_cf_condition, 1);
-
-		if (!c)
-			return;
-
-		c->status = 1;
-		c->cls = req->cls;
-		c->phone_number[0] = '\0';
-		c->number_type = 129;
-		c->time = DEFAULT_NO_REPLY_TIMEOUT;
-
-		ofono_debug("Inserting condition");
-		cf->cf_conditions[req->type] =
-			g_slist_insert_sorted(cf->cf_conditions[req->type],
-						c, cf_condition_compare);
-	}
-
-	if (c->number_type != req->number_type ||
-		strcmp(req->number, c->phone_number)) {
-		strcpy(c->phone_number, req->number);
-		c->number_type = req->number_type;
-
-		number = phone_number_to_string(req->number, req->number_type);
-
-		dbus_gsm_signal_property_changed(conn, modem->path,
-				CALL_FORWARDING_INTERFACE,
-				attr, DBUS_TYPE_STRING, &number);
-	}
-
-	if (req->type == CALL_FORWARDING_TYPE_NO_REPLY &&
-		c->time != req->timeout) {
-		c->time = req->timeout;
-
-		dbus_gsm_signal_property_changed(conn, modem->path,
-				CALL_FORWARDING_INTERFACE,
-				tattr, DBUS_TYPE_UINT16, &req->timeout);
-	}
-}
-
-static void pending_msg_error(struct call_forwarding_data *cf,
-				const struct ofono_error *error)
-{
-	DBusMessage *reply;
-	DBusConnection *conn = dbus_gsm_connection();
-
-	reply = dbus_gsm_failed(cf->pending);
-	g_dbus_send_message(conn, reply);
-
-	dbus_message_unref(cf->pending);
-	cf->pending = NULL;
-}
-
-static void property_set_query_callback(const struct ofono_error *error, int total,
+static void set_query_cf_callback(const struct ofono_error *error, int total,
 					const struct ofono_cf_condition *list,
 					void *data)
 {
-	struct set_cf_request *req = data;
-	struct ofono_modem *modem = req->modem;
+	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
+	GSList *l;
 	DBusMessage *reply;
-	GSList *new_cf_list;
 
-	reply = dbus_message_new_method_return(cf->pending);
-	dbus_gsm_pending_reply(&cf->pending, reply);
-
-	/* Strange, set succeeded but query failed, fallback to direct method */
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during query");
-		cf_condition_manual_set(req);
-		goto out;
+		ofono_error("Setting succeeded, but query failed");
+		cf->flags &= ~CALL_FORWARDING_FLAG_CACHED;
+		reply = dbus_gsm_failed(cf->pending);
+		dbus_gsm_pending_reply(&cf->pending, reply);
+		return;
 	}
 
-	new_cf_list = cf_cond_list_create(total, list);
+	if (cf->query_next == cf->query_end) {
+		reply = dbus_message_new_method_return(cf->pending);
+		dbus_gsm_pending_reply(&cf->pending, reply);
+	} else {
+		cf->query_next++;
+		g_timeout_add(0, set_query_next_cf_cond, modem);
+	}
 
-	ofono_debug("Query ran successfully");
-	cf_cond_list_print(new_cf_list);
+	l = cf_cond_list_create(total, list);
+	set_new_cond_list(modem, cf->query_next, l);
 
-	set_new_cond_list(modem, req->type, new_cf_list);
+	ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
+	cf_cond_list_print(l);
+}
 
-out:
-	g_free(req);
+static gboolean set_query_next_cf_cond(gpointer user)
+{
+	struct ofono_modem *modem = user;
+	struct call_forwarding_data *cf = modem->call_forwarding;
+
+	cf->ops->query(modem, cf->query_next, BEARER_CLASS_DEFAULT,
+			set_query_cf_callback, modem);
+
+	return FALSE;
 }
 
 static void set_property_callback(const struct ofono_error *error, void *data)
 {
-	struct set_cf_request *req = data;
-	struct ofono_modem *modem = req->modem;
+	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during set/erasure");
-
-		pending_msg_error(cf, error);
-		g_free(req);
-
+		dbus_gsm_pending_reply(&cf->pending,
+					dbus_gsm_failed(cf->pending));
 		return;
 	}
 
 	/* Successfully set, query the entire set just in case */
-	cf->ops->query(modem, req->type,
-			BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS,
-			property_set_query_callback, req);
+	set_query_next_cf_cond(modem);
 }
 
 static DBusMessage *set_property_request(struct ofono_modem *modem,
@@ -647,7 +585,6 @@ static DBusMessage *set_property_request(struct ofono_modem *modem,
 						int number_type, int timeout)
 {
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	struct set_cf_request *req;
 
 	if (number[0] != '\0' && cf->ops->registration == NULL)
 		return dbus_gsm_not_implemented(msg);
@@ -655,27 +592,17 @@ static DBusMessage *set_property_request(struct ofono_modem *modem,
 	if (number[0] == '\0' && cf->ops->erasure == NULL)
 		return dbus_gsm_not_implemented(msg);
 
-	req = g_try_new0(struct set_cf_request, 1);
-
-	if (!req)
-		return dbus_gsm_failed(msg);
-
-	req->modem = modem;
-	req->type = type;
-	req->cls = cls;
-	strcpy(req->number, number);
-	req->number_type = number_type;
-	req->timeout = timeout;
-
 	cf->pending = dbus_message_ref(msg);
+	cf->query_next = type;
+	cf->query_end = type;
 
 	ofono_debug("Farming off request, will be erasure: %d", number[0] == 0);
 
 	if (number[0] != '\0')
 		cf->ops->registration(modem, type, cls, number, number_type,
-				timeout, set_property_callback, req);
+				timeout, set_property_callback, modem);
 	else
-		cf->ops->erasure(modem, type, cls, set_property_callback, req);
+		cf->ops->erasure(modem, type, cls, set_property_callback, modem);
 
 	return NULL;
 }
@@ -767,53 +694,38 @@ static void disable_conditional_callback(const struct ofono_error *error,
 {
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during conditional erasure");
 
-		pending_msg_error(cf, error);
-
+		dbus_gsm_pending_reply(&cf->pending,
+					dbus_gsm_failed(cf->pending));
 		return;
 	}
 
-	reply = dbus_message_new_method_return(cf->pending);
-	dbus_gsm_pending_reply(&cf->pending, reply);
-
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_NO_REPLY, NULL);
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_NOT_REACHABLE, NULL);
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_BUSY, NULL);
-
-	cf->ops->query(modem, CALL_FORWARDING_TYPE_BUSY,
-			BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS,
-			cf_busy_callback, modem);
+	/* Query the three conditional cf types */
+	cf->query_next = CALL_FORWARDING_TYPE_BUSY;
+	cf->query_end = CALL_FORWARDING_TYPE_NOT_REACHABLE;
+	set_query_next_cf_cond(modem);
 }
 
 static void disable_all_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during erasure of all");
 
-		pending_msg_error(cf, error);
-
+		dbus_gsm_pending_reply(&cf->pending,
+					dbus_gsm_failed(cf->pending));
 		return;
 	}
 
-	reply = dbus_message_new_method_return(cf->pending);
-	dbus_gsm_pending_reply(&cf->pending, reply);
-
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_UNCONDITIONAL, NULL);
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_NO_REPLY, NULL);
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_NOT_REACHABLE, NULL);
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_BUSY, NULL);
-
-	cf->ops->query(modem, CALL_FORWARDING_TYPE_UNCONDITIONAL,
-			BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS,
-			cf_unconditional_callback, modem);
+	/* Query all cf types */
+	cf->query_next = CALL_FORWARDING_TYPE_UNCONDITIONAL;
+	cf->query_end = CALL_FORWARDING_TYPE_NOT_REACHABLE;
+	set_query_next_cf_cond(modem);
 }
 
 static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
@@ -844,19 +756,18 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 	cf->pending = dbus_message_ref(msg);
 
 	if (type == CALL_FORWARDING_TYPE_ALL)
-		cf->ops->erasure(modem, type,
-				BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS,
+		cf->ops->erasure(modem, type, BEARER_CLASS_DEFAULT,
 				disable_all_callback, modem);
 	else
-		cf->ops->erasure(modem, type,
-				BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS,
+		cf->ops->erasure(modem, type, BEARER_CLASS_DEFAULT,
 				disable_conditional_callback, modem);
 
 	return NULL;
 }
 
 static GDBusMethodTable cf_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	cf_get_properties },
+	{ "GetProperties",	"",	"a{sv}",	cf_get_properties,
+							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"sv",	"",		cf_set_property,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "DisableAll",		"s",	"",		cf_disable_all,
@@ -869,7 +780,7 @@ static GDBusSignalTable cf_signals[] = {
 	{ }
 };
 
-static void cf_ss_control_reply(struct ofono_modem *modem,
+static DBusMessage *cf_ss_control_reply(struct ofono_modem *modem,
 					struct cf_ss_request *req)
 {
 	struct call_forwarding_data *cf = modem->call_forwarding;
@@ -877,7 +788,6 @@ static void cf_ss_control_reply(struct ofono_modem *modem,
 	const char *sig = "(ssa{sv})";
 	const char *ss_type = ss_control_type_to_string(req->ss_type);
 	const char *cf_type = cf_type_lut[req->cf_type];
-	DBusConnection *conn = dbus_gsm_connection();
 	DBusMessageIter iter;
 	DBusMessageIter variant;
 	DBusMessageIter vstruct;
@@ -940,71 +850,72 @@ static void cf_ss_control_reply(struct ofono_modem *modem,
 
 	dbus_message_iter_close_container(&iter, &variant);
 
-	g_dbus_send_message(conn, reply);
+	return reply;
 }
 
-static void cf_ss_control_query_callback(const struct ofono_error *error,
-					int total,
+static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 					const struct ofono_cf_condition *list,
 					void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	GSList *new_cf_list;
+	GSList *l;
+	DBusMessage *reply;
 
-	/* Strange, set succeeded but query failed, fallback to direct method */
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during cf ss query");
-
-		pending_msg_error(cf, error);
-
+		ofono_error("Setting succeeded, but query failed");
+		cf->flags &= ~CALL_FORWARDING_FLAG_CACHED;
+		reply = dbus_gsm_failed(cf->pending);
+		dbus_gsm_pending_reply(&cf->pending, reply);
 		return;
 	}
 
-	new_cf_list = cf_cond_list_create(total, list);
+	l = cf_cond_list_create(total, list);
+	ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
+	cf_cond_list_print(l);
 
-	ofono_debug("Query ran successfully");
-	cf_cond_list_print(new_cf_list);
+	cf->ss_req->cf_list[cf->query_next] = l;
 
-	cf->ss_req->cf_list[cf->ss_req->cf_type] = new_cf_list;
+	if (cf->query_next == cf->query_end) {
+		reply = cf_ss_control_reply(modem, cf->ss_req);
+		dbus_gsm_pending_reply(&cf->pending, reply);
+		g_free(cf->ss_req);
+		cf->ss_req = NULL;
+	} else {
+		cf->query_next++;
+		g_timeout_add(0, ss_set_query_next_cf_cond, modem);
+	}
 
-	set_new_cond_list(modem, cf->ss_req->cf_type, new_cf_list);
+	set_new_cond_list(modem, cf->query_next, l);
+}
 
-	cf_ss_control_reply(modem, cf->ss_req);
+static gboolean ss_set_query_next_cf_cond(gpointer user)
+{
+	struct ofono_modem *modem = user;
+	struct call_forwarding_data *cf = modem->call_forwarding;
 
-	dbus_message_unref(cf->pending);
-	cf->pending = NULL;
+	cf->ops->query(modem, cf->query_next, BEARER_CLASS_DEFAULT,
+			ss_set_query_cf_callback, modem);
 
-	g_free(cf->ss_req);
-	cf->ss_req = NULL;
+	return FALSE;
 }
 
 static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	int cls;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during cf ss control set/erasure");
 
-		pending_msg_error(cf, error);
-
+		dbus_gsm_pending_reply(&cf->pending,
+					dbus_gsm_failed(cf->pending));
+		g_free(cf->ss_req);
+		cf->ss_req = NULL;
 		return;
 	}
 
-	cls = BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS | cf->ss_req->cls;
-
-	/* Successfully set, query the entire set just in case */
-	if (cf->ss_req->cf_type == CALL_FORWARDING_TYPE_ALL)
-		cf->ops->query(modem, CALL_FORWARDING_TYPE_UNCONDITIONAL,
-				cls, cf_unconditional_callback, modem);
-	else if (cf->ss_req->cf_type == CALL_FORWARDING_TYPE_ALL_CONDITIONAL)
-		cf->ops->query(modem, CALL_FORWARDING_TYPE_BUSY,
-				cls, cf_busy_callback, modem);
-	else
-		cf->ops->query(modem, cf->ss_req->cf_type, cls,
-				cf_ss_control_query_callback, modem);
+	ss_set_query_next_cf_cond(modem);
 }
 
 static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *sc,
@@ -1014,7 +925,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *s
 {
 	struct call_forwarding_data *cf = modem->call_forwarding;
 	DBusConnection *conn = dbus_gsm_connection();
-	int cls = BEARER_CLASS_DEFAULT;
+	int cls = BEARER_CLASS_SS_DEFAULT;
 	int timeout = DEFAULT_NO_REPLY_TIMEOUT;
 	int cf_type;
 	DBusMessage *reply;
@@ -1145,7 +1056,30 @@ static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *s
 	cf->ss_req->cls = cls;
 
 	cf->pending = dbus_message_ref(msg);
-	cls |= BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS;
+
+	switch (cf->ss_req->cf_type) {
+	case CALL_FORWARDING_TYPE_ALL:
+		cf->query_next = CALL_FORWARDING_TYPE_UNCONDITIONAL;
+		cf->query_end = CALL_FORWARDING_TYPE_NOT_REACHABLE;
+		break;
+	case CALL_FORWARDING_TYPE_ALL_CONDITIONAL:
+		cf->query_next = CALL_FORWARDING_TYPE_BUSY;
+		cf->query_end = CALL_FORWARDING_TYPE_NOT_REACHABLE;
+		break;
+	default:
+		cf->query_next = cf->ss_req->cf_type;
+		cf->query_end = cf->ss_req->cf_type;
+		break;
+	}
+
+	/* Some modems don't understand all classes very well, particularly
+	 * the older models.  So if the bearer class is the default, we
+	 * just use the more commonly understood value of 7 since BEARER_SMS
+	 * is not applicable to CallForwarding conditions according to 22.004
+	 * Annex A
+	 */
+	if (cls == BEARER_CLASS_SS_DEFAULT)
+		cls = BEARER_CLASS_DEFAULT;
 
 	switch (cf->ss_req->ss_type) {
 	case SS_CONTROL_TYPE_REGISTRATION:
@@ -1167,17 +1101,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *s
 					modem);
 		break;
 	case SS_CONTROL_TYPE_QUERY:
-		cls |= BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS;
-		if (cf_type == CALL_FORWARDING_TYPE_ALL)
-			cf->ops->query(modem,
-					CALL_FORWARDING_TYPE_UNCONDITIONAL,
-					cls, cf_unconditional_callback, modem);
-		else if (cf_type == CALL_FORWARDING_TYPE_ALL_CONDITIONAL)
-			cf->ops->query(modem, CALL_FORWARDING_TYPE_BUSY,
-					cls, cf_busy_callback, modem);
-		else
-			cf->ops->query(modem, cf_type, cls,
-					cf_ss_control_query_callback, modem);
+		ss_set_query_next_cf_cond(modem);
 		break;
 	}
 
@@ -1209,163 +1133,6 @@ static void cf_unregister_ss_controls(struct ofono_modem *modem)
 
 	ss_control_unregister(modem, "002", cf_ss_control);
 	ss_control_unregister(modem, "004", cf_ss_control);
-}
-
-static void cf_not_reachable_callback(const struct ofono_error *error, int total,
-				const struct ofono_cf_condition *list, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
-	GSList *l = NULL;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during not reachable CF query");
-		goto out;
-	}
-
-	l = cf_cond_list_create(total, list);
-
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_NOT_REACHABLE, l);
-
-	ofono_debug("Not Reachable conditions:");
-	cf_cond_list_print(l);
-
-out:
-
-	cf->flags |= CALL_FORWARDING_FLAG_CACHED;
-
-	if (cf->pending) {
-		if (cf->ss_req) {
-			cf->ss_req->cf_list[CALL_FORWARDING_TYPE_NOT_REACHABLE] = l;
-			cf_ss_control_reply(modem, cf->ss_req);
-			g_free(cf->ss_req);
-			cf->ss_req = NULL;
-		} else {
-			DBusConnection *conn = dbus_gsm_connection();
-			DBusMessage *reply =
-				cf_get_properties_reply(cf->pending, cf);
-
-			g_dbus_send_message(conn, reply);
-		}
-
-		dbus_message_unref(cf->pending);
-		cf->pending = NULL;
-	}
-}
-
-static void cf_no_reply_callback(const struct ofono_error *error, int total,
-				const struct ofono_cf_condition *list, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
-	GSList *l = NULL;
-	int cls = BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during no reply CF query");
-		goto out;
-	}
-
-	l = cf_cond_list_create(total, list);
-
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_NO_REPLY, l);
-
-	ofono_debug("No Reply conditions:");
-	cf_cond_list_print(l);
-
-out:
-	if (cf->ss_req) {
-		cls |= cf->ss_req->cls;
-		cf->ss_req->cf_list[CALL_FORWARDING_TYPE_NO_REPLY] = l;
-	}
-
-	cf->ops->query(modem, CALL_FORWARDING_TYPE_NOT_REACHABLE,
-			cls, cf_not_reachable_callback, modem);
-}
-
-static void cf_busy_callback(const struct ofono_error *error, int total,
-				const struct ofono_cf_condition *list, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
-	GSList *l = NULL;
-	int cls = BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during busy CF query");
-		goto out;
-	}
-
-	l = cf_cond_list_create(total, list);
-
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_BUSY, l);
-
-	ofono_debug("On Busy conditions:");
-	cf_cond_list_print(l);
-
-out:
-	if (cf->ss_req) {
-		cls |= cf->ss_req->cls;
-		cf->ss_req->cf_list[CALL_FORWARDING_TYPE_BUSY] = l;
-	}
-
-	cf->ops->query(modem, CALL_FORWARDING_TYPE_NO_REPLY,
-			cls, cf_no_reply_callback, modem);
-}
-
-static void cf_unconditional_callback(const struct ofono_error *error, int total,
-					const struct ofono_cf_condition *list,
-					void *data)
-{
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
-	GSList *l = NULL;
-	int cls = BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during unconditional CF query");
-		goto out;
-	}
-
-	l = cf_cond_list_create(total, list);
-
-	set_new_cond_list(modem, CALL_FORWARDING_TYPE_UNCONDITIONAL, l);
-
-	ofono_debug("Unconditional conditions:");
-	cf_cond_list_print(l);
-
-out:
-	if (cf->ss_req) {
-		cls |= cf->ss_req->cls;
-		cf->ss_req->cf_list[CALL_FORWARDING_TYPE_UNCONDITIONAL] = l;
-	}
-
-	cf->ops->query(modem, CALL_FORWARDING_TYPE_BUSY,
-			cls, cf_busy_callback, modem);
-}
-
-static gboolean initiate_settings_request(void *data)
-{
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *call_forwarding = modem->call_forwarding;
-
-	/* We can't get all settings at the same time according to 22.004:
-	 * "Interrogation of groups of Supplementary Services is not supported."
-	 * so we do it piecemeal, unconditional, busy, no reply, not reachable
-	 */
-
-	if (call_forwarding->ops->query)
-		call_forwarding->ops->query(modem,
-					CALL_FORWARDING_TYPE_UNCONDITIONAL,
-					BEARER_CLASS_DEFAULT | BEARER_CLASS_SMS,
-					cf_unconditional_callback, modem);
-
-	return FALSE;
-}
-
-static void request_settings(struct ofono_modem *modem)
-{
-	g_timeout_add(0, initiate_settings_request, modem);
 }
 
 int ofono_call_forwarding_register(struct ofono_modem *modem,
@@ -1404,8 +1171,6 @@ int ofono_call_forwarding_register(struct ofono_modem *modem,
 	cf_register_ss_controls(modem);
 
 	modem_add_interface(modem, CALL_FORWARDING_INTERFACE);
-
-	request_settings(modem);
 
 	return 0;
 }
