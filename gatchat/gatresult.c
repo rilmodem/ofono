@@ -24,6 +24,7 @@
 #endif
 
 #include <string.h>
+#include <stdio.h>
 
 #include <glib.h>
 
@@ -144,6 +145,58 @@ out:
 
 	if (str)
 		*str = iter->buf;
+
+	return TRUE;
+}
+
+gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
+		const guint8 **str, gint *length)
+{
+	unsigned int pos;
+	unsigned int end;
+	unsigned int len;
+	char *line;
+	char *bufpos;
+
+	if (!iter)
+		return FALSE;
+
+	if (!iter->l)
+		return FALSE;
+
+	line = iter->l->data;
+	len = strlen(line);
+
+	pos = iter->line_pos;
+
+	/* Omitted string */
+	if (line[pos] == ',') {
+		end = pos;
+		memset(iter->buf, 0, sizeof(iter->buf));
+		goto out;
+	}
+
+	end = pos;
+
+	while (end < len && g_ascii_isxdigit(line[end]))
+		end += 1;
+
+	if ((end - pos) & 1)
+		return FALSE;
+
+	if ((end - pos) / 2 >= sizeof(iter->buf))
+		return FALSE;
+	*length = (end - pos) / 2;
+
+	for (bufpos = iter->buf; pos < end; pos += 2)
+		sscanf(line + pos, "%02hhx", bufpos++);
+	memset(bufpos, 0, sizeof(iter->buf) - (bufpos - iter->buf));
+
+out:
+	iter->line_pos = skip_to_next_field(line, end, len);
+
+	if (str)
+		*str = (guint8 *) iter->buf;
 
 	return TRUE;
 }

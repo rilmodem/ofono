@@ -54,6 +54,8 @@ gboolean g_at_result_iter_skip_next(GAtResultIter *iter);
 gboolean g_at_result_iter_next_range(GAtResultIter *iter, gint *min, gint *max);
 gboolean g_at_result_iter_next_string(GAtResultIter *iter, const char **str);
 gboolean g_at_result_iter_next_number(GAtResultIter *iter, gint *number);
+gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
+		const guint8 **str, gint *length);
 
 const char *g_at_result_iter_raw_line(GAtResultIter *iter);
 
