@@ -90,3 +90,6 @@ extern void at_call_meter_exit(struct ofono_modem *modem);
 
 extern void at_call_barring_init(struct ofono_modem *modem);
 extern void at_call_barring_exit(struct ofono_modem *modem);
+
+extern void at_sim_init(struct ofono_modem *modem);
+extern void at_sim_exit(struct ofono_modem *modem);
