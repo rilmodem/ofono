@@ -36,6 +36,7 @@
 #include "modem.h"
 #include "driver.h"
 #include "cssn.h"
+#include "sim.h"
 
 #define MODEM_INTERFACE "org.ofono.Modem"
 
@@ -412,6 +413,7 @@ struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 		return NULL;
 	}
 
+	ofono_sim_manager_init(modem);
 	ofono_cssn_init(modem);
 
 	modem->modem_info->flags |= MODEM_FLAG_INITIALIZING_ATTRS;
@@ -429,6 +431,7 @@ void modem_remove(struct ofono_modem *modem)
 	ofono_debug("Removing modem: %s", modem->path);
 
 	ofono_cssn_exit(modem);
+	ofono_sim_manager_exit(modem);
 
 	g_dbus_unregister_interface(conn, path, MODEM_INTERFACE);
 

@@ -36,12 +36,15 @@
 #include "modem.h"
 #include "driver.h"
 #include "common.h"
+#include "sim.h"
 
 #define NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
 #define NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
 
 #define NETWORK_REGISTRATION_FLAG_REQUESTING_OPLIST 0x1
 #define NETWORK_REGISTRATION_FLAG_PENDING 0x2
+#define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN 0x4
+#define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN 0x8
 
 #define AUTO_REGISTER 1
 
@@ -59,6 +62,8 @@ struct network_registration_data {
 	int flags;
 	DBusMessage *pending;
 	int signal_strength;
+	char display_name[OFONO_MAX_OPERATOR_NAME_LENGTH];
+	char *spname;
 };
 
 static void operator_list_callback(const struct ofono_error *error, int total,
@@ -322,6 +327,45 @@ static void set_network_operator_technology(struct ofono_modem *modem,
 						&tech_str);
 }
 
+static char *get_operator_display_name(struct ofono_modem *modem)
+{
+	struct network_registration_data *netreg = modem->network_registration;
+	const char *plmn;
+	char *name = netreg->display_name;
+	int len = sizeof(netreg->display_name);
+
+	/* The name displayed to user depends on whether we're in a home
+	 * PLMN or roaming and on configuration bits from the SIM, all
+	 * together there are four cases to consider.  */
+
+	if (!netreg->current_operator) {
+		g_strlcpy(name, "", len);
+		return name;
+	}
+
+	if (!netreg->spname)
+		g_strlcpy(name, netreg->current_operator->name, len);
+
+	plmn = netreg->current_operator->name;
+
+	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED)
+		if (netreg->flags & NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN)
+			/* Case 1 */
+			snprintf(name, len, "%s (%s)", netreg->spname, plmn);
+		else
+			/* Case 2 */
+			snprintf(name, len, "%s", netreg->spname);
+	else
+		if (netreg->flags & NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN)
+			/* Case 3 */
+			snprintf(name, len, "%s (%s)", netreg->spname, plmn);
+		else
+			/* Case 4 */
+			snprintf(name, len, "%s", plmn);
+
+	return name;
+}
+
 static void set_network_operator_name(struct ofono_modem *modem,
 					struct ofono_network_operator *op,
 					const char *name)
@@ -329,6 +373,7 @@ static void set_network_operator_name(struct ofono_modem *modem,
 	struct network_registration_data *netreg = modem->network_registration;
 	DBusConnection *conn = dbus_gsm_connection();
 	const char *path;
+	const char *operator;
 
 	if (!strncmp(op->name, name, OFONO_MAX_OPERATOR_NAME_LENGTH))
 		return;
@@ -343,11 +388,13 @@ static void set_network_operator_name(struct ofono_modem *modem,
 				"Name", DBUS_TYPE_STRING,
 				&name);
 
-	if (op == netreg->current_operator)
+	if (op == netreg->current_operator) {
+		operator = get_operator_display_name(modem);
 		dbus_gsm_signal_property_changed(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
 					"Operator", DBUS_TYPE_STRING,
-					&name);
+					&operator);
+	}
 }
 
 static DBusMessage *network_operator_get_properties(DBusConnection *conn,
@@ -506,6 +553,9 @@ static void network_registration_destroy(gpointer userdata)
 
 	g_slist_free(data->operator_list);
 
+	if (data->spname)
+		g_free(data->spname);
+
 	g_free(data);
 
 	modem->network_registration = 0;
@@ -521,8 +571,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 
 	const char *status = registration_status_to_string(netreg->status);
-	const char *operator =
-		netreg->current_operator ? netreg->current_operator->name : "";
+	const char *operator;
 
 	char **network_operators;
 
@@ -558,6 +607,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 					&technology);
 	}
 
+	operator = get_operator_display_name(modem);
 	dbus_gsm_dict_append(&dict, "Operator", DBUS_TYPE_STRING, &operator);
 
 	network_operator_populate_registered(modem, &network_operators);
@@ -934,9 +984,7 @@ static void current_operator_callback(const struct ofono_error *error,
 		netreg->current_operator = NULL;
 	}
 
-	operator =
-		netreg->current_operator ? netreg->current_operator->name : "";
-
+	operator = get_operator_display_name(modem);
 	dbus_gsm_signal_property_changed(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
 					"Operator", DBUS_TYPE_STRING,
@@ -1024,6 +1072,34 @@ static void signal_strength_callback(const struct ofono_error *error,
 	ofono_signal_strength_notify(modem, strength);
 }
 
+static void ofono_update_spn(struct ofono_modem *modem, const char *spn,
+		int home_plmn_dpy, int roaming_spn_dpy)
+{
+	struct network_registration_data *netreg = modem->network_registration;
+	DBusConnection *conn = dbus_gsm_connection();
+	const char *operator;
+
+	if (!netreg)
+		return;
+	if (!strlen(spn))
+		return;
+
+	if (netreg->spname)
+		g_free(netreg->spname);
+	netreg->spname = g_strdup(spn);
+
+	if (home_plmn_dpy)
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
+	if (roaming_spn_dpy)
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
+
+	operator = get_operator_display_name(modem);
+	dbus_gsm_signal_property_changed(conn, modem->path,
+				NETWORK_REGISTRATION_INTERFACE,
+				"Operator", DBUS_TYPE_STRING,
+				&operator);
+}
+
 int ofono_network_registration_register(struct ofono_modem *modem,
 					struct ofono_network_registration_ops *ops)
 {
@@ -1041,6 +1117,8 @@ int ofono_network_registration_register(struct ofono_modem *modem,
 
 	initialize_network_registration(modem);
 
+	ofono_spn_update_notify_register(modem, ofono_update_spn);
+
 	if (ops->registration_status)
 		ops->registration_status(modem, init_registration_status,
 						modem);
@@ -1051,6 +1129,8 @@ int ofono_network_registration_register(struct ofono_modem *modem,
 void ofono_network_registration_unregister(struct ofono_modem *modem)
 {
 	DBusConnection *conn = dbus_gsm_connection();
+
+	ofono_spn_update_notify_unregister(modem, ofono_update_spn);
 
 	g_dbus_unregister_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE);
