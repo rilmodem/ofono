@@ -198,7 +198,7 @@ static DBusMessage *voicecall_busy(DBusConnection *conn,
 		call->status != CALL_STATUS_WAITING)
 		return dbus_gsm_failed(msg);
 
-	if (!voicecalls->ops->release_specific)
+	if (!voicecalls->ops->set_udub)
 		return dbus_gsm_not_implemented(msg);
 
 	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
