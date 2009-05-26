@@ -107,9 +107,9 @@ static void manager_free(gpointer user)
 		at_call_settings_exit(at->modem);
 		at_network_registration_exit(at->modem);
 		at_voicecall_exit(at->modem);
-		at_ussd_exit(at->modem);
 		at_call_meter_exit(at->modem);
 		at_call_barring_exit(at->modem);
+		at_ussd_exit(at->modem);
 		at_sim_exit(at->modem);
 		ofono_modem_unregister(at->modem);
 
@@ -338,6 +338,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	ofono_modem_set_userdata(at->modem, at);
 
 	at_ussd_init(at->modem);
+	at_sim_init(at->modem);
 	at_call_forwarding_init(at->modem);
 	at_call_settings_init(at->modem);
 	at_call_waiting_init(at->modem);
@@ -345,7 +346,6 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	at_voicecall_init(at->modem);
 	at_call_meter_init(at->modem);
 	at_call_barring_init(at->modem);
-	at_sim_init(at->modem);
 
 	at->io = io;
 	at->driver = g_strdup(driver);
