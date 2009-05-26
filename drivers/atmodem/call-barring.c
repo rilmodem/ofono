@@ -91,9 +91,6 @@ static void at_call_barring_query(struct ofono_modem *modem, const char *lock,
 
 	len = sprintf(buf, "AT+CLCK=\"%s\",2", lock);
 
-	if (cls != 7)
-		sprintf(buf + len, ",%d", cls);
-
 	if (g_at_chat_send(at->parser, buf, clck_prefix,
 				clck_query_cb, cbd, g_free) > 0)
 		return;
