@@ -1444,7 +1444,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		}
 
 		ofono_debug("Registering new call: %d", call->id);
-		voicecall_dbus_register(voicecall_create(modem, call));
+		voicecall_dbus_register(v);
 
 		calls->call_list = g_slist_insert_sorted(calls->call_list, v,
 					call_compare);
