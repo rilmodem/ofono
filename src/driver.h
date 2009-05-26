@@ -96,6 +96,14 @@ struct ofono_cw_condition {
 	int cls;
 };
 
+/* 27.007 Section 7.1 Subscriber Number */
+struct ofono_own_number {
+	struct ofono_phone_number phone_number;
+	int speed;
+	int service;
+	int itc;
+};
+
 /* Notification functions, the integer values here should map to
  * values obtained from the modem.  The enumerations are the same
  * as the values for the fields found in 3GPP TS 27.007
@@ -165,8 +173,8 @@ typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_imsi_cb_t)(const struct ofono_error *error,
 					const char *imsi, void *data);
 
-typedef void (*ofono_numbers_cb_t)(const struct ofono_error *error, int num,
-			const struct ofono_phone_number *numbers, void *data);
+typedef void (*ofono_own_numbers_cb_t)(const struct ofono_error *error, int num,
+			const struct ofono_own_number *numbers, void *data);
 
 struct ofono_modem_attribute_ops {
 	void (*query_manufacturer)(struct ofono_modem *modem,
@@ -372,7 +380,7 @@ struct ofono_sim_ops {
 	void (*read_imsi)(struct ofono_modem *modem,
 			ofono_imsi_cb_t cb, void *data);
 	void (*read_own_numbers)(struct ofono_modem *modem,
-			ofono_numbers_cb_t cb, void *data);
+			ofono_own_numbers_cb_t cb, void *data);
 };
 
 int ofono_sim_manager_register(struct ofono_modem *modem,

@@ -35,6 +35,7 @@
 #include "dbus-gsm.h"
 #include "modem.h"
 #include "driver.h"
+#include "common.h"
 #include "cssn.h"
 #include "sim.h"
 

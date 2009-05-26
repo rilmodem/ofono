@@ -234,9 +234,9 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
-	ofono_numbers_cb_t cb = cbd->cb;
+	ofono_own_numbers_cb_t cb = cbd->cb;
 	struct ofono_error error;
-	struct ofono_phone_number *numbers;
+	struct ofono_own_number *numbers;
 	int count;
 	const char *str;
 
@@ -253,7 +253,7 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	for (count = 0; g_at_result_iter_next(&iter, "+CNUM:"); count++);
 	ofono_debug("Got %i elements", count);
 
-	numbers = g_try_new0(struct ofono_phone_number, count);
+	numbers = g_try_new0(struct ofono_own_number, count);
 	if (!numbers) {
 		DECLARE_FAILURE(e);
 		cb(&e, 0, NULL, cbd->data);
@@ -262,16 +262,30 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	for (count = 0; g_at_result_iter_next(&iter, "+CNUM:"); count++) {
+	count = 0;
+	while (g_at_result_iter_next(&iter, "+CNUM")) {
+		/* Skip alnum */
 		g_at_result_iter_skip_next(&iter);
 
 		if (!g_at_result_iter_next_string(&iter, &str))
 			continue;
 
-		g_strlcpy(numbers[count].number, str,
+		g_strlcpy(numbers[count].phone_number.number,
+				str[0] == '+' ? str+1 : str,
 				OFONO_MAX_PHONE_NUMBER_LENGTH);
 
-		g_at_result_iter_next_number(&iter, &numbers[count].type);
+		g_at_result_iter_next_number(&iter,
+					&numbers[count].phone_number.type);
+
+		numbers[count].speed = -1;
+		numbers[count].service = -1;
+		numbers[count].itc = -1;
+
+		g_at_result_iter_skip_next(&iter);
+		g_at_result_iter_next_number(&iter, &numbers[count].service);
+		g_at_result_iter_next_number(&iter, &numbers[count].itc);
+
+		count++;
 	}
 
 	cb(&error, count, numbers, cbd->data);
@@ -279,8 +293,8 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_free(numbers);
 }
 
-static void at_read_msisdn(struct ofono_modem *modem, ofono_numbers_cb_t cb,
-			void *data)
+static void at_read_msisdn(struct ofono_modem *modem, ofono_own_numbers_cb_t cb,
+				void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);

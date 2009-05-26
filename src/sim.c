@@ -48,12 +48,63 @@ struct sim_manager_data {
 	int flags;
 	DBusMessage *pending;
 	char *imsi;
-	char **numbers;
+	GSList *own_numbers;
 	char *spn;
 	int dcbyte;
 
 	GSList *update_spn_notify;
 };
+
+static char **own_numbers_by_type(GSList *own_numbers, int type)
+{
+	int nelem;
+	GSList *l;
+	struct ofono_own_number *num;
+	char **ret;
+
+	if (!own_numbers)
+		return NULL;
+
+	for (nelem = 0, l = own_numbers; l; l = l->next) {
+		num = l->data;
+
+		if (num->service != type)
+			continue;
+
+		nelem++;
+	}
+
+	if (nelem == 0) {
+		if (g_slist_length(own_numbers) != 1)
+			return NULL;
+
+		num = own_numbers->data;
+
+		/* Generic case */
+		if (num->service != -1)
+			return NULL;
+
+		ret = g_new0(char *, 2);
+
+		ret[0] = g_strdup(phone_number_to_string(&num->phone_number));
+
+		return ret;
+	}
+
+	ret = g_new0(char *, nelem + 1);
+
+	nelem = 0;
+	for (l = own_numbers; l; l = l->next) {
+		num = l->data;
+
+		if (num->service != type)
+			continue;
+
+		ret[nelem++] = g_strdup(phone_number_to_string(&num->phone_number));
+	}
+
+	return ret;
+}
 
 static struct sim_manager_data *sim_manager_create()
 {
@@ -70,9 +121,10 @@ static void sim_manager_destroy(gpointer userdata)
 		data->imsi = NULL;
 	}
 
-	if (data->numbers) {
-		dbus_gsm_free_string_array(data->numbers);
-		data->numbers = NULL;
+	if (data->own_numbers) {
+		g_slist_foreach(data->own_numbers, (GFunc)g_free, NULL);
+		g_slist_free(data->own_numbers);
+		data->own_numbers = NULL;
 	}
 
 	if (data->spn) {
@@ -89,6 +141,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
+	char **own_voice;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -100,12 +153,22 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 						PROPERTIES_ARRAY_SIGNATURE,
 						&dict);
 
-	dbus_gsm_dict_append(&dict, "IMSI",
-			DBUS_TYPE_STRING, &sim->imsi);
-	dbus_gsm_dict_append(&dict, "ServiceProvider",
-			DBUS_TYPE_STRING, &sim->spn);
-	dbus_gsm_dict_append_array(&dict, "OwnNumbers",
-			DBUS_TYPE_STRING, &sim->numbers);
+	if (sim->imsi)
+		dbus_gsm_dict_append(&dict, "SubscriberIdentity",
+					DBUS_TYPE_STRING, &sim->imsi);
+
+	if (sim->spn)
+		dbus_gsm_dict_append(&dict, "ServiceProvider",
+					DBUS_TYPE_STRING, &sim->spn);
+
+	own_voice = own_numbers_by_type(sim->own_numbers,
+					OWN_NUMBER_SERVICE_TYPE_VOICE);
+
+	if (own_voice) {
+		dbus_gsm_dict_append_array(&dict, "VoiceSubscriberNumber",
+						DBUS_TYPE_STRING, &own_voice);
+		dbus_gsm_free_string_array(own_voice);
+	}
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -223,26 +286,30 @@ static gboolean sim_retrieve_imsi(void *user_data)
 }
 
 static void sim_own_number_cb(const struct ofono_error *error, int num,
-			const struct ofono_phone_number *phs, void *data)
+			const struct ofono_own_number *own, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
-	char **number_str;
 	int i;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		return;
 
-	sim->numbers = g_try_new0(char *, num + 1);
-	number_str = sim->numbers;
-
 	for (i = 0; i < num; i++) {
-		if (phs[i].number[0] == '\0')
+		struct ofono_own_number *ph;
+
+		if (own[i].phone_number.number[0] == '\0')
 			continue;
 
-		*number_str = g_strdup(phone_number_to_string(&phs[i]));
-		number_str++;
+		ph = g_new(struct ofono_own_number, 1);
+
+		memcpy(ph, &own[i], sizeof(struct ofono_own_number));
+
+		sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
 	}
+
+	if (sim->own_numbers)
+		sim->own_numbers = g_slist_reverse(sim->own_numbers);
 }
 
 static gboolean sim_retrieve_own_number(void *user_data)
