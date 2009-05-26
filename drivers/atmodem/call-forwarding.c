@@ -50,6 +50,7 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int num = 0;
 	struct ofono_cf_condition *list = NULL;
 	int i;
+	int maxlen;
 
 	dump_response("ccfc_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -79,24 +80,26 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
+	maxlen = OFONO_MAX_PHONE_NUMBER_LENGTH;
+
 	for (num = 0; g_at_result_iter_next(&iter, "+CCFC:"); num++) {
 		const char *str;
 
 		g_at_result_iter_next_number(&iter, &(list[num].status));
 		g_at_result_iter_next_number(&iter, &(list[num].cls));
 
-		list[num].phone_number[0] = '\0';
-		list[num].number_type = 129;
+		list[num].phone_number.number[0] = '\0';
+		list[num].phone_number.type = 129;
 		list[num].time = 20;
 
 		if (!g_at_result_iter_next_string(&iter, &str))
 			continue;
 
-		strncpy(list[num].phone_number, str,
-			OFONO_MAX_PHONE_NUMBER_LENGTH);
-		list[num].phone_number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+		strncpy(list[num].phone_number.number, str, maxlen);
+		list[num].phone_number.number[maxlen] = '\0';
 
-		g_at_result_iter_next_number(&iter, &(list[num].number_type));
+		g_at_result_iter_next_number(&iter,
+						&(list[num].phone_number.type));
 
 		if (!g_at_result_iter_skip_next(&iter))
 			continue;
@@ -110,8 +113,8 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	for (i = 0; i < num; i++)
 		ofono_debug("ccfc_cb: %d, %d, %s(%d) - %d sec",
 				list[i].status, list[i].cls,
-				list[i].phone_number, list[i].number_type,
-				list[i].time);
+				list[i].phone_number.number,
+				list[i].phone_number.type, list[i].time);
 
 out:
 	cb(&error, num, list, cbd->data);
@@ -227,7 +230,7 @@ static void at_ccfc_activation(struct ofono_modem *modem, int type, int cls,
 }
 
 static void at_ccfc_registration(struct ofono_modem *modem, int type, int cls,
-					const char *number, int number_type,
+					const struct ofono_phone_number *ph,
 					int time, ofono_generic_cb_t cb,
 					void *data)
 {
@@ -235,7 +238,7 @@ static void at_ccfc_registration(struct ofono_modem *modem, int type, int cls,
 	int offset;
 
 	offset = sprintf(buf, "AT+CCFC=%d,3,\"%s\",%d,%d", type,
-				number, number_type, cls);
+				ph->number, ph->type, cls);
 
 	if (type == 2 || type == 4 || type == 5)
 		sprintf(buf+offset, ",,,%d", time);

@@ -69,10 +69,12 @@ static void sim_manager_destroy(gpointer userdata)
 		g_free(data->imsi);
 		data->imsi = NULL;
 	}
+
 	if (data->numbers) {
 		dbus_gsm_free_string_array(data->numbers);
 		data->numbers = NULL;
 	}
+
 	if (data->spn) {
 		g_free(data->spn);
 		data->spn = NULL;
@@ -220,26 +222,26 @@ static gboolean sim_retrieve_imsi(void *user_data)
 	return FALSE;
 }
 
-static void sim_own_number_cb(const struct ofono_error *error, GSList *numbers,
-		void *data)
+static void sim_own_number_cb(const struct ofono_error *error, int num,
+			const struct ofono_phone_number *phs, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
-	GSList *l;
-	struct ofono_own_number *msisdn;
 	char **number_str;
+	int i;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		return;
 
-	sim->numbers = g_try_new0(char *, g_slist_length(numbers) + 1);
+	sim->numbers = g_try_new0(char *, num + 1);
 	number_str = sim->numbers;
 
-	for (l = numbers; l; l = l->next) {
-		msisdn = l->data;
-		*number_str++ = g_strdup(phone_number_to_string(
-				msisdn->phone_number,
-				msisdn->number_type));
+	for (i = 0; i < num; i++) {
+		if (phs[i].number[0] == '\0')
+			continue;
+
+		*number_str = g_strdup(phone_number_to_string(&phs[i]));
+		number_str++;
 	}
 }
 

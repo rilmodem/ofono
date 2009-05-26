@@ -168,8 +168,9 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 	call->status = status;
 
 	if (clip != 2) {
-		strncpy(call->phone_number, num, OFONO_MAX_PHONE_NUMBER_LENGTH);
-		call->number_type = num_type;
+		strncpy(call->phone_number.number, num,
+			OFONO_MAX_PHONE_NUMBER_LENGTH);
+		call->phone_number.type = num_type;
 	}
 
 	call->clip_validity = clip;
@@ -229,10 +230,11 @@ static GSList *parse_clcc(GAtResult *result)
 		call->direction = dir;
 		call->status = status;
 		call->type = type;
-		strncpy(call->phone_number, str, OFONO_MAX_PHONE_NUMBER_LENGTH);
-		call->number_type = number_type;
+		strncpy(call->phone_number.number, str,
+				OFONO_MAX_PHONE_NUMBER_LENGTH);
+		call->phone_number.type = number_type;
 
-		if (strlen(call->phone_number) > 0)
+		if (strlen(call->phone_number.number) > 0)
 			call->clip_validity = 0;
 		else
 			call->clip_validity = 2;
@@ -440,7 +442,8 @@ out:
 	cb(&error, cbd->data);
 }
 
-static void at_dial(struct ofono_modem *modem, const char *number, int number_type,
+static void at_dial(struct ofono_modem *modem,
+			const struct ofono_phone_number *ph,
 			enum ofono_clir_option clir, enum ofono_cug_option cug,
 			ofono_generic_cb_t cb, void *data)
 {
@@ -451,7 +454,7 @@ static void at_dial(struct ofono_modem *modem, const char *number, int number_ty
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "ATD%s", number);
+	sprintf(buf, "ATD%s", ph->number);
 
 	switch (clir) {
 	case OFONO_CLIR_OPTION_INVOCATION:
@@ -678,13 +681,14 @@ static void at_transfer(struct ofono_modem *modem, ofono_generic_cb_t cb,
 	at_template("AT+CHLD=4", modem, generic_cb, transfer, cb, data);
 }
 
-static void at_deflect(struct ofono_modem *modem, const char *number,
-			int number_type, ofono_generic_cb_t cb, void *data)
+static void at_deflect(struct ofono_modem *modem,
+			const struct ofono_phone_number *ph,
+			ofono_generic_cb_t cb, void *data)
 {
 	char buf[128];
 	unsigned int incoming_or_waiting = (0x1 << 4) | (0x1 << 5);
 
-	sprintf(buf, "AT+CTFR=%s,%d", number, number_type);
+	sprintf(buf, "AT+CTFR=%s,%d", ph->number, ph->type);
 	at_template(buf, modem, generic_cb, incoming_or_waiting, cb, data);
 }
 
@@ -861,9 +865,10 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 
 	call = l->data;
 
-	strncpy(call->phone_number, num, OFONO_MAX_PHONE_NUMBER_LENGTH);
-	call->phone_number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
-	call->number_type = type;
+	strncpy(call->phone_number.number, num,
+		OFONO_MAX_PHONE_NUMBER_LENGTH);
+	call->phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+	call->phone_number.type = type;
 	call->clip_validity = validity;
 
 	if (call->type == 0)
@@ -993,9 +998,13 @@ static void cssu_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	GAtResultIter iter;
-	int code2, index, num_type, satype;
-	const char *num, *subaddr;
-	char num_buf[OFONO_MAX_PHONE_NUMBER_LENGTH];
+	int code2;
+	int index = -1;
+	const char *num;
+	struct ofono_phone_number ph;
+
+	ph.number[0] = '\0';
+	ph.type = 129;
 
 	dump_response("cssu_notify", TRUE, result);
 
@@ -1007,32 +1016,21 @@ static void cssu_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &code2))
 		return;
 
-	if (!g_at_result_iter_next_number(&iter, &index)) {
-		index = 0;
-		num = NULL;
-		num_type = 0;
-		subaddr = NULL;
-		satype = 0;
-	} else if (!g_at_result_iter_next_string(&iter, &num)) {
-		num = NULL;
-		num_type = 0;
-		subaddr = NULL;
-		satype = 0;
-	} else {
-		strncpy(num_buf, num, OFONO_MAX_PHONE_NUMBER_LENGTH);
-		num = num_buf;
+	/* This field is optional, if we can't read it, try to skip it */
+	if (!g_at_result_iter_next_number(&iter, &index) &&
+			!g_at_result_iter_skip_next(&iter))
+		goto out;
 
-		if (!g_at_result_iter_next_number(&iter, &num_type))
-			return;
+	if (!g_at_result_iter_next_string(&iter, &num))
+		goto out;
 
-		if (!g_at_result_iter_next_string(&iter, &subaddr)) {
-			subaddr = NULL;
-			satype = 0;
-		} else if (!g_at_result_iter_next_number(&iter, &satype))
-			return;
-	}
+	strncpy(ph.number, num, OFONO_MAX_PHONE_NUMBER_LENGTH);
 
-	ofono_cssu_notify(modem, code2, index, num, num_type);
+	if (!g_at_result_iter_next_number(&iter, &ph.type))
+		return;
+
+out:
+	ofono_cssu_notify(modem, code2, index, &ph);
 }
 
 static struct ofono_voicecall_ops ops = {

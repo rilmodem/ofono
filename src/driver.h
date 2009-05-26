@@ -21,6 +21,12 @@
 
 struct ofono_modem;
 
+#define OFONO_MAX_PHONE_NUMBER_LENGTH 20
+struct ofono_phone_number {
+	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
+	int type;
+};
+
 /* 27.007 Section 6.2 */
 enum ofono_clir_option {
 	OFONO_CLIR_OPTION_DEFAULT = 0,
@@ -54,15 +60,12 @@ enum ofono_disconnect_reason {
 	OFONO_DISCONNECT_REASON_ERROR,
 };
 
-#define OFONO_MAX_PHONE_NUMBER_LENGTH 20
-
 struct ofono_call {
 	unsigned id;
 	int type;
 	int direction;
 	int status;
-	char phone_number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
-	int number_type;
+	struct ofono_phone_number phone_number;
 	int clip_validity;
 };
 
@@ -83,8 +86,7 @@ struct ofono_network_operator {
 struct ofono_cf_condition {
 	int status;
 	int cls;
-	char phone_number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
-	int number_type;
+	struct ofono_phone_number phone_number;
 	int time;
 };
 
@@ -92,11 +94,6 @@ struct ofono_cf_condition {
 struct ofono_cw_condition {
 	int status;
 	int cls;
-};
-
-struct ofono_own_number {
-	char phone_number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
-	int number_type;
 };
 
 /* Notification functions, the integer values here should map to
@@ -168,8 +165,8 @@ typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_imsi_cb_t)(const struct ofono_error *error,
 					const char *imsi, void *data);
 
-typedef void (*ofono_numbers_cb_t)(const struct ofono_error *error,
-					GSList *numbers, void *data);
+typedef void (*ofono_numbers_cb_t)(const struct ofono_error *error, int num,
+			const struct ofono_phone_number *numbers, void *data);
 
 struct ofono_modem_attribute_ops {
 	void (*query_manufacturer)(struct ofono_modem *modem,
@@ -226,10 +223,10 @@ void ofono_network_registration_unregister(struct ofono_modem *modem);
  * not support vendor extensions for call progress indication.
  */
 struct ofono_voicecall_ops {
-	void (*dial)(struct ofono_modem *modem, const char *number,
-			int number_type, enum ofono_clir_option clir,
-			enum ofono_cug_option cug, ofono_generic_cb_t cb,
-			void *data);
+	void (*dial)(struct ofono_modem *modem,
+			const struct ofono_phone_number *number,
+			enum ofono_clir_option clir, enum ofono_cug_option cug,
+			ofono_generic_cb_t cb, void *data);
 	void (*answer)(struct ofono_modem *modem,
 			ofono_generic_cb_t cb, void *data);
 	void (*hangup)(struct ofono_modem *modem,
@@ -252,8 +249,9 @@ struct ofono_voicecall_ops {
 			ofono_generic_cb_t cb, void *data);
 	void (*transfer)(struct ofono_modem *modem,
 			ofono_generic_cb_t cb, void *data);
-	void (*deflect)(struct ofono_modem *modem, const char *number,
-			int number_type, ofono_generic_cb_t cb, void *data);
+	void (*deflect)(struct ofono_modem *modem,
+			const struct ofono_phone_number *ph,
+			ofono_generic_cb_t cb, void *data);
 	void (*swap_without_accept)(struct ofono_modem *modem,
 			ofono_generic_cb_t cb, void *data);
 	void (*send_tones)(struct ofono_modem *modem, const char *tones,
@@ -271,14 +269,14 @@ void ofono_voicecall_unregister(struct ofono_modem *modem);
 /* SSN notifications (CSSI and CSSU).  */
 void ofono_cssi_notify(struct ofono_modem *modem, int code, int index);
 void ofono_cssu_notify(struct ofono_modem *modem, int code, int index,
-		const char *number, int number_type);
+			const struct ofono_phone_number *number);
 
 struct ofono_call_forwarding_ops {
 	void (*activation)(struct ofono_modem *modem, int type, int cls,
 				ofono_generic_cb_t cb, void *data);
 	void (*registration)(struct ofono_modem *modem, int type, int cls,
-				const char *number, int number_type, int time,
-				ofono_generic_cb_t cb, void *data);
+				const struct ofono_phone_number *number,
+				int time, ofono_generic_cb_t cb, void *data);
 	void (*deactivation)(struct ofono_modem *modem, int type, int cls,
 				ofono_generic_cb_t cb, void *data);
 	void (*erasure)(struct ofono_modem *modem, int type, int cls,

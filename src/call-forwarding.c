@@ -122,8 +122,8 @@ static void cf_cond_list_print(GSList *list)
 
 		ofono_debug("CF Condition status: %d, class: %d, number: %s,"
 			" number_type: %d, time: %d",
-			cond->status, cond->cls, cond->phone_number,
-			cond->number_type, cond->time);
+			cond->status, cond->cls, cond->phone_number.number,
+			cond->phone_number.type, cond->time);
 	}
 }
 
@@ -241,8 +241,7 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 			continue;
 
 		timeout = lc->time;
-		number = phone_number_to_string(lc->phone_number,
-						lc->number_type);
+		number = phone_number_to_string(&lc->phone_number);
 
 		sprintf(attr, "%s%s", bearer_class_to_string(lc->cls),
 					cf_type_lut[type]);
@@ -256,8 +255,9 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 		if (o) { /* On the old list, must be active */
 			oc = o->data;
 
-			if (oc->number_type != lc->number_type ||
-				strcmp(oc->phone_number, lc->phone_number))
+			if (oc->phone_number.type != lc->phone_number.type ||
+				strcmp(oc->phone_number.number,
+					lc->phone_number.number))
 				dbus_gsm_signal_property_changed(conn,
 						modem->path,
 						CALL_FORWARDING_INTERFACE,
@@ -276,8 +276,7 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 			g_free(o->data);
 			old = g_slist_remove(old, o->data);
 		} else {
-			number = phone_number_to_string(lc->phone_number,
-							lc->number_type);
+			number = phone_number_to_string(&lc->phone_number);
 
 			dbus_gsm_signal_property_changed(conn, modem->path,
 						CALL_FORWARDING_INTERFACE,
@@ -365,8 +364,7 @@ static void property_append_cf_conditions(DBusMessageIter *dict,
 			continue;
 		}
 
-		number = phone_number_to_string(cf->phone_number,
-						cf->number_type);
+		number = phone_number_to_string(&cf->phone_number);
 
 		property_append_cf_condition(dict, i, postfix, number,
 						cf->time);
@@ -581,26 +579,27 @@ static void set_property_callback(const struct ofono_error *error, void *data)
 static DBusMessage *set_property_request(struct ofono_modem *modem,
 						DBusMessage *msg,
 						int type, int cls,
-						const char *number,
-						int number_type, int timeout)
+						struct ofono_phone_number *ph,
+						int timeout)
 {
 	struct call_forwarding_data *cf = modem->call_forwarding;
 
-	if (number[0] != '\0' && cf->ops->registration == NULL)
+	if (ph->number[0] != '\0' && cf->ops->registration == NULL)
 		return dbus_gsm_not_implemented(msg);
 
-	if (number[0] == '\0' && cf->ops->erasure == NULL)
+	if (ph->number[0] == '\0' && cf->ops->erasure == NULL)
 		return dbus_gsm_not_implemented(msg);
 
 	cf->pending = dbus_message_ref(msg);
 	cf->query_next = type;
 	cf->query_end = type;
 
-	ofono_debug("Farming off request, will be erasure: %d", number[0] == 0);
+	ofono_debug("Farming off request, will be erasure: %d",
+			ph->number[0] == '\0');
 
-	if (number[0] != '\0')
-		cf->ops->registration(modem, type, cls, number, number_type,
-				timeout, set_property_callback, modem);
+	if (ph->number[0] != '\0')
+		cf->ops->registration(modem, type, cls, ph, timeout,
+					set_property_callback, modem);
 	else
 		cf->ops->erasure(modem, type, cls, set_property_callback, modem);
 
@@ -660,12 +659,14 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 		c = l->data;
 
 		return set_property_request(modem, msg, type, cls,
-						c->phone_number,
-						c->number_type, timeout);
+						&c->phone_number, timeout);
 	} else if (cf_condition_enabled_property(cf, property, &type, &cls)) {
+		struct ofono_phone_number ph;
 		const char *number;
-		int number_type;
 		int timeout;
+
+		ph.number[0] = '\0';
+		ph.type = 129;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 			return dbus_gsm_invalid_args(msg);
@@ -676,14 +677,12 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 			return dbus_gsm_invalid_format(msg);
 
 		if (number[0] != '\0')
-			string_to_phone_number(number, &number_type, &number);
-		else
-			number_type = 129;
+			string_to_phone_number(number, &ph);
 
 		timeout = cf_find_timeout(cf->cf_conditions[type], cls);
 
-		return set_property_request(modem, msg, type, cls, number,
-					number_type, timeout);
+		return set_property_request(modem, msg, type, cls, &ph,
+						timeout);
 	}
 
 	return dbus_gsm_invalid_args(msg);
@@ -929,8 +928,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *s
 	int timeout = DEFAULT_NO_REPLY_TIMEOUT;
 	int cf_type;
 	DBusMessage *reply;
-	const char *number;
-	int number_type;
+	struct ofono_phone_number ph;
 	void *operation;
 
 	/* Before we do anything, make sure we're actually initialized */
@@ -1083,10 +1081,9 @@ static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *s
 
 	switch (cf->ss_req->ss_type) {
 	case SS_CONTROL_TYPE_REGISTRATION:
-		string_to_phone_number(sia, &number_type, &number);
-		cf->ops->registration(modem, cf_type, cls, number, number_type,
-					timeout, cf_ss_control_callback,
-					modem);
+		string_to_phone_number(sia, &ph);
+		cf->ops->registration(modem, cf_type, cls, &ph, timeout,
+					cf_ss_control_callback, modem);
 		break;
 	case SS_CONTROL_TYPE_ACTIVATION:
 		cf->ops->activation(modem, cf_type, cls, cf_ss_control_callback,

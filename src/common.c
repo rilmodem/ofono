@@ -362,30 +362,31 @@ int mmi_service_code_to_bearer_class(int code)
 	return cls;
 }
 
-const char *phone_number_to_string(const char *number, int type)
+const char *phone_number_to_string(const struct ofono_phone_number *ph)
 {
 	static char buffer[64];
 
-	if (type == 145 && (strlen(number) > 0) && number[0] != '+') {
+	if (ph->type == 145 && (strlen(ph->number) > 0) &&
+			ph->number[0] != '+') {
 		buffer[0] = '+';
-		strncpy(buffer + 1, number, 62);
+		strncpy(buffer + 1, ph->number, 62);
 		buffer[63] = '\0';
 	} else {
-		strncpy(buffer, number, 63);
+		strncpy(buffer, ph->number, 63);
 		buffer[63] = '\0';
 	}
 
 	return buffer;
 }
 
-void string_to_phone_number(const char *str, int *type, const char **number)
+void string_to_phone_number(const char *str, struct ofono_phone_number *ph)
 {
 	if (strlen(str) && str[0] == '+') {
-		*number = &str[1];
-		*type = 145;	/* International */
+		strcpy(ph->number, str+1);
+		ph->type = 145;	/* International */
 	} else {
-		*number = &str[0];
-		*type = 129;	/* Local */
+		strcpy(ph->number, str);
+		ph->type = 129;	/* Local */
 	}
 }
 

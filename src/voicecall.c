@@ -119,16 +119,16 @@ static const char *call_status_to_string(int status)
 	}
 }
 
-static const char *phone_and_clip_to_string(const char *number, int type,
+static const char *phone_and_clip_to_string(const struct ofono_phone_number *n,
 						int clip_validity)
 {
-	if (clip_validity == CLIP_VALIDITY_WITHHELD && !strlen(number))
+	if (clip_validity == CLIP_VALIDITY_WITHHELD && !strlen(n->number))
 		return "withheld";
 
 	if (clip_validity == CLIP_VALIDITY_NOT_AVAILABLE)
 		return "";
 
-	return phone_number_to_string(number, type);
+	return phone_number_to_string(n);
 }
 
 static const char *time_to_str(const time_t *t)
@@ -159,8 +159,7 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 		return NULL;
 
 	status = call_status_to_string(call->status);
-	callerid = phone_number_to_string(call->phone_number,
-						call->number_type);
+	callerid = phone_number_to_string(&call->phone_number);
 
 	dbus_message_iter_init_append(reply, &iter);
 
@@ -221,8 +220,8 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	struct voicecalls_data *voicecalls = modem->voicecalls;
 	struct ofono_call *call = v->call;
 
+	struct ofono_phone_number ph;
 	const char *number;
-	int number_type;
 
 	if (call->status != CALL_STATUS_INCOMING &&
 		call->status != CALL_STATUS_WAITING)
@@ -244,10 +243,9 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
 	voicecalls->pending = dbus_message_ref(msg);
 
-	string_to_phone_number(number, &number_type, &number);
+	string_to_phone_number(number, &ph);
 
-	voicecalls->ops->deflect(modem, number, number_type,
-					generic_callback, voicecalls);
+	voicecalls->ops->deflect(modem, &ph, generic_callback, voicecalls);
 
 	return NULL;
 }
@@ -401,7 +399,7 @@ static void voicecall_set_call_status(struct ofono_modem *modem,
 
 static void voicecall_set_call_lineid(struct ofono_modem *modem,
 					struct voicecall *v,
-					const char *number, int number_type,
+					const struct ofono_phone_number *ph,
 					int clip_validity)
 {
 	struct ofono_call *call = v->call;
@@ -409,8 +407,8 @@ static void voicecall_set_call_lineid(struct ofono_modem *modem,
 	const char *path;
 	const char *lineid_str;
 
-	if (!strcmp(call->phone_number, number) &&
-		call->number_type == number_type &&
+	if (!strcmp(call->phone_number.number, ph->number) &&
+		call->phone_number.type == ph->type &&
 		call->clip_validity == clip_validity)
 		return;
 
@@ -424,17 +422,16 @@ static void voicecall_set_call_lineid(struct ofono_modem *modem,
 		clip_validity == CLIP_VALIDITY_NOT_AVAILABLE)
 		return;
 
-	strcpy(call->phone_number, number);
+	strcpy(call->phone_number.number, ph->number);
 	call->clip_validity = clip_validity;
-	call->number_type = number_type;
+	call->phone_number.type = ph->type;
 
 	path = voicecall_build_path(modem, call);
 
 	if (call->direction == CALL_DIRECTION_MOBILE_TERMINATED)
-		lineid_str = phone_and_clip_to_string(number, number_type,
-							clip_validity);
+		lineid_str = phone_and_clip_to_string(ph, clip_validity);
 	else
-		lineid_str = phone_number_to_string(number, number_type);
+		lineid_str = phone_number_to_string(ph);
 
 	dbus_gsm_signal_property_changed(conn, path, VOICECALL_INTERFACE,
 						"LineIdentification",
@@ -737,7 +734,7 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	struct ofono_modem *modem = data;
 	struct voicecalls_data *calls = modem->voicecalls;
 	const char *number;
-	int number_type;
+	struct ofono_phone_number ph;
 	const char *clirstr;
 	enum ofono_clir_option clir;
 
@@ -774,10 +771,9 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
 
-	string_to_phone_number(number, &number_type, &number);
+	string_to_phone_number(number, &ph);
 
-	calls->ops->dial(modem, number, number_type, clir,
-				OFONO_CUG_OPTION_DEFAULT,
+	calls->ops->dial(modem, &ph, clir, OFONO_CUG_OPTION_DEFAULT,
 				dial_callback, modem);
 
 	return NULL;
@@ -1244,7 +1240,7 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 	struct ofono_call *newcall = NULL;
 
 	ofono_debug("Got a voicecall event, status: %d, id: %u, number: %s",
-			call->status, call->id, call->phone_number);
+			call->status, call->id, call->phone_number.number);
 
 	l = g_slist_find_custom(calls->call_list, GINT_TO_POINTER(call->id),
 				call_compare_by_id);
@@ -1252,8 +1248,8 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 	if (l) {
 		ofono_debug("Found call with id: %d\n", call->id);
 		voicecall_set_call_status(modem, l->data, call->status);
-		voicecall_set_call_lineid(modem, l->data, call->phone_number,
-					call->number_type, call->clip_validity);
+		voicecall_set_call_lineid(modem, l->data, &call->phone_number,
+						call->clip_validity);
 
 		return;
 	}
@@ -1358,19 +1354,12 @@ static struct ofono_call *synthesize_outgoing_call(struct ofono_modem *modem,
 						DBusMessage *msg)
 {
 	const char *number;
-	int number_type;
 	struct ofono_call *call;
 
 	call = g_try_new0(struct ofono_call, 1);
 
 	if (!call)
 		return call;
-
-	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
-				DBUS_TYPE_INVALID) == FALSE)
-		number = "";
-	else
-		string_to_phone_number(number, &number_type, &number);
 
 	call->id = modem_alloc_callid(modem);
 
@@ -1380,10 +1369,14 @@ static struct ofono_call *synthesize_outgoing_call(struct ofono_modem *modem,
 		return NULL;
 	}
 
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
+				DBUS_TYPE_INVALID) == FALSE)
+		number = "";
+	else
+		string_to_phone_number(number, &call->phone_number);
+
 	call->direction = CALL_DIRECTION_MOBILE_ORIGINATED;
 	call->status = CALL_STATUS_DIALING;
-	strcpy(call->phone_number, number);
-	call->number_type = number_type;
 	call->clip_validity = CLIP_VALIDITY_VALID;
 
 	return call;

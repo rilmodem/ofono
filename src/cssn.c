@@ -161,7 +161,7 @@ void ofono_cssi_notify(struct ofono_modem *modem, int code1, int index)
 }
 
 void ofono_cssu_notify(struct ofono_modem *modem, int code2, int index,
-		const char *number, int number_type)
+			const struct ofono_phone_number *ph)
 {
 	struct cssn_data *ss = modem->cssn;
 	struct mt_handler *h;
@@ -170,6 +170,6 @@ void ofono_cssu_notify(struct ofono_modem *modem, int code2, int index,
 	for (l = ss->mt_handler_list; l; l = l->next) {
 		h = l->data;
 		if (h->code2 == (enum ss_cssu) code2)
-			h->cb(index, number, number_type, h->cb_data);
+			h->cb(index, ph, h->cb_data);
 	}
 }

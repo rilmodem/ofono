@@ -23,8 +23,8 @@
 #define __CSSN_H__
 
 typedef void (*mo_ss_notify_cb)(int index, void *userdata);
-typedef void (*mt_ss_notify_cb)(int index, const char *num, int num_type,
-		void *userdata);
+typedef void (*mt_ss_notify_cb)(int index, const struct ofono_phone_number *ph,
+				void *userdata);
 
 void ofono_cssn_init(struct ofono_modem *modem);
 void ofono_cssn_exit(struct ofono_modem *modem);

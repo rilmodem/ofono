@@ -236,8 +236,7 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	ofono_numbers_cb_t cb = cbd->cb;
 	struct ofono_error error;
-	struct ofono_own_number *numbers;
-	GSList *l = NULL;
+	struct ofono_phone_number *numbers;
 	int count;
 	const char *str;
 
@@ -245,7 +244,7 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
-		cb(&error, NULL, cbd->data);
+		cb(&error, 0, NULL, cbd->data);
 		return;
 	}
 
@@ -254,10 +253,10 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	for (count = 0; g_at_result_iter_next(&iter, "+CNUM:"); count++);
 	ofono_debug("Got %i elements", count);
 
-	numbers = g_try_new0(struct ofono_own_number, count);
+	numbers = g_try_new0(struct ofono_phone_number, count);
 	if (!numbers) {
 		DECLARE_FAILURE(e);
-		cb(&e, NULL, cbd->data);
+		cb(&e, 0, NULL, cbd->data);
 		return;
 	}
 
@@ -269,19 +268,15 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (!g_at_result_iter_next_string(&iter, &str))
 			continue;
 
-		g_strlcpy(numbers[count].phone_number, str,
+		g_strlcpy(numbers[count].number, str,
 				OFONO_MAX_PHONE_NUMBER_LENGTH);
 
-		g_at_result_iter_next_number(&iter,
-				&numbers[count].number_type);
-
-		l = g_slist_append(l, &numbers[count]);
+		g_at_result_iter_next_number(&iter, &numbers[count].type);
 	}
 
-	cb(&error, l, cbd->data);
+	cb(&error, count, numbers, cbd->data);
 
 	g_free(numbers);
-	g_slist_free(l);
 }
 
 static void at_read_msisdn(struct ofono_modem *modem, ofono_numbers_cb_t cb,
@@ -303,7 +298,7 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
+		cb(&error, 0, NULL, data);
 	}
 }
 
