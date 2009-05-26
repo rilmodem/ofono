@@ -454,7 +454,10 @@ static void at_dial(struct ofono_modem *modem,
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "ATD%s", ph->number);
+	if (ph->type == 145)
+		sprintf(buf, "ATD+%s", ph->number);
+	else
+		sprintf(buf, "ATD%s", ph->number);
 
 	switch (clir) {
 	case OFONO_CLIR_OPTION_INVOCATION:
