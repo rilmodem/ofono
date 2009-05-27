@@ -70,7 +70,7 @@ struct call_barring_lock {
 };
 
 static struct call_barring_lock cb_locks[] = {
-	{ "AllOutgoing",			"always",		"AO" },
+	{ "AllOutgoing",			"all",			"AO" },
 	{ "InternationalOutgoing",		"international",	"OI" },
 	{ "InternationalOutgoingExceptHome",	"internationalnothome",	"OX" },
 	{ "AllIncoming",			"always",		"AI" },
