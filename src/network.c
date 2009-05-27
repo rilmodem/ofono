@@ -343,8 +343,10 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 		return name;
 	}
 
-	if (!netreg->spname)
+	if (!netreg->spname || strlen(netreg->spname) == 0) {
 		g_strlcpy(name, netreg->current_operator->name, len);
+		return name;
+	}
 
 	plmn = netreg->current_operator->name;
 
