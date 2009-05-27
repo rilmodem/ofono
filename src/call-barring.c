@@ -126,14 +126,17 @@ static inline void emit_barring_changed(struct ofono_modem *modem, int start,
 						&value);
 }
 
-static void update_barrings(struct ofono_modem *modem)
+static void update_barrings(struct ofono_modem *modem, int mask)
 {
 	struct call_barring_data *cb = modem->call_barring;
 	int cls;
 	int i;
 
 	/* We're only interested in emitting signals for Voice, Fax & Data */
-	for (cls = 1; cls <= BEARER_CLASS_FAX; cls = cls << 1) {
+	for (cls = 1; cls <= BEARER_CLASS_PAD; cls = cls << 1) {
+		if ((cls & mask) == 0)
+			continue;
+
 		emit_barring_changed(modem, cb->query_start, CB_OUTGOING_END,
 					"Outgoing", cls);
 		emit_barring_changed(modem, CB_INCOMING_START, cb->query_end,
@@ -304,7 +307,7 @@ static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 	}
 
 	generate_ss_query_reply(modem);
-	update_barrings(modem);
+	update_barrings(modem, BEARER_CLASS_VOICE);
 }
 
 static gboolean cb_ss_query_next_lock(gpointer user)
@@ -544,7 +547,7 @@ static inline void cb_append_property(struct call_barring_data *cb,
 				&value);
 }
 
-static void cb_get_properties_reply(struct ofono_modem *modem)
+static void cb_get_properties_reply(struct ofono_modem *modem, int mask)
 {
 	struct call_barring_data *cb = modem->call_barring;
 	DBusMessage *reply;
@@ -563,7 +566,10 @@ static void cb_get_properties_reply(struct ofono_modem *modem)
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
 			PROPERTIES_ARRAY_SIGNATURE, &dict);
 
-	for (j = 1; j <= BEARER_CLASS_FAX; j = j << 1) {
+	for (j = 1; j <= BEARER_CLASS_PAD; j = j << 1) {
+		if ((j & mask) == 0)
+			continue;
+
 		cb_append_property(cb, &dict, CB_OUTGOING_START,
 					CB_OUTGOING_END, j, "Outgoing");
 		cb_append_property(cb, &dict, CB_INCOMING_START,
@@ -594,8 +600,8 @@ static void get_query_lock_callback(const struct ofono_error *error,
 		return;
 	}
 
-	cb_get_properties_reply(modem);
-	update_barrings(modem);
+	cb_get_properties_reply(modem, BEARER_CLASS_VOICE);
+	update_barrings(modem, BEARER_CLASS_VOICE);
 }
 
 static gboolean get_query_next_lock(gpointer user)
@@ -624,7 +630,7 @@ static DBusMessage *cb_get_properties(DBusConnection *conn, DBusMessage *msg,
 	cb->pending = dbus_message_ref(msg);
 
 	if (cb->flags & CALL_BARRING_FLAG_CACHED)
-		cb_get_properties_reply(modem);
+		cb_get_properties_reply(modem, BEARER_CLASS_VOICE);
 	else {
 		cb->query_next = CB_ALL_START;
 		get_query_next_lock(modem);
@@ -660,7 +666,7 @@ static void set_query_lock_callback(const struct ofono_error *error,
 
 	dbus_gsm_pending_reply(&cb->pending,
 				dbus_message_new_method_return(cb->pending));
-	update_barrings(modem);
+	update_barrings(modem, BEARER_CLASS_VOICE);
 }
 
 static gboolean set_query_next_lock(gpointer user)
@@ -699,7 +705,7 @@ static void set_lock_callback(const struct ofono_error *error, void *data)
 }
 
 static gboolean cb_lock_property_lookup(const char *property, const char *value,
-					int *out_which, int *out_cls,
+					int mask, int *out_which, int *out_cls,
 					int *out_mode)
 {
 	int i, j;
@@ -707,7 +713,10 @@ static gboolean cb_lock_property_lookup(const char *property, const char *value,
 	size_t len;
 	int start, end;
 
-	for (i = 1; i <= BEARER_CLASS_FAX; i = i << 1) {
+	for (i = 1; i <= BEARER_CLASS_PAD; i = i << 1) {
+		if ((i & mask) == 0)
+			continue;
+
 		prefix = bearer_class_to_string(i);
 		len = strlen(prefix);
 
@@ -715,7 +724,7 @@ static gboolean cb_lock_property_lookup(const char *property, const char *value,
 			break;
 	}
 
-	if (i > BEARER_CLASS_FAX)
+	if (i > BEARER_CLASS_PAD)
 		return FALSE;
 
 	property += len;
@@ -795,7 +804,8 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 
 	dbus_message_iter_get_basic(&var, &value);
 
-	if (!cb_lock_property_lookup(name, value, &lock, &cls, &mode))
+	if (!cb_lock_property_lookup(name, value, BEARER_CLASS_VOICE,
+					&lock, &cls, &mode))
 		return dbus_gsm_invalid_format(msg);
 
 	if (dbus_message_iter_next(&iter)) {
