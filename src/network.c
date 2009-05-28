@@ -953,14 +953,17 @@ static void current_operator_callback(const struct ofono_error *error,
 					network_operator_compare);
 
 	if (op) {
-		netreg->current_operator = op->data;
 		set_network_operator_status(modem, op->data,
 						OPERATOR_STATUS_CURRENT);
 		set_network_operator_technology(modem, op->data,
 						current->tech);
 		set_network_operator_name(modem, op->data, current->name);
 
-		return;
+		if (netreg->current_operator == op->data)
+			return;
+
+		netreg->current_operator = op->data;
+		goto emit;
 	}
 
 	if (current) {
@@ -986,6 +989,7 @@ static void current_operator_callback(const struct ofono_error *error,
 		netreg->current_operator = NULL;
 	}
 
+emit:
 	operator = get_operator_display_name(modem);
 	dbus_gsm_signal_property_changed(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
