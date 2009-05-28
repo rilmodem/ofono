@@ -392,6 +392,7 @@ static void set_network_operator_name(struct ofono_modem *modem,
 
 	if (op == netreg->current_operator) {
 		operator = get_operator_display_name(modem);
+
 		dbus_gsm_signal_property_changed(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
 					"Operator", DBUS_TYPE_STRING,
@@ -991,6 +992,7 @@ static void current_operator_callback(const struct ofono_error *error,
 
 emit:
 	operator = get_operator_display_name(modem);
+
 	dbus_gsm_signal_property_changed(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
 					"Operator", DBUS_TYPE_STRING,
@@ -1087,6 +1089,7 @@ static void ofono_update_spn(struct ofono_modem *modem, const char *spn,
 
 	if (!netreg)
 		return;
+
 	if (!strlen(spn))
 		return;
 
@@ -1096,10 +1099,12 @@ static void ofono_update_spn(struct ofono_modem *modem, const char *spn,
 
 	if (home_plmn_dpy)
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
+
 	if (roaming_spn_dpy)
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
 
 	operator = get_operator_display_name(modem);
+
 	dbus_gsm_signal_property_changed(conn, modem->path,
 				NETWORK_REGISTRATION_INTERFACE,
 				"Operator", DBUS_TYPE_STRING,
