@@ -328,7 +328,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem, int type,
 {
 	struct call_waiting_data *cw = modem->call_waiting;
 	DBusConnection *conn = dbus_gsm_connection();
-	int cls = BEARER_CLASS_DEFAULT;
+	int cls = BEARER_CLASS_SS_DEFAULT;
 	DBusMessage *reply;
 
 	if (!cw)
@@ -368,7 +368,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem, int type,
 	cw->ss_req_cls = cls;
 	cw->pending = dbus_message_ref(msg);
 
-	cls |= BEARER_CLASS_DEFAULT;
+	cls = BEARER_CLASS_DEFAULT;
 
 	switch (type) {
 	case SS_CONTROL_TYPE_REGISTRATION:
