@@ -1,0 +1,83 @@
+#!/usr/bin/python
+
+import gobject
+import sys
+import dbus
+import dbus.mainloop.glib
+
+
+def cm_property_changed(name, value):
+	print "CallMeter property: '%s' changed to '%s'" % (name, str(value))
+	if canexit:
+		mainloop.quit()
+
+def cm_maximum_reached():
+	print "Only 30 seconds call time remains, recharge."
+
+def print_useage(s):
+	print "Useage: %s <property> <newvalue> <password>" % (s)
+	print "Useage: %s reset <password>" % (s)
+	sys.exit(1);
+
+if __name__ == "__main__":
+	if len(sys.argv) != 3 and len(sys.argv) != 4:
+		print_useage(sys.argv[0])
+
+	if (sys.argv[1] == 'reset'):
+		pin = sys.argv[2]
+	else:
+		if (len(sys.argv) != 4):
+			print_useage(sys.argv[0])
+		property = sys.argv[1]
+		newvalue = sys.argv[2]
+		pin = sys.argv[3]
+
+	canexit = False
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+			'org.ofono.Manager')
+
+	modems = manager.GetProperties()['Modems']
+
+	cm = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+			'org.ofono.CallMeter')
+
+	cm.connect_to_signal("PropertyChanged", cm_property_changed)
+	cm.connect_to_signal("NearMaximumWarning", cm_maximum_reached)
+
+	properties = cm.GetProperties()
+
+	print "Currency: %s" % (properties['Currency'])
+	print "PricePerUnit %s" % (properties['PricePerUnit'])
+	print "Call meter for the current call: %s" % (properties['CallMeter'])
+	print "Call meter for current and previous calls: %s" %\
+		properties['AccumulatedCallMeter']
+	print "Call meter maximum, once reached calls are not possible: %s" %\
+		properties['AccumulatedCallMeterMaximum']
+
+	total = properties['PricePerUnit'] * properties['AccumulatedCallMeter']
+	print "Accumulated Meter in Currency: %s %s" %\
+		(total, properties['Currency'])
+
+	if (sys.argv[1] == 'reset'):
+		print "Resetting Accumulated Call Meter"
+		try:
+			cm.Reset(pin)
+		except dbus.DBusException, e:
+			print "Unable to reset ACM: ", e
+			sys.exit(1)
+	else:
+		try:
+			cm.SetProperty(property, newvalue, pin)
+		except dbus.DBusException, e:
+			print "Unable to set property: ", e
+			sys.exit(1)
+
+	canexit = True
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
