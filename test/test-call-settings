@@ -6,9 +6,6 @@ import dbus
 import dbus.mainloop.glib
 import sys
 
-def test_exit():
-	mainloop.quit()
-
 def property_changed(name, value):
 	print "CallSettings property: '%s' changed to '%s'" % (name, value)
 
