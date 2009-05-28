@@ -1103,6 +1103,9 @@ static void ofono_update_spn(struct ofono_modem *modem, const char *spn,
 	if (roaming_spn_dpy)
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
 
+	if (!netreg->current_operator)
+		return;
+
 	operator = get_operator_display_name(modem);
 
 	dbus_gsm_signal_property_changed(conn, modem->path,
