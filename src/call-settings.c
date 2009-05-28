@@ -25,6 +25,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <dbus/dbus.h>
 #include <glib.h>
@@ -42,6 +43,14 @@
 
 #define CALL_SETTINGS_FLAG_CACHED 0x1
 
+enum call_setting_type {
+	CALL_SETTING_TYPE_CLIP = 0,
+	CALL_SETTING_TYPE_COLP,
+	CALL_SETTING_TYPE_COLR,
+	CALL_SETTING_TYPE_CLIR,
+	CALL_SETTING_TYPE_CW
+};
+
 struct call_settings_data {
 	struct ofono_call_settings_ops *ops;
 	int clir;
@@ -49,17 +58,12 @@ struct call_settings_data {
 	int clip;
 	int colp;
 	int clir_setting;
+	int cw;
 	int flags;
 	DBusMessage *pending;
 	int ss_req_type;
-	int call_setting_type;
-};
-
-enum call_setting_type {
-	CALL_SETTING_TYPE_CLIP = 0,
-	CALL_SETTING_TYPE_COLP,
-	CALL_SETTING_TYPE_COLR,
-	CALL_SETTING_TYPE_CLIR
+	int ss_req_cls;
+	enum call_setting_type ss_setting;
 };
 
 static void cs_register_ss_controls(struct ofono_modem *modem);
@@ -215,6 +219,36 @@ static void set_colr(struct ofono_modem *modem, int colr)
 	}
 }
 
+static void set_cw(struct ofono_modem *modem, int new_cw, int mask)
+{
+	struct call_settings_data *cs = modem->call_settings;
+	DBusConnection *conn = dbus_gsm_connection();
+	char buf[64];
+	int j;
+	const char *value;
+
+	for (j = 1; j <= BEARER_CLASS_PAD; j = j << 1) {
+		if ((j & mask) == 0)
+			continue;
+
+		if ((cs->cw & j) == (new_cw & j))
+			continue;
+
+		if (new_cw & j)
+			value = "enabled";
+		else
+			value = "disabled";
+
+		sprintf(buf, "%sCallWaiting", bearer_class_to_string(j));
+		dbus_gsm_signal_property_changed(conn, modem->path,
+							CALL_SETTINGS_INTERFACE,
+							buf, DBUS_TYPE_STRING,
+							&value);
+	}
+
+	cs->cw = new_cw;
+}
+
 static struct call_settings_data *call_settings_create()
 {
 	struct call_settings_data *r;
@@ -241,6 +275,190 @@ static void call_settings_destroy(gpointer data)
 	cs_unregister_ss_controls(modem);
 
 	g_free(cs);
+}
+
+static void property_append_cw_conditions(DBusMessageIter *dict,
+						int conditions, int mask)
+{
+	int i;
+	char prop[128];
+	const char *value;
+
+	for (i = 1; i <= BEARER_CLASS_PAD; i = i << 1) {
+		if (!(mask & i))
+			continue;
+
+		sprintf(prop, "%sCallWaiting", bearer_class_to_string(i));
+
+		if (conditions & i)
+			value = "enabled";
+		else
+			value = "disabled";
+
+		dbus_gsm_dict_append(dict, prop, DBUS_TYPE_STRING, &value);
+	}
+}
+
+static void generate_cw_ss_query_reply(struct ofono_modem *modem)
+{
+	struct call_settings_data *cs = modem->call_settings;
+	const char *sig = "(sa{sv})";
+	const char *ss_type = ss_control_type_to_string(cs->ss_req_type);
+	const char *context = "CallWaiting";
+	DBusMessageIter iter;
+	DBusMessageIter var;
+	DBusMessageIter vstruct;
+	DBusMessageIter dict;
+	DBusMessage *reply;
+
+	reply = dbus_message_new_method_return(cs->pending);
+
+	dbus_message_iter_init_append(reply, &iter);
+
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &context);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_VARIANT, sig, &var);
+
+	dbus_message_iter_open_container(&var, DBUS_TYPE_STRUCT, NULL,
+						&vstruct);
+
+	dbus_message_iter_append_basic(&vstruct, DBUS_TYPE_STRING,
+					&ss_type);
+
+	dbus_message_iter_open_container(&vstruct, DBUS_TYPE_ARRAY,
+					PROPERTIES_ARRAY_SIGNATURE, &dict);
+
+	property_append_cw_conditions(&dict, cs->cw, cs->ss_req_cls);
+
+	dbus_message_iter_close_container(&vstruct, &dict);
+
+	dbus_message_iter_close_container(&var, &vstruct);
+
+	dbus_message_iter_close_container(&iter, &var);
+
+	dbus_gsm_pending_reply(&cs->pending, reply);
+}
+
+static void cw_ss_query_callback(const struct ofono_error *error, int status,
+					void *data)
+{
+	struct ofono_modem *modem = data;
+	struct call_settings_data *cs = modem->call_settings;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("setting CW via SS failed");
+
+		cs->flags &= ~CALL_SETTINGS_FLAG_CACHED;
+		dbus_gsm_pending_reply(&cs->pending,
+					dbus_gsm_failed(cs->pending));
+
+		return;
+	}
+
+	set_cw(modem, status, BEARER_CLASS_VOICE);
+
+	generate_cw_ss_query_reply(modem);
+}
+
+static void cw_ss_set_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct call_settings_data *cs = modem->call_settings;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("setting CW via SS failed");
+		dbus_gsm_pending_reply(&cs->pending,
+					dbus_gsm_failed(cs->pending));
+
+		return;
+	}
+
+	cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
+				cw_ss_query_callback, modem);
+}
+
+static gboolean cw_ss_control(struct ofono_modem *modem, int type,
+				const char *sc, const char *sia,
+				const char *sib, const char *sic,
+				const char *dn, DBusMessage *msg)
+{
+	struct call_settings_data *cs = modem->call_settings;
+	DBusConnection *conn = dbus_gsm_connection();
+	int cls = BEARER_CLASS_SS_DEFAULT;
+	DBusMessage *reply;
+
+	if (!cs)
+		return FALSE;
+
+	if (strcmp(sc, "43"))
+		return FALSE;
+
+	if (cs->pending) {
+		reply = dbus_gsm_busy(msg);
+		goto error;
+	}
+
+	if (strlen(sib) || strlen(sib) || strlen(dn))
+		goto bad_format;
+
+	if ((type == SS_CONTROL_TYPE_QUERY && !cs->ops->cw_query) ||
+		(type != SS_CONTROL_TYPE_QUERY && !cs->ops->cw_set)) {
+		reply = dbus_gsm_not_implemented(msg);
+		goto error;
+	}
+
+	if (strlen(sia) > 0) {
+		long service_code;
+		char *end;
+
+		service_code = strtoul(sia, &end, 10);
+
+		if (end == sia || *end != '\0')
+			goto bad_format;
+
+		cls = mmi_service_code_to_bearer_class(service_code);
+		if (cls == 0)
+			goto bad_format;
+	}
+
+	cs->ss_req_cls = cls;
+	cs->pending = dbus_message_ref(msg);
+
+	/* For the default case use the more readily accepted value */
+	if (cls == BEARER_CLASS_SS_DEFAULT)
+		cls = BEARER_CLASS_DEFAULT;
+
+	switch (type) {
+	case SS_CONTROL_TYPE_REGISTRATION:
+	case SS_CONTROL_TYPE_ACTIVATION:
+		cs->ss_req_type = SS_CONTROL_TYPE_ACTIVATION;
+		cs->ops->cw_set(modem, 1, cls, cw_ss_set_callback, modem);
+		break;
+
+	case SS_CONTROL_TYPE_QUERY:
+		cs->ss_req_type = SS_CONTROL_TYPE_QUERY;
+		/* Always query the entire set, SMS not applicable
+		 * according to 22.004 Appendix A, so CLASS_DEFAULT
+		 * is safe to use here
+		 */
+		cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
+					cw_ss_query_callback, modem);
+		break;
+
+	case SS_CONTROL_TYPE_DEACTIVATION:
+	case SS_CONTROL_TYPE_ERASURE:
+		cs->ss_req_type = SS_CONTROL_TYPE_DEACTIVATION;
+		cs->ops->cw_set(modem, 0, cls, cw_ss_set_callback, modem);
+		break;
+	}
+
+	return TRUE;
+
+bad_format:
+	reply = dbus_gsm_invalid_format(msg);
+error:
+	g_dbus_send_message(conn, reply);
+	return TRUE;
 }
 
 static void generate_ss_query_reply(struct ofono_modem *modem,
@@ -293,7 +511,7 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 		return;
 	}
 
-	switch (cs->call_setting_type) {
+	switch (cs->ss_setting) {
 	case CALL_SETTING_TYPE_CLIP:
 		set_clip(modem, status);
 		value = clip_status_to_string(status);
@@ -343,13 +561,13 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem, int type,
 	}
 
 	if (!strcmp(sc, "30")) {
-		cs->call_setting_type = CALL_SETTING_TYPE_CLIP;
+		cs->ss_setting = CALL_SETTING_TYPE_CLIP;
 		query_op = cs->ops->clip_query;
 	} else if (!strcmp(sc, "76")) {
-		cs->call_setting_type = CALL_SETTING_TYPE_COLP;
+		cs->ss_setting = CALL_SETTING_TYPE_COLP;
 		query_op = cs->ops->colp_query;
 	} else if (!strcmp(sc, "77")) {
-		cs->call_setting_type = CALL_SETTING_TYPE_COLR;
+		cs->ss_setting = CALL_SETTING_TYPE_COLR;
 		query_op = cs->ops->colr_query;
 	} else
 		return FALSE;
@@ -484,7 +702,7 @@ static gboolean clir_ss_control(struct ofono_modem *modem, int type,
 		return TRUE;
 	}
 
-	cs->call_setting_type = CALL_SETTING_TYPE_CLIR;
+	cs->ss_setting = CALL_SETTING_TYPE_CLIR;
 	cs->pending = dbus_message_ref(msg);
 
 	switch (type) {
@@ -520,6 +738,8 @@ static void cs_register_ss_controls(struct ofono_modem *modem)
 	ss_control_register(modem, "31", clir_ss_control);
 	ss_control_register(modem, "76", clip_colp_colr_ss);
 
+	ss_control_register(modem, "43", cw_ss_control);
+
 	if (cs->ops->colr_query)
 		ss_control_register(modem, "77", clip_colp_colr_ss);
 }
@@ -531,6 +751,8 @@ static void cs_unregister_ss_controls(struct ofono_modem *modem)
 	ss_control_unregister(modem, "30", clip_colp_colr_ss);
 	ss_control_unregister(modem, "31", clir_ss_control);
 	ss_control_unregister(modem, "76", clip_colp_colr_ss);
+
+	ss_control_unregister(modem, "43", cw_ss_control);
 
 	if (cs->ops->colr_query)
 		ss_control_unregister(modem, "77", clip_colp_colr_ss);
@@ -574,6 +796,8 @@ static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
 
 	str = hide_callerid_to_string(cs->clir_setting);
 	dbus_gsm_dict_append(&dict, "HideCallerId", DBUS_TYPE_STRING, &str);
+
+	property_append_cw_conditions(&dict, cs->cw, BEARER_CLASS_VOICE);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -702,6 +926,33 @@ static gboolean query_colr(gpointer user)
 	return FALSE;
 }
 
+static void cs_cw_callback(const struct ofono_error *error, int status,
+				void *data)
+{
+	struct ofono_modem *modem = data;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		set_cw(modem, status, BEARER_CLASS_VOICE);
+
+	g_timeout_add(0, query_colr, modem);
+}
+
+static gboolean query_cw(gpointer user)
+{
+	struct ofono_modem *modem = user;
+	struct call_settings_data *cs = modem->call_settings;
+
+	if (!cs->ops->cw_query) {
+		query_colr(modem);
+		return FALSE;
+	}
+
+	cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
+				cs_cw_callback, modem);
+
+	return FALSE;
+}
+
 static DBusMessage *cs_get_properties(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
@@ -717,7 +968,7 @@ static DBusMessage *cs_get_properties(DBusConnection *conn, DBusMessage *msg,
 	/* Query the settings and report back */
 	cs->pending = dbus_message_ref(msg);
 
-	query_colr(modem);
+	query_cw(modem);
 
 	return NULL;
 }
@@ -734,7 +985,7 @@ static void clir_set_query_callback(const struct ofono_error *error,
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("setting clir was successful, but the query was not");
+		ofono_error("set clir successful, but the query was not");
 
 		cs->flags &= ~CALL_SETTINGS_FLAG_CACHED;
 
@@ -793,6 +1044,95 @@ static DBusMessage *set_clir(DBusMessage *msg, struct ofono_modem *modem,
 	return NULL;
 }
 
+static void cw_set_query_callback(const struct ofono_error *error, int status,
+				void *data)
+{
+	struct ofono_modem *modem = data;
+	struct call_settings_data *cs = modem->call_settings;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("CW set succeeded, but query failed!");
+
+		cs->flags &= ~CALL_SETTINGS_FLAG_CACHED;
+
+		dbus_gsm_pending_reply(&cs->pending,
+					dbus_gsm_failed(cs->pending));
+		return;
+	}
+
+	dbus_gsm_pending_reply(&cs->pending,
+				dbus_message_new_method_return(cs->pending));
+
+	set_cw(modem, status, BEARER_CLASS_VOICE);
+}
+
+static void cw_set_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct call_settings_data *cs = modem->call_settings;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("Error occurred during CW set");
+
+		dbus_gsm_pending_reply(&cs->pending,
+					dbus_gsm_failed(cs->pending));
+
+		return;
+	}
+
+	cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
+				cw_set_query_callback, modem);
+}
+
+static DBusMessage *set_cw_req(DBusMessage *msg, struct ofono_modem *modem,
+				const char *setting, int cls)
+{
+	struct call_settings_data *cs = modem->call_settings;
+	int cw;
+
+	if (cs->ops->cw_set == NULL)
+		return dbus_gsm_not_implemented(msg);
+
+	if (!strcmp(setting, "enabled"))
+		cw = 1;
+	else if (!strcmp(setting, "disabled"))
+		cw = 0;
+	else
+		return dbus_gsm_invalid_format(msg);
+
+	cs->pending = dbus_message_ref(msg);
+
+	cs->ops->cw_set(modem, cw, cls, cw_set_callback, modem);
+
+	return NULL;
+}
+
+static gboolean is_cw_property(const char *property, int mask, int *out_cls)
+{
+	int i;
+	int len;
+	const char *prefix;
+
+	for (i = 1; i <= BEARER_CLASS_PAD; i = i << 1) {
+		if ((i & mask) == 0)
+			continue;
+
+		prefix = bearer_class_to_string(i);
+
+		len = strlen(prefix);
+
+		if (strncmp(property, prefix, len))
+			continue;
+
+		if (!strcmp(property+len, "CallWaiting")) {
+			*out_cls = i;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
@@ -801,6 +1141,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 	DBusMessageIter iter;
 	DBusMessageIter var;
 	const char *property;
+	int cls;
 
 	if (cs->pending)
 		return dbus_gsm_busy(msg);
@@ -828,6 +1169,15 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 		dbus_message_iter_get_basic(&var, &setting);
 
 		return set_clir(msg, modem, setting);
+	} else if (is_cw_property(property, BEARER_CLASS_VOICE, &cls)) {
+		const char *setting;
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return dbus_gsm_invalid_format(msg);
+
+		dbus_message_iter_get_basic(&var, &setting);
+
+		return set_cw_req(msg, modem, setting, cls);
 	}
 
 	return dbus_gsm_invalid_args(msg);

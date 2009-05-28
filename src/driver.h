@@ -312,22 +312,15 @@ struct ofono_call_settings_ops {
 				ofono_call_setting_status_cb_t cb, void *data);
 	void (*clir_set)(struct ofono_modem *modem, int mode, ofono_generic_cb_t cb,
 				void *data);
+	void (*cw_query)(struct ofono_modem *modem, int cls,
+			ofono_call_waiting_status_cb_t cb, void *data);
+	void (*cw_set)(struct ofono_modem *modem, int mode, int cls,
+			ofono_generic_cb_t cb, void *data);
 };
 
 int ofono_call_settings_register(struct ofono_modem *modem,
 				struct ofono_call_settings_ops *ops);
 void ofono_call_settings_unregister(struct ofono_modem *modem);
-
-struct ofono_call_waiting_ops {
-	void (*query)(struct ofono_modem *modem, int cls,
-			ofono_call_waiting_status_cb_t cb, void *data);
-	void (*set)(struct ofono_modem *modem, int mode, int cls,
-			ofono_generic_cb_t cb, void *data);
-};
-
-int ofono_call_waiting_register(struct ofono_modem *modem,
-				struct ofono_call_waiting_ops *ops);
-void ofono_call_waiting_unregister(struct ofono_modem *modem);
 
 struct ofono_call_meter_ops {
 	void (*call_meter_query)(struct ofono_modem *modem,

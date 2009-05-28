@@ -103,7 +103,6 @@ static void manager_free(gpointer user)
 		struct at_data *at = l->data;
 
 		at_call_forwarding_exit(at->modem);
-		at_call_waiting_exit(at->modem);
 		at_call_settings_exit(at->modem);
 		at_network_registration_exit(at->modem);
 		at_voicecall_exit(at->modem);
@@ -341,7 +340,6 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	at_sim_init(at->modem);
 	at_call_forwarding_init(at->modem);
 	at_call_settings_init(at->modem);
-	at_call_waiting_init(at->modem);
 	at_network_registration_init(at->modem);
 	at_voicecall_init(at->modem);
 	at_call_meter_init(at->modem);
