@@ -1,0 +1,89 @@
+#!/usr/bin/python
+
+import gobject
+import sys
+import dbus
+import dbus.mainloop.glib
+
+def operator_property_changed(name, value, path=None):
+	print "Operator on path: '%s', property '%s' changed to '%s'" %\
+		(path, name, value)
+
+def network_property_changed(name, value):
+	print "Network Registration property '%s' changed to '%s'" %\
+		(name, value)
+
+	if name == 'Operator' and canexit:
+		mainloop.quit()
+
+if __name__ == "__main__":
+	if len(sys.argv) != 2:
+		print "Useage: %s <path> - Register to PLMN on <path>" %\
+			(sys.argv[0])
+		print "Useage: %s default - Register to default PLMN" %\
+			(sys.argv[0])
+		print "Useage: %s unregister - Unregister from all PLMNs" %\
+			(sys.argv[0])
+		sys.exit(1)
+
+	canexit = False
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	modems = manager.GetProperties()['Modems']
+
+	netreg = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+				'org.ofono.NetworkRegistration')
+
+	netreg.connect_to_signal("PropertyChanged", network_property_changed)
+
+	props = netreg.GetProperties()
+
+	print "Status is: '%s', Operator is: '%s'" %\
+		(props['Status'], props['Operator'])
+
+	if props.has_key('LocationAreaCode') and props.has_key('CellId'):
+		print "Location: '%d', Cell: '%d'" %\
+			(props['LocationAreaCode'], props['CellId'])
+
+	if props.has_key('Technology'):
+		print "Technology: '%s'" % (props['Technology'])
+
+	for path in props['AvailableOperators']:
+		op = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.NetworkOperator')
+		op.connect_to_signal("PropertyChanged",
+					operator_property_changed,
+					path_keyword='path')
+
+		props = op.GetProperties()
+
+		print ""
+
+		print "Operator at path: '%s'" % (path)
+		print "Name: '%s', MCC: '%d', MNC: '%d', status: '%s'" %\
+			(props['Name'], props['MobileCountryCode'],
+				props['MobileNetworkCode'], props['Status'])
+
+	try:
+		if sys.argv[1] == 'default':
+			netreg.Register()
+		elif sys.argv[1] == 'unregister':
+			netreg.Deregister()
+		else:
+			obj = bus.get_object('org.ofono', sys.argv[1]);
+			op = dbus.Interface(obj, 'org.ofono.NetworkOperator')
+		op.Register()
+	except dbus.DBusException, e:
+		print "Unable to register/deregister: ", e
+		sys.exit(1)
+
+	canexit = True
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
