@@ -47,53 +47,19 @@ struct call_waiting_data {
 	struct ofono_call_waiting_ops *ops;
 	int flags;
 	DBusMessage *pending;
-	GSList *cw_list;
+	int conditions;
 	int ss_req_type;
 	int ss_req_cls;
 };
 
-static const char *enabled = "enabled";
-static const char *disabled = "disabled";
-
 static void cw_register_ss_controls(struct ofono_modem *modem);
 static void cw_unregister_ss_controls(struct ofono_modem *modem);
-
-static gint cw_condition_compare(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_cw_condition *ca = a;
-	const struct ofono_cw_condition *cb = b;
-
-	if (ca->cls < cb->cls)
-		return -1;
-
-	if (ca->cls > cb->cls)
-		return 1;
-
-	return 0;
-}
-
-static gint cw_condition_find_with_cls(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_cw_condition *c = a;
-	int cls = GPOINTER_TO_INT(b);
-
-	if (c->cls < cls)
-		return -1;
-
-	if (c->cls > cls)
-		return 1;
-
-	return 0;
-}
 
 static struct call_waiting_data *call_waiting_create()
 {
 	struct call_waiting_data *r;
 
-	r = g_try_new0(struct call_waiting_data, 1);
-
-	if (!r)
-		return r;
+	r = g_new0(struct call_waiting_data, 1);
 
 	return r;
 }
@@ -105,132 +71,59 @@ static void call_waiting_destroy(gpointer data)
 
 	cw_unregister_ss_controls(modem);
 
-	g_slist_foreach(cw->cw_list, (GFunc)g_free, NULL);
-	g_slist_free(cw->cw_list);
-
 	g_free(cw);
 }
 
-static void cw_cond_list_print(GSList *list)
-{
-	GSList *l;
-	struct ofono_cw_condition *cond;
-
-	for (l = list; l; l = l->next) {
-		cond = l->data;
-
-		ofono_debug("CW condition status: %d, class: %d",
-				cond->status, cond->cls);
-	}
-}
-
-static GSList *cw_cond_list_create(int total,
-					const struct ofono_cw_condition *list)
-{
-	GSList *l = NULL;
-	int i;
-	int j;
-	struct ofono_cw_condition *cond;
-
-	/* Specification is not really clear on how the results are reported,
-	 * most modems report it as multiple list items, one for each class
-	 * however, specification does leave room for a single compound value
-	 * to be reported
-	 */
-	for (i = 0; i < total; i++) {
-		for (j = 1; j <= BEARER_CLASS_PAD; j = j << 1) {
-			if (!(list[i].cls & j))
-				continue;
-
-			if (list[i].status == 0)
-				continue;
-
-			cond = g_new0(struct ofono_cw_condition, 1);
-
-			memcpy(cond, &list[i], sizeof(struct ofono_cw_condition));
-			cond->cls = j;
-
-			l = g_slist_insert_sorted(l, cond,
-							cw_condition_compare);
-		}
-	}
-
-	return l;
-}
-
-static void set_new_cond_list(struct ofono_modem *modem, GSList *new_cw_list)
+static void update_conditions(struct ofono_modem *modem, int new_conditions,
+				int mask)
 {
 	struct call_waiting_data *cw = modem->call_waiting;
 	DBusConnection *conn = dbus_gsm_connection();
-	GSList *n;
-	GSList *o;
-	struct ofono_cw_condition *nc;
-	struct ofono_cw_condition *oc;
 	char buf[64];
+	int j;
+	const char *value;
 
-	for (n = new_cw_list; n; n = n->next) {
-		nc = n->data;
-
-		if (nc->cls > BEARER_CLASS_FAX)
+	for (j = 1; j <= BEARER_CLASS_PAD; j = j << 1) {
+		if ((j & mask) == 0)
 			continue;
 
-		sprintf(buf, "%s", bearer_class_to_string(nc->cls));
+		if ((cw->conditions & j) == (new_conditions & j))
+			continue;
 
-		o = g_slist_find_custom(cw->cw_list, GINT_TO_POINTER(nc->cls),
-					cw_condition_find_with_cls);
+		if (new_conditions & j)
+			value = "enabled";
+		else
+			value = "disabled";
 
-		if (o) {
-			g_free(o->data);
-			cw->cw_list = g_slist_remove(cw->cw_list, o->data);
-		} else {
-			dbus_gsm_signal_property_changed(conn, modem->path,
-							CALL_WAITING_INTERFACE,
-							buf, DBUS_TYPE_STRING,
-							&enabled);
-		}
-	}
-
-	for (o = cw->cw_list; o; o = o->next) {
-		oc = o->data;
-
-		sprintf(buf, "%s", bearer_class_to_string(oc->cls));
-
+		sprintf(buf, "%s", bearer_class_to_string(j));
 		dbus_gsm_signal_property_changed(conn, modem->path,
 							CALL_WAITING_INTERFACE,
 							buf, DBUS_TYPE_STRING,
-							&disabled);
+							&value);
 	}
 
-	g_slist_foreach(cw->cw_list, (GFunc)g_free, NULL);
-	g_slist_free(cw->cw_list);
-
-	cw->cw_list = new_cw_list;
+	cw->conditions = new_conditions;
 }
 
 static void property_append_cw_conditions(DBusMessageIter *dict,
-						GSList *cw_list, int mask)
+						int conditions, int mask)
 {
-	GSList *l;
 	int i;
-	struct ofono_cw_condition *cw;
 	const char *prop;
+	const char *value;
 
-	for (i = 1, l = cw_list; i <= BEARER_CLASS_PAD; i = i << 1) {
+	for (i = 1; i <= BEARER_CLASS_PAD; i = i << 1) {
 		if (!(mask & i))
 			continue;
 
 		prop = bearer_class_to_string(i);
 
-		while (l && (cw = l->data) && (cw->cls < i))
-			l = l->next;
+		if (conditions & i)
+			value = "enabled";
+		else
+			value = "disabled";
 
-		if (!l || cw->cls != i) {
-			dbus_gsm_dict_append(dict, prop, DBUS_TYPE_STRING,
-						&disabled);
-			continue;
-		}
-
-		dbus_gsm_dict_append(dict, prop, DBUS_TYPE_STRING, &enabled);
+		dbus_gsm_dict_append(dict, prop, DBUS_TYPE_STRING, &value);
 	}
 }
 
@@ -263,7 +156,7 @@ static void generate_ss_query_reply(struct ofono_modem *modem)
 	dbus_message_iter_open_container(&vstruct, DBUS_TYPE_ARRAY,
 					PROPERTIES_ARRAY_SIGNATURE, &dict);
 
-	property_append_cw_conditions(&dict, cw->cw_list, cw->ss_req_cls);
+	property_append_cw_conditions(&dict, cw->conditions, cw->ss_req_cls);
 
 	dbus_message_iter_close_container(&vstruct, &dict);
 
@@ -274,13 +167,11 @@ static void generate_ss_query_reply(struct ofono_modem *modem)
 	dbus_gsm_pending_reply(&cw->pending, reply);
 }
 
-static void cw_ss_query_callback(const struct ofono_error *error, int num,
-					struct ofono_cw_condition *cond_list,
+static void cw_ss_query_callback(const struct ofono_error *error, int status,
 					void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_waiting_data *cw = modem->call_waiting;
-	GSList *l;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting CW via SS failed");
@@ -292,11 +183,7 @@ static void cw_ss_query_callback(const struct ofono_error *error, int num,
 		return;
 	}
 
-	l = cw_cond_list_create(num, cond_list);
-
-	cw_cond_list_print(l);
-
-	set_new_cond_list(modem, l);
+	update_conditions(modem, status, BEARER_CLASS_VOICE);
 	cw->flags |= CALL_WAITING_FLAG_CACHED;
 
 	generate_ss_query_reply(modem);
@@ -427,30 +314,26 @@ static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
 						PROPERTIES_ARRAY_SIGNATURE,
 						&dict);
 
-	property_append_cw_conditions(&dict, cw->cw_list, BEARER_CLASS_DEFAULT);
+	property_append_cw_conditions(&dict, cw->conditions,
+					BEARER_CLASS_VOICE);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
 }
 
-static void cw_query_callback(const struct ofono_error *error, int num,
-				struct ofono_cw_condition *cond_list, void *data)
+static void cw_query_callback(const struct ofono_error *error, int status,
+				void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_waiting_data *cw = modem->call_waiting;
-	GSList *l = NULL;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error during cw query");
 		goto out;
 	}
 
-	l = cw_cond_list_create(num, cond_list);
-
-	cw_cond_list_print(l);
-
-	set_new_cond_list(modem, l);
+	update_conditions(modem, status, BEARER_CLASS_VOICE);
 	cw->flags |= CALL_WAITING_FLAG_CACHED;
 
 out:
@@ -484,12 +367,11 @@ static DBusMessage *cw_get_properties(DBusConnection *conn, DBusMessage *msg,
 	return NULL;
 }
 
-static void set_query_callback(const struct ofono_error *error, int num,
-				struct ofono_cw_condition *cond_list, void *data)
+static void set_query_callback(const struct ofono_error *error, int status,
+				void *data)
 {
 	struct ofono_modem *modem = data;
 	struct call_waiting_data *cw = modem->call_waiting;
-	GSList *l = NULL;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("CW set succeeded, but query failed!");
@@ -503,11 +385,7 @@ static void set_query_callback(const struct ofono_error *error, int num,
 	dbus_gsm_pending_reply(&cw->pending,
 				dbus_message_new_method_return(cw->pending));
 
-	l = cw_cond_list_create(num, cond_list);
-
-	cw_cond_list_print(l);
-
-	set_new_cond_list(modem, l);
+	update_conditions(modem, status, BEARER_CLASS_VOICE);
 }
 
 static void set_callback(const struct ofono_error *error, void *data)

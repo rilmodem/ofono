@@ -45,11 +45,11 @@ static void ccwa_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_call_waiting_status_cb_t cb = cbd->cb;
+	int conditions = 0;
+	int status;
+	int cls;
 	struct ofono_error error;
 	GAtResultIter iter;
-	int num = 0;
-	struct ofono_cw_condition *list = NULL;
-	int i;
 
 	dump_response("ccwa_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -59,40 +59,18 @@ static void ccwa_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	while (g_at_result_iter_next(&iter, "+CCWA:"))
-		num += 1;
-
-	/* Specification is really unclear about this
-	 * generate status=0 for all classes just in case
-	 */
-	if (num == 0) {
-		list = g_new(struct ofono_cw_condition, 1);
-		num = 1;
-
-		list->status = 0;
-		list->cls = GPOINTER_TO_INT(cbd->user);
-
-		goto out;
-	}
-
-	list = g_new(struct ofono_cw_condition, num);
-
-	g_at_result_iter_init(&iter, result);
-	num = 0;
-
 	while (g_at_result_iter_next(&iter, "+CCWA:")) {
-		g_at_result_iter_next_number(&iter, &(list[num].status));
-		g_at_result_iter_next_number(&iter, &(list[num].cls));
+		g_at_result_iter_next_number(&iter, &status);
+		g_at_result_iter_next_number(&iter, &cls);
 
-		num += 1;
+		if (status == 1)
+			conditions |= cls;
 	}
 
-	for (i = 0; i < num; i++)
-		ofono_debug("ccwa_cb: %d, %d", list[i].status, list[i].cls);
+	ofono_debug("CW enabled for: %d", conditions);
 
 out:
-	cb(&error, num, list, cbd->data);
-	g_free(list);
+	cb(&error, conditions, cbd->data);
 }
 
 static void at_ccwa_query(struct ofono_modem *modem, int cls,
@@ -122,7 +100,7 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, 0, NULL, data);
+		cb(&error, 0, data);
 	}
 }
 

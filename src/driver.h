@@ -90,12 +90,6 @@ struct ofono_cf_condition {
 	int time;
 };
 
-/* 27.007 Section 7.12 Call Waiting */
-struct ofono_cw_condition {
-	int status;
-	int cls;
-};
-
 /* 27.007 Section 7.1 Subscriber Number */
 struct ofono_own_number {
 	struct ofono_phone_number phone_number;
@@ -150,8 +144,7 @@ typedef void (*ofono_clir_setting_cb_t)(const struct ofono_error *error,
 					int override, int network, void *data);
 
 typedef void (*ofono_call_waiting_status_cb_t)(const struct ofono_error *error,
-					int num, struct ofono_cw_condition *cond,
-					void *data);
+						int status, void *data);
 
 typedef void (*ofono_call_meter_query_cb_t)(const struct ofono_error *error,
 					int value, void *data);
