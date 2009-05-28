@@ -1236,7 +1236,7 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 {
 	GSList *l;
 	struct voicecalls_data *calls = modem->voicecalls;
-	struct voicecall *v;
+	struct voicecall *v = NULL;
 	struct ofono_call *newcall = NULL;
 
 	ofono_debug("Got a voicecall event, status: %d, id: %u, number: %s",
