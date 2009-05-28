@@ -1,0 +1,69 @@
+#!/usr/bin/python
+
+import gobject
+
+import dbus
+import dbus.mainloop.glib
+import sys
+
+def test_exit():
+	mainloop.quit()
+
+def property_changed(name, value):
+	print "CallSettings property: '%s' changed to '%s'" % (name, value)
+
+	if canexit:
+		mainloop.quit();
+
+if __name__ == "__main__":
+	if (len(sys.argv) < 3):
+		print "Useage: %s <property> <newvalue>" % (sys.argv[0])
+		print "Properties can be: VoiceCallWaiting, HideCallerId"
+		sys.exit(1)
+
+	canexit = False
+
+	property = sys.argv[1]
+	newvalue = sys.argv[2]
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	modems = manager.GetProperties()['Modems']
+
+	cs = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+						'org.ofono.CallSettings')
+
+	cs.connect_to_signal("PropertyChanged", property_changed)
+
+	properties = cs.GetProperties()
+
+	print "Current Property values:"
+	print "Network Status of Call Waiting - Voice: %s" %\
+		(properties['VoiceCallWaiting'])
+	print "Network Status of Called Line Restriction: %s" %\
+		(properties['CalledLineRestriction'])
+	print "Network Status of Calling Line Restriction: %s" %\
+		(properties['CallingLineRestriction'])
+	print "Network Status of Calling Line Presentation: %s" %\
+		(properties['CallingLinePresentation'])
+	print "Network Status of Called Line Presentation: %s" %\
+		(properties['CalledLinePresentation'])
+	print "Hide my Caller Id: %s" % (properties['HideCallerId'])
+
+	try:
+		cs.SetProperty(property, newvalue)
+	except dbus.DBusException, e:
+		print "Unable to set property: ", e
+		sys.exit(1);
+
+	print "Setting successful"
+
+	canexit = True
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
