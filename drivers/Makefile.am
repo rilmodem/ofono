@@ -6,7 +6,7 @@ builtin_cflags =
 builtin_modules += atmodem
 builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/session.h atmodem/session.c \
-			atmodem/call-settings.c \
+			atmodem/call-settings.c atmodem/sms.c \
 			atmodem/call-forwarding.c atmodem/call-meter.c \
 			atmodem/network-registration.c atmodem/sim.c \
 			atmodem/ussd.c atmodem/voicecall.c \

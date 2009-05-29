@@ -102,6 +102,7 @@ static void manager_free(gpointer user)
 	for (l = g_sessions; l; l = l->next) {
 		struct at_data *at = l->data;
 
+		at_sms_exit(at->modem);
 		at_call_forwarding_exit(at->modem);
 		at_call_settings_exit(at->modem);
 		at_network_registration_exit(at->modem);
@@ -344,6 +345,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	at_voicecall_init(at->modem);
 	at_call_meter_init(at->modem);
 	at_call_barring_init(at->modem);
+	at_sms_init(at->modem);
 
 	at->io = io;
 	at->driver = g_strdup(driver);
