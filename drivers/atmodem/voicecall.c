@@ -180,14 +180,6 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 	return call;
 }
 
-#if 0
-static void destroy_call(struct ofono_call *call, struct voicecall_data *d)
-{
-
-	g_free(call);
-}
-#endif
-
 static GSList *parse_clcc(GAtResult *result)
 {
 	GAtResultIter iter;
