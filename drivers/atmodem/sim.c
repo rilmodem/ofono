@@ -39,7 +39,6 @@
 #include "at.h"
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
-static const char *empty_prefix[] = { "", NULL };
 static const char *cnum_prefix[] = { "+CNUM:", NULL };
 
 static void at_crsm_len_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -184,6 +183,7 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_imsi_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	const char *imsi;
+	int i;
 
 	dump_response("at_cimi_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -193,14 +193,11 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	g_at_result_iter_init(&iter, result);
-	g_at_result_iter_next(&iter, "");
+
+	for (i = 0; i < g_at_result_num_response_lines(result); i++)
+		g_at_result_iter_next(&iter, NULL);
 
 	imsi = g_at_result_iter_raw_line(&iter);
-	if (imsi == NULL) {
-		DECLARE_FAILURE(e);
-		cb(&e, NULL, cbd->data);
-		return;
-	}
 
 	ofono_debug("cimi_cb: %s", imsi);
 
@@ -216,7 +213,7 @@ static void at_read_imsi(struct ofono_modem *modem, ofono_imsi_cb_t cb,
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CIMI", empty_prefix,
+	if (g_at_chat_send(at->parser, "AT+CIMI", NULL,
 				at_cimi_cb, cbd, g_free) > 0)
 		return;
 
