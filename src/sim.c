@@ -41,8 +41,6 @@
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
-#define SIM_FLAG_PENDING 0x1
-
 struct sim_manager_data {
 	struct ofono_sim_ops *ops;
 	int flags;
