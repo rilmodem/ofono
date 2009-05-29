@@ -41,23 +41,6 @@
 static GSList *g_modem_list = NULL;
 static int g_next_modem_id = 1;
 
-#if 0
-struct ofono_modem *manager_find_modem_by_id(int id)
-{
-	GSList *l;
-	struct ofono_modem *modem;
-
-	for (l = g_modem_list; l; l = l->next) {
-		modem = l->data;
-
-		if (modem->id == id)
-			return modem;
-	}
-
-	return NULL;
-}
-#endif
-
 /* Clients only need to free *modems */
 static int modem_list(char ***modems)
 {
