@@ -40,6 +40,7 @@ struct ofono_modem {
 	struct call_barring_data *call_barring;
 	struct cssn_data *cssn;
 	struct sim_manager_data *sim_manager;
+	struct sms_manager_data *sms_manager;
 };
 
 struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops);

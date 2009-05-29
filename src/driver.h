@@ -169,6 +169,10 @@ typedef void (*ofono_imsi_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_own_numbers_cb_t)(const struct ofono_error *error, int num,
 			const struct ofono_own_number *numbers, void *data);
 
+typedef void (*ofono_sca_query_cb_t)(const struct ofono_error *error,
+					const struct ofono_phone_number *ph,
+					void *data);
+
 struct ofono_modem_attribute_ops {
 	void (*query_manufacturer)(struct ofono_modem *modem,
 			ofono_modem_attribute_query_cb_t cb, void *data);
@@ -372,3 +376,15 @@ struct ofono_sim_ops {
 int ofono_sim_manager_register(struct ofono_modem *modem,
 				struct ofono_sim_ops *ops);
 void ofono_sim_manager_unregister(struct ofono_modem *modem);
+
+struct ofono_sms_ops {
+	void (*sca_query)(struct ofono_modem *modem, ofono_sca_query_cb_t cb,
+				void *data);
+	void (*sca_set)(struct ofono_modem *modem,
+				const struct ofono_phone_number *sca,
+				ofono_generic_cb_t cb, void *data);
+};
+
+int ofono_sms_manager_register(struct ofono_modem *modem,
+				struct ofono_sms_ops *ops);
+void ofono_sms_manager_unregister(struct ofono_modem *modem);
