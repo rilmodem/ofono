@@ -229,7 +229,7 @@ static gboolean encode_scts(const struct sms_scts *in, unsigned char *pdu,
 static gboolean decode_scts(const unsigned char *pdu, int len,
 				int *offset, struct sms_scts *out)
 {
-	unsigned char oct;
+	unsigned char oct = 0;
 
 	if ((len - *offset) < 7)
 		return FALSE;
