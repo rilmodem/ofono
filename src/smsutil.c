@@ -109,7 +109,6 @@ int ud_len_in_octets(guint8 ud_len, guint8 dcs)
 {
 	int len_7bit = (ud_len + 1) * 7 / 8;
 	int len_8bit = ud_len;
-	int len_16bit = ud_len * 2;
 	guint8 upper;
 
 	if (dcs == 0)
@@ -129,7 +128,7 @@ int ud_len_in_octets(guint8 ud_len, guint8 dcs)
 		case 1:
 			return len_8bit;
 		case 2:
-			return len_16bit;
+			return len_8bit;
 		}
 
 		return 0;
@@ -141,7 +140,7 @@ int ud_len_in_octets(guint8 ud_len, guint8 dcs)
 		case 1:
 			return len_7bit;
 		case 2:
-			return len_16bit;
+			return len_8bit;
 		case 3:
 			if (dcs & 0x4)
 				return len_8bit;
