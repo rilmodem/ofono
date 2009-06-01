@@ -930,7 +930,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 	int cf_type;
 	DBusMessage *reply;
 	struct ofono_phone_number ph;
-	void *operation;
+	void *operation = NULL;
 
 	/* Before we do anything, make sure we're actually initialized */
 	if (!cf)
