@@ -637,6 +637,8 @@ static void clir_ss_query_callback(const struct ofono_error *error,
 		else
 			value = "disabled";
 		break;
+	default:
+		value = "unknown";
 	};
 
 	generate_ss_query_reply(modem, "CallingLineRestriction", value);
