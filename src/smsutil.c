@@ -454,7 +454,8 @@ static gboolean decode_address(const unsigned char *pdu, int len,
 		unsigned char oct;
 
 		for (i = 0; i < byte_len; i++) {
-			next_octet(pdu, len, offset, &oct);
+			if (!next_octet(pdu, len, offset, &oct))
+				break;
 
 			out->address[i*2] = digit_lut[oct & 0x0f];
 			out->address[i*2+1] = digit_lut[(oct & 0xf0) >> 4];
