@@ -352,7 +352,7 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 	int cls = BEARER_CLASS_DEFAULT;
 	const char *fac;
 	DBusMessage *reply;
-	void *operation;
+	void *operation = NULL;
 	int i;
 
 	if (cb->pending) {
