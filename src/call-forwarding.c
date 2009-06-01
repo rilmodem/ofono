@@ -917,7 +917,8 @@ static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 	ss_set_query_next_cf_cond(modem);
 }
 
-static gboolean cf_ss_control(struct ofono_modem *modem, int type, const char *sc,
+static gboolean cf_ss_control(struct ofono_modem *modem,
+				enum ss_control_type type, const char *sc,
 				const char *sia, const char *sib,
 				const char *sic, const char *dn,
 				DBusMessage *msg)

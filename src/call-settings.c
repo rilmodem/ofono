@@ -377,7 +377,8 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 				cw_ss_query_callback, modem);
 }
 
-static gboolean cw_ss_control(struct ofono_modem *modem, int type,
+static gboolean cw_ss_control(struct ofono_modem *modem,
+				enum ss_control_type type,
 				const char *sc, const char *sia,
 				const char *sib, const char *sic,
 				const char *dn, DBusMessage *msg)
@@ -540,7 +541,8 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 	generate_ss_query_reply(modem, context, value);
 }
 
-static gboolean clip_colp_colr_ss(struct ofono_modem *modem, int type,
+static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
+				enum ss_control_type type,
 				const char *sc, const char *sia,
 				const char *sib, const char *sic,
 				const char *dn, DBusMessage *msg)
@@ -663,7 +665,8 @@ static void clir_ss_set_callback(const struct ofono_error *error, void *data)
 	cs->ops->clir_query(modem, clir_ss_query_callback, modem);
 }
 
-static gboolean clir_ss_control(struct ofono_modem *modem, int type,
+static gboolean clir_ss_control(struct ofono_modem *modem,
+				enum ss_control_type type,
 				const char *sc, const char *sia,
 				const char *sib, const char *sic,
 				const char *dn, DBusMessage *msg)

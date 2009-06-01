@@ -26,7 +26,8 @@ struct ussd_data {
 	int flags;
 };
 
-typedef gboolean (*ss_control_cb_t)(struct ofono_modem *modem, int type,
+typedef gboolean (*ss_control_cb_t)(struct ofono_modem *modem,
+					enum ss_control_type type,
 					const char *sc,
 					const char *sia, const char *sib,
 					const char *sic, const char *dn,

@@ -342,7 +342,7 @@ static void cb_ss_set_lock_callback(const struct ofono_error *error,
 }
 
 static gboolean cb_ss_control(struct ofono_modem *modem,
-				int type, const char *sc,
+				enum ss_control_type type, const char *sc,
 				const char *sia, const char *sib,
 				const char *sic, const char *dn,
 				DBusMessage *msg)
