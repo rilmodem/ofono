@@ -450,6 +450,124 @@ static void test_submit_encode()
 	g_free(encoded_pdu);
 }
 
+static const char *header_test = "0041000B915121551532F40000631A0A031906200A03"
+	"2104100A032705040A032E05080A043807002B8ACD29A85D9ECFC3E7F21C340EBB41E"
+	"3B79B1E4EBB41697A989D1EB340E2379BCC02B1C3F27399059AB7C36C3628EC2683C6"
+	"6FF65B5E2683E8653C1D";
+static int header_test_len = 100;
+static const char *header_test_expected = "EMS messages can contain italic, bold"
+	", large, small and colored text";
+
+static void test_udh_iter()
+{
+	struct sms sms;
+	unsigned char *decoded_pdu;
+	long pdu_len;
+	gboolean ret;
+	int data_len;
+	int udhl;
+	struct sms_udh_iter iter;
+	int max_chars;
+	unsigned char *unpacked;
+	char *utf8;
+
+	decoded_pdu = decode_hex(header_test, -1, &pdu_len, 0);
+
+	g_assert(decoded_pdu);
+	g_assert(pdu_len == (long)strlen(header_test) / 2);
+
+	ret = decode_sms(decoded_pdu, pdu_len, TRUE,
+				header_test_len, &sms);
+
+	g_free(decoded_pdu);
+
+	g_assert(ret);
+	g_assert(sms.type == SMS_TYPE_SUBMIT);
+
+	if (g_test_verbose()) {
+		if (sms.sc_addr.address[0] == '\0')
+			g_print("SMSC Address absent, default will be used\n");
+		else
+			g_print("SMSC Address number_type: %d,"
+				" number_plan: %d, %s\n",
+				(int)sms.sc_addr.number_type,
+				(int)sms.sc_addr.numbering_plan,
+				sms.sc_addr.address);
+
+		g_print("SMS type: %d\n", (int)sms.type);
+
+		g_print("Message Reference: %u\n", (int)sms.submit.mr);
+
+		g_print("Destination-Address: %d, %d, %s\n",
+			(int)sms.submit.daddr.number_type,
+			(int)sms.submit.daddr.numbering_plan,
+			sms.submit.daddr.address);
+
+		g_print("PID: %d\n", (int)sms.submit.pid);
+		g_print("DCS: %d\n", (int)sms.submit.dcs);
+
+		print_vpf(sms.submit.vpf, &sms.submit.vp);
+	}
+
+	udhl = sms.submit.ud[0];
+	g_assert(sms.submit.udl == 99);
+	g_assert(udhl == 26);
+
+	ret = sms_udh_iter_init(&sms, &iter);
+
+	g_assert(ret);
+
+	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
+	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
+	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
+	g_assert(sms_udh_iter_next(&iter) == TRUE);
+
+	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
+	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
+	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
+	g_assert(sms_udh_iter_next(&iter) == TRUE);
+
+	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
+	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
+	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
+	g_assert(sms_udh_iter_next(&iter) == TRUE);
+
+	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
+	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
+	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
+	g_assert(sms_udh_iter_next(&iter) == TRUE);
+
+	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
+	g_assert(sms_udh_iter_get_ie_length(&iter) == 4);
+	g_assert(sms_udh_iter_has_next(&iter) == FALSE);
+	g_assert(sms_udh_iter_next(&iter) == FALSE);
+	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_INVALID);
+
+	data_len = ud_len_in_octets(sms.submit.udl, sms.submit.dcs);
+
+	g_assert(data_len == 87);
+
+	max_chars = (data_len - (udhl + 1)) * 8 / 7;
+
+	unpacked = unpack_7bit(sms.submit.ud + udhl + 1, data_len - (udhl + 1),
+				udhl + 1, FALSE, max_chars, NULL, 0xff);
+
+	g_assert(unpacked);
+
+	utf8 = convert_gsm_to_utf8(unpacked, -1, NULL, NULL, 0xff);
+
+	g_free(unpacked);
+
+	g_assert(utf8);
+
+	if (g_test_verbose())
+		g_print("Decoded user data is: %s\n", utf8);
+
+	g_assert(strcmp(utf8, header_test_expected) == 0);
+
+	g_free(utf8);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -459,6 +577,7 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test Deliver Encode", test_deliver_encode);
 	g_test_add_func("/testsms/Test Simple Submit", test_simple_submit);
 	g_test_add_func("/testsms/Test Submit Encode", test_submit_encode);
+	g_test_add_func("/testsms/Test UDH Iterator", test_udh_iter);
 
 	return g_test_run();
 }
