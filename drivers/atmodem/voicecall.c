@@ -1105,6 +1105,9 @@ void at_voicecall_exit(struct ofono_modem *modem)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 
+	if (!at->voicecall)
+		return;
+
 	g_slist_foreach(at->voicecall->calls, (GFunc) g_free, NULL);
 	g_slist_free(at->voicecall->calls);
 
