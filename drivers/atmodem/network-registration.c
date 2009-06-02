@@ -666,6 +666,9 @@ void at_network_registration_exit(struct ofono_modem *modem)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 
+	if (!at->netreg)
+		return;
+
 	g_free(at->netreg);
 	at->netreg = NULL;
 
