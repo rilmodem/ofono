@@ -90,6 +90,19 @@ static void at_destroy(struct at_data *at)
 	g_free(at);
 }
 
+static void interface_exit(struct at_data *at)
+{
+	at_sms_exit(at->modem);
+	at_call_forwarding_exit(at->modem);
+	at_call_settings_exit(at->modem);
+	at_network_registration_exit(at->modem);
+	at_voicecall_exit(at->modem);
+	at_call_meter_exit(at->modem);
+	at_call_barring_exit(at->modem);
+	at_ussd_exit(at->modem);
+	at_sim_exit(at->modem);
+}
+
 static void manager_free(gpointer user)
 {
 	GSList *l;
@@ -102,15 +115,7 @@ static void manager_free(gpointer user)
 	for (l = g_sessions; l; l = l->next) {
 		struct at_data *at = l->data;
 
-		at_sms_exit(at->modem);
-		at_call_forwarding_exit(at->modem);
-		at_call_settings_exit(at->modem);
-		at_network_registration_exit(at->modem);
-		at_voicecall_exit(at->modem);
-		at_call_meter_exit(at->modem);
-		at_call_barring_exit(at->modem);
-		at_ussd_exit(at->modem);
-		at_sim_exit(at->modem);
+		interface_exit(at);
 		ofono_modem_unregister(at->modem);
 
 		at_destroy(at);
@@ -421,8 +426,7 @@ static DBusMessage *manager_destroy(DBusConnection *conn, DBusMessage *msg,
 		if (strcmp(at->modem->path, path))
 			continue;
 
-		at_network_registration_exit(at->modem);
-		at_voicecall_exit(at->modem);
+		interface_exit(at);
 		ofono_modem_unregister(at->modem);
 
 		g_sessions = g_slist_remove(g_sessions, at);
