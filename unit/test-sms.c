@@ -402,7 +402,46 @@ static void test_simple_submit()
 
 static void test_submit_encode()
 {
+	struct sms sms;
+	unsigned char *decoded_pdu;
+	long pdu_len;
+	gboolean ret;
+	unsigned char pdu[176];
+	int encoded_pdu_len;
+	int encoded_tpdu_len;
+	char *encoded_pdu;
 
+	decoded_pdu = decode_hex(simple_submit, -1, &pdu_len, 0);
+
+	g_assert(decoded_pdu);
+	g_assert(pdu_len == (long)strlen(simple_submit) / 2);
+
+	ret = decode_sms(decoded_pdu, pdu_len, TRUE, 23, &sms);
+
+	g_free(decoded_pdu);
+
+	g_assert(ret);
+	g_assert(sms.type == SMS_TYPE_SUBMIT);
+
+	ret = encode_sms(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
+
+	if (g_test_verbose()) {
+		int i;
+
+		for (i = 0; i < encoded_pdu_len; i++)
+			g_print("%02X", pdu[i]);
+		g_print("\n");
+	}
+
+	g_assert(ret);
+	g_assert(encoded_tpdu_len == 23);
+	g_assert(encoded_pdu_len == pdu_len);
+
+	encoded_pdu = encode_hex(pdu, encoded_pdu_len, 0);
+
+	g_assert(strcmp(simple_submit, encoded_pdu) == 0);
+
+	g_free(encoded_pdu);
 }
 
 int main(int argc, char **argv)
