@@ -49,6 +49,28 @@ static void print_scts(struct sms_scts *scts, const char *prefix)
 		(int)((abs(scts->timezone) % 4) * 15));
 }
 
+static void print_vpf(enum sms_validity_period_format vpf,
+			struct sms_validity_period *vp)
+{
+	g_print("Validity Period Format: %d\n", (int)vpf);
+
+	switch (vpf) {
+	case SMS_VALIDITY_PERIOD_FORMAT_ABSENT:
+		g_print("Validity-Period: Absent\n");
+		break;
+	case SMS_VALIDITY_PERIOD_FORMAT_RELATIVE:
+		g_print("Validity-Period: %d\n",
+			(int)vp->relative);
+		break;
+	case SMS_VALIDITY_PERIOD_FORMAT_ABSOLUTE:
+		print_scts(&vp->absolute, "Validity-Period:");
+		break;
+	case SMS_VALIDITY_PERIOD_FORMAT_ENHANCED:
+		g_print("Validity-Period: Enhanced");
+		break;
+	}
+}
+
 static void test_simple_deliver()
 {
 	struct sms sms;
@@ -340,23 +362,7 @@ static void test_simple_submit()
 		g_print("PID: %d\n", (int)sms.submit.pid);
 		g_print("DCS: %d\n", (int)sms.submit.dcs);
 
-		g_print("Validity Period Format: %d\n", (int)sms.submit.vpf);
-
-		switch (sms.submit.vpf) {
-		case SMS_VALIDITY_PERIOD_FORMAT_ABSENT:
-			g_print("Validity-Period: Absent\n");
-			break;
-		case SMS_VALIDITY_PERIOD_FORMAT_RELATIVE:
-			g_print("Validity-Period: %d\n",
-				(int)sms.submit.vp.relative);
-			break;
-		case SMS_VALIDITY_PERIOD_FORMAT_ABSOLUTE:
-			print_scts(&sms.submit.vp.absolute, "Validity-Period:");
-			break;
-		case SMS_VALIDITY_PERIOD_FORMAT_ENHANCED:
-			g_print("Validity-Period: Enhanced");
-			break;
-		}
+		print_vpf(sms.submit.vpf, &sms.submit.vp);
 	}
 
 	g_assert(strlen(sms.sc_addr.address) == 0);
