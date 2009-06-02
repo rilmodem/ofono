@@ -105,6 +105,41 @@ enum sms_ct {
 	SMS_CT_ENABLE_SRR = 3
 };
 
+enum sms_iei {
+	SMS_IEI_CONCATENATED_8BIT = 0x00,
+	SMS_IEI_SPECIAL_MESSAGE_INDICATION = 0x01,
+	SMS_IEI_APPLICATION_ADDRESSS_8BIT = 0x04,
+	SMS_IEI_APPLICATION_ADDRESS_16BIT = 0x05,
+	SMS_IEI_SMSC_CONTROL_PARAMETERS = 0x06,
+	SMS_IEI_UDH_SOURCE_INDICATOR = 0x07,
+	SMS_IEI_CONCATENATED_16BIT = 0x08,
+	SMS_IEI_WCMP = 0x09,
+	SMS_IEI_TEXT_FORMAT = 0x0A,
+	SMS_IEI_PREDEFINED_SOUND = 0x0B,
+	SMS_IEI_USER_DEFINED_SOUND = 0x0C,
+	SMS_IEI_PREDEFINED_ANIMATION = 0x0D,
+	SMS_IEI_LARGE_ANIMATION = 0x0E,
+	SMS_IEI_SMALL_ANIMATION = 0x0F,
+	SMS_IEI_LARGE_PICTURE = 0x10,
+	SMS_IEI_SMALL_PICTURE = 0x11,
+	SMS_IEI_VARIABLE_PICTURE = 0x12,
+	SMS_IEI_USER_PROMPT_INDICATOR = 0x13,
+	SMS_IEI_EXTENDED_OBJECT = 0x14,
+	SMS_IEI_REUSED_EXTENDED_OBJECT = 0x15,
+	SMS_IEI_COMPRESSION_CONTROL = 0x16,
+	SMS_IEI_OBJECT_DISTRIBUTION_INDICATOR = 0x17,
+	SMS_IEI_STANDARD_WVG_OBJECT = 0x18,
+	SMS_IEI_CHARACTER_SIZE_WVG_OBJECT = 0x19,
+	SMS_IEI_EXTENDED_OBJECT_DATA_REQUEST_COMMAND = 0x1A,
+	SMS_IEI_RFC822_EMAIL_HEADER = 0x20,
+	SMS_IEI_HYPERLINK_ELEMENT = 0x21,
+	SMS_IEI_REPLY_ADDRESS_ELEMENT = 0x22,
+	SMS_IEI_ENHANCED_VOICE_MAIL_INFORMATION = 0x23,
+	SMS_IEI_NATIONAL_LANGUAGE_SINGLE_SHIFT = 0x24,
+	SMS_IEI_NATIONAL_LANGUAGE_LOCKING_SHIFT = 0x25,
+	SMS_IEI_INVALID = 0xFFF
+};
+
 struct sms_address {
 	enum sms_number_type number_type;
 	enum sms_numbering_plan numbering_plan;
@@ -240,6 +275,12 @@ struct sms {
 	};
 };
 
+struct sms_udh_iter {
+	struct sms *sms;
+	guint8 *data;
+	guint8 offset;
+};
+
 gboolean decode_sms(const unsigned char *pdu, int len, gboolean outgoing,
 			int tpdu_len, struct sms *out);
 
@@ -248,4 +289,10 @@ gboolean encode_sms(const struct sms *in, int *len, int *tpdu_len,
 
 int ud_len_in_octets(guint8 ud_len, guint8 dcs);
 
+gboolean sms_udh_iter_init(struct sms *sms, struct sms_udh_iter *iter);
+enum sms_iei sms_udh_iter_get_ie_type(struct sms_udh_iter *iter);
+guint8 sms_udh_iter_get_ie_length(struct sms_udh_iter *iter);
+void sms_udh_iter_get_ie_data(struct sms_udh_iter *iter, guint8 *data);
+gboolean sms_udh_iter_has_next(struct sms_udh_iter *iter);
+gboolean sms_udh_iter_next(struct sms_udh_iter *iter);
 #endif

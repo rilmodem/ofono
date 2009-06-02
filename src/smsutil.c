@@ -1325,3 +1325,161 @@ gboolean decode_sms(const unsigned char *pdu, int len, gboolean outgoing,
 
 	return FALSE;
 }
+
+gboolean sms_udh_iter_init(struct sms *sms, struct sms_udh_iter *iter)
+{
+	gboolean udhi = FALSE;
+	guint8 *hdr;
+	guint8 udl;
+	guint8 dcs;
+	guint8 max_len;
+	guint8 offset;
+	guint8 max_offset;
+
+	switch (sms->type) {
+	case SMS_TYPE_DELIVER:
+		udhi = sms->deliver.udhi;
+		hdr = sms->deliver.ud;
+		udl = sms->deliver.udl;
+		dcs = sms->deliver.dcs;
+		break;
+	case SMS_TYPE_DELIVER_REPORT_ACK:
+		udhi = sms->deliver_ack_report.udhi;
+		hdr = sms->deliver_ack_report.ud;
+		udl = sms->deliver_ack_report.udl;
+		dcs = sms->deliver_ack_report.dcs;
+		break;
+	case SMS_TYPE_DELIVER_REPORT_ERROR:
+		udhi = sms->deliver_err_report.udhi;
+		hdr = sms->deliver_err_report.ud;
+		udl = sms->deliver_err_report.udl;
+		dcs = sms->deliver_err_report.dcs;
+		break;
+	case SMS_TYPE_STATUS_REPORT:
+		udhi = sms->status_report.udhi;
+		hdr = sms->status_report.ud;
+		udl = sms->status_report.udl;
+		dcs = sms->status_report.dcs;
+		break;
+	case SMS_TYPE_SUBMIT:
+		udhi = sms->submit.udhi;
+		hdr = sms->submit.ud;
+		udl = sms->submit.udl;
+		dcs = sms->submit.dcs;
+		break;
+	case SMS_TYPE_SUBMIT_REPORT_ACK:
+		udhi = sms->submit_ack_report.udhi;
+		hdr = sms->submit_ack_report.ud;
+		udl = sms->submit_ack_report.udl;
+		dcs = sms->submit_ack_report.dcs;
+		break;
+	case SMS_TYPE_SUBMIT_REPORT_ERROR:
+		udhi = sms->submit_err_report.udhi;
+		hdr = sms->submit_err_report.ud;
+		udl = sms->submit_err_report.udl;
+		dcs = sms->submit_err_report.dcs;
+		break;
+	case SMS_TYPE_COMMAND:
+		udhi = sms->command.udhi;
+		hdr = sms->command.cd;
+		udl = sms->command.cdl;
+		dcs = 0;
+		break;
+	};
+
+	if (!udhi)
+		return FALSE;
+
+	if (sms->type == SMS_TYPE_COMMAND)
+		max_len = udl;
+	else
+		max_len = ud_len_in_octets(udl, dcs);
+
+	/* Can't actually store the HDL + IEI / IEL */
+	if (max_len < 3)
+		return FALSE;
+
+	/* Must have at least one information-element if udhi is true */
+	if (hdr[0] < 2)
+		return FALSE;
+
+	if (hdr[0] >= max_len)
+		return FALSE;
+
+	/* According to 23.040: If the length of the User Data Header is
+	 * such that there are too few or too many octets in the final
+	 * Information Element then the whole User Data Header shall be
+	 * ignored.
+	 */
+
+	max_offset = hdr[0] + 1;
+	offset = 1;
+	do {
+		if ((offset + 2) > max_offset)
+			return FALSE;
+
+		if ((offset + 2 + hdr[offset + 1]) > max_offset)
+			return FALSE;
+
+		offset = offset + 2 + hdr[offset + 1];
+	} while (offset < max_offset);
+
+	if (offset != max_offset)
+		return FALSE;
+
+	iter->sms = sms;
+	iter->data = hdr;
+	iter->offset = 1;
+
+	return TRUE;
+}
+
+enum sms_iei sms_udh_iter_get_ie_type(struct sms_udh_iter *iter)
+{
+	if (iter->offset > iter->data[0])
+		return SMS_IEI_INVALID;
+
+	return (enum sms_iei) iter->data[iter->offset];
+}
+
+guint8 sms_udh_iter_get_ie_length(struct sms_udh_iter *iter)
+{
+	guint8 ie_len;
+
+	ie_len = iter->data[iter->offset + 1];
+
+	return ie_len;
+}
+
+void sms_udh_iter_get_ie_data(struct sms_udh_iter *iter, guint8 *data)
+{
+	guint8 ie_len;
+
+	ie_len = iter->data[iter->offset + 1];
+
+	memcpy(data, &iter->data[iter->offset + 2], ie_len);
+}
+
+gboolean sms_udh_iter_has_next(struct sms_udh_iter *iter)
+{
+	guint8 total_len = iter->data[0];
+	guint8 cur_ie_len = iter->data[iter->offset + 1];
+
+	if ((iter->offset + 2 + cur_ie_len) > total_len)
+		return FALSE;
+
+	return TRUE;
+}
+
+gboolean sms_udh_iter_next(struct sms_udh_iter *iter)
+{
+	if (iter->offset > iter->data[0])
+		return FALSE;
+
+	iter->offset = iter->offset + 2 + iter->data[iter->offset + 1];
+
+	if (iter->offset > iter->data[0])
+		return FALSE;
+
+	return TRUE;
+}
