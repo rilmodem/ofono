@@ -38,11 +38,11 @@
 
 #include "at.h"
 
-static const char *csca_prefix[] = { "+CSCA", NULL };
-static const char *csms_prefix[] = { "+CSMS", NULL };
-static const char *cmgf_prefix[] = { "+CMGF", NULL };
-static const char *cpms_prefix[] = { "+CPMS", NULL };
-static const char *cnmi_prefix[] = { "+CNMI", NULL };
+static const char *csca_prefix[] = { "+CSCA:", NULL };
+static const char *csms_prefix[] = { "+CSMS:", NULL };
+static const char *cmgf_prefix[] = { "+CMGF:", NULL };
+static const char *cpms_prefix[] = { "+CPMS:", NULL };
+static const char *cnmi_prefix[] = { "+CNMI:", NULL };
 
 static gboolean set_cmgf(gpointer user_data);
 static gboolean set_cpms(gpointer user_data);
