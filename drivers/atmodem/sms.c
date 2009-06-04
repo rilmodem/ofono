@@ -39,6 +39,40 @@
 #include "at.h"
 
 static const char *csca_prefix[] = { "+CSCA", NULL };
+static const char *csms_prefix[] = { "+CSMS", NULL };
+static const char *cmgf_prefix[] = { "+CMGF", NULL };
+static const char *cpms_prefix[] = { "+CPMS", NULL };
+static const char *cnmi_prefix[] = { "+CNMI", NULL };
+
+static gboolean set_cmgf(gpointer user_data);
+static gboolean set_cpms(gpointer user_data);
+
+#define MAX_CMGF_RETRIES 10
+#define MAX_CPMS_RETRIES 10
+
+static const char *storages[] = {
+	"SM",
+	"ME",
+};
+
+#define SM_STORE 0
+#define ME_STORE 1
+
+struct sms_data {
+	int store;
+	int retries;
+	gboolean cnma_enabled;
+};
+
+static struct sms_data *sms_create()
+{
+	return g_try_new0(struct sms_data, 1);
+}
+
+static void sms_destroy(struct sms_data *data)
+{
+	g_free(data);
+}
 
 static void at_csca_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -156,12 +190,431 @@ static struct ofono_sms_ops ops = {
 	.sca_set	= at_csca_set,
 };
 
+static void at_cbm_notify(GAtResult *result, gpointer user_data)
+{
+	dump_response("at_cbm_notify", TRUE, result);
+}
+
+static void at_cds_notify(GAtResult *result, gpointer user_data)
+{
+	dump_response("at_cds_notify", TRUE, result);
+}
+
+static void at_cmt_notify(GAtResult *result, gpointer user_data)
+{
+	dump_response("at_cmt_notify", TRUE, result);
+}
+
+static void at_cmti_notify(GAtResult *result, gpointer user_data)
+{
+	dump_response("at_cmti_notify", TRUE, result);
+}
+
+static void at_sms_initialized(struct ofono_modem *modem)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	g_at_chat_register(at->parser, "+CMTI:", at_cmti_notify, FALSE,
+				modem, NULL);
+	g_at_chat_register(at->parser, "+CMT:", at_cmt_notify, TRUE,
+				modem, NULL);
+	g_at_chat_register(at->parser, "+CDS:", at_cds_notify, TRUE,
+				modem, NULL);
+	g_at_chat_register(at->parser, "+CBM:", at_cbm_notify, TRUE,
+				modem, NULL);
+
+	ofono_sms_manager_register(modem, &ops);
+}
+
+static void at_sms_not_supported(struct ofono_modem *modem)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	ofono_error("SMS not supported by this modem.  If this is in error"
+			" please submit patches to support this hardware");
+	if (at->sms) {
+		sms_destroy(at->sms);
+		at->sms = NULL;
+	}
+}
+
+static void at_cnmi_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+
+	if (!ok)
+		return at_sms_not_supported(modem);
+
+	at_sms_initialized(modem);
+}
+
+static inline char wanted_cnmi(int supported, const char *pref)
+{
+	while (*pref) {
+		if (supported & (1 << (*pref - '0')))
+			return *pref;
+
+		pref++;
+	}
+
+	return '\0';
+}
+
+static inline gboolean append_cnmi_element(char *buf, int *len, int cap,
+						const char *wanted,
+						gboolean last)
+{
+	char setting = wanted_cnmi(cap, wanted);
+
+	if (!setting)
+		return FALSE;
+
+	buf[*len] = setting;
+
+	if (last)
+		buf[*len + 1] = '\0';
+	else
+		buf[*len + 1] = ',';
+
+	*len += 2;
+
+	return TRUE;
+}
+
+static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
+					gboolean cnma_enabled)
+{
+	int len = sprintf(buf, "AT+CNMI=");
+
+	/* Mode doesn't matter, but sounds like 2 is the sanest option */
+	if (!append_cnmi_element(buf, &len, cnmi_opts[0], "2310", FALSE))
+		return FALSE;
+
+	/* Prefer to deliver SMS via +CMT if CNMA is supported */
+	if (!append_cnmi_element(buf, &len, cnmi_opts[1],
+					cnma_enabled ? "21" : "1", FALSE))
+		return FALSE;
+
+	/* Always deliver CB via +CBM, otherwise don't deliver at all */
+	if (!append_cnmi_element(buf, &len, cnmi_opts[2], "20", FALSE))
+		return FALSE;
+
+	/* Always deliver Status-Reports via +CDS or don't deliver at all */
+	if (!append_cnmi_element(buf, &len, cnmi_opts[3], "10", FALSE))
+		return FALSE;
+
+	/* Don't care about buffering, 0 seems safer */
+	if (!append_cnmi_element(buf, &len, cnmi_opts[4], "01", TRUE))
+		return FALSE;
+
+	return TRUE;
+}
+
+static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	GAtResultIter iter;
+	int cnmi_opts[5]; /* See 27.005 Section 3.4.1 */
+	int opt;
+	int mode;
+	gboolean supported = FALSE;
+	char buf[128];
+
+	if (!ok)
+		goto out;
+
+	memset(cnmi_opts, 0, sizeof(cnmi_opts));
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CNMI:"))
+		goto out;
+
+	for (opt = 0; opt < 5; opt++) {
+		if (!g_at_result_iter_open_list(&iter))
+			goto out;
+
+		while (g_at_result_iter_next_number(&iter, &mode))
+			cnmi_opts[opt] |= 1 << mode;
+
+		if (!g_at_result_iter_close_list(&iter))
+			goto out;
+	}
+
+	if (build_cnmi_string(buf, cnmi_opts, at->sms->cnma_enabled))
+		supported = TRUE;
+
+out:
+	if (!supported)
+		return at_sms_not_supported(modem);
+
+	g_at_chat_send(at->parser, buf, cnmi_prefix,
+			at_cnmi_set_cb, modem, NULL);
+}
+
+static void at_query_cnmi(struct ofono_modem *modem)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	g_at_chat_send(at->parser, "AT+CNMI=?", cnmi_prefix,
+			at_cnmi_query_cb, modem, NULL);
+}
+
+static void at_cpms_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	if (ok)
+		return at_query_cnmi(modem);
+
+	at->sms->retries += 1;
+
+	if (at->sms->retries == MAX_CPMS_RETRIES) {
+		ofono_error("Unable to set preferred storage");
+		return at_sms_not_supported(modem);
+	}
+
+	g_timeout_add_seconds(1, set_cpms, modem);
+}
+
+static gboolean set_cpms(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	const char *store = storages[at->sms->store];
+	char buf[128];
+
+	sprintf(buf, "AT+CPMS=\"%s\",\"%s\",\"%s\"", store, store, store);
+
+	g_at_chat_send(at->parser, buf, cpms_prefix,
+			at_cpms_set_cb, modem, NULL);
+	return FALSE;
+}
+
+static void at_cmgf_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	if (ok) {
+		at->sms->retries = 0;
+		set_cpms(modem);
+		return;
+	}
+
+	at->sms->retries += 1;
+
+	if (at->sms->retries == MAX_CMGF_RETRIES) {
+		ofono_debug("Unable to enter PDU mode");
+		return at_sms_not_supported(modem);
+	}
+
+	g_timeout_add_seconds(1, set_cmgf, modem);
+}
+
+static gboolean set_cmgf(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	g_at_chat_send(at->parser, "AT+CMGF=0", cmgf_prefix,
+			at_cmgf_set_cb, modem, NULL);
+	return FALSE;
+}
+
+static void at_cpms_query_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	gboolean supported = FALSE;
+
+	if (ok) {
+		int mem = 0;
+		GAtResultIter iter;
+		const char *store;
+		gboolean me_supported[3];
+		gboolean sm_supported[3];
+
+		memset(me_supported, 0, sizeof(me_supported));
+		memset(sm_supported, 0, sizeof(sm_supported));
+
+		g_at_result_iter_init(&iter, result);
+
+		if (!g_at_result_iter_next(&iter, "+CPMS:"))
+			goto out;
+
+		for (mem = 0; mem < 3; mem++) {
+			if (!g_at_result_iter_open_list(&iter))
+				goto out;
+
+			while (g_at_result_iter_next_string(&iter, &store)) {
+				if (!strcmp(store, "ME"))
+					me_supported[mem] = TRUE;
+				else if (!strcmp(store, "SM"))
+					sm_supported[mem] = TRUE;
+			}
+
+			if (!g_at_result_iter_close_list(&iter))
+				goto out;
+		}
+
+		if (me_supported[0] && me_supported[1] && me_supported[2]) {
+			supported = TRUE;
+			at->sms->store = ME_STORE;
+		}
+
+		if (sm_supported[0] && sm_supported[1] && sm_supported[2]) {
+			supported = TRUE;
+			at->sms->store = SM_STORE;
+		}
+	}
+out:
+	if (!supported)
+		return at_sms_not_supported(modem);
+
+	set_cmgf(modem);
+}
+
+static void at_cmgf_query_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	gboolean supported = FALSE;
+
+	if (ok) {
+		GAtResultIter iter;
+		int mode;
+
+		g_at_result_iter_init(&iter, result);
+
+		if (!g_at_result_iter_next(&iter, "+CMGF:"))
+			goto out;
+
+		if (!g_at_result_iter_open_list(&iter))
+			goto out;
+
+		while (g_at_result_iter_next_number(&iter, &mode))
+			if (mode == 1)
+				supported = TRUE;
+	}
+
+out:
+	if (!supported)
+		return at_sms_not_supported(modem);
+
+	g_at_chat_send(at->parser, "AT+CPMS=?", cpms_prefix,
+			at_cpms_query_cb, modem, NULL);
+}
+
+static void at_csms_status_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	gboolean supported = FALSE;
+
+	if (ok) {
+		GAtResultIter iter;
+		int service;
+		int mt;
+		int mo;
+
+		g_at_result_iter_init(&iter, result);
+
+		if (!g_at_result_iter_next(&iter, "+CSMS:"))
+			goto out;
+
+		if (!g_at_result_iter_next_number(&iter, &service))
+			goto out;
+
+		if (!g_at_result_iter_next_number(&iter, &mt))
+			goto out;
+
+		if (!g_at_result_iter_next_number(&iter, &mo))
+			goto out;
+
+		if (service == 1)
+			at->sms->cnma_enabled = TRUE;
+
+		if (mt == 1 && mo == 1)
+			supported = TRUE;
+	}
+
+out:
+	if (!supported)
+		return at_sms_not_supported(modem);
+
+	/* Now query supported text format */
+	g_at_chat_send(at->parser, "AT+CMGF=?", cmgf_prefix,
+			at_cmgf_query_cb, modem, NULL);
+}
+
+static void at_csms_set_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	g_at_chat_send(at->parser, "AT+CSMS?", csms_prefix,
+			at_csms_status_cb, modem, NULL);
+}
+
+static void at_csms_query_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	gboolean cnma_supported = FALSE;
+	GAtResultIter iter;
+	int status;
+	char buf[128];
+
+	if (!ok)
+		return at_sms_not_supported(modem);
+
+	at->sms = sms_create();
+
+	if (!at->sms)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSMS:"))
+		goto out;
+
+	if (!g_at_result_iter_open_list(&iter))
+		goto out;
+
+	while (g_at_result_iter_next_number(&iter, &status))
+		if (status == 1)
+			cnma_supported = TRUE;
+
+	ofono_debug("CSMS query parsed successfully");
+
+out:
+	sprintf(buf, "AT+CSMS=%d", cnma_supported ? 1 : 0);
+	g_at_chat_send(at->parser, buf, csms_prefix,
+			at_csms_set_cb, modem, NULL);
+}
+
 void at_sms_init(struct ofono_modem *modem)
 {
-	ofono_sms_manager_register(modem, &ops);
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	g_at_chat_send(at->parser, "AT+CSMS=?", csms_prefix,
+			at_csms_query_cb, modem, NULL);
 }
 
 void at_sms_exit(struct ofono_modem *modem)
 {
+	struct at_data *at = ofono_modem_userdata(modem);
+
+	if (!at->sms)
+		return;
+
 	ofono_sms_manager_unregister(modem);
 }
