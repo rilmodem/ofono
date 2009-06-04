@@ -32,6 +32,8 @@
 
 #include <ofono/log.h>
 #include "driver.h"
+#include "smsutil.h"
+#include "util.h"
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -43,6 +45,7 @@ static const char *csms_prefix[] = { "+CSMS:", NULL };
 static const char *cmgf_prefix[] = { "+CMGF:", NULL };
 static const char *cpms_prefix[] = { "+CPMS:", NULL };
 static const char *cnmi_prefix[] = { "+CNMI:", NULL };
+static const char *none_prefix[] = { NULL };
 
 static gboolean set_cmgf(gpointer user_data);
 static gboolean set_cpms(gpointer user_data);
@@ -62,6 +65,8 @@ struct sms_data {
 	int store;
 	int retries;
 	gboolean cnma_enabled;
+	char *cnma_ack_pdu;
+	int cnma_ack_pdu_len;
 };
 
 static struct sms_data *sms_create()
@@ -71,6 +76,9 @@ static struct sms_data *sms_create()
 
 static void sms_destroy(struct sms_data *data)
 {
+	if (data->cnma_ack_pdu)
+		g_free(data->cnma_ack_pdu);
+
 	g_free(data);
 }
 
@@ -190,24 +198,187 @@ static struct ofono_sms_ops ops = {
 	.sca_set	= at_csca_set,
 };
 
+static void at_cnma_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	if (!ok)
+		ofono_error("CNMA acknowledgement failed: "
+				"Further SMS reception is not guaranteed");
+}
+
+static gboolean at_parse_pdu_common(GAtResult *result, const char *prefix,
+					const char **pdu, int *pdulen)
+{
+	GAtResultIter iter;
+
+	if (!g_at_result_iter_next(&iter, prefix))
+		return FALSE;
+
+	if (!g_at_result_iter_skip_next(&iter))
+		return FALSE;
+
+	if (!g_at_result_iter_next_number(&iter, pdulen))
+		return FALSE;
+
+	*pdu = g_at_result_pdu(result);
+
+	return TRUE;
+}
+
 static void at_cbm_notify(GAtResult *result, gpointer user_data)
 {
+	int pdulen;
+	const char *pdu;
+
 	dump_response("at_cbm_notify", TRUE, result);
+
+	if (!at_parse_pdu_common(result, "+CBM:", &pdu, &pdulen)) {
+		ofono_error("Unable to parse CBM notification");
+		return;
+	}
+
+	ofono_debug("Got new Cell Broadcast via CBM: %s, %d", pdu, pdulen);
 }
 
 static void at_cds_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	int pdulen;
+	const char *pdu;
+	char buf[256];
+
 	dump_response("at_cds_notify", TRUE, result);
+
+	if (!at_parse_pdu_common(result, "+CDS:", &pdu, &pdulen)) {
+		ofono_error("Unable to parse CDS notification");
+		return;
+	}
+
+	ofono_debug("Got new Status-Report PDU via CDS: %s, %d", pdu, pdulen);
+
+	/* We must acknowledge the PDU using CNMA */
+	if (at->sms->cnma_ack_pdu)
+		sprintf(buf, "AT+CNMA=1,%d\r%s", at->sms->cnma_ack_pdu_len,
+				at->sms->cnma_ack_pdu);
+	else
+		sprintf(buf, "AT+CNMA=0"); /* Should be a safe fallback */
+
+	g_at_chat_send(at->parser, buf, none_prefix, at_cnma_cb, NULL, NULL);
 }
 
 static void at_cmt_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	int pdulen;
+	const char *pdu;
+	char buf[256];
+
 	dump_response("at_cmt_notify", TRUE, result);
+
+	if (!at_parse_pdu_common(result, "+CMT:", &pdu, &pdulen)) {
+		ofono_error("Unable to parse CMT notification");
+		return;
+	}
+
+	ofono_debug("Got new SMS Deliver PDU via CMT: %s, %d", pdu, pdulen);
+
+	/* We must acknowledge the PDU using CNMA */
+	if (at->sms->cnma_ack_pdu)
+		sprintf(buf, "AT+CNMA=1,%d\r%s", at->sms->cnma_ack_pdu_len,
+				at->sms->cnma_ack_pdu);
+	else
+		sprintf(buf, "AT+CNMA=0"); /* Should be a safe fallback */
+
+	g_at_chat_send(at->parser, buf, none_prefix, at_cnma_cb, NULL, NULL);
+}
+
+static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	//struct ofono_modem *modem = user_data;
+	GAtResultIter iter;
+	int pdulen;
+	const char *pdu;
+
+	dump_response("at_cmgr_cb", ok, result);
+
+	if (!ok) {
+		ofono_error("Received a CMTI indication but CMGR failed!");
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CMGR:"))
+		goto err;
+
+	if (!g_at_result_iter_skip_next(&iter))
+		goto err;
+
+	if (!g_at_result_iter_skip_next(&iter))
+		goto err;
+
+	if (!g_at_result_iter_next_number(&iter, &pdulen))
+		goto err;
+
+	if (!g_at_result_iter_next(&iter, NULL))
+		goto err;
+
+	pdu = g_at_result_iter_raw_line(&iter);
+
+	ofono_debug("Got PDU: %s, with len: %d", pdu, pdulen);
+	return;
+
+err:
+	ofono_error("Unable to parse CMGR response");
+}
+
+static void at_cmgd_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	if (!ok)
+		ofono_error("Unable to delete received SMS");
 }
 
 static void at_cmti_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_modem *modem = user_data;
+	struct at_data *at = ofono_modem_userdata(modem);
+	GAtResultIter iter;
+	int index;
+	char buf[128];
+
 	dump_response("at_cmti_notify", TRUE, result);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CMTI:"))
+		goto err;
+
+	/* We skip the memory store here as we assume the modem will honor
+	 * the CPMS we sent out earlier
+	 */
+	if (!g_at_result_iter_skip_next(&iter))
+		goto err;
+
+	if (!g_at_result_iter_next_number(&iter, &index))
+		goto err;
+
+	ofono_debug("Got a CMTI indication at index: %d", index);
+
+	sprintf(buf, "AT+CMGR=%d", index);
+
+	/* Can't use a prefix here since a PDU is expected on the next line */
+	g_at_chat_send(at->parser, buf, NULL, at_cmgr_cb, modem, NULL);
+
+	sprintf(buf, "AT+CMGD=%d", index);
+
+	/* We don't buffer SMS on the SIM/ME, send along a CMGD as well */
+	g_at_chat_send(at->parser, buf, none_prefix, at_cmgd_cb, NULL, NULL);
+
+	return;
+
+err:
+	ofono_error("Unable to parse CMTI notification");
 }
 
 static void at_sms_initialized(struct ofono_modem *modem)
@@ -310,6 +481,36 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	return TRUE;
 }
 
+static void construct_ack_pdu(struct sms_data *d)
+{
+	struct sms ackpdu;
+	unsigned char pdu[164];
+	int len;
+	int tpdu_len;
+
+	memset(&ackpdu, 0, sizeof(ackpdu));
+
+	ackpdu.type = SMS_TYPE_DELIVER_REPORT_ACK;
+
+	if (!encode_sms(&ackpdu, &len, &tpdu_len, pdu))
+		goto err;
+
+	/* Constructing an <ackpdu> according to 27.005 Section 4.6 */
+	if (len != tpdu_len)
+		goto err;
+
+	d->cnma_ack_pdu = encode_hex(pdu, tpdu_len, 0);
+
+	if (!d->cnma_ack_pdu)
+		goto err;
+
+	d->cnma_ack_pdu_len = tpdu_len;
+	return;
+
+err:
+	ofono_error("Unable to construct Deliver ACK PDU");
+}
+
 static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -344,6 +545,9 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (build_cnmi_string(buf, cnmi_opts, at->sms->cnma_enabled))
 		supported = TRUE;
+
+	if (at->sms->cnma_enabled)
+		construct_ack_pdu(at->sms);
 
 out:
 	if (!supported)
