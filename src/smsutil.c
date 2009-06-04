@@ -1221,7 +1221,8 @@ gboolean encode_sms(const struct sms *in, int *len, int *tpdu_len,
 	int offset = 0;
 	int tpdu_start;
 
-	if (in->type == SMS_TYPE_DELIVER || in->type == SMS_TYPE_SUBMIT)
+	if (in->type == SMS_TYPE_DELIVER || in->type == SMS_TYPE_SUBMIT ||
+			in->type == SMS_TYPE_COMMAND)
 		if (!encode_address(&in->sc_addr, TRUE, pdu, &offset))
 			return FALSE;
 
