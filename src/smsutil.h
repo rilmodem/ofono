@@ -295,4 +295,6 @@ guint8 sms_udh_iter_get_ie_length(struct sms_udh_iter *iter);
 void sms_udh_iter_get_ie_data(struct sms_udh_iter *iter, guint8 *data);
 gboolean sms_udh_iter_has_next(struct sms_udh_iter *iter);
 gboolean sms_udh_iter_next(struct sms_udh_iter *iter);
+
+time_t sms_scts_to_time(struct sms_scts *scts, struct tm *remote);
 #endif

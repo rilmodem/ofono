@@ -38,6 +38,10 @@ static const char *simple_submit = "0011000B916407281553F80000AA"
 
 static void print_scts(struct sms_scts *scts, const char *prefix)
 {
+	time_t ts;
+	struct tm remote;
+	char buf[128];
+
 	g_print("%s: (YY-MM-DD) %02d-%02d-%02d\n", prefix,
 		(int)scts->year, (int)scts->month, (int)scts->day);
 
@@ -47,6 +51,18 @@ static void print_scts(struct sms_scts *scts, const char *prefix)
 	g_print("%s: Timezone %d hours %d minutes\n", prefix,
 		(int)scts->timezone / 4,
 		(int)((abs(scts->timezone) % 4) * 15));
+
+	ts = sms_scts_to_time(scts, &remote);
+
+	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", localtime(&ts));
+	buf[127] = '\0';
+
+	g_print("local time: %s\n", buf);
+
+	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", &remote);
+	buf[127] = '\0';
+
+	g_print("remote time: %s\n", buf);
 }
 
 static void print_vpf(enum sms_validity_period_format vpf,
