@@ -140,6 +140,20 @@ enum sms_iei {
 	SMS_IEI_INVALID = 0xFFF
 };
 
+enum sms_class {
+	SMS_CLASS_0 = 0,
+	SMS_CLASS_1 = 1,
+	SMS_CLASS_2 = 2,
+	SMS_CLASS_3 = 3,
+	SMS_CLASS_UNSPECIFIED = 4,
+};
+
+enum sms_charset {
+	SMS_CHARSET_7BIT = 0,
+	SMS_CHARSET_8BIT = 1,
+	SMS_CHARSET_UCS2 = 2,
+};
+
 struct sms_address {
 	enum sms_number_type number_type;
 	enum sms_numbering_plan numbering_plan;
@@ -297,4 +311,7 @@ gboolean sms_udh_iter_has_next(struct sms_udh_iter *iter);
 gboolean sms_udh_iter_next(struct sms_udh_iter *iter);
 
 time_t sms_scts_to_time(struct sms_scts *scts, struct tm *remote);
+gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
+			enum sms_charset *charset,
+			gboolean *compressed, gboolean *autodelete);
 #endif

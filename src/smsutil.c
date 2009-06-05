@@ -105,6 +105,73 @@ static inline int to_semi_oct(char in)
 	return digit;
 }
 
+/* Returns whether the DCS could be parsed successfully, e.g. no reserved
+ * values were used
+ */
+gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
+			enum sms_charset *charset,
+			gboolean *compressed, gboolean *autodelete)
+{
+	guint8 upper = (dcs & 0xf0) >> 4;
+	enum sms_charset ch;
+	enum sms_class cl;
+	gboolean comp;
+	gboolean autodel;
+
+	/* MWI DCS types are handled in sms_mwi_dcs_decode */
+	if (upper >= 0x8 && upper <= 0xE)
+		return FALSE;
+
+	upper = (dcs & 0xc0) >> 6;
+
+	switch (upper) {
+	case 0:
+	case 1:
+		autodel = upper;
+		comp = (dcs & 0x20) ? TRUE : FALSE;
+
+		if (dcs & 0x10)
+			cl = (enum sms_class)(dcs & 0x03);
+		else
+			cl = SMS_CLASS_UNSPECIFIED;
+
+		if (((dcs & 0x0c) >> 2) < 3)
+			ch = (enum sms_charset) ((dcs & 0x0c) >> 2);
+		else
+			return FALSE;
+
+		break;
+	case 3:
+		comp = FALSE;
+		autodel = FALSE;
+
+		if (dcs & 0x4)
+			ch = SMS_CHARSET_8BIT;
+		else
+			ch = SMS_CHARSET_7BIT;
+
+		cl = (enum sms_class)(dcs & 0x03);
+
+		break;
+	default:
+		return FALSE;
+	};
+
+	if (compressed)
+		*compressed = comp;
+
+	if (autodelete)
+		*autodelete = autodel;
+
+	if (cls)
+		*cls = cl;
+
+	if (charset)
+		*charset = ch;
+
+	return TRUE;
+}
+
 int ud_len_in_octets(guint8 ud_len, guint8 dcs)
 {
 	int len_7bit = (ud_len + 1) * 7 / 8;
