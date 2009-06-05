@@ -19,6 +19,9 @@
  *
  */
 
+#ifndef __UTIL_H__
+#define __UTIL_H__
+
 char *convert_gsm_to_utf8(const unsigned char *text, long len, long *items_read,
 				long *items_written, unsigned char terminator);
 unsigned char *convert_utf8_to_gsm(const char *text, long len, long *items_read,
@@ -56,3 +59,5 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
 				gboolean cb_or_ussd,
 				long *items_written, unsigned char terminator);
+
+#endif
