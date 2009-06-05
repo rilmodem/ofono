@@ -156,6 +156,13 @@ enum sms_charset {
 	SMS_CHARSET_UCS2 = 2,
 };
 
+enum sms_mwi_type {
+	SMS_MWI_TYPE_VOICE = 0,
+	SMS_MWI_TYPE_FAX = 1,
+	SMS_MWI_TYPE_EMAIL = 2,
+	SMS_MWI_TYPE_OTHER = 3,
+};
+
 struct sms_address {
 	enum sms_number_type number_type;
 	enum sms_numbering_plan numbering_plan;
@@ -317,4 +324,9 @@ gboolean sms_udh_iter_next(struct sms_udh_iter *iter);
 gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
 			enum sms_charset *charset,
 			gboolean *compressed, gboolean *autodelete);
+
+gboolean sms_mwi_dcs_decode(guint8 dcs, enum sms_mwi_type *type,
+				enum sms_charset *charset,
+				gboolean *active, gboolean *discard);
+
 #endif

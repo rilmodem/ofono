@@ -172,6 +172,50 @@ gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
 	return TRUE;
 }
 
+gboolean sms_mwi_dcs_decode(guint8 dcs, enum sms_mwi_type *type,
+				enum sms_charset *charset,
+				gboolean *active, gboolean *discard)
+{
+	guint8 upper = (dcs & 0xf0) >> 4;
+	enum sms_mwi_type t;
+	enum sms_charset ch;
+	gboolean dis;
+	gboolean act;
+
+	if (upper < 0xC || upper > 0xE)
+		return FALSE;
+
+	upper = (dcs & 0x30) >> 4;
+
+	if (upper == 0)
+		dis = TRUE;
+	else
+		dis = FALSE;
+
+	if (upper == 3)
+		ch = SMS_CHARSET_UCS2;
+	else
+		ch = SMS_CHARSET_7BIT;
+
+	act = dcs & 0x8;
+
+	t = (enum sms_mwi_type) (dcs & 0x3);
+
+	if (type)
+		*type = t;
+
+	if (charset)
+		*charset = ch;
+
+	if (active)
+		*active = act;
+
+	if (discard)
+		*discard = dis;
+
+	return TRUE;
+}
+
 int sms_udl_in_bytes(guint8 ud_len, guint8 dcs)
 {
 	int len_7bit = (ud_len + 1) * 7 / 8;
