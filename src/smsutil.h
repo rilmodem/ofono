@@ -301,7 +301,7 @@ gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 			unsigned char *pdu);
 
-int ud_len_in_octets(guint8 ud_len, guint8 dcs);
+int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
 gboolean sms_udh_iter_init(struct sms *sms, struct sms_udh_iter *iter);
 enum sms_iei sms_udh_iter_get_ie_type(struct sms_udh_iter *iter);

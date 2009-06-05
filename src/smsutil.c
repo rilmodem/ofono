@@ -172,7 +172,7 @@ gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
 	return TRUE;
 }
 
-int ud_len_in_octets(guint8 ud_len, guint8 dcs)
+int sms_udl_in_bytes(guint8 ud_len, guint8 dcs)
 {
 	int len_7bit = (ud_len + 1) * 7 / 8;
 	int len_8bit = ud_len;
@@ -608,7 +608,7 @@ static gboolean encode_deliver(const struct sms_deliver *in, unsigned char *pdu,
 
 	set_octet(pdu, offset, in->udl);
 
-	ud_oct_len = ud_len_in_octets(in->udl, in->dcs);
+	ud_oct_len = sms_udl_in_bytes(in->udl, in->dcs);
 
 	memcpy(pdu + *offset, in->ud, ud_oct_len);
 
@@ -649,7 +649,7 @@ static gboolean decode_deliver(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &out->deliver.udl))
 		return FALSE;
 
-	expected = ud_len_in_octets(out->deliver.udl, out->deliver.dcs);
+	expected = sms_udl_in_bytes(out->deliver.udl, out->deliver.dcs);
 
 	if ((len - offset) < expected)
 		return FALSE;
@@ -683,7 +683,7 @@ static gboolean encode_submit_ack_report(const struct sms_submit_ack_report *in,
 		set_octet(pdu, offset, in->dcs);
 
 	if (in->pi & 0x4) {
-		int ud_oct_len = ud_len_in_octets(in->udl, in->dcs);
+		int ud_oct_len = sms_udl_in_bytes(in->udl, in->dcs);
 
 		set_octet(pdu, offset, in->udl);
 		memcpy(pdu + *offset, in->ud, ud_oct_len);
@@ -719,7 +719,7 @@ static gboolean encode_submit_err_report(const struct sms_submit_err_report *in,
 		set_octet(pdu, offset, in->dcs);
 
 	if (in->pi & 0x4) {
-		int ud_oct_len = ud_len_in_octets(in->udl, in->dcs);
+		int ud_oct_len = sms_udl_in_bytes(in->udl, in->dcs);
 
 		set_octet(pdu, offset, in->udl);
 		memcpy(pdu + *offset, in->ud, ud_oct_len);
@@ -806,7 +806,7 @@ static gboolean decode_submit_report(const unsigned char *pdu, int len,
 		if (!next_octet(pdu, len, &offset, &udl))
 			return FALSE;
 
-		expected = ud_len_in_octets(udl, dcs);
+		expected = sms_udl_in_bytes(udl, dcs);
 
 		if ((len - offset) < expected)
 			return FALSE;
@@ -869,7 +869,7 @@ static gboolean encode_status_report(const struct sms_status_report *in,
 		set_octet(pdu, offset, in->dcs);
 
 	if (in->pi & 0x4) {
-		int ud_oct_len = ud_len_in_octets(in->udl, in->dcs);
+		int ud_oct_len = sms_udl_in_bytes(in->udl, in->dcs);
 
 		set_octet(pdu, offset, in->udl);
 		memcpy(pdu + *offset, in->ud, ud_oct_len);
@@ -942,7 +942,7 @@ static gboolean decode_status_report(const unsigned char *pdu, int len,
 		if (!next_octet(pdu, len, &offset, &out->status_report.udl))
 			return FALSE;
 
-		expected = ud_len_in_octets(out->status_report.udl,
+		expected = sms_udl_in_bytes(out->status_report.udl,
 						out->status_report.dcs);
 
 		if ((len - offset) < expected)
@@ -976,7 +976,7 @@ static gboolean encode_deliver_ack_report(const struct sms_deliver_ack_report *i
 		set_octet(pdu, offset, in->dcs);
 
 	if (in->pi & 0x4) {
-		int ud_oct_len = ud_len_in_octets(in->udl, in->dcs);
+		int ud_oct_len = sms_udl_in_bytes(in->udl, in->dcs);
 
 		set_octet(pdu, offset, in->udl);
 		memcpy(pdu + *offset, in->ud, ud_oct_len);
@@ -1010,7 +1010,7 @@ static gboolean encode_deliver_err_report(const struct sms_deliver_err_report *i
 		set_octet(pdu, offset, in->dcs);
 
 	if (in->pi & 0x4) {
-		int ud_oct_len = ud_len_in_octets(in->udl, in->dcs);
+		int ud_oct_len = sms_udl_in_bytes(in->udl, in->dcs);
 
 		set_octet(pdu, offset, in->udl);
 		memcpy(pdu + *offset, in->ud, ud_oct_len);
@@ -1089,7 +1089,7 @@ static gboolean decode_deliver_report(const unsigned char *pdu, int len,
 		if (!next_octet(pdu, len, &offset, &udl))
 			return FALSE;
 
-		expected = ud_len_in_octets(udl, dcs);
+		expected = sms_udl_in_bytes(udl, dcs);
 
 		if ((len - offset) < expected)
 			return FALSE;
@@ -1147,7 +1147,7 @@ static gboolean encode_submit(const struct sms_submit *in,
 
 	set_octet(pdu, offset, in->udl);
 
-	ud_oct_len = ud_len_in_octets(in->udl, in->dcs);
+	ud_oct_len = sms_udl_in_bytes(in->udl, in->dcs);
 
 	memcpy(pdu + *offset, in->ud, ud_oct_len);
 
@@ -1193,7 +1193,7 @@ static gboolean decode_submit(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &out->submit.udl))
 		return FALSE;
 
-	expected = ud_len_in_octets(out->submit.udl, out->submit.dcs);
+	expected = sms_udl_in_bytes(out->submit.udl, out->submit.dcs);
 
 	if ((len - offset) < expected)
 		return FALSE;
@@ -1461,7 +1461,7 @@ gboolean sms_udh_iter_init(struct sms *sms, struct sms_udh_iter *iter)
 	if (sms->type == SMS_TYPE_COMMAND)
 		max_len = udl;
 	else
-		max_len = ud_len_in_octets(udl, dcs);
+		max_len = sms_udl_in_bytes(udl, dcs);
 
 	/* Can't actually store the HDL + IEI / IEL */
 	if (max_len < 3)

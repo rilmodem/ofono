@@ -150,7 +150,7 @@ static void test_simple_deliver()
 
 	g_assert(sms.deliver.udl == 12);
 
-	data_len = ud_len_in_octets(sms.deliver.udl, sms.deliver.dcs);
+	data_len = sms_udl_in_bytes(sms.deliver.udl, sms.deliver.dcs);
 
 	g_assert(data_len == 11);
 
@@ -236,7 +236,7 @@ static void test_alnum_sender()
 
 	g_assert(sms.deliver.udl == 8);
 
-	data_len = ud_len_in_octets(sms.deliver.udl, sms.deliver.dcs);
+	data_len = sms_udl_in_bytes(sms.deliver.udl, sms.deliver.dcs);
 
 	g_assert(data_len == 7);
 
@@ -399,7 +399,7 @@ static void test_simple_submit()
 
 	g_assert(sms.submit.udl == 10);
 
-	data_len = ud_len_in_octets(sms.submit.udl, sms.submit.dcs);
+	data_len = sms_udl_in_bytes(sms.submit.udl, sms.submit.dcs);
 
 	g_assert(data_len == 9);
 
@@ -559,7 +559,7 @@ static void test_udh_iter()
 	g_assert(sms_udh_iter_next(&iter) == FALSE);
 	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_INVALID);
 
-	data_len = ud_len_in_octets(sms.submit.udl, sms.submit.dcs);
+	data_len = sms_udl_in_bytes(sms.submit.udl, sms.submit.dcs);
 
 	g_assert(data_len == 87);
 
