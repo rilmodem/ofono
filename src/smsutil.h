@@ -303,6 +303,8 @@ gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 
 int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
+time_t sms_scts_to_time(struct sms_scts *scts, struct tm *remote);
+
 gboolean sms_udh_iter_init(struct sms *sms, struct sms_udh_iter *iter);
 enum sms_iei sms_udh_iter_get_ie_type(struct sms_udh_iter *iter);
 guint8 sms_udh_iter_get_ie_length(struct sms_udh_iter *iter);
@@ -310,7 +312,6 @@ void sms_udh_iter_get_ie_data(struct sms_udh_iter *iter, guint8 *data);
 gboolean sms_udh_iter_has_next(struct sms_udh_iter *iter);
 gboolean sms_udh_iter_next(struct sms_udh_iter *iter);
 
-time_t sms_scts_to_time(struct sms_scts *scts, struct tm *remote);
 gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
 			enum sms_charset *charset,
 			gboolean *compressed, gboolean *autodelete);
