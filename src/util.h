@@ -41,23 +41,23 @@ char *encode_hex(const unsigned char *in, long len,
 			unsigned char terminator);
 
 unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
-					int byte_offset, gboolean cb,
+					int byte_offset, gboolean ussd,
 					long max_to_unpack, long *items_written,
 					unsigned char terminator,
 					unsigned char *buf);
 
 unsigned char *unpack_7bit(const unsigned char *in, long len, int byte_offset,
-				gboolean cb, long max_to_unpack,
+				gboolean ussd, long max_to_unpack,
 				long *items_written, unsigned char terminator);
 
 unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
-					int byte_offset, gboolean cb,
+					int byte_offset, gboolean ussd,
 					long *items_written,
 					unsigned char terminator,
 					unsigned char *buf);
 
 unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
-				gboolean cb_or_ussd,
+				gboolean ussd,
 				long *items_written, unsigned char terminator);
 
 #endif

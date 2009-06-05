@@ -503,7 +503,7 @@ char *encode_hex(const unsigned char *in, long len, unsigned char terminator)
 }
 
 unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
-					int byte_offset, gboolean cb,
+					int byte_offset, gboolean ussd,
 					long max_to_unpack, long *items_written,
 					unsigned char terminator,
 					unsigned char *buf)
@@ -517,7 +517,7 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 		return NULL;
 
 	/* In the case of CB, unpack as much as possible */
-	if (cb == TRUE)
+	if (ussd == TRUE)
 		max_to_unpack = len * 8 / 7;
 
 	for (i = 0; (i < len) && ((out-buf) < max_to_unpack); i++) {
@@ -562,7 +562,7 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 	 * the message ends on an octet boundary with <CR> as the last
 	 * character.
 	 */
-	if (cb && (((out - buf) % 8) == 0) && (*(out-1) == '\r'))
+	if (ussd && (((out - buf) % 8) == 0) && (*(out-1) == '\r'))
 			out = out - 1;
 
 	if (terminator)
@@ -575,18 +575,18 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 }
 
 unsigned char *unpack_7bit(const unsigned char *in, long len, int byte_offset,
-				gboolean cb, long max_to_unpack,
+				gboolean ussd, long max_to_unpack,
 				long *items_written, unsigned char terminator)
 {
 	unsigned char *buf = g_new(unsigned char, 
 					len * 8 / 7 + (terminator ? 1 : 0));
 	
-	return unpack_7bit_own_buf(in, len, byte_offset, cb, max_to_unpack,
+	return unpack_7bit_own_buf(in, len, byte_offset, ussd, max_to_unpack,
 				items_written, terminator, buf);
 }
 
 unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
-					int byte_offset, gboolean cb,
+					int byte_offset, gboolean ussd,
 					long *items_written,
 					unsigned char terminator,
 					unsigned char *buf)
@@ -640,13 +640,13 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 	 * but this will not result in misoperation as the definition of
 	 * <CR> in clause 6.1.1 is identical to the definition of <CR><CR>.
 	 */
-	if (cb && ((total_bits % 8) == 1))
+	if (ussd && ((total_bits % 8) == 1))
 		*out |= '\r' << 1;
 
 	if (bits != 7)
 		out++;
 
-	if (cb && ((total_bits % 8) == 0) && (in[len-1] == '\r')) {
+	if (ussd && ((total_bits % 8) == 0) && (in[len-1] == '\r')) {
 		*out = '\r';
 		out++;
 	}
@@ -657,7 +657,7 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 }
 
 unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
-				gboolean cb, long *items_written,
+				gboolean ussd, long *items_written,
 				unsigned char terminator)
 {
 	int bits = 7 - (byte_offset % 7);
@@ -683,11 +683,11 @@ unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
 		total_bits += bits;
 	
 	/* Round up number of bytes, must append <cr> if true */
-	if (cb && ((total_bits % 8) == 0) && (in[len-1] == '\r'))
+	if (ussd && ((total_bits % 8) == 0) && (in[len-1] == '\r'))
 		buf = g_new(unsigned char, (total_bits + 14) / 8);
 	else
 		buf = g_new(unsigned char, (total_bits + 7) / 8);
 
-	return pack_7bit_own_buf(in, len, byte_offset, cb, items_written,
+	return pack_7bit_own_buf(in, len, byte_offset, ussd, items_written,
 					terminator, buf);
 }

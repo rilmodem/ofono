@@ -22,6 +22,8 @@
 #ifndef __SMSUTIL_H__
 #define __SMSUTIL_H__
 
+#define CBS_PAYLOAD_CHARACTERS 93
+
 enum sms_type {
 	SMS_TYPE_DELIVER = 0,
 	SMS_TYPE_DELIVER_REPORT_ACK,
