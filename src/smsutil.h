@@ -295,10 +295,10 @@ struct sms_udh_iter {
 	guint8 offset;
 };
 
-gboolean decode_sms(const unsigned char *pdu, int len, gboolean outgoing,
+gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 			int tpdu_len, struct sms *out);
 
-gboolean encode_sms(const struct sms *in, int *len, int *tpdu_len,
+gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 			unsigned char *pdu);
 
 int ud_len_in_octets(guint8 ud_len, guint8 dcs);

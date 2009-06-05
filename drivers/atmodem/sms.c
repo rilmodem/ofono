@@ -492,7 +492,7 @@ static void construct_ack_pdu(struct sms_data *d)
 
 	ackpdu.type = SMS_TYPE_DELIVER_REPORT_ACK;
 
-	if (!encode_sms(&ackpdu, &len, &tpdu_len, pdu))
+	if (!sms_encode(&ackpdu, &len, &tpdu_len, pdu))
 		goto err;
 
 	/* Constructing an <ackpdu> according to 27.005 Section 4.6 */

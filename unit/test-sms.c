@@ -102,7 +102,7 @@ static void test_simple_deliver()
 	g_assert(decoded_pdu);
 	g_assert(pdu_len == (long)strlen(simple_deliver) / 2);
 
-	ret = decode_sms(decoded_pdu, pdu_len, FALSE, 30, &sms);
+	ret = sms_decode(decoded_pdu, pdu_len, FALSE, 30, &sms);
 
 	g_free(decoded_pdu);
 
@@ -188,7 +188,7 @@ static void test_alnum_sender()
 	g_assert(decoded_pdu);
 	g_assert(pdu_len == (long)strlen(alnum_sender) / 2);
 
-	ret = decode_sms(decoded_pdu, pdu_len, FALSE, 27, &sms);
+	ret = sms_decode(decoded_pdu, pdu_len, FALSE, 27, &sms);
 
 	g_free(decoded_pdu);
 
@@ -274,14 +274,14 @@ static void test_deliver_encode()
 	g_assert(decoded_pdu);
 	g_assert(pdu_len == (long)strlen(simple_deliver) / 2);
 
-	ret = decode_sms(decoded_pdu, pdu_len, FALSE, 30, &sms);
+	ret = sms_decode(decoded_pdu, pdu_len, FALSE, 30, &sms);
 
 	g_free(decoded_pdu);
 
 	g_assert(ret);
 	g_assert(sms.type == SMS_TYPE_DELIVER);
 
-	ret = encode_sms(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
+	ret = sms_encode(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
 
 	if (g_test_verbose()) {
 		int i;
@@ -306,14 +306,14 @@ static void test_deliver_encode()
 	g_assert(decoded_pdu);
 	g_assert(pdu_len == (long)strlen(alnum_sender) / 2);
 
-	ret = decode_sms(decoded_pdu, pdu_len, FALSE, 27, &sms);
+	ret = sms_decode(decoded_pdu, pdu_len, FALSE, 27, &sms);
 
 	g_free(decoded_pdu);
 
 	g_assert(ret);
 	g_assert(sms.type == SMS_TYPE_DELIVER);
 
-	ret = encode_sms(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
+	ret = sms_encode(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
 
 	if (g_test_verbose()) {
 		int i;
@@ -349,7 +349,7 @@ static void test_simple_submit()
 	g_assert(decoded_pdu);
 	g_assert(pdu_len == (long)strlen(simple_submit) / 2);
 
-	ret = decode_sms(decoded_pdu, pdu_len, TRUE, 23, &sms);
+	ret = sms_decode(decoded_pdu, pdu_len, TRUE, 23, &sms);
 
 	g_free(decoded_pdu);
 
@@ -438,14 +438,14 @@ static void test_submit_encode()
 	g_assert(decoded_pdu);
 	g_assert(pdu_len == (long)strlen(simple_submit) / 2);
 
-	ret = decode_sms(decoded_pdu, pdu_len, TRUE, 23, &sms);
+	ret = sms_decode(decoded_pdu, pdu_len, TRUE, 23, &sms);
 
 	g_free(decoded_pdu);
 
 	g_assert(ret);
 	g_assert(sms.type == SMS_TYPE_SUBMIT);
 
-	ret = encode_sms(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
+	ret = sms_encode(&sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
 
 	if (g_test_verbose()) {
 		int i;
@@ -492,7 +492,7 @@ static void test_udh_iter()
 	g_assert(decoded_pdu);
 	g_assert(pdu_len == (long)strlen(header_test) / 2);
 
-	ret = decode_sms(decoded_pdu, pdu_len, TRUE,
+	ret = sms_decode(decoded_pdu, pdu_len, TRUE,
 				header_test_len, &sms);
 
 	g_free(decoded_pdu);

@@ -1282,7 +1282,7 @@ static gboolean decode_command(const unsigned char *pdu, int len,
 }
 
 /* Buffer must be at least 164 (tpud) + 12 (SC address) bytes long */
-gboolean encode_sms(const struct sms *in, int *len, int *tpdu_len,
+gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 			unsigned char *pdu)
 {
 	int offset = 0;
@@ -1345,7 +1345,7 @@ gboolean encode_sms(const struct sms *in, int *len, int *tpdu_len,
 	return TRUE;
 }
 
-gboolean decode_sms(const unsigned char *pdu, int len, gboolean outgoing,
+gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 			int tpdu_len, struct sms *out)
 {
 	unsigned char type;
