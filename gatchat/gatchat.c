@@ -44,6 +44,7 @@ enum chat_state {
 	PARSER_STATE_RESPONSE,
 	PARSER_STATE_TERMINATOR_CR,
 	PARSER_STATE_RESPONSE_COMPLETE,
+	PARSER_STATE_GUESS_MULTILINE_RESPONSE,
 	PARSER_STATE_PDU,
 	PARSER_STATE_PDU_CR,
 	PARSER_STATE_PDU_COMPLETE,
@@ -405,6 +406,9 @@ static gboolean g_at_chat_handle_command_response(GAtChat *p,
 	}
 
 out:
+	if (!(p->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF))
+		p->state = PARSER_STATE_GUESS_MULTILINE_RESPONSE;
+
 	p->response_lines = g_slist_prepend(p->response_lines,
 						line);
 
@@ -552,6 +556,13 @@ static inline void parse_char(GAtChat *chat, char byte)
 			chat->state = PARSER_STATE_RESPONSE_COMPLETE;
 		else
 			chat->state = PARSER_STATE_IDLE;
+		break;
+
+	case PARSER_STATE_GUESS_MULTILINE_RESPONSE:
+		if (byte == '\r')
+			chat->state = PARSER_STATE_INITIAL_CR;
+		else
+			chat->state = PARSER_STATE_RESPONSE;
 		break;
 
 	case PARSER_STATE_PDU:
