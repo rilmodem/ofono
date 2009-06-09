@@ -45,6 +45,9 @@ enum chat_state {
 	PARSER_STATE_TERMINATOR_CR,
 	PARSER_STATE_RESPONSE_COMPLETE,
 	PARSER_STATE_GUESS_MULTILINE_RESPONSE,
+	PARSER_STATE_MULTILINE_RESPONSE,
+	PARSER_STATE_MULTILINE_TERMINATOR_CR,
+	PARSER_STATE_MULTILINE_COMPLETE,
 	PARSER_STATE_PDU,
 	PARSER_STATE_PDU_CR,
 	PARSER_STATE_PDU_COMPLETE,
@@ -415,7 +418,7 @@ out:
 	return TRUE;
 }
 
-static void have_line(GAtChat *p)
+static void have_line(GAtChat *p, gboolean strip_preceding)
 {
 	/* We're not going to copy terminal <CR><LF> */
 	unsigned int len = p->read_so_far - 2;
@@ -423,7 +426,7 @@ static void have_line(GAtChat *p)
 	struct at_command *cmd;
 
 	/* If we have preceding <CR><LF> modify the len */
-	if ((p->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF) == 0)
+	if (strip_preceding)
 		len -= 2;
 
 	/* Make sure we have terminal null */
@@ -434,7 +437,7 @@ static void have_line(GAtChat *p)
 		return;
 	}
 
-	if ((p->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF) == 0)
+	if (strip_preceding)
 		ring_buffer_drain(p->buf, 2);
 	ring_buffer_read(p->buf, str, len);
 	ring_buffer_drain(p->buf, 2);
@@ -562,7 +565,17 @@ static inline void parse_char(GAtChat *chat, char byte)
 		if (byte == '\r')
 			chat->state = PARSER_STATE_INITIAL_CR;
 		else
-			chat->state = PARSER_STATE_RESPONSE;
+			chat->state = PARSER_STATE_MULTILINE_RESPONSE;
+		break;
+
+	case PARSER_STATE_MULTILINE_RESPONSE:
+		if (byte == '\r')
+			chat->state = PARSER_STATE_MULTILINE_TERMINATOR_CR;
+		break;
+
+	case PARSER_STATE_MULTILINE_TERMINATOR_CR:
+		if (byte == '\n')
+			chat->state = PARSER_STATE_MULTILINE_COMPLETE;
 		break;
 
 	case PARSER_STATE_PDU:
@@ -583,6 +596,7 @@ static inline void parse_char(GAtChat *chat, char byte)
 
 	case PARSER_STATE_RESPONSE_COMPLETE:
 	case PARSER_STATE_PDU_COMPLETE:
+	case PARSER_STATE_MULTILINE_COMPLETE:
 	default:
 		/* This really shouldn't happen */
 		assert(TRUE);
@@ -608,10 +622,24 @@ static void new_bytes(GAtChat *p)
 		}
 
 		if (p->state == PARSER_STATE_RESPONSE_COMPLETE) {
+			gboolean strip_preceding;
+
+			if (p->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF)
+				strip_preceding = FALSE;
+			else
+				strip_preceding = TRUE;
+
 			len -= p->read_so_far;
 			wrap -= p->read_so_far;
 
-			have_line(p);
+			have_line(p, strip_preceding);
+
+			p->read_so_far = 0;
+		} else if (p->state == PARSER_STATE_MULTILINE_COMPLETE) {
+			len -= p->read_so_far;
+			wrap -= p->read_so_far;
+
+			have_line(p, FALSE);
 
 			p->read_so_far = 0;
 		} else if (p->state == PARSER_STATE_PDU_COMPLETE) {
