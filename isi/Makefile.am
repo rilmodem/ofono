@@ -5,5 +5,6 @@ MAINTAINERCLEANFILES = Makefile.in
 
 libgisi_la_SOURCES = \
 	netlink.h netlink.c \
-	socket.h socket.c
+	socket.h socket.c \
+	client.h client.c
 libgisi_la_LIBADD = @GLIB_LIBS@
