@@ -4,5 +4,6 @@ noinst_LTLIBRARIES = libgisi.la
 MAINTAINERCLEANFILES = Makefile.in
 
 libgisi_la_SOURCES = \
-	netlink.h netlink.c
+	netlink.h netlink.c \
+	socket.h socket.c
 libgisi_la_LIBADD = @GLIB_LIBS@
