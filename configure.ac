@@ -8,8 +8,6 @@ AM_MAINTAINER_MODE
 
 AC_PREFIX_DEFAULT(/usr/local)
 
-COMPILER_FLAGS
-
 AC_LANG_C
 
 AC_PROG_CC
@@ -84,6 +82,8 @@ AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 					[enable_datafiles=${enableval}])
 
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
+
+COMPILER_FLAGS
 
 AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile
 			include/Makefile include/version.h src/Makefile
