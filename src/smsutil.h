@@ -316,8 +316,8 @@ struct sms {
 };
 
 struct sms_udh_iter {
-	struct sms *sms;
-	guint8 *data;
+	const struct sms *sms;
+	const guint8 *data;
 	guint8 offset;
 };
 
@@ -331,7 +331,7 @@ int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
 time_t sms_scts_to_time(struct sms_scts *scts, struct tm *remote);
 
-gboolean sms_udh_iter_init(struct sms *sms, struct sms_udh_iter *iter);
+gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter);
 enum sms_iei sms_udh_iter_get_ie_type(struct sms_udh_iter *iter);
 guint8 sms_udh_iter_get_ie_length(struct sms_udh_iter *iter);
 void sms_udh_iter_get_ie_data(struct sms_udh_iter *iter, guint8 *data);

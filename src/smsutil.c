@@ -1438,10 +1438,10 @@ gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 	return FALSE;
 }
 
-gboolean sms_udh_iter_init(struct sms *sms, struct sms_udh_iter *iter)
+gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 {
 	gboolean udhi = FALSE;
-	guint8 *hdr;
+	const guint8 *hdr;
 	guint8 udl;
 	guint8 dcs;
 	guint8 max_len;
