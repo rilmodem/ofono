@@ -1511,6 +1511,9 @@ gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 	if (max_len < 3)
 		return FALSE;
 
+	if (max_len > 140)
+		return FALSE;
+
 	/* Must have at least one information-element if udhi is true */
 	if (hdr[0] < 2)
 		return FALSE;
