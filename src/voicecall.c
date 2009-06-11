@@ -1016,9 +1016,9 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 		voicecalls_release_queue(modem, calls->multiparty_list);
 		voicecalls_release_next(modem);
 	} else {
-		struct ofono_call *v = calls->multiparty_list->data;
+		struct voicecall *v = calls->multiparty_list->data;
 
-		if (v->status == CALL_STATUS_HELD)
+		if (v->call->status == CALL_STATUS_HELD)
 			calls->ops->release_all_held(modem, generic_callback,
 							calls);
 		else
