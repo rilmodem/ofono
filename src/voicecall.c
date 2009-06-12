@@ -1002,6 +1002,12 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 	if (!calls->ops->release_specific)
 		return dbus_gsm_not_implemented(msg);
 
+	if (!calls->ops->release_all_held)
+		return dbus_gsm_not_implemented(msg);
+
+	if (!calls->ops->release_all_active)
+		return dbus_gsm_not_implemented(msg);
+
 	if (g_slist_length(calls->multiparty_list) == 0) {
 		DBusMessage *reply = dbus_message_new_method_return(msg);
 		return reply;
