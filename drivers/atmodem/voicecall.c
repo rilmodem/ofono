@@ -749,7 +749,7 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 	dump_response("ring_notify", TRUE, result);
 
 	/* RING can repeat, ignore if we already have an incoming call */
-	if (g_slist_find_custom(at->voicecall->calls, (gconstpointer)4,
+	if (g_slist_find_custom(at->voicecall->calls, GINT_TO_POINTER(4),
 				call_compare_by_status))
 		return;
 
@@ -778,7 +778,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	dump_response("cring_notify", TRUE, result);
 
 	/* CRING can repeat, ignore if we already have an incoming call */
-	if (g_slist_find_custom(at->voicecall->calls, (gconstpointer)4,
+	if (g_slist_find_custom(at->voicecall->calls, GINT_TO_POINTER(4),
 				call_compare_by_status))
 		return;
 
@@ -824,7 +824,7 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 
 	dump_response("clip_notify", TRUE, result);
 
-	l = g_slist_find_custom(at->voicecall->calls, (gconstpointer)4,
+	l = g_slist_find_custom(at->voicecall->calls, GINT_TO_POINTER(4),
 				call_compare_by_status);
 
 	if (l == NULL) {
