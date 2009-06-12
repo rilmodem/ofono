@@ -1010,22 +1010,33 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
 
-	/* We have waiting calls, can't use +CHLD to release */
-	if (voicecalls_have_waiting(calls)) {
-		calls->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
-		voicecalls_release_queue(modem, calls->multiparty_list);
-		voicecalls_release_next(modem);
-	} else {
+	/* We don't have waiting calls, as we can't use +CHLD to release */
+	if (!voicecalls_have_waiting(calls)) {
 		struct voicecall *v = calls->multiparty_list->data;
 
-		if (v->call->status == CALL_STATUS_HELD)
+		if (v->call->status == CALL_STATUS_HELD) {
 			calls->ops->release_all_held(modem, generic_callback,
 							calls);
-		else
+			goto out;
+		}
+
+		/* Multiparty is currently active, if we have held calls
+		 * we shouldn't use release_all_active here since this also
+		 * has the side-effect of activating held calls
+		 */
+		if (!voicecalls_have_held(calls)) {
 			calls->ops->release_all_active(modem, generic_callback,
-							calls);
+						calls);
+			goto out;
+		}
 	}
 
+	/* Fall back to the old-fashioned way */
+	calls->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
+	voicecalls_release_queue(modem, calls->multiparty_list);
+	voicecalls_release_next(modem);
+
+out:
 	return NULL;
 }
 
