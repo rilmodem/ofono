@@ -74,10 +74,13 @@ struct ofono_call {
  *   */
 #define OFONO_MAX_OPERATOR_NAME_LENGTH 63
 
+/* MCC is always three digits. MNC is either two or three digits */
+#define OFONO_MAX_MNC_MCC_LENGTH 3
+
 struct ofono_network_operator {
 	char name[OFONO_MAX_OPERATOR_NAME_LENGTH + 1];
-	short mcc;
-	short mnc;
+	char mcc[OFONO_MAX_MNC_MCC_LENGTH + 1];
+	char mnc[OFONO_MAX_MNC_MCC_LENGTH + 1];
 	int status;
 	int tech;
 };

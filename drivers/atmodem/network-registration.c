@@ -45,28 +45,20 @@ static const char *csq_prefix[] = { "+CSQ:", NULL };
 
 struct netreg_data {
 	gboolean supports_tech;
-	short mnc;
-	short mcc;
+	char mnc[OFONO_MAX_MNC_MCC_LENGTH + 1];
+	char mcc[OFONO_MAX_MNC_MCC_LENGTH + 1];
 };
 
-static void extract_mcc_mnc(const char *str, short *mcc, short *mnc)
+static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 {
-	int num = 0;
-	unsigned int i;
-
 	/* Three digit country code */
-	for (i = 0; i < 3; i++)
-		num = num * 10 + (int)(str[i] - '0');
-
-	*mcc = num;
-
-	num = 0;
+	strncpy(mcc, str, OFONO_MAX_MNC_MCC_LENGTH);
+	mcc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
 
 	/* Usually a 2 but sometimes 3 digit network code */
-	for (; i < strlen(str); i++)
-		num = num * 10 + (int)(str[i] - '0');
-
-	*mnc = num;
+	strncpy(mnc, str + OFONO_MAX_MNC_MCC_LENGTH,
+		OFONO_MAX_MNC_MCC_LENGTH);
+	mnc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
 }
 
 static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -154,7 +146,7 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	dump_response("cops_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok || at->netreg->mcc == -1 || at->netreg->mnc == -1) {
+	if (!ok || *at->netreg->mcc == '\0' || *at->netreg->mnc == '\0') {
 		cb(&error, NULL, cbd->data);
 		goto out;
 	}
@@ -181,12 +173,16 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	strncpy(op.name, name, OFONO_MAX_OPERATOR_NAME_LENGTH);
 	op.name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 
-	op.mcc = at->netreg->mcc;
-	op.mnc = at->netreg->mnc;
+	strncpy(op.mcc, at->netreg->mcc, OFONO_MAX_MNC_MCC_LENGTH);
+	op.mcc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
+
+	strncpy(op.mnc, at->netreg->mnc, OFONO_MAX_MNC_MCC_LENGTH);
+	op.mnc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
+
 	op.status = -1;
 	op.tech = tech;
 
-	ofono_debug("cops_cb: %s, %hd %hd %d", name, at->netreg->mcc,
+	ofono_debug("cops_cb: %s, %s %s %d", name, at->netreg->mcc,
 			at->netreg->mnc, tech);
 
 	cb(&error, &op, cbd->data);
@@ -235,15 +231,16 @@ static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		strlen(str) == 0)
 		goto error;
 
-	extract_mcc_mnc(str, &at->netreg->mcc, &at->netreg->mnc);
+	extract_mcc_mnc(str, at->netreg->mcc, at->netreg->mnc);
 
-	ofono_debug("Cops numeric got mcc: %hd, mnc: %hd",
+	ofono_debug("Cops numeric got mcc: %s, mnc: %s",
 			at->netreg->mcc, at->netreg->mnc);
 
 	return;
 
 error:
-	at->netreg->mcc = at->netreg->mnc = -1;
+	*at->netreg->mcc = '\0';
+	*at->netreg->mnc = '\0';
 }
 
 static void at_current_operator(struct ofono_modem *modem,
@@ -356,7 +353,7 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			if (!g_at_result_iter_next_string(&iter, &n))
 				break;
 
-			extract_mcc_mnc(n, &list[num].mcc, &list[num].mnc);
+			extract_mcc_mnc(n, list[num].mcc, list[num].mnc);
 
 			if (!g_at_result_iter_next_number(&iter, &tech))
 				tech = 0;
@@ -376,7 +373,7 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int i = 0;
 
 	for (; i < num; i++) {
-		ofono_debug("Operator: %s, %hd, %hd, status: %d, %d",
+		ofono_debug("Operator: %s, %s, %s, status: %d, %d",
 				list[i].name, list[i].mcc, list[i].mnc,
 				list[i].status, list[i].tech);
 	}
@@ -457,12 +454,12 @@ static void at_register_manual(struct ofono_modem *modem,
 		goto error;
 
 	if (at->netreg->supports_tech && oper->tech != -1)
-		sprintf(buf, "AT+COPS=1,2,\"%03hd%02hd\",%1d", oper->mcc,
-							oper->mnc,
-							oper->tech);
+		sprintf(buf, "AT+COPS=1,2,\"%s%s\",%1d", oper->mcc,
+						oper->mnc,
+						oper->tech);
 	else
-		sprintf(buf, "AT+COPS=1,2,\"%03hd%02hd\"", oper->mcc,
-							oper->mnc);
+		sprintf(buf, "AT+COPS=1,2,\"%s%s\"", oper->mcc,
+						oper->mnc);
 
 	if (g_at_chat_send(at->parser, buf, none_prefix,
 				register_cb, cbd, g_free) > 0)

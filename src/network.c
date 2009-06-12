@@ -180,8 +180,9 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 	int modem_len;
 	int num_children;
 	GSList *l;
-	int *mccmnc;
 	char path[MAX_DBUS_PATH_LEN];
+	char mnc[4];
+	char mcc[4];
 
 	modem_len = snprintf(path, MAX_DBUS_PATH_LEN, "%s/operator",
 				modem->path);
@@ -199,10 +200,6 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 
 	*network_operators = g_try_new0(char *, num_children + 1);
 
-	mccmnc = g_try_new0(int, num_children * 2);
-	for (i = 0; i < num_children; i++)
-		sscanf(children[i], "%3d%3d", &mccmnc[i*2], &mccmnc[i*2+1]);
-
 	/* Quoting 27.007: "The list of operators shall be in order: home
 	 * network, networks referenced in SIM or active application in the
 	 * UICC (GSM or USIM) in the following order: HPLMN selector, User
@@ -217,17 +214,16 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 		int j;
 
 		for (j = 0; children[j]; j++) {
-			if (op->mcc == mccmnc[j*2] && op->mnc == mccmnc[j*2+1]) {
-				/* Enough to store '/' + 3 char wide MCC + 3 char wide MNC + null */
-				(*network_operators)[i] =  g_try_new(char, modem_len + 8);
-				snprintf((*network_operators)[i], modem_len + 8, "%s/%s",
+			sscanf(children[j], "%3[0-9]%[0-9]", mcc, mnc);
+			if (strcmp(op->mcc, mcc) == 0 && strcmp(op->mnc, mnc) == 0) {
+				/* Enough to store '/' + MCC + '_' + MNC + null */
+				(*network_operators)[i] =  g_try_new(char, modem_len + 9);
+				snprintf((*network_operators)[i], modem_len + 9, "%s/%s",
 					path, children[j]);
 				++i;
 			}
 		}
 	}
-
-	g_free(mccmnc);
 
 	dbus_free_string_array(children);
 }
@@ -244,19 +240,13 @@ static gint network_operator_compare(gconstpointer a, gconstpointer b)
 	const struct ofono_network_operator *opa = a;
 	const struct ofono_network_operator *opb = b;
 
-	if (opa->mcc < opb->mcc)
-		return -1;
+	int comp1;
+	int comp2;
 
-	if (opa->mcc > opb->mcc)
-		return 1;
+	comp1 = strcmp(opa->mcc, opb->mcc);
+	comp2 = strcmp(opa->mnc, opb->mnc);
 
-	if (opa->mnc < opb->mnc)
-		return -1;
-
-	if (opa->mnc > opb->mnc)
-		return 1;
-
-	return 0;
+	return comp1 != 0 ? comp1 : comp2;
 }
 
 static inline const char *network_operator_build_path(struct ofono_modem *modem,
@@ -264,7 +254,7 @@ static inline const char *network_operator_build_path(struct ofono_modem *modem,
 {
 	static char path[MAX_DBUS_PATH_LEN];
 
-	snprintf(path, MAX_DBUS_PATH_LEN, "%s/operator/%03d%03d",
+	snprintf(path, MAX_DBUS_PATH_LEN, "%s/operator/%s%s",
 			modem->path, oper->mcc, oper->mnc);
 
 	return path;
@@ -427,16 +417,16 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 
 	dbus_gsm_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
 
-	if (op->operator->mcc != -1) {
-		dbus_uint16_t mcc = op->operator->mcc;
+	if (*op->operator->mcc != '\0') {
+		const char *mcc = op->operator->mcc;
 		dbus_gsm_dict_append(&dict, "MobileCountryCode",
-					DBUS_TYPE_UINT16, &mcc);
+					DBUS_TYPE_STRING, &mcc);
 	}
 
-	if (op->operator->mnc != -1) {
-		dbus_uint16_t mnc = op->operator->mnc;
+	if (*op->operator->mnc != '\0') {
+		const char *mnc = op->operator->mnc;
 		dbus_gsm_dict_append(&dict, "MobileNetworkCode",
-					DBUS_TYPE_UINT16, &mnc);
+					DBUS_TYPE_STRING, &mnc);
 	}
 
 	if (op->operator->tech != -1) {
