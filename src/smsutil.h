@@ -330,6 +330,8 @@ gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
 time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote);
+const char *sms_address_to_string(const struct sms_address *addr);
+
 const guint8 *sms_extract_common(const struct sms *sms, gboolean *out_udhi,
 					guint8 *out_dcs, guint8 *out_udl,
 					guint8 *out_max);

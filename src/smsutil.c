@@ -1677,3 +1677,18 @@ time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote)
 
 	return ret;
 }
+
+const char *sms_address_to_string(const struct sms_address *addr)
+{
+	static char buffer[64];
+
+	if (addr->number_type == SMS_NUMBER_TYPE_INTERNATIONAL &&
+			(strlen(addr->address) > 0) &&
+				addr->address[0] != '+') {
+		buffer[0] = '+';
+		strcpy(buffer + 1, addr->address);
+	} else
+		strcpy(buffer, addr->address);
+
+	return buffer;
+}
