@@ -820,5 +820,8 @@ void at_sms_exit(struct ofono_modem *modem)
 	if (!at->sms)
 		return;
 
+	sms_destroy(at->sms);
+	at->sms = NULL;
+
 	ofono_sms_manager_unregister(modem);
 }
