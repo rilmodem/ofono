@@ -1591,6 +1591,16 @@ gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 	return TRUE;
 }
 
+guint8 sms_udh_iter_get_udh_length(struct sms_udh_iter *iter)
+{
+	return iter->data[0];
+}
+
+const guint8 *sms_udh_iter_get_ud_after_header(struct sms_udh_iter *iter)
+{
+	return iter->data + iter->data[0] + 1;
+}
+
 enum sms_iei sms_udh_iter_get_ie_type(struct sms_udh_iter *iter)
 {
 	if (iter->offset > iter->data[0])
