@@ -1702,3 +1702,76 @@ const char *sms_address_to_string(const struct sms_address *addr)
 
 	return buffer;
 }
+
+gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
+{
+	struct sms_udh_iter iter;
+	enum sms_iei iei;
+	guint8 addr_hdr[4];
+
+	int srcport = -1;
+	int dstport = -1;
+
+	if (!sms_udh_iter_init(sms, &iter))
+		return FALSE;
+
+	/* According to the specification, we have to use the last
+	 * useable header.  Also, we have to ignore ports that are reserved:
+	 * A receiving entity shall ignore (i.e. skip over and commence
+	 * processing at the next information element) any information element
+	 * where the value of the Information-Element-Data is Reserved or not
+	 * supported.
+	*/
+	while ((iei = sms_udh_iter_get_ie_type(&iter)) !=
+			SMS_IEI_INVALID) {
+		switch (iei) {
+		case SMS_IEI_APPLICATION_ADDRESS_8BIT:
+			if (sms_udh_iter_get_ie_length(&iter) != 2)
+				break;
+
+			sms_udh_iter_get_ie_data(&iter, addr_hdr);
+
+			if (addr_hdr[0] < 240)
+				break;
+
+			if (addr_hdr[1] < 240)
+				break;
+
+			dstport = addr_hdr[0];
+			srcport = addr_hdr[1];
+			break;
+
+		case SMS_IEI_APPLICATION_ADDRESS_16BIT:
+			if (sms_udh_iter_get_ie_length(&iter) != 4)
+				break;
+
+			sms_udh_iter_get_ie_data(&iter, addr_hdr);
+
+			if (((addr_hdr[0] << 8) | addr_hdr[1]) > 49151)
+				break;
+
+			if (((addr_hdr[2] << 8) | addr_hdr[3]) > 49151)
+				break;
+
+			dstport = (addr_hdr[0] << 8) | addr_hdr[1];
+			srcport = (addr_hdr[2] << 8) | addr_hdr[3];
+			break;
+
+		default:
+			break;
+		}
+
+		sms_udh_iter_next(&iter);
+	}
+
+	if (dstport == -1 || srcport == -1)
+		return FALSE;
+
+	if (dst)
+		*dst = dstport;
+
+	if (src)
+		*src = srcport;
+
+	return TRUE;
+}

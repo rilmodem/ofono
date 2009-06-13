@@ -353,4 +353,5 @@ gboolean sms_mwi_dcs_decode(guint8 dcs, enum sms_mwi_type *type,
 				enum sms_charset *charset,
 				gboolean *active, gboolean *discard);
 
+gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src);
 #endif
