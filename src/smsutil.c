@@ -1438,6 +1438,93 @@ gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 	return FALSE;
 }
 
+const guint8 *sms_extract_common(const struct sms *sms, gboolean *out_udhi,
+					guint8 *out_dcs, guint8 *out_udl,
+					guint8 *out_max)
+{
+	const guint8 *ud = NULL;
+	guint8 udl;
+	guint8 max;
+	gboolean udhi;
+	guint8 dcs;
+
+	switch (sms->type) {
+	case SMS_TYPE_DELIVER:
+		udhi = sms->deliver.udhi;
+		ud = sms->deliver.ud;
+		udl = sms->deliver.udl;
+		dcs = sms->deliver.dcs;
+		max = sizeof(sms->deliver.ud);
+		break;
+	case SMS_TYPE_DELIVER_REPORT_ACK:
+		udhi = sms->deliver_ack_report.udhi;
+		ud = sms->deliver_ack_report.ud;
+		udl = sms->deliver_ack_report.udl;
+		dcs = sms->deliver_ack_report.dcs;
+		max = sizeof(sms->deliver_ack_report.ud);
+		break;
+	case SMS_TYPE_DELIVER_REPORT_ERROR:
+		udhi = sms->deliver_err_report.udhi;
+		ud = sms->deliver_err_report.ud;
+		udl = sms->deliver_err_report.udl;
+		dcs = sms->deliver_err_report.dcs;
+		max = sizeof(sms->deliver_err_report.ud);
+		break;
+	case SMS_TYPE_STATUS_REPORT:
+		udhi = sms->status_report.udhi;
+		ud = sms->status_report.ud;
+		udl = sms->status_report.udl;
+		dcs = sms->status_report.dcs;
+		max = sizeof(sms->status_report.ud);
+		break;
+	case SMS_TYPE_SUBMIT:
+		udhi = sms->submit.udhi;
+		ud = sms->submit.ud;
+		udl = sms->submit.udl;
+		dcs = sms->submit.dcs;
+		max = sizeof(sms->submit.ud);
+		break;
+	case SMS_TYPE_SUBMIT_REPORT_ACK:
+		udhi = sms->submit_ack_report.udhi;
+		ud = sms->submit_ack_report.ud;
+		udl = sms->submit_ack_report.udl;
+		dcs = sms->submit_ack_report.dcs;
+		max = sizeof(sms->submit_ack_report.ud);
+		break;
+	case SMS_TYPE_SUBMIT_REPORT_ERROR:
+		udhi = sms->submit_err_report.udhi;
+		ud = sms->submit_err_report.ud;
+		udl = sms->submit_err_report.udl;
+		dcs = sms->submit_err_report.dcs;
+		max = sizeof(sms->submit_err_report.ud);
+		break;
+	case SMS_TYPE_COMMAND:
+		udhi = sms->command.udhi;
+		ud = sms->command.cd;
+		udl = sms->command.cdl;
+		dcs = 0;
+		max = sizeof(sms->command.cd);
+		break;
+	};
+
+	if (!ud)
+		return NULL;
+
+	if (out_udhi)
+		*out_udhi = udhi;
+
+	if (out_dcs)
+		*out_dcs = dcs;
+
+	if (out_udl)
+		*out_udl = udl;
+
+	if (out_max)
+		*out_max = max;
+
+	return ud;
+}
+
 gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 {
 	gboolean udhi = FALSE;
@@ -1447,57 +1534,12 @@ gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 	guint8 max_len;
 	guint8 offset;
 	guint8 max_offset;
+	guint8 max_ud_len;
 
-	switch (sms->type) {
-	case SMS_TYPE_DELIVER:
-		udhi = sms->deliver.udhi;
-		hdr = sms->deliver.ud;
-		udl = sms->deliver.udl;
-		dcs = sms->deliver.dcs;
-		break;
-	case SMS_TYPE_DELIVER_REPORT_ACK:
-		udhi = sms->deliver_ack_report.udhi;
-		hdr = sms->deliver_ack_report.ud;
-		udl = sms->deliver_ack_report.udl;
-		dcs = sms->deliver_ack_report.dcs;
-		break;
-	case SMS_TYPE_DELIVER_REPORT_ERROR:
-		udhi = sms->deliver_err_report.udhi;
-		hdr = sms->deliver_err_report.ud;
-		udl = sms->deliver_err_report.udl;
-		dcs = sms->deliver_err_report.dcs;
-		break;
-	case SMS_TYPE_STATUS_REPORT:
-		udhi = sms->status_report.udhi;
-		hdr = sms->status_report.ud;
-		udl = sms->status_report.udl;
-		dcs = sms->status_report.dcs;
-		break;
-	case SMS_TYPE_SUBMIT:
-		udhi = sms->submit.udhi;
-		hdr = sms->submit.ud;
-		udl = sms->submit.udl;
-		dcs = sms->submit.dcs;
-		break;
-	case SMS_TYPE_SUBMIT_REPORT_ACK:
-		udhi = sms->submit_ack_report.udhi;
-		hdr = sms->submit_ack_report.ud;
-		udl = sms->submit_ack_report.udl;
-		dcs = sms->submit_ack_report.dcs;
-		break;
-	case SMS_TYPE_SUBMIT_REPORT_ERROR:
-		udhi = sms->submit_err_report.udhi;
-		hdr = sms->submit_err_report.ud;
-		udl = sms->submit_err_report.udl;
-		dcs = sms->submit_err_report.dcs;
-		break;
-	case SMS_TYPE_COMMAND:
-		udhi = sms->command.udhi;
-		hdr = sms->command.cd;
-		udl = sms->command.cdl;
-		dcs = 0;
-		break;
-	};
+	hdr = sms_extract_common(sms, &udhi, &dcs, &udl, &max_ud_len);
+
+	if (!hdr)
+		return FALSE;
 
 	if (!udhi)
 		return FALSE;
@@ -1511,7 +1553,7 @@ gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 	if (max_len < 3)
 		return FALSE;
 
-	if (max_len > 140)
+	if (max_len > max_ud_len)
 		return FALSE;
 
 	/* Must have at least one information-element if udhi is true */

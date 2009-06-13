@@ -330,6 +330,9 @@ gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
 time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote);
+const guint8 *sms_extract_common(const struct sms *sms, gboolean *out_udhi,
+					guint8 *out_dcs, guint8 *out_udl,
+					guint8 *out_max);
 
 gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter);
 enum sms_iei sms_udh_iter_get_ie_type(struct sms_udh_iter *iter);
