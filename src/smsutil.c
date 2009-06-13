@@ -1931,3 +1931,100 @@ unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
 
 	return buf;
 }
+
+/*!
+ * Decodes a list of SMSes that contain a text in either 7bit or UCS2 encoding.
+ * The list must be sorted in order of the sequence number.  This function
+ * assumes that all fragments have a proper DCS.
+ *
+ * Returns a pointer to a newly allocated string or NULL if the conversion
+ * failed.
+ */
+char *sms_decode_text(GSList *sms_list)
+{
+	GSList *l;
+	GString *str;
+	const struct sms *sms = sms_list->data;
+	int guess_size = g_slist_length(sms_list);
+	char *utf8;
+
+	if (guess_size == 1)
+		guess_size = 160;
+	else
+		guess_size = (guess_size - 1) * 160;
+
+	str = g_string_sized_new(guess_size);
+
+	for (l = sms_list; l; l = l->next) {
+		guint8 taken = 0;
+		guint8 dcs;
+		guint8 udl;
+		enum sms_charset charset;
+		int udl_in_bytes;
+		const guint8 *ud;
+		struct sms_udh_iter iter;
+		char *converted;
+
+		sms = l->data;
+
+		ud = sms_extract_common(sms, NULL, &dcs, &udl, NULL);
+
+		if (!sms_mwi_dcs_decode(dcs, NULL, &charset, NULL, NULL) &&
+			!sms_dcs_decode(dcs, NULL, &charset, NULL, NULL))
+			continue;
+
+		if (charset == SMS_CHARSET_8BIT)
+			continue;
+
+		if (sms_udh_iter_init(sms, &iter))
+			taken = sms_udh_iter_get_udh_length(&iter) + 1;
+
+		udl_in_bytes = sms_udl_in_bytes(udl, dcs);
+
+		if (charset == SMS_CHARSET_7BIT) {
+			unsigned char buf[160];
+			long written;
+			int max_chars = udl - (taken * 8 + 6) / 7;
+
+			unpack_7bit_own_buf(ud + taken, udl_in_bytes - taken,
+						taken, FALSE, max_chars,
+						&written, 0, buf);
+
+			/* Take care of improperly split fragments */
+			if (buf[written-1] == 0x1b)
+				written = written - 1;
+
+			converted = convert_gsm_to_utf8(buf, written,
+							NULL, NULL, 0);
+
+		} else {
+			const gchar *from = (const gchar *)(ud + taken);
+			/* According to the spec: A UCS2 character shall not be
+			 * split in the middle; if the length of the User Data
+			 * Header is odd, the maximum length of the whole TP-UD
+			 * field is 139 octets
+			 */
+			gssize num_ucs2_chars = (udl_in_bytes - taken) >> 1;
+			num_ucs2_chars = num_ucs2_chars << 1;
+
+			converted = g_convert(from, num_ucs2_chars,
+						"UTF-8//TRANSLIT", "UCS-2BE",
+						NULL, NULL, NULL);
+
+		}
+
+		if (converted) {
+			g_string_append(str, converted);
+			g_free(converted);
+		}
+	}
+
+	utf8 = g_string_free(str, FALSE);
+
+	if (strlen(utf8) == 0) {
+		g_free(utf8);
+		return NULL;
+	}
+
+	return utf8;
+}
