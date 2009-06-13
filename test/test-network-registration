@@ -66,7 +66,7 @@ if __name__ == "__main__":
 		print ""
 
 		print "Operator at path: '%s'" % (path)
-		print "Name: '%s', MCC: '%d', MNC: '%d', status: '%s'" %\
+		print "Name: '%s', MCC: '%s', MNC: '%s', status: '%s'" %\
 			(props['Name'], props['MobileCountryCode'],
 				props['MobileNetworkCode'], props['Status'])
 

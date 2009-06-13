@@ -45,20 +45,19 @@ static const char *csq_prefix[] = { "+CSQ:", NULL };
 
 struct netreg_data {
 	gboolean supports_tech;
-	char mnc[OFONO_MAX_MNC_MCC_LENGTH + 1];
-	char mcc[OFONO_MAX_MNC_MCC_LENGTH + 1];
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 };
 
 static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 {
 	/* Three digit country code */
-	strncpy(mcc, str, OFONO_MAX_MNC_MCC_LENGTH);
-	mcc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
+	strncpy(mcc, str, OFONO_MAX_MCC_LENGTH);
+	mcc[OFONO_MAX_MCC_LENGTH] = '\0';
 
 	/* Usually a 2 but sometimes 3 digit network code */
-	strncpy(mnc, str + OFONO_MAX_MNC_MCC_LENGTH,
-		OFONO_MAX_MNC_MCC_LENGTH);
-	mnc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
+	strncpy(mnc, str + OFONO_MAX_MCC_LENGTH, OFONO_MAX_MNC_LENGTH);
+	mnc[OFONO_MAX_MNC_LENGTH] = '\0';
 }
 
 static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -146,7 +145,7 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	dump_response("cops_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok || *at->netreg->mcc == '\0' || *at->netreg->mnc == '\0') {
+	if (!ok || at->netreg->mcc[0] == '\0' || at->netreg->mnc[0] == '\0') {
 		cb(&error, NULL, cbd->data);
 		goto out;
 	}
@@ -173,11 +172,11 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	strncpy(op.name, name, OFONO_MAX_OPERATOR_NAME_LENGTH);
 	op.name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 
-	strncpy(op.mcc, at->netreg->mcc, OFONO_MAX_MNC_MCC_LENGTH);
-	op.mcc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
+	strncpy(op.mcc, at->netreg->mcc, OFONO_MAX_MCC_LENGTH);
+	op.mcc[OFONO_MAX_MCC_LENGTH] = '\0';
 
-	strncpy(op.mnc, at->netreg->mnc, OFONO_MAX_MNC_MCC_LENGTH);
-	op.mnc[OFONO_MAX_MNC_MCC_LENGTH] = '\0';
+	strncpy(op.mnc, at->netreg->mnc, OFONO_MAX_MNC_LENGTH);
+	op.mnc[OFONO_MAX_MNC_LENGTH] = '\0';
 
 	op.status = -1;
 	op.tech = tech;
@@ -239,8 +238,8 @@ static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	return;
 
 error:
-	*at->netreg->mcc = '\0';
-	*at->netreg->mnc = '\0';
+	at->netreg->mcc[0] = '\0';
+	at->netreg->mnc[0] = '\0';
 }
 
 static void at_current_operator(struct ofono_modem *modem,
@@ -454,12 +453,10 @@ static void at_register_manual(struct ofono_modem *modem,
 		goto error;
 
 	if (at->netreg->supports_tech && oper->tech != -1)
-		sprintf(buf, "AT+COPS=1,2,\"%s%s\",%1d", oper->mcc,
-						oper->mnc,
-						oper->tech);
+		sprintf(buf, "AT+COPS=1,2,\"%s%s\",%1d", oper->mcc, oper->mnc,
+				oper->tech);
 	else
-		sprintf(buf, "AT+COPS=1,2,\"%s%s\"", oper->mcc,
-						oper->mnc);
+		sprintf(buf, "AT+COPS=1,2,\"%s%s\"", oper->mcc, oper->mnc);
 
 	if (g_at_chat_send(at->parser, buf, none_prefix,
 				register_cb, cbd, g_free) > 0)

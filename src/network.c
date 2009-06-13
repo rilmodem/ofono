@@ -177,14 +177,15 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 	DBusConnection *conn = dbus_gsm_connection();
 	char **children;
 	int i;
-	int modem_len;
+	int prefix_len;
 	int num_children;
 	GSList *l;
 	char path[MAX_DBUS_PATH_LEN];
-	char mnc[4];
-	char mcc[4];
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	int op_path_len;
 
-	modem_len = snprintf(path, MAX_DBUS_PATH_LEN, "%s/operator",
+	prefix_len = snprintf(path, MAX_DBUS_PATH_LEN, "%s/operator",
 				modem->path);
 
 	if (!dbus_connection_list_registered(conn, path, &children)) {
@@ -199,6 +200,10 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 	num_children = i;
 
 	*network_operators = g_try_new0(char *, num_children + 1);
+	
+	/* Enough to store '/' + MCC + MNC + null */
+	op_path_len = prefix_len;
+	op_path_len += OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 2;
 
 	/* Quoting 27.007: "The list of operators shall be in order: home
 	 * network, networks referenced in SIM or active application in the
@@ -215,11 +220,11 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 
 		for (j = 0; children[j]; j++) {
 			sscanf(children[j], "%3[0-9]%[0-9]", mcc, mnc);
-			if (strcmp(op->mcc, mcc) == 0 && strcmp(op->mnc, mnc) == 0) {
-				/* Enough to store '/' + MCC + '_' + MNC + null */
-				(*network_operators)[i] =  g_try_new(char, modem_len + 9);
-				snprintf((*network_operators)[i], modem_len + 9, "%s/%s",
-					path, children[j]);
+			if (!strcmp(op->mcc, mcc) && !strcmp(op->mnc, mnc)) {
+				(*network_operators)[i] =
+					g_try_new(char, op_path_len);
+				snprintf((*network_operators)[i], op_path_len,
+						"%s/%s", path, children[j]);
 				++i;
 			}
 		}
