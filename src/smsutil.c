@@ -1861,3 +1861,73 @@ gboolean sms_extract_concatenation(const struct sms *sms, int *ref_num,
 
 	return TRUE;
 }
+
+/*!
+ * Decodes a list of SMSes that contain a datagram.  The list must be
+ * sorted in order of the sequence number.  This function assumes that
+ * all fragments are coded using 8-bit character set.
+ *
+ * Returns a pointer to a newly allocated array or NULL if the
+ * conversion could not be performed
+ */
+unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
+{
+	GSList *l;
+	const struct sms *sms;
+	unsigned char *buf;
+	long len = 0;
+
+	for (l = sms_list; l; l = l->next) {
+		guint8 taken = 0;
+		guint8 udl;
+		const guint8 *ud;
+		struct sms_udh_iter iter;
+
+		sms = l->data;
+
+		ud = sms_extract_common(sms, NULL, NULL, &udl, NULL);
+
+		if (!ud)
+			return NULL;
+
+		/* Note we do this because we must check whether the UDH
+		 * is properly formatted.  If not, the entire UDH is ignored
+		 */
+		if (sms_udh_iter_init(sms, &iter))
+			taken = sms_udh_iter_get_udh_length(&iter) + 1;
+
+		len += udl - taken;
+	}
+
+	/* Data is probably in headers we can't understand */
+	if (len == 0)
+		return NULL;
+
+	buf = g_try_new(unsigned char, len);
+
+	if (!buf)
+		return NULL;
+
+	len = 0;
+	for (l = sms_list; l; l = l->next) {
+		guint8 taken = 0;
+		guint8 udl;
+		const guint8 *ud;
+		struct sms_udh_iter iter;
+
+		sms = l->data;
+
+		ud = sms_extract_common(sms, NULL, NULL, &udl, NULL);
+
+		if (sms_udh_iter_init(sms, &iter))
+			taken = sms_udh_iter_get_udh_length(&iter) + 1;
+
+		memcpy(buf + len, ud + taken, udl - taken);
+		len += udl - taken;
+	}
+
+	if (out_len)
+		*out_len = len;
+
+	return buf;
+}
