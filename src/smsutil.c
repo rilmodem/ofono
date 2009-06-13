@@ -1602,7 +1602,7 @@ gboolean sms_udh_iter_next(struct sms_udh_iter *iter)
 /* Returns both forms of time.  The time_t value returns the time in local
  * timezone.  The struct tm is filled out with the remote time information
  */
-time_t sms_scts_to_time(struct sms_scts *scts, struct tm *remote)
+time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote)
 {
 	struct tm t;
 	time_t ret;
