@@ -270,18 +270,23 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct at_data *at = ofono_modem_userdata(modem);
-	int pdulen;
-	const char *pdu;
+	const char *hexpdu;
+	long pdu_len;
+	int tpdu_len;
+	unsigned char pdu[164];
 	char buf[256];
 
 	dump_response("at_cmt_notify", TRUE, result);
 
-	if (!at_parse_pdu_common(result, "+CMT:", &pdu, &pdulen)) {
+	if (!at_parse_pdu_common(result, "+CMT:", &hexpdu, &tpdu_len)) {
 		ofono_error("Unable to parse CMT notification");
 		return;
 	}
 
-	ofono_debug("Got new SMS Deliver PDU via CMT: %s, %d", pdu, pdulen);
+	ofono_debug("Got new SMS Deliver PDU via CMT: %s, %d", pdu, tpdu_len);
+
+	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
+	ofono_sms_deliver_notify(modem, pdu, pdu_len, tpdu_len);
 
 	/* We must acknowledge the PDU using CNMA */
 	if (at->sms->cnma_ack_pdu)
@@ -295,10 +300,12 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 
 static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	//struct ofono_modem *modem = user_data;
+	struct ofono_modem *modem = user_data;
 	GAtResultIter iter;
-	int pdulen;
-	const char *pdu;
+	const char *hexpdu;
+	unsigned char pdu[164];
+	long pdu_len;
+	int tpdu_len;
 
 	dump_response("at_cmgr_cb", ok, result);
 
@@ -318,15 +325,18 @@ static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_skip_next(&iter))
 		goto err;
 
-	if (!g_at_result_iter_next_number(&iter, &pdulen))
+	if (!g_at_result_iter_next_number(&iter, &tpdu_len))
 		goto err;
 
 	if (!g_at_result_iter_next(&iter, NULL))
 		goto err;
 
-	pdu = g_at_result_iter_raw_line(&iter);
+	hexpdu = g_at_result_iter_raw_line(&iter);
 
-	ofono_debug("Got PDU: %s, with len: %d", pdu, pdulen);
+	ofono_debug("Got PDU: %s, with len: %d", hexpdu, tpdu_len);
+
+	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
+	ofono_sms_deliver_notify(modem, pdu, pdu_len, tpdu_len);
 	return;
 
 err:

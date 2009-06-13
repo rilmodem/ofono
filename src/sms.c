@@ -38,6 +38,7 @@
 #include "common.h"
 #include "util.h"
 #include "sim.h"
+#include "smsutil.h"
 
 #define SMS_MANAGER_INTERFACE "org.ofono.SmsManager"
 
@@ -263,9 +264,311 @@ static GDBusMethodTable sms_manager_methods[] = {
 };
 
 static GDBusSignalTable sms_manager_signals[] = {
-	{ "PropertyChanged",	"sv"	},
+	{ "PropertyChanged",	"sv"		},
+	{ "IncomingMessage",	"sa{sv}"	},
+	{ "ImmediateMessage",	"sa{sv}"	},
 	{ }
 };
+
+static void dispatch_app_datagram(struct ofono_modem *modem, int dst, int src,
+					unsigned char *buf, long len)
+{
+	ofono_debug("Got app datagram for dst port: %d, src port: %d",
+			dst, src);
+	ofono_debug("Contents-Len: %ld", len);
+}
+
+static void dispatch_text_message(struct ofono_modem *modem,
+					const char *message,
+					enum sms_class cls,
+					const struct sms_address *addr,
+					const struct sms_scts *scts)
+{
+	DBusConnection *conn = dbus_gsm_connection();
+	DBusMessage *signal;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+	char buf[128];
+	const char *signal_name;
+	time_t ts;
+	struct tm remote;
+	const char *str = buf;
+
+	if (!message)
+		return;
+
+	if (cls == SMS_CLASS_0)
+		signal_name = "ImmediateMessage";
+	else
+		signal_name = "IncomingMessage";
+
+	signal = dbus_message_new_signal(modem->path, SMS_MANAGER_INTERFACE,
+						signal_name);
+
+	if (!signal)
+		return;
+
+	dbus_message_iter_init_append(signal, &iter);
+
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &message);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+						PROPERTIES_ARRAY_SIGNATURE,
+						&dict);
+
+	ts = sms_scts_to_time(scts, &remote);
+
+	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", localtime(&ts));
+	buf[127] = '\0';
+	dbus_gsm_dict_append(&dict, "LocalSentTime", DBUS_TYPE_STRING, &str);
+
+	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", &remote);
+	buf[127] = '\0';
+	dbus_gsm_dict_append(&dict, "SentTime", DBUS_TYPE_STRING, &str);
+
+	str = sms_address_to_string(addr);
+	dbus_gsm_dict_append(&dict, "Sender", DBUS_TYPE_STRING, &str);
+
+	dbus_message_iter_close_container(&iter, &dict);
+
+	g_dbus_send_message(conn, signal);
+}
+
+static void sms_dispatch(struct ofono_modem *modem, GSList *sms_list)
+{
+	GSList *l;
+	const struct sms *sms;
+	enum sms_charset old_charset;
+	enum sms_class cls;
+	int srcport = -1;
+	int dstport = -1;
+
+	/* Qutoting 23.040: The TP elements in the SMS‑SUBMIT PDU, apart from
+	 * TP‑MR, TP-SRR, TP‑UDL and TP‑UD, should remain unchanged for each
+	 * SM which forms part of a concatenated SM, otherwise this may lead
+	 * to irrational behaviour
+	 *
+	 * This means that we assume that at least the charset is the same
+	 * across all parts of the SMS in the case of 8-bit data.  Other
+	 * cases can be handled by converting to UTF8.
+	 *
+	 * We also check that if 8-bit or 16-bit application addressing is
+	 * used, the addresses are the same across all segments.
+	 */
+
+	for (l = sms_list; l; l = l->next) {
+		guint8 dcs;
+		gboolean comp = FALSE;
+		enum sms_charset charset;
+		int cdst = -1;
+		int csrc = -1;
+
+		sms = l->data;
+		dcs = sms->deliver.dcs;
+
+		if (sms_mwi_dcs_decode(dcs, NULL, &charset, NULL, NULL))
+			cls = SMS_CLASS_UNSPECIFIED;
+		else if (!sms_dcs_decode(dcs, &cls, &charset, &comp, NULL)) {
+			ofono_error("The deliver DCS is not recognized");
+			return;
+		}
+
+		if (comp) {
+			ofono_error("Compressed data not supported");
+			return;
+		}
+
+		if (l == sms_list)
+			old_charset = charset;
+
+		if (charset == SMS_CHARSET_8BIT && charset != old_charset) {
+			ofono_error("Can't concatenate disparate charsets");
+			return;
+		}
+
+		if (sms_extract_app_port(sms, &cdst, &csrc) &&
+				(l == sms_list)) {
+			srcport = csrc;
+			dstport = cdst;
+		}
+
+		if (srcport != csrc || dstport != cdst) {
+			ofono_error("Source / Destination ports across "
+					"concatenated message are not the "
+					"same, ignoring");
+			return;
+		}
+	}
+
+	/* Handle datagram */
+	if (old_charset == SMS_CHARSET_8BIT) {
+		unsigned char *buf;
+		long len;
+
+		if (srcport == -1 || dstport == -1) {
+			ofono_error("Got an 8-bit encoded message, however "
+					"no valid src/address port, ignore");
+			return;
+		}
+
+		buf = sms_decode_datagram(sms_list, &len);
+
+		if (!buf)
+			return;
+
+		dispatch_app_datagram(modem, dstport, srcport, buf, len);
+
+		g_free(buf);
+	} else {
+		char *message = sms_decode_text(sms_list);
+
+		if (!message)
+			return;
+
+		sms = sms_list->data;
+
+		dispatch_text_message(modem, message, cls, &sms->deliver.oaddr,
+					&sms->deliver.scts);
+		g_free(message);
+	}
+}
+
+static void handle_deliver(struct ofono_modem *modem, const struct sms *sms)
+{
+	GSList *l;
+
+	if (sms_extract_concatenation(sms, NULL, NULL, NULL)) {
+		ofono_error("Concatenation not yet handled");
+		return;
+	}
+
+	l = g_slist_append(NULL, (void *)sms);
+	sms_dispatch(modem, l);
+	g_slist_free(l);
+}
+
+static void handle_mwi(struct ofono_modem *modem, struct sms *mwi)
+{
+	ofono_error("MWI information not yet handled");
+}
+
+void ofono_sms_deliver_notify(struct ofono_modem *modem, unsigned char *pdu,
+				int len, int tpdu_len)
+{
+	struct sms sms;
+	enum sms_class cls;
+	gboolean discard;
+
+	if (!sms_decode(pdu, len, FALSE, tpdu_len, &sms)) {
+		ofono_error("Unable to decode PDU");
+		return;
+	}
+
+	if (sms.type != SMS_TYPE_DELIVER) {
+		ofono_error("Expecting a DELIVER pdu");
+		return;
+	}
+
+	if (sms.deliver.pid == SMS_PID_TYPE_SM_TYPE_0) {
+		ofono_debug("Explicitly ignoring type 0 SMS");
+		return;
+	}
+
+	/* This is an older style MWI notification, process MWI
+	 * headers and handle it like any other message */
+	if (sms.deliver.pid == SMS_PID_TYPE_RETURN_CALL) {
+		handle_mwi(modem, &sms);
+		goto out;
+	}
+
+	/* The DCS indicates this is an MWI notification, process it
+	 * and then handle the User-Data as any other message */
+	if (sms_mwi_dcs_decode(sms.deliver.dcs, NULL, NULL, NULL, &discard)) {
+		handle_mwi(modem, &sms);
+
+		if (discard)
+			return;
+
+		goto out;
+	}
+
+	if (!sms_dcs_decode(sms.deliver.dcs, &cls, NULL, NULL, NULL)) {
+		ofono_error("Unknown / Reserved DCS.  Ignoring");
+		return;
+	}
+
+	switch (sms.deliver.pid) {
+	case SMS_PID_TYPE_ME_DOWNLOAD:
+		if (cls == SMS_CLASS_1) {
+			ofono_error("ME Download message ignored");
+			return;
+		}
+
+		break;
+	case SMS_PID_TYPE_ME_DEPERSONALIZATION:
+		if (sms.deliver.dcs == 0x11) {
+			ofono_error("ME Depersonalization message ignored");
+			return;
+		}
+
+		break;
+	case SMS_PID_TYPE_USIM_DOWNLOAD:
+	case SMS_PID_TYPE_ANSI136:
+		if (cls == SMS_CLASS_2) {
+			ofono_error("(U)SIM Download messages not supported");
+			return;
+		}
+
+		/* Otherwise handle in a "normal" way */
+		break;
+	default:
+		break;
+	}
+
+	/* Check to see if the SMS has any other MWI related headers,
+	 * as sometimes they are "tacked on" by the SMSC.
+	 * While we're doing this we also check for messages containing
+	 * WCMP headers or headers that can't possibly be in a normal
+	 * message.  If we find messages like that, we ignore them.
+	 */
+	if (sms.deliver.udhi) {
+		struct sms_udh_iter iter;
+		enum sms_iei iei;
+
+		if (!sms_udh_iter_init(&sms, &iter))
+			goto out;
+
+		while ((iei = sms_udh_iter_get_ie_type(&iter)) !=
+				SMS_IEI_INVALID) {
+			if (iei > 0x25) {
+				ofono_error("Reserved / Unknown / USAT"
+						"header in use, ignore");
+				return;
+			}
+
+			switch (iei) {
+			case SMS_IEI_SPECIAL_MESSAGE_INDICATION:
+			case SMS_IEI_ENHANCED_VOICE_MAIL_INFORMATION:
+				handle_mwi(modem, &sms);
+				goto out;
+			case SMS_IEI_WCMP:
+				ofono_error("No support for WCMP, ignoring");
+				return;
+			default:
+				sms_udh_iter_next(&iter);
+			}
+		}
+	}
+
+out:
+	handle_deliver(modem, &sms);
+}
+
+void ofono_sms_status_notify(struct ofono_modem *modem, unsigned char *pdu,
+				int len, int tpdu_len)
+{
+	ofono_error("SMS Status-Report not yet handled");
+}
 
 int ofono_sms_manager_register(struct ofono_modem *modem,
 					struct ofono_sms_ops *ops)

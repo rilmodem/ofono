@@ -392,3 +392,8 @@ struct ofono_sms_ops {
 int ofono_sms_manager_register(struct ofono_modem *modem,
 				struct ofono_sms_ops *ops);
 void ofono_sms_manager_unregister(struct ofono_modem *modem);
+
+void ofono_sms_deliver_notify(struct ofono_modem *modem, unsigned char *pdu,
+				int len, int tpdu_len);
+void ofono_sms_status_notify(struct ofono_modem *modem, unsigned char *pdu,
+				int len, int tpdu_len);
