@@ -1775,3 +1775,89 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
 
 	return TRUE;
 }
+
+gboolean sms_extract_concatenation(const struct sms *sms, int *ref_num,
+					int *max_msgs, int *seq_num)
+{
+	struct sms_udh_iter iter;
+	enum sms_iei iei;
+	guint8 concat_hdr[4];
+	int rn, max, seq;
+	gboolean concatenated = FALSE;
+
+	/* We must ignore the entire user_data header here:
+	 * If the length of the User Data Header is such that there
+	 * are too few or too many octets in the final Information
+	 * Element then the whole User Data Header shall be ignored.
+	 */
+	if (!sms_udh_iter_init(sms, &iter))
+		return FALSE;
+
+	/* According to the specification, we have to use the last
+	 * useable header:
+	 * In the event that IEs determined as not repeatable are
+	 * duplicated, the last occurrence of the IE shall be used.
+	 * In the event that two or more IEs occur which have mutually
+	 * exclusive meanings (e.g. an 8bit port address and a 16bit
+	 * port address), then the last occurring IE shall be used.
+	 */
+	while ((iei = sms_udh_iter_get_ie_type(&iter)) !=
+			SMS_IEI_INVALID) {
+		switch (iei) {
+		case SMS_IEI_CONCATENATED_8BIT:
+			if (sms_udh_iter_get_ie_length(&iter) != 3)
+				break;
+
+			sms_udh_iter_get_ie_data(&iter, concat_hdr);
+
+			if (concat_hdr[1] == 0)
+				break;
+
+			if (concat_hdr[2] == 0 || concat_hdr[1] > concat_hdr[2])
+				break;
+
+			rn = concat_hdr[0];
+			max = concat_hdr[1];
+			seq = concat_hdr[2];
+			concatenated = TRUE;
+			break;
+
+		case SMS_IEI_CONCATENATED_16BIT:
+			if (sms_udh_iter_get_ie_length(&iter) != 4)
+				break;
+
+			sms_udh_iter_get_ie_data(&iter, concat_hdr);
+
+			if (concat_hdr[2] == 0)
+				break;
+
+			if (concat_hdr[3] == 0 ||
+					concat_hdr[2] > concat_hdr[3])
+				break;
+
+			rn = (concat_hdr[0] << 8) | concat_hdr[1];
+			max = concat_hdr[2];
+			seq = concat_hdr[3];
+			concatenated = TRUE;
+			break;
+		default:
+			break;
+		}
+
+		sms_udh_iter_next(&iter);
+	}
+
+	if (!concatenated)
+		return FALSE;
+
+	if (ref_num)
+		*ref_num = rn;
+
+	if (max_msgs)
+		*max_msgs = max;
+
+	if (seq_num)
+		*seq_num = seq;
+
+	return TRUE;
+}
