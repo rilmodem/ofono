@@ -49,6 +49,7 @@ struct sms_manager_data {
 	int flags;
 	DBusMessage *pending;
 	struct ofono_phone_number sca;
+	struct sms_assembly *assembly;
 };
 
 static struct sms_manager_data *sms_manager_create()
@@ -59,6 +60,8 @@ static struct sms_manager_data *sms_manager_create()
 
 	sms->sca.type = 129;
 
+	sms->assembly = sms_assembly_new();
+
 	return sms;
 }
 
@@ -66,6 +69,11 @@ static void sms_manager_destroy(gpointer userdata)
 {
 	struct ofono_modem *modem = userdata;
 	struct sms_manager_data *data = modem->sms_manager;
+
+	if (data->assembly) {
+		sms_assembly_free(data->assembly);
+		data->assembly = NULL;
+	}
 
 	g_free(data);
 }
@@ -433,16 +441,37 @@ static void sms_dispatch(struct ofono_modem *modem, GSList *sms_list)
 	}
 }
 
-static void handle_deliver(struct ofono_modem *modem, const struct sms *sms)
+static void handle_deliver(struct ofono_modem *modem,
+				const struct sms *incoming)
 {
+	struct sms_manager_data *sms = modem->sms_manager;
 	GSList *l;
+	guint16 ref;
+	guint8 max;
+	guint8 seq;
 
-	if (sms_extract_concatenation(sms, NULL, NULL, NULL)) {
-		ofono_error("Concatenation not yet handled");
+	if (sms_extract_concatenation(incoming, &ref, &max, &seq)) {
+		GSList *sms_list;
+
+		if (!sms->assembly)
+			return;
+
+		sms_list = sms_assembly_add_fragment(sms->assembly,
+							incoming, time(NULL),
+							&incoming->deliver.oaddr,
+							ref, max, seq);
+
+		if (!sms_list)
+			return;
+
+		sms_dispatch(modem, sms_list);
+		g_slist_foreach(sms_list, (GFunc)g_free, NULL);
+		g_slist_free(sms_list);
+
 		return;
 	}
 
-	l = g_slist_append(NULL, (void *)sms);
+	l = g_slist_append(NULL, (void *)incoming);
 	sms_dispatch(modem, l);
 	g_slist_free(l);
 }
