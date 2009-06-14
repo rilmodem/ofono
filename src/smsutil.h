@@ -321,6 +321,20 @@ struct sms_udh_iter {
 	guint8 offset;
 };
 
+struct sms_assembly_node {
+	struct sms_address addr;
+	time_t ts;
+	GSList *fragment_list;
+	guint8 ref;
+	guint8 max_fragments;
+	guint8 num_fragments;
+	unsigned int bitmap[8];
+};
+
+struct sms_assembly {
+	GSList *assembly_list;
+};
+
 gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 			int tpdu_len, struct sms *out);
 
@@ -360,4 +374,11 @@ gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len);
 char *sms_decode_text(GSList *sms_list);
 
+struct sms_assembly *sms_assembly_new();
+void sms_assembly_free(struct sms_assembly *assembly);
+GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
+					const struct sms *sms, time_t ts,
+					const struct sms_address *addr,
+					guint16 ref, guint8 max, guint8 seq);
+void sms_assembly_expire(struct sms_assembly *assembly, time_t before);
 #endif

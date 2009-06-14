@@ -2029,3 +2029,151 @@ char *sms_decode_text(GSList *sms_list)
 
 	return utf8;
 }
+
+struct sms_assembly *sms_assembly_new()
+{
+	return g_new0(struct sms_assembly, 1);
+}
+
+void sms_assembly_free(struct sms_assembly *assembly)
+{
+	GSList *l;
+
+	for (l = assembly->assembly_list; l; l = l->next) {
+		struct sms_assembly_node *node = l->data;
+
+		g_slist_foreach(node->fragment_list, (GFunc)g_free, 0);
+		g_slist_free(node->fragment_list);
+		g_free(node);
+	}
+
+	g_slist_free(assembly->assembly_list);
+	g_free(assembly);
+}
+
+GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
+					const struct sms *sms, time_t ts,
+					const struct sms_address *addr,
+					guint16 ref, guint8 max, guint8 seq)
+{
+	int offset = seq / 8;
+	int bit = 1 << (seq % 32);
+	GSList *l;
+	GSList *prev;
+	struct sms *newsms;
+	struct sms_assembly_node *node;
+	GSList *completed;
+	int position;
+	int i;
+	int j;
+
+	prev = NULL;
+
+	for (l = assembly->assembly_list; l; prev = l, l = l->next) {
+		node = l->data;
+
+		if (node->addr.number_type != addr->number_type)
+			continue;
+
+		if (node->addr.numbering_plan != addr->numbering_plan)
+			continue;
+
+		if (strcmp(node->addr.address, addr->address))
+			continue;
+
+		if (ref != node->ref)
+			continue;
+
+		/* Message Reference and address the same, but max is not
+		 * ignore the SMS completely
+		 */
+		if (max != node->max_fragments)
+			return NULL;
+
+		/* Now check if we already have this seq number */
+		if (node->bitmap[offset] & bit)
+			return NULL;
+
+		position = 0;
+		for (i = 0; i < offset; i++)
+			for (j = 0; j < 32; j++)
+				if (node->bitmap[i] & (1 << j))
+					position += 1;
+
+		for (j = 1; j < bit; j = j << 1)
+			if (node->bitmap[offset] & j)
+				position += 1;
+
+		goto out;
+	}
+
+	node = g_new0(struct sms_assembly_node, 1);
+	memcpy(&node->addr, addr, sizeof(struct sms_address));
+	node->ts = ts;
+	node->ref = ref;
+	node->max_fragments = max;
+
+	assembly->assembly_list = g_slist_prepend(assembly->assembly_list,
+							node);
+
+	prev = NULL;
+	l = assembly->assembly_list;
+	position = 0;
+
+out:
+	newsms = g_new(struct sms, 1);
+
+	memcpy(newsms, sms, sizeof(struct sms));
+	node->fragment_list = g_slist_insert(node->fragment_list,
+						newsms, position);
+	node->bitmap[offset] |= bit;
+	node->num_fragments += 1;
+
+	if (node->num_fragments < node->max_fragments)
+		return NULL;
+
+	completed = node->fragment_list;
+
+	if (prev)
+		prev->next = l->next;
+	else
+		assembly->assembly_list = l->next;
+
+	g_free(node);
+	return completed;
+}
+
+/*!
+ * Expires all incomplete messages that have been received at time prior
+ * to one given by before argument.  The fragment list is freed and the
+ * SMSes are vaporized.
+ */
+void sms_assembly_expire(struct sms_assembly *assembly, time_t before)
+{
+	GSList *cur;
+	GSList *prev;
+
+	prev = NULL;
+	cur = assembly->assembly_list;
+
+	while (cur) {
+		struct sms_assembly_node *node = cur->data;
+
+		if (node->ts > before) {
+			prev = cur;
+			cur = cur->next;
+			continue;
+		}
+
+		g_slist_foreach(node->fragment_list, (GFunc)g_free, 0);
+		g_slist_free(node->fragment_list);
+		g_free(node);
+
+		if (prev)
+			prev->next = cur->next;
+		else
+			assembly->assembly_list = cur->next;
+
+		cur = cur->next;
+	}
+}
