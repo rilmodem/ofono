@@ -1776,13 +1776,14 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
 	return TRUE;
 }
 
-gboolean sms_extract_concatenation(const struct sms *sms, int *ref_num,
-					int *max_msgs, int *seq_num)
+gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
+					guint8 *max_msgs, guint8 *seq_num)
 {
 	struct sms_udh_iter iter;
 	enum sms_iei iei;
 	guint8 concat_hdr[4];
-	int rn, max, seq;
+	guint16 rn;
+	guint8 max, seq;
 	gboolean concatenated = FALSE;
 
 	/* We must ignore the entire user_data header here:
