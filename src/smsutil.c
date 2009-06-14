@@ -1814,7 +1814,7 @@ gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 			if (concat_hdr[1] == 0)
 				break;
 
-			if (concat_hdr[2] == 0 || concat_hdr[1] > concat_hdr[2])
+			if (concat_hdr[2] == 0 || concat_hdr[2] > concat_hdr[1])
 				break;
 
 			rn = concat_hdr[0];
@@ -1833,7 +1833,7 @@ gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 				break;
 
 			if (concat_hdr[3] == 0 ||
-					concat_hdr[2] > concat_hdr[3])
+					concat_hdr[3] > concat_hdr[2])
 				break;
 
 			rn = (concat_hdr[0] << 8) | concat_hdr[1];
