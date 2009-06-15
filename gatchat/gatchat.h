@@ -86,6 +86,18 @@ guint g_at_chat_send(GAtChat *chat, const char *cmd,
 				const char **valid_resp, GAtResultFunc func,
 				gpointer user_data, GDestroyNotify notify);
 
+/*!
+ * Same as the above command, except that the caller wishes to receive the
+ * intermediate responses immediately through the GAtNotifyFunc callback.
+ * The final response will still be sent to GAtResultFunc callback.  The
+ * final GAtResult will not contain any lines from the intermediate responses.
+ * This is useful for listing commands such as CMGL or CPBR.
+ */
+guint g_at_chat_send_listing(GAtChat *chat, const char *cmd,
+				const char **valid_resp,
+				GAtNotifyFunc listing, GAtResultFunc func,
+				gpointer user_data, GDestroyNotify notify);
+
 gboolean g_at_chat_cancel(GAtChat *chat, guint id);
 
 guint g_at_chat_register(GAtChat *chat, const char *prefix,

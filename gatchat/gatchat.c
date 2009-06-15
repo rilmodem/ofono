@@ -60,6 +60,7 @@ struct at_command {
 	char **prefixes;
 	guint id;
 	GAtResultFunc callback;
+	GAtNotifyFunc listing;
 	gpointer user_data;
 	GDestroyNotify notify;
 };
@@ -145,6 +146,7 @@ static gint at_command_compare_by_id(gconstpointer a, gconstpointer b)
 
 static struct at_command *at_command_create(const char *cmd,
 						const char **prefix_list,
+						GAtNotifyFunc listing,
 						GAtResultFunc func,
 						gpointer user_data,
 						GDestroyNotify notify)
@@ -195,6 +197,7 @@ static struct at_command *at_command_create(const char *cmd,
 
 	c->prefixes = prefixes;
 	c->callback = func;
+	c->listing = listing;
 	c->user_data = user_data;
 	c->notify = notify;
 
@@ -412,8 +415,18 @@ out:
 	if (!(p->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF))
 		p->state = PARSER_STATE_GUESS_MULTILINE_RESPONSE;
 
-	p->response_lines = g_slist_prepend(p->response_lines,
-						line);
+	if (cmd->listing) {
+		GAtResult result;
+
+		result.lines = g_slist_prepend(NULL, line);
+		result.final_or_pdu = NULL;
+
+		cmd->listing(&result, cmd->user_data);
+
+		g_slist_free(result.lines);
+		g_free(line);
+	} else
+		p->response_lines = g_slist_prepend(p->response_lines, line);
 
 	return TRUE;
 }
@@ -787,7 +800,8 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	}
 
 	if (chat->cmd_bytes_written == 0 && wakeup_first == TRUE) {
-		cmd = at_command_create(chat->wakeup, NULL, NULL, NULL, NULL);
+		cmd = at_command_create(chat->wakeup, NULL, NULL, NULL,
+					NULL, NULL);
 
 		if (!cmd)
 			return FALSE;
@@ -973,8 +987,9 @@ gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
 	return TRUE;
 }
 
-guint g_at_chat_send(GAtChat *chat, const char *cmd,
-			const char **prefix_list, GAtResultFunc func,
+static guint send_common(GAtChat *chat, const char *cmd,
+			const char **prefix_list,
+			GAtNotifyFunc listing, GAtResultFunc func,
 			gpointer user_data, GDestroyNotify notify)
 {
 	struct at_command *c;
@@ -982,7 +997,8 @@ guint g_at_chat_send(GAtChat *chat, const char *cmd,
 	if (chat == NULL || chat->command_queue == NULL)
 		return 0;
 
-	c = at_command_create(cmd, prefix_list, func, user_data, notify);
+	c = at_command_create(cmd, prefix_list, listing, func,
+				user_data, notify);
 
 	if (!c)
 		return 0;
@@ -995,6 +1011,26 @@ guint g_at_chat_send(GAtChat *chat, const char *cmd,
 		g_at_chat_wakeup_writer(chat);
 
 	return c->id;
+}
+
+guint g_at_chat_send(GAtChat *chat, const char *cmd,
+			const char **prefix_list, GAtResultFunc func,
+			gpointer user_data, GDestroyNotify notify)
+{
+	return send_common(chat, cmd, prefix_list, NULL, func,
+				user_data, notify);
+}
+
+guint g_at_chat_send_listing(GAtChat *chat, const char *cmd,
+				const char **prefix_list,
+				GAtNotifyFunc listing, GAtResultFunc func,
+				gpointer user_data, GDestroyNotify notify)
+{
+	if (listing == NULL)
+		return 0;
+
+	return send_common(chat, cmd, prefix_list, listing, func,
+				user_data, notify);
 }
 
 gboolean g_at_chat_cancel(GAtChat *chat, guint id)
