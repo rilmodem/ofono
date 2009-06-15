@@ -33,10 +33,12 @@ struct _GAtResult {
 
 typedef struct _GAtResult GAtResult;
 
+#define G_AT_RESULT_LINE_LENGTH_MAX 2048
+
 struct _GAtResultIter {
 	GAtResult *result;
 	GSList *l;
-	char buf[2048];
+	char buf[G_AT_RESULT_LINE_LENGTH_MAX + 1];
 	unsigned int line_pos;
 	GSList pre;
 };

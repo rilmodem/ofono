@@ -43,13 +43,18 @@ gboolean g_at_result_iter_next(GAtResultIter *iter, const char *prefix)
 {
 	char *line;
 	int prefix_len = prefix ? strlen(prefix) : 0;
+	int linelen;
 
 	while ((iter->l = iter->l->next)) {
 		line = iter->l->data;
+		linelen = strlen(line);
+
+		if (linelen > G_AT_RESULT_LINE_LENGTH_MAX)
+			continue;
 
 		if (prefix_len == 0) {
 			iter->line_pos = 0;
-			return TRUE;
+			goto out;
 		}
 
 		if (g_str_has_prefix(line, prefix) == FALSE)
@@ -61,10 +66,15 @@ gboolean g_at_result_iter_next(GAtResultIter *iter, const char *prefix)
 			line[iter->line_pos] == ' ')
 			iter->line_pos += 1;
 
-		return TRUE;
+		goto out;
 	}
 
 	return FALSE;
+
+out:
+	/* Already checked the length to be no more than buflen */
+	strcpy(iter->buf, line);
+	return TRUE;
 }
 
 const char *g_at_result_iter_raw_line(GAtResultIter *iter)
@@ -116,7 +126,7 @@ gboolean g_at_result_iter_next_string(GAtResultIter *iter, const char **str)
 	/* Omitted string */
 	if (line[pos] == ',') {
 		end = pos;
-		memset(iter->buf, 0, sizeof(iter->buf));
+		iter->buf[pos] = '\0';
 		goto out;
 	}
 
@@ -131,11 +141,7 @@ gboolean g_at_result_iter_next_string(GAtResultIter *iter, const char **str)
 	if (line[end] != '"')
 		return FALSE;
 
-	if (end - pos >= sizeof(iter->buf))
-		return FALSE;
-
-	strncpy(iter->buf, line+pos, end-pos);
-	memset(iter->buf + end - pos, 0, sizeof(iter->buf) - end + pos);
+	iter->buf[end] = '\0';
 
 	/* Skip " */
 	end += 1;
@@ -144,7 +150,7 @@ out:
 	iter->line_pos = skip_to_next_field(line, end, len);
 
 	if (str)
-		*str = iter->buf;
+		*str = iter->buf + pos;
 
 	return TRUE;
 }
@@ -172,7 +178,7 @@ gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
 	/* Omitted string */
 	if (line[pos] == ',') {
 		end = pos;
-		memset(iter->buf, 0, sizeof(iter->buf));
+		iter->buf[pos] = '\0';
 		goto out;
 	}
 
@@ -184,19 +190,16 @@ gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
 	if ((end - pos) & 1)
 		return FALSE;
 
-	if ((end - pos) / 2 >= sizeof(iter->buf))
-		return FALSE;
 	*length = (end - pos) / 2;
 
-	for (bufpos = iter->buf; pos < end; pos += 2)
+	for (bufpos = iter->buf + pos; pos < end; pos += 2)
 		sscanf(line + pos, "%02hhx", bufpos++);
-	memset(bufpos, 0, sizeof(iter->buf) - (bufpos - iter->buf));
 
 out:
 	iter->line_pos = skip_to_next_field(line, end, len);
 
 	if (str)
-		*str = (guint8 *) iter->buf;
+		*str = (guint8 *) bufpos - *length;
 
 	return TRUE;
 }
