@@ -356,5 +356,5 @@ static gboolean g_isi_timeout(gpointer data)
 
 int g_isi_client_error(const GIsiClient *client)
 {	/* The only possible error at the moment */
-	return ETIMEDOUT;
+	return -ETIMEDOUT;
 }
