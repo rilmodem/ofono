@@ -77,7 +77,7 @@ static gboolean connect_cb(GIOChannel *io, GIOCondition cond, gpointer user)
 		socklen_t len = sizeof(err);
 
 		if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &err, &len) < 0)
-			err = errno;
+			err = errno == ENOTSOCK ? 0 : errno;
 	} else if (cond & (G_IO_HUP | G_IO_ERR))
 		err = ECONNRESET;
 
@@ -101,29 +101,47 @@ static gboolean connect_timeout(gpointer user)
 	return FALSE;
 }
 
-#if 0
-static int tty_open(const char *tty, struct termios *ti)
+static GIOChannel *tty_connect(const char *tty)
 {
+	GIOChannel *io;
 	int sk;
+	struct termios newtio;
 
 	sk = open(tty, O_RDWR | O_NOCTTY);
 
 	if (sk < 0) {
 		ofono_error("Can't open TTY %s: %s(%d)",
 				tty, strerror(errno), errno);
-		return -1;
+		return NULL;
 	}
 
-	if (ti && tcsetattr(sk, TCSANOW, ti) < 0) {
+	newtio.c_cflag = B115200 | CRTSCTS | CLOCAL | CREAD;
+	newtio.c_iflag = IGNPAR;
+	newtio.c_oflag = 0;
+	newtio.c_lflag = 0;
+
+	newtio.c_cc[VTIME] = 1;
+	newtio.c_cc[VMIN] = 5;
+
+	tcflush(sk, TCIFLUSH);
+	if (tcsetattr(sk, TCSANOW, &newtio) < 0) {
 		ofono_error("Can't change serial settings: %s(%d)",
 				strerror(errno), errno);
 		close(sk);
-		return -1;
+		return NULL;
 	}
 
-	return sk;
+	io = g_io_channel_unix_new(sk);
+	g_io_channel_set_close_on_unref(io, TRUE);
+
+	if (g_io_channel_set_flags(io, G_IO_FLAG_NONBLOCK,
+					NULL) != G_IO_STATUS_NORMAL) {
+		g_io_channel_unref(io);
+		return NULL;
+	}
+
+	return io;
 }
-#endif
 
 static GIOChannel *socket_common(int sk, struct sockaddr *addr,
 					socklen_t addrlen)
@@ -233,6 +251,8 @@ GIOChannel *modem_session_create(const char *target,
 		io = tcp_connect(target+4);
 	else if (!strncasecmp(target, "unix:", 5))
 		io = unix_connect(target+5);
+	else if (!strncasecmp(target, "dev:", 4))
+		io = tty_connect(target+4);
 
 	if (io == NULL)
 		return NULL;
