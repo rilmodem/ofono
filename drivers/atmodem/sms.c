@@ -298,7 +298,7 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 	g_at_chat_send(at->parser, buf, none_prefix, at_cnma_cb, NULL, NULL);
 }
 
-static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	GAtResultIter iter;
@@ -307,12 +307,7 @@ static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	long pdu_len;
 	int tpdu_len;
 
-	dump_response("at_cmgr_cb", ok, result);
-
-	if (!ok) {
-		ofono_error("Received a CMTI indication but CMGR failed!");
-		return;
-	}
+	dump_response("at_cmgr_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 
@@ -328,10 +323,7 @@ static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &tpdu_len))
 		goto err;
 
-	if (!g_at_result_iter_next(&iter, NULL))
-		goto err;
-
-	hexpdu = g_at_result_iter_raw_line(&iter);
+	hexpdu = g_at_result_pdu(result);
 
 	ofono_debug("Got PDU: %s, with len: %d", hexpdu, tpdu_len);
 
@@ -341,6 +333,12 @@ static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 err:
 	ofono_error("Unable to parse CMGR response");
+}
+
+static void at_cmgr_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	if (!ok)
+		ofono_error("Received a CMTI indication but CMGR failed!");
 }
 
 static void at_cmgd_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -377,8 +375,7 @@ static void at_cmti_notify(GAtResult *result, gpointer user_data)
 
 	sprintf(buf, "AT+CMGR=%d", index);
 
-	/* Can't use a prefix here since a PDU is expected on the next line */
-	g_at_chat_send(at->parser, buf, NULL, at_cmgr_cb, modem, NULL);
+	g_at_chat_send(at->parser, buf, none_prefix, at_cmgr_cb, modem, NULL);
 
 	sprintf(buf, "AT+CMGD=%d", index);
 
@@ -402,6 +399,10 @@ static void at_sms_initialized(struct ofono_modem *modem)
 	g_at_chat_register(at->parser, "+CDS:", at_cds_notify, TRUE,
 				modem, NULL);
 	g_at_chat_register(at->parser, "+CBM:", at_cbm_notify, TRUE,
+				modem, NULL);
+
+	/* We treat CMGR just like a notification */
+	g_at_chat_register(at->parser, "+CMGR:", at_cmgr_notify, TRUE,
 				modem, NULL);
 
 	ofono_sms_manager_register(modem, &ops);
