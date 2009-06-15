@@ -38,7 +38,7 @@
 #include "socket.h"
 #include "client.h"
 
-struct isi_client {
+struct _GIsiClient {
 	uint8_t resource;
 
 	/* Requests */
@@ -46,7 +46,7 @@ struct isi_client {
 	guint source;
 	uint8_t prev[256], next[256];
 	guint timeout[256];
-	isi_client_cb_t func[256];
+	GIsiResponseFunc func[256];
 	void *data[256];
 
 	/* Indications */
@@ -54,27 +54,28 @@ struct isi_client {
 		int fd;
 		guint source;
 		uint16_t count;
-		isi_ind_cb_t func[256];
+		GIsiIndicationFunc func[256];
 		void *data[256];
 	} ind;
 };
 
-static gboolean isi_callback(GIOChannel *, GIOCondition, gpointer);
-static gboolean isi_timeout(gpointer);
+static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
+				gpointer data);
+static gboolean g_isi_timeout(gpointer data);
 
-static inline struct isi_request *isi_req(struct isi_client *cl, uint8_t id)
+static inline GIsiRequest *g_isi_req(GIsiClient *cl, uint8_t id)
 {
-	return (struct isi_request *)(((uint8_t *)(void *)cl) + id);
+	return (GIsiRequest *)(((uint8_t *)(void *)cl) + id);
 }
 
-static inline uint8_t isi_id(void *ptr)
+static inline uint8_t g_isi_id(void *ptr)
 {
 	return ((uintptr_t)ptr) & 255;
 }
 
-static inline struct isi_client *isi_cl(void *ptr)
+static inline GIsiClient *g_isi_cl(void *ptr)
 {
-	return (struct isi_client *)(((uintptr_t)ptr) & ~255);
+	return (GIsiClient *)(((uintptr_t)ptr) & ~255);
 }
 
 /**
@@ -82,10 +83,10 @@ static inline struct isi_client *isi_cl(void *ptr)
  * @param resource Phonet resource ID for the client
  * @return NULL on error (see errno), an isi_client pointer on success,
  */
-struct isi_client *isi_client_create(uint8_t resource)
+GIsiClient *g_isi_client_create(uint8_t resource)
 {
 	void *ptr;
-	struct isi_client *cl;
+	GIsiClient *cl;
 	GIOChannel *channel;
 	unsigned i;
 
@@ -118,7 +119,7 @@ struct isi_client *isi_client_create(uint8_t resource)
 	cl->fd = g_io_channel_unix_get_fd(channel);
 	cl->source = g_io_add_watch(channel,
 					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
-					isi_callback, cl);
+					g_isi_callback, cl);
 	g_io_channel_unref(channel);
 	return cl;
 }
@@ -127,7 +128,7 @@ struct isi_client *isi_client_create(uint8_t resource)
  * Destroys an ISI client, cancels all pending transactions and subscriptions.
  * @param client client to destroy
  */
-void isi_client_destroy(struct isi_client *client)
+void g_isi_client_destroy(GIsiClient *client)
 {
 	unsigned id;
 
@@ -143,16 +144,15 @@ void isi_client_destroy(struct isi_client *client)
 /**
  * Make an ISI request and register a callback to process the response(s) to
  * the resulting transaction.
- * @param cl ISI client (from isi_client_create())
+ * @param cl ISI client (from g_isi_client_create())
  * @param buf pointer to request payload
  * @param len request payload byte length
  * @param cb callback to process response(s)
  * @param opaque data for the callback
  */
-struct isi_request *isi_request_make(struct isi_client *cl,
-					const void *__restrict buf, size_t len,
-					unsigned timeout,
-					isi_client_cb_t cb, void *opaque)
+GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
+				size_t len, unsigned timeout,
+				GIsiResponseFunc cb, void *opaque)
 {
 	struct iovec iov[2];
 	ssize_t ret;
@@ -192,10 +192,10 @@ struct isi_request *isi_request_make(struct isi_client *cl,
 
 	if (timeout > 0)
 		cl->timeout[id] = g_timeout_add_seconds(timeout,
-							isi_timeout, cl);
+							g_isi_timeout, cl);
 	else
 		cl->timeout[id] = 0;
-	return isi_req(cl, id);
+	return g_isi_req(cl, id);
 }
 
 /**
@@ -203,10 +203,10 @@ struct isi_request *isi_request_make(struct isi_client *cl,
  * timeout.
  * @param req request to cancel
  */
-void isi_request_cancel(struct isi_request *req)
+void g_isi_request_cancel(GIsiRequest *req)
 {
-	struct isi_client *cl = isi_cl(req);
-	uint8_t id = isi_id(req);
+	GIsiClient *cl = g_isi_cl(req);
+	uint8_t id = g_isi_id(req);
 
 	cl->func[id] = NULL;
 	cl->data[id] = NULL;
@@ -229,7 +229,7 @@ void isi_request_cancel(struct isi_request *req)
 #define PN_COMMGR 0x10
 #define PNS_SUBSCRIBED_RESOURCES_IND	0x10
 
-static int isi_indication_init(struct isi_client *cl)
+static int g_isi_indication_init(GIsiClient *cl)
 {
 	uint8_t msg[] = {
 		0, PNS_SUBSCRIBED_RESOURCES_IND, 1, cl->resource,
@@ -243,11 +243,11 @@ static int isi_indication_init(struct isi_client *cl)
 	send(cl->ind.fd, msg, 4, 0);
 	cl->ind.source = g_io_add_watch(channel,
 					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
-					isi_callback, cl);
+					g_isi_callback, cl);
 	return 0;
 }
 
-static void isi_indication_deinit(struct isi_client *client)
+static void g_isi_indication_deinit(GIsiClient *client)
 {
 	uint8_t msg[] = {
 		0, PNS_SUBSCRIBED_RESOURCES_IND, 0,
@@ -262,21 +262,21 @@ static void isi_indication_deinit(struct isi_client *client)
  * Subscribe to a given indication type for the resource that an ISI client
  * is associated with. If the same type was already subscrived, the old
  * subscription is overriden.
- * @param cl ISI client (fomr isi_client_create())
+ * @param cl ISI client (fomr g_isi_client_create())
  * @param type indication type
  * @param cb callback to process received indications
  * @param data data for the callback
  * @return 0 on success, a system error code otherwise.
  */
-int isi_subscribe(struct isi_client *cl, uint8_t type,
-			isi_ind_cb_t cb, void *data)
+int g_isi_subscribe(GIsiClient *cl, uint8_t type,
+			GIsiIndicationFunc cb, void *data)
 {
 	if (cb == NULL)
 		return EINVAL;
 
 	if (cl->ind.func[type] == NULL) {
 		if (cl->ind.count == 0) {
-			int ret = isi_indication_init(cl);
+			int ret = g_isi_indication_init(cl);
 			if (ret)
 				return ret;
 		}
@@ -289,24 +289,24 @@ int isi_subscribe(struct isi_client *cl, uint8_t type,
 
 /**
  * Unsubscribe from a given indication type.
- * @param client ISI client (from isi_client_create())
+ * @param client ISI client (from g_isi_client_create())
  * @param type indication type.
  */
-void isi_unsubscribe(struct isi_client *client, uint8_t type)
+void g_isi_unsubscribe(GIsiClient *client, uint8_t type)
 {
 	/* Unsubscribe */
 	if (client->ind.func[type] == NULL)
 		return;
 	client->ind.func[type] = NULL;
 	if (--client->ind.count == 0)
-		isi_indication_deinit(client);
+		g_isi_indication_deinit(client);
 }
 
 /* Data callback for both responses and indications */
-static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
+static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
-	struct isi_client *cl = data;
+	GIsiClient *cl = data;
 	int fd = g_io_channel_unix_get_fd(channel);
 	bool indication = (fd != cl->fd);
 	int len;
@@ -336,25 +336,25 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 				return TRUE; /* Bad transaction ID */
 			if ((cl->func[id])(cl, buf + 1, len - 1, obj,
 						cl->data[id]))
-				isi_request_cancel(isi_req(cl, id));
+				g_isi_request_cancel(g_isi_req(cl, id));
 		}
 	}
 	return TRUE;
 }
 
-static gboolean isi_timeout(gpointer data)
+static gboolean g_isi_timeout(gpointer data)
 {
-	struct isi_request *req = data;
-	struct isi_client *cl = isi_cl(req);
-	uint8_t id = isi_id(req);
+	GIsiRequest *req = data;
+	GIsiClient *cl = g_isi_cl(req);
+	uint8_t id = g_isi_id(req);
 
 	assert(cl->func[id]);
 	(cl->func[id])(cl, NULL, 0, 0, cl->data[id]);
-	isi_request_cancel(req);
+	g_isi_request_cancel(req);
 	return FALSE;
 }
 
-int isi_client_error(const struct isi_client *client)
+int g_isi_client_error(const GIsiClient *client)
 {	/* The only possible error at the moment */
 	return ETIMEDOUT;
 }

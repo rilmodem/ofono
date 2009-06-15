@@ -86,7 +86,7 @@ AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
 
 COMPILER_FLAGS
 
-AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile isi/Makefile
+AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile gisi/Makefile
 			include/Makefile include/version.h src/Makefile
 			plugins/Makefile drivers/Makefile unit/Makefile
 								doc/Makefile)

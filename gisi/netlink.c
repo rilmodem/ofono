@@ -45,14 +45,14 @@
 
 #include "netlink.h"
 
-struct pn_netlink {
-	pn_netlink_cb_t callback;
+struct _GPhonetNetlink {
+	GPhonetNetlinkFunc callback;
 	void *opaque;
 	guint watch;
 };
 
 /* Parser Netlink messages */
-static gboolean pn_nl_process(GIOChannel *channel, GIOCondition cond,
+static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
 	struct {
@@ -65,7 +65,7 @@ static gboolean pn_nl_process(GIOChannel *channel, GIOCondition cond,
 	ssize_t ret;
 	struct nlmsghdr *nlh;
 	int fd = g_io_channel_unix_get_fd(channel);
-	struct pn_netlink *self = data;
+	GPhonetNetlink *self = data;
 
 	if (cond & (G_IO_NVAL|G_IO_HUP))
 		return FALSE;
@@ -117,7 +117,7 @@ static gboolean pn_nl_process(GIOChannel *channel, GIOCondition cond,
 }
 
 /* Dump current Phonet address table */
-static int pn_netlink_query(int fd)
+static int g_pn_netlink_query(int fd)
 {
 	struct {
 		struct nlmsghdr nlh;
@@ -148,10 +148,10 @@ static int pn_netlink_query(int fd)
 	return 0;
 }
 
-struct pn_netlink *pn_netlink_start(pn_netlink_cb_t cb, void *opaque)
+GPhonetNetlink *g_pn_netlink_start(GPhonetNetlinkFunc cb, void *opaque)
 {
 	GIOChannel *chan;
-	struct pn_netlink *self;
+	GPhonetNetlink *self;
 	unsigned group = RTNLGRP_PHONET_IFADDR;
 	int fd;
 
@@ -167,7 +167,7 @@ struct pn_netlink *pn_netlink_start(pn_netlink_cb_t cb, void *opaque)
 	if (setsockopt(fd, SOL_NETLINK, NETLINK_ADD_MEMBERSHIP,
 			&group, sizeof(group)))
 		goto error;
-	pn_netlink_query(fd);
+	g_pn_netlink_query(fd);
 
 	chan = g_io_channel_unix_new(fd);
 	if (chan == NULL)
@@ -179,7 +179,7 @@ struct pn_netlink *pn_netlink_start(pn_netlink_cb_t cb, void *opaque)
 	self->callback = cb;
 	self->opaque = opaque;
 	self->watch = g_io_add_watch(chan, G_IO_IN|G_IO_ERR|G_IO_HUP,
-					pn_nl_process, self);
+					g_pn_nl_process, self);
 	g_io_channel_unref(chan);
 	return 0;
 
@@ -190,7 +190,7 @@ error:
 	return NULL;
 }
 
-void pn_netlink_stop(struct pn_netlink *self)
+void g_pn_netlink_stop(GPhonetNetlink *self)
 {
 	g_source_remove(self->watch);
 	g_free(self);

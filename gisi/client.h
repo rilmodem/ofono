@@ -1,0 +1,69 @@
+/*
+ * This file is part of oFono - Open Source Telephony
+ *
+ * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+ *
+ * Contact: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifndef __GISI_CLIENT_H
+#define __GISI_CLIENT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h>
+#include <stdbool.h>
+
+struct _GIsiClient;
+typedef struct _GIsiClient GIsiClient;
+
+struct _GIsiRequest;
+typedef struct _GIsiRequest GIsiRequest;
+
+typedef bool (*GIsiResponseFunc)(GIsiClient *client,
+		const void *restrict data, size_t len,
+		uint16_t object, void *opaque);
+
+typedef void (*GIsiIndicationFunc) (GIsiClient *client,
+		const void *restrict data, size_t len,
+		uint16_t object, void *opaque);
+
+GIsiClient *g_isi_client_create(uint8_t resource);
+
+void g_isi_client_destroy(GIsiClient *client);
+
+int g_isi_client_error(const GIsiClient *client);
+
+GIsiRequest *g_isi_request_make(GIsiClient *client, const void *data,
+				size_t len, unsigned timeout,
+				GIsiResponseFunc func, void *opaque);
+
+void g_isi_request_cancel(GIsiRequest *req);
+
+int g_isi_subscribe(GIsiClient *client, uint8_t type,
+			GIsiIndicationFunc func, void *opaque);
+
+void g_isi_unsubscribe(GIsiClient *client, uint8_t type);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __GISI_CLIENT_H */

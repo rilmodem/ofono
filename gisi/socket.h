@@ -21,11 +21,7 @@
  *
  */
 
-#ifndef OFONO_PHONET_SOCKET_H
-#define OFONO_PHONET_SOCKET_H 1
-
 GIOChannel *phonet_new(uint8_t resource);
-size_t phonet_peek_length(GIOChannel *);
-ssize_t phonet_read(GIOChannel *, void *restrict, size_t, uint16_t *restrict,
-			uint8_t *restrict);
-#endif
+size_t phonet_peek_length(GIOChannel *io);
+ssize_t phonet_read(GIOChannel *io, void *restrict buf, size_t len,
+			uint16_t *restrict obj, uint8_t *restrict res);

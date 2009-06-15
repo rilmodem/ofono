@@ -21,28 +21,27 @@
  *
  */
 
-#ifndef OFONO_PHONET_CLIENT_H
-#define OFONO_PHONET_CLIENT_H 1
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-struct isi_client;
-struct isi_client *isi_client_create(uint8_t resource);
-void isi_client_destroy(struct isi_client *client);
-int isi_client_error(const struct isi_client *client);
+#ifndef __GPHONET_NETLINK_H
+#define __GPHONET_NETLINK_H
 
-typedef bool (*isi_client_cb_t)(struct isi_client *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque);
-struct isi_request;
-struct isi_request *isi_request_make(struct isi_client *, const void *, size_t,
-				unsigned timeout, isi_client_cb_t, void *);
-void isi_request_cancel(struct isi_request *req);
-
-typedef void (*isi_ind_cb_t) (struct isi_client *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque);
-int isi_subscribe(struct isi_client *client, uint8_t type,
-				isi_ind_cb_t, void *);
-void isi_unsubscribe(struct isi_client *client, uint8_t type);
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+struct _GPhonetNetlink;
+typedef struct _GPhonetNetlink GPhonetNetlink;
+
+typedef void (*GPhonetNetlinkFunc)(bool up, uint8_t addr, unsigned idx,
+					void *data);
+
+GPhonetNetlink *g_pn_netlink_start(GPhonetNetlinkFunc func, void *data);
+void g_pn_netlink_stop(GPhonetNetlink *self);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __GPHONET_NETLINK_H */
