@@ -101,6 +101,7 @@ static void interface_exit(struct at_data *at)
 	at_call_barring_exit(at->modem);
 	at_ussd_exit(at->modem);
 	at_sim_exit(at->modem);
+	at_phonebook_exit(at->modem);
 }
 
 static void manager_free(gpointer user)
@@ -351,6 +352,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	at_call_meter_init(at->modem);
 	at_call_barring_init(at->modem);
 	at_sms_init(at->modem);
+	at_phonebook_init(at->modem);
 
 	at->io = io;
 	at->driver = g_strdup(driver);

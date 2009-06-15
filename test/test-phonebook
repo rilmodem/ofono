@@ -1,0 +1,30 @@
+#!/usr/bin/python
+
+import gobject
+
+import dbus
+import dbus.mainloop.glib
+
+if __name__ == "__main__":
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	try:
+		modems = manager.GetProperties()['Modems']
+	except dbus.DBusException, e:
+		print "Unable to get the Modems property %s" % e
+
+	phonebook = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+				'org.ofono.Phonebook')
+
+	print "export entries for the first time"
+	print phonebook.ExportEntries()
+	print "export entries for the second time, which should return from cache"
+	print phonebook.ExportEntries()
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()

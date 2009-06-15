@@ -94,3 +94,6 @@ extern void at_sim_exit(struct ofono_modem *modem);
 
 extern void at_sms_init(struct ofono_modem *modem);
 extern void at_sms_exit(struct ofono_modem *modem);
+
+extern void at_phonebook_init(struct ofono_modem *modem);
+extern void at_phonebook_exit(struct ofono_modem *modem);

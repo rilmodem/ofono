@@ -10,13 +10,13 @@ builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/call-forwarding.c atmodem/call-meter.c \
 			atmodem/network-registration.c atmodem/sim.c \
 			atmodem/ussd.c atmodem/voicecall.c \
-			atmodem/call-barring.c
+			atmodem/call-barring.c atmodem/phonebook.c
 
 builtin_modules += phonet
 builtin_sources += phonet/phonet.c
 
 noinst_LTLIBRARIES = libbuiltin.la
- 
+
 libbuiltin_la_SOURCES = $(builtin_sources)
 libbuiltin_la_LDFLAGS =
 libbuiltin_la_CFLAGS = $(AM_CFLAGS) $(builtin_cflags) \
