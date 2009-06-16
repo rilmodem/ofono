@@ -418,7 +418,7 @@ void ofono_sms_status_notify(struct ofono_modem *modem, unsigned char *pdu,
 				int len, int tpdu_len);
 
 struct ofono_phonebook_ops {
-	void (*export_entries)(struct ofono_modem *modem, char *storage,
+	void (*export_entries)(struct ofono_modem *modem, const char *storage,
 			ofono_phonebook_export_entries_t cb, void *data);
 };
 

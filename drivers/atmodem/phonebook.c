@@ -257,7 +257,7 @@ static void at_select_storage_cb(gboolean ok, GAtResult *result,
 		at_list_indices(modem, cb, modem);
 }
 
-static void at_select_storage(struct ofono_modem *modem, char *storage,
+static void at_export_entries(struct ofono_modem *modem, const char *storage,
 			ofono_phonebook_export_entries_t cb, void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
@@ -280,12 +280,6 @@ error:
 		DECLARE_FAILURE(error);
 		cb(&error, 0, NULL, data);
 	}
-}
-
-static void at_export_entries(struct ofono_modem *modem, char *storage,
-			ofono_phonebook_export_entries_t cb, void *data)
-{
-	at_select_storage(modem, storage, cb, modem);
 }
 
 static struct ofono_phonebook_ops ops = {
