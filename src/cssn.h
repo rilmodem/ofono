@@ -19,9 +19,6 @@
  *
  */
 
-#ifndef __CSSN_H__
-#define __CSSN_H__
-
 typedef void (*mo_ss_notify_cb)(int index, void *userdata);
 typedef void (*mt_ss_notify_cb)(int index, const struct ofono_phone_number *ph,
 				void *userdata);
@@ -36,5 +33,3 @@ void ofono_mt_ss_register(struct ofono_modem *modem, int code2,
 		mt_ss_notify_cb cb, void *userdata);
 void ofono_mt_ss_unregister(struct ofono_modem *modem, int code2,
 		mt_ss_notify_cb cb, void *userdata);
-
-#endif

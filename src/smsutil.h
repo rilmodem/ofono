@@ -19,9 +19,6 @@
  *
  */
 
-#ifndef __SMSUTIL_H__
-#define __SMSUTIL_H__
-
 #define CBS_PAYLOAD_CHARACTERS 93
 
 enum sms_type {
@@ -382,4 +379,3 @@ GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
 					const struct sms_address *addr,
 					guint16 ref, guint8 max, guint8 seq);
 void sms_assembly_expire(struct sms_assembly *assembly, time_t before);
-#endif
