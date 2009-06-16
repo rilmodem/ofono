@@ -92,6 +92,7 @@ static void at_destroy(struct at_data *at)
 
 static void interface_exit(struct at_data *at)
 {
+	at_phonebook_exit(at->modem);
 	at_sms_exit(at->modem);
 	at_call_forwarding_exit(at->modem);
 	at_call_settings_exit(at->modem);
@@ -101,7 +102,6 @@ static void interface_exit(struct at_data *at)
 	at_call_barring_exit(at->modem);
 	at_ussd_exit(at->modem);
 	at_sim_exit(at->modem);
-	at_phonebook_exit(at->modem);
 }
 
 static void manager_free(gpointer user)
