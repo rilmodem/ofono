@@ -72,6 +72,10 @@ if __name__ == "__main__":
 			sys.exit(1)
 	else:
 		try:
+			if property == 'AccumulatedCallMeterMaximum':
+				newvalue = int(newvalue)
+			elif property == 'PricePerUnit':
+				newvalue = float(newvalue)
 			cm.SetProperty(property, newvalue, pin)
 		except dbus.DBusException, e:
 			print "Unable to set property: ", e
