@@ -39,14 +39,13 @@
 
 #include "at.h"
 
-
 #define INDEX_INVALID -1
 
 static const char *none_prefix[] = { NULL };
 static const char *entries_prefix[] = { "+CPBR:", NULL };
 
 static void at_read_entries_cb(gboolean ok, GAtResult *result,
-			       gpointer user_data)
+				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_phonebook_export_entries_t cb = cbd->cb;
@@ -147,8 +146,9 @@ static void at_read_entries_cb(gboolean ok, GAtResult *result,
 }
 
 static void at_read_entries(struct ofono_modem *modem, int index_min,
-			    int index_max, ofono_phonebook_export_entries_t cb,
-			    void *data)
+				int index_max,
+				ofono_phonebook_export_entries_t cb,
+				void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
@@ -173,7 +173,7 @@ error:
 }
 
 static void at_list_indices_cb(gboolean ok, GAtResult *result,
-			       gpointer user_data)
+				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
@@ -219,7 +219,8 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 }
 
 static void at_list_indices(struct ofono_modem *modem,
-			ofono_phonebook_export_entries_t cb, void *data)
+				ofono_phonebook_export_entries_t cb,
+				void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
@@ -242,7 +243,7 @@ error:
 }
 
 static void at_select_storage_cb(gboolean ok, GAtResult *result,
-				 gpointer user_data)
+					gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
