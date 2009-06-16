@@ -3,11 +3,8 @@
 import gobject
 
 import dbus
-import dbus.mainloop.glib
 
 if __name__ == "__main__":
-	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
 	bus = dbus.SystemBus()
 
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
@@ -22,6 +19,3 @@ if __name__ == "__main__":
 				'org.ofono.Phonebook')
 
 	print phonebook.ExportEntries()
-
-	mainloop = gobject.MainLoop()
-	mainloop.run()
