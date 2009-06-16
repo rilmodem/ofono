@@ -180,9 +180,8 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 	ofono_phonebook_export_entries_t cb = cbd->cb;
 	struct ofono_error error;
 	GAtResultIter iter;
-	const char *indices;
-	int index_min = 0, index_max = 0;
-	int i = 0, integer_index = 0;
+	int index_min;
+	int index_max;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 	if (!ok) {
@@ -191,31 +190,30 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 	}
 
 	g_at_result_iter_init(&iter, result);
-	if (!g_at_result_iter_next(&iter, "+CPBR:")) {
-		DECLARE_FAILURE(e);
-		cb(&e, 0, NULL, cbd->data);
-		return;
-	}
+	if (!g_at_result_iter_next(&iter, "+CPBR:"))
+		goto fail;
 
-	indices = g_at_result_iter_raw_line(&iter);
+	if (!g_at_result_iter_open_list(&iter))
+		goto fail;
+
 	/* retrieve index_min and index_max from indices
 	 * which seems like "(1-150),32,16"
 	 */
-	while (indices[i] != ')') {
-		if (indices[i] == '(')
-			integer_index = 1;
-		else if (indices[i] == '-')
-			integer_index = 2;
-		if ((indices[i] >= '0') && (indices[i] <= '9')) {
-			if (integer_index == 1)
-				index_min = index_min*10 + (indices[i] - '0');
-			else if (integer_index == 2)
-				index_max = index_max*10 + (indices[i] - '0');
-		}
-		i++;
-	}
+	if (!g_at_result_iter_next_range(&iter, &index_min, &index_max))
+		goto fail;
+
+	if (!g_at_result_iter_close_list(&iter))
+		goto fail;
 
 	at_read_entries(modem, index_min, index_max, cb, modem);
+
+	return;
+
+fail:
+	{
+		DECLARE_FAILURE(e);
+		cb(&e, cbd->data);
+	}
 }
 
 static void at_list_indices(struct ofono_modem *modem,
