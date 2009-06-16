@@ -1703,7 +1703,8 @@ const char *sms_address_to_string(const struct sms_address *addr)
 	return buffer;
 }
 
-gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
+gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
+				gboolean *is_8bit)
 {
 	struct sms_udh_iter iter;
 	enum sms_iei iei;
@@ -1711,6 +1712,7 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
 
 	int srcport = -1;
 	int dstport = -1;
+	gboolean is_addr_8bit;
 
 	if (!sms_udh_iter_init(sms, &iter))
 		return FALSE;
@@ -1739,6 +1741,7 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
 
 			dstport = addr_hdr[0];
 			srcport = addr_hdr[1];
+			is_addr_8bit = TRUE;
 			break;
 
 		case SMS_IEI_APPLICATION_ADDRESS_16BIT:
@@ -1755,6 +1758,7 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
 
 			dstport = (addr_hdr[0] << 8) | addr_hdr[1];
 			srcport = (addr_hdr[2] << 8) | addr_hdr[3];
+			is_addr_8bit = FALSE;
 			break;
 
 		default:
@@ -1772,6 +1776,9 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src)
 
 	if (src)
 		*src = srcport;
+
+	if (is_8bit)
+		*is_8bit = is_addr_8bit;
 
 	return TRUE;
 }
