@@ -131,8 +131,10 @@ static void vcard_printf_number(GString *entries_vcard_pointer, int type,
 {
 	char *pref = "", *intl = "";
 	char buf[128];
+
 	if (prefer)
 		pref = "PREF,";
+
 	if ((type == TYPE_INTERNATIONAL) && (number[0] != '+'))
 		intl = "+";
 
@@ -142,33 +144,40 @@ static void vcard_printf_number(GString *entries_vcard_pointer, int type,
 
 
 static void entry_to_vcard(GString *entries_vcard_pointer,
-			   struct ofono_phonebook_entry *entry)
+				const struct ofono_phonebook_entry *entry)
 {
 	char field[LEN_MAX];
+
 	vcard_printf(entries_vcard_pointer, "BEGIN:VCARD");
 	vcard_printf(entries_vcard_pointer, "VERSION:3.0");
+
 	add_slash(field, entry->text, LEN_MAX, strlen(entry->text));
+
 	vcard_printf(entries_vcard_pointer, "FN:%s", field);
 	vcard_printf_number(entries_vcard_pointer, entry->type,
 			    entry->number, 1);
+
 	if (entry->group) {
 		add_slash(field, entry->group, LEN_MAX, strlen(entry->group));
 		vcard_printf(entries_vcard_pointer, "CATEGORIES:%s", field);
 	}
-	if (entry->adtype && entry->adnumber) {
+
+	if (entry->adtype && entry->adnumber)
 		vcard_printf_number(entries_vcard_pointer, entry->adtype,
 				    entry->adnumber, 0);
-	}
+
 	if (entry->email) {
 		add_slash(field, entry->email, LEN_MAX, strlen(entry->email));
 		vcard_printf(entries_vcard_pointer,
 			     "EMAIL;TYPE=INTERNET:%s", field);
 	}
+
 	if (entry->sip_uri) {
 		add_slash(field, entry->sip_uri, LEN_MAX,
 					strlen(entry->sip_uri));
 		vcard_printf(entries_vcard_pointer, "IMPP;TYPE=SIP:%s", field);
 	}
+
 	vcard_printf(entries_vcard_pointer, "END:VCARD");
 	vcard_printf(entries_vcard_pointer, "");
 }
@@ -191,8 +200,10 @@ static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem)
 	return NULL;
 }
 
-static void export_entries_one_storage_cb(const struct ofono_error *error,
-    int num_entries, const struct ofono_phonebook_entry *entries, void *data)
+static void export_phonebook_cb(const struct ofono_error *error,
+				int num_entries,
+				const struct ofono_phonebook_entry *entries,
+				void *data)
 {
 	struct ofono_modem *modem = data;
 	struct phonebook_data *phonebook = modem->phonebook;
@@ -272,7 +283,7 @@ static GDBusSignalTable phonebook_signals[] = {
 };
 
 int ofono_phonebook_register(struct ofono_modem *modem,
-			     struct ofono_phonebook_ops *ops)
+				struct ofono_phonebook_ops *ops)
 {
 	DBusConnection *conn = dbus_gsm_connection();
 
