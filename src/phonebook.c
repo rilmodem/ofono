@@ -40,8 +40,7 @@
 #include "common.h"
 
 
-#define PHONEBOOK_SERVICES_INTERFACE "org.ofono.Phonebook"
-#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#define PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define LEN_MAX 128
 #define TYPE_INTERNATIONAL 145
 
@@ -291,7 +290,7 @@ int ofono_phonebook_register(struct ofono_modem *modem,
 	modem->phonebook->ops = ops;
 
 	if (!g_dbus_register_interface(conn, modem->path,
-				       PHONEBOOK_SERVICES_INTERFACE,
+				       PHONEBOOK_INTERFACE,
 				       phonebook_methods, phonebook_signals,
 				       NULL, modem, phonebook_destroy)) {
 		ofono_error("Could not register Phonebook %s", modem->path);
@@ -301,7 +300,7 @@ int ofono_phonebook_register(struct ofono_modem *modem,
 		return -1;
 	}
 
-	modem_add_interface(modem, PHONEBOOK_SERVICES_INTERFACE);
+	modem_add_interface(modem, PHONEBOOK_INTERFACE);
 	return 0;
 }
 
@@ -312,7 +311,7 @@ void ofono_phonebook_unregister(struct ofono_modem *modem)
 	if (modem->phonebook == NULL)
 		return;
 
-	modem_remove_interface(modem, PHONEBOOK_SERVICES_INTERFACE);
+	modem_remove_interface(modem, PHONEBOOK_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path,
-					PHONEBOOK_SERVICES_INTERFACE);
+					PHONEBOOK_INTERFACE);
 }
