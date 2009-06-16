@@ -370,6 +370,7 @@ static void sms_dispatch(struct ofono_modem *modem, GSList *sms_list)
 		enum sms_charset charset;
 		int cdst = -1;
 		int csrc = -1;
+		gboolean is_8bit;
 
 		sms = l->data;
 		dcs = sms->deliver.dcs;
@@ -394,10 +395,10 @@ static void sms_dispatch(struct ofono_modem *modem, GSList *sms_list)
 			return;
 		}
 
-		if (sms_extract_app_port(sms, &cdst, &csrc) &&
+		if (sms_extract_app_port(sms, &cdst, &csrc, &is_8bit) &&
 				(l == sms_list)) {
-			srcport = csrc;
-			dstport = cdst;
+			srcport = is_8bit ? csrc : (csrc << 8);
+			dstport = is_8bit ? cdst : (cdst << 8);
 		}
 
 		if (srcport != csrc || dstport != cdst) {
