@@ -44,23 +44,29 @@
 #define LEN_MAX 128
 #define TYPE_INTERNATIONAL 145
 
+#define PHONEBOOK_FLAG_CACHED 0x1
+
 struct phonebook_data {
 	struct ofono_phonebook_ops *ops;
 	DBusMessage *pending;
-	int storage_support_index; /* go through all supported storage */
-	int cached;
-	GString entries_vcard; /* entries with vcard 3.0 format */
+	int storage_index; /* go through all supported storage */
+	int flags;
+	GString *vcards; /* entries with vcard 3.0 format */
 };
 
-static DBusMessage *export_entries_one_storage(DBusConnection *conn,
-					       DBusMessage *msg, void *data);
-
 static const char *storage_support[] = { "\"SM\"", "\"ME\"", NULL };
+static void export_phonebook(DBusMessage *msg, void *data);
 
 static struct phonebook_data *phonebook_create()
 {
 	struct phonebook_data *phonebook;
 	phonebook = g_try_new0(struct phonebook_data, 1);
+
+	if (!phonebook)
+		return NULL;
+
+	phonebook->vcards = g_string_new(NULL);
+
 	return phonebook;
 }
 
@@ -68,6 +74,9 @@ static void phonebook_destroy(gpointer data)
 {
 	struct ofono_modem *modem = data;
 	struct phonebook_data *phonebook = modem->phonebook;
+
+	g_string_free(phonebook->vcards, TRUE);
+
 	g_free(phonebook);
 	modem->phonebook = NULL;
 }
@@ -182,22 +191,22 @@ static void entry_to_vcard(GString *entries_vcard_pointer,
 	vcard_printf(entries_vcard_pointer, "");
 }
 
-static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem)
+static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem,
+							DBusMessage *msg)
 {
 	struct phonebook_data *phonebook = modem->phonebook;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusConnection *conn = dbus_gsm_connection();
 
-	reply = dbus_message_new_method_return(phonebook->pending);
+	reply = dbus_message_new_method_return(msg);
 	if (!reply)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING,
-				       &(phonebook->entries_vcard));
-	g_dbus_send_message(conn, reply);
-	return NULL;
+					phonebook->vcards);
+	return reply;
 }
 
 static void export_phonebook_cb(const struct ofono_error *error,
@@ -211,38 +220,40 @@ static void export_phonebook_cb(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_error("export_entries_one_storage_cb with %s failed",
-			    storage_support[phonebook->storage_support_index]);
+			    storage_support[phonebook->storage_index]);
 	else {
-		int num = 0;
-		GString *entries_vcard_pointer = &(phonebook->entries_vcard);
+		int num;
 		for (num = 0; num < num_entries; num++)
-			entry_to_vcard(entries_vcard_pointer,
-			(struct ofono_phonebook_entry *)&entries[num]);
+			entry_to_vcard(phonebook->vcards, &entries[num]);
 	}
 
-	phonebook->storage_support_index++;
-	export_entries_one_storage(conn, phonebook->pending, modem);
+	phonebook->storage_index++;
+	export_phonebook(phonebook->pending, modem);
 	return;
 }
 
-static DBusMessage *export_entries_one_storage(DBusConnection *conn,
-					       DBusMessage *msg, void *data)
+static void export_phonebook(DBusMessage *msg, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct phonebook_data *phonebook = modem->phonebook;
+	DBusMessage *reply;
+	const char *pb = storage_support[phonebook->storage_index];
 
-	if (storage_support[phonebook->storage_support_index] != NULL)
-		phonebook->ops->export_entries(modem,
-		(char *)storage_support[phonebook->storage_support_index],
-		export_entries_one_storage_cb, modem);
-	else {
-		phonebook->cached = 1;
-		generate_export_entries_reply(modem);
-		dbus_message_unref(phonebook->pending);
-		phonebook->pending = NULL;
+	if (pb) {
+		phonebook->ops->export_entries(modem, pb,
+						export_phonebook_cb, modem);
+		return;
 	}
 
-	return NULL;
+	reply = generate_export_entries_reply(modem, phonebook->pending);
+
+	if (!reply) {
+		dbus_message_unref(phonebook->pending);
+		return;
+	}
+
+	dbus_gsm_pending_reply(&phonebook->pending, reply);
+	phonebook->flags |= PHONEBOOK_FLAG_CACHED;
 }
 
 static DBusMessage *export_entries(DBusConnection *conn, DBusMessage *msg,
@@ -250,25 +261,26 @@ static DBusMessage *export_entries(DBusConnection *conn, DBusMessage *msg,
 {
 	struct ofono_modem *modem = data;
 	struct phonebook_data *phonebook = modem->phonebook;
+	DBusMessage *reply;
 
 	if (phonebook->pending) {
-		DBusMessage *reply;
 		reply = dbus_gsm_busy(phonebook->pending);
 		g_dbus_send_message(conn, reply);
 		return NULL;
 	}
-	phonebook->pending = dbus_message_ref(msg);
 
-	if (phonebook->cached) {
-		generate_export_entries_reply(modem);
-		dbus_message_unref(phonebook->pending);
-		phonebook->pending = NULL;
+	if (phonebook->flags & PHONEBOOK_FLAG_CACHED) {
+		reply = generate_export_entries_reply(modem, msg);
+		g_dbus_send_message(conn, reply);
 		return NULL;
 	}
 
-	g_string_set_size(&(phonebook->entries_vcard), 0);
-	phonebook->storage_support_index = 0;
-	export_entries_one_storage(conn, msg, data);
+	g_string_set_size(phonebook->vcards, 0);
+	phonebook->storage_index = 0;
+
+	phonebook->pending = dbus_message_ref(msg);
+	export_phonebook(msg, modem);
+
 	return NULL;
 }
 
