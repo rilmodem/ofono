@@ -44,110 +44,66 @@
 static const char *none_prefix[] = { NULL };
 static const char *entries_prefix[] = { "+CPBR:", NULL };
 
+static void at_cpbr_notify(GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	GAtResultIter iter;
+	g_at_result_iter_init(&iter, result);
+
+	while (g_at_result_iter_next(&iter, "+CPBR:")) {
+		int index;
+		const char *number;
+		int type;
+		const char *text;
+		int hidden = 0;
+		const char *group = NULL;
+		const char *adnumber = NULL;
+		int adtype = -1;
+		const char *secondtext = NULL;
+		const char *email = NULL;
+		const char *sip_uri = NULL;
+		const char *tel_uri = NULL;
+
+		if (!g_at_result_iter_next_number(&iter, &index))
+			continue;
+
+		if (!g_at_result_iter_next_string(&iter, &number))
+			continue;
+
+		if (!g_at_result_iter_next_number(&iter, &type))
+			continue;
+
+		if (!g_at_result_iter_next_string(&iter, &text))
+			continue;
+
+		g_at_result_iter_next_number(&iter, &hidden);
+		g_at_result_iter_next_string(&iter, &group);
+		g_at_result_iter_next_string(&iter, &adnumber);
+		g_at_result_iter_next_number(&iter, &adtype);
+		g_at_result_iter_next_string(&iter, &secondtext);
+		g_at_result_iter_next_string(&iter, &email);
+		g_at_result_iter_next_string(&iter, &sip_uri);
+		g_at_result_iter_next_string(&iter, &tel_uri);
+
+		ofono_phonebook_entry(cbd->modem, index, number, type, text,
+					hidden, group, adnumber, adtype,
+					secondtext, email, sip_uri, tel_uri);
+	}
+}
+
 static void at_read_entries_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_phonebook_export_entries_t cb = cbd->cb;
+	ofono_generic_cb_t cb = cbd->cb;
 	struct ofono_error error;
-	GAtResultIter iter;
-	int num_entries_max = 0;
-	int num_entries_real;
-	int num;
-	struct ofono_phonebook_entry *entries;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-	if (!ok) {
-		cb(&error, 0, NULL, cbd->data);
-		return;
-	}
-
-	g_at_result_iter_init(&iter, result);
-
-	while (g_at_result_iter_next(&iter, "+CPBR:"))
-		num_entries_max += 1;
-
-	entries = g_new(struct ofono_phonebook_entry, num_entries_max);
-
-	g_at_result_iter_init(&iter, result);
-	for (num_entries_real = 0; g_at_result_iter_next(&iter, "+CPBR:");) {
-		int index, type, hidden, adtype;
-		const char *number, *text, *group, *adnumber,
-			*secondtext, *email, *sip_uri, *tel_uri;
-
-		if (!g_at_result_iter_next_number(&iter, &index))
-			continue;
-		entries[num_entries_real].index = index;
-
-		if (!g_at_result_iter_next_string(&iter, &number))
-			continue;
-		entries[num_entries_real].number = g_strdup(number);
-
-		if (!g_at_result_iter_next_number(&iter, &type)) {
-			g_free(entries[num_entries_real].number);
-			continue;
-		}
-		entries[num_entries_real].type = type;
-
-		if (!g_at_result_iter_next_string(&iter, &text)) {
-			g_free(entries[num_entries_real].number);
-			continue;
-		}
-		entries[num_entries_real].text = g_strdup(text);
-
-		if (!g_at_result_iter_next_number(&iter, &hidden))
-			hidden = -1;
-		entries[num_entries_real].hidden = hidden;
-
-		if (!g_at_result_iter_next_string(&iter, &group))
-			group = NULL;
-		entries[num_entries_real].group = g_strdup(group);
-
-		if (!g_at_result_iter_next_string(&iter, &adnumber))
-			adnumber = NULL;
-		entries[num_entries_real].adnumber = g_strdup(adnumber);
-
-		if (!g_at_result_iter_next_number(&iter, &adtype))
-			adtype = -1;
-		entries[num_entries_real].adtype = adtype;
-
-		if (!g_at_result_iter_next_string(&iter, &secondtext))
-			secondtext = NULL;
-		entries[num_entries_real].secondtext = g_strdup(secondtext);
-
-		if (!g_at_result_iter_next_string(&iter, &email))
-			email = NULL;
-		entries[num_entries_real].email = g_strdup(email);
-
-		if (!g_at_result_iter_next_string(&iter, &sip_uri))
-			sip_uri = NULL;
-		entries[num_entries_real].sip_uri = g_strdup(sip_uri);
-
-		if (!g_at_result_iter_next_string(&iter, &tel_uri))
-			tel_uri = NULL;
-		entries[num_entries_real].tel_uri = g_strdup(tel_uri);
-
-		num_entries_real++;
-	}
-	cb(&error, num_entries_real, entries, cbd->data);
-
-	for (num = 0; num < num_entries_real; num++) {
-		g_free(entries[num].number);
-		g_free(entries[num].text);
-		g_free(entries[num].group);
-		g_free(entries[num].adnumber);
-		g_free(entries[num].secondtext);
-		g_free(entries[num].email);
-		g_free(entries[num].sip_uri);
-		g_free(entries[num].tel_uri);
-	}
-	g_free(entries);
-	entries = NULL;
+	cb(&error, cbd->data);
 }
 
 static void at_read_entries(struct ofono_modem *modem, int index_min,
-				int index_max,
-				ofono_phonebook_export_entries_t cb,
+				int index_max, ofono_generic_cb_t cb,
 				void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
@@ -158,8 +114,9 @@ static void at_read_entries(struct ofono_modem *modem, int index_min,
 		goto error;
 
 	sprintf(buf, "AT+CPBR=%d,%d", index_min, index_max);
-	if (g_at_chat_send(at->parser, buf, entries_prefix,
-				at_read_entries_cb, cbd, g_free) > 0)
+	if (g_at_chat_send_listing(at->parser, buf, entries_prefix,
+					at_cpbr_notify, at_read_entries_cb,
+					cbd, g_free) > 0)
 		return;
 
 error:
@@ -168,7 +125,7 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, 0, NULL, data);
+		cb(&error, data);
 	}
 }
 
@@ -177,15 +134,16 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
-	ofono_phonebook_export_entries_t cb = cbd->cb;
-	struct ofono_error error;
+	ofono_generic_cb_t cb = cbd->cb;
 	GAtResultIter iter;
 	int index_min;
 	int index_max;
 
-	decode_at_error(&error, g_at_result_final_response(result));
 	if (!ok) {
-		cb(&error, 0, NULL, cbd->data);
+		struct ofono_error error;
+
+		decode_at_error(&error, g_at_result_final_response(result));
+		cb(&error, cbd->data);
 		return;
 	}
 
@@ -217,8 +175,7 @@ fail:
 }
 
 static void at_list_indices(struct ofono_modem *modem,
-				ofono_phonebook_export_entries_t cb,
-				void *data)
+				ofono_generic_cb_t cb, void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
@@ -236,7 +193,7 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, 0, NULL, data);
+		cb(&error, data);
 	}
 }
 
@@ -245,19 +202,20 @@ static void at_select_storage_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
-	ofono_phonebook_export_entries_t cb = cbd->cb;
-	struct ofono_error error;
+	ofono_generic_cb_t cb = cbd->cb;
 
-	decode_at_error(&error, g_at_result_final_response(result));
 	if (!ok) {
-		cb(&error, 0, NULL, cbd->data);
+		struct ofono_error error;
+		decode_at_error(&error, g_at_result_final_response(result));
+		cb(&error, cbd->data);
 		return;
-	} else
-		at_list_indices(modem, cb, modem);
+	}
+
+	at_list_indices(modem, cb, modem);
 }
 
 static void at_export_entries(struct ofono_modem *modem, const char *storage,
-			ofono_phonebook_export_entries_t cb, void *data)
+				ofono_generic_cb_t cb, void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
@@ -277,7 +235,7 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, 0, NULL, data);
+		cb(&error, data);
 	}
 }
 

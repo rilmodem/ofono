@@ -55,7 +55,7 @@ struct phonebook_data {
 };
 
 static const char *storage_support[] = { "\"SM\"", "\"ME\"", NULL };
-static void export_phonebook(DBusMessage *msg, void *data);
+static void export_phonebook(struct ofono_modem *modem);
 
 static struct phonebook_data *phonebook_create()
 {
@@ -108,7 +108,7 @@ static void vcard_printf(GString *str, const char *fmt, ...)
 /* According to RFC 2426, we need escape following characters:
  *  '\n', '\r', ';', ',', '\'.
  */
-static void add_slash(char *dest, char *src, int len_max, int len)
+static void add_slash(char *dest, const char *src, int len_max, int len)
 {
 	int i, j;
 
@@ -136,7 +136,7 @@ static void add_slash(char *dest, char *src, int len_max, int len)
 }
 
 static void vcard_printf_number(GString *entries_vcard_pointer, int type,
-				char *number, int prefer)
+				const char *number, int prefer)
 {
 	char *pref = "", *intl = "";
 	char buf[128];
@@ -149,46 +149,6 @@ static void vcard_printf_number(GString *entries_vcard_pointer, int type,
 
 	sprintf(buf, "TEL;TYPE=\%sVOICE:\%s\%s", pref, intl, number);
 	vcard_printf(entries_vcard_pointer, buf, number);
-}
-
-
-static void entry_to_vcard(GString *entries_vcard_pointer,
-				const struct ofono_phonebook_entry *entry)
-{
-	char field[LEN_MAX];
-
-	vcard_printf(entries_vcard_pointer, "BEGIN:VCARD");
-	vcard_printf(entries_vcard_pointer, "VERSION:3.0");
-
-	add_slash(field, entry->text, LEN_MAX, strlen(entry->text));
-
-	vcard_printf(entries_vcard_pointer, "FN:%s", field);
-	vcard_printf_number(entries_vcard_pointer, entry->type,
-			    entry->number, 1);
-
-	if (entry->group) {
-		add_slash(field, entry->group, LEN_MAX, strlen(entry->group));
-		vcard_printf(entries_vcard_pointer, "CATEGORIES:%s", field);
-	}
-
-	if (entry->adtype && entry->adnumber)
-		vcard_printf_number(entries_vcard_pointer, entry->adtype,
-				    entry->adnumber, 0);
-
-	if (entry->email) {
-		add_slash(field, entry->email, LEN_MAX, strlen(entry->email));
-		vcard_printf(entries_vcard_pointer,
-			     "EMAIL;TYPE=INTERNET:%s", field);
-	}
-
-	if (entry->sip_uri) {
-		add_slash(field, entry->sip_uri, LEN_MAX,
-					strlen(entry->sip_uri));
-		vcard_printf(entries_vcard_pointer, "IMPP;TYPE=SIP:%s", field);
-	}
-
-	vcard_printf(entries_vcard_pointer, "END:VCARD");
-	vcard_printf(entries_vcard_pointer, "");
 }
 
 static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem,
@@ -209,10 +169,50 @@ static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem,
 	return reply;
 }
 
-static void export_phonebook_cb(const struct ofono_error *error,
-				int num_entries,
-				const struct ofono_phonebook_entry *entries,
-				void *data)
+void ofono_phonebook_entry(struct ofono_modem *modem, int index,
+				const char *number, int type,
+				const char *text, int hidden,
+				const char *group,
+				const char *adnumber, int adtype,
+				const char *secondtext, const char *email,
+				const char *sip_uri, const char *tel_uri)
+{
+	struct phonebook_data *phonebook = modem->phonebook;
+	char field[LEN_MAX];
+	int len;
+
+	vcard_printf(phonebook->vcards, "BEGIN:VCARD");
+	vcard_printf(phonebook->vcards, "VERSION:3.0");
+
+	add_slash(field, text, LEN_MAX, strlen(text));
+
+	vcard_printf(phonebook->vcards, "FN:%s", field);
+	vcard_printf_number(phonebook->vcards, type, number, 1);
+
+	if (group && (len = strlen(group))) {
+		add_slash(field, group, LEN_MAX, len);
+		vcard_printf(phonebook->vcards, "CATEGORIES:%s", field);
+	}
+
+	if (adnumber && strlen(adnumber) && adtype != -1)
+		vcard_printf_number(phonebook->vcards, adtype, adnumber, 0);
+
+	if (email && (len = strlen(email))) {
+		add_slash(field, email, LEN_MAX, len);
+		vcard_printf(phonebook->vcards,
+				"EMAIL;TYPE=INTERNET:%s", field);
+	}
+
+	if (sip_uri && (len = strlen(sip_uri))) {
+		add_slash(field, sip_uri, LEN_MAX, len);
+		vcard_printf(phonebook->vcards, "IMPP;TYPE=SIP:%s", field);
+	}
+
+	vcard_printf(phonebook->vcards, "END:VCARD");
+	vcard_printf(phonebook->vcards, "");
+}
+
+static void export_phonebook_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct phonebook_data *phonebook = modem->phonebook;
@@ -220,21 +220,15 @@ static void export_phonebook_cb(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_error("export_entries_one_storage_cb with %s failed",
-			    storage_support[phonebook->storage_index]);
-	else {
-		int num;
-		for (num = 0; num < num_entries; num++)
-			entry_to_vcard(phonebook->vcards, &entries[num]);
-	}
+				storage_support[phonebook->storage_index]);
 
 	phonebook->storage_index++;
-	export_phonebook(phonebook->pending, modem);
+	export_phonebook(modem);
 	return;
 }
 
-static void export_phonebook(DBusMessage *msg, void *data)
+static void export_phonebook(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = data;
 	struct phonebook_data *phonebook = modem->phonebook;
 	DBusMessage *reply;
 	const char *pb = storage_support[phonebook->storage_index];
@@ -279,7 +273,7 @@ static DBusMessage *export_entries(DBusConnection *conn, DBusMessage *msg,
 	phonebook->storage_index = 0;
 
 	phonebook->pending = dbus_message_ref(msg);
-	export_phonebook(msg, modem);
+	export_phonebook(modem);
 
 	return NULL;
 }
@@ -313,9 +307,9 @@ int ofono_phonebook_register(struct ofono_modem *modem,
 	modem->phonebook->ops = ops;
 
 	if (!g_dbus_register_interface(conn, modem->path,
-				       PHONEBOOK_INTERFACE,
-				       phonebook_methods, phonebook_signals,
-				       NULL, modem, phonebook_destroy)) {
+					PHONEBOOK_INTERFACE,
+					phonebook_methods, phonebook_signals,
+					NULL, modem, phonebook_destroy)) {
 		ofono_error("Could not register Phonebook %s", modem->path);
 
 		phonebook_destroy(modem->phonebook);

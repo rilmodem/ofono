@@ -102,21 +102,6 @@ struct ofono_own_number {
 	int itc;
 };
 
-struct ofono_phonebook_entry {
-	int index;
-	char *number;
-	int type;
-	char *text;
-	int hidden;
-	char *group;
-	char *adnumber;
-	int adtype;
-	char *secondtext;
-	char *email;
-	char *sip_uri;
-	char *tel_uri;
-};
-
 /* Notification functions, the integer values here should map to
  * values obtained from the modem.  The enumerations are the same
  * as the values for the fields found in 3GPP TS 27.007
@@ -191,10 +176,6 @@ typedef void (*ofono_own_numbers_cb_t)(const struct ofono_error *error, int num,
 typedef void (*ofono_sca_query_cb_t)(const struct ofono_error *error,
 					const struct ofono_phone_number *ph,
 					void *data);
-
-typedef void (*ofono_phonebook_export_entries_t)(
-	    const struct ofono_error *error, int num_entries,
-	    const struct ofono_phonebook_entry *entries, void *data);
 
 struct ofono_modem_attribute_ops {
 	void (*query_manufacturer)(struct ofono_modem *modem,
@@ -417,12 +398,22 @@ void ofono_sms_deliver_notify(struct ofono_modem *modem, unsigned char *pdu,
 void ofono_sms_status_notify(struct ofono_modem *modem, unsigned char *pdu,
 				int len, int tpdu_len);
 
+/* Export entries reports results through ofono_phonebook_entry, if an error
+ * occurs, ofono_phonebook_entry should not be called
+ */
 struct ofono_phonebook_ops {
 	void (*export_entries)(struct ofono_modem *modem, const char *storage,
-			ofono_phonebook_export_entries_t cb, void *data);
+				ofono_generic_cb_t cb, void *data);
 };
 
 int ofono_phonebook_register(struct ofono_modem *modem,
 			     struct ofono_phonebook_ops *ops);
 void ofono_phonebook_unregister(struct ofono_modem *modem);
 
+void ofono_phonebook_entry(struct ofono_modem *modem, int index,
+				const char *number, int type,
+				const char *text, int hidden,
+				const char *group,
+				const char *adnumber, int adtype,
+				const char *secondtext, const char *email,
+				const char *sip_uri, const char *tel_uri);
