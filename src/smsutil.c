@@ -2147,6 +2147,7 @@ out:
 		assembly->assembly_list = l->next;
 
 	g_free(node);
+	g_slist_free_1(l);
 	return completed;
 }
 
@@ -2159,6 +2160,7 @@ void sms_assembly_expire(struct sms_assembly *assembly, time_t before)
 {
 	GSList *cur;
 	GSList *prev;
+	GSList *tmp;
 
 	prev = NULL;
 	cur = assembly->assembly_list;
@@ -2181,6 +2183,8 @@ void sms_assembly_expire(struct sms_assembly *assembly, time_t before)
 		else
 			assembly->assembly_list = cur->next;
 
+		tmp = cur;
 		cur = cur->next;
+		g_slist_free_1(tmp);
 	}
 }
