@@ -42,6 +42,8 @@ struct ofono_modem {
 	struct sim_manager_data *sim_manager;
 	struct sms_manager_data *sms_manager;
 	struct phonebook_data *phonebook;
+
+	GSList *history_contexts;
 };
 
 struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops);

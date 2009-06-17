@@ -62,6 +62,7 @@ struct voicecall {
 	struct ofono_call *call;
 	struct ofono_modem *modem;
 	time_t start_time;
+	time_t detect_time;
 };
 
 static void generic_callback(const struct ofono_error *error, void *data);
@@ -1206,6 +1207,8 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 	GSList *l;
 	struct voicecalls_data *calls = modem->voicecalls;
 	struct voicecall *call;
+	time_t ts;
+	enum call_status prev_status;
 
 	ofono_debug("Got disconnection event for id: %d, reason: %d", id, reason);
 
@@ -1219,6 +1222,9 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 	}
 
 	call = l->data;
+
+	ts = time(NULL);
+	prev_status = call->call->status;
 
 	l = g_slist_find_custom(calls->multiparty_list, GINT_TO_POINTER(id),
 				call_compare_by_id);
@@ -1241,6 +1247,12 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 
 	/* TODO: Emit disconnect reason */
 	voicecall_set_call_status(modem, call, CALL_STATUS_DISCONNECTED);
+
+	if (prev_status == CALL_STATUS_INCOMING)
+		ofono_history_call_missed(modem, call->call, ts);
+	else
+		ofono_history_call_ended(modem, call->call,
+						call->detect_time, ts);
 
 	voicecall_dbus_unregister(modem, call);
 
@@ -1294,6 +1306,8 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 		ofono_error("Unable to allocate voicecall_data");
 		goto err;
 	}
+
+	v->detect_time = time(NULL);
 
 	if (!voicecall_dbus_register(v)) {
 		ofono_error("Unable to register voice call");
@@ -1459,6 +1473,8 @@ static void dial_callback(const struct ofono_error *error, void *data)
 
 			goto out;
 		}
+
+		v->detect_time = time(NULL);
 
 		ofono_debug("Registering new call: %d", call->id);
 		voicecall_dbus_register(v);

@@ -1,6 +1,6 @@
 /*
  *
- *  oFono - Open Source Telephony
+ *  oFono - Open Telephony stack for Linux
  *
  *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
  *
@@ -19,35 +19,38 @@
  *
  */
 
-#include <glib.h>
+#ifndef __OFONO_HISTORY_H
+#define __OFONO_HISTORY_H
 
-#define OFONO_API_SUBJECT_TO_CHANGE
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-int __ofono_manager_init();
-void __ofono_manager_cleanup();
+enum ofono_disconnect_reason;
+struct ofono_call;
 
-GSList *ofono_manager_get_modems();
+struct ofono_history_context {
+	struct ofono_history_driver *driver;
+	struct ofono_modem *modem;
+	void *data;
+};
 
-#include <ofono/log.h>
-
-int __ofono_log_init(gboolean detach, gboolean debug);
-void __ofono_log_cleanup(void);
-
-void __ofono_toggle_debug(void);
-
-#include <ofono/plugin.h>
-
-int __ofono_plugin_init(const char *pattern, const char *exclude);
-void __ofono_plugin_cleanup(void);
-
-#include <ofono/history.h>
-
-void ofono_history_probe_drivers(struct ofono_modem *modem);
-void ofono_history_remove_drivers(struct ofono_modem *modem);
-
-void ofono_history_call_ended(struct ofono_modem *modem,
+struct ofono_history_driver {
+	const char *name;
+	int (*probe)(struct ofono_history_context *context);
+	void (*remove)(struct ofono_history_context *context);
+	void (*call_ended)(struct ofono_history_context *context,
 				const struct ofono_call *call,
 				time_t start, time_t end);
-
-void ofono_history_call_missed(struct ofono_modem *modem,
+	void (*call_missed)(struct ofono_history_context *context,
 				const struct ofono_call *call, time_t when);
+};
+
+int ofono_history_driver_register(const struct ofono_history_driver *driver);
+void ofono_history_driver_unregister(const struct ofono_history_driver *driver);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __OFONO_HISTORY_H */
