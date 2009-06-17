@@ -250,7 +250,7 @@ static void export_phonebook(struct ofono_modem *modem)
 	phonebook->flags |= PHONEBOOK_FLAG_CACHED;
 }
 
-static DBusMessage *export_entries(DBusConnection *conn, DBusMessage *msg,
+static DBusMessage *import_entries(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_modem *modem = data;
@@ -279,8 +279,8 @@ static DBusMessage *export_entries(DBusConnection *conn, DBusMessage *msg,
 }
 
 static GDBusMethodTable phonebook_methods[] = {
-	{ "ExportEntries",       "",     "s",     export_entries,
-						  G_DBUS_METHOD_FLAG_ASYNC },
+	{ "Import",	"",	"s",	import_entries,
+					G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
