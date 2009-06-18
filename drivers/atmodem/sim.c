@@ -46,8 +46,9 @@ static void at_crsm_len_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
 	ofono_sim_file_len_cb_t cb = cbd->cb;
-	gint sw1, len;
 	struct ofono_error error;
+	const guint8 *response;
+	gint sw1, sw2, len;
 
 	dump_response("at_crsm_len_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -69,16 +70,18 @@ static void at_crsm_len_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &sw1);
 	g_at_result_iter_next_number(&iter, &len);
 
-	ofono_debug("crsm_len_cb: %i, %i", sw1, len);
-
-	if (sw1 != 0x67) {
+	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
+		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92) ||
+		(sw1 == 0x90 && sw2 != 0x00) || len < 14) {
 		DECLARE_FAILURE(e);
 
 		cb(&e, -1, cbd->data);
 		return;
 	}
 
-	cb(&error, len, cbd->data);
+	ofono_debug("crsm_len_cb: %02x, %02x, %i", sw1, sw2, len);
+
+	cb(&error, (response[2] << 8) | response[3], cbd->data);
 }
 
 static void at_sim_read_file_len(struct ofono_modem *modem, int fileid,
@@ -92,7 +95,7 @@ static void at_sim_read_file_len(struct ofono_modem *modem, int fileid,
 	if (!cbd)
 		goto error;
 
-	snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,0,0,0", fileid);
+	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i,0,0,15", fileid);
 	if (g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_len_cb, cbd, g_free) > 0)
 		return;
@@ -136,7 +139,7 @@ static void at_crsm_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &sw1);
 	g_at_result_iter_next_number(&iter, &sw2);
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
-		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92) ||
+		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 		(sw1 == 0x90 && sw2 != 0x00)) {
 		DECLARE_FAILURE(e);
 
