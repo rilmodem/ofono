@@ -332,6 +332,21 @@ struct sms_assembly {
 	GSList *assembly_list;
 };
 
+static inline gboolean is_bit_set(unsigned char oct, int bit)
+{
+	int mask = 0x1 << bit;
+	return oct & mask ? TRUE : FALSE;
+}
+
+static inline unsigned char bit_field(unsigned char oct, int start, int num)
+{
+	unsigned char mask = (0x1 << num) - 1;
+
+	return (oct >> start) & mask;
+}
+
+void extract_bcd_number(const unsigned char *buf, int len, char *out);
+
 gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 			int tpdu_len, struct sms *out);
 

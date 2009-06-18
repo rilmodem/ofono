@@ -31,17 +31,20 @@
 #include "util.h"
 #include "smsutil.h"
 
-static inline gboolean is_bit_set(unsigned char oct, int bit)
+void extract_bcd_number(const unsigned char *buf, int len, char *out)
 {
-	int mask = 0x1 << bit;
-	return oct & mask ? TRUE : FALSE;
-}
+	static const char digit_lut[] = "0123456789*#abc\0";
+	unsigned char oct;
+	int i;
 
-static inline unsigned char bit_field(unsigned char oct, int start, int num)
-{
-	unsigned char mask = (0x1 << num) - 1;
+	for (i = 0; i < len; i++) {
+		oct = buf[i];
 
-	return (oct >> start) & mask;
+		out[i*2] = digit_lut[oct & 0x0f];
+		out[i*2+1] = digit_lut[(oct & 0xf0) >> 4];
+	}
+
+	out[i*2] = '\0';
 }
 
 static inline int to_semi_oct(char in)
@@ -532,7 +535,6 @@ static gboolean decode_address(const unsigned char *pdu, int len,
 				int *offset, gboolean sc,
 				struct sms_address *out)
 {
-	static const char digit_lut[] = "0123456789*#abc\0";
 	unsigned char addr_len;
 	unsigned char addr_type;
 	int byte_len;
@@ -561,17 +563,8 @@ static gboolean decode_address(const unsigned char *pdu, int len,
 	out->numbering_plan = bit_field(addr_type, 0, 4);
 
 	if (out->number_type != SMS_NUMBER_TYPE_ALPHANUMERIC) {
-		unsigned char oct;
-
-		for (i = 0; i < byte_len; i++) {
-			if (!next_octet(pdu, len, offset, &oct))
-				break;
-
-			out->address[i*2] = digit_lut[oct & 0x0f];
-			out->address[i*2+1] = digit_lut[(oct & 0xf0) >> 4];
-		}
-
-		out->address[i*2] = '\0';
+		extract_bcd_number(pdu+*offset, byte_len, out->address);
+		*offset += byte_len;
 	} else {
 		int chars;
 		long written;
