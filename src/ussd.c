@@ -274,8 +274,16 @@ static gboolean recognized_passwd_change_string(struct ofono_modem *modem,
 		return FALSE;
 	}
 
-	if (strcmp(sc, "03") || strlen(dn) || strcmp(sic, sid))
+	if (strcmp(sc, "03") || strlen(dn))
 		return FALSE;
+
+	/* If SIC & SID don't match, then we just bail out here */
+	if (strcmp(sic, sid)) {
+		DBusConnection *conn = dbus_gsm_connection();
+		DBusMessage *reply = dbus_gsm_invalid_format(msg);
+		g_dbus_send_message(conn, reply);
+		return TRUE;
+	}
 
 	while ((l = g_slist_find_custom(l, sia,
 			ss_passwd_entry_find_by_service)) != NULL) {
@@ -317,7 +325,7 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 			goto out;
 		}
 
-		if (*sid != '\0');
+		if (*sid != '\0')
 			goto out;
 
 		while ((l = g_slist_find_custom(l, sc,
