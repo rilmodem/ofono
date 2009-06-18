@@ -19,13 +19,6 @@
  *
  */
 
-struct ussd_data {
-	struct ofono_ussd_ops *ops;
-	int state;
-	DBusMessage *pending;
-	int flags;
-};
-
 typedef gboolean (*ss_control_cb_t)(struct ofono_modem *modem,
 					enum ss_control_type type,
 					const char *sc,

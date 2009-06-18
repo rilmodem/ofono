@@ -49,6 +49,13 @@ enum ussd_state {
 	USSD_STATE_USER_ACTION = 2
 };
 
+struct ussd_data {
+	struct ofono_ussd_ops *ops;
+	int state;
+	DBusMessage *pending;
+	int flags;
+};
+
 static struct ussd_data *ussd_create()
 {
 	struct ussd_data *r;
