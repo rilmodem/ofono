@@ -102,6 +102,13 @@ struct ofono_own_number {
 	int itc;
 };
 
+/* 51.011 Section 9.3 */
+enum ofono_simfile_struct {
+	OFONO_SIM_FILE_TRANSPARENT = 0,
+	OFONO_SIM_FILE_FIXED = 1,
+	OFONO_SIM_FILE_CYCLIC = 3
+};
+
 /* Notification functions, the integer values here should map to
  * values obtained from the modem.  The enumerations are the same
  * as the values for the fields found in 3GPP TS 27.007
@@ -160,8 +167,10 @@ typedef void (*ofono_call_meter_puct_query_cb_t)(const struct ofono_error *error
 typedef void (*ofono_call_barring_cb_t)(const struct ofono_error *error,
 					int status, void *data);
 
-typedef void (*ofono_sim_file_len_cb_t)(const struct ofono_error *error,
-					int length, void *data);
+typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
+					int filelength,
+					enum ofono_simfile_struct structure,
+					int recordlength, void *data);
 
 typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,
 					const unsigned char *sdata, int length,
@@ -367,10 +376,20 @@ int ofono_call_barring_register(struct ofono_modem *modem,
 void ofono_call_barring_unregister(struct ofono_modem *modem);
 
 struct ofono_sim_ops {
-	void (*read_file_len)(struct ofono_modem *modem, int fileid,
-			ofono_sim_file_len_cb_t cb, void *data);
-	void (*read_file)(struct ofono_modem *modem, int fileid, int start,
-			int length, ofono_sim_read_cb_t cb, void *data);
+	void (*read_file_info)(struct ofono_modem *modem, int fileid,
+			ofono_sim_file_info_cb_t cb, void *data);
+	void (*read_file_transparent)(struct ofono_modem *modem, int fileid,
+			int start, int length,
+			ofono_sim_read_cb_t cb, void *data);
+	void (*read_file_linear)(struct ofono_modem *modem, int fileid,
+			int record, int length,
+			ofono_sim_read_cb_t cb, void *data);
+	void (*write_file_transparent)(struct ofono_modem *modem, int fileid,
+			int start, int length, const unsigned char *value,
+			ofono_generic_cb_t cb, void *data);
+	void (*write_file_linear)(struct ofono_modem *modem, int fileid,
+			int record, int length, const unsigned char *value,
+			ofono_generic_cb_t cb, void *data);
 	void (*read_imsi)(struct ofono_modem *modem,
 			ofono_imsi_cb_t cb, void *data);
 	void (*read_own_numbers)(struct ofono_modem *modem,

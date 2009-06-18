@@ -41,20 +41,22 @@
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
 static const char *cnum_prefix[] = { "+CNUM:", NULL };
 
-static void at_crsm_len_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
-	ofono_sim_file_len_cb_t cb = cbd->cb;
+	ofono_sim_file_info_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	const guint8 *response;
 	gint sw1, sw2, len;
+	int flen, rlen;
+	enum ofono_simfile_struct str;
 
-	dump_response("at_crsm_len_cb", ok, result);
+	dump_response("at_crsm_info_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
-		cb(&error, -1, cbd->data);
+		cb(&error, -1, -1, -1, cbd->data);
 		return;
 	}
 
@@ -63,29 +65,38 @@ static void at_crsm_len_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "+CRSM:")) {
 		DECLARE_FAILURE(e);
 
-		cb(&e, -1, cbd->data);
+		cb(&e, -1, -1, -1, cbd->data);
 		return;
 	}
 
 	g_at_result_iter_next_number(&iter, &sw1);
-	g_at_result_iter_next_number(&iter, &len);
+	g_at_result_iter_next_number(&iter, &sw2);
 
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
 		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92) ||
-		(sw1 == 0x90 && sw2 != 0x00) || len < 14) {
+		(sw1 == 0x90 && sw2 != 0x00) ||
+		len < 14 || response[6] != 0x04 ||
+		(response[13] == 0x01 && len < 15)) {
 		DECLARE_FAILURE(e);
 
-		cb(&e, -1, cbd->data);
+		cb(&e, -1, -1, -1, cbd->data);
 		return;
 	}
 
-	ofono_debug("crsm_len_cb: %02x, %02x, %i", sw1, sw2, len);
+	ofono_debug("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
 
-	cb(&error, (response[2] << 8) | response[3], cbd->data);
+	flen = (response[2] << 8) | response[3];
+	str = response[13];
+	if (str == 0x01)
+		rlen = response[14];
+	else
+		rlen = 0;
+
+	cb(&error, flen, str, rlen, cbd->data);
 }
 
-static void at_sim_read_file_len(struct ofono_modem *modem, int fileid,
-					ofono_sim_file_len_cb_t cb,
+static void at_sim_read_info(struct ofono_modem *modem, int fileid,
+					ofono_sim_file_info_cb_t cb,
 					void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
@@ -97,7 +108,7 @@ static void at_sim_read_file_len(struct ofono_modem *modem, int fileid,
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i,0,0,15", fileid);
 	if (g_at_chat_send(at->parser, buf, crsm_prefix,
-				at_crsm_len_cb, cbd, g_free) > 0)
+				at_crsm_info_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -106,11 +117,12 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, -1, data);
+		cb(&error, -1, -1, -1, data);
 	}
 }
 
-static void at_crsm_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void at_crsm_read_cb(gboolean ok, GAtResult *result,
+		gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
@@ -119,7 +131,7 @@ static void at_crsm_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const guint8 *response;
 	gint sw1, sw2, len;
 
-	dump_response("at_crsm_cb", ok, result);
+	dump_response("at_crsm_read_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -147,14 +159,14 @@ static void at_crsm_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_debug("crsm_cb: %02x, %02x, %d", sw1, sw2, len);
+	ofono_debug("crsm_read_cb: %02x, %02x, %d", sw1, sw2, len);
 
 	cb(&error, response, len, cbd->data);
 }
 
-static void at_sim_read_file(struct ofono_modem *modem, int fileid, int start,
-					int length, ofono_sim_read_cb_t cb,
-					void *data)
+static void at_sim_read_binary(struct ofono_modem *modem, int fileid,
+					int start, int length,
+					ofono_sim_read_cb_t cb, void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
@@ -166,7 +178,7 @@ static void at_sim_read_file(struct ofono_modem *modem, int fileid, int start,
 	snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,%i,%i,%i", fileid,
 			start >> 8, start & 0xff, length);
 	if (g_at_chat_send(at->parser, buf, crsm_prefix,
-				at_crsm_cb, cbd, g_free) > 0)
+				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -176,6 +188,144 @@ error:
 	{
 		DECLARE_FAILURE(error);
 		cb(&error, NULL, 0, data);
+	}
+}
+
+static void at_sim_read_record(struct ofono_modem *modem, int fileid,
+					int record, int length,
+					ofono_sim_read_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char buf[64];
+
+	if (!cbd)
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CRSM=178,%i,%i,4,%i", fileid,
+			record + 1, length);
+	if (g_at_chat_send(at->parser, buf, crsm_prefix,
+				at_crsm_read_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, NULL, 0, data);
+	}
+}
+
+static void at_crsm_update_cb(gboolean ok, GAtResult *result,
+		gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	GAtResultIter iter;
+	ofono_generic_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	gint sw1, sw2;
+
+	dump_response("at_crsm_update_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CRSM:")) {
+		DECLARE_FAILURE(e);
+
+		cb(&e, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_next_number(&iter, &sw1);
+	g_at_result_iter_next_number(&iter, &sw2);
+	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
+		(sw1 == 0x90 && sw2 != 0x00)) {
+		DECLARE_FAILURE(e);
+
+		cb(&e, cbd->data);
+		return;
+	}
+
+	ofono_debug("crsm_update_cb: %02x, %02x", sw1, sw2);
+
+	cb(&error, cbd->data);
+}
+
+static void at_sim_update_binary(struct ofono_modem *modem, int fileid,
+					int start, int length,
+					const unsigned char *value,
+					ofono_generic_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char *buf = g_try_new(char, 36 + length * 2);
+	int len, ret;
+
+	if (!cbd || !buf)
+		goto error;
+
+	len = sprintf(buf, "AT+CRSM=214,%i,%i,%i,%i,", fileid,
+			start >> 8, start & 0xff, length);
+	for (; length; length--)
+		len += sprintf(buf + len, "%02hhx", *value++);
+	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
+				at_crsm_update_cb, cbd, g_free);
+
+	g_free(buf);
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, data);
+	}
+}
+
+static void at_sim_update_record(struct ofono_modem *modem, int fileid,
+					int record, int length,
+					const unsigned char *value,
+					ofono_generic_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char *buf = g_try_new(char, 36 + length * 2);
+	int len, ret;
+
+	if (!cbd || !buf)
+		goto error;
+
+	len = sprintf(buf, "AT+CRSM=220,%i,%i,4,%i,", fileid,
+			record + 1, length);
+	for (; length; length--)
+		len += sprintf(buf + len, "%02hhx", *value++);
+	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
+				at_crsm_update_cb, cbd, g_free);
+
+	g_free(buf);
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, data);
 	}
 }
 
@@ -317,8 +467,11 @@ error:
 }
 
 static struct ofono_sim_ops ops = {
-	.read_file_len 		= at_sim_read_file_len,
-	.read_file 		= at_sim_read_file,
+	.read_file_info		= at_sim_read_info,
+	.read_file_transparent	= at_sim_read_binary,
+	.read_file_linear	= at_sim_read_record,
+	.write_file_transparent	= at_sim_update_binary,
+	.write_file_linear	= at_sim_update_record,
 	.read_imsi		= at_read_imsi,
 	.read_own_numbers	= at_read_msisdn,
 };

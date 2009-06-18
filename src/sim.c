@@ -237,16 +237,18 @@ static void sim_spn_read_cb(const struct ofono_error *error,
 		sim_spn_notify(modem, l->data);
 }
 
-static void sim_spn_len_cb(const struct ofono_error *error,
-		int length, void *data)
+static void sim_spn_info_cb(const struct ofono_error *error,
+		int length, enum ofono_simfile_struct structure, int dummy,
+		void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 1)
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 1 ||
+			structure != OFONO_SIM_FILE_TRANSPARENT)
 		return;
 
-	sim->ops->read_file(modem, SIM_EFSPN_FILEID, 0, length,
+	sim->ops->read_file_transparent(modem, SIM_EFSPN_FILEID, 0, length,
 			sim_spn_read_cb, modem);
 }
 
@@ -255,8 +257,8 @@ static gboolean sim_retrieve_spn(void *user_data)
 	struct ofono_modem *modem = user_data;
 	struct sim_manager_data *sim = modem->sim_manager;
 
-	sim->ops->read_file_len(modem, SIM_EFSPN_FILEID,
-			sim_spn_len_cb, modem);
+	sim->ops->read_file_info(modem, SIM_EFSPN_FILEID,
+			sim_spn_info_cb, modem);
 
 	return FALSE;
 }
@@ -341,7 +343,7 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 
 	modem_add_interface(modem, SIM_MANAGER_INTERFACE);
 
-	if (modem->sim_manager->ops->read_file)
+	if (modem->sim_manager->ops->read_file_transparent)
 		g_timeout_add(0, sim_retrieve_spn, modem);
 
 	if (modem->sim_manager->ops->read_imsi)
