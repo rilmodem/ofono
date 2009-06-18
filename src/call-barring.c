@@ -523,6 +523,7 @@ static gboolean cb_ss_passwd(struct ofono_modem *modem, const char *sc,
 		fac = "AB";
 	else
 		fac = cb_ss_service_to_fac(sc);
+
 	if (!fac)
 		return FALSE;
 
