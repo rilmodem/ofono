@@ -465,7 +465,7 @@ const char *ss_control_type_to_string(enum ss_control_type type)
 gboolean parse_ss_control_string(char *str, int *ss_type,
 					char **sc, char **sia,
 					char **sib, char **sic,
-					char **dn)
+					char **sid, char **dn)
 {
 	int len = strlen(str);
 	int cur = 0;
@@ -533,6 +533,7 @@ gboolean parse_ss_control_string(char *str, int *ss_type,
 	NEXT_FIELD(c, *sia);
 	NEXT_FIELD(c, *sib);
 	NEXT_FIELD(c, *sic);
+	NEXT_FIELD(c, *sid);
 
 	if (*c == '\0')
 		ret = TRUE;

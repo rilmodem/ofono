@@ -165,22 +165,148 @@ void ss_control_unregister(struct ofono_modem *modem, const char *str,
 						l->data);
 }
 
+struct ss_passwd_entry {
+	char *service;
+	ss_passwd_cb_t cb;
+};
+
+static struct ss_passwd_entry *ss_passwd_entry_create(const char *service,
+							ss_passwd_cb_t cb)
+{
+	struct ss_passwd_entry *r;
+
+	r = g_try_new0(struct ss_passwd_entry, 1);
+
+	if (!r)
+		return r;
+
+	r->service = g_strdup(service);
+	r->cb = cb;
+
+	return r;
+}
+
+static void ss_passwd_entry_destroy(struct ss_passwd_entry *ca)
+{
+	g_free(ca->service);
+	g_free(ca);
+}
+
+static gint ss_passwd_entry_compare(gconstpointer a, gconstpointer b)
+{
+	const struct ss_passwd_entry *ca = a;
+	const struct ss_passwd_entry *cb = b;
+	int ret;
+
+	ret = strcmp(ca->service, cb->service);
+
+	if (ret)
+		return ret;
+
+	if (ca->cb < cb->cb)
+		return -1;
+
+	if (ca->cb > cb->cb)
+		return 1;
+
+	return 0;
+}
+
+static gint ss_passwd_entry_find_by_service(gconstpointer a, gconstpointer b)
+{
+	const struct ss_passwd_entry *ca = a;
+
+	return strcmp(ca->service, b);
+}
+
+gboolean ss_passwd_register(struct ofono_modem *modem, const char *str,
+				ss_passwd_cb_t cb)
+{
+	struct ss_passwd_entry *entry;
+
+	if (!modem)
+		return FALSE;
+
+	entry = ss_passwd_entry_create(str, cb);
+
+	if (!entry)
+		return FALSE;
+
+	modem->ss_passwd_list = g_slist_append(modem->ss_passwd_list, entry);
+
+	return TRUE;
+}
+
+void ss_passwd_unregister(struct ofono_modem *modem, const char *str,
+				ss_passwd_cb_t cb)
+{
+	const struct ss_passwd_entry entry = { (char *)str, cb };
+	GSList *l;
+
+	if (!modem)
+		return;
+
+	l = g_slist_find_custom(modem->ss_passwd_list, &entry,
+				ss_passwd_entry_compare);
+
+	if (!l)
+		return;
+
+	ss_passwd_entry_destroy(l->data);
+	modem->ss_passwd_list = g_slist_remove(modem->ss_passwd_list,
+						l->data);
+}
+
+static gboolean recognized_passwd_change_string(struct ofono_modem *modem,
+						int type, char *sc,
+						char *sia, char *sib,
+						char *sic, char *sid,
+						char *dn, DBusMessage *msg)
+{
+	GSList *l = modem->ss_passwd_list;
+
+	switch (type) {
+	case SS_CONTROL_TYPE_ACTIVATION:
+	case SS_CONTROL_TYPE_REGISTRATION:
+		break;
+
+	default:
+		return FALSE;
+	}
+
+	if (strcmp(sc, "03") || strlen(dn) || strcmp(sic, sid))
+		return FALSE;
+
+	while ((l = g_slist_find_custom(l, sia,
+			ss_passwd_entry_find_by_service)) != NULL) {
+		struct ss_passwd_entry *entry = l->data;
+
+		if (entry->cb(modem, sia, sib, sic, msg))
+			return TRUE;
+
+		l = l->next;
+	}
+
+	return FALSE;
+}
+
 static gboolean recognized_control_string(struct ofono_modem *modem,
 						const char *ss_str,
 						DBusMessage *msg)
 {
 	char *str = g_strdup(ss_str);
-	char *sc, *sia, *sib, *sic, *dn;
+	char *sc, *sia, *sib, *sic, *sid, *dn;
 	int type;
 	gboolean ret = FALSE;
 
 	ofono_debug("parsing control string");
 
-	if (parse_ss_control_string(str, &type, &sc, &sia, &sib, &sic, &dn)) {
+	if (parse_ss_control_string(str, &type, &sc,
+				&sia, &sib, &sic, &sid, &dn)) {
 		GSList *l = modem->ss_control_list;
 
-		ofono_debug("Got parse result: %d, %s, %s, %s, %s, %s",
-				type, sc, sia, sib, sic, dn);
+		ofono_debug("Got parse result: %d, %s, %s, %s, %s, %s, %s",
+				type, sc, sia, sib, sic, sid, dn);
 
 		while ((l = g_slist_find_custom(l, sc,
 				ss_control_entry_find_by_service)) != NULL) {
@@ -193,6 +319,13 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 
 			l = l->next;
 		}
+
+		/* A password change string needs to be treated separately
+		 * because it uses a fourth SI and is thus not a valid
+		 * control string.  */
+		if (recognized_passwd_change_string(modem, type, sc,
+					sia, sib, sic, sid, dn, msg))
+			goto out;
 	}
 
 	/* TODO: Handle all strings that control voice calls */
@@ -203,9 +336,6 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 	/* Note: SIM PIN/PIN2 change and unblock and IMEI presentation
 	 * procedures are not handled by the daemon since they are not followed
 	 * by SEND and are not valid USSD requests.
-	 */
-
-	/* TODO: Handle Password registration according to 22.030 Section 6.5.4
 	 */
 
 out:

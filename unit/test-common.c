@@ -57,6 +57,7 @@ static void test_invalid()
 	char *sia;
 	char *sib;
 	char *sic;
+	char *sid;
 	char *dn;
 	int type;
 
@@ -71,7 +72,9 @@ static void test_invalid()
 		str = strdup(invalid_strings[i]);
 
 		ret = parse_ss_control_string(str, &type, &sc,
-						&sia, &sib, &sic, &dn);
+						&sia, &sib, &sic, &sid, &dn);
+		if (strlen(sid))
+			ret = FALSE;
 
 		g_assert(ret == FALSE);
 
@@ -105,6 +108,7 @@ static void test_valid()
 	char *sia;
 	char *sib;
 	char *sic;
+	char *sid;
 	char *dn;
 	int type;
 	gboolean ret;
@@ -119,7 +123,9 @@ static void test_valid()
 		str = strdup(valid_strings[i]);
 
 		ret = parse_ss_control_string(str, &type, &sc,
-						&sia, &sib, &sic, &dn);
+						&sia, &sib, &sic, &sid, &dn);
+		if (strlen(sid))
+			ret = FALSE;
 
 		g_assert(ret == TRUE);
 

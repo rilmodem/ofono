@@ -28,6 +28,7 @@ struct ofono_modem {
 	void 		*userdata;
 
 	GSList *ss_control_list;
+	GSList *ss_passwd_list;
 
 	struct ofono_modem_data *modem_info;
 	struct network_registration_data *network_registration;

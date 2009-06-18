@@ -192,7 +192,7 @@ gboolean valid_ussd_string(const char *str);
 gboolean parse_ss_control_string(char *str, int *ss_type,
 					char **sc, char **sia,
 					char **sib, char **sic,
-					char **dn);
+					char **sid, char **dn);
 
 const char *ss_control_type_to_string(enum ss_control_type type);
 

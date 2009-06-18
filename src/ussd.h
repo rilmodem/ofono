@@ -26,8 +26,18 @@ typedef gboolean (*ss_control_cb_t)(struct ofono_modem *modem,
 					const char *sic, const char *dn,
 					DBusMessage *msg);
 
+typedef gboolean (*ss_passwd_cb_t)(struct ofono_modem *modem, const char *sc,
+					const char *old, const char *new,
+					DBusMessage *msg);
+
 gboolean ss_control_register(struct ofono_modem *modem, const char *str,
 				ss_control_cb_t cb);
 
 void ss_control_unregister(struct ofono_modem *modem, const char *str,
 				ss_control_cb_t cb);
+
+gboolean ss_passwd_register(struct ofono_modem *modem, const char *str,
+				ss_passwd_cb_t cb);
+
+void ss_passwd_unregister(struct ofono_modem *modem, const char *str,
+				ss_passwd_cb_t cb);
