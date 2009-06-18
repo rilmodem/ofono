@@ -39,7 +39,6 @@
 #include "at.h"
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
-static const char *cnum_prefix[] = { "+CNUM:", NULL };
 
 static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -380,93 +379,6 @@ error:
 	}
 }
 
-static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct cb_data *cbd = user_data;
-	GAtResultIter iter;
-	ofono_own_numbers_cb_t cb = cbd->cb;
-	struct ofono_error error;
-	struct ofono_own_number *numbers;
-	int count;
-	const char *str;
-
-	dump_response("at_cnum_cb", ok, result);
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (!ok) {
-		cb(&error, 0, NULL, cbd->data);
-		return;
-	}
-
-	g_at_result_iter_init(&iter, result);
-
-	for (count = 0; g_at_result_iter_next(&iter, "+CNUM:"); count++);
-	ofono_debug("Got %i elements", count);
-
-	numbers = g_try_new0(struct ofono_own_number, count);
-	if (!numbers) {
-		DECLARE_FAILURE(e);
-		cb(&e, 0, NULL, cbd->data);
-		return;
-	}
-
-	g_at_result_iter_init(&iter, result);
-
-	count = 0;
-	while (g_at_result_iter_next(&iter, "+CNUM")) {
-		/* Skip alnum */
-		g_at_result_iter_skip_next(&iter);
-
-		if (!g_at_result_iter_next_string(&iter, &str))
-			continue;
-
-		g_strlcpy(numbers[count].phone_number.number,
-				str[0] == '+' ? str+1 : str,
-				OFONO_MAX_PHONE_NUMBER_LENGTH);
-
-		g_at_result_iter_next_number(&iter,
-					&numbers[count].phone_number.type);
-
-		numbers[count].speed = -1;
-		numbers[count].service = -1;
-		numbers[count].itc = -1;
-		numbers[count].npi = -1;
-
-		g_at_result_iter_skip_next(&iter);
-		g_at_result_iter_next_number(&iter, &numbers[count].service);
-		g_at_result_iter_next_number(&iter, &numbers[count].itc);
-
-		count++;
-	}
-
-	cb(&error, count, numbers, cbd->data);
-
-	g_free(numbers);
-}
-
-static void at_read_msisdn(struct ofono_modem *modem, ofono_own_numbers_cb_t cb,
-				void *data)
-{
-	struct at_data *at = ofono_modem_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
-
-	if (!cbd)
-		goto error;
-
-	if (g_at_chat_send(at->parser, "AT+CNUM", cnum_prefix,
-				at_cnum_cb, cbd, g_free) > 0)
-		return;
-
-error:
-	if (cbd)
-		g_free(cbd);
-
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, 0, NULL, data);
-	}
-}
-
 static struct ofono_sim_ops ops = {
 	.read_file_info		= at_sim_read_info,
 	.read_file_transparent	= at_sim_read_binary,
@@ -474,7 +386,6 @@ static struct ofono_sim_ops ops = {
 	.write_file_transparent	= at_sim_update_binary,
 	.write_file_linear	= at_sim_update_record,
 	.read_imsi		= at_read_imsi,
-	.read_own_numbers	= at_read_msisdn,
 };
 
 void at_sim_init(struct ofono_modem *modem)

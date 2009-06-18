@@ -94,36 +94,6 @@ struct ofono_cf_condition {
 	int time;
 };
 
-/* 27.007 Section 7.1 Subscriber Number */
-struct ofono_own_number {
-	struct ofono_phone_number phone_number;
-	int speed;
-	int service;
-	int itc;
-	int npi;
-};
-
-/* 24.008 Section 10.5.4.7 */
-enum ofono_number_type {
-	OFONO_NUMBER_TYPE_UNKNOWN = 0,
-	OFONO_NUMBER_TYPE_INTERNATIONAL = 1,
-	OFONO_NUMBER_TYPE_NATIONAL = 2,
-	OFONO_NUMBER_TYPE_NETWORK_SPECIFIC = 3,
-	OFONO_NUMBER_TYPE_DEDICATED_ACCESS = 4,
-	OFONO_NUMBER_TYPE_RESERVED = 7
-};
-
-enum ofono_numbering_plan {
-	OFONO_NUMBERING_PLAN_UNKNOWN = 0,
-	OFONO_NUMBERING_PLAN_ISDN = 1,
-	OFONO_NUMBERING_PLAN_DATA = 3,
-	OFONO_NUMBERING_PLAN_TELEX = 4,
-	OFONO_NUMBERING_PLAN_NATIONAL = 8,
-	OFONO_NUMBERING_PLAN_PRIVATE = 9,
-	OFONO_NUMBERING_PLAN_RESERVED_CTS = 11,
-	OFONO_NUMBERING_PLAN_RESERVED = 15
-};
-
 /* 51.011 Section 9.3 */
 enum ofono_sim_file_structure {
 	OFONO_SIM_FILE_STRUCTURE_TRANSPARENT = 0,
@@ -200,9 +170,6 @@ typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,
 
 typedef void (*ofono_imsi_cb_t)(const struct ofono_error *error,
 					const char *imsi, void *data);
-
-typedef void (*ofono_own_numbers_cb_t)(const struct ofono_error *error, int num,
-			const struct ofono_own_number *numbers, void *data);
 
 typedef void (*ofono_sca_query_cb_t)(const struct ofono_error *error,
 					const struct ofono_phone_number *ph,
@@ -414,8 +381,6 @@ struct ofono_sim_ops {
 			ofono_generic_cb_t cb, void *data);
 	void (*read_imsi)(struct ofono_modem *modem,
 			ofono_imsi_cb_t cb, void *data);
-	void (*read_own_numbers)(struct ofono_modem *modem,
-			ofono_own_numbers_cb_t cb, void *data);
 };
 
 int ofono_sim_manager_register(struct ofono_modem *modem,

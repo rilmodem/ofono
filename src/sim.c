@@ -37,9 +37,19 @@
 #include "driver.h"
 #include "common.h"
 #include "util.h"
+#include "smsutil.h"
 #include "sim.h"
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
+
+/* 27.007 Section 7.1 Subscriber Number */
+struct own_number {
+	struct ofono_phone_number phone_number;
+	int speed;
+	int service;
+	int itc;
+	int npi;
+};
 
 struct sim_manager_data {
 	struct ofono_sim_ops *ops;
@@ -61,7 +71,7 @@ static char **own_numbers_by_type(GSList *own_numbers, int type)
 {
 	int nelem;
 	GSList *l;
-	struct ofono_own_number *num;
+	struct own_number *num;
 	char **ret;
 
 	if (!own_numbers)
@@ -295,7 +305,7 @@ static void sim_msisdn_read_cb(const struct ofono_error *error,
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
-	struct ofono_own_number *ph;
+	struct own_number *ph;
 	int number_len;
 	int ton_npi;
 	int i, digit;
@@ -315,36 +325,18 @@ static void sim_msisdn_read_cb(const struct ofono_error *error,
 	if (number_len > 11 || ton_npi == 0xff)
 		goto skip;
 
-	ph = g_new(struct ofono_own_number, 1);
+	ph = g_new(struct own_number, 1);
 
 	ph->speed = -1;
 	ph->service = -1;
 	ph->itc = -1;
-	ph->npi = (ton_npi >> 0) & 15;
-	ph->phone_number.type = (ton_npi >> 4) & 7;
+	ph->phone_number.type = bit_field(ton_npi, 4, 3);
+	ph->npi = bit_field(ton_npi, 0, 4);
 
-	if (number_len > 10)
-		number_len = 10;
-	number_len *= 2;
-	if (number_len > OFONO_MAX_PHONE_NUMBER_LENGTH)
-		number_len = OFONO_MAX_PHONE_NUMBER_LENGTH;
+	/* BCD coded, however the TON/NPI is given by the first byte */
+	number_len = (number_len - 1) * 2;
 
-	for (i = 0; i < number_len; i ++) {
-		digit = *sdata;
-		/* BCD coded */
-		if (i & 1) {
-			sdata ++;
-			digit >>= 4;
-		}
-		digit &= 0xf;
-
-		if (digit > 9)
-			break;
-
-		ph->phone_number.number[i] = '0' + digit;
-	}
-	memset(&ph->phone_number.number[i], 0,
-			OFONO_MAX_PHONE_NUMBER_LENGTH - i);
+	extract_bcd_number(sdata, number_len, ph->phone_number.number);
 
 	sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
 
@@ -352,25 +344,25 @@ skip:
 	sim->own_numbers_current ++;
 	if (sim->own_numbers_current < sim->own_numbers_num)
 		sim->ops->read_file_linear(modem, SIM_EFMSISDN_FILEID,
-				sim->own_numbers_current,
-				sim->own_numbers_size,
-				sim_msisdn_read_cb, modem);
+						sim->own_numbers_current,
+						sim->own_numbers_size,
+						sim_msisdn_read_cb, modem);
 	else
 		/* All records retrieved */
 		if (sim->own_numbers)
 			sim->own_numbers = g_slist_reverse(sim->own_numbers);
 }
 
-static void sim_msisdn_info_cb(const struct ofono_error *error,
-		int length, enum ofono_simfile_struct structure,
-		int record_length, void *data)
+static void sim_msisdn_info_cb(const struct ofono_error *error, int length,
+				enum ofono_sim_file_structure structure,
+				int record_length, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length < 14 ||
 			record_length < 14 ||
-			structure != OFONO_SIM_FILE_FIXED)
+			structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
 		return;
 
 	sim->own_numbers_current = 0;
