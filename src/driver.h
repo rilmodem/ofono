@@ -103,10 +103,10 @@ struct ofono_own_number {
 };
 
 /* 51.011 Section 9.3 */
-enum ofono_simfile_struct {
-	OFONO_SIM_FILE_TRANSPARENT = 0,
-	OFONO_SIM_FILE_FIXED = 1,
-	OFONO_SIM_FILE_CYCLIC = 3
+enum ofono_sim_file_structure {
+	OFONO_SIM_FILE_STRUCTURE_TRANSPARENT = 0,
+	OFONO_SIM_FILE_STRUCTURE_FIXED = 1,
+	OFONO_SIM_FILE_STRUCTURE_CYCLIC = 3
 };
 
 /* Notification functions, the integer values here should map to
@@ -169,7 +169,7 @@ typedef void (*ofono_call_barring_cb_t)(const struct ofono_error *error,
 
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
-					enum ofono_simfile_struct structure,
+					enum ofono_sim_file_structure structure,
 					int recordlength, void *data);
 
 typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,

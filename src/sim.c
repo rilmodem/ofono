@@ -237,19 +237,19 @@ static void sim_spn_read_cb(const struct ofono_error *error,
 		sim_spn_notify(modem, l->data);
 }
 
-static void sim_spn_info_cb(const struct ofono_error *error,
-		int length, enum ofono_simfile_struct structure, int dummy,
-		void *data)
+static void sim_spn_info_cb(const struct ofono_error *error, int length,
+				enum ofono_sim_file_structure structure,
+				int dummy, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 1 ||
-			structure != OFONO_SIM_FILE_TRANSPARENT)
+			structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		return;
 
 	sim->ops->read_file_transparent(modem, SIM_EFSPN_FILEID, 0, length,
-			sim_spn_read_cb, modem);
+					sim_spn_read_cb, modem);
 }
 
 static gboolean sim_retrieve_spn(void *user_data)
@@ -258,7 +258,7 @@ static gboolean sim_retrieve_spn(void *user_data)
 	struct sim_manager_data *sim = modem->sim_manager;
 
 	sim->ops->read_file_info(modem, SIM_EFSPN_FILEID,
-			sim_spn_info_cb, modem);
+					sim_spn_info_cb, modem);
 
 	return FALSE;
 }

@@ -50,7 +50,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const guint8 *response;
 	gint sw1, sw2, len;
 	int flen, rlen;
-	enum ofono_simfile_struct str;
+	enum ofono_sim_file_structure str;
 
 	dump_response("at_crsm_info_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
