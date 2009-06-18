@@ -430,6 +430,7 @@ static void at_cnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		numbers[count].speed = -1;
 		numbers[count].service = -1;
 		numbers[count].itc = -1;
+		numbers[count].npi = -1;
 
 		g_at_result_iter_skip_next(&iter);
 		g_at_result_iter_next_number(&iter, &numbers[count].service);

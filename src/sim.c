@@ -51,6 +51,10 @@ struct sim_manager_data {
 	int dcbyte;
 
 	GSList *update_spn_notify;
+
+	int own_numbers_num;
+	int own_numbers_size;
+	int own_numbers_current;
 };
 
 static char **own_numbers_by_type(GSList *own_numbers, int type)
@@ -181,6 +185,7 @@ static GDBusMethodTable sim_manager_methods[] = {
 static GDBusSignalTable sim_manager_signals[] = { { } };
 
 enum sim_fileids {
+	SIM_EFMSISDN_FILEID = 0x6f40,
 	SIM_EFSPN_FILEID = 0x6f46,
 };
 
@@ -285,31 +290,94 @@ static gboolean sim_retrieve_imsi(void *user_data)
 	return FALSE;
 }
 
-static void sim_own_number_cb(const struct ofono_error *error, int num,
-			const struct ofono_own_number *own, void *data)
+static void sim_msisdn_read_cb(const struct ofono_error *error,
+		const unsigned char *sdata, int length, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
-	int i;
+	struct ofono_own_number *ph;
+	int number_len;
+	int ton_npi;
+	int i, digit;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		goto skip;
+
+	if (length < sim->own_numbers_size)
+		goto skip;
+
+	/* Skip Alpha-Identifier field */
+	sdata += sim->own_numbers_size - 14;
+
+	number_len = *sdata++;
+	ton_npi = *sdata++;
+
+	if (number_len > 11 || ton_npi == 0xff)
+		goto skip;
+
+	ph = g_new(struct ofono_own_number, 1);
+
+	ph->speed = -1;
+	ph->service = -1;
+	ph->itc = -1;
+	ph->npi = (ton_npi >> 0) & 15;
+	ph->phone_number.type = (ton_npi >> 4) & 7;
+
+	if (number_len > 10)
+		number_len = 10;
+	number_len *= 2;
+	if (number_len > OFONO_MAX_PHONE_NUMBER_LENGTH)
+		number_len = OFONO_MAX_PHONE_NUMBER_LENGTH;
+
+	for (i = 0; i < number_len; i ++) {
+		digit = *sdata;
+		/* BCD coded */
+		if (i & 1) {
+			sdata ++;
+			digit >>= 4;
+		}
+		digit &= 0xf;
+
+		if (digit > 9)
+			break;
+
+		ph->phone_number.number[i] = '0' + digit;
+	}
+	memset(&ph->phone_number.number[i], 0,
+			OFONO_MAX_PHONE_NUMBER_LENGTH - i);
+
+	sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
+
+skip:
+	sim->own_numbers_current ++;
+	if (sim->own_numbers_current < sim->own_numbers_num)
+		sim->ops->read_file_linear(modem, SIM_EFMSISDN_FILEID,
+				sim->own_numbers_current,
+				sim->own_numbers_size,
+				sim_msisdn_read_cb, modem);
+	else
+		/* All records retrieved */
+		if (sim->own_numbers)
+			sim->own_numbers = g_slist_reverse(sim->own_numbers);
+}
+
+static void sim_msisdn_info_cb(const struct ofono_error *error,
+		int length, enum ofono_simfile_struct structure,
+		int record_length, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length < 14 ||
+			record_length < 14 ||
+			structure != OFONO_SIM_FILE_FIXED)
 		return;
 
-	for (i = 0; i < num; i++) {
-		struct ofono_own_number *ph;
-
-		if (own[i].phone_number.number[0] == '\0')
-			continue;
-
-		ph = g_new(struct ofono_own_number, 1);
-
-		memcpy(ph, &own[i], sizeof(struct ofono_own_number));
-
-		sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
-	}
-
-	if (sim->own_numbers)
-		sim->own_numbers = g_slist_reverse(sim->own_numbers);
+	sim->own_numbers_current = 0;
+	sim->own_numbers_size = record_length;
+	sim->own_numbers_num = length / record_length;
+	sim->ops->read_file_linear(modem, SIM_EFMSISDN_FILEID, 0,
+			record_length, sim_msisdn_read_cb, modem);
 }
 
 static gboolean sim_retrieve_own_number(void *user_data)
@@ -317,7 +385,8 @@ static gboolean sim_retrieve_own_number(void *user_data)
 	struct ofono_modem *modem = user_data;
 	struct sim_manager_data *sim = modem->sim_manager;
 
-	sim->ops->read_own_numbers(modem, sim_own_number_cb, modem);
+	sim->ops->read_file_info(modem, SIM_EFMSISDN_FILEID,
+			sim_msisdn_info_cb, modem);
 
 	return FALSE;
 }
@@ -349,7 +418,7 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 	if (modem->sim_manager->ops->read_imsi)
 		g_timeout_add(0, sim_retrieve_imsi, modem);
 
-	if (modem->sim_manager->ops->read_own_numbers)
+	if (modem->sim_manager->ops->read_file_linear)
 		g_timeout_add(0, sim_retrieve_own_number, modem);
 }
 
