@@ -42,15 +42,6 @@
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
-/* 27.007 Section 7.1 Subscriber Number */
-struct own_number {
-	struct ofono_phone_number phone_number;
-	int speed;
-	int service;
-	int itc;
-	int npi;
-};
-
 struct sim_manager_data {
 	struct ofono_sim_ops *ops;
 	int flags;
@@ -67,41 +58,15 @@ struct sim_manager_data {
 	int own_numbers_current;
 };
 
-static char **own_numbers_by_type(GSList *own_numbers, int type)
+static char **get_own_numbers(GSList *own_numbers)
 {
-	int nelem;
+	int nelem = 0;
 	GSList *l;
-	struct own_number *num;
+	struct ofono_phone_number *num;
 	char **ret;
 
-	if (!own_numbers)
-		return NULL;
-
-	for (nelem = 0, l = own_numbers; l; l = l->next) {
-		num = l->data;
-
-		if (num->service != type)
-			continue;
-
-		nelem++;
-	}
-
-	if (nelem == 0) {
-		if (g_slist_length(own_numbers) != 1)
-			return NULL;
-
-		num = own_numbers->data;
-
-		/* Generic case */
-		if (num->service != -1)
-			return NULL;
-
-		ret = g_new0(char *, 2);
-
-		ret[0] = g_strdup(phone_number_to_string(&num->phone_number));
-
-		return ret;
-	}
+	if (own_numbers)
+		nelem = g_slist_length(own_numbers);
 
 	ret = g_new0(char *, nelem + 1);
 
@@ -109,10 +74,7 @@ static char **own_numbers_by_type(GSList *own_numbers, int type)
 	for (l = own_numbers; l; l = l->next) {
 		num = l->data;
 
-		if (num->service != type)
-			continue;
-
-		ret[nelem++] = g_strdup(phone_number_to_string(&num->phone_number));
+		ret[nelem++] = g_strdup(phone_number_to_string(num));
 	}
 
 	return ret;
@@ -153,7 +115,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-	char **own_voice;
+	char **own_numbers;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -173,14 +135,11 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 		dbus_gsm_dict_append(&dict, "ServiceProvider",
 					DBUS_TYPE_STRING, &sim->spn);
 
-	own_voice = own_numbers_by_type(sim->own_numbers,
-					OWN_NUMBER_SERVICE_TYPE_VOICE);
+	own_numbers = get_own_numbers(sim->own_numbers);
 
-	if (own_voice) {
-		dbus_gsm_dict_append_array(&dict, "VoiceSubscriberNumber",
-						DBUS_TYPE_STRING, &own_voice);
-		dbus_gsm_free_string_array(own_voice);
-	}
+	dbus_gsm_dict_append_array(&dict, "SubscriberNumbers",
+					DBUS_TYPE_STRING, &own_numbers);
+	dbus_gsm_free_string_array(own_numbers);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -305,7 +264,7 @@ static void sim_msisdn_read_cb(const struct ofono_error *error,
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
-	struct own_number *ph;
+	struct ofono_phone_number *ph;
 	int number_len;
 	int ton_npi;
 	int i, digit;
@@ -325,18 +284,14 @@ static void sim_msisdn_read_cb(const struct ofono_error *error,
 	if (number_len > 11 || ton_npi == 0xff)
 		goto skip;
 
-	ph = g_new(struct own_number, 1);
+	ph = g_new(struct ofono_phone_number, 1);
 
-	ph->speed = -1;
-	ph->service = -1;
-	ph->itc = -1;
-	ph->phone_number.type = bit_field(ton_npi, 4, 3);
-	ph->npi = bit_field(ton_npi, 0, 4);
+	ph->type = bit_field(ton_npi, 4, 3);
 
 	/* BCD coded, however the TON/NPI is given by the first byte */
 	number_len = (number_len - 1) * 2;
 
-	extract_bcd_number(sdata, number_len, ph->phone_number.number);
+	extract_bcd_number(sdata, number_len, ph->number);
 
 	sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
 
