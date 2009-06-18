@@ -308,6 +308,18 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 		ofono_debug("Got parse result: %d, %s, %s, %s, %s, %s, %s",
 				type, sc, sia, sib, sic, sid, dn);
 
+		/* A password change string needs to be treated separately
+		 * because it uses a fourth SI and is thus not a valid
+		 * control string.  */
+		if (recognized_passwd_change_string(modem, type, sc,
+					sia, sib, sic, sid, dn, msg)) {
+			ret = TRUE;
+			goto out;
+		}
+
+		if (*sid != '\0');
+			goto out;
+
 		while ((l = g_slist_find_custom(l, sc,
 				ss_control_entry_find_by_service)) != NULL) {
 			struct ss_control_entry *entry = l->data;
@@ -320,12 +332,6 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 			l = l->next;
 		}
 
-		/* A password change string needs to be treated separately
-		 * because it uses a fourth SI and is thus not a valid
-		 * control string.  */
-		if (recognized_passwd_change_string(modem, type, sc,
-					sia, sib, sic, sid, dn, msg))
-			goto out;
 	}
 
 	/* TODO: Handle all strings that control voice calls */
