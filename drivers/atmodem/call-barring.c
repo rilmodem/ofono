@@ -152,9 +152,50 @@ error:
 	}
 }
 
+static void cpwd_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_generic_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	dump_response("cpwd_set_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
+}
+
+static void at_call_barring_set_passwd(struct ofono_modem *modem,
+				const char *lock,
+				const char *old_passwd, const char *new_passwd,
+				ofono_generic_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char buf[64];
+
+	if (!cbd || strlen(lock) != 2)
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CPWD=\"%s\",\"%s\",\"%s\"",
+			lock, old_passwd, new_passwd);
+
+	if (g_at_chat_send(at->parser, buf, none_prefix,
+				cpwd_set_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, data);
+	}
+}
+
 static struct ofono_call_barring_ops ops = {
-	.set	= at_call_barring_set,
-	.query	= at_call_barring_query,
+	.set		= at_call_barring_set,
+	.query		= at_call_barring_query,
+	.set_passwd	= at_call_barring_set_passwd,
 };
 
 void at_call_barring_init(struct ofono_modem *modem)
