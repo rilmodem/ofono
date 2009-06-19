@@ -2184,3 +2184,163 @@ void sms_assembly_expire(struct sms_assembly *assembly, time_t before)
 		g_slist_free_1(tmp);
 	}
 }
+
+static inline GSList *sms_list_append(GSList *l, const struct sms *in)
+{
+	struct sms *sms;
+
+	sms = g_new(struct sms, 1);
+	memcpy(sms, in, sizeof(struct sms));
+	l = g_slist_prepend(l, sms);
+
+	return l;
+}
+
+GSList *sms_text_prepare(const char *utf8, guint16 ref, gboolean use_16bit)
+{
+	struct sms template;
+	int offset = 0;
+	unsigned char *gsm_encoded = NULL;
+	char *ucs2_encoded = NULL;
+	long written;
+	long left;
+	guint8 seq;
+	guint8 max;
+	GSList *r = NULL;
+
+	memset(&template, 0, sizeof(struct sms));
+	template.type = SMS_TYPE_SUBMIT;
+	template.submit.rd = FALSE;
+	template.submit.vpf = SMS_VALIDITY_PERIOD_FORMAT_RELATIVE;
+	template.submit.rp = FALSE;
+	template.submit.srr = FALSE;
+	template.submit.mr = 0;
+	template.submit.vp.relative = 0xA7; /* 24 Hours */
+
+	/* UDHI, UDL, UD and DCS actually depend on what we have in the text */
+	gsm_encoded = convert_utf8_to_gsm(utf8, -1, NULL, &written, 0);
+
+	if (!gsm_encoded)
+		ucs2_encoded = g_convert(utf8, -1, "UCS-2BE//TRANSLIT", "UTF-8",
+						NULL, &written, NULL);
+
+	if (!gsm_encoded && !ucs2_encoded)
+		return NULL;
+
+	if (gsm_encoded)
+		template.submit.dcs = 0x00; /* Class Unspecified, 7 Bit */
+	else
+		template.submit.dcs = 0x08; /* Class Unspecified, UCS2 */
+
+	if (offset != 0)
+		template.submit.udhi = FALSE;
+
+	if (gsm_encoded && (written <= sms_text_capacity_gsm(160, offset))) {
+		template.submit.udl = written + (offset * 8 + 6) / 7;
+		pack_7bit_own_buf(gsm_encoded, written, offset, FALSE, NULL,
+					0, template.submit.ud + offset);
+
+		g_free(gsm_encoded);
+		return sms_list_append(NULL, &template);
+	}
+
+	if (ucs2_encoded && (written <= (140 - offset))) {
+		template.submit.udl = written + offset;
+		memcpy(template.submit.ud + offset, ucs2_encoded, written);
+
+		g_free(ucs2_encoded);
+		return sms_list_append(NULL, &template);
+	}
+
+	template.submit.udhi = TRUE;
+
+	if (!offset)
+		offset = 1;
+
+	if (use_16bit) {
+		template.submit.ud[0] += 6;
+		template.submit.ud[offset] = SMS_IEI_CONCATENATED_16BIT;
+		template.submit.ud[offset + 1] = 4;
+		template.submit.ud[offset + 2] = (ref & 0xf0) >> 8;
+		template.submit.ud[offset + 3] = ref & 0xf;
+
+		offset += 6;
+	} else {
+		template.submit.ud[0] += 5;
+		template.submit.ud[offset] = SMS_IEI_CONCATENATED_8BIT;
+		template.submit.ud[offset + 1] = 3;
+		template.submit.ud[offset + 2] = ref & 0xf;
+
+		offset += 5;
+	}
+
+	seq = 1;
+	left = written;
+	written = 0;
+
+	while (left > 0) {
+		long chunk;
+
+		if (gsm_encoded) {
+			chunk = sms_text_capacity_gsm(160, offset);
+
+			if (gsm_encoded[written + chunk - 1] == 0x1b)
+				chunk -= 1;
+
+			if (left < chunk)
+				chunk = left;
+
+			template.submit.udl = chunk + (offset * 8 + 6) / 7;
+			pack_7bit_own_buf(gsm_encoded + written, chunk,
+						offset, FALSE, NULL, 0,
+						template.submit.ud + offset);
+		} else {
+			chunk = 140 - offset;
+			chunk &= ~0x1;
+
+			if (left < chunk)
+				chunk = left;
+
+			template.submit.udl = chunk + offset;
+			memcpy(template.submit.ud + offset,
+				ucs2_encoded + written, chunk);
+		}
+
+		written += chunk;
+		left -= chunk;
+
+		template.submit.ud[offset - 1] = seq;
+
+		r = sms_list_append(r, &template);
+
+		if (seq == 255)
+			break;
+
+		seq += 1;
+	}
+
+	if (gsm_encoded)
+		g_free(gsm_encoded);
+
+	if (ucs2_encoded)
+		g_free(ucs2_encoded);
+
+	if (left > 0) {
+		g_slist_foreach(r, (GFunc)g_free, NULL);
+		g_slist_free(r);
+
+		return NULL;
+	} else {
+		GSList *l;
+
+		for (l = r; l; l = l->next) {
+			struct sms *sms = l->data;
+
+			sms->submit.ud[offset - 2] = seq;
+		}
+	}
+
+	r = g_slist_reverse(r);
+
+	return r;
+}
