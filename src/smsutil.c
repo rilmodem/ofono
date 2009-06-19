@@ -1997,7 +1997,6 @@ char *sms_decode_text(GSList *sms_list)
 
 			converted = convert_gsm_to_utf8(buf, written,
 							NULL, NULL, 0);
-
 		} else {
 			const gchar *from = (const gchar *)(ud + taken);
 			/* According to the spec: A UCS2 character shall not be
@@ -2011,7 +2010,6 @@ char *sms_decode_text(GSList *sms_list)
 			converted = g_convert(from, num_ucs2_chars,
 						"UTF-8//TRANSLIT", "UCS-2BE",
 						NULL, NULL, NULL);
-
 		}
 
 		if (converted) {
