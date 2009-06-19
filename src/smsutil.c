@@ -1681,6 +1681,18 @@ time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote)
 	return ret;
 }
 
+void sms_address_from_string(struct sms_address *addr, const char *str)
+{
+	addr->numbering_plan = SMS_NUMBERING_PLAN_ISDN;
+	if (str[0] == '+') {
+		addr->number_type = SMS_NUMBER_TYPE_INTERNATIONAL;
+		strcpy(addr->address, str+1);
+	} else {
+		addr->number_type = SMS_NUMBER_TYPE_UNKNOWN;
+		strcpy(addr->address, str);
+	}
+}
+
 const char *sms_address_to_string(const struct sms_address *addr)
 {
 	static char buffer[64];
