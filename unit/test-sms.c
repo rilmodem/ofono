@@ -623,6 +623,8 @@ static void test_assembly()
 	guint8 max;
 	guint8 seq;
 	GSList *l;
+	char *utf8;
+	char *reencoded;
 
 	decode_hex_own_buf(assembly_pdu1, -1, &pdu_len, 0, pdu);
 	sms_decode(pdu, pdu_len, FALSE, assembly_pdu_len1, &sms);
@@ -630,6 +632,13 @@ static void test_assembly()
 	sms_extract_concatenation(&sms, &ref, &max, &seq);
 	l = sms_assembly_add_fragment(assembly, &sms, time(NULL),
 					&sms.deliver.oaddr, ref, max, seq);
+
+	if (g_test_verbose()) {
+		g_print("Ref: %u\n", ref);
+		g_print("Max: %u\n", max);
+		g_print("From: %s\n",
+				sms_address_to_string(&sms.deliver.oaddr));
+	}
 
 	g_assert(g_slist_length(assembly->assembly_list) == 1);
 	g_assert(l == NULL);
@@ -658,12 +667,94 @@ static void test_assembly()
 	sms_extract_concatenation(&sms, &ref, &max, &seq);
 	l = sms_assembly_add_fragment(assembly, &sms, time(NULL),
 					&sms.deliver.oaddr, ref, max, seq);
+
 	g_assert(l != NULL);
+
+	utf8 = sms_decode_text(l);
 
 	g_slist_foreach(l, (GFunc)g_free, NULL);
 	g_slist_free(l);
 
 	sms_assembly_free(assembly);
+
+	if (g_test_verbose())
+		g_printf("Text:\n%s\n", utf8);
+
+	l = sms_text_prepare(utf8, ref, TRUE, NULL);
+	g_assert(l);
+	g_assert(g_slist_length(l) == 3);
+
+	reencoded = sms_decode_text(l);
+
+	if (g_test_verbose())
+		g_printf("ReEncoded:\n%s\n", reencoded);
+
+	g_assert(strcmp(utf8, reencoded) == 0);
+
+	g_free(utf8);
+	g_free(reencoded);
+}
+
+static const char *test_no_fragmentation_7bit = "This is testing !";
+static const char *expected_no_fragmentation_7bit = "079153485002020911000C915"
+			"348870420140000A71154747A0E4ACF41F4F29C9E769F4121";
+static const char *sc_addr = "+358405202090";
+static const char *da_addr = "+358478400241";
+static void test_prepare_7bit()
+{
+	GSList *r;
+	struct sms *sms;
+	gboolean ret;
+	unsigned char pdu[176];
+	int encoded_pdu_len;
+	int encoded_tpdu_len;
+	char *encoded_pdu;
+
+	r = sms_text_prepare(test_no_fragmentation_7bit, 0, FALSE, NULL);
+
+	g_assert(r != NULL);
+
+	sms = r->data;
+
+	sms->sc_addr.number_type = SMS_NUMBER_TYPE_INTERNATIONAL;
+	sms->sc_addr.numbering_plan = SMS_NUMBERING_PLAN_ISDN;
+	strcpy(sms->sc_addr.address, sc_addr+1);
+
+	if (g_test_verbose())
+		g_print("sc_addr: %s\n", sms_address_to_string(&sms->sc_addr));
+
+	g_assert(!strcmp(sc_addr, sms_address_to_string(&sms->sc_addr)));
+
+	sms->submit.daddr.number_type = SMS_NUMBER_TYPE_INTERNATIONAL;
+	sms->submit.daddr.numbering_plan = SMS_NUMBERING_PLAN_ISDN;
+	strcpy(sms->submit.daddr.address, da_addr+1);
+
+	if (g_test_verbose())
+		g_print("da_addr: %s\n",
+			sms_address_to_string(&sms->submit.daddr));
+
+	g_assert(!strcmp(da_addr,
+				sms_address_to_string(&sms->submit.daddr)));
+
+	ret = sms_encode(sms, &encoded_pdu_len, &encoded_tpdu_len, pdu);
+
+	g_assert(ret);
+
+	if (g_test_verbose()) {
+		int i;
+
+		for (i = 0; i < encoded_pdu_len; i++)
+			g_print("%02X", pdu[i]);
+		g_print("\n");
+	}
+
+	encoded_pdu = encode_hex(pdu, encoded_pdu_len, 0);
+
+	g_assert(strcmp(expected_no_fragmentation_7bit, encoded_pdu) == 0);
+
+	g_free(encoded_pdu);
+	g_slist_foreach(r, (GFunc)g_free, NULL);
+	g_slist_free(r);
 }
 
 int main(int argc, char **argv)
@@ -677,6 +768,7 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test Submit Encode", test_submit_encode);
 	g_test_add_func("/testsms/Test UDH Iterator", test_udh_iter);
 	g_test_add_func("/testsms/Test Assembly", test_assembly);
+	g_test_add_func("/testsms/Test Prepare 7Bit", test_prepare_7bit);
 
 	return g_test_run();
 }

@@ -395,4 +395,5 @@ GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
 					guint16 ref, guint8 max, guint8 seq);
 void sms_assembly_expire(struct sms_assembly *assembly, time_t before);
 
-GSList *sms_text_prepare(const char *utf8, guint16 ref, gboolean use_16bit);
+GSList *sms_text_prepare(const char *utf8, guint16 ref,
+				gboolean use_16bit, int *ref_offset);

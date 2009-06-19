@@ -2196,7 +2196,14 @@ static inline GSList *sms_list_append(GSList *l, const struct sms *in)
 	return l;
 }
 
-GSList *sms_text_prepare(const char *utf8, guint16 ref, gboolean use_16bit)
+/* Prepares the text for transmission.  Breaks up into fragments if
+ * necessary using ref as the concatenated message reference number.
+ * Returns a list of sms messages in order.  If ref_offset is given,
+ * then the ref_offset contains the reference number offset or 0
+ * if no concatenation took place.
+ */
+GSList *sms_text_prepare(const char *utf8, guint16 ref,
+				gboolean use_16bit, int *ref_offset)
 {
 	struct sms template;
 	int offset = 0;
@@ -2236,6 +2243,9 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref, gboolean use_16bit)
 		template.submit.udhi = FALSE;
 
 	if (gsm_encoded && (written <= sms_text_capacity_gsm(160, offset))) {
+		if (ref_offset)
+			*ref_offset = 0;
+
 		template.submit.udl = written + (offset * 8 + 6) / 7;
 		pack_7bit_own_buf(gsm_encoded, written, offset, FALSE, NULL,
 					0, template.submit.ud + offset);
@@ -2245,6 +2255,9 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref, gboolean use_16bit)
 	}
 
 	if (ucs2_encoded && (written <= (140 - offset))) {
+		if (ref_offset)
+			*ref_offset = 0;
+
 		template.submit.udl = written + offset;
 		memcpy(template.submit.ud + offset, ucs2_encoded, written);
 
@@ -2273,6 +2286,9 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref, gboolean use_16bit)
 
 		offset += 5;
 	}
+
+	if (ref_offset)
+		*ref_offset = offset + 2;
 
 	seq = 1;
 	left = written;
