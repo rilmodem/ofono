@@ -2282,6 +2282,9 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 	if (!offset)
 		offset = 1;
 
+	if (ref_offset)
+		*ref_offset = offset + 2;
+
 	if (use_16bit) {
 		template.submit.ud[0] += 6;
 		template.submit.ud[offset] = SMS_IEI_CONCATENATED_16BIT;
@@ -2299,15 +2302,14 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 		offset += 5;
 	}
 
-	if (ref_offset)
-		*ref_offset = offset + 2;
-
-	seq = 1;
+	seq = 0;
 	left = written;
 	written = 0;
 
 	while (left > 0) {
 		long chunk;
+
+		seq += 1;
 
 		if (gsm_encoded) {
 			chunk = sms_text_capacity_gsm(160, offset);
@@ -2343,8 +2345,6 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 
 		if (seq == 255)
 			break;
-
-		seq += 1;
 	}
 
 	if (gsm_encoded)
