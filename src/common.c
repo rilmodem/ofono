@@ -241,11 +241,11 @@ gboolean valid_phone_number_format(const char *number)
 	if (!len)
 		return FALSE;
 
-	if (len > OFONO_MAX_PHONE_NUMBER_LENGTH)
-		return FALSE;
-
 	if (number[0] == '+')
 		begin = 1;
+
+	if ((len - begin) > OFONO_MAX_PHONE_NUMBER_LENGTH)
+		return FALSE;
 
 	for (i = begin; i < len; i++) {
 		if (number[i] >= '0' && number[i] <= '9')
