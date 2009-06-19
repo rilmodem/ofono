@@ -596,7 +596,7 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 	long i;
 	long total_bits;
 
-	if (len == 0 || !items_written)
+	if (len == 0)
 		return NULL;
 
 	if (len < 0) {
@@ -651,7 +651,8 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 		out++;
 	}
 
-	*items_written = out - buf;
+	if (items_written)
+		*items_written = out - buf;
 
 	return buf;
 }
