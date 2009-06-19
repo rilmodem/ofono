@@ -757,6 +757,88 @@ static void test_prepare_7bit()
 	g_slist_free(r);
 }
 
+static const char *pad1 = "Shakespeare divided his time between London and Str"
+	"atford during his career. In 1596, the year before he bought New Plac"
+	"e as his family home in Stratford, Shakespeare was living in the pari"
+	"sh of St. Helen's, Bishopsgate, north of the River Thames.";
+
+/* The string in this test should be padded at the end.  This confuses some
+ * decoders which do not use udl properly
+ */
+static void test_prepare_concat()
+{
+	GSList *r;
+	GSList *l;
+	const char *decoded_str;
+	GSList *pdus = NULL;
+	char pdu[176];
+	struct sms *sms;
+	struct sms decoded;
+	int pdu_len, tpdu_len;
+	struct sms_assembly *assembly = sms_assembly_new();
+	guint16 ref;
+	guint8 max;
+	guint8 seq;
+
+	if (g_test_verbose())
+		g_print("strlen: %d\n", strlen(pad1));
+
+	r = sms_text_prepare(pad1, 0, TRUE, NULL);
+
+	g_assert(r);
+	g_assert(g_slist_length(r) == 2);
+
+	for (l = r; l; l = l->next) {
+		char *strpdu;
+
+		sms = l->data;
+
+		sms_address_from_string(&sms->submit.daddr, "+15554449999");
+		sms_encode(sms, &pdu_len, &tpdu_len, pdu);
+		g_assert(pdu_len == (tpdu_len + 1));
+
+		strpdu = encode_hex(pdu, pdu_len, 0);
+
+		if (g_test_verbose())
+			g_printf("PDU: %s, len: %d, tlen: %d\n",
+				strpdu, pdu_len, tpdu_len);
+		pdus = g_slist_append(pdus, strpdu);
+	}
+
+	g_slist_foreach(r, (GFunc)g_free, NULL);
+	g_slist_free(r);
+
+	for (l = pdus; l; l = l->next) {
+		long len;
+		gboolean ok;
+
+		decode_hex_own_buf((char *)l->data, -1, &len, 0, pdu);
+
+		if (g_test_verbose())
+			g_print("PDU Len: %d", len);
+
+		ok = sms_decode(pdu, len, TRUE, len - 1, &decoded);
+
+		if (g_test_verbose())
+			g_print("Pdu udl: %d\n", decoded.submit.udl);
+
+		sms_extract_concatenation(&decoded, &ref, &max, &seq);
+		r = sms_assembly_add_fragment(assembly, &decoded, time(NULL),
+						&decoded.submit.daddr,
+						ref, max, seq);
+	}
+
+	g_assert(r);
+
+	decoded_str = sms_decode_text(r);
+
+	if (g_test_verbose())
+		g_printf("Decoded String: %s\n", decoded_str);
+
+	g_assert(decoded_str);
+	g_assert(strcmp(decoded_str, pad1) == 0);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -769,6 +851,7 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test UDH Iterator", test_udh_iter);
 	g_test_add_func("/testsms/Test Assembly", test_assembly);
 	g_test_add_func("/testsms/Test Prepare 7Bit", test_prepare_7bit);
+	g_test_add_func("/testsms/Test Prepare Concat", test_prepare_concat);
 
 	return g_test_run();
 }
