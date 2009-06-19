@@ -1933,6 +1933,11 @@ unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
 	return buf;
 }
 
+static inline int sms_text_capacity_gsm(int max, int offset)
+{
+	return max - (offset * 8 + 6) / 7;
+}
+
 /*!
  * Decodes a list of SMSes that contain a text in either 7bit or UCS2 encoding.
  * The list must be sorted in order of the sequence number.  This function
@@ -1985,7 +1990,7 @@ char *sms_decode_text(GSList *sms_list)
 		if (charset == SMS_CHARSET_7BIT) {
 			unsigned char buf[160];
 			long written;
-			int max_chars = udl - (taken * 8 + 6) / 7;
+			int max_chars = sms_text_capacity_gsm(udl, taken);
 
 			unpack_7bit_own_buf(ud + taken, udl_in_bytes - taken,
 						taken, FALSE, max_chars,
