@@ -606,13 +606,14 @@ static inline void parse_char(GAtChat *chat, char byte)
 			chat->state = PARSER_STATE_PROMPT_COMPLETE;
 		else
 			chat->state = PARSER_STATE_RESPONSE;
+		break;
 
 	case PARSER_STATE_RESPONSE_COMPLETE:
 	case PARSER_STATE_PDU_COMPLETE:
 	case PARSER_STATE_MULTILINE_COMPLETE:
 	default:
 		/* This really shouldn't happen */
-		assert(TRUE);
+		assert(FALSE);
 		return;
 	}
 }
@@ -678,6 +679,8 @@ static void new_bytes(GAtChat *p)
 			ring_buffer_drain(p->buf, p->read_so_far);
 
 			p->read_so_far = 0;
+
+			p->state = PARSER_STATE_IDLE;
 		}
 	}
 
