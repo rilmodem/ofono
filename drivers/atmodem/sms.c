@@ -45,6 +45,7 @@ static const char *csms_prefix[] = { "+CSMS:", NULL };
 static const char *cmgf_prefix[] = { "+CMGF:", NULL };
 static const char *cpms_prefix[] = { "+CPMS:", NULL };
 static const char *cnmi_prefix[] = { "+CNMI:", NULL };
+static const char *cmgs_prefix[] = { "+CMGS:", NULL };
 static const char *none_prefix[] = { NULL };
 
 static gboolean set_cmgf(gpointer user_data);
@@ -193,9 +194,79 @@ error:
 	}
 }
 
+static void at_cmgs_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	GAtResultIter iter;
+	ofono_sms_submit_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	int mr;
+
+	dump_response("at_cmgs_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CMGS:"))
+		goto err;
+
+	if (!g_at_result_iter_next_number(&iter, &mr))
+		goto err;
+
+	ofono_debug("Got MR: %d", mr);
+
+	cb(&error, mr, cbd->data);
+	return;
+
+err:
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, -1, cbd->data);
+	}
+}
+
+static void at_cmgs(struct ofono_modem *modem, unsigned char *pdu, int pdu_len,
+			int tpdu_len, gboolean mms, ofono_sms_submit_cb_t cb,
+			void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char buf[512];
+	int len;
+
+	if (!cbd)
+		goto error;
+
+	if (mms)
+		g_at_chat_send(at->parser, "AT+CMMS=1", none_prefix,
+				NULL, NULL, NULL);
+
+	len = sprintf(buf, "AT+CMGS=%d\r", tpdu_len);
+	encode_hex_own_buf(pdu, pdu_len, 0, buf+len);
+
+	if (g_at_chat_send(at->parser, buf, cmgs_prefix,
+				at_cmgs_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, -1, data);
+	}
+}
+
 static struct ofono_sms_ops ops = {
 	.sca_query	= at_csca_query,
 	.sca_set	= at_csca_set,
+	.submit		= at_cmgs,
 };
 
 static void at_cnma_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -210,10 +281,12 @@ static gboolean at_parse_pdu_common(GAtResult *result, const char *prefix,
 {
 	GAtResultIter iter;
 
+	g_at_result_iter_init(&iter, result);
+
 	if (!g_at_result_iter_next(&iter, prefix))
 		return FALSE;
 
-	if (!g_at_result_iter_skip_next(&iter))
+	if (!strcmp(prefix, "+CMT:") && !g_at_result_iter_skip_next(&iter))
 		return FALSE;
 
 	if (!g_at_result_iter_next_number(&iter, pdulen))
