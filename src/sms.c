@@ -44,12 +44,23 @@
 
 #define SMS_MANAGER_FLAG_CACHED 0x1
 
+static gboolean tx_next(gpointer user_data);
+
 struct sms_manager_data {
 	struct ofono_sms_ops *ops;
 	int flags;
 	DBusMessage *pending;
 	struct ofono_phone_number sca;
 	struct sms_assembly *assembly;
+	guint ref;
+	GQueue *txq;
+	time_t last_mms;
+};
+
+struct pending_pdu {
+	unsigned char pdu[176];
+	int tpdu_len;
+	int pdu_len;
 };
 
 static struct sms_manager_data *sms_manager_create()
@@ -59,8 +70,10 @@ static struct sms_manager_data *sms_manager_create()
 	sms = g_new0(struct sms_manager_data, 1);
 
 	sms->sca.type = 129;
+	sms->ref = 1;
 
 	sms->assembly = sms_assembly_new();
+	sms->txq = g_queue_new();
 
 	return sms;
 }
@@ -73,6 +86,12 @@ static void sms_manager_destroy(gpointer userdata)
 	if (data->assembly) {
 		sms_assembly_free(data->assembly);
 		data->assembly = NULL;
+	}
+
+	if (data->txq) {
+		g_queue_foreach(data->txq, (GFunc)g_free, NULL);
+		g_queue_free(data->txq);
+		data->txq = NULL;
 	}
 
 	g_free(data);
@@ -263,11 +282,169 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 	return dbus_gsm_invalid_args(msg);
 }
 
+static void tx_finished(const struct ofono_error *error, int mr, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sms_manager_data *sms = modem->sms_manager;
+	struct pending_pdu *pdu;
+
+	ofono_debug("tx_finished");
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("Sending failed, retrying in 5 seconds...");
+		g_timeout_add_seconds(5, tx_next, data);
+		return;
+	}
+
+	pdu = g_queue_pop_head(sms->txq);
+	g_free(pdu);
+
+	ofono_debug("Peeking in the queue");
+
+	if (g_queue_peek_head(sms->txq)) {
+		ofono_debug("Scheduling next");
+		g_timeout_add(0, tx_next, sms);
+	}
+}
+
+static gboolean tx_next(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct sms_manager_data *sms = modem->sms_manager;
+	time_t ts;
+	gboolean send_mms = FALSE;
+	struct pending_pdu *pdu = g_queue_peek_head(sms->txq);
+	char *encoded_pdu;
+	struct ofono_error error;
+
+	error.type = OFONO_ERROR_TYPE_NO_ERROR;
+
+	ofono_debug("tx_next: %p", pdu);
+
+	if (!pdu)
+		return FALSE;
+
+	ts = time(NULL);
+
+	if ((g_queue_get_length(sms->txq) > 1) &&
+			((ts - sms->last_mms) > 60))
+		send_mms = TRUE;
+
+	sms->ops->submit(modem, pdu->pdu, pdu->pdu_len, pdu->tpdu_len, send_mms,
+				tx_finished, modem);
+
+	return FALSE;
+}
+
+static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
+				const char *to)
+{
+	GSList *l;
+	struct sms *sms;
+
+	for (l = msg_list; l; l = l->next) {
+		sms = l->data;
+
+		if (offset != 0) {
+			sms->submit.ud[offset] = (ref & 0xf0) >> 8;
+			sms->submit.ud[offset+1] = (ref & 0x0f);
+		}
+
+		sms_address_from_string(&sms->submit.daddr, to);
+	}
+}
+
+static void append_tx_queue(struct ofono_modem *modem, GSList *msg_list)
+{
+	struct sms_manager_data *sms = modem->sms_manager;
+	struct sms *s;
+	GSList *l;
+	struct pending_pdu *pdu;
+	gboolean start = FALSE;
+
+	if (g_queue_peek_head(sms->txq) == NULL)
+		start = TRUE;
+
+	for (l = msg_list; l; l = l->next) {
+		s = l->data;
+
+		pdu = g_new(struct pending_pdu, 1);
+
+		sms_encode(s, &pdu->pdu_len, &pdu->tpdu_len, pdu->pdu);
+
+		ofono_debug("pdu_len: %d, tpdu_len: %d",
+				pdu->pdu_len, pdu->tpdu_len);
+
+		g_queue_push_tail(sms->txq, pdu);
+	}
+
+	if (start)
+		g_timeout_add(0, tx_next, modem);
+}
+
+static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
+					void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sms_manager_data *sms = modem->sms_manager;
+	char **tos;
+	int num_to;
+	char *text;
+	int i;
+	GSList *msg_list;
+	int ref_offset;
+
+	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING,
+					&tos, &num_to, DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_INVALID))
+		return dbus_gsm_invalid_args(msg);
+
+	if (num_to == 0) {
+		dbus_free_string_array(tos);
+		return dbus_gsm_invalid_format(msg);
+	}
+
+	ofono_debug("Got %d recipients", num_to);
+
+	for (i = 0; i < num_to; i++) {
+		if (valid_phone_number_format(tos[i]))
+			continue;
+
+		dbus_free_string_array(tos);
+		return dbus_gsm_invalid_format(msg);
+	}
+
+	msg_list = sms_text_prepare(text, 0, TRUE, &ref_offset);
+
+	if (!msg_list) {
+		dbus_free_string_array(tos);
+		return dbus_gsm_invalid_format(msg);
+	}
+
+	for (i = 0; i < num_to; i++) {
+		ofono_debug("ref: %d, offset: %d", sms->ref, ref_offset);
+		set_ref_and_to(msg_list, sms->ref, ref_offset, tos[i]);
+		append_tx_queue(modem, msg_list);
+
+		if (sms->ref == 65536)
+			sms->ref = 1;
+		else
+			sms->ref = sms->ref + 1;
+	}
+
+	dbus_free_string_array(tos);
+	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
+	g_slist_free(msg_list);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static GDBusMethodTable sms_manager_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	sms_get_properties,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"sv",	"",		sms_set_property,
 							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "SendMessage",	"ass",	"",		sms_send_message },
 	{ }
 };
 
