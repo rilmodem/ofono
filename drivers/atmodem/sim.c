@@ -328,6 +328,39 @@ error:
 	}
 }
 
+static void at_sim_update_cyclic(struct ofono_modem *modem, int fileid,
+					int length, const unsigned char *value,
+					ofono_generic_cb_t cb, void *data)
+{
+	struct at_data *at = ofono_modem_userdata(modem);
+	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	char *buf = g_try_new(char, 36 + length * 2);
+	int len, ret;
+
+	if (!cbd || !buf)
+		goto error;
+
+	len = sprintf(buf, "AT+CRSM=220,%i,0,3,%i,", fileid, length);
+	for (; length; length--)
+		len += sprintf(buf + len, "%02hhx", *value++);
+	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
+				at_crsm_update_cb, cbd, g_free);
+
+	g_free(buf);
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, data);
+	}
+}
+
 static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -383,8 +416,10 @@ static struct ofono_sim_ops ops = {
 	.read_file_info		= at_sim_read_info,
 	.read_file_transparent	= at_sim_read_binary,
 	.read_file_linear	= at_sim_read_record,
+	.read_file_cyclic	= at_sim_read_record,
 	.write_file_transparent	= at_sim_update_binary,
 	.write_file_linear	= at_sim_update_record,
+	.write_file_cyclic	= at_sim_update_cyclic,
 	.read_imsi		= at_read_imsi,
 };
 

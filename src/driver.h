@@ -378,11 +378,17 @@ struct ofono_sim_ops {
 	void (*read_file_linear)(struct ofono_modem *modem, int fileid,
 			int record, int length,
 			ofono_sim_read_cb_t cb, void *data);
+	void (*read_file_cyclic)(struct ofono_modem *modem, int fileid,
+			int record, int length,
+			ofono_sim_read_cb_t cb, void *data);
 	void (*write_file_transparent)(struct ofono_modem *modem, int fileid,
 			int start, int length, const unsigned char *value,
 			ofono_generic_cb_t cb, void *data);
 	void (*write_file_linear)(struct ofono_modem *modem, int fileid,
 			int record, int length, const unsigned char *value,
+			ofono_generic_cb_t cb, void *data);
+	void (*write_file_cyclic)(struct ofono_modem *modem, int fileid,
+			int length, const unsigned char *value,
 			ofono_generic_cb_t cb, void *data);
 	void (*read_imsi)(struct ofono_modem *modem,
 			ofono_imsi_cb_t cb, void *data);
