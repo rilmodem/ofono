@@ -53,6 +53,8 @@ struct sim_manager_data {
 
 	GSList *update_spn_notify;
 
+	GSList *spdi;
+
 	int own_numbers_num;
 	int own_numbers_size;
 	int own_numbers_current;
@@ -80,6 +82,44 @@ static char **get_own_numbers(GSList *own_numbers)
 	return ret;
 }
 
+/* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
+static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
+						int in_len, int *out_len)
+{
+	guint8 tag;
+	int len;
+	const guint8 *end = pdu + in_len;
+
+	do {
+		while (pdu < end && (*pdu == 0x00 || *pdu == 0xff))
+			pdu ++;
+		if (pdu == end)
+			break;
+
+		tag = *pdu ++;
+		if (!(0x1f & ~tag))
+			while (pdu < end && (*pdu ++ & 0x80));
+		if (pdu == end)
+			break;
+
+		for (len = 0; pdu + 1 < end && (*pdu & 0x80);
+				len = (len | (*pdu ++ & 0x7f)) << 7);
+		if (*pdu & 0x80)
+			break;
+		len |= *pdu ++;
+
+		if (tag == in_tag && pdu + len <= end) {
+			if (out_len)
+				*out_len = len;
+			return pdu;
+		}
+
+		pdu += len;
+	} while (pdu < end);
+
+	return NULL;
+}
+
 static struct sim_manager_data *sim_manager_create()
 {
 	return g_try_new0(struct sim_manager_data, 1);
@@ -104,6 +144,12 @@ static void sim_manager_destroy(gpointer userdata)
 	if (data->spn) {
 		g_free(data->spn);
 		data->spn = NULL;
+	}
+
+	if (data->spdi) {
+		g_slist_foreach(data->spdi, (GFunc)g_free, NULL);
+		g_slist_free(data->spdi);
+		data->spdi = NULL;
 	}
 }
 
@@ -156,6 +202,7 @@ static GDBusSignalTable sim_manager_signals[] = { { } };
 enum sim_fileids {
 	SIM_EFMSISDN_FILEID = 0x6f40,
 	SIM_EFSPN_FILEID = 0x6f46,
+	SIM_EFSPDI_FILEID = 0x6fcd,
 };
 
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
@@ -338,6 +385,123 @@ static gboolean sim_retrieve_own_number(void *user_data)
 	return FALSE;
 }
 
+struct spdi_operator {
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+};
+
+static struct spdi_operator *spdi_operator_alloc(const guint8 *bcd)
+{
+	struct spdi_operator *spdi = g_new0(struct spdi_operator, 1);
+	char *mcc = spdi->mcc;
+	char *mnc = spdi->mnc;
+	guint8 digit;
+
+	digit = (bcd[0] >> 0) & 0xf;
+	if (digit != 0xf)
+		*mcc ++ = '0' + digit;
+	digit = (bcd[0] >> 4) & 0xf;
+	if (digit != 0xf)
+		*mcc ++ = '0' + digit;
+	digit = (bcd[1] >> 0) & 0xf;
+	if (digit != 0xf)
+		*mcc ++ = '0' + digit;
+	digit = (bcd[2] >> 0) & 0xf;
+	if (digit != 0xf)
+		*mnc ++ = '0' + digit;
+	digit = (bcd[2] >> 4) & 0xf;
+	if (digit != 0xf)
+		*mnc ++ = '0' + digit;
+	digit = (bcd[1] >> 4) & 0xf;
+	if (digit != 0xf)
+		*mnc ++ = '0' + digit;
+
+	return spdi;
+}
+
+static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
+{
+	const struct spdi_operator *opa = a;
+	const struct spdi_operator *opb = b;
+
+	return strcmp(opa->mcc, opb->mcc) ?: strcmp(opa->mnc, opb->mnc);
+}
+
+int ofono_operator_in_spdi(struct ofono_modem *modem,
+				const struct ofono_network_operator *op)
+{
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct spdi_operator spdi_op;
+
+	if (!sim)
+		return FALSE;
+
+	g_strlcpy(spdi_op.mcc, op->mcc, sizeof(spdi_op.mcc));
+	g_strlcpy(spdi_op.mnc, op->mnc, sizeof(spdi_op.mnc));
+
+	return !!g_slist_find_custom(sim->spdi,
+			&spdi_op, spdi_operator_compare);
+}
+
+static void sim_spdi_read_cb(const struct ofono_error *error,
+				const unsigned char *spdidata,
+				int length, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+	const guint8 *plmn_list;
+	struct spdi_operator *spdi;
+	GSList *l;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 5)
+		return;
+
+	plmn_list = ber_tlv_find_by_tag(spdidata, 0x80, length, &length);
+	if (!plmn_list) {
+		ofono_debug("Couldn't parse the EF-SPDI contents as a TLV");
+		return;
+	}
+
+	for (length /= 3; length --; plmn_list += 3) {
+		if ((plmn_list[0] & plmn_list[1] & plmn_list[2]) == 0xff)
+			continue;
+
+		sim->spdi = g_slist_insert_sorted(sim->spdi,
+				spdi_operator_alloc(plmn_list),
+				spdi_operator_compare);
+	}
+
+	if (sim->spdi)
+		for (l = sim->update_spn_notify; l; l = l->next)
+			sim_spn_notify(modem, l->data);
+}
+
+static void sim_spdi_info_cb(const struct ofono_error *error, int length,
+				enum ofono_sim_file_structure structure,
+				int dummy, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 5 ||
+			structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	sim->ops->read_file_transparent(modem, SIM_EFSPDI_FILEID, 0, length,
+					sim_spdi_read_cb, modem);
+}
+
+static gboolean sim_retrieve_spdi(void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	sim->ops->read_file_info(modem, SIM_EFSPDI_FILEID,
+					sim_spdi_info_cb, modem);
+
+	return FALSE;
+}
+
 static void initialize_sim_manager(struct ofono_modem *modem)
 {
 	DBusConnection *conn = dbus_gsm_connection();
@@ -367,6 +531,9 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 
 	if (modem->sim_manager->ops->read_file_linear)
 		g_timeout_add(0, sim_retrieve_own_number, modem);
+
+	if (modem->sim_manager->ops->read_file_transparent)
+		g_timeout_add(0, sim_retrieve_spdi, modem);
 }
 
 int ofono_sim_manager_register(struct ofono_modem *modem,

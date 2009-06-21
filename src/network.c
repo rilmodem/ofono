@@ -328,6 +328,7 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 	const char *plmn;
 	char *name = netreg->display_name;
 	int len = sizeof(netreg->display_name);
+	int home_or_spdi;
 
 	/* The name displayed to user depends on whether we're in a home
 	 * PLMN or roaming and on configuration bits from the SIM, all
@@ -345,7 +346,11 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 
 	plmn = netreg->current_operator->name;
 
-	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED)
+	home_or_spdi =
+		(netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED) ||
+		ofono_operator_in_spdi(modem, netreg->current_operator);
+
+	if (home_or_spdi)
 		if (netreg->flags & NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN)
 			/* Case 1 */
 			snprintf(name, len, "%s (%s)", netreg->spname, plmn);
