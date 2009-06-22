@@ -29,5 +29,5 @@ int ofono_spn_update_notify_register(struct ofono_modem *modem,
 int ofono_spn_update_notify_unregister(struct ofono_modem *modem,
 		update_spn_cb cb);
 
-int ofono_operator_in_spdi(struct ofono_modem *modem,
+gboolean ofono_operator_in_spdi(struct ofono_modem *modem,
 				const struct ofono_network_operator *op);
