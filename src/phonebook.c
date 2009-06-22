@@ -46,12 +46,12 @@
 
 #define PHONEBOOK_FLAG_CACHED 0x1
 
-enum {
-	TEL_TYPE_VOICE,
+enum phonebook_number_type {
 	TEL_TYPE_HOME,
 	TEL_TYPE_MOBILE,
 	TEL_TYPE_FAX,
-	TEL_TYPE_WORK
+	TEL_TYPE_WORK,
+	TEL_TYPE_OTHER,
 };
 
 struct phonebook_data {
@@ -65,9 +65,8 @@ struct phonebook_data {
 
 struct phonebook_number {
 	char *number;
-	int type; /* international or not */
-	int category; /* represent for "WORK", "HOME", etc */
-	int prefer;
+	int type;
+	enum phonebook_number_type category;
 };
 
 struct phonebook_person {
@@ -75,10 +74,8 @@ struct phonebook_person {
 	char *text;
 	int hidden;
 	char *group;
-	char *secondtext;
 	char *email;
 	char *sip_uri;
-	char *tel_uri;
 };
 
 static const char *storage_support[] = { "\"SM\"", "\"ME\"", NULL };
@@ -176,7 +173,7 @@ static void vcard_printf_text(GString *vcards, const char *text)
 }
 
 static void vcard_printf_number(GString *vcards, const char *number, int type,
-					int category, int prefer)
+					enum phonebook_number_type category)
 {
 	char *pref = "", *intl = "", *category_string = "";
 	char buf[128];
@@ -184,24 +181,20 @@ static void vcard_printf_number(GString *vcards, const char *number, int type,
 	if (!number || !strlen(number) || !type)
 		return;
 
-	if (prefer)
-		pref = "PREF,";
-
 	switch (category) {
 	case TEL_TYPE_HOME:
-		category_string = "HOME";
+		category_string = "HOME,VOICE";
 		break;
 	case TEL_TYPE_MOBILE:
-		category_string = "CELL";
+		category_string = "CELL,VOICE";
 		break;
 	case TEL_TYPE_FAX:
 		category_string = "FAX";
 		break;
 	case TEL_TYPE_WORK:
-		category_string = "WORK";
+		category_string = "WORK,VOICE";
 		break;
-	case TEL_TYPE_VOICE:
-	default:
+	case TEL_TYPE_OTHER:
 		category_string = "VOICE";
 		break;
 	}
@@ -216,8 +209,12 @@ static void vcard_printf_number(GString *vcards, const char *number, int type,
 
 static void vcard_printf_group(GString *vcards,	const char *group)
 {
-	int len = strlen(group);
-	if (group && len) {
+	int len = 0;
+
+	if (group)
+		len = strlen(group);
+
+	if (len) {
 		char field[LEN_MAX];
 		add_slash(field, group, LEN_MAX, len);
 		vcard_printf(vcards, "CATEGORIES:%s", field);
@@ -226,8 +223,12 @@ static void vcard_printf_group(GString *vcards,	const char *group)
 
 static void vcard_printf_email(GString *vcards, const char *email)
 {
-	int len = strlen(email);
-	if (email && len) {
+	int len = 0;
+
+	if (email)
+		len = strlen(email);
+
+	if (len) {
 		char field[LEN_MAX];
 		add_slash(field, email, LEN_MAX, len);
 		vcard_printf(vcards,
@@ -237,8 +238,12 @@ static void vcard_printf_email(GString *vcards, const char *email)
 
 static void vcard_printf_sip_uri(GString *vcards, const char *sip_uri)
 {
-	int len = strlen(sip_uri);
-	if (sip_uri && len) {
+	int len = 0;
+
+	if (sip_uri)
+		len = strlen(sip_uri);
+
+	if (len) {
 		char field[LEN_MAX];
 		add_slash(field, sip_uri, LEN_MAX, len);
 		vcard_printf(vcards, "IMPP;TYPE=SIP:%s", field);
@@ -249,6 +254,45 @@ static void vcard_printf_end(GString *vcards)
 {
 	vcard_printf(vcards, "END:VCARD");
 	vcard_printf(vcards, "");
+}
+
+static void print_number(struct phonebook_number *pn, GString *vcards)
+{
+	vcard_printf_number(vcards, pn->number, pn->type, pn->category);
+}
+
+static void destroy_number(struct phonebook_number *pn)
+{
+	g_free(pn->number);
+	g_free(pn);
+}
+
+static void print_merged_entry(struct phonebook_person *person, GString *vcards)
+{
+	vcard_printf_begin(vcards);
+	vcard_printf_text(vcards, person->text);
+
+	g_slist_foreach(person->number_list, (GFunc)print_number, vcards);
+
+	vcard_printf_group(vcards, person->group);
+	vcard_printf_email(vcards, person->email);
+	vcard_printf_sip_uri(vcards, person->sip_uri);
+	vcard_printf_end(vcards);
+}
+
+static void destroy_merged_entry(struct phonebook_person *person)
+{
+	GSList *number_list;
+
+	g_free(person->text);
+	g_free(person->group);
+	g_free(person->email);
+	g_free(person->sip_uri);
+
+	g_slist_foreach(person->number_list, (GFunc)destroy_number, NULL);
+	g_slist_free(person->number_list);
+
+	g_free(person);
 }
 
 static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem,
@@ -281,21 +325,19 @@ static gboolean need_merge(const char *text)
 
 static void merge_field_generic(char **str1, const char *str2)
 {
-	if ((*str1 == NULL) && (str2 != NULL))
+	if ((*str1 == NULL) && (str2 != NULL) && (strlen(str2) != 0))
 		*str1 = g_strdup(str2);
 }
 
-static void merge_field_number(GSList **l, const char *number, int type,
-				char c, int prefer)
+static void merge_field_number(GSList **l, const char *number, int type, char c)
 {
 	struct phonebook_number *pn = g_new0(struct phonebook_number, 1);
-	int category;
+	enum phonebook_number_type category;
 
 	pn->number = g_strdup(number);
 	pn->type = type;
 	switch (c) {
 	case 'w':
-	case 'o':
 		category = TEL_TYPE_WORK;
 		break;
 	case 'h':
@@ -304,12 +346,15 @@ static void merge_field_number(GSList **l, const char *number, int type,
 	case 'm':
 		category = TEL_TYPE_MOBILE;
 		break;
+	case 'f':
+		category = TEL_TYPE_FAX;
+		break;
+	case 'o':
 	default:
-		category = TEL_TYPE_VOICE;
+		category = TEL_TYPE_OTHER;
 		break;
 	}
 	pn->category = category;
-	pn->prefer = prefer;
 	*l = g_slist_append(*l, pn);
 }
 
@@ -323,6 +368,7 @@ void ofono_phonebook_entry(struct ofono_modem *modem, int index,
 {
 	struct phonebook_data *phonebook = modem->phonebook;
 	char field[LEN_MAX];
+
 	/*
 	 * We need to collect all the entries that belong to one person,
 	 * so that only one vCard will be generated at last.
@@ -331,42 +377,40 @@ void ofono_phonebook_entry(struct ofono_modem *modem, int index,
 	 */
 	if (need_merge(text)) {
 		GSList *l;
-		int has_merge = 0;
-		int len_text = strlen(text);
-		char *text_temp = g_strndup(text, len_text - 2);
+		size_t len_text = strlen(text) - 2;
 		struct phonebook_person *person;
+
 		for (l = phonebook->merge_list; l; l = l->next) {
 			person = l->data;
-			if (!strcmp(text_temp, person->text)) {
-				has_merge = 1;
+			if (!strncmp(text, person->text, len_text) &&
+					(strlen(person->text) == len_text))
 				break;
-			}
 		}
-		if (has_merge == 0) {
+
+		if (!l) {
 			person = g_new0(struct phonebook_person, 1);
-			phonebook->merge_list = g_slist_append(
-					phonebook->merge_list, person);
+			phonebook->merge_list =
+				g_slist_prepend(phonebook->merge_list, person);
+			person->text = g_strndup(text, len_text);
 		}
-		merge_field_generic(&(person->text), text_temp);
+
 		merge_field_number(&(person->number_list), number, type,
-					text[len_text - 1], 1);
+					text[len_text + 1]);
 		merge_field_number(&(person->number_list), adnumber, adtype,
-					text[len_text - 1], 0);
+					text[len_text + 1]);
+
 		merge_field_generic(&(person->group), group);
-		merge_field_generic(&(person->secondtext), secondtext);
 		merge_field_generic(&(person->email), email);
 		merge_field_generic(&(person->sip_uri), sip_uri);
-		merge_field_generic(&(person->tel_uri), tel_uri);
-		g_free(text_temp);
+
 		return;
 	}
 
 	vcard_printf_begin(phonebook->vcards);
 	vcard_printf_text(phonebook->vcards, text);
-	vcard_printf_number(phonebook->vcards, number, type,
-				TEL_TYPE_VOICE, 1);
+	vcard_printf_number(phonebook->vcards, number, type, TEL_TYPE_OTHER);
 	vcard_printf_number(phonebook->vcards, adnumber, adtype,
-				TEL_TYPE_VOICE, 0);
+				TEL_TYPE_OTHER);
 	vcard_printf_group(phonebook->vcards, group);
 	vcard_printf_email(phonebook->vcards, email);
 	vcard_printf_sip_uri(phonebook->vcards, sip_uri);
@@ -382,6 +426,14 @@ static void export_phonebook_cb(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_error("export_entries_one_storage_cb with %s failed",
 				storage_support[phonebook->storage_index]);
+
+	/* convert the collected entries that are already merged to vcard */
+	g_slist_foreach(phonebook->merge_list, (GFunc)print_merged_entry,
+				phonebook->vcards);
+	g_slist_foreach(phonebook->merge_list, (GFunc)destroy_merged_entry,
+				NULL);
+	g_slist_free(phonebook->merge_list);
+	phonebook->merge_list = NULL;
 
 	phonebook->storage_index++;
 	export_phonebook(modem);
@@ -399,22 +451,6 @@ static void export_phonebook(struct ofono_modem *modem)
 		phonebook->ops->export_entries(modem, pb,
 						export_phonebook_cb, modem);
 		return;
-	}
-
-	/* convert the collected entries that are already merged to vcard */
-	for (l = phonebook->merge_list; l; l = l->next) {
-		struct phonebook_person *person = l->data;
-		vcard_printf_begin(phonebook->vcards);
-		vcard_printf_text(phonebook->vcards, person->text);
-		for (m = person->number_list; m; m = m->next) {
-			struct phonebook_number *pn = m->data;
-			vcard_printf_number(phonebook->vcards, pn->number,
-					pn->type, pn->category, pn->prefer);
-		}
-		vcard_printf_group(phonebook->vcards, person->group);
-		vcard_printf_email(phonebook->vcards, person->email);
-		vcard_printf_sip_uri(phonebook->vcards, person->sip_uri);
-		vcard_printf_end(phonebook->vcards);
 	}
 
 	reply = generate_export_entries_reply(modem, phonebook->pending);
