@@ -191,7 +191,7 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 	ret = sendmsg(cl->fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
 		return NULL;
-	if (ret != (ssize_t)(len + 2)) {
+	if (ret != (ssize_t)(len + 1)) {
 		errno = EMSGSIZE;
 		return NULL;
 	}
@@ -210,7 +210,8 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 
 	if (timeout > 0)
 		cl->timeout[id] = g_timeout_add_seconds(timeout,
-							g_isi_timeout, cl);
+							g_isi_timeout,
+							g_isi_req(cl, id));
 	else
 		cl->timeout[id] = 0;
 	return g_isi_req(cl, id);
@@ -344,22 +345,29 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 	len = phonet_peek_length(channel);
 	{
 		uint32_t buf[(len + 3) / 4];
+		uint8_t *msg;
 		uint16_t obj;
 		uint8_t res, id;
 
 		len = phonet_read(channel, buf, len, &obj, &res);
 		if (len < 2 || res != cl->resource)
 			return TRUE;
-		memcpy(&id, buf, 1); /* Transaction ID or indication type */
+
+		msg = (uint8_t *)buf;
 		if (indication) {
+			/* Message ID at offset 1 */
+			id = msg[1];
 			if (cl->ind.func[id] == NULL)
 				return TRUE; /* Unsubscribed indication */
-			cl->ind.func[id](cl, buf + 1, len - 1, obj,
+			cl->ind.func[id](cl, msg + 1, len - 1, obj,
 						cl->ind.data[id]);
 		} else {
-			if (cl->func[id] == NULL)
+			/* Transaction ID at offset 0 */
+			id = msg[0];
+			if (cl->func[id] == NULL) {
 				return TRUE; /* Bad transaction ID */
-			if ((cl->func[id])(cl, buf + 1, len - 1, obj,
+			}
+			if ((cl->func[id])(cl, msg + 1, len - 1, obj,
 						cl->data[id]))
 				g_isi_request_cancel(g_isi_req(cl, id));
 		}
