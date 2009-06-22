@@ -364,9 +364,8 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 		} else {
 			/* Transaction ID at offset 0 */
 			id = msg[0];
-			if (cl->func[id] == NULL) {
+			if (cl->func[id] == NULL)
 				return TRUE; /* Bad transaction ID */
-			}
 			if ((cl->func[id])(cl, msg + 1, len - 1, obj,
 						cl->data[id]))
 				g_isi_request_cancel(g_isi_req(cl, id));
