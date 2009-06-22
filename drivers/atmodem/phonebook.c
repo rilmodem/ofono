@@ -55,7 +55,7 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 		const char *number;
 		int type;
 		const char *text;
-		int hidden = 0;
+		int hidden = -1;
 		const char *group = NULL;
 		const char *adnumber = NULL;
 		int adtype = -1;
