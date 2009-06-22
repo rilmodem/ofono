@@ -423,11 +423,15 @@ static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
 {
 	const struct spdi_operator *opa = a;
 	const struct spdi_operator *opb = b;
+	gint r;
 
-	return strcmp(opa->mcc, opb->mcc) ?: strcmp(opa->mnc, opb->mnc);
+	if (r = strcmp(opa->mcc, opb->mcc))
+		return r;
+
+	return strcmp(opa->mnc, opb->mnc);
 }
 
-int ofono_operator_in_spdi(struct ofono_modem *modem,
+gboolean ofono_operator_in_spdi(struct ofono_modem *modem,
 				const struct ofono_network_operator *op)
 {
 	struct sim_manager_data *sim = modem->sim_manager;
@@ -439,8 +443,8 @@ int ofono_operator_in_spdi(struct ofono_modem *modem,
 	g_strlcpy(spdi_op.mcc, op->mcc, sizeof(spdi_op.mcc));
 	g_strlcpy(spdi_op.mnc, op->mnc, sizeof(spdi_op.mnc));
 
-	return !!g_slist_find_custom(sim->spdi,
-			&spdi_op, spdi_operator_compare);
+	return g_slist_find_custom(sim->spdi,
+			&spdi_op, spdi_operator_compare) != NULL;
 }
 
 static void sim_spdi_read_cb(const struct ofono_error *error,
