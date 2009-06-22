@@ -2239,9 +2239,13 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 	/* UDHI, UDL, UD and DCS actually depend on what we have in the text */
 	gsm_encoded = convert_utf8_to_gsm(utf8, -1, NULL, &written, 0);
 
-	if (!gsm_encoded)
+	if (!gsm_encoded) {
+		gsize converted;
+
 		ucs2_encoded = g_convert(utf8, -1, "UCS-2BE//TRANSLIT", "UTF-8",
-						NULL, &written, NULL);
+						NULL, &converted, NULL);
+		written = converted;
+	}
 
 	if (!gsm_encoded && !ucs2_encoded)
 		return NULL;
