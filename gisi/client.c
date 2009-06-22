@@ -34,6 +34,11 @@
 #include <sys/uio.h>
 #include <errno.h>
 #include <glib.h>
+#include <linux/types.h>
+#include <linux/phonet.h>
+#ifndef AF_PHONET
+#define AF_PHONET 35
+#endif
 
 #include "socket.h"
 #include "client.h"
@@ -155,6 +160,19 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 				GIsiResponseFunc cb, void *opaque)
 {
 	struct iovec iov[2];
+	const struct sockaddr_pn dst = {
+		.spn_family = AF_PHONET,
+		.spn_resource = cl->resource,
+	};
+	const struct msghdr msg = {
+		.msg_name = (struct sockaddr *)&dst,
+		.msg_namelen = sizeof(dst),
+		.msg_iov = (struct iovec *)iov,
+		.msg_iovlen = 2,
+		.msg_control = NULL,
+		.msg_controllen = 0,
+		.msg_flags = 0,
+	};
 	ssize_t ret;
 	uint8_t id = cl->next[0];
 
@@ -170,7 +188,7 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 	iov[0].iov_len = 1;
 	iov[1].iov_base = (void *)buf;
 	iov[1].iov_len = len;
-	ret = writev(cl->fd, iov, sizeof(iov) / sizeof(iov[0]));
+	ret = sendmsg(cl->fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
 		return NULL;
 	if (ret != (ssize_t)(len + 2)) {
@@ -229,6 +247,11 @@ void g_isi_request_cancel(GIsiRequest *req)
 #define PN_COMMGR 0x10
 #define PNS_SUBSCRIBED_RESOURCES_IND	0x10
 
+static const struct sockaddr_pn commgr = {
+	.spn_family = AF_PHONET,
+	.spn_resource = PN_COMMGR,
+};
+
 static int g_isi_indication_init(GIsiClient *cl)
 {
 	uint8_t msg[] = {
@@ -240,7 +263,8 @@ static int g_isi_indication_init(GIsiClient *cl)
 		return errno;
 	/* Send subscribe indication */
 	cl->ind.fd = g_io_channel_unix_get_fd(channel);
-	send(cl->ind.fd, msg, 4, 0);
+	sendto(cl->ind.fd, msg, 4, MSG_NOSIGNAL,
+		(const struct sockaddr *)&commgr, sizeof(commgr));
 	cl->ind.source = g_io_add_watch(channel,
 					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
 					g_isi_callback, cl);
@@ -254,7 +278,8 @@ static void g_isi_indication_deinit(GIsiClient *client)
 	};
 
 	/* Send empty subscribe indication */
-	send(client->ind.fd, msg, 3, 0);
+	sendto(client->ind.fd, msg, 3, MSG_NOSIGNAL,
+		(const struct sockaddr *)&commgr, sizeof(commgr));
 	g_source_remove(client->ind.source);
 }
 
