@@ -896,11 +896,10 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 
 			memcpy(op, &list[i], sizeof(struct ofono_network_operator));
 
-			n = g_slist_prepend(n, op);
-
-			network_operator_dbus_register(modem, op);
-
-			need_to_emit = TRUE;
+			if (network_operator_dbus_register(modem, op)) {
+				n = g_slist_prepend(n, op);
+				need_to_emit = TRUE;
+			}
 		}
 	}
 
