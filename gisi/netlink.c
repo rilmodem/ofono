@@ -181,7 +181,7 @@ GPhonetNetlink *g_pn_netlink_start(GPhonetNetlinkFunc cb, void *opaque)
 	self->watch = g_io_add_watch(chan, G_IO_IN|G_IO_ERR|G_IO_HUP,
 					g_pn_nl_process, self);
 	g_io_channel_unref(chan);
-	return 0;
+	return self;
 
 error:
 	if (fd != -1)
