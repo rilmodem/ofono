@@ -781,7 +781,7 @@ static void test_prepare_concat()
 	guint8 seq;
 
 	if (g_test_verbose())
-		g_print("strlen: %d\n", strlen(pad1));
+		g_print("strlen: %zd\n", strlen(pad1));
 
 	r = sms_text_prepare(pad1, 0, TRUE, NULL);
 
@@ -815,7 +815,7 @@ static void test_prepare_concat()
 		decode_hex_own_buf((char *)l->data, -1, &len, 0, pdu);
 
 		if (g_test_verbose())
-			g_print("PDU Len: %d", len);
+			g_print("PDU Len: %ld", len);
 
 		ok = sms_decode(pdu, len, TRUE, len - 1, &decoded);
 
