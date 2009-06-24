@@ -137,6 +137,8 @@ static inline const char *registration_tech_to_string(int tech)
 		return "UTRAN+HSUPA";
 	case ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA:
 		return "UTRAN+HSDPA+HSUPA";
+	case ACCESS_TECHNOLOGY_EUTRAN:
+		return "EUTRAN";
 	default:
 		return "";
 	}
