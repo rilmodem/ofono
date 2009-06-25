@@ -85,8 +85,8 @@ static inline GIsiClient *g_isi_cl(void *ptr)
 
 /**
  * Create an ISI client.
- * @param resource Phonet resource ID for the client
- * @return NULL on error (see errno), an isi_client pointer on success,
+ * @param resource PhoNet resource ID for the client
+ * @return NULL on error (see errno), a GIsiClient pointer on success,
  */
 GIsiClient *g_isi_client_create(uint8_t resource)
 {
@@ -127,6 +127,16 @@ GIsiClient *g_isi_client_create(uint8_t resource)
 					g_isi_callback, cl);
 	g_io_channel_unref(channel);
 	return cl;
+}
+
+/**
+ * Returns the resource associated with @a client
+ * @param client client for the resource
+ * @return PhoNet resource ID for the client
+ */
+uint8_t g_isi_client_resource(GIsiClient *client)
+{
+	return client->resource;
 }
 
 /**

@@ -47,6 +47,8 @@ typedef void (*GIsiIndicationFunc) (GIsiClient *client,
 
 GIsiClient *g_isi_client_create(uint8_t resource);
 
+uint8_t g_isi_client_resource(GIsiClient *client);
+
 void g_isi_client_destroy(GIsiClient *client);
 
 int g_isi_client_error(const GIsiClient *client);
