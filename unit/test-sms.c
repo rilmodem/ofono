@@ -815,7 +815,7 @@ static void test_prepare_concat()
 		decode_hex_own_buf((char *)l->data, -1, &len, 0, pdu);
 
 		if (g_test_verbose())
-			g_print("PDU Len: %ld", len);
+			g_print("PDU Len: %ld\n", len);
 
 		ok = sms_decode(pdu, len, TRUE, len - 1, &decoded);
 
