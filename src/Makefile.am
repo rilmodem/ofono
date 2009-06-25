@@ -22,7 +22,9 @@ ofonod_LDADD = $(top_builddir)/plugins/libbuiltin.la \
 
 ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=ofono.ver
 
-ofonod_DEPENDENCIES = ofono.ver
+ofonod_DEPENDENCIES = ofono.ver \
+	@GATCHAT_LIBS@ @GISI_LIBS@ ../gdbus/libgdbus.la \
+	../drivers/libbuiltin.la ../plugins/libbuiltin.la
 
 CLEANFILES = ofono.ver ofono.exp
 
