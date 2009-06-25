@@ -12,8 +12,8 @@ builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/ussd.c atmodem/voicecall.c \
 			atmodem/call-barring.c atmodem/phonebook.c
 
-builtin_modules += phonet
-builtin_sources += phonet/phonet.c
+builtin_modules += isimodem
+builtin_sources += isimodem/isimodem.c isimodem/isi.h
 
 noinst_LTLIBRARIES = libbuiltin.la
 
@@ -26,7 +26,8 @@ BUILT_SOURCES = builtin.h
 
 nodist_libbuiltin_la_SOURCES = $(BUILT_SOURCES)
 
-AM_CFLAGS = -fvisibility=hidden @GLIB_CFLAGS@ @GDBUS_CFLAGS@ @GATCHAT_CFLAGS@
+AM_CFLAGS = -fvisibility=hidden \
+		@GLIB_CFLAGS@ @GDBUS_CFLAGS@ @GATCHAT_CFLAGS@ @GISI_CFLAGS@
 
 INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/src
 
