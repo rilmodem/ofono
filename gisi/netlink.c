@@ -102,7 +102,7 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 		}
 		/* We have a route message */
 		ifa = NLMSG_DATA(nlh);
-		len = RTM_PAYLOAD(nlh);
+		len = IFA_PAYLOAD(nlh);
 
 		/* If Phonet is absent, kernel transmits other families... */
 		if (ifa->ifa_family != AF_PHONET)
