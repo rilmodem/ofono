@@ -184,13 +184,14 @@ static GSList *parse_clcc(GAtResult *result)
 {
 	GAtResultIter iter;
 	GSList *l = NULL;
-	int id, dir, status, type, number_type;
+	int id, dir, status, type;
 	struct ofono_call *call;
 
 	g_at_result_iter_init(&iter, result);
 
 	while (g_at_result_iter_next(&iter, "+CLCC:")) {
-		const char *str;
+		const char *str = "";
+		int number_type = 129;
 
 		if (!g_at_result_iter_next_number(&iter, &id))
 			continue;
@@ -207,11 +208,8 @@ static GSList *parse_clcc(GAtResult *result)
 		if (!g_at_result_iter_skip_next(&iter))
 			continue;
 
-		if (!g_at_result_iter_next_string(&iter, &str))
-			continue;
-
-		if (!g_at_result_iter_next_number(&iter, &number_type))
-			continue;
+		if (g_at_result_iter_next_string(&iter, &str))
+			g_at_result_iter_next_number(&iter, &number_type);
 
 		call = g_try_new0(struct ofono_call, 1);
 
