@@ -78,7 +78,7 @@ AC_SUBST([GDBUS_LIBS], ['$(top_builddir)/gdbus/libgdbus.la $(DBUS_LIBS)'])
 AC_SUBST([GATCHAT_CFLAGS], ['-I$(top_srcdir)/gatchat'])
 AC_SUBST([GATCHAT_LIBS], ['$(top_builddir)/gatchat/libgatchat.la'])
 
-AC_SUBST([GISI_CFLAGS], ['-I$(top_srcdir)/gisi'])
+AC_SUBST([GISI_CFLAGS], ['-I$(top_srcdir)'])
 AC_SUBST([GISI_LIBS], ['$(top_builddir)/gisi/libgisi.la'])
 
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
