@@ -286,6 +286,15 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 			n = n->next;
 		} else {
+			/* Always use the clip_validity from old call
+			 * the only place this is truly told to us is
+			 * in the CLIP notify, the rest are fudged
+			 * anyway.  Useful when RING, CLIP is used,
+			 * and we're forced to use CLCC and clip_validity
+			 * is 1
+			 */
+			nc->clip_validity = oc->clip_validity;
+
 			if (memcmp(nc, oc, sizeof(struct ofono_call)) && !nc->type)
 				ofono_voicecall_notify(modem, nc);
 
