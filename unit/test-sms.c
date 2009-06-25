@@ -820,7 +820,7 @@ static void test_prepare_concat()
 		ok = sms_decode(pdu, len, TRUE, len - 1, &decoded);
 
 		if (g_test_verbose())
-			g_print("Pdu udl: %d\n", decoded.submit.udl);
+			g_print("Pdu udl: %d\n", (int)decoded.submit.udl);
 
 		sms_extract_concatenation(&decoded, &ref, &max, &seq);
 		r = sms_assembly_add_fragment(assembly, &decoded, time(NULL),
