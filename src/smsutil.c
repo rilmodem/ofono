@@ -2376,3 +2376,111 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 
 	return r;
 }
+
+gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
+			enum sms_charset *charset, gboolean *compressed,
+			enum cbs_language *language, gboolean *iso639)
+{
+	guint8 upper = (dcs & 0xf0) >> 4;
+	guint8 lower = dcs & 0xf;
+	enum sms_charset ch;
+	enum sms_class cl;
+	enum cbs_language lang = CBS_LANGUAGE_UNSPECIFIED;
+	gboolean iso = FALSE;
+	gboolean comp = FALSE;
+	gboolean udh = FALSE;
+
+	if (upper == 0x3 || upper == 0x8 || (upper >= 0xA && upper <= 0xE))
+		return FALSE;
+
+	switch (upper) {
+	case 0:
+		ch = SMS_CHARSET_7BIT;
+		cl = SMS_CLASS_UNSPECIFIED;
+		lang = (enum cbs_language)lower;
+		break;
+	case 1:
+		if (lower > 1)
+			return FALSE;
+
+		if (lower == 0)
+			ch = SMS_CHARSET_7BIT;
+		else
+			ch = SMS_CHARSET_UCS2;
+
+		cl = SMS_CLASS_UNSPECIFIED;
+		iso = TRUE;
+
+		break;
+	case 2:
+		if (lower > 4)
+			return FALSE;
+
+		ch = SMS_CHARSET_7BIT;
+		cl = SMS_CLASS_UNSPECIFIED;
+		lang = (enum cbs_language)dcs;
+		break;
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+		comp = (dcs & 0x20) ? TRUE : FALSE;
+
+		if (dcs & 0x10)
+			cl = (enum sms_class)(dcs & 0x03);
+		else
+			cl = SMS_CLASS_UNSPECIFIED;
+
+		if (((dcs & 0x0c) >> 2) < 3)
+			ch = (enum sms_charset)((dcs & 0x0c) >> 2);
+		else
+			return FALSE;
+	case 9:
+		udh = TRUE;
+		cl = (enum sms_class)(dcs & 0x03);
+		if (((dcs & 0x0c) >> 2) < 3)
+			ch = (enum sms_charset)((dcs & 0x0c) >> 2);
+		else
+			return FALSE;
+
+		break;
+	case 15:
+		if (lower & 0x8)
+			return FALSE;
+
+		if (lower & 0x4)
+			ch = SMS_CHARSET_8BIT;
+		else
+			ch = SMS_CHARSET_7BIT;
+
+		if (lower & 0x3)
+			cl = (enum sms_class)(lower & 0x3);
+		else
+			cl = SMS_CLASS_UNSPECIFIED;
+
+		break;
+	default:
+		return FALSE;
+	};
+
+	if (udhi)
+		*udhi = udh;
+
+	if (cls)
+		*cls = cl;
+
+	if (charset)
+		*charset = ch;
+
+	if (compressed)
+		*compressed = comp;
+
+	if (language)
+		*language = lang;
+
+	if (iso639)
+		*iso639 = iso;
+
+	return TRUE;
+}
+
