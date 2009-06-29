@@ -428,6 +428,7 @@ static void export_phonebook_cb(const struct ofono_error *error, void *data)
 				storage_support[phonebook->storage_index]);
 
 	/* convert the collected entries that are already merged to vcard */
+	phonebook->merge_list = g_slist_reverse(phonebook->merge_list);
 	g_slist_foreach(phonebook->merge_list, (GFunc)print_merged_entry,
 				phonebook->vcards);
 	g_slist_foreach(phonebook->merge_list, (GFunc)destroy_merged_entry,
