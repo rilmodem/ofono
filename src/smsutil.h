@@ -201,6 +201,13 @@ enum cbs_language {
 	CBS_LANGUAGE_ICELANDIC = 0x24
 };
 
+enum cbs_geo_scope {
+	CBS_GEO_SCOPE_CELL_IMMEDIATE,
+	CBS_GEO_SCOPE_PLMN,
+	CBS_GEO_SCOPE_SERVICE_AREA,
+	CBS_GEO_SCOPE_CELL_NORMAL
+};
+
 struct sms_address {
 	enum sms_number_type number_type;
 	enum sms_numbering_plan numbering_plan;
@@ -356,6 +363,17 @@ struct sms_assembly {
 	GSList *assembly_list;
 };
 
+struct cbs {
+	enum cbs_geo_scope gs;			/* 2 bits */
+	guint16 message_code;			/* 10 bits */
+	guint8 update_number;			/* 4 bits */
+	guint16 message_identifier;		/* 16 bits */
+	guint8 dcs;				/* 8 bits */
+	guint8 max_pages;			/* 4 bits */
+	guint8 page;				/* 4 bits */
+	guint8 ud[82];
+};
+
 static inline gboolean is_bit_set(unsigned char oct, int bit)
 {
 	int mask = 0x1 << bit;
@@ -427,3 +445,6 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 			enum sms_charset *charset, gboolean *compressed,
 			enum cbs_language *language, gboolean *iso639);
+
+gboolean cbs_decode(const unsigned char *pdu, int len, struct cbs *out);
+gboolean cbs_encode(const struct cbs *cbs, int *len, unsigned char *pdu);

@@ -2484,3 +2484,48 @@ gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 	return TRUE;
 }
 
+gboolean cbs_decode(const unsigned char *pdu, int len, struct cbs *out)
+{
+	/* CBS is always a fixed length of 88 bytes */
+	if (len != 88)
+		return FALSE;
+
+	out->gs = (enum cbs_geo_scope) ((pdu[0] >> 6) & 0x03);
+	out->message_code = ((pdu[0] & 0x3f) << 4) | ((pdu[1] >> 4) & 0xf);
+	out->update_number = (pdu[1] & 0xf);
+	out->message_identifier = (pdu[2] << 8) | pdu[3];
+	out->dcs = pdu[4];
+	out->max_pages = pdu[5] & 0xf;
+	out->page = (pdu[5] >> 4) & 0xf;
+
+	/* If a mobile receives the code 0000 in either the first field or
+	 * the second field then it shall treat the CBS message exactly the
+	 * same as a CBS message with page parameter 0001 0001 (i.e. a single
+	 * page message).
+	 */
+	if (out->max_pages == 0 || out->page == 0) {
+		out->max_pages = 1;
+		out->page = 1;
+	}
+
+	memcpy(out->ud, pdu + 6, 82);
+
+	return TRUE;
+}
+
+gboolean cbs_encode(const struct cbs *cbs, int *len, unsigned char *pdu)
+{
+	pdu[0] = (cbs->gs << 6) | ((cbs->message_code >> 4) & 0x3f);
+	pdu[1] = ((cbs->message_code & 0xf) << 4) | cbs->update_number;
+	pdu[2] = cbs->message_identifier >> 8;
+	pdu[3] = cbs->message_identifier & 0xff;
+	pdu[4] = cbs->dcs;
+	pdu[5] = cbs->max_pages | (cbs->page << 4);
+
+	memcpy(pdu + 6, cbs->ud, 82);
+
+	if (len)
+		*len = 88;
+
+	return TRUE;
+}
