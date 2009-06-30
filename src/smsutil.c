@@ -1518,36 +1518,10 @@ const guint8 *sms_extract_common(const struct sms *sms, gboolean *out_udhi,
 	return ud;
 }
 
-gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
+static gboolean verify_udh(const guint8 *hdr, guint8 max_len)
 {
-	gboolean udhi = FALSE;
-	const guint8 *hdr;
-	guint8 udl;
-	guint8 dcs;
-	guint8 max_len;
-	guint8 offset;
 	guint8 max_offset;
-	guint8 max_ud_len;
-
-	hdr = sms_extract_common(sms, &udhi, &dcs, &udl, &max_ud_len);
-
-	if (!hdr)
-		return FALSE;
-
-	if (!udhi)
-		return FALSE;
-
-	if (sms->type == SMS_TYPE_COMMAND)
-		max_len = udl;
-	else
-		max_len = sms_udl_in_bytes(udl, dcs);
-
-	/* Can't actually store the HDL + IEI / IEL */
-	if (max_len < 3)
-		return FALSE;
-
-	if (max_len > max_ud_len)
-		return FALSE;
+	guint8 offset;
 
 	/* Must have at least one information-element if udhi is true */
 	if (hdr[0] < 2)
@@ -1577,13 +1551,77 @@ gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 	if (offset != max_offset)
 		return FALSE;
 
-	iter->sms = sms;
+	return TRUE;
+}
+
+gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
+{
+	gboolean udhi = FALSE;
+	const guint8 *hdr;
+	guint8 udl;
+	guint8 dcs;
+	guint8 max_len;
+	guint8 max_ud_len;
+
+	hdr = sms_extract_common(sms, &udhi, &dcs, &udl, &max_ud_len);
+
+	if (!hdr)
+		return FALSE;
+
+	if (!udhi)
+		return FALSE;
+
+	if (sms->type == SMS_TYPE_COMMAND)
+		max_len = udl;
+	else
+		max_len = sms_udl_in_bytes(udl, dcs);
+
+	/* Can't actually store the HDL + IEI / IEL */
+	if (max_len < 3)
+		return FALSE;
+
+	if (max_len > max_ud_len)
+		return FALSE;
+
+	if (!verify_udh(hdr, max_len))
+		return FALSE;
+
 	iter->data = hdr;
 	iter->offset = 1;
 
 	return TRUE;
 }
 
+gboolean sms_udh_iter_init_from_cbs(const struct cbs *cbs,
+					struct sms_udh_iter *iter)
+{
+	gboolean udhi = FALSE;
+	const guint8 *hdr;
+	guint8 max_ud_len;
+
+	cbs_dcs_decode(cbs->dcs, &udhi, NULL, NULL, NULL, NULL, NULL);
+
+	if (!udhi)
+		return FALSE;
+
+	hdr = cbs->ud;
+	max_ud_len = 82;
+
+	/* Must have at least one information-element if udhi is true */
+	if (hdr[0] < 2)
+		return FALSE;
+
+	if (hdr[0] >= max_ud_len)
+		return FALSE;
+
+	if (!verify_udh(hdr, max_ud_len))
+		return FALSE;
+
+	iter->data = hdr;
+	iter->offset = 1;
+
+	return TRUE;
+}
 guint8 sms_udh_iter_get_udh_length(struct sms_udh_iter *iter)
 {
 	return iter->data[0];
