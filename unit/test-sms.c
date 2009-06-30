@@ -839,6 +839,51 @@ static void test_prepare_concat()
 	g_assert(strcmp(decoded_str, pad1) == 0);
 }
 
+static const char *cbs1 = "011000320111C2327BFC76BBCBEE46A3D168341A8D46A3D1683"
+	"41A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168"
+	"341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D100";
+
+static void test_cbs_encode_decode()
+{
+	unsigned char *decoded_pdu;
+	long pdu_len;
+	gboolean ret;
+	struct cbs cbs;
+	unsigned char pdu[88];
+	int len;
+	char *encoded_pdu;
+
+	decoded_pdu = decode_hex(cbs1, -1, &pdu_len, 0);
+
+	g_assert(decoded_pdu);
+	g_assert(pdu_len == (long)strlen(cbs1) / 2);
+	g_assert(pdu_len == 88);
+
+	ret = cbs_decode(decoded_pdu, pdu_len, &cbs);
+
+	g_free(decoded_pdu);
+
+	g_assert(ret);
+
+	g_assert(cbs.gs == CBS_GEO_SCOPE_CELL_IMMEDIATE);
+	g_assert(cbs.message_code == 17);
+	g_assert(cbs.update_number == 0);
+	g_assert(cbs.message_identifier == 50);
+	g_assert(cbs.dcs == 1);
+	g_assert(cbs.max_pages == 1);
+	g_assert(cbs.page == 1);
+
+	ret = cbs_encode(&cbs, &len, pdu);
+
+	g_assert(ret);
+
+	encoded_pdu = encode_hex(pdu, len, 0);
+
+	g_assert(strcmp(cbs1, encoded_pdu) == 0);
+
+	g_free(encoded_pdu);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -852,6 +897,9 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test Assembly", test_assembly);
 	g_test_add_func("/testsms/Test Prepare 7Bit", test_prepare_7bit);
 	g_test_add_func("/testsms/Test Prepare Concat", test_prepare_concat);
+
+	g_test_add_func("/testsms/Test CBS Encode / Decode",
+			test_cbs_encode_decode);
 
 	return g_test_run();
 }
