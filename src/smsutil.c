@@ -1746,19 +1746,14 @@ const char *sms_address_to_string(const struct sms_address *addr)
 	return buffer;
 }
 
-gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
-				gboolean *is_8bit)
+static gboolean extract_app_port_common(struct sms_udh_iter *iter, int *dst,
+					int *src, gboolean *is_8bit)
 {
-	struct sms_udh_iter iter;
 	enum sms_iei iei;
 	guint8 addr_hdr[4];
-
 	int srcport = -1;
 	int dstport = -1;
 	gboolean is_addr_8bit;
-
-	if (!sms_udh_iter_init(sms, &iter))
-		return FALSE;
 
 	/* According to the specification, we have to use the last
 	 * useable header.  Also, we have to ignore ports that are reserved:
@@ -1767,14 +1762,14 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
 	 * where the value of the Information-Element-Data is Reserved or not
 	 * supported.
 	*/
-	while ((iei = sms_udh_iter_get_ie_type(&iter)) !=
+	while ((iei = sms_udh_iter_get_ie_type(iter)) !=
 			SMS_IEI_INVALID) {
 		switch (iei) {
 		case SMS_IEI_APPLICATION_ADDRESS_8BIT:
-			if (sms_udh_iter_get_ie_length(&iter) != 2)
+			if (sms_udh_iter_get_ie_length(iter) != 2)
 				break;
 
-			sms_udh_iter_get_ie_data(&iter, addr_hdr);
+			sms_udh_iter_get_ie_data(iter, addr_hdr);
 
 			if (addr_hdr[0] < 240)
 				break;
@@ -1788,10 +1783,10 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
 			break;
 
 		case SMS_IEI_APPLICATION_ADDRESS_16BIT:
-			if (sms_udh_iter_get_ie_length(&iter) != 4)
+			if (sms_udh_iter_get_ie_length(iter) != 4)
 				break;
 
-			sms_udh_iter_get_ie_data(&iter, addr_hdr);
+			sms_udh_iter_get_ie_data(iter, addr_hdr);
 
 			if (((addr_hdr[0] << 8) | addr_hdr[1]) > 49151)
 				break;
@@ -1808,7 +1803,7 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
 			break;
 		}
 
-		sms_udh_iter_next(&iter);
+		sms_udh_iter_next(iter);
 	}
 
 	if (dstport == -1 || srcport == -1)
@@ -1824,6 +1819,18 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
 		*is_8bit = is_addr_8bit;
 
 	return TRUE;
+
+}
+
+gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
+				gboolean *is_8bit)
+{
+	struct sms_udh_iter iter;
+
+	if (!sms_udh_iter_init(sms, &iter))
+		return FALSE;
+
+	return extract_app_port_common(&iter, dst, src, is_8bit);
 }
 
 gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
@@ -2566,4 +2573,15 @@ gboolean cbs_encode(const struct cbs *cbs, int *len, unsigned char *pdu)
 		*len = 88;
 
 	return TRUE;
+}
+
+gboolean cbs_extract_app_port(const struct cbs *cbs, int *dst, int *src,
+				gboolean *is_8bit)
+{
+	struct sms_udh_iter iter;
+
+	if (!sms_udh_iter_init_from_cbs(cbs, &iter))
+		return FALSE;
+
+	return extract_app_port_common(&iter, dst, src, is_8bit);
 }
