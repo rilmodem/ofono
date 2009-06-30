@@ -44,6 +44,7 @@ enum _GAtChatFlags {
 typedef enum _GAtChatFlags GAtChatFlags;
 
 GAtChat *g_at_chat_new(GIOChannel *channel, int flags);
+GAtChat *g_at_chat_new_from_tty(const char *device, int flags);
 
 GAtChat *g_at_chat_ref(GAtChat *chat);
 void g_at_chat_unref(GAtChat *chat);

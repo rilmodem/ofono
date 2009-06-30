@@ -24,8 +24,11 @@
 #endif
 
 #include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
 #include <assert.h>
+#include <termios.h>
 
 #include <glib.h>
 
@@ -933,6 +936,44 @@ error:
 
 	g_free(chat);
 	return NULL;
+}
+
+static int open_device(const char *device)
+{
+	struct termios ti;
+	int fd;
+
+	fd = open(device, O_RDWR | O_NOCTTY);
+	if (fd < 0)
+		return -1;
+
+	tcflush(fd, TCIOFLUSH);
+
+	/* Switch TTY to raw mode */
+	memset(&ti, 0, sizeof(ti));
+	cfmakeraw(&ti);
+
+	tcsetattr(fd, TCSANOW, &ti);
+
+	return fd;
+}
+
+GAtChat *g_at_chat_new_from_tty(const char *device, int flags)
+{
+	GIOChannel *channel;
+	int fd;
+
+	fd = open_device(device);
+	if (fd < 0)
+		return NULL;
+
+	channel = g_io_channel_unix_new(fd);
+	if (!channel) {
+		close(fd);
+		return NULL;
+	}
+
+	return g_at_chat_new(channel, flags);
 }
 
 GAtChat *g_at_chat_ref(GAtChat *chat)
