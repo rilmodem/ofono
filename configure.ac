@@ -4,6 +4,8 @@ AC_INIT()
 AM_INIT_AUTOMAKE(ofono, 0.0)
 AM_CONFIG_HEADER(config.h)
 
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 AM_MAINTAINER_MODE
 
 AC_PREFIX_DEFAULT(/usr/local)
