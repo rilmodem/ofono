@@ -174,6 +174,7 @@ gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
 	len = strlen(line);
 
 	pos = iter->line_pos;
+	bufpos = iter->buf + pos;
 
 	/* Omitted string */
 	if (line[pos] == ',') {
@@ -192,7 +193,7 @@ gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
 
 	*length = (end - pos) / 2;
 
-	for (bufpos = iter->buf + pos; pos < end; pos += 2)
+	for (; pos < end; pos += 2)
 		sscanf(line + pos, "%02hhx", bufpos++);
 
 out:
