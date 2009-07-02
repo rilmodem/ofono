@@ -769,7 +769,7 @@ static void test_prepare_concat()
 {
 	GSList *r;
 	GSList *l;
-	const char *decoded_str;
+	char *decoded_str;
 	GSList *pdus = NULL;
 	char pdu[176];
 	struct sms *sms;
@@ -837,6 +837,8 @@ static void test_prepare_concat()
 
 	g_assert(decoded_str);
 	g_assert(strcmp(decoded_str, pad1) == 0);
+	g_free(decoded_str);
+	sms_assembly_free(assembly);
 }
 
 static const char *cbs1 = "011000320111C2327BFC76BBCBEE46A3D168341A8D46A3D1683"
@@ -892,6 +894,8 @@ static void test_cbs_encode_decode()
 
 	g_assert(strcmp(utf8, "Belconnen") == 0);
 	g_assert(strcmp(iso639_lang, "en") == 0);
+
+	g_free(utf8);
 
 	g_slist_free(l);
 
