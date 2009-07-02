@@ -2845,5 +2845,6 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 		utf8 = g_convert(buf, bufsize, "UTF-8//TRANSLIT", "UCS-2BE",
 					NULL, NULL, NULL);
 
+	g_free(buf);
 	return utf8;
 }
