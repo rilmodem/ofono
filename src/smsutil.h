@@ -451,3 +451,5 @@ gboolean cbs_decode(const unsigned char *pdu, int len, struct cbs *out);
 gboolean cbs_encode(const struct cbs *cbs, int *len, unsigned char *pdu);
 gboolean cbs_extract_app_port(const struct cbs *cbs, int *dst, int *src,
 				gboolean *is_8bit);
+
+char *cbs_decode_text(GSList *cbs_list, char *iso639_lang);

@@ -2696,3 +2696,152 @@ static gboolean iso639_2_from_language(enum cbs_language lang, char *iso639)
 
 	return FALSE;
 }
+
+char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
+{
+	GSList *l;
+	const struct cbs *cbs = cbs_list->data;
+	enum sms_charset charset;
+	enum cbs_language lang;
+	gboolean iso639;
+	int bufsize = 0;
+	unsigned char *buf;
+	char *utf8;
+
+	/* CBS can only come from the network, so we're much less lenient
+	 * on what we support.  Namely we require the same charset to be
+	 * used across all pages.
+	 */
+	for (l = cbs_list; l; l = l->next) {
+		enum sms_charset curch;
+		gboolean curiso;
+
+		cbs = l->data;
+
+		if (!cbs_dcs_decode(cbs->dcs, NULL, NULL,
+					&curch, NULL, &lang, &curiso))
+			return NULL;
+
+		if (l == cbs_list) {
+			iso639 = curiso;
+			charset = curch;
+		}
+
+		if (curch != charset)
+			return NULL;
+
+		if (curiso != iso639)
+			return NULL;
+
+		if (curch == SMS_CHARSET_8BIT)
+			return NULL;
+
+		if (curch == SMS_CHARSET_7BIT) {
+			/* CBS can have up to 93 chars in 7Bit */
+			bufsize += 93;
+
+			if (iso639)
+				bufsize -= 3;
+		} else {
+			bufsize += 82;
+
+			if (iso639)
+				bufsize -= 2;
+		}
+	}
+
+	if (lang) {
+		cbs = cbs_list->data;
+
+		if (iso639) {
+			struct sms_udh_iter iter;
+			int taken = 0;
+
+			if (sms_udh_iter_init_from_cbs(cbs, &iter))
+				taken = sms_udh_iter_get_udh_length(&iter) + 1;
+
+			unpack_7bit_own_buf(cbs->ud + taken, 82 - taken,
+						taken, FALSE, 2,
+						NULL, 0, iso639_lang);
+			iso639_lang[2] = '\0';
+		} else
+			iso639_2_from_language(lang, iso639_lang);
+	}
+
+	buf = g_new(unsigned char, bufsize);
+	bufsize = 0;
+
+	for (l = cbs_list; l; l = l->next) {
+		const guint8 *ud;
+		struct sms_udh_iter iter;
+		int taken = 0;
+
+		cbs = l->data;
+		ud = cbs->ud;
+
+		if (sms_udh_iter_init_from_cbs(cbs, &iter))
+			taken = sms_udh_iter_get_udh_length(&iter) + 1;
+
+		if (charset == SMS_CHARSET_7BIT) {
+			unsigned char unpacked[93];
+			long written;
+			int max_chars = sms_text_capacity_gsm(93, taken);
+			int i;
+
+			unpack_7bit_own_buf(ud + taken, 82 - taken,
+						taken, FALSE, max_chars,
+						&written, 0, unpacked);
+
+			i = iso639 ? 3 : 0;
+
+			/* CR is a padding character, which means we can
+			 * safely discard everything afterwards
+			 */
+			for (; i < written; i++, bufsize++) {
+				if (unpacked[i] == '\r')
+					break;
+
+				buf[bufsize] = unpacked[i];
+			}
+
+			/* It isn't clear whether extension sequences
+			 * (2 septets) must be wholly present in the page
+			 * and not broken over multiple pages.  The behavior
+			 * is probably the same as SMS, but we don't make
+			 * the check here since the specification isn't clear
+			 */
+		} else {
+			int num_ucs2_chars = (82 - taken) >> 1;
+			int i = taken;
+			int max_offset = taken + num_ucs2_chars * 2;
+
+			/* It is completely unclear how UCS2 chars are handled
+			 * especially across pages or when the UDH is present.
+			 * For now do the best we can
+			 */
+			if (iso639) {
+				i += 2;
+				num_ucs2_chars -= 1;
+			}
+
+			while (i < max_offset) {
+				if (ud[i] == 0x00 && ud[i] == '\r')
+					break;
+
+				buf[bufsize] = ud[i];
+				buf[bufsize + 1] = ud[i+1];
+
+				bufsize += 2;
+				i += 2;
+			}
+		}
+	}
+
+	if (charset == SMS_CHARSET_7BIT)
+		utf8 = convert_gsm_to_utf8(buf, bufsize, NULL, NULL, 0);
+	else
+		utf8 = g_convert(buf, bufsize, "UTF-8//TRANSLIT", "UCS-2BE",
+					NULL, NULL, NULL);
+
+	return utf8;
+}
