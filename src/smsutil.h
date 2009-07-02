@@ -19,7 +19,7 @@
  *
  */
 
-#define CBS_PAYLOAD_CHARACTERS 93
+#define CBS_MAX_GSM_CHARS 93
 
 enum sms_type {
 	SMS_TYPE_DELIVER = 0,

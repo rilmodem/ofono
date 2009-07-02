@@ -2737,8 +2737,7 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 			return NULL;
 
 		if (curch == SMS_CHARSET_7BIT) {
-			/* CBS can have up to 93 chars in 7Bit */
-			bufsize += 93;
+			bufsize += CBS_MAX_GSM_CHARS;
 
 			if (iso639)
 				bufsize -= 3;
@@ -2783,10 +2782,13 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 			taken = sms_udh_iter_get_udh_length(&iter) + 1;
 
 		if (charset == SMS_CHARSET_7BIT) {
-			unsigned char unpacked[93];
+			unsigned char unpacked[CBS_MAX_GSM_CHARS];
 			long written;
-			int max_chars = sms_text_capacity_gsm(93, taken);
+			int max_chars;
 			int i;
+
+			max_chars =
+				sms_text_capacity_gsm(CBS_MAX_GSM_CHARS, taken);
 
 			unpack_7bit_own_buf(ud + taken, 82 - taken,
 						taken, FALSE, max_chars,
