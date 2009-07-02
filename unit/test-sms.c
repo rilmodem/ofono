@@ -852,6 +852,9 @@ static void test_cbs_encode_decode()
 	unsigned char pdu[88];
 	int len;
 	char *encoded_pdu;
+	GSList *l;
+	char iso639_lang[3];
+	char *utf8;
 
 	decoded_pdu = decode_hex(cbs1, -1, &pdu_len, 0);
 
@@ -872,6 +875,25 @@ static void test_cbs_encode_decode()
 	g_assert(cbs.dcs == 1);
 	g_assert(cbs.max_pages == 1);
 	g_assert(cbs.page == 1);
+
+	l = g_slist_append(NULL, &cbs);
+
+	utf8 = cbs_decode_text(l, iso639_lang);
+
+	g_assert(utf8);
+
+	if (g_test_verbose()) {
+		g_printf("%s\n", utf8);
+		if (iso639_lang[0] == '\0')
+			g_printf("Lang: Unspecified\n");
+		else
+			g_printf("Lang: %s\n", iso639_lang);
+	}
+
+	g_assert(strcmp(utf8, "Belconnen") == 0);
+	g_assert(strcmp(iso639_lang, "en") == 0);
+
+	g_slist_free(l);
 
 	ret = cbs_encode(&cbs, &len, pdu);
 
