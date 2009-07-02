@@ -21,10 +21,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #define DECLARE_FAILURE(e) 			\
 	struct ofono_error e;			\
 	e.type = OFONO_ERROR_TYPE_FAILURE;	\

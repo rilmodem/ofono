@@ -19,10 +19,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 struct at_data {
 	GAtChat *parser;
 	struct ofono_modem *modem;
