@@ -845,6 +845,10 @@ static const char *cbs1 = "011000320111C2327BFC76BBCBEE46A3D168341A8D46A3D1683"
 	"41A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168"
 	"341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D100";
 
+static const char *cbs2 = "0110003201114679785E96371A8D46A3D168341A8D46A3D1683"
+	"41A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168"
+	"341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D100";
+
 static void test_cbs_encode_decode()
 {
 	unsigned char *decoded_pdu;
@@ -910,6 +914,94 @@ static void test_cbs_encode_decode()
 	g_free(encoded_pdu);
 }
 
+static void test_cbs_assembly()
+{
+	unsigned char *decoded_pdu;
+	long pdu_len;
+	struct cbs dec1;
+	struct cbs dec2;
+	struct cbs_assembly *assembly;
+	char iso639_lang[3];
+	GSList *l;
+	char *utf8;
+
+	assembly = cbs_assembly_new();
+
+	g_assert(assembly);
+
+	decoded_pdu = decode_hex(cbs1, -1, &pdu_len, 0);
+	cbs_decode(decoded_pdu, pdu_len, &dec1);
+	g_free(decoded_pdu);
+
+	decoded_pdu = decode_hex(cbs2, -1, &pdu_len, 0);
+	cbs_decode(decoded_pdu, pdu_len, &dec2);
+	g_free(decoded_pdu);
+
+	/* Add an initial page to the assembly */
+	l = cbs_assembly_add_page(assembly, &dec1);
+	g_assert(l);
+	g_assert(g_slist_length(assembly->recv_cell) == 1);
+	g_slist_foreach(l, (GFunc)g_free, NULL);
+	g_slist_free(l);
+
+	/* Can we receive new updates ? */
+	dec1.update_number = 8;
+	l = cbs_assembly_add_page(assembly, &dec1);
+	g_assert(l);
+	g_assert(g_slist_length(assembly->recv_cell) == 1);
+	g_slist_foreach(l, (GFunc)g_free, NULL);
+	g_slist_free(l);
+
+	/* Do we ignore old pages ? */
+	l = cbs_assembly_add_page(assembly, &dec1);
+	g_assert(l == NULL);
+
+	/* Do we ignore older pages ? */
+	dec1.update_number = 5;
+	l = cbs_assembly_add_page(assembly, &dec1);
+	g_assert(l == NULL);
+
+	cbs_assembly_location_changed(assembly, TRUE, TRUE);
+	g_assert(assembly->recv_cell == NULL);
+
+	dec1.update_number = 9;
+	dec1.page = 3;
+	dec1.max_pages = 3;
+
+	dec2.update_number = 9;
+	dec2.page = 2;
+	dec2.max_pages = 3;
+
+	l = cbs_assembly_add_page(assembly, &dec2);
+	g_assert(l == NULL);
+	l = cbs_assembly_add_page(assembly, &dec1);
+	g_assert(l == NULL);
+
+	dec1.page = 1;
+	l = cbs_assembly_add_page(assembly, &dec1);
+	g_assert(l);
+
+	utf8 = cbs_decode_text(l, iso639_lang);
+
+	g_assert(utf8);
+
+	if (g_test_verbose()) {
+		g_printf("%s\n", utf8);
+		if (iso639_lang[0] == '\0')
+			g_printf("Lang: Unspecified\n");
+		else
+			g_printf("Lang: %s\n", iso639_lang);
+	}
+
+	g_assert(strcmp(utf8, "BelconnenFraserBelconnen") == 0);
+
+	g_free(utf8);
+	g_slist_foreach(l, (GFunc)g_free, NULL);
+	g_slist_free(l);
+
+	cbs_assembly_free(assembly);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -926,6 +1018,7 @@ int main(int argc, char **argv)
 
 	g_test_add_func("/testsms/Test CBS Encode / Decode",
 			test_cbs_encode_decode);
+	g_test_add_func("/testsms/Test CBS Assembly", test_cbs_assembly);
 
 	return g_test_run();
 }
