@@ -33,12 +33,8 @@
 #include <sys/socket.h>
 #include <sys/uio.h>
 #include <errno.h>
+#include "phonet.h"
 #include <glib.h>
-#include <linux/types.h>
-#include <linux/phonet.h>
-#ifndef AF_PHONET
-#define AF_PHONET 35
-#endif
 
 #include "socket.h"
 #include "client.h"

@@ -31,14 +31,9 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <linux/types.h>
-#include <linux/phonet.h>
+#include "phonet.h"
 #include <glib.h>
 
-#ifndef AF_PHONET
-#define AF_PHONET 35
-#define PF_PHONET AF_PHONET
-#endif
 #include "socket.h"
 
 GIOChannel *phonet_new(uint8_t resource)

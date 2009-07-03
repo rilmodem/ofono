@@ -36,11 +36,8 @@
 #ifndef SOL_NETLINK
 #define SOL_NETLINK 270 /* libc!? */
 #endif
-#ifndef AF_PHONET
-#define AF_PHONET 35
-#endif
+#include "phonet.h"
 #include <linux/rtnetlink.h>
-#include <linux/phonet.h>
 #include <glib.h>
 
 #include "netlink.h"
