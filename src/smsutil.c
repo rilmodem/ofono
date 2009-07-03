@@ -2848,3 +2848,262 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 	g_free(buf);
 	return utf8;
 }
+
+static inline gboolean cbs_is_update_newer(unsigned int n, unsigned int o)
+{
+	unsigned int old_update = o & 0xf;
+	unsigned int new_update = n & 0xf;
+
+	if (new_update == old_update)
+		return FALSE;
+
+	/* Any Update Number eight or less higher (modulo 16) than the last
+	 * received Update Number will be considered more recent, and shall be
+	 * treated as a new CBS message, provided the mobile has not been
+	 * switched off.
+	 */
+	if (new_update <= ((old_update + 8) % 16))
+		return TRUE;
+
+	return FALSE;
+}
+
+struct cbs_assembly *cbs_assembly_new()
+{
+	return g_new0(struct cbs_assembly, 1);
+}
+
+void cbs_assembly_free(struct cbs_assembly *assembly)
+{
+	GSList *l;
+
+	for (l = assembly->assembly_list; l; l = l->next) {
+		struct cbs_assembly_node *node = l->data;
+
+		g_slist_foreach(node->pages, (GFunc)g_free, 0);
+		g_slist_free(node->pages);
+		g_free(node);
+	}
+
+	g_slist_free(assembly->assembly_list);
+	g_slist_free(assembly->recv_plmn);
+	g_slist_free(assembly->recv_loc);
+	g_slist_free(assembly->recv_cell);
+
+	g_free(assembly);
+}
+
+static gint cbs_compare_node_by_gs(gconstpointer a, gconstpointer b)
+{
+	const struct cbs_assembly_node *node = a;
+	unsigned int gs = GPOINTER_TO_UINT(b);
+
+	if (((node->serial >> 14) & 0x3) == gs)
+		return 0;
+
+	return 1;
+}
+
+static gint cbs_compare_node_by_update(gconstpointer a, gconstpointer b)
+{
+	const struct cbs_assembly_node *node = a;
+	unsigned int serial = GPOINTER_TO_UINT(b);
+
+	if ((serial & (~0xf)) != (node->serial & (~0xf)))
+		return 1;
+
+	if (cbs_is_update_newer(node->serial, serial))
+		return 1;
+
+	return 0;
+}
+
+static gint cbs_compare_recv_by_serial(gconstpointer a, gconstpointer b)
+{
+	unsigned int old_serial = GPOINTER_TO_UINT(a);
+	unsigned int new_serial = GPOINTER_TO_UINT(b);
+
+	if ((old_serial & (~0xf)) == (new_serial & (~0xf)))
+		return 0;
+
+	return 1;
+}
+
+static void cbs_assembly_expire(struct cbs_assembly *assembly,
+				GCompareFunc func, gconstpointer *userdata)
+{
+	GSList *l;
+	GSList *prev;
+	GSList *tmp;
+
+	/* Take care of the case where several updates are being
+	 * reassembled at the same time.  If the newer one is assembled
+	 * first, then the subsequent old update is discarded, make
+	 * sure that we're also discarding the assembly node for the
+	 * partially assembled ones
+	 */
+	prev = NULL;
+	l = assembly->assembly_list;
+
+	while (l) {
+		struct cbs_assembly_node *node = l->data;
+
+		if (func(node, userdata) != 0) {
+			prev = l;
+			l = l->next;
+			continue;
+		}
+
+		if (prev)
+			prev->next = l->next;
+		else
+			assembly->assembly_list = l->next;
+
+		g_slist_foreach(node->pages, (GFunc)g_free, NULL);
+		g_slist_free(node->pages);
+		g_free(node->pages);
+		tmp = l;
+		l = l->next;
+		g_slist_free_1(tmp);
+	}
+}
+
+void cbs_assembly_location_changed(struct cbs_assembly *assembly,
+					gboolean lac, gboolean ci)
+{
+	/* Location Area wide (in GSM) (which means that a CBS message with the
+	 * same Message Code and Update Number may or may not be "new" in the
+	 * next cell according to whether the next cell is in the same Location
+	 * Area as the current cell), or
+	 *
+	 * Service Area Wide (in UMTS) (which means that a CBS message with the
+	 * same Message Code and Update Number may or may not be "new" in the
+	 * next cell according to whether the next cell is in the same Service
+	 * Area as the current cell)
+	 *
+	 * NOTE 4: According to 3GPP TS 23.003 [2] a Service Area consists of
+	 * one cell only.
+	 */
+
+	if (lac) {
+		/* If LAC changed, then cell id has changed */
+		ci = TRUE;
+		g_slist_free(assembly->recv_loc);
+		assembly->recv_loc = NULL;
+
+		cbs_assembly_expire(assembly, cbs_compare_node_by_gs,
+				GUINT_TO_POINTER(CBS_GEO_SCOPE_SERVICE_AREA));
+	}
+
+	if (ci) {
+		g_slist_free(assembly->recv_cell);
+		assembly->recv_cell = NULL;
+		cbs_assembly_expire(assembly, cbs_compare_node_by_gs,
+				GUINT_TO_POINTER(CBS_GEO_SCOPE_CELL_IMMEDIATE));
+		cbs_assembly_expire(assembly, cbs_compare_node_by_gs,
+				GUINT_TO_POINTER(CBS_GEO_SCOPE_CELL_NORMAL));
+	}
+}
+
+GSList *cbs_assembly_add_page(struct cbs_assembly *assembly,
+				const struct cbs *cbs)
+{
+	struct cbs *newcbs;
+	struct cbs_assembly_node *node;
+	GSList *completed;
+	unsigned int new_serial;
+	GSList **recv;
+	GSList *l;
+	GSList *prev;
+	int position;
+
+	new_serial = cbs->gs << 14;
+	new_serial |= cbs->message_code << 4;
+	new_serial |= cbs->update_number;
+	new_serial |= cbs->message_identifier << 16;
+
+	if (cbs->gs == CBS_GEO_SCOPE_PLMN)
+		recv = &assembly->recv_plmn;
+	else if (cbs->gs == CBS_GEO_SCOPE_SERVICE_AREA)
+		recv = &assembly->recv_loc;
+	else
+		recv = &assembly->recv_cell;
+
+	/* Have we seen this message before? */
+	l = g_slist_find_custom(*recv, GUINT_TO_POINTER(new_serial),
+				cbs_compare_recv_by_serial);
+
+	/* If we have, is the message newer? */
+	if (l && !cbs_is_update_newer(new_serial, GPOINTER_TO_UINT(l->data)))
+		return NULL;
+
+	/* Easy case first, page 1 of 1 */
+	if (cbs->max_pages == 1 && cbs->page == 1) {
+		if (l)
+			l->data = GUINT_TO_POINTER(new_serial);
+		else
+			*recv = g_slist_prepend(*recv,
+						GUINT_TO_POINTER(new_serial));
+
+		newcbs = g_new(struct cbs, 1);
+		memcpy(newcbs, cbs, sizeof(struct cbs));
+		completed = g_slist_append(NULL, newcbs);
+
+		return completed;
+	}
+
+	prev = NULL;
+	position = 0;
+
+	for (l = assembly->assembly_list; l; prev = l, l = l->next) {
+		int j;
+		node = l->data;
+
+		if (new_serial != node->serial)
+			continue;
+
+		if (node->bitmap & (1 << cbs->page))
+			return NULL;
+
+		for (j = 1; j < cbs->page; j++)
+			if (node->bitmap & (1 << j))
+				position += 1;
+
+		goto out;
+	}
+
+	node = g_new0(struct cbs_assembly_node, 1);
+	node->serial = new_serial;
+
+	assembly->assembly_list = g_slist_prepend(assembly->assembly_list,
+							node);
+
+	prev = NULL;
+	l = assembly->assembly_list;
+	position = 0;
+
+out:
+	newcbs = g_new(struct cbs, 1);
+	memcpy(newcbs, cbs, sizeof(struct cbs));
+	node->pages = g_slist_insert(node->pages, newcbs, position);
+	node->bitmap |= 1 << cbs->page;
+
+	if (g_slist_length(node->pages) < cbs->max_pages)
+		return NULL;
+
+	completed = node->pages;
+
+	if (prev)
+		prev->next = l->next;
+	else
+		assembly->assembly_list = l->next;
+
+	g_free(node);
+	g_slist_free_1(l);
+
+	cbs_assembly_expire(assembly, cbs_compare_node_by_update,
+				GUINT_TO_POINTER(new_serial));
+	*recv = g_slist_prepend(*recv, GUINT_TO_POINTER(new_serial));
+
+	return completed;
+}

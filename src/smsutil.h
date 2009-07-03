@@ -373,6 +373,19 @@ struct cbs {
 	guint8 ud[82];
 };
 
+struct cbs_assembly_node {
+	guint32 serial;
+	guint16 bitmap;
+	GSList *pages;
+};
+
+struct cbs_assembly {
+	GSList *assembly_list;
+	GSList *recv_plmn;
+	GSList *recv_loc;
+	GSList *recv_cell;
+};
+
 static inline gboolean is_bit_set(unsigned char oct, int bit)
 {
 	int mask = 0x1 << bit;
@@ -453,3 +466,10 @@ gboolean cbs_extract_app_port(const struct cbs *cbs, int *dst, int *src,
 				gboolean *is_8bit);
 
 char *cbs_decode_text(GSList *cbs_list, char *iso639_lang);
+
+struct cbs_assembly *cbs_assembly_new();
+void cbs_assembly_free(struct cbs_assembly *assembly);
+GSList *cbs_assembly_add_page(struct cbs_assembly *assembly,
+				const struct cbs *cbs);
+void cbs_assembly_location_changed(struct cbs_assembly *assembly,
+					gboolean lac, gboolean ci);
