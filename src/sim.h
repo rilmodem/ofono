@@ -31,3 +31,7 @@ int ofono_spn_update_notify_unregister(struct ofono_modem *modem,
 
 gboolean ofono_operator_in_spdi(struct ofono_modem *modem,
 				const struct ofono_network_operator *op);
+
+const char *ofono_operator_name_sim_override(struct ofono_modem *modem,
+						const char *mcc,
+						const char *mnc);

@@ -84,6 +84,8 @@ struct ofono_network_operator {
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 	int status;
 	int tech;
+
+	const char *override_name;
 };
 
 /* 27.007 Section 7.11 Call Forwarding */

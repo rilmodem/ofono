@@ -58,6 +58,16 @@ struct sim_manager_data {
 	int own_numbers_num;
 	int own_numbers_size;
 	int own_numbers_current;
+
+	GSList *opl;
+	int opl_num;
+	int opl_size;
+	int opl_current;
+
+	struct pnn_operator *pnn;
+	int pnn_num;
+	int pnn_size;
+	int pnn_current;
 };
 
 static char **get_own_numbers(GSList *own_numbers)
@@ -120,6 +130,11 @@ static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 	return NULL;
 }
 
+struct pnn_operator {
+	char *longname;
+	char *shortname;
+};
+
 static struct sim_manager_data *sim_manager_create()
 {
 	return g_try_new0(struct sim_manager_data, 1);
@@ -129,6 +144,7 @@ static void sim_manager_destroy(gpointer userdata)
 {
 	struct ofono_modem *modem = userdata;
 	struct sim_manager_data *data = modem->sim_manager;
+	int i;
 
 	if (data->imsi) {
 		g_free(data->imsi);
@@ -150,6 +166,24 @@ static void sim_manager_destroy(gpointer userdata)
 		g_slist_foreach(data->spdi, (GFunc)g_free, NULL);
 		g_slist_free(data->spdi);
 		data->spdi = NULL;
+	}
+
+	if (data->opl) {
+		g_slist_foreach(data->opl, (GFunc)g_free, NULL);
+		g_slist_free(data->opl);
+		data->opl = NULL;
+	}
+
+	if (data->pnn) {
+		for (i = 0; i < data->pnn_num; i ++) {
+			if (data->pnn[i].longname)
+				g_free(data->pnn[i].longname);
+			if (data->pnn[i].shortname)
+				g_free(data->pnn[i].shortname);
+		}
+		g_free(data->pnn);
+		data->pnn = NULL;
+		data->pnn_num = 0;
 	}
 }
 
@@ -199,9 +233,42 @@ static GDBusMethodTable sim_manager_methods[] = {
 
 static GDBusSignalTable sim_manager_signals[] = { { } };
 
+static char *network_name_parse(const unsigned char *buffer, int length)
+{
+	unsigned char *endp;
+	unsigned int dcs;
+
+	if (length < 1)
+		return NULL;
+
+	dcs = *buffer ++;
+	length --;
+
+	if (dcs & (1 << 3)) {
+		/* TODO: "The MS should add the letters for the Country's
+		 * Initials and a separator (e.g. a space)" */
+	}
+
+	switch (dcs & (7 << 4)) {
+	case 0x00:
+		endp = memchr(buffer, 0xff, length);
+		if (endp)
+			length = endp - buffer;
+		return convert_gsm_to_utf8(buffer, length,
+				NULL, NULL, 0xff);
+	case 0x10:
+		return convert_ucs2_to_utf8(buffer, length,
+				NULL, NULL, 0xffff);
+	}
+
+	return NULL;
+}
+
 enum sim_fileids {
 	SIM_EFMSISDN_FILEID = 0x6f40,
 	SIM_EFSPN_FILEID = 0x6f46,
+	SIM_EFPNN_FILEID = 0x6fc5,
+	SIM_EFOPL_FILEID = 0x6fc6,
 	SIM_EFSPDI_FILEID = 0x6fcd,
 };
 
@@ -384,16 +451,15 @@ static gboolean sim_retrieve_own_number(void *user_data)
 	return FALSE;
 }
 
-struct spdi_operator {
+struct sim_operator {
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 };
 
-static struct spdi_operator *spdi_operator_alloc(const guint8 *bcd)
+static void parse_mcc_mnc(struct sim_operator *oper, const guint8 *bcd)
 {
-	struct spdi_operator *spdi = g_new0(struct spdi_operator, 1);
-	char *mcc = spdi->mcc;
-	char *mnc = spdi->mnc;
+	char *mcc = oper->mcc;
+	char *mnc = oper->mnc;
 	guint8 digit;
 
 	digit = (bcd[0] >> 0) & 0xf;
@@ -414,14 +480,21 @@ static struct spdi_operator *spdi_operator_alloc(const guint8 *bcd)
 	digit = (bcd[1] >> 4) & 0xf;
 	if (digit != 0xf)
 		*mnc ++ = '0' + digit;
+}
+
+static struct sim_operator *sim_operator_alloc(const guint8 *bcd)
+{
+	struct sim_operator *spdi = g_new0(struct sim_operator, 1);
+
+	parse_mcc_mnc(spdi, bcd);
 
 	return spdi;
 }
 
 static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
 {
-	const struct spdi_operator *opa = a;
-	const struct spdi_operator *opb = b;
+	const struct sim_operator *opa = a;
+	const struct sim_operator *opb = b;
 	gint r;
 
 	if ((r = strcmp(opa->mcc, opb->mcc)))
@@ -434,7 +507,7 @@ gboolean ofono_operator_in_spdi(struct ofono_modem *modem,
 				const struct ofono_network_operator *op)
 {
 	struct sim_manager_data *sim = modem->sim_manager;
-	struct spdi_operator spdi_op;
+	struct sim_operator spdi_op;
 
 	if (!sim)
 		return FALSE;
@@ -469,7 +542,7 @@ static void sim_spdi_read_cb(const struct ofono_error *error,
 			continue;
 
 		sim->spdi = g_slist_insert_sorted(sim->spdi,
-				spdi_operator_alloc(plmn_list),
+				sim_operator_alloc(plmn_list),
 				spdi_operator_compare);
 	}
 
@@ -500,6 +573,225 @@ static gboolean sim_retrieve_spdi(void *user_data)
 
 	sim->ops->read_file_info(modem, SIM_EFSPDI_FILEID,
 					sim_spdi_info_cb, modem);
+
+	return FALSE;
+}
+
+struct opl_operator {
+	struct sim_operator mcc_mnc;
+	guint16 lac_tac_low;
+	guint16 lac_tac_high;
+	guint8 id;
+};
+
+static struct opl_operator *opl_operator_alloc(const guint8 *record)
+{
+	struct opl_operator *oper = g_new0(struct opl_operator, 1);
+
+	parse_mcc_mnc(&oper->mcc_mnc, record);
+	record += 3;
+
+	oper->lac_tac_low = (record[0] << 8) | record[1];
+	record += 2;
+	oper->lac_tac_high = (record[0] << 8) | record[1];
+	record += 2;
+
+	oper->id = record[0];
+	if (!oper->id) {
+		/* TODO: name to be taken from other sources, see TS 22.101 */
+	}
+
+	return oper;
+}
+
+static gint opl_operator_compare(gconstpointer a, gconstpointer b)
+{
+	const struct opl_operator *opa = a;
+	const struct sim_operator *opb = b;
+	int i;
+
+	for (i = 0; opb->mcc[i] | opa->mcc_mnc.mcc[i]; i ++)
+		if (opb->mcc[i] != opa->mcc_mnc.mcc[i] &&
+				!(opa->mcc_mnc.mcc[i] == '0' + 0xd &&
+					opb->mcc[i]))
+			return opa->mcc_mnc.mcc[i] - opb->mcc[i];
+	for (i = 0; opb->mnc[i] | opa->mcc_mnc.mnc[i]; i ++)
+		if (opb->mnc[i] != opa->mcc_mnc.mnc[i] &&
+				!(opa->mcc_mnc.mnc[i] == '0' + 0xd &&
+					opb->mnc[i]))
+			return opa->mcc_mnc.mnc[i] - opb->mnc[i];
+
+	if (opa->lac_tac_low > 0x0000 || opa->lac_tac_high < 0xfffe)
+		return 1;
+
+	return 0;
+}
+
+static void sim_opl_read_cb(const struct ofono_error *error,
+		const unsigned char *sdata, int length, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct opl_operator *oper;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		goto skip;
+
+	if (length < sim->opl_size)
+		goto skip;
+
+	oper = opl_operator_alloc(sdata);
+	if (oper->id > sim->pnn_num) {
+		g_free(oper);
+		goto skip;
+	}
+
+	sim->opl = g_slist_prepend(sim->opl, oper);
+
+skip:
+	sim->opl_current ++;
+	if (sim->opl_current < sim->opl_num)
+		sim->ops->read_file_linear(modem, SIM_EFOPL_FILEID,
+						sim->opl_current,
+						sim->opl_size,
+						sim_opl_read_cb, modem);
+	else
+		/* All records retrieved */
+		if (sim->opl)
+			sim->opl = g_slist_reverse(sim->opl);
+}
+
+static void sim_opl_info_cb(const struct ofono_error *error, int length,
+				enum ofono_sim_file_structure structure,
+				int record_length, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length < 8 ||
+			record_length < 8 ||
+			structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
+		return;
+
+	sim->opl_current = 0;
+	sim->opl_size = record_length;
+	sim->opl_num = length / record_length;
+	sim->ops->read_file_linear(modem, SIM_EFOPL_FILEID, 0,
+			record_length, sim_opl_read_cb, modem);
+}
+
+static gboolean sim_retrieve_opl(void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	sim->ops->read_file_info(modem, SIM_EFOPL_FILEID,
+			sim_opl_info_cb, modem);
+
+	return FALSE;
+}
+
+const char *ofono_operator_name_sim_override(struct ofono_modem *modem,
+		const char *mcc, const char *mnc)
+{
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_operator op;
+	GSList *l;
+	const struct opl_operator *opl_op;
+
+	g_strlcpy(op.mcc, mcc, sizeof(op.mcc));
+	g_strlcpy(op.mnc, mnc, sizeof(op.mnc));
+
+	l = g_slist_find_custom(sim->opl, &op, opl_operator_compare);
+	if (!l)
+		return NULL;
+	opl_op = l->data;
+
+	return sim->pnn[opl_op->id - 1].longname;
+}
+
+static gboolean pnn_operator_parse(struct pnn_operator *oper,
+				const guint8 *tlv, int length)
+{
+	const char *name;
+	int namelength;
+
+	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
+	if (!name || !namelength)
+		return FALSE;
+	oper->longname = network_name_parse(name, namelength);
+
+	name = ber_tlv_find_by_tag(tlv, 0x45, length, &namelength);
+	if (name && namelength)
+		oper->shortname = network_name_parse(name, namelength);
+
+	if (ber_tlv_find_by_tag(tlv, 0x80, length, &namelength))
+		ofono_debug("%i octets of addition PLMN information "
+				"present in EF-PNN");
+
+	return TRUE;
+}
+
+static void sim_pnn_read_cb(const struct ofono_error *error,
+		const unsigned char *pnndata, int length, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct opl_operator *oper;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		goto skip;
+
+	if (length < sim->pnn_size)
+		goto skip;
+
+	pnn_operator_parse(&sim->pnn[sim->pnn_current], pnndata, length);
+
+skip:
+	sim->pnn_current ++;
+	if (sim->pnn_current < sim->pnn_num)
+		sim->ops->read_file_linear(modem, SIM_EFPNN_FILEID,
+						sim->pnn_current,
+						sim->pnn_size,
+						sim_pnn_read_cb, modem);
+	else
+		/* All records retrieved */
+		/* We now need EF-OPL if it's there for PNN to be
+		 * useful.  */
+		sim_retrieve_opl(modem);
+}
+
+static void sim_pnn_info_cb(const struct ofono_error *error, int length,
+				enum ofono_sim_file_structure structure,
+				int record_length, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length < 3 ||
+			record_length < 3 ||
+			structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
+		/* If PNN is not present then OPL is not useful, don't
+		 * retrieve it.  If OPL is not there then PNN[1] will
+		 * still be used for the HPLMN and/or EHPLMN, if PNN
+		 * is present.  */
+		return;
+
+	sim->pnn_current = 0;
+	sim->pnn_size = record_length;
+	sim->pnn_num = length / record_length;
+	sim->pnn = g_new0(struct pnn_operator, sim->pnn_num);
+	sim->ops->read_file_linear(modem, SIM_EFPNN_FILEID, 0,
+			record_length, sim_pnn_read_cb, modem);
+}
+
+static gboolean sim_retrieve_pnn(void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	sim->ops->read_file_info(modem, SIM_EFPNN_FILEID,
+			sim_pnn_info_cb, modem);
 
 	return FALSE;
 }
@@ -536,6 +828,9 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 
 	if (modem->sim_manager->ops->read_file_transparent)
 		g_timeout_add(0, sim_retrieve_spdi, modem);
+
+	if (modem->sim_manager->ops->read_file_linear)
+		g_timeout_add(0, sim_retrieve_pnn, modem);
 }
 
 int ofono_sim_manager_register(struct ofono_modem *modem,

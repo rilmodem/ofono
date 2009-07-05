@@ -341,12 +341,14 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 		return name;
 	}
 
+	plmn = netreg->current_operator->name;
+	if (netreg->current_operator->override_name)
+		plmn = netreg->current_operator->override_name;
+
 	if (!netreg->spname || strlen(netreg->spname) == 0) {
-		g_strlcpy(name, netreg->current_operator->name, len);
+		g_strlcpy(name, plmn, len);
 		return name;
 	}
-
-	plmn = netreg->current_operator->name;
 
 	home_or_spdi =
 		(netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED) ||
@@ -385,20 +387,22 @@ static void set_network_operator_name(struct ofono_modem *modem,
 	strncpy(op->name, name, OFONO_MAX_OPERATOR_NAME_LENGTH);
 	op->name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 
-	path = network_operator_build_path(modem, op);
+	if (!op->override_name) {
+		path = network_operator_build_path(modem, op);
 
-	dbus_gsm_signal_property_changed(conn, path,
-				NETWORK_OPERATOR_INTERFACE,
-				"Name", DBUS_TYPE_STRING,
-				&name);
+		dbus_gsm_signal_property_changed(conn, path,
+					NETWORK_OPERATOR_INTERFACE,
+					"Name", DBUS_TYPE_STRING,
+					&name);
 
-	if (op == netreg->current_operator) {
-		operator = get_operator_display_name(modem);
+		if (op == netreg->current_operator) {
+			operator = get_operator_display_name(modem);
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
-					NETWORK_REGISTRATION_INTERFACE,
-					"Operator", DBUS_TYPE_STRING,
-					&operator);
+			dbus_gsm_signal_property_changed(conn, modem->path,
+						NETWORK_REGISTRATION_INTERFACE,
+						"Operator", DBUS_TYPE_STRING,
+						&operator);
+		}
 	}
 }
 
@@ -414,6 +418,9 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 	const char *name = op->operator->name;
 	const char *status =
 		network_operator_status_to_string(op->operator->status);
+
+	if (op->operator->override_name)
+		name = op->operator->override_name;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -854,6 +861,13 @@ void ofono_network_registration_notify(struct ofono_modem *modem, int status,
 	}
 }
 
+static void network_operator_name_override(struct ofono_modem *modem,
+					struct ofono_network_operator *op)
+{
+	op->override_name =
+		ofono_operator_name_sim_override(modem, op->mcc, op->mnc);
+}
+
 static void operator_list_callback(const struct ofono_error *error, int total,
 					const struct ofono_network_operator *list,
 					void *data)
@@ -892,11 +906,12 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 		} else {
 			/* New operator */
 			struct ofono_network_operator *op =
-				g_try_new0(struct ofono_network_operator, 1);
+				g_memdup(&list[i],
+					sizeof(struct ofono_network_operator));
 			if (!op)
 				continue;
 
-			memcpy(op, &list[i], sizeof(struct ofono_network_operator));
+			network_operator_name_override(modem, op);
 
 			if (network_operator_dbus_register(modem, op)) {
 				n = g_slist_prepend(n, op);
@@ -970,15 +985,14 @@ static void current_operator_callback(const struct ofono_error *error,
 
 	if (current) {
 		netreg->current_operator =
-			g_try_new0(struct ofono_network_operator, 1);
-
+			g_memdup(current,
+				sizeof(struct ofono_network_operator));
 		if (!netreg->current_operator) {
 			ofono_error("Unable to allocate current operator");
 			return;
 		}
 
-		memcpy(netreg->current_operator, current,
-			sizeof(struct ofono_network_operator));
+		network_operator_name_override(modem, netreg->current_operator);
 
 		netreg->current_operator->status = OPERATOR_STATUS_CURRENT;
 
