@@ -616,6 +616,70 @@ static void test_offset_handling()
 	g_free(packed);
 }
 
+static unsigned char sim_7bit[] = { 0x6F, 0x46, 0x6F, 0x6E, 0x6F, 0xFF, 0xFF };
+static unsigned char sim_80_1[] = { 0x80, 0x00, 0x6F, 0x00, 0x6E, 0x00,
+					0x6F };
+static unsigned char sim_80_2[] = { 0x80, 0x00, 0x6F, 0x00, 0x6E, 0x00,
+					0x6F, 0xFF, 0xFF, 0xFF};
+static unsigned char sim_80_3[] = { 0x80, 0x00, 0x6F, 0x00, 0x6E, 0x00,
+					0x6F, 0xFF, 0xFF};
+static unsigned char sim_81_0[] = { 0x81, 0x05, 0x13, 0x53, 0x95, 0xA6,
+					0xA6, 0xFF, 0xFF };
+static unsigned char sim_81_1[] = { 0x81, 0x03, 0x00, 0x6F, 0x6E, 0x6F, 0xFF };
+static unsigned char sim_81_2[] = { 0x81, 0x05, 0x08, 0xB3, 0xB4, 0xB5, 0x53,
+					0x54, 0xFF, 0xFF, 0xFF };
+static unsigned char sim_82_0[] = { 0x82, 0x05, 0x05, 0x30, 0x2D, 0x82,
+					0xD3, 0x2D, 0x31 };
+static unsigned char sim_82_1[] = { 0x82, 0x05, 0x04, 0x00, 0x2D, 0xB3, 0xB4,
+					0x2D, 0x31 };
+
+static void test_sim()
+{
+	char *utf8;
+
+	utf8 = sim_string_to_utf8(sim_7bit, sizeof(sim_7bit));
+
+	g_assert(utf8);
+	g_assert(strcmp(utf8, "oFono") == 0);
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_80_1, sizeof(sim_80_1));
+	g_assert(utf8);
+	g_assert(strcmp(utf8, "ono") == 0 );
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_80_2, sizeof(sim_80_2));
+	g_assert(utf8);
+	g_assert(strcmp(utf8, "ono") == 0 );
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_80_3, sizeof(sim_80_3));
+	g_assert(utf8);
+	g_assert(strcmp(utf8, "ono") == 0 );
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_81_0, sizeof(sim_81_0));
+	g_assert(utf8);
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_81_2, sizeof(sim_81_2));
+	g_assert(utf8);
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_81_1, sizeof(sim_81_1));
+	g_assert(utf8);
+	g_assert(strcmp(utf8, "ono") == 0 );
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_82_0, sizeof(sim_82_0));
+	g_assert(utf8);
+	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_82_1, sizeof(sim_82_1));
+	g_assert(utf8);
+	g_free(utf8);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -627,6 +691,7 @@ int main(int argc, char **argv)
 	g_test_add_func("/testutil/CBS CR Handling", test_cr_handling);
 	g_test_add_func("/testutil/SMS Handling", test_sms_handling);
 	g_test_add_func("/testutil/Offset Handling", test_offset_handling);
+	g_test_add_func("/testutil/SIM conversions", test_sim);
 
 	return g_test_run();
 }
