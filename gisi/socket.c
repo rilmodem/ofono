@@ -81,7 +81,7 @@ ssize_t phonet_read(GIOChannel *channel, void *restrict buf, size_t len,
 		return -1;
 
 	if (obj != NULL)
-		*obj = pn_sockaddr_get_object(&addr);
+		*obj = (addr.spn_dev << 8) | addr.spn_obj;
 	if (res != NULL)
 		*res = addr.spn_resource;
 	return ret;
