@@ -692,3 +692,127 @@ unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
 	return pack_7bit_own_buf(in, len, byte_offset, ussd, items_written,
 					terminator, buf);
 }
+
+char *sim_string_to_utf8(const unsigned char *buffer, int length)
+{
+	int i;
+	int j;
+	int num_chars;
+	unsigned short ucs2_offset;
+	int res_len;
+	int offset;
+	char *utf8 = NULL;
+	char *out;
+
+	if (length < 1)
+		return NULL;
+
+	if (buffer[0] < 0x80) {
+		/* We have to find the real length, since on SIM file system
+		 * alpha fields are 0xff padded
+		 */
+		for (i = 0; i < length; i++)
+			if (buffer[i] == 0xff)
+				break;
+
+		return convert_gsm_to_utf8(buffer, i, NULL, NULL, 0);
+	}
+
+	switch (buffer[0]) {
+	case 0x80:
+		for (i = 1; i < length; i += 2)
+			if (buffer[i] == 0xff)
+				break;
+
+		return g_convert(buffer + 1, i - 1,
+					"UTF-8//TRANSLIT", "UCS-2BE",
+					NULL, NULL, NULL);
+	case 0x81:
+		if (length < 3 || (buffer[1] > (length - 3)))
+			return NULL;
+
+		num_chars = buffer[1];
+		ucs2_offset = buffer[2] << 7;
+		offset = 3;
+		break;
+
+	case 0x82:
+		if (length < 4 || buffer[1] > length - 4)
+			return NULL;
+
+		num_chars = buffer[1];
+		ucs2_offset = (buffer[2] << 8) | buffer[3];
+		offset = 4;
+		break;
+
+	default:
+		return NULL;
+	}
+
+	res_len = 0;
+	i = offset;
+	j = 0;
+
+	while ((i < length) && (j < num_chars)) {
+		unsigned short c;
+
+		if (buffer[i] & 0x80) {
+			c = (buffer[i++] & 0x7f) + ucs2_offset;
+			res_len += UTF8_LENGTH(c);
+			j += 1;
+			continue;
+		}
+
+		if (buffer[i] == 0x1b) {
+			++i;
+			if (i >= length)
+				return NULL;
+
+			c = gsm_extension_table_lookup(buffer[i++]);
+
+			if (c == 0)
+				return NULL;
+
+			j += 2;
+		} else {
+			c = gsm_table[buffer[i++]];
+			j += 1;
+		}
+
+		res_len += UTF8_LENGTH(c);
+	}
+
+	if (j != num_chars)
+		return NULL;
+
+	/* Check that the string is padded out to the length by 0xff */
+	for (; i < length; i++)
+		if (buffer[i] != 0xff)
+			return NULL;
+
+	utf8 = g_malloc(res_len + 1);
+
+	if (!utf8)
+		return NULL;
+
+	i = offset;
+	out = utf8;
+
+	while (out < utf8 + res_len) {
+		unsigned short c;
+
+		if (buffer[i] & 0x80)
+			c = (buffer[i++] & 0x7f) + ucs2_offset;
+		else if (buffer[i] == 0x1b) {
+			++i;
+			c = gsm_extension_table_lookup(buffer[i++]);
+		} else
+			c = gsm_table[buffer[i++]];
+
+		out += g_unichar_to_utf8(c, out);
+	}
+
+	*out = '\0';
+
+	return utf8;
+}
