@@ -237,9 +237,7 @@ static void sim_spn_read_cb(const struct ofono_error *error,
 	if (endp)
 		length = endp - sdata;
 
-	/*
-	 * The specification has this to say about the encoding of SPN:
-	 * Coding:
+	/* TS 31.102 says:
 	 *
 	 * the string shall use:
 	 *
@@ -250,9 +248,11 @@ static void sim_spn_read_cb(const struct ofono_error *error,
 	 * - or one of the UCS2 code options defined in the annex of TS
 	 *   31.101 [11].
 	 *
-	 * Assume the first option.
+	 * 31.101 has no such annex though.  51.101 refers to Annex B of
+	 * itself which is not there either.  11.11 contains the same
+	 * paragraph as 51.101 and has an Annex B which we implement.
 	 */
-	sim->spn = convert_gsm_to_utf8(sdata, length, NULL, NULL, 0xff);
+	sim->spn = sim_string_to_utf8(sdata, length);
 
 	for (l = sim->update_spn_notify; l; l = l->next)
 		sim_spn_notify(modem, l->data);
