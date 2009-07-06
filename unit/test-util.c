@@ -188,8 +188,11 @@ static void test_invalid()
 
 	res = convert_gsm_to_utf8(invalid_gsm_extended, 0, &nread, &nwritten,
 					0);
-	g_assert(res == NULL);
+	g_assert(res);
 	g_assert(nread == 0);
+	g_assert(nwritten == 0);
+	g_assert(res[0] == '\0');
+	g_free(res);
 
 	res = convert_gsm_to_utf8(invalid_gsm_extended,
 					sizeof(invalid_gsm_extended),
