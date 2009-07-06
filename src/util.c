@@ -186,7 +186,7 @@ char *convert_gsm_to_utf8(const unsigned char *text, long len,
 	long i = 0;
 	long res_length;
 
-	if (len == 0 || (len < 0 && !terminator))
+	if (len < 0 && !terminator)
 		goto err_out;
 
 	if (len < 0) {
