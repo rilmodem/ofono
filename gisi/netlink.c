@@ -190,5 +190,5 @@ error:
 void g_pn_netlink_stop(GPhonetNetlink *self)
 {
 	g_source_remove(self->watch);
-	g_free(self);
+	free(self);
 }
