@@ -78,10 +78,10 @@ enum version_types {
 	INFO_MCUSW = 0x01
 };
 
-static GPhonetNetlink *pn_link;
-static struct isi_data *isi;
-static GIsiClient *client;
-static GSList *pending;
+static GPhonetNetlink *pn_link = NULL;
+static struct isi_data *isi = NULL;
+static GIsiClient *client = NULL;
+static GSList *pending = NULL;
 
 void dump_msg(const unsigned char *msg, size_t len)
 {
