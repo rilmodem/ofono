@@ -634,6 +634,8 @@ static unsigned char sim_82_0[] = { 0x82, 0x05, 0x05, 0x30, 0x2D, 0x82,
 					0xD3, 0x2D, 0x31 };
 static unsigned char sim_82_1[] = { 0x82, 0x05, 0x04, 0x00, 0x2D, 0xB3, 0xB4,
 					0x2D, 0x31 };
+static unsigned char sim_82_2[] = { 0x82, 0x05, 0xD8, 0x00, 0x2D, 0xB3, 0xB4,
+					0x2D, 0x31 };
 
 static void test_sim()
 {
@@ -680,6 +682,9 @@ static void test_sim()
 	utf8 = sim_string_to_utf8(sim_82_1, sizeof(sim_82_1));
 	g_assert(utf8);
 	g_free(utf8);
+
+	utf8 = sim_string_to_utf8(sim_82_2, sizeof(sim_82_2));
+	g_assert(utf8 == NULL);
 }
 
 int main(int argc, char **argv)
