@@ -126,8 +126,11 @@ static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int i
 
 		memcpy(str, msg + 7, msg[6]);
 		str[msg[6]] = '\0';
-
 		DBG("<%s>", str);
+
+		err.type = OFONO_ERROR_TYPE_NO_ERROR;
+		err.error = 0;
+
 		cb(&err, str, data);
 		return true;
 	}
