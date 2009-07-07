@@ -466,9 +466,21 @@ static void have_line(GAtChat *p, gboolean strip_preceding)
 
 	cmd = g_queue_peek_head(p->command_queue);
 
-	if (cmd && p->cmd_bytes_written == strlen(cmd->cmd) &&
-		g_at_chat_handle_command_response(p, cmd, str))
-		return;
+	if (cmd) {
+		char c = cmd->cmd[p->cmd_bytes_written - 1];
+
+		/* We check that we have submitted a terminator, in which case
+		 * a command might have failed or completed successfully
+		 *
+		 * In the generic case, \r is at the end of the command, so we
+		 * know the entire command has been submitted.  In the case of
+		 * commands like CMGS, every \r or Ctrl-Z might result in a
+		 * final response from the modem, so we check this as well.
+		 */
+		if ((c == '\r' || c == 26) &&
+				g_at_chat_handle_command_response(p, cmd, str))
+			return;
+	}
 
 	if (g_at_chat_match_notify(p, str) == TRUE)
 		return;
