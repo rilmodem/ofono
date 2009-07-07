@@ -980,6 +980,8 @@ static void current_operator_callback(const struct ofono_error *error,
 		memcpy(netreg->current_operator, current,
 			sizeof(struct ofono_network_operator));
 
+		netreg->current_operator->status = OPERATOR_STATUS_CURRENT;
+
 		netreg->operator_list = g_slist_append(netreg->operator_list,
 						netreg->current_operator);
 
