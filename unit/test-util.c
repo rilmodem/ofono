@@ -339,7 +339,9 @@ static void test_decode_encode()
 
 	packed = pack_7bit(gsm_encoded, -1, 0, FALSE, &packed_size, 0xff);
 
-	g_assert(gsm_encoded != NULL);
+	g_free(gsm_encoded);
+
+	g_assert(packed != NULL);
 
 	if (g_test_verbose())
 		g_print("Packed GSM to size of %ld bytes\n", packed_size);
