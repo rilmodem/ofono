@@ -765,6 +765,10 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 
 		if (buffer[i] & 0x80) {
 			c = (buffer[i++] & 0x7f) + ucs2_offset;
+
+			if (c >= 0xd800 && c < 0xe000)
+				return NULL;
+
 			res_len += UTF8_LENGTH(c);
 			j += 1;
 			continue;
