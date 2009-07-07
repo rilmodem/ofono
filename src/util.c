@@ -720,8 +720,15 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 
 	switch (buffer[0]) {
 	case 0x80:
+		if (((length - 1) % 2) == 1) {
+			if (buffer[length - 1] != 0xff)
+				return NULL;
+
+			length = length - 1;
+		}
+
 		for (i = 1; i < length; i += 2)
-			if (buffer[i] == 0xff)
+			if (buffer[i] == 0xff && buffer[i + 1] == 0xff)
 				break;
 
 		return g_convert(buffer + 1, i - 1,
