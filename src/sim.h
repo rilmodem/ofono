@@ -19,12 +19,22 @@
  *
  */
 
+typedef void (*ofono_sim_ready_notify_cb_t)(struct ofono_modem *modem);
+
+typedef void (*ofono_sim_read_binary_cb_t)(struct ofono_modem *modem,
+						const struct ofono_error *error,
+						const unsigned char *data,
+						int len, void *userdata);
 
 void ofono_sim_manager_init(struct ofono_modem *modem);
 void ofono_sim_manager_exit(struct ofono_modem *modem);
 
 gboolean ofono_operator_in_spdi(struct ofono_modem *modem,
 				const struct ofono_network_operator *op);
+int ofono_sim_ready_notify_register(struct ofono_modem *modem,
+					ofono_sim_ready_notify_cb_t cb);
+void ofono_sim_ready_notify_unregister(struct ofono_modem *modem,
+					ofono_sim_ready_notify_cb_t cb);
 
 const char *ofono_operator_name_sim_override(struct ofono_modem *modem,
 						const char *mcc,

@@ -807,6 +807,31 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 		g_timeout_add(0, sim_retrieve_pnn, modem);
 }
 
+int ofono_sim_ready_notify_register(struct ofono_modem *modem,
+					ofono_sim_ready_notify_cb_t cb)
+{
+	if (modem->sim_manager == NULL)
+		return -1;
+
+	modem->sim_manager->ready_notify =
+		g_slist_append(modem->sim_manager->ready_notify, cb);
+
+	return 0;
+}
+
+void ofono_sim_ready_notify_unregister(struct ofono_modem *modem,
+					ofono_sim_ready_notify_cb_t cb)
+{
+	if (modem->sim_manager == NULL)
+		return;
+
+	modem->sim_manager->ready_notify =
+		g_slist_remove(modem->sim_manager->ready_notify, cb);
+}
+
+	return 0;
+}
+
 int ofono_sim_manager_register(struct ofono_modem *modem,
 					struct ofono_sim_ops *ops)
 {
