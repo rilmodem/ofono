@@ -50,7 +50,6 @@ struct sim_manager_data {
 	GSList *own_numbers;
 	GSList *ready_notify;
 
-	char *spn;
 	int dcbyte;
 
 	GSList *spdi;
@@ -119,11 +118,6 @@ static void sim_manager_destroy(gpointer userdata)
 		data->own_numbers = NULL;
 	}
 
-	if (data->spn) {
-		g_free(data->spn);
-		data->spn = NULL;
-	}
-
 	if (data->spdi) {
 		g_slist_foreach(data->spdi, (GFunc)g_free, NULL);
 		g_slist_free(data->spdi);
@@ -172,10 +166,6 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	if (sim->imsi)
 		dbus_gsm_dict_append(&dict, "SubscriberIdentity",
 					DBUS_TYPE_STRING, &sim->imsi);
-
-	if (sim->spn)
-		dbus_gsm_dict_append(&dict, "ServiceProvider",
-					DBUS_TYPE_STRING, &sim->spn);
 
 	own_numbers = get_own_numbers(sim->own_numbers);
 
