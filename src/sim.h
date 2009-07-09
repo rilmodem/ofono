@@ -39,3 +39,5 @@ void ofono_sim_ready_notify_unregister(struct ofono_modem *modem,
 const char *ofono_operator_name_sim_override(struct ofono_modem *modem,
 						const char *mcc,
 						const char *mnc);
+int ofono_sim_get_ready(struct ofono_modem *modem);
+void ofono_sim_set_ready(struct ofono_modem *modem);

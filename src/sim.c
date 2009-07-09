@@ -49,6 +49,7 @@ struct sim_manager_data {
 	char *imsi;
 	GSList *own_numbers;
 	GSList *ready_notify;
+	gboolean ready;
 
 	int dcbyte;
 
@@ -819,7 +820,34 @@ void ofono_sim_ready_notify_unregister(struct ofono_modem *modem,
 		g_slist_remove(modem->sim_manager->ready_notify, cb);
 }
 
+int ofono_sim_get_ready(struct ofono_modem *modem)
+{
+	if (modem->sim_manager == NULL)
+		return 0;
+
+	if (modem->sim_manager->ready == TRUE)
+		return 1;
+
 	return 0;
+}
+
+void ofono_sim_set_ready(struct ofono_modem *modem)
+{
+	GSList *l;
+
+	if (modem->sim_manager == NULL)
+		return;
+
+	if (modem->sim_manager->ready == TRUE)
+		return;
+
+	modem->sim_manager->ready = TRUE;
+
+	for (l = modem->sim_manager->ready_notify; l; l = l->next) {
+		ofono_sim_ready_notify_cb_t cb = l->data;
+
+		cb(modem);
+	}
 }
 
 int ofono_sim_manager_register(struct ofono_modem *modem,
