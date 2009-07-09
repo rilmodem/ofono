@@ -92,44 +92,6 @@ static char **get_own_numbers(GSList *own_numbers)
 	return ret;
 }
 
-/* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
-static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
-						int in_len, int *out_len)
-{
-	guint8 tag;
-	int len;
-	const guint8 *end = pdu + in_len;
-
-	do {
-		while (pdu < end && (*pdu == 0x00 || *pdu == 0xff))
-			pdu ++;
-		if (pdu == end)
-			break;
-
-		tag = *pdu ++;
-		if (!(0x1f & ~tag))
-			while (pdu < end && (*pdu ++ & 0x80));
-		if (pdu == end)
-			break;
-
-		for (len = 0; pdu + 1 < end && (*pdu & 0x80);
-				len = (len | (*pdu ++ & 0x7f)) << 7);
-		if (*pdu & 0x80)
-			break;
-		len |= *pdu ++;
-
-		if (tag == in_tag && pdu + len <= end) {
-			if (out_len)
-				*out_len = len;
-			return pdu;
-		}
-
-		pdu += len;
-	} while (pdu < end);
-
-	return NULL;
-}
-
 struct pnn_operator {
 	char *longname;
 	char *shortname;

@@ -1,0 +1,66 @@
+/*
+ *
+ *  oFono - Open Source Telephony
+ *
+ *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <glib.h>
+
+#include "simutil.h"
+
+/* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
+const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
+					int in_len, int *out_len)
+{
+	guint8 tag;
+	int len;
+	const guint8 *end = pdu + in_len;
+
+	do {
+		while (pdu < end && (*pdu == 0x00 || *pdu == 0xff))
+			pdu ++;
+		if (pdu == end)
+			break;
+
+		tag = *pdu ++;
+		if (!(0x1f & ~tag))
+			while (pdu < end && (*pdu ++ & 0x80));
+		if (pdu == end)
+			break;
+
+		for (len = 0; pdu + 1 < end && (*pdu & 0x80);
+				len = (len | (*pdu ++ & 0x7f)) << 7);
+		if (*pdu & 0x80)
+			break;
+		len |= *pdu ++;
+
+		if (tag == in_tag && pdu + len <= end) {
+			if (out_len)
+				*out_len = len;
+			return pdu;
+		}
+
+		pdu += len;
+	} while (pdu < end);
+
+	return NULL;
+}
