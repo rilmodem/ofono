@@ -418,13 +418,31 @@ static void netlink_status_cb(bool up, uint8_t addr, unsigned idx,
 		up ? "up" : "down", addr, idx);
 
 	if (up) {
-		isi->modem = ofono_modem_register(&ops);
-		if (!isi->modem)
-			return;
-		ofono_modem_set_userdata(isi->modem, isi);
+		if (!client) {
+			client = g_isi_client_create(PN_PHONE_INFO);
+			if (!client)
+				return;
+		}
+
+		if (!isi->modem) {
+			isi->modem = ofono_modem_register(&ops);
+			if (!isi->modem)
+				return;
+
+			ofono_modem_set_userdata(isi->modem, isi);
+		}
 	} else {
 		clear_pending_reqs();
-		ofono_modem_unregister(isi->modem);
+
+		if (client) {
+			g_isi_client_destroy(client);
+			client = NULL;
+		}
+
+		if (isi->modem) {
+			ofono_modem_unregister(isi->modem);
+			isi->modem = NULL;
+		}
 	}
 }
 
@@ -432,7 +450,6 @@ static int isimodem_init(void)
 {
 	isi = g_new0(struct isi_data, 1);
 
-	client = g_isi_client_create(PN_PHONE_INFO);
 	pn_link = g_pn_netlink_start(netlink_status_cb, isi);
 	
 	return 0;
@@ -441,8 +458,17 @@ static int isimodem_init(void)
 static void isimodem_exit(void)
 {
 	clear_pending_reqs();
-	g_isi_client_destroy(client);
-	g_pn_netlink_stop(pn_link);
+
+	if (client) {
+		g_isi_client_destroy(client);
+		client = NULL;
+	}
+
+	if (pn_link) {
+		g_pn_netlink_stop(pn_link);
+		pn_link = NULL;
+	}
+
 	g_free(isi);
 }
 
