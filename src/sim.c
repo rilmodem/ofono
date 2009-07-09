@@ -48,10 +48,10 @@ struct sim_manager_data {
 	DBusMessage *pending;
 	char *imsi;
 	GSList *own_numbers;
+	GSList *ready_notify;
+
 	char *spn;
 	int dcbyte;
-
-	GSList *update_spn_notify;
 
 	GSList *spdi;
 
