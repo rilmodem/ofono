@@ -798,6 +798,14 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 		g_timeout_add(0, sim_retrieve_pnn, modem);
 }
 
+const char *ofono_sim_get_imsi(struct ofono_modem *modem)
+{
+	if (modem->sim_manager == NULL)
+		return NULL;
+
+	return modem->sim_manager->imsi;
+}
+
 int ofono_sim_ready_notify_register(struct ofono_modem *modem,
 					ofono_sim_ready_notify_cb_t cb)
 {
