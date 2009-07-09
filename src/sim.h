@@ -19,15 +19,9 @@
  *
  */
 
-typedef void (*update_spn_cb)(struct ofono_modem *modem, const char *spn,
-		int home_plmn_dpy, int roaming_spn_dpy);
 
 void ofono_sim_manager_init(struct ofono_modem *modem);
 void ofono_sim_manager_exit(struct ofono_modem *modem);
-int ofono_spn_update_notify_register(struct ofono_modem *modem,
-		update_spn_cb cb);
-int ofono_spn_update_notify_unregister(struct ofono_modem *modem,
-		update_spn_cb cb);
 
 gboolean ofono_operator_in_spdi(struct ofono_modem *modem,
 				const struct ofono_network_operator *op);

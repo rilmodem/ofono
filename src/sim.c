@@ -848,29 +848,3 @@ void ofono_sim_manager_exit(struct ofono_modem *modem)
 
 	modem->sim_manager = 0;
 }
-
-int ofono_spn_update_notify_register(struct ofono_modem *modem,
-		update_spn_cb cb)
-{
-	if (modem->sim_manager == NULL)
-		return -1;
-
-	modem->sim_manager->update_spn_notify =
-		g_slist_append(modem->sim_manager->update_spn_notify, cb);
-
-	if (modem->sim_manager->spn)
-		sim_spn_notify(modem, cb);
-
-	return 0;
-}
-
-int ofono_spn_update_notify_unregister(struct ofono_modem *modem,
-		update_spn_cb cb)
-{
-	if (modem->sim_manager == NULL)
-		return -1;
-
-	modem->sim_manager->update_spn_notify =
-		g_slist_remove(modem->sim_manager->update_spn_notify, cb);
-	return 0;
-}
