@@ -341,28 +341,6 @@ static gboolean sim_retrieve_spn(void *user_data)
 	return FALSE;
 }
 
-static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
-		void *data)
-{
-	struct ofono_modem *modem = data;
-	struct sim_manager_data *sim = modem->sim_manager;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		return;
-
-	sim->imsi = g_strdup(imsi);
-}
-
-static gboolean sim_retrieve_imsi(void *user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct sim_manager_data *sim = modem->sim_manager;
-
-	sim->ops->read_imsi(modem, sim_imsi_cb, modem);
-
-	return FALSE;
-}
-
 static void sim_msisdn_read_cb(const struct ofono_error *error,
 		const unsigned char *sdata, int length, void *data)
 {
@@ -786,6 +764,42 @@ static gboolean sim_retrieve_pnn(void *user_data)
 	return FALSE;
 }
 
+static void sim_ready(struct ofono_modem *modem)
+{
+}
+
+static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
+		void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("Unable to read IMSI, emergency calls only");
+		return;
+	}
+
+	sim->imsi = g_strdup(imsi);
+
+	ofono_sim_ready(modem);
+}
+
+static gboolean sim_retrieve_imsi(void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct sim_manager_data *sim = modem->sim_manager;
+
+	if (!sim->ops->read_imsi) {
+		ofono_error("IMSI retrieval not implemented,"
+				" only emergency calls will be available");
+		return FALSE;
+	}
+
+	sim->ops->read_imsi(modem, sim_imsi_cb, modem);
+
+	return FALSE;
+}
+
 static void sim_op_error(struct ofono_modem *modem)
 {
 	struct sim_manager_data *sim = modem->sim_manager;
@@ -967,20 +981,27 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 
 	modem_add_interface(modem, SIM_MANAGER_INTERFACE);
 
-	if (modem->sim_manager->ops->read_file_transparent)
-		g_timeout_add(0, sim_retrieve_spn, modem);
+	ofono_sim_ready_notify_register(modem, sim_ready);
 
-	if (modem->sim_manager->ops->read_imsi)
-		g_timeout_add(0, sim_retrieve_imsi, modem);
-
-	if (modem->sim_manager->ops->read_file_linear)
-		g_timeout_add(0, sim_retrieve_own_number, modem);
-
-	if (modem->sim_manager->ops->read_file_transparent)
-		g_timeout_add(0, sim_retrieve_spdi, modem);
-
-	if (modem->sim_manager->ops->read_file_linear)
-		g_timeout_add(0, sim_retrieve_pnn, modem);
+	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
+	 * The assumption here is that if sim manager is being initialized,
+	 * then sim commands are implemented, and the sim manager is then
+	 * responsible for checking the PIN, reading the IMSI and signaling
+	 * SIM ready condition.
+	 *
+	 * The procedure according to 31.102 is roughly:
+	 * Read EFecc
+	 * Read EFli and EFpl
+	 * SIM Pin check
+	 * Read EFust
+	 * Read EFest
+	 * Read IMSI
+	 *
+	 * At this point we signal the SIM ready condition and allow
+	 * arbitrary files to be written or read, assuming their presence
+	 * in the EFust
+	 */
+	g_timeout_add(0, sim_retrieve_imsi, modem);
 }
 
 const char *ofono_sim_get_imsi(struct ofono_modem *modem)
