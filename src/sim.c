@@ -821,9 +821,15 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
 	int total = op->length / op->record_length;
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		op->cb(modem, 1, op->structure, op->length, op->current,
-			data, op->record_length, op->userdata);
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		if (op->current == 1)
+			sim_op_error(modem);
+
+		return;
+	}
+
+	op->cb(modem, 1, op->structure, op->length, op->current,
+		data, op->record_length, op->userdata);
 
 	if (op->current == total) {
 		op = g_queue_pop_head(sim->simop_q);
