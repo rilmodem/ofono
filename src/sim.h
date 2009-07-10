@@ -21,10 +21,11 @@
 
 typedef void (*ofono_sim_ready_notify_cb_t)(struct ofono_modem *modem);
 
-typedef void (*ofono_sim_read_binary_cb_t)(struct ofono_modem *modem,
-						const struct ofono_error *error,
-						const unsigned char *data,
-						int len, void *userdata);
+typedef void (*ofono_sim_file_read_cb_t)(struct ofono_modem *modem, int ok,
+					enum ofono_sim_file_structure structure,
+					int total_length, int record,
+					const unsigned char *data,
+					int record_length, void *userdata);
 
 void ofono_sim_manager_init(struct ofono_modem *modem);
 void ofono_sim_manager_exit(struct ofono_modem *modem);
@@ -43,3 +44,17 @@ const char *ofono_operator_name_sim_override(struct ofono_modem *modem,
 						const char *mnc);
 int ofono_sim_get_ready(struct ofono_modem *modem);
 void ofono_sim_set_ready(struct ofono_modem *modem);
+
+/* This will queue an operation to read all available records with id from the
+ * SIM.  Callback cb will be called every time a record has been read, or once
+ * if an error has occurred.  For transparent files, the callback will only
+ * be called once.
+ *
+ * Returns 0 if the request could be queued, -1 otherwise.
+ */
+int ofono_sim_read(struct ofono_modem *modem, int id,
+			ofono_sim_file_read_cb_t cb, void *data);
+
+int ofono_sim_write(struct ofono_modem *modem, int id,
+			enum ofono_sim_file_structure structure, int record,
+			const unsigned char *data, int length);

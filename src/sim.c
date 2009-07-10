@@ -42,6 +42,19 @@
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
+static gboolean sim_op_next(gpointer user_data);
+static gboolean sim_op_retrieve_next(gpointer user);
+
+struct sim_file_op {
+	int id;
+	enum ofono_sim_file_structure structure;
+	int length;
+	int record_length;
+	int current;
+	ofono_sim_file_read_cb_t cb;
+	void *userdata;
+};
+
 struct sim_manager_data {
 	struct ofono_sim_ops *ops;
 	int flags;
@@ -50,6 +63,7 @@ struct sim_manager_data {
 	GSList *own_numbers;
 	GSList *ready_notify;
 	gboolean ready;
+	GQueue *simop_q;
 
 	int dcbyte;
 
@@ -97,6 +111,11 @@ struct pnn_operator {
 	char *shortname;
 };
 
+static void sim_file_op_free(struct sim_file_op *node)
+{
+	g_free(node);
+}
+
 static struct sim_manager_data *sim_manager_create()
 {
 	return g_try_new0(struct sim_manager_data, 1);
@@ -117,6 +136,12 @@ static void sim_manager_destroy(gpointer userdata)
 		g_slist_foreach(data->own_numbers, (GFunc)g_free, NULL);
 		g_slist_free(data->own_numbers);
 		data->own_numbers = NULL;
+	}
+
+	if (data->simop_q) {
+		g_queue_foreach(data->simop_q, (GFunc)sim_file_op_free, NULL);
+		g_queue_free(data->simop_q);
+		data->simop_q = NULL;
 	}
 
 	if (data->spdi) {
@@ -759,6 +784,166 @@ static gboolean sim_retrieve_pnn(void *user_data)
 			sim_pnn_info_cb, modem);
 
 	return FALSE;
+}
+
+static void sim_op_error(struct ofono_modem *modem)
+{
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
+
+	op->cb(modem, 0, 0, 0, 0, 0, 0, op->userdata);
+
+	sim_file_op_free(op);
+
+	if (g_queue_get_length(sim->simop_q) > 0)
+		g_timeout_add(0, sim_op_next, modem);
+}
+
+static void sim_op_retrieve_cb(const struct ofono_error *error,
+				const unsigned char *data, int len, void *user)
+{
+	struct ofono_modem *modem = user;
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
+	int total = op->length / op->record_length;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		op->cb(modem, 1, op->structure, op->length, op->current,
+			data, op->record_length, op->userdata);
+
+	if (op->current == total) {
+		op = g_queue_pop_head(sim->simop_q);
+
+		sim_file_op_free(op);
+
+		if (g_queue_get_length(sim->simop_q) > 0)
+			g_timeout_add(0, sim_op_next, modem);
+	} else {
+		op->current += 1;
+		g_timeout_add(0, sim_op_retrieve_next, modem);
+	}
+}
+
+static gboolean sim_op_retrieve_next(gpointer user)
+{
+	struct ofono_modem *modem = user;
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
+
+	switch (op->structure) {
+	case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
+		if (!sim->ops->read_file_transparent) {
+			sim_op_error(modem);
+			return FALSE;
+		}
+
+		sim->ops->read_file_transparent(modem, op->id, 0, op->length,
+						sim_op_retrieve_cb, modem);
+		break;
+	case OFONO_SIM_FILE_STRUCTURE_FIXED:
+		if (!sim->ops->read_file_linear) {
+			sim_op_error(modem);
+			return FALSE;
+		}
+
+		sim->ops->read_file_linear(modem, op->id, op->current,
+						op->record_length,
+						sim_op_retrieve_cb, modem);
+		break;
+	case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
+		if (!sim->ops->read_file_cyclic) {
+			sim_op_error(modem);
+			return FALSE;
+		}
+
+		sim->ops->read_file_cyclic(modem, op->id, op->current,
+						op->record_length,
+						sim_op_retrieve_cb, modem);
+		break;
+	default:
+		ofono_error("Unrecognized file structure, this can't happen");
+	}
+
+	return FALSE;
+}
+
+static void sim_op_info_cb(const struct ofono_error *error, int length,
+				enum ofono_sim_file_structure structure,
+				int record_length, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		sim_op_error(modem);
+		return;
+	}
+
+	op->structure = structure;
+	op->length = length;
+	op->record_length = record_length;
+	op->current = 1;
+
+	g_timeout_add(0, sim_op_retrieve_next, modem);
+}
+
+static gboolean sim_op_next(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_file_op *op;
+
+	if (!sim->simop_q)
+		return FALSE;
+
+	op = g_queue_peek_head(sim->simop_q);
+
+	sim->ops->read_file_info(modem, op->id, sim_op_info_cb, modem);
+
+	return FALSE;
+}
+
+int ofono_sim_read(struct ofono_modem *modem, int id,
+			ofono_sim_file_read_cb_t cb, void *data)
+{
+	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_file_op *op;
+
+	if (!cb)
+		return -1;
+
+	if (modem->sim_manager == NULL)
+		return -1;
+
+	if (!sim->ops)
+		return -1;
+
+	if (!sim->ops->read_file_info)
+		return -1;
+
+	if (!sim->simop_q)
+		sim->simop_q = g_queue_new();
+
+	op = g_new0(struct sim_file_op, 1);
+
+	op->id = id;
+	op->cb = cb;
+	op->userdata = data;
+
+	g_queue_push_tail(sim->simop_q, op);
+
+	if (g_queue_get_length(sim->simop_q) == 1)
+		g_timeout_add(0, sim_op_next, modem);
+
+	return 0;
+}
+
+int ofono_sim_write(struct ofono_modem *modem, int id,
+			enum ofono_sim_file_structure structure, int record,
+			const unsigned char *data, int length)
+{
+	return -1;
 }
 
 static void initialize_sim_manager(struct ofono_modem *modem)
