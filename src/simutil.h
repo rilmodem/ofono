@@ -18,5 +18,14 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+
+enum sim_fileid {
+	SIM_EFMSISDN_FILEID = 0x6f40,
+	SIM_EFSPN_FILEID = 0x6f46,
+	SIM_EFPNN_FILEID = 0x6fc5,
+	SIM_EFOPL_FILEID = 0x6fc6,
+	SIM_EFSPDI_FILEID = 0x6fcd,
+};
+
 const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 					int in_len, int *out_len);

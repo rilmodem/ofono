@@ -39,6 +39,7 @@
 #include "util.h"
 #include "smsutil.h"
 #include "sim.h"
+#include "simutil.h"
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
@@ -253,14 +254,6 @@ static char *network_name_parse(const unsigned char *buffer, int length)
 
 	return NULL;
 }
-
-enum sim_fileids {
-	SIM_EFMSISDN_FILEID = 0x6f40,
-	SIM_EFSPN_FILEID = 0x6f46,
-	SIM_EFPNN_FILEID = 0x6fc5,
-	SIM_EFOPL_FILEID = 0x6fc6,
-	SIM_EFSPDI_FILEID = 0x6fcd,
-};
 
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
 #define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
