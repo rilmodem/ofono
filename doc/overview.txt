@@ -1,0 +1,154 @@
+oFono - Open Source Telephony
+*****************************
+
+Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
+
+
+Mission statement
+=================
+
+The overall goal of the oFono project is to create a telephony host stack
+for embedded/mobile and desktop systems based on Linux.
+
+It currently targets GSM/UMTS User Equipment (UE) based on 3GPP standards,
+but is of course not limited to that. Extensions for other telephony systems
+like CDMA/EVDO are more than welcome.
+
+Within oFono there is clear abstraction between the application interfaces
+based on D-Bus, the hardware level (via drivers) and the integration with
+other system components (plugins). The whole architecture is modular and
+flexible.
+
+
+Telephony features
+==================
+
+The oFono stack will support the majority of the features from the 3GPP
+specification, but not all of them. The whole standard is pretty complex
+and some features and not used in any mobile network so far, some of them
+are outdated and have no relevance anymore. This paragraph tries to give
+some insights on what has been implemented so far, what is coming in the
+future and especially what will not be part of oFono.
+
+Current implemented features:
+
+	Modem abstraction
+
+		Currently there are two modem drivers available.
+
+		The "atmodem" driver handles hardware based on the 3GPP
+		TS 27.007 standard.
+
+		The "isimodem" driver handles Nokia based PhoNet modems.
+
+	Network registration
+
+		The network registration interface contains support for
+		network detection. It also handles the automatic or manual
+		registration to a mobile network.
+
+		Additional information about the current network can be
+		easily retrieved and displayed to the user.
+
+	Voice call handling
+
+		The voice call interface handles simple call creation and
+		termination. It also supports 3way-calling and multi-party
+		features.
+
+		This is only for voice control. It doesn't contain support
+		for the voice data path/routing.
+
+	Advanced voice call control
+
+		Features like COLR/CLIR/CLIP/COLP are supported by the
+		voice call handling interface. 
+
+		The support for call forwarding and call waiting is also
+		present.
+
+		Interfaces for call barring and advice of charge do exist,
+		but highly depend on if the operator supports them.
+
+	Call history
+
+		The call history is realized via a plugin interface and
+		not handled directly. This allows an easy integration with
+		storage systems like Evolution-Data-Server.
+
+	Phonebook support
+
+		The storage of the SIM card is not used. The only supported
+		feature is to export the contacts stored on the SIM card to
+		some third-part entity.
+
+		SIM card storage is limited, slow and not flexible enough
+		for modem telephony applications.
+
+	Short message service
+
+		The SMS support is available, but is currently still missing
+		some integration with the driver framework.
+
+
+Work in progress features:
+
+	SIM PIN handling
+
+		At this moment only SIM cards with deactivated PIN request
+		are supported. The full support for SIM PIN is planned, but
+		not yet implemented.
+
+	Cell broadcast and USSD
+
+		Both features are work in progress right now.
+
+	GPRS data connection
+
+		No work on this has been done so far, but it is planned
+		feature.
+
+Not implemented features:
+
+	SIM card storage
+
+		The SIM card storage will not be used by oFono. It is slow,
+		limited in size and flexibility. It is an outdated interface
+		that makes no sense in a modern telephony system.
+
+		Export of stored contacts from the SIM card is supported for
+		legacy reasons and to allow a smooth transition.
+
+	WAP support
+
+		The WAP feature is outdated and uses full Internet access
+		with an embedded browser is the future.
+
+	MMS support
+
+		The MMS support should not be part of oFono itself. The best
+		idea is to implement a MMS service that runs in the user
+		session and uses oFono's SMS interface to listen for
+		notifications.
+
+		Similar to the split between BlueZ and OBEX daemon.
+
+		Especially when it comes to image conversion and other tasks
+		that MMS support requires it is important to NOT do this as
+		a system daemon.
+
+	EMS support
+
+		This is an Ericsson specific standard and not widely spread
+		across the handset manufactures.
+
+	Video telephony
+
+		Currently there are no plans to support this. The support
+		from the networks and available handsets are still limited.
+
+		This needs re-evaluation once such a service becomes more
+		prominent.
+
+		A similar split like with MMS might be a good idea.
+
