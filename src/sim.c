@@ -341,29 +341,35 @@ static gboolean sim_retrieve_spn(void *user_data)
 	return FALSE;
 }
 
-static void sim_msisdn_read_cb(const struct ofono_error *error,
-		const unsigned char *sdata, int length, void *data)
+static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
-	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
+	int total = length / record_length;
 	struct ofono_phone_number *ph;
 	int number_len;
 	int ton_npi;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		goto skip;
+	if (!ok)
+		return;
 
-	if (length < sim->own_numbers_size)
-		goto skip;
+	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
+		return;
+
+	if (length < 14 || record_length < 14 || length < record_length)
+		return;
 
 	/* Skip Alpha-Identifier field */
-	sdata += sim->own_numbers_size - 14;
+	data += record_length - 14;
 
-	number_len = *sdata++;
-	ton_npi = *sdata++;
+	number_len = *data++;
+	ton_npi = *data++;
 
 	if (number_len > 11 || ton_npi == 0xff)
-		goto skip;
+		goto check;
 
 	ph = g_new(struct ofono_phone_number, 1);
 
@@ -372,51 +378,27 @@ static void sim_msisdn_read_cb(const struct ofono_error *error,
 	/* BCD coded, however the TON/NPI is given by the first byte */
 	number_len = (number_len - 1) * 2;
 
-	extract_bcd_number(sdata, number_len, ph->number);
+	extract_bcd_number(data, number_len, ph->number);
 
 	sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
 
-skip:
-	sim->own_numbers_current ++;
-	if (sim->own_numbers_current < sim->own_numbers_num)
-		sim->ops->read_file_linear(modem, SIM_EFMSISDN_FILEID,
-						sim->own_numbers_current,
-						sim->own_numbers_size,
-						sim_msisdn_read_cb, modem);
-	else
+check:
+	if (record == total && sim->own_numbers) {
+		char **own_numbers;
+		DBusConnection *conn = dbus_gsm_connection();
+
 		/* All records retrieved */
-		if (sim->own_numbers)
-			sim->own_numbers = g_slist_reverse(sim->own_numbers);
-}
+		sim->own_numbers = g_slist_reverse(sim->own_numbers);
 
-static void sim_msisdn_info_cb(const struct ofono_error *error, int length,
-				enum ofono_sim_file_structure structure,
-				int record_length, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct sim_manager_data *sim = modem->sim_manager;
+		own_numbers = get_own_numbers(sim->own_numbers);
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length < 14 ||
-			record_length < 14 ||
-			structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
-		return;
-
-	sim->own_numbers_current = 0;
-	sim->own_numbers_size = record_length;
-	sim->own_numbers_num = length / record_length;
-	sim->ops->read_file_linear(modem, SIM_EFMSISDN_FILEID, 0,
-			record_length, sim_msisdn_read_cb, modem);
-}
-
-static gboolean sim_retrieve_own_number(void *user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct sim_manager_data *sim = modem->sim_manager;
-
-	sim->ops->read_file_info(modem, SIM_EFMSISDN_FILEID,
-			sim_msisdn_info_cb, modem);
-
-	return FALSE;
+		dbus_gsm_signal_array_property_changed(conn, modem->path,
+							SIM_MANAGER_INTERFACE,
+							"SubscriberNumbers",
+							DBUS_TYPE_STRING,
+							&own_numbers);
+		dbus_gsm_free_string_array(own_numbers);
+	}
 }
 
 struct sim_operator {
@@ -766,6 +748,7 @@ static gboolean sim_retrieve_pnn(void *user_data)
 
 static void sim_ready(struct ofono_modem *modem)
 {
+	ofono_sim_read(modem, SIM_EFMSISDN_FILEID, sim_msisdn_read_cb, NULL);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
