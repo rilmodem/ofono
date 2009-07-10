@@ -70,10 +70,6 @@ struct sim_manager_data {
 
 	GSList *spdi;
 
-	int own_numbers_num;
-	int own_numbers_size;
-	int own_numbers_current;
-
 	GSList *opl;
 	int opl_num;
 	int opl_size;
