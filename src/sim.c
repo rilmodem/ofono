@@ -254,15 +254,6 @@ static char *network_name_parse(const unsigned char *buffer, int length)
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
 #define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
 
-static void sim_spn_notify(struct ofono_modem *modem, update_spn_cb cb)
-{
-	struct sim_manager_data *sim = modem->sim_manager;
-
-	cb(modem, sim->spn,
-			sim->dcbyte & SIM_EFSPN_DC_HOME_PLMN_BIT,
-			!(sim->dcbyte & SIM_EFSPN_DC_ROAMING_SPN_BIT));
-}
-
 static void sim_spn_read_cb(const struct ofono_error *error,
 		const unsigned char *sdata, int length, void *data)
 {
