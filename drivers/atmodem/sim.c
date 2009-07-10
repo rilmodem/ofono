@@ -86,6 +86,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	flen = (response[2] << 8) | response[3];
 	str = response[13];
+
 	if (str == 0x01)
 		rlen = response[14];
 	else
@@ -106,6 +107,7 @@ static void at_sim_read_info(struct ofono_modem *modem, int fileid,
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i,0,0,15", fileid);
+
 	if (g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_info_cb, cbd, g_free) > 0)
 		return;
@@ -149,6 +151,7 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 
 	g_at_result_iter_next_number(&iter, &sw1);
 	g_at_result_iter_next_number(&iter, &sw2);
+
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
 		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 		(sw1 == 0x90 && sw2 != 0x00)) {
@@ -176,6 +179,7 @@ static void at_sim_read_binary(struct ofono_modem *modem, int fileid,
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,%i,%i,%i", fileid,
 			start >> 8, start & 0xff, length);
+
 	if (g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
@@ -203,6 +207,7 @@ static void at_sim_read_record(struct ofono_modem *modem, int fileid,
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=178,%i,%i,4,%i", fileid,
 			record, length);
+
 	if (g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
@@ -245,6 +250,7 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 
 	g_at_result_iter_next_number(&iter, &sw1);
 	g_at_result_iter_next_number(&iter, &sw2);
+
 	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 		(sw1 == 0x90 && sw2 != 0x00)) {
 		DECLARE_FAILURE(e);
@@ -273,8 +279,10 @@ static void at_sim_update_binary(struct ofono_modem *modem, int fileid,
 
 	len = sprintf(buf, "AT+CRSM=214,%i,%i,%i,%i,", fileid,
 			start >> 8, start & 0xff, length);
+
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhx", *value++);
+
 	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
 
@@ -308,8 +316,10 @@ static void at_sim_update_record(struct ofono_modem *modem, int fileid,
 
 	len = sprintf(buf, "AT+CRSM=220,%i,%i,4,%i,", fileid,
 			record + 1, length);
+
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhx", *value++);
+
 	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
 
@@ -341,8 +351,10 @@ static void at_sim_update_cyclic(struct ofono_modem *modem, int fileid,
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=220,%i,0,3,%i,", fileid, length);
+
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhx", *value++);
+
 	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
 
@@ -372,6 +384,7 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	dump_response("at_cimi_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
+
 	if (!ok) {
 		cb(&error, NULL, cbd->data);
 		return;
