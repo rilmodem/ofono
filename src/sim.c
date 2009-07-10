@@ -251,9 +251,6 @@ static char *network_name_parse(const unsigned char *buffer, int length)
 	return NULL;
 }
 
-#define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
-#define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
-
 static void sim_spn_read_cb(const struct ofono_error *error,
 		const unsigned char *sdata, int length, void *data)
 {

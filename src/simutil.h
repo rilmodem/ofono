@@ -27,5 +27,8 @@ enum sim_fileid {
 	SIM_EFSPDI_FILEID = 0x6fcd,
 };
 
+#define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
+#define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
+
 const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 					int in_len, int *out_len);
