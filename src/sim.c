@@ -936,6 +936,10 @@ int ofono_sim_read(struct ofono_modem *modem, int id,
 	if (!sim->ops->read_file_info)
 		return -1;
 
+	/* TODO: We must first check the EFust table to see whether
+	 * this file can be read at all
+	 */
+
 	if (!sim->simop_q)
 		sim->simop_q = g_queue_new();
 
