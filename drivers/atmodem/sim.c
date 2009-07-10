@@ -202,7 +202,7 @@ static void at_sim_read_record(struct ofono_modem *modem, int fileid,
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=178,%i,%i,4,%i", fileid,
-			record + 1, length);
+			record, length);
 	if (g_at_chat_send(at->parser, buf, crsm_prefix,
 				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
