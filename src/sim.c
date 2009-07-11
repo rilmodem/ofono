@@ -208,49 +208,6 @@ static GDBusMethodTable sim_manager_methods[] = {
 
 static GDBusSignalTable sim_manager_signals[] = { { } };
 
-static char *network_name_parse(const unsigned char *buffer, int length)
-{
-	unsigned char *endp;
-	unsigned char dcs;
-	int i;
-
-	if (length < 1)
-		return NULL;
-
-	dcs = *buffer ++;
-	length --;
-
-	/* TODO: "The MS should add the letters for the Country's
-	 * Initials and a separator (e.g. a space)" */
-	if (is_bit_set(dcs, 4))
-		ofono_error("Network Name DCS implies country initials");
-
-	switch (dcs & (7 << 4)) {
-	case 0x00:
-		endp = memchr(buffer, 0xff, length);
-		if (endp)
-			length = endp - buffer;
-		return convert_gsm_to_utf8(buffer, length,
-				NULL, NULL, 0xff);
-	case 0x10:
-		if ((length % 2) == 1) {
-			if (buffer[length - 1] != 0xff)
-				return NULL;
-
-			length = length - 1;
-		}
-
-		for (i = 0; i < length; i += 2)
-			if (buffer[i] == 0xff && buffer[i + 1] == 0xff)
-				break;
-
-		return g_convert(buffer, length, "UTF-8//TRANSLIT", "UCS-2BE",
-					NULL, NULL, NULL);
-	}
-
-	return NULL;
-}
-
 static void sim_spn_read_cb(const struct ofono_error *error,
 		const unsigned char *sdata, int length, void *data)
 {

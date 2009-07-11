@@ -23,9 +23,12 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
 #include <glib.h>
 
 #include "simutil.h"
+#include "util.h"
 
 /* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
 const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
@@ -63,4 +66,55 @@ const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 	} while (pdu < end);
 
 	return NULL;
+}
+
+char *sim_network_name_parse(const unsigned char *buffer, int length,
+				gboolean *add_ci)
+{
+	char *ret = NULL;
+	unsigned char *endp;
+	unsigned char dcs;
+	int i;
+	gboolean ci = FALSE;
+
+	if (length < 1)
+		return NULL;
+
+	dcs = *buffer ++;
+	length --;
+
+	/* "The MS should add the letters for the Country's Initials and a
+	 * separator (e.g. a space)" */
+	if (is_bit_set(dcs, 4))
+		ci = TRUE;
+
+	switch (dcs & (7 << 4)) {
+	case 0x00:
+		endp = memchr(buffer, 0xff, length);
+		if (endp)
+			length = endp - buffer;
+		ret = convert_gsm_to_utf8(buffer, length,
+				NULL, NULL, 0xff);
+		break;
+	case 0x10:
+		if ((length % 2) == 1) {
+			if (buffer[length - 1] != 0xff)
+				return NULL;
+
+			length = length - 1;
+		}
+
+		for (i = 0; i < length; i += 2)
+			if (buffer[i] == 0xff && buffer[i + 1] == 0xff)
+				break;
+
+		ret = g_convert(buffer, length, "UTF-8//TRANSLIT", "UCS-2BE",
+					NULL, NULL, NULL);
+		break;
+	}
+
+	if (add_ci)
+		*add_ci = ci;
+
+	return ret;
 }

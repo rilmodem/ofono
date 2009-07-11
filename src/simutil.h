@@ -32,3 +32,5 @@ enum sim_fileid {
 
 const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 					int in_len, int *out_len);
+char *sim_network_name_parse(const unsigned char *buffer, int length,
+				gboolean *add_ci);
