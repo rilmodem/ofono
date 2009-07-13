@@ -165,26 +165,26 @@ void sim_pnn_operator_free(struct sim_pnn_operator *oper)
 
 static void parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
 {
+	static const char digit_lut[] = "0123456789*#abd\0";
 	guint8 digit;
 
 	digit = (bcd[0] >> 0) & 0xf;
-	if (digit != 0xf)
-		*mcc ++ = '0' + digit;
+	*mcc++ = digit_lut[digit];
+
 	digit = (bcd[0] >> 4) & 0xf;
-	if (digit != 0xf)
-		*mcc ++ = '0' + digit;
+	*mcc++ = digit_lut[digit];
+
 	digit = (bcd[1] >> 0) & 0xf;
-	if (digit != 0xf)
-		*mcc ++ = '0' + digit;
+	*mcc++ = digit_lut[digit];
+
 	digit = (bcd[2] >> 0) & 0xf;
-	if (digit != 0xf)
-		*mnc ++ = '0' + digit;
+	*mnc++ = digit_lut[digit];
+
 	digit = (bcd[2] >> 4) & 0xf;
-	if (digit != 0xf)
-		*mnc ++ = '0' + digit;
+	*mnc++ = digit_lut[digit];
+
 	digit = (bcd[1] >> 4) & 0xf;
-	if (digit != 0xf)
-		*mnc ++ = '0' + digit;
+	*mnc++ = digit_lut[digit];
 }
 
 static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
