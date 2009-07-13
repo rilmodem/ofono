@@ -103,11 +103,6 @@ static char **get_own_numbers(GSList *own_numbers)
 	return ret;
 }
 
-struct pnn_operator {
-	char *longname;
-	char *shortname;
-};
-
 static void sim_file_op_free(struct sim_file_op *node)
 {
 	g_free(node);
@@ -592,28 +587,6 @@ const char *ofono_operator_name_sim_override(struct ofono_modem *modem,
 	opl_op = l->data;
 
 	return sim->pnn[opl_op->id - 1].longname;
-}
-
-static gboolean pnn_operator_parse(struct pnn_operator *oper,
-				const guint8 *tlv, int length)
-{
-	const char *name;
-	int namelength;
-
-	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
-	if (!name || !namelength)
-		return FALSE;
-	oper->longname = network_name_parse(name, namelength);
-
-	name = ber_tlv_find_by_tag(tlv, 0x45, length, &namelength);
-	if (name && namelength)
-		oper->shortname = network_name_parse(name, namelength);
-
-	if (ber_tlv_find_by_tag(tlv, 0x80, length, &namelength))
-		ofono_debug("%i octets of addition PLMN information "
-				"present in EF-PNN");
-
-	return TRUE;
 }
 
 static void sim_pnn_read_cb(const struct ofono_error *error,

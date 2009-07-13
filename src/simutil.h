@@ -30,7 +30,19 @@ enum sim_fileid {
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
 #define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
 
+struct sim_pnn_operator {
+	char *longname;
+	gboolean long_ci;
+	char *shortname;
+	gboolean short_ci;
+	char *info;
+};
+
+void sim_pnn_operator_free(struct sim_pnn_operator *oper);
+
 const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 					int in_len, int *out_len);
 char *sim_network_name_parse(const unsigned char *buffer, int length,
 				gboolean *add_ci);
+gboolean sim_pnn_operator_parse(struct sim_pnn_operator *oper,
+				const guint8 *tlv, int length);
