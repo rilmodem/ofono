@@ -74,11 +74,6 @@ struct sim_manager_data {
 	int opl_num;
 	int opl_size;
 	int opl_current;
-
-	struct pnn_operator *pnn;
-	int pnn_num;
-	int pnn_size;
-	int pnn_current;
 };
 
 static char **get_own_numbers(GSList *own_numbers)
@@ -146,18 +141,6 @@ static void sim_manager_destroy(gpointer userdata)
 		g_slist_foreach(data->opl, (GFunc)g_free, NULL);
 		g_slist_free(data->opl);
 		data->opl = NULL;
-	}
-
-	if (data->pnn) {
-		for (i = 0; i < data->pnn_num; i ++) {
-			if (data->pnn[i].longname)
-				g_free(data->pnn[i].longname);
-			if (data->pnn[i].shortname)
-				g_free(data->pnn[i].shortname);
-		}
-		g_free(data->pnn);
-		data->pnn = NULL;
-		data->pnn_num = 0;
 	}
 }
 
