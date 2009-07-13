@@ -30,25 +30,27 @@ enum sim_fileid {
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
 #define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
 
-struct sim_pnn_operator {
-	char *longname;
-	gboolean long_ci;
-	char *shortname;
-	gboolean short_ci;
-	char *info;
-};
-
 struct sim_spdi {
 	GSList *operators;
 };
 
-void sim_pnn_operator_free(struct sim_pnn_operator *oper);
+struct sim_eons {
+	struct pnn_operator *pnn_list;
+	GSList *opl_list;
+	gboolean pnn_valid;
+	int pnn_max;
+};
 
-const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
-					int in_len, int *out_len);
-char *sim_network_name_parse(const unsigned char *buffer, int length,
-				gboolean *add_ci);
-struct sim_pnn_operator *sim_pnn_operator_parse(const guint8 *tlv, int length);
+struct sim_eons *sim_eons_new(int pnn_records);
+void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
+				const guint8 *tlv, int length);
+gboolean sim_eons_pnn_is_empty(struct sim_eons *eons);
+void sim_eons_add_opl_record(struct sim_eons *eons,
+				const guint8 *tlv, int length);
+void sim_eons_optimize(struct sim_eons *eons);
+const char *sim_eons_lookup(struct sim_eons *eons, const char *mcc,
+				const char *mnc, guint16 lac);
+void sim_eons_free(struct sim_eons *eons);
 
 struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length);
 gboolean sim_spdi_lookup(struct sim_spdi *spdi,

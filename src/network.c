@@ -65,8 +65,8 @@ struct network_registration_data {
 	DBusMessage *pending;
 	int signal_strength;
 	char *spname;
-	GSList *pnn_list;
 	struct sim_spdi *spdi;
+	struct sim_eons *eons;
 };
 
 static void operator_list_callback(const struct ofono_error *error, int total,
@@ -571,8 +571,11 @@ static void network_registration_destroy(gpointer userdata)
 
 	g_slist_free(data->operator_list);
 
-	g_slist_foreach(data->pnn_list, (GFunc)sim_pnn_operator_free, NULL);
-	g_slist_free(data->pnn_list);
+	if (data->eons)
+		sim_eons_free(data->eons);
+
+	if (data->spdi)
+		sim_spdi_free(data->spdi);
 
 	if (data->spname)
 		g_free(data->spname);
@@ -1106,6 +1109,34 @@ static void signal_strength_callback(const struct ofono_error *error,
 	ofono_signal_strength_notify(modem, strength);
 }
 
+static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct network_registration_data *netreg = modem->network_registration;
+	int total = length / record_length;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
+		return;
+
+	if (length < 8 || record_length < 8 || length < record_length)
+		return;
+
+	/* If we don't have PNN, ignore this completely */
+	if (!netreg->eons)
+		return;
+
+	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
+
+	if (record == total)
+		sim_eons_optimize(netreg->eons);
+}
+
 static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 				enum ofono_sim_file_structure structure,
 				int length, int record,
@@ -1113,7 +1144,6 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 				int record_length, void *userdata)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	struct sim_pnn_operator *oper;
 	int total = length / record_length;
 
 	if (!ok)
@@ -1125,19 +1155,17 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 	if (length < 3 || record_length < 3 || length < record_length)
 		return;
 
-	oper = sim_pnn_operator_parse(data, record_length);
+	if (!netreg->eons)
+		netreg->eons = sim_eons_new(total);
 
-	if (oper)
-		netreg->pnn_list = g_slist_prepend(netreg->pnn_list, oper);
+	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
 
 	/* If PNN is not present then OPL is not useful, don't
 	 * retrieve it.  If OPL is not there then PNN[1] will
 	 * still be used for the HPLMN and/or EHPLMN, if PNN
 	 * is present.  */
-	if (record == total && g_slist_length(netreg->pnn_list) > 0) {
-		netreg->pnn_list = g_slist_reverse(netreg->pnn_list);
+	if (record == total && !sim_eons_pnn_is_empty(netreg->eons))
 		ofono_sim_read(modem, SIM_EFOPL_FILEID, sim_opl_read_cb, NULL);
-	}
 }
 
 static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,

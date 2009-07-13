@@ -31,14 +31,30 @@
 #include "simutil.h"
 #include "util.h"
 
+struct pnn_operator {
+	char *longname;
+	gboolean long_ci;
+	char *shortname;
+	gboolean short_ci;
+	char *info;
+};
+
 struct spdi_operator {
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 };
 
+struct opl_operator {
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	guint16 lac_tac_low;
+	guint16 lac_tac_high;
+	guint8 id;
+};
+
 /* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
-const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
-					int in_len, int *out_len)
+static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
+						int in_len, int *out_len)
 {
 	guint8 tag;
 	int len;
@@ -74,8 +90,8 @@ const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 	return NULL;
 }
 
-char *sim_network_name_parse(const unsigned char *buffer, int length,
-				gboolean *add_ci)
+static char *sim_network_name_parse(const unsigned char *buffer, int length,
+					gboolean *add_ci)
 {
 	char *ret = NULL;
 	unsigned char *endp;
@@ -123,44 +139,6 @@ char *sim_network_name_parse(const unsigned char *buffer, int length,
 		*add_ci = ci;
 
 	return ret;
-}
-
-struct sim_pnn_operator *sim_pnn_operator_parse(const guint8 *tlv, int length)
-{
-	const char *name;
-	int namelength;
-	gboolean add_ci;
-	struct sim_pnn_operator *oper;
-
-	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
-
-	if (!name || !namelength)
-		return NULL;
-
-	oper = g_new0(struct sim_pnn_operator, 1);
-
-	oper->longname = sim_network_name_parse(name, namelength,
-						&oper->long_ci);
-
-	name = ber_tlv_find_by_tag(tlv, 0x45, length, &namelength);
-
-	if (name && namelength)
-		oper->shortname = sim_network_name_parse(name, namelength,
-							&oper->short_ci);
-
-	name = ber_tlv_find_by_tag(tlv, 0x80, length, &namelength);
-
-	if (name && namelength)
-		oper->info = sim_string_to_utf8(name, namelength);
-
-	return oper;
-}
-
-void sim_pnn_operator_free(struct sim_pnn_operator *oper)
-{
-	g_free(oper->info);
-	g_free(oper->shortname);
-	g_free(oper->longname);
 }
 
 static void parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
@@ -247,4 +225,151 @@ void sim_spdi_free(struct sim_spdi *spdi)
 	g_slist_foreach(spdi->operators, (GFunc)g_free, NULL);
 	g_slist_free(spdi->operators);
 	g_free(spdi);
+}
+
+static void pnn_operator_free(struct pnn_operator *oper)
+{
+	g_free(oper->info);
+	g_free(oper->shortname);
+	g_free(oper->longname);
+}
+
+struct sim_eons *sim_eons_new(int pnn_records)
+{
+	struct sim_eons *eons = g_new0(struct sim_eons, 1);
+
+	eons->pnn_list = g_new0(struct pnn_operator, pnn_records);
+	eons->pnn_max = pnn_records;
+
+	return eons;
+}
+
+gboolean sim_eons_pnn_is_empty(struct sim_eons *eons)
+{
+	return !eons->pnn_valid;
+}
+
+void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
+				const guint8 *tlv, int length)
+{
+	const char *name;
+	int namelength;
+	gboolean add_ci;
+	struct pnn_operator *oper = &eons->pnn_list[record-1];
+
+	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
+
+	if (!name || !namelength)
+		return;
+
+	oper->longname = sim_network_name_parse(name, namelength,
+						&oper->long_ci);
+
+	name = ber_tlv_find_by_tag(tlv, 0x45, length, &namelength);
+
+	if (name && namelength)
+		oper->shortname = sim_network_name_parse(name, namelength,
+							&oper->short_ci);
+
+	name = ber_tlv_find_by_tag(tlv, 0x80, length, &namelength);
+
+	if (name && namelength)
+		oper->info = sim_string_to_utf8(name, namelength);
+
+	eons->pnn_valid = TRUE;
+}
+
+static struct opl_operator *opl_operator_alloc(const guint8 *record)
+{
+	struct opl_operator *oper = g_new0(struct opl_operator, 1);
+
+	parse_mcc_mnc(record, oper->mcc, oper->mnc);
+	record += 3;
+
+	oper->lac_tac_low = (record[0] << 8) | record[1];
+	record += 2;
+	oper->lac_tac_high = (record[0] << 8) | record[1];
+	record += 2;
+
+	oper->id = record[0];
+
+	return oper;
+}
+
+void sim_eons_add_opl_record(struct sim_eons *eons,
+				const guint8 *tlv, int length)
+{
+	struct opl_operator *oper;
+
+	oper = opl_operator_alloc(tlv);
+
+	if (oper->id > eons->pnn_max) {
+		g_free(oper);
+		return;
+	}
+
+	eons->opl_list = g_slist_prepend(eons->opl_list, oper);
+}
+
+void sim_eons_optimize(struct sim_eons *eons)
+{
+	eons->opl_list = g_slist_reverse(eons->opl_list);
+}
+
+void sim_eons_free(struct sim_eons *eons)
+{
+	int i;
+
+	for (i = 0; i < eons->pnn_max; i++)
+		pnn_operator_free(eons->pnn_list + i);
+
+	g_free(eons->pnn_list);
+
+	g_slist_foreach(eons->opl_list, (GFunc)g_free, NULL);
+	g_slist_free(eons->opl_list);
+
+	g_free(eons);
+}
+
+static gint opl_operator_compare(gconstpointer a, gconstpointer b)
+{
+}
+
+const char *sim_eons_lookup(struct sim_eons *eons,
+				const char *mcc, const char *mnc, guint16 lac)
+{
+	GSList *l;
+	const struct opl_operator *opl;
+	int i;
+
+	for (l = eons->opl_list; l; l = l->next) {
+		opl = l->data;
+
+		for (i = 0; i < OFONO_MAX_MCC_LENGTH; i++)
+			if (mcc[i] != opl->mcc[i] &&
+					!(opl->mcc[i] == 'd' && mcc[i]))
+				continue;
+
+		for (i = 0; i < OFONO_MAX_MNC_LENGTH; i++)
+			if (mnc[i] != opl->mnc[i] &&
+					!(opl->mnc[i] == 'd' && mnc[i]))
+				continue;
+
+		if (opl->lac_tac_low == 0 && opl->lac_tac_high == 0xfffe)
+			break;
+
+		if ((lac >= opl->lac_tac_low) && (lac <= opl->lac_tac_high))
+			break;
+	}
+
+	if (!l)
+		return NULL;
+
+	opl = l->data;
+
+	/* 0 is not a valid record id */
+	if (opl->id == 0)
+		return NULL;
+
+	return eons->pnn_list[opl->id - 1].longname;
 }
