@@ -38,6 +38,10 @@ struct sim_pnn_operator {
 	char *info;
 };
 
+struct sim_spdi {
+	GSList *operators;
+};
+
 void sim_pnn_operator_free(struct sim_pnn_operator *oper);
 
 const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
@@ -45,3 +49,8 @@ const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 char *sim_network_name_parse(const unsigned char *buffer, int length,
 				gboolean *add_ci);
 struct sim_pnn_operator *sim_pnn_operator_parse(const guint8 *tlv, int length);
+
+struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length);
+gboolean sim_spdi_lookup(struct sim_spdi *spdi,
+				const char *mcc, const char *mnc);
+void sim_spdi_free(struct sim_spdi *spdi);

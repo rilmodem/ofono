@@ -30,8 +30,6 @@ typedef void (*ofono_sim_file_read_cb_t)(struct ofono_modem *modem, int ok,
 void ofono_sim_manager_init(struct ofono_modem *modem);
 void ofono_sim_manager_exit(struct ofono_modem *modem);
 
-gboolean ofono_operator_in_spdi(struct ofono_modem *modem,
-				const struct ofono_network_operator *op);
 const char *ofono_sim_get_imsi(struct ofono_modem *modem);
 
 int ofono_sim_ready_notify_register(struct ofono_modem *modem,

@@ -27,8 +27,14 @@
 
 #include <glib.h>
 
+#include "driver.h"
 #include "simutil.h"
 #include "util.h"
+
+struct spdi_operator {
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+};
 
 /* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
 const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
@@ -155,4 +161,90 @@ void sim_pnn_operator_free(struct sim_pnn_operator *oper)
 	g_free(oper->info);
 	g_free(oper->shortname);
 	g_free(oper->longname);
+}
+
+static void parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
+{
+	guint8 digit;
+
+	digit = (bcd[0] >> 0) & 0xf;
+	if (digit != 0xf)
+		*mcc ++ = '0' + digit;
+	digit = (bcd[0] >> 4) & 0xf;
+	if (digit != 0xf)
+		*mcc ++ = '0' + digit;
+	digit = (bcd[1] >> 0) & 0xf;
+	if (digit != 0xf)
+		*mcc ++ = '0' + digit;
+	digit = (bcd[2] >> 0) & 0xf;
+	if (digit != 0xf)
+		*mnc ++ = '0' + digit;
+	digit = (bcd[2] >> 4) & 0xf;
+	if (digit != 0xf)
+		*mnc ++ = '0' + digit;
+	digit = (bcd[1] >> 4) & 0xf;
+	if (digit != 0xf)
+		*mnc ++ = '0' + digit;
+}
+
+static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
+{
+	const struct spdi_operator *opa = a;
+	const struct spdi_operator *opb = b;
+	gint r;
+
+	if (r = strcmp(opa->mcc, opb->mcc))
+		return r;
+
+	return strcmp(opa->mnc, opb->mnc);
+}
+
+struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length)
+{
+	const guint8 *plmn_list;
+	struct sim_spdi *spdi;
+	struct spdi_operator *oper;
+	int tlv_length;
+
+	if (length <= 5)
+		return NULL;
+
+	plmn_list = ber_tlv_find_by_tag(tlv, 0x80, length, &tlv_length);
+
+	if (!plmn_list)
+		return NULL;
+
+	spdi = g_new0(struct sim_spdi, 1);
+
+	for (tlv_length /= 3; tlv_length--; plmn_list += 3) {
+		if ((plmn_list[0] & plmn_list[1] & plmn_list[2]) == 0xff)
+			continue;
+
+		oper = g_new0(struct spdi_operator, 1);
+
+		parse_mcc_mnc(plmn_list, oper->mcc, oper->mnc);
+		spdi->operators = g_slist_insert_sorted(spdi->operators, oper,
+						spdi_operator_compare);
+	}
+
+	return spdi;
+}
+
+gboolean sim_spdi_lookup(struct sim_spdi *spdi,
+				const char *mcc, const char *mnc)
+{
+	struct spdi_operator spdi_op;
+
+	g_strlcpy(spdi_op.mcc, mcc, sizeof(spdi_op.mcc));
+	g_strlcpy(spdi_op.mnc, mnc, sizeof(spdi_op.mnc));
+
+	return g_slist_find_custom(spdi->operators, &spdi_op,
+					spdi_operator_compare) != NULL;
+}
+
+void sim_spdi_free(struct sim_spdi *spdi)
+{
+	g_slist_foreach(spdi->operators, (GFunc)g_free, NULL);
+	g_slist_free(spdi->operators);
+	g_free(spdi);
 }

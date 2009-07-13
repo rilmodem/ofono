@@ -66,6 +66,7 @@ struct network_registration_data {
 	int signal_strength;
 	char *spname;
 	GSList *pnn_list;
+	struct sim_spdi *spdi;
 };
 
 static void operator_list_callback(const struct ofono_error *error, int total,
@@ -352,9 +353,12 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 		return name;
 	}
 
-	home_or_spdi =
-		(netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED) ||
-		ofono_operator_in_spdi(modem, netreg->current_operator);
+	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED)
+		home_or_spdi = TRUE;
+	else
+		home_or_spdi = sim_spdi_lookup(netreg->spdi,
+						netreg->current_operator->mcc,
+						netreg->current_operator->mnc);
 
 	if (home_or_spdi)
 		if (netreg->flags & NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN)
@@ -1136,6 +1140,43 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 	}
 }
 
+static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct network_registration_data *netreg = modem->network_registration;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	netreg->spdi = sim_spdi_new(data, length);
+
+	if (!netreg->current_operator)
+		return;
+
+	if (netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
+		DBusConnection *conn = dbus_gsm_connection();
+		const char *operator;
+
+		if (!sim_spdi_lookup(netreg->spdi,
+					netreg->current_operator->mcc,
+					netreg->current_operator->mnc))
+			return;
+
+		operator = get_operator_display_name(modem);
+
+		dbus_gsm_signal_property_changed(conn, modem->path,
+						NETWORK_REGISTRATION_INTERFACE,
+						"Operator", DBUS_TYPE_STRING,
+						&operator);
+	}
+}
+
 static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 				enum ofono_sim_file_structure structure,
 				int length, int record,
@@ -1143,8 +1184,6 @@ static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 				int record_length, void *userdata)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
-	const char *operator;
 	unsigned char dcbyte;
 	char *spn;
 
@@ -1183,21 +1222,26 @@ static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 		return;
 	}
 
+	netreg->spname = spn;
+	ofono_sim_read(modem, SIM_EFSPDI_FILEID, sim_spdi_read_cb, NULL);
+
 	if (dcbyte & SIM_EFSPN_DC_HOME_PLMN_BIT)
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
 
 	if (!(dcbyte & SIM_EFSPN_DC_ROAMING_SPN_BIT))
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
 
-	if (!netreg->current_operator)
-		return;
+	if (netreg->current_operator) {
+		DBusConnection *conn = dbus_gsm_connection();
+		const char *operator;
 
-	operator = get_operator_display_name(modem);
+		operator = get_operator_display_name(modem);
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
-				NETWORK_REGISTRATION_INTERFACE,
-				"Operator", DBUS_TYPE_STRING,
-				&operator);
+		dbus_gsm_signal_property_changed(conn, modem->path,
+						NETWORK_REGISTRATION_INTERFACE,
+						"Operator", DBUS_TYPE_STRING,
+						&operator);
+	}
 }
 
 static void sim_ready(struct ofono_modem *modem)
