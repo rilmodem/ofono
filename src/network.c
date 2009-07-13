@@ -37,6 +37,7 @@
 #include "driver.h"
 #include "common.h"
 #include "sim.h"
+#include "simutil.h"
 
 #define NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
 #define NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
@@ -64,6 +65,7 @@ struct network_registration_data {
 	int signal_strength;
 	char display_name[OFONO_MAX_OPERATOR_NAME_LENGTH];
 	char *spname;
+	GSList *pnn_list;
 };
 
 static void operator_list_callback(const struct ofono_error *error, int total,
@@ -564,6 +566,9 @@ static void network_registration_destroy(gpointer userdata)
 	}
 
 	g_slist_free(data->operator_list);
+
+	g_slist_foreach(data->pnn_list, (GFunc)sim_pnn_operator_free, NULL);
+	g_slist_free(data->pnn_list);
 
 	if (data->spname)
 		g_free(data->spname);
@@ -1129,6 +1134,43 @@ static void ofono_update_spn(struct ofono_modem *modem, const char *spn,
 				NETWORK_REGISTRATION_INTERFACE,
 				"Operator", DBUS_TYPE_STRING,
 				&operator);
+}
+
+static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct network_registration_data *netreg = modem->network_registration;
+	struct sim_pnn_operator *oper;
+	int total = length / record_length;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
+		return;
+
+	if (length < 3 || record_length < 3 || length < record_length)
+		return;
+
+	oper = sim_pnn_operator_parse(data, record_length);
+
+	if (oper)
+		netreg->pnn_list = g_slist_prepend(netreg->pnn_list, oper);
+
+	/* If PNN is not present then OPL is not useful, don't
+	 * retrieve it.  If OPL is not there then PNN[1] will
+	 * still be used for the HPLMN and/or EHPLMN, if PNN
+	 * is present.  */
+	if (record == total && g_slist_length(netreg->pnn_list) > 0)
+		ofono_sim_read(modem, SIM_EFOPL_FILEID, sim_opl_read_cb, NULL);
+}
+
+static void sim_ready(struct ofono_modem *modem)
+{
+	ofono_sim_read(modem, SIM_EFPNN_FILEID, sim_pnn_read_cb, NULL);
 }
 
 int ofono_network_registration_register(struct ofono_modem *modem,
