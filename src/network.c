@@ -38,6 +38,7 @@
 #include "common.h"
 #include "sim.h"
 #include "simutil.h"
+#include "util.h"
 
 #define NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
 #define NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
@@ -63,7 +64,6 @@ struct network_registration_data {
 	int flags;
 	DBusMessage *pending;
 	int signal_strength;
-	char display_name[OFONO_MAX_OPERATOR_NAME_LENGTH];
 	char *spname;
 	GSList *pnn_list;
 };
@@ -330,8 +330,8 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 {
 	struct network_registration_data *netreg = modem->network_registration;
 	const char *plmn;
-	char *name = netreg->display_name;
-	int len = sizeof(netreg->display_name);
+	static char name[1024];
+	int len = sizeof(name);
 	int home_or_spdi;
 
 	/* The name displayed to user depends on whether we're in a home
@@ -1102,40 +1102,6 @@ static void signal_strength_callback(const struct ofono_error *error,
 	ofono_signal_strength_notify(modem, strength);
 }
 
-static void ofono_update_spn(struct ofono_modem *modem, const char *spn,
-		int home_plmn_dpy, int roaming_spn_dpy)
-{
-	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
-	const char *operator;
-
-	if (!netreg)
-		return;
-
-	if (!strlen(spn))
-		return;
-
-	if (netreg->spname)
-		g_free(netreg->spname);
-	netreg->spname = g_strdup(spn);
-
-	if (home_plmn_dpy)
-		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
-
-	if (roaming_spn_dpy)
-		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
-
-	if (!netreg->current_operator)
-		return;
-
-	operator = get_operator_display_name(modem);
-
-	dbus_gsm_signal_property_changed(conn, modem->path,
-				NETWORK_REGISTRATION_INTERFACE,
-				"Operator", DBUS_TYPE_STRING,
-				&operator);
-}
-
 static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 				enum ofono_sim_file_structure structure,
 				int length, int record,
@@ -1168,9 +1134,74 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 		ofono_sim_read(modem, SIM_EFOPL_FILEID, sim_opl_read_cb, NULL);
 }
 
+static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct network_registration_data *netreg = modem->network_registration;
+	DBusConnection *conn = dbus_gsm_connection();
+	const char *operator;
+	unsigned char dcbyte;
+	char *spn;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	dcbyte = data[0];
+
+	/* TS 31.102 says:
+	 *
+	 * the string shall use:
+	 *
+	 * - either the SMS default 7-bit coded alphabet as defined in
+	 *   TS 23.038 [5] with bit 8 set to 0. The string shall be left
+	 *   justified. Unused bytes shall be set to 'FF'.
+	 *
+	 * - or one of the UCS2 code options defined in the annex of TS
+	 *   31.101 [11].
+	 *
+	 * 31.101 has no such annex though.  51.101 refers to Annex B of
+	 * itself which is not there either.  11.11 contains the same
+	 * paragraph as 51.101 and has an Annex B which we implement.
+	 */
+	spn = sim_string_to_utf8(data + 1, length - 1);
+
+	if (!spn) {
+		ofono_error("EFspn read successfully, but couldn't parse");
+		return;
+	}
+
+	if (strlen(spn) == 0) {
+		g_free(spn);
+		return;
+	}
+
+	if (dcbyte & SIM_EFSPN_DC_HOME_PLMN_BIT)
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
+
+	if (!(dcbyte & SIM_EFSPN_DC_ROAMING_SPN_BIT))
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
+
+	if (!netreg->current_operator)
+		return;
+
+	operator = get_operator_display_name(modem);
+
+	dbus_gsm_signal_property_changed(conn, modem->path,
+				NETWORK_REGISTRATION_INTERFACE,
+				"Operator", DBUS_TYPE_STRING,
+				&operator);
+}
+
 static void sim_ready(struct ofono_modem *modem)
 {
 	ofono_sim_read(modem, SIM_EFPNN_FILEID, sim_pnn_read_cb, NULL);
+	ofono_sim_read(modem, SIM_EFSPN_FILEID, sim_spn_read_cb, NULL);
 }
 
 int ofono_network_registration_register(struct ofono_modem *modem,
@@ -1190,8 +1221,6 @@ int ofono_network_registration_register(struct ofono_modem *modem,
 
 	initialize_network_registration(modem);
 
-	ofono_spn_update_notify_register(modem, ofono_update_spn);
-
 	if (ops->registration_status)
 		ops->registration_status(modem, init_registration_status,
 						modem);
@@ -1202,8 +1231,6 @@ int ofono_network_registration_register(struct ofono_modem *modem,
 void ofono_network_registration_unregister(struct ofono_modem *modem)
 {
 	DBusConnection *conn = dbus_gsm_connection();
-
-	ofono_spn_update_notify_unregister(modem, ofono_update_spn);
 
 	g_dbus_unregister_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE);

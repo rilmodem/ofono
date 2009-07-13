@@ -66,8 +66,6 @@ struct sim_manager_data {
 	gboolean ready;
 	GQueue *simop_q;
 
-	int dcbyte;
-
 	GSList *spdi;
 
 	GSList *opl;
@@ -186,72 +184,6 @@ static GDBusMethodTable sim_manager_methods[] = {
 
 static GDBusSignalTable sim_manager_signals[] = { { } };
 
-static void sim_spn_read_cb(const struct ofono_error *error,
-		const unsigned char *sdata, int length, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct sim_manager_data *sim = modem->sim_manager;
-	unsigned char *endp;
-	GSList *l;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 1)
-		return;
-
-	sim->dcbyte = sdata[0];
-	sdata++;
-	length--;
-
-	/* Successfully read the SPN from the SIM DB */
-	endp = memchr(sdata, 0xff, length);
-	if (endp)
-		length = endp - sdata;
-
-	/* TS 31.102 says:
-	 *
-	 * the string shall use:
-	 *
-	 * - either the SMS default 7-bit coded alphabet as defined in
-	 *   TS 23.038 [5] with bit 8 set to 0. The string shall be left
-	 *   justified. Unused bytes shall be set to 'FF'.
-	 *
-	 * - or one of the UCS2 code options defined in the annex of TS
-	 *   31.101 [11].
-	 *
-	 * 31.101 has no such annex though.  51.101 refers to Annex B of
-	 * itself which is not there either.  11.11 contains the same
-	 * paragraph as 51.101 and has an Annex B which we implement.
-	 */
-	sim->spn = sim_string_to_utf8(sdata, length);
-
-	for (l = sim->update_spn_notify; l; l = l->next)
-		sim_spn_notify(modem, l->data);
-}
-
-static void sim_spn_info_cb(const struct ofono_error *error, int length,
-				enum ofono_sim_file_structure structure,
-				int dummy, void *data)
-{
-	struct ofono_modem *modem = data;
-	struct sim_manager_data *sim = modem->sim_manager;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 1 ||
-			structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
-		return;
-
-	sim->ops->read_file_transparent(modem, SIM_EFSPN_FILEID, 0, length,
-					sim_spn_read_cb, modem);
-}
-
-static gboolean sim_retrieve_spn(void *user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct sim_manager_data *sim = modem->sim_manager;
-
-	sim->ops->read_file_info(modem, SIM_EFSPN_FILEID,
-					sim_spn_info_cb, modem);
-
-	return FALSE;
-}
 
 static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 				enum ofono_sim_file_structure structure,
