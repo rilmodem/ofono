@@ -774,7 +774,7 @@ static void set_registration_cellid(struct ofono_modem *modem, int ci)
 {
 	struct network_registration_data *netreg = modem->network_registration;
 	DBusConnection *conn = dbus_gsm_connection();
-	dbus_uint16_t dbus_ci = ci;
+	dbus_uint32_t dbus_ci = ci;
 
 	netreg->cellid = ci;
 
