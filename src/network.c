@@ -1130,8 +1130,10 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 	 * retrieve it.  If OPL is not there then PNN[1] will
 	 * still be used for the HPLMN and/or EHPLMN, if PNN
 	 * is present.  */
-	if (record == total && g_slist_length(netreg->pnn_list) > 0)
+	if (record == total && g_slist_length(netreg->pnn_list) > 0) {
+		netreg->pnn_list = g_slist_reverse(netreg->pnn_list);
 		ofono_sim_read(modem, SIM_EFOPL_FILEID, sim_opl_read_cb, NULL);
+	}
 }
 
 static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
