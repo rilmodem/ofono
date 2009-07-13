@@ -119,25 +119,24 @@ char *sim_network_name_parse(const unsigned char *buffer, int length,
 	return ret;
 }
 
-gboolean sim_pnn_operator_parse(struct sim_pnn_operator *oper,
-				const guint8 *tlv, int length)
+struct sim_pnn_operator *sim_pnn_operator_parse(const guint8 *tlv, int length)
 {
 	const char *name;
 	int namelength;
 	gboolean add_ci;
+	struct sim_pnn_operator *oper;
 
 	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
 
 	if (!name || !namelength)
-		return FALSE;
+		return NULL;
+
+	oper = g_new0(struct sim_pnn_operator, 1);
 
 	oper->longname = sim_network_name_parse(name, namelength,
 						&oper->long_ci);
 
 	name = ber_tlv_find_by_tag(tlv, 0x45, length, &namelength);
-
-	oper->short_ci = FALSE;
-	oper->shortname = NULL;
 
 	if (name && namelength)
 		oper->shortname = sim_network_name_parse(name, namelength,
@@ -148,7 +147,7 @@ gboolean sim_pnn_operator_parse(struct sim_pnn_operator *oper,
 	if (name && namelength)
 		oper->info = sim_string_to_utf8(name, namelength);
 
-	return TRUE;
+	return oper;
 }
 
 void sim_pnn_operator_free(struct sim_pnn_operator *oper)
