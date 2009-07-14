@@ -772,7 +772,7 @@ static void test_prepare_concat()
 	GSList *l;
 	char *decoded_str;
 	GSList *pdus = NULL;
-	char pdu[176];
+	unsigned char pdu[176];
 	struct sms *sms;
 	struct sms decoded;
 	int pdu_len, tpdu_len;
