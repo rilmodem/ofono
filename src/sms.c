@@ -314,7 +314,6 @@ static gboolean tx_next(gpointer user_data)
 	time_t ts;
 	gboolean send_mms = FALSE;
 	struct pending_pdu *pdu = g_queue_peek_head(sms->txq);
-	char *encoded_pdu;
 	struct ofono_error error;
 
 	error.type = OFONO_ERROR_TYPE_NO_ERROR;
