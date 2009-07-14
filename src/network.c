@@ -423,6 +423,67 @@ static void set_network_operator_name(struct ofono_modem *modem,
 	}
 }
 
+static void set_network_operator_eons_info(struct ofono_modem *modem,
+				struct network_operator_data *opd,
+				struct sim_eons_operator_info *eons_info)
+{
+	struct network_registration_data *netreg = modem->network_registration;
+	DBusConnection *conn = dbus_gsm_connection();
+	struct sim_eons_operator_info *old_eons_info = opd->eons_info;
+	const char *path;
+	const char *oldname;
+	const char *newname;
+	const char *oldinfo;
+	const char *newinfo;
+
+	if (!old_eons_info && !eons_info)
+		return;
+
+	path = network_operator_build_path(modem, opd->info);
+	opd->eons_info = eons_info;
+
+	if (old_eons_info && old_eons_info->longname)
+		oldname = old_eons_info->longname;
+	else
+		oldname = opd->info->name;
+
+	if (eons_info && eons_info->longname)
+		newname = eons_info->longname;
+	else
+		newname = opd->info->name;
+
+	if (oldname != newname && strcmp(oldname, newname)) {
+		dbus_gsm_signal_property_changed(conn, path,
+						NETWORK_OPERATOR_INTERFACE,
+						"Name", DBUS_TYPE_STRING,
+						&newname);
+
+		if (opd == netreg->current_operator) {
+			const char *operator = get_operator_display_name(modem);
+
+			dbus_gsm_signal_property_changed(conn, modem->path,
+						NETWORK_REGISTRATION_INTERFACE,
+						"Operator", DBUS_TYPE_STRING,
+						&operator);
+		}
+	}
+
+	if (old_eons_info && old_eons_info->info)
+		oldinfo = old_eons_info->info;
+	else
+		oldinfo = "";
+
+	if (eons_info && eons_info->info)
+		newname = eons_info->info;
+	else
+		newinfo = "";
+
+	if (oldname != newname && strcmp(oldname, newname))
+		dbus_gsm_signal_property_changed(conn, path,
+						NETWORK_OPERATOR_INTERFACE,
+						"AdditionalInformation",
+						DBUS_TYPE_STRING, &newinfo);
+}
 static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 							DBusMessage *msg,
 							void *data)
@@ -523,6 +584,7 @@ static struct network_operator_data *
 					const struct ofono_network_operator *op,
 					enum operator_status status)
 {
+	struct network_registration_data *netreg = modem->network_registration;
 	DBusConnection *conn = dbus_gsm_connection();
 	const char *path;
 	struct network_operator_data *opd = NULL;
@@ -542,6 +604,10 @@ static struct network_operator_data *
 	opd->info->status = status;
 	opd->modem = modem;
 	opd->eons_info = NULL;
+
+	if (netreg->eons)
+		opd->eons_info = sim_eons_lookup(netreg->eons,
+							op->mcc, op->mnc);
 
 	if (!g_dbus_register_interface(conn, path, NETWORK_OPERATOR_INTERFACE,
 					network_operator_methods,
@@ -1132,6 +1198,7 @@ static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
 {
 	struct network_registration_data *netreg = modem->network_registration;
 	int total;
+	GSList *l;
 
 	if (!ok)
 		return;
@@ -1142,16 +1209,24 @@ static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
 	if (length < 8 || record_length < 8 || length < record_length)
 		return;
 
-	/* If we don't have PNN, ignore this completely */
-	if (!netreg->eons)
-		return;
-
 	total = length / record_length;
 
 	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
 
-	if (record == total)
-		sim_eons_optimize(netreg->eons);
+	if (record != total)
+		return;
+
+	sim_eons_optimize(netreg->eons);
+
+	for (l = netreg->operator_list; l; l = l->next) {
+		struct network_operator_data *opd = l->data;
+		struct sim_eons_operator_info *eons_info;
+
+		eons_info = sim_eons_lookup(netreg->eons, opd->info->mcc,
+						opd->info->mnc);
+
+		set_network_operator_eons_info(modem, opd, eons_info);
+	}
 }
 
 static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
