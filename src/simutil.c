@@ -328,9 +328,10 @@ static gint opl_operator_compare(gconstpointer a, gconstpointer b)
 {
 }
 
-struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
-						const char *mcc,
-						const char *mnc, guint16 lac)
+static struct sim_eons_operator_info *
+	sim_eons_lookup_common(struct sim_eons *eons,
+				const char *mcc, const char *mnc,
+				gboolean have_lac, guint16 lac)
 {
 	GSList *l;
 	const struct opl_operator *opl;
@@ -352,6 +353,9 @@ struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
 		if (opl->lac_tac_low == 0 && opl->lac_tac_high == 0xfffe)
 			break;
 
+		if (have_lac == FALSE)
+			continue;
+
 		if ((lac >= opl->lac_tac_low) && (lac <= opl->lac_tac_high))
 			break;
 	}
@@ -366,4 +370,19 @@ struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
 		return NULL;
 
 	return &eons->pnn_list[opl->id - 1];
+}
+
+struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
+						const char *mcc,
+						const char *mnc)
+{
+	return sim_eons_lookup_common(eons, mcc, mnc, FALSE, 0);
+}
+
+struct sim_eons_operator_info *sim_eons_lookup_with_lac(struct sim_eons *eons,
+							const char *mcc,
+							const char *mnc,
+							guint16 lac)
+{
+	return sim_eons_lookup_common(eons, mcc, mnc, TRUE, lac);
 }

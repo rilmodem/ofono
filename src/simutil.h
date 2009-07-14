@@ -56,9 +56,13 @@ gboolean sim_eons_pnn_is_empty(struct sim_eons *eons);
 void sim_eons_add_opl_record(struct sim_eons *eons,
 				const guint8 *tlv, int length);
 void sim_eons_optimize(struct sim_eons *eons);
+struct sim_eons_operator_info *sim_eons_lookup_with_lac(struct sim_eons *eons,
+							const char *mcc,
+							const char *mnc,
+							guint16 lac);
 struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
 						const char *mcc,
-						const char *mnc, guint16 lac);
+						const char *mnc);
 void sim_eons_free(struct sim_eons *eons);
 
 struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length);
