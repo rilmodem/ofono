@@ -110,7 +110,6 @@ static void sim_manager_destroy(gpointer userdata)
 {
 	struct ofono_modem *modem = userdata;
 	struct sim_manager_data *data = modem->sim_manager;
-	int i;
 
 	if (data->imsi) {
 		g_free(data->imsi);
