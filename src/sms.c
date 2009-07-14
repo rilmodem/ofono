@@ -528,6 +528,9 @@ static void sms_dispatch(struct ofono_modem *modem, GSList *sms_list)
 	int srcport = -1;
 	int dstport = -1;
 
+	if (sms_list == NULL)
+		return;
+
 	/* Qutoting 23.040: The TP elements in the SMS‑SUBMIT PDU, apart from
 	 * TP‑MR, TP-SRR, TP‑UDL and TP‑UD, should remain unchanged for each
 	 * SM which forms part of a concatenated SM, otherwise this may lead
