@@ -538,7 +538,6 @@ static gboolean decode_address(const unsigned char *pdu, int len,
 	unsigned char addr_len;
 	unsigned char addr_type;
 	int byte_len;
-	int i;
 
 	if (!next_octet(pdu, len, offset, &addr_len))
 		return FALSE;
@@ -2269,7 +2268,6 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 	long written;
 	long left;
 	guint8 seq;
-	guint8 max;
 	GSList *r = NULL;
 
 	memset(&template, 0, sizeof(struct sms));
