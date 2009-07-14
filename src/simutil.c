@@ -30,6 +30,7 @@
 #include "driver.h"
 #include "simutil.h"
 #include "util.h"
+#include "smsutil.h"
 
 struct spdi_operator {
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
