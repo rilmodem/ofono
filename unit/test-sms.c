@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <glib.h>
+#include <glib/gprintf.h>
 
 #include "util.h"
 #include "smsutil.h"
