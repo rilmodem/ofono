@@ -2759,7 +2759,8 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 
 			unpack_7bit_own_buf(cbs->ud + taken, 82 - taken,
 						taken, FALSE, 2,
-						NULL, 0, iso639_lang);
+						NULL, 0,
+						(unsigned char *)iso639_lang);
 			iso639_lang[2] = '\0';
 		} else
 			iso639_2_from_language(lang, iso639_lang);
@@ -2840,8 +2841,8 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 	if (charset == SMS_CHARSET_7BIT)
 		utf8 = convert_gsm_to_utf8(buf, bufsize, NULL, NULL, 0);
 	else
-		utf8 = g_convert(buf, bufsize, "UTF-8//TRANSLIT", "UCS-2BE",
-					NULL, NULL, NULL);
+		utf8 = g_convert((char *)buf, bufsize, "UTF-8//TRANSLIT",
+					"UCS-2BE", NULL, NULL, NULL);
 
 	g_free(buf);
 	return utf8;
