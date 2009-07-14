@@ -34,8 +34,16 @@ struct sim_spdi {
 	GSList *operators;
 };
 
+struct sim_eons_operator_info {
+	char *longname;
+	gboolean long_ci;
+	char *shortname;
+	gboolean short_ci;
+	char *info;
+};
+
 struct sim_eons {
-	struct pnn_operator *pnn_list;
+	struct sim_eons_operator_info *pnn_list;
 	GSList *opl_list;
 	gboolean pnn_valid;
 	int pnn_max;
@@ -48,8 +56,9 @@ gboolean sim_eons_pnn_is_empty(struct sim_eons *eons);
 void sim_eons_add_opl_record(struct sim_eons *eons,
 				const guint8 *tlv, int length);
 void sim_eons_optimize(struct sim_eons *eons);
-const char *sim_eons_lookup(struct sim_eons *eons, const char *mcc,
-				const char *mnc, guint16 lac);
+struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
+						const char *mcc,
+						const char *mnc, guint16 lac);
 void sim_eons_free(struct sim_eons *eons);
 
 struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length);

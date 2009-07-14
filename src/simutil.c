@@ -31,14 +31,6 @@
 #include "simutil.h"
 #include "util.h"
 
-struct pnn_operator {
-	char *longname;
-	gboolean long_ci;
-	char *shortname;
-	gboolean short_ci;
-	char *info;
-};
-
 struct spdi_operator {
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
@@ -227,7 +219,7 @@ void sim_spdi_free(struct sim_spdi *spdi)
 	g_free(spdi);
 }
 
-static void pnn_operator_free(struct pnn_operator *oper)
+static void pnn_operator_free(struct sim_eons_operator_info *oper)
 {
 	g_free(oper->info);
 	g_free(oper->shortname);
@@ -238,7 +230,7 @@ struct sim_eons *sim_eons_new(int pnn_records)
 {
 	struct sim_eons *eons = g_new0(struct sim_eons, 1);
 
-	eons->pnn_list = g_new0(struct pnn_operator, pnn_records);
+	eons->pnn_list = g_new0(struct sim_eons_operator_info, pnn_records);
 	eons->pnn_max = pnn_records;
 
 	return eons;
@@ -255,7 +247,7 @@ void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
 	const char *name;
 	int namelength;
 	gboolean add_ci;
-	struct pnn_operator *oper = &eons->pnn_list[record-1];
+	struct sim_eons_operator_info *oper = &eons->pnn_list[record-1];
 
 	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
 
@@ -335,8 +327,9 @@ static gint opl_operator_compare(gconstpointer a, gconstpointer b)
 {
 }
 
-const char *sim_eons_lookup(struct sim_eons *eons,
-				const char *mcc, const char *mnc, guint16 lac)
+struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
+						const char *mcc,
+						const char *mnc, guint16 lac)
 {
 	GSList *l;
 	const struct opl_operator *opl;
@@ -371,5 +364,5 @@ const char *sim_eons_lookup(struct sim_eons *eons,
 	if (opl->id == 0)
 		return NULL;
 
-	return eons->pnn_list[opl->id - 1].longname;
+	return &eons->pnn_list[opl->id - 1];
 }
