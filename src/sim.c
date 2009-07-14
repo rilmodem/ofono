@@ -386,7 +386,12 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 
 	op->structure = structure;
 	op->length = length;
-	op->record_length = record_length;
+
+	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		op->record_length = length;
+	else
+		op->record_length = record_length;
+
 	op->current = 1;
 
 	g_timeout_add(0, sim_op_retrieve_next, modem);
