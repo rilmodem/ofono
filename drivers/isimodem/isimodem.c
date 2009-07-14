@@ -274,7 +274,6 @@ static bool revision_resp_cb(GIsiClient *client, const void *restrict data,
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
-	struct ofono_error err;
 	ofono_modem_attribute_query_cb_t cb = cbd->cb;
 
 	if(!msg) {
@@ -341,7 +340,6 @@ static bool serial_resp_cb(GIsiClient *client, const void *restrict data,
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
-	struct ofono_error err;
 	ofono_modem_attribute_query_cb_t cb = cbd->cb;
 
 	if(!msg) {
