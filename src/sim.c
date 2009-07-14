@@ -314,7 +314,6 @@ static void sim_msisdn_read_cb(const struct ofono_error *error,
 	struct ofono_phone_number *ph;
 	int number_len;
 	int ton_npi;
-	int i, digit;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		goto skip;
@@ -454,7 +453,6 @@ static void sim_spdi_read_cb(const struct ofono_error *error,
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
 	const guint8 *plmn_list;
-	struct spdi_operator *spdi;
 	GSList *l;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR || length <= 5)
