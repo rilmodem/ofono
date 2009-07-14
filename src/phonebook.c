@@ -282,8 +282,6 @@ static void print_merged_entry(struct phonebook_person *person, GString *vcards)
 
 static void destroy_merged_entry(struct phonebook_person *person)
 {
-	GSList *number_list;
-
 	g_free(person->text);
 	g_free(person->group);
 	g_free(person->email);
@@ -301,7 +299,6 @@ static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem,
 	struct phonebook_data *phonebook = modem->phonebook;
 	DBusMessage *reply;
 	DBusMessageIter iter;
-	DBusConnection *conn = dbus_gsm_connection();
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -367,7 +364,6 @@ void ofono_phonebook_entry(struct ofono_modem *modem, int index,
 				const char *sip_uri, const char *tel_uri)
 {
 	struct phonebook_data *phonebook = modem->phonebook;
-	char field[LEN_MAX];
 
 	/*
 	 * We need to collect all the entries that belong to one person,
@@ -421,7 +417,6 @@ static void export_phonebook_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct phonebook_data *phonebook = modem->phonebook;
-	DBusConnection *conn = dbus_gsm_connection();
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_error("export_entries_one_storage_cb with %s failed",
@@ -446,7 +441,6 @@ static void export_phonebook(struct ofono_modem *modem)
 	struct phonebook_data *phonebook = modem->phonebook;
 	DBusMessage *reply;
 	const char *pb = storage_support[phonebook->storage_index];
-	GSList *l, *m;
 
 	if (pb) {
 		phonebook->ops->export_entries(modem, pb,
