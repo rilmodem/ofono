@@ -92,7 +92,7 @@ void dump_msg(const unsigned char *msg, size_t len)
 		sprintf(dumpstr + i * 5, "0x%02x%s",
 			msg[i], (i + 1) % 10 == 0 ? "\n" : " ");
 
-	DBG("%d bytes:\n%s", len, dumpstr);
+	DBG("%zd bytes:\n%s", len, dumpstr);
 }
 
 static void clear_pending_reqs()
