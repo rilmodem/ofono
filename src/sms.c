@@ -40,6 +40,8 @@
 #include "sim.h"
 #include "smsutil.h"
 
+#define uninitialized_var(x) x = x
+
 #define SMS_MANAGER_INTERFACE "org.ofono.SmsManager"
 
 #define SMS_MANAGER_FLAG_CACHED 0x1
@@ -522,7 +524,7 @@ static void sms_dispatch(struct ofono_modem *modem, GSList *sms_list)
 {
 	GSList *l;
 	const struct sms *sms;
-	enum sms_charset old_charset;
+	enum sms_charset uninitialized_var(old_charset);
 	enum sms_class cls;
 	int srcport = -1;
 	int dstport = -1;

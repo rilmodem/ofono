@@ -31,6 +31,8 @@
 #include "util.h"
 #include "smsutil.h"
 
+#define uninitialized_var(x) x = x
+
 void extract_bcd_number(const unsigned char *buf, int len, char *out)
 {
 	static const char digit_lut[] = "0123456789*#abc\0";
@@ -1435,10 +1437,10 @@ const guint8 *sms_extract_common(const struct sms *sms, gboolean *out_udhi,
 					guint8 *out_max)
 {
 	const guint8 *ud = NULL;
-	guint8 udl;
-	guint8 max;
-	gboolean udhi;
-	guint8 dcs;
+	guint8 uninitialized_var(udl);
+	guint8 uninitialized_var(max);
+	gboolean uninitialized_var(udhi);
+	guint8 uninitialized_var(dcs);
 
 	switch (sms->type) {
 	case SMS_TYPE_DELIVER:
@@ -1752,7 +1754,7 @@ static gboolean extract_app_port_common(struct sms_udh_iter *iter, int *dst,
 	guint8 addr_hdr[4];
 	int srcport = -1;
 	int dstport = -1;
-	gboolean is_addr_8bit;
+	gboolean uninitialized_var(is_addr_8bit);
 
 	/* According to the specification, we have to use the last
 	 * useable header.  Also, we have to ignore ports that are reserved:
@@ -1838,8 +1840,8 @@ gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 	struct sms_udh_iter iter;
 	enum sms_iei iei;
 	guint8 concat_hdr[4];
-	guint16 rn;
-	guint8 max, seq;
+	guint16 uninitialized_var(rn);
+	guint8 uninitialized_var(max), uninitialized_var(seq);
 	gboolean concatenated = FALSE;
 
 	/* We must ignore the entire user_data header here:
@@ -2699,12 +2701,15 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 {
 	GSList *l;
 	const struct cbs *cbs = cbs_list->data;
-	enum sms_charset charset;
+	enum sms_charset uninitialized_var(charset);
 	enum cbs_language lang;
-	gboolean iso639;
+	gboolean uninitialized_var(iso639);
 	int bufsize = 0;
 	unsigned char *buf;
 	char *utf8;
+
+	if (cbs_list == NULL)
+		return NULL;
 
 	/* CBS can only come from the network, so we're much less lenient
 	 * on what we support.  Namely we require the same charset to be
