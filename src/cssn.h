@@ -25,11 +25,11 @@ typedef void (*mt_ss_notify_cb)(int index, const struct ofono_phone_number *ph,
 
 void ofono_cssn_init(struct ofono_modem *modem);
 void ofono_cssn_exit(struct ofono_modem *modem);
-void ofono_mo_ss_register(struct ofono_modem *modem, int code1,
+void ofono_mo_ss_register(struct ofono_modem *modem, enum ss_cssi code1,
 		mo_ss_notify_cb cb, void *userdata);
-void ofono_mo_ss_unregister(struct ofono_modem *modem, int code1,
+void ofono_mo_ss_unregister(struct ofono_modem *modem, enum ss_cssi code1,
 		mo_ss_notify_cb cb, void *userdata);
-void ofono_mt_ss_register(struct ofono_modem *modem, int code2,
+void ofono_mt_ss_register(struct ofono_modem *modem, enum ss_cssu code2,
 		mt_ss_notify_cb cb, void *userdata);
-void ofono_mt_ss_unregister(struct ofono_modem *modem, int code2,
+void ofono_mt_ss_unregister(struct ofono_modem *modem, enum ss_cssu code2,
 		mt_ss_notify_cb cb, void *userdata);

@@ -57,7 +57,7 @@ static gint ss_handler_compare(gconstpointer a, gconstpointer b)
 	return memcmp(a, b, sizeof(struct mo_handler));
 }
 
-void ofono_mo_ss_register(struct ofono_modem *modem, int code1,
+void ofono_mo_ss_register(struct ofono_modem *modem, enum ss_cssi code1,
 		mo_ss_notify_cb cb, void *userdata)
 {
 	struct cssn_data *ss = modem->cssn;
@@ -70,7 +70,7 @@ void ofono_mo_ss_register(struct ofono_modem *modem, int code1,
 	ss->mo_handler_list = g_slist_prepend(ss->mo_handler_list, handler);
 }
 
-void ofono_mo_ss_unregister(struct ofono_modem *modem, int code1,
+void ofono_mo_ss_unregister(struct ofono_modem *modem, enum ss_cssi code1,
 		mo_ss_notify_cb cb, void *userdata)
 {
 	struct cssn_data *ss = modem->cssn;
@@ -88,7 +88,7 @@ void ofono_mo_ss_unregister(struct ofono_modem *modem, int code1,
 	ss->mo_handler_list = g_slist_delete_link(ss->mo_handler_list, l);
 }
 
-void ofono_mt_ss_register(struct ofono_modem *modem, int code2,
+void ofono_mt_ss_register(struct ofono_modem *modem, enum ss_cssu code2,
 		mt_ss_notify_cb cb, void *userdata)
 {
 	struct cssn_data *ss = modem->cssn;
@@ -101,7 +101,7 @@ void ofono_mt_ss_register(struct ofono_modem *modem, int code2,
 	ss->mt_handler_list = g_slist_prepend(ss->mt_handler_list, handler);
 }
 
-void ofono_mt_ss_unregister(struct ofono_modem *modem, int code2,
+void ofono_mt_ss_unregister(struct ofono_modem *modem, enum ss_cssu code2,
 		mt_ss_notify_cb cb, void *userdata)
 {
 	struct cssn_data *ss = modem->cssn;
