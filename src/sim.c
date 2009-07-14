@@ -263,7 +263,7 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 
 	sim->imsi = g_strdup(imsi);
 
-	ofono_sim_ready(modem);
+	ofono_sim_set_ready(modem);
 }
 
 static gboolean sim_retrieve_imsi(void *user_data)
