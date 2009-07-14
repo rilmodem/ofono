@@ -58,7 +58,7 @@ struct network_registration_data {
 	int location;
 	int cellid;
 	int technology;
-	struct ofono_network_operator *current_operator;
+	struct network_operator_data *current_operator;
 	GSList *operator_list;
 	struct ofono_network_registration_ops *ops;
 	int flags;
@@ -68,6 +68,8 @@ struct network_registration_data {
 	struct sim_spdi *spdi;
 	struct sim_eons *eons;
 };
+
+static void network_sim_ready(struct ofono_modem *modem);
 
 static void operator_list_callback(const struct ofono_error *error, int total,
 				const struct ofono_network_operator *list,
@@ -84,9 +86,10 @@ static void registration_status_callback(const struct ofono_error *error,
 					int status, int lac, int ci, int tech,
 					void *data);
 
-struct ofono_network_operator_data {
-	struct ofono_network_operator *operator;
+struct network_operator_data {
+	struct ofono_network_operator *info;
 	struct ofono_modem *modem;
+	struct sim_eons_operator_info *eons_info;
 };
 
 static inline const char *network_operator_status_to_string(int status)
@@ -220,7 +223,8 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 	 */
 	i = 0;
 	for (l = modem->network_registration->operator_list; l; l = l->next) {
-		struct ofono_network_operator *op = l->data;
+		struct network_operator_data *opd = l->data;
+		struct ofono_network_operator *op = opd->info;
 		int j;
 
 		for (j = 0; children[j]; j++) {
@@ -240,14 +244,16 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 
 static void network_operator_destroy(gpointer userdata)
 {
-	struct ofono_network_operator_data *op = userdata;
+	struct network_operator_data *op = userdata;
 
+	g_free(op->info);
 	g_free(op);
 }
 
 static gint network_operator_compare(gconstpointer a, gconstpointer b)
 {
-	const struct ofono_network_operator *opa = a;
+	const struct network_operator_data *opda = a;
+	const struct ofono_network_operator *opa = opda->info;
 	const struct ofono_network_operator *opb = b;
 
 	int comp1;
@@ -260,7 +266,7 @@ static gint network_operator_compare(gconstpointer a, gconstpointer b)
 }
 
 static inline const char *network_operator_build_path(struct ofono_modem *modem,
-							struct ofono_network_operator *oper)
+				const struct ofono_network_operator *oper)
 {
 	static char path[MAX_DBUS_PATH_LEN];
 
@@ -287,9 +293,10 @@ static void network_operator_emit_available_operators(struct ofono_modem *modem)
 }
 
 static void set_network_operator_status(struct ofono_modem *modem,
-					struct ofono_network_operator *op,
+					struct network_operator_data *opd,
 					int status)
 {
+	struct ofono_network_operator *op = opd->info;
 	DBusConnection *conn = dbus_gsm_connection();
 	const char *status_str;
 	const char *path;
@@ -308,9 +315,10 @@ static void set_network_operator_status(struct ofono_modem *modem,
 }
 
 static void set_network_operator_technology(struct ofono_modem *modem,
-						struct ofono_network_operator *op,
-						int tech)
+					struct network_operator_data *opd,
+					int tech)
 {
+	struct ofono_network_operator *op = opd->info;
 	DBusConnection *conn = dbus_gsm_connection();
 	const char *tech_str;
 	const char *path;
@@ -330,6 +338,8 @@ static void set_network_operator_technology(struct ofono_modem *modem,
 static char *get_operator_display_name(struct ofono_modem *modem)
 {
 	struct network_registration_data *netreg = modem->network_registration;
+	struct network_operator_data *current = netreg->current_operator;
+	struct ofono_network_operator *op = current->info;
 	const char *plmn;
 	static char name[1024];
 	int len = sizeof(name);
@@ -344,9 +354,9 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 		return name;
 	}
 
-	plmn = netreg->current_operator->name;
-	if (netreg->current_operator->override_name)
-		plmn = netreg->current_operator->override_name;
+	plmn = op->name;
+	if (current->eons_info && current->eons_info->longname)
+		plmn = current->eons_info->longname;
 
 	if (!netreg->spname || strlen(netreg->spname) == 0) {
 		g_strlcpy(name, plmn, len);
@@ -356,9 +366,7 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED)
 		home_or_spdi = TRUE;
 	else
-		home_or_spdi = sim_spdi_lookup(netreg->spdi,
-						netreg->current_operator->mcc,
-						netreg->current_operator->mnc);
+		home_or_spdi = sim_spdi_lookup(netreg->spdi, op->mcc, op->mnc);
 
 	if (home_or_spdi)
 		if (netreg->flags & NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN)
@@ -379,10 +387,11 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 }
 
 static void set_network_operator_name(struct ofono_modem *modem,
-					struct ofono_network_operator *op,
+					struct network_operator_data *opd,
 					const char *name)
 {
 	struct network_registration_data *netreg = modem->network_registration;
+	struct ofono_network_operator *op = opd->info;
 	DBusConnection *conn = dbus_gsm_connection();
 	const char *path;
 	const char *operator;
@@ -393,22 +402,24 @@ static void set_network_operator_name(struct ofono_modem *modem,
 	strncpy(op->name, name, OFONO_MAX_OPERATOR_NAME_LENGTH);
 	op->name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 
-	if (!op->override_name) {
-		path = network_operator_build_path(modem, op);
+	/* If we have Enhanced Operator Name info on the SIM, we always use
+	 * that, so do not need to emit the signal here
+	 */
+	if (opd->eons_info && opd->eons_info->longname)
+		return;
 
-		dbus_gsm_signal_property_changed(conn, path,
-					NETWORK_OPERATOR_INTERFACE,
-					"Name", DBUS_TYPE_STRING,
-					&name);
+	path = network_operator_build_path(modem, op);
 
-		if (op == netreg->current_operator) {
-			operator = get_operator_display_name(modem);
+	dbus_gsm_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
+					"Name", DBUS_TYPE_STRING, &name);
 
-			dbus_gsm_signal_property_changed(conn, modem->path,
+	if (opd == netreg->current_operator) {
+		operator = get_operator_display_name(modem);
+
+		dbus_gsm_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"Operator", DBUS_TYPE_STRING,
 						&operator);
-		}
 	}
 }
 
@@ -416,17 +427,17 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 							DBusMessage *msg,
 							void *data)
 {
-	struct ofono_network_operator_data *op = data;
+	struct network_operator_data *opd = data;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 
-	const char *name = op->operator->name;
+	const char *name = opd->info->name;
 	const char *status =
-		network_operator_status_to_string(op->operator->status);
+		network_operator_status_to_string(opd->info->status);
 
-	if (op->operator->override_name)
-		name = op->operator->override_name;
+	if (opd->eons_info && opd->eons_info->longname)
+		name = opd->eons_info->longname;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -442,24 +453,31 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 
 	dbus_gsm_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
 
-	if (*op->operator->mcc != '\0') {
-		const char *mcc = op->operator->mcc;
+	if (*opd->info->mcc != '\0') {
+		const char *mcc = opd->info->mcc;
 		dbus_gsm_dict_append(&dict, "MobileCountryCode",
 					DBUS_TYPE_STRING, &mcc);
 	}
 
-	if (*op->operator->mnc != '\0') {
-		const char *mnc = op->operator->mnc;
+	if (*opd->info->mnc != '\0') {
+		const char *mnc = opd->info->mnc;
 		dbus_gsm_dict_append(&dict, "MobileNetworkCode",
 					DBUS_TYPE_STRING, &mnc);
 	}
 
-	if (op->operator->tech != -1) {
+	if (opd->info->tech != -1) {
 		const char *technology =
-			registration_tech_to_string(op->operator->tech);
+			registration_tech_to_string(opd->info->tech);
 
 		dbus_gsm_dict_append(&dict, "Technology", DBUS_TYPE_STRING,
 					&technology);
+	}
+
+	if (opd->eons_info && opd->eons_info->info) {
+		const char *additional = opd->eons_info->info;
+
+		dbus_gsm_dict_append(&dict, "AdditionalInformation",
+					DBUS_TYPE_STRING, &additional);
 	}
 
 	dbus_message_iter_close_container(&iter, &dict);
@@ -470,7 +488,7 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 static DBusMessage *network_operator_register(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	struct ofono_network_operator_data *op = data;
+	struct network_operator_data *op = data;
 	struct network_registration_data *netreg = op->modem->network_registration;
 
 	if (netreg->flags & NETWORK_REGISTRATION_FLAG_PENDING)
@@ -482,7 +500,7 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 	netreg->flags |= NETWORK_REGISTRATION_FLAG_PENDING;
 	netreg->pending = dbus_message_ref(msg);
 
-	netreg->ops->register_manual(op->modem, op->operator,
+	netreg->ops->register_manual(op->modem, op->info,
 					register_callback, op->modem);
 
 	return NULL;
@@ -500,35 +518,47 @@ static GDBusSignalTable network_operator_signals[] = {
 	{ }
 };
 
-static gboolean network_operator_dbus_register(struct ofono_modem *modem,
-						struct ofono_network_operator *op)
+static struct network_operator_data *
+	network_operator_dbus_register(struct ofono_modem *modem,
+					const struct ofono_network_operator *op,
+					enum operator_status status)
 {
 	DBusConnection *conn = dbus_gsm_connection();
 	const char *path;
-
-	struct ofono_network_operator_data *opd =
-		g_try_new(struct ofono_network_operator_data, 1);
-
-	if (!opd)
-		return FALSE;
-
-	opd->operator = op;
-	opd->modem = modem;
+	struct network_operator_data *opd = NULL;
 
 	path = network_operator_build_path(modem, op);
+
+	opd = g_try_new(struct network_operator_data, 1);
+
+	if (!opd)
+		goto err;
+
+	opd->info = g_memdup(op, sizeof(struct ofono_network_operator));
+
+	if (opd->info == NULL)
+		goto err;
+
+	opd->info->status = status;
+	opd->modem = modem;
+	opd->eons_info = NULL;
 
 	if (!g_dbus_register_interface(conn, path, NETWORK_OPERATOR_INTERFACE,
 					network_operator_methods,
 					network_operator_signals,
 					NULL, opd,
-					network_operator_destroy)) {
-		ofono_error("Could not register NetworkOperator %s", path);
+					network_operator_destroy))
+		goto err;
+
+	return opd;
+
+err:
+	if (opd)
 		network_operator_destroy(opd);
 
-		return FALSE;
-	}
+	ofono_error("Could not register NetworkOperator %s", path);
 
-	return TRUE;
+	return NULL;
 }
 
 static gboolean network_operator_dbus_unregister(struct ofono_modem *modem,
@@ -564,10 +594,8 @@ static void network_registration_destroy(gpointer userdata)
 	struct network_registration_data *data = modem->network_registration;
 	GSList *l;
 
-	for (l = data->operator_list; l; l = l->next) {
+	for (l = data->operator_list; l; l = l->next)
 		network_operator_dbus_unregister(modem, l->data);
-		g_free(l->data);
-	}
 
 	g_slist_free(data->operator_list);
 
@@ -827,6 +855,7 @@ static void initialize_network_registration(struct ofono_modem *modem)
 			modem->path);
 
 	modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
+	ofono_sim_ready_notify_register(modem, network_sim_ready);
 
 	if (modem->network_registration->ops->list_operators) {
 		g_timeout_add_seconds(OPERATOR_LIST_UPDATE_TIME,
@@ -873,13 +902,6 @@ void ofono_network_registration_notify(struct ofono_modem *modem, int status,
 	}
 }
 
-static void network_operator_name_override(struct ofono_modem *modem,
-					struct ofono_network_operator *op)
-{
-	op->override_name =
-		ofono_operator_name_sim_override(modem, op->mcc, op->mnc);
-}
-
 static void operator_list_callback(const struct ofono_error *error, int total,
 					const struct ofono_network_operator *list,
 					void *data)
@@ -917,18 +939,16 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 				g_slist_remove(netreg->operator_list, o->data);
 		} else {
 			/* New operator */
-			struct ofono_network_operator *op =
-				g_memdup(&list[i],
-					sizeof(struct ofono_network_operator));
-			if (!op)
+			struct network_operator_data *opd;
+
+			opd = network_operator_dbus_register(modem, &list[i],
+								list[i].status);
+
+			if (!opd)
 				continue;
 
-			network_operator_name_override(modem, op);
-
-			if (network_operator_dbus_register(modem, op)) {
-				n = g_slist_prepend(n, op);
-				need_to_emit = TRUE;
-			}
+			n = g_slist_prepend(n, opd);
+			need_to_emit = TRUE;
 		}
 	}
 
@@ -940,7 +960,6 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 
 	for (o = netreg->operator_list; o; o = o->next) {
 		network_operator_dbus_unregister(modem, o->data);
-		g_free(o->data);
 	}
 
 	g_slist_free(netreg->operator_list);
@@ -973,7 +992,7 @@ static void current_operator_callback(const struct ofono_error *error,
 	/* It will be updated properly later */
 	if (netreg->current_operator &&
 		(!current ||
-			network_operator_compare(current, netreg->current_operator)))
+			network_operator_compare(netreg->current_operator, current)))
 		set_network_operator_status(modem, netreg->current_operator,
 						OPERATOR_STATUS_AVAILABLE);
 
@@ -996,22 +1015,18 @@ static void current_operator_callback(const struct ofono_error *error,
 	}
 
 	if (current) {
-		netreg->current_operator =
-			g_memdup(current,
-				sizeof(struct ofono_network_operator));
-		if (!netreg->current_operator) {
-			ofono_error("Unable to allocate current operator");
+		struct network_operator_data *opd;
+
+		opd = network_operator_dbus_register(modem, current,
+						OPERATOR_STATUS_CURRENT);
+
+		if (!opd)
 			return;
-		}
 
-		network_operator_name_override(modem, netreg->current_operator);
-
-		netreg->current_operator->status = OPERATOR_STATUS_CURRENT;
-
+		netreg->current_operator = opd;
 		netreg->operator_list = g_slist_append(netreg->operator_list,
-						netreg->current_operator);
+							opd);
 
-		network_operator_dbus_register(modem, netreg->current_operator);
 		network_operator_emit_available_operators(modem);
 	} else {
 		/* We don't free this here because operator is registered */
@@ -1179,6 +1194,7 @@ static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
 				int record_length, void *userdata)
 {
 	struct network_registration_data *netreg = modem->network_registration;
+	struct network_operator_data *current = netreg->current_operator;
 
 	if (!ok)
 		return;
@@ -1188,7 +1204,7 @@ static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
 
 	netreg->spdi = sim_spdi_new(data, length);
 
-	if (!netreg->current_operator)
+	if (!current)
 		return;
 
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
@@ -1196,8 +1212,7 @@ static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
 		const char *operator;
 
 		if (!sim_spdi_lookup(netreg->spdi,
-					netreg->current_operator->mcc,
-					netreg->current_operator->mnc))
+					current->info->mcc, current->info->mnc))
 			return;
 
 		operator = get_operator_display_name(modem);
@@ -1276,7 +1291,7 @@ static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 	}
 }
 
-static void sim_ready(struct ofono_modem *modem)
+static void network_sim_ready(struct ofono_modem *modem)
 {
 	ofono_sim_read(modem, SIM_EFPNN_FILEID, sim_pnn_read_cb, NULL);
 	ofono_sim_read(modem, SIM_EFSPN_FILEID, sim_spn_read_cb, NULL);
