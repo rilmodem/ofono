@@ -324,10 +324,6 @@ void sim_eons_free(struct sim_eons *eons)
 	g_free(eons);
 }
 
-static gint opl_operator_compare(gconstpointer a, gconstpointer b)
-{
-}
-
 static struct sim_eons_operator_info *
 	sim_eons_lookup_common(struct sim_eons *eons,
 				const char *mcc, const char *mnc,
