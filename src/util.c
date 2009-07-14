@@ -731,7 +731,7 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 			if (buffer[i] == 0xff && buffer[i + 1] == 0xff)
 				break;
 
-		return g_convert(buffer + 1, i - 1,
+		return g_convert((char *)buffer + 1, i - 1,
 					"UTF-8//TRANSLIT", "UCS-2BE",
 					NULL, NULL, NULL);
 	case 0x81:
