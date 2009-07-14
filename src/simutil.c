@@ -123,7 +123,8 @@ static char *sim_network_name_parse(const unsigned char *buffer, int length,
 			if (buffer[i] == 0xff && buffer[i + 1] == 0xff)
 				break;
 
-		ret = g_convert(buffer, length, "UTF-8//TRANSLIT", "UCS-2BE",
+		ret = g_convert((const char *)buffer, length,
+					"UTF-8//TRANSLIT", "UCS-2BE",
 					NULL, NULL, NULL);
 		break;
 	}
@@ -164,7 +165,7 @@ static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
 	const struct spdi_operator *opb = b;
 	gint r;
 
-	if (r = strcmp(opa->mcc, opb->mcc))
+	if ((r = strcmp(opa->mcc, opb->mcc)))
 		return r;
 
 	return strcmp(opa->mnc, opb->mnc);
@@ -245,9 +246,8 @@ gboolean sim_eons_pnn_is_empty(struct sim_eons *eons)
 void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
 				const guint8 *tlv, int length)
 {
-	const char *name;
+	const unsigned char *name;
 	int namelength;
-	gboolean add_ci;
 	struct sim_eons_operator_info *oper = &eons->pnn_list[record-1];
 
 	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
