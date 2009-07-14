@@ -192,7 +192,7 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 				int record_length, void *userdata)
 {
 	struct sim_manager_data *sim = modem->sim_manager;
-	int total = length / record_length;
+	int total;
 	struct ofono_phone_number *ph;
 	int number_len;
 	int ton_npi;
@@ -205,6 +205,8 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 
 	if (length < 14 || record_length < 14 || length < record_length)
 		return;
+
+	total = length / record_length;
 
 	/* Skip Alpha-Identifier field */
 	data += record_length - 14;

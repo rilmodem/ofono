@@ -1116,7 +1116,7 @@ static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
 				int record_length, void *userdata)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	int total = length / record_length;
+	int total;
 
 	if (!ok)
 		return;
@@ -1131,6 +1131,8 @@ static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
 	if (!netreg->eons)
 		return;
 
+	total = length / record_length;
+
 	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
 
 	if (record == total)
@@ -1144,7 +1146,7 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 				int record_length, void *userdata)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	int total = length / record_length;
+	int total;
 
 	if (!ok)
 		return;
@@ -1157,6 +1159,8 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 
 	if (!netreg->eons)
 		netreg->eons = sim_eons_new(total);
+
+	total = length / record_length;
 
 	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
 
