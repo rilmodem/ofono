@@ -562,10 +562,10 @@ err:
 }
 
 static gboolean network_operator_dbus_unregister(struct ofono_modem *modem,
-						struct ofono_network_operator *op)
+						struct network_operator_data *opd)
 {
 	DBusConnection *conn = dbus_gsm_connection();
-	const char *path = network_operator_build_path(modem, op);
+	const char *path = network_operator_build_path(modem, opd->info);
 
 	return g_dbus_unregister_interface(conn, path,
 					NETWORK_OPERATOR_INTERFACE);
