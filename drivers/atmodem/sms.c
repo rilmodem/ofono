@@ -785,8 +785,9 @@ static void at_cmgf_query_cb(gboolean ok, GAtResult *result,
 		if (!g_at_result_iter_open_list(&iter))
 			goto out;
 
+		/* Look for mode 0 (PDU mode) */
 		while (g_at_result_iter_next_number(&iter, &mode))
-			if (mode == 1)
+			if (mode == 0)
 				supported = TRUE;
 	}
 
