@@ -39,6 +39,7 @@ typedef void (*GAtDisconnectFunc)(gpointer user_data);
 
 enum _GAtChatFlags {
 	G_AT_CHAT_FLAG_NO_LEADING_CRLF = 1,	/* Some emulators are broken */
+	G_AT_CHAT_FLAG_EXTRA_PDU_CRLF = 2,
 };
 
 typedef enum _GAtChatFlags GAtChatFlags;

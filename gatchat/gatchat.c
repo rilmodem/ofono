@@ -675,7 +675,15 @@ static void new_bytes(GAtChat *p)
 			len -= p->read_so_far;
 			wrap -= p->read_so_far;
 
-			have_pdu(p);
+			/* Some modems like the TI Calypso send a CMT style
+			 * notification with an extra CRLF thrown in
+			 */
+			if ((p->flags & G_AT_CHAT_FLAG_EXTRA_PDU_CRLF) &&
+					p->read_so_far == 2) {
+				p->state = PARSER_STATE_PDU;
+				ring_buffer_drain(p->buf, p->read_so_far);
+			} else
+				have_pdu(p);
 
 			p->read_so_far = 0;
 		} else if (p->state == PARSER_STATE_INITIAL_CR) {
