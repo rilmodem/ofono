@@ -606,6 +606,8 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	gboolean supported = FALSE;
 	char buf[128];
 
+	dump_response("at_cnmi_query_cb", ok, result);
+
 	if (!ok)
 		goto out;
 
@@ -654,6 +656,8 @@ static void at_cpms_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct at_data *at = ofono_modem_userdata(modem);
 
+	dump_response("at_cpms_set_cb", ok, result);
+
 	if (ok)
 		return at_query_cnmi(modem);
 
@@ -685,6 +689,8 @@ static void at_cmgf_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct at_data *at = ofono_modem_userdata(modem);
+
+	dump_response("at_cmgf_set_cb", ok, result);
 
 	if (ok) {
 		at->sms->retries = 0;
@@ -718,6 +724,8 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 	struct ofono_modem *modem = user_data;
 	struct at_data *at = ofono_modem_userdata(modem);
 	gboolean supported = FALSE;
+
+	dump_response("cpms_query_cb", ok, result);
 
 	if (ok) {
 		int mem = 0;
@@ -773,6 +781,8 @@ static void at_cmgf_query_cb(gboolean ok, GAtResult *result,
 	struct at_data *at = ofono_modem_userdata(modem);
 	gboolean supported = FALSE;
 
+	dump_response("cmgf_query_cb", ok, result);
+
 	if (ok) {
 		GAtResultIter iter;
 		int mode;
@@ -805,6 +815,8 @@ static void at_csms_status_cb(gboolean ok, GAtResult *result,
 	struct ofono_modem *modem = user_data;
 	struct at_data *at = ofono_modem_userdata(modem);
 	gboolean supported = FALSE;
+
+	dump_response("csms_status_cb", ok, result);
 
 	if (ok) {
 		GAtResultIter iter;
@@ -861,6 +873,8 @@ static void at_csms_query_cb(gboolean ok, GAtResult *result,
 	GAtResultIter iter;
 	int status;
 	char buf[128];
+
+	dump_response("csms_query_cb", ok, result);
 
 	if (!ok)
 		return at_sms_not_supported(modem);
