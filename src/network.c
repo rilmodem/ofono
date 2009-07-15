@@ -1247,10 +1247,10 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 	if (length < 3 || record_length < 3 || length < record_length)
 		return;
 
+	total = length / record_length;
+
 	if (!netreg->eons)
 		netreg->eons = sim_eons_new(total);
-
-	total = length / record_length;
 
 	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
 
