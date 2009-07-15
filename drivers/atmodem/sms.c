@@ -619,11 +619,15 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto out;
 
 	for (opt = 0; opt < 5; opt++) {
+		int min, max;
+
 		if (!g_at_result_iter_open_list(&iter))
 			goto out;
 
-		while (g_at_result_iter_next_number(&iter, &mode))
-			cnmi_opts[opt] |= 1 << mode;
+		while (g_at_result_iter_next_range(&iter, &min, &max)) {
+			for (mode = min; mode <= max; mode++)
+				cnmi_opts[opt] |= 1 << mode;
+		}
 
 		if (!g_at_result_iter_close_list(&iter))
 			goto out;
