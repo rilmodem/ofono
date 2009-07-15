@@ -288,6 +288,11 @@ error:
 static void send_init_commands(const char *vendor, GAtChat *parser)
 {
 	if (!strcmp(vendor, "ti_calypso")) {
+		int flags = g_at_chat_get_flags(parser);
+
+		flags |= G_AT_CHAT_FLAG_EXTRA_PDU_CRLF;
+		g_at_chat_set_flags(parser, flags);
+
 		g_at_chat_set_wakeup_command(parser, "\r", 1000, 5000);
 
 		g_at_chat_send(parser, "AT%CUNS=0", NULL,
