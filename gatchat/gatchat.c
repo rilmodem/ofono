@@ -958,6 +958,22 @@ error:
 	return NULL;
 }
 
+int g_at_chat_get_flags(GAtChat *chat)
+{
+	if (chat == NULL)
+		return 0;
+
+	return chat->flags;
+}
+
+void g_at_chat_set_flags(GAtChat *chat, int flags)
+{
+	if (chat == NULL)
+		return;
+
+	chat->flags = flags;
+}
+
 static int open_device(const char *device)
 {
 	struct termios ti;
