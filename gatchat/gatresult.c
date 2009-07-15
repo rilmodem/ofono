@@ -274,15 +274,12 @@ gboolean g_at_result_iter_next_range(GAtResultIter *iter, gint *min, gint *max)
 	if (pos == end)
 		return FALSE;
 
-	if (line[end] == ',') {
+	if (line[end] != '-') {
 		high = low;
 		goto out;
 	}
 
-	if (line[end] == '-')
-		pos = end = end + 1;
-	else
-		return FALSE;
+	pos = end = end + 1;
 
 	while (line[end] >= '0' && line[end] <= '9') {
 		high = high * 10 + (int)(line[end] - '0');
