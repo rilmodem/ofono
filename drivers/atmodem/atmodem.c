@@ -319,6 +319,8 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	const char *target, *driver;
 	char **modems;
 
+	g_pending = g_slist_remove(g_pending, io);
+
 	if (success == FALSE)
 		goto out;
 
