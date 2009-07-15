@@ -765,6 +765,14 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 static gboolean wakeup_no_response(gpointer user)
 {
 	GAtChat *chat = user;
+	struct at_command *cmd = g_queue_peek_head(chat->command_queue);
+
+	/* Sometimes during startup the modem is still in the ready state
+	 * and might acknowledge our 'wakeup' command.  In that case don't
+	 * timeout the wrong command
+	 */
+	if (cmd == NULL || cmd->id != 0)
+		return FALSE;
 
 	g_at_chat_finish_command(chat, FALSE, NULL);
 
