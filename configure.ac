@@ -23,11 +23,18 @@ m4_ifdef([AC_LIBTOOL_TAGS], [AC_LIBTOOL_TAGS([])])
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
+AC_ARG_ENABLE(optimization, AC_HELP_STRING([--disable-optimization],
+			[disable code optimization through compiler]), [
+	if (test "${enableval}" = "no"); then
+		CFLAGS="$CFLAGS -O0"
+	fi
+])
+
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 			[enable compiling with debugging information]), [
 	if (test "${enableval}" = "yes" &&
 				test "${ac_cv_prog_cc_g}" = "yes"); then
-		CFLAGS="$CFLAGS -g -O0"
+		CFLAGS="$CFLAGS -g"
 	fi
 ])
 
