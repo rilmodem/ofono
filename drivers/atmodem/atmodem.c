@@ -295,8 +295,8 @@ static void send_init_commands(const char *vendor, GAtChat *parser)
 
 		g_at_chat_set_wakeup_command(parser, "\r", 1000, 5000);
 
-		g_at_chat_send(parser, "AT%CUNS=0", NULL,
-					NULL, NULL, NULL);
+		g_at_chat_send(parser, "AT%CUNS=0", NULL, NULL, NULL, NULL);
+		g_at_chat_send(parser, "AT+CFUN=1", NULL, NULL, NULL, NULL);
 	}
 }
 
