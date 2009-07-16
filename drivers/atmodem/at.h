@@ -28,6 +28,7 @@ struct at_data {
 	struct netreg_data *netreg;
 	struct voicecall_data *voicecall;
 	struct sms_data *sms;
+	struct pb_data *pb;
 };
 
 void decode_at_error(struct ofono_error *error, const char *final);
