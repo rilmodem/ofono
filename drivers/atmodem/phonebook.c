@@ -39,7 +39,6 @@
 
 #include "at.h"
 
-
 #define INDEX_INVALID -1
 
 #define CHARSET_UTF8 1
