@@ -78,7 +78,7 @@ struct phonebook_person {
 	char *sip_uri;
 };
 
-static const char *storage_support[] = { "\"SM\"", "\"ME\"", NULL };
+static const char *storage_support[] = { "SM", "ME", NULL };
 static void export_phonebook(struct ofono_modem *modem);
 
 static struct phonebook_data *phonebook_create()
