@@ -57,17 +57,26 @@ static gboolean set_cpms(gpointer user_data);
 static const char *storages[] = {
 	"SM",
 	"ME",
+	"MT",
 };
 
 #define SM_STORE 0
 #define ME_STORE 1
+#define MT_STORE 2
 
 struct sms_data {
 	int store;
+	int incoming;
 	int retries;
 	gboolean cnma_enabled;
 	char *cnma_ack_pdu;
 	int cnma_ack_pdu_len;
+};
+
+struct cpms_request {
+	struct ofono_modem *modem;
+	int store;
+	int index;
 };
 
 static struct sms_data *sms_create()
@@ -420,13 +429,36 @@ static void at_cmgd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_error("Unable to delete received SMS");
 }
 
+static void at_cmti_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cpms_request *req = user_data;
+	struct ofono_modem *modem = req->modem;
+	struct at_data *at = ofono_modem_userdata(modem);
+	char buf[128];
+
+	if (!ok) {
+		ofono_error("Received CMTI, but CPMS request failed");
+		return;
+	}
+
+	at->sms->store = req->store;
+
+	sprintf(buf, "AT+CMGR=%d", req->index);
+	g_at_chat_send(at->parser, buf, none_prefix, at_cmgr_cb, modem, NULL);
+
+	/* We don't buffer SMS on the SIM/ME, send along a CMGD as well */
+	sprintf(buf, "AT+CMGD=%d", req->index);
+	g_at_chat_send(at->parser, buf, none_prefix, at_cmgd_cb, NULL, NULL);
+}
+
 static void at_cmti_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct at_data *at = ofono_modem_userdata(modem);
+	const char *strstore;
+	int store;
 	GAtResultIter iter;
 	int index;
-	char buf[128];
 
 	dump_response("at_cmti_notify", TRUE, result);
 
@@ -435,25 +467,44 @@ static void at_cmti_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "+CMTI:"))
 		goto err;
 
-	/* We skip the memory store here as we assume the modem will honor
-	 * the CPMS we sent out earlier
-	 */
-	if (!g_at_result_iter_skip_next(&iter))
+	if (!g_at_result_iter_next_string(&iter, &strstore))
+		goto err;
+
+	if (!strcmp(strstore, "ME"))
+		store = ME_STORE;
+	else if (!strcmp(strstore, "SM"))
+		store = SM_STORE;
+	else
 		goto err;
 
 	if (!g_at_result_iter_next_number(&iter, &index))
 		goto err;
 
-	ofono_debug("Got a CMTI indication at index: %d", index);
+	ofono_debug("Got a CMTI indication at %s, index: %d", strstore, index);
 
-	sprintf(buf, "AT+CMGR=%d", index);
+	if (store == at->sms->store) {
+		struct cpms_request req;
 
-	g_at_chat_send(at->parser, buf, none_prefix, at_cmgr_cb, modem, NULL);
+		req.modem = modem;
+		req.store = store;
+		req.index = index;
 
-	sprintf(buf, "AT+CMGD=%d", index);
+		at_cmti_cpms_cb(TRUE, NULL, &req);
+	} else {
+		char buf[128];
+		const char *incoming = storages[at->sms->incoming];
+		struct cpms_request *req = g_new(struct cpms_request, 1);
 
-	/* We don't buffer SMS on the SIM/ME, send along a CMGD as well */
-	g_at_chat_send(at->parser, buf, none_prefix, at_cmgd_cb, NULL, NULL);
+		req->modem = modem;
+		req->store = store;
+		req->index = index;
+
+		sprintf(buf, "AT+CPMS=\"%s\",\"%s\",\"%s\"",
+			strstore, strstore, incoming);
+
+		g_at_chat_send(at->parser, buf, cpms_prefix, at_cmti_cpms_cb,
+				req, g_free);
+	}
 
 	return;
 
@@ -680,9 +731,10 @@ static gboolean set_cpms(gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct at_data *at = ofono_modem_userdata(modem);
 	const char *store = storages[at->sms->store];
+	const char *incoming = storages[at->sms->incoming];
 	char buf[128];
 
-	sprintf(buf, "AT+CPMS=\"%s\",\"%s\",\"%s\"", store, store, store);
+	sprintf(buf, "AT+CPMS=\"%s\",\"%s\",\"%s\"", store, store, incoming);
 
 	g_at_chat_send(at->parser, buf, cpms_prefix,
 			at_cpms_set_cb, modem, NULL);
@@ -737,9 +789,11 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 		const char *store;
 		gboolean me_supported[3];
 		gboolean sm_supported[3];
+		gboolean mt_supported[3];
 
 		memset(me_supported, 0, sizeof(me_supported));
 		memset(sm_supported, 0, sizeof(sm_supported));
+		memset(mt_supported, 0, sizeof(mt_supported));
 
 		g_at_result_iter_init(&iter, result);
 
@@ -755,21 +809,39 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 					me_supported[mem] = TRUE;
 				else if (!strcmp(store, "SM"))
 					sm_supported[mem] = TRUE;
+				else if (!strcmp(store, "MT"))
+					mt_supported[mem] = TRUE;
 			}
 
 			if (!g_at_result_iter_close_list(&iter))
 				goto out;
 		}
 
-		if (me_supported[0] && me_supported[1] && me_supported[2]) {
+		if (!sm_supported[2] && !me_supported[2] && !mt_supported[2])
+			goto out;
+
+		if (sm_supported[0] && sm_supported[1]) {
+			supported = TRUE;
+			at->sms->store = SM_STORE;
+		}
+
+		if (me_supported[0] && me_supported[1]) {
 			supported = TRUE;
 			at->sms->store = ME_STORE;
 		}
 
-		if (sm_supported[0] && sm_supported[1] && sm_supported[2]) {
-			supported = TRUE;
-			at->sms->store = SM_STORE;
-		}
+		/* This seems to be a special case, where the modem will
+		 * pick & route the SMS to any of the storages supported by
+		 * mem1
+		 */
+		if (mt_supported[2] && (sm_supported[0] || me_supported[0]))
+			at->sms->incoming = MT_STORE;
+
+		if (sm_supported[2])
+			at->sms->incoming = SM_STORE;
+
+		if (me_supported[2])
+			at->sms->incoming = ME_STORE;
 	}
 out:
 	if (!supported)
