@@ -25,7 +25,7 @@ Telephony features
 
 The oFono stack will support the majority of the features from the 3GPP
 specification, but not all of them. The whole standard is pretty complex
-and some features and not used in any mobile network so far, some of them
+and some features are not used in any mobile network so far, some of them
 are outdated and have no relevance anymore. This paragraph tries to give
 some insights on what has been implemented so far, what is coming in the
 future and especially what will not be part of oFono.
@@ -121,7 +121,7 @@ Not implemented features:
 
 	WAP support
 
-		The WAP feature is outdated and uses full Internet access
+		The WAP feature is outdated and using full Internet access
 		with an embedded browser is the future.
 
 	MMS support
