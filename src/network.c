@@ -339,7 +339,7 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 {
 	struct network_registration_data *netreg = modem->network_registration;
 	struct network_operator_data *current = netreg->current_operator;
-	struct ofono_network_operator *op = current->info;
+	struct ofono_network_operator *op;
 	const char *plmn;
 	static char name[1024];
 	int len = sizeof(name);
@@ -349,10 +349,12 @@ static char *get_operator_display_name(struct ofono_modem *modem)
 	 * PLMN or roaming and on configuration bits from the SIM, all
 	 * together there are four cases to consider.  */
 
-	if (!netreg->current_operator) {
+	if (!current) {
 		g_strlcpy(name, "", len);
 		return name;
 	}
+
+	op = current->info;
 
 	plmn = op->name;
 	if (current->eons_info && current->eons_info->longname)
