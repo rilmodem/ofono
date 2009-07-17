@@ -1206,12 +1206,12 @@ static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
 	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
 		return;
 
-	if (length < 8 || record_length < 8 || length < record_length)
+	if (record_length < 8 || length < record_length)
 		return;
 
 	total = length / record_length;
 
-	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
+	sim_eons_add_opl_record(netreg->eons, data, record_length);
 
 	if (record != total)
 		return;

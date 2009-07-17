@@ -338,13 +338,17 @@ static struct sim_eons_operator_info *
 
 		for (i = 0; i < OFONO_MAX_MCC_LENGTH; i++)
 			if (mcc[i] != opl->mcc[i] &&
-					!(opl->mcc[i] == 'd' && mcc[i]))
-				continue;
+					!(opl->mcc[i] == 'b' && mcc[i]))
+				break;
+		if (i < OFONO_MAX_MCC_LENGTH)
+			continue;
 
 		for (i = 0; i < OFONO_MAX_MNC_LENGTH; i++)
 			if (mnc[i] != opl->mnc[i] &&
-					!(opl->mnc[i] == 'd' && mnc[i]))
-				continue;
+					!(opl->mnc[i] == 'b' && mnc[i]))
+				break;
+		if (i < OFONO_MAX_MNC_LENGTH)
+			continue;
 
 		if (opl->lac_tac_low == 0 && opl->lac_tac_high == 0xfffe)
 			break;
