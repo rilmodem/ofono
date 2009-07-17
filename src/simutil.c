@@ -32,6 +32,13 @@
 #include "util.h"
 #include "smsutil.h"
 
+struct sim_eons {
+	struct sim_eons_operator_info *pnn_list;
+	GSList *opl_list;
+	gboolean pnn_valid;
+	int pnn_max;
+};
+
 struct spdi_operator {
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
@@ -171,6 +178,10 @@ static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
 	return strcmp(opa->mnc, opb->mnc);
 }
 
+struct sim_spdi {
+	GSList *operators;
+};
+
 struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length)
 {
 	const guint8 *plmn_list;
@@ -290,11 +301,11 @@ static struct opl_operator *opl_operator_alloc(const guint8 *record)
 }
 
 void sim_eons_add_opl_record(struct sim_eons *eons,
-				const guint8 *tlv, int length)
+				const guint8 *contents, int length)
 {
 	struct opl_operator *oper;
 
-	oper = opl_operator_alloc(tlv);
+	oper = opl_operator_alloc(contents);
 
 	if (oper->id > eons->pnn_max) {
 		g_free(oper);
@@ -324,7 +335,7 @@ void sim_eons_free(struct sim_eons *eons)
 	g_free(eons);
 }
 
-static struct sim_eons_operator_info *
+static const struct sim_eons_operator_info *
 	sim_eons_lookup_common(struct sim_eons *eons,
 				const char *mcc, const char *mnc,
 				gboolean have_lac, guint16 lac)
@@ -372,14 +383,15 @@ static struct sim_eons_operator_info *
 	return &eons->pnn_list[opl->id - 1];
 }
 
-struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
+const struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
 						const char *mcc,
 						const char *mnc)
 {
 	return sim_eons_lookup_common(eons, mcc, mnc, FALSE, 0);
 }
 
-struct sim_eons_operator_info *sim_eons_lookup_with_lac(struct sim_eons *eons,
+const struct sim_eons_operator_info *sim_eons_lookup_with_lac(
+							struct sim_eons *eons,
 							const char *mcc,
 							const char *mnc,
 							guint16 lac)

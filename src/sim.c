@@ -65,13 +65,6 @@ struct sim_manager_data {
 	GSList *ready_notify;
 	gboolean ready;
 	GQueue *simop_q;
-
-	GSList *spdi;
-
-	GSList *opl;
-	int opl_num;
-	int opl_size;
-	int opl_current;
 };
 
 static char **get_own_numbers(GSList *own_numbers)
@@ -127,18 +120,6 @@ static void sim_manager_destroy(gpointer userdata)
 		g_queue_free(data->simop_q);
 		data->simop_q = NULL;
 	}
-
-	if (data->spdi) {
-		g_slist_foreach(data->spdi, (GFunc)g_free, NULL);
-		g_slist_free(data->spdi);
-		data->spdi = NULL;
-	}
-
-	if (data->opl) {
-		g_slist_foreach(data->opl, (GFunc)g_free, NULL);
-		g_slist_free(data->opl);
-		data->opl = NULL;
-	}
 }
 
 static DBusMessage *sim_get_properties(DBusConnection *conn,
@@ -181,7 +162,10 @@ static GDBusMethodTable sim_manager_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable sim_manager_signals[] = { { } };
+static GDBusSignalTable sim_manager_signals[] = {
+	{ "PropertyChanged",	"sv" },
+	{ }
+};
 
 
 static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
@@ -202,7 +186,7 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
 		return;
 
-	if (length < 14 || record_length < 14 || length < record_length)
+	if (record_length < 14 || length < record_length)
 		return;
 
 	total = length / record_length;

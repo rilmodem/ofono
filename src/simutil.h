@@ -30,10 +30,6 @@ enum sim_fileid {
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
 #define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
 
-struct sim_spdi {
-	GSList *operators;
-};
-
 struct sim_eons_operator_info {
 	char *longname;
 	gboolean long_ci;
@@ -42,25 +38,19 @@ struct sim_eons_operator_info {
 	char *info;
 };
 
-struct sim_eons {
-	struct sim_eons_operator_info *pnn_list;
-	GSList *opl_list;
-	gboolean pnn_valid;
-	int pnn_max;
-};
-
 struct sim_eons *sim_eons_new(int pnn_records);
 void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
 				const guint8 *tlv, int length);
 gboolean sim_eons_pnn_is_empty(struct sim_eons *eons);
 void sim_eons_add_opl_record(struct sim_eons *eons,
-				const guint8 *tlv, int length);
+				const guint8 *contents, int length);
 void sim_eons_optimize(struct sim_eons *eons);
-struct sim_eons_operator_info *sim_eons_lookup_with_lac(struct sim_eons *eons,
-							const char *mcc,
-							const char *mnc,
-							guint16 lac);
-struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
+const struct sim_eons_operator_info *sim_eons_lookup_with_lac(
+						struct sim_eons *eons,
+						const char *mcc,
+						const char *mnc,
+						guint16 lac);
+const struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
 						const char *mcc,
 						const char *mnc);
 void sim_eons_free(struct sim_eons *eons);

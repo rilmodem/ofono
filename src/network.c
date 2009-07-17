@@ -89,7 +89,7 @@ static void registration_status_callback(const struct ofono_error *error,
 struct network_operator_data {
 	struct ofono_network_operator *info;
 	struct ofono_modem *modem;
-	struct sim_eons_operator_info *eons_info;
+	const struct sim_eons_operator_info *eons_info;
 };
 
 static inline const char *network_operator_status_to_string(int status)
@@ -425,11 +425,11 @@ static void set_network_operator_name(struct ofono_modem *modem,
 
 static void set_network_operator_eons_info(struct ofono_modem *modem,
 				struct network_operator_data *opd,
-				struct sim_eons_operator_info *eons_info)
+				const struct sim_eons_operator_info *eons_info)
 {
 	struct network_registration_data *netreg = modem->network_registration;
 	DBusConnection *conn = dbus_gsm_connection();
-	struct sim_eons_operator_info *old_eons_info = opd->eons_info;
+	const struct sim_eons_operator_info *old_eons_info = opd->eons_info;
 	const char *path;
 	const char *oldname;
 	const char *newname;
@@ -1220,7 +1220,7 @@ static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
 
 	for (l = netreg->operator_list; l; l = l->next) {
 		struct network_operator_data *opd = l->data;
-		struct sim_eons_operator_info *eons_info;
+		const struct sim_eons_operator_info *eons_info;
 
 		eons_info = sim_eons_lookup(netreg->eons, opd->info->mcc,
 						opd->info->mnc);
