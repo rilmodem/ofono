@@ -954,7 +954,8 @@ void ofono_network_registration_notify(struct ofono_modem *modem, int status,
 	if (netreg->technology != tech)
 		set_registration_technology(modem, tech);
 
-	if (netreg->status == 1 || netreg->status == 5) {
+	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
+		netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
 		if (netreg->ops->current_operator)
 			netreg->ops->current_operator(modem,
 					current_operator_callback, modem);
@@ -1142,13 +1143,16 @@ static void init_registration_status(const struct ofono_error *error,
 	/* Bootstrap our signal strength value without waiting for the
 	 * stack to report it
 	 */
-	if (netreg->status == 1 || netreg->status == 5) {
+	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
+		netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
 		if (netreg->ops->signal_strength)
 			netreg->ops->signal_strength(modem,
 					signal_strength_callback, modem);
 	}
 
-	if (AUTO_REGISTER && (status == 0 || status == 3))
+	if (AUTO_REGISTER &&
+		(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED ||
+		 status == NETWORK_REGISTRATION_STATUS_DENIED))
 		netreg->ops->register_auto(modem, register_callback, modem);
 }
 
