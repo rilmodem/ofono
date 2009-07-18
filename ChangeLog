@@ -1,2 +1,9 @@
+ver 0.2:
+	Add more detailed handling for network names.
+	Add character set support for phonebook.
+	Add SIM file reading and writing utilities.
+	Add experimental support for MT incoming SMS store.
+	Add special support for ti_calypso based devices.
+
 ver 0.1:
 	Initial public release.
