@@ -356,7 +356,8 @@ static gboolean sim_op_retrieve_next(gpointer user)
 
 static void sim_op_info_cb(const struct ofono_error *error, int length,
 				enum ofono_sim_file_structure structure,
-				int record_length, void *data)
+				int record_length,
+				enum ofono_sim_file_access *access, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
