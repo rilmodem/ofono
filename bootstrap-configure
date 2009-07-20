@@ -12,4 +12,5 @@ fi
 		--prefix=/usr \
 		--mandir=/usr/share/man \
 		--sysconfdir=/etc \
-		--disable-datafiles
+		--disable-datafiles \
+		--localstatedir=/var

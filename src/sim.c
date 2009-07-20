@@ -29,6 +29,10 @@
 #include <dbus/dbus.h>
 #include <glib.h>
 #include <gdbus.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #include "ofono.h"
 
@@ -48,6 +52,7 @@ static gboolean sim_op_retrieve_next(gpointer user);
 
 struct sim_file_op {
 	int id;
+	int cache;
 	enum ofono_sim_file_structure structure;
 	int length;
 	int record_length;
@@ -267,6 +272,34 @@ static gboolean sim_retrieve_imsi(void *user_data)
 	return FALSE;
 }
 
+static int create_dirs(const char *filename, const mode_t mode)
+{
+	struct stat st;
+	char *dir;
+	const char *prev, *next;
+	int err;
+
+	err = stat(filename, &st);
+	if (!err && S_ISREG(st.st_mode))
+		return 0;
+
+	dir = g_malloc(strlen(filename) + 1);
+	strcpy(dir, "/");
+
+	for (prev = filename; next = strchr(prev + 1, '/'); prev = next)
+		if (next > prev + 1) {
+			strncat(dir, prev + 1, next - prev);
+
+			if (mkdir(dir, mode) && errno != EEXIST) {
+				g_free(dir);
+				return -1;
+			}
+		}
+
+	g_free(dir);
+	return 0;
+}
+
 static void sim_op_error(struct ofono_modem *modem)
 {
 	struct sim_manager_data *sim = modem->sim_manager;
@@ -280,6 +313,11 @@ static void sim_op_error(struct ofono_modem *modem)
 		g_timeout_add(0, sim_op_next, modem);
 }
 
+#define SIM_CACHE_MODE 0600
+#define SIM_CACHE_PATH CONFIG_LOCALSTATEDIR "/lib/ofono/%s/%04x"
+#define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 2 + imsilen)
+#define SIM_CACHE_HEADER_SIZE 6
+
 static void sim_op_retrieve_cb(const struct ofono_error *error,
 				const unsigned char *data, int len, void *user)
 {
@@ -287,6 +325,10 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
 	int total = op->length / op->record_length;
+
+	char *imsi = sim->imsi;
+	char *path;
+	int fd, ret;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		if (op->current == 1)
@@ -298,6 +340,23 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 	op->cb(modem, 1, op->structure, op->length, op->current,
 		data, op->record_length, op->userdata);
 
+	if (op->cache && imsi) {
+		/* Cache the record */
+		path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
+		fd = open(path, O_WRONLY);
+		g_free(path);
+
+		if (fd == -1)
+			goto next;
+
+		if (lseek(fd, (op->current - 1) * op->record_length +
+					SIM_CACHE_HEADER_SIZE, SEEK_SET) !=
+				(off_t) -1)
+			write(fd, data, op->record_length);
+		close(fd);
+	}
+
+next:
 	if (op->current == total) {
 		op = g_queue_pop_head(sim->simop_q);
 
@@ -363,6 +422,11 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
 
+	char *imsi = sim->imsi;
+	char *path;
+	unsigned char fileinfo[6];
+	int fd = -1;
+
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		sim_op_error(modem);
 		return;
@@ -370,6 +434,12 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 
 	op->structure = structure;
 	op->length = length;
+	/* Never cache card holder writable files */
+	op->cache = (
+			access[OFONO_SIM_FILE_CONDITION_UPDATE] ==
+			OFONO_SIM_FILE_ACCESS_ADM ||
+			access[OFONO_SIM_FILE_CONDITION_UPDATE] ==
+			OFONO_SIM_FILE_ACCESS_NEVER);
 
 	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		op->record_length = length;
@@ -379,6 +449,30 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 	op->current = 1;
 
 	g_timeout_add(0, sim_op_retrieve_next, modem);
+
+	if (op->cache && imsi) {
+		path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
+		if (create_dirs(path, SIM_CACHE_MODE | S_IXUSR) == 0)
+			fd = open(path, O_WRONLY | O_CREAT, SIM_CACHE_MODE);
+		g_free(path);
+
+		if (fd == -1) {
+			ofono_debug("Error %i creating cache file for "
+					"fileid %04x, IMSI %s",
+					errno, op->id, imsi);
+			return;
+		}
+
+		fileinfo[0] = error->type;
+		fileinfo[1] = length >> 8;
+		fileinfo[2] = length & 0xff;
+		fileinfo[3] = structure;
+		fileinfo[4] = record_length >> 8;
+		fileinfo[5] = record_length & 0xff;
+
+		write(fd, fileinfo, 6);
+		close(fd);
+	}
 }
 
 static gboolean sim_op_next(gpointer user_data)
@@ -397,6 +491,106 @@ static gboolean sim_op_next(gpointer user_data)
 	return FALSE;
 }
 
+struct sim_cache_callback {
+	ofono_sim_file_read_cb_t cb;
+	void *userdata;
+	struct ofono_modem *modem;
+	int error;
+	int fd;
+	enum ofono_sim_file_structure structure;
+	unsigned int record_length;
+	unsigned int total;
+};
+
+static gboolean sim_op_cached_callback(gpointer user)
+{
+	struct sim_cache_callback *cbs = user;
+	guint8 buffer[cbs->record_length];
+	unsigned int record;
+
+	if (cbs->error != OFONO_ERROR_TYPE_NO_ERROR) {
+		cbs->cb(cbs->modem, 0, 0, 0, 0, 0, 0, 0);
+		goto cleanup;
+	}
+
+	for (record = 0; record < cbs->total; record++) {
+		if (read(cbs->fd, buffer, cbs->record_length) <
+				(int) cbs->record_length) {
+			cbs->cb(cbs->modem, 0, 0, 0, 0, 0, 0, 0);
+			break;
+		}
+
+		cbs->cb(cbs->modem, 1, cbs->structure,
+				cbs->record_length * cbs->total, record + 1,
+				buffer, cbs->record_length, cbs->userdata);
+	}
+
+cleanup:
+	close(cbs->fd);
+	g_free(cbs);
+
+	return FALSE;
+}
+
+static gboolean sim_op_check_cached(struct ofono_modem *modem, int fileid,
+			ofono_sim_file_read_cb_t cb, void *data)
+{
+	struct sim_manager_data *sim = modem->sim_manager;
+	char *imsi = sim->imsi;
+	char *path;
+	int fd;
+	unsigned char fileinfo[SIM_CACHE_HEADER_SIZE];
+	ssize_t len;
+	struct ofono_error error;
+	unsigned int file_length;
+	enum ofono_sim_file_structure structure;
+	unsigned int record_length;
+	struct sim_cache_callback *cbs;
+
+	if (!imsi)
+		return FALSE;
+
+	path = g_strdup_printf(SIM_CACHE_PATH, imsi, fileid);
+	fd = open(path, O_RDONLY);
+	g_free(path);
+
+	if (fd == -1) {
+		if (errno != ENOENT)
+			ofono_debug("Error %i opening cache file for "
+					"fileid %04x, IMSI %s",
+					errno, fileid, imsi);
+
+		return FALSE;
+	}
+
+	len = read(fd, fileinfo, SIM_CACHE_HEADER_SIZE);
+	if (len != SIM_CACHE_HEADER_SIZE)
+		return FALSE;
+
+	error.type = fileinfo[0];
+	file_length = (fileinfo[1] << 8) | fileinfo[2];
+	structure = fileinfo[3];
+	record_length = (fileinfo[4] << 8) | fileinfo[5];
+
+	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		record_length = file_length;
+	if (record_length == 0 || file_length < record_length)
+		return FALSE;
+
+	cbs = g_new(struct sim_cache_callback, 1);
+	cbs->cb = cb;
+	cbs->userdata = data;
+	cbs->modem = modem;
+	cbs->error = error.type;
+	cbs->fd = fd;
+	cbs->structure = structure;
+	cbs->record_length = record_length;
+	cbs->total = file_length / record_length;
+	g_timeout_add(0, sim_op_cached_callback, cbs);
+
+	return TRUE;
+}
+
 int ofono_sim_read(struct ofono_modem *modem, int id,
 			ofono_sim_file_read_cb_t cb, void *data)
 {
@@ -408,6 +602,9 @@ int ofono_sim_read(struct ofono_modem *modem, int id,
 
 	if (modem->sim_manager == NULL)
 		return -1;
+
+	if (sim_op_check_cached(modem, id, cb, data))
+		return 0;
 
 	if (!sim->ops)
 		return -1;

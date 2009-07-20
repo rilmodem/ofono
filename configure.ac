@@ -96,6 +96,11 @@ AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
 
+eval "eval LOCALSTATE_DIR=$localstatedir"
+AC_SUBST(LOCALSTATE_DIR)
+AC_DEFINE_UNQUOTED(CONFIG_LOCALSTATEDIR, "$LOCALSTATE_DIR",
+		   [Define to the location where state is stored.])
+
 COMPILER_FLAGS
 
 AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile gisi/Makefile
