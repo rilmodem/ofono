@@ -286,7 +286,7 @@ static int create_dirs(const char *filename, const mode_t mode)
 	dir = g_malloc(strlen(filename) + 1);
 	strcpy(dir, "/");
 
-	for (prev = filename; next = strchr(prev + 1, '/'); prev = next)
+	for (prev = filename; (next = strchr(prev + 1, '/')); prev = next)
 		if (next > prev + 1) {
 			strncat(dir, prev + 1, next - prev);
 
