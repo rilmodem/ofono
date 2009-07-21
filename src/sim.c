@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "ofono.h"
 
