@@ -466,7 +466,7 @@ static void have_line(GAtChat *p, gboolean strip_preceding)
 
 	cmd = g_queue_peek_head(p->command_queue);
 
-	if (cmd) {
+	if (cmd && p->cmd_bytes_written > 0) {
 		char c = cmd->cmd[p->cmd_bytes_written - 1];
 
 		/* We check that we have submitted a terminator, in which case
