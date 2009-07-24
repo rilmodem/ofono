@@ -240,7 +240,7 @@ err:
 }
 
 static void at_cmgs(struct ofono_modem *modem, unsigned char *pdu, int pdu_len,
-			int tpdu_len, gboolean mms, ofono_sms_submit_cb_t cb,
+			int tpdu_len, int mms, ofono_sms_submit_cb_t cb,
 			void *data)
 {
 	struct at_data *at = ofono_modem_userdata(modem);
@@ -251,9 +251,11 @@ static void at_cmgs(struct ofono_modem *modem, unsigned char *pdu, int pdu_len,
 	if (!cbd)
 		goto error;
 
-	if (mms)
-		g_at_chat_send(at->parser, "AT+CMMS=1", none_prefix,
+	if (mms) {
+		sprintf(buf, "AT+CMMS=%d", mms);
+		g_at_chat_send(at->parser, buf, none_prefix,
 				NULL, NULL, NULL);
+	}
 
 	len = sprintf(buf, "AT+CMGS=%d\r", tpdu_len);
 	encode_hex_own_buf(pdu, pdu_len, 0, buf+len);

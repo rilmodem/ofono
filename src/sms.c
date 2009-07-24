@@ -314,7 +314,7 @@ static gboolean tx_next(gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct sms_manager_data *sms = modem->sms_manager;
 	time_t ts;
-	gboolean send_mms = FALSE;
+	int send_mms = 0;
 	struct pending_pdu *pdu = g_queue_peek_head(sms->txq);
 	struct ofono_error error;
 
@@ -329,7 +329,7 @@ static gboolean tx_next(gpointer user_data)
 
 	if ((g_queue_get_length(sms->txq) > 1) &&
 			((ts - sms->last_mms) > 60))
-		send_mms = TRUE;
+		send_mms = 1;
 
 	sms->ops->submit(modem, pdu->pdu, pdu->pdu_len, pdu->tpdu_len, send_mms,
 				tx_finished, modem);

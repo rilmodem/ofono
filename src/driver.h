@@ -405,7 +405,7 @@ struct ofono_sms_ops {
 				const struct ofono_phone_number *sca,
 				ofono_generic_cb_t cb, void *data);
 	void (*submit)(struct ofono_modem *modem, unsigned char *pdu,
-			int pdu_len, int tpdu_len, gboolean mms,
+			int pdu_len, int tpdu_len, int mms,
 			ofono_sms_submit_cb_t cb, void *data);
 };
 
