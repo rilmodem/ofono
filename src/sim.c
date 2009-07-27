@@ -312,7 +312,7 @@ static void sim_op_error(struct ofono_modem *modem)
 }
 
 #define SIM_CACHE_MODE 0600
-#define SIM_CACHE_PATH CONFIG_LOCALSTATEDIR "/lib/ofono/%s/%04x"
+#define SIM_CACHE_PATH STORAGEDIR "/%s/%04x"
 #define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 2 + imsilen)
 #define SIM_CACHE_HEADER_SIZE 6
 

@@ -8,8 +8,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AM_MAINTAINER_MODE
 
-AC_PREFIX_DEFAULT(/usr/local)
-
 AC_LANG_C
 
 AC_PROG_CC
@@ -96,10 +94,25 @@ AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
 
-eval "eval LOCALSTATE_DIR=$localstatedir"
-AC_SUBST(LOCALSTATE_DIR)
-AC_DEFINE_UNQUOTED(CONFIG_LOCALSTATEDIR, "$LOCALSTATE_DIR",
-		   [Define to the location where state is stored.])
+AC_PREFIX_DEFAULT(/usr/local)
+
+if (test "${prefix}" = "NONE"); then
+	dnl no prefix and no localstatedir, so default to /var
+	if (test "$localstatedir" = '${prefix}/var'); then
+		AC_SUBST([localstatedir], ['/var'])
+	fi
+
+	prefix="${ac_default_prefix}"
+fi
+
+if (test "$localstatedir" = '${prefix}/var'); then
+	storagedir="${prefix}/var/lib/ofono"
+else
+	storagedir="${localstatedir}/lib/ofono"
+fi
+
+AC_DEFINE_UNQUOTED(STORAGEDIR, "${storagedir}",
+			[Directory for the storage files])
 
 COMPILER_FLAGS
 
