@@ -92,6 +92,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	access[1] = response[9];
 	access[2] = response[10];
 
+	if (str == 0x01 || str == 0x03)
 		rlen = response[14];
 	else
 		rlen = 0;
