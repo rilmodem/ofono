@@ -474,7 +474,7 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 			at->pb->supported |= CHARSET_UCS2;
 	}
 
-	if (in_list && g_at_result_iter_close_list(&iter))
+	if (in_list && !g_at_result_iter_close_list(&iter))
 		goto error;
 
 	if (!(at->pb->supported & CHARSET_SUPPORT))
