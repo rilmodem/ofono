@@ -463,7 +463,7 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next(&iter, "+CSCS:"))
 		goto error;
 
-	/* Some modems don't report CPBS in a proper list */
+	/* Some modems don't report CSCS in a proper list */
 	if (g_at_result_iter_open_list(&iter))
 		in_list = TRUE;
 
