@@ -101,25 +101,6 @@ enum ofono_sim_file_structure {
 	OFONO_SIM_FILE_STRUCTURE_CYCLIC = 3
 };
 
-/* 51.011 Section 9.3 */
-enum ofono_sim_file_access {
-	OFONO_SIM_FILE_ACCESS_ALWAYS = 0,
-	OFONO_SIM_FILE_ACCESS_CHV1 = 1,
-	OFONO_SIM_FILE_ACCESS_CHV2 = 2,
-	OFONO_SIM_FILE_ACCESS_RESERVED = 3,
-	OFONO_SIM_FILE_ACCESS_ADM = 4,
-	OFONO_SIM_FILE_ACCESS_NEVER = 15,
-};
-
-enum ofono_sim_file_condition {
-	OFONO_SIM_FILE_CONDITION_READ = 0,
-	OFONO_SIM_FILE_CONDITION_UPDATE,
-	OFONO_SIM_FILE_CONDITION_INCREASE,
-	OFONO_SIM_FILE_CONDITION_INVALIDATE,
-	OFONO_SIM_FILE_CONDITION_REHABILITATE,
-	__OFONO_SIM_FILE_CONDITION_NUM,
-};
-
 /* Notification functions, the integer values here should map to
  * values obtained from the modem.  The enumerations are the same
  * as the values for the fields found in 3GPP TS 27.007
@@ -182,7 +163,7 @@ typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
 					enum ofono_sim_file_structure structure,
 					int recordlength,
-					enum ofono_sim_file_access *access,
+					const unsigned char access[3],
 					void *data);
 
 typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,

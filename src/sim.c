@@ -417,30 +417,38 @@ static gboolean sim_op_retrieve_next(gpointer user)
 static void sim_op_info_cb(const struct ofono_error *error, int length,
 				enum ofono_sim_file_structure structure,
 				int record_length,
-				enum ofono_sim_file_access *access, void *data)
+				const unsigned char access[3], void *data)
 {
 	struct ofono_modem *modem = data;
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-
 	char *imsi = sim->imsi;
 	char *path;
 	unsigned char fileinfo[6];
 	int fd = -1;
+	enum sim_file_access update;
+	enum sim_file_access invalidate;
+	enum sim_file_access rehabilitate;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		sim_op_error(modem);
 		return;
 	}
 
+	/* TS 11.11, Section 9.3 */
+	update = file_access_condition_decode(access[0] & 0xf);
+	rehabilitate = file_access_condition_decode((access[2] >> 4) & 0xf);
+	invalidate = file_access_condition_decode(access[2] & 0xf);
+
 	op->structure = structure;
 	op->length = length;
 	/* Never cache card holder writable files */
-	op->cache = (
-			access[OFONO_SIM_FILE_CONDITION_UPDATE] ==
-			OFONO_SIM_FILE_ACCESS_ADM ||
-			access[OFONO_SIM_FILE_CONDITION_UPDATE] ==
-			OFONO_SIM_FILE_ACCESS_NEVER);
+	op->cache = (update == SIM_FILE_ACCESS_ADM ||
+			update == SIM_FILE_ACCESS_NEVER) &&
+			(invalidate == SIM_FILE_ACCESS_ADM ||
+				invalidate == SIM_FILE_ACCESS_NEVER) &&
+			(rehabilitate == SIM_FILE_ACCESS_ADM ||
+				rehabilitate == SIM_FILE_ACCESS_NEVER);
 
 	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		op->record_length = length;

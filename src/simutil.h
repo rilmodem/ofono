@@ -27,6 +27,16 @@ enum sim_fileid {
 	SIM_EFSPDI_FILEID = 0x6fcd,
 };
 
+/* 51.011 Section 9.3 */
+enum sim_file_access {
+	SIM_FILE_ACCESS_ALWAYS = 0,
+	SIM_FILE_ACCESS_CHV1 = 1,
+	SIM_FILE_ACCESS_CHV2 = 2,
+	SIM_FILE_ACCESS_RESERVED = 3,
+	SIM_FILE_ACCESS_ADM = 4,
+	SIM_FILE_ACCESS_NEVER = 15,
+};
+
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
 #define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
 
@@ -59,3 +69,10 @@ struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length);
 gboolean sim_spdi_lookup(struct sim_spdi *spdi,
 				const char *mcc, const char *mnc);
 void sim_spdi_free(struct sim_spdi *spdi);
+
+static inline enum sim_file_access file_access_condition_decode(int bcd)
+{
+	if (bcd >= 4 && bcd <= 14)
+		return SIM_FILE_ACCESS_ADM;
+	return bcd;
+}

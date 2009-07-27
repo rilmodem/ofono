@@ -40,13 +40,6 @@
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
 
-static inline enum ofono_sim_file_access file_access_condition_decode(int bcd)
-{
-	if (bcd >= 4 && bcd <= 14)
-		return OFONO_SIM_FILE_ACCESS_ADM;
-	return bcd;
-}
-
 static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -57,7 +50,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	gint sw1, sw2, len;
 	int flen, rlen;
 	enum ofono_sim_file_structure str;
-	enum ofono_sim_file_access access[__OFONO_SIM_FILE_CONDITION_NUM];
+	unsigned char access[3];
 
 	dump_response("at_crsm_info_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -94,18 +87,11 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	flen = (response[2] << 8) | response[3];
 	str = response[13];
-	access[OFONO_SIM_FILE_CONDITION_UPDATE] =
-		file_access_condition_decode((response[9] >> 4) & 0xf);
-	access[OFONO_SIM_FILE_CONDITION_READ] =
-		file_access_condition_decode((response[9] >> 0) & 0xf);
-	access[OFONO_SIM_FILE_CONDITION_INCREASE] =
-		file_access_condition_decode((response[10] >> 0) & 0xf);
-	access[OFONO_SIM_FILE_CONDITION_INVALIDATE] =
-		file_access_condition_decode((response[11] >> 4) & 0xf);
-	access[OFONO_SIM_FILE_CONDITION_REHABILITATE] =
-		file_access_condition_decode((response[11] >> 0) & 0xf);
 
-	if (str == 0x01)
+	access[0] = response[8];
+	access[1] = response[9];
+	access[2] = response[10];
+
 		rlen = response[14];
 	else
 		rlen = 0;
