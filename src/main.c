@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 
 	__ofono_log_init(option_detach, option_debug);
 
-	if (dbus_gsm_init() != 0)
+	if (__ofono_dbus_init() != 0)
 		goto cleanup;
 
 	if (__ofono_manager_init() < 0)
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 
 	__ofono_manager_cleanup();
 
-	dbus_gsm_exit();
+	__ofono_dbus_cleanup();
 
 cleanup:
 	g_main_loop_unref(event_loop);

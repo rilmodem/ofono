@@ -200,7 +200,7 @@ static gboolean system_bus_reconnect(void *user_data)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!conn && (dbus_gsm_init() < 0))
+	if (!conn && (__ofono_dbus_init() < 0))
 		return TRUE;
 
 	conn = ofono_dbus_get_connection();
@@ -224,7 +224,7 @@ static void system_bus_disconnected(DBusConnection *conn, void *user_data)
 				system_bus_reconnect, NULL);
 }
 
-int dbus_gsm_init()
+int __ofono_dbus_init(void)
 {
 	DBusConnection *conn;
 	DBusError error;
@@ -248,7 +248,7 @@ int dbus_gsm_init()
 	return 0;
 }
 
-void dbus_gsm_exit()
+void __ofono_dbus_cleanup(void)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 

@@ -22,9 +22,6 @@
 #include <ofono/dbus.h>
 #include <gdbus.h>
 
-int dbus_gsm_init();
-void dbus_gsm_exit();
-
 #define MAX_DBUS_PATH_LEN 64
 
 void dbus_gsm_free_string_array(char **array);

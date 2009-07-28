@@ -35,6 +35,11 @@ void __ofono_log_cleanup(void);
 
 void __ofono_toggle_debug(void);
 
+#include <ofono/dbus.h>
+
+int __ofono_dbus_init(void);
+void __ofono_dbus_cleanup(void);
+
 #include <ofono/plugin.h>
 
 int __ofono_plugin_init(const char *pattern, const char *exclude);
