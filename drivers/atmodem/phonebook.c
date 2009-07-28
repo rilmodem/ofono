@@ -43,6 +43,7 @@
 
 #define CHARSET_UTF8 1
 #define CHARSET_UCS2 2
+#define CHARSET_IRA  4
 #define CHARSET_SUPPORT (CHARSET_UTF8 | CHARSET_UCS2)
 
 static const char *none_prefix[] = { NULL };
@@ -85,6 +86,9 @@ static const char *best_charset(int supported)
 {
 	const char *charset = "Invalid";
 
+	if (supported & CHARSET_IRA)
+		charset = "IRA";
+
 	if (supported & CHARSET_UCS2)
 		charset = "UCS2";
 
@@ -103,6 +107,9 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 	int current;
 
 	dump_response("at_cbpr_notify", 1, result);
+
+	if (at->pb->supported & CHARSET_IRA)
+		current = CHARSET_IRA;
 
 	if (at->pb->supported & CHARSET_UCS2)
 		current = CHARSET_UCS2;
@@ -180,6 +187,9 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 			g_free(sip_uri_utf8);
 			g_free(tel_uri_utf8);
 		} else {
+			/* In the case of IRA charset, assume these are Latin1
+			 * characters, same as in UTF8
+			 */
 			ofono_phonebook_entry(cbd->modem, index, number, type,
 				text, hidden, group, adnumber,
 				adtype, secondtext, email,
@@ -472,13 +482,29 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 			at->pb->supported |= CHARSET_UTF8;
 		else if (!strcmp(charset, "UCS2"))
 			at->pb->supported |= CHARSET_UCS2;
+		else if (!strcmp(charset, "IRA"))
+			at->pb->supported |= CHARSET_IRA;
 	}
 
 	if (in_list && !g_at_result_iter_close_list(&iter))
 		goto error;
 
-	if (!(at->pb->supported & CHARSET_SUPPORT))
-		goto error;
+	if (!(at->pb->supported & CHARSET_SUPPORT)) {
+		/* Some modems, like the Google G1, do not support UCS2 or UTF8
+		 * Such modems are effectively junk, but we can still get some
+		 * useful information out of them by using IRA charset, which
+		 * is essentially Latin1.  Still, all bets are off if a SIM
+		 * with UCS2 encoded entries is present.
+		 */
+		if (at->pb->supported & CHARSET_IRA) {
+			ofono_error("This modem does not support UCS2 or UTF8 "
+					"character sets.  This means no i18n "
+					"phonebook is possible on this modem,"
+					" if this is in error, submit patches "
+					"to properly support this hardware");
+		} else
+			goto error;
+	}
 
 	if (g_at_chat_send(at->parser, "AT+CPBS=?", cpbs_prefix,
 				at_list_storages_cb, modem, NULL) > 0)
