@@ -178,7 +178,7 @@ out:
 					registration_status_callback, modem);
 }
 
-/* Must use dbus_gsm_free_string_array on network_operators */
+/* Must use g_strfreev on network_operators */
 static void network_operator_populate_registered(struct ofono_modem *modem,
 						char ***network_operators)
 {
@@ -289,7 +289,7 @@ static void network_operator_emit_available_operators(struct ofono_modem *modem)
 						DBUS_TYPE_OBJECT_PATH,
 						&network_operators);
 
-	dbus_gsm_free_string_array(network_operators);
+	g_strfreev(network_operators);
 }
 
 static void set_network_operator_status(struct ofono_modem *modem,
@@ -736,7 +736,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 					DBUS_TYPE_OBJECT_PATH,
 					&network_operators);
 
-	dbus_gsm_free_string_array(network_operators);
+	g_strfreev(network_operators);
 
 	if (netreg->signal_strength != -1) {
 		dbus_uint16_t strength = netreg->signal_strength;

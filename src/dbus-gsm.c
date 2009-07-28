@@ -35,19 +35,6 @@
 
 static DBusConnection *g_connection;
 
-void dbus_gsm_free_string_array(char **array)
-{
-	int i;
-
-	if (!array)
-		return;
-
-	for (i = 0; array[i]; i++)
-		g_free(array[i]);
-
-	g_free(array);
-}
-
 void dbus_gsm_append_variant(DBusMessageIter *iter,
 				int type, void *value)
 {

@@ -24,8 +24,6 @@
 
 #define MAX_DBUS_PATH_LEN 64
 
-void dbus_gsm_free_string_array(char **array);
-
 /* Essentially a{sv} */
 #define PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \
 					DBUS_TYPE_STRING_AS_STRING \

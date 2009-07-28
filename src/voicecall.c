@@ -715,14 +715,14 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	dbus_gsm_dict_append_array(&dict, "Calls", DBUS_TYPE_OBJECT_PATH,
 				&callobj_list);
 
-	dbus_gsm_free_string_array(callobj_list);
+	g_strfreev(callobj_list);
 
 	voicecalls_path_list(modem, calls->multiparty_list, &callobj_list);
 
 	dbus_gsm_dict_append_array(&dict, "MultipartyCalls",
 					DBUS_TYPE_OBJECT_PATH, &callobj_list);
 
-	dbus_gsm_free_string_array(callobj_list);
+	g_strfreev(callobj_list);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -1143,7 +1143,7 @@ static gboolean real_emit_call_list_changed(void *data)
 				DBUS_TYPE_OBJECT_PATH,
 				&objpath_list);
 
-	dbus_gsm_free_string_array(objpath_list);
+	g_strfreev(objpath_list);
 
 	ofono_debug("Resetting updating flag");
 	voicecalls->flags &= ~VOICECALLS_FLAG_UPDATING_CALL_LIST;
@@ -1179,7 +1179,7 @@ static gboolean real_emit_multiparty_call_list_changed(void *data)
 				DBUS_TYPE_OBJECT_PATH,
 				&objpath_list);
 
-	dbus_gsm_free_string_array(objpath_list);
+	g_strfreev(objpath_list);
 
 	voicecalls->flags &= ~VOICECALLS_FLAG_UPDATING_MPTY_CALL_LIST;
 

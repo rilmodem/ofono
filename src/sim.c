@@ -156,7 +156,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 
 	dbus_gsm_dict_append_array(&dict, "SubscriberNumbers",
 					DBUS_TYPE_STRING, &own_numbers);
-	dbus_gsm_free_string_array(own_numbers);
+	g_strfreev(own_numbers);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -232,7 +232,7 @@ check:
 							"SubscriberNumbers",
 							DBUS_TYPE_STRING,
 							&own_numbers);
-		dbus_gsm_free_string_array(own_numbers);
+		g_strfreev(own_numbers);
 	}
 }
 
