@@ -22,8 +22,6 @@
 #include <ofono/dbus.h>
 #include <gdbus.h>
 
-void dbus_gsm_set_connection(DBusConnection *conn);
-
 int dbus_gsm_init();
 void dbus_gsm_exit();
 

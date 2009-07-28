@@ -188,7 +188,7 @@ DBusConnection *ofono_dbus_get_connection()
 	return g_connection;
 }
 
-void dbus_gsm_set_connection(DBusConnection *conn)
+static void dbus_gsm_set_connection(DBusConnection *conn)
 {
 	if (conn && g_connection != NULL)
 		ofono_error("Setting a connection when it is not NULL");
