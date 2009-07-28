@@ -31,8 +31,6 @@
 
 #include "dbus-gsm.h"
 
-#define SERVICE_NAME	"org.ofono"
-
 #define RECONNECT_RETRY_TIMEOUT 2000
 
 static DBusConnection *g_connection;
@@ -196,53 +194,8 @@ static void dbus_gsm_set_connection(DBusConnection *conn)
 	g_connection = conn;
 }
 
-static gboolean system_bus_reconnect(void *user_data)
+int __ofono_dbus_init(DBusConnection *conn)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
-
-	if (!conn && (__ofono_dbus_init() < 0))
-		return TRUE;
-
-	conn = ofono_dbus_get_connection();
-
-	if (conn && dbus_connection_get_is_connected(conn))
-		return FALSE;
-
-	ofono_error("While attempting to reconnect, conn != NULL,"
-			" but not connected");
-
-	return TRUE;
-}
-
-static void system_bus_disconnected(DBusConnection *conn, void *user_data)
-{
-	ofono_error("System bus has disconnected!");
-
-	dbus_gsm_set_connection(NULL);
-
-	g_timeout_add(RECONNECT_RETRY_TIMEOUT,
-				system_bus_reconnect, NULL);
-}
-
-int __ofono_dbus_init(void)
-{
-	DBusConnection *conn;
-	DBusError error;
-
-	dbus_error_init(&error);
-
-	conn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, SERVICE_NAME, &error);
-	if (!conn) {
-		ofono_error("Unable to hop onto D-Bus: %s", error.message);
-		return -1;
-	}
-
-	if (g_dbus_set_disconnect_function(conn, system_bus_disconnected,
-						NULL, NULL) == FALSE) {
-		dbus_connection_unref(conn);
-		return -1;
-	}
-
 	dbus_gsm_set_connection(conn);
 
 	return 0;
@@ -256,6 +209,4 @@ void __ofono_dbus_cleanup(void)
 		return;
 
 	dbus_gsm_set_connection(NULL);
-
-	dbus_connection_unref(conn);
 }

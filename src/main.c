@@ -45,6 +45,13 @@ static void sig_term(int sig)
 	g_main_loop_quit(event_loop);
 }
 
+static void system_bus_disconnected(DBusConnection *conn, void *user_data)
+{
+	ofono_error("System bus has disconnected!");
+
+	g_main_loop_quit(event_loop);
+}
+
 static gboolean option_detach = TRUE;
 static gboolean option_debug = FALSE;
 
@@ -62,6 +69,8 @@ int main(int argc, char **argv)
 	GOptionContext *context;
 	GError *err = NULL;
 	struct sigaction sa;
+	DBusConnection *conn;
+	DBusError error;
 
 #ifdef NEED_THREADS
 	if (g_thread_supported() == FALSE)
@@ -102,11 +111,25 @@ int main(int argc, char **argv)
 
 	__ofono_log_init(option_detach, option_debug);
 
-	if (__ofono_dbus_init() != 0)
-		goto cleanup;
+	dbus_error_init(&error);
 
-	if (__ofono_manager_init() < 0)
+	conn = g_dbus_setup_bus(DBUS_BUS_SYSTEM, OFONO_SERVICE, &error);
+	if (!conn) {
+		if (dbus_error_is_set(&error) == TRUE) {
+			ofono_error("Unable to hop onto D-Bus: %s",
+					error.message);
+			dbus_error_free(&error);
+		} else
+			ofono_error("Unable to hop onto D-Bus");
 		goto cleanup;
+	}
+
+	g_dbus_set_disconnect_function(conn, system_bus_disconnected,
+					NULL, NULL);
+
+	__ofono_dbus_init(conn);
+
+	__ofono_manager_init();
 
 	__ofono_plugin_init(NULL, NULL);
 
@@ -129,6 +152,7 @@ int main(int argc, char **argv)
 	__ofono_manager_cleanup();
 
 	__ofono_dbus_cleanup();
+	dbus_connection_unref(conn);
 
 cleanup:
 	g_main_loop_unref(event_loop);
