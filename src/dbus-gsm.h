@@ -19,7 +19,7 @@
  *
  */
 
-#include <dbus/dbus.h>
+#include <ofono/dbus.h>
 #include <gdbus.h>
 
 DBusConnection *dbus_gsm_connection();
