@@ -1,0 +1,35 @@
+.\"
+.\" ofonod(8)
+.\"
+.\" Copyright (C) 2009  Collabora Ltd.
+.TH ofonod 8 "Jul 2009"
+.SH NAME
+ofonod \- oFono mobile telephony daemon
+.SH SYNOPSIS
+.B "ofonod [options]"
+.SH DESCRIPTION
+.B ofonod
+is a daemon which provides an oFono stack for interfacing mobile telephony devices.
+oFono is controlled through \fID-Bus\fP; for example, one can tell
+.B ofonod
+to send AT commands over /dev/rfcomm0 by calling the \fID-Bus\fP method org.ofono.at.Manager.Create.
+.I "/etc/dbus-1/system.d/ofono.conf"
+is used to manage \fID-Bus\fP permissions for oFono.
+.SH OPTIONS
+.TP
+.B --debug, -d
+Enable debug information output.
+.TP
+.B --nodetach, -n
+Don't run as daemon in background.
+.TP
+.SH SEE ALSO
+.PP
+\&\fIdbus-send\fR\|(1)
+
+.SH FILES
+.BR /etc/dbus-1/system.d/ofono.conf
+.SH AUTHOR
+.br
+This man page was written by Andres Salomon <dilinger@collabora.co.uk>.
+
