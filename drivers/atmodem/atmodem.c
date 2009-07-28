@@ -316,7 +316,7 @@ static void msg_destroy(gpointer user)
 
 static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *msg = user;
 	DBusMessage *reply;
 	struct at_data *at = NULL;
@@ -513,7 +513,7 @@ static void manager_exit(DBusConnection *conn)
 
 static int atmodem_init(void)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	manager_init(conn);
 
@@ -522,7 +522,7 @@ static int atmodem_init(void)
 
 static void atmodem_exit(void)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	manager_exit(conn);
 }

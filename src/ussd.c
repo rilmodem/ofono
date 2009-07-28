@@ -279,7 +279,7 @@ static gboolean recognized_passwd_change_string(struct ofono_modem *modem,
 
 	/* If SIC & SID don't match, then we just bail out here */
 	if (strcmp(sic, sid)) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		DBusMessage *reply = dbus_gsm_invalid_format(msg);
 		g_dbus_send_message(conn, reply);
 		return TRUE;
@@ -361,7 +361,7 @@ out:
 void ofono_ussd_notify(struct ofono_modem *modem, int status, const char *str)
 {
 	struct ussd_data *ussd = modem->ussd;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *ussdstr = "USSD";
 	const char sig[] = { DBUS_TYPE_STRING, 0 };
 	DBusMessage *reply;
@@ -420,7 +420,7 @@ out:
 static void ussd_callback(const struct ofono_error *error, void *data)
 {
 	struct ussd_data *ussd = data;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
@@ -547,7 +547,7 @@ static GDBusSignalTable ussd_signals[] = {
 
 int ofono_ussd_register(struct ofono_modem *modem, struct ofono_ussd_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem == NULL)
 		return -1;
@@ -581,7 +581,7 @@ int ofono_ussd_register(struct ofono_modem *modem, struct ofono_ussd_ops *ops)
 
 void ofono_ussd_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem->ussd == NULL)
 		return;

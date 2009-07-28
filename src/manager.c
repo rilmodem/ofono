@@ -70,7 +70,7 @@ GSList *ofono_manager_get_modems()
 struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops)
 {
 	struct ofono_modem *modem;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char **modems;
 
 	modem = modem_create(g_next_modem_id, ops);
@@ -97,7 +97,7 @@ struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops)
 int ofono_modem_unregister(struct ofono_modem *m)
 {
 	struct ofono_modem *modem = m;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char **modems;
 
 	if (modem == NULL)
@@ -162,7 +162,7 @@ static GDBusSignalTable manager_signals[] = {
 
 int __ofono_manager_init()
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	gboolean ret;
 
 	ret = g_dbus_register_interface(conn, "/", MANAGER_INTERFACE,
@@ -179,7 +179,7 @@ void __ofono_manager_cleanup()
 {
 	GSList *l;
 	struct ofono_modem *modem;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	/* Clean up in case plugins didn't unregister the modems */
 	for (l = g_modem_list; l; l = l->next) {

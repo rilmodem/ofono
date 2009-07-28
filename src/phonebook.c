@@ -501,7 +501,7 @@ static GDBusSignalTable phonebook_signals[] = {
 int ofono_phonebook_register(struct ofono_modem *modem,
 				struct ofono_phonebook_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem == NULL)
 		return -1;
@@ -533,7 +533,7 @@ int ofono_phonebook_register(struct ofono_modem *modem,
 
 void ofono_phonebook_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem->phonebook == NULL)
 		return;

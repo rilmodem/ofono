@@ -22,7 +22,6 @@
 #include <ofono/dbus.h>
 #include <gdbus.h>
 
-DBusConnection *dbus_gsm_connection();
 void dbus_gsm_set_connection(DBusConnection *conn);
 
 int dbus_gsm_init();
@@ -122,7 +121,7 @@ static inline DBusMessage *dbus_gsm_timed_out(DBusMessage *msg)
 
 static inline void dbus_gsm_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	g_dbus_send_message(conn, reply);
 

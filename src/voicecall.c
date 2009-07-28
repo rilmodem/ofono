@@ -361,7 +361,7 @@ static void voicecall_set_call_status(struct ofono_modem *modem,
 					struct voicecall *call,
 					int status)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 	const char *status_str;
 	int old_status;
@@ -404,7 +404,7 @@ static void voicecall_set_call_lineid(struct ofono_modem *modem,
 					int clip_validity)
 {
 	struct ofono_call *call = v->call;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 	const char *lineid_str;
 
@@ -441,7 +441,7 @@ static void voicecall_set_call_lineid(struct ofono_modem *modem,
 
 static gboolean voicecall_dbus_register(struct voicecall *voicecall)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 
 	if (!voicecall)
@@ -466,7 +466,7 @@ static gboolean voicecall_dbus_register(struct voicecall *voicecall)
 static gboolean voicecall_dbus_unregister(struct ofono_modem *modem,
 						struct voicecall *call)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = voicecall_build_path(modem, call->call);
 
 	return g_dbus_unregister_interface(conn, path,
@@ -1132,7 +1132,7 @@ static gboolean real_emit_call_list_changed(void *data)
 {
 	struct ofono_modem *modem = data;
 	struct voicecalls_data *voicecalls = modem->voicecalls;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char **objpath_list;
 
 	voicecalls_path_list(modem, voicecalls->call_list, &objpath_list);
@@ -1169,7 +1169,7 @@ static gboolean real_emit_multiparty_call_list_changed(void *data)
 {
 	struct ofono_modem *modem = data;
 	struct voicecalls_data *voicecalls = modem->voicecalls;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char **objpath_list;
 
 	voicecalls_path_list(modem, voicecalls->multiparty_list, &objpath_list);
@@ -1332,7 +1332,7 @@ err:
 static void generic_callback(const struct ofono_error *error, void *data)
 {
 	struct voicecalls_data *calls = data;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
@@ -1359,7 +1359,7 @@ static void multirelease_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct voicecalls_data *calls = modem->voicecalls;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	if (g_slist_length(calls->release_list)) {
@@ -1417,7 +1417,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct voicecalls_data *calls = modem->voicecalls;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	GSList *l;
 	struct ofono_call *call;
@@ -1531,7 +1531,7 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 {
 	struct ofono_modem *modem = data;
 	struct voicecalls_data *calls = modem->voicecalls;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	gboolean need_to_emit = FALSE;
 
@@ -1592,7 +1592,7 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct voicecalls_data *calls = modem->voicecalls;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	gboolean need_to_emit = FALSE;
 	const char *callpath;
@@ -1651,7 +1651,7 @@ out:
 
 int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem == NULL)
 		return -1;
@@ -1685,7 +1685,7 @@ int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_o
 
 void ofono_voicecall_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!modem->voicecalls)
 		return;

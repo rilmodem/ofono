@@ -140,7 +140,7 @@ static void set_clir_network(struct ofono_modem *modem, int clir)
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (cs->clir != clir) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *str = clir_status_to_string(clir);
 
 		cs->clir = clir;
@@ -157,7 +157,7 @@ static void set_clir_override(struct ofono_modem *modem, int override)
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (cs->clir_setting != override) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *str = hide_callerid_to_string(override);
 
 		cs->clir_setting = override;
@@ -173,7 +173,7 @@ static void set_clip(struct ofono_modem *modem, int clip)
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (cs->clip != clip) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *str = clip_status_to_string(clip);
 
 		cs->clip = clip;
@@ -190,7 +190,7 @@ static void set_colp(struct ofono_modem *modem, int colp)
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (cs->colp != colp) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *str = colp_status_to_string(colp);
 
 		cs->colp = colp;
@@ -207,7 +207,7 @@ static void set_colr(struct ofono_modem *modem, int colr)
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (cs->colr != colr) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *str = colr_status_to_string(colr);
 
 		cs->colr = colr;
@@ -222,7 +222,7 @@ static void set_colr(struct ofono_modem *modem, int colr)
 static void set_cw(struct ofono_modem *modem, int new_cw, int mask)
 {
 	struct call_settings_data *cs = modem->call_settings;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char buf[64];
 	int j;
 	const char *value;
@@ -384,7 +384,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 				const char *dn, DBusMessage *msg)
 {
 	struct call_settings_data *cs = modem->call_settings;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_SS_DEFAULT;
 	DBusMessage *reply;
 
@@ -548,7 +548,7 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
 				const char *dn, DBusMessage *msg)
 {
 	struct call_settings_data *cs = modem->call_settings;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	void (*query_op)(struct ofono_modem *modem, ofono_call_setting_status_cb_t cb,
 				void *data);
 
@@ -672,7 +672,7 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 				const char *dn, DBusMessage *msg)
 {
 	struct call_settings_data *cs = modem->call_settings;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!cs)
 		return FALSE;
@@ -1204,7 +1204,7 @@ static GDBusSignalTable cs_signals[] = {
 int ofono_call_settings_register(struct ofono_modem *modem,
 				struct ofono_call_settings_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem == NULL)
 		return -1;
@@ -1240,7 +1240,7 @@ int ofono_call_settings_register(struct ofono_modem *modem,
 void ofono_call_settings_unregister(struct ofono_modem *modem)
 {
 	struct call_settings_data *cs = modem->call_settings;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!cs)
 		return;

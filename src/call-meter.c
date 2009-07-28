@@ -77,7 +77,7 @@ static void set_call_meter(struct ofono_modem *modem, int value)
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (cm->call_meter != value) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 
 		cm->call_meter = value;
 
@@ -94,7 +94,7 @@ static void set_acm(struct ofono_modem *modem, int value)
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (cm->acm != value) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 
 		cm->acm = value;
 
@@ -111,7 +111,7 @@ static void set_acm_max(struct ofono_modem *modem, int value)
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (cm->acm_max != value) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 
 		cm->acm_max = value;
 
@@ -128,7 +128,7 @@ static void set_ppu(struct ofono_modem *modem, double value)
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (cm->ppu != value) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 
 		cm->ppu = value;
 
@@ -150,7 +150,7 @@ static void set_currency(struct ofono_modem *modem, const char *value)
 	}
 
 	if (strcmp(cm->currency, value)) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *dbusval = cm->currency;
 
 		strncpy(cm->currency, value, 3);
@@ -703,7 +703,7 @@ void ofono_call_meter_changed_notify(struct ofono_modem *modem, int new_value)
 
 void ofono_call_meter_maximum_notify(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *signal;
 
 	signal = dbus_message_new_signal(modem->path,
@@ -720,7 +720,7 @@ void ofono_call_meter_maximum_notify(struct ofono_modem *modem)
 int ofono_call_meter_register(struct ofono_modem *modem,
 				struct ofono_call_meter_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!modem || !ops)
 		return -1;
@@ -749,7 +749,7 @@ int ofono_call_meter_register(struct ofono_modem *modem,
 
 void ofono_call_meter_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!modem->call_meter)
 		return;

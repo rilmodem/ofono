@@ -220,7 +220,7 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 check:
 	if (record == total && sim->own_numbers) {
 		char **own_numbers;
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 
 		/* All records retrieved */
 		sim->own_numbers = g_slist_reverse(sim->own_numbers);
@@ -651,7 +651,7 @@ int ofono_sim_write(struct ofono_modem *modem, int id,
 
 static void initialize_sim_manager(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!g_dbus_register_interface(conn, modem->path,
 					SIM_MANAGER_INTERFACE,
@@ -773,7 +773,7 @@ int ofono_sim_manager_register(struct ofono_modem *modem,
 
 void ofono_sim_manager_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	g_dbus_unregister_interface(conn, modem->path,
 					SIM_MANAGER_INTERFACE);

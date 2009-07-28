@@ -95,7 +95,7 @@ static inline void emit_barring_changed(struct ofono_modem *modem, int start,
 					int end, const char *type, int cls)
 {
 	struct call_barring_data *cb = modem->call_barring;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char property_name[64];
 	const char *value;
 	int i;
@@ -370,7 +370,7 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 				DBusMessage *msg)
 {
 	struct call_barring_data *cb = modem->call_barring;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_DEFAULT;
 	const char *fac;
 	DBusMessage *reply;
@@ -504,7 +504,7 @@ static gboolean cb_ss_passwd(struct ofono_modem *modem, const char *sc,
 				DBusMessage *msg)
 {
 	struct call_barring_data *cb = modem->call_barring;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	const char *fac;
 
@@ -1045,7 +1045,7 @@ static GDBusSignalTable cb_signals[] = {
 static void call_barring_incoming_enabled_notify(int idx, void *userdata)
 {
 	struct ofono_modem *modem = userdata;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *signal;
 
 	signal = dbus_message_new_signal(modem->path,
@@ -1062,7 +1062,7 @@ static void call_barring_incoming_enabled_notify(int idx, void *userdata)
 static void call_barring_outgoing_enabled_notify(int idx, void *userdata)
 {
 	struct ofono_modem *modem = userdata;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *signal;
 
 	signal = dbus_message_new_signal(modem->path,
@@ -1079,7 +1079,7 @@ static void call_barring_outgoing_enabled_notify(int idx, void *userdata)
 int ofono_call_barring_register(struct ofono_modem *modem,
 				struct ofono_call_barring_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!modem || !ops)
 		return -1;
@@ -1116,7 +1116,7 @@ int ofono_call_barring_register(struct ofono_modem *modem,
 
 void ofono_call_barring_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!modem->call_barring)
 		return;

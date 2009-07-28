@@ -204,7 +204,7 @@ static gboolean trigger_interface_update(void *data)
 {
 	struct ofono_modem *modem = data;
 	struct ofono_modem_data *info = modem->modem_info;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	char **interfaces;
 	GSList *l;
@@ -264,7 +264,7 @@ void modem_remove_interface(struct ofono_modem *modem, const char *interface)
 
 static void finish_attr_query(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	modem->modem_info->flags &= ~MODEM_FLAG_INITIALIZING_ATTRS;
@@ -387,7 +387,7 @@ static gboolean query_manufacturer(gpointer user)
 struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 {
 	char path[MAX_DBUS_PATH_LEN];
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem;
 
 	modem = g_try_new0(struct ofono_modem, 1);
@@ -425,7 +425,7 @@ struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 
 void modem_remove(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	/* Need to make a copy to keep gdbus happy */
 	char *path = g_strdup(modem->path);
 

@@ -154,7 +154,7 @@ static void register_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	if (!netreg->pending)
@@ -182,7 +182,7 @@ out:
 static void network_operator_populate_registered(struct ofono_modem *modem,
 						char ***network_operators)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char **children;
 	int i;
 	int prefix_len;
@@ -278,7 +278,7 @@ static inline const char *network_operator_build_path(struct ofono_modem *modem,
 
 static void network_operator_emit_available_operators(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char **network_operators;
 
 	network_operator_populate_registered(modem, &network_operators);
@@ -297,7 +297,7 @@ static void set_network_operator_status(struct ofono_modem *modem,
 					int status)
 {
 	struct ofono_network_operator *op = opd->info;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *status_str;
 	const char *path;
 
@@ -319,7 +319,7 @@ static void set_network_operator_technology(struct ofono_modem *modem,
 					int tech)
 {
 	struct ofono_network_operator *op = opd->info;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *tech_str;
 	const char *path;
 
@@ -394,7 +394,7 @@ static void set_network_operator_name(struct ofono_modem *modem,
 {
 	struct network_registration_data *netreg = modem->network_registration;
 	struct ofono_network_operator *op = opd->info;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 	const char *operator;
 
@@ -430,7 +430,7 @@ static void set_network_operator_eons_info(struct ofono_modem *modem,
 				const struct sim_eons_operator_info *eons_info)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const struct sim_eons_operator_info *old_eons_info = opd->eons_info;
 	const char *path;
 	const char *oldname;
@@ -587,7 +587,7 @@ static struct network_operator_data *
 					enum operator_status status)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 	struct network_operator_data *opd = NULL;
 
@@ -632,7 +632,7 @@ err:
 static gboolean network_operator_dbus_unregister(struct ofono_modem *modem,
 						struct network_operator_data *opd)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = network_operator_build_path(modem, opd->info);
 
 	return g_dbus_unregister_interface(conn, path,
@@ -839,7 +839,7 @@ static void set_registration_status(struct ofono_modem *modem, int status)
 {
 	const char *str_status = registration_status_to_string(status);
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	netreg->status = status;
 
@@ -852,7 +852,7 @@ static void set_registration_status(struct ofono_modem *modem, int status)
 static void set_registration_location(struct ofono_modem *modem, int lac)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_uint16_t dbus_lac = lac;
 
 	if (lac > 0xffff)
@@ -872,7 +872,7 @@ static void set_registration_location(struct ofono_modem *modem, int lac)
 static void set_registration_cellid(struct ofono_modem *modem, int ci)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_uint32_t dbus_ci = ci;
 
 	netreg->cellid = ci;
@@ -890,7 +890,7 @@ static void set_registration_technology(struct ofono_modem *modem, int tech)
 {
 	struct network_registration_data *netreg = modem->network_registration;
 	const char *tech_str = registration_tech_to_string(tech);
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	netreg->technology = tech;
 
@@ -905,7 +905,7 @@ static void set_registration_technology(struct ofono_modem *modem, int tech)
 
 static void initialize_network_registration(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!g_dbus_register_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
@@ -1043,7 +1043,7 @@ static void current_operator_callback(const struct ofono_error *error,
 				const struct ofono_network_operator *current,
 				void *data)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = data;
 	struct network_registration_data *netreg = modem->network_registration;
 	GSList *op = NULL;
@@ -1159,7 +1159,7 @@ static void init_registration_status(const struct ofono_error *error,
 void ofono_signal_strength_notify(struct ofono_modem *modem, int strength)
 {
 	struct network_registration_data *netreg = modem->network_registration;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (netreg->signal_strength == strength)
 		return;
@@ -1289,7 +1289,7 @@ static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
 		return;
 
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *operator;
 
 		if (!sim_spdi_lookup(netreg->spdi,
@@ -1360,7 +1360,7 @@ static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
 
 	if (netreg->current_operator) {
-		DBusConnection *conn = dbus_gsm_connection();
+		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *operator;
 
 		operator = get_operator_display_name(modem);
@@ -1404,7 +1404,7 @@ int ofono_network_registration_register(struct ofono_modem *modem,
 
 void ofono_network_registration_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	g_dbus_unregister_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE);

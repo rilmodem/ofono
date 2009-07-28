@@ -103,7 +103,7 @@ static void set_sca(struct ofono_modem *modem,
 			const struct ofono_phone_number *sca)
 {
 	struct sms_manager_data *sms = modem->sms_manager;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *value;
 
 	if (sms->sca.type == sca->type &&
@@ -470,7 +470,7 @@ static void dispatch_text_message(struct ofono_modem *modem,
 					const struct sms_address *addr,
 					const struct sms_scts *scts)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *signal;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
@@ -784,7 +784,7 @@ void ofono_sms_status_notify(struct ofono_modem *modem, unsigned char *pdu,
 int ofono_sms_manager_register(struct ofono_modem *modem,
 					struct ofono_sms_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem == NULL)
 		return -1;
@@ -821,7 +821,7 @@ int ofono_sms_manager_register(struct ofono_modem *modem,
 
 void ofono_sms_manager_unregister(struct ofono_modem *modem)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	g_dbus_unregister_interface(conn, modem->path,
 					SMS_MANAGER_INTERFACE);

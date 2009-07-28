@@ -183,7 +183,7 @@ int dbus_gsm_signal_array_property_changed(DBusConnection *conn,
 	return g_dbus_send_message(conn, signal);
 }
 
-DBusConnection *dbus_gsm_connection()
+DBusConnection *ofono_dbus_get_connection()
 {
 	return g_connection;
 }
@@ -198,12 +198,12 @@ void dbus_gsm_set_connection(DBusConnection *conn)
 
 static gboolean system_bus_reconnect(void *user_data)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!conn && (dbus_gsm_init() < 0))
 		return TRUE;
 
-	conn = dbus_gsm_connection();
+	conn = ofono_dbus_get_connection();
 
 	if (conn && dbus_connection_get_is_connected(conn))
 		return FALSE;
@@ -250,7 +250,7 @@ int dbus_gsm_init()
 
 void dbus_gsm_exit()
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!conn || !dbus_connection_get_is_connected(conn))
 		return;

@@ -219,7 +219,7 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 {
 	struct call_forwarding_data *cf = modem->call_forwarding;
 	GSList *old = cf->cf_conditions[type];
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	GSList *l;
 	GSList *o;
 	struct ofono_cf_condition *lc;
@@ -924,7 +924,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 				DBusMessage *msg)
 {
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_SS_DEFAULT;
 	int timeout = DEFAULT_NO_REPLY_TIMEOUT;
 	int cf_type;
@@ -1136,7 +1136,7 @@ static void cf_unregister_ss_controls(struct ofono_modem *modem)
 int ofono_call_forwarding_register(struct ofono_modem *modem,
 				struct ofono_call_forwarding_ops *ops)
 {
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (modem == NULL)
 		return -1;
@@ -1176,7 +1176,7 @@ int ofono_call_forwarding_register(struct ofono_modem *modem,
 void ofono_call_forwarding_unregister(struct ofono_modem *modem)
 {
 	struct call_forwarding_data *cf = modem->call_forwarding;
-	DBusConnection *conn = dbus_gsm_connection();
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!cf)
 		return;

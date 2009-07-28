@@ -28,6 +28,8 @@ extern "C" {
 
 #include <dbus/dbus.h>
 
+DBusConnection *ofono_dbus_get_connection();
+
 #ifdef __cplusplus
 }
 #endif
