@@ -31,7 +31,6 @@
 
 #include "dbus-gsm.h"
 
-#define RECONNECT_RETRY_TIMEOUT 2000
 
 static DBusConnection *g_connection;
 
