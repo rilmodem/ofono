@@ -1137,7 +1137,7 @@ static gboolean real_emit_call_list_changed(void *data)
 
 	voicecalls_path_list(modem, voicecalls->call_list, &objpath_list);
 
-	dbus_gsm_signal_array_property_changed(conn, modem->path,
+	ofono_dbus_signal_array_property_changed(conn, modem->path,
 				VOICECALL_MANAGER_INTERFACE,
 				"Calls",
 				DBUS_TYPE_OBJECT_PATH,
@@ -1174,7 +1174,7 @@ static gboolean real_emit_multiparty_call_list_changed(void *data)
 
 	voicecalls_path_list(modem, voicecalls->multiparty_list, &objpath_list);
 
-	dbus_gsm_signal_array_property_changed(conn, modem->path,
+	ofono_dbus_signal_array_property_changed(conn, modem->path,
 				VOICECALL_MANAGER_INTERFACE, "MultipartyCalls",
 				DBUS_TYPE_OBJECT_PATH,
 				&objpath_list);

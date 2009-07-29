@@ -84,7 +84,7 @@ struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops)
 	g_modem_list = g_slist_prepend(g_modem_list, modem);
 
 	if (modem_list(&modems) == 0) {
-		dbus_gsm_signal_array_property_changed(conn, MANAGER_PATH,
+		ofono_dbus_signal_array_property_changed(conn, MANAGER_PATH,
 				MANAGER_INTERFACE, "Modems",
 				DBUS_TYPE_OBJECT_PATH, &modems);
 
@@ -109,7 +109,7 @@ int ofono_modem_unregister(struct ofono_modem *m)
 	g_modem_list = g_slist_remove(g_modem_list, modem);
 
 	if (modem_list(&modems) == 0) {
-		dbus_gsm_signal_array_property_changed(conn, MANAGER_PATH,
+		ofono_dbus_signal_array_property_changed(conn, MANAGER_PATH,
 				MANAGER_INTERFACE, "Modems",
 				DBUS_TYPE_OBJECT_PATH, &modems);
 

@@ -382,7 +382,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	g_dbus_send_message(conn, reply);
 
 	modem_list(&modems);
-	dbus_gsm_signal_array_property_changed(conn, "/", AT_MANAGER_INTERFACE,
+	ofono_dbus_signal_array_property_changed(conn, "/", AT_MANAGER_INTERFACE,
 						"Modems", DBUS_TYPE_OBJECT_PATH,
 						&modems);
 	g_free(modems);
@@ -447,7 +447,7 @@ static DBusMessage *manager_destroy(DBusConnection *conn, DBusMessage *msg,
 		at_destroy(at);
 
 		modem_list(&modems);
-		dbus_gsm_signal_array_property_changed(conn, "/",
+		ofono_dbus_signal_array_property_changed(conn, "/",
 						AT_MANAGER_INTERFACE,
 						"Modems", DBUS_TYPE_OBJECT_PATH,
 						&modems);

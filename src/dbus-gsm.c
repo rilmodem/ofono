@@ -141,7 +141,7 @@ int ofono_dbus_signal_property_changed(DBusConnection *conn,
 	return g_dbus_send_message(conn, signal);
 }
 
-int dbus_gsm_signal_array_property_changed(DBusConnection *conn,
+int ofono_dbus_signal_array_property_changed(DBusConnection *conn,
 						const char *path,
 						const char *interface,
 						const char *name,

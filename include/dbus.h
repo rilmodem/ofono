@@ -36,6 +36,12 @@ int ofono_dbus_signal_property_changed(DBusConnection *conn, const char *path,
 					const char *interface, const char *name,
 					int type, void *value);
 
+int ofono_dbus_signal_array_property_changed(DBusConnection *conn,
+						const char *path,
+						const char *interface,
+						const char *name, int type,
+						void *value);
+
 #ifdef __cplusplus
 }
 #endif

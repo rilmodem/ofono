@@ -214,7 +214,7 @@ static gboolean trigger_interface_update(void *data)
 	for (i = 0, l = info->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
 
-	dbus_gsm_signal_array_property_changed(conn, modem->path,
+	ofono_dbus_signal_array_property_changed(conn, modem->path,
 						MODEM_INTERFACE,
 						"Interfaces", DBUS_TYPE_STRING,
 						&interfaces);

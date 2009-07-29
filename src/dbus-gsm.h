@@ -41,12 +41,6 @@ void dbus_gsm_dict_append_array(DBusMessageIter *dict, const char *key,
 				int type, void *val);
 
 
-int dbus_gsm_signal_array_property_changed(DBusConnection *conn,
-						const char *path,
-						const char *interface,
-						const char *name, int type,
-						void *value);
-
 static inline void dbus_gsm_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();

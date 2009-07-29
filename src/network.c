@@ -283,7 +283,7 @@ static void network_operator_emit_available_operators(struct ofono_modem *modem)
 
 	network_operator_populate_registered(modem, &network_operators);
 
-	dbus_gsm_signal_array_property_changed(conn, modem->path,
+	ofono_dbus_signal_array_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"AvailableOperators",
 						DBUS_TYPE_OBJECT_PATH,

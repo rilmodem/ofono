@@ -227,7 +227,7 @@ check:
 
 		own_numbers = get_own_numbers(sim->own_numbers);
 
-		dbus_gsm_signal_array_property_changed(conn, modem->path,
+		ofono_dbus_signal_array_property_changed(conn, modem->path,
 							SIM_MANAGER_INTERFACE,
 							"SubscriberNumbers",
 							DBUS_TYPE_STRING,
