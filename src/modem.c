@@ -393,7 +393,8 @@ static gboolean query_manufacturer(gpointer user)
 	return FALSE;
 }
 
-struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
+static struct ofono_modem *modem_create(int id,
+					struct ofono_modem_attribute_ops *ops)
 {
 	char path[128];
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -432,7 +433,7 @@ struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 	return modem;
 }
 
-void modem_remove(struct ofono_modem *modem)
+static void modem_remove(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	/* Need to make a copy to keep gdbus happy */
