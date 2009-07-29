@@ -57,6 +57,32 @@ void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 int __ofono_plugin_init(const char *pattern, const char *exclude);
 void __ofono_plugin_cleanup(void);
 
+struct ofono_modem {
+	int		id;
+	char		*path;
+
+	void 		*userdata;
+
+	GSList *ss_control_list;
+	GSList *ss_passwd_list;
+
+	struct ofono_modem_data *modem_info;
+	struct network_registration_data *network_registration;
+	struct voicecalls_data *voicecalls;
+	struct call_forwarding_data *call_forwarding;
+	struct ussd_data *ussd;
+	struct call_settings_data *call_settings;
+	struct call_waiting_data *call_waiting;
+	struct call_meter_data *call_meter;
+	struct call_barring_data *call_barring;
+	struct cssn_data *cssn;
+	struct sim_manager_data *sim_manager;
+	struct sms_manager_data *sms_manager;
+	struct phonebook_data *phonebook;
+
+	GSList *history_contexts;
+};
+
 #include <ofono/history.h>
 
 void __ofono_history_probe_drivers(struct ofono_modem *modem);

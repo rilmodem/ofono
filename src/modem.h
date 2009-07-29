@@ -21,32 +21,6 @@
 
 struct ofono_modem_attribute_ops;
 
-struct ofono_modem {
-	int		id;
-	char		*path;
-
-	void 		*userdata;
-
-	GSList *ss_control_list;
-	GSList *ss_passwd_list;
-
-	struct ofono_modem_data *modem_info;
-	struct network_registration_data *network_registration;
-	struct voicecalls_data *voicecalls;
-	struct call_forwarding_data *call_forwarding;
-	struct ussd_data *ussd;
-	struct call_settings_data *call_settings;
-	struct call_waiting_data *call_waiting;
-	struct call_meter_data *call_meter;
-	struct call_barring_data *call_barring;
-	struct cssn_data *cssn;
-	struct sim_manager_data *sim_manager;
-	struct sms_manager_data *sms_manager;
-	struct phonebook_data *phonebook;
-
-	GSList *history_contexts;
-};
-
 struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops);
 void modem_remove(struct ofono_modem *modem);
 
