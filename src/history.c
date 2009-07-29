@@ -59,7 +59,7 @@ static struct ofono_history_context *history_context_create(
 	return context;
 }
 
-void ofono_history_probe_drivers(struct ofono_modem *modem)
+void __ofono_history_probe_drivers(struct ofono_modem *modem)
 {
 	GSList *l;
 	struct ofono_history_context *context;
@@ -78,7 +78,7 @@ void ofono_history_probe_drivers(struct ofono_modem *modem)
 	}
 }
 
-void ofono_history_remove_drivers(struct ofono_modem *modem)
+void __ofono_history_remove_drivers(struct ofono_modem *modem)
 {
 	GSList *l;
 	struct ofono_history_context *context;
@@ -96,7 +96,7 @@ void ofono_history_remove_drivers(struct ofono_modem *modem)
 	modem->history_contexts = NULL;
 }
 
-void ofono_history_call_ended(struct ofono_modem *modem,
+void __ofono_history_call_ended(struct ofono_modem *modem,
 				const struct ofono_call *call,
 				time_t start, time_t end)
 {
@@ -111,7 +111,7 @@ void ofono_history_call_ended(struct ofono_modem *modem,
 	}
 }
 
-void ofono_history_call_missed(struct ofono_modem *modem,
+void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when)
 {
 	struct ofono_history_context *context;

@@ -59,12 +59,12 @@ void __ofono_plugin_cleanup(void);
 
 #include <ofono/history.h>
 
-void ofono_history_probe_drivers(struct ofono_modem *modem);
-void ofono_history_remove_drivers(struct ofono_modem *modem);
+void __ofono_history_probe_drivers(struct ofono_modem *modem);
+void __ofono_history_remove_drivers(struct ofono_modem *modem);
 
-void ofono_history_call_ended(struct ofono_modem *modem,
+void __ofono_history_call_ended(struct ofono_modem *modem,
 				const struct ofono_call *call,
 				time_t start, time_t end);
 
-void ofono_history_call_missed(struct ofono_modem *modem,
+void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when);

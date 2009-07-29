@@ -1248,9 +1248,9 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 	voicecall_set_call_status(modem, call, CALL_STATUS_DISCONNECTED);
 
 	if (prev_status == CALL_STATUS_INCOMING)
-		ofono_history_call_missed(modem, call->call, ts);
+		__ofono_history_call_missed(modem, call->call, ts);
 	else
-		ofono_history_call_ended(modem, call->call,
+		__ofono_history_call_ended(modem, call->call,
 						call->detect_time, ts);
 
 	voicecall_dbus_unregister(modem, call);
