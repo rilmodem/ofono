@@ -278,7 +278,7 @@ static void generate_ss_query_reply(struct ofono_modem *modem)
 
 	dbus_message_iter_close_container(&iter, &variant);
 
-	dbus_gsm_pending_reply(&cb->pending, reply);
+	__ofono_dbus_pending_reply(&cb->pending, reply);
 }
 
 static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
@@ -294,7 +294,7 @@ static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 
 		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
 
-		dbus_gsm_pending_reply(&cb->pending,
+		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;
 	}
@@ -333,7 +333,7 @@ static void cb_ss_set_lock_callback(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Enabling/disabling Call Barring via SS failed");
-		dbus_gsm_pending_reply(&cb->pending,
+		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;
 	}
@@ -497,7 +497,7 @@ static void cb_set_passwd_callback(const struct ofono_error *error, void *data)
 		ofono_debug("Changing Call Barring password via SS failed");
 	}
 
-	dbus_gsm_pending_reply(&cb->pending, reply);
+	__ofono_dbus_pending_reply(&cb->pending, reply);
 }
 
 static gboolean cb_ss_passwd(struct ofono_modem *modem, const char *sc,
@@ -663,7 +663,7 @@ static void cb_get_properties_reply(struct ofono_modem *modem, int mask)
 
 	dbus_message_iter_close_container(&iter, &dict);
 
-	dbus_gsm_pending_reply(&cb->pending, reply);
+	__ofono_dbus_pending_reply(&cb->pending, reply);
 }
 
 static void get_query_lock_callback(const struct ofono_error *error,
@@ -736,7 +736,7 @@ static void set_query_lock_callback(const struct ofono_error *error,
 
 		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
 
-		dbus_gsm_pending_reply(&cb->pending,
+		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;
 	}
@@ -749,7 +749,7 @@ static void set_query_lock_callback(const struct ofono_error *error,
 		return;
 	}
 
-	dbus_gsm_pending_reply(&cb->pending,
+	__ofono_dbus_pending_reply(&cb->pending,
 				dbus_message_new_method_return(cb->pending));
 	update_barrings(modem, BEARER_CLASS_VOICE);
 }
@@ -772,7 +772,7 @@ static void set_lock_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Enabling/disabling a lock failed");
-		dbus_gsm_pending_reply(&cb->pending,
+		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;
 	}
@@ -921,7 +921,7 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Disabling all barring failed");
-		dbus_gsm_pending_reply(&cb->pending,
+		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;
 	}

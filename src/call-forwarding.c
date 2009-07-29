@@ -421,7 +421,7 @@ static void get_query_cf_callback(const struct ofono_error *error, int total,
 
 	if (cf->query_next == CALL_FORWARDING_TYPE_NOT_REACHABLE) {
 		DBusMessage *reply = cf_get_properties_reply(cf->pending, cf);
-		dbus_gsm_pending_reply(&cf->pending, reply);
+		__ofono_dbus_pending_reply(&cf->pending, reply);
 		return;
 	}
 
@@ -530,13 +530,13 @@ static void set_query_cf_callback(const struct ofono_error *error, int total,
 		ofono_error("Setting succeeded, but query failed");
 		cf->flags &= ~CALL_FORWARDING_FLAG_CACHED;
 		reply = __ofono_error_failed(cf->pending);
-		dbus_gsm_pending_reply(&cf->pending, reply);
+		__ofono_dbus_pending_reply(&cf->pending, reply);
 		return;
 	}
 
 	if (cf->query_next == cf->query_end) {
 		reply = dbus_message_new_method_return(cf->pending);
-		dbus_gsm_pending_reply(&cf->pending, reply);
+		__ofono_dbus_pending_reply(&cf->pending, reply);
 	} else {
 		cf->query_next++;
 		g_timeout_add(0, set_query_next_cf_cond, modem);
@@ -567,7 +567,7 @@ static void set_property_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during set/erasure");
-		dbus_gsm_pending_reply(&cf->pending,
+		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
 		return;
 	}
@@ -697,7 +697,7 @@ static void disable_conditional_callback(const struct ofono_error *error,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during conditional erasure");
 
-		dbus_gsm_pending_reply(&cf->pending,
+		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
 		return;
 	}
@@ -716,7 +716,7 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during erasure of all");
 
-		dbus_gsm_pending_reply(&cf->pending,
+		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
 		return;
 	}
@@ -865,7 +865,7 @@ static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 		ofono_error("Setting succeeded, but query failed");
 		cf->flags &= ~CALL_FORWARDING_FLAG_CACHED;
 		reply = __ofono_error_failed(cf->pending);
-		dbus_gsm_pending_reply(&cf->pending, reply);
+		__ofono_dbus_pending_reply(&cf->pending, reply);
 		return;
 	}
 
@@ -877,7 +877,7 @@ static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 
 	if (cf->query_next == cf->query_end) {
 		reply = cf_ss_control_reply(modem, cf->ss_req);
-		dbus_gsm_pending_reply(&cf->pending, reply);
+		__ofono_dbus_pending_reply(&cf->pending, reply);
 		g_free(cf->ss_req);
 		cf->ss_req = NULL;
 	} else {
@@ -907,7 +907,7 @@ static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during cf ss control set/erasure");
 
-		dbus_gsm_pending_reply(&cf->pending,
+		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
 		g_free(cf->ss_req);
 		cf->ss_req = NULL;

@@ -227,6 +227,16 @@ DBusMessage *__ofono_error_timed_out(DBusMessage *msg)
 			"Operation failure due to timeout");
 }
 
+void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	g_dbus_send_message(conn, reply);
+
+	dbus_message_unref(*msg);
+	*msg = NULL;
+}
+
 DBusConnection *ofono_dbus_get_connection()
 {
 	return g_connection;

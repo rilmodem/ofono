@@ -456,7 +456,7 @@ static void export_phonebook(struct ofono_modem *modem)
 		return;
 	}
 
-	dbus_gsm_pending_reply(&phonebook->pending, reply);
+	__ofono_dbus_pending_reply(&phonebook->pending, reply);
 	phonebook->flags |= PHONEBOOK_FLAG_CACHED;
 }
 

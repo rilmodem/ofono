@@ -50,6 +50,8 @@ DBusMessage *__ofono_error_not_active(DBusMessage *msg);
 DBusMessage *__ofono_error_not_supported(DBusMessage *msg);
 DBusMessage *__ofono_error_timed_out(DBusMessage *msg);
 
+void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
+
 #include <ofono/plugin.h>
 
 int __ofono_plugin_init(const char *pattern, const char *exclude);

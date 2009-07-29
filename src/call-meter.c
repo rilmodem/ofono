@@ -196,7 +196,7 @@ static void cm_get_properties_reply(struct ofono_modem *modem)
 
 	dbus_message_iter_close_container(&iter, &dict);
 
-	dbus_gsm_pending_reply(&cm->pending, reply);
+	__ofono_dbus_pending_reply(&cm->pending, reply);
 }
 
 static void query_call_meter_callback(const struct ofono_error *error, int value,
@@ -355,13 +355,13 @@ static void set_acm_max_query_callback(const struct ofono_error *error, int valu
 
 		cm->flags &= ~CALL_METER_FLAG_CACHED;
 
-		dbus_gsm_pending_reply(&cm->pending,
+		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
 	}
 
 	reply = dbus_message_new_method_return(cm->pending);
-	dbus_gsm_pending_reply(&cm->pending, reply);
+	__ofono_dbus_pending_reply(&cm->pending, reply);
 
 	set_acm_max(modem, value);
 }
@@ -373,7 +373,7 @@ static void set_acm_max_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Setting acm_max failed");
-		dbus_gsm_pending_reply(&cm->pending,
+		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
 	}
@@ -417,13 +417,13 @@ static void set_puct_query_callback(const struct ofono_error *error,
 
 		cm->flags &= ~CALL_METER_FLAG_CACHED;
 
-		dbus_gsm_pending_reply(&cm->pending,
+		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
 	}
 
 	reply = dbus_message_new_method_return(cm->pending);
-	dbus_gsm_pending_reply(&cm->pending, reply);
+	__ofono_dbus_pending_reply(&cm->pending, reply);
 
 	set_currency(modem, currency);
 	set_ppu(modem, ppu);
@@ -436,7 +436,7 @@ static void set_puct_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting puct failed");
-		dbus_gsm_pending_reply(&cm->pending,
+		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
 	}
@@ -463,7 +463,7 @@ static void set_puct_initial_query_callback(const struct ofono_error *error,
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		dbus_gsm_pending_reply(&cm->pending,
+		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
 	}
@@ -622,13 +622,13 @@ static void reset_acm_query_callback(const struct ofono_error *error, int value,
 
 		cm->flags &= ~CALL_METER_FLAG_CACHED;
 
-		dbus_gsm_pending_reply(&cm->pending,
+		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
 	}
 
 	reply = dbus_message_new_method_return(cm->pending);
-	dbus_gsm_pending_reply(&cm->pending, reply);
+	__ofono_dbus_pending_reply(&cm->pending, reply);
 
 	set_acm(modem, value);
 }
@@ -640,7 +640,7 @@ static void acm_reset_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("reseting acm failed");
-		dbus_gsm_pending_reply(&cm->pending,
+		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
 	}

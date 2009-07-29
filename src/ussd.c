@@ -507,7 +507,7 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 	} else
 		reply = __ofono_error_failed(ussd->pending);
 
-	dbus_gsm_pending_reply(&ussd->pending, reply);
+	__ofono_dbus_pending_reply(&ussd->pending, reply);
 }
 
 static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,

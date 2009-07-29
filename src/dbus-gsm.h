@@ -24,12 +24,3 @@
 
 #define MAX_DBUS_PATH_LEN 64
 
-static inline void dbus_gsm_pending_reply(DBusMessage **msg, DBusMessage *reply)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-
-	g_dbus_send_message(conn, reply);
-
-	dbus_message_unref(*msg);
-	*msg = NULL;
-}

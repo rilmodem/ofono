@@ -169,7 +169,7 @@ out:
 	if (sms->pending) {
 		DBusMessage *reply = generate_get_properties_reply(modem,
 								sms->pending);
-		dbus_gsm_pending_reply(&sms->pending, reply);
+		__ofono_dbus_pending_reply(&sms->pending, reply);
 	}
 }
 
@@ -207,14 +207,14 @@ static void sca_set_query_callback(const struct ofono_error *error,
 		ofono_error("Set SCA succeeded, but query failed");
 		sms->flags &= ~SMS_MANAGER_FLAG_CACHED;
 		reply = __ofono_error_failed(sms->pending);
-		dbus_gsm_pending_reply(&sms->pending, reply);
+		__ofono_dbus_pending_reply(&sms->pending, reply);
 		return;
 	}
 
 	set_sca(modem, sca);
 
 	reply = dbus_message_new_method_return(sms->pending);
-	dbus_gsm_pending_reply(&sms->pending, reply);
+	__ofono_dbus_pending_reply(&sms->pending, reply);
 }
 
 static void sca_set_callback(const struct ofono_error *error, void *data)
@@ -224,7 +224,7 @@ static void sca_set_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Setting SCA failed");
-		dbus_gsm_pending_reply(&sms->pending,
+		__ofono_dbus_pending_reply(&sms->pending,
 					__ofono_error_failed(sms->pending));
 		return;
 	}
