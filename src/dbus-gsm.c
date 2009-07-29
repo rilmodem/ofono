@@ -35,7 +35,7 @@
 
 static DBusConnection *g_connection;
 
-void dbus_gsm_append_variant(DBusMessageIter *iter,
+static void append_variant(DBusMessageIter *iter,
 				int type, void *value)
 {
 	char sig[2];
@@ -68,7 +68,7 @@ void ofono_dbus_dict_append(DBusMessageIter *dict,
 
 	dbus_message_iter_append_basic(&keyiter, DBUS_TYPE_STRING, &key);
 
-	dbus_gsm_append_variant(&keyiter, type, value);
+	append_variant(&keyiter, type, value);
 
 	dbus_message_iter_close_container(dict, &keyiter);
 }
@@ -136,7 +136,7 @@ int ofono_dbus_signal_property_changed(DBusConnection *conn,
 
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &name);
 
-	dbus_gsm_append_variant(&iter, type, value);
+	append_variant(&iter, type, value);
 
 	return g_dbus_send_message(conn, signal);
 }
