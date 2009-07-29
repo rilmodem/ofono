@@ -1232,7 +1232,7 @@ int ofono_call_settings_register(struct ofono_modem *modem,
 
 	cs_register_ss_controls(modem);
 
-	modem_add_interface(modem, CALL_SETTINGS_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_SETTINGS_INTERFACE);
 	return 0;
 }
 
@@ -1244,7 +1244,7 @@ void ofono_call_settings_unregister(struct ofono_modem *modem)
 	if (!cs)
 		return;
 
-	modem_remove_interface(modem, CALL_SETTINGS_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_SETTINGS_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path,
 					CALL_SETTINGS_INTERFACE);
 

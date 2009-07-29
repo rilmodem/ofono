@@ -1166,7 +1166,7 @@ int ofono_call_forwarding_register(struct ofono_modem *modem,
 
 	cf_register_ss_controls(modem);
 
-	modem_add_interface(modem, CALL_FORWARDING_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_FORWARDING_INTERFACE);
 
 	return 0;
 }
@@ -1179,7 +1179,7 @@ void ofono_call_forwarding_unregister(struct ofono_modem *modem)
 	if (!cf)
 		return;
 
-	modem_remove_interface(modem, CALL_FORWARDING_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_FORWARDING_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path,
 					CALL_FORWARDING_INTERFACE);
 

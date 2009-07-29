@@ -741,7 +741,7 @@ int ofono_call_meter_register(struct ofono_modem *modem,
 		return -1;
 	}
 
-	modem_add_interface(modem, CALL_METER_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_METER_INTERFACE);
 
 	return 0;
 }
@@ -753,7 +753,7 @@ void ofono_call_meter_unregister(struct ofono_modem *modem)
 	if (!modem->call_meter)
 		return;
 
-	modem_remove_interface(modem, CALL_METER_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_METER_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path, CALL_METER_INTERFACE);
 
 	modem->call_meter = NULL;

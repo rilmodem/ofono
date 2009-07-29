@@ -83,6 +83,8 @@ struct ofono_modem {
 	GSList *history_contexts;
 };
 
+#include <ofono/modem.h>
+
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem);
 void __ofono_modem_release_callid(struct ofono_modem *modem, int id);
 

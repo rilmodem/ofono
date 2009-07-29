@@ -666,7 +666,7 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 	ofono_debug("SIMManager interface for modem: %s created",
 			modem->path);
 
-	modem_add_interface(modem, SIM_MANAGER_INTERFACE);
+	ofono_modem_add_interface(modem, SIM_MANAGER_INTERFACE);
 
 	ofono_sim_ready_notify_register(modem, sim_ready);
 
@@ -775,7 +775,7 @@ void ofono_sim_manager_unregister(struct ofono_modem *modem)
 
 	g_dbus_unregister_interface(conn, modem->path,
 					SIM_MANAGER_INTERFACE);
-	modem_remove_interface(modem, SIM_MANAGER_INTERFACE);
+	ofono_modem_remove_interface(modem, SIM_MANAGER_INTERFACE);
 }
 
 void ofono_sim_manager_init(struct ofono_modem *modem)

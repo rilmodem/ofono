@@ -224,7 +224,8 @@ static gboolean trigger_interface_update(void *data)
 	return FALSE;
 }
 
-void modem_add_interface(struct ofono_modem *modem, const char *interface)
+void ofono_modem_add_interface(struct ofono_modem *modem,
+				const char *interface)
 {
 	struct ofono_modem_data *info = modem->modem_info;
 
@@ -236,7 +237,8 @@ void modem_add_interface(struct ofono_modem *modem, const char *interface)
 			g_timeout_add(0, trigger_interface_update, modem);
 }
 
-void modem_remove_interface(struct ofono_modem *modem, const char *interface)
+void ofono_modem_remove_interface(struct ofono_modem *modem,
+				const char *interface)
 {
 	struct ofono_modem_data *info = modem->modem_info;
 

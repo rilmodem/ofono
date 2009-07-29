@@ -1102,7 +1102,7 @@ int ofono_call_barring_register(struct ofono_modem *modem,
 		return -1;
 	}
 
-	modem_add_interface(modem, CALL_BARRING_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_BARRING_INTERFACE);
 
 	cb_register_ss_controls(modem);
 
@@ -1121,7 +1121,7 @@ void ofono_call_barring_unregister(struct ofono_modem *modem)
 	if (!modem->call_barring)
 		return;
 
-	modem_remove_interface(modem, CALL_BARRING_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_BARRING_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path, CALL_BARRING_INTERFACE);
 
 	cb_unregister_ss_controls(modem);

@@ -572,7 +572,7 @@ int ofono_ussd_register(struct ofono_modem *modem, struct ofono_ussd_ops *ops)
 		return -1;
 	}
 
-	modem_add_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
+	ofono_modem_add_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
 
 	return 0;
 }
@@ -584,7 +584,7 @@ void ofono_ussd_unregister(struct ofono_modem *modem)
 	if (modem->ussd == NULL)
 		return;
 
-	modem_remove_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
+	ofono_modem_remove_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path,
 					SUPPLEMENTARY_SERVICES_INTERFACE);
 }

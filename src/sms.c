@@ -812,7 +812,7 @@ int ofono_sms_manager_register(struct ofono_modem *modem,
 	ofono_debug("SmsManager interface for modem: %s created",
 			modem->path);
 
-	modem_add_interface(modem, SMS_MANAGER_INTERFACE);
+	ofono_modem_add_interface(modem, SMS_MANAGER_INTERFACE);
 
 	return 0;
 }
@@ -824,5 +824,5 @@ void ofono_sms_manager_unregister(struct ofono_modem *modem)
 	g_dbus_unregister_interface(conn, modem->path,
 					SMS_MANAGER_INTERFACE);
 
-	modem_remove_interface(modem, SMS_MANAGER_INTERFACE);
+	ofono_modem_remove_interface(modem, SMS_MANAGER_INTERFACE);
 }

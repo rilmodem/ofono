@@ -525,7 +525,7 @@ int ofono_phonebook_register(struct ofono_modem *modem,
 		return -1;
 	}
 
-	modem_add_interface(modem, PHONEBOOK_INTERFACE);
+	ofono_modem_add_interface(modem, PHONEBOOK_INTERFACE);
 	return 0;
 }
 
@@ -536,7 +536,7 @@ void ofono_phonebook_unregister(struct ofono_modem *modem)
 	if (modem->phonebook == NULL)
 		return;
 
-	modem_remove_interface(modem, PHONEBOOK_INTERFACE);
+	ofono_modem_remove_interface(modem, PHONEBOOK_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path,
 					PHONEBOOK_INTERFACE);
 }

@@ -919,7 +919,7 @@ static void initialize_network_registration(struct ofono_modem *modem)
 	ofono_debug("NetworkRegistration interface for modem: %s created",
 			modem->path);
 
-	modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
+	ofono_modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
 	ofono_sim_ready_notify_register(modem, network_sim_ready);
 
 	if (modem->network_registration->ops->list_operators) {
@@ -1405,6 +1405,6 @@ void ofono_network_registration_unregister(struct ofono_modem *modem)
 
 	g_dbus_unregister_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE);
-	modem_remove_interface(modem, NETWORK_REGISTRATION_INTERFACE);
+	ofono_modem_remove_interface(modem, NETWORK_REGISTRATION_INTERFACE);
 }
 

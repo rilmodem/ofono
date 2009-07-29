@@ -19,7 +19,21 @@
  *
  */
 
-struct ofono_modem_attribute_ops;
+#ifndef __OFONO_MODEM_H
+#define __OFONO_MODEM_H
 
-struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops);
-void modem_remove(struct ofono_modem *modem);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void ofono_modem_add_interface(struct ofono_modem *modem,
+				const char *interface);
+
+void ofono_modem_remove_interface(struct ofono_modem *modem,
+					const char *interface);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __OFONO_MODEM_H */
