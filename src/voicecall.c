@@ -376,7 +376,7 @@ static void voicecall_set_call_status(struct ofono_modem *modem,
 	status_str = call_status_to_string(status);
 	path = voicecall_build_path(modem, call->call);
 
-	dbus_gsm_signal_property_changed(conn, path, VOICECALL_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path, VOICECALL_INTERFACE,
 						"State", DBUS_TYPE_STRING,
 						&status_str);
 
@@ -390,7 +390,7 @@ static void voicecall_set_call_status(struct ofono_modem *modem,
 		call->start_time = time(NULL);
 		timestr = time_to_str(&call->start_time);
 
-		dbus_gsm_signal_property_changed(conn, path,
+		ofono_dbus_signal_property_changed(conn, path,
 							VOICECALL_INTERFACE,
 							"StartTime",
 							DBUS_TYPE_STRING,
@@ -434,7 +434,7 @@ static void voicecall_set_call_lineid(struct ofono_modem *modem,
 	else
 		lineid_str = phone_number_to_string(ph);
 
-	dbus_gsm_signal_property_changed(conn, path, VOICECALL_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path, VOICECALL_INTERFACE,
 						"LineIdentification",
 						DBUS_TYPE_STRING, &lineid_str);
 }

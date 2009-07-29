@@ -41,10 +41,6 @@ void dbus_gsm_dict_append_array(DBusMessageIter *dict, const char *key,
 				int type, void *val);
 
 
-int dbus_gsm_signal_property_changed(DBusConnection *conn, const char *path,
-					const char *interface, const char *name,
-					int type, void *value);
-
 int dbus_gsm_signal_array_property_changed(DBusConnection *conn,
 						const char *path,
 						const char *interface,

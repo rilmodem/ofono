@@ -145,7 +145,7 @@ static void set_clir_network(struct ofono_modem *modem, int clir)
 
 		cs->clir = clir;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 				CALL_SETTINGS_INTERFACE,
 				"CallingLineRestriction",
 				DBUS_TYPE_STRING, &str);
@@ -162,7 +162,7 @@ static void set_clir_override(struct ofono_modem *modem, int override)
 
 		cs->clir_setting = override;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 				CALL_SETTINGS_INTERFACE,
 				"HideCallerId", DBUS_TYPE_STRING, &str);
 	}
@@ -178,7 +178,7 @@ static void set_clip(struct ofono_modem *modem, int clip)
 
 		cs->clip = clip;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 				CALL_SETTINGS_INTERFACE,
 				"CallingLinePresentation",
 				DBUS_TYPE_STRING, &str);
@@ -195,7 +195,7 @@ static void set_colp(struct ofono_modem *modem, int colp)
 
 		cs->colp = colp;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 				CALL_SETTINGS_INTERFACE,
 				"CalledLinePresentation",
 				DBUS_TYPE_STRING, &str);
@@ -212,7 +212,7 @@ static void set_colr(struct ofono_modem *modem, int colr)
 
 		cs->colr = colr;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 				CALL_SETTINGS_INTERFACE,
 				"CalledLineRestriction",
 				DBUS_TYPE_STRING, &str);
@@ -240,7 +240,7 @@ static void set_cw(struct ofono_modem *modem, int new_cw, int mask)
 			value = "disabled";
 
 		sprintf(buf, "%sCallWaiting", bearer_class_to_string(j));
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 							CALL_SETTINGS_INTERFACE,
 							buf, DBUS_TYPE_STRING,
 							&value);

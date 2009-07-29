@@ -115,7 +115,7 @@ void dbus_gsm_dict_append_array(DBusMessageIter *dict, const char *key,
 	dbus_message_iter_close_container(dict, &entry);
 }
 
-int dbus_gsm_signal_property_changed(DBusConnection *conn,
+int ofono_dbus_signal_property_changed(DBusConnection *conn,
 					const char *path,
 					const char *interface,
 					const char *name,

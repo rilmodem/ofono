@@ -120,7 +120,7 @@ static inline void emit_barring_changed(struct ofono_modem *modem, int start,
 	snprintf(property_name, sizeof(property_name), "%s%s",
 			bearer_class_to_string(cls), type);
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
+	ofono_dbus_signal_property_changed(conn, modem->path,
 						CALL_BARRING_INTERFACE,
 						property_name, DBUS_TYPE_STRING,
 						&value);

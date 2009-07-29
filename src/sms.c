@@ -116,7 +116,7 @@ static void set_sca(struct ofono_modem *modem,
 
 	value = phone_number_to_string(&sms->sca);
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
+	ofono_dbus_signal_property_changed(conn, modem->path,
 						SMS_MANAGER_INTERFACE,
 						"ServiceCenterAddress",
 						DBUS_TYPE_STRING, &value);

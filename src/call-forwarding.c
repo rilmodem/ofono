@@ -258,7 +258,7 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 			if (oc->phone_number.type != lc->phone_number.type ||
 				strcmp(oc->phone_number.number,
 					lc->phone_number.number))
-				dbus_gsm_signal_property_changed(conn,
+				ofono_dbus_signal_property_changed(conn,
 						modem->path,
 						CALL_FORWARDING_INTERFACE,
 						attr, DBUS_TYPE_STRING,
@@ -266,7 +266,7 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 				oc->time != lc->time)
-				dbus_gsm_signal_property_changed(conn,
+				ofono_dbus_signal_property_changed(conn,
 						modem->path,
 						CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
@@ -278,14 +278,14 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 		} else {
 			number = phone_number_to_string(&lc->phone_number);
 
-			dbus_gsm_signal_property_changed(conn, modem->path,
+			ofono_dbus_signal_property_changed(conn, modem->path,
 						CALL_FORWARDING_INTERFACE,
 						attr, DBUS_TYPE_STRING,
 						&number);
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 				lc->time != DEFAULT_NO_REPLY_TIMEOUT)
-				dbus_gsm_signal_property_changed(conn,
+				ofono_dbus_signal_property_changed(conn,
 						modem->path,
 						CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
@@ -305,13 +305,13 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY)
 			sprintf(tattr, "%sTimeout", attr);
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 					CALL_FORWARDING_INTERFACE, attr,
 					DBUS_TYPE_STRING, &number);
 
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 			oc->time != DEFAULT_NO_REPLY_TIMEOUT)
-			dbus_gsm_signal_property_changed(conn, modem->path,
+			ofono_dbus_signal_property_changed(conn, modem->path,
 						CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
 						&timeout);

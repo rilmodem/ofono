@@ -309,7 +309,7 @@ static void set_network_operator_status(struct ofono_modem *modem,
 	status_str = network_operator_status_to_string(status);
 	path = network_operator_build_path(modem, op);
 
-	dbus_gsm_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
 						"Status", DBUS_TYPE_STRING,
 						&status_str);
 }
@@ -330,7 +330,7 @@ static void set_network_operator_technology(struct ofono_modem *modem,
 	tech_str = registration_tech_to_string(tech);
 	path = network_operator_build_path(modem, op);
 
-	dbus_gsm_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
 						"Technology", DBUS_TYPE_STRING,
 						&tech_str);
 }
@@ -412,13 +412,13 @@ static void set_network_operator_name(struct ofono_modem *modem,
 
 	path = network_operator_build_path(modem, op);
 
-	dbus_gsm_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
 					"Name", DBUS_TYPE_STRING, &name);
 
 	if (opd == netreg->current_operator) {
 		operator = get_operator_display_name(modem);
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"Operator", DBUS_TYPE_STRING,
 						&operator);
@@ -455,7 +455,7 @@ static void set_network_operator_eons_info(struct ofono_modem *modem,
 		newname = opd->info->name;
 
 	if (oldname != newname && strcmp(oldname, newname)) {
-		dbus_gsm_signal_property_changed(conn, path,
+		ofono_dbus_signal_property_changed(conn, path,
 						NETWORK_OPERATOR_INTERFACE,
 						"Name", DBUS_TYPE_STRING,
 						&newname);
@@ -463,7 +463,7 @@ static void set_network_operator_eons_info(struct ofono_modem *modem,
 		if (opd == netreg->current_operator) {
 			const char *operator = get_operator_display_name(modem);
 
-			dbus_gsm_signal_property_changed(conn, modem->path,
+			ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"Operator", DBUS_TYPE_STRING,
 						&operator);
@@ -481,7 +481,7 @@ static void set_network_operator_eons_info(struct ofono_modem *modem,
 		newinfo = "";
 
 	if (oldname != newname && strcmp(oldname, newname))
-		dbus_gsm_signal_property_changed(conn, path,
+		ofono_dbus_signal_property_changed(conn, path,
 						NETWORK_OPERATOR_INTERFACE,
 						"AdditionalInformation",
 						DBUS_TYPE_STRING, &newinfo);
@@ -843,7 +843,7 @@ static void set_registration_status(struct ofono_modem *modem, int status)
 
 	netreg->status = status;
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
+	ofono_dbus_signal_property_changed(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
 					"Status", DBUS_TYPE_STRING,
 					&str_status);
@@ -863,7 +863,7 @@ static void set_registration_location(struct ofono_modem *modem, int lac)
 	if (netreg->location == -1)
 		return;
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
+	ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"LocationAreaCode",
 						DBUS_TYPE_UINT16, &dbus_lac);
@@ -880,7 +880,7 @@ static void set_registration_cellid(struct ofono_modem *modem, int ci)
 	if (netreg->cellid == -1)
 		return;
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
+	ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"CellId", DBUS_TYPE_UINT32,
 						&dbus_ci);
@@ -897,7 +897,7 @@ static void set_registration_technology(struct ofono_modem *modem, int tech)
 	if (netreg->technology == -1)
 		return;
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
+	ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"Technology", DBUS_TYPE_STRING,
 						&tech_str);
@@ -1106,7 +1106,7 @@ static void current_operator_callback(const struct ofono_error *error,
 emit:
 	operator = get_operator_display_name(modem);
 
-	dbus_gsm_signal_property_changed(conn, modem->path,
+	ofono_dbus_signal_property_changed(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
 					"Operator", DBUS_TYPE_STRING,
 					&operator);
@@ -1176,7 +1176,7 @@ void ofono_signal_strength_notify(struct ofono_modem *modem, int strength)
 	if (strength != -1) {
 		dbus_uint16_t strength = netreg->signal_strength;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"Strength", DBUS_TYPE_UINT16,
 						&strength);
@@ -1298,7 +1298,7 @@ static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
 
 		operator = get_operator_display_name(modem);
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"Operator", DBUS_TYPE_STRING,
 						&operator);
@@ -1365,7 +1365,7 @@ static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 
 		operator = get_operator_display_name(modem);
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 						NETWORK_REGISTRATION_INTERFACE,
 						"Operator", DBUS_TYPE_STRING,
 						&operator);

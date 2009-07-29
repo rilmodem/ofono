@@ -81,7 +81,7 @@ static void set_call_meter(struct ofono_modem *modem, int value)
 
 		cm->call_meter = value;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 							CALL_METER_INTERFACE,
 							"CallMeter",
 							DBUS_TYPE_UINT32,
@@ -98,7 +98,7 @@ static void set_acm(struct ofono_modem *modem, int value)
 
 		cm->acm = value;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 							CALL_METER_INTERFACE,
 							"AccumulatedCallMeter",
 							DBUS_TYPE_UINT32,
@@ -115,7 +115,7 @@ static void set_acm_max(struct ofono_modem *modem, int value)
 
 		cm->acm_max = value;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 							CALL_METER_INTERFACE,
 							"AccumulatedCallMeterMaximum",
 							DBUS_TYPE_UINT32,
@@ -132,7 +132,7 @@ static void set_ppu(struct ofono_modem *modem, double value)
 
 		cm->ppu = value;
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 							CALL_METER_INTERFACE,
 							"PricePerUnit",
 							DBUS_TYPE_DOUBLE,
@@ -156,7 +156,7 @@ static void set_currency(struct ofono_modem *modem, const char *value)
 		strncpy(cm->currency, value, 3);
 		cm->currency[3] = '\0';
 
-		dbus_gsm_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 							CALL_METER_INTERFACE,
 							"Currency",
 							DBUS_TYPE_STRING,
