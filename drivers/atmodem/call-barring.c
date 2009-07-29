@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <ofono/log.h>
+#include <ofono/modem.h>
 #include "driver.h"
 
 #include "gatchat.h"
@@ -81,7 +82,7 @@ static void at_call_barring_query(struct ofono_modem *modem, const char *lock,
 					int cls, ofono_call_barring_cb_t cb,
 					void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 	int len;
@@ -120,7 +121,7 @@ static void at_call_barring_set(struct ofono_modem *modem, const char *lock,
 				int enable, const char *passwd, int cls,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 	int len;
@@ -168,7 +169,7 @@ static void at_call_barring_set_passwd(struct ofono_modem *modem,
 				const char *old_passwd, const char *new_passwd,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 

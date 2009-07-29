@@ -193,9 +193,6 @@ struct ofono_modem_attribute_ops {
 struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops);
 int ofono_modem_unregister(struct ofono_modem *modem);
 
-void ofono_modem_set_userdata(struct ofono_modem *modem, void *data);
-void *ofono_modem_userdata(struct ofono_modem *modem);
-
 /* Network related functions, including registration status, operator selection
  * and signal strength indicators.
  *

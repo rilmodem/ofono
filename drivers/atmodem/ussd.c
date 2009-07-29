@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <ofono/log.h>
+#include <ofono/modem.h>
 #include "driver.h"
 #include "util.h"
 
@@ -56,7 +57,7 @@ static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_ussd_request(struct ofono_modem *modem, const char *str,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	unsigned char *converted;
 	int dcs;
@@ -113,7 +114,7 @@ static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_ussd_cancel(struct ofono_modem *modem,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)

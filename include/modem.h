@@ -26,6 +26,8 @@
 extern "C" {
 #endif
 
+struct ofono_modem;
+
 void ofono_modem_add_interface(struct ofono_modem *modem,
 				const char *interface);
 
@@ -33,6 +35,9 @@ void ofono_modem_remove_interface(struct ofono_modem *modem,
 					const char *interface);
 
 const char *ofono_modem_get_path(struct ofono_modem *modem);
+
+void ofono_modem_set_userdata(struct ofono_modem *modem, void *data);
+void *ofono_modem_get_userdata(struct ofono_modem *modem);
 
 #ifdef __cplusplus
 }

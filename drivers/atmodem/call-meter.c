@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <ofono/log.h>
+#include <ofono/modem.h>
 #include "driver.h"
 
 #include "gatchat.h"
@@ -112,7 +113,7 @@ static void cccm_notify(GAtResult *result, gpointer user_data)
 static void at_caoc_query(struct ofono_modem *modem, ofono_call_meter_query_cb_t cb,
 				void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -136,7 +137,7 @@ error:
 static void at_cacm_query(struct ofono_modem *modem, ofono_call_meter_query_cb_t cb,
 				void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -172,7 +173,7 @@ static void generic_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_cacm_set(struct ofono_modem *modem, const char *passwd,
 			ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 
@@ -198,7 +199,7 @@ error:
 static void at_camm_query(struct ofono_modem *modem, ofono_call_meter_query_cb_t cb,
 				void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -222,7 +223,7 @@ error:
 static void at_camm_set(struct ofono_modem *modem,	int accmax, const char *passwd,
 			ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 
@@ -285,7 +286,7 @@ static void cpuc_query_cb(gboolean ok,
 static void at_cpuc_query(struct ofono_modem *modem,
 				ofono_call_meter_puct_query_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -310,7 +311,7 @@ static void at_cpuc_set(struct ofono_modem *modem, const char *currency,
 			double ppu, const char *passwd, ofono_generic_cb_t cb,
 			void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 
@@ -362,7 +363,7 @@ static void at_call_meter_initialized(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	g_at_chat_register(at->parser, "+CCCM:",
 			cccm_notify, FALSE, modem, NULL);
@@ -374,7 +375,7 @@ static void at_call_meter_initialized(gboolean ok, GAtResult *result,
 
 void at_call_meter_init(struct ofono_modem *modem)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	g_at_chat_send(at->parser, "AT+CAOC=2", NULL, NULL, NULL, NULL);
 	g_at_chat_send(at->parser, "AT+CCWE=1", NULL,

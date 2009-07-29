@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <ofono/log.h>
+#include <ofono/modem.h>
 #include "driver.h"
 
 #include "gatchat.h"
@@ -113,7 +114,7 @@ static void at_registration_status(struct ofono_modem *modem,
 					ofono_registration_status_cb_t cb,
 					void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -136,7 +137,7 @@ error:
 static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct at_data *at = ofono_modem_userdata(cbd->modem);
+	struct at_data *at = ofono_modem_get_userdata(cbd->modem);
 	ofono_current_operator_cb_t cb = cbd->cb;
 	struct ofono_network_operator op;
 	GAtResultIter iter;
@@ -206,7 +207,7 @@ error:
 static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct at_data *at = ofono_modem_userdata(cbd->modem);
+	struct at_data *at = ofono_modem_get_userdata(cbd->modem);
 	GAtResultIter iter;
 	const char *str;
 	int format;
@@ -247,7 +248,7 @@ error:
 static void at_current_operator(struct ofono_modem *modem,
 				ofono_current_operator_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	gboolean ok;
 
@@ -388,7 +389,7 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_list_operators(struct ofono_modem *modem, ofono_operator_list_cb_t cb,
 				void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -423,7 +424,7 @@ static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_register_auto(struct ofono_modem *modem, ofono_generic_cb_t cb,
 				void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -447,7 +448,7 @@ static void at_register_manual(struct ofono_modem *modem,
 				const struct ofono_network_operator *oper,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[128];
 
@@ -473,7 +474,7 @@ error:
 static void at_deregister(struct ofono_modem *modem, ofono_generic_cb_t cb,
 				void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -559,7 +560,7 @@ static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_signal_strength(struct ofono_modem *modem,
 				ofono_signal_strength_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -628,7 +629,7 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 							gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (!ok) {
 		ofono_error("Unable to initialize Network Registration");
@@ -645,7 +646,7 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 
 void at_network_registration_init(struct ofono_modem *modem)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	at->netreg = g_try_new0(struct netreg_data, 1);
 
@@ -659,7 +660,7 @@ void at_network_registration_init(struct ofono_modem *modem)
 
 void at_network_registration_exit(struct ofono_modem *modem)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (!at->netreg)
 		return;

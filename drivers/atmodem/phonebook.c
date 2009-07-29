@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <ofono/log.h>
+#include <ofono/modem.h>
 #include "driver.h"
 #include "util.h"
 
@@ -102,7 +103,7 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	GAtResultIter iter;
 	int current;
 
@@ -202,7 +203,7 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 static void export_failed(struct cb_data *cbd)
 {
 	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	ofono_generic_cb_t cb = cbd->cb;
 
 	{
@@ -223,7 +224,7 @@ static void at_read_entries_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	ofono_generic_cb_t cb = cbd->cb;
 	const char *charset;
 	struct ofono_error error;
@@ -247,7 +248,7 @@ static void at_read_entries_cb(gboolean ok, GAtResult *result,
 static void at_read_entries(struct cb_data *cbd)
 {
 	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	char buf[32];
 
 	sprintf(buf, "AT+CPBR=%d,%d", at->pb->index_min, at->pb->index_max);
@@ -280,7 +281,7 @@ static void at_read_charset_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	GAtResultIter iter;
 	const char *charset;
 	char buf[32];
@@ -320,7 +321,7 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	GAtResultIter iter;
 
 	if (!ok)
@@ -356,7 +357,7 @@ static void at_select_storage_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	dump_response("at_select_storage_cb", ok, result);
 
@@ -374,7 +375,7 @@ error:
 static void at_export_entries(struct ofono_modem *modem, const char *storage,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[32];
 
@@ -402,7 +403,7 @@ static struct ofono_phonebook_ops ops = {
 
 static void phonebook_not_supported(struct ofono_modem *modem)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	ofono_error("Phonebook not supported by this modem.  If this is in "
 			"error please submit patches to support this hardware");
@@ -459,7 +460,7 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	gboolean in_list = FALSE;
 	GAtResultIter iter;
 	const char *charset;
@@ -516,7 +517,7 @@ error:
 
 static void at_list_charsets(struct ofono_modem *modem)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (g_at_chat_send(at->parser, "AT+CSCS=?", cscs_prefix,
 				at_list_charsets_cb, modem, NULL) > 0)
@@ -527,7 +528,7 @@ static void at_list_charsets(struct ofono_modem *modem)
 
 void at_phonebook_init(struct ofono_modem *modem)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	at->pb = phonebook_create();
 	at_list_charsets(modem);
@@ -535,7 +536,7 @@ void at_phonebook_init(struct ofono_modem *modem)
 
 void at_phonebook_exit(struct ofono_modem *modem)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (!at->pb)
 		return;

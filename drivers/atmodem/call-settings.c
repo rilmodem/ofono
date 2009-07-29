@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <ofono/log.h>
+#include <ofono/modem.h>
 #include "driver.h"
 
 #include "gatchat.h"
@@ -79,7 +80,7 @@ out:
 static void at_ccwa_query(struct ofono_modem *modem, int cls,
 				ofono_call_waiting_status_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 
@@ -122,7 +123,7 @@ static void ccwa_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_ccwa_set(struct ofono_modem *modem, int mode, int cls,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 
@@ -183,7 +184,7 @@ static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_clip_query(struct ofono_modem *modem,
 				ofono_call_setting_status_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -240,7 +241,7 @@ static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_colp_query(struct ofono_modem *modem,
 				ofono_call_setting_status_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -297,7 +298,7 @@ static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_clir_query(struct ofono_modem *modem,
 				ofono_clir_setting_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)
@@ -332,7 +333,7 @@ static void clir_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_clir_set(struct ofono_modem *modem, int mode,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 

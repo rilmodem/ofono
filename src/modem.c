@@ -85,7 +85,7 @@ void ofono_modem_set_userdata(struct ofono_modem *modem, void *userdata)
 		modem->userdata = userdata;
 }
 
-void *ofono_modem_userdata(struct ofono_modem *modem)
+void *ofono_modem_get_userdata(struct ofono_modem *modem)
 {
 	if (modem)
 		return modem->userdata;

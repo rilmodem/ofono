@@ -31,6 +31,7 @@
 #include <glib.h>
 
 #include <ofono/log.h>
+#include <ofono/modem.h>
 #include "driver.h"
 
 #include "gatchat.h"
@@ -124,7 +125,7 @@ out:
 static void at_ccfc_query(struct ofono_modem *modem, int type, int cls,
 				ofono_call_forwarding_query_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 	char buf[64];
 
@@ -167,7 +168,7 @@ static void ccfc_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_ccfc_set(struct ofono_modem *modem, const char *buf,
 				ofono_generic_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 	struct cb_data *cbd = cb_data_new(modem, cb, data);
 
 	if (!cbd)

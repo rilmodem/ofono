@@ -203,7 +203,7 @@ static void at_query_manufacturer(struct ofono_modem *modem,
 				ofono_modem_attribute_query_cb_t cb, void *data)
 {
 	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGMI:");
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (!info)
 		goto error;
@@ -226,7 +226,7 @@ static void at_query_model(struct ofono_modem *modem,
 				ofono_modem_attribute_query_cb_t cb, void *data)
 {
 	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGMM:");
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (!info)
 		goto error;
@@ -249,7 +249,7 @@ static void at_query_revision(struct ofono_modem *modem,
 				ofono_modem_attribute_query_cb_t cb, void *data)
 {
 	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGMR:");
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (!info)
 		goto error;
@@ -272,7 +272,7 @@ static void at_query_serial(struct ofono_modem *modem,
 				ofono_modem_attribute_query_cb_t cb, void *data)
 {
 	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGSN:");
-	struct at_data *at = ofono_modem_userdata(modem);
+	struct at_data *at = ofono_modem_get_userdata(modem);
 
 	if (!info)
 		goto error;
