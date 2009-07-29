@@ -41,6 +41,9 @@
 
 #define ATTRIBUTE_QUERY_DELAY 0
 
+static GSList *g_modem_list = NULL;
+static int g_next_modem_id = 1;
+
 struct ofono_modem_data {
 	char      			*manufacturer;
 	char      			*model;
@@ -443,4 +446,81 @@ void modem_remove(struct ofono_modem *modem)
 	g_dbus_unregister_interface(conn, path, OFONO_MODEM_INTERFACE);
 
 	g_free(path);
+}
+
+/* Clients only need to free *modems */
+const char **__ofono_modem_get_list()
+{
+	GSList *l;
+	int i;
+	struct ofono_modem *modem;
+	const char **modems;
+
+	modems = g_new0(const char *, g_slist_length(g_modem_list) + 1);
+
+	for (l = g_modem_list, i = 0; l; l = l->next, i++) {
+		modem = l->data;
+
+		modems[i] = modem->path;
+	}
+
+	return modems;
+}
+
+struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops)
+{
+	struct ofono_modem *modem;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char **modems;
+
+	modem = modem_create(g_next_modem_id, ops);
+
+	if (modem == NULL)
+		return 0;
+
+	++g_next_modem_id;
+
+	__ofono_history_probe_drivers(modem);
+	g_modem_list = g_slist_prepend(g_modem_list, modem);
+
+	modems = __ofono_modem_get_list();
+
+	if (modems) {
+		ofono_dbus_signal_array_property_changed(conn,
+				OFONO_MANAGER_PATH,
+				OFONO_MANAGER_INTERFACE, "Modems",
+				DBUS_TYPE_OBJECT_PATH, &modems);
+
+		g_free(modems);
+	}
+
+	return modem;
+}
+
+int ofono_modem_unregister(struct ofono_modem *m)
+{
+	struct ofono_modem *modem = m;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char **modems;
+
+	if (modem == NULL)
+		return -1;
+
+	__ofono_history_remove_drivers(modem);
+	modem_remove(modem);
+
+	g_modem_list = g_slist_remove(g_modem_list, modem);
+
+	modems = __ofono_modem_get_list();
+
+	if (modems) {
+		ofono_dbus_signal_array_property_changed(conn,
+				OFONO_MANAGER_PATH,
+				OFONO_MANAGER_INTERFACE, "Modems",
+				DBUS_TYPE_OBJECT_PATH, &modems);
+
+		g_free(modems);
+	}
+
+	return 0;
 }

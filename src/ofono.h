@@ -27,6 +27,7 @@ int __ofono_manager_init();
 void __ofono_manager_cleanup();
 
 GSList *ofono_manager_get_modems();
+const char **__ofono_modem_get_list();
 
 #include <ofono/log.h>
 

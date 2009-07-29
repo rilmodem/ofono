@@ -32,87 +32,9 @@
 #include "modem.h"
 #include "driver.h"
 
-static GSList *g_modem_list = NULL;
-static int g_next_modem_id = 1;
-
-/* Clients only need to free *modems */
-static int modem_list(char ***modems)
-{
-	GSList *l;
-	int i;
-	struct ofono_modem *modem;
-
-	*modems = g_new0(char *, g_slist_length(g_modem_list) + 1);
-
-	if (!*modems)
-		return -1;
-
-	for (l = g_modem_list, i = 0; l; l = l->next, i++) {
-		modem = l->data;
-
-		(*modems)[i] = modem->path;
-	}
-
-	return 0;
-}
-
 GSList *ofono_manager_get_modems()
 {
 	return g_modem_list;
-}
-
-struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops)
-{
-	struct ofono_modem *modem;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	char **modems;
-
-	modem = modem_create(g_next_modem_id, ops);
-
-	if (modem == NULL)
-		return 0;
-
-	++g_next_modem_id;
-
-	__ofono_history_probe_drivers(modem);
-	g_modem_list = g_slist_prepend(g_modem_list, modem);
-
-	if (modem_list(&modems) == 0) {
-		ofono_dbus_signal_array_property_changed(conn,
-				OFONO_MANAGER_PATH,
-				OFONO_MANAGER_INTERFACE, "Modems",
-				DBUS_TYPE_OBJECT_PATH, &modems);
-
-		g_free(modems);
-	}
-
-	return modem;
-}
-
-int ofono_modem_unregister(struct ofono_modem *m)
-{
-	struct ofono_modem *modem = m;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	char **modems;
-
-	if (modem == NULL)
-		return -1;
-
-	__ofono_history_remove_drivers(modem);
-	modem_remove(modem);
-
-	g_modem_list = g_slist_remove(g_modem_list, modem);
-
-	if (modem_list(&modems) == 0) {
-		ofono_dbus_signal_array_property_changed(conn,
-				OFONO_MANAGER_PATH,
-				OFONO_MANAGER_INTERFACE, "Modems",
-				DBUS_TYPE_OBJECT_PATH, &modems);
-
-		g_free(modems);
-	}
-
-	return 0;
 }
 
 static DBusMessage *manager_get_properties(DBusConnection *conn,
@@ -121,13 +43,15 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	DBusMessage *reply;
-	char **modems;
+	const char **modems;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
 		return NULL;
 
-	if (modem_list(&modems) == -1)
+	modems = __ofono_modem_get_list();
+
+	if (!modems)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -174,24 +98,7 @@ int __ofono_manager_init()
 
 void __ofono_manager_cleanup()
 {
-	GSList *l;
-	struct ofono_modem *modem;
 	DBusConnection *conn = ofono_dbus_get_connection();
-
-	/* Clean up in case plugins didn't unregister the modems */
-	for (l = g_modem_list; l; l = l->next) {
-		modem = l->data;
-
-		if (!modem)
-			continue;
-
-		ofono_debug("plugin owning %s forgot to unregister, cleaning up",
-				modem->path);
-		modem_remove(modem);
-	}
-
-	g_slist_free(g_modem_list);
-	g_modem_list = 0;
 
 	g_dbus_unregister_interface(conn, OFONO_MANAGER_PATH,
 					OFONO_MANAGER_INTERFACE);
