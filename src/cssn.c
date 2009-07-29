@@ -31,7 +31,6 @@
 #include "ofono.h"
 
 #include "driver.h"
-#include "modem.h"
 #include "common.h"
 #include "cssn.h"
 

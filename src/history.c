@@ -30,8 +30,6 @@
 
 #include "ofono.h"
 
-#include "modem.h"
-
 static GSList *history_drivers = NULL;
 
 static struct ofono_history_context *history_context_create(

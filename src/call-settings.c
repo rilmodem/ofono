@@ -34,7 +34,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "modem.h"
 #include "ussd.h"
 
 #define CALL_SETTINGS_INTERFACE "org.ofono.CallSettings"

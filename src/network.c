@@ -31,7 +31,6 @@
 
 #include "ofono.h"
 
-#include "modem.h"
 #include "driver.h"
 #include "common.h"
 #include "sim.h"

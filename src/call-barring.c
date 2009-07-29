@@ -35,7 +35,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "modem.h"
 #include "cssn.h"
 #include "ussd.h"
 

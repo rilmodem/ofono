@@ -34,10 +34,8 @@
 
 #include "ofono.h"
 
-#include "modem.h"
 #include "driver.h"
 #include "common.h"
-
 
 #define PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define LEN_MAX 128

@@ -31,11 +31,11 @@
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/dbus.h>
+#include <ofono/modem.h>
 
 #include "driver.h"
 
 #include "at.h"
-#include "modem.h"
 #include "session.h"
 
 #define AT_MANAGER_INTERFACE "org.ofono.at.Manager"

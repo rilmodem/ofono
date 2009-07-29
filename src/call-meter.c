@@ -34,7 +34,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "modem.h"
 
 #define CALL_METER_INTERFACE "org.ofono.CallMeter"
 
