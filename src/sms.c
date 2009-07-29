@@ -294,7 +294,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Sending failed, retrying in 5 seconds...");
-		g_timeout_add_seconds(5, tx_next, data);
+		g_timeout_add_seconds(5, tx_next, modem);
 		return;
 	}
 
@@ -305,7 +305,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 
 	if (g_queue_peek_head(sms->txq)) {
 		ofono_debug("Scheduling next");
-		g_timeout_add(0, tx_next, sms);
+		g_timeout_add(0, tx_next, modem);
 	}
 }
 
