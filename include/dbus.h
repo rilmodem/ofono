@@ -29,6 +29,7 @@ extern "C" {
 #include <dbus/dbus.h>
 
 #define OFONO_SERVICE	"org.ofono"
+#define OFONO_MANAGER_INTERFACE "org.ofono.Manager"
 
 /* Essentially a{sv} */
 #define OFONO_PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \

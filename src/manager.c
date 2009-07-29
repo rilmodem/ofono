@@ -32,7 +32,6 @@
 #include "modem.h"
 #include "driver.h"
 
-#define MANAGER_INTERFACE "org.ofono.Manager"
 #define MANAGER_PATH "/"
 
 static GSList *g_modem_list = NULL;
@@ -82,7 +81,7 @@ struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops)
 
 	if (modem_list(&modems) == 0) {
 		ofono_dbus_signal_array_property_changed(conn, MANAGER_PATH,
-				MANAGER_INTERFACE, "Modems",
+				OFONO_MANAGER_INTERFACE, "Modems",
 				DBUS_TYPE_OBJECT_PATH, &modems);
 
 		g_free(modems);
@@ -107,7 +106,7 @@ int ofono_modem_unregister(struct ofono_modem *m)
 
 	if (modem_list(&modems) == 0) {
 		ofono_dbus_signal_array_property_changed(conn, MANAGER_PATH,
-				MANAGER_INTERFACE, "Modems",
+				OFONO_MANAGER_INTERFACE, "Modems",
 				DBUS_TYPE_OBJECT_PATH, &modems);
 
 		g_free(modems);
@@ -162,7 +161,7 @@ int __ofono_manager_init()
 	DBusConnection *conn = ofono_dbus_get_connection();
 	gboolean ret;
 
-	ret = g_dbus_register_interface(conn, "/", MANAGER_INTERFACE,
+	ret = g_dbus_register_interface(conn, "/", OFONO_MANAGER_INTERFACE,
 					manager_methods, manager_signals,
 					NULL, NULL, NULL);
 
@@ -193,5 +192,5 @@ void __ofono_manager_cleanup()
 	g_slist_free(g_modem_list);
 	g_modem_list = 0;
 
-	g_dbus_unregister_interface(conn, "/", MANAGER_INTERFACE);
+	g_dbus_unregister_interface(conn, "/", OFONO_MANAGER_INTERFACE);
 }
