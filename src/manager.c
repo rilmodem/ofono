@@ -32,11 +32,6 @@
 #include "modem.h"
 #include "driver.h"
 
-GSList *ofono_manager_get_modems()
-{
-	return g_modem_list;
-}
-
 static DBusMessage *manager_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
