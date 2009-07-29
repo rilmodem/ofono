@@ -95,13 +95,18 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
 		lac = strtol(str, NULL, 16);
+	else
+		goto out;
 
 	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
 		ci = strtol(str, NULL, 16);
+	else
+		goto out;
 
 	if (g_at_result_iter_next_number(&iter, &tech) == TRUE)
 		at->netreg->supports_tech = TRUE;
 
+out:
 	ofono_debug("creg_cb: %d, %d, %d, %d", status, lac, ci, tech);
 
 	cb(&error, status, lac, ci, tech, cbd->data);
@@ -601,13 +606,18 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 
 	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
 		lac = strtol(str, NULL, 16);
+	else
+		goto out;
 
 	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
 		ci = strtol(str, NULL, 16);
+	else
+		goto out;
 
 	if (g_at_result_iter_next_number(&iter, &tech) == TRUE)
 		at->netreg->supports_tech = TRUE;
 
+out:
 	ofono_debug("creg_notify: %d, %d, %d, %d", status, lac, ci, tech);
 
 	ofono_network_registration_notify(modem, status, lac, ci, tech);
