@@ -180,10 +180,10 @@ static DBusMessage *sms_get_properties(DBusConnection *conn,
 	struct sms_manager_data *sms = modem->sms_manager;
 
 	if (sms->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!sms->ops->sca_query)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (sms->flags & SMS_MANAGER_FLAG_CACHED)
 		return generate_get_properties_reply(modem, msg);
@@ -206,7 +206,7 @@ static void sca_set_query_callback(const struct ofono_error *error,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Set SCA succeeded, but query failed");
 		sms->flags &= ~SMS_MANAGER_FLAG_CACHED;
-		reply = dbus_gsm_failed(sms->pending);
+		reply = __ofono_error_failed(sms->pending);
 		dbus_gsm_pending_reply(&sms->pending, reply);
 		return;
 	}
@@ -225,7 +225,7 @@ static void sca_set_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Setting SCA failed");
 		dbus_gsm_pending_reply(&sms->pending,
-					dbus_gsm_failed(sms->pending));
+					__ofono_error_failed(sms->pending));
 		return;
 	}
 
@@ -242,19 +242,19 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 	const char *property;
 
 	if (sms->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &property);
 	dbus_message_iter_next(&iter);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
 
@@ -263,15 +263,15 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 		struct ofono_phone_number sca;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-			return dbus_gsm_invalid_args(msg);
+			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &value);
 
 		if (strlen(value) == 0 || !valid_phone_number_format(value))
-			return dbus_gsm_invalid_format(msg);
+			return __ofono_error_invalid_format(msg);
 
 		if (!sms->ops->sca_set)
-			return dbus_gsm_not_implemented(msg);
+			return __ofono_error_not_implemented(msg);
 
 		string_to_phone_number(value, &sca);
 
@@ -281,7 +281,7 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 		return NULL;
 	}
 
-	return dbus_gsm_invalid_args(msg);
+	return __ofono_error_invalid_args(msg);
 }
 
 static void tx_finished(const struct ofono_error *error, int mr, void *data)
@@ -398,11 +398,11 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING,
 					&tos, &num_to, DBUS_TYPE_STRING, &text,
 					DBUS_TYPE_INVALID))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (num_to == 0) {
 		dbus_free_string_array(tos);
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 	}
 
 	ofono_debug("Got %d recipients", num_to);
@@ -412,14 +412,14 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 			continue;
 
 		dbus_free_string_array(tos);
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 	}
 
 	msg_list = sms_text_prepare(text, 0, TRUE, &ref_offset);
 
 	if (!msg_list) {
 		dbus_free_string_array(tos);
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 	}
 
 	for (i = 0; i < num_to; i++) {

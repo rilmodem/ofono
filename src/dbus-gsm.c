@@ -31,6 +31,7 @@
 
 #include "dbus-gsm.h"
 
+#define DBUS_GSM_ERROR_INTERFACE "org.ofono.Error"
 
 static DBusConnection *g_connection;
 
@@ -165,6 +166,65 @@ int dbus_gsm_signal_array_property_changed(DBusConnection *conn,
 	dbus_gsm_append_array_variant(&iter, type, value);
 
 	return g_dbus_send_message(conn, signal);
+}
+
+DBusMessage *__ofono_error_invalid_args(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
+					".InvalidArguments",
+					"Invalid arguments in method call");
+}
+
+DBusMessage *__ofono_error_invalid_format(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
+					".InvalidFormat",
+					"Argument format is not recognized");
+}
+
+DBusMessage *__ofono_error_not_implemented(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
+					".NotImplemented",
+					"Implementation not provided");
+}
+
+DBusMessage *__ofono_error_failed(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".Failed",
+					"Operation failed");
+}
+
+DBusMessage *__ofono_error_busy(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".InProgress",
+					"Operation already in progress");
+}
+
+DBusMessage *__ofono_error_not_found(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".NotFound",
+			"Object is not found or not valid for this operation");
+}
+
+DBusMessage *__ofono_error_not_active(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".NotActive",
+			"Operation is not active or in progress");
+}
+
+DBusMessage *__ofono_error_not_supported(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
+					".NotSupported",
+					"Operation is not supported by the"
+					" network / modem");
+}
+
+DBusMessage *__ofono_error_timed_out(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".Timedout",
+			"Operation failure due to timeout");
 }
 
 DBusConnection *ofono_dbus_get_connection()

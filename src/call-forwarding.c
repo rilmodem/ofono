@@ -450,10 +450,10 @@ static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
 		return cf_get_properties_reply(msg, cf);
 
 	if (!cf->ops->query)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (cf->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	cf->pending = dbus_message_ref(msg);
 	cf->query_next = 0;
@@ -529,7 +529,7 @@ static void set_query_cf_callback(const struct ofono_error *error, int total,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Setting succeeded, but query failed");
 		cf->flags &= ~CALL_FORWARDING_FLAG_CACHED;
-		reply = dbus_gsm_failed(cf->pending);
+		reply = __ofono_error_failed(cf->pending);
 		dbus_gsm_pending_reply(&cf->pending, reply);
 		return;
 	}
@@ -568,7 +568,7 @@ static void set_property_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during set/erasure");
 		dbus_gsm_pending_reply(&cf->pending,
-					dbus_gsm_failed(cf->pending));
+					__ofono_error_failed(cf->pending));
 		return;
 	}
 
@@ -585,10 +585,10 @@ static DBusMessage *set_property_request(struct ofono_modem *modem,
 	struct call_forwarding_data *cf = modem->call_forwarding;
 
 	if (ph->number[0] != '\0' && cf->ops->registration == NULL)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (ph->number[0] == '\0' && cf->ops->erasure == NULL)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	cf->pending = dbus_message_ref(msg);
 	cf->query_next = type;
@@ -618,19 +618,19 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 	int type;
 
 	if (cf->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &property);
 	dbus_message_iter_next(&iter);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
 
@@ -642,19 +642,19 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 		type = CALL_FORWARDING_TYPE_NO_REPLY;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_UINT16)
-			return dbus_gsm_invalid_args(msg);
+			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &timeout);
 
 		if (timeout < 1 || timeout > 30)
-			return dbus_gsm_invalid_format(msg);
+			return __ofono_error_invalid_format(msg);
 
 		l = g_slist_find_custom(cf->cf_conditions[type],
 				GINT_TO_POINTER(cls),
 				cf_condition_find_with_cls);
 
 		if (!l)
-			return dbus_gsm_failed(msg);
+			return __ofono_error_failed(msg);
 
 		c = l->data;
 
@@ -669,12 +669,12 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 		ph.type = 129;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-			return dbus_gsm_invalid_args(msg);
+			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &number);
 
 		if (strlen(number) > 0 && !valid_phone_number_format(number))
-			return dbus_gsm_invalid_format(msg);
+			return __ofono_error_invalid_format(msg);
 
 		if (number[0] != '\0')
 			string_to_phone_number(number, &ph);
@@ -685,7 +685,7 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 						timeout);
 	}
 
-	return dbus_gsm_invalid_args(msg);
+	return __ofono_error_invalid_args(msg);
 }
 
 static void disable_conditional_callback(const struct ofono_error *error,
@@ -698,7 +698,7 @@ static void disable_conditional_callback(const struct ofono_error *error,
 		ofono_debug("Error occurred during conditional erasure");
 
 		dbus_gsm_pending_reply(&cf->pending,
-					dbus_gsm_failed(cf->pending));
+					__ofono_error_failed(cf->pending));
 		return;
 	}
 
@@ -717,7 +717,7 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 		ofono_debug("Error occurred during erasure of all");
 
 		dbus_gsm_pending_reply(&cf->pending,
-					dbus_gsm_failed(cf->pending));
+					__ofono_error_failed(cf->pending));
 		return;
 	}
 
@@ -736,21 +736,21 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 	int type;
 
 	if (cf->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!cf->ops->erasure)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &strtype,
 					DBUS_TYPE_INVALID) == FALSE)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (!strcmp(strtype, "all") || !strcmp(strtype, ""))
 		type = CALL_FORWARDING_TYPE_ALL;
 	else if (!strcmp(strtype, "conditional"))
 		type = CALL_FORWARDING_TYPE_ALL_CONDITIONAL;
 	else
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	cf->pending = dbus_message_ref(msg);
 
@@ -864,7 +864,7 @@ static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Setting succeeded, but query failed");
 		cf->flags &= ~CALL_FORWARDING_FLAG_CACHED;
-		reply = dbus_gsm_failed(cf->pending);
+		reply = __ofono_error_failed(cf->pending);
 		dbus_gsm_pending_reply(&cf->pending, reply);
 		return;
 	}
@@ -908,7 +908,7 @@ static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 		ofono_debug("Error occurred during cf ss control set/erasure");
 
 		dbus_gsm_pending_reply(&cf->pending,
-					dbus_gsm_failed(cf->pending));
+					__ofono_error_failed(cf->pending));
 		g_free(cf->ss_req);
 		cf->ss_req = NULL;
 		return;
@@ -937,7 +937,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 		return FALSE;
 
 	if (cf->pending) {
-		reply = dbus_gsm_busy(msg);
+		reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -1035,7 +1035,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 	}
 
 	if (!operation) {
-		reply = dbus_gsm_not_implemented(msg);
+		reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -1044,7 +1044,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 	cf->ss_req = g_try_new0(struct cf_ss_request, 1);
 
 	if (!cf->ss_req) {
-		reply = dbus_gsm_failed(msg);
+		reply = __ofono_error_failed(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -1106,7 +1106,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 	return TRUE;
 
 error:
-	reply = dbus_gsm_invalid_format(msg);
+	reply = __ofono_error_invalid_format(msg);
 	g_dbus_send_message(conn, reply);
 	return TRUE;
 }

@@ -350,7 +350,7 @@ static void cw_ss_query_callback(const struct ofono_error *error, int status,
 
 		cs->flags &= ~CALL_SETTINGS_FLAG_CACHED;
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 
 		return;
 	}
@@ -368,7 +368,7 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting CW via SS failed");
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 
 		return;
 	}
@@ -395,7 +395,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 		return FALSE;
 
 	if (cs->pending) {
-		reply = dbus_gsm_busy(msg);
+		reply = __ofono_error_busy(msg);
 		goto error;
 	}
 
@@ -404,7 +404,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 
 	if ((type == SS_CONTROL_TYPE_QUERY && !cs->ops->cw_query) ||
 		(type != SS_CONTROL_TYPE_QUERY && !cs->ops->cw_set)) {
-		reply = dbus_gsm_not_implemented(msg);
+		reply = __ofono_error_not_implemented(msg);
 		goto error;
 	}
 
@@ -456,7 +456,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 	return TRUE;
 
 bad_format:
-	reply = dbus_gsm_invalid_format(msg);
+	reply = __ofono_error_invalid_format(msg);
 error:
 	g_dbus_send_message(conn, reply);
 	return TRUE;
@@ -507,7 +507,7 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during ss control query");
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 
 		return;
 	}
@@ -533,7 +533,7 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 
 	default:
 		dbus_gsm_pending_reply(&cs->pending,
-				dbus_gsm_failed(cs->pending));
+				__ofono_error_failed(cs->pending));
 		ofono_error("Unknown type during COLR/COLP/CLIP ss");
 		return;
 	};
@@ -556,7 +556,7 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
 		return FALSE;
 
 	if (cs->pending) {
-		DBusMessage *reply = dbus_gsm_busy(msg);
+		DBusMessage *reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -576,14 +576,14 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
 
 	if (type != SS_CONTROL_TYPE_QUERY || strlen(sia) || strlen(sib) ||
 		strlen(sic) || strlen(dn)) {
-		DBusMessage *reply = dbus_gsm_invalid_format(msg);
+		DBusMessage *reply = __ofono_error_invalid_format(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
 	}
 
 	if (!query_op) {
-		DBusMessage *reply = dbus_gsm_not_implemented(msg);
+		DBusMessage *reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -608,7 +608,7 @@ static void clir_ss_query_callback(const struct ofono_error *error,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting clir via SS failed");
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 
 		return;
 	}
@@ -657,7 +657,7 @@ static void clir_ss_set_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting clir via SS failed");
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 
 		return;
 	}
@@ -681,7 +681,7 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 		return FALSE;
 
 	if (cs->pending) {
-		DBusMessage *reply = dbus_gsm_busy(msg);
+		DBusMessage *reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -693,7 +693,7 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 		return FALSE;
 
 	if (strlen(sia) || strlen(sib) || strlen(sic) || strlen(dn)) {
-		DBusMessage *reply = dbus_gsm_invalid_format(msg);
+		DBusMessage *reply = __ofono_error_invalid_format(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -701,7 +701,7 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 
 	if ((type == SS_CONTROL_TYPE_QUERY && !cs->ops->clir_query) ||
 		(type != SS_CONTROL_TYPE_QUERY && !cs->ops->clir_set)) {
-		DBusMessage *reply = dbus_gsm_not_implemented(msg);
+		DBusMessage *reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -965,7 +965,7 @@ static DBusMessage *cs_get_properties(DBusConnection *conn, DBusMessage *msg,
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (cs->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (cs->flags & CALL_SETTINGS_FLAG_CACHED)
 		return generate_get_properties_reply(modem, msg);
@@ -994,7 +994,7 @@ static void clir_set_query_callback(const struct ofono_error *error,
 
 		cs->flags &= ~CALL_SETTINGS_FLAG_CACHED;
 
-		reply = dbus_gsm_failed(cs->pending);
+		reply = __ofono_error_failed(cs->pending);
 		dbus_gsm_pending_reply(&cs->pending, reply);
 		return;
 	}
@@ -1014,7 +1014,7 @@ static void clir_set_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting clir failed");
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 
 		return;
 	}
@@ -1030,7 +1030,7 @@ static DBusMessage *set_clir(DBusMessage *msg, struct ofono_modem *modem,
 	int clir = -1;
 
 	if (cs->ops->clir_set == NULL)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (!strcmp(setting, "default"))
 		clir = 0;
@@ -1040,7 +1040,7 @@ static DBusMessage *set_clir(DBusMessage *msg, struct ofono_modem *modem,
 		clir = 2;
 
 	if (clir == -1)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	cs->pending = dbus_message_ref(msg);
 
@@ -1061,7 +1061,7 @@ static void cw_set_query_callback(const struct ofono_error *error, int status,
 		cs->flags &= ~CALL_SETTINGS_FLAG_CACHED;
 
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 		return;
 	}
 
@@ -1080,7 +1080,7 @@ static void cw_set_callback(const struct ofono_error *error, void *data)
 		ofono_debug("Error occurred during CW set");
 
 		dbus_gsm_pending_reply(&cs->pending,
-					dbus_gsm_failed(cs->pending));
+					__ofono_error_failed(cs->pending));
 
 		return;
 	}
@@ -1096,14 +1096,14 @@ static DBusMessage *set_cw_req(DBusMessage *msg, struct ofono_modem *modem,
 	int cw;
 
 	if (cs->ops->cw_set == NULL)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (!strcmp(setting, "enabled"))
 		cw = 1;
 	else if (!strcmp(setting, "disabled"))
 		cw = 0;
 	else
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	cs->pending = dbus_message_ref(msg);
 
@@ -1149,19 +1149,19 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 	int cls;
 
 	if (cs->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &property);
 	dbus_message_iter_next(&iter);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
 
@@ -1169,7 +1169,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 		const char *setting;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-			return dbus_gsm_invalid_format(msg);
+			return __ofono_error_invalid_format(msg);
 
 		dbus_message_iter_get_basic(&var, &setting);
 
@@ -1178,14 +1178,14 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 		const char *setting;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-			return dbus_gsm_invalid_format(msg);
+			return __ofono_error_invalid_format(msg);
 
 		dbus_message_iter_get_basic(&var, &setting);
 
 		return set_cw_req(msg, modem, setting, cls);
 	}
 
-	return dbus_gsm_invalid_args(msg);
+	return __ofono_error_invalid_args(msg);
 }
 
 static GDBusMethodTable cs_methods[] = {

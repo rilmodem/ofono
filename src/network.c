@@ -163,7 +163,7 @@ static void register_callback(const struct ofono_error *error, void *data)
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		reply = dbus_message_new_method_return(netreg->pending);
 	else
-		reply = dbus_gsm_failed(netreg->pending);
+		reply = __ofono_error_failed(netreg->pending);
 
 	g_dbus_send_message(conn, reply);
 
@@ -555,10 +555,10 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 	struct network_registration_data *netreg = op->modem->network_registration;
 
 	if (netreg->flags & NETWORK_REGISTRATION_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (netreg->ops->register_manual == NULL)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	netreg->flags |= NETWORK_REGISTRATION_FLAG_PENDING;
 	netreg->pending = dbus_message_ref(msg);
@@ -756,10 +756,10 @@ static DBusMessage *network_register(DBusConnection *conn,
 	struct network_registration_data *netreg = modem->network_registration;
 
 	if (netreg->flags & NETWORK_REGISTRATION_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (netreg->ops->register_auto == NULL)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	netreg->flags |= NETWORK_REGISTRATION_FLAG_PENDING;
 	netreg->pending = dbus_message_ref(msg);
@@ -776,10 +776,10 @@ static DBusMessage *network_deregister(DBusConnection *conn,
 	struct network_registration_data *netreg = modem->network_registration;
 
 	if (netreg->flags & NETWORK_REGISTRATION_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (netreg->ops->deregister == NULL)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	netreg->flags |= NETWORK_REGISTRATION_FLAG_PENDING;
 	netreg->pending = dbus_message_ref(msg);

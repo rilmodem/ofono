@@ -197,13 +197,13 @@ static DBusMessage *voicecall_busy(DBusConnection *conn,
 
 	if (call->status != CALL_STATUS_INCOMING &&
 		call->status != CALL_STATUS_WAITING)
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!voicecalls->ops->set_udub)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
 	voicecalls->pending = dbus_message_ref(msg);
@@ -226,20 +226,20 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 
 	if (call->status != CALL_STATUS_INCOMING &&
 		call->status != CALL_STATUS_WAITING)
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!voicecalls->ops->deflect)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
 					DBUS_TYPE_INVALID) == FALSE)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (!valid_phone_number_format(number))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
 	voicecalls->pending = dbus_message_ref(msg);
@@ -260,13 +260,13 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	struct ofono_call *call = v->call;
 
 	if (call->status == CALL_STATUS_DISCONNECTED)
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!voicecalls->ops->release_specific)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
 	voicecalls->pending = dbus_message_ref(msg);
@@ -286,13 +286,13 @@ static DBusMessage *voicecall_answer(DBusConnection *conn,
 	struct ofono_call *call = v->call;
 
 	if (call->status != CALL_STATUS_INCOMING)
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!voicecalls->ops->answer)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
 	voicecalls->pending = dbus_message_ref(msg);
@@ -740,18 +740,18 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	enum ofono_clir_option clir;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (g_slist_length(calls->call_list) >= MAX_VOICE_CALLS)
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
 					DBUS_TYPE_STRING, &clirstr,
 					DBUS_TYPE_INVALID) == FALSE)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (!valid_phone_number_format(number))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	if (strlen(clirstr) == 0 || !strcmp(clirstr, "default"))
 		clir = OFONO_CLIR_OPTION_DEFAULT;
@@ -760,14 +760,14 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	else if (!strcmp(clirstr, "enabled"))
 		clir = OFONO_CLIR_OPTION_INVOCATION;
 	else
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	if (!calls->ops->dial)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (voicecalls_have_active(calls) &&
 		voicecalls_have_held(calls))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
@@ -789,7 +789,7 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 	int numheld;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	numactive = voicecalls_num_active(calls);
 
@@ -802,10 +802,10 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 	numheld = voicecalls_num_held(calls);
 
 	if ((numactive != 1) && (numheld != 1))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!calls->ops->transfer)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
@@ -822,13 +822,13 @@ static DBusMessage *manager_swap_calls(DBusConnection *conn,
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (voicecalls_have_waiting(calls))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!calls->ops->hold_all_active)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
@@ -845,13 +845,13 @@ static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!voicecalls_have_active(calls) || !voicecalls_have_waiting(calls))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!calls->ops->release_all_active)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
@@ -868,14 +868,14 @@ static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (voicecalls_have_active(calls) && voicecalls_have_held(calls) &&
 		voicecalls_have_waiting(calls))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!calls->ops->hold_all_active)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
@@ -892,10 +892,10 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!calls->ops->release_specific)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (g_slist_length(calls->call_list) == 0) {
 		DBusMessage *reply = dbus_message_new_method_return(msg);
@@ -924,22 +924,22 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	GSList *l;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &callpath,
 					DBUS_TYPE_INVALID) == FALSE)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (strlen(callpath) == 0 || strlen(callpath) > MAX_DBUS_PATH_LEN)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	c = strrchr(callpath, '/');
 
 	if (!c || strncmp(modem->path, callpath, c-callpath))
-		return dbus_gsm_not_found(msg);
+		return __ofono_error_not_found(msg);
 
 	if (!sscanf(c, "/voicecall%2u", &id))
-		return dbus_gsm_not_found(msg);
+		return __ofono_error_not_found(msg);
 
 	for (l = calls->multiparty_list; l; l = l->next) {
 		struct voicecall *v = l->data;
@@ -948,17 +948,17 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	}
 
 	if (!l)
-		return dbus_gsm_not_found(msg);
+		return __ofono_error_not_found(msg);
 
 	/* If we found id on the list of multiparty calls, then by definition
 	 * the multiparty call exists.	Only thing to check is whether we have
 	 * held calls
 	 */
 	if (voicecalls_have_held(calls))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!calls->ops->private_chat)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
@@ -975,13 +975,13 @@ static DBusMessage *multiparty_create(DBusConnection *conn,
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!voicecalls_have_held(calls) || !voicecalls_have_active(calls))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (!calls->ops->create_multiparty)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
 	calls->pending = dbus_message_ref(msg);
@@ -998,16 +998,16 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!calls->ops->release_specific)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (!calls->ops->release_all_held)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (!calls->ops->release_all_active)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	if (g_slist_length(calls->multiparty_list) == 0) {
 		DBusMessage *reply = dbus_message_new_method_return(msg);
@@ -1057,23 +1057,23 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 	int i, len;
 
 	if (calls->flags & VOICECALLS_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!calls->ops->send_tones)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	/* Send DTMFs only if we have at least one connected call */
 	if (!voicecalls_have_connected(calls))
-		return dbus_gsm_failed(msg);
+		return __ofono_error_failed(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &in_tones,
 					DBUS_TYPE_INVALID) == FALSE)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	len = strlen(in_tones);
 
 	if (len == 0)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	tones = g_ascii_strup(in_tones, len);
 
@@ -1085,7 +1085,7 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 			continue;
 
 		g_free(tones);
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 	}
 
 	calls->flags |= VOICECALLS_FLAG_PENDING;
@@ -1347,7 +1347,7 @@ static void generic_callback(const struct ofono_error *error, void *data)
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		reply = dbus_message_new_method_return(calls->pending);
 	else
-		reply = dbus_gsm_failed(calls->pending);
+		reply = __ofono_error_failed(calls->pending);
 
 	g_dbus_send_message(conn, reply);
 
@@ -1434,7 +1434,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = dbus_gsm_failed(calls->pending);
+		reply = __ofono_error_failed(calls->pending);
 		g_dbus_send_message(conn, reply);
 
 		goto out;
@@ -1459,7 +1459,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		call = synthesize_outgoing_call(modem, calls->pending);
 
 		if (!call) {
-			reply = dbus_gsm_failed(calls->pending);
+			reply = __ofono_error_failed(calls->pending);
 			g_dbus_send_message(conn, reply);
 
 			goto out;
@@ -1468,7 +1468,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		v = voicecall_create(modem, call);
 
 		if (!v) {
-			reply = dbus_gsm_failed(calls->pending);
+			reply = __ofono_error_failed(calls->pending);
 			g_dbus_send_message(conn, reply);
 
 			goto out;
@@ -1545,7 +1545,7 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = dbus_gsm_failed(calls->pending);
+		reply = __ofono_error_failed(calls->pending);
 		goto out;
 	}
 
@@ -1570,7 +1570,7 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 		ofono_error("Created multiparty call, but size is less than 2"
 				" panic!");
 
-		reply = dbus_gsm_failed(calls->pending);
+		reply = __ofono_error_failed(calls->pending);
 	} else {
 		reply = dbus_message_new_method_return(calls->pending);
 
@@ -1610,7 +1610,7 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = dbus_gsm_failed(calls->pending);
+		reply = __ofono_error_failed(calls->pending);
 		goto out;
 	}
 

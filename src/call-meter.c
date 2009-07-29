@@ -322,7 +322,7 @@ static DBusMessage *cm_get_properties(DBusConnection *conn, DBusMessage *msg,
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (cm->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	cm->pending = dbus_message_ref(msg);
 
@@ -355,7 +355,7 @@ static void set_acm_max_query_callback(const struct ofono_error *error, int valu
 		cm->flags &= ~CALL_METER_FLAG_CACHED;
 
 		dbus_gsm_pending_reply(&cm->pending,
-					dbus_gsm_failed(cm->pending));
+					__ofono_error_failed(cm->pending));
 		return;
 	}
 
@@ -373,7 +373,7 @@ static void set_acm_max_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Setting acm_max failed");
 		dbus_gsm_pending_reply(&cm->pending,
-					dbus_gsm_failed(cm->pending));
+					__ofono_error_failed(cm->pending));
 		return;
 	}
 
@@ -389,7 +389,7 @@ static DBusMessage *prop_set_acm_max(DBusMessage *msg, struct ofono_modem *modem
 	dbus_uint32_t value;
 
 	if (!cm->ops->acm_max_set)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	dbus_message_iter_get_basic(dbus_value, &value);
 
@@ -417,7 +417,7 @@ static void set_puct_query_callback(const struct ofono_error *error,
 		cm->flags &= ~CALL_METER_FLAG_CACHED;
 
 		dbus_gsm_pending_reply(&cm->pending,
-					dbus_gsm_failed(cm->pending));
+					__ofono_error_failed(cm->pending));
 		return;
 	}
 
@@ -436,7 +436,7 @@ static void set_puct_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting puct failed");
 		dbus_gsm_pending_reply(&cm->pending,
-					dbus_gsm_failed(cm->pending));
+					__ofono_error_failed(cm->pending));
 		return;
 	}
 
@@ -463,7 +463,7 @@ static void set_puct_initial_query_callback(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		dbus_gsm_pending_reply(&cm->pending,
-					dbus_gsm_failed(cm->pending));
+					__ofono_error_failed(cm->pending));
 		return;
 	}
 
@@ -495,12 +495,12 @@ static DBusMessage *prop_set_ppu(DBusMessage *msg, struct ofono_modem *modem,
 	double ppu;
 
 	if (!cm->ops->puct_set || !cm->ops->puct_query)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	dbus_message_iter_get_basic(var, &ppu);
 
 	if (ppu < 0.0)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	cm->pending = dbus_message_ref(msg);
 
@@ -521,12 +521,12 @@ static DBusMessage *prop_set_cur(DBusMessage *msg, struct ofono_modem *modem,
 	const char *value;
 
 	if (!cm->ops->puct_set || !cm->ops->puct_query)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	dbus_message_iter_get_basic(var, &value);
 
 	if (strlen(value) > 3)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	cm->pending = dbus_message_ref(msg);
 
@@ -565,45 +565,45 @@ static DBusMessage *cm_set_property(DBusConnection *conn, DBusMessage *msg,
 	struct call_meter_property *property;
 
 	if (cm->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &name);
 
 	dbus_message_iter_next(&iter);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
 
 	if (!dbus_message_iter_next(&iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-			return dbus_gsm_invalid_args(msg);
+			return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &passwd);
 
 	if (!is_valid_pin(passwd))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	for (property = cm_properties; property->name; property++) {
 		if (strcmp(name, property->name))
 			continue;
 
 		if (dbus_message_iter_get_arg_type(&var) != property->type)
-			return dbus_gsm_invalid_format(msg);
+			return __ofono_error_invalid_format(msg);
 
 		return property->set(msg, modem, &var, passwd);
 	}
 
-	return dbus_gsm_invalid_args(msg);
+	return __ofono_error_invalid_args(msg);
 }
 
 static void reset_acm_query_callback(const struct ofono_error *error, int value,
@@ -622,7 +622,7 @@ static void reset_acm_query_callback(const struct ofono_error *error, int value,
 		cm->flags &= ~CALL_METER_FLAG_CACHED;
 
 		dbus_gsm_pending_reply(&cm->pending,
-					dbus_gsm_failed(cm->pending));
+					__ofono_error_failed(cm->pending));
 		return;
 	}
 
@@ -640,7 +640,7 @@ static void acm_reset_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("reseting acm failed");
 		dbus_gsm_pending_reply(&cm->pending,
-					dbus_gsm_failed(cm->pending));
+					__ofono_error_failed(cm->pending));
 		return;
 	}
 
@@ -657,21 +657,21 @@ static DBusMessage *cm_acm_reset(DBusConnection *conn, DBusMessage *msg,
 	const char *pin2;
 
 	if (cm->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &pin2);
 
 	if (!is_valid_pin(pin2))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	if (!cm->ops->acm_reset)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	cm->pending = dbus_message_ref(msg);
 

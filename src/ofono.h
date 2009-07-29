@@ -40,6 +40,16 @@ void __ofono_toggle_debug(void);
 int __ofono_dbus_init(DBusConnection *conn);
 void __ofono_dbus_cleanup(void);
 
+DBusMessage *__ofono_error_invalid_args(DBusMessage *msg);
+DBusMessage *__ofono_error_invalid_format(DBusMessage *msg);
+DBusMessage *__ofono_error_not_implemented(DBusMessage *msg);
+DBusMessage *__ofono_error_failed(DBusMessage *msg);
+DBusMessage *__ofono_error_busy(DBusMessage *msg);
+DBusMessage *__ofono_error_not_found(DBusMessage *msg);
+DBusMessage *__ofono_error_not_active(DBusMessage *msg);
+DBusMessage *__ofono_error_not_supported(DBusMessage *msg);
+DBusMessage *__ofono_error_timed_out(DBusMessage *msg);
+
 #include <ofono/plugin.h>
 
 int __ofono_plugin_init(const char *pattern, const char *exclude);

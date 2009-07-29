@@ -51,67 +51,6 @@ int dbus_gsm_signal_array_property_changed(DBusConnection *conn,
 						const char *name, int type,
 						void *value);
 
-#define DBUS_GSM_ERROR_INTERFACE "org.ofono.Error"
-
-static inline DBusMessage *dbus_gsm_invalid_args(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
-					".InvalidArguments",
-					"Invalid arguments in method call");
-}
-
-static inline DBusMessage *dbus_gsm_invalid_format(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
-					".InvalidFormat",
-					"Argument format is not recognized");
-}
-
-static inline DBusMessage *dbus_gsm_not_implemented(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
-					".NotImplemented",
-					"Implementation not provided");
-}
-
-static inline DBusMessage *dbus_gsm_failed(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".Failed",
-					"Operation failed");
-}
-
-static inline DBusMessage *dbus_gsm_busy(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".InProgress",
-					"Operation already in progress");
-}
-
-static inline DBusMessage *dbus_gsm_not_found(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".NotFound",
-			"Object is not found or not valid for this operation");
-}
-
-static inline DBusMessage *dbus_gsm_not_active(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".NotActive",
-			"Operation is not active or in progress");
-}
-
-static inline DBusMessage *dbus_gsm_not_supported(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE
-					".NotSupported",
-					"Operation is not supported by the"
-					" network / modem");
-}
-
-static inline DBusMessage *dbus_gsm_timed_out(DBusMessage *msg)
-{
-	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".Timedout",
-			"Operation failure due to timeout");
-}
-
 static inline void dbus_gsm_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();

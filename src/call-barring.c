@@ -294,7 +294,7 @@ static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
 
 		dbus_gsm_pending_reply(&cb->pending,
-					dbus_gsm_failed(cb->pending));
+					__ofono_error_failed(cb->pending));
 		return;
 	}
 
@@ -333,7 +333,7 @@ static void cb_ss_set_lock_callback(const struct ofono_error *error,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Enabling/disabling Call Barring via SS failed");
 		dbus_gsm_pending_reply(&cb->pending,
-					dbus_gsm_failed(cb->pending));
+					__ofono_error_failed(cb->pending));
 		return;
 	}
 
@@ -378,7 +378,7 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 	int i;
 
 	if (cb->pending) {
-		reply = dbus_gsm_busy(msg);
+		reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -423,7 +423,7 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 	}
 
 	if (!operation) {
-		reply = dbus_gsm_not_implemented(msg);
+		reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -478,7 +478,7 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 	return TRUE;
 
 bad_format:
-	reply = dbus_gsm_invalid_format(msg);
+	reply = __ofono_error_invalid_format(msg);
 	g_dbus_send_message(conn, reply);
 	return TRUE;
 }
@@ -492,7 +492,7 @@ static void cb_set_passwd_callback(const struct ofono_error *error, void *data)
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		reply = dbus_message_new_method_return(cb->pending);
 	else {
-		reply = dbus_gsm_failed(cb->pending);
+		reply = __ofono_error_failed(cb->pending);
 		ofono_debug("Changing Call Barring password via SS failed");
 	}
 
@@ -509,7 +509,7 @@ static gboolean cb_ss_passwd(struct ofono_modem *modem, const char *sc,
 	const char *fac;
 
 	if (cb->pending) {
-		reply = dbus_gsm_busy(msg);
+		reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
 		return TRUE;
@@ -536,7 +536,7 @@ static gboolean cb_ss_passwd(struct ofono_modem *modem, const char *sc,
 
 	return TRUE;
 bad_format:
-	reply = dbus_gsm_invalid_format(msg);
+	reply = __ofono_error_invalid_format(msg);
 	g_dbus_send_message(conn, reply);
 	return TRUE;
 }
@@ -705,10 +705,10 @@ static DBusMessage *cb_get_properties(DBusConnection *conn, DBusMessage *msg,
 	struct call_barring_data *cb = modem->call_barring;
 
 	if (cb->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!cb->ops->query)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	cb->pending = dbus_message_ref(msg);
 
@@ -735,7 +735,7 @@ static void set_query_lock_callback(const struct ofono_error *error,
 		cb->flags &= ~CALL_BARRING_FLAG_CACHED;
 
 		dbus_gsm_pending_reply(&cb->pending,
-					dbus_gsm_failed(cb->pending));
+					__ofono_error_failed(cb->pending));
 		return;
 	}
 
@@ -771,7 +771,7 @@ static void set_lock_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Enabling/disabling a lock failed");
 		dbus_gsm_pending_reply(&cb->pending,
-					dbus_gsm_failed(cb->pending));
+					__ofono_error_failed(cb->pending));
 		return;
 	}
 
@@ -865,43 +865,43 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 	int mode;
 
 	if (cb->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &name);
 
 	dbus_message_iter_next(&iter);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
 
 	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_get_basic(&var, &value);
 
 	if (!cb_lock_property_lookup(name, value, BEARER_CLASS_VOICE,
 					&lock, &cls, &mode))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	if (dbus_message_iter_next(&iter)) {
 		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-			return dbus_gsm_invalid_args(msg);
+			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&iter, &passwd);
 		if (!is_valid_pin(passwd))
-			return dbus_gsm_invalid_format(msg);
+			return __ofono_error_invalid_format(msg);
 	}
 
 	if (!cb->ops->set)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	cb_set_query_bounds(cb, cb_locks[lock].fac, FALSE);
 
@@ -920,7 +920,7 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Disabling all barring failed");
 		dbus_gsm_pending_reply(&cb->pending,
-					dbus_gsm_failed(cb->pending));
+					__ofono_error_failed(cb->pending));
 		return;
 	}
 
@@ -937,20 +937,20 @@ static DBusMessage *cb_disable_all(DBusConnection *conn, DBusMessage *msg,
 	const char *passwd = "";
 
 	if (cb->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &passwd);
 	if (!is_valid_pin(passwd))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	if (!cb->ops->set)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	cb_set_query_bounds(cb, fac, FALSE);
 
@@ -988,29 +988,29 @@ static DBusMessage *cb_set_passwd(DBusConnection *conn, DBusMessage *msg,
 	const char *old_passwd, *new_passwd;
 
 	if (cb->pending)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &old_passwd);
 	if (!is_valid_pin(old_passwd))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_next(&iter);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &new_passwd);
 	if (!is_valid_pin(new_passwd))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	if (!cb->ops->set_passwd)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	cb->pending = dbus_message_ref(msg);
 	cb->ops->set_passwd(modem, "AB", old_passwd, new_passwd,

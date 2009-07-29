@@ -42,6 +42,11 @@
 static GSList *g_sessions = NULL;
 static GSList *g_pending = NULL;
 
+DBusMessage *__ofono_error_invalid_args(DBusMessage *msg);
+DBusMessage *__ofono_error_invalid_format(DBusMessage *msg);
+DBusMessage *__ofono_error_failed(DBusMessage *msg);
+DBusMessage *__ofono_error_not_found(DBusMessage *msg);
+
 static void modem_list(char ***modems)
 {
 	GSList *l;
@@ -388,7 +393,7 @@ out:
 	if (at)
 		at_destroy(at);
 
-	reply = dbus_gsm_failed(msg);
+	reply = __ofono_error_failed(msg);
 	g_dbus_send_message(conn, reply);
 }
 
@@ -403,12 +408,12 @@ static DBusMessage *manager_create(DBusConnection *conn, DBusMessage *msg,
 					DBUS_TYPE_STRING, &target,
 					DBUS_TYPE_STRING, &driver,
 					DBUS_TYPE_INVALID))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	io = modem_session_create(target, create_cb, msg, msg_destroy);
 
 	if (!io)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	dbus_message_ref(msg);
 
@@ -426,7 +431,7 @@ static DBusMessage *manager_destroy(DBusConnection *conn, DBusMessage *msg,
 	if (!dbus_message_get_args(msg, NULL,
 					DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID))
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	for (l = g_sessions; l; l = l->next) {
 		struct at_data *at = l->data;
@@ -451,7 +456,7 @@ static DBusMessage *manager_destroy(DBusConnection *conn, DBusMessage *msg,
 		return dbus_message_new_method_return(msg);
 	}
 
-	return dbus_gsm_not_found(msg);
+	return __ofono_error_not_found(msg);
 }
 
 static DBusMessage *manager_get_properties(DBusConnection *conn,

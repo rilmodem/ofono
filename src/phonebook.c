@@ -468,7 +468,7 @@ static DBusMessage *import_entries(DBusConnection *conn, DBusMessage *msg,
 	DBusMessage *reply;
 
 	if (phonebook->pending) {
-		reply = dbus_gsm_busy(phonebook->pending);
+		reply = __ofono_error_busy(phonebook->pending);
 		g_dbus_send_message(conn, reply);
 		return NULL;
 	}

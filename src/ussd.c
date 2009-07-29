@@ -280,7 +280,7 @@ static gboolean recognized_passwd_change_string(struct ofono_modem *modem,
 	/* If SIC & SID don't match, then we just bail out here */
 	if (strcmp(sic, sid)) {
 		DBusConnection *conn = ofono_dbus_get_connection();
-		DBusMessage *reply = dbus_gsm_invalid_format(msg);
+		DBusMessage *reply = __ofono_error_invalid_format(msg);
 		g_dbus_send_message(conn, reply);
 		return TRUE;
 	}
@@ -370,13 +370,13 @@ void ofono_ussd_notify(struct ofono_modem *modem, int status, const char *str)
 
 	if (status == USSD_STATUS_NOT_SUPPORTED) {
 		ussd->state = USSD_STATE_IDLE;
-		reply = dbus_gsm_not_supported(ussd->pending);
+		reply = __ofono_error_not_supported(ussd->pending);
 		goto out;
 	}
 
 	if (status == USSD_STATUS_TIMED_OUT) {
 		ussd->state = USSD_STATE_IDLE;
-		reply = dbus_gsm_timed_out(ussd->pending);
+		reply = __ofono_error_timed_out(ussd->pending);
 		goto out;
 	}
 
@@ -437,7 +437,7 @@ static void ussd_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	reply = dbus_gsm_failed(ussd->pending);
+	reply = __ofono_error_failed(ussd->pending);
 
 	g_dbus_send_message(conn, reply);
 
@@ -453,17 +453,17 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 	const char *str;
 
 	if (ussd->flags & USSD_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (ussd->state == USSD_STATE_ACTIVE)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &str,
 					DBUS_TYPE_INVALID) == FALSE)
-		return dbus_gsm_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (strlen(str) == 0)
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	ofono_debug("checking if this is a recognized control string");
 	if (recognized_control_string(modem, str, msg))
@@ -471,12 +471,12 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 
 	ofono_debug("No.., checking if this is a USSD string");
 	if (!valid_ussd_string(str))
-		return dbus_gsm_invalid_format(msg);
+		return __ofono_error_invalid_format(msg);
 
 	ofono_debug("OK, running USSD request");
 
 	if (!ussd->ops->request)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	ussd->flags |= USSD_FLAG_PENDING;
 	ussd->pending = dbus_message_ref(msg);
@@ -505,7 +505,7 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 
 		reply = dbus_message_new_method_return(ussd->pending);
 	} else
-		reply = dbus_gsm_failed(ussd->pending);
+		reply = __ofono_error_failed(ussd->pending);
 
 	dbus_gsm_pending_reply(&ussd->pending, reply);
 }
@@ -517,13 +517,13 @@ static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,
 	struct ussd_data *ussd = modem->ussd;
 
 	if (ussd->flags & USSD_FLAG_PENDING)
-		return dbus_gsm_busy(msg);
+		return __ofono_error_busy(msg);
 
 	if (ussd->state == USSD_STATE_IDLE)
-		return dbus_gsm_not_active(msg);
+		return __ofono_error_not_active(msg);
 
 	if (!ussd->ops->cancel)
-		return dbus_gsm_not_implemented(msg);
+		return __ofono_error_not_implemented(msg);
 
 	ussd->flags |= USSD_FLAG_PENDING;
 	ussd->pending = dbus_message_ref(msg);
