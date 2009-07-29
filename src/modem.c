@@ -93,6 +93,14 @@ void *ofono_modem_userdata(struct ofono_modem *modem)
 	return NULL;
 }
 
+const char *ofono_modem_get_path(struct ofono_modem *modem)
+{
+	if (modem)
+		return modem->path;
+
+	return NULL;
+}
+
 static void modem_free(gpointer data)
 {
 	struct ofono_modem *modem = data;

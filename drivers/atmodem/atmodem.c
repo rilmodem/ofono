@@ -48,18 +48,18 @@ DBusMessage *__ofono_error_invalid_format(DBusMessage *msg);
 DBusMessage *__ofono_error_failed(DBusMessage *msg);
 DBusMessage *__ofono_error_not_found(DBusMessage *msg);
 
-static void modem_list(char ***modems)
+static void modem_list(const char ***modems)
 {
 	GSList *l;
 	int i;
 	struct at_data *at;
 
-	*modems = g_new0(char *, g_slist_length(g_sessions) + 1);
+	*modems = g_new0(const char *, g_slist_length(g_sessions) + 1);
 
 	for (l = g_sessions, i = 0; l; l = l->next, i++) {
 		at = l->data;
 
-		(*modems)[i] = at->modem->path;
+		(*modems)[i] = ofono_modem_get_path(at->modem);
 	}
 }
 
@@ -328,7 +328,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	struct at_data *at = NULL;
 	const char *path;
 	const char *target, *driver;
-	char **modems;
+	const char **modems;
 
 	g_pending = g_slist_remove(g_pending, io);
 
@@ -373,7 +373,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	g_pending = g_slist_remove(g_pending, io);
 	g_sessions = g_slist_prepend(g_sessions, at);
 
-	path = at->modem->path;
+	path = ofono_modem_get_path(at->modem);
 
 	reply = dbus_message_new_method_return(msg);
 
@@ -436,9 +436,9 @@ static DBusMessage *manager_destroy(DBusConnection *conn, DBusMessage *msg,
 
 	for (l = g_sessions; l; l = l->next) {
 		struct at_data *at = l->data;
-		char **modems;
+		const char **modems;
 
-		if (strcmp(at->modem->path, path))
+		if (strcmp(ofono_modem_get_path(at->modem), path))
 			continue;
 
 		interface_exit(at);
@@ -466,7 +466,7 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	DBusMessage *reply;
-	char **modems;
+	const char **modems;
 
 	reply = dbus_message_new_method_return(msg);
 

@@ -32,6 +32,8 @@ void ofono_modem_add_interface(struct ofono_modem *modem,
 void ofono_modem_remove_interface(struct ofono_modem *modem,
 					const char *interface);
 
+const char *ofono_modem_get_path(struct ofono_modem *modem);
+
 #ifdef __cplusplus
 }
 #endif
