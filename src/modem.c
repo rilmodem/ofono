@@ -56,7 +56,7 @@ struct ofono_modem_data {
 	guint				interface_update;
 };
 
-unsigned int modem_alloc_callid(struct ofono_modem *modem)
+unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
 {
 	struct ofono_modem_data *d = modem->modem_info;
 	unsigned int i;
@@ -72,7 +72,7 @@ unsigned int modem_alloc_callid(struct ofono_modem *modem)
 	return 0;
 }
 
-void modem_release_callid(struct ofono_modem *modem, int id)
+void __ofono_modem_release_callid(struct ofono_modem *modem, int id)
 {
 	struct ofono_modem_data *d = modem->modem_info;
 

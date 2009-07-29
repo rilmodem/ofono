@@ -1242,7 +1242,7 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 
 	calls->release_list = g_slist_remove(calls->release_list, call);
 
-	modem_release_callid(modem, id);
+	__ofono_modem_release_callid(modem, id);
 
 	/* TODO: Emit disconnect reason */
 	voicecall_set_call_status(modem, call, CALL_STATUS_DISCONNECTED);
@@ -1293,7 +1293,7 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 
 	memcpy(newcall, call, sizeof(struct ofono_call));
 
-	if (modem_alloc_callid(modem) != call->id) {
+	if (__ofono_modem_alloc_callid(modem) != call->id) {
 		ofono_error("Warning: Call id and internally tracked id"
 				" do not correspond");
 		goto err;
@@ -1391,7 +1391,7 @@ static struct ofono_call *synthesize_outgoing_call(struct ofono_modem *modem,
 	if (!call)
 		return call;
 
-	call->id = modem_alloc_callid(modem);
+	call->id = __ofono_modem_alloc_callid(modem);
 
 	if (call->id == 0) {
 		ofono_error("Failed to alloc callid, too many calls");

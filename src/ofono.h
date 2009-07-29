@@ -83,6 +83,9 @@ struct ofono_modem {
 	GSList *history_contexts;
 };
 
+unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem);
+void __ofono_modem_release_callid(struct ofono_modem *modem, int id);
+
 #include <ofono/history.h>
 
 void __ofono_history_probe_drivers(struct ofono_modem *modem);

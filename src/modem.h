@@ -27,5 +27,3 @@ void modem_remove(struct ofono_modem *modem);
 void modem_add_interface(struct ofono_modem *modem, const char *interface);
 void modem_remove_interface(struct ofono_modem *modem, const char *interface);
 
-unsigned int modem_alloc_callid(struct ofono_modem *modem);
-void modem_release_callid(struct ofono_modem *modem, int id);
