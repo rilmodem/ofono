@@ -44,7 +44,6 @@ static const char *cops_prefix[] = { "+COPS:", NULL };
 static const char *csq_prefix[] = { "+CSQ:", NULL };
 
 struct netreg_data {
-	gboolean supports_tech;
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 };
@@ -63,7 +62,6 @@ static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct at_data *at = ofono_modem_userdata(cbd->modem);
 	GAtResultIter iter;
 	ofono_registration_status_cb_t cb = cbd->cb;
 	int status;
@@ -103,8 +101,7 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	else
 		goto out;
 
-	if (g_at_result_iter_next_number(&iter, &tech) == TRUE)
-		at->netreg->supports_tech = TRUE;
+	g_at_result_iter_next_number(&iter, &tech);
 
 out:
 	ofono_debug("creg_cb: %d, %d, %d, %d", status, lac, ci, tech);
@@ -457,11 +454,7 @@ static void at_register_manual(struct ofono_modem *modem,
 	if (!cbd)
 		goto error;
 
-	if (at->netreg->supports_tech && oper->tech != -1)
-		sprintf(buf, "AT+COPS=1,2,\"%s%s\",%1d", oper->mcc, oper->mnc,
-				oper->tech);
-	else
-		sprintf(buf, "AT+COPS=1,2,\"%s%s\"", oper->mcc, oper->mnc);
+	sprintf(buf, "AT+COPS=1,2,\"%s%s\"", oper->mcc, oper->mnc);
 
 	if (g_at_chat_send(at->parser, buf, none_prefix,
 				register_cb, cbd, g_free) > 0)
@@ -589,7 +582,6 @@ error:
 static void creg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_userdata(modem);
 	GAtResultIter iter;
 	int status;
 	int lac = -1, ci = -1, tech = -1;
@@ -614,8 +606,7 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	else
 		goto out;
 
-	if (g_at_result_iter_next_number(&iter, &tech) == TRUE)
-		at->netreg->supports_tech = TRUE;
+	g_at_result_iter_next_number(&iter, &tech);
 
 out:
 	ofono_debug("creg_notify: %d, %d, %d, %d", status, lac, ci, tech);
