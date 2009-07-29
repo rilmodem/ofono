@@ -37,8 +37,6 @@
 #include "cssn.h"
 #include "sim.h"
 
-#define MODEM_INTERFACE "org.ofono.Modem"
-
 #define MODEM_FLAG_INITIALIZING_ATTRS 1
 
 #define ATTRIBUTE_QUERY_DELAY 0
@@ -221,7 +219,7 @@ static gboolean trigger_interface_update(void *data)
 		interfaces[i] = l->data;
 
 	ofono_dbus_signal_array_property_changed(conn, modem->path,
-						MODEM_INTERFACE,
+						OFONO_MODEM_INTERFACE,
 						"Interfaces", DBUS_TYPE_STRING,
 						&interfaces);
 
@@ -414,7 +412,7 @@ struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 	snprintf(path, sizeof(path), "/modem%d", modem->id);
 	modem->path = g_strdup(path);
 
-	if (!g_dbus_register_interface(conn, path, MODEM_INTERFACE,
+	if (!g_dbus_register_interface(conn, path, OFONO_MODEM_INTERFACE,
 			modem_methods, modem_signals, NULL,
 			modem, modem_free)) {
 		ofono_error("Modem interface init failed on path %s", path);
@@ -442,7 +440,7 @@ void modem_remove(struct ofono_modem *modem)
 	ofono_cssn_exit(modem);
 	ofono_sim_manager_exit(modem);
 
-	g_dbus_unregister_interface(conn, path, MODEM_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_MODEM_INTERFACE);
 
 	g_free(path);
 }
