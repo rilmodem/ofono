@@ -154,7 +154,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 
 	own_numbers = get_own_numbers(sim->own_numbers);
 
-	dbus_gsm_dict_append_array(&dict, "SubscriberNumbers",
+	ofono_dbus_dict_append_array(&dict, "SubscriberNumbers",
 					DBUS_TYPE_STRING, &own_numbers);
 	g_strfreev(own_numbers);
 

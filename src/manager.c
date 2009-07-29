@@ -140,7 +140,7 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	dbus_gsm_dict_append_array(&dict, "Modems", DBUS_TYPE_OBJECT_PATH,
+	ofono_dbus_dict_append_array(&dict, "Modems", DBUS_TYPE_OBJECT_PATH,
 					&modems);
 
 	g_free(modems);

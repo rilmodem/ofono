@@ -713,14 +713,14 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 
 	voicecalls_path_list(modem, calls->call_list, &callobj_list);
 
-	dbus_gsm_dict_append_array(&dict, "Calls", DBUS_TYPE_OBJECT_PATH,
+	ofono_dbus_dict_append_array(&dict, "Calls", DBUS_TYPE_OBJECT_PATH,
 				&callobj_list);
 
 	g_strfreev(callobj_list);
 
 	voicecalls_path_list(modem, calls->multiparty_list, &callobj_list);
 
-	dbus_gsm_dict_append_array(&dict, "MultipartyCalls",
+	ofono_dbus_dict_append_array(&dict, "MultipartyCalls",
 					DBUS_TYPE_OBJECT_PATH, &callobj_list);
 
 	g_strfreev(callobj_list);

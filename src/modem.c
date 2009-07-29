@@ -166,7 +166,7 @@ static DBusMessage *generate_properties_reply(struct ofono_modem *modem,
 	for (i = 0, l = info->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
 
-	dbus_gsm_dict_append_array(&dict, "Interfaces", DBUS_TYPE_STRING,
+	ofono_dbus_dict_append_array(&dict, "Interfaces", DBUS_TYPE_STRING,
 					&interfaces);
 
 	g_free(interfaces);

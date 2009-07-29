@@ -28,9 +28,6 @@ void dbus_gsm_append_variant(DBusMessageIter *iter, int type, void *value);
 
 void dbus_gsm_append_array_variant(DBusMessageIter *iter, int type, void *val);
 
-void dbus_gsm_dict_append_array(DBusMessageIter *dict, const char *key,
-				int type, void *val);
-
 
 static inline void dbus_gsm_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {

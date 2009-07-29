@@ -732,7 +732,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 
 	network_operator_populate_registered(modem, &network_operators);
 
-	dbus_gsm_dict_append_array(&dict, "AvailableOperators",
+	ofono_dbus_dict_append_array(&dict, "AvailableOperators",
 					DBUS_TYPE_OBJECT_PATH,
 					&network_operators);
 

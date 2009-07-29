@@ -100,7 +100,7 @@ void dbus_gsm_append_array_variant(DBusMessageIter *iter, int type, void *val)
 	dbus_message_iter_close_container(iter, &variant);
 }
 
-void dbus_gsm_dict_append_array(DBusMessageIter *dict, const char *key,
+void ofono_dbus_dict_append_array(DBusMessageIter *dict, const char *key,
 				int type, void *val)
 {
 	DBusMessageIter entry;
