@@ -73,7 +73,7 @@ void ofono_dbus_dict_append(DBusMessageIter *dict,
 	dbus_message_iter_close_container(dict, &keyiter);
 }
 
-void dbus_gsm_append_array_variant(DBusMessageIter *iter, int type, void *val)
+static void append_array_variant(DBusMessageIter *iter, int type, void *val)
 {
 	DBusMessageIter variant, array;
 	char typesig[2];
@@ -110,7 +110,7 @@ void ofono_dbus_dict_append_array(DBusMessageIter *dict, const char *key,
 
 	dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
 
-	dbus_gsm_append_array_variant(&entry, type, val);
+	append_array_variant(&entry, type, val);
 
 	dbus_message_iter_close_container(dict, &entry);
 }
@@ -163,7 +163,7 @@ int ofono_dbus_signal_array_property_changed(DBusConnection *conn,
 
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &name);
 
-	dbus_gsm_append_array_variant(&iter, type, value);
+	append_array_variant(&iter, type, value);
 
 	return g_dbus_send_message(conn, signal);
 }

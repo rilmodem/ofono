@@ -24,9 +24,6 @@
 
 #define MAX_DBUS_PATH_LEN 64
 
-void dbus_gsm_append_array_variant(DBusMessageIter *iter, int type, void *val);
-
-
 static inline void dbus_gsm_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
