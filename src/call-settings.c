@@ -326,7 +326,8 @@ static void generate_cw_ss_query_reply(struct ofono_modem *modem)
 					&ss_type);
 
 	dbus_message_iter_open_container(&vstruct, DBUS_TYPE_ARRAY,
-					PROPERTIES_ARRAY_SIGNATURE, &dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	property_append_cw_conditions(&dict, cs->cw, cs->ss_req_cls);
 
@@ -780,8 +781,8 @@ static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
-						&dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	str = clip_status_to_string(cs->clip);
 	dbus_gsm_dict_append(&dict, "CallingLinePresentation",

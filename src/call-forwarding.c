@@ -387,7 +387,7 @@ static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 						&dict);
 
 	for (i = 0; i < 4; i++)
@@ -812,7 +812,7 @@ static DBusMessage *cf_ss_control_reply(struct ofono_modem *modem,
 					&cf_type);
 
 	dbus_message_iter_open_container(&vstruct, DBUS_TYPE_ARRAY,
-					PROPERTIES_ARRAY_SIGNATURE, &dict);
+				OFONO_PROPERTIES_ARRAY_SIGNATURE, &dict);
 
 	if (req->cf_type == CALL_FORWARDING_TYPE_UNCONDITIONAL ||
 		req->cf_type == CALL_FORWARDING_TYPE_ALL)

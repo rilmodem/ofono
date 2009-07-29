@@ -137,8 +137,8 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
-						&dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	dbus_gsm_dict_append_array(&dict, "Modems", DBUS_TYPE_OBJECT_PATH,
 					&modems);

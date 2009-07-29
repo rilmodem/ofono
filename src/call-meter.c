@@ -178,7 +178,8 @@ static void cm_get_properties_reply(struct ofono_modem *modem)
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-			PROPERTIES_ARRAY_SIGNATURE, &dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	dbus_gsm_dict_append(&dict, "CallMeter", DBUS_TYPE_UINT32,
 				&cm->call_meter);

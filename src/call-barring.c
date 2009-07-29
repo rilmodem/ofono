@@ -257,7 +257,8 @@ static void generate_ss_query_reply(struct ofono_modem *modem)
 	dbus_message_iter_append_basic(&vstruct, DBUS_TYPE_STRING, &ss_fac);
 
 	dbus_message_iter_open_container(&vstruct, DBUS_TYPE_ARRAY,
-					PROPERTIES_ARRAY_SIGNATURE, &dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	/* We report all affected locks only for the special case ones */
 	if (cb->ss_req_lock <= CB_ALL_END) {
@@ -647,7 +648,8 @@ static void cb_get_properties_reply(struct ofono_modem *modem, int mask)
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-			PROPERTIES_ARRAY_SIGNATURE, &dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	for (j = 1; j <= BEARER_CLASS_PAD; j = j << 1) {
 		if ((j & mask) == 0)

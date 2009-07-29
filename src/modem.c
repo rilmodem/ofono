@@ -143,8 +143,8 @@ static DBusMessage *generate_properties_reply(struct ofono_modem *modem,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
-						&dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	if (info->manufacturer)
 		dbus_gsm_dict_append(&dict, "Manufacturer", DBUS_TYPE_STRING,

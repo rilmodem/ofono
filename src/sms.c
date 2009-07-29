@@ -139,7 +139,7 @@ static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 						&dict);
 
 	sca = phone_number_to_string(&sms->sca);
@@ -499,7 +499,7 @@ static void dispatch_text_message(struct ofono_modem *modem,
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &message);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 						&dict);
 
 	ts = sms_scts_to_time(scts, &remote);

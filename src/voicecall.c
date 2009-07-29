@@ -165,8 +165,8 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
-						&dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	dbus_gsm_dict_append(&dict, "State", DBUS_TYPE_STRING, &status);
 
@@ -708,7 +708,8 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-					PROPERTIES_ARRAY_SIGNATURE, &dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
 	voicecalls_path_list(modem, calls->call_list, &callobj_list);
 

@@ -24,12 +24,6 @@
 
 #define MAX_DBUS_PATH_LEN 64
 
-/* Essentially a{sv} */
-#define PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \
-					DBUS_TYPE_STRING_AS_STRING \
-					DBUS_TYPE_VARIANT_AS_STRING \
-					DBUS_DICT_ENTRY_END_CHAR_AS_STRING
-
 void dbus_gsm_dict_append(DBusMessageIter *dict, const char *key, int type,
 				void *value);
 

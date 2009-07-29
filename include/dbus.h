@@ -30,6 +30,12 @@ extern "C" {
 
 #define OFONO_SERVICE	"org.ofono"
 
+/* Essentially a{sv} */
+#define OFONO_PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \
+					DBUS_TYPE_STRING_AS_STRING \
+					DBUS_TYPE_VARIANT_AS_STRING \
+					DBUS_DICT_ENTRY_END_CHAR_AS_STRING
+
 DBusConnection *ofono_dbus_get_connection();
 
 int ofono_dbus_signal_property_changed(DBusConnection *conn, const char *path,
