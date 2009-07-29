@@ -149,7 +149,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 					&dict);
 
 	if (sim->imsi)
-		dbus_gsm_dict_append(&dict, "SubscriberIdentity",
+		ofono_dbus_dict_append(&dict, "SubscriberIdentity",
 					DBUS_TYPE_STRING, &sim->imsi);
 
 	own_numbers = get_own_numbers(sim->own_numbers);

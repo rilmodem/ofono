@@ -147,19 +147,19 @@ static DBusMessage *generate_properties_reply(struct ofono_modem *modem,
 					&dict);
 
 	if (info->manufacturer)
-		dbus_gsm_dict_append(&dict, "Manufacturer", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(&dict, "Manufacturer", DBUS_TYPE_STRING,
 					&info->manufacturer);
 
 	if (info->model)
-		dbus_gsm_dict_append(&dict, "Model", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(&dict, "Model", DBUS_TYPE_STRING,
 					&info->model);
 
 	if (info->revision)
-		dbus_gsm_dict_append(&dict, "Revision", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(&dict, "Revision", DBUS_TYPE_STRING,
 					&info->revision);
 
 	if (info->serial)
-		dbus_gsm_dict_append(&dict, "Serial", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(&dict, "Serial", DBUS_TYPE_STRING,
 					&info->serial);
 
 	interfaces = g_new0(char *, g_slist_length(info->interface_list) + 1);

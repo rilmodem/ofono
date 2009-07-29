@@ -167,7 +167,7 @@ static void cb_ss_property_append(struct call_barring_data *cb,
 				bearer_class_to_string(i),
 				cb_locks[lock].name);
 
-		dbus_gsm_dict_append(dict, property_name, DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(dict, property_name, DBUS_TYPE_STRING,
 					&strvalue);
 	}
 }
@@ -627,7 +627,7 @@ static inline void cb_append_property(struct call_barring_data *cb,
 	snprintf(property_name, sizeof(property_name), "%s%s",
 			bearer_class_to_string(cls), property);
 
-	dbus_gsm_dict_append(dict, property_name, DBUS_TYPE_STRING,
+	ofono_dbus_dict_append(dict, property_name, DBUS_TYPE_STRING,
 				&value);
 }
 

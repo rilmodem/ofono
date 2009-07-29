@@ -52,7 +52,7 @@ void dbus_gsm_append_variant(DBusMessageIter *iter,
 	dbus_message_iter_close_container(iter, &valueiter);
 }
 
-void dbus_gsm_dict_append(DBusMessageIter *dict,
+void ofono_dbus_dict_append(DBusMessageIter *dict,
 			const char *key, int type, void *value)
 {
 	DBusMessageIter keyiter;

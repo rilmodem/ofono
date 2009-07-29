@@ -512,19 +512,19 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	dbus_gsm_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
+	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
 
-	dbus_gsm_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
+	ofono_dbus_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
 
 	if (*opd->info->mcc != '\0') {
 		const char *mcc = opd->info->mcc;
-		dbus_gsm_dict_append(&dict, "MobileCountryCode",
+		ofono_dbus_dict_append(&dict, "MobileCountryCode",
 					DBUS_TYPE_STRING, &mcc);
 	}
 
 	if (*opd->info->mnc != '\0') {
 		const char *mnc = opd->info->mnc;
-		dbus_gsm_dict_append(&dict, "MobileNetworkCode",
+		ofono_dbus_dict_append(&dict, "MobileNetworkCode",
 					DBUS_TYPE_STRING, &mnc);
 	}
 
@@ -532,14 +532,14 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 		const char *technology =
 			registration_tech_to_string(opd->info->tech);
 
-		dbus_gsm_dict_append(&dict, "Technology", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(&dict, "Technology", DBUS_TYPE_STRING,
 					&technology);
 	}
 
 	if (opd->eons_info && opd->eons_info->info) {
 		const char *additional = opd->eons_info->info;
 
-		dbus_gsm_dict_append(&dict, "AdditionalInformation",
+		ofono_dbus_dict_append(&dict, "AdditionalInformation",
 					DBUS_TYPE_STRING, &additional);
 	}
 
@@ -702,20 +702,20 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 	dbus_message_iter_init_append(reply, &iter);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-						PROPERTIES_ARRAY_SIGNATURE,
-						&dict);
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
 
-	dbus_gsm_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
+	ofono_dbus_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
 
 	if (netreg->location != -1) {
 		dbus_uint16_t location = netreg->location;
-		dbus_gsm_dict_append(&dict, "LocationAreaCode",
+		ofono_dbus_dict_append(&dict, "LocationAreaCode",
 					DBUS_TYPE_UINT16, &location);
 	}
 
 	if (netreg->cellid != -1) {
 		dbus_uint32_t cellid = netreg->cellid;
-		dbus_gsm_dict_append(&dict, "CellId",
+		ofono_dbus_dict_append(&dict, "CellId",
 					DBUS_TYPE_UINT32, &cellid);
 	}
 
@@ -723,12 +723,12 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 		const char *technology =
 			registration_tech_to_string(netreg->technology);
 
-		dbus_gsm_dict_append(&dict, "Technology", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(&dict, "Technology", DBUS_TYPE_STRING,
 					&technology);
 	}
 
 	operator = get_operator_display_name(modem);
-	dbus_gsm_dict_append(&dict, "Operator", DBUS_TYPE_STRING, &operator);
+	ofono_dbus_dict_append(&dict, "Operator", DBUS_TYPE_STRING, &operator);
 
 	network_operator_populate_registered(modem, &network_operators);
 
@@ -740,7 +740,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 
 	if (netreg->signal_strength != -1) {
 		dbus_uint16_t strength = netreg->signal_strength;
-		dbus_gsm_dict_append(&dict, "Strength", DBUS_TYPE_UINT16,
+		ofono_dbus_dict_append(&dict, "Strength", DBUS_TYPE_UINT16,
 					&strength);
 	}
 

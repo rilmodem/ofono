@@ -181,18 +181,18 @@ static void cm_get_properties_reply(struct ofono_modem *modem)
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	dbus_gsm_dict_append(&dict, "CallMeter", DBUS_TYPE_UINT32,
+	ofono_dbus_dict_append(&dict, "CallMeter", DBUS_TYPE_UINT32,
 				&cm->call_meter);
 
-	dbus_gsm_dict_append(&dict, "AccumulatedCallMeter", DBUS_TYPE_UINT32,
+	ofono_dbus_dict_append(&dict, "AccumulatedCallMeter", DBUS_TYPE_UINT32,
 				&cm->acm);
 
-	dbus_gsm_dict_append(&dict, "AccumulatedCallMeterMaximum",
+	ofono_dbus_dict_append(&dict, "AccumulatedCallMeterMaximum",
 				DBUS_TYPE_UINT32, &cm->acm_max);
 
-	dbus_gsm_dict_append(&dict, "PricePerUnit", DBUS_TYPE_DOUBLE, &cm->ppu);
+	ofono_dbus_dict_append(&dict, "PricePerUnit", DBUS_TYPE_DOUBLE, &cm->ppu);
 
-	dbus_gsm_dict_append(&dict, "Currency", DBUS_TYPE_STRING, &currency);
+	ofono_dbus_dict_append(&dict, "Currency", DBUS_TYPE_STRING, &currency);
 
 	dbus_message_iter_close_container(&iter, &dict);
 

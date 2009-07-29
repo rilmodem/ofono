@@ -295,7 +295,7 @@ static void property_append_cw_conditions(DBusMessageIter *dict,
 		else
 			value = "disabled";
 
-		dbus_gsm_dict_append(dict, prop, DBUS_TYPE_STRING, &value);
+		ofono_dbus_dict_append(dict, prop, DBUS_TYPE_STRING, &value);
 	}
 }
 
@@ -785,23 +785,23 @@ static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
 					&dict);
 
 	str = clip_status_to_string(cs->clip);
-	dbus_gsm_dict_append(&dict, "CallingLinePresentation",
+	ofono_dbus_dict_append(&dict, "CallingLinePresentation",
 				DBUS_TYPE_STRING, &str);
 
 	str = colp_status_to_string(cs->colp);
-	dbus_gsm_dict_append(&dict, "CalledLinePresentation",
+	ofono_dbus_dict_append(&dict, "CalledLinePresentation",
 				DBUS_TYPE_STRING, &str);
 
 	str = colr_status_to_string(cs->colr);
-	dbus_gsm_dict_append(&dict, "CalledLineRestriction",
+	ofono_dbus_dict_append(&dict, "CalledLineRestriction",
 				DBUS_TYPE_STRING, &str);
 
 	str = clir_status_to_string(cs->clir);
-	dbus_gsm_dict_append(&dict, "CallingLineRestriction",
+	ofono_dbus_dict_append(&dict, "CallingLineRestriction",
 				DBUS_TYPE_STRING, &str);
 
 	str = hide_callerid_to_string(cs->clir_setting);
-	dbus_gsm_dict_append(&dict, "HideCallerId", DBUS_TYPE_STRING, &str);
+	ofono_dbus_dict_append(&dict, "HideCallerId", DBUS_TYPE_STRING, &str);
 
 	property_append_cw_conditions(&dict, cs->cw, BEARER_CLASS_VOICE);
 

@@ -336,10 +336,10 @@ static inline void property_append_cf_condition(DBusMessageIter *dict, int cls,
 		sprintf(tattr, "%s%sTimeout", bearer_class_to_string(cls),
 			postfix);
 
-	dbus_gsm_dict_append(dict, attr, DBUS_TYPE_STRING, &value);
+	ofono_dbus_dict_append(dict, attr, DBUS_TYPE_STRING, &value);
 
 	if (addt)
-		dbus_gsm_dict_append(dict, tattr, DBUS_TYPE_UINT16, &timeout);
+		ofono_dbus_dict_append(dict, tattr, DBUS_TYPE_UINT16, &timeout);
 }
 
 static void property_append_cf_conditions(DBusMessageIter *dict,

@@ -38,6 +38,9 @@ extern "C" {
 
 DBusConnection *ofono_dbus_get_connection();
 
+void ofono_dbus_dict_append(DBusMessageIter *dict, const char *key, int type,
+				void *value);
+
 int ofono_dbus_signal_property_changed(DBusConnection *conn, const char *path,
 					const char *interface, const char *name,
 					int type, void *value);

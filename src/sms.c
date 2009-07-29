@@ -144,7 +144,7 @@ static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
 
 	sca = phone_number_to_string(&sms->sca);
 
-	dbus_gsm_dict_append(&dict, "ServiceCenterAddress", DBUS_TYPE_STRING,
+	ofono_dbus_dict_append(&dict, "ServiceCenterAddress", DBUS_TYPE_STRING,
 				&sca);
 
 	dbus_message_iter_close_container(&iter, &dict);
@@ -506,14 +506,14 @@ static void dispatch_text_message(struct ofono_modem *modem,
 
 	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", localtime(&ts));
 	buf[127] = '\0';
-	dbus_gsm_dict_append(&dict, "LocalSentTime", DBUS_TYPE_STRING, &str);
+	ofono_dbus_dict_append(&dict, "LocalSentTime", DBUS_TYPE_STRING, &str);
 
 	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", &remote);
 	buf[127] = '\0';
-	dbus_gsm_dict_append(&dict, "SentTime", DBUS_TYPE_STRING, &str);
+	ofono_dbus_dict_append(&dict, "SentTime", DBUS_TYPE_STRING, &str);
 
 	str = sms_address_to_string(addr);
-	dbus_gsm_dict_append(&dict, "Sender", DBUS_TYPE_STRING, &str);
+	ofono_dbus_dict_append(&dict, "Sender", DBUS_TYPE_STRING, &str);
 
 	dbus_message_iter_close_container(&iter, &dict);
 

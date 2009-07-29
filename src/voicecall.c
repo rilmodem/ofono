@@ -168,9 +168,9 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	dbus_gsm_dict_append(&dict, "State", DBUS_TYPE_STRING, &status);
+	ofono_dbus_dict_append(&dict, "State", DBUS_TYPE_STRING, &status);
 
-	dbus_gsm_dict_append(&dict, "LineIdentification",
+	ofono_dbus_dict_append(&dict, "LineIdentification",
 				DBUS_TYPE_STRING, &callerid);
 
 	if (call->status == CALL_STATUS_ACTIVE ||
@@ -178,7 +178,7 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 		call->status == CALL_STATUS_HELD) {
 		timestr = time_to_str(&v->start_time);
 
-		dbus_gsm_dict_append(&dict, "StartTime", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(&dict, "StartTime", DBUS_TYPE_STRING,
 					&timestr);
 	}
 
