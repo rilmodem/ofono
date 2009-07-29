@@ -30,10 +30,11 @@
 
 #include <ofono/plugin.h>
 #include <ofono/log.h>
+#include <ofono/dbus.h>
+
 #include "driver.h"
 
 #include "at.h"
-#include "dbus-gsm.h"
 #include "modem.h"
 #include "session.h"
 

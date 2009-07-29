@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#include <gdbus.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -30,8 +32,6 @@
 #include <signal.h>
 
 #include "ofono.h"
-
-#include "dbus-gsm.h"
 
 static GMainLoop *event_loop;
 

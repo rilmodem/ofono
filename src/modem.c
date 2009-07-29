@@ -26,13 +26,11 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <dbus/dbus.h>
 #include <glib.h>
 #include <gdbus.h>
 
 #include "ofono.h"
 
-#include "dbus-gsm.h"
 #include "modem.h"
 #include "driver.h"
 #include "common.h"
@@ -386,7 +384,7 @@ static gboolean query_manufacturer(gpointer user)
 
 struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 {
-	char path[MAX_DBUS_PATH_LEN];
+	char path[128];
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem;
 
@@ -403,7 +401,7 @@ struct ofono_modem *modem_create(int id, struct ofono_modem_attribute_ops *ops)
 	modem->id = id;
 	modem->modem_info->ops = ops;
 
-	snprintf(path, MAX_DBUS_PATH_LEN, "/modem%d", modem->id);
+	snprintf(path, sizeof(path), "/modem%d", modem->id);
 	modem->path = g_strdup(path);
 
 	if (!g_dbus_register_interface(conn, path, MODEM_INTERFACE,

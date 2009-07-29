@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <time.h>
 
-#include <dbus/dbus.h>
 #include <glib.h>
 #include <gdbus.h>
 
@@ -35,7 +34,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "dbus-gsm.h"
 #include "modem.h"
 #include "cssn.h"
 
@@ -349,9 +347,9 @@ static void voicecall_destroy(gpointer userdata)
 static const char *voicecall_build_path(struct ofono_modem *modem,
 					const struct ofono_call *call)
 {
-	static char path[MAX_DBUS_PATH_LEN];
+	static char path[256];
 
-	snprintf(path, MAX_DBUS_PATH_LEN, "%s/voicecall%02d",
+	snprintf(path, sizeof(path), "%s/voicecall%02d",
 			modem->path, call->id);
 
 	return path;
@@ -931,7 +929,7 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (strlen(callpath) == 0 || strlen(callpath) > MAX_DBUS_PATH_LEN)
+	if (strlen(callpath) == 0)
 		return __ofono_error_invalid_format(msg);
 
 	c = strrchr(callpath, '/');

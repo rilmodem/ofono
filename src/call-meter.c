@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <time.h>
 
-#include <dbus/dbus.h>
 #include <glib.h>
 #include <gdbus.h>
 
@@ -35,7 +34,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "dbus-gsm.h"
 #include "modem.h"
 
 #define CALL_METER_INTERFACE "org.ofono.CallMeter"

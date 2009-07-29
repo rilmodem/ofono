@@ -26,13 +26,11 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <dbus/dbus.h>
 #include <glib.h>
 #include <gdbus.h>
 
 #include "ofono.h"
 
-#include "dbus-gsm.h"
 #include "modem.h"
 #include "driver.h"
 #include "common.h"
@@ -188,13 +186,12 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 	int prefix_len;
 	int num_children;
 	GSList *l;
-	char path[MAX_DBUS_PATH_LEN];
+	char path[256];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	int op_path_len;
 
-	prefix_len = snprintf(path, MAX_DBUS_PATH_LEN, "%s/operator",
-				modem->path);
+	prefix_len = snprintf(path, sizeof(path), "%s/operator", modem->path);
 
 	if (!dbus_connection_list_registered(conn, path, &children)) {
 		ofono_debug("Unable to obtain registered NetworkOperator(s)");
@@ -268,9 +265,9 @@ static gint network_operator_compare(gconstpointer a, gconstpointer b)
 static inline const char *network_operator_build_path(struct ofono_modem *modem,
 				const struct ofono_network_operator *oper)
 {
-	static char path[MAX_DBUS_PATH_LEN];
+	static char path[256];
 
-	snprintf(path, MAX_DBUS_PATH_LEN, "%s/operator/%s%s",
+	snprintf(path, sizeof(path), "%s/operator/%s%s",
 			modem->path, oper->mcc, oper->mnc);
 
 	return path;

@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <dbus/dbus.h>
 #include <glib.h>
 #include <gdbus.h>
 
@@ -36,7 +35,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "dbus-gsm.h"
 #include "modem.h"
 #include "cssn.h"
 #include "ussd.h"

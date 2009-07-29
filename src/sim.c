@@ -26,7 +26,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <dbus/dbus.h>
 #include <glib.h>
 #include <gdbus.h>
 #include <sys/stat.h>
@@ -37,7 +36,6 @@
 
 #include "ofono.h"
 
-#include "dbus-gsm.h"
 #include "modem.h"
 #include "driver.h"
 #include "common.h"

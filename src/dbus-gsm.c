@@ -24,12 +24,9 @@
 #endif
 
 #include <glib.h>
-#include <dbus/dbus.h>
 #include <gdbus.h>
 
 #include "ofono.h"
-
-#include "dbus-gsm.h"
 
 #define DBUS_GSM_ERROR_INTERFACE "org.ofono.Error"
 
