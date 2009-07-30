@@ -895,7 +895,7 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 	if (!calls->ops->release_specific)
 		return __ofono_error_not_implemented(msg);
 
-	if (g_slist_length(calls->call_list) == 0) {
+	if (calls->call_list == NULL) {
 		DBusMessage *reply = dbus_message_new_method_return(msg);
 		return reply;
 	}
@@ -1007,7 +1007,7 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 	if (!calls->ops->release_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	if (g_slist_length(calls->multiparty_list) == 0) {
+	if (calls->multiparty_list == NULL) {
 		DBusMessage *reply = dbus_message_new_method_return(msg);
 		return reply;
 	}
@@ -1360,7 +1360,7 @@ static void multirelease_callback(const struct ofono_error *error, void *data)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
-	if (g_slist_length(calls->release_list)) {
+	if (calls->release_list != NULL) {
 		voicecalls_release_next(modem);
 		return;
 	}
