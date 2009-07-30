@@ -9,7 +9,8 @@ test_sms_SOURCES = test-sms.c $(top_srcdir)/src/util.c \
 					$(top_srcdir)/src/smsutil.c
 
 test_simutil_SOURCES = test-simutil.c $(top_srcdir)/src/util.c \
-					$(top_srcdir)/src/simutil.c
+					$(top_srcdir)/src/simutil.c \
+					$(top_srcdir)/src/smsutil.c
 
 LDADD = @GLIB_LIBS@ @GTHREAD_LIBS@
 

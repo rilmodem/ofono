@@ -398,3 +398,31 @@ const struct sim_eons_operator_info *sim_eons_lookup_with_lac(
 {
 	return sim_eons_lookup_common(eons, mcc, mnc, TRUE, lac);
 }
+
+gboolean sim_adn_parse(const unsigned char *data, int length,
+			struct ofono_phone_number *ph)
+{
+	int number_len;
+	int ton_npi;
+
+	if (length < 14)
+		return FALSE;
+
+	/* Skip Alpha-Identifier field */
+	data += length - 14;
+
+	number_len = *data++;
+	ton_npi = *data++;
+
+	if (number_len > 11 || ton_npi == 0xff)
+		return FALSE;
+
+	ph->type = bit_field(ton_npi, 4, 3);
+
+	/* BCD coded, however the TON/NPI is given by the first byte */
+	number_len = (number_len - 1) * 2;
+
+	extract_bcd_number(data, number_len, ph->number);
+
+	return TRUE;
+}

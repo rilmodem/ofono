@@ -61,8 +61,6 @@ struct sim_file_op {
 
 struct sim_manager_data {
 	struct ofono_sim_ops *ops;
-	int flags;
-	DBusMessage *pending;
 	char *imsi;
 	GSList *own_numbers;
 	GSList *ready_notify;
@@ -180,8 +178,6 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 	struct sim_manager_data *sim = modem->sim_manager;
 	int total;
 	struct ofono_phone_number *ph;
-	int number_len;
-	int ton_npi;
 
 	if (!ok)
 		return;
@@ -194,23 +190,12 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 
 	total = length / record_length;
 
-	/* Skip Alpha-Identifier field */
-	data += record_length - 14;
-
-	number_len = *data++;
-	ton_npi = *data++;
-
-	if (number_len > 11 || ton_npi == 0xff)
-		goto check;
-
 	ph = g_new(struct ofono_phone_number, 1);
 
-	ph->type = bit_field(ton_npi, 4, 3);
-
-	/* BCD coded, however the TON/NPI is given by the first byte */
-	number_len = (number_len - 1) * 2;
-
-	extract_bcd_number(data, number_len, ph->number);
+	if (sim_adn_parse(data, record_length, ph) == FALSE) {
+		g_free(ph);
+		goto check;
+	}
 
 	sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
 
@@ -789,5 +774,5 @@ void ofono_sim_manager_exit(struct ofono_modem *modem)
 
 	g_free(modem->sim_manager);
 
-	modem->sim_manager = 0;
+	modem->sim_manager = NULL;
 }

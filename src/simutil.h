@@ -76,3 +76,6 @@ static inline enum sim_file_access file_access_condition_decode(int bcd)
 		return SIM_FILE_ACCESS_ADM;
 	return bcd;
 }
+
+gboolean sim_adn_parse(const unsigned char *data, int length,
+			struct ofono_phone_number *ph);

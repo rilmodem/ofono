@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <glib.h>
 
+#include "driver.h"
 #include "simutil.h"
 
 const unsigned char valid_efopl[] = {
