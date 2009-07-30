@@ -314,9 +314,7 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 	int fd;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		if (op->current == 1)
-			sim_op_error(modem);
-
+		sim_op_error(modem);
 		return;
 	}
 
