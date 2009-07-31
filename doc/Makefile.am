@@ -1,6 +1,5 @@
+man_MANS = ofonod.8
 
-EXTRA_DIST = overview.txt
+EXTRA_DIST = overview.txt $(man_MANS)
 
 MAINTAINERCLEANFILES = Makefile.in
-
-man_MANS = ofonod.8
