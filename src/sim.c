@@ -182,7 +182,7 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 	struct ofono_phone_number *ph;
 
 	if (!ok)
-		return;
+		goto check;
 
 	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
 		return;
@@ -202,7 +202,7 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 	sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
 
 check:
-	if (record == total && sim->own_numbers) {
+	if ((record == total || !ok) && sim->own_numbers) {
 		char **own_numbers;
 		DBusConnection *conn = ofono_dbus_get_connection();
 
