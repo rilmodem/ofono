@@ -26,6 +26,8 @@ typedef void (*ofono_sim_file_read_cb_t)(struct ofono_modem *modem, int ok,
 					int total_length, int record,
 					const unsigned char *data,
 					int record_length, void *userdata);
+typedef void (*ofono_sim_file_write_cb_t)(struct ofono_modem *modem, int ok,
+					void *userdata);
 
 void ofono_sim_manager_init(struct ofono_modem *modem);
 void ofono_sim_manager_exit(struct ofono_modem *modem);
@@ -51,5 +53,6 @@ int ofono_sim_read(struct ofono_modem *modem, int id,
 			ofono_sim_file_read_cb_t cb, void *data);
 
 int ofono_sim_write(struct ofono_modem *modem, int id,
+			ofono_sim_file_write_cb_t cb,
 			enum ofono_sim_file_structure structure, int record,
-			const unsigned char *data, int length);
+			const unsigned char *data, int length, void *userdata);
