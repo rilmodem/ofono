@@ -322,7 +322,7 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 
 	char *imsi = sim->imsi;
 	char *path;
-	int fd;
+	int r = 0, fd;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		sim_op_error(modem);
@@ -336,7 +336,6 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 		/* Cache the record */
 		path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
 		fd = open(path, O_WRONLY);
-		g_free(path);
 
 		if (fd == -1)
 			goto next;
@@ -344,8 +343,15 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 		if (lseek(fd, (op->current - 1) * op->record_length +
 					SIM_CACHE_HEADER_SIZE, SEEK_SET) !=
 				(off_t) -1)
-			write(fd, data, op->record_length);
+			r = write(fd, data, op->record_length);
 		close(fd);
+
+		if (r < op->record_length) {
+			op->cache = 0;
+			unlink(path);
+		}
+
+		g_free(path);
 	}
 
 next:
@@ -416,7 +422,7 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 	char *imsi = sim->imsi;
 	char *path;
 	unsigned char fileinfo[6];
-	int fd = -1;
+	int r, fd = -1;
 	enum sim_file_access update;
 	enum sim_file_access invalidate;
 	enum sim_file_access rehabilitate;
@@ -454,7 +460,6 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 		path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
 		if (create_dirs(path, SIM_CACHE_MODE | S_IXUSR) == 0)
 			fd = open(path, O_WRONLY | O_CREAT, SIM_CACHE_MODE);
-		g_free(path);
 
 		if (fd == -1) {
 			ofono_debug("Error %i creating cache file for "
@@ -470,8 +475,15 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 		fileinfo[4] = record_length >> 8;
 		fileinfo[5] = record_length & 0xff;
 
-		write(fd, fileinfo, 6);
+		r = write(fd, fileinfo, 6);
 		close(fd);
+
+		if (r < 6) {
+			op->cache = 0;
+			unlink(path);
+		}
+
+		g_free(path);
 	}
 }
 
