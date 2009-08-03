@@ -1261,12 +1261,15 @@ static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
 
 	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
 
+	if (record != total)
+		return;
+
 check:
 	/* If PNN is not present then OPL is not useful, don't
 	 * retrieve it.  If OPL is not there then PNN[1] will
 	 * still be used for the HPLMN and/or EHPLMN, if PNN
 	 * is present.  */
-	if ((record == total || !ok) && !sim_eons_pnn_is_empty(netreg->eons))
+	if (!sim_eons_pnn_is_empty(netreg->eons))
 		ofono_sim_read(modem, SIM_EFOPL_FILEID, sim_opl_read_cb, NULL);
 }
 
