@@ -158,6 +158,7 @@ enum sms_mwi_type {
 	SMS_MWI_TYPE_FAX = 1,
 	SMS_MWI_TYPE_EMAIL = 2,
 	SMS_MWI_TYPE_OTHER = 3,
+	SMS_MWI_TYPE_VIDEO = 4,
 };
 
 enum sms_pid_type {

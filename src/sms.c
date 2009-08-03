@@ -36,6 +36,7 @@
 #include "util.h"
 #include "sim.h"
 #include "smsutil.h"
+#include "message-waiting.h"
 
 #define uninitialized_var(x) x = x
 
@@ -655,11 +656,6 @@ static void handle_deliver(struct ofono_modem *modem,
 	g_slist_free(l);
 }
 
-static void handle_mwi(struct ofono_modem *modem, struct sms *mwi)
-{
-	ofono_error("MWI information not yet handled");
-}
-
 void ofono_sms_deliver_notify(struct ofono_modem *modem, unsigned char *pdu,
 				int len, int tpdu_len)
 {
@@ -685,14 +681,18 @@ void ofono_sms_deliver_notify(struct ofono_modem *modem, unsigned char *pdu,
 	/* This is an older style MWI notification, process MWI
 	 * headers and handle it like any other message */
 	if (sms.deliver.pid == SMS_PID_TYPE_RETURN_CALL) {
-		handle_mwi(modem, &sms);
+		ofono_handle_sms_mwi(modem, &sms, &discard);
+
+		if (discard)
+			return;
+
 		goto out;
 	}
 
 	/* The DCS indicates this is an MWI notification, process it
 	 * and then handle the User-Data as any other message */
-	if (sms_mwi_dcs_decode(sms.deliver.dcs, NULL, NULL, NULL, &discard)) {
-		handle_mwi(modem, &sms);
+	if (sms_mwi_dcs_decode(sms.deliver.dcs, NULL, NULL, NULL, NULL)) {
+		ofono_handle_sms_mwi(modem, &sms, &discard);
 
 		if (discard)
 			return;
@@ -757,7 +757,14 @@ void ofono_sms_deliver_notify(struct ofono_modem *modem, unsigned char *pdu,
 			switch (iei) {
 			case SMS_IEI_SPECIAL_MESSAGE_INDICATION:
 			case SMS_IEI_ENHANCED_VOICE_MAIL_INFORMATION:
-				handle_mwi(modem, &sms);
+				/* TODO: ignore if not in the very first
+				 * segment of a concatenated SM so as not
+				 * to repeat the indication.  */
+				ofono_handle_sms_mwi(modem, &sms, &discard);
+
+				if (discard)
+					return;
+
 				goto out;
 			case SMS_IEI_WCMP:
 				ofono_error("No support for WCMP, ignoring");
@@ -787,6 +794,9 @@ int ofono_sms_manager_register(struct ofono_modem *modem,
 		return -1;
 
 	if (ops == NULL)
+		return -1;
+
+	if (ofono_message_waiting_register(modem))
 		return -1;
 
 	modem->sms_manager = sms_manager_create();
@@ -824,4 +834,6 @@ void ofono_sms_manager_unregister(struct ofono_modem *modem)
 					SMS_MANAGER_INTERFACE);
 
 	ofono_modem_remove_interface(modem, SMS_MANAGER_INTERFACE);
+
+	ofono_message_waiting_unregister(modem);
 }

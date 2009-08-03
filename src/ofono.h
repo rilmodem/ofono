@@ -79,6 +79,7 @@ struct ofono_modem {
 	struct sim_manager_data *sim_manager;
 	struct sms_manager_data *sms_manager;
 	struct phonebook_data *phonebook;
+	struct message_waiting_data *message_waiting;
 
 	GSList *history_contexts;
 };
@@ -99,3 +100,6 @@ void __ofono_history_call_ended(struct ofono_modem *modem,
 
 void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when);
+
+int ofono_message_waiting_register(struct ofono_modem *modem);
+void ofono_message_waiting_unregister(struct ofono_modem *modem);
