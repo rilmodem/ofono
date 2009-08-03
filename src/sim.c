@@ -56,7 +56,7 @@ struct sim_file_op {
 	int record_length;
 	int current;
 	gconstpointer cb;
-	int is_read;
+	gboolean is_read;
 	void *buffer;
 	void *userdata;
 };
@@ -290,7 +290,7 @@ static void sim_op_error(struct ofono_modem *modem)
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
 
-	if (op->is_read)
+	if (op->is_read == TRUE)
 		((ofono_sim_file_read_cb_t) op->cb)
 			(modem, 0, 0, 0, 0, 0, 0, op->userdata);
 	else
@@ -503,7 +503,7 @@ static gboolean sim_op_next(gpointer user_data)
 
 	op = g_queue_peek_head(sim->simop_q);
 
-	if (op->is_read) {
+	if (op->is_read == TRUE) {
 		sim->ops->read_file_info(modem, op->id, sim_op_info_cb, modem);
 	} else {
 		switch (op->structure) {
@@ -666,7 +666,7 @@ int ofono_sim_read(struct ofono_modem *modem, int id,
 	op->id = id;
 	op->cb = cb;
 	op->userdata = data;
-	op->is_read = 1;
+	op->is_read = TRUE;
 
 	g_queue_push_tail(sim->simop_q, op);
 
@@ -719,7 +719,7 @@ int ofono_sim_write(struct ofono_modem *modem, int id,
 	op->id = id;
 	op->cb = cb;
 	op->userdata = userdata;
-	op->is_read = 0;
+	op->is_read = FALSE;
 	op->buffer = g_memdup(data, length);
 	op->structure = structure;
 	op->length = length;
