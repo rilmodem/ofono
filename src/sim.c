@@ -50,7 +50,7 @@ static gboolean sim_op_retrieve_next(gpointer user);
 
 struct sim_file_op {
 	int id;
-	int cache;
+	gboolean cache;
 	enum ofono_sim_file_structure structure;
 	int length;
 	int record_length;
