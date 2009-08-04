@@ -52,6 +52,11 @@
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
+#define SIM_CACHE_MODE 0600
+#define SIM_CACHE_PATH STORAGEDIR "/%s/%04x"
+#define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 2 + imsilen)
+#define SIM_CACHE_HEADER_SIZE 6
+
 static gboolean sim_op_next(gpointer user_data);
 static gboolean sim_op_retrieve_next(gpointer user);
 
@@ -312,11 +317,6 @@ static void sim_op_error(struct ofono_modem *modem)
 	if (g_queue_get_length(sim->simop_q) > 0)
 		g_timeout_add(0, sim_op_next, modem);
 }
-
-#define SIM_CACHE_MODE 0600
-#define SIM_CACHE_PATH STORAGEDIR "/%s/%04x"
-#define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 2 + imsilen)
-#define SIM_CACHE_HEADER_SIZE 6
 
 static gboolean cache_record(const char *path, int current, int record_len,
 				const unsigned char *data)
