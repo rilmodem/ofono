@@ -47,19 +47,15 @@ static gboolean mw_update(gpointer user);
 
 struct mailbox_state {
 	gboolean indication;
-	int message_count;
+	unsigned char message_count;
 };
 
 struct message_waiting_data {
 	struct mailbox_state messages[5];
-	int efmwis_length;
-	int efmbdn_length;
-	int efmbdn_record_id[5];
-
+	unsigned char efmwis_length;
+	unsigned char efmbdn_length;
+	unsigned char efmbdn_record_id[5];
 	struct ofono_phone_number mailbox_number[5];
-
-	int pending;
-	struct mailbox_state messages_new[5];
 };
 
 struct mbdn_set_request {
@@ -315,7 +311,7 @@ static void mw_mwis_read_cb(struct ofono_modem *modem, int ok,
 		ofono_error("Unable to read waiting messages numbers "
 			"from SIM");
 
-		mw->efmwis_length = -1;
+		mw->efmwis_length = 0;
 
 		return;
 	}
@@ -335,7 +331,6 @@ static void mw_mwis_read_cb(struct ofono_modem *modem, int ok,
 				mw->messages[i].message_count !=
 				info.message_count) {
 			memcpy(&mw->messages[i], &info, sizeof(info));
-			memcpy(&mw->messages_new[i], &info, sizeof(info));
 
 			if (!mw_message_waiting_property_name[i])
 				continue;
@@ -455,121 +450,66 @@ static gboolean mw_mwis_load(struct ofono_modem *modem)
 	return TRUE;
 }
 
-/* Writes MWI states and/or MBDN back to SIM */
-static gboolean mw_update(gpointer user)
+static void mw_set_indicator(struct ofono_modem *modem, int profile,
+				enum sms_mwi_type type,
+				gboolean present, unsigned char messages)
 {
-	struct ofono_modem *modem = user;
 	struct message_waiting_data *mw = modem->message_waiting;
 	DBusConnection *conn = ofono_dbus_get_connection();
-	dbus_bool_t indication;
-	unsigned char count;
-	const char *number;
+	unsigned char efmwis[255];  /* Max record size */
 	int i;
-	unsigned char *file;
 
-	mw->pending = 0;
+	if (mw == NULL)
+		return;
 
-	for (i = 0; i < 5; i++) {
-		if (mw->messages_new[i].message_count !=
-				mw->messages[i].message_count) {
-			mw->messages[i].message_count =
-				mw->messages_new[i].message_count;
+	/* Handle only current identity (TODO: currently assumes first) */
+	if (profile != 1)
+		return;
 
-			if (!mw_message_count_property_name[i])
-				continue;
+	if (mw->messages[type].indication == present &&
+			mw->messages[type].message_count == messages)
+		return;
 
-			count = mw->messages[i].message_count;
+	if (mw->messages[type].indication != present) {
+		dbus_bool_t indication;
 
-			ofono_dbus_signal_property_changed(conn, modem->path,
+		indication = present;
+		mw->messages[type].indication = present;
+
+		ofono_dbus_signal_property_changed(conn, modem->path,
 					MESSAGE_WAITING_INTERFACE,
-					mw_message_count_property_name[i],
-					DBUS_TYPE_BYTE, &count);
-		}
-
-		if (mw->messages_new[i].indication !=
-				mw->messages[i].indication) {
-			mw->messages[i].indication =
-				mw->messages_new[i].indication;
-
-			if (!mw_message_waiting_property_name[i])
-				continue;
-
-			indication = mw->messages[i].indication;
-
-			ofono_dbus_signal_property_changed(conn, modem->path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_message_waiting_property_name[i],
+					mw_message_waiting_property_name[type],
 					DBUS_TYPE_BOOLEAN, &indication);
-		}
 	}
 
-	if (mw->efmwis_length < 1)
-		return FALSE;
+	if (mw->messages[type].message_count != messages) {
+		mw->messages[type].message_count = messages;
 
-	file = g_malloc0(mw->efmwis_length);
+		ofono_dbus_signal_property_changed(conn, modem->path,
+					MESSAGE_WAITING_INTERFACE,
+					mw_message_count_property_name[type],
+					DBUS_TYPE_BYTE, &messages);
+	}
+
+	/* Writes MWI states and/or MBDN back to SIM */
+	if ((mw->efmwis_length < 5)) {
+		ofono_error("Unable to update MWIS indicator");
+		return;
+	}
 
 	/* Fill in numbers of messages in bytes 1 to X of EF-MWIS */
 	for (i = 0; i < 5 && i < mw->efmwis_length - 1; i++)
-		file[i + 1] = mw->messages[i].message_count;
+		efmwis[i + 1] = mw->messages[i].message_count;
 
 	/* Fill in indicator state bits in byte 0 */
 	for (i = 0; i < 5 && i < mw->efmwis_length - 1; i++)
 		if (mw->messages[i].indication)
-			file[0] |= 1 << i;
+			efmwis[0] |= 1 << i;
 
 	if (ofono_sim_write(modem, SIM_EFMWIS_FILEID, mw_mwis_write_cb,
 				OFONO_SIM_FILE_STRUCTURE_FIXED, 1,
-				file, mw->efmwis_length, NULL) != 0) {
+				efmwis, mw->efmwis_length, NULL) != 0) {
 		ofono_error("Queuing a EF-MWI write to SIM failed");
-	}
-
-	g_free(file);
-
-	return FALSE;
-}
-
-static void ofono_message_waiting_present_notify(struct ofono_modem *modem,
-		enum sms_mwi_type type, gboolean present, int profile)
-{
-	struct message_waiting_data *mw = modem->message_waiting;
-
-	if (mw == NULL)
-		return;
-
-	/* Handle only current identity (TODO: currently assumes first) */
-	if (profile != 1)
-		return;
-
-	if (mw->messages_new[type].indication != present) {
-		mw->messages_new[type].indication = present;
-
-		if (!present)
-			mw->messages_new[type].message_count = 0;
-
-		if (!mw->pending)
-			mw->pending = g_timeout_add(0, mw_update, modem);
-	}
-}
-
-static void ofono_message_waiting_count_notify(struct ofono_modem *modem,
-		enum sms_mwi_type type, int count, int profile)
-{
-	struct message_waiting_data *mw = modem->message_waiting;
-
-	if (mw == NULL)
-		return;
-
-	/* Handle only current identity (TODO: currently assumes first) */
-	if (profile != 1)
-		return;
-
-	if (mw->messages_new[type].message_count != count ||
-			mw->messages_new[type].indication != (count > 0)) {
-		mw->messages_new[type].message_count = count;
-		mw->messages_new[type].indication = (count > 0);
-
-		if (!mw->pending)
-			mw->pending = g_timeout_add(0, mw_update, modem);
 	}
 }
 
@@ -630,6 +570,7 @@ static void handle_special_sms_iei(struct ofono_modem *modem,
 {
 	enum sms_mwi_type type;
 	int profile;
+	gboolean set;
 
 	/* Parse type & storage byte */
 	if (discard)
@@ -647,15 +588,17 @@ static void handle_special_sms_iei(struct ofono_modem *modem,
 			type = SMS_MWI_TYPE_OTHER;
 	}
 
+	set = iei[1] > 0 ? TRUE : FALSE;
 	profile = ((iei[0] >> 5) & 3) + 1;
 
-	ofono_message_waiting_count_notify(modem, iei[1], type, profile);
+	mw_set_indicator(modem, profile, type, set, iei[1]);
 }
 
 static void handle_enhanced_voicemail_iei(struct ofono_modem *modem,
 		const guint8 *iei, gboolean *discard, int length)
 {
 	int profile, n;
+	gboolean set;
 
 	if (length < 3)
 		return;
@@ -680,8 +623,9 @@ static void handle_enhanced_voicemail_iei(struct ofono_modem *modem,
 
 		/* Other parameters currently not supported */
 
-		ofono_message_waiting_count_notify(modem, iei[2 + n],
-				SMS_MWI_TYPE_VOICE, profile);
+		set = iei[n + 2] > 0 ? TRUE : FALSE;
+		mw_set_indicator(modem, profile, SMS_MWI_TYPE_VOICE,
+					set, iei[n + 2]);
 	} else {
 		/* 9.2.3.24.13.2 Enhanced Voice Delete Confirmation */
 
@@ -699,8 +643,9 @@ static void handle_enhanced_voicemail_iei(struct ofono_modem *modem,
 
 		/* Other parameters currently not supported */
 
-		ofono_message_waiting_count_notify(modem, iei[2 + n],
-				SMS_MWI_TYPE_VOICE, profile);
+		set = iei[n + 2] > 0 ? TRUE : FALSE;
+		mw_set_indicator(modem, profile, SMS_MWI_TYPE_VOICE,
+					set, iei[n + 2]);
 	}
 }
 
@@ -788,8 +733,7 @@ void ofono_handle_sms_mwi(struct ofono_modem *modem,
 
 	if (sms_mwi_dcs_decode(sms->deliver.dcs, &type,
 				NULL, &active, out_discard)) {
-		ofono_message_waiting_present_notify(modem,
-				type, active, profile);
+		mw_set_indicator(modem, profile, type, active, 0);
 
 		return;
 	}
