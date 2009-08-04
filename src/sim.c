@@ -23,6 +23,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 
@@ -42,6 +43,12 @@
 #include "smsutil.h"
 #include "sim.h"
 #include "simutil.h"
+
+#ifdef TEMP_FAILURE_RETRY
+#define TFR TEMP_FAILURE_RETRY
+#else
+#define TFR
+#endif
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
@@ -317,7 +324,7 @@ static gboolean cache_record(const char *path, int current, int record_len,
 	int r = 0;
 	int fd;
 
-	fd = open(path, O_WRONLY);
+	fd = TFR(open(path, O_WRONLY));
 
 	if (fd == -1)
 		return FALSE;
@@ -325,8 +332,8 @@ static gboolean cache_record(const char *path, int current, int record_len,
 	if (lseek(fd, (current - 1) * record_len +
 				SIM_CACHE_HEADER_SIZE, SEEK_SET) !=
 			(off_t) -1)
-		r = write(fd, data, record_len);
-	close(fd);
+		r = TFR(write(fd, data, record_len));
+	TFR(close(fd));
 
 	if (r < record_len) {
 		unlink(path);
@@ -426,7 +433,7 @@ static gboolean cache_info(const char *path, const unsigned char *info, int len)
 	if (create_dirs(path, SIM_CACHE_MODE | S_IXUSR) != 0)
 		return FALSE;
 
-	fd = open(path, O_WRONLY | O_CREAT, SIM_CACHE_MODE);
+	fd = TFR(open(path, O_WRONLY | O_CREAT, SIM_CACHE_MODE));
 
 	if (fd == -1) {
 		ofono_debug("Error %i creating cache file %s",
@@ -434,8 +441,8 @@ static gboolean cache_info(const char *path, const unsigned char *info, int len)
 		return FALSE;
 	}
 
-	r = write(fd, info, len);
-	close(fd);
+	r = TFR(write(fd, info, len));
+	TFR(close(fd));
 
 	if (r < 6) {
 		unlink(path);
@@ -586,7 +593,7 @@ static gboolean sim_op_cached_callback(gpointer user)
 	}
 
 	for (record = 0; record < cbs->total; record++) {
-		if (read(cbs->fd, buffer, cbs->record_length) <
+		if (TFR(read(cbs->fd, buffer, cbs->record_length)) <
 				(int) cbs->record_length) {
 			cbs->cb(cbs->modem, 0, 0, 0, 0, 0, 0, 0);
 			break;
@@ -598,7 +605,7 @@ static gboolean sim_op_cached_callback(gpointer user)
 	}
 
 cleanup:
-	close(cbs->fd);
+	TFR(close(cbs->fd));
 	g_free(cbs);
 
 	return FALSE;
@@ -623,7 +630,7 @@ static gboolean sim_op_check_cached(struct ofono_modem *modem, int fileid,
 		return FALSE;
 
 	path = g_strdup_printf(SIM_CACHE_PATH, imsi, fileid);
-	fd = open(path, O_RDONLY);
+	fd = TFR(open(path, O_RDONLY));
 	g_free(path);
 
 	if (fd == -1) {
@@ -635,7 +642,7 @@ static gboolean sim_op_check_cached(struct ofono_modem *modem, int fileid,
 		return FALSE;
 	}
 
-	len = read(fd, fileinfo, SIM_CACHE_HEADER_SIZE);
+	len = TFR(read(fd, fileinfo, SIM_CACHE_HEADER_SIZE));
 	if (len != SIM_CACHE_HEADER_SIZE)
 		return FALSE;
 
