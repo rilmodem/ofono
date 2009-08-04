@@ -418,6 +418,33 @@ static gboolean sim_op_retrieve_next(gpointer user)
 	return FALSE;
 }
 
+static gboolean cache_info(const char *path, const unsigned char *info, int len)
+{
+	int fd;
+	int r;
+
+	if (create_dirs(path, SIM_CACHE_MODE | S_IXUSR) != 0)
+		return FALSE;
+
+	fd = open(path, O_WRONLY | O_CREAT, SIM_CACHE_MODE);
+
+	if (fd == -1) {
+		ofono_debug("Error %i creating cache file %s",
+				errno, path);
+		return FALSE;
+	}
+
+	r = write(fd, info, len);
+	close(fd);
+
+	if (r < 6) {
+		unlink(path);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 static void sim_op_info_cb(const struct ofono_error *error, int length,
 				enum ofono_sim_file_structure structure,
 				int record_length,
@@ -427,9 +454,6 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
 	char *imsi = sim->imsi;
-	char *path;
-	unsigned char fileinfo[6];
-	int r, fd = -1;
 	enum sim_file_access update;
 	enum sim_file_access invalidate;
 	enum sim_file_access rehabilitate;
@@ -464,16 +488,8 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 	g_timeout_add(0, sim_op_retrieve_next, modem);
 
 	if (op->cache && imsi) {
-		path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
-		if (create_dirs(path, SIM_CACHE_MODE | S_IXUSR) == 0)
-			fd = open(path, O_WRONLY | O_CREAT, SIM_CACHE_MODE);
-
-		if (fd == -1) {
-			ofono_debug("Error %i creating cache file for "
-					"fileid %04x, IMSI %s",
-					errno, op->id, imsi);
-			return;
-		}
+		char *path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
+		unsigned char fileinfo[6];
 
 		fileinfo[0] = error->type;
 		fileinfo[1] = length >> 8;
@@ -482,13 +498,7 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 		fileinfo[4] = record_length >> 8;
 		fileinfo[5] = record_length & 0xff;
 
-		r = write(fd, fileinfo, 6);
-		close(fd);
-
-		if (r < 6) {
-			op->cache = 0;
-			unlink(path);
-		}
+		op->cache = cache_info(path, fileinfo, 6);
 
 		g_free(path);
 	}
