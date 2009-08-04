@@ -191,7 +191,7 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 {
 	struct sim_manager_data *sim = modem->sim_manager;
 	int total;
-	struct ofono_phone_number *ph;
+	struct ofono_phone_number ph;
 
 	if (!ok)
 		goto check;
@@ -204,14 +204,13 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 
 	total = length / record_length;
 
-	ph = g_new(struct ofono_phone_number, 1);
+	if (sim_adn_parse(data, record_length, &ph) == TRUE) {
+		struct ofono_phone_number *own;
 
-	if (sim_adn_parse(data, record_length, ph) == FALSE) {
-		g_free(ph);
-		goto check;
+		own = g_new(struct ofono_phone_number, 1);
+		memcpy(own, &ph, sizeof(struct ofono_phone_number));
+		sim->own_numbers = g_slist_prepend(sim->own_numbers, own);
 	}
-
-	sim->own_numbers = g_slist_prepend(sim->own_numbers, ph);
 
 	if (record != total)
 		return;
