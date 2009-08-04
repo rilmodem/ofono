@@ -192,16 +192,20 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_next(&iter);
+
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
 		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
+
 	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&var, &value);
+
 	if (!valid_phone_number_format(value))
 		return __ofono_error_invalid_format(msg);
+
 	string_to_phone_number(value, &new_number);
 
 	if (strcmp(mw->mailbox_number_new[i].number, new_number.number) ||
@@ -241,7 +245,7 @@ static void mw_mwis_read_cb(struct ofono_modem *modem, int ok,
 
 	if (!ok ||
 		structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
-		record_length < 5) {
+			record_length < 5) {
 		ofono_error("Unable to read waiting messages numbers "
 			"from SIM");
 
@@ -277,6 +281,7 @@ static void mw_mwis_read_cb(struct ofono_modem *modem, int ok,
 					MESSAGE_WAITING_INTERFACE,
 					mw_message_waiting_property_name[i],
 					DBUS_TYPE_BOOLEAN, &indication);
+
 			ofono_dbus_signal_property_changed(conn, modem->path,
 					MESSAGE_WAITING_INTERFACE,
 					mw_message_count_property_name[i],
@@ -299,18 +304,18 @@ static void mw_mbdn_read_cb(struct ofono_modem *modem, int ok,
 
 	if (!ok ||
 		structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
-		record_length < 14 || total_length < record_length) {
+			record_length < 14 || total_length < record_length) {
 		ofono_error("Unable to read mailbox dialling numbers "
 			"from SIM");
 
 		mw->efmbdn_length = -1;
-
 		return;
 	}
 
 	for (i = 0; i < 5; i++)
 		if (record == mw->efmbdn_record_id[i])
 			break;
+
 	if (i == 5)
 		return;
 
@@ -345,12 +350,11 @@ static void mw_mbi_read_cb(struct ofono_modem *modem, int ok,
 
 	if (!ok ||
 		structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
-		record_length < 4) {
+			record_length < 4) {
 		ofono_error("Unable to read mailbox identifies "
 			"from SIM");
 
 		mw->efmbdn_length = -1;
-
 		return;
 	}
 
@@ -362,9 +366,9 @@ static void mw_mbi_read_cb(struct ofono_modem *modem, int ok,
 		mw->efmbdn_record_id[i] = data[i];
 
 	err = ofono_sim_read(modem, SIM_EFMBDN_FILEID, mw_mbdn_read_cb, NULL);
-	if (err != 0) {
+
+	if (err != 0)
 		ofono_error("Unable to read EF-MBDN from SIM");
-	}
 }
 
 static void mw_mbdn_write_cb(struct ofono_modem *modem, int ok, void *userdata)
@@ -379,10 +383,12 @@ static gboolean mw_mwis_load(struct ofono_modem *modem)
 	int err;
 
 	err = ofono_sim_read(modem, SIM_EFMWIS_FILEID, mw_mwis_read_cb, NULL);
+
 	if (err != 0)
 		return FALSE;
 
 	err = ofono_sim_read(modem, SIM_EFMBI_FILEID, mw_mbi_read_cb, NULL);
+
 	if (err != 0)
 		return FALSE;
 
@@ -436,6 +442,7 @@ static gboolean mw_update(gpointer user)
 					DBUS_TYPE_BOOLEAN, &indication);
 		}
 	}
+
 	if (mw->efmwis_length < 1)
 		goto mbdn;
 
@@ -479,6 +486,7 @@ mbdn:
 					mw_mailbox_property_name[i],
 					DBUS_TYPE_STRING, &number);
 		}
+
 	if (mw->efmbdn_length < 1)
 		return FALSE;
 
@@ -497,9 +505,9 @@ void ofono_message_waiting_present_notify(struct ofono_modem *modem,
 	if (profile != 1)
 		return;
 
-	present = !!present;
 	if (mw->messages_new[type].indication != present) {
 		mw->messages_new[type].indication = present;
+
 		if (!present)
 			mw->messages_new[type].message_count = 0;
 
