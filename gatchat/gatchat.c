@@ -33,30 +33,12 @@
 #include <glib.h>
 
 #include "ringbuffer.h"
-#include "gatresult.h"
 #include "gatchat.h"
 
 /* #define WRITE_SCHEDULER_DEBUG 1 */
 
 static void g_at_chat_wakeup_writer(GAtChat *chat);
-
-enum chat_state {
-	PARSER_STATE_IDLE = 0,
-	PARSER_STATE_INITIAL_CR,
-	PARSER_STATE_INITIAL_LF,
-	PARSER_STATE_RESPONSE,
-	PARSER_STATE_TERMINATOR_CR,
-	PARSER_STATE_RESPONSE_COMPLETE,
-	PARSER_STATE_GUESS_MULTILINE_RESPONSE,
-	PARSER_STATE_MULTILINE_RESPONSE,
-	PARSER_STATE_MULTILINE_TERMINATOR_CR,
-	PARSER_STATE_MULTILINE_COMPLETE,
-	PARSER_STATE_PDU,
-	PARSER_STATE_PDU_CR,
-	PARSER_STATE_PDU_COMPLETE,
-	PARSER_STATE_PROMPT,
-	PARSER_STATE_PROMPT_COMPLETE
-};
+static void debug_chat(GAtChat *chat, gboolean in, const char *str, gsize len);
 
 struct at_command {
 	char *cmd;
@@ -95,14 +77,13 @@ struct _GAtChat {
 	struct ring_buffer *buf;		/* Current read buffer */
 	guint read_so_far;			/* Number of bytes processed */
 	gboolean disconnecting;			/* Whether we're disconnecting */
-	enum chat_state state;		/* Current chat state */
-	int flags;
 	char *pdu_notify;			/* Unsolicited Resp w/ PDU */
 	GSList *response_lines;			/* char * lines of the response */
 	char *wakeup;				/* command sent to wakeup modem */
 	gdouble inactivity_time;		/* Period of inactivity */
 	guint wakeup_timeout;			/* How long to wait for resp */
 	GTimer *wakeup_timer;			/* Keep track of elapsed time */
+	GAtSyntax *syntax;
 };
 
 static gint at_notify_node_compare_by_id(gconstpointer a, gconstpointer b)
@@ -254,6 +235,9 @@ static void g_at_chat_cleanup(GAtChat *chat)
 		g_timer_destroy(chat->wakeup_timer);
 		chat->wakeup_timer = 0;
 	}
+
+	g_at_syntax_unref(chat->syntax);
+	chat->syntax = NULL;
 }
 
 static void read_watcher_destroy_notify(GAtChat *chat)
@@ -306,7 +290,10 @@ static gboolean g_at_chat_match_notify(GAtChat *chat, char *line)
 
 		if (notify->pdu) {
 			chat->pdu_notify = line;
-			chat->state = PARSER_STATE_PDU;
+
+			if (chat->syntax->set_hint)
+				chat->syntax->set_hint(chat->syntax,
+							G_AT_SYNTAX_EXPECT_PDU);
 			return TRUE;
 		}
 
@@ -321,7 +308,6 @@ static gboolean g_at_chat_match_notify(GAtChat *chat, char *line)
 	if (ret) {
 		g_slist_free(result.lines);
 		g_free(line);
-		chat->state = PARSER_STATE_IDLE;
 	}
 
 	return ret;
@@ -387,8 +373,6 @@ static gboolean g_at_chat_handle_command_response(GAtChat *p,
 	int i;
 	int size = sizeof(terminator_table) / sizeof(struct terminator_info);
 
-	p->state = PARSER_STATE_IDLE;
-
 	for (i = 0; i < size; i++) {
 		struct terminator_info *info = &terminator_table[i];
 
@@ -415,8 +399,8 @@ static gboolean g_at_chat_handle_command_response(GAtChat *p,
 	}
 
 out:
-	if (!(p->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF))
-		p->state = PARSER_STATE_GUESS_MULTILINE_RESPONSE;
+	if (p->syntax->set_hint)
+		p->syntax->set_hint(p->syntax, G_AT_SYNTAX_EXPECT_MULTILINE);
 
 	if (cmd->listing) {
 		GAtResult result;
@@ -434,31 +418,13 @@ out:
 	return TRUE;
 }
 
-static void have_line(GAtChat *p, gboolean strip_preceding)
+static void have_line(GAtChat *p, char *str)
 {
 	/* We're not going to copy terminal <CR><LF> */
-	unsigned int len = p->read_so_far - 2;
-	char *str;
 	struct at_command *cmd;
 
-	/* If we have preceding <CR><LF> modify the len */
-	if (strip_preceding)
-		len -= 2;
-
-	/* Make sure we have terminal null */
-	str = g_try_new(char, len + 1);
-
-	if (!str) {
-		ring_buffer_drain(p->buf, p->read_so_far);
+	if (!str)
 		return;
-	}
-
-	if (strip_preceding)
-		ring_buffer_drain(p->buf, 2);
-	ring_buffer_read(p->buf, str, len);
-	ring_buffer_drain(p->buf, 2);
-
-	str[len] = '\0';
 
 	/* Check for echo, this should not happen, but lets be paranoid */
 	if (!strncmp(str, "AT", 2) == TRUE)
@@ -488,30 +454,18 @@ static void have_line(GAtChat *p, gboolean strip_preceding)
 done:
 	/* No matches & no commands active, ignore line */
 	g_free(str);
-	p->state = PARSER_STATE_IDLE;
 }
 
-static void have_pdu(GAtChat *p)
+static void have_pdu(GAtChat *p, char *pdu)
 {
-	unsigned int len = p->read_so_far - 2;
-	char *pdu;
 	GHashTableIter iter;
 	struct at_notify *notify;
 	char *prefix;
 	gpointer key, value;
 	GAtResult result;
 
-	pdu = g_try_new(char, len + 1);
-
-	if (!pdu) {
-		ring_buffer_drain(p->buf, p->read_so_far);
+	if (!pdu)
 		goto out;
-	}
-
-	ring_buffer_read(p->buf, pdu, len);
-	ring_buffer_drain(p->buf, 2);
-
-	pdu[len] = '\0';
 
 	result.lines = g_slist_prepend(NULL, p->pdu_notify);
 	result.final_or_pdu = pdu;
@@ -540,97 +494,47 @@ out:
 
 	if (pdu)
 		g_free(pdu);
-
-	p->state = PARSER_STATE_IDLE;
 }
 
-static inline void parse_char(GAtChat *chat, char byte)
+static char *extract_line(GAtChat *p)
 {
-	switch (chat->state) {
-	case PARSER_STATE_IDLE:
-		if (byte == '\r')
-			chat->state = PARSER_STATE_INITIAL_CR;
-		else if (chat->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF) {
-			if (byte == '>')
-				chat->state = PARSER_STATE_PROMPT;
+	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
+	unsigned int pos = 0;
+	unsigned char *buf = ring_buffer_read_ptr(p->buf, pos);
+	int strip_front = 0;
+	int line_length = 0;
+	char *line;
+
+	while (pos < p->read_so_far) {
+		if (*buf == '\r' || *buf == '\n')
+			if (!line_length)
+				strip_front += 1;
 			else
-				chat->state = PARSER_STATE_RESPONSE;
-		}
-		break;
-
-	case PARSER_STATE_INITIAL_CR:
-		if (byte == '\n')
-			chat->state = PARSER_STATE_INITIAL_LF;
-		else if (byte != '\r' && /* Echo & no <CR><LF>?! */
-			(chat->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF))
-			chat->state = PARSER_STATE_RESPONSE;
-		else if (byte != '\r')
-			chat->state = PARSER_STATE_IDLE;
-		break;
-
-	case PARSER_STATE_INITIAL_LF:
-		if (byte == '\r')
-			chat->state = PARSER_STATE_TERMINATOR_CR;
-		else if (byte == '>')
-			chat->state = PARSER_STATE_PROMPT;
+				break;
 		else
-			chat->state = PARSER_STATE_RESPONSE;
-		break;
+			line_length += 1;
 
-	case PARSER_STATE_RESPONSE:
-		if (byte == '\r')
-			chat->state = PARSER_STATE_TERMINATOR_CR;
-		break;
+		buf += 1;
+		pos += 1;
 
-	case PARSER_STATE_TERMINATOR_CR:
-		if (byte == '\n')
-			chat->state = PARSER_STATE_RESPONSE_COMPLETE;
-		else
-			chat->state = PARSER_STATE_IDLE;
-		break;
-
-	case PARSER_STATE_GUESS_MULTILINE_RESPONSE:
-		if (byte == '\r')
-			chat->state = PARSER_STATE_INITIAL_CR;
-		else
-			chat->state = PARSER_STATE_MULTILINE_RESPONSE;
-		break;
-
-	case PARSER_STATE_MULTILINE_RESPONSE:
-		if (byte == '\r')
-			chat->state = PARSER_STATE_MULTILINE_TERMINATOR_CR;
-		break;
-
-	case PARSER_STATE_MULTILINE_TERMINATOR_CR:
-		if (byte == '\n')
-			chat->state = PARSER_STATE_MULTILINE_COMPLETE;
-		break;
-
-	case PARSER_STATE_PDU:
-		if (byte == '\r')
-			chat->state = PARSER_STATE_PDU_CR;
-		break;
-
-	case PARSER_STATE_PDU_CR:
-		if (byte == '\n')
-			chat->state = PARSER_STATE_PDU_COMPLETE;
-		break;
-
-	case PARSER_STATE_PROMPT:
-		if (byte == ' ')
-			chat->state = PARSER_STATE_PROMPT_COMPLETE;
-		else
-			chat->state = PARSER_STATE_RESPONSE;
-		break;
-
-	case PARSER_STATE_RESPONSE_COMPLETE:
-	case PARSER_STATE_PDU_COMPLETE:
-	case PARSER_STATE_MULTILINE_COMPLETE:
-	default:
-		/* This really shouldn't happen */
-		assert(FALSE);
-		return;
+		if (pos == wrap)
+			buf = ring_buffer_read_ptr(p->buf, pos);
 	}
+
+	line = g_try_new(char, line_length + 1);
+
+	if (!line) {
+		ring_buffer_drain(p->buf, p->read_so_far);
+		return NULL;
+	}
+
+	ring_buffer_drain(p->buf, strip_front);
+	ring_buffer_read(p->buf, line, line_length);
+	ring_buffer_drain(p->buf, p->read_so_far - strip_front - line_length);
+
+	line[line_length] = '\0';
+
+	return line;
 }
 
 static void new_bytes(GAtChat *p)
@@ -639,76 +543,45 @@ static void new_bytes(GAtChat *p)
 	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
 	unsigned char *buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
 
-	while (p->read_so_far < len) {
-		parse_char(p, *buf);
+	GAtSyntaxResult result;
 
-		buf += 1;
-		p->read_so_far += 1;
+	while (p->read_so_far < len) {
+		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
+		result = p->syntax->feed(p->syntax, (char *)buf, &rbytes);
+
+		buf += rbytes;
+		p->read_so_far += rbytes;
 
 		if (p->read_so_far == wrap) {
 			buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
 			wrap = len;
 		}
 
-		if (p->state == PARSER_STATE_RESPONSE_COMPLETE) {
-			gboolean strip_preceding;
+		if (result == G_AT_SYNTAX_RESULT_UNSURE)
+			continue;
 
-			if (p->flags & G_AT_CHAT_FLAG_NO_LEADING_CRLF)
-				strip_preceding = FALSE;
-			else
-				strip_preceding = TRUE;
+		switch (result) {
+		case G_AT_SYNTAX_RESULT_LINE:
+		case G_AT_SYNTAX_RESULT_MULTILINE:
+			have_line(p, extract_line(p));
+			break;
 
-			len -= p->read_so_far;
-			wrap -= p->read_so_far;
+		case G_AT_SYNTAX_RESULT_PDU:
+			have_pdu(p, extract_line(p));
+			break;
 
-			have_line(p, strip_preceding);
-
-			p->read_so_far = 0;
-		} else if (p->state == PARSER_STATE_MULTILINE_COMPLETE) {
-			len -= p->read_so_far;
-			wrap -= p->read_so_far;
-
-			have_line(p, FALSE);
-
-			p->read_so_far = 0;
-		} else if (p->state == PARSER_STATE_PDU_COMPLETE) {
-			len -= p->read_so_far;
-			wrap -= p->read_so_far;
-
-			/* Some modems like the TI Calypso send a CMT style
-			 * notification with an extra CRLF thrown in
-			 */
-			if ((p->flags & G_AT_CHAT_FLAG_EXTRA_PDU_CRLF) &&
-					p->read_so_far == 2) {
-				p->state = PARSER_STATE_PDU;
-				ring_buffer_drain(p->buf, p->read_so_far);
-			} else
-				have_pdu(p);
-
-			p->read_so_far = 0;
-		} else if (p->state == PARSER_STATE_INITIAL_CR) {
-			len -= p->read_so_far - 1;
-			wrap -= p->read_so_far - 1;
-
-			ring_buffer_drain(p->buf, p->read_so_far - 1);
-
-			p->read_so_far = 1;
-		} else if (p->state == PARSER_STATE_PROMPT_COMPLETE) {
-			len -= p->read_so_far;
-			wrap -= p->read_so_far;
-
+		case G_AT_SYNTAX_RESULT_PROMPT:
 			g_at_chat_wakeup_writer(p);
-
 			ring_buffer_drain(p->buf, p->read_so_far);
+			break;
 
-			p->read_so_far = 0;
-
-			p->state = PARSER_STATE_IDLE;
+		default:
+			ring_buffer_drain(p->buf, p->read_so_far);
+			break;
 		}
-	}
 
-	if (p->state == PARSER_STATE_IDLE && p->read_so_far > 0) {
-		ring_buffer_drain(p->buf, p->read_so_far);
+		len -= p->read_so_far;
+		wrap -= p->read_so_far;
 		p->read_so_far = 0;
 	}
 }
@@ -736,13 +609,8 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		 * this cannot happen under normal circumstances, so probably
 		 * the channel is getting garbage, drop off
 		 */
-		if (toread == 0) {
-			if (chat->state == PARSER_STATE_RESPONSE)
-				return FALSE;
-
-			err = G_IO_ERROR_AGAIN;
-			break;
-		}
+		if (toread == 0)
+			return FALSE;
 
 		buf = ring_buffer_write_ptr(chat->buf);
 
@@ -900,12 +768,15 @@ static void g_at_chat_wakeup_writer(GAtChat *chat)
 				(GDestroyNotify)write_watcher_destroy_notify);
 }
 
-GAtChat *g_at_chat_new(GIOChannel *channel, int flags)
+GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
 {
 	GAtChat *chat;
 	GIOFlags io_flags;
 
 	if (!channel)
+		return NULL;
+
+	if (!syntax)
 		return NULL;
 
 	chat = g_try_new0(GAtChat, 1);
@@ -916,7 +787,6 @@ GAtChat *g_at_chat_new(GIOChannel *channel, int flags)
 	chat->ref_count = 1;
 	chat->next_cmd_id = 1;
 	chat->next_notify_id = 1;
-	chat->flags = flags;
 
 	chat->buf = ring_buffer_new(4096);
 
@@ -951,6 +821,8 @@ GAtChat *g_at_chat_new(GIOChannel *channel, int flags)
 				received_data, chat,
 				(GDestroyNotify)read_watcher_destroy_notify);
 
+	chat->syntax = g_at_syntax_ref(syntax);
+
 	return chat;
 
 error:
@@ -965,22 +837,6 @@ error:
 
 	g_free(chat);
 	return NULL;
-}
-
-int g_at_chat_get_flags(GAtChat *chat)
-{
-	if (chat == NULL)
-		return 0;
-
-	return chat->flags;
-}
-
-void g_at_chat_set_flags(GAtChat *chat, int flags)
-{
-	if (chat == NULL)
-		return;
-
-	chat->flags = flags;
 }
 
 static int open_device(const char *device)
@@ -1003,7 +859,7 @@ static int open_device(const char *device)
 	return fd;
 }
 
-GAtChat *g_at_chat_new_from_tty(const char *device, int flags)
+GAtChat *g_at_chat_new_from_tty(const char *device, GAtSyntax *syntax)
 {
 	GIOChannel *channel;
 	int fd;
@@ -1018,7 +874,7 @@ GAtChat *g_at_chat_new_from_tty(const char *device, int flags)
 		return NULL;
 	}
 
-	return g_at_chat_new(channel, flags);
+	return g_at_chat_new(channel, syntax);
 }
 
 GAtChat *g_at_chat_ref(GAtChat *chat)
