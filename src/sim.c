@@ -482,12 +482,10 @@ static void sim_op_write_cb(const struct ofono_error *error, void *data)
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
 	ofono_sim_file_write_cb_t cb = op->cb;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		sim_op_error(modem);
-		return;
-	}
-
-	cb(modem, 1, op->userdata);
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		cb(modem, 1, op->userdata);
+	else
+		cb(modem, 0, op->userdata);
 
 	sim_file_op_free(op);
 
