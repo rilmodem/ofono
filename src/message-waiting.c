@@ -683,7 +683,7 @@ void ofono_handle_sms_mwi(struct ofono_modem *modem,
 	 */
 
 	if (sms->deliver.udhi) {
-		guint8 *evm_iei;
+		guint8 evm_iei[140];
 		struct sms_udh_iter iter;
 		enum sms_iei iei;
 
@@ -694,17 +694,12 @@ void ofono_handle_sms_mwi(struct ofono_modem *modem,
 				SMS_IEI_INVALID) {
 			switch (iei) {
 			case SMS_IEI_ENHANCED_VOICE_MAIL_INFORMATION:
-				evm_iei = g_malloc0(
-						sms_udh_iter_get_ie_length(
-							&iter));
 				sms_udh_iter_get_ie_data(&iter, evm_iei);
 
 				handle_enhanced_voicemail_iei(modem, evm_iei,
 						out_discard,
 						sms_udh_iter_get_ie_length(
 							&iter));
-
-				g_free(evm_iei);
 				return;
 			}
 
