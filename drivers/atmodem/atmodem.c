@@ -294,11 +294,6 @@ error:
 static void send_init_commands(const char *vendor, GAtChat *parser)
 {
 	if (!strcmp(vendor, "ti_calypso")) {
-		int flags = g_at_chat_get_flags(parser);
-
-		flags |= G_AT_CHAT_FLAG_EXTRA_PDU_CRLF;
-		g_at_chat_set_flags(parser, flags);
-
 		g_at_chat_set_wakeup_command(parser, "\r", 1000, 5000);
 
 		g_at_chat_send(parser, "AT%CUNS=0", NULL, NULL, NULL, NULL);
@@ -329,17 +324,21 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	const char *path;
 	const char *target, *driver;
 	const char **modems;
+	GAtSyntax *syntax;
 
 	g_pending = g_slist_remove(g_pending, io);
 
 	if (success == FALSE)
 		goto out;
 
+	syntax = g_at_syntax_new_gsmv1();
+
 	at = g_new0(struct at_data, 1);
 
-	at->parser = g_at_chat_new(io, 0);
+	at->parser = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
 
-	if (!at->parser)
+	if (at->parser == NULL)
 		goto out;
 
 	ofono_debug("Seting up AT channel");
