@@ -311,6 +311,31 @@ static void sim_op_error(struct ofono_modem *modem)
 #define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 2 + imsilen)
 #define SIM_CACHE_HEADER_SIZE 6
 
+static gboolean cache_record(const char *path, int current, int record_len,
+				const unsigned char *data)
+{
+	int r = 0;
+	int fd;
+
+	fd = open(path, O_WRONLY);
+
+	if (fd == -1)
+		return FALSE;
+
+	if (lseek(fd, (current - 1) * record_len +
+				SIM_CACHE_HEADER_SIZE, SEEK_SET) !=
+			(off_t) -1)
+		r = write(fd, data, record_len);
+	close(fd);
+
+	if (r < record_len) {
+		unlink(path);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 static void sim_op_retrieve_cb(const struct ofono_error *error,
 				const unsigned char *data, int len, void *user)
 {
@@ -319,10 +344,7 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
 	int total = op->length / op->record_length;
 	ofono_sim_file_read_cb_t cb = op->cb;
-
 	char *imsi = sim->imsi;
-	char *path;
-	int r = 0, fd;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		sim_op_error(modem);
@@ -333,28 +355,13 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 		data, op->record_length, op->userdata);
 
 	if (op->cache && imsi) {
-		/* Cache the record */
-		path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
-		fd = open(path, O_WRONLY);
+		char *path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
 
-		if (fd == -1)
-			goto next;
-
-		if (lseek(fd, (op->current - 1) * op->record_length +
-					SIM_CACHE_HEADER_SIZE, SEEK_SET) !=
-				(off_t) -1)
-			r = write(fd, data, op->record_length);
-		close(fd);
-
-		if (r < op->record_length) {
-			op->cache = 0;
-			unlink(path);
-		}
-
+		op->cache = cache_record(path, op->current, op->record_length,
+						data);
 		g_free(path);
 	}
 
-next:
 	if (op->current == total) {
 		op = g_queue_pop_head(sim->simop_q);
 
