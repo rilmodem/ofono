@@ -43,6 +43,8 @@
 
 #define MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
 
+static gboolean mw_update(gpointer user);
+
 struct mailbox_state {
 	gboolean indication;
 	int message_count;
@@ -58,7 +60,14 @@ struct message_waiting_data {
 
 	int pending;
 	struct mailbox_state messages_new[5];
-	struct ofono_phone_number mailbox_number_new[5];
+};
+
+struct mbdn_set_request {
+	struct ofono_modem *modem;
+	struct message_waiting_data *mw;
+	int mailbox;
+	struct ofono_phone_number number;
+	DBusMessage *msg;
 };
 
 static struct message_waiting_data *message_waiting_create()
@@ -159,7 +168,67 @@ static DBusMessage *mw_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static gboolean mw_update(gpointer user);
+static void mbdn_set_cb(gboolean ok, void *data)
+{
+	struct mbdn_set_request *req = data;
+	struct ofono_phone_number *old = &req->mw->mailbox_number[req->mailbox];
+	const char *property;
+	DBusMessage *reply;
+
+	if (!ok) {
+		if (req->msg)
+			reply = __ofono_error_failed(req->msg);
+
+		goto out;
+	}
+
+	if (g_str_equal(req->number.number, old->number) &&
+			req->number.type == old->type)
+		goto out;
+
+	memcpy(old, &req->number, sizeof(struct ofono_phone_number));
+
+	property = mw_mailbox_property_name[req->mailbox];
+
+	if (property) {
+		DBusConnection *conn = ofono_dbus_get_connection();
+		const char *number;
+
+		number = phone_number_to_string(old);
+
+		ofono_dbus_signal_property_changed(conn, req->modem->path,
+						MESSAGE_WAITING_INTERFACE,
+						property, DBUS_TYPE_STRING,
+						&number);
+	}
+
+	if (req->msg)
+		reply = dbus_message_new_method_return(req->msg);
+
+out:
+	if (req->msg)
+		__ofono_dbus_pending_reply(&req->msg, reply);
+
+	g_free(req);
+}
+
+static void set_mbdn(struct ofono_modem *modem, int mailbox,
+			const char *number, DBusMessage *msg)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct mbdn_set_request *req;
+
+	req = g_new0(struct mbdn_set_request, 1);
+
+	req->modem = modem;
+	req->mw = modem->message_waiting;
+	req->mailbox = mailbox;
+	string_to_phone_number(number, &req->number);
+	req->msg = dbus_message_ref(msg);
+
+	/* TODO: Fill the actual sim_write data */
+	mbdn_set_cb(TRUE, req);
+}
 
 static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 					void *data)
@@ -170,7 +239,6 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 	DBusMessageIter var;
 	const char *name, *value;
 	int i;
-	struct ofono_phone_number new_number;
 
 	if (mw->efmbdn_length == 0)
 		return __ofono_error_busy(msg);
@@ -187,36 +255,35 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (mw_mailbox_property_name[i] &&
 				!strcmp(name, mw_mailbox_property_name[i]))
 			break;
-	if (i == 5)
-		return __ofono_error_invalid_args(msg);
 
-	dbus_message_iter_next(&iter);
+	if (i < 5) {
+		const char *cur_number;
 
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-		return __ofono_error_invalid_args(msg);
+		dbus_message_iter_next(&iter);
 
-	dbus_message_iter_recurse(&iter, &var);
+		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
+			return __ofono_error_invalid_args(msg);
 
-	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
+		dbus_message_iter_recurse(&iter, &var);
 
-	dbus_message_iter_get_basic(&var, &value);
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return __ofono_error_invalid_args(msg);
 
-	if (!valid_phone_number_format(value))
-		return __ofono_error_invalid_format(msg);
+		dbus_message_iter_get_basic(&var, &value);
 
-	string_to_phone_number(value, &new_number);
+		if (!valid_phone_number_format(value))
+			return __ofono_error_invalid_format(msg);
 
-	if (strcmp(mw->mailbox_number_new[i].number, new_number.number) ||
-			mw->mailbox_number_new[i].type != new_number.type) {
-		memcpy(&mw->mailbox_number_new[i], &new_number,
-				sizeof(struct ofono_phone_number));
+		cur_number = phone_number_to_string(&mw->mailbox_number[i]);
 
-		if (!mw->pending)
-			mw->pending = g_timeout_add(0, mw_update, modem);
+		if (g_str_equal(cur_number, value))
+			return dbus_message_new_method_return(msg);
+
+		set_mbdn(modem, i, value, msg);
+		return NULL;
 	}
 
-	return dbus_message_new_method_return(msg);
+	return __ofono_error_invalid_args(msg);
 }
 
 static GDBusMethodTable message_waiting_methods[] = {
@@ -318,14 +385,8 @@ static void mw_mbdn_read_cb(struct ofono_modem *modem, int ok,
 	if (i == 5)
 		return;
 
-	if (sim_adn_parse(data, record_length, &mw->mailbox_number[i]) ==
-			FALSE) {
+	if (sim_adn_parse(data, record_length, &mw->mailbox_number[i]) == FALSE)
 		mw->mailbox_number[i].number[0] = '\0';
-		mw->mailbox_number_new[i].number[0] = '\0';
-	} else {
-		memcpy(&mw->mailbox_number_new[i], &mw->mailbox_number[i],
-				sizeof(struct ofono_phone_number));
-	}
 
 	if (mw_mailbox_property_name[i]) {
 		value = phone_number_to_string(&mw->mailbox_number[i]);
@@ -443,7 +504,7 @@ static gboolean mw_update(gpointer user)
 	}
 
 	if (mw->efmwis_length < 1)
-		goto mbdn;
+		return FALSE;
 
 	file = g_malloc0(mw->efmwis_length);
 
@@ -463,31 +524,6 @@ static gboolean mw_update(gpointer user)
 	}
 
 	g_free(file);
-
-mbdn:
-	for (i = 0; i < 5; i++)
-		if (strcmp(mw->mailbox_number_new[i].number,
-					mw->mailbox_number[i].number) ||
-				mw->mailbox_number_new[i].type !=
-				mw->mailbox_number[i].type) {
-			memcpy(&mw->mailbox_number[i],
-					&mw->mailbox_number_new[i],
-					sizeof(struct ofono_phone_number));
-
-			if (!mw_mailbox_property_name[i])
-				continue;
-
-			number = phone_number_to_string(
-					&mw->mailbox_number[i]);
-
-			ofono_dbus_signal_property_changed(conn, modem->path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_mailbox_property_name[i],
-					DBUS_TYPE_STRING, &number);
-		}
-
-	if (mw->efmbdn_length < 1)
-		return FALSE;
 
 	return FALSE;
 }
