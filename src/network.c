@@ -1269,7 +1269,7 @@ check:
 	 * retrieve it.  If OPL is not there then PNN[1] will
 	 * still be used for the HPLMN and/or EHPLMN, if PNN
 	 * is present.  */
-	if (!sim_eons_pnn_is_empty(netreg->eons))
+	if (netreg->eons && !sim_eons_pnn_is_empty(netreg->eons))
 		ofono_sim_read(modem, SIM_EFOPL_FILEID, sim_opl_read_cb, NULL);
 }
 
