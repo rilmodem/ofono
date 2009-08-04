@@ -431,7 +431,7 @@ static void mw_mbi_read_cb(struct ofono_modem *modem, int ok,
 		ofono_error("Unable to read EF-MBDN from SIM");
 }
 
-static void mw_mbdn_write_cb(struct ofono_modem *modem, int ok, void *userdata)
+static void mw_mwis_write_cb(struct ofono_modem *modem, int ok, void *userdata)
 {
 	if (!ok)
 		ofono_error("Writing new EF-MBDN failed");
@@ -517,7 +517,7 @@ static gboolean mw_update(gpointer user)
 		if (mw->messages[i].indication)
 			file[0] |= 1 << i;
 
-	if (ofono_sim_write(modem, SIM_EFMWIS_FILEID, mw_mbdn_write_cb,
+	if (ofono_sim_write(modem, SIM_EFMWIS_FILEID, mw_mwis_write_cb,
 				OFONO_SIM_FILE_STRUCTURE_FIXED, 1,
 				file, mw->efmwis_length, NULL) != 0) {
 		ofono_error("Queuing a EF-MWI write to SIM failed");
