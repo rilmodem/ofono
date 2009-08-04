@@ -36,7 +36,6 @@
 #include "util.h"
 #include "sim.h"
 #include "smsutil.h"
-#include "message-waiting.h"
 
 #define uninitialized_var(x) x = x
 

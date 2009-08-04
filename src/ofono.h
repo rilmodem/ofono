@@ -101,5 +101,9 @@ void __ofono_history_call_ended(struct ofono_modem *modem,
 void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when);
 
+struct sms;
+
 int ofono_message_waiting_register(struct ofono_modem *modem);
 void ofono_message_waiting_unregister(struct ofono_modem *modem);
+void ofono_handle_sms_mwi(struct ofono_modem *modem,
+				struct sms *sms, gboolean *out_discard);

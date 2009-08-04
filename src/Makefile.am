@@ -14,7 +14,7 @@ ofonod_SOURCES = main.c ofono.h log.c plugin.c \
 		call-settings.c call-forwarding.c call-meter.c \
 		smsutil.h smsutil.c cssn.h cssn.c call-barring.c sim.h sim.c \
 		phonebook.c history.c simutil.h simutil.c \
-		message-waiting.c message-waiting.h
+		message-waiting.c
 
 ofonod_LDADD = $(top_builddir)/plugins/libbuiltin.la \
 		$(top_builddir)/drivers/libbuiltin.la \

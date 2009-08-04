@@ -40,7 +40,6 @@
 #include "sim.h"
 #include "simutil.h"
 #include "smsutil.h"
-#include "message-waiting.h"
 
 #define MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
 
@@ -493,7 +492,7 @@ mbdn:
 	return FALSE;
 }
 
-void ofono_message_waiting_present_notify(struct ofono_modem *modem,
+static void ofono_message_waiting_present_notify(struct ofono_modem *modem,
 		enum sms_mwi_type type, gboolean present, int profile)
 {
 	struct message_waiting_data *mw = modem->message_waiting;
@@ -516,7 +515,7 @@ void ofono_message_waiting_present_notify(struct ofono_modem *modem,
 	}
 }
 
-void ofono_message_waiting_count_notify(struct ofono_modem *modem,
+static void ofono_message_waiting_count_notify(struct ofono_modem *modem,
 		enum sms_mwi_type type, int count, int profile)
 {
 	struct message_waiting_data *mw = modem->message_waiting;
