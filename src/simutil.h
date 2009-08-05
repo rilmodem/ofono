@@ -82,3 +82,5 @@ static inline enum sim_file_access file_access_condition_decode(int bcd)
 
 gboolean sim_adn_parse(const unsigned char *data, int length,
 			struct ofono_phone_number *ph);
+void sim_adn_build(unsigned char *data, int length,
+			const struct ofono_phone_number *ph);

@@ -426,3 +426,30 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 
 	return TRUE;
 }
+
+void sim_adn_build(unsigned char *data, int length,
+			const struct ofono_phone_number *ph)
+{
+	int number_len = strlen(ph->number);
+
+	/* Alpha-Identifier field */
+	if (length > 14) {
+		memset(data, 0xff, length - 14);
+		data += length - 14;
+	}
+
+	number_len = (number_len + 1) / 2;
+	*data++ = number_len + 1;
+
+	/* Use given number type and 'Unknown' for Numbering Plan */
+	*data++ = 0x80 | (ph->type << 4) | 0;
+
+	encode_bcd_number(ph->number, data);
+	memset(data + number_len, 0xff, 10 - number_len);
+	data += 10;
+
+	/* CCP1 unused */
+	*data++ = 0xff;
+	/* Ext1 unused */
+	*data++ = 0xff;
+}
