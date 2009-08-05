@@ -401,6 +401,7 @@ static inline unsigned char bit_field(unsigned char oct, int start, int num)
 }
 
 void extract_bcd_number(const unsigned char *buf, int len, char *out);
+void encode_bcd_number(const char *number, unsigned char *out);
 
 gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 			int tpdu_len, struct sms *out);

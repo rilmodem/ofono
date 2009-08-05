@@ -110,6 +110,17 @@ static inline int to_semi_oct(char in)
 	return digit;
 }
 
+void encode_bcd_number(const char *number, unsigned char *out)
+{
+	while (number[0] != '\0' && number[1] != '\0') {
+		*out = to_semi_oct(*number++);
+		*out++ |= to_semi_oct(*number++) << 4;
+	}
+
+	if (*number)
+		*out = to_semi_oct(*number) | 0xf0;
+}
+
 /* Returns whether the DCS could be parsed successfully, e.g. no reserved
  * values were used
  */
