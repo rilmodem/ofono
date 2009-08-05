@@ -43,8 +43,6 @@
 
 #define MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
 
-static gboolean mw_update(gpointer user);
-
 struct mailbox_state {
 	gboolean indication;
 	unsigned char message_count;
@@ -169,7 +167,7 @@ static void mbdn_set_cb(gboolean ok, void *data)
 	struct mbdn_set_request *req = data;
 	struct ofono_phone_number *old = &req->mw->mailbox_number[req->mailbox];
 	const char *property;
-	DBusMessage *reply;
+	DBusMessage *reply = NULL;
 
 	if (!ok) {
 		if (req->msg)
@@ -202,7 +200,7 @@ static void mbdn_set_cb(gboolean ok, void *data)
 		reply = dbus_message_new_method_return(req->msg);
 
 out:
-	if (req->msg)
+	if (req->msg && reply)
 		__ofono_dbus_pending_reply(&req->msg, reply);
 
 	g_free(req);
