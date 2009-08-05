@@ -331,11 +331,11 @@ static void mw_mwis_read_cb(struct ofono_modem *modem, int ok,
 				info.message_count) {
 			memcpy(&mw->messages[i], &info, sizeof(info));
 
-			if (!mw_message_waiting_property_name[i])
-				continue;
-
 			indication = info.indication;
 			count = info.message_count;
+
+			if (!mw_message_waiting_property_name[i])
+				continue;
 
 			ofono_dbus_signal_property_changed(conn, modem->path,
 					MESSAGE_WAITING_INTERFACE,
@@ -475,7 +475,8 @@ static void mw_set_indicator(struct ofono_modem *modem, int profile,
 		indication = present;
 		mw->messages[type].indication = present;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
+		if (!mw_message_waiting_property_name[type])
+			ofono_dbus_signal_property_changed(conn, modem->path,
 					MESSAGE_WAITING_INTERFACE,
 					mw_message_waiting_property_name[type],
 					DBUS_TYPE_BOOLEAN, &indication);
@@ -484,7 +485,8 @@ static void mw_set_indicator(struct ofono_modem *modem, int profile,
 	if (mw->messages[type].message_count != messages) {
 		mw->messages[type].message_count = messages;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
+		if (!mw_message_waiting_property_name[type])
+			ofono_dbus_signal_property_changed(conn, modem->path,
 					MESSAGE_WAITING_INTERFACE,
 					mw_message_count_property_name[type],
 					DBUS_TYPE_BYTE, &messages);
