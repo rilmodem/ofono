@@ -584,7 +584,7 @@ static DBusMessage *cm_set_property(DBusConnection *conn, DBusMessage *msg,
 		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-			return __ofono_error_invalid_args(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&iter, &passwd);
 
@@ -596,7 +596,7 @@ static DBusMessage *cm_set_property(DBusConnection *conn, DBusMessage *msg,
 			continue;
 
 		if (dbus_message_iter_get_arg_type(&var) != property->type)
-			return __ofono_error_invalid_format(msg);
+			return __ofono_error_invalid_args(msg);
 
 		return property->set(msg, modem, &var, passwd);
 	}

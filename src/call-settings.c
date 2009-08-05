@@ -1167,7 +1167,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 		const char *setting;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-			return __ofono_error_invalid_format(msg);
+			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &setting);
 
@@ -1176,7 +1176,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 		const char *setting;
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-			return __ofono_error_invalid_format(msg);
+			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &setting);
 

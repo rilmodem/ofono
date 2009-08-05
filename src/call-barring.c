@@ -882,13 +882,13 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_recurse(&iter, &var);
 
 	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_format(msg);
+		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_get_basic(&var, &value);
 
 	if (!cb_lock_property_lookup(name, value, BEARER_CLASS_VOICE,
 					&lock, &cls, &mode))
-		return __ofono_error_invalid_format(msg);
+		return __ofono_error_invalid_args(msg);
 
 	if (dbus_message_iter_next(&iter)) {
 		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
