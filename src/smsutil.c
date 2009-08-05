@@ -457,8 +457,8 @@ static gboolean encode_validity_period(const struct sms_validity_period *vp,
 	return FALSE;
 }
 
-static gboolean encode_address(const struct sms_address *in, gboolean sc,
-				unsigned char *pdu, int *offset)
+gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
+					unsigned char *pdu, int *offset)
 {
 	size_t len = strlen(in->address);
 	unsigned char addr_len = 0;
@@ -544,9 +544,9 @@ out:
 	return TRUE;
 }
 
-static gboolean decode_address(const unsigned char *pdu, int len,
-				int *offset, gboolean sc,
-				struct sms_address *out)
+gboolean sms_decode_address_field(const unsigned char *pdu, int len,
+					int *offset, gboolean sc,
+					struct sms_address *out)
 {
 	unsigned char addr_len;
 	unsigned char addr_type;
@@ -646,7 +646,7 @@ static gboolean encode_deliver(const struct sms_deliver *in, unsigned char *pdu,
 
 	set_octet(pdu, offset, oct);
 
-	if (encode_address(&in->oaddr, FALSE, pdu, offset) == FALSE)
+	if (sms_encode_address_field(&in->oaddr, FALSE, pdu, offset) == FALSE)
 		return FALSE;
 
 	set_octet(pdu, offset, in->pid);
@@ -683,7 +683,8 @@ static gboolean decode_deliver(const unsigned char *pdu, int len,
 	out->deliver.udhi = is_bit_set(octet, 6);
 	out->deliver.rp = is_bit_set(octet, 7);
 
-	if (!decode_address(pdu, len, &offset, FALSE, &out->deliver.oaddr))
+	if (!sms_decode_address_field(pdu, len, &offset,
+					FALSE, &out->deliver.oaddr))
 		return FALSE;
 
 	if (!next_octet(pdu, len, &offset, &out->deliver.pid))
@@ -894,7 +895,7 @@ static gboolean encode_status_report(const struct sms_status_report *in,
 
 	set_octet(pdu, offset, in->mr);
 
-	if (!encode_address(&in->raddr, FALSE, pdu, offset))
+	if (!sms_encode_address_field(&in->raddr, FALSE, pdu, offset))
 		return FALSE;
 
 	if (!encode_scts(&in->scts, pdu, offset))
@@ -946,8 +947,8 @@ static gboolean decode_status_report(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &out->status_report.mr))
 		return FALSE;
 
-	if (!decode_address(pdu, len, &offset, FALSE,
-				&out->status_report.raddr))
+	if (!sms_decode_address_field(pdu, len, &offset, FALSE,
+					&out->status_report.raddr))
 		return FALSE;
 
 	if (!decode_scts(pdu, len, &offset, &out->status_report.scts))
@@ -1184,7 +1185,7 @@ static gboolean encode_submit(const struct sms_submit *in,
 
 	set_octet(pdu, offset, in->mr);
 
-	if (encode_address(&in->daddr, FALSE, pdu, offset) == FALSE)
+	if (sms_encode_address_field(&in->daddr, FALSE, pdu, offset) == FALSE)
 		return FALSE;
 
 	set_octet(pdu, offset, in->pid);
@@ -1226,7 +1227,8 @@ static gboolean decode_submit(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &out->submit.mr))
 		return FALSE;
 
-	if (!decode_address(pdu, len, &offset, FALSE, &out->submit.daddr))
+	if (!sms_decode_address_field(pdu, len, &offset,
+					FALSE, &out->submit.daddr))
 		return FALSE;
 
 	if (!next_octet(pdu, len, &offset, &out->submit.pid))
@@ -1276,7 +1278,7 @@ static gboolean encode_command(const struct sms_command *in,
 
 	set_octet(pdu, offset, in->mn);
 
-	if (!encode_address(&in->daddr, FALSE, pdu, offset))
+	if (!sms_encode_address_field(&in->daddr, FALSE, pdu, offset))
 		return FALSE;
 
 	set_octet(pdu, offset, in->cdl);
@@ -1316,7 +1318,8 @@ static gboolean decode_command(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &out->command.mn))
 		return FALSE;
 
-	if (!decode_address(pdu, len, &offset, FALSE, &out->command.daddr))
+	if (!sms_decode_address_field(pdu, len, &offset,
+					FALSE, &out->command.daddr))
 		return FALSE;
 
 	if (!next_octet(pdu, len, &offset, &out->command.cdl))
@@ -1339,7 +1342,7 @@ gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 
 	if (in->type == SMS_TYPE_DELIVER || in->type == SMS_TYPE_SUBMIT ||
 			in->type == SMS_TYPE_COMMAND)
-		if (!encode_address(&in->sc_addr, TRUE, pdu, &offset))
+		if (!sms_encode_address_field(&in->sc_addr, TRUE, pdu, &offset))
 			return FALSE;
 
 	tpdu_start = offset;
@@ -1407,7 +1410,8 @@ gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 		return FALSE;
 
 	if (tpdu_len < len) {
-		if (!decode_address(pdu, len, &offset, TRUE, &out->sc_addr))
+		if (!sms_decode_address_field(pdu, len, &offset,
+						TRUE, &out->sc_addr))
 			return FALSE;
 	}
 

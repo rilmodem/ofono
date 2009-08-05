@@ -409,6 +409,13 @@ gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 			unsigned char *pdu);
 
+gboolean sms_decode_address_field(const unsigned char *pdu, int len,
+					int *offset, gboolean sc,
+					struct sms_address *out);
+
+gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
+					unsigned char *pdu, int *offset);
+
 int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
 time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote);
