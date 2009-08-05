@@ -321,7 +321,7 @@ static void at_sim_update_record(struct ofono_modem *modem, int fileid,
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=220,%i,%i,4,%i,", fileid,
-			record + 1, length);
+			record, length);
 
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhx", *value++);
