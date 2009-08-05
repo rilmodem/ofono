@@ -618,6 +618,7 @@ static void handle_enhanced_voicemail_iei(struct ofono_modem *modem,
 {
 	int profile, n;
 	gboolean set;
+	struct sms_address mailbox_address;
 
 	if (length < 3)
 		return;
@@ -633,9 +634,10 @@ static void handle_enhanced_voicemail_iei(struct ofono_modem *modem,
 		if (discard)
 			*discard = (iei[0] & (1 << 4)) ? FALSE : TRUE;
 
-		/* TODO: VM_MAILBOX_ACCESS_ADDRESS */
-		n = 2 + (iei[1] + 1) / 2;
-		if (length < n + 11)
+		/* VM_MAILBOX_ACCESS_ADDRESS */
+		n = 0;
+		if (!sms_decode_address_field(iei + 1, length - 1, &n,
+					FALSE, &mailbox_address))
 			return;
 
 		/* TODO: VM_MESSAGE_PRIORITY_INDICATION */
@@ -655,9 +657,10 @@ static void handle_enhanced_voicemail_iei(struct ofono_modem *modem,
 		if (discard)
 			*discard = (iei[0] & (1 << 4)) ? FALSE : TRUE;
 
-		/* TODO: VM_MAILBOX_ACCESS_ADDRESS */
-		n = 2 + (iei[1] + 1) / 2;
-		if (length < n + 11)
+		/* VM_MAILBOX_ACCESS_ADDRESS */
+		n = 0;
+		if (!sms_decode_address_field(iei + 1, length - 1, &n,
+					FALSE, &mailbox_address))
 			return;
 
 		/* Other parameters currently not supported */
@@ -666,6 +669,10 @@ static void handle_enhanced_voicemail_iei(struct ofono_modem *modem,
 		mw_set_indicator(modem, profile, SMS_MWI_TYPE_VOICE,
 					set, iei[n + 2]);
 	}
+
+	if (mailbox_address.address[0] != '\0')
+		set_mbdn(modem, SMS_MWI_TYPE_VOICE,
+				sms_address_to_string(&mailbox_address), NULL);
 }
 
 void ofono_handle_sms_mwi(struct ofono_modem *modem,
