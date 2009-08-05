@@ -77,6 +77,8 @@ struct _GAtChat {
 	struct ring_buffer *buf;		/* Current read buffer */
 	guint read_so_far;			/* Number of bytes processed */
 	gboolean disconnecting;			/* Whether we're disconnecting */
+	GAtDebugFunc debugf;			/* debugging output function */
+	gpointer debug_func_user_data;
 	char *pdu_notify;			/* Unsolicited Resp w/ PDU */
 	GSList *response_lines;			/* char * lines of the response */
 	char *wakeup;				/* command sent to wakeup modem */
@@ -590,6 +592,35 @@ static void new_bytes(GAtChat *p)
 		g_at_chat_shutdown(p);
 }
 
+static void g_at_chat_debug_log(GAtChat *chat, gboolean is_read,
+		const char *str, gsize len)
+{
+	char type = is_read ? '<' : '>';
+	char *t1, *t2;
+
+	if (!chat->debugf || !len)
+		return;
+
+	if (len > 2048) {
+		/* 27.007 specifies a max command result length of 2048 */
+		t1 = g_strdup_printf("%c (ignoring string of length %d)", type, len);
+		chat->debugf(t1, chat->debug_func_user_data);
+		g_free(t1);
+		return;
+	}
+
+	/* prefix with "> " or "< ", and ensure null-termination */
+	t1 = g_malloc(len + 3);
+	g_sprintf(t1, "%c ", type);
+	g_memmove(t1 + 2, str, len);
+	t1[len + 2] = '\0';
+
+	t2 = g_strescape(t1, "\"");
+	chat->debugf(t2, chat->debug_func_user_data);
+	g_free(t1);
+	g_free(t2);
+}
+
 static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
@@ -615,6 +646,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		buf = ring_buffer_write_ptr(chat->buf);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
+		g_at_chat_debug_log(chat, TRUE, buf, rbytes);
 
 		total_read += rbytes;
 
@@ -741,6 +773,8 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 	}
 
+	g_at_chat_debug_log(chat, FALSE, cmd->cmd + chat->cmd_bytes_written,
+			bytes_written);
 	chat->cmd_bytes_written += bytes_written;
 
 	if (bytes_written < towrite)
@@ -784,6 +818,7 @@ GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
 	chat->ref_count = 1;
 	chat->next_cmd_id = 1;
 	chat->next_notify_id = 1;
+	chat->debugf = NULL;
 
 	chat->buf = ring_buffer_new(4096);
 
@@ -926,6 +961,17 @@ gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
 	chat->user_disconnect = disconnect;
 	chat->user_disconnect_data = user_data;
 
+	return TRUE;
+}
+
+gboolean g_at_chat_set_debugging(GAtChat *chat, GAtDebugFunc func,
+		gpointer user_data)
+{
+	if (chat == NULL)
+		return FALSE;
+
+	chat->debugf = func;
+	chat->debug_func_user_data = user_data;
 	return TRUE;
 }
 

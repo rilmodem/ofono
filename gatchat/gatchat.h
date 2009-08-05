@@ -37,6 +37,7 @@ typedef void (*GAtResultFunc)(gboolean success, GAtResult *result,
 				gpointer user_data);
 typedef void (*GAtNotifyFunc)(GAtResult *result, gpointer user_data);
 typedef void (*GAtDisconnectFunc)(gpointer user_data);
+typedef void (*GAtDebugFunc)(const char *str, gpointer user_data);
 
 enum _GAtChatFlags {
 	G_AT_CHAT_FLAG_NO_LEADING_CRLF = 1,	/* Some emulators are broken */
@@ -55,6 +56,9 @@ gboolean g_at_chat_shutdown(GAtChat *chat);
 
 gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
 			GAtDisconnectFunc disconnect, gpointer user_data);
+
+gboolean g_at_chat_set_debugging(GAtChat *chat, GAtDebugFunc func,
+		gpointer user_data);
 
 /*!
  * Queue an AT command for execution.  The command contents are given
