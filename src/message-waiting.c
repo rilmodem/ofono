@@ -162,7 +162,7 @@ static DBusMessage *mw_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static void mbdn_set_cb(gboolean ok, void *data)
+static void mbdn_set_cb(struct ofono_modem *modem, int ok, void *data)
 {
 	struct mbdn_set_request *req = data;
 	struct ofono_phone_number *old = &req->mw->mailbox_number[req->mailbox];
@@ -206,11 +206,19 @@ out:
 	g_free(req);
 }
 
-static void set_mbdn(struct ofono_modem *modem, int mailbox,
+static DBusMessage *set_mbdn(struct ofono_modem *modem, int mailbox,
 			const char *number, DBusMessage *msg)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct mbdn_set_request *req;
+	unsigned char efmbdn[255];
+
+	if (modem->message_waiting->efmbdn_record_id[mailbox] == 0) {
+		if (msg)
+			return __ofono_error_failed(msg);
+
+		return NULL;
+	}
 
 	req = g_new0(struct mbdn_set_request, 1);
 
@@ -220,8 +228,19 @@ static void set_mbdn(struct ofono_modem *modem, int mailbox,
 	string_to_phone_number(number, &req->number);
 	req->msg = dbus_message_ref(msg);
 
-	/* TODO: Fill the actual sim_write data */
-	mbdn_set_cb(TRUE, req);
+	sim_adn_build(efmbdn, req->mw->efmbdn_length, &req->number);
+
+	if (ofono_sim_write(modem, SIM_EFMBDN_FILEID, mbdn_set_cb,
+			OFONO_SIM_FILE_STRUCTURE_FIXED,
+			req->mw->efmbdn_record_id[mailbox],
+			efmbdn, req->mw->efmbdn_length, req) == -1) {
+		g_free(req);
+
+		if (msg)
+			return __ofono_error_failed(msg);
+	}
+
+	return NULL;
 }
 
 static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
@@ -273,8 +292,7 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (g_str_equal(cur_number, value))
 			return dbus_message_new_method_return(msg);
 
-		set_mbdn(modem, i, value, msg);
-		return NULL;
+		return set_mbdn(modem, i, value, msg);
 	}
 
 	return __ofono_error_invalid_args(msg);
