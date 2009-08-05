@@ -443,7 +443,7 @@ static gboolean cache_info(const char *path, const unsigned char *info, int len)
 	r = TFR(write(fd, info, len));
 	TFR(close(fd));
 
-	if (r < 6) {
+	if (r < len) {
 		unlink(path);
 		return FALSE;
 	}
