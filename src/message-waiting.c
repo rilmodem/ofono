@@ -282,7 +282,8 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 
 static GDBusMethodTable message_waiting_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	mw_get_properties	},
-	{ "SetProperty",	"sv",	"",		mw_set_property,	},
+	{ "SetProperty",	"sv",	"",		mw_set_property,
+							G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
