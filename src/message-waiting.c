@@ -734,6 +734,9 @@ void ofono_handle_sms_mwi(struct ofono_modem *modem,
 				if (out_discard)
 					*out_discard = *out_discard || discard;
 				iei_found = 1;
+				break;
+			default:
+				break;
 			}
 
 			sms_udh_iter_next(&iter);
