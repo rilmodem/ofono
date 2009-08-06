@@ -204,7 +204,7 @@ static void network_operator_populate_registered(struct ofono_modem *modem,
 	num_children = i;
 
 	*network_operators = g_try_new0(char *, num_children + 1);
-	
+
 	/* Enough to store '/' + MCC + MNC + null */
 	op_path_len = prefix_len;
 	op_path_len += OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 2;
