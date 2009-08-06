@@ -913,6 +913,7 @@ GAtChat *g_at_chat_new(GIOChannel *channel, int flags)
 	if (!chat)
 		return chat;
 
+	chat->ref_count = 1;
 	chat->next_cmd_id = 1;
 	chat->next_notify_id = 1;
 	chat->flags = flags;
