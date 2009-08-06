@@ -173,9 +173,9 @@ static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
 {
 	const struct spdi_operator *opa = a;
 	const struct spdi_operator *opb = b;
-	gint r;
+	gint r = strcmp(opa->mcc, opb->mcc);
 
-	if ((r = strcmp(opa->mcc, opb->mcc)))
+	if (r)
 		return r;
 
 	return strcmp(opa->mnc, opb->mnc);
