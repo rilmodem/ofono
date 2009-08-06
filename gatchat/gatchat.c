@@ -584,6 +584,10 @@ static void new_bytes(GAtChat *p)
 		wrap -= p->read_so_far;
 		p->read_so_far = 0;
 	}
+
+	/* We're overflowing the buffer, shutdown the socket */
+	if (ring_buffer_avail(p->buf) == 0)
+		g_at_chat_shutdown(p);
 }
 
 static gboolean received_data(GIOChannel *channel, GIOCondition cond,
@@ -605,12 +609,8 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 
 		toread = ring_buffer_avail_no_wrap(chat->buf);
 
-		/* We're going to start overflowing the buffer
-		 * this cannot happen under normal circumstances, so probably
-		 * the channel is getting garbage, drop off
-		 */
 		if (toread == 0)
-			return FALSE;
+			break;
 
 		buf = ring_buffer_write_ptr(chat->buf);
 
@@ -627,9 +627,6 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		new_bytes(chat);
 
 	if (cond & (G_IO_HUP | G_IO_ERR))
-		return FALSE;
-
-	if (err == G_IO_ERROR_NONE && rbytes == 0)
 		return FALSE;
 
 	if (err != G_IO_ERROR_NONE && err != G_IO_ERROR_AGAIN)
