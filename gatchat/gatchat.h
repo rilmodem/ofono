@@ -39,13 +39,6 @@ typedef void (*GAtNotifyFunc)(GAtResult *result, gpointer user_data);
 typedef void (*GAtDisconnectFunc)(gpointer user_data);
 typedef void (*GAtDebugFunc)(const char *str, gpointer user_data);
 
-enum _GAtChatFlags {
-	G_AT_CHAT_FLAG_NO_LEADING_CRLF = 1,	/* Some emulators are broken */
-	G_AT_CHAT_FLAG_EXTRA_PDU_CRLF = 2,
-};
-
-typedef enum _GAtChatFlags GAtChatFlags;
-
 GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax);
 GAtChat *g_at_chat_new_from_tty(const char *device, GAtSyntax *syntax);
 
