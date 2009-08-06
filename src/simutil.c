@@ -62,21 +62,21 @@ static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 
 	do {
 		while (pdu < end && (*pdu == 0x00 || *pdu == 0xff))
-			pdu ++;
+			pdu++;
 		if (pdu == end)
 			break;
 
-		tag = *pdu ++;
+		tag = *pdu++;
 		if (!(0x1f & ~tag))
-			while (pdu < end && (*pdu ++ & 0x80));
+			while (pdu < end && (*pdu++ & 0x80));
 		if (pdu == end)
 			break;
 
 		for (len = 0; pdu + 1 < end && (*pdu & 0x80);
-				len = (len | (*pdu ++ & 0x7f)) << 7);
+				len = (len | (*pdu++ & 0x7f)) << 7);
 		if (*pdu & 0x80)
 			break;
-		len |= *pdu ++;
+		len |= *pdu++;
 
 		if (tag == in_tag && pdu + len <= end) {
 			if (out_len)
@@ -102,8 +102,8 @@ static char *sim_network_name_parse(const unsigned char *buffer, int length,
 	if (length < 1)
 		return NULL;
 
-	dcs = *buffer ++;
-	length --;
+	dcs = *buffer++;
+	length--;
 
 	/* "The MS should add the letters for the Country's Initials and a
 	 * separator (e.g. a space)" */
