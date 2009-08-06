@@ -68,12 +68,15 @@ static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 
 		tag = *pdu++;
 		if (!(0x1f & ~tag))
-			while (pdu < end && (*pdu++ & 0x80));
+			while (pdu < end && (*pdu++ & 0x80))
+				;
 		if (pdu == end)
 			break;
 
 		for (len = 0; pdu + 1 < end && (*pdu & 0x80);
-				len = (len | (*pdu++ & 0x7f)) << 7);
+				len = (len | (*pdu++ & 0x7f)) << 7)
+			;
+
 		if (*pdu & 0x80)
 			break;
 		len |= *pdu++;
