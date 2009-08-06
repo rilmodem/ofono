@@ -707,6 +707,8 @@ void ofono_handle_sms_mwi(struct ofono_modem *modem,
 						sms_udh_iter_get_ie_length(
 							&iter));
 				return;
+			default:
+				break;
 			}
 
 			sms_udh_iter_next(&iter);
