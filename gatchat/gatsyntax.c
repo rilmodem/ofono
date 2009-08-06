@@ -149,7 +149,7 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 
 			if (byte == '\n')
 				i += 1;
-			
+
 			goto out;
 
 		case GSMV1_STATE_PDU:
