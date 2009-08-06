@@ -27,6 +27,7 @@
 #include <glib.h>
 #include <gdbus.h>
 #include <gatchat.h>
+#include <stdlib.h>
 
 #include <ofono/plugin.h>
 #include <ofono/log.h>
@@ -315,6 +316,11 @@ static void msg_destroy(gpointer user)
 	dbus_message_unref(msg);
 }
 
+static void at_debug(const char *str, gpointer user)
+{
+	ofono_debug("%s", str);
+}
+
 static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -340,6 +346,9 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 
 	if (at->parser == NULL)
 		goto out;
+
+	if (getenv("OFONO_AT_DEBUG") != NULL)
+		g_at_chat_set_debug(at->parser, at_debug, NULL);
 
 	ofono_debug("Seting up AT channel");
 
