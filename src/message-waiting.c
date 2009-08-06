@@ -209,7 +209,6 @@ out:
 static DBusMessage *set_mbdn(struct ofono_modem *modem, int mailbox,
 			const char *number, DBusMessage *msg)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
 	struct mbdn_set_request *req;
 	unsigned char efmbdn[255];
 
