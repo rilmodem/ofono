@@ -36,6 +36,8 @@ enum GSMV1_STATE_ {
 	GSMV1_STATE_GUESS_MULTILINE_RESPONSE,
 	GSMV1_STATE_MULTILINE_RESPONSE,
 	GSMV1_STATE_MULTILINE_TERMINATOR_CR,
+	GSMV1_STATE_PDU_CHECK_EXTRA_CR,
+	GSMV1_STATE_PDU_CHECK_EXTRA_LF,
 	GSMV1_STATE_PDU,
 	GSMV1_STATE_PDU_CR,
 	GSMV1_STATE_PROMPT,
@@ -47,7 +49,7 @@ static void gsmv1_hint(GAtSyntax *syntax, GAtSyntaxExpectHint hint)
 {
 	switch (hint) {
 	case G_AT_SYNTAX_EXPECT_PDU:
-		syntax->state = GSMV1_STATE_PDU;
+		syntax->state = GSMV1_STATE_PDU_CHECK_EXTRA_CR;
 		break;
 	case G_AT_SYNTAX_EXPECT_MULTILINE:
 		syntax->state = GSMV1_STATE_GUESS_MULTILINE_RESPONSE;
@@ -127,6 +129,27 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 			} else
 				res = G_AT_SYNTAX_RESULT_UNRECOGNIZED;
 
+			goto out;
+
+		/* Some 27.007 compliant modems still get this wrong.  They
+		 * insert an extra CRLF between the command and he PDU,
+		 * in effect making them two separate lines.  We try to
+		 * handle this case gracefully
+		 */
+		case GSMV1_STATE_PDU_CHECK_EXTRA_CR:
+			if (byte == '\r')
+				syntax->state = GSMV1_STATE_PDU_CHECK_EXTRA_LF;
+			else
+				syntax->state = GSMV1_STATE_PDU;
+			break;
+
+		case GSMV1_STATE_PDU_CHECK_EXTRA_LF:
+			res = G_AT_SYNTAX_RESULT_UNRECOGNIZED;
+			syntax->state = GSMV1_STATE_PDU;
+
+			if (byte == '\n')
+				i += 1;
+			
 			goto out;
 
 		case GSMV1_STATE_PDU:
