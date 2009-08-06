@@ -57,8 +57,12 @@ gboolean g_at_chat_shutdown(GAtChat *chat);
 gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
 			GAtDisconnectFunc disconnect, gpointer user_data);
 
-gboolean g_at_chat_set_debugging(GAtChat *chat, GAtDebugFunc func,
-		gpointer user_data);
+/*!
+ * If the function is not NULL, then on every read/write from the GIOChannel
+ * provided to GAtChat the logging function will be called with the
+ * input/output string and user data
+ */
+gboolean g_at_chat_set_debug(GAtChat *chat, GAtDebugFunc func, gpointer user);
 
 /*!
  * Queue an AT command for execution.  The command contents are given
