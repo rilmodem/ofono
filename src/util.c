@@ -382,7 +382,7 @@ unsigned char *decode_hex_own_buf(const char *in, long len, long *items_written,
 
 	for (i = 0, j = 0; i < len; i++, j++) {
 		c = toupper(in[i]);
-	
+
 		if (c >= '0' && c <= '9')
 			b = c - '0';
 		else if (c >= 'A' && c <= 'F')
@@ -578,9 +578,9 @@ unsigned char *unpack_7bit(const unsigned char *in, long len, int byte_offset,
 				gboolean ussd, long max_to_unpack,
 				long *items_written, unsigned char terminator)
 {
-	unsigned char *buf = g_new(unsigned char, 
+	unsigned char *buf = g_new(unsigned char,
 					len * 8 / 7 + (terminator ? 1 : 0));
-	
+
 	return unpack_7bit_own_buf(in, len, byte_offset, ussd, max_to_unpack,
 				items_written, terminator, buf);
 }
@@ -607,7 +607,7 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 
 		len = i;
 	}
-	
+
 	total_bits = len * 7;
 
 	if (bits != 7) {
@@ -632,7 +632,7 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 		else
 			bits = bits - 1;
 	}
-	
+
 	/* If <CR> is intended to be the last character and the message
 	 * (including the wanted <CR>) ends on an octet boundary, then
 	 * another <CR> must be added together with a padding bit 0. The
@@ -677,12 +677,12 @@ unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
 
 		len = i;
 	}
-	
+
 	total_bits = len * 7;
 
 	if (bits != 7)
 		total_bits += bits;
-	
+
 	/* Round up number of bytes, must append <cr> if true */
 	if (ussd && ((total_bits % 8) == 0) && (in[len-1] == '\r'))
 		buf = g_new(unsigned char, (total_bits + 14) / 8);
