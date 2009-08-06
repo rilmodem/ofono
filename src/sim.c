@@ -304,6 +304,9 @@ static void sim_op_error(struct ofono_modem *modem)
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
 
+	if (g_queue_get_length(sim->simop_q) > 0)
+		g_timeout_add(0, sim_op_next, modem);
+
 	if (op->is_read == TRUE)
 		((ofono_sim_file_read_cb_t) op->cb)
 			(modem, 0, 0, 0, 0, 0, 0, op->userdata);
@@ -312,9 +315,6 @@ static void sim_op_error(struct ofono_modem *modem)
 			(modem, 0, op->userdata);
 
 	sim_file_op_free(op);
-
-	if (g_queue_get_length(sim->simop_q) > 0)
-		g_timeout_add(0, sim_op_next, modem);
 }
 
 static gboolean cache_record(const char *path, int current, int record_len,
@@ -517,15 +517,15 @@ static void sim_op_write_cb(const struct ofono_error *error, void *data)
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
 	ofono_sim_file_write_cb_t cb = op->cb;
 
+	if (g_queue_get_length(sim->simop_q) > 0)
+		g_timeout_add(0, sim_op_next, modem);
+
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		cb(modem, 1, op->userdata);
 	else
 		cb(modem, 0, op->userdata);
 
 	sim_file_op_free(op);
-
-	if (g_queue_get_length(sim->simop_q) > 0)
-		g_timeout_add(0, sim_op_next, modem);
 }
 
 static gboolean sim_op_next(gpointer user_data)
