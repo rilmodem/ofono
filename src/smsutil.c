@@ -575,7 +575,7 @@ gboolean sms_decode_address_field(const unsigned char *pdu, int len,
 	out->numbering_plan = bit_field(addr_type, 0, 4);
 
 	if (out->number_type != SMS_NUMBER_TYPE_ALPHANUMERIC) {
-		extract_bcd_number(pdu+*offset, byte_len, out->address);
+		extract_bcd_number(pdu + *offset, byte_len, out->address);
 		*offset += byte_len;
 	} else {
 		int chars;
