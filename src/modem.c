@@ -38,8 +38,6 @@
 
 #define MODEM_FLAG_INITIALIZING_ATTRS 1
 
-#define ATTRIBUTE_QUERY_DELAY 0
-
 static GSList *g_modem_list = NULL;
 static int g_next_modem_id = 1;
 
@@ -301,18 +299,14 @@ static void query_serial_cb(const struct ofono_error *error,
 	finish_attr_query(modem);
 }
 
-static gboolean query_serial(gpointer user)
+static void query_serial(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
-
 	if (!modem->modem_info->ops->query_serial) {
 		finish_attr_query(modem);
-		return FALSE;
+		return;
 	}
 
 	modem->modem_info->ops->query_serial(modem, query_serial_cb, modem);
-
-	return FALSE;
 }
 
 static void query_revision_cb(const struct ofono_error *error,
@@ -323,21 +317,17 @@ static void query_revision_cb(const struct ofono_error *error,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		modem->modem_info->revision = g_strdup(revision);
 
-	g_timeout_add(0, query_serial, modem);
+	query_serial(modem);
 }
 
-static gboolean query_revision(gpointer user)
+static void query_revision(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
-
 	if (!modem->modem_info->ops->query_revision) {
-		g_timeout_add(0, query_serial, modem);
-		return FALSE;
+		query_serial(modem);
+		return;
 	}
 
 	modem->modem_info->ops->query_revision(modem, query_revision_cb, modem);
-
-	return FALSE;
 }
 
 static void query_model_cb(const struct ofono_error *error,
@@ -348,22 +338,18 @@ static void query_model_cb(const struct ofono_error *error,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		modem->modem_info->model = g_strdup(model);
 
-	g_timeout_add(0, query_revision, modem);
+	query_revision(modem);
 }
 
-static gboolean query_model(gpointer user)
+static void query_model(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
-
 	if (!modem->modem_info->ops->query_model) {
 		/* If model is not supported, don't bother querying revision */
-		g_timeout_add(0, query_serial, modem);
-		return FALSE;
+		query_serial(modem);
+		return;
 	}
 
 	modem->modem_info->ops->query_model(modem, query_model_cb, modem);
-
-	return FALSE;
 }
 
 static void query_manufacturer_cb(const struct ofono_error *error,
@@ -374,7 +360,7 @@ static void query_manufacturer_cb(const struct ofono_error *error,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		modem->modem_info->manufacturer = g_strdup(manufacturer);
 
-	g_timeout_add(0, query_model, modem);
+	query_model(modem);
 }
 
 static gboolean query_manufacturer(gpointer user)
@@ -382,7 +368,7 @@ static gboolean query_manufacturer(gpointer user)
 	struct ofono_modem *modem = user;
 
 	if (!modem->modem_info->ops->query_manufacturer) {
-		g_timeout_add(0, query_model, modem);
+		query_model(modem);
 		return FALSE;
 	}
 
@@ -427,7 +413,7 @@ static struct ofono_modem *modem_create(int id,
 	ofono_cssn_init(modem);
 
 	modem->modem_info->flags |= MODEM_FLAG_INITIALIZING_ATTRS;
-	g_timeout_add(ATTRIBUTE_QUERY_DELAY, query_manufacturer, modem);
+	g_timeout_add(0, query_manufacturer, modem);
 
 	return modem;
 }
