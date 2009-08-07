@@ -420,7 +420,7 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 	if (number_len > 11 || ton_npi == 0xff)
 		return FALSE;
 
-	ph->type = bit_field(ton_npi, 4, 3);
+	ph->type = ton_npi;
 
 	/* BCD coded, however the TON/NPI is given by the first byte */
 	number_len = (number_len - 1) * 2;
@@ -445,7 +445,7 @@ void sim_adn_build(unsigned char *data, int length,
 	*data++ = number_len + 1;
 
 	/* Use given number type and 'Unknown' for Numbering Plan */
-	*data++ = 0x80 | (ph->type << 4) | 0;
+	*data++ = ph->type;
 
 	encode_bcd_number(ph->number, data);
 	memset(data + number_len, 0xff, 10 - number_len);
