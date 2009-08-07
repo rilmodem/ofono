@@ -41,7 +41,6 @@
 
 #define VOICECALLS_FLAG_PENDING 0x1
 #define VOICECALLS_FLAG_MULTI_RELEASE 0x2
-#define VOICECALLS_FLAG_UPDATING_CALL_LIST 0x4
 #define VOICECALLS_FLAG_UPDATING_MPTY_CALL_LIST 0x8
 
 #define MAX_VOICE_CALLS 16
@@ -53,6 +52,7 @@ struct voicecalls_data {
 	struct ofono_voicecall_ops *ops;
 	int flags;
 	DBusMessage *pending;
+	gint emit_calls_source;
 };
 
 struct voicecall {
@@ -484,6 +484,11 @@ static void voicecalls_destroy(gpointer userdata)
 	struct ofono_modem *modem = userdata;
 	struct voicecalls_data *calls = modem->voicecalls;
 	GSList *l;
+
+	if (calls->emit_calls_source) {
+		g_source_remove(calls->emit_calls_source);
+		calls->emit_calls_source = 0;
+	}
 
 	for (l = calls->call_list; l; l = l->next)
 		voicecall_dbus_unregister(modem, l->data);
@@ -1143,8 +1148,7 @@ static gboolean real_emit_call_list_changed(void *data)
 
 	g_strfreev(objpath_list);
 
-	ofono_debug("Resetting updating flag");
-	voicecalls->flags &= ~VOICECALLS_FLAG_UPDATING_CALL_LIST;
+	voicecalls->emit_calls_source = 0;
 
 	return FALSE;
 }
@@ -1154,10 +1158,9 @@ static void emit_call_list_changed(struct ofono_modem *modem)
 #ifdef DELAY_EMIT
 	struct voicecalls_data *calls = modem->voicecalls;
 
-	if (!(calls->flags & VOICECALLS_FLAG_UPDATING_CALL_LIST)) {
-		calls->flags |= VOICECALLS_FLAG_UPDATING_CALL_LIST;
-		g_timeout_add(0, real_emit_call_list_changed, modem);
-	}
+	if (calls->emit_calls_source == 0)
+		calls->emit_calls_source = 
+			g_timeout_add(0, real_emit_call_list_changed, modem);
 #else
 	real_emit_call_list_changed(modem);
 #endif
