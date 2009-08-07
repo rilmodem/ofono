@@ -42,9 +42,9 @@
 
 #define CALL_BARRING_FLAG_CACHED 0x1
 
-static gboolean cb_ss_query_next_lock(gpointer user);
-static gboolean get_query_next_lock(gpointer user);
-static gboolean set_query_next_lock(gpointer user);
+static void cb_ss_query_next_lock(struct ofono_modem *modem);
+static void get_query_next_lock(struct ofono_modem *modem);
+static void set_query_next_lock(struct ofono_modem *modem);
 
 struct call_barring_data {
 	struct ofono_call_barring_ops *ops;
@@ -300,7 +300,7 @@ static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 
 	if (cb->query_next < cb->query_end) {
 		cb->query_next += 1;
-		g_timeout_add(0, cb_ss_query_next_lock, modem);
+		cb_ss_query_next_lock(modem);
 		return;
 	}
 
@@ -308,9 +308,8 @@ static void cb_ss_query_next_lock_callback(const struct ofono_error *error,
 	update_barrings(modem, BEARER_CLASS_VOICE);
 }
 
-static gboolean cb_ss_query_next_lock(gpointer user)
+static void cb_ss_query_next_lock(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_barring_data *cb = modem->call_barring;
 	int cls;
 
@@ -318,8 +317,6 @@ static gboolean cb_ss_query_next_lock(gpointer user)
 
 	cb->ops->query(modem, cb_locks[cb->query_next].fac, cls,
 			cb_ss_query_next_lock_callback, modem);
-
-	return FALSE;
 }
 
 static void cb_ss_set_lock_callback(const struct ofono_error *error,
@@ -678,7 +675,7 @@ static void get_query_lock_callback(const struct ofono_error *error,
 
 	if (cb->query_next < CB_ALL_END) {
 		cb->query_next = cb->query_next + 1;
-		g_timeout_add(0, get_query_next_lock, modem);
+		get_query_next_lock(modem);
 		return;
 	}
 
@@ -686,15 +683,12 @@ static void get_query_lock_callback(const struct ofono_error *error,
 	update_barrings(modem, BEARER_CLASS_VOICE);
 }
 
-static gboolean get_query_next_lock(gpointer user)
+static void get_query_next_lock(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_barring_data *cb = modem->call_barring;
 
 	cb->ops->query(modem, cb_locks[cb->query_next].fac,
 			BEARER_CLASS_DEFAULT, get_query_lock_callback, modem);
-
-	return FALSE;
 }
 
 static DBusMessage *cb_get_properties(DBusConnection *conn, DBusMessage *msg,
@@ -742,7 +736,7 @@ static void set_query_lock_callback(const struct ofono_error *error,
 
 	if (cb->query_next < cb->query_end) {
 		cb->query_next += 1;
-		g_timeout_add(0, set_query_next_lock, modem);
+		set_query_next_lock(modem);
 		return;
 	}
 
@@ -751,15 +745,12 @@ static void set_query_lock_callback(const struct ofono_error *error,
 	update_barrings(modem, BEARER_CLASS_VOICE);
 }
 
-static gboolean set_query_next_lock(gpointer user)
+static void set_query_next_lock(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_barring_data *cb = modem->call_barring;
 
 	cb->ops->query(modem, cb_locks[cb->query_next].fac,
 			BEARER_CLASS_DEFAULT, set_query_lock_callback, modem);
-
-	return FALSE;
 }
 
 static void set_lock_callback(const struct ofono_error *error, void *data)
