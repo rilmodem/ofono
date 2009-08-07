@@ -78,6 +78,7 @@ struct sim_manager_data {
 	struct ofono_sim_ops *ops;
 	char *imsi;
 	GSList *own_numbers;
+	GSList *new_numbers;
 	GSList *ready_notify;
 	gboolean ready;
 	GQueue *simop_q;
@@ -364,10 +365,9 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
-	struct sim_manager_data *sim = modem->sim_manager;
+	struct sim_manager_data *sim = userdata;
 	int total;
 	struct ofono_phone_number ph;
-	GSList **new_own_numbers = userdata;
 
 	if (!ok)
 		goto check;
@@ -387,7 +387,7 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 
 		own = g_new(struct ofono_phone_number, 1);
 		memcpy(own, &ph, sizeof(struct ofono_phone_number));
-		*new_own_numbers = g_slist_prepend(*new_own_numbers, own);
+		sim->new_numbers = g_slist_prepend(sim->new_numbers, own);
 	}
 
 	if (record != total)
@@ -395,16 +395,16 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 
 check:
 	/* All records retrieved */
-	if (*new_own_numbers)
-		*new_own_numbers = g_slist_reverse(*new_own_numbers);
+	if (sim->new_numbers)
+		sim->new_numbers = g_slist_reverse(sim->new_numbers);
 
-	if (!numbers_list_equal(*new_own_numbers, sim->own_numbers)) {
+	if (!numbers_list_equal(sim->new_numbers, sim->own_numbers)) {
 		char **own_numbers;
 		DBusConnection *conn = ofono_dbus_get_connection();
 
 		g_slist_foreach(sim->own_numbers, (GFunc) g_free, NULL);
 		g_slist_free(sim->own_numbers);
-		sim->own_numbers = *new_own_numbers;
+		sim->own_numbers = sim->new_numbers;
 
 		own_numbers = get_own_numbers(sim->own_numbers);
 
@@ -415,22 +415,15 @@ check:
 							&own_numbers);
 		g_strfreev(own_numbers);
 	} else {
-		g_slist_foreach(*new_own_numbers, (GFunc) g_free, NULL);
-		g_slist_free(*new_own_numbers);
+		g_slist_foreach(sim->new_numbers, (GFunc) g_free, NULL);
+		g_slist_free(sim->new_numbers);
 	}
-
-	g_free(new_own_numbers);
 }
 
 static void sim_own_numbers_update(struct ofono_modem *modem)
 {
-	GSList **new_own_numbers = g_new0(GSList *, 1);
-
-	if (!new_own_numbers)
-		return;
-
 	ofono_sim_read(modem, SIM_EFMSISDN_FILEID,
-			sim_msisdn_read_cb, new_own_numbers);
+			sim_msisdn_read_cb, modem->sim_manager);
 }
 
 static void sim_ready(struct ofono_modem *modem)
