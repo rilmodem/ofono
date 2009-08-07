@@ -7,5 +7,6 @@ libgisi_la_SOURCES = \
 	phonet.h \
 	netlink.h netlink.c \
 	socket.h socket.c \
-	client.h client.c
+	client.h client.c \
+	pipe.h pipe.c
 libgisi_la_LIBADD = @GLIB_LIBS@
