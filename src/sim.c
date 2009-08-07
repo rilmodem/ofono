@@ -267,8 +267,6 @@ static DBusMessage *sim_set_property(DBusConnection *conn, DBusMessage *msg,
 	DBusMessageIter var;
 	DBusMessageIter var_elem;
 	const char *name, *value;
-	struct ofono_phone_number *own;
-	GSList *own_numbers = NULL;
 
 	if (!dbus_message_iter_init(msg, &iter))
 		return __ofono_error_invalid_args(msg);
@@ -279,6 +277,9 @@ static DBusMessage *sim_set_property(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &name);
 
 	if (!strcmp(name, "SubscriberNumbers")) {
+		struct ofono_phone_number *own;
+		GSList *own_numbers = NULL;
+
 		if (sim->efmsisdn_length == 0)
 			return __ofono_error_busy(msg);
 
