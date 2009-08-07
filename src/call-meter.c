@@ -209,21 +209,18 @@ static void query_call_meter_callback(const struct ofono_error *error, int value
 		cm_get_properties_reply(modem);
 }
 
-static gboolean query_call_meter(gpointer user)
+static void query_call_meter(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (!cm->ops->call_meter_query) {
 		if (cm->pending)
 			cm_get_properties_reply(modem);
 
-		return FALSE;
+		return;
 	}
 
 	cm->ops->call_meter_query(modem, query_call_meter_callback, modem);
-
-	return FALSE;
 }
 
 static void query_acm_callback(const struct ofono_error *error, int value,
@@ -234,22 +231,19 @@ static void query_acm_callback(const struct ofono_error *error, int value,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		set_acm(modem, value);
 
-	g_timeout_add(0, query_call_meter, modem);
+	query_call_meter(modem);
 }
 
-static gboolean query_acm(gpointer user)
+static void query_acm(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (!cm->ops->acm_query) {
 		query_call_meter(modem);
-		return FALSE;
+		return;
 	}
 
 	cm->ops->acm_query(modem, query_acm_callback, modem);
-
-	return FALSE;
 }
 
 static void query_acm_max_callback(const struct ofono_error *error, int value,
@@ -263,24 +257,21 @@ static void query_acm_max_callback(const struct ofono_error *error, int value,
 
 	cm->flags |= CALL_METER_FLAG_CACHED;
 
-	g_timeout_add(0, query_acm, modem);
+	query_acm(modem);
 }
 
-static gboolean query_acm_max(gpointer user)
+static void query_acm_max(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_meter_data *cm = modem->call_meter;
 
 	if (!cm->ops->acm_max_query) {
 		cm->flags |= CALL_METER_FLAG_CACHED;
 
 		query_acm(modem);
-		return FALSE;
+		return; 
 	}
 
 	cm->ops->acm_max_query(modem, query_acm_max_callback, modem);
-
-	return FALSE;
 }
 
 static void query_puct_callback(const struct ofono_error *error,
@@ -295,22 +286,17 @@ static void query_puct_callback(const struct ofono_error *error,
 		set_ppu(modem, ppu);
 	}
 
-	g_timeout_add(0, query_acm_max, modem);
+	query_acm_max(modem);
 }
 
-static gboolean query_puct(gpointer user)
+static void query_puct(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_meter_data *cm = modem->call_meter;
 
-	if (!cm->ops->puct_query) {
+	if (!cm->ops->puct_query)
 		query_acm_max(modem);
-		return FALSE;
-	}
-
-	cm->ops->puct_query(modem, query_puct_callback, modem);
-
-	return FALSE;
+	else
+		cm->ops->puct_query(modem, query_puct_callback, modem);
 }
 
 static DBusMessage *cm_get_properties(DBusConnection *conn, DBusMessage *msg,
