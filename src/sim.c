@@ -82,6 +82,7 @@ struct sim_manager_data {
 	GSList *ready_notify;
 	gboolean ready;
 	GQueue *simop_q;
+	gint simop_source;
 
 	unsigned char efmsisdn_length;
 	unsigned char efmsisdn_records;
@@ -140,6 +141,11 @@ static void sim_manager_destroy(gpointer userdata)
 		g_slist_foreach(data->own_numbers, (GFunc)g_free, NULL);
 		g_slist_free(data->own_numbers);
 		data->own_numbers = NULL;
+	}
+
+	if (data->simop_source) {
+		g_source_remove(data->simop_source);
+		data->simop_source = 0;
 	}
 
 	if (data->simop_q) {
@@ -500,7 +506,7 @@ static void sim_op_error(struct ofono_modem *modem)
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
 
 	if (g_queue_get_length(sim->simop_q) > 0)
-		g_timeout_add(0, sim_op_next, modem);
+		sim->simop_source = g_timeout_add(0, sim_op_next, modem);
 
 	if (op->is_read == TRUE)
 		((ofono_sim_file_read_cb_t) op->cb)
@@ -569,10 +575,12 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 		sim_file_op_free(op);
 
 		if (g_queue_get_length(sim->simop_q) > 0)
-			g_timeout_add(0, sim_op_next, modem);
+			sim->simop_source = g_timeout_add(0, sim_op_next,
+								modem);
 	} else {
 		op->current += 1;
-		g_timeout_add(0, sim_op_retrieve_next, modem);
+		sim->simop_source = g_timeout_add(0, sim_op_retrieve_next,
+							modem);
 	}
 }
 
@@ -581,6 +589,8 @@ static gboolean sim_op_retrieve_next(gpointer user)
 	struct ofono_modem *modem = user;
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
+
+	sim->simop_source = 0;
 
 	switch (op->structure) {
 	case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
@@ -686,7 +696,7 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 
 	op->current = 1;
 
-	g_timeout_add(0, sim_op_retrieve_next, modem);
+	sim->simop_source = g_timeout_add(0, sim_op_retrieve_next, modem);
 
 	if (op->cache && imsi) {
 		char *path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
@@ -713,7 +723,7 @@ static void sim_op_write_cb(const struct ofono_error *error, void *data)
 	ofono_sim_file_write_cb_t cb = op->cb;
 
 	if (g_queue_get_length(sim->simop_q) > 0)
-		g_timeout_add(0, sim_op_next, modem);
+		sim->simop_source = g_timeout_add(0, sim_op_next, modem);
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		cb(modem, 1, op->userdata);
@@ -728,6 +738,8 @@ static gboolean sim_op_next(gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct sim_file_op *op;
+
+	sim->simop_source = 0;
 
 	if (!sim->simop_q)
 		return FALSE;
@@ -820,6 +832,8 @@ static gboolean sim_op_check_cached(struct ofono_modem *modem, int fileid,
 	unsigned int record_length;
 	struct sim_cache_callback *cbs;
 
+	sim->simop_source = 0;
+
 	if (!imsi)
 		return FALSE;
 
@@ -902,7 +916,7 @@ int ofono_sim_read(struct ofono_modem *modem, int id,
 	g_queue_push_tail(sim->simop_q, op);
 
 	if (g_queue_get_length(sim->simop_q) == 1)
-		g_timeout_add(0, sim_op_next, modem);
+		sim->simop_source = g_timeout_add(0, sim_op_next, modem);
 
 	return 0;
 }
@@ -959,7 +973,7 @@ int ofono_sim_write(struct ofono_modem *modem, int id,
 	g_queue_push_tail(sim->simop_q, op);
 
 	if (g_queue_get_length(sim->simop_q) == 1)
-		g_timeout_add(0, sim_op_next, modem);
+		sim->simop_source = g_timeout_add(0, sim_op_next, modem);
 
 	return 0;
 }
