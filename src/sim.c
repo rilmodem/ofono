@@ -315,11 +315,11 @@ static DBusMessage *sim_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		set_own_numbers(modem, g_slist_reverse(own_numbers), msg);
 		return NULL;
-	}
 
 error:
-	g_slist_foreach(own_numbers, (GFunc) g_free, 0);
-	g_slist_free(own_numbers);
+		g_slist_foreach(own_numbers, (GFunc) g_free, 0);
+		g_slist_free(own_numbers);
+	}
 
 	return __ofono_error_invalid_args(msg);
 }
