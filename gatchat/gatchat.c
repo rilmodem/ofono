@@ -83,6 +83,7 @@ struct _GAtChat {
 	char *pdu_notify;			/* Unsolicited Resp w/ PDU */
 	GSList *response_lines;			/* char * lines of the response */
 	char *wakeup;				/* command sent to wakeup modem */
+	gint timeout_source;
 	gdouble inactivity_time;		/* Period of inactivity */
 	guint wakeup_timeout;			/* How long to wait for resp */
 	GTimer *wakeup_timer;			/* Keep track of elapsed time */
@@ -719,6 +720,8 @@ static gboolean wakeup_no_response(gpointer user)
 	GAtChat *chat = user;
 	struct at_command *cmd = g_queue_peek_head(chat->command_queue);
 
+	chat->timeout_source = 0;
+
 	/* Sometimes during startup the modem is still in the ready state
 	 * and might acknowledge our 'wakeup' command.  In that case don't
 	 * timeout the wrong command
@@ -788,8 +791,8 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 
 		len = strlen(chat->wakeup);
 
-		g_timeout_add(chat->wakeup_timeout, wakeup_no_response,
-				chat);
+		chat->timeout_source = g_timeout_add(chat->wakeup_timeout,
+						wakeup_no_response, chat);
 	}
 
 	towrite = len - chat->cmd_bytes_written;
@@ -987,6 +990,11 @@ gboolean g_at_chat_shutdown(GAtChat *chat)
 {
 	if (chat->channel == NULL)
 		return FALSE;
+
+	if (chat->timeout_source) {
+		g_source_remove(chat->timeout_source);
+		chat->timeout_source = 0;
+	}
 
 	chat->disconnecting = TRUE;
 
