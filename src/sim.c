@@ -83,7 +83,8 @@ struct sim_manager_data {
 	gboolean ready;
 	GQueue *simop_q;
 
-	int efmsisdn_length;
+	unsigned char efmsisdn_length;
+	unsigned char efmsisdn_records;
 };
 
 struct msisdn_set_request {
@@ -213,8 +214,8 @@ static void msisdn_set_cb(struct ofono_modem *modem, int ok, void *data)
 		msisdn_set_done(req);
 }
 
-static void set_own_numbers(struct ofono_modem *modem,
-		GSList *new_numbers, DBusMessage *msg)
+static gboolean set_own_numbers(struct ofono_modem *modem,
+				GSList *new_numbers, DBusMessage *msg)
 {
 	struct sim_manager_data *sim = modem->sim_manager;
 	struct msisdn_set_request *req;
@@ -222,33 +223,25 @@ static void set_own_numbers(struct ofono_modem *modem,
 	unsigned char efmsisdn[255];
 	struct ofono_phone_number *number;
 
-	if (!sim->own_numbers || g_slist_length(new_numbers) !=
-			g_slist_length(sim->own_numbers)) {
-		g_slist_foreach(new_numbers, (GFunc) g_free, 0);
-		g_slist_free(new_numbers);
-
-		msg = dbus_message_ref(msg);
-		__ofono_dbus_pending_reply(&msg,
-				__ofono_error_invalid_args(msg));
-
-		return;
-	}
+	if (new_numbers && g_slist_length(new_numbers) > sim->efmsisdn_records)
+		return FALSE;
 
 	req = g_new0(struct msisdn_set_request, 1);
 
 	req->modem = modem;
 	req->msg = dbus_message_ref(msg);
 
-	for (record = 1; new_numbers; record++) {
-		number = new_numbers->data;
-		new_numbers = g_slist_delete_link(new_numbers, new_numbers);
-
-		sim_adn_build(efmsisdn, sim->efmsisdn_length, number);
-		g_free(number);
+	for (record = 1; record <= sim->efmsisdn_records; record++) {
+		if (new_numbers) {
+			number = new_numbers->data;
+			sim_adn_build(efmsisdn, sim->efmsisdn_length, number);
+			new_numbers = new_numbers->next;
+		} else
+			memset(efmsisdn, 0xff, sim->efmsisdn_length);
 
 		if (ofono_sim_write(req->modem, SIM_EFMSISDN_FILEID,
 				msisdn_set_cb, OFONO_SIM_FILE_STRUCTURE_FIXED,
-				record++, efmsisdn,
+				record, efmsisdn,
 				sim->efmsisdn_length, req) == 0)
 			req->pending++;
 		else
@@ -257,6 +250,8 @@ static void set_own_numbers(struct ofono_modem *modem,
 
 	if (!req->pending)
 		msisdn_set_done(req);
+
+	return TRUE;
 }
 
 static DBusMessage *sim_set_property(DBusConnection *conn, DBusMessage *msg,
@@ -278,6 +273,7 @@ static DBusMessage *sim_set_property(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &name);
 
 	if (!strcmp(name, "SubscriberNumbers")) {
+		gboolean set_ok = FALSE;
 		struct ofono_phone_number *own;
 		GSList *own_numbers = NULL;
 
@@ -298,7 +294,9 @@ static DBusMessage *sim_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		dbus_message_iter_recurse(&var, &var_elem);
 
-		do {
+		/* Empty lists are supported */
+		while (dbus_message_iter_get_arg_type(&var_elem) !=
+				DBUS_TYPE_INVALID) {
 			if (dbus_message_iter_get_arg_type(&var_elem) !=
 					DBUS_TYPE_STRING)
 				goto error;
@@ -312,14 +310,19 @@ static DBusMessage *sim_set_property(DBusConnection *conn, DBusMessage *msg,
 			string_to_phone_number(value, own);
 
 			own_numbers = g_slist_prepend(own_numbers, own);
-		} while (dbus_message_iter_next(&var_elem));
 
-		set_own_numbers(modem, g_slist_reverse(own_numbers), msg);
-		return NULL;
+			dbus_message_iter_next(&var_elem);
+		}
+
+		own_numbers = g_slist_reverse(own_numbers);
+		set_ok = set_own_numbers(modem, own_numbers, msg);
 
 error:
 		g_slist_foreach(own_numbers, (GFunc) g_free, 0);
 		g_slist_free(own_numbers);
+
+		if (set_ok)
+			return NULL;
 	}
 
 	return __ofono_error_invalid_args(msg);
@@ -372,8 +375,6 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 	if (!ok)
 		goto check;
 
-	sim->efmsisdn_length = record_length;
-
 	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
 		return;
 
@@ -381,6 +382,9 @@ static void sim_msisdn_read_cb(struct ofono_modem *modem, int ok,
 		return;
 
 	total = length / record_length;
+
+	sim->efmsisdn_length = record_length;
+	sim->efmsisdn_records = total;
 
 	if (sim_adn_parse(data, record_length, &ph) == TRUE) {
 		struct ofono_phone_number *own;
@@ -418,6 +422,8 @@ check:
 		g_slist_foreach(sim->new_numbers, (GFunc) g_free, NULL);
 		g_slist_free(sim->new_numbers);
 	}
+
+	sim->new_numbers = NULL;
 }
 
 static void sim_own_numbers_update(struct ofono_modem *modem)
