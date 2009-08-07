@@ -54,6 +54,7 @@ struct sms_manager_data {
 	guint ref;
 	GQueue *txq;
 	time_t last_mms;
+	gint tx_source;
 };
 
 struct pending_pdu {
@@ -81,6 +82,11 @@ static void sms_manager_destroy(gpointer userdata)
 {
 	struct ofono_modem *modem = userdata;
 	struct sms_manager_data *data = modem->sms_manager;
+
+	if (data->tx_source) {
+		g_source_remove(data->tx_source);
+		data->tx_source = 0;
+	}
 
 	if (data->assembly) {
 		sms_assembly_free(data->assembly);
@@ -291,7 +297,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Sending failed, retrying in 5 seconds...");
-		g_timeout_add_seconds(5, tx_next, modem);
+		sms->tx_source = g_timeout_add_seconds(5, tx_next, modem);
 		return;
 	}
 
@@ -302,7 +308,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 
 	if (g_queue_peek_head(sms->txq)) {
 		ofono_debug("Scheduling next");
-		g_timeout_add(0, tx_next, modem);
+		sms->tx_source = g_timeout_add(0, tx_next, modem);
 	}
 }
 
@@ -318,6 +324,8 @@ static gboolean tx_next(gpointer user_data)
 	error.type = OFONO_ERROR_TYPE_NO_ERROR;
 
 	ofono_debug("tx_next: %p", pdu);
+
+	sms->tx_source = 0;
 
 	if (!pdu)
 		return FALSE;
@@ -377,7 +385,7 @@ static void append_tx_queue(struct ofono_modem *modem, GSList *msg_list)
 	}
 
 	if (start)
-		g_timeout_add(0, tx_next, modem);
+		sms->tx_source = g_timeout_add(0, tx_next, modem);
 }
 
 static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
