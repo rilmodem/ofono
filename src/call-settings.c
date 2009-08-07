@@ -830,9 +830,8 @@ out:
 	}
 }
 
-static gboolean query_clir(gpointer user)
+static void query_clir(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (!cs->ops->clir_query) {
@@ -843,12 +842,10 @@ static gboolean query_clir(gpointer user)
 			__ofono_dbus_pending_reply(&cs->pending, reply);
 		}
 
-		return FALSE;
+		return;
 	}
 
 	cs->ops->clir_query(modem, cs_clir_callback, modem);
-
-	return FALSE;
 }
 
 static void cs_clip_callback(const struct ofono_error *error,
@@ -859,22 +856,19 @@ static void cs_clip_callback(const struct ofono_error *error,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		set_clip(modem, state);
 
-	g_timeout_add(0, query_clir, modem);
+	query_clir(modem);
 }
 
-static gboolean query_clip(gpointer user)
+static void query_clip(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (!cs->ops->clip_query) {
 		query_clir(modem);
-		return FALSE;
+		return;
 	}
 
 	cs->ops->clip_query(modem, cs_clip_callback, modem);
-
-	return FALSE;
 }
 
 static void cs_colp_callback(const struct ofono_error *error,
@@ -885,22 +879,19 @@ static void cs_colp_callback(const struct ofono_error *error,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		set_colp(modem, state);
 
-	g_timeout_add(0, query_clip, modem);
+	query_clip(modem);
 }
 
-static gboolean query_colp(gpointer user)
+static void query_colp(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (!cs->ops->colp_query) {
 		query_clip(modem);
-		return FALSE;
+		return;
 	}
 
 	cs->ops->colp_query(modem, cs_colp_callback, modem);
-
-	return FALSE;
 }
 
 static void cs_colr_callback(const struct ofono_error *error,
@@ -911,22 +902,19 @@ static void cs_colr_callback(const struct ofono_error *error,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		set_colr(modem, state);
 
-	g_timeout_add(0, query_colp, modem);
+	query_colp(modem);
 }
 
-static gboolean query_colr(gpointer user)
+static void query_colr(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (!cs->ops->colr_query) {
 		query_colp(modem);
-		return FALSE;
+		return;
 	}
 
 	cs->ops->colr_query(modem, cs_colr_callback, modem);
-
-	return FALSE;
 }
 
 static void cs_cw_callback(const struct ofono_error *error, int status,
@@ -937,23 +925,20 @@ static void cs_cw_callback(const struct ofono_error *error, int status,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		set_cw(modem, status, BEARER_CLASS_VOICE);
 
-	g_timeout_add(0, query_colr, modem);
+	query_colr(modem);
 }
 
-static gboolean query_cw(gpointer user)
+static void query_cw(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user;
 	struct call_settings_data *cs = modem->call_settings;
 
 	if (!cs->ops->cw_query) {
 		query_colr(modem);
-		return FALSE;
+		return;
 	}
 
 	cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
 				cs_cw_callback, modem);
-
-	return FALSE;
 }
 
 static DBusMessage *cs_get_properties(DBusConnection *conn, DBusMessage *msg,
