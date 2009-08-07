@@ -453,20 +453,17 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 	ofono_sim_set_ready(modem);
 }
 
-static gboolean sim_retrieve_imsi(void *user_data)
+static void sim_retrieve_imsi(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = user_data;
 	struct sim_manager_data *sim = modem->sim_manager;
 
 	if (!sim->ops->read_imsi) {
 		ofono_error("IMSI retrieval not implemented,"
 				" only emergency calls will be available");
-		return FALSE;
+		return;
 	}
 
 	sim->ops->read_imsi(modem, sim_imsi_cb, modem);
-
-	return FALSE;
 }
 
 static int create_dirs(const char *filename, const mode_t mode)
@@ -1008,7 +1005,7 @@ static void initialize_sim_manager(struct ofono_modem *modem)
 	 * arbitrary files to be written or read, assuming their presence
 	 * in the EFust
 	 */
-	g_timeout_add(0, sim_retrieve_imsi, modem);
+	sim_retrieve_imsi(modem);
 }
 
 const char *ofono_sim_get_imsi(struct ofono_modem *modem)
