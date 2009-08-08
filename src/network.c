@@ -919,7 +919,11 @@ static void initialize_network_registration(struct ofono_modem *modem)
 			modem->path);
 
 	ofono_modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
+
 	ofono_sim_ready_notify_register(modem, network_sim_ready);
+
+	if (ofono_sim_get_ready(modem))
+		network_sim_ready(modem);
 
 	if (modem->network_registration->ops->list_operators) {
 		g_timeout_add_seconds(OPERATOR_LIST_UPDATE_TIME,
