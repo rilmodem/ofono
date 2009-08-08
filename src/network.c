@@ -1424,6 +1424,9 @@ void ofono_network_registration_unregister(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
+	if (modem->network_registration == NULL)
+		return;
+
 	g_dbus_unregister_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE);
 	ofono_modem_remove_interface(modem, NETWORK_REGISTRATION_INTERFACE);
