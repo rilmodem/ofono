@@ -64,6 +64,7 @@ struct network_registration_data {
 	char *spname;
 	struct sim_spdi *spdi;
 	struct sim_eons *eons;
+	gint opscan_source;
 };
 
 static void network_sim_ready(struct ofono_modem *modem);
@@ -658,6 +659,11 @@ static void network_registration_destroy(gpointer userdata)
 	struct network_registration_data *data = modem->network_registration;
 	GSList *l;
 
+	if (data->opscan_source) {
+		g_source_remove(data->opscan_source);
+		data->opscan_source = 0;
+	}
+
 	for (l = data->operator_list; l; l = l->next)
 		network_operator_dbus_unregister(modem, l->data);
 
@@ -827,6 +833,11 @@ static gboolean update_network_operator_list_init(void *user_data)
 	struct ofono_modem *modem = user_data;
 
 	update_network_operator_list(modem);
+		
+	modem->network_registration->opscan_source = 
+		g_timeout_add_seconds(OPERATOR_LIST_UPDATE_TIME,
+					update_network_operator_list_cb, modem);
+
 
 	return FALSE;
 }
@@ -902,6 +913,7 @@ static void set_registration_technology(struct ofono_modem *modem, int tech)
 static void initialize_network_registration(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct network_registration_data *netreg = modem->network_registration;
 
 	if (!g_dbus_register_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
@@ -925,13 +937,10 @@ static void initialize_network_registration(struct ofono_modem *modem)
 	if (ofono_sim_get_ready(modem))
 		network_sim_ready(modem);
 
-	if (modem->network_registration->ops->list_operators) {
-		g_timeout_add_seconds(OPERATOR_LIST_UPDATE_TIME,
-					update_network_operator_list_cb, modem);
-
-		g_timeout_add_seconds(5, update_network_operator_list_init,
-					modem);
-	}
+	if (netreg->ops->list_operators)
+		netreg->opscan_source = 
+			g_timeout_add_seconds(5,
+				update_network_operator_list_init, modem);
 }
 
 void ofono_network_registration_notify(struct ofono_modem *modem, int status,
