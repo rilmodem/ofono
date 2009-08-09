@@ -792,7 +792,9 @@ static gboolean sim_op_check_cached(struct ofono_modem *modem)
 
 	buffer = g_malloc(file_length);
 
-	if (TFR(read(fd, buffer, file_length)) < file_length)
+	len = TFR(read(fd, buffer, file_length));
+
+	if (len < (ssize_t)file_length)
 		goto cleanup;
 
 	for (record = 0; record < file_length / record_length; record++) {
