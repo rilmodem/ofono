@@ -1,0 +1,22 @@
+Manager hierarchy
+=================
+
+Service		org.ofono
+Interface	org.ofono.Manager
+Object path	/
+
+Methods		dict GetProperties()
+
+			Returns all global system properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	array{object} Modems [readonly]
+
+			List of all modem objects in the system.

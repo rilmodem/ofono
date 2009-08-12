@@ -1,0 +1,179 @@
+Network registration hierarchy
+==============================
+
+Service		org.ofono
+Interface	org.ofono.NetworkRegistration
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all network registration properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
+		void Register()
+
+			Attempts to register to the default network. The
+			default network is normally selected by the settings
+			from the SIM card.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void Deregister()
+
+			Completely unregisters from the network
+
+			Possible Errors: [service].Error.InvalidArguments
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string Mode [readwrite]
+
+			The current registration mode. The deault of this
+			is "auto", but can be changed during operation. This
+			property will change to "manual" if the Register()
+			method of an operator is called.
+
+			The possible values are:
+				"auto"     Network registration is performed
+				           automatically.
+				"manual"   Network operator is selected
+				           manually. If the operator is
+				           currently not selected, registration
+				           is notattempted
+				"off"      Unregisters from currently selected
+				           network, if any, and does not
+				           attempt to register again.
+
+		string Status [readonly]
+
+			The current registration status of a modem.
+
+			The possible values are: 
+				"unregistered"  Not registered to any network
+				"registered"    Registered to home network
+				"searching"     Not registered, but searching
+				"denied"        Registration has been denied
+				"unknown"       Status is unknown
+				"roaming"       Registered, but roaming
+
+		uint16 LocationAreaCode [readonly, optional]
+
+			Contains the current location area code.
+
+			TODO: Agent based location signalling would be better.
+
+		uint32 CellId [readonly, optional]
+
+			Contains the current network cell id.
+
+			TODO: Agent based location signalling would be better.
+
+		string Technology [readonly, optional]
+
+			Contains the technology of the current network.
+
+			The possible values are: "GSM", "GSMCompact", "UTRAN",
+						 "GSM+EGPS", "UTRAN+HSDPA",
+						 "UTRAN+HSUPA",
+						 "UTRAN+HSDPA+HSUPA"
+
+			TODO: Values for CDMA and EVDO based networks.
+
+		string Name [readonly]
+
+			Contains the current operator name, suitable for
+			display on the idle screen or an empty string if
+			not registered to a network.
+
+			This value is idential to the Name property from
+			the network operator object. It is provided here
+			for simplicity of application that don't allow
+			manual registration.
+
+		byte Strength [readonly, optional]
+
+			Contains the current signal strength as a percentage
+			between 0-100 percent.
+
+		array{object} Operators [readonly]
+
+			List of all operator object paths known to the
+			telephony stack. The scanning for new operators is
+			done in the background.
+
+			The list of operators is only useful when attempting
+			manual registration. The automatic registration is
+			the preferred method.
+
+
+Network operator hierarchy
+==========================
+
+Service		org.ofono
+Interface	org.ofono.NetworkOperator
+Object path	[variable prefix]/{modem0,modem1,...}/{operator0,operator1,...}
+
+Methods		dict GetProperties()
+
+			Returns all network operator properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void Register()
+
+			Attempts to register to this network operator.
+
+			The method will return immediately, the result should
+			be observed by tracking the NetworkRegistration Status
+			property.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string Name [readonly]
+
+			Contains the name of the operator
+
+		string Status [readonly]
+
+			Contains the status of the operator.
+
+			The possible values are: "unknown", "available",
+						 "current" and "forbidden"
+
+		uint16 MobileCountryCode [readonly, optional]
+
+			Contains the Mobile Country Code (MCC).
+
+		uint16 MobileNetworkCode [readonly, optional]
+
+			Contains the Mobile Network Code (MNC)
+
+		string Technology [readonly, optional]
+
+			Contains the technology of the network provider.
+
+			The possible values are: "GSM", "GSMCompact", "UTRAN",
+						 "GSM+EGPS", "UTRAN+HSDPA",
+						 "UTRAN+HSUPA",
+						 "UTRAN+HSDPA+HSUPA"

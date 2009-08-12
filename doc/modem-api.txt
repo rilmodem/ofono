@@ -1,0 +1,54 @@
+Modem hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.Modem
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the modem object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string Manufacturer [readonly, optional]
+
+			String representing the manufacturer of the modem
+			device.
+
+			This is usually obtained by the +CGMI AT command.
+
+		string Model [readonly, optional]
+
+			String representing the model of the modem device.
+
+			This is usually obtained by the +CGMM AT command.
+
+		string Revision [readonly, optional]
+
+			String representing the revision of the modem device.
+
+			This is usually obtained by using the +CGMR AT command.
+
+		string Serial [readonly, optional]
+
+			String represeting the serial number of the modem
+			device.
+
+			This is usually obtained by using the +CGSN AT command.
+
+		array{string} Interfaces [readonly]
+
+			Set of interfaces currently supported by the mode
+			device. The set depends on the state of the device
+			(registration status, SIM inserted status,
+			network capabilities, device capabilities, etc.)
+
+			TODO: Better to split this into Status and
+			      Capabilites properties?
