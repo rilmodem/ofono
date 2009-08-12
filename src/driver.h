@@ -19,13 +19,9 @@
  *
  */
 
-struct ofono_modem;
+#include <ofono/types.h>
 
-#define OFONO_MAX_PHONE_NUMBER_LENGTH 20
-struct ofono_phone_number {
-	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
-	int type;
-};
+struct ofono_modem;
 
 /* 27.007 Section 6.2 */
 enum ofono_clir_option {
@@ -38,19 +34,6 @@ enum ofono_clir_option {
 enum ofono_cug_option {
 	OFONO_CUG_OPTION_DEFAULT = 0,
 	OFONO_CUG_OPTION_INVOCATION = 1,
-};
-
-enum ofono_error_type {
-	OFONO_ERROR_TYPE_NO_ERROR = 0,
-	OFONO_ERROR_TYPE_CME,
-	OFONO_ERROR_TYPE_CMS,
-	OFONO_ERROR_TYPE_CEER,
-	OFONO_ERROR_TYPE_FAILURE
-};
-
-struct ofono_error {
-	enum ofono_error_type type;
-	int error;
 };
 
 enum ofono_disconnect_reason {

@@ -1,7 +1,8 @@
 
 includedir = @includedir@/ofono
 
-include_HEADERS = log.h plugin.h history.h dbus.h modem.h
+include_HEADERS = log.h plugin.h history.h dbus.h modem.h \
+			types.h
 
 nodist_include_HEADERS = version.h
 
