@@ -78,7 +78,7 @@ struct ofono_modem {
 	struct call_settings_data *call_settings;
 	struct call_waiting_data *call_waiting;
 	struct call_meter_data *call_meter;
-	struct call_barring_data *call_barring;
+	struct ofono_call_barring *call_barring;
 	struct cssn_data *cssn;
 	struct sim_manager_data *sim_manager;
 	struct sms_manager_data *sms_manager;
@@ -126,6 +126,8 @@ void __ofono_atom_unregister(struct ofono_atom *atom);
 
 void __ofono_modem_remove_atom(struct ofono_modem *modem,
 				struct ofono_atom *atom);
+
+#include <ofono/call-barring.h>
 
 #include <ofono/history.h>
 
