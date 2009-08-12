@@ -1,0 +1,131 @@
+VoiceCallManager hierarchy
+==========================
+
+Service		org.ofono
+Interface	org.ofono.VoiceCallManager
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all global system properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		object Dial(string number, string hide_callerid)
+
+			Initiates a new outgoing call. Returns the object path
+			to the newly created call. The clir variable holds
+			the CLIR override for this call.
+			The defines values are:
+				"" or "default" - Default (Netowrk) CLIR mode
+							is used
+				"enabled" - Hides callerid, CLIR Invocation
+						is used
+				"disabled" - Shows callerid, CLIR Suppression
+						is used
+
+			This is usually implemented using the ATD AT command.
+
+		void Transfer()
+
+			Joins the currently Active (or Outgoing, depending
+			on network support) and Held calls together and
+			disconnects both calls. In effect transfering
+			one party to the other. This procedure requires
+			an Active and Held call and the Explicit Call Transfer
+			(ECT) supplementary service to be active.
+
+			This functionality is generally implemented by using
+			the +CHLD=4 AT command.
+
+		void SwapCalls()
+
+			Swaps Active and Held calls.  The effect of this
+			is that all calls (0 or more including calls in a 
+			multi-party conversation) that were Active are now Held,
+			and all calls (0 or more) that were Held are now Active.
+
+			GSM specification does not allow calls to be swapped 
+			in the case where Held, Active and Waiting calls exist.
+			Some modems implement this anyway, thus it is manufacturer
+			specific whether this method will succeed in the case
+			of Held, Active and Waiting calls.
+
+			This functionality is generally implemented by using
+			the +CHLD=2 AT command.
+
+		void ReleaseAndAnswer()
+
+			Releases currently active call and answers the currently
+			waiting call. Please note that if the current call is
+			a multiparty call, then all parties in the multi-party
+			call will be released.
+
+		void HoldAndAnswer()
+
+			Puts the current call (including multi-party calls) on 
+			hold and answers the currently waiting call. Calling
+			this function when a user already has a both Active and
+			Held calls is invalid, since in GSM a user can have
+			only a single Held call at a time.
+
+		void HangupAllCalls()
+
+			Releases all calls. 
+
+		array{object} PrivateChat(object call)
+
+			Places the multi-party call on hold and makes desired
+			call active. This is used to accomplish private chat
+			functionality.  Note that if there are only two calls
+			(three parties) in the multi-party call the result will
+			be two regular calls, one held and one active. The
+			Multiparty call will need to be setup again by using the
+			CreateMultiparty method.  Returns the new list of calls
+			participating in the multiparty call.
+
+			This is usually implemented using the +CHLD=2X command.
+
+		array{object} CreateMultiparty()
+
+			Joins active and held calls together into a multi-party
+			call. If one of the calls is already a multi-party
+			call, then the other call is added to the multiparty
+			conversation. Returns the new list of calls
+			participating in the multiparty call.
+
+			There can only be one subscriber controlled multi-party
+			call according to the GSM specification.  
+
+			This is usually implemented using the +CHLD=3 AT
+			command.
+
+		void HangupMultiparty()
+
+			Hangs up the multi-party call.  All participating
+			calls are released.
+
+		void SendTones(string tones)
+
+			Sends the DTMF tones to the network.  Under GSM the
+			tones have a fixed duration.  Tones can be one of:
+			'0' - '9', '*', '#', 'A', 'B', 'C', 'D'. The last four
+			are typically not used in normal circumstances.
+
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed. The
+			new value is passed as the signal argument.
+
+Properties	array{object} Calls [readonly]
+
+			Returns the list of calls currently present in the
+			system. If there are no calls, the list will be empty.
+
+		array{object} MultipartyCalls [readonly]
+
+			Returns the list of calls that are currently
+			participating in the multi-party (MPTY) call.  The list
+			will be empty if no multi-party call is active, or a
+			list with at least two elements otherwise.

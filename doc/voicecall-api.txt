@@ -1,0 +1,106 @@
+VoiceCall hierarchy
+===================
+
+Service		org.ofono
+Interface	org.ofono.VoiceCall
+Object path	[variable prefix]/{modem0,modem1,...}/{call0,call1,...}
+
+Methods		dict GetProperties()
+
+			Returns all global system properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void Busy()
+
+			Notifies the incoming or waiting call that the user
+			is busy. This is done by setting the User Determined
+			User Busy (UDUB) condition. This method is only valid
+			if there is an incoming or waiting call.
+
+			This functionality is generally implemented by using
+			the +CHLD=0 AT command.
+
+		void Deflect(string number)
+
+			Deflects the incoming or waiting call to number given
+			in the argument.  This method is only valid if the
+			call is in "incoming" or "waiting" state and the
+			Call Deflection supplementary service is subscribed to.
+
+			This functionality is generally implemented by using
+			the +CHLD=4 * NUMBER command.
+
+			This method should not be confused with the Transfer()
+			method.
+
+		void Hangup()
+
+			Hangs up the voice call.
+
+			This functionality is generally implemented by
+			+CHLD=1X, +CHUP or ATH AT commands.
+
+		void Answer()
+
+			Answers the incoming call.  Only valid if the state
+			of the call is "incoming."
+
+			This functionality is generally implemented by ATA
+			AT command.
+
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
+
+		DisconnectReason(string reason)
+
+			This signal is emitted when the modem manager can
+			provide extra information about why this call was
+			released. The possible reason values are:
+				"local" - The call was release due to local user action
+				"remote" - Remote party released the call
+				"network" - Network released the call, most likely due
+						to low signal or other network
+						failure
+
+			Not all implementations are able to provide this
+			information, so applications should treat the emission
+			of this signal as optional. This signal will be
+			emitted before the PropertyChanged signal.
+
+Properties	string LineIdentification [readonly]
+
+			Contains the Line Identification information returned
+			by the network, if present. For incoming calls this is
+			effectively the CLIP. For outgoing calls this attribute
+			will hold the dialed number, or the COLP if received by
+			the underlying implementation.
+
+			Please note that COLP may be different from the
+			dialed number. A special "withheld" value means the
+			remote party refused to provide caller ID and the
+			"override category" option was not provisioned for
+			the current subscriber.
+
+		string State [readonly]
+
+			Contains the state of the current call.  The state
+			can be one of:
+				- "active" - The call is active
+				- "held" - The call is on hold
+				- "dialing" - The call is being dialed
+				- "alerting" - The remote party is being alerted
+				- "incoming" - Incoming call in progress
+				- "waiting" - Call is waiting
+				- "disconnected" - No further use of this object
+					is allowed, it will be destroyed shortly
+
+		string StartTime [readonly, optional]
+
+			Contains the starting time of the call.  The time is
+			stamped when the call enters the "active" state.
+			Client applications can use this to infer somewhat
+			reliable call duration information.
