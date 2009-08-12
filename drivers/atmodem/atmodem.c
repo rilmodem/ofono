@@ -106,7 +106,6 @@ static void interface_exit(struct at_data *at)
 	at_network_registration_exit(at->modem);
 	at_voicecall_exit(at->modem);
 	at_call_meter_exit(at->modem);
-	at_call_barring_exit(at->modem);
 	at_ussd_exit(at->modem);
 	at_sim_exit(at->modem);
 }
@@ -371,7 +370,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	at_network_registration_init(at->modem);
 	at_voicecall_init(at->modem);
 	at_call_meter_init(at->modem);
-	at_call_barring_init(at->modem);
+	ofono_call_barring_create(at->modem, "generic_at", at->parser);
 	at_sms_init(at->modem);
 	at_phonebook_init(at->modem);
 
@@ -530,6 +529,8 @@ static int atmodem_init(void)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
+	at_call_barring_init();
+
 	manager_init(conn);
 
 	return 0;
@@ -540,6 +541,8 @@ static void atmodem_exit(void)
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	manager_exit(conn);
+
+	at_call_barring_exit();
 }
 
 OFONO_PLUGIN_DEFINE(atmodem, "AT modem driver", VERSION,

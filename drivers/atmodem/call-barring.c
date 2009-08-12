@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/call-barring.h>
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -45,7 +45,7 @@ static const char *none_prefix[] = { NULL };
 static void clck_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_call_barring_cb_t cb = cbd->cb;
+	ofono_call_barring_query_cb_t callback = cbd->cb;
 	struct ofono_error error;
 	GAtResultIter iter;
 	int status_mask, status, class, line;
@@ -75,15 +75,16 @@ static void clck_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			status_mask &= ~class;
 	}
 
-	cb(&error, status_mask, cbd->data);
+	callback(&error, status_mask, cbd->data);
 }
 
-static void at_call_barring_query(struct ofono_modem *modem, const char *lock,
-					int cls, ofono_call_barring_cb_t cb,
+static void at_call_barring_query(struct ofono_call_barring *cb,
+					const char *lock, int cls,
+					ofono_call_barring_query_cb_t callback,
 					void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_barring_get_data(cb);
+	struct cb_data *cbd = cb_data_new(NULL, callback, data);
 	char buf[64];
 	int len;
 
@@ -92,7 +93,7 @@ static void at_call_barring_query(struct ofono_modem *modem, const char *lock,
 
 	len = sprintf(buf, "AT+CLCK=\"%s\",2", lock);
 
-	if (g_at_chat_send(at->parser, buf, clck_prefix,
+	if (g_at_chat_send(chat, buf, clck_prefix,
 				clck_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -102,27 +103,28 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, 0, data);
+		callback(&error, 0, data);
 	}
 }
 
 static void clck_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_call_barring_set_cb_t callback = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("clck_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, cbd->data);
+	callback(&error, cbd->data);
 }
 
-static void at_call_barring_set(struct ofono_modem *modem, const char *lock,
+static void at_call_barring_set(struct ofono_call_barring *cb, const char *lock,
 				int enable, const char *passwd, int cls,
-				ofono_generic_cb_t cb, void *data)
+				ofono_call_barring_set_cb_t callback,
+				void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_barring_get_data(cb);
+	struct cb_data *cbd = cb_data_new(NULL, callback, data);
 	char buf[64];
 	int len;
 
@@ -139,7 +141,7 @@ static void at_call_barring_set(struct ofono_modem *modem, const char *lock,
 					",%i", cls);
 	}
 
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(chat, buf, none_prefix,
 				clck_set_cb, cbd, g_free) > 0)
 		return;
 
@@ -149,28 +151,30 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, data);
+		callback(&error, data);
 	}
 }
 
 static void cpwd_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_call_barring_set_cb_t callback = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("cpwd_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, cbd->data);
+	callback(&error, cbd->data);
 }
 
-static void at_call_barring_set_passwd(struct ofono_modem *modem,
-				const char *lock,
-				const char *old_passwd, const char *new_passwd,
-				ofono_generic_cb_t cb, void *data)
+static void at_call_barring_set_passwd(struct ofono_call_barring *cb,
+					const char *lock,
+					const char *old_passwd,
+					const char *new_passwd,
+					ofono_call_barring_set_cb_t callback,
+					void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_barring_get_data(cb);
+	struct cb_data *cbd = cb_data_new(NULL, callback, data);
 	char buf[64];
 
 	if (!cbd || strlen(lock) != 2)
@@ -179,7 +183,7 @@ static void at_call_barring_set_passwd(struct ofono_modem *modem,
 	snprintf(buf, sizeof(buf), "AT+CPWD=\"%s\",\"%s\",\"%s\"",
 			lock, old_passwd, new_passwd);
 
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(chat, buf, none_prefix,
 				cpwd_set_cb, cbd, g_free) > 0)
 		return;
 
@@ -189,22 +193,46 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, data);
+		callback(&error, data);
 	}
 }
 
-static struct ofono_call_barring_ops ops = {
+static gboolean at_call_barring_register(gpointer user)
+{
+	struct ofono_call_barring *cb = user;
+
+	ofono_call_barring_register(cb);
+
+	return FALSE;
+}
+
+static int at_call_barring_probe(struct ofono_call_barring *cb)
+{
+	g_idle_add(at_call_barring_register, cb);
+
+	return 0;
+}
+
+static int at_call_barring_remove(struct ofono_call_barring *cb)
+{
+	return 0;
+}
+
+static struct ofono_call_barring_driver driver = {
+	.name		= "generic_at",
+	.probe		= at_call_barring_probe,
+	.remove		= at_call_barring_remove,
 	.set		= at_call_barring_set,
 	.query		= at_call_barring_query,
 	.set_passwd	= at_call_barring_set_passwd,
 };
 
-void at_call_barring_init(struct ofono_modem *modem)
+void at_call_barring_init()
 {
-	ofono_call_barring_register(modem, &ops);
+	ofono_call_barring_driver_register(&driver);
 }
 
-void at_call_barring_exit(struct ofono_modem *modem)
+void at_call_barring_exit()
 {
-	ofono_call_barring_unregister(modem);
+	ofono_call_barring_driver_unregister(&driver);
 }
