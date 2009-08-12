@@ -229,7 +229,7 @@ gboolean ss_passwd_register(struct ofono_modem *modem, const char *str,
 	if (!entry)
 		return FALSE;
 
-	modem->ss_passwd_list = g_slist_append(modem->ss_passwd_list, entry);
+	modem->ss_passwd_list = g_slist_prepend(modem->ss_passwd_list, entry);
 
 	return TRUE;
 }
