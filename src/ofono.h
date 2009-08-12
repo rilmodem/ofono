@@ -66,6 +66,8 @@ struct ofono_modem {
 	GSList *ss_control_list;
 	GSList *ss_passwd_list;
 
+	GSList		*atoms;
+
 	struct ofono_modem_data *modem_info;
 	struct network_registration_data *network_registration;
 	struct voicecalls_data *voicecalls;
@@ -88,6 +90,40 @@ struct ofono_modem {
 
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem);
 void __ofono_modem_release_callid(struct ofono_modem *modem, int id);
+
+struct ofono_atom;
+
+enum ofono_atom_type {
+	OFONO_ATOM_TYPE_INFO = 0,
+	OFONO_ATOM_TYPE_CALL_BARRING = 1,
+	OFONO_ATOM_TYPE_CALL_FORWARDING = 2,
+	OFONO_ATOM_TYPE_CALL_METER = 3,
+	OFONO_ATOM_TYPE_CALL_SETTINGS = 4,
+	OFONO_ATOM_TYPE_NETWORK_REGISTRATION = 5,
+	OFONO_ATOM_TYPE_PHONEBOOK = 6,
+	OFONO_ATOM_TYPE_SMS = 7,
+	OFONO_ATOM_TYPE_SIM = 8,
+	OFONO_ATOM_TYPE_USSD = 9,
+	OFONO_ATOM_TYPE_VOICECALL = 10,
+	OFONO_ATOM_TYPE_HISTORY = 11
+};
+
+struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
+					enum ofono_atom_type type,
+					void (*destruct)(struct ofono_atom *),
+					void *data);
+
+struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
+						enum ofono_atom_type type);
+
+void *__ofono_atom_get_data(struct ofono_atom *atom);
+
+void __ofono_atom_register(struct ofono_atom *atom,
+				void (*unregister)(struct ofono_atom *));
+void __ofono_atom_unregister(struct ofono_atom *atom);
+
+void __ofono_modem_remove_atom(struct ofono_modem *modem,
+				struct ofono_atom *atom);
 
 #include <ofono/history.h>
 

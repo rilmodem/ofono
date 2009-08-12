@@ -54,6 +54,13 @@ struct ofono_modem_data {
 	guint				interface_update;
 };
 
+struct ofono_atom {
+	enum ofono_atom_type type;
+	void (*destruct)(struct ofono_atom *atom);
+	void (*unregister)(struct ofono_atom *atom);
+	void *data;
+};
+
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
 {
 	struct ofono_modem_data *d = modem->modem_info;
@@ -99,6 +106,102 @@ const char *ofono_modem_get_path(struct ofono_modem *modem)
 	return NULL;
 }
 
+struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
+					enum ofono_atom_type type,
+					void (*destruct)(struct ofono_atom *),
+					void *data)
+{
+	struct ofono_atom *atom;
+
+	if (modem == NULL)
+		return NULL;
+
+	atom = g_new0(struct ofono_atom, 1);
+
+	atom->type = type;
+	atom->destruct = destruct;
+	atom->data = data;
+
+	modem->atoms = g_slist_prepend(modem->atoms, atom);
+
+	return atom;
+}
+
+void *__ofono_atom_get_data(struct ofono_atom *atom)
+{
+	return atom->data;
+}
+
+void __ofono_atom_register(struct ofono_atom *atom,
+			void (*unregister)(struct ofono_atom *))
+{
+	atom->unregister = unregister;
+}
+
+void __ofono_atom_unregister(struct ofono_atom *atom)
+{
+	if (atom->unregister)
+		atom->unregister(atom);
+}
+
+struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
+						enum ofono_atom_type type)
+{
+	GSList *l;
+	struct ofono_atom *atom;
+
+	if (modem == NULL)
+		return NULL;
+
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		if (atom->type == type)
+			return atom;
+	}
+
+	return NULL;
+}
+
+void __ofono_modem_remove_atom(struct ofono_modem *modem,
+					struct ofono_atom *atom)
+{
+	if (modem == NULL)
+		return;
+
+	modem->atoms = g_slist_remove(modem->atoms, atom);
+
+	__ofono_atom_unregister(atom);
+
+	if (atom->destruct)
+		atom->destruct(atom);
+
+	g_free(atom);
+}
+
+static void remove_all_atoms(struct ofono_modem *modem)
+{
+	GSList *l;
+	struct ofono_atom *atom;
+
+	if (modem == NULL)
+		return;
+
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		__ofono_atom_unregister(atom);
+
+		if (atom->destruct)
+			atom->destruct(atom);
+
+		g_free(atom);
+	}
+
+	g_slist_free(modem->atoms);
+	modem->atoms = NULL;
+}
+
 static void modem_free(gpointer data)
 {
 	struct ofono_modem *modem = data;
@@ -124,6 +227,7 @@ static void modem_free(gpointer data)
 		g_source_remove(modem->modem_info->interface_update);
 
 	g_free(modem->modem_info);
+
 	g_free(modem->path);
 	g_free(modem);
 }
@@ -425,6 +529,8 @@ static void modem_remove(struct ofono_modem *modem)
 	char *path = g_strdup(modem->path);
 
 	ofono_debug("Removing modem: %s", modem->path);
+
+	remove_all_atoms(modem);
 
 	ofono_cssn_exit(modem);
 	ofono_sim_manager_exit(modem);
