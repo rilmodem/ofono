@@ -137,7 +137,7 @@ gboolean ss_control_register(struct ofono_modem *modem, const char *str,
 	if (!entry)
 		return FALSE;
 
-	modem->ss_control_list = g_slist_append(modem->ss_control_list, entry);
+	modem->ss_control_list = g_slist_prepend(modem->ss_control_list, entry);
 
 	return TRUE;
 }
