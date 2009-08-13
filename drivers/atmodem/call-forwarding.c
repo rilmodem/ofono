@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/call-forwarding.h>
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -49,7 +49,7 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	GAtResultIter iter;
 	int num = 0;
-	struct ofono_cf_condition *list = NULL;
+	struct ofono_call_forwarding_condition *list = NULL;
 	int i;
 	int maxlen;
 
@@ -68,7 +68,7 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * generate status=0 for all classes just in case
 	 */
 	if (num == 0) {
-		list = g_new0(struct ofono_cf_condition, 1);
+		list = g_new0(struct ofono_call_forwarding_condition, 1);
 		num = 1;
 
 		list->status = 0;
@@ -77,7 +77,7 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto out;
 	}
 
-	list = g_new(struct ofono_cf_condition, num);
+	list = g_new(struct ofono_call_forwarding_condition, num);
 
 	g_at_result_iter_init(&iter, result);
 
@@ -122,11 +122,11 @@ out:
 	g_free(list);
 }
 
-static void at_ccfc_query(struct ofono_modem *modem, int type, int cls,
+static void at_ccfc_query(struct ofono_call_forwarding *cf, int type, int cls,
 				ofono_call_forwarding_query_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_forwarding_get_data(cf);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -139,7 +139,7 @@ static void at_ccfc_query(struct ofono_modem *modem, int type, int cls,
 	else
 		sprintf(buf, "AT+CCFC=%d,2,,,%d", type, cls);
 
-	if (g_at_chat_send(at->parser, buf, ccfc_prefix,
+	if (g_at_chat_send(chat, buf, ccfc_prefix,
 				ccfc_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -156,7 +156,7 @@ error:
 static void ccfc_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_call_forwarding_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("ccfc_set_cb", ok, result);
@@ -165,16 +165,16 @@ static void ccfc_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_ccfc_set(struct ofono_modem *modem, const char *buf,
-				ofono_generic_cb_t cb, void *data)
+static void at_ccfc_set(struct ofono_call_forwarding *cf, const char *buf,
+				ofono_call_forwarding_set_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_forwarding_get_data(cf);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(chat, buf, none_prefix,
 				ccfc_set_cb, cbd, g_free) > 0)
 		return;
 
@@ -188,8 +188,9 @@ error:
 	}
 }
 
-static void at_ccfc_erasure(struct ofono_modem *modem, int type, int cls,
-				ofono_generic_cb_t cb, void *data)
+static void at_ccfc_erasure(struct ofono_call_forwarding *cf,
+				int type, int cls,
+				ofono_call_forwarding_set_cb_t cb, void *data)
 {
 	char buf[128];
 	int len;
@@ -199,11 +200,13 @@ static void at_ccfc_erasure(struct ofono_modem *modem, int type, int cls,
 	if (cls != 7)
 		sprintf(buf + len, ",,,%d", cls);
 
-	at_ccfc_set(modem, buf, cb, data);
+	at_ccfc_set(cf, buf, cb, data);
 }
 
-static void at_ccfc_deactivation(struct ofono_modem *modem, int type, int cls,
-					ofono_generic_cb_t cb, void *data)
+static void at_ccfc_deactivation(struct ofono_call_forwarding *cf,
+					int type, int cls,
+					ofono_call_forwarding_set_cb_t cb,
+					void *data)
 {
 	char buf[128];
 	int len;
@@ -213,11 +216,12 @@ static void at_ccfc_deactivation(struct ofono_modem *modem, int type, int cls,
 	if (cls != 7)
 		sprintf(buf + len, ",,,%d", cls);
 
-	at_ccfc_set(modem, buf, cb, data);
+	at_ccfc_set(cf, buf, cb, data);
 }
 
-static void at_ccfc_activation(struct ofono_modem *modem, int type, int cls,
-				ofono_generic_cb_t cb, void *data)
+static void at_ccfc_activation(struct ofono_call_forwarding *cf,
+				int type, int cls,
+				ofono_call_forwarding_set_cb_t cb, void *data)
 {
 	char buf[128];
 	int len;
@@ -227,12 +231,14 @@ static void at_ccfc_activation(struct ofono_modem *modem, int type, int cls,
 	if (cls != 7)
 		sprintf(buf + len, ",,,%d", cls);
 
-	at_ccfc_set(modem, buf, cb, data);
+	at_ccfc_set(cf, buf, cb, data);
 }
 
-static void at_ccfc_registration(struct ofono_modem *modem, int type, int cls,
+static void at_ccfc_registration(struct ofono_call_forwarding *cf,
+					int type, int cls,
 					const struct ofono_phone_number *ph,
-					int time, ofono_generic_cb_t cb,
+					int time,
+					ofono_call_forwarding_set_cb_t cb,
 					void *data)
 {
 	char buf[128];
@@ -244,10 +250,34 @@ static void at_ccfc_registration(struct ofono_modem *modem, int type, int cls,
 	if (type == 2 || type == 4 || type == 5)
 		sprintf(buf+offset, ",,,%d", time);
 
-	at_ccfc_set(modem, buf, cb, data);
+	at_ccfc_set(cf, buf, cb, data);
 }
 
-static struct ofono_call_forwarding_ops ops = {
+static gboolean at_ccfc_register(gpointer user)
+{
+	struct ofono_call_forwarding *cf = user;
+
+	ofono_call_forwarding_register(cf);
+
+	return FALSE;
+}
+
+static int at_ccfc_probe(struct ofono_call_forwarding *cf)
+{
+	g_idle_add(at_ccfc_register, cf);
+
+	return 0;
+}
+
+static int at_ccfc_remove(struct ofono_call_forwarding *cf)
+{
+	return 0;
+}
+
+static struct ofono_call_forwarding_driver driver = {
+	.name		= "generic_at",
+	.probe		= at_ccfc_probe,
+	.remove		= at_ccfc_remove,
 	.registration	= at_ccfc_registration,
 	.activation	= at_ccfc_activation,
 	.query		= at_ccfc_query,
@@ -255,12 +285,12 @@ static struct ofono_call_forwarding_ops ops = {
 	.erasure	= at_ccfc_erasure
 };
 
-void at_call_forwarding_init(struct ofono_modem *modem)
+void at_call_forwarding_init()
 {
-	ofono_call_forwarding_register(modem, &ops);
+	ofono_call_forwarding_driver_register(&driver);
 }
 
-void at_call_forwarding_exit(struct ofono_modem *modem)
+void at_call_forwarding_exit()
 {
-	ofono_call_forwarding_unregister(modem);
+	ofono_call_forwarding_driver_unregister(&driver);
 }

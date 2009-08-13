@@ -68,8 +68,8 @@ extern struct ofono_error g_ok;
 extern void at_network_registration_init(struct ofono_modem *modem);
 extern void at_network_registration_exit(struct ofono_modem *modem);
 
-extern void at_call_forwarding_init(struct ofono_modem *modem);
-extern void at_call_forwarding_exit(struct ofono_modem *modem);
+extern void at_call_forwarding_init();
+extern void at_call_forwarding_exit();
 
 extern void at_call_settings_init(struct ofono_modem *modem);
 extern void at_call_settings_exit(struct ofono_modem *modem);
