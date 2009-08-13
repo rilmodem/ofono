@@ -53,7 +53,7 @@ void ofono_info(const char *format, ...)
  * @format: format string
  * @Varargs: list of arguments
  *
- * Output warning information
+ * Output warning messages
  */
 void ofono_warn(const char *format, ...)
 {
