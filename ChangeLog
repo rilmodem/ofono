@@ -1,3 +1,14 @@
+ver 0.3:
+	Fix support for phonebook reading.
+	Fix some issues with network registration.
+	Fix some issues with MSISDN handling.
+	Fix some issues with SIM storage support.
+	Add caching for EF-PNN and EF-OPL SIM files.
+	Add support for SIM ADN type number handling.
+	Add support for tracking message waiting indications.
+	Add support for user-provided AT parsers.
+	Add initial drafts of API documentation.
+
 ver 0.2:
 	Add more detailed handling for network names.
 	Add character set support for phonebook.
