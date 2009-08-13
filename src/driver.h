@@ -69,14 +69,6 @@ struct ofono_network_operator {
 	int tech;
 };
 
-/* 27.007 Section 7.11 Call Forwarding */
-struct ofono_cf_condition {
-	int status;
-	int cls;
-	struct ofono_phone_number phone_number;
-	int time;
-};
-
 /* 51.011 Section 9.3 */
 enum ofono_sim_file_structure {
 	OFONO_SIM_FILE_STRUCTURE_TRANSPARENT = 0,
@@ -114,11 +106,6 @@ typedef void (*ofono_registration_status_cb_t)(const struct ofono_error *error,
 
 typedef void (*ofono_signal_strength_cb_t)(const struct ofono_error *error,
 					int strength, void *data);
-
-typedef void (*ofono_call_forwarding_query_cb_t)(const struct ofono_error *error,
-					int total,
-					const struct ofono_cf_condition *list,
-					void *data);
 
 typedef void (*ofono_modem_attribute_query_cb_t)(const struct ofono_error *error,
 					const char *attribute, void *data);
@@ -258,24 +245,6 @@ void ofono_voicecall_unregister(struct ofono_modem *modem);
 void ofono_cssi_notify(struct ofono_modem *modem, int code, int index);
 void ofono_cssu_notify(struct ofono_modem *modem, int code, int index,
 			const struct ofono_phone_number *number);
-
-struct ofono_call_forwarding_ops {
-	void (*activation)(struct ofono_modem *modem, int type, int cls,
-				ofono_generic_cb_t cb, void *data);
-	void (*registration)(struct ofono_modem *modem, int type, int cls,
-				const struct ofono_phone_number *number,
-				int time, ofono_generic_cb_t cb, void *data);
-	void (*deactivation)(struct ofono_modem *modem, int type, int cls,
-				ofono_generic_cb_t cb, void *data);
-	void (*erasure)(struct ofono_modem *modem, int type, int cls,
-				ofono_generic_cb_t cb, void *data);
-	void (*query)(struct ofono_modem *modem, int type, int cls,
-				ofono_call_forwarding_query_cb_t cb, void *data);
-};
-
-int ofono_call_forwarding_register(struct ofono_modem *modem,
-				struct ofono_call_forwarding_ops *ops);
-void ofono_call_forwarding_unregister(struct ofono_modem *modem);
 
 struct ofono_ussd_ops {
 	void (*request)(struct ofono_modem *modem, const char *str,

@@ -26,13 +26,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 #include "ussd.h"
 
@@ -43,20 +43,25 @@
 /* According to 27.007 Spec */
 #define DEFAULT_NO_REPLY_TIMEOUT 20
 
-struct call_forwarding_data {
-	struct ofono_call_forwarding_ops *ops;
+static GSList *g_drivers = NULL;
+
+struct ofono_call_forwarding {
 	GSList *cf_conditions[4];
 	int flags;
 	DBusMessage *pending;
 	int query_next;
 	int query_end;
 	struct cf_ss_request *ss_req;
+	const struct ofono_call_forwarding_driver *driver;
+	void *driver_data;
+	struct ofono_modem *modem;
+	struct ofono_atom *atom;
 };
 
-static void get_query_next_cf_cond(struct ofono_modem *modem);
-static void set_query_next_cf_cond(struct ofono_modem *modem);
-static void ss_set_query_next_cf_cond(struct ofono_modem *modem);
-static void cf_unregister_ss_controls(struct ofono_modem *modem);
+static void get_query_next_cf_cond(struct ofono_call_forwarding *cf);
+static void set_query_next_cf_cond(struct ofono_call_forwarding *cf);
+static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf);
+static void cf_unregister_ss_controls(struct ofono_call_forwarding *cf);
 
 struct cf_ss_request {
 	int ss_type;
@@ -67,8 +72,8 @@ struct cf_ss_request {
 
 static gint cf_condition_compare(gconstpointer a, gconstpointer b)
 {
-	const struct ofono_cf_condition *ca = a;
-	const struct ofono_cf_condition *cb = b;
+	const struct ofono_call_forwarding_condition *ca = a;
+	const struct ofono_call_forwarding_condition *cb = b;
 
 	if (ca->cls < cb->cls)
 		return -1;
@@ -81,7 +86,7 @@ static gint cf_condition_compare(gconstpointer a, gconstpointer b)
 
 static gint cf_condition_find_with_cls(gconstpointer a, gconstpointer b)
 {
-	const struct ofono_cf_condition *c = a;
+	const struct ofono_call_forwarding_condition *c = a;
 	int cls = GPOINTER_TO_INT(b);
 
 	if (c->cls < cls)
@@ -96,7 +101,7 @@ static gint cf_condition_find_with_cls(gconstpointer a, gconstpointer b)
 static int cf_find_timeout(GSList *cf_list, int cls)
 {
 	GSList *l;
-	struct ofono_cf_condition *c;
+	struct ofono_call_forwarding_condition *c;
 
 	l = g_slist_find_custom(cf_list, GINT_TO_POINTER(cls),
 		cf_condition_find_with_cls);
@@ -112,7 +117,7 @@ static int cf_find_timeout(GSList *cf_list, int cls)
 static void cf_cond_list_print(GSList *list)
 {
 	GSList *l;
-	struct ofono_cf_condition *cond;
+	struct ofono_call_forwarding_condition *cond;
 
 	for (l = list; l; l = l->next) {
 		cond = l->data;
@@ -125,12 +130,12 @@ static void cf_cond_list_print(GSList *list)
 }
 
 static GSList *cf_cond_list_create(int total,
-					const struct ofono_cf_condition *list)
+			const struct ofono_call_forwarding_condition *list)
 {
 	GSList *l = NULL;
 	int i;
 	int j;
-	struct ofono_cf_condition *cond;
+	struct ofono_call_forwarding_condition *cond;
 
 	/* Specification is not really clear how the results are reported,
 	 * so assume both multiple list items & compound values of class
@@ -144,11 +149,12 @@ static GSList *cf_cond_list_create(int total,
 			if (list[i].status == 0)
 				continue;
 
-			cond = g_try_new0(struct ofono_cf_condition, 1);
+			cond = g_try_new0(struct ofono_call_forwarding_condition, 1);
 			if (!cond)
 				continue;
 
-			memcpy(cond, &list[i], sizeof(struct ofono_cf_condition));
+			memcpy(cond, &list[i],
+				sizeof(struct ofono_call_forwarding_condition));
 			cond->cls = j;
 
 			l = g_slist_insert_sorted(l, cond,
@@ -169,7 +175,7 @@ static inline void cf_list_clear(GSList *cf_list)
 	g_slist_free(cf_list);
 }
 
-static inline void cf_clear_all(struct call_forwarding_data *cf)
+static inline void cf_clear_all(struct ofono_call_forwarding *cf)
 {
 	int i;
 
@@ -177,30 +183,6 @@ static inline void cf_clear_all(struct call_forwarding_data *cf)
 		cf_list_clear(cf->cf_conditions[i]);
 		cf->cf_conditions[i] = NULL;
 	}
-}
-
-static struct call_forwarding_data *call_forwarding_create()
-{
-	struct call_forwarding_data *r;
-
-	r = g_try_new0(struct call_forwarding_data, 1);
-
-	if (!r)
-		return r;
-
-	return r;
-}
-
-static void call_forwarding_destroy(gpointer data)
-{
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
-
-	cf_clear_all(cf);
-
-	cf_unregister_ss_controls(modem);
-
-	g_free(cf);
 }
 
 static const char *cf_type_lut[] = {
@@ -212,15 +194,16 @@ static const char *cf_type_lut[] = {
 	"AllConditional"
 };
 
-static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
+static void set_new_cond_list(struct ofono_call_forwarding *cf,
+				int type, GSList *list)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
 	GSList *old = cf->cf_conditions[type];
 	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(cf->modem);
 	GSList *l;
 	GSList *o;
-	struct ofono_cf_condition *lc;
-	struct ofono_cf_condition *oc;
+	struct ofono_call_forwarding_condition *lc;
+	struct ofono_call_forwarding_condition *oc;
 	const char *number;
 	dbus_uint16_t timeout;
 	char attr[64];
@@ -255,16 +238,14 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 			if (oc->phone_number.type != lc->phone_number.type ||
 				strcmp(oc->phone_number.number,
 					lc->phone_number.number))
-				ofono_dbus_signal_property_changed(conn,
-						modem->path,
+				ofono_dbus_signal_property_changed(conn, path,
 						CALL_FORWARDING_INTERFACE,
 						attr, DBUS_TYPE_STRING,
 						&number);
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 				oc->time != lc->time)
-				ofono_dbus_signal_property_changed(conn,
-						modem->path,
+				ofono_dbus_signal_property_changed(conn, path,
 						CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
 						&timeout);
@@ -275,15 +256,14 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 		} else {
 			number = phone_number_to_string(&lc->phone_number);
 
-			ofono_dbus_signal_property_changed(conn, modem->path,
+			ofono_dbus_signal_property_changed(conn, path,
 						CALL_FORWARDING_INTERFACE,
 						attr, DBUS_TYPE_STRING,
 						&number);
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 				lc->time != DEFAULT_NO_REPLY_TIMEOUT)
-				ofono_dbus_signal_property_changed(conn,
-						modem->path,
+				ofono_dbus_signal_property_changed(conn, path,
 						CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
 						&timeout);
@@ -302,13 +282,13 @@ static void set_new_cond_list(struct ofono_modem *modem, int type, GSList *list)
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY)
 			sprintf(tattr, "%sTimeout", attr);
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, path,
 					CALL_FORWARDING_INTERFACE, attr,
 					DBUS_TYPE_STRING, &number);
 
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 			oc->time != DEFAULT_NO_REPLY_TIMEOUT)
-			ofono_dbus_signal_property_changed(conn, modem->path,
+			ofono_dbus_signal_property_changed(conn, path,
 						CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
 						&timeout);
@@ -345,7 +325,7 @@ static void property_append_cf_conditions(DBusMessageIter *dict,
 {
 	GSList *l;
 	int i;
-	struct ofono_cf_condition *cf;
+	struct ofono_call_forwarding_condition *cf;
 	const char *number;
 
 	for (i = 1, l = cf_list; i <= BEARER_CLASS_PAD; i = i << 1) {
@@ -369,7 +349,7 @@ static void property_append_cf_conditions(DBusMessageIter *dict,
 }
 
 static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
-						struct call_forwarding_data *cf)
+						struct ofono_call_forwarding *cf)
 {
 	DBusMessage *reply;
 	DBusMessageIter iter;
@@ -398,16 +378,15 @@ static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
 }
 
 static void get_query_cf_callback(const struct ofono_error *error, int total,
-					const struct ofono_cf_condition *list,
-					void *data)
+			const struct ofono_call_forwarding_condition *list,
+			void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
 		GSList *l;
 		l = cf_cond_list_create(total, list);
-		set_new_cond_list(modem, cf->query_next, l);
+		set_new_cond_list(cf, cf->query_next, l);
 
 		ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
 		cf_cond_list_print(l);
@@ -423,27 +402,24 @@ static void get_query_cf_callback(const struct ofono_error *error, int total,
 	}
 
 	cf->query_next++;
-	get_query_next_cf_cond(modem);
+	get_query_next_cf_cond(cf);
 }
 
-static void get_query_next_cf_cond(struct ofono_modem *modem)
+static void get_query_next_cf_cond(struct ofono_call_forwarding *cf)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
-
-	cf->ops->query(modem, cf->query_next, BEARER_CLASS_DEFAULT,
-			get_query_cf_callback, modem);
+	cf->driver->query(cf, cf->query_next, BEARER_CLASS_DEFAULT,
+			get_query_cf_callback, cf);
 }
 
 static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 
 	if (cf->flags & CALL_FORWARDING_FLAG_CACHED)
 		return cf_get_properties_reply(msg, cf);
 
-	if (!cf->ops->query)
+	if (!cf->driver->query)
 		return __ofono_error_not_implemented(msg);
 
 	if (cf->pending)
@@ -452,12 +428,12 @@ static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
 	cf->pending = dbus_message_ref(msg);
 	cf->query_next = 0;
 
-	get_query_next_cf_cond(modem);
+	get_query_next_cf_cond(cf);
 
 	return NULL;
 }
 
-static gboolean cf_condition_enabled_property(struct call_forwarding_data *cf,
+static gboolean cf_condition_enabled_property(struct ofono_call_forwarding *cf,
 			const char *property, int *out_type, int *out_cls)
 {
 	int i;
@@ -512,11 +488,10 @@ static gboolean cf_condition_timeout_property(const char *property,
 }
 
 static void set_query_cf_callback(const struct ofono_error *error, int total,
-					const struct ofono_cf_condition *list,
-					void *data)
+			const struct ofono_call_forwarding_condition *list,
+			void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 	GSList *l;
 	DBusMessage *reply;
 
@@ -534,29 +509,26 @@ static void set_query_cf_callback(const struct ofono_error *error, int total,
 	} 
 
 	l = cf_cond_list_create(total, list);
-	set_new_cond_list(modem, cf->query_next, l);
+	set_new_cond_list(cf, cf->query_next, l);
 
 	ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
 	cf_cond_list_print(l);
 
 	if (cf->query_next != cf->query_end) {
 		cf->query_next++;
-		set_query_next_cf_cond(modem);
+		set_query_next_cf_cond(cf);
 	}
 }
 
-static void set_query_next_cf_cond(struct ofono_modem *modem)
+static void set_query_next_cf_cond(struct ofono_call_forwarding *cf)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
-
-	cf->ops->query(modem, cf->query_next, BEARER_CLASS_DEFAULT,
-			set_query_cf_callback, modem);
+	cf->driver->query(cf, cf->query_next, BEARER_CLASS_DEFAULT,
+			set_query_cf_callback, cf);
 }
 
 static void set_property_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during set/erasure");
@@ -566,21 +538,19 @@ static void set_property_callback(const struct ofono_error *error, void *data)
 	}
 
 	/* Successfully set, query the entire set just in case */
-	set_query_next_cf_cond(modem);
+	set_query_next_cf_cond(cf);
 }
 
-static DBusMessage *set_property_request(struct ofono_modem *modem,
+static DBusMessage *set_property_request(struct ofono_call_forwarding *cf,
 						DBusMessage *msg,
 						int type, int cls,
 						struct ofono_phone_number *ph,
 						int timeout)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
-
-	if (ph->number[0] != '\0' && cf->ops->registration == NULL)
+	if (ph->number[0] != '\0' && cf->driver->registration == NULL)
 		return __ofono_error_not_implemented(msg);
 
-	if (ph->number[0] == '\0' && cf->ops->erasure == NULL)
+	if (ph->number[0] == '\0' && cf->driver->erasure == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	cf->pending = dbus_message_ref(msg);
@@ -591,10 +561,10 @@ static DBusMessage *set_property_request(struct ofono_modem *modem,
 			ph->number[0] == '\0');
 
 	if (ph->number[0] != '\0')
-		cf->ops->registration(modem, type, cls, ph, timeout,
-					set_property_callback, modem);
+		cf->driver->registration(cf, type, cls, ph, timeout,
+					set_property_callback, cf);
 	else
-		cf->ops->erasure(modem, type, cls, set_property_callback, modem);
+		cf->driver->erasure(cf, type, cls, set_property_callback, cf);
 
 	return NULL;
 }
@@ -602,8 +572,7 @@ static DBusMessage *set_property_request(struct ofono_modem *modem,
 static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 	DBusMessageIter iter;
 	DBusMessageIter var;
 	const char *property;
@@ -630,7 +599,7 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 	if (cf_condition_timeout_property(property, &cls)) {
 		dbus_uint16_t timeout;
 		GSList *l;
-		struct ofono_cf_condition *c;
+		struct ofono_call_forwarding_condition *c;
 
 		type = CALL_FORWARDING_TYPE_NO_REPLY;
 
@@ -651,7 +620,7 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		c = l->data;
 
-		return set_property_request(modem, msg, type, cls,
+		return set_property_request(cf, msg, type, cls,
 						&c->phone_number, timeout);
 	} else if (cf_condition_enabled_property(cf, property, &type, &cls)) {
 		struct ofono_phone_number ph;
@@ -674,7 +643,7 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		timeout = cf_find_timeout(cf->cf_conditions[type], cls);
 
-		return set_property_request(modem, msg, type, cls, &ph,
+		return set_property_request(cf, msg, type, cls, &ph,
 						timeout);
 	}
 
@@ -684,8 +653,7 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 static void disable_conditional_callback(const struct ofono_error *error,
 						void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during conditional erasure");
@@ -698,13 +666,12 @@ static void disable_conditional_callback(const struct ofono_error *error,
 	/* Query the three conditional cf types */
 	cf->query_next = CALL_FORWARDING_TYPE_BUSY;
 	cf->query_end = CALL_FORWARDING_TYPE_NOT_REACHABLE;
-	set_query_next_cf_cond(modem);
+	set_query_next_cf_cond(cf);
 }
 
 static void disable_all_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during erasure of all");
@@ -717,21 +684,20 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 	/* Query all cf types */
 	cf->query_next = CALL_FORWARDING_TYPE_UNCONDITIONAL;
 	cf->query_end = CALL_FORWARDING_TYPE_NOT_REACHABLE;
-	set_query_next_cf_cond(modem);
+	set_query_next_cf_cond(cf);
 }
 
 static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 	const char *strtype;
 	int type;
 
 	if (cf->pending)
 		return __ofono_error_busy(msg);
 
-	if (!cf->ops->erasure)
+	if (!cf->driver->erasure)
 		return __ofono_error_not_implemented(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &strtype,
@@ -748,11 +714,11 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 	cf->pending = dbus_message_ref(msg);
 
 	if (type == CALL_FORWARDING_TYPE_ALL)
-		cf->ops->erasure(modem, type, BEARER_CLASS_DEFAULT,
-				disable_all_callback, modem);
+		cf->driver->erasure(cf, type, BEARER_CLASS_DEFAULT,
+				disable_all_callback, cf);
 	else
-		cf->ops->erasure(modem, type, BEARER_CLASS_DEFAULT,
-				disable_conditional_callback, modem);
+		cf->driver->erasure(cf, type, BEARER_CLASS_DEFAULT,
+				disable_conditional_callback, cf);
 
 	return NULL;
 }
@@ -772,10 +738,9 @@ static GDBusSignalTable cf_signals[] = {
 	{ }
 };
 
-static DBusMessage *cf_ss_control_reply(struct ofono_modem *modem,
+static DBusMessage *cf_ss_control_reply(struct ofono_call_forwarding *cf,
 					struct cf_ss_request *req)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
 	const char *context = "CallForwarding";
 	const char *sig = "(ssa{sv})";
 	const char *ss_type = ss_control_type_to_string(req->ss_type);
@@ -846,11 +811,10 @@ static DBusMessage *cf_ss_control_reply(struct ofono_modem *modem,
 }
 
 static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
-					const struct ofono_cf_condition *list,
-					void *data)
+			const struct ofono_call_forwarding_condition *list,
+			void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 	GSList *l;
 	DBusMessage *reply;
 
@@ -869,32 +833,29 @@ static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 	cf->ss_req->cf_list[cf->query_next] = l;
 
 	if (cf->query_next == cf->query_end) {
-		reply = cf_ss_control_reply(modem, cf->ss_req);
+		reply = cf_ss_control_reply(cf, cf->ss_req);
 		__ofono_dbus_pending_reply(&cf->pending, reply);
 		g_free(cf->ss_req);
 		cf->ss_req = NULL;
 	}
 
-	set_new_cond_list(modem, cf->query_next, l);
+	set_new_cond_list(cf, cf->query_next, l);
 
 	if (cf->query_next != cf->query_end) {
 		cf->query_next++;
-		ss_set_query_next_cf_cond(modem);
+		ss_set_query_next_cf_cond(cf);
 	}
 }
 
-static void ss_set_query_next_cf_cond(struct ofono_modem *modem)
+static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
-
-	cf->ops->query(modem, cf->query_next, BEARER_CLASS_DEFAULT,
-			ss_set_query_cf_callback, modem);
+	cf->driver->query(cf, cf->query_next, BEARER_CLASS_DEFAULT,
+			ss_set_query_cf_callback, cf);
 }
 
 static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during cf ss control set/erasure");
@@ -906,7 +867,7 @@ static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	ss_set_query_next_cf_cond(modem);
+	ss_set_query_next_cf_cond(cf);
 }
 
 static gboolean cf_ss_control(struct ofono_modem *modem,
@@ -915,7 +876,7 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 				const char *sic, const char *dn,
 				DBusMessage *msg)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = modem->call_forwarding;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_SS_DEFAULT;
 	int timeout = DEFAULT_NO_REPLY_TIMEOUT;
@@ -1010,19 +971,19 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 
 	switch (type) {
 	case SS_CONTROL_TYPE_REGISTRATION:
-		operation = cf->ops->registration;
+		operation = cf->driver->registration;
 		break;
 	case SS_CONTROL_TYPE_ACTIVATION:
-		operation = cf->ops->activation;
+		operation = cf->driver->activation;
 		break;
 	case SS_CONTROL_TYPE_DEACTIVATION:
-		operation = cf->ops->deactivation;
+		operation = cf->driver->deactivation;
 		break;
 	case SS_CONTROL_TYPE_ERASURE:
-		operation = cf->ops->erasure;
+		operation = cf->driver->erasure;
 		break;
 	case SS_CONTROL_TYPE_QUERY:
-		operation = cf->ops->query;
+		operation = cf->driver->query;
 		break;
 	}
 
@@ -1075,23 +1036,23 @@ static gboolean cf_ss_control(struct ofono_modem *modem,
 	switch (cf->ss_req->ss_type) {
 	case SS_CONTROL_TYPE_REGISTRATION:
 		string_to_phone_number(sia, &ph);
-		cf->ops->registration(modem, cf_type, cls, &ph, timeout,
-					cf_ss_control_callback, modem);
+		cf->driver->registration(cf, cf_type, cls, &ph, timeout,
+					cf_ss_control_callback, cf);
 		break;
 	case SS_CONTROL_TYPE_ACTIVATION:
-		cf->ops->activation(modem, cf_type, cls, cf_ss_control_callback,
-					modem);
+		cf->driver->activation(cf, cf_type, cls, cf_ss_control_callback,
+					cf);
 		break;
 	case SS_CONTROL_TYPE_DEACTIVATION:
-		cf->ops->deactivation(modem, cf_type, cls,
-					cf_ss_control_callback, modem);
+		cf->driver->deactivation(cf, cf_type, cls,
+					cf_ss_control_callback, cf);
 		break;
 	case SS_CONTROL_TYPE_ERASURE:
-		cf->ops->erasure(modem, cf_type, cls, cf_ss_control_callback,
-					modem);
+		cf->driver->erasure(cf, cf_type, cls, cf_ss_control_callback,
+					cf);
 		break;
 	case SS_CONTROL_TYPE_QUERY:
-		ss_set_query_next_cf_cond(modem);
+		ss_set_query_next_cf_cond(cf);
 		break;
 	}
 
@@ -1103,79 +1064,148 @@ error:
 	return TRUE;
 }
 
-static void cf_register_ss_controls(struct ofono_modem *modem)
+static void cf_register_ss_controls(struct ofono_call_forwarding *cf)
 {
-	ss_control_register(modem, "21", cf_ss_control);
-	ss_control_register(modem, "67", cf_ss_control);
-	ss_control_register(modem, "61", cf_ss_control);
-	ss_control_register(modem, "62", cf_ss_control);
+	ss_control_register(cf->modem, "21", cf_ss_control);
+	ss_control_register(cf->modem, "67", cf_ss_control);
+	ss_control_register(cf->modem, "61", cf_ss_control);
+	ss_control_register(cf->modem, "62", cf_ss_control);
 
-	ss_control_register(modem, "002", cf_ss_control);
-	ss_control_register(modem, "004", cf_ss_control);
+	ss_control_register(cf->modem, "002", cf_ss_control);
+	ss_control_register(cf->modem, "004", cf_ss_control);
 }
 
-static void cf_unregister_ss_controls(struct ofono_modem *modem)
+static void cf_unregister_ss_controls(struct ofono_call_forwarding *cf)
 {
-	ss_control_unregister(modem, "21", cf_ss_control);
-	ss_control_unregister(modem, "67", cf_ss_control);
-	ss_control_unregister(modem, "61", cf_ss_control);
-	ss_control_unregister(modem, "62", cf_ss_control);
+	ss_control_unregister(cf->modem, "21", cf_ss_control);
+	ss_control_unregister(cf->modem, "67", cf_ss_control);
+	ss_control_unregister(cf->modem, "61", cf_ss_control);
+	ss_control_unregister(cf->modem, "62", cf_ss_control);
 
-	ss_control_unregister(modem, "002", cf_ss_control);
-	ss_control_unregister(modem, "004", cf_ss_control);
+	ss_control_unregister(cf->modem, "002", cf_ss_control);
+	ss_control_unregister(cf->modem, "004", cf_ss_control);
 }
 
-int ofono_call_forwarding_register(struct ofono_modem *modem,
-				struct ofono_call_forwarding_ops *ops)
+int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_driver *d)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
+	DBG("driver: %p, name: %s", d, d->name);
 
-	if (modem == NULL)
-		return -1;
+	if (d->probe == NULL)
+		return -EINVAL;
 
-	if (ops == NULL)
-		return -1;
-
-	if (ops->query == NULL)
-		return -1;
-
-	modem->call_forwarding = call_forwarding_create();
-
-	if (modem->call_forwarding == NULL)
-		return -1;
-
-	modem->call_forwarding->ops = ops;
-
-	if (!g_dbus_register_interface(conn, modem->path,
-					CALL_FORWARDING_INTERFACE,
-					cf_methods, cf_signals, NULL,
-					modem, call_forwarding_destroy)) {
-		ofono_error("Could not register CallForwarding %s", modem->path);
-		call_forwarding_destroy(modem);
-
-		return -1;
-	}
-
-	ofono_debug("Registered call forwarding interface");
-
-	cf_register_ss_controls(modem);
-
-	ofono_modem_add_interface(modem, CALL_FORWARDING_INTERFACE);
+	g_drivers = g_slist_prepend(g_drivers, (void *)d);
 
 	return 0;
 }
 
-void ofono_call_forwarding_unregister(struct ofono_modem *modem)
+void ofono_call_forwarding_driver_unregister(const struct ofono_call_forwarding_driver *d)
 {
-	struct call_forwarding_data *cf = modem->call_forwarding;
+	DBG("driver: %p, name: %s", d, d->name);
+
+	g_drivers = g_slist_remove(g_drivers, (void *)d);
+}
+
+static void call_forwarding_unregister(struct ofono_atom *atom)
+{
+	struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
+	const char *path = ofono_modem_get_path(cf->modem);
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!cf)
+	ofono_modem_remove_interface(cf->modem, CALL_FORWARDING_INTERFACE);
+	g_dbus_unregister_interface(conn, path, CALL_FORWARDING_INTERFACE);
+
+	cf_unregister_ss_controls(cf);
+
+	cf->modem->call_forwarding = NULL;
+}
+
+static void call_forwarding_remove(struct ofono_atom *atom)
+{
+	struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
+
+	DBG("atom: %p", atom);
+
+	if (cf == NULL)
 		return;
 
-	ofono_modem_remove_interface(modem, CALL_FORWARDING_INTERFACE);
-	g_dbus_unregister_interface(conn, modem->path,
-					CALL_FORWARDING_INTERFACE);
+	if (cf->driver && cf->driver->remove)
+		cf->driver->remove(cf);
 
-	modem->call_forwarding = NULL;
+	cf_clear_all(cf);
+
+	g_free(cf);
+}
+
+struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *modem,
+							const char *driver,
+							void *data)
+{
+	struct ofono_call_forwarding *cf;
+	GSList *l;
+
+	if (driver == NULL)
+		return NULL;
+
+	cf = g_try_new0(struct ofono_call_forwarding, 1);
+
+	if (cf == NULL)
+		return NULL;
+
+	cf->modem = modem;
+	cf->driver_data = data;
+	cf->atom = __ofono_modem_add_atom(modem,
+						OFONO_ATOM_TYPE_CALL_FORWARDING,
+						call_forwarding_remove, cf);
+	for (l = g_drivers; l; l = l->next) {
+		const struct ofono_call_forwarding_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(cf) < 0)
+			continue;
+
+		cf->driver = drv;
+		break;
+	}
+
+	return cf;
+}
+
+void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(cf->modem);
+
+	if (!g_dbus_register_interface(conn, path,
+					CALL_FORWARDING_INTERFACE,
+					cf_methods, cf_signals, NULL, cf,
+					NULL)) {
+		ofono_error("Could not create %s interface",
+				CALL_FORWARDING_INTERFACE);
+
+		return;
+	}
+
+	cf->modem->call_forwarding = cf;
+
+	ofono_modem_add_interface(cf->modem, CALL_FORWARDING_INTERFACE);
+	cf_register_ss_controls(cf);
+
+	__ofono_atom_register(cf->atom, call_forwarding_unregister);
+}
+
+void ofono_call_forwarding_remove(struct ofono_call_forwarding *cf)
+{
+	__ofono_modem_remove_atom(cf->modem, cf->atom);
+}
+
+void ofono_call_forwarding_set_data(struct ofono_call_forwarding *cf, void *data)
+{
+	cf->driver_data = data;
+}
+
+void *ofono_call_forwarding_get_data(struct ofono_call_forwarding *cf)
+{
+	return cf->driver_data;
 }
