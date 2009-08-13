@@ -97,15 +97,6 @@ typedef void (*ofono_signal_strength_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_modem_attribute_query_cb_t)(const struct ofono_error *error,
 					const char *attribute, void *data);
 
-typedef void (*ofono_call_setting_status_cb_t)(const struct ofono_error *error,
-						int status, void *data);
-
-typedef void (*ofono_clir_setting_cb_t)(const struct ofono_error *error,
-					int override, int network, void *data);
-
-typedef void (*ofono_call_waiting_status_cb_t)(const struct ofono_error *error,
-						int status, void *data);
-
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
 					enum ofono_sim_file_structure structure,
@@ -236,27 +227,6 @@ struct ofono_ussd_ops {
 void ofono_ussd_notify(struct ofono_modem *modem, int status, const char *str);
 int ofono_ussd_register(struct ofono_modem *modem, struct ofono_ussd_ops *ops);
 void ofono_ussd_unregister(struct ofono_modem *modem);
-
-struct ofono_call_settings_ops {
-	void (*clip_query)(struct ofono_modem *modem,
-				ofono_call_setting_status_cb_t cb, void *data);
-	void (*colp_query)(struct ofono_modem *modem,
-				ofono_call_setting_status_cb_t cb, void *data);
-	void (*clir_query)(struct ofono_modem *modem, ofono_clir_setting_cb_t cb,
-				void *data);
-	void (*colr_query)(struct ofono_modem *modem,
-				ofono_call_setting_status_cb_t cb, void *data);
-	void (*clir_set)(struct ofono_modem *modem, int mode, ofono_generic_cb_t cb,
-				void *data);
-	void (*cw_query)(struct ofono_modem *modem, int cls,
-			ofono_call_waiting_status_cb_t cb, void *data);
-	void (*cw_set)(struct ofono_modem *modem, int mode, int cls,
-			ofono_generic_cb_t cb, void *data);
-};
-
-int ofono_call_settings_register(struct ofono_modem *modem,
-				struct ofono_call_settings_ops *ops);
-void ofono_call_settings_unregister(struct ofono_modem *modem);
 
 struct ofono_sim_ops {
 	void (*read_file_info)(struct ofono_modem *modem, int fileid,

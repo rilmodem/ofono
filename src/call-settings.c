@@ -26,19 +26,21 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 #include "ussd.h"
 
 #define CALL_SETTINGS_INTERFACE "org.ofono.CallSettings"
 
 #define CALL_SETTINGS_FLAG_CACHED 0x1
+
+static GSList *g_drivers = NULL;
 
 enum call_setting_type {
 	CALL_SETTING_TYPE_CLIP = 0,
@@ -48,8 +50,7 @@ enum call_setting_type {
 	CALL_SETTING_TYPE_CW
 };
 
-struct call_settings_data {
-	struct ofono_call_settings_ops *ops;
+struct ofono_call_settings {
 	int clir;
 	int colr;
 	int clip;
@@ -61,10 +62,11 @@ struct call_settings_data {
 	int ss_req_type;
 	int ss_req_cls;
 	enum call_setting_type ss_setting;
+	const struct ofono_call_settings_driver *driver;
+	void *driver_data;
+	struct ofono_modem *modem;
+	struct ofono_atom *atom;
 };
-
-static void cs_register_ss_controls(struct ofono_modem *modem);
-static void cs_unregister_ss_controls(struct ofono_modem *modem);
 
 static const char *clip_status_to_string(int status)
 {
@@ -132,94 +134,115 @@ static const char *clir_status_to_string(int status)
 	}
 }
 
-static void set_clir_network(struct ofono_modem *modem, int clir)
+static void set_clir_network(struct ofono_call_settings *cs, int clir)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	DBusConnection *conn;
+	const char *path;
+	const char *str;
 
-	if (cs->clir != clir) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *str = clir_status_to_string(clir);
+	if (cs->clir == clir)
+		return;
 
-		cs->clir = clir;
+	cs->clir = clir;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-				CALL_SETTINGS_INTERFACE,
-				"CallingLineRestriction",
-				DBUS_TYPE_STRING, &str);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cs->modem);
+
+	str = clir_status_to_string(clir);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+						"CallingLineRestriction",
+						DBUS_TYPE_STRING, &str);
 }
 
-static void set_clir_override(struct ofono_modem *modem, int override)
+static void set_clir_override(struct ofono_call_settings *cs, int override)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	DBusConnection *conn;
+	const char *path;
+	const char *str;
 
-	if (cs->clir_setting != override) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *str = hide_callerid_to_string(override);
+	if (cs->clir_setting == override)
+		return;
 
-		cs->clir_setting = override;
+	cs->clir_setting = override;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-				CALL_SETTINGS_INTERFACE,
-				"HideCallerId", DBUS_TYPE_STRING, &str);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cs->modem);
+
+	str = hide_callerid_to_string(override);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+						"HideCallerId",
+						DBUS_TYPE_STRING, &str);
 }
 
-static void set_clip(struct ofono_modem *modem, int clip)
+static void set_clip(struct ofono_call_settings *cs, int clip)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	DBusConnection *conn;
+	const char *path;
+	const char *str;
 
-	if (cs->clip != clip) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *str = clip_status_to_string(clip);
+	if (cs->clip == clip)
+		return;
 
-		cs->clip = clip;
+	cs->clip = clip;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-				CALL_SETTINGS_INTERFACE,
-				"CallingLinePresentation",
-				DBUS_TYPE_STRING, &str);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cs->modem);
+
+	str = clip_status_to_string(clip);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+						"CallingLinePresentation",
+						DBUS_TYPE_STRING, &str);
 }
 
-static void set_colp(struct ofono_modem *modem, int colp)
+static void set_colp(struct ofono_call_settings *cs, int colp)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	DBusConnection *conn;
+	const char *path;
+	const char *str;
 
-	if (cs->colp != colp) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *str = colp_status_to_string(colp);
+	if (cs->colp == colp)
+		return;
 
-		cs->colp = colp;
+	cs->colp = colp;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-				CALL_SETTINGS_INTERFACE,
-				"CalledLinePresentation",
-				DBUS_TYPE_STRING, &str);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cs->modem);
+
+	str = colp_status_to_string(colp);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+						"CalledLinePresentation",
+						DBUS_TYPE_STRING, &str);
 }
 
-static void set_colr(struct ofono_modem *modem, int colr)
+static void set_colr(struct ofono_call_settings *cs, int colr)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	DBusConnection *conn;
+	const char *path;
+	const char *str;
 
-	if (cs->colr != colr) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *str = colr_status_to_string(colr);
+	if (cs->colr == colr)
+		return;
 
-		cs->colr = colr;
+	cs->colr = colr;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-				CALL_SETTINGS_INTERFACE,
-				"CalledLineRestriction",
-				DBUS_TYPE_STRING, &str);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cs->modem);
+
+	str = colr_status_to_string(colr);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+						"CalledLineRestriction",
+						DBUS_TYPE_STRING, &str);
 }
 
-static void set_cw(struct ofono_modem *modem, int new_cw, int mask)
+static void set_cw(struct ofono_call_settings *cs, int new_cw, int mask)
 {
-	struct call_settings_data *cs = modem->call_settings;
 	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(cs->modem);
 	char buf[64];
 	int j;
 	const char *value;
@@ -237,41 +260,13 @@ static void set_cw(struct ofono_modem *modem, int new_cw, int mask)
 			value = "disabled";
 
 		sprintf(buf, "%sCallWaiting", bearer_class_to_string(j));
-		ofono_dbus_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, path,
 							CALL_SETTINGS_INTERFACE,
 							buf, DBUS_TYPE_STRING,
 							&value);
 	}
 
 	cs->cw = new_cw;
-}
-
-static struct call_settings_data *call_settings_create()
-{
-	struct call_settings_data *r;
-
-	r = g_try_new0(struct call_settings_data, 1);
-
-	if (!r)
-		return r;
-
-	/* Set all the settings to unknown state */
-	r->clip = 2;
-	r->clir = 2;
-	r->colp = 2;
-	r->colr = 2;
-
-	return r;
-}
-
-static void call_settings_destroy(gpointer data)
-{
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
-
-	cs_unregister_ss_controls(modem);
-
-	g_free(cs);
 }
 
 static void property_append_cw_conditions(DBusMessageIter *dict,
@@ -296,9 +291,8 @@ static void property_append_cw_conditions(DBusMessageIter *dict,
 	}
 }
 
-static void generate_cw_ss_query_reply(struct ofono_modem *modem)
+static void generate_cw_ss_query_reply(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
 	const char *sig = "(sa{sv})";
 	const char *ss_type = ss_control_type_to_string(cs->ss_req_type);
 	const char *context = "CallWaiting";
@@ -340,8 +334,7 @@ static void generate_cw_ss_query_reply(struct ofono_modem *modem)
 static void cw_ss_query_callback(const struct ofono_error *error, int status,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting CW via SS failed");
@@ -353,15 +346,14 @@ static void cw_ss_query_callback(const struct ofono_error *error, int status,
 		return;
 	}
 
-	set_cw(modem, status, BEARER_CLASS_VOICE);
+	set_cw(cs, status, BEARER_CLASS_VOICE);
 
-	generate_cw_ss_query_reply(modem);
+	generate_cw_ss_query_reply(cs);
 }
 
 static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting CW via SS failed");
@@ -371,8 +363,8 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
-				cw_ss_query_callback, modem);
+	cs->driver->cw_query(cs, BEARER_CLASS_DEFAULT,
+				cw_ss_query_callback, cs);
 }
 
 static gboolean cw_ss_control(struct ofono_modem *modem,
@@ -381,7 +373,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 				const char *sib, const char *sic,
 				const char *dn, DBusMessage *msg)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = modem->call_settings;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_SS_DEFAULT;
 	DBusMessage *reply;
@@ -400,8 +392,8 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 	if (strlen(sib) || strlen(sib) || strlen(dn))
 		goto bad_format;
 
-	if ((type == SS_CONTROL_TYPE_QUERY && !cs->ops->cw_query) ||
-		(type != SS_CONTROL_TYPE_QUERY && !cs->ops->cw_set)) {
+	if ((type == SS_CONTROL_TYPE_QUERY && !cs->driver->cw_query) ||
+		(type != SS_CONTROL_TYPE_QUERY && !cs->driver->cw_set)) {
 		reply = __ofono_error_not_implemented(msg);
 		goto error;
 	}
@@ -431,7 +423,7 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 	case SS_CONTROL_TYPE_REGISTRATION:
 	case SS_CONTROL_TYPE_ACTIVATION:
 		cs->ss_req_type = SS_CONTROL_TYPE_ACTIVATION;
-		cs->ops->cw_set(modem, 1, cls, cw_ss_set_callback, modem);
+		cs->driver->cw_set(cs, 1, cls, cw_ss_set_callback, cs);
 		break;
 
 	case SS_CONTROL_TYPE_QUERY:
@@ -440,14 +432,14 @@ static gboolean cw_ss_control(struct ofono_modem *modem,
 		 * according to 22.004 Appendix A, so CLASS_DEFAULT
 		 * is safe to use here
 		 */
-		cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
-					cw_ss_query_callback, modem);
+		cs->driver->cw_query(cs, BEARER_CLASS_DEFAULT,
+					cw_ss_query_callback, cs);
 		break;
 
 	case SS_CONTROL_TYPE_DEACTIVATION:
 	case SS_CONTROL_TYPE_ERASURE:
 		cs->ss_req_type = SS_CONTROL_TYPE_DEACTIVATION;
-		cs->ops->cw_set(modem, 0, cls, cw_ss_set_callback, modem);
+		cs->driver->cw_set(cs, 0, cls, cw_ss_set_callback, cs);
 		break;
 	}
 
@@ -460,10 +452,9 @@ error:
 	return TRUE;
 }
 
-static void generate_ss_query_reply(struct ofono_modem *modem,
+static void generate_ss_query_reply(struct ofono_call_settings *cs,
 					const char *context, const char *value)
 {
-	struct call_settings_data *cs = modem->call_settings;
 	const char *sig = "(ss)";
 	const char *ss_type = ss_control_type_to_string(cs->ss_req_type);
 	DBusMessageIter iter;
@@ -497,8 +488,7 @@ static void generate_ss_query_reply(struct ofono_modem *modem,
 static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 					int status, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 	const char *context;
 	const char *value;
 
@@ -512,19 +502,19 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 
 	switch (cs->ss_setting) {
 	case CALL_SETTING_TYPE_CLIP:
-		set_clip(modem, status);
+		set_clip(cs, status);
 		value = clip_status_to_string(status);
 		context = "CallingLinePresentation";
 		break;
 
 	case CALL_SETTING_TYPE_COLP:
-		set_colp(modem, status);
+		set_colp(cs, status);
 		value = colp_status_to_string(status);
 		context = "CalledLinePresentation";
 		break;
 
 	case CALL_SETTING_TYPE_COLR:
-		set_colr(modem, status);
+		set_colr(cs, status);
 		value = colr_status_to_string(status);
 		context = "CallingLineRestriction";
 		break;
@@ -536,7 +526,7 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 		return;
 	};
 
-	generate_ss_query_reply(modem, context, value);
+	generate_ss_query_reply(cs, context, value);
 }
 
 static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
@@ -545,10 +535,10 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
 				const char *sib, const char *sic,
 				const char *dn, DBusMessage *msg)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = modem->call_settings;
 	DBusConnection *conn = ofono_dbus_get_connection();
-	void (*query_op)(struct ofono_modem *modem, ofono_call_setting_status_cb_t cb,
-				void *data);
+	void (*query_op)(struct ofono_call_settings *cs,
+				ofono_call_settings_status_cb_t cb, void *data);
 
 	if (!cs)
 		return FALSE;
@@ -562,13 +552,13 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
 
 	if (!strcmp(sc, "30")) {
 		cs->ss_setting = CALL_SETTING_TYPE_CLIP;
-		query_op = cs->ops->clip_query;
+		query_op = cs->driver->clip_query;
 	} else if (!strcmp(sc, "76")) {
 		cs->ss_setting = CALL_SETTING_TYPE_COLP;
-		query_op = cs->ops->colp_query;
+		query_op = cs->driver->colp_query;
 	} else if (!strcmp(sc, "77")) {
 		cs->ss_setting = CALL_SETTING_TYPE_COLR;
-		query_op = cs->ops->colr_query;
+		query_op = cs->driver->colr_query;
 	} else
 		return FALSE;
 
@@ -591,7 +581,7 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
 
 	cs->pending = dbus_message_ref(msg);
 
-	query_op(modem, clip_colp_colr_ss_query_cb, modem);
+	query_op(cs, clip_colp_colr_ss_query_cb, cs);
 
 	return TRUE;
 }
@@ -599,8 +589,7 @@ static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
 static void clir_ss_query_callback(const struct ofono_error *error,
 					int override, int network, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 	const char *value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
@@ -641,16 +630,15 @@ static void clir_ss_query_callback(const struct ofono_error *error,
 		value = "unknown";
 	};
 
-	generate_ss_query_reply(modem, "CallingLineRestriction", value);
+	generate_ss_query_reply(cs, "CallingLineRestriction", value);
 
-	set_clir_network(modem, network);
-	set_clir_override(modem, override);
+	set_clir_network(cs, network);
+	set_clir_override(cs, override);
 }
 
 static void clir_ss_set_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting clir via SS failed");
@@ -660,7 +648,7 @@ static void clir_ss_set_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	cs->ops->clir_query(modem, clir_ss_query_callback, modem);
+	cs->driver->clir_query(cs, clir_ss_query_callback, cs);
 }
 
 static gboolean clir_ss_control(struct ofono_modem *modem,
@@ -669,7 +657,7 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 				const char *sib, const char *sic,
 				const char *dn, DBusMessage *msg)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = modem->call_settings;
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!cs)
@@ -697,8 +685,8 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 		return TRUE;
 	}
 
-	if ((type == SS_CONTROL_TYPE_QUERY && !cs->ops->clir_query) ||
-		(type != SS_CONTROL_TYPE_QUERY && !cs->ops->clir_set)) {
+	if ((type == SS_CONTROL_TYPE_QUERY && !cs->driver->clir_query) ||
+		(type != SS_CONTROL_TYPE_QUERY && !cs->driver->clir_set)) {
 		DBusMessage *reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
@@ -712,59 +700,53 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 	case SS_CONTROL_TYPE_REGISTRATION:
 	case SS_CONTROL_TYPE_ACTIVATION:
 		cs->ss_req_type = SS_CONTROL_TYPE_ACTIVATION;
-		cs->ops->clir_set(modem, OFONO_CLIR_OPTION_INVOCATION,
-					clir_ss_set_callback, modem);
+		cs->driver->clir_set(cs, OFONO_CLIR_OPTION_INVOCATION,
+					clir_ss_set_callback, cs);
 		break;
 
 	case SS_CONTROL_TYPE_QUERY:
 		cs->ss_req_type = SS_CONTROL_TYPE_QUERY;
-		cs->ops->clir_query(modem, clir_ss_query_callback,
-					modem);
+		cs->driver->clir_query(cs, clir_ss_query_callback, cs);
 		break;
 
 	case SS_CONTROL_TYPE_DEACTIVATION:
 	case SS_CONTROL_TYPE_ERASURE:
 		cs->ss_req_type = SS_CONTROL_TYPE_DEACTIVATION;
-		cs->ops->clir_set(modem, OFONO_CLIR_OPTION_SUPPRESSION,
-					clir_ss_set_callback, modem);
+		cs->driver->clir_set(cs, OFONO_CLIR_OPTION_SUPPRESSION,
+					clir_ss_set_callback, cs);
 		break;
 	};
 
 	return TRUE;
 }
 
-static void cs_register_ss_controls(struct ofono_modem *modem)
+static void cs_register_ss_controls(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	ss_control_register(cs->modem, "30", clip_colp_colr_ss);
+	ss_control_register(cs->modem, "31", clir_ss_control);
+	ss_control_register(cs->modem, "76", clip_colp_colr_ss);
 
-	ss_control_register(modem, "30", clip_colp_colr_ss);
-	ss_control_register(modem, "31", clir_ss_control);
-	ss_control_register(modem, "76", clip_colp_colr_ss);
+	ss_control_register(cs->modem, "43", cw_ss_control);
 
-	ss_control_register(modem, "43", cw_ss_control);
-
-	if (cs->ops->colr_query)
-		ss_control_register(modem, "77", clip_colp_colr_ss);
+	if (cs->driver->colr_query)
+		ss_control_register(cs->modem, "77", clip_colp_colr_ss);
 }
 
-static void cs_unregister_ss_controls(struct ofono_modem *modem)
+static void cs_unregister_ss_controls(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	ss_control_unregister(cs->modem, "30", clip_colp_colr_ss);
+	ss_control_unregister(cs->modem, "31", clir_ss_control);
+	ss_control_unregister(cs->modem, "76", clip_colp_colr_ss);
 
-	ss_control_unregister(modem, "30", clip_colp_colr_ss);
-	ss_control_unregister(modem, "31", clir_ss_control);
-	ss_control_unregister(modem, "76", clip_colp_colr_ss);
+	ss_control_unregister(cs->modem, "43", cw_ss_control);
 
-	ss_control_unregister(modem, "43", cw_ss_control);
-
-	if (cs->ops->colr_query)
-		ss_control_unregister(modem, "77", clip_colp_colr_ss);
+	if (cs->driver->colr_query)
+		ss_control_unregister(cs->modem, "77", clip_colp_colr_ss);
 }
 
-static DBusMessage *generate_get_properties_reply(struct ofono_modem *modem,
+static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs,
 							DBusMessage *msg)
 {
-	struct call_settings_data *cs = modem->call_settings;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
@@ -811,33 +793,30 @@ static void cs_clir_callback(const struct ofono_error *error,
 				int override_setting, int network_setting,
 				void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		goto out;
 
-	set_clir_network(modem, network_setting);
-	set_clir_override(modem, override_setting);
+	set_clir_network(cs, network_setting);
+	set_clir_override(cs, override_setting);
 
 	cs->flags |= CALL_SETTINGS_FLAG_CACHED;
 
 out:
 	if (cs->pending) {
-		DBusMessage *reply = generate_get_properties_reply(modem,
+		DBusMessage *reply = generate_get_properties_reply(cs,
 								cs->pending);
 		__ofono_dbus_pending_reply(&cs->pending, reply);
 	}
 }
 
-static void query_clir(struct ofono_modem *modem)
+static void query_clir(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
-
-	if (!cs->ops->clir_query) {
+	if (!cs->driver->clir_query) {
 		if (cs->pending) {
 			DBusMessage *reply =
-				generate_get_properties_reply(modem,
+				generate_get_properties_reply(cs,
 								cs->pending);
 			__ofono_dbus_pending_reply(&cs->pending, reply);
 		}
@@ -845,118 +824,108 @@ static void query_clir(struct ofono_modem *modem)
 		return;
 	}
 
-	cs->ops->clir_query(modem, cs_clir_callback, modem);
+	cs->driver->clir_query(cs, cs_clir_callback, cs);
 }
 
 static void cs_clip_callback(const struct ofono_error *error,
 				int state, void *data)
 {
-	struct ofono_modem *modem = data;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_clip(modem, state);
+		set_clip(cs, state);
 
-	query_clir(modem);
+	query_clir(cs);
 }
 
-static void query_clip(struct ofono_modem *modem)
+static void query_clip(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
-
-	if (!cs->ops->clip_query) {
-		query_clir(modem);
+	if (!cs->driver->clip_query) {
+		query_clir(cs);
 		return;
 	}
 
-	cs->ops->clip_query(modem, cs_clip_callback, modem);
+	cs->driver->clip_query(cs, cs_clip_callback, cs);
 }
 
 static void cs_colp_callback(const struct ofono_error *error,
 				int state, void *data)
 {
-	struct ofono_modem *modem = data;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_colp(modem, state);
+		set_colp(cs, state);
 
-	query_clip(modem);
+	query_clip(cs);
 }
 
-static void query_colp(struct ofono_modem *modem)
+static void query_colp(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
-
-	if (!cs->ops->colp_query) {
-		query_clip(modem);
+	if (!cs->driver->colp_query) {
+		query_clip(cs);
 		return;
 	}
 
-	cs->ops->colp_query(modem, cs_colp_callback, modem);
+	cs->driver->colp_query(cs, cs_colp_callback, cs);
 }
 
 static void cs_colr_callback(const struct ofono_error *error,
 				int state, void *data)
 {
-	struct ofono_modem *modem = data;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_colr(modem, state);
+		set_colr(cs, state);
 
-	query_colp(modem);
+	query_colp(cs);
 }
 
-static void query_colr(struct ofono_modem *modem)
+static void query_colr(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
-
-	if (!cs->ops->colr_query) {
-		query_colp(modem);
+	if (!cs->driver->colr_query) {
+		query_colp(cs);
 		return;
 	}
 
-	cs->ops->colr_query(modem, cs_colr_callback, modem);
+	cs->driver->colr_query(cs, cs_colr_callback, cs);
 }
 
 static void cs_cw_callback(const struct ofono_error *error, int status,
 				void *data)
 {
-	struct ofono_modem *modem = data;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_cw(modem, status, BEARER_CLASS_VOICE);
+		set_cw(cs, status, BEARER_CLASS_VOICE);
 
-	query_colr(modem);
+	query_colr(cs);
 }
 
-static void query_cw(struct ofono_modem *modem)
+static void query_cw(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *cs = modem->call_settings;
-
-	if (!cs->ops->cw_query) {
-		query_colr(modem);
+	if (!cs->driver->cw_query) {
+		query_colr(cs);
 		return;
 	}
 
-	cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
-				cs_cw_callback, modem);
+	cs->driver->cw_query(cs, BEARER_CLASS_DEFAULT, cs_cw_callback, cs);
 }
 
 static DBusMessage *cs_get_properties(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (cs->pending)
 		return __ofono_error_busy(msg);
 
 	if (cs->flags & CALL_SETTINGS_FLAG_CACHED)
-		return generate_get_properties_reply(modem, msg);
+		return generate_get_properties_reply(cs, msg);
 
 	/* Query the settings and report back */
 	cs->pending = dbus_message_ref(msg);
 
-	query_cw(modem);
+	query_cw(cs);
 
 	return NULL;
 }
@@ -965,8 +934,7 @@ static void clir_set_query_callback(const struct ofono_error *error,
 					int override_setting,
 					int network_setting, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 	DBusMessage *reply;
 
 	if (!cs->pending)
@@ -985,14 +953,13 @@ static void clir_set_query_callback(const struct ofono_error *error,
 	reply = dbus_message_new_method_return(cs->pending);
 	__ofono_dbus_pending_reply(&cs->pending, reply);
 
-	set_clir_override(modem, override_setting);
-	set_clir_network(modem, network_setting);
+	set_clir_override(cs, override_setting);
+	set_clir_network(cs, network_setting);
 }
 
 static void clir_set_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting clir failed");
@@ -1003,16 +970,15 @@ static void clir_set_callback(const struct ofono_error *error, void *data)
 	}
 
 	/* Assume that if we have clir_set, we have clir_query */
-	cs->ops->clir_query(modem, clir_set_query_callback, modem);
+	cs->driver->clir_query(cs, clir_set_query_callback, cs);
 }
 
-static DBusMessage *set_clir(DBusMessage *msg, struct ofono_modem *modem,
+static DBusMessage *set_clir(DBusMessage *msg, struct ofono_call_settings *cs,
 				const char *setting)
 {
-	struct call_settings_data *cs = modem->call_settings;
 	int clir = -1;
 
-	if (cs->ops->clir_set == NULL)
+	if (cs->driver->clir_set == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (!strcmp(setting, "default"))
@@ -1027,7 +993,7 @@ static DBusMessage *set_clir(DBusMessage *msg, struct ofono_modem *modem,
 
 	cs->pending = dbus_message_ref(msg);
 
-	cs->ops->clir_set(modem, clir, clir_set_callback, modem);
+	cs->driver->clir_set(cs, clir, clir_set_callback, cs);
 
 	return NULL;
 }
@@ -1035,8 +1001,7 @@ static DBusMessage *set_clir(DBusMessage *msg, struct ofono_modem *modem,
 static void cw_set_query_callback(const struct ofono_error *error, int status,
 				void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("CW set succeeded, but query failed!");
@@ -1051,13 +1016,12 @@ static void cw_set_query_callback(const struct ofono_error *error, int status,
 	__ofono_dbus_pending_reply(&cs->pending,
 				dbus_message_new_method_return(cs->pending));
 
-	set_cw(modem, status, BEARER_CLASS_VOICE);
+	set_cw(cs, status, BEARER_CLASS_VOICE);
 }
 
 static void cw_set_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during CW set");
@@ -1068,17 +1032,16 @@ static void cw_set_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	cs->ops->cw_query(modem, BEARER_CLASS_DEFAULT,
-				cw_set_query_callback, modem);
+	cs->driver->cw_query(cs, BEARER_CLASS_DEFAULT,
+				cw_set_query_callback, cs);
 }
 
-static DBusMessage *set_cw_req(DBusMessage *msg, struct ofono_modem *modem,
+static DBusMessage *set_cw_req(DBusMessage *msg, struct ofono_call_settings *cs,
 				const char *setting, int cls)
 {
-	struct call_settings_data *cs = modem->call_settings;
 	int cw;
 
-	if (cs->ops->cw_set == NULL)
+	if (cs->driver->cw_set == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (!strcmp(setting, "enabled"))
@@ -1090,7 +1053,7 @@ static DBusMessage *set_cw_req(DBusMessage *msg, struct ofono_modem *modem,
 
 	cs->pending = dbus_message_ref(msg);
 
-	cs->ops->cw_set(modem, cw, cls, cw_set_callback, modem);
+	cs->driver->cw_set(cs, cw, cls, cw_set_callback, cs);
 
 	return NULL;
 }
@@ -1124,8 +1087,7 @@ static gboolean is_cw_property(const char *property, int mask, int *out_cls)
 static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_settings_data *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 	DBusMessageIter iter;
 	DBusMessageIter var;
 	const char *property;
@@ -1156,7 +1118,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		dbus_message_iter_get_basic(&var, &setting);
 
-		return set_clir(msg, modem, setting);
+		return set_clir(msg, cs, setting);
 	} else if (is_cw_property(property, BEARER_CLASS_VOICE, &cls)) {
 		const char *setting;
 
@@ -1165,7 +1127,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		dbus_message_iter_get_basic(&var, &setting);
 
-		return set_cw_req(msg, modem, setting, cls);
+		return set_cw_req(msg, cs, setting, cls);
 	}
 
 	return __ofono_error_invalid_args(msg);
@@ -1184,53 +1146,131 @@ static GDBusSignalTable cs_signals[] = {
 	{ }
 };
 
-int ofono_call_settings_register(struct ofono_modem *modem,
-				struct ofono_call_settings_ops *ops)
+int ofono_call_settings_driver_register(const struct ofono_call_settings_driver *d)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
+	DBG("driver: %p, name: %s", d, d->name);
 
-	if (modem == NULL)
-		return -1;
+	if (d->probe == NULL)
+		return -EINVAL;
 
-	if (ops == NULL)
-		return -1;
+	g_drivers = g_slist_prepend(g_drivers, (void *)d);
 
-	modem->call_settings = call_settings_create();
-
-	if (!modem->call_settings)
-		return -1;
-
-	modem->call_settings->ops = ops;
-
-	if (!g_dbus_register_interface(conn, modem->path,
-					CALL_SETTINGS_INTERFACE,
-					cs_methods, cs_signals, NULL,
-					modem, call_settings_destroy)) {
-		ofono_error("Could not register CallSettings %s", modem->path);
-		call_settings_destroy(modem);
-
-		return -1;
-	}
-
-	ofono_debug("Registered call settings interface");
-
-	cs_register_ss_controls(modem);
-
-	ofono_modem_add_interface(modem, CALL_SETTINGS_INTERFACE);
 	return 0;
 }
 
-void ofono_call_settings_unregister(struct ofono_modem *modem)
+void ofono_call_settings_driver_unregister(const struct ofono_call_settings_driver *d)
 {
-	struct call_settings_data *cs = modem->call_settings;
+	DBG("driver: %p, name: %s", d, d->name);
+
+	g_drivers = g_slist_remove(g_drivers, (void *)d);
+}
+
+static void call_settings_unregister(struct ofono_atom *atom)
+{
+	struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
+	const char *path = ofono_modem_get_path(cs->modem);
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!cs)
+	ofono_modem_remove_interface(cs->modem, CALL_SETTINGS_INTERFACE);
+	g_dbus_unregister_interface(conn, path, CALL_SETTINGS_INTERFACE);
+
+	cs_unregister_ss_controls(cs);
+
+	cs->modem->call_settings = NULL;
+}
+
+static void call_settings_remove(struct ofono_atom *atom)
+{
+	struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
+	struct ofono_modem *modem = cs->modem;
+
+	DBG("atom: %p", atom);
+
+	if (cs == NULL)
 		return;
 
-	ofono_modem_remove_interface(modem, CALL_SETTINGS_INTERFACE);
-	g_dbus_unregister_interface(conn, modem->path,
-					CALL_SETTINGS_INTERFACE);
+	if (cs->driver && cs->driver->remove)
+		cs->driver->remove(cs);
+
+	g_free(cs);
 
 	modem->call_settings = NULL;
+}
+
+struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem,
+							const char *driver,
+							void *data)
+{
+	struct ofono_call_settings *cs;
+	GSList *l;
+
+	if (driver == NULL)
+		return NULL;
+
+	cs = g_try_new0(struct ofono_call_settings, 1);
+
+	if (cs == NULL)
+		return NULL;
+
+	/* Set all the settings to unknown state */
+	cs->clip = 2;
+	cs->clir = 2;
+	cs->colp = 2;
+	cs->colr = 2;
+	cs->modem = modem;
+	cs->driver_data = data;
+	cs->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS,
+						call_settings_remove, cs);
+
+	for (l = g_drivers; l; l = l->next) {
+		const struct ofono_call_settings_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(cs) < 0)
+			continue;
+
+		cs->driver = drv;
+		break;
+	}
+
+	return cs;
+}
+
+void ofono_call_settings_register(struct ofono_call_settings *cs)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(cs->modem);
+
+	if (!g_dbus_register_interface(conn, path, CALL_SETTINGS_INTERFACE,
+					cs_methods, cs_signals, NULL, cs,
+					NULL)) {
+		ofono_error("Could not create %s interface",
+				CALL_SETTINGS_INTERFACE);
+
+		return;
+	}
+
+	cs->modem->call_settings = cs;
+
+	ofono_modem_add_interface(cs->modem, CALL_SETTINGS_INTERFACE);
+	cs_register_ss_controls(cs);
+
+	__ofono_atom_register(cs->atom, call_settings_unregister);
+}
+
+void ofono_call_settings_remove(struct ofono_call_settings *cs)
+{
+	__ofono_modem_remove_atom(cs->modem, cs->atom);
+}
+
+void ofono_call_settings_set_data(struct ofono_call_settings *cs, void *data)
+{
+	cs->driver_data = data;
+}
+
+void *ofono_call_settings_get_data(struct ofono_call_settings *cs)
+{
+	return cs->driver_data;
 }

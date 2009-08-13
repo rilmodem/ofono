@@ -3,7 +3,7 @@ includedir = @includedir@/ofono
 
 include_HEADERS = log.h plugin.h history.h dbus.h modem.h \
 			types.h call-barring.h call-forwarding.h \
-			call-meter.h
+			call-meter.h call-settings.h
 
 nodist_include_HEADERS = version.h
 
