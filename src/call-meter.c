@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -40,130 +41,122 @@
 #define CALL_METER_FLAG_CACHED 0x1
 #define CALL_METER_FLAG_HAVE_PUCT 0x2
 
-struct call_meter_data {
-	struct ofono_call_meter_ops *ops;
+static GSList *g_drivers = NULL;
+
+struct ofono_call_meter {
 	int flags;
 	DBusMessage *pending;
-
 	int call_meter;
 	int acm;
 	int acm_max;
 	double ppu;
 	char currency[4];
+	const struct ofono_call_meter_driver *driver;
+	void *driver_data;
+	struct ofono_modem *modem;
+	struct ofono_atom *atom;
 };
 
-static struct call_meter_data *call_meter_create(void)
+static void set_call_meter(struct ofono_call_meter *cm, int value)
 {
-	struct call_meter_data *cm = g_try_new0(struct call_meter_data, 1);
+	DBusConnection *conn;
+	const char *path;
 
-	return cm;
+	if (cm->call_meter == value)
+		return;
+
+	cm->call_meter = value;
+
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cm->modem);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+						"CallMeter", DBUS_TYPE_UINT32,
+						&cm->call_meter);
 }
 
-static void call_meter_destroy(gpointer userdata)
+static void set_acm(struct ofono_call_meter *cm, int value)
 {
-	struct ofono_modem *modem = userdata;
-	struct call_meter_data *cm = modem->call_meter;
+	DBusConnection *conn;
+	const char *path;
 
-	g_free(cm);
+	if (cm->acm == value)
+		return;
 
-	modem->call_meter = NULL;
+	cm->acm = value;
+
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cm->modem);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+						"AccumulatedCallMeter",
+						DBUS_TYPE_UINT32, &cm->acm);
 }
 
-static void set_call_meter(struct ofono_modem *modem, int value)
+static void set_acm_max(struct ofono_call_meter *cm, int value)
 {
-	struct call_meter_data *cm = modem->call_meter;
+	DBusConnection *conn;
+	const char *path;
 
-	if (cm->call_meter != value) {
-		DBusConnection *conn = ofono_dbus_get_connection();
+	if (cm->acm_max == value)
+		return;
 
-		cm->call_meter = value;
+	cm->acm_max = value;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-							CALL_METER_INTERFACE,
-							"CallMeter",
-							DBUS_TYPE_UINT32,
-							&cm->call_meter);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cm->modem);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+						"AccumulatedCallMeterMaximum",
+						DBUS_TYPE_UINT32, &cm->acm_max);
 }
 
-static void set_acm(struct ofono_modem *modem, int value)
+static void set_ppu(struct ofono_call_meter *cm, double value)
 {
-	struct call_meter_data *cm = modem->call_meter;
+	DBusConnection *conn;
+	const char *path;
 
-	if (cm->acm != value) {
-		DBusConnection *conn = ofono_dbus_get_connection();
+	if (cm->ppu == value)
+		return;
 
-		cm->acm = value;
+	cm->ppu = value;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-							CALL_METER_INTERFACE,
-							"AccumulatedCallMeter",
-							DBUS_TYPE_UINT32,
-							&cm->acm);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cm->modem);
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+						"PricePerUnit",
+						DBUS_TYPE_DOUBLE, &cm->ppu);
 }
 
-static void set_acm_max(struct ofono_modem *modem, int value)
+static void set_currency(struct ofono_call_meter *cm, const char *value)
 {
-	struct call_meter_data *cm = modem->call_meter;
-
-	if (cm->acm_max != value) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-
-		cm->acm_max = value;
-
-		ofono_dbus_signal_property_changed(conn, modem->path,
-							CALL_METER_INTERFACE,
-							"AccumulatedCallMeterMaximum",
-							DBUS_TYPE_UINT32,
-							&cm->acm_max);
-	}
-}
-
-static void set_ppu(struct ofono_modem *modem, double value)
-{
-	struct call_meter_data *cm = modem->call_meter;
-
-	if (cm->ppu != value) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-
-		cm->ppu = value;
-
-		ofono_dbus_signal_property_changed(conn, modem->path,
-							CALL_METER_INTERFACE,
-							"PricePerUnit",
-							DBUS_TYPE_DOUBLE,
-							&cm->ppu);
-	}
-}
-
-static void set_currency(struct ofono_modem *modem, const char *value)
-{
-	struct call_meter_data *cm = modem->call_meter;
+	DBusConnection *conn;
+	const char *path;
+	const char *dbusval;
 
 	if (strlen(value) > 3) {
 		ofono_error("Currency reported with size > 3: %s", value);
 		return;
 	}
 
-	if (strcmp(cm->currency, value)) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *dbusval = cm->currency;
+	if (!strcmp(cm->currency, value))
+		return;
 
-		strncpy(cm->currency, value, 3);
-		cm->currency[3] = '\0';
+	strncpy(cm->currency, value, 3);
+	cm->currency[3] = '\0';
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-							CALL_METER_INTERFACE,
-							"Currency",
-							DBUS_TYPE_STRING,
-							&dbusval);
-	}
+	conn = ofono_dbus_get_connection();
+	path = ofono_modem_get_path(cm->modem);
+	dbusval = cm->currency;
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+						"Currency", DBUS_TYPE_STRING,
+						&dbusval);
 }
 
-static void cm_get_properties_reply(struct ofono_modem *modem)
+static void cm_get_properties_reply(struct ofono_call_meter *cm)
 {
-	struct call_meter_data *cm = modem->call_meter;
 	DBusMessage *reply;
 	DBusMessageIter iter, dict;
 	const char *currency = cm->currency;
@@ -199,111 +192,99 @@ static void cm_get_properties_reply(struct ofono_modem *modem)
 static void query_call_meter_callback(const struct ofono_error *error, int value,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_call_meter(modem, value);
+		set_call_meter(cm, value);
 
 	if (cm->pending)
-		cm_get_properties_reply(modem);
+		cm_get_properties_reply(cm);
 }
 
-static void query_call_meter(struct ofono_modem *modem)
+static void query_call_meter(struct ofono_call_meter *cm)
 {
-	struct call_meter_data *cm = modem->call_meter;
-
-	if (!cm->ops->call_meter_query) {
+	if (!cm->driver->call_meter_query) {
 		if (cm->pending)
-			cm_get_properties_reply(modem);
+			cm_get_properties_reply(cm);
 
 		return;
 	}
 
-	cm->ops->call_meter_query(modem, query_call_meter_callback, modem);
+	cm->driver->call_meter_query(cm, query_call_meter_callback, cm);
 }
 
 static void query_acm_callback(const struct ofono_error *error, int value,
 					void *data)
 {
-	struct ofono_modem *modem = data;
+	struct ofono_call_meter *cm = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_acm(modem, value);
+		set_acm(cm, value);
 
-	query_call_meter(modem);
+	query_call_meter(cm);
 }
 
-static void query_acm(struct ofono_modem *modem)
+static void query_acm(struct ofono_call_meter *cm)
 {
-	struct call_meter_data *cm = modem->call_meter;
-
-	if (!cm->ops->acm_query) {
-		query_call_meter(modem);
+	if (!cm->driver->acm_query) {
+		query_call_meter(cm);
 		return;
 	}
 
-	cm->ops->acm_query(modem, query_acm_callback, modem);
+	cm->driver->acm_query(cm, query_acm_callback, cm);
 }
 
 static void query_acm_max_callback(const struct ofono_error *error, int value,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		set_acm_max(modem, value);
+		set_acm_max(cm, value);
 
 	cm->flags |= CALL_METER_FLAG_CACHED;
 
-	query_acm(modem);
+	query_acm(cm);
 }
 
-static void query_acm_max(struct ofono_modem *modem)
+static void query_acm_max(struct ofono_call_meter *cm)
 {
-	struct call_meter_data *cm = modem->call_meter;
-
-	if (!cm->ops->acm_max_query) {
+	if (!cm->driver->acm_max_query) {
 		cm->flags |= CALL_METER_FLAG_CACHED;
 
-		query_acm(modem);
+		query_acm(cm);
 		return; 
 	}
 
-	cm->ops->acm_max_query(modem, query_acm_max_callback, modem);
+	cm->driver->acm_max_query(cm, query_acm_max_callback, cm);
 }
 
 static void query_puct_callback(const struct ofono_error *error,
 				const char *currency, double ppu, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
 		cm->flags |= CALL_METER_FLAG_HAVE_PUCT;
-		set_currency(modem, currency);
-		set_ppu(modem, ppu);
+		set_currency(cm, currency);
+		set_ppu(cm, ppu);
 	}
 
-	query_acm_max(modem);
+	query_acm_max(cm);
 }
 
-static void query_puct(struct ofono_modem *modem)
+static void query_puct(struct ofono_call_meter *cm)
 {
-	struct call_meter_data *cm = modem->call_meter;
-
-	if (!cm->ops->puct_query)
-		query_acm_max(modem);
+	if (!cm->driver->puct_query)
+		query_acm_max(cm);
 	else
-		cm->ops->puct_query(modem, query_puct_callback, modem);
+		cm->driver->puct_query(cm, query_puct_callback, cm);
 }
 
 static DBusMessage *cm_get_properties(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 
 	if (cm->pending)
 		return __ofono_error_busy(msg);
@@ -316,9 +297,9 @@ static DBusMessage *cm_get_properties(DBusConnection *conn, DBusMessage *msg,
 	 * fast to query anyway
 	 */
 	if (cm->flags & CALL_METER_FLAG_CACHED)
-		query_acm(modem);
+		query_acm(cm);
 	else
-		query_puct(modem);
+		query_puct(cm);
 
 	return NULL;
 }
@@ -326,8 +307,7 @@ static DBusMessage *cm_get_properties(DBusConnection *conn, DBusMessage *msg,
 static void set_acm_max_query_callback(const struct ofono_error *error, int value,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 	DBusMessage *reply;
 
 	if (!cm->pending)
@@ -346,13 +326,12 @@ static void set_acm_max_query_callback(const struct ofono_error *error, int valu
 	reply = dbus_message_new_method_return(cm->pending);
 	__ofono_dbus_pending_reply(&cm->pending, reply);
 
-	set_acm_max(modem, value);
+	set_acm_max(cm, value);
 }
 
 static void set_acm_max_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Setting acm_max failed");
@@ -362,24 +341,24 @@ static void set_acm_max_callback(const struct ofono_error *error, void *data)
 	}
 
 	/* Assume if we have acm_reset, we have acm_query */
-	cm->ops->acm_max_query(modem, set_acm_max_query_callback, modem);
+	cm->driver->acm_max_query(cm, set_acm_max_query_callback, cm);
 }
 
-static DBusMessage *prop_set_acm_max(DBusMessage *msg, struct ofono_modem *modem,
+static DBusMessage *prop_set_acm_max(DBusMessage *msg,
+					struct ofono_call_meter *cm,
 					DBusMessageIter *dbus_value,
 					const char *pin2)
 {
-	struct call_meter_data *cm = modem->call_meter;
 	dbus_uint32_t value;
 
-	if (!cm->ops->acm_max_set)
+	if (!cm->driver->acm_max_set)
 		return __ofono_error_not_implemented(msg);
 
 	dbus_message_iter_get_basic(dbus_value, &value);
 
 	cm->pending = dbus_message_ref(msg);
 
-	cm->ops->acm_max_set(modem, value, pin2, set_acm_max_callback, modem);
+	cm->driver->acm_max_set(cm, value, pin2, set_acm_max_callback, cm);
 
 	return NULL;
 }
@@ -388,8 +367,7 @@ static void set_puct_query_callback(const struct ofono_error *error,
 					const char *currency, double ppu,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 	DBusMessage *reply;
 
 	if (!cm->pending)
@@ -408,14 +386,13 @@ static void set_puct_query_callback(const struct ofono_error *error,
 	reply = dbus_message_new_method_return(cm->pending);
 	__ofono_dbus_pending_reply(&cm->pending, reply);
 
-	set_currency(modem, currency);
-	set_ppu(modem, ppu);
+	set_currency(cm, currency);
+	set_ppu(cm, ppu);
 }
 
 static void set_puct_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("setting puct failed");
@@ -425,7 +402,7 @@ static void set_puct_callback(const struct ofono_error *error, void *data)
 	}
 
 	/* Assume if we have puct_set, we have puct_query */
-	cm->ops->puct_query(modem, set_puct_query_callback, modem);
+	cm->driver->puct_query(cm, set_puct_query_callback, cm);
 }
 
 /* This function is for the really bizarre case of someone trying to call
@@ -435,8 +412,7 @@ static void set_puct_initial_query_callback(const struct ofono_error *error,
 						const char *currency,
 						double ppu, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 	DBusMessageIter iter;
 	DBusMessageIter var;
 	const char *name;
@@ -451,8 +427,8 @@ static void set_puct_initial_query_callback(const struct ofono_error *error,
 		return;
 	}
 
-	set_currency(modem, currency);
-	set_ppu(modem, ppu);
+	set_currency(cm, currency);
+	set_ppu(cm, ppu);
 
 	cm->flags |= CALL_METER_FLAG_HAVE_PUCT;
 
@@ -468,17 +444,16 @@ static void set_puct_initial_query_callback(const struct ofono_error *error,
 	else
 		dbus_message_iter_get_basic(&var, &currency);
 
-	cm->ops->puct_set(modem, currency, ppu, pin2,
-				set_puct_callback, modem);
+	cm->driver->puct_set(cm, currency, ppu, pin2,
+				set_puct_callback, cm);
 }
 
-static DBusMessage *prop_set_ppu(DBusMessage *msg, struct ofono_modem *modem,
+static DBusMessage *prop_set_ppu(DBusMessage *msg, struct ofono_call_meter *cm,
 				DBusMessageIter *var, const char *pin2)
 {
-	struct call_meter_data *cm = modem->call_meter;
 	double ppu;
 
-	if (!cm->ops->puct_set || !cm->ops->puct_query)
+	if (!cm->driver->puct_set || !cm->driver->puct_query)
 		return __ofono_error_not_implemented(msg);
 
 	dbus_message_iter_get_basic(var, &ppu);
@@ -489,22 +464,20 @@ static DBusMessage *prop_set_ppu(DBusMessage *msg, struct ofono_modem *modem,
 	cm->pending = dbus_message_ref(msg);
 
 	if (cm->flags & CALL_METER_FLAG_HAVE_PUCT)
-		cm->ops->puct_set(modem, cm->currency, ppu, pin2,
-					set_puct_callback, modem);
+		cm->driver->puct_set(cm, cm->currency, ppu, pin2,
+					set_puct_callback, cm);
 	else
-		cm->ops->puct_query(modem, set_puct_initial_query_callback,
-					modem);
+		cm->driver->puct_query(cm, set_puct_initial_query_callback, cm);
 
 	return NULL;
 }
 
-static DBusMessage *prop_set_cur(DBusMessage *msg, struct ofono_modem *modem,
+static DBusMessage *prop_set_cur(DBusMessage *msg, struct ofono_call_meter *cm,
 				DBusMessageIter *var, const char *pin2)
 {
-	struct call_meter_data *cm = modem->call_meter;
 	const char *value;
 
-	if (!cm->ops->puct_set || !cm->ops->puct_query)
+	if (!cm->driver->puct_set || !cm->driver->puct_query)
 		return __ofono_error_not_implemented(msg);
 
 	dbus_message_iter_get_basic(var, &value);
@@ -515,11 +488,10 @@ static DBusMessage *prop_set_cur(DBusMessage *msg, struct ofono_modem *modem,
 	cm->pending = dbus_message_ref(msg);
 
 	if (cm->flags & CALL_METER_FLAG_HAVE_PUCT)
-		cm->ops->puct_set(modem, value, cm->ppu, pin2,
-					set_puct_callback, modem);
+		cm->driver->puct_set(cm, value, cm->ppu, pin2,
+					set_puct_callback, cm);
 	else
-		cm->ops->puct_query(modem, set_puct_initial_query_callback,
-					modem);
+		cm->driver->puct_query(cm, set_puct_initial_query_callback, cm);
 
 	return NULL;
 }
@@ -527,7 +499,7 @@ static DBusMessage *prop_set_cur(DBusMessage *msg, struct ofono_modem *modem,
 struct call_meter_property {
 	const char *name;
 	int type;
-	DBusMessage* (*set)(DBusMessage *msg, struct ofono_modem *modem,
+	DBusMessage* (*set)(DBusMessage *msg, struct ofono_call_meter *cm,
 				DBusMessageIter *var, const char *pin2);
 };
 
@@ -541,8 +513,7 @@ static struct call_meter_property cm_properties[] = {
 static DBusMessage *cm_set_property(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 	DBusMessageIter iter;
 	DBusMessageIter var;
 	const char *name, *passwd = "";
@@ -584,7 +555,7 @@ static DBusMessage *cm_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (dbus_message_iter_get_arg_type(&var) != property->type)
 			return __ofono_error_invalid_args(msg);
 
-		return property->set(msg, modem, &var, passwd);
+		return property->set(msg, cm, &var, passwd);
 	}
 
 	return __ofono_error_invalid_args(msg);
@@ -593,8 +564,7 @@ static DBusMessage *cm_set_property(DBusConnection *conn, DBusMessage *msg,
 static void reset_acm_query_callback(const struct ofono_error *error, int value,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 	DBusMessage *reply;
 
 	if (!cm->pending)
@@ -613,13 +583,12 @@ static void reset_acm_query_callback(const struct ofono_error *error, int value,
 	reply = dbus_message_new_method_return(cm->pending);
 	__ofono_dbus_pending_reply(&cm->pending, reply);
 
-	set_acm(modem, value);
+	set_acm(cm, value);
 }
 
 static void acm_reset_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("reseting acm failed");
@@ -629,14 +598,13 @@ static void acm_reset_callback(const struct ofono_error *error, void *data)
 	}
 
 	/* Assume if we have acm_reset, we have acm_query */
-	cm->ops->acm_query(modem, reset_acm_query_callback, modem);
+	cm->driver->acm_query(cm, reset_acm_query_callback, cm);
 }
 
 static DBusMessage *cm_acm_reset(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct call_meter_data *cm = modem->call_meter;
+	struct ofono_call_meter *cm = data;
 	DBusMessageIter iter;
 	const char *pin2;
 
@@ -654,12 +622,12 @@ static DBusMessage *cm_acm_reset(DBusConnection *conn, DBusMessage *msg,
 	if (!is_valid_pin(pin2))
 		return __ofono_error_invalid_format(msg);
 
-	if (!cm->ops->acm_reset)
+	if (!cm->driver->acm_reset)
 		return __ofono_error_not_implemented(msg);
 
 	cm->pending = dbus_message_ref(msg);
 
-	cm->ops->acm_reset(modem, pin2, acm_reset_callback, modem);
+	cm->driver->acm_reset(cm, pin2, acm_reset_callback, cm);
 
 	return NULL;
 }
@@ -680,18 +648,19 @@ static GDBusSignalTable cm_signals[] = {
 	{ }
 };
 
-void ofono_call_meter_changed_notify(struct ofono_modem *modem, int new_value)
+void ofono_call_meter_changed_notify(struct ofono_call_meter *cm, int new_value)
 {
-	set_call_meter(modem, new_value);
+	set_call_meter(cm, new_value);
 }
 
-void ofono_call_meter_maximum_notify(struct ofono_modem *modem)
+void ofono_call_meter_maximum_notify(struct ofono_call_meter *cm)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *signal;
+	const char *path = ofono_modem_get_path(cm->modem);
 
-	signal = dbus_message_new_signal(modem->path,
-			CALL_METER_INTERFACE, "NearMaximumWarning");
+	signal = dbus_message_new_signal(path, CALL_METER_INTERFACE,
+						"NearMaximumWarning");
 	if (!signal) {
 		ofono_error("Unable to allocate new %s.NearMaximumWarning "
 				"signal", CALL_METER_INTERFACE);
@@ -701,45 +670,118 @@ void ofono_call_meter_maximum_notify(struct ofono_modem *modem)
 	g_dbus_send_message(conn, signal);
 }
 
-int ofono_call_meter_register(struct ofono_modem *modem,
-				struct ofono_call_meter_ops *ops)
+int ofono_call_meter_driver_register(const struct ofono_call_meter_driver *d)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
+	DBG("driver: %p, name: %s", d, d->name);
 
-	if (!modem || !ops)
-		return -1;
+	if (d->probe == NULL)
+		return -EINVAL;
 
-	modem->call_meter = call_meter_create();
-
-	if (!modem->call_meter)
-		return -1;
-
-	modem->call_meter->ops = ops;
-
-	if (!g_dbus_register_interface(conn, modem->path, CALL_METER_INTERFACE,
-					cm_methods, cm_signals, NULL, modem,
-					call_meter_destroy)) {
-		ofono_error("Could not create %s interface",
-				CALL_METER_INTERFACE);
-		call_meter_destroy(modem);
-
-		return -1;
-	}
-
-	ofono_modem_add_interface(modem, CALL_METER_INTERFACE);
+	g_drivers = g_slist_prepend(g_drivers, (void *)d);
 
 	return 0;
 }
 
-void ofono_call_meter_unregister(struct ofono_modem *modem)
+void ofono_call_meter_driver_unregister(const struct ofono_call_meter_driver *d)
 {
+	DBG("driver: %p, name: %s", d, d->name);
+
+	g_drivers = g_slist_remove(g_drivers, (void *)d);
+}
+
+static void call_meter_unregister(struct ofono_atom *atom)
+{
+	struct ofono_call_meter *cm = __ofono_atom_get_data(atom);
+	const char *path = ofono_modem_get_path(cm->modem);
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!modem->call_meter)
+	ofono_modem_remove_interface(cm->modem, CALL_METER_INTERFACE);
+	g_dbus_unregister_interface(conn, path, CALL_METER_INTERFACE);
+}
+
+static void call_meter_remove(struct ofono_atom *atom)
+{
+	struct ofono_call_meter *cm = __ofono_atom_get_data(atom);
+	struct ofono_modem *modem = cm->modem;
+
+	DBG("atom: %p", atom);
+
+	if (cm == NULL)
 		return;
 
-	ofono_modem_remove_interface(modem, CALL_METER_INTERFACE);
-	g_dbus_unregister_interface(conn, modem->path, CALL_METER_INTERFACE);
+	if (cm->driver && cm->driver->remove)
+		cm->driver->remove(cm);
 
-	modem->call_meter = NULL;
+	g_free(cm);
+}
+
+struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
+							const char *driver,
+							void *data)
+{
+	struct ofono_call_meter *cm;
+	GSList *l;
+
+	if (driver == NULL)
+		return NULL;
+
+	cm = g_try_new0(struct ofono_call_meter, 1);
+
+	if (cm == NULL)
+		return NULL;
+
+	cm->modem = modem;
+	cm->driver_data = data;
+	cm->atom = __ofono_modem_add_atom(modem,
+						OFONO_ATOM_TYPE_CALL_METER,
+						call_meter_remove, cm);
+
+	for (l = g_drivers; l; l = l->next) {
+		const struct ofono_call_meter_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(cm) < 0)
+			continue;
+
+		cm->driver = drv;
+		break;
+	}
+
+	return cm;
+}
+
+void ofono_call_meter_register(struct ofono_call_meter *cm)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(cm->modem);
+
+	if (!g_dbus_register_interface(conn, path, CALL_METER_INTERFACE,
+					cm_methods, cm_signals, NULL, cm,
+					NULL)) {
+		ofono_error("Could not create %s interface",
+				CALL_METER_INTERFACE);
+
+		return;
+	}
+
+	ofono_modem_add_interface(cm->modem, CALL_METER_INTERFACE);
+
+	__ofono_atom_register(cm->atom, call_meter_unregister);
+}
+
+void ofono_call_meter_remove(struct ofono_call_meter *cm)
+{
+	__ofono_modem_remove_atom(cm->modem, cm->atom);
+}
+
+void ofono_call_meter_set_data(struct ofono_call_meter *cm, void *data)
+{
+	cm->driver_data = data;
+}
+
+void *ofono_call_meter_get_data(struct ofono_call_meter *cm)
+{
+	return cm->driver_data;
 }

@@ -119,13 +119,6 @@ typedef void (*ofono_clir_setting_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_call_waiting_status_cb_t)(const struct ofono_error *error,
 						int status, void *data);
 
-typedef void (*ofono_call_meter_query_cb_t)(const struct ofono_error *error,
-					int value, void *data);
-
-typedef void (*ofono_call_meter_puct_query_cb_t)(const struct ofono_error *error,
-					const char *currency, double ppu,
-					void *data);
-
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
 					enum ofono_sim_file_structure structure,
@@ -277,30 +270,6 @@ struct ofono_call_settings_ops {
 int ofono_call_settings_register(struct ofono_modem *modem,
 				struct ofono_call_settings_ops *ops);
 void ofono_call_settings_unregister(struct ofono_modem *modem);
-
-struct ofono_call_meter_ops {
-	void (*call_meter_query)(struct ofono_modem *modem,
-			ofono_call_meter_query_cb_t cb, void *data);
-	void (*acm_query)(struct ofono_modem *modem,
-			ofono_call_meter_query_cb_t cb, void *data);
-	void (*acm_reset)(struct ofono_modem *modem, const char *sim_pin2,
-			ofono_generic_cb_t cb, void *data);
-	void (*acm_max_query)(struct ofono_modem *modem,
-			ofono_call_meter_query_cb_t cb, void *data);
-	void (*acm_max_set)(struct ofono_modem *modem, int new_value,
-			const char *sim_pin2, ofono_generic_cb_t cb, void *data);
-	void (*puct_query)(struct ofono_modem *modem,
-			ofono_call_meter_puct_query_cb_t cb, void *data);
-	void (*puct_set)(struct ofono_modem *modem, const char *currency,
-			double ppu, const char *sim_pin2,
-			ofono_generic_cb_t cb, void *data);
-};
-
-int ofono_call_meter_register(struct ofono_modem *modem,
-				struct ofono_call_meter_ops *ops);
-void ofono_call_meter_unregister(struct ofono_modem *modem);
-void ofono_call_meter_maximum_notify(struct ofono_modem *modem);
-void ofono_call_meter_changed_notify(struct ofono_modem *modem, int new_value);
 
 struct ofono_sim_ops {
 	void (*read_file_info)(struct ofono_modem *modem, int fileid,
