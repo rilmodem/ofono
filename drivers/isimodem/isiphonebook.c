@@ -1,0 +1,425 @@
+/*
+ * This file is part of oFono - Open Source Telephony
+ *
+ * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+ *
+ * Contact: Alexander Kanavin <alexander.kanavin@nokia.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <glib.h>
+#include <gisi/client.h>
+
+#include <ofono/log.h>
+#include <ofono/modem.h>
+#include "driver.h"
+#include "util.h"
+
+#include "isi.h"
+
+#define PHONEBOOK_TIMEOUT	5
+#define PN_SIM			0x09
+
+enum pb_message_id {
+	SIM_PB_REQ_SIM_PB_READ = 0xDC,
+	SIM_PB_RESP_SIM_PB_READ = 0xDD
+};
+
+enum pb_service_types {
+	SIM_PB_READ = 0x0F
+};
+
+enum pb_sub_block_id {
+	SIM_PB_INFO_REQUEST = 0xE4,
+	SIM_PB_STATUS = 0xFB,
+	SIM_PB_LOCATION = 0xFE,
+	SIM_PB_LOCATION_SEARCH = 0xFF
+};
+
+enum pb_type {
+	SIM_PB_ADN = 0xC8
+};
+
+enum pb_tag {
+	SIM_PB_ANR = 0xCA,
+	SIM_PB_EMAIL = 0xDD,
+	SIM_PB_SNE = 0xF7
+};
+
+enum pb_status {
+	SIM_SERV_OK = 0x01
+};
+
+static GIsiClient *client = NULL;
+
+struct pb_data {
+
+};
+
+static char *ucs2_to_utf8(const char *str, long len)
+{
+	char *utf8;
+	utf8 = g_convert(str, len, "UTF-8//TRANSLIT", "UCS-2BE",
+				NULL, NULL, NULL);
+	return utf8;
+}
+
+
+static struct pb_data *phonebook_create()
+{
+	struct pb_data *pb = g_try_new0(struct pb_data, 1);
+	return pb;
+}
+
+static void phonebook_destroy(struct pb_data *data)
+{
+	g_free(data);
+}
+
+static int decode_read_response(const unsigned char *msg, size_t len,
+				struct ofono_modem *modem)
+{
+	unsigned int i, p;
+
+	char *name = NULL;
+	char *number = NULL;
+	char *adn = NULL;
+	char *snr = NULL;
+	char *email = NULL;
+
+	unsigned int location = 0;
+	unsigned int status = 0;
+
+	unsigned int messageid;
+	unsigned int servicetype;
+	unsigned int num_subblocks;
+
+	dump_msg(msg, len);
+
+	if (len < 3)
+		goto error;
+
+	messageid = msg[0];
+	servicetype = msg[1];
+	num_subblocks = msg[2];
+
+	if (messageid != SIM_PB_RESP_SIM_PB_READ || servicetype != SIM_PB_READ)
+		goto error;
+
+	p = 3;
+	for (i=0; i < num_subblocks; i++) {
+		unsigned int subblock_type;
+		unsigned int subblock_len;
+
+		if (p + 4 > len)
+			goto error;
+
+		subblock_type = (msg[p] << 8) + msg[p+1];
+		subblock_len = (msg[p+2] << 8) + msg[p+3];
+
+		switch (subblock_type) {
+
+		case SIM_PB_ADN: {
+			unsigned int namelength;
+			unsigned int numberlength;
+
+			if (p + 8 > len)
+				goto error;
+
+			location = (msg[p + 4] << 8) + msg[p + 5];
+			namelength = msg[p + 6];
+			numberlength = msg[p + 7];
+
+			if (p + 8 + namelength * 2 + numberlength * 2 > len)
+				goto error;
+
+			name = ucs2_to_utf8(msg + p + 8, namelength * 2);
+			number = ucs2_to_utf8(msg + p + 8 + namelength * 2,
+						numberlength * 2);
+			DBG("ADN subblock: name %s number %s location %i",
+				name, number, location);
+			break;
+		}
+
+		case SIM_PB_SNE: {
+			unsigned int locsne;
+			unsigned int snelength;
+			unsigned int snefiller;
+
+			if (p + 8 > len)
+				goto error;
+
+			locsne = (msg[p + 4] << 8) + msg[p + 5];
+			snelength = msg[p + 6];
+			snefiller = msg[p + 7];
+
+			if (p + 8 + snelength * 2 > len)
+				goto error;
+
+			adn = ucs2_to_utf8(msg + p + 8, snelength * 2);
+			DBG("SNE subblock: name %s", adn);
+			break;
+		}
+
+		case SIM_PB_ANR: {
+			unsigned int locanr;
+			unsigned int anrlength;
+			unsigned int anrfiller;
+
+			if (p + 8 > len)
+				goto error;
+
+			locanr = (msg[p + 4] << 8) + msg[p + 5];
+			anrlength = msg[p + 6];
+			anrfiller = msg[p + 7];
+
+			if (p + 8 + anrlength * 2 > len)
+				goto error;
+
+			snr = ucs2_to_utf8(msg + p + 8, anrlength * 2);
+			DBG("ANR subblock: number %s", snr);
+			break;
+		}
+
+		case SIM_PB_EMAIL: {
+			unsigned int locemail;
+			unsigned int emaillength;
+			unsigned int emailfiller;
+
+			if (p + 8 > len)
+				goto error;
+
+			locemail = (msg[p + 4] << 8) + msg[p + 5];
+			emaillength = msg[p + 6];
+			emailfiller = msg[p + 7];
+
+			if (p + 8 + emaillength * 2 > len)
+				goto error;
+
+			email = ucs2_to_utf8(msg + p + 8, emaillength * 2);
+			DBG("EMAIL subblock: email %s", email);
+			break;
+		}
+
+		case SIM_PB_STATUS:
+			if (p + 5 > len)
+				goto error;
+
+			status = msg[p + 4];
+			DBG("STATUS subblock: status %i", status);
+			break;
+
+		default:
+			DBG("Unknown subblock in read response: type %i length %i",
+				subblock_type, subblock_len);
+			break;
+		}
+
+		p += subblock_len;
+	}
+	if (status == SIM_SERV_OK) {
+		ofono_phonebook_entry(modem, -1, number, -1, name, -1, NULL,
+					snr, -1, adn, email, NULL, NULL);
+		return location;
+	} else {
+		return -1;
+	}
+
+error:
+	DBG("Malformed read response");
+	return -1;
+}
+
+static void read_next_entry(int location, GIsiResponseFunc read_cb, struct isi_cb_data *cbd)
+{
+	ofono_generic_cb_t cb = cbd->cb;
+	const unsigned char msg[] = {
+		SIM_PB_REQ_SIM_PB_READ,
+		SIM_PB_READ,
+		2,				/* number of subblocks */
+		0, SIM_PB_LOCATION_SEARCH,	/* subblock id */
+		0, 8,				/* subblock size */
+		0, SIM_PB_ADN,
+		location >> 8, location & 0xFF,	/* read next entry after specified by location */
+		0, SIM_PB_INFO_REQUEST,		/* subblock id */
+		0, 16,				/* subblock size */
+		4,				/* number of tags */
+		0,				/* filler */
+		0, SIM_PB_ADN,			/* tags */
+		0, SIM_PB_SNE,
+		0, SIM_PB_ANR,
+		0, SIM_PB_EMAIL,
+		0, 0				/* filler */
+	};
+
+	if (location < 0)
+		goto error;
+
+	if (!cbd)
+		goto error;
+
+	if (g_isi_request_make(client, msg, sizeof(msg), PHONEBOOK_TIMEOUT,
+				read_cb, cbd))
+		return;
+
+error:
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, cbd->data);
+		g_free(cbd);
+	}
+
+}
+
+static bool read_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_generic_cb_t cb = cbd->cb;
+	int location;
+
+	if(!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	location = decode_read_response(data, len, cbd->modem);
+	if (location != -1) {
+		read_next_entry(location, read_resp_cb, cbd);
+		return;
+	}
+
+	{
+		DECLARE_SUCCESS(e);
+		cb(&e, cbd->data);
+	}
+
+	goto out;
+
+error:
+	{
+		DECLARE_FAILURE(e);
+		cb(&e, cbd->data);
+	}
+
+out:
+	g_free(cbd);
+	return true;
+}
+
+static void isi_export_entries(struct ofono_modem *modem, const char *storage,
+				ofono_generic_cb_t cb, void *data)
+{
+	struct isi_cb_data *cbd = isi_cb_data_new(modem, cb, data);
+	const unsigned char msg[] = {
+		SIM_PB_REQ_SIM_PB_READ,
+		SIM_PB_READ,
+		2,				/* number of subblocks */
+		0, SIM_PB_LOCATION,		/* subblock id */
+		0, 8,				/* subblock size */
+		0, SIM_PB_ADN,
+		0xFF, 0xFF,			/* read first entry in the phonebook */
+		0, SIM_PB_INFO_REQUEST,		/* subblock id */
+		0, 16,				/* subblock size */
+		4,				/* number of tags */
+		0,				/* filler */
+		0, SIM_PB_ADN,			/* tags */
+		0, SIM_PB_SNE,
+		0, SIM_PB_ANR,
+		0, SIM_PB_EMAIL,
+		0, 0				/* filler */
+	};
+
+	if (!cbd)
+		goto error;
+
+	if (strcmp(storage, "SM"))
+		goto error;
+
+	if (g_isi_request_make(client, msg, sizeof(msg), PHONEBOOK_TIMEOUT,
+				read_resp_cb, cbd))
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	{
+		DECLARE_FAILURE(error);
+		cb(&error, data);
+	}
+}
+
+static struct ofono_phonebook_ops ops = {
+	.export_entries		= isi_export_entries
+};
+
+static void phonebook_not_supported(struct ofono_modem *modem)
+{
+	struct isi_data *isi = ofono_modem_get_userdata(modem);
+
+	ofono_error("Phonebook not supported by this modem.  If this is in "
+			"error please submit patches to support this hardware");
+	if (isi->pb) {
+		phonebook_destroy(isi->pb);
+		isi->pb = NULL;
+	}
+}
+
+void isi_phonebook_init(struct ofono_modem *modem)
+{
+	struct isi_data *isi = ofono_modem_get_userdata(modem);
+
+	isi->pb = phonebook_create();
+	if (!client) {
+		client = g_isi_client_create(PN_SIM);
+		if (!client)
+			goto error;
+	}
+
+	/* FIXME: If this is running on a phone itself, phonebook initialization needs to be done here */
+	ofono_phonebook_register(modem, &ops);
+	return;
+
+error:
+	phonebook_not_supported(modem);
+}
+
+void isi_phonebook_exit(struct ofono_modem *modem)
+{
+	struct isi_data *isi = ofono_modem_get_userdata(modem);
+
+	ofono_phonebook_unregister(modem);
+
+	if (client) {
+		g_isi_client_destroy(client);
+		client = NULL;
+	}
+	if (!isi->pb)
+		return;
+
+	phonebook_destroy(isi->pb);
+	isi->pb = NULL;
+}

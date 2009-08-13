@@ -13,7 +13,7 @@ builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/call-barring.c atmodem/phonebook.c
 
 builtin_modules += isimodem
-builtin_sources += isimodem/isimodem.c isimodem/isi.h
+builtin_sources += isimodem/isimodem.c isimodem/isi.h isimodem/isiphonebook.c
 
 noinst_LTLIBRARIES = libbuiltin.la
 

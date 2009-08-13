@@ -26,9 +26,16 @@
 	e.type = OFONO_ERROR_TYPE_FAILURE;	\
 	e.error = 0				\
 
+#define DECLARE_SUCCESS(e) 			\
+	struct ofono_error e;			\
+	e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
+	e.error = 0				\
+
+
 struct isi_data {
 	struct ofono_modem *modem;
 	struct netreg_data *netreg;
+	struct pb_data *pb;
 };
 
 struct isi_cb_data {
@@ -54,3 +61,6 @@ static inline struct isi_cb_data *isi_cb_data_new(struct ofono_modem *modem,
 }
 
 void dump_msg(const unsigned char *msg, size_t len);
+
+extern void isi_phonebook_init(struct ofono_modem *modem);
+extern void isi_phonebook_exit(struct ofono_modem *modem);

@@ -429,6 +429,7 @@ static void netlink_status_cb(bool up, uint8_t addr, unsigned idx,
 				return;
 
 			ofono_modem_set_userdata(isi->modem, isi);
+			isi_phonebook_init(isi->modem);
 		}
 	} else {
 		clear_pending_reqs();
@@ -439,6 +440,7 @@ static void netlink_status_cb(bool up, uint8_t addr, unsigned idx,
 		}
 
 		if (isi->modem) {
+			isi_phonebook_exit(isi->modem);
 			ofono_modem_unregister(isi->modem);
 			isi->modem = NULL;
 		}
