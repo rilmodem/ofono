@@ -49,6 +49,24 @@ void ofono_info(const char *format, ...)
 }
 
 /**
+ * ofono_warn:
+ * @format: format string
+ * @Varargs: list of arguments
+ *
+ * Output warning information
+ */
+void ofono_warn(const char *format, ...)
+{
+	va_list ap;
+
+	va_start(ap, format);
+
+	vsyslog(LOG_WARNING, format, ap);
+
+	va_end(ap);
+}
+
+/**
  * ofono_error:
  * @format: format string
  * @varargs: list of arguments
