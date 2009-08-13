@@ -23,19 +23,6 @@
 
 struct ofono_modem;
 
-/* 27.007 Section 6.2 */
-enum ofono_clir_option {
-	OFONO_CLIR_OPTION_DEFAULT = 0,
-	OFONO_CLIR_OPTION_INVOCATION,
-	OFONO_CLIR_OPTION_SUPPRESSION
-};
-
-/* 27.007 Section 6.2 */
-enum ofono_cug_option {
-	OFONO_CUG_OPTION_DEFAULT = 0,
-	OFONO_CUG_OPTION_INVOCATION = 1,
-};
-
 enum ofono_disconnect_reason {
 	OFONO_DISCONNECT_REASON_UNKNOWN = 0,
 	OFONO_DISCONNECT_REASON_LOCAL_HANGUP,
