@@ -362,6 +362,11 @@ void ofono_phonebook_entry(struct ofono_modem *modem, int index,
 {
 	struct phonebook_data *phonebook = modem->phonebook;
 
+	/* There's really nothing to do */
+	if ((number == NULL || number[0] == '\0') &&
+			(text == NULL || text[0] == '\0'))
+		return;
+
 	/*
 	 * We need to collect all the entries that belong to one person,
 	 * so that only one vCard will be generated at last.
