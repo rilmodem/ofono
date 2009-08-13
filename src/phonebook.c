@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -43,6 +44,8 @@
 
 #define PHONEBOOK_FLAG_CACHED 0x1
 
+static GSList *g_drivers = NULL;
+
 enum phonebook_number_type {
 	TEL_TYPE_HOME,
 	TEL_TYPE_MOBILE,
@@ -51,13 +54,16 @@ enum phonebook_number_type {
 	TEL_TYPE_OTHER,
 };
 
-struct phonebook_data {
-	struct ofono_phonebook_ops *ops;
+struct ofono_phonebook {
 	DBusMessage *pending;
 	int storage_index; /* go through all supported storage */
 	int flags;
 	GString *vcards; /* entries with vcard 3.0 format */
 	GSList *merge_list; /* cache the entries that may need a merge */
+	const struct ofono_phonebook_driver *driver;
+	void *driver_data;
+	struct ofono_modem *modem;
+	struct ofono_atom *atom;
 };
 
 struct phonebook_number {
@@ -76,31 +82,7 @@ struct phonebook_person {
 };
 
 static const char *storage_support[] = { "SM", "ME", NULL };
-static void export_phonebook(struct ofono_modem *modem);
-
-static struct phonebook_data *phonebook_create()
-{
-	struct phonebook_data *phonebook;
-	phonebook = g_try_new0(struct phonebook_data, 1);
-
-	if (!phonebook)
-		return NULL;
-
-	phonebook->vcards = g_string_new(NULL);
-
-	return phonebook;
-}
-
-static void phonebook_destroy(gpointer data)
-{
-	struct ofono_modem *modem = data;
-	struct phonebook_data *phonebook = modem->phonebook;
-
-	g_string_free(phonebook->vcards, TRUE);
-
-	g_free(phonebook);
-	modem->phonebook = NULL;
-}
+static void export_phonebook(struct ofono_phonebook *pb);
 
 /* according to RFC 2425, the output string may need folding */
 static void vcard_printf(GString *str, const char *fmt, ...)
@@ -290,20 +272,20 @@ static void destroy_merged_entry(struct phonebook_person *person)
 	g_free(person);
 }
 
-static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem,
+static DBusMessage *generate_export_entries_reply(struct ofono_phonebook *pb,
 							DBusMessage *msg)
 {
-	struct phonebook_data *phonebook = modem->phonebook;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 
 	reply = dbus_message_new_method_return(msg);
+
 	if (!reply)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
-	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING,
-					phonebook->vcards);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, pb->vcards);
+
 	return reply;
 }
 
@@ -364,7 +346,7 @@ static void merge_field_number(GSList **l, const char *number, int type, char c)
 	*l = g_slist_append(*l, pn);
 }
 
-void ofono_phonebook_entry(struct ofono_modem *modem, int index,
+void ofono_phonebook_entry(struct ofono_phonebook *phonebook, int index,
 				const char *number, int type,
 				const char *text, int hidden,
 				const char *group,
@@ -372,8 +354,6 @@ void ofono_phonebook_entry(struct ofono_modem *modem, int index,
 				const char *secondtext, const char *email,
 				const char *sip_uri, const char *tel_uri)
 {
-	struct phonebook_data *phonebook = modem->phonebook;
-
 	/* There's really nothing to do */
 	if ((number == NULL || number[0] == '\0') &&
 			(text == NULL || text[0] == '\0'))
@@ -434,8 +414,7 @@ void ofono_phonebook_entry(struct ofono_modem *modem, int index,
 
 static void export_phonebook_cb(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct phonebook_data *phonebook = modem->phonebook;
+	struct ofono_phonebook *phonebook = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_error("export_entries_one_storage_cb with %s failed",
@@ -451,23 +430,22 @@ static void export_phonebook_cb(const struct ofono_error *error, void *data)
 	phonebook->merge_list = NULL;
 
 	phonebook->storage_index++;
-	export_phonebook(modem);
+	export_phonebook(phonebook);
 	return;
 }
 
-static void export_phonebook(struct ofono_modem *modem)
+static void export_phonebook(struct ofono_phonebook *phonebook)
 {
-	struct phonebook_data *phonebook = modem->phonebook;
 	DBusMessage *reply;
 	const char *pb = storage_support[phonebook->storage_index];
 
 	if (pb) {
-		phonebook->ops->export_entries(modem, pb,
-						export_phonebook_cb, modem);
+		phonebook->driver->export_entries(phonebook, pb,
+						export_phonebook_cb, phonebook);
 		return;
 	}
 
-	reply = generate_export_entries_reply(modem, phonebook->pending);
+	reply = generate_export_entries_reply(phonebook, phonebook->pending);
 
 	if (!reply) {
 		dbus_message_unref(phonebook->pending);
@@ -481,8 +459,7 @@ static void export_phonebook(struct ofono_modem *modem)
 static DBusMessage *import_entries(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct phonebook_data *phonebook = modem->phonebook;
+	struct ofono_phonebook *phonebook = data;
 	DBusMessage *reply;
 
 	if (phonebook->pending) {
@@ -492,7 +469,7 @@ static DBusMessage *import_entries(DBusConnection *conn, DBusMessage *msg,
 	}
 
 	if (phonebook->flags & PHONEBOOK_FLAG_CACHED) {
-		reply = generate_export_entries_reply(modem, msg);
+		reply = generate_export_entries_reply(phonebook, msg);
 		g_dbus_send_message(conn, reply);
 		return NULL;
 	}
@@ -501,7 +478,7 @@ static DBusMessage *import_entries(DBusConnection *conn, DBusMessage *msg,
 	phonebook->storage_index = 0;
 
 	phonebook->pending = dbus_message_ref(msg);
-	export_phonebook(modem);
+	export_phonebook(phonebook);
 
 	return NULL;
 }
@@ -516,47 +493,118 @@ static GDBusSignalTable phonebook_signals[] = {
 	{ }
 };
 
-int ofono_phonebook_register(struct ofono_modem *modem,
-				struct ofono_phonebook_ops *ops)
+int ofono_phonebook_driver_register(const struct ofono_phonebook_driver *d)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
+	DBG("driver: %p, name: %s", d, d->name);
 
-	if (modem == NULL)
-		return -1;
+	if (d->probe == NULL)
+		return -EINVAL;
 
-	if (ops == NULL)
-		return -1;
+	g_drivers = g_slist_prepend(g_drivers, (void *)d);
 
-	modem->phonebook = phonebook_create();
-
-	if (modem->phonebook == NULL)
-		return -1;
-
-	modem->phonebook->ops = ops;
-
-	if (!g_dbus_register_interface(conn, modem->path,
-					PHONEBOOK_INTERFACE,
-					phonebook_methods, phonebook_signals,
-					NULL, modem, phonebook_destroy)) {
-		ofono_error("Could not register Phonebook %s", modem->path);
-
-		phonebook_destroy(modem->phonebook);
-
-		return -1;
-	}
-
-	ofono_modem_add_interface(modem, PHONEBOOK_INTERFACE);
 	return 0;
 }
 
-void ofono_phonebook_unregister(struct ofono_modem *modem)
+void ofono_phonebook_driver_unregister(const struct ofono_phonebook_driver *d)
 {
+	DBG("driver: %p, name: %s", d, d->name);
+
+	g_drivers = g_slist_remove(g_drivers, (void *)d);
+}
+
+static void phonebook_unregister(struct ofono_atom *atom)
+{
+	struct ofono_phonebook *pb = __ofono_atom_get_data(atom);
+	const char *path = ofono_modem_get_path(pb->modem);
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (modem->phonebook == NULL)
+	ofono_modem_remove_interface(pb->modem, PHONEBOOK_INTERFACE);
+	g_dbus_unregister_interface(conn, path, PHONEBOOK_INTERFACE);
+}
+
+static void phonebook_remove(struct ofono_atom *atom)
+{
+	struct ofono_phonebook *pb = __ofono_atom_get_data(atom);
+	struct ofono_modem *modem = pb->modem;
+
+	DBG("atom: %p", atom);
+
+	if (pb == NULL)
 		return;
 
-	ofono_modem_remove_interface(modem, PHONEBOOK_INTERFACE);
-	g_dbus_unregister_interface(conn, modem->path,
-					PHONEBOOK_INTERFACE);
+	if (pb->driver && pb->driver->remove)
+		pb->driver->remove(pb);
+
+	g_string_free(pb->vcards, TRUE);
+	g_free(pb);
+}
+
+struct ofono_phonebook *ofono_phonebook_create(struct ofono_modem *modem,
+						const char *driver, void *data)
+{
+	struct ofono_phonebook *pb;
+	GSList *l;
+
+	if (driver == NULL)
+		return NULL;
+
+	pb = g_try_new0(struct ofono_phonebook, 1);
+
+	if (pb == NULL)
+		return NULL;
+
+	pb->vcards = g_string_new(NULL);
+	pb->modem = modem;
+	pb->driver_data = data;
+	pb->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_PHONEBOOK,
+						phonebook_remove, pb);
+
+	for (l = g_drivers; l; l = l->next) {
+		const struct ofono_phonebook_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(pb) < 0)
+			continue;
+
+		pb->driver = drv;
+		break;
+	}
+
+	return pb;
+}
+
+void ofono_phonebook_register(struct ofono_phonebook *pb)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(pb->modem);
+
+	if (!g_dbus_register_interface(conn, path, PHONEBOOK_INTERFACE,
+					phonebook_methods, phonebook_signals,
+					NULL, pb, NULL)) {
+		ofono_error("Could not create %s interface",
+				PHONEBOOK_INTERFACE);
+
+		return;
+	}
+
+	ofono_modem_add_interface(pb->modem, PHONEBOOK_INTERFACE);
+
+	__ofono_atom_register(pb->atom, phonebook_unregister);
+}
+
+void ofono_phonebook_remove(struct ofono_phonebook *pb)
+{
+	__ofono_modem_remove_atom(pb->modem, pb->atom);
+}
+
+void ofono_phonebook_set_data(struct ofono_phonebook *pb, void *data)
+{
+	pb->driver_data = data;
+}
+
+void *ofono_phonebook_get_data(struct ofono_phonebook *pb)
+{
+	return pb->driver_data;
 }

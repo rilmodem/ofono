@@ -277,22 +277,3 @@ void ofono_sms_deliver_notify(struct ofono_modem *modem, unsigned char *pdu,
 void ofono_sms_status_notify(struct ofono_modem *modem, unsigned char *pdu,
 				int len, int tpdu_len);
 
-/* Export entries reports results through ofono_phonebook_entry, if an error
- * occurs, ofono_phonebook_entry should not be called
- */
-struct ofono_phonebook_ops {
-	void (*export_entries)(struct ofono_modem *modem, const char *storage,
-				ofono_generic_cb_t cb, void *data);
-};
-
-int ofono_phonebook_register(struct ofono_modem *modem,
-			     struct ofono_phonebook_ops *ops);
-void ofono_phonebook_unregister(struct ofono_modem *modem);
-
-void ofono_phonebook_entry(struct ofono_modem *modem, int index,
-				const char *number, int type,
-				const char *text, int hidden,
-				const char *group,
-				const char *adnumber, int adtype,
-				const char *secondtext, const char *email,
-				const char *sip_uri, const char *tel_uri);

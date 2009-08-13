@@ -80,7 +80,6 @@ struct ofono_modem {
 	struct cssn_data *cssn;
 	struct sim_manager_data *sim_manager;
 	struct sms_manager_data *sms_manager;
-	struct phonebook_data *phonebook;
 	struct message_waiting_data *message_waiting;
 
 	GSList *history_contexts;
@@ -129,6 +128,7 @@ void __ofono_modem_remove_atom(struct ofono_modem *modem,
 #include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
+#include <ofono/phonebook.h>
 
 #include <ofono/history.h>
 
