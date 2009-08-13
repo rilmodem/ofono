@@ -309,11 +309,23 @@ static DBusMessage *generate_export_entries_reply(struct ofono_modem *modem,
 
 static gboolean need_merge(const char *text)
 {
-	int len = strlen(text);
-	char c = tolower(text[len-1]);
+	int len;
+	char c;
+
+	if (!text)
+		return FALSE;
+
+	len = strlen(text);
+
+	if (len < 2)
+		return FALSE;
+
+	c = tolower(text[len-1]);
+
 	if ((text[len-2] == '/') &&
-		((c == 'w') || (c == 'h') || (c == 'm') || (c == 'o')))
+			((c == 'w') || (c == 'h') || (c == 'm') || (c == 'o')))
 		return TRUE;
+
 	return FALSE;
 }
 
