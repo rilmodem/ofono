@@ -80,8 +80,8 @@ extern void at_ussd_exit(struct ofono_modem *modem);
 extern void at_voicecall_init(struct ofono_modem *modem);
 extern void at_voicecall_exit(struct ofono_modem *modem);
 
-extern void at_call_meter_init(struct ofono_modem *modem);
-extern void at_call_meter_exit(struct ofono_modem *modem);
+extern void at_call_meter_init();
+extern void at_call_meter_exit();
 
 extern void at_call_barring_init();
 extern void at_call_barring_exit();
