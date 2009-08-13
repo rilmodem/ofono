@@ -28,7 +28,7 @@ struct at_data {
 	struct netreg_data *netreg;
 	struct voicecall_data *voicecall;
 	struct sms_data *sms;
-	struct pb_data *pb;
+	struct ofono_phonebook *pb;
 };
 
 void decode_at_error(struct ofono_error *error, const char *final);
@@ -92,5 +92,5 @@ extern void at_sim_exit(struct ofono_modem *modem);
 extern void at_sms_init(struct ofono_modem *modem);
 extern void at_sms_exit(struct ofono_modem *modem);
 
-extern void at_phonebook_init(struct ofono_modem *modem);
-extern void at_phonebook_exit(struct ofono_modem *modem);
+extern void at_phonebook_init();
+extern void at_phonebook_exit();

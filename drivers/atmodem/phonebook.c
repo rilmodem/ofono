@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/phonebook.h>
 #include "util.h"
 
 #include "gatchat.h"
@@ -56,20 +56,8 @@ struct pb_data {
 	int index_min, index_max;
 	char *old_charset;
 	int supported;
+	GAtChat *chat;
 };
-
-static struct pb_data *phonebook_create()
-{
-	struct pb_data *pb = g_try_new0(struct pb_data, 1);
-	return pb;
-}
-
-static void phonebook_destroy(struct pb_data *data)
-{
-	if (data->old_charset)
-		g_free(data->old_charset);
-	g_free(data);
-}
 
 static char *ucs2_to_utf8(const char *str)
 {
@@ -102,20 +90,20 @@ static const char *best_charset(int supported)
 static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_phonebook *pb = cbd->user;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	GAtResultIter iter;
 	int current;
 
 	dump_response("at_cbpr_notify", 1, result);
 
-	if (at->pb->supported & CHARSET_IRA)
+	if (pbd->supported & CHARSET_IRA)
 		current = CHARSET_IRA;
 
-	if (at->pb->supported & CHARSET_UCS2)
+	if (pbd->supported & CHARSET_UCS2)
 		current = CHARSET_UCS2;
 
-	if (at->pb->supported & CHARSET_UTF8)
+	if (pbd->supported & CHARSET_UTF8)
 		current = CHARSET_UTF8;
 
 	g_at_result_iter_init(&iter, result);
@@ -186,7 +174,7 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 			if (tel_uri)
 				tel_uri_utf8 = ucs2_to_utf8(tel_uri);
 
-			ofono_phonebook_entry(cbd->modem, index, number, type,
+			ofono_phonebook_entry(pb, index, number, type,
 				text_utf8, hidden, group_utf8, adnumber,
 				adtype, secondtext_utf8, email_utf8,
 				sip_uri_utf8, tel_uri_utf8);
@@ -201,7 +189,7 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 			/* In the case of IRA charset, assume these are Latin1
 			 * characters, same as in UTF8
 			 */
-			ofono_phonebook_entry(cbd->modem, index, number, type,
+			ofono_phonebook_entry(pb, index, number, type,
 				text, hidden, group, adnumber,
 				adtype, secondtext, email,
 				sip_uri, tel_uri);
@@ -212,9 +200,9 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 
 static void export_failed(struct cb_data *cbd)
 {
-	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	ofono_generic_cb_t cb = cbd->cb;
+	struct ofono_phonebook *pb = cbd->user;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
+	ofono_phonebook_cb_t cb = cbd->cb;
 
 	{
 		DECLARE_FAILURE(error);
@@ -223,9 +211,9 @@ static void export_failed(struct cb_data *cbd)
 
 	g_free(cbd);
 
-	if (at->pb->old_charset) {
-		g_free(at->pb->old_charset);
-		at->pb->old_charset = NULL;
+	if (pbd->old_charset) {
+		g_free(pbd->old_charset);
+		pbd->old_charset = NULL;
 	}
 }
 
@@ -233,9 +221,9 @@ static void at_read_entries_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	ofono_generic_cb_t cb = cbd->cb;
+	struct ofono_phonebook *pb = cbd->user;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
+	ofono_phonebook_cb_t cb = cbd->cb;
 	const char *charset;
 	struct ofono_error error;
 	char buf[32];
@@ -244,25 +232,25 @@ static void at_read_entries_cb(gboolean ok, GAtResult *result,
 	cb(&error, cbd->data);
 	g_free(cbd);
 
-	charset = best_charset(at->pb->supported);
+	charset = best_charset(pbd->supported);
 
-	if (strcmp(at->pb->old_charset, charset)) {
-		sprintf(buf, "AT+CSCS=\"%s\"", at->pb->old_charset);
-		g_at_chat_send(at->parser, buf, none_prefix, NULL, NULL, NULL);
+	if (strcmp(pbd->old_charset, charset)) {
+		sprintf(buf, "AT+CSCS=\"%s\"", pbd->old_charset);
+		g_at_chat_send(pbd->chat, buf, none_prefix, NULL, NULL, NULL);
 	}
 
-	g_free(at->pb->old_charset);
-	at->pb->old_charset = NULL;
+	g_free(pbd->old_charset);
+	pbd->old_charset = NULL;
 }
 
 static void at_read_entries(struct cb_data *cbd)
 {
-	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_phonebook *pb = cbd->user;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	char buf[32];
 
-	sprintf(buf, "AT+CPBR=%d,%d", at->pb->index_min, at->pb->index_max);
-	if (g_at_chat_send_listing(at->parser, buf, cpbr_prefix,
+	sprintf(buf, "AT+CPBR=%d,%d", pbd->index_min, pbd->index_max);
+	if (g_at_chat_send_listing(pbd->chat, buf, cpbr_prefix,
 					at_cpbr_notify, at_read_entries_cb,
 					cbd, NULL) > 0)
 		return;
@@ -290,8 +278,8 @@ static void at_read_charset_cb(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_phonebook *pb = cbd->user;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	GAtResultIter iter;
 	const char *charset;
 	char buf[32];
@@ -308,17 +296,17 @@ static void at_read_charset_cb(gboolean ok, GAtResult *result,
 
 	g_at_result_iter_next_string(&iter, &charset);
 
-	at->pb->old_charset = g_strdup(charset);
+	pbd->old_charset = g_strdup(charset);
 
-	charset = best_charset(at->pb->supported);
+	charset = best_charset(pbd->supported);
 
-	if (!strcmp(at->pb->old_charset, charset)) {
+	if (!strcmp(pbd->old_charset, charset)) {
 		at_read_entries(cbd);
 		return;
 	}
 
 	sprintf(buf, "AT+CSCS=\"%s\"", charset);
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(pbd->chat, buf, none_prefix,
 				at_set_charset_cb, cbd, NULL) > 0)
 		return;
 
@@ -330,8 +318,8 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_phonebook *pb = cbd->user;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	GAtResultIter iter;
 
 	if (!ok)
@@ -347,14 +335,14 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 	/* retrieve index_min and index_max from indices
 	 * which seems like "(1-150),32,16"
 	 */
-	if (!g_at_result_iter_next_range(&iter, &at->pb->index_min,
-						&at->pb->index_max))
+	if (!g_at_result_iter_next_range(&iter, &pbd->index_min,
+						&pbd->index_max))
 		goto error;
 
 	if (!g_at_result_iter_close_list(&iter))
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CSCS?", cscs_prefix,
+	if (g_at_chat_send(pbd->chat, "AT+CSCS?", cscs_prefix,
 				at_read_charset_cb, cbd, NULL) > 0)
 		return;
 
@@ -366,15 +354,15 @@ static void at_select_storage_cb(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct ofono_modem *modem = cbd->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_phonebook *pb = cbd->user;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 
 	dump_response("at_select_storage_cb", ok, result);
 
 	if (!ok)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CPBR=?", cpbr_prefix,
+	if (g_at_chat_send(pbd->chat, "AT+CPBR=?", cpbr_prefix,
 				at_list_indices_cb, cbd, NULL) > 0)
 		return;
 
@@ -382,18 +370,20 @@ error:
 	export_failed(cbd);
 }
 
-static void at_export_entries(struct ofono_modem *modem, const char *storage,
-				ofono_generic_cb_t cb, void *data)
+static void at_export_entries(struct ofono_phonebook *pb, const char *storage,
+				ofono_phonebook_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[32];
 
 	if (!cbd)
 		goto error;
 
+	cbd->user = pb;
+
 	sprintf(buf, "AT+CPBS=\"%s\"", storage);
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(pbd->chat, buf, none_prefix,
 				at_select_storage_cb, cbd, NULL) > 0)
 		return;
 
@@ -407,26 +397,19 @@ error:
 	}
 }
 
-static struct ofono_phonebook_ops ops = {
-	.export_entries		= at_export_entries
-};
-
-static void phonebook_not_supported(struct ofono_modem *modem)
+static void phonebook_not_supported(struct ofono_phonebook *pb)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
 	ofono_error("Phonebook not supported by this modem.  If this is in "
 			"error please submit patches to support this hardware");
-	if (at->pb) {
-		phonebook_destroy(at->pb);
-		at->pb = NULL;
-	}
+
+	ofono_phonebook_remove(pb);
 }
 
 static void at_list_storages_cb(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
+	struct ofono_phonebook *pb = user_data;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	gboolean sm_supported = FALSE;
 	gboolean me_supported = FALSE;
 	gboolean in_list = FALSE;
@@ -459,18 +442,18 @@ static void at_list_storages_cb(gboolean ok, GAtResult *result,
 	if (!me_supported && !sm_supported)
 		goto error;
 
-	ofono_phonebook_register(modem, &ops);
+	ofono_phonebook_register(pb);
 	return;
 
 error:
-	phonebook_not_supported(modem);
+	phonebook_not_supported(pb);
 }
 
 static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_phonebook *pb = user_data;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	gboolean in_list = FALSE;
 	GAtResultIter iter;
 	const char *charset;
@@ -490,24 +473,24 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 
 	while (g_at_result_iter_next_string(&iter, &charset)) {
 		if (!strcmp(charset, "UTF-8"))
-			at->pb->supported |= CHARSET_UTF8;
+			pbd->supported |= CHARSET_UTF8;
 		else if (!strcmp(charset, "UCS2"))
-			at->pb->supported |= CHARSET_UCS2;
+			pbd->supported |= CHARSET_UCS2;
 		else if (!strcmp(charset, "IRA"))
-			at->pb->supported |= CHARSET_IRA;
+			pbd->supported |= CHARSET_IRA;
 	}
 
 	if (in_list && !g_at_result_iter_close_list(&iter))
 		goto error;
 
-	if (!(at->pb->supported & CHARSET_SUPPORT)) {
+	if (!(pbd->supported & CHARSET_SUPPORT)) {
 		/* Some modems, like the Google G1, do not support UCS2 or UTF8
 		 * Such modems are effectively junk, but we can still get some
 		 * useful information out of them by using IRA charset, which
 		 * is essentially Latin1.  Still, all bets are off if a SIM
 		 * with UCS2 encoded entries is present.
 		 */
-		if (at->pb->supported & CHARSET_IRA) {
+		if (pbd->supported & CHARSET_IRA) {
 			ofono_error("This modem does not support UCS2 or UTF8 "
 					"character sets.  This means no i18n "
 					"phonebook is possible on this modem,"
@@ -517,42 +500,65 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 			goto error;
 	}
 
-	if (g_at_chat_send(at->parser, "AT+CPBS=?", cpbs_prefix,
-				at_list_storages_cb, modem, NULL) > 0)
+	if (g_at_chat_send(pbd->chat, "AT+CPBS=?", cpbs_prefix,
+				at_list_storages_cb, pb, NULL) > 0)
 		return;
 
 error:
-	phonebook_not_supported(modem);
+	phonebook_not_supported(pb);
 }
 
-static void at_list_charsets(struct ofono_modem *modem)
+static void at_list_charsets(struct ofono_phonebook *pb)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 
-	if (g_at_chat_send(at->parser, "AT+CSCS=?", cscs_prefix,
-				at_list_charsets_cb, modem, NULL) > 0)
+	if (g_at_chat_send(pbd->chat, "AT+CSCS=?", cscs_prefix,
+				at_list_charsets_cb, pb, NULL) > 0)
 		return;
 
-	phonebook_not_supported(modem);
+	phonebook_not_supported(pb);
 }
 
-void at_phonebook_init(struct ofono_modem *modem)
+static int at_phonebook_probe(struct ofono_phonebook *pb)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	GAtChat *chat = ofono_phonebook_get_data(pb);
+	struct pb_data *pbd;
 
-	at->pb = phonebook_create();
-	at_list_charsets(modem);
+	pbd = g_new0(struct pb_data, 1);
+	pbd->chat = chat;
+
+	ofono_phonebook_set_data(pb, pbd);
+
+	at_list_charsets(pb);
+
+	return 0;
 }
 
-void at_phonebook_exit(struct ofono_modem *modem)
+static int at_phonebook_remove(struct ofono_phonebook *pb)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 
-	if (!at->pb)
-		return;
+	if (pbd->old_charset)
+		g_free(pbd->old_charset);
 
-	phonebook_destroy(at->pb);
-	at->pb = NULL;
+	g_free(pbd);
 
-	ofono_phonebook_unregister(modem);
+	return 0;
+}
+
+static struct ofono_phonebook_driver driver = {
+	.name			= "generic_at",
+	.probe			= at_phonebook_probe,
+	.remove			= at_phonebook_remove,
+	.export_entries		= at_export_entries
+};
+
+void at_phonebook_init()
+{
+	ofono_phonebook_driver_register(&driver);
+}
+
+void at_phonebook_exit()
+{
+	ofono_phonebook_driver_unregister(&driver);
 }
