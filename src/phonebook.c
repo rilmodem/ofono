@@ -417,7 +417,12 @@ void ofono_phonebook_entry(struct ofono_modem *modem, int index,
 	}
 
 	vcard_printf_begin(phonebook->vcards);
-	vcard_printf_text(phonebook->vcards, text);
+
+	if (text == NULL || text[0] == '\0')
+		vcard_printf_text(phonebook->vcards, number);
+	else
+		vcard_printf_text(phonebook->vcards, text);
+
 	vcard_printf_number(phonebook->vcards, number, type, TEL_TYPE_OTHER);
 	vcard_printf_number(phonebook->vcards, adnumber, adtype,
 				TEL_TYPE_OTHER);
