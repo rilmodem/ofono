@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/call-settings.h>
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -48,7 +48,7 @@ static const char *ccwa_prefix[] = { "+CCWA:", NULL };
 static void ccwa_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_call_waiting_status_cb_t cb = cbd->cb;
+	ofono_call_settings_status_cb_t cb = cbd->cb;
 	int conditions = 0;
 	int status;
 	int cls;
@@ -77,11 +77,11 @@ out:
 	cb(&error, conditions, cbd->data);
 }
 
-static void at_ccwa_query(struct ofono_modem *modem, int cls,
-				ofono_call_waiting_status_cb_t cb, void *data)
+static void at_ccwa_query(struct ofono_call_settings *cs, int cls,
+				ofono_call_settings_status_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -94,7 +94,7 @@ static void at_ccwa_query(struct ofono_modem *modem, int cls,
 	else
 		sprintf(buf, "AT+CCWA=1,2,%d", cls);
 
-	if (g_at_chat_send(at->parser, buf, ccwa_prefix,
+	if (g_at_chat_send(chat, buf, ccwa_prefix,
 				ccwa_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -111,7 +111,7 @@ error:
 static void ccwa_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_call_settings_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("ccwa_set_cb", ok, result);
@@ -120,11 +120,11 @@ static void ccwa_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_ccwa_set(struct ofono_modem *modem, int mode, int cls,
-				ofono_generic_cb_t cb, void *data)
+static void at_ccwa_set(struct ofono_call_settings *cs, int mode, int cls,
+				ofono_call_settings_set_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -132,7 +132,7 @@ static void at_ccwa_set(struct ofono_modem *modem, int mode, int cls,
 
 	sprintf(buf, "AT+CCWA=1,%d,%d", mode, cls);
 
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(chat, buf, none_prefix,
 				ccwa_set_cb, cbd, g_free) > 0)
 		return;
 
@@ -150,7 +150,7 @@ error:
 static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_call_setting_status_cb_t cb = cbd->cb;
+	ofono_call_settings_status_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	GAtResultIter iter;
 	int status = -1;
@@ -181,16 +181,16 @@ static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, status, cbd->data);
 }
 
-static void at_clip_query(struct ofono_modem *modem,
-				ofono_call_setting_status_cb_t cb, void *data)
+static void at_clip_query(struct ofono_call_settings *cs,
+				ofono_call_settings_status_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CLIP?", clip_prefix,
+	if (g_at_chat_send(chat, "AT+CLIP?", clip_prefix,
 				clip_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -207,7 +207,7 @@ error:
 static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_call_setting_status_cb_t cb = cbd->cb;
+	ofono_call_settings_status_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	GAtResultIter iter;
 	int status;
@@ -238,16 +238,16 @@ static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, status, cbd->data);
 }
 
-static void at_colp_query(struct ofono_modem *modem,
-				ofono_call_setting_status_cb_t cb, void *data)
+static void at_colp_query(struct ofono_call_settings *cs,
+				ofono_call_settings_status_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+COLP?", colp_prefix,
+	if (g_at_chat_send(chat, "AT+COLP?", colp_prefix,
 				colp_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -264,7 +264,7 @@ error:
 static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_clir_setting_cb_t cb = cbd->cb;
+	ofono_call_settings_clir_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	GAtResultIter iter;
 	int override = 0, network = 2;
@@ -295,16 +295,16 @@ static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, override, network, cbd->data);
 }
 
-static void at_clir_query(struct ofono_modem *modem,
-				ofono_clir_setting_cb_t cb, void *data)
+static void at_clir_query(struct ofono_call_settings *cs,
+				ofono_call_settings_clir_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CLIR?", clir_prefix,
+	if (g_at_chat_send(chat, "AT+CLIR?", clir_prefix,
 				clir_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -321,7 +321,7 @@ error:
 static void clir_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_call_settings_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("clir_set_cb", ok, result);
@@ -330,11 +330,11 @@ static void clir_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_clir_set(struct ofono_modem *modem, int mode,
-				ofono_generic_cb_t cb, void *data)
+static void at_clir_set(struct ofono_call_settings *cs, int mode,
+				ofono_call_settings_set_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -342,7 +342,7 @@ static void at_clir_set(struct ofono_modem *modem, int mode,
 
 	sprintf(buf, "AT+CLIR=%d", mode);
 
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(chat, buf, none_prefix,
 				clir_set_cb, cbd, g_free) > 0)
 		return;
 
@@ -356,7 +356,31 @@ error:
 	}
 }
 
-static struct ofono_call_settings_ops ops = {
+static gboolean at_call_settings_register(gpointer user)
+{
+	struct ofono_call_settings *cs = user;
+
+	ofono_call_settings_register(cs);
+
+	return FALSE;
+}
+
+static int at_call_settings_probe(struct ofono_call_settings *cs)
+{
+	g_idle_add(at_call_settings_register, cs);
+
+	return 0;
+}
+
+static int at_call_settings_remove(struct ofono_call_settings *cs)
+{
+	return 0;
+}
+
+static struct ofono_call_settings_driver driver = {
+	.name = "generic_at",
+	.probe = at_call_settings_probe,
+	.remove = at_call_settings_remove,
 	.clip_query = at_clip_query,
 	.colp_query = at_colp_query,
 	.clir_query = at_clir_query,
@@ -366,12 +390,12 @@ static struct ofono_call_settings_ops ops = {
 	.cw_set = at_ccwa_set,
 };
 
-void at_call_settings_init(struct ofono_modem *modem)
+void at_call_settings_init()
 {
-	ofono_call_settings_register(modem, &ops);
+	ofono_call_settings_driver_register(&driver);
 }
 
-void at_call_settings_exit(struct ofono_modem *modem)
+void at_call_settings_exit()
 {
-	ofono_call_settings_unregister(modem);
+	ofono_call_settings_driver_unregister(&driver);
 }

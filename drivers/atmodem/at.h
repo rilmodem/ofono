@@ -71,8 +71,8 @@ extern void at_network_registration_exit(struct ofono_modem *modem);
 extern void at_call_forwarding_init();
 extern void at_call_forwarding_exit();
 
-extern void at_call_settings_init(struct ofono_modem *modem);
-extern void at_call_settings_exit(struct ofono_modem *modem);
+extern void at_call_settings_init();
+extern void at_call_settings_exit();
 
 extern void at_ussd_init(struct ofono_modem *modem);
 extern void at_ussd_exit(struct ofono_modem *modem);
