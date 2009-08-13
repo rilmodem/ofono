@@ -165,6 +165,16 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 			char *tel_uri_utf8 = NULL;
 
 			text_utf8 = ucs2_to_utf8(text);
+
+			if (text_utf8 == NULL)
+				ofono_warn("Name field conversion to UTF8"
+						" failed, this can indicate a"
+						" problem with modem"
+						" integration, as this field"
+						" is required by 27.007."
+						"  Contents of name reported"
+						" by modem: %s", text);
+
 			if (group)
 				group_utf8 = ucs2_to_utf8(group);
 			if (secondtext)
