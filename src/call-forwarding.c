@@ -54,7 +54,6 @@ struct ofono_call_forwarding {
 	struct cf_ss_request *ss_req;
 	const struct ofono_call_forwarding_driver *driver;
 	void *driver_data;
-	struct ofono_modem *modem;
 	struct ofono_atom *atom;
 };
 
@@ -199,7 +198,7 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 {
 	GSList *old = cf->cf_conditions[type];
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cf->modem);
+	const char *path = __ofono_atom_get_path(cf->atom);
 	GSList *l;
 	GSList *o;
 	struct ofono_call_forwarding_condition *lc;
@@ -1066,24 +1065,28 @@ error:
 
 static void cf_register_ss_controls(struct ofono_call_forwarding *cf)
 {
-	ss_control_register(cf->modem, "21", cf_ss_control);
-	ss_control_register(cf->modem, "67", cf_ss_control);
-	ss_control_register(cf->modem, "61", cf_ss_control);
-	ss_control_register(cf->modem, "62", cf_ss_control);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
 
-	ss_control_register(cf->modem, "002", cf_ss_control);
-	ss_control_register(cf->modem, "004", cf_ss_control);
+	ss_control_register(modem, "21", cf_ss_control);
+	ss_control_register(modem, "67", cf_ss_control);
+	ss_control_register(modem, "61", cf_ss_control);
+	ss_control_register(modem, "62", cf_ss_control);
+
+	ss_control_register(modem, "002", cf_ss_control);
+	ss_control_register(modem, "004", cf_ss_control);
 }
 
 static void cf_unregister_ss_controls(struct ofono_call_forwarding *cf)
 {
-	ss_control_unregister(cf->modem, "21", cf_ss_control);
-	ss_control_unregister(cf->modem, "67", cf_ss_control);
-	ss_control_unregister(cf->modem, "61", cf_ss_control);
-	ss_control_unregister(cf->modem, "62", cf_ss_control);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
 
-	ss_control_unregister(cf->modem, "002", cf_ss_control);
-	ss_control_unregister(cf->modem, "004", cf_ss_control);
+	ss_control_unregister(modem, "21", cf_ss_control);
+	ss_control_unregister(modem, "67", cf_ss_control);
+	ss_control_unregister(modem, "61", cf_ss_control);
+	ss_control_unregister(modem, "62", cf_ss_control);
+
+	ss_control_unregister(modem, "002", cf_ss_control);
+	ss_control_unregister(modem, "004", cf_ss_control);
 }
 
 int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_driver *d)
@@ -1108,15 +1111,16 @@ void ofono_call_forwarding_driver_unregister(const struct ofono_call_forwarding_
 static void call_forwarding_unregister(struct ofono_atom *atom)
 {
 	struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
-	const char *path = ofono_modem_get_path(cf->modem);
+	const char *path = __ofono_atom_get_path(cf->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
 
-	ofono_modem_remove_interface(cf->modem, CALL_FORWARDING_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_FORWARDING_INTERFACE);
 	g_dbus_unregister_interface(conn, path, CALL_FORWARDING_INTERFACE);
 
 	cf_unregister_ss_controls(cf);
 
-	cf->modem->call_forwarding = NULL;
+	modem->call_forwarding = NULL;
 }
 
 static void call_forwarding_remove(struct ofono_atom *atom)
@@ -1151,7 +1155,6 @@ struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *m
 	if (cf == NULL)
 		return NULL;
 
-	cf->modem = modem;
 	cf->driver_data = data;
 	cf->atom = __ofono_modem_add_atom(modem,
 						OFONO_ATOM_TYPE_CALL_FORWARDING,
@@ -1175,7 +1178,8 @@ struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *m
 void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cf->modem);
+	const char *path = __ofono_atom_get_path(cf->atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
 
 	if (!g_dbus_register_interface(conn, path,
 					CALL_FORWARDING_INTERFACE,
@@ -1187,9 +1191,9 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 		return;
 	}
 
-	cf->modem->call_forwarding = cf;
+	modem->call_forwarding = cf;
 
-	ofono_modem_add_interface(cf->modem, CALL_FORWARDING_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_FORWARDING_INTERFACE);
 	cf_register_ss_controls(cf);
 
 	__ofono_atom_register(cf->atom, call_forwarding_unregister);
