@@ -53,7 +53,6 @@ struct ofono_call_meter {
 	char currency[4];
 	const struct ofono_call_meter_driver *driver;
 	void *driver_data;
-	struct ofono_modem *modem;
 	struct ofono_atom *atom;
 };
 
@@ -68,7 +67,7 @@ static void set_call_meter(struct ofono_call_meter *cm, int value)
 	cm->call_meter = value;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cm->modem);
+	path = __ofono_atom_get_path(cm->atom);
 
 	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
 						"CallMeter", DBUS_TYPE_UINT32,
@@ -86,7 +85,7 @@ static void set_acm(struct ofono_call_meter *cm, int value)
 	cm->acm = value;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cm->modem);
+	path = __ofono_atom_get_path(cm->atom);
 
 	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
 						"AccumulatedCallMeter",
@@ -104,7 +103,7 @@ static void set_acm_max(struct ofono_call_meter *cm, int value)
 	cm->acm_max = value;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cm->modem);
+	path = __ofono_atom_get_path(cm->atom);
 
 	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
 						"AccumulatedCallMeterMaximum",
@@ -122,7 +121,7 @@ static void set_ppu(struct ofono_call_meter *cm, double value)
 	cm->ppu = value;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cm->modem);
+	path = __ofono_atom_get_path(cm->atom);
 
 	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
 						"PricePerUnit",
@@ -147,7 +146,7 @@ static void set_currency(struct ofono_call_meter *cm, const char *value)
 	cm->currency[3] = '\0';
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cm->modem);
+	path = __ofono_atom_get_path(cm->atom);
 	dbusval = cm->currency;
 
 	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
@@ -657,7 +656,7 @@ void ofono_call_meter_maximum_notify(struct ofono_call_meter *cm)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *signal;
-	const char *path = ofono_modem_get_path(cm->modem);
+	const char *path = __ofono_atom_get_path(cm->atom);
 
 	signal = dbus_message_new_signal(path, CALL_METER_INTERFACE,
 						"NearMaximumWarning");
@@ -692,17 +691,17 @@ void ofono_call_meter_driver_unregister(const struct ofono_call_meter_driver *d)
 static void call_meter_unregister(struct ofono_atom *atom)
 {
 	struct ofono_call_meter *cm = __ofono_atom_get_data(atom);
-	const char *path = ofono_modem_get_path(cm->modem);
+	const char *path = __ofono_atom_get_path(cm->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(cm->atom);
 
-	ofono_modem_remove_interface(cm->modem, CALL_METER_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_METER_INTERFACE);
 	g_dbus_unregister_interface(conn, path, CALL_METER_INTERFACE);
 }
 
 static void call_meter_remove(struct ofono_atom *atom)
 {
 	struct ofono_call_meter *cm = __ofono_atom_get_data(atom);
-	struct ofono_modem *modem = cm->modem;
 
 	DBG("atom: %p", atom);
 
@@ -730,7 +729,6 @@ struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
 	if (cm == NULL)
 		return NULL;
 
-	cm->modem = modem;
 	cm->driver_data = data;
 	cm->atom = __ofono_modem_add_atom(modem,
 						OFONO_ATOM_TYPE_CALL_METER,
@@ -755,7 +753,8 @@ struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
 void ofono_call_meter_register(struct ofono_call_meter *cm)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cm->modem);
+	const char *path = __ofono_atom_get_path(cm->atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cm->atom);
 
 	if (!g_dbus_register_interface(conn, path, CALL_METER_INTERFACE,
 					cm_methods, cm_signals, NULL, cm,
@@ -766,7 +765,7 @@ void ofono_call_meter_register(struct ofono_call_meter *cm)
 		return;
 	}
 
-	ofono_modem_add_interface(cm->modem, CALL_METER_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_METER_INTERFACE);
 
 	__ofono_atom_register(cm->atom, call_meter_unregister);
 }
