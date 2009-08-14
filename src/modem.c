@@ -71,7 +71,6 @@ struct ofono_atom_watch {
 };
 
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
-
 {
 	struct ofono_modem_data *d = modem->modem_info;
 	unsigned int i;
