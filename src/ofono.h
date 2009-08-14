@@ -116,6 +116,8 @@ struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 						enum ofono_atom_type type);
 
 void *__ofono_atom_get_data(struct ofono_atom *atom);
+const char *__ofono_atom_get_path(struct ofono_atom *atom);
+struct ofono_modem *__ofono_atom_get_modem(struct ofono_atom *atom);
 
 void __ofono_atom_register(struct ofono_atom *atom,
 				void (*unregister)(struct ofono_atom *));

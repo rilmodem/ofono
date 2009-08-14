@@ -59,6 +59,7 @@ struct ofono_atom {
 	void (*destruct)(struct ofono_atom *atom);
 	void (*unregister)(struct ofono_atom *atom);
 	void *data;
+	struct ofono_modem *modem;
 };
 
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
@@ -121,6 +122,7 @@ struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
 	atom->type = type;
 	atom->destruct = destruct;
 	atom->data = data;
+	atom->modem = modem;
 
 	modem->atoms = g_slist_prepend(modem->atoms, atom);
 
@@ -130,6 +132,16 @@ struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
 void *__ofono_atom_get_data(struct ofono_atom *atom)
 {
 	return atom->data;
+}
+
+const char *__ofono_atom_get_path(struct ofono_atom *atom)
+{
+	return atom->modem->path;
+}
+
+struct ofono_modem *__ofono_atom_get_modem(struct ofono_atom *atom)
+{
+	return atom->modem;
 }
 
 void __ofono_atom_register(struct ofono_atom *atom,
