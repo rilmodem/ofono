@@ -139,7 +139,7 @@ void __ofono_atom_unregister(struct ofono_atom *atom);
 int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					enum ofono_atom_type type,
 					ofono_atom_watch_func notify,
-					ofono_destroy_func destroy, void *data);
+					void *data, ofono_destroy_func destroy);
 gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem, int id);
 
 void __ofono_atom_free(struct ofono_atom *atom);
