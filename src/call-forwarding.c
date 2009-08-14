@@ -36,8 +36,6 @@
 #include "common.h"
 #include "ussd.h"
 
-#define CALL_FORWARDING_INTERFACE "org.ofono.CallForwarding"
-
 #define CALL_FORWARDING_FLAG_CACHED 0x1
 
 /* According to 27.007 Spec */
@@ -238,14 +236,14 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 				strcmp(oc->phone_number.number,
 					lc->phone_number.number))
 				ofono_dbus_signal_property_changed(conn, path,
-						CALL_FORWARDING_INTERFACE,
+						OFONO_CALL_FORWARDING_INTERFACE,
 						attr, DBUS_TYPE_STRING,
 						&number);
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 				oc->time != lc->time)
 				ofono_dbus_signal_property_changed(conn, path,
-						CALL_FORWARDING_INTERFACE,
+						OFONO_CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
 						&timeout);
 
@@ -256,14 +254,14 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 			number = phone_number_to_string(&lc->phone_number);
 
 			ofono_dbus_signal_property_changed(conn, path,
-						CALL_FORWARDING_INTERFACE,
+						OFONO_CALL_FORWARDING_INTERFACE,
 						attr, DBUS_TYPE_STRING,
 						&number);
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 				lc->time != DEFAULT_NO_REPLY_TIMEOUT)
 				ofono_dbus_signal_property_changed(conn, path,
-						CALL_FORWARDING_INTERFACE,
+						OFONO_CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
 						&timeout);
 		}
@@ -282,13 +280,13 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 			sprintf(tattr, "%sTimeout", attr);
 
 		ofono_dbus_signal_property_changed(conn, path,
-					CALL_FORWARDING_INTERFACE, attr,
+					OFONO_CALL_FORWARDING_INTERFACE, attr,
 					DBUS_TYPE_STRING, &number);
 
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
 			oc->time != DEFAULT_NO_REPLY_TIMEOUT)
 			ofono_dbus_signal_property_changed(conn, path,
-						CALL_FORWARDING_INTERFACE,
+						OFONO_CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
 						&timeout);
 	}
@@ -1115,8 +1113,9 @@ static void call_forwarding_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
 
-	ofono_modem_remove_interface(modem, CALL_FORWARDING_INTERFACE);
-	g_dbus_unregister_interface(conn, path, CALL_FORWARDING_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
+	g_dbus_unregister_interface(conn, path,
+					OFONO_CALL_FORWARDING_INTERFACE);
 
 	cf_unregister_ss_controls(cf);
 
@@ -1182,18 +1181,18 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
 
 	if (!g_dbus_register_interface(conn, path,
-					CALL_FORWARDING_INTERFACE,
+					OFONO_CALL_FORWARDING_INTERFACE,
 					cf_methods, cf_signals, NULL, cf,
 					NULL)) {
 		ofono_error("Could not create %s interface",
-				CALL_FORWARDING_INTERFACE);
+				OFONO_CALL_FORWARDING_INTERFACE);
 
 		return;
 	}
 
 	modem->call_forwarding = cf;
 
-	ofono_modem_add_interface(modem, CALL_FORWARDING_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
 	cf_register_ss_controls(cf);
 
 	__ofono_atom_register(cf->atom, call_forwarding_unregister);
