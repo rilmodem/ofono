@@ -177,13 +177,17 @@ void __ofono_atom_register(struct ofono_atom *atom,
 		return;
 
 	atom->unregister = unregister;
+
+	call_watches(atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED);
 }
 
 void __ofono_atom_unregister(struct ofono_atom *atom)
 {
 	if (atom->unregister == NULL)
 		return;
-		
+
+	call_watches(atom, OFONO_ATOM_WATCH_CONDITION_UNREGISTERED);
+
 	atom->unregister(atom);
 }
 
