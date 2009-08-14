@@ -38,7 +38,6 @@
 #include "driver.h"
 #include "common.h"
 
-#define PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define LEN_MAX 128
 #define TYPE_INTERNATIONAL 145
 
@@ -518,8 +517,8 @@ static void phonebook_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(pb->atom);
 
-	ofono_modem_remove_interface(modem, PHONEBOOK_INTERFACE);
-	g_dbus_unregister_interface(conn, path, PHONEBOOK_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_PHONEBOOK_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_PHONEBOOK_INTERFACE);
 }
 
 static void phonebook_remove(struct ofono_atom *atom)
@@ -579,16 +578,16 @@ void ofono_phonebook_register(struct ofono_phonebook *pb)
 	const char *path = __ofono_atom_get_path(pb->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(pb->atom);
 
-	if (!g_dbus_register_interface(conn, path, PHONEBOOK_INTERFACE,
+	if (!g_dbus_register_interface(conn, path, OFONO_PHONEBOOK_INTERFACE,
 					phonebook_methods, phonebook_signals,
 					NULL, pb, NULL)) {
 		ofono_error("Could not create %s interface",
-				PHONEBOOK_INTERFACE);
+				OFONO_PHONEBOOK_INTERFACE);
 
 		return;
 	}
 
-	ofono_modem_add_interface(modem, PHONEBOOK_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_PHONEBOOK_INTERFACE);
 
 	__ofono_atom_register(pb->atom, phonebook_unregister);
 }
