@@ -975,67 +975,6 @@ static void busy_notify(GAtResult *result, gpointer user_data)
 					clcc_poll_cb, modem, NULL);
 }
 
-static void cssi_notify(GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	GAtResultIter iter;
-	int code1, index;
-
-	dump_response("cssi_notify", TRUE, result);
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CSSI:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &code1))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &index))
-		index = 0;
-
-	ofono_cssi_notify(modem, code1, index);
-}
-
-static void cssu_notify(GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	GAtResultIter iter;
-	int code2;
-	int index = -1;
-	const char *num;
-	struct ofono_phone_number ph;
-
-	ph.number[0] = '\0';
-	ph.type = 129;
-
-	dump_response("cssu_notify", TRUE, result);
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CSSU:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &code2))
-		return;
-
-	/* This field is optional, if we can't read it, try to skip it */
-	if (!g_at_result_iter_next_number(&iter, &index) &&
-			!g_at_result_iter_skip_next(&iter))
-		goto out;
-
-	if (!g_at_result_iter_next_string(&iter, &num))
-		goto out;
-
-	strncpy(ph.number, num, OFONO_MAX_PHONE_NUMBER_LENGTH);
-
-	if (!g_at_result_iter_next_number(&iter, &ph.type))
-		return;
-
-out:
-	ofono_cssu_notify(modem, code2, index, &ph);
-}
-
 static struct ofono_voicecall_ops ops = {
 	.dial			= at_dial,
 	.answer			= at_answer,
@@ -1070,10 +1009,6 @@ static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 				clip_notify, FALSE, modem, NULL);
 	g_at_chat_register(at->parser, "+CCWA:",
 				ccwa_notify, FALSE, modem, NULL);
-	g_at_chat_register(at->parser, "+CSSI:",
-				cssi_notify, FALSE, modem, NULL);
-	g_at_chat_register(at->parser, "+CSSU:",
-				cssu_notify, FALSE, modem, NULL);
 
 	/* Modems with 'better' call progress indicators should
 	 * probably not even bother registering to these

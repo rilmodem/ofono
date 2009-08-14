@@ -368,6 +368,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	at_voicecall_init(at->modem);
 	ofono_call_meter_create(at->modem, "generic_at", at->parser);
 	ofono_call_barring_create(at->modem, "generic_at", at->parser);
+	ofono_ssn_create(at->modem, "generic_at", at->parser);
 	at_sms_init(at->modem);
 	ofono_phonebook_create(at->modem, "generic_at", at->parser);
 
@@ -531,6 +532,7 @@ static int atmodem_init(void)
 	at_call_meter_init();
 	at_call_settings_init();
 	at_phonebook_init();
+	at_ssn_init();
 
 	manager_init(conn);
 
@@ -543,6 +545,7 @@ static void atmodem_exit(void)
 
 	manager_exit(conn);
 
+	at_ssn_exit();
 	at_phonebook_exit();
 	at_call_settings_exit();
 	at_call_meter_exit();

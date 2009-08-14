@@ -10,7 +10,8 @@ builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/call-forwarding.c atmodem/call-meter.c \
 			atmodem/network-registration.c atmodem/sim.c \
 			atmodem/ussd.c atmodem/voicecall.c \
-			atmodem/call-barring.c atmodem/phonebook.c
+			atmodem/call-barring.c atmodem/phonebook.c \
+			atmodem/ssn.c
 
 builtin_modules += isimodem
 builtin_sources += isimodem/isimodem.c isimodem/isi.h isimodem/isiphonebook.c
