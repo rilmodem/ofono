@@ -153,6 +153,23 @@ struct ofono_modem *__ofono_atom_get_modem(struct ofono_atom *atom)
 	return atom->modem;
 }
 
+static void call_watches(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond)
+{
+	struct ofono_modem *modem = atom->modem;
+	GSList *l;
+	struct ofono_atom_watch *watch;
+
+	for (l = modem->atom_watches; l; l = l->next) {
+		watch = l->data;
+
+		if (watch->type != atom->type)
+			continue;
+
+		watch->notify(atom, cond, watch->notify_data);
+	}
+}
+
 void __ofono_atom_register(struct ofono_atom *atom,
 			void (*unregister)(struct ofono_atom *))
 {
