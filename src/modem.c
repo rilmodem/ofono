@@ -180,11 +180,9 @@ struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 	return NULL;
 }
 
-void __ofono_modem_remove_atom(struct ofono_modem *modem,
-					struct ofono_atom *atom)
+void __ofono_atom_free(struct ofono_atom *atom)
 {
-	if (modem == NULL)
-		return;
+	struct ofono_modem *modem = atom->modem;
 
 	modem->atoms = g_slist_remove(modem->atoms, atom);
 

@@ -123,8 +123,7 @@ void __ofono_atom_register(struct ofono_atom *atom,
 				void (*unregister)(struct ofono_atom *));
 void __ofono_atom_unregister(struct ofono_atom *atom);
 
-void __ofono_modem_remove_atom(struct ofono_modem *modem,
-				struct ofono_atom *atom);
+void __ofono_atom_free(struct ofono_atom *atom);
 
 #include <ofono/call-barring.h>
 #include <ofono/call-forwarding.h>
