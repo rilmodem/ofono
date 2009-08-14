@@ -62,7 +62,6 @@ struct ofono_call_barring {
 	int ss_req_lock;
 	const struct ofono_call_barring_driver *driver;
 	void *driver_data;
-	struct ofono_modem *modem;
 	struct ofono_atom *atom;
 };
 
@@ -99,7 +98,7 @@ static inline void emit_barring_changed(struct ofono_call_barring *cb,
 					const char *type, int cls)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cb->modem);
+	const char *path = __ofono_atom_get_path(cb->atom);
 	char property_name[64];
 	const char *value;
 	int i;
@@ -537,7 +536,7 @@ bad_format:
 
 static void cb_register_ss_controls(struct ofono_call_barring *cb)
 {
-	struct ofono_modem *modem = cb->modem;
+	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
 
 	ss_control_register(modem, "33", cb_ss_control);
 	ss_control_register(modem, "331", cb_ss_control);
@@ -560,7 +559,7 @@ static void cb_register_ss_controls(struct ofono_call_barring *cb)
 
 static void cb_unregister_ss_controls(struct ofono_call_barring *cb)
 {
-	struct ofono_modem *modem = cb->modem;
+	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
 
 	ss_control_unregister(modem, "33", cb_ss_control);
 	ss_control_unregister(modem, "331", cb_ss_control);
@@ -1001,7 +1000,7 @@ static void call_barring_incoming_enabled_notify(int idx, void *userdata)
 {
 	struct ofono_call_barring *cb = userdata;
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cb->modem);
+	const char *path = __ofono_atom_get_path(cb->atom);
 	DBusMessage *signal;
 
 	signal = dbus_message_new_signal(path, CALL_BARRING_INTERFACE,
@@ -1020,7 +1019,7 @@ static void call_barring_outgoing_enabled_notify(int idx, void *userdata)
 {
 	struct ofono_call_barring *cb = userdata;
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cb->modem);
+	const char *path = __ofono_atom_get_path(cb->atom);
 	DBusMessage *signal;
 
 	signal = dbus_message_new_signal(path, CALL_BARRING_INTERFACE,
@@ -1057,20 +1056,21 @@ void ofono_call_barring_driver_unregister(const struct ofono_call_barring_driver
 static void call_barring_unregister(struct ofono_atom *atom)
 {
 	struct ofono_call_barring *cb = __ofono_atom_get_data(atom);
-	const char *path = ofono_modem_get_path(cb->modem);
+	const char *path = __ofono_atom_get_path(cb->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem= __ofono_atom_get_modem(cb->atom);
 
-	ofono_modem_remove_interface(cb->modem, CALL_BARRING_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_BARRING_INTERFACE);
 	g_dbus_unregister_interface(conn, path, CALL_BARRING_INTERFACE);
 
 	cb_unregister_ss_controls(cb);
 
-	ofono_mo_ss_unregister(cb->modem, SS_MO_INCOMING_BARRING,
+	ofono_mo_ss_unregister(modem, SS_MO_INCOMING_BARRING,
 			call_barring_incoming_enabled_notify, cb);
-	ofono_mo_ss_unregister(cb->modem, SS_MO_OUTGOING_BARRING,
+	ofono_mo_ss_unregister(modem, SS_MO_OUTGOING_BARRING,
 			call_barring_outgoing_enabled_notify, cb);
 
-	cb->modem->call_barring = NULL;
+	modem->call_barring = NULL;
 }
 
 static void call_barring_remove(struct ofono_atom *atom)
@@ -1110,7 +1110,6 @@ struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 
 	cb->cur_locks = g_new0(int, lcount);
 	cb->new_locks = g_new0(int, lcount);
-	cb->modem = modem;
 	cb->driver_data = data;
 	cb->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_CALL_BARRING,
 						call_barring_remove, cb);
@@ -1134,7 +1133,8 @@ struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 void ofono_call_barring_register(struct ofono_call_barring *cb)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cb->modem);
+	const char *path = __ofono_atom_get_path(cb->atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
 
 	if (!g_dbus_register_interface(conn, path,
 					CALL_BARRING_INTERFACE,
@@ -1146,14 +1146,14 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 		return;
 	}
 
-	cb->modem->call_barring = cb;
+	modem->call_barring = cb;
 
-	ofono_modem_add_interface(cb->modem, CALL_BARRING_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_BARRING_INTERFACE);
 	cb_register_ss_controls(cb);
 
-	ofono_mo_ss_register(cb->modem, SS_MO_INCOMING_BARRING,
+	ofono_mo_ss_register(modem, SS_MO_INCOMING_BARRING,
 			call_barring_incoming_enabled_notify, cb);
-	ofono_mo_ss_register(cb->modem, SS_MO_OUTGOING_BARRING,
+	ofono_mo_ss_register(modem, SS_MO_OUTGOING_BARRING,
 			call_barring_outgoing_enabled_notify, cb);
 
 	__ofono_atom_register(cb->atom, call_barring_unregister);
