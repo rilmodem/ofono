@@ -135,13 +135,18 @@ void *__ofono_atom_get_data(struct ofono_atom *atom)
 void __ofono_atom_register(struct ofono_atom *atom,
 			void (*unregister)(struct ofono_atom *))
 {
+	if (unregister == NULL)
+		return;
+
 	atom->unregister = unregister;
 }
 
 void __ofono_atom_unregister(struct ofono_atom *atom)
 {
-	if (atom->unregister)
-		atom->unregister(atom);
+	if (atom->unregister == NULL)
+		return;
+		
+	atom->unregister(atom);
 }
 
 struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
