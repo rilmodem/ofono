@@ -36,8 +36,6 @@
 #include "common.h"
 #include "ussd.h"
 
-#define CALL_SETTINGS_INTERFACE "org.ofono.CallSettings"
-
 #define CALL_SETTINGS_FLAG_CACHED 0x1
 
 static GSList *g_drivers = NULL;
@@ -149,7 +147,8 @@ static void set_clir_network(struct ofono_call_settings *cs, int clir)
 
 	str = clir_status_to_string(clir);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_SETTINGS_INTERFACE,
 						"CallingLineRestriction",
 						DBUS_TYPE_STRING, &str);
 }
@@ -170,7 +169,8 @@ static void set_clir_override(struct ofono_call_settings *cs, int override)
 
 	str = hide_callerid_to_string(override);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_SETTINGS_INTERFACE,
 						"HideCallerId",
 						DBUS_TYPE_STRING, &str);
 }
@@ -191,7 +191,8 @@ static void set_clip(struct ofono_call_settings *cs, int clip)
 
 	str = clip_status_to_string(clip);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_SETTINGS_INTERFACE,
 						"CallingLinePresentation",
 						DBUS_TYPE_STRING, &str);
 }
@@ -212,7 +213,8 @@ static void set_colp(struct ofono_call_settings *cs, int colp)
 
 	str = colp_status_to_string(colp);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_SETTINGS_INTERFACE,
 						"CalledLinePresentation",
 						DBUS_TYPE_STRING, &str);
 }
@@ -233,7 +235,8 @@ static void set_colr(struct ofono_call_settings *cs, int colr)
 
 	str = colr_status_to_string(colr);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_SETTINGS_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_SETTINGS_INTERFACE,
 						"CalledLineRestriction",
 						DBUS_TYPE_STRING, &str);
 }
@@ -260,9 +263,9 @@ static void set_cw(struct ofono_call_settings *cs, int new_cw, int mask)
 
 		sprintf(buf, "%sCallWaiting", bearer_class_to_string(j));
 		ofono_dbus_signal_property_changed(conn, path,
-							CALL_SETTINGS_INTERFACE,
-							buf, DBUS_TYPE_STRING,
-							&value);
+						OFONO_CALL_SETTINGS_INTERFACE,
+						buf, DBUS_TYPE_STRING,
+						&value);
 	}
 
 	cs->cw = new_cw;
@@ -1175,8 +1178,8 @@ static void call_settings_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
 
-	ofono_modem_remove_interface(modem, CALL_SETTINGS_INTERFACE);
-	g_dbus_unregister_interface(conn, path, CALL_SETTINGS_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_CALL_SETTINGS_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_CALL_SETTINGS_INTERFACE);
 
 	cs_unregister_ss_controls(cs);
 
@@ -1244,18 +1247,19 @@ void ofono_call_settings_register(struct ofono_call_settings *cs)
 	const char *path = __ofono_atom_get_path(cs->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
 
-	if (!g_dbus_register_interface(conn, path, CALL_SETTINGS_INTERFACE,
+	if (!g_dbus_register_interface(conn, path,
+					OFONO_CALL_SETTINGS_INTERFACE,
 					cs_methods, cs_signals, NULL, cs,
 					NULL)) {
 		ofono_error("Could not create %s interface",
-				CALL_SETTINGS_INTERFACE);
+				OFONO_CALL_SETTINGS_INTERFACE);
 
 		return;
 	}
 
 	modem->call_settings = cs;
 
-	ofono_modem_add_interface(modem, CALL_SETTINGS_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_CALL_SETTINGS_INTERFACE);
 	cs_register_ss_controls(cs);
 
 	__ofono_atom_register(cs->atom, call_settings_unregister);
