@@ -36,7 +36,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "cssn.h"
 #include "ussd.h"
 
 #define CALL_BARRING_FLAG_CACHED 0x1
@@ -58,6 +57,9 @@ struct ofono_call_barring {
 	int ss_req_type;
 	int ss_req_cls;
 	int ss_req_lock;
+	struct ofono_ssn *ssn;
+	unsigned int incoming_bar_watch;
+	unsigned int outgoing_bar_watch;
 	const struct ofono_call_barring_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -1064,10 +1066,10 @@ static void call_barring_unregister(struct ofono_atom *atom)
 
 	cb_unregister_ss_controls(cb);
 
-	ofono_mo_ss_unregister(modem, SS_MO_INCOMING_BARRING,
-			call_barring_incoming_enabled_notify, cb);
-	ofono_mo_ss_unregister(modem, SS_MO_OUTGOING_BARRING,
-			call_barring_outgoing_enabled_notify, cb);
+	if (cb->incoming_bar_watch)
+		__ofono_ssn_mo_watch_remove(cb->ssn, cb->incoming_bar_watch);
+	if (cb->outgoing_bar_watch)
+		__ofono_ssn_mt_watch_remove(cb->ssn, cb->outgoing_bar_watch);
 
 	modem->call_barring = NULL;
 }
@@ -1129,11 +1131,35 @@ struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 	return cb;
 }
 
+static void ssn_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_call_barring *cb = data;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		cb->ssn = NULL;
+		cb->incoming_bar_watch = 0;
+		cb->outgoing_bar_watch = 0;
+		return;
+	}
+
+	cb->ssn = __ofono_atom_get_data(atom);
+
+	cb->incoming_bar_watch =
+		__ofono_ssn_mo_watch_add(cb->ssn, SS_MO_INCOMING_BARRING,
+				call_barring_incoming_enabled_notify, cb, NULL);
+
+	cb->outgoing_bar_watch =
+		__ofono_ssn_mo_watch_add(cb->ssn, SS_MO_OUTGOING_BARRING,
+				call_barring_outgoing_enabled_notify, cb, NULL);
+}
+
 void ofono_call_barring_register(struct ofono_call_barring *cb)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cb->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
+	struct ofono_atom *ssn_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CALL_BARRING_INTERFACE,
@@ -1148,12 +1174,15 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 	modem->call_barring = cb;
 
 	ofono_modem_add_interface(modem, OFONO_CALL_BARRING_INTERFACE);
+
 	cb_register_ss_controls(cb);
 
-	ofono_mo_ss_register(modem, SS_MO_INCOMING_BARRING,
-			call_barring_incoming_enabled_notify, cb);
-	ofono_mo_ss_register(modem, SS_MO_OUTGOING_BARRING,
-			call_barring_outgoing_enabled_notify, cb);
+	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_SSN,
+					ssn_watch, cb, NULL);	
+	ssn_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SSN);
+	
+	if (ssn_atom && __ofono_atom_get_registered(ssn_atom))
+		ssn_watch(ssn_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, cb);
 
 	__ofono_atom_register(cb->atom, call_barring_unregister);
 }

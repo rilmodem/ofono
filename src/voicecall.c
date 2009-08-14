@@ -34,7 +34,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "cssn.h"
 
 #define VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
 #define VOICECALL_INTERFACE "org.ofono.VoiceCall"

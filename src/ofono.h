@@ -108,7 +108,8 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_SIM = 8,
 	OFONO_ATOM_TYPE_USSD = 9,
 	OFONO_ATOM_TYPE_VOICECALL = 10,
-	OFONO_ATOM_TYPE_HISTORY = 11
+	OFONO_ATOM_TYPE_HISTORY = 11,
+	OFONO_ATOM_TYPE_SSN = 12,
 };
 
 enum ofono_atom_watch_condition {
@@ -151,6 +152,23 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
 #include <ofono/phonebook.h>
+
+#include <ofono/ssn.h>
+
+typedef void (*ofono_ssn_mo_notify_cb)(int index, void *user);
+typedef void (*ofono_ssn_mt_notify_cb)(int index,
+					const struct ofono_phone_number *ph,
+					void *user);
+
+unsigned int __ofono_ssn_mo_watch_add(struct ofono_ssn *ssn, int code1,
+					ofono_ssn_mo_notify_cb cb, void *user,
+					ofono_destroy_func destroy);
+gboolean __ofono_ssn_mo_watch_remove(struct ofono_ssn *ssn, int id);
+
+unsigned int __ofono_ssn_mt_watch_add(struct ofono_ssn *ssn, int code2,
+					ofono_ssn_mt_notify_cb cb, void *user,
+					ofono_destroy_func destroy);
+gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, int id);
 
 #include <ofono/history.h>
 
