@@ -34,6 +34,7 @@
 
 #include "driver.h"
 #include "common.h"
+#include "simutil.h"
 
 #define VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
 #define VOICECALL_INTERFACE "org.ofono.VoiceCall"
@@ -47,11 +48,13 @@ struct voicecalls_data {
 	GSList *call_list;
 	GSList *release_list;
 	GSList *multiparty_list;
+	GSList *en_list;  /* emergency number list */
 	struct ofono_voicecall_ops *ops;
 	int flags;
 	DBusMessage *pending;
 	gint emit_calls_source;
 	gint emit_multi_source;
+	gint emit_en_source;
 };
 
 struct voicecall {
@@ -60,6 +63,10 @@ struct voicecall {
 	time_t start_time;
 	time_t detect_time;
 };
+
+static const char *default_en_list[] = { "911", "112", NULL };
+static const char *default_en_list_no_sim[] = { "119", "118", "999", "110",
+						"08", "000", NULL };
 
 static void generic_callback(const struct ofono_error *error, void *data);
 static void dial_callback(const struct ofono_error *error, void *data);
@@ -494,6 +501,11 @@ static void voicecalls_destroy(gpointer userdata)
 		calls->emit_multi_source = 0;
 	}
 
+	if (calls->emit_en_source) {
+		g_source_remove(calls->emit_en_source);
+		calls->emit_en_source = 0;
+	}
+
 	for (l = calls->call_list; l; l = l->next)
 		voicecall_dbus_unregister(modem, l->data);
 
@@ -703,8 +715,10 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-
+	int i;
+	GSList *l;
 	char **callobj_list;
+	char **list;
 
 	reply = dbus_message_new_method_return(msg);
 
@@ -730,6 +744,14 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 					DBUS_TYPE_OBJECT_PATH, &callobj_list);
 
 	g_strfreev(callobj_list);
+
+	/* property EmergencyNumbers */
+	list = g_new0(char *, g_slist_length(calls->en_list) + 1);
+	for (i = 0, l = calls->en_list; l; l = l->next, i++)
+		list[i] = g_strdup(l->data);
+	ofono_dbus_dict_append_array(&dict, "EmergencyNumbers",
+					DBUS_TYPE_STRING, &list);
+	g_strfreev(list);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -1654,6 +1676,105 @@ out:
 	calls->pending = NULL;
 }
 
+static gboolean in_default_en_list(char *en)
+{
+	int i = 0;
+	while (default_en_list[i])
+		if (!strcmp(en, default_en_list[i++]))
+			return TRUE;
+
+	return FALSE;
+}
+
+static gboolean real_emit_en_list_changed(void *data)
+{
+	struct ofono_modem *modem = data;
+	struct voicecalls_data *calls = modem->voicecalls;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	char **list;
+	GSList *l;
+	int i;
+
+	list = g_new0(char *, g_slist_length(calls->en_list) + 1);
+	for (i = 0, l = calls->en_list; l; l = l->next, i++)
+		list[i] = g_strdup(l->data);
+	ofono_dbus_signal_array_property_changed(conn, modem->path,
+				VOICECALL_MANAGER_INTERFACE,
+				"EmergencyNumbers",
+				DBUS_TYPE_STRING,
+				&list);
+
+	g_strfreev(list);
+	calls->emit_en_source = 0;
+
+	return FALSE;
+}
+
+static void emit_en_list_changed(struct ofono_modem *modem)
+{
+#ifdef DELAY_EMIT
+	struct voicecalls_data *calls = modem->voicecalls;
+
+	if (calls->emit_en_source == 0)
+		calls->emit_en_source =
+			g_timeout_add(0, real_emit_en_list_changed, modem);
+#else
+	real_emit_en_list_changed(modem);
+#endif
+}
+
+static void add_to_list(GSList **l, const char **list)
+{
+	int i = 0;
+	while (list[i])
+		*l = g_slist_prepend(*l, g_strdup(list[i++]));
+}
+
+static void construct_en_list(GSList **en_list)
+{
+	if (!*en_list)
+		add_to_list(en_list, default_en_list_no_sim);
+}
+
+static void ecc_read_cb(struct ofono_modem *modem, int ok,
+		enum ofono_sim_file_structure structure, int total_length,
+		int record, const unsigned char *data, int record_length,
+		void *userdata)
+{
+	struct voicecalls_data *calls = modem->voicecalls;
+	char *en;
+	static record_length_read;
+
+	if (!ok || structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
+		record_length < 4 || total_length < record_length) {
+		ofono_error("Unable to read emergency numbers from SIM");
+		construct_en_list(&calls->en_list);
+		return;
+	}
+
+	en = g_malloc(7);
+	extract_bcd_number(data, 3, en);
+
+	if (!in_default_en_list(en)) {
+		calls->en_list = g_slist_prepend(calls->en_list, en);
+		emit_en_list_changed(modem);
+	} else
+		g_free(en);
+
+	record_length_read += record_length;
+	if (record_length_read == total_length)
+		construct_en_list(&calls->en_list);
+}
+
+static gboolean ecc_load(struct ofono_modem *modem)
+{
+	int err;
+	err = ofono_sim_read(modem, SIM_EFECC_FILEID, ecc_read_cb, NULL);
+	if (err != 0)
+		return FALSE;
+	return TRUE;
+}
+
 int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_ops *ops)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1685,15 +1806,28 @@ int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_o
 
 	ofono_modem_add_interface(modem, VOICECALL_MANAGER_INTERFACE);
 
+	add_to_list(&modem->voicecalls->en_list, default_en_list);
+	ofono_sim_ready_notify_register(modem, ecc_load);
+	if (ofono_sim_get_ready(modem))
+		ecc_load(modem);
+
 	return 0;
 }
 
 void ofono_voicecall_unregister(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	GSList *l;
 
 	if (!modem->voicecalls)
 		return;
+
+	l = modem->voicecalls->en_list;
+	if (l) {
+		g_slist_foreach(l, (GFunc)g_free, NULL);
+		g_slist_free(l);
+		l = NULL;
+	}
 
 	ofono_modem_remove_interface(modem, VOICECALL_MANAGER_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path,
