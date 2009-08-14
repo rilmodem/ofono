@@ -1164,7 +1164,7 @@ static void emit_call_list_changed(struct ofono_modem *modem)
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->emit_calls_source == 0)
-		calls->emit_calls_source = 
+		calls->emit_calls_source =
 			g_timeout_add(0, real_emit_call_list_changed, modem);
 #else
 	real_emit_call_list_changed(modem);
@@ -1186,7 +1186,7 @@ static gboolean real_emit_multiparty_call_list_changed(void *data)
 				&objpath_list);
 
 	g_strfreev(objpath_list);
-	
+
 	voicecalls->emit_multi_source = 0;
 
 	return FALSE;
@@ -1198,7 +1198,7 @@ static void emit_multiparty_call_list_changed(struct ofono_modem *modem)
 	struct voicecalls_data *calls = modem->voicecalls;
 
 	if (calls->emit_multi_source == 0)
-		calls->emit_multi_source = g_timeout_add(0, 
+		calls->emit_multi_source = g_timeout_add(0,
 				real_emit_multiparty_call_list_changed, modem);
 	}
 #else
