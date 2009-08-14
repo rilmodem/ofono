@@ -62,7 +62,6 @@ struct ofono_phonebook {
 	GSList *merge_list; /* cache the entries that may need a merge */
 	const struct ofono_phonebook_driver *driver;
 	void *driver_data;
-	struct ofono_modem *modem;
 	struct ofono_atom *atom;
 };
 
@@ -515,17 +514,17 @@ void ofono_phonebook_driver_unregister(const struct ofono_phonebook_driver *d)
 static void phonebook_unregister(struct ofono_atom *atom)
 {
 	struct ofono_phonebook *pb = __ofono_atom_get_data(atom);
-	const char *path = ofono_modem_get_path(pb->modem);
+	const char *path = __ofono_atom_get_path(pb->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(pb->atom);
 
-	ofono_modem_remove_interface(pb->modem, PHONEBOOK_INTERFACE);
+	ofono_modem_remove_interface(modem, PHONEBOOK_INTERFACE);
 	g_dbus_unregister_interface(conn, path, PHONEBOOK_INTERFACE);
 }
 
 static void phonebook_remove(struct ofono_atom *atom)
 {
 	struct ofono_phonebook *pb = __ofono_atom_get_data(atom);
-	struct ofono_modem *modem = pb->modem;
 
 	DBG("atom: %p", atom);
 
@@ -554,7 +553,6 @@ struct ofono_phonebook *ofono_phonebook_create(struct ofono_modem *modem,
 		return NULL;
 
 	pb->vcards = g_string_new(NULL);
-	pb->modem = modem;
 	pb->driver_data = data;
 	pb->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_PHONEBOOK,
 						phonebook_remove, pb);
@@ -578,7 +576,8 @@ struct ofono_phonebook *ofono_phonebook_create(struct ofono_modem *modem,
 void ofono_phonebook_register(struct ofono_phonebook *pb)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(pb->modem);
+	const char *path = __ofono_atom_get_path(pb->atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(pb->atom);
 
 	if (!g_dbus_register_interface(conn, path, PHONEBOOK_INTERFACE,
 					phonebook_methods, phonebook_signals,
@@ -589,7 +588,7 @@ void ofono_phonebook_register(struct ofono_phonebook *pb)
 		return;
 	}
 
-	ofono_modem_add_interface(pb->modem, PHONEBOOK_INTERFACE);
+	ofono_modem_add_interface(modem, PHONEBOOK_INTERFACE);
 
 	__ofono_atom_register(pb->atom, phonebook_unregister);
 }
