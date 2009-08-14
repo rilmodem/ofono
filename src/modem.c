@@ -190,6 +190,11 @@ void __ofono_atom_unregister(struct ofono_atom *atom)
 	atom->unregister(atom);
 }
 
+gboolean __ofono_atom_get_registered(struct ofono_atom *atom)
+{
+	return atom->unregister ? TRUE : FALSE;
+}
+
 int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					enum ofono_atom_type type,
 					ofono_atom_watch_func notify,

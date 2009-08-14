@@ -136,6 +136,8 @@ void __ofono_atom_register(struct ofono_atom *atom,
 				void (*unregister)(struct ofono_atom *));
 void __ofono_atom_unregister(struct ofono_atom *atom);
 
+gboolean __ofono_atom_get_registered(struct ofono_atom *atom);
+
 int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					enum ofono_atom_type type,
 					ofono_atom_watch_func notify,
