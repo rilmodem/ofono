@@ -36,8 +36,6 @@
 #include "driver.h"
 #include "common.h"
 
-#define CALL_METER_INTERFACE "org.ofono.CallMeter"
-
 #define CALL_METER_FLAG_CACHED 0x1
 #define CALL_METER_FLAG_HAVE_PUCT 0x2
 
@@ -69,7 +67,8 @@ static void set_call_meter(struct ofono_call_meter *cm, int value)
 	conn = ofono_dbus_get_connection();
 	path = __ofono_atom_get_path(cm->atom);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_METER_INTERFACE,
 						"CallMeter", DBUS_TYPE_UINT32,
 						&cm->call_meter);
 }
@@ -87,7 +86,8 @@ static void set_acm(struct ofono_call_meter *cm, int value)
 	conn = ofono_dbus_get_connection();
 	path = __ofono_atom_get_path(cm->atom);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_METER_INTERFACE,
 						"AccumulatedCallMeter",
 						DBUS_TYPE_UINT32, &cm->acm);
 }
@@ -105,7 +105,8 @@ static void set_acm_max(struct ofono_call_meter *cm, int value)
 	conn = ofono_dbus_get_connection();
 	path = __ofono_atom_get_path(cm->atom);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_METER_INTERFACE,
 						"AccumulatedCallMeterMaximum",
 						DBUS_TYPE_UINT32, &cm->acm_max);
 }
@@ -123,7 +124,8 @@ static void set_ppu(struct ofono_call_meter *cm, double value)
 	conn = ofono_dbus_get_connection();
 	path = __ofono_atom_get_path(cm->atom);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_METER_INTERFACE,
 						"PricePerUnit",
 						DBUS_TYPE_DOUBLE, &cm->ppu);
 }
@@ -149,7 +151,8 @@ static void set_currency(struct ofono_call_meter *cm, const char *value)
 	path = __ofono_atom_get_path(cm->atom);
 	dbusval = cm->currency;
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_METER_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_METER_INTERFACE,
 						"Currency", DBUS_TYPE_STRING,
 						&dbusval);
 }
@@ -658,11 +661,11 @@ void ofono_call_meter_maximum_notify(struct ofono_call_meter *cm)
 	DBusMessage *signal;
 	const char *path = __ofono_atom_get_path(cm->atom);
 
-	signal = dbus_message_new_signal(path, CALL_METER_INTERFACE,
+	signal = dbus_message_new_signal(path, OFONO_CALL_METER_INTERFACE,
 						"NearMaximumWarning");
 	if (!signal) {
 		ofono_error("Unable to allocate new %s.NearMaximumWarning "
-				"signal", CALL_METER_INTERFACE);
+				"signal", OFONO_CALL_METER_INTERFACE);
 		return;
 	}
 
@@ -695,8 +698,8 @@ static void call_meter_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(cm->atom);
 
-	ofono_modem_remove_interface(modem, CALL_METER_INTERFACE);
-	g_dbus_unregister_interface(conn, path, CALL_METER_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_CALL_METER_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_CALL_METER_INTERFACE);
 }
 
 static void call_meter_remove(struct ofono_atom *atom)
@@ -756,16 +759,16 @@ void ofono_call_meter_register(struct ofono_call_meter *cm)
 	const char *path = __ofono_atom_get_path(cm->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(cm->atom);
 
-	if (!g_dbus_register_interface(conn, path, CALL_METER_INTERFACE,
+	if (!g_dbus_register_interface(conn, path, OFONO_CALL_METER_INTERFACE,
 					cm_methods, cm_signals, NULL, cm,
 					NULL)) {
 		ofono_error("Could not create %s interface",
-				CALL_METER_INTERFACE);
+				OFONO_CALL_METER_INTERFACE);
 
 		return;
 	}
 
-	ofono_modem_add_interface(modem, CALL_METER_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_CALL_METER_INTERFACE);
 
 	__ofono_atom_register(cm->atom, call_meter_unregister);
 }

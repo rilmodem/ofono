@@ -34,7 +34,7 @@ extern "C" {
 #define OFONO_MODEM_INTERFACE "org.ofono.Modem"
 #define OFONO_CALL_BARRING_INTERFACE "org.ofono.CallBarring"
 #define OFONO_CALL_FORWARDING_INTERFACE "org.ofono.CallForwarding"
-
+#define OFONO_CALL_METER_INTERFACE "org.ofono.CallMeter"
 
 /* Essentially a{sv} */
 #define OFONO_PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \
