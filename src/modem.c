@@ -62,7 +62,16 @@ struct ofono_atom {
 	struct ofono_modem *modem;
 };
 
+struct ofono_atom_watch {
+	enum ofono_atom_type type;
+	int id;
+	ofono_atom_watch_func notify;
+	ofono_destroy_func destroy;
+	void *notify_data;
+};
+
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
+
 {
 	struct ofono_modem_data *d = modem->modem_info;
 	unsigned int i;
@@ -159,6 +168,82 @@ void __ofono_atom_unregister(struct ofono_atom *atom)
 		return;
 		
 	atom->unregister(atom);
+}
+
+int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
+					enum ofono_atom_type type,
+					ofono_atom_watch_func notify,
+					ofono_destroy_func destroy, void *data)
+{
+	struct ofono_atom_watch *watch;
+	
+	if (notify == NULL)
+		return 0;
+		
+	watch = g_new0(struct ofono_atom_watch, 1);
+
+	watch->type = type;
+	watch->id = modem->next_atom_watch_id++;
+	watch->notify = notify;
+	watch->destroy = destroy;
+	watch->notify_data = data;
+
+	modem->atom_watches = g_slist_prepend(modem->atom_watches, watch);
+
+	return watch->id;
+}
+
+gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem, int id)
+{
+	struct ofono_atom_watch *watch;
+	GSList *p;
+	GSList *c;
+
+	p = NULL;
+	c = modem->atom_watches;
+
+	while (c) {
+		watch = c->data;
+
+		if (watch->id != id) {
+			p = c;
+			c = c->next;
+			continue;
+		}
+
+		if (p)
+			p->next = c->next;
+		else
+			modem->atom_watches = c->next;
+
+		if (watch->destroy)
+			watch->destroy(watch->notify_data);
+
+		g_free(watch);
+		g_slist_free_1(c);
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static void remove_all_watches(struct ofono_modem *modem)
+{
+	struct ofono_atom_watch *watch;
+	GSList *l;
+
+	for (l = modem->atom_watches; l; l = l->next) {
+		watch = l->data;
+
+		if (watch->destroy)
+			watch->destroy(watch->notify_data);
+
+		g_free(watch);
+	}
+
+	g_slist_free(modem->atom_watches);
+	modem->atom_watches = NULL;
 }
 
 struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
@@ -546,6 +631,7 @@ static void modem_remove(struct ofono_modem *modem)
 	ofono_debug("Removing modem: %s", modem->path);
 
 	remove_all_atoms(modem);
+	remove_all_watches(modem);
 
 	ofono_cssn_exit(modem);
 	ofono_sim_manager_exit(modem);

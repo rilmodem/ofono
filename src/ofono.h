@@ -23,6 +23,8 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 
+typedef void (*ofono_destroy_func)(void *data);
+
 int __ofono_manager_init();
 void __ofono_manager_cleanup();
 
@@ -69,6 +71,8 @@ struct ofono_modem {
 	GSList *ss_passwd_list;
 
 	GSList		*atoms;
+	GSList		*atom_watches;
+	int		next_atom_watch_id;
 
 	struct ofono_modem_data *modem_info;
 	struct network_registration_data *network_registration;
@@ -107,6 +111,15 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_HISTORY = 11
 };
 
+enum ofono_atom_watch_condition {
+	OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+	OFONO_ATOM_WATCH_CONDITION_UNREGISTERED
+};
+
+typedef void (*ofono_atom_watch_func)(struct ofono_atom *atom,
+					enum ofono_atom_watch_condition cond,
+					void *data);
+
 struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
 					enum ofono_atom_type type,
 					void (*destruct)(struct ofono_atom *),
@@ -122,6 +135,12 @@ struct ofono_modem *__ofono_atom_get_modem(struct ofono_atom *atom);
 void __ofono_atom_register(struct ofono_atom *atom,
 				void (*unregister)(struct ofono_atom *));
 void __ofono_atom_unregister(struct ofono_atom *atom);
+
+int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
+					enum ofono_atom_type type,
+					ofono_atom_watch_func notify,
+					ofono_destroy_func destroy, void *data);
+gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem, int id);
 
 void __ofono_atom_free(struct ofono_atom *atom);
 
