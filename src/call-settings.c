@@ -1262,7 +1262,7 @@ void ofono_call_settings_register(struct ofono_call_settings *cs)
 
 void ofono_call_settings_remove(struct ofono_call_settings *cs)
 {
-	__ofono_modem_remove_atom(cs->modem, cs->atom);
+	__ofono_atom_free(cs->atom);
 }
 
 void ofono_call_settings_set_data(struct ofono_call_settings *cs, void *data)

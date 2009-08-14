@@ -773,7 +773,7 @@ void ofono_call_meter_register(struct ofono_call_meter *cm)
 
 void ofono_call_meter_remove(struct ofono_call_meter *cm)
 {
-	__ofono_modem_remove_atom(cm->modem, cm->atom);
+	__ofono_atom_free(cm->atom);
 }
 
 void ofono_call_meter_set_data(struct ofono_call_meter *cm, void *data)

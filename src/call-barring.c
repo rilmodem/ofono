@@ -1161,7 +1161,7 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 
 void ofono_call_barring_remove(struct ofono_call_barring *cb)
 {
-	__ofono_modem_remove_atom(cb->modem, cb->atom);
+	__ofono_atom_free(cb->atom);
 }
 
 void ofono_call_barring_set_data(struct ofono_call_barring *cb, void *data)

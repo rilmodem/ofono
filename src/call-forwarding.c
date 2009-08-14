@@ -1197,7 +1197,7 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 
 void ofono_call_forwarding_remove(struct ofono_call_forwarding *cf)
 {
-	__ofono_modem_remove_atom(cf->modem, cf->atom);
+	__ofono_atom_free(cf->atom);
 }
 
 void ofono_call_forwarding_set_data(struct ofono_call_forwarding *cf, void *data)

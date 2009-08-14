@@ -596,7 +596,7 @@ void ofono_phonebook_register(struct ofono_phonebook *pb)
 
 void ofono_phonebook_remove(struct ofono_phonebook *pb)
 {
-	__ofono_modem_remove_atom(pb->modem, pb->atom);
+	__ofono_atom_free(pb->atom);
 }
 
 void ofono_phonebook_set_data(struct ofono_phonebook *pb, void *data)
