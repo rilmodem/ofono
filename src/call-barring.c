@@ -999,12 +999,14 @@ static GDBusSignalTable cb_signals[] = {
 
 static void call_barring_incoming_enabled_notify(int idx, void *userdata)
 {
-	struct ofono_modem *modem = userdata;
+	struct ofono_call_barring *cb = userdata;
 	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(cb->modem);
 	DBusMessage *signal;
 
-	signal = dbus_message_new_signal(modem->path,
-			CALL_BARRING_INTERFACE, "IncomingBarringInEffect");
+	signal = dbus_message_new_signal(path, CALL_BARRING_INTERFACE,
+						"IncomingBarringInEffect");
+
 	if (!signal) {
 		ofono_error("Unable to allocate new %s.IncomingBarringInEffect"
 				" signal", CALL_BARRING_INTERFACE);
@@ -1016,12 +1018,14 @@ static void call_barring_incoming_enabled_notify(int idx, void *userdata)
 
 static void call_barring_outgoing_enabled_notify(int idx, void *userdata)
 {
-	struct ofono_modem *modem = userdata;
+	struct ofono_call_barring *cb = userdata;
 	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ofono_modem_get_path(cb->modem);
 	DBusMessage *signal;
 
-	signal = dbus_message_new_signal(modem->path,
-			CALL_BARRING_INTERFACE, "OutgoingBarringInEffect");
+	signal = dbus_message_new_signal(path, CALL_BARRING_INTERFACE,
+						"OutgoingBarringInEffect");
+
 	if (!signal) {
 		ofono_error("Unable to allocate new %s.OutgoingBarringInEffect"
 				" signal", CALL_BARRING_INTERFACE);
