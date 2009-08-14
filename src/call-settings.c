@@ -64,7 +64,6 @@ struct ofono_call_settings {
 	enum call_setting_type ss_setting;
 	const struct ofono_call_settings_driver *driver;
 	void *driver_data;
-	struct ofono_modem *modem;
 	struct ofono_atom *atom;
 };
 
@@ -146,7 +145,7 @@ static void set_clir_network(struct ofono_call_settings *cs, int clir)
 	cs->clir = clir;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cs->modem);
+	path = __ofono_atom_get_path(cs->atom);
 
 	str = clir_status_to_string(clir);
 
@@ -167,7 +166,7 @@ static void set_clir_override(struct ofono_call_settings *cs, int override)
 	cs->clir_setting = override;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cs->modem);
+	path = __ofono_atom_get_path(cs->atom);
 
 	str = hide_callerid_to_string(override);
 
@@ -188,7 +187,7 @@ static void set_clip(struct ofono_call_settings *cs, int clip)
 	cs->clip = clip;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cs->modem);
+	path = __ofono_atom_get_path(cs->atom);
 
 	str = clip_status_to_string(clip);
 
@@ -209,7 +208,7 @@ static void set_colp(struct ofono_call_settings *cs, int colp)
 	cs->colp = colp;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cs->modem);
+	path = __ofono_atom_get_path(cs->atom);
 
 	str = colp_status_to_string(colp);
 
@@ -230,7 +229,7 @@ static void set_colr(struct ofono_call_settings *cs, int colr)
 	cs->colr = colr;
 
 	conn = ofono_dbus_get_connection();
-	path = ofono_modem_get_path(cs->modem);
+	path = __ofono_atom_get_path(cs->atom);
 
 	str = colr_status_to_string(colr);
 
@@ -242,7 +241,7 @@ static void set_colr(struct ofono_call_settings *cs, int colr)
 static void set_cw(struct ofono_call_settings *cs, int new_cw, int mask)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cs->modem);
+	const char *path = __ofono_atom_get_path(cs->atom);
 	char buf[64];
 	int j;
 	const char *value;
@@ -722,26 +721,30 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 
 static void cs_register_ss_controls(struct ofono_call_settings *cs)
 {
-	ss_control_register(cs->modem, "30", clip_colp_colr_ss);
-	ss_control_register(cs->modem, "31", clir_ss_control);
-	ss_control_register(cs->modem, "76", clip_colp_colr_ss);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
 
-	ss_control_register(cs->modem, "43", cw_ss_control);
+	ss_control_register(modem, "30", clip_colp_colr_ss);
+	ss_control_register(modem, "31", clir_ss_control);
+	ss_control_register(modem, "76", clip_colp_colr_ss);
+
+	ss_control_register(modem, "43", cw_ss_control);
 
 	if (cs->driver->colr_query)
-		ss_control_register(cs->modem, "77", clip_colp_colr_ss);
+		ss_control_register(modem, "77", clip_colp_colr_ss);
 }
 
 static void cs_unregister_ss_controls(struct ofono_call_settings *cs)
 {
-	ss_control_unregister(cs->modem, "30", clip_colp_colr_ss);
-	ss_control_unregister(cs->modem, "31", clir_ss_control);
-	ss_control_unregister(cs->modem, "76", clip_colp_colr_ss);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
 
-	ss_control_unregister(cs->modem, "43", cw_ss_control);
+	ss_control_unregister(modem, "30", clip_colp_colr_ss);
+	ss_control_unregister(modem, "31", clir_ss_control);
+	ss_control_unregister(modem, "76", clip_colp_colr_ss);
+
+	ss_control_unregister(modem, "43", cw_ss_control);
 
 	if (cs->driver->colr_query)
-		ss_control_unregister(cs->modem, "77", clip_colp_colr_ss);
+		ss_control_unregister(modem, "77", clip_colp_colr_ss);
 }
 
 static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs,
@@ -1168,21 +1171,21 @@ void ofono_call_settings_driver_unregister(const struct ofono_call_settings_driv
 static void call_settings_unregister(struct ofono_atom *atom)
 {
 	struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
-	const char *path = ofono_modem_get_path(cs->modem);
+	const char *path = __ofono_atom_get_path(cs->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
 
-	ofono_modem_remove_interface(cs->modem, CALL_SETTINGS_INTERFACE);
+	ofono_modem_remove_interface(modem, CALL_SETTINGS_INTERFACE);
 	g_dbus_unregister_interface(conn, path, CALL_SETTINGS_INTERFACE);
 
 	cs_unregister_ss_controls(cs);
 
-	cs->modem->call_settings = NULL;
+	modem->call_settings = NULL;
 }
 
 static void call_settings_remove(struct ofono_atom *atom)
 {
 	struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
-	struct ofono_modem *modem = cs->modem;
 
 	DBG("atom: %p", atom);
 
@@ -1193,8 +1196,6 @@ static void call_settings_remove(struct ofono_atom *atom)
 		cs->driver->remove(cs);
 
 	g_free(cs);
-
-	modem->call_settings = NULL;
 }
 
 struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem,
@@ -1217,7 +1218,6 @@ struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem
 	cs->clir = 2;
 	cs->colp = 2;
 	cs->colr = 2;
-	cs->modem = modem;
 	cs->driver_data = data;
 	cs->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS,
 						call_settings_remove, cs);
@@ -1241,7 +1241,8 @@ struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem
 void ofono_call_settings_register(struct ofono_call_settings *cs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = ofono_modem_get_path(cs->modem);
+	const char *path = __ofono_atom_get_path(cs->atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
 
 	if (!g_dbus_register_interface(conn, path, CALL_SETTINGS_INTERFACE,
 					cs_methods, cs_signals, NULL, cs,
@@ -1252,9 +1253,9 @@ void ofono_call_settings_register(struct ofono_call_settings *cs)
 		return;
 	}
 
-	cs->modem->call_settings = cs;
+	modem->call_settings = cs;
 
-	ofono_modem_add_interface(cs->modem, CALL_SETTINGS_INTERFACE);
+	ofono_modem_add_interface(modem, CALL_SETTINGS_INTERFACE);
 	cs_register_ss_controls(cs);
 
 	__ofono_atom_register(cs->atom, call_settings_unregister);
