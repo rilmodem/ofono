@@ -62,5 +62,5 @@ static inline struct isi_cb_data *isi_cb_data_new(struct ofono_modem *modem,
 
 void dump_msg(const unsigned char *msg, size_t len);
 
-extern void isi_phonebook_init(struct ofono_modem *modem);
-extern void isi_phonebook_exit(struct ofono_modem *modem);
+extern void isi_phonebook_init();
+extern void isi_phonebook_exit();

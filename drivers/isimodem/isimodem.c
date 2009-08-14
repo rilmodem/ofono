@@ -429,7 +429,7 @@ static void netlink_status_cb(bool up, uint8_t addr, unsigned idx,
 				return;
 
 			ofono_modem_set_userdata(isi->modem, isi);
-			isi_phonebook_init(isi->modem);
+			ofono_phonebook_create(isi->modem, "isi", NULL);
 		}
 	} else {
 		clear_pending_reqs();
@@ -440,7 +440,6 @@ static void netlink_status_cb(bool up, uint8_t addr, unsigned idx,
 		}
 
 		if (isi->modem) {
-			isi_phonebook_exit(isi->modem);
 			ofono_modem_unregister(isi->modem);
 			isi->modem = NULL;
 		}
@@ -452,7 +451,9 @@ static int isimodem_init(void)
 	isi = g_new0(struct isi_data, 1);
 
 	pn_link = g_pn_netlink_start(netlink_status_cb, isi);
-	
+
+	isi_phonebook_init();
+
 	return 0;
 }
 
@@ -469,6 +470,8 @@ static void isimodem_exit(void)
 		g_pn_netlink_stop(pn_link);
 		pn_link = NULL;
 	}
+
+	isi_phonebook_exit();
 
 	g_free(isi);
 }

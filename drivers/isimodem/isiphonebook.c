@@ -28,12 +28,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
 #include <glib.h>
 #include <gisi/client.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/phonebook.h>
 #include "util.h"
 
 #include "isi.h"
@@ -98,7 +100,7 @@ static void phonebook_destroy(struct pb_data *data)
 }
 
 static int decode_read_response(const unsigned char *msg, size_t len,
-				struct ofono_modem *modem)
+				struct ofono_phonebook *pb)
 {
 	unsigned int i, p;
 
@@ -239,7 +241,7 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 		p += subblock_len;
 	}
 	if (status == SIM_SERV_OK) {
-		ofono_phonebook_entry(modem, -1, number, -1, name, -1, NULL,
+		ofono_phonebook_entry(pb, -1, number, -1, name, -1, NULL,
 					snr, -1, adn, email, NULL, NULL);
 		return location;
 	} else {
@@ -253,7 +255,7 @@ error:
 
 static void read_next_entry(int location, GIsiResponseFunc read_cb, struct isi_cb_data *cbd)
 {
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_phonebook_cb_t cb = cbd->cb;
 	const unsigned char msg[] = {
 		SIM_PB_REQ_SIM_PB_READ,
 		SIM_PB_READ,
@@ -297,7 +299,7 @@ static bool read_resp_cb(GIsiClient *client, const void *restrict data,
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_phonebook_cb_t cb = cbd->cb;
 	int location;
 
 	if(!msg) {
@@ -305,7 +307,7 @@ static bool read_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	location = decode_read_response(data, len, cbd->modem);
+	location = decode_read_response(data, len, cbd->user);
 	if (location != -1) {
 		read_next_entry(location, read_resp_cb, cbd);
 		return;
@@ -329,10 +331,10 @@ out:
 	return true;
 }
 
-static void isi_export_entries(struct ofono_modem *modem, const char *storage,
-				ofono_generic_cb_t cb, void *data)
+static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
+				ofono_phonebook_cb_t cb, void *data)
 {
-	struct isi_cb_data *cbd = isi_cb_data_new(modem, cb, data);
+	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
 	const unsigned char msg[] = {
 		SIM_PB_REQ_SIM_PB_READ,
 		SIM_PB_READ,
@@ -358,6 +360,8 @@ static void isi_export_entries(struct ofono_modem *modem, const char *storage,
 	if (strcmp(storage, "SM"))
 		goto error;
 
+	cbd->user = pb;
+
 	if (g_isi_request_make(client, msg, sizeof(msg), PHONEBOOK_TIMEOUT,
 				read_resp_cb, cbd))
 		return;
@@ -372,54 +376,62 @@ error:
 	}
 }
 
-static struct ofono_phonebook_ops ops = {
-	.export_entries		= isi_export_entries
-};
-
-static void phonebook_not_supported(struct ofono_modem *modem)
+static gboolean isi_phonebook_register(gpointer user)
 {
-	struct isi_data *isi = ofono_modem_get_userdata(modem);
+	struct ofono_phonebook *pb = user;
 
-	ofono_error("Phonebook not supported by this modem.  If this is in "
-			"error please submit patches to support this hardware");
-	if (isi->pb) {
-		phonebook_destroy(isi->pb);
-		isi->pb = NULL;
-	}
+	ofono_phonebook_register(pb);
+
+	return FALSE;
 }
 
-void isi_phonebook_init(struct ofono_modem *modem)
+static int isi_phonebook_probe(struct ofono_phonebook *pb)
 {
-	struct isi_data *isi = ofono_modem_get_userdata(modem);
-
-	isi->pb = phonebook_create();
+	struct pb_data *pbd;
+	
 	if (!client) {
 		client = g_isi_client_create(PN_SIM);
 		if (!client)
-			goto error;
+			return -ENOMEM;
 	}
 
-	/* FIXME: If this is running on a phone itself, phonebook initialization needs to be done here */
-	ofono_phonebook_register(modem, &ops);
-	return;
+	ofono_phonebook_set_data(pb, phonebook_create());
 
-error:
-	phonebook_not_supported(modem);
+	/* FIXME: If this is running on a phone itself, phonebook initialization needs to be done here */
+
+	g_idle_add(isi_phonebook_register, pb);
+
+	return 0;
 }
 
-void isi_phonebook_exit(struct ofono_modem *modem)
+static int isi_phonebook_remove(struct ofono_phonebook *pb)
 {
-	struct isi_data *isi = ofono_modem_get_userdata(modem);
-
-	ofono_phonebook_unregister(modem);
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 
 	if (client) {
 		g_isi_client_destroy(client);
 		client = NULL;
 	}
-	if (!isi->pb)
-		return;
 
-	phonebook_destroy(isi->pb);
-	isi->pb = NULL;
+	if (pbd)
+		phonebook_destroy(pbd);
+
+	return 0;
+}
+
+static struct ofono_phonebook_driver driver = {
+	.name			= "isi",
+	.probe			= isi_phonebook_probe,
+	.remove			= isi_phonebook_remove,
+	.export_entries		= isi_export_entries
+};
+
+void isi_phonebook_init()
+{
+	ofono_phonebook_driver_register(&driver);
+}
+
+void isi_phonebook_exit()
+{
+	ofono_phonebook_driver_unregister(&driver);
 }
