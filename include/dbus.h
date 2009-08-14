@@ -32,6 +32,7 @@ extern "C" {
 #define OFONO_MANAGER_INTERFACE "org.ofono.Manager"
 #define OFONO_MANAGER_PATH "/"
 #define OFONO_MODEM_INTERFACE "org.ofono.Modem"
+#define OFONO_CALL_BARRING_INTERFACE "org.ofono.CallBarring"
 
 /* Essentially a{sv} */
 #define OFONO_PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \

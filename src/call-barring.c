@@ -39,8 +39,6 @@
 #include "cssn.h"
 #include "ussd.h"
 
-#define CALL_BARRING_INTERFACE "org.ofono.CallBarring"
-
 #define CALL_BARRING_FLAG_CACHED 0x1
 
 static GSList *g_drivers = NULL;
@@ -123,7 +121,8 @@ static inline void emit_barring_changed(struct ofono_call_barring *cb,
 	snprintf(property_name, sizeof(property_name), "%s%s",
 			bearer_class_to_string(cls), type);
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_BARRING_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_BARRING_INTERFACE,
 						property_name, DBUS_TYPE_STRING,
 						&value);
 }
@@ -1003,12 +1002,12 @@ static void call_barring_incoming_enabled_notify(int idx, void *userdata)
 	const char *path = __ofono_atom_get_path(cb->atom);
 	DBusMessage *signal;
 
-	signal = dbus_message_new_signal(path, CALL_BARRING_INTERFACE,
+	signal = dbus_message_new_signal(path, OFONO_CALL_BARRING_INTERFACE,
 						"IncomingBarringInEffect");
 
 	if (!signal) {
 		ofono_error("Unable to allocate new %s.IncomingBarringInEffect"
-				" signal", CALL_BARRING_INTERFACE);
+				" signal", OFONO_CALL_BARRING_INTERFACE);
 		return;
 	}
 
@@ -1022,12 +1021,12 @@ static void call_barring_outgoing_enabled_notify(int idx, void *userdata)
 	const char *path = __ofono_atom_get_path(cb->atom);
 	DBusMessage *signal;
 
-	signal = dbus_message_new_signal(path, CALL_BARRING_INTERFACE,
+	signal = dbus_message_new_signal(path, OFONO_CALL_BARRING_INTERFACE,
 						"OutgoingBarringInEffect");
 
 	if (!signal) {
 		ofono_error("Unable to allocate new %s.OutgoingBarringInEffect"
-				" signal", CALL_BARRING_INTERFACE);
+				" signal", OFONO_CALL_BARRING_INTERFACE);
 		return;
 	}
 
@@ -1060,8 +1059,8 @@ static void call_barring_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem= __ofono_atom_get_modem(cb->atom);
 
-	ofono_modem_remove_interface(modem, CALL_BARRING_INTERFACE);
-	g_dbus_unregister_interface(conn, path, CALL_BARRING_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_CALL_BARRING_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_CALL_BARRING_INTERFACE);
 
 	cb_unregister_ss_controls(cb);
 
@@ -1137,18 +1136,18 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
 
 	if (!g_dbus_register_interface(conn, path,
-					CALL_BARRING_INTERFACE,
+					OFONO_CALL_BARRING_INTERFACE,
 					cb_methods, cb_signals, NULL, cb,
 					NULL)) {
 		ofono_error("Could not create %s interface",
-				CALL_BARRING_INTERFACE);
+				OFONO_CALL_BARRING_INTERFACE);
 
 		return;
 	}
 
 	modem->call_barring = cb;
 
-	ofono_modem_add_interface(modem, CALL_BARRING_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_CALL_BARRING_INTERFACE);
 	cb_register_ss_controls(cb);
 
 	ofono_mo_ss_register(modem, SS_MO_INCOMING_BARRING,
