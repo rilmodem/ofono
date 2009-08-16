@@ -45,9 +45,9 @@ EXTRA_DIST = ofono.conf
 MAINTAINERCLEANFILES = Makefile.in
 
 ofono.exp: $(ofonod_OBJECTS)
-	nm -B *.o | awk '{ print $$3 }' | sort -u | grep -E -e '^ofono_' > $@
+	$(AM_V_GEN)nm -B *.o | awk '{ print $$3 }' | sort -u | grep -E -e '^ofono_' > $@
 
 ofono.ver: ofono.exp
-	echo "{ global:" > $@
-	cat $< | sed -e "s/\(.*\)/\1;/" >> $@
-	echo "local: *; };" >> $@
+	@echo "{ global:" > $@
+	$(AM_V_GEN)cat $< | sed -e "s/\(.*\)/\1;/" >> $@
+	@echo "local: *; };" >> $@
