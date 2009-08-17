@@ -212,11 +212,6 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_ops *ops);
 void ofono_voicecall_unregister(struct ofono_modem *modem);
 
-/* SSN notifications (CSSI and CSSU).  */
-void ofono_cssi_notify(struct ofono_modem *modem, int code, int index);
-void ofono_cssu_notify(struct ofono_modem *modem, int code, int index,
-			const struct ofono_phone_number *number);
-
 struct ofono_ussd_ops {
 	void (*request)(struct ofono_modem *modem, const char *str,
 				ofono_generic_cb_t cb, void *data);
