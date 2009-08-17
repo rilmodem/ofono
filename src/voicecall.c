@@ -54,7 +54,6 @@ struct voicecalls_data {
 	DBusMessage *pending;
 	gint emit_calls_source;
 	gint emit_multi_source;
-	gint emit_en_source;
 };
 
 struct voicecall {
@@ -499,11 +498,6 @@ static void voicecalls_destroy(gpointer userdata)
 	if (calls->emit_multi_source) {
 		g_source_remove(calls->emit_multi_source);
 		calls->emit_multi_source = 0;
-	}
-
-	if (calls->emit_en_source) {
-		g_source_remove(calls->emit_en_source);
-		calls->emit_en_source = 0;
 	}
 
 	if (calls->en_list) {
@@ -1692,9 +1686,8 @@ static gboolean in_default_en_list(char *en)
 	return FALSE;
 }
 
-static gboolean real_emit_en_list_changed(void *data)
+static void emit_en_list_changed(struct ofono_modem *modem)
 {
-	struct ofono_modem *modem = data;
 	struct voicecalls_data *calls = modem->voicecalls;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	char **list;
@@ -1711,22 +1704,6 @@ static gboolean real_emit_en_list_changed(void *data)
 				&list);
 
 	g_strfreev(list);
-	calls->emit_en_source = 0;
-
-	return FALSE;
-}
-
-static void emit_en_list_changed(struct ofono_modem *modem)
-{
-#ifdef DELAY_EMIT
-	struct voicecalls_data *calls = modem->voicecalls;
-
-	if (calls->emit_en_source == 0)
-		calls->emit_en_source =
-			g_timeout_add(0, real_emit_en_list_changed, modem);
-#else
-	real_emit_en_list_changed(modem);
-#endif
 }
 
 static void add_to_list(GSList **l, const char **list)
