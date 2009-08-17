@@ -63,6 +63,13 @@ enum colp_status {
 	COLP_STATUS_UNKNOWN = 2
 };
 
+/* This is not defined in 27.007, but presumably the same as CLIP/COLP */
+enum colr_status {
+	COLR_STATUS_NOT_PROVISIONED = 0,
+	COLR_STATUS_PROVISIONED = 1,
+	COLR_STATUS_UNKNOWN = 2
+};
+
 enum call_setting_type {
 	CALL_SETTING_TYPE_CLIP = 0,
 	CALL_SETTING_TYPE_COLP,

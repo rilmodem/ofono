@@ -56,13 +56,6 @@ enum clip_validity {
 	CLIP_VALIDITY_NOT_AVAILABLE = 2
 };
 
-/* This is not defined in 27.007, but presumably the same as CLIP/COLP */
-enum colr_status {
-	COLR_STATUS_NOT_PROVISIONED = 0,
-	COLR_STATUS_PROVISIONED = 1,
-	COLR_STATUS_UNKNOWN = 2
-};
-
 /* 27.007 Section 7.18 */
 enum call_status {
 	CALL_STATUS_ACTIVE = 0,
