@@ -50,6 +50,7 @@ struct ofono_call_forwarding {
 	int query_next;
 	int query_end;
 	struct cf_ss_request *ss_req;
+	struct ofono_ussd *ussd;
 	const struct ofono_call_forwarding_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -867,13 +868,12 @@ static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 	ss_set_query_next_cf_cond(cf);
 }
 
-static gboolean cf_ss_control(struct ofono_modem *modem,
-				enum ss_control_type type, const char *sc,
+static gboolean cf_ss_control(int type, const char *sc,
 				const char *sia, const char *sib,
 				const char *sic, const char *dn,
-				DBusMessage *msg)
+				DBusMessage *msg, void *data)
 {
-	struct ofono_call_forwarding *cf = modem->call_forwarding;
+	struct ofono_call_forwarding *cf = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_SS_DEFAULT;
 	int timeout = DEFAULT_NO_REPLY_TIMEOUT;
@@ -1063,28 +1063,24 @@ error:
 
 static void cf_register_ss_controls(struct ofono_call_forwarding *cf)
 {
-	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
+	__ofono_ussd_ssc_register(cf->ussd, "21", cf_ss_control, cf, NULL);
+	__ofono_ussd_ssc_register(cf->ussd, "67", cf_ss_control, cf, NULL);
+	__ofono_ussd_ssc_register(cf->ussd, "61", cf_ss_control, cf, NULL);
+	__ofono_ussd_ssc_register(cf->ussd, "62", cf_ss_control, cf, NULL);
 
-	ss_control_register(modem, "21", cf_ss_control);
-	ss_control_register(modem, "67", cf_ss_control);
-	ss_control_register(modem, "61", cf_ss_control);
-	ss_control_register(modem, "62", cf_ss_control);
-
-	ss_control_register(modem, "002", cf_ss_control);
-	ss_control_register(modem, "004", cf_ss_control);
+	__ofono_ussd_ssc_register(cf->ussd, "002", cf_ss_control, cf, NULL);
+	__ofono_ussd_ssc_register(cf->ussd, "004", cf_ss_control, cf, NULL);
 }
 
 static void cf_unregister_ss_controls(struct ofono_call_forwarding *cf)
 {
-	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
+	__ofono_ussd_ssc_unregister(cf->ussd, "21");
+	__ofono_ussd_ssc_unregister(cf->ussd, "67");
+	__ofono_ussd_ssc_unregister(cf->ussd, "61");
+	__ofono_ussd_ssc_unregister(cf->ussd, "62");
 
-	ss_control_unregister(modem, "21", cf_ss_control);
-	ss_control_unregister(modem, "67", cf_ss_control);
-	ss_control_unregister(modem, "61", cf_ss_control);
-	ss_control_unregister(modem, "62", cf_ss_control);
-
-	ss_control_unregister(modem, "002", cf_ss_control);
-	ss_control_unregister(modem, "004", cf_ss_control);
+	__ofono_ussd_ssc_unregister(cf->ussd, "002");
+	__ofono_ussd_ssc_unregister(cf->ussd, "004");
 }
 
 int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_driver *d)
@@ -1117,9 +1113,8 @@ static void call_forwarding_unregister(struct ofono_atom *atom)
 	g_dbus_unregister_interface(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE);
 
-	cf_unregister_ss_controls(cf);
-
-	modem->call_forwarding = NULL;
+	if (cf->ussd)
+		cf_unregister_ss_controls(cf);
 }
 
 static void call_forwarding_remove(struct ofono_atom *atom)
@@ -1174,11 +1169,26 @@ struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *m
 	return cf;
 }
 
+static void ussd_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_call_forwarding *cf = data;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		cf->ussd = NULL;
+		return;
+	}
+
+	cf->ussd = __ofono_atom_get_data(atom);
+	cf_register_ss_controls(cf);
+}
+
 void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cf->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
+	struct ofono_atom *ussd_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE,
@@ -1190,10 +1200,15 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 		return;
 	}
 
-	modem->call_forwarding = cf;
-
 	ofono_modem_add_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
-	cf_register_ss_controls(cf);
+
+	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_USSD,
+					ussd_watch, cf, NULL);
+	ussd_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
+
+	if (ussd_atom && __ofono_atom_get_registered(ussd_atom))
+		ussd_watch(ussd_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+				cf);
 
 	__ofono_atom_register(cf->atom, call_forwarding_unregister);
 }
