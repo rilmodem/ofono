@@ -26,13 +26,13 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 #include "ussd.h"
 
@@ -40,35 +40,22 @@
 
 #define USSD_FLAG_PENDING 0x1
 
+static GSList *g_drivers = NULL;
+
 enum ussd_state {
 	USSD_STATE_IDLE = 0,
 	USSD_STATE_ACTIVE = 1,
 	USSD_STATE_USER_ACTION = 2
 };
 
-struct ussd_data {
-	struct ofono_ussd_ops *ops;
+struct ofono_ussd {
 	int state;
 	DBusMessage *pending;
 	int flags;
+	const struct ofono_ussd_driver *driver;
+	void *driver_data;
+	struct ofono_atom *atom;
 };
-
-static struct ussd_data *ussd_create()
-{
-	struct ussd_data *r;
-
-	r = g_try_new0(struct ussd_data, 1);
-
-	return r;
-}
-
-static void ussd_destroy(gpointer data)
-{
-	struct ofono_modem *modem = data;
-	struct ussd_data *ussd = modem->ussd;
-
-	g_free(ussd);
-}
 
 struct ss_control_entry {
 	char *service;
@@ -355,9 +342,8 @@ out:
 	return ret;
 }
 
-void ofono_ussd_notify(struct ofono_modem *modem, int status, const char *str)
+void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 {
-	struct ussd_data *ussd = modem->ussd;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *ussdstr = "USSD";
 	const char sig[] = { DBUS_TYPE_STRING, 0 };
@@ -416,7 +402,7 @@ out:
 
 static void ussd_callback(const struct ofono_error *error, void *data)
 {
-	struct ussd_data *ussd = data;
+	struct ofono_ussd *ussd = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
@@ -445,8 +431,8 @@ static void ussd_callback(const struct ofono_error *error, void *data)
 static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct ussd_data *ussd = modem->ussd;
+	struct ofono_ussd *ussd = data;
+	struct ofono_modem *modem = __ofono_atom_get_modem(ussd->atom);
 	const char *str;
 
 	if (ussd->flags & USSD_FLAG_PENDING)
@@ -472,20 +458,20 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 
 	ofono_debug("OK, running USSD request");
 
-	if (!ussd->ops->request)
+	if (!ussd->driver->request)
 		return __ofono_error_not_implemented(msg);
 
 	ussd->flags |= USSD_FLAG_PENDING;
 	ussd->pending = dbus_message_ref(msg);
 
-	ussd->ops->request(modem, str, ussd_callback, ussd);
+	ussd->driver->request(ussd, str, ussd_callback, ussd);
 
 	return NULL;
 }
 
 static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 {
-	struct ussd_data *ussd = data;
+	struct ofono_ussd *ussd = data;
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
@@ -510,8 +496,7 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
-	struct ofono_modem *modem = data;
-	struct ussd_data *ussd = modem->ussd;
+	struct ofono_ussd *ussd = data;
 
 	if (ussd->flags & USSD_FLAG_PENDING)
 		return __ofono_error_busy(msg);
@@ -519,13 +504,13 @@ static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,
 	if (ussd->state == USSD_STATE_IDLE)
 		return __ofono_error_not_active(msg);
 
-	if (!ussd->ops->cancel)
+	if (!ussd->driver->cancel)
 		return __ofono_error_not_implemented(msg);
 
 	ussd->flags |= USSD_FLAG_PENDING;
 	ussd->pending = dbus_message_ref(msg);
 
-	ussd->ops->cancel(modem, ussd_cancel_callback, ussd);
+	ussd->driver->cancel(ussd, ussd_cancel_callback, ussd);
 
 	return NULL;
 }
@@ -542,48 +527,119 @@ static GDBusSignalTable ussd_signals[] = {
 	{ }
 };
 
-int ofono_ussd_register(struct ofono_modem *modem, struct ofono_ussd_ops *ops)
+int ofono_ussd_driver_register(const struct ofono_ussd_driver *d)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
+	DBG("driver: %p, name: %s", d, d->name);
 
-	if (modem == NULL)
-		return -1;
+	if (d->probe == NULL)
+		return -EINVAL;
 
-	if (ops == NULL)
-		return -1;
-
-	modem->ussd = ussd_create();
-
-	if (modem->ussd == NULL)
-		return -1;
-
-	modem->ussd->ops = ops;
-
-	if (!g_dbus_register_interface(conn, modem->path,
-					SUPPLEMENTARY_SERVICES_INTERFACE,
-					ussd_methods, ussd_signals, NULL,
-					modem, ussd_destroy)) {
-		ofono_error("Could not create %s interface",
-				SUPPLEMENTARY_SERVICES_INTERFACE);
-
-		ussd_destroy(modem->ussd);
-
-		return -1;
-	}
-
-	ofono_modem_add_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
+	g_drivers = g_slist_prepend(g_drivers, (void *)d);
 
 	return 0;
 }
 
-void ofono_ussd_unregister(struct ofono_modem *modem)
+void ofono_ussd_driver_unregister(const struct ofono_ussd_driver *d)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
+	DBG("driver: %p, name: %s", d, d->name);
 
-	if (modem->ussd == NULL)
-		return;
+	g_drivers = g_slist_remove(g_drivers, (void *)d);
+}
+
+static void ussd_unregister(struct ofono_atom *atom)
+{
+	struct ofono_ussd *ussd = __ofono_atom_get_data(atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
+	const char *path = __ofono_atom_get_path(atom);
 
 	ofono_modem_remove_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
-	g_dbus_unregister_interface(conn, modem->path,
+	g_dbus_unregister_interface(conn, path,
 					SUPPLEMENTARY_SERVICES_INTERFACE);
+}
+
+static void ussd_remove(struct ofono_atom *atom)
+{
+	struct ofono_ussd *ussd = __ofono_atom_get_data(atom);
+
+	DBG("atom: %p", atom);
+
+	if (ussd == NULL)
+		return;
+
+	if (ussd->driver && ussd->driver->remove)
+		ussd->driver->remove(ussd);
+
+	g_free(ussd);
+}
+
+struct ofono_ussd *ofono_ussd_create(struct ofono_modem *modem,
+					const char *driver,
+					void *data)
+{
+	struct ofono_ussd *ussd;
+	GSList *l;
+
+	if (driver == NULL)
+		return NULL;
+
+	ussd = g_try_new0(struct ofono_ussd, 1);
+
+	if (ussd == NULL)
+		return NULL;
+
+	ussd->driver_data = data;
+	ussd->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_USSD,
+						ussd_remove, ussd);
+
+	for (l = g_drivers; l; l = l->next) {
+		const struct ofono_ussd_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(ussd) < 0)
+			continue;
+
+		ussd->driver = drv;
+		break;
+	}
+
+	return ussd;
+}
+
+void ofono_ussd_register(struct ofono_ussd *ussd)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(ussd->atom);
+	const char *path = __ofono_atom_get_path(ussd->atom);
+
+	if (!g_dbus_register_interface(conn, path,
+					SUPPLEMENTARY_SERVICES_INTERFACE,
+					ussd_methods, ussd_signals, NULL,
+					ussd, NULL)) {
+		ofono_error("Could not create %s interface",
+				OFONO_CALL_BARRING_INTERFACE);
+
+		return;
+	}
+
+	ofono_modem_add_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
+
+	__ofono_atom_register(ussd->atom, ussd_unregister);
+}
+
+void ofono_ussd_remove(struct ofono_ussd *ussd)
+{
+	__ofono_atom_free(ussd->atom);
+}
+
+void ofono_ussd_set_data(struct ofono_ussd *ussd, void *data)
+{
+	ussd->driver_data = data;
+}
+
+void *ofono_ussd_get_data(struct ofono_ussd *ussd)
+{
+	return ussd->driver_data;
 }

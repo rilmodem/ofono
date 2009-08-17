@@ -212,17 +212,6 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_ops *ops);
 void ofono_voicecall_unregister(struct ofono_modem *modem);
 
-struct ofono_ussd_ops {
-	void (*request)(struct ofono_modem *modem, const char *str,
-				ofono_generic_cb_t cb, void *data);
-	void (*cancel)(struct ofono_modem *modem,
-				ofono_generic_cb_t cb, void *data);
-};
-
-void ofono_ussd_notify(struct ofono_modem *modem, int status, const char *str);
-int ofono_ussd_register(struct ofono_modem *modem, struct ofono_ussd_ops *ops);
-void ofono_ussd_unregister(struct ofono_modem *modem);
-
 struct ofono_sim_ops {
 	void (*read_file_info)(struct ofono_modem *modem, int fileid,
 			ofono_sim_file_info_cb_t cb, void *data);

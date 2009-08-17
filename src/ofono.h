@@ -78,7 +78,6 @@ struct ofono_modem {
 	struct network_registration_data *network_registration;
 	struct voicecalls_data *voicecalls;
 	struct ofono_call_forwarding *call_forwarding;
-	struct ussd_data *ussd;
 	struct ofono_call_settings *call_settings;
 	struct ofono_call_barring *call_barring;
 	struct cssn_data *cssn;
@@ -169,6 +168,8 @@ unsigned int __ofono_ssn_mt_watch_add(struct ofono_ssn *ssn, int code2,
 					ofono_ssn_mt_notify_cb cb, void *user,
 					ofono_destroy_func destroy);
 gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, int id);
+
+#include <ofono/ussd.h>
 
 #include <ofono/history.h>
 
