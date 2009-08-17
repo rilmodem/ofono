@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/ussd.h>
 #include "util.h"
 
 #include "gatchat.h"
@@ -45,7 +45,7 @@ static const char *none_prefix[] = { NULL };
 static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_ussd_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("cusd_request_cb", ok, result);
@@ -54,11 +54,11 @@ static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_ussd_request(struct ofono_modem *modem, const char *str,
-				ofono_generic_cb_t cb, void *data)
+static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
+				ofono_ussd_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_ussd_get_data(ussd);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	unsigned char *converted;
 	int dcs;
 	int max_len;
@@ -85,7 +85,7 @@ static void at_ussd_request(struct ofono_modem *modem, const char *str,
 
 	sprintf(buf, "AT+CUSD=1,\"%s\",%d", converted, dcs);
 
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(chat, buf, none_prefix,
 				cusd_request_cb, cbd, g_free) > 0)
 		return;
 
@@ -102,7 +102,7 @@ error:
 static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_ussd_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("cusd_cancel_cb", ok, result);
@@ -111,16 +111,16 @@ static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_ussd_cancel(struct ofono_modem *modem,
-				ofono_generic_cb_t cb, void *data)
+static void at_ussd_cancel(struct ofono_ussd *ussd,
+				ofono_ussd_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_ussd_get_data(ussd);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CUSD=2", none_prefix,
+	if (g_at_chat_send(chat, "AT+CUSD=2", none_prefix,
 				cusd_cancel_cb, cbd, g_free) > 0)
 		return;
 
@@ -134,18 +134,41 @@ error:
 	}
 }
 
-static struct ofono_ussd_ops ops = {
+static gboolean at_ussd_register(gpointer user)
+{
+	struct ofono_ussd *ussd = user;
+
+	ofono_ussd_register(ussd);
+
+	return FALSE;
+}
+
+static int at_ussd_probe(struct ofono_ussd *ussd)
+{
+	g_idle_add(at_ussd_register, ussd);
+
+	return 0;
+}
+
+static int at_ussd_remove(struct ofono_ussd *ussd)
+{
+	return 0;
+}
+
+static struct ofono_ussd_driver driver = {
+	.name = "generic_at",
+	.probe = at_ussd_probe,
+	.remove = at_ussd_remove,
 	.request = at_ussd_request,
 	.cancel = at_ussd_cancel
 };
 
-void at_ussd_init(struct ofono_modem *modem)
+void at_ussd_init()
 {
-	/* TODO: Register for USSD Notifications */
-	ofono_ussd_register(modem, &ops);
+	ofono_ussd_driver_register(&driver);
 }
 
-void at_ussd_exit(struct ofono_modem *modem)
+void at_ussd_exit()
 {
-	ofono_ussd_unregister(modem);
+	ofono_ussd_driver_unregister(&driver);
 }
