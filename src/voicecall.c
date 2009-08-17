@@ -506,6 +506,12 @@ static void voicecalls_destroy(gpointer userdata)
 		calls->emit_en_source = 0;
 	}
 
+	if (calls->en_list) {
+		g_slist_foreach(calls->en_list, (GFunc)g_free, NULL);
+		g_slist_free(calls->en_list);
+		calls->en_list = NULL;
+	}
+
 	for (l = calls->call_list; l; l = l->next)
 		voicecall_dbus_unregister(modem, l->data);
 
@@ -1821,13 +1827,6 @@ void ofono_voicecall_unregister(struct ofono_modem *modem)
 
 	if (!modem->voicecalls)
 		return;
-
-	l = modem->voicecalls->en_list;
-	if (l) {
-		g_slist_foreach(l, (GFunc)g_free, NULL);
-		g_slist_free(l);
-		l = NULL;
-	}
 
 	ofono_modem_remove_interface(modem, VOICECALL_MANAGER_INTERFACE);
 	g_dbus_unregister_interface(conn, modem->path,
