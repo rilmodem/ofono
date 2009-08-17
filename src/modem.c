@@ -207,7 +207,7 @@ int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 	watch = g_new0(struct ofono_atom_watch, 1);
 
 	watch->type = type;
-	watch->id = modem->next_atom_watch_id++;
+	watch->id = ++modem->next_atom_watch_id;
 	watch->notify = notify;
 	watch->destroy = destroy;
 	watch->notify_data = data;
