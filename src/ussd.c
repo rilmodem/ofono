@@ -492,6 +492,14 @@ static void ussd_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
+	g_slist_foreach(ussd->ss_control_list, (GFunc)ssc_entry_destroy, NULL);
+	g_slist_free(ussd->ss_control_list);
+	ussd->ss_control_list = NULL;
+
+	g_slist_foreach(ussd->ss_passwd_list, (GFunc)ssc_entry_destroy, NULL);
+	g_slist_free(ussd->ss_passwd_list);
+	ussd->ss_passwd_list = NULL;
+
 	ofono_modem_remove_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
 					SUPPLEMENTARY_SERVICES_INTERFACE);
