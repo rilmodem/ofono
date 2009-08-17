@@ -61,6 +61,8 @@ struct ofono_call_barring {
 	struct ofono_ussd *ussd;
 	unsigned int incoming_bar_watch;
 	unsigned int outgoing_bar_watch;
+	unsigned int ssn_watch;
+	unsigned int ussd_watch;
 	const struct ofono_call_barring_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -1059,7 +1061,7 @@ static void call_barring_unregister(struct ofono_atom *atom)
 	struct ofono_call_barring *cb = __ofono_atom_get_data(atom);
 	const char *path = __ofono_atom_get_path(cb->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
-	struct ofono_modem *modem= __ofono_atom_get_modem(cb->atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
 
 	ofono_modem_remove_interface(modem, OFONO_CALL_BARRING_INTERFACE);
 	g_dbus_unregister_interface(conn, path, OFONO_CALL_BARRING_INTERFACE);
@@ -1071,6 +1073,12 @@ static void call_barring_unregister(struct ofono_atom *atom)
 		__ofono_ssn_mo_watch_remove(cb->ssn, cb->incoming_bar_watch);
 	if (cb->outgoing_bar_watch)
 		__ofono_ssn_mt_watch_remove(cb->ssn, cb->outgoing_bar_watch);
+
+	if (cb->ssn_watch)
+		__ofono_modem_remove_atom_watch(modem, cb->ssn_watch);
+
+	if (cb->ussd_watch)
+		__ofono_modem_remove_atom_watch(modem, cb->ussd_watch);
 }
 
 static void call_barring_remove(struct ofono_atom *atom)
@@ -1187,15 +1195,18 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 
 	ofono_modem_add_interface(modem, OFONO_CALL_BARRING_INTERFACE);
 
-	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_SSN,
-					ssn_watch, cb, NULL);	
+	cb->ssn_watch = __ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_SSN,
+					ssn_watch, cb, NULL);
+
 	ssn_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SSN);
 	
 	if (ssn_atom && __ofono_atom_get_registered(ssn_atom))
 		ssn_watch(ssn_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, cb);
 
-	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_USSD,
+	cb->ussd_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_USSD,
 					ussd_watch, cb, NULL);
+
 	ussd_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
 
 	if (ussd_atom && __ofono_atom_get_registered(ussd_atom))

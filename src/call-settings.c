@@ -61,6 +61,7 @@ struct ofono_call_settings {
 	int ss_req_cls;
 	enum call_setting_type ss_setting;
 	struct ofono_ussd *ussd;
+	unsigned int ussd_watch;
 	const struct ofono_call_settings_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -1178,6 +1179,9 @@ static void call_settings_unregister(struct ofono_atom *atom)
 
 	if (cs->ussd)
 		cs_unregister_ss_controls(cs);
+
+	if (cs->ussd_watch)
+		__ofono_modem_remove_atom_watch(modem, cs->ussd_watch);
 }
 
 static void call_settings_remove(struct ofono_atom *atom)
@@ -1268,8 +1272,10 @@ void ofono_call_settings_register(struct ofono_call_settings *cs)
 
 	ofono_modem_add_interface(modem, OFONO_CALL_SETTINGS_INTERFACE);
 
-	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_USSD,
+	cs->ussd_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_USSD,
 					ussd_watch, cs, NULL);
+
 	ussd_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
 
 	if (ussd_atom && __ofono_atom_get_registered(ussd_atom))

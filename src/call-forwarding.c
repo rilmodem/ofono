@@ -51,6 +51,7 @@ struct ofono_call_forwarding {
 	int query_end;
 	struct cf_ss_request *ss_req;
 	struct ofono_ussd *ussd;
+	unsigned int ussd_watch;
 	const struct ofono_call_forwarding_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -1115,6 +1116,9 @@ static void call_forwarding_unregister(struct ofono_atom *atom)
 
 	if (cf->ussd)
 		cf_unregister_ss_controls(cf);
+
+	if (cf->ussd_watch)
+		__ofono_modem_remove_atom_watch(modem, cf->ussd_watch);
 }
 
 static void call_forwarding_remove(struct ofono_atom *atom)
@@ -1202,8 +1206,10 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 
 	ofono_modem_add_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
 
-	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_USSD,
+	cf->ussd_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_USSD,
 					ussd_watch, cf, NULL);
+
 	ussd_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
 
 	if (ussd_atom && __ofono_atom_get_registered(ussd_atom))
