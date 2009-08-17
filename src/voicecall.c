@@ -49,6 +49,7 @@ struct voicecalls_data {
 	GSList *release_list;
 	GSList *multiparty_list;
 	GSList *en_list;  /* emergency number list */
+	GSList *new_en_list; /* Emergency numbers being read from SIM */
 	struct ofono_voicecall_ops *ops;
 	int flags;
 	DBusMessage *pending;
@@ -100,6 +101,13 @@ static gint call_compare(gconstpointer a, gconstpointer b)
 		return 1;
 
 	return 0;
+}
+
+static void add_to_en_list(GSList **l, const char **list)
+{
+	int i = 0;
+	while (list[i])
+		*l = g_slist_prepend(*l, g_strdup(list[i++]));
 }
 
 static const char *call_status_to_string(int status)
@@ -1676,7 +1684,7 @@ out:
 	calls->pending = NULL;
 }
 
-static gboolean in_default_en_list(char *en)
+static gboolean in_default_en_list(const char *en)
 {
 	int i = 0;
 	while (default_en_list[i])
@@ -1706,17 +1714,35 @@ static void emit_en_list_changed(struct ofono_modem *modem)
 	g_strfreev(list);
 }
 
-static void add_to_list(GSList **l, const char **list)
+static void set_new_ecc(struct ofono_modem *modem)
 {
+	struct voicecalls_data *calls = modem->voicecalls;
+	GSList *l;
 	int i = 0;
-	while (list[i])
-		*l = g_slist_prepend(*l, g_strdup(list[i++]));
-}
 
-static void construct_en_list(GSList **en_list)
-{
-	if (!*en_list)
-		add_to_list(en_list, default_en_list_no_sim);
+	g_slist_foreach(calls->en_list, (GFunc)g_free, NULL);
+	g_slist_free(calls->en_list);
+	calls->en_list = NULL;
+
+	calls->en_list = calls->new_en_list;
+	calls->new_en_list = NULL;
+
+	while (default_en_list[i]) {
+		GSList *l;
+
+		for (l = calls->en_list; l; l = l->next)
+			if (!strcmp(l->data, default_en_list[i]))
+				break;
+
+		if (l == NULL)
+			calls->en_list = g_slist_prepend(calls->en_list,
+						g_strdup(default_en_list[i]));
+
+		i++;
+	}
+
+	calls->en_list = g_slist_reverse(calls->en_list);
+	emit_en_list_changed(modem);
 }
 
 static void ecc_read_cb(struct ofono_modem *modem, int ok,
@@ -1725,28 +1751,33 @@ static void ecc_read_cb(struct ofono_modem *modem, int ok,
 		void *userdata)
 {
 	struct voicecalls_data *calls = modem->voicecalls;
-	char *en;
-	static record_length_read;
+	int total;
+	char en[7];
 
-	if (!ok || structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
+	DBG("%d", ok);
+
+	if (!ok)
+		goto check;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
 		record_length < 4 || total_length < record_length) {
 		ofono_error("Unable to read emergency numbers from SIM");
-		construct_en_list(&calls->en_list);
 		return;
 	}
 
-	en = g_malloc(7);
+	total = total_length / record_length;
 	extract_bcd_number(data, 3, en);
 
-	if (!in_default_en_list(en)) {
-		calls->en_list = g_slist_prepend(calls->en_list, en);
-		emit_en_list_changed(modem);
-	} else
-		g_free(en);
+	calls->new_en_list = g_slist_prepend(calls->new_en_list, g_strdup(en));
 
-	record_length_read += record_length;
-	if (record_length_read == total_length)
-		construct_en_list(&calls->en_list);
+	if (record != total)
+		return;
+
+check:
+	if (calls->new_en_list == NULL)
+		return;
+
+	set_new_ecc(modem);
 }
 
 static gboolean ecc_load(struct ofono_modem *modem)
@@ -1789,7 +1820,14 @@ int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_o
 
 	ofono_modem_add_interface(modem, VOICECALL_MANAGER_INTERFACE);
 
-	add_to_list(&modem->voicecalls->en_list, default_en_list);
+	/* Start out with the 22.101 mandated numbers, if we have a SIM and
+	 * the SIM contains EFecc, then we update the list once we've read them
+	 */
+	add_to_en_list(&modem->voicecalls->en_list, default_en_list_no_sim);
+	add_to_en_list(&modem->voicecalls->en_list, default_en_list);
+
+	/* TODO: We don't need to wait for the sim ready signal
+	 */
 	ofono_sim_ready_notify_register(modem, ecc_load);
 	if (ofono_sim_get_ready(modem))
 		ecc_load(modem);
