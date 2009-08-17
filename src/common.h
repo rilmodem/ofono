@@ -50,13 +50,6 @@ enum network_registration_status {
 };
 
 /* 27.007 Section 7.6 */
-enum clip_status {
-	CLIP_STATUS_NOT_PROVISIONED = 0,
-	CLIP_STATUS_PROVISIONED,
-	CLIP_STATUS_UNKNOWN
-};
-
-/* 27.007 Section 7.6 */
 enum clip_validity {
 	CLIP_VALIDITY_VALID = 0,
 	CLIP_VALIDITY_WITHHELD = 1,

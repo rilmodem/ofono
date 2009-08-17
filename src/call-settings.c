@@ -49,6 +49,13 @@ enum clir_status {
 	CLIR_STATUS_TEMPORARY_ALLOWED
 };
 
+/* 27.007 Section 7.6 */
+enum clip_status {
+	CLIP_STATUS_NOT_PROVISIONED = 0,
+	CLIP_STATUS_PROVISIONED,
+	CLIP_STATUS_UNKNOWN
+};
+
 enum call_setting_type {
 	CALL_SETTING_TYPE_CLIP = 0,
 	CALL_SETTING_TYPE_COLP,
