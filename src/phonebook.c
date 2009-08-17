@@ -35,7 +35,6 @@
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 
 #define LEN_MAX 128

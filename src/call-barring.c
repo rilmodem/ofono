@@ -34,7 +34,6 @@
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 
 #define CALL_BARRING_FLAG_CACHED 0x1

@@ -33,7 +33,6 @@
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 
 #define CALL_METER_FLAG_CACHED 0x1
