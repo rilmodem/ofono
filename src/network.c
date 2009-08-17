@@ -50,6 +50,14 @@
 /* How often we update the operator list, in seconds */
 #define OPERATOR_LIST_UPDATE_TIME 300
 
+/* 27.007 Section 7.3 <stat> */
+enum operator_status {
+	OPERATOR_STATUS_UNKNOWN = 0,
+	OPERATOR_STATUS_AVAILABLE = 1,
+	OPERATOR_STATUS_CURRENT = 2,
+	OPERATOR_STATUS_FORBIDDEN = 3
+};
+
 struct network_registration_data {
 	int status;
 	int location;
