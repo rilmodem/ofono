@@ -60,6 +60,7 @@ struct ofono_call_settings {
 	int ss_req_type;
 	int ss_req_cls;
 	enum call_setting_type ss_setting;
+	struct ofono_ussd *ussd;
 	const struct ofono_call_settings_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -369,13 +370,12 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 				cw_ss_query_callback, cs);
 }
 
-static gboolean cw_ss_control(struct ofono_modem *modem,
-				enum ss_control_type type,
+static gboolean cw_ss_control(int type,
 				const char *sc, const char *sia,
 				const char *sib, const char *sic,
-				const char *dn, DBusMessage *msg)
+				const char *dn, DBusMessage *msg, void *data)
 {
-	struct ofono_call_settings *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_SS_DEFAULT;
 	DBusMessage *reply;
@@ -531,13 +531,12 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 	generate_ss_query_reply(cs, context, value);
 }
 
-static gboolean clip_colp_colr_ss(struct ofono_modem *modem,
-				enum ss_control_type type,
+static gboolean clip_colp_colr_ss(int type,
 				const char *sc, const char *sia,
 				const char *sib, const char *sic,
-				const char *dn, DBusMessage *msg)
+				const char *dn, DBusMessage *msg, void *data)
 {
-	struct ofono_call_settings *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	void (*query_op)(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data);
@@ -653,13 +652,12 @@ static void clir_ss_set_callback(const struct ofono_error *error, void *data)
 	cs->driver->clir_query(cs, clir_ss_query_callback, cs);
 }
 
-static gboolean clir_ss_control(struct ofono_modem *modem,
-				enum ss_control_type type,
+static gboolean clir_ss_control(int type,
 				const char *sc, const char *sia,
 				const char *sib, const char *sic,
-				const char *dn, DBusMessage *msg)
+				const char *dn, DBusMessage *msg, void *data)
 {
-	struct ofono_call_settings *cs = modem->call_settings;
+	struct ofono_call_settings *cs = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!cs)
@@ -724,30 +722,27 @@ static gboolean clir_ss_control(struct ofono_modem *modem,
 
 static void cs_register_ss_controls(struct ofono_call_settings *cs)
 {
-	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
+	__ofono_ussd_ssc_register(cs->ussd, "30", clip_colp_colr_ss, cs, NULL);
+	__ofono_ussd_ssc_register(cs->ussd, "31", clir_ss_control, cs, NULL);
+	__ofono_ussd_ssc_register(cs->ussd, "76", clip_colp_colr_ss, cs, NULL);
 
-	ss_control_register(modem, "30", clip_colp_colr_ss);
-	ss_control_register(modem, "31", clir_ss_control);
-	ss_control_register(modem, "76", clip_colp_colr_ss);
-
-	ss_control_register(modem, "43", cw_ss_control);
+	__ofono_ussd_ssc_register(cs->ussd, "43", cw_ss_control, cs, NULL);
 
 	if (cs->driver->colr_query)
-		ss_control_register(modem, "77", clip_colp_colr_ss);
+		__ofono_ussd_ssc_register(cs->ussd, "77",
+						clip_colp_colr_ss, cs, NULL);
 }
 
 static void cs_unregister_ss_controls(struct ofono_call_settings *cs)
 {
-	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
+	__ofono_ussd_ssc_unregister(cs->ussd, "30");
+	__ofono_ussd_ssc_unregister(cs->ussd, "31");
+	__ofono_ussd_ssc_unregister(cs->ussd, "76");
 
-	ss_control_unregister(modem, "30", clip_colp_colr_ss);
-	ss_control_unregister(modem, "31", clir_ss_control);
-	ss_control_unregister(modem, "76", clip_colp_colr_ss);
-
-	ss_control_unregister(modem, "43", cw_ss_control);
+	__ofono_ussd_ssc_unregister(cs->ussd, "43");
 
 	if (cs->driver->colr_query)
-		ss_control_unregister(modem, "77", clip_colp_colr_ss);
+		__ofono_ussd_ssc_unregister(cs->ussd, "77");
 }
 
 static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs,
@@ -1181,9 +1176,8 @@ static void call_settings_unregister(struct ofono_atom *atom)
 	ofono_modem_remove_interface(modem, OFONO_CALL_SETTINGS_INTERFACE);
 	g_dbus_unregister_interface(conn, path, OFONO_CALL_SETTINGS_INTERFACE);
 
-	cs_unregister_ss_controls(cs);
-
-	modem->call_settings = NULL;
+	if (cs->ussd)
+		cs_unregister_ss_controls(cs);
 }
 
 static void call_settings_remove(struct ofono_atom *atom)
@@ -1241,11 +1235,26 @@ struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem
 	return cs;
 }
 
+static void ussd_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_call_settings *cs = data;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		cs->ussd = NULL;
+		return;
+	}
+
+	cs->ussd = __ofono_atom_get_data(atom);
+	cs_register_ss_controls(cs);
+}
+
 void ofono_call_settings_register(struct ofono_call_settings *cs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cs->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(cs->atom);
+	struct ofono_atom *ussd_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CALL_SETTINGS_INTERFACE,
@@ -1257,10 +1266,15 @@ void ofono_call_settings_register(struct ofono_call_settings *cs)
 		return;
 	}
 
-	modem->call_settings = cs;
-
 	ofono_modem_add_interface(modem, OFONO_CALL_SETTINGS_INTERFACE);
-	cs_register_ss_controls(cs);
+
+	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_USSD,
+					ussd_watch, cs, NULL);
+	ussd_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
+
+	if (ussd_atom && __ofono_atom_get_registered(ussd_atom))
+		ussd_watch(ussd_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+				cs);
 
 	__ofono_atom_register(cs->atom, call_settings_unregister);
 }
