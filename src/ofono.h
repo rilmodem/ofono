@@ -76,7 +76,6 @@ struct ofono_modem {
 	struct voicecalls_data *voicecalls;
 	struct ofono_call_forwarding *call_forwarding;
 	struct ofono_call_settings *call_settings;
-	struct ofono_call_barring *call_barring;
 	struct cssn_data *cssn;
 	struct sim_manager_data *sim_manager;
 	struct sms_manager_data *sms_manager;

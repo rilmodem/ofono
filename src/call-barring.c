@@ -58,6 +58,7 @@ struct ofono_call_barring {
 	int ss_req_cls;
 	int ss_req_lock;
 	struct ofono_ssn *ssn;
+	struct ofono_ussd *ussd;
 	unsigned int incoming_bar_watch;
 	unsigned int outgoing_bar_watch;
 	const struct ofono_call_barring_driver *driver;
@@ -359,13 +360,12 @@ static const char *cb_ss_service_to_fac(const char *svc)
 	return NULL;
 }
 
-static gboolean cb_ss_control(struct ofono_modem *modem,
-				enum ss_control_type type, const char *sc,
+static gboolean cb_ss_control(int type, const char *sc,
 				const char *sia, const char *sib,
 				const char *sic, const char *dn,
-				DBusMessage *msg)
+				DBusMessage *msg, void *data)
 {
-	struct ofono_call_barring *cb = modem->call_barring;
+	struct ofono_call_barring *cb = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	int cls = BEARER_CLASS_DEFAULT;
 	const char *fac;
@@ -415,6 +415,8 @@ static gboolean cb_ss_control(struct ofono_modem *modem,
 		break;
 	case SS_CONTROL_TYPE_QUERY:
 		operation = cb->driver->query;
+		break;
+	default:
 		break;
 	}
 
@@ -494,11 +496,11 @@ static void cb_set_passwd_callback(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&cb->pending, reply);
 }
 
-static gboolean cb_ss_passwd(struct ofono_modem *modem, const char *sc,
+static gboolean cb_ss_passwd(const char *sc,
 				const char *old, const char *new,
-				DBusMessage *msg)
+				DBusMessage *msg, void *data)
 {
-	struct ofono_call_barring *cb = modem->call_barring;
+	struct ofono_call_barring *cb = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	const char *fac;
@@ -537,48 +539,46 @@ bad_format:
 
 static void cb_register_ss_controls(struct ofono_call_barring *cb)
 {
-	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
+	__ofono_ussd_ssc_register(cb->ussd, "33", cb_ss_control, cb, NULL);
+	__ofono_ussd_ssc_register(cb->ussd, "331", cb_ss_control, cb, NULL);
+	__ofono_ussd_ssc_register(cb->ussd, "332", cb_ss_control, cb, NULL);
+	__ofono_ussd_ssc_register(cb->ussd, "35", cb_ss_control, cb, NULL);
+	__ofono_ussd_ssc_register(cb->ussd, "351", cb_ss_control, cb, NULL);
+	__ofono_ussd_ssc_register(cb->ussd, "330", cb_ss_control, cb, NULL);
+	__ofono_ussd_ssc_register(cb->ussd, "333", cb_ss_control, cb, NULL);
+	__ofono_ussd_ssc_register(cb->ussd, "353", cb_ss_control, cb, NULL);
 
-	ss_control_register(modem, "33", cb_ss_control);
-	ss_control_register(modem, "331", cb_ss_control);
-	ss_control_register(modem, "332", cb_ss_control);
-	ss_control_register(modem, "35", cb_ss_control);
-	ss_control_register(modem, "351", cb_ss_control);
-	ss_control_register(modem, "330", cb_ss_control);
-	ss_control_register(modem, "333", cb_ss_control);
-	ss_control_register(modem, "353", cb_ss_control);
-	ss_passwd_register(modem, "", cb_ss_passwd);
-	ss_passwd_register(modem, "33", cb_ss_passwd);
-	ss_passwd_register(modem, "331", cb_ss_passwd);
-	ss_passwd_register(modem, "332", cb_ss_passwd);
-	ss_passwd_register(modem, "35", cb_ss_passwd);
-	ss_passwd_register(modem, "351", cb_ss_passwd);
-	ss_passwd_register(modem, "330", cb_ss_passwd);
-	ss_passwd_register(modem, "333", cb_ss_passwd);
-	ss_passwd_register(modem, "353", cb_ss_passwd);
+	__ofono_ussd_passwd_register(cb->ussd, "", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "33", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "331", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "332", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "35", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "351", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "330", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "333", cb_ss_passwd, cb, NULL);
+	__ofono_ussd_passwd_register(cb->ussd, "353", cb_ss_passwd, cb, NULL);
 }
 
 static void cb_unregister_ss_controls(struct ofono_call_barring *cb)
 {
-	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
+	__ofono_ussd_ssc_unregister(cb->ussd, "33");
+	__ofono_ussd_ssc_unregister(cb->ussd, "331");
+	__ofono_ussd_ssc_unregister(cb->ussd, "332");
+	__ofono_ussd_ssc_unregister(cb->ussd, "35");
+	__ofono_ussd_ssc_unregister(cb->ussd, "351");
+	__ofono_ussd_ssc_unregister(cb->ussd, "330");
+	__ofono_ussd_ssc_unregister(cb->ussd, "333");
+	__ofono_ussd_ssc_unregister(cb->ussd, "353");
 
-	ss_control_unregister(modem, "33", cb_ss_control);
-	ss_control_unregister(modem, "331", cb_ss_control);
-	ss_control_unregister(modem, "332", cb_ss_control);
-	ss_control_unregister(modem, "35", cb_ss_control);
-	ss_control_unregister(modem, "351", cb_ss_control);
-	ss_control_unregister(modem, "330", cb_ss_control);
-	ss_control_unregister(modem, "333", cb_ss_control);
-	ss_control_unregister(modem, "353", cb_ss_control);
-	ss_passwd_unregister(modem, "", cb_ss_passwd);
-	ss_passwd_unregister(modem, "33", cb_ss_passwd);
-	ss_passwd_unregister(modem, "331", cb_ss_passwd);
-	ss_passwd_unregister(modem, "332", cb_ss_passwd);
-	ss_passwd_unregister(modem, "35", cb_ss_passwd);
-	ss_passwd_unregister(modem, "351", cb_ss_passwd);
-	ss_passwd_unregister(modem, "330", cb_ss_passwd);
-	ss_passwd_unregister(modem, "333", cb_ss_passwd);
-	ss_passwd_unregister(modem, "353", cb_ss_passwd);
+	__ofono_ussd_passwd_unregister(cb->ussd, "");
+	__ofono_ussd_passwd_unregister(cb->ussd, "33");
+	__ofono_ussd_passwd_unregister(cb->ussd, "331");
+	__ofono_ussd_passwd_unregister(cb->ussd, "332");
+	__ofono_ussd_passwd_unregister(cb->ussd, "35");
+	__ofono_ussd_passwd_unregister(cb->ussd, "351");
+	__ofono_ussd_passwd_unregister(cb->ussd, "330");
+	__ofono_ussd_passwd_unregister(cb->ussd, "333");
+	__ofono_ussd_passwd_unregister(cb->ussd, "353");
 }
 
 static inline void cb_append_property(struct ofono_call_barring *cb,
@@ -1064,14 +1064,13 @@ static void call_barring_unregister(struct ofono_atom *atom)
 	ofono_modem_remove_interface(modem, OFONO_CALL_BARRING_INTERFACE);
 	g_dbus_unregister_interface(conn, path, OFONO_CALL_BARRING_INTERFACE);
 
-	cb_unregister_ss_controls(cb);
+	if (cb->ussd)
+		cb_unregister_ss_controls(cb);
 
 	if (cb->incoming_bar_watch)
 		__ofono_ssn_mo_watch_remove(cb->ssn, cb->incoming_bar_watch);
 	if (cb->outgoing_bar_watch)
 		__ofono_ssn_mt_watch_remove(cb->ssn, cb->outgoing_bar_watch);
-
-	modem->call_barring = NULL;
 }
 
 static void call_barring_remove(struct ofono_atom *atom)
@@ -1154,12 +1153,27 @@ static void ssn_watch(struct ofono_atom *atom,
 				call_barring_outgoing_enabled_notify, cb, NULL);
 }
 
+static void ussd_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_call_barring *cb = data;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		cb->ussd = NULL;
+		return;
+	}
+
+	cb->ussd = __ofono_atom_get_data(atom);
+	cb_register_ss_controls(cb);
+}
+
 void ofono_call_barring_register(struct ofono_call_barring *cb)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cb->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(cb->atom);
 	struct ofono_atom *ssn_atom;
+	struct ofono_atom *ussd_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CALL_BARRING_INTERFACE,
@@ -1171,11 +1185,7 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 		return;
 	}
 
-	modem->call_barring = cb;
-
 	ofono_modem_add_interface(modem, OFONO_CALL_BARRING_INTERFACE);
-
-	cb_register_ss_controls(cb);
 
 	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_SSN,
 					ssn_watch, cb, NULL);	
@@ -1183,6 +1193,14 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 	
 	if (ssn_atom && __ofono_atom_get_registered(ssn_atom))
 		ssn_watch(ssn_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, cb);
+
+	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_USSD,
+					ussd_watch, cb, NULL);
+	ussd_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
+
+	if (ussd_atom && __ofono_atom_get_registered(ussd_atom))
+		ussd_watch(ussd_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+				cb);
 
 	__ofono_atom_register(cb->atom, call_barring_unregister);
 }
