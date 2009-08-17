@@ -34,7 +34,6 @@
 #include "ofono.h"
 
 #include "common.h"
-#include "ussd.h"
 
 #define SUPPLEMENTARY_SERVICES_INTERFACE "org.ofono.SupplementaryServices"
 
@@ -52,202 +51,141 @@ struct ofono_ussd {
 	int state;
 	DBusMessage *pending;
 	int flags;
+	GSList *ss_control_list;
+	GSList *ss_passwd_list;
 	const struct ofono_ussd_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
 };
 
-struct ss_control_entry {
+struct ssc_entry {
 	char *service;
-	ss_control_cb_t cb;
+	void *cb;
+	void *user;
+	ofono_destroy_func destroy;
 };
 
-static struct ss_control_entry *ss_control_entry_create(const char *service,
-							ss_control_cb_t cb)
+static struct ssc_entry *ssc_entry_create(const char *sc, void *cb, void *data,
+						ofono_destroy_func destroy)
 {
-	struct ss_control_entry *r;
+	struct ssc_entry *r;
 
-	r = g_try_new0(struct ss_control_entry, 1);
+	r = g_try_new0(struct ssc_entry, 1);
 
 	if (!r)
 		return r;
 
-	r->service = g_strdup(service);
+	r->service = g_strdup(sc);
 	r->cb = cb;
+	r->user = data;
+	r->destroy = destroy;
 
 	return r;
 }
 
-static void ss_control_entry_destroy(struct ss_control_entry *ca)
+static void ssc_entry_destroy(struct ssc_entry *ca)
 {
+	if (ca->destroy)
+		ca->destroy(ca->user);
+
 	g_free(ca->service);
 	g_free(ca);
 }
 
-static gint ss_control_entry_compare(gconstpointer a, gconstpointer b)
+static gint ssc_entry_compare(gconstpointer a, gconstpointer b)
 {
-	const struct ss_control_entry *ca = a;
-	const struct ss_control_entry *cb = b;
-	int ret;
+	const struct ssc_entry *ca = a;
+	const struct ssc_entry *cb = b;
 
-	ret = strcmp(ca->service, cb->service);
-
-	if (ret)
-		return ret;
-
-	if (ca->cb < cb->cb)
-		return -1;
-
-	if (ca->cb > cb->cb)
-		return 1;
-
-	return 0;
+	return strcmp(ca->service, cb->service);
 }
 
-static gint ss_control_entry_find_by_service(gconstpointer a, gconstpointer b)
+static gint ssc_entry_find_by_service(gconstpointer a, gconstpointer b)
 {
-	const struct ss_control_entry *ca = a;
+	const struct ssc_entry *ca = a;
 
 	return strcmp(ca->service, b);
 }
 
-gboolean ss_control_register(struct ofono_modem *modem, const char *str,
-				ss_control_cb_t cb)
+gboolean __ofono_ussd_ssc_register(struct ofono_ussd *ussd, const char *sc,
+					ofono_ussd_ssc_cb_t cb, void *data,
+					ofono_destroy_func destroy)
 {
-	struct ss_control_entry *entry;
+	struct ssc_entry *entry;
 
-	if (!modem)
+	if (!ussd)
 		return FALSE;
 
-	entry = ss_control_entry_create(str, cb);
+	entry = ssc_entry_create(sc, cb, data, destroy);
 
 	if (!entry)
 		return FALSE;
 
-	modem->ss_control_list = g_slist_prepend(modem->ss_control_list, entry);
+	ussd->ss_control_list = g_slist_prepend(ussd->ss_control_list, entry);
 
 	return TRUE;
 }
 
-void ss_control_unregister(struct ofono_modem *modem, const char *str,
-				ss_control_cb_t cb)
+void __ofono_ussd_ssc_unregister(struct ofono_ussd *ussd, const char *sc)
 {
-	const struct ss_control_entry entry = { (char *)str, cb };
 	GSList *l;
 
-	if (!modem)
+	if (!ussd)
 		return;
 
-	l = g_slist_find_custom(modem->ss_control_list, &entry,
-				ss_control_entry_compare);
+	l = g_slist_find_custom(ussd->ss_control_list, sc,
+				ssc_entry_find_by_service);
 
 	if (!l)
 		return;
 
-	ss_control_entry_destroy(l->data);
-	modem->ss_control_list = g_slist_remove(modem->ss_control_list,
-						l->data);
+	ssc_entry_destroy(l->data);
+	ussd->ss_control_list = g_slist_remove(ussd->ss_control_list, l->data);
 }
 
-struct ss_passwd_entry {
-	char *service;
-	ss_passwd_cb_t cb;
-};
-
-static struct ss_passwd_entry *ss_passwd_entry_create(const char *service,
-							ss_passwd_cb_t cb)
+gboolean __ofono_ussd_passwd_register(struct ofono_ussd *ussd, const char *sc,
+					ofono_ussd_passwd_cb_t cb, void *data,
+					ofono_destroy_func destroy)
 {
-	struct ss_passwd_entry *r;
+	struct ssc_entry *entry;
 
-	r = g_try_new0(struct ss_passwd_entry, 1);
-
-	if (!r)
-		return r;
-
-	r->service = g_strdup(service);
-	r->cb = cb;
-
-	return r;
-}
-
-static void ss_passwd_entry_destroy(struct ss_passwd_entry *ca)
-{
-	g_free(ca->service);
-	g_free(ca);
-}
-
-static gint ss_passwd_entry_compare(gconstpointer a, gconstpointer b)
-{
-	const struct ss_passwd_entry *ca = a;
-	const struct ss_passwd_entry *cb = b;
-	int ret;
-
-	ret = strcmp(ca->service, cb->service);
-
-	if (ret)
-		return ret;
-
-	if (ca->cb < cb->cb)
-		return -1;
-
-	if (ca->cb > cb->cb)
-		return 1;
-
-	return 0;
-}
-
-static gint ss_passwd_entry_find_by_service(gconstpointer a, gconstpointer b)
-{
-	const struct ss_passwd_entry *ca = a;
-
-	return strcmp(ca->service, b);
-}
-
-gboolean ss_passwd_register(struct ofono_modem *modem, const char *str,
-				ss_passwd_cb_t cb)
-{
-	struct ss_passwd_entry *entry;
-
-	if (!modem)
+	if (!ussd)
 		return FALSE;
 
-	entry = ss_passwd_entry_create(str, cb);
+	entry = ssc_entry_create(sc, cb, data, destroy);
 
 	if (!entry)
 		return FALSE;
 
-	modem->ss_passwd_list = g_slist_prepend(modem->ss_passwd_list, entry);
+	ussd->ss_passwd_list = g_slist_prepend(ussd->ss_passwd_list, entry);
 
 	return TRUE;
 }
 
-void ss_passwd_unregister(struct ofono_modem *modem, const char *str,
-				ss_passwd_cb_t cb)
+void __ofono_ussd_passwd_unregister(struct ofono_ussd *ussd, const char *sc)
 {
-	const struct ss_passwd_entry entry = { (char *)str, cb };
 	GSList *l;
 
-	if (!modem)
+	if (!ussd)
 		return;
 
-	l = g_slist_find_custom(modem->ss_passwd_list, &entry,
-				ss_passwd_entry_compare);
+	l = g_slist_find_custom(ussd->ss_passwd_list, sc,
+				ssc_entry_find_by_service);
 
 	if (!l)
 		return;
 
-	ss_passwd_entry_destroy(l->data);
-	modem->ss_passwd_list = g_slist_remove(modem->ss_passwd_list,
-						l->data);
+	ssc_entry_destroy(l->data);
+	ussd->ss_passwd_list = g_slist_remove(ussd->ss_passwd_list, l->data);
 }
 
-static gboolean recognized_passwd_change_string(struct ofono_modem *modem,
+static gboolean recognized_passwd_change_string(struct ofono_ussd *ussd,
 						int type, char *sc,
 						char *sia, char *sib,
 						char *sic, char *sid,
 						char *dn, DBusMessage *msg)
 {
-	GSList *l = modem->ss_passwd_list;
+	GSList *l = ussd->ss_passwd_list;
 
 	switch (type) {
 	case SS_CONTROL_TYPE_ACTIVATION:
@@ -270,10 +208,11 @@ static gboolean recognized_passwd_change_string(struct ofono_modem *modem,
 	}
 
 	while ((l = g_slist_find_custom(l, sia,
-			ss_passwd_entry_find_by_service)) != NULL) {
-		struct ss_passwd_entry *entry = l->data;
+			ssc_entry_find_by_service)) != NULL) {
+		struct ssc_entry *entry = l->data;
+		ofono_ussd_passwd_cb_t cb = entry->cb;
 
-		if (entry->cb(modem, sia, sib, sic, msg))
+		if (cb(sia, sib, sic, msg, entry->user))
 			return TRUE;
 
 		l = l->next;
@@ -282,7 +221,7 @@ static gboolean recognized_passwd_change_string(struct ofono_modem *modem,
 	return FALSE;
 }
 
-static gboolean recognized_control_string(struct ofono_modem *modem,
+static gboolean recognized_control_string(struct ofono_ussd *ussd,
 						const char *ss_str,
 						DBusMessage *msg)
 {
@@ -295,7 +234,7 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 
 	if (parse_ss_control_string(str, &type, &sc,
 				&sia, &sib, &sic, &sid, &dn)) {
-		GSList *l = modem->ss_control_list;
+		GSList *l = ussd->ss_control_list;
 
 		ofono_debug("Got parse result: %d, %s, %s, %s, %s, %s, %s",
 				type, sc, sia, sib, sic, sid, dn);
@@ -303,7 +242,7 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 		/* A password change string needs to be treated separately
 		 * because it uses a fourth SI and is thus not a valid
 		 * control string.  */
-		if (recognized_passwd_change_string(modem, type, sc,
+		if (recognized_passwd_change_string(ussd, type, sc,
 					sia, sib, sic, sid, dn, msg)) {
 			ret = TRUE;
 			goto out;
@@ -313,10 +252,11 @@ static gboolean recognized_control_string(struct ofono_modem *modem,
 			goto out;
 
 		while ((l = g_slist_find_custom(l, sc,
-				ss_control_entry_find_by_service)) != NULL) {
-			struct ss_control_entry *entry = l->data;
+				ssc_entry_find_by_service)) != NULL) {
+			struct ssc_entry *entry = l->data;
+			ofono_ussd_ssc_cb_t cb = entry->cb;
 
-			if (entry->cb(modem, type, sc, sia, sib, sic, dn, msg)) {
+			if (cb(type, sc, sia, sib, sic, dn, msg, entry->user)) {
 				ret = TRUE;
 				goto out;
 			}
@@ -432,7 +372,6 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_ussd *ussd = data;
-	struct ofono_modem *modem = __ofono_atom_get_modem(ussd->atom);
 	const char *str;
 
 	if (ussd->flags & USSD_FLAG_PENDING)
@@ -449,7 +388,7 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 		return __ofono_error_invalid_format(msg);
 
 	ofono_debug("checking if this is a recognized control string");
-	if (recognized_control_string(modem, str, msg))
+	if (recognized_control_string(ussd, str, msg))
 		return NULL;
 
 	ofono_debug("No.., checking if this is a USSD string");

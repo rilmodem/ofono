@@ -67,9 +67,6 @@ struct ofono_modem {
 
 	void 		*userdata;
 
-	GSList *ss_control_list;
-	GSList *ss_passwd_list;
-
 	GSList		*atoms;
 	GSList		*atom_watches;
 	int		next_atom_watch_id;
@@ -170,6 +167,26 @@ unsigned int __ofono_ssn_mt_watch_add(struct ofono_ssn *ssn, int code2,
 gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, int id);
 
 #include <ofono/ussd.h>
+
+typedef gboolean (*ofono_ussd_ssc_cb_t)(int type,
+					const char *sc,
+					const char *sia, const char *sib,
+					const char *sic, const char *dn,
+					DBusMessage *msg, void *data);
+
+typedef gboolean (*ofono_ussd_passwd_cb_t)(const char *sc,
+					const char *old, const char *new,
+					DBusMessage *msg, void *data);
+
+gboolean __ofono_ussd_ssc_register(struct ofono_ussd *ussd, const char *sc,
+					ofono_ussd_ssc_cb_t cb, void *data,
+					ofono_destroy_func destroy);
+void __ofono_ussd_ssc_unregister(struct ofono_ussd *ussd, const char *sc);
+
+gboolean __ofono_ussd_passwd_register(struct ofono_ussd *ussd, const char *sc,
+					ofono_ussd_passwd_cb_t cb, void *data,
+					ofono_destroy_func destroy);
+void __ofono_ussd_passwd_unregister(struct ofono_ussd *ussd, const char *sc);
 
 #include <ofono/history.h>
 
