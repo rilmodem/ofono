@@ -56,6 +56,13 @@ enum clip_status {
 	CLIP_STATUS_UNKNOWN
 };
 
+/* 27.007 Section 7.8 */
+enum colp_status {
+	COLP_STATUS_NOT_PROVISIONED = 0,
+	COLP_STATUS_PROVISIONED = 1,
+	COLP_STATUS_UNKNOWN = 2
+};
+
 enum call_setting_type {
 	CALL_SETTING_TYPE_CLIP = 0,
 	CALL_SETTING_TYPE_COLP,
