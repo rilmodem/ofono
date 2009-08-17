@@ -34,7 +34,6 @@
 #include "ofono.h"
 
 #include "common.h"
-#include "ussd.h"
 
 #define CALL_FORWARDING_FLAG_CACHED 0x1
 

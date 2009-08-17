@@ -36,7 +36,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "ussd.h"
 
 #define CALL_BARRING_FLAG_CACHED 0x1
 
