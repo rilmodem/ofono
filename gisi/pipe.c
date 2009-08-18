@@ -119,6 +119,9 @@ enum {
 
 struct _GIsiPipe {
 	GIsiClient *client;
+	void (*handler)(GIsiPipe *);
+	void (*error_handler)(GIsiPipe *);
+	void *opaque;
 	int error;
 	uint8_t handle;
 	bool enabled;
@@ -141,11 +144,23 @@ static int g_isi_pipe_error(uint8_t code)
 		[PN_PIPE_ERR_GENERAL] = -EAGAIN,
 		[PN_PIPE_ERR_NOT_SUPPORTED] = -ENOSYS,
 	};
+	int err = 0;
 
 	if (code == PN_PIPE_NO_ERROR ||
 	    ((code < sizeof(codes) / sizeof(codes[0])) && codes[code]))
 		return codes[code];
 	return -EBADMSG;
+}
+
+static void g_isi_pipe_handle_error(GIsiPipe *pipe, uint8_t code)
+{
+	int err = g_isi_pipe_error(code);
+
+	if (err == 0)
+		return;
+	pipe->error = err;
+	if (pipe->error_handler)
+		pipe->error_handler(pipe);
 }
 
 static bool g_isi_pipe_created(GIsiClient *client,
@@ -163,21 +178,24 @@ static bool g_isi_pipe_created(GIsiClient *client,
 		pipe->handle = resp->pipe_handle;
 		if (pipe->enabling)
 			g_isi_pipe_start(pipe);
+		if (pipe->handler)
+			pipe->handler(pipe);
 	} else
-		pipe->error = g_isi_pipe_error(resp->error_code);
+		g_isi_pipe_handle_error(pipe, resp->error_code);
 	return true;
 }
 
 /**
  * Create a Phonet pipe in disabled state and with low priority.
  * @param modem ISI modem to create a pipe with
+ * @param created optional callback for created event
  * @param obj1 Object handle of the first end point
  * @param obj2 Object handle of the second end point
  * @param type1 Type of the first end point
  * @param type2 Type of the second end point
  * @return a pipe object on success, NULL on error.
  */
-GIsiPipe *g_isi_pipe_create(GIsiModem *modem,
+GIsiPipe *g_isi_pipe_create(GIsiModem *modem, void (*created)(GIsiPipe *),
 				uint16_t obj1, uint16_t obj2,
 				uint8_t type1, uint8_t type2)
 {
@@ -194,6 +212,8 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem,
 	GIsiPipe *pipe = g_malloc(sizeof(*pipe));
 
 	pipe->client = g_isi_client_create(modem, PN_PIPE);
+	pipe->handler = created;
+	pipe->error_handler = NULL;
 	pipe->error = 0;
 	pipe->enabling = false;
 	pipe->enabled = false;
@@ -236,7 +256,7 @@ static bool g_isi_pipe_enabled(GIsiClient *client,
 	if (!resp)
 		return false;
 
-	pipe->error = g_isi_pipe_error(resp->error_code);
+	g_isi_pipe_handle_error(pipe, resp->error_code);
 	pipe->enabling = false;
 	if (!pipe->error)
 		pipe->enabled = true;
@@ -314,3 +334,27 @@ void g_isi_pipe_destroy(GIsiPipe *pipe)
 	g_isi_client_destroy(pipe->client);
 	g_free(pipe);
 }
+
+void g_isi_pipe_set_error_handler(GIsiPipe *pipe, void (*cb)(GIsiPipe *))
+{
+	pipe->error_handler = cb;
+}
+
+int g_isi_pipe_get_error(const GIsiPipe *pipe)
+{
+	return pipe->error;
+}
+
+void *g_isi_pipe_set_userdata(GIsiPipe *pipe, void *opaque)
+{
+	void *old = pipe->opaque;
+
+	pipe->opaque = opaque;
+	return old;
+}
+
+void *g_isi_pipe_get_userdata(GIsiPipe *pipe)
+{
+	return pipe->opaque;
+}
+

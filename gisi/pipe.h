@@ -23,8 +23,14 @@
 
 typedef struct _GIsiPipe GIsiPipe;
 
-GIsiPipe *g_isi_pipe_create(GIsiModem *, uint16_t obj1, uint16_t obj2,
+GIsiPipe *g_isi_pipe_create(GIsiModem *, void (*cb)(GIsiPipe *),
+				uint16_t obj1, uint16_t obj2,
 				uint8_t type1, uint8_t type2);
 void g_isi_pipe_destroy(GIsiPipe *pipe);
+
+void g_isi_pipe_set_error_handler(GIsiPipe *pipe, void (*cb)(GIsiPipe *));
+int g_isi_pipe_get_error(const GIsiPipe *pipe);
+void *g_isi_pipe_set_userdata(GIsiPipe *pipe, void *data);
+void *g_isi_pipe_get_userdata(GIsiPipe *pipe);
 
 int g_isi_pipe_start(GIsiPipe *pipe);
