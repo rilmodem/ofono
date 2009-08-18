@@ -49,6 +49,7 @@ DBusMessage *__ofono_error_not_found(DBusMessage *msg);
 DBusMessage *__ofono_error_not_active(DBusMessage *msg);
 DBusMessage *__ofono_error_not_supported(DBusMessage *msg);
 DBusMessage *__ofono_error_timed_out(DBusMessage *msg);
+DBusMessage *__ofono_error_sim_not_ready(DBusMessage *msg);
 
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 

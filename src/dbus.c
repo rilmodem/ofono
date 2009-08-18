@@ -224,6 +224,12 @@ DBusMessage *__ofono_error_timed_out(DBusMessage *msg)
 			"Operation failure due to timeout");
 }
 
+DBusMessage *__ofono_error_sim_not_ready(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".SimNotReady",
+			"SIM is not ready or not inserted");
+}
+
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
