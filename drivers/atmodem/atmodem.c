@@ -100,7 +100,6 @@ static void at_destroy(struct at_data *at)
 static void interface_exit(struct at_data *at)
 {
 	at_phonebook_exit(at->modem);
-	at_sms_exit(at->modem);
 	at_network_registration_exit(at->modem);
 	at_voicecall_exit(at->modem);
 	at_sim_exit(at->modem);
@@ -368,7 +367,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	ofono_call_meter_create(at->modem, "generic_at", at->parser);
 	ofono_call_barring_create(at->modem, "generic_at", at->parser);
 	ofono_ssn_create(at->modem, "generic_at", at->parser);
-	at_sms_init(at->modem);
+	ofono_sms_create(at->modem, "generic_at", at->parser);
 	ofono_phonebook_create(at->modem, "generic_at", at->parser);
 
 	at->io = io;
@@ -533,6 +532,7 @@ static int atmodem_init(void)
 	at_phonebook_init();
 	at_ssn_init();
 	at_ussd_init();
+	at_sms_init();
 
 	manager_init(conn);
 
@@ -545,6 +545,7 @@ static void atmodem_exit(void)
 
 	manager_exit(conn);
 
+	at_sms_exit();
 	at_ussd_exit();
 	at_ssn_exit();
 	at_phonebook_exit();

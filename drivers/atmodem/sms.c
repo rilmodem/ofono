@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/sms.h>
 #include "smsutil.h"
 #include "util.h"
 
@@ -72,31 +72,19 @@ struct sms_data {
 	gboolean cnma_enabled;
 	char *cnma_ack_pdu;
 	int cnma_ack_pdu_len;
+	GAtChat *chat;
 };
 
 struct cpms_request {
-	struct ofono_modem *modem;
+	struct ofono_sms *sms;
 	int store;
 	int index;
 };
 
-static struct sms_data *sms_create()
-{
-	return g_try_new0(struct sms_data, 1);
-}
-
-static void sms_destroy(struct sms_data *data)
-{
-	if (data->cnma_ack_pdu)
-		g_free(data->cnma_ack_pdu);
-
-	g_free(data);
-}
-
 static void at_csca_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_sms_sca_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("csca_set_cb", ok, result);
@@ -105,12 +93,12 @@ static void at_csca_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_csca_set(struct ofono_modem *modem,
+static void at_csca_set(struct ofono_sms *sms,
 			const struct ofono_phone_number *sca,
-			ofono_generic_cb_t cb, void *data)
+			ofono_sms_sca_set_cb_t cb, void *user_data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct sms_data *data = ofono_sms_get_data(sms);
+	struct cb_data *cbd = cb_data_new(NULL, cb, user_data);
 	char buf[64];
 
 	if (!cbd)
@@ -118,7 +106,7 @@ static void at_csca_set(struct ofono_modem *modem,
 
 	sprintf(buf, "AT+CSCA=\"%s\",%d", sca->number, sca->type);
 
-	if (g_at_chat_send(at->parser, buf, csca_prefix,
+	if (g_at_chat_send(data->chat, buf, csca_prefix,
 				at_csca_set_cb, cbd, g_free) > 0)
 		return;
 
@@ -128,7 +116,7 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, data);
+		cb(&error, user_data);
 	}
 }
 
@@ -136,7 +124,7 @@ static void at_csca_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
-	ofono_sca_query_cb_t cb = cbd->cb;
+	ofono_sms_sca_query_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	struct ofono_phone_number sca;
 	const char *number;
@@ -181,16 +169,16 @@ err:
 	}
 }
 
-static void at_csca_query(struct ofono_modem *modem, ofono_sca_query_cb_t cb,
-					void *data)
+static void at_csca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
+					void *user_data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct sms_data *data = ofono_sms_get_data(sms);
+	struct cb_data *cbd = cb_data_new(NULL, cb, user_data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CSCA?", csca_prefix,
+	if (g_at_chat_send(data->chat, "AT+CSCA?", csca_prefix,
 				at_csca_query_cb, cbd, g_free) > 0)
 		return;
 
@@ -200,7 +188,7 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
+		cb(&error, NULL, user_data);
 	}
 }
 
@@ -240,12 +228,12 @@ err:
 	}
 }
 
-static void at_cmgs(struct ofono_modem *modem, unsigned char *pdu, int pdu_len,
+static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
 			int tpdu_len, int mms, ofono_sms_submit_cb_t cb,
-			void *data)
+			void *user_data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct sms_data *data = ofono_sms_get_data(sms);
+	struct cb_data *cbd = cb_data_new(NULL, cb, user_data);
 	char buf[512];
 	int len;
 
@@ -254,14 +242,14 @@ static void at_cmgs(struct ofono_modem *modem, unsigned char *pdu, int pdu_len,
 
 	if (mms) {
 		sprintf(buf, "AT+CMMS=%d", mms);
-		g_at_chat_send(at->parser, buf, none_prefix,
+		g_at_chat_send(data->chat, buf, none_prefix,
 				NULL, NULL, NULL);
 	}
 
 	len = sprintf(buf, "AT+CMGS=%d\r", tpdu_len);
 	encode_hex_own_buf(pdu, pdu_len, 0, buf+len);
 
-	if (g_at_chat_send(at->parser, buf, cmgs_prefix,
+	if (g_at_chat_send(data->chat, buf, cmgs_prefix,
 				at_cmgs_cb, cbd, g_free) > 0)
 		return;
 
@@ -271,15 +259,9 @@ error:
 
 	{
 		DECLARE_FAILURE(error);
-		cb(&error, -1, data);
+		cb(&error, -1, user_data);
 	}
 }
-
-static struct ofono_sms_ops ops = {
-	.sca_query	= at_csca_query,
-	.sca_set	= at_csca_set,
-	.submit		= at_cmgs,
-};
 
 static void at_cnma_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -326,8 +308,8 @@ static void at_cbm_notify(GAtResult *result, gpointer user_data)
 
 static void at_cds_notify(GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	int pdulen;
 	const char *pdu;
 	char buf[256];
@@ -342,19 +324,19 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 	ofono_debug("Got new Status-Report PDU via CDS: %s, %d", pdu, pdulen);
 
 	/* We must acknowledge the PDU using CNMA */
-	if (at->sms->cnma_ack_pdu)
-		sprintf(buf, "AT+CNMA=1,%d\r%s", at->sms->cnma_ack_pdu_len,
-				at->sms->cnma_ack_pdu);
+	if (data->cnma_ack_pdu)
+		sprintf(buf, "AT+CNMA=1,%d\r%s", data->cnma_ack_pdu_len,
+				data->cnma_ack_pdu);
 	else
 		sprintf(buf, "AT+CNMA=0"); /* Should be a safe fallback */
 
-	g_at_chat_send(at->parser, buf, none_prefix, at_cnma_cb, NULL, NULL);
+	g_at_chat_send(data->chat, buf, none_prefix, at_cnma_cb, NULL, NULL);
 }
 
 static void at_cmt_notify(GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	const char *hexpdu;
 	long pdu_len;
 	int tpdu_len;
@@ -371,21 +353,21 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 	ofono_debug("Got new SMS Deliver PDU via CMT: %s, %d", hexpdu, tpdu_len);
 
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
-	ofono_sms_deliver_notify(modem, pdu, pdu_len, tpdu_len);
+	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
 
 	/* We must acknowledge the PDU using CNMA */
-	if (at->sms->cnma_ack_pdu)
-		sprintf(buf, "AT+CNMA=1,%d\r%s", at->sms->cnma_ack_pdu_len,
-				at->sms->cnma_ack_pdu);
+	if (data->cnma_ack_pdu)
+		sprintf(buf, "AT+CNMA=1,%d\r%s", data->cnma_ack_pdu_len,
+				data->cnma_ack_pdu);
 	else
 		sprintf(buf, "AT+CNMA=0"); /* Should be a safe fallback */
 
-	g_at_chat_send(at->parser, buf, none_prefix, at_cnma_cb, NULL, NULL);
+	g_at_chat_send(data->chat, buf, none_prefix, at_cnma_cb, NULL, NULL);
 }
 
 static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
+	struct ofono_sms *sms = user_data;
 	GAtResultIter iter;
 	const char *hexpdu;
 	unsigned char pdu[164];
@@ -413,7 +395,7 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 	ofono_debug("Got PDU: %s, with len: %d", hexpdu, tpdu_len);
 
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
-	ofono_sms_deliver_notify(modem, pdu, pdu_len, tpdu_len);
+	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
 	return;
 
 err:
@@ -435,8 +417,8 @@ static void at_cmgd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void at_cmti_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cpms_request *req = user_data;
-	struct ofono_modem *modem = req->modem;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = req->sms;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	char buf[128];
 
 	if (!ok) {
@@ -444,20 +426,20 @@ static void at_cmti_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	at->sms->store = req->store;
+	data->store = req->store;
 
 	sprintf(buf, "AT+CMGR=%d", req->index);
-	g_at_chat_send(at->parser, buf, none_prefix, at_cmgr_cb, modem, NULL);
+	g_at_chat_send(data->chat, buf, none_prefix, at_cmgr_cb, NULL, NULL);
 
 	/* We don't buffer SMS on the SIM/ME, send along a CMGD as well */
 	sprintf(buf, "AT+CMGD=%d", req->index);
-	g_at_chat_send(at->parser, buf, none_prefix, at_cmgd_cb, NULL, NULL);
+	g_at_chat_send(data->chat, buf, none_prefix, at_cmgd_cb, NULL, NULL);
 }
 
 static void at_cmti_notify(GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	const char *strstore;
 	int store;
 	GAtResultIter iter;
@@ -485,27 +467,27 @@ static void at_cmti_notify(GAtResult *result, gpointer user_data)
 
 	ofono_debug("Got a CMTI indication at %s, index: %d", strstore, index);
 
-	if (store == at->sms->store) {
+	if (store == data->store) {
 		struct cpms_request req;
 
-		req.modem = modem;
+		req.sms = sms;
 		req.store = store;
 		req.index = index;
 
 		at_cmti_cpms_cb(TRUE, NULL, &req);
 	} else {
 		char buf[128];
-		const char *incoming = storages[at->sms->incoming];
+		const char *incoming = storages[data->incoming];
 		struct cpms_request *req = g_new(struct cpms_request, 1);
 
-		req->modem = modem;
+		req->sms = sms;
 		req->store = store;
 		req->index = index;
 
 		sprintf(buf, "AT+CPMS=\"%s\",\"%s\",\"%s\"",
 			strstore, strstore, incoming);
 
-		g_at_chat_send(at->parser, buf, cpms_prefix, at_cmti_cpms_cb,
+		g_at_chat_send(data->chat, buf, cpms_prefix, at_cmti_cpms_cb,
 				req, g_free);
 	}
 
@@ -515,46 +497,42 @@ err:
 	ofono_error("Unable to parse CMTI notification");
 }
 
-static void at_sms_initialized(struct ofono_modem *modem)
+static void at_sms_initialized(struct ofono_sms *sms)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct sms_data *data = ofono_sms_get_data(sms);
 
-	g_at_chat_register(at->parser, "+CMTI:", at_cmti_notify, FALSE,
-				modem, NULL);
-	g_at_chat_register(at->parser, "+CMT:", at_cmt_notify, TRUE,
-				modem, NULL);
-	g_at_chat_register(at->parser, "+CDS:", at_cds_notify, TRUE,
-				modem, NULL);
-	g_at_chat_register(at->parser, "+CBM:", at_cbm_notify, TRUE,
-				modem, NULL);
+	g_at_chat_register(data->chat, "+CMTI:", at_cmti_notify, FALSE,
+				sms, NULL);
+	g_at_chat_register(data->chat, "+CMT:", at_cmt_notify, TRUE,
+				sms, NULL);
+	g_at_chat_register(data->chat, "+CDS:", at_cds_notify, TRUE,
+				sms, NULL);
+	g_at_chat_register(data->chat, "+CBM:", at_cbm_notify, TRUE,
+				sms, NULL);
 
 	/* We treat CMGR just like a notification */
-	g_at_chat_register(at->parser, "+CMGR:", at_cmgr_notify, TRUE,
-				modem, NULL);
+	g_at_chat_register(data->chat, "+CMGR:", at_cmgr_notify, TRUE,
+				sms, NULL);
 
-	ofono_sms_manager_register(modem, &ops);
+	ofono_sms_register(sms);
 }
 
-static void at_sms_not_supported(struct ofono_modem *modem)
+static void at_sms_not_supported(struct ofono_sms *sms)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
 	ofono_error("SMS not supported by this modem.  If this is in error"
 			" please submit patches to support this hardware");
-	if (at->sms) {
-		sms_destroy(at->sms);
-		at->sms = NULL;
-	}
+
+	ofono_sms_remove(sms);
 }
 
 static void at_cnmi_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
+	struct ofono_sms *sms = user_data;
 
 	if (!ok)
-		return at_sms_not_supported(modem);
+		return at_sms_not_supported(sms);
 
-	at_sms_initialized(modem);
+	at_sms_initialized(sms);
 }
 
 static inline char wanted_cnmi(int supported, const char *pref)
@@ -651,8 +629,8 @@ err:
 
 static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	GAtResultIter iter;
 	int cnmi_opts[5]; /* See 27.005 Section 3.4.1 */
 	int opt;
@@ -687,101 +665,101 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			goto out;
 	}
 
-	if (build_cnmi_string(buf, cnmi_opts, at->sms->cnma_enabled))
+	if (build_cnmi_string(buf, cnmi_opts, data->cnma_enabled))
 		supported = TRUE;
 
-	if (at->sms->cnma_enabled)
-		construct_ack_pdu(at->sms);
+	if (data->cnma_enabled)
+		construct_ack_pdu(data);
 
 out:
 	if (!supported)
-		return at_sms_not_supported(modem);
+		return at_sms_not_supported(sms);
 
-	g_at_chat_send(at->parser, buf, cnmi_prefix,
-			at_cnmi_set_cb, modem, NULL);
+	g_at_chat_send(data->chat, buf, cnmi_prefix,
+			at_cnmi_set_cb, sms, NULL);
 }
 
-static void at_query_cnmi(struct ofono_modem *modem)
+static void at_query_cnmi(struct ofono_sms *sms)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct sms_data *data = ofono_sms_get_data(sms);
 
-	g_at_chat_send(at->parser, "AT+CNMI=?", cnmi_prefix,
-			at_cnmi_query_cb, modem, NULL);
+	g_at_chat_send(data->chat, "AT+CNMI=?", cnmi_prefix,
+			at_cnmi_query_cb, sms, NULL);
 }
 
 static void at_cpms_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 
 	dump_response("at_cpms_set_cb", ok, result);
 
 	if (ok)
-		return at_query_cnmi(modem);
+		return at_query_cnmi(sms);
 
-	at->sms->retries += 1;
+	data->retries += 1;
 
-	if (at->sms->retries == MAX_CPMS_RETRIES) {
+	if (data->retries == MAX_CPMS_RETRIES) {
 		ofono_error("Unable to set preferred storage");
-		return at_sms_not_supported(modem);
+		return at_sms_not_supported(sms);
 	}
 
-	g_timeout_add_seconds(1, set_cpms, modem);
+	g_timeout_add_seconds(1, set_cpms, sms);
 }
 
 static gboolean set_cpms(gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	const char *store = storages[at->sms->store];
-	const char *incoming = storages[at->sms->incoming];
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
+	const char *store = storages[data->store];
+	const char *incoming = storages[data->incoming];
 	char buf[128];
 
 	sprintf(buf, "AT+CPMS=\"%s\",\"%s\",\"%s\"", store, store, incoming);
 
-	g_at_chat_send(at->parser, buf, cpms_prefix,
-			at_cpms_set_cb, modem, NULL);
+	g_at_chat_send(data->chat, buf, cpms_prefix,
+			at_cpms_set_cb, sms, NULL);
 	return FALSE;
 }
 
 static void at_cmgf_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 
 	dump_response("at_cmgf_set_cb", ok, result);
 
 	if (ok) {
-		at->sms->retries = 0;
-		set_cpms(modem);
+		data->retries = 0;
+		set_cpms(sms);
 		return;
 	}
 
-	at->sms->retries += 1;
+	data->retries += 1;
 
-	if (at->sms->retries == MAX_CMGF_RETRIES) {
+	if (data->retries == MAX_CMGF_RETRIES) {
 		ofono_debug("Unable to enter PDU mode");
-		return at_sms_not_supported(modem);
+		return at_sms_not_supported(sms);
 	}
 
-	g_timeout_add_seconds(1, set_cmgf, modem);
+	g_timeout_add_seconds(1, set_cmgf, sms);
 }
 
 static gboolean set_cmgf(gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 
-	g_at_chat_send(at->parser, "AT+CMGF=0", cmgf_prefix,
-			at_cmgf_set_cb, modem, NULL);
+	g_at_chat_send(data->chat, "AT+CMGF=0", cmgf_prefix,
+			at_cmgf_set_cb, sms, NULL);
 	return FALSE;
 }
 
 static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean supported = FALSE;
 
 	dump_response("cpms_query_cb", ok, result);
@@ -825,12 +803,12 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 
 		if (sm_supported[0] && sm_supported[1]) {
 			supported = TRUE;
-			at->sms->store = SM_STORE;
+			data->store = SM_STORE;
 		}
 
 		if (me_supported[0] && me_supported[1]) {
 			supported = TRUE;
-			at->sms->store = ME_STORE;
+			data->store = ME_STORE;
 		}
 
 		/* This seems to be a special case, where the modem will
@@ -838,26 +816,26 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 		 * mem1
 		 */
 		if (mt_supported[2] && (sm_supported[0] || me_supported[0]))
-			at->sms->incoming = MT_STORE;
+			data->incoming = MT_STORE;
 
 		if (sm_supported[2])
-			at->sms->incoming = SM_STORE;
+			data->incoming = SM_STORE;
 
 		if (me_supported[2])
-			at->sms->incoming = ME_STORE;
+			data->incoming = ME_STORE;
 	}
 out:
 	if (!supported)
-		return at_sms_not_supported(modem);
+		return at_sms_not_supported(sms);
 
-	set_cmgf(modem);
+	set_cmgf(sms);
 }
 
 static void at_cmgf_query_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean supported = FALSE;
 
 	dump_response("cmgf_query_cb", ok, result);
@@ -882,17 +860,17 @@ static void at_cmgf_query_cb(gboolean ok, GAtResult *result,
 
 out:
 	if (!supported)
-		return at_sms_not_supported(modem);
+		return at_sms_not_supported(sms);
 
-	g_at_chat_send(at->parser, "AT+CPMS=?", cpms_prefix,
-			at_cpms_query_cb, modem, NULL);
+	g_at_chat_send(data->chat, "AT+CPMS=?", cpms_prefix,
+			at_cpms_query_cb, sms, NULL);
 }
 
 static void at_csms_status_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean supported = FALSE;
 
 	dump_response("csms_status_cb", ok, result);
@@ -918,7 +896,7 @@ static void at_csms_status_cb(gboolean ok, GAtResult *result,
 			goto out;
 
 		if (service == 1)
-			at->sms->cnma_enabled = TRUE;
+			data->cnma_enabled = TRUE;
 
 		if (mt == 1 && mo == 1)
 			supported = TRUE;
@@ -926,28 +904,28 @@ static void at_csms_status_cb(gboolean ok, GAtResult *result,
 
 out:
 	if (!supported)
-		return at_sms_not_supported(modem);
+		return at_sms_not_supported(sms);
 
 	/* Now query supported text format */
-	g_at_chat_send(at->parser, "AT+CMGF=?", cmgf_prefix,
-			at_cmgf_query_cb, modem, NULL);
+	g_at_chat_send(data->chat, "AT+CMGF=?", cmgf_prefix,
+			at_cmgf_query_cb, sms, NULL);
 }
 
 static void at_csms_set_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 
-	g_at_chat_send(at->parser, "AT+CSMS?", csms_prefix,
-			at_csms_status_cb, modem, NULL);
+	g_at_chat_send(data->chat, "AT+CSMS?", csms_prefix,
+			at_csms_status_cb, sms, NULL);
 }
 
 static void at_csms_query_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean cnma_supported = FALSE;
 	GAtResultIter iter;
 	int status;
@@ -956,12 +934,7 @@ static void at_csms_query_cb(gboolean ok, GAtResult *result,
 	dump_response("csms_query_cb", ok, result);
 
 	if (!ok)
-		return at_sms_not_supported(modem);
-
-	at->sms = sms_create();
-
-	if (!at->sms)
-		return;
+		return at_sms_not_supported(sms);
 
 	g_at_result_iter_init(&iter, result);
 
@@ -979,27 +952,53 @@ static void at_csms_query_cb(gboolean ok, GAtResult *result,
 
 out:
 	sprintf(buf, "AT+CSMS=%d", cnma_supported ? 1 : 0);
-	g_at_chat_send(at->parser, buf, csms_prefix,
-			at_csms_set_cb, modem, NULL);
+	g_at_chat_send(data->chat, buf, csms_prefix,
+			at_csms_set_cb, sms, NULL);
 }
 
-void at_sms_init(struct ofono_modem *modem)
+static int at_sms_probe(struct ofono_sms *sms)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	GAtChat *chat = ofono_sms_get_data(sms);
+	struct sms_data *data;
 
-	g_at_chat_send(at->parser, "AT+CSMS=?", csms_prefix,
-			at_csms_query_cb, modem, NULL);
+	data = g_new0(struct sms_data, 1);
+	data->chat = chat;
+
+	ofono_sms_set_data(sms, data);
+
+	g_at_chat_send(chat, "AT+CSMS=?", csms_prefix,
+			at_csms_query_cb, sms, NULL);
+
+	return 0;
 }
 
-void at_sms_exit(struct ofono_modem *modem)
+static int at_sms_remove(struct ofono_sms *sms)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
+	struct sms_data *data = ofono_sms_get_data(sms);
 
-	if (!at->sms)
-		return;
+	if (data->cnma_ack_pdu)
+		g_free(data->cnma_ack_pdu);
 
-	sms_destroy(at->sms);
-	at->sms = NULL;
+	g_free(data);
 
-	ofono_sms_manager_unregister(modem);
+	return 0;
+}
+
+static struct ofono_sms_driver driver = {
+	.name = "generic_at",
+	.probe = at_sms_probe,
+	.remove = at_sms_remove,
+	.sca_query	= at_csca_query,
+	.sca_set	= at_csca_set,
+	.submit		= at_cmgs,
+};
+
+void at_sms_init()
+{
+	ofono_sms_driver_register(&driver);
+}
+
+void at_sms_exit()
+{
+	ofono_sms_driver_unregister(&driver);
 }
