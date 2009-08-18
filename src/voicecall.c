@@ -514,6 +514,12 @@ static void voicecalls_destroy(gpointer userdata)
 		calls->en_list = NULL;
 	}
 
+	if (calls->new_en_list) {
+		g_slist_foreach(calls->new_en_list, (GFunc)g_free, NULL);
+		g_slist_free(calls->new_en_list);
+		calls->new_en_list = NULL;
+	}
+
 	for (l = calls->call_list; l; l = l->next)
 		voicecall_dbus_unregister(modem, l->data);
 
