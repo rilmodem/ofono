@@ -170,13 +170,15 @@ static bool g_isi_pipe_created(GIsiClient *client,
 
 /**
  * Create a Phonet pipe in disabled state and with low priority.
+ * @param modem ISI modem to create a pipe with
  * @param obj1 Object handle of the first end point
  * @param obj2 Object handle of the second end point
  * @param type1 Type of the first end point
  * @param type2 Type of the second end point
  * @return a pipe object on success, NULL on error.
  */
-GIsiPipe *g_isi_pipe_create(uint16_t obj1, uint16_t obj2,
+GIsiPipe *g_isi_pipe_create(GIsiModem *modem,
+				uint16_t obj1, uint16_t obj2,
 				uint8_t type1, uint8_t type2)
 {
 	_isi_pipe_create_req_t msg = {
@@ -191,7 +193,7 @@ GIsiPipe *g_isi_pipe_create(uint16_t obj1, uint16_t obj2,
 	};
 	GIsiPipe *pipe = g_malloc(sizeof(*pipe));
 
-	pipe->client = g_isi_client_create(NULL, PN_PIPE);
+	pipe->client = g_isi_client_create(modem, PN_PIPE);
 	pipe->error = 0;
 	pipe->enabling = false;
 	pipe->enabled = false;

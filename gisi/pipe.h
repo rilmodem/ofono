@@ -23,7 +23,7 @@
 
 typedef struct _GIsiPipe GIsiPipe;
 
-GIsiPipe *g_isi_pipe_create(uint16_t obj1, uint16_t obj2,
+GIsiPipe *g_isi_pipe_create(GIsiModem *, uint16_t obj1, uint16_t obj2,
 				uint8_t type1, uint8_t type2);
 void g_isi_pipe_destroy(GIsiPipe *pipe);
 
