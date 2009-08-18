@@ -37,7 +37,6 @@
 #include "driver.h"
 #include "common.h"
 #include "util.h"
-#include "sim.h"
 #include "simutil.h"
 #include "smsutil.h"
 
@@ -54,6 +53,9 @@ struct message_waiting_data {
 	unsigned char efmbdn_length;
 	unsigned char efmbdn_record_id[5];
 	struct ofono_phone_number mailbox_number[5];
+	struct ofono_sim *sim;
+	unsigned int sim_watch;
+	unsigned int sim_ready_watch;
 };
 
 struct mbdn_set_request {
@@ -73,6 +75,17 @@ static void message_waiting_destroy(gpointer userdata)
 {
 	struct ofono_modem *modem = userdata;
 	struct message_waiting_data *data = modem->message_waiting;
+
+	if (data->sim_watch) {
+		__ofono_modem_remove_atom_watch(modem, data->sim_watch);
+		data->sim_watch = 0;
+	}
+
+	if (data->sim_ready_watch) {
+		ofono_sim_remove_ready_watch(data->sim, data->sim_ready_watch);
+		data->sim_ready_watch = 0;
+		data->sim = NULL;
+	}
 
 	g_free(data);
 
@@ -162,7 +175,7 @@ static DBusMessage *mw_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static void mbdn_set_cb(struct ofono_modem *modem, int ok, void *data)
+static void mbdn_set_cb(int ok, void *data)
 {
 	struct mbdn_set_request *req = data;
 	struct ofono_phone_number *old = &req->mw->mailbox_number[req->mailbox];
@@ -229,7 +242,7 @@ static DBusMessage *set_mbdn(struct ofono_modem *modem, int mailbox,
 
 	sim_adn_build(efmbdn, req->mw->efmbdn_length, &req->number);
 
-	if (ofono_sim_write(modem, SIM_EFMBDN_FILEID, mbdn_set_cb,
+	if (ofono_sim_write(req->mw->sim, SIM_EFMBDN_FILEID, mbdn_set_cb,
 			OFONO_SIM_FILE_STRUCTURE_FIXED,
 			req->mw->efmbdn_record_id[mailbox],
 			efmbdn, req->mw->efmbdn_length, req) == -1) {
@@ -309,11 +322,12 @@ static GDBusSignalTable message_waiting_signals[] = {
 	{ }
 };
 
-static void mw_mwis_read_cb(struct ofono_modem *modem, int ok,
+static void mw_mwis_read_cb(int ok,
 		enum ofono_sim_file_structure structure, int total_length,
 		int record, const unsigned char *data, int record_length,
 		void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	int i, status;
 	struct mailbox_state info;
 	dbus_bool_t indication;
@@ -369,11 +383,12 @@ static void mw_mwis_read_cb(struct ofono_modem *modem, int ok,
 	mw->efmwis_length = record_length;
 }
 
-static void mw_mbdn_read_cb(struct ofono_modem *modem, int ok,
+static void mw_mbdn_read_cb(int ok,
 		enum ofono_sim_file_structure structure, int total_length,
 		int record, const unsigned char *data, int record_length,
 		void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	int i;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct message_waiting_data *mw = modem->message_waiting;
@@ -411,11 +426,12 @@ static void mw_mbdn_read_cb(struct ofono_modem *modem, int ok,
 	mw->efmbdn_length = record_length;
 }
 
-static void mw_mbi_read_cb(struct ofono_modem *modem, int ok,
+static void mw_mbi_read_cb(int ok,
 		enum ofono_sim_file_structure structure, int total_length,
 		int record, const unsigned char *data, int record_length,
 		void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	int i, err;
 	struct message_waiting_data *mw = modem->message_waiting;
 
@@ -436,13 +452,13 @@ static void mw_mbi_read_cb(struct ofono_modem *modem, int ok,
 	for (i = 0; i < 5 && i < record_length; i++)
 		mw->efmbdn_record_id[i] = data[i];
 
-	err = ofono_sim_read(modem, SIM_EFMBDN_FILEID, mw_mbdn_read_cb, NULL);
+	err = ofono_sim_read(mw->sim, SIM_EFMBDN_FILEID, mw_mbdn_read_cb, modem);
 
 	if (err != 0)
 		ofono_error("Unable to read EF-MBDN from SIM");
 }
 
-static void mw_mwis_write_cb(struct ofono_modem *modem, int ok, void *userdata)
+static void mw_mwis_write_cb(int ok, void *userdata)
 {
 	if (!ok)
 		ofono_error("Writing new EF-MBDN failed");
@@ -451,14 +467,15 @@ static void mw_mwis_write_cb(struct ofono_modem *modem, int ok, void *userdata)
 /* Loads MWI states and MBDN from SIM */
 static gboolean mw_mwis_load(struct ofono_modem *modem)
 {
+	struct message_waiting_data *mw = modem->message_waiting;
 	int err;
 
-	err = ofono_sim_read(modem, SIM_EFMWIS_FILEID, mw_mwis_read_cb, NULL);
+	err = ofono_sim_read(mw->sim, SIM_EFMWIS_FILEID, mw_mwis_read_cb, modem);
 
 	if (err != 0)
 		return FALSE;
 
-	err = ofono_sim_read(modem, SIM_EFMBI_FILEID, mw_mbi_read_cb, NULL);
+	err = ofono_sim_read(mw->sim, SIM_EFMBI_FILEID, mw_mbi_read_cb, modem);
 
 	if (err != 0)
 		return FALSE;
@@ -524,15 +541,16 @@ static void mw_set_indicator(struct ofono_modem *modem, int profile,
 		if (mw->messages[i].indication)
 			efmwis[0] |= 1 << i;
 
-	if (ofono_sim_write(modem, SIM_EFMWIS_FILEID, mw_mwis_write_cb,
+	if (ofono_sim_write(mw->sim, SIM_EFMWIS_FILEID, mw_mwis_write_cb,
 				OFONO_SIM_FILE_STRUCTURE_FIXED, 1,
-				efmwis, mw->efmwis_length, NULL) != 0) {
+				efmwis, mw->efmwis_length, modem) != 0) {
 		ofono_error("Queuing a EF-MWI write to SIM failed");
 	}
 }
 
-static void initialize_message_waiting(struct ofono_modem *modem)
+static void initialize_message_waiting(void *user_data)
 {
+	struct ofono_modem *modem = user_data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (!mw_mwis_load(modem)) {
@@ -560,17 +578,46 @@ static void initialize_message_waiting(struct ofono_modem *modem)
 	ofono_modem_add_interface(modem, MESSAGE_WAITING_INTERFACE);
 }
 
+static void sim_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct message_waiting_data *mw = modem->message_waiting;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		mw->sim = NULL;
+		mw->sim_ready_watch = 0;
+		return;
+	}
+
+	mw->sim = __ofono_atom_get_data(atom);
+	mw->sim_ready_watch = ofono_sim_add_ready_watch(mw->sim,
+				initialize_message_waiting, modem, NULL);
+
+	if (ofono_sim_get_ready(mw->sim))
+		initialize_message_waiting(modem);
+}
+
 int ofono_message_waiting_register(struct ofono_modem *modem)
 {
+	struct message_waiting_data *mw;
+	struct ofono_atom *sim_atom;
+
 	if (modem == NULL)
 		return -1;
 
-	modem->message_waiting = message_waiting_create();
+	mw = message_waiting_create();
+	modem->message_waiting = mw;
 
-	ofono_sim_ready_notify_register(modem, initialize_message_waiting);
-	if (ofono_sim_get_ready(modem))
-		initialize_message_waiting(modem);
+	mw->sim_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_SIM,
+					sim_watch, modem, NULL);
 
+	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+	if (sim_atom && __ofono_atom_get_registered(sim_atom))
+		sim_watch(sim_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+				modem);
 	return 0;
 }
 
