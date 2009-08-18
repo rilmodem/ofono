@@ -84,8 +84,8 @@ extern void at_call_meter_exit();
 extern void at_call_barring_init();
 extern void at_call_barring_exit();
 
-extern void at_sim_init(struct ofono_modem *modem);
-extern void at_sim_exit(struct ofono_modem *modem);
+extern void at_sim_init();
+extern void at_sim_exit();
 
 extern void at_sms_init();
 extern void at_sms_exit();

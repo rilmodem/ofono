@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/sim.h>
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -101,12 +101,12 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, flen, str, rlen, access, cbd->data);
 }
 
-static void at_sim_read_info(struct ofono_modem *modem, int fileid,
+static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 					ofono_sim_file_info_cb_t cb,
 					void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -114,7 +114,7 @@ static void at_sim_read_info(struct ofono_modem *modem, int fileid,
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i,0,0,15", fileid);
 
-	if (g_at_chat_send(at->parser, buf, crsm_prefix,
+	if (g_at_chat_send(chat, buf, crsm_prefix,
 				at_crsm_info_cb, cbd, g_free) > 0)
 		return;
 
@@ -172,12 +172,12 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 	cb(&error, response, len, cbd->data);
 }
 
-static void at_sim_read_binary(struct ofono_modem *modem, int fileid,
+static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -186,7 +186,7 @@ static void at_sim_read_binary(struct ofono_modem *modem, int fileid,
 	snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,%i,%i,%i", fileid,
 			start >> 8, start & 0xff, length);
 
-	if (g_at_chat_send(at->parser, buf, crsm_prefix,
+	if (g_at_chat_send(chat, buf, crsm_prefix,
 				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
 
@@ -200,12 +200,12 @@ error:
 	}
 }
 
-static void at_sim_read_record(struct ofono_modem *modem, int fileid,
+static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -214,7 +214,7 @@ static void at_sim_read_record(struct ofono_modem *modem, int fileid,
 	snprintf(buf, sizeof(buf), "AT+CRSM=178,%i,%i,4,%i", fileid,
 			record, length);
 
-	if (g_at_chat_send(at->parser, buf, crsm_prefix,
+	if (g_at_chat_send(chat, buf, crsm_prefix,
 				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
 
@@ -233,7 +233,7 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_sim_write_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	gint sw1, sw2;
 
@@ -270,13 +270,13 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 	cb(&error, cbd->data);
 }
 
-static void at_sim_update_binary(struct ofono_modem *modem, int fileid,
+static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					const unsigned char *value,
-					ofono_generic_cb_t cb, void *data)
+					ofono_sim_write_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
@@ -289,7 +289,7 @@ static void at_sim_update_binary(struct ofono_modem *modem, int fileid,
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhx", *value++);
 
-	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
+	ret = g_at_chat_send(chat, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
 
 	g_free(buf);
@@ -307,13 +307,13 @@ error:
 	}
 }
 
-static void at_sim_update_record(struct ofono_modem *modem, int fileid,
+static void at_sim_update_record(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					const unsigned char *value,
-					ofono_generic_cb_t cb, void *data)
+					ofono_sim_write_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
@@ -326,7 +326,7 @@ static void at_sim_update_record(struct ofono_modem *modem, int fileid,
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhx", *value++);
 
-	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
+	ret = g_at_chat_send(chat, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
 
 	g_free(buf);
@@ -344,12 +344,12 @@ error:
 	}
 }
 
-static void at_sim_update_cyclic(struct ofono_modem *modem, int fileid,
+static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
 					int length, const unsigned char *value,
-					ofono_generic_cb_t cb, void *data)
+					ofono_sim_write_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
@@ -361,7 +361,7 @@ static void at_sim_update_cyclic(struct ofono_modem *modem, int fileid,
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhx", *value++);
 
-	ret = g_at_chat_send(at->parser, buf, crsm_prefix,
+	ret = g_at_chat_send(chat, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
 
 	g_free(buf);
@@ -383,7 +383,7 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
-	ofono_imsi_cb_t cb = cbd->cb;
+	ofono_sim_imsi_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	const char *imsi;
 	int i;
@@ -408,16 +408,16 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, imsi, cbd->data);
 }
 
-static void at_read_imsi(struct ofono_modem *modem, ofono_imsi_cb_t cb,
+static void at_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 			void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CIMI", NULL,
+	if (g_at_chat_send(chat, "AT+CIMI", NULL,
 				at_cimi_cb, cbd, g_free) > 0)
 		return;
 
@@ -431,7 +431,32 @@ error:
 	}
 }
 
-static struct ofono_sim_ops ops = {
+static gboolean at_sim_register(gpointer user)
+{
+	struct ofono_sim *sim = user;
+	GAtChat *chat = ofono_sim_get_data(sim);
+
+	ofono_sim_register(sim);
+
+	return FALSE;
+}
+
+static int at_sim_probe(struct ofono_sim *sim)
+{
+	g_idle_add(at_sim_register, sim);
+
+	return 0;
+}
+
+static int at_sim_remove(struct ofono_sim *sim)
+{
+	return 0;
+}
+
+static struct ofono_sim_driver driver = {
+	.name			= "generic_at",
+	.probe			= at_sim_probe,
+	.remove			= at_sim_remove,
 	.read_file_info		= at_sim_read_info,
 	.read_file_transparent	= at_sim_read_binary,
 	.read_file_linear	= at_sim_read_record,
@@ -442,12 +467,12 @@ static struct ofono_sim_ops ops = {
 	.read_imsi		= at_read_imsi,
 };
 
-void at_sim_init(struct ofono_modem *modem)
+void at_sim_init()
 {
-	ofono_sim_manager_register(modem, &ops);
+	ofono_sim_driver_register(&driver);
 }
 
-void at_sim_exit(struct ofono_modem *modem)
+void at_sim_exit()
 {
-	ofono_sim_manager_unregister(modem);
+	ofono_sim_driver_unregister(&driver);
 }
