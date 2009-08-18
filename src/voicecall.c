@@ -55,6 +55,7 @@ struct voicecalls_data {
 	DBusMessage *pending;
 	gint emit_calls_source;
 	gint emit_multi_source;
+	unsigned int sim_watch;
 };
 
 struct voicecall {
@@ -497,6 +498,11 @@ static void voicecalls_destroy(gpointer userdata)
 	struct ofono_modem *modem = userdata;
 	struct voicecalls_data *calls = modem->voicecalls;
 	GSList *l;
+
+	if (calls->sim_watch) {
+		__ofono_modem_remove_atom_watch(modem, calls->sim_watch);
+		calls->sim_watch = 0;
+	}
 
 	if (calls->emit_calls_source) {
 		g_source_remove(calls->emit_calls_source);
@@ -1751,11 +1757,12 @@ static void set_new_ecc(struct ofono_modem *modem)
 	emit_en_list_changed(modem);
 }
 
-static void ecc_read_cb(struct ofono_modem *modem, int ok,
+static void ecc_read_cb(int ok,
 		enum ofono_sim_file_structure structure, int total_length,
 		int record, const unsigned char *data, int record_length,
 		void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	struct voicecalls_data *calls = modem->voicecalls;
 	int total;
 	char en[7];
@@ -1786,18 +1793,24 @@ check:
 	set_new_ecc(modem);
 }
 
-static gboolean ecc_load(struct ofono_modem *modem)
+static void sim_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
 {
-	int err;
-	err = ofono_sim_read(modem, SIM_EFECC_FILEID, ecc_read_cb, NULL);
-	if (err != 0)
-		return FALSE;
-	return TRUE;
+	struct ofono_modem *modem = data;
+	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_sim *sim = __ofono_atom_get_data(atom);
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		return;
+	}
+
+	ofono_sim_read(sim, SIM_EFECC_FILEID, ecc_read_cb, modem);
 }
 
 int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_ops *ops)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_atom *sim_atom;
 
 	if (modem == NULL)
 		return -1;
@@ -1832,11 +1845,15 @@ int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_o
 	add_to_en_list(&modem->voicecalls->en_list, default_en_list_no_sim);
 	add_to_en_list(&modem->voicecalls->en_list, default_en_list);
 
-	/* TODO: We don't need to wait for the sim ready signal
-	 */
-	ofono_sim_ready_notify_register(modem, ecc_load);
-	if (ofono_sim_get_ready(modem))
-		ecc_load(modem);
+	modem->voicecalls->sim_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_SIM,
+					sim_watch, modem, NULL);
+
+	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+	if (sim_atom && __ofono_atom_get_registered(sim_atom))
+		sim_watch(sim_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+				modem);
 
 	return 0;
 }
