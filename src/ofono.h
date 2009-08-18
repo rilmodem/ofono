@@ -75,7 +75,6 @@ struct ofono_modem {
 	struct network_registration_data *network_registration;
 	struct voicecalls_data *voicecalls;
 	struct sim_manager_data *sim_manager;
-	struct sms_manager_data *sms_manager;
 	struct message_waiting_data *message_waiting;
 
 	GSList *history_contexts;
