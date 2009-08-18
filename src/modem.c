@@ -33,7 +33,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "sim.h"
 
 #define MODEM_FLAG_INITIALIZING_ATTRS 1
 
@@ -637,8 +636,6 @@ static struct ofono_modem *modem_create(int id,
 		return NULL;
 	}
 
-	ofono_sim_manager_init(modem);
-
 	modem->modem_info->flags |= MODEM_FLAG_INITIALIZING_ATTRS;
 	g_timeout_add(0, query_manufacturer, modem);
 
@@ -655,8 +652,6 @@ static void modem_remove(struct ofono_modem *modem)
 
 	remove_all_atoms(modem);
 	remove_all_watches(modem);
-
-	ofono_sim_manager_exit(modem);
 
 	g_dbus_unregister_interface(conn, path, OFONO_MODEM_INTERFACE);
 
