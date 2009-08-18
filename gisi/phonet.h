@@ -32,6 +32,8 @@
 #define PN_PROTO_PHONET		1
 #define PN_PROTO_PIPE		2
 
+#define SOL_PNPIPE		275
+
 #define PNPIPE_ENCAP		1
 #define PNPIPE_IFINDEX		2
 
