@@ -575,7 +575,7 @@ void ofono_ussd_register(struct ofono_ussd *ussd)
 					ussd_methods, ussd_signals, NULL,
 					ussd, NULL)) {
 		ofono_error("Could not create %s interface",
-				OFONO_CALL_BARRING_INTERFACE);
+				SUPPLEMENTARY_SERVICES_INTERFACE);
 
 		return;
 	}
