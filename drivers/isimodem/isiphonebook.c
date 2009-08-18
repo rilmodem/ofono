@@ -390,7 +390,8 @@ static int isi_phonebook_probe(struct ofono_phonebook *pb)
 	struct pb_data *pbd;
 	
 	if (!client) {
-		client = g_isi_client_create(PN_SIM);
+		/* FIXME: pass GIsiModem object */
+		client = g_isi_client_create(NULL, PN_SIM);
 		if (!client)
 			return -ENOMEM;
 	}

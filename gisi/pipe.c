@@ -191,7 +191,7 @@ GIsiPipe *g_isi_pipe_create(uint16_t obj1, uint16_t obj2,
 	};
 	GIsiPipe *pipe = g_malloc(sizeof(*pipe));
 
-	pipe->client = g_isi_client_create(PN_PIPE);
+	pipe->client = g_isi_client_create(NULL, PN_PIPE);
 	pipe->error = 0;
 	pipe->enabling = false;
 	pipe->enabled = false;

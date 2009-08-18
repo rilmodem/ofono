@@ -418,7 +418,7 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 
 	if (up) {
 		if (!client) {
-			client = g_isi_client_create(PN_PHONE_INFO);
+			client = g_isi_client_create(idx, PN_PHONE_INFO);
 			if (!client)
 				return;
 		}

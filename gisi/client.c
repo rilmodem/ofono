@@ -84,7 +84,7 @@ static inline GIsiClient *g_isi_cl(void *ptr)
  * @param resource PhoNet resource ID for the client
  * @return NULL on error (see errno), a GIsiClient pointer on success,
  */
-GIsiClient *g_isi_client_create(uint8_t resource)
+GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 {
 	void *ptr;
 	GIsiClient *cl;
@@ -112,7 +112,7 @@ GIsiClient *g_isi_client_create(uint8_t resource)
 	cl->next[254] = 0;
 	cl->prev[255] = cl->next[255] = 255;
 
-	channel = phonet_new(NULL, resource);
+	channel = phonet_new(modem, resource);
 	if (channel == NULL) {
 		free(cl);
 		return NULL;
