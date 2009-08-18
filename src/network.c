@@ -33,7 +33,6 @@
 
 #include "driver.h"
 #include "common.h"
-#include "sim.h"
 #include "simutil.h"
 #include "util.h"
 
@@ -73,9 +72,12 @@ struct network_registration_data {
 	struct sim_spdi *spdi;
 	struct sim_eons *eons;
 	gint opscan_source;
+	struct ofono_sim *sim;
+	unsigned int sim_watch;
+	unsigned int sim_ready_watch;
 };
 
-static void network_sim_ready(struct ofono_modem *modem);
+static void network_sim_ready(void *userdata);
 
 static void operator_list_callback(const struct ofono_error *error, int total,
 				const struct ofono_network_operator *list,
@@ -667,6 +669,17 @@ static void network_registration_destroy(gpointer userdata)
 	struct network_registration_data *data = modem->network_registration;
 	GSList *l;
 
+	if (data->sim_watch) {
+		__ofono_modem_remove_atom_watch(modem, data->sim_watch);
+		data->sim_watch = 0;
+	}
+
+	if (data->sim_ready_watch) {
+		ofono_sim_remove_ready_watch(data->sim, data->sim_ready_watch);
+		data->sim_ready_watch = 0;
+		data->sim = NULL;
+	}
+
 	if (data->opscan_source) {
 		g_source_remove(data->opscan_source);
 		data->opscan_source = 0;
@@ -918,10 +931,31 @@ static void set_registration_technology(struct ofono_modem *modem, int tech)
 						&tech_str);
 }
 
+static void sim_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_modem *modem = data;
+	struct network_registration_data *netreg = modem->network_registration;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		netreg->sim = NULL;
+		netreg->sim_ready_watch = 0;
+		return;
+	}
+
+	netreg->sim = __ofono_atom_get_data(atom);
+	netreg->sim_ready_watch = ofono_sim_add_ready_watch(netreg->sim,
+						network_sim_ready, modem, NULL);
+
+	if (ofono_sim_get_ready(netreg->sim))
+		network_sim_ready(modem);
+}
+
 static void initialize_network_registration(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct network_registration_data *netreg = modem->network_registration;
+	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, modem->path,
 					NETWORK_REGISTRATION_INTERFACE,
@@ -940,10 +974,15 @@ static void initialize_network_registration(struct ofono_modem *modem)
 
 	ofono_modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
 
-	ofono_sim_ready_notify_register(modem, network_sim_ready);
+	netreg->sim_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_SIM,
+					sim_watch, modem, NULL);
 
-	if (ofono_sim_get_ready(modem))
-		network_sim_ready(modem);
+	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+	if (sim_atom && __ofono_atom_get_registered(sim_atom))
+		sim_watch(sim_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+				modem);
 
 	if (netreg->ops->list_operators)
 		netreg->opscan_source =
@@ -1212,12 +1251,13 @@ static void signal_strength_callback(const struct ofono_error *error,
 	ofono_signal_strength_notify(modem, strength);
 }
 
-static void sim_opl_read_cb(struct ofono_modem *modem, int ok,
+static void sim_opl_read_cb(int ok,
 				enum ofono_sim_file_structure structure,
 				int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	struct network_registration_data *netreg = modem->network_registration;
 	int total;
 	GSList *l;
@@ -1256,12 +1296,13 @@ optimize:
 	}
 }
 
-static void sim_pnn_read_cb(struct ofono_modem *modem, int ok,
+static void sim_pnn_read_cb(int ok,
 				enum ofono_sim_file_structure structure,
 				int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	struct network_registration_data *netreg = modem->network_registration;
 	int total;
 
@@ -1290,15 +1331,17 @@ check:
 	 * still be used for the HPLMN and/or EHPLMN, if PNN
 	 * is present.  */
 	if (netreg->eons && !sim_eons_pnn_is_empty(netreg->eons))
-		ofono_sim_read(modem, SIM_EFOPL_FILEID, sim_opl_read_cb, NULL);
+		ofono_sim_read(netreg->sim, SIM_EFOPL_FILEID,
+						sim_opl_read_cb, modem);
 }
 
-static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
+static void sim_spdi_read_cb(int ok,
 				enum ofono_sim_file_structure structure,
 				int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	struct network_registration_data *netreg = modem->network_registration;
 	struct network_operator_data *current = netreg->current_operator;
 
@@ -1330,12 +1373,13 @@ static void sim_spdi_read_cb(struct ofono_modem *modem, int ok,
 	}
 }
 
-static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
+static void sim_spn_read_cb(int ok,
 				enum ofono_sim_file_structure structure,
 				int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
+	struct ofono_modem *modem = userdata;
 	struct network_registration_data *netreg = modem->network_registration;
 	unsigned char dcbyte;
 	char *spn;
@@ -1376,7 +1420,7 @@ static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 	}
 
 	netreg->spname = spn;
-	ofono_sim_read(modem, SIM_EFSPDI_FILEID, sim_spdi_read_cb, NULL);
+	ofono_sim_read(netreg->sim, SIM_EFSPDI_FILEID, sim_spdi_read_cb, modem);
 
 	if (dcbyte & SIM_EFSPN_DC_HOME_PLMN_BIT)
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
@@ -1397,10 +1441,13 @@ static void sim_spn_read_cb(struct ofono_modem *modem, int ok,
 	}
 }
 
-static void network_sim_ready(struct ofono_modem *modem)
+static void network_sim_ready(void *userdata)
 {
-	ofono_sim_read(modem, SIM_EFPNN_FILEID, sim_pnn_read_cb, NULL);
-	ofono_sim_read(modem, SIM_EFSPN_FILEID, sim_spn_read_cb, NULL);
+	struct ofono_modem *modem = userdata;
+	struct network_registration_data *netreg = modem->network_registration;
+
+	ofono_sim_read(netreg->sim, SIM_EFPNN_FILEID, sim_pnn_read_cb, modem);
+	ofono_sim_read(netreg->sim, SIM_EFSPN_FILEID, sim_spn_read_cb, modem);
 }
 
 int ofono_network_registration_register(struct ofono_modem *modem,
