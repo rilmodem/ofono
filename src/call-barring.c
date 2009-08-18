@@ -1197,7 +1197,7 @@ void ofono_call_barring_register(struct ofono_call_barring *cb)
 					ssn_watch, cb, NULL);
 
 	ssn_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SSN);
-	
+
 	if (ssn_atom && __ofono_atom_get_registered(ssn_atom))
 		ssn_watch(ssn_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, cb);
 

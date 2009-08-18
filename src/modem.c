@@ -200,10 +200,10 @@ int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					void *data, ofono_destroy_func destroy)
 {
 	struct ofono_atom_watch *watch;
-	
+
 	if (notify == NULL)
 		return 0;
-		
+
 	watch = g_new0(struct ofono_atom_watch, 1);
 
 	watch->type = type;

@@ -60,7 +60,7 @@ static unsigned int add_ssn_handler(GSList **l, unsigned int *id,
 
 	if (notify == NULL)
 		return 0;
-		
+
 	handler = g_new0(struct ssn_handler, 1);
 
 	handler->code = code;

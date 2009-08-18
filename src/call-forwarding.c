@@ -513,7 +513,7 @@ static void set_query_cf_callback(const struct ofono_error *error, int total,
 	if (cf->query_next == cf->query_end) {
 		reply = dbus_message_new_method_return(cf->pending);
 		__ofono_dbus_pending_reply(&cf->pending, reply);
-	} 
+	}
 
 	l = cf_cond_list_create(total, list);
 	set_new_cond_list(cf, cf->query_next, l);

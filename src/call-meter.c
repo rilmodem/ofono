@@ -254,7 +254,7 @@ static void query_acm_max(struct ofono_call_meter *cm)
 		cm->flags |= CALL_METER_FLAG_CACHED;
 
 		query_acm(cm);
-		return; 
+		return;
 	}
 
 	cm->driver->acm_max_query(cm, query_acm_max_callback, cm);

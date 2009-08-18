@@ -841,8 +841,8 @@ static gboolean update_network_operator_list_init(void *user_data)
 	struct ofono_modem *modem = user_data;
 
 	update_network_operator_list(modem);
-		
-	modem->network_registration->opscan_source = 
+
+	modem->network_registration->opscan_source =
 		g_timeout_add_seconds(OPERATOR_LIST_UPDATE_TIME,
 					update_network_operator_list_cb, modem);
 
@@ -946,7 +946,7 @@ static void initialize_network_registration(struct ofono_modem *modem)
 		network_sim_ready(modem);
 
 	if (netreg->ops->list_operators)
-		netreg->opscan_source = 
+		netreg->opscan_source =
 			g_timeout_add_seconds(5,
 				update_network_operator_list_init, modem);
 }
@@ -1044,9 +1044,8 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 	if (netreg->operator_list)
 		need_to_emit = TRUE;
 
-	for (o = netreg->operator_list; o; o = o->next) {
+	for (o = netreg->operator_list; o; o = o->next)
 		network_operator_dbus_unregister(modem, o->data);
-	}
 
 	g_slist_free(netreg->operator_list);
 
