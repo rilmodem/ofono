@@ -12,7 +12,7 @@ ofonod_SOURCES = main.c ofono.h log.c plugin.c \
 		manager.c dbus.c util.h util.c \
 		network.c voicecall.c ussd.c sms.c \
 		call-settings.c call-forwarding.c call-meter.c \
-		smsutil.h smsutil.c ssn.c call-barring.c sim.h sim.c \
+		smsutil.h smsutil.c ssn.c call-barring.c sim.c \
 		phonebook.c history.c simutil.h simutil.c \
 		message-waiting.c
 

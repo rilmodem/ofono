@@ -72,7 +72,6 @@ struct ofono_modem {
 	struct ofono_modem_data *modem_info;
 	struct network_registration_data *network_registration;
 	struct voicecalls_data *voicecalls;
-	struct sim_manager_data *sim_manager;
 	struct message_waiting_data *message_waiting;
 
 	GSList *history_contexts;
@@ -142,6 +141,8 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/call-settings.h>
 #include <ofono/phonebook.h>
 #include <ofono/sms.h>
+
+#include <ofono/sim.h>
 
 #include <ofono/ssn.h>
 
