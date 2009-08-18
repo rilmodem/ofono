@@ -26,6 +26,8 @@
 extern "C" {
 #endif
 
+typedef void (*ofono_destroy_func)(void *data);
+
 /* 27.007 Section 6.2 */
 enum ofono_clir_option {
 	OFONO_CLIR_OPTION_DEFAULT = 0,

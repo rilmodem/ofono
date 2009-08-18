@@ -23,8 +23,6 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 
-typedef void (*ofono_destroy_func)(void *data);
-
 int __ofono_manager_init();
 void __ofono_manager_cleanup();
 
