@@ -99,7 +99,6 @@ static void at_destroy(struct at_data *at)
 
 static void interface_exit(struct at_data *at)
 {
-	at_phonebook_exit(at->modem);
 	at_network_registration_exit(at->modem);
 	at_voicecall_exit(at->modem);
 }
