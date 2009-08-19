@@ -53,6 +53,13 @@ enum ofono_error_type {
 	OFONO_ERROR_TYPE_FAILURE
 };
 
+enum ofono_disconnect_reason {
+	OFONO_DISCONNECT_REASON_UNKNOWN = 0,
+	OFONO_DISCONNECT_REASON_LOCAL_HANGUP,
+	OFONO_DISCONNECT_REASON_REMOTE_HANGUP,
+	OFONO_DISCONNECT_REASON_ERROR,
+};
+
 struct ofono_error {
 	enum ofono_error_type type;
 	int error;
@@ -63,6 +70,15 @@ struct ofono_error {
 struct ofono_phone_number {
 	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
 	int type;
+};
+
+struct ofono_call {
+	unsigned id;
+	int type;
+	int direction;
+	int status;
+	struct ofono_phone_number phone_number;
+	int clip_validity;
 };
 
 #ifdef __cplusplus

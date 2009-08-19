@@ -26,13 +26,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 #include "simutil.h"
 
@@ -44,23 +44,27 @@
 
 #define MAX_VOICE_CALLS 16
 
-struct voicecalls_data {
+GSList *g_drivers = NULL;
+
+struct ofono_voicecall {
 	GSList *call_list;
 	GSList *release_list;
 	GSList *multiparty_list;
 	GSList *en_list;  /* emergency number list */
 	GSList *new_en_list; /* Emergency numbers being read from SIM */
-	struct ofono_voicecall_ops *ops;
 	int flags;
 	DBusMessage *pending;
 	gint emit_calls_source;
 	gint emit_multi_source;
 	unsigned int sim_watch;
+	const struct ofono_voicecall_driver *driver;
+	void *driver_data;
+	struct ofono_atom *atom;
 };
 
 struct voicecall {
 	struct ofono_call *call;
-	struct ofono_modem *modem;
+	struct ofono_voicecall *vc;
 	time_t start_time;
 	time_t detect_time;
 };
@@ -202,24 +206,23 @@ static DBusMessage *voicecall_busy(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct voicecall *v = data;
-	struct ofono_modem *modem = v->modem;
-	struct voicecalls_data *voicecalls = modem->voicecalls;
+	struct ofono_voicecall *vc = v->vc;
 	struct ofono_call *call = v->call;
 
 	if (call->status != CALL_STATUS_INCOMING &&
 		call->status != CALL_STATUS_WAITING)
 		return __ofono_error_failed(msg);
 
-	if (!voicecalls->ops->set_udub)
+	if (!vc->driver->set_udub)
 		return __ofono_error_not_implemented(msg);
 
-	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
-	voicecalls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	voicecalls->ops->set_udub(modem, generic_callback, voicecalls);
+	vc->driver->set_udub(vc, generic_callback, vc);
 
 	return NULL;
 }
@@ -228,8 +231,7 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct voicecall *v = data;
-	struct ofono_modem *modem = v->modem;
-	struct voicecalls_data *voicecalls = modem->voicecalls;
+	struct ofono_voicecall *vc = v->vc;
 	struct ofono_call *call = v->call;
 
 	struct ofono_phone_number ph;
@@ -239,10 +241,10 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 		call->status != CALL_STATUS_WAITING)
 		return __ofono_error_failed(msg);
 
-	if (!voicecalls->ops->deflect)
+	if (!vc->driver->deflect)
 		return __ofono_error_not_implemented(msg);
 
-	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
@@ -252,12 +254,12 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	if (!valid_phone_number_format(number))
 		return __ofono_error_invalid_format(msg);
 
-	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
-	voicecalls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
 	string_to_phone_number(number, &ph);
 
-	voicecalls->ops->deflect(modem, &ph, generic_callback, voicecalls);
+	vc->driver->deflect(vc, &ph, generic_callback, vc);
 
 	return NULL;
 }
@@ -266,24 +268,23 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct voicecall *v = data;
-	struct ofono_modem *modem = v->modem;
-	struct voicecalls_data *voicecalls = modem->voicecalls;
+	struct ofono_voicecall *vc = v->vc;
 	struct ofono_call *call = v->call;
 
 	if (call->status == CALL_STATUS_DISCONNECTED)
 		return __ofono_error_failed(msg);
 
-	if (!voicecalls->ops->release_specific)
+	if (!vc->driver->release_specific)
 		return __ofono_error_not_implemented(msg);
 
-	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
-	voicecalls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	voicecalls->ops->release_specific(modem, call->id,
-						generic_callback, voicecalls);
+	vc->driver->release_specific(vc, call->id,
+						generic_callback, vc);
 
 	return NULL;
 }
@@ -292,23 +293,22 @@ static DBusMessage *voicecall_answer(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct voicecall *v = data;
-	struct ofono_modem *modem = v->modem;
-	struct voicecalls_data *voicecalls = modem->voicecalls;
+	struct ofono_voicecall *vc = v->vc;
 	struct ofono_call *call = v->call;
 
 	if (call->status != CALL_STATUS_INCOMING)
 		return __ofono_error_failed(msg);
 
-	if (!voicecalls->ops->answer)
+	if (!vc->driver->answer)
 		return __ofono_error_not_implemented(msg);
 
-	if (voicecalls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	voicecalls->flags |= VOICECALLS_FLAG_PENDING;
-	voicecalls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	voicecalls->ops->answer(modem, generic_callback, voicecalls);
+	vc->driver->answer(vc, generic_callback, vc);
 
 	return NULL;
 }
@@ -332,7 +332,7 @@ static GDBusSignalTable voicecall_signals[] = {
 	{ }
 };
 
-static struct voicecall *voicecall_create(struct ofono_modem *modem,
+static struct voicecall *voicecall_create(struct ofono_voicecall *vc,
 						struct ofono_call *call)
 {
 	struct voicecall *v;
@@ -343,7 +343,7 @@ static struct voicecall *voicecall_create(struct ofono_modem *modem,
 		return NULL;
 
 	v->call = call;
-	v->modem = modem;
+	v->vc = vc;
 
 	return v;
 }
@@ -357,19 +357,18 @@ static void voicecall_destroy(gpointer userdata)
 	g_free(voicecall);
 }
 
-static const char *voicecall_build_path(struct ofono_modem *modem,
+static const char *voicecall_build_path(struct ofono_voicecall *vc,
 					const struct ofono_call *call)
 {
 	static char path[256];
 
 	snprintf(path, sizeof(path), "%s/voicecall%02d",
-			modem->path, call->id);
+			__ofono_atom_get_path(vc->atom), call->id);
 
 	return path;
 }
 
-static void voicecall_set_call_status(struct ofono_modem *modem,
-					struct voicecall *call,
+static void voicecall_set_call_status(struct voicecall *call,
 					int status)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -385,7 +384,7 @@ static void voicecall_set_call_status(struct ofono_modem *modem,
 	call->call->status = status;
 
 	status_str = call_status_to_string(status);
-	path = voicecall_build_path(modem, call->call);
+	path = voicecall_build_path(call->vc, call->call);
 
 	ofono_dbus_signal_property_changed(conn, path, VOICECALL_INTERFACE,
 						"State", DBUS_TYPE_STRING,
@@ -409,8 +408,7 @@ static void voicecall_set_call_status(struct ofono_modem *modem,
 	}
 }
 
-static void voicecall_set_call_lineid(struct ofono_modem *modem,
-					struct voicecall *v,
+static void voicecall_set_call_lineid(struct voicecall *v,
 					const struct ofono_phone_number *ph,
 					int clip_validity)
 {
@@ -438,7 +436,7 @@ static void voicecall_set_call_lineid(struct ofono_modem *modem,
 	call->clip_validity = clip_validity;
 	call->phone_number.type = ph->type;
 
-	path = voicecall_build_path(modem, call);
+	path = voicecall_build_path(v->vc, call);
 
 	if (call->direction == CALL_DIRECTION_MOBILE_TERMINATED)
 		lineid_str = phone_and_clip_to_string(ph, clip_validity);
@@ -450,23 +448,22 @@ static void voicecall_set_call_lineid(struct ofono_modem *modem,
 						DBUS_TYPE_STRING, &lineid_str);
 }
 
-static gboolean voicecall_dbus_register(struct voicecall *voicecall)
+static gboolean voicecall_dbus_register(struct voicecall *v)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 
-	if (!voicecall)
+	if (!v)
 		return FALSE;
 
-	path = voicecall_build_path(voicecall->modem, voicecall->call);
+	path = voicecall_build_path(v->vc, v->call);
 
 	if (!g_dbus_register_interface(conn, path, VOICECALL_INTERFACE,
 					voicecall_methods,
 					voicecall_signals,
-					NULL, voicecall,
-					voicecall_destroy)) {
+					NULL, v, voicecall_destroy)) {
 		ofono_error("Could not register VoiceCall %s", path);
-		voicecall_destroy(voicecall);
+		voicecall_destroy(v);
 
 		return FALSE;
 	}
@@ -474,69 +471,18 @@ static gboolean voicecall_dbus_register(struct voicecall *voicecall)
 	return TRUE;
 }
 
-static gboolean voicecall_dbus_unregister(struct ofono_modem *modem,
-						struct voicecall *call)
+static gboolean voicecall_dbus_unregister(struct ofono_voicecall *vc,
+						struct voicecall *v)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = voicecall_build_path(modem, call->call);
+	const char *path = voicecall_build_path(vc, v->call);
 
 	return g_dbus_unregister_interface(conn, path,
 					VOICECALL_INTERFACE);
 }
 
-static struct voicecalls_data *voicecalls_create()
-{
-	struct voicecalls_data *calls;
 
-	calls = g_try_new0(struct voicecalls_data, 1);
-
-	return calls;
-}
-
-static void voicecalls_destroy(gpointer userdata)
-{
-	struct ofono_modem *modem = userdata;
-	struct voicecalls_data *calls = modem->voicecalls;
-	GSList *l;
-
-	if (calls->sim_watch) {
-		__ofono_modem_remove_atom_watch(modem, calls->sim_watch);
-		calls->sim_watch = 0;
-	}
-
-	if (calls->emit_calls_source) {
-		g_source_remove(calls->emit_calls_source);
-		calls->emit_calls_source = 0;
-	}
-
-	if (calls->emit_multi_source) {
-		g_source_remove(calls->emit_multi_source);
-		calls->emit_multi_source = 0;
-	}
-
-	if (calls->en_list) {
-		g_slist_foreach(calls->en_list, (GFunc)g_free, NULL);
-		g_slist_free(calls->en_list);
-		calls->en_list = NULL;
-	}
-
-	if (calls->new_en_list) {
-		g_slist_foreach(calls->new_en_list, (GFunc)g_free, NULL);
-		g_slist_free(calls->new_en_list);
-		calls->new_en_list = NULL;
-	}
-
-	for (l = calls->call_list; l; l = l->next)
-		voicecall_dbus_unregister(modem, l->data);
-
-	g_slist_free(calls->call_list);
-
-	g_free(calls);
-
-	modem->voicecalls = 0;
-}
-
-static int voicecalls_path_list(struct ofono_modem *modem, GSList *call_list,
+static int voicecalls_path_list(struct ofono_voicecall *vc, GSList *call_list,
 				char ***objlist)
 {
 	GSList *l;
@@ -550,18 +496,18 @@ static int voicecalls_path_list(struct ofono_modem *modem, GSList *call_list,
 
 	for (i = 0, l = call_list; l; l = l->next, i++) {
 		v = l->data;
-		(*objlist)[i] = g_strdup(voicecall_build_path(modem, v->call));
+		(*objlist)[i] = g_strdup(voicecall_build_path(vc, v->call));
 	}
 
 	return 0;
 }
 
-static gboolean voicecalls_have_active(struct voicecalls_data *calls)
+static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
 {
 	GSList *l;
 	struct voicecall *v;
 
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_ACTIVE ||
@@ -574,12 +520,12 @@ static gboolean voicecalls_have_active(struct voicecalls_data *calls)
 	return FALSE;
 }
 
-static gboolean voicecalls_have_connected(struct voicecalls_data *calls)
+static gboolean voicecalls_have_connected(struct ofono_voicecall *vc)
 {
 	GSList *l;
 	struct voicecall *v;
 
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_ACTIVE)
@@ -589,12 +535,12 @@ static gboolean voicecalls_have_connected(struct voicecalls_data *calls)
 	return FALSE;
 }
 
-static gboolean voicecalls_have_held(struct voicecalls_data *calls)
+static gboolean voicecalls_have_held(struct ofono_voicecall *vc)
 {
 	GSList *l;
 	struct voicecall *v;
 
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_HELD)
@@ -604,14 +550,14 @@ static gboolean voicecalls_have_held(struct voicecalls_data *calls)
 	return FALSE;
 }
 
-static int voicecalls_num_with_status(struct voicecalls_data *calls,
+static int voicecalls_num_with_status(struct ofono_voicecall *vc,
 					int status)
 {
 	GSList *l;
 	struct voicecall *v;
 	int num = 0;
 
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
 		if (v->call->status == status)
@@ -621,33 +567,33 @@ static int voicecalls_num_with_status(struct voicecalls_data *calls,
 	return num;
 }
 
-static int voicecalls_num_active(struct voicecalls_data *calls)
+static int voicecalls_num_active(struct ofono_voicecall *vc)
 {
-	return voicecalls_num_with_status(calls, CALL_STATUS_ACTIVE);
+	return voicecalls_num_with_status(vc, CALL_STATUS_ACTIVE);
 }
 
-static int voicecalls_num_held(struct voicecalls_data *calls)
+static int voicecalls_num_held(struct ofono_voicecall *vc)
 {
-	return voicecalls_num_with_status(calls, CALL_STATUS_HELD);
+	return voicecalls_num_with_status(vc, CALL_STATUS_HELD);
 }
 
-static int voicecalls_num_connecting(struct voicecalls_data *calls)
+static int voicecalls_num_connecting(struct ofono_voicecall *vc)
 {
 	int r = 0;
 
-	r += voicecalls_num_with_status(calls, CALL_STATUS_DIALING);
-	r += voicecalls_num_with_status(calls, CALL_STATUS_ALERTING);
+	r += voicecalls_num_with_status(vc, CALL_STATUS_DIALING);
+	r += voicecalls_num_with_status(vc, CALL_STATUS_ALERTING);
 
 	return r;
 }
 
-static GSList *voicecalls_held_list(struct voicecalls_data *calls)
+static GSList *voicecalls_held_list(struct ofono_voicecall *vc)
 {
 	GSList *l;
 	GSList *r = NULL;
 	struct voicecall *v;
 
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_HELD)
@@ -662,13 +608,13 @@ static GSList *voicecalls_held_list(struct voicecalls_data *calls)
 
 /* Intended to be used for multiparty, which cannot be incoming,
  * alerting or dialing */
-static GSList *voicecalls_active_list(struct voicecalls_data *calls)
+static GSList *voicecalls_active_list(struct ofono_voicecall *vc)
 {
 	GSList *l;
 	GSList *r = NULL;
 	struct voicecall *v;
 
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_ACTIVE)
@@ -681,12 +627,12 @@ static GSList *voicecalls_active_list(struct voicecalls_data *calls)
 	return r;
 }
 
-static gboolean voicecalls_have_waiting(struct voicecalls_data *calls)
+static gboolean voicecalls_have_waiting(struct ofono_voicecall *vc)
 {
 	GSList *l;
 	struct voicecall *v;
 
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_WAITING)
@@ -696,42 +642,36 @@ static gboolean voicecalls_have_waiting(struct voicecalls_data *calls)
 	return FALSE;
 }
 
-static void voicecalls_release_queue(struct ofono_modem *modem, GSList *calls)
+static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls)
 {
-	struct voicecalls_data *voicecalls = modem->voicecalls;
 	GSList *l;
 
-	g_slist_free(voicecalls->release_list);
-	voicecalls->release_list = NULL;
+	g_slist_free(vc->release_list);
+	vc->release_list = NULL;
 
-	for (l = calls; l; l = l->next) {
-		voicecalls->release_list =
-			g_slist_prepend(voicecalls->release_list, l->data);
-	}
+	for (l = calls; l; l = l->next)
+		vc->release_list = g_slist_prepend(vc->release_list, l->data);
 }
 
-static void voicecalls_release_next(struct ofono_modem *modem)
+static void voicecalls_release_next(struct ofono_voicecall *vc)
 {
-	struct voicecalls_data *voicecalls = modem->voicecalls;
 	struct voicecall *call;
 
-	if (!voicecalls->release_list)
+	if (!vc->release_list)
 		return;
 
-	call = voicecalls->release_list->data;
+	call = vc->release_list->data;
 
-	voicecalls->release_list = g_slist_remove(voicecalls->release_list,
-							call);
+	vc->release_list = g_slist_remove(vc->release_list, call);
 
-	voicecalls->ops->release_specific(modem, call->call->id,
-						multirelease_callback, modem);
+	vc->driver->release_specific(vc, call->call->id,
+						multirelease_callback, vc);
 }
 
 static DBusMessage *manager_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
@@ -751,14 +691,14 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	voicecalls_path_list(modem, calls->call_list, &callobj_list);
+	voicecalls_path_list(vc, vc->call_list, &callobj_list);
 
 	ofono_dbus_dict_append_array(&dict, "Calls", DBUS_TYPE_OBJECT_PATH,
 				&callobj_list);
 
 	g_strfreev(callobj_list);
 
-	voicecalls_path_list(modem, calls->multiparty_list, &callobj_list);
+	voicecalls_path_list(vc, vc->multiparty_list, &callobj_list);
 
 	ofono_dbus_dict_append_array(&dict, "MultipartyCalls",
 					DBUS_TYPE_OBJECT_PATH, &callobj_list);
@@ -766,9 +706,11 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	g_strfreev(callobj_list);
 
 	/* property EmergencyNumbers */
-	list = g_new0(char *, g_slist_length(calls->en_list) + 1);
-	for (i = 0, l = calls->en_list; l; l = l->next, i++)
+	list = g_new0(char *, g_slist_length(vc->en_list) + 1);
+
+	for (i = 0, l = vc->en_list; l; l = l->next, i++)
 		list[i] = g_strdup(l->data);
+
 	ofono_dbus_dict_append_array(&dict, "EmergencyNumbers",
 					DBUS_TYPE_STRING, &list);
 	g_strfreev(list);
@@ -781,17 +723,16 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 static DBusMessage *manager_dial(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	const char *number;
 	struct ofono_phone_number ph;
 	const char *clirstr;
 	enum ofono_clir_option clir;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (g_slist_length(calls->call_list) >= MAX_VOICE_CALLS)
+	if (g_slist_length(vc->call_list) >= MAX_VOICE_CALLS)
 		return __ofono_error_failed(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
@@ -811,20 +752,20 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	else
 		return __ofono_error_invalid_format(msg);
 
-	if (!calls->ops->dial)
+	if (!vc->driver->dial)
 		return __ofono_error_not_implemented(msg);
 
-	if (voicecalls_have_active(calls) &&
-		voicecalls_have_held(calls))
+	if (voicecalls_have_active(vc) &&
+		voicecalls_have_held(vc))
 		return __ofono_error_failed(msg);
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
 	string_to_phone_number(number, &ph);
 
-	calls->ops->dial(modem, &ph, clir, OFONO_CUG_OPTION_DEFAULT,
-				dial_callback, modem);
+	vc->driver->dial(vc, &ph, clir, OFONO_CUG_OPTION_DEFAULT,
+				dial_callback, vc);
 
 	return NULL;
 }
@@ -832,34 +773,33 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 static DBusMessage *manager_transfer(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	int numactive;
 	int numheld;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	numactive = voicecalls_num_active(calls);
+	numactive = voicecalls_num_active(vc);
 
 	/* According to 22.091 section 5.8, the network has the option of
 	 * implementing the call transfer operation for a call that is
 	 * still dialing/alerting.
 	 */
-	numactive += voicecalls_num_connecting(calls);
+	numactive += voicecalls_num_connecting(vc);
 
-	numheld = voicecalls_num_held(calls);
+	numheld = voicecalls_num_held(vc);
 
 	if ((numactive != 1) && (numheld != 1))
 		return __ofono_error_failed(msg);
 
-	if (!calls->ops->transfer)
+	if (!vc->driver->transfer)
 		return __ofono_error_not_implemented(msg);
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	calls->ops->transfer(modem, generic_callback, calls);
+	vc->driver->transfer(vc, generic_callback, vc);
 
 	return NULL;
 }
@@ -867,22 +807,21 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 static DBusMessage *manager_swap_calls(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (voicecalls_have_waiting(calls))
+	if (voicecalls_have_waiting(vc))
 		return __ofono_error_failed(msg);
 
-	if (!calls->ops->hold_all_active)
+	if (!vc->driver->hold_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	calls->ops->hold_all_active(modem, generic_callback, calls);
+	vc->driver->hold_all_active(vc, generic_callback, vc);
 
 	return NULL;
 }
@@ -890,22 +829,21 @@ static DBusMessage *manager_swap_calls(DBusConnection *conn,
 static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (!voicecalls_have_active(calls) || !voicecalls_have_waiting(calls))
+	if (!voicecalls_have_active(vc) || !voicecalls_have_waiting(vc))
 		return __ofono_error_failed(msg);
 
-	if (!calls->ops->release_all_active)
+	if (!vc->driver->release_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	calls->ops->release_all_active(modem, generic_callback, calls);
+	vc->driver->release_all_active(vc, generic_callback, vc);
 
 	return NULL;
 }
@@ -913,23 +851,22 @@ static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (voicecalls_have_active(calls) && voicecalls_have_held(calls) &&
-		voicecalls_have_waiting(calls))
+	if (voicecalls_have_active(vc) && voicecalls_have_held(vc) &&
+		voicecalls_have_waiting(vc))
 		return __ofono_error_failed(msg);
 
-	if (!calls->ops->hold_all_active)
+	if (!vc->driver->hold_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	calls->ops->hold_all_active(modem, generic_callback, calls);
+	vc->driver->hold_all_active(vc, generic_callback, vc);
 
 	return NULL;
 }
@@ -937,27 +874,26 @@ static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 static DBusMessage *manager_hangup_all(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (!calls->ops->release_specific)
+	if (!vc->driver->release_specific)
 		return __ofono_error_not_implemented(msg);
 
-	if (calls->call_list == NULL) {
+	if (vc->call_list == NULL) {
 		DBusMessage *reply = dbus_message_new_method_return(msg);
 		return reply;
 	}
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
 
-	calls->pending = dbus_message_ref(msg);
+	vc->pending = dbus_message_ref(msg);
 
-	voicecalls_release_queue(modem, calls->call_list);
-	voicecalls_release_next(modem);
+	voicecalls_release_queue(vc, vc->call_list);
+	voicecalls_release_next(vc);
 
 	return NULL;
 }
@@ -965,14 +901,14 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
+	const char *path = __ofono_atom_get_path(vc->atom);
 	const char *callpath;
 	const char *c;
 	unsigned int id;
 	GSList *l;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &callpath,
@@ -984,13 +920,13 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 
 	c = strrchr(callpath, '/');
 
-	if (!c || strncmp(modem->path, callpath, c-callpath))
+	if (!c || strncmp(path, callpath, c-callpath))
 		return __ofono_error_not_found(msg);
 
 	if (!sscanf(c, "/voicecall%2u", &id))
 		return __ofono_error_not_found(msg);
 
-	for (l = calls->multiparty_list; l; l = l->next) {
+	for (l = vc->multiparty_list; l; l = l->next) {
 		struct voicecall *v = l->data;
 		if (v->call->id == id)
 			break;
@@ -1003,16 +939,16 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	 * the multiparty call exists.	Only thing to check is whether we have
 	 * held calls
 	 */
-	if (voicecalls_have_held(calls))
+	if (voicecalls_have_held(vc))
 		return __ofono_error_failed(msg);
 
-	if (!calls->ops->private_chat)
+	if (!vc->driver->private_chat)
 		return __ofono_error_not_implemented(msg);
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	calls->ops->private_chat(modem, id, private_chat_callback, modem);
+	vc->driver->private_chat(vc, id, private_chat_callback, vc);
 
 	return NULL;
 }
@@ -1020,22 +956,21 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 static DBusMessage *multiparty_create(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (!voicecalls_have_held(calls) || !voicecalls_have_active(calls))
+	if (!voicecalls_have_held(vc) || !voicecalls_have_active(vc))
 		return __ofono_error_failed(msg);
 
-	if (!calls->ops->create_multiparty)
+	if (!vc->driver->create_multiparty)
 		return __ofono_error_not_implemented(msg);
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	calls->ops->create_multiparty(modem, multiparty_create_callback, modem);
+	vc->driver->create_multiparty(vc, multiparty_create_callback, vc);
 
 	return NULL;
 }
@@ -1043,36 +978,35 @@ static DBusMessage *multiparty_create(DBusConnection *conn,
 static DBusMessage *multiparty_hangup(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (!calls->ops->release_specific)
+	if (!vc->driver->release_specific)
 		return __ofono_error_not_implemented(msg);
 
-	if (!calls->ops->release_all_held)
+	if (!vc->driver->release_all_held)
 		return __ofono_error_not_implemented(msg);
 
-	if (!calls->ops->release_all_active)
+	if (!vc->driver->release_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	if (calls->multiparty_list == NULL) {
+	if (vc->multiparty_list == NULL) {
 		DBusMessage *reply = dbus_message_new_method_return(msg);
 		return reply;
 	}
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
 	/* We don't have waiting calls, as we can't use +CHLD to release */
-	if (!voicecalls_have_waiting(calls)) {
-		struct voicecall *v = calls->multiparty_list->data;
+	if (!voicecalls_have_waiting(vc)) {
+		struct voicecall *v = vc->multiparty_list->data;
 
 		if (v->call->status == CALL_STATUS_HELD) {
-			calls->ops->release_all_held(modem, generic_callback,
-							calls);
+			vc->driver->release_all_held(vc, generic_callback,
+							vc);
 			goto out;
 		}
 
@@ -1080,17 +1014,17 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 		 * we shouldn't use release_all_active here since this also
 		 * has the side-effect of activating held calls
 		 */
-		if (!voicecalls_have_held(calls)) {
-			calls->ops->release_all_active(modem, generic_callback,
-						calls);
+		if (!voicecalls_have_held(vc)) {
+			vc->driver->release_all_active(vc, generic_callback,
+								vc);
 			goto out;
 		}
 	}
 
 	/* Fall back to the old-fashioned way */
-	calls->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
-	voicecalls_release_queue(modem, calls->multiparty_list);
-	voicecalls_release_next(modem);
+	vc->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
+	voicecalls_release_queue(vc, vc->multiparty_list);
+	voicecalls_release_next(vc);
 
 out:
 	return NULL;
@@ -1099,20 +1033,19 @@ out:
 static DBusMessage *manager_tone(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	const char *in_tones;
 	char *tones;
 	int i, len;
 
-	if (calls->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
 
-	if (!calls->ops->send_tones)
+	if (!vc->driver->send_tones)
 		return __ofono_error_not_implemented(msg);
 
 	/* Send DTMFs only if we have at least one connected call */
-	if (!voicecalls_have_connected(calls))
+	if (!voicecalls_have_connected(vc))
 		return __ofono_error_failed(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &in_tones,
@@ -1137,10 +1070,10 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 		return __ofono_error_invalid_format(msg);
 	}
 
-	calls->flags |= VOICECALLS_FLAG_PENDING;
-	calls->pending = dbus_message_ref(msg);
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
 
-	calls->ops->send_tones(modem, tones, generic_callback, calls);
+	vc->driver->send_tones(vc, tones, generic_callback, vc);
 
 	g_free(tones);
 
@@ -1179,14 +1112,14 @@ static GDBusSignalTable manager_signals[] = {
 
 static gboolean real_emit_call_list_changed(void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *voicecalls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(vc->atom);
 	char **objpath_list;
 
-	voicecalls_path_list(modem, voicecalls->call_list, &objpath_list);
+	voicecalls_path_list(vc, vc->call_list, &objpath_list);
 
-	ofono_dbus_signal_array_property_changed(conn, modem->path,
+	ofono_dbus_signal_array_property_changed(conn, path,
 				VOICECALL_MANAGER_INTERFACE,
 				"Calls",
 				DBUS_TYPE_OBJECT_PATH,
@@ -1194,72 +1127,68 @@ static gboolean real_emit_call_list_changed(void *data)
 
 	g_strfreev(objpath_list);
 
-	voicecalls->emit_calls_source = 0;
+	vc->emit_calls_source = 0;
 
 	return FALSE;
 }
 
-static void emit_call_list_changed(struct ofono_modem *modem)
+static void emit_call_list_changed(struct ofono_voicecall *vc)
 {
 #ifdef DELAY_EMIT
-	struct voicecalls_data *calls = modem->voicecalls;
-
-	if (calls->emit_calls_source == 0)
-		calls->emit_calls_source =
-			g_timeout_add(0, real_emit_call_list_changed, modem);
+	if (vc->emit_calls_source == 0)
+		vc->emit_calls_source =
+			g_timeout_add(0, real_emit_call_list_changed, vc);
 #else
-	real_emit_call_list_changed(modem);
+	real_emit_call_list_changed(vc);
 #endif
 }
 
 static gboolean real_emit_multiparty_call_list_changed(void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *voicecalls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(vc->atom);
 	char **objpath_list;
 
-	voicecalls_path_list(modem, voicecalls->multiparty_list, &objpath_list);
+	voicecalls_path_list(vc, vc->multiparty_list, &objpath_list);
 
-	ofono_dbus_signal_array_property_changed(conn, modem->path,
+	ofono_dbus_signal_array_property_changed(conn, path,
 				VOICECALL_MANAGER_INTERFACE, "MultipartyCalls",
 				DBUS_TYPE_OBJECT_PATH,
 				&objpath_list);
 
 	g_strfreev(objpath_list);
 
-	voicecalls->emit_multi_source = 0;
+	vc->emit_multi_source = 0;
 
 	return FALSE;
 }
 
-static void emit_multiparty_call_list_changed(struct ofono_modem *modem)
+static void emit_multiparty_call_list_changed(struct ofono_voicecall *vc)
 {
 #ifdef DELAY_EMIT
-	struct voicecalls_data *calls = modem->voicecalls;
-
-	if (calls->emit_multi_source == 0)
-		calls->emit_multi_source = g_timeout_add(0,
-				real_emit_multiparty_call_list_changed, modem);
+	if (vc->emit_multi_source == 0)
+		vc->emit_multi_source = g_timeout_add(0,
+				real_emit_multiparty_call_list_changed, vc);
 	}
 #else
-	real_emit_multiparty_call_list_changed(modem);
+	real_emit_multiparty_call_list_changed(vc);
 #endif
 }
 
-void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
+void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 				enum ofono_disconnect_reason reason,
 				const struct ofono_error *error)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	GSList *l;
-	struct voicecalls_data *calls = modem->voicecalls;
 	struct voicecall *call;
 	time_t ts;
 	enum call_status prev_status;
 
 	ofono_debug("Got disconnection event for id: %d, reason: %d", id, reason);
 
-	l = g_slist_find_custom(calls->call_list, GINT_TO_POINTER(id),
+	l = g_slist_find_custom(vc->call_list, GINT_TO_POINTER(id),
 				call_compare_by_id);
 
 	if (!l) {
@@ -1273,27 +1202,27 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 	ts = time(NULL);
 	prev_status = call->call->status;
 
-	l = g_slist_find_custom(calls->multiparty_list, GINT_TO_POINTER(id),
+	l = g_slist_find_custom(vc->multiparty_list, GINT_TO_POINTER(id),
 				call_compare_by_id);
 
 	if (l) {
-		calls->multiparty_list =
-			g_slist_remove(calls->multiparty_list, call);
+		vc->multiparty_list =
+			g_slist_remove(vc->multiparty_list, call);
 
-		if (calls->multiparty_list->next == NULL) { /* Size == 1 */
-			g_slist_free(calls->multiparty_list);
-			calls->multiparty_list = 0;
+		if (vc->multiparty_list->next == NULL) { /* Size == 1 */
+			g_slist_free(vc->multiparty_list);
+			vc->multiparty_list = 0;
 		}
 
-		emit_multiparty_call_list_changed(modem);
+		emit_multiparty_call_list_changed(vc);
 	}
 
-	calls->release_list = g_slist_remove(calls->release_list, call);
+	vc->release_list = g_slist_remove(vc->release_list, call);
 
 	__ofono_modem_release_callid(modem, id);
 
 	/* TODO: Emit disconnect reason */
-	voicecall_set_call_status(modem, call, CALL_STATUS_DISCONNECTED);
+	voicecall_set_call_status(call, CALL_STATUS_DISCONNECTED);
 
 	if (prev_status == CALL_STATUS_INCOMING)
 		__ofono_history_call_missed(modem, call->call, ts);
@@ -1301,30 +1230,31 @@ void ofono_voicecall_disconnected(struct ofono_modem *modem, int id,
 		__ofono_history_call_ended(modem, call->call,
 						call->detect_time, ts);
 
-	voicecall_dbus_unregister(modem, call);
+	voicecall_dbus_unregister(vc, call);
 
-	calls->call_list = g_slist_remove(calls->call_list, call);
+	vc->call_list = g_slist_remove(vc->call_list, call);
 
-	emit_call_list_changed(modem);
+	emit_call_list_changed(vc);
 }
 
-void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *call)
+void ofono_voicecall_notify(struct ofono_voicecall *vc,
+				const struct ofono_call *call)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	GSList *l;
-	struct voicecalls_data *calls = modem->voicecalls;
 	struct voicecall *v = NULL;
 	struct ofono_call *newcall = NULL;
 
 	ofono_debug("Got a voicecall event, status: %d, id: %u, number: %s",
 			call->status, call->id, call->phone_number.number);
 
-	l = g_slist_find_custom(calls->call_list, GINT_TO_POINTER(call->id),
+	l = g_slist_find_custom(vc->call_list, GINT_TO_POINTER(call->id),
 				call_compare_by_id);
 
 	if (l) {
 		ofono_debug("Found call with id: %d\n", call->id);
-		voicecall_set_call_status(modem, l->data, call->status);
-		voicecall_set_call_lineid(modem, l->data, &call->phone_number,
+		voicecall_set_call_status(l->data, call->status);
+		voicecall_set_call_lineid(l->data, &call->phone_number,
 						call->clip_validity);
 
 		return;
@@ -1347,7 +1277,7 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 		goto err;
 	}
 
-	v = voicecall_create(modem, newcall);
+	v = voicecall_create(vc, newcall);
 
 	if (!v) {
 		ofono_error("Unable to allocate voicecall_data");
@@ -1361,10 +1291,9 @@ void ofono_voicecall_notify(struct ofono_modem *modem, const struct ofono_call *
 		goto err;
 	}
 
-	calls->call_list = g_slist_insert_sorted(calls->call_list, v,
-							call_compare);
+	vc->call_list = g_slist_insert_sorted(vc->call_list, v, call_compare);
 
-	emit_call_list_changed(modem);
+	emit_call_list_changed(vc);
 
 	return;
 
@@ -1378,7 +1307,7 @@ err:
 
 static void generic_callback(const struct ofono_error *error, void *data)
 {
-	struct voicecalls_data *calls = data;
+	struct ofono_voicecall *vc = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
@@ -1386,51 +1315,51 @@ static void generic_callback(const struct ofono_error *error, void *data)
 		ofono_debug("command failed with error: %s",
 				telephony_error_to_str(error));
 
-	calls->flags &= ~VOICECALLS_FLAG_PENDING;
+	vc->flags &= ~VOICECALLS_FLAG_PENDING;
 
-	if (!calls->pending)
+	if (!vc->pending)
 		return;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		reply = dbus_message_new_method_return(calls->pending);
+		reply = dbus_message_new_method_return(vc->pending);
 	else
-		reply = __ofono_error_failed(calls->pending);
+		reply = __ofono_error_failed(vc->pending);
 
 	g_dbus_send_message(conn, reply);
 
-	dbus_message_unref(calls->pending);
-	calls->pending = NULL;
+	dbus_message_unref(vc->pending);
+	vc->pending = NULL;
 }
 
 static void multirelease_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
-	if (calls->release_list != NULL) {
-		voicecalls_release_next(modem);
+	if (vc->release_list != NULL) {
+		voicecalls_release_next(vc);
 		return;
 	}
 
-	calls->flags &= ~VOICECALLS_FLAG_MULTI_RELEASE;
-	calls->flags &= ~VOICECALLS_FLAG_PENDING;
+	vc->flags &= ~VOICECALLS_FLAG_MULTI_RELEASE;
+	vc->flags &= ~VOICECALLS_FLAG_PENDING;
 
-	if (!calls->pending)
+	if (!vc->pending)
 		return;
 
-	reply = dbus_message_new_method_return(calls->pending);
+	reply = dbus_message_new_method_return(vc->pending);
 
 	g_dbus_send_message(conn, reply);
 
-	dbus_message_unref(calls->pending);
-	calls->pending = NULL;
+	dbus_message_unref(vc->pending);
+	vc->pending = NULL;
 }
 
-static struct ofono_call *synthesize_outgoing_call(struct ofono_modem *modem,
+static struct ofono_call *synthesize_outgoing_call(struct ofono_voicecall *vc,
 						DBusMessage *msg)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	const char *number;
 	struct ofono_call *call;
 
@@ -1462,8 +1391,7 @@ static struct ofono_call *synthesize_outgoing_call(struct ofono_modem *modem,
 
 static void dial_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	GSList *l;
@@ -1475,25 +1403,25 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		ofono_debug("Dial callback returned error: %s",
 			telephony_error_to_str(error));
 
-	calls->flags &= ~VOICECALLS_FLAG_PENDING;
+	vc->flags &= ~VOICECALLS_FLAG_PENDING;
 
-	if (!calls->pending)
+	if (!vc->pending)
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = __ofono_error_failed(calls->pending);
+		reply = __ofono_error_failed(vc->pending);
 		g_dbus_send_message(conn, reply);
 
 		goto out;
 	}
 
-	reply = dbus_message_new_method_return(calls->pending);
+	reply = dbus_message_new_method_return(vc->pending);
 	if (!reply)
 		goto out;
 
 	/* Two things can happen, the call notification arrived before dial
 	 * callback or dial callback was first.	Handle here */
-	for (l = calls->call_list; l; l = l->next) {
+	for (l = vc->call_list; l; l = l->next) {
 		struct voicecall *v = l->data;
 
 		if (v->call->status == CALL_STATUS_DIALING ||
@@ -1503,19 +1431,19 @@ static void dial_callback(const struct ofono_error *error, void *data)
 
 	if (!l) {
 		struct voicecall *v;
-		call = synthesize_outgoing_call(modem, calls->pending);
+		call = synthesize_outgoing_call(vc, vc->pending);
 
 		if (!call) {
-			reply = __ofono_error_failed(calls->pending);
+			reply = __ofono_error_failed(vc->pending);
 			g_dbus_send_message(conn, reply);
 
 			goto out;
 		}
 
-		v = voicecall_create(modem, call);
+		v = voicecall_create(vc, call);
 
 		if (!v) {
-			reply = __ofono_error_failed(calls->pending);
+			reply = __ofono_error_failed(vc->pending);
 			g_dbus_send_message(conn, reply);
 
 			goto out;
@@ -1526,7 +1454,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		ofono_debug("Registering new call: %d", call->id);
 		voicecall_dbus_register(v);
 
-		calls->call_list = g_slist_insert_sorted(calls->call_list, v,
+		vc->call_list = g_slist_insert_sorted(vc->call_list, v,
 					call_compare);
 
 		need_to_emit = TRUE;
@@ -1536,7 +1464,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		call = v->call;
 	}
 
-	path = voicecall_build_path(modem, call);
+	path = voicecall_build_path(vc, call);
 
 	dbus_message_append_args(reply, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID);
@@ -1544,24 +1472,22 @@ static void dial_callback(const struct ofono_error *error, void *data)
 	g_dbus_send_message(conn, reply);
 
 	if (need_to_emit)
-		emit_call_list_changed(modem);
+		emit_call_list_changed(vc);
 
 out:
-	dbus_message_unref(calls->pending);
-	calls->pending = NULL;
+	dbus_message_unref(vc->pending);
+	vc->pending = NULL;
 }
 
-
-static void multiparty_callback_common(struct ofono_modem *modem,
+static void multiparty_callback_common(struct ofono_voicecall *vc,
 					DBusMessage *reply)
 {
-	struct voicecalls_data *voicecalls = modem->voicecalls;
 	DBusMessageIter iter;
 	DBusMessageIter array_iter;
 	char **objpath_list;
 	int i;
 
-	voicecalls_path_list(modem, voicecalls->multiparty_list, &objpath_list);
+	voicecalls_path_list(vc, vc->multiparty_list, &objpath_list);
 
 	dbus_message_iter_init_append(reply, &iter);
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
@@ -1576,8 +1502,7 @@ static void multiparty_callback_common(struct ofono_modem *modem,
 
 static void multiparty_create_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	gboolean need_to_emit = FALSE;
@@ -1586,42 +1511,42 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 		ofono_debug("command failed with error: %s",
 				telephony_error_to_str(error));
 
-	calls->flags &= ~VOICECALLS_FLAG_PENDING;
+	vc->flags &= ~VOICECALLS_FLAG_PENDING;
 
-	if (!calls->pending)
+	if (!vc->pending)
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = __ofono_error_failed(calls->pending);
+		reply = __ofono_error_failed(vc->pending);
 		goto out;
 	}
 
 	/* We just created a multiparty call, gather all held
 	 * active calls and add them to the multiparty list
 	 */
-	if (calls->multiparty_list) {
-		g_slist_free(calls->multiparty_list);
-		calls->multiparty_list = 0;
+	if (vc->multiparty_list) {
+		g_slist_free(vc->multiparty_list);
+		vc->multiparty_list = 0;
 	}
 
-	calls->multiparty_list = g_slist_concat(calls->multiparty_list,
-						voicecalls_held_list(calls));
+	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
+						voicecalls_held_list(vc));
 
-	calls->multiparty_list = g_slist_concat(calls->multiparty_list,
-						voicecalls_active_list(calls));
+	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
+						voicecalls_active_list(vc));
 
-	calls->multiparty_list = g_slist_sort(calls->multiparty_list,
+	vc->multiparty_list = g_slist_sort(vc->multiparty_list,
 						call_compare);
 
-	if (g_slist_length(calls->multiparty_list) < 2) {
+	if (g_slist_length(vc->multiparty_list) < 2) {
 		ofono_error("Created multiparty call, but size is less than 2"
 				" panic!");
 
-		reply = __ofono_error_failed(calls->pending);
+		reply = __ofono_error_failed(vc->pending);
 	} else {
-		reply = dbus_message_new_method_return(calls->pending);
+		reply = dbus_message_new_method_return(vc->pending);
 
-		multiparty_callback_common(modem, reply);
+		multiparty_callback_common(vc, reply);
 		need_to_emit = TRUE;
 	}
 
@@ -1629,16 +1554,15 @@ out:
 	g_dbus_send_message(conn, reply);
 
 	if (need_to_emit)
-		emit_multiparty_call_list_changed(modem);
+		emit_multiparty_call_list_changed(vc);
 
-	dbus_message_unref(calls->pending);
-	calls->pending = NULL;
+	dbus_message_unref(vc->pending);
+	vc->pending = NULL;
 }
 
 static void private_chat_callback(const struct ofono_error *error, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	gboolean need_to_emit = FALSE;
@@ -1651,49 +1575,49 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 		ofono_debug("command failed with error: %s",
 				telephony_error_to_str(error));
 
-	calls->flags &= ~VOICECALLS_FLAG_PENDING;
+	vc->flags &= ~VOICECALLS_FLAG_PENDING;
 
-	if (!calls->pending)
+	if (!vc->pending)
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = __ofono_error_failed(calls->pending);
+		reply = __ofono_error_failed(vc->pending);
 		goto out;
 	}
 
-	dbus_message_get_args(calls->pending, NULL,
+	dbus_message_get_args(vc->pending, NULL,
 				DBUS_TYPE_OBJECT_PATH, &callpath,
 				DBUS_TYPE_INVALID);
 
 	c = strrchr(callpath, '/');
 	sscanf(c, "/voicecall%2u", &id);
 
-	l = g_slist_find_custom(calls->multiparty_list, GINT_TO_POINTER(id),
+	l = g_slist_find_custom(vc->multiparty_list, GINT_TO_POINTER(id),
 				call_compare_by_id);
 
 	if (l) {
-		calls->multiparty_list =
-			g_slist_remove(calls->multiparty_list, l->data);
+		vc->multiparty_list =
+			g_slist_remove(vc->multiparty_list, l->data);
 
-		if (g_slist_length(calls->multiparty_list) < 2) {
-			g_slist_free(calls->multiparty_list);
-			calls->multiparty_list = 0;
+		if (g_slist_length(vc->multiparty_list) < 2) {
+			g_slist_free(vc->multiparty_list);
+			vc->multiparty_list = 0;
 		}
 	}
 
-	reply = dbus_message_new_method_return(calls->pending);
+	reply = dbus_message_new_method_return(vc->pending);
 
-	multiparty_callback_common(modem, reply);
+	multiparty_callback_common(vc, reply);
 	need_to_emit = TRUE;
 
 out:
 	g_dbus_send_message(conn, reply);
 
 	if (need_to_emit)
-		emit_multiparty_call_list_changed(modem);
+		emit_multiparty_call_list_changed(vc);
 
-	dbus_message_unref(calls->pending);
-	calls->pending = NULL;
+	dbus_message_unref(vc->pending);
+	vc->pending = NULL;
 }
 
 static gboolean in_default_en_list(const char *en)
@@ -1706,18 +1630,19 @@ static gboolean in_default_en_list(const char *en)
 	return FALSE;
 }
 
-static void emit_en_list_changed(struct ofono_modem *modem)
+static void emit_en_list_changed(struct ofono_voicecall *vc)
 {
-	struct voicecalls_data *calls = modem->voicecalls;
 	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(vc->atom);
 	char **list;
 	GSList *l;
 	int i;
 
-	list = g_new0(char *, g_slist_length(calls->en_list) + 1);
-	for (i = 0, l = calls->en_list; l; l = l->next, i++)
+	list = g_new0(char *, g_slist_length(vc->en_list) + 1);
+	for (i = 0, l = vc->en_list; l; l = l->next, i++)
 		list[i] = g_strdup(l->data);
-	ofono_dbus_signal_array_property_changed(conn, modem->path,
+
+	ofono_dbus_signal_array_property_changed(conn, path,
 				VOICECALL_MANAGER_INTERFACE,
 				"EmergencyNumbers",
 				DBUS_TYPE_STRING,
@@ -1726,44 +1651,41 @@ static void emit_en_list_changed(struct ofono_modem *modem)
 	g_strfreev(list);
 }
 
-static void set_new_ecc(struct ofono_modem *modem)
+static void set_new_ecc(struct ofono_voicecall *vc)
 {
-	struct voicecalls_data *calls = modem->voicecalls;
 	GSList *l;
 	int i = 0;
 
-	g_slist_foreach(calls->en_list, (GFunc)g_free, NULL);
-	g_slist_free(calls->en_list);
-	calls->en_list = NULL;
+	g_slist_foreach(vc->en_list, (GFunc)g_free, NULL);
+	g_slist_free(vc->en_list);
+	vc->en_list = NULL;
 
-	calls->en_list = calls->new_en_list;
-	calls->new_en_list = NULL;
+	vc->en_list = vc->new_en_list;
+	vc->new_en_list = NULL;
 
 	while (default_en_list[i]) {
 		GSList *l;
 
-		for (l = calls->en_list; l; l = l->next)
+		for (l = vc->en_list; l; l = l->next)
 			if (!strcmp(l->data, default_en_list[i]))
 				break;
 
 		if (l == NULL)
-			calls->en_list = g_slist_prepend(calls->en_list,
+			vc->en_list = g_slist_prepend(vc->en_list,
 						g_strdup(default_en_list[i]));
 
 		i++;
 	}
 
-	calls->en_list = g_slist_reverse(calls->en_list);
-	emit_en_list_changed(modem);
+	vc->en_list = g_slist_reverse(vc->en_list);
+	emit_en_list_changed(vc);
 }
 
-static void ecc_read_cb(int ok,
-		enum ofono_sim_file_structure structure, int total_length,
-		int record, const unsigned char *data, int record_length,
-		void *userdata)
+static void ecc_read_cb(int ok, enum ofono_sim_file_structure structure,
+			int total_length, int record, const unsigned char *data,
+			int record_length, void *userdata)
 {
-	struct ofono_modem *modem = userdata;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = userdata;
 	int total;
 	char en[7];
 
@@ -1781,60 +1703,160 @@ static void ecc_read_cb(int ok,
 	total = total_length / record_length;
 	extract_bcd_number(data, 3, en);
 
-	calls->new_en_list = g_slist_prepend(calls->new_en_list, g_strdup(en));
+	vc->new_en_list = g_slist_prepend(vc->new_en_list, g_strdup(en));
 
 	if (record != total)
 		return;
 
 check:
-	if (calls->new_en_list == NULL)
+	if (vc->new_en_list == NULL)
 		return;
 
-	set_new_ecc(modem);
+	set_new_ecc(vc);
+}
+
+int ofono_voicecall_driver_register(const struct ofono_voicecall_driver *d)
+{
+	DBG("driver: %p, name: %s", d, d->name);
+
+	if (d->probe == NULL)
+		return -EINVAL;
+
+	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+
+	return 0;
+}
+
+void ofono_voicecall_driver_unregister(const struct ofono_voicecall_driver *d)
+{
+	DBG("driver: %p, name: %s", d, d->name);
+
+	g_drivers = g_slist_remove(g_drivers, (void *)d);
+}
+
+static void voicecall_unregister(struct ofono_atom *atom)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_voicecall *vc = __ofono_atom_get_data(atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
+	const char *path = __ofono_atom_get_path(atom);
+	GSList *l;
+
+	if (vc->sim_watch) {
+		__ofono_modem_remove_atom_watch(modem, vc->sim_watch);
+		vc->sim_watch = 0;
+	}
+
+	if (vc->emit_calls_source) {
+		g_source_remove(vc->emit_calls_source);
+		vc->emit_calls_source = 0;
+	}
+
+	if (vc->emit_multi_source) {
+		g_source_remove(vc->emit_multi_source);
+		vc->emit_multi_source = 0;
+	}
+
+	for (l = vc->call_list; l; l = l->next)
+		voicecall_dbus_unregister(vc, l->data);
+
+	g_slist_free(vc->call_list);
+
+	ofono_modem_remove_interface(modem, VOICECALL_MANAGER_INTERFACE);
+	g_dbus_unregister_interface(conn, modem->path,
+					VOICECALL_MANAGER_INTERFACE);
+}
+
+static void voicecall_remove(struct ofono_atom *atom)
+{
+	struct ofono_voicecall *vc = __ofono_atom_get_data(atom);
+
+	DBG("atom: %p", atom);
+
+	if (vc == NULL)
+		return;
+
+	if (vc->driver && vc->driver->remove)
+		vc->driver->remove(vc);
+
+	if (vc->en_list) {
+		g_slist_foreach(vc->en_list, (GFunc)g_free, NULL);
+		g_slist_free(vc->en_list);
+		vc->en_list = NULL;
+	}
+
+	if (vc->new_en_list) {
+		g_slist_foreach(vc->new_en_list, (GFunc)g_free, NULL);
+		g_slist_free(vc->new_en_list);
+		vc->new_en_list = NULL;
+	}
+
+	g_free(vc);
+}
+
+struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
+					const char *driver,
+					void *data)
+{
+	struct ofono_voicecall *vc;
+	GSList *l;
+
+	if (driver == NULL)
+		return NULL;
+
+	vc = g_try_new0(struct ofono_voicecall, 1);
+
+	if (vc == NULL)
+		return NULL;
+
+	vc->driver_data = data;
+	vc->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_VOICECALL,
+						voicecall_remove, vc);
+
+	for (l = g_drivers; l; l = l->next) {
+		const struct ofono_voicecall_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(vc) < 0)
+			continue;
+
+		vc->driver = drv;
+		break;
+	}
+
+	return vc;
 }
 
 static void sim_watch(struct ofono_atom *atom,
 			enum ofono_atom_watch_condition cond, void *data)
 {
-	struct ofono_modem *modem = data;
-	struct voicecalls_data *calls = modem->voicecalls;
+	struct ofono_voicecall *vc = data;
 	struct ofono_sim *sim = __ofono_atom_get_data(atom);
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
 		return;
 	}
 
-	ofono_sim_read(sim, SIM_EFECC_FILEID, ecc_read_cb, modem);
+	ofono_sim_read(sim, SIM_EFECC_FILEID, ecc_read_cb, vc);
 }
 
-int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_ops *ops)
+void ofono_voicecall_register(struct ofono_voicecall *vc)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
+	const char *path = __ofono_atom_get_path(vc->atom);
 	struct ofono_atom *sim_atom;
 
-	if (modem == NULL)
-		return -1;
-
-	if (ops == NULL)
-		return -1;
-
-	modem->voicecalls = voicecalls_create();
-
-	if (modem->voicecalls == NULL)
-		return -1;
-
-	modem->voicecalls->ops = ops;
-
-	if (!g_dbus_register_interface(conn, modem->path,
+	if (!g_dbus_register_interface(conn, path,
 					VOICECALL_MANAGER_INTERFACE,
 					manager_methods, manager_signals, NULL,
-					modem, voicecalls_destroy)) {
+					vc, NULL)) {
 		ofono_error("Could not create %s interface",
 				VOICECALL_MANAGER_INTERFACE);
 
-		voicecalls_destroy(modem->voicecalls);
-
-		return -1;
+		return;
 	}
 
 	ofono_modem_add_interface(modem, VOICECALL_MANAGER_INTERFACE);
@@ -1842,33 +1864,32 @@ int ofono_voicecall_register(struct ofono_modem *modem, struct ofono_voicecall_o
 	/* Start out with the 22.101 mandated numbers, if we have a SIM and
 	 * the SIM contains EFecc, then we update the list once we've read them
 	 */
-	add_to_en_list(&modem->voicecalls->en_list, default_en_list_no_sim);
-	add_to_en_list(&modem->voicecalls->en_list, default_en_list);
+	add_to_en_list(&vc->en_list, default_en_list_no_sim);
+	add_to_en_list(&vc->en_list, default_en_list);
 
-	modem->voicecalls->sim_watch = __ofono_modem_add_atom_watch(modem,
-					OFONO_ATOM_TYPE_SIM,
-					sim_watch, modem, NULL);
+	vc->sim_watch = __ofono_modem_add_atom_watch(modem,
+						OFONO_ATOM_TYPE_SIM,
+						sim_watch, vc, NULL);
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
 	if (sim_atom && __ofono_atom_get_registered(sim_atom))
-		sim_watch(sim_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
-				modem);
+		sim_watch(sim_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, vc);
 
-	return 0;
+	__ofono_atom_register(vc->atom, voicecall_unregister);
 }
 
-void ofono_voicecall_unregister(struct ofono_modem *modem)
+void ofono_voicecall_remove(struct ofono_voicecall *vc)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
-	GSList *l;
+	__ofono_atom_free(vc->atom);
+}
 
-	if (!modem->voicecalls)
-		return;
+void ofono_voicecall_set_data(struct ofono_voicecall *vc, void *data)
+{
+	vc->driver_data = data;
+}
 
-	ofono_modem_remove_interface(modem, VOICECALL_MANAGER_INTERFACE);
-	g_dbus_unregister_interface(conn, modem->path,
-					VOICECALL_MANAGER_INTERFACE);
-
-	modem->voicecalls = NULL;
+void *ofono_voicecall_get_data(struct ofono_voicecall *vc)
+{
+	return vc->driver_data;
 }
