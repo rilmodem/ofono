@@ -55,6 +55,8 @@ struct ofono_sms {
 	GQueue *txq;
 	time_t last_mms;
 	gint tx_source;
+	struct ofono_message_waiting *mw;
+	unsigned int mw_watch;
 	const struct ofono_sms_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -616,13 +618,24 @@ static void handle_deliver(struct ofono_sms *sms, const struct sms *incoming)
 	g_slist_free(l);
 }
 
+static inline gboolean handle_mwi(struct ofono_sms *sms, struct sms *s)
+{
+	gboolean discard;
+
+	if (sms->mw == NULL)
+		return FALSE;
+
+	__ofono_message_waiting_mwi(sms->mw, s, &discard);
+
+	return discard;
+}
+
 void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 				int len, int tpdu_len)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	struct sms s;
 	enum sms_class cls;
-	gboolean discard;
 
 	if (!sms_decode(pdu, len, FALSE, tpdu_len, &s)) {
 		ofono_error("Unable to decode PDU");
@@ -642,9 +655,7 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 	/* This is an older style MWI notification, process MWI
 	 * headers and handle it like any other message */
 	if (s.deliver.pid == SMS_PID_TYPE_RETURN_CALL) {
-		ofono_handle_sms_mwi(modem, &s, &discard);
-
-		if (discard)
+		if (handle_mwi(sms, &s))
 			return;
 
 		goto out;
@@ -653,9 +664,7 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 	/* The DCS indicates this is an MWI notification, process it
 	 * and then handle the User-Data as any other message */
 	if (sms_mwi_dcs_decode(s.deliver.dcs, NULL, NULL, NULL, NULL)) {
-		ofono_handle_sms_mwi(modem, &s, &discard);
-
-		if (discard)
+		if (handle_mwi(sms, &s))
 			return;
 
 		goto out;
@@ -721,9 +730,7 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 				/* TODO: ignore if not in the very first
 				 * segment of a concatenated SM so as not
 				 * to repeat the indication.  */
-				ofono_handle_sms_mwi(modem, &s, &discard);
-
-				if (discard)
+				if (handle_mwi(sms, &s))
 					return;
 
 				goto out;
@@ -774,7 +781,11 @@ static void sms_unregister(struct ofono_atom *atom)
 
 	g_dbus_unregister_interface(conn, path, SMS_MANAGER_INTERFACE);
 	ofono_modem_remove_interface(modem, SMS_MANAGER_INTERFACE);
-	ofono_message_waiting_unregister(modem);
+
+	if (sms->mw_watch) {
+		__ofono_modem_remove_atom_watch(modem, sms->mw_watch);
+		sms->mw_watch = 0;
+	}
 }
 
 static void sms_remove(struct ofono_atom *atom)
@@ -847,11 +858,25 @@ struct ofono_sms *ofono_sms_create(struct ofono_modem *modem,
 	return sms;
 }
 
+static void mw_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_sms *sms = data;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		sms->mw = NULL;
+		return;
+	}
+
+	sms->mw = __ofono_atom_get_data(atom);
+}
+
 void ofono_sms_register(struct ofono_sms *sms)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	const char *path = __ofono_atom_get_path(sms->atom);
+	struct ofono_atom *mw_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					SMS_MANAGER_INTERFACE,
@@ -865,7 +890,15 @@ void ofono_sms_register(struct ofono_sms *sms)
 
 	ofono_modem_add_interface(modem, SMS_MANAGER_INTERFACE);
 
-	ofono_message_waiting_register(modem);
+	sms->mw_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_MESSAGE_WAITING,
+					mw_watch, sms, NULL);
+
+	mw_atom = __ofono_modem_find_atom(modem,
+					OFONO_ATOM_TYPE_MESSAGE_WAITING);
+
+	if (mw_atom && __ofono_atom_get_registered(mw_atom))
+		mw_watch(mw_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
 
 	__ofono_atom_register(sms->atom, sms_unregister);
 }

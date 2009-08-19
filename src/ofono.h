@@ -99,6 +99,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_VOICECALL = 10,
 	OFONO_ATOM_TYPE_HISTORY = 11,
 	OFONO_ATOM_TYPE_SSN = 12,
+	OFONO_ATOM_TYPE_MESSAGE_WAITING = 13,
 };
 
 enum ofono_atom_watch_condition {
@@ -196,9 +197,9 @@ void __ofono_history_call_ended(struct ofono_modem *modem,
 void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when);
 
+#include <ofono/message-waiting.h>
+
 struct sms;
 
-int ofono_message_waiting_register(struct ofono_modem *modem);
-void ofono_message_waiting_unregister(struct ofono_modem *modem);
-void ofono_handle_sms_mwi(struct ofono_modem *modem,
+void __ofono_message_waiting_mwi(struct ofono_message_waiting *mw,
 				struct sms *sms, gboolean *out_discard);
