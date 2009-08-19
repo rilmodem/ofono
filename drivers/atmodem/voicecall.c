@@ -52,7 +52,6 @@ static const char *none_prefix[] = { NULL };
 static const char *atd_prefix[] = { "+COLP:", NULL };
 
 struct voicecall_data {
-	gboolean poll_clcc;
 	GSList *calls;
 	unsigned int id_list;
 	unsigned int local_release;
@@ -295,8 +294,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	vd->local_release = 0;
 
-	if (poll_again && vd->poll_clcc &&
-		!vd->clcc_source)
+	if (poll_again && !vd->clcc_source)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
 						poll_clcc, vc);
 }
@@ -336,9 +334,8 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		}
 	}
 
-	if (vd->poll_clcc)
-		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-					clcc_poll_cb, req->vc, NULL);
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+			clcc_poll_cb, req->vc, NULL);
 
 	/* We have to callback after we schedule a poll if required */
 	req->cb(&error, req->data);
@@ -357,9 +354,8 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	if (ok)
 		vd->local_release = req->id;
 
-	if (vd->poll_clcc)
-		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-					clcc_poll_cb, req->vc, NULL);
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+			clcc_poll_cb, req->vc, NULL);
 
 	/* We have to callback after we schedule a poll if required */
 	req->cb(&error, req->data);
@@ -415,7 +411,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (validity != 2)
 		ofono_voicecall_notify(vc, call);
 
-	if (vd->poll_clcc && !vd->clcc_source)
+	if (!vd->clcc_source)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
 						poll_clcc, vc);
 
@@ -806,8 +802,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	 * So we wait, and schedule the clcc call.  If the CLIP arrives
 	 * earlier, we announce the call there
 	 */
-	vd->clcc_source =
-		g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
+	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
 
 	ofono_debug("cring_notify");
 }
@@ -872,10 +867,10 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	/* We started a CLCC, but the CLIP arrived and the call type
 	 * is known.  If we don't need to poll, cancel the GSource
 	 */
-	if (call->type != 9 && !vd->poll_clcc &&
-		vd->clcc_source &&
-			g_source_remove(vd->clcc_source))
+	if (call->type != 9 && vd->clcc_source) {
+		g_source_remove(vd->clcc_source);
 		vd->clcc_source = 0;
+	}
 }
 
 static void ccwa_notify(GAtResult *result, gpointer user_data)
@@ -927,7 +922,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	if (call->type == 0) /* Only notify voice calls */
 		ofono_voicecall_notify(vc, call);
 
-	if (vd->poll_clcc && !vd->clcc_source)
+	if (vd->clcc_source == 0)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
 						poll_clcc, vc);
 }
@@ -937,9 +932,8 @@ static void no_carrier_notify(GAtResult *result, gpointer user_data)
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->poll_clcc)
-		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-					clcc_poll_cb, vc, NULL);
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+			clcc_poll_cb, vc, NULL);
 }
 
 static void no_answer_notify(GAtResult *result, gpointer user_data)
@@ -947,9 +941,8 @@ static void no_answer_notify(GAtResult *result, gpointer user_data)
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (vd->poll_clcc)
-		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-					clcc_poll_cb, vc, NULL);
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+			clcc_poll_cb, vc, NULL);
 }
 
 static void busy_notify(GAtResult *result, gpointer user_data)
@@ -961,9 +954,8 @@ static void busy_notify(GAtResult *result, gpointer user_data)
 	 * or UDUB on the other side
 	 * TODO: Handle UDUB or other conditions somehow
 	 */
-	if (vd->poll_clcc)
-		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-					clcc_poll_cb, vc, NULL);
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+			clcc_poll_cb, vc, NULL);
 }
 
 static void at_voicecall_initialized(gboolean ok, GAtResult *result,
@@ -997,7 +989,6 @@ static int at_voicecall_probe(struct ofono_voicecall *vc)
 	struct voicecall_data *vd;
 
 	vd = g_new0(struct voicecall_data, 1);
-	vd->poll_clcc = TRUE;
 	vd->chat = chat;
 
 	ofono_voicecall_set_data(vc, vd);
