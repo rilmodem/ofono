@@ -91,7 +91,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_CALL_FORWARDING = 2,
 	OFONO_ATOM_TYPE_CALL_METER = 3,
 	OFONO_ATOM_TYPE_CALL_SETTINGS = 4,
-	OFONO_ATOM_TYPE_NETWORK_REGISTRATION = 5,
+	OFONO_ATOM_TYPE_NETREG = 5,
 	OFONO_ATOM_TYPE_PHONEBOOK = 6,
 	OFONO_ATOM_TYPE_SMS = 7,
 	OFONO_ATOM_TYPE_SIM = 8,
@@ -184,6 +184,8 @@ gboolean __ofono_ussd_passwd_register(struct ofono_ussd *ussd, const char *sc,
 					ofono_ussd_passwd_cb_t cb, void *data,
 					ofono_destroy_func destroy);
 void __ofono_ussd_passwd_unregister(struct ofono_ussd *ussd, const char *sc);
+
+#include <ofono/netreg.h>
 
 #include <ofono/history.h>
 

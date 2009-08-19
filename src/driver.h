@@ -39,19 +39,6 @@ struct ofono_call {
 	int clip_validity;
 };
 
-/* Theoretical limit is 16, but each GSM char can be encoded into
- *  * 3 UTF8 characters resulting in 16*3=48 chars
- *   */
-#define OFONO_MAX_OPERATOR_NAME_LENGTH 63
-
-struct ofono_network_operator {
-	char name[OFONO_MAX_OPERATOR_NAME_LENGTH + 1];
-	char mcc[OFONO_MAX_MCC_LENGTH + 1];
-	char mnc[OFONO_MAX_MNC_LENGTH + 1];
-	int status;
-	int tech;
-};
-
 /* Notification functions, the integer values here should map to
  * values obtained from the modem.  The enumerations are the same
  * as the values for the fields found in 3GPP TS 27.007
@@ -66,22 +53,6 @@ typedef void (*ofono_call_list_cb_t)(const struct ofono_error *error,
 					int numcalls,
 					const struct ofono_call *call_list,
 					void *data);
-
-typedef void (*ofono_current_operator_cb_t)(const struct ofono_error *error,
-					const struct ofono_network_operator *op,
-					void *data);
-
-typedef void (*ofono_operator_list_cb_t)(const struct ofono_error *error,
-					int total,
-					const struct ofono_network_operator *list,
-					void *data);
-
-typedef void (*ofono_registration_status_cb_t)(const struct ofono_error *error,
-					int status, int lac, int ci, int tech,
-					void *data);
-
-typedef void (*ofono_signal_strength_cb_t)(const struct ofono_error *error,
-					int strength, void *data);
 
 typedef void (*ofono_modem_attribute_query_cb_t)(const struct ofono_error *error,
 					const char *attribute, void *data);
@@ -99,37 +70,6 @@ struct ofono_modem_attribute_ops {
 
 struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops);
 int ofono_modem_unregister(struct ofono_modem *modem);
-
-/* Network related functions, including registration status, operator selection
- * and signal strength indicators.
- *
- * It is up to the plugin to implement CSQ polling if the modem does not support
- * vendor extensions for signal strength notification.
- */
-struct ofono_network_registration_ops {
-	void (*registration_status)(struct ofono_modem *modem,
-			ofono_registration_status_cb_t cb, void *data);
-	void (*current_operator)(struct ofono_modem *modem,
-			ofono_current_operator_cb_t cb, void *data);
-	void (*list_operators)(struct ofono_modem *modem,
-			ofono_operator_list_cb_t cb, void *data);
-	void (*register_auto)(struct ofono_modem *modem,
-			ofono_generic_cb_t cb, void *data);
-	void (*register_manual)(struct ofono_modem *modem,
-			const struct ofono_network_operator *oper,
-			ofono_generic_cb_t cb, void *data);
-	void (*deregister)(struct ofono_modem *modem,
-			ofono_generic_cb_t cb, void *data);
-	void (*signal_strength)(struct ofono_modem *modem,
-			ofono_signal_strength_cb_t, void *data);
-};
-
-void ofono_signal_strength_notify(struct ofono_modem *modem, int strength);
-void ofono_network_registration_notify(struct ofono_modem *modem, int status,
-			int lac, int ci, int tech);
-int ofono_network_registration_register(struct ofono_modem *modem,
-				struct ofono_network_registration_ops *ops);
-void ofono_network_registration_unregister(struct ofono_modem *modem);
 
 /* Voice call related functionality, including ATD, ATA, +CHLD, CTFR, CLCC
  * and VTS.
