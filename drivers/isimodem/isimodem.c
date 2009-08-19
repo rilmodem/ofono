@@ -408,12 +408,12 @@ static struct ofono_modem_attribute_ops ops = {
 	.query_serial = isi_query_serial
 };
 
-static void netlink_status_cb(bool up, uint8_t addr, unsigned idx,
+static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 				void *data)
 {
 	struct isi_data *isi = data;
 
-	DBG("PhoNet is %s, addr=0x%02x, idx=%d",
+	DBG("PhoNet is %s, addr=0x%02x, idx=%p",
 		up ? "up" : "down", addr, idx);
 
 	if (up) {

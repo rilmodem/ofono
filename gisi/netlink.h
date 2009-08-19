@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <gisi/modem.h>
 
 #ifndef __GPHONET_NETLINK_H
 #define __GPHONET_NETLINK_H
@@ -34,7 +35,7 @@ extern "C" {
 struct _GPhonetNetlink;
 typedef struct _GPhonetNetlink GPhonetNetlink;
 
-typedef void (*GPhonetNetlinkFunc)(bool up, uint8_t addr, unsigned idx,
+typedef void (*GPhonetNetlinkFunc)(bool up, uint8_t addr, GIsiModem *idx,
 					void *data);
 
 GPhonetNetlink *g_pn_netlink_start(GPhonetNetlinkFunc func, void *data);

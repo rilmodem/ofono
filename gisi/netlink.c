@@ -48,6 +48,11 @@ struct _GPhonetNetlink {
 	guint watch;
 };
 
+static inline GIsiModem *make_modem(unsigned idx)
+{
+	return (void *)(uintptr_t)idx;
+}
+
 /* Parser Netlink messages */
 static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
@@ -108,7 +113,8 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 						rta = RTA_NEXT(rta, len))
 			if (rta->rta_type == IFA_LOCAL)
 				memcpy(&addr, RTA_DATA(rta), 1);
-		self->callback(up, addr, ifa->ifa_index, self->opaque);
+		self->callback(up, addr,
+				make_modem(ifa->ifa_index), self->opaque);
 	}
 	return TRUE;
 }
