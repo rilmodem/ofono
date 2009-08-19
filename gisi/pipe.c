@@ -35,19 +35,20 @@
 #define PN_PIPE	0xd9
 
 typedef struct {
-	uint8_t dummy;
 	uint8_t cmd;
 	uint8_t state_after;
 	uint8_t priority;
 
-	uint16_t object1;
+	uint8_t device1;
+	uint8_t object1;
 	uint8_t type1;
 	uint8_t pad;
 
-	uint16_t object2;
+	uint8_t device2;
+	uint8_t object2;
 	uint8_t type2;
 	uint8_t n_sb;
-} _isi_pipe_create_req_t;
+} isi_pipe_create_req_t;
 
 typedef struct {
 	uint8_t cmd;
@@ -199,13 +200,15 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem, void (*created)(GIsiPipe *),
 				uint16_t obj1, uint16_t obj2,
 				uint8_t type1, uint8_t type2)
 {
-	_isi_pipe_create_req_t msg = {
+	isi_pipe_create_req_t msg = {
 		.cmd = PNS_PIPE_CREATE_REQ,
 		.state_after = PN_PIPE_DISABLE,
 		.priority = PN_MSG_PRIORITY_LOW,
-		.object1 = obj1,
+		.device1 = obj1 >> 8,
+		.object1 = obj1 & 0xff,
 		.type1 = type1,
-		.object2 = obj2,
+		.device2 = obj2 >> 8,
+		.object2 = obj2 & 0xff,
 		.type2 = type2,
 		.n_sb = 0,
 	};
@@ -220,7 +223,7 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem, void (*created)(GIsiPipe *),
 	pipe->handle = PN_PIPE_INVALID_HANDLE;
 
 	if (pipe->client == NULL ||
-	    g_isi_request_make(pipe->client, &msg.cmd, sizeof(msg) - 1, 3,
+	    g_isi_request_make(pipe->client, &msg, sizeof(msg), 3,
 				g_isi_pipe_created, pipe) == NULL)
 		goto error;
 
