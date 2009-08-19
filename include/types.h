@@ -26,6 +26,10 @@
 extern "C" {
 #endif
 
+/* MCC is always three digits. MNC is either two or three digits */
+#define OFONO_MAX_MCC_LENGTH 3
+#define OFONO_MAX_MNC_LENGTH 3
+
 typedef void (*ofono_destroy_func)(void *data);
 
 /* 27.007 Section 6.2 */
