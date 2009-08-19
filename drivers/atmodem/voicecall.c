@@ -90,41 +90,10 @@ static unsigned int alloc_next_id(struct voicecall_data *d)
 	return 0;
 }
 
-#if 0
-static gboolean alloc_specific_id(struct voicecall_data *d, unsigned int id)
-{
-	if (id < 1 || id > sizeof(d->id_list))
-		return FALSE;
-
-	if (d->id_list & (0x1 << id))
-		return FALSE;
-
-	d->id_list |= (0x1 << id);
-
-	return TRUE;
-}
-#endif
-
 static void release_id(struct voicecall_data *d, unsigned int id)
 {
 	d->id_list &= ~(0x1 << id);
 }
-
-#if 0
-static gint call_compare_by_id(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_call *call = a;
-	unsigned int id = GPOINTER_TO_UINT(b);
-
-	if (id < call->id)
-		return -1;
-
-	if (id > call->id)
-		return 1;
-
-	return 0;
-}
-#endif
 
 static gint call_compare_by_status(gconstpointer a, gconstpointer b)
 {
