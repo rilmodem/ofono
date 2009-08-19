@@ -352,7 +352,7 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
-		vd->local_release = req->id;
+		vd->local_release = 0x1 << req->id;
 
 	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
 			clcc_poll_cb, req->vc, NULL);
