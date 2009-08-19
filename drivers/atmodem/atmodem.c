@@ -43,6 +43,7 @@
 #include <ofono/sms.h>
 #include <ofono/ssn.h>
 #include <ofono/ussd.h>
+#include <ofono/voicecall.h>
 
 #include "driver.h"
 
@@ -109,7 +110,6 @@ static void at_destroy(struct at_data *at)
 
 static void interface_exit(struct at_data *at)
 {
-	at_voicecall_exit(at->modem);
 }
 
 static void manager_free(gpointer user)
@@ -371,7 +371,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	ofono_call_forwarding_create(at->modem, "generic_at", at->parser);
 	ofono_call_settings_create(at->modem, "generic_at", at->parser);
 	ofono_netreg_create(at->modem, "generic_at", at->parser);
-	at_voicecall_init(at->modem);
+	ofono_voicecall_create(at->modem, "generic_at", at->parser);
 	ofono_call_meter_create(at->modem, "generic_at", at->parser);
 	ofono_call_barring_create(at->modem, "generic_at", at->parser);
 	ofono_ssn_create(at->modem, "generic_at", at->parser);
@@ -537,6 +537,7 @@ static int atmodem_init(void)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
+	at_voicecall_init();
 	at_call_barring_init();
 	at_call_forwarding_init();
 	at_call_meter_init();
@@ -569,6 +570,7 @@ static void atmodem_exit(void)
 	at_call_forwarding_exit();
 	at_call_barring_exit();
 	at_netreg_exit();
+	at_voicecall_exit();
 }
 
 OFONO_PLUGIN_DEFINE(atmodem, "AT modem driver", VERSION,

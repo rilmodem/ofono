@@ -24,8 +24,6 @@ struct at_data {
 	struct ofono_modem *modem;
 	GIOChannel *io;
 	char *driver;
-
-	struct voicecall_data *voicecall;
 };
 
 void decode_at_error(struct ofono_error *error, const char *final);
@@ -74,8 +72,8 @@ extern void at_call_settings_exit();
 extern void at_ussd_init();
 extern void at_ussd_exit();
 
-extern void at_voicecall_init(struct ofono_modem *modem);
-extern void at_voicecall_exit(struct ofono_modem *modem);
+extern void at_voicecall_init();
+extern void at_voicecall_exit();
 
 extern void at_call_meter_init();
 extern void at_call_meter_exit();
