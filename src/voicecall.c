@@ -115,6 +115,18 @@ static void add_to_en_list(GSList **l, const char **list)
 		*l = g_slist_prepend(*l, g_strdup(list[i++]));
 }
 
+static const char *disconnect_reason_to_string(enum ofono_disconnect_reason r)
+{
+	switch (r) {
+	case OFONO_DISCONNECT_REASON_LOCAL_HANGUP:
+		return "local";
+	case OFONO_DISCONNECT_REASON_REMOTE_HANGUP:
+		return "remote";
+	default:
+		return "network";
+	}
+}
+
 static const char *call_status_to_string(int status)
 {
 	switch (status) {
@@ -366,6 +378,21 @@ static const char *voicecall_build_path(struct ofono_voicecall *vc,
 			__ofono_atom_get_path(vc->atom), call->id);
 
 	return path;
+}
+
+static void voicecall_emit_disconnect_reason(struct voicecall *call,
+					enum ofono_disconnect_reason reason)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path;
+	const char *reason_str;
+
+	reason_str = disconnect_reason_to_string(reason);
+	path = voicecall_build_path(call->vc, call->call);
+
+	g_dbus_emit_signal(conn, path, VOICECALL_INTERFACE, "DisconnectReason",
+				DBUS_TYPE_STRING, &reason_str,
+				DBUS_TYPE_INVALID);
 }
 
 static void voicecall_set_call_status(struct voicecall *call,
@@ -1221,7 +1248,7 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 
 	__ofono_modem_release_callid(modem, id);
 
-	/* TODO: Emit disconnect reason */
+	voicecall_emit_disconnect_reason(call, reason);
 	voicecall_set_call_status(call, CALL_STATUS_DISCONNECTED);
 
 	if (prev_status == CALL_STATUS_INCOMING ||
