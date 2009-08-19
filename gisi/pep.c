@@ -87,7 +87,7 @@ GIsiPEP *g_isi_pep_create(GIsiModem *modem)
 
 	pep->gprs_fd = -1;
 	pep->handle = 0;
-	if (ioctl(fd, SIOCPNGETOBJECT, &pep->handle) || listen(fd, 1))
+	if (listen(fd, 1) || ioctl(fd, SIOCPNGETOBJECT, &pep->handle))
 		goto error;
 
 	channel = g_io_channel_unix_new(fd);
