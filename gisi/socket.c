@@ -54,6 +54,9 @@ GIOChannel *phonet_new(GIsiModem *modem, uint8_t resource)
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 	/* Use blocking mode on purpose. */
 
+	if (ifi == 0)
+		g_warning("Unspecified GIsiModem!");
+	else
 	if (if_indextoname(ifi, buf) == NULL ||
 	    setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
 		goto error;
