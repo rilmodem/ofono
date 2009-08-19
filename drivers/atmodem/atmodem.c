@@ -33,6 +33,16 @@
 #include <ofono/log.h>
 #include <ofono/dbus.h>
 #include <ofono/modem.h>
+#include <ofono/call-barring.h>
+#include <ofono/call-forwarding.h>
+#include <ofono/call-meter.h>
+#include <ofono/call-settings.h>
+#include <ofono/message-waiting.h>
+#include <ofono/phonebook.h>
+#include <ofono/sim.h>
+#include <ofono/sms.h>
+#include <ofono/ssn.h>
+#include <ofono/ussd.h>
 
 #include "driver.h"
 
@@ -323,6 +333,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	const char *target, *driver;
 	const char **modems;
 	GAtSyntax *syntax;
+	struct ofono_message_waiting *mw;
 
 	g_pending = g_slist_remove(g_pending, io);
 
@@ -367,6 +378,10 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	ofono_ssn_create(at->modem, "generic_at", at->parser);
 	ofono_sms_create(at->modem, "generic_at", at->parser);
 	ofono_phonebook_create(at->modem, "generic_at", at->parser);
+
+	mw = ofono_message_waiting_create(at->modem);
+	if (mw)
+		ofono_message_waiting_register(mw);
 
 	at->io = io;
 	at->driver = g_strdup(driver);
