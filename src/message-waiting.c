@@ -51,6 +51,7 @@ struct ofono_message_waiting {
 	unsigned char efmwis_length;
 	unsigned char efmbdn_length;
 	unsigned char efmbdn_record_id[5];
+	gboolean mbdn_not_provided;
 	struct ofono_phone_number mailbox_number[5];
 	struct ofono_sim *sim;
 	unsigned int sim_watch;
@@ -200,7 +201,7 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 
 	if (mw->efmbdn_record_id[mailbox] == 0) {
 		if (msg)
-			return __ofono_error_failed(msg);
+			return __ofono_error_sim_not_ready(msg);
 
 		return NULL;
 	}
@@ -236,8 +237,11 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 	const char *name, *value;
 	int i;
 
+	if (mw->mbdn_not_provided == TRUE)
+		return __ofono_error_not_supported(msg);
+
 	if (mw->efmbdn_length == 0)
-		return __ofono_error_busy(msg);
+		return __ofono_error_sim_not_ready(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
 		return __ofono_error_invalid_args(msg);
@@ -370,7 +374,8 @@ static void mw_mbdn_read_cb(int ok,
 		ofono_error("Unable to read mailbox dialling numbers "
 			"from SIM");
 
-		mw->efmbdn_length = -1;
+		mw->efmbdn_length = 0;
+		mw->mbdn_not_provided = TRUE;
 		return;
 	}
 
@@ -412,7 +417,8 @@ static void mw_mbi_read_cb(int ok,
 		ofono_error("Unable to read mailbox identifies "
 			"from SIM");
 
-		mw->efmbdn_length = -1;
+		mw->efmbdn_length = 0;
+		mw->mbdn_not_provided = TRUE;
 		return;
 	}
 
