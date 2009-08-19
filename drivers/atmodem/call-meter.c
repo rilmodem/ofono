@@ -115,7 +115,7 @@ static void at_caoc_query(struct ofono_call_meter *cm,
 				void *data)
 {
 	GAtChat *chat = ofono_call_meter_get_data(cm);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -140,7 +140,7 @@ static void at_cacm_query(struct ofono_call_meter *cm,
 				void *data)
 {
 	GAtChat *chat = ofono_call_meter_get_data(cm);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -176,7 +176,7 @@ static void at_cacm_set(struct ofono_call_meter *cm, const char *passwd,
 			ofono_call_meter_set_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_meter_get_data(cm);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -203,7 +203,7 @@ static void at_camm_query(struct ofono_call_meter *cm,
 				void *data)
 {
 	GAtChat *chat = ofono_call_meter_get_data(cm);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -228,7 +228,7 @@ static void at_camm_set(struct ofono_call_meter *cm,
 			ofono_call_meter_set_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_meter_get_data(cm);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -291,7 +291,7 @@ static void at_cpuc_query(struct ofono_call_meter *cm,
 				ofono_call_meter_puct_query_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_meter_get_data(cm);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -316,7 +316,7 @@ static void at_cpuc_set(struct ofono_call_meter *cm, const char *currency,
 			ofono_call_meter_set_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_meter_get_data(cm);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)

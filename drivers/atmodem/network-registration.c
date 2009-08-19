@@ -116,7 +116,7 @@ static void at_registration_status(struct ofono_netreg *netreg,
 					void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -248,7 +248,7 @@ static void at_current_operator(struct ofono_netreg *netreg,
 				ofono_netreg_operator_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	gboolean ok;
 
 	if (!cbd)
@@ -391,7 +391,7 @@ static void at_list_operators(struct ofono_netreg *netreg,
 				ofono_netreg_operator_list_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -426,7 +426,7 @@ static void at_register_auto(struct ofono_netreg *netreg,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -450,7 +450,7 @@ static void at_register_manual(struct ofono_netreg *netreg,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[128];
 
 	if (!cbd)
@@ -476,7 +476,7 @@ static void at_deregister(struct ofono_netreg *netreg,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -562,7 +562,7 @@ static void at_signal_strength(struct ofono_netreg *netreg,
 				ofono_netreg_strength_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;

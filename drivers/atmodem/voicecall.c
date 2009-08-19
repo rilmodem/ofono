@@ -425,7 +425,7 @@ static void at_dial(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[256];
 
 	if (!cbd)
@@ -565,7 +565,7 @@ static void at_list_calls(struct ofono_voicecall *vc, ofono_call_list_cb_t cb,
 				void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -699,7 +699,7 @@ static void at_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	int len = strlen(dtmf);
 	int s;
 	int i;

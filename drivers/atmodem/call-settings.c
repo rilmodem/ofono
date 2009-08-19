@@ -81,7 +81,7 @@ static void at_ccwa_query(struct ofono_call_settings *cs, int cls,
 				ofono_call_settings_status_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_settings_get_data(cs);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -124,7 +124,7 @@ static void at_ccwa_set(struct ofono_call_settings *cs, int mode, int cls,
 				ofono_call_settings_set_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_settings_get_data(cs);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -185,7 +185,7 @@ static void at_clip_query(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_settings_get_data(cs);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -242,7 +242,7 @@ static void at_colp_query(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_settings_get_data(cs);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -299,7 +299,7 @@ static void at_clir_query(struct ofono_call_settings *cs,
 				ofono_call_settings_clir_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_settings_get_data(cs);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;
@@ -334,7 +334,7 @@ static void at_clir_set(struct ofono_call_settings *cs, int mode,
 				ofono_call_settings_set_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_settings_get_data(cs);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)

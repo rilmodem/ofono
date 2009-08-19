@@ -374,7 +374,7 @@ static void at_export_entries(struct ofono_phonebook *pb, const char *storage,
 				ofono_phonebook_cb_t cb, void *data)
 {
 	struct pb_data *pbd = ofono_phonebook_get_data(pb);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[32];
 
 	if (!cbd)

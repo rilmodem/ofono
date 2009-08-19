@@ -32,12 +32,10 @@ void dump_response(const char *func, gboolean ok, GAtResult *result);
 struct cb_data {
 	void *cb;
 	void *data;
-	struct ofono_modem *modem;
 	void *user;
 };
 
-static inline struct cb_data *cb_data_new(struct ofono_modem *modem,
-						void *cb, void *data)
+static inline struct cb_data *cb_data_new(void *cb, void *data)
 {
 	struct cb_data *ret;
 
@@ -48,7 +46,6 @@ static inline struct cb_data *cb_data_new(struct ofono_modem *modem,
 
 	ret->cb = cb;
 	ret->data = data;
-	ret->modem = modem;
 
 	return ret;
 }

@@ -58,7 +58,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 				ofono_ussd_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_ussd_get_data(ussd);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	unsigned char *converted;
 	int dcs;
 	int max_len;
@@ -115,7 +115,7 @@ static void at_ussd_cancel(struct ofono_ussd *ussd,
 				ofono_ussd_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_ussd_get_data(ussd);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;

@@ -126,7 +126,7 @@ static void at_ccfc_query(struct ofono_call_forwarding *cf, int type, int cls,
 				ofono_call_forwarding_query_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_forwarding_get_data(cf);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -169,7 +169,7 @@ static void at_ccfc_set(struct ofono_call_forwarding *cf, const char *buf,
 				ofono_call_forwarding_set_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_call_forwarding_get_data(cf);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;

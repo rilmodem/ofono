@@ -106,7 +106,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 					void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -177,7 +177,7 @@ static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -205,7 +205,7 @@ static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
 	if (!cbd)
@@ -276,7 +276,7 @@ static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
@@ -313,7 +313,7 @@ static void at_sim_update_record(struct ofono_sim *sim, int fileid,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
@@ -349,7 +349,7 @@ static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
 					ofono_sim_write_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
@@ -412,7 +412,7 @@ static void at_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 			void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(NULL, cb, data);
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (!cbd)
 		goto error;

@@ -98,7 +98,7 @@ static void at_csca_set(struct ofono_sms *sms,
 			ofono_sms_sca_set_cb_t cb, void *user_data)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
-	struct cb_data *cbd = cb_data_new(NULL, cb, user_data);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
 	char buf[64];
 
 	if (!cbd)
@@ -173,7 +173,7 @@ static void at_csca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
 					void *user_data)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
-	struct cb_data *cbd = cb_data_new(NULL, cb, user_data);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
 
 	if (!cbd)
 		goto error;
@@ -233,7 +233,7 @@ static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
 			void *user_data)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
-	struct cb_data *cbd = cb_data_new(NULL, cb, user_data);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
 	char buf[512];
 	int len;
 

@@ -84,7 +84,7 @@ static void at_call_barring_query(struct ofono_call_barring *cb,
 					void *data)
 {
 	GAtChat *chat = ofono_call_barring_get_data(cb);
-	struct cb_data *cbd = cb_data_new(NULL, callback, data);
+	struct cb_data *cbd = cb_data_new(callback, data);
 	char buf[64];
 	int len;
 
@@ -124,7 +124,7 @@ static void at_call_barring_set(struct ofono_call_barring *cb, const char *lock,
 				void *data)
 {
 	GAtChat *chat = ofono_call_barring_get_data(cb);
-	struct cb_data *cbd = cb_data_new(NULL, callback, data);
+	struct cb_data *cbd = cb_data_new(callback, data);
 	char buf[64];
 	int len;
 
@@ -174,7 +174,7 @@ static void at_call_barring_set_passwd(struct ofono_call_barring *cb,
 					void *data)
 {
 	GAtChat *chat = ofono_call_barring_get_data(cb);
-	struct cb_data *cbd = cb_data_new(NULL, callback, data);
+	struct cb_data *cbd = cb_data_new(callback, data);
 	char buf[64];
 
 	if (!cbd || strlen(lock) != 2)
