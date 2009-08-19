@@ -25,7 +25,6 @@ struct at_data {
 	GIOChannel *io;
 	char *driver;
 
-	struct netreg_data *netreg;
 	struct voicecall_data *voicecall;
 };
 
@@ -63,8 +62,8 @@ static inline struct cb_data *cb_data_new(struct ofono_modem *modem,
 
 extern struct ofono_error g_ok;
 
-extern void at_network_registration_init(struct ofono_modem *modem);
-extern void at_network_registration_exit(struct ofono_modem *modem);
+extern void at_netreg_init();
+extern void at_netreg_exit();
 
 extern void at_call_forwarding_init();
 extern void at_call_forwarding_exit();

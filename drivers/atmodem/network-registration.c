@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include "driver.h"
+#include <ofono/netreg.h>
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -45,6 +45,7 @@ static const char *cops_prefix[] = { "+COPS:", NULL };
 static const char *csq_prefix[] = { "+CSQ:", NULL };
 
 struct netreg_data {
+	GAtChat *chat;
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 };
@@ -64,7 +65,7 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
-	ofono_registration_status_cb_t cb = cbd->cb;
+	ofono_netreg_status_cb_t cb = cbd->cb;
 	int status;
 	const char *str;
 	int lac = -1, ci = -1, tech = -1;
@@ -110,17 +111,17 @@ out:
 	cb(&error, status, lac, ci, tech, cbd->data);
 }
 
-static void at_registration_status(struct ofono_modem *modem,
-					ofono_registration_status_cb_t cb,
+static void at_registration_status(struct ofono_netreg *netreg,
+					ofono_netreg_status_cb_t cb,
 					void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CREG?", creg_prefix,
+	if (g_at_chat_send(nd->chat, "AT+CREG?", creg_prefix,
 				at_creg_cb, cbd, g_free) > 0)
 		return;
 
@@ -137,8 +138,8 @@ error:
 static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct at_data *at = ofono_modem_get_userdata(cbd->modem);
-	ofono_current_operator_cb_t cb = cbd->cb;
+	struct netreg_data *nd = ofono_netreg_get_data(cbd->user);
+	ofono_netreg_operator_cb_t cb = cbd->cb;
 	struct ofono_network_operator op;
 	GAtResultIter iter;
 	int format, tech;
@@ -148,7 +149,7 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	dump_response("cops_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok || at->netreg->mcc[0] == '\0' || at->netreg->mnc[0] == '\0') {
+	if (!ok || nd->mcc[0] == '\0' || nd->mnc[0] == '\0') {
 		cb(&error, NULL, cbd->data);
 		goto out;
 	}
@@ -175,17 +176,16 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	strncpy(op.name, name, OFONO_MAX_OPERATOR_NAME_LENGTH);
 	op.name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 
-	strncpy(op.mcc, at->netreg->mcc, OFONO_MAX_MCC_LENGTH);
+	strncpy(op.mcc, nd->mcc, OFONO_MAX_MCC_LENGTH);
 	op.mcc[OFONO_MAX_MCC_LENGTH] = '\0';
 
-	strncpy(op.mnc, at->netreg->mnc, OFONO_MAX_MNC_LENGTH);
+	strncpy(op.mnc, nd->mnc, OFONO_MAX_MNC_LENGTH);
 	op.mnc[OFONO_MAX_MNC_LENGTH] = '\0';
 
 	op.status = -1;
 	op.tech = tech;
 
-	ofono_debug("cops_cb: %s, %s %s %d", name, at->netreg->mcc,
-			at->netreg->mnc, tech);
+	ofono_debug("cops_cb: %s, %s %s %d", name, nd->mcc, nd->mnc, tech);
 
 	cb(&error, &op, cbd->data);
 
@@ -207,7 +207,7 @@ error:
 static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	struct at_data *at = ofono_modem_get_userdata(cbd->modem);
+	struct netreg_data *nd = ofono_netreg_get_data(cbd->user);
 	GAtResultIter iter;
 	const char *str;
 	int format;
@@ -233,41 +233,42 @@ static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		strlen(str) == 0)
 		goto error;
 
-	extract_mcc_mnc(str, at->netreg->mcc, at->netreg->mnc);
+	extract_mcc_mnc(str, nd->mcc, nd->mnc);
 
-	ofono_debug("Cops numeric got mcc: %s, mnc: %s",
-			at->netreg->mcc, at->netreg->mnc);
+	ofono_debug("Cops numeric got mcc: %s, mnc: %s", nd->mcc, nd->mnc);
 
 	return;
 
 error:
-	at->netreg->mcc[0] = '\0';
-	at->netreg->mnc[0] = '\0';
+	nd->mcc[0] = '\0';
+	nd->mnc[0] = '\0';
 }
 
-static void at_current_operator(struct ofono_modem *modem,
-				ofono_current_operator_cb_t cb, void *data)
+static void at_current_operator(struct ofono_netreg *netreg,
+				ofono_netreg_operator_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	gboolean ok;
 
 	if (!cbd)
 		goto error;
 
-	ok = g_at_chat_send(at->parser, "AT+COPS=3,2", none_prefix,
+	cbd->user = netreg;
+
+	ok = g_at_chat_send(nd->chat, "AT+COPS=3,2", none_prefix,
 				NULL, NULL, NULL);
 
 	if (ok)
-		ok = g_at_chat_send(at->parser, "AT+COPS?", cops_prefix,
+		ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
 					cops_numeric_cb, cbd, NULL);
 
 	if (ok)
-		ok = g_at_chat_send(at->parser, "AT+COPS=3,0", none_prefix,
+		ok = g_at_chat_send(nd->chat, "AT+COPS=3,0", none_prefix,
 					NULL, NULL, NULL);
 
 	if (ok)
-		ok = g_at_chat_send(at->parser, "AT+COPS?", cops_prefix,
+		ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
 					cops_cb, cbd, NULL);
 
 	if (ok)
@@ -286,7 +287,7 @@ error:
 static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_operator_list_cb_t cb = cbd->cb;
+	ofono_netreg_operator_list_cb_t cb = cbd->cb;
 	struct ofono_network_operator *list;
 	GAtResultIter iter;
 	int num = 0;
@@ -386,16 +387,16 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_free(list);
 }
 
-static void at_list_operators(struct ofono_modem *modem, ofono_operator_list_cb_t cb,
-				void *data)
+static void at_list_operators(struct ofono_netreg *netreg,
+				ofono_netreg_operator_list_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+COPS=?", cops_prefix,
+	if (g_at_chat_send(nd->chat, "AT+COPS=?", cops_prefix,
 				cops_list_cb, cbd, g_free) > 0)
 		return;
 
@@ -412,7 +413,7 @@ error:
 static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_generic_cb_t cb = cbd->cb;
+	ofono_netreg_register_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("register_cb", ok, result);
@@ -421,16 +422,16 @@ static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_register_auto(struct ofono_modem *modem, ofono_generic_cb_t cb,
-				void *data)
+static void at_register_auto(struct ofono_netreg *netreg,
+				ofono_netreg_register_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+COPS=0", none_prefix,
+	if (g_at_chat_send(nd->chat, "AT+COPS=0", none_prefix,
 				register_cb, cbd, g_free) > 0)
 		return;
 
@@ -444,12 +445,12 @@ error:
 	}
 }
 
-static void at_register_manual(struct ofono_modem *modem,
+static void at_register_manual(struct ofono_netreg *netreg,
 				const struct ofono_network_operator *oper,
-				ofono_generic_cb_t cb, void *data)
+				ofono_netreg_register_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 	char buf[128];
 
 	if (!cbd)
@@ -457,7 +458,7 @@ static void at_register_manual(struct ofono_modem *modem,
 
 	sprintf(buf, "AT+COPS=1,2,\"%s%s\"", oper->mcc, oper->mnc);
 
-	if (g_at_chat_send(at->parser, buf, none_prefix,
+	if (g_at_chat_send(nd->chat, buf, none_prefix,
 				register_cb, cbd, g_free) > 0)
 		return;
 
@@ -471,16 +472,16 @@ error:
 	}
 }
 
-static void at_deregister(struct ofono_modem *modem, ofono_generic_cb_t cb,
-				void *data)
+static void at_deregister(struct ofono_netreg *netreg,
+				ofono_netreg_register_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+COPS=2", none_prefix,
+	if (g_at_chat_send(nd->chat, "AT+COPS=2", none_prefix,
 				register_cb, cbd, g_free) > 0)
 		return;
 
@@ -496,7 +497,7 @@ error:
 
 static void csq_notify(GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
+	struct ofono_netreg *netreg = user_data;
 	int strength;
 	GAtResultIter iter;
 
@@ -517,13 +518,13 @@ static void csq_notify(GAtResult *result, gpointer user_data)
 	else
 		strength = strength * 100 / 31;
 
-	ofono_signal_strength_notify(modem, strength);
+	ofono_netreg_strength_notify(netreg, strength);
 }
 
 static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_signal_strength_cb_t cb = cbd->cb;
+	ofono_netreg_strength_cb_t cb = cbd->cb;
 	int strength;
 	GAtResultIter iter;
 	struct ofono_error error;
@@ -557,16 +558,16 @@ static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, strength, cbd->data);
 }
 
-static void at_signal_strength(struct ofono_modem *modem,
-				ofono_signal_strength_cb_t cb, void *data)
+static void at_signal_strength(struct ofono_netreg *netreg,
+				ofono_netreg_strength_cb_t cb, void *data)
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-	struct cb_data *cbd = cb_data_new(modem, cb, data);
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct cb_data *cbd = cb_data_new(NULL, cb, data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(at->parser, "AT+CSQ", csq_prefix,
+	if (g_at_chat_send(nd->chat, "AT+CSQ", csq_prefix,
 				csq_cb, cbd, g_free) > 0)
 		return;
 
@@ -582,7 +583,7 @@ error:
 
 static void creg_notify(GAtResult *result, gpointer user_data)
 {
-	struct ofono_modem *modem = user_data;
+	struct ofono_netreg *netreg = user_data;
 	GAtResultIter iter;
 	int status;
 	int lac = -1, ci = -1, tech = -1;
@@ -612,61 +613,73 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 out:
 	ofono_debug("creg_notify: %d, %d, %d, %d", status, lac, ci, tech);
 
-	ofono_network_registration_notify(modem, status, lac, ci, tech);
+	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
-static struct ofono_network_registration_ops ops = {
+static void at_network_registration_initialized(gboolean ok, GAtResult *result,
+							gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	if (!ok) {
+		ofono_error("Unable to initialize Network Registration");
+		ofono_netreg_remove(netreg);
+		return;
+	}
+
+	g_at_chat_register(nd->chat, "+CREG:",
+				creg_notify, FALSE, netreg, NULL);
+	g_at_chat_register(nd->chat, "+CSQ:",
+				csq_notify, FALSE, netreg, NULL);
+
+	ofono_netreg_register(netreg);
+}
+
+static int at_netreg_probe(struct ofono_netreg *netreg)
+{
+	GAtChat *chat = ofono_netreg_get_data(netreg);
+	struct netreg_data *nd;
+
+	nd = g_new0(struct netreg_data, 1);
+
+	nd->chat = chat;
+	ofono_netreg_set_data(netreg, nd);
+
+	g_at_chat_send(chat, "AT+CREG=2", NULL,
+				at_network_registration_initialized,
+				netreg, NULL);
+	return 0;
+}
+
+static int at_netreg_remove(struct ofono_netreg *netreg)
+{
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	g_free(nd);
+
+	return 0;
+}
+
+static struct ofono_netreg_driver driver = {
+	.name				= "generic_at",
+	.probe				= at_netreg_probe,
+	.remove				= at_netreg_remove,
 	.registration_status 		= at_registration_status,
 	.current_operator 		= at_current_operator,
 	.list_operators			= at_list_operators,
 	.register_auto			= at_register_auto,
 	.register_manual		= at_register_manual,
 	.deregister			= at_deregister,
-	.signal_strength		= at_signal_strength,
+	.strength			= at_signal_strength,
 };
 
-static void at_network_registration_initialized(gboolean ok, GAtResult *result,
-							gpointer user_data)
+void at_netreg_init()
 {
-	struct ofono_modem *modem = user_data;
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
-	if (!ok) {
-		ofono_error("Unable to initialize Network Registration");
-		return;
-	}
-
-	g_at_chat_register(at->parser, "+CREG:",
-				creg_notify, FALSE, modem, NULL);
-	g_at_chat_register(at->parser, "+CSQ:",
-				csq_notify, FALSE, modem, NULL);
-
-	ofono_network_registration_register(modem, &ops);
+	ofono_netreg_driver_register(&driver);
 }
 
-void at_network_registration_init(struct ofono_modem *modem)
+void at_netreg_exit()
 {
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
-	at->netreg = g_try_new0(struct netreg_data, 1);
-
-	if (!at->netreg)
-		return;
-
-	g_at_chat_send(at->parser, "AT+CREG=2", NULL,
-				at_network_registration_initialized,
-				modem, NULL);
-}
-
-void at_network_registration_exit(struct ofono_modem *modem)
-{
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
-	if (!at->netreg)
-		return;
-
-	g_free(at->netreg);
-	at->netreg = NULL;
-
-	ofono_network_registration_unregister(modem);
+	ofono_netreg_driver_unregister(&driver);
 }
