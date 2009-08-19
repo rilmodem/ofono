@@ -1,10 +1,10 @@
-AM_CFLAGS = @GLIB_CFLAGS@
+AM_CFLAGS = @GLIB_CFLAGS@ -I$(top_srcdir)
 
 noinst_LTLIBRARIES = libgisi.la
 MAINTAINERCLEANFILES = Makefile.in
 
 libgisi_la_SOURCES = \
-	phonet.h \
+	phonet.h isicommon.h \
 	netlink.h netlink.c \
 	socket.h socket.c \
 	client.h client.c \

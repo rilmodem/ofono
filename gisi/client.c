@@ -112,7 +112,7 @@ GIsiClient *g_isi_client_create(uint8_t resource)
 	cl->next[254] = 0;
 	cl->prev[255] = cl->next[255] = 255;
 
-	channel = phonet_new(resource);
+	channel = phonet_new(NULL, resource);
 	if (channel == NULL) {
 		free(cl);
 		return NULL;
@@ -264,7 +264,7 @@ static int g_isi_indication_init(GIsiClient *cl)
 	uint8_t msg[] = {
 		0, PNS_SUBSCRIBED_RESOURCES_IND, 1, cl->resource,
 	};
-	GIOChannel *channel = phonet_new(PN_COMMGR);
+	GIOChannel *channel = phonet_new(NULL, PN_COMMGR);
 
 	if (channel == NULL)
 		return errno;

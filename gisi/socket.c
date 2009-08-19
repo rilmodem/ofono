@@ -30,35 +30,44 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <net/if.h>
 #include <fcntl.h>
+#include "modem.h"
 #include "phonet.h"
 #include <glib.h>
 
 #include "socket.h"
 
-GIOChannel *phonet_new(uint8_t resource)
+GIOChannel *phonet_new(GIsiModem *modem, uint8_t resource)
 {
 	GIOChannel *channel;
 	struct sockaddr_pn addr = {
 		.spn_family = AF_PHONET,
 		.spn_resource = resource,
 	};
+	unsigned ifi = g_isi_modem_index(modem);
+	char buf[IF_NAMESIZE];
 
 	int fd = socket(PF_PHONET, SOCK_DGRAM, 0);
 	if (fd == -1)
 		return NULL;
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 	/* Use blocking mode on purpose. */
-	if (bind(fd, (struct sockaddr *)&addr, sizeof(addr))) {
-		close(fd);
-		return NULL;
-	}
+
+	if (if_indextoname(ifi, buf) == NULL ||
+	    setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
+		goto error;
+	if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)))
+		goto error;
 
 	channel = g_io_channel_unix_new(fd);
 	g_io_channel_set_close_on_unref(channel, TRUE);
 	g_io_channel_set_encoding(channel, NULL, NULL);
 	g_io_channel_set_buffered(channel, FALSE);
 	return channel;
+error:
+	close(fd);
+	return NULL;
 }
 
 size_t phonet_peek_length(GIOChannel *channel)
