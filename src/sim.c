@@ -1075,6 +1075,8 @@ static void sim_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
+	remove_all_watches(__ofono_atom_get_data(atom));
+
 	g_dbus_unregister_interface(conn, path,
 					SIM_MANAGER_INTERFACE);
 	ofono_modem_remove_interface(modem, SIM_MANAGER_INTERFACE);
