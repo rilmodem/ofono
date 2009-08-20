@@ -834,7 +834,6 @@ int ofono_modem_unregister(struct ofono_modem *m)
 	if (modem == NULL)
 		return -1;
 
-	__ofono_history_remove_drivers(modem);
 	modem_remove(modem);
 
 	g_modem_list = g_slist_remove(g_modem_list, modem);

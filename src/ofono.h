@@ -71,7 +71,6 @@ struct ofono_modem {
 	int		next_atom_watch_id;
 
 	struct ofono_modem_data *modem_info;
-	GSList *history_contexts;
 };
 
 #include <ofono/modem.h>
@@ -193,7 +192,6 @@ void __ofono_ussd_passwd_unregister(struct ofono_ussd *ussd, const char *sc);
 #include <ofono/history.h>
 
 void __ofono_history_probe_drivers(struct ofono_modem *modem);
-void __ofono_history_remove_drivers(struct ofono_modem *modem);
 
 void __ofono_history_call_ended(struct ofono_modem *modem,
 				const struct ofono_call *call,

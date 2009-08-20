@@ -32,6 +32,18 @@
 
 static GSList *history_drivers = NULL;
 
+struct history_foreach_data {
+	const struct ofono_call *call;
+	union {
+		struct {
+			time_t start;
+			time_t end;
+		};
+
+		time_t when;
+	};
+};
+
 static struct ofono_history_context *history_context_create(
 					struct ofono_modem *modem,
 					struct ofono_history_driver *driver)
@@ -57,11 +69,21 @@ static struct ofono_history_context *history_context_create(
 	return context;
 }
 
+static void context_remove(struct ofono_atom *atom)
+{
+	struct ofono_history_context *context = __ofono_atom_get_data(atom);
+
+	if (context->driver->remove)
+		context->driver->remove(context);
+
+	g_free(context);
+}
+
 void __ofono_history_probe_drivers(struct ofono_modem *modem)
 {
-	GSList *l;
-	struct ofono_history_context *context;
 	struct ofono_history_driver *driver;
+	struct ofono_history_context *context;
+	GSList *l;
 
 	for (l = history_drivers; l; l = l->next) {
 		driver = l->data;
@@ -71,56 +93,57 @@ void __ofono_history_probe_drivers(struct ofono_modem *modem)
 		if (!context)
 			continue;
 
-		modem->history_contexts =
-			g_slist_prepend(modem->history_contexts, context);
+		__ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_HISTORY,
+						context_remove, context);
 	}
 }
 
-void __ofono_history_remove_drivers(struct ofono_modem *modem)
+static void history_call_ended(struct ofono_atom *atom, void *data)
 {
-	GSList *l;
-	struct ofono_history_context *context;
+	struct ofono_history_context *context = __ofono_atom_get_data(atom);
+	struct history_foreach_data *hfd = data;
 
-	for (l = modem->history_contexts; l; l = l->next) {
-		context = l->data;
+	if (context->driver->call_ended == NULL)
+		return;
 
-		if (context->driver->remove)
-			context->driver->remove(context);
-
-		g_free(context);
-	}
-
-	g_slist_free(modem->history_contexts);
-	modem->history_contexts = NULL;
+	context->driver->call_ended(context, hfd->call, hfd->start, hfd->end);
 }
 
 void __ofono_history_call_ended(struct ofono_modem *modem,
 				const struct ofono_call *call,
 				time_t start, time_t end)
 {
-	struct ofono_history_context *context;
-	GSList *l;
+	struct history_foreach_data hfd;
 
-	for (l = modem->history_contexts; l; l = l->next) {
-		context = l->data;
+	hfd.call = call;
+	hfd.start = start;
+	hfd.end = end;
 
-		if (context->driver->call_ended)
-			context->driver->call_ended(context, call, start, end);
-	}
+	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_HISTORY,
+					history_call_ended, &hfd);
+}
+
+static void history_call_missed(struct ofono_atom *atom, void *data)
+{
+	struct ofono_history_context *context = __ofono_atom_get_data(atom);
+	struct history_foreach_data *hfd = data;
+
+	if (context->driver->call_missed == NULL)
+		return;
+
+	context->driver->call_missed(context, hfd->call, hfd->when);
 }
 
 void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when)
 {
-	struct ofono_history_context *context;
-	GSList *l;
+	struct history_foreach_data hfd;
 
-	for (l = modem->history_contexts; l; l = l->next) {
-		context = l->data;
+	hfd.call = call;
+	hfd.when = when;
 
-		if (context->driver->call_missed)
-			context->driver->call_missed(context, call, when);
-	}
+	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_HISTORY,
+					history_call_missed, &hfd);
 }
 
 int ofono_history_driver_register(const struct ofono_history_driver *driver)
