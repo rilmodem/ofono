@@ -99,15 +99,15 @@ void __ofono_modem_release_callid(struct ofono_modem *modem, int id)
 	modem->call_ids &= ~(0x1 << id);
 }
 
-void ofono_modem_set_userdata(struct ofono_modem *modem, void *userdata)
+void ofono_modem_set_data(struct ofono_modem *modem, void *data)
 {
 	if (modem == NULL)
 		return;
 
-	modem->driver_data = userdata;
+	modem->driver_data = data;
 }
 
-void *ofono_modem_get_userdata(struct ofono_modem *modem)
+void *ofono_modem_get_data(struct ofono_modem *modem)
 {
 	if (modem == NULL)
 		return NULL;

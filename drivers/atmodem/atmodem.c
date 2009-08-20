@@ -197,7 +197,7 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 	if (!at->modem)
 		goto out;
 
-	ofono_modem_set_userdata(at->modem, at);
+	ofono_modem_set_data(at->modem, at);
 
 	ofono_devinfo_create(at->modem, "generic_at", at->parser);
 	ofono_ussd_create(at->modem, "generic_at", at->parser);

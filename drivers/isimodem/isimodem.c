@@ -70,7 +70,7 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 			if (!isi->modem)
 				return;
 
-			ofono_modem_set_userdata(isi->modem, isi);
+			ofono_modem_set_data(isi->modem, isi);
 			ofono_devinfo_create(isi->modem, "isi", idx);
 			ofono_phonebook_create(isi->modem, "isi", NULL);
 		}
