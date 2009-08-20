@@ -145,7 +145,6 @@ static int g_isi_pipe_error(uint8_t code)
 		[PN_PIPE_ERR_GENERAL] = -EAGAIN,
 		[PN_PIPE_ERR_NOT_SUPPORTED] = -ENOSYS,
 	};
-	int err = 0;
 
 	if (code == PN_PIPE_NO_ERROR ||
 	    ((code < sizeof(codes) / sizeof(codes[0])) && codes[code]))
