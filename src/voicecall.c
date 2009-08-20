@@ -1649,16 +1649,6 @@ out:
 	vc->pending = NULL;
 }
 
-static gboolean in_default_en_list(const char *en)
-{
-	int i = 0;
-	while (default_en_list[i])
-		if (!strcmp(en, default_en_list[i++]))
-			return TRUE;
-
-	return FALSE;
-}
-
 static void emit_en_list_changed(struct ofono_voicecall *vc)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
