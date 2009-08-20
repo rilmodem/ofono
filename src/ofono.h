@@ -60,19 +60,6 @@ void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 int __ofono_plugin_init(const char *pattern, const char *exclude);
 void __ofono_plugin_cleanup(void);
 
-struct ofono_modem {
-	int		id;
-	char		*path;
-
-	void 		*userdata;
-
-	GSList		*atoms;
-	GSList		*atom_watches;
-	int		next_atom_watch_id;
-
-	struct ofono_modem_data *modem_info;
-};
-
 #include <ofono/modem.h>
 
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem);

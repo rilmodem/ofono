@@ -39,12 +39,18 @@ static GSList *g_devinfo_drivers = NULL;
 static GSList *g_modem_list = NULL;
 static int g_next_modem_id = 1;
 
-struct ofono_modem_data {
-	GSList          		*interface_list;
-	int				flags;
-	unsigned int			idlist;
-	DBusMessage			*pending;
-	guint				interface_update;
+struct ofono_modem {
+	int		id;
+	char		*path;
+	GSList		*atoms;
+	GSList		*atom_watches;
+	int		next_atom_watch_id;
+	GSList         	*interface_list;
+	int		flags;
+	unsigned int	call_ids;
+	DBusMessage	*pending;
+	guint		interface_update;
+	void		*driver_data;
 };
 
 struct ofono_devinfo {
@@ -75,14 +81,13 @@ struct ofono_atom_watch {
 
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
 {
-	struct ofono_modem_data *d = modem->modem_info;
 	unsigned int i;
 
-	for (i = 1; i < sizeof(d->idlist) * 8; i++) {
-		if (d->idlist & (0x1 << i))
+	for (i = 1; i < sizeof(modem->call_ids) * 8; i++) {
+		if (modem->call_ids & (0x1 << i))
 			continue;
 
-		d->idlist |= (0x1 << i);
+		modem->call_ids |= (0x1 << i);
 		return i;
 	}
 
@@ -91,23 +96,23 @@ unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
 
 void __ofono_modem_release_callid(struct ofono_modem *modem, int id)
 {
-	struct ofono_modem_data *d = modem->modem_info;
-
-	d->idlist &= ~(0x1 << id);
+	modem->call_ids &= ~(0x1 << id);
 }
 
 void ofono_modem_set_userdata(struct ofono_modem *modem, void *userdata)
 {
-	if (modem)
-		modem->userdata = userdata;
+	if (modem == NULL)
+		return;
+
+	modem->driver_data = userdata;
 }
 
 void *ofono_modem_get_userdata(struct ofono_modem *modem)
 {
-	if (modem)
-		return modem->userdata;
+	if (modem == NULL)
+		return NULL;
 
-	return NULL;
+	return modem->driver_data;
 }
 
 const char *ofono_modem_get_path(struct ofono_modem *modem)
@@ -358,18 +363,14 @@ static void modem_free(gpointer data)
 	if (modem == NULL)
 		return;
 
-	for (l = modem->modem_info->interface_list; l; l = l->next)
-		g_free(l->data);
+	g_slist_foreach(modem->interface_list, (GFunc)g_free, NULL);
+	g_slist_free(modem->interface_list);
 
-	g_slist_free(modem->modem_info->interface_list);
+	if (modem->pending)
+		dbus_message_unref(modem->pending);
 
-	if (modem->modem_info->pending)
-		dbus_message_unref(modem->modem_info->pending);
-
-	if (modem->modem_info->interface_update)
-		g_source_remove(modem->modem_info->interface_update);
-
-	g_free(modem->modem_info);
+	if (modem->interface_update)
+		g_source_remove(modem->interface_update);
 
 	g_free(modem->path);
 	g_free(modem);
@@ -379,7 +380,6 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct ofono_modem *modem = data;
-	struct ofono_modem_data *d = modem->modem_info;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
@@ -426,8 +426,9 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 						&info->serial);
 	}
 
-	interfaces = g_new0(char *, g_slist_length(d->interface_list) + 1);
-	for (i = 0, l = d->interface_list; l; l = l->next, i++)
+	interfaces = g_new0(char *, g_slist_length(modem->interface_list) + 1);
+
+	for (i = 0, l = modem->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
 
 	ofono_dbus_dict_append_array(&dict, "Interfaces", DBUS_TYPE_STRING,
@@ -453,15 +454,14 @@ static GDBusSignalTable modem_signals[] = {
 static gboolean trigger_interface_update(void *data)
 {
 	struct ofono_modem *modem = data;
-	struct ofono_modem_data *info = modem->modem_info;
 	DBusConnection *conn = ofono_dbus_get_connection();
-
 	char **interfaces;
 	GSList *l;
 	int i;
 
-	interfaces = g_new0(char *, g_slist_length(info->interface_list) + 1);
-	for (i = 0, l = info->interface_list; l; l = l->next, i++)
+	interfaces = g_new0(char *, g_slist_length(modem->interface_list) + 1);
+
+	for (i = 0, l = modem->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
 
 	ofono_dbus_signal_array_property_changed(conn, modem->path,
@@ -471,7 +471,7 @@ static gboolean trigger_interface_update(void *data)
 
 	g_free(interfaces);
 
-	info->interface_update = 0;
+	modem->interface_update = 0;
 
 	return FALSE;
 }
@@ -479,23 +479,19 @@ static gboolean trigger_interface_update(void *data)
 void ofono_modem_add_interface(struct ofono_modem *modem,
 				const char *interface)
 {
-	struct ofono_modem_data *info = modem->modem_info;
+	modem->interface_list =
+		g_slist_prepend(modem->interface_list, g_strdup(interface));
 
-	info->interface_list =
-		g_slist_prepend(info->interface_list, g_strdup(interface));
+	if (modem->interface_update != 0)
+		return;
 
-	if (info->interface_update == 0)
-		info->interface_update =
-			g_timeout_add(0, trigger_interface_update, modem);
+	modem->interface_update = g_idle_add(trigger_interface_update, modem);
 }
 
 void ofono_modem_remove_interface(struct ofono_modem *modem,
 				const char *interface)
 {
-	struct ofono_modem_data *info = modem->modem_info;
-
-	GSList *found = g_slist_find_custom(info->interface_list,
-						interface,
+	GSList *found = g_slist_find_custom(modem->interface_list, interface,
 						(GCompareFunc) strcmp);
 
 	if (!found) {
@@ -506,12 +502,13 @@ void ofono_modem_remove_interface(struct ofono_modem *modem,
 
 	g_free(found->data);
 
-	info->interface_list =
-		g_slist_remove(info->interface_list, found->data);
+	modem->interface_list = g_slist_remove(modem->interface_list,
+						found->data);
 
-	if (info->interface_update == 0)
-		info->interface_update =
-			g_timeout_add(0, trigger_interface_update, modem);
+	if (modem->interface_update != 0)
+		return;
+
+	modem->interface_update = g_idle_add(trigger_interface_update, modem);
 }
 
 static void query_serial_cb(const struct ofono_error *error,
@@ -737,12 +734,6 @@ static struct ofono_modem *modem_create(int id)
 	modem = g_try_new0(struct ofono_modem, 1);
 	if (modem == NULL)
 		return modem;
-
-	modem->modem_info = g_try_new0(struct ofono_modem_data, 1);
-	if (modem->modem_info == NULL) {
-		g_free(modem);
-		return NULL;
-	}
 
 	modem->id = id;
 
