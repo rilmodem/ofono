@@ -409,7 +409,6 @@ static void at_list_storages_cb(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
 	struct ofono_phonebook *pb = user_data;
-	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	gboolean sm_supported = FALSE;
 	gboolean me_supported = FALSE;
 	gboolean in_list = FALSE;
