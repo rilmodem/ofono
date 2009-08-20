@@ -293,6 +293,8 @@ int g_isi_pipe_start(GIsiPipe *pipe)
 		g_isi_pipe_enable(pipe);
 	else
 		pipe->enabling = true;
+
+	return 0;
 }
 
 /* Not very useful, it will never have time to trigger */
