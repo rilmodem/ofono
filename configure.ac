@@ -48,6 +48,11 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 AC_ARG_ENABLE(threads, AC_HELP_STRING([--enable-threads],
 		[enable threading support]), [enable_threads=${enableval}])
 
+AC_ARG_ENABLE(isi, AC_HELP_STRING([--disable-isi],
+		[disable PhoNet/ISI protocol support]), [enable_isi=${enableval}])
+
+AM_CONDITIONAL(WANT_ISI, test "${enable_isi}" != "no")
+
 AC_CHECK_LIB(dl, dlopen, dummy=yes,
 			AC_MSG_ERROR(dynamic linking loader is required))
 
