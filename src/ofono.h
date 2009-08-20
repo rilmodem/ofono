@@ -107,6 +107,8 @@ typedef void (*ofono_atom_watch_func)(struct ofono_atom *atom,
 					enum ofono_atom_watch_condition cond,
 					void *data);
 
+typedef void (*ofono_atom_func)(struct ofono_atom *atom, void *data);
+
 struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
 					enum ofono_atom_type type,
 					void (*destruct)(struct ofono_atom *),
@@ -114,6 +116,10 @@ struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
 
 struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 						enum ofono_atom_type type);
+
+void __ofono_modem_foreach_atom(struct ofono_modem *modem,
+				enum ofono_atom_type type,
+				ofono_atom_func callback, void *data);
 
 void *__ofono_atom_get_data(struct ofono_atom *atom);
 const char *__ofono_atom_get_path(struct ofono_atom *atom);

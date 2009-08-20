@@ -293,6 +293,26 @@ struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 	return NULL;
 }
 
+void __ofono_modem_foreach_atom(struct ofono_modem *modem,
+				enum ofono_atom_type type,
+				ofono_atom_func callback, void *data)
+{
+	GSList *l;
+	struct ofono_atom *atom;
+
+	if (modem == NULL)
+		return;
+
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		if (atom->type != type)
+			continue;
+
+		callback(atom, data);
+	}
+}
+
 void __ofono_atom_free(struct ofono_atom *atom)
 {
 	struct ofono_modem *modem = atom->modem;
