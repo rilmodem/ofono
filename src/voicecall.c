@@ -1681,7 +1681,6 @@ static void emit_en_list_changed(struct ofono_voicecall *vc)
 
 static void set_new_ecc(struct ofono_voicecall *vc)
 {
-	GSList *l;
 	int i = 0;
 
 	g_slist_foreach(vc->en_list, (GFunc)g_free, NULL);
