@@ -387,8 +387,6 @@ static gboolean isi_phonebook_register(gpointer user)
 
 static int isi_phonebook_probe(struct ofono_phonebook *pb)
 {
-	struct pb_data *pbd;
-	
 	if (!client) {
 		/* FIXME: pass GIsiModem object */
 		client = g_isi_client_create(NULL, PN_SIM);
