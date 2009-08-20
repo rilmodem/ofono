@@ -77,9 +77,12 @@ GIsiPEP *g_isi_pep_create(GIsiModem *modem)
 	unsigned ifi = g_isi_modem_index(modem);
 	char buf[IF_NAMESIZE];
 
-	fd = socket(PF_PHONET, SOCK_SEQPACKET|SOCK_NONBLOCK|SOCK_CLOEXEC, 0);
+	fd = socket(PF_PHONET, SOCK_SEQPACKET, 0);
 	if (fd == -1)
 		return NULL;
+
+	fcntl(fd, F_SETFD, FD_CLOEXEC);
+	fcntl(fd, F_SETFL, O_NONBLOCK|fcntl(fd, F_GETFL));
 
 	if (if_indextoname(ifi, buf) == NULL ||
 	    setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
