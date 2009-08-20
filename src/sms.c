@@ -633,7 +633,6 @@ static inline gboolean handle_mwi(struct ofono_sms *sms, struct sms *s)
 void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 				int len, int tpdu_len)
 {
-	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	struct sms s;
 	enum sms_class cls;
 
