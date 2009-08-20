@@ -71,10 +71,6 @@ struct ofono_modem {
 	int		next_atom_watch_id;
 
 	struct ofono_modem_data *modem_info;
-	struct network_registration_data *network_registration;
-	struct voicecalls_data *voicecalls;
-	struct message_waiting_data *message_waiting;
-
 	GSList *history_contexts;
 };
 
