@@ -37,6 +37,7 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
+#include <ofono/phonebook.h>
 
 #include "isi.h"
 
