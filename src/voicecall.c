@@ -35,6 +35,7 @@
 
 #include "common.h"
 #include "simutil.h"
+#include "smsutil.h"
 
 #define VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
 #define VOICECALL_INTERFACE "org.ofono.VoiceCall"
