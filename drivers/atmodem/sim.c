@@ -434,7 +434,6 @@ error:
 static gboolean at_sim_register(gpointer user)
 {
 	struct ofono_sim *sim = user;
-	GAtChat *chat = ofono_sim_get_data(sim);
 
 	ofono_sim_register(sim);
 
