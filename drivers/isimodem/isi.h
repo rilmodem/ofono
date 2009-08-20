@@ -64,3 +64,6 @@ void dump_msg(const unsigned char *msg, size_t len);
 
 extern void isi_phonebook_init();
 extern void isi_phonebook_exit();
+
+extern void isi_devinfo_init();
+extern void isi_devinfo_exit();
