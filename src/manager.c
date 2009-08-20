@@ -29,8 +29,6 @@
 
 #include "ofono.h"
 
-#include "driver.h"
-
 static DBusMessage *manager_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {

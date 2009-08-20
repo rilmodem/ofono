@@ -25,31 +25,36 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
 
 #include "ofono.h"
 
-#include "driver.h"
 #include "common.h"
 
-#define MODEM_FLAG_INITIALIZING_ATTRS 1
+static GSList *g_devinfo_drivers = NULL;
 
 static GSList *g_modem_list = NULL;
 static int g_next_modem_id = 1;
 
 struct ofono_modem_data {
-	char      			*manufacturer;
-	char      			*model;
-	char      			*revision;
-	char      			*serial;
 	GSList          		*interface_list;
 	int				flags;
 	unsigned int			idlist;
-	struct ofono_modem_attribute_ops	*ops;
 	DBusMessage			*pending;
 	guint				interface_update;
+};
+
+struct ofono_devinfo {
+	char *manufacturer;
+	char *model;
+	char *revision;
+	char *serial;
+	const struct ofono_devinfo_driver *driver;
+	void *driver_data;
+	struct ofono_atom *atom;
 };
 
 struct ofono_atom {
@@ -338,11 +343,6 @@ static void modem_free(gpointer data)
 
 	g_slist_free(modem->modem_info->interface_list);
 
-	g_free(modem->modem_info->manufacturer);
-	g_free(modem->modem_info->serial);
-	g_free(modem->modem_info->revision);
-	g_free(modem->modem_info->model);
-
 	if (modem->modem_info->pending)
 		dbus_message_unref(modem->modem_info->pending);
 
@@ -355,17 +355,18 @@ static void modem_free(gpointer data)
 	g_free(modem);
 }
 
-static DBusMessage *generate_properties_reply(struct ofono_modem *modem,
-				DBusConnection *conn, DBusMessage *msg)
+static DBusMessage *modem_get_properties(DBusConnection *conn,
+						DBusMessage *msg, void *data)
 {
-	struct ofono_modem_data *info = modem->modem_info;
+	struct ofono_modem *modem = data;
+	struct ofono_modem_data *d = modem->modem_info;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-
 	char **interfaces;
 	int i;
 	GSList *l;
+	struct ofono_atom *devinfo_atom;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -377,24 +378,36 @@ static DBusMessage *generate_properties_reply(struct ofono_modem *modem,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	if (info->manufacturer)
-		ofono_dbus_dict_append(&dict, "Manufacturer", DBUS_TYPE_STRING,
-					&info->manufacturer);
+	devinfo_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_DEVINFO);
 
-	if (info->model)
-		ofono_dbus_dict_append(&dict, "Model", DBUS_TYPE_STRING,
-					&info->model);
+	/* We cheat a little here and don't check the registered status */
+	if (devinfo_atom) {
+		struct ofono_devinfo *info;
 
-	if (info->revision)
-		ofono_dbus_dict_append(&dict, "Revision", DBUS_TYPE_STRING,
-					&info->revision);
+		info = __ofono_atom_get_data(devinfo_atom);
 
-	if (info->serial)
-		ofono_dbus_dict_append(&dict, "Serial", DBUS_TYPE_STRING,
-					&info->serial);
+		if (info->manufacturer)
+			ofono_dbus_dict_append(&dict, "Manufacturer",
+						DBUS_TYPE_STRING,
+						&info->manufacturer);
 
-	interfaces = g_new0(char *, g_slist_length(info->interface_list) + 1);
-	for (i = 0, l = info->interface_list; l; l = l->next, i++)
+		if (info->model)
+			ofono_dbus_dict_append(&dict, "Model", DBUS_TYPE_STRING,
+						&info->model);
+
+		if (info->revision)
+			ofono_dbus_dict_append(&dict, "Revision",
+						DBUS_TYPE_STRING,
+						&info->revision);
+
+		if (info->serial)
+			ofono_dbus_dict_append(&dict, "Serial",
+						DBUS_TYPE_STRING,
+						&info->serial);
+	}
+
+	interfaces = g_new0(char *, g_slist_length(d->interface_list) + 1);
+	for (i = 0, l = d->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
 
 	ofono_dbus_dict_append_array(&dict, "Interfaces", DBUS_TYPE_STRING,
@@ -407,22 +420,8 @@ static DBusMessage *generate_properties_reply(struct ofono_modem *modem,
 	return reply;
 }
 
-static DBusMessage *modem_get_properties(DBusConnection *conn,
-						DBusMessage *msg, void *data)
-{
-	struct ofono_modem *modem = data;
-
-	if (modem->modem_info->flags & MODEM_FLAG_INITIALIZING_ATTRS) {
-		modem->modem_info->pending = dbus_message_ref(msg);
-		return NULL;
-	}
-
-	return generate_properties_reply(modem, conn, msg);
-}
-
 static GDBusMethodTable modem_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	modem_get_properties,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetProperties",	"",	"a{sv}",	modem_get_properties },
 	{ }
 };
 
@@ -495,118 +494,221 @@ void ofono_modem_remove_interface(struct ofono_modem *modem,
 			g_timeout_add(0, trigger_interface_update, modem);
 }
 
-static void finish_attr_query(struct ofono_modem *modem)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	DBusMessage *reply;
-
-	modem->modem_info->flags &= ~MODEM_FLAG_INITIALIZING_ATTRS;
-
-	if (!modem->modem_info->pending)
-		return;
-
-	reply = generate_properties_reply(modem, conn,
-						modem->modem_info->pending);
-
-	if (reply)
-		g_dbus_send_message(conn, reply);
-
-	dbus_message_unref(modem->modem_info->pending);
-	modem->modem_info->pending = NULL;
-}
-
 static void query_serial_cb(const struct ofono_error *error,
 				const char *serial, void *user)
 {
-	struct ofono_modem *modem = user;
+	struct ofono_devinfo *info = user;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(info->atom);
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		modem->modem_info->serial = g_strdup(serial);
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		return;
 
-	finish_attr_query(modem);
+	info->serial = g_strdup(serial);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_MODEM_INTERFACE,
+						"Serial", DBUS_TYPE_STRING,
+						&info->serial);
 }
 
-static void query_serial(struct ofono_modem *modem)
+static void query_serial(struct ofono_devinfo *info)
 {
-	if (!modem->modem_info->ops->query_serial) {
-		finish_attr_query(modem);
+	if (!info->driver->query_serial)
 		return;
-	}
 
-	modem->modem_info->ops->query_serial(modem, query_serial_cb, modem);
+	info->driver->query_serial(info, query_serial_cb, info);
 }
 
 static void query_revision_cb(const struct ofono_error *error,
 				const char *revision, void *user)
 {
-	struct ofono_modem *modem = user;
+	struct ofono_devinfo *info = user;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(info->atom);
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		modem->modem_info->revision = g_strdup(revision);
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		goto out;
 
-	query_serial(modem);
+	info->revision = g_strdup(revision);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_MODEM_INTERFACE,
+						"Revision", DBUS_TYPE_STRING,
+						&info->revision);
+
+out:
+	query_serial(info);
 }
 
-static void query_revision(struct ofono_modem *modem)
+static void query_revision(struct ofono_devinfo *info)
 {
-	if (!modem->modem_info->ops->query_revision) {
-		query_serial(modem);
+	if (!info->driver->query_revision) {
+		query_serial(info);
 		return;
 	}
 
-	modem->modem_info->ops->query_revision(modem, query_revision_cb, modem);
+	info->driver->query_revision(info, query_revision_cb, info);
 }
 
 static void query_model_cb(const struct ofono_error *error,
 				const char *model, void *user)
 {
-	struct ofono_modem *modem = user;
+	struct ofono_devinfo *info = user;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(info->atom);
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		modem->modem_info->model = g_strdup(model);
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		goto out;
 
-	query_revision(modem);
+	info->model = g_strdup(model);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_MODEM_INTERFACE,
+						"Model", DBUS_TYPE_STRING,
+						&info->model);
+
+out:
+	query_revision(info);
 }
 
-static void query_model(struct ofono_modem *modem)
+static void query_model(struct ofono_devinfo *info)
 {
-	if (!modem->modem_info->ops->query_model) {
+	if (!info->driver->query_model) {
 		/* If model is not supported, don't bother querying revision */
-		query_serial(modem);
-		return;
+		query_serial(info);
 	}
 
-	modem->modem_info->ops->query_model(modem, query_model_cb, modem);
+	info->driver->query_model(info, query_model_cb, info);
 }
 
 static void query_manufacturer_cb(const struct ofono_error *error,
 					const char *manufacturer, void *user)
 {
-	struct ofono_modem *modem = user;
+	struct ofono_devinfo *info = user;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(info->atom);
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		modem->modem_info->manufacturer = g_strdup(manufacturer);
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		goto out;
 
-	query_model(modem);
+	info->manufacturer = g_strdup(manufacturer);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_MODEM_INTERFACE,
+						"Serial", DBUS_TYPE_STRING,
+						&info->manufacturer);
+
+out:
+	query_model(info);
 }
 
 static gboolean query_manufacturer(gpointer user)
 {
-	struct ofono_modem *modem = user;
+	struct ofono_devinfo *info = user;
 
-	if (!modem->modem_info->ops->query_manufacturer) {
-		query_model(modem);
+	if (!info->driver->query_manufacturer) {
+		query_model(info);
 		return FALSE;
 	}
 
-	modem->modem_info->ops->query_manufacturer(modem, query_manufacturer_cb,
-							modem);
+	info->driver->query_manufacturer(info, query_manufacturer_cb, info);
 
 	return FALSE;
 }
 
-static struct ofono_modem *modem_create(int id,
-					struct ofono_modem_attribute_ops *ops)
+int ofono_devinfo_driver_register(const struct ofono_devinfo_driver *d)
+{
+	DBG("driver: %p, name: %s", d, d->name);
+
+	if (d->probe == NULL)
+		return -EINVAL;
+
+	g_devinfo_drivers = g_slist_prepend(g_devinfo_drivers, (void *)d);
+
+	return 0;
+}
+
+void ofono_devinfo_driver_unregister(const struct ofono_devinfo_driver *d)
+{
+	DBG("driver: %p, name: %s", d, d->name);
+
+	g_devinfo_drivers = g_slist_remove(g_devinfo_drivers, (void *)d);
+}
+
+static void devinfo_remove(struct ofono_atom *atom)
+{
+	struct ofono_devinfo *info = __ofono_atom_get_data(atom);
+
+	DBG("atom: %p", atom);
+
+	if (info == NULL)
+		return;
+
+	if (info->driver == NULL)
+		return;
+
+	if (info->driver->remove)
+		info->driver->remove(info);
+
+	g_free(info->manufacturer);
+	g_free(info->model);
+	g_free(info->revision);
+	g_free(info->serial);
+
+	g_free(info);
+}
+
+struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
+							const char *driver,
+							void *data)
+{
+	struct ofono_devinfo *info;
+	GSList *l;
+
+	info = g_new0(struct ofono_devinfo, 1);
+
+	info->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_DEVINFO,
+						devinfo_remove, info);
+	info->driver_data = data;
+
+	for (l = g_devinfo_drivers; l; l = l->next) {
+		const struct ofono_devinfo_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(info) < 0)
+			continue;
+
+		info->driver = drv;
+		break;
+	}
+
+	return info;
+}
+
+void ofono_devinfo_register(struct ofono_devinfo *info)
+{
+	query_manufacturer(info);
+}
+
+void ofono_devinfo_remove(struct ofono_devinfo *info)
+{
+	__ofono_atom_free(info->atom);
+}
+
+void ofono_devinfo_set_data(struct ofono_devinfo *info, void *data)
+{
+	info->driver_data = data;
+}
+
+void *ofono_devinfo_get_data(struct ofono_devinfo *info)
+{
+	return info->driver_data;
+}
+
+static struct ofono_modem *modem_create(int id)
 {
 	char path[128];
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -623,7 +725,6 @@ static struct ofono_modem *modem_create(int id,
 	}
 
 	modem->id = id;
-	modem->modem_info->ops = ops;
 
 	snprintf(path, sizeof(path), "/modem%d", modem->id);
 	modem->path = g_strdup(path);
@@ -635,9 +736,6 @@ static struct ofono_modem *modem_create(int id,
 		modem_free(modem);
 		return NULL;
 	}
-
-	modem->modem_info->flags |= MODEM_FLAG_INITIALIZING_ATTRS;
-	g_timeout_add(0, query_manufacturer, modem);
 
 	return modem;
 }
@@ -677,13 +775,13 @@ const char **__ofono_modem_get_list()
 	return modems;
 }
 
-struct ofono_modem *ofono_modem_register(struct ofono_modem_attribute_ops *ops)
+struct ofono_modem *ofono_modem_register()
 {
 	struct ofono_modem *modem;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char **modems;
 
-	modem = modem_create(g_next_modem_id, ops);
+	modem = modem_create(g_next_modem_id);
 
 	if (modem == NULL)
 		return 0;

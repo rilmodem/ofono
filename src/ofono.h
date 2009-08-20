@@ -82,7 +82,7 @@ void __ofono_modem_release_callid(struct ofono_modem *modem, int id);
 struct ofono_atom;
 
 enum ofono_atom_type {
-	OFONO_ATOM_TYPE_INFO = 0,
+	OFONO_ATOM_TYPE_DEVINFO = 0,
 	OFONO_ATOM_TYPE_CALL_BARRING = 1,
 	OFONO_ATOM_TYPE_CALL_FORWARDING = 2,
 	OFONO_ATOM_TYPE_CALL_METER = 3,
@@ -137,6 +137,7 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
+#include <ofono/devinfo.h>
 #include <ofono/phonebook.h>
 #include <ofono/sms.h>
 #include <ofono/sim.h>

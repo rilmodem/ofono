@@ -39,6 +39,9 @@ const char *ofono_modem_get_path(struct ofono_modem *modem);
 void ofono_modem_set_userdata(struct ofono_modem *modem, void *data);
 void *ofono_modem_get_userdata(struct ofono_modem *modem);
 
+struct ofono_modem *ofono_modem_register();
+int ofono_modem_unregister(struct ofono_modem *modem);
+
 #ifdef __cplusplus
 }
 #endif
