@@ -783,7 +783,6 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 static void mw_remove(struct ofono_atom *atom)
 {
 	struct ofono_message_waiting *mw = __ofono_atom_get_data(atom);
-	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 
 	DBG("atom: %p", atom);
 
