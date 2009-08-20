@@ -1,9 +1,9 @@
 
-SUBDIRS = gdbus gatchat include plugins drivers unit src doc
-
-if WANT_ISI
-  SUBDIRS += gisi
+if COND_ISI
+MAYBE_ISI = gisi
 endif
+
+SUBDIRS = gdbus gatchat $(MAYBE_ISI) include plugins drivers unit src doc
 
 AM_MAKEFLAGS = --no-print-directory
 

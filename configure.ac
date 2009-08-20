@@ -51,7 +51,15 @@ AC_ARG_ENABLE(threads, AC_HELP_STRING([--enable-threads],
 AC_ARG_ENABLE(isi, AC_HELP_STRING([--disable-isi],
 		[disable PhoNet/ISI protocol support]), [enable_isi=${enableval}])
 
-AM_CONDITIONAL(WANT_ISI, test "${enable_isi}" != "no")
+AM_CONDITIONAL(COND_ISI, test "${enable_isi}" != "no")
+
+if (test "${enable_isi}" != "no"); then
+	GISI_CFLAGS='-I$(top_srcdir)'
+	GISI_LIBS='$(top_builddir)/gisi/libgisi.la'
+fi
+
+AC_SUBST(GISI_CFLAGS)
+AC_SUBST(GISI_LIBS)
 
 AC_CHECK_LIB(dl, dlopen, dummy=yes,
 			AC_MSG_ERROR(dynamic linking loader is required))
@@ -89,9 +97,6 @@ AC_SUBST([GDBUS_LIBS], ['$(top_builddir)/gdbus/libgdbus.la $(DBUS_LIBS)'])
 
 AC_SUBST([GATCHAT_CFLAGS], ['-I$(top_srcdir)/gatchat'])
 AC_SUBST([GATCHAT_LIBS], ['$(top_builddir)/gatchat/libgatchat.la'])
-
-AC_SUBST([GISI_CFLAGS], ['-I$(top_srcdir)'])
-AC_SUBST([GISI_LIBS], ['$(top_builddir)/gisi/libgisi.la'])
 
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 			[don't install configuration and data files]),
