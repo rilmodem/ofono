@@ -29,8 +29,8 @@
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/history.h>
+#include <ofono/types.h>
 
-#include "driver.h"
 #include "common.h"
 
 static int example_history_probe(struct ofono_history_context *context)

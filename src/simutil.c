@@ -27,7 +27,7 @@
 
 #include <glib.h>
 
-#include "driver.h"
+#include <ofono/types.h>
 #include "simutil.h"
 #include "util.h"
 #include "smsutil.h"

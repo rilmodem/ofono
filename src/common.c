@@ -29,7 +29,7 @@
 
 #include <glib.h>
 
-#include "driver.h"
+#include <ofono/types.h>
 #include "common.h"
 
 struct error_entry {

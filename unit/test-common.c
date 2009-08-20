@@ -25,7 +25,8 @@
 #include <assert.h>
 #include <glib.h>
 
-#include "driver.h"
+#include <ofono/types.h>
+
 #include "common.h"
 
 static const char *invalid_strings[] = {
