@@ -79,10 +79,10 @@ struct pb_data {
 
 };
 
-static char *ucs2_to_utf8(const char *str, long len)
+static char *ucs2_to_utf8(const unsigned char *str, long len)
 {
 	char *utf8;
-	utf8 = g_convert(str, len, "UTF-8//TRANSLIT", "UCS-2BE",
+	utf8 = g_convert((const char *)str, len, "UTF-8//TRANSLIT", "UCS-2BE",
 				NULL, NULL, NULL);
 	return utf8;
 }
