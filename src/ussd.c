@@ -101,14 +101,6 @@ static void ssc_entry_destroy(struct ssc_entry *ca)
 	g_free(ca);
 }
 
-static gint ssc_entry_compare(gconstpointer a, gconstpointer b)
-{
-	const struct ssc_entry *ca = a;
-	const struct ssc_entry *cb = b;
-
-	return strcmp(ca->service, cb->service);
-}
-
 static gint ssc_entry_find_by_service(gconstpointer a, gconstpointer b)
 {
 	const struct ssc_entry *ca = a;
