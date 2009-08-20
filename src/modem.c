@@ -358,7 +358,6 @@ static void remove_all_atoms(struct ofono_modem *modem)
 static void modem_free(gpointer data)
 {
 	struct ofono_modem *modem = data;
-	GSList *l;
 
 	if (modem == NULL)
 		return;
