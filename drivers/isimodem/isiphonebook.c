@@ -310,7 +310,7 @@ static bool read_resp_cb(GIsiClient *client, const void *restrict data,
 	location = decode_read_response(data, len, cbd->user);
 	if (location != -1) {
 		read_next_entry(location, read_resp_cb, cbd);
-		return;
+		return true;
 	}
 
 	{
