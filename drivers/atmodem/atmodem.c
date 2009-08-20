@@ -37,6 +37,7 @@
 #include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
+#include <ofono/devinfo.h>
 #include <ofono/message-waiting.h>
 #include <ofono/phonebook.h>
 #include <ofono/sim.h>
@@ -44,8 +45,6 @@
 #include <ofono/ssn.h>
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
-
-#include "driver.h"
 
 #include "at.h"
 #include "session.h"
@@ -133,166 +132,6 @@ static void manager_free(gpointer user)
 	g_slist_free(g_sessions);
 }
 
-struct attr_cb_info {
-	ofono_modem_attribute_query_cb_t cb;
-	void *data;
-	const char *prefix;
-};
-
-static inline struct attr_cb_info *attr_cb_info_new(ofono_modem_attribute_query_cb_t cb,
-							void *data,
-							const char *prefix)
-{
-	struct attr_cb_info *ret;
-
-	ret = g_try_new(struct attr_cb_info, 1);
-
-	if (!ret)
-		return ret;
-
-	ret->cb = cb;
-	ret->data = data;
-	ret->prefix = prefix;
-
-	return ret;
-}
-
-static const char *fixup_return(const char *line, const char *prefix)
-{
-	if (g_str_has_prefix(line, prefix) == FALSE)
-		return line;
-
-	line = line + strlen(prefix);
-
-	while (line[0] == ' ')
-		line++;
-
-	return line;
-}
-
-static void attr_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_error error;
-	struct attr_cb_info *info = user_data;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	dump_response("attr_cb", ok, result);
-
-	if (ok) {
-		GAtResultIter iter;
-		const char *line;
-		int i;
-
-		g_at_result_iter_init(&iter, result);
-
-		/* We have to be careful here, sometimes a stray unsolicited
-		 * notification will appear as part of the response and we
-		 * cannot rely on having a prefix to recognize the actual
-		 * response line.  So use the last line only as the response
-		 */
-		for (i = 0; i < g_at_result_num_response_lines(result); i++)
-			g_at_result_iter_next(&iter, NULL);
-
-		line = g_at_result_iter_raw_line(&iter);
-
-		info->cb(&error, fixup_return(line, info->prefix), info->data);
-	} else
-		info->cb(&error, "", info->data);
-}
-
-static void at_query_manufacturer(struct ofono_modem *modem,
-				ofono_modem_attribute_query_cb_t cb, void *data)
-{
-	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGMI:");
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
-	if (!info)
-		goto error;
-
-	if (g_at_chat_send(at->parser, "AT+CGMI", NULL,
-				attr_cb, info, g_free) > 0)
-		return;
-
-error:
-	if (info)
-		g_free(info);
-
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
-}
-
-static void at_query_model(struct ofono_modem *modem,
-				ofono_modem_attribute_query_cb_t cb, void *data)
-{
-	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGMM:");
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
-	if (!info)
-		goto error;
-
-	if (g_at_chat_send(at->parser, "AT+CGMM", NULL,
-				attr_cb, info, g_free) > 0)
-		return;
-
-error:
-	if (info)
-		g_free(info);
-
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
-}
-
-static void at_query_revision(struct ofono_modem *modem,
-				ofono_modem_attribute_query_cb_t cb, void *data)
-{
-	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGMR:");
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
-	if (!info)
-		goto error;
-
-	if (g_at_chat_send(at->parser, "AT+CGMR", NULL,
-				attr_cb, info, g_free) > 0)
-		return;
-
-error:
-	if (info)
-		g_free(info);
-
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
-}
-
-static void at_query_serial(struct ofono_modem *modem,
-				ofono_modem_attribute_query_cb_t cb, void *data)
-{
-	struct attr_cb_info *info = attr_cb_info_new(cb, data, "+CGSN:");
-	struct at_data *at = ofono_modem_get_userdata(modem);
-
-	if (!info)
-		goto error;
-
-	if (g_at_chat_send(at->parser, "AT+CGSN", NULL,
-				attr_cb, info, g_free) > 0)
-		return;
-
-error:
-	if (info)
-		g_free(info);
-
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
-}
-
 static void send_init_commands(const char *vendor, GAtChat *parser)
 {
 	if (!strcmp(vendor, "ti_calypso")) {
@@ -302,13 +141,6 @@ static void send_init_commands(const char *vendor, GAtChat *parser)
 		g_at_chat_send(parser, "AT+CFUN=1", NULL, NULL, NULL, NULL);
 	}
 }
-
-static struct ofono_modem_attribute_ops ops = {
-	.query_manufacturer = at_query_manufacturer,
-	.query_model = at_query_model,
-	.query_revision = at_query_revision,
-	.query_serial = at_query_serial
-};
 
 static void msg_destroy(gpointer user)
 {
@@ -359,13 +191,14 @@ static void create_cb(GIOChannel *io, gboolean success, gpointer user)
 
 	send_init_commands(driver, at->parser);
 
-	at->modem = ofono_modem_register(&ops);
+	at->modem = ofono_modem_register();
 
 	if (!at->modem)
 		goto out;
 
 	ofono_modem_set_userdata(at->modem, at);
 
+	ofono_devinfo_create(at->modem, "generic_at", at->parser);
 	ofono_ussd_create(at->modem, "generic_at", at->parser);
 	ofono_sim_create(at->modem, "generic_at", at->parser);
 	ofono_call_forwarding_create(at->modem, "generic_at", at->parser);
@@ -538,6 +371,7 @@ static int atmodem_init(void)
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	at_voicecall_init();
+	at_devinfo_init();
 	at_call_barring_init();
 	at_call_forwarding_init();
 	at_call_meter_init();
@@ -570,6 +404,7 @@ static void atmodem_exit(void)
 	at_call_forwarding_exit();
 	at_call_barring_exit();
 	at_netreg_exit();
+	at_devinfo_exit();
 	at_voicecall_exit();
 }
 

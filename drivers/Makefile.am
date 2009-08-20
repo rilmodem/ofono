@@ -11,7 +11,7 @@ builtin_sources += atmodem/atmodem.c atmodem/at.h \
 			atmodem/network-registration.c atmodem/sim.c \
 			atmodem/ussd.c atmodem/voicecall.c \
 			atmodem/call-barring.c atmodem/phonebook.c \
-			atmodem/ssn.c
+			atmodem/ssn.c atmodem/devinfo.c
 
 if COND_ISI
 builtin_modules += isimodem

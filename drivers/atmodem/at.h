@@ -89,3 +89,6 @@ extern void at_phonebook_exit();
 
 extern void at_ssn_init();
 extern void at_ssn_exit();
+
+extern void at_devinfo_init();
+extern void at_devinfo_exit();
