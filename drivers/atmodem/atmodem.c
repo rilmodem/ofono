@@ -108,10 +108,6 @@ static void at_destroy(struct at_data *at)
 	g_free(at);
 }
 
-static void interface_exit(struct at_data *at)
-{
-}
-
 static void manager_free(gpointer user)
 {
 	GSList *l;
@@ -124,7 +120,6 @@ static void manager_free(gpointer user)
 	for (l = g_sessions; l; l = l->next) {
 		struct at_data *at = l->data;
 
-		interface_exit(at);
 		ofono_modem_unregister(at->modem);
 
 		at_destroy(at);
@@ -290,7 +285,6 @@ static DBusMessage *manager_destroy(DBusConnection *conn, DBusMessage *msg,
 		if (strcmp(ofono_modem_get_path(at->modem), path))
 			continue;
 
-		interface_exit(at);
 		ofono_modem_unregister(at->modem);
 
 		g_sessions = g_slist_remove(g_sessions, at);
