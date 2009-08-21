@@ -45,8 +45,6 @@
 #define PN_PHONE_INFO		0x1B
 #define INFO_TIMEOUT		5
 
-static GIsiClient *client = NULL;
-
 enum return_code {
 	INFO_OK = 0x00,
 	INFO_FAIL = 0x01,
@@ -81,6 +79,10 @@ enum serial_number_type {
 
 enum version_type {
 	INFO_MCUSW = 0x01
+};
+
+struct devinfo_data {
+	GIsiClient *client;
 };
 
 static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int id,
@@ -153,7 +155,9 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 					ofono_devinfo_query_cb_t cb,
 					void *data)
 {
+	struct devinfo_data *dev = ofono_devinfo_get_data(info);
 	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+
 	const unsigned char msg[] = {
 		INFO_PRODUCT_INFO_READ_REQ,
 		INFO_PRODUCT_MANUFACTURER
@@ -162,7 +166,7 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
 				manufacturer_resp_cb, cbd))
 		return;
 
@@ -212,7 +216,9 @@ static void isi_query_model(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
+	struct devinfo_data *dev = ofono_devinfo_get_data(info);
 	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+
 	const unsigned char msg[] = {
 		INFO_PRODUCT_INFO_READ_REQ,
 		INFO_PRODUCT_NAME
@@ -221,7 +227,7 @@ static void isi_query_model(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
 				model_resp_cb, cbd))
 		return;
 
@@ -271,7 +277,9 @@ static void isi_query_revision(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
+	struct devinfo_data *dev = ofono_devinfo_get_data(info);
 	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+
 	const unsigned char msg[] = {
 		INFO_VERSION_READ_REQ,
 		0x00, INFO_MCUSW,
@@ -281,7 +289,7 @@ static void isi_query_revision(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
 				revision_resp_cb, cbd))
 		return;
 
@@ -331,7 +339,9 @@ static void isi_query_serial(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
+	struct devinfo_data *dev = ofono_devinfo_get_data(info);
 	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+
 	const unsigned char msg[] = {
 		INFO_SERIAL_NUMBER_READ_REQ,
 		INFO_SN_IMEI_PLAIN
@@ -340,7 +350,7 @@ static void isi_query_serial(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
 				serial_resp_cb, cbd))
 		return;
 
@@ -366,13 +376,16 @@ static gboolean isi_devinfo_register(gpointer user)
 static int isi_devinfo_probe(struct ofono_devinfo *info)
 {
 	GIsiModem *idx = ofono_devinfo_get_data(info);
+	struct devinfo_data *data = g_try_new0(struct devinfo_data, 1);
 
-	if (!client) {
-		client = g_isi_client_create(idx, PN_PHONE_INFO);
+	if (!data)
+		return -ENOMEM;
 
-		if (!client)
-			return -ENOMEM;
-	}
+	data->client = g_isi_client_create(idx, PN_PHONE_INFO);
+	if (!data->client)
+		return -ENOMEM;
+
+	ofono_devinfo_set_data(info, data);
 
 	g_idle_add(isi_devinfo_register, info);
 
@@ -381,9 +394,11 @@ static int isi_devinfo_probe(struct ofono_devinfo *info)
 
 static int isi_devinfo_remove(struct ofono_devinfo *info)
 {
-	if (client) {
-		g_isi_client_destroy(client);
-		client = NULL;
+	struct devinfo_data *data = ofono_devinfo_get_data(info);
+
+	if (data) {
+		g_isi_client_destroy(data->client);
+		g_free(data);
 	}
 
 	return 0;
