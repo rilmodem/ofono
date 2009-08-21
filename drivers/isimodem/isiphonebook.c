@@ -387,16 +387,18 @@ static gboolean isi_phonebook_register(gpointer user)
 
 static int isi_phonebook_probe(struct ofono_phonebook *pb)
 {
+	GIsiModem *idx = ofono_devinfo_get_data(info);
+
 	if (!client) {
-		/* FIXME: pass GIsiModem object */
-		client = g_isi_client_create(NULL, PN_SIM);
+		client = g_isi_client_create(idx, PN_SIM);
 		if (!client)
 			return -ENOMEM;
 	}
 
 	ofono_phonebook_set_data(pb, phonebook_create());
 
-	/* FIXME: If this is running on a phone itself, phonebook initialization needs to be done here */
+	/* FIXME: If this is running on a phone itself, phonebook
+	 * initialization needs to be done here */
 
 	g_idle_add(isi_phonebook_register, pb);
 
