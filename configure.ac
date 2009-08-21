@@ -124,6 +124,15 @@ fi
 AC_DEFINE_UNQUOTED(STORAGEDIR, "${storagedir}",
 			[Directory for the storage files])
 
+if (test "$sysconfdir" = '${prefix}/etc'); then
+	configdir="${prefix}/etc/ofono"
+else
+	configdir="${sysconfdir}/ofono"
+fi
+
+AC_DEFINE_UNQUOTED(CONFIGDIR, "${configdir}",
+			[Directory for the configuration files])
+
 COMPILER_FLAGS
 
 AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile gisi/Makefile
