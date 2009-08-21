@@ -41,8 +41,14 @@
 
 #include "isi.h"
 
-static GPhonetNetlink *pn_link = NULL;
-static struct isi_data *isi = NULL;
+struct isi_data {
+	struct ofono_modem *modem;
+	GIsiModem *idx;
+};
+
+static GPhonetNetlink *link = NULL;
+static GSList *g_modems = NULL;
+
 
 void dump_msg(const unsigned char *msg, size_t len)
 {
@@ -56,38 +62,72 @@ void dump_msg(const unsigned char *msg, size_t len)
 	DBG("%zd bytes:\n%s", len, dumpstr);
 }
 
+static struct isi_data *find_modem_by_idx(GSList *modems, GIsiModem *idx)
+{
+	GSList *m = NULL;
+
+	for (m = g_modems; m; m = m->next) {
+		struct isi_data *isi = m->data;
+
+		if (isi->idx == idx)
+			return isi;
+	}
+	return NULL;
+}
+
 static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 				void *data)
 {
-	struct isi_data *isi = data;
+	struct isi_data *isi = find_modem_by_idx(g_modems, idx);
 
 	DBG("PhoNet is %s, addr=0x%02x, idx=%p",
 		up ? "up" : "down", addr, idx);
+	
 
 	if (up) {
-		if (!isi->modem) {
-			isi->modem = ofono_modem_register();
-			if (!isi->modem)
-				return;
 
-			ofono_modem_set_data(isi->modem, isi);
-			ofono_devinfo_create(isi->modem, "isi", idx);
-			ofono_phonebook_create(isi->modem, "isi", idx);
+		if (isi) {
+			DBG("Modem already registered: (0x%02x)",
+				g_isi_modem_index(idx));
+			return;
 		}
-	} else {
-		if (isi->modem) {
-			ofono_modem_unregister(isi->modem);
-			isi->modem = NULL;
+
+		isi = g_new0(struct isi_data, 1);
+		if (!isi)
+			return;
+
+		isi->idx = idx;
+		isi->modem = ofono_modem_register();
+
+		if (!isi->modem) {
+			g_free(isi);
+			return;
 		}
+
+		g_modems = g_slist_prepend(g_modems, isi);
+
+		ofono_devinfo_create(isi->modem, "isi", idx);
+		ofono_phonebook_create(isi->modem, "isi", idx);
+
+ 	} else {
+
+		if (!isi) {
+			DBG("Unknown modem: (0x%02x)",
+				g_isi_modem_index(idx));
+			return;
+		}
+
+		ofono_modem_unregister(isi->modem);
+
+		g_modems = g_slist_remove(g_modems, isi);
 	}
 }
 
 static int isimodem_init(void)
 {
-	isi = g_new0(struct isi_data, 1);
+	link = g_pn_netlink_start(netlink_status_cb, NULL);
 
-	pn_link = g_pn_netlink_start(netlink_status_cb, isi);
-
+	isi_devinfo_init();
 	isi_phonebook_init();
 
 	return 0;
@@ -95,14 +135,25 @@ static int isimodem_init(void)
 
 static void isimodem_exit(void)
 {
-	if (pn_link) {
-		g_pn_netlink_stop(pn_link);
-		pn_link = NULL;
+	GSList *m;
+
+	for (m = g_modems; m; m = m->next) {
+		struct isi_data *isi = m->data;
+
+		ofono_modem_unregister(isi->modem);
+
+		g_free(isi);
 	}
 
-	isi_phonebook_exit();
+	g_slist_free(g_modems);
 
-	g_free(isi);
+	if (link) {
+		g_pn_netlink_stop(link);
+		link = NULL;
+	}
+
+	isi_devinfo_exit();
+	isi_phonebook_exit();
 }
 
 OFONO_PLUGIN_DEFINE(isimodem, "PhoNet / ISI modem driver", VERSION,
