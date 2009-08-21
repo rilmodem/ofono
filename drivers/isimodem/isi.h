@@ -31,13 +31,6 @@
 	e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
 	e.error = 0				\
 
-
-struct isi_data {
-	struct ofono_modem *modem;
-	struct netreg_data *netreg;
-	struct pb_data *pb;
-};
-
 struct isi_cb_data {
 	void *cb;
 	void *data;
