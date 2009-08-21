@@ -73,10 +73,8 @@ enum pb_status {
 	SIM_SERV_OK = 0x01
 };
 
-static GIsiClient *client = NULL;
-
 struct pb_data {
-
+	GIsiClient *client;
 };
 
 static char *ucs2_to_utf8(const unsigned char *str, long len)
@@ -85,18 +83,6 @@ static char *ucs2_to_utf8(const unsigned char *str, long len)
 	utf8 = g_convert((const char *)str, len, "UTF-8//TRANSLIT", "UCS-2BE",
 				NULL, NULL, NULL);
 	return utf8;
-}
-
-
-static struct pb_data *phonebook_create()
-{
-	struct pb_data *pb = g_try_new0(struct pb_data, 1);
-	return pb;
-}
-
-static void phonebook_destroy(struct pb_data *data)
-{
-	g_free(data);
 }
 
 static int decode_read_response(const unsigned char *msg, size_t len,
@@ -253,7 +239,7 @@ error:
 	return -1;
 }
 
-static void read_next_entry(int location, GIsiResponseFunc read_cb, struct isi_cb_data *cbd)
+static void read_next_entry(GIsiClient *client, int location, GIsiResponseFunc read_cb, struct isi_cb_data *cbd)
 {
 	ofono_phonebook_cb_t cb = cbd->cb;
 	const unsigned char msg[] = {
@@ -309,7 +295,7 @@ static bool read_resp_cb(GIsiClient *client, const void *restrict data,
 
 	location = decode_read_response(data, len, cbd->user);
 	if (location != -1) {
-		read_next_entry(location, read_resp_cb, cbd);
+		read_next_entry(client, location, read_resp_cb, cbd);
 		return true;
 	}
 
@@ -334,6 +320,7 @@ out:
 static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
 				ofono_phonebook_cb_t cb, void *data)
 {
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
 	const unsigned char msg[] = {
 		SIM_PB_REQ_SIM_PB_READ,
@@ -362,7 +349,7 @@ static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
 
 	cbd->user = pb;
 
-	if (g_isi_request_make(client, msg, sizeof(msg), PHONEBOOK_TIMEOUT,
+	if (g_isi_request_make(pbd->client, msg, sizeof(msg), PHONEBOOK_TIMEOUT,
 				read_resp_cb, cbd))
 		return;
 
@@ -387,15 +374,17 @@ static gboolean isi_phonebook_register(gpointer user)
 
 static int isi_phonebook_probe(struct ofono_phonebook *pb)
 {
-	GIsiModem *idx = ofono_devinfo_get_data(info);
+	GIsiModem *idx = ofono_phonebook_get_data(pb);
+	struct pb_data *data = g_try_new0(struct pb_data, 1);
 
-	if (!client) {
-		client = g_isi_client_create(idx, PN_SIM);
-		if (!client)
-			return -ENOMEM;
-	}
+	if (!data)
+		return -ENOMEM;
 
-	ofono_phonebook_set_data(pb, phonebook_create());
+	data->client = g_isi_client_create(idx, PN_SIM);
+	if (!data->client)
+		return -ENOMEM;
+
+	ofono_phonebook_set_data(pb, data);
 
 	/* FIXME: If this is running on a phone itself, phonebook
 	 * initialization needs to be done here */
@@ -407,15 +396,12 @@ static int isi_phonebook_probe(struct ofono_phonebook *pb)
 
 static int isi_phonebook_remove(struct ofono_phonebook *pb)
 {
-	struct pb_data *pbd = ofono_phonebook_get_data(pb);
+	struct pb_data *data = ofono_phonebook_get_data(pb);
 
-	if (client) {
-		g_isi_client_destroy(client);
-		client = NULL;
+	if (data) {
+		g_isi_client_destroy(data->client);
+		g_free(data);
 	}
-
-	if (pbd)
-		phonebook_destroy(pbd);
 
 	return 0;
 }
