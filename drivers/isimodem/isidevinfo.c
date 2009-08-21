@@ -46,16 +46,15 @@
 #define INFO_TIMEOUT		5
 
 static GIsiClient *client = NULL;
-static GSList *pending = NULL;
 
-enum return_codes {
+enum return_code {
 	INFO_OK = 0x00,
 	INFO_FAIL = 0x01,
 	INFO_NO_NUMBER = 0x02,
 	INFO_NOT_SUPPORTED = 0x03
 };
 
-enum message_ids {
+enum message_id {
 	INFO_SERIAL_NUMBER_READ_REQ = 0x00,
 	INFO_SERIAL_NUMBER_READ_RESP = 0x01,
 	INFO_VERSION_READ_REQ = 0x07,
@@ -64,40 +63,30 @@ enum message_ids {
 	INFO_PRODUCT_INFO_READ_RESP = 0x16
 };
 
-enum sub_block_ids {
+enum sub_block_id {
 	INFO_SB_PRODUCT_INFO_NAME = 0x01,
 	INFO_SB_PRODUCT_INFO_MANUFACTURER = 0x07,
 	INFO_SB_SN_IMEI_PLAIN = 0x41,
 	INFO_SB_MCUSW_VERSION = 0x48
 };
 
-enum product_info_types {
+enum product_info_type {
 	INFO_PRODUCT_NAME = 0x01,
 	INFO_PRODUCT_MANUFACTURER = 0x07
 };
 
-enum serial_number_types {
+enum serial_number_type {
 	INFO_SN_IMEI_PLAIN = 0x41
 };
 
-enum version_types {
+enum version_type {
 	INFO_MCUSW = 0x01
 };
-
-static void clear_pending_reqs()
-{
-	GSList *l;
-
-	for (l = pending; l; l = l->next)
-		g_isi_request_cancel((GIsiRequest *)l->data);
-}
 
 static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int id,
 					ofono_devinfo_query_cb_t cb,
 					void *data)
 {
-	struct ofono_error err;
-
 	dump_msg(msg, len);
 
 	if (msg[1] != INFO_OK) {
@@ -117,11 +106,11 @@ static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int i
 		str[msg[6]] = '\0';
 		DBG("<%s>", str);
 
-		err.type = OFONO_ERROR_TYPE_NO_ERROR;
-		err.error = 0;
-
-		cb(&err, str, data);
-		return true;
+		{
+			DECLARE_SUCCESS(err);
+			cb(&err, str, data);
+			return true;
+		}
 	}
 
 	DBG("Unexpected sub-block: 0x%02x", msg[3]);
@@ -170,18 +159,12 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 		INFO_PRODUCT_MANUFACTURER
 	};
 
-	GIsiRequest *req = NULL;
-
 	if (!cbd)
 		goto error;
 
-	req = g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
-					manufacturer_resp_cb, cbd);
-
-	if (req) {
-		pending = g_slist_append(pending, req);
+	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+				manufacturer_resp_cb, cbd))
 		return;
-	}
 
 error:
 	if (cbd)
@@ -235,18 +218,12 @@ static void isi_query_model(struct ofono_devinfo *info,
 		INFO_PRODUCT_NAME
 	};
 
-	GIsiRequest *req = NULL;
-
 	if (!cbd)
 		goto error;
 
-	req = g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
-				model_resp_cb, cbd);
-
-	if (req) {
-		pending = g_slist_append(pending, req);
+	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+				model_resp_cb, cbd))
 		return;
-	}
 
 error:
 	if (cbd)
@@ -301,18 +278,12 @@ static void isi_query_revision(struct ofono_devinfo *info,
 		0x00, 0x00, 0x00, 0x00
 	};
 
-	GIsiRequest *req = NULL;
-
 	if (!cbd)
 		goto error;
 
-	req = g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
-					revision_resp_cb, cbd);
-
-	if (req) {
-		pending = g_slist_append(pending, req);
+	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+				revision_resp_cb, cbd))
 		return;
-	}
 
 error:
 	if (cbd)
@@ -366,18 +337,12 @@ static void isi_query_serial(struct ofono_devinfo *info,
 		INFO_SN_IMEI_PLAIN
 	};
 
-	GIsiRequest *req = NULL;
-
 	if (!cbd)
 		goto error;
 
-	req = g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
-					serial_resp_cb, cbd);
-
-	if (req) {
-		pending = g_slist_append(pending, req);
+	if (g_isi_request_make(client, msg, sizeof(msg), INFO_TIMEOUT,
+				serial_resp_cb, cbd))
 		return;
-	}
 
 error:
 	if (cbd)
@@ -420,8 +385,6 @@ static int isi_devinfo_remove(struct ofono_devinfo *info)
 		g_isi_client_destroy(client);
 		client = NULL;
 	}
-
-	clear_pending_reqs();
 
 	return 0;
 }
