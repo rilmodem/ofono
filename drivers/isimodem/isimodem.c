@@ -85,6 +85,7 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 	
 
 	if (up) {
+		char node[128];
 
 		if (isi) {
 			DBG("Modem already registered: (0x%02x)",
@@ -96,8 +97,10 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 		if (!isi)
 			return;
 
+		sprintf(node, "isi%p", idx);
+
 		isi->idx = idx;
-		isi->modem = ofono_modem_register();
+		isi->modem = ofono_modem_create(node, "isi");
 
 		if (!isi->modem) {
 			g_free(isi);
@@ -106,9 +109,9 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 
 		g_modems = g_slist_prepend(g_modems, isi);
 
-		ofono_devinfo_create(isi->modem, "isi", idx);
-		ofono_phonebook_create(isi->modem, "isi", idx);
-
+		ofono_modem_set_data(isi->modem, isi);
+		ofono_modem_set_powered(isi->modem, TRUE);
+		ofono_modem_register(isi->modem);
  	} else {
 
 		if (!isi) {
@@ -117,11 +120,50 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 			return;
 		}
 
-		ofono_modem_unregister(isi->modem);
+		ofono_modem_remove(isi->modem);
 
 		g_modems = g_slist_remove(g_modems, isi);
 	}
 }
+
+static int isi_modem_probe(struct ofono_modem *modem)
+{
+	return 0;
+}
+
+static int isi_modem_remove(struct ofono_modem *modem)
+{
+	return 0;
+}
+
+static int isi_modem_enable(struct ofono_modem *modem)
+{
+	return 0;
+}
+
+static int isi_modem_disable(struct ofono_modem *modem)
+{
+	return 0;
+}
+
+static int isi_modem_populate(struct ofono_modem *modem)
+{
+	struct isi_data *isi = ofono_modem_get_data(modem);
+
+	ofono_devinfo_create(isi->modem, "isi", isi->idx);
+	ofono_phonebook_create(isi->modem, "isi", isi->idx);
+
+	return 0;
+}
+
+static struct ofono_modem_driver driver = {
+	.name = "isi",
+	.probe = isi_modem_probe,
+	.remove = isi_modem_remove,
+	.enable = isi_modem_enable,
+	.disable = isi_modem_disable,
+	.populate = isi_modem_populate,
+};
 
 static int isimodem_init(void)
 {
@@ -129,6 +171,8 @@ static int isimodem_init(void)
 
 	isi_devinfo_init();
 	isi_phonebook_init();
+
+	ofono_modem_driver_register(&driver);
 
 	return 0;
 }
@@ -140,7 +184,7 @@ static void isimodem_exit(void)
 	for (m = g_modems; m; m = m->next) {
 		struct isi_data *isi = m->data;
 
-		ofono_modem_unregister(isi->modem);
+		ofono_modem_remove(isi->modem);
 
 		g_free(isi);
 	}
@@ -151,6 +195,8 @@ static void isimodem_exit(void)
 		g_pn_netlink_stop(link);
 		link = NULL;
 	}
+
+	ofono_modem_driver_unregister(&driver);
 
 	isi_devinfo_exit();
 	isi_phonebook_exit();
