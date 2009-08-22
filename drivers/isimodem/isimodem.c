@@ -110,6 +110,7 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 		ofono_modem_remove(isi->modem);
 
 		g_modems = g_slist_remove(g_modems, isi);
+		g_free(isi);
 	}
 }
 
@@ -172,11 +173,11 @@ static void isimodem_exit(void)
 		struct isi_data *isi = m->data;
 
 		ofono_modem_remove(isi->modem);
-
 		g_free(isi);
 	}
 
 	g_slist_free(g_modems);
+	g_modems = NULL;
 
 	if (link) {
 		g_pn_netlink_stop(link);
