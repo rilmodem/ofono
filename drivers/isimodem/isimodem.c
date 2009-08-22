@@ -49,19 +49,6 @@ struct isi_data {
 static GPhonetNetlink *link = NULL;
 static GSList *g_modems = NULL;
 
-
-void dump_msg(const unsigned char *msg, size_t len)
-{
-	char dumpstr[len * 5 + len / 10 + 1];
-	size_t i;
-
-	for (i = 0; i < len; i++)
-		sprintf(dumpstr + i * 5, "0x%02x%s",
-			msg[i], (i + 1) % 10 == 0 ? "\n" : " ");
-
-	DBG("%zd bytes:\n%s", len, dumpstr);
-}
-
 static struct isi_data *find_modem_by_idx(GSList *modems, GIsiModem *idx)
 {
 	GSList *m = NULL;

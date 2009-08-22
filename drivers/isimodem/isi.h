@@ -53,7 +53,17 @@ static inline struct isi_cb_data *isi_cb_data_new(struct ofono_modem *modem,
 	return ret;
 }
 
-void dump_msg(const unsigned char *msg, size_t len);
+static inline void dump_msg(const unsigned char *msg, size_t len)
+{
+	char dumpstr[len * 5 + len / 10 + 1];
+	size_t i;
+
+	for (i = 0; i < len; i++)
+		sprintf(dumpstr + i * 5, "0x%02x%s",
+			msg[i], (i + 1) % 10 == 0 ? "\n" : " ");
+
+	DBG("\n%s\n", dumpstr);
+}
 
 extern void isi_phonebook_init();
 extern void isi_phonebook_exit();
