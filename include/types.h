@@ -26,6 +26,16 @@
 extern "C" {
 #endif
 
+#ifndef	FALSE
+#define	FALSE	(0)
+#endif
+
+#ifndef	TRUE
+#define	TRUE	(!FALSE)
+#endif
+
+typedef int		ofono_bool_t;
+
 /* MCC is always three digits. MNC is either two or three digits */
 #define OFONO_MAX_MCC_LENGTH 3
 #define OFONO_MAX_MNC_LENGTH 3

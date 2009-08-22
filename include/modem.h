@@ -26,6 +26,8 @@
 extern "C" {
 #endif
 
+#include <ofono/types.h>
+
 struct ofono_modem;
 
 void ofono_modem_add_interface(struct ofono_modem *modem,
@@ -39,8 +41,24 @@ const char *ofono_modem_get_path(struct ofono_modem *modem);
 void ofono_modem_set_data(struct ofono_modem *modem, void *data);
 void *ofono_modem_get_data(struct ofono_modem *modem);
 
-struct ofono_modem *ofono_modem_register();
-int ofono_modem_unregister(struct ofono_modem *modem);
+struct ofono_modem *ofono_modem_create(const char *node, const char *type);
+int ofono_modem_register(struct ofono_modem *modem);
+void ofono_modem_remove(struct ofono_modem *modem);
+
+void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered);
+ofono_bool_t ofono_modem_get_powered(struct ofono_modem *modem);
+
+struct ofono_modem_driver {
+	const char *name;
+	int (*probe)(struct ofono_modem *modem);
+	int (*remove)(struct ofono_modem *modem);
+	int (*enable)(struct ofono_modem *modem);
+	int (*disable)(struct ofono_modem *modem);
+	int (*populate)(struct ofono_modem *modem);
+};
+
+int ofono_modem_driver_register(const struct ofono_modem_driver *);
+void ofono_modem_driver_unregister(const struct ofono_modem_driver *);
 
 #ifdef __cplusplus
 }
