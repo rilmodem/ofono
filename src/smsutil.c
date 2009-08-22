@@ -2132,7 +2132,7 @@ GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
 					const struct sms_address *addr,
 					guint16 ref, guint8 max, guint8 seq)
 {
-	int offset = seq / 8;
+	int offset = seq / 32;
 	int bit = 1 << (seq % 32);
 	GSList *l;
 	GSList *prev;
