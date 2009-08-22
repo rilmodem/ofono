@@ -58,6 +58,10 @@ struct _GIsiClient {
 		GIsiIndicationFunc func[256];
 		void *data[256];
 	} ind;
+
+	/* Debugging */
+	GIsiDebugFunc debug_func;
+	void *debug_data;
 };
 
 static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
@@ -136,6 +140,23 @@ uint8_t g_isi_client_resource(GIsiClient *client)
 }
 
 /**
+ * Set a debugging function for @a client. This function will be
+ * called whenever an ISI protocol message is sent or received.
+ * @param client client to debug
+ * @param func debug function
+ * @param opaque user data
+ */
+void g_isi_client_set_debug(GIsiClient *client, GIsiDebugFunc func,
+				void *opaque)
+{
+	if (!client)
+		return;
+
+	client->debug_func = func;
+	client->debug_data = opaque;
+}
+
+/**
  * Destroys an ISI client, cancels all pending transactions and subscriptions.
  * @param client client to destroy
  */
@@ -201,6 +222,9 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 		errno = EMSGSIZE;
 		return NULL;
 	}
+
+	if (cl->debug_func)
+		cl->debug_func(buf, len, cl->debug_data);
 
 	cl->func[id] = cb;
 	cl->data[id] = opaque;
@@ -360,6 +384,10 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 			return TRUE;
 
 		msg = (uint8_t *)buf;
+
+		if (cl->debug_func)
+			cl->debug_func(msg, len, cl->debug_data);
+
 		if (indication) {
 			/* Message ID at offset 1 */
 			id = msg[1];
