@@ -41,6 +41,7 @@
 
 struct _GIsiClient {
 	uint8_t resource;
+	GIsiModem *modem;
 
 	/* Requests */
 	int fd;
@@ -99,6 +100,7 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 		abort();
 	cl = ptr;
 	cl->resource = resource;
+	cl->modem = modem;
 	memset(cl->timeout, 0, sizeof(cl->timeout));
 	for (i = 0; i < 256; i++) {
 		cl->data[i] = cl->ind.data[i] = NULL;
@@ -288,7 +290,7 @@ static int g_isi_indication_init(GIsiClient *cl)
 	uint8_t msg[] = {
 		0, PNS_SUBSCRIBED_RESOURCES_IND, 1, cl->resource,
 	};
-	GIOChannel *channel = phonet_new(NULL, PN_COMMGR);
+	GIOChannel *channel = phonet_new(cl->modem, PN_COMMGR);
 
 	if (channel == NULL)
 		return errno;
