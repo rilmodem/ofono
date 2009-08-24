@@ -147,7 +147,7 @@ static inline const char *registration_tech_to_string(int tech)
 	case ACCESS_TECHNOLOGY_UTRAN:
 		return "UTRAN";
 	case ACCESS_TECHNOLOGY_GSM_EGPRS:
-		return "GSM+EGPS";
+		return "GSM+EGPRS";
 	case ACCESS_TECHNOLOGY_UTRAN_HSDPA:
 		return "UTRAN+HSDPA";
 	case ACCESS_TECHNOLOGY_UTRAN_HSUPA:
