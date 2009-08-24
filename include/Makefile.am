@@ -12,13 +12,15 @@ nodist_include_HEADERS = version.h
 MAINTAINERCLEANFILES = Makefile.in
 
 all-local:
-	@if [ ! -e ofono ]; then \
-	  mkdir ofono; \
-	  list='$(include_HEADERS)'; for i in $$list; \
-	    do $(LN_S) $(abs_top_srcdir)/include/$$i ofono/$$i; done; \
-	  list='$(nodist_include_HEADERS)'; for i in $$list; \
-	    do $(LN_S) $(abs_top_builddir)/include/$$i ofono/$$i; done; \
-	fi
+	@test -d ofono || mkdir ofono
+	@list='$(include_HEADERS)'; for i in $$list; do \
+	    test -f ofono/$$i || \
+	    $(LN_S) $(abs_top_srcdir)/include/$$i ofono/$$i; \
+	done
+	@list='$(nodist_include_HEADERS)'; for i in $$list; do \
+	    test -f ofono/$$i || \
+	    $(LN_S) $(abs_top_builddir)/include/$$i ofono/$$i; \
+	done
 
 clean-local:
 	@rm -rf ofono
