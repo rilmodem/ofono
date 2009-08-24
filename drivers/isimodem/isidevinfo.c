@@ -25,6 +25,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +33,6 @@
 
 #include <glib.h>
 
-#include <gisi/netlink.h>
 #include <gisi/client.h>
 
 #include <ofono/plugin.h>
@@ -89,8 +89,6 @@ static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int i
 					ofono_devinfo_query_cb_t cb,
 					void *data)
 {
-	dump_msg(msg, len);
-
 	if (msg[1] != INFO_OK) {
 		DBG("Query failed: 0x%02x", msg[1]);
 		return false;
@@ -109,8 +107,8 @@ static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int i
 		DBG("<%s>", str);
 
 		{
-			DECLARE_SUCCESS(err);
-			cb(&err, str, data);
+			DECLARE_SUCCESS(error);
+			cb(&error, str, data);
 			return true;
 		}
 	}
@@ -142,8 +140,8 @@ static bool manufacturer_resp_cb(GIsiClient *client, const void *restrict data,
 
 error:
 	{
-		DECLARE_FAILURE(e);
-		cb(&e, "", cbd->data);
+		DECLARE_FAILURE(error);
+		cb(&error, "", cbd->data);
 	}
 
 out:
@@ -203,8 +201,8 @@ static bool model_resp_cb(GIsiClient *client, const void *restrict data,
 
 error:
 	{
-		DECLARE_FAILURE(e);
-		cb(&e, "", cbd->data);
+		DECLARE_FAILURE(error);
+		cb(&error, "", cbd->data);
 	}
 
 out:
@@ -264,8 +262,8 @@ static bool revision_resp_cb(GIsiClient *client, const void *restrict data,
 
 error:
 	{
-		DECLARE_FAILURE(e);
-		cb(&e, "", cbd->data);
+		DECLARE_FAILURE(error);
+		cb(&error, "", cbd->data);
 	}
 
 out:
@@ -326,8 +324,8 @@ static bool serial_resp_cb(GIsiClient *client, const void *restrict data,
 
 error:
 	{
-		DECLARE_FAILURE(e);
-		cb(&e, "", cbd->data);
+		DECLARE_FAILURE(error);
+		cb(&error, "", cbd->data);
 	}
 
 out:
@@ -366,9 +364,9 @@ error:
 
 static gboolean isi_devinfo_register(gpointer user)
 {
-	struct ofono_devinfo *pb = user;
+	struct ofono_devinfo *info = user;
 
-	ofono_devinfo_register(pb);
+	ofono_devinfo_register(info);
 
 	return FALSE;
 }
@@ -381,9 +379,13 @@ static int isi_devinfo_probe(struct ofono_devinfo *info)
 	if (!data)
 		return -ENOMEM;
 
+	DBG("idx=%p", idx);
+
 	data->client = g_isi_client_create(idx, PN_PHONE_INFO);
-	if (!data->client)
+	if (!data->client) {
+		g_free(data);
 		return -ENOMEM;
+	}
 
 	ofono_devinfo_set_data(info, data);
 
