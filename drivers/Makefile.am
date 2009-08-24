@@ -15,7 +15,12 @@ builtin_sources += atmodem/atmodem.c atmodem/at.h \
 if COND_ISI
 builtin_modules += isimodem
 builtin_sources += isimodem/isimodem.c isimodem/isi.h isimodem/isiphonebook.c \
-			isimodem/isidevinfo.c
+			isimodem/isidevinfo.c isimodem/isinetwork.c \
+			isimodem/isivoicecall.c isimodem/isisms.c \
+			isimodem/isisim.c isimodem/isissn.c \
+			isimodem/isiussd.c isimodem/isicall-forwarding.c \
+			isimodem/isicall-settings.c isimodem/isicall-barring.c \
+			isimodem/isicall-meter.c
 endif
 
 noinst_LTLIBRARIES = libbuiltin.la

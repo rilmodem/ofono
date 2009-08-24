@@ -38,6 +38,16 @@
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
 #include <ofono/phonebook.h>
+#include <ofono/netreg.h>
+#include <ofono/voicecall.h>
+#include <ofono/sms.h>
+#include <ofono/sim.h>
+#include <ofono/ussd.h>
+#include <ofono/ssn.h>
+#include <ofono/call-forwarding.h>
+#include <ofono/call-settings.h>
+#include <ofono/call-barring.h>
+#include <ofono/call-meter.h>
 
 #include "isi.h"
 
@@ -140,6 +150,16 @@ static int isi_modem_populate(struct ofono_modem *modem)
 
 	ofono_devinfo_create(isi->modem, "isi", isi->idx);
 	ofono_phonebook_create(isi->modem, "isi", isi->idx);
+	ofono_netreg_create(isi->modem, "isi", isi->idx);
+	ofono_voicecall_create(isi->modem, "isi", isi->idx);
+	ofono_sms_create(isi->modem, "isi", isi->idx);
+	ofono_sim_create(isi->modem, "isi", isi->idx);
+	ofono_ssn_create(isi->modem, "isi", isi->idx);
+	ofono_ussd_create(isi->modem, "isi", isi->idx);
+	ofono_call_forwarding_create(isi->modem, "isi", isi->idx);
+	ofono_call_settings_create(isi->modem, "isi", isi->idx);
+	ofono_call_barring_create(isi->modem, "isi", isi->idx);
+	ofono_call_meter_create(isi->modem, "isi", isi->idx);
 
 	return 0;
 }
@@ -159,6 +179,16 @@ static int isimodem_init(void)
 
 	isi_devinfo_init();
 	isi_phonebook_init();
+	isi_netreg_init();
+	isi_voicecall_init();
+	isi_sms_init();
+	isi_sim_init();
+	isi_ssn_init();
+	isi_ussd_init();
+	isi_call_forwarding_init();
+	isi_call_settings_init();
+	isi_call_barring_init();
+	isi_call_meter_init();
 
 	ofono_modem_driver_register(&driver);
 
@@ -188,6 +218,16 @@ static void isimodem_exit(void)
 
 	isi_devinfo_exit();
 	isi_phonebook_exit();
+	isi_netreg_exit();
+	isi_voicecall_exit();
+	isi_sms_exit();
+	isi_sim_exit();
+	isi_ssn_exit();
+	isi_ussd_exit();
+	isi_call_forwarding_exit();
+	isi_call_settings_exit();
+	isi_call_barring_exit();
+	isi_call_meter_exit();
 }
 
 OFONO_PLUGIN_DEFINE(isimodem, "PhoNet / ISI modem driver", VERSION,

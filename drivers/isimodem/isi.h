@@ -38,6 +38,11 @@ struct isi_cb_data {
 	void *user;
 };
 
+struct isi_version {
+	unsigned short major;
+	unsigned short minor;
+};
+
 static inline struct isi_cb_data *isi_cb_data_new(struct ofono_modem *modem,
 						void *cb, void *data)
 {
@@ -70,3 +75,33 @@ extern void isi_phonebook_exit();
 
 extern void isi_devinfo_init();
 extern void isi_devinfo_exit();
+
+extern void isi_netreg_init();
+extern void isi_netreg_exit();
+
+extern void isi_voicecall_init();
+extern void isi_voicecall_exit();
+
+extern void isi_sms_init();
+extern void isi_sms_exit();
+
+extern void isi_sim_init();
+extern void isi_sim_exit();
+
+extern void isi_ussd_init();
+extern void isi_ussd_exit();
+
+extern void isi_ssn_init();
+extern void isi_ssn_exit();
+
+extern void isi_call_forwarding_init();
+extern void isi_call_forwarding_exit();
+
+extern void isi_call_settings_init();
+extern void isi_call_settings_exit();
+
+extern void isi_call_barring_init();
+extern void isi_call_barring_exit();
+
+extern void isi_call_meter_init();
+extern void isi_call_meter_exit();
