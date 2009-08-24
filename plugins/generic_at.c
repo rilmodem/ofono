@@ -266,7 +266,7 @@ static void connect_destroy(gpointer user)
 
 static void at_debug(const char *str, void *data)
 {
-	ofono_debug(str);
+	DBG("%s", str);
 }
 
 static gboolean connect_cb(GIOChannel *io, GIOCondition cond, gpointer user)
