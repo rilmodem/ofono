@@ -40,7 +40,7 @@ AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@ @GDBUS_CFLAGS@ @GATCHAT_CFLAGS@ \
 
 INCLUDES = -I$(top_builddir)/include -I$(top_builddir)
 
-EXTRA_DIST = ofono.conf
+EXTRA_DIST = genbuiltin ofono.conf
 
 MAINTAINERCLEANFILES = Makefile.in
 

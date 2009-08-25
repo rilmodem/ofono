@@ -1,0 +1,17 @@
+#!/bin/sh
+
+for i in $*
+do
+	echo "extern struct ofono_plugin_desc __ofono_builtin_$i;"
+done
+
+echo
+echo "static struct ofono_plugin_desc *__ofono_builtin[] = {"
+
+for i in $*
+do
+	echo "  &__ofono_builtin_$i,"
+done
+
+echo "  NULL"
+echo "};"
