@@ -99,6 +99,9 @@ builtin_sources += plugins/generic_at.c
 
 builtin_modules += mbm
 builtin_sources += plugins/mbm.c
+
+builtin_modules += g1
+builtin_sources += plugins/g1.c
 endif
 
 if MAINTAINER_MODE
