@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/ssn.h>
@@ -48,15 +47,6 @@ struct ssn_data {
 	GIsiClient *client;
 	struct isi_version version;
 };
-
-static gboolean isi_ssn_register(gpointer user)
-{
-	struct ofono_ssn *ssn = user;
-
-	ofono_ssn_register(ssn);
-
-	return FALSE;
-}
 
 static int isi_ssn_probe(struct ofono_ssn *ssn)
 {

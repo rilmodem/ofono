@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/ussd.h>
@@ -57,15 +56,6 @@ static void isi_request(struct ofono_ussd *ussd, const char *str,
 static void isi_cancel(struct ofono_ussd *ussd,
 				ofono_ussd_cb_t cb, void *data)
 {
-}
-
-static gboolean isi_ussd_register(gpointer user)
-{
-	struct ofono_ussd *ussd = user;
-
-	ofono_ussd_register(ussd);
-
-	return FALSE;
 }
 
 static int isi_ussd_probe(struct ofono_ussd *ussd)

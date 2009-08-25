@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/call-meter.h>
@@ -86,15 +85,6 @@ static void isi_puct_set(struct ofono_call_meter *cm, const char *currency,
 				double ppu, const char *sim_pin2,
 				ofono_call_meter_set_cb_t cb, void *data)
 {
-}
-
-static gboolean isi_call_meter_register(gpointer user)
-{
-	struct ofono_call_meter *cm = user;
-
-	ofono_call_meter_register(cm);
-
-	return FALSE;
 }
 
 static int isi_call_meter_probe(struct ofono_call_meter *cm)

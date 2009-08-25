@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/call-settings.h>
@@ -82,15 +81,6 @@ static void isi_cw_query(struct ofono_call_settings *cs, int cls,
 static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 			ofono_call_settings_set_cb_t cb, void *data)
 {
-}
-
-static gboolean isi_call_settings_register(gpointer user)
-{
-	struct ofono_call_settings *cs = user;
-
-	ofono_call_settings_register(cs);
-
-	return FALSE;
 }
 
 static int isi_call_settings_probe(struct ofono_call_settings *cs)

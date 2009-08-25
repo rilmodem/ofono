@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/sms.h>
@@ -64,15 +63,6 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 			int pdu_len, int tpdu_len, int mms,
 			ofono_sms_submit_cb_t cb, void *data)
 {
-}
-
-static gboolean isi_sms_register(gpointer user)
-{
-	struct ofono_sms *sms = user;
-
-	ofono_sms_register(sms);
-
-	return FALSE;
 }
 
 static int isi_sms_probe(struct ofono_sms *sms)

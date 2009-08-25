@@ -25,11 +25,10 @@ autom4te.cache
 
 include/ofono
 include/version.h
+src/builtin.h
 src/ofonod
 src/ofono.exp
 src/ofono.ver
-plugins/builtin.h
-drivers/builtin.h
 
 unit/test-common
 unit/test-util

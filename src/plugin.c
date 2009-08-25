@@ -88,8 +88,7 @@ static gboolean check_plugin(struct ofono_plugin_desc *desc,
 	return TRUE;
 }
 
-#include "plugins/builtin.h"
-#include "drivers/builtin.h"
+#include "builtin.h"
 
 int __ofono_plugin_init(const char *pattern, const char *exclude)
 {
@@ -101,20 +100,12 @@ int __ofono_plugin_init(const char *pattern, const char *exclude)
 
 	DBG("");
 
-	for (i = 0; __ofono_plugins[i]; i++) {
-		if (check_plugin(__ofono_plugins[i],
+	for (i = 0; __ofono_builtin[i]; i++) {
+		if (check_plugin(__ofono_builtin[i],
 					pattern, exclude) == FALSE)
 			continue;
 
-		add_plugin(NULL, __ofono_plugins[i]);
-	}
-
-	for (i = 0; __ofono_drivers[i]; i++) {
-		if (check_plugin(__ofono_drivers[i],
-					pattern, exclude) == FALSE)
-			continue;
-
-		add_plugin(NULL, __ofono_drivers[i]);
+		add_plugin(NULL, __ofono_builtin[i]);
 	}
 
 	dir = g_dir_open(PLUGINDIR, 0, NULL);

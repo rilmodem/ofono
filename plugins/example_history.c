@@ -26,6 +26,7 @@
 #include <string.h>
 #include <glib.h>
 
+#define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/history.h>

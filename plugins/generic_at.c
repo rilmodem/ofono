@@ -39,6 +39,7 @@
 #include <gatchat.h>
 #include <gatsyntax.h>
 
+#define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>

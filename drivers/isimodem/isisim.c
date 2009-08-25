@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/sim.h>
@@ -95,15 +94,6 @@ static void isi_write_file_cyclic(struct ofono_sim *sim, int fileid,
 static void isi_read_imsi(struct ofono_sim *sim,
 				ofono_sim_imsi_cb_t cb, void *data)
 {
-}
-
-static gboolean isi_sim_register(gpointer user)
-{
-	struct ofono_sim *sim = user;
-
-	ofono_sim_register(sim);
-
-	return FALSE;
 }
 
 static int isi_sim_probe(struct ofono_sim *sim)

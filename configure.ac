@@ -1,14 +1,22 @@
 AC_PREREQ(2.60)
 AC_INIT(ofono, 0.3)
 
-AM_INIT_AUTOMAKE()
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_CONFIG_HEADER(config.h)
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AM_MAINTAINER_MODE
 
+AC_PREFIX_DEFAULT(/usr/local)
+
+PKG_PROG_PKG_CONFIG
+
+COMPILER_FLAGS
+
 AC_LANG_C
+
+AC_C_RESTRICT
 
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -17,8 +25,6 @@ AC_PROG_INSTALL
 AC_PROG_SED
 AC_PROG_AWK
 AM_PROG_MKDIR_P
-
-AC_C_RESTRICT
 
 m4_define([_LT_AC_TAGCONFIG], [])
 m4_ifdef([AC_LIBTOOL_TAGS], [AC_LIBTOOL_TAGS([])])
@@ -54,18 +60,15 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 AC_ARG_ENABLE(threads, AC_HELP_STRING([--enable-threads],
 		[enable threading support]), [enable_threads=${enableval}])
 
-AC_ARG_ENABLE(isi, AC_HELP_STRING([--disable-isi],
-		[disable PhoNet/ISI protocol support]), [enable_isi=${enableval}])
+AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
+				[disable PhoNet/ISI modem support]),
+					[enable_isimodem=${enableval}])
+AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
 
-AM_CONDITIONAL(COND_ISI, test "${enable_isi}" != "no")
-
-if (test "${enable_isi}" != "no"); then
-	GISI_CFLAGS='-I$(top_srcdir)'
-	GISI_LIBS='$(top_builddir)/gisi/libgisi.la'
-fi
-
-AC_SUBST(GISI_CFLAGS)
-AC_SUBST(GISI_LIBS)
+AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
+                                [disable ETSI AT modem support]),
+                                        [enable_atmodem=${enableval}])
+AM_CONDITIONAL(ATMODEM, test "${enable_atmodem}" != "no")
 
 AC_CHECK_LIB(dl, dlopen, dummy=yes,
 			AC_MSG_ERROR(dynamic linking loader is required))
@@ -97,12 +100,6 @@ else
 	DBUS_DATADIR="$DBUS_DATADIR/dbus-1/system.d"
 fi
 AC_SUBST(DBUS_DATADIR)
-
-AC_SUBST([GDBUS_CFLAGS], ['$(DBUS_CFLAGS) -I$(top_srcdir)/gdbus'])
-AC_SUBST([GDBUS_LIBS], ['$(top_builddir)/gdbus/libgdbus.la $(DBUS_LIBS)'])
-
-AC_SUBST([GATCHAT_CFLAGS], ['-I$(top_srcdir)/gatchat'])
-AC_SUBST([GATCHAT_LIBS], ['$(top_builddir)/gatchat/libgatchat.la'])
 
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 			[don't install configuration and data files]),
@@ -139,9 +136,4 @@ fi
 AC_DEFINE_UNQUOTED(CONFIGDIR, "${configdir}",
 			[Directory for the configuration files])
 
-COMPILER_FLAGS
-
-AC_OUTPUT(Makefile gdbus/Makefile gatchat/Makefile gisi/Makefile
-			include/Makefile include/version.h src/Makefile
-			plugins/Makefile drivers/Makefile unit/Makefile
-								doc/Makefile)
+AC_OUTPUT(Makefile include/version.h)

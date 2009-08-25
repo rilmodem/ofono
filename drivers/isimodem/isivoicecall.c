@@ -36,7 +36,6 @@
 #include <gisi/netlink.h>
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/voicecall.h>
@@ -126,15 +125,6 @@ static void isi_swap_without_accept(struct ofono_voicecall *vc,
 static void isi_send_tones(struct ofono_voicecall *vc, const char *tones,
 			ofono_voicecall_cb_t cb, void *data)
 {
-}
-
-static gboolean isi_voicecall_register(gpointer user)
-{
-	struct ofono_voicecall *call = user;
-
-	ofono_voicecall_register(call);
-
-	return FALSE;
 }
 
 static int isi_voicecall_probe(struct ofono_voicecall *call)

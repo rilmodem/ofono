@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/call-forwarding.h>
@@ -78,15 +77,6 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 				ofono_call_forwarding_query_cb_t cb,
 				void *data)
 {
-}
-
-static gboolean isi_call_forwarding_register(gpointer user)
-{
-	struct ofono_call_forwarding *cf = user;
-
-	ofono_call_forwarding_register(cf);
-
-	return FALSE;
 }
 
 static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf)

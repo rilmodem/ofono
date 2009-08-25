@@ -37,7 +37,6 @@
 #include <gisi/netlink.h>
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/netreg.h>
@@ -173,7 +172,6 @@ static void isi_strength(struct ofono_netreg *netreg,
 static gboolean isi_netreg_register(gpointer user)
 {
 	struct ofono_netreg *net = user;
-	struct netreg_data *data = ofono_netreg_get_data(net);
 
 	ofono_netreg_register(net);
 

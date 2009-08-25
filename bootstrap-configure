@@ -1,16 +1,14 @@
 #!/bin/sh
 
-DIR="$(dirname "$0")"
-
 if [ -f config.status ]; then
 	make maintainer-clean
 fi
 
-(cd "$DIR" && ./bootstrap) && \
-    "$DIR/configure" --enable-maintainer-mode \
+./bootstrap && \
+    ./configure --enable-maintainer-mode \
 		--enable-debug \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
+		--localstatedir=/var \
 		--sysconfdir=/etc \
-		--disable-datafiles \
-		--localstatedir=/var
+		--disable-datafiles $*

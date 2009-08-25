@@ -35,7 +35,6 @@
 
 #include <gisi/client.h>
 
-#include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/call-barring.h>
@@ -64,15 +63,6 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 				const char *old_passwd, const char *new_passwd,
 				ofono_call_barring_set_cb_t cb, void *data)
 {
-}
-
-static gboolean isi_call_barring_register(gpointer user)
-{
-	struct ofono_call_barring *barr = user;
-
-	ofono_call_barring_register(barr);
-
-	return FALSE;
 }
 
 static int isi_call_barring_probe(struct ofono_call_barring *barr)
