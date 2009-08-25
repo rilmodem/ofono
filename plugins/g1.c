@@ -28,7 +28,6 @@
 
 #include <glib.h>
 #include <gatchat.h>
-#include <gatsyntax.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -48,6 +47,90 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 
+/* Supply our own syntax parser */
+
+enum G1_STATE_ {
+	G1_STATE_IDLE = 0,
+	G1_STATE_RESPONSE,
+	G1_STATE_GUESS_PDU,
+	G1_STATE_PDU,
+	G1_STATE_PROMPT,
+};
+
+static void g1_hint(GAtSyntax *syntax, GAtSyntaxExpectHint hint)
+{
+	if (hint == G_AT_SYNTAX_EXPECT_PDU)
+		syntax->state = G1_STATE_GUESS_PDU;
+}
+
+static GAtSyntaxResult g1_feed(GAtSyntax *syntax,
+		const char *bytes, gsize *len)
+{
+	gsize i = 0;
+	GAtSyntaxResult res = G_AT_SYNTAX_RESULT_UNSURE;
+
+	while (i < *len) {
+		char byte = bytes[i];
+
+		switch (syntax->state) {
+		case G1_STATE_IDLE:
+			if (byte == '\r' || byte == '\n')
+				/* ignore */;
+			else if (byte == '>')
+				syntax->state = G1_STATE_PROMPT;
+			else
+				syntax->state = G1_STATE_RESPONSE;
+			break;
+
+		case G1_STATE_RESPONSE:
+			if (byte == '\r') {
+				syntax->state = G1_STATE_IDLE;
+
+				i += 1;
+				res = G_AT_SYNTAX_RESULT_LINE;
+				goto out;
+			}
+			break;
+
+		case G1_STATE_GUESS_PDU:
+			/* keep going until we find a LF that leads the PDU */
+			if (byte == '\n')
+				syntax->state = G1_STATE_PDU;
+			break;
+
+		case G1_STATE_PDU:
+			if (byte == '\r') {
+				syntax->state = G1_STATE_IDLE;
+
+				i += 1;
+				res = G_AT_SYNTAX_RESULT_PDU;
+				goto out;
+			}
+			break;
+
+		case G1_STATE_PROMPT:
+			if (byte == ' ') {
+				syntax->state = G1_STATE_IDLE;
+				i += 1;
+				res = G_AT_SYNTAX_RESULT_PROMPT;
+				goto out;
+			}
+
+			syntax->state = G1_STATE_RESPONSE;
+			return G_AT_SYNTAX_RESULT_UNSURE;
+
+		default:
+			break;
+		};
+
+		i += 1;
+	}
+
+out:
+	*len = i;
+	return res;
+}
+
 static void g1_debug(const char *str, void *data)
 {
 	DBG("%s", str);
@@ -61,7 +144,7 @@ static int g1_probe(struct ofono_modem *modem)
 
 	DBG("");
 
-	syntax = g_at_syntax_new_gsmv1();
+	syntax = g_at_syntax_new_full(g1_feed, g1_hint, G1_STATE_IDLE);
 	chat = g_at_chat_new_from_tty("/dev/smd0", syntax);
 	g_at_syntax_unref(syntax);
 
