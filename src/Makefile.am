@@ -36,7 +36,7 @@ plugindir = $(libdir)/ofono/plugins
 endif
 
 AM_CFLAGS = @GTHREAD_CFLAGS@ @GLIB_CFLAGS@ @GDBUS_CFLAGS@ @GATCHAT_CFLAGS@ \
-					@GISI_CFLAGS@ -DPLUGINDIR=\""$(plugindir)"\"
+				@GISI_CFLAGS@ -DPLUGINDIR=\""$(plugindir)"\"
 
 INCLUDES = -I$(top_builddir)/include -I$(top_builddir)
 
@@ -45,9 +45,10 @@ EXTRA_DIST = ofono.conf
 MAINTAINERCLEANFILES = Makefile.in
 
 ofono.exp: $(ofonod_OBJECTS)
-	$(AM_V_GEN)nm -B *.o | awk '{ print $$3 }' | sort -u | grep -E -e '^ofono_' > $@
+	$(AM_V_GEN)$(NM) $^ | $(AWK) '{ print $$3 }' | sort -u | \
+					$(EGREP) -e '^ofono_' > $@
 
 ofono.ver: ofono.exp
-	@echo "{ global:" > $@
-	$(AM_V_GEN)cat $< | sed -e "s/\(.*\)/\1;/" >> $@
-	@echo "local: *; };" >> $@
+	$(AM_V_at)echo "{ global:" > $@
+	$(AM_V_GEN)$(SED) -e "s/\(.*\)/\1;/" $< >> $@
+	$(AM_V_at)echo "local: *; };" >> $@

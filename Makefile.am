@@ -11,4 +11,4 @@ DISTCHECK_CONFIGURE_FLAGS = --disable-datafiles
 
 MAINTAINERCLEANFILES = Makefile.in \
 	aclocal.m4 configure config.h.in config.sub config.guess \
-	ltmain.sh depcomp missing install-sh mkinstalldirs
+	ltmain.sh depcomp compile missing install-sh mkinstalldirs
