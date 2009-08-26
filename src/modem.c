@@ -526,6 +526,8 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 		if (powered) {
 			if (modem->driver->populate)
 				modem->driver->populate(modem);
+
+			__ofono_history_probe_drivers(modem);
 		} else {
 			remove_all_atoms(modem);
 		}
@@ -587,6 +589,8 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 	if (powered) {
 		if (modem->driver->populate)
 			modem->driver->populate(modem);
+
+		__ofono_history_probe_drivers(modem);
 	} else {
 		remove_all_atoms(modem);
 	}
@@ -965,8 +969,6 @@ int ofono_modem_register(struct ofono_modem *modem)
 		return -EIO;
 	}
 
-	__ofono_history_probe_drivers(modem);
-
 	g_free(modem->driver_type);
 	modem->driver_type = NULL;
 
@@ -976,8 +978,10 @@ int ofono_modem_register(struct ofono_modem *modem)
 	if (modem->powered_persistent)
 		set_powered(modem, TRUE);
 
-	if (modem->powered == TRUE && modem->driver->populate)
+	if (modem->powered == TRUE && modem->driver->populate) {
 		modem->driver->populate(modem);
+		__ofono_history_probe_drivers(modem);
+	}
 
 	return 0;
 }
