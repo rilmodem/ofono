@@ -76,6 +76,7 @@ struct sim_file_op {
 
 struct ofono_sim {
 	char *imsi;
+	unsigned char mnc_length;
 	GSList *own_numbers;
 	GSList *new_numbers;
 	gboolean ready;
@@ -153,6 +154,10 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	if (sim->imsi)
 		ofono_dbus_dict_append(&dict, "SubscriberIdentity",
 					DBUS_TYPE_STRING, &sim->imsi);
+
+	if (sim->mnc_length)
+		ofono_dbus_dict_append(&dict, "MNCLength",
+					DBUS_TYPE_BYTE, &sim->mnc_length);
 
 	own_numbers = get_own_numbers(sim->own_numbers);
 
@@ -406,10 +411,48 @@ check:
 	sim->new_numbers = NULL;
 }
 
+static void sim_ad_read_cb(int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sim->atom);
+	int new_mnc_length;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	if (length < 4)
+		return;
+
+	new_mnc_length = data[3] & 0xf;
+
+	if (sim->mnc_length != new_mnc_length) {
+		sim->mnc_length = new_mnc_length;
+
+		ofono_dbus_signal_property_changed(conn, path,
+						SIM_MANAGER_INTERFACE,
+						"MNCLength", DBUS_TYPE_BYTE,
+						&sim->mnc_length);
+	}
+}
+
 static void sim_own_numbers_update(struct ofono_sim *sim)
 {
 	ofono_sim_read(sim, SIM_EFMSISDN_FILEID,
 			sim_msisdn_read_cb, sim);
+}
+
+static void sim_mnc_length_update(struct ofono_sim *sim)
+{
+	ofono_sim_read(sim, SIM_EFAD_FILEID,
+			sim_ad_read_cb, sim);
 }
 
 static void sim_ready(void *user)
@@ -417,6 +460,7 @@ static void sim_ready(void *user)
 	struct ofono_sim *sim = user;
 
 	sim_own_numbers_update(sim);
+	sim_mnc_length_update(sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
