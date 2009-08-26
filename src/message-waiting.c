@@ -213,7 +213,7 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 	string_to_phone_number(number, &req->number);
 	req->msg = dbus_message_ref(msg);
 
-	sim_adn_build(efmbdn, req->mw->efmbdn_length, &req->number);
+	sim_adn_build(efmbdn, req->mw->efmbdn_length, &req->number, NULL);
 
 	if (ofono_sim_write(req->mw->sim, SIM_EFMBDN_FILEID, mbdn_set_cb,
 			OFONO_SIM_FILE_STRUCTURE_FIXED,
@@ -386,7 +386,8 @@ static void mw_mbdn_read_cb(int ok,
 	if (i == 5)
 		return;
 
-	if (sim_adn_parse(data, record_length, &mw->mailbox_number[i]) == FALSE)
+	if (sim_adn_parse(data, record_length, &mw->mailbox_number[i], NULL) ==
+			FALSE)
 		mw->mailbox_number[i].number[0] = '\0';
 
 	if (mw_mailbox_property_name[i]) {

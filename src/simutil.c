@@ -403,7 +403,7 @@ const struct sim_eons_operator_info *sim_eons_lookup_with_lac(
 }
 
 gboolean sim_adn_parse(const unsigned char *data, int length,
-			struct ofono_phone_number *ph)
+			struct ofono_phone_number *ph, char **identifier)
 {
 	int number_len;
 	int ton_npi;
@@ -411,19 +411,31 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 	if (length < 14)
 		return FALSE;
 
-	/* Skip Alpha-Identifier field */
+	/* Alpha-Identifier field */
+	if (identifier) {
+		if (length > 14)
+			*identifier = sim_string_to_utf8(data, length - 14);
+		 else
+			*identifier = NULL;
+	}
 	data += length - 14;
 
 	number_len = *data++;
 	ton_npi = *data++;
 
-	if (number_len > 11 || ton_npi == 0xff)
+	if (number_len > 11 || ton_npi == 0xff) {
+		if (identifier && *identifier) {
+			g_free(*identifier);
+			*identifier = NULL;
+		}
+
 		return FALSE;
+	}
 
 	ph->type = ton_npi;
 
 	/* BCD coded, however the TON/NPI is given by the first byte */
-	number_len = (number_len - 1) * 2;
+	number_len -= 1;
 
 	extract_bcd_number(data, number_len, ph->number);
 
@@ -431,13 +443,33 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 }
 
 void sim_adn_build(unsigned char *data, int length,
-			const struct ofono_phone_number *ph)
+			const struct ofono_phone_number *ph,
+			const char *identifier)
 {
 	int number_len = strlen(ph->number);
+	unsigned char *gsm_identifier;
+	long gsm_bytes;
 
 	/* Alpha-Identifier field */
 	if (length > 14) {
 		memset(data, 0xff, length - 14);
+
+		if (identifier) {
+			/* TODO: figure out when the identifier needs to
+			 * be encoded in UCS2 and do this.
+			 */
+			gsm_identifier = convert_utf8_to_gsm(identifier,
+					-1, NULL, &gsm_bytes, 0);
+
+			if (gsm_identifier) {
+				if (gsm_bytes > length - 14)
+					gsm_bytes = length - 14;
+
+				memcpy(data, gsm_identifier, gsm_bytes);
+				g_free(gsm_identifier);
+			}
+		}
+
 		data += length - 14;
 	}
 

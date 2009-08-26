@@ -219,7 +219,8 @@ static gboolean set_own_numbers(struct ofono_sim *sim,
 	for (record = 1; record <= sim->efmsisdn_records; record++) {
 		if (new_numbers) {
 			number = new_numbers->data;
-			sim_adn_build(efmsisdn, sim->efmsisdn_length, number);
+			sim_adn_build(efmsisdn, sim->efmsisdn_length,
+					number, NULL);
 			new_numbers = new_numbers->next;
 		} else
 			memset(efmsisdn, 0xff, sim->efmsisdn_length);
@@ -370,7 +371,7 @@ static void sim_msisdn_read_cb(int ok,
 	sim->efmsisdn_length = record_length;
 	sim->efmsisdn_records = total;
 
-	if (sim_adn_parse(data, record_length, &ph) == TRUE) {
+	if (sim_adn_parse(data, record_length, &ph, NULL) == TRUE) {
 		struct ofono_phone_number *own;
 
 		own = g_new(struct ofono_phone_number, 1);
