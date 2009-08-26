@@ -79,6 +79,7 @@ struct ofono_sim {
 	unsigned char mnc_length;
 	GSList *own_numbers;
 	GSList *new_numbers;
+	GSList *service_numbers;
 	gboolean ready;
 	GQueue *simop_q;
 	gint simop_source;
@@ -105,6 +106,11 @@ struct sim_ready_watch {
 	ofono_destroy_func destroy;
 };
 
+struct service_number {
+	char *id;
+	struct ofono_phone_number ph;
+};
+
 static char **get_own_numbers(GSList *own_numbers)
 {
 	int nelem = 0;
@@ -127,9 +133,37 @@ static char **get_own_numbers(GSList *own_numbers)
 	return ret;
 }
 
+static char **get_service_numbers(GSList *service_numbers)
+{
+	int nelem;
+	GSList *l;
+	struct service_number *num;
+	char **ret;
+
+	nelem = g_slist_length(service_numbers) * 2;
+
+	ret = g_new0(char *, nelem + 1);
+
+	nelem = 0;
+	for (l = service_numbers; l; l = l->next) {
+		num = l->data;
+
+		ret[nelem++] = g_strdup(num->id);
+		ret[nelem++] = g_strdup(phone_number_to_string(&num->ph));
+	}
+
+	return ret;
+}
+
 static void sim_file_op_free(struct sim_file_op *node)
 {
 	g_free(node);
+}
+
+static void service_number_free(struct service_number *num)
+{
+	g_free(num->id);
+	g_free(num);
 }
 
 static DBusMessage *sim_get_properties(DBusConnection *conn,
@@ -140,6 +174,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	char **own_numbers;
+	char **service_numbers;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -164,6 +199,15 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append_array(&dict, "SubscriberNumbers",
 					DBUS_TYPE_STRING, &own_numbers);
 	g_strfreev(own_numbers);
+
+	if (sim->service_numbers) {
+		service_numbers = get_service_numbers(sim->service_numbers);
+
+		ofono_dbus_dict_append_dict(&dict, "ServiceDiallingNumbers",
+						DBUS_TYPE_STRING,
+						&service_numbers);
+		g_strfreev(service_numbers);
+	}
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -444,16 +488,91 @@ static void sim_ad_read_cb(int ok,
 	}
 }
 
+static gint service_number_compare(gconstpointer a, gconstpointer b)
+{
+	const struct service_number *sdn = a;
+	const char *id = b;
+
+	return strcmp(sdn->id, id);
+}
+
+static void sim_sdn_read_cb(int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	int total;
+	struct ofono_phone_number ph;
+	char *alpha;
+	char **service_numbers;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sim->atom);
+
+	if (!ok)
+		goto check;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
+		return;
+
+	if (record_length < 14 || length < record_length)
+		return;
+
+	total = length / record_length;
+
+	if (sim_adn_parse(data, record_length, &ph, &alpha) == TRUE) {
+		struct service_number *sdn;
+
+		if (!alpha || alpha[0] == '\0') {
+			if (alpha)
+				g_free(alpha);
+
+			/* Use phone number if Id is unavailable */
+			alpha = g_strdup(phone_number_to_string(&ph));
+		}
+
+		if (sim->service_numbers &&
+				g_slist_find_custom(sim->service_numbers,
+					alpha, service_number_compare)) {
+			ofono_error("Duplicate EFsdn entries for `%s'\n",
+					alpha);
+			g_free(alpha);
+
+			goto check;
+		}
+
+		sdn = g_new(struct service_number, 1);
+		sdn->id = alpha;
+		memcpy(&sdn->ph, &ph, sizeof(struct ofono_phone_number));
+
+		sim->service_numbers =
+			g_slist_prepend(sim->service_numbers, sdn);
+	}
+
+	if (record != total)
+		return;
+
+check:
+	/* All records retrieved */
+	if (sim->service_numbers) {
+		sim->service_numbers = g_slist_reverse(sim->service_numbers);
+
+		service_numbers = get_service_numbers(sim->service_numbers);
+
+		ofono_dbus_signal_dict_property_changed(conn, path,
+						SIM_MANAGER_INTERFACE,
+						"ServiceDiallingNumbers",
+						DBUS_TYPE_STRING,
+						&service_numbers);
+		g_strfreev(service_numbers);
+	}
+}
+
 static void sim_own_numbers_update(struct ofono_sim *sim)
 {
 	ofono_sim_read(sim, SIM_EFMSISDN_FILEID,
 			sim_msisdn_read_cb, sim);
-}
-
-static void sim_mnc_length_update(struct ofono_sim *sim)
-{
-	ofono_sim_read(sim, SIM_EFAD_FILEID,
-			sim_ad_read_cb, sim);
 }
 
 static void sim_ready(void *user)
@@ -461,7 +580,11 @@ static void sim_ready(void *user)
 	struct ofono_sim *sim = user;
 
 	sim_own_numbers_update(sim);
-	sim_mnc_length_update(sim);
+
+	ofono_sim_read(sim, SIM_EFAD_FILEID,
+			sim_ad_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFSDN_FILEID,
+			sim_sdn_read_cb, sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
@@ -1148,6 +1271,13 @@ static void sim_remove(struct ofono_atom *atom)
 		g_slist_foreach(sim->own_numbers, (GFunc)g_free, NULL);
 		g_slist_free(sim->own_numbers);
 		sim->own_numbers = NULL;
+	}
+
+	if (sim->service_numbers) {
+		g_slist_foreach(sim->service_numbers,
+				(GFunc)service_number_free, NULL);
+		g_slist_free(sim->service_numbers);
+		sim->service_numbers = NULL;
 	}
 
 	if (sim->simop_source) {

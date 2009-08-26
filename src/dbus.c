@@ -112,6 +112,59 @@ void ofono_dbus_dict_append_array(DBusMessageIter *dict, const char *key,
 	dbus_message_iter_close_container(dict, &entry);
 }
 
+static void append_dict_variant(DBusMessageIter *iter, int type, void *val)
+{
+	DBusMessageIter variant, array, entry;
+	char typesig[5];
+	char arraysig[6];
+	const void **val_array = *(const void ***)val;
+	int i;
+
+	arraysig[0] = DBUS_TYPE_ARRAY;
+	arraysig[1] = typesig[0] = DBUS_DICT_ENTRY_BEGIN_CHAR;
+	arraysig[2] = typesig[1] = DBUS_TYPE_STRING;
+	arraysig[3] = typesig[2] = type;
+	arraysig[4] = typesig[3] = DBUS_DICT_ENTRY_END_CHAR;
+	arraysig[5] = typesig[4] = '\0';
+
+	dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+						arraysig, &variant);
+
+	dbus_message_iter_open_container(&variant, DBUS_TYPE_ARRAY,
+						typesig, &array);
+
+	for (i = 0; val_array[i]; i += 2) {
+		dbus_message_iter_open_container(&array, DBUS_TYPE_DICT_ENTRY,
+							NULL, &entry);
+
+		dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING,
+						&(val_array[i + 0]));
+		dbus_message_iter_append_basic(&entry, type,
+						&(val_array[i + 1]));
+
+		dbus_message_iter_close_container(&array, &entry);
+	}
+
+	dbus_message_iter_close_container(&variant, &array);
+
+	dbus_message_iter_close_container(iter, &variant);
+}
+
+void ofono_dbus_dict_append_dict(DBusMessageIter *dict, const char *key,
+				int type, void *val)
+{
+	DBusMessageIter entry;
+
+	dbus_message_iter_open_container(dict, DBUS_TYPE_DICT_ENTRY,
+						NULL, &entry);
+
+	dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
+
+	append_dict_variant(&entry, type, val);
+
+	dbus_message_iter_close_container(dict, &entry);
+}
+
 int ofono_dbus_signal_property_changed(DBusConnection *conn,
 					const char *path,
 					const char *interface,
@@ -161,6 +214,33 @@ int ofono_dbus_signal_array_property_changed(DBusConnection *conn,
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &name);
 
 	append_array_variant(&iter, type, value);
+
+	return g_dbus_send_message(conn, signal);
+}
+
+int ofono_dbus_signal_dict_property_changed(DBusConnection *conn,
+						const char *path,
+						const char *interface,
+						const char *name,
+						int type, void *value)
+
+{
+	DBusMessage *signal;
+	DBusMessageIter iter;
+
+	signal = dbus_message_new_signal(path, interface, "PropertyChanged");
+
+	if (!signal) {
+		ofono_error("Unable to allocate new %s.PropertyChanged signal",
+				interface);
+		return -1;
+	}
+
+	dbus_message_iter_init_append(signal, &iter);
+
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &name);
+
+	append_dict_variant(&iter, type, value);
 
 	return g_dbus_send_message(conn, signal);
 }
