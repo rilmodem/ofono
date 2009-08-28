@@ -37,6 +37,8 @@
 #include "pep.h"
 
 struct _GIsiPEP {
+	GIsiPEPCallback ready;
+	void *opaque;
 	int gprs_fd;
 	guint source;
 	uint16_t handle;
@@ -50,8 +52,6 @@ static gboolean g_isi_pep_callback(GIOChannel *channel, GIOCondition cond,
 	GIsiPEP *pep = data;
 	int fd = g_io_channel_unix_get_fd(channel);
 	int encap = PNPIPE_ENCAP_IP;
-	unsigned ifi;
-	socklen_t len = sizeof(ifi);
 
 	if (cond & (G_IO_HUP|G_IO_NVAL))
 		return FALSE;
@@ -61,16 +61,16 @@ static gboolean g_isi_pep_callback(GIOChannel *channel, GIOCondition cond,
 		return TRUE;
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 
-	if (setsockopt(fd, SOL_PNPIPE, PNPIPE_ENCAP, &encap, sizeof(encap))
-	 || getsockopt(fd, SOL_PNPIPE, PNPIPE_IFINDEX, &ifi, &len)) {
+	if (setsockopt(fd, SOL_PNPIPE, PNPIPE_ENCAP, &encap, sizeof(encap))) {
 		close(fd);
 		return TRUE;
 	}
 	pep->gprs_fd = fd;
+	pep->ready(pep, pep->opaque);
 	return FALSE;
 }
 
-GIsiPEP *g_isi_pep_create(GIsiModem *modem)
+GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback cb, void *opaque)
 {
 	GIsiPEP *pep = g_malloc(sizeof(*pep));
 	GIOChannel *channel;
@@ -89,6 +89,8 @@ GIsiPEP *g_isi_pep_create(GIsiModem *modem)
 	    setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
 		goto error;
 
+	pep->ready = cb;
+	pep->opaque = opaque;
 	pep->gprs_fd = -1;
 	pep->handle = 0;
 	if (listen(fd, 1) || ioctl(fd, SIOCPNGETOBJECT, &pep->handle))
@@ -121,4 +123,21 @@ void g_isi_pep_destroy(GIsiPEP *pep)
 	else
 		g_source_remove(pep->source);
 	g_free(pep);
+}
+
+unsigned g_isi_pep_get_ifindex(const GIsiPEP *pep)
+{
+	unsigned ifi;
+	socklen_t len = sizeof (ifi);
+
+	g_assert (pep->gprs_fd != -1);
+
+	getsockopt(pep->gprs_fd, SOL_PNPIPE, PNPIPE_IFINDEX, &ifi, &len);
+	return ifi;
+}
+
+char *g_isi_pep_get_ifname(const GIsiPEP *pep, char *ifname)
+{
+	unsigned ifi = g_isi_pep_get_ifindex(pep);
+	return if_indextoname(ifi, ifname);
 }

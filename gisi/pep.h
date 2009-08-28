@@ -22,7 +22,10 @@
  */
 
 typedef struct _GIsiPEP GIsiPEP;
+typedef void (*GIsiPEPCallback)(GIsiPEP *pep, void *opaque);
 
-GIsiPEP *g_isi_pep_create(GIsiModem *modem);
+GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback, void *);
 void g_isi_pep_destroy(GIsiPEP *pep);
 uint16_t g_isi_pep_get_object(const GIsiPEP *pep);
+unsigned g_isi_pep_get_ifindex(const GIsiPEP *pep);
+char *g_isi_pep_get_ifname(const GIsiPEP *pep, char *ifname);
