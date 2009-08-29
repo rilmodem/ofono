@@ -182,6 +182,16 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 		case GSMV1_STATE_GARBAGE:
 			if (byte == '\r')
 				syntax->state = GSMV1_STATE_GARBAGE_CHECK_LF;
+			/* This handles the case of echo of the PDU terminated
+			 * by CtrlZ character
+			 */
+			else if (byte == 26) {
+				syntax->state = GSMV1_STATE_IDLE;
+				res = G_AT_SYNTAX_RESULT_UNRECOGNIZED;
+				i += 1;
+				goto out;
+			}
+
 			break;
 
 		case GSMV1_STATE_GARBAGE_CHECK_LF:
