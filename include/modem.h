@@ -51,18 +51,20 @@ ofono_bool_t ofono_modem_get_powered(struct ofono_modem *modem);
 struct ofono_modem_driver {
 	const char *name;
 
-	/* probe - Detect existence of device and initialize any
-	 * device-specific data structures */
+	/* Detect existence of device and initialize any device-specific data
+	 * structures */
 	int (*probe)(struct ofono_modem *modem);
-	/* remove - Destroy data structures allocated during probe */
+
+	/* Destroy data structures allocated during probe and cleanup */
 	int (*remove)(struct ofono_modem *modem);
 
-	/* enable - Power up device */
+	/* Power up device */
 	int (*enable)(struct ofono_modem *modem);
-	/* disable - Power down device */
+
+	/* Power down device */
 	int (*disable)(struct ofono_modem *modem);
 
-	/* populate - Populate the atoms supported by this device */
+	/* Populate the atoms supported by this device */
 	int (*populate)(struct ofono_modem *modem);
 };
 
