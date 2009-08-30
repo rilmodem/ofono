@@ -896,6 +896,8 @@ struct ofono_modem *ofono_modem_create(const char *node, const char *type)
 	struct ofono_modem *modem;
 	char path[128];
 
+	DBG("%s, %s", node, type);
+
 	if (strlen(node) > 16)
 		return NULL;
 
