@@ -244,6 +244,8 @@ static void parse_config(const char *file)
 		if (modem == NULL)
 			continue;
 
+		g_modems = g_slist_prepend(g_modems, modem);
+
 		ofono_modem_set_data(modem, parsed);
 		ofono_modem_register(modem);
 	}
@@ -416,6 +418,10 @@ static int generic_at_probe(struct ofono_modem *modem)
 
 static int generic_at_remove(struct ofono_modem *modem)
 {
+	struct generic_at_data *d = ofono_modem_get_data(modem);
+
+	generic_at_data_free(d);
+
 	return 0;
 }
 
