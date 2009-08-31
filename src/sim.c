@@ -581,10 +581,8 @@ static void sim_ready(void *user)
 
 	sim_own_numbers_update(sim);
 
-	ofono_sim_read(sim, SIM_EFAD_FILEID,
-			sim_ad_read_cb, sim);
-	ofono_sim_read(sim, SIM_EFSDN_FILEID,
-			sim_sdn_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFAD_FILEID, sim_ad_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFSDN_FILEID, sim_sdn_read_cb, sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
