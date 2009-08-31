@@ -80,6 +80,7 @@ struct ofono_sim {
 	GSList *own_numbers;
 	GSList *new_numbers;
 	GSList *service_numbers;
+	gboolean sdn_ready;
 	gboolean ready;
 	GQueue *simop_q;
 	gint simop_source;
@@ -200,7 +201,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 					DBUS_TYPE_STRING, &own_numbers);
 	g_strfreev(own_numbers);
 
-	if (sim->service_numbers) {
+	if (sim->service_numbers && sim->sdn_ready) {
 		service_numbers = get_service_numbers(sim->service_numbers);
 
 		ofono_dbus_dict_append_dict(&dict, "ServiceDiallingNumbers",
@@ -561,6 +562,7 @@ check:
 		char **service_numbers;
 
 		sim->service_numbers = g_slist_reverse(sim->service_numbers);
+		sim->sdn_ready = TRUE;
 
 		service_numbers = get_service_numbers(sim->service_numbers);
 
