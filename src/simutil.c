@@ -407,37 +407,37 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 {
 	int number_len;
 	int ton_npi;
+	const unsigned char *alpha;
+	int alpha_length;
 
 	if (length < 14)
 		return FALSE;
 
-	/* Alpha-Identifier field */
-	if (identifier) {
-		if (length > 14)
-			*identifier = sim_string_to_utf8(data, length - 14);
-		 else
-			*identifier = NULL;
-	}
-	data += length - 14;
+	alpha = data;
+	alpha_length = length - 14;
+
+	data += alpha_length;
 
 	number_len = *data++;
 	ton_npi = *data++;
 
-	if (number_len > 11 || ton_npi == 0xff) {
-		if (identifier && *identifier) {
-			g_free(*identifier);
-			*identifier = NULL;
-		}
-
+	if (number_len > 11 || ton_npi == 0xff)
 		return FALSE;
-	}
 
 	ph->type = ton_npi;
 
 	/* BCD coded, however the TON/NPI is given by the first byte */
 	number_len -= 1;
-
 	extract_bcd_number(data, number_len, ph->number);
+
+	if (identifier == NULL)
+		return TRUE;
+
+	/* Alpha-Identifier field */
+	if (alpha_length > 0)
+		*identifier = sim_string_to_utf8(alpha, alpha_length);
+	else
+		*identifier = NULL;
 
 	return TRUE;
 }
