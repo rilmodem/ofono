@@ -504,12 +504,12 @@ static void sim_sdn_read_cb(int ok,
 				int record_length, void *userdata)
 {
 	struct ofono_sim *sim = userdata;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sim->atom);
 	int total;
 	struct ofono_phone_number ph;
 	char *alpha;
-	char **service_numbers;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(sim->atom);
+	struct service_number *sdn;
 
 	if (!ok)
 		goto check;
@@ -522,41 +522,44 @@ static void sim_sdn_read_cb(int ok,
 
 	total = length / record_length;
 
-	if (sim_adn_parse(data, record_length, &ph, &alpha) == TRUE) {
-		struct service_number *sdn;
+	if (sim_adn_parse(data, record_length, &ph, &alpha) == FALSE)
+		goto out;
 
-		if (!alpha || alpha[0] == '\0') {
-			if (alpha)
-				g_free(alpha);
 
-			/* Use phone number if Id is unavailable */
-			alpha = g_strdup(phone_number_to_string(&ph));
-		}
-
-		if (sim->service_numbers &&
-				g_slist_find_custom(sim->service_numbers,
-					alpha, service_number_compare)) {
-			ofono_error("Duplicate EFsdn entries for `%s'\n",
-					alpha);
-			g_free(alpha);
-
-			goto check;
-		}
-
-		sdn = g_new(struct service_number, 1);
-		sdn->id = alpha;
-		memcpy(&sdn->ph, &ph, sizeof(struct ofono_phone_number));
-
-		sim->service_numbers =
-			g_slist_prepend(sim->service_numbers, sdn);
+	/* Use phone number if Id is unavailable */
+	if (alpha && alpha[0] == '\0') {
+		g_free(alpha);
+		alpha = NULL;
 	}
 
+	if (alpha == NULL)
+		alpha = g_strdup(phone_number_to_string(&ph));
+
+	if (sim->service_numbers &&
+			g_slist_find_custom(sim->service_numbers,
+				alpha, service_number_compare)) {
+		ofono_error("Duplicate EFsdn entries for `%s'\n",
+				alpha);
+		g_free(alpha);
+
+		goto out;
+	}
+
+	sdn = g_new(struct service_number, 1);
+	sdn->id = alpha;
+	memcpy(&sdn->ph, &ph, sizeof(struct ofono_phone_number));
+
+	sim->service_numbers = g_slist_prepend(sim->service_numbers, sdn);
+
+out:
 	if (record != total)
 		return;
 
 check:
 	/* All records retrieved */
 	if (sim->service_numbers) {
+		char **service_numbers;
+
 		sim->service_numbers = g_slist_reverse(sim->service_numbers);
 
 		service_numbers = get_service_numbers(sim->service_numbers);
