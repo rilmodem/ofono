@@ -478,14 +478,15 @@ static void sim_ad_read_cb(int ok,
 
 	new_mnc_length = data[3] & 0xf;
 
-	if (sim->mnc_length != new_mnc_length) {
-		sim->mnc_length = new_mnc_length;
+	if (sim->mnc_length == new_mnc_length)
+		return;
 
-		ofono_dbus_signal_property_changed(conn, path,
-						SIM_MANAGER_INTERFACE,
-						"MNCLength", DBUS_TYPE_BYTE,
-						&sim->mnc_length);
-	}
+	sim->mnc_length = new_mnc_length;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					SIM_MANAGER_INTERFACE,
+					"MNCLength", DBUS_TYPE_BYTE,
+					&sim->mnc_length);
 }
 
 static gint service_number_compare(gconstpointer a, gconstpointer b)
