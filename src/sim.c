@@ -191,7 +191,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 					DBUS_TYPE_STRING, &sim->imsi);
 
 	if (sim->mnc_length)
-		ofono_dbus_dict_append(&dict, "MNCLength",
+		ofono_dbus_dict_append(&dict, "MobileNetworkCodeLength",
 					DBUS_TYPE_BYTE, &sim->mnc_length);
 
 	own_numbers = get_own_numbers(sim->own_numbers);
@@ -485,8 +485,8 @@ static void sim_ad_read_cb(int ok,
 
 	ofono_dbus_signal_property_changed(conn, path,
 					SIM_MANAGER_INTERFACE,
-					"MNCLength", DBUS_TYPE_BYTE,
-					&sim->mnc_length);
+					"MobileNetworkCodeLength",
+					DBUS_TYPE_BYTE, &sim->mnc_length);
 }
 
 static gint service_number_compare(gconstpointer a, gconstpointer b)
