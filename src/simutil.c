@@ -447,30 +447,30 @@ void sim_adn_build(unsigned char *data, int length,
 			const char *identifier)
 {
 	int number_len = strlen(ph->number);
-	unsigned char *gsm_identifier;
+	unsigned char *gsm_identifier = NULL;
 	long gsm_bytes;
+	long alpha_length;
+
+	alpha_length = length - 14;
 
 	/* Alpha-Identifier field */
-	if (length > 14) {
-		memset(data, 0xff, length - 14);
+	if (alpha_length > 0) {
+		memset(data, 0xff, alpha_length);
 
-		if (identifier) {
-			/* TODO: figure out when the identifier needs to
-			 * be encoded in UCS2 and do this.
-			 */
+		if (identifier)
 			gsm_identifier = convert_utf8_to_gsm(identifier,
 					-1, NULL, &gsm_bytes, 0);
 
-			if (gsm_identifier) {
-				if (gsm_bytes > length - 14)
-					gsm_bytes = length - 14;
-
-				memcpy(data, gsm_identifier, gsm_bytes);
-				g_free(gsm_identifier);
-			}
+		if (gsm_identifier) {
+			memcpy(data, gsm_identifier,
+				MIN(gsm_bytes, alpha_length));
+			g_free(gsm_identifier);
 		}
 
-		data += length - 14;
+		/* TODO: figure out when the identifier needs to
+		 * be encoded in UCS2 and do this.
+		 */
+		data += alpha_length;
 	}
 
 	number_len = (number_len + 1) / 2;
