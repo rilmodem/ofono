@@ -1813,8 +1813,9 @@ static void voicecall_remove(struct ofono_atom *atom)
 }
 
 struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
-					const char *driver,
-					void *data)
+						int vendor,
+						const char *driver,
+						void *data)
 {
 	struct ofono_voicecall *vc;
 	GSList *l;
@@ -1827,7 +1828,6 @@ struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
 	if (vc == NULL)
 		return NULL;
 
-	vc->driver_data = data;
 	vc->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_VOICECALL,
 						voicecall_remove, vc);
 
@@ -1837,7 +1837,7 @@ struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(vc) < 0)
+		if (drv->probe(vc, vendor, data) < 0)
 			continue;
 
 		vc->driver = drv;

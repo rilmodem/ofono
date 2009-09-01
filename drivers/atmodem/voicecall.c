@@ -983,9 +983,10 @@ static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 	ofono_voicecall_register(vc);
 }
 
-static int at_voicecall_probe(struct ofono_voicecall *vc)
+static int at_voicecall_probe(struct ofono_voicecall *vc, int vendor,
+				void *data)
 {
-	GAtChat *chat = ofono_voicecall_get_data(vc);
+	GAtChat *chat = data;
 	struct voicecall_data *vd;
 
 	vd = g_new0(struct voicecall_data, 1);

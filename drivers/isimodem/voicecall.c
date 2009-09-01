@@ -127,9 +127,10 @@ static void isi_send_tones(struct ofono_voicecall *vc, const char *tones,
 {
 }
 
-static int isi_voicecall_probe(struct ofono_voicecall *call)
+static int isi_voicecall_probe(struct ofono_voicecall *call, int vendor,
+				void *user)
 {
-	GIsiModem *idx = ofono_voicecall_get_data(call);
+	GIsiModem *idx = user;
 	struct voicecall_data *data = g_try_new0(struct voicecall_data, 1);
 
 	if (!data)
