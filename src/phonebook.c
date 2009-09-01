@@ -537,6 +537,7 @@ static void phonebook_remove(struct ofono_atom *atom)
 }
 
 struct ofono_phonebook *ofono_phonebook_create(struct ofono_modem *modem,
+						int vendor,
 						const char *driver, void *data)
 {
 	struct ofono_phonebook *pb;
@@ -551,7 +552,6 @@ struct ofono_phonebook *ofono_phonebook_create(struct ofono_modem *modem,
 		return NULL;
 
 	pb->vcards = g_string_new(NULL);
-	pb->driver_data = data;
 	pb->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_PHONEBOOK,
 						phonebook_remove, pb);
 
@@ -561,7 +561,7 @@ struct ofono_phonebook *ofono_phonebook_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(pb) < 0)
+		if (drv->probe(pb, vendor, data) < 0)
 			continue;
 
 		pb->driver = drv;

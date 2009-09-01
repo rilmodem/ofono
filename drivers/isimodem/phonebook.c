@@ -376,9 +376,10 @@ static gboolean isi_phonebook_register(gpointer user)
 	return FALSE;
 }
 
-static int isi_phonebook_probe(struct ofono_phonebook *pb)
+static int isi_phonebook_probe(struct ofono_phonebook *pb, int vendor,
+				void *user)
 {
-	GIsiModem *idx = ofono_phonebook_get_data(pb);
+	GIsiModem *idx = user;
 	struct pb_data *data = g_try_new0(struct pb_data, 1);
 
 	if (!data)

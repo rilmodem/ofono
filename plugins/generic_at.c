@@ -520,7 +520,7 @@ static int generic_at_populate(struct ofono_modem *modem)
 	ofono_call_barring_create(modem, 0, "generic_at", chat);
 	ofono_ssn_create(modem, "generic_at", chat);
 	ofono_sms_create(modem, "generic_at", chat);
-	ofono_phonebook_create(modem, "generic_at", chat);
+	ofono_phonebook_create(modem, 0, "generic_at", chat);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
