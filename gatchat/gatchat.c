@@ -44,6 +44,7 @@ static void debug_chat(GAtChat *chat, gboolean in, const char *str, gsize len);
 struct at_command {
 	char *cmd;
 	char **prefixes;
+	gboolean expect_pdu;
 	guint id;
 	GAtResultFunc callback;
 	GAtNotifyFunc listing;
@@ -134,6 +135,7 @@ static gint at_command_compare_by_id(gconstpointer a, gconstpointer b)
 
 static struct at_command *at_command_create(const char *cmd,
 						const char **prefix_list,
+						gboolean expect_pdu,
 						GAtNotifyFunc listing,
 						GAtResultFunc func,
 						gpointer user_data,
@@ -183,6 +185,7 @@ static struct at_command *at_command_create(const char *cmd,
 
 	c->cmd[len+1] = '\0';
 
+	c->expect_pdu = expect_pdu;
 	c->prefixes = prefixes;
 	c->callback = func;
 	c->listing = listing;
@@ -376,6 +379,7 @@ static gboolean g_at_chat_handle_command_response(GAtChat *p,
 {
 	int i;
 	int size = sizeof(terminator_table) / sizeof(struct terminator_info);
+	int hint;
 
 	for (i = 0; i < size; i++) {
 		struct terminator_info *info = &terminator_table[i];
@@ -403,8 +407,18 @@ static gboolean g_at_chat_handle_command_response(GAtChat *p,
 	}
 
 out:
+	if (cmd->listing && cmd->expect_pdu)
+		hint = G_AT_SYNTAX_EXPECT_PDU;
+	else
+		hint = G_AT_SYNTAX_EXPECT_MULTILINE;
+
 	if (p->syntax->set_hint)
-		p->syntax->set_hint(p->syntax, G_AT_SYNTAX_EXPECT_MULTILINE);
+		p->syntax->set_hint(p->syntax, hint);
+
+	if (cmd->listing && cmd->expect_pdu) {
+		p->pdu_notify = line;
+		return TRUE;
+	}
 
 	if (cmd->listing) {
 		GAtResult result;
@@ -460,19 +474,12 @@ done:
 	g_free(str);
 }
 
-static void have_pdu(GAtChat *p, char *pdu)
+static void have_notify_pdu(GAtChat *p, char *pdu, GAtResult *result)
 {
 	GHashTableIter iter;
 	struct at_notify *notify;
 	char *prefix;
 	gpointer key, value;
-	GAtResult result;
-
-	if (!pdu)
-		goto out;
-
-	result.lines = g_slist_prepend(NULL, p->pdu_notify);
-	result.final_or_pdu = pdu;
 
 	g_hash_table_iter_init(&iter, p->notify_list);
 
@@ -486,13 +493,43 @@ static void have_pdu(GAtChat *p, char *pdu)
 		if (!notify->pdu)
 			continue;
 
-		g_slist_foreach(notify->nodes, at_notify_call_callback,
-					&result);
+		g_slist_foreach(notify->nodes, at_notify_call_callback, result);
 	}
+}
+
+static void have_pdu(GAtChat *p, char *pdu)
+{
+	struct at_command *cmd;
+	GAtResult result;
+	gboolean listing_pdu = FALSE;
+
+	if (!pdu)
+		goto err;
+
+	result.lines = g_slist_prepend(NULL, p->pdu_notify);
+	result.final_or_pdu = pdu;
+
+	cmd = g_queue_peek_head(p->command_queue);
+
+	if (cmd && cmd->expect_pdu && p->cmd_bytes_written > 0) {
+		char c = cmd->cmd[p->cmd_bytes_written - 1];
+
+		if (c == '\r')
+			listing_pdu = TRUE;
+	}
+
+	if (listing_pdu) {
+		cmd->listing(&result, cmd->user_data);
+
+		if (p->syntax->set_hint)
+			p->syntax->set_hint(p->syntax,
+						G_AT_SYNTAX_EXPECT_MULTILINE);
+	} else
+		have_notify_pdu(p, pdu, &result);
 
 	g_slist_free(result.lines);
 
-out:
+err:
 	g_free(p->pdu_notify);
 	p->pdu_notify = NULL;
 
@@ -781,7 +818,7 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	}
 
 	if (chat->cmd_bytes_written == 0 && wakeup_first == TRUE) {
-		cmd = at_command_create(chat->wakeup, NULL, NULL, NULL,
+		cmd = at_command_create(chat->wakeup, NULL, FALSE, NULL, NULL,
 					NULL, NULL);
 
 		if (!cmd)
@@ -1032,6 +1069,7 @@ gboolean g_at_chat_set_debug(GAtChat *chat, GAtDebugFunc func, gpointer user)
 
 static guint send_common(GAtChat *chat, const char *cmd,
 			const char **prefix_list,
+			gboolean expect_pdu,
 			GAtNotifyFunc listing, GAtResultFunc func,
 			gpointer user_data, GDestroyNotify notify)
 {
@@ -1040,7 +1078,7 @@ static guint send_common(GAtChat *chat, const char *cmd,
 	if (chat == NULL || chat->command_queue == NULL)
 		return 0;
 
-	c = at_command_create(cmd, prefix_list, listing, func,
+	c = at_command_create(cmd, prefix_list, expect_pdu, listing, func,
 				user_data, notify);
 
 	if (!c)
@@ -1060,7 +1098,7 @@ guint g_at_chat_send(GAtChat *chat, const char *cmd,
 			const char **prefix_list, GAtResultFunc func,
 			gpointer user_data, GDestroyNotify notify)
 {
-	return send_common(chat, cmd, prefix_list, NULL, func,
+	return send_common(chat, cmd, prefix_list, FALSE, NULL, func,
 				user_data, notify);
 }
 
@@ -1072,7 +1110,19 @@ guint g_at_chat_send_listing(GAtChat *chat, const char *cmd,
 	if (listing == NULL)
 		return 0;
 
-	return send_common(chat, cmd, prefix_list, listing, func,
+	return send_common(chat, cmd, prefix_list, FALSE, listing, func,
+				user_data, notify);
+}
+
+guint g_at_chat_send_pdu_listing(GAtChat *chat, const char *cmd,
+				const char **prefix_list,
+				GAtNotifyFunc listing, GAtResultFunc func,
+				gpointer user_data, GDestroyNotify notify)
+{
+	if (listing == NULL)
+		return 0;
+
+	return send_common(chat, cmd, prefix_list, TRUE, listing, func,
 				user_data, notify);
 }
 

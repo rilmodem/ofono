@@ -95,9 +95,21 @@ guint g_at_chat_send(GAtChat *chat, const char *cmd,
  * intermediate responses immediately through the GAtNotifyFunc callback.
  * The final response will still be sent to GAtResultFunc callback.  The
  * final GAtResult will not contain any lines from the intermediate responses.
- * This is useful for listing commands such as CMGL or CPBR.
+ * This is useful for listing commands such as CPBR.
  */
 guint g_at_chat_send_listing(GAtChat *chat, const char *cmd,
+				const char **valid_resp,
+				GAtNotifyFunc listing, GAtResultFunc func,
+				gpointer user_data, GDestroyNotify notify);
+
+/*!
+ * Same as g_at_chat_send_listing except every response line in valid_resp
+ * is expected to be followed by a PDU.  The listing function will be called
+ * with the intermediate response and the following PDU line.
+ *
+ * This is useful for PDU listing commands like the +CMGL
+ */
+guint g_at_chat_send_pdu_listing(GAtChat *chat, const char *cmd,
 				const char **valid_resp,
 				GAtNotifyFunc listing, GAtResultFunc func,
 				gpointer user_data, GDestroyNotify notify);
