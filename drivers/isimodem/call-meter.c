@@ -87,9 +87,10 @@ static void isi_puct_set(struct ofono_call_meter *cm, const char *currency,
 {
 }
 
-static int isi_call_meter_probe(struct ofono_call_meter *cm)
+static int isi_call_meter_probe(struct ofono_call_meter *cm, int vendor,
+				void *user)
 {
-	GIsiModem *idx = ofono_call_meter_get_data(cm);
+	GIsiModem *idx = user;
 	struct call_meter_data *data = g_try_new0(struct call_meter_data, 1);
 
 	if (!data)

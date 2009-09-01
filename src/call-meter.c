@@ -717,6 +717,7 @@ static void call_meter_remove(struct ofono_atom *atom)
 }
 
 struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
+							int vendor,
 							const char *driver,
 							void *data)
 {
@@ -731,7 +732,6 @@ struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
 	if (cm == NULL)
 		return NULL;
 
-	cm->driver_data = data;
 	cm->atom = __ofono_modem_add_atom(modem,
 						OFONO_ATOM_TYPE_CALL_METER,
 						call_meter_remove, cm);
@@ -742,7 +742,7 @@ struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(cm) < 0)
+		if (drv->probe(cm, vendor, data) < 0)
 			continue;
 
 		cm->driver = drv;

@@ -42,7 +42,7 @@ typedef void(*ofono_call_meter_set_cb_t)(const struct ofono_error *error,
 
 struct ofono_call_meter_driver {
 	const char *name;
-	int (*probe)(struct ofono_call_meter *cm);
+	int (*probe)(struct ofono_call_meter *cm, int vendor, void *data);
 	int (*remove)(struct ofono_call_meter *cm);
 	void (*call_meter_query)(struct ofono_call_meter *cm,
 			ofono_call_meter_query_cb_t cb, void *data);
@@ -66,6 +66,7 @@ int ofono_call_meter_driver_register(const struct ofono_call_meter_driver *d);
 void ofono_call_meter_driver_unregister(const struct ofono_call_meter_driver *d);
 
 struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
+							int vendor,
 							const char *driver,
 							void *data);
 
