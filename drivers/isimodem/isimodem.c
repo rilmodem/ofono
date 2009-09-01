@@ -159,7 +159,7 @@ static int isi_modem_populate(struct ofono_modem *modem)
 	ofono_ussd_create(isi->modem, "isi", isi->idx);
 	ofono_call_forwarding_create(isi->modem, "isi", isi->idx);
 	ofono_call_settings_create(isi->modem, "isi", isi->idx);
-	ofono_call_barring_create(isi->modem, "isi", isi->idx);
+	ofono_call_barring_create(isi->modem, 0, "isi", isi->idx);
 	ofono_call_meter_create(isi->modem, "isi", isi->idx);
 
 	return 0;

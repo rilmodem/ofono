@@ -37,7 +37,7 @@ typedef void (*ofono_call_barring_query_cb_t)(const struct ofono_error *error,
 
 struct ofono_call_barring_driver {
 	const char *name;
-	int (*probe)(struct ofono_call_barring *cb);
+	int (*probe)(struct ofono_call_barring *cb, int vendor, void *data);
 	int (*remove)(struct ofono_call_barring *cb);
 	void (*set)(struct ofono_call_barring *barr, const char *lock,
 			int enable, const char *passwd, int cls,
@@ -53,6 +53,7 @@ int ofono_call_barring_driver_register(const struct ofono_call_barring_driver *d
 void ofono_call_barring_driver_unregister(const struct ofono_call_barring_driver *d);
 
 struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
+							int vendor,
 							const char *driver,
 							void *data);
 

@@ -517,7 +517,7 @@ static int generic_at_populate(struct ofono_modem *modem)
 	ofono_netreg_create(modem, "generic_at", chat);
 	ofono_voicecall_create(modem, "generic_at", chat);
 	ofono_call_meter_create(modem, "generic_at", chat);
-	ofono_call_barring_create(modem, "generic_at", chat);
+	ofono_call_barring_create(modem, 0, "generic_at", chat);
 	ofono_ssn_create(modem, "generic_at", chat);
 	ofono_sms_create(modem, "generic_at", chat);
 	ofono_phonebook_create(modem, "generic_at", chat);

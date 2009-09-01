@@ -1098,7 +1098,9 @@ static void call_barring_remove(struct ofono_atom *atom)
 }
 
 struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
-						const char *driver, void *data)
+							int vendor,
+							const char *driver,
+							void *data)
 {
 	struct ofono_call_barring *cb;
 	GSList *l;
@@ -1116,7 +1118,6 @@ struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 
 	cb->cur_locks = g_new0(int, lcount);
 	cb->new_locks = g_new0(int, lcount);
-	cb->driver_data = data;
 	cb->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_CALL_BARRING,
 						call_barring_remove, cb);
 
@@ -1126,7 +1127,7 @@ struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(cb) < 0)
+		if (drv->probe(cb, vendor, data) < 0)
 			continue;
 
 		cb->driver = drv;

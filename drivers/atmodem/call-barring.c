@@ -206,8 +206,12 @@ static gboolean at_call_barring_register(gpointer user)
 	return FALSE;
 }
 
-static int at_call_barring_probe(struct ofono_call_barring *cb)
+static int at_call_barring_probe(struct ofono_call_barring *cb, int vendor,
+					void *user)
 {
+	GAtChat *chat = user;
+
+	ofono_call_barring_set_data(cb, chat);
 	g_idle_add(at_call_barring_register, cb);
 
 	return 0;
