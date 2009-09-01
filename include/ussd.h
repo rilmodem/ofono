@@ -34,7 +34,7 @@ typedef void (*ofono_ussd_cb_t)(const struct ofono_error *error, void *data);
 
 struct ofono_ussd_driver {
 	const char *name;
-	int (*probe)(struct ofono_ussd *ussd);
+	int (*probe)(struct ofono_ussd *ussd, int vendor, void *data);
 	int (*remove)(struct ofono_ussd *ussd);
 	void (*request)(struct ofono_ussd *ussd, const char *str,
 				ofono_ussd_cb_t, void *data);
@@ -47,7 +47,7 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str);
 int ofono_ussd_driver_register(const struct ofono_ussd_driver *d);
 void ofono_ussd_driver_unregister(const struct ofono_ussd_driver *d);
 
-struct ofono_ussd *ofono_ussd_create(struct ofono_modem *modem,
+struct ofono_ussd *ofono_ussd_create(struct ofono_modem *modem, int vendor,
 					const char *driver, void *data);
 
 void ofono_ussd_register(struct ofono_ussd *ussd);

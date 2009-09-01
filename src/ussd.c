@@ -522,6 +522,7 @@ static void ussd_remove(struct ofono_atom *atom)
 }
 
 struct ofono_ussd *ofono_ussd_create(struct ofono_modem *modem,
+					int vendor,
 					const char *driver,
 					void *data)
 {
@@ -536,7 +537,6 @@ struct ofono_ussd *ofono_ussd_create(struct ofono_modem *modem,
 	if (ussd == NULL)
 		return NULL;
 
-	ussd->driver_data = data;
 	ussd->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_USSD,
 						ussd_remove, ussd);
 
@@ -546,7 +546,7 @@ struct ofono_ussd *ofono_ussd_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(ussd) < 0)
+		if (drv->probe(ussd, vendor, data) < 0)
 			continue;
 
 		ussd->driver = drv;

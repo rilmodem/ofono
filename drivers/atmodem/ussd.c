@@ -143,8 +143,11 @@ static gboolean at_ussd_register(gpointer user)
 	return FALSE;
 }
 
-static int at_ussd_probe(struct ofono_ussd *ussd)
+static int at_ussd_probe(struct ofono_ussd *ussd, int vendor, void *data)
 {
+	GAtChat *chat = data;
+
+	ofono_ussd_set_data(ussd, chat);
 	g_idle_add(at_ussd_register, ussd);
 
 	return 0;
