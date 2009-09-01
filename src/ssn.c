@@ -248,6 +248,7 @@ static void ssn_remove(struct ofono_atom *atom)
 }
 
 struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem,
+					int vendor,
 					const char *driver,
 					void *data)
 {
@@ -262,7 +263,6 @@ struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem,
 	if (ssn == NULL)
 		return NULL;
 
-	ssn->driver_data = data;
 	ssn->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_SSN,
 						ssn_remove, ssn);
 
@@ -272,7 +272,7 @@ struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(ssn) < 0)
+		if (drv->probe(ssn, vendor, data) < 0)
 			continue;
 
 		ssn->driver = drv;
