@@ -824,6 +824,7 @@ static void devinfo_remove(struct ofono_atom *atom)
 }
 
 struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
+							int vendor,
 							const char *driver,
 							void *data)
 {
@@ -834,7 +835,6 @@ struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
 
 	info->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_DEVINFO,
 						devinfo_remove, info);
-	info->driver_data = data;
 
 	for (l = g_devinfo_drivers; l; l = l->next) {
 		const struct ofono_devinfo_driver *drv = l->data;
@@ -842,7 +842,7 @@ struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(info) < 0)
+		if (drv->probe(info, vendor, data) < 0)
 			continue;
 
 		info->driver = drv;

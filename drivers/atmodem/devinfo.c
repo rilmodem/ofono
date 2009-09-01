@@ -189,10 +189,12 @@ static gboolean at_devinfo_register(gpointer user_data)
 	return FALSE;
 }
 
-static int at_devinfo_probe(struct ofono_devinfo *info)
+static int at_devinfo_probe(struct ofono_devinfo *info, int vendor, void *data)
 {
-	/* There are no useful initializations we can do */
-	g_timeout_add(0, at_devinfo_register, info);
+	GAtChat *chat = data;
+
+	ofono_devinfo_set_data(info, chat);
+	g_idle_add(at_devinfo_register, info);
 
 	return 0;
 }

@@ -370,9 +370,9 @@ static gboolean isi_devinfo_register(gpointer user)
 	return FALSE;
 }
 
-static int isi_devinfo_probe(struct ofono_devinfo *info)
+static int isi_devinfo_probe(struct ofono_devinfo *info, int vendor, void *user)
 {
-	GIsiModem *idx = ofono_devinfo_get_data(info);
+	GIsiModem *idx = user;
 	struct devinfo_data *data = g_try_new0(struct devinfo_data, 1);
 
 	if (!data)
