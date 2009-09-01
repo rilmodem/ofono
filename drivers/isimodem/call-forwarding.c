@@ -79,10 +79,13 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 {
 }
 
-static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf)
+static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
+					int vendor, void *user)
 {
-	GIsiModem *idx = ofono_call_forwarding_get_data(cf);
-	struct call_forwarding_data *data = g_try_new0(struct call_forwarding_data, 1);
+	GIsiModem *idx = user;
+	struct call_forwarding_data *data;
+
+	data = g_try_new0(struct call_forwarding_data, 1);
 
 	if (!data)
 		return -ENOMEM;

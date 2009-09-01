@@ -1147,6 +1147,7 @@ static void call_forwarding_remove(struct ofono_atom *atom)
 }
 
 struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *modem,
+							int vendor,
 							const char *driver,
 							void *data)
 {
@@ -1161,7 +1162,6 @@ struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *m
 	if (cf == NULL)
 		return NULL;
 
-	cf->driver_data = data;
 	cf->atom = __ofono_modem_add_atom(modem,
 						OFONO_ATOM_TYPE_CALL_FORWARDING,
 						call_forwarding_remove, cf);
@@ -1171,7 +1171,7 @@ struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *m
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(cf) < 0)
+		if (drv->probe(cf, vendor, data) < 0)
 			continue;
 
 		cf->driver = drv;

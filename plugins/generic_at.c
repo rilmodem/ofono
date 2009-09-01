@@ -512,7 +512,7 @@ static int generic_at_populate(struct ofono_modem *modem)
 	ofono_devinfo_create(modem, "generic_at", chat);
 	ofono_ussd_create(modem, "generic_at", chat);
 	ofono_sim_create(modem, "generic_at", chat);
-	ofono_call_forwarding_create(modem, "generic_at", chat);
+	ofono_call_forwarding_create(modem, 0, "generic_at", chat);
 	ofono_call_settings_create(modem, "generic_at", chat);
 	ofono_netreg_create(modem, "generic_at", chat);
 	ofono_voicecall_create(modem, "generic_at", chat);
