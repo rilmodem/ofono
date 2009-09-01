@@ -1399,6 +1399,7 @@ static void netreg_remove(struct ofono_atom *atom)
 }
 
 struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
+					int vendor,
 					const char *driver,
 					void *data)
 {
@@ -1419,8 +1420,6 @@ struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
 	netreg->technology = -1;
 	netreg->signal_strength = -1;
 
-	DBG("%p, %p", netreg, netreg->current_operator);
-	netreg->driver_data = data;
 	netreg->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_NETREG,
 						netreg_remove, netreg);
 
@@ -1430,7 +1429,7 @@ struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(netreg) < 0)
+		if (drv->probe(netreg, vendor, data) < 0)
 			continue;
 
 		netreg->driver = drv;

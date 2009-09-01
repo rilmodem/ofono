@@ -178,21 +178,21 @@ static gboolean isi_netreg_register(gpointer user)
 	return FALSE;
 }
 
-static int isi_netreg_probe(struct ofono_netreg *netreg)
+static int isi_netreg_probe(struct ofono_netreg *netreg, int vendor, void *user)
 {
-	GIsiModem *idx = ofono_netreg_get_data(netreg);
-	struct netreg_data *user = g_try_new0(struct netreg_data, 1);
+	GIsiModem *idx = user;
+	struct netreg_data *data = g_try_new0(struct netreg_data, 1);
 
-	if (!user)
+	if (!data)
 		return -ENOMEM;
 
-	user->client = g_isi_client_create(idx, PN_NETWORK);
-	if (!user->client) {
-		g_free(user);
+	data->client = g_isi_client_create(idx, PN_NETWORK);
+	if (!data->client) {
+		g_free(data);
 		return -ENOMEM;
 	}
 
-	ofono_netreg_set_data(netreg, user);
+	ofono_netreg_set_data(netreg, data);
 
 	g_idle_add(isi_netreg_register, netreg);
 

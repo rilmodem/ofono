@@ -636,9 +636,9 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 	ofono_netreg_register(netreg);
 }
 
-static int at_netreg_probe(struct ofono_netreg *netreg)
+static int at_netreg_probe(struct ofono_netreg *netreg, int vendor, void *data)
 {
-	GAtChat *chat = ofono_netreg_get_data(netreg);
+	GAtChat *chat = data;
 	struct netreg_data *nd;
 
 	nd = g_new0(struct netreg_data, 1);
