@@ -516,6 +516,8 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 		}
 
 		modem->powered = powered;
+		modem->powered_pending = powered;
+
 		g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
 		ofono_dbus_signal_property_changed(conn, modem->path,
@@ -571,11 +573,12 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		__ofono_dbus_pending_reply(&modem->pending, reply);
 	}
 
+	modem->powered_pending = powered;
+
 	if (modem->powered == powered)
 		return;
 
 	modem->powered = powered;
-	modem->powered_pending = powered;
 
 	if (modem->driver == NULL)
 		return;
