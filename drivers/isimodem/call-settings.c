@@ -83,15 +83,19 @@ static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 {
 }
 
-static int isi_call_settings_probe(struct ofono_call_settings *cs)
+static int isi_call_settings_probe(struct ofono_call_settings *cs, int vendor,
+					void *user)
 {
-	GIsiModem *idx = ofono_call_settings_get_data(cs);
-	struct call_settings_data *data = g_try_new0(struct call_settings_data, 1);
+	GIsiModem *idx = user;
+	struct call_settings_data *data;
+
+	data = g_try_new0(struct call_settings_data, 1);
 
 	if (!data)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_SS);
+
 	if (!data->client)
 		return -ENOMEM;
 

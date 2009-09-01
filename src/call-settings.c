@@ -1229,6 +1229,7 @@ static void call_settings_remove(struct ofono_atom *atom)
 }
 
 struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem,
+							int vendor,
 							const char *driver,
 							void *data)
 {
@@ -1248,7 +1249,6 @@ struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem
 	cs->clir = 2;
 	cs->colp = 2;
 	cs->colr = 2;
-	cs->driver_data = data;
 	cs->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS,
 						call_settings_remove, cs);
 
@@ -1258,7 +1258,7 @@ struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(cs) < 0)
+		if (drv->probe(cs, vendor, data) < 0)
 			continue;
 
 		cs->driver = drv;
