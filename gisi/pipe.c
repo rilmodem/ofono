@@ -362,3 +362,14 @@ void *g_isi_pipe_get_userdata(GIsiPipe *pipe)
 	return pipe->opaque;
 }
 
+/**
+ * Return a pipe handle.
+ * @param pipe a ready-made pipe with handler data present. Available
+ * after the pipe creation callback is called.
+ * @return uint8_t handle.
+ */
+
+uint8_t g_isi_pipe_get_handle(GIsiPipe *pipe)
+{
+	return pipe->handle;
+}
