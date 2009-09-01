@@ -1299,6 +1299,7 @@ static void sim_remove(struct ofono_atom *atom)
 }
 
 struct ofono_sim *ofono_sim_create(struct ofono_modem *modem,
+					int vendor,
 					const char *driver,
 					void *data)
 {
@@ -1313,7 +1314,6 @@ struct ofono_sim *ofono_sim_create(struct ofono_modem *modem,
 	if (sim == NULL)
 		return NULL;
 
-	sim->driver_data = data;
 	sim->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_SIM,
 						sim_remove, sim);
 
@@ -1323,7 +1323,7 @@ struct ofono_sim *ofono_sim_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(sim) < 0)
+		if (drv->probe(sim, vendor, data) < 0)
 			continue;
 
 		sim->driver = drv;

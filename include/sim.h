@@ -66,7 +66,7 @@ typedef void (*ofono_sim_file_write_cb_t)(int ok, void *userdata);
 
 struct ofono_sim_driver {
 	const char *name;
-	int (*probe)(struct ofono_sim *sim);
+	int (*probe)(struct ofono_sim *sim, int vendor, void *data);
 	int (*remove)(struct ofono_sim *sim);
 	void (*read_file_info)(struct ofono_sim *sim, int fileid,
 			ofono_sim_file_info_cb_t cb, void *data);
@@ -95,7 +95,7 @@ struct ofono_sim_driver {
 int ofono_sim_driver_register(const struct ofono_sim_driver *d);
 void ofono_sim_driver_unregister(const struct ofono_sim_driver *d);
 
-struct ofono_sim *ofono_sim_create(struct ofono_modem *modem,
+struct ofono_sim *ofono_sim_create(struct ofono_modem *modem, int vendor,
 					const char *driver, void *data);
 
 void ofono_sim_register(struct ofono_sim *sim);

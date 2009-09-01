@@ -96,9 +96,9 @@ static void isi_read_imsi(struct ofono_sim *sim,
 {
 }
 
-static int isi_sim_probe(struct ofono_sim *sim)
+static int isi_sim_probe(struct ofono_sim *sim, int vendor, void *user)
 {
-	GIsiModem *idx = ofono_sim_get_data(sim);
+	GIsiModem *idx = user;
 	struct sim_data *data = g_try_new0(struct sim_data, 1);
 
 	if (!data)
