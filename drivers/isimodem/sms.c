@@ -65,9 +65,9 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 {
 }
 
-static int isi_sms_probe(struct ofono_sms *sms)
+static int isi_sms_probe(struct ofono_sms *sms, int vendor, void *user)
 {
-	GIsiModem *idx = ofono_sms_get_data(sms);
+	GIsiModem *idx = user;
 	struct sms_data *data = g_try_new0(struct sms_data, 1);
 
 	if (!data)

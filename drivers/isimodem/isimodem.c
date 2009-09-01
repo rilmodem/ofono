@@ -153,7 +153,7 @@ static int isi_modem_populate(struct ofono_modem *modem)
 	ofono_phonebook_create(isi->modem, 0, "isi", isi->idx);
 	ofono_netreg_create(isi->modem, 0, "isi", isi->idx);
 	ofono_voicecall_create(isi->modem, "isi", isi->idx);
-	ofono_sms_create(isi->modem, "isi", isi->idx);
+	ofono_sms_create(isi->modem, 0, "isi", isi->idx);
 	ofono_sim_create(isi->modem, 0, "isi", isi->idx);
 	ofono_ssn_create(isi->modem, "isi", isi->idx);
 	ofono_ussd_create(isi->modem, "isi", isi->idx);

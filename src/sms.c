@@ -819,6 +819,7 @@ static void sms_remove(struct ofono_atom *atom)
 }
 
 struct ofono_sms *ofono_sms_create(struct ofono_modem *modem,
+					int vendor,
 					const char *driver,
 					void *data)
 {
@@ -837,7 +838,6 @@ struct ofono_sms *ofono_sms_create(struct ofono_modem *modem,
 	sms->ref = 1;
 	sms->assembly = sms_assembly_new();
 	sms->txq = g_queue_new();
-	sms->driver_data = data;
 	sms->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_SMS,
 						sms_remove, sms);
 
@@ -847,7 +847,7 @@ struct ofono_sms *ofono_sms_create(struct ofono_modem *modem,
 		if (g_strcmp0(drv->name, driver))
 			continue;
 
-		if (drv->probe(sms) < 0)
+		if (drv->probe(sms, vendor, data) < 0)
 			continue;
 
 		sms->driver = drv;
