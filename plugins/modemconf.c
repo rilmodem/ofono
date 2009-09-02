@@ -23,16 +23,87 @@
 #include <config.h>
 #endif
 
+#include <glib.h>
+
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
+#include <ofono/modem.h>
+#include <ofono/log.h>
+
+static GSList *modem_list = NULL;
+
+static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
+{
+	struct ofono_modem *modem;
+	char *driver;
+
+	driver = g_key_file_get_string(keyfile, group, "Driver", NULL);
+	if (!driver)
+		return NULL;
+
+	modem = ofono_modem_create(group, driver);
+
+	g_free(driver);
+
+	return modem;
+}
+
+static void parse_config(const char *file)
+{
+	GKeyFile *keyfile;
+	GError *err = NULL;
+	char **modems;
+	int i;
+
+	keyfile = g_key_file_new();
+
+	g_key_file_set_list_separator(keyfile, ',');
+
+	if (!g_key_file_load_from_file(keyfile, file, 0, &err)) {
+		ofono_warn("Reading of %s failed: %s", file, err->message);
+		g_error_free(err);
+		goto done;
+	}
+
+	modems = g_key_file_get_groups(keyfile, NULL);
+
+	for (i = 0; modems[i]; i++) {
+		struct ofono_modem *modem;
+
+		modem = create_modem(keyfile, modems[i]);
+		if (!modem)
+			continue;
+
+		modem_list = g_slist_prepend(modem_list, modem);
+
+		ofono_modem_register(modem);
+	}
+
+	g_strfreev(modems);
+
+done:
+	g_key_file_free(keyfile);
+}
 
 static int modemconf_init(void)
 {
+	parse_config(CONFIGDIR "/modem.conf");
+
 	return 0;
 }
 
 static void modemconf_exit(void)
 {
+	GSList *list;
+
+	for (list = modem_list; list; list = list->next) {
+		struct ofono_modem *modem = list->data;
+
+		ofono_modem_remove(modem);
+	}
+
+	g_slist_free(modem_list);
+	modem_list = NULL;
 }
 
 OFONO_PLUGIN_DEFINE(modemconf, "Static modem configuration", VERSION,
