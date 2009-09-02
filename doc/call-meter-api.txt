@@ -1,0 +1,77 @@
+Call Meter hierarchy
+===============
+Service		org.ofono
+Interface	org.ofono.CallMeter
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Contains the properties for this object.
+
+		void SetProperty(string property, variant value,
+				 string password)
+
+			Sets the property to value specified in the
+			call parameter.  The last parameter is used
+			to pass the SIM PIN2 code which may be
+			required by the SIM.
+
+		void Reset(string password)
+
+			Attempts to reset the Accumulated Call Meter.
+			Reseting this value requires SIM PIN2, provided
+			by the password parameter.
+
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
+
+		NearMaximumWarning()
+
+			Emitted shortly before the ACM (Accumulated Call
+			Meter) maximum values is reached.  The warning is
+			issued approximately when 30 seconds call time
+			remains or when starting a call with less than
+			30 seconds remaining.
+
+Properties	uint32 CallMeter [readonly]
+
+			Contains the current call meter value from the ME.
+			The values are in 24-bit range, counted in home
+			units.
+
+		uint32 AccumulatedCallMeter [readonly]
+
+			Contains the Accumulated Call Meter (ACM) value
+			from the SIM.  When the AccumulatedCallMeter
+			value reaches AccumulatedCallMeterMaximum value,
+			no further calls can be made until the ACM
+			value is reset.  Reset is accomplished using
+			the Reset() function.
+
+			The values are in 24-bit range.
+
+		uint32 AccumulatedCallMeterMaximum [readwrite]
+
+			Contains the Accumulated Call Meter maximum value
+			on reaching which, calls are prohibited.  This is
+			effectively the maximum number of home units
+			allowed to be consumed by subscriber.
+
+			According to the GSM specification, setting the value
+			to 0, turns off this feature.
+
+			The values are in 24-bit range.
+
+		double PricePerUnit [readwrite]
+
+			Contains price-per-unit conversion value.  This
+			information can be used to convert the home units
+			into currency units.
+
+		string Currency [readwrite]
+
+			Contains three-character currency code.  This
+			information can be used to convert the home
+			units into currency units.
