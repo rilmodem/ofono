@@ -38,6 +38,12 @@ static GSList *g_devinfo_drivers = NULL;
 static GSList *g_driver_list = NULL;
 static GSList *g_modem_list = NULL;
 
+enum ofono_property_type {
+	OFONO_PROPERTY_TYPE_INVALID = 0,
+	OFONO_PROPERTY_TYPE_STRING,
+	OFONO_PROPERTY_TYPE_INTEGER,
+};
+
 struct ofono_modem {
 	char		*path;
 	GSList		*atoms;
@@ -51,6 +57,7 @@ struct ofono_modem {
 	ofono_bool_t	powered_pending;
 	ofono_bool_t	powered_persistent;
 	guint		timeout;
+	GHashTable	*properties;
 	const struct ofono_modem_driver *driver;
 	void		*driver_data;
 	char		*driver_type;
@@ -80,6 +87,11 @@ struct ofono_atom_watch {
 	ofono_atom_watch_func notify;
 	ofono_destroy_func destroy;
 	void *notify_data;
+};
+
+struct ofono_property {
+	enum ofono_property_type type;
+	void *value;
 };
 
 unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
@@ -902,6 +914,112 @@ const char **__ofono_modem_get_list()
 	return modems;
 }
 
+static void unregister_property(gpointer data)
+{
+	struct ofono_property *property = data;
+
+	DBG("property %p", property);
+
+	g_free(property->value);
+	g_free(property);
+}
+
+static int set_modem_property(struct ofono_modem *modem, const char *name,
+				enum ofono_property_type type,
+				const void *value)
+{
+	struct ofono_property *property;
+
+	DBG("modem %p property %s", modem, name);
+
+	if (type != OFONO_PROPERTY_TYPE_STRING &&
+			type != OFONO_PROPERTY_TYPE_INTEGER)
+		return -EINVAL;
+
+	property = g_try_new0(struct ofono_property, 1);
+	if (property == NULL)
+		return -ENOMEM;
+
+	property->type = type;
+
+	switch (type) {
+	case OFONO_PROPERTY_TYPE_STRING:
+		property->value = g_strdup((const char *) value);
+		break;
+	case OFONO_PROPERTY_TYPE_INTEGER:
+		property->value = g_memdup(value, sizeof(int));
+		break;
+	}
+
+	g_hash_table_replace(modem->properties, g_strdup(name), property);
+
+	return 0;
+}
+
+static gboolean get_modem_property(struct ofono_modem *modem, const char *name,
+					enum ofono_property_type type,
+					void *value)
+{
+	struct ofono_property *property;
+
+	DBG("modem %p property %s", modem, name);
+
+	property = g_hash_table_lookup(modem->properties, name);
+
+	if (property == NULL)
+		return FALSE;
+
+	if (property->type != type)
+		return FALSE;
+
+	switch (property->type) {
+	case OFONO_PROPERTY_TYPE_STRING:
+		*((const char **) value) = property->value;
+		return TRUE;
+	case OFONO_PROPERTY_TYPE_INTEGER:
+		memcpy(value, property->value, sizeof(int));
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+int ofono_modem_set_string(struct ofono_modem *modem,
+				const char *key, const char *value)
+{
+	return set_modem_property(modem, key,
+					OFONO_PROPERTY_TYPE_STRING, value);
+}
+
+int ofono_modem_set_integer(struct ofono_modem *modem,
+				const char *key, int value)
+{
+	return set_modem_property(modem, key,
+					OFONO_PROPERTY_TYPE_INTEGER, &value);
+}
+
+const char *ofono_modem_get_string(struct ofono_modem *modem, const char *key)
+{
+	const char *value;
+
+	if (get_modem_property(modem, key,
+			OFONO_PROPERTY_TYPE_STRING, &value) == FALSE)
+		return NULL;
+
+	return value;
+}
+
+int ofono_modem_get_integer(struct ofono_modem *modem, const char *key)
+{
+	int value;
+
+	if (get_modem_property(modem, key,
+			OFONO_PROPERTY_TYPE_INTEGER, &value) == FALSE)
+		return 0;
+
+	return value;
+}
+
 struct ofono_modem *ofono_modem_create(const char *node, const char *type)
 {
 	struct ofono_modem *modem;
@@ -920,6 +1038,8 @@ struct ofono_modem *ofono_modem_create(const char *node, const char *type)
 	snprintf(path, sizeof(path), "/%s", node);
 	modem->path = g_strdup(path);
 	modem->driver_type = g_strdup(type);
+	modem->properties = g_hash_table_new_full(g_str_hash, g_str_equal,
+						g_free, unregister_property);
 
 	g_modem_list = g_slist_prepend(g_modem_list, modem);
 
@@ -1037,6 +1157,9 @@ static void modem_unregister(struct ofono_modem *modem)
 
 	if (modem->driver->remove)
 		modem->driver->remove(modem);
+
+	g_hash_table_destroy(modem->properties);
+	modem->properties = NULL;
 
 	modem->driver = NULL;
 }
