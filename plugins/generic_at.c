@@ -507,18 +507,18 @@ static void generic_at_populate(struct ofono_modem *modem)
 	GAtChat *chat = d->chat;
 	struct ofono_message_waiting *mw;
 
-	ofono_devinfo_create(modem, 0, "generic_at", chat);
-	ofono_ussd_create(modem, 0, "generic_at", chat);
-	ofono_sim_create(modem, 0, "generic_at", chat);
-	ofono_call_forwarding_create(modem, 0, "generic_at", chat);
-	ofono_call_settings_create(modem, 0, "generic_at", chat);
-	ofono_netreg_create(modem, 0, "generic_at", chat);
-	ofono_voicecall_create(modem, 0, "generic_at", chat);
-	ofono_call_meter_create(modem, 0, "generic_at", chat);
-	ofono_call_barring_create(modem, 0, "generic_at", chat);
-	ofono_ssn_create(modem, 0, "generic_at", chat);
-	ofono_sms_create(modem, 0, "generic_at", chat);
-	ofono_phonebook_create(modem, 0, "generic_at", chat);
+	ofono_devinfo_create(modem, 0, "atmodem", chat);
+	ofono_ussd_create(modem, 0, "atmodem", chat);
+	ofono_sim_create(modem, 0, "atmodem", chat);
+	ofono_call_forwarding_create(modem, 0, "atmodem", chat);
+	ofono_call_settings_create(modem, 0, "atmodem", chat);
+	ofono_netreg_create(modem, 0, "atmodem", chat);
+	ofono_voicecall_create(modem, 0, "atmodem", chat);
+	ofono_call_meter_create(modem, 0, "atmodem", chat);
+	ofono_call_barring_create(modem, 0, "atmodem", chat);
+	ofono_ssn_create(modem, 0, "atmodem", chat);
+	ofono_sms_create(modem, 0, "atmodem", chat);
+	ofono_phonebook_create(modem, 0, "atmodem", chat);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)

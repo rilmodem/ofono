@@ -127,7 +127,7 @@ static void at_ssn_remove(struct ofono_ssn *ssn)
 }
 
 static struct ofono_ssn_driver driver = {
-	.name = "generic_at",
+	.name = "atmodem",
 	.probe = at_ssn_probe,
 	.remove = at_ssn_remove,
 };

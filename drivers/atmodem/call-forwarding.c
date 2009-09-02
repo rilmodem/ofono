@@ -278,7 +278,7 @@ static void at_ccfc_remove(struct ofono_call_forwarding *cf)
 }
 
 static struct ofono_call_forwarding_driver driver = {
-	.name		= "generic_at",
+	.name		= "atmodem",
 	.probe		= at_ccfc_probe,
 	.remove		= at_ccfc_remove,
 	.registration	= at_ccfc_registration,

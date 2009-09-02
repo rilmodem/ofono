@@ -456,7 +456,7 @@ static void at_sim_remove(struct ofono_sim *sim)
 }
 
 static struct ofono_sim_driver driver = {
-	.name			= "generic_at",
+	.name			= "atmodem",
 	.probe			= at_sim_probe,
 	.remove			= at_sim_remove,
 	.read_file_info		= at_sim_read_info,

@@ -381,7 +381,7 @@ static void at_call_settings_remove(struct ofono_call_settings *cs)
 }
 
 static struct ofono_call_settings_driver driver = {
-	.name = "generic_at",
+	.name = "atmodem",
 	.probe = at_call_settings_probe,
 	.remove = at_call_settings_remove,
 	.clip_query = at_clip_query,

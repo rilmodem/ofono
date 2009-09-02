@@ -1013,7 +1013,7 @@ static void at_voicecall_remove(struct ofono_voicecall *vc)
 }
 
 static struct ofono_voicecall_driver driver = {
-	.name			= "generic_at",
+	.name			= "atmodem",
 	.probe			= at_voicecall_probe,
 	.remove			= at_voicecall_remove,
 	.dial			= at_dial,

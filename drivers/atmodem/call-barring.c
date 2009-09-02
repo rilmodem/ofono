@@ -222,7 +222,7 @@ static void at_call_barring_remove(struct ofono_call_barring *cb)
 }
 
 static struct ofono_call_barring_driver driver = {
-	.name		= "generic_at",
+	.name		= "atmodem",
 	.probe		= at_call_barring_probe,
 	.remove		= at_call_barring_remove,
 	.set		= at_call_barring_set,

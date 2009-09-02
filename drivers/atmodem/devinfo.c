@@ -205,7 +205,7 @@ static void at_devinfo_remove(struct ofono_devinfo *info)
 }
 
 static struct ofono_devinfo_driver driver = {
-	.name = "generic_at",
+	.name = "atmodem",
 	.probe = at_devinfo_probe,
 	.remove = at_devinfo_remove,
 	.query_manufacturer = at_query_manufacturer,

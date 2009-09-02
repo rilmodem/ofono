@@ -384,7 +384,7 @@ static void at_caoc_remove(struct ofono_call_meter *cm)
 }
 
 static struct ofono_call_meter_driver driver = {
-	.name = "generic_at",
+	.name = "atmodem",
 	.probe = at_caoc_probe,
 	.remove = at_caoc_remove,
 	.call_meter_query = at_caoc_query,

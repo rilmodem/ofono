@@ -545,7 +545,7 @@ static void at_phonebook_remove(struct ofono_phonebook *pb)
 }
 
 static struct ofono_phonebook_driver driver = {
-	.name			= "generic_at",
+	.name			= "atmodem",
 	.probe			= at_phonebook_probe,
 	.remove			= at_phonebook_remove,
 	.export_entries		= at_export_entries

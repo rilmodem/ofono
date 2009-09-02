@@ -159,7 +159,7 @@ static void at_ussd_remove(struct ofono_ussd *ussd)
 }
 
 static struct ofono_ussd_driver driver = {
-	.name = "generic_at",
+	.name = "atmodem",
 	.probe = at_ussd_probe,
 	.remove = at_ussd_remove,
 	.request = at_ussd_request,
