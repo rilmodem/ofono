@@ -21,4 +21,5 @@
 
 enum ofono_vendor {
 	OFONO_VENDOR_GENERIC = 0,
+	OFONO_VENDOR_HTC_G1 = 1,
 };

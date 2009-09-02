@@ -47,6 +47,8 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 
+#include <drivers/atmodem/vendor.h>
+
 /* Supply our own syntax parser */
 
 enum G1_STATE_ {
@@ -234,6 +236,7 @@ static void g1_populate(struct ofono_modem *modem)
 	ofono_call_meter_create(modem, 0, "atmodem", chat);
 	ofono_call_barring_create(modem, 0, "atmodem", chat);
 	ofono_ssn_create(modem, 0, "atmodem", chat);
+	ofono_sms_create(modem, OFONO_VENDOR_HTC_G1, "atmodem", chat);
 	ofono_phonebook_create(modem, 0, "atmodem", chat);
 
 	mw = ofono_message_waiting_create(modem);

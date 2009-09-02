@@ -35,6 +35,7 @@
 #include <ofono/sms.h>
 #include "smsutil.h"
 #include "util.h"
+#include "vendor.h"
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -570,17 +571,25 @@ static inline gboolean append_cnmi_element(char *buf, int *len, int cap,
 }
 
 static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
-					gboolean cnma_enabled)
+					struct sms_data *data)
 {
+	const char *mode;
 	int len = sprintf(buf, "AT+CNMI=");
 
-	/* Mode doesn't matter, but sounds like 2 is the sanest option */
-	if (!append_cnmi_element(buf, &len, cnmi_opts[0], "2310", FALSE))
+	if (data->vendor == OFONO_VENDOR_HTC_G1)
+		/* The G1 advertises support for mode 2, but returns an error
+		 * if we attempt to actually use it. */
+		mode = "1";
+	else
+		/* Sounds like 2 is the sanest mode */
+		mode = "2310";
+
+	if (!append_cnmi_element(buf, &len, cnmi_opts[0], mode, FALSE))
 		return FALSE;
 
 	/* Prefer to deliver SMS via +CMT if CNMA is supported */
 	if (!append_cnmi_element(buf, &len, cnmi_opts[1],
-					cnma_enabled ? "21" : "1", FALSE))
+					data->cnma_enabled ? "21" : "1", FALSE))
 		return FALSE;
 
 	/* Always deliver CB via +CBM, otherwise don't deliver at all */
@@ -666,7 +675,7 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			goto out;
 	}
 
-	if (build_cnmi_string(buf, cnmi_opts, data->cnma_enabled))
+	if (build_cnmi_string(buf, cnmi_opts, data))
 		supported = TRUE;
 
 	if (data->cnma_enabled)
