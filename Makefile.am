@@ -143,7 +143,7 @@ test_files = test/test-manager test/test-modem test/test-voicecall \
 		test/test-call-forwarding test/test-call-barring \
 		test/test-ss-control-cb test/test-ss-control-cf \
 		test/test-ss-control-cs \
-		test/list-modems test/enable-modem
+		test/monitor-ofono test/list-modems test/enable-modem
 
 EXTRA_DIST = src/genbuiltin src/ofono.conf $(doc_files) $(test_files)
 
