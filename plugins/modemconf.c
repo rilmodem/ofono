@@ -41,7 +41,7 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 	if (!driver)
 		return NULL;
 
-	modem = ofono_modem_create(group, driver);
+	modem = ofono_modem_create(driver);
 
 	g_free(driver);
 
