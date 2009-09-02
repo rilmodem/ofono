@@ -87,7 +87,7 @@ static void connect_callback(GAtChat *chat, gpointer user_data)
 
 	data->chat = g_at_chat_ref(chat);
 
-	if (getenv("OFONO_MBM_DEBUG"))
+	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, mbm_debug, NULL);
 
 	ofono_modem_set_powered(modem, TRUE);
