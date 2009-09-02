@@ -135,7 +135,9 @@ INCLUDES = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
 
 doc_files = doc/overview.txt \
 		doc/manager-api.txt doc/modem-api.txt doc/network-api.txt \
-			doc/voicecallmanager-api.txt doc/voicecall-api.txt
+			doc/voicecallmanager-api.txt doc/voicecall-api.txt \
+			doc/call-forwarding-api.txt doc/call-settings-api.txt \
+			doc/call-meter-api.txt
 
 test_files = test/test-manager test/test-modem test/test-voicecall \
 		test/test-network-registration test/test-phonebook \
