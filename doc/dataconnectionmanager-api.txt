@@ -161,6 +161,14 @@ Properties	boolean Activated [readwrite]
 			Holds the interface of the network interface created
 			by this context (e.g. "ppp0")
 
+		string Address [readonly, optional]
+
+			Holds the IP address for this context.
+
+		string Netmask [readonly, optional]
+
+			Holds the Netmask for this context.
+
 		array{string} DomainNameServers [readonly, optional]
 
 			Holds the list of domain name servers for this
