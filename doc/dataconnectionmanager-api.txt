@@ -136,6 +136,14 @@ Properties	boolean Activated [readwrite]
 			abbreviated as APN.  This value cannot be changed when
 			the context is active.
 
+		string Type [readwrite]
+
+			Contains the intended usage type for this context.
+			The currently supported values are:
+				"internet" - General internet connectivity
+				"mms" - Used by MMS related services
+				"wap" - Used by WAP related services
+
 		string Username [readwrite]
 
 			Holds the username to be used for authentication
