@@ -65,6 +65,8 @@ static void mbm_remove(struct ofono_modem *modem)
 
 	ofono_info("MBM remove");
 
+	ofono_modem_set_data(modem, NULL);
+
 	g_free(data);
 }
 
