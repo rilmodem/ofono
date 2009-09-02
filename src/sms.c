@@ -819,7 +819,7 @@ static void sms_remove(struct ofono_atom *atom)
 }
 
 struct ofono_sms *ofono_sms_create(struct ofono_modem *modem,
-					int vendor,
+					unsigned int vendor,
 					const char *driver,
 					void *data)
 {

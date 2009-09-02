@@ -83,7 +83,7 @@ static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 {
 }
 
-static int isi_call_settings_probe(struct ofono_call_settings *cs, int vendor,
+static int isi_call_settings_probe(struct ofono_call_settings *cs, unsigned int vendor,
 					void *user)
 {
 	GIsiModem *idx = user;

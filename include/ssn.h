@@ -32,7 +32,7 @@ struct ofono_ssn;
 
 struct ofono_ssn_driver {
 	const char *name;
-	int (*probe)(struct ofono_ssn *ssn, int vendor, void *data);
+	int (*probe)(struct ofono_ssn *ssn, unsigned int vendor, void *data);
 	int (*remove)(struct ofono_ssn *ssn);
 };
 
@@ -44,7 +44,8 @@ void ofono_ssn_cssu_notify(struct ofono_ssn *ssn, int code, int index,
 int ofono_ssn_driver_register(const struct ofono_ssn_driver *d);
 void ofono_ssn_driver_unregister(const struct ofono_ssn_driver *d);
 
-struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem, int vendor,
+struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem,
+					unsigned int vendor,
 					const char *driver, void *data);
 
 void ofono_ssn_register(struct ofono_ssn *ssn);

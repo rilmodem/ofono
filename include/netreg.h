@@ -70,7 +70,8 @@ typedef void (*ofono_netreg_strength_cb_t)(const struct ofono_error *error,
  */
 struct ofono_netreg_driver {
 	const char *name;
-	int (*probe)(struct ofono_netreg *netreg, int vendor, void *data);
+	int (*probe)(struct ofono_netreg *netreg, unsigned int vendor,
+			void *data);
 	int (*remove)(struct ofono_netreg *netreg);
 	void (*registration_status)(struct ofono_netreg *netreg,
 			ofono_netreg_status_cb_t cb, void *data);
@@ -96,8 +97,10 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 int ofono_netreg_driver_register(const struct ofono_netreg_driver *d);
 void ofono_netreg_driver_unregister(const struct ofono_netreg_driver *d);
 
-struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem, int vendor,
-					const char *driver, void *data);
+struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
+						unsigned int vendor,
+						const char *driver,
+						void *data);
 
 void ofono_netreg_register(struct ofono_netreg *netreg);
 void ofono_netreg_remove(struct ofono_netreg *netreg);

@@ -365,7 +365,8 @@ static void at_call_meter_initialized(gboolean ok, GAtResult *result,
 	ofono_call_meter_register(cm);
 }
 
-static int at_caoc_probe(struct ofono_call_meter *cm, int vendor, void *data)
+static int at_caoc_probe(struct ofono_call_meter *cm, unsigned int vendor,
+				void *data)
 {
 	GAtChat *chat = data;
 

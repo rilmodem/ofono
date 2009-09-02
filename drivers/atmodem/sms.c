@@ -73,7 +73,7 @@ struct sms_data {
 	char *cnma_ack_pdu;
 	int cnma_ack_pdu_len;
 	GAtChat *chat;
-	int vendor;
+	unsigned int vendor;
 };
 
 struct cpms_request {
@@ -957,7 +957,8 @@ out:
 			at_csms_set_cb, sms, NULL);
 }
 
-static int at_sms_probe(struct ofono_sms *sms, int vendor, void *user)
+static int at_sms_probe(struct ofono_sms *sms, unsigned int vendor,
+				void *user)
 {
 	GAtChat *chat = user;
 	struct sms_data *data;

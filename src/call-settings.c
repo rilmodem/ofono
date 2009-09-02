@@ -1229,7 +1229,7 @@ static void call_settings_remove(struct ofono_atom *atom)
 }
 
 struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem,
-							int vendor,
+							unsigned int vendor,
 							const char *driver,
 							void *data)
 {

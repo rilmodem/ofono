@@ -58,7 +58,8 @@ static void isi_cancel(struct ofono_ussd *ussd,
 {
 }
 
-static int isi_ussd_probe(struct ofono_ussd *ussd, int vendor, void *user)
+static int isi_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
+				void *user)
 {
 	GIsiModem *idx = user;
 	struct ussd_data *data = g_try_new0(struct ussd_data, 1);

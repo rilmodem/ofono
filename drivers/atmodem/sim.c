@@ -440,7 +440,8 @@ static gboolean at_sim_register(gpointer user)
 	return FALSE;
 }
 
-static int at_sim_probe(struct ofono_sim *sim, int vendor, void *data)
+static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
+				void *data)
 {
 	GAtChat *chat = data;
 

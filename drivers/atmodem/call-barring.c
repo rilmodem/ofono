@@ -206,8 +206,8 @@ static gboolean at_call_barring_register(gpointer user)
 	return FALSE;
 }
 
-static int at_call_barring_probe(struct ofono_call_barring *cb, int vendor,
-					void *user)
+static int at_call_barring_probe(struct ofono_call_barring *cb,
+					unsigned int vendor, void *user)
 {
 	GAtChat *chat = user;
 

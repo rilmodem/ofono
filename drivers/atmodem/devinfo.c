@@ -189,7 +189,8 @@ static gboolean at_devinfo_register(gpointer user_data)
 	return FALSE;
 }
 
-static int at_devinfo_probe(struct ofono_devinfo *info, int vendor, void *data)
+static int at_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
+				void *data)
 {
 	GAtChat *chat = data;
 

@@ -717,7 +717,7 @@ static void call_meter_remove(struct ofono_atom *atom)
 }
 
 struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
-							int vendor,
+							unsigned int vendor,
 							const char *driver,
 							void *data)
 {

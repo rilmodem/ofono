@@ -365,8 +365,8 @@ static gboolean at_call_settings_register(gpointer user)
 	return FALSE;
 }
 
-static int at_call_settings_probe(struct ofono_call_settings *cs, int vendor,
-					void *data)
+static int at_call_settings_probe(struct ofono_call_settings *cs,
+					unsigned int vendor, void *data)
 {
 	GAtChat *chat = data;
 

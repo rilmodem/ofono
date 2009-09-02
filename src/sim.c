@@ -1299,7 +1299,7 @@ static void sim_remove(struct ofono_atom *atom)
 }
 
 struct ofono_sim *ofono_sim_create(struct ofono_modem *modem,
-					int vendor,
+					unsigned int vendor,
 					const char *driver,
 					void *data)
 {

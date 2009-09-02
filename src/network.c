@@ -1399,7 +1399,7 @@ static void netreg_remove(struct ofono_atom *atom)
 }
 
 struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
-					int vendor,
+					unsigned int vendor,
 					const char *driver,
 					void *data)
 {

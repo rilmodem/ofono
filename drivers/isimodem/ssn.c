@@ -48,7 +48,8 @@ struct ssn_data {
 	struct isi_version version;
 };
 
-static int isi_ssn_probe(struct ofono_ssn *ssn, int vendor, void *user)
+static int isi_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
+				void *user)
 {
 	GIsiModem *idx = user;
 	struct ssn_data *data = g_try_new0(struct ssn_data, 1);

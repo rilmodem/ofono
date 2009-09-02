@@ -80,7 +80,7 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 }
 
 static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
-					int vendor, void *user)
+					unsigned int vendor, void *user)
 {
 	GIsiModem *idx = user;
 	struct call_forwarding_data *data;

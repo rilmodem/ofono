@@ -1098,7 +1098,7 @@ static void call_barring_remove(struct ofono_atom *atom)
 }
 
 struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
-							int vendor,
+							unsigned int vendor,
 							const char *driver,
 							void *data)
 {

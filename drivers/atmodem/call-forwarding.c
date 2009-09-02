@@ -262,7 +262,7 @@ static gboolean at_ccfc_register(gpointer user)
 	return FALSE;
 }
 
-static int at_ccfc_probe(struct ofono_call_forwarding *cf, int vendor,
+static int at_ccfc_probe(struct ofono_call_forwarding *cf, unsigned int vendor,
 				void *data)
 {
 	GAtChat *chat = data;

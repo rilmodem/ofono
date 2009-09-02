@@ -178,7 +178,8 @@ static gboolean isi_netreg_register(gpointer user)
 	return FALSE;
 }
 
-static int isi_netreg_probe(struct ofono_netreg *netreg, int vendor, void *user)
+static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
+				void *user)
 {
 	GIsiModem *idx = user;
 	struct netreg_data *data = g_try_new0(struct netreg_data, 1);

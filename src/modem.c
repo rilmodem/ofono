@@ -832,7 +832,7 @@ static void devinfo_remove(struct ofono_atom *atom)
 }
 
 struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
-							int vendor,
+							unsigned int vendor,
 							const char *driver,
 							void *data)
 {

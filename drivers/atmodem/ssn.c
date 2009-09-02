@@ -111,7 +111,8 @@ static gboolean at_ssn_register(gpointer user)
 	return FALSE;
 }
 
-static int at_ssn_probe(struct ofono_ssn *ssn, int vendor, void *data)
+static int at_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
+				void *data)
 {
 	GAtChat *chat = data;
 

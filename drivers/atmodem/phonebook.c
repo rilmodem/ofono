@@ -518,7 +518,7 @@ static void at_list_charsets(struct ofono_phonebook *pb)
 	phonebook_not_supported(pb);
 }
 
-static int at_phonebook_probe(struct ofono_phonebook *pb, int vendor,
+static int at_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 				void *data)
 {
 	GAtChat *chat = data;

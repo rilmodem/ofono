@@ -46,7 +46,8 @@ typedef void (*ofono_call_list_cb_t)(const struct ofono_error *error,
  */
 struct ofono_voicecall_driver {
 	const char *name;
-	int (*probe)(struct ofono_voicecall *vc, int vendor, void *data);
+	int (*probe)(struct ofono_voicecall *vc, unsigned int vendor,
+			void *data);
 	int (*remove)(struct ofono_voicecall *vc);
 	void (*dial)(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *number,
@@ -93,7 +94,7 @@ int ofono_voicecall_driver_register(const struct ofono_voicecall_driver *d);
 void ofono_voicecall_driver_unregister(const struct ofono_voicecall_driver *d);
 
 struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
-					int vendor,
+					unsigned int vendor,
 					const char *driver, void *data);
 
 void ofono_voicecall_register(struct ofono_voicecall *vc);

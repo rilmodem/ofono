@@ -38,7 +38,8 @@ typedef void (*ofono_phonebook_cb_t)(const struct ofono_error *error,
  */
 struct ofono_phonebook_driver {
 	const char *name;
-	int (*probe)(struct ofono_phonebook *pb, int vendor, void *data);
+	int (*probe)(struct ofono_phonebook *pb, unsigned int vendor,
+			void *data);
 	int (*remove)(struct ofono_phonebook *pb);
 	void (*export_entries)(struct ofono_phonebook *pb, const char *storage,
 				ofono_phonebook_cb_t cb, void *data);
@@ -56,7 +57,7 @@ int ofono_phonebook_driver_register(const struct ofono_phonebook_driver *d);
 void ofono_phonebook_driver_unregister(const struct ofono_phonebook_driver *d);
 
 struct ofono_phonebook *ofono_phonebook_create(struct ofono_modem *modem,
-							int vendor,
+							unsigned int vendor,
 							const char *driver,
 							void *data);
 

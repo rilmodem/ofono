@@ -65,8 +65,8 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 {
 }
 
-static int isi_call_barring_probe(struct ofono_call_barring *barr, int vendor,
-					void *user)
+static int isi_call_barring_probe(struct ofono_call_barring *barr,
+					unsigned int vendor, void *user)
 {
 	GIsiModem *idx = user;
 	struct call_barring_data *data = g_try_new0(struct call_barring_data, 1);

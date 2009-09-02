@@ -41,7 +41,8 @@ typedef void (*ofono_call_settings_clir_cb_t)(const struct ofono_error *error,
 
 struct ofono_call_settings_driver {
 	const char *name;
-	int (*probe)(struct ofono_call_settings *cs, int vendor, void *data);
+	int (*probe)(struct ofono_call_settings *cs, unsigned int vendor,
+			void *data);
 	int (*remove)(struct ofono_call_settings *cs);
 	void (*clip_query)(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data);
@@ -63,7 +64,7 @@ int ofono_call_settings_driver_register(const struct ofono_call_settings_driver 
 void ofono_call_settings_driver_unregister(const struct ofono_call_settings_driver *d);
 
 struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem,
-							int vendor,
+							unsigned int vendor,
 							const char *driver,
 							void *data);
 
