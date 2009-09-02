@@ -320,6 +320,50 @@ void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 	*msg = NULL;
 }
 
+gboolean __ofono_dbus_valid_object_path(const char *path)
+{
+	unsigned int i;
+	char c = '\0';
+
+	if (path == NULL)
+		return FALSE;
+
+	if (path[0] == '\0')
+		return FALSE;
+
+	if (path[0] && !path[1] && path[0] == '/')
+		return TRUE;
+
+	if (path[0] != '/')
+		return FALSE;
+
+	for (i = 0; path[i]; i++) {
+		if (path[i] == '/' && c == '/')
+			return FALSE;
+
+		c = path[i];
+
+		if (path[i] >= 'a' && path[i] <= 'z')
+			continue;
+
+		if (path[i] >= 'A' && path[i] <= 'Z')
+			continue;
+
+		if (path[i] >= '0' && path[i] <= '9')
+			continue;
+
+		if (path[i] == '_' || path[i] == '/')
+			continue;
+
+		return FALSE;
+	}
+
+	if (path[i-1] == '/')
+		return FALSE;
+
+	return TRUE;
+}
+
 DBusConnection *ofono_dbus_get_connection()
 {
 	return g_connection;

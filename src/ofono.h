@@ -53,6 +53,8 @@ DBusMessage *__ofono_error_sim_not_ready(DBusMessage *msg);
 
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 
+gboolean __ofono_dbus_valid_object_path(const char *path);
+
 #include <ofono/types.h>
 
 #include <ofono/plugin.h>
