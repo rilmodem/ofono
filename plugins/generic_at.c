@@ -501,7 +501,7 @@ static int generic_at_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static int generic_at_populate(struct ofono_modem *modem)
+static void generic_at_populate(struct ofono_modem *modem)
 {
 	struct generic_at_data *d = ofono_modem_get_data(modem);
 	GAtChat *chat = d->chat;
@@ -523,8 +523,6 @@ static int generic_at_populate(struct ofono_modem *modem)
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
 		ofono_message_waiting_register(mw);
-
-	return 0;
 }
 
 static struct ofono_modem_driver driver = {

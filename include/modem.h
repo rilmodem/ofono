@@ -65,7 +65,7 @@ struct ofono_modem_driver {
 	int (*disable)(struct ofono_modem *modem);
 
 	/* Populate the atoms supported by this device */
-	int (*populate)(struct ofono_modem *modem);
+	void (*populate)(struct ofono_modem *modem);
 };
 
 int ofono_modem_driver_register(const struct ofono_modem_driver *);
