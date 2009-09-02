@@ -599,6 +599,14 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 	}
 }
 
+ofono_bool_t ofono_modem_get_powered(struct ofono_modem *modem)
+{
+	if (modem == NULL)
+		return FALSE;
+
+	return modem->powered;
+}
+
 static gboolean trigger_interface_update(void *data)
 {
 	struct ofono_modem *modem = data;
