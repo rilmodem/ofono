@@ -39,6 +39,13 @@ gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/gatsyntax.h gatchat/gatsyntax.c \
 				gatchat/ringbuffer.h gatchat/ringbuffer.c
 
+if UDEV
+builtin_modules += udev
+builtin_sources += plugins/udev.c
+builtin_cflags += @UDEV_CFLAGS@
+builtin_libadd += @UDEV_LIBS@
+endif
+
 if ISIMODEM
 builtin_modules += isimodem
 builtin_sources += $(gisi_sources) drivers/isimodem/isi.h \
