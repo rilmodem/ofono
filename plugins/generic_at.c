@@ -239,7 +239,7 @@ static void parse_config(const char *file)
 		if (parsed == NULL)
 			continue;
 
-		modem = ofono_modem_create(modems[i], "generic_at");
+		modem = ofono_modem_create("generic_at");
 
 		if (modem == NULL)
 			continue;

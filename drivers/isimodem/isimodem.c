@@ -83,8 +83,6 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 	
 
 	if (up) {
-		char node[128];
-
 		if (isi) {
 			DBG("Modem already registered: (0x%02x)",
 				g_isi_modem_index(idx));
@@ -95,10 +93,8 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 		if (!isi)
 			return;
 
-		sprintf(node, "isi%p", idx);
-
 		isi->idx = idx;
-		isi->modem = ofono_modem_create(node, "isimodem");
+		isi->modem = ofono_modem_create("isimodem");
 
 		if (!isi->modem) {
 			g_free(isi);
