@@ -125,7 +125,7 @@ static void isi_sim_remove(struct ofono_sim *sim)
 }
 
 static struct ofono_sim_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_sim_probe,
 	.remove			= isi_sim_remove,
 	.read_file_info		= isi_read_file_info,

@@ -87,7 +87,7 @@ static void isi_ussd_remove(struct ofono_ussd *ussd)
 }
 
 static struct ofono_ussd_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_ussd_probe,
 	.remove			= isi_ussd_remove,
 	.request		= isi_request,

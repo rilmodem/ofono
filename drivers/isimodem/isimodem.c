@@ -98,7 +98,7 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 		sprintf(node, "isi%p", idx);
 
 		isi->idx = idx;
-		isi->modem = ofono_modem_create(node, "isi");
+		isi->modem = ofono_modem_create(node, "isimodem");
 
 		if (!isi->modem) {
 			g_free(isi);
@@ -148,22 +148,22 @@ static void isi_modem_populate(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
-	ofono_devinfo_create(isi->modem, 0, "isi", isi->idx);
-	ofono_phonebook_create(isi->modem, 0, "isi", isi->idx);
-	ofono_netreg_create(isi->modem, 0, "isi", isi->idx);
-	ofono_voicecall_create(isi->modem, 0, "isi", isi->idx);
-	ofono_sms_create(isi->modem, 0, "isi", isi->idx);
-	ofono_sim_create(isi->modem, 0, "isi", isi->idx);
-	ofono_ssn_create(isi->modem, 0, "isi", isi->idx);
-	ofono_ussd_create(isi->modem, 0, "isi", isi->idx);
-	ofono_call_forwarding_create(isi->modem, 0, "isi", isi->idx);
-	ofono_call_settings_create(isi->modem, 0, "isi", isi->idx);
-	ofono_call_barring_create(isi->modem, 0, "isi", isi->idx);
-	ofono_call_meter_create(isi->modem, 0, "isi", isi->idx);
+	ofono_devinfo_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_phonebook_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_netreg_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_voicecall_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_sms_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_sim_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_ssn_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_ussd_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_call_forwarding_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_call_settings_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_call_barring_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_call_meter_create(isi->modem, 0, "isimodem", isi->idx);
 }
 
 static struct ofono_modem_driver driver = {
-	.name = "isi",
+	.name = "isimodem",
 	.probe = isi_modem_probe,
 	.remove = isi_modem_remove,
 	.enable = isi_modem_enable,

@@ -94,7 +94,7 @@ static void isi_sms_remove(struct ofono_sms *sms)
 }
 
 static struct ofono_sms_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_sms_probe,
 	.remove			= isi_sms_remove,
 	.sca_query		= isi_sca_query,

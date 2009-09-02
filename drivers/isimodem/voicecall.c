@@ -156,7 +156,7 @@ static void isi_voicecall_remove(struct ofono_voicecall *call)
 }
 
 static struct ofono_voicecall_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_voicecall_probe,
 	.remove			= isi_voicecall_remove,
 	.dial			= isi_dial,

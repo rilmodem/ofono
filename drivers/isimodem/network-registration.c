@@ -211,7 +211,7 @@ static void isi_netreg_remove(struct ofono_netreg *net)
 }
 
 static struct ofono_netreg_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_netreg_probe,
 	.remove			= isi_netreg_remove,
 	.registration_status 	= isi_registration_status,

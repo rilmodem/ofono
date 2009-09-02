@@ -115,7 +115,7 @@ static void isi_call_settings_remove(struct ofono_call_settings *cs)
 }
 
 static struct ofono_call_settings_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_call_settings_probe,
 	.remove			= isi_call_settings_remove,
 	.clip_query		= isi_clip_query,

@@ -94,7 +94,7 @@ static void isi_call_barring_remove(struct ofono_call_barring *barr)
 }
 
 static struct ofono_call_barring_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_call_barring_probe,
 	.remove			= isi_call_barring_remove,
 	.set			= isi_set,

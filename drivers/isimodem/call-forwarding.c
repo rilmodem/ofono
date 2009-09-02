@@ -110,7 +110,7 @@ static void isi_call_forwarding_remove(struct ofono_call_forwarding *cf)
 }
 
 static struct ofono_call_forwarding_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_call_forwarding_probe,
 	.remove			= isi_call_forwarding_remove,
 	.activation		= isi_activation,

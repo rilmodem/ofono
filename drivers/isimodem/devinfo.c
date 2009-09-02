@@ -405,7 +405,7 @@ static void isi_devinfo_remove(struct ofono_devinfo *info)
 }
 
 static struct ofono_devinfo_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_devinfo_probe,
 	.remove			= isi_devinfo_remove,
 	.query_manufacturer	= isi_query_manufacturer,

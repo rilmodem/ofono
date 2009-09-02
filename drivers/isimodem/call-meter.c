@@ -116,7 +116,7 @@ static void isi_call_meter_remove(struct ofono_call_meter *cm)
 }
 
 static struct ofono_call_meter_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_call_meter_probe,
 	.remove			= isi_call_meter_remove,
 	.call_meter_query	= isi_call_meter_query,

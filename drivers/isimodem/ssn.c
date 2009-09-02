@@ -77,7 +77,7 @@ static void isi_ssn_remove(struct ofono_ssn *ssn)
 }
 
 static struct ofono_ssn_driver driver = {
-	.name			= "isi",
+	.name			= "isimodem",
 	.probe			= isi_ssn_probe,
 	.remove			= isi_ssn_remove
 };
