@@ -60,16 +60,6 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 AC_ARG_ENABLE(threads, AC_HELP_STRING([--enable-threads],
 		[enable threading support]), [enable_threads=${enableval}])
 
-AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
-				[disable PhoNet/ISI modem support]),
-					[enable_isimodem=${enableval}])
-AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
-
-AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
-                                [disable ETSI AT modem support]),
-                                        [enable_atmodem=${enableval}])
-AM_CONDITIONAL(ATMODEM, test "${enable_atmodem}" != "no")
-
 AC_CHECK_LIB(dl, dlopen, dummy=yes,
 			AC_MSG_ERROR(dynamic linking loader is required))
 
@@ -93,21 +83,56 @@ AC_CHECK_LIB(dbus-1, dbus_watch_get_unix_fd, dummy=yes,
 		[Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
-DBUS_DATADIR="`$PKG_CONFIG --variable=sysconfdir dbus-1`"
-if (test -z "{DBUS_DATADIR}"); then
+
+AC_ARG_WITH(dbusconf, AC_HELP_STRING([--with-dbusconf=PATH],
+	[path to D-Bus config directory]), [path_dbusconf=${withval}],
+		[path_dbusconf="`$PKG_CONFIG --variable=sysconfdir dbus-1`"])
+if (test -z "${path_dbusconf}"); then
 	DBUS_DATADIR="${sysconfdir}/dbus-1/system.d"
 else
-	DBUS_DATADIR="$DBUS_DATADIR/dbus-1/system.d"
+	DBUS_DATADIR="${path_dbusconf}/dbus-1/system.d"
 fi
 AC_SUBST(DBUS_DATADIR)
+
+AC_ARG_ENABLE(udev, AC_HELP_STRING([--disable-udev],
+			[don't use udev support even if available]),
+						[enable_udev=${enableval}])
+if (test "${enable_udev}" != "no"); then
+	PKG_CHECK_MODULES(UDEV, libudev >= 141,
+				[enable_udev="yes"], [enable_udev="no"])
+fi
+if (test "${enable_udev}" = "yes"); then
+	AC_CHECK_LIB(udev, udev_monitor_filter_update, dummy=yes,
+		AC_DEFINE(NEED_UDEV_MONITOR_FILTER, 1,
+			[Define to 1 if you need the
+					udev_monitor_filter...() functions.]))
+	UDEV_DATADIR="`$PKG_CONFIG --variable=udevdir udev`"
+	if (test -z "${UDEV_DATADIR}"); then
+		UDEV_DATADIR="${sysconfdir}/udev/rules.d"
+	else
+		UDEV_DATADIR="${UDEV_DATADIR}/rules.d"
+	fi
+	AC_SUBST(UDEV_DATADIR)
+fi
+AC_SUBST(UDEV_CFLAGS)
+AC_SUBST(UDEV_LIBS)
+AM_CONDITIONAL(UDEV, test "${enable_udev}" = "yes")
+
+AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
+				[disable PhoNet/ISI modem support]),
+					[enable_isimodem=${enableval}])
+AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
+
+AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
+				[disable ETSI AT modem support]),
+					[enable_atmodem=${enableval}])
+AM_CONDITIONAL(ATMODEM, test "${enable_atmodem}" != "no")
 
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 			[don't install configuration and data files]),
 					[enable_datafiles=${enableval}])
 
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
-
-AC_PREFIX_DEFAULT(/usr/local)
 
 if (test "${prefix}" = "NONE"); then
 	dnl no prefix and no localstatedir, so default to /var
