@@ -951,6 +951,8 @@ static int set_modem_property(struct ofono_modem *modem, const char *name,
 	case OFONO_PROPERTY_TYPE_INTEGER:
 		property->value = g_memdup(value, sizeof(int));
 		break;
+	default:
+		break;
 	}
 
 	g_hash_table_replace(modem->properties, g_strdup(name), property);
