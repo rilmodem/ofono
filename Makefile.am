@@ -81,8 +81,13 @@ builtin_sources += $(gatchat_sources) drivers/atmodem/at.h \
 				drivers/atmodem/ssn.c \
 				drivers/atmodem/devinfo.c
 
+builtin_sources += plugins/chat.h plugins/chat.c
+
 builtin_modules += generic_at
 builtin_sources += plugins/generic_at.c
+
+builtin_modules += mbm
+builtin_sources += plugins/mbm.c
 endif
 
 if MAINTAINER_MODE
