@@ -66,7 +66,7 @@ static int isi_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 	return 0;
 }
 
-static int isi_ssn_remove(struct ofono_ssn *ssn)
+static void isi_ssn_remove(struct ofono_ssn *ssn)
 {
 	struct ssn_data *data = ofono_ssn_get_data(ssn);
 
@@ -74,8 +74,6 @@ static int isi_ssn_remove(struct ofono_ssn *ssn)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_ssn_driver driver = {

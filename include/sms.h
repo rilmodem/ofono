@@ -41,7 +41,7 @@ typedef void (*ofono_sms_sca_set_cb_t)(const struct ofono_error *error,
 struct ofono_sms_driver {
 	const char *name;
 	int (*probe)(struct ofono_sms *sms, unsigned int vendor, void *data);
-	int (*remove)(struct ofono_sms *sms);
+	void (*remove)(struct ofono_sms *sms);
 	void (*sca_query)(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
 				void *data);
 	void (*sca_set)(struct ofono_sms *sms,

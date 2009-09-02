@@ -653,13 +653,11 @@ static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	return 0;
 }
 
-static int at_netreg_remove(struct ofono_netreg *netreg)
+static void at_netreg_remove(struct ofono_netreg *netreg)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
 	g_free(nd);
-
-	return 0;
 }
 
 static struct ofono_netreg_driver driver = {

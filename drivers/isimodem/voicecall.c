@@ -145,7 +145,7 @@ static int isi_voicecall_probe(struct ofono_voicecall *call,
 	return 0;
 }
 
-static int isi_voicecall_remove(struct ofono_voicecall *call)
+static void isi_voicecall_remove(struct ofono_voicecall *call)
 {
 	struct voicecall_data *data = ofono_voicecall_get_data(call);
 
@@ -153,8 +153,6 @@ static int isi_voicecall_remove(struct ofono_voicecall *call)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_voicecall_driver driver = {

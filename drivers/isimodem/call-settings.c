@@ -104,7 +104,7 @@ static int isi_call_settings_probe(struct ofono_call_settings *cs, unsigned int 
 	return 0;
 }
 
-static int isi_call_settings_remove(struct ofono_call_settings *cs)
+static void isi_call_settings_remove(struct ofono_call_settings *cs)
 {
 	struct call_settings_data *data = ofono_call_settings_get_data(cs);
 
@@ -112,8 +112,6 @@ static int isi_call_settings_remove(struct ofono_call_settings *cs)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_call_settings_driver driver = {

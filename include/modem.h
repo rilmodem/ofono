@@ -56,7 +56,7 @@ struct ofono_modem_driver {
 	int (*probe)(struct ofono_modem *modem);
 
 	/* Destroy data structures allocated during probe and cleanup */
-	int (*remove)(struct ofono_modem *modem);
+	void (*remove)(struct ofono_modem *modem);
 
 	/* Power up device */
 	int (*enable)(struct ofono_modem *modem);

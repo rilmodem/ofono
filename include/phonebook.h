@@ -40,7 +40,7 @@ struct ofono_phonebook_driver {
 	const char *name;
 	int (*probe)(struct ofono_phonebook *pb, unsigned int vendor,
 			void *data);
-	int (*remove)(struct ofono_phonebook *pb);
+	void (*remove)(struct ofono_phonebook *pb);
 	void (*export_entries)(struct ofono_phonebook *pb, const char *storage,
 				ofono_phonebook_cb_t cb, void *data);
 };

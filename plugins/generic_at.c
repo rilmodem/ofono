@@ -416,13 +416,11 @@ static int generic_at_probe(struct ofono_modem *modem)
 	return 0;
 }
 
-static int generic_at_remove(struct ofono_modem *modem)
+static void generic_at_remove(struct ofono_modem *modem)
 {
 	struct generic_at_data *d = ofono_modem_get_data(modem);
 
 	generic_at_data_free(d);
-
-	return 0;
 }
 
 static int generic_at_enable(struct ofono_modem *modem)

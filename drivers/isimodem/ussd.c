@@ -76,7 +76,7 @@ static int isi_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 	return 0;
 }
 
-static int isi_ussd_remove(struct ofono_ussd *ussd)
+static void isi_ussd_remove(struct ofono_ussd *ussd)
 {
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 
@@ -84,8 +84,6 @@ static int isi_ussd_remove(struct ofono_ussd *ussd)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_ussd_driver driver = {

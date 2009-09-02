@@ -394,7 +394,7 @@ static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 	return 0;
 }
 
-static int isi_devinfo_remove(struct ofono_devinfo *info)
+static void isi_devinfo_remove(struct ofono_devinfo *info)
 {
 	struct devinfo_data *data = ofono_devinfo_get_data(info);
 
@@ -402,8 +402,6 @@ static int isi_devinfo_remove(struct ofono_devinfo *info)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_devinfo_driver driver = {

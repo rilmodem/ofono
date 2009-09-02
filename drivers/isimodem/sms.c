@@ -83,7 +83,7 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 	return 0;
 }
 
-static int isi_sms_remove(struct ofono_sms *sms)
+static void isi_sms_remove(struct ofono_sms *sms)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
 
@@ -91,8 +91,6 @@ static int isi_sms_remove(struct ofono_sms *sms)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_sms_driver driver = {

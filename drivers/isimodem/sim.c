@@ -114,7 +114,7 @@ static int isi_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	return 0;
 }
 
-static int isi_sim_remove(struct ofono_sim *sim)
+static void isi_sim_remove(struct ofono_sim *sim)
 {
 	struct sim_data *data = ofono_sim_get_data(sim);
 
@@ -122,8 +122,6 @@ static int isi_sim_remove(struct ofono_sim *sim)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_sim_driver driver = {

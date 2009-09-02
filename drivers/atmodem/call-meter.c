@@ -379,9 +379,8 @@ static int at_caoc_probe(struct ofono_call_meter *cm, unsigned int vendor,
 	return 0;
 }
 
-static int at_caoc_remove(struct ofono_call_meter *cm)
+static void at_caoc_remove(struct ofono_call_meter *cm)
 {
-	return 0;
 }
 
 static struct ofono_call_meter_driver driver = {

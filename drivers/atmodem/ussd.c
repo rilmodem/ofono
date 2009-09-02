@@ -154,9 +154,8 @@ static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 	return 0;
 }
 
-static int at_ussd_remove(struct ofono_ussd *ussd)
+static void at_ussd_remove(struct ofono_ussd *ussd)
 {
-	return 0;
 }
 
 static struct ofono_ussd_driver driver = {

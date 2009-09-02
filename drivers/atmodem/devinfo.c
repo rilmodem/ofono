@@ -200,9 +200,8 @@ static int at_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 	return 0;
 }
 
-static int at_devinfo_remove(struct ofono_devinfo *info)
+static void at_devinfo_remove(struct ofono_devinfo *info)
 {
-	return 0;
 }
 
 static struct ofono_devinfo_driver driver = {

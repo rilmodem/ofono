@@ -273,9 +273,8 @@ static int at_ccfc_probe(struct ofono_call_forwarding *cf, unsigned int vendor,
 	return 0;
 }
 
-static int at_ccfc_remove(struct ofono_call_forwarding *cf)
+static void at_ccfc_remove(struct ofono_call_forwarding *cf)
 {
-	return 0;
 }
 
 static struct ofono_call_forwarding_driver driver = {

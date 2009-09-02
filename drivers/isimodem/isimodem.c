@@ -130,9 +130,8 @@ static int isi_modem_probe(struct ofono_modem *modem)
 	return 0;
 }
 
-static int isi_modem_remove(struct ofono_modem *modem)
+static void isi_modem_remove(struct ofono_modem *modem)
 {
-	return 0;
 }
 
 static int isi_modem_enable(struct ofono_modem *modem)

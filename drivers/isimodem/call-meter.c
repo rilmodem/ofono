@@ -105,7 +105,7 @@ static int isi_call_meter_probe(struct ofono_call_meter *cm,
 	return 0;
 }
 
-static int isi_call_meter_remove(struct ofono_call_meter *cm)
+static void isi_call_meter_remove(struct ofono_call_meter *cm)
 {
 	struct call_meter_data *data = ofono_call_meter_get_data(cm);
 
@@ -113,8 +113,6 @@ static int isi_call_meter_remove(struct ofono_call_meter *cm)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_call_meter_driver driver = {

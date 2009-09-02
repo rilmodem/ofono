@@ -122,9 +122,8 @@ static int at_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 	return 0;
 }
 
-static int at_ssn_remove(struct ofono_ssn *ssn)
+static void at_ssn_remove(struct ofono_ssn *ssn)
 {
-	return 0;
 }
 
 static struct ofono_ssn_driver driver = {

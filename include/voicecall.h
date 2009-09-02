@@ -48,7 +48,7 @@ struct ofono_voicecall_driver {
 	const char *name;
 	int (*probe)(struct ofono_voicecall *vc, unsigned int vendor,
 			void *data);
-	int (*remove)(struct ofono_voicecall *vc);
+	void (*remove)(struct ofono_voicecall *vc);
 	void (*dial)(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *number,
 			enum ofono_clir_option clir, enum ofono_cug_option cug,

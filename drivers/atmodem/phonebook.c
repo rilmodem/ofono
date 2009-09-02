@@ -534,7 +534,7 @@ static int at_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 	return 0;
 }
 
-static int at_phonebook_remove(struct ofono_phonebook *pb)
+static void at_phonebook_remove(struct ofono_phonebook *pb)
 {
 	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 
@@ -542,8 +542,6 @@ static int at_phonebook_remove(struct ofono_phonebook *pb)
 		g_free(pbd->old_charset);
 
 	g_free(pbd);
-
-	return 0;
 }
 
 static struct ofono_phonebook_driver driver = {

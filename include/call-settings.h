@@ -43,7 +43,7 @@ struct ofono_call_settings_driver {
 	const char *name;
 	int (*probe)(struct ofono_call_settings *cs, unsigned int vendor,
 			void *data);
-	int (*remove)(struct ofono_call_settings *cs);
+	void (*remove)(struct ofono_call_settings *cs);
 	void (*clip_query)(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data);
 	void (*colp_query)(struct ofono_call_settings *cs,

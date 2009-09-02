@@ -33,7 +33,7 @@ struct ofono_ssn;
 struct ofono_ssn_driver {
 	const char *name;
 	int (*probe)(struct ofono_ssn *ssn, unsigned int vendor, void *data);
-	int (*remove)(struct ofono_ssn *ssn);
+	void (*remove)(struct ofono_ssn *ssn);
 };
 
 /* SSN notifications (CSSI and CSSU).  */

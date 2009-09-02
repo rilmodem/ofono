@@ -49,7 +49,7 @@ struct ofono_call_forwarding_driver {
 	const char *name;
 	int (*probe)(struct ofono_call_forwarding *cf, unsigned int vendor,
 			void *data);
-	int (*remove)(struct ofono_call_forwarding *cf);
+	void (*remove)(struct ofono_call_forwarding *cf);
 	void (*activation)(struct ofono_call_forwarding *cf,
 				int type, int cls,
 				ofono_call_forwarding_set_cb_t cb, void *data);

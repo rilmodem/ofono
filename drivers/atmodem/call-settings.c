@@ -376,9 +376,8 @@ static int at_call_settings_probe(struct ofono_call_settings *cs,
 	return 0;
 }
 
-static int at_call_settings_remove(struct ofono_call_settings *cs)
+static void at_call_settings_remove(struct ofono_call_settings *cs)
 {
-	return 0;
 }
 
 static struct ofono_call_settings_driver driver = {

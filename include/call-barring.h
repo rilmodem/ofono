@@ -39,7 +39,7 @@ struct ofono_call_barring_driver {
 	const char *name;
 	int (*probe)(struct ofono_call_barring *cb, unsigned int vendor,
 			void *data);
-	int (*remove)(struct ofono_call_barring *cb);
+	void (*remove)(struct ofono_call_barring *cb);
 	void (*set)(struct ofono_call_barring *barr, const char *lock,
 			int enable, const char *passwd, int cls,
 			ofono_call_barring_set_cb_t cb, void *data);

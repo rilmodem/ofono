@@ -83,7 +83,7 @@ static int isi_call_barring_probe(struct ofono_call_barring *barr,
 	return 0;
 }
 
-static int isi_call_barring_remove(struct ofono_call_barring *barr)
+static void isi_call_barring_remove(struct ofono_call_barring *barr)
 {
 	struct call_barring_data *data = ofono_call_barring_get_data(barr);
 
@@ -91,8 +91,6 @@ static int isi_call_barring_remove(struct ofono_call_barring *barr)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_call_barring_driver driver = {

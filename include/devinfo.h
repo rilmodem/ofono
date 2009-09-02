@@ -37,7 +37,7 @@ struct ofono_devinfo_driver {
 	const char *name;
 	int (*probe)(struct ofono_devinfo *info, unsigned int vendor,
 			void *data);
-	int (*remove)(struct ofono_devinfo *info);
+	void (*remove)(struct ofono_devinfo *info);
 	void (*query_manufacturer)(struct ofono_devinfo *info,
 			ofono_devinfo_query_cb_t cb, void *data);
 	void (*query_serial)(struct ofono_devinfo *info,

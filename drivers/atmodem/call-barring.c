@@ -217,9 +217,8 @@ static int at_call_barring_probe(struct ofono_call_barring *cb,
 	return 0;
 }
 
-static int at_call_barring_remove(struct ofono_call_barring *cb)
+static void at_call_barring_remove(struct ofono_call_barring *cb)
 {
-	return 0;
 }
 
 static struct ofono_call_barring_driver driver = {

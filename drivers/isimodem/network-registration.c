@@ -200,7 +200,7 @@ static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	return 0;
 }
 
-static int isi_netreg_remove(struct ofono_netreg *net)
+static void isi_netreg_remove(struct ofono_netreg *net)
 {
 	struct netreg_data *data = ofono_netreg_get_data(net);
 
@@ -208,8 +208,6 @@ static int isi_netreg_remove(struct ofono_netreg *net)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_netreg_driver driver = {

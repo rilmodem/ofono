@@ -72,7 +72,7 @@ struct ofono_netreg_driver {
 	const char *name;
 	int (*probe)(struct ofono_netreg *netreg, unsigned int vendor,
 			void *data);
-	int (*remove)(struct ofono_netreg *netreg);
+	void (*remove)(struct ofono_netreg *netreg);
 	void (*registration_status)(struct ofono_netreg *netreg,
 			ofono_netreg_status_cb_t cb, void *data);
 	void (*current_operator)(struct ofono_netreg *netreg,

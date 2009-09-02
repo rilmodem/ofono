@@ -1003,15 +1003,13 @@ static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	return 0;
 }
 
-static int at_voicecall_remove(struct ofono_voicecall *vc)
+static void at_voicecall_remove(struct ofono_voicecall *vc)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
 	g_free(vd);
-
-	return 0;
 }
 
 static struct ofono_voicecall_driver driver = {

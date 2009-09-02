@@ -403,7 +403,7 @@ static int isi_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 	return 0;
 }
 
-static int isi_phonebook_remove(struct ofono_phonebook *pb)
+static void isi_phonebook_remove(struct ofono_phonebook *pb)
 {
 	struct pb_data *data = ofono_phonebook_get_data(pb);
 
@@ -411,8 +411,6 @@ static int isi_phonebook_remove(struct ofono_phonebook *pb)
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
-
-	return 0;
 }
 
 static struct ofono_phonebook_driver driver = {

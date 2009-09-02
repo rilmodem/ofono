@@ -451,9 +451,8 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	return 0;
 }
 
-static int at_sim_remove(struct ofono_sim *sim)
+static void at_sim_remove(struct ofono_sim *sim)
 {
-	return 0;
 }
 
 static struct ofono_sim_driver driver = {
