@@ -38,6 +38,8 @@ static GSList *g_devinfo_drivers = NULL;
 static GSList *g_driver_list = NULL;
 static GSList *g_modem_list = NULL;
 
+static int next_modem_id = 0;
+
 enum ofono_property_type {
 	OFONO_PROPERTY_TYPE_INVALID = 0,
 	OFONO_PROPERTY_TYPE_STRING,
@@ -1020,14 +1022,19 @@ int ofono_modem_get_integer(struct ofono_modem *modem, const char *key)
 	return value;
 }
 
-struct ofono_modem *ofono_modem_create(const char *node, const char *type)
+struct ofono_modem *ofono_modem_create(const char *type)
 {
 	struct ofono_modem *modem;
 	char path[128];
 
-	DBG("%s, %s", node, type);
+	DBG("%s", type);
 
-	if (strlen(node) > 16)
+	if (strlen(type) > 16)
+		return NULL;
+
+	snprintf(path, sizeof(path), "/%s%d", type, next_modem_id);
+
+	if (__ofono_dbus_valid_object_path(path) == FALSE)
 		return NULL;
 
 	modem = g_try_new0(struct ofono_modem, 1);
@@ -1035,13 +1042,14 @@ struct ofono_modem *ofono_modem_create(const char *node, const char *type)
 	if (modem == NULL)
 		return modem;
 
-	snprintf(path, sizeof(path), "/%s", node);
 	modem->path = g_strdup(path);
 	modem->driver_type = g_strdup(type);
 	modem->properties = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, unregister_property);
 
 	g_modem_list = g_slist_prepend(g_modem_list, modem);
+
+	next_modem_id += 1;
 
 	return modem;
 }
