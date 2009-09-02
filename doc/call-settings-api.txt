@@ -1,0 +1,98 @@
+Call Forwarding hierarchy
+===============
+Service		org.ofono
+Interface	org.ofono.CallForwarding
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Contains the properties for this object.
+
+		void SetProperty(string property, variant value)
+
+			Sets the given property value to that specified in
+			call parameter.
+
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
+
+Properties	string CallingLinePresentation [readonly]
+
+			Contains the value of the calling line identification
+			presentation property.  The value indicates
+			the state of the CLIP supplementary service in the
+			network.  If enabled, the network will provide
+			the number of the calling party for incoming calls.
+			Possible values are:
+				"disabled",
+				"enabled",
+				"unknown"
+
+		string CalledLinePresentation [readonly]
+
+			Contains the value of the connected line identification
+			presentation property.  The value indicates the state
+			of the COLP supplementary service in the network.  If
+			enabled, the network will attempt to provide the number
+			of the connected party for outgoing calls.  Possible
+			values are:
+				"disabled",
+				"enabled",
+				"unknown"
+
+		string CalledLineRestriction [readonly]
+
+			Contains the value of the connected line identification
+			restriction property. The value indicates the state of
+			the COLR supplementary service in the network.  If
+			enabled, the network will withold subscriber number
+			information from the calling party on incoming calls.
+			The possible values are:
+				"disabled",
+				"enabled",
+				"unknown"
+
+			Not all modems can report this information.
+
+		string CallingLineRestriction [readonly]
+
+			Contains the value of the calling line identification
+			restriction property.  The value indicates the state of
+			the CLIR supplementary service in the network.  If
+			enabled permanently or temporarily the restriction is
+			in effect, the subscriber number information will be
+			withheld from the called party on outgoing calls
+			unless the value is overriden using the HideCallerId
+			property or on a per call basis.
+
+			The possible values are:
+				"disabled"
+				"permanent"
+				"unknown",
+				"on",
+				"off"
+
+		string HideCallerId [readwrite]
+
+			Sets whether the ID of the caller will should be
+			provided or witheld for outgoing calls.  This setting
+			is also modified by the status of the CLIR supplementary
+			service in the network (see the CallingLineRestriction
+			property).  The three possible values are:
+				"default" - Uses the network setting
+				"enabled" - CLIR invoked, caller id is witheld
+				"disabled" - CLIR suppressed, caller id is provided
+
+			This setting can also be changed on a per-call basis,
+			see the VoiceCallManager Dial method documentation.
+
+		string VoiceCallWaiting [readwrite]
+
+			Contains the call waiting status for Voice calls.
+			If enabled, the call waiting status will be
+			presented to the subscriber for voice calls.
+			Possible values are:
+				"disabled",
+				"enabled",
