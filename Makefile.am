@@ -18,6 +18,10 @@ local_headers = $(foreach file,$(include_HEADERS) $(nodist_include_HEADERS), \
 
 
 if DATAFILES
+confdir = $(sysconfdir)/ofono
+
+conf_DATA =
+
 dbusdir = @DBUS_DATADIR@
 
 dbus_DATA = src/ofono.conf
@@ -83,6 +87,10 @@ builtin_sources += $(gatchat_sources) drivers/atmodem/at.h \
 
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
+
+if DATAFILES
+conf_DATA += plugins/modem.conf
+endif
 
 builtin_sources += plugins/chat.h plugins/chat.c
 
@@ -151,7 +159,9 @@ test_files = test/test-manager test/test-modem test/test-voicecall \
 		test/monitor-ofono test/list-modems test/enable-modem \
 		test/list-operators
 
-EXTRA_DIST = src/genbuiltin src/ofono.conf $(doc_files) $(test_files)
+conf_files = src/ofono.conf plugins/modem.conf
+
+EXTRA_DIST = src/genbuiltin $(doc_files) $(test_files) $(conf_files)
 
 dist_man_MANS = doc/ofonod.8
 
