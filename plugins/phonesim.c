@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -58,6 +59,11 @@ static int phonesim_probe(struct ofono_modem *modem)
 
 static void phonesim_remove(struct ofono_modem *modem)
 {
+}
+
+static void phonesim_debug(const char *str, void *user_data)
+{
+	ofono_info("%s", str);
 }
 
 static int phonesim_enable(struct ofono_modem *modem)
@@ -99,6 +105,9 @@ static int phonesim_enable(struct ofono_modem *modem)
 		g_io_channel_unref(io);
 		return -ENOMEM;
 	}
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, phonesim_debug, NULL);
 
 	g_io_channel_unref(io);
 
