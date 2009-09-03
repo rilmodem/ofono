@@ -92,9 +92,6 @@ if DATAFILES
 conf_DATA += plugins/modem.conf
 endif
 
-builtin_modules += generic_at
-builtin_sources += plugins/generic_at.c
-
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
 
