@@ -529,8 +529,6 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 			return NULL;
 		}
 
-		ofono_debug("Foobar");
-
 		modem->powered = powered;
 		modem->powered_pending = powered;
 
