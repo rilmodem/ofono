@@ -91,9 +91,12 @@ static int mbm_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	device = ofono_modem_get_string(modem, "Device");
-	if (!device)
-		return -EINVAL;
+	device  = ofono_modem_get_string(modem, "ModemDevice");
+	if (!device) {
+		device = ofono_modem_get_string(modem, "Device");
+		if (!device)
+			return -EINVAL;
+	}
 
 	syntax = g_at_syntax_new_gsmv1();
 	data->chat = g_at_chat_new_from_tty(device, syntax);
