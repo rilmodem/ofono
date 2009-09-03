@@ -10,6 +10,9 @@ ATTRS{idVendor}=="12d1", ENV{OFONO_DRIVER}="huawei"
 # Novatel Wireless
 ATTRS{idVendor}=="1410", ENV{OFONO_DRIVER}="novatel"
 
+# Option Globetrotter
+ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="6971", ENV{OFONO_DRIVER}="hso"
+
 # Ericsson F3507g
 ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="1900", ENV{OFONO_DRIVER}="mbm"
 ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="1902", ENV{OFONO_DRIVER}="mbm"

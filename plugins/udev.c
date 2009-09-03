@@ -86,10 +86,10 @@ static const char *get_driver(struct udev_device *udev_device)
 	return driver;
 }
 
-#define MBM_MODEM_DEVICE	"ModemDevice"
-#define MBM_DATA_DEVICE		"DataDevice"
-#define MBM_GPS_DEVICE		"GPSDevice"
-#define MBM_NETWORK_INTERFACE	"NetworkInterface"
+#define MODEM_DEVICE		"ModemDevice"
+#define DATA_DEVICE		"DataDevice"
+#define GPS_DEVICE		"GPSDevice"
+#define NETWORK_INTERFACE	"NetworkInterface"
 
 static void add_mbm(struct ofono_modem *modem,
 					struct udev_device *udev_device)
@@ -109,25 +109,61 @@ static void add_mbm(struct ofono_modem *modem,
 
 	if (g_str_has_suffix(description, "Minicard Modem") == TRUE) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, MBM_MODEM_DEVICE, devnode);
+		ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
 	} else if (g_str_has_suffix(description,
 					"Minicard Data Modem") == TRUE) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, MBM_DATA_DEVICE, devnode);
+		ofono_modem_set_string(modem, DATA_DEVICE, devnode);
 	} else if (g_str_has_suffix(description,
 					"Minicard GPS Port") == TRUE) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, MBM_GPS_DEVICE, devnode);
+		ofono_modem_set_string(modem, GPS_DEVICE, devnode);
 	} else if (g_str_has_suffix(description,
 					"Minicard Network Adapter") == TRUE) {
 		devnode = udev_device_get_property_value(udev_device,
 								"INTERFACE");
-		ofono_modem_set_string(modem, MBM_NETWORK_INTERFACE, devnode);
+		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
 	} else
 		return;
 
-	device  = ofono_modem_get_string(modem, MBM_MODEM_DEVICE);
-	network = ofono_modem_get_string(modem, MBM_NETWORK_INTERFACE);
+	device  = ofono_modem_get_string(modem, MODEM_DEVICE);
+	network = ofono_modem_get_string(modem, NETWORK_INTERFACE);
+
+	if (device != NULL && network != NULL) {
+		ofono_modem_set_integer(modem, "Registered", 1);
+		ofono_modem_register(modem);
+	}
+}
+
+static void add_hso(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	const char *subsystem, *type, *devnode;
+	const char *device, *network;
+	int registered;
+
+	subsystem = udev_device_get_subsystem(udev_device);
+	if (subsystem == NULL)
+		return;
+
+	registered = ofono_modem_get_integer(modem, "Registered");
+	if (registered != 0)
+		return;
+
+	type = udev_device_get_sysattr_value(udev_device, "hsotype");
+
+	if (type != NULL && g_str_has_suffix(type, "Control") == TRUE) {
+		devnode = udev_device_get_devnode(udev_device);
+		ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
+	} else if (g_str_equal(subsystem, "net") == TRUE) {
+		devnode = udev_device_get_property_value(udev_device,
+								"INTERFACE");
+		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
+	} else
+		return;
+
+	device  = ofono_modem_get_string(modem, MODEM_DEVICE);
+	network = ofono_modem_get_string(modem, NETWORK_INTERFACE);
 
 	if (device != NULL && network != NULL) {
 		ofono_modem_set_integer(modem, "Registered", 1);
@@ -209,6 +245,8 @@ static void add_modem(struct udev_device *udev_device)
 
 	if (g_strcmp0(driver, "mbm") == 0)
 		add_mbm(modem, udev_device);
+	else if (g_strcmp0(driver, "hso") == 0)
+		add_hso(modem, udev_device);
 	else if (g_strcmp0(driver, "huawei") == 0)
 		add_huawei(modem, udev_device);
 	else if (g_strcmp0(driver, "novatel") == 0)

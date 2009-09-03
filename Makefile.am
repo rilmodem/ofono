@@ -114,6 +114,9 @@ builtin_sources += plugins/g1.c
 builtin_modules += mbm
 builtin_sources += plugins/mbm.c
 
+builtin_modules += hso
+builtin_sources += plugins/hso.c
+
 builtin_modules += huawei
 builtin_sources += plugins/huawei.c
 
