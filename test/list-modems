@@ -35,7 +35,7 @@ for path in properties["Modems"]:
 		print "    [ %s ]" % (interface)
 
 		for key in properties.keys():
-			if key in ["AvailableOperators"]:
+			if key in ["AvailableOperators", "SubscriberNumbers"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
