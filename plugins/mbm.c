@@ -87,11 +87,16 @@ static int mbm_enable(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
 	GAtSyntax *syntax;
+	const char *device;
 
 	DBG("%p", modem);
 
+	device = ofono_modem_get_string(modem, "Device");
+	if (!device)
+		return -EINVAL;
+
 	syntax = g_at_syntax_new_gsmv1();
-	data->chat = g_at_chat_new_from_tty("/dev/ttyACM0", syntax);
+	data->chat = g_at_chat_new_from_tty(device, syntax);
 	g_at_syntax_unref(syntax);
 
 	if (!data->chat)

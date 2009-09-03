@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#include <errno.h>
+
 #include <glib.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
@@ -31,6 +33,22 @@
 #include <ofono/log.h>
 
 static GSList *modem_list = NULL;
+
+static int set_device(struct ofono_modem *modem,
+					GKeyFile *keyfile, const char *group)
+{
+	char *device;
+
+	device = g_key_file_get_string(keyfile, group, "Device", NULL);
+	if (!device)
+		return -EINVAL;
+
+	ofono_modem_set_string(modem, "Device", device);
+
+	g_free(device);
+
+	return 0;
+}
 
 static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 {
@@ -42,6 +60,9 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 		return NULL;
 
 	modem = ofono_modem_create(driver);
+
+	if (!g_strcmp0(driver, "g1") || !g_strcmp0(driver, "mbm"))
+		set_device(modem, keyfile, group);
 
 	g_free(driver);
 

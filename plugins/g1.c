@@ -143,11 +143,16 @@ static int g1_probe(struct ofono_modem *modem)
 {
 	GAtSyntax *syntax;
 	GAtChat *chat;
+	const char *device;
 
 	DBG("");
 
+	device = ofono_modem_get_string(modem, "Device");
+	if (device == NULL)
+		return -EINVAL;
+
 	syntax = g_at_syntax_new_full(g1_feed, g1_hint, G1_STATE_IDLE);
-	chat = g_at_chat_new_from_tty("/dev/smd0", syntax);
+	chat = g_at_chat_new_from_tty(device, syntax);
 	g_at_syntax_unref(syntax);
 
 	if (chat == NULL)
