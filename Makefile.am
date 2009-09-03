@@ -108,11 +108,14 @@ endif
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
 
+builtin_modules += g1
+builtin_sources += plugins/g1.c
+
 builtin_modules += mbm
 builtin_sources += plugins/mbm.c
 
-builtin_modules += g1
-builtin_sources += plugins/g1.c
+builtin_modules += huawei
+builtin_sources += plugins/huawei.c
 endif
 
 if MAINTAINER_MODE
