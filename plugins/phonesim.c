@@ -72,9 +72,18 @@ static int phonesim_enable(struct ofono_modem *modem)
 	GAtChat *chat;
 	GAtSyntax *syntax;
 	struct sockaddr_in addr;
-	int sk, err;
+	const char *address;
+	int sk, err, port;
 
 	DBG("%p", modem);
+
+	address = ofono_modem_get_string(modem, "Address");
+	if (!address)
+		return -EINVAL;
+
+	port = ofono_modem_get_integer(modem, "Port");
+	if (port < 0)
+		return -EINVAL;
 
 	sk = socket(PF_INET, SOCK_STREAM, 0);
 	if (sk < 0)
@@ -82,8 +91,8 @@ static int phonesim_enable(struct ofono_modem *modem)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	addr.sin_port = htons(12345);
+	addr.sin_addr.s_addr = inet_addr(address);
+	addr.sin_port = htons(port);
 
 	err = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
 	if (err < 0) {

@@ -24,6 +24,7 @@
 #endif
 
 #include <errno.h>
+#include <stdlib.h>
 
 #include <glib.h>
 
@@ -33,6 +34,28 @@
 #include <ofono/log.h>
 
 static GSList *modem_list = NULL;
+
+static int set_address(struct ofono_modem *modem,
+					GKeyFile *keyfile, const char *group)
+{
+	char *address, *port;
+
+	address = g_key_file_get_string(keyfile, group, "Address", NULL);
+	if (address) {
+		ofono_modem_set_string(modem, "Address", address);
+		g_free(address);
+	} else
+		ofono_modem_set_string(modem, "Address", "127.0.0.1");
+
+	port = g_key_file_get_string(keyfile, group, "Port", NULL);
+	if (port) {
+		ofono_modem_set_integer(modem, "Port", atoi(port));
+		g_free(port);
+	} else
+		ofono_modem_set_integer(modem, "Port", 12345);
+
+	return 0;
+}
 
 static int set_device(struct ofono_modem *modem,
 					GKeyFile *keyfile, const char *group)
@@ -60,6 +83,9 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 		return NULL;
 
 	modem = ofono_modem_create(driver);
+
+	if (!g_strcmp0(driver, "phonesim"))
+		set_address(modem, keyfile, group);
 
 	if (!g_strcmp0(driver, "g1") || !g_strcmp0(driver, "mbm"))
 		set_device(modem, keyfile, group);
