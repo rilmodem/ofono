@@ -529,6 +529,8 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 			return NULL;
 		}
 
+		ofono_debug("Foobar");
+
 		modem->powered = powered;
 		modem->powered_pending = powered;
 
@@ -1160,8 +1162,6 @@ static void modem_unregister(struct ofono_modem *modem)
 
 	g_dbus_unregister_interface(conn, modem->path, OFONO_MODEM_INTERFACE);
 
-	emit_modems();
-
 	if (modem->powered == TRUE)
 		set_powered(modem, FALSE);
 
@@ -1172,6 +1172,8 @@ static void modem_unregister(struct ofono_modem *modem)
 	modem->properties = NULL;
 
 	modem->driver = NULL;
+
+	emit_modems();
 }
 
 void ofono_modem_remove(struct ofono_modem *modem)
