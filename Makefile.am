@@ -116,6 +116,9 @@ builtin_sources += plugins/mbm.c
 
 builtin_modules += huawei
 builtin_sources += plugins/huawei.c
+
+builtin_modules += novatel
+builtin_sources += plugins/novatel.c
 endif
 
 if MAINTAINER_MODE

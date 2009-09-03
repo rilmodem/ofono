@@ -152,6 +152,23 @@ static void add_huawei(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
+static void add_novatel(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	const char *devnode;
+	int registered;
+
+	registered = ofono_modem_get_integer(modem, "Registered");
+	if (registered != 0)
+		return;
+
+	devnode = udev_device_get_devnode(udev_device);
+	ofono_modem_set_string(modem, "Device", devnode);
+
+	ofono_modem_set_integer(modem, "Registered", 1);
+	ofono_modem_register(modem);
+}
+
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -194,6 +211,8 @@ static void add_modem(struct udev_device *udev_device)
 		add_mbm(modem, udev_device);
 	else if (g_strcmp0(driver, "huawei") == 0)
 		add_huawei(modem, udev_device);
+	else if (g_strcmp0(driver, "novatel") == 0)
+		add_novatel(modem, udev_device);
 }
 
 static void remove_modem(struct udev_device *udev_device)
