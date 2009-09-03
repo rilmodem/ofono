@@ -48,7 +48,7 @@ static int mbm_probe(struct ofono_modem *modem)
 {
 	struct mbm_data *data;
 
-	ofono_info("MBM probe");
+	DBG("%p", modem);
 
 	data = g_try_new0(struct mbm_data, 1);
 	if (!data)
@@ -63,7 +63,7 @@ static void mbm_remove(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
 
-	ofono_info("MBM remove");
+	DBG("%p", modem);
 
 	ofono_modem_set_data(modem, NULL);
 
@@ -99,7 +99,7 @@ static int mbm_enable(struct ofono_modem *modem)
 {
 	int err;
 
-	ofono_info("MBM enable");
+	DBG("%p", modem);
 
 	err = chat_connect("/dev/ttyACM0", connect_callback, modem);
 	if (err < 0)
@@ -112,7 +112,7 @@ static int mbm_disable(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
 
-	ofono_info("MBM disable");
+	DBG("%p", modem);
 
 	if (!data->chat)
 		return 0;
@@ -131,7 +131,7 @@ static void mbm_populate(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
 
-	ofono_info("MBM populate");
+	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
