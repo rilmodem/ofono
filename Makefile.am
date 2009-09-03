@@ -18,13 +18,17 @@ local_headers = $(foreach file,$(include_HEADERS) $(nodist_include_HEADERS), \
 
 
 if DATAFILES
+dbusdir = @DBUS_DATADIR@
+
+dbus_DATA = src/ofono.conf
+
 confdir = $(sysconfdir)/ofono
 
 conf_DATA =
 
-dbusdir = @DBUS_DATADIR@
+statedir = $(localstatedir)/lib/ofono
 
-dbus_DATA = src/ofono.conf
+state_DATA =
 endif
 
 builtin_modules =

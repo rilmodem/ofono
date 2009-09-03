@@ -13,7 +13,8 @@ In order to compile telephony stack you need following software packages:
 	- D-Bus library
 
 To configure run:
-	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+	./configure --prefix=/usr --mandir=/usr/share/man \
+				--sysconfdir=/etc --localstatedir=/var
 
 Configure automatically searches for all required components and packages.
 

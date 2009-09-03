@@ -9,6 +9,6 @@ fi
 		--enable-debug \
 		--prefix=/usr \
 		--mandir=/usr/share/man \
-		--localstatedir=/var \
 		--sysconfdir=/etc \
+		--localstatedir=/var \
 		--disable-datafiles $*
