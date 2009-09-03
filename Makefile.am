@@ -97,6 +97,9 @@ builtin_sources += plugins/chat.h plugins/chat.c
 builtin_modules += generic_at
 builtin_sources += plugins/generic_at.c
 
+builtin_modules += phonesim
+builtin_sources += plugins/phonesim.c
+
 builtin_modules += mbm
 builtin_sources += plugins/mbm.c
 
