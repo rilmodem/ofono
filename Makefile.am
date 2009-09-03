@@ -83,7 +83,8 @@ builtin_sources += $(gatchat_sources) drivers/atmodem/at.h \
 				drivers/atmodem/call-barring.c \
 				drivers/atmodem/phonebook.c \
 				drivers/atmodem/ssn.c \
-				drivers/atmodem/devinfo.c
+				drivers/atmodem/devinfo.c \
+				drivers/atmodem/vendor.h
 
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
