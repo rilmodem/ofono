@@ -47,11 +47,19 @@ gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/gatsyntax.h gatchat/gatsyntax.c \
 				gatchat/ringbuffer.h gatchat/ringbuffer.c
 
+udev_files = plugins/ofono.rules
+
 if UDEV
 builtin_modules += udev
 builtin_sources += plugins/udev.c
 builtin_cflags += @UDEV_CFLAGS@
 builtin_libadd += @UDEV_LIBS@
+
+if DATAFILES
+rulesdir = @UDEV_DATADIR@
+
+rules_DATA = $(foreach file,$(udev_files), plugins/97-$(notdir $(file)))
+endif
 endif
 
 if ISIMODEM
@@ -132,7 +140,8 @@ src_ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=src/ofono.ver
 
 src_ofonod_DEPENDENCIES = src/ofono.ver
 
-CLEANFILES = src/ofono.ver src/ofono.exp src/builtin.h $(local_headers)
+CLEANFILES = src/ofono.ver src/ofono.exp src/builtin.h \
+					$(local_headers) $(rules_DATA)
 
 plugindir = $(libdir)/ofono/plugins
 
@@ -167,7 +176,8 @@ test_files = test/test-manager test/test-modem test/test-voicecall \
 
 conf_files = src/ofono.conf plugins/modem.conf
 
-EXTRA_DIST = src/genbuiltin $(doc_files) $(test_files) $(conf_files)
+EXTRA_DIST = src/genbuiltin $(doc_files) \
+				$(test_files) $(conf_files) $(udev_files)
 
 dist_man_MANS = doc/ofonod.8
 
@@ -215,6 +225,9 @@ src/ofono.ver: src/ofono.exp
 	$(AM_V_at)echo "{ global:" > $@
 	$(AM_V_GEN)$(SED) -e "s/\(.*\)/\1;/" $< >> $@
 	$(AM_V_at)echo "local: *; };" >> $@
+
+plugins/%.rules:
+	$(AM_V_GEN)cp $(subst 97-,,$@) $@
 
 $(src_ofonod_OBJECTS) $(unit_objects): $(local_headers)
 
