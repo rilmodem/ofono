@@ -1,3 +1,14 @@
+ver 0.4:
+	Add atom framework and update all drivers.
+	Add support for modem driver framework.
+	Add support for static modem configuration.
+	Add support for specialized phone simulator driver.
+	Add support for HTC G1 modem devices.
+	Add support for Ericsson MBM devices.
+	Add support for AT command PDU listing.
+	Add support for low-level PhoNet/ISI pipe endpoints.
+	Add support for full non-recursive build.
+
 ver 0.3:
 	Fix support for phonebook reading.
 	Fix some issues with network registration.
