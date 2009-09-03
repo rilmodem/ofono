@@ -38,8 +38,6 @@
 #include <ofono/sms.h>
 #include <ofono/log.h>
 
-#include "chat.h"
-
 struct mbm_data {
 	GAtChat *chat;
 };
@@ -75,37 +73,47 @@ static void mbm_debug(const char *str, void *user_data)
 	ofono_info("%s", str);
 }
 
-static void connect_callback(GAtChat *chat, gpointer user_data)
+static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct mbm_data *data = ofono_modem_get_data(modem);
 
-	if (!chat) {
-		ofono_modem_set_powered(modem, FALSE);
-		return;
-	}
+	DBG("");
 
-	data->chat = g_at_chat_ref(chat);
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, mbm_debug, NULL);
-
-	ofono_modem_set_powered(modem, TRUE);
-
-	g_at_chat_send(data->chat, "AT+CFUN=1", NULL, NULL, NULL, NULL);
+	if (ok)
+		ofono_modem_set_powered(modem, TRUE);
 }
 
 static int mbm_enable(struct ofono_modem *modem)
 {
-	int err;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+	GAtSyntax *syntax;
 
 	DBG("%p", modem);
 
-	err = chat_connect("/dev/ttyACM0", connect_callback, modem);
-	if (err < 0)
-		return err;
+	syntax = g_at_syntax_new_gsmv1();
+	data->chat = g_at_chat_new_from_tty("/dev/ttyACM0", syntax);
+	g_at_syntax_unref(syntax);
 
-	return -EINPROGRESS;
+	if (!data->chat)
+		return -EIO;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(data->chat, mbm_debug, NULL);
+
+	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
+					cfun_enable, modem, NULL);
+
+	return 0;
+}
+
+static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+
+	DBG("");
+
+	if (ok)
+		ofono_modem_set_powered(modem, FALSE);
 }
 
 static int mbm_disable(struct ofono_modem *modem)
@@ -117,9 +125,10 @@ static int mbm_disable(struct ofono_modem *modem)
 	if (!data->chat)
 		return 0;
 
-	g_at_chat_shutdown(data->chat);
+	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
+					cfun_disable, modem, NULL);
 
-	chat_disconnect(data->chat);
+	g_at_chat_shutdown(data->chat);
 
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;

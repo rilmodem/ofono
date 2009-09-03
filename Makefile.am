@@ -92,8 +92,6 @@ if DATAFILES
 conf_DATA += plugins/modem.conf
 endif
 
-builtin_sources += plugins/chat.h plugins/chat.c
-
 builtin_modules += generic_at
 builtin_sources += plugins/generic_at.c
 
