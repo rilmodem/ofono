@@ -37,7 +37,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 static const char *clck_prefix[] = { "+CLCK:", NULL };
 static const char *none_prefix[] = { NULL };

@@ -38,7 +38,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 #define INDEX_INVALID -1
 

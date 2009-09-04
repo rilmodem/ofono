@@ -37,7 +37,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 static const char *none_prefix[] = { NULL };
 static const char *clir_prefix[] = { "+CLIR:", NULL };

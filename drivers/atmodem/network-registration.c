@@ -37,7 +37,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 #include "vendor.h"
 
 static const char *none_prefix[] = { NULL };

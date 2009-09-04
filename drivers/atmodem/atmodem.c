@@ -30,7 +30,7 @@
 #include <ofono/plugin.h>
 #include <ofono/types.h>
 
-#include "at.h"
+#include "atmodem.h"
 
 static int atmodem_init(void)
 {

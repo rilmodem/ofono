@@ -37,7 +37,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 /* Amount of ms we wait between CLCC calls */
 #define POLL_CLCC_INTERVAL 500

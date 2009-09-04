@@ -35,7 +35,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 static void cssi_notify(GAtResult *result, gpointer user_data)
 {

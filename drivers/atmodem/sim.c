@@ -37,7 +37,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
 

@@ -40,7 +40,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 static const char *csca_prefix[] = { "+CSCA:", NULL };
 static const char *csms_prefix[] = { "+CSMS:", NULL };

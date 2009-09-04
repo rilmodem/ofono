@@ -33,7 +33,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include "at.h"
+#include "atmodem.h"
 
 static const char *fixup_return(const char *line, const char *prefix)
 {
