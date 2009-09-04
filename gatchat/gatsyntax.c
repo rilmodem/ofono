@@ -27,7 +27,7 @@
 
 #include "gatsyntax.h"
 
-enum GSMV1_STATE_ {
+enum GSMV1_STATE {
 	GSMV1_STATE_IDLE = 0,
 	GSMV1_STATE_INITIAL_CR,
 	GSMV1_STATE_INITIAL_LF,
@@ -43,6 +43,14 @@ enum GSMV1_STATE_ {
 	GSMV1_STATE_PROMPT,
 	GSMV1_STATE_GARBAGE,
 	GSMV1_STATE_GARBAGE_CHECK_LF,
+};
+
+enum GSM_PERMISSIVE_STATE {
+	GSM_PERMISSIVE_STATE_IDLE = 0,
+	GSM_PERMISSIVE_STATE_RESPONSE,
+	GSM_PERMISSIVE_STATE_GUESS_PDU,
+	GSM_PERMISSIVE_STATE_PDU,
+	GSM_PERMISSIVE_STATE_PROMPT,
 };
 
 static void gsmv1_hint(GAtSyntax *syntax, GAtSyntaxExpectHint hint)
@@ -215,6 +223,79 @@ out:
 	return res;
 }
 
+static void gsm_permissive_hint(GAtSyntax *syntax, GAtSyntaxExpectHint hint)
+{
+	if (hint == G_AT_SYNTAX_EXPECT_PDU)
+		syntax->state = GSM_PERMISSIVE_STATE_GUESS_PDU;
+}
+
+static GAtSyntaxResult gsm_permissive_feed(GAtSyntax *syntax,
+						const char *bytes, gsize *len)
+{
+	gsize i = 0;
+	GAtSyntaxResult res = G_AT_SYNTAX_RESULT_UNSURE;
+
+	while (i < *len) {
+		char byte = bytes[i];
+
+		switch (syntax->state) {
+		case GSM_PERMISSIVE_STATE_IDLE:
+			if (byte == '\r' || byte == '\n')
+				/* ignore */;
+			else if (byte == '>')
+				syntax->state = GSM_PERMISSIVE_STATE_PROMPT;
+			else
+				syntax->state = GSM_PERMISSIVE_STATE_RESPONSE;
+			break;
+
+		case GSM_PERMISSIVE_STATE_RESPONSE:
+			if (byte == '\r') {
+				syntax->state = GSM_PERMISSIVE_STATE_IDLE;
+
+				i += 1;
+				res = G_AT_SYNTAX_RESULT_LINE;
+				goto out;
+			}
+			break;
+
+		case GSM_PERMISSIVE_STATE_GUESS_PDU:
+			if (byte != '\r' && byte != '\n')
+				syntax->state = GSM_PERMISSIVE_STATE_PDU;
+			break;
+
+		case GSM_PERMISSIVE_STATE_PDU:
+			if (byte == '\r') {
+				syntax->state = GSM_PERMISSIVE_STATE_IDLE;
+
+				i += 1;
+				res = G_AT_SYNTAX_RESULT_PDU;
+				goto out;
+			}
+			break;
+
+		case GSM_PERMISSIVE_STATE_PROMPT:
+			if (byte == ' ') {
+				syntax->state = GSM_PERMISSIVE_STATE_IDLE;
+				i += 1;
+				res = G_AT_SYNTAX_RESULT_PROMPT;
+				goto out;
+			}
+
+			syntax->state = GSM_PERMISSIVE_STATE_RESPONSE;
+			return G_AT_SYNTAX_RESULT_UNSURE;
+
+		default:
+			break;
+		};
+
+		i += 1;
+	}
+
+out:
+	*len = i;
+	return res;
+}
+
 GAtSyntax *g_at_syntax_new_full(GAtSyntaxFeedFunc feed,
 					GAtSyntaxSetHintFunc hint,
 					int initial_state)
@@ -235,6 +316,12 @@ GAtSyntax *g_at_syntax_new_full(GAtSyntaxFeedFunc feed,
 GAtSyntax *g_at_syntax_new_gsmv1()
 {
 	return g_at_syntax_new_full(gsmv1_feed, gsmv1_hint, GSMV1_STATE_IDLE);
+}
+
+GAtSyntax *g_at_syntax_new_gsm_permissive()
+{
+	return g_at_syntax_new_full(gsm_permissive_feed, gsm_permissive_hint,
+					GSM_PERMISSIVE_STATE_IDLE);
 }
 
 GAtSyntax *g_at_syntax_ref(GAtSyntax *syntax)
