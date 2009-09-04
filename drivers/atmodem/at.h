@@ -19,13 +19,6 @@
  *
  */
 
-struct at_data {
-	GAtChat *parser;
-	struct ofono_modem *modem;
-	GIOChannel *io;
-	char *driver;
-};
-
 void decode_at_error(struct ofono_error *error, const char *final);
 void dump_response(const char *func, gboolean ok, GAtResult *result);
 
