@@ -122,6 +122,9 @@ builtin_sources += plugins/huawei.c
 
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
+
+builtin_modules += calypso
+builtin_sources += plugins/calypso.c
 endif
 
 if MAINTAINER_MODE
