@@ -25,46 +25,33 @@
 
 #include <glib.h>
 #include <gatchat.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
-#include <ofono/plugin.h>
+#include <ofono/log.h>
 #include <ofono/types.h>
 
-#include "at.h"
+#include "atutil.h"
 
-static int atmodem_init(void)
+void dump_response(const char *func, gboolean ok, GAtResult *result)
 {
-	at_voicecall_init();
-	at_devinfo_init();
-	at_call_barring_init();
-	at_call_forwarding_init();
-	at_call_meter_init();
-	at_call_settings_init();
-	at_phonebook_init();
-	at_ssn_init();
-	at_ussd_init();
-	at_sms_init();
-	at_sim_init();
-	at_netreg_init();
+	GSList *l;
 
-	return 0;
+	ofono_debug("%s got result: %d", func, ok);
+	ofono_debug("Final response: %s", result->final_or_pdu);
+
+	for (l = result->lines; l; l = l->next)
+		ofono_debug("Response line: %s", (char *) l->data);
 }
 
-static void atmodem_exit(void)
+void decode_at_error(struct ofono_error *error, const char *final)
 {
-	at_sim_exit();
-	at_sms_exit();
-	at_ussd_exit();
-	at_ssn_exit();
-	at_phonebook_exit();
-	at_call_settings_exit();
-	at_call_meter_exit();
-	at_call_forwarding_exit();
-	at_call_barring_exit();
-	at_netreg_exit();
-	at_devinfo_exit();
-	at_voicecall_exit();
+	if (!strcmp(final, "OK")) {
+		error->type = OFONO_ERROR_TYPE_NO_ERROR;
+		error->error = 0;
+	} else {
+		error->type = OFONO_ERROR_TYPE_FAILURE;
+		error->error = 0;
+	}
 }
-
-OFONO_PLUGIN_DEFINE(atmodem, "AT modem driver", VERSION,
-		OFONO_PLUGIN_PRIORITY_DEFAULT, atmodem_init, atmodem_exit)

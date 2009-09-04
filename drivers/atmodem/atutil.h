@@ -19,40 +19,32 @@
  *
  */
 
-#include "atutil.h"
+void decode_at_error(struct ofono_error *error, const char *final);
+void dump_response(const char *func, gboolean ok, GAtResult *result);
 
-extern void at_netreg_init();
-extern void at_netreg_exit();
+struct cb_data {
+	void *cb;
+	void *data;
+	void *user;
+};
 
-extern void at_call_forwarding_init();
-extern void at_call_forwarding_exit();
+static inline struct cb_data *cb_data_new(void *cb, void *data)
+{
+	struct cb_data *ret;
 
-extern void at_call_settings_init();
-extern void at_call_settings_exit();
+	ret = g_try_new0(struct cb_data, 1);
 
-extern void at_ussd_init();
-extern void at_ussd_exit();
+	if (!ret)
+		return ret;
 
-extern void at_voicecall_init();
-extern void at_voicecall_exit();
+	ret->cb = cb;
+	ret->data = data;
 
-extern void at_call_meter_init();
-extern void at_call_meter_exit();
+	return ret;
+}
 
-extern void at_call_barring_init();
-extern void at_call_barring_exit();
+#define DECLARE_FAILURE(e) 			\
+	struct ofono_error e;			\
+	e.type = OFONO_ERROR_TYPE_FAILURE;	\
+	e.error = 0				\
 
-extern void at_sim_init();
-extern void at_sim_exit();
-
-extern void at_sms_init();
-extern void at_sms_exit();
-
-extern void at_phonebook_init();
-extern void at_phonebook_exit();
-
-extern void at_ssn_init();
-extern void at_ssn_exit();
-
-extern void at_devinfo_init();
-extern void at_devinfo_exit();

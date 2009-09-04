@@ -96,7 +96,9 @@ builtin_sources += $(gatchat_sources) drivers/atmodem/at.h \
 				drivers/atmodem/phonebook.c \
 				drivers/atmodem/ssn.c \
 				drivers/atmodem/devinfo.c \
-				drivers/atmodem/vendor.h
+				drivers/atmodem/vendor.h \
+				drivers/atmodem/atutil.h \
+				drivers/atmodem/atutil.c
 
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
