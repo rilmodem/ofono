@@ -82,7 +82,7 @@ endif
 
 if ATMODEM
 builtin_modules += atmodem
-builtin_sources += $(gatchat_sources) drivers/atmodem/at.h \
+builtin_sources += $(gatchat_sources) drivers/atmodem/atmodem.h \
 				drivers/atmodem/atmodem.c \
 				drivers/atmodem/call-settings.c \
 				drivers/atmodem/sms.c \
