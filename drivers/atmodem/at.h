@@ -48,8 +48,6 @@ static inline struct cb_data *cb_data_new(void *cb, void *data)
 	e.type = OFONO_ERROR_TYPE_FAILURE;	\
 	e.error = 0				\
 
-extern struct ofono_error g_ok;
-
 extern void at_netreg_init();
 extern void at_netreg_exit();
 
