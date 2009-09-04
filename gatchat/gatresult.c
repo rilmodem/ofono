@@ -105,6 +105,51 @@ static inline int skip_to_next_field(const char *line, int pos, int len)
 	return pos;
 }
 
+gboolean g_at_result_iter_next_unquoted_string(GAtResultIter *iter,
+						const char **str)
+{
+	unsigned int pos;
+	unsigned int end;
+	unsigned int len;
+	char *line;
+
+	if (!iter)
+		return FALSE;
+
+	if (!iter->l)
+		return FALSE;
+
+	line = iter->l->data;
+	len = strlen(line);
+
+	pos = iter->line_pos;
+
+	/* Omitted string */
+	if (line[pos] == ',') {
+		end = pos;
+		iter->buf[pos] = '\0';
+		goto out;
+	}
+
+	if (line[pos] == '"')
+		return FALSE;
+
+	end = pos;
+
+	while (end < len && line[end] != ',')
+		end += 1;
+
+	iter->buf[end] = '\0';
+
+out:
+	iter->line_pos = skip_to_next_field(line, end, len);
+
+	if (str)
+		*str = iter->buf + pos;
+
+	return TRUE;
+}
+
 gboolean g_at_result_iter_next_string(GAtResultIter *iter, const char **str)
 {
 	unsigned int pos;
