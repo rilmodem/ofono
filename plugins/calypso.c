@@ -420,40 +420,44 @@ static gboolean poweron_cycle(gpointer user_data)
 	struct calypso_data *data = ofono_modem_get_data(modem);
 
 	switch (data->state) {
-		case POWERCYCLE_STATE_POWER0:
-			if (write_file(CALYPSO_RESET_PATH, FALSE)) {
-				data->state = POWERCYCLE_STATE_RESET0;
-				return TRUE;
-			}
+	case POWERCYCLE_STATE_POWER0:
+		if (write_file(CALYPSO_RESET_PATH, FALSE)) {
+			data->state = POWERCYCLE_STATE_RESET0;
+			return TRUE;
+		}
 
-			break;
+		break;
 
-		case POWERCYCLE_STATE_RESET0:
-			if (write_file(CALYPSO_POWER_PATH, TRUE)) {
-				data->state = POWERCYCLE_STATE_POWER1;
-				return TRUE;
-			}
+	case POWERCYCLE_STATE_RESET0:
+		if (write_file(CALYPSO_POWER_PATH, TRUE)) {
+			data->state = POWERCYCLE_STATE_POWER1;
+			return TRUE;
+		}
 
-			break;
-		case POWERCYCLE_STATE_POWER1:
-			if (write_file(CALYPSO_RESET_PATH, TRUE)) {
-				data->state = POWERCYCLE_STATE_RESET1;
-				return TRUE;
-			}
+		break;
 
-			break;
-		case POWERCYCLE_STATE_RESET1:
-			if (write_file(CALYPSO_RESET_PATH, FALSE)) {
-				data->state = POWERCYCLE_STATE_FINISHED;
-				return TRUE;
-			}
+	case POWERCYCLE_STATE_POWER1:
+		if (write_file(CALYPSO_RESET_PATH, TRUE)) {
+			data->state = POWERCYCLE_STATE_RESET1;
+			return TRUE;
+		}
 
-			break;
-		case POWERCYCLE_STATE_FINISHED:
-			modem_initialize(modem);
-			return FALSE;
-		default:
-			break;
+		break;
+
+	case POWERCYCLE_STATE_RESET1:
+		if (write_file(CALYPSO_RESET_PATH, FALSE)) {
+			data->state = POWERCYCLE_STATE_FINISHED;
+			return TRUE;
+		}
+
+		break;
+
+	case POWERCYCLE_STATE_FINISHED:
+		modem_initialize(modem);
+		return FALSE;
+
+	default:
+		break;
 	};
 
 	ofono_modem_set_powered(modem, FALSE);
