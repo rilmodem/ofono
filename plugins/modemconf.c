@@ -87,7 +87,8 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 	if (!g_strcmp0(driver, "phonesim"))
 		set_address(modem, keyfile, group);
 
-	if (!g_strcmp0(driver, "g1") || !g_strcmp0(driver, "mbm"))
+	if (!g_strcmp0(driver, "g1") || !g_strcmp0(driver, "mbm") ||
+			!g_strcmp0(driver, "calypso"))
 		set_device(modem, keyfile, group);
 
 	g_free(driver);
