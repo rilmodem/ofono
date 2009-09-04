@@ -111,6 +111,9 @@ builtin_sources += plugins/phonesim.c
 builtin_modules += g1
 builtin_sources += plugins/g1.c
 
+builtin_modules += calypso
+builtin_sources += plugins/calypso.c
+
 builtin_modules += mbm
 builtin_sources += plugins/mbm.c
 
@@ -122,9 +125,6 @@ builtin_sources += plugins/huawei.c
 
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
-
-builtin_modules += calypso
-builtin_sources += plugins/calypso.c
 endif
 
 if MAINTAINER_MODE
