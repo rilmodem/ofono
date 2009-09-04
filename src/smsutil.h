@@ -450,6 +450,8 @@ gboolean sms_extract_app_port(const struct sms *sms, int *dst, int *src,
 				gboolean *is_8bit);
 gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 					guint8 *max_msgs, guint8 *seq_num);
+gboolean sms_extract_language_variant(const struct sms *sms, guint8 *locking,
+					guint8 *single);
 
 unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len);
 char *sms_decode_text(GSList *sms_list);

@@ -1936,6 +1936,59 @@ gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 	return TRUE;
 }
 
+gboolean sms_extract_language_variant(const struct sms *sms, guint8 *locking,
+					guint8 *single)
+{
+	struct sms_udh_iter iter;
+	enum sms_iei iei;
+	guint8 variant;
+
+	/* We must ignore the entire user_data header here:
+	 * If the length of the User Data Header is such that there
+	 * are too few or too many octets in the final Information
+	 * Element then the whole User Data Header shall be ignored.
+	 */
+	if (!sms_udh_iter_init(sms, &iter))
+		return FALSE;
+
+	/* According to the specification, we have to use the last
+	 * useable header:
+	 * In the event that IEs determined as not repeatable are
+	 * duplicated, the last occurrence of the IE shall be used.
+	 * In the event that two or more IEs occur which have mutually
+	 * exclusive meanings (e.g. an 8bit port address and a 16bit
+	 * port address), then the last occurring IE shall be used.
+	 */
+	while ((iei = sms_udh_iter_get_ie_type(&iter)) !=
+			SMS_IEI_INVALID) {
+		switch (iei) {
+		case SMS_IEI_NATIONAL_LANGUAGE_SINGLE_SHIFT:
+			if (sms_udh_iter_get_ie_length(&iter) != 1)
+				break;
+
+			sms_udh_iter_get_ie_data(&iter, &variant);
+			if (single)
+				*single = variant;
+			break;
+
+		case SMS_IEI_NATIONAL_LANGUAGE_LOCKING_SHIFT:
+			if (sms_udh_iter_get_ie_length(&iter) != 1)
+				break;
+
+			sms_udh_iter_get_ie_data(&iter, &variant);
+			if (locking)
+				*locking = variant;
+			break;
+		default:
+			break;
+		}
+
+		sms_udh_iter_next(&iter);
+	}
+
+	return TRUE;
+}
+
 /*!
  * Decodes a list of SMSes that contain a datagram.  The list must be
  * sorted in order of the sequence number.  This function assumes that
@@ -2063,6 +2116,8 @@ char *sms_decode_text(GSList *sms_list)
 		if (charset == SMS_CHARSET_7BIT) {
 			unsigned char buf[160];
 			long written;
+			guint8 locking_shift = 0;
+			guint8 single_shift = 0;
 			int max_chars = sms_text_capacity_gsm(udl, taken);
 
 			unpack_7bit_own_buf(ud + taken, udl_in_bytes - taken,
@@ -2073,8 +2128,12 @@ char *sms_decode_text(GSList *sms_list)
 			if (buf[written-1] == 0x1b)
 				written = written - 1;
 
-			converted = convert_gsm_to_utf8(buf, written,
-							NULL, NULL, 0);
+			sms_extract_language_variant(sms, &locking_shift, &single_shift);
+
+			converted = convert_gsm_to_utf8_with_lang(buf, written,
+								NULL, NULL, 0,
+								locking_shift,
+								single_shift);
 		} else {
 			const gchar *from = (const gchar *)(ud + taken);
 			/* According to the spec: A UCS2 character shall not be
