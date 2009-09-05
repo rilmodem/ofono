@@ -287,7 +287,7 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	if (call->status == CALL_STATUS_DISCONNECTED)
 		return __ofono_error_failed(msg);
 
-	if (!vc->driver->release_specific)
+	if (!vc->driver->release_specific || !vc->driver->hangup)
 		return __ofono_error_not_implemented(msg);
 
 	if (vc->flags & VOICECALLS_FLAG_PENDING)
@@ -296,7 +296,10 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
-	vc->driver->release_specific(vc, call->id,
+	if (call->status == CALL_STATUS_INCOMING)
+		vc->driver->hangup(vc, generic_callback, vc);
+	else
+		vc->driver->release_specific(vc, call->id,
 						generic_callback, vc);
 
 	return NULL;
