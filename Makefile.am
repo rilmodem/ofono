@@ -100,6 +100,12 @@ builtin_sources += $(gatchat_sources) drivers/atmodem/atmodem.h \
 				drivers/atmodem/atutil.h \
 				drivers/atmodem/atutil.c
 
+builtin_modules += calypsomodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/calypsomodem/calypsomodem.h \
+			drivers/calypsomodem/calypsomodem.c \
+			drivers/calypsomodem/voicecall.c
+
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
 
