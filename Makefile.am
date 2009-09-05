@@ -42,6 +42,8 @@ gisi_sources = gisi/phonet.h gisi/modem.h gisi/netlink.h gisi/netlink.c \
 		gisi/socket.h gisi/socket.c gisi/client.h gisi/client.c \
 		gisi/pep.h gisi/pep.c gisi/pipe.h gisi/pipe.c
 
+gatmux_sources = gatmux/gsm0710_p.h gatmux/gsm0710.c
+
 gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/gatresult.h gatchat/gatresult.c \
 				gatchat/gatsyntax.h gatchat/gatsyntax.c \
@@ -64,7 +66,8 @@ endif
 
 if ISIMODEM
 builtin_modules += isimodem
-builtin_sources += $(gisi_sources) drivers/isimodem/isi.h \
+builtin_sources += $(gisi_sources) \
+				drivers/isimodem/isi.h \
 				drivers/isimodem/isimodem.c \
 				drivers/isimodem/phonebook.c \
 				drivers/isimodem/devinfo.c \
@@ -82,7 +85,8 @@ endif
 
 if ATMODEM
 builtin_modules += atmodem
-builtin_sources += $(gatchat_sources) drivers/atmodem/atmodem.h \
+builtin_sources += $(gatmux_sources) $(gatchat_sources) \
+				drivers/atmodem/atmodem.h \
 				drivers/atmodem/atmodem.c \
 				drivers/atmodem/call-settings.c \
 				drivers/atmodem/sms.c \

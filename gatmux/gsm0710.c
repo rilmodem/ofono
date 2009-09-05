@@ -17,10 +17,15 @@
 **
 ****************************************************************************/
 
-#include "gsm0710_p.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <alloca.h>
 #include <string.h>
 #include <stdio.h>
+
+#include "gsm0710_p.h"
 
 /* Initialize a GSM 07.10 context, in preparation for startup */
 void gsm0710_initialize(struct gsm0710_context *ctx)
