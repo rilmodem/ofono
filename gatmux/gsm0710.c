@@ -121,7 +121,7 @@ static const unsigned char crc_table[256] = {
     0xBA, 0x2B, 0x59, 0xC8, 0xBD, 0x2C, 0x5E, 0xCF
 };
 
-static int gsm0710_compute_crc(const char *data, int len)
+static unsigned char gsm0710_compute_crc(const unsigned char *data, int len)
 {
     int sum = 0xFF;
     while ( len > 0 ) {
@@ -133,22 +133,22 @@ static int gsm0710_compute_crc(const char *data, int len)
 
 /* Write a raw GSM 07.10 frame to the underlying device */
 static void gsm0710_write_frame(struct gsm0710_context *ctx, int channel,
-                                int type, const char *data, int len)
+                                int type, const unsigned char *data, int len)
 {
-    char *frame = (char *)alloca(ctx->frame_size * 2 + 8);
+    unsigned char *frame = alloca(ctx->frame_size * 2 + 8);
     int size;
     if (len > ctx->frame_size)
         len = ctx->frame_size;
     if (ctx->mode) {
         int temp, crc;
-        frame[0] = (char)0x7E;
-        frame[1] = (char)((channel << 2) | 0x03);
-        frame[2] = (char)type;
+        frame[0] = 0x7E;
+        frame[1] = ((channel << 2) | 0x03);
+        frame[2] = type;
         crc = gsm0710_compute_crc(frame + 1, 2);
         if ( type == 0x7E || type == 0x7D ) {
             /* Need to quote the type field now that crc has been computed */
-            frame[2] = (char)0x7D;
-            frame[3] = (char)(type ^ 0x20);
+            frame[2] = 0x7D;
+            frame[3] = (type ^ 0x20);
             size = 4;
         } else {
             size = 3;
@@ -157,30 +157,30 @@ static void gsm0710_write_frame(struct gsm0710_context *ctx, int channel,
             temp = *data++ & 0xFF;
             --len;
             if ( temp != 0x7E && temp != 0x7D ) {
-                frame[size++] = (char)temp;
+                frame[size++] = temp;
             } else {
-                frame[size++] = (char)0x7D;
-                frame[size++] = (char)(temp ^ 0x20);
+                frame[size++] = 0x7D;
+                frame[size++] = (temp ^ 0x20);
             }
         }
         if ( crc != 0x7E && crc != 0x7D ) {
-            frame[size++] = (char)crc;
+            frame[size++] = crc;
         } else {
-            frame[size++] = (char)0x7D;
-            frame[size++] = (char)(crc ^ 0x20);
+            frame[size++] = 0x7D;
+            frame[size++] = (crc ^ 0x20);
         }
-        frame[size++] = (char)0x7E;
+        frame[size++] = 0x7E;
     } else {
         int header_size;
-        frame[0] = (char)0xF9;
-        frame[1] = (char)((channel << 2) | 0x03);
-        frame[2] = (char)type;
+        frame[0] = 0xF9;
+        frame[1] = ((channel << 2) | 0x03);
+        frame[2] = type;
         if (len <= 127) {
-            frame[3] = (char)((len << 1) | 0x01);
+            frame[3] = ((len << 1) | 0x01);
             header_size = size = 4;
         } else {
-            frame[3] = (char)(len << 1);
-            frame[4] = (char)(len >> 7);
+            frame[3] = (len << 1);
+            frame[4] = (len >> 7);
             header_size = size = 5;
         }
         if (len > 0) {
@@ -188,8 +188,8 @@ static void gsm0710_write_frame(struct gsm0710_context *ctx, int channel,
             size += len;
         }
         /* Note: GSM 07.10 says that the CRC is only computed over the header */
-        frame[size++] = (char)gsm0710_compute_crc(frame + 1, header_size - 1);
-        frame[size++] = (char)0xF9;
+        frame[size++] = gsm0710_compute_crc(frame + 1, header_size - 1);
+        frame[size++] = 0xF9;
     }
     if (ctx->write)
         ctx->write(ctx, frame, size);
@@ -247,7 +247,7 @@ int gsm0710_startup(struct gsm0710_context *ctx, int send_cmux)
 /* Shut down the GSM 07.10 session, closing all channels */
 void gsm0710_shutdown(struct gsm0710_context *ctx)
 {
-    static const char terminate[2] =
+    static const unsigned char terminate[2] =
         {GSM0710_TERMINATE_BYTE1, GSM0710_TERMINATE_BYTE2};
     if (!ctx->server) {
         int channel;
@@ -296,7 +296,7 @@ int gsm0710_is_channel_open(struct gsm0710_context *ctx, int channel)
 
 /* Process an incoming GSM 07.10 packet */
 static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
-                           const char *data, int len )
+                           const unsigned char *data, int len )
 {
     if (ctx->packet_filter &&
         ctx->packet_filter(ctx, channel, type, data, len)) {
@@ -312,10 +312,10 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
                 ctx->deliver_data(ctx, channel, data, len);
         } else if (channel == 0) {
             /* An embedded command or response on channel 0 */
-            if (len >= 2 && data[0] == (char)GSM0710_STATUS_SET) {
+            if (len >= 2 && data[0] == GSM0710_STATUS_SET) {
                 return gsm0710_packet(ctx, channel, GSM0710_STATUS_ACK,
                                       data + 2, len - 2);
-            } else if (len >= 2 && data[0] == (char)0xC3 && ctx->server) {
+            } else if (len >= 2 && data[0] == 0xC3 && ctx->server) {
                 /* Incoming terminate request on server side */
                 for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
                     if (is_channel_used(ctx, channel)) {
@@ -327,18 +327,18 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
                 if (ctx->terminate)
                     ctx->terminate(ctx);
                 return 0;
-            } else if (len >= 2 && data[0] == (char)0x43) {
+            } else if (len >= 2 && data[0] == 0x43) {
                 /* Test command from other side - send the same bytes back */
-                char *resp = (char *)alloca(len);
+                unsigned char *resp = alloca(len);
                 memcpy(resp, data, len);
-                resp[0] = (char)0x41;   /* Clear the C/R bit in the response */
+                resp[0] = 0x41;   /* Clear the C/R bit in the response */
                 gsm0710_write_frame(ctx, 0, GSM0710_DATA, resp, len);
             }
         }
 
     } else if (type == GSM0710_STATUS_ACK && channel == 0) {
 
-        char resp[33];
+        unsigned char resp[33];
 
         /* Status change message */
         if (len >= 2) {
@@ -355,8 +355,8 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
         gsm0710_debug(ctx, "received status line signal, sending response");
         if ( len > 31 )
             len = 31;
-        resp[0] = (char)GSM0710_STATUS_ACK;
-        resp[1] = (char)((len << 1) | 0x01);
+        resp[0] = GSM0710_STATUS_ACK;
+        resp[1] = ((len << 1) | 0x01);
         memcpy(resp + 2, data, len);
         gsm0710_write_frame(ctx, 0, GSM0710_DATA, resp, len + 2);
 
@@ -414,11 +414,11 @@ void gsm0710_ready_read(struct gsm0710_context *ctx)
     /* Break the incoming data up into packets */
     posn = 0;
     while (posn < ctx->buffer_used) {
-        if (ctx->buffer[posn] == (char)0xF9) {
+        if (ctx->buffer[posn] == 0xF9) {
 
             /* Basic format: skip additional 0xF9 bytes between frames */
             while ((posn + 1) < ctx->buffer_used &&
-                   ctx->buffer[posn + 1] == (char)0xF9) {
+                   ctx->buffer[posn + 1] == 0xF9) {
                 ++posn;
             }
 
@@ -442,7 +442,7 @@ void gsm0710_ready_read(struct gsm0710_context *ctx)
                 /* Double-byte length indication */
                 if ((posn + 5) > ctx->buffer_used)
                     break;
-                len |= ((int)(unsigned char)(ctx->buffer[posn + 4])) << 7;
+                len |= ((int)(ctx->buffer[posn + 4])) << 7;
                 header_size = 4;
             }
             if ((posn + header_size + 2 + len) > ctx->buffer_used )
@@ -470,18 +470,18 @@ void gsm0710_ready_read(struct gsm0710_context *ctx)
             }
             posn += len + header_size + 2;
 
-        } else if (ctx->buffer[posn] == (char)0x7E) {
+        } else if (ctx->buffer[posn] == 0x7E) {
 
             /* Advanced format: skip additional 0x7E bytes between frames */
             while ((posn + 1) < ctx->buffer_used &&
-                   ctx->buffer[posn + 1] == (char)0x7E) {
+                   ctx->buffer[posn + 1] == 0x7E) {
                 ++posn;
             }
 
             /* Search for the end of the packet (the next 0x7E byte) */
             len = posn + 1;
             while (len < ctx->buffer_used &&
-                   ctx->buffer[len] != (char)0x7E) {
+                   ctx->buffer[len] != 0x7E) {
                 ++len;
             }
             if (len >= ctx->buffer_used) {
@@ -502,7 +502,7 @@ void gsm0710_ready_read(struct gsm0710_context *ctx)
                     ++posn;
                     if ( posn >= len)
                         break;
-                    ctx->buffer[posn2++] = (char)(ctx->buffer[posn++] ^ 0x20);
+                    ctx->buffer[posn2++] = (ctx->buffer[posn++] ^ 0x20);
                 } else {
                     ctx->buffer[posn2++] = ctx->buffer[posn++];
                 }
@@ -555,7 +555,7 @@ void gsm0710_write_data(struct gsm0710_context *ctx, int channel,
         if (temp > ctx->frame_size)
             temp = ctx->frame_size;
         gsm0710_write_frame(ctx, channel, GSM0710_DATA, data, temp);
-        data = (const void *)(((const char *)data) + temp);
+        data = (const void *)(((const unsigned char *)data) + temp);
         len -= temp;
     }
 }
@@ -563,10 +563,10 @@ void gsm0710_write_data(struct gsm0710_context *ctx, int channel,
 /* Set the modem status lines on a channel */
 void gsm0710_set_status(struct gsm0710_context *ctx, int channel, int status)
 {
-    char data[4];
-    data[0] = (char)GSM0710_STATUS_SET;
-    data[1] = (char)0x03;
-    data[2] = (char)((channel << 2) | 0x03);
-    data[3] = (char)status;
+    unsigned char data[4];
+    data[0] = GSM0710_STATUS_SET;
+    data[1] = 0x03;
+    data[2] = ((channel << 2) | 0x03);
+    data[3] = status;
     gsm0710_write_frame(ctx, 0, GSM0710_DATA, data, 4);
 }

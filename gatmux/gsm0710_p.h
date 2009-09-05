@@ -67,7 +67,7 @@ struct gsm0710_context
     int     frame_size;
     int     port_speed;
     int     server;
-    char    buffer[GSM0710_BUFFER_SIZE];
+    unsigned char buffer[GSM0710_BUFFER_SIZE];
     int     buffer_used;
     unsigned long used_channels[(GSM0710_MAX_CHANNELS + 31) / 32];
     const char *reinit_detect;
@@ -88,7 +88,7 @@ struct gsm0710_context
     void    (*close_channel)(struct gsm0710_context *ctx, int channel);
     void    (*terminate)(struct gsm0710_context *ctx);
     int     (*packet_filter)(struct gsm0710_context *ctx, int channel,
-                             int type, const char *data, int len);
+                             int type, const unsigned char *data, int len);
 };
 
 void gsm0710_initialize(struct gsm0710_context *ctx);
