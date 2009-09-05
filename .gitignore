@@ -34,3 +34,4 @@ unit/test-common
 unit/test-util
 unit/test-sms
 unit/test-simutil
+unit/test-mux

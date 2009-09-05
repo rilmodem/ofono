@@ -184,7 +184,8 @@ AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @GTHREAD_CFLAGS@ \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
 
 INCLUDES = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
-			-I$(srcdir)/gdbus -I$(srcdir)/gisi -I$(srcdir)/gatchat
+				-I$(srcdir)/gdbus -I$(srcdir)/gisi \
+				-I$(srcdir)/gatmux -I$(srcdir)/gatchat
 
 doc_files = doc/overview.txt \
 		doc/manager-api.txt doc/modem-api.txt doc/network-api.txt \
@@ -212,7 +213,7 @@ dist_man_MANS = doc/ofonod.8
 unit_objects =
 
 noinst_PROGRAMS = unit/test-common unit/test-util \
-					unit/test-sms unit/test-simutil
+			unit/test-sms unit/test-simutil unit/test-mux
 
 unit_test_common_SOURCES = unit/test-common.c src/common.c
 unit_test_common_LDADD = @GLIB_LIBS@
@@ -230,6 +231,10 @@ unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
 						src/simutil.c src/smsutil.c
 unit_test_simutil_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_simutil_OBJECTS)
+
+unit_test_mux_SOURCES = unit/test-mux.c gatmux/gsm0710_p.h gatmux/gsm0710.c
+unit_test_mux_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_mux_OBJECTS)
 
 
 DISTCHECK_CONFIGURE_FLAGS = --disable-datafiles
