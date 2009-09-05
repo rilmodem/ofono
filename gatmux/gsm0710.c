@@ -274,6 +274,8 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
 
     } else if (type == GSM0710_STATUS_ACK && channel == 0) {
 
+        char resp[33];
+
         /* Status change message */
         if (len >= 2) {
             /* Handle status changes on other channels */
@@ -287,7 +289,6 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
 
         /* Send the response to the status change request to ACK it */
         gsm0710_debug(ctx, "received status line signal, sending response");
-        char resp[33];
         if ( len > 31 )
             len = 31;
         resp[0] = (char)GSM0710_STATUS_ACK;
@@ -325,10 +326,12 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
    A callback will be made to ctx->read to get the data for processing */
 void gsm0710_ready_read(struct gsm0710_context *ctx)
 {
+    int len, posn, posn2, header_size, channel, type;
+
     /* Read more data from the underlying serial device */
     if (!ctx->read)
         return;
-    int len = (*(ctx->read))(ctx, ctx->buffer + ctx->buffer_used,
+    len = (*(ctx->read))(ctx, ctx->buffer + ctx->buffer_used,
                             sizeof(ctx->buffer) - ctx->buffer_used);
     if ( len <= 0 )
         return;
@@ -345,10 +348,7 @@ void gsm0710_ready_read(struct gsm0710_context *ctx)
     }
 
     /* Break the incoming data up into packets */
-    int posn = 0;
-    int posn2;
-    int header_size;
-    int channel, type;
+    posn = 0;
     while (posn < ctx->buffer_used) {
         if (ctx->buffer[posn] == (char)0xF9) {
 
