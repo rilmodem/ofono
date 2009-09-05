@@ -158,7 +158,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
 			src/call-meter.c src/smsutil.h src/smsutil.c \
 			src/ssn.c src/call-barring.c src/sim.c \
 			src/phonebook.c src/history.c src/message-waiting.c \
-			src/simutil.h src/simutil.c
+			src/simutil.h src/simutil.c src/storage.h src/storage.c
 
 src_ofonod_LDADD = $(builtin_libadd) \
 			@GLIB_LIBS@ @GTHREAD_LIBS@ @DBUS_LIBS@ -ldl

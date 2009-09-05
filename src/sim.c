@@ -41,12 +41,7 @@
 #include "util.h"
 #include "smsutil.h"
 #include "simutil.h"
-
-#ifdef TEMP_FAILURE_RETRY
-#define TFR TEMP_FAILURE_RETRY
-#else
-#define TFR
-#endif
+#include "storage.h"
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
@@ -617,34 +612,6 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 }
 
-static int create_dirs(const char *filename, const mode_t mode)
-{
-	struct stat st;
-	char *dir;
-	const char *prev, *next;
-	int err;
-
-	err = stat(filename, &st);
-	if (!err && S_ISREG(st.st_mode))
-		return 0;
-
-	dir = g_malloc(strlen(filename) + 1);
-	strcpy(dir, "/");
-
-	for (prev = filename; (next = strchr(prev + 1, '/')); prev = next)
-		if (next > prev + 1) {
-			strncat(dir, prev + 1, next - prev);
-
-			if (mkdir(dir, mode) && errno != EEXIST) {
-				g_free(dir);
-				return -1;
-			}
-		}
-
-	g_free(dir);
-	return 0;
-}
-
 static void sim_op_error(struct ofono_sim *sim)
 {
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
@@ -769,33 +736,6 @@ static gboolean sim_op_retrieve_next(gpointer user)
 	return FALSE;
 }
 
-static gboolean cache_info(const char *path, const unsigned char *info, int len)
-{
-	int fd;
-	int r;
-
-	if (create_dirs(path, SIM_CACHE_MODE | S_IXUSR) != 0)
-		return FALSE;
-
-	fd = TFR(open(path, O_WRONLY | O_CREAT, SIM_CACHE_MODE));
-
-	if (fd == -1) {
-		ofono_debug("Error %i creating cache file %s",
-				errno, path);
-		return FALSE;
-	}
-
-	r = TFR(write(fd, info, len));
-	TFR(close(fd));
-
-	if (r < len) {
-		unlink(path);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 static void sim_op_info_cb(const struct ofono_error *error, int length,
 				enum ofono_sim_file_structure structure,
 				int record_length,
@@ -838,7 +778,6 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 	sim->simop_source = g_timeout_add(0, sim_op_retrieve_next, sim);
 
 	if (op->cache && imsi) {
-		char *path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
 		unsigned char fileinfo[6];
 
 		fileinfo[0] = error->type;
@@ -848,9 +787,9 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 		fileinfo[4] = record_length >> 8;
 		fileinfo[5] = record_length & 0xff;
 
-		op->cache = cache_info(path, fileinfo, 6);
-
-		g_free(path);
+		if (write_file(fileinfo, 6, SIM_CACHE_MODE,
+					SIM_CACHE_PATH, imsi, op->id) != 6)
+			op->cache = FALSE;
 	}
 }
 
