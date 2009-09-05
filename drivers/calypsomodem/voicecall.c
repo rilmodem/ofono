@@ -197,8 +197,6 @@ static void calypso_deflect(struct ofono_voicecall *vc,
 static void calypso_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct cb_data *cbd = cb_data_new(cb, data);
 	int len = strlen(dtmf);
 	int s;
 	int i;
