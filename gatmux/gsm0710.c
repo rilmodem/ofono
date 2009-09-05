@@ -269,7 +269,7 @@ int gsm0710_startup(struct gsm0710_context *ctx, int send_cmux)
 	}
 
 	/* Open the control channel */
-	gsm0710_write_frame(ctx, 0, GSM0710_OPEN_CHANNEL, 0, 0);
+	gsm0710_write_frame(ctx, 0, GSM0710_OPEN_CHANNEL, NULL, 0);
 
 	/* Open previously-used channels if this is a reinit.
 	   Send "ERROR" on re-opened channels, to cause higher
@@ -277,7 +277,7 @@ int gsm0710_startup(struct gsm0710_context *ctx, int send_cmux)
 	for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
 		if (is_channel_used(ctx, channel)) {
 			gsm0710_write_frame(ctx, channel,
-						GSM0710_OPEN_CHANNEL, 0, 0);
+						GSM0710_OPEN_CHANNEL, NULL, 0);
 			if (ctx->deliver_data)
 				ctx->deliver_data(ctx, channel,
 							"\r\nERROR\r\n", 9);
@@ -296,7 +296,7 @@ void gsm0710_shutdown(struct gsm0710_context *ctx)
 		for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
 			if (is_channel_used(ctx, channel)) {
 				gsm0710_write_frame(ctx, channel,
-						GSM0710_CLOSE_CHANNEL, 0, 0);
+						GSM0710_CLOSE_CHANNEL, NULL, 0);
 			}
 		}
 		gsm0710_write_frame(ctx, 0, GSM0710_DATA, terminate, 2);
@@ -313,7 +313,8 @@ int gsm0710_open_channel(struct gsm0710_context *ctx, int channel)
 		return 1;	/* Channel is already open */
 	mark_channel_used(ctx, channel);
 	if (!ctx->server)
-		gsm0710_write_frame(ctx, channel, GSM0710_OPEN_CHANNEL, 0, 0);
+		gsm0710_write_frame(ctx, channel,
+					GSM0710_OPEN_CHANNEL, NULL, 0);
 	return 1;
 }
 
@@ -326,7 +327,8 @@ void gsm0710_close_channel(struct gsm0710_context *ctx, int channel)
 		return;		/* Channel is already closed */
 	mark_channel_unused(ctx, channel);
 	if (!ctx->server)
-		gsm0710_write_frame(ctx, channel, GSM0710_CLOSE_CHANNEL, 0, 0);
+		gsm0710_write_frame(ctx, channel,
+					GSM0710_CLOSE_CHANNEL, NULL, 0);
 }
 
 /* Determine if a specific channel is open */
