@@ -555,7 +555,7 @@ void gsm0710_write_data(struct gsm0710_context *ctx, int channel,
         if (temp > ctx->frame_size)
             temp = ctx->frame_size;
         gsm0710_write_frame(ctx, channel, GSM0710_DATA, data, temp);
-        data = (((const unsigned char *)data) + temp);
+        data = ((const unsigned char *)data) + temp;
         len -= temp;
     }
 }
