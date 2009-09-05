@@ -1,6 +1,6 @@
 /*
  *
- *  AT multiplexer library with GLib integration
+ *  AT chat library with GLib integration
  *
  *  Copyright (C) 2009  Intel Corporation. All rights reserved.
  *  Copyright (C) 2009  Trolltech ASA.
@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "gsm0710_p.h"
+#include "gsm0710.h"
 
 /* Frame types and subtypes */
 #define GSM0710_OPEN_CHANNEL		0x3F

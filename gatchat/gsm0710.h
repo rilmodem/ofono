@@ -1,6 +1,6 @@
 /*
  *
- *  AT multiplexer library with GLib integration
+ *  AT chat library with GLib integration
  *
  *  Copyright (C) 2009  Intel Corporation. All rights reserved.
  *  Copyright (C) 2009  Trolltech ASA.

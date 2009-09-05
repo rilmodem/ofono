@@ -42,13 +42,12 @@ gisi_sources = gisi/phonet.h gisi/modem.h gisi/netlink.h gisi/netlink.c \
 		gisi/socket.h gisi/socket.c gisi/client.h gisi/client.c \
 		gisi/pep.h gisi/pep.c gisi/pipe.h gisi/pipe.c
 
-gatmux_sources = gatmux/gatmux.h gatmux/gatmux.c \
-				gatmux/gsm0710_p.h gatmux/gsm0710.c
-
 gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/gatresult.h gatchat/gatresult.c \
 				gatchat/gatsyntax.h gatchat/gatsyntax.c \
-				gatchat/ringbuffer.h gatchat/ringbuffer.c
+				gatchat/ringbuffer.h gatchat/ringbuffer.c \
+				gatchat/gatmux.h gatchat/gatmux.c \
+				gatchat/gsm0710.h gatchat/gsm0710.c
 
 udev_files = plugins/ofono.rules
 
@@ -86,7 +85,7 @@ endif
 
 if ATMODEM
 builtin_modules += atmodem
-builtin_sources += $(gatmux_sources) $(gatchat_sources) \
+builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/atmodem.h \
 				drivers/atmodem/atmodem.c \
 				drivers/atmodem/call-settings.c \
@@ -185,8 +184,7 @@ AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @GTHREAD_CFLAGS@ \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
 
 INCLUDES = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
-				-I$(srcdir)/gdbus -I$(srcdir)/gisi \
-				-I$(srcdir)/gatmux -I$(srcdir)/gatchat
+			-I$(srcdir)/gdbus -I$(srcdir)/gisi -I$(srcdir)/gatchat
 
 doc_files = doc/overview.txt \
 		doc/manager-api.txt doc/modem-api.txt doc/network-api.txt \
@@ -233,7 +231,7 @@ unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
 unit_test_simutil_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_simutil_OBJECTS)
 
-unit_test_mux_SOURCES = unit/test-mux.c gatmux/gsm0710_p.h gatmux/gsm0710.c
+unit_test_mux_SOURCES = unit/test-mux.c gatchat/gsm0710.h gatchat/gsm0710.c
 unit_test_mux_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_mux_OBJECTS)
 

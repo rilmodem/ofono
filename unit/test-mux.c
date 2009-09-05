@@ -26,7 +26,7 @@
 #include <glib.h>
 #include <glib/gprintf.h>
 
-#include "gsm0710_p.h"
+#include "gsm0710.h"
 
 static void debug_message(struct gsm0710_context *ctx, const char *msg)
 {
