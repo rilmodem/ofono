@@ -42,7 +42,8 @@ gisi_sources = gisi/phonet.h gisi/modem.h gisi/netlink.h gisi/netlink.c \
 		gisi/socket.h gisi/socket.c gisi/client.h gisi/client.c \
 		gisi/pep.h gisi/pep.c gisi/pipe.h gisi/pipe.c
 
-gatmux_sources = gatmux/gsm0710_p.h gatmux/gsm0710.c
+gatmux_sources = gatmux/gatmux.h gatmux/gatmux.c \
+				gatmux/gsm0710_p.h gatmux/gsm0710.c
 
 gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/gatresult.h gatchat/gatresult.c \
