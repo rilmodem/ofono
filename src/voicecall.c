@@ -1459,7 +1459,8 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		struct voicecall *v = l->data;
 
 		if (v->call->status == CALL_STATUS_DIALING ||
-			v->call->status == CALL_STATUS_ALERTING)
+				v->call->status == CALL_STATUS_ALERTING ||
+				v->call->status == CALL_STATUS_ACTIVE)
 			break;
 	}
 
