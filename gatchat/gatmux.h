@@ -26,6 +26,8 @@
 extern "C" {
 #endif
 
+#include "gatchat.h"
+
 struct _GAtMux;
 
 typedef struct _GAtMux GAtMux;
@@ -37,6 +39,11 @@ GAtMux *g_at_mux_ref(GAtMux *mux);
 void g_at_mux_unref(GAtMux *mux);
 
 gboolean g_at_mux_shutdown(GAtMux *mux);
+
+gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
+			GAtDisconnectFunc disconnect, gpointer user_data);
+
+gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user);
 
 #ifdef __cplusplus
 }

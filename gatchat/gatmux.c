@@ -35,8 +35,12 @@
 #include "gatmux.h"
 
 struct _GAtMux {
-	gint ref_count;		/* Ref count */
-	GIOChannel *channel;	/* channel */
+	gint ref_count;				/* Ref count */
+	GIOChannel *channel;			/* channel */
+	GAtDisconnectFunc user_disconnect;	/* user disconnect func */
+	gpointer user_disconnect_data;		/* user disconnect data */
+	GAtDebugFunc debugf;			/* debugging output function */
+	gpointer debug_data;			/* Data to pass to debug func */
 };
 
 GAtMux *g_at_mux_new(GIOChannel *channel)
@@ -122,6 +126,29 @@ gboolean g_at_mux_shutdown(GAtMux *mux)
 {
 	if (mux->channel == NULL)
 		return FALSE;
+
+	return TRUE;
+}
+
+gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
+			GAtDisconnectFunc disconnect, gpointer user_data)
+{
+	if (mux == NULL)
+		return FALSE;
+
+	mux->user_disconnect = disconnect;
+	mux->user_disconnect_data = user_data;
+
+	return TRUE;
+}
+
+gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user)
+{
+	if (mux == NULL)
+		return FALSE;
+
+	mux->debugf = func;
+	mux->debug_data = user;
 
 	return TRUE;
 }
