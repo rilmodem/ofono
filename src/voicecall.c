@@ -1252,7 +1252,9 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 
 	__ofono_modem_release_callid(modem, id);
 
-	voicecall_emit_disconnect_reason(call, reason);
+	if (reason != OFONO_DISCONNECT_REASON_UNKNOWN)
+		voicecall_emit_disconnect_reason(call, reason);
+
 	voicecall_set_call_status(call, CALL_STATUS_DISCONNECTED);
 
 	if (prev_status == CALL_STATUS_INCOMING ||
