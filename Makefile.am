@@ -222,12 +222,13 @@ unit_test_util_SOURCES = unit/test-util.c src/util.c
 unit_test_util_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_utils_OBJECTS)
 
-unit_test_sms_SOURCES = unit/test-sms.c src/util.c src/smsutil.c
+unit_test_sms_SOURCES = unit/test-sms.c src/util.c src/smsutil.c src/storage.c
 unit_test_sms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_sms_OBJECTS)
 
 unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
-						src/simutil.c src/smsutil.c
+						src/simutil.c src/smsutil.c \
+						src/storage.c
 unit_test_simutil_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_simutil_OBJECTS)
 

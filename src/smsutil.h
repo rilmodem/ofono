@@ -360,6 +360,7 @@ struct sms_assembly_node {
 };
 
 struct sms_assembly {
+	const char *imsi;
 	GSList *assembly_list;
 };
 
@@ -456,7 +457,7 @@ gboolean sms_extract_language_variant(const struct sms *sms, guint8 *locking,
 unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len);
 char *sms_decode_text(GSList *sms_list);
 
-struct sms_assembly *sms_assembly_new();
+struct sms_assembly *sms_assembly_new(const char *imsi);
 void sms_assembly_free(struct sms_assembly *assembly);
 GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
 					const struct sms *sms, time_t ts,

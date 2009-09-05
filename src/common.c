@@ -26,6 +26,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <glib.h>
 

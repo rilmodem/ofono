@@ -623,7 +623,7 @@ static void test_assembly()
 	unsigned char pdu[164];
 	long pdu_len;
 	struct sms sms;
-	struct sms_assembly *assembly = sms_assembly_new();
+	struct sms_assembly *assembly = sms_assembly_new(NULL);
 	guint16 ref;
 	guint8 max;
 	guint8 seq;
@@ -780,7 +780,7 @@ static void test_prepare_concat()
 	struct sms *sms;
 	struct sms decoded;
 	int pdu_len, tpdu_len;
-	struct sms_assembly *assembly = sms_assembly_new();
+	struct sms_assembly *assembly = sms_assembly_new(NULL);
 	guint16 ref;
 	guint8 max;
 	guint8 seq;

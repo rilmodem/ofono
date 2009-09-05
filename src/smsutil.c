@@ -23,15 +23,37 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <glib.h>
 
+#include "types.h"
+#include "common.h"
 #include "util.h"
+#include "storage.h"
 #include "smsutil.h"
 
 #define uninitialized_var(x) x = x
+
+#define SMS_BACKUP_MODE 0600
+#define SMS_BACKUP_PATH STORAGEDIR "/%s/sms"
+#define SMS_BACKUP_PATH_DIR SMS_BACKUP_PATH "/%s-%i-%i"
+#define SMS_BACKUP_PATH_FILE SMS_BACKUP_PATH_DIR "/%03i"
+
+#define SMS_ADDR_FMT "%21[0-9+*#]"
+
+static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
+					const struct sms *sms, time_t ts,
+					const struct sms_address *addr,
+					guint16 ref, guint8 max, guint8 seq,
+					gboolean backup);
 
 void extract_bcd_number(const unsigned char *buf, int len, char *out)
 {
@@ -2173,9 +2195,177 @@ char *sms_decode_text(GSList *sms_list)
 	return utf8;
 }
 
-struct sms_assembly *sms_assembly_new()
+static int sms_serialize(unsigned char *buf, const struct sms *sms)
 {
-	return g_new0(struct sms_assembly, 1);
+	int len, tpdu_len;
+
+	sms_encode(sms, &len, &tpdu_len, buf + 1);
+	buf[0] = tpdu_len;
+
+	return len;
+}
+
+static gboolean sms_deserialize(const unsigned char *buf,
+		struct sms *sms, int len)
+{
+	if (len < 1)
+		return FALSE;
+
+	return sms_decode(buf + 1, len - 1, FALSE, buf[0], sms);
+}
+
+static void sms_assembly_load(struct sms_assembly *assembly,
+				const struct dirent *dir)
+{
+	struct sms_address addr;
+	char straddr[sizeof(addr.address) + 1];
+	guint16 ref;
+	guint8 max;
+	guint8 seq;
+	char *path;
+	int len;
+	struct stat segment_stat;
+	struct dirent **segments;
+	char *endp;
+	int r;
+	int i;
+	unsigned char buf[177];
+	struct sms segment;
+
+	if (dir->d_type != DT_DIR)
+		return;
+
+	if (sscanf(dir->d_name, SMS_ADDR_FMT "-%hi-%hhi",
+				straddr, &ref, &max) < 3)
+		return;
+	sms_address_from_string(&addr, straddr);
+
+	path = g_strdup_printf(SMS_BACKUP_PATH "/%s",
+			assembly->imsi, dir->d_name);
+	len = scandir(path, &segments, NULL, versionsort);
+	g_free(path);
+
+	if (len < 0)
+		return;
+
+	for (i = 0; i < len; i++) {
+		if (segments[i]->d_type != DT_REG)
+			continue;
+
+		seq = strtol(segments[i]->d_name, &endp, 10);
+		if (*endp != '\0')
+			continue;
+
+		r = read_file(buf, sizeof(buf), SMS_BACKUP_PATH "/%s/%s",
+				assembly->imsi,
+				dir->d_name, segments[i]->d_name);
+		if (r < 0)
+			continue;
+
+		if (!sms_deserialize(buf, &segment, r))
+			continue;
+
+		path = g_strdup_printf(SMS_BACKUP_PATH "/%s/%s",
+				assembly->imsi,
+				dir->d_name, segments[i]->d_name);
+		r = stat(path, &segment_stat);
+		g_free(path);
+
+		if (r != 0)
+			continue;
+
+		if (sms_assembly_add_fragment_backup(assembly, &segment,
+						segment_stat.st_mtime,
+						&addr, ref, max, seq, FALSE)) {
+			/* This should not happen */
+		}
+	}
+
+	for (i = 0; i < len; i++)
+		free(segments[i]);
+
+	free(segments);
+}
+
+static gboolean sms_assembly_store(struct sms_assembly *assembly,
+				struct sms_assembly_node *node,
+				const struct sms *sms, guint8 seq)
+{
+	unsigned char buf[177];
+	int len;
+
+	if (!assembly->imsi)
+		return FALSE;
+
+	len = sms_serialize(buf, sms);
+
+	if (write_file(buf, len, SMS_BACKUP_MODE,
+				SMS_BACKUP_PATH_FILE, assembly->imsi,
+				sms_address_to_string(&node->addr),
+				node->ref, node->max_fragments, seq) != len)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void sms_assembly_backup_free(struct sms_assembly *assembly,
+					struct sms_assembly_node *node)
+{
+	char *path;
+	int seq;
+
+	if (!assembly->imsi)
+		return;
+
+	for (seq = 0; seq < node->max_fragments; seq++) {
+		int offset = seq / 32;
+		int bit = 1 << (seq % 32);
+
+		if (node->bitmap[offset] & bit) {
+			path = g_strdup_printf(SMS_BACKUP_PATH_FILE,
+					assembly->imsi,
+					sms_address_to_string(&node->addr),
+					node->ref, node->max_fragments, seq);
+			unlink(path);
+			g_free(path);
+		}
+	}
+
+	path = g_strdup_printf(SMS_BACKUP_PATH_DIR, assembly->imsi,
+				sms_address_to_string(&node->addr),
+				node->ref, node->max_fragments);
+	rmdir(path);
+	g_free(path);
+}
+
+struct sms_assembly *sms_assembly_new(const char *imsi)
+{
+	struct sms_assembly *ret = g_new0(struct sms_assembly, 1);
+	char *path;
+	struct dirent **entries;
+	int len;
+
+	if (imsi) {
+		ret->imsi = imsi;
+
+		/* Restore state from backup */
+
+		path = g_strdup_printf(SMS_BACKUP_PATH, imsi);
+		len = scandir(path, &entries, NULL, alphasort);
+		g_free(path);
+
+		if (len < 0)
+			return ret;
+
+		while (len--) {
+			sms_assembly_load(ret, entries[len]);
+			free(entries[len]);
+		}
+
+		free(entries);
+	}
+
+	return ret;
 }
 
 void sms_assembly_free(struct sms_assembly *assembly)
@@ -2198,6 +2388,16 @@ GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
 					const struct sms *sms, time_t ts,
 					const struct sms_address *addr,
 					guint16 ref, guint8 max, guint8 seq)
+{
+	return sms_assembly_add_fragment_backup(assembly, sms,
+						ts, addr, ref, max, seq, TRUE);
+}
+
+static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
+					const struct sms *sms, time_t ts,
+					const struct sms_address *addr,
+					guint16 ref, guint8 max, guint8 seq,
+					gboolean backup)
 {
 	int offset = seq / 32;
 	int bit = 1 << (seq % 32);
@@ -2272,10 +2472,16 @@ out:
 	node->bitmap[offset] |= bit;
 	node->num_fragments += 1;
 
-	if (node->num_fragments < node->max_fragments)
+	if (node->num_fragments < node->max_fragments) {
+		if (backup)
+			sms_assembly_store(assembly, node, sms, seq);
+
 		return NULL;
+	}
 
 	completed = node->fragment_list;
+
+	sms_assembly_backup_free(assembly, node);
 
 	if (prev)
 		prev->next = l->next;
@@ -2309,6 +2515,8 @@ void sms_assembly_expire(struct sms_assembly *assembly, time_t before)
 			cur = cur->next;
 			continue;
 		}
+
+		sms_assembly_backup_free(assembly, node);
 
 		g_slist_foreach(node->fragment_list, (GFunc)g_free, 0);
 		g_slist_free(node->fragment_list);
