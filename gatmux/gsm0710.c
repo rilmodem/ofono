@@ -72,7 +72,7 @@ static void mark_channel_unused(struct gsm0710_context *ctx, int channel)
 static void gsm0710_debug(struct gsm0710_context *ctx, const char *msg)
 {
     if (ctx->debug_message)
-        (*(ctx->debug_message))(ctx, msg);
+        ctx->debug_message(ctx, msg);
 }
 
 /* Set the "reinitialize detect" string to "str".  When "str" is
@@ -112,7 +112,7 @@ int gsm0710_startup(struct gsm0710_context *ctx, int send_cmux)
         }
         sprintf(command, "AT+CMUX=%d,0,%d,%d",
                 ctx->mode, speed, ctx->frame_size);
-        if (!ctx->at_command || !(*(ctx->at_command))(ctx, command)) {
+        if (!ctx->at_command || !ctx->at_command(ctx, command)) {
             gsm0710_debug
                 (ctx, "could not initialize multiplexing with AT+CMUX");
             return 0;
@@ -129,7 +129,7 @@ int gsm0710_startup(struct gsm0710_context *ctx, int send_cmux)
         if (is_channel_used(ctx, channel)) {
             gsm0710_write_frame(ctx, channel, GSM0710_OPEN_CHANNEL, 0, 0);
             if (ctx->deliver_data)
-                (*ctx->deliver_data)(ctx, channel, "\r\nERROR\r\n", 9);
+                ctx->deliver_data(ctx, channel, "\r\nERROR\r\n", 9);
         }
     }
     return 1;
@@ -235,7 +235,7 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
                            const char *data, int len )
 {
     if (ctx->packet_filter &&
-        (*(ctx->packet_filter))(ctx, channel, type, data, len)) {
+        ctx->packet_filter(ctx, channel, type, data, len)) {
         /* The filter has extracted and processed the packet */
         return 1;
     }
@@ -245,7 +245,7 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
             is_channel_used(ctx, channel)) {
             /* Ordinary data packet */
             if (ctx->deliver_data)
-                (*(ctx->deliver_data))(ctx, channel, data, len);
+                ctx->deliver_data(ctx, channel, data, len);
         } else if (channel == 0) {
             /* An embedded command or response on channel 0 */
             if (len >= 2 && data[0] == (char)GSM0710_STATUS_SET) {
@@ -256,12 +256,12 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
                 for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
                     if (is_channel_used(ctx, channel)) {
                         if (ctx->close_channel)
-                            (*(ctx->close_channel))(ctx, channel);
+                            ctx->close_channel(ctx, channel);
                     }
                 }
                 memset(ctx->used_channels, 0, sizeof(ctx->used_channels));
                 if (ctx->terminate)
-                    (*(ctx->terminate))(ctx);
+                    ctx->terminate(ctx);
                 return 0;
             } else if (len >= 2 && data[0] == (char)0x43) {
                 /* Test command from other side - send the same bytes back */
@@ -283,7 +283,7 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
             if (channel >= 1 && channel <= GSM0710_MAX_CHANNELS &&
                 is_channel_used(ctx, channel)) {
                 if (ctx->deliver_status)
-                    (*(ctx->deliver_status))(ctx, channel, data[1] & 0xFF);
+                    ctx->deliver_status(ctx, channel, data[1] & 0xFF);
             }
         }
 
@@ -303,7 +303,7 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
             if (!is_channel_used(ctx, channel)) {
                 mark_channel_used(ctx, channel);
                 if (ctx->open_channel)
-                    (*(ctx->open_channel))(ctx, channel);
+                    ctx->open_channel(ctx, channel);
             }
         }
 
@@ -314,7 +314,7 @@ static int gsm0710_packet( struct gsm0710_context *ctx, int channel, int type,
             if (is_channel_used(ctx, channel)) {
                 mark_channel_unused(ctx, channel);
                 if (ctx->close_channel)
-                    (*(ctx->close_channel))(ctx, channel);
+                    ctx->close_channel(ctx, channel);
             }
         }
 
@@ -331,7 +331,7 @@ void gsm0710_ready_read(struct gsm0710_context *ctx)
     /* Read more data from the underlying serial device */
     if (!ctx->read)
         return;
-    len = (*(ctx->read))(ctx, ctx->buffer + ctx->buffer_used,
+    len = ctx->read(ctx, ctx->buffer + ctx->buffer_used,
                             sizeof(ctx->buffer) - ctx->buffer_used);
     if ( len <= 0 )
         return;
@@ -541,7 +541,7 @@ void gsm0710_write_frame(struct gsm0710_context *ctx, int channel, int type,
         frame[size++] = (char)0xF9;
     }
     if (ctx->write)
-        (*(ctx->write))(ctx, frame, size);
+        ctx->write(ctx, frame, size);
 }
 
 /* Write a block of data to the the underlying device.  It will be split
