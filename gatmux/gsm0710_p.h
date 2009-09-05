@@ -99,12 +99,9 @@ int gsm0710_open_channel(struct gsm0710_context *ctx, int channel);
 void gsm0710_close_channel(struct gsm0710_context *ctx, int channel);
 int gsm0710_is_channel_open(struct gsm0710_context *ctx, int channel);
 void gsm0710_ready_read(struct gsm0710_context *ctx);
-void gsm0710_write_frame(struct gsm0710_context *ctx, int channel, int type,
-                         const char *data, int len);
 void gsm0710_write_data(struct gsm0710_context *ctx, int channel,
                         const void *data, int len);
 void gsm0710_set_status(struct gsm0710_context *ctx, int channel, int status);
-int gsm0710_compute_crc(const char *data, int len);
 
 #ifdef __cplusplus
 };
