@@ -353,7 +353,7 @@ static void calypso_populate(struct ofono_modem *modem)
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
 	ofono_netreg_create(modem, OFONO_VENDOR_CALYPSO, "atmodem", data->chat);
-	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
+	ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
