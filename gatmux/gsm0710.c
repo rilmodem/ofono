@@ -1,21 +1,24 @@
-/****************************************************************************
-**
-** This file is part of the Qt Extended Opensource Package.
-**
-** Copyright (C) 2009 Trolltech ASA.
-**
-** Contact: Qt Extended Information (info@qtextended.org)
-**
-** This file may be used under the terms of the GNU General Public License
-** version 2.0 as published by the Free Software Foundation and appearing
-** in the file LICENSE.GPL included in the packaging of this file.
-**
-** Please review the following information to ensure GNU General Public
-** Licensing requirements will be met:
-**     http://www.fsf.org/licensing/licenses/info/GPLv2.html.
-**
-**
-****************************************************************************/
+/*
+ *
+ *  AT multiplexer library with GLib integration
+ *
+ *  Copyright (C) 2009  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2009  Trolltech ASA.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
