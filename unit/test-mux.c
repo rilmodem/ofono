@@ -23,14 +23,66 @@
 #include <config.h>
 #endif
 
+#include <unistd.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include <glib.h>
 #include <glib/gprintf.h>
 
 #include "gsm0710.h"
 
+static int at_command(struct gsm0710_context *ctx, const char *cmd)
+{
+	int len;
+
+	g_print("sending: %s\n", cmd);
+
+	len = write(ctx->fd, cmd, strlen(cmd));
+	len = write(ctx->fd, "\r", 1);
+
+	return 1;
+}
+
+static int do_write(struct gsm0710_context *ctx, const void *data, int size)
+{
+	int len;
+
+	g_print("writing: %d bytes\n", size);
+
+	len = write(ctx->fd, data, size);
+
+	return 1;
+}
+
 static void debug_message(struct gsm0710_context *ctx, const char *msg)
 {
 	g_print("debug: %s\n", msg);
+}
+
+static int do_connect(const char *address, unsigned short port)
+{
+	struct sockaddr_in addr;
+	int sk, err;
+
+	sk = socket(PF_INET, SOCK_STREAM, 0);
+	if (sk < 0)
+		return sk;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(address);
+	addr.sin_port = htons(port);
+
+	err = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
+	if (err < 0) {
+		close(sk);
+		return err;
+	}
+
+	return sk;
 }
 
 static void test_setup(void)
@@ -39,10 +91,19 @@ static void test_setup(void)
 
 	gsm0710_initialize(&ctx);
 
-	ctx.fd = -1;
+	ctx.fd = do_connect("127.0.0.1", 12345);
+	if (ctx.fd < 0)
+		return;
+
+	ctx.at_command = at_command;
+	ctx.write = do_write;
 	ctx.debug_message = debug_message;
 
-	gsm0710_startup(&ctx, 0);
+	gsm0710_startup(&ctx, 1);
+
+	gsm0710_open_channel(&ctx, 1);
+
+	sleep(10);
 
 	gsm0710_shutdown(&ctx);
 }
