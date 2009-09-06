@@ -30,15 +30,25 @@ for path in properties["Modems"]:
 		object = dbus.Interface(bus.get_object('org.ofono', path),
 								interface)
 
-		properties = object.GetProperties()
-
 		print "    [ %s ]" % (interface)
 
+		try:
+			properties = object.GetProperties()
+		except:
+			continue
+
 		for key in properties.keys():
-			if key in ["AvailableOperators", "SubscriberNumbers"]:
+			if key in ["AvailableOperators", "Calls",
+						"MultipartyCalls",
+						"EmergencyNumbers",
+						"SubscriberNumbers",
+						"ServiceDiallingNumbers"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
+			elif key in ["MobileNetworkCodeLength",
+						"VoicemailMessageCount"]:
+				val = int(properties[key])
 			else:
 				val = str(properties[key])
 			print "        %s = %s" % (key, val)
