@@ -21,8 +21,19 @@
 
 char *convert_gsm_to_utf8(const unsigned char *text, long len, long *items_read,
 				long *items_written, unsigned char terminator);
+
+char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len, long *items_read,
+				long *items_written, unsigned char terminator,
+				unsigned char locking_shift_lang,
+				unsigned char single_shift_lang);
+
 unsigned char *convert_utf8_to_gsm(const char *text, long len, long *items_read,
 				long *items_written, unsigned char terminator);
+
+unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len, long *items_read,
+				long *items_written, unsigned char terminator,
+				unsigned char locking_shift_lang,
+				unsigned char single_shifth_lang);
 
 unsigned char *decode_hex_own_buf(const char *in, long len, long *items_written,
 					unsigned char terminator,
