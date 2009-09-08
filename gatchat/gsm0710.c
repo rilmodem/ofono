@@ -53,16 +53,16 @@ void gsm0710_initialize(struct gsm0710_context *ctx)
 	ctx->reinit_detect_len = 0;
 	ctx->user_data = 0;
 	ctx->fd = -1;
-	ctx->at_command = 0;
-	ctx->read = 0;
-	ctx->write = 0;
-	ctx->deliver_data = 0;
-	ctx->deliver_status = 0;
-	ctx->debug_message = 0;
-	ctx->open_channel = 0;
-	ctx->close_channel = 0;
-	ctx->terminate = 0;
-	ctx->packet_filter = 0;
+	ctx->at_command = NULL;
+	ctx->read = NULL;
+	ctx->write = NULL;
+	ctx->deliver_data = NULL;
+	ctx->deliver_status = NULL;
+	ctx->debug_message = NULL;
+	ctx->open_channel = NULL;
+	ctx->close_channel = NULL;
+	ctx->terminate = NULL;
+	ctx->packet_filter = NULL;
 }
 
 /* Determine if a channel is in use */
