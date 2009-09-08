@@ -52,6 +52,8 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 
+#include <drivers/atmodem/vendor.h>
+
 struct phonesim_data {
 	GAtChat *chat;
 	gboolean calypso;
@@ -199,8 +201,16 @@ static void phonesim_populate(struct ofono_modem *modem)
 	ofono_sim_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
-	ofono_netreg_create(modem, 0, "atmodem", data->chat);
-	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
+
+	if (data->calypso) {
+		ofono_netreg_create(modem, OFONO_VENDOR_CALYPSO,
+							"atmodem", data->chat);
+		ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
+	} else {
+		ofono_netreg_create(modem, 0, "atmodem", data->chat);
+		ofono_voicecall_create(modem, 0, "atmodem", data->chat);
+	}
+
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
