@@ -31,8 +31,17 @@ extern "C" {
 #define GSM0710_DEFAULT_FRAME_SIZE	31
 #define GSM0710_MAX_CHANNELS		63
 
+/* Multiplexer modes */
 #define GSM0710_MODE_BASIC		0
 #define GSM0710_MODE_ADVANCED		1
+
+/* Status flags */
+#define GSM0710_FC			0x02
+#define GSM0710_DTR			0x04
+#define GSM0710_DSR			0x04
+#define GSM0710_RTS			0x08
+#define GSM0710_CTS			0x08
+#define GSM0710_DCD			0x80
 
 struct gsm0710_context
 {

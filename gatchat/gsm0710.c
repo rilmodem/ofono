@@ -40,14 +40,6 @@
 #define GSM0710_TERMINATE_BYTE1		0xC3
 #define GSM0710_TERMINATE_BYTE2		0x01
 
-/* Status flags */
-#define GSM0710_FC			0x02
-#define GSM0710_DTR			0x04
-#define GSM0710_DSR			0x04
-#define GSM0710_RTS			0x08
-#define GSM0710_CTS			0x08
-#define GSM0710_DCD			0x80
-
 /* Initialize a GSM 07.10 context, in preparation for startup */
 void gsm0710_initialize(struct gsm0710_context *ctx)
 {
