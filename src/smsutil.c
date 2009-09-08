@@ -2202,7 +2202,7 @@ static int sms_serialize(unsigned char *buf, const struct sms *sms)
 	sms_encode(sms, &len, &tpdu_len, buf + 1);
 	buf[0] = tpdu_len;
 
-	return len;
+	return len + 1;
 }
 
 static gboolean sms_deserialize(const unsigned char *buf,
