@@ -231,7 +231,7 @@ unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
 unit_test_simutil_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_simutil_OBJECTS)
 
-unit_test_mux_SOURCES = unit/test-mux.c gatchat/gsm0710.h gatchat/gsm0710.c
+unit_test_mux_SOURCES = unit/test-mux.c $(gatchat_sources)
 unit_test_mux_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_mux_OBJECTS)
 

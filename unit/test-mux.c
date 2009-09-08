@@ -24,6 +24,7 @@
 #endif
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -32,35 +33,7 @@
 #include <glib.h>
 #include <glib/gprintf.h>
 
-#include "gsm0710.h"
-
-static int at_command(struct gsm0710_context *ctx, const char *cmd)
-{
-	int len;
-
-	g_print("sending: %s\n", cmd);
-
-	len = write(ctx->fd, cmd, strlen(cmd));
-	len = write(ctx->fd, "\r", 1);
-
-	return 1;
-}
-
-static int do_write(struct gsm0710_context *ctx, const void *data, int size)
-{
-	int len;
-
-	g_print("writing: %d bytes\n", size);
-
-	len = write(ctx->fd, data, size);
-
-	return 1;
-}
-
-static void debug_message(struct gsm0710_context *ctx, const char *msg)
-{
-	g_print("debug: %s\n", msg);
-}
+#include "gatmux.h"
 
 static int do_connect(const char *address, unsigned short port)
 {
@@ -85,34 +58,119 @@ static int do_connect(const char *address, unsigned short port)
 	return sk;
 }
 
-static void test_setup(void)
+static GMainLoop *mainloop;
+
+static gboolean cleanup_callback(gpointer data)
 {
-	struct gsm0710_context ctx;
+	GAtChat *chat = data;
 
-	gsm0710_initialize(&ctx);
+	g_at_chat_shutdown(chat);
 
-	ctx.fd = do_connect("127.0.0.1", 12345);
-	if (ctx.fd < 0)
+	g_at_chat_unref(chat);
+
+	g_main_loop_quit(mainloop);
+
+	return FALSE;
+}
+
+static void chat_callback(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	g_print("chat: callback [ok %d]\n", ok);
+
+	g_print("%s\n", g_at_result_final_response(result));
+
+	g_idle_add(cleanup_callback, user_data);
+}
+
+static void mux_debug(const char *str, void *data)
+{
+	g_print("%s: %s\n", (char *) data, str);
+}
+
+static gboolean idle_callback(gpointer data)
+{
+	GAtMux *mux = data;
+	GAtChat *chat;
+	GAtSyntax *syntax;
+
+	g_print("idle: callback\n");
+
+	syntax = g_at_syntax_new_gsmv1();
+	chat = g_at_mux_create_chat(mux, syntax);
+	g_at_syntax_unref(syntax);
+
+	if (!chat) {
+		g_printerr("chat failed\n");
+		g_main_loop_quit(mainloop);
+		return FALSE;
+	}
+
+	g_at_chat_set_debug(chat, mux_debug, "CHAT");
+
+	g_at_chat_send(chat, "AT+CGMI", NULL, NULL, NULL, NULL);
+
+	g_at_chat_send(chat, "AT+CGMR", NULL, chat_callback, chat, NULL);
+
+	return FALSE;
+}
+
+static void test_mux(void)
+{
+	GIOChannel *io;
+	GAtMux *mux;
+	int sk;
+
+	sk= do_connect("192.168.0.202", 2000);
+	if (sk < 0) {
+		g_printerr("connect failed\n");
 		return;
+	}
 
-	ctx.at_command = at_command;
-	ctx.write = do_write;
-	ctx.debug_message = debug_message;
+	io = g_io_channel_unix_new(sk);
+	mux = g_at_mux_new(io);
+	g_io_channel_unref(io);
 
-	gsm0710_startup(&ctx, 1);
+	if (!mux) {
+		g_printerr("mux failed\n");
+		close(sk);
+		return;
+	}
 
-	gsm0710_open_channel(&ctx, 1);
+	g_at_mux_set_debug(mux, mux_debug, "MUX");
 
-	sleep(10);
+	g_io_channel_set_close_on_unref(io, TRUE);
 
-	gsm0710_shutdown(&ctx);
+	mainloop = g_main_loop_new(NULL, FALSE);
+
+	g_idle_add(idle_callback, mux);
+
+	g_main_loop_run(mainloop);
+
+	g_at_mux_unref(mux);
+
+	g_main_loop_unref(mainloop);
+}
+
+static void test_basic(void)
+{
+	if (g_test_trap_fork(60 * 1000 * 1000, 0) == TRUE) {
+		test_mux();
+		exit(0);
+	}
+
+	g_test_trap_assert_passed();
+	//g_test_trap_assert_stderr("failed");
 }
 
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
 
-	g_test_add_func("/testmux/Setup", test_setup);
+	g_test_add_func("/testmux/basic", test_basic);
 
 	return g_test_run();
 }
