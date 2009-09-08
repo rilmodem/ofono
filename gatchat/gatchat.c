@@ -324,34 +324,36 @@ static void g_at_chat_finish_command(GAtChat *p, gboolean ok,
 						char *final)
 {
 	struct at_command *cmd = g_queue_pop_head(p->command_queue);
+	GSList *response_lines;
 
 	/* Cannot happen, but lets be paranoid */
 	if (!cmd)
 		return;
 
-	if (cmd->callback) {
-		GAtResult result;
-
-		p->response_lines = g_slist_reverse(p->response_lines);
-
-		result.final_or_pdu = final;
-		result.lines = p->response_lines;
-
-		cmd->callback(ok, &result, cmd->user_data);
-	}
-
-	g_slist_foreach(p->response_lines, (GFunc)g_free, NULL);
-	g_slist_free(p->response_lines);
-	p->response_lines = NULL;
-
-	g_free(final);
-
-	at_command_destroy(cmd);
-
 	p->cmd_bytes_written = 0;
 
 	if (g_queue_peek_head(p->command_queue))
 		g_at_chat_wakeup_writer(p);
+
+	response_lines = p->response_lines;
+	p->response_lines = NULL;
+
+	if (cmd->callback) {
+		GAtResult result;
+
+		response_lines = g_slist_reverse(response_lines);
+
+		result.final_or_pdu = final;
+		result.lines = response_lines;
+
+		cmd->callback(ok, &result, cmd->user_data);
+	}
+
+	g_slist_foreach(response_lines, (GFunc)g_free, NULL);
+	g_slist_free(response_lines);
+
+	g_free(final);
+	at_command_destroy(cmd);
 }
 
 struct terminator_info {
