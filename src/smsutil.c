@@ -2274,11 +2274,10 @@ static void sms_assembly_load(struct sms_assembly *assembly,
 		if (r != 0)
 			continue;
 
-		if (sms_assembly_add_fragment_backup(assembly, &segment,
+		/* Errors cannot occur here */
+		sms_assembly_add_fragment_backup(assembly, &segment,
 						segment_stat.st_mtime,
-						&addr, ref, max, seq, FALSE)) {
-			/* This should not happen */
-		}
+						&addr, ref, max, seq, FALSE);
 	}
 
 	for (i = 0; i < len; i++)
