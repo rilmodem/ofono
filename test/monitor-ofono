@@ -7,7 +7,8 @@ import dbus.mainloop.glib
 
 def property_changed(name, value, path, interface):
 	iface = interface[interface.rfind(".") + 1:]
-	if name in [""]:
+	if name in ["MobileNetworkCodeLength",
+				"VoicemailMessageCount"]:
 		val = int(value)
 	else:
 		val = str(value)
