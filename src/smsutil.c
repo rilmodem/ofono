@@ -47,7 +47,7 @@
 #define SMS_BACKUP_PATH_DIR SMS_BACKUP_PATH "/%s-%i-%i"
 #define SMS_BACKUP_PATH_FILE SMS_BACKUP_PATH_DIR "/%03i"
 
-#define SMS_ADDR_FMT "%21[0-9+*#]"
+#define SMS_ADDR_FMT "%24[0-9A-F]"
 
 static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
 					const struct sms *sms, time_t ts,
@@ -2214,11 +2214,41 @@ static gboolean sms_deserialize(const unsigned char *buf,
 	return sms_decode(buf + 1, len - 1, FALSE, buf[0], sms);
 }
 
+static gboolean sms_assembly_extract_address(const char *straddr,
+						struct sms_address *out)
+{
+	unsigned char pdu[12];
+	long len;
+	int offset = 0;
+
+	if (decode_hex_own_buf(straddr, -1, &len, 0, pdu) == NULL)
+		return FALSE;
+
+	return sms_decode_address_field(pdu, len, &offset, FALSE, out);
+}
+
+static gboolean sms_assembly_encode_address(const struct sms_address *in,
+						char *straddr)
+{
+	unsigned char pdu[12];
+	int offset = 0;
+
+	if (sms_encode_address_field(in, FALSE, pdu, &offset) == FALSE)
+		return FALSE;
+
+	if (encode_hex_own_buf(pdu, offset, 0, straddr) == NULL)
+		return FALSE;
+
+	straddr[offset * 2 + 1] = '\0';
+
+	return TRUE;
+}
+
 static void sms_assembly_load(struct sms_assembly *assembly,
 				const struct dirent *dir)
 {
 	struct sms_address addr;
-	char straddr[sizeof(addr.address) + 1];
+	char straddr[25];
 	guint16 ref;
 	guint8 max;
 	guint8 seq;
@@ -2235,10 +2265,13 @@ static void sms_assembly_load(struct sms_assembly *assembly,
 	if (dir->d_type != DT_DIR)
 		return;
 
+	/* Max of SMS address size is 12 bytes, hex encoded */
 	if (sscanf(dir->d_name, SMS_ADDR_FMT "-%hi-%hhi",
 				straddr, &ref, &max) < 3)
 		return;
-	sms_address_from_string(&addr, straddr);
+
+	if (sms_assembly_extract_address(straddr, &addr) == FALSE)
+		return;
 
 	path = g_strdup_printf(SMS_BACKUP_PATH "/%s",
 			assembly->imsi, dir->d_name);
@@ -2292,15 +2325,18 @@ static gboolean sms_assembly_store(struct sms_assembly *assembly,
 {
 	unsigned char buf[177];
 	int len;
+	char straddr[25];
 
 	if (!assembly->imsi)
+		return FALSE;
+
+	if (sms_assembly_encode_address(&node->addr, straddr) == FALSE)
 		return FALSE;
 
 	len = sms_serialize(buf, sms);
 
 	if (write_file(buf, len, SMS_BACKUP_MODE,
-				SMS_BACKUP_PATH_FILE, assembly->imsi,
-				sms_address_to_string(&node->addr),
+				SMS_BACKUP_PATH_FILE, assembly->imsi, straddr,
 				node->ref, node->max_fragments, seq) != len)
 		return FALSE;
 
@@ -2312,8 +2348,12 @@ static void sms_assembly_backup_free(struct sms_assembly *assembly,
 {
 	char *path;
 	int seq;
+	char straddr[25];
 
 	if (!assembly->imsi)
+		return;
+
+	if (sms_assembly_encode_address(&node->addr, straddr) == FALSE)
 		return;
 
 	for (seq = 0; seq < node->max_fragments; seq++) {
@@ -2322,16 +2362,14 @@ static void sms_assembly_backup_free(struct sms_assembly *assembly,
 
 		if (node->bitmap[offset] & bit) {
 			path = g_strdup_printf(SMS_BACKUP_PATH_FILE,
-					assembly->imsi,
-					sms_address_to_string(&node->addr),
+					assembly->imsi, straddr,
 					node->ref, node->max_fragments, seq);
 			unlink(path);
 			g_free(path);
 		}
 	}
 
-	path = g_strdup_printf(SMS_BACKUP_PATH_DIR, assembly->imsi,
-				sms_address_to_string(&node->addr),
+	path = g_strdup_printf(SMS_BACKUP_PATH_DIR, assembly->imsi, straddr,
 				node->ref, node->max_fragments);
 	rmdir(path);
 	g_free(path);
