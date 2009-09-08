@@ -32,6 +32,7 @@
 #include <arpa/inet.h>
 
 #include <glib.h>
+#include <gatmux.h>
 #include <gatchat.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
@@ -55,8 +56,10 @@
 #include <drivers/atmodem/vendor.h>
 
 struct phonesim_data {
+	GAtMux *mux;
 	GAtChat *chat;
 	gboolean calypso;
+	gboolean use_mux;
 };
 
 static int phonesim_probe(struct ofono_modem *modem)
@@ -122,6 +125,10 @@ static int phonesim_enable(struct ofono_modem *modem)
 	if (!g_strcmp0(value, "calypso"))
 		data->calypso = TRUE;
 
+	value = ofono_modem_get_string(modem, "Multiplexer");
+	if (!g_strcmp0(value, "internal"))
+		data->use_mux = TRUE;
+
 	sk = socket(PF_INET, SOCK_STREAM, 0);
 	if (sk < 0)
 		return -EINVAL;
@@ -143,15 +150,33 @@ static int phonesim_enable(struct ofono_modem *modem)
 		return -ENOMEM;
 	}
 
+	if (data->use_mux) {
+		data->mux = g_at_mux_new(io);
+		if (!data->mux)
+			return -ENOMEM;
+
+		if (getenv("OFONO_AT_DEBUG"))
+			g_at_mux_set_debug(data->mux, phonesim_debug, NULL);
+	}
+
 	if (data->calypso)
 		syntax = g_at_syntax_new_gsm_permissive();
 	else
 		syntax = g_at_syntax_new_gsmv1();
 
-	data->chat = g_at_chat_new(io, syntax);
+	if (data->mux)
+		data->chat = g_at_mux_create_chat(data->mux, syntax);
+	else
+		data->chat = g_at_chat_new(io, syntax);
+
 	g_at_syntax_unref(syntax);
 
 	if (!data->chat) {
+		if (data->mux) {
+			g_at_mux_unref(data->mux);
+			data->mux = NULL;
+		}
+
 		g_io_channel_unref(io);
 		return -ENOMEM;
 	}
@@ -185,6 +210,13 @@ static int phonesim_disable(struct ofono_modem *modem)
 
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
+
+	if (data->mux) {
+		g_at_mux_shutdown(data->mux);
+
+		g_at_mux_unref(data->mux);
+		data->mux = NULL;
+	}
 
 	return 0;
 }

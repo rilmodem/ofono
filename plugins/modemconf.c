@@ -60,6 +60,12 @@ static int set_address(struct ofono_modem *modem,
 		g_free(value);
 	}
 
+	value = g_key_file_get_string(keyfile, group, "Multiplexer", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Multiplexer", value);
+		g_free(value);
+	}
+
 	return 0;
 }
 
