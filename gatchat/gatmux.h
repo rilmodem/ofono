@@ -38,12 +38,16 @@ GAtMux *g_at_mux_new_from_tty(const char *device);
 GAtMux *g_at_mux_ref(GAtMux *mux);
 void g_at_mux_unref(GAtMux *mux);
 
+gboolean g_at_mux_start(GAtMux *mux);
 gboolean g_at_mux_shutdown(GAtMux *mux);
 
 gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
 			GAtDisconnectFunc disconnect, gpointer user_data);
 
 gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user);
+
+GIOChannel *g_at_mux_create_channel(GAtMux *mux);
+GAtChat *g_at_mux_create_chat(GAtMux *mux, GAtSyntax *syntax);
 
 #ifdef __cplusplus
 }
