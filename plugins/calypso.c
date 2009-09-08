@@ -144,14 +144,22 @@ static void setup_modem(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
 
+	/* Generate unsolicited notifications as soon as they're generated */
 	g_at_chat_send(data->chat, "AT%CUNS=0", NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->chat, "AT%CSTAT=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->chat, "@ST=\"-26\"", NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->chat, "%SLEEP=2", NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->chat, "+CLVL=255", NULL, NULL, NULL, NULL);
 
+	/* CSTAT tells us when SMS & Phonebook are ready to be used */
 	g_at_chat_register(data->chat, "%CSTAT:", cstat_notify, FALSE,
 				modem, NULL);
+	g_at_chat_send(data->chat, "AT%CSTAT=1", NULL, NULL, NULL, NULL);
+
+	/* audio side tone: set to minimum */
+	g_at_chat_send(data->chat, "AT@ST=\"-26\"", NULL, NULL, NULL, NULL);
+
+	/* Disable deep sleep */
+	g_at_chat_send(data->chat, "AT%SLEEP=2", NULL, NULL, NULL, NULL);
+
+	/* Set audio level to maximum */
+	g_at_chat_send(data->chat, "AT+CLVL=255", NULL, NULL, NULL, NULL);
 }
 
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
