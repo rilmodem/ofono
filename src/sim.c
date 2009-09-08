@@ -641,9 +641,9 @@ static gboolean cache_record(const char *path, int current, int record_len,
 		return FALSE;
 
 	if (lseek(fd, (current - 1) * record_len +
-				SIM_CACHE_HEADER_SIZE, SEEK_SET) !=
-			(off_t) -1)
+				SIM_CACHE_HEADER_SIZE, SEEK_SET) != (off_t) -1)
 		r = TFR(write(fd, data, record_len));
+
 	TFR(close(fd));
 
 	if (r < record_len) {
