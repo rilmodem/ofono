@@ -2130,6 +2130,14 @@ char *sms_decode_text(GSList *sms_list)
 
 			sms_extract_language_variant(sms, &locking_shift, &single_shift);
 
+			/* If language is not defined in 3GPP TS 23.038,
+	 		 * implementations are instructed to ignore it' */
+			if (locking_shift >= GSM_DIALECT_INVALID)
+				locking_shift = GSM_DIALECT_DEFAULT;
+
+			if (single_shift >= GSM_DIALECT_INVALID)
+				single_shift = GSM_DIALECT_DEFAULT;
+
 			converted = convert_gsm_to_utf8_with_lang(buf, written,
 								NULL, NULL, 0,
 								locking_shift,
