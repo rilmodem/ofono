@@ -60,7 +60,6 @@
 */
 
 #define GUND			0xFFFF
-#define KNOWN_VARIANTS		4
 
 #define UTF8_LENGTH(c) \
 	((c) < 0x80 ? 1 : \
@@ -74,13 +73,17 @@ struct codepoint {
 	unsigned short to;
 };
 
-struct single_shift_table {
-	const struct codepoint *table;
-	unsigned int len;
+struct alphabet_conversion_table {
+	const unsigned short *togsm_locking_shift;
+	const struct codepoint *togsm_single_shift;
+	unsigned int togsm_single_shift_len;
+	const struct codepoint *tounicode_locking_shift;
+	const struct codepoint *tounicode_single_shift;
+	unsigned int tounicode_single_shift_len;
 };
 
 /* GSM to Unicode extension table, for GSM sequences starting with 0x1B */
-static const struct codepoint default_ext_gsm[] = {
+static const struct codepoint def_ext_gsm[] = {
 	{ 0x0A, 0x000C },		/* See NOTE 3 in 23.038 */
 	{ 0x14, 0x005E },
 	{ 0x1B, 0x0020 },		/* See NOTE 1 in 23.038 */
@@ -94,7 +97,7 @@ static const struct codepoint default_ext_gsm[] = {
 	{ 0x65, 0x20AC }
 };
 
-static const struct codepoint default_ext_unicode[] = {
+static const struct codepoint def_ext_unicode[] = {
 	{ 0x000C, 0x1B0A },
 	{ 0x005B, 0x1B3C },
 	{ 0x005C, 0x1B2F },
@@ -108,7 +111,7 @@ static const struct codepoint default_ext_unicode[] = {
 };
 
 /* Appendix A.2.1. in 3GPP TS23.038, V.8.2.0 */
-static const struct codepoint turkish_ext_gsm[] = {
+static const struct codepoint tur_ext_gsm[] = {
 	{ 0x0A, 0x000C },		/* See NOTE 3 */
 	{ 0x14, 0x005E },
 	{ 0x1B, 0x0020 },		/* See NOTE 1 */
@@ -129,7 +132,7 @@ static const struct codepoint turkish_ext_gsm[] = {
 	{ 0x73, 0x015F }
 };
 
-static const struct codepoint turkish_ext_unicode[] = {
+static const struct codepoint tur_ext_unicode[] = {
 	{ 0x000C, 0x1B0A },
 	{ 0x005B, 0x1B3C },
 	{ 0x005C, 0x1B2F },
@@ -150,7 +153,7 @@ static const struct codepoint turkish_ext_unicode[] = {
 };
 
 /* Appendix A.2.2. in 3GPP TS23.038 V.8.2.0*/
-static const struct codepoint spanish_ext_gsm[] = {
+static const struct codepoint spa_ext_gsm[] = {
 	{ 0x09, 0x00E7 },
 	{ 0x0A, 0x000C },		/* See NOTE 3 */
 	{ 0x14, 0x005E },
@@ -173,7 +176,7 @@ static const struct codepoint spanish_ext_gsm[] = {
 	{ 0x75, 0x00FA }
 };
 
-static const struct codepoint spanish_ext_unicode[] = {
+static const struct codepoint spa_ext_unicode[] = {
 	{ 0x000C, 0x1B0A },
 	{ 0x005B, 0x1B3C },
 	{ 0x005C, 0x1B2F },
@@ -196,7 +199,7 @@ static const struct codepoint spanish_ext_unicode[] = {
 };
 
 /* Appendix A.2.3. in 3GPP TS23.038 V.8.2.0 */
-static const struct codepoint portuguese_ext_gsm[] = {
+static const struct codepoint por_ext_gsm[] = {
 	{ 0x05, 0x00EA },
 	{ 0x09, 0x00E7 },
 	{ 0x0A, 0x000C },		/* See NOTE 3 */
@@ -237,7 +240,7 @@ static const struct codepoint portuguese_ext_gsm[] = {
 	{ 0x7F, 0x00E2 }
 };
 
-static const struct codepoint portuguese_ext_unicode[] = {
+static const struct codepoint por_ext_unicode[] = {
 	{ 0x000C, 0x1B0A },
 	{ 0x005B, 0x1B3C },
 	{ 0x005C, 0x1B2F },
@@ -278,7 +281,7 @@ static const struct codepoint portuguese_ext_unicode[] = {
 };
 
 /* Used for conversion of GSM to Unicode */
-static const unsigned short default_gsm[] = {
+static const unsigned short def_gsm[] = {
 	0x0040, 0x00A3, 0x0024, 0x00A5, 0x00E8, 0x00E9, 0x00F9, 0x00EC, /* 0x07 */
 	0x00F2, 0x00C7, 0x000A, 0x00D8, 0x00F8, 0x000D, 0x00C5, 0x00E5, /* 0x0F */
 	0x0394, 0x005F, 0x03A6, 0x0393, 0x039B, 0x03A9, 0x03A0, 0x03A8, /* 0x17 */
@@ -297,7 +300,7 @@ static const unsigned short default_gsm[] = {
 	0x0078, 0x0079, 0x007A, 0x00E4, 0x00F6, 0x00F1, 0x00FC, 0x00E0  /* 0x7F */
 };
 
-static const struct codepoint default_unicode[] = {
+static const struct codepoint def_unicode[] = {
 	{ 0x000A, 0x0A }, { 0x000D, 0x0D }, { 0x0020, 0x20 }, { 0x0021, 0x21 },
 	{ 0x0022, 0x22 }, { 0x0023, 0x23 }, { 0x0024, 0x02 }, { 0x0025, 0x25 },
 	{ 0x0026, 0x26 }, { 0x0027, 0x27 }, { 0x0028, 0x28 }, { 0x0029, 0x29 },
@@ -333,7 +336,7 @@ static const struct codepoint default_unicode[] = {
 };
 
 /* Appendix A.3.1 in 3GPP TS23.038 */
-static const unsigned short turkish_gsm[] = {
+static const unsigned short tur_gsm[] = {
 	0x0040, 0x00A3, 0x0024, 0x00A5, 0x20AC, 0x00E9, 0x00F9, 0x0131, /* 0x07 */
 	0x00F2, 0x00C7, 0x000A, 0x011E, 0x011F, 0x000D, 0x00C5, 0x00E5, /* 0x0F */
 	0x0394, 0x005F, 0x03A6, 0x0393, 0x039B, 0x03A9, 0x03A0, 0x03A8, /* 0x17 */
@@ -352,7 +355,7 @@ static const unsigned short turkish_gsm[] = {
 	0x0078, 0x0079, 0x007A, 0x00E4, 0x00F6, 0x00F1, 0x00FC, 0x00E0  /* 0x7F */
 };
 
-static const struct codepoint turkish_unicode[] = {
+static const struct codepoint tur_unicode[] = {
 	{ 0x000A, 0x0A }, { 0x000D, 0x0D }, { 0x0020, 0x20 }, { 0x0021, 0x21 },
 	{ 0x0022, 0x22 }, { 0x0023, 0x23 }, { 0x0024, 0x02 }, { 0x0025, 0x25 },
 	{ 0x0026, 0x26 }, { 0x0027, 0x27 }, { 0x0028, 0x28 }, { 0x0029, 0x29 },
@@ -388,7 +391,7 @@ static const struct codepoint turkish_unicode[] = {
 };
 
 /* Appendix A.3.2 in 3GPP TS23.038 */
-static const unsigned short portuguese_gsm[] = {
+static const unsigned short por_gsm[] = {
 	0x0040, 0x00A3, 0x0024, 0x00A5, 0x00EA, 0x00E9, 0x00FA, 0x00ED, /* 0x07 */
 	0x00F3, 0x00E7, 0x000A, 0x00D4, 0x00F4, 0x000D, 0x00C1, 0x00E1, /* 0x0F */
 	0x0394, 0x005F, 0x00AA, 0x00C7, 0x00C0, 0x221E, 0x005E, 0x005C, /* 0x17 */
@@ -407,7 +410,7 @@ static const unsigned short portuguese_gsm[] = {
 	0x0078, 0x0079, 0x007A, 0x00E3, 0x00F5, 0x0060, 0x00FC, 0x00E0  /* 0x7F */
 };
 
-static const struct codepoint portuguese_unicode[] = {
+static const struct codepoint por_unicode[] = {
 	{ 0x000A, 0x0A }, { 0x000D, 0x0D }, { 0x0020, 0x20 }, { 0x0021, 0x21 },
 	{ 0x0022, 0x22 }, { 0x0023, 0x23 }, { 0x0024, 0x02 }, { 0x0025, 0x25 },
 	{ 0x0026, 0x26 }, { 0x0027, 0x27 }, { 0x0028, 0x28 }, { 0x0029, 0x29 },
@@ -442,32 +445,19 @@ static const struct codepoint portuguese_unicode[] = {
 	{ 0x00FC, 0x7E }, { 0x0394, 0x10 }, { 0x20AC, 0x18 }, { 0x221E, 0x15 }
 };
 
-static const struct single_shift_table gsm_single_shift[] = {
-	{ default_ext_gsm, TABLE_SIZE(default_ext_gsm) },
-	{ turkish_ext_gsm, TABLE_SIZE(turkish_ext_gsm) },
-	{ spanish_ext_gsm, TABLE_SIZE(spanish_ext_gsm) },
-	{ portuguese_ext_gsm, TABLE_SIZE(portuguese_ext_gsm) }
-};
-
-static const struct single_shift_table unicode_single_shift[] = {
-	{ default_ext_unicode, TABLE_SIZE(default_ext_unicode) },
-	{ turkish_ext_unicode, TABLE_SIZE(turkish_ext_unicode) },
-	{ spanish_ext_unicode, TABLE_SIZE(spanish_ext_unicode) },
-	{ portuguese_ext_unicode, TABLE_SIZE(portuguese_ext_unicode) }
-};
-
-static const unsigned short *gsm_locking_shift[] = {
-	default_gsm,
-	turkish_gsm,
-	default_gsm,
-	portuguese_gsm
-};
-
-static const struct codepoint *unicode_locking_shift[] = {
-	default_unicode,
-	turkish_unicode,
-	default_unicode,
-	portuguese_unicode
+static const struct alphabet_conversion_table alphabet_lookup[] = {
+	/* Default GSM 7 bit */
+	{ def_gsm, def_ext_gsm, TABLE_SIZE(def_ext_gsm),
+		def_unicode, def_ext_unicode, TABLE_SIZE(def_ext_unicode) },
+	/* Turkish GSM dialect */
+	{ tur_gsm, tur_ext_gsm, TABLE_SIZE(tur_ext_gsm),
+		tur_unicode, tur_ext_unicode, TABLE_SIZE(tur_ext_unicode) },
+	/* Spanish GSM dialect, note that this one only has extension table */
+	{ def_gsm, spa_ext_gsm, TABLE_SIZE(spa_ext_gsm),
+		def_unicode, spa_ext_unicode, TABLE_SIZE(spa_ext_unicode)  },
+	/* Portuguese GSM dialect */
+	{ por_gsm, por_ext_gsm, TABLE_SIZE(por_ext_gsm),
+		por_unicode, por_ext_unicode, TABLE_SIZE(por_ext_unicode) },
 };
 
 static int compare_codepoints(const void *a, const void *b)
@@ -493,40 +483,45 @@ static unsigned short codepoint_lookup(struct codepoint *key,
 static unsigned short gsm_locking_shift_lookup(unsigned char k,
 						unsigned char lang)
 {
-	/* If language is not defined in 3GPP TS 23.038,
-	 * implementations are instructed to ignore it' */
-	unsigned char variant = lang < KNOWN_VARIANTS ? lang : 0;
-
-	return gsm_locking_shift[variant][k];
+	return alphabet_lookup[lang].togsm_locking_shift[k];
 }
 
 static unsigned short gsm_single_shift_lookup(unsigned char k,
 						unsigned char lang)
 {
 	struct codepoint key = { k, 0 };
-	unsigned char variant = lang < KNOWN_VARIANTS ? lang : 0;
+	const struct codepoint *table;
+	unsigned int len;
+	
+	table = alphabet_lookup[lang].togsm_single_shift;
+	len = alphabet_lookup[lang].togsm_single_shift_len;
 
-	return codepoint_lookup(&key, gsm_single_shift[variant].table,
-				gsm_single_shift[variant].len);
+	return codepoint_lookup(&key, table, len);
 }
 
 static unsigned short unicode_locking_shift_lookup(unsigned short k,
 							unsigned char lang)
 {
 	struct codepoint key = { k, 0 };
-	unsigned char variant = lang < KNOWN_VARIANTS ? lang : 0;
+	const struct codepoint *table;
+	unsigned int len = 128;
 
-	return codepoint_lookup(&key, unicode_locking_shift[variant], 128);
+	table = alphabet_lookup[lang].tounicode_locking_shift;
+
+	return codepoint_lookup(&key, table, len); 
 }
 
 static unsigned short unicode_single_shift_lookup(unsigned short k,
 							unsigned char lang)
 {
 	struct codepoint key = { k, 0 };
-	unsigned char variant = lang < KNOWN_VARIANTS ? lang : 0;
+	const struct codepoint *table;
+	unsigned int len;
 
-	return codepoint_lookup(&key, unicode_single_shift[variant].table,
-				unicode_single_shift[variant].len);
+	table = alphabet_lookup[lang].tounicode_single_shift;
+	len = alphabet_lookup[lang].tounicode_single_shift_len;
+
+	return codepoint_lookup(&key, table, len);
 }
 
 /*!
@@ -545,13 +540,19 @@ static unsigned short unicode_single_shift_lookup(unsigned short k,
 char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 					long *items_read, long *items_written,
 					unsigned char terminator,
-					unsigned char locking_lang,
-					unsigned char single_lang)
+					enum gsm_dialect locking_lang,
+					enum gsm_dialect single_lang)
 {
 	char *res = NULL;
 	char *out;
 	long i = 0;
 	long res_length;
+
+	if (locking_lang >= GSM_DIALECT_INVALID)
+		return NULL;
+
+	if (single_lang >= GSM_DIALECT_INVALID)
+		return NULL;
 
 	if (len < 0 && !terminator)
 		goto err_out;
@@ -626,7 +627,9 @@ char *convert_gsm_to_utf8(const unsigned char *text, long len,
 {
 	return convert_gsm_to_utf8_with_lang(text, len, items_read,
 						items_written,
-						terminator, 0, 0);
+						terminator,
+						GSM_DIALECT_DEFAULT,
+						GSM_DIALECT_DEFAULT);
 }
 
 /*!
@@ -642,8 +645,8 @@ char *convert_gsm_to_utf8(const unsigned char *text, long len,
 unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len,
 					long *items_read, long *items_written,
 					unsigned char terminator,
-					unsigned char locking_lang,
-					unsigned char single_lang)
+					enum gsm_dialect locking_lang,
+					enum gsm_dialect single_lang)
 {
 	long nchars = 0;
 	const char *in;
@@ -651,6 +654,12 @@ unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len,
 	unsigned char *res = NULL;
 	long res_len;
 	long i;
+
+	if (locking_lang >= GSM_DIALECT_INVALID)
+		return NULL;
+
+	if (single_lang >= GSM_DIALECT_INVALID)
+		return NULL;
 
 	in = text;
 	res_len = 0;
@@ -730,7 +739,9 @@ unsigned char *convert_utf8_to_gsm(const char *text, long len,
 {
 	return convert_utf8_to_gsm_with_lang(text, len, items_read,
 						items_written,
-						terminator, 0, 0);
+						terminator,
+						GSM_DIALECT_DEFAULT,
+						GSM_DIALECT_DEFAULT);
 }
 
 /*!
