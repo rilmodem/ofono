@@ -34,8 +34,6 @@
 
 #include <glib.h>
 
-#include "types.h"
-#include "common.h"
 #include "util.h"
 #include "storage.h"
 #include "smsutil.h"
