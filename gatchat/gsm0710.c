@@ -49,11 +49,7 @@ void gsm0710_initialize(struct gsm0710_context *ctx)
 	ctx->server = 0;
 	ctx->buffer_used = 0;
 	memset(ctx->used_channels, 0, sizeof(ctx->used_channels));
-	ctx->reinit_detect = 0;
-	ctx->reinit_detect_len = 0;
-	ctx->user_data = 0;
-	ctx->fd = -1;
-	ctx->at_command = NULL;
+	ctx->user_data = NULL;
 	ctx->read = NULL;
 	ctx->write = NULL;
 	ctx->deliver_data = NULL;
@@ -91,17 +87,6 @@ static void gsm0710_debug(struct gsm0710_context *ctx, const char *msg)
 {
 	if (ctx->debug_message)
 		ctx->debug_message(ctx, msg);
-}
-
-/* Set the "reinitialize detect" string to "str".  When "str" is
-   encountered in the input stream, the AT+CMUX command will be
-   re-sent and the multiplexer re-started.  This is needed for
-   devices that drop out of multiplexer mode due to suspend/wakeup/etc.
-   The data at "str" must persist until the context is destroyed */
-void gsm0710_set_reinit_detect(struct gsm0710_context *ctx, const char *str)
-{
-	ctx->reinit_detect = str;
-	ctx->reinit_detect_len = (str ? strlen(str) : 0);
 }
 
 static const unsigned char crc_table[256] = {
@@ -214,67 +199,16 @@ static void gsm0710_write_frame(struct gsm0710_context *ctx, int channel,
 }
 
 /* Start up the GSM 07.10 session on the underlying device.
-   If "send_cmux" is non-zero, then send the AT+CMUX command.
-   Otherwise the underlying device is assumed to already be
-   in multiplexing mode.  Returns zero if the AT+CMUX failed */
-int gsm0710_startup(struct gsm0710_context *ctx, int send_cmux)
+   The underlying device is assumed to already be in
+   multiplexing mode.  Returns zero on failure */
+int gsm0710_startup(struct gsm0710_context *ctx)
 {
-	int channel;
-	char command[64];
-
 	/* Discard any data in the buffer, in case of restart */
 	ctx->buffer_used = 0;
-
-	/* Send the appropriate AT+CMUX command */
-	if (send_cmux) {
-		int speed;
-		switch (ctx->port_speed) {
-		case 9600:
-			speed = 1;
-			break;
-		case 19200:
-			speed = 2;
-			break;
-		case 38400:
-			speed = 3;
-			break;
-		case 57600:
-			speed = 4;
-			break;
-		case 115200:
-			speed = 5;
-			break;
-		case 230400:
-			speed = 6;
-			break;
-		default:
-			speed = 5;
-			break;
-		}
-		sprintf(command, "AT+CMUX=%d,0,%d,%d",
-					ctx->mode, speed, ctx->frame_size);
-		if (!ctx->at_command || !ctx->at_command(ctx, command)) {
-			gsm0710_debug(ctx,
-				"could not initialize multiplexing with AT+CMUX");
-			return 0;
-		}
-	}
 
 	/* Open the control channel */
 	gsm0710_write_frame(ctx, 0, GSM0710_OPEN_CHANNEL, NULL, 0);
 
-	/* Open previously-used channels if this is a reinit.
-	   Send "ERROR" on re-opened channels, to cause higher
-	   layers to abort pending AT commands */
-	for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
-		if (is_channel_used(ctx, channel)) {
-			gsm0710_write_frame(ctx, channel,
-						GSM0710_OPEN_CHANNEL, NULL, 0);
-			if (ctx->deliver_data)
-				ctx->deliver_data(ctx, channel,
-							"\r\nERROR\r\n", 9);
-		}
-	}
 	return 1;
 }
 
@@ -444,14 +378,6 @@ void gsm0710_ready_read(struct gsm0710_context *ctx)
 
 	/* Update the buffer size */
 	ctx->buffer_used += len;
-
-	/* Check for the re-initialization detection string */
-	if (!ctx->server && ctx->reinit_detect_len &&
-				len >= ctx->reinit_detect_len &&
-			!memcmp(ctx->buffer, ctx->reinit_detect, ctx->reinit_detect_len)) {
-		gsm0710_startup(ctx, 1);
-		return;
-	}
 
 	/* Break the incoming data up into packets */
 	posn = 0;

@@ -53,13 +53,9 @@ struct gsm0710_context
 	unsigned char buffer[GSM0710_BUFFER_SIZE];
 	int buffer_used;
 	unsigned long used_channels[(GSM0710_MAX_CHANNELS + 31) / 32];
-	const char *reinit_detect;
-	int reinit_detect_len;
 
 	/* Hooks to other levels */
 	void *user_data;
-	int fd;
-	int (*at_command)(struct gsm0710_context *ctx, const char *cmd);
 	int (*read)(struct gsm0710_context *ctx, void *data, int len);
 	int (*write)(struct gsm0710_context *ctx, const void *data, int len);
 	void (*deliver_data)(struct gsm0710_context *ctx, int channel,
@@ -75,8 +71,7 @@ struct gsm0710_context
 };
 
 void gsm0710_initialize(struct gsm0710_context *ctx);
-void gsm0710_set_reinit_detect(struct gsm0710_context *ctx, const char *str);
-int gsm0710_startup(struct gsm0710_context *ctx, int send_cmux);
+int gsm0710_startup(struct gsm0710_context *ctx);
 void gsm0710_shutdown(struct gsm0710_context *ctx);
 int gsm0710_open_channel(struct gsm0710_context *ctx, int channel);
 void gsm0710_close_channel(struct gsm0710_context *ctx, int channel);
