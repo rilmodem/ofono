@@ -44,6 +44,7 @@ enum ofono_property_type {
 	OFONO_PROPERTY_TYPE_INVALID = 0,
 	OFONO_PROPERTY_TYPE_STRING,
 	OFONO_PROPERTY_TYPE_INTEGER,
+	OFONO_PROPERTY_TYPE_BOOLEAN,
 };
 
 struct ofono_modem {
@@ -951,6 +952,9 @@ static int set_modem_property(struct ofono_modem *modem, const char *name,
 	case OFONO_PROPERTY_TYPE_INTEGER:
 		property->value = g_memdup(value, sizeof(int));
 		break;
+	case OFONO_PROPERTY_TYPE_BOOLEAN:
+		property->value = g_memdup(value, sizeof(bool));
+		break;
 	default:
 		break;
 	}
@@ -983,6 +987,9 @@ static gboolean get_modem_property(struct ofono_modem *modem, const char *name,
 	case OFONO_PROPERTY_TYPE_INTEGER:
 		memcpy(value, property->value, sizeof(int));
 		return TRUE;
+	case OFONO_PROPERTY_TYPE_BOOLEAN:
+		memcpy(value, property->value, sizeof(bool));
+		return TRUE;
 	default:
 		return FALSE;
 	}
@@ -1000,6 +1007,13 @@ int ofono_modem_set_integer(struct ofono_modem *modem,
 {
 	return set_modem_property(modem, key,
 					OFONO_PROPERTY_TYPE_INTEGER, &value);
+}
+
+int ofono_modem_set_boolean(struct ofono_modem *modem,
+				const char *key, bool value)
+{
+	return set_modem_property(modem, key,
+					OFONO_PROPERTY_TYPE_BOOLEAN, &value);
 }
 
 const char *ofono_modem_get_string(struct ofono_modem *modem, const char *key)
@@ -1020,6 +1034,17 @@ int ofono_modem_get_integer(struct ofono_modem *modem, const char *key)
 	if (get_modem_property(modem, key,
 			OFONO_PROPERTY_TYPE_INTEGER, &value) == FALSE)
 		return 0;
+
+	return value;
+}
+
+bool ofono_modem_get_boolean(struct ofono_modem *modem, const char *key)
+{
+	bool value;
+
+	if (get_modem_property(modem, key,
+			OFONO_PROPERTY_TYPE_BOOLEAN, &value) == FALSE)
+		return FALSE;
 
 	return value;
 }

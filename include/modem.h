@@ -26,6 +26,8 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 #include <ofono/types.h>
 
 struct ofono_modem;
@@ -55,6 +57,10 @@ const char *ofono_modem_get_string(struct ofono_modem *modem, const char *key);
 int ofono_modem_set_integer(struct ofono_modem *modem,
 				const char *key, int value);
 int ofono_modem_get_integer(struct ofono_modem *modem, const char *key);
+
+int ofono_modem_set_boolean(struct ofono_modem *modem,
+				const char *key, bool value);
+bool ofono_modem_get_boolean(struct ofono_modem *modem, const char *key);
 
 struct ofono_modem_driver {
 	const char *name;
