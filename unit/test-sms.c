@@ -1007,6 +1007,58 @@ static void test_cbs_assembly()
 	cbs_assembly_free(assembly);
 }
 
+static void test_serialize_assembly()
+{
+	unsigned char pdu[164];
+	long pdu_len;
+	struct sms sms;
+	struct sms_assembly *assembly = sms_assembly_new("1234");
+	guint16 ref;
+	guint8 max;
+	guint8 seq;
+	GSList *l;
+
+	decode_hex_own_buf(assembly_pdu1, -1, &pdu_len, 0, pdu);
+	sms_decode(pdu, pdu_len, FALSE, assembly_pdu_len1, &sms);
+
+	sms_extract_concatenation(&sms, &ref, &max, &seq);
+	l = sms_assembly_add_fragment(assembly, &sms, time(NULL),
+					&sms.deliver.oaddr, ref, max, seq);
+
+	if (g_test_verbose()) {
+		g_print("Ref: %u\n", ref);
+		g_print("Max: %u\n", max);
+		g_print("From: %s\n",
+				sms_address_to_string(&sms.deliver.oaddr));
+	}
+
+	g_assert(g_slist_length(assembly->assembly_list) == 1);
+	g_assert(l == NULL);
+
+	decode_hex_own_buf(assembly_pdu2, -1, &pdu_len, 0, pdu);
+	sms_decode(pdu, pdu_len, FALSE, assembly_pdu_len2, &sms);
+
+	sms_extract_concatenation(&sms, &ref, &max, &seq);
+	l = sms_assembly_add_fragment(assembly, &sms, time(NULL),
+					&sms.deliver.oaddr, ref, max, seq);
+	g_assert(l == NULL);
+
+	sms_assembly_free(assembly);
+
+	assembly = sms_assembly_new("1234");
+
+	decode_hex_own_buf(assembly_pdu3, -1, &pdu_len, 0, pdu);
+	sms_decode(pdu, pdu_len, FALSE, assembly_pdu_len3, &sms);
+
+	sms_extract_concatenation(&sms, &ref, &max, &seq);
+	l = sms_assembly_add_fragment(assembly, &sms, time(NULL),
+					&sms.deliver.oaddr, ref, max, seq);
+
+	g_assert(l != NULL);
+
+	sms_assembly_free(assembly);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -1024,6 +1076,9 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test CBS Encode / Decode",
 			test_cbs_encode_decode);
 	g_test_add_func("/testsms/Test CBS Assembly", test_cbs_assembly);
+
+	g_test_add_func("/testsms/Test SMS Assembly Serialize",
+			test_serialize_assembly);
 
 	return g_test_run();
 }
