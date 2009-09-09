@@ -101,6 +101,7 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 	cl = ptr;
 	cl->resource = resource;
 	cl->modem = modem;
+	cl->debug_func = NULL;
 	memset(cl->timeout, 0, sizeof(cl->timeout));
 	for (i = 0; i < 256; i++) {
 		cl->data[i] = cl->ind.data[i] = NULL;
