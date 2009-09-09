@@ -3436,3 +3436,215 @@ out:
 
 	return completed;
 }
+
+static inline int skip_to_next_field(const char *str, int pos, int len)
+{
+	if (pos < len && str[pos] == ',')
+		pos += 1;
+
+	while (pos < len && str[pos] == ' ')
+		pos += 1;
+
+	return pos;
+}
+
+static gboolean next_range(const char *str, int *offset, gint *min, gint *max)
+{
+	int pos;
+	int end;
+	int len;
+	int low = 0;
+	int high = 0;
+
+	len = strlen(str);
+
+	pos = *offset;
+
+	while (pos < len && str[pos] == ' ')
+		pos += 1;
+
+	end = pos;
+
+	while (str[end] >= '0' && str[end] <= '9') {
+		low = low * 10 + (int)(str[end] - '0');
+		end += 1;
+	}
+
+	if (pos == end)
+		return FALSE;
+
+	if (str[end] != '-') {
+		high = low;
+		goto out;
+	}
+
+	pos = end = end + 1;
+
+	while (str[end] >= '0' && str[end] <= '9') {
+		high = high * 10 + (int)(str[end] - '0');
+		end += 1;
+	}
+
+	if (pos == end)
+		return FALSE;
+
+out:
+	*offset = skip_to_next_field(str, end, len);
+
+	if (min)
+		*min = low;
+
+	if (max)
+		*max = high;
+
+	return TRUE;
+}
+
+static GSList *cbs_optimize_ranges(GSList *ranges)
+{
+	struct cbs_topic_range *range;
+	unsigned char bitmap[125];
+	GSList *l;
+	unsigned short i;
+	GSList *ret = NULL;
+
+	memset(bitmap, 0, sizeof(bitmap));
+
+	for (l = ranges; l; l = l->next) {
+		range = l->data;
+
+		for (i = range->min; i <= range->max; i++) {
+			int byte_offset = i / 8;
+			int bit = i % 8;
+
+			bitmap[byte_offset] |= 1 << bit;
+		}
+	}
+
+	range = NULL;
+
+	for (i = 0; i <= 999; i++) {
+		int byte_offset = i / 8;
+		int bit = i % 8;
+
+		if (is_bit_set(bitmap[byte_offset], bit) == FALSE) {
+			if (range) {
+				ret = g_slist_prepend(ret, range);
+				range = NULL;
+			}
+
+			continue;
+		}
+
+		if (range) {
+			range->max = i;
+			continue;
+		}
+
+		range = g_new0(struct cbs_topic_range, 1);
+		range->min = i;
+		range->max = i;
+	}
+
+	if (range != NULL)
+		ret = g_slist_prepend(ret, range);
+
+	ret = g_slist_reverse(ret);
+
+	return ret;
+}
+
+GSList *cbs_extract_topic_ranges(const char *ranges)
+{
+	int min;
+	int max;
+	int offset = 0;
+	GSList *ret = NULL;
+	GSList *tmp;
+
+	while (next_range(ranges, &offset, &min, &max) == TRUE) {
+		if (min < 0 || min > 999)
+			return NULL;
+
+		if (max < 0 || max > 999)
+			return NULL;
+
+		if (max < min)
+			return NULL;
+	}
+
+	if (ranges[offset] != '\0')
+		return NULL;
+
+	offset = 0;
+
+	while (next_range(ranges, &offset, &min, &max) == TRUE) {
+		struct cbs_topic_range *range = g_new0(struct cbs_topic_range, 1);
+
+		range->min = min;
+		range->max = max;
+
+		ret = g_slist_prepend(ret, range);
+	}
+
+	tmp = cbs_optimize_ranges(ret);
+	g_slist_foreach(ret, (GFunc)g_free, NULL);
+	g_slist_free(ret);
+
+	return tmp;
+}
+
+static inline int element_length(unsigned short element)
+{
+	if (element <= 9)
+		return 1;
+
+	if (element <= 99)
+		return 2;
+
+	return 3;
+}
+
+static inline int range_length(struct cbs_topic_range *range)
+{
+	if (range->min == range->max)
+		return element_length(range->min);
+
+	return element_length(range->min) + element_length(range->max) + 1;
+}
+
+char *cbs_topic_ranges_to_string(GSList *ranges)
+{
+	int len = 0;
+	int nelem = 0;
+	struct cbs_topic_range *range;
+	GSList *l;
+	char *ret;
+
+	for (l = ranges; l; l = l->next) {
+		range = l->data;
+
+		len += range_length(range);
+		nelem += 1;
+	}
+
+	/* Space for ranges, commas and terminator null */
+	ret = g_new(char, len + nelem);
+
+	len = 0;
+
+	for (l = ranges; l; l = l->next) {
+		range = l->data;
+
+		if (range->min != range->max)
+			len += sprintf(ret + len, "%hu-%hu",
+					range->min, range->max);
+		else
+			len += sprintf(ret + len, "%hu", range->min);
+
+		if (l->next != NULL)
+			ret[len++] = ',';
+	}
+
+	return ret;
+}

@@ -388,6 +388,11 @@ struct cbs_assembly {
 	GSList *recv_cell;
 };
 
+struct cbs_topic_range {
+	unsigned short min;
+	unsigned short max;
+};
+
 static inline gboolean is_bit_set(unsigned char oct, int bit)
 {
 	int mask = 0x1 << bit;
@@ -485,3 +490,6 @@ GSList *cbs_assembly_add_page(struct cbs_assembly *assembly,
 				const struct cbs *cbs);
 void cbs_assembly_location_changed(struct cbs_assembly *assembly,
 					gboolean lac, gboolean ci);
+
+char *cbs_topic_ranges_to_string(GSList *ranges);
+GSList *cbs_extract_topic_ranges(const char *ranges);
