@@ -1059,6 +1059,45 @@ static void test_serialize_assembly()
 	sms_assembly_free(assembly);
 }
 
+static const char *ranges[] = { "1-5, 2, 3, 600, 569-900, 999",
+				"0-20, 33, 44, 50-60, 20-50, 1-5, 5, 3, 5",
+				NULL };
+static const char *inv_ranges[] = { "1-5, 3333", "1-5, afbcd", "1-5, 3-5,,",
+					"1-5, 3-5, c", NULL };
+
+static void test_range_minimizer()
+{
+	int i = 0;
+
+	while (inv_ranges[i]) {
+		GSList *l = cbs_extract_topic_ranges(inv_ranges[i]);
+
+		g_assert(l == NULL);
+		i++;
+	}
+
+	i = 0;
+
+	while (ranges[i]) {
+		GSList *r = cbs_extract_topic_ranges(ranges[i]);
+		char *rangestr;
+
+		g_assert(r != NULL);
+		i++;
+
+		rangestr = cbs_topic_ranges_to_string(r);
+
+		g_assert(rangestr);
+
+		if (g_test_verbose())
+			g_print("range: %s\n", rangestr);
+
+		g_free(rangestr);
+		g_slist_foreach(r, (GFunc)g_free, NULL);
+		g_slist_free(r);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -1079,6 +1118,8 @@ int main(int argc, char **argv)
 
 	g_test_add_func("/testsms/Test SMS Assembly Serialize",
 			test_serialize_assembly);
+
+	g_test_add_func("/testsms/Range minimizer", test_range_minimizer);
 
 	return g_test_run();
 }
