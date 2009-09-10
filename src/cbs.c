@@ -133,8 +133,6 @@ static void cbs_dispatch_text(struct ofono_cbs *cbs, enum sms_class cls,
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cbs->atom);
-	DBusMessage *signal;
-	DBusMessageIter iter;
 
 	g_dbus_emit_signal(conn, path, CBS_MANAGER_INTERFACE,
 				"IncomingBroadcast",
