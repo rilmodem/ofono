@@ -554,7 +554,7 @@ static void handle_enhanced_voicemail_iei(struct ofono_message_waiting *mw,
 		/* 9.2.3.24.13.1 Enhanced Voice Mail Notification */
 
 		/* MULTIPLE_SUBSCRIBER_PROFILE */
-		profile = (iei[0] >> 2) & 3;
+		profile = ((iei[0] >> 2) & 3) + 1;
 
 		/* SM_STORAGE */
 		if (discard)
@@ -570,14 +570,17 @@ static void handle_enhanced_voicemail_iei(struct ofono_message_waiting *mw,
 
 		/* Other parameters currently not supported */
 
-		set = iei[n + 2] > 0 ? TRUE : FALSE;
+		if (length < n + 3)
+			return;
+
+		set = iei[n + 1] > 0 ? TRUE : FALSE;
 		mw_set_indicator(mw, profile, SMS_MWI_TYPE_VOICE,
-					set, iei[n + 2]);
+					set, iei[n + 1]);
 	} else {
 		/* 9.2.3.24.13.2 Enhanced Voice Delete Confirmation */
 
 		/* MULTIPLE_SUBSCRIBER_PROFILE */
-		profile = (iei[0] >> 2) & 3;
+		profile = ((iei[0] >> 2) & 3) + 1;
 
 		/* SM_STORAGE */
 		if (discard)
@@ -591,9 +594,12 @@ static void handle_enhanced_voicemail_iei(struct ofono_message_waiting *mw,
 
 		/* Other parameters currently not supported */
 
-		set = iei[n + 2] > 0 ? TRUE : FALSE;
+		if (length < n + 3)
+			return;
+
+		set = iei[n + 1] > 0 ? TRUE : FALSE;
 		mw_set_indicator(mw, profile, SMS_MWI_TYPE_VOICE,
-					set, iei[n + 2]);
+					set, iei[n + 1]);
 	}
 
 	if (mailbox_address.address[0] != '\0')
