@@ -83,6 +83,7 @@ static void phonesim_remove(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	g_free(data);
 	ofono_modem_set_data(modem, NULL);
 
 	g_free(data);
@@ -203,8 +204,6 @@ static int phonesim_disable(struct ofono_modem *modem)
 	struct phonesim_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
-
-	ofono_modem_set_data(modem, NULL);
 
 	g_at_chat_shutdown(data->chat);
 
