@@ -108,6 +108,13 @@ void ofono_netreg_remove(struct ofono_netreg *netreg);
 void ofono_netreg_set_data(struct ofono_netreg *netreg, void *data);
 void *ofono_netreg_get_data(struct ofono_netreg *netreg);
 
+int ofono_netreg_get_location(struct ofono_netreg *netreg);
+int ofono_netreg_get_cellid(struct ofono_netreg *netreg);
+int ofono_netreg_get_status(struct ofono_netreg *netreg);
+int ofono_netreg_get_technology(struct ofono_netreg *netreg);
+const struct ofono_network_operator *
+	ofono_netreg_get_operator(struct ofono_netreg *netreg);
+
 #ifdef __cplusplus
 }
 #endif

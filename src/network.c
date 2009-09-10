@@ -1319,6 +1319,50 @@ static void sim_spn_read_cb(int ok,
 	}
 }
 
+int ofono_netreg_get_location(struct ofono_netreg *netreg)
+{
+	if (netreg == NULL)
+		return -1;
+
+	return netreg->location;
+}
+
+int ofono_netreg_get_cellid(struct ofono_netreg *netreg)
+{
+	if (netreg == NULL)
+		return -1;
+
+	return netreg->cellid;
+}
+
+int ofono_netreg_get_status(struct ofono_netreg *netreg)
+{
+	if (netreg == NULL)
+		return -1;
+
+	return netreg->status;
+}
+
+int ofono_netreg_get_technology(struct ofono_netreg *netreg)
+{
+	if (netreg == NULL)
+		return -1;
+
+	return netreg->technology;
+}
+
+const struct ofono_network_operator *
+	ofono_netreg_get_operator(struct ofono_netreg *netreg)
+{
+	if (netreg == NULL)
+		return NULL;
+
+	if (netreg->current_operator == NULL)
+		return NULL;
+
+	return netreg->current_operator->info;
+}
+
 int ofono_netreg_driver_register(const struct ofono_netreg_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
