@@ -295,21 +295,6 @@ static gboolean at_parse_pdu_common(GAtResult *result, const char *prefix,
 	return TRUE;
 }
 
-static void at_cbm_notify(GAtResult *result, gpointer user_data)
-{
-	int pdulen;
-	const char *pdu;
-
-	dump_response("at_cbm_notify", TRUE, result);
-
-	if (!at_parse_pdu_common(result, "+CBM:", &pdu, &pdulen)) {
-		ofono_error("Unable to parse CBM notification");
-		return;
-	}
-
-	ofono_debug("Got new Cell Broadcast via CBM: %s, %d", pdu, pdulen);
-}
-
 static void at_cds_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
@@ -627,8 +612,6 @@ static void at_sms_initialized(struct ofono_sms *sms)
 	g_at_chat_register(data->chat, "+CMT:", at_cmt_notify, TRUE,
 				sms, NULL);
 	g_at_chat_register(data->chat, "+CDS:", at_cds_notify, TRUE,
-				sms, NULL);
-	g_at_chat_register(data->chat, "+CBM:", at_cbm_notify, TRUE,
 				sms, NULL);
 
 	/* We treat CMGR just like a notification */

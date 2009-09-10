@@ -56,3 +56,6 @@ extern void at_ssn_exit();
 
 extern void at_devinfo_init();
 extern void at_devinfo_exit();
+
+extern void at_cbs_init();
+extern void at_cbs_exit();

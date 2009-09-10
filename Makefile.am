@@ -91,6 +91,7 @@ builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/atmodem.c \
 				drivers/atmodem/call-settings.c \
 				drivers/atmodem/sms.c \
+				drivers/atmodem/cbs.c \
 				drivers/atmodem/call-forwarding.c \
 				drivers/atmodem/call-meter.c \
 				drivers/atmodem/network-registration.c \
