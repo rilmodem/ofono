@@ -462,6 +462,11 @@ static int set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 			err = driver->disable(modem);
 	}
 
+	if (err == 0)
+		modem->powered = powered;
+	else if (err != EINPROGRESS)
+		modem->powered_pending = modem->powered;
+
 	return err;
 }
 
@@ -472,6 +477,7 @@ static gboolean set_powered_timeout(gpointer user)
 	DBG("modem: %p", modem);
 
 	modem->timeout = 0;
+	modem->powered_pending = modem->powered;
 
 	if (modem->pending != NULL) {
 		DBusMessage *reply;
@@ -529,9 +535,6 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 						set_powered_timeout, modem);
 			return NULL;
 		}
-
-		modem->powered = powered;
-		modem->powered_pending = powered;
 
 		g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
