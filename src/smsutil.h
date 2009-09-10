@@ -488,7 +488,7 @@ struct cbs_assembly *cbs_assembly_new();
 void cbs_assembly_free(struct cbs_assembly *assembly);
 GSList *cbs_assembly_add_page(struct cbs_assembly *assembly,
 				const struct cbs *cbs);
-void cbs_assembly_location_changed(struct cbs_assembly *assembly,
+void cbs_assembly_location_changed(struct cbs_assembly *assembly, gboolean plmn,
 					gboolean lac, gboolean ci);
 
 char *cbs_topic_ranges_to_string(GSList *ranges);

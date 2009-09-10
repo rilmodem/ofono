@@ -966,7 +966,7 @@ static void test_cbs_assembly()
 	l = cbs_assembly_add_page(assembly, &dec1);
 	g_assert(l == NULL);
 
-	cbs_assembly_location_changed(assembly, TRUE, TRUE);
+	cbs_assembly_location_changed(assembly, TRUE, TRUE, TRUE);
 	g_assert(assembly->recv_cell == NULL);
 
 	dec1.update_number = 9;

@@ -3297,7 +3297,7 @@ static void cbs_assembly_expire(struct cbs_assembly *assembly,
 	}
 }
 
-void cbs_assembly_location_changed(struct cbs_assembly *assembly,
+void cbs_assembly_location_changed(struct cbs_assembly *assembly, gboolean plmn,
 					gboolean lac, gboolean ci)
 {
 	/* Location Area wide (in GSM) (which means that a CBS message with the
@@ -3313,6 +3313,15 @@ void cbs_assembly_location_changed(struct cbs_assembly *assembly,
 	 * NOTE 4: According to 3GPP TS 23.003 [2] a Service Area consists of
 	 * one cell only.
 	 */
+
+	if (plmn) {
+		lac = TRUE;
+		g_slist_free(assembly->recv_plmn);
+		assembly->recv_plmn = NULL;
+
+		cbs_assembly_expire(assembly, cbs_compare_node_by_gs,
+				GUINT_TO_POINTER(CBS_GEO_SCOPE_PLMN));
+	}
 
 	if (lac) {
 		/* If LAC changed, then cell id has changed */
