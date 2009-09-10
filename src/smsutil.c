@@ -3602,7 +3602,13 @@ static inline int element_length(unsigned short element)
 	if (element <= 99)
 		return 2;
 
-	return 3;
+	if (element <= 999)
+		return 3;
+
+	if (element <= 9999)
+		return 4;
+
+	return 5;
 }
 
 static inline int range_length(struct cbs_topic_range *range)
