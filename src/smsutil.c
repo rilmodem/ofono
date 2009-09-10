@@ -3627,6 +3627,9 @@ char *cbs_topic_ranges_to_string(GSList *ranges)
 	GSList *l;
 	char *ret;
 
+	if (ranges == NULL)
+		return g_new0(char, 1);
+
 	for (l = ranges; l; l = l->next) {
 		range = l->data;
 
