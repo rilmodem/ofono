@@ -86,8 +86,6 @@ static void phonesim_remove(struct ofono_modem *modem)
 
 	g_free(data);
 	ofono_modem_set_data(modem, NULL);
-
-	g_free(data);
 }
 
 static void phonesim_debug(const char *str, void *user_data)
