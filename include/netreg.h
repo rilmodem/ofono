@@ -112,4 +112,4 @@ void *ofono_netreg_get_data(struct ofono_netreg *netreg);
 }
 #endif
 
-#endif /* __OFONO_SSN_H */
+#endif /* __OFONO_NETREG_H */
