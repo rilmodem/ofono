@@ -56,17 +56,18 @@ static inline GIsiModem *make_modem(unsigned idx)
 	return (void *)(uintptr_t)idx;
 }
 
-static int bring_up(int fd, unsigned ifindex)
+static void bring_up(unsigned ifindex)
 {
 	struct ifreq req = { .ifr_ifindex = ifindex, };
+	int fd = socket(PF_LOCAL, SOCK_DGRAM, 0);
 
 	if (ioctl(fd, SIOCGIFNAME, &req) ||
 	    ioctl(fd, SIOCGIFFLAGS, &req))
-		return -errno;
+		goto error;
 	req.ifr_flags |= IFF_UP | IFF_RUNNING;
-	if (ioctl(fd, SIOCSIFFLAGS, &req))
-		return -errno;
-	return 0;
+	ioctl(fd, SIOCSIFFLAGS, &req);
+error:
+	close(fd);
 }
 
 /* Parser Netlink messages */
@@ -130,7 +131,7 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 			if (rta->rta_type == IFA_LOCAL)
 				memcpy(&addr, RTA_DATA(rta), 1);
 		if (up)
-			bring_up(fd, ifa->ifa_index);
+			bring_up(ifa->ifa_index);
 		self->callback(up, addr,
 				make_modem(ifa->ifa_index), self->opaque);
 	}
