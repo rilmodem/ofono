@@ -84,6 +84,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_HISTORY = 11,
 	OFONO_ATOM_TYPE_SSN = 12,
 	OFONO_ATOM_TYPE_MESSAGE_WAITING = 13,
+	OFONO_ATOM_TYPE_CBS = 14,
 };
 
 enum ofono_atom_watch_condition {
@@ -131,6 +132,7 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
+#include <ofono/cbs.h>
 #include <ofono/devinfo.h>
 #include <ofono/phonebook.h>
 #include <ofono/sms.h>

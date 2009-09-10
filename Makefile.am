@@ -9,7 +9,8 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/call-meter.h include/call-settings.h \
 			include/phonebook.h include/ssn.h include/ussd.h \
 			include/sms.h include/sim.h include/message-waiting.h \
-			include/netreg.h include/voicecall.h include/devinfo.h
+			include/netreg.h include/voicecall.h include/devinfo.h \
+			include/cbs.h
 
 nodist_include_HEADERS = include/version.h
 
@@ -158,7 +159,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
 			src/call-meter.c src/smsutil.h src/smsutil.c \
 			src/ssn.c src/call-barring.c src/sim.c \
 			src/phonebook.c src/history.c src/message-waiting.c \
-			src/simutil.h src/simutil.c src/storage.h src/storage.c
+			src/simutil.h src/simutil.c src/storage.h \
+			src/storage.c src/cbs.c
 
 src_ofonod_LDADD = $(builtin_libadd) \
 			@GLIB_LIBS@ @GTHREAD_LIBS@ @DBUS_LIBS@ -ldl
