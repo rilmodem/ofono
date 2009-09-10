@@ -211,7 +211,7 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 	req->mw = mw;
 	req->mailbox = mailbox;
 	string_to_phone_number(number, &req->number);
-	req->msg = dbus_message_ref(msg);
+	req->msg = msg ? dbus_message_ref(msg) : NULL;
 
 	sim_adn_build(efmbdn, req->mw->efmbdn_length, &req->number, NULL);
 
@@ -468,7 +468,7 @@ static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
 		indication = present;
 		mw->messages[type].indication = present;
 
-		if (!mw_message_waiting_property_name[type])
+		if (mw_message_waiting_property_name[type])
 			ofono_dbus_signal_property_changed(conn, path,
 					MESSAGE_WAITING_INTERFACE,
 					mw_message_waiting_property_name[type],
@@ -480,7 +480,7 @@ static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
 
 		mw->messages[type].message_count = messages;
 
-		if (!mw_message_waiting_property_name[type])
+		if (mw_message_waiting_property_name[type])
 			ofono_dbus_signal_property_changed(conn, path,
 					MESSAGE_WAITING_INTERFACE,
 					mw_message_count_property_name[type],
