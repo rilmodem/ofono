@@ -60,7 +60,7 @@ static int bring_up(int fd, unsigned ifindex)
 {
 	struct ifreq req = { .ifr_ifindex = ifindex, };
 
-	if (ioctl(fd, SIOCGIFINDEX, &req) ||
+	if (ioctl(fd, SIOCGIFNAME, &req) ||
 	    ioctl(fd, SIOCGIFFLAGS, &req))
 		return -errno;
 	req.ifr_flags |= IFF_UP | IFF_RUNNING;
