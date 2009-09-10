@@ -147,7 +147,7 @@ error:
 	}
 }
 
-static gboolean at_cbs_register(gpointer user)
+static void at_cbs_register(gboolean ok, GAtResult *result, gpointer user)
 {
 	struct ofono_cbs *cbs = user;
 	GAtChat *chat = ofono_cbs_get_data(cbs);
@@ -163,8 +163,6 @@ static gboolean at_cbs_register(gpointer user)
 	g_at_chat_register(chat, "+CBM:", at_cbm_notify, TRUE, cbs, NULL);
 
 	ofono_cbs_register(cbs);
-
-	return FALSE;
 }
 
 static int at_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
@@ -173,7 +171,12 @@ static int at_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 	GAtChat *chat = data;
 
 	ofono_cbs_set_data(cbs, chat);
-	g_idle_add(at_cbs_register, cbs);
+
+	/* Start with CBS not accepting any channels.  The core will
+	 * power on / set preferred channels when it is ready
+	 */
+	g_at_chat_send(chat, "AT+CSCB=1,\"0-65535\"", none_prefix,
+				at_cbs_register, cbs, NULL);
 
 	return 0;
 }
