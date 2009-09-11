@@ -54,8 +54,15 @@ struct ofono_cbs {
 	GSList *topics;
 	GSList *new_topics;
 	struct ofono_sim *sim;
+	struct ofono_netreg *netreg;
 	unsigned int sim_watch;
 	unsigned int imsi_watch;
+	unsigned int netreg_watch;
+	unsigned int location_watch;
+	int lac;
+	int ci;
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	const struct ofono_cbs_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -63,7 +70,10 @@ struct ofono_cbs {
 
 static void cbs_dispatch_base_station_id(struct ofono_cbs *cbs, const char *id)
 {
-	ofono_debug("Base station id: %s", id);
+	DBG("Base station id: %s", id);
+
+	if (cbs->netreg == NULL)
+		return;
 }
 
 static void cbs_dispatch_emergency(struct ofono_cbs *cbs, const char *message,
@@ -411,6 +421,19 @@ static void cbs_unregister(struct ofono_atom *atom)
 
 		__ofono_modem_remove_atom_watch(modem, cbs->sim_watch);
 		cbs->sim_watch = 0;
+		cbs->sim = NULL;
+	}
+
+	if (cbs->netreg_watch) {
+		if (cbs->location_watch) {
+			__ofono_netreg_remove_status_watch(cbs->netreg,
+							cbs->location_watch);
+			cbs->location_watch = 0;
+		}
+
+		__ofono_modem_remove_atom_watch(modem, cbs->netreg_watch);
+		cbs->netreg_watch = 0;
+		cbs->netreg = NULL;
 	}
 }
 
@@ -483,6 +506,7 @@ static void sim_watch(struct ofono_atom *atom,
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
 		cbs->imsi_watch = 0;
+		cbs->sim = NULL;
 		return;
 	}
 
@@ -494,12 +518,103 @@ static void sim_watch(struct ofono_atom *atom,
 		cbs_got_imsi(cbs);
 }
 
+static void cbs_location_changed(int status, int lac, int ci, int tech,
+					const struct ofono_network_operator *op,
+					void *data)
+{
+	struct ofono_cbs *cbs = data;
+	gboolean plmn_changed = FALSE;
+	gboolean lac_changed = FALSE;
+	gboolean ci_changed = FALSE;
+
+	DBG("%d, %d, %d, %d, %p", status, lac, ci, tech, op);
+
+	if (op == NULL) {
+		if (cbs->mcc[0] == '\0' && cbs->mnc[0] == '\0')
+			return;
+
+		memset(cbs->mcc, 0, sizeof(cbs->mcc));
+		memset(cbs->mnc, 0, sizeof(cbs->mnc));
+
+		plmn_changed = TRUE;
+		goto out;
+	}
+
+	if (strcmp(cbs->mcc, op->mcc) || strcmp(cbs->mnc, op->mnc)) {
+		memcpy(cbs->mcc, op->mcc, sizeof(cbs->mcc));
+		memcpy(cbs->mnc, op->mnc, sizeof(cbs->mnc));
+
+		plmn_changed = TRUE;
+		goto out;
+	}
+
+	if (cbs->lac != lac) {
+		cbs->lac = lac;
+
+		lac_changed = TRUE;
+		goto out;
+	}
+
+	if (cbs->ci != ci) {
+		cbs->ci = ci;
+
+		ci_changed = TRUE;
+		goto out;
+	}
+
+	return;
+
+out:
+	/* TODO: reset base station ID */
+
+	DBG("%d, %d, %d", plmn_changed, lac_changed, ci_changed);
+
+	cbs_assembly_location_changed(cbs->assembly, plmn_changed,
+					lac_changed, ci_changed);
+}
+
+static void netreg_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct ofono_cbs *cbs = data;
+	const struct ofono_network_operator *op;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		cbs->location_watch = 0;
+		return;
+	}
+
+	cbs->netreg = __ofono_atom_get_data(atom);
+	cbs->location_watch = __ofono_netreg_add_status_watch(cbs->netreg,
+					cbs_location_changed, cbs, NULL);
+
+	op = ofono_netreg_get_operator(cbs->netreg);
+
+	if (op) {
+		memcpy(cbs->mcc, op->mcc, sizeof(cbs->mcc));
+		memcpy(cbs->mnc, op->mnc, sizeof(cbs->mnc));
+	} else {
+		memset(cbs->mcc, 0, sizeof(cbs->mcc));
+		memset(cbs->mnc, 0, sizeof(cbs->mnc));
+	}
+
+	cbs->lac = ofono_netreg_get_location(cbs->netreg);
+	cbs->ci = ofono_netreg_get_cellid(cbs->netreg);
+
+	/* Clear out the cbs assembly just in case, worst case
+	 * we will receive the cell broadcasts again
+	 */
+	cbs_assembly_location_changed(cbs->assembly, TRUE, TRUE, TRUE);
+}
+
 void ofono_cbs_register(struct ofono_cbs *cbs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(cbs->atom);
 	const char *path = __ofono_atom_get_path(cbs->atom);
 	struct ofono_atom *sim_atom;
+	struct ofono_atom *netreg_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					CBS_MANAGER_INTERFACE,
@@ -521,6 +636,16 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 
 	if (sim_atom && __ofono_atom_get_registered(sim_atom))
 		sim_watch(sim_atom,
+				OFONO_ATOM_WATCH_CONDITION_REGISTERED, cbs);
+
+	cbs->netreg_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_NETREG,
+					netreg_watch, cbs, NULL);
+
+	netreg_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_NETREG);
+
+	if (netreg_atom && __ofono_atom_get_registered(netreg_atom))
+		netreg_watch(netreg_atom,
 				OFONO_ATOM_WATCH_CONDITION_REGISTERED, cbs);
 
 	__ofono_atom_register(cbs->atom, cbs_unregister);
