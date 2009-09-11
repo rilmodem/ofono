@@ -81,8 +81,7 @@ struct ofono_sim {
 	gint simop_source;
 	unsigned char efmsisdn_length;
 	unsigned char efmsisdn_records;
-	unsigned int next_ready_watch_id;
-	GSList *ready_watches;
+	struct ofono_watchlist *ready_watches;
 	const struct ofono_sim_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -93,13 +92,6 @@ struct msisdn_set_request {
 	int pending;
 	int failed;
 	DBusMessage *msg;
-};
-
-struct sim_ready_watch {
-	unsigned int id;
-	ofono_sim_ready_notify_cb_t notify;
-	void *data;
-	ofono_destroy_func destroy;
 };
 
 struct service_number {
@@ -1047,29 +1039,11 @@ const char *ofono_sim_get_imsi(struct ofono_sim *sim)
 	return sim->imsi;
 }
 
-static void remove_all_watches(struct ofono_sim *sim)
-{
-	struct sim_ready_watch *watch;
-	GSList *c;
-
-	for (c = sim->ready_watches; c; c = c->next) {
-		watch = c->data;
-
-		if (watch->destroy)
-			watch->destroy(watch->data);
-
-		g_free(watch);
-	}
-
-	g_slist_free(sim->ready_watches);
-	sim->ready_watches = NULL;
-}
-
 unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
 				ofono_sim_ready_notify_cb_t notify,
 				void *data, ofono_destroy_func destroy)
 {
-	struct sim_ready_watch *watch;
+	struct ofono_watchlist_item *item;
 
 	DBG("%p", sim);
 
@@ -1079,56 +1053,18 @@ unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
 	if (notify == NULL)
 		return 0;
 
-	watch = g_new0(struct sim_ready_watch, 1);
+	item = g_new0(struct ofono_watchlist_item, 1);
 
-	watch->id = ++sim->next_ready_watch_id;
-	watch->notify = notify;
-	watch->destroy = destroy;
-	watch->data = data;
+	item->notify = notify;
+	item->destroy = destroy;
+	item->notify_data = data;
 
-	sim->ready_watches = g_slist_prepend(sim->ready_watches, watch);
-
-	DBG("id: %u", watch->id);
-
-	return watch->id;
+	return __ofono_watchlist_add_item(sim->ready_watches, item);
 }
 
 void ofono_sim_remove_ready_watch(struct ofono_sim *sim, unsigned int id)
 {
-	struct sim_ready_watch *watch;
-	GSList *p;
-	GSList *c;
-
-	if (sim == NULL)
-		return;
-
-	DBG("%p, %u", sim, id);
-
-	p = NULL;
-	c = sim->ready_watches;
-
-	while (c) {
-		watch = c->data;
-
-		if (watch->id != id) {
-			p = c;
-			c = c->next;
-			continue;
-		}
-
-		if (p)
-			p->next = c->next;
-		else
-			sim->ready_watches = c->next;
-
-		if (watch->destroy)
-			watch->destroy(watch->data);
-
-		g_free(watch);
-		g_slist_free_1(c);
-
-		return;
-	}
+	__ofono_watchlist_remove_item(sim->ready_watches, id);
 }
 
 int ofono_sim_get_ready(struct ofono_sim *sim)
@@ -1145,6 +1081,7 @@ int ofono_sim_get_ready(struct ofono_sim *sim)
 void ofono_sim_set_ready(struct ofono_sim *sim)
 {
 	GSList *l;
+	ofono_sim_ready_notify_cb_t notify;
 
 	if (sim == NULL)
 		return;
@@ -1154,10 +1091,11 @@ void ofono_sim_set_ready(struct ofono_sim *sim)
 
 	sim->ready = TRUE;
 
-	for (l = sim->ready_watches; l; l = l->next) {
-		struct sim_ready_watch *watch = l->data;
+	for (l = sim->ready_watches->items; l; l = l->next) {
+		struct ofono_watchlist_item *item = l->data;
+		notify = item->notify;
 
-		watch->notify(watch->data);
+		notify(item->notify_data);
 	}
 }
 
@@ -1185,8 +1123,10 @@ static void sim_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
+	struct ofono_sim *sim = __ofono_atom_get_data(atom);
 
-	remove_all_watches(__ofono_atom_get_data(atom));
+	__ofono_watchlist_free(sim->ready_watches);
+	sim->ready_watches = NULL;
 
 	g_dbus_unregister_interface(conn, path,
 					SIM_MANAGER_INTERFACE);
@@ -1289,6 +1229,7 @@ void ofono_sim_register(struct ofono_sim *sim)
 	}
 
 	ofono_modem_add_interface(modem, SIM_MANAGER_INTERFACE);
+	sim->ready_watches = __ofono_watchlist_new(g_free);
 
 	__ofono_atom_register(sim->atom, sim_unregister);
 
