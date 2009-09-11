@@ -77,6 +77,7 @@ struct ofono_netreg {
 	struct ofono_sim *sim;
 	unsigned int sim_watch;
 	unsigned int sim_ready_watch;
+	struct ofono_watchlist *status_watches;
 	const struct ofono_netreg_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -872,6 +873,55 @@ static void set_registration_technology(struct ofono_netreg *netreg, int tech)
 						&tech_str);
 }
 
+unsigned int __ofono_netreg_add_status_watch(struct ofono_netreg *netreg,
+				ofono_netreg_status_notify_cb_t notify,
+				void *data, ofono_destroy_func destroy)
+{
+	struct ofono_watchlist_item *item;
+
+	DBG("%p", netreg);
+
+	if (netreg == NULL)
+		return 0;
+
+	if (notify == NULL)
+		return 0;
+
+	item = g_new0(struct ofono_watchlist_item, 1);
+
+	item->notify = notify;
+	item->destroy = destroy;
+	item->notify_data = data;
+
+	return __ofono_watchlist_add_item(netreg->status_watches, item);
+}
+
+gboolean __ofono_netreg_remove_status_watch(struct ofono_netreg *netreg,
+						unsigned int id)
+{
+	DBG("%p", netreg);
+	__ofono_watchlist_remove_item(netreg->status_watches, id);
+}
+
+static void notify_status_watches(struct ofono_netreg *netreg)
+{
+	struct ofono_watchlist_item *item;
+	GSList *l;
+	ofono_netreg_status_notify_cb_t notify;
+	struct ofono_network_operator *op = NULL;
+
+	if (netreg->current_operator)
+		op = netreg->current_operator->info;
+
+	for (l = netreg->status_watches->items; l; l = l->next) {
+		item = l->data;
+		notify = item->notify;
+
+		notify(netreg->status, netreg->location, netreg->cellid,
+			netreg->technology, op, item->notify_data);
+	}
+}
+
 void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 			int lac, int ci, int tech)
 {
@@ -905,6 +955,8 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 
 		netreg->signal_strength = -1;
 	}
+
+	notify_status_watches(netreg);
 }
 
 static void operator_list_callback(const struct ofono_error *error, int total,
@@ -1046,6 +1098,8 @@ emit:
 					NETWORK_REGISTRATION_INTERFACE,
 					"Operator", DBUS_TYPE_STRING,
 					&operator);
+
+	notify_status_watches(netreg);
 }
 
 static void registration_status_callback(const struct ofono_error *error,
@@ -1390,6 +1444,9 @@ static void netreg_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 	GSList *l;
 
+	__ofono_watchlist_free(netreg->status_watches);
+	netreg->status_watches = NULL;
+
 	if (netreg->sim_watch) {
 		__ofono_modem_remove_atom_watch(modem, netreg->sim_watch);
 		netreg->sim_watch = 0;
@@ -1536,6 +1593,8 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 
 		return;
 	}
+
+	netreg->status_watches = __ofono_watchlist_new(g_free);
 
 	ofono_modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
 

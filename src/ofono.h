@@ -201,6 +201,17 @@ void __ofono_ussd_passwd_unregister(struct ofono_ussd *ussd, const char *sc);
 
 #include <ofono/netreg.h>
 
+typedef void (*ofono_netreg_status_notify_cb_t)(int status, int lac, int ci,
+			int tech, const struct ofono_network_operator *op,
+			void *data);
+
+unsigned int __ofono_netreg_add_status_watch(struct ofono_netreg *netreg,
+				ofono_netreg_status_notify_cb_t cb,
+				void *data, ofono_destroy_func destroy);
+
+gboolean __ofono_netreg_remove_status_watch(struct ofono_netreg *netreg,
+						unsigned int id);
+
 #include <ofono/history.h>
 
 void __ofono_history_probe_drivers(struct ofono_modem *modem);
