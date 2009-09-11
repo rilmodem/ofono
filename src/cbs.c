@@ -426,10 +426,8 @@ static void cbs_remove(struct ofono_atom *atom)
 	if (cbs->driver && cbs->driver->remove)
 		cbs->driver->remove(cbs);
 
-	if (cbs->assembly) {
-		cbs_assembly_free(cbs->assembly);
-		cbs->assembly = NULL;
-	}
+	cbs_assembly_free(cbs->assembly);
+	cbs->assembly = NULL;
 
 	g_free(cbs);
 }
@@ -485,12 +483,6 @@ static void sim_watch(struct ofono_atom *atom,
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
 		cbs->imsi_watch = 0;
-
-		if (cbs->assembly) {
-			cbs_assembly_free(cbs->assembly);
-			cbs->assembly = NULL;
-		}
-
 		return;
 	}
 
