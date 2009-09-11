@@ -1026,7 +1026,6 @@ struct ofono_modem *ofono_modem_create(const char *type)
 	modem->driver_type = g_strdup(type);
 	modem->properties = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, unregister_property);
-	modem->atom_watches = __ofono_watchlist_new(g_free);
 
 	g_modem_list = g_slist_prepend(g_modem_list, modem);
 
@@ -1093,6 +1092,8 @@ int ofono_modem_register(struct ofono_modem *modem)
 
 	g_free(modem->driver_type);
 	modem->driver_type = NULL;
+
+	modem->atom_watches = __ofono_watchlist_new(g_free);
 
 	emit_modems();
 

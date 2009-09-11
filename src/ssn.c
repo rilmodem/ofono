@@ -204,9 +204,6 @@ struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem,
 	if (ssn == NULL)
 		return NULL;
 
-	ssn->mo_handler_list = __ofono_watchlist_new(g_free);
-	ssn->mt_handler_list = __ofono_watchlist_new(g_free);
-
 	ssn->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_SSN,
 						ssn_remove, ssn);
 
@@ -228,6 +225,9 @@ struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem,
 
 void ofono_ssn_register(struct ofono_ssn *ssn)
 {
+	ssn->mo_handler_list = __ofono_watchlist_new(g_free);
+	ssn->mt_handler_list = __ofono_watchlist_new(g_free);
+
 	__ofono_atom_register(ssn->atom, ssn_unregister);
 }
 
