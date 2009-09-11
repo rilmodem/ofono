@@ -147,10 +147,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, 0, NULL, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
 }
 
 static void ccfc_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -182,10 +179,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_ccfc_erasure(struct ofono_call_forwarding *cf,

@@ -467,10 +467,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_template(const char *cmd, struct ofono_voicecall *vc,
@@ -496,10 +493,7 @@ error:
 	if (req)
 		g_free(req);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_answer(struct ofono_voicecall *vc,
@@ -536,16 +530,14 @@ static void clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	calls = parse_clcc(result);
 
 	if (calls == NULL) {
-		DECLARE_FAILURE(e);
-		cb(&e, 0, NULL, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
 		goto out;
 	}
 
 	list = g_try_new0(struct ofono_call, g_slist_length(calls));
 
 	if (!list) {
-		DECLARE_FAILURE(e);
-		cb(&e, 0, NULL, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
 		goto out;
 	}
 
@@ -578,11 +570,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, 0, NULL, data);
-	}
-
+	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
 }
 
 static void at_hold_all_active(struct ofono_voicecall *vc,
@@ -637,10 +625,7 @@ error:
 	if (req)
 		g_free(req);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_private_chat(struct ofono_voicecall *vc, int id,
@@ -731,10 +716,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void ring_notify(GAtResult *result, gpointer user_data)

@@ -118,10 +118,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, user_data);
-	}
+	CALLBACK_WITH_FAILURE(cb, user_data);
 }
 
 static void at_cbs_clear_topics(struct ofono_cbs *cbs,
@@ -141,10 +138,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, user_data);
-	}
+	CALLBACK_WITH_FAILURE(cb, user_data);
 }
 
 static void at_cbs_register(gboolean ok, GAtResult *result, gpointer user)

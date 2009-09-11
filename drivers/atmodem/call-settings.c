@@ -102,10 +102,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, 0, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, 0, data);
 }
 
 static void ccwa_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -140,10 +137,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 
@@ -166,9 +160,7 @@ static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CLIP:")) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, -1, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 		return;
 	}
 
@@ -198,10 +190,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
 static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -223,9 +212,7 @@ static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+COLP:")) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, -1, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 		return;
 	}
 
@@ -255,10 +242,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
 static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -280,9 +264,7 @@ static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CLIR:")) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, -1, -1, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, -1, -1, cbd->data);
 		return;
 	}
 
@@ -312,10 +294,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, -1, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, -1, data);
 }
 
 static void clir_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -350,10 +329,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static gboolean at_call_settings_register(gpointer user)

@@ -99,10 +99,8 @@ static void at_query_manufacturer(struct ofono_devinfo *info,
 error:
 	if (cbd)
 		g_free(cbd);
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
+
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
 static void at_query_model(struct ofono_devinfo *info,
@@ -124,10 +122,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
 static void at_query_revision(struct ofono_devinfo *info,
@@ -149,10 +144,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
 static void at_query_serial(struct ofono_devinfo *info,
@@ -174,10 +166,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
 static gboolean at_devinfo_register(gpointer user_data)

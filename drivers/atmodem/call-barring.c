@@ -101,10 +101,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		callback(&error, 0, data);
-	}
+	CALLBACK_WITH_FAILURE(callback, 0, data);
 }
 
 static void clck_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -149,10 +146,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		callback(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(callback, data);
 }
 
 static void cpwd_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -191,10 +185,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		callback(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(callback, data);
 }
 
 static gboolean at_call_barring_register(gpointer user)

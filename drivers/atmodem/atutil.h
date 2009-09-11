@@ -48,3 +48,12 @@ static inline struct cb_data *cb_data_new(void *cb, void *data)
 	e.type = OFONO_ERROR_TYPE_FAILURE;	\
 	e.error = 0				\
 
+#define CALLBACK_WITH_FAILURE(cb, args...)		\
+	do {						\
+		struct ofono_error cb_e;		\
+		cb_e.type = OFONO_ERROR_TYPE_FAILURE;	\
+		cb_e.error = 0;				\
+							\
+		cb(&cb_e, ##args);			\
+	} while (0)					\
+

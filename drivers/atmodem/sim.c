@@ -64,9 +64,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CRSM:")) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, -1, -1, -1, NULL, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, cbd->data);
 		return;
 	}
 
@@ -74,13 +72,11 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &sw2);
 
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
-		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92) ||
-		(sw1 == 0x90 && sw2 != 0x00) ||
-		len < 14 || response[6] != 0x04 ||
-		(response[13] == 0x01 && len < 15)) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, -1, -1, -1, NULL, cbd->data);
+			(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92) ||
+			(sw1 == 0x90 && sw2 != 0x00) ||
+			len < 14 || response[6] != 0x04 ||
+			(response[13] == 0x01 && len < 15)) {
+		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, cbd->data);
 		return;
 	}
 
@@ -122,10 +118,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, -1, -1, NULL, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
 }
 
 static void at_crsm_read_cb(gboolean ok, GAtResult *result,
@@ -149,9 +142,7 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CRSM:")) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, NULL, 0, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 		return;
 	}
 
@@ -161,9 +152,7 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
 		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 		(sw1 == 0x90 && sw2 != 0x00)) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, NULL, 0, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 		return;
 	}
 
@@ -194,10 +183,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, 0, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
 static void at_sim_read_record(struct ofono_sim *sim, int fileid,
@@ -222,10 +208,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, 0, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
 static void at_crsm_update_cb(gboolean ok, GAtResult *result,
@@ -248,9 +231,7 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CRSM:")) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
 		return;
 	}
 
@@ -258,10 +239,8 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 	g_at_result_iter_next_number(&iter, &sw2);
 
 	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
-		(sw1 == 0x90 && sw2 != 0x00)) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, cbd->data);
+			(sw1 == 0x90 && sw2 != 0x00)) {
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
 		return;
 	}
 
@@ -301,10 +280,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_sim_update_record(struct ofono_sim *sim, int fileid,
@@ -338,10 +314,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
@@ -373,10 +346,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -425,10 +395,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
 static gboolean at_sim_register(gpointer user)

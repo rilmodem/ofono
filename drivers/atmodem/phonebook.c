@@ -204,10 +204,7 @@ static void export_failed(struct cb_data *cbd)
 	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	ofono_phonebook_cb_t cb = cbd->cb;
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
 
 	g_free(cbd);
 
@@ -391,10 +388,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void phonebook_not_supported(struct ofono_phonebook *pb)

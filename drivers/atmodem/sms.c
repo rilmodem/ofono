@@ -118,10 +118,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, user_data);
-	}
+	CALLBACK_WITH_FAILURE(cb, user_data);
 }
 
 static void at_csca_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -167,10 +164,7 @@ static void at_csca_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	return;
 
 err:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
 static void at_csca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
@@ -190,10 +184,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, NULL, user_data);
-	}
+	CALLBACK_WITH_FAILURE(cb, NULL, user_data);
 }
 
 static void at_cmgs_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -226,10 +217,7 @@ static void at_cmgs_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	return;
 
 err:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 }
 
 static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
@@ -261,10 +249,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, user_data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, user_data);
 }
 
 static void at_cnma_cb(gboolean ok, GAtResult *result, gpointer user_data)

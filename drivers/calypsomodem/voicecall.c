@@ -75,10 +75,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void calypso_dial(struct ofono_voicecall *vc,
@@ -206,8 +203,7 @@ static void calypso_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	buf = g_try_new(char, len * 9 + 3);
 
 	if (!buf) {
-		DECLARE_FAILURE(error);
-		cb(&error, data);
+		CALLBACK_WITH_FAILURE(cb, data);
 		return;
 	}
 

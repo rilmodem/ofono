@@ -67,18 +67,14 @@ static void caoc_cacm_camm_query_cb(gboolean ok,
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, cbd->user)) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, -1, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 		return;
 	}
 
 	g_at_result_iter_next_string(&iter, &meter_hex);
 	meter = strtol(meter_hex, &end, 16);
 	if (*end) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, -1, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 		return;
 	}
 
@@ -129,10 +125,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
 static void at_cacm_query(struct ofono_call_meter *cm,
@@ -154,10 +147,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
 static void generic_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -192,10 +182,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void at_camm_query(struct ofono_call_meter *cm,
@@ -217,10 +204,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, -1, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
 static void at_camm_set(struct ofono_call_meter *cm,
@@ -244,10 +228,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void cpuc_query_cb(gboolean ok,
@@ -272,9 +253,7 @@ static void cpuc_query_cb(gboolean ok,
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, cbd->user)) {
-		DECLARE_FAILURE(e);
-
-		cb(&e, 0, 0, cbd->data);
+		CALLBACK_WITH_FAILURE(cb, 0, 0, cbd->data);
 		return;
 	}
 
@@ -305,10 +284,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, 0, 0, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, 0, 0, data);
 }
 
 static void at_cpuc_set(struct ofono_call_meter *cm, const char *currency,
@@ -333,10 +309,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void ccwv_notify(GAtResult *result, gpointer user_data)
