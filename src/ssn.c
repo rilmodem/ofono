@@ -36,23 +36,19 @@
 static GSList *g_drivers = NULL;
 
 struct ssn_handler {
-	unsigned int id;
+	struct ofono_watchlist_item item;
 	int code;
-	void *notify;
-	void *data;
-	ofono_destroy_func destroy;
 };
 
 struct ofono_ssn {
-	GSList *mo_handler_list;
-	GSList *mt_handler_list;
-	unsigned int next_id;
+	struct ofono_watchlist *mo_handler_list;
+	struct ofono_watchlist *mt_handler_list;
 	const struct ofono_ssn_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
 };
 
-static unsigned int add_ssn_handler(GSList **l, unsigned int *id,
+static unsigned int add_ssn_handler(struct ofono_watchlist *watchlist,
 					int code, void *notify, void *data,
 					ofono_destroy_func destroy)
 {
@@ -64,68 +60,12 @@ static unsigned int add_ssn_handler(GSList **l, unsigned int *id,
 	handler = g_new0(struct ssn_handler, 1);
 
 	handler->code = code;
-	handler->id = *id;
-	*id = *id + 1;
-	handler->notify = notify;
-	handler->destroy = destroy;
-	handler->data = data;
+	handler->item.notify = notify;
+	handler->item.notify_data = data;
+	handler->item.destroy = destroy;
 
-	*l = g_slist_prepend(*l, handler);
-
-	return handler->id;
-}
-
-static gboolean remove_ssn_handler_by_id(GSList **l, unsigned int id)
-{
-	struct ssn_handler *handler;
-	GSList *p;
-	GSList *c;
-
-	p = NULL;
-	c = *l;
-
-	while (c) {
-		handler = c->data;
-
-		if (handler->id != id) {
-			p = c;
-			c = c->next;
-			continue;
-		}
-
-		if (p)
-			p->next = c->next;
-		else
-			*l = c->next;
-
-		if (handler->destroy)
-			handler->destroy(handler->data);
-
-		g_free(handler);
-		g_slist_free_1(c);
-
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static void remove_all_handlers(GSList **l)
-{
-	struct ssn_handler *handler;
-	GSList *c;
-
-	for (c = *l; c; c = c->next) {
-		handler = c->data;
-
-		if (handler->destroy)
-			handler->destroy(handler->data);
-
-		g_free(handler);
-	}
-
-	g_slist_free(*l);
-	*l = NULL;
+	return __ofono_watchlist_add_item(watchlist,
+				(struct ofono_watchlist_item *)handler);
 }
 
 unsigned int __ofono_ssn_mo_watch_add(struct ofono_ssn *ssn, int code1,
@@ -137,8 +77,7 @@ unsigned int __ofono_ssn_mo_watch_add(struct ofono_ssn *ssn, int code1,
 
 	DBG("%p, %d", ssn, code1);
 
-	return add_ssn_handler(&ssn->mo_handler_list, &ssn->next_id,
-				code1, cb, user, destroy);
+	return add_ssn_handler(ssn->mo_handler_list, code1, cb, user, destroy);
 }
 
 gboolean __ofono_ssn_mo_watch_remove(struct ofono_ssn *ssn, int id)
@@ -148,7 +87,7 @@ gboolean __ofono_ssn_mo_watch_remove(struct ofono_ssn *ssn, int id)
 
 	DBG("%p, %u", ssn, id);
 
-	return remove_ssn_handler_by_id(&ssn->mo_handler_list, id);
+	return __ofono_watchlist_remove_item(ssn->mo_handler_list, id);
 }
 
 unsigned int __ofono_ssn_mt_watch_add(struct ofono_ssn *ssn, int code2,
@@ -160,8 +99,7 @@ unsigned int __ofono_ssn_mt_watch_add(struct ofono_ssn *ssn, int code2,
 
 	DBG("%p, %d", ssn, code2);
 
-	return add_ssn_handler(&ssn->mt_handler_list, &ssn->next_id,
-				code2, cb, user, destroy);
+	return add_ssn_handler(ssn->mt_handler_list, code2, cb, user, destroy);
 }
 
 gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, int id)
@@ -171,7 +109,7 @@ gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, int id)
 
 	DBG("%p, %u", ssn, id);
 
-	return remove_ssn_handler_by_id(&ssn->mt_handler_list, id);
+	return __ofono_watchlist_remove_item(ssn->mt_handler_list, id);
 }
 
 void ofono_ssn_cssi_notify(struct ofono_ssn *ssn, int code1, int index)
@@ -180,12 +118,12 @@ void ofono_ssn_cssi_notify(struct ofono_ssn *ssn, int code1, int index)
 	GSList *l;
 	ofono_ssn_mo_notify_cb notify;
 
-	for (l = ssn->mo_handler_list; l; l = l->next) {
+	for (l = ssn->mo_handler_list->items; l; l = l->next) {
 		h = l->data;
-		notify = h->notify;
+		notify = h->item.notify;
 
 		if (h->code == code1)
-			notify(index, h->data);
+			notify(index, h->item.notify_data);
 	}
 }
 
@@ -196,12 +134,12 @@ void ofono_ssn_cssu_notify(struct ofono_ssn *ssn, int code2, int index,
 	GSList *l;
 	ofono_ssn_mt_notify_cb notify;
 
-	for (l = ssn->mt_handler_list; l; l = l->next) {
+	for (l = ssn->mt_handler_list->items; l; l = l->next) {
 		h = l->data;
-		notify = h->notify;
+		notify = h->item.notify;
 
 		if (h->code == code2)
-			notify(index, ph, h->data);
+			notify(index, ph, h->item.notify_data);
 	}
 }
 
@@ -228,8 +166,11 @@ static void ssn_unregister(struct ofono_atom *atom)
 {
 	struct ofono_ssn *ssn = __ofono_atom_get_data(atom);
 
-	remove_all_handlers(&ssn->mo_handler_list);
-	remove_all_handlers(&ssn->mt_handler_list);
+	__ofono_watchlist_free(ssn->mo_handler_list);
+	ssn->mo_handler_list = NULL;
+
+	__ofono_watchlist_free(ssn->mt_handler_list);
+	ssn->mt_handler_list = NULL;
 }
 
 static void ssn_remove(struct ofono_atom *atom)
@@ -262,6 +203,9 @@ struct ofono_ssn *ofono_ssn_create(struct ofono_modem *modem,
 
 	if (ssn == NULL)
 		return NULL;
+
+	ssn->mo_handler_list = __ofono_watchlist_new(g_free);
+	ssn->mt_handler_list = __ofono_watchlist_new(g_free);
 
 	ssn->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_SSN,
 						ssn_remove, ssn);

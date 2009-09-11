@@ -57,6 +57,26 @@ gboolean __ofono_dbus_valid_object_path(const char *path);
 
 #include <ofono/types.h>
 
+struct ofono_watchlist_item {
+	unsigned int id;
+	void *notify;
+	void *notify_data;
+	ofono_destroy_func destroy;
+};
+
+struct ofono_watchlist {
+	int next_id;
+	GSList *items;
+	ofono_destroy_func destroy;
+};
+
+struct ofono_watchlist *__ofono_watchlist_new(ofono_destroy_func destroy);
+unsigned int __ofono_watchlist_add_item(struct ofono_watchlist *watchlist,
+					struct ofono_watchlist_item *item);
+gboolean __ofono_watchlist_remove_item(struct ofono_watchlist *watchlist,
+					unsigned int id);
+void __ofono_watchlist_free(struct ofono_watchlist *watchlist);
+
 #include <ofono/plugin.h>
 
 int __ofono_plugin_init(const char *pattern, const char *exclude);
@@ -120,11 +140,12 @@ void __ofono_atom_unregister(struct ofono_atom *atom);
 
 gboolean __ofono_atom_get_registered(struct ofono_atom *atom);
 
-int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
+unsigned int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					enum ofono_atom_type type,
 					ofono_atom_watch_func notify,
 					void *data, ofono_destroy_func destroy);
-gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem, int id);
+gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem,
+						unsigned int id);
 
 void __ofono_atom_free(struct ofono_atom *atom);
 
