@@ -212,6 +212,9 @@ unsigned int __ofono_netreg_add_status_watch(struct ofono_netreg *netreg,
 gboolean __ofono_netreg_remove_status_watch(struct ofono_netreg *netreg,
 						unsigned int id);
 
+void __ofono_netreg_set_base_station_name(struct ofono_netreg *netreg,
+						const char *name);
+
 #include <ofono/history.h>
 
 void __ofono_history_probe_drivers(struct ofono_modem *modem);

@@ -64,6 +64,7 @@ struct ofono_netreg {
 	int location;
 	int cellid;
 	int technology;
+	char *base_station;
 	struct network_operator_data *current_operator;
 	GSList *operator_list;
 	struct ofono_network_registration_ops *ops;
@@ -714,6 +715,10 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 					&strength);
 	}
 
+	if (netreg->base_station)
+		ofono_dbus_dict_append(&dict, "BaseStation", DBUS_TYPE_STRING,
+					&netreg->base_station);
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
@@ -873,6 +878,32 @@ static void set_registration_technology(struct ofono_netreg *netreg, int tech)
 						&tech_str);
 }
 
+void __ofono_netreg_set_base_station_name(struct ofono_netreg *netreg,
+						const char *name)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(netreg->atom);
+	const char *base_station = name ? name : "";
+
+	if (netreg->base_station)
+		g_free(netreg->base_station);
+
+	if (name == NULL) {
+		netreg->base_station = NULL;
+
+		/* We just got unregistered, set name to NULL
+		 * but don't emit signal */
+		if (netreg->current_operator == NULL)
+			return;
+	} else
+		netreg->base_station = g_strdup(name);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						NETWORK_REGISTRATION_INTERFACE,
+						"BaseStation", DBUS_TYPE_STRING,
+						&base_station);
+}
+
 unsigned int __ofono_netreg_add_status_watch(struct ofono_netreg *netreg,
 				ofono_netreg_status_notify_cb_t notify,
 				void *data, ofono_destroy_func destroy)
@@ -952,6 +983,7 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 		error.error = 0;
 
 		current_operator_callback(&error, NULL, netreg);
+		__ofono_netreg_set_base_station_name(netreg, NULL);
 
 		netreg->signal_strength = -1;
 	}
@@ -1469,6 +1501,11 @@ static void netreg_unregister(struct ofono_atom *atom)
 
 	g_slist_free(netreg->operator_list);
 	netreg->operator_list = NULL;
+
+	if (netreg->base_station) {
+		g_free(netreg->base_station);
+		netreg->base_station = NULL;
+	}
 
 	g_dbus_unregister_interface(conn, path,
 					NETWORK_REGISTRATION_INTERFACE);
