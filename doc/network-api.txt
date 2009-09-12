@@ -110,6 +110,16 @@ Properties	string Mode [readwrite]
 			Contains the current signal strength as a percentage
 			between 0-100 percent.
 
+		string BaseStation [readonly, optional]
+
+			If the Cell Broadcast service is available and
+			properly configured, this attribute will contain the
+			name of the current service cell.  This is typically a
+			descriptive name of the local area, e.g. name of the
+			suburb.  If no name is provided or becomes
+			unavailable, this property will not be returned by
+			GetProperties or will be set to an empty string.
+
 		array{object} Operators [readonly]
 
 			List of all operator object paths known to the
