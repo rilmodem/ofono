@@ -42,33 +42,63 @@
 #include "isi.h"
 
 #define PN_SIM			0x09
+#define SIM_TIMEOUT		5
+#define SIM_MAX_IMSI_LENGTH	15
+
+enum return_code {
+    SIM_SERV_OK = 0x01
+};
+
+enum message_id {
+    SIM_IMSI_REQ_READ_IMSI = 0x1D,
+    SIM_IMSI_RESP_READ_IMSI = 0x1E,
+    COMMON_MESSAGE = 0xF0
+};
+
+enum service_type {
+    READ_IMSI = 0x2D
+};
 
 struct sim_data {
 	GIsiClient *client;
 	struct isi_version version;
 };
 
+static void sim_debug(const void *restrict buf, size_t len, void *data)
+{
+	DBG("");
+	dump_msg(buf, len);
+}
+
 static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 				ofono_sim_file_info_cb_t cb, void *data)
 {
+	DBG("Not implemented (fileid = %04x)",fileid);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
 }
 
 static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
+	DBG("Not implemented (fileid = %04x)",fileid);
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
 static void isi_read_file_linear(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
+	DBG("Not implemented (fileid = %04x)",fileid);
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
 static void isi_read_file_cyclic(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
+	DBG("Not implemented (fileid = %04x)",fileid);
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
 static void isi_write_file_transparent(struct ofono_sim *sim, int fileid,
@@ -76,6 +106,8 @@ static void isi_write_file_transparent(struct ofono_sim *sim, int fileid,
 					const unsigned char *value,
 					ofono_sim_write_cb_t cb, void *data)
 {
+	DBG("Not implemented (fileid = %04x)",fileid);
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void isi_write_file_linear(struct ofono_sim *sim, int fileid,
@@ -83,33 +115,126 @@ static void isi_write_file_linear(struct ofono_sim *sim, int fileid,
 					const unsigned char *value,
 					ofono_sim_write_cb_t cb, void *data)
 {
+	DBG("Not implemented (fileid = %04x)",fileid);
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void isi_write_file_cyclic(struct ofono_sim *sim, int fileid,
 					int length, const unsigned char *value,
 					ofono_sim_write_cb_t cb, void *data)
 {
+	DBG("Not implemented (fileid = %04x)",fileid);
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static bool imsi_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_sim_imsi_cb_t cb = cbd->cb;
+
+	char imsi[SIM_MAX_IMSI_LENGTH + 1];
+	int index = 0;
+	size_t i = 0;
+	size_t imsi_len = 0;
+
+	DBG("");
+
+	if(!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	if (len < 5 || msg[0] != SIM_IMSI_RESP_READ_IMSI)
+		 goto error;
+
+	if (msg[1] != READ_IMSI || msg[2] != SIM_SERV_OK)
+		goto error;
+
+	imsi_len = msg[3];
+	if (imsi_len == 0 || imsi_len > len)
+		goto error;
+	
+	msg += 4;
+
+	/* Ignore the low-order semi-octet of the first byte */
+	imsi[0] = ((msg[0] & 0xF0) >> 4) + '0';
+	for (i = 1, index = 1; i < imsi_len; i++) {
+
+		char nibble;
+		imsi[index++] = (msg[i] & 0x0F) + '0';
+
+		nibble = (msg[i] & 0xF0) >> 4;
+		if (nibble != 0x0F)
+			imsi[index++] = nibble + '0';
+	}
+
+	imsi[index] = '\0';
+	CALLBACK_WITH_SUCCESS(cb, imsi, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
 }
 
 static void isi_read_imsi(struct ofono_sim *sim,
 				ofono_sim_imsi_cb_t cb, void *data)
 {
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	struct isi_cb_data *cbd = isi_cb_data_new(sim, cb, data);
+	const unsigned char msg[] = {
+		SIM_IMSI_REQ_READ_IMSI,
+		READ_IMSI
+	};
+
+	if (!cbd)
+		goto error;
+
+	if (g_isi_request_make(sd->client, msg, sizeof(msg), 
+				SIM_TIMEOUT,
+				imsi_resp_cb, cbd))
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
+}
+
+static gboolean isi_sim_register(gpointer user)
+{
+	struct ofono_sim *sim = user;
+	struct sim_data *sd = ofono_sim_get_data(sim);
+
+	g_isi_client_set_debug(sd->client, sim_debug, NULL);
+
+	ofono_sim_register(sim);
+
+	return FALSE;
 }
 
 static int isi_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 				void *user)
 {
 	GIsiModem *idx = user;
-	struct sim_data *data = g_try_new0(struct sim_data, 1);
+	struct sim_data *sd = g_try_new0(struct sim_data, 1);
 
-	if (!data)
+	if (!sd)
 		return -ENOMEM;
 
-	data->client = g_isi_client_create(idx, PN_SIM);
-	if (!data->client)
+	sd->client = g_isi_client_create(idx, PN_SIM);
+	if (!sd->client)
 		return -ENOMEM;
 
-	ofono_sim_set_data(sim, data);
+	ofono_sim_set_data(sim, sd);
+
+	g_idle_add(isi_sim_register, sim);
 
 	return 0;
 }
