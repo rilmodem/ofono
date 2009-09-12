@@ -1007,8 +1007,8 @@ static bool rssi_get_resp_cb(GIsiClient *client, const void *restrict data,
 	struct isi_cb_data *cbd = opaque;
 	ofono_netreg_strength_cb_t cb = cbd->cb;
 
+	struct isi_sb_iter iter;
 	int strength = -1;
-	int dbm = 0;
 
 	DBG("");
 
@@ -1017,22 +1017,36 @@ static bool rssi_get_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (msg[0] != NET_RSSI_GET_RESP
-		|| len < 7
-		|| msg[1] != NET_CAUSE_OK
-		|| msg[3] != NET_RSSI_CURRENT)
+	if (len < 3 || msg[0] != NET_RSSI_GET_RESP || msg[1] != NET_CAUSE_OK)
 		goto error;
 
-	dbm = msg[5];
+	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
+		goto error;
 
-	if (dbm == 0)
-		strength = -1;
-	else if (dbm >= 113)
-		strength = 0;
-	else if (dbm > 51)
-		strength = (113 - dbm) / 2;
-	else
-		strength = 31;
+	while (isi_sb_iter_is_valid(&iter)) {
+
+		switch (isi_sb_iter_get_id(&iter)) {
+
+		case NET_RSSI_CURRENT: {
+
+			guint8 rssi = 0;
+
+			if (isi_sb_iter_get_len(&iter) < 4 ||
+				!isi_sb_iter_get_byte(&iter, &rssi, 2))
+				goto error;
+
+			strength = rssi != 0 ? rssi : -1;
+			break;
+		}
+
+		default:
+			DBG("Skipping sub-block: 0x%02X (%d bytes)",
+				isi_sb_iter_get_id(&iter),
+				isi_sb_iter_get_len(&iter));
+			break;
+		}
+		isi_sb_iter_next(&iter);
+	}
 
 	CALLBACK_WITH_SUCCESS(cb, strength, cbd->data);
 	goto out;
