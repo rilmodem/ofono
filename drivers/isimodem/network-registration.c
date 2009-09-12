@@ -159,7 +159,8 @@ struct isi_sb_iter {
 	guint8 *end;
 };
 
-static inline unsigned char *mccmnc_to_bcd(const char *mcc, const char *mnc, unsigned char *bcd)
+static inline unsigned char *mccmnc_to_bcd(const char *mcc, const char *mnc,
+						unsigned char *bcd)
 {
 	bcd[0] = (mcc[0] - '0') | (mcc[1] - '0') << 4;
 	bcd[1] = (mcc[2] - '0');
@@ -168,7 +169,8 @@ static inline unsigned char *mccmnc_to_bcd(const char *mcc, const char *mnc, uns
 	return bcd;
 }
 
-static inline void bcd_to_mccmnc(const unsigned char *bcd, char *mcc, char *mnc)
+static inline void bcd_to_mccmnc(const unsigned char *bcd, char *mcc,
+					char *mnc)
 {
 	mcc[0] = '0' + (bcd[0] & 0x0f);
 	mcc[1] = '0' + ((bcd[0] & 0xf0) >> 4);
@@ -177,7 +179,8 @@ static inline void bcd_to_mccmnc(const unsigned char *bcd, char *mcc, char *mnc)
 
 	mnc[0] = '0' + (bcd[2] & 0x0f);
 	mnc[1] = '0' + ((bcd[2] & 0xf0) >> 4);
-	mnc[2] = (bcd[1] & 0xf0) == 0xf0 ? '\0' : '0' + (bcd[1] & 0xf0);
+	mnc[2] = (bcd[1] & 0xf0) == 0xf0 ? '\0' : '0' +
+			(bcd[1] & 0xf0);
 	mnc[3] = '\0';
 }
 
@@ -202,7 +205,8 @@ static guint8 isi_sb_iter_get_len(struct isi_sb_iter *iter)
 	return iter->start[1];
 }
 
-static gboolean isi_sb_iter_get_byte(struct isi_sb_iter *iter, guint8 *byte, int pos)
+static gboolean isi_sb_iter_get_byte(struct isi_sb_iter *iter, guint8 *byte,
+					int pos)
 {
 	if (pos > iter->start[1] || iter->start + pos > iter->end)
 		return FALSE;
@@ -211,7 +215,8 @@ static gboolean isi_sb_iter_get_byte(struct isi_sb_iter *iter, guint8 *byte, int
 	return TRUE;
 }
 
-static gboolean isi_sb_iter_get_word(struct isi_sb_iter *iter, guint16 *word, int pos)
+static gboolean isi_sb_iter_get_word(struct isi_sb_iter *iter, guint16 *word,
+					int pos)
 {
 	guint16 val;
 
@@ -223,7 +228,8 @@ static gboolean isi_sb_iter_get_word(struct isi_sb_iter *iter, guint16 *word, in
 	return TRUE;
 }
 
-static gboolean isi_sb_iter_get_dword(struct isi_sb_iter *iter, guint32 *dword, int pos)
+static gboolean isi_sb_iter_get_dword(struct isi_sb_iter *iter, guint32 *dword,
+					int pos)
 {
 	guint32 val;
 
@@ -235,7 +241,8 @@ static gboolean isi_sb_iter_get_dword(struct isi_sb_iter *iter, guint32 *dword, 
 	return TRUE;
 }
 
-static gboolean isi_sb_iter_get_oper_code(struct isi_sb_iter *iter, char *mcc, char *mnc, int pos)
+static gboolean isi_sb_iter_get_oper_code(struct isi_sb_iter *iter, char *mcc,
+						char *mnc, int pos)
 {
 	if (pos + 2 > iter->start[1])
 		return FALSE;
@@ -244,7 +251,8 @@ static gboolean isi_sb_iter_get_oper_code(struct isi_sb_iter *iter, char *mcc, c
 	return TRUE;
 }
 
-static gboolean isi_sb_iter_get_alpha_tag(struct isi_sb_iter *iter, char **utf8, int pos)
+static gboolean isi_sb_iter_get_alpha_tag(struct isi_sb_iter *iter, char **utf8,
+						int pos)
 {
 	guint8 *ucs2 = NULL;
 	int len = 0;
@@ -263,7 +271,8 @@ static gboolean isi_sb_iter_get_alpha_tag(struct isi_sb_iter *iter, char **utf8,
 	return utf8 != NULL;
 }
 
-static gboolean isi_sb_iter_init(const guint8 *data, size_t len, struct isi_sb_iter *iter)
+static gboolean isi_sb_iter_init(const guint8 *data, size_t len,
+					struct isi_sb_iter *iter)
 {
 	if (!iter || !data || len == 0)
 		return FALSE;
@@ -320,8 +329,9 @@ static inline int isi_status_to_at_status(guint8 status)
 	}
 }
 
-static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg, size_t len,
-					int *status, int *lac, int *ci, int *tech)
+static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
+					size_t len, int *status, int *lac,
+					int *ci, int *tech)
 {
 	struct isi_sb_iter iter;
 
@@ -339,8 +349,10 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg, siz
 			if (isi_sb_iter_get_len(&iter) < 12)
 				return FALSE;
 
-			if (!isi_sb_iter_get_byte(&iter, (guint8 *)status, 2) ||
-				!isi_sb_iter_get_byte(&iter, &nd->last_reg_mode, 3))
+			if (!isi_sb_iter_get_byte(&iter, (guint8 *)status, 2))
+				return FALSE;
+
+			if (!isi_sb_iter_get_byte(&iter, &nd->last_reg_mode, 3))
 				return FALSE;
 
 			*status = byte;
@@ -369,8 +381,6 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg, siz
 
 			*ci = word;
 			*lac = dword;
-
-			DBG("egprs=%u, hsdpa=%u, hsupa=%u", egprs, hsdpa, hsupa);
 
 			switch (nd->rat) {
 
@@ -427,18 +437,17 @@ static void reg_status_ind_cb(GIsiClient *client, const void *restrict data,
 	int ci = -1;
 	int tech = -1;
 
-	if (!msg || len < 3 || msg[0] != NET_REG_STATUS_IND) {
-		DBG("Truncated/invalid message");
+	if (!msg || len < 3 || msg[0] != NET_REG_STATUS_IND)
 		return;
-	}
 
-	if (decode_reg_status(nd, msg + 3, len - 3, &status, &lac, &ci, &tech))
-		ofono_netreg_status_notify(netreg, isi_status_to_at_status(status),
-						lac, ci, tech);
+	if (decode_reg_status(nd, msg+3, len-3, &status, &lac, &ci, &tech)) {
+		status = isi_status_to_at_status(status);
+		ofono_netreg_status_notify(netreg, status, lac, ci, tech);
+	}
 }
 
-static bool reg_status_get_resp_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+static bool reg_status_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -447,7 +456,7 @@ static bool reg_status_get_resp_cb(GIsiClient *client, const void *restrict data
 	ofono_netreg_status_cb_t cb = cbd->cb;
 
 	int status = -1;
-        int lac = -1;
+	int lac = -1;
 	int ci = -1;
 	int tech = -1;
 
@@ -458,12 +467,15 @@ static bool reg_status_get_resp_cb(GIsiClient *client, const void *restrict data
 		goto error;
 	}
 
-	if (len < 3 || msg[0] != NET_REG_STATUS_GET_RESP || msg[1] != NET_CAUSE_OK) {
-		DBG("Truncated/invalid message");
+	if (len < 3 || msg[0] != NET_REG_STATUS_GET_RESP)
+		goto error;
+
+	if (msg[1] != NET_CAUSE_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
 		goto error;
 	}
 
-	if (decode_reg_status(nd, msg + 3, len - 3, &status, &lac, &ci, &tech))	{
+	if (decode_reg_status(nd, msg+3, len-3, &status, &lac, &ci, &tech)) {
 
 		CALLBACK_WITH_SUCCESS(cb, isi_status_to_at_status(status),
 					lac, ci, tech, cbd->data);
@@ -495,7 +507,7 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
-				reg_status_get_resp_cb, cbd))
+				reg_status_resp_cb, cbd))
 		return;
 
 error:
@@ -522,8 +534,11 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (len < 3 || msg[0] != NET_OPER_NAME_READ_RESP || msg[1] != NET_CAUSE_OK) {
-		DBG("Truncated/invalid message");
+	if (len < 3 || msg[0] != NET_OPER_NAME_READ_RESP)
+		goto error;
+
+	if (msg[1] != NET_CAUSE_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
 		goto error;
 	}
 
@@ -633,8 +648,13 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!msg|| len < 3 || msg[0] != NET_AVAILABLE_GET_RESP || msg[1] != NET_CAUSE_OK)
+	if (len < 3 || msg[0] != NET_AVAILABLE_GET_RESP)
 		goto error;
+
+	if (msg[1] != NET_CAUSE_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
+		goto error;
+	}
 
 	/* Each description of an operator has a pair of sub-blocks */
 	total = msg[2] / 2;
@@ -802,8 +822,8 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static bool net_set_manual_resp_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -818,14 +838,17 @@ static bool net_set_manual_resp_cb(GIsiClient *client, const void *restrict data
 		goto error;
 	}
 
-	if (!msg|| len < 3 || msg[0] != NET_SET_RESP)
+	if (len < 3 || msg[0] != NET_SET_RESP)
 		goto error;
 
-	if (msg[1] == NET_CAUSE_OK) {
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-		nd->last_reg_mode = NET_SELECT_MODE_MANUAL;
-		goto out;
+	if (msg[1] != NET_CAUSE_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
+		goto error;
 	}
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	nd->last_reg_mode = NET_SELECT_MODE_MANUAL;
+	goto out;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
@@ -866,7 +889,7 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_SET_TIMEOUT,
-				net_set_manual_resp_cb, cbd))
+				set_manual_resp_cb, cbd))
 		return;
 
 error:
@@ -933,8 +956,8 @@ error:
 	return;
 }
 
-static bool rat_get_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
+			size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
@@ -950,8 +973,13 @@ static bool rat_get_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 
-	if (len < 3 || msg[0] != NET_RAT_RESP || msg[1] != NET_CAUSE_OK)
+	if (len < 3 || msg[0] != NET_RAT_RESP)
 		return true;
+
+	if (msg[1] != NET_CAUSE_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
+		return true;
+	}
 
 	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
 		return true;
@@ -1000,7 +1028,7 @@ static void rssi_ind_cb(GIsiClient *client, const void *restrict data,
 	ofono_netreg_strength_notify(netreg, msg[1]);
 }
 
-static bool rssi_get_resp_cb(GIsiClient *client, const void *restrict data,
+static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
@@ -1017,8 +1045,13 @@ static bool rssi_get_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (len < 3 || msg[0] != NET_RSSI_GET_RESP || msg[1] != NET_CAUSE_OK)
+	if (len < 3 || msg[0] != NET_RSSI_GET_RESP)
 		goto error;
+
+	if (msg[1] != NET_CAUSE_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
+		goto error;
+	}
 
 	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
 		goto error;
@@ -1078,7 +1111,7 @@ static void isi_strength(struct ofono_netreg *netreg,
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
-				rssi_get_resp_cb, cbd))
+				rssi_resp_cb, cbd))
 		return;
 
 error:
@@ -1103,12 +1136,13 @@ static gboolean isi_netreg_register(gpointer user)
 	g_isi_client_set_debug(nd->client, net_debug, NULL);
 
 	g_isi_subscribe(nd->client, NET_RSSI_IND, rssi_ind_cb, netreg);
-	g_isi_subscribe(nd->client, NET_REG_STATUS_IND, reg_status_ind_cb, netreg);
+	g_isi_subscribe(nd->client, NET_REG_STATUS_IND, reg_status_ind_cb,
+			netreg);
 	g_isi_subscribe(nd->client, NET_RAT_IND, rat_ind_cb, netreg);
 
 	/* Bootstrap current RAT setting */
 	if (!g_isi_request_make(nd->client, rat, sizeof(rat), NETWORK_TIMEOUT,
-				rat_get_resp_cb, netreg))
+				rat_resp_cb, netreg))
 		DBG("Failed to bootstrap RAT");
 
 	ofono_netreg_register(netreg);
