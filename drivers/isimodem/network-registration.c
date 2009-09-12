@@ -349,7 +349,7 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 			if (isi_sb_iter_get_len(&iter) < 12)
 				return FALSE;
 
-			if (!isi_sb_iter_get_byte(&iter, (guint8 *)status, 2))
+			if (!isi_sb_iter_get_byte(&iter, &byte, 2))
 				return FALSE;
 
 			if (!isi_sb_iter_get_byte(&iter, &nd->last_reg_mode, 3))
