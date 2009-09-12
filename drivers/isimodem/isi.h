@@ -21,20 +21,25 @@
  *
  */
 
-#define DECLARE_FAILURE(e) 			\
-	struct ofono_error e;			\
-	e.type = OFONO_ERROR_TYPE_FAILURE;	\
-	e.error = 0				\
+#define CALLBACK_WITH_FAILURE(f, args...)		\
+	do {						\
+		struct ofono_error e;			\
+		e.type = OFONO_ERROR_TYPE_FAILURE;	\
+		e.error = 0;				\
+		f(&e, ##args);				\
+	} while(0)					\
 
-#define DECLARE_SUCCESS(e) 			\
-	struct ofono_error e;			\
-	e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
-	e.error = 0				\
+#define CALLBACK_WITH_SUCCESS(f, args...)		\
+	do {						\
+		struct ofono_error e;			\
+		e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
+		e.error = 0;				\
+		f(&e, ##args);				\
+	} while(0)					\
 
 struct isi_cb_data {
 	void *cb;
 	void *data;
-	struct ofono_modem *modem;
 	void *user;
 };
 
@@ -43,8 +48,8 @@ struct isi_version {
 	unsigned short minor;
 };
 
-static inline struct isi_cb_data *isi_cb_data_new(struct ofono_modem *modem,
-						void *cb, void *data)
+static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
+							void *data)
 {
 	struct isi_cb_data *ret;
 
@@ -53,7 +58,7 @@ static inline struct isi_cb_data *isi_cb_data_new(struct ofono_modem *modem,
 	if (ret) {
 		ret->cb = cb;
 		ret->data = data;
-		ret->modem = modem;
+		ret->user = user;
 	}
 	return ret;
 }
