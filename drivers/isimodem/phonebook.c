@@ -278,11 +278,8 @@ static void read_next_entry(GIsiClient *client, int location, GIsiResponseFunc r
 		return;
 
 error:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, cbd->data);
-		g_free(cbd);
-	}
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+	g_free(cbd);
 }
 
 static bool read_resp_cb(GIsiClient *client, const void *restrict data,
@@ -304,17 +301,11 @@ static bool read_resp_cb(GIsiClient *client, const void *restrict data,
 		return true;
 	}
 
-	{
-		DECLARE_SUCCESS(error);
-		cb(&error, cbd->data);
-		goto out;
-	}
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	goto out;
 
 error:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
 
 out:
 	g_free(cbd);
@@ -361,10 +352,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, data);
-	}
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static gboolean isi_phonebook_register(gpointer user)

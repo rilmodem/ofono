@@ -105,11 +105,8 @@ static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int i
 		str[msg[6]] = '\0';
 		DBG("<%s>", str);
 
-		{
-			DECLARE_SUCCESS(error);
-			cb(&error, str, data);
-			return true;
-		}
+		CALLBACK_WITH_SUCCESS(cb, str, data);
+		return true;
 	}
 
 	DBG("Unexpected sub-block: 0x%02x", msg[3]);
@@ -138,10 +135,7 @@ static bool manufacturer_resp_cb(GIsiClient *client, const void *restrict data,
 		goto out;
 
 error:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
 
 out:
 	g_free(cbd);
@@ -171,10 +165,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", data);
 }
 
 static bool model_resp_cb(GIsiClient *client, const void *restrict data,
@@ -199,10 +190,7 @@ static bool model_resp_cb(GIsiClient *client, const void *restrict data,
 		goto out;
 
 error:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
 
 out:
 	g_free(cbd);
@@ -232,10 +220,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", data);
 }
 
 static bool revision_resp_cb(GIsiClient *client, const void *restrict data,
@@ -260,10 +245,7 @@ static bool revision_resp_cb(GIsiClient *client, const void *restrict data,
 		goto out;
 
 error:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
 
 out:
 	g_free(cbd);
@@ -294,10 +276,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", data);
 }
 
 static bool serial_resp_cb(GIsiClient *client, const void *restrict data,
@@ -322,10 +301,7 @@ static bool serial_resp_cb(GIsiClient *client, const void *restrict data,
 		goto out;
 
 error:
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", cbd->data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
 
 out:
 	g_free(cbd);
@@ -355,10 +331,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	{
-		DECLARE_FAILURE(error);
-		cb(&error, "", data);
-	}
+	CALLBACK_WITH_FAILURE(cb, "", data);
 }
 
 static gboolean isi_devinfo_register(gpointer user)
