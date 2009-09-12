@@ -59,6 +59,7 @@ struct ofono_cbs {
 	unsigned int imsi_watch;
 	unsigned int netreg_watch;
 	unsigned int location_watch;
+	guint reset_source;
 	int lac;
 	int ci;
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
@@ -74,6 +75,13 @@ static void cbs_dispatch_base_station_id(struct ofono_cbs *cbs, const char *id)
 
 	if (cbs->netreg == NULL)
 		return;
+
+	if (cbs->reset_source) {
+		g_source_remove(cbs->reset_source);
+		cbs->reset_source = 0;
+	}
+
+	__ofono_netreg_set_base_station_name(cbs->netreg, id);
 }
 
 static void cbs_dispatch_emergency(struct ofono_cbs *cbs, const char *message,
@@ -424,6 +432,14 @@ static void cbs_unregister(struct ofono_atom *atom)
 		cbs->sim = NULL;
 	}
 
+	if (cbs->reset_source) {
+		g_source_remove(cbs->reset_source);
+		cbs->reset_source = 0;
+
+		if (cbs->netreg)
+			__ofono_netreg_set_base_station_name(cbs->netreg, NULL);
+	}
+
 	if (cbs->netreg_watch) {
 		if (cbs->location_watch) {
 			__ofono_netreg_remove_status_watch(cbs->netreg,
@@ -518,6 +534,21 @@ static void sim_watch(struct ofono_atom *atom,
 		cbs_got_imsi(cbs);
 }
 
+static gboolean reset_base_station_name(gpointer user)
+{
+	struct ofono_cbs *cbs = user;
+
+	cbs->reset_source = 0;
+
+	if (cbs->netreg == NULL)
+		goto out;
+
+	__ofono_netreg_set_base_station_name(cbs->netreg, NULL);
+
+out:
+	return FALSE;
+}
+
 static void cbs_location_changed(int status, int lac, int ci, int tech,
 					const struct ofono_network_operator *op,
 					void *data)
@@ -565,9 +596,17 @@ static void cbs_location_changed(int status, int lac, int ci, int tech,
 	return;
 
 out:
-	/* TODO: reset base station ID */
-
 	DBG("%d, %d, %d", plmn_changed, lac_changed, ci_changed);
+
+	/* In order to minimize signal transmissions we wait about X seconds
+	 * before reseting the base station id.  The hope is that we receive
+	 * another cell broadcast with the new base station name within
+	 * that time
+	 */
+	if (lac_changed || ci_changed) {
+		cbs->reset_source = 
+			g_timeout_add_seconds(3, reset_base_station_name, cbs);
+	}
 
 	cbs_assembly_location_changed(cbs->assembly, plmn_changed,
 					lac_changed, ci_changed);
