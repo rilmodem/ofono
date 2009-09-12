@@ -931,7 +931,8 @@ gboolean __ofono_netreg_remove_status_watch(struct ofono_netreg *netreg,
 						unsigned int id)
 {
 	DBG("%p", netreg);
-	__ofono_watchlist_remove_item(netreg->status_watches, id);
+
+	return __ofono_watchlist_remove_item(netreg->status_watches, id);
 }
 
 static void notify_status_watches(struct ofono_netreg *netreg)
