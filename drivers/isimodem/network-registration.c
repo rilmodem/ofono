@@ -154,8 +154,8 @@ struct netreg_data {
 	guint8 gsm_compact;
 };
 
-static inline unsigned char *mccmnc_to_bcd(const char *mcc, const char *mnc,
-						unsigned char *bcd)
+static inline guint8 *mccmnc_to_bcd(const char *mcc, const char *mnc,
+						guint8 *bcd)
 {
 	bcd[0] = (mcc[0] - '0') | (mcc[1] - '0') << 4;
 	bcd[1] = (mcc[2] - '0');
@@ -222,7 +222,8 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 			if (!g_isi_sb_iter_get_byte(&iter, &byte, 2))
 				return FALSE;
 
-			if (!g_isi_sb_iter_get_byte(&iter, &nd->last_reg_mode, 3))
+			if (!g_isi_sb_iter_get_byte(&iter,
+						&nd->last_reg_mode, 3))
 				return FALSE;
 
 			*status = byte;
@@ -492,8 +493,8 @@ error:
 }
 
 
-static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+static bool available_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -533,15 +534,17 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 		
 			struct ofono_network_operator *op;
 			char *tag = NULL;
+			guint8 status = 0;
 
 			if (g_isi_sb_iter_get_len(&iter) < 12)
 				goto error;
 
 			op = list + common++;
-			if (!g_isi_sb_iter_get_byte(&iter, (guint8 *)&op->status, 2) ||
+			if (!g_isi_sb_iter_get_byte(&iter, &status, 2) ||
 				!g_isi_sb_iter_get_alpha_tag(&iter, &tag, 5))
 				goto error;
 
+			op->status = status;
 			strncpy(op->name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
 			op->name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 			g_free(tag);
@@ -556,7 +559,8 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 				goto error;
 
 			op = list + detail++;
-			if (!g_isi_sb_iter_get_oper_code(&iter, op->mcc, op->mnc, 2))
+			if (!g_isi_sb_iter_get_oper_code(&iter, op->mcc,
+								op->mnc, 2))
 				goto error;
 			break;
 		}
@@ -603,8 +607,9 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(net->client, msg, sizeof(msg), NETWORK_SCAN_TIMEOUT,
-				available_get_resp_cb, cbd))
+	if (g_isi_request_make(net->client, msg, sizeof(msg),
+				NETWORK_SCAN_TIMEOUT,
+				available_resp_cb, cbd))
 		return;
 
 error:
@@ -614,8 +619,8 @@ error:
 	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
 }
 
-static bool net_set_auto_resp_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+static bool set_auto_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -627,8 +632,13 @@ static bool net_set_auto_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!msg|| len < 3 || msg[0] != NET_SET_RESP || msg[1] != NET_CAUSE_OK)
+	if (!msg|| len < 3 || msg[0] != NET_SET_RESP)
 		goto error;
+
+	if (msg[1] != NET_CAUSE_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
+		goto error;
+	}
 
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	net->last_reg_mode = NET_SELECT_MODE_AUTOMATIC;
@@ -664,11 +674,10 @@ static void isi_register_auto(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(net->client, msg, sizeof(msg), NETWORK_SET_TIMEOUT,
-				net_set_auto_resp_cb, cbd)) {
-		net->last_reg_mode = NET_SELECT_MODE_AUTOMATIC;
+	if (g_isi_request_make(net->client, msg, sizeof(msg),
+				NETWORK_SET_TIMEOUT,
+				set_auto_resp_cb, cbd))
 		return;
-	}
 
 error:
 	if (cbd)
@@ -718,8 +727,8 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct isi_cb_data *cbd = isi_cb_data_new(netreg, cb, data);
 
-	unsigned char buffer[3] = { 0 };
-	unsigned char *bcd = mccmnc_to_bcd(oper->mcc, oper->mnc, buffer);
+	guint8 buffer[3] = { 0 };
+	guint8 *bcd = mccmnc_to_bcd(oper->mcc, oper->mnc, buffer);
 
 	const unsigned char msg[] = {
 		NET_SET_REQ,
@@ -739,7 +748,8 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_SET_TIMEOUT,
+	if (g_isi_request_make(nd->client, msg, sizeof(msg),
+				NETWORK_SET_TIMEOUT,
 				set_manual_resp_cb, cbd))
 		return;
 
@@ -788,7 +798,8 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 			g_isi_sb_iter_get_byte(&iter, &info, 3);
 
 			if (info)
-				g_isi_sb_iter_get_byte(&iter, &nd->gsm_compact, 4);
+				g_isi_sb_iter_get_byte(&iter,
+						&nd->gsm_compact, 4);
 			break;
 		}
 
@@ -846,7 +857,8 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 			g_isi_sb_iter_get_byte(&iter, &info, 3);
 
 			if (info)
-				g_isi_sb_iter_get_byte(&iter, &nd->gsm_compact, 4);
+				g_isi_sb_iter_get_byte(&iter,
+						&nd->gsm_compact, 4);
 			break;
 		}
 
