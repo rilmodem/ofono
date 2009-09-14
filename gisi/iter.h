@@ -34,14 +34,17 @@ extern "C" {
 struct _GIsiSubBlockIter {
 	uint8_t *start;
 	uint8_t *end;
+	bool longhdr;
 };
 typedef struct _GIsiSubBlockIter GIsiSubBlockIter;
 
+bool g_isi_sb_iter_init(const void restrict *data, size_t len,
+			GIsiSubBlockIter *iter, bool longhdr);
 bool g_isi_sb_iter_is_valid(GIsiSubBlockIter *iter);
 bool g_isi_sb_iter_next(GIsiSubBlockIter *iter);
 
-uint8_t g_isi_sb_iter_get_id(GIsiSubBlockIter *iter);
-uint8_t g_isi_sb_iter_get_len(GIsiSubBlockIter *iter);
+int g_isi_sb_iter_get_id(GIsiSubBlockIter *iter);
+size_t g_isi_sb_iter_get_len(GIsiSubBlockIter *iter);
 
 bool g_isi_sb_iter_get_byte(GIsiSubBlockIter *iter, uint8_t *byte, int pos);
 bool g_isi_sb_iter_get_word(GIsiSubBlockIter *iter, uint16_t *word, int pos);
@@ -52,9 +55,6 @@ bool g_isi_sb_iter_get_alpha_tag(GIsiSubBlockIter *iter, char **utf8,
 					size_t len, int pos);
 bool g_isi_sb_iter_get_latin_tag(GIsiSubBlockIter *iter, char **ascii,
 					size_t len, int pos);
-
-bool g_isi_sb_iter_init(const void restrict *data, size_t len,
-			GIsiSubBlockIter *iter);
 
 #ifdef __cplusplus
 }

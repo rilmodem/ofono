@@ -47,30 +47,53 @@ static inline void bcd_to_mccmnc(const uint8_t *bcd, char *mcc, char *mnc)
 	mnc[3] = '\0';
 }
 
-bool g_isi_sb_iter_is_valid(GIsiSubBlockIter *iter)
+bool g_isi_sb_iter_init(const void restrict *data, size_t len,
+			GIsiSubBlockIter *iter, bool longhdr)
 {
-	if (!iter || iter->end - iter->start < 2)
+	if (!iter || !data || len == 0)
 		return false;
 
-	if (iter->start + iter->start[1] > iter->end)
+	iter->start = (uint8_t *)data;
+	iter->end = iter->start + len;
+	iter->longhdr = longhdr;
+
+	return true;
+}
+
+bool g_isi_sb_iter_is_valid(GIsiSubBlockIter *iter)
+{
+	if (!iter || iter->end - iter->start < (iter->longhdr ? 4 : 2))
+		return false;
+
+	if (iter->start + g_isi_sb_iter_get_len(iter) > iter->end)
 		return false;
 
 	return true;
 }
 
-uint8_t g_isi_sb_iter_get_id(GIsiSubBlockIter *iter)
+int g_isi_sb_iter_get_id(GIsiSubBlockIter *iter)
 {
+	if (iter->longhdr) {
+		uint16_t *hdr = (uint16_t *)iter->start;
+		return (int)ntohs(hdr[0]);
+	}
+
 	return iter->start[0];
 }
 
-uint8_t g_isi_sb_iter_get_len(GIsiSubBlockIter *iter)
+size_t g_isi_sb_iter_get_len(GIsiSubBlockIter *iter)
 {
+	if (iter->longhdr) {
+		uint16_t *hdr = (uint16_t *)iter->start;
+		return (size_t)ntohs(hdr[1]);
+	}
+
 	return iter->start[1];
 }
 
 bool g_isi_sb_iter_get_byte(GIsiSubBlockIter *iter, uint8_t *byte, int pos)
 {
-	if (pos > iter->start[1] || iter->start + pos > iter->end)
+	if (pos > (int)g_isi_sb_iter_get_len(iter) || iter->start + pos > iter->end)
 		return false;
 
 	*byte = iter->start[pos];
@@ -81,7 +104,7 @@ bool g_isi_sb_iter_get_word(GIsiSubBlockIter *iter, uint16_t *word, int pos)
 {
 	uint16_t val;
 
-	if (pos + 1 > iter->start[1])
+	if (pos + 1 > (int)g_isi_sb_iter_get_len(iter))
 		return false;
 
 	memcpy(&val, iter->start + pos, sizeof(uint16_t));
@@ -94,7 +117,7 @@ bool g_isi_sb_iter_get_dword(GIsiSubBlockIter *iter, uint32_t *dword,
 {
 	uint32_t val;
 
-	if (pos + 3 > iter->start[1])
+	if (pos + 3 > (int)g_isi_sb_iter_get_len(iter))
 		return false;
 
 	memcpy(&val, iter->start + pos, sizeof(uint32_t));
@@ -105,7 +128,7 @@ bool g_isi_sb_iter_get_dword(GIsiSubBlockIter *iter, uint32_t *dword,
 bool g_isi_sb_iter_get_oper_code(GIsiSubBlockIter *iter, char *mcc,
 						char *mnc, int pos)
 {
-	if (pos + 2 > iter->start[1])
+	if (pos + 2 > (int)g_isi_sb_iter_get_len(iter))
 		return false;
 
 	bcd_to_mccmnc(iter->start + pos, mcc, mnc);
@@ -117,10 +140,10 @@ bool g_isi_sb_iter_get_alpha_tag(GIsiSubBlockIter *iter, char **utf8,
 {
 	uint8_t *ucs2 = NULL;
 
-	if (pos > iter->start[1])
+	if (pos > (int)g_isi_sb_iter_get_len(iter))
 		return false;
 
-	if (!utf8 || len == 0 || pos + len > iter->start[1])
+	if (!utf8 || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
 		return false;
 
 	ucs2 = iter->start + pos;
@@ -137,10 +160,10 @@ bool g_isi_sb_iter_get_latin_tag(GIsiSubBlockIter *iter, char **latin,
 {
 	uint8_t *str = NULL;
 
-	if (pos > iter->start[1])
+	if (pos > (int)g_isi_sb_iter_get_len(iter))
 		return false;
 
-	if (!latin || len == 0 || pos + len > iter->start[1])
+	if (!latin || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
 		return false;
 
 	str = iter->start + pos;
@@ -152,20 +175,12 @@ bool g_isi_sb_iter_get_latin_tag(GIsiSubBlockIter *iter, char **latin,
 	return latin != NULL;
 }
 
-bool g_isi_sb_iter_init(const void restrict *data, size_t len, GIsiSubBlockIter *iter)
-{
-	if (!iter || !data || len == 0)
-		return false;
-
-	iter->start = (uint8_t *)data;
-	iter->end = iter->start + len;
-
-	return true;
-}
-
 bool g_isi_sb_iter_next(GIsiSubBlockIter *iter)
 {
-	uint8_t len = iter->start[1] == 0 ? 2 : iter->start[1];
+	uint8_t len = g_isi_sb_iter_get_len(iter);
+
+	if (len == 0)
+		len = iter->longhdr ? 4 : 2;
 
 	if (iter->start + len > iter->end)
 		return false;
