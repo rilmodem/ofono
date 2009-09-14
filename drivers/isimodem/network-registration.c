@@ -205,8 +205,10 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 {
 	GIsiSubBlockIter iter;
 
-	if (!g_isi_sb_iter_init(msg, len, &iter))
+	if (!g_isi_sb_iter_init(msg, len, &iter, false))
 		return FALSE;
+
+	DBG("%d", g_isi_sb_iter_is_valid(&iter));
 
 	while (g_isi_sb_iter_is_valid(&iter)) {
 
@@ -411,7 +413,7 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!g_isi_sb_iter_init(msg + 7, len - 7, &iter))
+	if (!g_isi_sb_iter_init(msg + 7, len - 7, &iter, false))
 		goto error;
 
 	while (g_isi_sb_iter_is_valid(&iter)) {
@@ -530,7 +532,7 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 	total = msg[2] / 2;
 	list = alloca(total * sizeof(struct ofono_network_operator));
 
-	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter, false))
 		goto error;
 
 	while (g_isi_sb_iter_is_valid(&iter)) {
@@ -795,7 +797,7 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 	if (!msg || len < 3 || msg[0] != NET_RAT_IND)
 		return;
 
-	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter, false))
 		return;
 
 	while (g_isi_sb_iter_is_valid(&iter)) {
@@ -854,7 +856,7 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 		return true;
 	}
 
-	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter, false))
 		return true;
 
 	while (g_isi_sb_iter_is_valid(&iter)) {
@@ -923,7 +925,7 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter, false))
 		goto error;
 
 	while (g_isi_sb_iter_is_valid(&iter)) {

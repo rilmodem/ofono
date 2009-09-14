@@ -118,7 +118,7 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!g_isi_sb_iter_init(msg+3, len-3, &iter))
+	if (!g_isi_sb_iter_init(msg+3, len-3, &iter, false))
 		goto error;
 
 	while (g_isi_sb_iter_is_valid(&iter)) {
