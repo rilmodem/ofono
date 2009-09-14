@@ -208,8 +208,6 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 	if (!g_isi_sb_iter_init(msg, len, &iter, false))
 		return FALSE;
 
-	DBG("%d", g_isi_sb_iter_is_valid(&iter));
-
 	while (g_isi_sb_iter_is_valid(&iter)) {
 
 		switch (g_isi_sb_iter_get_id(&iter)) {
