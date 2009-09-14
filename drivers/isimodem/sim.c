@@ -135,9 +135,9 @@ static bool imsi_resp_cb(GIsiClient *client, const void *restrict data,
 	ofono_sim_imsi_cb_t cb = cbd->cb;
 
 	char imsi[SIM_MAX_IMSI_LENGTH + 1];
-	int index = 0;
 	size_t i = 0;
-	size_t imsi_len = 0;
+	size_t j = 0;
+	size_t octets = 0;
 
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -150,25 +150,26 @@ static bool imsi_resp_cb(GIsiClient *client, const void *restrict data,
 	if (msg[1] != READ_IMSI || msg[2] != SIM_SERV_OK)
 		goto error;
 
-	imsi_len = msg[3];
-	if (imsi_len == 0 || imsi_len > len)
+	octets = msg[3];
+	if (octets != 8 || octets > len)
 		goto error;
 	
 	msg += 4;
 
 	/* Ignore the low-order semi-octet of the first byte */
-	imsi[0] = ((msg[0] & 0xF0) >> 4) + '0';
-	for (i = 1, index = 1; i < imsi_len; i++) {
+	imsi[j] = ((msg[i] & 0xF0) >> 4) + '0';
+
+	for (i++, j++; i < octets && j < SIM_MAX_IMSI_LENGTH; i++) {
 
 		char nibble;
-		imsi[index++] = (msg[i] & 0x0F) + '0';
+		imsi[j++] = (msg[i] & 0x0F) + '0';
 
 		nibble = (msg[i] & 0xF0) >> 4;
 		if (nibble != 0x0F)
-			imsi[index++] = nibble + '0';
+			imsi[j++] = nibble + '0';
 	}
 
-	imsi[index] = '\0';
+	imsi[j] = '\0';
 	CALLBACK_WITH_SUCCESS(cb, imsi, cbd->data);
 	goto out;
 
