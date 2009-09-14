@@ -1119,11 +1119,44 @@ static gboolean isi_netreg_register(gpointer user)
 	return FALSE;
 }
 
+static bool version_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct ofono_netreg *netreg = opaque;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	
+	if(!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		return true;
+	}
+
+	if (len < 7 || msg[0] != COMMON_MESSAGE ||
+		msg[1] != COMM_ISI_VERSION_GET_RESP)
+		return true;
+
+	nd->version.major = msg[2];
+	nd->version.minor = msg[3];
+
+	g_idle_add(isi_netreg_register, netreg);
+
+	DBG("Resource 0x%02X version: %03u.%03u",
+		g_isi_client_resource(nd->client),
+		nd->version.major, nd->version.minor);
+	return true;
+}
+
 static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 				void *user)
 {
 	GIsiModem *idx = user;
 	struct netreg_data *nd = g_try_new0(struct netreg_data, 1);
+
+	unsigned char msg[] = {
+		COMMON_MESSAGE,
+		COMM_ISI_VERSION_GET_REQ,
+		0x00 /* Filler */
+	};
 
 	if (!nd)
 		return -ENOMEM;
@@ -1136,7 +1169,9 @@ static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 
 	ofono_netreg_set_data(netreg, nd);
 
-	g_idle_add(isi_netreg_register, netreg);
+	if (!g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
+				version_resp_cb, netreg))
+		DBG("Version query failed");
 
 	return 0;
 }
