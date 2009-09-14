@@ -62,7 +62,7 @@ enum sub_block_id {
 	SMS_GSM_STATUS_REPORT = 0x01,
 	SMS_GSM_SUBMIT = 0x02,
 	SMS_GSM_COMMAND = 0x03,
-	SMS_GSM_ROUTING = 0x0D                                                     
+	SMS_GSM_ROUTING = 0x0D
 };
 
 enum routing_command {
@@ -135,7 +135,7 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 			ofono_sms_submit_cb_t cb, void *data)
 {
 	DBG("Not implemented.");
-	CALLBACK_WITH_FAILURE(cb, -1, data);		
+	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
 static void routing_ntf_cb(GIsiClient *client, const void *restrict data,

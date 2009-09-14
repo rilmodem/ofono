@@ -1125,7 +1125,7 @@ static bool version_resp_cb(GIsiClient *client, const void *restrict data,
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	
+
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		return true;
