@@ -187,7 +187,7 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 			break;
 
 		default:
-			DBG("Skipping sub-block: 0x%04X (%u bytes)",
+			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;

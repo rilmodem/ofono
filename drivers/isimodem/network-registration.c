@@ -285,7 +285,7 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%d bytes)",
+			DBG("Skipping sub-block: 0x%02X (%zd bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;
@@ -449,7 +449,7 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%u bytes)",
+			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;
@@ -583,7 +583,7 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%u bytes)",
+			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;
@@ -821,7 +821,7 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%u bytes)",
+			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;
@@ -880,7 +880,7 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%u bytes)",
+			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;
@@ -945,7 +945,7 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%d bytes)",
+			DBG("Skipping sub-block: 0x%02X (%zd bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;

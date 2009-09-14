@@ -146,7 +146,7 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 			goto out;
 
 		default:
-			DBG("Unknown sub-block: 0x%02X (%u bytes)",
+			DBG("Unknown sub-block: 0x%02X (%zu bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;
