@@ -42,6 +42,7 @@
 #include <ofono/netreg.h>
 #include <ofono/voicecall.h>
 #include <ofono/sms.h>
+#include <ofono/cbs.h>
 #include <ofono/sim.h>
 #include <ofono/ussd.h>
 #include <ofono/ssn.h>
@@ -149,6 +150,7 @@ static void isi_modem_populate(struct ofono_modem *modem)
 	ofono_netreg_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_voicecall_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_sms_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_cbs_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_sim_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_ssn_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_ussd_create(isi->modem, 0, "isimodem", isi->idx);
@@ -176,6 +178,7 @@ static int isimodem_init(void)
 	isi_netreg_init();
 	isi_voicecall_init();
 	isi_sms_init();
+	isi_cbs_init();
 	isi_sim_init();
 	isi_ssn_init();
 	isi_ussd_init();
@@ -215,6 +218,7 @@ static void isimodem_exit(void)
 	isi_netreg_exit();
 	isi_voicecall_exit();
 	isi_sms_exit();
+	isi_cbs_exit();
 	isi_sim_exit();
 	isi_ssn_exit();
 	isi_ussd_exit();

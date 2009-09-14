@@ -75,6 +75,7 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/network-registration.c \
 				drivers/isimodem/voicecall.c \
 				drivers/isimodem/sms.c \
+				drivers/isimodem/cbs.c \
 				drivers/isimodem/sim.c \
 				drivers/isimodem/ssn.c \
 				drivers/isimodem/ussd.c \

@@ -90,6 +90,9 @@ extern void isi_voicecall_exit();
 extern void isi_sms_init();
 extern void isi_sms_exit();
 
+extern void isi_cbs_init();
+extern void isi_cbs_exit();
+
 extern void isi_sim_init();
 extern void isi_sim_exit();
 
