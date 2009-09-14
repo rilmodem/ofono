@@ -356,7 +356,7 @@ static void isi_phonebook_remove(struct ofono_phonebook *pb)
 {
 	struct pb_data *data = ofono_phonebook_get_data(pb);
 
-	if (data && data->client) {
+	if (data) {
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}

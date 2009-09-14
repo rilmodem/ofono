@@ -1079,7 +1079,7 @@ static void isi_netreg_remove(struct ofono_netreg *net)
 {
 	struct netreg_data *data = ofono_netreg_get_data(net);
 
-	if (data && data->client) {
+	if (data) {
 		g_isi_client_destroy(data->client);
 		g_free(data);
 	}
