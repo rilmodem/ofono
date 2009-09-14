@@ -501,8 +501,6 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 		NET_REG_STATUS_GET_REQ
 	};
 
-	DBG("");
-
 	if (!cbd)
 		goto error;
 
@@ -526,8 +524,6 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 
 	struct ofono_network_operator op;
 	struct isi_sb_iter iter;
-
-	DBG("");
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -611,8 +607,6 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 		0x00  /* No sub-blocks */
 	};
 
-	DBG("");
-
 	if (!cbd)
 		goto error;
 
@@ -640,8 +634,6 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 	struct isi_sb_iter iter;
 	int common = 0;
 	int detail = 0;
-
-	DBG("");
 
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -696,7 +688,6 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 			op = list + detail++;
 			if (!isi_sb_iter_get_oper_code(&iter, op->mcc, op->mnc, 2))
 				goto error;
-
 			break;
 		}
 
@@ -739,8 +730,6 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 		0x00
 	};
 
-	DBG("");
-
 	if (!cbd)
 		goto error;
 
@@ -762,8 +751,6 @@ static bool net_set_auto_resp_cb(GIsiClient *client, const void *restrict data,
 	struct isi_cb_data *cbd = opaque;
 	struct netreg_data *net = cbd->user;
 	ofono_netreg_register_cb_t cb = cbd->cb;
-
-	DBG("");
 
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -804,8 +791,6 @@ static void isi_register_auto(struct ofono_netreg *netreg,
 		0x00  /* Index not used */
 	};
 
-	DBG("");
-
 	if (!cbd)
 		goto error;
 
@@ -830,8 +815,6 @@ static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
 	struct ofono_netreg *netreg = cbd->user;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	ofono_netreg_register_cb_t cb = cbd->cb;
-
-	DBG("");
 
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -883,8 +866,6 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 		0x00, 0x00  /* Filler */ 
 	};
 
-	DBG("");
-
 	if (!cbd)
 		goto error;
 
@@ -914,14 +895,13 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 	struct ofono_netreg *netreg = opaque;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
-	struct isi_sb_iter iter = { 0 };
+	struct isi_sb_iter iter;
 	
-	DBG("");
-
 	if (!msg || len < 3 || msg[0] != NET_RAT_IND)
 		return;
 
-	isi_sb_iter_init(msg + 3, len - 3, &iter);
+	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
+		return;
 
 	while (isi_sb_iter_is_valid(&iter)) {
 
@@ -963,15 +943,12 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 	struct ofono_netreg *netreg = opaque;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
-	struct isi_sb_iter iter = { 0 };
+	struct isi_sb_iter iter;
 	
-	DBG("");
-
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		return true;
 	}
-
 
 	if (len < 3 || msg[0] != NET_RAT_RESP)
 		return true;
@@ -1020,8 +997,6 @@ static void rssi_ind_cb(GIsiClient *client, const void *restrict data,
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
 
-	DBG("");
-
 	if (!msg || len < 3 || msg[0] != NET_RSSI_IND)
 		return;
 
@@ -1037,8 +1012,6 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 
 	struct isi_sb_iter iter;
 	int strength = -1;
-
-	DBG("");
 
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -1105,8 +1078,6 @@ static void isi_strength(struct ofono_netreg *netreg,
 		NET_CURRENT_CELL_RSSI
 	};
 
-	DBG("");
-
 	if (!cbd)
 		goto error;
 
@@ -1130,8 +1101,6 @@ static gboolean isi_netreg_register(gpointer user)
 		NET_RAT_REQ,
 		NET_CURRENT_RAT
 	};
-
-	DBG("");
 
 	g_isi_client_set_debug(nd->client, net_debug, NULL);
 
