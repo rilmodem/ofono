@@ -113,23 +113,43 @@ bool g_isi_sb_iter_get_oper_code(GIsiSubBlockIter *iter, char *mcc,
 }
 
 bool g_isi_sb_iter_get_alpha_tag(GIsiSubBlockIter *iter, char **utf8,
-						int pos)
+					size_t len, int pos)
 {
 	uint8_t *ucs2 = NULL;
-	int len = 0;
 
 	if (pos > iter->start[1])
 		return false;
 
-	len = iter->start[pos] * 2; /* Alpha tags are UCS-2 */
-
-	if (!utf8 || len == 0 || pos + 1 + len > iter->start[1])
+	if (!utf8 || len == 0 || pos + len > iter->start[1])
 		return false;
 
-	ucs2 = iter->start + pos + 1;
+	ucs2 = iter->start + pos;
+	if (ucs2 + len > iter->end)
+		return false;
+
 	*utf8 = g_convert((const char *)ucs2, len, "UTF-8//TRANSLIT", "UCS-2BE",
 				NULL, NULL, NULL);
 	return utf8 != NULL;
+}
+
+bool g_isi_sb_iter_get_latin_tag(GIsiSubBlockIter *iter, char **latin,
+				size_t len, int pos)
+{
+	uint8_t *str = NULL;
+
+	if (pos > iter->start[1])
+		return false;
+
+	if (!latin || len == 0 || pos + len > iter->start[1])
+		return false;
+
+	str = iter->start + pos;
+	if (str + len > iter->end)
+		return false;
+
+	*latin = g_strndup((char *)str, len);
+
+	return latin != NULL;
 }
 
 bool g_isi_sb_iter_init(const void restrict *data, size_t len, GIsiSubBlockIter *iter)

@@ -48,7 +48,11 @@ bool g_isi_sb_iter_get_word(GIsiSubBlockIter *iter, uint16_t *word, int pos);
 bool g_isi_sb_iter_get_dword(GIsiSubBlockIter *iter, uint32_t *dword, int pos);
 bool g_isi_sb_iter_get_oper_code(GIsiSubBlockIter *iter, char *mcc,
 					char *mnc, int pos);
-bool g_isi_sb_iter_get_alpha_tag(GIsiSubBlockIter *iter, char **utf8, int pos);
+bool g_isi_sb_iter_get_alpha_tag(GIsiSubBlockIter *iter, char **utf8,
+					size_t len, int pos);
+bool g_isi_sb_iter_get_latin_tag(GIsiSubBlockIter *iter, char **ascii,
+					size_t len, int pos);
+
 bool g_isi_sb_iter_init(const void restrict *data, size_t len,
 			GIsiSubBlockIter *iter);
 
