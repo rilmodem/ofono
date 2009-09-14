@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <arpa/inet.h>
 
 #include <glib.h>
 
 #include <gisi/client.h>
+#include <gisi/iter.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
@@ -154,11 +154,6 @@ struct netreg_data {
 	guint8 gsm_compact;
 };
 
-struct isi_sb_iter {
-	guint8 *start;
-	guint8 *end;
-};
-
 static inline unsigned char *mccmnc_to_bcd(const char *mcc, const char *mnc,
 						unsigned char *bcd)
 {
@@ -167,131 +162,6 @@ static inline unsigned char *mccmnc_to_bcd(const char *mcc, const char *mnc,
 	bcd[1] |= (mnc[2] == '\0' ? 0x0f : (mnc[2] - '0')) << 4;
 	bcd[2] = (mnc[0] - '0') | (mnc[1] - '0') << 4;
 	return bcd;
-}
-
-static inline void bcd_to_mccmnc(const unsigned char *bcd, char *mcc,
-					char *mnc)
-{
-	mcc[0] = '0' + (bcd[0] & 0x0f);
-	mcc[1] = '0' + ((bcd[0] & 0xf0) >> 4);
-	mcc[2] = '0' + (bcd[1] & 0x0f);
-	mcc[3] = '\0';
-
-	mnc[0] = '0' + (bcd[2] & 0x0f);
-	mnc[1] = '0' + ((bcd[2] & 0xf0) >> 4);
-	mnc[2] = (bcd[1] & 0xf0) == 0xf0 ? '\0' : '0' +
-			(bcd[1] & 0xf0);
-	mnc[3] = '\0';
-}
-
-static gboolean isi_sb_iter_is_valid(struct isi_sb_iter *iter)
-{
-	if (!iter || iter->end - iter->start < 2)
-		return FALSE;
-
-	if (iter->start + iter->start[1] > iter->end)
-		return FALSE;
-
-	return TRUE;
-}
-
-static guint8 isi_sb_iter_get_id(struct isi_sb_iter *iter)
-{
-	return iter->start[0];
-}
-
-static guint8 isi_sb_iter_get_len(struct isi_sb_iter *iter)
-{
-	return iter->start[1];
-}
-
-static gboolean isi_sb_iter_get_byte(struct isi_sb_iter *iter, guint8 *byte,
-					int pos)
-{
-	if (pos > iter->start[1] || iter->start + pos > iter->end)
-		return FALSE;
-
-	*byte = iter->start[pos];
-	return TRUE;
-}
-
-static gboolean isi_sb_iter_get_word(struct isi_sb_iter *iter, guint16 *word,
-					int pos)
-{
-	guint16 val;
-
-	if (pos + 1 > iter->start[1])
-		return FALSE;
-
-	memcpy(&val, iter->start + pos, sizeof(guint16));
-	*word = ntohs(val);
-	return TRUE;
-}
-
-static gboolean isi_sb_iter_get_dword(struct isi_sb_iter *iter, guint32 *dword,
-					int pos)
-{
-	guint32 val;
-
-	if (pos + 3 > iter->start[1])
-		return FALSE;
-
-	memcpy(&val, iter->start + pos, sizeof(guint32));
-	*dword = ntohl(val);
-	return TRUE;
-}
-
-static gboolean isi_sb_iter_get_oper_code(struct isi_sb_iter *iter, char *mcc,
-						char *mnc, int pos)
-{
-	if (pos + 2 > iter->start[1])
-		return FALSE;
-
-	bcd_to_mccmnc(iter->start + pos, mcc, mnc);
-	return TRUE;
-}
-
-static gboolean isi_sb_iter_get_alpha_tag(struct isi_sb_iter *iter, char **utf8,
-						int pos)
-{
-	guint8 *ucs2 = NULL;
-	int len = 0;
-
-	if (pos > iter->start[1])
-		return FALSE;
-
-	len = iter->start[pos] * 2; /* UCS-2 alpha tag */
-
-	if (!utf8 || len == 0 || pos + 1 + len > iter->start[1])
-		return FALSE;
-
-	ucs2 = iter->start + pos + 1;
-	*utf8 = g_convert((const char *)ucs2, len, "UTF-8", "UCS-2BE",
-				NULL, NULL, NULL);
-	return utf8 != NULL;
-}
-
-static gboolean isi_sb_iter_init(const guint8 *data, size_t len,
-					struct isi_sb_iter *iter)
-{
-	if (!iter || !data || len == 0)
-		return FALSE;
-
-	iter->start = (guint8 *)data;
-	iter->end = iter->start + len;
-
-	return TRUE;
-}
-
-static gboolean isi_sb_iter_next(struct isi_sb_iter *iter)
-{
-	guint8 len = iter->start[1] == 0 ? 2 : iter->start[1];
-
-	if (iter->start + len > iter->end)
-		return FALSE;
-
-	iter->start += len;
-	return TRUE;
 }
 
 static void net_debug(const void *restrict buf, size_t len, void *data)
@@ -333,26 +203,26 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 					size_t len, int *status, int *lac,
 					int *ci, int *tech)
 {
-	struct isi_sb_iter iter;
+	GIsiSubBlockIter iter;
 
-	if (!isi_sb_iter_init(msg, len, &iter))
+	if (!g_isi_sb_iter_init(msg, len, &iter))
 		return FALSE;
 
-	while (isi_sb_iter_is_valid(&iter)) {
+	while (g_isi_sb_iter_is_valid(&iter)) {
 
-		switch (isi_sb_iter_get_id(&iter)) {
+		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_REG_INFO_COMMON: {
 
 			guint8 byte = 0;
 
-			if (isi_sb_iter_get_len(&iter) < 12)
+			if (g_isi_sb_iter_get_len(&iter) < 12)
 				return FALSE;
 
-			if (!isi_sb_iter_get_byte(&iter, &byte, 2))
+			if (!g_isi_sb_iter_get_byte(&iter, &byte, 2))
 				return FALSE;
 
-			if (!isi_sb_iter_get_byte(&iter, &nd->last_reg_mode, 3))
+			if (!g_isi_sb_iter_get_byte(&iter, &nd->last_reg_mode, 3))
 				return FALSE;
 
 			*status = byte;
@@ -369,14 +239,14 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 			guint8 hsdpa = 0;
 			guint8 hsupa = 0;
 
-			if (isi_sb_iter_get_len(&iter) != 24)
+			if (g_isi_sb_iter_get_len(&iter) != 24)
 				return FALSE;
 
-			if (!isi_sb_iter_get_word(&iter, &word, 2) ||
-				!isi_sb_iter_get_dword(&iter, &dword, 4) ||
-				!isi_sb_iter_get_byte(&iter, &egprs, 17) ||
-				!isi_sb_iter_get_byte(&iter, &hsdpa, 20) ||
-				!isi_sb_iter_get_byte(&iter, &hsupa, 21))
+			if (!g_isi_sb_iter_get_word(&iter, &word, 2) ||
+				!g_isi_sb_iter_get_dword(&iter, &dword, 4) ||
+				!g_isi_sb_iter_get_byte(&iter, &egprs, 17) ||
+				!g_isi_sb_iter_get_byte(&iter, &hsdpa, 20) ||
+				!g_isi_sb_iter_get_byte(&iter, &hsupa, 21))
 				return FALSE;
 
 			*ci = word;
@@ -413,12 +283,12 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 
 		default:
 			DBG("Skipping sub-block: 0x%02X (%d bytes)",
-				isi_sb_iter_get_id(&iter),
-				isi_sb_iter_get_len(&iter));
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
 
-		isi_sb_iter_next(&iter);
+		g_isi_sb_iter_next(&iter);
 	}
 
 	DBG("status=%d, lac=%d, ci=%d, tech=%d", *status, *lac, *ci, *tech);
@@ -523,7 +393,7 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 	ofono_netreg_operator_cb_t cb = cbd->cb;
 
 	struct ofono_network_operator op;
-	struct isi_sb_iter iter;
+	GIsiSubBlockIter iter;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -538,29 +408,29 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!isi_sb_iter_init(msg + 7, len - 7, &iter))
+	if (!g_isi_sb_iter_init(msg + 7, len - 7, &iter))
 		goto error;
 
-	while (isi_sb_iter_is_valid(&iter)) {
+	while (g_isi_sb_iter_is_valid(&iter)) {
 
-		switch (isi_sb_iter_get_id(&iter)) {
+		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_GSM_OPERATOR_INFO:
 
-			if (isi_sb_iter_get_len(&iter) < 8)
+			if (g_isi_sb_iter_get_len(&iter) < 8)
 				goto error;
 
-			isi_sb_iter_get_oper_code(&iter, op.mcc, op.mnc, 2);
+			g_isi_sb_iter_get_oper_code(&iter, op.mcc, op.mnc, 2);
 			break;
 
 		case NET_OPER_NAME_INFO: {
 
 			char *tag = NULL;
 
-			if (isi_sb_iter_get_len(&iter) < 4)
+			if (g_isi_sb_iter_get_len(&iter) < 4)
 				goto error;
 
-			if (!isi_sb_iter_get_alpha_tag(&iter, &tag, 3))
+			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag, 3))
 				goto error;
 
 			strncpy(op.name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
@@ -570,12 +440,12 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 
 		default:
 			DBG("Skipping sub-block: 0x%02X (%u bytes)",
-				isi_sb_iter_get_id(&iter),
-				isi_sb_iter_get_len(&iter));
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
 
-		isi_sb_iter_next(&iter);
+		g_isi_sb_iter_next(&iter);
 	}
 
 	DBG("mnc=%s, mcc=%s, name=%s", op.mnc, op.mcc, op.name);
@@ -631,7 +501,7 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 	struct ofono_network_operator *list = NULL;
 	int total = 0;
 
-	struct isi_sb_iter iter;
+	GIsiSubBlockIter iter;
 	int common = 0;
 	int detail = 0;
 
@@ -652,24 +522,24 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 	total = msg[2] / 2;
 	list = alloca(total * sizeof(struct ofono_network_operator));
 
-	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
 		goto error;
 
-	while (isi_sb_iter_is_valid(&iter)) {
+	while (g_isi_sb_iter_is_valid(&iter)) {
 
-		switch (isi_sb_iter_get_id(&iter)) {
+		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_AVAIL_NETWORK_INFO_COMMON: {
 		
 			struct ofono_network_operator *op;
 			char *tag = NULL;
 
-			if (isi_sb_iter_get_len(&iter) < 12)
+			if (g_isi_sb_iter_get_len(&iter) < 12)
 				goto error;
 
 			op = list + common++;
-			if (!isi_sb_iter_get_byte(&iter, (guint8 *)&op->status, 2) ||
-				!isi_sb_iter_get_alpha_tag(&iter, &tag, 5))
+			if (!g_isi_sb_iter_get_byte(&iter, (guint8 *)&op->status, 2) ||
+				!g_isi_sb_iter_get_alpha_tag(&iter, &tag, 5))
 				goto error;
 
 			strncpy(op->name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
@@ -682,22 +552,22 @@ static bool available_get_resp_cb(GIsiClient *client, const void *restrict data,
 
 			struct ofono_network_operator *op;
 
-			if (isi_sb_iter_get_len(&iter) < 8)
+			if (g_isi_sb_iter_get_len(&iter) < 8)
 				goto error;
 
 			op = list + detail++;
-			if (!isi_sb_iter_get_oper_code(&iter, op->mcc, op->mnc, 2))
+			if (!g_isi_sb_iter_get_oper_code(&iter, op->mcc, op->mnc, 2))
 				goto error;
 			break;
 		}
 
 		default:
 			DBG("Skipping sub-block: 0x%02X (%u bytes)",
-				isi_sb_iter_get_id(&iter),
-				isi_sb_iter_get_len(&iter));
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-		isi_sb_iter_next(&iter);
+		g_isi_sb_iter_next(&iter);
 	}
 
 	if (common == detail && detail == total) {
@@ -895,40 +765,40 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 	struct ofono_netreg *netreg = opaque;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
-	struct isi_sb_iter iter;
+	GIsiSubBlockIter iter;
 	
 	if (!msg || len < 3 || msg[0] != NET_RAT_IND)
 		return;
 
-	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
 		return;
 
-	while (isi_sb_iter_is_valid(&iter)) {
+	while (g_isi_sb_iter_is_valid(&iter)) {
 
-		switch (isi_sb_iter_get_id(&iter)) {
+		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_RAT_INFO: {
 
 			guint8 info = 0;
 
-			if (isi_sb_iter_get_len(&iter) < 4)
+			if (g_isi_sb_iter_get_len(&iter) < 4)
 				goto error;
 			
-			isi_sb_iter_get_byte(&iter, &nd->rat, 2);
-			isi_sb_iter_get_byte(&iter, &info, 3);
+			g_isi_sb_iter_get_byte(&iter, &nd->rat, 2);
+			g_isi_sb_iter_get_byte(&iter, &info, 3);
 
 			if (info)
-				isi_sb_iter_get_byte(&iter, &nd->gsm_compact, 4);
+				g_isi_sb_iter_get_byte(&iter, &nd->gsm_compact, 4);
 			break;
 		}
 
 		default:
 			DBG("Skipping sub-block: 0x%02X (%u bytes)",
-				isi_sb_iter_get_id(&iter),
-				isi_sb_iter_get_len(&iter));
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-		isi_sb_iter_next(&iter);
+		g_isi_sb_iter_next(&iter);
 	}
 
 error:
@@ -943,7 +813,7 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 	struct ofono_netreg *netreg = opaque;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
-	struct isi_sb_iter iter;
+	GIsiSubBlockIter iter;
 	
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -958,35 +828,35 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 		return true;
 	}
 
-	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
 		return true;
 
-	while (isi_sb_iter_is_valid(&iter)) {
+	while (g_isi_sb_iter_is_valid(&iter)) {
 
-		switch (isi_sb_iter_get_id(&iter)) {
+		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_RAT_INFO: {
 
 			guint8 info = 0;
 
-			if (isi_sb_iter_get_len(&iter) < 4)
+			if (g_isi_sb_iter_get_len(&iter) < 4)
 				return true;
 			
-			isi_sb_iter_get_byte(&iter, &nd->rat, 2);
-			isi_sb_iter_get_byte(&iter, &info, 3);
+			g_isi_sb_iter_get_byte(&iter, &nd->rat, 2);
+			g_isi_sb_iter_get_byte(&iter, &info, 3);
 
 			if (info)
-				isi_sb_iter_get_byte(&iter, &nd->gsm_compact, 4);
+				g_isi_sb_iter_get_byte(&iter, &nd->gsm_compact, 4);
 			break;
 		}
 
 		default:
 			DBG("Skipping sub-block: 0x%02X (%u bytes)",
-				isi_sb_iter_get_id(&iter),
-				isi_sb_iter_get_len(&iter));
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-		isi_sb_iter_next(&iter);
+		g_isi_sb_iter_next(&iter);
 	}
 	return true;
 }
@@ -1010,7 +880,7 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 	struct isi_cb_data *cbd = opaque;
 	ofono_netreg_strength_cb_t cb = cbd->cb;
 
-	struct isi_sb_iter iter;
+	GIsiSubBlockIter iter;
 	int strength = -1;
 
 	if(!msg) {
@@ -1026,19 +896,19 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!isi_sb_iter_init(msg + 3, len - 3, &iter))
+	if (!g_isi_sb_iter_init(msg + 3, len - 3, &iter))
 		goto error;
 
-	while (isi_sb_iter_is_valid(&iter)) {
+	while (g_isi_sb_iter_is_valid(&iter)) {
 
-		switch (isi_sb_iter_get_id(&iter)) {
+		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_RSSI_CURRENT: {
 
 			guint8 rssi = 0;
 
-			if (isi_sb_iter_get_len(&iter) < 4 ||
-				!isi_sb_iter_get_byte(&iter, &rssi, 2))
+			if (g_isi_sb_iter_get_len(&iter) < 4 ||
+				!g_isi_sb_iter_get_byte(&iter, &rssi, 2))
 				goto error;
 
 			strength = rssi != 0 ? rssi : -1;
@@ -1047,11 +917,11 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 
 		default:
 			DBG("Skipping sub-block: 0x%02X (%d bytes)",
-				isi_sb_iter_get_id(&iter),
-				isi_sb_iter_get_len(&iter));
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-		isi_sb_iter_next(&iter);
+		g_isi_sb_iter_next(&iter);
 	}
 
 	CALLBACK_WITH_SUCCESS(cb, strength, cbd->data);
