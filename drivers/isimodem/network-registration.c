@@ -396,6 +396,8 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 	struct ofono_network_operator op;
 	GIsiSubBlockIter iter;
 
+	DBG("");
+
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
@@ -427,11 +429,16 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		case NET_OPER_NAME_INFO: {
 
 			char *tag = NULL;
+			guint8 taglen = 0;
 
 			if (g_isi_sb_iter_get_len(&iter) < 4)
 				goto error;
 
-			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag, 3))
+			if (!g_isi_sb_iter_get_byte(&iter, &taglen, 3))
+				goto error;
+
+			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag,
+						taglen * 2, 4))
 				goto error;
 
 			strncpy(op.name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
@@ -534,17 +541,25 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 		
 			struct ofono_network_operator *op;
 			char *tag = NULL;
+			guint8 taglen = 0;
 			guint8 status = 0;
 
 			if (g_isi_sb_iter_get_len(&iter) < 12)
 				goto error;
 
 			op = list + common++;
-			if (!g_isi_sb_iter_get_byte(&iter, &status, 2) ||
-				!g_isi_sb_iter_get_alpha_tag(&iter, &tag, 5))
+			if (!g_isi_sb_iter_get_byte(&iter, &status, 2))
 				goto error;
 
 			op->status = status;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &taglen, 5))
+				goto error;
+
+			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag,
+						taglen * 2, 6))
+				goto error;
+
 			strncpy(op->name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
 			op->name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 			g_free(tag);
