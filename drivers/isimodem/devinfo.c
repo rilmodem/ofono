@@ -34,6 +34,7 @@
 #include <glib.h>
 
 #include <gisi/client.h>
+#include <gisi/iter.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
@@ -84,55 +85,74 @@ struct devinfo_data {
 	GIsiClient *client;
 };
 
-static gboolean decode_sb_and_report(const unsigned char *msg, size_t len, int id,
-					ofono_devinfo_query_cb_t cb,
-					void *data)
-{
-	if (msg[1] != INFO_OK) {
-		DBG("Query failed: 0x%02x", msg[1]);
-		return false;
-	}
-
-	if (msg[2] == 0 || len < 8 || msg[6] == 0 || len < (size_t)(msg[6] + 7)) {
-		DBG("Truncated message");
-		return false;
-	}
-
-	if (msg[3] == id) {
-		char str[msg[6] + 1];
-
-		memcpy(str, msg + 7, msg[6]);
-		str[msg[6]] = '\0';
-		DBG("<%s>", str);
-
-		CALLBACK_WITH_SUCCESS(cb, str, data);
-		return true;
-	}
-
-	DBG("Unexpected sub-block: 0x%02x", msg[3]);
-	return false;
-}
-
-static bool manufacturer_resp_cb(GIsiClient *client, const void *restrict data,
+static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_devinfo_query_cb_t cb = cbd->cb;
 
+	GIsiSubBlockIter iter;
+	char *info = NULL;
+	guint8 chars;
+
 	if(!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
 
-	if (msg[0] != INFO_PRODUCT_INFO_READ_RESP) {
+	if (len < 3) {
+		DBG("Truncated message.");
+		goto error;
+	}
+
+	if (msg[0] != INFO_PRODUCT_INFO_READ_RESP &&
+		msg[0] != INFO_VERSION_READ_RESP &&
+		msg[0] != INFO_SERIAL_NUMBER_READ_RESP) {
 		DBG("Unexpected message ID: 0x%02x", msg[0]);
 		goto error;
 	}
 
-	if (decode_sb_and_report(msg, len, INFO_SB_PRODUCT_INFO_MANUFACTURER,
-					cb, cbd->data))
-		goto out;
+	if (msg[1] != INFO_OK) {
+		DBG("Request failed: 0x%02X", msg[1]);
+		goto error;
+	}
+
+	if (!g_isi_sb_iter_init(msg+3, len-3, &iter))
+		goto error;
+
+	while (g_isi_sb_iter_is_valid(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+
+		case INFO_SB_PRODUCT_INFO_MANUFACTURER:
+		case INFO_SB_PRODUCT_INFO_NAME:
+		case INFO_SB_MCUSW_VERSION:
+		case INFO_SB_SN_IMEI_PLAIN:
+
+			if (g_isi_sb_iter_get_len(&iter) < 5)
+				goto error;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &chars, 3))
+				goto error;
+
+			if (!g_isi_sb_iter_get_latin_tag(&iter,
+					&info, chars, 4))
+				goto error;
+
+			DBG("info=<%s>", info);
+			CALLBACK_WITH_SUCCESS(cb, info, cbd->data);
+			g_free(info);
+			goto out;
+
+		default:
+			DBG("Unknown sub-block: 0x%02X (%u bytes)",
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
+		g_isi_sb_iter_next(&iter);
+	}
 
 error:
 	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
@@ -147,7 +167,7 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 					void *data)
 {
 	struct devinfo_data *dev = ofono_devinfo_get_data(info);
-	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+	struct isi_cb_data *cbd = isi_cb_data_new(dev, cb, data);
 
 	const unsigned char msg[] = {
 		INFO_PRODUCT_INFO_READ_REQ,
@@ -158,7 +178,7 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				manufacturer_resp_cb, cbd))
+				info_resp_cb, cbd))
 		return;
 
 error:
@@ -168,41 +188,12 @@ error:
 	CALLBACK_WITH_FAILURE(cb, "", data);
 }
 
-static bool model_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
-{
-	const unsigned char *msg = data;
-	struct isi_cb_data *cbd = opaque;
-	ofono_devinfo_query_cb_t cb = cbd->cb;
-
-	if(!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
-	}
-
-	if (msg[0] != INFO_PRODUCT_INFO_READ_RESP) {
-		DBG("Unexpected message ID: 0x%02x", msg[0]);
-		goto error;
-	}
-
-	if (decode_sb_and_report(msg, len, INFO_SB_PRODUCT_INFO_NAME,
-					cb, cbd->data))
-		goto out;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
-
-out:
-	g_free(cbd);
-	return true;
-}
-
 static void isi_query_model(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
 	struct devinfo_data *dev = ofono_devinfo_get_data(info);
-	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+	struct isi_cb_data *cbd = isi_cb_data_new(dev, cb, data);
 
 	const unsigned char msg[] = {
 		INFO_PRODUCT_INFO_READ_REQ,
@@ -213,7 +204,7 @@ static void isi_query_model(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				model_resp_cb, cbd))
+				info_resp_cb, cbd))
 		return;
 
 error:
@@ -223,41 +214,12 @@ error:
 	CALLBACK_WITH_FAILURE(cb, "", data);
 }
 
-static bool revision_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
-{
-	const unsigned char *msg = data;
-	struct isi_cb_data *cbd = opaque;
-	ofono_devinfo_query_cb_t cb = cbd->cb;
-
-	if(!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
-	}
-
-	if (msg[0] != INFO_VERSION_READ_RESP) {
-		DBG("Unexpected message ID: 0x%02x", msg[0]);
-		goto error;
-	}
-
-	if (decode_sb_and_report(msg, len, INFO_SB_MCUSW_VERSION,
-					cb, cbd->data))
-		goto out;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
-
-out:
-	g_free(cbd);
-	return true;
-}
-
 static void isi_query_revision(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
 	struct devinfo_data *dev = ofono_devinfo_get_data(info);
-	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+	struct isi_cb_data *cbd = isi_cb_data_new(dev, cb, data);
 
 	const unsigned char msg[] = {
 		INFO_VERSION_READ_REQ,
@@ -269,7 +231,7 @@ static void isi_query_revision(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				revision_resp_cb, cbd))
+				info_resp_cb, cbd))
 		return;
 
 error:
@@ -279,41 +241,12 @@ error:
 	CALLBACK_WITH_FAILURE(cb, "", data);
 }
 
-static bool serial_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
-{
-	const unsigned char *msg = data;
-	struct isi_cb_data *cbd = opaque;
-	ofono_devinfo_query_cb_t cb = cbd->cb;
-
-	if(!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
-	}
-
-	if (msg[0] != INFO_SERIAL_NUMBER_READ_RESP) {
-		DBG("Unexpected message ID: 0x%02x", msg[0]);
-		goto error;
-	}
-
-	if (decode_sb_and_report(msg, len, INFO_SB_SN_IMEI_PLAIN,
-					cb, cbd->data))
-		goto out;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
-
-out:
-	g_free(cbd);
-	return true;
-}
-
 static void isi_query_serial(struct ofono_devinfo *info,
 				ofono_devinfo_query_cb_t cb,
 				void *data)
 {
 	struct devinfo_data *dev = ofono_devinfo_get_data(info);
-	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+	struct isi_cb_data *cbd = isi_cb_data_new(dev, cb, data);
 
 	const unsigned char msg[] = {
 		INFO_SERIAL_NUMBER_READ_REQ,
@@ -324,7 +257,7 @@ static void isi_query_serial(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				serial_resp_cb, cbd))
+				info_resp_cb, cbd))
 		return;
 
 error:
