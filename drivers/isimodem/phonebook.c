@@ -195,10 +195,13 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 		g_isi_sb_iter_next(&iter);
 	}
 
-	if (status == SIM_SERV_OK) {
-		ofono_phonebook_entry(pb, -1, number, -1, name, -1, NULL,
-					anr, -1, sne, email, NULL, NULL);
+	if (status != SIM_SERV_OK) {
+		DBG("PB read returned status: 0x%02X", status);
+		goto error;
 	}
+
+	ofono_phonebook_entry(pb, -1, number, -1, name, -1, NULL,
+				anr, -1, sne, email, NULL, NULL);
 
 error:
 	g_free(name);
