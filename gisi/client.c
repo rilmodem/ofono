@@ -41,6 +41,10 @@
 
 struct _GIsiClient {
 	uint8_t resource;
+	struct {
+		int major;
+		int minor;
+	} version;
 	GIsiModem *modem;
 
 	/* Requests */
@@ -100,6 +104,8 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 		abort();
 	cl = ptr;
 	cl->resource = resource;
+	cl->version.major = -1;
+	cl->version.minor = -1;
 	cl->modem = modem;
 	cl->debug_func = NULL;
 	memset(cl->timeout, 0, sizeof(cl->timeout));
@@ -130,6 +136,43 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 					g_isi_callback, cl);
 	g_io_channel_unref(channel);
 	return cl;
+}
+
+/**
+ * Set the ISI resource version of @a client.
+ * @param client client for the resource
+ * @param major ISI major version
+ * @param minor ISI minor version
+ */
+void g_isi_version_set(GIsiClient *client, int major, int minor)
+{
+	if (!client)
+		return;
+
+	client->version.major = major;
+	client->version.minor = minor;
+}
+
+/**
+ * Returns the ISI major version of the resource associated with @a
+ * client.
+ * @param client client for the resource
+ * @return major version, -1 if not available
+ */
+int g_isi_version_major(GIsiClient *client)
+{
+	return client->version.major;
+}
+
+/**
+ * Returns the ISI minor version of the resource associated with @a
+ * client.
+ * @param client client for the resource
+ * @return minor version, -1 if not available
+ */
+int g_isi_version_minor(GIsiClient *client)
+{
+	return client->version.minor;
 }
 
 /**

@@ -1,0 +1,106 @@
+/*
+ * This file is part of oFono - Open Source Telephony
+ *
+ * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
+ *
+ * Contact: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <glib.h>
+
+#include "client.h"
+
+#define VERSION_TIMEOUT				5
+
+#define COMMON_MESSAGE				0xF0
+#define COMM_ISI_VERSION_GET_REQ		0x12
+#define COMM_ISI_VERSION_GET_RESP		0x13
+#define COMM_ISA_ENTITY_NOT_REACHABLE_RESP	0x14
+
+struct verify_data {
+	void *func;
+	void *data;
+};
+
+static bool verify_cb(GIsiClient *client, const void *restrict data,
+			size_t len, uint16_t object, void *opaque)
+{
+	const uint8_t *msg = data;
+	struct verify_data *vd = opaque;
+	GIsiVerifyFunc func = vd->func;
+
+	bool alive = false;
+
+	if(!msg)
+		goto out;
+
+	if (len < 4 || msg[0] != COMMON_MESSAGE)
+		goto out;
+
+	if (msg[1] == COMM_ISI_VERSION_GET_RESP) {
+		g_isi_version_set(client, msg[2], msg[3]);
+		alive = true;
+		goto out;
+	}
+
+	if (msg[1] != COMM_ISA_ENTITY_NOT_REACHABLE_RESP)
+		alive = true;
+
+out:
+	if (func)
+		func(client, alive, vd->data);
+	g_free(vd);
+	return true;
+}
+
+/**
+ * Verifies reachability of @a client with its resource. As a side
+ * effect of this liveliness check, the ISI version of the client
+ * resource will be made available via g_isi_client_version().
+ * @param client client to verify
+ * @param func callback to process outcome
+ * @param opaque user data
+ * @return NULL on error (see errno), GIsiRequest pointer on success.
+ */
+GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,
+				void *opaque)
+{
+	struct verify_data *data = g_try_new0(struct verify_data, 1);
+	GIsiRequest *req = NULL;
+	uint8_t msg[] = {
+		COMMON_MESSAGE,
+		COMM_ISI_VERSION_GET_REQ,
+		0x00  /* Filler */
+	};
+
+	data->func = func;
+	data->data = opaque;
+
+	req = g_isi_request_make(client, msg, sizeof(msg), VERSION_TIMEOUT,
+					verify_cb, data);
+	if (!req)
+		g_free(data);
+
+	return req;
+}

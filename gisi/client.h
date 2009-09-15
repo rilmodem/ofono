@@ -38,6 +38,8 @@ typedef struct _GIsiClient GIsiClient;
 struct _GIsiRequest;
 typedef struct _GIsiRequest GIsiRequest;
 
+typedef void (*GIsiVerifyFunc)(GIsiClient *client, bool alive, void *opaque);
+
 typedef bool (*GIsiResponseFunc)(GIsiClient *client,
 		const void *restrict data, size_t len,
 		uint16_t object, void *opaque);
@@ -51,7 +53,14 @@ typedef void (*GIsiDebugFunc) (const void *restrict data, size_t len,
 
 GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource);
 
+GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,
+				void *opaque);
+
 uint8_t g_isi_client_resource(GIsiClient *client);
+
+void g_isi_version_set(GIsiClient *client, int major, int minor);
+int g_isi_version_major(GIsiClient *client);
+int g_isi_version_minor(GIsiClient *client);
 
 void g_isi_client_set_debug(GIsiClient *client, GIsiDebugFunc func,
 				void *opaque);
