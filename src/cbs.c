@@ -420,6 +420,18 @@ static void cbs_unregister(struct ofono_atom *atom)
 	g_dbus_unregister_interface(conn, path, CBS_MANAGER_INTERFACE);
 	ofono_modem_remove_interface(modem, CBS_MANAGER_INTERFACE);
 
+	if (cbs->topics) {
+		g_slist_foreach(cbs->topics, (GFunc)g_free, NULL);
+		g_slist_free(cbs->topics);
+		cbs->topics = NULL;
+	}
+
+	if (cbs->new_topics) {
+		g_slist_foreach(cbs->new_topics, (GFunc)g_free, NULL);
+		g_slist_free(cbs->new_topics);
+		cbs->new_topics = NULL;
+	}
+
 	if (cbs->sim_watch) {
 		if (cbs->imsi_watch) {
 			ofono_sim_remove_ready_watch(cbs->sim,
