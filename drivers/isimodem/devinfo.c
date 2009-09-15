@@ -276,6 +276,21 @@ static gboolean isi_devinfo_register(gpointer user)
 	return FALSE;
 }
 
+static void reachable_cb(GIsiClient *client, bool alive, void *opaque)
+{
+	struct ofono_devinfo *info = opaque;
+
+	if (alive == true) {
+		DBG("Resource 0x%02X, with version %03d.%03d reachable",
+			g_isi_client_resource(client),
+			g_isi_version_major(client),
+			g_isi_version_minor(client));
+		g_idle_add(isi_devinfo_register, info);
+		return;
+	}
+	DBG("Unable to bootsrap devinfo driver");
+}
+
 static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 				void *user)
 {
@@ -295,7 +310,8 @@ static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 
 	ofono_devinfo_set_data(info, data);
 
-	g_idle_add(isi_devinfo_register, info);
+	if (!g_isi_verify(data->client, reachable_cb, info))
+		DBG("Unable to verify reachability");
 
 	return 0;
 }
