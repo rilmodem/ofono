@@ -35,6 +35,7 @@
 #include "common.h"
 #include "util.h"
 #include "smsutil.h"
+#include "simutil.h"
 
 #define CBS_MANAGER_INTERFACE "org.ofono.CbsManager"
 
@@ -59,6 +60,12 @@ struct ofono_cbs {
 	unsigned int imsi_watch;
 	unsigned int netreg_watch;
 	unsigned int location_watch;
+	unsigned short efcbmi_length;
+	GSList *efcbmi_contents;
+	unsigned short efcbmir_length;
+	GSList *efcbmir_contents;
+	unsigned short efcbmid_length;
+	GSList *efcbmid_contents;
 	guint reset_source;
 	int lac;
 	int ci;
@@ -519,12 +526,187 @@ struct ofono_cbs *ofono_cbs_create(struct ofono_modem *modem,
 	return cbs;
 }
 
+static void sim_cbmi_read_cb(int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_cbs *cbs = userdata;
+	unsigned short mi;
+	int i;
+	char *str;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	if ((length % 2) == 1 || length < 2)
+		return;
+
+	cbs->efcbmi_length = length;
+
+	for (i = 0; i < length; i += 2) {
+		struct cbs_topic_range *range;
+
+		if (data[i] == 0xff && data[i+1] == 0xff)
+			continue;
+
+		mi = (data[i] << 8) + data[i+1];
+
+		if (mi > 999)
+			continue;
+
+		range = g_new0(struct cbs_topic_range, 1);
+		range->min = mi;
+		range->max = mi;
+
+		cbs->efcbmi_contents = g_slist_prepend(cbs->efcbmi_contents,
+							range);
+	}
+
+	if (cbs->efcbmi_contents == NULL)
+		return;
+
+	cbs->efcbmi_contents = g_slist_reverse(cbs->efcbmi_contents);
+
+	str = cbs_topic_ranges_to_string(cbs->efcbmi_contents);
+	ofono_debug("Got cbmi: %s", str);
+	g_free(str);
+
+	cbs->efcbmi_length = 0;
+	g_slist_foreach(cbs->efcbmi_contents, (GFunc)g_free, NULL);
+	g_slist_free(cbs->efcbmi_contents);
+	cbs->efcbmi_contents = NULL;
+}
+
+static void sim_cbmir_read_cb(int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_cbs *cbs = userdata;
+	int i;
+	unsigned short min;
+	unsigned short max;
+	char *str;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	if ((length % 4) != 0)
+		return;
+
+	cbs->efcbmir_length = length;
+
+	for (i = 0; i < length; i += 4) {
+		struct cbs_topic_range *range;
+
+		if (data[i] == 0xff && data[i+1] == 0xff &&
+				data[i+2] == 0xff && data[i+3] == 0xff)
+			continue;
+
+		min = (data[i] << 8) + data[i+1];
+		max = (data[i+2] << 8) + data[i+3];
+
+		if (min > 999 || max > 999 || min > max)
+			continue;
+
+		range = g_new0(struct cbs_topic_range, 1);
+		range->min = min;
+		range->max = max;
+
+		cbs->efcbmir_contents = g_slist_prepend(cbs->efcbmir_contents,
+							range);
+	}
+
+	if (cbs->efcbmir_contents == NULL)
+		return;
+
+	cbs->efcbmir_contents = g_slist_reverse(cbs->efcbmir_contents);
+
+	str = cbs_topic_ranges_to_string(cbs->efcbmir_contents);
+	ofono_debug("Got cbmir: %s", str);
+	g_free(str);
+
+	cbs->efcbmir_length = 0;
+	g_slist_foreach(cbs->efcbmir_contents, (GFunc)g_free, NULL);
+	g_slist_free(cbs->efcbmir_contents);
+	cbs->efcbmir_contents = NULL;
+}
+
+static void sim_cbmid_read_cb(int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_cbs *cbs = userdata;
+	unsigned short mi;
+	int i;
+	char *str;
+
+	if (!ok)
+		return;
+
+	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	if ((length % 2) == 1 || length < 2)
+		return;
+
+	cbs->efcbmid_length = length;
+
+	for (i = 0; i < length; i += 2) {
+		struct cbs_topic_range *range;
+
+		if (data[i] == 0xff && data[i+1] == 0xff)
+			continue;
+
+		mi = (data[i] << 8) + data[i+1];
+
+		range = g_new0(struct cbs_topic_range, 1);
+		range->min = mi;
+		range->max = mi;
+
+		cbs->efcbmid_contents = g_slist_prepend(cbs->efcbmid_contents,
+							range);
+	}
+
+	if (cbs->efcbmid_contents == NULL)
+		return;
+
+	cbs->efcbmid_contents = g_slist_reverse(cbs->efcbmid_contents);
+
+	str = cbs_topic_ranges_to_string(cbs->efcbmid_contents);
+	ofono_debug("Got cbmid: %s", str);
+	g_free(str);
+
+	cbs->efcbmid_length = 0;
+	g_slist_foreach(cbs->efcbmid_contents, (GFunc)g_free, NULL);
+	g_slist_free(cbs->efcbmid_contents);
+	cbs->efcbmid_contents = NULL;
+}
+
 static void cbs_got_imsi(void *data)
 {
 	struct ofono_cbs *cbs = data;
 	const char *imsi = ofono_sim_get_imsi(cbs->sim);
 
 	ofono_debug("Got IMSI: %s", imsi);
+
+	ofono_sim_read(cbs->sim, SIM_EFCBMI_FILEID,
+				sim_cbmi_read_cb, cbs);
+	ofono_sim_read(cbs->sim, SIM_EFCBMIR_FILEID,
+				sim_cbmir_read_cb, cbs);
+	ofono_sim_read(cbs->sim, SIM_EFCBMID_FILEID,
+				sim_cbmid_read_cb, cbs);
 }
 
 static void sim_watch(struct ofono_atom *atom,

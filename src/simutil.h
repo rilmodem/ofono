@@ -31,6 +31,9 @@ enum sim_fileid {
 	SIM_EFMWIS_FILEID = 0x6fca,
 	SIM_EFSPDI_FILEID = 0x6fcd,
 	SIM_EFECC_FILEID = 0x6fb7,
+	SIM_EFCBMIR_FILEID = 0x6f50,
+	SIM_EFCBMI_FILEID = 0x6f45,
+	SIM_EFCBMID_FILEID = 0x6f48,
 };
 
 /* 51.011 Section 9.3 */
