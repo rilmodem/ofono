@@ -47,13 +47,6 @@
 #define NETWORK_SCAN_TIMEOUT	60
 #define NETWORK_SET_TIMEOUT	100
 
-/* Used with COMMON_MESSAGE */
-enum sub_message_id {
-	COMM_ISI_VERSION_GET_REQ = 0x12,
-	COMM_ISI_VERSION_GET_RESP = 0x13,
-	COMM_ISA_ENTITY_NOT_REACHABLE_RESP = 0x14
-};
-
 enum message_id {
 	NET_SET_REQ = 0x07,
 	NET_SET_RESP = 0x08,
@@ -70,7 +63,6 @@ enum message_id {
 	NET_AVAILABLE_GET_RESP = 0xE4,
 	NET_OPER_NAME_READ_REQ = 0xE5,
 	NET_OPER_NAME_READ_RESP = 0xE6,
-	COMMON_MESSAGE = 0xF0
 };
 
 enum sub_block_id {
@@ -213,11 +205,7 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_REG_INFO_COMMON: {
-
 			guint8 byte = 0;
-
-			if (g_isi_sb_iter_get_len(&iter) < 12)
-				return FALSE;
 
 			if (!g_isi_sb_iter_get_byte(&iter, &byte, 2))
 				return FALSE;
@@ -228,20 +216,16 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 
 			*status = byte;
 
-			/* FIXME: decode alpha tag */
+			/* FIXME: decode alpha tag(s) */
 			break;
 		}
 
 		case NET_GSM_REG_INFO: {
-
 			guint16 word = 0;
 			guint32 dword = 0;
 			guint8 egprs = 0;
 			guint8 hsdpa = 0;
 			guint8 hsupa = 0;
-
-			if (g_isi_sb_iter_get_len(&iter) != 24)
-				return FALSE;
 
 			if (!g_isi_sb_iter_get_word(&iter, &word, 2) ||
 				!g_isi_sb_iter_get_dword(&iter, &dword, 4) ||
@@ -419,20 +403,13 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_GSM_OPERATOR_INFO:
-
-			if (g_isi_sb_iter_get_len(&iter) < 8)
+			if (!g_isi_sb_iter_get_oper_code(&iter, op.mcc, op.mnc, 2))
 				goto error;
-
-			g_isi_sb_iter_get_oper_code(&iter, op.mcc, op.mnc, 2);
 			break;
 
 		case NET_OPER_NAME_INFO: {
-
 			char *tag = NULL;
 			guint8 taglen = 0;
-
-			if (g_isi_sb_iter_get_len(&iter) < 4)
-				goto error;
 
 			if (!g_isi_sb_iter_get_byte(&iter, &taglen, 3))
 				goto error;
@@ -538,20 +515,13 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_AVAIL_NETWORK_INFO_COMMON: {
-		
 			struct ofono_network_operator *op;
 			char *tag = NULL;
 			guint8 taglen = 0;
 			guint8 status = 0;
 
-			if (g_isi_sb_iter_get_len(&iter) < 12)
-				goto error;
-
-			op = list + common++;
 			if (!g_isi_sb_iter_get_byte(&iter, &status, 2))
 				goto error;
-
-			op->status = status;
 
 			if (!g_isi_sb_iter_get_byte(&iter, &taglen, 5))
 				goto error;
@@ -560,6 +530,9 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 						taglen * 2, 6))
 				goto error;
 
+			op = list + common++;
+			op->status = status;
+
 			strncpy(op->name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
 			op->name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 			g_free(tag);
@@ -567,11 +540,7 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		case NET_DETAILED_NETWORK_INFO: {
-
 			struct ofono_network_operator *op;
-
-			if (g_isi_sb_iter_get_len(&iter) < 8)
-				goto error;
 
 			op = list + detail++;
 			if (!g_isi_sb_iter_get_oper_code(&iter, op->mcc,
@@ -803,18 +772,18 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_RAT_INFO: {
-
 			guint8 info = 0;
-
-			if (g_isi_sb_iter_get_len(&iter) < 4)
-				goto error;
 			
-			g_isi_sb_iter_get_byte(&iter, &nd->rat, 2);
-			g_isi_sb_iter_get_byte(&iter, &info, 3);
+			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2))
+				return;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &info, 3))
+				return;
 
 			if (info)
-				g_isi_sb_iter_get_byte(&iter,
-						&nd->gsm_compact, 4);
+				if (!g_isi_sb_iter_get_byte(&iter,
+							&nd->gsm_compact, 4))
+					return;
 			break;
 		}
 
@@ -826,10 +795,6 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 		}
 		g_isi_sb_iter_next(&iter);
 	}
-
-error:
-	DBG("Truncated message");
-	return;
 }
 
 static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
@@ -862,18 +827,18 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_RAT_INFO: {
-
 			guint8 info = 0;
-
-			if (g_isi_sb_iter_get_len(&iter) < 4)
-				return true;
 			
-			g_isi_sb_iter_get_byte(&iter, &nd->rat, 2);
-			g_isi_sb_iter_get_byte(&iter, &info, 3);
+			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2))
+				return true;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &info, 3))
+				return true;
 
 			if (info)
-				g_isi_sb_iter_get_byte(&iter,
-						&nd->gsm_compact, 4);
+				if (!g_isi_sb_iter_get_byte(&iter,
+							&nd->gsm_compact, 4))
+					return true;
 			break;
 		}
 
@@ -931,11 +896,9 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_RSSI_CURRENT: {
-
 			guint8 rssi = 0;
 
-			if (g_isi_sb_iter_get_len(&iter) < 4 ||
-				!g_isi_sb_iter_get_byte(&iter, &rssi, 2))
+			if (!g_isi_sb_iter_get_byte(&iter, &rssi, 2))
 				goto error;
 
 			strength = rssi != 0 ? rssi : -1;
@@ -1016,31 +979,19 @@ static gboolean isi_netreg_register(gpointer user)
 	return FALSE;
 }
 
-static bool version_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static void reachable_cb(GIsiClient *client, bool alive, void *opaque)
 {
-	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
-	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
-	if(!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		return true;
+	if (alive == true) {
+		DBG("Resource 0x%02X, with version %03d.%03d reachable",
+			g_isi_client_resource(client),
+			g_isi_version_major(client),
+			g_isi_version_minor(client));
+		g_idle_add(isi_netreg_register, netreg);
+		return;
 	}
-
-	if (len < 7 || msg[0] != COMMON_MESSAGE ||
-		msg[1] != COMM_ISI_VERSION_GET_RESP)
-		return true;
-
-	nd->version.major = msg[2];
-	nd->version.minor = msg[3];
-
-	g_idle_add(isi_netreg_register, netreg);
-
-	DBG("Resource 0x%02X version: %03u.%03u",
-		g_isi_client_resource(nd->client),
-		nd->version.major, nd->version.minor);
-	return true;
+	DBG("Unable to bootsrap netreg driver");
 }
 
 static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
@@ -1048,12 +999,6 @@ static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 {
 	GIsiModem *idx = user;
 	struct netreg_data *nd = g_try_new0(struct netreg_data, 1);
-
-	unsigned char msg[] = {
-		COMMON_MESSAGE,
-		COMM_ISI_VERSION_GET_REQ,
-		0x00 /* Filler */
-	};
 
 	if (!nd)
 		return -ENOMEM;
@@ -1066,9 +1011,8 @@ static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 
 	ofono_netreg_set_data(netreg, nd);
 
-	if (!g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
-				version_resp_cb, netreg))
-		DBG("Version query failed");
+	if (!g_isi_verify(nd->client, reachable_cb, netreg))
+		DBG("Unable to verify reachability");
 
 	return 0;
 }
