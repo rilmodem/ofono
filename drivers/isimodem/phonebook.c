@@ -330,6 +330,21 @@ static gboolean isi_phonebook_register(gpointer user)
 	return FALSE;
 }
 
+static void reachable_cb(GIsiClient *client, bool alive, void *opaque)
+{
+	struct ofono_phonebook *pb = opaque;
+
+	if (alive == true) {
+		DBG("Resource 0x%02X, with version %03d.%03d reachable",
+			g_isi_client_resource(client),
+			g_isi_version_major(client),
+			g_isi_version_minor(client));
+		g_idle_add(isi_phonebook_register, pb);
+		return;
+	}
+	DBG("Unable to bootsrap phonebook driver");
+}
+
 static int isi_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 				void *user)
 {
@@ -347,10 +362,8 @@ static int isi_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 
 	ofono_phonebook_set_data(pb, data);
 
-	/* FIXME: If this is running on a phone itself, phonebook
-	 * initialization needs to be done here */
-
-	g_idle_add(isi_phonebook_register, pb);
+	if (!g_isi_verify(data->client, reachable_cb, pb))
+		DBG("Unable to verify reachability");
 
 	return 0;
 }
