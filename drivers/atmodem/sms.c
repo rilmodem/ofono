@@ -314,13 +314,18 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 	const char *hexpdu;
 	long pdu_len;
 	int tpdu_len;
-	unsigned char pdu[164];
+	unsigned char pdu[176];
 	char buf[256];
 
 	dump_response("at_cmt_notify", TRUE, result);
 
 	if (!at_parse_pdu_common(result, "+CMT:", &hexpdu, &tpdu_len)) {
 		ofono_error("Unable to parse CMT notification");
+		return;
+	}
+
+	if (strlen(hexpdu) > sizeof(pdu) * 2) {
+		ofono_error("Bad PDU length in CMT notification");
 		return;
 	}
 
@@ -344,7 +349,7 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 	struct ofono_sms *sms = user_data;
 	GAtResultIter iter;
 	const char *hexpdu;
-	unsigned char pdu[164];
+	unsigned char pdu[176];
 	long pdu_len;
 	int tpdu_len;
 
@@ -365,6 +370,9 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 		goto err;
 
 	hexpdu = g_at_result_pdu(result);
+
+	if (strlen(hexpdu) > sizeof(pdu) * 2)
+		goto err;
 
 	ofono_debug("Got PDU: %s, with len: %d", hexpdu, tpdu_len);
 
@@ -485,7 +493,7 @@ static void at_cmgl_notify(GAtResult *result, gpointer user_data)
 	struct sms_data *data = ofono_sms_get_data(sms);
 	GAtResultIter iter;
 	const char *hexpdu;
-	unsigned char pdu[164];
+	unsigned char pdu[176];
 	long pdu_len;
 	int tpdu_len;
 	int index;
@@ -517,6 +525,9 @@ static void at_cmgl_notify(GAtResult *result, gpointer user_data)
 
 		ofono_debug("Found an old SMS PDU: %s, with len: %d",
 				hexpdu, tpdu_len);
+
+		if (strlen(hexpdu) > sizeof(pdu) * 2)
+			continue;
 
 		decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 		ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
