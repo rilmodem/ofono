@@ -47,7 +47,7 @@ static inline void bcd_to_mccmnc(const uint8_t *bcd, char *mcc, char *mnc)
 	mnc[3] = '\0';
 }
 
-bool g_isi_sb_iter_init(const void restrict *data, size_t len,
+bool g_isi_sb_iter_init(const void *restrict data, size_t len,
 			GIsiSubBlockIter *iter, bool longhdr)
 {
 	if (!iter || !data || len == 0)

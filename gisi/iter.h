@@ -38,7 +38,7 @@ struct _GIsiSubBlockIter {
 };
 typedef struct _GIsiSubBlockIter GIsiSubBlockIter;
 
-bool g_isi_sb_iter_init(const void restrict *data, size_t len,
+bool g_isi_sb_iter_init(const void *restrict data, size_t len,
 			GIsiSubBlockIter *iter, bool longhdr);
 bool g_isi_sb_iter_is_valid(GIsiSubBlockIter *iter);
 bool g_isi_sb_iter_next(GIsiSubBlockIter *iter);
