@@ -111,15 +111,10 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 			guint8 namelen;
 			guint8 numberlen;
 
-			if (g_isi_sb_iter_get_len(&iter) < 8)
-				goto error;
-
 			if (!g_isi_sb_iter_get_word(&iter, &loc, 4) ||
 				!g_isi_sb_iter_get_byte(&iter, &namelen, 6) ||
 				!g_isi_sb_iter_get_byte(&iter, &numberlen, 7))
 				goto error;
-
-			location = loc;
 
 			if (!g_isi_sb_iter_get_alpha_tag(&iter, &name,
 						namelen * 2, 8))
@@ -128,14 +123,13 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 			if (!g_isi_sb_iter_get_alpha_tag(&iter, &number,
 						numberlen * 2, 8 + namelen * 2))
 				goto error;
+
+			location = loc;
 			break;
 		}
 
 		case SIM_PB_SNE: {
 			guint8 snelen;
-
-			if (g_isi_sb_iter_get_len(&iter) < 8)
-				goto error;
 
 			if (!g_isi_sb_iter_get_byte(&iter, &snelen, 6))
 				goto error;
@@ -149,9 +143,6 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 		case SIM_PB_ANR: {
 			guint8 anrlen;
 
-			if (g_isi_sb_iter_get_len(&iter) < 8)
-				goto error;
-
 			if (!g_isi_sb_iter_get_byte(&iter, &anrlen, 6))
 				goto error;
 
@@ -164,9 +155,6 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 		case SIM_PB_EMAIL: {
 			guint8 emaillen;
 
-			if (g_isi_sb_iter_get_len(&iter) < 8)
-				goto error;
-
 			if (!g_isi_sb_iter_get_byte(&iter, &emaillen, 6))
 				goto error;
 
@@ -177,9 +165,6 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 		}
 
 		case SIM_PB_STATUS:
-
-			if (g_isi_sb_iter_get_len(&iter) < 5)
-				goto error;
 
 			if (!g_isi_sb_iter_get_byte(&iter, &status, 4))
 				 goto error;

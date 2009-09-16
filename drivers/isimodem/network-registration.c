@@ -267,7 +267,7 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%zd bytes)",
+			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
 				g_isi_sb_iter_get_id(&iter),
 				g_isi_sb_iter_get_len(&iter));
 			break;
@@ -359,7 +359,8 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
+	if (g_isi_request_make(nd->client, msg, sizeof(msg),
+				NETWORK_TIMEOUT,
 				reg_status_resp_cb, cbd))
 		return;
 
@@ -395,7 +396,7 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!g_isi_sb_iter_init(msg + 7, len - 7, &iter, false))
+	if (!g_isi_sb_iter_init(msg+7, len-7, &iter, false))
 		goto error;
 
 	while (g_isi_sb_iter_is_valid(&iter)) {
@@ -419,6 +420,7 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 				goto error;
 
 			strncpy(op.name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
+			op.name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 			g_free(tag);
 			break;
 		}
@@ -465,7 +467,8 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
+	if (g_isi_request_make(nd->client, msg, sizeof(msg),
+				NETWORK_TIMEOUT,
 				name_get_resp_cb, cbd))
 		return;
 
@@ -941,7 +944,8 @@ static void isi_strength(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
+	if (g_isi_request_make(nd->client, msg, sizeof(msg),
+				NETWORK_TIMEOUT,
 				rssi_resp_cb, cbd))
 		return;
 
@@ -970,7 +974,8 @@ static gboolean isi_netreg_register(gpointer user)
 	g_isi_subscribe(nd->client, NET_RAT_IND, rat_ind_cb, netreg);
 
 	/* Bootstrap current RAT setting */
-	if (!g_isi_request_make(nd->client, rat, sizeof(rat), NETWORK_TIMEOUT,
+	if (!g_isi_request_make(nd->client, rat, sizeof(rat),
+				NETWORK_TIMEOUT,
 				rat_resp_cb, netreg))
 		DBG("Failed to bootstrap RAT");
 
