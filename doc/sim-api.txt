@@ -1,0 +1,83 @@
+SimManager hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.SimManager
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the modem object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		ChangePin(string type, string oldpin, string newpin)
+
+			Changes the pin given by string type.  If newpin is
+			empty, this has the effect of disabling the pin.
+
+		EnterPin(string type, string pin)
+
+			Enters the currently pending pin.  The type value must
+			match the pin type being asked in the PinRequired
+			property.
+
+		ResetPin(string type, string puk, string newpin)
+
+			Provides the unblock key to the modem and if correct
+			resets the pin to the new value of newpin.
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string SubscriberIdentity [readonly, optional]
+
+			Contains the ISMI of the SIM, if available
+
+		uint8 MobileNetworkCodeLength [readonly, optional]
+
+			Contains the length of the MNC (2 or 3 digits)
+
+		array{string} SubscriberNumbers [readwrite]
+
+			Contains the list of subscriber numbers.  This is
+			usually stored in the EFmsisdn sim file.
+
+		dict ServiceNumbers [readonly, optional]
+
+			Contains a dictionary of service dialing numbers from
+			the SIM, if available.
+
+		string PinRequired [readonly]
+
+			Contains the string type of the pin required by the
+			modem.  The possible values are:
+				"none" - Nothing is required
+				"pin" - SIM PIN is required
+				"phone" - Phone-to-SIM PIN is required
+				"firstphone" - Phone-to-very-first SIM
+						PIN is required
+				"pin2" - SIM PIN2 is required
+				"network" - Network Personalization password is
+						required
+				"netsub" - Network subset personalization
+						password is required
+				"service" - Service Provider personalization
+						password is required
+				"corp" - Corporate personalization password
+						is required
+				"puk" - SIM PUK is required
+				"firstphonepuk" - Phone-to-very-first SIM PUK is
+						required
+				"puk2" - SIM PUK2 is required
+				"networkpuk" - Network personalization unblocking
+						password is required
+				"netsubpuk" - Network subset personalization
+						unblocking password is required
+				"servicepuk" - Service provider personalization
+						unblocking password is required
+				"corppuk" - Corporate personalization unblocking
+						password is required
