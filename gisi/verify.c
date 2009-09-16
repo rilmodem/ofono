@@ -38,6 +38,8 @@
 #define COMM_ISI_VERSION_GET_RESP		0x13
 #define COMM_ISA_ENTITY_NOT_REACHABLE_RESP	0x14
 
+#define PN_SIM			0x09
+
 struct verify_data {
 	void *func;
 	void *data;
@@ -55,10 +57,10 @@ static bool verify_cb(GIsiClient *client, const void *restrict data,
 	if(!msg)
 		goto out;
 
-	if (len < 4 || msg[0] != COMMON_MESSAGE)
+	if (len < 2 || msg[0] != COMMON_MESSAGE)
 		goto out;
 
-	if (msg[1] == COMM_ISI_VERSION_GET_RESP) {
+	if (msg[1] == COMM_ISI_VERSION_GET_RESP && len >= 4) {
 		g_isi_version_set(client, msg[2], msg[3]);
 		alive = true;
 		goto out;
