@@ -620,7 +620,7 @@ static int assembly_pdu_len3 = 89;
 
 static void test_assembly()
 {
-	unsigned char pdu[164];
+	unsigned char pdu[176];
 	long pdu_len;
 	struct sms sms;
 	struct sms_assembly *assembly = sms_assembly_new(NULL);
@@ -1009,7 +1009,7 @@ static void test_cbs_assembly()
 
 static void test_serialize_assembly()
 {
-	unsigned char pdu[164];
+	unsigned char pdu[176];
 	long pdu_len;
 	struct sms sms;
 	struct sms_assembly *assembly = sms_assembly_new("1234");
