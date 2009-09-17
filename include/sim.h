@@ -64,6 +64,12 @@ typedef void (*ofono_sim_file_read_cb_t)(int ok,
 
 typedef void (*ofono_sim_file_write_cb_t)(int ok, void *userdata);
 
+typedef void (*ofono_sim_passwd_cb_t)(const struct ofono_error *error,
+					int passwd_type, void *data);
+
+typedef void (*ofono_sim_lock_unlock_cb_t)(const struct ofono_error *error,
+					void *data);
+
 struct ofono_sim_driver {
 	const char *name;
 	int (*probe)(struct ofono_sim *sim, unsigned int vendor, void *data);
@@ -90,6 +96,19 @@ struct ofono_sim_driver {
 			ofono_sim_write_cb_t cb, void *data);
 	void (*read_imsi)(struct ofono_sim *sim,
 			ofono_sim_imsi_cb_t cb, void *data);
+	void (*query_passwd_state)(struct ofono_sim *sim,
+			ofono_sim_passwd_cb_t cb, void *data);
+	void (*send_passwd)(struct ofono_sim *sim, const char *passwd,
+			ofono_sim_lock_unlock_cb_t cb, void *data);
+	void (*reset_passwd)(struct ofono_sim *sim, const char *puk,
+			const char *passwd,
+			ofono_sim_lock_unlock_cb_t cb, void *data);
+	void (*change_passwd)(struct ofono_sim *sim, int passwd_type,
+			const char *old, const char *new,
+			ofono_sim_lock_unlock_cb_t cb, void *data);
+	void (*lock)(struct ofono_sim *sim, int passwd_type, int enable,
+			const char *passwd,
+			ofono_sim_lock_unlock_cb_t cb, void *data);
 };
 
 int ofono_sim_driver_register(const struct ofono_sim_driver *d);

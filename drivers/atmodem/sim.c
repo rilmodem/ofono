@@ -398,6 +398,242 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
+static struct {
+	enum ofono_passwd_type type;
+	const char *name;
+} const at_sim_name[] = {
+	{ OFONO_PASSWD_SIM_PIN, "SIM PIN" },
+	{ OFONO_PASSWD_SIM_PUK, "SIM PUK" },
+	{ OFONO_PASSWD_PHSIM_PIN, "PH-SIM PIN" },
+	{ OFONO_PASSWD_PHFSIM_PIN, "PH-FSIM PIN" },
+	{ OFONO_PASSWD_PHFSIM_PUK, "PH-FSIM PUK" },
+	{ OFONO_PASSWD_SIM_PIN2, "SIM PIN2" },
+	{ OFONO_PASSWD_SIM_PUK2, "SIM PUK2" },
+	{ OFONO_PASSWD_PHNET_PIN, "PH-NET PIN" },
+	{ OFONO_PASSWD_PHNET_PUK, "PH-NET PUK" },
+	{ OFONO_PASSWD_PHNETSUB_PIN, "PH-NETSUB PIN" },
+	{ OFONO_PASSWD_PHNETSUB_PUK, "PH-NETSUB PUK" },
+	{ OFONO_PASSWD_PHSP_PIN, "PH-SP PIN" },
+	{ OFONO_PASSWD_PHSP_PUK, "PH-SP PUK" },
+	{ OFONO_PASSWD_PHCORP_PIN, "PH-CORP PIN" },
+	{ OFONO_PASSWD_PHCORP_PUK, "PH-CORP PUK" },
+};
+
+static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	GAtResultIter iter;
+	ofono_sim_passwd_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	const char *pin_required;
+	int pin_type;
+	int i;
+	int len = sizeof(at_sim_name) / sizeof(*at_sim_name);
+
+	dump_response("at_cpin_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CPIN:")) {
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_next_unquoted_string(&iter, &pin_required);
+
+	pin_type = -1;
+	if (!strcmp(pin_required, "READY"))
+		pin_type = OFONO_PASSWD_NONE;
+	else
+		for (i = 0; i < len; i++)
+			if (!strcmp(pin_required, at_sim_name[i].name)) {
+				pin_type = at_sim_name[i].type;
+				break;
+			}
+
+	if (pin_type == -1) {
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+		return;
+	}
+
+	ofono_debug("crsm_pin_cb: %s", pin_required);
+
+	cb(&error, pin_type, cbd->data);
+}
+
+static void at_pin_query(struct ofono_sim *sim, ofono_sim_passwd_cb_t cb,
+			void *data)
+{
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data);
+
+	if (!cbd)
+		goto error;
+
+	if (g_at_chat_send(chat, "AT+CPIN?", NULL,
+				at_cpin_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, -1, data);
+}
+
+static void at_lock_unlock_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	dump_response("at_lock_unlock_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	cb(&error, cbd->data);
+}
+
+static void at_pin_send(struct ofono_sim *sim, const char *passwd,
+			ofono_sim_lock_unlock_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[64];
+	int ret;
+
+	if (!cbd)
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\"", passwd);
+
+	ret = g_at_chat_send(chat, buf, NULL, at_lock_unlock_cb, cbd, g_free);
+
+	memset(buf, 0, sizeof(buf));
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
+				const char *passwd,
+				ofono_sim_lock_unlock_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[64];
+	int ret;
+
+	if (!cbd)
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\",\"%s\"", puk, passwd);
+
+	ret = g_at_chat_send(chat, buf, NULL, at_lock_unlock_cb, cbd, g_free);
+
+	memset(buf, 0, sizeof(buf));
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static const char *const at_clck_cpwd_fac[] = {
+	[OFONO_PASSWD_SIM_PIN] = "SC",
+	[OFONO_PASSWD_SIM_PIN2] = "P2",
+	[OFONO_PASSWD_PHSIM_PIN] = "PS",
+	[OFONO_PASSWD_PHFSIM_PIN] = "PF",
+	[OFONO_PASSWD_PHNET_PIN] = "PN",
+	[OFONO_PASSWD_PHNETSUB_PIN] = "PU",
+	[OFONO_PASSWD_PHSP_PIN] = "PP",
+	[OFONO_PASSWD_PHCORP_PIN] = "PC",
+};
+
+static void at_pin_enable(struct ofono_sim *sim, int passwd_type, int enable,
+			const char *passwd,
+			ofono_sim_lock_unlock_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[64];
+	int ret;
+	int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
+
+	if (!cbd)
+		goto error;
+
+	if (passwd_type < 0 || passwd_type >= len ||
+			!at_clck_cpwd_fac[passwd_type])
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",%i,\"%s\"",
+			at_clck_cpwd_fac[passwd_type], enable ? 1 : 0, passwd);
+
+	ret = g_at_chat_send(chat, buf, NULL, at_lock_unlock_cb, cbd, g_free);
+
+	memset(buf, 0, sizeof(buf));
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void at_change_passwd(struct ofono_sim *sim, int passwd_type,
+			const char *old, const char *new,
+			ofono_sim_lock_unlock_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[64];
+	int ret;
+	int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
+
+	if (!cbd)
+		goto error;
+
+	if (passwd_type < 0 || passwd_type >= len ||
+			!at_clck_cpwd_fac[passwd_type])
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CPWD=\"%s\",\"%s\",\"%s\"",
+			at_clck_cpwd_fac[passwd_type], old, new);
+
+	ret = g_at_chat_send(chat, buf, NULL, at_lock_unlock_cb, cbd, g_free);
+
+	memset(buf, 0, sizeof(buf));
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
 static gboolean at_sim_register(gpointer user)
 {
 	struct ofono_sim *sim = user;
@@ -434,6 +670,11 @@ static struct ofono_sim_driver driver = {
 	.write_file_linear	= at_sim_update_record,
 	.write_file_cyclic	= at_sim_update_cyclic,
 	.read_imsi		= at_read_imsi,
+	.query_passwd_state	= at_pin_query,
+	.send_passwd		= at_pin_send,
+	.reset_passwd		= at_pin_send_puk,
+	.lock			= at_pin_enable,
+	.change_passwd		= at_change_passwd,
 };
 
 void at_sim_init()

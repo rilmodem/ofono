@@ -93,3 +93,6 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 void sim_adn_build(unsigned char *data, int length,
 			const struct ofono_phone_number *ph,
 			const char *identifier);
+
+const char *sim_passwd_name(enum ofono_passwd_type type);
+enum ofono_passwd_type sim_string_to_passwd(const char *name);
