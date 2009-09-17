@@ -2911,7 +2911,7 @@ gboolean cbs_extract_app_port(const struct cbs *cbs, int *dst, int *src,
 	return extract_app_port_common(&iter, dst, src, is_8bit);
 }
 
-static gboolean iso639_2_from_language(enum cbs_language lang, char *iso639)
+gboolean iso639_2_from_language(enum cbs_language lang, char *iso639)
 {
 	switch (lang) {
 	case CBS_LANGUAGE_GERMAN:

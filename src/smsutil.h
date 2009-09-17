@@ -477,6 +477,7 @@ gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 			enum sms_charset *charset, gboolean *compressed,
 			enum cbs_language *language, gboolean *iso639);
 
+gboolean iso639_2_from_language(enum cbs_language lang, char *iso639);
 gboolean cbs_decode(const unsigned char *pdu, int len, struct cbs *out);
 gboolean cbs_encode(const struct cbs *cbs, int *len, unsigned char *pdu);
 gboolean cbs_extract_app_port(const struct cbs *cbs, int *dst, int *src,

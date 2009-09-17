@@ -679,47 +679,23 @@ static void parse_language_list(char **out_list, int *count,
 	}
 }
 
-static const char* const dcs_lang_to_iso[0x30] = {
-	[0x00] = "de",
-	[0x01] = "en",
-	[0x02] = "it",
-	[0x03] = "fr",
-	[0x04] = "es",
-	[0x05] = "nl",
-	[0x06] = "sv",
-	[0x07] = "da",
-	[0x08] = "pt",
-	[0x09] = "fi",
-	[0x0a] = "no",
-	[0x0b] = "el",
-	[0x0c] = "tr",
-	[0x0d] = "hu",
-	[0x0e] = "pl",
-	[0x20] = "cs",
-	[0x21] = "ar",
-	[0x22] = "he",
-	[0x23] = "ar",
-	[0x24] = "ru",
-	[0x25] = "is",
-};
-
 static void parse_eflp(char **out_list, int *count,
 			const unsigned char *eflp, int length)
 {
 	int i, j;
-	const char *code;
+	char code[3];
 
 	for (i = 0; i < length; i++) {
 		if (eflp[i] >= 0x30)
 			continue;
 
-		code = dcs_lang_to_iso[eflp[i]];
-		if (!code)
+		if (iso639_2_from_language(eflp[i], code) == FALSE)
 			continue;
 
 		for (j = 0; j < *count; j ++)
 			if (!memcmp(out_list[j], code, 2))
 				break;
+
 		if (j < *count)
 			continue;
 
