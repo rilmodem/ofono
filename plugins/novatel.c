@@ -141,13 +141,21 @@ static int novatel_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void novatel_populate(struct ofono_modem *modem)
+static void novatel_pre_sim(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+}
+
+static void novatel_post_sim(struct ofono_modem *modem)
+{
+	struct novatel_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
 }
 
@@ -157,7 +165,8 @@ static struct ofono_modem_driver novatel_driver = {
 	.remove		= novatel_remove,
 	.enable		= novatel_enable,
 	.disable	= novatel_disable,
-	.populate	= novatel_populate,
+	.pre_sim	= novatel_pre_sim,
+	.post_sim	= novatel_post_sim,
 };
 
 static int novatel_init(void)

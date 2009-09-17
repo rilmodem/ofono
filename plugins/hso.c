@@ -145,7 +145,7 @@ static int hso_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void hso_populate(struct ofono_modem *modem)
+static void hso_pre_sim(struct ofono_modem *modem)
 {
 	struct hso_data *data = ofono_modem_get_data(modem);
 
@@ -157,13 +157,24 @@ static void hso_populate(struct ofono_modem *modem)
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
 }
 
+static void hso_post_sim(struct ofono_modem *modem)
+{
+	struct hso_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	ofono_sms_create(modem, 0, "atmodem", data->chat);
+}
+
 static struct ofono_modem_driver hso_driver = {
 	.name		= "hso",
 	.probe		= hso_probe,
 	.remove		= hso_remove,
 	.enable		= hso_enable,
 	.disable	= hso_disable,
-	.populate	= hso_populate,
+	.pre_sim	= hso_pre_sim,
+	.post_sim	= hso_post_sim,
 };
 
 static int hso_init(void)

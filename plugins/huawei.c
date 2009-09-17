@@ -141,13 +141,21 @@ static int huawei_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void huawei_populate(struct ofono_modem *modem)
+static void huawei_pre_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+}
+
+static void huawei_post_sim(struct ofono_modem *modem)
+{
+	struct huawei_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
 }
 
@@ -157,7 +165,8 @@ static struct ofono_modem_driver huawei_driver = {
 	.remove		= huawei_remove,
 	.enable		= huawei_enable,
 	.disable	= huawei_disable,
-	.populate	= huawei_populate,
+	.pre_sim	= huawei_pre_sim,
+	.post_sim	= huawei_post_sim,
 };
 
 static int huawei_init(void)

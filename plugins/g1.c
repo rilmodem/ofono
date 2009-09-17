@@ -140,20 +140,28 @@ static int g1_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void g1_populate(struct ofono_modem *modem)
+static void g1_pre_sim(struct ofono_modem *modem)
+{
+	GAtChat *chat = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	ofono_devinfo_create(modem, 0, "atmodem", chat);
+	ofono_sim_create(modem, 0, "atmodem", chat);
+	ofono_voicecall_create(modem, 0, "atmodem", chat);
+}
+
+static void g1_post_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 
 	DBG("");
 
-	ofono_devinfo_create(modem, 0, "atmodem", chat);
 	ofono_ussd_create(modem, 0, "atmodem", chat);
-	ofono_sim_create(modem, 0, "atmodem", chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", chat);
 	ofono_call_settings_create(modem, 0, "atmodem", chat);
 	ofono_netreg_create(modem, 0, "atmodem", chat);
-	ofono_voicecall_create(modem, 0, "atmodem", chat);
 	ofono_call_meter_create(modem, 0, "atmodem", chat);
 	ofono_call_barring_create(modem, 0, "atmodem", chat);
 	ofono_ssn_create(modem, 0, "atmodem", chat);
@@ -171,7 +179,8 @@ static struct ofono_modem_driver g1_driver = {
 	.remove		= g1_remove,
 	.enable		= g1_enable,
 	.disable	= g1_disable,
-	.populate	= g1_populate,
+	.pre_sim	= g1_pre_sim,
+	.post_sim	= g1_post_sim,
 };
 
 static int g1_init(void)

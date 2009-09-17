@@ -145,15 +145,23 @@ static int mbm_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void mbm_populate(struct ofono_modem *modem)
+static void mbm_pre_sim(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	ofono_netreg_create(modem, 0, "atmodem", data->chat);
 	ofono_sim_create(modem, 0, "atmodem", data->chat);
+}
+
+static void mbm_post_sim(struct ofono_modem *modem)
+{
+	struct mbm_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_netreg_create(modem, 0, "atmodem", data->chat);
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
 }
 
@@ -163,7 +171,8 @@ static struct ofono_modem_driver mbm_driver = {
 	.remove		= mbm_remove,
 	.enable		= mbm_enable,
 	.disable	= mbm_disable,
-	.populate	= mbm_populate,
+	.pre_sim	= mbm_pre_sim,
+	.post_sim	= mbm_post_sim,
 };
 
 static int mbm_init(void)

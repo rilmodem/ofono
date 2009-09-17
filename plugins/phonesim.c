@@ -219,27 +219,37 @@ static int phonesim_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void phonesim_populate(struct ofono_modem *modem)
+static void phonesim_pre_sim(struct ofono_modem *modem)
+{
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+	ofono_sim_create(modem, 0, "atmodem", data->chat);
+
+	if (data->calypso)
+		ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
+	else
+		ofono_voicecall_create(modem, 0, "atmodem", data->chat);
+}
+
+static void phonesim_post_sim(struct ofono_modem *modem)
 {
 	struct phonesim_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 
 	DBG("%p", modem);
 
-	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
-	ofono_sim_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
 
-	if (data->calypso) {
+	if (data->calypso)
 		ofono_netreg_create(modem, OFONO_VENDOR_CALYPSO,
 							"atmodem", data->chat);
-		ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
-	} else {
+	else
 		ofono_netreg_create(modem, 0, "atmodem", data->chat);
-		ofono_voicecall_create(modem, 0, "atmodem", data->chat);
-	}
 
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
@@ -262,7 +272,8 @@ static struct ofono_modem_driver phonesim_driver = {
 	.remove		= phonesim_remove,
 	.enable		= phonesim_enable,
 	.disable	= phonesim_disable,
-	.populate	= phonesim_populate,
+	.pre_sim	= phonesim_pre_sim,
+	.post_sim	= phonesim_post_sim
 };
 
 static int phonesim_init(void)

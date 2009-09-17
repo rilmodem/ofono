@@ -101,20 +101,28 @@ static int atgen_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void atgen_populate(struct ofono_modem *modem)
+static void atgen_pre_sim(struct ofono_modem *modem)
+{
+	GAtChat *chat = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_devinfo_create(modem, 0, "atmodem", chat);
+	ofono_sim_create(modem, 0, "atmodem", chat);
+	ofono_voicecall_create(modem, 0, "atmodem", chat);
+}
+
+static void atgen_post_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 
 	DBG("%p", modem);
 
-	ofono_devinfo_create(modem, 0, "atmodem", chat);
 	ofono_ussd_create(modem, 0, "atmodem", chat);
-	ofono_sim_create(modem, 0, "atmodem", chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", chat);
 	ofono_call_settings_create(modem, 0, "atmodem", chat);
 	ofono_netreg_create(modem, 0, "atmodem", chat);
-	ofono_voicecall_create(modem, 0, "atmodem", chat);
 	ofono_call_meter_create(modem, 0, "atmodem", chat);
 	ofono_call_barring_create(modem, 0, "atmodem", chat);
 	ofono_ssn_create(modem, 0, "atmodem", chat);
@@ -132,7 +140,8 @@ static struct ofono_modem_driver atgen_driver = {
 	.remove		= atgen_remove,
 	.enable		= atgen_enable,
 	.disable	= atgen_disable,
-	.populate	= atgen_populate,
+	.pre_sim	= atgen_pre_sim,
+	.post_sim	= atgen_post_sim,
 };
 
 static int atgen_init(void)

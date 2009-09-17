@@ -141,17 +141,23 @@ static int isi_modem_disable(struct ofono_modem *modem)
 	return 0;
 }
 
-static void isi_modem_populate(struct ofono_modem *modem)
+static void isi_modem_pre_sim(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
 	ofono_devinfo_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_voicecall_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_sim_create(isi->modem, 0, "isimodem", isi->idx);
+}
+
+static void isi_modem_post_sim(struct ofono_modem *modem)
+{
+	struct isi_data *isi = ofono_modem_get_data(modem);
+
 	ofono_phonebook_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_netreg_create(isi->modem, 0, "isimodem", isi->idx);
-	ofono_voicecall_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_sms_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_cbs_create(isi->modem, 0, "isimodem", isi->idx);
-	ofono_sim_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_ssn_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_ussd_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_forwarding_create(isi->modem, 0, "isimodem", isi->idx);
@@ -166,7 +172,8 @@ static struct ofono_modem_driver driver = {
 	.remove = isi_modem_remove,
 	.enable = isi_modem_enable,
 	.disable = isi_modem_disable,
-	.populate = isi_modem_populate,
+	.pre_sim = isi_modem_pre_sim,
+	.post_sim = isi_modem_post_sim,
 };
 
 static int isimodem_init(void)

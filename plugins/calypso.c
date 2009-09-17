@@ -348,7 +348,18 @@ static int calypso_disable(struct ofono_modem *modem)
 	return -EINVAL;
 }
 
-static void calypso_populate(struct ofono_modem *modem)
+static void calypso_pre_sim(struct ofono_modem *modem)
+{
+	struct calypso_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+	ofono_sim_create(modem, 0, "atmodem", data->chat);
+	ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
+}
+
+static void calypso_post_sim(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
@@ -377,7 +388,8 @@ static struct ofono_modem_driver calypso_driver = {
 	.remove		= calypso_remove,
 	.enable		= calypso_enable,
 	.disable	= calypso_disable,
-	.populate	= calypso_populate,
+	.pre_sim	= calypso_pre_sim,
+	.post_sim	= calypso_post_sim,
 };
 
 static int calypso_init(void)
