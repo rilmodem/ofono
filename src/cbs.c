@@ -56,8 +56,6 @@ struct ofono_cbs {
 	GSList *new_topics;
 	struct ofono_sim *sim;
 	struct ofono_netreg *netreg;
-	unsigned int sim_watch;
-	unsigned int imsi_watch;
 	unsigned int netreg_watch;
 	unsigned int location_watch;
 	unsigned short efcbmi_length;
@@ -439,17 +437,7 @@ static void cbs_unregister(struct ofono_atom *atom)
 		cbs->new_topics = NULL;
 	}
 
-	if (cbs->sim_watch) {
-		if (cbs->imsi_watch) {
-			ofono_sim_remove_ready_watch(cbs->sim,
-							cbs->imsi_watch);
-			cbs->imsi_watch = 0;
-		}
-
-		__ofono_modem_remove_atom_watch(modem, cbs->sim_watch);
-		cbs->sim_watch = 0;
-		cbs->sim = NULL;
-	}
+	cbs->sim = NULL;
 
 	if (cbs->reset_source) {
 		g_source_remove(cbs->reset_source);
@@ -694,9 +682,8 @@ static void sim_cbmid_read_cb(int ok,
 	cbs->efcbmid_contents = NULL;
 }
 
-static void cbs_got_imsi(void *data)
+static void cbs_got_imsi(struct ofono_cbs *cbs)
 {
-	struct ofono_cbs *cbs = data;
 	const char *imsi = ofono_sim_get_imsi(cbs->sim);
 
 	ofono_debug("Got IMSI: %s", imsi);
@@ -707,25 +694,6 @@ static void cbs_got_imsi(void *data)
 				sim_cbmir_read_cb, cbs);
 	ofono_sim_read(cbs->sim, SIM_EFCBMID_FILEID,
 				sim_cbmid_read_cb, cbs);
-}
-
-static void sim_watch(struct ofono_atom *atom,
-			enum ofono_atom_watch_condition cond, void *data)
-{
-	struct ofono_cbs *cbs = data;
-
-	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		cbs->imsi_watch = 0;
-		cbs->sim = NULL;
-		return;
-	}
-
-	cbs->sim = __ofono_atom_get_data(atom);
-	cbs->imsi_watch = ofono_sim_add_ready_watch(cbs->sim, cbs_got_imsi,
-							cbs, NULL);
-
-	if (ofono_sim_get_ready(cbs->sim))
-		cbs_got_imsi(cbs);
 }
 
 static gboolean reset_base_station_name(gpointer user)
@@ -861,15 +829,14 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 
 	ofono_modem_add_interface(modem, CBS_MANAGER_INTERFACE);
 
-	cbs->sim_watch = __ofono_modem_add_atom_watch(modem,
-					OFONO_ATOM_TYPE_SIM,
-					sim_watch, cbs, NULL);
-
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
-	if (sim_atom && __ofono_atom_get_registered(sim_atom))
-		sim_watch(sim_atom,
-				OFONO_ATOM_WATCH_CONDITION_REGISTERED, cbs);
+	if (sim_atom) {
+		cbs->sim = __ofono_atom_get_data(sim_atom);
+
+		if (ofono_sim_get_ready(cbs->sim) == TRUE)
+			cbs_got_imsi(cbs);
+	}
 
 	cbs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
