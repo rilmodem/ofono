@@ -654,53 +654,76 @@ static gboolean sim_efli_format(const unsigned char *ef, int length)
 	return TRUE;
 }
 
-static void parse_language_list(char **out_list, int *count,
-				const unsigned char *ef, int length)
+static GSList *parse_language_list(const unsigned char *ef, int length)
 {
-	int i, j;
-
-	length--;
+	int i;
+	GSList *ret = NULL;
 
 	for (i = 0; i < length; i += 2) {
-		if (ef[i] == 0xff || ef[i + 1] == 0xff)
-			continue;
-
-		for (j = 0; j < *count; j++)
-			if (!memcmp(out_list[j], ef + i, 2))
-				break;
-		if (j < *count)
+		if (ef[i] > 0x7f || ef[i+1] > 0x7f)
 			continue;
 
 		/* ISO 639 codes contain only characters that are coded
 		 * identically in SMS 7 bit charset, ASCII or UTF8 so
 		 * no conversion.
 		 */
-		out_list[(*count)++] = g_strndup((char *) ef + i, 2);
+		ret = g_slist_prepend(ret, g_ascii_strdown((char *)ef + i, 2));
 	}
+
+	if (ret)
+		ret = g_slist_reverse(ret);
+
+	return ret;
 }
 
-static void parse_eflp(char **out_list, int *count,
-			const unsigned char *eflp, int length)
+static GSList *parse_eflp(const unsigned char *eflp, int length)
 {
-	int i, j;
+	int i;
 	char code[3];
+	GSList *ret = NULL;
 
 	for (i = 0; i < length; i++) {
-		if (eflp[i] >= 0x30)
-			continue;
-
 		if (iso639_2_from_language(eflp[i], code) == FALSE)
 			continue;
 
-		for (j = 0; j < *count; j ++)
-			if (!memcmp(out_list[j], code, 2))
-				break;
+		ret = g_slist_prepend(ret, g_strdup(code));
+	}
 
-		if (j < *count)
+	if (ret)
+		ret = g_slist_reverse(ret);
+
+	return ret;
+}
+
+static char **concat_lang_prefs(GSList *a, GSList *b)
+{
+	GSList *l, *k;
+	char **ret;
+	int i = 0;
+	int total = g_slist_length(a) + g_slist_length(b);
+
+	if (total == 0)
+		return NULL;
+
+	ret = g_new0(char *, total + 1);
+
+	for (l = a; l; l = l->next)
+		ret[i++] = g_strdup(l->data);
+
+	for (l = b; l; l = l->next) {
+		gboolean duplicate = FALSE;
+
+		for (k = a; k; k = k->next)
+			if (!strcmp(k->data, l->data))
+				duplicate = TRUE;
+
+		if (duplicate)
 			continue;
 
-		out_list[*count++] = g_strdup(code);
+		ret[i++] = g_strdup(l->data);
 	}
+
+	return ret;
 }
 
 static void sim_efpl_read_cb(int ok,
@@ -710,65 +733,56 @@ static void sim_efpl_read_cb(int ok,
 				int record_length, void *userdata)
 {
 	struct ofono_sim *sim = userdata;
-	unsigned char *efli = sim->efli;
-	const unsigned char *efpl = data;
-	int efli_length = sim->efli_length;
-	int efpl_length = length;
-	int count;
-	int maxcount;
 	const char *path = __ofono_atom_get_path(sim->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
+	gboolean eflp_format = TRUE;
+	GSList *efli = NULL;
+	GSList *efpl = NULL;
 
 	if (!ok || structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT ||
-			length < 2) {
-		efpl = NULL;
-		efpl_length = 0;
-	}
+			length < 2)
+		goto skip_efpl;
 
-	if (!efli || sim_efli_format(efli, efli_length)) {
-		maxcount = (efli_length + efpl_length) / 2;
-		sim->language_prefs = g_new0(char *, maxcount + 1);
+	efpl = parse_language_list(data, length);
 
-		count = 0;
+skip_efpl:
+	if (sim->efli && sim->efli_length > 0) {
+		eflp_format = sim_efli_format(sim->efli, sim->efli_length);
 
-		/* Make a list of languages in both files in order of
-		 * preference following TS 31.102.
-		 */
+		if (eflp_format)
+			efli = parse_language_list(sim->efli, sim->efli_length);
+		else
+			efli = parse_eflp(sim->efli, sim->efli_length);
 
-		if (efli && efpl && efli[0] == 0xff && efli[1] == 0xff) {
-			parse_language_list(sim->language_prefs, &count,
-						efpl, efpl_length);
-			efpl = NULL;
-		}
-
-		if (efli) {
-			parse_language_list(sim->language_prefs, &count,
-						efli, efli_length);
-			g_free(efli);
-			sim->efli = NULL;
-		}
-
-		if (efpl)
-			parse_language_list(sim->language_prefs, &count,
-						efpl, efpl_length);
-	} else {
-		maxcount = efpl_length / 2 + efli_length;
-		sim->language_prefs = g_new0(char *, maxcount + 1);
-
-		count = 0;
-
-		/* Make a list of languages in both files in order of
-		 * preference following TS 51.011.
-		 */
-
-		if (efpl)
-			parse_language_list(sim->language_prefs, &count,
-						efpl, efpl_length);
-
-		parse_eflp(sim->language_prefs, &count, efli, efli_length);
-		g_free(efli);
+		g_free(sim->efli);
 		sim->efli = NULL;
+		sim->efli_length = 0;
 	}
+
+	/* If efli_format is TRUE, make a list of languages in both files in
+	 * order of preference following TS 31.102.
+	 * Quoting 31.102 Section 5.1.1.2:
+	 * The preferred language selection shall always use the EFLI in
+	 * preference to the EFPL at the MF unless...
+	 * Otherwise in order of preference according to TS 51.011
+	 */
+	if (eflp_format)
+		sim->language_prefs = concat_lang_prefs(efli, efpl);
+	else
+		sim->language_prefs = concat_lang_prefs(efpl, efli);
+
+	if (efli) {
+		g_slist_foreach(efli, (GFunc)g_free, NULL);
+		g_slist_free(efli);
+	}
+
+	if (efpl) {
+		g_slist_foreach(efpl, (GFunc)g_free, NULL);
+		g_slist_free(efpl);
+	}
+
+	if (sim->language_prefs == NULL)
+		return;
 
 	ofono_dbus_signal_array_property_changed(conn, path,
 							SIM_MANAGER_INTERFACE,
