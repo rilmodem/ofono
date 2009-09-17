@@ -77,10 +77,14 @@ struct ofono_sim {
 	GSList *service_numbers;
 	gboolean sdn_ready;
 	gboolean ready;
+	char **language_prefs;
 	GQueue *simop_q;
 	gint simop_source;
 	unsigned char efmsisdn_length;
 	unsigned char efmsisdn_records;
+	unsigned char *efli;
+	unsigned char efli_length;
+	unsigned int next_ready_watch_id;
 	struct ofono_watchlist *ready_watches;
 	const struct ofono_sim_driver *driver;
 	void *driver_data;
@@ -196,6 +200,11 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 						&service_numbers);
 		g_strfreev(service_numbers);
 	}
+
+	if (sim->language_prefs)
+		ofono_dbus_dict_append_array(&dict, "PreferredLanguages",
+		                                DBUS_TYPE_STRING,
+		                                &sim->language_prefs);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -602,6 +611,207 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	}
 
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
+}
+
+static void sim_efli_read_cb(int ok,
+		                enum ofono_sim_file_structure structure,
+		                int length, int record,
+		                const unsigned char *data,
+		                int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (!ok || structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+		return;
+
+	sim->efli = g_memdup(data, length);
+	sim->efli_length = length;
+}
+
+/* Detect whether the file is in EFli format, as opposed to 51.011 EFlp */
+static gboolean sim_efli_format(const unsigned char *ef, int length)
+{
+	if (length & 1)
+		return FALSE;
+
+	while (length) {
+		if (ef[0] != ef[1] && (ef[0] == 0xff || ef[1] == 0xff))
+			return FALSE;
+
+		/* ISO 639 country codes are each two lower-case SMS 7-bit
+		 * characters while CB DCS language codes are in ranges
+		 * (0 - 15) or (32 - 47), so the ranges don't overlap
+		 */
+		if (ef[0] != 0xff && (ef[0] < 'a' || ef[0] > 'z'))
+			return FALSE;
+		if (ef[1] != 0xff && (ef[1] < 'a' || ef[1] > 'z'))
+			return FALSE;
+
+		ef += 2;
+		length -= 2;
+	}
+
+	return TRUE;
+}
+
+static void parse_language_list(char **out_list, int *count,
+				const unsigned char *ef, int length)
+{
+	int i, j;
+
+	length--;
+
+	for (i = 0; i < length; i += 2) {
+		if (ef[i] == 0xff || ef[i + 1] == 0xff)
+			continue;
+
+		for (j = 0; j < *count; j++)
+			if (!memcmp(out_list[j], ef + i, 2))
+				break;
+		if (j < *count)
+			continue;
+
+		/* ISO 639 codes contain only characters that are coded
+		 * identically in SMS 7 bit charset, ASCII or UTF8 so
+		 * no conversion.
+		 */
+		out_list[(*count)++] = g_strndup((char *) ef + i, 2);
+	}
+}
+
+static const char* const dcs_lang_to_iso[0x30] = {
+	[0x00] = "de",
+	[0x01] = "en",
+	[0x02] = "it",
+	[0x03] = "fr",
+	[0x04] = "es",
+	[0x05] = "nl",
+	[0x06] = "sv",
+	[0x07] = "da",
+	[0x08] = "pt",
+	[0x09] = "fi",
+	[0x0a] = "no",
+	[0x0b] = "el",
+	[0x0c] = "tr",
+	[0x0d] = "hu",
+	[0x0e] = "pl",
+	[0x20] = "cs",
+	[0x21] = "ar",
+	[0x22] = "he",
+	[0x23] = "ar",
+	[0x24] = "ru",
+	[0x25] = "is",
+};
+
+static void parse_eflp(char **out_list, int *count,
+			const unsigned char *eflp, int length)
+{
+	int i, j;
+	const char *code;
+
+	for (i = 0; i < length; i++) {
+		if (eflp[i] >= 0x30)
+			continue;
+
+		code = dcs_lang_to_iso[eflp[i]];
+		if (!code)
+			continue;
+
+		for (j = 0; j < *count; j ++)
+			if (!memcmp(out_list[j], code, 2))
+				break;
+		if (j < *count)
+			continue;
+
+		out_list[*count++] = g_strdup(code);
+	}
+}
+
+static void sim_efpl_read_cb(int ok,
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	unsigned char *efli = sim->efli;
+	const unsigned char *efpl = data;
+	int efli_length = sim->efli_length;
+	int efpl_length = length;
+	int count;
+	int maxcount;
+	const char *path = __ofono_atom_get_path(sim->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	if (!ok || structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT ||
+			length < 2) {
+		efpl = NULL;
+		efpl_length = 0;
+	}
+
+	if (!efli || sim_efli_format(efli, efli_length)) {
+		maxcount = (efli_length + efpl_length) / 2;
+		sim->language_prefs = g_new0(char *, maxcount + 1);
+
+		count = 0;
+
+		/* Make a list of languages in both files in order of
+		 * preference following TS 31.102.
+		 */
+
+		if (efli && efpl && efli[0] == 0xff && efli[1] == 0xff) {
+			parse_language_list(sim->language_prefs, &count,
+						efpl, efpl_length);
+			efpl = NULL;
+		}
+
+		if (efli) {
+			parse_language_list(sim->language_prefs, &count,
+						efli, efli_length);
+			g_free(efli);
+			sim->efli = NULL;
+		}
+
+		if (efpl)
+			parse_language_list(sim->language_prefs, &count,
+						efpl, efpl_length);
+	} else {
+		maxcount = efpl_length / 2 + efli_length;
+		sim->language_prefs = g_new0(char *, maxcount + 1);
+
+		count = 0;
+
+		/* Make a list of languages in both files in order of
+		 * preference following TS 51.011.
+		 */
+
+		if (efpl)
+			parse_language_list(sim->language_prefs, &count,
+						efpl, efpl_length);
+
+		parse_eflp(sim->language_prefs, &count, efli, efli_length);
+		g_free(efli);
+		sim->efli = NULL;
+	}
+
+	ofono_dbus_signal_array_property_changed(conn, path,
+							SIM_MANAGER_INTERFACE,
+							"PreferredLanguages",
+							DBUS_TYPE_STRING,
+							&sim->language_prefs);
+}
+
+static void sim_retrieve_efli(struct ofono_sim *sim)
+{
+	/* According to 31.102 the EFli is read first and EFpl is then
+	 * only read if none of the EFli languages are supported by user
+	 * interface.  51.011 mandates the exact opposite, making EFpl/EFelp
+	 * preferred over EFlp (same EFid as EFli, different format).
+	 * However we don't depend on the user interface and so
+	 * need to read both files now.
+	 */
+	ofono_sim_read(sim, SIM_EFLI_FILEID, sim_efli_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFPL_FILEID, sim_efpl_read_cb, sim);
 }
 
 static void sim_op_error(struct ofono_sim *sim)
@@ -1163,6 +1373,11 @@ static void sim_remove(struct ofono_atom *atom)
 		sim->service_numbers = NULL;
 	}
 
+	if (sim->language_prefs) {
+		g_strfreev(sim->language_prefs);
+		sim->language_prefs = NULL;
+	}
+
 	if (sim->simop_source) {
 		g_source_remove(sim->simop_source);
 		sim->simop_source = 0;
@@ -1253,6 +1468,7 @@ void ofono_sim_register(struct ofono_sim *sim)
 	 * arbitrary files to be written or read, assuming their presence
 	 * in the EFust
 	 */
+	sim_retrieve_efli(sim);
 	sim_retrieve_imsi(sim);
 }
 
