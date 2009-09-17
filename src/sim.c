@@ -777,7 +777,7 @@ static void sim_efpl_read_cb(int ok,
 							&sim->language_prefs);
 }
 
-static void sim_retrieve_efli(struct ofono_sim *sim)
+static void sim_retrieve_efli_and_efpl(struct ofono_sim *sim)
 {
 	/* According to 31.102 the EFli is read first and EFpl is then
 	 * only read if none of the EFli languages are supported by user
@@ -1444,7 +1444,7 @@ void ofono_sim_register(struct ofono_sim *sim)
 	 * arbitrary files to be written or read, assuming their presence
 	 * in the EFust
 	 */
-	sim_retrieve_efli(sim);
+	sim_retrieve_efli_and_efpl(sim);
 	sim_retrieve_imsi(sim);
 }
 
