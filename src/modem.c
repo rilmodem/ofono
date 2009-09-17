@@ -60,6 +60,9 @@ struct ofono_modem {
 	ofono_bool_t		powered_persistent;
 	guint			timeout;
 	GHashTable		*properties;
+	struct ofono_sim	*sim;
+	unsigned int		sim_watch;
+	unsigned int		sim_ready_watch;
 	const struct ofono_modem_driver *driver;
 	void			*driver_data;
 	char			*driver_type;
@@ -494,10 +497,8 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 						&powered);
 
 		if (powered) {
-			if (modem->driver->populate)
-				modem->driver->populate(modem);
-
-			__ofono_history_probe_drivers(modem);
+			if (modem->driver->pre_sim)
+				modem->driver->pre_sim(modem);
 		} else {
 			remove_all_atoms(modem);
 		}
@@ -558,10 +559,8 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 						&dbus_powered);
 
 	if (powered) {
-		if (modem->driver->populate)
-			modem->driver->populate(modem);
-
-		__ofono_history_probe_drivers(modem);
+		if (modem->driver->pre_sim)
+			modem->driver->pre_sim(modem);
 	} else {
 		remove_all_atoms(modem);
 	}
@@ -1050,6 +1049,35 @@ static void emit_modems()
 	g_free(modems);
 }
 
+static void modem_sim_ready(void *user)
+{
+	struct ofono_modem *modem = user;
+
+	if (modem->driver->post_sim)
+		modem->driver->post_sim(modem);
+
+	__ofono_history_probe_drivers(modem);
+}
+
+static void sim_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_modem *modem = data;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		modem->sim_ready_watch = 0;
+		return;
+	}
+
+	modem->sim = __ofono_atom_get_data(atom);
+	modem->sim_ready_watch = ofono_sim_add_ready_watch(modem->sim,
+							modem_sim_ready,
+							modem, NULL);
+
+	if (ofono_sim_get_ready(modem->sim))
+		modem_sim_ready(modem);
+}
+
 int ofono_modem_register(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1097,14 +1125,16 @@ int ofono_modem_register(struct ofono_modem *modem)
 
 	emit_modems();
 
+	modem->sim_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_SIM,
+					sim_watch, modem, NULL);
+
 	/* TODO: Read powered property from store */
 	if (modem->powered_persistent)
 		set_powered(modem, TRUE);
 
-	if (modem->powered == TRUE && modem->driver->populate) {
-		modem->driver->populate(modem);
-		__ofono_history_probe_drivers(modem);
-	}
+	if (modem->powered == TRUE && modem->driver->pre_sim)
+		modem->driver->pre_sim(modem);
 
 	return 0;
 }
@@ -1120,6 +1150,9 @@ static void modem_unregister(struct ofono_modem *modem)
 
 	__ofono_watchlist_free(modem->atom_watches);
 	modem->atom_watches = NULL;
+
+	modem->sim_watch = 0;
+	modem->sim_ready_watch = 0;
 
 	g_slist_foreach(modem->interface_list, (GFunc)g_free, NULL);
 	g_slist_free(modem->interface_list);
