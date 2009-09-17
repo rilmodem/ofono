@@ -1349,6 +1349,12 @@ static void sim_remove(struct ofono_atom *atom)
 		sim->service_numbers = NULL;
 	}
 
+	if (sim->efli) {
+		g_free(sim->efli);
+		sim->efli = NULL;
+		sim->efli_length = 0;
+	}
+
 	if (sim->language_prefs) {
 		g_strfreev(sim->language_prefs);
 		sim->language_prefs = NULL;
