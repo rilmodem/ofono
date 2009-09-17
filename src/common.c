@@ -25,7 +25,6 @@
 
 #define _GNU_SOURCE
 #include <string.h>
-#include <ctype.h>
 #include <errno.h>
 
 #include <glib.h>
@@ -528,7 +527,7 @@ gboolean parse_ss_control_string(char *str, int *ss_type,
 		goto out;
 
 	for (i = 0; i < strlen(*sc); i++)
-		if (!isdigit((*sc)[i]))
+		if (!g_ascii_isdigit((*sc)[i]))
 			goto out;
 
 	NEXT_FIELD(c, *sia);
