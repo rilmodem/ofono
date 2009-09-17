@@ -631,24 +631,24 @@ static void sim_efli_read_cb(int ok,
 /* Detect whether the file is in EFli format, as opposed to 51.011 EFlp */
 static gboolean sim_efli_format(const unsigned char *ef, int length)
 {
+	int i;
+
 	if (length & 1)
 		return FALSE;
 
-	while (length) {
-		if (ef[0] != ef[1] && (ef[0] == 0xff || ef[1] == 0xff))
-			return FALSE;
+	for (i = 0; i < length; i += 2) {
+		if (ef[i] == 0xff && ef[i+1] == 0xff)
+			continue;
 
 		/* ISO 639 country codes are each two lower-case SMS 7-bit
 		 * characters while CB DCS language codes are in ranges
 		 * (0 - 15) or (32 - 47), so the ranges don't overlap
 		 */
-		if (ef[0] != 0xff && (ef[0] < 'a' || ef[0] > 'z'))
-			return FALSE;
-		if (ef[1] != 0xff && (ef[1] < 'a' || ef[1] > 'z'))
+		if (g_ascii_isalpha(ef[i]) == 0)
 			return FALSE;
 
-		ef += 2;
-		length -= 2;
+		if (g_ascii_isalpha(ef[i+1]) == 0)
+			return FALSE;
 	}
 
 	return TRUE;
