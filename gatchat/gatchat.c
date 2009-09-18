@@ -78,7 +78,6 @@ struct _GAtChat {
 	gpointer user_disconnect_data;		/* user disconnect data */
 	struct ring_buffer *buf;		/* Current read buffer */
 	guint read_so_far;			/* Number of bytes processed */
-	gboolean disconnecting;			/* Whether we're disconnecting */
 	GAtDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
 	char *pdu_notify;			/* Unsolicited Resp w/ PDU */
@@ -243,20 +242,21 @@ static void g_at_chat_cleanup(GAtChat *chat)
 		chat->wakeup_timer = 0;
 	}
 
+	if (chat->timeout_source) {
+		g_source_remove(chat->timeout_source);
+		chat->timeout_source = 0;
+	}
+
 	g_at_syntax_unref(chat->syntax);
 	chat->syntax = NULL;
+	
+	chat->channel = NULL;
 }
 
 static void read_watcher_destroy_notify(GAtChat *chat)
 {
-	chat->read_watch = 0;
-
-	if (chat->disconnecting)
-		return;
-
-	chat->channel = NULL;
-
 	g_at_chat_cleanup(chat);
+	chat->read_watch = 0;
 
 	if (chat->user_disconnect)
 		chat->user_disconnect(chat->user_disconnect_data);
@@ -630,7 +630,7 @@ static void new_bytes(GAtChat *p)
 
 	/* We're overflowing the buffer, shutdown the socket */
 	if (ring_buffer_avail(p->buf) == 0)
-		g_at_chat_shutdown(p);
+		g_source_remove(p->read_watch);
 }
 
 static void debug_chat(GAtChat *chat, gboolean in, const char *str, gsize len)
@@ -858,7 +858,7 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 			&bytes_written);
 
 	if (err != G_IO_ERROR_NONE) {
-		g_at_chat_shutdown(chat);
+		g_source_remove(chat->read_watch);
 		return FALSE;
 	}
 
@@ -1017,12 +1017,11 @@ void g_at_chat_unref(GAtChat *chat)
 
 	is_zero = g_atomic_int_dec_and_test(&chat->ref_count);
 
-	if (is_zero) {
-		g_at_chat_shutdown(chat);
+	if (is_zero == FALSE)
+		return;
 
-		g_at_chat_cleanup(chat);
-		g_free(chat);
-	}
+	g_at_chat_shutdown(chat);
+	g_free(chat);
 }
 
 gboolean g_at_chat_shutdown(GAtChat *chat)
@@ -1030,12 +1029,9 @@ gboolean g_at_chat_shutdown(GAtChat *chat)
 	if (chat->channel == NULL)
 		return FALSE;
 
-	if (chat->timeout_source) {
-		g_source_remove(chat->timeout_source);
-		chat->timeout_source = 0;
-	}
-
-	chat->disconnecting = TRUE;
+	/* Don't trigger user disconnect on shutdown */
+	chat->user_disconnect = NULL;
+	chat->user_disconnect_data = NULL;
 
 	if (chat->read_watch)
 		g_source_remove(chat->read_watch);
