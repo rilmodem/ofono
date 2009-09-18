@@ -54,8 +54,6 @@ struct ofono_message_waiting {
 	gboolean mbdn_not_provided;
 	struct ofono_phone_number mailbox_number[5];
 	struct ofono_sim *sim;
-	unsigned int sim_watch;
-	unsigned int sim_ready_watch;
 	struct ofono_atom *atom;
 };
 
@@ -705,55 +703,15 @@ void __ofono_message_waiting_mwi(struct ofono_message_waiting *mw,
 		return;
 }
 
-static void message_waiting_sim_ready(void *userdata)
-{
-	struct ofono_message_waiting *mw = userdata;
-
-	/* Loads MWI states and MBDN from SIM */
-	ofono_sim_read(mw->sim, SIM_EFMWIS_FILEID, mw_mwis_read_cb, mw);
-	ofono_sim_read(mw->sim, SIM_EFMBI_FILEID, mw_mbi_read_cb, mw);
-}
-
 static void message_waiting_unregister(struct ofono_atom *atom)
 {
-	struct ofono_message_waiting *mw = __ofono_atom_get_data(atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
-	if (mw->sim_watch) {
-		__ofono_modem_remove_atom_watch(modem, mw->sim_watch);
-		mw->sim_watch = 0;
-	}
-
-	if (mw->sim_ready_watch) {
-		ofono_sim_remove_ready_watch(mw->sim, mw->sim_ready_watch);
-		mw->sim_ready_watch = 0;
-		mw->sim = NULL;
-	}
-
 	g_dbus_unregister_interface(conn, path,
 					MESSAGE_WAITING_INTERFACE);
 	ofono_modem_remove_interface(modem, MESSAGE_WAITING_INTERFACE);
-}
-
-static void sim_watch(struct ofono_atom *atom,
-			enum ofono_atom_watch_condition cond, void *data)
-{
-	struct ofono_message_waiting *mw = data;
-
-	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		mw->sim = NULL;
-		mw->sim_ready_watch = 0;
-		return;
-	}
-
-	mw->sim = __ofono_atom_get_data(atom);
-	mw->sim_ready_watch = ofono_sim_add_ready_watch(mw->sim,
-				message_waiting_sim_ready, mw, NULL);
-
-	if (ofono_sim_get_ready(mw->sim))
-		message_waiting_sim_ready(mw);
 }
 
 void ofono_message_waiting_register(struct ofono_message_waiting *mw)
@@ -775,14 +733,16 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 
 	ofono_modem_add_interface(modem, MESSAGE_WAITING_INTERFACE);
 
-	mw->sim_watch = __ofono_modem_add_atom_watch(modem,
-					OFONO_ATOM_TYPE_SIM,
-					sim_watch, mw, NULL);
-
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
-	if (sim_atom && __ofono_atom_get_registered(sim_atom))
-		sim_watch(sim_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, mw);
+	if (sim_atom) {
+		/* Assume that if sim atom exists, it is ready */
+		mw->sim = __ofono_atom_get_data(sim_atom);
+
+		/* Loads MWI states and MBDN from SIM */
+		ofono_sim_read(mw->sim, SIM_EFMWIS_FILEID, mw_mwis_read_cb, mw);
+		ofono_sim_read(mw->sim, SIM_EFMBI_FILEID, mw_mbi_read_cb, mw);
+	}
 
 	__ofono_atom_register(mw->atom, message_waiting_unregister);
 }
