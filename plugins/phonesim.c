@@ -102,6 +102,25 @@ static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_modem_set_powered(modem, ok);
 }
 
+static void phonesim_disconnected(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
+
+	if (data->mux) {
+		g_at_mux_shutdown(data->mux);
+		g_at_mux_unref(data->mux);
+		data->mux = NULL;
+	}
+}
+
 static int phonesim_enable(struct ofono_modem *modem)
 {
 	struct phonesim_data *data = ofono_modem_get_data(modem);
@@ -183,6 +202,9 @@ static int phonesim_enable(struct ofono_modem *modem)
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, phonesim_debug, NULL);
+
+	g_at_chat_set_disconnect_function(data->chat,
+						phonesim_disconnected, modem);
 
 	if (data->calypso) {
 		g_at_chat_set_wakeup_command(data->chat, "\r", 1000, 5000);
