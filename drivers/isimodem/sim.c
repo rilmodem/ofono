@@ -40,28 +40,30 @@
 #include <ofono/sim.h>
 
 #include "isi.h"
+#include "simutil.h"
 
 #define PN_SIM			0x09
 #define SIM_TIMEOUT		5
 #define SIM_MAX_IMSI_LENGTH	15
 
 enum return_code {
-    SIM_SERV_OK = 0x01
+	SIM_SERV_OK = 0x01,
 };
 
 enum message_id {
-    SIM_IMSI_REQ_READ_IMSI = 0x1D,
-    SIM_IMSI_RESP_READ_IMSI = 0x1E,
-    COMMON_MESSAGE = 0xF0
+	SIM_IMSI_REQ_READ_IMSI = 0x1D,
+	SIM_IMSI_RESP_READ_IMSI = 0x1E,
+	SIM_SERV_PROV_NAME_REQ = 0x21,
+	SIM_SERV_PROV_NAME_RESP = 0x22
 };
 
-enum service_type {
-    READ_IMSI = 0x2D
+enum service_types {
+	SIM_ST_READ_SERV_PROV_NAME = 0x2C,
+	READ_IMSI = 0x2D,
 };
 
 struct sim_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
 
 static void sim_debug(const void *restrict buf, size_t len, void *data)
@@ -70,17 +72,107 @@ static void sim_debug(const void *restrict buf, size_t len, void *data)
 	dump_msg(buf, len);
 }
 
+/* Returns fake (static) file info for EFSPN */
+static gboolean efspn_file_info(gpointer user)
+{
+	struct isi_cb_data *cbd = user;
+	ofono_sim_file_info_cb_t cb = cbd->cb;
+	unsigned char access[3] = { 0x0f, 0xff, 0xff };
+
+	DBG("Returning dummy file_info for EFSPN");
+	CALLBACK_WITH_SUCCESS(cb, 17, 0, 0, access, cbd->data);
+
+	g_free(cbd);
+	return FALSE;
+}
+
 static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 				ofono_sim_file_info_cb_t cb, void *data)
 {
+	if (fileid == SIM_EFSPN_FILEID) {
+		/* Fake response for EFSPN  */
+		struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+		g_idle_add(efspn_file_info, cbd);
+		return;
+	}
+
 	DBG("Not implemented (fileid = %04x)",fileid);
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
+}
+
+static bool spn_resp_cb(GIsiClient * client, const void *restrict data,
+			size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_sim_read_cb_t cb = cbd->cb;
+	unsigned char spn[17] = { 0xff };
+	int i;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	if (len < 39 || msg[0] != SIM_SERV_PROV_NAME_RESP)
+		 goto error;
+
+	if (msg[1] != SIM_ST_READ_SERV_PROV_NAME || msg[2] != SIM_SERV_OK)
+		goto error;
+
+	/* Set display condition bits */
+	spn[0] = ((msg[38] & 1) << 1) + (msg[37] & 1);
+	/* Dirty conversion from 16bit unicode to ascii */
+	for (i = 0; i < 16; i++) {
+		unsigned char c = msg[3 + i * 2 + 1];
+		if (c == 0)
+			c = 0xff;
+		else if (!g_ascii_isprint(c))
+			c = '?';
+		spn[i + 1] = c;
+	}
+	DBG("SPN read successfully");
+	CALLBACK_WITH_SUCCESS(cb, spn, 17, cbd->data);
+	goto out;
+
+error:
+	DBG("Error reading SPN");
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
 }
 
 static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
+	struct isi_cb_data *cbd = NULL;
+
+	if (fileid == SIM_EFSPN_FILEID) {
+		/* Hack support for EFSPN reading */
+		struct sim_data *simd = ofono_sim_get_data(sim);
+		const unsigned char msg[] = {
+			SIM_SERV_PROV_NAME_REQ,
+			SIM_ST_READ_SERV_PROV_NAME,
+			0
+		};
+		cbd = isi_cb_data_new(NULL, cb, data);
+
+		if (!simd)
+			goto error;
+
+		cbd->user = sim;
+
+		if (g_isi_request_make(simd->client, msg, sizeof(msg),
+				       SIM_TIMEOUT, spn_resp_cb, cbd))
+			return;
+	}
+error:
+	if (cbd)
+		g_free(cbd);
+
 	DBG("Not implemented (fileid = %04x)",fileid);
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
