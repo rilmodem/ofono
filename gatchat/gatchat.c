@@ -249,7 +249,7 @@ static void g_at_chat_cleanup(GAtChat *chat)
 
 	g_at_syntax_unref(chat->syntax);
 	chat->syntax = NULL;
-	
+
 	chat->channel = NULL;
 }
 
