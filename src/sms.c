@@ -58,8 +58,6 @@ struct ofono_sms {
 	struct ofono_message_waiting *mw;
 	unsigned int mw_watch;
 	struct ofono_sim *sim;
-	unsigned int sim_watch;
-	unsigned int imsi_watch;
 	const struct ofono_sms_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -776,29 +774,12 @@ void ofono_sms_driver_unregister(const struct ofono_sms_driver *d)
 
 static void sms_unregister(struct ofono_atom *atom)
 {
-	struct ofono_sms *sms = __ofono_atom_get_data(atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
 	g_dbus_unregister_interface(conn, path, SMS_MANAGER_INTERFACE);
 	ofono_modem_remove_interface(modem, SMS_MANAGER_INTERFACE);
-
-	if (sms->mw_watch) {
-		__ofono_modem_remove_atom_watch(modem, sms->mw_watch);
-		sms->mw_watch = 0;
-	}
-
-	if (sms->sim_watch) {
-		if (sms->imsi_watch) {
-			ofono_sim_remove_ready_watch(sms->sim,
-							sms->imsi_watch);
-			sms->imsi_watch = 0;
-		}
-
-		__ofono_modem_remove_atom_watch(modem, sms->sim_watch);
-		sms->sim_watch = 0;
-	}
 }
 
 static void sms_remove(struct ofono_atom *atom)
@@ -883,38 +864,6 @@ static void mw_watch(struct ofono_atom *atom,
 	sms->mw = __ofono_atom_get_data(atom);
 }
 
-static void sms_got_imsi(void *data)
-{
-	struct ofono_sms *sms = data;
-	const char *imsi = ofono_sim_get_imsi(sms->sim);
-
-	sms->assembly = sms_assembly_new(imsi);
-}
-
-static void sim_watch(struct ofono_atom *atom,
-			enum ofono_atom_watch_condition cond, void *data)
-{
-	struct ofono_sms *sms = data;
-
-	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		sms->imsi_watch = 0;
-
-		if (sms->assembly) {
-			sms_assembly_free(sms->assembly);
-			sms->assembly = NULL;
-		}
-
-		return;
-	}
-
-	sms->sim = __ofono_atom_get_data(atom);
-	sms->imsi_watch = ofono_sim_add_ready_watch(sms->sim, sms_got_imsi,
-							sms, NULL);
-
-	if (ofono_sim_get_ready(sms->sim))
-		sms_got_imsi(sms);
-}
-
 void ofono_sms_register(struct ofono_sms *sms)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -945,15 +894,20 @@ void ofono_sms_register(struct ofono_sms *sms)
 	if (mw_atom && __ofono_atom_get_registered(mw_atom))
 		mw_watch(mw_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
 
-	sms->sim_watch = __ofono_modem_add_atom_watch(modem,
-					OFONO_ATOM_TYPE_SIM,
-					sim_watch, sms, NULL);
-
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
-	if (sim_atom && __ofono_atom_get_registered(sim_atom))
-		sim_watch(sim_atom,
-				OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
+	/* If we have a sim atom, we can uniquely identify the SIM,
+	 * otherwise create an sms assembly which doesn't backup the fragment
+	 * store.
+	 */
+	if (sim_atom) {
+		const char *imsi;
+
+		sms->sim = __ofono_atom_get_data(sim_atom);
+		imsi = ofono_sim_get_imsi(sms->sim);
+		sms->assembly = sms_assembly_new(imsi);
+	} else
+		sms->assembly = sms_assembly_new(NULL);
 
 	__ofono_atom_register(sms->atom, sms_unregister);
 }
