@@ -76,8 +76,6 @@ struct ofono_netreg {
 	struct sim_eons *eons;
 	gint opscan_source;
 	struct ofono_sim *sim;
-	unsigned int sim_watch;
-	unsigned int sim_ready_watch;
 	struct ofono_watchlist *status_watches;
 	const struct ofono_netreg_driver *driver;
 	void *driver_data;
@@ -1480,18 +1478,6 @@ static void netreg_unregister(struct ofono_atom *atom)
 	__ofono_watchlist_free(netreg->status_watches);
 	netreg->status_watches = NULL;
 
-	if (netreg->sim_watch) {
-		__ofono_modem_remove_atom_watch(modem, netreg->sim_watch);
-		netreg->sim_watch = 0;
-	}
-
-	if (netreg->sim_ready_watch) {
-		ofono_sim_remove_ready_watch(netreg->sim,
-						netreg->sim_ready_watch);
-		netreg->sim_ready_watch = 0;
-		netreg->sim = NULL;
-	}
-
 	if (netreg->opscan_source) {
 		g_source_remove(netreg->opscan_source);
 		netreg->opscan_source = 0;
@@ -1578,42 +1564,6 @@ struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
 	return netreg;
 }
 
-static void netreg_sim_ready(void *userdata)
-{
-	struct ofono_netreg *netreg = userdata;
-
-	ofono_sim_read(netreg->sim, SIM_EFPNN_FILEID, sim_pnn_read_cb, netreg);
-	ofono_sim_read(netreg->sim, SIM_EFSPN_FILEID, sim_spn_read_cb, netreg);
-
-	if (netreg->driver->list_operators)
-		netreg->opscan_source = g_timeout_add_seconds(5,
-				update_network_operator_list_init, netreg);
-
-	if (netreg->driver->registration_status)
-		netreg->driver->registration_status(netreg,
-					init_registration_status, netreg);
-
-}
-
-static void netreg_sim_watch(struct ofono_atom *atom,
-			enum ofono_atom_watch_condition cond, void *data)
-{
-	struct ofono_netreg *netreg = data;
-
-	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		netreg->sim = NULL;
-		netreg->sim_ready_watch = 0;
-		return;
-	}
-
-	netreg->sim = __ofono_atom_get_data(atom);
-	netreg->sim_ready_watch = ofono_sim_add_ready_watch(netreg->sim,
-						netreg_sim_ready, netreg, NULL);
-
-	if (ofono_sim_get_ready(netreg->sim))
-		netreg_sim_ready(netreg);
-}
-
 void ofono_netreg_register(struct ofono_netreg *netreg)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1636,15 +1586,25 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 
 	ofono_modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
 
-	netreg->sim_watch = __ofono_modem_add_atom_watch(modem,
-					OFONO_ATOM_TYPE_SIM,
-					netreg_sim_watch, netreg, NULL);
+	if (netreg->driver->list_operators)
+		netreg->opscan_source = g_timeout_add_seconds(5,
+				update_network_operator_list_init, netreg);
+
+	if (netreg->driver->registration_status)
+		netreg->driver->registration_status(netreg,
+					init_registration_status, netreg);
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
-	if (sim_atom && __ofono_atom_get_registered(sim_atom))
-		netreg_sim_watch(sim_atom,
-				OFONO_ATOM_WATCH_CONDITION_REGISTERED, netreg);
+	if (sim_atom) {
+		/* Assume that if sim atom exists, it is ready */
+		netreg->sim = __ofono_atom_get_data(sim_atom);
+
+		ofono_sim_read(netreg->sim, SIM_EFPNN_FILEID,
+				sim_pnn_read_cb, netreg);
+		ofono_sim_read(netreg->sim, SIM_EFSPN_FILEID,
+				sim_spn_read_cb, netreg);
+	}
 
 	__ofono_atom_register(netreg->atom, netreg_unregister);
 }
