@@ -402,6 +402,7 @@ static struct {
 	enum ofono_sim_password_type type;
 	const char *name;
 } const at_sim_name[] = {
+	{ OFONO_SIM_PASSWORD_NONE, "READY" },
 	{ OFONO_SIM_PASSWORD_SIM_PIN, "SIM PIN" },
 	{ OFONO_SIM_PASSWORD_SIM_PUK, "SIM PUK" },
 	{ OFONO_SIM_PASSWORD_PHSIM_PIN, "PH-SIM PIN" },
@@ -447,15 +448,13 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_next_unquoted_string(&iter, &pin_required);
 
-	pin_type = -1;
-	if (!strcmp(pin_required, "READY"))
-		pin_type = OFONO_SIM_PASSWD_NONE;
-	else
-		for (i = 0; i < len; i++)
-			if (!strcmp(pin_required, at_sim_name[i].name)) {
-				pin_type = at_sim_name[i].type;
-				break;
-			}
+	for (i = 0; i < len; i++) {
+		if (strcmp(pin_required, at_sim_name[i].name))
+			continue;
+
+		pin_type = at_sim_name[i].type;
+		break;
+	}
 
 	if (pin_type == OFONO_SIM_PASSWORD_INVALID) {
 		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
