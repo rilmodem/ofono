@@ -98,17 +98,16 @@ out:
 	ofono_ssn_cssu_notify(ssn, code2, index, &ph);
 }
 
-static gboolean at_ssn_register(gpointer user)
+static void at_ssn_initialized(gboolean ok, GAtResult *result,
+				gpointer user_data)
 {
-	struct ofono_ssn *ssn = user;
+	struct ofono_ssn *ssn = user_data;
 	GAtChat *chat = ofono_ssn_get_data(ssn);
 
 	g_at_chat_register(chat, "+CSSI:", cssi_notify, FALSE, ssn, NULL);
 	g_at_chat_register(chat, "+CSSU:", cssu_notify, FALSE, ssn, NULL);
 
 	ofono_ssn_register(ssn);
-
-	return FALSE;
 }
 
 static int at_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
@@ -117,7 +116,8 @@ static int at_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 	GAtChat *chat = data;
 
 	ofono_ssn_set_data(ssn, chat);
-	g_idle_add(at_ssn_register, ssn);
+	g_at_chat_send(chat, "AT+CSSN=1,1", NULL,
+			at_ssn_initialized, ssn, NULL);
 
 	return 0;
 }

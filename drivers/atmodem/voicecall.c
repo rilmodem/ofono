@@ -979,7 +979,6 @@ static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	g_at_chat_send(chat, "AT+CRC=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(chat, "AT+COLP=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+CSSN=1,1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(chat, "AT+CCWA=1", NULL,
 				at_voicecall_initialized, vc, NULL);
 	return 0;
