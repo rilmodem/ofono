@@ -584,6 +584,10 @@ gboolean is_valid_pin(const char *pin)
 {
 	unsigned int i;
 
+	/* Pin must not be empty */
+	if (pin == NULL || pin[0] == '\0')
+		return FALSE;
+
 	for (i = 0; i < strlen(pin); i++)
 		if (pin[i] < '0' || pin[i] > '9')
 			return FALSE;
