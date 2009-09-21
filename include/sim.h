@@ -37,6 +37,25 @@ enum ofono_sim_file_structure {
 	OFONO_SIM_FILE_STRUCTURE_CYCLIC = 3
 };
 
+enum ofono_passwd_type {
+	OFONO_PASSWD_NONE = 0,
+	OFONO_PASSWD_SIM_PIN,
+	OFONO_PASSWD_SIM_PUK,
+	OFONO_PASSWD_PHSIM_PIN,
+	OFONO_PASSWD_PHFSIM_PIN,
+	OFONO_PASSWD_PHFSIM_PUK,
+	OFONO_PASSWD_SIM_PIN2,
+	OFONO_PASSWD_SIM_PUK2,
+	OFONO_PASSWD_PHNET_PIN,
+	OFONO_PASSWD_PHNET_PUK,
+	OFONO_PASSWD_PHNETSUB_PIN,
+	OFONO_PASSWD_PHNETSUB_PUK,
+	OFONO_PASSWD_PHSP_PIN,
+	OFONO_PASSWD_PHSP_PUK,
+	OFONO_PASSWD_PHCORP_PIN,
+	OFONO_PASSWD_PHCORP_PUK,
+};
+
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
 					enum ofono_sim_file_structure structure,

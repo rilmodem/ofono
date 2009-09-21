@@ -112,6 +112,42 @@ struct service_number {
 	struct ofono_phone_number ph;
 };
 
+static const char *const passwd_name[] = {
+	[OFONO_PASSWD_NONE] = "none",
+	[OFONO_PASSWD_SIM_PIN] = "pin",
+	[OFONO_PASSWD_SIM_PUK] = "puk",
+	[OFONO_PASSWD_PHSIM_PIN] = "phone",
+	[OFONO_PASSWD_PHFSIM_PIN] = "firstphone",
+	[OFONO_PASSWD_PHFSIM_PUK] = "firstphonepuk",
+	[OFONO_PASSWD_SIM_PIN2] = "pin2",
+	[OFONO_PASSWD_SIM_PUK2] = "puk2",
+	[OFONO_PASSWD_PHNET_PIN] = "network",
+	[OFONO_PASSWD_PHNET_PUK] = "networkpuk",
+	[OFONO_PASSWD_PHNETSUB_PIN] = "netsub",
+	[OFONO_PASSWD_PHNETSUB_PUK] = "netsubpuk",
+	[OFONO_PASSWD_PHSP_PIN] = "service",
+	[OFONO_PASSWD_PHSP_PUK] = "servicepuk",
+	[OFONO_PASSWD_PHCORP_PIN] = "corp",
+	[OFONO_PASSWD_PHCORP_PUK] = "corppuk",
+};
+
+static const char *sim_passwd_name(enum ofono_passwd_type type)
+{
+	return passwd_name[type];
+}
+
+static enum ofono_passwd_type sim_string_to_passwd(const char *name)
+{
+	int len = sizeof(passwd_name) / sizeof(*passwd_name);
+	int i;
+
+	for (i = 0; i < len; i++)
+		if (!strcmp(passwd_name[i], name))
+			return i;
+
+	return OFONO_PASSWD_NONE;
+}
+
 static char **get_own_numbers(GSList *own_numbers)
 {
 	int nelem = 0;
