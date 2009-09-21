@@ -37,23 +37,24 @@ enum ofono_sim_file_structure {
 	OFONO_SIM_FILE_STRUCTURE_CYCLIC = 3
 };
 
-enum ofono_passwd_type {
-	OFONO_PASSWD_NONE = 0,
-	OFONO_PASSWD_SIM_PIN,
-	OFONO_PASSWD_SIM_PUK,
-	OFONO_PASSWD_PHSIM_PIN,
-	OFONO_PASSWD_PHFSIM_PIN,
-	OFONO_PASSWD_PHFSIM_PUK,
-	OFONO_PASSWD_SIM_PIN2,
-	OFONO_PASSWD_SIM_PUK2,
-	OFONO_PASSWD_PHNET_PIN,
-	OFONO_PASSWD_PHNET_PUK,
-	OFONO_PASSWD_PHNETSUB_PIN,
-	OFONO_PASSWD_PHNETSUB_PUK,
-	OFONO_PASSWD_PHSP_PIN,
-	OFONO_PASSWD_PHSP_PUK,
-	OFONO_PASSWD_PHCORP_PIN,
-	OFONO_PASSWD_PHCORP_PUK,
+enum ofono_sim_password_type {
+	OFONO_SIM_PASSWORD_NONE = 0,
+	OFONO_SIM_PASSWORD_SIM_PIN,
+	OFONO_SIM_PASSWORD_PHSIM_PIN,
+	OFONO_SIM_PASSWORD_PHFSIM_PIN,
+	OFONO_SIM_PASSWORD_SIM_PIN2,
+	OFONO_SIM_PASSWORD_PHNET_PIN,
+	OFONO_SIM_PASSWORD_PHNETSUB_PIN,
+	OFONO_SIM_PASSWORD_PHSP_PIN,
+	OFONO_SIM_PASSWORD_PHCORP_PIN,
+	OFONO_SIM_PASSWORD_SIM_PUK,
+	OFONO_SIM_PASSWORD_PHFSIM_PUK,
+	OFONO_SIM_PASSWORD_SIM_PUK2,
+	OFONO_SIM_PASSWORD_PHNET_PUK,
+	OFONO_SIM_PASSWORD_PHNETSUB_PUK,
+	OFONO_SIM_PASSWORD_PHSP_PUK,
+	OFONO_SIM_PASSWORD_PHCORP_PUK,
+	OFONO_SIM_PASSWORD_INVALID,
 };
 
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
@@ -122,7 +123,8 @@ struct ofono_sim_driver {
 	void (*reset_passwd)(struct ofono_sim *sim, const char *puk,
 			const char *passwd,
 			ofono_sim_lock_unlock_cb_t cb, void *data);
-	void (*change_passwd)(struct ofono_sim *sim, int passwd_type,
+	void (*change_passwd)(struct ofono_sim *sim,
+			enum ofono_sim_password_type type,
 			const char *old, const char *new,
 			ofono_sim_lock_unlock_cb_t cb, void *data);
 	void (*lock)(struct ofono_sim *sim, int passwd_type, int enable,

@@ -399,24 +399,24 @@ error:
 }
 
 static struct {
-	enum ofono_passwd_type type;
+	enum ofono_sim_password_type type;
 	const char *name;
 } const at_sim_name[] = {
-	{ OFONO_PASSWD_SIM_PIN, "SIM PIN" },
-	{ OFONO_PASSWD_SIM_PUK, "SIM PUK" },
-	{ OFONO_PASSWD_PHSIM_PIN, "PH-SIM PIN" },
-	{ OFONO_PASSWD_PHFSIM_PIN, "PH-FSIM PIN" },
-	{ OFONO_PASSWD_PHFSIM_PUK, "PH-FSIM PUK" },
-	{ OFONO_PASSWD_SIM_PIN2, "SIM PIN2" },
-	{ OFONO_PASSWD_SIM_PUK2, "SIM PUK2" },
-	{ OFONO_PASSWD_PHNET_PIN, "PH-NET PIN" },
-	{ OFONO_PASSWD_PHNET_PUK, "PH-NET PUK" },
-	{ OFONO_PASSWD_PHNETSUB_PIN, "PH-NETSUB PIN" },
-	{ OFONO_PASSWD_PHNETSUB_PUK, "PH-NETSUB PUK" },
-	{ OFONO_PASSWD_PHSP_PIN, "PH-SP PIN" },
-	{ OFONO_PASSWD_PHSP_PUK, "PH-SP PUK" },
-	{ OFONO_PASSWD_PHCORP_PIN, "PH-CORP PIN" },
-	{ OFONO_PASSWD_PHCORP_PUK, "PH-CORP PUK" },
+	{ OFONO_SIM_PASSWORD_SIM_PIN, "SIM PIN" },
+	{ OFONO_SIM_PASSWORD_SIM_PUK, "SIM PUK" },
+	{ OFONO_SIM_PASSWORD_PHSIM_PIN, "PH-SIM PIN" },
+	{ OFONO_SIM_PASSWORD_PHFSIM_PIN, "PH-FSIM PIN" },
+	{ OFONO_SIM_PASSWORD_PHFSIM_PUK, "PH-FSIM PUK" },
+	{ OFONO_SIM_PASSWORD_SIM_PIN2, "SIM PIN2" },
+	{ OFONO_SIM_PASSWORD_SIM_PUK2, "SIM PUK2" },
+	{ OFONO_SIM_PASSWORD_PHNET_PIN, "PH-NET PIN" },
+	{ OFONO_SIM_PASSWORD_PHNET_PUK, "PH-NET PUK" },
+	{ OFONO_SIM_PASSWORD_PHNETSUB_PIN, "PH-NETSUB PIN" },
+	{ OFONO_SIM_PASSWORD_PHNETSUB_PUK, "PH-NETSUB PUK" },
+	{ OFONO_SIM_PASSWORD_PHSP_PIN, "PH-SP PIN" },
+	{ OFONO_SIM_PASSWORD_PHSP_PUK, "PH-SP PUK" },
+	{ OFONO_SIM_PASSWORD_PHCORP_PIN, "PH-CORP PIN" },
+	{ OFONO_SIM_PASSWORD_PHCORP_PUK, "PH-CORP PUK" },
 };
 
 static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -426,7 +426,7 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_sim_passwd_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	const char *pin_required;
-	int pin_type;
+	int pin_type = OFONO_SIM_PASSWORD_INVALID;
 	int i;
 	int len = sizeof(at_sim_name) / sizeof(*at_sim_name);
 
@@ -449,7 +449,7 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	pin_type = -1;
 	if (!strcmp(pin_required, "READY"))
-		pin_type = OFONO_PASSWD_NONE;
+		pin_type = OFONO_SIM_PASSWD_NONE;
 	else
 		for (i = 0; i < len; i++)
 			if (!strcmp(pin_required, at_sim_name[i].name)) {
@@ -457,7 +457,7 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				break;
 			}
 
-	if (pin_type == -1) {
+	if (pin_type == OFONO_SIM_PASSWORD_INVALID) {
 		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 		return;
 	}
@@ -556,14 +556,14 @@ error:
 }
 
 static const char *const at_clck_cpwd_fac[] = {
-	[OFONO_PASSWD_SIM_PIN] = "SC",
-	[OFONO_PASSWD_SIM_PIN2] = "P2",
-	[OFONO_PASSWD_PHSIM_PIN] = "PS",
-	[OFONO_PASSWD_PHFSIM_PIN] = "PF",
-	[OFONO_PASSWD_PHNET_PIN] = "PN",
-	[OFONO_PASSWD_PHNETSUB_PIN] = "PU",
-	[OFONO_PASSWD_PHSP_PIN] = "PP",
-	[OFONO_PASSWD_PHCORP_PIN] = "PC",
+	[OFONO_SIM_PASSWORD_SIM_PIN] = "SC",
+	[OFONO_SIM_PASSWORD_SIM_PIN2] = "P2",
+	[OFONO_SIM_PASSWORD_PHSIM_PIN] = "PS",
+	[OFONO_SIM_PASSWORD_PHFSIM_PIN] = "PF",
+	[OFONO_SIM_PASSWORD_PHNET_PIN] = "PN",
+	[OFONO_SIM_PASSWORD_PHNETSUB_PIN] = "PU",
+	[OFONO_SIM_PASSWORD_PHSP_PIN] = "PP",
+	[OFONO_SIM_PASSWORD_PHCORP_PIN] = "PC",
 };
 
 static void at_pin_enable(struct ofono_sim *sim, int passwd_type, int enable,
@@ -600,7 +600,8 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void at_change_passwd(struct ofono_sim *sim, int passwd_type,
+static void at_change_passwd(struct ofono_sim *sim,
+			enum ofono_sim_password_type passwd_type,
 			const char *old, const char *new,
 			ofono_sim_lock_unlock_cb_t cb, void *data)
 {
@@ -608,12 +609,12 @@ static void at_change_passwd(struct ofono_sim *sim, int passwd_type,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 	int ret;
-	int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
+	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
 
 	if (!cbd)
 		goto error;
 
-	if (passwd_type < 0 || passwd_type >= len ||
+	if (passwd_type >= len ||
 			!at_clck_cpwd_fac[passwd_type])
 		goto error;
 

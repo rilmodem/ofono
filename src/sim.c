@@ -113,30 +113,30 @@ struct service_number {
 };
 
 static const char *const passwd_name[] = {
-	[OFONO_PASSWD_NONE] = "none",
-	[OFONO_PASSWD_SIM_PIN] = "pin",
-	[OFONO_PASSWD_SIM_PUK] = "puk",
-	[OFONO_PASSWD_PHSIM_PIN] = "phone",
-	[OFONO_PASSWD_PHFSIM_PIN] = "firstphone",
-	[OFONO_PASSWD_PHFSIM_PUK] = "firstphonepuk",
-	[OFONO_PASSWD_SIM_PIN2] = "pin2",
-	[OFONO_PASSWD_SIM_PUK2] = "puk2",
-	[OFONO_PASSWD_PHNET_PIN] = "network",
-	[OFONO_PASSWD_PHNET_PUK] = "networkpuk",
-	[OFONO_PASSWD_PHNETSUB_PIN] = "netsub",
-	[OFONO_PASSWD_PHNETSUB_PUK] = "netsubpuk",
-	[OFONO_PASSWD_PHSP_PIN] = "service",
-	[OFONO_PASSWD_PHSP_PUK] = "servicepuk",
-	[OFONO_PASSWD_PHCORP_PIN] = "corp",
-	[OFONO_PASSWD_PHCORP_PUK] = "corppuk",
+	[OFONO_SIM_PASSWORD_NONE] = "none",
+	[OFONO_SIM_PASSWORD_SIM_PIN] = "pin",
+	[OFONO_SIM_PASSWORD_SIM_PUK] = "puk",
+	[OFONO_SIM_PASSWORD_PHSIM_PIN] = "phone",
+	[OFONO_SIM_PASSWORD_PHFSIM_PIN] = "firstphone",
+	[OFONO_SIM_PASSWORD_PHFSIM_PUK] = "firstphonepuk",
+	[OFONO_SIM_PASSWORD_SIM_PIN2] = "pin2",
+	[OFONO_SIM_PASSWORD_SIM_PUK2] = "puk2",
+	[OFONO_SIM_PASSWORD_PHNET_PIN] = "network",
+	[OFONO_SIM_PASSWORD_PHNET_PUK] = "networkpuk",
+	[OFONO_SIM_PASSWORD_PHNETSUB_PIN] = "netsub",
+	[OFONO_SIM_PASSWORD_PHNETSUB_PUK] = "netsubpuk",
+	[OFONO_SIM_PASSWORD_PHSP_PIN] = "service",
+	[OFONO_SIM_PASSWORD_PHSP_PUK] = "servicepuk",
+	[OFONO_SIM_PASSWORD_PHCORP_PIN] = "corp",
+	[OFONO_SIM_PASSWORD_PHCORP_PUK] = "corppuk",
 };
 
-static const char *sim_passwd_name(enum ofono_passwd_type type)
+static const char *sim_passwd_name(enum ofono_sim_password_type type)
 {
 	return passwd_name[type];
 }
 
-static enum ofono_passwd_type sim_string_to_passwd(const char *name)
+static enum ofono_sim_password_type sim_string_to_passwd(const char *name)
 {
 	int len = sizeof(passwd_name) / sizeof(*passwd_name);
 	int i;
@@ -145,7 +145,7 @@ static enum ofono_passwd_type sim_string_to_passwd(const char *name)
 		if (!strcmp(passwd_name[i], name))
 			return i;
 
-	return OFONO_PASSWD_NONE;
+	return OFONO_SIM_PASSWORD_INVALID;
 }
 
 static char **get_own_numbers(GSList *own_numbers)
@@ -450,7 +450,7 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	struct ofono_sim *sim = data;
 	struct pin_enable_request *req;
 	DBusMessageIter iter;
-	enum ofono_passwd_type type;
+	enum ofono_sim_password_type type;
 	const char *typestr;
 	const char *old;
 	const char *new;
@@ -467,7 +467,8 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
-	if (type == OFONO_PASSWD_NONE)
+	if (type == OFONO_SIM_PASSWORD_NONE ||
+			type == OFONO_SIM_PASSWORD_INVALID)
 		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_next(&iter);
@@ -553,7 +554,7 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
-	if (type == OFONO_PASSWD_NONE || type != sim->pin_type)
+	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_next(&iter);
@@ -596,7 +597,7 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
-	if (type == OFONO_PASSWD_NONE || type != sim->pin_type)
+	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_next(&iter);
@@ -889,7 +890,7 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 }
 
 static void sim_pin_query_cb(const struct ofono_error *error, int pin_type,
-		void *data)
+				void *data)
 {
 	struct ofono_sim *sim = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -914,7 +915,7 @@ static void sim_pin_query_cb(const struct ofono_error *error, int pin_type,
 	}
 
 checkdone:
-	if (pin_type == OFONO_PASSWD_NONE)
+	if (pin_type == OFONO_SIM_PASSWORD_NONE)
 		sim_retrieve_imsi(sim);
 }
 
