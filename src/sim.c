@@ -405,7 +405,7 @@ error:
 	return __ofono_error_invalid_args(msg);
 }
 
-static void sim_enable_pin_cb(const struct ofono_error *error, void *data)
+static void sim_lock_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_sim *sim = data;
 	DBusMessage *reply;
@@ -418,30 +418,76 @@ static void sim_enable_pin_cb(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&sim->pending, reply);
 }
 
+static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
+					DBusConnection *conn, DBusMessage *msg)
+{
+	DBusMessageIter iter;
+	enum ofono_sim_password_type type;
+	const char *typestr;
+	const char *pin;
+
+	if (!sim->driver->lock)
+		return __ofono_error_not_implemented(msg);
+
+	if (sim->pending)
+		return __ofono_error_busy(msg);
+
+	if (!dbus_message_iter_init(msg, &iter))
+		return __ofono_error_invalid_args(msg);
+
+	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
+		return __ofono_error_invalid_args(msg);
+
+	dbus_message_iter_get_basic(&iter, &typestr);
+
+	type = sim_string_to_passwd(typestr);
+	if (type == OFONO_SIM_PASSWORD_NONE ||
+			type == OFONO_SIM_PASSWORD_INVALID)
+		return __ofono_error_invalid_format(msg);
+
+	dbus_message_iter_next(&iter);
+	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
+		return __ofono_error_invalid_args(msg);
+
+	dbus_message_iter_get_basic(&iter, &pin);
+
+	if (!is_valid_pin(pin))
+		return __ofono_error_invalid_format(msg);
+
+	sim->pending = dbus_message_ref(msg);
+	sim->driver->lock(sim, type, lock, pin, sim_lock_cb, sim);
+
+	return NULL;
+}
+
+static DBusMessage *sim_lock_pin(DBusConnection *conn, DBusMessage *msg,
+					void *data)
+{
+	struct ofono_sim *sim = data;
+
+	return sim_lock_or_unlock(sim, 1, conn, msg);
+}
+
+static DBusMessage *sim_unlock_pin(DBusConnection *conn, DBusMessage *msg,
+					void *data)
+{
+	struct ofono_sim *sim = data;
+
+	return sim_lock_or_unlock(sim, 0, conn, msg);
+}
+
 static void sim_change_pin_cb(const struct ofono_error *error, void *data)
 {
-	struct pin_enable_request *req = data;
-	struct ofono_sim *sim = req->sim;
+	struct ofono_sim *sim = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		__ofono_dbus_pending_reply(&sim->pending,
 				__ofono_error_failed(sim->pending));
-		goto cleanup;
+		return;
 	}
 
-	if (!sim->driver->lock) {
-		__ofono_dbus_pending_reply(&sim->pending,
+	__ofono_dbus_pending_reply(&sim->pending,
 				dbus_message_new_method_return(sim->pending));
-		goto cleanup;
-	}
-
-	sim->driver->lock(sim, req->type, 1, req->passwd,
-				sim_enable_pin_cb, sim);
-
-cleanup:
-	memset(req->passwd, 0, strlen(req->passwd));
-	g_free(req->passwd);
-	g_free(req);
 }
 
 static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
@@ -454,6 +500,9 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	const char *typestr;
 	const char *old;
 	const char *new;
+
+	if (!sim->driver->change_passwd)
+		return __ofono_error_not_implemented(msg);
 
 	if (sim->pending)
 		return __ofono_error_busy(msg);
@@ -486,31 +535,15 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 
 	dbus_message_iter_get_basic(&iter, &new);
 
-	if (new[0] != '\0' && strcmp(new, old)) {
-		if (!sim->driver->change_passwd)
-			return __ofono_error_not_implemented(msg);
+	if (!is_valid_pin(new))
+		return __ofono_error_invalid_format(msg);
 
-		if (!is_valid_pin(new))
-			return __ofono_error_invalid_format(msg);
+	if (!strcmp(new, old))
+		return dbus_message_new_method_return(msg);
 
-		req = g_new0(struct pin_enable_request, 1);
-
-		req->sim = sim;
-		req->type = type;
-		req->passwd = g_strdup(new);
-
-		sim->pending = dbus_message_ref(msg);
-
-		sim->driver->change_passwd(sim, type, old, new,
-						sim_change_pin_cb, req);
-	} else {
-		if (!sim->driver->lock)
-			return __ofono_error_not_implemented(msg);
-
-		sim->pending = dbus_message_ref(msg);
-		sim->driver->lock(sim, type, new[0] != '\0',
-					old, sim_enable_pin_cb, sim);
-	}
+	sim->pending = dbus_message_ref(msg);
+	sim->driver->change_passwd(sim, type, old, new,
+					sim_change_pin_cb, sim);
 
 	return NULL;
 }
@@ -633,6 +666,10 @@ static GDBusMethodTable sim_methods[] = {
 	{ "EnterPin",		"ss",	"",		sim_enter_pin,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "ResetPin",		"sss",	"",		sim_reset_pin,
+							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "LockPin",		"ss",	"",		sim_lock_pin,
+							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "UnlockPin",		"ss",	"",		sim_unlock_pin,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
