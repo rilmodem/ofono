@@ -888,11 +888,6 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 }
 
-static void sim_pin_check_done(struct ofono_sim *sim)
-{
-	sim_retrieve_imsi(sim);
-}
-
 static void sim_pin_query_cb(const struct ofono_error *error, int pin_type,
 		void *data)
 {
@@ -920,13 +915,13 @@ static void sim_pin_query_cb(const struct ofono_error *error, int pin_type,
 
 checkdone:
 	if (pin_type == OFONO_PASSWD_NONE)
-		sim_pin_check_done(sim);
+		sim_retrieve_imsi(sim);
 }
 
 static void sim_pin_check(struct ofono_sim *sim)
 {
 	if (!sim->driver->query_passwd_state) {
-		sim_pin_check_done(sim);
+		sim_retrieve_imsi(sim);
 		return;
 	}
 
