@@ -606,25 +606,20 @@ static DBusMessage *cm_acm_reset(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_call_meter *cm = data;
-	DBusMessageIter iter;
 	const char *pin2;
+
+	if (!cm->driver->acm_reset)
+		return __ofono_error_not_implemented(msg);
 
 	if (cm->pending)
 		return __ofono_error_busy(msg);
 
-	if (!dbus_message_iter_init(msg, &iter))
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &pin2,
+					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &pin2);
 
 	if (!is_valid_pin(pin2))
 		return __ofono_error_invalid_format(msg);
-
-	if (!cm->driver->acm_reset)
-		return __ofono_error_not_implemented(msg);
 
 	cm->pending = dbus_message_ref(msg);
 

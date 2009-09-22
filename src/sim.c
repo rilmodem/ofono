@@ -442,7 +442,6 @@ static void sim_lock_cb(const struct ofono_error *error, void *data)
 static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 					DBusConnection *conn, DBusMessage *msg)
 {
-	DBusMessageIter iter;
 	enum ofono_sim_password_type type;
 	const char *typestr;
 	const char *pin;
@@ -453,13 +452,10 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 	if (sim->pending)
 		return __ofono_error_busy(msg);
 
-	if (!dbus_message_iter_init(msg, &iter))
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
+					DBUS_TYPE_STRING, &pin,
+					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
 
@@ -469,12 +465,6 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 	if (password_is_pin(type) == FALSE ||
 			type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		return __ofono_error_invalid_format(msg);
-
-	dbus_message_iter_next(&iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &pin);
 
 	if (!is_valid_pin(pin))
 		return __ofono_error_invalid_format(msg);
@@ -519,7 +509,6 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_sim *sim = data;
-	DBusMessageIter iter;
 	enum ofono_sim_password_type type;
 	const char *typestr;
 	const char *old;
@@ -531,33 +520,19 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	if (sim->pending)
 		return __ofono_error_busy(msg);
 
-	if (!dbus_message_iter_init(msg, &iter))
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
+					DBUS_TYPE_STRING, &old,
+					DBUS_TYPE_STRING, &new,
+					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
 
 	if (password_is_pin(type) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
-	dbus_message_iter_next(&iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &old);
-
 	if (!is_valid_pin(old))
 		return __ofono_error_invalid_format(msg);
-
-	dbus_message_iter_next(&iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &new);
 
 	if (!is_valid_pin(new))
 		return __ofono_error_invalid_format(msg);
@@ -591,7 +566,6 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_sim *sim = data;
-	DBusMessageIter iter;
 	const char *typestr;
 	enum ofono_sim_password_type type;
 	const char *pin;
@@ -602,24 +576,15 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	if (sim->pending)
 		return __ofono_error_busy(msg);
 
-	if (!dbus_message_iter_init(msg, &iter))
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
+					DBUS_TYPE_STRING, &pin,
+					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
 
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
-
-	dbus_message_iter_next(&iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &pin);
 
 	if (!is_valid_pin(pin))
 		return __ofono_error_invalid_format(msg);
@@ -634,7 +599,6 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_sim *sim = data;
-	DBusMessageIter iter;
 	const char *typestr;
 	enum ofono_sim_password_type type;
 	const char *puk;
@@ -646,33 +610,19 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	if (sim->pending)
 		return __ofono_error_busy(msg);
 
-	if (!dbus_message_iter_init(msg, &iter))
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
+					DBUS_TYPE_STRING, &puk,
+					DBUS_TYPE_STRING, &pin,
+					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
 
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
-	dbus_message_iter_next(&iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &puk);
-
 	if (!is_valid_pin(puk))
 		return __ofono_error_invalid_format(msg);
-
-	dbus_message_iter_next(&iter);
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &pin);
 
 	if (!is_valid_pin(pin))
 		return __ofono_error_invalid_format(msg);

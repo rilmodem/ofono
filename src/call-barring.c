@@ -889,24 +889,20 @@ static DBusMessage *cb_disable_all(DBusConnection *conn, DBusMessage *msg,
 					void *data, const char *fac)
 {
 	struct ofono_call_barring *cb = data;
-	DBusMessageIter iter;
-	const char *passwd = "";
+	const char *passwd;
+
+	if (!cb->driver->set)
+		return __ofono_error_not_implemented(msg);
 
 	if (cb->pending)
 		return __ofono_error_busy(msg);
 
-	if (!dbus_message_iter_init(msg, &iter))
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &passwd,
+					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &passwd);
 	if (!is_valid_pin(passwd))
 		return __ofono_error_invalid_format(msg);
-
-	if (!cb->driver->set)
-		return __ofono_error_not_implemented(msg);
 
 	cb_set_query_bounds(cb, fac, FALSE);
 
@@ -939,33 +935,25 @@ static DBusMessage *cb_set_passwd(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_call_barring *cb = data;
-	DBusMessageIter iter;
-	const char *old_passwd, *new_passwd;
+	const char *old_passwd;
+	const char *new_passwd;
+
+	if (!cb->driver->set_passwd)
+		return __ofono_error_not_implemented(msg);
 
 	if (cb->pending)
 		return __ofono_error_busy(msg);
 
-	if (!dbus_message_iter_init(msg, &iter))
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &old_passwd,
+					DBUS_TYPE_STRING, &new_passwd,
+					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &old_passwd);
 	if (!is_valid_pin(old_passwd))
 		return __ofono_error_invalid_format(msg);
 
-	dbus_message_iter_next(&iter);
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return __ofono_error_invalid_args(msg);
-
-	dbus_message_iter_get_basic(&iter, &new_passwd);
 	if (!is_valid_pin(new_passwd))
 		return __ofono_error_invalid_format(msg);
-
-	if (!cb->driver->set_passwd)
-		return __ofono_error_not_implemented(msg);
 
 	cb->pending = dbus_message_ref(msg);
 	cb->driver->set_passwd(cb, "AB", old_passwd, new_passwd,

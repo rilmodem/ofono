@@ -701,11 +701,11 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 	const char *strtype;
 	int type;
 
-	if (cf->pending)
-		return __ofono_error_busy(msg);
-
 	if (!cf->driver->erasure)
 		return __ofono_error_not_implemented(msg);
+
+	if (cf->pending)
+		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &strtype,
 					DBUS_TYPE_INVALID) == FALSE)
