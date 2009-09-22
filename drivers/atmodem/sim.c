@@ -565,21 +565,21 @@ static const char *const at_clck_cpwd_fac[] = {
 	[OFONO_SIM_PASSWORD_PHCORP_PIN] = "PC",
 };
 
-static void at_pin_enable(struct ofono_sim *sim, int passwd_type, int enable,
-			const char *passwd,
-			ofono_sim_lock_unlock_cb_t cb, void *data)
+static void at_pin_enable(struct ofono_sim *sim,
+				enum ofono_sim_password_type passwd_type,
+				int enable, const char *passwd,
+				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 	int ret;
-	int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
+	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
 
 	if (!cbd)
 		goto error;
 
-	if (passwd_type < 0 || passwd_type >= len ||
-			!at_clck_cpwd_fac[passwd_type])
+	if (passwd_type >= len || !at_clck_cpwd_fac[passwd_type])
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",%i,\"%s\"",

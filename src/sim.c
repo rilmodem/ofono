@@ -78,7 +78,7 @@ struct ofono_sim {
 	GSList *service_numbers;
 	gboolean sdn_ready;
 	gboolean ready;
-	int pin_type;
+	enum ofono_sim_password_type pin_type;
 	char **language_prefs;
 	GQueue *simop_q;
 	gint simop_source;
@@ -569,7 +569,7 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	struct ofono_sim *sim = data;
 	DBusMessageIter iter;
 	const char *typestr;
-	int type;
+	enum ofono_sim_password_type type;
 	const char *pin;
 
 	if (!sim->driver->send_passwd)
@@ -611,7 +611,7 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	struct ofono_sim *sim = data;
 	DBusMessageIter iter;
 	const char *typestr;
-	int type;
+	enum ofono_sim_password_type type;
 	const char *puk;
 	const char *pin;
 
@@ -926,7 +926,8 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 }
 
-static void sim_pin_query_cb(const struct ofono_error *error, int pin_type,
+static void sim_pin_query_cb(const struct ofono_error *error,
+				enum ofono_sim_password_type pin_type,
 				void *data)
 {
 	struct ofono_sim *sim = data;

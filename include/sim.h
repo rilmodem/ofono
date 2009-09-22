@@ -85,7 +85,8 @@ typedef void (*ofono_sim_file_read_cb_t)(int ok,
 typedef void (*ofono_sim_file_write_cb_t)(int ok, void *userdata);
 
 typedef void (*ofono_sim_passwd_cb_t)(const struct ofono_error *error,
-					int passwd_type, void *data);
+					enum ofono_sim_password_type type,
+					void *data);
 
 typedef void (*ofono_sim_lock_unlock_cb_t)(const struct ofono_error *error,
 					void *data);
@@ -127,8 +128,8 @@ struct ofono_sim_driver {
 			enum ofono_sim_password_type type,
 			const char *old, const char *new,
 			ofono_sim_lock_unlock_cb_t cb, void *data);
-	void (*lock)(struct ofono_sim *sim, int passwd_type, int enable,
-			const char *passwd,
+	void (*lock)(struct ofono_sim *sim, enum ofono_sim_password_type type,
+			int enable, const char *passwd,
 			ofono_sim_lock_unlock_cb_t cb, void *data);
 };
 
