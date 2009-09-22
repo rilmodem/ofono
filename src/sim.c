@@ -101,12 +101,6 @@ struct msisdn_set_request {
 	DBusMessage *msg;
 };
 
-struct pin_enable_request {
-	struct ofono_sim *sim;
-	int type;
-	char *passwd;
-};
-
 struct service_number {
 	char *id;
 	struct ofono_phone_number ph;
