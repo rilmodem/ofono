@@ -417,7 +417,7 @@ static int set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 
 	if (err == 0)
 		modem->powered = powered;
-	else if (err != EINPROGRESS)
+	else if (err != -EINPROGRESS)
 		modem->powered_pending = modem->powered;
 
 	return err;
