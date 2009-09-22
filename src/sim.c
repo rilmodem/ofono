@@ -148,6 +148,33 @@ static enum ofono_sim_password_type sim_string_to_passwd(const char *name)
 	return OFONO_SIM_PASSWORD_INVALID;
 }
 
+static gboolean password_is_pin(enum ofono_sim_password_type type)
+{
+	switch(type) {
+	case OFONO_SIM_PASSWORD_SIM_PIN:
+	case OFONO_SIM_PASSWORD_PHSIM_PIN:
+	case OFONO_SIM_PASSWORD_PHFSIM_PIN:
+	case OFONO_SIM_PASSWORD_SIM_PIN2:
+	case OFONO_SIM_PASSWORD_PHNET_PIN:
+	case OFONO_SIM_PASSWORD_PHNETSUB_PIN:
+	case OFONO_SIM_PASSWORD_PHSP_PIN:
+	case OFONO_SIM_PASSWORD_PHCORP_PIN:
+		return TRUE;
+	case OFONO_SIM_PASSWORD_SIM_PUK:
+	case OFONO_SIM_PASSWORD_PHFSIM_PUK:
+	case OFONO_SIM_PASSWORD_SIM_PUK2:
+	case OFONO_SIM_PASSWORD_PHNET_PUK:
+	case OFONO_SIM_PASSWORD_PHNETSUB_PUK:
+	case OFONO_SIM_PASSWORD_PHSP_PUK:
+	case OFONO_SIM_PASSWORD_PHCORP_PUK:
+	case OFONO_SIM_PASSWORD_INVALID:
+	case OFONO_SIM_PASSWORD_NONE:
+		return FALSE;
+	}
+
+	return FALSE;
+}
+
 static char **get_own_numbers(GSList *own_numbers)
 {
 	int nelem = 0;
@@ -441,8 +468,7 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
-	if (type == OFONO_SIM_PASSWORD_NONE ||
-			type == OFONO_SIM_PASSWORD_INVALID)
+	if (password_is_pin(type) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_next(&iter);
@@ -516,8 +542,8 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
-	if (type == OFONO_SIM_PASSWORD_NONE ||
-			type == OFONO_SIM_PASSWORD_INVALID)
+
+	if (password_is_pin(type) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_next(&iter);
@@ -587,6 +613,7 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
+
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
@@ -630,6 +657,7 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
+
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
