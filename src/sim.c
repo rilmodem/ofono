@@ -468,7 +468,12 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 	dbus_message_iter_get_basic(&iter, &typestr);
 
 	type = sim_string_to_passwd(typestr);
-	if (password_is_pin(type) == FALSE)
+
+	/* SIM PIN2 cannot be locked / unlocked according to 27.007,
+	 * however the PIN combination can be changed
+	 */
+	if (password_is_pin(type) == FALSE ||
+			type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		return __ofono_error_invalid_format(msg);
 
 	dbus_message_iter_next(&iter);
