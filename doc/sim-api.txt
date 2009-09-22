@@ -28,6 +28,19 @@ Methods		dict GetProperties()
 			Provides the unblock key to the modem and if correct
 			resets the pin to the new value of newpin.
 
+		LockPin(string type, string pin)
+
+			Activates the lock for the particular pin type.  The
+			device will ask for a PIN automatically next time the
+			device is turned on or the SIM is removed and
+			re-inserter.  The current PIN is required for the
+			operation to succeed.
+
+		UnlockPin(string type, string pin)
+
+			Deactivates the lock for the particular pin type.  The
+			current PIN is required for the operation to succeed.
+
 Signals		PropertyChanged(string name, variant value)
 
 			This signal indicates a changed value of the given
