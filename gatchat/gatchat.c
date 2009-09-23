@@ -984,6 +984,7 @@ GAtChat *g_at_chat_new_from_tty(const char *device, GAtSyntax *syntax)
 {
 	GIOChannel *channel;
 	int fd;
+	GAtChat *chat;
 
 	fd = open_device(device);
 	if (fd < 0)
@@ -995,7 +996,9 @@ GAtChat *g_at_chat_new_from_tty(const char *device, GAtSyntax *syntax)
 		return NULL;
 	}
 
-	return g_at_chat_new(channel, syntax);
+	chat = g_at_chat_new(channel, syntax);
+	g_io_channel_unref(channel);
+	return chat;
 }
 
 GAtChat *g_at_chat_ref(GAtChat *chat)
