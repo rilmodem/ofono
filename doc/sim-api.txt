@@ -14,8 +14,7 @@ Methods		dict GetProperties()
 
 		ChangePin(string type, string oldpin, string newpin)
 
-			Changes the pin given by string type.  If newpin is
-			empty, this has the effect of disabling the pin.
+			Changes the pin given by string type.
 
 		EnterPin(string type, string pin)
 
