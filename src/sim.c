@@ -1065,7 +1065,7 @@ static void sim_efpl_read_cb(int ok,
 	struct ofono_sim *sim = userdata;
 	const char *path = __ofono_atom_get_path(sim->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
-	gboolean eflp_format = TRUE;
+	gboolean efli_format = TRUE;
 	GSList *efli = NULL;
 	GSList *efpl = NULL;
 
@@ -1077,9 +1077,9 @@ static void sim_efpl_read_cb(int ok,
 
 skip_efpl:
 	if (sim->efli && sim->efli_length > 0) {
-		eflp_format = sim_efli_format(sim->efli, sim->efli_length);
+		efli_format = sim_efli_format(sim->efli, sim->efli_length);
 
-		if (eflp_format)
+		if (efli_format)
 			efli = parse_language_list(sim->efli, sim->efli_length);
 		else
 			efli = parse_eflp(sim->efli, sim->efli_length);
@@ -1096,7 +1096,7 @@ skip_efpl:
 	 * preference to the EFPL at the MF unless...
 	 * Otherwise in order of preference according to TS 51.011
 	 */
-	if (eflp_format)
+	if (efli_format)
 		sim->language_prefs = concat_lang_prefs(efli, efpl);
 	else
 		sim->language_prefs = concat_lang_prefs(efpl, efli);
