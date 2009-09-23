@@ -525,7 +525,6 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_sim *sim = data;
-	struct pin_enable_request *req;
 	DBusMessageIter iter;
 	enum ofono_sim_password_type type;
 	const char *typestr;
