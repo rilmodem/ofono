@@ -86,7 +86,6 @@ struct ofono_sim {
 	unsigned char efmsisdn_records;
 	unsigned char *efli;
 	unsigned char efli_length;
-	unsigned int next_ready_watch_id;
 	struct ofono_watchlist *ready_watches;
 	const struct ofono_sim_driver *driver;
 	void *driver_data;
