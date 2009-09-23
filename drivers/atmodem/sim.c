@@ -634,6 +634,66 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void at_lock_status_cb(gboolean ok, GAtResult *result,
+		gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	GAtResultIter iter;
+	ofono_sim_locked_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	int locked;
+
+	dump_response("at_lock_status_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CLCK:")) {
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_next_number(&iter, &locked);
+
+	ofono_debug("lock_status_cb: %i", locked);
+
+	cb(&error, locked, cbd->data);
+}
+
+static void at_pin_query_enabled(struct ofono_sim *sim,
+				enum ofono_sim_password_type passwd_type,
+				ofono_sim_locked_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[64];
+	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
+
+	if (!cbd)
+		goto error;
+
+	if (passwd_type >= len || !at_clck_cpwd_fac[passwd_type])
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",2",
+			at_clck_cpwd_fac[passwd_type]);
+
+	if (g_at_chat_send(chat, buf, NULL,
+				at_lock_status_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, -1, data);
+}
+
 static gboolean at_sim_register(gpointer user)
 {
 	struct ofono_sim *sim = user;
@@ -675,6 +735,7 @@ static struct ofono_sim_driver driver = {
 	.reset_passwd		= at_pin_send_puk,
 	.lock			= at_pin_enable,
 	.change_passwd		= at_change_passwd,
+	.query_locked		= at_pin_query_enabled,
 };
 
 void at_sim_init()

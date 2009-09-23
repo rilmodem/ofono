@@ -91,6 +91,9 @@ typedef void (*ofono_sim_passwd_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_sim_lock_unlock_cb_t)(const struct ofono_error *error,
 					void *data);
 
+typedef void (*ofono_sim_locked_cb_t)(const struct ofono_error *error,
+					int locked, void *data);
+
 struct ofono_sim_driver {
 	const char *name;
 	int (*probe)(struct ofono_sim *sim, unsigned int vendor, void *data);
@@ -131,6 +134,9 @@ struct ofono_sim_driver {
 	void (*lock)(struct ofono_sim *sim, enum ofono_sim_password_type type,
 			int enable, const char *passwd,
 			ofono_sim_lock_unlock_cb_t cb, void *data);
+	void (*query_locked)(struct ofono_sim *sim,
+			enum ofono_sim_password_type type,
+			ofono_sim_locked_cb_t cb, void *data);
 };
 
 int ofono_sim_driver_register(const struct ofono_sim_driver *d);
