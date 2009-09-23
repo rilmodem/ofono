@@ -1092,12 +1092,19 @@ skip_efpl:
 	 * order of preference following TS 31.102.
 	 * Quoting 31.102 Section 5.1.1.2:
 	 * The preferred language selection shall always use the EFLI in
-	 * preference to the EFPL at the MF unless...
+	 * preference to the EFPL at the MF unless:
+	 * - if the EFLI has the value 'FFFF' in its highest priority position,
+	 *   then the preferred language selection shall be the language
+	 *   preference in the EFPL at the MF level
 	 * Otherwise in order of preference according to TS 51.011
 	 */
-	if (efli_format)
-		sim->language_prefs = concat_lang_prefs(efli, efpl);
-	else
+	if (efli_format) {
+		if (sim->efli_length >= 2 && sim->efli[0] == 0xff &&
+				sim->efli[1] == 0xff)
+			sim->language_prefs = concat_lang_prefs(NULL, efpl);
+		else
+			sim->language_prefs = concat_lang_prefs(efli, efpl);
+	} else
 		sim->language_prefs = concat_lang_prefs(efpl, efli);
 
 	if (efli) {
