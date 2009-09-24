@@ -1,0 +1,172 @@
+oFono - Open Source Telephony
+*******************************************************************************
+
+1.0 Introduction
+
+Linux and other open source components are now used extensively on both desktop
+and mobile embedded devices.  They provide networking, power management,
+database and other core OS infrastructure.  However, up to this point no
+viable open source solution for mobile telephony existed.  oFono aims to
+change that; it is a telephony host stack specifically targetted at both
+mobile embedded and desktop systems.
+
+Launched on May 11, 2009 oFono aims to provide a solid framework for builidng
+3GPP GSM/UMTS User Equipment (UE) standard compliant devices.  Support for
+CDMA/EVDO technologies is also planned.  The goal of oFono is to provide an
+easy to use, high-level API for applications.  This is accomplished by keeping
+the core logic within the daemon, taking care of standards compliance and
+exposing only the need-to-know aspects to the application.
+
+The license for oFono was chosen as GPLv2.  This means that all core services
+and plugins for oFono must be Open Source.  oFono accepts GPLv2 or any
+GPL-compatible BSD license.  However, since oFono provides a D-Bus API, user
+interface applications can be of any license.
+
+2.0 Design Philosophy
+
+2.1 Modern
+
+oFono aims to be a modern implementation, ready for the 21st century.  From
+the very beginning oFono was designed with support of multiple technologies
+and device types in mind.  It is also designed to support multiple active
+devices simultenously.  This enables greater flexibility and enables usecases
+not possible with current solutions.
+
+oFono explicitly chooses not to support some of the more archaic features
+of GSM.  Specifically only limited use of the SIM for Phonebook support is
+enabled.  SIM storage for incoming and outgoing Short Messages (SMS) is also
+not supported.  The use of these features does not make sense on the current
+generation of devices, and introduces unnessary complexity.
+
+2.2 Fast and Light
+
+One of the main constraints for oFono's design was to make it extremely
+performant on resource-constrainted embedded devices.  This means that
+high-level languages like Python could not be used and library dependencies
+had to be kept to a minimum.  oFono is thus implemented in C and has minimial
+dependencies: libdbus, glib.  The reference drivers introduce two other library
+dependencies, gatchat and gisi, which are linked statically.
+
+2.3 Standards Compliant
+
+oFono is meant to be used in commercial systems, so standards compliance is a
+primary consideration from the very beginning.  Whenever possible oFono takes
+care of the gory details.  This includes the particulars of SMS decoding,
+de-fragmentation and duplicate detection; network operator name display;
+message waiting indicator processing and reporting; emergency dialing numbers,
+service numbers and subscriber number management; supplementary service
+control via strings defined in 3GPP TS 22.030.
+
+3.0 Architecture
+
+oFono provides a flexible, modular and extensible architecture with four main
+components: core daemon, oFono atoms, drivers and plugins.
+
+3.1 Core Daemon
+
+Core daemon provides base level services within oFono, namely the loading of
+plugins and drivers; utility APIs for decoding, encoding and fragmentation of
+binary SMS pdus; utility APIs for reading and writing to the SIM, and
+interpreting the contents of the low-level Element File (EF) contents; utility
+APIs for character set conversion; utility APIs for decoding, duplicate
+detection and pagination of cell broadcasts; and detection of and communication
+between oFono atoms.
+
+A big part of the core daemon is the modem device abstraction.  Each device is
+managed independently, and several devices can be present and active in the
+system at the same time.  The technologies for each device are not restricted
+in any way, and can be customized via the use of drivers.
+
+3.2 oFono Atoms
+
+oFono atoms provide a clear abstraction API for the applications based on
+D-Bus.  There are currently over a dozen atoms within oFono, providing access
+to core functionality like voice calls, supplementary services, short message
+service (SMS), cell broadcast (CBS) and sim management.
+
+Atoms can detect the presence of other atoms and use information provided by
+other atoms to provide extra functionality.  For instance, the Network
+Registration atom will read low-level EF files whenever a SIM is present, and
+provide enhanced operator information if the SIM is thus provisioned.
+
+3.3 Drivers
+
+oFono provides a way to integrate multiple device technologies through its
+driver mechanism.  All modem devices and atoms provide an abstract interface
+for low-level operations.  This interface is based on 3GPP TS 27.007 "AT
+command set for User Equipment" and 3GPP TS 27.005 "DTE-DCE interface for SMS
+and CBS".  oFono assumes that all operations are fully asynchronous.
+
+This means that oFono can accomodate a wide variety of devices, including
+full-featured modems (AT command based and otherwise), data-only cards, and
+modem like devices (e.g. Bluetooth Handsfree and Sim Access Profile devices,
+etc.)
+
+oFono provides a reference AT command driver, which should work for the
+majority of AT command based modems in the market.  oFono also includes an ISI
+protocol based driver, which will enable the majority of Nokia devices to be
+used.  Finally a Bluetooth Handsfree Profile (HFP) driver is also planned.
+
+3.4 Plugins
+
+Plugins provide a final piece of the puzzle.  These are used to provide device
+drivers and atom drivers.  They can also be used to extend oFono or interact
+with other system services.  For example, Moblin uses oFono plugins to store
+all call history information within Evolution Data Server.
+
+4.0 D-Bus API
+
+Much thought has been given to how user interface applications will interact
+with oFono.  The goal of the oFono API is to make the User Interface (UI)
+application writer's job as easy as possible.  This is accomplished in two
+ways: exposing only the essential details to the application and provide a
+high level API.  To accomplish this, oFono sticks to the following four
+basic principles of API design: Consistent, Minimal, Complete and Easy to Use.
+
+4.1 Consistent
+
+As mentioned previously, each atom provides a high-level D-Bus API, which is
+referred to as an interface.  Each interface has a well-defined set of
+properties and two special methods for managing them: GetProperties and
+SetProperty.
+
+All names within oFono are CamelCased and this naming convention is strictly
+enforced.  This means that once the application writer is comfortable using
+one Interface, they should be able to quickly pick up others.
+
+4.2 Minimal & Complete
+
+A common pitfal of API design is exposing too much and assuming that the user
+has the same level of knowledge as the designer.  Almost always these
+assumptions are incorrect and lead to incorrect and inefficient use of the
+API.  This in turn leads to applications that are hard to write, maintain and
+replace.
+
+Instead the API should be minimal; it should make it easy and apparent to the
+user how to accomplish a particular task he or she is interested in.  oFono
+accomplishes this by doing as much as possible within the core and only
+exposing the information which is actually required to be shown to the user.
+
+4.3 Easy to Use
+
+While the above three principles generally provide good results, a process of
+refinement can still be applied.  oFono works with user interface designers
+and implementers to continually improve its API.  This means that if a
+particular feature is found to be inefficient in practice, it refined and
+improved as quickly as possible.
+
+5.0 Conclusion
+
+oFono provides a full host protocol stack for telephony aware applications.
+Today, it enables most of the commonly used features defined by 3GPP standards,
+including voicecalls, sms, cbs, supplementary services and network registration.
+Data connections using GPRS and 3G features are being actively worked on.  It
+thus provides a viable, open source solution to system implementors seeking to
+add telephony capabilities to Linux desktop and mobile devices.
+
+6.0 Resources
+
+Website: http://ofono.org
+Mailing List: ofono@ofono.org
+IRC: #ofono on freenode
+
