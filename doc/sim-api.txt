@@ -93,3 +93,13 @@ Properties	string SubscriberIdentity [readonly, optional]
 						unblocking password is required
 				"corppuk" - Corporate personalization unblocking
 						password is required
+
+		array{string} LockedPins [readonly]
+
+			Contains the pins that are currently locked and will
+			require the user to enter the password at startup.
+			Using LockPin and UnlockPin will result in changes to
+			this property.
+
+			The list contains elements of the same format as the
+			PinRequired property.
