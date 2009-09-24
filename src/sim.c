@@ -79,6 +79,7 @@ struct ofono_sim {
 	gboolean sdn_ready;
 	gboolean ready;
 	enum ofono_sim_password_type pin_type;
+	gboolean locked_pins[OFONO_SIM_PASSWORD_INVALID];
 	char **language_prefs;
 	GQueue *simop_q;
 	gint simop_source;
@@ -190,6 +191,40 @@ static char **get_own_numbers(GSList *own_numbers)
 	return ret;
 }
 
+static char **get_locked_pins(struct ofono_sim *sim)
+{
+	int i;
+	int nelem = 0;
+	char **ret;
+
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++) {
+		if (sim->locked_pins[i] == FALSE)
+			continue;
+
+		if (password_is_pin(i) == FALSE)
+			continue;
+
+		nelem += 1;
+	}
+
+	ret = g_new0(char *, nelem + 1);
+
+	nelem = 0;
+
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++) {
+		if (sim->locked_pins[i] == FALSE)
+			continue;
+
+		if (password_is_pin(i) == FALSE)
+			continue;
+
+		ret[nelem] = g_strdup(sim_passwd_name(i));
+		nelem += 1;
+	}
+
+	return ret;
+}
+
 static char **get_service_numbers(GSList *service_numbers)
 {
 	int nelem;
@@ -232,6 +267,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	char **own_numbers;
 	char **service_numbers;
+	char **locked_pins;
 	const char *pin_name;
 
 	reply = dbus_message_new_method_return(msg);
@@ -257,6 +293,11 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append_array(&dict, "SubscriberNumbers",
 					DBUS_TYPE_STRING, &own_numbers);
 	g_strfreev(own_numbers);
+
+	locked_pins = get_locked_pins(sim);
+	ofono_dbus_dict_append_array(&dict, "LockedPins",
+					DBUS_TYPE_STRING, &locked_pins);
+	g_strfreev(locked_pins);
 
 	if (sim->service_numbers && sim->sdn_ready) {
 		service_numbers = get_service_numbers(sim->service_numbers);
@@ -425,17 +466,60 @@ error:
 	return __ofono_error_invalid_args(msg);
 }
 
+static void sim_locked_cb(struct ofono_sim *sim, gboolean locked)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sim->atom);
+	const char *typestr;
+	const char *pin;
+	char **locked_pins;
+	enum ofono_sim_password_type type;
+	DBusMessage *reply;
+
+	reply = dbus_message_new_method_return(sim->pending);
+
+	dbus_message_get_args(sim->pending, NULL, DBUS_TYPE_STRING, &typestr,
+					DBUS_TYPE_STRING, &pin,
+					DBUS_TYPE_INVALID);
+
+	type = sim_string_to_passwd(typestr);
+
+	sim->locked_pins[type] = locked;
+	__ofono_dbus_pending_reply(&sim->pending, reply);
+
+	locked_pins = get_locked_pins(sim);
+	ofono_dbus_signal_array_property_changed(conn, path,
+							SIM_MANAGER_INTERFACE,
+							"LockedPins",
+							DBUS_TYPE_STRING,
+							&locked_pins);
+	g_strfreev(locked_pins);
+}
+
+static void sim_unlock_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_sim *sim = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBusMessage *reply = __ofono_error_failed(sim->pending);
+		__ofono_dbus_pending_reply(&sim->pending, reply);
+		return;
+	}
+
+	sim_locked_cb(sim, FALSE);
+}
+
 static void sim_lock_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_sim *sim = data;
-	DBusMessage *reply;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		reply = __ofono_error_failed(sim->pending);
-	else
-		reply = dbus_message_new_method_return(sim->pending);
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBusMessage *reply = __ofono_error_failed(sim->pending);
+		__ofono_dbus_pending_reply(&sim->pending, reply);
+		return;
+	}
 
-	__ofono_dbus_pending_reply(&sim->pending, reply);
+	sim_locked_cb(sim, TRUE);
 }
 
 static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
@@ -469,7 +553,9 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 		return __ofono_error_invalid_format(msg);
 
 	sim->pending = dbus_message_ref(msg);
-	sim->driver->lock(sim, type, lock, pin, sim_lock_cb, sim);
+
+	sim->driver->lock(sim, type, lock, pin,
+				lock ? sim_lock_cb : sim_unlock_cb, sim);
 
 	return NULL;
 }
@@ -919,6 +1005,8 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 	if (sim->pin_type != pin_type) {
 		sim->pin_type = pin_type;
 		pin_name = sim_passwd_name(pin_type);
+
+		sim->locked_pins[pin_type] = TRUE;
 
 		ofono_dbus_signal_property_changed(conn, path,
 							SIM_MANAGER_INTERFACE,
