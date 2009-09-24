@@ -191,7 +191,7 @@ AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @GTHREAD_CFLAGS@ \
 INCLUDES = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
 			-I$(srcdir)/gdbus -I$(srcdir)/gisi -I$(srcdir)/gatchat
 
-doc_files = doc/overview.txt \
+doc_files = doc/overview.txt doc/ofono-paper.txt \
 		doc/manager-api.txt doc/modem-api.txt doc/network-api.txt \
 			doc/voicecallmanager-api.txt doc/voicecall-api.txt \
 			doc/call-forwarding-api.txt doc/call-settings-api.txt \
@@ -240,6 +240,13 @@ unit_objects += $(unit_test_simutil_OBJECTS)
 unit_test_mux_SOURCES = unit/test-mux.c $(gatchat_sources)
 unit_test_mux_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_mux_OBJECTS)
+
+
+noinst_PROGRAMS += gatchat/gsmdial
+
+gatchat_gsmdial_SOURCES = gatchat/gsmdial.c $(gatchat_sources)
+
+gatchat_gsmdial_LDADD = @GLIB_LIBS@
 
 
 DISTCHECK_CONFIGURE_FLAGS = --disable-datafiles
