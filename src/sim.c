@@ -144,7 +144,7 @@ static enum ofono_sim_password_type sim_string_to_passwd(const char *name)
 
 static gboolean password_is_pin(enum ofono_sim_password_type type)
 {
-	switch(type) {
+	switch (type) {
 	case OFONO_SIM_PASSWORD_SIM_PIN:
 	case OFONO_SIM_PASSWORD_PHSIM_PIN:
 	case OFONO_SIM_PASSWORD_PHFSIM_PIN:
@@ -310,8 +310,8 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 
 	if (sim->language_prefs)
 		ofono_dbus_dict_append_array(&dict, "PreferredLanguages",
-		                                DBUS_TYPE_STRING,
-		                                &sim->language_prefs);
+						DBUS_TYPE_STRING,
+						&sim->language_prefs);
 
 	pin_name = sim_passwd_name(sim->pin_type);
 	ofono_dbus_dict_append(&dict, "PinRequired",
@@ -1031,10 +1031,10 @@ static void sim_pin_check(struct ofono_sim *sim)
 }
 
 static void sim_efli_read_cb(int ok,
-		                enum ofono_sim_file_structure structure,
-		                int length, int record,
-		                const unsigned char *data,
-		                int record_length, void *userdata)
+				enum ofono_sim_file_structure structure,
+				int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
 	struct ofono_sim *sim = userdata;
 
