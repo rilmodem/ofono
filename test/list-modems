@@ -42,7 +42,9 @@ for path in properties["Modems"]:
 						"MultipartyCalls",
 						"EmergencyNumbers",
 						"SubscriberNumbers",
-						"ServiceDiallingNumbers"]:
+						"ServiceDiallingNumbers",
+						"PreferredLanguages",
+						"LockedPins"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
