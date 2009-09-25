@@ -1,3 +1,8 @@
+ver 0.6:
+	Fix build issue with example history plugin.
+	Fix segmentation fault from SIM reading on Calypso modem.
+	Add more scripts for SMS and voice call testing.
+
 ver 0.5:
 	Fix reading of left overs in ME storage on startup.
 	Fix parsing of Enhanced Voicemail notifications.
