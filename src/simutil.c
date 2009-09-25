@@ -221,6 +221,9 @@ gboolean sim_spdi_lookup(struct sim_spdi *spdi,
 {
 	struct spdi_operator spdi_op;
 
+	if (!spdi)
+		return FALSE;
+
 	g_strlcpy(spdi_op.mcc, mcc, sizeof(spdi_op.mcc));
 	g_strlcpy(spdi_op.mnc, mnc, sizeof(spdi_op.mnc));
 
