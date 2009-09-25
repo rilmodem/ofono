@@ -1,3 +1,16 @@
+ver 0.5:
+	Fix reading of left overs in ME storage on startup.
+	Fix parsing of Enhanced Voicemail notifications.
+	Add reading of various CBS related EFs.
+	Add ability to expire PLMN wide messages.
+	Add support for national language variants.
+	Add support for PIN and PUK handling.
+	Add support for TI Calypso modem.
+	Add initial support for Novatel based devices.
+	Add initial support for Huawei based devices.
+	Add initial support for Option HSO based devices.
+	Add initial support for TTY multiplexing.
+
 ver 0.4:
 	Add atom framework and update all drivers.
 	Add support for modem driver framework.
