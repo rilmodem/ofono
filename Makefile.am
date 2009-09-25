@@ -209,7 +209,7 @@ test_files = test/test-manager test/test-modem test/test-voicecall \
 
 conf_files = src/ofono.conf plugins/modem.conf
 
-EXTRA_DIST = src/genbuiltin $(doc_files) \
+EXTRA_DIST = src/genbuiltin plugins/example_history.c $(doc_files) \
 				$(test_files) $(conf_files) $(udev_files)
 
 dist_man_MANS = doc/ofonod.8
