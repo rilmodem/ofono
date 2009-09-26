@@ -857,13 +857,13 @@ const char **__ofono_modem_get_list()
 
 	modems = g_new0(const char *, g_slist_length(g_modem_list) + 1);
 
-	for (l = g_modem_list, i = 0; l; l = l->next, i++) {
+	for (l = g_modem_list, i = 0; l; l = l->next) {
 		modem = l->data;
 
 		if (modem->driver == NULL)
 			continue;
 
-		modems[i] = modem->path;
+		modems[i++] = modem->path;
 	}
 
 	return modems;
