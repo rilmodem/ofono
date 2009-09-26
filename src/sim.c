@@ -1170,10 +1170,6 @@ skip_efpl:
 			efli = parse_language_list(sim->efli, sim->efli_length);
 		else
 			efli = parse_eflp(sim->efli, sim->efli_length);
-
-		g_free(sim->efli);
-		sim->efli = NULL;
-		sim->efli_length = 0;
 	}
 
 	/* If efli_format is TRUE, make a list of languages in both files in
@@ -1194,6 +1190,12 @@ skip_efpl:
 			sim->language_prefs = concat_lang_prefs(efli, efpl);
 	} else
 		sim->language_prefs = concat_lang_prefs(efpl, efli);
+
+	if (sim->efli) {
+		g_free(sim->efli);
+		sim->efli = NULL;
+		sim->efli_length = 0;
+	}
 
 	if (efli) {
 		g_slist_foreach(efli, (GFunc)g_free, NULL);
