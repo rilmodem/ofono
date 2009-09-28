@@ -40,19 +40,15 @@ struct ofono_call_volume_driver {
 			void *data);
 	void (*remove)(struct ofono_call_volume *cv);
 	void (*speaker_volume)(struct ofono_call_volume *cv,
-			unsigned char percent,
-			ofono_call_volume_cb_t cb, void *data);
+				unsigned char percent,
+				ofono_call_volume_cb_t cb, void *data);
 	void (*microphone_volume)(struct ofono_call_volume *cv,
-			unsigned char percent,
-			ofono_call_volume_cb_t cb, void *data);
+					unsigned char percent,
+					ofono_call_volume_cb_t cb, void *data);
 };
 
 void ofono_call_volume_notify(struct ofono_call_volume *cv,
 			const char *property, unsigned char percent);
-DBusMessage *ofono_set_call_volume(DBusMessage *msg,
-			struct ofono_call_volume *cv,
-			const char *property,
-			unsigned char percent);
 
 int ofono_call_volume_driver_register(const struct ofono_call_volume_driver *d);
 void ofono_call_volume_driver_unregister(

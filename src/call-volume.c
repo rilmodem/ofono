@@ -157,10 +157,10 @@ static void mv_set_callback(const struct ofono_error *error, void *data)
 	generic_callback(error, data);
 }
 
-DBusMessage *ofono_set_call_volume(DBusMessage *msg,
-					struct ofono_call_volume *cv,
-					const char *property,
-					unsigned char percent)
+static DBusMessage *ofono_set_call_volume(DBusMessage *msg,
+						struct ofono_call_volume *cv,
+						const char *property,
+						unsigned char percent)
 {
 	if (percent > 100)
 		return __ofono_error_invalid_format(msg);
