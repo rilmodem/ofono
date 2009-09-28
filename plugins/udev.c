@@ -94,32 +94,33 @@ static const char *get_driver(struct udev_device *udev_device)
 static void add_mbm(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
-	const char *description, *devnode;
+	const char *desc, *devnode;
 	const char *device, *network;
 	int registered;
 
-	description = udev_device_get_sysattr_value(udev_device,
-							"device/interface");
-	if (description == NULL)
+	desc = udev_device_get_sysattr_value(udev_device, "device/interface");
+
+	if (desc == NULL)
 		return;
 
 	registered = ofono_modem_get_integer(modem, "Registered");
 	if (registered != 0)
 		return;
 
-	if (g_str_has_suffix(description, "Minicard Modem") == TRUE) {
+	if (g_str_has_suffix(desc, "Minicard Modem") ||
+			g_str_has_suffix(desc, "Broadband Modem")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
-	} else if (g_str_has_suffix(description,
-					"Minicard Data Modem") == TRUE) {
+	} else if (g_str_has_suffix(desc, "Minicard Data Modem") ||
+			g_str_has_suffix(desc, "Broadband Data Modem")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, DATA_DEVICE, devnode);
-	} else if (g_str_has_suffix(description,
-					"Minicard GPS Port") == TRUE) {
+	} else if (g_str_has_suffix(desc, "Minicard GPS Port") ||
+			g_str_has_suffix(desc, "Broadband GPS Port")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, GPS_DEVICE, devnode);
-	} else if (g_str_has_suffix(description,
-					"Minicard Network Adapter") == TRUE) {
+	} else if (g_str_has_suffix(desc, "Minicard Network Adapter") ||
+			g_str_has_suffix(desc, "Broadband Network Adapter")) {
 		devnode = udev_device_get_property_value(udev_device,
 								"INTERFACE");
 		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
