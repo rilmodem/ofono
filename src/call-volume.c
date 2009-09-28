@@ -48,34 +48,44 @@ static GSList *g_drivers = NULL;
 
 struct ofono_call_volume {
 	DBusMessage *pending;
-	const struct ofono_call_volume_driver *driver;
-	int flags;
-	void *driver_data;
-	struct ofono_atom *atom;
-
 	unsigned char speaker_volume;
 	unsigned char microphone_volume;
-
-	/* temp volume before it is accepted by remote */
-	unsigned char temp_volume;
+	unsigned char pending_volume;
+	const struct ofono_call_volume_driver *driver;
+	void *driver_data;
+	struct ofono_atom *atom;
 };
 
-void ofono_call_volume_notify(struct ofono_call_volume *cv,
-						const char *property,
+void ofono_call_volume_set_speaker_volume(struct ofono_call_volume *cv,
 						unsigned char percent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cv->atom);
 
-	if (!strcmp(property, "SpeakerVolume"))
-		cv->speaker_volume = percent;
+	cv->speaker_volume = percent;
 
-	if (!strcmp(property, "MicrophoneVolume"))
-		cv->microphone_volume = percent;
+	if (__ofono_atom_get_registered(cv->atom) == FALSE)
+		return;
 
 	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
-					property, DBUS_TYPE_BYTE,
-					&percent);
+						"SpeakerVolume",
+						DBUS_TYPE_BYTE, &percent);
+}
+
+void ofono_call_volume_set_microphone_volume(struct ofono_call_volume *cv,
+						unsigned char percent)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(cv->atom);
+
+	cv->microphone_volume = percent;
+
+	if (__ofono_atom_get_registered(cv->atom) == FALSE)
+		return;
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+						"MicrophoneVolume",
+						DBUS_TYPE_BYTE, &percent);
 }
 
 static DBusMessage *cv_get_properties(DBusConnection *conn,
