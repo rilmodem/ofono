@@ -302,10 +302,8 @@ struct ofono_call_volume *ofono_call_volume_create(struct ofono_modem *modem,
 static void call_volume_unregister(struct ofono_atom *atom)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	struct ofono_call_volume *cv = __ofono_atom_get_data(atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
-	GSList *l;
 
 	ofono_modem_remove_interface(modem, CALL_VOLUME_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
