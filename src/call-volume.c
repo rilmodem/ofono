@@ -42,8 +42,6 @@
 
 #define CALL_VOLUME_INTERFACE OFONO_SERVICE ".CallVolume"
 
-#define CALL_VOLUME_FLAG_PENDING 0x1
-
 static GSList *g_drivers = NULL;
 
 struct ofono_call_volume {
