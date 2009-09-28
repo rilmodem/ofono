@@ -123,8 +123,6 @@ static void generic_callback(const struct ofono_error *error, void *data)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
-	cv->flags &= ~CALL_VOLUME_FLAG_PENDING;
-
 	if (!cv->pending)
 		return;
 
@@ -147,7 +145,7 @@ static void sv_set_callback(const struct ofono_error *error, void *data)
 		ofono_error("Error occurred during Speaker Volume set: %s",
 					telephony_error_to_str(error));
 	} else {
-		cv->speaker_volume = cv->temp_volume;
+		cv->speaker_volume = cv->pending_volume;
 	}
 
 	generic_callback(error, data);
@@ -161,24 +159,23 @@ static void mv_set_callback(const struct ofono_error *error, void *data)
 		ofono_error("Error occurred during Microphone Volume set: %s",
 					telephony_error_to_str(error));
 	} else {
-		cv->microphone_volume = cv->temp_volume;
+		cv->microphone_volume = cv->pending_volume;
 	}
 
 	generic_callback(error, data);
 }
 
-static DBusMessage *ofono_set_call_volume(DBusMessage *msg,
-						struct ofono_call_volume *cv,
-						const char *property,
-						unsigned char percent)
+static DBusMessage *cv_set_call_volume(DBusMessage *msg,
+					struct ofono_call_volume *cv,
+					const char *property,
+					unsigned char percent)
 {
 	if (percent > 100)
 		return __ofono_error_invalid_format(msg);
 
 	DBG("set %s volume to %d percent", property, percent);
 
-	cv->flags |= CALL_VOLUME_FLAG_PENDING;
-	cv->temp_volume = percent;
+	cv->pending_volume = percent;
 
 	if (msg)
 		cv->pending = dbus_message_ref(msg);
@@ -237,7 +234,7 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 
 	dbus_message_iter_get_basic(&var, &percent);
 
-	return ofono_set_call_volume(msg, cv, property, percent);
+	return cv_set_call_volume(msg, cv, property, percent);
 }
 
 static GDBusMethodTable cv_methods[] = {
