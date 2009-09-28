@@ -115,90 +115,48 @@ static DBusMessage *cv_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static void generic_callback(const struct ofono_error *error, void *data)
-{
-	struct ofono_call_volume *cv = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	DBusMessage *reply;
-
-	if (!cv->pending)
-		return;
-
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		reply = dbus_message_new_method_return(cv->pending);
-	else
-		reply = __ofono_error_failed(cv->pending);
-
-	g_dbus_send_message(conn, reply);
-
-	dbus_message_unref(cv->pending);
-	cv->pending = NULL;
-}
-
 static void sv_set_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_call_volume *cv = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(cv->atom);
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("Error occurred during Speaker Volume set: %s",
-					telephony_error_to_str(error));
-	} else {
-		cv->speaker_volume = cv->pending_volume;
+		__ofono_dbus_pending_reply(&cv->pending,
+					__ofono_error_failed(cv->pending));
+		return;
 	}
 
-	generic_callback(error, data);
+	cv->speaker_volume = cv->pending_volume;
+
+	__ofono_dbus_pending_reply(&cv->pending,
+				dbus_message_new_method_return(cv->pending));
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+					"SpeakerVolume",
+					DBUS_TYPE_BYTE, &cv->speaker_volume);
 }
 
 static void mv_set_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_call_volume *cv = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(cv->atom);
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("Error occurred during Microphone Volume set: %s",
-					telephony_error_to_str(error));
-	} else {
-		cv->microphone_volume = cv->pending_volume;
+		__ofono_dbus_pending_reply(&cv->pending,
+					__ofono_error_failed(cv->pending));
+		return;
 	}
 
-	generic_callback(error, data);
-}
+	cv->microphone_volume = cv->pending_volume;
 
-static DBusMessage *cv_set_call_volume(DBusMessage *msg,
-					struct ofono_call_volume *cv,
-					const char *property,
-					unsigned char percent)
-{
-	if (percent > 100)
-		return __ofono_error_invalid_format(msg);
+	__ofono_dbus_pending_reply(&cv->pending,
+				dbus_message_new_method_return(cv->pending));
 
-	DBG("set %s volume to %d percent", property, percent);
-
-	cv->pending_volume = percent;
-
-	if (msg)
-		cv->pending = dbus_message_ref(msg);
-
-	if (!strcmp(property, "SpeakerVolume")) {
-		if (!cv->driver->speaker_volume) {
-			if (msg != NULL)
-				return __ofono_error_not_implemented(msg);
-			else
-				return NULL;
-		}
-		cv->driver->speaker_volume(cv, percent, sv_set_callback, cv);
-	}
-
-	if (!strcmp(property, "MicrophoneVolume")) {
-		if (!cv->driver->microphone_volume) {
-			if (msg != NULL)
-				return __ofono_error_not_implemented(msg);
-			else
-				return NULL;
-		}
-		cv->driver->microphone_volume(cv, percent, mv_set_callback, cv);
-	}
-
-	return NULL;
+	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+					"MicrophoneVolume",
+					DBUS_TYPE_BYTE, &cv->microphone_volume);
 }
 
 static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
@@ -208,7 +166,6 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 	DBusMessageIter iter;
 	DBusMessageIter var;
 	const char *property;
-	unsigned char percent;
 
 	if (cv->pending)
 		return __ofono_error_busy(msg);
@@ -227,18 +184,49 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 
 	dbus_message_iter_recurse(&iter, &var);
 
-	if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BYTE)
-		return __ofono_error_invalid_args(msg);
+	if (g_str_equal(property, "SpeakerVolume") == TRUE) {
+		unsigned char percent;
 
-	dbus_message_iter_get_basic(&var, &percent);
+		if (!cv->driver->speaker_volume)
+			return __ofono_error_not_supported(msg);
 
-	return cv_set_call_volume(msg, cv, property, percent);
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BYTE)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &percent);
+
+		if (percent > 100)
+			return __ofono_error_invalid_format(msg);
+
+		cv->pending_volume = percent;
+		cv->pending = dbus_message_ref(msg);
+		cv->driver->speaker_volume(cv, percent, sv_set_callback, cv);
+	} else if (g_str_equal(property, "MicrophoneVolume") == TRUE) {
+		unsigned char percent;
+
+		if (!cv->driver->microphone_volume)
+			return __ofono_error_not_supported(msg);
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BYTE)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &percent);
+
+		if (percent > 100)
+			return __ofono_error_invalid_format(msg);
+
+		cv->pending_volume = percent;
+		cv->pending = dbus_message_ref(msg);
+		cv->driver->speaker_volume(cv, percent, mv_set_callback, cv);
+	}
+
+	return __ofono_error_invalid_args(msg);
 }
 
 static GDBusMethodTable cv_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	cv_get_properties },
 	{ "SetProperty",	"sv",	"",		cv_set_property,
-					G_DBUS_METHOD_FLAG_ASYNC },
+							G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
