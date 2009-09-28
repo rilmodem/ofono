@@ -279,9 +279,6 @@ struct ofono_call_volume *ofono_call_volume_create(struct ofono_modem *modem,
 	if (cv == NULL)
 		return NULL;
 
-	/* assume volume as half of maxium volume */
-	cv->speaker_volume = 50;
-	cv->microphone_volume = 50;
 	cv->atom = __ofono_modem_add_atom(modem,
 					OFONO_ATOM_TYPES_CALL_VOLUME,
 					call_volume_remove, cv);
