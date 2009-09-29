@@ -43,6 +43,7 @@
 #include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
+#include <ofono/call-volume.h>
 #include <ofono/cbs.h>
 #include <ofono/devinfo.h>
 #include <ofono/message-waiting.h>
@@ -276,6 +277,7 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
+	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
 	if (!data->calypso) {
 		ofono_sms_create(modem, 0, "atmodem", data->chat);
