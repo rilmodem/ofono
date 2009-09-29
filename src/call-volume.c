@@ -244,6 +244,9 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (percent > 100)
 			return __ofono_error_invalid_format(msg);
 
+		if (percent == cv->speaker_volume)
+			return dbus_message_new_method_return(msg);
+
 		cv->pending_volume = percent;
 		cv->pending = dbus_message_ref(msg);
 		cv->driver->speaker_volume(cv, percent, sv_set_callback, cv);
@@ -263,6 +266,9 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (percent > 100)
 			return __ofono_error_invalid_format(msg);
 
+		if (percent == cv->microphone_volume)
+			return dbus_message_new_method_return(msg);
+
 		cv->pending_volume = percent;
 		cv->pending = dbus_message_ref(msg);
 		cv->driver->speaker_volume(cv, percent, mv_set_callback, cv);
@@ -278,6 +284,9 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &muted);
+
+		if (muted == cv->muted)
+			return dbus_message_new_method_return(msg);
 
 		cv->muted_pending = muted;
 		cv->pending = dbus_message_ref(msg);
