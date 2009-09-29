@@ -45,12 +45,15 @@ struct ofono_call_volume_driver {
 	void (*microphone_volume)(struct ofono_call_volume *cv,
 					unsigned char percent,
 					ofono_call_volume_cb_t cb, void *data);
+	void (*mute)(struct ofono_call_volume *cv, int muted,
+			ofono_call_volume_cb_t cb, void *data);
 };
 
 void ofono_call_volume_set_speaker_volume(struct ofono_call_volume *cv,
 					unsigned char percent);
 void ofono_call_volume_set_microphone_volume(struct ofono_call_volume *cv,
 						unsigned char percent);
+void ofono_call_volume_set_muted(struct ofono_call_volume *cv, int muted);
 
 int ofono_call_volume_driver_register(const struct ofono_call_volume_driver *d);
 void ofono_call_volume_driver_unregister(

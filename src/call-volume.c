@@ -49,6 +49,8 @@ struct ofono_call_volume {
 	unsigned char speaker_volume;
 	unsigned char microphone_volume;
 	unsigned char pending_volume;
+	gboolean muted;
+	gboolean muted_pending;
 	const struct ofono_call_volume_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -86,12 +88,29 @@ void ofono_call_volume_set_microphone_volume(struct ofono_call_volume *cv,
 						DBUS_TYPE_BYTE, &percent);
 }
 
+void ofono_call_volume_set_muted(struct ofono_call_volume *cv, int muted)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(cv->atom);
+	dbus_bool_t m;
+
+	cv->muted = muted;
+
+	if (__ofono_atom_get_registered(cv->atom) == FALSE)
+		return;
+
+	m = muted;
+	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+						"Muted", DBUS_TYPE_BOOLEAN, &m);
+}
+
 static DBusMessage *cv_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct ofono_call_volume *cv = data;
 	DBusMessage *reply;
 	DBusMessageIter iter, dict;
+	dbus_bool_t muted;
 
 	reply = dbus_message_new_method_return(msg);
 
@@ -109,6 +128,9 @@ static DBusMessage *cv_get_properties(DBusConnection *conn,
 
 	ofono_dbus_dict_append(&dict, "MicrophoneVolume",
 					DBUS_TYPE_BYTE, &cv->microphone_volume);
+
+	muted = cv->muted;
+	ofono_dbus_dict_append(&dict, "Muted", DBUS_TYPE_BOOLEAN, &muted);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -159,6 +181,30 @@ static void mv_set_callback(const struct ofono_error *error, void *data)
 					DBUS_TYPE_BYTE, &cv->microphone_volume);
 }
 
+static void muted_set_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_call_volume *cv = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(cv->atom);
+	dbus_bool_t m;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		cv->muted_pending = cv->muted;
+		__ofono_dbus_pending_reply(&cv->pending,
+					__ofono_error_failed(cv->pending));
+		return;
+	}
+
+	cv->muted = cv->muted_pending;
+	m = cv->muted;
+
+	__ofono_dbus_pending_reply(&cv->pending,
+				dbus_message_new_method_return(cv->pending));
+
+	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+						"Muted", DBUS_TYPE_BOOLEAN, &m);
+}
+
 static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
@@ -201,6 +247,8 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 		cv->pending_volume = percent;
 		cv->pending = dbus_message_ref(msg);
 		cv->driver->speaker_volume(cv, percent, sv_set_callback, cv);
+
+		return NULL;
 	} else if (g_str_equal(property, "MicrophoneVolume") == TRUE) {
 		unsigned char percent;
 
@@ -218,6 +266,24 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 		cv->pending_volume = percent;
 		cv->pending = dbus_message_ref(msg);
 		cv->driver->speaker_volume(cv, percent, mv_set_callback, cv);
+
+		return NULL;
+	} else if (g_str_equal(property, "Muted") == TRUE) {
+		dbus_bool_t muted;
+
+		if (!cv->driver->mute)
+			return __ofono_error_not_supported(msg);
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &muted);
+
+		cv->muted_pending = muted;
+		cv->pending = dbus_message_ref(msg);
+		cv->driver->mute(cv, muted, muted_set_callback, cv);
+
+		return NULL;
 	}
 
 	return __ofono_error_invalid_args(msg);
