@@ -37,6 +37,8 @@
 
 #include "atmodem.h"
 
+static const char *none_prefix[] = { NULL };
+
 static void cssi_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_ssn *ssn = user_data;
@@ -116,7 +118,7 @@ static int at_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 	GAtChat *chat = data;
 
 	ofono_ssn_set_data(ssn, chat);
-	g_at_chat_send(chat, "AT+CSSN=1,1", NULL,
+	g_at_chat_send(chat, "AT+CSSN=1,1", none_prefix,
 			at_ssn_initialized, ssn, NULL);
 
 	return 0;
