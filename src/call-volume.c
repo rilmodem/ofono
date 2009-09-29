@@ -285,7 +285,7 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		dbus_message_iter_get_basic(&var, &muted);
 
-		if (muted == cv->muted)
+		if (muted == (dbus_bool_t) cv->muted)
 			return dbus_message_new_method_return(msg);
 
 		cv->muted_pending = muted;
