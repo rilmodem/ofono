@@ -42,6 +42,7 @@
 #include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
+#include <ofono/call-volume.h>
 #include <ofono/devinfo.h>
 #include <ofono/message-waiting.h>
 #include <ofono/netreg.h>
@@ -157,9 +158,6 @@ static void setup_modem(struct ofono_modem *modem)
 
 	/* Disable deep sleep */
 	g_at_chat_send(data->chat, "AT%SLEEP=2", NULL, NULL, NULL, NULL);
-
-	/* Set audio level to maximum */
-	g_at_chat_send(data->chat, "AT+CLVL=255", NULL, NULL, NULL, NULL);
 }
 
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -376,6 +374,7 @@ static void calypso_post_sim(struct ofono_modem *modem)
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
+	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
