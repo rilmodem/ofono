@@ -104,6 +104,7 @@ builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/phonebook.c \
 				drivers/atmodem/ssn.c \
 				drivers/atmodem/devinfo.c \
+				drivers/atmodem/call-volume.c \
 				drivers/atmodem/vendor.h \
 				drivers/atmodem/atutil.h \
 				drivers/atmodem/atutil.c

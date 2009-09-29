@@ -47,6 +47,7 @@ static int atmodem_init(void)
 	at_sim_init();
 	at_netreg_init();
 	at_cbs_init();
+	at_call_volume_init();
 
 	return 0;
 }
@@ -66,6 +67,7 @@ static void atmodem_exit(void)
 	at_devinfo_exit();
 	at_voicecall_exit();
 	at_cbs_exit();
+	at_call_volume_exit();
 }
 
 OFONO_PLUGIN_DEFINE(atmodem, "AT modem driver", VERSION,

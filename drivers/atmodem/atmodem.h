@@ -59,3 +59,6 @@ extern void at_devinfo_exit();
 
 extern void at_cbs_init();
 extern void at_cbs_exit();
+
+extern void at_call_volume_init();
+extern void at_call_volume_exit();
