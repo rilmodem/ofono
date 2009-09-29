@@ -480,7 +480,7 @@ static inline void report_signal_strength(struct ofono_netreg *netreg,
 	if (strength == 99)
 		strength = -1;
 	else
-		strength = strength * 100 / 31;
+		strength = (strength * 100) / 31;
 
 	ofono_netreg_strength_notify(netreg, strength);
 }
@@ -553,7 +553,7 @@ static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (strength == 99)
 		strength = -1;
 	else
-		strength = strength * 100 / 31;
+		strength = (strength * 100) / 31;
 
 	cb(&error, strength, cbd->data);
 }
