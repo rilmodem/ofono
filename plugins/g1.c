@@ -57,6 +57,29 @@ static void g1_debug(const char *str, void *data)
 /* Detect hardware, and initialize if found */
 static int g1_probe(struct ofono_modem *modem)
 {
+	DBG("");
+
+	return 0;
+}
+
+static void g1_remove(struct ofono_modem *modem)
+{
+	DBG("");
+}
+
+static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+ 
+	DBG("");
+
+	if (ok)
+		ofono_modem_set_powered(modem, TRUE);
+}
+
+/* power up hardware */
+static int g1_enable(struct ofono_modem *modem)
+{
 	GAtSyntax *syntax;
 	GAtChat *chat;
 	const char *device;
@@ -78,36 +101,6 @@ static int g1_probe(struct ofono_modem *modem)
 		g_at_chat_set_debug(chat, g1_debug, NULL);
 
 	ofono_modem_set_data(modem, chat);
-
-	return 0;
-}
-
-static void g1_remove(struct ofono_modem *modem)
-{
-	GAtChat *chat = ofono_modem_get_data(modem);
-
-	DBG("");
-
-	ofono_modem_set_data(modem, NULL);
-	g_at_chat_unref(chat);
-}
-
-static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
- 
-	DBG("");
-
-	if (ok)
-		ofono_modem_set_powered(modem, TRUE);
-}
-
-/* power up hardware */
-static int g1_enable(struct ofono_modem *modem)
-{
-	GAtChat *chat = ofono_modem_get_data(modem);
-
-	DBG("");
 
 	/* ensure modem is in a known state; verbose on, echo/quiet off */
 	g_at_chat_send(chat, "ATE0Q0V1", NULL, NULL, NULL, NULL);
@@ -136,6 +129,9 @@ static int g1_disable(struct ofono_modem *modem)
 
 	/* power down modem */
 	g_at_chat_send(chat, "AT+CFUN=0", NULL, cfun_set_off_cb, modem, NULL);
+
+	g_at_chat_unref(chat);
+	ofono_modem_set_data(modem, NULL);
 
 	return 0;
 }
