@@ -28,6 +28,7 @@
 
 #include <glib.h>
 #include <gatchat.h>
+#include <gattty.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -81,6 +82,7 @@ static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static int g1_enable(struct ofono_modem *modem)
 {
 	GAtSyntax *syntax;
+	GIOChannel *channel;
 	GAtChat *chat;
 	const char *device;
 
@@ -90,8 +92,13 @@ static int g1_enable(struct ofono_modem *modem)
 	if (device == NULL)
 		return -EINVAL;
 
+	channel = g_at_tty_open(device, NULL);
+	if (channel == NULL)
+		return -EIO;
+
 	syntax = g_at_syntax_new_gsm_permissive();
-	chat = g_at_chat_new_from_tty(device, syntax);
+	chat = g_at_chat_new(channel, syntax);
+	g_io_channel_unref(channel);
 	g_at_syntax_unref(syntax);
 
 	if (chat == NULL)

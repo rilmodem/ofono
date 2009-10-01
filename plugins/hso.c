@@ -29,6 +29,7 @@
 
 #include <glib.h>
 #include <gatchat.h>
+#include <gattty.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -88,6 +89,7 @@ static int hso_enable(struct ofono_modem *modem)
 {
 	struct hso_data *data = ofono_modem_get_data(modem);
 	GAtSyntax *syntax;
+	GIOChannel *channel;
 	const char *device;
 
 	DBG("%p", modem);
@@ -99,9 +101,14 @@ static int hso_enable(struct ofono_modem *modem)
 			return -EINVAL;
 	}
 
+	channel = g_at_tty_open(device, NULL);
+	if (!channel)
+		return -EIO;
+
 	syntax = g_at_syntax_new_gsmv1();
-	data->chat = g_at_chat_new_from_tty(device, syntax);
+	data->chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
+	g_io_channel_unref(channel);
 
 	if (!data->chat)
 		return -EIO;

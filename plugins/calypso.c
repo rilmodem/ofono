@@ -33,6 +33,7 @@
 
 #include <glib.h>
 #include <gatchat.h>
+#include <gattty.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -179,39 +180,29 @@ static void modem_initialize(struct ofono_modem *modem)
 	GIOChannel *io;
 	int sk;
 	struct termios ti;
+	GHashTable *options;
 
 	DBG("");
 
 	device = ofono_modem_get_string(modem, "Device");
 
-	sk = open(device, O_RDWR | O_NOCTTY);
-
-	if (sk < 0)
+	options = g_hash_table_new(g_str_hash, g_str_equal);
+	if (options == NULL)
 		goto error;
 
-	tcflush(sk, TCIOFLUSH);
+	g_hash_table_insert(options, "baud", "115200");
+	g_hash_table_insert(options, "parity", "none");
+	g_hash_table_insert(options, "stopbits", "1");
+	g_hash_table_insert(options, "databits", "8");
+	g_hash_table_insert(options, "xonxoff", "on");
+	g_hash_table_insert(options, "local", "on");
+	g_hash_table_insert(options, "rtscts", "on");
 
-	/* Switch TTY to raw mode */
-	memset(&ti, 0, sizeof(ti));
-	cfmakeraw(&ti);
+	io = g_at_tty_open(device, options);
+	g_hash_table_destroy(options);
 
-	cfsetospeed(&ti, B115200);
-	cfsetispeed(&ti, B115200);
-
-	ti.c_cflag &= ~(PARENB);
-	ti.c_cflag &= ~(CSTOPB);
-	ti.c_cflag &= ~(CSIZE);
-	ti.c_cflag |= CS8;
-	ti.c_cflag |= CRTSCTS;
-	ti.c_cflag |= CLOCAL;
-	ti.c_iflag |= (IXON | IXOFF | IXANY);
-	ti.c_cc[VSTART] = 17;
-	ti.c_cc[VSTOP] = 19;
-
-	tcsetattr(sk, TCSANOW, &ti);
-
-	io = g_io_channel_unix_new(sk);
-	g_io_channel_set_close_on_unref(io, TRUE);
+	if (io == NULL)
+		goto error;
 
 	/* Calypso is normally compliant to 27.007, except the vendor-specific
 	 * notifications (like %CSTAT) are not prefixed by \r\n
