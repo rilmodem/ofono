@@ -63,28 +63,34 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "+CRSM:")) {
-		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, cbd->data);
-		return;
-	}
+	if (!g_at_result_iter_next(&iter, "+CRSM:"))
+		goto error;
 
 	g_at_result_iter_next_number(&iter, &sw1);
 	g_at_result_iter_next_number(&iter, &sw2);
 
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
 			(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92) ||
-			(sw1 == 0x90 && sw2 != 0x00) ||
-			len < 14 || response[6] != 0x04 ||
-			(response[13] == 0x01 && len < 15)) {
-		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, cbd->data);
-		return;
-	}
+			(sw1 == 0x90 && sw2 != 0x00))
+		goto error;
 
 	ofono_debug("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
 
-	sim_parse_2g_get_response(response, len, &flen, &rlen, &str, access);
+	if (response[0] == 0x62)
+		ok = sim_parse_3g_get_response(response, len, &flen, &rlen,
+						&str, access, NULL);
+	else
+		ok = sim_parse_2g_get_response(response, len, &flen, &rlen,
+						&str, access);
+
+	if (!ok)
+		goto error;
 
 	cb(&error, flen, str, rlen, access, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, cbd->data);
 }
 
 static void at_sim_read_info(struct ofono_sim *sim, int fileid,
@@ -98,7 +104,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 	if (!cbd)
 		goto error;
 
-	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i,0,0,15", fileid);
+	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i", fileid);
 
 	if (g_at_chat_send(chat, buf, crsm_prefix,
 				at_crsm_info_cb, cbd, g_free) > 0)
