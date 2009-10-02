@@ -1705,8 +1705,7 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 	emit_en_list_changed(vc);
 }
 
-static void ecc_read_cb(int ok, enum ofono_sim_file_structure structure,
-			int total_length, int record, const unsigned char *data,
+static void ecc_read_cb(int ok, int total_length, int record, const unsigned char *data,
 			int record_length, void *userdata)
 {
 	struct ofono_voicecall *vc = userdata;
@@ -1718,8 +1717,7 @@ static void ecc_read_cb(int ok, enum ofono_sim_file_structure structure,
 	if (!ok)
 		goto check;
 
-	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
-		record_length < 4 || total_length < record_length) {
+	if (record_length < 4 || total_length < record_length) {
 		ofono_error("Unable to read emergency numbers from SIM");
 		return;
 	}
@@ -1863,7 +1861,8 @@ static void sim_watch(struct ofono_atom *atom,
 		return;
 	}
 
-	ofono_sim_read(sim, SIM_EFECC_FILEID, ecc_read_cb, vc);
+	ofono_sim_read(sim, SIM_EFECC_FILEID, OFONO_SIM_FILE_STRUCTURE_FIXED,
+			ecc_read_cb, vc);
 }
 
 void ofono_voicecall_register(struct ofono_voicecall *vc)

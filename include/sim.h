@@ -76,9 +76,7 @@ typedef void (*ofono_sim_imsi_cb_t)(const struct ofono_error *error,
 
 typedef void (*ofono_sim_ready_notify_cb_t)(void *data);
 
-typedef void (*ofono_sim_file_read_cb_t)(int ok,
-					enum ofono_sim_file_structure structure,
-					int total_length, int record,
+typedef void (*ofono_sim_file_read_cb_t)(int ok, int total_length, int record,
 					const unsigned char *data,
 					int record_length, void *userdata);
 
@@ -171,6 +169,7 @@ void ofono_sim_set_ready(struct ofono_sim *sim);
  * Returns 0 if the request could be queued, -1 otherwise.
  */
 int ofono_sim_read(struct ofono_sim *sim, int id,
+			enum ofono_sim_file_structure expected,
 			ofono_sim_file_read_cb_t cb, void *data);
 
 int ofono_sim_write(struct ofono_sim *sim, int id,

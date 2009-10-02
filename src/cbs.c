@@ -514,9 +514,7 @@ struct ofono_cbs *ofono_cbs_create(struct ofono_modem *modem,
 	return cbs;
 }
 
-static void sim_cbmi_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_cbmi_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -526,9 +524,6 @@ static void sim_cbmi_read_cb(int ok,
 	char *str;
 
 	if (!ok)
-		return;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		return;
 
 	if ((length % 2) == 1 || length < 2)
@@ -570,9 +565,7 @@ static void sim_cbmi_read_cb(int ok,
 	cbs->efcbmi_contents = NULL;
 }
 
-static void sim_cbmir_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_cbmir_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -583,9 +576,6 @@ static void sim_cbmir_read_cb(int ok,
 	char *str;
 
 	if (!ok)
-		return;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		return;
 
 	if ((length % 4) != 0)
@@ -629,9 +619,7 @@ static void sim_cbmir_read_cb(int ok,
 	cbs->efcbmir_contents = NULL;
 }
 
-static void sim_cbmid_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_cbmid_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -641,9 +629,6 @@ static void sim_cbmid_read_cb(int ok,
 	char *str;
 
 	if (!ok)
-		return;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		return;
 
 	if ((length % 2) == 1 || length < 2)
@@ -689,11 +674,14 @@ static void cbs_got_imsi(struct ofono_cbs *cbs)
 	ofono_debug("Got IMSI: %s", imsi);
 
 	ofono_sim_read(cbs->sim, SIM_EFCBMI_FILEID,
-				sim_cbmi_read_cb, cbs);
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_cbmi_read_cb, cbs);
 	ofono_sim_read(cbs->sim, SIM_EFCBMIR_FILEID,
-				sim_cbmir_read_cb, cbs);
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_cbmir_read_cb, cbs);
 	ofono_sim_read(cbs->sim, SIM_EFCBMID_FILEID,
-				sim_cbmid_read_cb, cbs);
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_cbmid_read_cb, cbs);
 }
 
 static gboolean reset_base_station_name(gpointer user)

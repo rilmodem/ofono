@@ -295,10 +295,9 @@ static GDBusSignalTable message_waiting_signals[] = {
 	{ }
 };
 
-static void mw_mwis_read_cb(int ok,
-		enum ofono_sim_file_structure structure, int total_length,
-		int record, const unsigned char *data, int record_length,
-		void *userdata)
+static void mw_mwis_read_cb(int ok, int total_length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
 	struct ofono_message_waiting *mw = userdata;
 	int i, status;
@@ -308,9 +307,7 @@ static void mw_mwis_read_cb(int ok,
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(mw->atom);
 
-	if (!ok ||
-		structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
-			record_length < 5) {
+	if (!ok || record_length < 5) {
 		ofono_error("Unable to read waiting messages numbers "
 			"from SIM");
 
@@ -356,19 +353,16 @@ static void mw_mwis_read_cb(int ok,
 	mw->efmwis_length = record_length;
 }
 
-static void mw_mbdn_read_cb(int ok,
-		enum ofono_sim_file_structure structure, int total_length,
-		int record, const unsigned char *data, int record_length,
-		void *userdata)
+static void mw_mbdn_read_cb(int ok, int total_length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
 	struct ofono_message_waiting *mw = userdata;
 	int i;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *value;
 
-	if (!ok ||
-		structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
-			record_length < 14 || total_length < record_length) {
+	if (!ok || record_length < 14 || total_length < record_length) {
 		ofono_error("Unable to read mailbox dialling numbers "
 			"from SIM");
 
@@ -402,17 +396,14 @@ static void mw_mbdn_read_cb(int ok,
 	mw->efmbdn_length = record_length;
 }
 
-static void mw_mbi_read_cb(int ok,
-		enum ofono_sim_file_structure structure, int total_length,
-		int record, const unsigned char *data, int record_length,
-		void *userdata)
+static void mw_mbi_read_cb(int ok, int total_length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
 	struct ofono_message_waiting *mw = userdata;
 	int i, err;
 
-	if (!ok ||
-		structure != OFONO_SIM_FILE_STRUCTURE_FIXED ||
-			record_length < 4) {
+	if (!ok || record_length < 4) {
 		ofono_error("Unable to read mailbox identifies "
 			"from SIM");
 
@@ -428,7 +419,9 @@ static void mw_mbi_read_cb(int ok,
 	for (i = 0; i < 5 && i < record_length; i++)
 		mw->efmbdn_record_id[i] = data[i];
 
-	err = ofono_sim_read(mw->sim, SIM_EFMBDN_FILEID, mw_mbdn_read_cb, mw);
+	err = ofono_sim_read(mw->sim, SIM_EFMBDN_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				mw_mbdn_read_cb, mw);
 
 	if (err != 0)
 		ofono_error("Unable to read EF-MBDN from SIM");
@@ -740,8 +733,12 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 		mw->sim = __ofono_atom_get_data(sim_atom);
 
 		/* Loads MWI states and MBDN from SIM */
-		ofono_sim_read(mw->sim, SIM_EFMWIS_FILEID, mw_mwis_read_cb, mw);
-		ofono_sim_read(mw->sim, SIM_EFMBI_FILEID, mw_mbi_read_cb, mw);
+		ofono_sim_read(mw->sim, SIM_EFMWIS_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				mw_mwis_read_cb, mw);
+		ofono_sim_read(mw->sim, SIM_EFMBI_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				mw_mbi_read_cb, mw);
 	}
 
 	__ofono_atom_register(mw->atom, message_waiting_unregister);

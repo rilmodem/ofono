@@ -1216,9 +1216,7 @@ static void signal_strength_callback(const struct ofono_error *error,
 	ofono_netreg_strength_notify(netreg, strength);
 }
 
-static void sim_opl_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_opl_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -1232,9 +1230,6 @@ static void sim_opl_read_cb(int ok,
 
 		return;
 	}
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
-		return;
 
 	if (record_length < 8 || length < record_length)
 		return;
@@ -1260,9 +1255,7 @@ optimize:
 	}
 }
 
-static void sim_pnn_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_pnn_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -1271,9 +1264,6 @@ static void sim_pnn_read_cb(int ok,
 
 	if (!ok)
 		goto check;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
-		return;
 
 	if (length < 3 || record_length < 3 || length < record_length)
 		return;
@@ -1295,12 +1285,11 @@ check:
 	 * is present.  */
 	if (netreg->eons && !sim_eons_pnn_is_empty(netreg->eons))
 		ofono_sim_read(netreg->sim, SIM_EFOPL_FILEID,
-						sim_opl_read_cb, netreg);
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				sim_opl_read_cb, netreg);
 }
 
-static void sim_spdi_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_spdi_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -1308,9 +1297,6 @@ static void sim_spdi_read_cb(int ok,
 	struct network_operator_data *current = netreg->current_operator;
 
 	if (!ok)
-		return;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		return;
 
 	netreg->spdi = sim_spdi_new(data, length);
@@ -1336,9 +1322,7 @@ static void sim_spdi_read_cb(int ok,
 	}
 }
 
-static void sim_spn_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_spn_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -1347,9 +1331,6 @@ static void sim_spn_read_cb(int ok,
 	char *spn;
 
 	if (!ok)
-		return;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		return;
 
 	dcbyte = data[0];
@@ -1382,7 +1363,9 @@ static void sim_spn_read_cb(int ok,
 	}
 
 	netreg->spname = spn;
-	ofono_sim_read(netreg->sim, SIM_EFSPDI_FILEID, sim_spdi_read_cb, netreg);
+	ofono_sim_read(netreg->sim, SIM_EFSPDI_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_spdi_read_cb, netreg);
 
 	if (dcbyte & SIM_EFSPN_DC_HOME_PLMN_BIT)
 		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
@@ -1601,8 +1584,10 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 		netreg->sim = __ofono_atom_get_data(sim_atom);
 
 		ofono_sim_read(netreg->sim, SIM_EFPNN_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				sim_pnn_read_cb, netreg);
 		ofono_sim_read(netreg->sim, SIM_EFSPN_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_spn_read_cb, netreg);
 	}
 

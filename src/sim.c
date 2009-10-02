@@ -762,9 +762,7 @@ static gboolean numbers_list_equal(GSList *a, GSList *b)
 	return TRUE;
 }
 
-static void sim_msisdn_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_msisdn_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -774,9 +772,6 @@ static void sim_msisdn_read_cb(int ok,
 
 	if (!ok)
 		goto check;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
-		return;
 
 	if (record_length < 14 || length < record_length)
 		return;
@@ -827,9 +822,7 @@ check:
 	sim->new_numbers = NULL;
 }
 
-static void sim_ad_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_ad_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -839,9 +832,6 @@ static void sim_ad_read_cb(int ok,
 	int new_mnc_length;
 
 	if (!ok)
-		return;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		return;
 
 	if (length < 4)
@@ -868,9 +858,7 @@ static gint service_number_compare(gconstpointer a, gconstpointer b)
 	return strcmp(sdn->id, id);
 }
 
-static void sim_sdn_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_sdn_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -884,9 +872,6 @@ static void sim_sdn_read_cb(int ok,
 
 	if (!ok)
 		goto check;
-
-	if (structure != OFONO_SIM_FILE_STRUCTURE_FIXED)
-		return;
 
 	if (record_length < 14 || length < record_length)
 		return;
@@ -947,7 +932,7 @@ check:
 
 static void sim_own_numbers_update(struct ofono_sim *sim)
 {
-	ofono_sim_read(sim, SIM_EFMSISDN_FILEID,
+	ofono_sim_read(sim, SIM_EFMSISDN_FILEID, OFONO_SIM_FILE_STRUCTURE_FIXED,
 			sim_msisdn_read_cb, sim);
 }
 
@@ -957,8 +942,11 @@ static void sim_ready(void *user)
 
 	sim_own_numbers_update(sim);
 
-	ofono_sim_read(sim, SIM_EFAD_FILEID, sim_ad_read_cb, sim);
-	ofono_sim_read(sim, SIM_EFSDN_FILEID, sim_sdn_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFAD_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_ad_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFSDN_FILEID, OFONO_SIM_FILE_STRUCTURE_FIXED,
+			sim_sdn_read_cb, sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
@@ -1030,15 +1018,13 @@ static void sim_pin_check(struct ofono_sim *sim)
 	sim->driver->query_passwd_state(sim, sim_pin_query_cb, sim);
 }
 
-static void sim_efli_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_efli_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
 	struct ofono_sim *sim = userdata;
 
-	if (!ok || structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
+	if (!ok)
 		return;
 
 	sim->efli = g_memdup(data, length);
@@ -1143,9 +1129,7 @@ static char **concat_lang_prefs(GSList *a, GSList *b)
 	return ret;
 }
 
-static void sim_efpl_read_cb(int ok,
-				enum ofono_sim_file_structure structure,
-				int length, int record,
+static void sim_efpl_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
 {
@@ -1156,8 +1140,7 @@ static void sim_efpl_read_cb(int ok,
 	GSList *efli = NULL;
 	GSList *efpl = NULL;
 
-	if (!ok || structure != OFONO_SIM_FILE_STRUCTURE_TRANSPARENT ||
-			length < 2)
+	if (!ok || length < 2)
 		goto skip_efpl;
 
 	efpl = parse_language_list(data, length);
@@ -1226,8 +1209,12 @@ static void sim_retrieve_efli_and_efpl(struct ofono_sim *sim)
 	 * However we don't depend on the user interface and so
 	 * need to read both files now.
 	 */
-	ofono_sim_read(sim, SIM_EFLI_FILEID, sim_efli_read_cb, sim);
-	ofono_sim_read(sim, SIM_EFPL_FILEID, sim_efpl_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFLI_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efli_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFPL_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efpl_read_cb, sim);
 }
 
 static void sim_op_error(struct ofono_sim *sim)
@@ -1239,7 +1226,7 @@ static void sim_op_error(struct ofono_sim *sim)
 
 	if (op->is_read == TRUE)
 		((ofono_sim_file_read_cb_t) op->cb)
-			(0, 0, 0, 0, 0, 0, op->userdata);
+			(0, 0, 0, 0, 0, op->userdata);
 	else
 		((ofono_sim_file_write_cb_t) op->cb)
 			(0, op->userdata);
@@ -1286,8 +1273,7 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 		return;
 	}
 
-	cb(1, op->structure, op->length, op->current,
-		data, op->record_length, op->userdata);
+	cb(1, op->length, op->current, data, op->record_length, op->userdata);
 
 	if (op->cache && imsi) {
 		char *path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
@@ -1367,6 +1353,13 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 	enum sim_file_access rehabilitate;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		sim_op_error(sim);
+		return;
+	}
+
+	if (structure != op->structure) {
+		ofono_error("Requested file structure differs from SIM: %x",
+				op->id);
 		sim_op_error(sim);
 		return;
 	}
@@ -1478,9 +1471,10 @@ static gboolean sim_op_check_cached(struct ofono_sim *sim)
 	if (record_length == 0 || file_length < record_length)
 		goto cleanup;
 
-	if (error_type != OFONO_ERROR_TYPE_NO_ERROR) {
+	if (error_type != OFONO_ERROR_TYPE_NO_ERROR ||
+			structure != op->structure) {
 		ret = TRUE;
-		cb(0, 0, 0, 0, 0, 0, 0);
+		cb(0, 0, 0, 0, 0, 0);
 		goto cleanup;
 	}
 
@@ -1492,9 +1486,8 @@ static gboolean sim_op_check_cached(struct ofono_sim *sim)
 		goto cleanup;
 
 	for (record = 0; record < file_length / record_length; record++) {
-		cb(1, structure, file_length, record + 1,
-			&buffer[record * record_length], record_length,
-			op->userdata);
+		cb(1, file_length, record + 1, &buffer[record * record_length],
+			record_length, op->userdata);
 	}
 
 	ret = TRUE;
@@ -1563,6 +1556,7 @@ static gboolean sim_op_next(gpointer user_data)
 }
 
 int ofono_sim_read(struct ofono_sim *sim, int id,
+			enum ofono_sim_file_structure expected_type,
 			ofono_sim_file_read_cb_t cb, void *data)
 {
 	struct sim_file_op *op;
@@ -1589,6 +1583,7 @@ int ofono_sim_read(struct ofono_sim *sim, int id,
 	op = g_new0(struct sim_file_op, 1);
 
 	op->id = id;
+	op->structure = expected_type;
 	op->cb = cb;
 	op->userdata = data;
 	op->is_read = TRUE;
