@@ -38,6 +38,17 @@
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
 #include <ofono/sms.h>
+#include <ofono/cbs.h>
+#include <ofono/ssn.h>
+#include <ofono/ussd.h>
+#include <ofono/voicecall.h>
+#include <ofono/phonebook.h>
+#include <ofono/message-waiting.h>
+#include <ofono/call-barring.h>
+#include <ofono/call-forwarding.h>
+#include <ofono/call-meter.h>
+#include <ofono/call-settings.h>
+#include <ofono/call-volume.h>
 #include <ofono/log.h>
 
 struct mbm_data {
@@ -160,16 +171,32 @@ static void mbm_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	ofono_sim_create(modem, 0, "atmodem", data->chat);
+	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
 }
 
 static void mbm_post_sim(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
+	struct ofono_message_waiting *mw;
 
 	DBG("%p", modem);
 
+	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
+	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
+	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
+	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
+	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
+
+	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
+	ofono_ssn_create(modem, 0, "atmodem", data->chat);
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
+	ofono_cbs_create(modem, 0, "atmodem", data->chat);
+
+	mw = ofono_message_waiting_create(modem);
+	if (mw)
+		ofono_message_waiting_register(mw);
 }
 
 static struct ofono_modem_driver mbm_driver = {
