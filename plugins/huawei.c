@@ -36,8 +36,12 @@
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
+#include <ofono/sim.h>
 #include <ofono/sms.h>
+#include <ofono/voicecall.h>
 #include <ofono/log.h>
+
+#include <drivers/atmodem/vendor.h>
 
 struct huawei_data {
 	GAtChat *chat;
@@ -112,6 +116,8 @@ static int huawei_enable(struct ofono_modem *modem)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, huawei_debug, NULL);
 
+	g_at_chat_send(data->chat, "ATE0", NULL, NULL, NULL, NULL);
+
 	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
 					cfun_enable, modem, NULL);
 
@@ -155,6 +161,8 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+	ofono_sim_create(modem, 0, "atmodem", data->chat);
+	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
 }
 
 static void huawei_post_sim(struct ofono_modem *modem)
@@ -164,6 +172,7 @@ static void huawei_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	ofono_sms_create(modem, OFONO_VENDOR_HTC_G1, "atmodem", data->chat);
 }
 
 static struct ofono_modem_driver huawei_driver = {
