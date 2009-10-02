@@ -178,8 +178,6 @@ static void modem_initialize(struct ofono_modem *modem)
 	GAtChat *chat;
 	const char *device;
 	GIOChannel *io;
-	int sk;
-	struct termios ti;
 	GHashTable *options;
 
 	DBG("");
