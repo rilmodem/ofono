@@ -1003,6 +1003,18 @@ gboolean g_at_chat_shutdown(GAtChat *chat)
 	return TRUE;
 }
 
+gboolean g_at_chat_set_syntax(GAtChat *chat, GAtSyntax *syntax)
+{
+	if (chat == NULL)
+		return FALSE;
+
+	g_at_syntax_unref(chat->syntax);
+
+	chat->syntax = g_at_syntax_ref(syntax);
+
+	return TRUE;
+}
+
 gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
 			GAtDisconnectFunc disconnect, gpointer user_data)
 {

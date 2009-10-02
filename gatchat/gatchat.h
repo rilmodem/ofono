@@ -47,6 +47,8 @@ void g_at_chat_unref(GAtChat *chat);
 
 gboolean g_at_chat_shutdown(GAtChat *chat);
 
+gboolean g_at_chat_set_syntax(GAtChat *chat, GAtSyntax *syntax);
+
 gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
 			GAtDisconnectFunc disconnect, gpointer user_data);
 
