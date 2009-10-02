@@ -687,7 +687,10 @@ gboolean sim_parse_2g_get_response(unsigned char *response, int len,
 					int *file_len, int *record_len,
 					int *structure, unsigned char *access)
 {
-	if (len < 14)
+	if (len < 14 || response[6] != 0x04)
+		return FALSE;
+
+	if ((response[13] == 0x01 || response[13] == 0x03) && len < 15)
 		return FALSE;
 
 	*file_len = (response[2] << 8) | response[3];
