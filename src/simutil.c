@@ -573,3 +573,25 @@ struct sim_ef_info *sim_ef_db_lookup(unsigned short id)
 
 	return result;
 }
+
+gboolean sim_parse_2G_get_response(unsigned char *response, int len,
+					int *file_len, int *record_len,
+					int *structure, unsigned char *access)
+{
+	if (len < 14)
+		return FALSE;
+
+	*file_len = (response[2] << 8) | response[3];
+	*structure = response[13];
+
+	access[0] = response[8];
+	access[1] = response[9];
+	access[2] = response[10];
+
+	if (response[13] == 0x01 || response[13] == 0x03)
+		*record_len = response[14];
+	else
+		*record_len = 0;
+
+	return TRUE;
+}

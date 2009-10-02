@@ -50,7 +50,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const guint8 *response;
 	gint sw1, sw2, len;
 	int flen, rlen;
-	enum ofono_sim_file_structure str;
+	int str;
 	unsigned char access[3];
 
 	dump_response("at_crsm_info_cb", ok, result);
@@ -82,17 +82,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	ofono_debug("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
 
-	flen = (response[2] << 8) | response[3];
-	str = response[13];
-
-	access[0] = response[8];
-	access[1] = response[9];
-	access[2] = response[10];
-
-	if (str == 0x01 || str == 0x03)
-		rlen = response[14];
-	else
-		rlen = 0;
+	sim_parse_2G_get_response(response, len, &flen, &rlen, &str, access);
 
 	cb(&error, flen, str, rlen, access, cbd->data);
 }
