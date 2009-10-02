@@ -228,6 +228,9 @@ gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
 		goto out;
 	}
 
+	if (line[pos] == '"')
+		pos += 1;
+
 	end = pos;
 
 	while (end < len && g_ascii_isxdigit(line[end]))
@@ -240,6 +243,9 @@ gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
 
 	for (; pos < end; pos += 2)
 		sscanf(line + pos, "%02hhx", bufpos++);
+
+	if (line[end] == '"')
+		end += 1;
 
 out:
 	iter->line_pos = skip_to_next_field(line, end, len);
