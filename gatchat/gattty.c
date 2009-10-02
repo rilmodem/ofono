@@ -23,11 +23,13 @@
 #include <config.h>
 #endif
 
-#include <termios.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
+#include <termios.h>
 
 #include <glib.h>
+
 #include "gattty.h"
 
 static gboolean set_baud(const char *baud, struct termios *ti)
