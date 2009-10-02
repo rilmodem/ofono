@@ -108,7 +108,7 @@ static void test_3g_status_data()
 
 	response = decode_hex(binary_ef, -1, &len, 0);
 
-	sim_parse_3G_get_response(response, len, &flen, &rlen, &str,
+	sim_parse_3g_get_response(response, len, &flen, &rlen, &str,
 					access, &efid);
 
 	g_assert(flen == 10);
@@ -123,7 +123,7 @@ static void test_3g_status_data()
 
 	response = decode_hex(record_ef, -1, &len, 0);
 
-	sim_parse_3G_get_response(response, len, &flen, &rlen, &str,
+	sim_parse_3g_get_response(response, len, &flen, &rlen, &str,
 					access, &efid);
 
 	g_assert(flen == 0x80);

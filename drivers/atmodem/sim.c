@@ -82,7 +82,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	ofono_debug("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
 
-	sim_parse_2G_get_response(response, len, &flen, &rlen, &str, access);
+	sim_parse_2g_get_response(response, len, &flen, &rlen, &str, access);
 
 	cb(&error, flen, str, rlen, access, cbd->data);
 }
