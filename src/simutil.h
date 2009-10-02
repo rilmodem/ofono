@@ -107,6 +107,11 @@ void sim_adn_build(unsigned char *data, int length,
 
 struct sim_ef_info *sim_ef_db_lookup(unsigned short efid);
 
+gboolean sim_parse_3G_get_response(unsigned char *data, int len,
+					int *file_len, int *record_len,
+					int *structure, unsigned char *access,
+					unsigned short *efid);
+
 gboolean sim_parse_2G_get_response(unsigned char *response, int len,
 					int *file_len, int *record_len,
 					int *structure, unsigned char *access);

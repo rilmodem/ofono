@@ -574,6 +574,115 @@ struct sim_ef_info *sim_ef_db_lookup(unsigned short id)
 	return result;
 }
 
+gboolean sim_parse_3G_get_response(unsigned char *data, int len,
+					int *file_len, int *record_len,
+					int *structure, unsigned char *access,
+					unsigned short *efid)
+{
+	const unsigned char *fcp;
+	int fcp_length;
+	const unsigned char *tlv;
+	int tlv_length;
+	int i;
+	int flen, rlen, str;
+	unsigned short id;
+	unsigned char acc[3];
+	struct sim_ef_info *info;
+
+	fcp = ber_tlv_find_by_tag(data, 0x62, len, &fcp_length);
+
+	if (fcp == NULL)
+		return FALSE;
+
+	/* Find the file size tag 0x80 according to
+	 * ETSI 102.221 Section 11.1.1.3.2 */
+	tlv = ber_tlv_find_by_tag(fcp, 0x80, fcp_length, &tlv_length);
+
+	if (!tlv || tlv_length < 2)
+		return FALSE;
+
+	flen = tlv[0];
+	for (i = 1; i < tlv_length; i++)
+		flen = (flen << 8) | tlv[i];
+
+	tlv = ber_tlv_find_by_tag(fcp, 0x83, fcp_length, &tlv_length);
+
+	if (!tlv || tlv_length != 2)
+		return FALSE;
+
+	id = (tlv[0] << 8) | tlv[1];
+
+	tlv = ber_tlv_find_by_tag(fcp, 0x82, fcp_length, &tlv_length);
+
+	if (!tlv || (tlv_length != 2 && tlv_length != 5))
+		return FALSE;
+
+	if (tlv[1] != 0x21)
+		return FALSE;
+
+	switch (tlv[0] & 0x3) {
+	case 1:	/* Transparent */
+		str = 0x00;
+		break;
+	case 2: /* Linear Fixed */
+		str = 0x01;
+		break;
+	case 6: /* Cyclic */
+		str = 0x03;
+		break;
+	default:
+		return FALSE;
+	};
+
+	/* For cyclic or linear fixed we need record size & num records */
+	if (str != 0x00 && tlv_length != 5)
+		return FALSE;
+
+	/* strictly speaking the record length is 16 bit, but the valid
+	 * range is 0x01 to 0xFF according to 102.221 */
+	if (str != 0x00)
+		rlen = tlv[3];
+	else
+		rlen = 0;
+
+	/* The 3G response data contains references to EFarr which actually
+	 * contains the security attributes.  These are usually not carried
+	 * along with the response data unlike in 2G.  Instead of querying
+	 * this, we simply look it up in our database.  We fudge it somewhat
+	 * and guess if the file isn't found.
+	 */
+	info = sim_ef_db_lookup(id);
+
+	if (str == 0x03)
+		acc[1] = 0x1f;
+	else
+		acc[1] = 0xff;
+
+	acc[2] = 0x44;
+
+	if (!info)
+		acc[0] = 0x11;
+	else
+		acc[0] = (info->perm_read << 4) | info->perm_update;
+
+	if (file_len)
+		*file_len = flen;
+
+	if (record_len)
+		*record_len = rlen;
+
+	if (efid)
+		*efid = id;
+
+	if (structure)
+		*structure = str;
+
+	if (access)
+		memcpy(access, acc, 3);
+
+	return TRUE;
+}
+
 gboolean sim_parse_2G_get_response(unsigned char *response, int len,
 					int *file_len, int *record_len,
 					int *structure, unsigned char *access)
