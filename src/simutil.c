@@ -24,6 +24,7 @@
 #endif
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <glib.h>
 
@@ -62,7 +63,7 @@ struct opl_operator {
 #define ADM	4
 #define NEV	15
 
-static struct sim_ef_info efs[] = {
+static struct sim_ef_info ef_db[] = {
 {	0x2F05, ROOTMF, BINARY, 0,	ALW,	PIN	},
 {	0x2F06, ROOTMF, RECORD, 0,	ALW,	PIN	},
 {	0x2FE2, ROOTMF, BINARY, 10,	ALW,	NEV 	},
@@ -552,4 +553,23 @@ void sim_adn_build(unsigned char *data, int length,
 	*data++ = 0xff;
 	/* Ext1 unused */
 	*data++ = 0xff;
+}
+
+static int find_ef_by_id(const void *key, const void *value)
+{
+	unsigned short id = GPOINTER_TO_UINT(key);
+	const struct sim_ef_info *info = value;
+
+	return id - info->id;
+}
+
+struct sim_ef_info *sim_ef_db_lookup(unsigned short id)
+{
+	struct sim_ef_info *result;
+	unsigned int nelem = sizeof(ef_db) / sizeof(struct sim_ef_info);
+
+	result = bsearch(GUINT_TO_POINTER(id), ef_db, nelem,
+				sizeof(struct sim_ef_info), find_ef_by_id);
+
+	return result;
 }

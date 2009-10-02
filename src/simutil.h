@@ -104,3 +104,5 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 void sim_adn_build(unsigned char *data, int length,
 			const struct ofono_phone_number *ph,
 			const char *identifier);
+
+struct sim_ef_info *sim_ef_db_lookup(unsigned short efid);
