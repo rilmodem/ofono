@@ -59,6 +59,17 @@ struct sim_eons_operator_info {
 	char *info;
 };
 
+struct sim_ef_info {
+	unsigned short id;
+	unsigned short parent;
+	unsigned char file_type;
+	unsigned char size;
+	enum sim_file_access perm_read;
+	enum sim_file_access perm_update;
+};
+
+#define ROOTMF 0x3F00
+
 struct sim_eons *sim_eons_new(int pnn_records);
 void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
 				const guint8 *tlv, int length);

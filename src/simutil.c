@@ -52,6 +52,68 @@ struct opl_operator {
 	guint8 id;
 };
 
+#define BINARY 0
+#define RECORD 1
+#define CYCLIC 3
+
+#define ALW	0
+#define PIN	1
+#define PIN2	2
+#define ADM	4
+#define NEV	15
+
+static struct sim_ef_info efs[] = {
+{	0x2F05, ROOTMF, BINARY, 0,	ALW,	PIN	},
+{	0x2F06, ROOTMF, RECORD, 0,	ALW,	PIN	},
+{	0x2FE2, ROOTMF, BINARY, 10,	ALW,	NEV 	},
+{	0x6F05, 0x7F20, BINARY, 0,	ALW,	PIN	},
+{	0x6F06, 0x0000, RECORD, 0,	ALW,	ADM	},
+{	0x6F2C, 0x7F20, BINARY, 16,	PIN,	PIN	},
+{	0x6F30, 0x7F20, BINARY, 0,	PIN,	PIN	},
+{	0x6F32, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6F37, 0x7F20, BINARY, 3,	PIN,	PIN2	},
+{	0x6F38, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6F39, 0x7F20, CYCLIC, 3,	PIN,	PIN2	},
+{	0x6F3B, 0x7F10, RECORD, 0,	PIN,	PIN2	},
+{	0x6F3E, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6F3F, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6F40, 0x7F10, RECORD, 0,	PIN,	PIN	},
+{	0x6F41, 0x7F20, BINARY, 5,	PIN,	PIN2	},
+{	0x6F42, 0x7F10, RECORD, 0,	PIN,	PIN	},
+{	0x6F44, 0x7F10, CYCLIC, 0,	PIN,	PIN	},
+{	0x6F45, 0x7F20, BINARY, 0,	PIN,	PIN	},
+{	0x6F46, 0x7F20, BINARY, 17,	ALW,	ADM	},
+{	0x6F48, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6F49, 0x7F10, RECORD, 0,	PIN,	ADM	},
+{	0x6F4D, 0x7F20, RECORD, 0,	PIN,	PIN2	},
+{	0x6F50, 0x7F20, BINARY, 0,	PIN,	PIN	},
+{	0x6F51, 0x7F20, RECORD, 0,	PIN,	ADM	},
+{	0x6F53, 0x7F20, BINARY, 14,	PIN,	PIN	},
+{	0x6F56, 0x0000, BINARY, 0,	PIN,	PIN2	},
+{	0x6F60, 0x7F20, BINARY, 0,	PIN,	PIN	},
+{	0x6F61, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6F62, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6F73, 0x0000, BINARY, 14,	PIN,	PIN	},
+{	0x6F7B, 0x7F20, BINARY, 0,	PIN,	PIN	},
+{	0x6F7E, 0x7F20, BINARY, 11,	PIN,	PIN	},
+{	0x6FAD, 0x7F20, BINARY, 0,	ALW,	ADM	},
+{	0x6FAE, 0x7F20, BINARY, 1,	ALW,	ADM	},
+{	0x6FB7, 0x7F20, BINARY, 0,	ALW,	ADM	},
+{	0x6FC5, 0x7F20, RECORD, 0,	ALW,	ADM	},
+{	0x6FC6, 0x7F20, RECORD, 0,	ALW,	ADM	},
+{	0x6FC7, 0x7F20, RECORD, 0,	PIN,	PIN	},
+{	0x6FC9, 0x7F20, RECORD, 0,	PIN,	PIN	},
+{	0x6FCA, 0x7F20, RECORD, 0,	PIN,	PIN	},
+{	0x6FCB, 0x7F20, RECORD, 16,	PIN,	PIN	},
+{	0x6FCD, 0x7F20, BINARY, 0,	PIN,	ADM	},
+{	0x6FD9, 0x0000, BINARY, 0,	PIN,	ADM	},
+{	0x6FDB, 0x0000, BINARY, 1,	PIN,	ADM	},
+{	0x6FDC, 0x0000, BINARY, 1,	PIN,	ADM	},
+{	0x6FDE, 0x0000, BINARY, 0,	ALW,	ADM	},
+{	0x6FDF, 0x0000, RECORD, 0,	ALW,	ADM	},
+{	0x6FE3, 0x0000, BINARY, 18,	PIN,	PIN	},
+};
+
 /* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
 static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 						int in_len, int *out_len)
