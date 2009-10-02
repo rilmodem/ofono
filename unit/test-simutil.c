@@ -75,11 +75,29 @@ static void test_eons()
 	sim_eons_free(eons_info);
 }
 
+static void test_ef_db()
+{
+	struct sim_ef_info *info;
+
+	info = sim_ef_db_lookup(0x6FAD);
+	g_assert(info);
+
+	info = sim_ef_db_lookup(0x6FB1);
+	g_assert(!info);
+
+	info = sim_ef_db_lookup(0x2F05);
+	g_assert(info);
+
+	info = sim_ef_db_lookup(0x6FE3);
+	g_assert(info);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
 
 	g_test_add_func("/testsimutil/EONS Handling", test_eons);
+	g_test_add_func("/testsimutil/Elementary File DB", test_ef_db);
 
 	return g_test_run();
 }
