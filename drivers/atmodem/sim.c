@@ -36,6 +36,7 @@
 
 #include "gatchat.h"
 #include "gatresult.h"
+#include "simutil.h"
 
 #include "atmodem.h"
 
