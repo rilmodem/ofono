@@ -2140,9 +2140,11 @@ char *sms_decode_text(GSList *sms_list)
 			guint8 single_shift = 0;
 			int max_chars = sms_text_capacity_gsm(udl, taken);
 
-			unpack_7bit_own_buf(ud + taken, udl_in_bytes - taken,
+			if (unpack_7bit_own_buf(ud + taken,
+						udl_in_bytes - taken,
 						taken, FALSE, max_chars,
-						&written, 0, buf);
+						&written, 0, buf) == NULL)
+				continue;
 
 			/* Take care of improperly split fragments */
 			if (buf[written-1] == 0x1b)
