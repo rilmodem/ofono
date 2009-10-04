@@ -568,7 +568,7 @@ struct sim_ef_info *sim_ef_db_lookup(unsigned short id)
 	struct sim_ef_info *result;
 	unsigned int nelem = sizeof(ef_db) / sizeof(struct sim_ef_info);
 
-	result = bsearch(GUINT_TO_POINTER(id), ef_db, nelem,
+	result = bsearch(GUINT_TO_POINTER((unsigned int) id), ef_db, nelem,
 				sizeof(struct sim_ef_info), find_ef_by_id);
 
 	return result;
