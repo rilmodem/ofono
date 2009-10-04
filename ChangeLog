@@ -1,3 +1,11 @@
+ver 0.7:
+	Fix handling of empty SMS text messages.
+	Fix GAtChat's next_hexstring to handle optional quotes.
+	Fix generic SIM driver to work correctly with 3G SIM cards.
+	Add utility functions to parse 2G and 3G get response data.
+	Add call volume interface to adjust speaker and mic volume.
+	Add support for basic elementary file database.
+
 ver 0.6:
 	Fix build issue with example history plugin.
 	Fix segmentation fault from SIM reading on Calypso modem.
