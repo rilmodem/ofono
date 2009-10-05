@@ -164,7 +164,7 @@ static const char *time_to_str(const time_t *t)
 {
 	static char buf[128];
 
-	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", localtime(t));
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(t));
 	buf[127] = '\0';
 
 	return buf;

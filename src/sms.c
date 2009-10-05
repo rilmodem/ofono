@@ -467,11 +467,11 @@ static void dispatch_text_message(struct ofono_sms *sms,
 
 	ts = sms_scts_to_time(scts, &remote);
 
-	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", localtime(&ts));
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(&ts));
 	buf[127] = '\0';
 	ofono_dbus_dict_append(&dict, "LocalSentTime", DBUS_TYPE_STRING, &str);
 
-	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", &remote);
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", &remote);
 	buf[127] = '\0';
 	ofono_dbus_dict_append(&dict, "SentTime", DBUS_TYPE_STRING, &str);
 

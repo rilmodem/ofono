@@ -59,12 +59,12 @@ static void print_scts(struct sms_scts *scts, const char *prefix)
 
 	ts = sms_scts_to_time(scts, &remote);
 
-	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", localtime(&ts));
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(&ts));
 	buf[127] = '\0';
 
 	g_print("local time: %s\n", buf);
 
-	strftime(buf, 127, "%a, %d %b %Y %H:%M:%S %z", &remote);
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", &remote);
 	buf[127] = '\0';
 
 	g_print("remote time: %s\n", buf);
