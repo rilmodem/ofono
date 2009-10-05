@@ -1474,7 +1474,7 @@ static gboolean sim_op_check_cached(struct ofono_sim *sim)
 	if (error_type != OFONO_ERROR_TYPE_NO_ERROR ||
 			structure != op->structure) {
 		ret = TRUE;
-		cb(0, 0, 0, 0, 0, 0);
+		cb(0, 0, 0, 0, 0, op->userdata);
 		goto cleanup;
 	}
 
