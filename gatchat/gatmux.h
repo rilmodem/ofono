@@ -33,7 +33,6 @@ struct _GAtMux;
 typedef struct _GAtMux GAtMux;
 
 GAtMux *g_at_mux_new(GIOChannel *channel);
-GAtMux *g_at_mux_new_from_tty(const char *device);
 
 GAtMux *g_at_mux_ref(GAtMux *mux);
 void g_at_mux_unref(GAtMux *mux);

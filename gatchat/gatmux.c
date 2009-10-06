@@ -188,48 +188,6 @@ GAtMux *g_at_mux_new(GIOChannel *channel)
 	return mux;
 }
 
-static int open_device(const char *device)
-{
-	struct termios ti;
-	int fd;
-
-	fd = open(device, O_RDWR | O_NOCTTY);
-	if (fd < 0)
-		return -1;
-
-	tcflush(fd, TCIOFLUSH);
-
-	/* Switch TTY to raw mode */
-	memset(&ti, 0, sizeof(ti));
-	cfmakeraw(&ti);
-
-	tcsetattr(fd, TCSANOW, &ti);
-
-	return fd;
-}
-
-GAtMux *g_at_mux_new_from_tty(const char *device)
-{
-	GAtMux *mux;
-	GIOChannel *channel;
-	int fd;
-
-	fd = open_device(device);
-	if (fd < 0)
-		return NULL;
-
-	channel = g_io_channel_unix_new(fd);
-	mux = g_at_mux_new(channel);
-	g_io_channel_unref(channel);
-
-	if (!mux) {
-		close(fd);
-		return NULL;
-	}
-
-	return mux;
-}
-
 GAtMux *g_at_mux_ref(GAtMux *mux)
 {
 	if (mux == NULL)
