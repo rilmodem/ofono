@@ -46,7 +46,6 @@ void gsm0710_initialize(struct gsm0710_context *ctx)
 	ctx->mode = GSM0710_MODE_BASIC;
 	ctx->frame_size = GSM0710_DEFAULT_FRAME_SIZE;
 	ctx->port_speed = 115200;
-	ctx->server = 0;
 	ctx->buffer_used = 0;
 	memset(ctx->used_channels, 0, sizeof(ctx->used_channels));
 	ctx->user_data = NULL;
@@ -217,16 +216,17 @@ void gsm0710_shutdown(struct gsm0710_context *ctx)
 {
 	static const unsigned char terminate[2] = { GSM0710_TERMINATE_BYTE1,
 						GSM0710_TERMINATE_BYTE2 };
-	if (!ctx->server) {
-		int channel;
-		for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
-			if (is_channel_used(ctx, channel)) {
-				gsm0710_write_frame(ctx, channel,
-						GSM0710_CLOSE_CHANNEL, NULL, 0);
-			}
-		}
-		gsm0710_write_frame(ctx, 0, GSM0710_DATA, terminate, 2);
+	int channel;
+
+	for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
+		if (is_channel_used(ctx, channel) == 0)
+			continue;
+
+		gsm0710_write_frame(ctx, channel,
+					GSM0710_CLOSE_CHANNEL, NULL, 0);
 	}
+
+	gsm0710_write_frame(ctx, 0, GSM0710_DATA, terminate, 2);
 	memset(ctx->used_channels, 0, sizeof(ctx->used_channels));
 }
 
@@ -235,12 +235,14 @@ int gsm0710_open_channel(struct gsm0710_context *ctx, int channel)
 {
 	if (channel <= 0 || channel > GSM0710_MAX_CHANNELS)
 		return 0;	/* Invalid channel number */
+
 	if (is_channel_used(ctx, channel))
 		return 1;	/* Channel is already open */
+
 	mark_channel_used(ctx, channel);
-	if (!ctx->server)
-		gsm0710_write_frame(ctx, channel,
-					GSM0710_OPEN_CHANNEL, NULL, 0);
+
+	gsm0710_write_frame(ctx, channel, GSM0710_OPEN_CHANNEL, NULL, 0);
+
 	return 1;
 }
 
@@ -249,12 +251,13 @@ void gsm0710_close_channel(struct gsm0710_context *ctx, int channel)
 {
 	if (channel <= 0 || channel > GSM0710_MAX_CHANNELS)
 		return;		/* Invalid channel number */
+
 	if (!is_channel_used(ctx, channel))
 		return;		/* Channel is already closed */
+
 	mark_channel_unused(ctx, channel);
-	if (!ctx->server)
-		gsm0710_write_frame(ctx, channel,
-					GSM0710_CLOSE_CHANNEL, NULL, 0);
+
+	gsm0710_write_frame(ctx, channel, GSM0710_CLOSE_CHANNEL, NULL, 0);
 }
 
 /* Determine if a specific channel is open */
@@ -287,19 +290,6 @@ static int gsm0710_packet(struct gsm0710_context *ctx, int channel, int type,
 				return gsm0710_packet(ctx, channel,
 							GSM0710_STATUS_ACK,
 							data + 2, len - 2);
-			} else if (len >= 2 && data[0] == 0xC3 && ctx->server) {
-				/* Incoming terminate request on server side */
-				for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
-					if (is_channel_used(ctx, channel)) {
-						if (ctx->close_channel)
-							ctx->close_channel(ctx, channel);
-					}
-				}
-				memset(ctx->used_channels, 0,
-						sizeof(ctx->used_channels));
-				if (ctx->terminate)
-					ctx->terminate(ctx);
-				return 0;
 			} else if (len >= 2 && data[0] == 0x43) {
 				/* Test command from other side - send the same bytes back */
 				unsigned char *resp = alloca(len);
@@ -311,7 +301,6 @@ static int gsm0710_packet(struct gsm0710_context *ctx, int channel, int type,
 		}
 
 	} else if (type == GSM0710_STATUS_ACK && channel == 0) {
-
 		unsigned char resp[33];
 
 		/* Status change message */
@@ -335,30 +324,8 @@ static int gsm0710_packet(struct gsm0710_context *ctx, int channel, int type,
 		resp[1] = ((len << 1) | 0x01);
 		memcpy(resp + 2, data, len);
 		gsm0710_write_frame(ctx, 0, GSM0710_DATA, resp, len + 2);
-
-	} else if (type == (0x3F & 0xEF) && ctx->server) {
-
-		/* Incoming channel open request on server side */
-		if (channel >= 1 && channel <= GSM0710_MAX_CHANNELS) {
-			if (!is_channel_used(ctx, channel)) {
-				mark_channel_used(ctx, channel);
-				if (ctx->open_channel)
-					ctx->open_channel(ctx, channel);
-			}
-		}
-
-	} else if (type == (0x53 & 0xEF) && ctx->server) {
-
-		/* Incoming channel close request on server side */
-		if (channel >= 1 && channel <= GSM0710_MAX_CHANNELS) {
-			if (is_channel_used(ctx, channel)) {
-				mark_channel_unused(ctx, channel);
-				if (ctx->close_channel)
-					ctx->close_channel(ctx, channel);
-			}
-		}
-
 	}
+
 	return 1;
 }
 

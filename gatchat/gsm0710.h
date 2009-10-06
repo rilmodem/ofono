@@ -49,7 +49,6 @@ struct gsm0710_context
 	int mode;
 	int frame_size;
 	int port_speed;
-	int server;
 	unsigned char buffer[GSM0710_BUFFER_SIZE];
 	int buffer_used;
 	unsigned long used_channels[(GSM0710_MAX_CHANNELS + 31) / 32];
