@@ -141,14 +141,6 @@ static void deliver_status(struct gsm0710_context *ctx,
 	g_main_context_wakeup(context);
 }
 
-static void open_channel(struct gsm0710_context *ctx, int channel)
-{
-}
-
-static void close_channel(struct gsm0710_context *ctx, int channel)
-{
-}
-
 static void debug_message(struct gsm0710_context *ctx, const char *msg)
 {
 }
@@ -181,8 +173,6 @@ GAtMux *g_at_mux_new(GIOChannel *channel)
 	mux->ctx.terminate = do_terminate;
 	mux->ctx.deliver_data = deliver_data;
 	mux->ctx.deliver_status = deliver_status;
-	mux->ctx.open_channel = open_channel;
-	mux->ctx.close_channel = close_channel;
 	mux->ctx.debug_message = debug_message;
 
 	return mux;
