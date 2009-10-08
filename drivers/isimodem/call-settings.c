@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
  *
- * Contact: Aki Niemi <aki.niemi@nokia.com>
+ * Contact: Alexander Kanavin <alexander.kanavin@nokia.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -40,56 +40,276 @@
 #include <ofono/call-settings.h>
 
 #include "isi.h"
+#include "ss.h"
+#include "iter.h"
 
-#define PN_SS			0x06
-
-struct call_settings_data {
+struct settings_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
 
-static void isi_clip_query(struct ofono_call_settings *cs,
-				ofono_call_settings_status_cb_t cb, void *data)
+static void update_status_mask(unsigned int *mask, int bsc)
 {
+	switch (bsc) {
+
+	case SS_GSM_TELEPHONY:
+		*mask |= 1;
+		break;
+
+	case SS_GSM_ALL_DATA_TELE:
+		*mask |= 1 << 1;
+		break;
+
+	case SS_GSM_FACSIMILE:
+		*mask |= 1 << 2;
+		break;
+
+	case SS_GSM_SMS:
+		*mask |= 1 << 3;
+		break;
+
+	case SS_GSM_ALL_DATA_CIRCUIT_SYNC:
+		*mask |= 1 << 4;
+		break;
+
+	case SS_GSM_ALL_DATA_CIRCUIT_ASYNC:
+		*mask |= 1 << 5;
+		break;
+
+	case SS_GSM_ALL_DATA_PACKET_SYNC:
+		*mask |= 1 << 6;
+		break;
+
+	case SS_GSM_ALL_PAD_ACCESS:
+		*mask |= 1 << 7;
+		break;
+
+	default:
+		DBG("Unknown BSC value %d, please report\n", bsc);
+		break;
+	}
 }
 
-static void isi_colp_query(struct ofono_call_settings *cs,
-				ofono_call_settings_status_cb_t cb, void *data)
+static bool query_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
-}
+	GIsiSubBlockIter iter;
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_call_settings_status_cb_t cb = cbd->cb;
+	guint32 mask = 0;
 
-static void isi_clir_query(struct ofono_call_settings *cs,
-				ofono_call_settings_clir_cb_t cb, void *data)
-{
-}
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
 
-static void isi_colr_query(struct ofono_call_settings *cs,
-				ofono_call_settings_status_cb_t cb, void *data)
-{
-}
+	if (len < 7 || msg[0] != SS_SERVICE_COMPLETED_RESP)
+		goto error;
 
-static void isi_clir_set(struct ofono_call_settings *cs, int mode,
-				ofono_call_settings_set_cb_t cb, void *data)
-{
+	if (msg[1] != SS_INTERROGATION)
+		goto error;
+
+	for (g_isi_sb_iter_init(&iter, msg, len, 7);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+
+		case SS_STATUS_RESULT:
+			break;
+
+		case SS_GSM_ADDITIONAL_INFO:
+			break;
+
+		case SS_GSM_BSC_INFO: {
+
+			guint8 bsc;
+			guint8 count;
+			guint8 i;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &count, 2))
+				goto error;
+
+			for (i = 0; i < count; i++) {
+				if (!g_isi_sb_iter_get_byte(&iter, &bsc, 3 + i))
+					goto error;
+			        update_status_mask(&mask, bsc);
+			}
+			break;
+		}
+		default:
+			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
+	}
+
+	DBG("status_mask %d\n", mask);
+	CALLBACK_WITH_SUCCESS(cb, mask, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, 0, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
+
 }
 
 static void isi_cw_query(struct ofono_call_settings *cs, int cls,
 			ofono_call_settings_status_cb_t cb, void *data)
 {
+	struct settings_data *sd = ofono_call_settings_get_data(cs);
+	struct isi_cb_data *cbd = isi_cb_data_new(cs, cb, data);
+
+	unsigned char msg[] = {
+		SS_SERVICE_REQ,
+		SS_INTERROGATION,
+		SS_ALL_TELE_AND_BEARER,
+		SS_GSM_CALL_WAITING >> 8,   /* Supplementary services */
+		SS_GSM_CALL_WAITING & 0xFF, /* code */
+		SS_SEND_ADDITIONAL_INFO,
+		0 /* Subblock count */
+	};
+
+	DBG("waiting class %d\n", cls);
+
+	if (!cbd)
+		goto error;
+
+	if (g_isi_request_make(sd->client, msg, sizeof(msg), SS_TIMEOUT,
+				query_resp_cb, cbd))
+		return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, 0, data);
+	g_free(cbd);
+}
+
+static bool set_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	GIsiSubBlockIter iter;
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_call_settings_set_cb_t cb = cbd->cb;
+
+	if (len < 7 || msg[0] != SS_SERVICE_COMPLETED_RESP)
+		goto error;
+
+	if (msg[1] != SS_ACTIVATION && msg[1] != SS_DEACTIVATION)
+		goto error;
+
+	for (g_isi_sb_iter_init(&iter, msg, len, 7);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+
+		case SS_GSM_ADDITIONAL_INFO:
+			break;
+
+		case SS_GSM_DATA: {
+
+			guint8 status;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &status, 2))
+				goto error;
+
+			if ((status & SS_GSM_ACTIVE)
+				&& (msg[1] == SS_DEACTIVATION))
+				goto error;
+
+			if (!(status & SS_GSM_ACTIVE)
+				&& (msg[1] == SS_ACTIVATION))
+				goto error;
+
+			break;
+		}
+		default:
+			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
+	}
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
+
 }
 
 static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 			ofono_call_settings_set_cb_t cb, void *data)
 {
+	struct settings_data *sd = ofono_call_settings_get_data(cs);
+	struct isi_cb_data *cbd = isi_cb_data_new(cs, cb, data);
+
+	unsigned char msg[] = {
+		SS_SERVICE_REQ,
+		mode ? SS_ACTIVATION : SS_DEACTIVATION,
+		SS_ALL_TELE_AND_BEARER,
+		SS_GSM_CALL_WAITING >> 8,   /* Supplementary services */
+		SS_GSM_CALL_WAITING & 0xFF, /* code */
+		SS_SEND_ADDITIONAL_INFO,
+		0  /* Subblock count */
+	};
+
+	DBG("waiting mode %d class %d\n", mode, cls);
+
+	if (!cbd)
+		goto error;
+
+	if (g_isi_request_make(sd->client, msg, sizeof(msg), SS_TIMEOUT,
+				set_resp_cb, cbd))
+		return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
 }
+
+static gboolean isi_call_settings_register(gpointer user)
+{
+	struct ofono_call_settings *cs = user;
+
+	ofono_call_settings_register(cs);
+
+	return FALSE;
+}
+
+static void reachable_cb(GIsiClient *client, bool alive, void *opaque)
+{
+	struct ofono_call_settings *cs = opaque;
+
+	if (alive == true) {
+		DBG("Resource 0x%02X, with version %03d.%03d reachable",
+			g_isi_client_resource(client),
+			g_isi_version_major(client),
+			g_isi_version_minor(client));
+		g_idle_add(isi_call_settings_register, cs);
+		return;
+	}
+	DBG("Unable to bootsrap call settings driver");
+}
+
 
 static int isi_call_settings_probe(struct ofono_call_settings *cs, unsigned int vendor,
 					void *user)
 {
 	GIsiModem *idx = user;
-	struct call_settings_data *data;
+	struct settings_data *data;
 
-	data = g_try_new0(struct call_settings_data, 1);
+	data = g_try_new0(struct settings_data, 1);
 
 	if (!data)
 		return -ENOMEM;
@@ -100,13 +320,15 @@ static int isi_call_settings_probe(struct ofono_call_settings *cs, unsigned int 
 		return -ENOMEM;
 
 	ofono_call_settings_set_data(cs, data);
+	if (!g_isi_verify(data->client, reachable_cb, cs))
+		DBG("Unable to verify reachability");
 
 	return 0;
 }
 
 static void isi_call_settings_remove(struct ofono_call_settings *cs)
 {
-	struct call_settings_data *data = ofono_call_settings_get_data(cs);
+	struct settings_data *data = ofono_call_settings_get_data(cs);
 
 	if (data) {
 		g_isi_client_destroy(data->client);
@@ -118,11 +340,11 @@ static struct ofono_call_settings_driver driver = {
 	.name			= "isimodem",
 	.probe			= isi_call_settings_probe,
 	.remove			= isi_call_settings_remove,
-	.clip_query		= isi_clip_query,
-	.colp_query		= isi_colp_query,
-	.clir_query		= isi_clir_query,
-	.colr_query		= isi_colr_query,
-	.clir_set		= isi_clir_set,
+	.clip_query		= NULL,
+	.colp_query		= NULL,
+	.clir_query		= NULL,
+	.colr_query		= NULL,
+	.clir_set		= NULL,
 	.cw_query		= isi_cw_query,
 	.cw_set			= isi_cw_set
 };

@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
  *
- * Contact: Aki Niemi <aki.niemi@nokia.com>
+ * Contact: Alexander Kanavin <alexander.kanavin@nokia.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,24 +34,131 @@
 #include <glib.h>
 
 #include <gisi/client.h>
+#include <gisi/iter.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/call-forwarding.h>
 
 #include "isi.h"
+#include "ss.h"
 
-#define PN_SS			0x06
-
-struct call_forwarding_data {
+struct forw_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
 
-static void isi_activation(struct ofono_call_forwarding *cf,
-				int type, int cls,
-				ofono_call_forwarding_set_cb_t cb, void *data)
+static int forw_type_to_isi_code(int type)
 {
+	int ss_code;
+	switch (type) {
+	case 0:
+		ss_code = SS_GSM_FORW_UNCONDITIONAL;
+		break;
+	case 1:
+		ss_code = SS_GSM_FORW_BUSY;
+		break;
+	case 2:
+		ss_code = SS_GSM_FORW_NO_REPLY;
+		break;
+	case 3:
+		ss_code = SS_GSM_FORW_NO_REACH;
+		break;
+	case 4:
+		ss_code = SS_GSM_ALL_FORWARDINGS;
+		break;
+	case 5:
+		ss_code = SS_GSM_ALL_COND_FORWARDINGS;
+		break;
+	default:
+		DBG("Unknown forwarding type %d\n", type);
+		ss_code = -1;
+		break;
+	}
+	return ss_code;
+}
+
+static bool registration_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	GIsiSubBlockIter iter;
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_call_forwarding_set_cb_t cb = cbd->cb;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	if (len < 7 || msg[0] != SS_SERVICE_COMPLETED_RESP)
+		goto error;
+
+	if (msg[1] != SS_REGISTRATION)
+		goto error;
+
+	for (g_isi_sb_iter_init(&iter, msg, len, 7);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+
+		case SS_GSM_ADDITIONAL_INFO:
+			break;
+
+		case SS_GSM_FORWARDING_INFO: {
+
+			GIsiSubBlockIter iter_fw;
+
+			if (g_isi_sb_iter_get_len(&iter) < 4)
+				goto error;
+
+			for (g_isi_sb_iter_init(&iter_fw, iter.start,
+				g_isi_sb_iter_get_len(&iter), 4);
+				g_isi_sb_iter_is_valid(&iter_fw);
+				g_isi_sb_iter_next(&iter_fw)) {
+
+				switch (g_isi_sb_iter_get_id(&iter_fw)) {
+
+				case SS_GSM_FORWARDING_FEATURE: {
+
+					guint8 status;
+
+					if (!g_isi_sb_iter_get_byte(&iter_fw,
+						&status, 3))
+						goto error;
+
+					if (!(status & SS_GSM_ACTIVE)
+						|| !(status & SS_GSM_REGISTERED))
+						goto error;
+
+					break;
+				}
+				default:
+					DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
+						g_isi_sb_iter_get_id(&iter_fw),
+						g_isi_sb_iter_get_len(&iter_fw));
+					break;
+				}
+			}
+			break;
+		}
+		default:
+			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
+	}
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
 }
 
 static void isi_registration(struct ofono_call_forwarding *cf,
@@ -60,32 +167,384 @@ static void isi_registration(struct ofono_call_forwarding *cf,
 				int time,
 				ofono_call_forwarding_set_cb_t cb, void *data)
 {
+	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
+	struct isi_cb_data *cbd = isi_cb_data_new(cf, cb, data);
+	int ss_code;
+	int num_filler;
+	char *ucs2 = NULL;
+
+	unsigned char msg[100] = {
+		SS_SERVICE_REQ,
+		SS_REGISTRATION,
+		SS_GSM_TELEPHONY,
+		0, 0,  /* Supplementary services code */
+		SS_SEND_ADDITIONAL_INFO,
+		1,  /* Subblock count */
+		SS_FORWARDING,
+		0,  /* Variable subblock length, because of phone number */
+		number->type,
+		time,
+		strlen(number->number),
+		0  /* Sub address length */
+	};
+	/* Followed by number in UCS-2, zero sub address bytes, and 0
+	 * to 3 bytes of filler */
+
+	DBG("forwarding type %d class %d\n", type, cls);
+
+	if (!cbd || !number->number || strlen(number->number) > 28)
+		goto error;
+
+	ss_code = forw_type_to_isi_code(type);
+	if (ss_code < 0)
+		goto error;
+
+	msg[3] = ss_code >> 8;
+	msg[4] = ss_code & 0xFF;
+
+	num_filler = (6 + 2 * strlen(number->number)) % 4;
+	if (num_filler != 0)
+		num_filler = 4 - num_filler;
+
+	msg[8]  = 6 + 2 * strlen(number->number) + num_filler;
+
+	ucs2 = g_convert(number->number, strlen(number->number), "UCS-2BE",
+				"UTF-8//TRANSLIT", NULL, NULL, NULL);
+	if (ucs2 == NULL)
+		goto error;
+
+	memcpy((char *)msg + 13, ucs2, strlen(number->number) * 2);
+	g_free(ucs2);
+
+	if (g_isi_request_make(fd->client, msg, 7 + msg[8], SS_TIMEOUT,
+				registration_resp_cb, cbd))
+		return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
 }
 
-static void isi_deactivation(struct ofono_call_forwarding *cf,
-				int type, int cls,
-				ofono_call_forwarding_set_cb_t cb, void *data)
+static bool erasure_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
+	GIsiSubBlockIter iter;
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_call_forwarding_set_cb_t cb = cbd->cb;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	if (len < 7 || msg[0] != SS_SERVICE_COMPLETED_RESP)
+		goto error;
+
+	if (msg[1] != SS_ERASURE)
+		goto error;
+
+	for (g_isi_sb_iter_init(&iter, msg, len, 7);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+
+		case SS_GSM_ADDITIONAL_INFO:
+			break;
+
+		case SS_GSM_FORWARDING_INFO: {
+
+			GIsiSubBlockIter iter_fw;
+
+			if (g_isi_sb_iter_get_len(&iter) < 4)
+				goto error;
+
+			for (g_isi_sb_iter_init(&iter_fw, iter.start,
+				g_isi_sb_iter_get_len(&iter), 4);
+				g_isi_sb_iter_is_valid(&iter_fw);
+				g_isi_sb_iter_next(&iter_fw)) {
+
+				switch (g_isi_sb_iter_get_id(&iter_fw)) {
+
+				case SS_GSM_FORWARDING_FEATURE: {
+
+					guint8 status;
+
+					if (!g_isi_sb_iter_get_byte(&iter_fw,
+						&status, 3))
+						goto error;
+
+					if ((status & SS_GSM_ACTIVE)
+						|| (status & SS_GSM_REGISTERED))
+						goto error;
+
+					break;
+				}
+				default:
+					DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
+						g_isi_sb_iter_get_id(&iter_fw),
+						g_isi_sb_iter_get_len(&iter_fw));
+					break;
+				}
+			}
+			break;
+		}
+		default:
+			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
+	}
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
 }
+
 
 static void isi_erasure(struct ofono_call_forwarding *cf, int type, int cls,
 				ofono_call_forwarding_set_cb_t cb, void *data)
 {
+	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
+	struct isi_cb_data *cbd = isi_cb_data_new(cf, cb, data);
+	int ss_code;
+
+	unsigned char msg[] = {
+		SS_SERVICE_REQ,
+		SS_ERASURE,
+		SS_GSM_TELEPHONY,
+		0, 0,  /* Supplementary services code */
+		SS_SEND_ADDITIONAL_INFO,
+		0  /* Subblock count */
+	};
+
+	DBG("forwarding type %d class %d\n", type, cls);
+
+	if (!cbd)
+		goto error;
+
+	ss_code = forw_type_to_isi_code(type);
+	if (ss_code < 0)
+		goto error;
+
+	msg[3] = ss_code >> 8;
+	msg[4] = ss_code & 0xFF;
+
+	if (g_isi_request_make(fd->client, msg, sizeof(msg), SS_TIMEOUT,
+				erasure_resp_cb, cbd))
+		return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
 }
+
+static bool query_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	GIsiSubBlockIter iter;
+	const unsigned char *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_call_forwarding_query_cb_t cb = cbd->cb;
+
+	struct ofono_call_forwarding_condition list;
+	list.status = 0;
+	list.cls = 7;
+	list.time = 0;
+	list.phone_number.number[0] = 0;
+	list.phone_number.type = 0;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	if (len < 7 || msg[0] != SS_SERVICE_COMPLETED_RESP)
+		goto error;
+
+	if (msg[1] != SS_INTERROGATION)
+		goto error;
+
+	for (g_isi_sb_iter_init(&iter, msg, len, 7);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+
+		case SS_STATUS_RESULT:
+			break;
+
+		case SS_GSM_ADDITIONAL_INFO:
+			break;
+
+		case SS_GSM_FORWARDING_INFO: {
+
+			GIsiSubBlockIter iter_fw;
+
+			if (g_isi_sb_iter_get_len(&iter) < 4)
+				goto error;
+
+			for (g_isi_sb_iter_init(&iter_fw, iter.start,
+				g_isi_sb_iter_get_len(&iter), 4);
+				g_isi_sb_iter_is_valid(&iter_fw);
+				g_isi_sb_iter_next(&iter_fw)) {
+
+				switch (g_isi_sb_iter_get_id(&iter_fw)) {
+
+				case SS_GSM_FORWARDING_FEATURE: {
+
+					guint8 status;
+					guint8 ton;
+					guint8 norply;
+					guint8 numlen;
+					char* number = NULL;
+
+					if (!g_isi_sb_iter_get_byte(&iter_fw,
+						&status, 3))
+						goto error;
+
+					if (!g_isi_sb_iter_get_byte(&iter_fw,
+						&ton, 4))
+						goto error;
+
+					if (!g_isi_sb_iter_get_byte(&iter_fw,
+						&norply, 5))
+						goto error;
+
+					if (!g_isi_sb_iter_get_byte(&iter_fw,
+						&numlen, 7))
+						goto error;
+
+					if (!g_isi_sb_iter_get_alpha_tag(&iter_fw,
+						&number, numlen * 2, 10))
+						goto error;
+
+					list.status = status & (SS_GSM_ACTIVE
+							| SS_GSM_REGISTERED
+							| SS_GSM_PROVISIONED);
+
+					list.time = norply;
+
+					strncpy(list.phone_number.number, number,
+						OFONO_MAX_PHONE_NUMBER_LENGTH);
+					list.phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+					g_free(number);
+
+					list.phone_number.type = ton | 128;
+					break;
+				}
+				default:
+					DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
+						g_isi_sb_iter_get_id(&iter_fw),
+						g_isi_sb_iter_get_len(&iter_fw));
+					break;
+				}
+			}
+			break;
+		}
+		default:
+			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
+	}
+
+	DBG("forwarding query: %d, %d, %s(%d) - %d sec",
+			list.status, list.cls,
+			list.phone_number.number,
+			list.phone_number.type, list.time);
+	CALLBACK_WITH_SUCCESS(cb, 1, &list, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
+
+}
+
 
 static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 				ofono_call_forwarding_query_cb_t cb,
 				void *data)
 {
+	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
+	struct isi_cb_data *cbd = isi_cb_data_new(cf, cb, data);
+	int ss_code;
+
+	unsigned char msg[] = {
+		SS_SERVICE_REQ,
+		SS_INTERROGATION,
+		SS_GSM_TELEPHONY,
+		0, 0,  /* Supplementary services code */
+		SS_SEND_ADDITIONAL_INFO,
+		0  /* Subblock count */
+	};
+
+	DBG("forwarding type %d class %d\n", type, cls);
+
+	if (!cbd || cls != 7)
+		goto error;
+
+	ss_code = forw_type_to_isi_code(type);
+	if (ss_code < 0)
+		goto error;
+
+	msg[3] = ss_code >> 8;
+	msg[4] = ss_code & 0xFF;
+
+	if (g_isi_request_make(fd->client, msg, sizeof(msg), SS_TIMEOUT,
+				query_resp_cb, cbd))
+		return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
+	g_free(cbd);
 }
+
+static gboolean isi_call_forwarding_register(gpointer user)
+{
+	struct ofono_call_forwarding *cf = user;
+
+	ofono_call_forwarding_register(cf);
+
+	return FALSE;
+}
+
+static void reachable_cb(GIsiClient *client, bool alive, void *opaque)
+{
+	struct ofono_call_forwarding *cf = opaque;
+
+	if (alive == true) {
+		DBG("Resource 0x%02X, with version %03d.%03d reachable",
+			g_isi_client_resource(client),
+			g_isi_version_major(client),
+			g_isi_version_minor(client));
+		g_idle_add(isi_call_forwarding_register, cf);
+		return;
+	}
+	DBG("Unable to bootsrap call forwarding driver");
+}
+
 
 static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
 					unsigned int vendor, void *user)
 {
 	GIsiModem *idx = user;
-	struct call_forwarding_data *data;
+	struct forw_data *data;
 
-	data = g_try_new0(struct call_forwarding_data, 1);
+	data = g_try_new0(struct forw_data, 1);
 
 	if (!data)
 		return -ENOMEM;
@@ -95,13 +554,15 @@ static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
 		return -ENOMEM;
 
 	ofono_call_forwarding_set_data(cf, data);
+	if (!g_isi_verify(data->client, reachable_cb, cf))
+		DBG("Unable to verify reachability");
 
 	return 0;
 }
 
 static void isi_call_forwarding_remove(struct ofono_call_forwarding *cf)
 {
-	struct call_forwarding_data *data = ofono_call_forwarding_get_data(cf);
+	struct forw_data *data = ofono_call_forwarding_get_data(cf);
 
 	if (data) {
 		g_isi_client_destroy(data->client);
@@ -113,9 +574,9 @@ static struct ofono_call_forwarding_driver driver = {
 	.name			= "isimodem",
 	.probe			= isi_call_forwarding_probe,
 	.remove			= isi_call_forwarding_remove,
-	.activation		= isi_activation,
+	.activation		= NULL,
 	.registration		= isi_registration,
-	.deactivation		= isi_deactivation,
+	.deactivation		= NULL,
 	.erasure		= isi_erasure,
 	.query			= isi_query
 };

@@ -71,6 +71,7 @@ if ISIMODEM
 builtin_modules += isimodem
 builtin_sources += $(gisi_sources) \
 				drivers/isimodem/isi.h \
+				drivers/isimodem/ss.h \
 				drivers/isimodem/isimodem.c \
 				drivers/isimodem/phonebook.c \
 				drivers/isimodem/devinfo.c \
