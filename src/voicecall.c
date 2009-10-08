@@ -551,7 +551,7 @@ static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
 	return FALSE;
 }
 
-static gboolean voicecalls_have_connected(struct ofono_voicecall *vc)
+static gboolean voicecalls_can_dtmf(struct ofono_voicecall *vc)
 {
 	GSList *l;
 	struct voicecall *v;
@@ -1100,7 +1100,7 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 		return __ofono_error_not_implemented(msg);
 
 	/* Send DTMFs only if we have at least one connected call */
-	if (!voicecalls_have_connected(vc))
+	if (!voicecalls_can_dtmf(vc))
 		return __ofono_error_failed(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &in_tones,
