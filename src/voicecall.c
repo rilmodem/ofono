@@ -835,10 +835,30 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 	return NULL;
 }
 
+static DBusMessage *manager_swap_without_accept(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct ofono_voicecall *vc = data;
+
+	if (vc->flags & VOICECALLS_FLAG_PENDING)
+		return __ofono_error_busy(msg);
+
+	vc->flags |= VOICECALLS_FLAG_PENDING;
+	vc->pending = dbus_message_ref(msg);
+
+	vc->driver->swap_without_accept(vc, generic_callback, vc);
+
+	return NULL;
+}
+
+
 static DBusMessage *manager_swap_calls(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_voicecall *vc = data;
+
+	if (vc->driver->swap_without_accept)
+		return manager_swap_without_accept(conn, msg, data);
 
 	if (vc->flags & VOICECALLS_FLAG_PENDING)
 		return __ofono_error_busy(msg);
