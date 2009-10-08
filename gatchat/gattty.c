@@ -72,14 +72,22 @@ static gboolean set_baud(const char *baud, struct termios *ti)
 		speed = B1500000;
 	else if (g_str_equal(baud, "2000000"))
 		speed = B2000000;
+#ifdef B2500000
 	else if (g_str_equal(baud, "2500000"))
 		speed = B2500000;
+#endif
+#ifdef B3000000
 	else if (g_str_equal(baud, "3000000"))
 		speed = B3000000;
+#endif
+#ifdef B3500000
 	else if (g_str_equal(baud, "3500000"))
 		speed = B3500000;
+#endif
+#ifdef B4000000
 	else if (g_str_equal(baud, "4000000"))
 		speed = B4000000;
+#endif
 	else
 		return FALSE;
 
