@@ -37,8 +37,6 @@
 #define GSM0710_DATA_ALT		0x03
 #define GSM0710_STATUS_SET		0xE3
 #define GSM0710_STATUS_ACK		0xE1
-#define GSM0710_TERMINATE_BYTE1		0xC3
-#define GSM0710_TERMINATE_BYTE2		0x01
 
 /* Initialize a GSM 07.10 context, in preparation for startup */
 void gsm0710_initialize(struct gsm0710_context *ctx)
@@ -212,8 +210,6 @@ int gsm0710_startup(struct gsm0710_context *ctx)
 /* Shut down the GSM 07.10 session, closing all channels */
 void gsm0710_shutdown(struct gsm0710_context *ctx)
 {
-	static const unsigned char terminate[2] = { GSM0710_TERMINATE_BYTE1,
-						GSM0710_TERMINATE_BYTE2 };
 	int channel;
 
 	for (channel = 1; channel <= GSM0710_MAX_CHANNELS; ++channel) {
@@ -224,7 +220,7 @@ void gsm0710_shutdown(struct gsm0710_context *ctx)
 					GSM0710_CLOSE_CHANNEL, NULL, 0);
 	}
 
-	gsm0710_write_frame(ctx, 0, GSM0710_DATA, terminate, 2);
+	gsm0710_write_frame(ctx, 0, GSM0710_CLOSE_CHANNEL, NULL, 0);
 	memset(ctx->used_channels, 0, sizeof(ctx->used_channels));
 }
 
