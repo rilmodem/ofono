@@ -138,7 +138,7 @@ static const char *call_status_to_string(int status)
 	case CALL_STATUS_DIALING:
 		return "dialing";
 	case CALL_STATUS_ALERTING:
-	return "alerting";
+		return "alerting";
 	case CALL_STATUS_INCOMING:
 		return "incoming";
 	case CALL_STATUS_WAITING:
@@ -560,6 +560,10 @@ static gboolean voicecalls_have_connected(struct ofono_voicecall *vc)
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_ACTIVE)
+			return TRUE;
+
+		/* Connected for 2nd stage dialing */
+		if (v->call->status == CALL_STATUS_ALERTING)
 			return TRUE;
 	}
 
