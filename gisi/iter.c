@@ -47,22 +47,44 @@ static inline void bcd_to_mccmnc(const uint8_t *restrict bcd, char *mcc, char *m
 	mnc[3] = '\0';
 }
 
-bool g_isi_sb_iter_init(const void *restrict data, size_t len,
-			GIsiSubBlockIter *iter, bool longhdr)
+void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter,
+			     const void *restrict data,
+			     size_t len,
+			     size_t used,
+			     bool longhdr,
+			     uint16_t sub_blocks)
 {
-	if (!iter || !data || len == 0)
-		return false;
-
-	iter->start = (uint8_t *)data;
+	if (!data)
+		len = used = 0;
+	iter->start = (uint8_t *)data + used;
 	iter->end = iter->start + len;
 	iter->longhdr = longhdr;
+	iter->sub_blocks = len > used ? sub_blocks : 0;
+}
 
-	return true;
+void g_isi_sb_iter_init(GIsiSubBlockIter *iter,
+			const void *restrict data,
+			size_t len,
+			size_t used)
+{
+
+	if (!data)
+		len = used = 0;
+	iter->start = (uint8_t *)data + used;
+	iter->end = iter->start + len;
+	iter->longhdr = false;
+	iter->sub_blocks = len > used ? iter->start[-1] : 0;
 }
 
 bool g_isi_sb_iter_is_valid(const GIsiSubBlockIter *iter)
 {
-	if (!iter || iter->end - iter->start < (iter->longhdr ? 4 : 2))
+	if (!iter)
+		return false;
+
+	if (iter->sub_blocks == 0)
+		return false;
+
+	if (iter->start + (iter->longhdr ? 4 : 2) > iter->end)
 		return false;
 
 	if (iter->start + g_isi_sb_iter_get_len(iter) > iter->end)
@@ -73,29 +95,24 @@ bool g_isi_sb_iter_is_valid(const GIsiSubBlockIter *iter)
 
 int g_isi_sb_iter_get_id(const GIsiSubBlockIter *iter)
 {
-	if (iter->longhdr) {
-		uint16_t *hdr = (uint16_t *)iter->start;
-		return (int)ntohs(hdr[0]);
-	}
-
+	if (iter->longhdr)
+		return (iter->start[0] << 8) | (iter->start[1]);
 	return iter->start[0];
 }
 
 size_t g_isi_sb_iter_get_len(const GIsiSubBlockIter *iter)
 {
-	if (iter->longhdr) {
-		uint16_t *hdr = (uint16_t *)iter->start;
-		return (size_t)ntohs(hdr[1]);
-	}
+	if (iter->longhdr)
+		return (iter->start[2] << 8) | (iter->start[3]);
 
 	return iter->start[1];
 }
 
 bool g_isi_sb_iter_get_byte(const GIsiSubBlockIter *restrict iter, uint8_t *byte, int pos)
 {
-	if (pos > (int)g_isi_sb_iter_get_len(iter) || iter->start + pos > iter->end)
+	if ((size_t)(unsigned)pos > g_isi_sb_iter_get_len(iter) ||
+	    iter->start + (unsigned)pos > iter->end)
 		return false;
-
 	*byte = iter->start[pos];
 	return true;
 }
@@ -183,9 +200,14 @@ bool g_isi_sb_iter_next(GIsiSubBlockIter *iter)
 	if (len == 0)
 		len = iter->longhdr ? 4 : 2;
 
+	if (iter->sub_blocks == 0)
+		return false;
+
 	if (iter->start + len > iter->end)
 		return false;
 
 	iter->start += len;
+	iter->sub_blocks--;
+
 	return true;
 }

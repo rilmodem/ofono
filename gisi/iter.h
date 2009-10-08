@@ -34,13 +34,22 @@ extern "C" {
 struct _GIsiSubBlockIter {
 	uint8_t *start;
 	uint8_t *end;
-	bool longhdr;
+	uint16_t longhdr;
+	uint16_t sub_blocks;
 };
+
 typedef struct _GIsiSubBlockIter GIsiSubBlockIter;
 
-bool g_isi_sb_iter_init(const void *restrict data, size_t len,
-			GIsiSubBlockIter *iter, bool longhdr);
-bool g_isi_sb_iter_is_valid(const GIsiSubBlockIter *iter);
+void g_isi_sb_iter_init(GIsiSubBlockIter *iter,
+			const void *restrict data,
+			size_t len, size_t used);
+void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter,
+			     const void *restrict data,
+			     size_t len, size_t used,
+			     bool longhdr,
+			     uint16_t sub_blocks);
+bool g_isi_sb_iter_is_valid(GIsiSubBlockIter const *iter);
+
 bool g_isi_sb_iter_next(GIsiSubBlockIter *iter);
 
 int g_isi_sb_iter_get_id(const GIsiSubBlockIter *iter);

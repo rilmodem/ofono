@@ -99,10 +99,9 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 	if (msg[1] != SIM_PB_READ)
 		goto error;
 
-	if (!g_isi_sb_iter_init(msg+3, len-3, &iter, true))
-		goto error;
-
-	while (g_isi_sb_iter_is_valid(&iter)) {
+	for (g_isi_sb_iter_init_full(&iter, msg, len, 3, true, msg[2]);
+	     g_isi_sb_iter_is_valid(&iter);
+	     g_isi_sb_iter_next(&iter)) {
 
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
@@ -177,7 +176,6 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-		g_isi_sb_iter_next(&iter);
 	}
 
 	if (status != SIM_SERV_OK) {

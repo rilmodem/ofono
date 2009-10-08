@@ -118,11 +118,9 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!g_isi_sb_iter_init(msg+3, len-3, &iter, false))
-		goto error;
-
-	while (g_isi_sb_iter_is_valid(&iter)) {
-
+	for (g_isi_sb_iter_init(&iter, msg, len, 3);
+	     g_isi_sb_iter_is_valid(&iter);
+	     g_isi_sb_iter_next(&iter)) {
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case INFO_SB_PRODUCT_INFO_MANUFACTURER:
@@ -151,7 +149,6 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-		g_isi_sb_iter_next(&iter);
 	}
 
 error:
