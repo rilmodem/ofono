@@ -59,14 +59,16 @@ static int do_connect(const char *address, unsigned short port)
 }
 
 static GMainLoop *mainloop;
+static GAtMux *mux;
 
 static gboolean cleanup_callback(gpointer data)
 {
 	GAtChat *chat = data;
 
 	g_at_chat_shutdown(chat);
-
 	g_at_chat_unref(chat);
+
+	g_at_mux_unref(mux);
 
 	g_main_loop_quit(mainloop);
 
@@ -91,37 +93,54 @@ static void mux_debug(const char *str, void *data)
 	g_print("%s: %s\n", (char *) data, str);
 }
 
-static gboolean idle_callback(gpointer data)
+static void mux_setup(GAtMux *mux, gpointer data)
 {
-	GAtMux *mux = data;
-	GAtChat *chat;
+	GAtChat *chat = data;
+	GIOChannel *io;
 	GAtSyntax *syntax;
 
-	g_print("idle: callback\n");
+	g_print("mux_setup: %p\n", mux);
 
-	syntax = g_at_syntax_new_gsmv1();
-	chat = g_at_mux_create_chat(mux, syntax);
-	g_at_syntax_unref(syntax);
-
-	if (!chat) {
-		g_printerr("chat failed\n");
+	if (mux == NULL) {
+		g_at_chat_unref(chat);
 		g_main_loop_quit(mainloop);
-		return FALSE;
+		return;
 	}
 
+	g_at_mux_start(mux);
+
+	io = g_at_mux_create_channel(mux);
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(io);
+
 	g_at_chat_set_debug(chat, mux_debug, "CHAT");
-
+	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
 	g_at_chat_send(chat, "AT+CGMI", NULL, NULL, NULL, NULL);
-
 	g_at_chat_send(chat, "AT+CGMR", NULL, chat_callback, chat, NULL);
+}
 
-	return FALSE;
+static void mux_init(gboolean ok, GAtResult *result, gpointer data)
+{
+	GAtChat *chat = data;
+
+	g_print("mux_init: %d\n", ok);
+
+	if (ok == FALSE) {
+		g_at_chat_unref(chat);
+		g_main_loop_quit(mainloop);
+		return;
+	}
+
+	g_at_mux_setup_gsm0710(chat, mux_setup, chat, NULL);
 }
 
 static void test_mux(void)
 {
 	GIOChannel *io;
-	GAtMux *mux;
+	GAtChat *chat;
+	GAtSyntax *syntax;
 	int sk;
 
 	sk= do_connect("192.168.0.202", 2000);
@@ -130,28 +149,28 @@ static void test_mux(void)
 		return;
 	}
 
+	mux = NULL;
 	io = g_io_channel_unix_new(sk);
-	mux = g_at_mux_new(io);
+	g_io_channel_set_close_on_unref(io, TRUE);
+
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+
 	g_io_channel_unref(io);
 
-	if (!mux) {
-		g_printerr("mux failed\n");
-		close(sk);
+	if (!chat) {
+		g_printerr("Chat creation failed\n");
 		return;
 	}
 
-	g_at_mux_set_debug(mux, mux_debug, "MUX");
-
-	g_io_channel_set_close_on_unref(io, TRUE);
+	g_at_chat_set_debug(chat, mux_debug, "MUX");
+	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
+	g_at_chat_send(chat, "ATE0", NULL, mux_init, chat, NULL);
 
 	mainloop = g_main_loop_new(NULL, FALSE);
 
-	g_idle_add(idle_callback, mux);
-
 	g_main_loop_run(mainloop);
-
-	g_at_mux_unref(mux);
-
 	g_main_loop_unref(mainloop);
 }
 
