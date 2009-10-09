@@ -35,6 +35,9 @@
 #include "gsm0710.h"
 #include "gatmux.h"
 
+static const char *cmux_prefix[] = { "+CMUX:", NULL };
+static const char *none_prefix[] = { NULL };
+
 typedef struct _GAtMuxChannel GAtMuxChannel;
 typedef struct _GAtMuxWatch GAtMuxWatch;
 
@@ -57,7 +60,6 @@ struct _GAtMux {
 	gint ref_count;				/* Ref count */
 	guint read_watch;			/* GSource read id, 0 if none */
 	GIOChannel *channel;			/* channel */
-	GAtChat *chat;				/* for muxer setup */
 	GAtDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
 	GAtDebugFunc debugf;			/* debugging output function */
@@ -65,6 +67,15 @@ struct _GAtMux {
 
 	GAtMuxChannel *mux_channel;
 	struct gsm0710_context ctx;
+};
+
+struct mux_setup_data {
+	GAtChat *chat;
+	GAtMuxSetupFunc func;
+	gpointer user;
+	GDestroyNotify destroy;
+	guint mode;
+	guint frame_size;
 };
 
 static gboolean received_data(GIOChannel *channel, GIOCondition cond,
@@ -141,7 +152,8 @@ static void debug_message(struct gsm0710_context *ctx, const char *msg)
 {
 }
 
-GAtMux *g_at_mux_new(GIOChannel *channel)
+static GAtMux *mux_new_gsm0710_common(GIOChannel *channel,
+					int mode, int frame_size)
 {
 	GAtMux *mux;
 
@@ -162,15 +174,27 @@ GAtMux *g_at_mux_new(GIOChannel *channel)
 	gsm0710_initialize(&mux->ctx);
 	mux->ctx.user_data = mux;
 
-	mux->ctx.mode = GSM0710_MODE_ADVANCED;
-
 	mux->ctx.read = do_read;
 	mux->ctx.write = do_write;
 	mux->ctx.deliver_data = deliver_data;
 	mux->ctx.deliver_status = deliver_status;
 	mux->ctx.debug_message = debug_message;
 
+	mux->ctx.mode = mode;
+	mux->ctx.frame_size = frame_size;
+
 	return mux;
+}
+
+GAtMux *g_at_mux_new_gsm0710_basic(GIOChannel *channel, int frame_size)
+{
+	return mux_new_gsm0710_common(channel, GSM0710_MODE_BASIC, frame_size);
+}
+
+GAtMux *g_at_mux_new_gsm0710_advanced(GIOChannel *channel, int frame_size)
+{
+	return mux_new_gsm0710_common(channel, GSM0710_MODE_ADVANCED,
+					frame_size);
 }
 
 GAtMux *g_at_mux_ref(GAtMux *mux)
@@ -197,103 +221,16 @@ void g_at_mux_unref(GAtMux *mux)
 	}
 }
 
-static gboolean startup_callback(gpointer data)
+gboolean g_at_mux_start(GAtMux *mux)
 {
-	GAtMux *mux = data;
-	GIOFlags flags;
-
-	g_at_chat_shutdown(mux->chat);
-
-	g_at_chat_unref(mux->chat);
-	mux->chat = NULL;
-
-	g_io_channel_flush(mux->channel, NULL);
-
-	flags = g_io_channel_get_flags(mux->channel) | G_IO_FLAG_NONBLOCK;
-	g_io_channel_set_flags(mux->channel, flags, NULL);
-
-	g_io_channel_set_encoding(mux->channel, NULL, NULL);
-	g_io_channel_set_buffered(mux->channel, FALSE);
+	if (mux->channel == NULL)
+		return FALSE;
 
 	mux->read_watch = g_io_add_watch_full(mux->channel, G_PRIORITY_DEFAULT,
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 						received_data, mux, NULL);
 
 	gsm0710_startup(&mux->ctx);
-
-	gsm0710_open_channel(&mux->ctx, 1);
-
-	return FALSE;
-}
-
-static void setup_callback(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	GAtMux *mux = user_data;
-
-	if (!ok)
-		return;
-
-	g_idle_add(startup_callback, mux);
-}
-
-static void chat_disconnect(gpointer user_data)
-{
-}
-
-gboolean g_at_mux_start(GAtMux *mux)
-{
-	GAtSyntax *syntax;
-	char *cmd;
-	int speed;
-
-	if (mux->channel == NULL)
-		return FALSE;
-
-	syntax = g_at_syntax_new_gsm_permissive();
-	mux->chat = g_at_chat_new(mux->channel, syntax);
-	g_at_syntax_unref(syntax);
-
-	if (!mux->chat)
-		return FALSE;
-
-	g_at_chat_set_debug(mux->chat, mux->debugf, mux->debug_data);
-
-	g_at_chat_set_disconnect_function(mux->chat, chat_disconnect, NULL);
-
-	g_at_chat_set_wakeup_command(mux->chat, "\r", 1000, 5000);
-
-	g_at_chat_send(mux->chat, "ATE0", NULL, NULL, NULL, NULL);
-
-	//g_at_chat_send(mux->chat, "AT+CFUN=0", NULL, NULL, NULL, NULL);
-
-	switch (mux->ctx.port_speed) {
-	case 9600:
-		speed = 1;
-		break;
-	case 19200:
-		speed = 2;
-		break;
-	case 38400:
-		speed = 3;
-		break;
-	case 57600:
-		speed = 4;
-		break;
-	case 115200:
-		speed = 5;
-		break;
-	case 230400:
-		speed = 6;
-		break;
-	default:
-		speed = 5;
-		break;
-	}
-
-	cmd = g_strdup_printf("AT+CMUX=%u,0,%u,%u", mux->ctx.mode, speed,
-							mux->ctx.frame_size);
-
-	g_at_chat_send(mux->chat, cmd, NULL, setup_callback, mux, NULL);
 
 	return TRUE;
 }
@@ -497,15 +434,167 @@ GIOChannel *g_at_mux_create_channel(GAtMux *mux)
 	return channel;
 }
 
-GAtChat *g_at_mux_create_chat(GAtMux *mux, GAtSyntax *syntax)
+static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
+	struct mux_setup_data *msd = user_data;
+	GIOFlags flags;
 	GIOChannel *channel;
+	GAtMux *mux = NULL;
 
-	g_at_mux_start(mux);
+	if (!ok)
+		goto error;
 
-	channel = g_at_mux_create_channel(mux);
-	if (channel == NULL)
-		return NULL;
+	channel = g_at_chat_get_channel(msd->chat);
+	channel = g_io_channel_ref(channel);
 
-	return g_at_chat_new(channel, syntax);
+	g_at_chat_shutdown(msd->chat);
+	g_at_chat_unref(msd->chat);
+
+	flags = g_io_channel_get_flags(channel) | G_IO_FLAG_NONBLOCK;
+	g_io_channel_set_flags(channel, flags, NULL);
+
+	g_io_channel_set_encoding(channel, NULL, NULL);
+	g_io_channel_set_buffered(channel, FALSE);
+
+	if (msd->mode == 0)
+		mux = g_at_mux_new_gsm0710_basic(channel, msd->frame_size);
+	else
+		mux = g_at_mux_new_gsm0710_advanced(channel, msd->frame_size);
+
+	g_io_channel_unref(channel);
+
+error:
+	msd->func(mux, msd->user);
+
+	if (msd->destroy)
+		msd->destroy(msd->user);
+}
+
+static void mux_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct mux_setup_data *msd = user_data;
+	struct mux_setup_data *nmsd;
+	GAtResultIter iter;
+	int min, max;
+	int speed;
+	char buf[64];
+
+	/* CMUX query not supported, abort */
+	if (!ok)
+		goto error;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CMUX:"))
+		goto error;
+
+	/* Mode */
+	if (!g_at_result_iter_open_list(&iter))
+		goto error;
+
+	if (!g_at_result_iter_next_range(&iter, &min, &max))
+		goto error;
+
+	if (!g_at_result_iter_close_list(&iter))
+		goto error;
+
+	if (min <= 1 && 1 <= max)
+		msd->mode = 1;
+	else if (min <= 0 && 0 <= max)
+		msd->mode = 0;
+	else
+		goto error;
+
+	/* Subset */
+	if (!g_at_result_iter_open_list(&iter))
+		goto error;
+
+	if (!g_at_result_iter_next_range(&iter, &min, &max))
+		goto error;
+
+	if (!g_at_result_iter_close_list(&iter))
+		goto error;
+
+	if (min > 0)
+		goto error;
+
+	/* Speed, pick highest */
+	if (!g_at_result_iter_open_list(&iter))
+		goto error;
+
+	if (!g_at_result_iter_next_range(&iter, &min, &max))
+		goto error;
+
+	if (!g_at_result_iter_close_list(&iter))
+		goto error;
+
+	speed = max;
+
+	/* Frame size, pick defaults */
+	if (!g_at_result_iter_open_list(&iter))
+		goto error;
+
+	if (!g_at_result_iter_next_range(&iter, &min, &max))
+		goto error;
+
+	if (!g_at_result_iter_close_list(&iter))
+		goto error;
+
+	if (msd->mode == 0) {
+		if (min > 31 || max < 31)
+			goto error;
+
+		msd->frame_size = 31;
+	} else if (msd->mode == 1) {
+		if (min > 64 || max < 64)
+			goto error;
+
+		msd->frame_size = 64;
+	} else
+		goto error;
+
+	nmsd = g_memdup(msd, sizeof(struct mux_setup_data));
+
+	sprintf(buf, "AT+CMUX=%u,0,%u,%u", msd->mode, speed, msd->frame_size);
+
+	if (g_at_chat_send(msd->chat, buf, none_prefix,
+				mux_setup_cb, nmsd, g_free) > 0)
+		return;
+
+	g_free(nmsd);
+
+error:
+	msd->func(NULL, msd->user);
+
+	if (msd->destroy)
+		msd->destroy(msd->user);
+}
+
+gboolean g_at_mux_setup_gsm0710(GAtChat *chat,
+				GAtMuxSetupFunc notify, gpointer user_data,
+				GDestroyNotify destroy)
+{
+	struct mux_setup_data *msd;
+
+	if (chat == NULL)
+		return FALSE;
+
+	if (notify == NULL)
+		return FALSE;
+
+	msd = g_new0(struct mux_setup_data, 1);
+
+	msd->chat = g_at_chat_ref(chat);
+	msd->func = notify;
+	msd->user = user_data;
+	msd->destroy = destroy;
+
+	if (g_at_chat_send(chat, "AT+CMUX=?", cmux_prefix,
+				mux_query_cb, msd, g_free) > 0)
+		return TRUE;
+
+	if (msd)
+		g_free(msd);
+
+	return FALSE;
 }

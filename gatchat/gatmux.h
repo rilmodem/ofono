@@ -32,7 +32,10 @@ struct _GAtMux;
 
 typedef struct _GAtMux GAtMux;
 
-GAtMux *g_at_mux_new(GIOChannel *channel);
+typedef void (*GAtMuxSetupFunc)(GAtMux *mux, gpointer user_data);
+
+GAtMux *g_at_mux_new_gsm0710_basic(GIOChannel *channel, int framesize);
+GAtMux *g_at_mux_new_gsm0710_advanced(GIOChannel *channel, int framesize);
 
 GAtMux *g_at_mux_ref(GAtMux *mux);
 void g_at_mux_unref(GAtMux *mux);
@@ -46,7 +49,18 @@ gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
 gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user);
 
 GIOChannel *g_at_mux_create_channel(GAtMux *mux);
-GAtChat *g_at_mux_create_chat(GAtMux *mux, GAtSyntax *syntax);
+
+/*!
+ * Uses the passed in GAtChat to setup a GSM 07.10 style multiplexer on the
+ * channel used by GAtChat.  This function queries the multiplexer capability,
+ * preferring advanced mode over basic.  If supported, the best available
+ * multiplexer mode is entered.  If this is successful, the chat is
+ * shutdown and unrefed.  The chat's channel will be transferred to the
+ * resulting multiplexer object.
+ */
+gboolean g_at_mux_setup_gsm0710(GAtChat *chat,
+				GAtMuxSetupFunc notify, gpointer user_data,
+				GDestroyNotify destroy);
 
 #ifdef __cplusplus
 }

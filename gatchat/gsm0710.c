@@ -43,7 +43,6 @@ void gsm0710_initialize(struct gsm0710_context *ctx)
 {
 	ctx->mode = GSM0710_MODE_BASIC;
 	ctx->frame_size = GSM0710_DEFAULT_FRAME_SIZE;
-	ctx->port_speed = 115200;
 	ctx->buffer_used = 0;
 	memset(ctx->used_channels, 0, sizeof(ctx->used_channels));
 	ctx->user_data = NULL;
