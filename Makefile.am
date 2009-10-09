@@ -77,6 +77,8 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/devinfo.c \
 				drivers/isimodem/network-registration.c \
 				drivers/isimodem/voicecall.c \
+				drivers/isimodem/isi-call.h \
+				drivers/isimodem/isi-call-debug.c \
 				drivers/isimodem/sms.c \
 				drivers/isimodem/cbs.c \
 				drivers/isimodem/sim.c \

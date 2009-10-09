@@ -431,15 +431,14 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 
 		msg = (uint8_t *)buf;
 
+		if (cl->debug_func)
+			cl->debug_func(msg + 1, len - 1, cl->debug_data);
+
 		if (indication) {
 			/* Message ID at offset 1 */
 			id = msg[1];
 			if (cl->ind.func[id] == NULL)
 				return TRUE; /* Unsubscribed indication */
-
-			if (cl->debug_func)
-				cl->debug_func(msg + 1, len - 1,
-						cl->debug_data);
 
 			cl->ind.func[id](cl, msg + 1, len - 1, obj,
 						cl->ind.data[id]);
@@ -448,10 +447,6 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 			id = msg[0];
 			if (cl->func[id] == NULL)
 				return TRUE; /* Bad transaction ID */
-
-			if (cl->debug_func)
-				cl->debug_func(msg + 1, len - 1,
-						cl->debug_data);
 
 			if ((cl->func[id])(cl, msg + 1, len - 1, obj,
 						cl->data[id]))
