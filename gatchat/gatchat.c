@@ -959,6 +959,14 @@ error:
 	return NULL;
 }
 
+GIOChannel *g_at_chat_get_channel(GAtChat *chat)
+{
+	if (chat == NULL)
+		return NULL;
+
+	return chat->channel;
+}
+
 GAtChat *g_at_chat_ref(GAtChat *chat)
 {
 	if (chat == NULL)

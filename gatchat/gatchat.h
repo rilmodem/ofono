@@ -41,6 +41,8 @@ typedef void (*GAtDebugFunc)(const char *str, gpointer user_data);
 
 GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax);
 
+GIOChannel *g_at_chat_get_channel(GAtChat *chat);
+
 GAtChat *g_at_chat_ref(GAtChat *chat);
 void g_at_chat_unref(GAtChat *chat);
 
