@@ -52,7 +52,6 @@ void gsm0710_initialize(struct gsm0710_context *ctx)
 	ctx->deliver_data = NULL;
 	ctx->deliver_status = NULL;
 	ctx->debug_message = NULL;
-	ctx->terminate = NULL;
 	ctx->packet_filter = NULL;
 }
 

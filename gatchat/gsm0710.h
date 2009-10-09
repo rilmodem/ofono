@@ -62,9 +62,6 @@ struct gsm0710_context
 	void (*deliver_status)(struct gsm0710_context *ctx,
 						int channel, int status);
 	void (*debug_message)(struct gsm0710_context *ctx, const char *msg);
-	void (*open_channel)(struct gsm0710_context *ctx, int channel);
-	void (*close_channel)(struct gsm0710_context *ctx, int channel);
-	void (*terminate)(struct gsm0710_context *ctx);
 	int (*packet_filter)(struct gsm0710_context *ctx, int channel,
 				int type, const unsigned char *data, int len);
 };

@@ -107,10 +107,6 @@ static int do_write(struct gsm0710_context *ctx, const void *data, int len)
 	return bytes_written;
 }
 
-static void do_terminate(struct gsm0710_context *ctx)
-{
-}
-
 static void deliver_data(struct gsm0710_context *ctx, int channel,
 						const void *data, int len)
 {
@@ -170,7 +166,6 @@ GAtMux *g_at_mux_new(GIOChannel *channel)
 
 	mux->ctx.read = do_read;
 	mux->ctx.write = do_write;
-	mux->ctx.terminate = do_terminate;
 	mux->ctx.deliver_data = deliver_data;
 	mux->ctx.deliver_status = deliver_status;
 	mux->ctx.debug_message = debug_message;
