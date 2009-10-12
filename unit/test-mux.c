@@ -63,16 +63,19 @@ static GAtMux *mux;
 
 static gboolean cleanup_callback(gpointer data)
 {
-	GAtChat *chat = data;
-
-	g_at_chat_shutdown(chat);
-	g_at_chat_unref(chat);
-
 	g_at_mux_unref(mux);
 
 	g_main_loop_quit(mainloop);
 
 	return FALSE;
+}
+
+static gboolean chat_cleanup(gpointer data)
+{
+	GAtChat *chat = data;
+
+	g_at_chat_shutdown(chat);
+	g_at_chat_unref(chat);
 }
 
 static void chat_callback(gboolean ok, GAtResult *result, gpointer user_data)
@@ -85,7 +88,7 @@ static void chat_callback(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_print("%s\n", g_at_result_final_response(result));
 
-	g_idle_add(cleanup_callback, user_data);
+	g_idle_add(chat_cleanup, user_data);
 }
 
 static void mux_debug(const char *str, void *data)
@@ -93,11 +96,13 @@ static void mux_debug(const char *str, void *data)
 	g_print("%s: %s\n", (char *) data, str);
 }
 
-static void mux_setup(GAtMux *mux, gpointer data)
+static void mux_setup(GAtMux *m, gpointer data)
 {
 	GAtChat *chat = data;
 	GIOChannel *io;
 	GAtSyntax *syntax;
+
+	mux = m;
 
 	g_print("mux_setup: %p\n", mux);
 
@@ -115,10 +120,45 @@ static void mux_setup(GAtMux *mux, gpointer data)
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(io);
 
-	g_at_chat_set_debug(chat, mux_debug, "CHAT");
+	g_at_chat_set_debug(chat, mux_debug, "CHAT1");
 	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
 	g_at_chat_send(chat, "AT+CGMI", NULL, NULL, NULL, NULL);
 	g_at_chat_send(chat, "AT+CGMR", NULL, chat_callback, chat, NULL);
+
+	io = g_at_mux_create_channel(mux);
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(io);
+
+	g_at_chat_set_debug(chat, mux_debug, "CHAT2");
+	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
+	g_at_chat_send(chat, "AT+CGMI", NULL, NULL, NULL, NULL);
+	g_at_chat_send(chat, "AT+CGMR", NULL, chat_callback, chat, NULL);
+
+	io = g_at_mux_create_channel(mux);
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(io);
+
+	g_at_chat_set_debug(chat, mux_debug, "CHAT3");
+	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
+	g_at_chat_send(chat, "AT+CGMI", NULL, NULL, NULL, NULL);
+	g_at_chat_send(chat, "AT+CGMR", NULL, chat_callback, chat, NULL);
+
+	io = g_at_mux_create_channel(mux);
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(io);
+
+	g_at_chat_set_debug(chat, mux_debug, "CHAT4");
+	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
+	g_at_chat_send(chat, "AT+CGMI", NULL, NULL, NULL, NULL);
+	g_at_chat_send(chat, "AT+CGMR", NULL, chat_callback, chat, NULL);
+
+	g_timeout_add_seconds(7, cleanup_callback, NULL);
 }
 
 static void mux_init(gboolean ok, GAtResult *result, gpointer data)
