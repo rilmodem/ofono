@@ -280,14 +280,14 @@ const char *telephony_error_to_str(const struct ofono_error *error)
 		maxentries = sizeof(ceer_errors) / sizeof(struct error_entry);
 		break;
 	default:
-		return 0;
+		return "Unknown error type";
 	}
 
 	for (i = 0; i < maxentries; i++)
 		if (e[i].error == error->error)
 			return e[i].str;
 
-	return 0;
+	return "Unknown error";
 }
 
 int mmi_service_code_to_bearer_class(int code)
