@@ -548,7 +548,7 @@ static void at_cmgl_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_sms *sms = user_data;
 
 	if (!ok)
-		ofono_error("Initial listing SMS storage failed!");
+		ofono_debug("Initial listing SMS storage failed!");
 
 	at_cmgl_done(sms);
 }
