@@ -76,7 +76,8 @@ struct _GAtMux {
 	gpointer debug_data;			/* Data to pass to debug func */
 	GAtMuxChannel *dlcs[MAX_CHANNELS];	/* DLCs opened by the MUX */
 	guint8 newdata[BITMAP_SIZE];		/* Channels that got new data */
-	struct gsm0710_context ctx;
+	const GAtMuxDriver *driver;		/* Driver functions */
+	void *driver_data;			/* Driver data */
 };
 
 struct mux_setup_data {
@@ -164,7 +165,9 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	DBG("received data");
 
 	memset(mux->newdata, 0, BITMAP_SIZE);
-	gsm0710_ready_read(&mux->ctx);
+
+	if (mux->driver->ready_read)
+		mux->driver->ready_read(mux);
 
 	for (i = 1; i <= MAX_CHANNELS; i++) {
 		int offset = i / 8;
@@ -249,25 +252,23 @@ static void wakeup_writer(GAtMux *mux)
 				(GDestroyNotify)write_watcher_destroy_notify);
 }
 
-static int do_read(struct gsm0710_context *ctx, void *data, int len)
+int g_at_mux_raw_read(GAtMux *mux, void *data, int toread)
 {
-	GAtMux *mux = ctx->user_data;
 	GError *error = NULL;
 	GIOStatus status;
 	gsize bytes_read;
 
-	status = g_io_channel_read_chars(mux->channel, data, len,
+	status = g_io_channel_read_chars(mux->channel, data, toread,
 						&bytes_read, &error);
 
 	return bytes_read;
 }
 
-static int do_write(struct gsm0710_context *ctx, const void *data, int len)
+int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite)
 {
-	GAtMux *mux = ctx->user_data;
 	GError *error = NULL;
 	GIOStatus status;
-	gssize count = len;
+	gssize count = towrite;
 	gsize bytes_written;
 
 	status = g_io_channel_write_chars(mux->channel, (gchar *) data,
@@ -276,10 +277,9 @@ static int do_write(struct gsm0710_context *ctx, const void *data, int len)
 	return bytes_written;
 }
 
-static void deliver_data(struct gsm0710_context *ctx, int dlc,
-						const void *data, int len)
+void g_at_mux_feed_dlc_data(GAtMux *mux, guint8 dlc,
+				const void *data, int tofeed)
 {
-	GAtMux *mux = ctx->user_data;
 	GAtMuxChannel *channel = mux->dlcs[dlc-1];
 	int written;
 	int offset;
@@ -290,7 +290,7 @@ static void deliver_data(struct gsm0710_context *ctx, int dlc,
 	if (channel == NULL)
 		return;
 
-	written = ring_buffer_write(channel->buffer, data, len);
+	written = ring_buffer_write(channel->buffer, data, tofeed);
 
 	if (written < 0)
 		return;
@@ -302,20 +302,20 @@ static void deliver_data(struct gsm0710_context *ctx, int dlc,
 	channel->condition |= G_IO_IN;
 }
 
-static void deliver_status(struct gsm0710_context *ctx,
-						int channel, int status)
+void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status)
 {
-	GAtMux *mux = ctx->user_data;
-
 	DBG("Got status %d, for channel %d", status, channel);
 
-	if (status & GSM0710_RTS) {
+	if (dlc < 1 || dlc > MAX_CHANNELS)
+		return;
+
+	if (status & G_AT_MUX_DLC_STATUS_RTR) {
 		GSList *l;
 
-		mux->dlcs[channel-1]->throttled = FALSE;
+		mux->dlcs[dlc-1]->throttled = FALSE;
 		DBG("setting throttled to FALSE");
 
-		for (l = mux->dlcs[channel-1]->sources; l; l = l->next) {
+		for (l = mux->dlcs[dlc-1]->sources; l; l = l->next) {
 			GAtMuxWatch *source = l->data;
 
 			if (source->condition & G_IO_OUT) {
@@ -324,11 +324,7 @@ static void deliver_status(struct gsm0710_context *ctx,
 			}
 		}
 	} else
-		mux->dlcs[channel-1]->throttled = TRUE;
-}
-
-static void debug_message(struct gsm0710_context *ctx, const char *msg)
-{
+		mux->dlcs[dlc-1]->throttled = TRUE;
 }
 
 static gboolean watch_check(GSource *source)
@@ -390,7 +386,8 @@ static GIOStatus channel_write(GIOChannel *channel, const gchar *buf,
 	GAtMuxChannel *mux_channel = (GAtMuxChannel *) channel;
 	GAtMux *mux = mux_channel->mux;
 
-	gsm0710_write_data(&mux->ctx, mux_channel->dlc, buf, count);
+	if (mux->driver->write)
+		mux->driver->write(mux, mux_channel->dlc, buf, count);
 	*bytes_written = count;
 
 	return G_IO_STATUS_NORMAL;
@@ -411,7 +408,9 @@ static GIOStatus channel_close(GIOChannel *channel, GError **err)
 
 	dispatch_sources(mux_channel, G_IO_NVAL);
 
-	gsm0710_close_channel(&mux->ctx, mux_channel->dlc);
+	if (mux->driver->close_dlc)
+		mux->driver->close_dlc(mux, mux_channel->dlc);
+
 	mux->dlcs[mux_channel->dlc - 1] = NULL;
 
 	return G_IO_STATUS_NORMAL;
@@ -479,49 +478,26 @@ static GIOFuncs channel_funcs = {
 	channel_get_flags,
 };
 
-static GAtMux *mux_new_gsm0710_common(GIOChannel *channel,
-					int mode, int frame_size)
+GAtMux *g_at_mux_new(GIOChannel *channel, const GAtMuxDriver *driver)
 {
 	GAtMux *mux;
 
 	if (!channel)
 		return NULL;
 
-	mux = g_try_new0(GAtMux, 1);
+	mux = g_new0(GAtMux, 1);
 	if (!mux)
 		return NULL;
 
 	mux->ref_count = 1;
+	mux->driver = driver;
 
 	mux->channel = channel;
 	g_io_channel_ref(channel);
 
 	g_io_channel_set_close_on_unref(channel, TRUE);
 
-	gsm0710_initialize(&mux->ctx);
-	mux->ctx.user_data = mux;
-
-	mux->ctx.read = do_read;
-	mux->ctx.write = do_write;
-	mux->ctx.deliver_data = deliver_data;
-	mux->ctx.deliver_status = deliver_status;
-	mux->ctx.debug_message = debug_message;
-
-	mux->ctx.mode = mode;
-	mux->ctx.frame_size = frame_size;
-
 	return mux;
-}
-
-GAtMux *g_at_mux_new_gsm0710_basic(GIOChannel *channel, int frame_size)
-{
-	return mux_new_gsm0710_common(channel, GSM0710_MODE_BASIC, frame_size);
-}
-
-GAtMux *g_at_mux_new_gsm0710_advanced(GIOChannel *channel, int frame_size)
-{
-	return mux_new_gsm0710_common(channel, GSM0710_MODE_ADVANCED,
-					frame_size);
 }
 
 GAtMux *g_at_mux_ref(GAtMux *mux)
@@ -544,6 +520,9 @@ void g_at_mux_unref(GAtMux *mux)
 
 		g_io_channel_unref(mux->channel);
 
+		if (mux->driver->remove)
+			mux->driver->remove(mux);
+
 		g_free(mux);
 	}
 }
@@ -553,11 +532,15 @@ gboolean g_at_mux_start(GAtMux *mux)
 	if (mux->channel == NULL)
 		return FALSE;
 
+	if (mux->driver->startup == NULL)
+		return FALSE;
+
+	if (mux->driver->startup(mux) == FALSE)
+		return FALSE;
+
 	mux->read_watch = g_io_add_watch_full(mux->channel, G_PRIORITY_DEFAULT,
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 						received_data, mux, NULL);
-
-	gsm0710_startup(&mux->ctx);
 
 	return TRUE;
 }
@@ -565,6 +548,9 @@ gboolean g_at_mux_start(GAtMux *mux)
 gboolean g_at_mux_shutdown(GAtMux *mux)
 {
 	int i;
+
+	if (mux->channel == NULL)
+		return FALSE;
 
 	if (mux->read_watch > 0)
 		g_source_remove(mux->read_watch);
@@ -576,10 +562,8 @@ gboolean g_at_mux_shutdown(GAtMux *mux)
 		channel_close((GIOChannel *) mux->dlcs[i], NULL);
 	}
 
-	if (mux->channel == NULL)
-		return FALSE;
-
-	gsm0710_shutdown(&mux->ctx);
+	if (mux->driver->shutdown)
+		mux->driver->shutdown(mux);
 
 	return TRUE;
 }
@@ -625,7 +609,8 @@ GIOChannel *g_at_mux_create_channel(GAtMux *mux)
 	if (mux_channel == NULL)
 		return NULL;
 
-	gsm0710_open_channel(&mux->ctx, i+1);
+	if (mux->driver->open_dlc)
+		mux->driver->open_dlc(mux, i+1);
 
 	channel = (GIOChannel *) mux_channel;
 

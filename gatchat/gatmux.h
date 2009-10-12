@@ -31,9 +31,29 @@ extern "C" {
 struct _GAtMux;
 
 typedef struct _GAtMux GAtMux;
-
+typedef struct _GAtMuxDriver GAtMuxDriver;
+typedef enum _GAtMuxChannelStatus GAtMuxChannelStatus;
 typedef void (*GAtMuxSetupFunc)(GAtMux *mux, gpointer user_data);
 
+enum _GAtMuxDlcStatus {
+	G_AT_MUX_DLC_STATUS_RTC = 0x02,
+	G_AT_MUX_DLC_STATUS_RTR = 0x04,
+	G_AT_MUX_DLC_STATUS_IC = 0x08,
+	G_AT_MUX_DLC_STATUS_DV = 0x80,
+};
+
+struct _GAtMuxDriver {
+	void (*remove)(GAtMux *mux);
+	gboolean (*startup)(GAtMux *mux);
+	gboolean (*shutdown)(GAtMux *mux);
+	gboolean (*open_dlc)(GAtMux *mux, guint8 dlc);
+	gboolean (*close_dlc)(GAtMux *mux, guint8 dlc);
+	void (*ready_read)(GAtMux *mux);
+	void (*set_status)(GAtMux *mux, guint8 dlc, int status);
+	void (*write)(GAtMux *mux, guint8 dlc, const void *data, int towrite);
+};
+
+GAtMux *g_at_mux_new(GIOChannel *channel, const GAtMuxDriver *driver);
 GAtMux *g_at_mux_new_gsm0710_basic(GIOChannel *channel, int framesize);
 GAtMux *g_at_mux_new_gsm0710_advanced(GIOChannel *channel, int framesize);
 
@@ -49,6 +69,19 @@ gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
 gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user);
 
 GIOChannel *g_at_mux_create_channel(GAtMux *mux);
+
+/*!
+ * Multiplexer driver integration functions
+ */
+void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status);
+void g_at_mux_feed_dlc_data(GAtMux *mux, guint8 dlc,
+				const void *data, int tofeed);
+
+int g_at_mux_raw_read(GAtMux *mux, void *data, int toread);
+int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite);
+
+void g_at_mux_set_data(GAtMux *mux, void *data);
+void g_at_mux_get_data(GAtMux *mux);
 
 /*!
  * Uses the passed in GAtChat to setup a GSM 07.10 style multiplexer on the
