@@ -62,3 +62,6 @@ extern void at_cbs_exit();
 
 extern void at_call_volume_init();
 extern void at_call_volume_exit();
+
+extern void at_data_connection_init();
+extern void at_data_connection_exit();

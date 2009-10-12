@@ -106,6 +106,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_MESSAGE_WAITING = 13,
 	OFONO_ATOM_TYPE_CBS = 14,
 	OFONO_ATOM_TYPES_CALL_VOLUME = 15,
+	OFONO_ATOM_TYPE_DATA_CONNECTION = 16,
 };
 
 enum ofono_atom_watch_condition {
@@ -160,6 +161,7 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/sms.h>
 #include <ofono/sim.h>
 #include <ofono/voicecall.h>
+#include <ofono/data-connection.h>
 
 #include <ofono/ssn.h>
 

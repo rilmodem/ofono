@@ -54,6 +54,7 @@
 #include <ofono/ssn.h>
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
+#include <ofono/data-connection.h>
 
 #include <drivers/atmodem/vendor.h>
 
@@ -311,6 +312,8 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 		ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 		ofono_cbs_create(modem, 0, "atmodem", data->chat);
 	}
+
+	ofono_data_connection_create(modem, 0, "atmodem", data->chat);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)

@@ -42,7 +42,7 @@ Signals		PropertyChanged(string property, variant value)
 
 Properties	array{object} PrimaryContexts [readonly]
 
-			List of all primary contexts objects.
+			List of all primary context objects.
 
 		boolean Attached [readonly]
 
