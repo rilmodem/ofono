@@ -327,6 +327,22 @@ void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status)
 		mux->dlcs[dlc-1]->throttled = TRUE;
 }
 
+void g_at_mux_set_data(GAtMux *mux, void *data)
+{
+	if (mux == NULL)
+		return;
+
+	mux->driver_data = data;
+}
+
+void *g_at_mux_get_data(GAtMux *mux)
+{
+	if (mux == NULL)
+		return NULL;
+
+	return mux->driver_data;
+}
+
 static gboolean watch_check(GSource *source)
 {
 	return FALSE;
