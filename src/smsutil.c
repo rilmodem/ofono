@@ -2133,6 +2133,9 @@ char *sms_decode_text(GSList *sms_list)
 
 		udl_in_bytes = sms_udl_in_bytes(udl, dcs);
 
+		if (udl_in_bytes == taken)
+			continue;
+
 		if (charset == SMS_CHARSET_7BIT) {
 			unsigned char buf[160];
 			long written;
