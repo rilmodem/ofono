@@ -597,3 +597,47 @@ gboolean is_valid_pin(const char *pin)
 
 	return TRUE;
 }
+
+const char *registration_status_to_string(int status)
+{
+	switch (status) {
+	case NETWORK_REGISTRATION_STATUS_NOT_REGISTERED:
+		return "unregistered";
+	case NETWORK_REGISTRATION_STATUS_REGISTERED:
+		return "registered";
+	case NETWORK_REGISTRATION_STATUS_SEARCHING:
+		return "searching";
+	case NETWORK_REGISTRATION_STATUS_DENIED:
+		return "denied";
+	case NETWORK_REGISTRATION_STATUS_UNKNOWN:
+		return "unknown";
+	case NETWORK_REGISTRATION_STATUS_ROAMING:
+		return "roaming";
+	}
+
+	return "";
+}
+
+const char *registration_tech_to_string(int tech)
+{
+	switch (tech) {
+	case ACCESS_TECHNOLOGY_GSM:
+		return "GSM";
+	case ACCESS_TECHNOLOGY_GSM_COMPACT:
+		return "GSMCompact";
+	case ACCESS_TECHNOLOGY_UTRAN:
+		return "UTRAN";
+	case ACCESS_TECHNOLOGY_GSM_EGPRS:
+		return "GSM+EGPRS";
+	case ACCESS_TECHNOLOGY_UTRAN_HSDPA:
+		return "UTRAN+HSDPA";
+	case ACCESS_TECHNOLOGY_UTRAN_HSUPA:
+		return "UTRAN+HSUPA";
+	case ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA:
+		return "UTRAN+HSDPA+HSUPA";
+	case ACCESS_TECHNOLOGY_EUTRAN:
+		return "EUTRAN";
+	default:
+		return "";
+	}
+}

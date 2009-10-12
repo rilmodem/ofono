@@ -135,3 +135,6 @@ const char *ss_control_type_to_string(enum ss_control_type type);
 const char *bearer_class_to_string(enum bearer_class cls);
 
 gboolean is_valid_pin(const char *pin);
+
+const char *registration_status_to_string(int status);
+const char *registration_tech_to_string(int tech);
