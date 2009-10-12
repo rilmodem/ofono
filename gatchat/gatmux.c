@@ -331,125 +331,6 @@ static void debug_message(struct gsm0710_context *ctx, const char *msg)
 {
 }
 
-static GAtMux *mux_new_gsm0710_common(GIOChannel *channel,
-					int mode, int frame_size)
-{
-	GAtMux *mux;
-
-	if (!channel)
-		return NULL;
-
-	mux = g_try_new0(GAtMux, 1);
-	if (!mux)
-		return NULL;
-
-	mux->ref_count = 1;
-
-	mux->channel = channel;
-	g_io_channel_ref(channel);
-
-	g_io_channel_set_close_on_unref(channel, TRUE);
-
-	gsm0710_initialize(&mux->ctx);
-	mux->ctx.user_data = mux;
-
-	mux->ctx.read = do_read;
-	mux->ctx.write = do_write;
-	mux->ctx.deliver_data = deliver_data;
-	mux->ctx.deliver_status = deliver_status;
-	mux->ctx.debug_message = debug_message;
-
-	mux->ctx.mode = mode;
-	mux->ctx.frame_size = frame_size;
-
-	return mux;
-}
-
-GAtMux *g_at_mux_new_gsm0710_basic(GIOChannel *channel, int frame_size)
-{
-	return mux_new_gsm0710_common(channel, GSM0710_MODE_BASIC, frame_size);
-}
-
-GAtMux *g_at_mux_new_gsm0710_advanced(GIOChannel *channel, int frame_size)
-{
-	return mux_new_gsm0710_common(channel, GSM0710_MODE_ADVANCED,
-					frame_size);
-}
-
-GAtMux *g_at_mux_ref(GAtMux *mux)
-{
-	if (mux == NULL)
-		return NULL;
-
-	g_atomic_int_inc(&mux->ref_count);
-
-	return mux;
-}
-
-void g_at_mux_unref(GAtMux *mux)
-{
-	if (mux == NULL)
-		return;
-
-	if (g_atomic_int_dec_and_test(&mux->ref_count)) {
-		g_at_mux_shutdown(mux);
-
-		g_io_channel_unref(mux->channel);
-
-		g_free(mux);
-	}
-}
-
-gboolean g_at_mux_start(GAtMux *mux)
-{
-	if (mux->channel == NULL)
-		return FALSE;
-
-	mux->read_watch = g_io_add_watch_full(mux->channel, G_PRIORITY_DEFAULT,
-				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-						received_data, mux, NULL);
-
-	gsm0710_startup(&mux->ctx);
-
-	return TRUE;
-}
-
-gboolean g_at_mux_shutdown(GAtMux *mux)
-{
-	if (mux->read_watch > 0)
-		g_source_remove(mux->read_watch);
-
-	if (mux->channel == NULL)
-		return FALSE;
-
-	gsm0710_shutdown(&mux->ctx);
-
-	return TRUE;
-}
-
-gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
-			GAtDisconnectFunc disconnect, gpointer user_data)
-{
-	if (mux == NULL)
-		return FALSE;
-
-	mux->user_disconnect = disconnect;
-	mux->user_disconnect_data = user_data;
-
-	return TRUE;
-}
-
-gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user)
-{
-	if (mux == NULL)
-		return FALSE;
-
-	mux->debugf = func;
-	mux->debug_data = user;
-
-	return TRUE;
-}
-
 static gboolean watch_check(GSource *source)
 {
 	return FALSE;
@@ -597,6 +478,134 @@ static GIOFuncs channel_funcs = {
 	channel_set_flags,
 	channel_get_flags,
 };
+
+static GAtMux *mux_new_gsm0710_common(GIOChannel *channel,
+					int mode, int frame_size)
+{
+	GAtMux *mux;
+
+	if (!channel)
+		return NULL;
+
+	mux = g_try_new0(GAtMux, 1);
+	if (!mux)
+		return NULL;
+
+	mux->ref_count = 1;
+
+	mux->channel = channel;
+	g_io_channel_ref(channel);
+
+	g_io_channel_set_close_on_unref(channel, TRUE);
+
+	gsm0710_initialize(&mux->ctx);
+	mux->ctx.user_data = mux;
+
+	mux->ctx.read = do_read;
+	mux->ctx.write = do_write;
+	mux->ctx.deliver_data = deliver_data;
+	mux->ctx.deliver_status = deliver_status;
+	mux->ctx.debug_message = debug_message;
+
+	mux->ctx.mode = mode;
+	mux->ctx.frame_size = frame_size;
+
+	return mux;
+}
+
+GAtMux *g_at_mux_new_gsm0710_basic(GIOChannel *channel, int frame_size)
+{
+	return mux_new_gsm0710_common(channel, GSM0710_MODE_BASIC, frame_size);
+}
+
+GAtMux *g_at_mux_new_gsm0710_advanced(GIOChannel *channel, int frame_size)
+{
+	return mux_new_gsm0710_common(channel, GSM0710_MODE_ADVANCED,
+					frame_size);
+}
+
+GAtMux *g_at_mux_ref(GAtMux *mux)
+{
+	if (mux == NULL)
+		return NULL;
+
+	g_atomic_int_inc(&mux->ref_count);
+
+	return mux;
+}
+
+void g_at_mux_unref(GAtMux *mux)
+{
+	if (mux == NULL)
+		return;
+
+	if (g_atomic_int_dec_and_test(&mux->ref_count)) {
+		g_at_mux_shutdown(mux);
+
+		g_io_channel_unref(mux->channel);
+
+		g_free(mux);
+	}
+}
+
+gboolean g_at_mux_start(GAtMux *mux)
+{
+	if (mux->channel == NULL)
+		return FALSE;
+
+	mux->read_watch = g_io_add_watch_full(mux->channel, G_PRIORITY_DEFAULT,
+				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+						received_data, mux, NULL);
+
+	gsm0710_startup(&mux->ctx);
+
+	return TRUE;
+}
+
+gboolean g_at_mux_shutdown(GAtMux *mux)
+{
+	int i;
+
+	if (mux->read_watch > 0)
+		g_source_remove(mux->read_watch);
+
+	for (i = 0; i < MAX_CHANNELS; i++) {
+		if (mux->dlcs[i] == NULL)
+			continue;
+
+		channel_close((GIOChannel *) mux->dlcs[i], NULL);
+	}
+
+	if (mux->channel == NULL)
+		return FALSE;
+
+	gsm0710_shutdown(&mux->ctx);
+
+	return TRUE;
+}
+
+gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
+			GAtDisconnectFunc disconnect, gpointer user_data)
+{
+	if (mux == NULL)
+		return FALSE;
+
+	mux->user_disconnect = disconnect;
+	mux->user_disconnect_data = user_data;
+
+	return TRUE;
+}
+
+gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user)
+{
+	if (mux == NULL)
+		return FALSE;
+
+	mux->debugf = func;
+	mux->debug_data = user;
+
+	return TRUE;
+}
 
 GIOChannel *g_at_mux_create_channel(GAtMux *mux)
 {
