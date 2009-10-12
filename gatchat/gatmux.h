@@ -81,7 +81,7 @@ int g_at_mux_raw_read(GAtMux *mux, void *data, int toread);
 int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite);
 
 void g_at_mux_set_data(GAtMux *mux, void *data);
-void g_at_mux_get_data(GAtMux *mux);
+void *g_at_mux_get_data(GAtMux *mux);
 
 /*!
  * Uses the passed in GAtChat to setup a GSM 07.10 style multiplexer on the
