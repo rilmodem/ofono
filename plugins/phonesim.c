@@ -122,6 +122,48 @@ static void phonesim_disconnected(gpointer user_data)
 	}
 }
 
+static void mux_setup(GAtMux *mux, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+	GIOChannel *io;
+	GAtSyntax *syntax;
+
+	DBG("%p", mux);
+
+	if (!mux) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	data->chat = NULL;
+	data->mux = mux;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_mux_set_debug(data->mux, phonesim_debug, NULL);
+
+	g_at_mux_start(mux);
+	io = g_at_mux_create_channel(mux);
+
+	if (data->calypso)
+		syntax = g_at_syntax_new_gsm_permissive();
+	else
+		syntax = g_at_syntax_new_gsmv1();
+
+	data->chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(io);
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(data->chat, phonesim_debug, NULL);
+
+	if (data->calypso)
+		g_at_chat_set_wakeup_command(data->chat, "\r", 1000, 5000);
+
+	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
+					cfun_set_on_cb, modem, NULL);
+}
+
 static int phonesim_enable(struct ofono_modem *modem)
 {
 	struct phonesim_data *data = ofono_modem_get_data(modem);
@@ -170,36 +212,18 @@ static int phonesim_enable(struct ofono_modem *modem)
 		return -ENOMEM;
 	}
 
-	if (data->use_mux) {
-		data->mux = g_at_mux_new(io);
-		if (!data->mux)
-			return -ENOMEM;
-
-		if (getenv("OFONO_AT_DEBUG"))
-			g_at_mux_set_debug(data->mux, phonesim_debug, NULL);
-	}
-
 	if (data->calypso)
 		syntax = g_at_syntax_new_gsm_permissive();
 	else
 		syntax = g_at_syntax_new_gsmv1();
 
-	if (data->mux)
-		data->chat = g_at_mux_create_chat(data->mux, syntax);
-	else
-		data->chat = g_at_chat_new(io, syntax);
+	data->chat = g_at_chat_new(io, syntax);
 
 	g_at_syntax_unref(syntax);
+	g_io_channel_unref(io);
 
-	if (!data->chat) {
-		if (data->mux) {
-			g_at_mux_unref(data->mux);
-			data->mux = NULL;
-		}
-
-		g_io_channel_unref(io);
+	if (!data->chat)
 		return -ENOMEM;
-	}
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, phonesim_debug, NULL);
@@ -212,13 +236,15 @@ static int phonesim_enable(struct ofono_modem *modem)
 
 		g_at_chat_send(data->chat, "ATE0", NULL, NULL, NULL, NULL);
 
-		g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
-						cfun_set_on_cb, modem, NULL);
 	}
 
-	g_io_channel_unref(io);
+	if (data->use_mux)
+		g_at_mux_setup_gsm0710(data->chat, mux_setup, modem, NULL);
+	else
+		g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
+					cfun_set_on_cb, modem, NULL);
 
-	return 0;
+	return -EINPROGRESS;
 }
 
 static int phonesim_disable(struct ofono_modem *modem)
