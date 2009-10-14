@@ -313,7 +313,7 @@ void g_at_mux_feed_dlc_data(GAtMux *mux, guint8 dlc,
 	int offset;
 	int bit;
 
-	DBG("deliver_data: dlc: %d, channel: %p", dlc, channel);
+	DBG("deliver_data: dlc: %hu", dlc);
 
 	if (dlc < 1 || dlc > MAX_CHANNELS)
 		return;
@@ -339,7 +339,7 @@ void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status)
 {
 	GAtMuxChannel *channel;
 
-	DBG("Got status %d, for channel %d", status, channel);
+	DBG("Got status %d, for channel %hu", status, dlc);
 
 	if (dlc < 1 || dlc > MAX_CHANNELS)
 		return;
