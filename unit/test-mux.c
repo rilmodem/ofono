@@ -76,6 +76,8 @@ static gboolean chat_cleanup(gpointer data)
 
 	g_at_chat_shutdown(chat);
 	g_at_chat_unref(chat);
+
+	return FALSE;
 }
 
 static void chat_callback(gboolean ok, GAtResult *result, gpointer user_data)
