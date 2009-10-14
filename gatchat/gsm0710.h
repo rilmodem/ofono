@@ -20,63 +20,34 @@
  *
  */
 
-#ifndef GSM0710_P_H
-#define GSM0710_P_H
+#ifndef __GSM0710_H
+#define __GSM0710_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define GSM0710_BUFFER_SIZE		4096
-#define GSM0710_DEFAULT_FRAME_SIZE	31
-#define GSM0710_MAX_CHANNELS		63
+/* Frame types and subtypes */
+#define GSM0710_OPEN_CHANNEL		0x3F
+#define GSM0710_CLOSE_CHANNEL		0x53
+#define GSM0710_DATA			0xEF
+#define GSM0710_DATA_ALT		0x03
+#define GSM0710_STATUS_SET		0xE3
+#define GSM0710_STATUS_ACK		0xE1
 
-/* Multiplexer modes */
-#define GSM0710_MODE_BASIC		0
-#define GSM0710_MODE_ADVANCED		1
+int gsm0710_basic_extract_frame(guint8 *data, int len,
+					guint8 *out_dlc, guint8 *out_type,
+					guint8 **frame, int *out_len);
 
-/* Status flags */
-#define GSM0710_FC			0x02
-#define GSM0710_DTR			0x04
-#define GSM0710_DSR			0x04
-#define GSM0710_RTS			0x08
-#define GSM0710_CTS			0x08
-#define GSM0710_DCD			0x80
+int gsm0710_basic_fill_frame(guint8 *frame, guint8 dlc, guint8 type,
+				const guint8 *data, int len);
 
-struct gsm0710_context
-{
-	/* GSM 07.10 implementation details */
-	int mode;
-	int frame_size;
-	int port_speed;
-	unsigned char buffer[GSM0710_BUFFER_SIZE];
-	int buffer_used;
-	unsigned long used_channels[(GSM0710_MAX_CHANNELS + 31) / 32];
+int gsm0710_advanced_extract_frame(guint8 *data, int len,
+					guint8 *out_dlc, guint8 *out_type,
+					guint8 **frame, int *out_len);
 
-	/* Hooks to other levels */
-	void *user_data;
-	int (*read)(struct gsm0710_context *ctx, void *data, int len);
-	int (*write)(struct gsm0710_context *ctx, const void *data, int len);
-	void (*deliver_data)(struct gsm0710_context *ctx, int channel,
-						const void *data, int len);
-	void (*deliver_status)(struct gsm0710_context *ctx,
-						int channel, int status);
-	void (*debug_message)(struct gsm0710_context *ctx, const char *msg);
-	int (*packet_filter)(struct gsm0710_context *ctx, int channel,
-				int type, const unsigned char *data, int len);
-};
-
-void gsm0710_initialize(struct gsm0710_context *ctx);
-int gsm0710_startup(struct gsm0710_context *ctx);
-void gsm0710_shutdown(struct gsm0710_context *ctx);
-int gsm0710_open_channel(struct gsm0710_context *ctx, int channel);
-void gsm0710_close_channel(struct gsm0710_context *ctx, int channel);
-int gsm0710_is_channel_open(struct gsm0710_context *ctx, int channel);
-void gsm0710_ready_read(struct gsm0710_context *ctx);
-void gsm0710_write_data(struct gsm0710_context *ctx, int channel,
-						const void *data, int len);
-void gsm0710_set_status(struct gsm0710_context *ctx, int channel, int status);
-
+int gsm0710_advanced_fill_frame(guint8 *frame, guint8 dlc, guint8 type,
+					const guint8 *data, int len);
 #ifdef __cplusplus
 };
 #endif

@@ -3,6 +3,7 @@
  *  AT chat library with GLib integration
  *
  *  Copyright (C) 2008-2009  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2009  Trolltech ASA.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -48,9 +49,9 @@ struct _GAtMuxDriver {
 	gboolean (*shutdown)(GAtMux *mux);
 	gboolean (*open_dlc)(GAtMux *mux, guint8 dlc);
 	gboolean (*close_dlc)(GAtMux *mux, guint8 dlc);
-	void (*ready_read)(GAtMux *mux);
-	void (*set_status)(GAtMux *mux, guint8 dlc, int status);
+	void (*set_status)(GAtMux *mux, guint8 dlc, guint8 status);
 	void (*write)(GAtMux *mux, guint8 dlc, const void *data, int towrite);
+	int (*feed_data)(GAtMux *mux, void *data, int len);
 };
 
 GAtMux *g_at_mux_new(GIOChannel *channel, const GAtMuxDriver *driver);
@@ -77,7 +78,6 @@ void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status);
 void g_at_mux_feed_dlc_data(GAtMux *mux, guint8 dlc,
 				const void *data, int tofeed);
 
-int g_at_mux_raw_read(GAtMux *mux, void *data, int toread);
 int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite);
 
 void g_at_mux_set_data(GAtMux *mux, void *data);
