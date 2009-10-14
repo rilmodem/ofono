@@ -306,12 +306,18 @@ int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite)
 void g_at_mux_feed_dlc_data(GAtMux *mux, guint8 dlc,
 				const void *data, int tofeed)
 {
-	GAtMuxChannel *channel = mux->dlcs[dlc-1];
+	GAtMuxChannel *channel;
+
 	int written;
 	int offset;
 	int bit;
 
 	DBG("deliver_data: dlc: %d, channel: %p", dlc, channel);
+
+	if (dlc < 1 || dlc > MAX_CHANNELS)
+		return;
+
+	channel = mux->dlcs[dlc-1];
 
 	if (channel == NULL)
 		return;
@@ -330,9 +336,15 @@ void g_at_mux_feed_dlc_data(GAtMux *mux, guint8 dlc,
 
 void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status)
 {
+	GAtMuxChannel *channel;
+
 	DBG("Got status %d, for channel %d", status, channel);
 
 	if (dlc < 1 || dlc > MAX_CHANNELS)
+		return;
+
+	channel = mux->dlcs[dlc-1];
+	if (channel == NULL)
 		return;
 
 	if (status & G_AT_MUX_DLC_STATUS_RTR) {
