@@ -695,6 +695,16 @@ GIOChannel *g_at_mux_create_channel(GAtMux *mux)
 	return channel;
 }
 
+static void msd_free(gpointer user_data)
+{
+	struct mux_setup_data *msd = user_data;
+
+	if (msd->chat)
+		g_at_chat_unref(msd->chat);
+
+	g_free(msd);
+}
+
 static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct mux_setup_data *msd = user_data;
@@ -709,7 +719,6 @@ static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	channel = g_io_channel_ref(channel);
 
 	g_at_chat_shutdown(msd->chat);
-	g_at_chat_unref(msd->chat);
 
 	flags = g_io_channel_get_flags(channel) | G_IO_FLAG_NONBLOCK;
 	g_io_channel_set_flags(channel, flags, NULL);
@@ -815,14 +824,15 @@ static void mux_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto error;
 
 	nmsd = g_memdup(msd, sizeof(struct mux_setup_data));
+	g_at_chat_ref(nmsd->chat);
 
 	sprintf(buf, "AT+CMUX=%u,0,%u,%u", msd->mode, speed, msd->frame_size);
 
 	if (g_at_chat_send(msd->chat, buf, none_prefix,
-				mux_setup_cb, nmsd, g_free) > 0)
+				mux_setup_cb, nmsd, msd_free) > 0)
 		return;
 
-	g_free(nmsd);
+	msd_free(nmsd);
 
 error:
 	msd->func(NULL, msd->user);
@@ -851,11 +861,11 @@ gboolean g_at_mux_setup_gsm0710(GAtChat *chat,
 	msd->destroy = destroy;
 
 	if (g_at_chat_send(chat, "AT+CMUX=?", cmux_prefix,
-				mux_query_cb, msd, g_free) > 0)
+				mux_query_cb, msd, msd_free) > 0)
 		return TRUE;
 
 	if (msd)
-		g_free(msd);
+		msd_free(msd);
 
 	return FALSE;
 }
