@@ -33,7 +33,8 @@
 
 #include "iter.h"
 
-static inline void bcd_to_mccmnc(const uint8_t *restrict bcd, char *mcc, char *mnc)
+static inline void bcd_to_mccmnc(const uint8_t *restrict bcd,
+					char *mcc, char *mnc)
 {
 	mcc[0] = '0' + (bcd[0] & 0x0F);
 	mcc[1] = '0' + ((bcd[0] & 0xF0) >> 4);
@@ -47,29 +48,25 @@ static inline void bcd_to_mccmnc(const uint8_t *restrict bcd, char *mcc, char *m
 	mnc[3] = '\0';
 }
 
-void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter,
-			     const void *restrict data,
-			     size_t len,
-			     size_t used,
-			     bool longhdr,
-			     uint16_t sub_blocks)
+void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const void *restrict data,
+				size_t len, size_t used, bool longhdr,
+				uint16_t sub_blocks)
 {
 	if (!data)
 		len = used = 0;
+
 	iter->start = (uint8_t *)data + used;
 	iter->end = iter->start + len;
 	iter->longhdr = longhdr;
 	iter->sub_blocks = len > used ? sub_blocks : 0;
 }
 
-void g_isi_sb_iter_init(GIsiSubBlockIter *iter,
-			const void *restrict data,
-			size_t len,
-			size_t used)
+void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const void *restrict data,
+			size_t len, size_t used)
 {
-
 	if (!data)
 		len = used = 0;
+
 	iter->start = (uint8_t *)data + used;
 	iter->end = iter->start + len;
 	iter->longhdr = false;
@@ -104,25 +101,35 @@ size_t g_isi_sb_iter_get_len(const GIsiSubBlockIter *iter)
 {
 	if (iter->longhdr)
 		return (iter->start[2] << 8) | (iter->start[3]);
-
 	return iter->start[1];
 }
 
-bool g_isi_sb_iter_get_byte(const GIsiSubBlockIter *restrict iter, uint8_t *byte, int pos)
+bool g_isi_sb_iter_get_data(const GIsiSubBlockIter *restrict iter,
+				void **data, unsigned pos)
 {
-	if ((size_t)(unsigned)pos > g_isi_sb_iter_get_len(iter) ||
-	    iter->start + (unsigned)pos > iter->end)
+	if ((size_t)pos > g_isi_sb_iter_get_len(iter)
+		|| iter->start + pos > iter->end)
+		return false;
+	*data = (void *)iter->start + pos;
+	return true;
+}
+
+bool g_isi_sb_iter_get_byte(const GIsiSubBlockIter *restrict iter,
+				uint8_t *byte, unsigned pos)
+{
+	if ((size_t)pos > g_isi_sb_iter_get_len(iter)
+		|| iter->start + pos > iter->end)
 		return false;
 	*byte = iter->start[pos];
 	return true;
 }
 
 bool g_isi_sb_iter_get_word(const GIsiSubBlockIter *restrict iter,
-				uint16_t *word, int pos)
+				uint16_t *word, unsigned pos)
 {
 	uint16_t val;
 
-	if (pos + 1 > (int)g_isi_sb_iter_get_len(iter))
+	if (pos + 1 > g_isi_sb_iter_get_len(iter))
 		return false;
 
 	memcpy(&val, iter->start + pos, sizeof(uint16_t));
@@ -131,11 +138,11 @@ bool g_isi_sb_iter_get_word(const GIsiSubBlockIter *restrict iter,
 }
 
 bool g_isi_sb_iter_get_dword(const GIsiSubBlockIter *restrict iter,
-				uint32_t *dword, int pos)
+				uint32_t *dword, unsigned pos)
 {
 	uint32_t val;
 
-	if (pos + 3 > (int)g_isi_sb_iter_get_len(iter))
+	if (pos + 3 > g_isi_sb_iter_get_len(iter))
 		return false;
 
 	memcpy(&val, iter->start + pos, sizeof(uint32_t));
@@ -144,9 +151,9 @@ bool g_isi_sb_iter_get_dword(const GIsiSubBlockIter *restrict iter,
 }
 
 bool g_isi_sb_iter_get_oper_code(const GIsiSubBlockIter *restrict iter,
-					char *mcc, char *mnc, int pos)
+					char *mcc, char *mnc, unsigned pos)
 {
-	if (pos + 2 > (int)g_isi_sb_iter_get_len(iter))
+	if (pos + 2 > g_isi_sb_iter_get_len(iter))
 		return false;
 
 	bcd_to_mccmnc(iter->start + pos, mcc, mnc);
@@ -154,11 +161,11 @@ bool g_isi_sb_iter_get_oper_code(const GIsiSubBlockIter *restrict iter,
 }
 
 bool g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
-					char **utf8, size_t len, int pos)
+					char **utf8, size_t len, unsigned pos)
 {
 	uint8_t *ucs2 = NULL;
 
-	if (pos > (int)g_isi_sb_iter_get_len(iter))
+	if (pos > g_isi_sb_iter_get_len(iter))
 		return false;
 
 	if (!utf8 || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
@@ -174,11 +181,11 @@ bool g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
 }
 
 bool g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
-					char **latin, size_t len, int pos)
+					char **latin, size_t len, unsigned pos)
 {
 	uint8_t *str = NULL;
 
-	if (pos > (int)g_isi_sb_iter_get_len(iter))
+	if (pos > g_isi_sb_iter_get_len(iter))
 		return false;
 
 	if (!latin || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
