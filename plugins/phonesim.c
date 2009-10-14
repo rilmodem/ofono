@@ -136,7 +136,6 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 		return;
 	}
 
-	data->chat = NULL;
 	data->mux = mux;
 
 	if (getenv("OFONO_AT_DEBUG"))
@@ -238,9 +237,11 @@ static int phonesim_enable(struct ofono_modem *modem)
 
 	}
 
-	if (data->use_mux)
+	if (data->use_mux) {
 		g_at_mux_setup_gsm0710(data->chat, mux_setup, modem, NULL);
-	else
+		g_at_chat_unref(data->chat);
+		data->chat = NULL;
+	} else
 		g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
 					cfun_set_on_cb, modem, NULL);
 
