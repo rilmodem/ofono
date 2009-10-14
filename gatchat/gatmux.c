@@ -89,6 +89,7 @@ struct _GAtMux {
 	void *driver_data;			/* Driver data */
 	char buf[MUX_BUFFER_SIZE];		/* Buffer on the main mux */
 	int buf_used;				/* Bytes of buf being used */
+	gboolean shutdown;
 };
 
 struct mux_setup_data {
@@ -545,6 +546,7 @@ GAtMux *g_at_mux_new(GIOChannel *channel, const GAtMuxDriver *driver)
 
 	mux->ref_count = 1;
 	mux->driver = driver;
+	mux->shutdown = TRUE;
 
 	mux->channel = channel;
 	g_io_channel_ref(channel);
@@ -596,12 +598,17 @@ gboolean g_at_mux_start(GAtMux *mux)
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 						received_data, mux, NULL);
 
+	mux->shutdown = FALSE;
+
 	return TRUE;
 }
 
 gboolean g_at_mux_shutdown(GAtMux *mux)
 {
 	int i;
+
+	if (mux->shutdown == TRUE)
+		return FALSE;
 
 	if (mux->channel == NULL)
 		return FALSE;
@@ -618,6 +625,8 @@ gboolean g_at_mux_shutdown(GAtMux *mux)
 
 	if (mux->driver->shutdown)
 		mux->driver->shutdown(mux);
+
+	mux->shutdown = TRUE;
 
 	return TRUE;
 }
