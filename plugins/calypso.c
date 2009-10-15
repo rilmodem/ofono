@@ -34,6 +34,7 @@
 #include <glib.h>
 #include <gatchat.h>
 #include <gattty.h>
+#include <gatmux.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -67,8 +68,17 @@ enum powercycle_state {
 	POWERCYCLE_STATE_FINISHED,
 };
 
+#define NUM_DLC 4
+
+#define VOICE_DLC 0
+#define NETREG_DLC 1
+#define SMS_DLC 2
+#define AUX_DLC 3
+#define SETUP_DLC 3
+
 struct calypso_data {
-	GAtChat *chat;
+	GAtMux *mux;
+	GAtChat *dlcs[NUM_DLC];
 	enum powercycle_state state;
 	gboolean phonebook_added;
 	gboolean sms_added;
@@ -133,47 +143,108 @@ static void cstat_notify(GAtResult *result, gpointer user_data)
 
 	if (!g_strcmp0(stat, "PHB") && enabled == 1 && !data->phonebook_added) {
 		data->phonebook_added = TRUE;
-		ofono_phonebook_create(modem, 0, "atmodem", data->chat);
+		ofono_phonebook_create(modem, 0, "atmodem",
+					data->dlcs[AUX_DLC]);
 	}
 
 	if (!g_strcmp0(stat, "SMS") && enabled == 1 && !data->sms_added) {
 		data->sms_added = TRUE;
-		ofono_sms_create(modem, 0, "atmodem", data->chat);
+		ofono_sms_create(modem, 0, "atmodem", data->dlcs[SMS_DLC]);
 	}
 }
 
 static void setup_modem(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
+	int i;
 
 	/* Generate unsolicited notifications as soon as they're generated */
-	g_at_chat_send(data->chat, "AT%CUNS=0", NULL, NULL, NULL, NULL);
+	for (i = 0; i < NUM_DLC; i++)
+		g_at_chat_send(data->dlcs[i], "AT%CUNS=0",
+				NULL, NULL, NULL, NULL);
 
 	/* CSTAT tells us when SMS & Phonebook are ready to be used */
-	g_at_chat_register(data->chat, "%CSTAT:", cstat_notify, FALSE,
-				modem, NULL);
-	g_at_chat_send(data->chat, "AT%CSTAT=1", NULL, NULL, NULL, NULL);
+	g_at_chat_register(data->dlcs[SETUP_DLC], "%CSTAT:", cstat_notify,
+				FALSE, modem, NULL);
+	g_at_chat_send(data->dlcs[SETUP_DLC], "AT%CSTAT=1", NULL,
+				NULL, NULL, NULL);
 
 	/* audio side tone: set to minimum */
-	g_at_chat_send(data->chat, "AT@ST=\"-26\"", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->dlcs[VOICE_DLC], "AT@ST=\"-26\"", NULL,
+			NULL, NULL, NULL);
 
 	/* Disable deep sleep */
-	g_at_chat_send(data->chat, "AT%SLEEP=2", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->dlcs[SETUP_DLC], "AT%SLEEP=2", NULL,
+			NULL, NULL, NULL);
 }
 
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct calypso_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
-	setup_modem(modem);
+	if (ok == FALSE) {
+		int i;
+
+		for (i = 0; i < NUM_DLC; i++) {
+			g_at_chat_shutdown(data->dlcs[i]);
+			g_at_chat_unref(data->dlcs[i]);
+			data->dlcs[i] = NULL;
+		}
+
+		g_at_mux_shutdown(data->mux);
+		g_at_mux_unref(data->mux);
+		data->mux = NULL;
+	} else
+		setup_modem(modem);
+
 	ofono_modem_set_powered(modem, ok);
+}
+
+static void mux_setup(GAtMux *mux, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct calypso_data *data = ofono_modem_get_data(modem);
+	GIOChannel *io;
+	GAtSyntax *syntax;
+	int i;
+
+	DBG("%p", mux);
+
+	if (!mux) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	data->mux = mux;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_mux_set_debug(data->mux, calypso_debug, NULL);
+
+	g_at_mux_start(mux);
+
+	for (i = 0; i < NUM_DLC; i++) {
+		io = g_at_mux_create_channel(mux);
+
+		syntax = g_at_syntax_new_gsm_permissive();
+		data->dlcs[i] = g_at_chat_new(io, syntax);
+		g_at_syntax_unref(syntax);
+		g_io_channel_unref(io);
+
+		if (getenv("OFONO_AT_DEBUG"))
+			g_at_chat_set_debug(data->dlcs[i], calypso_debug, NULL);
+
+		g_at_chat_set_wakeup_command(data->dlcs[i], "\r", 1000, 5000);
+	}
+
+	g_at_chat_send(data->dlcs[SETUP_DLC], "AT+CFUN=1", NULL,
+					cfun_set_on_cb, modem, NULL);
 }
 
 static void modem_initialize(struct ofono_modem *modem)
 {
-	struct calypso_data *data = ofono_modem_get_data(modem);
 	GAtSyntax *syntax;
 	GAtChat *chat;
 	const char *device;
@@ -220,10 +291,8 @@ static void modem_initialize(struct ofono_modem *modem)
 
 	g_at_chat_send(chat, "ATE0", NULL, NULL, NULL, NULL);
 
-	/* power up modem */
-	g_at_chat_send(chat, "AT+CFUN=1", NULL, cfun_set_on_cb, modem, NULL);
-
-	data->chat = chat;
+	g_at_mux_setup_gsm0710(chat, mux_setup, modem, NULL);
+	g_at_chat_unref(chat);
 
 	return;
 
@@ -320,11 +389,19 @@ static int calypso_enable(struct ofono_modem *modem)
 static int calypso_disable(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
+	int i;
 
 	DBG("");
 
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
+	for (i = 0; i < NUM_DLC; i++) {
+		g_at_chat_shutdown(data->dlcs[i]);
+		g_at_chat_unref(data->dlcs[i]);
+		data->dlcs[i] = NULL;
+	}
+
+	g_at_mux_shutdown(data->mux);
+	g_at_mux_unref(data->mux);
+	data->mux = NULL;
 
 	data->phonebook_added = FALSE;
 	data->sms_added = FALSE;
@@ -341,9 +418,9 @@ static void calypso_pre_sim(struct ofono_modem *modem)
 
 	DBG("");
 
-	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	ofono_sim_create(modem, 0, "atmodem", data->chat);
-	ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
+	ofono_devinfo_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_voicecall_create(modem, 0, "calypsomodem", data->dlcs[VOICE_DLC]);
 }
 
 static void calypso_post_sim(struct ofono_modem *modem)
@@ -353,17 +430,17 @@ static void calypso_post_sim(struct ofono_modem *modem)
 
 	DBG("");
 
-	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	ofono_ussd_create(modem, 0, "atmodem", data->chat);
-	ofono_sim_create(modem, 0, "atmodem", data->chat);
-	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
-	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
-	ofono_netreg_create(modem, OFONO_VENDOR_CALYPSO, "atmodem", data->chat);
-	ofono_voicecall_create(modem, 0, "calypsomodem", data->chat);
-	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
-	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
-	ofono_ssn_create(modem, 0, "atmodem", data->chat);
-	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
+	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_call_forwarding_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_call_settings_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_netreg_create(modem, OFONO_VENDOR_CALYPSO, "atmodem",
+				data->dlcs[NETREG_DLC]);
+	ofono_voicecall_create(modem, 0, "calypsomodem", data->dlcs[VOICE_DLC]);
+	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_call_barring_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_ssn_create(modem, 0, "atmodem", data->dlcs[VOICE_DLC]);
+	ofono_call_volume_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
