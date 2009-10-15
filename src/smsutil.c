@@ -805,7 +805,7 @@ static gboolean decode_submit_report(const unsigned char *pdu, int len,
 	int offset = 0;
 	unsigned char octet;
 	gboolean udhi;
-	guint8 fcs;
+	guint8 uninitialized_var(fcs);
 	guint8 pi;
 	struct sms_scts *scts;
 	guint8 pid = 0;
@@ -1096,7 +1096,7 @@ static gboolean decode_deliver_report(const unsigned char *pdu, int len,
 	int offset = 0;
 	unsigned char octet;
 	gboolean udhi;
-	guint8 fcs;
+	guint8 uninitialized_var(fcs);
 	guint8 pi;
 	guint8 pid = 0;
 	guint8 dcs = 0;
