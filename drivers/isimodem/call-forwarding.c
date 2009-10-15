@@ -77,6 +77,57 @@ static int forw_type_to_isi_code(int type)
 	return ss_code;
 }
 
+static bool decode_gsm_forwarding_info(const void *restrict data, size_t len,
+					uint8_t *status, uint8_t *ton,
+					uint8_t *norply, char **number)
+{
+	GIsiSubBlockIter iter;
+
+	for (g_isi_sb_iter_init(&iter, data, len, 0);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+
+		case SS_GSM_FORWARDING_FEATURE: {
+
+			uint8_t _numlen;
+			uint8_t _status;
+			uint8_t _norply;
+			uint8_t _ton;
+			char *_number = NULL;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &_status, 3)
+				|| !g_isi_sb_iter_get_byte(&iter, &_ton, 4)
+				|| !g_isi_sb_iter_get_byte(&iter, &_norply, 5)
+				|| !g_isi_sb_iter_get_byte(&iter, &_numlen, 7)
+				|| !g_isi_sb_iter_get_alpha_tag(&iter, &_number,
+					_numlen * 2, 10))
+				return false;
+
+			if (status)
+				*status = _status;
+			if (ton)
+				*ton = _ton;
+			if (norply)
+				*norply = _norply;
+			if (number)
+				*number = _number;
+			else
+				g_free(_number);
+
+			return true;
+		}
+		default:
+			DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
+				g_isi_sb_iter_get_id(&iter),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
+	}
+	return false;
+}
+
 static bool registration_resp_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
 {
@@ -107,39 +158,22 @@ static bool registration_resp_cb(GIsiClient *client, const void *restrict data,
 
 		case SS_GSM_FORWARDING_INFO: {
 
-			GIsiSubBlockIter iter_fw;
+			guint8 status;
+			void *info = NULL;
+			size_t infolen;
 
-			if (g_isi_sb_iter_get_len(&iter) < 4)
+			if (!g_isi_sb_iter_get_data(&iter, &info, 4))
 				goto error;
 
-			for (g_isi_sb_iter_init(&iter_fw, iter.start,
-				g_isi_sb_iter_get_len(&iter), 4);
-				g_isi_sb_iter_is_valid(&iter_fw);
-				g_isi_sb_iter_next(&iter_fw)) {
+			infolen = g_isi_sb_iter_get_len(&iter) - 4;
 
-				switch (g_isi_sb_iter_get_id(&iter_fw)) {
+			if (!decode_gsm_forwarding_info(info, infolen, &status,
+							NULL, NULL, NULL))
+				goto error;
 
-				case SS_GSM_FORWARDING_FEATURE: {
+			if (!(status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED)))
+				goto error;
 
-					guint8 status;
-
-					if (!g_isi_sb_iter_get_byte(&iter_fw,
-						&status, 3))
-						goto error;
-
-					if (!(status & SS_GSM_ACTIVE)
-						|| !(status & SS_GSM_REGISTERED))
-						goto error;
-
-					break;
-				}
-				default:
-					DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
-						g_isi_sb_iter_get_id(&iter_fw),
-						g_isi_sb_iter_get_len(&iter_fw));
-					break;
-				}
-			}
 			break;
 		}
 		default:
@@ -255,39 +289,22 @@ static bool erasure_resp_cb(GIsiClient *client, const void *restrict data,
 
 		case SS_GSM_FORWARDING_INFO: {
 
-			GIsiSubBlockIter iter_fw;
+			guint8 status;
+			void *info = NULL;
+			size_t infolen;
 
-			if (g_isi_sb_iter_get_len(&iter) < 4)
+			if (!g_isi_sb_iter_get_data(&iter, &info, 4))
 				goto error;
 
-			for (g_isi_sb_iter_init(&iter_fw, iter.start,
-				g_isi_sb_iter_get_len(&iter), 4);
-				g_isi_sb_iter_is_valid(&iter_fw);
-				g_isi_sb_iter_next(&iter_fw)) {
+			infolen = g_isi_sb_iter_get_len(&iter) - 4;
 
-				switch (g_isi_sb_iter_get_id(&iter_fw)) {
+			if (!decode_gsm_forwarding_info(info, infolen, &status,
+							NULL, NULL, NULL))
+				goto error;
 
-				case SS_GSM_FORWARDING_FEATURE: {
+			if (status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED))
+				goto error;
 
-					guint8 status;
-
-					if (!g_isi_sb_iter_get_byte(&iter_fw,
-						&status, 3))
-						goto error;
-
-					if ((status & SS_GSM_ACTIVE)
-						|| (status & SS_GSM_REGISTERED))
-						goto error;
-
-					break;
-				}
-				default:
-					DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
-						g_isi_sb_iter_get_id(&iter_fw),
-						g_isi_sb_iter_get_len(&iter_fw));
-					break;
-				}
-			}
 			break;
 		}
 		default:
@@ -387,67 +404,32 @@ static bool query_resp_cb(GIsiClient *client, const void *restrict data,
 
 		case SS_GSM_FORWARDING_INFO: {
 
-			GIsiSubBlockIter iter_fw;
+			guint8 status;
+			void *info = NULL;
+			size_t infolen;
 
-			if (g_isi_sb_iter_get_len(&iter) < 4)
+			guint8 ton;
+			guint8 norply;
+			char *number = NULL;
+
+			if (!g_isi_sb_iter_get_data(&iter, &info, 4))
 				goto error;
 
-			for (g_isi_sb_iter_init(&iter_fw, iter.start,
-				g_isi_sb_iter_get_len(&iter), 4);
-				g_isi_sb_iter_is_valid(&iter_fw);
-				g_isi_sb_iter_next(&iter_fw)) {
+			infolen = g_isi_sb_iter_get_len(&iter) - 4;
 
-				switch (g_isi_sb_iter_get_id(&iter_fw)) {
+			if (!decode_gsm_forwarding_info(info, infolen, &status,
+							&ton, &norply, &number))
+				goto error;
 
-				case SS_GSM_FORWARDING_FEATURE: {
+			list.status = status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED
+						| SS_GSM_PROVISIONED);
+			list.time = norply;
+			list.phone_number.type = ton | 128;
+			strncpy(list.phone_number.number, number,
+				OFONO_MAX_PHONE_NUMBER_LENGTH);
+			list.phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+			g_free(number);
 
-					guint8 status;
-					guint8 ton;
-					guint8 norply;
-					guint8 numlen;
-					char* number = NULL;
-
-					if (!g_isi_sb_iter_get_byte(&iter_fw,
-						&status, 3))
-						goto error;
-
-					if (!g_isi_sb_iter_get_byte(&iter_fw,
-						&ton, 4))
-						goto error;
-
-					if (!g_isi_sb_iter_get_byte(&iter_fw,
-						&norply, 5))
-						goto error;
-
-					if (!g_isi_sb_iter_get_byte(&iter_fw,
-						&numlen, 7))
-						goto error;
-
-					if (!g_isi_sb_iter_get_alpha_tag(&iter_fw,
-						&number, numlen * 2, 10))
-						goto error;
-
-					list.status = status & (SS_GSM_ACTIVE
-							| SS_GSM_REGISTERED
-							| SS_GSM_PROVISIONED);
-
-					list.time = norply;
-
-					strncpy(list.phone_number.number, number,
-						OFONO_MAX_PHONE_NUMBER_LENGTH);
-					list.phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
-					g_free(number);
-
-					list.phone_number.type = ton | 128;
-					break;
-				}
-				default:
-					DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
-						g_isi_sb_iter_get_id(&iter_fw),
-						g_isi_sb_iter_get_len(&iter_fw));
-					break;
-				}
-			}
 			break;
 		}
 		default:
