@@ -86,7 +86,19 @@ struct calypso_data {
 
 static void calypso_debug(const char *str, void *data)
 {
-	DBG("%s", str);
+	guint dlc = GPOINTER_TO_UINT(data);
+
+	DBG("DLC%u: %s", dlc, str);
+}
+
+static void calypso_mux_debug(const char *str, void *data)
+{
+	DBG("MUX: %s", str);
+}
+
+static void calypso_setup_debug(const char *str, void *data)
+{
+	DBG("Setup: %s", str);
 }
 
 static int calypso_probe(struct ofono_modem *modem)
@@ -221,7 +233,7 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 	data->mux = mux;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_mux_set_debug(data->mux, calypso_debug, NULL);
+		g_at_mux_set_debug(data->mux, calypso_mux_debug, NULL);
 
 	g_at_mux_start(mux);
 
@@ -234,7 +246,8 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 		g_io_channel_unref(io);
 
 		if (getenv("OFONO_AT_DEBUG"))
-			g_at_chat_set_debug(data->dlcs[i], calypso_debug, NULL);
+			g_at_chat_set_debug(data->dlcs[i], calypso_debug,
+						GUINT_TO_POINTER(i));
 
 		g_at_chat_set_wakeup_command(data->dlcs[i], "\r", 1000, 5000);
 	}
@@ -285,7 +298,7 @@ static void modem_initialize(struct ofono_modem *modem)
 		goto error;
 
 	if (getenv("OFONO_AT_DEBUG") != NULL)
-		g_at_chat_set_debug(chat, calypso_debug, NULL);
+		g_at_chat_set_debug(chat, calypso_setup_debug, NULL);
 
 	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
 
