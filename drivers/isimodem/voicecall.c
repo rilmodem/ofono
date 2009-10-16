@@ -370,7 +370,7 @@ static struct isi_call_req_context *
 isi_call_create_req(struct ofono_voicecall *ovc,
 		    uint8_t presentation,
 		    uint8_t addr_type,
-		    char const restrict address[21],
+		    char const address[21],
 		    ofono_voicecall_cb_t cb,
 		    void *data)
 {
@@ -679,7 +679,7 @@ static struct isi_call_req_context *
 isi_call_deflect_req(struct ofono_voicecall *ovc,
 		     uint8_t call_id,
 		     uint8_t address_type,
-		     char const restrict address[21],
+		     char const address[21],
 		     ofono_voicecall_cb_t cb,
 		     void *data)
 {
