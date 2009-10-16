@@ -2190,11 +2190,6 @@ char *sms_decode_text(GSList *sms_list)
 
 	utf8 = g_string_free(str, FALSE);
 
-	if (strlen(utf8) == 0) {
-		g_free(utf8);
-		return NULL;
-	}
-
 	return utf8;
 }
 
