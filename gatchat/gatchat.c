@@ -87,6 +87,7 @@ struct _GAtChat {
 	guint wakeup_timeout;			/* How long to wait for resp */
 	GTimer *wakeup_timer;			/* Keep track of elapsed time */
 	GAtSyntax *syntax;
+	gboolean destroyed;			/* Re-entrancy guard */
 };
 
 static gint at_notify_node_compare_by_id(gconstpointer a, gconstpointer b)
@@ -259,6 +260,9 @@ static void read_watcher_destroy_notify(GAtChat *chat)
 
 	if (chat->user_disconnect)
 		chat->user_disconnect(chat->user_disconnect_data);
+
+	if (chat->destroyed)
+		g_free(chat);
 }
 
 static void write_watcher_destroy_notify(GAtChat *chat)
@@ -587,7 +591,9 @@ static void new_bytes(GAtChat *p)
 
 	GAtSyntaxResult result;
 
-	while (p->read_so_far < len) {
+	g_at_chat_ref(p);
+
+	while (p->channel && (p->read_so_far < len)) {
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
 		result = p->syntax->feed(p->syntax, (char *)buf, &rbytes);
 
@@ -628,8 +634,10 @@ static void new_bytes(GAtChat *p)
 	}
 
 	/* We're overflowing the buffer, shutdown the socket */
-	if (ring_buffer_avail(p->buf) == 0)
+	if (p->buf && ring_buffer_avail(p->buf) == 0)
 		g_source_remove(p->read_watch);
+
+	g_at_chat_unref(p);
 }
 
 static void debug_chat(GAtChat *chat, gboolean in, const char *str, gsize len)
@@ -990,7 +998,16 @@ void g_at_chat_unref(GAtChat *chat)
 		return;
 
 	g_at_chat_shutdown(chat);
-	g_free(chat);
+
+	/* glib delays the destruction of the watcher until it exits, this
+	 * means we can't free the data just yet, even though we've been
+	 * destroyed already.  We have to wait until the read_watcher
+	 * destroy function gets called
+	 */
+	if (chat->read_watch != 0)
+		chat->destroyed = TRUE;
+	else
+		g_free(chat);
 }
 
 gboolean g_at_chat_shutdown(GAtChat *chat)
