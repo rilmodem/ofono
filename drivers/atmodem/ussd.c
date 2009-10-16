@@ -148,7 +148,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 	if (written > max_len)
 		goto error;
 
-	sprintf(buf, "AT+CUSD=1,\"%*s\",%d", (int) written, converted, dcs);
+	sprintf(buf, "AT+CUSD=1,\"%.*s\",%d", (int) written, converted, dcs);
 
 	g_free(converted);
 	converted = NULL;
