@@ -171,7 +171,8 @@ static bool registration_resp_cb(GIsiClient *client, const void *restrict data,
 							NULL, NULL, NULL))
 				goto error;
 
-			if (!(status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED)))
+			if (!(status & SS_GSM_ACTIVE)
+				|| !(status & SS_GSM_REGISTERED))
 				goto error;
 
 			break;
