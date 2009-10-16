@@ -34,6 +34,7 @@
 #include <ofono/modem.h>
 #include <ofono/ussd.h>
 #include "util.h"
+#include "smsutil.h"
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -56,6 +57,10 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 	int dcs;
 	const char *content;
 	char *converted = NULL;
+	gboolean udhi;
+	enum sms_charset charset;
+	gboolean compressed;
+	gboolean iso639;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -71,28 +76,24 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 	if (!g_at_result_iter_next_number(&iter, &dcs))
 		goto out;
 
-	/* All 7-bit coding schemes - there's no need to distinguish
-	 * between the different schemes because the modem is tasked
-	 * with presenting us with only raw 7-bit characters.
-	 */
-	if ((dcs & 0xf0) == 0x00 || dcs == 0x10 || (dcs & 0xf0) == 0x20 ||
-			(dcs & 0xf0) == 0x30 || (dcs & 0xcc) == 0x40 ||
-			(dcs & 0xfc) == 0x90 || (dcs & 0xf4) == 0xf0)
-		converted = convert_gsm_to_utf8((const guint8 *) content,
-						strlen(content), NULL, NULL,
-						0);
+	if (!cbs_dcs_decode(dcs, &udhi, NULL, &charset,
+				&compressed, NULL, &iso639))
+		goto out;
 
-	/* All 8-bit coding schemes are treated the same again.
-	 * TODO
-	 */
-	else if ((dcs & 0xcc) == 0x44 || (dcs & 0xfc) == 0x94 ||
-			(dcs & 0xf4) == 0xf4) {
+	if (udhi || compressed || iso639)
+		goto out;
+
+	if (charset == SMS_CHARSET_7BIT)
+		converted = convert_gsm_to_utf8((const guint8 *) content,
+						strlen(content), NULL, NULL, 0);
+
+	else if (charset == SMS_CHARSET_8BIT) {
+		/* TODO: Figure out what to do with 8 bit data */
 		ofono_error("8-bit coded USSD response received");
 		status = 4; /* Not supported */
 	}
-
-	/* No other encoding is mentioned in TS27007 7.15 */
 	else {
+		/* No other encoding is mentioned in TS27007 7.15 */
 		ofono_error("Unsupported USSD data coding scheme (%02x)", dcs);
 		status = 4; /* Not supported */
 	}
@@ -147,7 +148,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 	if (written > max_len)
 		goto error;
 
-	sprintf(buf, "AT+CUSD=1,\"%*s\", %d", (int) written, converted, dcs);
+	sprintf(buf, "AT+CUSD=1,\"%*s\",%d", (int) written, converted, dcs);
 
 	g_free(converted);
 	converted = NULL;
