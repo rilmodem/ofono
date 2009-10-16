@@ -40,25 +40,88 @@
 
 #include "atmodem.h"
 
+struct cusd_req {
+	ofono_ussd_cb_t cb;
+	void *data;
+	struct ofono_ussd *ussd;
+};
+
+static const char *cusd_prefix[] = { "+CUSD:", NULL };
 static const char *none_prefix[] = { NULL };
+
+static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
+{
+	GAtResultIter iter;
+	int status;
+	int dcs;
+	const char *content;
+	char *converted = NULL;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CUSD:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &status))
+		return;
+
+	if (!g_at_result_iter_next_string(&iter, &content))
+		goto out;
+
+	if (!g_at_result_iter_next_number(&iter, &dcs))
+		goto out;
+
+	/* All 7-bit coding schemes - there's no need to distinguish
+	 * between the different schemes because the modem is tasked
+	 * with presenting us with only raw 7-bit characters.
+	 */
+	if ((dcs & 0xf0) == 0x00 || dcs == 0x10 || (dcs & 0xf0) == 0x20 ||
+			(dcs & 0xf0) == 0x30 || (dcs & 0xcc) == 0x40 ||
+			(dcs & 0xfc) == 0x90 || (dcs & 0xf4) == 0xf0)
+		converted = convert_gsm_to_utf8((const guint8 *) content,
+						strlen(content), NULL, NULL,
+						0);
+
+	/* All 8-bit coding schemes are treated the same again.
+	 * TODO
+	 */
+	else if ((dcs & 0xcc) == 0x44 || (dcs & 0xfc) == 0x94 ||
+			(dcs & 0xf4) == 0xf4) {
+		ofono_error("8-bit coded USSD response received");
+		status = 4; /* Not supported */
+	}
+
+	/* No other encoding is mentioned in TS27007 7.15 */
+	else {
+		ofono_error("Unsupported USSD data coding scheme (%02x)", dcs);
+		status = 4; /* Not supported */
+	}
+
+out:
+	ofono_ussd_notify(ussd, status, converted);
+
+	if (converted)
+		g_free(converted);
+}
 
 static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct cb_data *cbd = user_data;
-	ofono_ussd_cb_t cb = cbd->cb;
+	struct cusd_req *cbd = user_data;
 	struct ofono_error error;
 
 	dump_response("cusd_request_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	cb(&error, cbd->data);
+	cbd->cb(&error, cbd->data);
+
+	cusd_parse(result, cbd->ussd);
 }
 
 static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 				ofono_ussd_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_ussd_get_data(ussd);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cusd_req *cbd = g_try_new0(struct cusd_req, 1);
 	unsigned char *converted = NULL;
 	int dcs;
 	int max_len;
@@ -68,11 +131,12 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 	if (!cbd)
 		goto error;
 
+	cbd->cb = cb;
+	cbd->data = data;
+	cbd->ussd = ussd;
+
 	converted = convert_utf8_to_gsm(str, strlen(str), NULL, &written, 0);
 
-	/* TODO: Be able to convert to UCS2, although the standard does not
-	 * indicate that this is actually possible
-	 */
 	if (!converted)
 		goto error;
 	else {
@@ -83,12 +147,12 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 	if (written > max_len)
 		goto error;
 
-	sprintf(buf, "AT+CUSD=1,\"%*s\",%d", (int) written, converted, dcs);
+	sprintf(buf, "AT+CUSD=1,\"%*s\", %d", (int) written, converted, dcs);
 
 	g_free(converted);
 	converted = NULL;
 
-	if (g_at_chat_send(chat, buf, none_prefix,
+	if (g_at_chat_send(chat, buf, cusd_prefix,
 				cusd_request_cb, cbd, g_free) > 0)
 		return;
 
@@ -134,13 +198,28 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static gboolean at_ussd_register(gpointer user)
+static void cusd_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_ussd *ussd = user_data;
+
+	dump_response("cusd_notify", TRUE, result);
+
+	cusd_parse(result, ussd);
+}
+
+static void at_ussd_register(gboolean ok, GAtResult *result, gpointer user)
 {
 	struct ofono_ussd *ussd = user;
+	GAtChat *chat = ofono_ussd_get_data(ussd);
+
+	if (!ok) {
+		ofono_error("Could not enable CUSD notifications");
+		return;
+	}
+
+	g_at_chat_register(chat, "+CUSD:", cusd_notify, FALSE, ussd, NULL);
 
 	ofono_ussd_register(ussd);
-
-	return FALSE;
 }
 
 static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
@@ -149,7 +228,8 @@ static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 	GAtChat *chat = data;
 
 	ofono_ussd_set_data(ussd, chat);
-	g_idle_add(at_ussd_register, ussd);
+
+	g_at_chat_send(chat, "AT+CUSD=1", NULL, at_ussd_register, ussd, NULL);
 
 	return 0;
 }

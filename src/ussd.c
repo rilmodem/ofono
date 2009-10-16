@@ -313,6 +313,9 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 
 		reply = dbus_message_new_method_return(ussd->pending);
 
+		if (!str)
+			str = "";
+
 		dbus_message_iter_init_append(reply, &iter);
 
 		dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING,
