@@ -1,0 +1,33 @@
+#!/usr/bin/python
+
+import sys
+import gobject
+
+import dbus
+import dbus.mainloop.glib
+
+if __name__ == "__main__":
+	if (len(sys.argv) < 2):
+		print "Useage: %s <ussd-string>" % (sys.argv[0])
+		sys.exit(1)
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	try:
+		modems = manager.GetProperties()['Modems']
+	except dbus.DBusException, e:
+		print "Unable to get the Modems property %s" % e
+
+	ss = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+							'org.ofono.SupplementaryServices')
+
+	print ss.Initiate(sys.argv[1], timeout=100)
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
+
