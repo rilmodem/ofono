@@ -1,7 +1,7 @@
-Call Forwarding hierarchy
+Call Settings hierarchy
 ===============
 Service		org.ofono
-Interface	org.ofono.CallForwarding
+Interface	org.ofono.CallSettings
 Object path	[variable prefix]/{modem0,modem1,...}
 
 Methods		dict GetProperties()

@@ -70,7 +70,7 @@ Methods		dict GetProperties()
 			Held calls is invalid, since in GSM a user can have
 			only a single Held call at a time.
 
-		void HangupAllCalls()
+		void HangupAll()
 
 			Releases all calls. 
 

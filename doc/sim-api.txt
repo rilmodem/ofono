@@ -12,22 +12,22 @@ Methods		dict GetProperties()
 
 			Possible Errors: [service].Error.InvalidArguments
 
-		ChangePin(string type, string oldpin, string newpin)
+		void ChangePin(string type, string oldpin, string newpin)
 
 			Changes the pin given by string type.
 
-		EnterPin(string type, string pin)
+		void EnterPin(string type, string pin)
 
 			Enters the currently pending pin.  The type value must
 			match the pin type being asked in the PinRequired
 			property.
 
-		ResetPin(string type, string puk, string newpin)
+		void ResetPin(string type, string puk, string newpin)
 
 			Provides the unblock key to the modem and if correct
 			resets the pin to the new value of newpin.
 
-		LockPin(string type, string pin)
+		void LockPin(string type, string pin)
 
 			Activates the lock for the particular pin type.  The
 			device will ask for a PIN automatically next time the
@@ -35,7 +35,7 @@ Methods		dict GetProperties()
 			re-inserter.  The current PIN is required for the
 			operation to succeed.
 
-		UnlockPin(string type, string pin)
+		void UnlockPin(string type, string pin)
 
 			Deactivates the lock for the particular pin type.  The
 			current PIN is required for the operation to succeed.

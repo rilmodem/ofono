@@ -3,7 +3,7 @@ VoiceCall hierarchy
 
 Service		org.ofono
 Interface	org.ofono.VoiceCall
-Object path	[variable prefix]/{modem0,modem1,...}/{call0,call1,...}
+Object path	[variable prefix]/{modem0,modem1,...}/{voicecall01,voicecall02,...}
 
 Methods		dict GetProperties()
 
