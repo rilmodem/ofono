@@ -1,3 +1,11 @@
+ver 0.8:
+	Fix crash when internal structures differ.
+	Fix issues with handling empty text messages.
+	Add driver model for TTY multiplexer support.
+	Add support for multiplexer usage with Calypso modems.
+	Add support for PhoNet/ISI call barring, forwarding and waiting.
+	Add support for PhoNet/ISI voice call handling.
+
 ver 0.7:
 	Fix handling of empty SMS text messages.
 	Fix GAtChat's next_hexstring to handle optional quotes.
