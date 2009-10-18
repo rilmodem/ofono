@@ -119,6 +119,11 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/calypsomodem/calypsomodem.c \
 			drivers/calypsomodem/voicecall.c
 
+builtin_modules += hfpmodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/hfpmodem/hfp.h \
+			drivers/hfpmodem/hfp.c
+
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
 
@@ -149,6 +154,9 @@ builtin_sources += plugins/huawei.c
 
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
+
+builtin_modules += hfp
+builtin_sources += plugins/hfp.c
 endif
 
 if MAINTAINER_MODE
