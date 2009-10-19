@@ -68,7 +68,8 @@ static void cind_status_cb(gboolean ok, GAtResult *result,
 	struct ofono_modem *modem = user_data;
 	struct hfp_data *data = ofono_modem_get_data(modem);
 	GAtResultIter iter;
-	int index = 0, value = 0;
+	int index;
+	int value;
 
 	if (!ok)
 		goto error;
@@ -78,8 +79,20 @@ static void cind_status_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next(&iter, "+CIND:"))
 		goto error;
 
-	while (g_at_result_iter_next_number(&iter, &value))
-		data->cind_values[++index] = value;
+	index = 1;
+
+	while (g_at_result_iter_next_number(&iter, &value)) {
+		int i;
+
+		for (i = 0; i < HFP_INDICATOR_LAST; i++) {
+			if (index != data->cind_pos[i])
+				continue;
+
+			data->cind_val[i] = value;
+		}
+
+		index += 1;
+	}
 
 	ofono_info("Service level connection established");
 	g_at_chat_send(data->chat, "AT+CMEE=1", NULL, NULL, NULL, NULL);
@@ -105,27 +118,13 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			cind_status_cb, modem, NULL);
 }
 
-static void set_cind_data(GSList *l, struct hfp_data *data)
-{
-	int len = g_slist_length(l);
-	int i = 0;
-
-	data->cind_names = g_new0(char *, len + 1);
-	data->cind_values = g_new0(int, len + 1);
-	data->cind_length = len;
-
-	data->cind_names[0] = NULL;
-	for (; l; l = l->next)
-		data->cind_names[++i] = g_strdup(l->data);
-}
-
 static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct hfp_data *data = ofono_modem_get_data(modem);
-	GSList *l = NULL;
 	GAtResultIter iter;
 	const char *str;
+	int index;
 	int min, max;
 
 	if (!ok)
@@ -135,11 +134,11 @@ static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "+CIND:"))
 		goto error;
 
+	index = 1;
+
 	while (g_at_result_iter_open_list(&iter)) {
 		if (!g_at_result_iter_next_string(&iter, &str))
 			goto error;
-
-		l = g_slist_append(l, (gpointer)g_strdup(str));
 
 		if (!g_at_result_iter_open_list(&iter))
 			goto error;
@@ -152,11 +151,24 @@ static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		if (!g_at_result_iter_close_list(&iter))
 			goto error;
-	}
 
-	set_cind_data(l, data);
-	g_slist_foreach(l, (GFunc) g_free, 0);
-	g_slist_free(l);
+		if (g_str_equal("service", str) == TRUE)
+			data->cind_pos[HFP_INDICATOR_SERVICE] = index;
+		else if (g_str_equal("call", str) == TRUE)
+			data->cind_pos[HFP_INDICATOR_CALL] = index;
+		else if (g_str_equal("callsetup", str) == TRUE)
+			data->cind_pos[HFP_INDICATOR_CALLSETUP] = index;
+		else if (g_str_equal("callheld", str) == TRUE)
+			data->cind_pos[HFP_INDICATOR_CALLHELD] = index;
+		else if (g_str_equal("signal", str) == TRUE)
+			data->cind_pos[HFP_INDICATOR_SIGNAL] = index;
+		else if (g_str_equal("roam", str) == TRUE)
+			data->cind_pos[HFP_INDICATOR_ROAM] = index;
+		else if (g_str_equal("battchg", str) == TRUE)
+			data->cind_pos[HFP_INDICATOR_BATTCHG] = index;
+
+		index += 1;
+	}
 
 	g_at_chat_send(data->chat, "AT+CMER=3,0,0,1", cmer_prefix,
 				cmer_cb, modem, NULL);
@@ -279,18 +291,8 @@ static int hfp_disable(struct ofono_modem *modem)
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
 
-	if (data->cind_length) {
-		for (i = 1; i < data->cind_length + 1; i++)
-			g_free(data->cind_names[i]);
-
-		g_free(data->cind_names);
-		data->cind_names = NULL;
-
-		g_free(data->cind_values);
-		data->cind_values = NULL;
-
-		data->cind_length = 0;
-	}
+	memset(data->cind_val, 0, sizeof(data->cind_val));
+	memset(data->cind_pos, 0, sizeof(data->cind_pos));
 
 	ofono_modem_set_powered(modem, FALSE);
 

@@ -34,12 +34,22 @@
 #define AG_FEATURE_ENHANCED_CALL_CONTROL 0x80
 #define AG_FEATURE_EXTENDED_RES_CODE 0x100
 
+enum hfp_indicator {
+	HFP_INDICATOR_SERVICE = 0,
+	HFP_INDICATOR_CALL,
+	HFP_INDICATOR_CALLSETUP,
+	HFP_INDICATOR_CALLHELD,
+	HFP_INDICATOR_SIGNAL,
+	HFP_INDICATOR_ROAM,
+	HFP_INDICATOR_BATTCHG,
+	HFP_INDICATOR_LAST
+};
+
 struct hfp_data {
 	GAtChat *chat;
-	int ag_features;
-	char **cind_names;
-	int *cind_values;
-	int cind_length;
+	guint ag_features;
+	guint8 cind_pos[HFP_INDICATOR_LAST];
+	gint cind_val[HFP_INDICATOR_LAST];
 };
 
 extern void hfp_voicecall_init();
