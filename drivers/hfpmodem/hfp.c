@@ -33,7 +33,6 @@
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include <dbus.h>
 
 #include <gatchat.h>
 #include <gatresult.h>

@@ -30,7 +30,6 @@
 #include <glib.h>
 #include <gatchat.h>
 #include <gattty.h>
-#include <dbus.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
@@ -193,7 +192,7 @@ static void brsf_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "+BRSF:"))
 		goto error;
 
-	g_at_result_iter_next_number(&iter, &data->ag_features);
+	g_at_result_iter_next_number(&iter, (gint *)&data->ag_features);
 
 	g_at_chat_send(data->chat, "AT+CIND=?", cind_prefix,
 				cind_cb, modem, NULL);
@@ -289,7 +288,6 @@ static int hfp_enable(struct ofono_modem *modem)
 static int hfp_disable(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
-	int i;
 
 	DBG("%p", modem);
 
