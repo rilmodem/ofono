@@ -34,6 +34,14 @@
 #define AG_FEATURE_ENHANCED_CALL_CONTROL 0x80
 #define AG_FEATURE_EXTENDED_RES_CODE 0x100
 
+#define HF_FEATURE_ECNR 0x1
+#define HF_FEATURE_3WAY 0x2
+#define HF_FEATURE_CLIP 0x4
+#define HF_FEATURE_VOICE_RECOGNITION 0x8
+#define HF_FEATURE_REMOTE_VOLUME_CONTROL 0x10
+#define HF_FEATURE_ENHANCED_CALL_STATUS 0x20
+#define HF_FEATURE_ENHANCED_CALL_CONTROL 0x40
+
 enum hfp_indicator {
 	HFP_INDICATOR_SERVICE = 0,
 	HFP_INDICATOR_CALL,
@@ -48,6 +56,7 @@ enum hfp_indicator {
 struct hfp_data {
 	GAtChat *chat;
 	guint ag_features;
+	guint hf_features;
 	guint8 cind_pos[HFP_INDICATOR_LAST];
 	gint cind_val[HFP_INDICATOR_LAST];
 };

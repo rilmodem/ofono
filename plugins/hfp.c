@@ -24,6 +24,7 @@
 #endif
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
 #include <glib.h>
@@ -210,6 +211,7 @@ static int service_level_connection(struct ofono_modem *modem,
 	GIOChannel *io;
 	GAtSyntax *syntax;
 	GAtChat *chat;
+	char buf[64];
 
 	io = g_at_tty_open(tty, NULL);
 	if (!io) {
@@ -229,9 +231,9 @@ static int service_level_connection(struct ofono_modem *modem,
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, hfp_debug, NULL);
 
-	/* 118 = 0x76, support multiparty calling, enhanced call status
-	* and enhanced call control */
-	g_at_chat_send(chat, "AT+BRSF=118", brsf_prefix,
+	sprintf(buf, "AT+BRSF=%d", data->hf_features);
+
+	g_at_chat_send(chat, buf, brsf_prefix,
 				brsf_cb, modem, NULL);
 	data->chat = chat;
 
@@ -245,6 +247,12 @@ static int hfp_probe(struct ofono_modem *modem)
 	data = g_try_new0(struct hfp_data, 1);
 	if (!data)
 		return -ENOMEM;
+
+	data->hf_features |= HF_FEATURE_3WAY;
+	data->hf_features |= HF_FEATURE_CLIP;
+	data->hf_features |= HF_FEATURE_REMOTE_VOLUME_CONTROL;
+	data->hf_features |= HF_FEATURE_ENHANCED_CALL_STATUS;
+	data->hf_features |= HF_FEATURE_ENHANCED_CALL_CONTROL;
 
 	ofono_modem_set_data(modem, data);
 
