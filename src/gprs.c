@@ -959,15 +959,14 @@ int ofono_gprs_driver_register(
 	return 0;
 }
 
-void ofono_gprs_driver_unregister(
-		const struct ofono_gprs_driver *d)
+void ofono_gprs_driver_unregister(const struct ofono_gprs_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
 	g_drivers = g_slist_remove(g_drivers, (void *)d);
 }
 
-static void data_connection_unregister(struct ofono_atom *atom)
+static void gprs_unregister(struct ofono_atom *atom)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_gprs *gprs = __ofono_atom_get_data(atom);
@@ -981,7 +980,7 @@ static void data_connection_unregister(struct ofono_atom *atom)
 					DATA_CONNECTION_MANAGER_INTERFACE);
 }
 
-static void data_connection_remove(struct ofono_atom *atom)
+static void gprs_remove(struct ofono_atom *atom)
 {
 	struct ofono_gprs *gprs = __ofono_atom_get_data(atom);
 
@@ -996,9 +995,9 @@ static void data_connection_remove(struct ofono_atom *atom)
 	g_free(gprs);
 }
 
-struct ofono_gprs *ofono_gprs_create(
-		struct ofono_modem *modem, unsigned int vendor,
-		const char *driver, void *data)
+struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
+					unsigned int vendor,
+					const char *driver, void *data)
 {
 	struct ofono_gprs *gprs;
 	GSList *l;
@@ -1011,9 +1010,8 @@ struct ofono_gprs *ofono_gprs_create(
 	if (gprs == NULL)
 		return NULL;
 
-	gprs->atom = __ofono_modem_add_atom(modem,
-			OFONO_ATOM_TYPE_DATA_CONNECTION,
-			data_connection_remove, gprs);
+	gprs->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_GPRS,
+						gprs_remove, gprs);
 
 	for (l = g_drivers; l; l = l->next) {
 		const struct ofono_gprs_driver *drv = l->data;
@@ -1053,7 +1051,7 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 
 	ofono_modem_add_interface(modem, DATA_CONNECTION_MANAGER_INTERFACE);
 
-	__ofono_atom_register(gprs->atom, data_connection_unregister);
+	__ofono_atom_register(gprs->atom, gprs_unregister);
 }
 
 void ofono_gprs_remove(struct ofono_gprs *gprs)
