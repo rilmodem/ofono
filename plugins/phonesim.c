@@ -313,7 +313,7 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 		ofono_cbs_create(modem, 0, "atmodem", data->chat);
 	}
 
-	ofono_data_connection_create(modem, 0, "atmodem", data->chat);
+	ofono_gprs_create(modem, 0, "atmodem", data->chat);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)

@@ -91,16 +91,6 @@ struct ofono_call {
 	int clip_validity;
 };
 
-struct ofono_data_context {
-	unsigned id;
-	int type;
-	int direction;
-	int active;
-	char *apn;
-	char *username;
-	char *password;
-};
-
 #ifdef __cplusplus
 }
 #endif

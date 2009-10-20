@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef __OFONO_DATA_CONNECTION_H
-#define __OFONO_DATA_CONNECTION_H
+#ifndef __OFONO_GPRS_H
+#define __OFONO_GPRS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,62 +28,73 @@ extern "C" {
 
 #include <ofono/types.h>
 
-struct ofono_data_connection;
+struct ofono_gprs;
 
-typedef void (*ofono_data_connection_cb_t)(const struct ofono_error *error,
-						void *data);
-
-typedef void (*ofono_data_connection_alloc_cb_t)(
-						const struct ofono_error *error,
-						struct ofono_data_context *ctx,
-						void *data);
-
-struct ofono_data_connection_driver {
-	const char *name;
-	int (*probe)(struct ofono_data_connection *dc, unsigned int vendor,
-			void *data);
-	void (*remove)(struct ofono_data_connection *dc);
-	void (*set_attached)(struct ofono_data_connection *dc,
-				int attached, ofono_data_connection_cb_t cb,
-				void *data);
-	void (*set_active)(struct ofono_data_connection *dc, unsigned id,
-				int active, ofono_data_connection_cb_t cb,
-				void *data);
-	void (*set_active_all)(struct ofono_data_connection *dc,
-				int active, ofono_data_connection_cb_t cb,
-				void *data);
-	void (*create_context)(struct ofono_data_connection *dc,
-				ofono_data_connection_alloc_cb_t cb,
-				void *data);
-	void (*remove_context)(struct ofono_data_connection *dc, unsigned id,
-				ofono_data_connection_cb_t cb, void *data);
+struct ofono_gprs_primary_context {
+	unsigned id;
+	int type;
+	int direction;
+	int active;
+	char *apn;
+	char *username;
+	char *password;
 };
 
-void ofono_data_connection_notify(struct ofono_data_connection *dc,
-					struct ofono_data_context *ctx);
-void ofono_data_connection_deactivated(struct ofono_data_connection *dc,
-					unsigned id);
-void ofono_data_connection_detached(struct ofono_data_connection *dc);
-void ofono_data_netreg_status_notify(struct ofono_data_connection *dc,
-					int status, int lac, int ci, int tech);
+typedef void (*ofono_gprs_status_cb_t)(const struct ofono_error *error,
+						int status, int lac, int ci,
+						int tech, void *data);
 
-int ofono_data_connection_driver_register(
-				const struct ofono_data_connection_driver *d);
-void ofono_data_connection_driver_unregister(
-				const struct ofono_data_connection_driver *d);
+typedef void (*ofono_gprs_cb_t)(const struct ofono_error *error, void *data);
 
-struct ofono_data_connection *ofono_data_connection_create(
-		struct ofono_modem *modem, unsigned int vendor,
-		const char *driver, void *data);
-void ofono_data_connection_register(struct ofono_data_connection *dc);
-void ofono_data_connection_remove(struct ofono_data_connection *dc);
-
-void ofono_data_connection_set_data(struct ofono_data_connection *dc,
+typedef void (*ofono_gprs_alloc_cb_t)(const struct ofono_error *error,
+					struct ofono_gprs_primary_context *ctx,
 					void *data);
-void *ofono_data_connection_get_data(struct ofono_data_connection *dc);
+
+struct ofono_gprs_driver {
+	const char *name;
+	int (*probe)(struct ofono_gprs *gprs, unsigned int vendor,
+			void *data);
+	void (*remove)(struct ofono_gprs *gprs);
+	void (*set_attached)(struct ofono_gprs *gprs, int attached,
+				ofono_gprs_cb_t cb, void *data);
+	void (*set_active)(struct ofono_gprs *gprs, unsigned id,
+				int active, ofono_gprs_cb_t cb,
+				void *data);
+	void (*set_active_all)(struct ofono_gprs *gprs,
+				int active, ofono_gprs_cb_t cb,
+				void *data);
+	void (*create_context)(struct ofono_gprs *gprs,
+				ofono_gprs_alloc_cb_t cb,
+				void *data);
+	void (*remove_context)(struct ofono_gprs *gprs, unsigned id,
+				ofono_gprs_cb_t cb, void *data);
+	void (*registration_status)(struct ofono_gprs *gprs,
+					ofono_gprs_status_cb_t cb, void *data);
+};
+
+void ofono_gprs_status_notify(struct ofono_gprs *gprs,
+				int status, int lac, int ci, int tech);
+
+void ofono_gprs_notify(struct ofono_gprs *gprs,
+					struct ofono_gprs_primary_context *ctx);
+void ofono_gprs_deactivated(struct ofono_gprs *gprs,
+					unsigned id);
+void ofono_gprs_detached(struct ofono_gprs *gprs);
+
+int ofono_gprs_driver_register(const struct ofono_gprs_driver *d);
+void ofono_gprs_driver_unregister(const struct ofono_gprs_driver *d);
+
+struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
+					unsigned int vendor, const char *driver,
+					void *data);
+void ofono_gprs_register(struct ofono_gprs *gprs);
+void ofono_gprs_remove(struct ofono_gprs *gprs);
+
+void ofono_gprs_set_data(struct ofono_gprs *gprs, void *data);
+void *ofono_gprs_get_data(struct ofono_gprs *gprs);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __OFONO_DATA_CONNECTION_H */
+#endif /* __OFONO_GPRS_H */
