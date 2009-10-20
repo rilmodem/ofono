@@ -32,7 +32,7 @@
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include <ofono/data-connection.h>
+#include <ofono/gprs.h>
 
 #include "gatchat.h"
 #include "gatresult.h"

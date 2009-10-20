@@ -54,7 +54,7 @@
 #include <ofono/ssn.h>
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
-#include <ofono/data-connection.h>
+#include <ofono/gprs.h>
 
 #include <drivers/atmodem/vendor.h>
 

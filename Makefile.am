@@ -11,7 +11,7 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/sms.h include/sim.h include/message-waiting.h \
 			include/netreg.h include/voicecall.h include/devinfo.h \
 			include/cbs.h include/call-volume.h \
-			include/data-connection.h
+			include/gprs.h
 
 nodist_include_HEADERS = include/version.h
 
@@ -113,7 +113,7 @@ builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/vendor.h \
 				drivers/atmodem/atutil.h \
 				drivers/atmodem/atutil.c \
-				drivers/atmodem/data-connection.c
+				drivers/atmodem/gprs.c
 
 builtin_modules += calypsomodem
 builtin_sources += drivers/atmodem/atutil.h \
@@ -179,7 +179,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
 			src/phonebook.c src/history.c src/message-waiting.c \
 			src/simutil.h src/simutil.c src/storage.h \
 			src/storage.c src/cbs.c src/watch.c src/call-volume.c \
-			src/data-connection.c
+			src/gprs.c
 
 src_ofonod_LDADD = $(builtin_libadd) \
 			@GLIB_LIBS@ @GTHREAD_LIBS@ @DBUS_LIBS@ -ldl
