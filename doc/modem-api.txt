@@ -12,12 +12,27 @@ Methods		dict GetProperties()
 
 			Possible Errors: [service].Error.InvalidArguments
 
+		void SetProperty(string property, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
 Signals		PropertyChanged(string name, variant value)
 
 			This signal indicates a changed value of the given
 			property.
 
-Properties	string Manufacturer [readonly, optional]
+Properties	boolean Powered [readwrite]
+
+			Boolean representing the power state of the modem
+			device.
+
+		string Manufacturer [readonly, optional]
 
 			String representing the manufacturer of the modem
 			device.
