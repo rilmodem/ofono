@@ -121,8 +121,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 
 builtin_modules += hfpmodem
 builtin_sources += drivers/atmodem/atutil.h \
-			drivers/hfpmodem/hfp.h \
-			drivers/hfpmodem/hfp.c
+			drivers/hfpmodem/hfpmodem.h \
+			drivers/hfpmodem/hfpmodem.c
 
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c

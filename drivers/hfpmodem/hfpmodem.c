@@ -37,7 +37,7 @@
 #include <gatchat.h>
 #include <gatresult.h>
 
-#include "hfp.h"
+#include "hfpmodem.h"
 
 static int hfpmodem_init(void)
 {

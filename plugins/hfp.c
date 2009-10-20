@@ -49,7 +49,7 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 
-#include <drivers/hfpmodem/hfp.h>
+#include <drivers/hfpmodem/hfpmodem.h>
 
 static const char *brsf_prefix[] = { "+BRSF:", NULL };
 static const char *cind_prefix[] = { "+CIND:", NULL };
