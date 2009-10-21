@@ -97,6 +97,18 @@ static gboolean set_baud(const char *baud, struct termios *ti)
 	return TRUE;
 }
 
+static gboolean set_read(const char *bits, struct termios *ti)
+{
+	if (g_str_equal(bits, "off"))
+		ti->c_cflag &= ~(CREAD);
+	else if (g_str_equal(bits, "on"))
+		ti->c_cflag |= CREAD;
+	else
+		return FALSE;
+
+	return TRUE;
+}
+
 static gboolean set_stop_bits(const char *bits, struct termios *ti)
 {
 	if (g_str_equal(bits, "1"))
@@ -210,6 +222,8 @@ static int open_device(const char *tty, GHashTable *options)
 				ok = set_rtscts(value, &ti);
 			else if (g_str_equal(key, "local"))
 				ok = set_local(value, &ti);
+			else if (g_str_equal(key, "read"))
+				ok = set_read(value, &ti);
 
 			if (ok == FALSE)
 				return -1;
