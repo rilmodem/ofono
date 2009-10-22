@@ -706,12 +706,7 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	struct ofono_gprs *gprs = data;
 	struct pri_context *ctx;
 	const char *path;
-
-	if (gprs->pending)
-		return __ofono_error_busy(msg);
-
-	if (!gprs->driver->remove_context)
-		return __ofono_error_not_implemented(msg);
+	char **objpath_list;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID))
@@ -724,18 +719,26 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	if (!ctx)
 		return __ofono_error_not_found(msg);
 
-	gprs->pending = dbus_message_ref(msg);
-	gprs->current_context = ctx;
+	if (ctx->active)
+		return __ofono_error_failed(msg);
 
-	if (ctx->context->active && gprs->driver->set_active) {
-		gprs->driver->set_active(gprs, ctx->context->id, 0,
-					gprs_deactivate_context_callback, gprs);
+	ofono_debug("Unregistering context: %s\n", ctx->path);
 
-		return NULL;
+	context_dbus_unregister(ctx);
+	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	objpath_list = gprs_contexts_path_list(gprs->contexts);
+
+	if (objpath_list) {
+		path = __ofono_atom_get_path(gprs->atom);
+		ofono_dbus_signal_array_property_changed(conn, path,
+					DATA_CONNECTION_MANAGER_INTERFACE,
+					"PrimaryContexts",
+					DBUS_TYPE_OBJECT_PATH, &objpath_list);
+		g_strfreev(objpath_list);
 	}
-
-	gprs->driver->remove_context(gprs, ctx->context->id,
-					gprs_remove_context_callback, gprs);
 
 	return NULL;
 }
