@@ -131,12 +131,12 @@ gboolean g_at_result_iter_next_unquoted_string(GAtResultIter *iter,
 		goto out;
 	}
 
-	if (line[pos] == '"')
+	if (line[pos] == '"' || line[pos] == ')')
 		return FALSE;
 
 	end = pos;
 
-	while (end < len && line[end] != ',')
+	while (end < len && line[end] != ',' && line[end] != ')')
 		end += 1;
 
 	iter->buf[end] = '\0';
