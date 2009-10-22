@@ -77,14 +77,6 @@ struct pri_context {
 
 static void gprs_netreg_update(struct ofono_gprs *gprs);
 
-static gint context_compare(gconstpointer a, gconstpointer b)
-{
-	const struct context *ctxa = a;
-	const struct context *ctxb = a;
-
-	return ctxa->context->id - ctxb->context->id;
-}
-
 static inline const char *gprs_context_type_to_string(int type)
 {
 	switch (type) {
