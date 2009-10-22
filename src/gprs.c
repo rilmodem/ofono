@@ -41,6 +41,12 @@
 
 static GSList *g_drivers = NULL;
 
+enum gprs_context_type {
+	GPRS_CONTEXT_TYPE_INTERNET = 1,
+	GPRS_CONTEXT_TYPE_MMS,
+	GPRS_CONTEXT_TYPE_WAP,
+};
+
 struct ofono_gprs {
 	GSList *contexts;
 	int attached;
@@ -74,20 +80,14 @@ static gint context_compare(gconstpointer a, gconstpointer b)
 	return ctxa->context->id - ctxb->context->id;
 }
 
-enum {
-	DATA_CONTEXT_TYPE_INTERNET,
-	DATA_CONTEXT_TYPE_MMS,
-	DATA_CONTEXT_TYPE_WAP,
-};
-
-static inline const char *data_context_type_to_string(int type)
+static inline const char *gprs_context_type_to_string(int type)
 {
 	switch (type) {
-	case DATA_CONTEXT_TYPE_INTERNET:
+	case GPRS_CONTEXT_TYPE_INTERNET:
 		return "internet";
-	case DATA_CONTEXT_TYPE_MMS:
+	case GPRS_CONTEXT_TYPE_MMS:
 		return "mms";
-	case DATA_CONTEXT_TYPE_WAP:
+	case GPRS_CONTEXT_TYPE_WAP:
 		return "wap";
 	}
 
@@ -136,7 +136,9 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	dbus_bool_t value;
-	const char *type = data_context_type_to_string(ctx->context->type);
+	const char *type = gprs_context_type_to_string(ctx->type);
+	const char *name = ctx->name ? ctx->name : "";
+	const char *strvalue;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
