@@ -58,6 +58,8 @@ struct ofono_gprs {
 	int technology;
 	int flags;
 	int next_context_id;
+	int cid_min;
+	int cid_max;
 	DBusMessage *pending;
 	const struct ofono_gprs_driver *driver;
 	void *driver_data;
@@ -966,8 +968,16 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 		set_registration_technology(gprs, tech);
 }
 
-int ofono_gprs_driver_register(
-		const struct ofono_gprs_driver *d)
+void ofono_gprs_set_cid_range(struct ofono_gprs *gprs, int min, int max)
+{
+	if (gprs == NULL)
+		return;
+
+	gprs->cid_min = min;
+	gprs->cid_max = max;
+}
+
+int ofono_gprs_driver_register(const struct ofono_gprs_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
