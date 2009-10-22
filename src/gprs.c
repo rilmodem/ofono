@@ -743,17 +743,10 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 	if (gprs->pending)
 		return __ofono_error_busy(msg);
 
-	if (!gprs->driver->set_active_all)
-		return __ofono_error_not_implemented(msg);
-
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
-	gprs->pending = dbus_message_ref(msg);
-
-	gprs->driver->set_active_all(gprs, 0, gprs_generic_callback, gprs);
-
-	return NULL;
+	return __ofono_error_not_implemented(msg);
 }
 
 static GDBusMethodTable manager_methods[] = {
