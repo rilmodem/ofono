@@ -438,8 +438,7 @@ static gboolean context_dbus_unregister(struct pri_context *ctx)
 						DATA_CONTEXT_INTERFACE);
 }
 
-static char **gprs_contexts_path_list(struct ofono_gprs *gprs,
-					GSList *context_list)
+static char **gprs_contexts_path_list(GSList *context_list)
 {
 	GSList *l;
 	char **i;
@@ -451,7 +450,7 @@ static char **gprs_contexts_path_list(struct ofono_gprs *gprs,
 
 	for (i = objlist, l = context_list; l; l = l->next) {
 		ctx = l->data;
-		*i++ = g_strdup(gprs_build_context_path(gprs, ctx->context));
+		*i++ = g_strdup(ctx->path);
 	}
 
 	return objlist;
@@ -553,7 +552,7 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	objpath_list = gprs_contexts_path_list(gprs, gprs->contexts);
+	objpath_list = gprs_contexts_path_list(gprs->contexts);
 	if (!objpath_list)
 		return NULL;
 
