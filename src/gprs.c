@@ -765,65 +765,7 @@ static GDBusSignalTable manager_signals[] = {
 	{ }
 };
 
-void ofono_gprs_notify(struct ofono_gprs *gprs,
-					struct ofono_gprs_primary_context *ctx)
-{
-	struct context *context = context_create(gprs, ctx);
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path;
-	char **objpath_list;
-
-	if (!context) {
-		ofono_error("Unable to allocate context struct");
-		return;
-	}
-
-	ofono_debug("Registering new context: %i", ctx->id);
-	if (!context_dbus_register(gprs, context))
-		return;
-
-	gprs->contexts = g_slist_insert_sorted(gprs->contexts,
-						context, context_compare);
-
-	objpath_list = gprs_contexts_path_list(gprs, gprs->contexts);
-	if (!objpath_list) {
-		ofono_error("Unable to allocate PrimaryContext objects list");
-		return;
-	}
-
-	path = __ofono_atom_get_path(gprs->atom);
-	ofono_dbus_signal_array_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"PrimaryContexts",
-					DBUS_TYPE_OBJECT_PATH, &objpath_list);
-
-	g_strfreev(objpath_list);
-}
-
-void ofono_gprs_deactivated(struct ofono_gprs *gprs,
-					unsigned id)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = NULL; /* Suppress warning */
-	dbus_bool_t value = 0;
-	GSList *l;
-	struct context *ctx;
-
-	for (l = gprs->contexts; l; l = l->next) {
-		ctx = l->data;
-
-		if (ctx->context->id == id) {
-			path = gprs_build_context_path(gprs, ctx->context);
-			break;
-		}
-	}
-
-	ofono_dbus_signal_property_changed(conn, path, DATA_CONTEXT_INTERFACE,
-						"Active", DBUS_TYPE_BOOLEAN,
-						&value);
-}
-
-void ofono_gprs_detached(struct ofono_gprs *gprs)
+void ofono_gprs_attach_notify(struct ofono_gprs *gprs, int attached)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
