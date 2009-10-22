@@ -136,20 +136,24 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	value = ctx->context->active;
+	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
+
+	value = ctx->active;
 	ofono_dbus_dict_append(&dict, "Active", DBUS_TYPE_BOOLEAN, &value);
 
-	ofono_dbus_dict_append(&dict, "AccessPointName",
-				DBUS_TYPE_STRING, &ctx->context->apn);
+	ofono_dbus_dict_append(&dict, "Type", DBUS_TYPE_STRING, &type);
 
-	ofono_dbus_dict_append(&dict, "Type",
-				DBUS_TYPE_STRING, &type);
+	strvalue = ctx->context.apn;
+	ofono_dbus_dict_append(&dict, "AccessPointName", DBUS_TYPE_STRING,
+				&strvalue);
 
-	ofono_dbus_dict_append(&dict, "Username",
-				DBUS_TYPE_STRING, &ctx->context->username);
+	strvalue = ctx->context.username;
+	ofono_dbus_dict_append(&dict, "Username", DBUS_TYPE_STRING,
+				&strvalue);
 
-	ofono_dbus_dict_append(&dict, "Passwod",
-				DBUS_TYPE_STRING, &ctx->context->password);
+	strvalue = ctx->context.password;
+	ofono_dbus_dict_append(&dict, "Passwod", DBUS_TYPE_STRING,
+				&strvalue);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
