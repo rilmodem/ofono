@@ -99,23 +99,15 @@ static inline const char *gprs_context_type_to_string(int type)
 	return NULL;
 }
 
-static struct context *gprs_context_by_path(struct ofono_gprs *gprs,
+static struct pri_context *gprs_context_by_path(struct ofono_gprs *gprs,
 						const char *ctx_path)
 {
-	const char *path = __ofono_atom_get_path(gprs->atom);
 	GSList *l;
-	unsigned id;
-
-	if (!g_str_has_prefix(ctx_path, path))
-		return NULL;
-
-	if (sscanf(ctx_path + strlen(path), "/primarycontext%2u", &id) != 1)
-		return NULL;
 
 	for (l = gprs->contexts; l; l = l->next) {
-		struct context *ctx = l->data;
+		struct pri_context *ctx = l->data;
 
-		if (ctx->context->id == id)
+		if (g_str_equal(ctx_path, ctx->path))
 			return ctx;
 	}
 
