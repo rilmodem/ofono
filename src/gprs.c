@@ -66,6 +66,12 @@ struct ofono_gprs {
 	struct ofono_atom *atom;
 };
 
+struct ofono_gprs_context {
+	struct ofono_gprs *gprs;
+	const struct ofono_gprs_context_driver *driver;
+	void *driver_data;
+};
+
 struct pri_context {
 	ofono_bool_t active;
 	enum gprs_context_type type;
@@ -891,6 +897,32 @@ void ofono_gprs_set_cid_range(struct ofono_gprs *gprs, int min, int max)
 
 	gprs->cid_min = min;
 	gprs->cid_max = max;
+}
+
+void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc, unsigned cid)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	GSList *l;
+	struct pri_context *ctx;
+	dbus_bool_t value;
+
+	for (l = gc->gprs->contexts; l; l = l->next) {
+		ctx = l->data;
+
+		if (ctx->active == FALSE)
+			continue;
+
+		if (ctx->context.cid != cid)
+			continue;
+
+		ctx->active = FALSE;
+
+		value = FALSE;
+		ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"Active", DBUS_TYPE_BOOLEAN,
+						&value);
+	}
 }
 
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d)
