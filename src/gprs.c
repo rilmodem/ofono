@@ -783,8 +783,7 @@ void ofono_gprs_attach_notify(struct ofono_gprs *gprs, int attached)
 	}
 }
 
-static void set_registration_status(struct ofono_gprs *gprs,
-					int status)
+static void set_registration_status(struct ofono_gprs *gprs, int status)
 {
 	const char *str_status = registration_status_to_string(status);
 	const char *path = __ofono_atom_get_path(gprs->atom);
@@ -1007,8 +1006,7 @@ void ofono_gprs_remove(struct ofono_gprs *gprs)
 	__ofono_atom_free(gprs->atom);
 }
 
-void ofono_gprs_set_data(struct ofono_gprs *gprs,
-					void *data)
+void ofono_gprs_set_data(struct ofono_gprs *gprs, void *data)
 {
 	gprs->driver_data = data;
 }
