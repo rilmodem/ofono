@@ -99,17 +99,6 @@ static inline const char *gprs_context_type_to_string(int type)
 	return NULL;
 }
 
-static const char *gprs_build_context_path(struct ofono_gprs *gprs,
-				const struct ofono_gprs_primary_context *ctx)
-{
-	static char path[256];
-
-	snprintf(path, sizeof(path), "%s/primarycontext%02u",
-			__ofono_atom_get_path(gprs->atom), ctx->id);
-
-	return path;
-}
-
 static struct context *gprs_context_by_path(struct ofono_gprs *gprs,
 						const char *ctx_path)
 {
