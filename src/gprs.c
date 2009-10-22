@@ -160,36 +160,119 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static void context_set_active_callback(const struct ofono_error *error,
-					void *data)
+static DBusMessage *pri_set_apn(struct pri_context *ctx, DBusConnection *conn,
+				DBusMessage *msg, const char *apn)
 {
-	struct context *ctx = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	DBusMessage *reply;
-	const char *path;
-	dbus_bool_t value;
+	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
+		return __ofono_error_invalid_format(msg);
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Activating context failed with error: %s",
-				telephony_error_to_str(error));
+	if (g_str_equal(apn, ctx->context.apn))
+		return dbus_message_new_method_return(msg);
 
-		reply = __ofono_error_failed(ctx->gprs->pending);
-		goto reply;
-	}
+	strcpy(ctx->context.apn, apn);
 
-	reply = dbus_message_new_method_return(ctx->gprs->pending);
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
-	if (!ctx->context->active) /* Signal emitted elsewhere */
-		goto reply;
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"AccessPointName",
+						DBUS_TYPE_STRING, &apn);
 
-	path = gprs_build_context_path(ctx->gprs, ctx->context);
-	value = ctx->context->active;
-	ofono_dbus_signal_property_changed(conn, path, DATA_CONTEXT_INTERFACE,
-						"Active", DBUS_TYPE_BOOLEAN,
-						&value);
+	return NULL;
+}
 
-reply:
-	__ofono_dbus_pending_reply(&ctx->gprs->pending, reply);
+static DBusMessage *pri_set_username(struct pri_context *ctx,
+					DBusConnection *conn, DBusMessage *msg,
+					const char *username)
+{
+	if (strlen(username) > OFONO_GPRS_MAX_USERNAME_LENGTH)
+		return __ofono_error_invalid_format(msg);
+
+	if (g_str_equal(username, ctx->context.username))
+		return dbus_message_new_method_return(msg);
+
+	strcpy(ctx->context.username, username);
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"Username",
+						DBUS_TYPE_STRING, &username);
+
+	return NULL;
+}
+
+static DBusMessage *pri_set_password(struct pri_context *ctx,
+					DBusConnection *conn, DBusMessage *msg,
+					const char *password)
+{
+	if (strlen(password) > OFONO_GPRS_MAX_PASSWORD_LENGTH)
+		return __ofono_error_invalid_format(msg);
+
+	if (g_str_equal(password, ctx->context.password))
+		return dbus_message_new_method_return(msg);
+
+	strcpy(ctx->context.password, password);
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"Password",
+						DBUS_TYPE_STRING, &password);
+
+	return NULL;
+}
+
+static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
+					DBusMessage *msg, const char *type)
+{
+	enum gprs_context_type context_type;
+
+	if (g_str_equal(type, "internet"))
+		context_type = GPRS_CONTEXT_TYPE_INTERNET;
+	else if (g_str_equal(type, "wap"))
+		context_type = GPRS_CONTEXT_TYPE_WAP;
+	else if (g_str_equal(type, "mms"))
+		context_type = GPRS_CONTEXT_TYPE_MMS;
+	else
+		return __ofono_error_invalid_args(msg);
+
+	if (ctx->type == context_type)
+		return dbus_message_new_method_return(msg);
+
+	ctx->type = context_type;
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE, "Type",
+						DBUS_TYPE_STRING, &type);
+
+	return NULL;
+}
+
+static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
+					DBusMessage *msg, const char *name)
+{
+	int context_type;
+
+	if (ctx->name && g_str_equal(ctx->name, name))
+		return dbus_message_new_method_return(msg);
+
+	if (ctx->name)
+		g_free(ctx->name);
+
+	ctx->name = g_strdup(name);
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE, "Name",
+						DBUS_TYPE_STRING, &name);
+
+	return NULL;
 }
 
 static DBusMessage *pri_set_property(DBusConnection *conn,
@@ -202,9 +285,6 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 	dbus_bool_t value;
 	const char *str;
 	const char *path;
-
-	if (ctx->gprs->pending)
-		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
 		return __ofono_error_invalid_args(msg);
@@ -220,7 +300,10 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 
 	dbus_message_iter_recurse(&iter, &var);
 
-	if (!strcmp(property, "Active")) {
+	if (g_str_equal(property, "Active")) {
+		if (ctx->gprs->pending)
+			return __ofono_error_busy(msg);
+
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
 			return __ofono_error_invalid_args(msg);
 
@@ -234,17 +317,8 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 
 		if (value && !ctx->gprs->attached)
 			return __ofono_error_failed(msg);
-		if (!ctx->gprs->driver->set_active)
-			return __ofono_error_not_implemented(msg);
 
-		ctx->gprs->pending = dbus_message_ref(msg);
-
-		ctx->gprs->driver->set_active(ctx->gprs, ctx->context->id,
-						value,
-						context_set_active_callback,
-						ctx);
-
-		return NULL;
+		return __ofono_error_not_implemented(msg);
 	}
 
 	/* All other properties are read-only when context is active */
@@ -257,46 +331,38 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 
 		dbus_message_iter_get_basic(&var, &str);
 
-		if (ctx->context->apn)
-			g_free(ctx->context->apn);
-		ctx->context->apn = g_strdup(str);
+		return pri_set_apn(ctx, conn, msg, str);
 	} else if (!strcmp(property, "Type")) {
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &str);
 
-		if (!strcmp(str, "internet"))
-			ctx->context->type = DATA_CONTEXT_TYPE_INTERNET;
-		else
-			return __ofono_error_invalid_args(msg);
+		return pri_set_type(ctx, conn, msg, str);
 	} else if (!strcmp(property, "Username")) {
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &str);
 
-		if (ctx->context->username)
-			g_free(ctx->context->username);
-		ctx->context->username = g_strdup(str);
+		return pri_set_username(ctx, conn, msg, str);
 	} else if (!strcmp(property, "Password")) {
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &str);
 
-		if (ctx->context->password)
-			g_free(ctx->context->password);
-		ctx->context->password = g_strdup(str);
-	} else
-		return __ofono_error_invalid_args(msg);
+		return pri_set_password(ctx, conn, msg, str);
+	} else if (!strcmp(property, "Name")) {
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return __ofono_error_invalid_args(msg);
 
-	path = gprs_build_context_path(ctx->gprs, ctx->context);
-	ofono_dbus_signal_property_changed(conn, path, DATA_CONTEXT_INTERFACE,
-						property, DBUS_TYPE_STRING,
-						&str);
+		dbus_message_iter_get_basic(&var, &str);
 
-	return dbus_message_new_method_return(msg);
+		return pri_set_name(ctx, conn, msg, str);
+	}
+
+	return __ofono_error_invalid_args(msg);
 }
 
 static GDBusMethodTable context_methods[] = {
