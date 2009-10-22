@@ -39,6 +39,7 @@
 
 #include "atmodem.h"
 
+static const char *cgreg_prefix[] = { "+CGREG:", NULL };
 static const char *cgdcont_prefix[] = { "+CGDCONT:", NULL };
 static const char *none_prefix[] = { NULL };
 
@@ -81,213 +82,73 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct set_active_req *req = user_data;
-	struct gprs_data *gd =
-		ofono_gprs_get_data(req->gprs);
+	struct cb_data *cbd = user_data;
+	GAtResultIter iter;
+	ofono_gprs_status_cb_t cb = cbd->cb;
+	int status;
+	const char *str;
+	int lac = -1, ci = -1, tech = -1;
 	struct ofono_error error;
-	char buf[64];
 
-	dump_response("cgdcont_cb", ok, result);
+	dump_response("at_cgreg_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
-		req->cb(&error, req->data);
-
-		g_free(req);
+		cb(&error, -1, -1, -1, -1, cbd->data);
 		return;
 	}
 
-	/* Context is no longer undefined */
-	gd->new_contexts = g_slist_remove(gd->new_contexts, req->ctx);
+	g_at_result_iter_init(&iter, result);
 
-	sprintf(buf, "AT+CGACT=1,%u", req->ctx->id);
-
-	if (g_at_chat_send(gd->chat, buf, none_prefix,
-				at_cgact_cb, req, g_free) > 0)
+	if (!g_at_result_iter_next(&iter, "+CGREG:")) {
+		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 		return;
-
-	CALLBACK_WITH_FAILURE(req->cb, req->data);
-
-	g_free(req);
-}
-
-static void at_pdp_set_active(struct ofono_gprs *gprs, unsigned id,
-				int active, ofono_gprs_cb_t cb,
-				void *data)
-{
-	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct set_active_req *req = NULL;
-	char buf[64];
-	struct ofono_gprs_primary_context *ctx;
-	gint cid = id;
-	int len;
-	GSList *l;
-
-	l = g_slist_find_custom(gd->contexts, &cid, context_id_compare);
-	if (!l)
-		goto error;
-
-	ctx = l->data;
-
-	req = g_new0(struct set_active_req, 1);
-	if (!req)
-		goto error;
-
-	req->gprs = gprs;
-	req->ctx = ctx;
-	req->active = active;
-	req->cb = cb;
-	req->data = data;
-
-	if (active) {
-		len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", id);
-		if (ctx->apn)
-			snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
-					ctx->apn);
-
-		if (g_at_chat_send(gd->chat, buf, none_prefix,
-					at_cgdcont_cb, req, NULL) > 0)
-			return;
-	} else {
-		sprintf(buf, "AT+CGACT=0,%u", id);
-
-		if (g_at_chat_send(gd->chat, buf, none_prefix,
-					at_cgact_cb, req, g_free) > 0)
-			return;
 	}
 
-error:
-	if (req)
-		g_free(req);
+	/* Skip <n> the unsolicited result code */
+	g_at_result_iter_skip_next(&iter);
 
-	CALLBACK_WITH_FAILURE(cb, data);
+	g_at_result_iter_next_number(&iter, &status);
+
+	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+		lac = strtol(str, NULL, 16);
+	else
+		goto out;
+
+	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+		ci = strtol(str, NULL, 16);
+	else
+		goto out;
+
+	g_at_result_iter_next_number(&iter, &tech);
+
+out:
+	ofono_debug("cgreg_cb: %d, %d, %d, %d", status, lac, ci, tech);
+
+	cb(&error, status, lac, ci, tech, cbd->data);
 }
 
-static void at_pdp_set_active_all(struct ofono_gprs *gprs,
-				int active, ofono_gprs_cb_t cb,
-				void *data)
+static void at_gprs_registration_status(struct ofono_gprs *gprs,
+					ofono_gprs_status_cb_t cb,
+					void *data)
 {
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct set_active_req *req;
-	char buf[64];
+	struct cb_data *cbd = cb_data_new(cb, data);
 
-	req = g_new0(struct set_active_req, 1);
-	if (!req)
+	if (!cbd)
 		goto error;
 
-	req->gprs = gprs;
-	req->active = active;
-	req->cb = cb;
-	req->data = data;
-
-	sprintf(buf, "AT+CGACT=%i", active ? 1 : 0);
-
-	if (g_at_chat_send(gd->chat, buf, none_prefix,
-				at_cgact_cb, req, g_free) > 0)
+	if (g_at_chat_send(gd->chat, "AT+CGREG?", cgreg_prefix,
+				at_cgreg_cb, cbd, g_free) > 0)
 		return;
 
 error:
-	if (req)
-		g_free(req);
+	if (cbd)
+		g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, data);
-}
-
-static void at_pdp_alloc(struct ofono_gprs *gprs,
-				ofono_gprs_alloc_cb_t cb,
-				void *data)
-{
-	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct ofono_gprs_primary_context *ctx;
-	struct ofono_error e;
-	unsigned id = find_next_primary_id(gd);
-
-	if (!id) {
-		CALLBACK_WITH_FAILURE(cb, NULL, data);
-
-		return;
-	}
-
-	ctx = g_try_new0(struct ofono_gprs_primary_context, 1);
-	if (!ctx) {
-		CALLBACK_WITH_FAILURE(cb, NULL, data);
-
-		return;
-	}
-
-	ctx->id = id;
-	ctx->apn = g_strdup("");
-	ctx->username = g_strdup("");
-	ctx->password = g_strdup("");
-
-	gd->new_contexts = g_slist_insert_sorted(gd->new_contexts,
-						ctx, context_compare);
-	gd->contexts = g_slist_insert_sorted(gd->contexts,
-						ctx, context_compare);
-
-	/* The context will be defined (+CGDCONT) lazily, once it's needed
-	 * and the parameters are already set in ctx.  Right now just call
-	 * back */
-	e.type = OFONO_ERROR_TYPE_NO_ERROR;
-	e.error = 0;
-	cb(&e, ctx, data);
-
-	ofono_gprs_notify(gprs, ctx);
-}
-
-static void at_pdp_undefine_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
-{
-	dump_response("undefine_cb", ok, result);
-
-	if (!ok)
-		ofono_error("Undefining primary context failed");
-}
-
-static void at_pdp_free(struct ofono_gprs *gprs, unsigned id,
-			ofono_gprs_cb_t cb, void *data)
-{
-	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct ofono_error e;
-	char buf[64];
-	struct ofono_gprs_primary_context *ctx;
-	GSList *l;
-	gint cid = id;
-
-	l = g_slist_find_custom(gd->contexts, &cid, context_id_compare);
-	if (!l) {
-		CALLBACK_WITH_FAILURE(cb, data);
-
-		return;
-	}
-
-	ctx = l->data;
-	if (ctx->active) {
-		CALLBACK_WITH_FAILURE(cb, data);
-
-		return;
-	}
-
-	/* We can call back already -- even if the request to undefine
-	 * the context fails, the ID can be re-used.  */
-	e.type = OFONO_ERROR_TYPE_NO_ERROR;
-	e.error = 0;
-	cb(&e, data);
-
-	context_free(ctx);
-	gd->contexts = g_slist_remove(gd->contexts, ctx);
-
-	if (g_slist_find(gd->new_contexts, ctx)) {
-		gd->new_contexts = g_slist_remove(gd->new_contexts, ctx);
-		return;
-	}
-
-	sprintf(buf, "AT+CGDCONT=%u", id);
-
-	g_at_chat_send(gd->chat, buf, none_prefix,
-			at_pdp_undefine_cb, NULL, NULL);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
 }
 
 static void at_cgact_read_cb(gboolean ok, GAtResult *result,
@@ -501,6 +362,7 @@ static struct ofono_gprs_driver driver = {
 	.probe			= at_gprs_probe,
 	.remove			= at_gprs_remove,
 	.set_attached		= at_gprs_set_attached,
+	.registration_status	= at_gprs_registration_status,
 };
 
 void at_gprs_init()
