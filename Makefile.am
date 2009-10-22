@@ -11,7 +11,7 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/sms.h include/sim.h include/message-waiting.h \
 			include/netreg.h include/voicecall.h include/devinfo.h \
 			include/cbs.h include/call-volume.h \
-			include/gprs.h
+			include/gprs.h include/gprs-context.h
 
 nodist_include_HEADERS = include/version.h
 

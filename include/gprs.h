@@ -30,25 +30,11 @@ extern "C" {
 
 struct ofono_gprs;
 
-struct ofono_gprs_primary_context {
-	unsigned id;
-	int type;
-	int direction;
-	int active;
-	char *apn;
-	char *username;
-	char *password;
-};
-
 typedef void (*ofono_gprs_status_cb_t)(const struct ofono_error *error,
 						int status, int lac, int ci,
 						int tech, void *data);
 
 typedef void (*ofono_gprs_cb_t)(const struct ofono_error *error, void *data);
-
-typedef void (*ofono_gprs_alloc_cb_t)(const struct ofono_error *error,
-					struct ofono_gprs_primary_context *ctx,
-					void *data);
 
 struct ofono_gprs_driver {
 	const char *name;
@@ -57,17 +43,6 @@ struct ofono_gprs_driver {
 	void (*remove)(struct ofono_gprs *gprs);
 	void (*set_attached)(struct ofono_gprs *gprs, int attached,
 				ofono_gprs_cb_t cb, void *data);
-	void (*set_active)(struct ofono_gprs *gprs, unsigned id,
-				int active, ofono_gprs_cb_t cb,
-				void *data);
-	void (*set_active_all)(struct ofono_gprs *gprs,
-				int active, ofono_gprs_cb_t cb,
-				void *data);
-	void (*create_context)(struct ofono_gprs *gprs,
-				ofono_gprs_alloc_cb_t cb,
-				void *data);
-	void (*remove_context)(struct ofono_gprs *gprs, unsigned id,
-				ofono_gprs_cb_t cb, void *data);
 	void (*registration_status)(struct ofono_gprs *gprs,
 					ofono_gprs_status_cb_t cb, void *data);
 };
@@ -75,11 +50,7 @@ struct ofono_gprs_driver {
 void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 				int status, int lac, int ci, int tech);
 
-void ofono_gprs_notify(struct ofono_gprs *gprs,
-					struct ofono_gprs_primary_context *ctx);
-void ofono_gprs_deactivated(struct ofono_gprs *gprs,
-					unsigned id);
-void ofono_gprs_detached(struct ofono_gprs *gprs);
+void ofono_gprs_attach_notify(struct ofono_gprs *gprs, int attached);
 
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d);
 void ofono_gprs_driver_unregister(const struct ofono_gprs_driver *d);

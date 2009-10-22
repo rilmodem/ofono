@@ -163,6 +163,7 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/sim.h>
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 
 #include <ofono/ssn.h>
 
