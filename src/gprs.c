@@ -49,14 +49,13 @@ enum gprs_context_type {
 
 struct ofono_gprs {
 	GSList *contexts;
-	int attached;
-	int roaming_allowed;
-	int powered;
+	ofono_bool_t attached;
+	ofono_bool_t roaming_allowed;
+	ofono_bool_t powered;
 	int status;
 	int location;
 	int cellid;
 	int technology;
-
 	int flags;
 	struct context *current_context;
 	DBusMessage *pending;
