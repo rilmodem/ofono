@@ -659,81 +659,45 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_gprs *gprs = data;
-
-	if (gprs->pending)
-		return __ofono_error_busy(msg);
-
-	if (!gprs->driver->create_context)
-		return __ofono_error_not_implemented(msg);
+	struct pri_context *context;
+	const char *path;
+	char **objpath_list;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
-	gprs->pending = dbus_message_ref(msg);
+	context = pri_context_create(gprs);
 
-	gprs->driver->create_context(gprs, gprs_create_context_callback, gprs);
-
-	return NULL;
-}
-
-static void gprs_remove_context_callback(const struct ofono_error *error,
-						void *data)
-{
-	struct ofono_gprs *gprs = data;
-	DBusMessage *reply;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path;
-	char **objpath_list;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("Removing context failed with error: %s",
-				telephony_error_to_str(error));
-
-		reply = __ofono_error_failed(gprs->pending);
-		goto error;
+	if (!context) {
+		ofono_error("Unable to allocate context struct");
+		return __ofono_error_failed(msg);
 	}
 
-	context_dbus_unregister(gprs, gprs->current_context->context);
-	gprs->contexts = g_slist_remove(gprs->contexts, gprs->current_context);
-	gprs->current_context = NULL;
+	ofono_debug("Registering new context");
 
-	objpath_list = gprs_contexts_path_list(gprs, gprs->contexts);
-	if (!objpath_list) {
-		ofono_error("Could not allocate PrimaryContext objects list");
-		return;
+	if (!context_dbus_register(context)) {
+		ofono_error("Unable to register primary context");
+		return __ofono_error_failed(msg);
 	}
 
-	path = __ofono_atom_get_path(gprs->atom);
-	ofono_dbus_signal_array_property_changed(conn, path,
+	gprs->contexts = g_slist_append(gprs->contexts, context);
+
+	objpath_list = gprs_contexts_path_list(gprs->contexts);
+
+	if (objpath_list) {
+		path = __ofono_atom_get_path(gprs->atom);
+		ofono_dbus_signal_array_property_changed(conn, path,
 					DATA_CONNECTION_MANAGER_INTERFACE,
 					"PrimaryContexts",
 					DBUS_TYPE_OBJECT_PATH, &objpath_list);
 
-	g_strfreev(objpath_list);
-
-	reply = dbus_message_new_method_return(gprs->pending);
-
-error:
-	__ofono_dbus_pending_reply(&gprs->pending, reply);
-}
-
-static void gprs_deactivate_context_callback(const struct ofono_error *error,
-						void *data)
-{
-	struct ofono_gprs *gprs = data;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Removing context failed with error: %s",
-				telephony_error_to_str(error));
-
-		gprs->current_context = NULL;
-		__ofono_dbus_pending_reply(&gprs->pending, __ofono_error_failed(
-						gprs->pending));
-		return;
+		g_strfreev(objpath_list);
 	}
 
-	gprs->driver->remove_context(gprs, gprs->current_context->context->id,
-					gprs_remove_context_callback, gprs);
+	path = context->path;
+
+	return g_dbus_create_reply(msg, DBUS_TYPE_OBJECT_PATH, &path,
+					DBUS_TYPE_INVALID);
 }
 
 static DBusMessage *gprs_remove_context(DBusConnection *conn,
@@ -800,8 +764,7 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 static GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	gprs_get_properties },
 	{ "SetProperty",	"sv",	"",		gprs_set_property },
-	{ "CreateContext",	"",	"o",		gprs_create_context,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "CreateContext",	"",	"o",		gprs_create_context },
 	{ "RemoveContext",	"o",	"",		gprs_remove_context,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "DeactivateAll",	"",	"",		gprs_deactivate_all,
