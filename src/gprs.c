@@ -655,32 +655,6 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 	return dbus_message_new_method_return(msg);
 }
 
-static void gprs_create_context_callback(const struct ofono_error *error,
-					struct ofono_gprs_primary_context *ctx,
-					void *data)
-{
-	struct ofono_gprs *gprs = data;
-	DBusMessage *reply;
-	const char *path;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Creating new context failed with error: %s",
-				telephony_error_to_str(error));
-
-		reply = __ofono_error_failed(gprs->pending);
-		goto error;
-	}
-
-	reply = dbus_message_new_method_return(gprs->pending);
-
-	path = gprs_build_context_path(gprs, ctx);
-	dbus_message_append_args(reply, DBUS_TYPE_OBJECT_PATH, &path,
-					DBUS_TYPE_INVALID);
-
-error:
-	__ofono_dbus_pending_reply(&gprs->pending, reply);
-}
-
 static DBusMessage *gprs_create_context(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
