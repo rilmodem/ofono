@@ -310,6 +310,12 @@ DBusMessage *__ofono_error_sim_not_ready(DBusMessage *msg)
 			"SIM is not ready or not inserted");
 }
 
+DBusMessage *__ofono_error_in_use(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".InUse",
+			"The resource is currently in use");
+}
+
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
