@@ -40,174 +40,45 @@
 #include "atmodem.h"
 
 static const char *cgdcont_prefix[] = { "+CGDCONT:", NULL };
-static const char *cgact_prefix[] = { "+CGACT:", NULL };
 static const char *none_prefix[] = { NULL };
 
 struct gprs_data {
-	GSList *primary_id_range;
-	GSList *contexts;
-	GSList *new_contexts; /* Not yet defined contexts */
 	GAtChat *chat;
 };
 
-struct set_attached_req {
-	struct ofono_gprs *gprs;
-	int attached;
-	ofono_gprs_cb_t cb;
-	void *data;
-};
-
-struct set_active_req {
-	struct ofono_gprs *gprs;
-	struct ofono_gprs_primary_context *ctx;
-	int active;
-	ofono_gprs_cb_t cb;
-	void *data;
-};
-
-static gint context_id_compare(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_gprs_primary_context *ctxa = a;
-	const gint *id = b;
-
-	return ctxa->id - *id;
-}
-
-static gint context_compare(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_gprs_primary_context *ctxa = a;
-	const struct ofono_gprs_primary_context *ctxb = a;
-
-	return ctxa->id - ctxb->id;
-}
-
-static void context_free(struct ofono_gprs_primary_context *ctx)
-{
-	if (ctx->apn)
-		g_free(ctx->apn);
-
-	if (ctx->username) {
-		memset(ctx->username, 0, strlen(ctx->username));
-		g_free(ctx->username);
-	}
-
-	if (ctx->password) {
-		memset(ctx->password, 0, strlen(ctx->password));
-		g_free(ctx->password);
-	}
-
-	g_free(ctx);
-}
-
-static unsigned int find_next_primary_id(struct gprs_data *d)
-{
-	GSList *l;
-	gint i, *range;
-
-	for (l = d->primary_id_range; l; l = l->next)
-		for (range = l->data, i = range[0]; i <= range[1]; i++)
-			if (!g_slist_find_custom(d->contexts, &i,
-							context_id_compare))
-				return i;
-
-	return 0;
-}
-
-static void detached(struct ofono_gprs *gprs)
-{
-	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	GSList *l;
-	struct ofono_gprs_primary_context *ctx;
-
-	for (l = gd->contexts; l; l = l->next) {
-		ctx = l->data;
-		if (ctx->active) {
-			ctx->active = 0;
-
-			ofono_gprs_deactivated(gprs, ctx->id);
-		}
-	}
-}
-
 static void at_cgatt_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct set_attached_req *req = user_data;
+	struct cb_data *cbd = user_data;
+	ofono_gprs_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	dump_response("cgatt_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (ok && !req->attached)
-		detached(req->gprs);
-
-	req->cb(&error, req->data);
+	cb(&error, cbd->data);
 }
 
-static void at_ps_set_attached(struct ofono_gprs *gprs,
-				int attached, ofono_gprs_cb_t cb,
-				void *data)
+static void at_gprs_set_attached(struct ofono_gprs *gprs, int attached,
+					ofono_gprs_cb_t cb, void *data)
 {
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct set_attached_req *req;
+	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	req = g_new0(struct set_attached_req, 1);
-	if (!req)
+	if (!cbd)
 		goto error;
-
-	req->gprs = gprs;
-	req->attached = attached;
-	req->cb = cb;
-	req->data = data;
 
 	sprintf(buf, "AT+CGATT=%i", attached ? 1 : 0);
 
 	if (g_at_chat_send(gd->chat, buf, none_prefix,
-				at_cgatt_cb, req, g_free) > 0)
+				at_cgatt_cb, cbd, g_free) > 0)
 		return;
 
 error:
-	if (req)
-		g_free(req);
+	if (cbd)
+		g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
-}
-
-static void at_cgact_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct set_active_req *req = user_data;
-	struct gprs_data *gd =
-		ofono_gprs_get_data(req->gprs);
-	struct ofono_error error;
-	GSList *l;
-	struct ofono_gprs_primary_context *ctx;
-
-	dump_response("cgact_cb", ok, result);
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (ok) {
-		if (req->ctx) {
-			req->ctx->active = req->active;
-
-			if (!req->active)
-				ofono_gprs_deactivated(req->gprs,
-								req->ctx->id);
-		} else
-			for (l = gd->contexts; l; l = l->next) {
-				ctx = l->data;
-
-				if (g_slist_find(gd->new_contexts, ctx))
-					continue;
-
-				ctx->active = req->active;
-
-				if (!req->active)
-					ofono_gprs_deactivated(
-							req->gprs, ctx->id);
-			}
-	}
-
-	req->cb(&error, req->data);
 }
 
 static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -621,9 +492,7 @@ static void at_gprs_remove(struct ofono_gprs *gprs)
 {
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 
-	g_slist_foreach(gd->contexts, (GFunc) context_free, NULL);
-	g_slist_free(gd->contexts);
-	g_slist_free(gd->new_contexts);
+	ofono_gprs_set_data(gprs, NULL);
 	g_free(gd);
 }
 
@@ -631,11 +500,7 @@ static struct ofono_gprs_driver driver = {
 	.name			= "atmodem",
 	.probe			= at_gprs_probe,
 	.remove			= at_gprs_remove,
-	.set_attached		= at_ps_set_attached,
-	.set_active		= at_pdp_set_active,
-	.set_active_all		= at_pdp_set_active_all,
-	.create_context		= at_pdp_alloc,
-	.remove_context		= at_pdp_free,
+	.set_attached		= at_gprs_set_attached,
 };
 
 void at_gprs_init()
