@@ -727,6 +727,11 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 
 	dump_response("ring_notify", TRUE, result);
 
+	/* See comment in CRING */
+	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),
+				call_compare_by_status))
+		return;
+
 	/* RING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
 				call_compare_by_status))
@@ -754,6 +759,17 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	struct ofono_call *call;
 
 	dump_response("cring_notify", TRUE, result);
+
+	/* Handle the following situation:
+	 * Active Call + Waiting Call.  Active Call is Released.  The Waiting
+	 * call becomes Incoming and RING/CRING indications are signaled.
+	 * Sometimes these arrive before we managed to poll CLCC to find about
+	 * the stage change.  If this happens, simply ignore the RING/CRING
+	 * when a waiting call exists (cannot have waiting + incoming in GSM)
+	 */
+	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),
+				call_compare_by_status))
+		return;
 
 	/* CRING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
