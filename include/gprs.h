@@ -29,6 +29,7 @@ extern "C" {
 #include <ofono/types.h>
 
 struct ofono_gprs;
+struct ofono_gprs_context;
 
 typedef void (*ofono_gprs_status_cb_t)(const struct ofono_error *error,
 						int status, int lac, int ci,
@@ -65,6 +66,8 @@ void ofono_gprs_set_data(struct ofono_gprs *gprs, void *data);
 void *ofono_gprs_get_data(struct ofono_gprs *gprs);
 
 void ofono_gprs_set_cid_range(struct ofono_gprs *gprs, int min, int max);
+void ofono_gprs_add_context(struct ofono_gprs *gprs,
+				struct ofono_gprs_context *gc);
 
 #ifdef __cplusplus
 }

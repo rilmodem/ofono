@@ -358,6 +358,8 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		gc->pending = dbus_message_ref(msg);
 
 		ctx->pending_active = value;
+		/* TODO: Find lowest unused CID */
+		ctx->context.cid = 1;
 
 		if (value)
 			gc->driver->activate_primary(gc, &ctx->context,
@@ -970,6 +972,24 @@ void ofono_gprs_set_cid_range(struct ofono_gprs *gprs, int min, int max)
 	gprs->cid_max = max;
 }
 
+static void gprs_context_unregister(struct ofono_atom *atom)
+{
+	struct ofono_gprs_context *gc = __ofono_atom_get_data(atom);
+
+	if (gc->gprs)
+		gc->gprs->context_driver = NULL;
+
+	gc->gprs = NULL;
+}
+
+void ofono_gprs_add_context(struct ofono_gprs *gprs,
+				struct ofono_gprs_context *gc)
+{
+	gprs->context_driver = gc;
+
+	__ofono_atom_register(gc->atom, gprs_context_unregister);
+}
+
 void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc, unsigned cid)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1027,9 +1047,6 @@ static void gprs_context_remove(struct ofono_atom *atom)
 	if (gc->driver && gc->driver->remove)
 		gc->driver->remove(gc);
 
-	if (gc->gprs)
-		gc->gprs->context_driver = NULL;
-
 	g_free(gc);
 }
 
@@ -1051,7 +1068,7 @@ struct ofono_gprs_context *ofono_gprs_context_create(struct ofono_modem *modem,
 	gc->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_GPRS_CONTEXT,
 						gprs_context_remove, gc);
 
-	for (l = g_drivers; l; l = l->next) {
+	for (l = g_context_drivers; l; l = l->next) {
 		const struct ofono_gprs_context_driver *drv = l->data;
 
 		if (g_strcmp0(drv->name, driver))
