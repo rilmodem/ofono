@@ -55,10 +55,10 @@ enum hfp_indicator {
 
 struct hfp_data {
 	GAtChat *chat;
-	guint ag_features;
-	guint hf_features;
-	guint8 cind_pos[HFP_INDICATOR_LAST];
-	gint cind_val[HFP_INDICATOR_LAST];
+	unsigned int ag_features;
+	unsigned int hf_features;
+	unsigned char cind_pos[HFP_INDICATOR_LAST];
+	unsigned int cind_val[HFP_INDICATOR_LAST];
 };
 
 extern void hfp_voicecall_init();
