@@ -127,6 +127,12 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hfpmodem/hfpmodem.h \
 			drivers/hfpmodem/hfpmodem.c
 
+builtin_modules += mbmmodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/mbmmodem/mbmmodem.h \
+			drivers/mbmmodem/mbmmodem.c \
+			drivers/mbmmodem/gprs-context.c
+
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
 
