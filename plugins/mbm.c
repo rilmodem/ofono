@@ -127,6 +127,8 @@ static int mbm_enable(struct ofono_modem *modem)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, mbm_debug, NULL);
 
+	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1", NULL,
+					NULL, NULL, NULL);
 	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
 					cfun_enable, modem, NULL);
 
@@ -152,7 +154,7 @@ static int mbm_disable(struct ofono_modem *modem)
 	if (!data->chat)
 		return 0;
 
-	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
+	g_at_chat_send(data->chat, "AT+CFUN=4", NULL,
 					cfun_disable, modem, NULL);
 
 	g_at_chat_shutdown(data->chat);
