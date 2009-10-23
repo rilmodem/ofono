@@ -39,7 +39,6 @@
 
 #include "atmodem.h"
 
-static const char *cgdcont_prefix[] = { "+CGDCONT:", NULL };
 static const char *cgact_prefix[] = { "+CGACT:", NULL };
 static const char *none_prefix[] = { NULL };
 
@@ -106,7 +105,6 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				at_cgact_up_cb, ncbd, g_free) > 0)
 		return;
 
-error:
 	if (ncbd)
 		g_free(ncbd);
 

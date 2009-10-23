@@ -169,8 +169,6 @@ static void pri_set_active_callback(const struct ofono_error *error,
 	struct pri_context *ctx = data;
 	struct ofono_gprs_context *gc = ctx->gprs->context_driver;
 	DBusConnection *conn = ofono_dbus_get_connection();
-	DBusMessage *reply;
-	const char *path;
 	dbus_bool_t value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
@@ -292,8 +290,6 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
 					DBusMessage *msg, const char *name)
 {
-	int context_type;
-
 	if (ctx->name && g_str_equal(ctx->name, name))
 		return dbus_message_new_method_return(msg);
 
@@ -320,7 +316,6 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 	const char *property;
 	dbus_bool_t value;
 	const char *str;
-	const char *path;
 
 	if (!dbus_message_iter_init(msg, &iter))
 		return __ofono_error_invalid_args(msg);
@@ -507,26 +502,6 @@ static char **gprs_contexts_path_list(GSList *context_list)
 	}
 
 	return objlist;
-}
-
-static void gprs_generic_callback(const struct ofono_error *error, void *data)
-{
-	struct ofono_gprs *gprs = data;
-	DBusMessage *reply;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_debug("command failed with error: %s",
-				telephony_error_to_str(error));
-
-	if (!gprs->pending)
-		return;
-
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		reply = dbus_message_new_method_return(gprs->pending);
-	else
-		reply = __ofono_error_failed(gprs->pending);
-
-	__ofono_dbus_pending_reply(&gprs->pending, reply);
 }
 
 static void gprs_attach_callback(const struct ofono_error *error, void *data)

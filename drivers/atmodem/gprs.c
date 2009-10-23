@@ -189,7 +189,6 @@ out:
 static void cgev_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
-	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 	GAtResultIter iter;
 	const char *event;
 
