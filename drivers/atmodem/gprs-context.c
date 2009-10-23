@@ -108,6 +108,8 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (ncbd)
 		g_free(ncbd);
 
+	gcd->active_context = 0;
+
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
@@ -235,6 +237,8 @@ static int at_gprs_context_probe(struct ofono_gprs_context *gc,
 
 	gcd = g_new0(struct gprs_context_data, 1);
 	gcd->chat = chat;
+
+	g_at_chat_register(gcd->chat, "+CGEV:", cgev_notify, FALSE, gc, NULL);
 
 	ofono_gprs_context_set_data(gc, gcd);
 
