@@ -108,6 +108,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_CBS = 14,
 	OFONO_ATOM_TYPES_CALL_VOLUME = 15,
 	OFONO_ATOM_TYPE_GPRS = 16,
+	OFONO_ATOM_TYPE_GPRS_CONTEXT = 17,
 };
 
 enum ofono_atom_watch_condition {

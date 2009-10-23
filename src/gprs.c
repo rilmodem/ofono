@@ -40,6 +40,7 @@
 #define GPRS_FLAG_ATTACHING 0x1
 
 static GSList *g_drivers = NULL;
+static GSList *g_context_drivers = NULL;
 
 enum gprs_context_type {
 	GPRS_CONTEXT_TYPE_INTERNET = 1,
@@ -72,6 +73,7 @@ struct ofono_gprs_context {
 	DBusMessage *pending;
 	const struct ofono_gprs_context_driver *driver;
 	void *driver_data;
+	struct ofono_atom *atom;
 };
 
 struct pri_context {
@@ -1017,6 +1019,92 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc, unsigned cid)
 						"Active", DBUS_TYPE_BOOLEAN,
 						&value);
 	}
+}
+
+int ofono_gprs_context_driver_register(const struct ofono_gprs_context_driver *d)
+{
+	DBG("driver: %p, name: %s", d, d->name);
+
+	if (d->probe == NULL)
+		return -EINVAL;
+
+	g_context_drivers = g_slist_prepend(g_context_drivers, (void *)d);
+
+	return 0;
+}
+
+void ofono_gprs_context_driver_unregister(const struct ofono_gprs_context_driver *d)
+{
+	DBG("driver: %p, name: %s", d, d->name);
+
+	g_context_drivers = g_slist_remove(g_context_drivers, (void *)d);
+}
+
+static void gprs_context_remove(struct ofono_atom *atom)
+{
+	struct ofono_gprs_context *gc = __ofono_atom_get_data(atom);
+
+	DBG("atom: %p", atom);
+
+	if (gc == NULL)
+		return;
+
+	if (gc->driver && gc->driver->remove)
+		gc->driver->remove(gc);
+
+	if (gc->gprs)
+		gc->gprs->context_driver = NULL;
+
+	g_free(gc);
+}
+
+struct ofono_gprs_context *ofono_gprs_context_create(struct ofono_modem *modem,
+						unsigned int vendor,
+						const char *driver, void *data)
+{
+	struct ofono_gprs_context *gc;
+	GSList *l;
+
+	if (driver == NULL)
+		return NULL;
+
+	gc = g_try_new0(struct ofono_gprs_context, 1);
+
+	if (gc == NULL)
+		return NULL;
+
+	gc->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_GPRS_CONTEXT,
+						gprs_context_remove, gc);
+
+	for (l = g_drivers; l; l = l->next) {
+		const struct ofono_gprs_context_driver *drv = l->data;
+
+		if (g_strcmp0(drv->name, driver))
+			continue;
+
+		if (drv->probe(gc, vendor, data) < 0)
+			continue;
+
+		gc->driver = drv;
+		break;
+	}
+
+	return gc;
+}
+
+void ofono_gprs_context_remove(struct ofono_gprs_context *gc)
+{
+	__ofono_atom_free(gc->atom);
+}
+
+void ofono_gprs_context_set_data(struct ofono_gprs_context *gc, void *data)
+{
+	gc->driver_data = data;
+}
+
+void *ofono_gprs_context_get_data(struct ofono_gprs_context *gc)
+{
+	return gc->driver_data;
 }
 
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d)
