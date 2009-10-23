@@ -37,7 +37,7 @@
 #define DATA_CONNECTION_MANAGER_INTERFACE "org.ofono.DataConnectionManager"
 #define DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 
-#define DATA_CONNECTION_FLAG_ATTACHING 0x1
+#define GPRS_FLAG_ATTACHING 0x1
 
 static GSList *g_drivers = NULL;
 
@@ -348,7 +348,7 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		if (ctx->active == (ofono_bool_t) value)
 			return dbus_message_new_method_return(msg);
 
-		if (ctx->gprs->flags & DATA_CONNECTION_FLAG_ATTACHING)
+		if (ctx->gprs->flags & GPRS_FLAG_ATTACHING)
 			return __ofono_error_busy(msg);
 
 		if (value && !ctx->gprs->attached)
@@ -535,7 +535,7 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 	dbus_bool_t value;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
-			(gprs->flags & DATA_CONNECTION_FLAG_ATTACHING)) {
+			(gprs->flags & GPRS_FLAG_ATTACHING)) {
 		gprs->attached = !gprs->attached;
 
 		path = __ofono_atom_get_path(gprs->atom);
@@ -545,7 +545,7 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 					"Attached", DBUS_TYPE_BOOLEAN, &value);
 	}
 
-	gprs->flags &= ~DATA_CONNECTION_FLAG_ATTACHING;
+	gprs->flags &= ~GPRS_FLAG_ATTACHING;
 
 	gprs_netreg_update(gprs);
 }
@@ -564,8 +564,8 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 	attach = gprs->powered && operator_ok;
 
 	if (gprs->attached != attach &&
-			!(gprs->flags & DATA_CONNECTION_FLAG_ATTACHING)) {
-		gprs->flags |= DATA_CONNECTION_FLAG_ATTACHING;
+			!(gprs->flags & GPRS_FLAG_ATTACHING)) {
+		gprs->flags |= GPRS_FLAG_ATTACHING;
 
 		gprs->driver->set_attached(gprs, attach, gprs_attach_callback,
 						gprs);
@@ -871,7 +871,7 @@ void ofono_gprs_attach_notify(struct ofono_gprs *gprs, int attached)
 	const char *path;
 	dbus_bool_t value = 0;
 
-	if (gprs->attached && !(gprs->flags & DATA_CONNECTION_FLAG_ATTACHING)) {
+	if (gprs->attached && !(gprs->flags & GPRS_FLAG_ATTACHING)) {
 		gprs->attached = 0;
 
 		path = __ofono_atom_get_path(gprs->atom);
@@ -900,7 +900,7 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 	attached = (status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
 			status != NETWORK_REGISTRATION_STATUS_ROAMING);
 	if (gprs->attached != (int) attached &&
-			!(gprs->flags & DATA_CONNECTION_FLAG_ATTACHING)) {
+			!(gprs->flags & GPRS_FLAG_ATTACHING)) {
 		gprs->attached = (int) attached;
 
 		ofono_dbus_signal_property_changed(conn, path,
