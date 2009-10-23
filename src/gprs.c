@@ -155,7 +155,7 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 				&strvalue);
 
 	strvalue = ctx->context.password;
-	ofono_dbus_dict_append(&dict, "Passwod", DBUS_TYPE_STRING,
+	ofono_dbus_dict_append(&dict, "Password", DBUS_TYPE_STRING,
 				&strvalue);
 
 	dbus_message_iter_close_container(&iter, &dict);
