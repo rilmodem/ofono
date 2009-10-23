@@ -54,7 +54,8 @@ struct ofono_gprs_context_driver {
 				const struct ofono_gprs_primary_context *ctx,
 				ofono_gprs_context_cb_t cb, void *data);
 	void (*deactivate_primary)(struct ofono_gprs_context *gc,
-					unsigned int id);
+					unsigned int id,
+					ofono_gprs_context_cb_t cb, void *data);
 };
 
 void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc, unsigned id);

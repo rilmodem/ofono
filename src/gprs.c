@@ -61,6 +61,7 @@ struct ofono_gprs {
 	int cid_min;
 	int cid_max;
 	DBusMessage *pending;
+	struct ofono_gprs_context *context_driver;
 	const struct ofono_gprs_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -68,12 +69,14 @@ struct ofono_gprs {
 
 struct ofono_gprs_context {
 	struct ofono_gprs *gprs;
+	DBusMessage *pending;
 	const struct ofono_gprs_context_driver *driver;
 	void *driver_data;
 };
 
 struct pri_context {
 	ofono_bool_t active;
+	ofono_bool_t pending_active;
 	enum gprs_context_type type;
 	char *name;
 	char *path;
@@ -156,6 +159,39 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
+}
+
+static void pri_set_active_callback(const struct ofono_error *error,
+					void *data)
+{
+	struct pri_context *ctx = data;
+	struct ofono_gprs_context *gc = ctx->gprs->context_driver;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	DBusMessage *reply;
+	const char *path;
+	dbus_bool_t value;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("(De)Activating context failed with error: %s",
+				telephony_error_to_str(error));
+
+		ctx->pending_active = ctx->active;
+
+		__ofono_dbus_pending_reply(&gc->pending,
+					__ofono_error_failed(gc->pending));
+		return;
+	}
+
+	ctx->active = ctx->pending_active;
+
+	__ofono_dbus_pending_reply(&gc->pending,
+				dbus_message_new_method_return(gc->pending));
+
+	value = ctx->active;
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"Active", DBUS_TYPE_BOOLEAN,
+						&value);
 }
 
 static DBusMessage *pri_set_apn(struct pri_context *ctx, DBusConnection *conn,
@@ -299,7 +335,9 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 	dbus_message_iter_recurse(&iter, &var);
 
 	if (g_str_equal(property, "Active")) {
-		if (ctx->gprs->pending)
+		struct ofono_gprs_context *gc = ctx->gprs->context_driver;
+
+		if (gc->pending)
 			return __ofono_error_busy(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
@@ -316,7 +354,22 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		if (value && !ctx->gprs->attached)
 			return __ofono_error_failed(msg);
 
-		return __ofono_error_not_implemented(msg);
+		if (gc == NULL || gc->driver->activate_primary == NULL ||
+				gc->driver->deactivate_primary == NULL)
+			return __ofono_error_not_implemented(msg);
+
+		gc->pending = dbus_message_ref(msg);
+
+		ctx->pending_active = value;
+
+		if (value)
+			gc->driver->activate_primary(gc, &ctx->context,
+						pri_set_active_callback, ctx);
+		else
+			gc->driver->deactivate_primary(gc, ctx->context.cid,
+						pri_set_active_callback, ctx);
+
+		return NULL;
 	}
 
 	/* All other properties are read-only when context is active */
