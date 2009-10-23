@@ -751,6 +751,42 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 					DBUS_TYPE_INVALID);
 }
 
+static void gprs_deactivate_for_remove(const struct ofono_error *error,
+						void *data)
+{
+	struct pri_context *ctx = data;
+	struct ofono_gprs *gprs = ctx->gprs;
+	char **objpath_list;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("Removing context failed with error: %s",
+				telephony_error_to_str(error));
+
+		__ofono_dbus_pending_reply(&gprs->pending,
+					__ofono_error_failed(gprs->pending));
+		return;
+	}
+
+	context_dbus_unregister(ctx);
+	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
+
+	__ofono_dbus_pending_reply(&gprs->pending,
+				dbus_message_new_method_return(gprs->pending));
+
+	objpath_list = gprs_contexts_path_list(gprs->contexts);
+
+	if (objpath_list) {
+		const char *path = __ofono_atom_get_path(gprs->atom);
+		DBusConnection *conn = ofono_dbus_get_connection();
+
+		ofono_dbus_signal_array_property_changed(conn, path,
+					DATA_CONNECTION_MANAGER_INTERFACE,
+					"PrimaryContexts",
+					DBUS_TYPE_OBJECT_PATH, &objpath_list);
+		g_strfreev(objpath_list);
+	}
+}
+
 static DBusMessage *gprs_remove_context(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -770,11 +806,16 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	if (!ctx)
 		return __ofono_error_not_found(msg);
 
-	if (ctx->active)
-		return __ofono_error_failed(msg);
+	if (ctx->active) {
+		struct ofono_gprs_context *gc = gprs->context_driver;
+
+		gprs->pending = dbus_message_ref(msg);
+		gc->driver->deactivate_primary(gc, ctx->context.cid,
+					gprs_deactivate_for_remove, ctx);
+		return NULL;
+	}
 
 	ofono_debug("Unregistering context: %s\n", ctx->path);
-
 	context_dbus_unregister(ctx);
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
 
