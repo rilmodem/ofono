@@ -55,6 +55,7 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 
 #include <drivers/atmodem/vendor.h>
 
@@ -289,6 +290,8 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 {
 	struct phonesim_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
@@ -313,7 +316,11 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 		ofono_cbs_create(modem, 0, "atmodem", data->chat);
 	}
 
-	ofono_gprs_create(modem, 0, "atmodem", data->chat);
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
