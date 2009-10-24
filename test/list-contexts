@@ -1,0 +1,40 @@
+#!/usr/bin/python
+
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+properties = manager.GetProperties()
+
+for path in properties["Modems"]:
+	modem = dbus.Interface(bus.get_object('org.ofono', path),
+							'org.ofono.Modem')
+
+	properties = modem.GetProperties()
+
+	print "[ %s ]" % (path)
+
+	if "org.ofono.DataConnectionManager" not in properties["Interfaces"]:
+		continue
+
+	netreg = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.DataConnectionManager')
+
+	properties = netreg.GetProperties()
+
+	for path in properties["PrimaryContexts"]:
+		context = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.PrimaryDataContext')
+
+		properties = context.GetProperties()
+
+		print "    [ %s ]" % (path)
+
+		for key in properties.keys():
+			val = str(properties[key])
+			print "        %s = %s" % (key, val)
+	
+		print
