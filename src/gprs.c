@@ -661,6 +661,9 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 
 		dbus_message_iter_get_basic(&var, &value);
 
+		if (gprs->roaming_allowed == (ofono_bool_t) value)
+			return dbus_message_new_method_return(msg);
+
 		gprs->roaming_allowed = value;
 		gprs_netreg_update(gprs);
 	} else if (!strcmp(property, "Powered")) {
@@ -671,6 +674,9 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&var, &value);
+
+		if (gprs->powered == (ofono_bool_t) value)
+			return dbus_message_new_method_return(msg);
 
 		gprs->powered = value;
 		gprs_netreg_update(gprs);
