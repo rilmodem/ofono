@@ -216,6 +216,8 @@ static int mbm_gprs_context_probe(struct ofono_gprs_context *gc,
 
 	g_at_chat_register(chat, "*E2NAP:", e2nap_notifier, FALSE, gc, NULL);
 
+	g_at_chat_send(chat, "AT*E2NAP=1", NULL, NULL, NULL, NULL);
+
 	ofono_gprs_context_set_data(gc, gcd);
 
 	return 0;
