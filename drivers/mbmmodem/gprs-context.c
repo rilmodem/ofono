@@ -155,16 +155,13 @@ static void mbm_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char buf[64];
 
 	if (!cbd)
 		goto error;
 
 	cbd->user = gc;
 
-	sprintf(buf, "AT*ENAP=0,%u", cid);
-
-	if (g_at_chat_send(gcd->chat, buf, none_prefix,
+	if (g_at_chat_send(gcd->chat, "AT*ENAP=0", none_prefix,
 				at_enap_down_cb, cbd, g_free) > 0)
 		return;
 
