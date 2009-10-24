@@ -992,6 +992,7 @@ void ofono_gprs_add_context(struct ofono_gprs *gprs,
 				struct ofono_gprs_context *gc)
 {
 	gprs->context_driver = gc;
+	gc->gprs = gprs;
 
 	__ofono_atom_register(gc->atom, gprs_context_unregister);
 }
