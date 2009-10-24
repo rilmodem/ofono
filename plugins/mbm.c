@@ -44,8 +44,6 @@
 #include <ofono/voicecall.h>
 #include <ofono/phonebook.h>
 #include <ofono/message-waiting.h>
-#include <ofono/call-barring.h>
-#include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
 #include <ofono/call-volume.h>
@@ -187,10 +185,8 @@ static void mbm_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
-	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
