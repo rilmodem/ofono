@@ -20,10 +20,10 @@ for path in properties["Modems"]:
 	if "org.ofono.DataConnectionManager" not in properties["Interfaces"]:
 		continue
 
-	netreg = dbus.Interface(bus.get_object('org.ofono', path),
+	connmgr = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.DataConnectionManager')
 
-	properties = netreg.GetProperties()
+	properties = connmgr.GetProperties()
 
 	for path in properties["PrimaryContexts"]:
 		context = dbus.Interface(bus.get_object('org.ofono', path),
