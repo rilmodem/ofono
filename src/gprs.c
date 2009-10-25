@@ -882,8 +882,8 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 					"Status", DBUS_TYPE_STRING,
 					&str_status);
 
-	attached = (status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
-			status != NETWORK_REGISTRATION_STATUS_ROAMING);
+	attached = (status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
+			status == NETWORK_REGISTRATION_STATUS_ROAMING);
 	if (gprs->attached != (int) attached &&
 			!(gprs->flags & GPRS_FLAG_ATTACHING)) {
 		gprs->attached = (int) attached;
