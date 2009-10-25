@@ -38,6 +38,7 @@
 #define DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 
 #define GPRS_FLAG_ATTACHING 0x1
+#define GPRS_FLAG_DETACHED_AFTER_ROAMING 0x2
 
 static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
@@ -51,6 +52,7 @@ enum gprs_context_type {
 struct ofono_gprs {
 	GSList *contexts;
 	ofono_bool_t attached;
+	ofono_bool_t driver_attached;
 	ofono_bool_t roaming_allowed;
 	ofono_bool_t powered;
 	int status;
@@ -61,6 +63,10 @@ struct ofono_gprs {
 	int next_context_id;
 	int cid_min;
 	int cid_max;
+	int netreg_status;
+	struct ofono_netreg *netreg;
+	unsigned int netreg_watch;
+	unsigned int status_watch;
 	DBusMessage *pending;
 	struct ofono_gprs_context *context_driver;
 	const struct ofono_gprs_driver *driver;
@@ -506,23 +512,32 @@ static char **gprs_contexts_path_list(GSList *context_list)
 	return objlist;
 }
 
-static void gprs_attach_callback(const struct ofono_error *error, void *data)
+static void gprs_set_attached(struct ofono_gprs *gprs)
 {
-	struct ofono_gprs *gprs = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 	dbus_bool_t value;
+	ofono_bool_t attached = gprs->driver_attached &&
+		!(gprs->flags & GPRS_FLAG_DETACHED_AFTER_ROAMING);
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
-			(gprs->flags & GPRS_FLAG_ATTACHING)) {
-		gprs->attached = !gprs->attached;
+	if (attached != gprs->attached) {
+		gprs->attached = attached;
 
 		path = __ofono_atom_get_path(gprs->atom);
-		value = gprs->attached;
+		value = attached;
 		ofono_dbus_signal_property_changed(conn, path,
 					DATA_CONNECTION_MANAGER_INTERFACE,
 					"Attached", DBUS_TYPE_BOOLEAN, &value);
 	}
+}
+
+static void gprs_attach_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_gprs *gprs = data;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
+			(gprs->flags & GPRS_FLAG_ATTACHING))
+		gprs->driver_attached = !gprs->driver_attached;
 
 	gprs->flags &= ~GPRS_FLAG_ATTACHING;
 
@@ -531,18 +546,21 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 
 static void gprs_netreg_update(struct ofono_gprs *gprs)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
 	int attach;
 	int operator_ok;
-	const char *path;
-	dbus_bool_t value = 0;
 
 	operator_ok = gprs->roaming_allowed ||
-		(gprs->status != NETWORK_REGISTRATION_STATUS_ROAMING);
+		(gprs->status != NETWORK_REGISTRATION_STATUS_ROAMING &&
+		 !(gprs->flags & GPRS_FLAG_DETACHED_AFTER_ROAMING));
+
+	if (gprs->powered && !operator_ok)
+		gprs->flags |= GPRS_FLAG_DETACHED_AFTER_ROAMING;
+
+	gprs_set_attached(gprs);
 
 	attach = gprs->powered && operator_ok;
 
-	if (gprs->attached != attach &&
+	if (gprs->driver_attached != attach &&
 			!(gprs->flags & GPRS_FLAG_ATTACHING) &&
 			!(attach && gprs->status ==
 				NETWORK_REGISTRATION_STATUS_SEARCHING)) {
@@ -550,17 +568,33 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 
 		gprs->driver->set_attached(gprs, attach, gprs_attach_callback,
 						gprs);
-
-		/* Prevent further attempts to attach */
-		if (!attach && gprs->powered) {
-			gprs->powered = 0;
-
-			path = __ofono_atom_get_path(gprs->atom);
-			ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"Powered", DBUS_TYPE_BOOLEAN, &value);
-		}
 	}
+}
+
+static void netreg_status_changed(int status, int lac, int ci, int tech,
+					const struct ofono_network_operator *op,
+					void *data)
+{
+	struct ofono_gprs *gprs = data;
+
+	DBG("%d, %d, %d, %d, %p", status, lac, ci, tech, op);
+
+	if (gprs->netreg_status == status)
+		return;
+	gprs->netreg_status = status;
+
+	if (!(gprs->flags & GPRS_FLAG_DETACHED_AFTER_ROAMING))
+		return;
+
+	if (status != NETWORK_REGISTRATION_STATUS_REGISTERED)
+		return;
+
+	/* If the circuit switched radio just registered to home PLMN then
+	 * we also make an attempt to attach.
+	 */
+	gprs->flags &= ~GPRS_FLAG_DETACHED_AFTER_ROAMING;
+
+	gprs_netreg_update(gprs);
 }
 
 static DBusMessage *gprs_get_properties(DBusConnection *conn,
@@ -667,6 +701,8 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 			return dbus_message_new_method_return(msg);
 
 		gprs->roaming_allowed = value;
+		gprs->flags &= ~GPRS_FLAG_DETACHED_AFTER_ROAMING;
+
 		gprs_netreg_update(gprs);
 	} else if (!strcmp(property, "Powered")) {
 		if (!gprs->driver->set_attached)
@@ -681,6 +717,8 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 			return dbus_message_new_method_return(msg);
 
 		gprs->powered = value;
+		gprs->flags &= ~GPRS_FLAG_DETACHED_AFTER_ROAMING;
+
 		gprs_netreg_update(gprs);
 	} else
 		return __ofono_error_invalid_args(msg);
@@ -854,17 +892,9 @@ static GDBusSignalTable manager_signals[] = {
 
 void ofono_gprs_attach_notify(struct ofono_gprs *gprs, int attached)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path;
-	dbus_bool_t value = 0;
-
-	if (gprs->attached && !(gprs->flags & GPRS_FLAG_ATTACHING)) {
-		gprs->attached = 0;
-
-		path = __ofono_atom_get_path(gprs->atom);
-		ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"Attached", DBUS_TYPE_BOOLEAN, &value);
+	if (gprs->driver_attached != attached &&
+			!(gprs->flags & GPRS_FLAG_ATTACHING)) {
+		gprs->driver_attached = attached;
 
 		gprs_netreg_update(gprs);
 	}
@@ -875,7 +905,7 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 	const char *str_status = registration_status_to_string(status);
 	const char *path = __ofono_atom_get_path(gprs->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
-	dbus_bool_t attached;
+	ofono_bool_t attached;
 
 	gprs->status = status;
 
@@ -886,15 +916,8 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 
 	attached = (status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
 			status == NETWORK_REGISTRATION_STATUS_ROAMING);
-	if (gprs->attached != (int) attached &&
-			!(gprs->flags & GPRS_FLAG_ATTACHING)) {
-		gprs->attached = (int) attached;
-
-		ofono_dbus_signal_property_changed(conn, path,
-				DATA_CONNECTION_MANAGER_INTERFACE,
-				"Attached", DBUS_TYPE_BOOLEAN,
-				&attached);
-	}
+	if (!(gprs->flags & GPRS_FLAG_ATTACHING))
+		gprs->driver_attached = attached;
 
 	gprs_netreg_update(gprs);
 }
@@ -1136,6 +1159,18 @@ static void gprs_unregister(struct ofono_atom *atom)
 
 	g_slist_free(gprs->contexts);
 
+	if (gprs->netreg_watch) {
+		if (gprs->status_watch) {
+			__ofono_netreg_remove_status_watch(gprs->netreg,
+							gprs->status_watch);
+			gprs->status_watch = 0;
+		}
+
+		__ofono_modem_remove_atom_watch(modem, gprs->netreg_watch);
+		gprs->netreg_watch = 0;
+		gprs->netreg = NULL;
+	}
+
 	ofono_modem_remove_interface(modem, DATA_CONNECTION_MANAGER_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
 					DATA_CONNECTION_MANAGER_INTERFACE);
@@ -1195,11 +1230,30 @@ struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
 	return gprs;
 }
 
+static void netreg_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct ofono_gprs *gprs = data;
+
+	if (cond != OFONO_ATOM_WATCH_CONDITION_REGISTERED) {
+		gprs->status_watch = 0;
+		gprs->netreg = NULL;
+		return;
+	}
+
+	gprs->netreg = __ofono_atom_get_data(atom);
+	gprs->netreg_status = ofono_netreg_get_status(gprs->netreg);
+	gprs->status_watch = __ofono_netreg_add_status_watch(gprs->netreg,
+					netreg_status_changed, gprs, NULL);
+}
+
 void ofono_gprs_register(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
 	const char *path = __ofono_atom_get_path(gprs->atom);
+	struct ofono_atom *netreg_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					DATA_CONNECTION_MANAGER_INTERFACE,
@@ -1212,6 +1266,17 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 	}
 
 	ofono_modem_add_interface(modem, DATA_CONNECTION_MANAGER_INTERFACE);
+
+	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_NETREG,
+					netreg_watch, gprs, NULL);
+
+	netreg_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_NETREG);
+
+	if (netreg_atom && __ofono_atom_get_registered(netreg_atom))
+		netreg_watch(netreg_atom,
+				OFONO_ATOM_WATCH_CONDITION_REGISTERED, gprs);
+
 
 	__ofono_atom_register(gprs->atom, gprs_unregister);
 }
