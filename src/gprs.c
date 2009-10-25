@@ -543,7 +543,9 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 	attach = gprs->powered && operator_ok;
 
 	if (gprs->attached != attach &&
-			!(gprs->flags & GPRS_FLAG_ATTACHING)) {
+			!(gprs->flags & GPRS_FLAG_ATTACHING) &&
+			!(attach && gprs->status ==
+				NETWORK_REGISTRATION_STATUS_SEARCHING)) {
 		gprs->flags |= GPRS_FLAG_ATTACHING;
 
 		gprs->driver->set_attached(gprs, attach, gprs_attach_callback,
@@ -892,9 +894,9 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 				DATA_CONNECTION_MANAGER_INTERFACE,
 				"Attached", DBUS_TYPE_BOOLEAN,
 				&attached);
-
-		gprs_netreg_update(gprs);
 	}
+
+	gprs_netreg_update(gprs);
 }
 
 static void set_registration_location(struct ofono_gprs *gprs,
