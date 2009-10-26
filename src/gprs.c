@@ -922,11 +922,7 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 					"Status", DBUS_TYPE_STRING,
 					&str_status);
 
-	attached = (status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
-			status == NETWORK_REGISTRATION_STATUS_ROAMING);
-	if (!(gprs->flags & GPRS_FLAG_ATTACHING))
-		gprs->driver_attached = attached;
-
+	gprs_attached_update(gprs);
 	gprs_netreg_update(gprs);
 }
 
