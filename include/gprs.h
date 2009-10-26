@@ -51,7 +51,7 @@ struct ofono_gprs_driver {
 void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 				int status, int lac, int ci, int tech);
 
-void ofono_gprs_attach_notify(struct ofono_gprs *gprs, int attached);
+void ofono_gprs_detached_notify(struct ofono_gprs *gprs);
 
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d);
 void ofono_gprs_driver_unregister(const struct ofono_gprs_driver *d);

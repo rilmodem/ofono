@@ -200,7 +200,7 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 
 	if (g_str_has_prefix(event, "NW DETACH ") ||
 			g_str_has_prefix(event, "ME DETACH ")) {
-		ofono_gprs_attach_notify(gprs, 0);
+		ofono_gprs_detached_notify(gprs);
 		return;
 	}
 }

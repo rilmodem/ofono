@@ -894,14 +894,18 @@ static GDBusSignalTable manager_signals[] = {
 	{ }
 };
 
-void ofono_gprs_attach_notify(struct ofono_gprs *gprs, int attached)
+void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
 {
-	if (gprs->driver_attached != attached &&
-			!(gprs->flags & GPRS_FLAG_ATTACHING)) {
-		gprs->driver_attached = attached;
+	if (gprs->driver_attached == FALSE)
+		return;
 
-		gprs_netreg_update(gprs);
-	}
+	gprs->driver_attached = FALSE;
+
+	gprs_attached_update(gprs);
+
+	/* TODO: The network forced a detach, we should wait for some time
+	 * and try to re-attach
+	 */
 }
 
 static void set_registration_status(struct ofono_gprs *gprs, int status)
