@@ -574,14 +574,12 @@ static void netreg_status_changed(int status, int lac, int ci, int tech,
 {
 	struct ofono_gprs *gprs = data;
 
-	DBG("%d, %d, %d, %d, %p", status, lac, ci, tech, op);
+	DBG("%d", status);
 
 	if (gprs->netreg_status == status)
 		return;
-	gprs->netreg_status = status;
 
-	if (status != NETWORK_REGISTRATION_STATUS_REGISTERED)
-		return;
+	gprs->netreg_status = status;
 
 	gprs_netreg_update(gprs);
 }
@@ -905,7 +903,6 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 					&str_status);
 
 	gprs_attached_update(gprs);
-	gprs_netreg_update(gprs);
 }
 
 static void set_registration_location(struct ofono_gprs *gprs,
