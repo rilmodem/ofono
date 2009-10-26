@@ -557,7 +557,7 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 
 	attach = attach && gprs->powered;
 
-	if (gprs->attached == attach)
+	if (gprs->driver_attached == attach)
 		return;
 
 	if (gprs->flags & GPRS_FLAG_ATTACHING)
