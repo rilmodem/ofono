@@ -512,23 +512,27 @@ static char **gprs_contexts_path_list(GSList *context_list)
 	return objlist;
 }
 
-static void gprs_set_attached(struct ofono_gprs *gprs)
+static void gprs_attached_update(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
+	ofono_bool_t attached;
 	dbus_bool_t value;
-	ofono_bool_t attached = gprs->driver_attached &&
-		!(gprs->flags & GPRS_FLAG_DETACHED_AFTER_ROAMING);
 
-	if (attached != gprs->attached) {
-		gprs->attached = attached;
+	attached = gprs->driver_attached &&
+		(gprs->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
+			gprs->status == NETWORK_REGISTRATION_STATUS_ROAMING);
 
-		path = __ofono_atom_get_path(gprs->atom);
-		value = attached;
-		ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"Attached", DBUS_TYPE_BOOLEAN, &value);
-	}
+	if (attached == gprs->attached)
+		return;
+
+	gprs->attached = attached;
+
+	path = __ofono_atom_get_path(gprs->atom);
+	value = attached;
+	ofono_dbus_signal_property_changed(conn, path,
+				DATA_CONNECTION_MANAGER_INTERFACE,
+				"Attached", DBUS_TYPE_BOOLEAN, &value);
 }
 
 static void gprs_attach_callback(const struct ofono_error *error, void *data)
