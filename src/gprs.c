@@ -1238,7 +1238,7 @@ static void netreg_watch(struct ofono_atom *atom,
 {
 	struct ofono_gprs *gprs = data;
 
-	if (cond != OFONO_ATOM_WATCH_CONDITION_REGISTERED) {
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
 		gprs->status_watch = 0;
 		gprs->netreg = NULL;
 		return;
@@ -1248,6 +1248,8 @@ static void netreg_watch(struct ofono_atom *atom,
 	gprs->netreg_status = ofono_netreg_get_status(gprs->netreg);
 	gprs->status_watch = __ofono_netreg_add_status_watch(gprs->netreg,
 					netreg_status_changed, gprs, NULL);
+
+	gprs_netreg_update(gprs);
 }
 
 void ofono_gprs_register(struct ofono_gprs *gprs)
@@ -1269,6 +1271,9 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 
 	ofono_modem_add_interface(modem, DATA_CONNECTION_MANAGER_INTERFACE);
 
+	/* TODO: Read Powered from SIM store */
+	gprs->powered = TRUE;
+
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
 					netreg_watch, gprs, NULL);
@@ -1278,7 +1283,6 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 	if (netreg_atom && __ofono_atom_get_registered(netreg_atom))
 		netreg_watch(netreg_atom,
 				OFONO_ATOM_WATCH_CONDITION_REGISTERED, gprs);
-
 
 	__ofono_atom_register(gprs->atom, gprs_unregister);
 }
