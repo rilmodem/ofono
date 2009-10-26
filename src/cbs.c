@@ -771,6 +771,7 @@ static void netreg_watch(struct ofono_atom *atom,
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
 		cbs->location_watch = 0;
+		cbs->netreg = 0;
 		return;
 	}
 
