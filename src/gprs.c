@@ -38,7 +38,6 @@
 #define DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 
 #define GPRS_FLAG_ATTACHING 0x1
-#define GPRS_FLAG_DETACHED_AFTER_ROAMING 0x2
 
 static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
@@ -554,13 +553,7 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 	int operator_ok;
 
 	operator_ok = gprs->roaming_allowed ||
-		(gprs->status != NETWORK_REGISTRATION_STATUS_ROAMING &&
-		 !(gprs->flags & GPRS_FLAG_DETACHED_AFTER_ROAMING));
-
-	if (gprs->powered && !operator_ok)
-		gprs->flags |= GPRS_FLAG_DETACHED_AFTER_ROAMING;
-
-	gprs_set_attached(gprs);
+		(gprs->status != NETWORK_REGISTRATION_STATUS_ROAMING);
 
 	attach = gprs->powered && operator_ok;
 
@@ -587,16 +580,8 @@ static void netreg_status_changed(int status, int lac, int ci, int tech,
 		return;
 	gprs->netreg_status = status;
 
-	if (!(gprs->flags & GPRS_FLAG_DETACHED_AFTER_ROAMING))
-		return;
-
 	if (status != NETWORK_REGISTRATION_STATUS_REGISTERED)
 		return;
-
-	/* If the circuit switched radio just registered to home PLMN then
-	 * we also make an attempt to attach.
-	 */
-	gprs->flags &= ~GPRS_FLAG_DETACHED_AFTER_ROAMING;
 
 	gprs_netreg_update(gprs);
 }
@@ -705,7 +690,6 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 			return dbus_message_new_method_return(msg);
 
 		gprs->roaming_allowed = value;
-		gprs->flags &= ~GPRS_FLAG_DETACHED_AFTER_ROAMING;
 
 		gprs_netreg_update(gprs);
 	} else if (!strcmp(property, "Powered")) {
@@ -721,7 +705,6 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 			return dbus_message_new_method_return(msg);
 
 		gprs->powered = value;
-		gprs->flags &= ~GPRS_FLAG_DETACHED_AFTER_ROAMING;
 
 		gprs_netreg_update(gprs);
 	} else
