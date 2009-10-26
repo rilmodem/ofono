@@ -538,13 +538,12 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_gprs *gprs = data;
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
-			(gprs->flags & GPRS_FLAG_ATTACHING))
-		gprs->driver_attached = !gprs->driver_attached;
-
 	gprs->flags &= ~GPRS_FLAG_ATTACHING;
 
-	gprs_netreg_update(gprs);
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
+		gprs->driver_attached = !gprs->driver_attached;
+		gprs_attach_update(gprs);
+	}
 }
 
 static void gprs_netreg_update(struct ofono_gprs *gprs)
