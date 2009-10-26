@@ -985,6 +985,11 @@ static void set_registration_technology(struct ofono_gprs *gprs,
 void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 				int status, int lac, int ci, int tech)
 {
+	/* If we are not attached and haven't tried to attach, ignore */
+	if (gprs->driver_attached == FALSE &&
+			(gprs->flags & GPRS_FLAG_ATTACHING) == 0)
+		return;
+
 	if (gprs->status != status)
 		set_registration_status(gprs, status);
 
