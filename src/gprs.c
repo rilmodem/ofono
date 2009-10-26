@@ -548,23 +548,24 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 
 static void gprs_netreg_update(struct ofono_gprs *gprs)
 {
-	int attach;
-	int operator_ok;
+	ofono_bool_t attach;
 
-	operator_ok = gprs->roaming_allowed ||
-		(gprs->status != NETWORK_REGISTRATION_STATUS_ROAMING);
+	attach = gprs->netreg_status == NETWORK_REGISTRATION_STATUS_REGISTERED;
 
-	attach = gprs->powered && operator_ok;
+	attach = attach || (gprs->roaming_allowed &&
+		gprs->netreg_status == NETWORK_REGISTRATION_STATUS_ROAMING);
 
-	if (gprs->driver_attached != attach &&
-			!(gprs->flags & GPRS_FLAG_ATTACHING) &&
-			!(attach && gprs->status ==
-				NETWORK_REGISTRATION_STATUS_SEARCHING)) {
-		gprs->flags |= GPRS_FLAG_ATTACHING;
+	attach = attach && gprs->powered;
 
-		gprs->driver->set_attached(gprs, attach, gprs_attach_callback,
-						gprs);
-	}
+	if (gprs->attached == attach)
+		return;
+
+	if (gprs->flags & GPRS_FLAG_ATTACHING)
+		return;
+
+	gprs->flags |= GPRS_FLAG_ATTACHING;
+
+	gprs->driver->set_attached(gprs, attach, gprs_attach_callback, gprs);
 }
 
 static void netreg_status_changed(int status, int lac, int ci, int tech,
