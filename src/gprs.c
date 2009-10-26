@@ -542,7 +542,7 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
 		gprs->driver_attached = !gprs->driver_attached;
-		gprs_attach_update(gprs);
+		gprs_attached_update(gprs);
 	}
 }
 
@@ -895,7 +895,6 @@ static void set_registration_status(struct ofono_gprs *gprs, int status)
 	const char *str_status = registration_status_to_string(status);
 	const char *path = __ofono_atom_get_path(gprs->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
-	ofono_bool_t attached;
 
 	gprs->status = status;
 
