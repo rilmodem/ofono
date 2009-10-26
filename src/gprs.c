@@ -1222,6 +1222,8 @@ struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
 		break;
 	}
 
+	gprs->status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
+	gprs->netreg_status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
 	gprs->technology = -1;
 	gprs->cellid = -1;
 	gprs->location = -1;
