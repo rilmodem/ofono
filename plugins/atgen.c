@@ -48,6 +48,24 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 
+static const char *tty_opts[] =
+  {
+	  "Baud",
+	  "Read",
+	  "Local",
+	  "StopBits",
+	  "DataBits",
+	  "Parity",
+	  "XonXoff",
+	  "Rtscts",
+	  NULL,
+  };
+
+static void unregister_tty_option(gpointer data)
+{
+	g_free(data);
+}
+
 static int atgen_probe(struct ofono_modem *modem)
 {
 	return 0;
@@ -68,6 +86,9 @@ static int atgen_enable(struct ofono_modem *modem)
 	GIOChannel *channel;
 	GAtSyntax *syntax;
 	const char *device;
+	const char *value;
+	GHashTable *options;
+	int i = 0;
 
 	DBG("%p", modem);
 
@@ -75,22 +96,43 @@ static int atgen_enable(struct ofono_modem *modem)
 	if (!device)
 		return -EINVAL;
 
-	channel = g_at_tty_open(device, NULL);
-	if (!channel)
+	options = g_hash_table_new_full(g_str_hash, g_str_equal,
+					g_free, unregister_tty_option);
+	if (!options)
+		return -ENOMEM;
+
+	while (tty_opts[i]) {
+
+		value = ofono_modem_get_string(modem, tty_opts[i]);
+		if (value) {
+			g_hash_table_replace(options, g_strdup(tty_opts[i]),
+					     g_strdup(value));
+		}
+		i++;
+	};
+
+	channel = g_at_tty_open(device, options);
+	if (!channel) {
+		g_hash_table_destroy(options);
 		return -EIO;
+	}
 
 	syntax = g_at_syntax_new_gsmv1();
 	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
-	if (!chat)
+	if (!chat) {
+		g_hash_table_destroy(options);
 		return -ENOMEM;
+	}
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, atgen_debug, NULL);
 
 	ofono_modem_set_data(modem, chat);
+
+	g_hash_table_destroy(options);
 
 	return 0;
 }

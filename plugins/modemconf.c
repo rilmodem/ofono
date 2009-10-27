@@ -72,7 +72,7 @@ static int set_address(struct ofono_modem *modem,
 static int set_device(struct ofono_modem *modem,
 					GKeyFile *keyfile, const char *group)
 {
-	char *device;
+	char *device, *value;
 
 	device = g_key_file_get_string(keyfile, group, "Device", NULL);
 	if (!device)
@@ -81,6 +81,63 @@ static int set_device(struct ofono_modem *modem,
 	ofono_modem_set_string(modem, "Device", device);
 
 	g_free(device);
+
+	value = g_key_file_get_string(keyfile, group, "Baud", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Baud", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "Baud", "115200");
+
+	value = g_key_file_get_string(keyfile, group, "Read", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Read", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "Read", "on");
+
+	value = g_key_file_get_string(keyfile, group, "Local", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Local", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "Local", "none");
+
+	value = g_key_file_get_string(keyfile, group, "StopBits", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "StopBits", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "StopBits", "1");
+
+	value = g_key_file_get_string(keyfile, group, "DataBits", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "DataBits", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "Databits", "8");
+
+	value = g_key_file_get_string(keyfile, group, "Parity", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Parity", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "Parity", "none");
+
+	value = g_key_file_get_string(keyfile, group, "XonXoff", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "XonXoff", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "XonXoff", "off");
+
+	value = g_key_file_get_string(keyfile, group, "Rtscts", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Rtscts", value);
+		g_free(value);
+	} else
+		ofono_modem_set_string(modem, "Rtscts", "on");
+
 
 	return 0;
 }
