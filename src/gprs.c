@@ -1144,6 +1144,13 @@ static void gprs_unregister(struct ofono_atom *atom)
 	struct ofono_gprs *gprs = __ofono_atom_get_data(atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
+	GSList *l;
+
+	for (l = gprs->contexts; l; l = l->next) {
+		struct pri_context *context = l->data;
+
+		context_dbus_unregister(context);
+	}
 
 	g_slist_free(gprs->contexts);
 
