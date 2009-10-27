@@ -208,21 +208,21 @@ static int open_device(const char *tty, GHashTable *options)
 							(void *) &value)) {
 			gboolean ok = FALSE;
 
-			if (g_str_equal(key, "baud"))
+			if (g_str_equal(key, "Baud"))
 				ok = set_baud(value, &ti);
-			else if (g_str_equal(key, "stopbits"))
+			else if (g_str_equal(key, "StopBits"))
 				ok = set_stop_bits(value, &ti);
-			else if (g_str_equal(key, "databits"))
+			else if (g_str_equal(key, "DataBits"))
 				ok = set_data_bits(value, &ti);
-			else if (g_str_equal(key, "parity"))
+			else if (g_str_equal(key, "Parity"))
 				ok = set_parity(value, &ti);
-			else if (g_str_equal(key, "xonxoff"))
+			else if (g_str_equal(key, "XonXoff"))
 				ok = set_xonxoff(value, &ti);
-			else if (g_str_equal(key, "rtscts"))
+			else if (g_str_equal(key, "Rtscts"))
 				ok = set_rtscts(value, &ti);
-			else if (g_str_equal(key, "local"))
+			else if (g_str_equal(key, "Local"))
 				ok = set_local(value, &ti);
-			else if (g_str_equal(key, "read"))
+			else if (g_str_equal(key, "Read"))
 				ok = set_read(value, &ti);
 
 			if (ok == FALSE)
