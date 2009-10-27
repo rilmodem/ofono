@@ -1749,7 +1749,9 @@ static void ecc_read_cb(int ok, int total_length, int record, const unsigned cha
 	total = total_length / record_length;
 	extract_bcd_number(data, 3, en);
 
-	vc->new_en_list = g_slist_prepend(vc->new_en_list, g_strdup(en));
+	if (en[0] != '\0')
+		vc->new_en_list = g_slist_prepend(vc->new_en_list,
+							g_strdup(en));
 
 	if (record != total)
 		return;
