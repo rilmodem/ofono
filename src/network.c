@@ -839,6 +839,10 @@ void __ofono_netreg_set_base_station_name(struct ofono_netreg *netreg,
 	const char *path = __ofono_atom_get_path(netreg->atom);
 	const char *base_station = name ? name : "";
 
+	/* Cell ID changed, but we don't have a cell name, nothing to do */
+	if (netreg->base_station == NULL && name == NULL)
+		return;
+
 	if (netreg->base_station)
 		g_free(netreg->base_station);
 
