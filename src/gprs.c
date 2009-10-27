@@ -1180,6 +1180,11 @@ static void gprs_remove(struct ofono_atom *atom)
 	if (gprs == NULL)
 		return;
 
+	if (gprs->context_driver) {
+		gprs->context_driver->gprs = NULL;
+		gprs->context_driver = NULL;
+	}
+
 	if (gprs->driver && gprs->driver->remove)
 		gprs->driver->remove(gprs);
 
