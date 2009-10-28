@@ -32,13 +32,14 @@ extern "C" {
  *
  * The following keys / values are recognized (all strings)
  *
- * "baud" - "300", "600", etc
- * "stopbits" - "1", "2"
- * "databits" - "7", "8"
- * "parity" - "none", "odd", "even"
- * "xonxoff" - "on", "off"
- * "rtscts" - "on", "off"
- * "local" - "on", "off"
+ * "Baud" - "300", "600", etc
+ * "Stopbits" - "1", "2"
+ * "Databits" - "7", "8"
+ * "Parity" - "none", "odd", "even"
+ * "XonXoff" - "on", "off"
+ * "RtsCts" - "on", "off"
+ * "Local" - "on", "off"
+ * "Read" - "on, "off"
  */
 GIOChannel *g_at_tty_open(const char *tty, GHashTable *options);
 

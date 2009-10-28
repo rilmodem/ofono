@@ -218,7 +218,7 @@ static int open_device(const char *tty, GHashTable *options)
 				ok = set_parity(value, &ti);
 			else if (g_str_equal(key, "XonXoff"))
 				ok = set_xonxoff(value, &ti);
-			else if (g_str_equal(key, "Rtscts"))
+			else if (g_str_equal(key, "RtsCts"))
 				ok = set_rtscts(value, &ti);
 			else if (g_str_equal(key, "Local"))
 				ok = set_local(value, &ti);
