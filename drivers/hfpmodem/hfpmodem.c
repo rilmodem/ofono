@@ -41,11 +41,14 @@
 
 static int hfpmodem_init(void)
 {
+	hfp_voicecall_init();
+
 	return 0;
 }
 
 static void hfpmodem_exit(void)
 {
+	hfp_voicecall_exit();
 }
 
 OFONO_PLUGIN_DEFINE(hfpmodem, "Hands-Free Profile Driver", VERSION,

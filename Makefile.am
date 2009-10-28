@@ -125,7 +125,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 builtin_modules += hfpmodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hfpmodem/hfpmodem.h \
-			drivers/hfpmodem/hfpmodem.c
+			drivers/hfpmodem/hfpmodem.c \
+			drivers/hfpmodem/voicecall.c
 
 builtin_modules += mbmmodem
 builtin_sources += drivers/atmodem/atutil.h \

@@ -307,7 +307,10 @@ static int hfp_disable(struct ofono_modem *modem)
 
 static void hfp_pre_sim(struct ofono_modem *modem)
 {
+	struct hfp_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
+	ofono_voicecall_create(modem, 0, "hfpmodem", data);
 }
 
 static void hfp_post_sim(struct ofono_modem *modem)
