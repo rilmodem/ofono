@@ -1379,8 +1379,7 @@ int ofono_netreg_get_technology(struct ofono_netreg *netreg)
 	return netreg->technology;
 }
 
-const struct ofono_network_operator *
-	ofono_netreg_get_operator(struct ofono_netreg *netreg)
+const char *ofono_netreg_get_mcc(struct ofono_netreg *netreg)
 {
 	if (netreg == NULL)
 		return NULL;
@@ -1388,7 +1387,18 @@ const struct ofono_network_operator *
 	if (netreg->current_operator == NULL)
 		return NULL;
 
-	return netreg->current_operator->info;
+	return netreg->current_operator->info->mcc;
+}
+
+const char *ofono_netreg_get_mnc(struct ofono_netreg *netreg)
+{
+	if (netreg == NULL)
+		return NULL;
+
+	if (netreg->current_operator == NULL)
+		return NULL;
+
+	return netreg->current_operator->info->mnc;
 }
 
 int ofono_netreg_driver_register(const struct ofono_netreg_driver *d)

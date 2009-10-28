@@ -767,7 +767,8 @@ static void netreg_watch(struct ofono_atom *atom,
 				void *data)
 {
 	struct ofono_cbs *cbs = data;
-	const struct ofono_network_operator *op;
+	const char *mcc;
+	const char *mnc;
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
 		cbs->location_watch = 0;
@@ -779,11 +780,12 @@ static void netreg_watch(struct ofono_atom *atom,
 	cbs->location_watch = __ofono_netreg_add_status_watch(cbs->netreg,
 					cbs_location_changed, cbs, NULL);
 
-	op = ofono_netreg_get_operator(cbs->netreg);
+	mcc = ofono_netreg_get_mcc(cbs->netreg);
+	mnc = ofono_netreg_get_mnc(cbs->netreg);
 
-	if (op) {
-		memcpy(cbs->mcc, op->mcc, sizeof(cbs->mcc));
-		memcpy(cbs->mnc, op->mnc, sizeof(cbs->mnc));
+	if (mcc && mnc) {
+		memcpy(cbs->mcc, mcc, sizeof(cbs->mcc));
+		memcpy(cbs->mnc, mnc, sizeof(cbs->mnc));
 	} else {
 		memset(cbs->mcc, 0, sizeof(cbs->mcc));
 		memset(cbs->mnc, 0, sizeof(cbs->mnc));
