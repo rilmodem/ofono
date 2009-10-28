@@ -395,7 +395,6 @@ static void release_call(struct ofono_voicecall *vc, struct ofono_call *call)
 		vd->call = NULL;
 
 	g_free(call);
-	call = NULL;
 }
 
 static void ciev_call_notify(struct ofono_voicecall *vc,
