@@ -75,8 +75,6 @@ static const char *default_en_list_no_sim[] = { "119", "118", "999", "110",
 
 static void generic_callback(const struct ofono_error *error, void *data);
 static void multirelease_callback(const struct ofono_error *err, void *data);
-static void multiparty_create_callback(const struct ofono_error *error,
-					void *data);
 static void private_chat_callback(const struct ofono_error *error, void *data);
 
 static gint call_compare_by_id(gconstpointer a, gconstpointer b)
@@ -1120,6 +1118,27 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 	return NULL;
 }
 
+static void multiparty_callback_common(struct ofono_voicecall *vc,
+					DBusMessage *reply)
+{
+	DBusMessageIter iter;
+	DBusMessageIter array_iter;
+	char **objpath_list;
+	int i;
+
+	voicecalls_path_list(vc, vc->multiparty_list, &objpath_list);
+
+	dbus_message_iter_init_append(reply, &iter);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+		DBUS_TYPE_OBJECT_PATH_AS_STRING, &array_iter);
+
+	for (i = 0; objpath_list[i]; i++)
+		dbus_message_iter_append_basic(&array_iter,
+			DBUS_TYPE_OBJECT_PATH, &objpath_list[i]);
+
+	dbus_message_iter_close_container(&iter, &array_iter);
+}
+
 static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -1172,6 +1191,52 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	vc->driver->private_chat(vc, id, private_chat_callback, vc);
 
 	return NULL;
+}
+
+static void multiparty_create_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	DBusMessage *reply;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("command failed with error: %s",
+				telephony_error_to_str(error));
+		__ofono_dbus_pending_reply(&vc->pending,
+					__ofono_error_failed(vc->pending));
+		return;
+	}
+
+	/* We just created a multiparty call, gather all held
+	 * active calls and add them to the multiparty list
+	 */
+	if (vc->multiparty_list) {
+		g_slist_free(vc->multiparty_list);
+		vc->multiparty_list = 0;
+	}
+
+	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
+						voicecalls_held_list(vc));
+
+	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
+						voicecalls_active_list(vc));
+
+	vc->multiparty_list = g_slist_sort(vc->multiparty_list,
+						call_compare);
+
+	if (g_slist_length(vc->multiparty_list) < 2) {
+		ofono_error("Created multiparty call, but size is less than 2"
+				" panic!");
+
+		__ofono_dbus_pending_reply(&vc->pending,
+					__ofono_error_failed(vc->pending));
+		return;
+	}
+
+	reply = dbus_message_new_method_return(vc->pending);
+	multiparty_callback_common(vc, reply);
+	__ofono_dbus_pending_reply(&vc->pending, reply);
+
+	emit_multiparty_call_list_changed(vc);
 }
 
 static DBusMessage *multiparty_create(DBusConnection *conn,
@@ -1491,73 +1556,6 @@ static void multirelease_callback(const struct ofono_error *error, void *data)
 
 	reply = dbus_message_new_method_return(vc->pending);
 	__ofono_dbus_pending_reply(&vc->pending, reply);
-}
-
-static void multiparty_callback_common(struct ofono_voicecall *vc,
-					DBusMessage *reply)
-{
-	DBusMessageIter iter;
-	DBusMessageIter array_iter;
-	char **objpath_list;
-	int i;
-
-	voicecalls_path_list(vc, vc->multiparty_list, &objpath_list);
-
-	dbus_message_iter_init_append(reply, &iter);
-	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-		DBUS_TYPE_OBJECT_PATH_AS_STRING, &array_iter);
-
-	for (i = 0; objpath_list[i]; i++)
-		dbus_message_iter_append_basic(&array_iter,
-			DBUS_TYPE_OBJECT_PATH, &objpath_list[i]);
-
-	dbus_message_iter_close_container(&iter, &array_iter);
-}
-
-static void multiparty_create_callback(const struct ofono_error *error, void *data)
-{
-	struct ofono_voicecall *vc = data;
-	DBusMessage *reply;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("command failed with error: %s",
-				telephony_error_to_str(error));
-		__ofono_dbus_pending_reply(&vc->pending,
-					__ofono_error_failed(vc->pending));
-		return;
-	}
-
-	/* We just created a multiparty call, gather all held
-	 * active calls and add them to the multiparty list
-	 */
-	if (vc->multiparty_list) {
-		g_slist_free(vc->multiparty_list);
-		vc->multiparty_list = 0;
-	}
-
-	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
-						voicecalls_held_list(vc));
-
-	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
-						voicecalls_active_list(vc));
-
-	vc->multiparty_list = g_slist_sort(vc->multiparty_list,
-						call_compare);
-
-	if (g_slist_length(vc->multiparty_list) < 2) {
-		ofono_error("Created multiparty call, but size is less than 2"
-				" panic!");
-
-		__ofono_dbus_pending_reply(&vc->pending,
-					__ofono_error_failed(vc->pending));
-		return;
-	}
-
-	reply = dbus_message_new_method_return(vc->pending);
-	multiparty_callback_common(vc, reply);
-	__ofono_dbus_pending_reply(&vc->pending, reply);
-
-	emit_multiparty_call_list_changed(vc);
 }
 
 static void private_chat_callback(const struct ofono_error *error, void *data)
