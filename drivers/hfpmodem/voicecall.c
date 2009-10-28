@@ -310,10 +310,8 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 	/* Generate an incoming call of voice type */
 	call = create_call(vd, 0, 1, CALL_STATUS_INCOMING, NULL, 128, 2);
 
-	if (!call) {
+	if (!call)
 		ofono_error("Couldn't create call, call management is fubar!");
-		return;
-	}
 }
 
 static void clip_notify(GAtResult *result, gpointer user_data)
@@ -478,8 +476,6 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 		ciev_call_notify(vc, call, index, value);
 	else if (index == vd->cind_pos[HFP_INDICATOR_CALLSETUP])
 		ciev_callsetup_notify(vc, call, index, value);
-
-	return;
 }
 
 static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -490,14 +486,15 @@ static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *str;
 
 	if (!ok)
-		goto error;
+		return;
 
 	g_at_result_iter_init(&iter, result);
+
 	if (!g_at_result_iter_next(&iter, "+CHLD:"))
-		goto error;
+		return;
 
 	if (!g_at_result_iter_open_list(&iter))
-		goto error;
+		return;
 
 	while (g_at_result_iter_next_unquoted_string(&iter, &str)) {
 		if (!strcmp(str, "0"))
@@ -517,13 +514,9 @@ static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	if (!g_at_result_iter_close_list(&iter))
-		goto error;
+		return;
 
 	vd->ag_mpty_features = ag_mpty_feature;
-	return;
-
-error:
-	return;
 }
 
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
@@ -548,10 +541,12 @@ static int hfp_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	struct voicecall_data *vd;
 
 	vd = g_new0(struct voicecall_data, 1);
+
 	vd->chat = data->chat;
 	vd->ag_features = data->ag_features;
 	vd->call = NULL;
 	vd->mpty_call = FALSE;
+
 	memcpy(vd->cind_pos, data->cind_pos, HFP_INDICATOR_LAST);
 	memcpy(vd->cind_val, data->cind_val, HFP_INDICATOR_LAST);
 
