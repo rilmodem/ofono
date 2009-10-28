@@ -89,26 +89,6 @@ static int class_to_call_type(int cls)
 	}
 }
 
-static unsigned int alloc_next_id(struct voicecall_data *d)
-{
-	unsigned int i;
-
-	for (i = 1; i < sizeof(d->id_list) * 8; i++) {
-		if (d->id_list & (0x1 << i))
-			continue;
-
-		d->id_list |= (0x1 << i);
-		return i;
-	}
-
-	return 0;
-}
-
-static void release_id(struct voicecall_data *d, unsigned int id)
-{
-	d->id_list &= ~(0x1 << id);
-}
-
 static struct ofono_call *create_call(struct voicecall_data *d, int type,
 					int direction, int status,
 					const char *num, int num_type, int clip)
@@ -121,7 +101,7 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 	if (!call)
 		return NULL;
 
-	call->id = alloc_next_id(d);
+	call->id = at_util_alloc_next_id(&d->id_list);
 	call->type = type;
 	call->direction = direction;
 	call->status = status;
@@ -235,7 +215,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				ofono_voicecall_disconnected(vc, oc->id,
 								reason, NULL);
 
-			release_id(vd, oc->id);
+			at_util_release_id(&vd->id_list, oc->id);
 
 			o = o->next;
 		} else if (nc && (!oc || (nc->id < oc->id))) {

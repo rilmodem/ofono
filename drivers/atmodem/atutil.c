@@ -81,3 +81,23 @@ gint at_util_call_compare(gconstpointer a, gconstpointer b)
 	return 0;
 }
 
+unsigned int at_util_alloc_next_id(unsigned int *id_list)
+{
+	unsigned int i;
+
+	for (i = 1; i < sizeof(unsigned int) * 8; i++) {
+		if (*id_list & (1 << i))
+			continue;
+
+		*id_list |= (1 << i);
+		return i;
+	}
+
+	return 0;
+}
+
+void at_util_release_id(unsigned int *id_list, unsigned int id)
+{
+	*id_list &= ~(1 << id);
+}
+
