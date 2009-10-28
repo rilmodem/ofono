@@ -40,8 +40,7 @@
 #define VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
 #define VOICECALL_INTERFACE "org.ofono.VoiceCall"
 
-#define VOICECALLS_FLAG_PENDING 0x1
-#define VOICECALLS_FLAG_MULTI_RELEASE 0x2
+#define VOICECALLS_FLAG_MULTI_RELEASE 0x1
 
 #define MAX_VOICE_CALLS 16
 
@@ -229,10 +228,9 @@ static DBusMessage *voicecall_busy(DBusConnection *conn,
 	if (!vc->driver->set_udub)
 		return __ofono_error_not_implemented(msg);
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->set_udub(vc, generic_callback, vc);
@@ -257,7 +255,7 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	if (!vc->driver->deflect)
 		return __ofono_error_not_implemented(msg);
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
@@ -267,7 +265,6 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	if (!valid_phone_number_format(number))
 		return __ofono_error_invalid_format(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	string_to_phone_number(number, &ph);
@@ -290,10 +287,9 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	if (!vc->driver->release_specific || !vc->driver->hangup)
 		return __ofono_error_not_implemented(msg);
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	if (call->status == CALL_STATUS_INCOMING)
@@ -318,10 +314,9 @@ static DBusMessage *voicecall_answer(DBusConnection *conn,
 	if (!vc->driver->answer)
 		return __ofono_error_not_implemented(msg);
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->answer(vc, generic_callback, vc);
@@ -780,7 +775,7 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	const char *clirstr;
 	enum ofono_clir_option clir;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (g_slist_length(vc->call_list) >= MAX_VOICE_CALLS)
@@ -804,7 +799,6 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 		voicecalls_have_held(vc))
 		return __ofono_error_failed(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	string_to_phone_number(number, &ph);
@@ -822,7 +816,7 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 	int numactive;
 	int numheld;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	numactive = voicecalls_num_active(vc);
@@ -841,7 +835,6 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 	if (!vc->driver->transfer)
 		return __ofono_error_not_implemented(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->transfer(vc, generic_callback, vc);
@@ -854,10 +847,9 @@ static DBusMessage *manager_swap_without_accept(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->swap_without_accept(vc, generic_callback, vc);
@@ -874,7 +866,7 @@ static DBusMessage *manager_swap_calls(DBusConnection *conn,
 	if (vc->driver->swap_without_accept)
 		return manager_swap_without_accept(conn, msg, data);
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (voicecalls_have_waiting(vc))
@@ -883,7 +875,6 @@ static DBusMessage *manager_swap_calls(DBusConnection *conn,
 	if (!vc->driver->hold_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->hold_all_active(vc, generic_callback, vc);
@@ -896,7 +887,7 @@ static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (!voicecalls_have_active(vc) || !voicecalls_have_waiting(vc))
@@ -905,7 +896,6 @@ static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 	if (!vc->driver->release_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->release_all_active(vc, generic_callback, vc);
@@ -918,7 +908,7 @@ static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (voicecalls_have_active(vc) && voicecalls_have_held(vc) &&
@@ -928,7 +918,6 @@ static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 	if (!vc->driver->hold_all_active)
 		return __ofono_error_not_implemented(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->hold_all_active(vc, generic_callback, vc);
@@ -941,7 +930,7 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (!vc->driver->release_specific)
@@ -952,7 +941,6 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 		return reply;
 	}
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
 
 	vc->pending = dbus_message_ref(msg);
@@ -973,7 +961,7 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	unsigned int id;
 	GSList *l;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &callpath,
@@ -1010,7 +998,6 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	if (!vc->driver->private_chat)
 		return __ofono_error_not_implemented(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->private_chat(vc, id, private_chat_callback, vc);
@@ -1023,7 +1010,7 @@ static DBusMessage *multiparty_create(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (!voicecalls_have_held(vc) || !voicecalls_have_active(vc))
@@ -1032,7 +1019,6 @@ static DBusMessage *multiparty_create(DBusConnection *conn,
 	if (!vc->driver->create_multiparty)
 		return __ofono_error_not_implemented(msg);
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->create_multiparty(vc, multiparty_create_callback, vc);
@@ -1045,7 +1031,7 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (!vc->driver->release_specific)
@@ -1062,7 +1048,6 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 		return reply;
 	}
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	/* We don't have waiting calls, as we can't use +CHLD to release */
@@ -1103,7 +1088,7 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 	char *tones;
 	int i, len;
 
-	if (vc->flags & VOICECALLS_FLAG_PENDING)
+	if (vc->pending)
 		return __ofono_error_busy(msg);
 
 	if (!vc->driver->send_tones)
@@ -1135,7 +1120,6 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 		return __ofono_error_invalid_format(msg);
 	}
 
-	vc->flags |= VOICECALLS_FLAG_PENDING;
 	vc->pending = dbus_message_ref(msg);
 
 	vc->driver->send_tones(vc, tones, generic_callback, vc);
@@ -1376,33 +1360,23 @@ err:
 static void generic_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_debug("command failed with error: %s",
 				telephony_error_to_str(error));
 
-	vc->flags &= ~VOICECALLS_FLAG_PENDING;
-
-	if (!vc->pending)
-		return;
-
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		reply = dbus_message_new_method_return(vc->pending);
 	else
 		reply = __ofono_error_failed(vc->pending);
 
-	g_dbus_send_message(conn, reply);
-
-	dbus_message_unref(vc->pending);
-	vc->pending = NULL;
+	__ofono_dbus_pending_reply(&vc->pending, reply);
 }
 
 static void multirelease_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	if (vc->release_list != NULL) {
@@ -1411,17 +1385,9 @@ static void multirelease_callback(const struct ofono_error *error, void *data)
 	}
 
 	vc->flags &= ~VOICECALLS_FLAG_MULTI_RELEASE;
-	vc->flags &= ~VOICECALLS_FLAG_PENDING;
-
-	if (!vc->pending)
-		return;
 
 	reply = dbus_message_new_method_return(vc->pending);
-
-	g_dbus_send_message(conn, reply);
-
-	dbus_message_unref(vc->pending);
-	vc->pending = NULL;
+	__ofono_dbus_pending_reply(&vc->pending, reply);
 }
 
 static struct ofono_call *synthesize_outgoing_call(struct ofono_voicecall *vc,
@@ -1460,32 +1426,19 @@ static struct ofono_call *synthesize_outgoing_call(struct ofono_voicecall *vc,
 static void dial_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 	GSList *l;
 	struct ofono_call *call;
 	const char *path;
 	gboolean need_to_emit = FALSE;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Dial callback returned error: %s",
 			telephony_error_to_str(error));
-
-	vc->flags &= ~VOICECALLS_FLAG_PENDING;
-
-	if (!vc->pending)
-		return;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		reply = __ofono_error_failed(vc->pending);
-		g_dbus_send_message(conn, reply);
-
-		goto out;
+		__ofono_dbus_pending_reply(&vc->pending, reply);
+		return;
 	}
-
-	reply = dbus_message_new_method_return(vc->pending);
-	if (!reply)
-		goto out;
 
 	/* Two things can happen, the call notification arrived before dial
 	 * callback or dial callback was first.	Handle here */
@@ -1503,19 +1456,17 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		call = synthesize_outgoing_call(vc, vc->pending);
 
 		if (!call) {
-			reply = __ofono_error_failed(vc->pending);
-			g_dbus_send_message(conn, reply);
-
-			goto out;
+			__ofono_dbus_pending_reply(&vc->pending,
+				__ofono_error_failed(vc->pending));
+			return;
 		}
 
 		v = voicecall_create(vc, call);
 
 		if (!v) {
-			reply = __ofono_error_failed(vc->pending);
-			g_dbus_send_message(conn, reply);
-
-			goto out;
+			__ofono_dbus_pending_reply(&vc->pending,
+				__ofono_error_failed(vc->pending));
+			return;
 		}
 
 		v->detect_time = time(NULL);
@@ -1533,19 +1484,14 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		call = v->call;
 	}
 
+	reply = dbus_message_new_method_return(vc->pending);
 	path = voicecall_build_path(vc, call);
-
 	dbus_message_append_args(reply, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID);
-
-	g_dbus_send_message(conn, reply);
+	__ofono_dbus_pending_reply(&vc->pending, reply);
 
 	if (need_to_emit)
 		emit_call_list_changed(vc);
-
-out:
-	dbus_message_unref(vc->pending);
-	vc->pending = NULL;
 }
 
 static void multiparty_callback_common(struct ofono_voicecall *vc,
@@ -1572,22 +1518,14 @@ static void multiparty_callback_common(struct ofono_voicecall *vc,
 static void multiparty_create_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
-	gboolean need_to_emit = FALSE;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_debug("command failed with error: %s",
-				telephony_error_to_str(error));
-
-	vc->flags &= ~VOICECALLS_FLAG_PENDING;
-
-	if (!vc->pending)
-		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = __ofono_error_failed(vc->pending);
-		goto out;
+		ofono_debug("command failed with error: %s",
+				telephony_error_to_str(error));
+		__ofono_dbus_pending_reply(&vc->pending,
+					__ofono_error_failed(vc->pending));
+		return;
 	}
 
 	/* We just created a multiparty call, gather all held
@@ -1611,47 +1549,33 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 		ofono_error("Created multiparty call, but size is less than 2"
 				" panic!");
 
-		reply = __ofono_error_failed(vc->pending);
-	} else {
-		reply = dbus_message_new_method_return(vc->pending);
-
-		multiparty_callback_common(vc, reply);
-		need_to_emit = TRUE;
+		__ofono_dbus_pending_reply(&vc->pending,
+					__ofono_error_failed(vc->pending));
+		return;
 	}
 
-out:
-	g_dbus_send_message(conn, reply);
+	reply = dbus_message_new_method_return(vc->pending);
+	multiparty_callback_common(vc, reply);
+	__ofono_dbus_pending_reply(&vc->pending, reply);
 
-	if (need_to_emit)
-		emit_multiparty_call_list_changed(vc);
-
-	dbus_message_unref(vc->pending);
-	vc->pending = NULL;
+	emit_multiparty_call_list_changed(vc);
 }
 
 static void private_chat_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
-	gboolean need_to_emit = FALSE;
 	const char *callpath;
 	const char *c;
 	int id;
 	GSList *l;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("command failed with error: %s",
 				telephony_error_to_str(error));
-
-	vc->flags &= ~VOICECALLS_FLAG_PENDING;
-
-	if (!vc->pending)
+		__ofono_dbus_pending_reply(&vc->pending,
+					__ofono_error_failed(vc->pending));
 		return;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = __ofono_error_failed(vc->pending);
-		goto out;
 	}
 
 	dbus_message_get_args(vc->pending, NULL,
@@ -1675,18 +1599,10 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 	}
 
 	reply = dbus_message_new_method_return(vc->pending);
-
 	multiparty_callback_common(vc, reply);
-	need_to_emit = TRUE;
+	__ofono_dbus_pending_reply(&vc->pending, reply);
 
-out:
-	g_dbus_send_message(conn, reply);
-
-	if (need_to_emit)
-		emit_multiparty_call_list_changed(vc);
-
-	dbus_message_unref(vc->pending);
-	vc->pending = NULL;
+	emit_multiparty_call_list_changed(vc);
 }
 
 static void emit_en_list_changed(struct ofono_voicecall *vc)
