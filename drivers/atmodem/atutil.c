@@ -55,3 +55,29 @@ void decode_at_error(struct ofono_error *error, const char *final)
 		error->error = 0;
 	}
 }
+
+gint at_util_call_compare_by_status(gconstpointer a, gconstpointer b)
+{
+	const struct ofono_call *call = a;
+	int status = GPOINTER_TO_INT(b);
+
+	if (status != call->status)
+		return 1;
+
+	return 0;
+}
+
+gint at_util_call_compare(gconstpointer a, gconstpointer b)
+{
+	const struct ofono_call *ca = a;
+	const struct ofono_call *cb = b;
+
+	if (ca->id < cb->id)
+		return -1;
+
+	if (ca->id > cb->id)
+		return 1;
+
+	return 0;
+}
+

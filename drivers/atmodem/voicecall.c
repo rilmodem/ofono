@@ -109,31 +109,6 @@ static void release_id(struct voicecall_data *d, unsigned int id)
 	d->id_list &= ~(0x1 << id);
 }
 
-static gint call_compare_by_status(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_call *call = a;
-	int status = GPOINTER_TO_INT(b);
-
-	if (status != call->status)
-		return 1;
-
-	return 0;
-}
-
-static gint call_compare(gconstpointer a, gconstpointer b)
-{
-	const struct ofono_call *ca = a;
-	const struct ofono_call *cb = b;
-
-	if (ca->id < cb->id)
-		return -1;
-
-	if (ca->id > cb->id)
-		return 1;
-
-	return 0;
-}
-
 static struct ofono_call *create_call(struct voicecall_data *d, int type,
 					int direction, int status,
 					const char *num, int num_type, int clip)
@@ -159,7 +134,7 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 
 	call->clip_validity = clip;
 
-	d->calls = g_slist_insert_sorted(d->calls, call, call_compare);
+	d->calls = g_slist_insert_sorted(d->calls, call, at_util_call_compare);
 
 	return call;
 }
@@ -213,7 +188,7 @@ static GSList *parse_clcc(GAtResult *result)
 		else
 			call->clip_validity = 2;
 
-		l = g_slist_insert_sorted(l, call, call_compare);
+		l = g_slist_insert_sorted(l, call, at_util_call_compare);
 	}
 
 	return l;
@@ -729,12 +704,12 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 
 	/* See comment in CRING */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),
-				call_compare_by_status))
+				at_util_call_compare_by_status))
 		return;
 
 	/* RING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
-				call_compare_by_status))
+				at_util_call_compare_by_status))
 		return;
 
 	/* Generate an incoming call of unknown type */
@@ -768,12 +743,12 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	 * when a waiting call exists (cannot have waiting + incoming in GSM)
 	 */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),
-				call_compare_by_status))
+				at_util_call_compare_by_status))
 		return;
 
 	/* CRING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
-				call_compare_by_status))
+				at_util_call_compare_by_status))
 		return;
 
 	g_at_result_iter_init(&iter, result);
@@ -818,7 +793,7 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	dump_response("clip_notify", TRUE, result);
 
 	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
-				call_compare_by_status);
+				at_util_call_compare_by_status);
 
 	if (l == NULL) {
 		ofono_error("CLIP for unknown call");
