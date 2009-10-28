@@ -75,7 +75,6 @@ static const char *default_en_list_no_sim[] = { "119", "118", "999", "110",
 
 static void generic_callback(const struct ofono_error *error, void *data);
 static void multirelease_callback(const struct ofono_error *err, void *data);
-static void private_chat_callback(const struct ofono_error *error, void *data);
 
 static gint call_compare_by_id(gconstpointer a, gconstpointer b)
 {
@@ -1139,6 +1138,50 @@ static void multiparty_callback_common(struct ofono_voicecall *vc,
 	dbus_message_iter_close_container(&iter, &array_iter);
 }
 
+static void private_chat_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	DBusMessage *reply;
+	const char *callpath;
+	const char *c;
+	int id;
+	GSList *l;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("command failed with error: %s",
+				telephony_error_to_str(error));
+		__ofono_dbus_pending_reply(&vc->pending,
+					__ofono_error_failed(vc->pending));
+		return;
+	}
+
+	dbus_message_get_args(vc->pending, NULL,
+				DBUS_TYPE_OBJECT_PATH, &callpath,
+				DBUS_TYPE_INVALID);
+
+	c = strrchr(callpath, '/');
+	sscanf(c, "/voicecall%2u", &id);
+
+	l = g_slist_find_custom(vc->multiparty_list, GINT_TO_POINTER(id),
+				call_compare_by_id);
+
+	if (l) {
+		vc->multiparty_list =
+			g_slist_remove(vc->multiparty_list, l->data);
+
+		if (g_slist_length(vc->multiparty_list) < 2) {
+			g_slist_free(vc->multiparty_list);
+			vc->multiparty_list = 0;
+		}
+	}
+
+	reply = dbus_message_new_method_return(vc->pending);
+	multiparty_callback_common(vc, reply);
+	__ofono_dbus_pending_reply(&vc->pending, reply);
+
+	emit_multiparty_call_list_changed(vc);
+}
+
 static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -1556,50 +1599,6 @@ static void multirelease_callback(const struct ofono_error *error, void *data)
 
 	reply = dbus_message_new_method_return(vc->pending);
 	__ofono_dbus_pending_reply(&vc->pending, reply);
-}
-
-static void private_chat_callback(const struct ofono_error *error, void *data)
-{
-	struct ofono_voicecall *vc = data;
-	DBusMessage *reply;
-	const char *callpath;
-	const char *c;
-	int id;
-	GSList *l;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("command failed with error: %s",
-				telephony_error_to_str(error));
-		__ofono_dbus_pending_reply(&vc->pending,
-					__ofono_error_failed(vc->pending));
-		return;
-	}
-
-	dbus_message_get_args(vc->pending, NULL,
-				DBUS_TYPE_OBJECT_PATH, &callpath,
-				DBUS_TYPE_INVALID);
-
-	c = strrchr(callpath, '/');
-	sscanf(c, "/voicecall%2u", &id);
-
-	l = g_slist_find_custom(vc->multiparty_list, GINT_TO_POINTER(id),
-				call_compare_by_id);
-
-	if (l) {
-		vc->multiparty_list =
-			g_slist_remove(vc->multiparty_list, l->data);
-
-		if (g_slist_length(vc->multiparty_list) < 2) {
-			g_slist_free(vc->multiparty_list);
-			vc->multiparty_list = 0;
-		}
-	}
-
-	reply = dbus_message_new_method_return(vc->pending);
-	multiparty_callback_common(vc, reply);
-	__ofono_dbus_pending_reply(&vc->pending, reply);
-
-	emit_multiparty_call_list_changed(vc);
 }
 
 static void emit_en_list_changed(struct ofono_voicecall *vc)
