@@ -755,6 +755,22 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	return reply;
 }
 
+static ofono_bool_t clir_string_to_clir(const char *clirstr,
+					enum ofono_clir_option *clir)
+{
+	if (strlen(clirstr) == 0 || !strcmp(clirstr, "default")) {
+		*clir = OFONO_CLIR_OPTION_DEFAULT;
+		return TRUE;
+	} else if (!strcmp(clirstr, "disabled")) {
+		*clir = OFONO_CLIR_OPTION_SUPPRESSION;
+		return TRUE;
+	} else if (!strcmp(clirstr, "enabled")) {
+		*clir = OFONO_CLIR_OPTION_INVOCATION;
+		return TRUE;
+	} else
+		return FALSE;
+}
+
 static DBusMessage *manager_dial(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -778,13 +794,7 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	if (!valid_phone_number_format(number))
 		return __ofono_error_invalid_format(msg);
 
-	if (strlen(clirstr) == 0 || !strcmp(clirstr, "default"))
-		clir = OFONO_CLIR_OPTION_DEFAULT;
-	else if (!strcmp(clirstr, "disabled"))
-		clir = OFONO_CLIR_OPTION_SUPPRESSION;
-	else if (!strcmp(clirstr, "enabled"))
-		clir = OFONO_CLIR_OPTION_INVOCATION;
-	else
+	if (clir_string_to_clir(clirstr, &clir) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
 	if (!vc->driver->dial)
