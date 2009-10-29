@@ -1132,7 +1132,8 @@ static void init_registration_status(const struct ofono_error *error,
 
 	if (AUTO_REGISTER &&
 		(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED ||
-		 status == NETWORK_REGISTRATION_STATUS_DENIED))
+			status == NETWORK_REGISTRATION_STATUS_DENIED ||
+			status == NETWORK_REGISTRATION_STATUS_UNKNOWN))
 		netreg->driver->register_auto(netreg, register_callback, netreg);
 }
 
