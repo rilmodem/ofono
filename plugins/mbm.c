@@ -132,7 +132,7 @@ static int mbm_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
 					cfun_enable, modem, NULL);
 
-	return 0;
+	return -EINPROGRESS;
 }
 
 static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -162,7 +162,7 @@ static int mbm_disable(struct ofono_modem *modem)
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
 
-	return 0;
+	return -EINPROGRESS;
 }
 
 static void mbm_pre_sim(struct ofono_modem *modem)
