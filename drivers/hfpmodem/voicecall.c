@@ -244,49 +244,6 @@ static void hfp_hangup(struct ofono_voicecall *vc,
 	hfp_template("AT+CHUP", vc, generic_cb, 0x3f, cb, data);
 }
 
-static void release_id_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
-{
-	struct release_id_req *req = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
-	struct ofono_error error;
-
-	dump_response("release_id_cb", ok, result);
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (ok)
-		vd->local_release = 0x1 << req->id;
-
-	req->cb(&error, req->data);
-}
-
-static void hfp_release_specific(struct ofono_voicecall *vc, int id,
-				ofono_voicecall_cb_t cb, void *data)
-{
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct release_id_req *req = g_try_new0(struct release_id_req, 1);
-
-	if (!req)
-		goto error;
-
-	req->vc = vc;
-	req->cb = cb;
-	req->data = data;
-	req->id = id;
-
-	if (vd->mpty_call == FALSE)
-		g_at_chat_send(vd->chat, "AT+CHUP", none_prefix,
-				release_id_cb, req, g_free);
-
-	return;
-
-error:
-	if (req)
-		g_free(req);
-
-	CALLBACK_WITH_FAILURE(cb, data);
-}
-
 static void ring_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
@@ -584,7 +541,7 @@ static struct ofono_voicecall_driver driver = {
 	.release_all_held	= NULL,
 	.set_udub		= NULL,
 	.release_all_active	= NULL,
-	.release_specific	= hfp_release_specific,
+	.release_specific	= NULL,
 	.private_chat		= NULL,
 	.create_multiparty	= NULL,
 	.transfer		= NULL,
