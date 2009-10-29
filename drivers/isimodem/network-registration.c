@@ -705,14 +705,14 @@ out:
 }
 
 static void isi_register_manual(struct ofono_netreg *netreg,
-				const struct ofono_network_operator *oper,
+				const char *mcc, const char *mnc,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct isi_cb_data *cbd = isi_cb_data_new(netreg, cb, data);
 
 	guint8 buffer[3] = { 0 };
-	guint8 *bcd = mccmnc_to_bcd(oper->mcc, oper->mnc, buffer);
+	guint8 *bcd = mccmnc_to_bcd(mcc, mnc, buffer);
 
 	const unsigned char msg[] = {
 		NET_SET_REQ,
