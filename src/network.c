@@ -565,42 +565,31 @@ static GDBusSignalTable network_operator_signals[] = {
 	{ }
 };
 
-static struct network_operator_data *
-	network_operator_dbus_register(struct ofono_netreg *netreg,
-					const struct ofono_network_operator *op,
-					enum operator_status status)
+static gboolean network_operator_dbus_register(struct ofono_netreg *netreg,
+					struct network_operator_data *opd)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
-	struct network_operator_data *opd = NULL;
 
-	path = network_operator_build_path(netreg, op->mcc, op->mnc);
+	path = network_operator_build_path(netreg, opd->mcc, opd->mnc);
 
-	opd = network_operator_create(op);
+	if (!g_dbus_register_interface(conn, path, NETWORK_OPERATOR_INTERFACE,
+					network_operator_methods,
+					network_operator_signals,
+					NULL, opd,
+					network_operator_destroy)) {
+		ofono_error("Could not register NetworkOperator %s", path);
+		return FALSE;
+	}
 
 	opd->netreg = netreg;
 	opd->eons_info = NULL;
 
 	if (netreg->eons)
 		opd->eons_info = sim_eons_lookup(netreg->eons,
-							op->mcc, op->mnc);
+							opd->mcc, opd->mnc);
 
-	if (!g_dbus_register_interface(conn, path, NETWORK_OPERATOR_INTERFACE,
-					network_operator_methods,
-					network_operator_signals,
-					NULL, opd,
-					network_operator_destroy))
-		goto err;
-
-	return opd;
-
-err:
-	if (opd)
-		network_operator_destroy(opd);
-
-	ofono_error("Could not register NetworkOperator %s", path);
-
-	return NULL;
+	return TRUE;
 }
 
 static gboolean network_operator_dbus_unregister(struct ofono_netreg *netreg,
@@ -999,11 +988,12 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 			/* New operator */
 			struct network_operator_data *opd;
 
-			opd = network_operator_dbus_register(netreg, &list[i],
-								list[i].status);
+			opd = network_operator_create(&list[i]);
 
-			if (!opd)
+			if (!network_operator_dbus_register(netreg, opd)) {
+				g_free(opd);
 				continue;
+			}
 
 			n = g_slist_prepend(n, opd);
 			need_to_emit = TRUE;
@@ -1076,11 +1066,12 @@ static void current_operator_callback(const struct ofono_error *error,
 	if (current) {
 		struct network_operator_data *opd;
 
-		opd = network_operator_dbus_register(netreg, current,
-						OPERATOR_STATUS_CURRENT);
+		opd = network_operator_create(current);
 
-		if (!opd)
+		if (!network_operator_dbus_register(netreg, opd)) {
+			g_free(opd);
 			return;
+		}
 
 		netreg->current_operator = opd;
 		netreg->operator_list = g_slist_append(netreg->operator_list,
