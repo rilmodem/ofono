@@ -92,7 +92,6 @@ static void mbm_debug(const char *str, void *user_data)
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct mbm_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
