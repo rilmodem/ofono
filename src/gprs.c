@@ -569,7 +569,7 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 }
 
 static void netreg_status_changed(int status, int lac, int ci, int tech,
-					const struct ofono_network_operator *op,
+					const char *mcc, const char *mnc,
 					void *data)
 {
 	struct ofono_gprs *gprs = data;

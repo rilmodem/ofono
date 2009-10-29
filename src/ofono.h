@@ -208,7 +208,7 @@ void __ofono_ussd_passwd_unregister(struct ofono_ussd *ussd, const char *sc);
 #include <ofono/netreg.h>
 
 typedef void (*ofono_netreg_status_notify_cb_t)(int status, int lac, int ci,
-			int tech, const struct ofono_network_operator *op,
+			int tech, const char *mcc, const char *mnc,
 			void *data);
 
 unsigned int __ofono_netreg_add_status_watch(struct ofono_netreg *netreg,
