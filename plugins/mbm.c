@@ -51,6 +51,9 @@
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
 
+static const char *cfun_prefix[] = { "+CFUN:", NULL };
+static const char *none_prefix[] = { NULL };
+
 struct mbm_data {
 	GAtChat *chat;
 };
@@ -89,11 +92,62 @@ static void mbm_debug(const char *str, void *user_data)
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
-	if (ok)
-		ofono_modem_set_powered(modem, TRUE);
+	if (!ok)
+		ofono_modem_set_powered(modem, FALSE);
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
+static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int status;
+
+	DBG("");
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "+CFUN:") == FALSE)
+		return;
+
+	g_at_result_iter_next_number(&iter, &status);
+
+	if (status == 4) {
+		g_at_chat_send(data->chat, "AT+CFUN=1", none_prefix,
+				cfun_enable, modem, NULL);
+		return;
+	}
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
+static void emrdy_notifier(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int status;
+
+	DBG("");
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "*EMRDY:") == FALSE)
+		return;
+
+	g_at_result_iter_next_number(&iter, &status);
+
+	if (status != 1)
+		return;
+
+	g_at_chat_send(data->chat, "AT+CFUN?", cfun_prefix,
+					cfun_query, modem, NULL);
 }
 
 static int mbm_enable(struct ofono_modem *modem)
@@ -127,10 +181,12 @@ static int mbm_enable(struct ofono_modem *modem)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, mbm_debug, NULL);
 
+	g_at_chat_register(data->chat, "*EMRDY:", emrdy_notifier,
+					FALSE, modem, NULL);
+
 	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1", NULL,
 					NULL, NULL, NULL);
-	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
-					cfun_enable, modem, NULL);
+	g_at_chat_send(data->chat, "AT*EMRDY?", none_prefix, NULL, NULL, NULL);
 
 	return -EINPROGRESS;
 }
