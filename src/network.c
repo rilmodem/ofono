@@ -120,6 +120,30 @@ static inline const char *network_operator_status_to_string(int status)
 	return "unknown";
 }
 
+static char **network_operator_technologies(struct network_operator_data *opd)
+{
+	unsigned int ntechs = 0;
+	char **techs;
+	unsigned int i;
+
+	for (i = 0; i < sizeof(opd->techs); i++) {
+		if (opd->techs & (1 << i))
+			ntechs += 1;
+	}
+
+	techs = g_new0(char *, ntechs + 1);
+	ntechs = 0;
+
+	for (i = 0; i < sizeof(opd->techs); i++) {
+		if (!(opd->techs & (1 << i)))
+			continue;
+
+		techs[ntechs++] = g_strdup(registration_tech_to_string(i));
+	}
+
+	return techs;
+}
+
 static void register_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_netreg *netreg = data;
