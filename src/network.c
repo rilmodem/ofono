@@ -980,6 +980,36 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 	notify_status_watches(netreg);
 }
 
+static GSList *compress_operator_list(const struct ofono_network_operator *list,
+					int total)
+{
+	GSList *oplist = 0;
+	GSList *o;
+	int i;
+	struct network_operator_data *opd;
+
+	for (i = 0; i < total; i++) {
+		o = NULL;
+
+		if (oplist)
+			o = g_slist_find_custom(oplist, &list[i],
+						network_operator_compare);
+
+		if (!o) {
+			opd = network_operator_create(&list[i]);
+			oplist = g_slist_prepend(oplist, opd);
+		} else if (o && list[i].tech != -1) {
+			opd = o->data;
+			opd->techs |= 1 << list[i].tech;
+		}
+	}
+
+	if (oplist)
+		oplist = g_slist_reverse(oplist);
+
+	return oplist;
+}
+
 static void operator_list_callback(const struct ofono_error *error, int total,
 					const struct ofono_network_operator *list,
 					void *data)
