@@ -429,7 +429,7 @@ error:
 }
 
 static void at_register_manual(struct ofono_netreg *netreg,
-				const struct ofono_network_operator *oper,
+				const char *mcc, const char *mnc,
 				ofono_netreg_register_cb_t cb, void *data)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -439,7 +439,7 @@ static void at_register_manual(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "AT+COPS=1,2,\"%s%s\"", oper->mcc, oper->mnc);
+	sprintf(buf, "AT+COPS=1,2,\"%s%s\"", mcc, mnc);
 
 	if (g_at_chat_send(nd->chat, buf, none_prefix,
 				register_cb, cbd, g_free) > 0)
