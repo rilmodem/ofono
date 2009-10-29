@@ -102,6 +102,7 @@ struct network_operator_data {
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 	int status;
+	unsigned int techs;
 	const struct sim_eons_operator_info *eons_info;
 	struct ofono_netreg *netreg;
 };
@@ -325,24 +326,27 @@ static void set_network_operator_status(struct ofono_netreg *netreg,
 						&status_str);
 }
 
-static void set_network_operator_technology(struct ofono_netreg *netreg,
-					struct network_operator_data *opd,
-					int tech)
+static void set_network_operator_techs(struct network_operator_data *opd,
+					unsigned int techs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *tech_str;
+	struct ofono_netreg *netreg = opd->netreg;
+	char **technologies;
 	const char *path;
 
-	if (op->tech == tech)
+	if (opd->techs == techs)
 		return;
 
-	op->tech = tech;
-	tech_str = registration_tech_to_string(tech);
-	path = network_operator_build_path(netreg, op);
+	opd->techs = techs;
+	technologies = network_operator_technologies(opd);
+	path = network_operator_build_path(netreg, opd->mcc, opd->mnc);
 
-	ofono_dbus_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
-						"Technology", DBUS_TYPE_STRING,
-						&tech_str);
+	ofono_dbus_signal_array_property_changed(conn, path,
+						NETWORK_REGISTRATION_INTERFACE,
+						"Technologies",
+						DBUS_TYPE_STRING,
+						&technologies);
+	g_strfreev(technologies);
 }
 
 static char *get_operator_display_name(struct ofono_netreg *netreg)
@@ -536,12 +540,14 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 					DBUS_TYPE_STRING, &mnc);
 	}
 
-	if (opd->info->tech != -1) {
-		const char *technology =
-			registration_tech_to_string(opd->info->tech);
+	if (opd->techs != 0) {
+		char **technologies = network_operator_technologies(opd);
 
-		ofono_dbus_dict_append(&dict, "Technology", DBUS_TYPE_STRING,
-					&technology);
+		ofono_dbus_dict_append_array(&dict, "Technologies",
+						DBUS_TYPE_STRING,
+						&technologies);
+
+		g_strfreev(technologies);
 	}
 
 	if (opd->eons_info && opd->eons_info->info) {
@@ -999,8 +1005,7 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 			set_network_operator_status(netreg, o->data,
 							list[i].status);
 
-			set_network_operator_technology(netreg, o->data,
-							list[i].tech);
+			set_network_operator_techs(o->data, list[i].tech);
 
 			set_network_operator_name(netreg, o->data,
 							list[i].name);
@@ -1078,6 +1083,7 @@ static void current_operator_callback(const struct ofono_error *error,
 						OPERATOR_STATUS_CURRENT);
 		set_network_operator_technology(netreg, op->data,
 						current->tech);
+		set_network_operator_techs(op->data, current->tech);
 		set_network_operator_name(netreg, op->data, current->name);
 
 		if (netreg->current_operator == op->data)
