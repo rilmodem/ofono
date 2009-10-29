@@ -280,19 +280,36 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	if (call->status == CALL_STATUS_DISCONNECTED)
 		return __ofono_error_failed(msg);
 
-	if (!vc->driver->release_specific || !vc->driver->hangup)
+	if (!vc->driver->hangup && !vc->driver->release_specific)
 		return __ofono_error_not_implemented(msg);
 
 	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	vc->pending = dbus_message_ref(msg);
+	/* According to various specs, other than 27.007, +CHUP is used
+	 * to reject an incoming call
+	 */
+	if (call->status == CALL_STATUS_INCOMING) {
+		if (vc->driver->hangup == NULL)
+			return __ofono_error_not_implemented(msg);
 
-	if (call->status == CALL_STATUS_INCOMING)
+		vc->pending = dbus_message_ref(msg);
+
 		vc->driver->hangup(vc, generic_callback, vc);
-	else
-		vc->driver->release_specific(vc, call->id,
-						generic_callback, vc);
+		return NULL;
+	}
+
+	if ((g_slist_length(vc->call_list) == 1) && vc->driver->hangup &&
+			(call->status == CALL_STATUS_ACTIVE ||
+				call->status == CALL_STATUS_DIALING ||
+				call->status == CALL_STATUS_ALERTING)) {
+		vc->driver->hangup(vc, generic_callback, vc);
+
+		return NULL;
+	}
+
+	vc->driver->release_specific(vc, call->id,
+					generic_callback, vc);
 
 	return NULL;
 }
