@@ -275,6 +275,20 @@ static gint network_operator_compare(gconstpointer a, gconstpointer b)
 	return comp1 != 0 ? comp1 : comp2;
 }
 
+static gint network_operator_data_compare(gconstpointer a, gconstpointer b)
+{
+	const struct network_operator_data *opa = a;
+	const struct network_operator_data *opb = b;
+
+	int comp1;
+	int comp2;
+
+	comp1 = strcmp(opa->mcc, opb->mcc);
+	comp2 = strcmp(opa->mnc, opb->mnc);
+
+	return comp1 != 0 ? comp1 : comp2;
+}
+
 static inline const char *network_operator_build_path(struct ofono_netreg *netreg,
 							const char *mcc,
 							const char *mnc)
@@ -1017,7 +1031,8 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 	struct ofono_netreg *netreg = data;
 	GSList *n = NULL;
 	GSList *o;
-	int i;
+	GSList *compressed;
+	GSList *c;
 	gboolean need_to_emit = FALSE;
 
 	netreg->flags &= ~NETWORK_REGISTRATION_FLAG_REQUESTING_OPLIST;
@@ -1027,17 +1042,18 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 		return;
 	}
 
-	for (i = 0; i < total; i++) {
-		o = g_slist_find_custom(netreg->operator_list, &list[i],
-					network_operator_compare);
+	compressed = compress_operator_list(list, total);
+
+	for (c = compressed; c; c = c->next) {
+		struct network_operator_data *copd = c->data;
+
+		o = g_slist_find_custom(netreg->operator_list, copd,
+					network_operator_data_compare);
 
 		if (o) { /* Update and move to a new list */
-			set_network_operator_status(o->data,
-							list[i].status);
-
-			set_network_operator_techs(o->data, list[i].tech);
-
-			set_network_operator_name(o->data, list[i].name);
+			set_network_operator_status(o->data, copd->status);
+			set_network_operator_techs(o->data, copd->techs);
+			set_network_operator_name(o->data, copd->name);
 
 			n = g_slist_prepend(n, o->data);
 			netreg->operator_list =
@@ -1046,7 +1062,8 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 			/* New operator */
 			struct network_operator_data *opd;
 
-			opd = network_operator_create(&list[i]);
+			opd = g_memdup(copd,
+					sizeof(struct network_operator_data));
 
 			if (!network_operator_dbus_register(netreg, opd)) {
 				g_free(opd);
@@ -1057,6 +1074,9 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 			need_to_emit = TRUE;
 		}
 	}
+
+	g_slist_foreach(compressed, (GFunc)g_free, NULL);
+	g_slist_free(compressed);
 
 	if (n)
 		n = g_slist_reverse(n);
