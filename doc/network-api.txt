@@ -179,9 +179,10 @@ Properties	string Name [readonly]
 
 			Contains the Mobile Network Code (MNC)
 
-		string Technology [readonly, optional]
+		array{string} Technologies [readonly, optional]
 
-			Contains the technology of the network provider.
+			Contains a list of technologies currently available
+			from this network provider.
 
 			The possible values are: "GSM", "GSMCompact", "UTRAN",
 						 "GSM+EGPS", "UTRAN+HSDPA",
