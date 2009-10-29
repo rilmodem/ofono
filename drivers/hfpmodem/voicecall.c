@@ -398,10 +398,11 @@ static void release_call(struct ofono_voicecall *vc, struct ofono_call *call)
 }
 
 static void ciev_call_notify(struct ofono_voicecall *vc,
-			struct ofono_call *call,
-			unsigned int call_pos, unsigned int value)
+				struct ofono_call *call,
+				unsigned int value)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	unsigned int call_pos = vd->cind_pos[HFP_INDICATOR_CALL];
 
 	if (vd->mpty_call == FALSE) {
 		switch (value) {
@@ -421,11 +422,12 @@ static void ciev_call_notify(struct ofono_voicecall *vc,
 }
 
 static void ciev_callsetup_notify(struct ofono_voicecall *vc,
-			struct ofono_call *call,
-			unsigned int callsetup_pos, unsigned int value)
+					struct ofono_call *call,
+					unsigned int value)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	int call_pos = vd->cind_pos[HFP_INDICATOR_CALL];
+	unsigned int callsetup_pos = vd->cind_pos[HFP_INDICATOR_CALLSETUP];
+	unsigned int call_pos = vd->cind_pos[HFP_INDICATOR_CALL];
 
 	if (vd->mpty_call == FALSE) {
 		switch (value) {
@@ -472,9 +474,9 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	if (index == vd->cind_pos[HFP_INDICATOR_CALL])
-		ciev_call_notify(vc, call, index, value);
+		ciev_call_notify(vc, call, value);
 	else if (index == vd->cind_pos[HFP_INDICATOR_CALLSETUP])
-		ciev_callsetup_notify(vc, call, index, value);
+		ciev_callsetup_notify(vc, call, value);
 }
 
 static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
