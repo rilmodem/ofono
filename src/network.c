@@ -305,11 +305,11 @@ static void network_operator_emit_available_operators(struct ofono_netreg *netre
 	g_strfreev(network_operators);
 }
 
-static void set_network_operator_status(struct ofono_netreg *netreg,
-					struct network_operator_data *opd,
+static void set_network_operator_status(struct network_operator_data *opd,
 					int status)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_netreg *netreg = opd->netreg;
 	const char *status_str;
 	const char *path;
 
@@ -399,11 +399,11 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	return name;
 }
 
-static void set_network_operator_name(struct ofono_netreg *netreg,
-					struct network_operator_data *opd,
+static void set_network_operator_name(struct network_operator_data *opd,
 					const char *name)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_netreg *netreg = opd->netreg;
 	const char *path;
 	const char *operator;
 
@@ -436,11 +436,11 @@ static void set_network_operator_name(struct ofono_netreg *netreg,
 	}
 }
 
-static void set_network_operator_eons_info(struct ofono_netreg *netreg,
-				struct network_operator_data *opd,
+static void set_network_operator_eons_info(struct network_operator_data *opd,
 				const struct sim_eons_operator_info *eons_info)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_netreg *netreg = opd->netreg;
 	const struct sim_eons_operator_info *old_eons_info = opd->eons_info;
 	const char *path;
 	const char *oldname;
@@ -1002,13 +1002,12 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 					network_operator_compare);
 
 		if (o) { /* Update and move to a new list */
-			set_network_operator_status(netreg, o->data,
+			set_network_operator_status(o->data,
 							list[i].status);
 
 			set_network_operator_techs(o->data, list[i].tech);
 
-			set_network_operator_name(netreg, o->data,
-							list[i].name);
+			set_network_operator_name(o->data, list[i].name);
 
 			n = g_slist_prepend(n, o->data);
 			netreg->operator_list =
@@ -1071,7 +1070,7 @@ static void current_operator_callback(const struct ofono_error *error,
 	if (netreg->current_operator &&
 		(!current ||
 			network_operator_compare(netreg->current_operator, current)))
-		set_network_operator_status(netreg, netreg->current_operator,
+		set_network_operator_status(netreg->current_operator,
 						OPERATOR_STATUS_AVAILABLE);
 
 	if (current)
@@ -1079,12 +1078,9 @@ static void current_operator_callback(const struct ofono_error *error,
 					network_operator_compare);
 
 	if (op) {
-		set_network_operator_status(netreg, op->data,
-						OPERATOR_STATUS_CURRENT);
-		set_network_operator_technology(netreg, op->data,
-						current->tech);
+		set_network_operator_status(op->data, OPERATOR_STATUS_CURRENT);
 		set_network_operator_techs(op->data, current->tech);
-		set_network_operator_name(netreg, op->data, current->name);
+		set_network_operator_name(op->data, current->name);
 
 		if (netreg->current_operator == op->data)
 			return;
@@ -1243,7 +1239,7 @@ optimize:
 
 		eons_info = sim_eons_lookup(netreg->eons, opd->mcc, opd->mnc);
 
-		set_network_operator_eons_info(netreg, opd, eons_info);
+		set_network_operator_eons_info(opd, eons_info);
 	}
 }
 
