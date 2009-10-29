@@ -1128,9 +1128,16 @@ static void current_operator_callback(const struct ofono_error *error,
 					network_operator_compare);
 
 	if (op) {
-		set_network_operator_status(op->data, OPERATOR_STATUS_CURRENT);
-		set_network_operator_techs(op->data, current->tech);
-		set_network_operator_name(op->data, current->name);
+		struct network_operator_data *opd = op->data;
+		unsigned int techs = opd->techs;
+
+		if (current->tech != -1) {
+			techs |= 1 << current->tech;
+			set_network_operator_techs(opd, techs);
+		}
+
+		set_network_operator_status(opd, OPERATOR_STATUS_CURRENT);
+		set_network_operator_name(opd, current->name);
 
 		if (netreg->current_operator == op->data)
 			return;
