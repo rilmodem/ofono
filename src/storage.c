@@ -178,9 +178,6 @@ void storage_sync(const char *imsi, const char *store, GKeyFile *keyfile)
 void storage_close(const char *imsi, const char *store, GKeyFile *keyfile,
 			gboolean save)
 {
-	gchar *pathname, *data = NULL;
-	gsize length = 0;
-
 	if (save == TRUE)
 		storage_sync(imsi, store, keyfile);
 

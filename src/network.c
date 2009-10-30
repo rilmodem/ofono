@@ -1733,8 +1733,6 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
 	if (sim_atom) {
-		const char *imsi;
-
 		/* Assume that if sim atom exists, it is ready */
 		netreg->sim = __ofono_atom_get_data(sim_atom);
 
