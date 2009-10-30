@@ -142,12 +142,53 @@ static void test_valid()
 	}
 }
 
+static const char *valid_apns[] = {
+	"wap.cingular",
+	"vodafone.co.uk",
+	"vodafone.com",
+	NULL
+};
+
+static const char *invalid_apns[] = {
+	".",
+	"..",
+	"f..f",
+	"foo.bar.#",
+	"",
+	NULL
+};
+
+static void test_apn()
+{
+	int i;
+	gboolean res;
+
+	for (i = 0; valid_apns[i]; i++) {
+		if (g_test_verbose())
+			g_print("Test Valid:%s\n", valid_apns[i]);
+
+		res = is_valid_apn(valid_apns[i]);
+
+		g_assert(res == TRUE);
+	}
+
+	for (i = 0; invalid_apns[i]; i++) {
+		if (g_test_verbose())
+			g_print("Test Invalid:%s\n", invalid_apns[i]);
+
+		res = is_valid_apn(invalid_apns[i]);
+
+		g_assert(res == FALSE);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
 
 	g_test_add_func("/testutil/Invalid", test_invalid);
 	g_test_add_func("/testutil/Valid", test_valid);
+	g_test_add_func("/testutil/APN", test_apn);
 
 	return g_test_run();
 }
