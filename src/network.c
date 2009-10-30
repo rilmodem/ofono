@@ -44,7 +44,12 @@
 #define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN 0x4
 #define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN 0x8
 
-#define AUTO_REGISTER 1
+enum network_registration_mode {
+	NETWORK_REGISTRATION_MODE_AUTO = 0,
+	NETWORK_REGISTRATION_MODE_MANUAL = 1,
+	NETWORK_REGISTRATION_MODE_OFF = 2,
+	NETWORK_REGISTRATION_MODE_MANUAL_AUTO = 4
+};
 
 /* How often we update the operator list, in seconds */
 #define OPERATOR_LIST_UPDATE_TIME 300
@@ -64,6 +69,7 @@ struct ofono_netreg {
 	int location;
 	int cellid;
 	int technology;
+	int mode;
 	char *base_station;
 	struct network_operator_data *current_operator;
 	GSList *operator_list;
@@ -107,6 +113,20 @@ struct network_operator_data {
 	struct ofono_netreg *netreg;
 };
 
+static const char *registration_mode_to_string(int mode)
+{
+	switch (mode) {
+	case NETWORK_REGISTRATION_MODE_AUTO:
+		return "auto";
+	case NETWORK_REGISTRATION_MODE_MANUAL:
+		return "manual";
+	case NETWORK_REGISTRATION_MODE_OFF:
+		return "off";
+	default:
+		return "unknown";
+	}
+}
+
 static inline const char *network_operator_status_to_string(int status)
 {
 	switch (status) {
@@ -143,6 +163,28 @@ static char **network_operator_technologies(struct network_operator_data *opd)
 	}
 
 	return techs;
+}
+
+static void set_registration_mode(struct ofono_netreg *netreg, int mode)
+{
+	DBusConnection *conn;
+	const char *strmode;
+	const char *path;
+
+	if (netreg->mode == mode)
+		return;
+
+	netreg->mode = mode;
+
+	strmode = registration_mode_to_string(mode);
+
+	conn = ofono_dbus_get_connection();
+	path = __ofono_atom_get_path(netreg->atom);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						NETWORK_REGISTRATION_INTERFACE,
+						"Mode", DBUS_TYPE_STRING,
+						&strmode);
 }
 
 static void register_callback(const struct ofono_error *error, void *data)
@@ -594,6 +636,8 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 	netreg->driver->register_manual(netreg, opd->mcc, opd->mnc,
 					register_callback, netreg);
 
+	set_registration_mode(netreg, NETWORK_REGISTRATION_MODE_MANUAL);
+
 	return NULL;
 }
 
@@ -658,6 +702,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 
 	const char *status = registration_status_to_string(netreg->status);
 	const char *operator;
+	const char *mode = registration_mode_to_string(netreg->mode);
 
 	char **network_operators;
 
@@ -672,6 +717,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 					&dict);
 
 	ofono_dbus_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
+	ofono_dbus_dict_append(&dict, "Mode", DBUS_TYPE_STRING, &mode);
 
 	if (netreg->location != -1) {
 		dbus_uint16_t location = netreg->location;
@@ -735,6 +781,8 @@ static DBusMessage *network_register(DBusConnection *conn,
 
 	netreg->driver->register_auto(netreg, register_callback, netreg);
 
+	set_registration_mode(netreg, NETWORK_REGISTRATION_MODE_AUTO);
+
 	return NULL;
 }
 
@@ -753,6 +801,8 @@ static DBusMessage *network_deregister(DBusConnection *conn,
 	netreg->pending = dbus_message_ref(msg);
 
 	netreg->driver->deregister(netreg, register_callback, netreg);
+
+	set_registration_mode(netreg, NETWORK_REGISTRATION_MODE_OFF);
 
 	return NULL;
 }
@@ -1215,7 +1265,7 @@ static void init_registration_status(const struct ofono_error *error,
 					signal_strength_callback, netreg);
 	}
 
-	if (AUTO_REGISTER &&
+	if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO &&
 		(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED ||
 			status == NETWORK_REGISTRATION_STATUS_DENIED ||
 			status == NETWORK_REGISTRATION_STATUS_UNKNOWN))
