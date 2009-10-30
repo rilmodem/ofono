@@ -138,3 +138,5 @@ gboolean is_valid_pin(const char *pin);
 
 const char *registration_status_to_string(int status);
 const char *registration_tech_to_string(int tech);
+
+gboolean is_valid_apn(const char *apn);

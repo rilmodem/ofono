@@ -641,3 +641,29 @@ const char *registration_tech_to_string(int tech)
 		return "";
 	}
 }
+
+gboolean is_valid_apn(const char *apn)
+{
+	int i;
+	int last_period = 0;
+
+	if (apn[0] == '.' || apn[0] == '\0')
+		return FALSE;
+
+	for (i = 0; apn[i] != '\0'; i++) {
+		if (g_ascii_isalnum(apn[i]))
+			continue;
+
+		if (apn[i] == '-')
+			continue;
+
+		if (apn[i] == '.' && (i - last_period) > 1) {
+			last_period = i;
+			continue;
+		}
+
+		return FALSE;
+	}
+
+	return TRUE;
+}
