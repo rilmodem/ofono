@@ -35,6 +35,7 @@
 #include "common.h"
 #include "simutil.h"
 #include "util.h"
+#include "storage.h"
 
 #define NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
 #define NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
@@ -53,6 +54,9 @@ enum network_registration_mode {
 
 /* How often we update the operator list, in seconds */
 #define OPERATOR_LIST_UPDATE_TIME 300
+
+#define SETTINGS_STORE "netreg"
+#define SETTINGS_GROUP "Settings"
 
 static GSList *g_drivers = NULL;
 
@@ -82,6 +86,8 @@ struct ofono_netreg {
 	struct sim_eons *eons;
 	gint opscan_source;
 	struct ofono_sim *sim;
+	GKeyFile *settings;
+	char *imsi;
 	struct ofono_watchlist *status_watches;
 	const struct ofono_netreg_driver *driver;
 	void *driver_data;
@@ -175,6 +181,12 @@ static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 		return;
 
 	netreg->mode = mode;
+
+	if (netreg->settings) {
+		g_key_file_set_integer(netreg->settings, SETTINGS_GROUP,
+					"Mode", netreg->mode);
+		storage_sync(netreg->imsi, SETTINGS_STORE, netreg->settings);
+	}
 
 	strmode = registration_mode_to_string(mode);
 
@@ -1582,6 +1594,15 @@ static void netreg_unregister(struct ofono_atom *atom)
 		netreg->base_station = NULL;
 	}
 
+	if (netreg->settings) {
+		storage_close(netreg->imsi, SETTINGS_STORE,
+				netreg->settings, TRUE);
+
+		g_free(netreg->imsi);
+		netreg->imsi = NULL;
+		netreg->settings = NULL;
+	}
+
 	g_dbus_unregister_interface(conn, path,
 					NETWORK_REGISTRATION_INTERFACE);
 	ofono_modem_remove_interface(modem, NETWORK_REGISTRATION_INTERFACE);
@@ -1652,6 +1673,33 @@ struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
 	return netreg;
 }
 
+static void netreg_load_settings(struct ofono_netreg *netreg)
+{
+	const char *imsi;
+	int mode;
+
+	imsi = ofono_sim_get_imsi(netreg->sim);
+
+	if (!imsi)
+		return;
+
+	netreg->settings = storage_open(imsi, SETTINGS_STORE);
+
+	if (netreg->settings == NULL)
+		return;
+
+	netreg->imsi = g_strdup(imsi);
+
+	mode = g_key_file_get_integer(netreg->settings, SETTINGS_GROUP,
+					"Mode", NULL);
+
+	if (mode >= 0 && mode <= 2)
+		netreg->mode = mode;
+
+	g_key_file_set_integer(netreg->settings, SETTINGS_GROUP,
+				"Mode", netreg->mode);
+}
+
 void ofono_netreg_register(struct ofono_netreg *netreg)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1685,8 +1733,12 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
 	if (sim_atom) {
+		const char *imsi;
+
 		/* Assume that if sim atom exists, it is ready */
 		netreg->sim = __ofono_atom_get_data(sim_atom);
+
+		netreg_load_settings(netreg);
 
 		ofono_sim_read(netreg->sim, SIM_EFPNN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
