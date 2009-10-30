@@ -33,7 +33,6 @@
 
 #include <glib.h>
 
-#include <ofono/types.h>
 #include "storage.h"
 
 int create_dirs(const char *filename, const mode_t mode)
