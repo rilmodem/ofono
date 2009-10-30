@@ -552,7 +552,6 @@ static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_ACTIVE ||
-			v->call->status == CALL_STATUS_INCOMING ||
 			v->call->status == CALL_STATUS_DIALING ||
 			v->call->status == CALL_STATUS_ALERTING)
 			return TRUE;
@@ -1138,7 +1137,7 @@ static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	if (!voicecalls_have_active(vc) || !voicecalls_have_waiting(vc))
+	if (!voicecalls_have_waiting(vc))
 		return __ofono_error_failed(msg);
 
 	if (!vc->driver->release_all_active)
@@ -1159,8 +1158,13 @@ static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	if (voicecalls_have_active(vc) && voicecalls_have_held(vc) &&
-		voicecalls_have_waiting(vc))
+	if (voicecalls_have_waiting(vc) == FALSE)
+		return __ofono_error_failed(msg);
+
+	/* We have waiting call and both an active and held call.  According
+	 * to 22.030 we cannot use CHLD=2 in this situation.
+	 */
+	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
 		return __ofono_error_failed(msg);
 
 	if (!vc->driver->hold_all_active)
