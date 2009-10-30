@@ -43,7 +43,7 @@ static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
 
 enum gprs_context_type {
-	GPRS_CONTEXT_TYPE_INTERNET = 1,
+	GPRS_CONTEXT_TYPE_INTERNET = 0,
 	GPRS_CONTEXT_TYPE_MMS,
 	GPRS_CONTEXT_TYPE_WAP,
 };
