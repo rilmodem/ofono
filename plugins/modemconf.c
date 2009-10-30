@@ -44,6 +44,7 @@ static const char *tty_opts[] = {
 	"Parity",
 	"XonXoff",
 	"RtsCts",
+	"GsmSyntax",
 	NULL,
 };
 

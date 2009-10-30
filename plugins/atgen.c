@@ -113,7 +113,17 @@ static int atgen_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
-	syntax = g_at_syntax_new_gsmv1();
+	value = ofono_modem_get_string(modem, "GsmSyntax");
+	if (value) {
+		if (g_str_equal(value, "V1"))
+			syntax = g_at_syntax_new_gsmv1();
+		else if (g_str_equal(value, "Permissive"))
+			syntax = g_at_syntax_new_gsm_permissive();
+		else
+			return -EINVAL;
+	} else
+		syntax = g_at_syntax_new_gsmv1();
+
 	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
