@@ -124,3 +124,65 @@ ssize_t write_file(const unsigned char *buffer, size_t len, mode_t mode,
 	g_free(path);
 	return r;
 }
+
+GKeyFile *storage_open(const char *imsi, const char *store)
+{
+	GKeyFile *keyfile;
+	char *path;
+
+	if (store == NULL)
+		return NULL;
+
+	if (imsi)
+		path = g_strdup_printf(STORAGEDIR "/%s/%s", imsi, store);
+	else
+		path = g_strdup_printf(STORAGEDIR "/%s", store);
+
+	keyfile = g_key_file_new();
+
+	if (path) {
+		g_key_file_load_from_file(keyfile, path, 0, NULL);
+		g_free(path);
+	}
+
+	return keyfile;
+}
+
+void storage_sync(const char *imsi, const char *store, GKeyFile *keyfile)
+{
+	char *path;
+	char *data;
+	gsize length = 0;
+
+	if (imsi)
+		path = g_strdup_printf(STORAGEDIR "/%s/%s", imsi, store);
+	else
+		path = g_strdup_printf(STORAGEDIR "/%s", store);
+
+	if (path == NULL)
+		return;
+
+	if (create_dirs(path, S_IRUSR | S_IWUSR | S_IXUSR) != 0) {
+		g_free(path);
+		return;
+	}
+
+	data = g_key_file_to_data(keyfile, &length, NULL);
+
+	g_file_set_contents(path, data, length, NULL);
+
+	g_free(data);
+	g_free(path);
+}
+
+void storage_close(const char *imsi, const char *store, GKeyFile *keyfile,
+			gboolean save)
+{
+	gchar *pathname, *data = NULL;
+	gsize length = 0;
+
+	if (save == TRUE)
+		storage_sync(imsi, store, keyfile);
+
+	g_key_file_free(keyfile);
+}
