@@ -88,17 +88,17 @@ static void calypso_debug(const char *str, void *data)
 {
 	guint dlc = GPOINTER_TO_UINT(data);
 
-	DBG("DLC%u: %s", dlc, str);
+	ofono_info("DLC%u: %s", dlc, str);
 }
 
 static void calypso_mux_debug(const char *str, void *data)
 {
-	DBG("MUX: %s", str);
+	ofono_info("MUX: %s", str);
 }
 
 static void calypso_setup_debug(const char *str, void *data)
 {
-	DBG("Setup: %s", str);
+	ofono_info("Setup: %s", str);
 }
 
 static int calypso_probe(struct ofono_modem *modem)

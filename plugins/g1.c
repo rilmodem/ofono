@@ -52,7 +52,7 @@
 
 static void g1_debug(const char *str, void *data)
 {
-	DBG("%s", str);
+	ofono_info("%s", str);
 }
 
 /* Detect hardware, and initialize if found */

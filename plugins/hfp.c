@@ -59,7 +59,7 @@ static int hfp_disable(struct ofono_modem *modem);
 
 static void hfp_debug(const char *str, void *user_data)
 {
-	ofono_debug("%s", str);
+	ofono_info("%s", str);
 }
 
 static void cind_status_cb(gboolean ok, GAtResult *result,
