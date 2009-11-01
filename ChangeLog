@@ -1,3 +1,11 @@
+ver 0.9:
+	Fix issues with voice call dialing logic.
+	Fix issues with USSD decoding support.
+	Add initial GPRS support for MBM modems.
+	Add mode property to network registration.
+	Add support for advanced options in modem.conf file.
+	Add voice call driver for Bluetooth Handsfree.
+
 ver 0.8:
 	Fix crash when internal structures differ.
 	Fix issues with handling empty text messages.
