@@ -33,12 +33,15 @@
 #include "ofono.h"
 
 #include "common.h"
+#include "storage.h"
 
 #define DATA_CONNECTION_MANAGER_INTERFACE "org.ofono.DataConnectionManager"
 #define DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 
 #define GPRS_FLAG_ATTACHING 0x1
 
+#define SETTINGS_STORE "gprs"
+#define SETTINGS_GROUP "Settings"
 #define MAX_CONTEXT_NAME_LENGTH 127
 #define MAX_CONTEXTS 256
 
@@ -70,6 +73,8 @@ struct ofono_gprs {
 	struct ofono_netreg *netreg;
 	unsigned int netreg_watch;
 	unsigned int status_watch;
+	GKeyFile *settings;
+	char *imsi;
 	DBusMessage *pending;
 	struct ofono_gprs_context *context_driver;
 	const struct ofono_gprs_driver *driver;
@@ -702,6 +707,14 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 
 		gprs->roaming_allowed = value;
 
+		if (gprs->settings) {
+			g_key_file_set_integer(gprs->settings, SETTINGS_GROUP,
+						"RoamingAllowed",
+						gprs->roaming_allowed);
+			storage_sync(gprs->imsi, SETTINGS_STORE,
+					gprs->settings);
+		}
+
 		gprs_netreg_update(gprs);
 	} else if (!strcmp(property, "Powered")) {
 		if (!gprs->driver->set_attached)
@@ -716,6 +729,13 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 			return dbus_message_new_method_return(msg);
 
 		gprs->powered = value;
+
+		if (gprs->settings) {
+			g_key_file_set_integer(gprs->settings, SETTINGS_GROUP,
+						"Powered", gprs->powered);
+			storage_sync(gprs->imsi, SETTINGS_STORE,
+					gprs->settings);
+		}
 
 		gprs_netreg_update(gprs);
 	} else
@@ -1178,6 +1198,15 @@ static void gprs_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 	GSList *l;
 
+	if (gprs->settings) {
+		storage_close(gprs->imsi, SETTINGS_STORE,
+				gprs->settings, TRUE);
+
+		g_free(gprs->imsi);
+		gprs->imsi = NULL;
+		gprs->settings = NULL;
+	}
+
 	for (l = gprs->contexts; l; l = l->next) {
 		struct pri_context *context = l->data;
 
@@ -1284,12 +1313,50 @@ static void netreg_watch(struct ofono_atom *atom,
 	gprs_netreg_update(gprs);
 }
 
+static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
+{
+	GError *error = NULL;
+
+	gprs->settings = storage_open(imsi, SETTINGS_STORE);
+
+	if (gprs->settings == NULL)
+		return;
+
+	gprs->imsi = g_strdup(imsi);
+
+	gprs->powered = g_key_file_get_boolean(gprs->settings, SETTINGS_GROUP,
+						"Powered", &error);
+
+	/*
+	 * If any error occurs, simply switch to defaults.
+	 * Default to Powered = True
+	 * and RoamingAllowed = True
+	 */
+	if (error) {
+		gprs->powered = TRUE;
+		g_key_file_set_boolean(gprs->settings, SETTINGS_GROUP,
+					"Powered", gprs->powered);
+	}
+
+	gprs->roaming_allowed = g_key_file_get_boolean(gprs->settings,
+							SETTINGS_GROUP,
+							"RoamingAllowed", NULL);
+
+	if (error) {
+		gprs->roaming_allowed = TRUE;
+		g_key_file_set_boolean(gprs->settings, SETTINGS_GROUP,
+					"RoamingAllowed",
+					gprs->roaming_allowed);
+	}
+}
+
 void ofono_gprs_register(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
 	const char *path = __ofono_atom_get_path(gprs->atom);
 	struct ofono_atom *netreg_atom;
+	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					DATA_CONNECTION_MANAGER_INTERFACE,
@@ -1303,9 +1370,6 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 
 	ofono_modem_add_interface(modem, DATA_CONNECTION_MANAGER_INTERFACE);
 
-	/* TODO: Read Powered from SIM store */
-	gprs->powered = TRUE;
-
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
 					netreg_watch, gprs, NULL);
@@ -1315,6 +1379,15 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 	if (netreg_atom && __ofono_atom_get_registered(netreg_atom))
 		netreg_watch(netreg_atom,
 				OFONO_ATOM_WATCH_CONDITION_REGISTERED, gprs);
+
+	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+	if (sim_atom) {
+		struct ofono_sim *sim = __ofono_atom_get_data(sim_atom);
+		const char *imsi = ofono_sim_get_imsi(sim);
+
+		gprs_load_settings(gprs, imsi);
+	}
 
 	__ofono_atom_register(gprs->atom, gprs_unregister);
 }
