@@ -490,7 +490,9 @@ static GDBusSignalTable context_signals[] = {
 	{ }
 };
 
-static struct pri_context *pri_context_create(struct ofono_gprs *gprs)
+static struct pri_context *pri_context_create(struct ofono_gprs *gprs,
+						const char *name,
+						enum gprs_context_type type)
 {
 	struct pri_context *context = g_try_new0(struct pri_context, 1);
 
@@ -498,6 +500,8 @@ static struct pri_context *pri_context_create(struct ofono_gprs *gprs)
 		return NULL;
 
 	context->gprs = gprs;
+	strcpy(context->name, name);
+	context->type = type;
 
 	return context;
 }
@@ -816,7 +820,7 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 	if (g_slist_length(gprs->contexts) >= MAX_CONTEXTS)
 		return __ofono_error_not_supported(msg);
 
-	context = pri_context_create(gprs);
+	context = pri_context_create(gprs, name, type);
 
 	if (!context) {
 		ofono_error("Unable to allocate context struct");
@@ -829,9 +833,6 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 		ofono_error("Unable to register primary context");
 		return __ofono_error_failed(msg);
 	}
-
-	strcpy(context->name, name);
-	context->type = type;
 
 	if (gprs->settings) {
 		g_key_file_set_string(gprs->settings, context->key,
@@ -1378,9 +1379,97 @@ static void netreg_watch(struct ofono_atom *atom,
 	gprs_netreg_update(gprs);
 }
 
+static gboolean load_context(struct ofono_gprs *gprs, const char *group)
+{
+	char *name = NULL;
+	char *typestr = NULL;
+	char *username = NULL;
+	char *password = NULL;
+	char *apn = NULL;
+	gboolean ret = FALSE;
+	struct pri_context *context;
+	enum gprs_context_type type;
+
+	if ((name = g_key_file_get_string(gprs->settings, group,
+					"Name", NULL)) == NULL)
+		goto err;
+
+	if ((typestr = g_key_file_get_string(gprs->settings, group,
+					"Type", NULL)) == NULL)
+		goto err;
+
+	type = gprs_context_string_to_type(typestr);
+	if (type == GPRS_CONTEXT_TYPE_INVALID)
+		goto err;
+
+	username = g_key_file_get_string(gprs->settings, group,
+						"Username", NULL);
+	if (!username)
+		goto err;
+
+	if (strlen(username) > OFONO_GPRS_MAX_USERNAME_LENGTH)
+		goto err;
+
+	password = g_key_file_get_string(gprs->settings, group,
+						"Password", NULL);
+
+	if (!password)
+		goto err;
+
+	if (strlen(password) > OFONO_GPRS_MAX_PASSWORD_LENGTH)
+		goto err;
+
+	apn = g_key_file_get_string(gprs->settings, group,
+					"AccessPointName", NULL);
+
+	if (!apn)
+		goto err;
+
+	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
+		goto err;
+
+	/* Accept empty (just created) APNs, but don't allow other
+	 * invalid ones */
+	if (apn[0] != '\0' && is_valid_apn(apn) == FALSE)
+		goto err;
+
+	if ((context = pri_context_create(gprs, name, type)) == NULL)
+		goto err;
+
+	strcpy(context->context.username, username);
+	strcpy(context->context.password, password);
+	strcpy(context->context.apn, apn);
+
+	if (context_dbus_register(context) == FALSE)
+		goto err;
+
+	gprs->contexts = g_slist_append(gprs->contexts, context);
+	ret = TRUE;
+
+err:
+	if (name)
+		g_free(name);
+
+	if (typestr)
+		g_free(typestr);
+
+	if (username)
+		g_free(username);
+
+	if (password)
+		g_free(password);
+
+	if (apn)
+		g_free(apn);
+
+	return ret;
+}
+
 static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 {
 	GError *error = NULL;
+	char **groups;
+	int i;
 
 	gprs->settings = storage_open(imsi, SETTINGS_STORE);
 
@@ -1413,6 +1502,25 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 					"RoamingAllowed",
 					gprs->roaming_allowed);
 	}
+
+	groups = g_key_file_get_groups(gprs->settings, NULL);
+
+	for (i = 0; groups[i]; i++) {
+
+		if (g_str_equal(groups[i], SETTINGS_GROUP))
+			continue;
+
+		if (!g_str_has_prefix(groups[i], "primarycontext"))
+			goto remove;
+
+		if (load_context(gprs, groups[i]) == TRUE)
+			continue;
+
+remove:
+		g_key_file_remove_group(gprs->settings, groups[i], NULL);
+	}
+
+	g_strfreev(groups);
 }
 
 void ofono_gprs_register(struct ofono_gprs *gprs)
