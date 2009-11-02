@@ -39,6 +39,8 @@
 
 #define GPRS_FLAG_ATTACHING 0x1
 
+#define MAX_CONTEXT_NAME_LENGTH 127
+
 static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
 
@@ -86,7 +88,7 @@ struct pri_context {
 	ofono_bool_t active;
 	ofono_bool_t pending_active;
 	enum gprs_context_type type;
-	char *name;
+	char name[MAX_CONTEXT_NAME_LENGTH + 1];
 	char *path;
 	struct ofono_gprs_primary_context context;
 	struct ofono_gprs *gprs;
@@ -144,7 +146,7 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	dbus_bool_t value;
 	const char *type = gprs_context_type_to_string(ctx->type);
-	const char *name = ctx->name ? ctx->name : "";
+	const char *name = ctx->name;
 	const char *strvalue;
 
 	reply = dbus_message_new_method_return(msg);
@@ -307,13 +309,14 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
 					DBusMessage *msg, const char *name)
 {
+	if (strlen(name) > MAX_CONTEXT_NAME_LENGTH)
+		return __ofono_error_invalid_format(msg);
+
 	if (ctx->name && g_str_equal(ctx->name, name))
 		return dbus_message_new_method_return(msg);
 
-	if (ctx->name)
-		g_free(ctx->name);
+	strcpy(ctx->name, name);
 
-	ctx->name = g_strdup(name);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -459,9 +462,6 @@ static struct pri_context *pri_context_create(struct ofono_gprs *gprs)
 static void pri_context_destroy(gpointer userdata)
 {
 	struct pri_context *ctx = userdata;
-
-	if (ctx->name)
-		g_free(ctx->name);
 
 	if (ctx->path)
 		g_free(ctx->path);
@@ -733,11 +733,24 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 {
 	struct ofono_gprs *gprs = data;
 	struct pri_context *context;
+	const char *name;
+	const char *typestr;
 	const char *path;
+	enum gprs_context_type type;
 	char **objpath_list;
 
-	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID))
+	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &name,
+					DBUS_TYPE_STRING, &typestr,
+					DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
+
+	if (strlen(name) == 0 || strlen(name) > MAX_CONTEXT_NAME_LENGTH)
+		return __ofono_error_invalid_format(msg);
+
+	type = gprs_context_string_to_type(typestr);
+
+	if (type == GPRS_CONTEXT_TYPE_INVALID)
+		return __ofono_error_invalid_format(msg);
 
 	context = pri_context_create(gprs);
 
@@ -752,6 +765,9 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 		ofono_error("Unable to register primary context");
 		return __ofono_error_failed(msg);
 	}
+
+	strcpy(context->name, name);
+	context->type = type;
 
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 
@@ -874,7 +890,7 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 static GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	gprs_get_properties },
 	{ "SetProperty",	"sv",	"",		gprs_set_property },
-	{ "CreateContext",	"",	"o",		gprs_create_context },
+	{ "CreateContext",	"ss",	"o",		gprs_create_context },
 	{ "RemoveContext",	"o",	"",		gprs_remove_context,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "DeactivateAll",	"",	"",		gprs_deactivate_all,

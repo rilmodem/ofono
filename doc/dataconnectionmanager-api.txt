@@ -24,10 +24,15 @@ Methods		dict GetProperties()
 
 			Deactivates all active contexts.
 
-		object CreateContext()
+		object CreateContext(string name, string type)
 
-			Creates a new Primary context.  Returns the object
-			path of the created context.
+			Creates a new Primary context.  The name is a free
+			form string that describes this context.  The name
+			should not be empty and limited to a short string
+			for display purposes.  The type contains the intended
+			purpose of the context.  For possible values see the
+			Type documentation of PrimaryDataContext interface.
+			Returns the object path of the created context.
 
 		void RemoveContext(object context)
 
