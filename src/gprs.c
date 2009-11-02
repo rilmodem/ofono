@@ -40,6 +40,7 @@
 #define GPRS_FLAG_ATTACHING 0x1
 
 #define MAX_CONTEXT_NAME_LENGTH 127
+#define MAX_CONTEXTS 256
 
 static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
@@ -751,6 +752,9 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 
 	if (type == GPRS_CONTEXT_TYPE_INVALID)
 		return __ofono_error_invalid_format(msg);
+
+	if (g_slist_length(gprs->contexts) >= MAX_CONTEXTS)
+		return __ofono_error_not_supported(msg);
 
 	context = pri_context_create(gprs);
 
