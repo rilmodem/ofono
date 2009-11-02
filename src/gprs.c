@@ -46,6 +46,7 @@ enum gprs_context_type {
 	GPRS_CONTEXT_TYPE_INTERNET = 0,
 	GPRS_CONTEXT_TYPE_MMS,
 	GPRS_CONTEXT_TYPE_WAP,
+	GPRS_CONTEXT_TYPE_INVALID,
 };
 
 struct ofono_gprs {
@@ -93,7 +94,7 @@ struct pri_context {
 
 static void gprs_netreg_update(struct ofono_gprs *gprs);
 
-static inline const char *gprs_context_type_to_string(int type)
+static const char *gprs_context_type_to_string(int type)
 {
 	switch (type) {
 	case GPRS_CONTEXT_TYPE_INTERNET:
@@ -105,6 +106,18 @@ static inline const char *gprs_context_type_to_string(int type)
 	}
 
 	return NULL;
+}
+
+static enum gprs_context_type gprs_context_string_to_type(const char *str)
+{
+	if (g_str_equal(str, "internet"))
+		return GPRS_CONTEXT_TYPE_INTERNET;
+	else if (g_str_equal(str, "wap"))
+		return GPRS_CONTEXT_TYPE_WAP;
+	else if (g_str_equal(str, "mms"))
+		return GPRS_CONTEXT_TYPE_MMS;
+
+	return GPRS_CONTEXT_TYPE_INVALID;
 }
 
 static struct pri_context *gprs_context_by_path(struct ofono_gprs *gprs,
@@ -272,13 +285,9 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 {
 	enum gprs_context_type context_type;
 
-	if (g_str_equal(type, "internet"))
-		context_type = GPRS_CONTEXT_TYPE_INTERNET;
-	else if (g_str_equal(type, "wap"))
-		context_type = GPRS_CONTEXT_TYPE_WAP;
-	else if (g_str_equal(type, "mms"))
-		context_type = GPRS_CONTEXT_TYPE_MMS;
-	else
+	context_type = gprs_context_string_to_type(type);
+
+	if (context_type == GPRS_CONTEXT_TYPE_INVALID)
 		return __ofono_error_invalid_args(msg);
 
 	if (ctx->type == context_type)
