@@ -96,6 +96,7 @@ struct pri_context {
 	enum gprs_context_type type;
 	char name[MAX_CONTEXT_NAME_LENGTH + 1];
 	char *path;
+	char *key;
 	struct ofono_gprs_primary_context context;
 	struct ofono_gprs *gprs;
 };
@@ -223,6 +224,8 @@ static void pri_set_active_callback(const struct ofono_error *error,
 static DBusMessage *pri_set_apn(struct pri_context *ctx, DBusConnection *conn,
 				DBusMessage *msg, const char *apn)
 {
+	GKeyFile *settings = ctx->gprs->settings;
+
 	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
 		return __ofono_error_invalid_format(msg);
 
@@ -233,6 +236,12 @@ static DBusMessage *pri_set_apn(struct pri_context *ctx, DBusConnection *conn,
 		return __ofono_error_invalid_format(msg);
 
 	strcpy(ctx->context.apn, apn);
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key,
+					"AccessPointName", apn);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -248,6 +257,8 @@ static DBusMessage *pri_set_username(struct pri_context *ctx,
 					DBusConnection *conn, DBusMessage *msg,
 					const char *username)
 {
+	GKeyFile *settings = ctx->gprs->settings;
+
 	if (strlen(username) > OFONO_GPRS_MAX_USERNAME_LENGTH)
 		return __ofono_error_invalid_format(msg);
 
@@ -255,6 +266,12 @@ static DBusMessage *pri_set_username(struct pri_context *ctx,
 		return dbus_message_new_method_return(msg);
 
 	strcpy(ctx->context.username, username);
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key,
+					"Username", username);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -270,6 +287,8 @@ static DBusMessage *pri_set_password(struct pri_context *ctx,
 					DBusConnection *conn, DBusMessage *msg,
 					const char *password)
 {
+	GKeyFile *settings = ctx->gprs->settings;
+
 	if (strlen(password) > OFONO_GPRS_MAX_PASSWORD_LENGTH)
 		return __ofono_error_invalid_format(msg);
 
@@ -277,6 +296,12 @@ static DBusMessage *pri_set_password(struct pri_context *ctx,
 		return dbus_message_new_method_return(msg);
 
 	strcpy(ctx->context.password, password);
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key,
+					"Password", password);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -291,6 +316,7 @@ static DBusMessage *pri_set_password(struct pri_context *ctx,
 static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 					DBusMessage *msg, const char *type)
 {
+	GKeyFile *settings = ctx->gprs->settings;
 	enum gprs_context_type context_type;
 
 	context_type = gprs_context_string_to_type(type);
@@ -302,6 +328,11 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 		return dbus_message_new_method_return(msg);
 
 	ctx->type = context_type;
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key, "Type", type);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -315,6 +346,8 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
 					DBusMessage *msg, const char *name)
 {
+	GKeyFile *settings = ctx->gprs->settings;
+
 	if (strlen(name) > MAX_CONTEXT_NAME_LENGTH)
 		return __ofono_error_invalid_format(msg);
 
@@ -323,6 +356,10 @@ static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
 
 	strcpy(ctx->name, name);
 
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key, "Name", ctx->name);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
@@ -480,9 +517,11 @@ static gboolean context_dbus_register(struct pri_context *ctx)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	char path[256];
 	unsigned int id = ctx->gprs->next_context_id;
+	const char *basepath;
 
-	snprintf(path, sizeof(path), "%s/primarycontext%u",
-			__ofono_atom_get_path(ctx->gprs->atom), id);
+	basepath = __ofono_atom_get_path(ctx->gprs->atom);
+
+	snprintf(path, sizeof(path), "%s/primarycontext%u", basepath, id);
 
 	if (!g_dbus_register_interface(conn, path, DATA_CONTEXT_INTERFACE,
 					context_methods, context_signals,
@@ -494,6 +533,7 @@ static gboolean context_dbus_register(struct pri_context *ctx)
 	}
 
 	ctx->path = g_strdup(path);
+	ctx->key = ctx->path + strlen(basepath) + 1;
 
 	ctx->gprs->next_context_id += 1;
 
@@ -793,6 +833,21 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 	strcpy(context->name, name);
 	context->type = type;
 
+	if (gprs->settings) {
+		g_key_file_set_string(gprs->settings, context->key,
+					"Name", context->name);
+		g_key_file_set_string(gprs->settings, context->key,
+					"AccessPointName",
+					context->context.apn);
+		g_key_file_set_string(gprs->settings, context->key,
+					"Username", context->context.username);
+		g_key_file_set_string(gprs->settings, context->key,
+					"Password", context->context.password);
+		g_key_file_set_string(gprs->settings, context->key, "Type",
+				gprs_context_type_to_string(context->type));
+		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
+	}
+
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 
 	objpath_list = gprs_contexts_path_list(gprs->contexts);
@@ -827,6 +882,11 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 		__ofono_dbus_pending_reply(&gprs->pending,
 					__ofono_error_failed(gprs->pending));
 		return;
+	}
+
+	if (gprs->settings) {
+		g_key_file_remove_group(gprs->settings, ctx->key, NULL);
+		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
 	}
 
 	context_dbus_unregister(ctx);
@@ -875,6 +935,11 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 		gc->driver->deactivate_primary(gc, ctx->context.cid,
 					gprs_deactivate_for_remove, ctx);
 		return NULL;
+	}
+
+	if (gprs->settings) {
+		g_key_file_remove_group(gprs->settings, ctx->key, NULL);
+		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
 	}
 
 	ofono_debug("Unregistering context: %s\n", ctx->path);
