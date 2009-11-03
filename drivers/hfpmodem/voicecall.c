@@ -54,7 +54,6 @@ struct voicecall_data {
 	GAtChat *chat;
 	GSList *calls;
 	struct ofono_call *call;
-	gboolean mpty_call;
 	unsigned int ag_features;
 	unsigned int ag_mpty_features;
 	unsigned char cind_pos[HFP_INDICATOR_LAST];
@@ -103,9 +102,6 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 	d->calls = g_slist_insert_sorted(d->calls, call, at_util_call_compare);
 
 	call->clip_validity = clip;
-
-	if (d->call)
-		d->mpty_call = TRUE;
 
 	d->call = call;
 
@@ -339,8 +335,7 @@ static void release_call(struct ofono_voicecall *vc, struct ofono_call *call)
 	ofono_voicecall_disconnected(vc, call->id, reason, NULL);
 	at_util_release_id(&vd->id_list, call->id);
 
-	if (vd->mpty_call == FALSE)
-		vd->local_release = 0;
+	vd->local_release = 0;
 
 	vd->calls = g_slist_remove(vd->calls, call);
 
@@ -357,7 +352,7 @@ static void ciev_call_notify(struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	unsigned int call_pos = vd->cind_pos[HFP_INDICATOR_CALL];
 
-	if (vd->mpty_call == FALSE) {
+	if (g_slist_length(vd->calls) == 1) {
 		switch (value) {
 		case 0:
 			release_call(vc, call);
@@ -382,7 +377,7 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 	unsigned int callsetup_pos = vd->cind_pos[HFP_INDICATOR_CALLSETUP];
 	unsigned int call_pos = vd->cind_pos[HFP_INDICATOR_CALL];
 
-	if (vd->mpty_call == FALSE) {
+	if (g_slist_length(vd->calls) == 1) {
 		switch (value) {
 		case 0:
 			/* call=0 and callsetup=1: reject an incoming call
@@ -499,7 +494,6 @@ static int hfp_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	vd->chat = data->chat;
 	vd->ag_features = data->ag_features;
 	vd->call = NULL;
-	vd->mpty_call = FALSE;
 
 	memcpy(vd->cind_pos, data->cind_pos, HFP_INDICATOR_LAST);
 	memcpy(vd->cind_val, data->cind_val, HFP_INDICATOR_LAST);
