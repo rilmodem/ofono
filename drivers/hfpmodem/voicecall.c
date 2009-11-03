@@ -350,7 +350,6 @@ static void ciev_call_notify(struct ofono_voicecall *vc,
 				unsigned int value)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	unsigned int call_pos = vd->cind_pos[HFP_INDICATOR_CALL];
 
 	if (g_slist_length(vd->calls) == 1) {
 		switch (value) {
@@ -366,7 +365,7 @@ static void ciev_call_notify(struct ofono_voicecall *vc,
 		}
 	}
 
-	vd->cind_val[call_pos] = value;
+	vd->cind_val[HFP_INDICATOR_CALL] = value;
 }
 
 static void ciev_callsetup_notify(struct ofono_voicecall *vc,
@@ -374,8 +373,8 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 					unsigned int value)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	unsigned int callsetup_pos = vd->cind_pos[HFP_INDICATOR_CALLSETUP];
-	unsigned int call_pos = vd->cind_pos[HFP_INDICATOR_CALL];
+	unsigned int ciev_callsetup = vd->cind_val[HFP_INDICATOR_CALLSETUP];
+	unsigned int ciev_call = vd->cind_val[HFP_INDICATOR_CALL];
 
 	if (g_slist_length(vd->calls) == 1) {
 		switch (value) {
@@ -383,8 +382,7 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 			/* call=0 and callsetup=1: reject an incoming call
 			 * call=0 and callsetup=2,3: interrupt an outgoing call
 			 */
-			if ((vd->cind_val[call_pos] == 0) &&
-					(vd->cind_val[callsetup_pos] > 0))
+			if (ciev_call == 0 && ciev_callsetup > 0)
 				release_call(vc, call);
 			break;
 		case 1:
@@ -398,7 +396,7 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 		}
 	}
 
-	vd->cind_val[callsetup_pos] = value;
+	vd->cind_val[HFP_INDICATOR_CALLSETUP] = value;
 }
 
 static void ciev_notify(GAtResult *result, gpointer user_data)
