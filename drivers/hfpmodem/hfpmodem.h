@@ -61,6 +61,9 @@ struct hfp_data {
 	unsigned int cind_val[HFP_INDICATOR_LAST];
 };
 
+extern void hfp_netreg_init();
+extern void hfp_netreg_exit();
+
 extern void hfp_voicecall_init();
 extern void hfp_voicecall_exit();
 
