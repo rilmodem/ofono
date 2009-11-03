@@ -129,8 +129,7 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			call = l->data;
 
 			if (req->affected_types & (0x1 << call->status))
-				vd->local_release |=
-					(0x1 << call->id);
+				vd->local_release |= (0x1 << call->id);
 		}
 	}
 
@@ -143,7 +142,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_voicecall *vc = cbd->user;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	ofono_voicecall_cb_t cb = cbd->cb;
-	GAtResultIter iter;
 	int type = 128;
 	int validity = 2;
 	struct ofono_error error;
@@ -155,8 +153,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (!ok)
 		goto out;
-
-	g_at_result_iter_init(&iter, result);
 
 	call = create_call(vd, 0, 0, CALL_STATUS_DIALING, NULL, type, validity);
 
