@@ -310,6 +310,7 @@ static void hfp_pre_sim(struct ofono_modem *modem)
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
 	ofono_voicecall_create(modem, 0, "hfpmodem", data);
 	ofono_netreg_create(modem, 0, "hfpmodem", data);
 }

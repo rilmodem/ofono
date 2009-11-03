@@ -205,7 +205,6 @@ static void registration_status_cb(gboolean ok, GAtResult *result,
 	index = 1;
 
 	while (g_at_result_iter_next_number(&iter, &value)) {
-
 		if (index == nd->cind_pos[HFP_INDICATOR_SERVICE])
 			nd->cind_val[HFP_INDICATOR_SERVICE] = value;
 
@@ -289,7 +288,7 @@ static void hfp_signal_strength(struct ofono_netreg *netreg,
 	cbd->user = netreg;
 
 	if (g_at_chat_send(nd->chat, "AT+CIND?", cind_prefix,
-			signal_strength_cb, cbd, g_free) > 0)
+				signal_strength_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -315,6 +314,7 @@ static int hfp_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	struct netreg_data *nd;
 
 	nd = g_new0(struct netreg_data, 1);
+
 	nd->chat = data->chat;
 	memcpy(nd->cind_pos, data->cind_pos, HFP_INDICATOR_LAST);
 	memcpy(nd->cind_val, data->cind_val, HFP_INDICATOR_LAST);
@@ -322,7 +322,7 @@ static int hfp_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	ofono_netreg_set_data(netreg, nd);
 
 	g_at_chat_register(nd->chat, "+CIEV:", ciev_notify, FALSE,
-			netreg, NULL);
+				netreg, NULL);
 
 	g_idle_add(hfp_netreg_register, netreg);
 
