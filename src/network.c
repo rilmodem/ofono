@@ -386,6 +386,10 @@ static void set_network_operator_status(struct network_operator_data *opd,
 
 	opd->status = status;
 
+	/* Don't emit for the case where only operator name is reported */
+	if (opd->mcc[0] == '\0' && opd->mnc[0] == '\0')
+		return;
+
 	status_str = network_operator_status_to_string(status);
 	path = network_operator_build_path(netreg, opd->mcc, opd->mnc);
 
@@ -487,11 +491,6 @@ static void set_network_operator_name(struct network_operator_data *opd,
 	if (opd->eons_info && opd->eons_info->longname)
 		return;
 
-	path = network_operator_build_path(netreg, opd->mcc, opd->mnc);
-
-	ofono_dbus_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
-					"Name", DBUS_TYPE_STRING, &name);
-
 	if (opd == netreg->current_operator) {
 		const char *path = __ofono_atom_get_path(netreg->atom);
 
@@ -502,6 +501,15 @@ static void set_network_operator_name(struct network_operator_data *opd,
 						"Operator", DBUS_TYPE_STRING,
 						&operator);
 	}
+
+	/* Don't emit when only operator name is reported */
+	if (opd->mcc[0] == '\0' && opd->mnc[0] == '\0')
+		return;
+
+	path = network_operator_build_path(netreg, opd->mcc, opd->mnc);
+
+	ofono_dbus_signal_property_changed(conn, path, NETWORK_OPERATOR_INTERFACE,
+					"Name", DBUS_TYPE_STRING, &name);
 }
 
 static void set_network_operator_eons_info(struct network_operator_data *opd,
@@ -1213,7 +1221,8 @@ static void current_operator_callback(const struct ofono_error *error,
 
 		opd = network_operator_create(current);
 
-		if (!network_operator_dbus_register(netreg, opd)) {
+		if (opd->mcc[0] != '\0' && opd->mnc[0] != '\0' &&
+				!network_operator_dbus_register(netreg, opd)) {
 			g_free(opd);
 			return;
 		}
@@ -1222,7 +1231,8 @@ static void current_operator_callback(const struct ofono_error *error,
 		netreg->operator_list = g_slist_append(netreg->operator_list,
 							opd);
 
-		network_operator_emit_available_operators(netreg);
+		if (opd->mcc[0] != '\0' && opd->mnc[0] != '\0')
+			network_operator_emit_available_operators(netreg);
 	} else {
 		/* We don't free this here because operator is registered */
 		/* Taken care of elsewhere */
