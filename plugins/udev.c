@@ -121,7 +121,8 @@ static void add_mbm(struct ofono_modem *modem,
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, GPS_DEVICE, devnode);
 	} else if (g_str_has_suffix(desc, "Minicard Network Adapter") ||
-			g_str_has_suffix(desc, "Broadband Network Adapter")) {
+			g_str_has_suffix(desc, "Broadband Network Adapter") ||
+			g_str_has_suffix(desc, "Minicard NetworkAdapter")) {
 		devnode = udev_device_get_property_value(udev_device,
 								"INTERFACE");
 		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
