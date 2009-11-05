@@ -101,12 +101,83 @@ static void example_history_call_missed(struct ofono_history_context *context,
 	ofono_debug("When: %s", buf);
 }
 
+static void example_history_sms_received(struct ofono_history_context *context,
+						unsigned int msg_id,
+						const char *from,
+						const struct tm *remote,
+						const struct tm *local,
+						const char *text)
+{
+	char buf[128];
+
+	ofono_debug("Incoming SMS on modem: %p", context->modem);
+	ofono_debug("InternalMessageId: %u", msg_id);
+	ofono_debug("From: %s:", from);
+
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", local);
+	buf[127] = '\0';
+	ofono_debug("Local Sent Time: %s", buf);
+
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", remote);
+	buf[127] = '\0';
+	ofono_debug("Remote Sent Time: %s", buf);
+
+	ofono_debug("Text: %s", text);
+}
+
+static void example_history_sms_send_pending(struct ofono_history_context *context,
+						unsigned int msg_id,
+						const char *to, time_t when,
+						const char *text)
+{
+	char buf[128];
+
+	ofono_debug("Sending SMS on modem: %p", context->modem);
+	ofono_debug("InternalMessageId: %u", msg_id);
+	ofono_debug("To: %s:", to);
+
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(&when));
+	buf[127] = '\0';
+	ofono_debug("Local Time: %s", buf);
+	ofono_debug("Text: %s", text);
+}
+
+static void example_history_sms_send_status(struct ofono_history_context *context,
+						unsigned int msg_id,
+						time_t when,
+						enum ofono_history_sms_status s)
+{
+	char buf[128];
+
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(&when));
+	buf[127] = '\0';
+
+	switch (s) {
+	case OFONO_HISTORY_SMS_STATUS_PENDING:
+		break;
+	case OFONO_HISTORY_SMS_STATUS_SUBMITTED:
+		ofono_debug("SMS %u submitted successfully", msg_id);
+		ofono_debug("Submission Time: %s", buf);
+		break;
+	case OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED:
+		ofono_debug("Sending SMS %u failed", msg_id);
+		ofono_debug("Failure Time: %s", buf);
+		break;
+	default:
+		break;
+	};
+
+}
+
 static struct ofono_history_driver example_driver = {
 	.name = "Example Call History",
 	.probe = example_history_probe,
 	.remove = example_history_remove,
 	.call_ended = example_history_call_ended,
 	.call_missed = example_history_call_missed,
+	.sms_received = example_history_sms_received,
+	.sms_send_pending = example_history_sms_send_pending,
+	.sms_send_status = example_history_sms_send_status,
 };
 
 static int example_history_init(void)
