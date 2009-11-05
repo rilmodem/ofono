@@ -41,7 +41,7 @@
 #define uninitialized_var(x) x = x
 
 #define SMS_BACKUP_MODE 0600
-#define SMS_BACKUP_PATH STORAGEDIR "/%s/sms"
+#define SMS_BACKUP_PATH STORAGEDIR "/%s/sms_assembly"
 #define SMS_BACKUP_PATH_DIR SMS_BACKUP_PATH "/%s-%i-%i"
 #define SMS_BACKUP_PATH_FILE SMS_BACKUP_PATH_DIR "/%03i"
 
