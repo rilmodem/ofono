@@ -1543,6 +1543,15 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 
 	ofono_modem_add_interface(modem, DATA_CONNECTION_MANAGER_INTERFACE);
 
+	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+	if (sim_atom) {
+		struct ofono_sim *sim = __ofono_atom_get_data(sim_atom);
+		const char *imsi = ofono_sim_get_imsi(sim);
+
+		gprs_load_settings(gprs, imsi);
+	}
+
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
 					netreg_watch, gprs, NULL);
@@ -1552,15 +1561,6 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 	if (netreg_atom && __ofono_atom_get_registered(netreg_atom))
 		netreg_watch(netreg_atom,
 				OFONO_ATOM_WATCH_CONDITION_REGISTERED, gprs);
-
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-	if (sim_atom) {
-		struct ofono_sim *sim = __ofono_atom_get_data(sim_atom);
-		const char *imsi = ofono_sim_get_imsi(sim);
-
-		gprs_load_settings(gprs, imsi);
-	}
 
 	__ofono_atom_register(gprs->atom, gprs_unregister);
 }
