@@ -285,6 +285,10 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		__ofono_dbus_pending_reply(&entry->msg,
 					__ofono_error_failed(entry->msg));
 
+		__ofono_history_sms_send_status(modem, entry->msg_id,
+					time(NULL),
+					OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED);
+
 		g_free(entry->pdus);
 		g_free(entry);
 
@@ -307,6 +311,9 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 	entry = g_queue_pop_head(sms->txq);
 	__ofono_dbus_pending_reply(&entry->msg,
 				dbus_message_new_method_return(entry->msg));
+	__ofono_history_sms_send_status(modem, entry->msg_id,
+					time(NULL),
+					OFONO_HISTORY_SMS_STATUS_SUBMITTED);
 
 	g_free(entry->pdus);
 	g_free(entry);
@@ -431,6 +438,10 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 
 	g_queue_push_tail(sms->txq, entry);
 
+	modem = __ofono_atom_get_modem(sms->atom);
+	__ofono_history_sms_send_pending(modem, entry->msg_id, to,
+						time(NULL), text);
+
 	if (g_queue_get_length(sms->txq) == 1)
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 
@@ -468,6 +479,7 @@ static void dispatch_text_message(struct ofono_sms *sms,
 					const struct sms_address *addr,
 					const struct sms_scts *scts)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(sms->atom);
 	DBusMessage *signal;
@@ -477,6 +489,7 @@ static void dispatch_text_message(struct ofono_sms *sms,
 	const char *signal_name;
 	time_t ts;
 	struct tm remote;
+	struct tm local;
 	const char *str = buf;
 
 	if (!message)
@@ -502,8 +515,9 @@ static void dispatch_text_message(struct ofono_sms *sms,
 						&dict);
 
 	ts = sms_scts_to_time(scts, &remote);
+	localtime_r(&ts, &local);
 
-	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(&ts));
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", &local);
 	buf[127] = '\0';
 	ofono_dbus_dict_append(&dict, "LocalSentTime", DBUS_TYPE_STRING, &str);
 
@@ -517,6 +531,12 @@ static void dispatch_text_message(struct ofono_sms *sms,
 	dbus_message_iter_close_container(&iter, &dict);
 
 	g_dbus_send_message(conn, signal);
+
+	if (cls != SMS_CLASS_0) {
+		__ofono_history_sms_received(modem, sms->next_msg_id, str,
+						&remote, &local, message);
+		sms->next_msg_id += 1;
+	}
 }
 
 static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
