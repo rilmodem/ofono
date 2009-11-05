@@ -15,4 +15,4 @@ path = properties["Modems"][0]
 manager = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.SmsManager')
 
-manager.SendMessage([ sys.argv[1] ], sys.argv[2])
+manager.SendMessage(sys.argv[1], sys.argv[2])
