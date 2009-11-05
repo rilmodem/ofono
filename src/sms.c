@@ -350,52 +350,36 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_sms *sms = data;
-	char **tos;
-	int num_to;
-	char *text;
-	int i;
+	const char *to;
+	const char *text;
 	GSList *msg_list;
 	int ref_offset;
 
-	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING,
-					&tos, &num_to, DBUS_TYPE_STRING, &text,
+	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &to,
+					DBUS_TYPE_STRING, &text,
 					DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
-	if (num_to == 0) {
-		dbus_free_string_array(tos);
+	if (valid_phone_number_format(to) == FALSE)
 		return __ofono_error_invalid_format(msg);
-	}
-
-	ofono_debug("Got %d recipients", num_to);
-
-	for (i = 0; i < num_to; i++) {
-		if (valid_phone_number_format(tos[i]))
-			continue;
-
-		dbus_free_string_array(tos);
-		return __ofono_error_invalid_format(msg);
-	}
 
 	msg_list = sms_text_prepare(text, 0, TRUE, &ref_offset);
 
-	if (!msg_list) {
-		dbus_free_string_array(tos);
+	if (!msg_list)
 		return __ofono_error_invalid_format(msg);
-	}
 
-	for (i = 0; i < num_to; i++) {
-		ofono_debug("ref: %d, offset: %d", sms->ref, ref_offset);
-		set_ref_and_to(msg_list, sms->ref, ref_offset, tos[i]);
-		append_tx_queue(sms, msg_list);
+	ofono_debug("ref: %d, offset: %d", sms->ref, ref_offset);
 
+	set_ref_and_to(msg_list, sms->ref, ref_offset, to);
+	append_tx_queue(sms, msg_list);
+
+	if (ref_offset != 0) {
 		if (sms->ref == 65536)
 			sms->ref = 1;
 		else
 			sms->ref = sms->ref + 1;
 	}
 
-	dbus_free_string_array(tos);
 	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
 	g_slist_free(msg_list);
 
@@ -407,7 +391,7 @@ static GDBusMethodTable sms_manager_methods[] = {
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"sv",	"",		sms_set_property,
 							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SendMessage",	"ass",	"",		sms_send_message },
+	{ "SendMessage",	"ss",	"",		sms_send_message },
 	{ }
 };
 
