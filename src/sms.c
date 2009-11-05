@@ -42,6 +42,8 @@
 
 #define SMS_MANAGER_FLAG_CACHED 0x1
 
+#define TXQ_MAX_RETRIES 4
+
 static gboolean tx_next(gpointer user_data);
 
 static GSList *g_drivers = NULL;
@@ -51,6 +53,7 @@ struct ofono_sms {
 	DBusMessage *pending;
 	struct ofono_phone_number sca;
 	struct sms_assembly *assembly;
+	unsigned int next_msg_id;
 	guint ref;
 	GQueue *txq;
 	time_t last_mms;
@@ -67,6 +70,15 @@ struct pending_pdu {
 	unsigned char pdu[176];
 	int tpdu_len;
 	int pdu_len;
+};
+
+struct tx_queue_entry {
+	struct pending_pdu *pdus;
+	unsigned char num_pdus;
+	unsigned char cur_pdu;
+	unsigned int msg_id;
+	unsigned int retry;
+	DBusMessage *msg;
 };
 
 static void set_sca(struct ofono_sms *sms,
@@ -251,20 +263,53 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 static void tx_finished(const struct ofono_error *error, int mr, void *data)
 {
 	struct ofono_sms *sms = data;
-	struct pending_pdu *pdu;
+	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
+	struct tx_queue_entry *entry = g_queue_peek_head(sms->txq);
 
 	ofono_debug("tx_finished");
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Sending failed, retrying in 5 seconds...");
-		sms->tx_source = g_timeout_add_seconds(5, tx_next, sms);
+		entry->retry += 1;
+
+		if (entry->retry != TXQ_MAX_RETRIES) {
+			ofono_debug("Sending failed, retry in %d secs",
+					entry->retry * 5);
+			sms->tx_source = g_timeout_add_seconds(entry->retry * 5,
+								tx_next, sms);
+			return;
+		}
+
+		ofono_debug("Max retries reached, giving up");
+
+		entry = g_queue_pop_head(sms->txq);
+		__ofono_dbus_pending_reply(&entry->msg,
+					__ofono_error_failed(entry->msg));
+
+		g_free(entry->pdus);
+		g_free(entry);
+
+		if (g_queue_peek_head(sms->txq)) {
+			ofono_debug("Previous send failed, scheduling next");
+			sms->tx_source = g_timeout_add(0, tx_next, sms);
+		}
+
 		return;
 	}
 
-	pdu = g_queue_pop_head(sms->txq);
-	g_free(pdu);
+	entry->cur_pdu += 1;
+	entry->retry = 0;
 
-	ofono_debug("Peeking in the queue");
+	if (entry->cur_pdu < entry->num_pdus) {
+		sms->tx_source = g_timeout_add(0, tx_next, sms);
+		return;
+	}
+
+	entry = g_queue_pop_head(sms->txq);
+	__ofono_dbus_pending_reply(&entry->msg,
+				dbus_message_new_method_return(entry->msg));
+
+	g_free(entry->pdus);
+	g_free(entry);
 
 	if (g_queue_peek_head(sms->txq)) {
 		ofono_debug("Scheduling next");
@@ -277,16 +322,17 @@ static gboolean tx_next(gpointer user_data)
 	struct ofono_sms *sms = user_data;
 	time_t ts;
 	int send_mms = 0;
-	struct pending_pdu *pdu = g_queue_peek_head(sms->txq);
+	struct tx_queue_entry *entry = g_queue_peek_head(sms->txq);
+	struct pending_pdu *pdu = &entry->pdus[entry->cur_pdu];
 	struct ofono_error error;
 
 	error.type = OFONO_ERROR_TYPE_NO_ERROR;
 
-	ofono_debug("tx_next: %p", pdu);
+	ofono_debug("tx_next: %p", entry);
 
 	sms->tx_source = 0;
 
-	if (!pdu)
+	if (!entry)
 		return FALSE;
 
 	ts = time(NULL);
@@ -319,31 +365,26 @@ static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
 	}
 }
 
-static void append_tx_queue(struct ofono_sms *sms, GSList *msg_list)
+static struct tx_queue_entry *create_tx_queue_entry(GSList *msg_list)
 {
-	struct sms *s;
+	struct tx_queue_entry *entry = g_new0(struct tx_queue_entry, 1);
+	int i = 0;
 	GSList *l;
-	struct pending_pdu *pdu;
-	gboolean start = FALSE;
 
-	if (g_queue_peek_head(sms->txq) == NULL)
-		start = TRUE;
+	entry->num_pdus = g_slist_length(msg_list);
+	entry->pdus = g_new0(struct pending_pdu, entry->num_pdus);
 
 	for (l = msg_list; l; l = l->next) {
-		s = l->data;
-
-		pdu = g_new(struct pending_pdu, 1);
+		struct pending_pdu *pdu = &entry->pdus[i];
+		struct sms *s = l->data;
 
 		sms_encode(s, &pdu->pdu_len, &pdu->tpdu_len, pdu->pdu);
 
 		ofono_debug("pdu_len: %d, tpdu_len: %d",
 				pdu->pdu_len, pdu->tpdu_len);
-
-		g_queue_push_tail(sms->txq, pdu);
 	}
 
-	if (start)
-		sms->tx_source = g_timeout_add(0, tx_next, sms);
+	return entry;
 }
 
 static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
@@ -354,6 +395,8 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	const char *text;
 	GSList *msg_list;
 	int ref_offset;
+	struct tx_queue_entry *entry;
+	struct ofono_modem *modem;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &to,
 					DBUS_TYPE_STRING, &text,
@@ -371,7 +414,10 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	ofono_debug("ref: %d, offset: %d", sms->ref, ref_offset);
 
 	set_ref_and_to(msg_list, sms->ref, ref_offset, to);
-	append_tx_queue(sms, msg_list);
+	entry = create_tx_queue_entry(msg_list);
+
+	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
+	g_slist_free(msg_list);
 
 	if (ref_offset != 0) {
 		if (sms->ref == 65536)
@@ -380,10 +426,15 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 			sms->ref = sms->ref + 1;
 	}
 
-	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
-	g_slist_free(msg_list);
+	entry->msg = dbus_message_ref(msg);
+	entry->msg_id = sms->next_msg_id++;
 
-	return dbus_message_new_method_return(msg);
+	g_queue_push_tail(sms->txq, entry);
+
+	if (g_queue_get_length(sms->txq) == 1)
+		sms->tx_source = g_timeout_add(0, tx_next, sms);
+
+	return NULL;
 }
 
 static GDBusMethodTable sms_manager_methods[] = {
@@ -391,7 +442,8 @@ static GDBusMethodTable sms_manager_methods[] = {
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"sv",	"",		sms_set_property,
 							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SendMessage",	"ss",	"",		sms_send_message },
+	{ "SendMessage",	"ss",	"",		sms_send_message,
+							G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
