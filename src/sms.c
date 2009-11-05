@@ -35,12 +35,16 @@
 #include "common.h"
 #include "util.h"
 #include "smsutil.h"
+#include "storage.h"
 
 #define uninitialized_var(x) x = x
 
 #define SMS_MANAGER_INTERFACE "org.ofono.SmsManager"
 
 #define SMS_MANAGER_FLAG_CACHED 0x1
+
+#define SETTINGS_STORE "sms"
+#define SETTINGS_GROUP "Settings"
 
 #define TXQ_MAX_RETRIES 4
 
@@ -61,6 +65,8 @@ struct ofono_sms {
 	struct ofono_message_waiting *mw;
 	unsigned int mw_watch;
 	struct ofono_sim *sim;
+	GKeyFile *settings;
+	char *imsi;
 	const struct ofono_sms_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -866,6 +872,19 @@ static void sms_remove(struct ofono_atom *atom)
 		sms->txq = NULL;
 	}
 
+	if (sms->settings) {
+		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
+					"NextMessageId", sms->next_msg_id);
+		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
+					"NextReference", sms->ref);
+
+		storage_close(sms->imsi, SETTINGS_STORE, sms->settings, TRUE);
+
+		g_free(sms->imsi);
+		sms->imsi = NULL;
+		sms->settings = NULL;
+	}
+
 	g_free(sms);
 }
 
@@ -920,6 +939,24 @@ static void mw_watch(struct ofono_atom *atom,
 	sms->mw = __ofono_atom_get_data(atom);
 }
 
+static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
+{
+	sms->settings = storage_open(imsi, SETTINGS_STORE);
+
+	if (sms->settings == NULL)
+		return;
+
+	sms->imsi = g_strdup(imsi);
+
+	sms->next_msg_id = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
+							"NextMessageId", NULL);
+	sms->ref = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
+							"NextReference", NULL);
+
+	if (sms->ref >= 65536)
+		sms->ref = 1;
+
+}
 void ofono_sms_register(struct ofono_sms *sms)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -962,6 +999,8 @@ void ofono_sms_register(struct ofono_sms *sms)
 		sms->sim = __ofono_atom_get_data(sim_atom);
 		imsi = ofono_sim_get_imsi(sms->sim);
 		sms->assembly = sms_assembly_new(imsi);
+
+		sms_load_settings(sms, imsi);
 	} else
 		sms->assembly = sms_assembly_new(NULL);
 
