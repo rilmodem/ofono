@@ -158,8 +158,9 @@ static const char *phone_and_clip_to_string(const struct ofono_phone_number *n,
 static const char *time_to_str(const time_t *t)
 {
 	static char buf[128];
+	struct tm tm;
 
-	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(t));
+	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime_r(t, &tm));
 	buf[127] = '\0';
 
 	return buf;
