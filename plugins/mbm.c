@@ -108,7 +108,10 @@ static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int status;
 
-	DBG("");
+	DBG("%d", ok);
+
+	if (!ok)
+		return;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -149,6 +152,25 @@ static void emrdy_notifier(GAtResult *result, gpointer user_data)
 					cfun_query, modem, NULL);
 }
 
+static void emrdy_query(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+
+	DBG("%d", ok);
+
+	if (ok)
+		return;
+
+	/* On some MBM hardware the EMRDY cannot be queried, so if this fails
+	 * we try to run CFUN? to check the state.  CFUN? will fail unless
+	 * EMRDY: 1 has been sent, in which case the emrdy_notifier should be
+	 * triggered eventually and we send CFUN? again.
+	 */
+	g_at_chat_send(data->chat, "AT+CFUN?", cfun_prefix,
+					cfun_query, modem, NULL);
+};
+
 static int mbm_enable(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
@@ -185,7 +207,8 @@ static int mbm_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1", NULL,
 					NULL, NULL, NULL);
-	g_at_chat_send(data->chat, "AT*EMRDY?", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(data->chat, "AT*EMRDY?", none_prefix,
+				emrdy_query, modem, NULL);
 
 	return -EINPROGRESS;
 }
