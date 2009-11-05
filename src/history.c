@@ -32,7 +32,7 @@
 
 static GSList *history_drivers = NULL;
 
-struct history_foreach_data {
+struct history_call_foreach_data {
 	const struct ofono_call *call;
 	union {
 		struct {
@@ -41,6 +41,22 @@ struct history_foreach_data {
 		};
 
 		time_t when;
+	};
+};
+
+struct history_sms_foreach_data {
+	unsigned int msg_id;
+	const char *address;
+	const char *text;
+	union {
+		struct {
+			const struct tm *remote;
+			const struct tm *local;
+		};
+		struct {
+			time_t when;
+			enum ofono_history_sms_status status;
+		};
 	};
 };
 
@@ -101,7 +117,7 @@ void __ofono_history_probe_drivers(struct ofono_modem *modem)
 static void history_call_ended(struct ofono_atom *atom, void *data)
 {
 	struct ofono_history_context *context = __ofono_atom_get_data(atom);
-	struct history_foreach_data *hfd = data;
+	struct history_call_foreach_data *hfd = data;
 
 	if (context->driver->call_ended == NULL)
 		return;
@@ -113,7 +129,7 @@ void __ofono_history_call_ended(struct ofono_modem *modem,
 				const struct ofono_call *call,
 				time_t start, time_t end)
 {
-	struct history_foreach_data hfd;
+	struct history_call_foreach_data hfd;
 
 	hfd.call = call;
 	hfd.start = start;
@@ -126,7 +142,7 @@ void __ofono_history_call_ended(struct ofono_modem *modem,
 static void history_call_missed(struct ofono_atom *atom, void *data)
 {
 	struct ofono_history_context *context = __ofono_atom_get_data(atom);
-	struct history_foreach_data *hfd = data;
+	struct history_call_foreach_data *hfd = data;
 
 	if (context->driver->call_missed == NULL)
 		return;
@@ -137,13 +153,100 @@ static void history_call_missed(struct ofono_atom *atom, void *data)
 void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when)
 {
-	struct history_foreach_data hfd;
+	struct history_call_foreach_data hfd;
 
 	hfd.call = call;
 	hfd.when = when;
 
 	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_HISTORY,
 					history_call_missed, &hfd);
+}
+
+static void history_sms_received(struct ofono_atom *atom, void *data)
+{
+	struct ofono_history_context *context = __ofono_atom_get_data(atom);
+	struct history_sms_foreach_data *hfd = data;
+
+	if (context->driver->sms_received == NULL)
+		return;
+
+	context->driver->sms_received(context, hfd->msg_id, hfd->address,
+					hfd->remote, hfd->local, hfd->text);
+}
+
+void __ofono_history_sms_received(struct ofono_modem *modem,
+					unsigned int msg_id,
+					const char *from,
+					const struct tm *remote,
+					const struct tm *local,
+					const char *text)
+{
+	struct history_sms_foreach_data hfd;
+
+	hfd.msg_id = msg_id;
+	hfd.address = from;
+	hfd.remote = remote;
+	hfd.local = local;
+	hfd.text = text;
+
+	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_HISTORY,
+					history_sms_received, &hfd);
+}
+
+static void history_sms_send_pending(struct ofono_atom *atom, void *data)
+{
+	struct ofono_history_context *context = __ofono_atom_get_data(atom);
+	struct history_sms_foreach_data *hfd = data;
+
+	if (context->driver->sms_send_pending == NULL)
+		return;
+
+	context->driver->sms_send_pending(context, hfd->msg_id, hfd->address,
+						hfd->when, hfd->text);
+}
+
+void __ofono_history_sms_send_pending(struct ofono_modem *modem,
+					unsigned int msg_id, const char *to,
+					time_t when, const char *text)
+{
+	struct history_sms_foreach_data hfd;
+
+	hfd.msg_id = msg_id;
+	hfd.address = to;
+	hfd.text = text;
+	hfd.when = when;
+	hfd.status = OFONO_HISTORY_SMS_STATUS_PENDING;
+
+	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_HISTORY,
+					history_sms_send_pending, &hfd);
+}
+
+static void history_sms_send_status(struct ofono_atom *atom, void *data)
+{
+	struct ofono_history_context *context = __ofono_atom_get_data(atom);
+	struct history_sms_foreach_data *hfd = data;
+
+	if (context->driver->sms_send_status == NULL)
+		return;
+
+	context->driver->sms_send_status(context, hfd->msg_id,
+						hfd->when, hfd->status);
+}
+
+void __ofono_history_sms_send_status(struct ofono_modem *modem,
+					unsigned int msg_id, time_t when,
+					enum ofono_history_sms_status status)
+{
+	struct history_sms_foreach_data hfd;
+
+	hfd.msg_id = msg_id;
+	hfd.address = NULL;
+	hfd.text = NULL;
+	hfd.when = when;
+	hfd.status = status;
+
+	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_HISTORY,
+					history_sms_send_status, &hfd);
 }
 
 int ofono_history_driver_register(const struct ofono_history_driver *driver)
