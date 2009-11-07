@@ -124,8 +124,8 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		for (l = vd->calls; l; l = l->next) {
 			call = l->data;
 
-			if (req->affected_types & (0x1 << call->status))
-				vd->local_release |= (0x1 << call->id);
+			if (req->affected_types & (1 << call->status))
+				vd->local_release |= (1 << call->id);
 		}
 	}
 
@@ -327,7 +327,7 @@ static void release_call(struct ofono_voicecall *vc, struct ofono_call *call)
 	if (call == NULL)
 		return;
 
-	if (vd->local_release & (0x1 << call->id))
+	if (vd->local_release & (1 << call->id))
 		reason = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
 	else
 		reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
