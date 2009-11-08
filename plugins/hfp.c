@@ -48,6 +48,7 @@
 #include <ofono/ssn.h>
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
+#include <ofono/call-volume.h>
 
 #include <drivers/hfpmodem/hfpmodem.h>
 
@@ -313,6 +314,7 @@ static void hfp_pre_sim(struct ofono_modem *modem)
 
 	ofono_voicecall_create(modem, 0, "hfpmodem", data);
 	ofono_netreg_create(modem, 0, "hfpmodem", data);
+	ofono_call_volume_create(modem, 0, "hfpmodem", data);
 }
 
 static void hfp_post_sim(struct ofono_modem *modem)
