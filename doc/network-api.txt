@@ -41,7 +41,7 @@ Signals		PropertyChanged(string property, variant value)
 			This signal indicates a changed value of the given
 			property.
 
-Properties	string Mode [readwrite]
+Properties	string Mode [readonly]
 
 			The current registration mode. The deault of this
 			is "auto", but can be changed during operation. This
@@ -94,7 +94,7 @@ Properties	string Mode [readwrite]
 
 			TODO: Values for CDMA and EVDO based networks.
 
-		string Name [readonly]
+		string Operator [readonly]
 
 			Contains the current operator name, suitable for
 			display on the idle screen or an empty string if
@@ -120,7 +120,7 @@ Properties	string Mode [readwrite]
 			unavailable, this property will not be returned by
 			GetProperties or will be set to an empty string.
 
-		array{object} Operators [readonly]
+		array{object} AvailableOperators [readonly]
 
 			List of all operator object paths known to the
 			telephony stack. The scanning for new operators is
@@ -188,3 +188,9 @@ Properties	string Name [readonly]
 						 "GSM+EGPS", "UTRAN+HSDPA",
 						 "UTRAN+HSUPA",
 						 "UTRAN+HSDPA+HSUPA"
+
+		string AdditionalInformation [readonly, optional]
+
+			Contains a short description of the operator.  This is
+			typically stored on the SIM and might be available
+			only for select operators.
