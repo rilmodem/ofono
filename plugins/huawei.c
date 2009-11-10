@@ -172,7 +172,7 @@ static void huawei_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
-	ofono_sms_create(modem, OFONO_VENDOR_HTC_G1, "atmodem", data->chat);
+	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem", data->chat);
 }
 
 static struct ofono_modem_driver huawei_driver = {

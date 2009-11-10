@@ -680,9 +680,9 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	const char *mode;
 	int len = sprintf(buf, "AT+CNMI=");
 
-	if (data->vendor == OFONO_VENDOR_HTC_G1)
-		/* The G1 advertises support for mode 2, but returns an error
-		 * if we attempt to actually use it. */
+	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM)
+		/* MSM devices advertise support for mode 2, but return an
+		 * error if we attempt to actually use it. */
 		mode = "1";
 	else
 		/* Sounds like 2 is the sanest mode */
