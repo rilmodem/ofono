@@ -192,14 +192,16 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	const char *event;
 
+	g_at_result_iter_init(&iter, result);
+
 	if (!g_at_result_iter_next(&iter, "+CGEV:"))
 		return;
 
 	if (!g_at_result_iter_next_unquoted_string(&iter, &event))
 		return;
 
-	if (g_str_has_prefix(event, "NW DETACH ") ||
-			g_str_has_prefix(event, "ME DETACH ")) {
+	if (g_str_equal(event, "NW DETACH") ||
+			g_str_equal(event, "ME DETACH")) {
 		ofono_gprs_detached_notify(gprs);
 		return;
 	}
