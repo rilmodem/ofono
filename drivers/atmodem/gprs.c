@@ -216,6 +216,57 @@ static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_gprs_register(gprs);
 }
 
+static void at_cgreg_test_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	struct gprs_data *gd = ofono_gprs_get_data(gprs);
+	gint range[2];
+	GAtResultIter iter;
+	int cgreg1 = 0;
+	int cgreg2 = 0;
+	const char *cmd;
+
+	dump_response("cgreg_read_cb", ok, result);
+
+	if (!ok)
+		goto error;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CGREG:"))
+		goto error;
+
+	if (!g_at_result_iter_open_list(&iter))
+		goto error;
+
+	while (g_at_result_iter_next_range(&iter, &range[0], &range[1])) {
+		if (1 >= range[0] && 1 <= range[1])
+			cgreg1 = 1;
+		if (2 >= range[0] && 2 <= range[1])
+			cgreg2 = 1;
+	}
+
+	g_at_result_iter_close_list(&iter);
+
+	if (cgreg2)
+		cmd = "AT+CGREG=2";
+	else if (cgreg1)
+		cmd = "AT+CGREG=1";
+	else
+		goto error;
+
+	g_at_chat_send(gd->chat, cmd, none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(gd->chat, "AT+CGAUTO=0", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(gd->chat, "AT+CGEREP=2,1", none_prefix,
+			gprs_initialized, gprs, NULL);
+	return;
+
+error:
+	ofono_info("GPRS not supported on this device");
+	ofono_gprs_remove(gprs);
+}
+
 static void at_cgdcont_test_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
@@ -262,10 +313,8 @@ static void at_cgdcont_test_cb(gboolean ok, GAtResult *result,
 
 	ofono_gprs_set_cid_range(gprs, min, max);
 
-	g_at_chat_send(gd->chat, "AT+CGREG=2", none_prefix, NULL, NULL, NULL);
-	g_at_chat_send(gd->chat, "AT+CGAUTO=0", none_prefix, NULL, NULL, NULL);
-	g_at_chat_send(gd->chat, "AT+CGEREP=2,1", none_prefix,
-			gprs_initialized, gprs, NULL);
+	g_at_chat_send(gd->chat, "AT+CGREG=?", cgreg_prefix,
+			at_cgreg_test_cb, gprs, NULL);
 
 	return;
 

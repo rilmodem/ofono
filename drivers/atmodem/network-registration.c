@@ -637,6 +637,56 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 	ofono_netreg_register(netreg);
 }
 
+static void at_creg_test_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	gint range[2];
+	GAtResultIter iter;
+	int creg1 = 0;
+	int creg2 = 0;
+
+	dump_response("creg_read_cb", ok, result);
+
+	if (!ok)
+		goto error;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CREG:"))
+		goto error;
+
+	if (!g_at_result_iter_open_list(&iter))
+		goto error;
+
+	while (g_at_result_iter_next_range(&iter, &range[0], &range[1])) {
+		if (1 >= range[0] && 1 <= range[1])
+			creg1 = 1;
+		if (2 >= range[0] && 2 <= range[1])
+			creg2 = 1;
+	}
+
+	g_at_result_iter_close_list(&iter);
+
+	if (creg2) {
+		g_at_chat_send(nd->chat, "AT+CREG=2", none_prefix,
+				at_network_registration_initialized,
+				netreg, NULL);
+		return;
+	}
+
+	if (creg1) {
+		g_at_chat_send(nd->chat, "AT+CREG=1", none_prefix,
+				at_network_registration_initialized,
+				netreg, NULL);
+		return;
+	}
+
+error:
+	ofono_error("Unable to initialize Network Registration");
+	ofono_netreg_remove(netreg);
+}
+
 static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 				void *data)
 {
@@ -652,9 +702,9 @@ static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	if (nd->vendor == OFONO_VENDOR_CALYPSO)
 		g_at_chat_send(chat, "AT%CSQ=1", NULL, NULL, NULL, NULL);
 
-	g_at_chat_send(chat, "AT+CREG=2", NULL,
-				at_network_registration_initialized,
-				netreg, NULL);
+	g_at_chat_send(chat, "AT+CREG=?", creg_prefix,
+			at_creg_test_cb, netreg, NULL);
+
 	return 0;
 }
 
