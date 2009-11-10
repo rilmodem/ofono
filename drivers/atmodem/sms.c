@@ -1042,7 +1042,7 @@ static void at_csms_query_cb(gboolean ok, GAtResult *result,
 	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean cnma_supported = FALSE;
 	GAtResultIter iter;
-	int status;
+	int status_min, status_max;
 	char buf[128];
 
 	dump_response("csms_query_cb", ok, result);
@@ -1058,8 +1058,8 @@ static void at_csms_query_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_open_list(&iter))
 		goto out;
 
-	while (g_at_result_iter_next_number(&iter, &status))
-		if (status == 1)
+	while (g_at_result_iter_next_range(&iter, &status_min, &status_max))
+		if (status_min <= 1 && 1 <= status_max)
 			cnma_supported = TRUE;
 
 	ofono_debug("CSMS query parsed successfully");
