@@ -190,8 +190,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
 			src/storage.c src/cbs.c src/watch.c src/call-volume.c \
 			src/gprs.c
 
-src_ofonod_LDADD = $(builtin_libadd) \
-			@GLIB_LIBS@ @GTHREAD_LIBS@ @DBUS_LIBS@ -ldl
+src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
 src_ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=src/ofono.ver
 
@@ -208,8 +207,7 @@ else
 build_plugindir = $(plugindir)
 endif
 
-AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @GTHREAD_CFLAGS@ \
-					$(builtin_cflags) \
+AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ $(builtin_cflags) \
 					-DOFONO_PLUGIN_BUILTIN \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
 
