@@ -168,6 +168,9 @@ builtin_sources += plugins/novatel.c
 
 builtin_modules += hfp
 builtin_sources += plugins/hfp.c
+
+builtin_modules += palmpre
+builtin_sources += plugins/palmpre.c
 endif
 
 if MAINTAINER_MODE
