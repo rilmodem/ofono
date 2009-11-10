@@ -361,6 +361,17 @@ static gint skip_until(const char *line, int start, const char delim)
 		if (line[i] == delim)
 			return i;
 
+		if (line[i] == '\"') {
+			i += 1;
+			while (i < len && line[i] != '\"')
+				i += 1;
+
+			if (i < len)
+				i += 1;
+
+			continue;
+		}
+
 		if (line[i] != '(') {
 			i += 1;
 			continue;
