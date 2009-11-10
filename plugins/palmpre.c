@@ -42,6 +42,7 @@
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/sms.h>
 
 #include <drivers/atmodem/vendor.h>
 
@@ -183,6 +184,8 @@ static void palmpre_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem",
+				data->chat);
 	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
