@@ -535,6 +535,8 @@ static void at_phonebook_remove(struct ofono_phonebook *pb)
 	if (pbd->old_charset)
 		g_free(pbd->old_charset);
 
+	ofono_phonebook_set_data(pb, NULL);
+
 	g_free(pbd);
 }
 

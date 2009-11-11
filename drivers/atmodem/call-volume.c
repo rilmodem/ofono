@@ -210,6 +210,8 @@ static void at_call_volume_remove(struct ofono_call_volume *cv)
 {
 	struct cv_data *cvd = ofono_call_volume_get_data(cv);
 
+	ofono_call_volume_set_data(cv, NULL);
+
 	g_free(cvd);
 }
 
