@@ -272,13 +272,13 @@ static void modem_initialize(struct ofono_modem *modem)
 	if (options == NULL)
 		goto error;
 
-	g_hash_table_insert(options, "baud", "115200");
-	g_hash_table_insert(options, "parity", "none");
-	g_hash_table_insert(options, "stopbits", "1");
-	g_hash_table_insert(options, "databits", "8");
-	g_hash_table_insert(options, "xonxoff", "on");
-	g_hash_table_insert(options, "local", "on");
-	g_hash_table_insert(options, "rtscts", "on");
+	g_hash_table_insert(options, "Baud", "115200");
+	g_hash_table_insert(options, "Parity", "none");
+	g_hash_table_insert(options, "StopBits", "1");
+	g_hash_table_insert(options, "DataBits", "8");
+	g_hash_table_insert(options, "XonXoff", "on");
+	g_hash_table_insert(options, "Local", "on");
+	g_hash_table_insert(options, "RtsCts", "on");
 
 	io = g_at_tty_open(device, options);
 	g_hash_table_destroy(options);
