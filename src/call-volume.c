@@ -271,7 +271,7 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		cv->pending_volume = percent;
 		cv->pending = dbus_message_ref(msg);
-		cv->driver->speaker_volume(cv, percent, mv_set_callback, cv);
+		cv->driver->microphone_volume(cv, percent, mv_set_callback, cv);
 
 		return NULL;
 	} else if (g_str_equal(property, "Muted") == TRUE) {
