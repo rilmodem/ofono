@@ -731,6 +731,11 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 
 static void at_sim_remove(struct ofono_sim *sim)
 {
+	struct sim_data *sd = ofono_sim_get_data(sim);
+
+	ofono_sim_set_data(sim, NULL);
+
+	g_free(sd);
 }
 
 static struct ofono_sim_driver driver = {
