@@ -736,7 +736,7 @@ static void query_manufacturer_cb(const struct ofono_error *error,
 
 	ofono_dbus_signal_property_changed(conn, path,
 						OFONO_MODEM_INTERFACE,
-						"Serial", DBUS_TYPE_STRING,
+						"Manufacturer", DBUS_TYPE_STRING,
 						&info->manufacturer);
 
 out:
