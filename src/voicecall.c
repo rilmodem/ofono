@@ -296,6 +296,14 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 		return NULL;
 	}
 
+	if (num_calls == 1 && vc->driver->release_all_held &&
+			call->status == CALL_STATUS_HELD) {
+		vc->pending = dbus_message_ref(msg);
+		vc->driver->release_all_held(vc, generic_callback, vc);
+
+		return NULL;
+	}
+
 	if (vc->driver->release_specific == NULL)
 		return __ofono_error_not_implemented(msg);
 
