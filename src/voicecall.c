@@ -211,30 +211,6 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static DBusMessage *voicecall_busy(DBusConnection *conn,
-					DBusMessage *msg, void *data)
-{
-	struct voicecall *v = data;
-	struct ofono_voicecall *vc = v->vc;
-	struct ofono_call *call = v->call;
-
-	if (call->status != CALL_STATUS_INCOMING &&
-		call->status != CALL_STATUS_WAITING)
-		return __ofono_error_failed(msg);
-
-	if (!vc->driver->set_udub)
-		return __ofono_error_not_implemented(msg);
-
-	if (vc->pending)
-		return __ofono_error_busy(msg);
-
-	vc->pending = dbus_message_ref(msg);
-
-	vc->driver->set_udub(vc, generic_callback, vc);
-
-	return NULL;
-}
-
 static DBusMessage *voicecall_deflect(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -277,6 +253,7 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	struct voicecall *v = data;
 	struct ofono_voicecall *vc = v->vc;
 	struct ofono_call *call = v->call;
+	int num_calls;
 
 	if (call->status == CALL_STATUS_DISCONNECTED)
 		return __ofono_error_failed(msg);
@@ -297,7 +274,19 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 		return NULL;
 	}
 
-	if ((g_slist_length(vc->call_list) == 1) && vc->driver->hangup &&
+	if (call->status == CALL_STATUS_WAITING) {
+		if (vc->driver->set_udub == NULL)
+			return __ofono_error_not_implemented(msg);
+
+		vc->pending = dbus_message_ref(msg);
+		vc->driver->set_udub(vc, generic_callback, vc);
+
+		return NULL;
+	}
+
+	num_calls = g_slist_length(vc->call_list);
+
+	if (num_calls == 1 && vc->driver->hangup &&
 			(call->status == CALL_STATUS_ACTIVE ||
 				call->status == CALL_STATUS_DIALING ||
 				call->status == CALL_STATUS_ALERTING)) {
@@ -342,8 +331,6 @@ static DBusMessage *voicecall_answer(DBusConnection *conn,
 
 static GDBusMethodTable voicecall_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	voicecall_get_properties },
-	{ "Busy",		"",	"",		voicecall_busy,
-							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Deflect",		"s",	"",		voicecall_deflect,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Hangup",		"",	"",		voicecall_hangup,

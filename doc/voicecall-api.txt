@@ -7,20 +7,10 @@ Object path	[variable prefix]/{modem0,modem1,...}/{voicecall01,voicecall02,...}
 
 Methods		dict GetProperties()
 
-			Returns all global system properties. See the
+			Returns all properties for this object. See the
 			properties section for available properties.
 
 			Possible Errors: [service].Error.InvalidArguments
-
-		void Busy()
-
-			Notifies the incoming or waiting call that the user
-			is busy. This is done by setting the User Determined
-			User Busy (UDUB) condition. This method is only valid
-			if there is an incoming or waiting call.
-
-			This functionality is generally implemented by using
-			the +CHLD=0 AT command.
 
 		void Deflect(string number)
 
@@ -39,8 +29,19 @@ Methods		dict GetProperties()
 
 			Hangs up the voice call.
 
-			This functionality is generally implemented by
-			+CHLD=1X, +CHUP or ATH AT commands.
+			For an incoming call, the call is hung up using ATH or
+			equivalent.  For a waiting call, the remote party is
+			notified by using the User Determined User Busy (UDUB)
+			condition.  This is generally implemented using CHLD=0.
+
+			Please note that the GSM specification does not allow
+			the release of a held call when a waiting call exists,
+			or the release of a particular party in a held
+			multiparty call.
+
+			Note that releasing a held call or a particular party
+			of a held multiparty call might not be possible on some
+			implementations.
 
 		void Answer()
 
