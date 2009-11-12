@@ -26,6 +26,7 @@ gint at_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
 gint at_util_call_compare(gconstpointer a, gconstpointer b);
 unsigned int at_util_alloc_next_id(unsigned int *id_list);
 void at_util_release_id(unsigned int *id_list, unsigned int id);
+GSList *at_util_parse_clcc(GAtResult *result);
 
 struct cb_data {
 	void *cb;

@@ -110,3 +110,58 @@ void at_util_release_id(unsigned int *id_list, unsigned int id)
 	*id_list &= ~(1 << id);
 }
 
+GSList *at_util_parse_clcc(GAtResult *result)
+{
+	GAtResultIter iter;
+	GSList *l = NULL;
+	int id, dir, status, type;
+	struct ofono_call *call;
+
+	g_at_result_iter_init(&iter, result);
+
+	while (g_at_result_iter_next(&iter, "+CLCC:")) {
+		const char *str = "";
+		int number_type = 129;
+
+		if (!g_at_result_iter_next_number(&iter, &id))
+			continue;
+
+		if (!g_at_result_iter_next_number(&iter, &dir))
+			continue;
+
+		if (!g_at_result_iter_next_number(&iter, &status))
+			continue;
+
+		if (!g_at_result_iter_next_number(&iter, &type))
+			continue;
+
+		if (!g_at_result_iter_skip_next(&iter))
+			continue;
+
+		if (g_at_result_iter_next_string(&iter, &str))
+			g_at_result_iter_next_number(&iter, &number_type);
+
+		call = g_try_new0(struct ofono_call, 1);
+
+		if (!call)
+			break;
+
+		call->id = id;
+		call->direction = dir;
+		call->status = status;
+		call->type = type;
+		strncpy(call->phone_number.number, str,
+				OFONO_MAX_PHONE_NUMBER_LENGTH);
+		call->phone_number.type = number_type;
+
+		if (strlen(call->phone_number.number) > 0)
+			call->clip_validity = 0;
+		else
+			call->clip_validity = 2;
+
+		l = g_slist_insert_sorted(l, call, at_util_call_compare);
+	}
+
+	return l;
+}
+
