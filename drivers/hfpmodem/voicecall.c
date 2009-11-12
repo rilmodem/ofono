@@ -514,6 +514,9 @@ static void hfp_voicecall_remove(struct ofono_voicecall *vc)
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
+
+	ofono_voicecall_set_data(vc, NULL);
+
 	g_free(vd);
 }
 

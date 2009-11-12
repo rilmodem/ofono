@@ -333,6 +333,8 @@ static void hfp_netreg_remove(struct ofono_netreg *netreg)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
+	ofono_netreg_set_data(netreg, NULL);
+
 	g_free(nd);
 }
 
