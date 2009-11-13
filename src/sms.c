@@ -957,6 +957,7 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 		sms->ref = 1;
 
 }
+
 void ofono_sms_register(struct ofono_sms *sms)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
