@@ -49,6 +49,18 @@ struct ofono_voicecall_driver {
 	int (*probe)(struct ofono_voicecall *vc, unsigned int vendor,
 			void *data);
 	void (*remove)(struct ofono_voicecall *vc);
+
+	/* According to 22.030 the dial is expected to do the following:
+	 * - If an there is an existing active call(s), and the dial is
+	 *   successful, the active calls are automatically put on hold.
+	 *   Driver must take special care to put the call on hold before
+	 *   returning from atd call.
+	 *
+	 * - The dial has no affect on the state of the waiting call,
+	 *   if the hardware does not support this, then it is better
+	 *   to return an error here.  No special handling of the
+	 *   waiting call is performed by the core
+	 */
 	void (*dial)(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *number,
 			enum ofono_clir_option clir, enum ofono_cug_option cug,
