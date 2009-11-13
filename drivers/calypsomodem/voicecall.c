@@ -156,7 +156,10 @@ static void calypso_release_specific(struct ofono_voicecall *vc, int id,
 {
 	char buf[32];
 
-	sprintf(buf, "AT+CHLD=1%d", id);
+	/* On calypso, 1X only releases active calls, while 7X releases
+	 * active or held calls
+	 */
+	sprintf(buf, "AT%CHLD=7%d", id);
 	calypso_template(vc, buf, cb, data);
 }
 
