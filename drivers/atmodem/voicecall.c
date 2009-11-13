@@ -273,6 +273,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int validity = 2;
 	struct ofono_error error;
 	struct ofono_call *call;
+	GSList *l;
 
 	dump_response("atd_cb", ok, result);
 
@@ -280,6 +281,17 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (!ok)
 		goto out;
+
+	/* On a success, make sure to put all active calls on hold */
+	for (l = vd->calls; l; l = l->next) {
+		call = l->data;
+
+		if (call->status != 0)
+			continue;
+
+		call->status = 1;
+		ofono_voicecall_notify(vc, call);
+	}
 
 	g_at_result_iter_init(&iter, result);
 
