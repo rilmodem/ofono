@@ -49,6 +49,7 @@
 
 static const char *none_prefix[] = { NULL };
 static const char *chld_prefix[] = { "+CHLD:", NULL };
+static const char *clcc_prefix[] = { "+CLCC:", NULL };
 
 struct voicecall_data {
 	GAtChat *chat;
@@ -106,6 +107,20 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 	d->call = call;
 
 	return call;
+}
+
+static struct ofono_call *new_call_notify(struct ofono_voicecall *vc, int type,
+					int direction, int status,
+					const char *num, int num_type, int clip)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ofono_call *c;
+
+	c = create_call(vd, type, direction, status, num, num_type, clip);
+
+	ofono_voicecall_notify(vc, c);
+
+	return c;
 }
 
 static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -351,21 +366,76 @@ static void ciev_call_notify(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	if (g_slist_length(vd->calls) == 1) {
-		switch (value) {
-		case 0:
-			release_call(vc, call);
-			break;
-		case 1:
-			call->status = CALL_STATUS_ACTIVE;
-			ofono_voicecall_notify(vc, call);
-			break;
-		default:
-			break;
-		}
+	switch (value) {
+	case 0:
+		release_call(vc, call);
+		break;
+	case 1:
+		call->status = CALL_STATUS_ACTIVE;
+		ofono_voicecall_notify(vc, call);
+		break;
+	default:
+		break;
 	}
 
 	vd->cind_val[HFP_INDICATOR_CALL] = value;
+}
+
+static void sync_dialing_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct ofono_error error;
+	GSList *calls = NULL;
+	GSList *l = NULL;
+	struct ofono_call *nc = NULL;
+	struct ofono_call *oc = vd->call;
+	unsigned int call_held = vd->cind_val[HFP_INDICATOR_CALLHELD];
+
+	dump_response("sync_dialing_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok)
+		return;
+
+	calls = at_util_parse_clcc(result);
+
+	if (calls == NULL)
+		return;
+
+	if (oc && call_held == 0) {
+		l = g_slist_find_custom(calls, oc, at_util_call_compare);
+
+		if (l) {
+			nc = l->data;
+
+			if (memcmp(nc, oc, sizeof(struct ofono_call))) {
+				ofono_voicecall_notify(vc, nc);
+
+				memcpy(oc, nc, sizeof(struct ofono_call));
+			}
+		}
+	} else {
+		while (calls) {
+			nc = calls->data;
+
+			if (vd->calls)
+				l = g_slist_find_custom(vd->calls, nc,
+							at_util_call_compare);
+
+			if (!l)
+				new_call_notify(vc, nc->type, nc->direction,
+							nc->status,
+							nc->phone_number.number,
+							nc->phone_number.type,
+							nc->clip_validity);
+
+			calls = calls->next;
+		}
+	}
+
+	g_slist_foreach(calls, (GFunc) g_free, NULL);
+	g_slist_free(calls);
 }
 
 static void ciev_callsetup_notify(struct ofono_voicecall *vc,
@@ -376,27 +446,48 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 	unsigned int ciev_callsetup = vd->cind_val[HFP_INDICATOR_CALLSETUP];
 	unsigned int ciev_call = vd->cind_val[HFP_INDICATOR_CALL];
 
-	if (g_slist_length(vd->calls) == 1) {
-		switch (value) {
-		case 0:
-			/* call=0 and callsetup=1: reject an incoming call
-			 * call=0 and callsetup=2,3: interrupt an outgoing call
-			 */
-			if (ciev_call == 0 && ciev_callsetup > 0)
-				release_call(vc, call);
-			break;
-		case 1:
-		case 2:
-			break;
-		case 3:
-			call->status = CALL_STATUS_ALERTING;
-			ofono_voicecall_notify(vc, call);
-		default:
-			break;
-		}
+	switch (value) {
+	case 0:
+		/* call=0 and callsetup=1: reject an incoming call
+		 * call=0 and callsetup=2,3: interrupt an outgoing call
+		 */
+		if ((ciev_call == 0) && (ciev_callsetup > 0))
+			release_call(vc, call);
+		break;
+	case 1:
+		break;
+	case 2:
+		/* two cases of outgoing call: dial from HF or AG.
+		 * from HF: query and sync the phone number.
+		 * from AG: query and create call.
+		 * if phone does not support CLLC, we guess the call.
+		 */
+		if (vd->ag_features & AG_FEATURE_ENHANCED_CALL_STATUS)
+			g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+						sync_dialing_cb,
+						vc, NULL);
+		else if (!vd->call)
+			vd->call = new_call_notify(vc, 0, 0,
+						CALL_STATUS_DIALING,
+						NULL, 128, 2);
+		break;
+	case 3:
+		call->status = CALL_STATUS_ALERTING;
+		ofono_voicecall_notify(vc, call);
+	default:
+		break;
 	}
 
 	vd->cind_val[HFP_INDICATOR_CALLSETUP] = value;
+}
+
+static void ciev_callheld_notify(struct ofono_voicecall *vc,
+					struct ofono_call *call,
+					unsigned int value)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
+	vd->cind_val[HFP_INDICATOR_CALLHELD] = value;
 }
 
 static void ciev_notify(GAtResult *result, gpointer user_data)
@@ -423,6 +514,8 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 		ciev_call_notify(vc, call, value);
 	else if (index == vd->cind_pos[HFP_INDICATOR_CALLSETUP])
 		ciev_callsetup_notify(vc, call, value);
+	else if (index == vd->cind_pos[HFP_INDICATOR_CALLHELD])
+		ciev_callheld_notify(vc, call, value);
 }
 
 static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
