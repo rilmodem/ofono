@@ -575,7 +575,7 @@ static gboolean voicecalls_can_dtmf(struct ofono_voicecall *vc)
 	return FALSE;
 }
 
-static gboolean voicecalls_have_held(struct ofono_voicecall *vc)
+static gboolean voicecalls_have_with_status(struct ofono_voicecall *vc, int status)
 {
 	GSList *l;
 	struct voicecall *v;
@@ -583,11 +583,16 @@ static gboolean voicecalls_have_held(struct ofono_voicecall *vc)
 	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
-		if (v->call->status == CALL_STATUS_HELD)
+		if (v->call->status == status)
 			return TRUE;
 	}
 
 	return FALSE;
+}
+
+static gboolean voicecalls_have_held(struct ofono_voicecall *vc)
+{
+	return voicecalls_have_with_status(vc, CALL_STATUS_HELD);
 }
 
 static int voicecalls_num_with_status(struct ofono_voicecall *vc,
@@ -669,17 +674,12 @@ static GSList *voicecalls_active_list(struct ofono_voicecall *vc)
 
 static gboolean voicecalls_have_waiting(struct ofono_voicecall *vc)
 {
-	GSList *l;
-	struct voicecall *v;
+	return voicecalls_have_with_status(vc, CALL_STATUS_WAITING);
+}
 
-	for (l = vc->call_list; l; l = l->next) {
-		v = l->data;
-
-		if (v->call->status == CALL_STATUS_WAITING)
-			return TRUE;
-	}
-
-	return FALSE;
+static gboolean voicecalls_have_incoming(struct ofono_voicecall *vc)
+{
+	return voicecalls_have_with_status(vc, CALL_STATUS_INCOMING);
 }
 
 static gboolean real_emit_call_list_changed(void *data)
