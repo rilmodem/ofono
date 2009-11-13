@@ -161,7 +161,6 @@ static void hso_pre_sim(struct ofono_modem *modem)
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
 	ofono_sim_create(modem, 0, "atmodem", data->chat);
-	ofono_sms_create(modem, 0, "atmodem", data->chat);
 }
 
 static void hso_post_sim(struct ofono_modem *modem)
