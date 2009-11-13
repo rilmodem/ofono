@@ -946,33 +946,6 @@ static void dial_callback(const struct ofono_error *error, void *data)
 		emit_call_list_changed(vc);
 }
 
-static void swap_before_dial(const struct ofono_error *error, void *data)
-{
-	struct ofono_voicecall *vc = data;
-	const char *number;
-	const char *clirstr;
-	struct ofono_phone_number ph;
-	enum ofono_clir_option clir;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Couldn't swap for dialing because: %s",
-				telephony_error_to_str(error));
-		__ofono_dbus_pending_reply(&vc->pending,
-					__ofono_error_failed(vc->pending));
-		return;
-	}
-
-	dbus_message_get_args(vc->pending, NULL, DBUS_TYPE_STRING, &number,
-					DBUS_TYPE_STRING, &clirstr,
-					DBUS_TYPE_INVALID);
-
-	string_to_phone_number(number, &ph);
-	clir_string_to_clir(clirstr, &clir);
-
-	vc->driver->dial(vc, &ph, clir, OFONO_CUG_OPTION_DEFAULT,
-				dial_callback, vc);
-}
-
 static DBusMessage *manager_dial(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -981,7 +954,6 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	struct ofono_phone_number ph;
 	const char *clirstr;
 	enum ofono_clir_option clir;
-	gboolean have_active;
 
 	if (vc->pending)
 		return __ofono_error_busy(msg);
@@ -1003,44 +975,12 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	if (!vc->driver->dial)
 		return __ofono_error_not_implemented(msg);
 
-	have_active = voicecalls_have_active(vc);
-
-	if (have_active && voicecalls_have_held(vc))
+	/* We can't have two dialing/alerting calls, reject outright */
+	if (voicecalls_num_connecting(vc) > 0)
 		return __ofono_error_failed(msg);
 
-	/* There are three cases we need to watch out for:
-	 * - No Active Calls - Just Dial
-	 * - Active Call - We have to swap first
-	 * - Active and Waiting call - If we can swap without accepting,
-	 *   	then do so, otherwise we should fail.
-	 */
-
-	if (have_active && voicecalls_have_waiting(vc)) {
-		if (vc->driver->swap_without_accept == NULL)
-			return __ofono_error_failed(msg);
-
-		vc->pending = dbus_message_ref(msg);
-
-		vc->driver->swap_without_accept(vc, swap_before_dial, vc);
-
-		return NULL;
-	}
-
-	if (have_active) {
-		if (vc->driver->swap_without_accept == NULL &&
-				vc->driver->hold_all_active == NULL)
-			return __ofono_error_failed(msg);
-
-		vc->pending = dbus_message_ref(msg);
-
-		if (vc->driver->swap_without_accept)
-			vc->driver->swap_without_accept(vc, swap_before_dial,
-							vc);
-		else
-			vc->driver->hold_all_active(vc, swap_before_dial, vc);
-
-		return NULL;
-	}
+	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
+		return __ofono_error_failed(msg);
 
 	vc->pending = dbus_message_ref(msg);
 
