@@ -975,6 +975,9 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	if (!vc->driver->dial)
 		return __ofono_error_not_implemented(msg);
 
+	if (voicecalls_have_incoming(vc))
+		return __ofono_error_failed(msg);
+
 	/* We can't have two dialing/alerting calls, reject outright */
 	if (voicecalls_num_connecting(vc) > 0)
 		return __ofono_error_failed(msg);
