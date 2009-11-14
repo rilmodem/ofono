@@ -1,3 +1,12 @@
+ver 0.10:
+	Fix issues with correct ATD handling.
+	Fix issues with indication handling.
+	Add support for SMS history capability.
+	Add basic save/restore support for GPRS settings.
+	Add three-way calling support to HFP voice driver.
+	Add call volume support to HFP modem plugin.
+	Add initial support for Palm Pre modems.
+
 ver 0.9:
 	Fix issues with voice call dialing logic.
 	Fix issues with USSD decoding support.
