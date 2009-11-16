@@ -626,36 +626,25 @@ static void ciev_call_notify(struct ofono_voicecall *vc,
 
 	switch (value) {
 	case 0:
-	{
-		GSList *waiting;
-		GSList *incoming;
-
 		/* If call goes to 0, then we have no held or active calls
 		 * in the system.  The waiting calls are promoted to incoming
-		 * calls
+		 * calls, dialing calls are kept.  This also handles the
+		 * situation when dialing and waiting calls exist
 		 */
-		waiting = g_slist_find_custom(vd->calls,
-					GINT_TO_POINTER(CALL_STATUS_WAITING),
-					at_util_call_compare_by_status);
+		release_with_status(vc, CALL_STATUS_HELD);
+		release_with_status(vc, CALL_STATUS_ACTIVE);
 
-		if (waiting) {
-			incoming = waiting;
-			call = waiting->data;
-			call->status = CALL_STATUS_INCOMING;
-			ofono_voicecall_notify(vc, call);
-		} else
-			incoming = g_slist_find_custom(vd->calls,
-					GINT_TO_POINTER(CALL_STATUS_INCOMING),
-					at_util_call_compare_by_status);
+		/* Promote waiting to incoming if it is the last call */
+		if (vd->calls && vd->calls->next == NULL) {
+			call = vd->calls->data;
 
-		if (incoming)
-			vd->calls = g_slist_remove_link(vd->calls, incoming);
-
-		release_all_calls(vc);
-		vd->calls = incoming;
+			if (call->status == CALL_STATUS_WAITING) {
+				call->status = CALL_STATUS_INCOMING;
+				ofono_voicecall_notify(vc, call);
+			}
+		}
 
 		break;
-	}
 
 	case 1:
 	{
