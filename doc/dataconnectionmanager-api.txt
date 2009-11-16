@@ -161,7 +161,7 @@ Properties	boolean Activated [readwrite]
 			purposes.  This value cannot be changed when the
 			context is active.
 
-		dict Settings [readonly, optonal]
+		dict Settings [readonly, optional]
 
 			Holds all the IP network settings
 
