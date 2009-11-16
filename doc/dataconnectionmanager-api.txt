@@ -161,24 +161,35 @@ Properties	boolean Activated [readwrite]
 			purposes.  This value cannot be changed when the
 			context is active.
 
-		string Interface [readonly, optional]
+		dict Settings [readonly, optonal]
 
-			Holds the interface of the network interface created
-			by this context (e.g. "ppp0")
+			Holds all the IP network settings
 
-		string Address [readonly, optional]
+			string Interface [readonly, optional]
 
-			Holds the IP address for this context.
+				Holds the interface of the network interface used
+				by this context (e.g. "ppp0" "usb0")
 
-		string Netmask [readonly, optional]
+			string Method [readonly, optional]
 
-			Holds the Netmask for this context.
+				Holds the IP network config method
+					"static"- Set IP network statically
+					"dhcp"  - Set IP network through DHCP
 
-		array{string} DomainNameServers [readonly, optional]
+			string Address [readonly, optional]
 
-			Holds the list of domain name servers for this
-			context.
+				Holds the IP address for this context.
 
-		string Gateway [readonly, optional]
+			string Netmask [readonly, optional]
 
-			Holds the gateway IP for this connection.
+				Holds the Netmask for this context.
+
+			array{string} DomainNameServers [readonly, optional]
+
+				Holds the list of domain name servers for this
+				context.
+
+			string Gateway [readonly, optional]
+
+				Holds the gateway IP for this connection.
+
