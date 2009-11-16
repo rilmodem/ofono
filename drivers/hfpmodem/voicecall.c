@@ -319,7 +319,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (call->status != 0)
 			continue;
 
-		call->status = 2;
+		call->status = CALL_STATUS_HELD;
 		ofono_voicecall_notify(vc, call);
 	}
 
