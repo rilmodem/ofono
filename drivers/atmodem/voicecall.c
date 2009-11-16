@@ -794,6 +794,11 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	dump_response("ccwa_notify", TRUE, result);
 
+	/* Some modems resend CCWA, ignore it the second time around */
+	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),
+				at_util_call_compare_by_status))
+		return;
+
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CCWA:"))
