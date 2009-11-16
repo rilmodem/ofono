@@ -76,6 +76,21 @@ struct change_state_req {
 	int affected_types;
 };
 
+static GSList *find_dialing(GSList *calls)
+{
+	GSList *c;
+
+	c = g_slist_find_custom(calls, GINT_TO_POINTER(CALL_STATUS_DIALING),
+				at_util_call_compare_by_status);
+
+	if (!c)
+		c = g_slist_find_custom(calls,
+					GINT_TO_POINTER(CALL_STATUS_ALERTING),
+					at_util_call_compare_by_status);
+
+	return c;
+}
+
 static struct ofono_call *create_call(struct voicecall_data *d, int type,
 					int direction, int status,
 					const char *num, int num_type, int clip)
@@ -690,24 +705,12 @@ static void sync_dialing_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 
 	/* Look for dialing or alerting calls on the new list */
-	n = g_slist_find_custom(calls, GINT_TO_POINTER(CALL_STATUS_DIALING),
-				at_util_call_compare_by_status);
-
-	if (!n)
-		n = g_slist_find_custom(calls,
-					GINT_TO_POINTER(CALL_STATUS_ALERTING),
-					at_util_call_compare_by_status);
+	n = find_dialing(calls);
 
  	/* Let us find if we have done the dial from HF by looking for
 	 * existing dialing or alerting calls
 	 */
-	o = g_slist_find_custom(vd->calls, GINT_TO_POINTER(CALL_STATUS_DIALING),
-				at_util_call_compare_by_status);
-
-	if (!o)
-		o = g_slist_find_custom(vd->calls,
-					GINT_TO_POINTER(CALL_STATUS_ALERTING),
-					at_util_call_compare_by_status);
+	o = find_dialing(vd->calls);
 
 	if (!n && o) {
 		oc = o->data;
@@ -742,14 +745,7 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 	GSList *dialing;
 	GSList *waiting;
 
-	dialing = g_slist_find_custom(vd->calls,
-					GINT_TO_POINTER(CALL_STATUS_DIALING),
-					at_util_call_compare_by_status);
-
-	if (!dialing)
-		dialing = g_slist_find_custom(vd->calls,
-					GINT_TO_POINTER(CALL_STATUS_ALERTING),
-					at_util_call_compare_by_status);
+	dialing = find_dialing(vd->calls);
 
 	waiting = g_slist_find_custom(vd->calls,
 					GINT_TO_POINTER(CALL_STATUS_WAITING),
@@ -776,8 +772,9 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 			goto out;
 		}
 
-		/* If call=1 and no call is waiting or dialing, the call
-		 * is active. */
+		/* If call=1 and no call is waiting or dialing, the call is
+		 * active and we moved it to active state when call=1 arrived
+		 */
 		if (waiting == NULL && dialing == NULL)
 			goto out;
 
