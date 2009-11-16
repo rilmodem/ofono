@@ -161,6 +161,7 @@ static void release_with_status(struct ofono_voicecall *vc, int status)
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GSList *p = NULL;
 	GSList *c = vd->calls;
+	GSList *t;
 	struct ofono_call *call;
 
 	while (c) {
@@ -179,7 +180,9 @@ static void release_with_status(struct ofono_voicecall *vc, int status)
 		else
 			vd->calls = c->next;
 
-		g_slist_free_1(c);
+		t = c;
+		c = c->next;
+		g_slist_free_1(t);
 	}
 }
 
