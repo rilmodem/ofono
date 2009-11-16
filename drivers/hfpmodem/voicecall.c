@@ -179,7 +179,7 @@ static void release_with_status(struct ofono_voicecall *vc, int status)
 		else
 			vd->calls = c->next;
 
-			g_slist_free_1(c);
+		g_slist_free_1(c);
 	}
 }
 
