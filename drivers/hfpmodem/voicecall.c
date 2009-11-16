@@ -776,6 +776,11 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 			goto out;
 		}
 
+		/* If call=1 and no call is waiting or dialing, the call
+		 * is active. */
+		if (waiting == NULL && dialing == NULL)
+			goto out;
+
 		 /*
 		 * If call=1, in the waiting case we have to poll, since we
 		 * have no idea whether a waiting call gave up or we accepted
