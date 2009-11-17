@@ -71,6 +71,8 @@ void ofono_gprs_context_remove(struct ofono_gprs_context *gc);
 void ofono_gprs_context_set_data(struct ofono_gprs_context *gc, void *data);
 void *ofono_gprs_context_get_data(struct ofono_gprs_context *gc);
 
+struct ofono_modem *ofono_gprs_context_get_modem(struct ofono_gprs_context *gc);
+
 #ifdef __cplusplus
 }
 #endif

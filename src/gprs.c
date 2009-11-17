@@ -1237,6 +1237,11 @@ void *ofono_gprs_context_get_data(struct ofono_gprs_context *gc)
 	return gc->driver_data;
 }
 
+struct ofono_modem *ofono_gprs_context_get_modem(struct ofono_gprs_context *gc)
+{
+	return __ofono_atom_get_modem(gc->atom);
+}
+
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
