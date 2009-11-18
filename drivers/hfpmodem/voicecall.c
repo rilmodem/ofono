@@ -60,7 +60,6 @@ struct voicecall_data {
 	int cind_val[HFP_INDICATOR_LAST];
 	unsigned int id_list;
 	unsigned int local_release;
-	ofono_bool_t ignore_callheld_1;
 };
 
 struct release_id_req {
@@ -322,8 +321,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		call->status = CALL_STATUS_HELD;
 		ofono_voicecall_notify(vc, call);
-
-		vd->ignore_callheld_1 = TRUE;
 	}
 
 	call = create_call(vd, 0, 0, CALL_STATUS_DIALING, NULL, type, validity);
@@ -839,15 +836,6 @@ static void ciev_callheld_notify(struct ofono_voicecall *vc,
 	struct ofono_call *call;
 	unsigned int callheld = vd->cind_val[HFP_INDICATOR_CALLHELD];
 
-	/* When ATD is sent when another call is active, we will receive
-	 * callheld=1, then callsetup=2.  We have already placed active
-	 * calls on hold in atd_cb, so ignore the callheld in this case
-	 */
-	if (vd->ignore_callheld_1 == TRUE && value == 1) {
-		vd->ignore_callheld_1 = FALSE;
-		goto out;
-	}
-
 	switch (value) {
 	case 0:
 		/* We have to poll here, we have no idea whether the call was
@@ -859,38 +847,13 @@ static void ciev_callheld_notify(struct ofono_voicecall *vc,
 		break;
 
 	case 1:
-	{
-		GSList *waiting;
-
-		waiting = g_slist_find_custom(vd->calls,
-					GINT_TO_POINTER(CALL_STATUS_WAITING),
-					at_util_call_compare_by_status);
-
-		for (l = vd->calls; l; l = l->next) {
-			call = l->data;
-
-			if (waiting) {
-				if (call->status == CALL_STATUS_WAITING) {
-					call->status = CALL_STATUS_ACTIVE;
-					ofono_voicecall_notify(vc, call);
-				} else if (call->status == CALL_STATUS_ACTIVE) {
-					call->status = CALL_STATUS_HELD;
-					ofono_voicecall_notify(vc, call);
-				}
-			} else {
-				if (call->status == CALL_STATUS_ACTIVE) {
-					call->status = CALL_STATUS_HELD;
-					ofono_voicecall_notify(vc, call);
-				} else if (call->status == CALL_STATUS_HELD) {
-					call->status = CALL_STATUS_ACTIVE;
-					ofono_voicecall_notify(vc, call);
-				}
-			}
-		}
-
+		/* We have to poll here, we have no idea whether the call was
+		 * accepted by CHLD=1 or swapped by CHLD=2 or one call was
+		 * chosed for private chat by CHLD=2x
+		 */
+		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+				clcc_poll_cb, vc, NULL);
 		break;
-	}
-
 	case 2:
 		if (callheld == 0) {
 			for (l = vd->calls; l; l = l->next) {
@@ -907,7 +870,6 @@ static void ciev_callheld_notify(struct ofono_voicecall *vc,
 			release_with_status(vc, CALL_STATUS_ACTIVE);
 	}
 
-out:
 	vd->cind_val[HFP_INDICATOR_CALLHELD] = value;
 }
 
