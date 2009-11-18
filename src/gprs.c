@@ -381,7 +381,7 @@ static void pri_activate_callback(const struct ofono_error *error,
 	/* If we don't have the interface, don't bother emitting any settings,
 	 * as nobody can make use of them
 	 */
-	if (interface == NULL)
+	if (interface != NULL)
 		pri_update_context_settings(ctx, interface, static_ip,
 						ip, netmask, gateway, dns);
 }
