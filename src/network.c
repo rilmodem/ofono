@@ -41,7 +41,6 @@
 #define NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
 
 #define NETWORK_REGISTRATION_FLAG_REQUESTING_OPLIST 0x1
-#define NETWORK_REGISTRATION_FLAG_PENDING 0x2
 #define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN 0x4
 #define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN 0x8
 
@@ -219,8 +218,6 @@ static void register_callback(const struct ofono_error *error, void *data)
 	netreg->pending = NULL;
 
 out:
-	netreg->flags &= ~NETWORK_REGISTRATION_FLAG_PENDING;
-
 	if (netreg->driver->registration_status)
 		netreg->driver->registration_status(netreg,
 					registration_status_callback, netreg);
@@ -644,13 +641,12 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 	struct network_operator_data *opd = data;
 	struct ofono_netreg *netreg = opd->netreg;
 
-	if (netreg->flags & NETWORK_REGISTRATION_FLAG_PENDING)
+	if (netreg->pending)
 		return __ofono_error_busy(msg);
 
 	if (netreg->driver->register_manual == NULL)
 		return __ofono_error_not_implemented(msg);
 
-	netreg->flags |= NETWORK_REGISTRATION_FLAG_PENDING;
 	netreg->pending = dbus_message_ref(msg);
 
 	netreg->driver->register_manual(netreg, opd->mcc, opd->mnc,
@@ -790,13 +786,12 @@ static DBusMessage *network_register(DBusConnection *conn,
 {
 	struct ofono_netreg *netreg = data;
 
-	if (netreg->flags & NETWORK_REGISTRATION_FLAG_PENDING)
+	if (netreg->pending)
 		return __ofono_error_busy(msg);
 
 	if (netreg->driver->register_auto == NULL)
 		return __ofono_error_not_implemented(msg);
 
-	netreg->flags |= NETWORK_REGISTRATION_FLAG_PENDING;
 	netreg->pending = dbus_message_ref(msg);
 
 	netreg->driver->register_auto(netreg, register_callback, netreg);
@@ -811,13 +806,12 @@ static DBusMessage *network_deregister(DBusConnection *conn,
 {
 	struct ofono_netreg *netreg = data;
 
-	if (netreg->flags & NETWORK_REGISTRATION_FLAG_PENDING)
+	if (netreg->pending)
 		return __ofono_error_busy(msg);
 
 	if (netreg->driver->deregister == NULL)
 		return __ofono_error_not_implemented(msg);
 
-	netreg->flags |= NETWORK_REGISTRATION_FLAG_PENDING;
 	netreg->pending = dbus_message_ref(msg);
 
 	netreg->driver->deregister(netreg, register_callback, netreg);
