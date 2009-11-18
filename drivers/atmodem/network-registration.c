@@ -179,7 +179,8 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	strncpy(op.mnc, nd->mnc, OFONO_MAX_MNC_LENGTH);
 	op.mnc[OFONO_MAX_MNC_LENGTH] = '\0';
 
-	op.status = -1;
+	/* Set to current */
+	op.status = 2;
 	op.tech = tech;
 
 	ofono_debug("cops_cb: %s, %s %s %d", name, nd->mcc, nd->mnc, tech);
