@@ -233,8 +233,9 @@ test_files = test/test-manager test/test-modem test/test-voicecall \
 		test/test-ss-control-cs \
 		test/monitor-ofono test/list-modems test/enable-modem \
 		test/list-operators test/dial-number test/hangup-all \
-		test/receive-sms test/send-sms test/list-contexts \
-		test/create-context test/activate-context
+		test/receive-sms test/send-sms \
+		test/list-contexts test/create-context \
+		test/activate-context test/deactivate-context
 
 conf_files = src/ofono.conf plugins/modem.conf
 
