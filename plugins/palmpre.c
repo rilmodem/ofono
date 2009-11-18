@@ -138,11 +138,16 @@ static int palmpre_enable(struct ofono_modem *modem)
 
 static void cfun_set_off_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	GAtChat *chat = user_data;
+	struct ofono_modem *modem = user_data;
+	struct palmpre_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
-	g_at_chat_unref(chat);
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
+
+	if (ok)
+		ofono_modem_set_powered(modem, FALSE);
 }
 
 static int palmpre_disable(struct ofono_modem *modem)
@@ -153,13 +158,9 @@ static int palmpre_disable(struct ofono_modem *modem)
 
 	/* Power modem down */
 	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
-			cfun_set_off_cb, data->chat, NULL);
+			cfun_set_off_cb, modem, NULL);
 
-	ofono_modem_set_powered(modem, FALSE);
-
-	data->chat = NULL;
-
-	return 0;
+	return -EINPROGRESS;
 }
 
 static void palmpre_pre_sim(struct ofono_modem *modem)
