@@ -368,7 +368,7 @@ static void pri_activate_callback(const struct ofono_error *error,
 		return;
 	}
 
-	ctx->active = FALSE;
+	ctx->active = TRUE;
 	__ofono_dbus_pending_reply(&gc->pending,
 				dbus_message_new_method_return(gc->pending));
 
@@ -401,7 +401,7 @@ static void pri_deactivate_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	ctx->active = TRUE;
+	ctx->active = FALSE;
 	__ofono_dbus_pending_reply(&gc->pending,
 				dbus_message_new_method_return(gc->pending));
 
