@@ -42,6 +42,8 @@
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
 
+static const char *none_prefix[] = { NULL };
+
 struct hso_data {
 	GAtChat *chat;
 };
@@ -118,7 +120,7 @@ static int hso_enable(struct ofono_modem *modem)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, hso_debug, NULL);
 
-	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
+	g_at_chat_send(data->control, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
 
 	return 0;
@@ -145,10 +147,10 @@ static int hso_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (!data->chat)
+	if (!data->control)
 		return 0;
 
-	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
+	g_at_chat_send(data->control, "AT+CFUN=0", none_prefix,
 					cfun_disable, modem, NULL);
 
 	return -EINPROGRESS;
