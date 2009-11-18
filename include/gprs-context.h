@@ -44,6 +44,10 @@ struct ofono_gprs_primary_context {
 
 typedef void (*ofono_gprs_context_cb_t)(const struct ofono_error *error,
 					void *data);
+typedef void (*ofono_gprs_context_up_cb_t)(const struct ofono_error *error,
+				const char *interface, ofono_bool_t static_ip,
+				const char *address, const char *netmask,
+				const char *gw, const char **dns, void *data);
 
 struct ofono_gprs_context_driver {
 	const char *name;
@@ -52,7 +56,7 @@ struct ofono_gprs_context_driver {
 	void (*remove)(struct ofono_gprs_context *gc);
 	void (*activate_primary)(struct ofono_gprs_context *gc,
 				const struct ofono_gprs_primary_context *ctx,
-				ofono_gprs_context_cb_t cb, void *data);
+				ofono_gprs_context_up_cb_t cb, void *data);
 	void (*deactivate_primary)(struct ofono_gprs_context *gc,
 					unsigned int id,
 					ofono_gprs_context_cb_t cb, void *data);
