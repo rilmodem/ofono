@@ -316,6 +316,12 @@ DBusMessage *__ofono_error_in_use(DBusMessage *msg)
 			"The resource is currently in use");
 }
 
+DBusMessage *__ofono_error_not_attached(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".NotAttached",
+			"GPRS is not attached");
+}
+
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();

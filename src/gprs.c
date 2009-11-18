@@ -603,11 +603,11 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		if (ctx->active == (ofono_bool_t) value)
 			return dbus_message_new_method_return(msg);
 
+		if (value && !ctx->gprs->attached)
+			return __ofono_error_not_attached(msg);
+
 		if (ctx->gprs->flags & GPRS_FLAG_ATTACHING)
 			return __ofono_error_busy(msg);
-
-		if (value && !ctx->gprs->attached)
-			return __ofono_error_failed(msg);
 
 		if (gc == NULL || gc->driver->activate_primary == NULL ||
 				gc->driver->deactivate_primary == NULL)
