@@ -145,10 +145,10 @@ static void hso_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	cbd->user = gc;
 
-	if (ctx->username && ctx->password)
+	if (ctx->username[0] && ctx->password[0])
 		sprintf(buf, "AT$QCPDPP=%u,1,\"%s\",\"%s\"",
 			ctx->cid, ctx->username, ctx->password);
-	else if (ctx->password)
+	else if (ctx->password[0])
 		sprintf(buf, "AT$QCPDPP=%u,2,,\"%s\"",
 			ctx->cid, ctx->password);
 	else
