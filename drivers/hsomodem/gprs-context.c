@@ -216,7 +216,7 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (g_at_result_iter_next(&iter, "_OWANCALL:") == FALSE)
+	if (g_at_result_iter_next(&iter, "_OWANDATA:") == FALSE)
 		return;
 
 	g_at_result_iter_next_number(&iter, &cid);
@@ -263,7 +263,7 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 
 		ofono_debug("HSO Context: connected");
 
-		sprintf(buf, "AT_OWANDATA=%u,", gcd->active_context);
+		sprintf(buf, "AT_OWANDATA=%u", gcd->active_context);
 
 		g_at_chat_send(gcd->chat, buf, owandata_prefix,
 				owandata_cb, gc, NULL);
