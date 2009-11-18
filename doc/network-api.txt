@@ -36,6 +36,19 @@ Methods		dict GetProperties()
 
 			Possible Errors: [service].Error.InvalidArguments
 
+		array{object} ProposeScan()
+
+			Runs a network operator scan to discover the currently
+			available operators.  This operation can take several
+			seconds, and up to several minutes on some modems.
+			This can be used to help the user determine what is
+			the best operator to use if forced to roam on a
+			foreign network.
+
+			NOTE: The operator scan can interfere with any active
+			GPRS contexts.  Expect the context to be unavailable
+			for the duration of the operator scan.
+
 Signals		PropertyChanged(string property, variant value)
 
 			This signal indicates a changed value of the given
