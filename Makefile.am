@@ -136,6 +136,12 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/mbmmodem/mbmmodem.c \
 			drivers/mbmmodem/gprs-context.c
 
+builtin_modules += hsomodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/hsomodem/hsomodem.h \
+			drivers/hsomodem/hsomodem.c \
+			drivers/hsomodem/gprs-context.c
+
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
 

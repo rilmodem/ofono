@@ -38,6 +38,8 @@
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
 #include <ofono/sms.h>
+#include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 #include <ofono/log.h>
 
 struct hso_data {
@@ -165,11 +167,19 @@ static void hso_pre_sim(struct ofono_modem *modem)
 static void hso_post_sim(struct ofono_modem *modem)
 {
 	struct hso_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
+
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "hso", data->chat);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 }
 
 static struct ofono_modem_driver hso_driver = {
