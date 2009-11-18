@@ -825,11 +825,31 @@ static DBusMessage *network_deregister(DBusConnection *conn,
 	return NULL;
 }
 
+static DBusMessage *network_propose_scan(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	if (netreg->pending)
+		return __ofono_error_busy(msg);
+
+	if (netreg->driver->list_operators == NULL)
+		return __ofono_error_not_implemented(msg);
+
+	netreg->pending = dbus_message_ref(msg);
+
+	netreg->driver->list_operators(netreg, operator_list_callback, netreg);
+
+	return NULL;
+}
+
 static GDBusMethodTable network_registration_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	network_get_properties	},
 	{ "Register",		"",	"",		network_register,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Deregister",		"",	"",		network_deregister,
+							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "ProposeScan",	"",	"ao",		network_propose_scan,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
@@ -1058,21 +1078,14 @@ static GSList *compress_operator_list(const struct ofono_network_operator *list,
 	return oplist;
 }
 
-static void operator_list_callback(const struct ofono_error *error, int total,
-					const struct ofono_network_operator *list,
-					void *data)
+static gboolean update_operator_list(struct ofono_netreg *netreg, int total,
+					const struct ofono_network_operator *list)
 {
-	struct ofono_netreg *netreg = data;
 	GSList *n = NULL;
 	GSList *o;
 	GSList *compressed;
 	GSList *c;
-	gboolean need_to_emit = FALSE;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during operator list");
-		return;
-	}
+	gboolean changed = FALSE;
 
 	compressed = compress_operator_list(list, total);
 
@@ -1103,7 +1116,7 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 			}
 
 			n = g_slist_prepend(n, opd);
-			need_to_emit = TRUE;
+			changed = TRUE;
 		}
 	}
 
@@ -1114,7 +1127,7 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 		n = g_slist_reverse(n);
 
 	if (netreg->operator_list)
-		need_to_emit = TRUE;
+		changed = TRUE;
 
 	for (o = netreg->operator_list; o; o = o->next)
 		network_operator_dbus_unregister(netreg, o->data);
@@ -1122,6 +1135,46 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 	g_slist_free(netreg->operator_list);
 
 	netreg->operator_list = n;
+
+	return changed;
+}
+
+static void operator_list_callback(const struct ofono_error *error, int total,
+					const struct ofono_network_operator *list,
+					void *data)
+{
+	struct ofono_netreg *netreg = data;
+	DBusMessage *reply;
+	char **network_operators;
+	DBusMessageIter iter;
+	DBusMessageIter array_iter;
+	int i;
+	gboolean need_to_emit;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("Error occurred during operator list");
+		__ofono_dbus_pending_reply(&netreg->pending,
+					__ofono_error_failed(netreg->pending));
+		return;
+	}
+
+	need_to_emit = update_operator_list(netreg, total, list);
+
+	reply = dbus_message_new_method_return(netreg->pending);
+	network_operator_populate_registered(netreg, &network_operators);
+
+	dbus_message_iter_init_append(reply, &iter);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+		DBUS_TYPE_OBJECT_PATH_AS_STRING, &array_iter);
+
+	for (i = 0; network_operators[i]; i++)
+		dbus_message_iter_append_basic(&array_iter,
+			DBUS_TYPE_OBJECT_PATH, &network_operators[i]);
+
+	dbus_message_iter_close_container(&iter, &array_iter);
+	__ofono_dbus_pending_reply(&netreg->pending, reply);
+
+	g_strfreev(network_operators);
 
 	if (need_to_emit)
 		network_operator_emit_available_operators(netreg);
