@@ -770,6 +770,79 @@ static char **gprs_contexts_path_list(GSList *context_list)
 	return objlist;
 }
 
+static void set_registration_status(struct ofono_gprs *gprs, int status)
+{
+	const char *str_status = registration_status_to_string(status);
+	const char *path = __ofono_atom_get_path(gprs->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	if (gprs->status == status)
+		return;
+
+	gprs->status = status;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					DATA_CONNECTION_MANAGER_INTERFACE,
+					"Status", DBUS_TYPE_STRING,
+					&str_status);
+}
+
+static void set_registration_location(struct ofono_gprs *gprs,
+					int lac)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(gprs->atom);
+	dbus_uint16_t dbus_lac = lac;
+
+	if (lac > 0xffff)
+		return;
+
+	gprs->location = lac;
+
+	if (gprs->location == -1)
+		return;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					DATA_CONNECTION_MANAGER_INTERFACE,
+					"LocationAreaCode",
+					DBUS_TYPE_UINT16, &dbus_lac);
+}
+
+static void set_registration_cellid(struct ofono_gprs *gprs, int ci)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(gprs->atom);
+	dbus_uint32_t dbus_ci = ci;
+
+	gprs->cellid = ci;
+
+	if (gprs->cellid == -1)
+		return;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					DATA_CONNECTION_MANAGER_INTERFACE,
+					"CellId", DBUS_TYPE_UINT32,
+					&dbus_ci);
+}
+
+static void set_registration_technology(struct ofono_gprs *gprs,
+					int tech)
+{
+	const char *tech_str = registration_tech_to_string(tech);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(gprs->atom);
+
+	gprs->technology = tech;
+
+	if (gprs->technology == -1)
+		return;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					DATA_CONNECTION_MANAGER_INTERFACE,
+					"Technology", DBUS_TYPE_STRING,
+					&tech_str);
+}
+
 static void gprs_attached_update(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1204,78 +1277,6 @@ void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
 	 */
 }
 
-static void set_registration_status(struct ofono_gprs *gprs, int status)
-{
-	const char *str_status = registration_status_to_string(status);
-	const char *path = __ofono_atom_get_path(gprs->atom);
-	DBusConnection *conn = ofono_dbus_get_connection();
-
-	gprs->status = status;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"Status", DBUS_TYPE_STRING,
-					&str_status);
-
-	gprs_attached_update(gprs);
-}
-
-static void set_registration_location(struct ofono_gprs *gprs,
-					int lac)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(gprs->atom);
-	dbus_uint16_t dbus_lac = lac;
-
-	if (lac > 0xffff)
-		return;
-
-	gprs->location = lac;
-
-	if (gprs->location == -1)
-		return;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"LocationAreaCode",
-					DBUS_TYPE_UINT16, &dbus_lac);
-}
-
-static void set_registration_cellid(struct ofono_gprs *gprs, int ci)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(gprs->atom);
-	dbus_uint32_t dbus_ci = ci;
-
-	gprs->cellid = ci;
-
-	if (gprs->cellid == -1)
-		return;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"CellId", DBUS_TYPE_UINT32,
-					&dbus_ci);
-}
-
-static void set_registration_technology(struct ofono_gprs *gprs,
-					int tech)
-{
-	const char *tech_str = registration_tech_to_string(tech);
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(gprs->atom);
-
-	gprs->technology = tech;
-
-	if (gprs->technology == -1)
-		return;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"Technology", DBUS_TYPE_STRING,
-					&tech_str);
-}
-
 void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 				int status, int lac, int ci, int tech)
 {
@@ -1295,6 +1296,8 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 
 	if (gprs->technology != tech)
 		set_registration_technology(gprs, tech);
+
+	gprs_attached_update(gprs);
 }
 
 void ofono_gprs_set_cid_range(struct ofono_gprs *gprs, int min, int max)
