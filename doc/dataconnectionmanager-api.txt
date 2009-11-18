@@ -124,6 +124,8 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InvalidArguments
 					 [service].Error.InvalidFormat
 					 [service].Error.Failed
+					 [service].Error.NotAttached
+					 [service].Error.AttachInProgress
 
 Signals		PropertyChanged(string property, variant value)
 
