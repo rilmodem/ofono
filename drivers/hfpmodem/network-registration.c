@@ -89,6 +89,8 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	op.mcc[0] = '\0';
 	op.mnc[0] = '\0';
+	op.status = 2;
+	op.tech = -1;
 
 	cb(&error, &op, cbd->data);
 
