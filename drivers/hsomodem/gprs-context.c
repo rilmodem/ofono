@@ -287,8 +287,6 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 	int state;
 	unsigned int cid;
 
-	DBG("%p", gc);
-
 	if (gcd->active_context == 0)
 		return;
 
@@ -299,8 +297,6 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_next_number(&iter, &cid);
 	g_at_result_iter_next_number(&iter, &state);
-
-	ofono_debug("%u, %d", cid, state);
 
 	if (gcd->active_context != cid)
 		return;
