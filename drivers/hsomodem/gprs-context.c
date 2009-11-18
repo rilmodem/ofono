@@ -206,10 +206,10 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	GAtResultIter iter;
 	unsigned int cid;
-	const char *ip;
-	const char *gateway;
-	const char *dns1;
-	const char *dns2;
+	const char *ip = NULL;
+	const char *gateway = NULL;
+	const char *dns1 = NULL;
+	const char *dns2 = NULL;
 
 	if (!ok)
 		return;
@@ -220,10 +220,26 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 
 	g_at_result_iter_next_number(&iter, &cid);
-	g_at_result_iter_next_string(&iter, &ip);
-	g_at_result_iter_next_string(&iter, &gateway);
-	g_at_result_iter_next_string(&iter, &dns1);
-	g_at_result_iter_next_string(&iter, &dns2);
+	g_at_result_iter_next_unquoted_string(&iter, &ip);
+	g_at_result_iter_next_unquoted_string(&iter, &gateway);
+	g_at_result_iter_next_unquoted_string(&iter, &dns1);
+	g_at_result_iter_next_unquoted_string(&iter, &dns2);
+
+	if (ip && ip[0] == ' ')
+		ip += 1;
+
+	if (gateway && gateway[0] == ' ')
+		gateway += 1;
+
+	if (dns1 && dns1[0] == ' ')
+		dns1 += 1;
+
+	if (dns2 && dns2[0] == ' ')
+		dns2 += 1;
+
+	/* Don't bother reporting the same DNS twice */
+	if (g_str_equal(dns1, dns2))
+		dns2 = NULL;
 
 	ofono_info("Got the following parameters for context: %d", cid);
 	ofono_info("IP: %s, Gateway: %s", ip, gateway);
