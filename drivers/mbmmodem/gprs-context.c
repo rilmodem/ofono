@@ -70,19 +70,29 @@ static void at_enap_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void mbm_enap_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_gprs_context_cb_t cb = cbd->cb;
+	ofono_gprs_context_up_cb_t cb = cbd->cb;
+	struct ofono_gprs_context *gc = cbd->user;
+	const char *interface = NULL;
 	struct ofono_error error;
 
 	dump_response("enap_up_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	cb(&error, cbd->data);
+	if (ok) {
+		struct ofono_modem *modem = ofono_gprs_context_get_modem(gc);
+		interface = ofono_modem_get_string(modem, "NetworkInterface");
+	} else {
+		struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+		gcd->active_context = 0;
+	}
+
+	cb(&error, interface, FALSE, NULL, NULL, NULL, NULL, cbd->data);
 }
 
 static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_gprs_context_cb_t cb = cbd->cb;
+	ofono_gprs_context_up_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *ncbd;
@@ -96,7 +106,7 @@ static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		gcd->active_context = 0;
 
 		decode_at_error(&error, g_at_result_final_response(result));
-		cb(&error, cbd->data);
+		cb(&error, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
 		return;
 	}
 
@@ -113,12 +123,12 @@ static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	gcd->active_context = 0;
 
-	CALLBACK_WITH_FAILURE(cb, cbd->data);
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
 }
 
 static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 				const struct ofono_gprs_primary_context *ctx,
-				ofono_gprs_context_cb_t cb, void *data)
+				ofono_gprs_context_up_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -146,7 +156,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, data);
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, data);
 }
 
 static void mbm_gprs_deactivate_primary(struct ofono_gprs_context *gc,
