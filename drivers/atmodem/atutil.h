@@ -63,3 +63,11 @@ static inline struct cb_data *cb_data_new(void *cb, void *data)
 		cb(&cb_e, ##args);			\
 	} while (0)					\
 
+#define CALLBACK_WITH_SUCCESS(f, args...)		\
+	do {						\
+		struct ofono_error e;			\
+		e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
+		e.error = 0;				\
+		f(&e, ##args);				\
+	} while(0)					\
+
