@@ -137,11 +137,14 @@ static void add_mbm(struct ofono_modem *modem,
 	}
 }
 
+#define APPLICATION_PORT "ApplicationPort"
+#define CONTROL_PORT "ControlPort"
+
 static void add_hso(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	const char *subsystem, *type, *devnode;
-	const char *device, *network;
+	const char *app, *control, *network;
 	int registered;
 
 	subsystem = udev_device_get_subsystem(udev_device);
@@ -154,9 +157,13 @@ static void add_hso(struct ofono_modem *modem,
 
 	type = udev_device_get_sysattr_value(udev_device, "hsotype");
 
-	if (type != NULL && g_str_has_suffix(type, "Application") == TRUE) {
+	if (type != NULL) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
+
+		if (g_str_has_suffix(type, "Application") == TRUE)
+			ofono_modem_set_string(modem, APPLICATION_PORT, devnode);
+		else if (g_str_has_suffix(type, "Control") == TRUE)
+			ofono_modem_set_string(modem, CONTROL_PORT, devnode);
 	} else if (g_str_equal(subsystem, "net") == TRUE) {
 		devnode = udev_device_get_property_value(udev_device,
 								"INTERFACE");
@@ -164,10 +171,11 @@ static void add_hso(struct ofono_modem *modem,
 	} else
 		return;
 
-	device  = ofono_modem_get_string(modem, MODEM_DEVICE);
+	app = ofono_modem_get_string(modem, APPLICATION_PORT);
+	control = ofono_modem_get_string(modem, CONTROL_PORT);
 	network = ofono_modem_get_string(modem, NETWORK_INTERFACE);
 
-	if (device != NULL && network != NULL) {
+	if (app != NULL && control != NULL && network != NULL) {
 		ofono_modem_set_integer(modem, "Registered", 1);
 		ofono_modem_register(modem);
 	}
