@@ -218,6 +218,15 @@ out:
 					registration_status_callback, netreg);
 }
 
+static void init_register(const struct ofono_error *error, void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	if (netreg->driver->registration_status)
+		netreg->driver->registration_status(netreg,
+					registration_status_callback, netreg);
+}
+
 /* Must use g_strfreev on network_operators */
 static void network_operator_populate_registered(struct ofono_netreg *netreg,
 						char ***network_operators)
@@ -1244,7 +1253,7 @@ static void init_registration_status(const struct ofono_error *error,
 		(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED ||
 			status == NETWORK_REGISTRATION_STATUS_DENIED ||
 			status == NETWORK_REGISTRATION_STATUS_UNKNOWN))
-		netreg->driver->register_auto(netreg, register_callback, netreg);
+		netreg->driver->register_auto(netreg, init_register, netreg);
 }
 
 void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
