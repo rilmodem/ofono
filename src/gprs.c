@@ -90,13 +90,22 @@ struct ofono_gprs_context {
 	struct ofono_atom *atom;
 };
 
+struct context_settings {
+	char *interface;
+	gboolean static_ip;
+	char *ip;
+	char *netmask;
+	char *gateway;
+	char **dns;
+};
+
 struct pri_context {
 	ofono_bool_t active;
-	ofono_bool_t pending_active;
 	enum gprs_context_type type;
 	char name[MAX_CONTEXT_NAME_LENGTH + 1];
 	char *path;
 	char *key;
+	struct context_settings *settings;
 	struct ofono_gprs_primary_context context;
 	struct ofono_gprs *gprs;
 };
@@ -144,6 +153,154 @@ static struct pri_context *gprs_context_by_path(struct ofono_gprs *gprs,
 	return NULL;
 }
 
+static void context_settings_free(struct context_settings *settings)
+{
+	if (settings->interface)
+		g_free(settings->interface);
+
+	if (settings->ip)
+		g_free(settings->ip);
+
+	if (settings->netmask)
+		g_free(settings->netmask);
+
+	if (settings->gateway)
+		g_free(settings->gateway);
+
+	if (settings->dns)
+		g_strfreev(settings->dns);
+
+	g_free(settings);
+}
+
+static void context_settings_append_variant(struct context_settings *settings,
+						DBusMessageIter *iter)
+{
+	DBusMessageIter variant;
+	DBusMessageIter array;
+	char typesig[5];
+	char arraysig[6];
+	const char *method;
+
+	arraysig[0] = DBUS_TYPE_ARRAY;
+	arraysig[1] = typesig[0] = DBUS_DICT_ENTRY_BEGIN_CHAR;
+	arraysig[2] = typesig[1] = DBUS_TYPE_STRING;
+	arraysig[3] = typesig[2] = DBUS_TYPE_VARIANT;
+	arraysig[4] = typesig[3] = DBUS_DICT_ENTRY_END_CHAR;
+	arraysig[5] = typesig[4] = '\0';
+
+	dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+						arraysig, &variant);
+
+	dbus_message_iter_open_container(&variant, DBUS_TYPE_ARRAY,
+						typesig, &array);
+	if (settings == NULL)
+		goto end;
+
+	ofono_dbus_dict_append(&array, "Interface",
+				DBUS_TYPE_STRING, &settings->interface);
+
+	if (settings->static_ip == TRUE)
+		method = "static";
+	else
+		method = "dhcp";
+
+	ofono_dbus_dict_append(&array, "Method", DBUS_TYPE_STRING, &method);
+
+	if (settings->ip)
+		ofono_dbus_dict_append(&array, "Address", DBUS_TYPE_STRING,
+					&settings->ip);
+
+	if (settings->netmask)
+		ofono_dbus_dict_append(&array, "Netmask", DBUS_TYPE_STRING,
+					&settings->netmask);
+
+	if (settings->gateway)
+		ofono_dbus_dict_append(&array, "Gateway", DBUS_TYPE_STRING,
+					&settings->gateway);
+
+	if (settings->dns)
+		ofono_dbus_dict_append_array(&array, "DomainNameServers",
+						DBUS_TYPE_STRING,
+						&settings->dns);
+
+end:
+	dbus_message_iter_close_container(&variant, &array);
+
+	dbus_message_iter_close_container(iter, &variant);
+}
+
+static void context_settings_append_dict(struct context_settings *settings,
+						DBusMessageIter *dict)
+{
+	DBusMessageIter entry;
+	const char *key = "Settings";
+
+	dbus_message_iter_open_container(dict, DBUS_TYPE_DICT_ENTRY,
+						NULL, &entry);
+
+	dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
+
+	context_settings_append_variant(settings, &entry);
+
+	dbus_message_iter_close_container(dict, &entry);
+}
+
+static void pri_context_signal_settings(struct pri_context *ctx)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = ctx->path;
+	DBusMessage *signal;
+	DBusMessageIter iter;
+	const char *prop = "Settings";
+
+	signal = dbus_message_new_signal(path, DATA_CONTEXT_INTERFACE,
+						"PropertyChanged");
+
+	if (!signal)
+		return;
+
+	dbus_message_iter_init_append(signal, &iter);
+
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
+
+	context_settings_append_variant(ctx->settings, &iter);
+
+	g_dbus_send_message(conn, signal);
+}
+
+static void pri_reset_context_settings(struct pri_context *ctx)
+{
+	if (ctx->settings == NULL)
+		return;
+
+	context_settings_free(ctx->settings);
+	ctx->settings = NULL;
+
+	pri_context_signal_settings(ctx);
+}
+
+static void pri_update_context_settings(struct pri_context *ctx,
+					const char *interface,
+					ofono_bool_t static_ip,
+					const char *ip, const char *netmask,
+					const char *gateway, const char **dns)
+{
+	if (ctx->settings)
+		context_settings_free(ctx->settings);
+
+	ctx->settings = g_new0(struct context_settings, 1);
+
+	ctx->settings->interface = g_strdup(interface);
+	ctx->settings->static_ip = static_ip;
+	ctx->settings->ip = g_strdup(ip);
+	ctx->settings->netmask = g_strdup(netmask);
+	ctx->settings->gateway = g_strdup(gateway);
+	ctx->settings->dns = g_strdupv((char **)dns);
+
+	pri_context_signal_settings(ctx);
+}
+
 static DBusMessage *pri_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -185,12 +342,17 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append(&dict, "Password", DBUS_TYPE_STRING,
 				&strvalue);
 
+	context_settings_append_dict(ctx->settings, &dict);
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
 }
 
-static void pri_set_active_callback(const struct ofono_error *error,
+static void pri_activate_callback(const struct ofono_error *error,
+					const char *interface, ofono_bool_t static_ip,
+					const char *ip, const char *netmask,
+					const char *gateway, const char **dns,
 					void *data)
 {
 	struct pri_context *ctx = data;
@@ -199,20 +361,51 @@ static void pri_set_active_callback(const struct ofono_error *error,
 	dbus_bool_t value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("(De)Activating context failed with error: %s",
+		ofono_debug("Activating context failed with error: %s",
 				telephony_error_to_str(error));
-
-		ctx->pending_active = ctx->active;
-
 		__ofono_dbus_pending_reply(&gc->pending,
 					__ofono_error_failed(gc->pending));
 		return;
 	}
 
-	ctx->active = ctx->pending_active;
-
+	ctx->active = FALSE;
 	__ofono_dbus_pending_reply(&gc->pending,
 				dbus_message_new_method_return(gc->pending));
+
+	value = ctx->active;
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"Active", DBUS_TYPE_BOOLEAN,
+						&value);
+
+	/* If we don't have the interface, don't bother emitting any settings,
+	 * as nobody can make use of them
+	 */
+	if (interface == NULL)
+		pri_update_context_settings(ctx, interface, static_ip,
+						ip, netmask, gateway, dns);
+}
+
+static void pri_deactivate_callback(const struct ofono_error *error, void *data)
+{
+	struct pri_context *ctx = data;
+	struct ofono_gprs_context *gc = ctx->gprs->context_driver;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	dbus_bool_t value;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("Deactivating context failed with error: %s",
+				telephony_error_to_str(error));
+		__ofono_dbus_pending_reply(&gc->pending,
+					__ofono_error_failed(gc->pending));
+		return;
+	}
+
+	ctx->active = TRUE;
+	__ofono_dbus_pending_reply(&gc->pending,
+				dbus_message_new_method_return(gc->pending));
+
+	pri_reset_context_settings(ctx);
 
 	value = ctx->active;
 	ofono_dbus_signal_property_changed(conn, ctx->path,
@@ -420,16 +613,15 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 
 		gc->pending = dbus_message_ref(msg);
 
-		ctx->pending_active = value;
 		/* TODO: Find lowest unused CID */
 		ctx->context.cid = 1;
 
 		if (value)
 			gc->driver->activate_primary(gc, &ctx->context,
-						pri_set_active_callback, ctx);
+						pri_activate_callback, ctx);
 		else
 			gc->driver->deactivate_primary(gc, ctx->context.cid,
-						pri_set_active_callback, ctx);
+						pri_deactivate_callback, ctx);
 
 		return NULL;
 	}
@@ -509,6 +701,11 @@ static struct pri_context *pri_context_create(struct ofono_gprs *gprs,
 static void pri_context_destroy(gpointer userdata)
 {
 	struct pri_context *ctx = userdata;
+
+	if (ctx->settings) {
+		context_settings_free(ctx->settings);
+		ctx->settings = NULL;
+	}
 
 	if (ctx->path)
 		g_free(ctx->path);
