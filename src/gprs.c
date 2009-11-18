@@ -360,6 +360,8 @@ static void pri_activate_callback(const struct ofono_error *error,
 	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_bool_t value;
 
+	DBG("%p %s", ctx, interface);
+
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Activating context failed with error: %s",
 				telephony_error_to_str(error));
@@ -866,16 +868,34 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 				"Attached", DBUS_TYPE_BOOLEAN, &value);
 }
 
-static void gprs_attach_callback(const struct ofono_error *error, void *data)
+static void registration_status_cb(const struct ofono_error *error,
+					int status, int lac, int ci, int tech,
+					void *data)
 {
 	struct ofono_gprs *gprs = data;
 
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		ofono_gprs_status_notify(gprs, status, lac, ci, tech);
+
 	gprs->flags &= ~GPRS_FLAG_ATTACHING;
+}
+
+static void gprs_attach_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_gprs *gprs = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
 		gprs->driver_attached = !gprs->driver_attached;
 		gprs_attached_update(gprs);
 	}
+
+	if (gprs->driver->registration_status) {
+		gprs->driver->registration_status(gprs, registration_status_cb,
+							gprs);
+		return;
+	}
+
+	gprs->flags &= ~GPRS_FLAG_ATTACHING;
 }
 
 static void gprs_netreg_update(struct ofono_gprs *gprs)
