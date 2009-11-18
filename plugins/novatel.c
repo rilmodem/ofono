@@ -121,8 +121,13 @@ static int novatel_enable(struct ofono_modem *modem)
 static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct novatel_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
+
+	g_at_chat_shutdown(data->chat);
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
@@ -140,12 +145,7 @@ static int novatel_disable(struct ofono_modem *modem)
 	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
 					cfun_disable, modem, NULL);
 
-	g_at_chat_shutdown(data->chat);
-
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
-
-	return 0;
+	return -EINPROGRESS;
 }
 
 static void novatel_pre_sim(struct ofono_modem *modem)
