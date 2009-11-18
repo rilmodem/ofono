@@ -40,7 +40,6 @@
 #define NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
 #define NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
 
-#define NETWORK_REGISTRATION_FLAG_REQUESTING_OPLIST 0x1
 #define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN 0x4
 #define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN 0x8
 
@@ -50,9 +49,6 @@ enum network_registration_mode {
 	NETWORK_REGISTRATION_MODE_OFF = 2,
 	NETWORK_REGISTRATION_MODE_MANUAL_AUTO = 4
 };
-
-/* How often we update the operator list, in seconds */
-#define OPERATOR_LIST_UPDATE_TIME 300
 
 #define SETTINGS_STORE "netreg"
 #define SETTINGS_GROUP "Settings"
@@ -83,7 +79,6 @@ struct ofono_netreg {
 	char *spname;
 	struct sim_spdi *spdi;
 	struct sim_eons *eons;
-	gint opscan_source;
 	struct ofono_sim *sim;
 	GKeyFile *settings;
 	char *imsi;
@@ -835,40 +830,6 @@ static GDBusSignalTable network_registration_signals[] = {
 	{ }
 };
 
-static void update_network_operator_list(struct ofono_netreg *netreg)
-{
-	if (netreg->flags & NETWORK_REGISTRATION_FLAG_REQUESTING_OPLIST)
-		return;
-
-	if (!netreg->driver->list_operators)
-		return;
-
-	netreg->flags |= NETWORK_REGISTRATION_FLAG_REQUESTING_OPLIST;
-	netreg->driver->list_operators(netreg, operator_list_callback, netreg);
-}
-
-static gboolean update_network_operator_list_cb(void *user_data)
-{
-	struct ofono_netreg *netreg = user_data;
-
-	update_network_operator_list(netreg);
-
-	return TRUE;
-}
-
-static gboolean update_network_operator_list_init(void *user_data)
-{
-	struct ofono_netreg *netreg = user_data;
-
-	update_network_operator_list(netreg);
-
-	netreg->opscan_source = g_timeout_add_seconds(OPERATOR_LIST_UPDATE_TIME,
-					update_network_operator_list_cb, netreg);
-
-
-	return FALSE;
-}
-
 static void set_registration_status(struct ofono_netreg *netreg, int status)
 {
 	const char *str_status = registration_status_to_string(status);
@@ -1098,8 +1059,6 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 	GSList *compressed;
 	GSList *c;
 	gboolean need_to_emit = FALSE;
-
-	netreg->flags &= ~NETWORK_REGISTRATION_FLAG_REQUESTING_OPLIST;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_debug("Error occurred during operator list");
@@ -1582,11 +1541,6 @@ static void netreg_unregister(struct ofono_atom *atom)
 	__ofono_watchlist_free(netreg->status_watches);
 	netreg->status_watches = NULL;
 
-	if (netreg->opscan_source) {
-		g_source_remove(netreg->opscan_source);
-		netreg->opscan_source = 0;
-	}
-
 	for (l = netreg->operator_list; l; l = l->next)
 		network_operator_dbus_unregister(netreg, l->data);
 
@@ -1725,10 +1679,6 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 	netreg->status_watches = __ofono_watchlist_new(g_free);
 
 	ofono_modem_add_interface(modem, NETWORK_REGISTRATION_INTERFACE);
-
-	if (netreg->driver->list_operators)
-		netreg->opscan_source = g_timeout_add_seconds(5,
-				update_network_operator_list_init, netreg);
 
 	if (netreg->driver->registration_status)
 		netreg->driver->registration_status(netreg,
