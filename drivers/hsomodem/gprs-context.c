@@ -41,14 +41,28 @@
 
 #define HSO_DISCONNECTED 0
 #define HSO_CONNECTED 1
-#define HSO_FAILED 2
+#define HSO_CONNECTING 2
+#define HSO_FAILED 3
 
 static const char *none_prefix[] = { NULL };
 static const char *owandata_prefix[] = { "_OWANDATA:", NULL };
 
+enum hso_state {
+	HSO_NONE = 0,
+	HSO_ENABLING = 1,
+	HSO_DISABLING = 2,
+};
+
 struct gprs_context_data {
 	GAtChat *chat;
-	unsigned active_context;
+	unsigned active_context;			/* Currently active */
+	enum hso_state hso_state;			/* Are we in req ? */
+	union {
+		ofono_gprs_context_cb_t down_cb;	/* Down callback */
+		ofono_gprs_context_up_cb_t up_cb;	/* Up callback */
+	};
+	void *cb_data;					/* Callback data */
+	int owancall;					/* State of the call */
 };
 
 static void at_owancall_down_cb(gboolean ok, GAtResult *result,
@@ -60,12 +74,15 @@ static void at_owancall_down_cb(gboolean ok, GAtResult *result,
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
 
-	if (ok)
-		gcd->active_context = 0;
+	/* Now we have to wait for the unsolicited notification to arrive */
+	if (ok && gcd->owancall != 0) {
+		gcd->hso_state = HSO_DISABLING;
+		gcd->down_cb = cb;
+		gcd->cb_data = cbd->data;
+		return;
+	}
 
-	dump_response("owancall_down_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
-
 	cb(&error, cbd->data);
 }
 
@@ -75,21 +92,20 @@ static void hso_owancall_up_cb(gboolean ok, GAtResult *result,
 	struct cb_data *cbd = user_data;
 	ofono_gprs_context_up_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
-	const char *interface = NULL;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
 
-	dump_response("owancall_up_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok) {
-		struct ofono_modem *modem = ofono_gprs_context_get_modem(gc);
-		interface = ofono_modem_get_string(modem, "NetworkInterface");
-	} else {
-		struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-		gcd->active_context = 0;
+		gcd->hso_state = HSO_ENABLING;
+		gcd->up_cb = cb;
+		gcd->cb_data = cbd->data;
+		return;
 	}
 
-	cb(&error, interface, FALSE, NULL, NULL, NULL, NULL, cbd->data);
+	gcd->active_context = 0;
+	cb(&error, NULL, FALSE, NULL, NULL, NULL, NULL, cbd->data);
 }
 
 static void hso_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -210,6 +226,9 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *gateway = NULL;
 	const char *dns1 = NULL;
 	const char *dns2 = NULL;
+	const char *dns[3];
+	struct ofono_modem *modem;
+	const char *interface;
 
 	if (!ok)
 		return;
@@ -241,9 +260,23 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (g_str_equal(dns1, dns2))
 		dns2 = NULL;
 
+	dns[0] = dns1;
+	dns[1] = dns2;
+	dns[2] = 0;
+
+	modem = ofono_gprs_context_get_modem(gc);
+	interface = ofono_modem_get_string(modem, "NetworkInterface");
+
 	ofono_info("Got the following parameters for context: %d", cid);
 	ofono_info("IP: %s, Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns1, dns2);
+
+	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, ip, NULL,
+				gateway, dns, gcd->cb_data);
+
+	gcd->hso_state = HSO_NONE;
+	gcd->up_cb = NULL;
+	gcd->cb_data = NULL;
 }
 
 static void owancall_notifier(GAtResult *result, gpointer user_data)
@@ -253,6 +286,8 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int state;
 	unsigned int cid;
+
+	DBG("%p", gc);
 
 	if (gcd->active_context == 0)
 		return;
@@ -265,33 +300,59 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &cid);
 	g_at_result_iter_next_number(&iter, &state);
 
+	ofono_debug("%u, %d", cid, state);
+
 	if (gcd->active_context != cid)
 		return;
 
 	switch (state) {
 	case HSO_DISCONNECTED:
-		ofono_gprs_context_deactivated(gc, gcd->active_context);
+		ofono_debug("HSO Context: disconnected");
+
+		if (gcd->hso_state == HSO_DISABLING) {
+			CALLBACK_WITH_SUCCESS(gcd->down_cb, gcd->cb_data);
+			gcd->hso_state = HSO_NONE;
+			gcd->down_cb = NULL;
+			gcd->cb_data = NULL;
+		} else
+			ofono_gprs_context_deactivated(gc, gcd->active_context);
+
 		gcd->active_context = 0;
 		break;
-	case HSO_CONNECTED:
-	{
-		char buf[128];
 
+	case HSO_CONNECTED:
 		ofono_debug("HSO Context: connected");
 
-		sprintf(buf, "AT_OWANDATA=%u", gcd->active_context);
+		if (gcd->hso_state == HSO_ENABLING) {
+			char buf[128];
 
-		g_at_chat_send(gcd->chat, buf, owandata_prefix,
-				owandata_cb, gc, NULL);
+			sprintf(buf, "AT_OWANDATA=%u", gcd->active_context);
+
+			g_at_chat_send(gcd->chat, buf, owandata_prefix,
+					owandata_cb, gc, NULL);
+		}
 
 		break;
-	}
+
 	case HSO_FAILED:
 		ofono_debug("HSO Context: failed");
+
+		if (gcd->hso_state == HSO_ENABLING) {
+			CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL,
+						NULL, NULL, NULL, gcd->cb_data);
+			gcd->hso_state = HSO_NONE;
+			gcd->up_cb = NULL;
+			gcd->cb_data = NULL;
+		}
+
+		gcd->active_context = 0;
 		break;
+
 	default:
 		break;
 	};
+
+	gcd->owancall = state;
 }
 
 static int hso_gprs_context_probe(struct ofono_gprs_context *gc,
