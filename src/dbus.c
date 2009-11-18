@@ -322,6 +322,13 @@ DBusMessage *__ofono_error_not_attached(DBusMessage *msg)
 			"GPRS is not attached");
 }
 
+DBusMessage *__ofono_error_attach_in_progress(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg,
+				DBUS_GSM_ERROR_INTERFACE ".AttachInProgress",
+				"GPRS Attach is in progress");
+}
+
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();

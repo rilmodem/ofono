@@ -607,7 +607,7 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 			return __ofono_error_not_attached(msg);
 
 		if (ctx->gprs->flags & GPRS_FLAG_ATTACHING)
-			return __ofono_error_busy(msg);
+			return __ofono_error_attach_in_progress(msg);
 
 		if (gc == NULL || gc->driver->activate_primary == NULL ||
 				gc->driver->deactivate_primary == NULL)
