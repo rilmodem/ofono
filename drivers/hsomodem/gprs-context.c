@@ -221,7 +221,7 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	GAtResultIter iter;
-	unsigned int cid;
+	int cid;
 	const char *ip = NULL;
 	const char *gateway = NULL;
 	const char *dns1 = NULL;
@@ -285,7 +285,7 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	GAtResultIter iter;
 	int state;
-	unsigned int cid;
+	int cid;
 
 	if (gcd->active_context == 0)
 		return;
@@ -298,7 +298,7 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &cid);
 	g_at_result_iter_next_number(&iter, &state);
 
-	if (gcd->active_context != cid)
+	if (gcd->active_context != (unsigned int) cid)
 		return;
 
 	switch (state) {
