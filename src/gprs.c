@@ -374,18 +374,19 @@ static void pri_activate_callback(const struct ofono_error *error,
 	__ofono_dbus_pending_reply(&gc->pending,
 				dbus_message_new_method_return(gc->pending));
 
-	value = ctx->active;
-	ofono_dbus_signal_property_changed(conn, ctx->path,
-						DATA_CONTEXT_INTERFACE,
-						"Active", DBUS_TYPE_BOOLEAN,
-						&value);
-
 	/* If we don't have the interface, don't bother emitting any settings,
 	 * as nobody can make use of them
 	 */
 	if (interface != NULL)
 		pri_update_context_settings(ctx, interface, static_ip,
 						ip, netmask, gateway, dns);
+
+	value = ctx->active;
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"Active", DBUS_TYPE_BOOLEAN,
+						&value);
+
 }
 
 static void pri_deactivate_callback(const struct ofono_error *error, void *data)
