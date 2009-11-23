@@ -26,6 +26,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <net/if.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -269,15 +273,59 @@ static void pri_context_signal_settings(struct pri_context *ctx)
 	g_dbus_send_message(conn, signal);
 }
 
+static void pri_ifupdown(const char *interface, ofono_bool_t active)
+{
+	struct ifreq ifr;
+	int sk;
+
+	if (!interface)
+		return;
+
+	sk = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
+		return;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, interface, IFNAMSIZ);
+
+	if (ioctl(sk, SIOCGIFFLAGS, &ifr) < 0)
+		goto done;
+
+	if (active == TRUE) {
+		if (ifr.ifr_flags & IFF_UP)
+			goto done;
+		ifr.ifr_flags |= IFF_UP;
+	} else {
+		if (!(ifr.ifr_flags & IFF_UP))
+			goto done;
+		ifr.ifr_flags &= ~IFF_UP;
+	}
+
+	if (ioctl(sk, SIOCSIFFLAGS, &ifr) < 0)
+		ofono_error("Failed to change interface flags");
+
+done:
+	close(sk);
+}
+
 static void pri_reset_context_settings(struct pri_context *ctx)
 {
+	char *interface;
+
 	if (ctx->settings == NULL)
 		return;
+
+	interface = ctx->settings->interface;
+	ctx->settings->interface = NULL;
 
 	context_settings_free(ctx->settings);
 	ctx->settings = NULL;
 
 	pri_context_signal_settings(ctx);
+
+	pri_ifupdown(interface, FALSE);
+
+	g_free(interface);
 }
 
 static void pri_update_context_settings(struct pri_context *ctx,
@@ -297,6 +345,8 @@ static void pri_update_context_settings(struct pri_context *ctx,
 	ctx->settings->netmask = g_strdup(netmask);
 	ctx->settings->gateway = g_strdup(gateway);
 	ctx->settings->dns = g_strdupv((char **)dns);
+
+	pri_ifupdown(interface, TRUE);
 
 	pri_context_signal_settings(ctx);
 }
