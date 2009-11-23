@@ -87,6 +87,7 @@ struct ofono_call {
 	int type;
 	int direction;
 	int status;
+	ofono_bool_t mpty;
 	struct ofono_phone_number phone_number;
 	int clip_validity;
 };

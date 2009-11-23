@@ -115,6 +115,7 @@ GSList *at_util_parse_clcc(GAtResult *result)
 	GAtResultIter iter;
 	GSList *l = NULL;
 	int id, dir, status, type;
+	ofono_bool_t mpty;
 	struct ofono_call *call;
 
 	g_at_result_iter_init(&iter, result);
@@ -135,7 +136,7 @@ GSList *at_util_parse_clcc(GAtResult *result)
 		if (!g_at_result_iter_next_number(&iter, &type))
 			continue;
 
-		if (!g_at_result_iter_skip_next(&iter))
+		if (!g_at_result_iter_next_number(&iter, &mpty))
 			continue;
 
 		if (g_at_result_iter_next_string(&iter, &str))
@@ -150,6 +151,7 @@ GSList *at_util_parse_clcc(GAtResult *result)
 		call->direction = dir;
 		call->status = status;
 		call->type = type;
+		call->mpty = mpty;
 		strncpy(call->phone_number.number, str,
 				OFONO_MAX_PHONE_NUMBER_LENGTH);
 		call->phone_number.type = number_type;
