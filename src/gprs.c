@@ -159,20 +159,11 @@ static struct pri_context *gprs_context_by_path(struct ofono_gprs *gprs,
 
 static void context_settings_free(struct context_settings *settings)
 {
-	if (settings->interface)
-		g_free(settings->interface);
-
-	if (settings->ip)
-		g_free(settings->ip);
-
-	if (settings->netmask)
-		g_free(settings->netmask);
-
-	if (settings->gateway)
-		g_free(settings->gateway);
-
-	if (settings->dns)
-		g_strfreev(settings->dns);
+	g_free(settings->interface);
+	g_free(settings->ip);
+	g_free(settings->netmask);
+	g_free(settings->gateway);
+	g_strfreev(settings->dns);
 
 	g_free(settings);
 }
@@ -760,8 +751,7 @@ static void pri_context_destroy(gpointer userdata)
 		ctx->settings = NULL;
 	}
 
-	if (ctx->path)
-		g_free(ctx->path);
+	g_free(ctx->path);
 
 	g_free(ctx);
 }
@@ -1723,20 +1713,11 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	ret = TRUE;
 
 err:
-	if (name)
-		g_free(name);
-
-	if (typestr)
-		g_free(typestr);
-
-	if (username)
-		g_free(username);
-
-	if (password)
-		g_free(password);
-
-	if (apn)
-		g_free(apn);
+	g_free(name);
+	g_free(typestr);
+	g_free(username);
+	g_free(password);
+	g_free(apn);
 
 	return ret;
 }
