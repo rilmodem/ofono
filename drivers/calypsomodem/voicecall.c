@@ -321,7 +321,8 @@ static void cpi_notify(GAtResult *result, gpointer user_data)
 
 	/* Need to send this on the calypso hardware to avoid echo issues */
 	if (msgtype == 3 || msgtype == 4)
-		g_at_chat_send(vd->chat, "AT%N0187", NULL, NULL, NULL, NULL);
+		g_at_chat_send(vd->chat, "AT%N0187", none_prefix,
+				NULL, NULL, NULL);
 
 	switch (msgtype) {
 	case 0:
