@@ -37,6 +37,8 @@
 
 /* #define WRITE_SCHEDULER_DEBUG 1 */
 
+static const char *none_prefix[] = { NULL };
+
 static void g_at_chat_wakeup_writer(GAtChat *chat);
 static void debug_chat(GAtChat *chat, gboolean in, const char *str, gsize len);
 
@@ -827,8 +829,8 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	}
 
 	if (chat->cmd_bytes_written == 0 && wakeup_first == TRUE) {
-		cmd = at_command_create(chat->wakeup, NULL, FALSE, NULL, NULL,
-					NULL, NULL);
+		cmd = at_command_create(chat->wakeup, none_prefix, FALSE,
+					NULL, NULL, NULL, NULL);
 
 		if (!cmd)
 			return FALSE;
