@@ -1,3 +1,10 @@
+ver 0.11:
+	Fix issue with repeated CCWA notifications.
+	Fix issue with double-swap when 3-way dialing.
+	Add CLCC polling for better multiparty call support.
+	Add GPRS context driver for Option HSO devices.
+	Add support for GPRS interface configuration.
+
 ver 0.10:
 	Fix issues with correct ATD handling.
 	Fix issues with indication handling.
