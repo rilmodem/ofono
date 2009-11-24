@@ -107,6 +107,7 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	syntax = g_at_syntax_new_gsmv1();
 	data->chat = g_at_chat_new(channel, syntax);
+	g_at_chat_add_terminator(data->chat, "COMMAND NOT SUPPORT", -1, FALSE);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
