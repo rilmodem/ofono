@@ -388,7 +388,7 @@ static struct tx_queue_entry *create_tx_queue_entry(GSList *msg_list)
 	entry->pdus = g_new0(struct pending_pdu, entry->num_pdus);
 
 	for (l = msg_list; l; l = l->next) {
-		struct pending_pdu *pdu = &entry->pdus[i];
+		struct pending_pdu *pdu = &entry->pdus[i++];
 		struct sms *s = l->data;
 
 		sms_encode(s, &pdu->pdu_len, &pdu->tpdu_len, pdu->pdu);
