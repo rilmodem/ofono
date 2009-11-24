@@ -233,7 +233,7 @@ static int phonesim_enable(struct ofono_modem *modem)
 						phonesim_disconnected, modem);
 
 	if (data->calypso) {
-		g_at_chat_set_wakeup_command(data->chat, "\r", 1000, 5000);
+		g_at_chat_set_wakeup_command(data->chat, "AT\r", 1000, 5000);
 
 		g_at_chat_send(data->chat, "ATE0", NULL, NULL, NULL, NULL);
 
