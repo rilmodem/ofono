@@ -128,6 +128,9 @@ gboolean g_at_chat_unregister(GAtChat *chat, guint id);
 gboolean g_at_chat_set_wakeup_command(GAtChat *chat, const char *cmd,
 					guint timeout, guint msec);
 
+void g_at_chat_add_terminator(GAtChat *chat, char *terminator,
+				int len, gboolean success);
+
 
 #ifdef __cplusplus
 }

@@ -90,6 +90,13 @@ struct _GAtChat {
 	GTimer *wakeup_timer;			/* Keep track of elapsed time */
 	GAtSyntax *syntax;
 	gboolean destroyed;			/* Re-entrancy guard */
+	GSList *terminator_list;		/* Non-standard terminator */
+};
+
+struct terminator_info {
+	char *terminator;
+	int len;
+	gboolean success;
 };
 
 static gint at_notify_node_compare_by_id(gconstpointer a, gconstpointer b)
@@ -206,6 +213,14 @@ static void at_command_destroy(struct at_command *cmd)
 	g_free(cmd);
 }
 
+static void free_terminator(struct terminator_info *info)
+{
+	g_free(info->terminator);
+	info->terminator = NULL;
+	g_free(info);
+	info = NULL;
+}
+
 static void g_at_chat_cleanup(GAtChat *chat)
 {
 	struct at_command *c;
@@ -253,6 +268,13 @@ static void g_at_chat_cleanup(GAtChat *chat)
 	chat->syntax = NULL;
 
 	chat->channel = NULL;
+
+	if (chat->terminator_list) {
+		g_slist_foreach(chat->terminator_list,
+					(GFunc)free_terminator, NULL);
+		g_slist_free(chat->terminator_list);
+		chat->terminator_list = NULL;
+	}
 }
 
 static void read_watcher_destroy_notify(GAtChat *chat)
@@ -361,12 +383,6 @@ static void g_at_chat_finish_command(GAtChat *p, gboolean ok,
 	at_command_destroy(cmd);
 }
 
-struct terminator_info {
-	const char *terminator;
-	int len;
-	gboolean success;
-};
-
 static struct terminator_info terminator_table[] = {
 	{ "OK", -1, TRUE },
 	{ "ERROR", -1, FALSE },
@@ -380,6 +396,27 @@ static struct terminator_info terminator_table[] = {
 	{ "+EXT ERROR:", 11, FALSE }
 };
 
+void g_at_chat_add_terminator(GAtChat *chat, char *terminator,
+					int len, gboolean success)
+{
+	struct terminator_info *info = g_new0(struct terminator_info, 1);
+	info->terminator = g_strdup(terminator);
+	info->len = len;
+	info->success = success;
+	chat->terminator_list = g_slist_prepend(chat->terminator_list, info);
+}
+
+static gboolean check_terminator(struct terminator_info *info, char *line)
+{
+	if (info->len == -1 && !strcmp(line, info->terminator))
+		return TRUE;
+
+	if (info->len > 0 && !strncmp(line, info->terminator, info->len))
+		return TRUE;
+
+	return FALSE;
+}
+
 static gboolean g_at_chat_handle_command_response(GAtChat *p,
 							struct at_command *cmd,
 							char *line)
@@ -387,17 +424,19 @@ static gboolean g_at_chat_handle_command_response(GAtChat *p,
 	int i;
 	int size = sizeof(terminator_table) / sizeof(struct terminator_info);
 	int hint;
+	GSList *l;
 
 	for (i = 0; i < size; i++) {
 		struct terminator_info *info = &terminator_table[i];
-
-		if (info->len == -1 && !strcmp(line, info->terminator)) {
+		if (check_terminator(info, line)) {
 			g_at_chat_finish_command(p, info->success, line);
 			return TRUE;
 		}
+	}
 
-		if (info->len > 0 &&
-			!strncmp(line, info->terminator, info->len)) {
+	for (l = p->terminator_list; l; l = l->next) {
+		struct terminator_info *info = l->data;
+		if (check_terminator(info, line)) {
 			g_at_chat_finish_command(p, info->success, line);
 			return TRUE;
 		}
