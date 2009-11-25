@@ -63,6 +63,22 @@ static void hfp_debug(const char *str, void *user_data)
 	ofono_info("%s", str);
 }
 
+static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct hfp_data *data = ofono_modem_get_data(modem);
+
+	if (!ok) {
+		hfp_disable(modem);
+		return;
+	}
+
+	ofono_info("Service level connection established");
+	g_at_chat_send(data->chat, "AT+CMEE=1", NULL, NULL, NULL, NULL);
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
 static void cind_status_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
@@ -95,28 +111,12 @@ static void cind_status_cb(gboolean ok, GAtResult *result,
 		index += 1;
 	}
 
-	ofono_info("Service level connection established");
-	g_at_chat_send(data->chat, "AT+CMEE=1", NULL, NULL, NULL, NULL);
-
-	ofono_modem_set_powered(modem, TRUE);
+	g_at_chat_send(data->chat, "AT+CMER=3,0,0,1", cmer_prefix,
+				cmer_cb, modem, NULL);
 	return;
 
 error:
 	hfp_disable(modem);
-}
-
-static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct hfp_data *data = ofono_modem_get_data(modem);
-
-	if (!ok) {
-		hfp_disable(modem);
-		return;
-	}
-
-	g_at_chat_send(data->chat, "AT+CIND?", cind_prefix,
-			cind_status_cb, modem, NULL);
 }
 
 static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -171,8 +171,8 @@ static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		index += 1;
 	}
 
-	g_at_chat_send(data->chat, "AT+CMER=3,0,0,1", cmer_prefix,
-				cmer_cb, modem, NULL);
+	g_at_chat_send(data->chat, "AT+CIND?", cind_prefix,
+			cind_status_cb, modem, NULL);
 	return;
 
 error:
