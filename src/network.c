@@ -1305,8 +1305,11 @@ static void init_registration_status(const struct ofono_error *error,
 	if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO &&
 		(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED ||
 			status == NETWORK_REGISTRATION_STATUS_DENIED ||
-			status == NETWORK_REGISTRATION_STATUS_UNKNOWN))
-		netreg->driver->register_auto(netreg, init_register, netreg);
+			status == NETWORK_REGISTRATION_STATUS_UNKNOWN)) {
+		if (netreg->driver->register_auto)
+			netreg->driver->register_auto(netreg, init_register,
+							netreg);
+	}
 }
 
 void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
