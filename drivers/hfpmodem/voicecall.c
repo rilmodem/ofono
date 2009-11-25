@@ -39,16 +39,7 @@
 
 #include "hfpmodem.h"
 
-#define AG_CHLD_0 0x01
-#define AG_CHLD_1 0x02
-#define AG_CHLD_1x 0x04
-#define AG_CHLD_2 0x08
-#define AG_CHLD_2x 0x10
-#define AG_CHLD_3 0x20
-#define AG_CHLD_4 0x40
-
 static const char *none_prefix[] = { NULL };
-static const char *chld_prefix[] = { "+CHLD:", NULL };
 static const char *clcc_prefix[] = { "+CLCC:", NULL };
 
 struct voicecall_data {
@@ -900,47 +891,6 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 		ciev_callheld_notify(vc, value);
 }
 
-static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct voicecall_data *vd = user_data;
-	unsigned int ag_mpty_feature = 0;
-	GAtResultIter iter;
-	const char *str;
-
-	if (!ok)
-		return;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CHLD:"))
-		return;
-
-	if (!g_at_result_iter_open_list(&iter))
-		return;
-
-	while (g_at_result_iter_next_unquoted_string(&iter, &str)) {
-		if (!strcmp(str, "0"))
-			ag_mpty_feature |= AG_CHLD_0;
-		else if (!strcmp(str, "1"))
-			ag_mpty_feature |= AG_CHLD_1;
-		else if (!strcmp(str, "1x"))
-			ag_mpty_feature |= AG_CHLD_1x;
-		else if (!strcmp(str, "2"))
-			ag_mpty_feature |= AG_CHLD_2;
-		else if (!strcmp(str, "2x"))
-			ag_mpty_feature |= AG_CHLD_2x;
-		else if (!strcmp(str, "3"))
-			ag_mpty_feature |= AG_CHLD_3;
-		else if (!strcmp(str, "4"))
-			ag_mpty_feature |= AG_CHLD_4;
-	}
-
-	if (!g_at_result_iter_close_list(&iter))
-		return;
-
-	vd->ag_mpty_features = ag_mpty_feature;
-}
-
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
@@ -970,13 +920,10 @@ static int hfp_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	vd->chat = data->chat;
 	vd->ag_features = data->ag_features;
+	vd->ag_mpty_features = data->ag_mpty_features;
 
 	memcpy(vd->cind_pos, data->cind_pos, HFP_INDICATOR_LAST);
 	memcpy(vd->cind_val, data->cind_val, HFP_INDICATOR_LAST);
-
-	if (vd->ag_features & AG_FEATURE_3WAY)
-		g_at_chat_send(vd->chat, "AT+CHLD=?", chld_prefix,
-			chld_cb, vd, NULL);
 
 	ofono_voicecall_set_data(vc, vd);
 

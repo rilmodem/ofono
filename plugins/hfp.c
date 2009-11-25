@@ -55,12 +55,67 @@
 static const char *brsf_prefix[] = { "+BRSF:", NULL };
 static const char *cind_prefix[] = { "+CIND:", NULL };
 static const char *cmer_prefix[] = { "+CMER:", NULL };
+static const char *chld_prefix[] = { "+CHLD:", NULL };
 
 static int hfp_disable(struct ofono_modem *modem);
 
 static void hfp_debug(const char *str, void *user_data)
 {
 	ofono_info("%s", str);
+}
+
+static void sevice_level_conn_established(struct ofono_modem *modem)
+{
+	struct hfp_data *data = ofono_modem_get_data(modem);
+
+	ofono_info("Service level connection established");
+	ofono_modem_set_powered(modem, TRUE);
+
+	g_at_chat_send(data->chat, "AT+CMEE=1", NULL, NULL, NULL, NULL);
+}
+
+static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct hfp_data *data = ofono_modem_get_data(modem);
+	unsigned int ag_mpty_feature = 0;
+	GAtResultIter iter;
+	const char *str;
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CHLD:"))
+		return;
+
+	if (!g_at_result_iter_open_list(&iter))
+		return;
+
+	while (g_at_result_iter_next_unquoted_string(&iter, &str)) {
+		if (!strcmp(str, "0"))
+			ag_mpty_feature |= AG_CHLD_0;
+		else if (!strcmp(str, "1"))
+			ag_mpty_feature |= AG_CHLD_1;
+		else if (!strcmp(str, "1x"))
+			ag_mpty_feature |= AG_CHLD_1x;
+		else if (!strcmp(str, "2"))
+			ag_mpty_feature |= AG_CHLD_2;
+		else if (!strcmp(str, "2x"))
+			ag_mpty_feature |= AG_CHLD_2x;
+		else if (!strcmp(str, "3"))
+			ag_mpty_feature |= AG_CHLD_3;
+		else if (!strcmp(str, "4"))
+			ag_mpty_feature |= AG_CHLD_4;
+	}
+
+	if (!g_at_result_iter_close_list(&iter))
+		return;
+
+	data->ag_mpty_features = ag_mpty_feature;
+
+	sevice_level_conn_established(modem);
 }
 
 static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -73,10 +128,11 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_info("Service level connection established");
-	g_at_chat_send(data->chat, "AT+CMEE=1", NULL, NULL, NULL, NULL);
-
-	ofono_modem_set_powered(modem, TRUE);
+	if (data->ag_features & AG_FEATURE_3WAY)
+		g_at_chat_send(data->chat, "AT+CHLD=?", chld_prefix,
+			chld_cb, modem, NULL);
+	else
+		sevice_level_conn_established(modem);
 }
 
 static void cind_status_cb(gboolean ok, GAtResult *result,
