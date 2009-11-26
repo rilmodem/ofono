@@ -391,11 +391,7 @@ static int calypso_voicecall_probe(struct ofono_voicecall *vc, unsigned int vend
 
 	ofono_voicecall_set_data(vc, vd);
 
-	g_at_chat_send(chat, "AT%CPI=3", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+COLP=0", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+CSSN=1,1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+CCWA=1", NULL,
+	g_at_chat_send(chat, "AT%CPI=3", NULL,
 				calypso_voicecall_initialized, vc, NULL);
 
 	return 0;
