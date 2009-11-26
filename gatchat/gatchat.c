@@ -147,7 +147,8 @@ static struct at_command *at_command_create(const char *cmd,
 						GAtNotifyFunc listing,
 						GAtResultFunc func,
 						gpointer user_data,
-						GDestroyNotify notify)
+						GDestroyNotify notify,
+						gboolean wakeup)
 {
 	struct at_command *c;
 	gsize len;
@@ -186,12 +187,16 @@ static struct at_command *at_command_create(const char *cmd,
 	/* If we have embedded '\r' then this is a command expecting a prompt
 	 * from the modem.  Embed Ctrl-Z at the very end automatically
 	 */
-	if (strchr(cmd, '\r'))
-		c->cmd[len] = 26;
-	else
-		c->cmd[len] = '\r';
+	if (wakeup == FALSE) {
+		if (strchr(cmd, '\r'))
+			c->cmd[len] = 26;
+		else
+			c->cmd[len] = '\r';
 
-	c->cmd[len+1] = '\0';
+		len += 1;
+	}
+
+	c->cmd[len] = '\0';
 
 	c->expect_pdu = expect_pdu;
 	c->prefixes = prefixes;
@@ -802,23 +807,40 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	return TRUE;
 }
 
+static void wakeup_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	GAtChat *chat = user_data;
+
+	if (ok == FALSE)
+		return;
+
+	if (chat->debugf)
+		chat->debugf("Finally woke up the modem\n", chat->debug_data);
+
+	g_source_remove(chat->timeout_source);
+	chat->timeout_source = 0;
+}
+
 static gboolean wakeup_no_response(gpointer user)
 {
 	GAtChat *chat = user;
 	struct at_command *cmd = g_queue_peek_head(chat->command_queue);
 
-	chat->timeout_source = 0;
-
-	/* Sometimes during startup the modem is still in the ready state
-	 * and might acknowledge our 'wakeup' command.  In that case don't
-	 * timeout the wrong command
-	 */
-	if (cmd == NULL || cmd->id != 0)
-		return FALSE;
+	if (chat->debugf)
+		chat->debugf("Wakeup got no response\n", chat->debug_data);
 
 	g_at_chat_finish_command(chat, FALSE, NULL);
+	cmd = at_command_create(chat->wakeup, none_prefix, FALSE,
+				NULL, wakeup_cb, chat, NULL, TRUE);
 
-	return FALSE;
+	if (!cmd) {
+		chat->timeout_source = 0;
+		return FALSE;
+	}
+
+	g_queue_push_head(chat->command_queue, cmd);
+
+	return TRUE;
 }
 
 static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
@@ -869,7 +891,7 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 
 	if (chat->cmd_bytes_written == 0 && wakeup_first == TRUE) {
 		cmd = at_command_create(chat->wakeup, none_prefix, FALSE,
-					NULL, NULL, NULL, NULL);
+					NULL, wakeup_cb, chat, NULL, TRUE);
 
 		if (!cmd)
 			return FALSE;
@@ -1116,7 +1138,7 @@ static guint send_common(GAtChat *chat, const char *cmd,
 		return 0;
 
 	c = at_command_create(cmd, prefix_list, expect_pdu, listing, func,
-				user_data, notify);
+				user_data, notify, FALSE);
 
 	if (!c)
 		return 0;
