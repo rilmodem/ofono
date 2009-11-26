@@ -249,7 +249,7 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 			g_at_chat_set_debug(data->dlcs[i], calypso_debug,
 						GUINT_TO_POINTER(i));
 
-		g_at_chat_set_wakeup_command(data->dlcs[i], "\r", 1000, 5000);
+		g_at_chat_set_wakeup_command(data->dlcs[i], "AT\r", 500, 5000);
 	}
 
 	g_at_chat_send(data->dlcs[SETUP_DLC], "AT+CFUN=1", NULL,
@@ -300,7 +300,7 @@ static void modem_initialize(struct ofono_modem *modem)
 	if (getenv("OFONO_AT_DEBUG") != NULL)
 		g_at_chat_set_debug(chat, calypso_setup_debug, NULL);
 
-	g_at_chat_set_wakeup_command(chat, "\r", 1000, 5000);
+	g_at_chat_set_wakeup_command(chat, "AT\r", 500, 5000);
 
 	g_at_chat_send(chat, "ATE0", NULL, NULL, NULL, NULL);
 
