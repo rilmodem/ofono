@@ -501,6 +501,7 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 				modem->driver->pre_sim(modem);
 		} else {
 			remove_all_atoms(modem);
+			modem->call_ids = 0;
 		}
 
 		return NULL;
@@ -563,6 +564,7 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 			modem->driver->pre_sim(modem);
 	} else {
 		remove_all_atoms(modem);
+		modem->call_ids = 0;
 	}
 }
 
@@ -1147,6 +1149,7 @@ static void modem_unregister(struct ofono_modem *modem)
 		return;
 
 	remove_all_atoms(modem);
+	modem->call_ids = 0;
 
 	__ofono_watchlist_free(modem->atom_watches);
 	modem->atom_watches = NULL;
