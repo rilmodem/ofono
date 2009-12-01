@@ -60,7 +60,7 @@ struct gprs_context_data {
 	unsigned int active_context;
 	gboolean have_e2nap;
 	gboolean have_e2ipcfg;
-        enum mbm_state mbm_state;
+	enum mbm_state mbm_state;
 	union {
 		ofono_gprs_context_cb_t down_cb;        /* Down callback */
 		ofono_gprs_context_up_cb_t up_cb;       /* Up callback */
