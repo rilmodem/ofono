@@ -1473,7 +1473,7 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 
 	ofono_debug("Got disconnection event for id: %d, reason: %d", id, reason);
 
-	l = g_slist_find_custom(vc->call_list, GINT_TO_POINTER(id),
+	l = g_slist_find_custom(vc->call_list, GUINT_TO_POINTER(id),
 				call_compare_by_id);
 
 	if (!l) {
@@ -1487,7 +1487,7 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 	ts = time(NULL);
 	prev_status = call->call->status;
 
-	l = g_slist_find_custom(vc->multiparty_list, GINT_TO_POINTER(id),
+	l = g_slist_find_custom(vc->multiparty_list, GUINT_TO_POINTER(id),
 				call_compare_by_id);
 
 	if (l) {
@@ -1536,7 +1536,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 	ofono_debug("Got a voicecall event, status: %d, id: %u, number: %s",
 			call->status, call->id, call->phone_number.number);
 
-	l = g_slist_find_custom(vc->call_list, GINT_TO_POINTER(call->id),
+	l = g_slist_find_custom(vc->call_list, GUINT_TO_POINTER(call->id),
 				call_compare_by_id);
 
 	if (l) {
