@@ -44,7 +44,7 @@ static const char *none_prefix[] = { NULL };
 
 struct gprs_context_data {
 	GAtChat *chat;
-	unsigned active_context;
+	unsigned int active_context;
 };
 
 static void at_cgact_down_cb(gboolean ok, GAtResult *result, gpointer user_data)

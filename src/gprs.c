@@ -1389,7 +1389,8 @@ void ofono_gprs_add_context(struct ofono_gprs *gprs,
 	__ofono_atom_register(gc->atom, gprs_context_unregister);
 }
 
-void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc, unsigned cid)
+void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
+					unsigned int cid)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	GSList *l;

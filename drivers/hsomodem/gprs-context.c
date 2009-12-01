@@ -55,7 +55,7 @@ enum hso_state {
 
 struct gprs_context_data {
 	GAtChat *chat;
-	unsigned active_context;			/* Currently active */
+	unsigned int active_context;			/* Currently active */
 	enum hso_state hso_state;			/* Are we in req ? */
 	union {
 		ofono_gprs_context_cb_t down_cb;	/* Down callback */

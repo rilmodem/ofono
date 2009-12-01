@@ -83,7 +83,7 @@ struct ofono_phone_number {
 };
 
 struct ofono_call {
-	unsigned id;
+	unsigned int id;
 	int type;
 	int direction;
 	int status;
