@@ -184,7 +184,7 @@ static void setup_modem(struct ofono_modem *modem)
 				NULL, NULL, NULL);
 
 	/* audio side tone: set to minimum */
-	g_at_chat_send(data->dlcs[VOICE_DLC], "AT@ST=\"-26\"", NULL,
+	g_at_chat_send(data->dlcs[SETUP_DLC], "AT@ST=\"-26\"", NULL,
 			NULL, NULL, NULL);
 
 	/* Disable deep sleep */
@@ -452,7 +452,7 @@ static void calypso_post_sim(struct ofono_modem *modem)
 				data->dlcs[NETREG_DLC]);
 	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_barring_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_ssn_create(modem, 0, "atmodem", data->dlcs[VOICE_DLC]);
+	ofono_ssn_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_volume_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 
 	mw = ofono_message_waiting_create(modem);
