@@ -252,6 +252,9 @@ static void mbm_e2ipcfg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		default:
 			break;
 		}
+
+		if (g_at_result_iter_close_list(&iter) == FALSE)
+			break;
 	}
 
 	dns[numdns] = NULL;
