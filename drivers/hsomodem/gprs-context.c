@@ -98,8 +98,6 @@ static void hso_owancall_up_cb(gboolean ok, GAtResult *result,
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
 
-	decode_at_error(&error, g_at_result_final_response(result));
-
 	if (ok) {
 		gcd->hso_state = HSO_ENABLING;
 		gcd->up_cb = cb;
@@ -108,6 +106,8 @@ static void hso_owancall_up_cb(gboolean ok, GAtResult *result,
 	}
 
 	gcd->active_context = 0;
+
+	decode_at_error(&error, g_at_result_final_response(result));
 	cb(&error, NULL, FALSE, NULL, NULL, NULL, NULL, cbd->data);
 }
 
