@@ -145,7 +145,13 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	cbd->user = gc;
 
-	/* TODO: Handle username / password fields */
+	sprintf(buf, "AT*EIAAUW=%d,1,\"%s\",\"%s\"", ctx->cid,
+		ctx->username, ctx->password);
+
+	if (g_at_chat_send(gcd->chat, buf, none_prefix,
+				NULL, NULL, NULL) == 0)
+		goto error;
+						
 	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)
