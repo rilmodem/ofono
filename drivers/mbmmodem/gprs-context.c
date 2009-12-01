@@ -43,6 +43,9 @@
 #define MBM_E2NAP_CONNECTED 1
 #define MBM_E2NAP_CONNECTING 2
 
+#define AUTH_BUF_LENGTH OFONO_GPRS_MAX_USERNAME_LENGTH + \
+			OFONO_GPRS_MAX_PASSWORD_LENGTH + 128
+
 static const char *none_prefix[] = { NULL };
 
 struct gprs_context_data {
@@ -132,7 +135,7 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char buf[OFONO_GPRS_MAX_APN_LENGTH + 128];
+	char buf[AUTH_BUF_LENGTH];
 	int len;
 
 	if (!cbd)
