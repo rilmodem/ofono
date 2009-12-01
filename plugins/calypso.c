@@ -171,9 +171,11 @@ static void setup_modem(struct ofono_modem *modem)
 	int i;
 
 	/* Generate unsolicited notifications as soon as they're generated */
-	for (i = 0; i < NUM_DLC; i++)
+	for (i = 0; i < NUM_DLC; i++) {
+		g_at_chat_send(data->dlcs[i], "ATE0", NULL, NULL, NULL, NULL);
 		g_at_chat_send(data->dlcs[i], "AT%CUNS=0",
 				NULL, NULL, NULL, NULL);
+	}
 
 	/* CSTAT tells us when SMS & Phonebook are ready to be used */
 	g_at_chat_register(data->dlcs[SETUP_DLC], "%CSTAT:", cstat_notify,
