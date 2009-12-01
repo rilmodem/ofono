@@ -1531,7 +1531,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	GSList *l;
 	struct voicecall *v = NULL;
-	struct ofono_call *newcall = NULL;
+	struct ofono_call *newcall;
 
 	ofono_debug("Got a voicecall event, status: %d, id: %u, number: %s",
 			call->status, call->id, call->phone_number.number);
@@ -1550,14 +1550,12 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 
 	ofono_debug("Did not find a call with id: %d\n", call->id);
 
-	newcall = g_try_new0(struct ofono_call, 1);
+	newcall = g_memdup(call, sizeof(struct ofono_call));
 
-	if (!call) {
+	if (!newcall) {
 		ofono_error("Unable to allocate call");
 		goto err;
 	}
-
-	memcpy(newcall, call, sizeof(struct ofono_call));
 
 	if (__ofono_modem_alloc_callid(modem) != call->id) {
 		ofono_error("Warning: Call id and internally tracked id"
