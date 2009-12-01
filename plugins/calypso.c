@@ -446,12 +446,10 @@ static void calypso_post_sim(struct ofono_modem *modem)
 	DBG("");
 
 	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_settings_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_netreg_create(modem, OFONO_VENDOR_CALYPSO, "atmodem",
 				data->dlcs[NETREG_DLC]);
-	ofono_voicecall_create(modem, 0, "calypsomodem", data->dlcs[VOICE_DLC]);
 	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_barring_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_ssn_create(modem, 0, "atmodem", data->dlcs[VOICE_DLC]);
