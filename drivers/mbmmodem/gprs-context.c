@@ -46,6 +46,8 @@
 #define AUTH_BUF_LENGTH OFONO_GPRS_MAX_USERNAME_LENGTH + \
 			OFONO_GPRS_MAX_PASSWORD_LENGTH + 128
 
+#define MAX_DNS 5
+
 static const char *none_prefix[] = { NULL };
 static const char *e2ipcfg_prefix[] = { "*E2IPCFG:", NULL };
 static const char *enap_prefix[] = { "*ENAP:", NULL };
@@ -83,7 +85,7 @@ static void mbm_e2ipcfg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *str;
 	const char *ip = NULL;
 	const char *gateway = NULL;
-	const char *dns[5];
+	const char *dns[MAX_DNS + 1];
 	struct ofono_modem *modem;
 	const char *interface;
 	gboolean success = FALSE;
@@ -111,7 +113,8 @@ static void mbm_e2ipcfg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			gateway = str;
 			break;
 		case 3:
-			dns[numdns++] = str;
+			if (numdns < MAX_DNS)
+				dns[numdns++] = str;
 			break;
 		default:
 			break;
