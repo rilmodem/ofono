@@ -65,7 +65,14 @@ static int g1_probe(struct ofono_modem *modem)
 
 static void g1_remove(struct ofono_modem *modem)
 {
+	GAtChat *chat = ofono_modem_get_data(modem);
+ 
 	DBG("");
+ 
+ 	if (chat) {
+		g_at_chat_unref(chat);
+		ofono_modem_set_data(modem, NULL);
+	}
 }
 
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -139,6 +146,8 @@ static int g1_disable(struct ofono_modem *modem)
 	DBG("");
 
 	/* power down modem */
+	g_at_chat_cancel_all(chat);
+	g_at_chat_unregister_all(chat);
 	g_at_chat_send(chat, "AT+CFUN=0", NULL, cfun_set_off_cb, modem, NULL);
 
 	return -EINPROGRESS;
