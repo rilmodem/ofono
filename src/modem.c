@@ -1145,11 +1145,8 @@ static void modem_unregister(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (modem->driver == NULL)
-		return;
-
-	remove_all_atoms(modem);
-	modem->call_ids = 0;
+	if (modem->powered == TRUE)
+		set_powered(modem, FALSE);
 
 	__ofono_watchlist_free(modem->atom_watches);
 	modem->atom_watches = NULL;
@@ -1178,10 +1175,7 @@ static void modem_unregister(struct ofono_modem *modem)
 
 	g_dbus_unregister_interface(conn, modem->path, OFONO_MODEM_INTERFACE);
 
-	if (modem->powered == TRUE)
-		set_powered(modem, FALSE);
-
-	if (modem->driver->remove)
+	if (modem->driver && modem->driver->remove)
 		modem->driver->remove(modem);
 
 	g_hash_table_destroy(modem->properties);
