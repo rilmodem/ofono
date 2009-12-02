@@ -118,6 +118,7 @@ guint g_at_chat_send_pdu_listing(GAtChat *chat, const char *cmd,
 				gpointer user_data, GDestroyNotify notify);
 
 gboolean g_at_chat_cancel(GAtChat *chat, guint id);
+gboolean g_at_chat_cancel_all(GAtChat *chat);
 
 guint g_at_chat_register(GAtChat *chat, const char *prefix,
 				GAtNotifyFunc func, gboolean expect_pdu,

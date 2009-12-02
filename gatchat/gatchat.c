@@ -1219,6 +1219,33 @@ gboolean g_at_chat_cancel(GAtChat *chat, guint id)
 	return TRUE;
 }
 
+gboolean g_at_chat_cancel_all(GAtChat *chat)
+{
+	int n = 0;
+	struct at_command *c;
+
+	if (chat == NULL || chat->command_queue == NULL)
+		return FALSE;
+
+	while ((c = g_queue_peek_nth(chat->command_queue, n)) != NULL) {
+		if (c->id == 0) {
+			n += 1;
+			continue;
+		}
+
+		if (n == 0 && chat->cmd_bytes_written > 0) {
+			c->callback = NULL;
+			n += 1;
+			continue;
+		}
+
+		at_command_destroy(c);
+		g_queue_remove(chat->command_queue, c);
+	}
+
+	return TRUE;
+}
+
 static struct at_notify *at_notify_create(GAtChat *chat, const char *prefix,
 						gboolean pdu)
 {
