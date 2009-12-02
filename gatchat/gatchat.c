@@ -1202,7 +1202,8 @@ gboolean g_at_chat_cancel(GAtChat *chat, guint id)
 	if (!l)
 		return FALSE;
 
-	if (l == g_queue_peek_head(chat->command_queue)) {
+	if (l == g_queue_peek_head(chat->command_queue) &&
+			chat->cmd_bytes_written > 0) {
 		struct at_command *c = l->data;
 
 		/* We can't actually remove it since it is most likely
