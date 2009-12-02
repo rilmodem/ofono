@@ -1192,6 +1192,10 @@ gboolean g_at_chat_cancel(GAtChat *chat, guint id)
 	if (chat == NULL || chat->command_queue == NULL)
 		return FALSE;
 
+	/* We use id 0 for wakeup commands */
+	if (id == 0)
+		return FALSE;
+
 	l = g_queue_find_custom(chat->command_queue, GUINT_TO_POINTER(id),
 				at_command_compare_by_id);
 
