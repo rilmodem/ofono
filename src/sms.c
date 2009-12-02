@@ -836,12 +836,19 @@ void ofono_sms_driver_unregister(const struct ofono_sms_driver *d)
 
 static void sms_unregister(struct ofono_atom *atom)
 {
+	struct ofono_sms *sms = __ofono_atom_get_data(atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
 	g_dbus_unregister_interface(conn, path, SMS_MANAGER_INTERFACE);
 	ofono_modem_remove_interface(modem, SMS_MANAGER_INTERFACE);
+
+	if (sms->mw_watch) {
+		__ofono_modem_remove_atom_watch(modem, sms->mw_watch);
+		sms->mw_watch = 0;
+		sms->mw = NULL;
+	}
 }
 
 static void sms_remove(struct ofono_atom *atom)
