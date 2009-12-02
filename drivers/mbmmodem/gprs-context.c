@@ -48,6 +48,9 @@
 
 static const char *none_prefix[] = { NULL };
 static const char *e2ipcfg_prefix[] = { "*E2IPCFG:", NULL };
+static const char *enap_prefix[] = { "*ENAP:", NULL };
+
+static gboolean mbm_enap_poll(gpointer user_data);
 
 enum mbm_state {
 	MBM_NONE = 0,
@@ -60,6 +63,7 @@ struct gprs_context_data {
 	unsigned int active_context;
 	gboolean have_e2nap;
 	gboolean have_e2ipcfg;
+	unsigned int enap_source;
 	enum mbm_state mbm_state;
 	union {
 		ofono_gprs_context_cb_t down_cb;        /* Down callback */
@@ -68,6 +72,172 @@ struct gprs_context_data {
 	void *cb_data;                                  /* Callback data */
 	int enap;                                   /* State of the call */
 };
+
+static void mbm_e2ipcfg_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs_context *gc = user_data;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	GAtResultIter iter;
+	int numdns = 0;
+	int type;
+	const char *str;
+	const char *ip = NULL;
+	const char *gateway = NULL;
+	const char *dns[5];
+	struct ofono_modem *modem;
+	const char *interface;
+	gboolean success = FALSE;
+
+	if (!ok)
+		goto out;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "*E2IPCFG:") == FALSE)
+		return;
+
+	while (g_at_result_iter_open_list(&iter)) {
+		if (g_at_result_iter_next_number(&iter, &type) == FALSE)
+			break;
+
+		if (g_at_result_iter_next_string(&iter, &str) == FALSE)
+			break;
+
+		switch (type) {
+		case 1:
+			ip = str;
+			break;
+		case 2:
+			gateway = str;
+			break;
+		case 3:
+			dns[numdns++] = str;
+			break;
+		default:
+			break;
+		}
+
+		if (g_at_result_iter_close_list(&iter) == FALSE)
+			break;
+	}
+
+	dns[numdns] = NULL;
+
+	if (ip && gateway && numdns)
+		success = TRUE;
+
+out:
+	modem = ofono_gprs_context_get_modem(gc);
+	interface = ofono_modem_get_string(modem, "NetworkInterface");
+
+	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, success, ip, NULL,
+			gateway, success ? dns : NULL, gcd->cb_data);
+	gcd->mbm_state = MBM_NONE;
+	gcd->up_cb = NULL;
+	gcd->cb_data = NULL;
+}
+
+static void mbm_get_ip_details(struct ofono_gprs_context *gc)
+{
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	struct ofono_modem *modem;
+	const char *interface;	
+
+	if (gcd->have_e2ipcfg) {
+		g_at_chat_send(gcd->chat, "AT*E2IPCFG?", e2ipcfg_prefix,
+				mbm_e2ipcfg_cb, gc, NULL);
+		return;
+	}
+
+	modem = ofono_gprs_context_get_modem(gc);
+	interface = ofono_modem_get_string(modem, "NetworkInterface");
+	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, FALSE, NULL, NULL,
+			NULL, NULL, gcd->cb_data);
+
+	gcd->mbm_state = MBM_NONE;
+	gcd->up_cb = NULL;
+	gcd->cb_data = NULL;
+}
+
+static void mbm_state_changed(struct ofono_gprs_context *gc, int state)
+{
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	if (gcd->active_context == 0)
+		return;
+
+	switch (state) {
+	case MBM_E2NAP_DISCONNECTED:
+		ofono_debug("MBM Context: disconnected");
+
+		if (gcd->mbm_state == MBM_DISABLING) {
+			CALLBACK_WITH_SUCCESS(gcd->down_cb, gcd->cb_data);
+			gcd->down_cb = NULL;
+		} else if (gcd->mbm_state == MBM_ENABLING) {
+			CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL, NULL,
+						NULL, NULL, gcd->cb_data);
+			gcd->up_cb = NULL;
+		} else
+			ofono_gprs_context_deactivated(gc, gcd->active_context);
+
+		gcd->mbm_state = MBM_NONE;
+		gcd->cb_data = NULL;
+		gcd->active_context = 0;
+
+		break;
+
+	case MBM_E2NAP_CONNECTED:
+		ofono_debug("MBM Context: connected");
+
+		if (gcd->mbm_state == MBM_ENABLING)
+			mbm_get_ip_details(gc);
+
+		break;
+
+	case MBM_E2NAP_CONNECTING:
+		ofono_debug("MBM Context: connecting");
+		break;
+
+	default:
+		break;
+	};
+
+	gcd->enap = state;
+}
+
+static void mbm_enap_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs_context *gc = user_data;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	GAtResultIter iter;
+	int state;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "*ENAP:") == FALSE)
+		return;
+
+	g_at_result_iter_next_number(&iter, &state);
+
+	mbm_state_changed(gc, state);
+
+	if ((state == MBM_E2NAP_CONNECTED && gcd->mbm_state == MBM_DISABLING) ||
+			state == MBM_E2NAP_CONNECTING)
+		gcd->enap_source = g_timeout_add_seconds(1, mbm_enap_poll, gc);
+}
+
+static gboolean mbm_enap_poll(gpointer user_data)
+{
+	struct ofono_gprs_context *gc = user_data;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	g_at_chat_send(gcd->chat, "AT*ENAP?", enap_prefix,
+				mbm_enap_poll_cb, gc, NULL);
+
+	gcd->enap_source = 0;
+
+	return FALSE;
+}
 
 static void at_enap_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -82,6 +252,11 @@ static void at_enap_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		gcd->mbm_state = MBM_DISABLING;
 		gcd->down_cb = cb;
 		gcd->cb_data = cbd->data;
+		
+		if (gcd->have_e2nap == FALSE)
+			g_at_chat_send(gcd->chat, "AT*ENAP?", enap_prefix,
+					mbm_enap_poll_cb, gc, NULL);
+
 		return;
 	}
 
@@ -101,6 +276,11 @@ static void mbm_enap_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		gcd->mbm_state = MBM_ENABLING;
 		gcd->up_cb = cb;
 		gcd->cb_data = cbd->data;
+
+		if (gcd->have_e2nap == FALSE)
+			g_at_chat_send(gcd->chat, "AT*ENAP?", enap_prefix,
+					mbm_enap_poll_cb, gc, NULL);
+
 		return;
 	}
 
@@ -209,101 +389,11 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void mbm_e2ipcfg_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_gprs_context *gc = user_data;
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	GAtResultIter iter;
-	int numdns = 0;
-	int type;
-	const char *str;
-	const char *ip = NULL;
-	const char *gateway = NULL;
-	const char *dns[5];
-	struct ofono_modem *modem;
-	const char *interface;
-	gboolean success = FALSE;
-
-	if (!ok)
-		goto out;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (g_at_result_iter_next(&iter, "*E2IPCFG:") == FALSE)
-		return;
-
-	while (g_at_result_iter_open_list(&iter)) {
-		if (g_at_result_iter_next_number(&iter, &type) == FALSE)
-			break;
-
-		if (g_at_result_iter_next_string(&iter, &str) == FALSE)
-			break;
-
-		switch (type) {
-		case 1:
-			ip = str;
-			break;
-		case 2:
-			gateway = str;
-			break;
-		case 3:
-			dns[numdns++] = str;
-			break;
-		default:
-			break;
-		}
-
-		if (g_at_result_iter_close_list(&iter) == FALSE)
-			break;
-	}
-
-	dns[numdns] = NULL;
-
-	if (ip && gateway && numdns)
-		success = TRUE;
-
-out:
-	modem = ofono_gprs_context_get_modem(gc);
-	interface = ofono_modem_get_string(modem, "NetworkInterface");
-
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, success, ip, NULL,
-			gateway, success ? dns : NULL, gcd->cb_data);
-	gcd->mbm_state = MBM_NONE;
-	gcd->up_cb = NULL;
-	gcd->cb_data = NULL;
-}
-
-static void mbm_get_ip_details(struct ofono_gprs_context *gc)
-{
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	struct ofono_modem *modem;
-	const char *interface;	
-
-	if (gcd->have_e2ipcfg) {
-		g_at_chat_send(gcd->chat, "AT*E2IPCFG?", e2ipcfg_prefix,
-				mbm_e2ipcfg_cb, gc, NULL);
-		return;
-	}
-
-	modem = ofono_gprs_context_get_modem(gc);
-	interface = ofono_modem_get_string(modem, "NetworkInterface");
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, FALSE, NULL, NULL,
-			NULL, NULL, gcd->cb_data);
-
-	gcd->mbm_state = MBM_NONE;
-	gcd->up_cb = NULL;
-	gcd->cb_data = NULL;
-}
-
 static void e2nap_notifier(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs_context *gc = user_data;
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	GAtResultIter iter;
 	int state;
-
-	if (gcd->active_context == 0)
-		return;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -312,41 +402,7 @@ static void e2nap_notifier(GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_next_number(&iter, &state);
 
-	switch (state) {
-	case MBM_E2NAP_DISCONNECTED:
-		if (gcd->mbm_state == MBM_DISABLING) {
-			CALLBACK_WITH_SUCCESS(gcd->down_cb, gcd->cb_data);
-			gcd->down_cb = NULL;
-		} else if (gcd->mbm_state == MBM_ENABLING) {
-			CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL, NULL,
-						NULL, NULL, gcd->cb_data);
-			gcd->up_cb = NULL;
-		} else
-			ofono_gprs_context_deactivated(gc, gcd->active_context);
-
-		gcd->mbm_state = MBM_NONE;
-		gcd->cb_data = NULL;
-		gcd->active_context = 0;
-
-		break;
-
-	case MBM_E2NAP_CONNECTED:
-		ofono_debug("MBM Context: connected");
-
-		if (gcd->mbm_state == MBM_ENABLING)
-			mbm_get_ip_details(gc);
-
-		break;
-
-	case MBM_E2NAP_CONNECTING:
-		ofono_debug("MBM Context: connecting");
-		break;
-
-	default:
-		break;
-	};
-
-	gcd->enap = state;
+	mbm_state_changed(gc, state);
 }
 
 static void mbm_e2nap_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -391,6 +447,11 @@ static int mbm_gprs_context_probe(struct ofono_gprs_context *gc,
 static void mbm_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	if (gcd->enap_source) {
+		g_source_remove(gcd->enap_source);
+		gcd->enap_source = 0;
+	}
 
 	ofono_gprs_context_set_data(gc, NULL);
 	g_free(gcd);
