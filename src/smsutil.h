@@ -353,7 +353,7 @@ struct sms_assembly_node {
 	struct sms_address addr;
 	time_t ts;
 	GSList *fragment_list;
-	guint8 ref;
+	guint16 ref;
 	guint8 max_fragments;
 	guint8 num_fragments;
 	unsigned int bitmap[8];
