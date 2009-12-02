@@ -1,3 +1,14 @@
+ver 0.12:
+	Fix various issues with Calypso modem driver.
+	Fix order of CMER and CIND in SLC connection.
+	Fix issue with SMS references stored as 8 bits.
+	Add static IP configuration for newer MBM devices.
+	Add context status polling for older MBM devices.
+	Add username/password support for MBM devices.
+	Add support for Huawei specific error terminator.
+	Add support for weird naming of Dell 5530 devices.
+	Add udev rules for Option GI0201 and GTM382 modems.
+
 ver 0.11:
 	Fix issue with repeated CCWA notifications.
 	Fix issue with double-swap when 3-way dialing.
