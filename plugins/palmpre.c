@@ -72,6 +72,8 @@ static void palmpre_remove(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_modem_set_data(modem, NULL);
+
+	g_at_chat_unref(data->chat);
 	g_free(data);
 }
 
@@ -157,6 +159,8 @@ static int palmpre_disable(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	/* Power modem down */
+	g_at_chat_cancel_all(data->chat);
+	g_at_chat_unregister_all(data->chat);
 	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
 			cfun_set_off_cb, modem, NULL);
 
