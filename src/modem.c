@@ -399,13 +399,19 @@ static int set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 	const struct ofono_modem_driver *driver = modem->driver;
 	int err = -EINVAL;
 
-	if (driver == NULL)
-		return -EINVAL;
-
 	if (modem->powered_pending == powered)
 		return -EALREADY;
 
+	/* Remove the atoms even if the driver is no longer available */
+	if (powered == FALSE) {
+		remove_all_atoms(modem);
+		modem->call_ids = 0;
+	}
+
 	modem->powered_pending = powered;
+
+	if (driver == NULL)
+		return -EINVAL;
 
 	if (powered == TRUE) {
 		if (driver->enable)
@@ -499,9 +505,6 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 		if (powered) {
 			if (modem->driver->pre_sim)
 				modem->driver->pre_sim(modem);
-		} else {
-			remove_all_atoms(modem);
-			modem->call_ids = 0;
 		}
 
 		return NULL;
@@ -562,9 +565,6 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 	if (powered) {
 		if (modem->driver->pre_sim)
 			modem->driver->pre_sim(modem);
-	} else {
-		remove_all_atoms(modem);
-		modem->call_ids = 0;
 	}
 }
 
