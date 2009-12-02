@@ -72,6 +72,7 @@ static void hso_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
+	g_at_chat_unref(data->control);
 	g_free(data);
 }
 
@@ -166,10 +167,6 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_unref(data->control);
 	data->control = NULL;
 
-	g_at_chat_shutdown(data->app);
-	g_at_chat_unref(data->app);
-	data->app = NULL;
-
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
 }
@@ -182,6 +179,13 @@ static int hso_disable(struct ofono_modem *modem)
 
 	if (!data->control)
 		return 0;
+
+	g_at_chat_cancel_all(data->control);
+	g_at_chat_unregister_all(data->control);
+
+	g_at_chat_shutdown(data->app);
+	g_at_chat_unref(data->app);
+	data->app = NULL;
 
 	g_at_chat_send(data->control, "AT+CFUN=0", none_prefix,
 					cfun_disable, modem, NULL);
