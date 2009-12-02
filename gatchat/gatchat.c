@@ -1346,6 +1346,34 @@ gboolean g_at_chat_unregister(GAtChat *chat, guint id)
 	return TRUE;
 }
 
+gboolean g_at_chat_unregister_all(GAtChat *chat)
+{
+	GHashTableIter iter;
+	struct at_notify *notify;
+	char *prefix;
+	gpointer key, value;
+	GSList *l;
+
+	if (chat == NULL || chat->notify_list == NULL)
+		return FALSE;
+
+	g_hash_table_iter_init(&iter, chat->notify_list);
+
+	while (g_hash_table_iter_next(&iter, &key, &value)) {
+		prefix = key;
+		notify = value;
+
+		for (l = notify->nodes; l; l = l->next)
+			at_notify_node_destroy(l->data);
+
+		g_slist_free(notify->nodes);
+		notify->nodes=  NULL;
+		g_hash_table_iter_remove(&iter);
+	}
+
+	return TRUE;
+}
+
 gboolean g_at_chat_set_wakeup_command(GAtChat *chat, const char *cmd,
 					unsigned int timeout, unsigned int msec)
 {

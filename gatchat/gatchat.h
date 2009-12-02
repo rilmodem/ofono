@@ -125,6 +125,7 @@ guint g_at_chat_register(GAtChat *chat, const char *prefix,
 				gpointer user_data, GDestroyNotify notify);
 
 gboolean g_at_chat_unregister(GAtChat *chat, guint id);
+gboolean g_at_chat_unregister_all(GAtChat *chat);
 
 gboolean g_at_chat_set_wakeup_command(GAtChat *chat, const char *cmd,
 					guint timeout, guint msec);
