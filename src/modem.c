@@ -1219,7 +1219,19 @@ int ofono_modem_driver_register(const struct ofono_modem_driver *d)
 
 void ofono_modem_driver_unregister(const struct ofono_modem_driver *d)
 {
+	GSList *l;
+	struct ofono_modem *modem;
+
 	DBG("driver: %p, name: %s", d, d->name);
 
 	g_driver_list = g_slist_remove(g_driver_list, (void *)d);
+
+	for (l = g_modem_list; l; l = l->next) {
+		modem = l->data;
+
+		if (modem->driver != d)
+			continue;
+
+		modem_unregister(modem);
+	}
 }
