@@ -23,10 +23,13 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 
+void __ofono_exit();
+
 int __ofono_manager_init();
 void __ofono_manager_cleanup();
 
 const char **__ofono_modem_get_list();
+void __ofono_modem_shutdown();
 
 #include <ofono/log.h>
 

@@ -39,6 +39,8 @@ static GSList *g_driver_list = NULL;
 static GSList *g_modem_list = NULL;
 
 static int next_modem_id = 0;
+static gboolean powering_down = FALSE;
+static int modems_remaining = 0;
 
 enum ofono_property_type {
 	OFONO_PROPERTY_TYPE_INVALID = 0,
@@ -478,6 +480,9 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
 		return __ofono_error_invalid_args(msg);
 
+	if (powering_down == TRUE)
+		return __ofono_error_failed(msg);
+
 	dbus_message_iter_recurse(&iter, &var);
 
 	if (g_str_equal(name, "Powered") == TRUE) {
@@ -539,7 +544,6 @@ static GDBusSignalTable modem_signals[] = {
 void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	dbus_bool_t dbus_powered;
 
 	if (modem->timeout > 0) {
 		g_source_remove(modem->timeout);
@@ -559,23 +563,29 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 
 	modem->powered_pending = powered;
 
-	if (modem->powered == powered)
-		return;
+	if (modem->powered != powered) {
+		modem->powered = powered;
 
-	modem->powered = powered;
+		if (modem->driver) {
+			dbus_bool_t dbus_powered = powered;
 
-	if (modem->driver == NULL)
-		return;
-
-	dbus_powered = powered;
-	ofono_dbus_signal_property_changed(conn, modem->path,
+			ofono_dbus_signal_property_changed(conn, modem->path,
 						OFONO_MODEM_INTERFACE,
 						"Powered", DBUS_TYPE_BOOLEAN,
 						&dbus_powered);
+		}
 
-	if (powered) {
-		if (modem->driver->pre_sim)
-			modem->driver->pre_sim(modem);
+		if (powered) {
+			if (modem->driver->pre_sim)
+				modem->driver->pre_sim(modem);
+		}
+	}
+
+	if (powering_down) {
+		modems_remaining -= 1;
+
+		if (modems_remaining == 0)
+			__ofono_exit();
 	}
 }
 
@@ -1099,6 +1109,9 @@ int ofono_modem_register(struct ofono_modem *modem)
 	if (modem == NULL)
 		return -EINVAL;
 
+	if (powering_down == TRUE)
+		return -EBUSY;
+
 	if (modem->driver != NULL)
 		return -EALREADY;
 
@@ -1244,5 +1257,28 @@ void ofono_modem_driver_unregister(const struct ofono_modem_driver *d)
 			continue;
 
 		modem_unregister(modem);
+	}
+}
+
+void __ofono_modem_shutdown()
+{
+	struct ofono_modem *modem;
+	GSList *l;
+
+	powering_down = TRUE;
+
+	for (l = g_modem_list; l; l = l->next) {
+		modem = l->data;
+
+		modem = l->data;
+
+		if (modem->driver == NULL)
+			continue;
+
+		if (modem->powered == FALSE && modem->powered_pending == FALSE)
+			continue;
+
+		if (set_powered(modem, FALSE) == -EINPROGRESS)
+			modems_remaining += 1;
 	}
 }

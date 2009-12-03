@@ -33,7 +33,21 @@
 
 #include "ofono.h"
 
+#define SHUTDOWN_GRACE_SECONDS 10
+
 static GMainLoop *event_loop;
+static guint quit_eventloop_source = 0;
+
+void __ofono_exit()
+{
+	g_main_loop_quit(event_loop);
+}
+
+static gboolean quit_eventloop(gpointer user_data)
+{
+	__ofono_exit();
+	return FALSE;
+}
 
 static void sig_debug(int sig)
 {
@@ -42,7 +56,12 @@ static void sig_debug(int sig)
 
 static void sig_term(int sig)
 {
-	g_main_loop_quit(event_loop);
+	if (quit_eventloop_source != 0)
+		return;
+
+	quit_eventloop_source = g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
+							quit_eventloop, NULL);
+	__ofono_modem_shutdown();
 }
 
 static void system_bus_disconnected(DBusConnection *conn, void *user_data)
