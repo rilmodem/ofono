@@ -36,7 +36,7 @@
 #define SHUTDOWN_GRACE_SECONDS 10
 
 static GMainLoop *event_loop;
-static guint quit_eventloop_source = 0;
+static volatile sig_atomic_t terminated = 0;
 
 void __ofono_exit()
 {
@@ -54,14 +54,21 @@ static void sig_debug(int sig)
 	__ofono_toggle_debug();
 }
 
+static gboolean initiate_shutdown(gpointer user_data)
+{
+	g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS, quit_eventloop, NULL);
+	__ofono_modem_shutdown();
+
+	return FALSE;
+}
+
 static void sig_term(int sig)
 {
-	if (quit_eventloop_source != 0)
+	if (terminated > 0)
 		return;
 
-	quit_eventloop_source = g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
-							quit_eventloop, NULL);
-	__ofono_modem_shutdown();
+	terminated = 1;
+	g_idle_add(initiate_shutdown, NULL);
 }
 
 static void system_bus_disconnected(DBusConnection *conn, void *user_data)
