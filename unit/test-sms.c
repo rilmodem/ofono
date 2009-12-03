@@ -846,6 +846,66 @@ static void test_prepare_concat()
 	sms_assembly_free(assembly);
 }
 
+static void test_limit(gunichar uni, int target_size, gboolean use_16bit)
+{
+	char *utf8;
+	char *decoded;
+	GSList *l;
+	unsigned int i;
+	char utf8_char[6];
+	unsigned int stride;
+
+	stride = g_unichar_to_utf8(uni, utf8_char);
+
+	utf8 = g_new0(char, (target_size + 2) * stride);
+
+	for (i = 0; i < target_size * stride; i += stride)
+		memcpy(utf8 + i, utf8_char, stride);
+
+	utf8[i] = '\0';
+
+	l = sms_text_prepare(utf8, 0, use_16bit, NULL);
+
+	g_assert(l);
+	g_assert(g_slist_length(l) == 255);
+
+	decoded = sms_decode_text(l);
+	g_assert(g_utf8_strlen(decoded, -1) == target_size);
+
+	g_free(decoded);
+
+	memcpy(utf8 + i, utf8_char, stride);
+	utf8[i+stride] = '\0';
+
+	l = sms_text_prepare(utf8, 0, use_16bit, NULL);
+
+	g_assert(l == NULL);
+	g_free(utf8);
+}
+
+static void test_prepare_limits()
+{
+	gunichar ascii = 0x41;
+	gunichar ucs2 = 0x416;
+	unsigned int target_size;
+
+	/* The limit for 16 bit headers is 255 * 152 for GSM7 */
+	target_size = 255 * 152;
+	test_limit(ascii, target_size, TRUE);
+
+	/* The limit for 8 bit headers is 255 * 153 for GSM7 */
+	target_size = 255 * 153;
+	test_limit(ascii, target_size, FALSE);
+
+	/* The limit for 16 bit headers is 255 * 66 for UCS2 */
+	target_size = 255 * 66;
+	test_limit(ucs2, target_size, TRUE);
+
+	/* The limit for 8 bit headers is 255 * 67 for UCS2 */
+	target_size = 255 * 67;
+	test_limit(ucs2, target_size, FALSE);
+}
+
 static const char *cbs1 = "011000320111C2327BFC76BBCBEE46A3D168341A8D46A3D1683"
 	"41A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168"
 	"341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D100";
@@ -1111,6 +1171,7 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test Assembly", test_assembly);
 	g_test_add_func("/testsms/Test Prepare 7Bit", test_prepare_7bit);
 	g_test_add_func("/testsms/Test Prepare Concat", test_prepare_concat);
+	g_test_add_func("/testsms/Test Prepare Limits", test_prepare_limits);
 
 	g_test_add_func("/testsms/Test CBS Encode / Decode",
 			test_cbs_encode_decode);
