@@ -1279,4 +1279,7 @@ void __ofono_modem_shutdown()
 		if (set_powered(modem, FALSE) == -EINPROGRESS)
 			modems_remaining += 1;
 	}
+
+	if (modems_remaining == 0)
+		__ofono_exit();
 }
