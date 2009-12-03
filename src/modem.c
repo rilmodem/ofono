@@ -1270,8 +1270,6 @@ void __ofono_modem_shutdown()
 	for (l = g_modem_list; l; l = l->next) {
 		modem = l->data;
 
-		modem = l->data;
-
 		if (modem->driver == NULL)
 			continue;
 
