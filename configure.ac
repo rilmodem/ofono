@@ -48,6 +48,10 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 	fi
 ])
 
+AC_ARG_ENABLE(test, AC_HELP_STRING([--enable-test],
+		[enable test/example scripts]), [enable_test=${enableval}])
+AM_CONDITIONAL(TEST, test "${enable_test}" = "yes")
+
 AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 			[enable position independent executables flag]), [
 	if (test "${enableval}" = "yes" &&

@@ -231,7 +231,7 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 			doc/call-meter-api.txt \
 			doc/dataconnectionmanager-api.txt
 
-test_files = test/test-manager test/test-modem test/test-voicecall \
+test_scripts = test/test-manager test/test-modem test/test-voicecall \
 		test/test-network-registration test/test-phonebook \
 		test/test-advice-of-charge test/test-call-settings \
 		test/test-call-forwarding test/test-call-barring \
@@ -244,10 +244,15 @@ test_files = test/test-manager test/test-modem test/test-voicecall \
 		test/activate-context test/deactivate-context \
 		test/process-context-settings
 
+if TEST
+testdir = $(pkglibdir)/test
+test_SCRIPTS = $(test_scripts)
+endif
+
 conf_files = src/ofono.conf plugins/modem.conf
 
 EXTRA_DIST = src/genbuiltin plugins/example_history.c $(doc_files) \
-				$(test_files) $(conf_files) $(udev_files)
+				$(test_scripts) $(conf_files) $(udev_files)
 
 dist_man_MANS = doc/ofonod.8
 
