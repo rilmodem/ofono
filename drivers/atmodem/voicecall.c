@@ -53,7 +53,6 @@ static const char *atd_prefix[] = { "+COLP:", NULL };
 
 struct voicecall_data {
 	GSList *calls;
-	unsigned int id_list;
 	unsigned int local_release;
 	unsigned int clcc_source;
 	GAtChat *chat;
@@ -89,10 +88,11 @@ static int class_to_call_type(int cls)
 	}
 }
 
-static struct ofono_call *create_call(struct voicecall_data *d, int type,
+static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 					int direction, int status,
 					const char *num, int num_type, int clip)
 {
+	struct voicecall_data *d = ofono_voicecall_get_data(vc);
 	struct ofono_call *call;
 
 	/* Generate a call structure for the waiting call */
@@ -101,7 +101,7 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 	if (!call)
 		return NULL;
 
-	call->id = at_util_alloc_next_id(&d->id_list);
+	call->id = ofono_voicecall_get_next_callid(vc);
 	call->type = type;
 	call->direction = direction;
 	call->status = status;
@@ -159,8 +159,6 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			if (!oc->type)
 				ofono_voicecall_disconnected(vc, oc->id,
 								reason, NULL);
-
-			at_util_release_id(&vd->id_list, oc->id);
 
 			o = o->next;
 		} else if (nc && (!oc || (nc->id < oc->id))) {
@@ -307,7 +305,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	/* Generate a voice call that was just dialed, we guess the ID */
-	call = create_call(vd, 0, 0, 2, num, type, validity);
+	call = create_call(vc, 0, 0, 2, num, type, validity);
 
 	if (!call) {
 		ofono_error("Unable to allocate call, call tracking will fail!");
@@ -649,7 +647,7 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	/* Generate an incoming call of unknown type */
-	call = create_call(vd, 9, 1, 4, NULL, 128, 2);
+	call = create_call(vc, 9, 1, 4, NULL, 128, 2);
 
 	if (!call) {
 		ofono_error("Couldn't create call, call management is fubar!");
@@ -704,7 +702,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 		type = 9;
 
 	/* Generate an incoming call */
-	call = create_call(vd, type, 1, 4, NULL, 128, 2);
+	call = create_call(vc, type, 1, 4, NULL, 128, 2);
 
 	/* We have a call, and call type but don't know the number and
 	 * must wait for the CLIP to arrive before announcing the call.
@@ -825,7 +823,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	ofono_debug("ccwa_notify: %s %d %d %d", num, num_type, cls, validity);
 
-	call = create_call(vd, class_to_call_type(cls), 1, 5,
+	call = create_call(vc, class_to_call_type(cls), 1, 5,
 				num, num_type, validity);
 
 	if (!call) {
