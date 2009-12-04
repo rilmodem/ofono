@@ -452,6 +452,45 @@ static void hfp_release_all_active(struct ofono_voicecall *vc,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
+			ofono_voicecall_cb_t cb, void *data)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
+	char *buf;
+	int s;
+
+	if (!req)
+		goto error;
+
+	req->vc = vc;
+	req->cb = cb;
+	req->data = data;
+	req->affected_types = 0;
+
+	/* strlen("AT+VTS=") = 7 */
+	buf = g_try_new(char, strlen(dtmf) + 7);
+
+	if (!buf)
+		goto error;
+
+	sprintf(buf, "AT+VTS=%s", dtmf);
+
+	s = g_at_chat_send(vd->chat, buf, none_prefix,
+				generic_cb, req, g_free);
+
+	g_free(buf);
+
+	if (s > 0)
+		return;
+
+error:
+	if (req)
+		g_free(req);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
 static void no_carrier_notify(GAtResult *result, gpointer user_data)
 {
 	DBG("");
@@ -959,7 +998,7 @@ static struct ofono_voicecall_driver driver = {
 	.transfer		= NULL,
 	.deflect		= NULL,
 	.swap_without_accept	= NULL,
-	.send_tones		= NULL
+	.send_tones		= hfp_send_dtmf
 };
 
 void hfp_voicecall_init()
