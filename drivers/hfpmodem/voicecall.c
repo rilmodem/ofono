@@ -49,7 +49,6 @@ struct voicecall_data {
 	unsigned int ag_mpty_features;
 	unsigned char cind_pos[HFP_INDICATOR_LAST];
 	int cind_val[HFP_INDICATOR_LAST];
-	unsigned int id_list;
 	unsigned int local_release;
 };
 
@@ -82,10 +81,11 @@ static GSList *find_dialing(GSList *calls)
 	return c;
 }
 
-static struct ofono_call *create_call(struct voicecall_data *d, int type,
+static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 					int direction, int status,
 					const char *num, int num_type, int clip)
 {
+	struct voicecall_data *d = ofono_voicecall_get_data(vc);
 	struct ofono_call *call;
 
 	/* Generate a call structure for the waiting call */
@@ -94,7 +94,7 @@ static struct ofono_call *create_call(struct voicecall_data *d, int type,
 	if (!call)
 		return NULL;
 
-	call->id = at_util_alloc_next_id(&d->id_list);
+	call->id = ofono_voicecall_get_next_callid(vc);
 	call->type = type;
 	call->direction = direction;
 	call->status = status;
@@ -116,10 +116,9 @@ static struct ofono_call *new_call_notify(struct ofono_voicecall *vc, int type,
 					int direction, int status,
 					const char *num, int num_type, int clip)
 {
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct ofono_call *c;
 
-	c = create_call(vd, type, direction, status, num, num_type, clip);
+	c = create_call(vc, type, direction, status, num, num_type, clip);
 
 	ofono_voicecall_notify(vc, c);
 
@@ -140,7 +139,6 @@ static void release_call(struct ofono_voicecall *vc, struct ofono_call *call)
 		reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
 
 	ofono_voicecall_disconnected(vc, call->id, reason, NULL);
-	at_util_release_id(&vd->id_list, call->id);
 	vd->local_release &= ~(1 << call->id);
 
 	g_free(call);
@@ -226,7 +224,6 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				ofono_voicecall_disconnected(vc, oc->id,
 								reason, NULL);
 
-			at_util_release_id(&vd->id_list, oc->id);
 			vd->local_release &= ~(1 << oc->id);
 
 			o = o->next;
@@ -314,7 +311,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_voicecall_notify(vc, call);
 	}
 
-	call = create_call(vd, 0, 0, CALL_STATUS_DIALING, NULL, type, validity);
+	call = create_call(vc, 0, 0, CALL_STATUS_DIALING, NULL, type, validity);
 
 	if (!call) {
 		ofono_error("Unable to allocate call, "
@@ -495,7 +492,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	ofono_debug("ccwa_notify: %s %d %d", num, num_type, validity);
 
-	call = create_call(vd, 0, 1, 5, num, num_type, validity);
+	call = create_call(vc, 0, 1, 5, num, num_type, validity);
 
 	if (!call) {
 		ofono_error("malloc call structfailed. Call management is fubar");
@@ -544,7 +541,7 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 	}
 
 	/* Generate an incoming call of voice type */
-	call = create_call(vd, 0, 1, CALL_STATUS_INCOMING, NULL, 128, 2);
+	call = create_call(vc, 0, 1, CALL_STATUS_INCOMING, NULL, 128, 2);
 
 	if (!call)
 		ofono_error("Couldn't create call, call management is fubar!");
