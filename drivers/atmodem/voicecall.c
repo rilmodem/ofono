@@ -420,66 +420,17 @@ static void at_hangup(struct ofono_voicecall *vc,
 
 static void clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct cb_data *cbd = user_data;
-	ofono_call_list_cb_t cb = cbd->cb;
-	struct ofono_error error;
-	GSList *calls = NULL;
-	GSList *l;
-	struct ofono_call *list;
-	int num;
-
-	dump_response("clcc_cb", ok, result);
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (!ok) {
-		cb(&error, 0, NULL, cbd->data);
-		goto out;
-	}
-
-	calls = at_util_parse_clcc(result);
-
-	if (calls == NULL) {
-		CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
-		goto out;
-	}
-
-	list = g_try_new0(struct ofono_call, g_slist_length(calls));
-
-	if (!list) {
-		CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
-		goto out;
-	}
-
-	for (num = 0, l = calls; l; l = l->next, num++)
-		memcpy(&list[num], l->data, sizeof(struct ofono_call));
-
-	cb(&error, num, list, cbd->data);
-
-	g_free(list);
-
-out:
-	g_slist_foreach(calls, (GFunc) g_free, NULL);
-	g_slist_free(calls);
-}
-
-static void at_list_calls(struct ofono_voicecall *vc, ofono_call_list_cb_t cb,
-				void *data)
-{
+	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	GSList *l;
 
-	if (!cbd)
-		goto error;
-
-	if (g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-				clcc_cb, cbd, g_free) > 0)
+	if (!ok)
 		return;
 
-error:
-	if (cbd)
-		g_free(cbd);
+	vd->calls = at_util_parse_clcc(result);
 
-	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
+	for (l = vd->calls; l; l = l->next)
+		ofono_voicecall_notify(vc, l->data);
 }
 
 static void at_hold_all_active(struct ofono_voicecall *vc,
@@ -893,6 +844,9 @@ static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(vd->chat, "BUSY", busy_notify, FALSE, vc, NULL);
 
 	ofono_voicecall_register(vc);
+
+	/* Populate the call list */
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix, clcc_cb, vc, NULL);
 }
 
 static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
@@ -933,7 +887,6 @@ static struct ofono_voicecall_driver driver = {
 	.dial			= at_dial,
 	.answer			= at_answer,
 	.hangup			= at_hangup,
-	.list_calls		= at_list_calls,
 	.hold_all_active	= at_hold_all_active,
 	.release_all_held	= at_release_all_held,
 	.set_udub		= at_set_udub,
