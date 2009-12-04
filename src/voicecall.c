@@ -1887,3 +1887,14 @@ void *ofono_voicecall_get_data(struct ofono_voicecall *vc)
 {
 	return vc->driver_data;
 }
+
+int ofono_voicecall_get_next_callid(struct ofono_voicecall *vc)
+{
+	struct ofono_modem *modem;
+	if (vc == NULL || vc->atom == NULL)
+		return 0;
+
+	modem = __ofono_atom_get_modem(vc->atom);
+
+	return __ofono_modem_callid_next(modem);
+}

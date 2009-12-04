@@ -112,6 +112,7 @@ void ofono_voicecall_remove(struct ofono_voicecall *vc);
 
 void ofono_voicecall_set_data(struct ofono_voicecall *vc, void *data);
 void *ofono_voicecall_get_data(struct ofono_voicecall *vc);
+int ofono_voicecall_get_next_callid(struct ofono_voicecall *vc);
 
 #ifdef __cplusplus
 }
