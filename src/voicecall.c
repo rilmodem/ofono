@@ -854,13 +854,15 @@ static struct ofono_call *synthesize_outgoing_call(struct ofono_voicecall *vc,
 	if (!call)
 		return call;
 
-	call->id = __ofono_modem_alloc_callid(modem);
+	call->id = __ofono_modem_callid_next(modem);
 
 	if (call->id == 0) {
 		ofono_error("Failed to alloc callid, too many calls");
 		g_free(call);
 		return NULL;
 	}
+
+	__ofono_modem_callid_hold(modem, call->id);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
 				DBUS_TYPE_INVALID) == FALSE)
@@ -1473,6 +1475,8 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 
 	ofono_debug("Got disconnection event for id: %d, reason: %d", id, reason);
 
+	__ofono_modem_callid_release(modem, id);
+
 	l = g_slist_find_custom(vc->call_list, GUINT_TO_POINTER(id),
 				call_compare_by_id);
 
@@ -1503,8 +1507,6 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 	}
 
 	vc->release_list = g_slist_remove(vc->release_list, call);
-
-	__ofono_modem_release_callid(modem, id);
 
 	if (reason != OFONO_DISCONNECT_REASON_UNKNOWN)
 		voicecall_emit_disconnect_reason(call, reason);
@@ -1550,16 +1552,12 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 
 	ofono_debug("Did not find a call with id: %d\n", call->id);
 
+	__ofono_modem_callid_hold(modem, call->id);
+
 	newcall = g_memdup(call, sizeof(struct ofono_call));
 
 	if (!newcall) {
 		ofono_error("Unable to allocate call");
-		goto err;
-	}
-
-	if (__ofono_modem_alloc_callid(modem) != call->id) {
-		ofono_error("Warning: Call id and internally tracked id"
-				" do not correspond");
 		goto err;
 	}
 
