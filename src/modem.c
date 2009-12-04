@@ -98,7 +98,7 @@ struct ofono_property {
 	void *value;
 };
 
-unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
+unsigned int __ofono_modem_callid_next(struct ofono_modem *modem)
 {
 	unsigned int i;
 
@@ -106,14 +106,18 @@ unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem)
 		if (modem->call_ids & (0x1 << i))
 			continue;
 
-		modem->call_ids |= (0x1 << i);
 		return i;
 	}
 
 	return 0;
 }
 
-void __ofono_modem_release_callid(struct ofono_modem *modem, int id)
+void __ofono_modem_callid_hold(struct ofono_modem *modem, int id)
+{
+	modem->call_ids |= (0x1 << id);
+}
+
+void __ofono_modem_callid_release(struct ofono_modem *modem, int id)
 {
 	modem->call_ids &= ~(0x1 << id);
 }

@@ -90,8 +90,9 @@ void __ofono_plugin_cleanup(void);
 
 #include <ofono/modem.h>
 
-unsigned int __ofono_modem_alloc_callid(struct ofono_modem *modem);
-void __ofono_modem_release_callid(struct ofono_modem *modem, int id);
+unsigned int __ofono_modem_callid_next(struct ofono_modem *modem);
+void __ofono_modem_callid_hold(struct ofono_modem *modem, int id);
+void __ofono_modem_callid_release(struct ofono_modem *modem, int id);
 
 struct ofono_atom;
 
