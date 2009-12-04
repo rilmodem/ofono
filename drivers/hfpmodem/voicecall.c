@@ -952,7 +952,6 @@ static struct ofono_voicecall_driver driver = {
 	.dial			= hfp_dial,
 	.answer			= hfp_answer,
 	.hangup			= hfp_hangup,
-	.list_calls		= NULL,
 	.hold_all_active	= hfp_hold_all_active,
 	.release_all_held	= hfp_release_all_held,
 	.set_udub		= hfp_set_udub,
