@@ -1016,21 +1016,6 @@ static void isi_hangup(struct ofono_voicecall *ovc,
 			     cb, data);
 }
 
-static void isi_list_calls(struct ofono_voicecall *ovc,
-			   ofono_call_list_cb_t cb, void *data)
-{
-	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
-	struct ofono_call calls[7];
-	int n, i;
-
-	for (i = 1, n = 0; i <= 7; i++) {
-		if (ivc->calls[i].status != CALL_STATUS_IDLE)
-			calls[n++] = isi_call_as_ofono_call(&ivc->calls[i]);
-	}
-
-	CALLBACK_WITH_FAILURE(cb, n, calls, data);
-}
-
 static void isi_release_all_held(struct ofono_voicecall *ovc,
 			ofono_voicecall_cb_t cb, void *data)
 {
@@ -1369,7 +1354,6 @@ static struct ofono_voicecall_driver driver = {
 	.dial			= isi_dial,
 	.answer			= isi_answer,
 	.hangup			= isi_hangup,
-	.list_calls		= isi_list_calls,
 	.hold_all_active	= isi_hold_all_active,
 	.release_all_held	= isi_release_all_held,
 	.set_udub		= isi_set_udub,
