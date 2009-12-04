@@ -229,8 +229,7 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			call = l->data;
 
 			if (req->affected_types & (0x1 << call->status))
-				vd->local_release |=
-					(0x1 << call->id);
+				vd->local_release |= (0x1 << call->id);
 		}
 	}
 
