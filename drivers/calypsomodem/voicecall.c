@@ -411,7 +411,6 @@ static struct ofono_voicecall_driver driver = {
 	.dial			= calypso_dial,
 	.answer			= calypso_answer,
 	.hangup			= calypso_hangup,
-	.list_calls		= NULL,
 	.hold_all_active	= calypso_hold_all_active,
 	.release_all_held	= calypso_release_all_held,
 	.set_udub		= calypso_set_udub,
