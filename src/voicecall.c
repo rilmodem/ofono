@@ -706,13 +706,9 @@ static gboolean real_emit_call_list_changed(void *data)
 
 static void emit_call_list_changed(struct ofono_voicecall *vc)
 {
-#ifdef DELAY_EMIT
 	if (vc->emit_calls_source == 0)
 		vc->emit_calls_source =
 			g_timeout_add(0, real_emit_call_list_changed, vc);
-#else
-	real_emit_call_list_changed(vc);
-#endif
 }
 
 static gboolean real_emit_multiparty_call_list_changed(void *data)
@@ -738,14 +734,9 @@ static gboolean real_emit_multiparty_call_list_changed(void *data)
 
 static void emit_multiparty_call_list_changed(struct ofono_voicecall *vc)
 {
-#ifdef DELAY_EMIT
 	if (vc->emit_multi_source == 0)
 		vc->emit_multi_source = g_timeout_add(0,
 				real_emit_multiparty_call_list_changed, vc);
-	}
-#else
-	real_emit_multiparty_call_list_changed(vc);
-#endif
 }
 
 static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls)
