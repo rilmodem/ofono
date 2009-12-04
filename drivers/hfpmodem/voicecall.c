@@ -927,6 +927,21 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 		ciev_callheld_notify(vc, value);
 }
 
+static void hfp_clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GSList *l;
+
+	if (!ok)
+		return;
+
+	vd->calls = at_util_parse_clcc(result);
+
+	for (l = vd->calls; l; l = l->next)
+		ofono_voicecall_notify(vc, l->data);
+}
+
 static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
@@ -944,6 +959,9 @@ static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
 				no_carrier_notify, FALSE, vc, NULL);
 
 	ofono_voicecall_register(vc);
+
+	/* Populate the call list */
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix, hfp_clcc_cb, vc, NULL);
 }
 
 static int hfp_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
