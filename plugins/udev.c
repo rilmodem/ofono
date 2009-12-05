@@ -25,7 +25,6 @@
 
 #include <errno.h>
 
-#define LIBUDEV_I_KNOW_THE_API_IS_SUBJECT_TO_CHANGE
 #include <libudev.h>
 
 #include <glib.h>
@@ -34,22 +33,6 @@
 #include <ofono/plugin.h>
 #include <ofono/modem.h>
 #include <ofono/log.h>
-
-#ifdef NEED_UDEV_MONITOR_FILTER
-static int udev_monitor_filter_add_match_subsystem_devtype(struct udev_monitor *udev_monitor,
-				const char *subsystem, const char *devtype)
-{
-	return -EINVAL;
-}
-static int udev_monitor_filter_update(struct udev_monitor *udev_monitor)
-{
-	return -EINVAL;
-}
-static int udev_monitor_filter_remove(struct udev_monitor *udev_monitor)
-{
-	return -EINVAL;
-}
-#endif
 
 static GSList *modem_list = NULL;
 
