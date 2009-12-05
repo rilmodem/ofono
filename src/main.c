@@ -51,6 +51,7 @@ static gboolean quit_eventloop(gpointer user_data)
 
 static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 {
+	static int terminated = 0;
 	int signal_fd = GPOINTER_TO_INT(data);
 	struct signalfd_siginfo si;
 	ssize_t res;
@@ -65,9 +66,13 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	switch (si.ssi_signo) {
 	case SIGINT:
 	case SIGTERM:
-		g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
-					quit_eventloop, NULL);
-		__ofono_modem_shutdown();
+		if (terminated == 0) {
+			g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
+						quit_eventloop, NULL);
+			__ofono_modem_shutdown();
+		}
+
+		terminated++;
 		break;
 	case SIGUSR2:
 		__ofono_toggle_debug();
