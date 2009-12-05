@@ -64,6 +64,9 @@ AC_ARG_ENABLE(pie, AC_HELP_STRING([--enable-pie],
 AC_ARG_ENABLE(threads, AC_HELP_STRING([--enable-threads],
 		[enable threading support]), [enable_threads=${enableval}])
 
+AC_CHECK_LIB(c, signalfd, dummy=yes,
+			AC_MSG_ERROR(signalfd support is required))
+
 AC_CHECK_LIB(dl, dlopen, dummy=yes,
 			AC_MSG_ERROR(dynamic linking loader is required))
 
