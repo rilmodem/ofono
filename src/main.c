@@ -30,13 +30,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/signalfd.h>
 
 #include "ofono.h"
 
 #define SHUTDOWN_GRACE_SECONDS 10
 
 static GMainLoop *event_loop;
-static volatile sig_atomic_t terminated = 0;
 
 void __ofono_exit()
 {
@@ -49,26 +49,36 @@ static gboolean quit_eventloop(gpointer user_data)
 	return FALSE;
 }
 
-static void sig_debug(int sig)
+static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 {
-	__ofono_toggle_debug();
-}
+	int signal_fd = GPOINTER_TO_INT(data);
+	struct signalfd_siginfo si;
+	ssize_t res;
 
-static gboolean initiate_shutdown(gpointer user_data)
-{
-	g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS, quit_eventloop, NULL);
-	__ofono_modem_shutdown();
+	if (cond & (G_IO_NVAL | G_IO_ERR))
+		return FALSE;
 
-	return FALSE;
-}
+	res = read(signal_fd, &si, sizeof(si));
+	if (res != sizeof(si))
+		return FALSE;
 
-static void sig_term(int sig)
-{
-	if (terminated > 0)
-		return;
+	switch (si.ssi_signo) {
+	case SIGINT:
+	case SIGTERM:
+		g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
+					quit_eventloop, NULL);
+		__ofono_modem_shutdown();
+		break;
+	case SIGUSR2:
+		__ofono_toggle_debug();
+		break;
+	case SIGPIPE:
+		break;
+	default:
+		break;
+	}
 
-	terminated = 1;
-	g_idle_add(initiate_shutdown, NULL);
+	return TRUE;
 }
 
 static void system_bus_disconnected(DBusConnection *conn, void *user_data)
@@ -94,9 +104,36 @@ int main(int argc, char **argv)
 {
 	GOptionContext *context;
 	GError *err = NULL;
-	struct sigaction sa;
+	sigset_t mask;
 	DBusConnection *conn;
 	DBusError error;
+	int signal_fd;
+	GIOChannel *signal_io;
+	int signal_source;
+
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGTERM);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGUSR2);
+	sigaddset(&mask, SIGPIPE);
+
+	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
+		perror("Can't set signal mask");
+		return 1;
+	}
+
+	signal_fd = signalfd(-1, &mask, 0);
+	if (signal_fd < 0) {
+		perror("Can't create signal filedescriptor");
+		return 1;
+	}
+
+	signal_io = g_io_channel_unix_new(signal_fd);
+	g_io_channel_set_close_on_unref(signal_io, TRUE);
+	signal_source = g_io_add_watch(signal_io,
+			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+			signal_cb, GINT_TO_POINTER(signal_fd));
+	g_io_channel_unref(signal_io);
 
 #ifdef NEED_THREADS
 	if (g_thread_supported() == FALSE)
@@ -159,18 +196,6 @@ int main(int argc, char **argv)
 
 	__ofono_plugin_init(NULL, NULL);
 
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_flags = SA_NOCLDSTOP;
-	sa.sa_handler = sig_term;
-	sigaction(SIGTERM, &sa, NULL);
-	sigaction(SIGINT,  &sa, NULL);
-
-	sa.sa_handler = sig_debug;
-	sigaction(SIGUSR2, &sa, NULL);
-
-	sa.sa_handler = SIG_IGN;
-	sigaction(SIGPIPE, &sa, NULL);
-
 	g_main_loop_run(event_loop);
 
 	__ofono_plugin_cleanup();
@@ -181,6 +206,7 @@ int main(int argc, char **argv)
 	dbus_connection_unref(conn);
 
 cleanup:
+	g_source_remove(signal_source);
 	g_main_loop_unref(event_loop);
 
 	__ofono_log_cleanup();
