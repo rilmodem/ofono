@@ -1,3 +1,9 @@
+ver 0.13:
+	Add better support for call id allocation.
+	Add CLCC query when initializing modem.
+	Add DTMF tone sending support for HFP modem.
+	Add support for modem disabling on shutdown.
+
 ver 0.12:
 	Fix various issues with Calypso modem driver.
 	Fix order of CMER and CIND in SLC connection.
