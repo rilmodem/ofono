@@ -42,6 +42,8 @@
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
 
+#include <drivers/atmodem/vendor.h>
+
 static const char *none_prefix[] = { NULL };
 
 struct hso_data {
@@ -211,7 +213,8 @@ static void hso_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, 0, "atmodem", data->app);
+	ofono_netreg_create(modem, OFONO_VENDOR_OPTION_HSO,
+				"atmodem", data->app);
 	ofono_sms_create(modem, 0, "atmodem", data->app);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->app);
