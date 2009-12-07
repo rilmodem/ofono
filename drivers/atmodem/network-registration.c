@@ -524,6 +524,25 @@ static void calypso_csq_notify(GAtResult *result, gpointer user_data)
 	report_signal_strength(netreg, strength);
 }
 
+static void option_osigq_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	int strength;
+	GAtResultIter iter;
+
+	dump_response("option_osigq_notify", TRUE, result);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OSIGQ:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &strength))
+		return;
+
+	report_signal_strength(netreg, strength);
+}
+
 static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -636,6 +655,13 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 		g_at_chat_send(nd->chat, "AT%CSQ=1", none_prefix,
 				NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "%CSQ:", calypso_csq_notify,
+					FALSE, netreg, NULL);
+
+		break;
+	case OFONO_VENDOR_OPTION_HSO:
+		g_at_chat_send(nd->chat, "AT_OSQI=1", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_register(nd->chat, "_OSIGQ:", option_osigq_notify,
 					FALSE, netreg, NULL);
 
 		break;
