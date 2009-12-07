@@ -543,6 +543,54 @@ static void option_osigq_notify(GAtResult *result, gpointer user_data)
 	report_signal_strength(netreg, strength);
 }
 
+static void option_owcti_notify(GAtResult *result, gpointer user_data)
+{
+	int mode;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OWCTI:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &mode))
+		return;
+
+	ofono_info("OWCTI mode: %d", mode);
+}
+
+static void option_octi_notify(GAtResult *result, gpointer user_data)
+{
+	int mode;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OCTI:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &mode))
+		return;
+
+	ofono_info("OCTI mode: %d", mode);
+}
+
+static void option_ossysi_notify(GAtResult *result, gpointer user_data)
+{
+	int mode;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OSSYSI:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &mode))
+		return;
+
+	ofono_info("OSSYSI mode: %d", mode);
+}
+
 static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -659,9 +707,19 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 
 		break;
 	case OFONO_VENDOR_OPTION_HSO:
+		g_at_chat_send(nd->chat, "AT_OSSYS=1", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT_OCTI=1", none_prefix,
+				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OSQI=1", none_prefix,
 				NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "_OSIGQ:", option_osigq_notify,
+					FALSE, netreg, NULL);
+		g_at_chat_register(nd->chat, "_OWCTI:", option_owcti_notify,
+					FALSE, netreg, NULL);
+		g_at_chat_register(nd->chat, "_OCTI:", option_octi_notify,
+					FALSE, netreg, NULL);
+		g_at_chat_register(nd->chat, "_OSSYSI:", option_ossysi_notify,
 					FALSE, netreg, NULL);
 
 		break;
