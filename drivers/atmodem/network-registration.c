@@ -631,9 +631,17 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(nd->chat, "+CSQ:",
 				csq_notify, FALSE, netreg, NULL);
 
-	if (nd->vendor == OFONO_VENDOR_CALYPSO)
+	switch (nd->vendor) {
+	case OFONO_VENDOR_CALYPSO:
+		g_at_chat_send(nd->chat, "AT%CSQ=1", none_prefix,
+				NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "%CSQ:", calypso_csq_notify,
 					FALSE, netreg, NULL);
+
+		break;
+	default:
+		break;
+	}
 
 	ofono_netreg_register(netreg);
 }
@@ -699,9 +707,6 @@ static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	nd->chat = chat;
 	nd->vendor = vendor;
 	ofono_netreg_set_data(netreg, nd);
-
-	if (nd->vendor == OFONO_VENDOR_CALYPSO)
-		g_at_chat_send(chat, "AT%CSQ=1", NULL, NULL, NULL, NULL);
 
 	g_at_chat_send(chat, "AT+CREG=?", creg_prefix,
 			at_creg_test_cb, netreg, NULL);
