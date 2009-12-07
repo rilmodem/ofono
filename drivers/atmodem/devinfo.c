@@ -54,31 +54,37 @@ static void attr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_devinfo_query_cb_t cb = cbd->cb;
 	const char *prefix = cbd->user;
 	struct ofono_error error;
+	int numlines = g_at_result_num_response_lines(result);
+	GAtResultIter iter;
+	const char *line;
+	int i;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-
 	dump_response("attr_cb", ok, result);
 
-	if (ok) {
-		GAtResultIter iter;
-		const char *line;
-		int i;
+	if (!ok) {
+		cb(&error, NULL, cbd->data);
+		return;
+	}
 
-		g_at_result_iter_init(&iter, result);
+	if (numlines == 0) {
+		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+		return;
+	}
 
-		/* We have to be careful here, sometimes a stray unsolicited
-		 * notification will appear as part of the response and we
-		 * cannot rely on having a prefix to recognize the actual
-		 * response line.  So use the last line only as the response
-		 */
-		for (i = 0; i < g_at_result_num_response_lines(result); i++)
-			g_at_result_iter_next(&iter, NULL);
+	g_at_result_iter_init(&iter, result);
 
-		line = g_at_result_iter_raw_line(&iter);
+	/* We have to be careful here, sometimes a stray unsolicited
+	 * notification will appear as part of the response and we
+	 * cannot rely on having a prefix to recognize the actual
+	 * response line.  So use the last line only as the response
+	 */
+	for (i = 0; i < numlines; i++)
+		g_at_result_iter_next(&iter, NULL);
 
-		cb(&error, fixup_return(line, prefix), cbd->data);
-	} else
-		cb(&error, "", cbd->data);
+	line = g_at_result_iter_raw_line(&iter);
+
+	cb(&error, fixup_return(line, prefix), cbd->data);
 }
 
 static void at_query_manufacturer(struct ofono_devinfo *info,
