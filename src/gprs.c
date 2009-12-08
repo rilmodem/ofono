@@ -901,6 +901,27 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 
 	gprs->attached = attached;
 
+	if (gprs->attached == FALSE) {
+		GSList *l;
+		struct pri_context *ctx;
+
+		for (l = gprs->contexts; l; l = l->next) {
+			ctx = l->data;
+
+			if (ctx->active == FALSE)
+				continue;
+
+			ctx->active = FALSE;
+			pri_reset_context_settings(ctx);
+
+			value = FALSE;
+			ofono_dbus_signal_property_changed(conn, ctx->path,
+						DATA_CONTEXT_INTERFACE,
+						"Active", DBUS_TYPE_BOOLEAN,
+						&value);
+		}
+	}
+
 	path = __ofono_atom_get_path(gprs->atom);
 	value = attached;
 	ofono_dbus_signal_property_changed(conn, path,
