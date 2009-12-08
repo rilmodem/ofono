@@ -567,16 +567,20 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 	modem->powered_pending = powered;
 
 	if (modem->powered != powered) {
+		dbus_bool_t dbus_powered = powered;
 		modem->powered = powered;
 
-		if (modem->driver) {
-			dbus_bool_t dbus_powered = powered;
+		if (modem->driver == NULL) {
+			ofono_error("Calling ofono_modem_set_powered on a"
+					"modem with no driver is not valid, "
+					"please fix the modem driver.");
+			return;
+		}
 
-			ofono_dbus_signal_property_changed(conn, modem->path,
+		ofono_dbus_signal_property_changed(conn, modem->path,
 						OFONO_MODEM_INTERFACE,
 						"Powered", DBUS_TYPE_BOOLEAN,
 						&dbus_powered);
-		}
 
 		if (powered) {
 			if (modem->driver->pre_sim)
