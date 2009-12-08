@@ -105,8 +105,8 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 		g_modems = g_slist_prepend(g_modems, isi);
 
 		ofono_modem_set_data(isi->modem, isi);
-		ofono_modem_set_powered(isi->modem, TRUE);
 		ofono_modem_register(isi->modem);
+		ofono_modem_set_powered(isi->modem, TRUE);
  	} else {
 
 		if (!isi) {
