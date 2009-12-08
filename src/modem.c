@@ -591,7 +591,7 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		}
 	}
 
-	if (powering_down) {
+	if (powering_down && powered == FALSE) {
 		modems_remaining -= 1;
 
 		if (modems_remaining == 0)
