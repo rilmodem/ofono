@@ -59,7 +59,6 @@ struct ofono_modem {
 	guint			interface_update;
 	ofono_bool_t		powered;
 	ofono_bool_t		powered_pending;
-	ofono_bool_t		powered_persistent;
 	guint			timeout;
 	GHashTable		*properties;
 	struct ofono_sim	*sim;
@@ -1158,13 +1157,6 @@ int ofono_modem_register(struct ofono_modem *modem)
 	modem->sim_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_SIM,
 					sim_watch, modem, NULL);
-
-	/* TODO: Read powered property from store */
-	if (modem->powered_persistent)
-		set_powered(modem, TRUE);
-
-	if (modem->powered == TRUE && modem->driver->pre_sim)
-		modem->driver->pre_sim(modem);
 
 	return 0;
 }
