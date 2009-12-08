@@ -577,12 +577,12 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 						OFONO_MODEM_INTERFACE,
 						"Powered", DBUS_TYPE_BOOLEAN,
 						&dbus_powered);
-			if (powered) {
-				if (modem->driver->pre_sim)
-					modem->driver->pre_sim(modem);
-			}
 		}
 
+		if (powered) {
+			if (modem->driver->pre_sim)
+				modem->driver->pre_sim(modem);
+		}
 	}
 
 	if (powering_down) {
