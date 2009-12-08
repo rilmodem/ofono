@@ -89,6 +89,7 @@ static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_gprs_status_cb_t cb = cbd->cb;
 	int status;
 	const char *str;
+	int mode;
 	int lac = -1, ci = -1, tech = -1;
 	struct ofono_error error;
 
@@ -102,32 +103,33 @@ static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "+CGREG:")) {
-		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
+	while (g_at_result_iter_next(&iter, "+CGREG:")) {
+		g_at_result_iter_next_number(&iter, &mode);
+
+		/* Sometimes we get an unsolicited CGREG here, skip it */
+		if (g_at_result_iter_next_number(&iter, &status) == FALSE)
+			continue;
+
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			lac = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			ci = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		g_at_result_iter_next_number(&iter, &tech);
+
+out:
+		ofono_debug("cgreg_cb: %d, %d, %d, %d", status, lac, ci, tech);
+
+		cb(&error, status, lac, ci, tech, cbd->data);
 		return;
 	}
 
-	/* Skip <n> the unsolicited result code */
-	g_at_result_iter_skip_next(&iter);
-
-	g_at_result_iter_next_number(&iter, &status);
-
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		lac = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		ci = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	g_at_result_iter_next_number(&iter, &tech);
-
-out:
-	ofono_debug("cgreg_cb: %d, %d, %d, %d", status, lac, ci, tech);
-
-	cb(&error, status, lac, ci, tech, cbd->data);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 }
 
 static void at_gprs_registration_status(struct ofono_gprs *gprs,
