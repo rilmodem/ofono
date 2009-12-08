@@ -581,6 +581,9 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		if (powered) {
 			if (modem->driver->pre_sim)
 				modem->driver->pre_sim(modem);
+		} else {
+			remove_all_atoms(modem);
+			modem->call_ids = 0;
 		}
 	}
 
