@@ -427,7 +427,6 @@ static void pri_activate_callback(const struct ofono_error *error,
 						DATA_CONTEXT_INTERFACE,
 						"Active", DBUS_TYPE_BOOLEAN,
 						&value);
-
 }
 
 static void pri_deactivate_callback(const struct ofono_error *error, void *data)
