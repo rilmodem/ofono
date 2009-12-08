@@ -1406,6 +1406,7 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 			continue;
 
 		ctx->active = FALSE;
+		pri_reset_context_settings(ctx);
 
 		value = FALSE;
 		ofono_dbus_signal_property_changed(conn, ctx->path,
