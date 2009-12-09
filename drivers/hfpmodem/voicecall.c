@@ -501,6 +501,56 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void hfp_private_chat(struct ofono_voicecall *vc, int id,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	char buf[32];
+
+	if (vd->ag_mpty_features & AG_CHLD_2x) {
+		sprintf(buf, "AT+CHLD=2%d", id);
+
+		hfp_template(buf, vc, generic_cb, 0, cb, data);
+
+		return;
+	}
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void hfp_create_multiparty(struct ofono_voicecall *vc,
+					ofono_voicecall_cb_t cb, void *data)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
+	if (vd->ag_mpty_features & AG_CHLD_3) {
+		hfp_template("AT+CHLD=3", vc, generic_cb, 0, cb, data);
+
+		return;
+	}
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void hfp_transfer(struct ofono_voicecall *vc,
+			ofono_voicecall_cb_t cb, void *data)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	/* Transfer can puts held & active calls together and disconnects
+	 * from both.  However, some networks support transfering of
+	 * dialing/ringing calls as well.
+	 */
+	unsigned int transfer = 0x1 | 0x2 | 0x4 | 0x8;
+
+	if (vd->ag_mpty_features & AG_CHLD_4) {
+		hfp_template("AT+CHLD=4", vc, generic_cb, transfer, cb, data);
+
+		return;
+	}
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
 static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 			ofono_voicecall_cb_t cb, void *data)
 {
@@ -1059,9 +1109,9 @@ static struct ofono_voicecall_driver driver = {
 	.set_udub		= hfp_set_udub,
 	.release_all_active	= hfp_release_all_active,
 	.release_specific	= hfp_release_specific,
-	.private_chat		= NULL,
-	.create_multiparty	= NULL,
-	.transfer		= NULL,
+	.private_chat		= hfp_private_chat,
+	.create_multiparty	= hfp_create_multiparty,
+	.transfer		= hfp_transfer,
 	.deflect		= NULL,
 	.swap_without_accept	= NULL,
 	.send_tones		= hfp_send_dtmf
