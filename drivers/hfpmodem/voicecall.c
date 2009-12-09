@@ -258,7 +258,8 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			 */
 			nc->clip_validity = oc->clip_validity;
 
-			if (memcmp(nc, oc, sizeof(struct ofono_call)) && !nc->type)
+			if (memcmp(nc, oc, sizeof(struct ofono_call)) &&
+					!nc->type)
 				ofono_voicecall_notify(vc, nc);
 
 			n = n->next;
@@ -453,7 +454,8 @@ static void hfp_release_all_held(struct ofono_voicecall *vc,
 	unsigned int held_status = 0x1 << 1;
 
 	if (vd->ag_mpty_features & AG_CHLD_0) {
-		hfp_template("AT+CHLD=0", vc, generic_cb, held_status, cb, data);
+		hfp_template("AT+CHLD=0", vc, generic_cb, held_status,
+				cb, data);
 		return;
 	}
 
@@ -669,7 +671,8 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	call = create_call(vc, 0, 1, 5, num, num_type, validity);
 
 	if (!call) {
-		ofono_error("malloc call structfailed. Call management is fubar");
+		ofono_error("malloc call struct failed.  "
+				"Call management is fubar");
 		return;
 	}
 
@@ -891,7 +894,7 @@ static void sync_dialing_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	/* Look for dialing or alerting calls on the new list */
 	n = find_dialing(calls);
 
- 	/* Let us find if we have done the dial from HF by looking for
+	/* Let us find if we have done the dial from HF by looking for
 	 * existing dialing or alerting calls
 	 */
 	o = find_dialing(vd->calls);
@@ -1007,11 +1010,11 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 
 		if (o) {
 			struct ofono_call *call = o->data;
-			
+
 			call->status = CALL_STATUS_ALERTING;
 			ofono_voicecall_notify(vc, call);
 		}
-	
+
 		break;
 	}
 
