@@ -147,3 +147,99 @@ GSList *at_util_parse_clcc(GAtResult *result)
 	return l;
 }
 
+gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
+					int *status,
+					int *lac, int *ci, int *tech)
+{
+	GAtResultIter iter;
+	int s;
+	int l = -1, c = -1, t = -1;
+	const char *str;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, prefix) == FALSE)
+		return FALSE;
+		
+	if (g_at_result_iter_next_number(&iter, &s) == FALSE)
+		return FALSE;
+
+	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+		l = strtol(str, NULL, 16);
+	else
+		goto out;
+
+	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+		c = strtol(str, NULL, 16);
+	else
+		goto out;
+
+	g_at_result_iter_next_number(&iter, &t);
+
+out:
+	if (status)
+		*status = s;
+
+	if (lac)
+		*lac = l;
+
+	if (ci)
+		*ci = c;
+
+	if (tech)
+		*tech = t;
+
+	return TRUE;
+}
+
+gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
+				int *mode, int *status,
+				int *lac, int *ci, int *tech)
+{
+	GAtResultIter iter;
+	int m, s;
+	int l = -1, c = -1, t = -1;
+	const char *str;
+
+	g_at_result_iter_init(&iter, result);
+
+	while (g_at_result_iter_next(&iter, prefix)) {
+		g_at_result_iter_next_number(&iter, &m);
+
+		/* Sometimes we get an unsolicited CREG/CGREG here, skip it */
+		if (g_at_result_iter_next_number(&iter, &s) == FALSE)
+			continue;
+
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			l = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			c = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		g_at_result_iter_next_number(&iter, &t);
+
+out:
+		if (mode)
+			*mode = m;
+
+		if (status)
+			*status = s;
+
+		if (lac)
+			*lac = l;
+
+		if (ci)
+			*ci = c;
+
+		if (tech)
+			*tech = t;
+
+		return TRUE;
+	}
+	
+	return FALSE;
+}
