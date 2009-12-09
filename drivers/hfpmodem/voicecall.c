@@ -40,6 +40,7 @@
 #include "hfpmodem.h"
 
 #define POLL_CLCC_INTERVAL 2000
+#define CLIP_TIMEOUT 500
 
 static const char *none_prefix[] = { NULL };
 static const char *clcc_prefix[] = { "+CLCC:", NULL };
@@ -53,6 +54,7 @@ struct voicecall_data {
 	int cind_val[HFP_INDICATOR_LAST];
 	unsigned int local_release;
 	unsigned int clcc_source;
+	unsigned int clip_source;
 };
 
 struct release_id_req {
@@ -674,6 +676,29 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	ofono_voicecall_notify(vc, call);
 }
 
+static gboolean clip_timeout(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GSList *l;
+	struct ofono_call *call;
+
+	l = g_slist_find_custom(vd->calls,
+				GINT_TO_POINTER(CALL_STATUS_INCOMING),
+				at_util_call_compare_by_status);
+
+	if (l == NULL)
+		return FALSE;
+
+	call = l->data;
+
+	ofono_voicecall_notify(vc, call);
+
+	vd->clip_source = 0;
+
+	return FALSE;
+}
+
 static void ring_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
@@ -717,6 +742,11 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 
 	if (!call)
 		ofono_error("Couldn't create call, call management is fubar!");
+
+	/* We don't know the number must wait for CLIP to arrive before
+	 * announcing the call. If timeout, we notify the call as it is.
+	 */
+	vd->clip_source = g_timeout_add(CLIP_TIMEOUT, clip_timeout, vc);
 }
 
 static void clip_notify(GAtResult *result, gpointer user_data)
@@ -773,6 +803,11 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	call->clip_validity = validity;
 
 	ofono_voicecall_notify(vc, call);
+
+	if (vd->clip_source) {
+		g_source_remove(vd->clip_source);
+		vd->clip_source = 0;
+	}
 }
 
 static void ciev_call_notify(struct ofono_voicecall *vc,
@@ -1125,6 +1160,9 @@ static void hfp_voicecall_remove(struct ofono_voicecall *vc)
 
 	if (vd->clcc_source)
 		g_source_remove(vd->clcc_source);
+
+	if (vd->clip_source)
+		g_source_remove(vd->clip_source);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
