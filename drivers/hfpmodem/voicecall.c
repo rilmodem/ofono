@@ -39,6 +39,8 @@
 
 #include "hfpmodem.h"
 
+#define POLL_CLCC_INTERVAL 2000
+
 static const char *none_prefix[] = { NULL };
 static const char *clcc_prefix[] = { "+CLCC:", NULL };
 
@@ -50,6 +52,7 @@ struct voicecall_data {
 	unsigned char cind_pos[HFP_INDICATOR_LAST];
 	int cind_val[HFP_INDICATOR_LAST];
 	unsigned int local_release;
+	unsigned int clcc_source;
 };
 
 struct release_id_req {
@@ -65,6 +68,8 @@ struct change_state_req {
 	void *data;
 	int affected_types;
 };
+
+static gboolean poll_clcc(gpointer user_data);
 
 static GSList *find_dialing(GSList *calls)
 {
@@ -197,6 +202,8 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GSList *calls;
 	GSList *n, *o;
 	struct ofono_call *nc, *oc;
+	unsigned int num_active = 0;
+	unsigned int num_held = 0;
 
 	dump_response("clcc_poll_cb", ok, result);
 
@@ -211,6 +218,12 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	while (n || o) {
 		nc = n ? n->data : NULL;
 		oc = o ? o->data : NULL;
+
+		if (nc && (nc->status == CALL_STATUS_ACTIVE))
+			num_active++;
+
+		if (nc && (nc->status == CALL_STATUS_HELD))
+			num_held++;
 
 		if (oc && (!nc || (nc->id > oc->id))) {
 			enum ofono_disconnect_reason reason;
@@ -255,6 +268,27 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_slist_free(vd->calls);
 
 	vd->calls = calls;
+
+	/* If either active/held call is more than 1, we are in mpty calls.
+	 * we won't get indicator update if any of them is released by CHLD=1x.
+	 * So we have to poll it.
+	 */
+	if (num_active > 1 || num_held > 1)
+		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL, poll_clcc,
+							vc);
+}
+
+static gboolean poll_clcc(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
+	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
+				clcc_poll_cb, vc, NULL);
+
+	vd->clcc_source = 0;
+
+	return FALSE;
 }
 
 static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -1088,6 +1122,9 @@ static int hfp_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 static void hfp_voicecall_remove(struct ofono_voicecall *vc)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
+	if (vd->clcc_source)
+		g_source_remove(vd->clcc_source);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
