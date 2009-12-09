@@ -891,7 +891,6 @@ static void ciev_callheld_notify(struct ofono_voicecall *vc,
 
 				call->status = CALL_STATUS_HELD;
 				ofono_voicecall_notify(vc, call);
-
 			}
 		} else if (callheld == 1)
 			release_with_status(vc, CALL_STATUS_ACTIVE);
