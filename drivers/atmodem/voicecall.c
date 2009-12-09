@@ -131,7 +131,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	dump_response("clcc_poll_cb", ok, result);
 
 	if (!ok) {
-		ofono_error("We are polling CLCC and CLCC resulted in an error");
+		ofono_error("We are polling CLCC and received an error");
 		ofono_error("All bets are off for call management");
 		return;
 	}
@@ -177,7 +177,8 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			 */
 			nc->clip_validity = oc->clip_validity;
 
-			if (memcmp(nc, oc, sizeof(struct ofono_call)) && !nc->type)
+			if (memcmp(nc, oc, sizeof(struct ofono_call)) &&
+					!nc->type)
 				ofono_voicecall_notify(vc, nc);
 
 			n = n->next;
@@ -308,7 +309,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	call = create_call(vc, 0, 0, 2, num, type, validity);
 
 	if (!call) {
-		ofono_error("Unable to allocate call, call tracking will fail!");
+		ofono_error("Unable to malloc, call tracking will fail!");
 		return;
 	}
 
@@ -778,7 +779,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 				num, num_type, validity);
 
 	if (!call) {
-		ofono_error("malloc call structfailed. Call management is fubar");
+		ofono_error("Unable to malloc. Call management is fubar");
 		return;
 	}
 

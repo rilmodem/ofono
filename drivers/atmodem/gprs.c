@@ -215,7 +215,8 @@ static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 
 	g_at_chat_register(gd->chat, "+CGEV:", cgev_notify, FALSE, gprs, NULL);
-	g_at_chat_register(gd->chat, "+CGREG:", cgreg_notify, FALSE, gprs, NULL);
+	g_at_chat_register(gd->chat, "+CGREG:", cgreg_notify,
+				FALSE, gprs, NULL);
 
 	ofono_gprs_register(gprs);
 }

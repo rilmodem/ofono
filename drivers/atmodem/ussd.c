@@ -91,8 +91,7 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 		/* TODO: Figure out what to do with 8 bit data */
 		ofono_error("8-bit coded USSD response received");
 		status = 4; /* Not supported */
-	}
-	else {
+	} else {
 		/* No other encoding is mentioned in TS27007 7.15 */
 		ofono_error("Unsupported USSD data coding scheme (%02x)", dcs);
 		status = 4; /* Not supported */

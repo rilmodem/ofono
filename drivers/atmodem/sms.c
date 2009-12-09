@@ -329,7 +329,8 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_debug("Got new SMS Deliver PDU via CMT: %s, %d", hexpdu, tpdu_len);
+	ofono_debug("Got new SMS Deliver PDU via CMT: %s, %d",
+			hexpdu, tpdu_len);
 
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);

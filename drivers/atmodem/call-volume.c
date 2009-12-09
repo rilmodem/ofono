@@ -180,8 +180,8 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static int at_call_volume_probe(struct ofono_call_volume *cv, unsigned int vendor,
-				void *data)
+static int at_call_volume_probe(struct ofono_call_volume *cv,
+				unsigned int vendor, void *data)
 {
 	GAtChat *chat = data;
 	struct cv_data *cvd;
