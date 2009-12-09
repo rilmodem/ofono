@@ -86,24 +86,30 @@ static void add_mbm(struct ofono_modem *modem,
 	if (desc == NULL)
 		return;
 
+	DBG("desc: %s", desc);
+
 	registered = ofono_modem_get_integer(modem, "Registered");
 	if (registered != 0)
 		return;
 
 	if (g_str_has_suffix(desc, "Minicard Modem") ||
+			g_str_has_suffix(desc, "Mini-Card Modem") ||
 			g_str_has_suffix(desc, "Broadband Modem") ||
 			g_str_has_suffix(desc, "Broadband USB Modem")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
 	} else if (g_str_has_suffix(desc, "Minicard Data Modem") ||
+			g_str_has_suffix(desc, "Mini-Card Data Modem") ||
 			g_str_has_suffix(desc, "Broadband Data Modem")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, DATA_DEVICE, devnode);
 	} else if (g_str_has_suffix(desc, "Minicard GPS Port") ||
+			g_str_has_suffix(desc, "Mini-Card GPRS Port") ||
 			g_str_has_suffix(desc, "Broadband GPS Port")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, GPS_DEVICE, devnode);
 	} else if (g_str_has_suffix(desc, "Minicard Network Adapter") ||
+			g_str_has_suffix(desc, "Mini-Card Network Adapter") ||
 			g_str_has_suffix(desc, "Broadband Network Adapter") ||
 			g_str_has_suffix(desc, "Minicard NetworkAdapter")) {
 		devnode = udev_device_get_property_value(udev_device,
