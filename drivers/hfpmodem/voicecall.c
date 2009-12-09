@@ -452,6 +452,55 @@ static void hfp_release_all_active(struct ofono_voicecall *vc,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void release_id_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct release_id_req *req = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
+	struct ofono_error error;
+
+	dump_response("release_id_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (ok)
+		vd->local_release |= (1 << req->id);
+
+	req->cb(&error, req->data);
+}
+
+static void hfp_release_specific(struct ofono_voicecall *vc, int id,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct release_id_req *req = NULL;
+	char buf[32];
+
+	if (!(vd->ag_mpty_features & AG_CHLD_1x))
+		goto error;
+
+	req = g_try_new0(struct release_id_req, 1);
+
+	if (!req)
+		goto error;
+
+	req->vc = vc;
+	req->cb = cb;
+	req->data = data;
+	req->id = id;
+
+	sprintf(buf, "AT+CHLD=1%d", id);
+
+	if (g_at_chat_send(vd->chat, buf, none_prefix,
+				release_id_cb, req, g_free) > 0)
+		return;
+
+error:
+	if (req)
+		g_free(req);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
 static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 			ofono_voicecall_cb_t cb, void *data)
 {
@@ -1009,7 +1058,7 @@ static struct ofono_voicecall_driver driver = {
 	.release_all_held	= hfp_release_all_held,
 	.set_udub		= hfp_set_udub,
 	.release_all_active	= hfp_release_all_active,
-	.release_specific	= NULL,
+	.release_specific	= hfp_release_specific,
 	.private_chat		= NULL,
 	.create_multiparty	= NULL,
 	.transfer		= NULL,
