@@ -85,13 +85,9 @@ error:
 static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	GAtResultIter iter;
 	ofono_gprs_status_cb_t cb = cbd->cb;
-	int status;
-	const char *str;
-	int mode;
-	int lac = -1, ci = -1, tech = -1;
 	struct ofono_error error;
+	int status, lac, ci, tech;
 
 	dump_response("at_cgreg_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -101,35 +97,13 @@ static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	g_at_result_iter_init(&iter, result);
-
-	while (g_at_result_iter_next(&iter, "+CGREG:")) {
-		g_at_result_iter_next_number(&iter, &mode);
-
-		/* Sometimes we get an unsolicited CGREG here, skip it */
-		if (g_at_result_iter_next_number(&iter, &status) == FALSE)
-			continue;
-
-		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-			lac = strtol(str, NULL, 16);
-		else
-			goto out;
-
-		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-			ci = strtol(str, NULL, 16);
-		else
-			goto out;
-
-		g_at_result_iter_next_number(&iter, &tech);
-
-out:
-		ofono_debug("cgreg_cb: %d, %d, %d, %d", status, lac, ci, tech);
-
-		cb(&error, status, lac, ci, tech, cbd->data);
+	if (at_util_parse_reg(result, "+CGREG:", NULL, &status,
+				&lac, &ci, &tech) == FALSE) {
+		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 		return;
 	}
 
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
+	cb(&error, status, lac, ci, tech, cbd->data);
 }
 
 static void at_gprs_registration_status(struct ofono_gprs *gprs,
@@ -156,34 +130,13 @@ error:
 static void cgreg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
-	GAtResultIter iter;
-	gint status, tech = -1;
-	int lac = -1, ci = -1;
-	const char *str;
+	int status, lac, ci, tech;
 
 	dump_response("cgreg_notify", TRUE, result);
 
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CGREG:"))
+	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
+				&lac, &ci, &tech) == FALSE)
 		return;
-
-	g_at_result_iter_next_number(&iter, &status);
-
-	if (g_at_result_iter_next_string(&iter, &str))
-		lac = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	if (g_at_result_iter_next_string(&iter, &str))
-		ci = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	g_at_result_iter_next_number(&iter, &tech);
-
-out:
-	ofono_debug("cgreg_notify: %d, %d, %d, %d", status, lac, ci, tech);
 
 	ofono_gprs_status_notify(gprs, status, lac, ci, tech);
 }
