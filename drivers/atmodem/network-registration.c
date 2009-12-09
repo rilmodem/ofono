@@ -66,11 +66,8 @@ static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	GAtResultIter iter;
 	ofono_netreg_status_cb_t cb = cbd->cb;
-	int status;
-	const char *str;
-	int lac = -1, ci = -1, tech = -1;
+	int status, lac, ci, tech;
 	struct ofono_error error;
 
 	dump_response("at_creg_cb", ok, result);
@@ -81,32 +78,11 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CREG:")) {
+	if (at_util_parse_reg(result, "+CREG:", NULL, &status,
+				&lac, &ci, &tech) == FALSE) {
 		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 		return;
 	}
-
-	/* Skip <n> the unsolicited result code */
-	g_at_result_iter_skip_next(&iter);
-
-	g_at_result_iter_next_number(&iter, &status);
-
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		lac = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		ci = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	g_at_result_iter_next_number(&iter, &tech);
-
-out:
-	ofono_debug("creg_cb: %d, %d, %d, %d", status, lac, ci, tech);
 
 	cb(&error, status, lac, ci, tech, cbd->data);
 }
@@ -649,34 +625,13 @@ error:
 static void creg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
-	GAtResultIter iter;
-	int status;
-	int lac = -1, ci = -1, tech = -1;
-	const char *str;
+	int status, lac, ci, tech;
 
 	dump_response("creg_notify", TRUE, result);
 
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CREG:"))
+	if (at_util_parse_reg_unsolicited(result, "+CREG:", &status,
+				&lac, &ci, &tech) == FALSE)
 		return;
-
-	g_at_result_iter_next_number(&iter, &status);
-
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		lac = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		ci = strtol(str, NULL, 16);
-	else
-		goto out;
-
-	g_at_result_iter_next_number(&iter, &tech);
-
-out:
-	ofono_debug("creg_notify: %d, %d, %d, %d", status, lac, ci, tech);
 
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
