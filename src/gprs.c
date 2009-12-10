@@ -71,8 +71,8 @@ struct ofono_gprs {
 	int technology;
 	int flags;
 	int next_context_id;
-	int cid_min;
-	int cid_max;
+	unsigned int cid_min;
+	unsigned int cid_max;
 	int netreg_status;
 	struct ofono_netreg *netreg;
 	unsigned int netreg_watch;
@@ -1381,7 +1381,8 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 	gprs_attached_update(gprs);
 }
 
-void ofono_gprs_set_cid_range(struct ofono_gprs *gprs, int min, int max)
+void ofono_gprs_set_cid_range(struct ofono_gprs *gprs,
+				unsigned int min, unsigned int max)
 {
 	if (gprs == NULL)
 		return;

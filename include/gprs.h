@@ -65,7 +65,8 @@ void ofono_gprs_remove(struct ofono_gprs *gprs);
 void ofono_gprs_set_data(struct ofono_gprs *gprs, void *data);
 void *ofono_gprs_get_data(struct ofono_gprs *gprs);
 
-void ofono_gprs_set_cid_range(struct ofono_gprs *gprs, int min, int max);
+void ofono_gprs_set_cid_range(struct ofono_gprs *gprs,
+				unsigned int min, unsigned int max);
 void ofono_gprs_add_context(struct ofono_gprs *gprs,
 				struct ofono_gprs_context *gc);
 
