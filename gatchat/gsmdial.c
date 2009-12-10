@@ -393,7 +393,7 @@ static GOptionEntry options[] = {
 				"Specify CID to use" },
 	{ "apn", 'a', 0, G_OPTION_ARG_STRING, &option_apn,
 				"Specify APN" },
-	{ "offmode", 'a', 0, G_OPTION_ARG_INT, &option_offmode,
+	{ "offmode", 'o', 0, G_OPTION_ARG_INT, &option_offmode,
 				"Specify CFUN offmode" },
 	{ NULL },
 };
