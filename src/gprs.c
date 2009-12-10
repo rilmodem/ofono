@@ -73,6 +73,7 @@ struct ofono_gprs {
 	int next_context_id;
 	unsigned int cid_min;
 	unsigned int cid_max;
+	unsigned char *cid_bitmap;
 	int netreg_status;
 	struct ofono_netreg *netreg;
 	unsigned int netreg_watch;
@@ -140,6 +141,48 @@ static enum gprs_context_type gprs_context_string_to_type(const char *str)
 		return GPRS_CONTEXT_TYPE_MMS;
 
 	return GPRS_CONTEXT_TYPE_INVALID;
+}
+
+static unsigned int gprs_cid_alloc(struct ofono_gprs *gprs)
+{
+	unsigned int i, j;
+	unsigned int num_cids = gprs->cid_max - gprs->cid_min + 1;
+	unsigned int offset = num_cids / 8;
+	unsigned int max_bit = num_cids % 8;
+
+	for (i = 0; i < offset; i++) {
+		for (j = 0; j < 8; j++) {
+			if (gprs->cid_bitmap[i] & (1 << j))
+				continue;
+
+			gprs->cid_bitmap[i] |= (1 << j);
+			return i * 8 + j + 1;
+		}
+	}
+
+	for (j = 0; j < max_bit; j++) {
+		if (gprs->cid_bitmap[offset] & (1 << j))
+			continue;
+
+		gprs->cid_bitmap[i] |= (1 << j);
+		return offset * 8 + j + 1;
+	}
+
+	return 0;
+}
+
+static void gprs_cid_release(struct ofono_gprs *gprs, unsigned int id)
+{
+	unsigned int offset = (id - 1) / 8;
+	unsigned int bit = (id - 1) % 8;
+
+	if (id > gprs->cid_max)
+		return;
+
+	if (id < gprs->cid_min)
+		return;
+
+	gprs->cid_bitmap[offset] &= ~(1 << bit);
 }
 
 static struct pri_context *gprs_context_by_path(struct ofono_gprs *gprs,
@@ -408,6 +451,10 @@ static void pri_activate_callback(const struct ofono_error *error,
 				telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&gc->pending,
 					__ofono_error_failed(gc->pending));
+
+		gprs_cid_release(ctx->gprs, ctx->context.cid);
+		ctx->context.cid = 0;
+
 		return;
 	}
 
@@ -443,6 +490,9 @@ static void pri_deactivate_callback(const struct ofono_error *error, void *data)
 					__ofono_error_failed(gc->pending));
 		return;
 	}
+
+	gprs_cid_release(ctx->gprs, ctx->context.cid);
+	ctx->context.cid = 0;
 
 	ctx->active = FALSE;
 	__ofono_dbus_pending_reply(&gc->pending,
@@ -654,10 +704,24 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 				gc->driver->deactivate_primary == NULL)
 			return __ofono_error_not_implemented(msg);
 
-		gc->pending = dbus_message_ref(msg);
+		if (value) {
+			ctx->context.cid = gprs_cid_alloc(ctx->gprs);
 
-		/* TODO: Find lowest unused CID */
-		ctx->context.cid = 1;
+			if (ctx->context.cid == 0)
+				return __ofono_error_failed(msg);
+
+			if (ctx->context.cid != 1) {
+				ofono_error("Multiple active contexts are"
+						" not yet supported");
+
+				gprs_cid_release(ctx->gprs, ctx->context.cid);
+				ctx->context.cid = 0;
+
+				return __ofono_error_failed(msg);
+			}
+		}
+
+		gc->pending = dbus_message_ref(msg);
 
 		if (value)
 			gc->driver->activate_primary(gc, &ctx->context,
@@ -910,6 +974,9 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 
 			if (ctx->active == FALSE)
 				continue;
+
+			gprs_cid_release(gprs, ctx->context.cid);
+			ctx->context.cid = 0;
 
 			ctx->active = FALSE;
 			pri_reset_context_settings(ctx);
@@ -1387,6 +1454,9 @@ void ofono_gprs_set_cid_range(struct ofono_gprs *gprs,
 	if (gprs == NULL)
 		return;
 
+	g_free(gprs->cid_bitmap);
+	gprs->cid_bitmap = g_new0(unsigned char, (max - min + 8) / 8);
+
 	gprs->cid_min = min;
 	gprs->cid_max = max;
 }
@@ -1426,6 +1496,9 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 
 		if (ctx->context.cid != cid)
 			continue;
+
+		gprs_cid_release(ctx->gprs, ctx->context.cid);
+		ctx->context.cid = 0;
 
 		ctx->active = FALSE;
 		pri_reset_context_settings(ctx);
