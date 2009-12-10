@@ -35,6 +35,7 @@
 #include <gattty.h>
 
 static const char *none_prefix[] = { NULL };
+static const char *cgreg_prefix[] = { "+CGREG:", NULL };
 
 static gchar *option_ip = NULL;
 static gint option_port = 0;
@@ -148,6 +149,58 @@ out:
 	return TRUE;
 }
 
+static gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
+					int *mode, int *status,
+					int *lac, int *ci, int *tech)
+{
+	GAtResultIter iter;
+	int m, s;
+	int l = -1, c = -1, t = -1;
+	const char *str;
+
+	g_at_result_iter_init(&iter, result);
+
+	while (g_at_result_iter_next(&iter, prefix)) {
+		g_at_result_iter_next_number(&iter, &m);
+
+		/* Sometimes we get an unsolicited CREG/CGREG here, skip it */
+		if (g_at_result_iter_next_number(&iter, &s) == FALSE)
+			continue;
+
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			l = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			c = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		g_at_result_iter_next_number(&iter, &t);
+
+out:
+		if (mode)
+			*mode = m;
+
+		if (status)
+			*status = s;
+
+		if (lac)
+			*lac = l;
+
+		if (ci)
+			*ci = c;
+
+		if (tech)
+			*tech = t;
+
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
 static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	char buf[64];
@@ -176,6 +229,61 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(control, buf, none_prefix, at_cgact_up_cb, NULL, NULL);
 }
 
+static void setup_context(int status)
+{
+	char buf[1024];
+	int len;
+
+	state = STATE_ACTIVATING;
+
+	g_print("Registered to GPRS network, roaming=%s\n",
+			status == 5 ? "True" : "False");
+
+	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", option_cid);
+	snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"", option_apn);
+	g_at_chat_send(control, buf, none_prefix, at_cgdcont_cb, NULL, NULL);
+}
+
+static void cgreg_notify(GAtResult *result, gpointer user_data)
+{
+	int status, lac, ci, tech;
+
+	if (state != STATE_REGISTERING)
+		return;
+
+	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
+				&lac, &ci, &tech) == FALSE)
+		return;
+
+	if (status != 1 && status != 5)
+		return;
+
+	setup_context(status);
+}
+
+static void cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	int status, lac, ci, tech;
+
+	if (at_util_parse_reg(result, "+CGREG:", NULL, &status,
+				&lac, &ci, &tech) == FALSE)
+		return;
+
+	if (status != 1 && status != 5)
+		return;
+
+	setup_context(status);
+}
+
+static void attached_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	if (!ok)
+		return;
+
+	g_at_chat_send(control, "AT+CGREG?", cgreg_prefix,
+			cgreg_cb, NULL, NULL);
+}
+
 static void creg_notify(GAtResult *result, gpointer user_data)
 {
 	int status, lac, ci, tech;
@@ -192,36 +300,8 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 				status == 5 ? "True" : "False");
 		g_print("Activating gprs network...\n");
 		g_at_chat_send(control, "AT+CGATT=1", none_prefix,
-				NULL, NULL, NULL);
+				attached_cb, NULL, NULL);
 	}
-}
-
-static void cgreg_notify(GAtResult *result, gpointer user_data)
-{
-	int status, lac, ci, tech;
-	char buf[1024];
-	int len;
-
-	if (state != STATE_REGISTERING)
-		return;
-
-	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
-				&lac, &ci, &tech) == FALSE)
-		return;
-
-	if (status != 1 && status != 5)
-		return;
-
-	state = STATE_ACTIVATING;
-
-	g_print("Registered to GPRS network, roaming=%s\n",
-			status == 5 ? "True" : "False");
-
-	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", option_cid);
-
-	snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"", option_apn);
-
-	g_at_chat_send(control, buf, none_prefix, at_cgdcont_cb, NULL, NULL);
 }
 
 static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
