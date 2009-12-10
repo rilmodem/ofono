@@ -43,6 +43,7 @@ static gchar *option_modem = NULL;
 static gchar *option_control = NULL;
 static gint option_cid = 0;
 static gchar *option_apn = NULL;
+static gint option_offmode = 0;
 
 static GAtChat *control;
 static GAtChat *modem;
@@ -90,8 +91,11 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	case SIGINT:
 	case SIGTERM:
 		if (terminated == 0) {
+			char buf[64];
+
 			g_timeout_add_seconds(10, quit_eventloop, NULL);
-			g_at_chat_send(control, "AT+CFUN=0", none_prefix,
+			sprintf(buf, "AT+CFUN=%u", option_offmode);
+			g_at_chat_send(control, buf, none_prefix,
 					power_down, NULL, NULL);
 		}
 
@@ -389,6 +393,8 @@ static GOptionEntry options[] = {
 				"Specify CID to use" },
 	{ "apn", 'a', 0, G_OPTION_ARG_STRING, &option_apn,
 				"Specify APN" },
+	{ "offmode", 'a', 0, G_OPTION_ARG_INT, &option_offmode,
+				"Specify CFUN offmode" },
 	{ NULL },
 };
 
