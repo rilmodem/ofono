@@ -677,6 +677,12 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 		g_at_chat_register(nd->chat, "_OSSYSI:", option_ossysi_notify,
 					FALSE, netreg, NULL);
 
+		g_at_chat_send(nd->chat, "AT_OSSYS?", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT_OCTI?", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT_OSQI?", none_prefix,
+				NULL, NULL, NULL);
 		break;
 	default:
 		break;
