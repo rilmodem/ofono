@@ -44,6 +44,7 @@ static gchar *option_control = NULL;
 static gint option_cid = 0;
 static gchar *option_apn = NULL;
 static gint option_offmode = 0;
+static gboolean option_legacy = FALSE;
 
 static GAtChat *control;
 static GAtChat *modem;
@@ -228,9 +229,15 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		exit(1);
 	}
 
-	sprintf(buf, "AT+CGACT=1,%u", option_cid);
-
-	g_at_chat_send(control, buf, none_prefix, at_cgact_up_cb, NULL, NULL);
+	if (option_legacy == TRUE) {
+			sprintf(buf, "ATD*99***%u#", option_cid);
+			g_at_chat_send(modem, buf, none_prefix,
+					NULL, NULL, NULL);
+	} else {
+		sprintf(buf, "AT+CGACT=1,%u", option_cid);
+		g_at_chat_send(control, buf, none_prefix,
+				at_cgact_up_cb, NULL, NULL);
+	}
 }
 
 static void setup_context(int status)
@@ -302,6 +309,7 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	if (status == 1 || status == 5) {
 		g_print("Registered to network, roaming=%s\n",
 				status == 5 ? "True" : "False");
+
 		g_print("Activating gprs network...\n");
 		g_at_chat_send(control, "AT+CGATT=1", none_prefix,
 				attached_cb, NULL, NULL);
@@ -395,6 +403,8 @@ static GOptionEntry options[] = {
 				"Specify APN" },
 	{ "offmode", 'o', 0, G_OPTION_ARG_INT, &option_offmode,
 				"Specify CFUN offmode" },
+	{ "legacy", 'l', 0, G_OPTION_ARG_NONE, &option_legacy,
+				"Use ATD*99***<cid>#" },
 	{ NULL },
 };
 
