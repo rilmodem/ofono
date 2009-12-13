@@ -1,3 +1,14 @@
+ver 0.14:
+	Fix some issues with modem shutdown behavior.
+	Fix reset of context settings when deactivated.
+	Fix signal strength handling for Calypso modem.
+	Add proper signal strength handling for HSO modem.
+	Add support for enabling HSO Speech Services.
+	Add modem description for newer MBM devices.
+	Add clip_timeout for HFP incoming call handling.
+	Add poll_clcc for HFP multiparty calls.
+	Add utility for testing GSM GPRS dialing.
+
 ver 0.13:
 	Add better support for call id allocation.
 	Add CLCC query when initializing modem.
