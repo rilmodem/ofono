@@ -242,7 +242,8 @@ test_scripts = test/test-manager test/test-modem test/test-voicecall \
 		test/receive-sms test/send-sms \
 		test/list-contexts test/create-context \
 		test/activate-context test/deactivate-context \
-		test/process-context-settings
+		test/process-context-settings \
+		test/set-mic-volume
 
 if TEST
 testdir = $(pkglibdir)/test
