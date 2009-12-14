@@ -601,10 +601,14 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 			return;
 		}
 
-		if (sms_extract_app_port(s, &cdst, &csrc, &is_8bit) &&
-				(l == sms_list)) {
-			srcport = is_8bit ? csrc : (csrc << 8);
-			dstport = is_8bit ? cdst : (cdst << 8);
+		if (sms_extract_app_port(s, &cdst, &csrc, &is_8bit)) {
+			csrc = is_8bit ? csrc : (csrc << 8);
+			cdst = is_8bit ? cdst : (cdst << 8);
+
+			if (l == sms_list) {
+				srcport = csrc;
+				dstport = cdst;
+			}
 		}
 
 		if (srcport != csrc || dstport != cdst) {
