@@ -1663,8 +1663,42 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 	emit_en_list_changed(vc);
 }
 
-static void ecc_read_cb(int ok, int total_length, int record, const unsigned char *data,
-			int record_length, void *userdata)
+static void ecc_g2_read_cb(int ok, int total_length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_voicecall *vc = userdata;
+	char en[7];
+
+	DBG("%d", ok);
+
+	if (!ok)
+		return;
+
+	if (total_length < 3) {
+		ofono_error("Unable to read emergency numbers from SIM");
+		return;
+	}
+
+	total_length /= 3;
+	while (total_length--) {
+		extract_bcd_number(data, 3, en);
+		data += 3;
+
+		if (en[0] != '\0')
+			vc->new_en_list = g_slist_prepend(vc->new_en_list,
+								g_strdup(en));
+	}
+
+	if (vc->new_en_list == NULL)
+		return;
+
+	set_new_ecc(vc);
+}
+
+static void ecc_g3_read_cb(int ok, int total_length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
 	struct ofono_voicecall *vc = userdata;
 	int total;
@@ -1821,8 +1855,13 @@ static void sim_watch(struct ofono_atom *atom,
 		return;
 	}
 
-	ofono_sim_read(sim, SIM_EFECC_FILEID, OFONO_SIM_FILE_STRUCTURE_FIXED,
-			ecc_read_cb, vc);
+	/* Try both formats, only one or none will work */
+	ofono_sim_read(sim, SIM_EFECC_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			ecc_g2_read_cb, vc);
+	ofono_sim_read(sim, SIM_EFECC_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_FIXED,
+			ecc_g3_read_cb, vc);
 }
 
 void ofono_voicecall_register(struct ofono_voicecall *vc)
