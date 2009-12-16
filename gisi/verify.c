@@ -41,7 +41,7 @@
 #define PN_SIM			0x09
 
 struct verify_data {
-	void *func;
+	GIsiVerifyFunc func;
 	void *data;
 };
 
