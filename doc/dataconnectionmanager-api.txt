@@ -132,7 +132,7 @@ Signals		PropertyChanged(string property, variant value)
 			This signal indicates a changed value of the given
 			property.
 
-Properties	boolean Activated [readwrite]
+Properties	boolean Active [readwrite]
 
 			Holds whether the context is activated.  This value
 			can be set to activate / deactivate the context.
@@ -162,6 +162,12 @@ Properties	boolean Activated [readwrite]
 			Holds the password to be used for authentication
 			purposes.  This value cannot be changed when the
 			context is active.
+
+		string Name [readwrite]
+
+			The name is a free form string that describes this
+			context.  The name should not be empty and limited
+			to a short string for display purposes.
 
 		dict Settings [readonly, optional]
 
