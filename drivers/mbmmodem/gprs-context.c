@@ -48,6 +48,8 @@
 
 #define MAX_DNS 5
 
+#define STATIC_IP_NETMASK "255.255.255.248"
+
 static const char *none_prefix[] = { NULL };
 static const char *e2ipcfg_prefix[] = { "*E2IPCFG:", NULL };
 static const char *enap_prefix[] = { "*ENAP:", NULL };
@@ -133,8 +135,9 @@ out:
 	modem = ofono_gprs_context_get_modem(gc);
 	interface = ofono_modem_get_string(modem, "NetworkInterface");
 
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, success, ip, NULL,
-			gateway, success ? dns : NULL, gcd->cb_data);
+	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, success, ip,
+					STATIC_IP_NETMASK, gateway,
+					success ? dns : NULL, gcd->cb_data);
 	gcd->mbm_state = MBM_NONE;
 	gcd->up_cb = NULL;
 	gcd->cb_data = NULL;
