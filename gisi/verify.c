@@ -71,7 +71,7 @@ static bool verify_cb(GIsiClient *client, const void *restrict data,
 
 out:
 	if (func)
-		func(client, alive, vd->data);
+		func(client, alive, object, vd->data);
 	g_free(vd);
 	return true;
 }

@@ -410,7 +410,8 @@ static gboolean isi_call_barring_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, void *opaque)
+static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+				void *opaque)
 {
 	struct ofono_call_barring *barr = opaque;
 

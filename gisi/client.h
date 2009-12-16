@@ -38,7 +38,8 @@ typedef struct _GIsiClient GIsiClient;
 struct _GIsiRequest;
 typedef struct _GIsiRequest GIsiRequest;
 
-typedef void (*GIsiVerifyFunc)(GIsiClient *client, bool alive, void *opaque);
+typedef void (*GIsiVerifyFunc)(GIsiClient *client, bool alive,
+				uint16_t object, void *opaque);
 
 typedef bool (*GIsiResponseFunc)(GIsiClient *client,
 		const void *restrict data, size_t len,

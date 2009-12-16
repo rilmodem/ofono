@@ -74,7 +74,8 @@ typedef void GIsiIndication (GIsiClient *client,
 		const void *restrict data, size_t len,
 		uint16_t object, void *opaque);
 
-typedef void GIsiVerify (GIsiClient *client, bool alive, void *opaque);
+typedef void GIsiVerify (GIsiClient *client, bool alive, uint16_t object,
+				void *opaque);
 
 typedef bool GIsiResponse(GIsiClient *client,
 			  void const * restrict data, size_t len,
@@ -1300,7 +1301,7 @@ static int isi_voicecall_probe(struct ofono_voicecall *ovc,
 }
 
 static void isi_call_verify_cb(GIsiClient *client,
-			       bool alive,
+			       bool alive, uint16_t object,
 			       void *ovc)
 {
 	if (alive) {

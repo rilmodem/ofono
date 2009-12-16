@@ -273,7 +273,8 @@ static gboolean isi_devinfo_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, void *opaque)
+static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+				void *opaque)
 {
 	struct ofono_devinfo *info = opaque;
 
