@@ -704,6 +704,86 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
+static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
+		gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	GAtResultIter iter;
+	ofono_sim_read_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	const guint8 *response;
+	gint rlen, len;
+
+	dump_response("at_csim_envelope_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSIM:")) {
+		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
+		return;
+	}
+
+	if (!g_at_result_iter_next_number(&iter, &rlen)) {
+		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
+		return;
+	}
+
+	if (!g_at_result_iter_next_hexstring(&iter, &response, &len)) {
+		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
+		return;
+	}
+
+	if (rlen != len * 2 || len < 2 ||
+			response[len - 2] != 0x90 || response[len - 1] != 0) {
+		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
+		return;
+	}
+
+	ofono_debug("csim_envelope_cb: %i", len);
+
+	cb(&error, response, len - 2, cbd->data);
+}
+
+static void at_sim_envelope(struct ofono_sim *sim, int length,
+				const guint8 *command,
+				ofono_sim_read_cb_t cb, void *data)
+{
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char *buf = g_try_new(char, 64 + length * 2);
+	int len, ret;
+
+	if (!cbd || !buf)
+		goto error;
+
+	len = sprintf(buf, "AT+CSIM=%i,a0c20000%02hhx",
+			12 + length * 2, length);
+
+	for (; length; length--)
+		len += sprintf(buf + len, "%02hhx", *command++);
+	sprintf(buf + len, "00");
+
+	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
+				at_csim_envelope_cb, cbd, g_free);
+
+	g_free(buf);
+
+	if (ret > 0)
+		return;
+
+error:
+	if (cbd)
+		g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
+}
+
 static gboolean at_sim_register(gpointer user)
 {
 	struct ofono_sim *sim = user;
@@ -756,6 +836,7 @@ static struct ofono_sim_driver driver = {
 	.lock			= at_pin_enable,
 	.change_passwd		= at_change_passwd,
 	.query_locked		= at_pin_query_enabled,
+	.envelope		= at_sim_envelope,
 };
 
 void at_sim_init()
