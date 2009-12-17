@@ -167,10 +167,14 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/devinfo.h>
 #include <ofono/phonebook.h>
 #include <ofono/sms.h>
-#include <ofono/sim.h>
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+
+#include <ofono/sim.h>
+
+void __ofono_cbs_sim_download(struct ofono_sim *sim,
+				const guint8 *pdu, int pdu_len);
 
 #include <ofono/ssn.h>
 

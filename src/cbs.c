@@ -184,6 +184,11 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 		return;
 	}
 
+	if (cbs_topic_in_range(c.message_identifier, cbs->efcbmid_contents)) {
+		__ofono_cbs_sim_download(cbs->sim, pdu, pdu_len);
+		return;
+	}
+
 	if (!cbs_dcs_decode(c.dcs, &udhi, &cls, &charset, &comp, NULL, NULL)) {
 		ofono_error("Unknown / Reserved DCS.  Ignoring");
 		return;
@@ -332,6 +337,10 @@ static DBusMessage *cbs_set_topics(struct ofono_cbs *cbs, const char *value,
 	if (topics != NULL)
 		etws_topics = g_slist_copy(topics);
 
+	if (cbs->efcbmid_contents != NULL)
+		etws_topics = g_slist_concat(etws_topics,
+					g_slist_copy(cbs->efcbmid_contents));
+
 	etws_topics = g_slist_append(etws_topics, &etws_range);
 	topic_str = cbs_topic_ranges_to_string(etws_topics);
 	g_slist_free(etws_topics);
@@ -435,6 +444,13 @@ static void cbs_unregister(struct ofono_atom *atom)
 		g_slist_foreach(cbs->new_topics, (GFunc)g_free, NULL);
 		g_slist_free(cbs->new_topics);
 		cbs->new_topics = NULL;
+	}
+
+	if (cbs->efcbmid_length) {
+		cbs->efcbmid_length = 0;
+		g_slist_foreach(cbs->efcbmid_contents, (GFunc)g_free, NULL);
+		g_slist_free(cbs->efcbmid_contents);
+		cbs->efcbmid_contents = NULL;
 	}
 
 	cbs->sim = NULL;
@@ -627,6 +643,7 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	unsigned short mi;
 	int i;
 	char *str;
+	GSList *contents = NULL;
 
 	if (!ok)
 		return;
@@ -648,23 +665,17 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 		range->min = mi;
 		range->max = mi;
 
-		cbs->efcbmid_contents = g_slist_prepend(cbs->efcbmid_contents,
-							range);
+		contents = g_slist_prepend(contents, range);
 	}
 
-	if (cbs->efcbmid_contents == NULL)
+	if (contents == NULL)
 		return;
 
-	cbs->efcbmid_contents = g_slist_reverse(cbs->efcbmid_contents);
+	cbs->efcbmid_contents = g_slist_reverse(contents);
 
 	str = cbs_topic_ranges_to_string(cbs->efcbmid_contents);
 	ofono_debug("Got cbmid: %s", str);
 	g_free(str);
-
-	cbs->efcbmid_length = 0;
-	g_slist_foreach(cbs->efcbmid_contents, (GFunc)g_free, NULL);
-	g_slist_free(cbs->efcbmid_contents);
-	cbs->efcbmid_contents = NULL;
 }
 
 static void cbs_got_imsi(struct ofono_cbs *cbs)
