@@ -36,8 +36,12 @@
 #include "util.h"
 #include "smsutil.h"
 #include "simutil.h"
+#include "storage.h"
 
 #define CBS_MANAGER_INTERFACE "org.ofono.CbsManager"
+
+#define SETTINGS_STORE "cbs"
+#define SETTINGS_GROUP "Settings"
 
 static GSList *g_drivers = NULL;
 
@@ -69,6 +73,9 @@ struct ofono_cbs {
 	int ci;
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	ofono_bool_t powered;
+	GKeyFile *settings;
+	char *imsi;
 	const struct ofono_cbs_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -178,6 +185,8 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 
 	if (cbs->assembly == NULL)
 		return;
+	if (!cbs->powered)
+		return;
 
 	if (!cbs_decode(pdu, pdu_len, &c)) {
 		ofono_error("Unable to decode CBS PDU");
@@ -272,6 +281,9 @@ static DBusMessage *cbs_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
+	ofono_dbus_dict_append(&dict, "Powered", DBUS_TYPE_BOOLEAN,
+				&cbs->powered);
+
 	topics = cbs_topic_ranges_to_string(cbs->topics);
 	ofono_dbus_dict_append(&dict, "Topics", DBUS_TYPE_STRING, &topics);
 	g_free(topics);
@@ -279,6 +291,28 @@ static DBusMessage *cbs_get_properties(DBusConnection *conn,
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
+}
+
+static char *cbs_topics_to_str(struct ofono_cbs *cbs, GSList *user_topics)
+{
+	GSList *topics = NULL;
+	char *topic_str;
+	struct cbs_topic_range etws_range = { 4352, 4356 };
+
+	topics = g_slist_append(topics, &etws_range);
+
+	if (user_topics != NULL)
+		topics = g_slist_concat(topics,
+					g_slist_copy(user_topics));
+
+	if (cbs->efcbmid_contents != NULL)
+		topics = g_slist_concat(topics,
+					g_slist_copy(cbs->efcbmid_contents));
+
+	topic_str = cbs_topic_ranges_to_string(topics);
+	g_slist_free(topics);
+
+	return topic_str;
 }
 
 static void cbs_set_topics_cb(const struct ofono_error *error, void *data)
@@ -320,9 +354,8 @@ static DBusMessage *cbs_set_topics(struct ofono_cbs *cbs, const char *value,
 					DBusMessage *msg)
 {
 	GSList *topics;
-	GSList *etws_topics = NULL;
 	char *topic_str;
-	struct cbs_topic_range etws_range = { 4352, 4356 };
+	struct ofono_error error;
 
 	topics = cbs_extract_topic_ranges(value);
 
@@ -334,20 +367,103 @@ static DBusMessage *cbs_set_topics(struct ofono_cbs *cbs, const char *value,
 
 	cbs->new_topics = topics;
 
-	if (topics != NULL)
-		etws_topics = g_slist_copy(topics);
-
-	if (cbs->efcbmid_contents != NULL)
-		etws_topics = g_slist_concat(etws_topics,
-					g_slist_copy(cbs->efcbmid_contents));
-
-	etws_topics = g_slist_append(etws_topics, &etws_range);
-	topic_str = cbs_topic_ranges_to_string(etws_topics);
-	g_slist_free(etws_topics);
-
 	cbs->pending = dbus_message_ref(msg);
+
+	if (!cbs->powered) {
+		error.type = OFONO_ERROR_TYPE_NO_ERROR;
+		cbs_set_topics_cb(&error, cbs);
+		return NULL;
+	}
+
+	topic_str = cbs_topics_to_str(cbs, topics);
 	cbs->driver->set_topics(cbs, topic_str, cbs_set_topics_cb, cbs);
 	g_free(topic_str);
+
+	return NULL;
+}
+
+static void cbs_set_powered_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_cbs *cbs = data;
+	const char *path = __ofono_atom_get_path(cbs->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	DBusMessage *reply;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_debug("Setting Cell Broadcast topics failed");
+		if (!cbs->pending)
+			return;
+
+		__ofono_dbus_pending_reply(&cbs->pending,
+					__ofono_error_failed(cbs->pending));
+		return;
+	}
+
+	cbs->powered = !cbs->powered;
+
+	if (cbs->settings) {
+		g_key_file_set_boolean(cbs->settings, SETTINGS_GROUP,
+					"Powered", cbs->powered);
+		storage_sync(cbs->imsi, SETTINGS_STORE, cbs->settings);
+	}
+
+	ofono_dbus_signal_property_changed(conn, path,
+						CBS_MANAGER_INTERFACE,
+						"Powered",
+						DBUS_TYPE_BOOLEAN,
+						&cbs->powered);
+
+	if (!cbs->pending)
+		return;
+
+	reply = dbus_message_new_method_return(cbs->pending);
+	__ofono_dbus_pending_reply(&cbs->pending, reply);
+}
+
+static DBusMessage *cbs_set_powered(struct ofono_cbs *cbs, gboolean value,
+					DBusMessage *msg)
+{
+	const char *path = __ofono_atom_get_path(cbs->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	char *topic_str;
+
+	if (cbs->powered == value)
+		goto reply;
+
+	if (!cbs->driver->set_topics)
+		goto done;
+
+	if (msg)
+		cbs->pending = dbus_message_ref(msg);
+
+	if (!value)
+		cbs->driver->clear_topics(cbs, cbs_set_powered_cb, cbs);
+	else {
+		topic_str = cbs_topics_to_str(cbs, cbs->topics);
+		cbs->driver->set_topics(cbs, topic_str,
+					cbs_set_powered_cb, cbs);
+		g_free(topic_str);
+	}
+
+	return NULL;
+done:
+	cbs->powered = value;
+
+	if (cbs->settings) {
+		g_key_file_set_boolean(cbs->settings, SETTINGS_GROUP,
+					"Powered", cbs->powered);
+		storage_sync(cbs->imsi, SETTINGS_STORE, cbs->settings);
+	}
+
+	ofono_dbus_signal_property_changed(conn, path,
+						CBS_MANAGER_INTERFACE,
+						"Powered",
+						DBUS_TYPE_BOOLEAN,
+						&cbs->powered);
+
+reply:
+	if (msg)
+		return dbus_message_new_method_return(msg);
 
 	return NULL;
 }
@@ -376,6 +492,17 @@ static DBusMessage *cbs_set_property(DBusConnection *conn, DBusMessage *msg,
 		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
+
+	if (!strcmp(property, "Powered")) {
+		dbus_bool_t value;
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &value);
+
+		return cbs_set_powered(cbs, value, msg);
+	}
 
 	if (!strcmp(property, "Topics")) {
 		const char *value;
@@ -461,6 +588,16 @@ static void cbs_unregister(struct ofono_atom *atom)
 
 		if (cbs->netreg)
 			__ofono_netreg_set_base_station_name(cbs->netreg, NULL);
+	}
+
+	cbs->powered = FALSE;
+
+	if (cbs->settings) {
+		storage_close(cbs->imsi, SETTINGS_STORE, cbs->settings, TRUE);
+
+		g_free(cbs->imsi);
+		cbs->imsi = NULL;
+		cbs->settings = NULL;
 	}
 
 	if (cbs->netreg_watch) {
@@ -681,8 +818,19 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 static void cbs_got_imsi(struct ofono_cbs *cbs)
 {
 	const char *imsi = ofono_sim_get_imsi(cbs->sim);
+	gboolean powered;
 
 	ofono_debug("Got IMSI: %s", imsi);
+
+	cbs->settings = storage_open(imsi, SETTINGS_STORE);
+	if (cbs->settings == NULL)
+		return;
+
+	cbs->imsi = g_strdup(imsi);
+
+	powered = g_key_file_get_boolean(cbs->settings, SETTINGS_GROUP,
+						"Powered", NULL);
+	cbs_set_powered(cbs, powered, NULL);
 
 	ofono_sim_read(cbs->sim, SIM_EFCBMI_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
