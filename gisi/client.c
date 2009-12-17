@@ -232,7 +232,33 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 				size_t len, unsigned timeout,
 				GIsiResponseFunc cb, void *opaque)
 {
-	struct iovec iov[2];
+	const struct iovec iov = {
+		.iov_base = (void *)buf,
+		.iov_len = len,
+	};
+	GIsiRequest *req;
+
+	req = g_isi_request_vmake(cl, &iov, 1, timeout, cb, opaque);
+	if (cl->debug_func)
+		cl->debug_func(buf, len, cl->debug_data);
+	return req;
+}
+
+/**
+ * Make an ISI request and register a callback to process the response(s) to
+ * the resulting transaction.
+ * @param cl ISI client (from g_isi_client_create())
+ * @param iov scatter-gather array to the request payload
+ * @param iovlen number of vectors in the scatter-gather array
+ * @param cb callback to process response(s)
+ * @param opaque data for the callback
+ */
+GIsiRequest *g_isi_request_vmake(GIsiClient *cl,
+				const struct iovec *__restrict iov,
+				size_t iovlen, unsigned timeout,
+				GIsiResponseFunc cb, void *opaque)
+{
+	struct iovec _iov[1 + iovlen];
 	const struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
 		.spn_resource = cl->resource,
@@ -240,13 +266,14 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 	const struct msghdr msg = {
 		.msg_name = (struct sockaddr *)&dst,
 		.msg_namelen = sizeof(dst),
-		.msg_iov = (struct iovec *)iov,
-		.msg_iovlen = 2,
+		.msg_iov = (struct iovec *)_iov,
+		.msg_iovlen = 1 + iovlen,
 		.msg_control = NULL,
 		.msg_controllen = 0,
 		.msg_flags = 0,
 	};
 	ssize_t ret;
+	size_t i, len;
 	uint8_t id = cl->next[0];
 
 	if (id == 0) {
@@ -257,20 +284,21 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 		errno = EINVAL;
 		return NULL;
 	}
-	iov[0].iov_base = &id;
-	iov[0].iov_len = 1;
-	iov[1].iov_base = (void *)buf;
-	iov[1].iov_len = len;
+
+	_iov[0].iov_base = &id;
+	_iov[0].iov_len = 1;
+	for (i = 0, len = 1; i < iovlen; i++) {
+		_iov[1 + i] = iov[i];
+		len += iov[i].iov_len;
+	}
+
 	ret = sendmsg(cl->fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
 		return NULL;
-	if (ret != (ssize_t)(len + 1)) {
+	if (ret != (ssize_t)len) {
 		errno = EMSGSIZE;
 		return NULL;
 	}
-
-	if (cl->debug_func)
-		cl->debug_func(buf, len, cl->debug_data);
 
 	cl->func[id] = cb;
 	cl->data[id] = opaque;
