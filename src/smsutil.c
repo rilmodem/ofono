@@ -3509,7 +3509,7 @@ out:
 	return TRUE;
 }
 
-static GSList *cbs_optimize_ranges(GSList *ranges)
+GSList *cbs_optimize_ranges(GSList *ranges)
 {
 	struct cbs_topic_range *range;
 	unsigned char bitmap[125];
@@ -3665,4 +3665,24 @@ char *cbs_topic_ranges_to_string(GSList *ranges)
 	}
 
 	return ret;
+}
+
+static gint cbs_topic_compare(gconstpointer a, gconstpointer b)
+{
+	const struct cbs_topic_range *range = a;
+	unsigned short topic = GPOINTER_TO_UINT(b);
+
+	if (topic >= range->min && topic <= range->max)
+		return 0;
+
+	return 1;
+}
+
+gboolean cbs_topic_in_range(unsigned int topic, GSList *ranges)
+{
+	if (!ranges)
+		return FALSE;
+
+	return g_slist_find_custom(ranges, GUINT_TO_POINTER(topic),
+					cbs_topic_compare) != NULL;
 }
