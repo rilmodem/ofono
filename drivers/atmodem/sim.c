@@ -717,37 +717,31 @@ static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
 	dump_response("at_csim_envelope_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok) {
-		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
-		return;
-	}
+	if (!ok)
+		goto error;
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "+CSIM:")) {
-		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
-		return;
-	}
+	if (!g_at_result_iter_next(&iter, "+CSIM:"))
+		goto error;
 
-	if (!g_at_result_iter_next_number(&iter, &rlen)) {
-		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
-		return;
-	}
+	if (!g_at_result_iter_next_number(&iter, &rlen))
+		goto error;
 
-	if (!g_at_result_iter_next_hexstring(&iter, &response, &len)) {
-		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
-		return;
-	}
+	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
+		goto error;
 
 	if (rlen != len * 2 || len < 2 ||
-			response[len - 2] != 0x90 || response[len - 1] != 0) {
-		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
-		return;
-	}
+			response[len - 2] != 0x90 || response[len - 1] != 0)
+		goto error;
 
 	ofono_debug("csim_envelope_cb: %i", len);
 
 	cb(&error, response, len - 2, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 }
 
 static void at_sim_envelope(struct ofono_sim *sim, int length,
