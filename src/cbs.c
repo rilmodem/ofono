@@ -185,6 +185,7 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 
 	if (cbs->assembly == NULL)
 		return;
+
 	if (!cbs->powered)
 		return;
 
@@ -446,6 +447,7 @@ static DBusMessage *cbs_set_powered(struct ofono_cbs *cbs, gboolean value,
 	}
 
 	return NULL;
+
 done:
 	cbs->powered = value;
 
