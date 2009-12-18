@@ -272,7 +272,7 @@ static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
 			start >> 8, start & 0xff, length);
 
 	for (; length; length--)
-		len += sprintf(buf + len, "%02hhx", *value++);
+		len += sprintf(buf + len, "%02hhX", *value++);
 
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
@@ -306,7 +306,7 @@ static void at_sim_update_record(struct ofono_sim *sim, int fileid,
 			record, length);
 
 	for (; length; length--)
-		len += sprintf(buf + len, "%02hhx", *value++);
+		len += sprintf(buf + len, "%02hhX", *value++);
 
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
@@ -338,7 +338,7 @@ static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
 	len = sprintf(buf, "AT+CRSM=220,%i,0,3,%i,", fileid, length);
 
 	for (; length; length--)
-		len += sprintf(buf + len, "%02hhx", *value++);
+		len += sprintf(buf + len, "%02hhX", *value++);
 
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
 				at_crsm_update_cb, cbd, g_free);
@@ -756,11 +756,11 @@ static void at_sim_envelope(struct ofono_sim *sim, int length,
 	if (!cbd || !buf)
 		goto error;
 
-	len = sprintf(buf, "AT+CSIM=%i,a0c20000%02hhx",
+	len = sprintf(buf, "AT+CSIM=%i,A0C20000%02hhX",
 			12 + length * 2, length);
 
 	for (; length; length--)
-		len += sprintf(buf + len, "%02hhx", *command++);
+		len += sprintf(buf + len, "%02hhX", *command++);
 	sprintf(buf + len, "00");
 
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
