@@ -489,8 +489,9 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 					"phonebook is possible on this modem,"
 					" if this is in error, submit patches "
 					"to properly support this hardware");
-		} else
+		} else {
 			goto error;
+		}
 	}
 
 	if (g_at_chat_send(pbd->chat, "AT+CPBS=?", cpbs_prefix,

@@ -983,9 +983,10 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 
 			call->status = CALL_STATUS_ACTIVE;
 			ofono_voicecall_notify(vc, call);
-		} else
+		} else {
 			g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
 					clcc_poll_cb, vc, NULL);
+		}
 
 		break;
 
@@ -1063,8 +1064,9 @@ static void ciev_callheld_notify(struct ofono_voicecall *vc,
 				call->status = CALL_STATUS_HELD;
 				ofono_voicecall_notify(vc, call);
 			}
-		} else if (callheld == 1)
+		} else if (callheld == 1) {
 			release_with_status(vc, CALL_STATUS_ACTIVE);
+		}
 	}
 
 	vd->cind_val[HFP_INDICATOR_CALLHELD] = value;

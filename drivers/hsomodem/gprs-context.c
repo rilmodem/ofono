@@ -313,8 +313,9 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 			gcd->hso_state = HSO_NONE;
 			gcd->down_cb = NULL;
 			gcd->cb_data = NULL;
-		} else
+		} else {
 			ofono_gprs_context_deactivated(gc, gcd->active_context);
+		}
 
 		gcd->active_context = 0;
 		break;

@@ -149,8 +149,9 @@ static void at_csca_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (number[0] == '+') {
 		number = number + 1;
 		sca.type = 145;
-	} else
+	} else {
 		sca.type = 129;
+	}
 
 	strncpy(sca.number, number, OFONO_MAX_PHONE_NUMBER_LENGTH);
 	sca.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';

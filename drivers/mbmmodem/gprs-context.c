@@ -183,8 +183,9 @@ static void mbm_state_changed(struct ofono_gprs_context *gc, int state)
 			CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL, NULL,
 						NULL, NULL, gcd->cb_data);
 			gcd->up_cb = NULL;
-		} else
+		} else {
 			ofono_gprs_context_deactivated(gc, gcd->active_context);
+		}
 
 		gcd->mbm_state = MBM_NONE;
 		gcd->cb_data = NULL;
