@@ -767,11 +767,15 @@ static void at_sim_envelope(struct ofono_sim *sim, int length,
 				at_csim_envelope_cb, cbd, g_free);
 
 	g_free(buf);
+	buf = NULL;
 
 	if (ret > 0)
 		return;
 
 error:
+	if (buf)
+		g_free(buf);
+
 	if (cbd)
 		g_free(cbd);
 
