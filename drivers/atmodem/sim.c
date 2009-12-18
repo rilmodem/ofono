@@ -757,11 +757,10 @@ static void at_sim_envelope(struct ofono_sim *sim, int length,
 		goto error;
 
 	len = sprintf(buf, "AT+CSIM=%i,A0C20000%02hhX",
-			12 + length * 2, length);
+			10 + length * 2, length);
 
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhX", *command++);
-	sprintf(buf + len, "00");
 
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
 				at_csim_envelope_cb, cbd, g_free);
