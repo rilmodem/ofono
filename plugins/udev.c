@@ -115,8 +115,9 @@ static void add_mbm(struct ofono_modem *modem,
 		devnode = udev_device_get_property_value(udev_device,
 								"INTERFACE");
 		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
-	} else
+	} else {
 		return;
+	}
 
 	device  = ofono_modem_get_string(modem, MODEM_DEVICE);
 	network = ofono_modem_get_string(modem, NETWORK_INTERFACE);
@@ -158,8 +159,9 @@ static void add_hso(struct ofono_modem *modem,
 		devnode = udev_device_get_property_value(udev_device,
 								"INTERFACE");
 		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
-	} else
+	} else {
 		return;
+	}
 
 	app = ofono_modem_get_string(modem, APPLICATION_PORT);
 	control = ofono_modem_get_string(modem, CONTROL_PORT);

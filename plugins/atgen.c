@@ -121,8 +121,9 @@ static int atgen_enable(struct ofono_modem *modem)
 			syntax = g_at_syntax_new_gsm_permissive();
 		else
 			return -EINVAL;
-	} else
+	} else {
 		syntax = g_at_syntax_new_gsmv1();
+	}
 
 	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);

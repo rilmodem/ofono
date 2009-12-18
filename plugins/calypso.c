@@ -211,8 +211,9 @@ static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_mux_shutdown(data->mux);
 		g_at_mux_unref(data->mux);
 		data->mux = NULL;
-	} else
+	} else {
 		setup_modem(modem);
+	}
 
 	ofono_modem_set_powered(modem, ok);
 }

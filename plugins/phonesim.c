@@ -245,9 +245,10 @@ static int phonesim_enable(struct ofono_modem *modem)
 		g_at_mux_setup_gsm0710(data->chat, mux_setup, modem, NULL);
 		g_at_chat_unref(data->chat);
 		data->chat = NULL;
-	} else
+	} else {
 		g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
 					cfun_set_on_cb, modem, NULL);
+	}
 
 	return -EINPROGRESS;
 }
