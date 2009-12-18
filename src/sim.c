@@ -1738,7 +1738,8 @@ void __ofono_cbs_sim_download(struct ofono_sim *sim,
 
 	if (sim->ready != TRUE)
 		return;
-	if (!sim->driver->envelope)
+
+	if (sim->driver->envelope == NULL)
 		return;
 
 	tlv[0] = 0xd2; /* Cell Broadcast Download */
@@ -1749,6 +1750,7 @@ void __ofono_cbs_sim_download(struct ofono_sim *sim,
 	tlv[5] = 0x81; /* UICC */
 	tlv[6] = 0x8c; /* Cell Broadcast page */
 	tlv[7] = pdu_len;
+
 	memcpy(tlv + 8, pdu, pdu_len);
 
 	sim->driver->envelope(sim, pdu_len + 8, tlv, sim_cb_download_cb, sim);
