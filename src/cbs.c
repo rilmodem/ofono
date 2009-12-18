@@ -437,13 +437,13 @@ static DBusMessage *cbs_set_powered(struct ofono_cbs *cbs, gboolean value,
 	if (msg)
 		cbs->pending = dbus_message_ref(msg);
 
-	if (!value)
-		cbs->driver->clear_topics(cbs, cbs_set_powered_cb, cbs);
-	else {
+	if (value) {
 		topic_str = cbs_topics_to_str(cbs, cbs->topics);
 		cbs->driver->set_topics(cbs, topic_str,
 					cbs_set_powered_cb, cbs);
 		g_free(topic_str);
+	} else {
+		cbs->driver->clear_topics(cbs, cbs_set_powered_cb, cbs);
 	}
 
 	return NULL;
