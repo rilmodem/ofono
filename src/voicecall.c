@@ -829,8 +829,9 @@ static ofono_bool_t clir_string_to_clir(const char *clirstr,
 	} else if (!strcmp(clirstr, "enabled")) {
 		*clir = OFONO_CLIR_OPTION_INVOCATION;
 		return TRUE;
-	} else
+	} else {
 		return FALSE;
+	}
 }
 
 static struct ofono_call *synthesize_outgoing_call(struct ofono_voicecall *vc,

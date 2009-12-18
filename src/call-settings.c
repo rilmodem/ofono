@@ -590,8 +590,9 @@ static gboolean clip_colp_colr_ss(int type,
 	} else if (!strcmp(sc, "77")) {
 		cs->ss_setting = CALL_SETTING_TYPE_COLR;
 		query_op = cs->driver->colr_query;
-	} else
+	} else {
 		return FALSE;
+	}
 
 	if (type != SS_CONTROL_TYPE_QUERY || strlen(sia) || strlen(sib) ||
 		strlen(sic) || strlen(dn)) {

@@ -1200,8 +1200,9 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 		}
 
 		gprs_netreg_update(gprs);
-	} else
+	} else {
 		return __ofono_error_invalid_args(msg);
+	}
 
 	path = __ofono_atom_get_path(gprs->atom);
 	ofono_dbus_signal_property_changed(conn, path,

@@ -933,8 +933,9 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 			out++;
 			bits = 7;
 			rest = 0;
-		} else
+		} else {
 			bits = bits - 1;
+		}
 	}
 
 	/* According to 23.038 6.1.2.3.1, last paragraph:

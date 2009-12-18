@@ -948,8 +948,9 @@ void __ofono_netreg_set_base_station_name(struct ofono_netreg *netreg,
 		 * but don't emit signal */
 		if (netreg->current_operator == NULL)
 			return;
-	} else
+	} else {
 		netreg->base_station = g_strdup(name);
+	}
 
 	ofono_dbus_signal_property_changed(conn, path,
 						NETWORK_REGISTRATION_INTERFACE,

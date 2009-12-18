@@ -1013,8 +1013,9 @@ void ofono_sms_register(struct ofono_sms *sms)
 		sms->assembly = sms_assembly_new(imsi);
 
 		sms_load_settings(sms, imsi);
-	} else
+	} else {
 		sms->assembly = sms_assembly_new(NULL);
+	}
 
 	__ofono_atom_register(sms->atom, sms_unregister);
 }

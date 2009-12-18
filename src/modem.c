@@ -451,8 +451,9 @@ static gboolean set_powered_timeout(gpointer user)
 						OFONO_MODEM_INTERFACE,
 						"Powered", DBUS_TYPE_BOOLEAN,
 						&powered);
-	} else
+	} else {
 		modem->powered_pending = modem->powered;
+	}
 
 	if (modem->pending != NULL) {
 		DBusMessage *reply;

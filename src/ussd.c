@@ -430,8 +430,9 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 		ussd->state = USSD_STATE_IDLE;
 
 		reply = dbus_message_new_method_return(ussd->pending);
-	} else
+	} else {
 		reply = __ofono_error_failed(ussd->pending);
+	}
 
 	__ofono_dbus_pending_reply(&ussd->pending, reply);
 }

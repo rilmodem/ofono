@@ -777,8 +777,9 @@ static gboolean cb_lock_property_lookup(const char *property, const char *value,
 	} else if (!strcmp(property, "Incoming")) {
 		start = CB_INCOMING_START;
 		end = CB_INCOMING_END;
-	} else
+	} else {
 		return FALSE;
+	}
 
 	/* Gah, this is a special case.  If we're setting a barring to
 	 * disabled, then generate a disable all outgoing/incoming

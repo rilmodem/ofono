@@ -187,8 +187,10 @@ int main(int argc, char **argv)
 			ofono_error("Unable to hop onto D-Bus: %s",
 					error.message);
 			dbus_error_free(&error);
-		} else
+		} else {
 			ofono_error("Unable to hop onto D-Bus");
+		}
+
 		goto cleanup;
 	}
 

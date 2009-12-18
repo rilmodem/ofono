@@ -375,8 +375,9 @@ static gboolean set_own_numbers(struct ofono_sim *sim,
 			sim_adn_build(efmsisdn, sim->efmsisdn_length,
 					number, NULL);
 			new_numbers = new_numbers->next;
-		} else
+		} else {
 			memset(efmsisdn, 0xff, sim->efmsisdn_length);
+		}
 
 		if (ofono_sim_write(req->sim, SIM_EFMSISDN_FILEID,
 				msisdn_set_cb, OFONO_SIM_FILE_STRUCTURE_FIXED,
@@ -1171,8 +1172,9 @@ skip_efpl:
 			sim->language_prefs = concat_lang_prefs(NULL, efpl);
 		else
 			sim->language_prefs = concat_lang_prefs(efli, efpl);
-	} else
+	} else {
 		sim->language_prefs = concat_lang_prefs(efpl, efli);
+	}
 
 	if (sim->efli) {
 		g_free(sim->efli);

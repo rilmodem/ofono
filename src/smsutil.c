@@ -1003,8 +1003,9 @@ static gboolean decode_status_report(const unsigned char *pdu, int len,
 	if (out->status_report.pi & 0x02) {
 		if (!next_octet(pdu, len, &offset, &out->status_report.dcs))
 			return FALSE;
-	} else
+	} else {
 		out->status_report.dcs = 0;
+	}
 
 	if (out->status_report.pi & 0x04) {
 		int expected;
@@ -1125,8 +1126,9 @@ static gboolean decode_deliver_report(const unsigned char *pdu, int len,
 
 		if (!next_octet(pdu, len, &offset, &octet))
 			return FALSE;
-	} else
+	} else {
 		out->type = SMS_TYPE_DELIVER_REPORT_ACK;
+	}
 
 	pi = octet & 0x07;
 
@@ -1776,8 +1778,9 @@ const char *sms_address_to_string(const struct sms_address *addr)
 				addr->address[0] != '+') {
 		buffer[0] = '+';
 		strcpy(buffer + 1, addr->address);
-	} else
+	} else {
 		strcpy(buffer, addr->address);
+	}
 
 	return buffer;
 }
@@ -3092,8 +3095,9 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 						NULL, 0,
 						(unsigned char *)iso639_lang);
 			iso639_lang[2] = '\0';
-		} else
+		} else {
 			iso639_2_from_language(lang, iso639_lang);
+		}
 	}
 
 	buf = g_new(unsigned char, bufsize);
