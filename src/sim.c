@@ -46,8 +46,8 @@
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
 #define SIM_CACHE_MODE 0600
-#define SIM_CACHE_PATH STORAGEDIR "/%s/%04x"
-#define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 2 + imsilen)
+#define SIM_CACHE_PATH STORAGEDIR "/%s-%i/%04x"
+#define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 3 + imsilen)
 #define SIM_CACHE_HEADER_SIZE 6
 
 static GSList *g_drivers = NULL;
@@ -72,6 +72,7 @@ struct sim_file_op {
 
 struct ofono_sim {
 	char *imsi;
+	enum ofono_sim_phase phase;
 	unsigned char mnc_length;
 	GSList *own_numbers;
 	GSList *new_numbers;
@@ -1219,6 +1220,34 @@ static void sim_retrieve_efli_and_efpl(struct ofono_sim *sim)
 			sim_efpl_read_cb, sim);
 }
 
+static void sim_efphase_read_cb(const struct ofono_error *error,
+				const unsigned char *data, int len, void *user)
+{
+	struct ofono_sim *sim = user;
+
+	if (!error || error->type != OFONO_ERROR_TYPE_NO_ERROR || len != 1)
+		sim->phase = OFONO_SIM_PHASE_G3;
+	else if (data[0] != 0x00)
+		sim->phase = OFONO_SIM_PHASE_G2;
+	else
+		sim->phase = OFONO_SIM_PHASE_G1;
+
+	/* Proceed with SIM initialization */
+	sim_retrieve_efli_and_efpl(sim);
+	sim_pin_check(sim);
+}
+
+static void sim_determine_phase(struct ofono_sim *sim)
+{
+	if (!sim->driver->read_file_transparent) {
+		sim_efphase_read_cb(NULL, NULL, 0, sim);
+		return;
+	}
+
+	sim->driver->read_file_transparent(sim, SIM_EFPHASE_FILEID, 0, 1,
+						sim_efphase_read_cb, sim);
+}
+
 static void sim_op_error(struct ofono_sim *sim)
 {
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
@@ -1278,7 +1307,8 @@ static void sim_op_retrieve_cb(const struct ofono_error *error,
 	cb(1, op->length, op->current, data, op->record_length, op->userdata);
 
 	if (op->cache && imsi) {
-		char *path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
+		char *path = g_strdup_printf(SIM_CACHE_PATH,
+						imsi, sim->phase, op->id);
 
 		op->cache = cache_record(path, op->current, op->record_length,
 						data);
@@ -1400,8 +1430,8 @@ static void sim_op_info_cb(const struct ofono_error *error, int length,
 		fileinfo[4] = record_length >> 8;
 		fileinfo[5] = record_length & 0xff;
 
-		if (write_file(fileinfo, 6, SIM_CACHE_MODE,
-					SIM_CACHE_PATH, imsi, op->id) != 6)
+		if (write_file(fileinfo, 6, SIM_CACHE_MODE, SIM_CACHE_PATH,
+					imsi, sim->phase, op->id) != 6)
 			op->cache = FALSE;
 	}
 }
@@ -1443,7 +1473,7 @@ static gboolean sim_op_check_cached(struct ofono_sim *sim)
 	if (!imsi)
 		return FALSE;
 
-	path = g_strdup_printf(SIM_CACHE_PATH, imsi, op->id);
+	path = g_strdup_printf(SIM_CACHE_PATH, imsi, sim->phase, op->id);
 
 	fd = TFR(open(path, O_RDONLY));
 	g_free(path);
@@ -1660,6 +1690,14 @@ const char *ofono_sim_get_imsi(struct ofono_sim *sim)
 		return NULL;
 
 	return sim->imsi;
+}
+
+enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim)
+{
+	if (sim == NULL)
+		return 0;
+
+	return sim->phase;
 }
 
 unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
@@ -1915,6 +1953,7 @@ void ofono_sim_register(struct ofono_sim *sim)
 	 * Read EFecc
 	 * Read EFli and EFpl
 	 * SIM Pin check
+	 * Request SIM phase (only in 51.011)
 	 * Read EFust
 	 * Read EFest
 	 * Read IMSI
@@ -1923,8 +1962,7 @@ void ofono_sim_register(struct ofono_sim *sim)
 	 * arbitrary files to be written or read, assuming their presence
 	 * in the EFust
 	 */
-	sim_retrieve_efli_and_efpl(sim);
-	sim_pin_check(sim);
+	sim_determine_phase(sim);
 }
 
 void ofono_sim_remove(struct ofono_sim *sim)

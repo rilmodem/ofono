@@ -57,6 +57,12 @@ enum ofono_sim_password_type {
 	OFONO_SIM_PASSWORD_INVALID,
 };
 
+enum ofono_sim_phase {
+	OFONO_SIM_PHASE_G1,
+	OFONO_SIM_PHASE_G2,
+	OFONO_SIM_PHASE_G3,
+};
+
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
 					enum ofono_sim_file_structure structure,
@@ -154,6 +160,7 @@ void ofono_sim_set_data(struct ofono_sim *sim, void *data);
 void *ofono_sim_get_data(struct ofono_sim *sim);
 
 const char *ofono_sim_get_imsi(struct ofono_sim *sim);
+enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim);
 
 unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
 				ofono_sim_ready_notify_cb_t cb,
