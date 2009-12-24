@@ -555,7 +555,7 @@ static void have_pdu(GAtChat *p, char *pdu)
 	gboolean listing_pdu = FALSE;
 
 	if (!pdu)
-		goto err;
+		goto error;
 
 	result.lines = g_slist_prepend(NULL, p->pdu_notify);
 	result.final_or_pdu = pdu;
@@ -580,7 +580,7 @@ static void have_pdu(GAtChat *p, char *pdu)
 
 	g_slist_free(result.lines);
 
-err:
+error:
 	g_free(p->pdu_notify);
 	p->pdu_notify = NULL;
 
