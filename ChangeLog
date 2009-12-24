@@ -1,3 +1,10 @@
+ver 0.15:
+	Fix missing netmask value for newer MBM devices.
+	Fix concatenation of datagram SMS messages.
+	Add support for 51.011 EFecc format.
+	Add support for Powered property to CbsManager.
+	Add utility for checking if CBS topic is in range.
+
 ver 0.14:
 	Fix some issues with modem shutdown behavior.
 	Fix reset of context settings when deactivated.
