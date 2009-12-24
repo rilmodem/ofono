@@ -555,7 +555,7 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 		return NULL;
 
 	if (len < 0 && !terminator)
-		goto err_out;
+		goto error;
 
 	if (len < 0) {
 		i = 0;
@@ -570,17 +570,17 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 		unsigned short c;
 
 		if (text[i] > 0x7f)
-			goto err_out;
+			goto error;
 
 		if (text[i] == 0x1b) {
 			++i;
 			if (i >= len)
-				goto err_out;
+				goto error;
 
 			c = gsm_single_shift_lookup(text[i], single_lang);
 
 			if (c == GUND)
-				goto err_out;
+				goto error;
 		} else {
 			c = gsm_locking_shift_lookup(text[i], locking_lang);
 		}
@@ -591,7 +591,7 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 	res = g_malloc(res_length + 1);
 
 	if (!res)
-		goto err_out;
+		goto error;
 
 	out = res;
 
@@ -614,7 +614,7 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 	if (items_written)
 		*items_written = out - res;
 
-err_out:
+error:
 	if (items_read)
 		*items_read = i;
 

@@ -1550,21 +1550,21 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 
 	if (!newcall) {
 		ofono_error("Unable to allocate call");
-		goto err;
+		goto error;
 	}
 
 	v = voicecall_create(vc, newcall);
 
 	if (!v) {
 		ofono_error("Unable to allocate voicecall_data");
-		goto err;
+		goto error;
 	}
 
 	v->detect_time = time(NULL);
 
 	if (!voicecall_dbus_register(v)) {
 		ofono_error("Unable to register voice call");
-		goto err;
+		goto error;
 	}
 
 	vc->call_list = g_slist_insert_sorted(vc->call_list, v, call_compare);
@@ -1573,7 +1573,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 
 	return;
 
-err:
+error:
 	if (newcall)
 		g_free(newcall);
 

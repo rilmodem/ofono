@@ -1755,61 +1755,61 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 
 	if ((name = g_key_file_get_string(gprs->settings, group,
 					"Name", NULL)) == NULL)
-		goto err;
+		goto error;
 
 	if ((typestr = g_key_file_get_string(gprs->settings, group,
 					"Type", NULL)) == NULL)
-		goto err;
+		goto error;
 
 	type = gprs_context_string_to_type(typestr);
 	if (type == GPRS_CONTEXT_TYPE_INVALID)
-		goto err;
+		goto error;
 
 	username = g_key_file_get_string(gprs->settings, group,
 						"Username", NULL);
 	if (!username)
-		goto err;
+		goto error;
 
 	if (strlen(username) > OFONO_GPRS_MAX_USERNAME_LENGTH)
-		goto err;
+		goto error;
 
 	password = g_key_file_get_string(gprs->settings, group,
 						"Password", NULL);
 
 	if (!password)
-		goto err;
+		goto error;
 
 	if (strlen(password) > OFONO_GPRS_MAX_PASSWORD_LENGTH)
-		goto err;
+		goto error;
 
 	apn = g_key_file_get_string(gprs->settings, group,
 					"AccessPointName", NULL);
 
 	if (!apn)
-		goto err;
+		goto error;
 
 	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
-		goto err;
+		goto error;
 
 	/* Accept empty (just created) APNs, but don't allow other
 	 * invalid ones */
 	if (apn[0] != '\0' && is_valid_apn(apn) == FALSE)
-		goto err;
+		goto error;
 
 	if ((context = pri_context_create(gprs, name, type)) == NULL)
-		goto err;
+		goto error;
 
 	strcpy(context->context.username, username);
 	strcpy(context->context.password, password);
 	strcpy(context->context.apn, apn);
 
 	if (context_dbus_register(context) == FALSE)
-		goto err;
+		goto error;
 
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 	ret = TRUE;
 
-err:
+error:
 	g_free(name);
 	g_free(typestr);
 	g_free(username);
