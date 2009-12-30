@@ -47,6 +47,8 @@
 #define AUTH_BUF_LENGTH OFONO_GPRS_MAX_USERNAME_LENGTH + \
 			OFONO_GPRS_MAX_PASSWORD_LENGTH + 128
 
+#define STATIC_IP_NETMASK "255.255.255.255"
+
 static const char *none_prefix[] = { NULL };
 static const char *owandata_prefix[] = { "_OWANDATA:", NULL };
 
@@ -274,7 +276,7 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_info("IP: %s, Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns1, dns2);
 
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, ip, NULL,
+	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, ip, STATIC_IP_NETMASK,
 				gateway, dns, gcd->cb_data);
 
 	gcd->hso_state = HSO_NONE;
