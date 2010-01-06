@@ -1035,17 +1035,23 @@ bool ofono_modem_get_boolean(struct ofono_modem *modem, const char *key)
 	return value;
 }
 
-struct ofono_modem *ofono_modem_create(const char *type)
+struct ofono_modem *ofono_modem_create(const char *name, const char *type)
 {
 	struct ofono_modem *modem;
 	char path[128];
 
-	DBG("%s", type);
+	DBG("name: %s, type: %s", name, type);
 
 	if (strlen(type) > 16)
 		return NULL;
 
-	snprintf(path, sizeof(path), "/%s%d", type, next_modem_id);
+	if (name && strlen(name) > 64)
+		return NULL;
+
+	if (name == NULL)
+		snprintf(path, sizeof(path), "/%s%d", type, next_modem_id);
+	else
+		snprintf(path, sizeof(path), "/%s", name);
 
 	if (__ofono_dbus_valid_object_path(path) == FALSE)
 		return NULL;
@@ -1062,7 +1068,8 @@ struct ofono_modem *ofono_modem_create(const char *type)
 
 	g_modem_list = g_slist_prepend(g_modem_list, modem);
 
-	next_modem_id += 1;
+	if (name == NULL)
+		next_modem_id += 1;
 
 	return modem;
 }
