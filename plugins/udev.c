@@ -235,7 +235,7 @@ static void add_modem(struct udev_device *udev_device)
 
 	modem = find_modem(devpath);
 	if (modem == NULL) {
-		modem = ofono_modem_create(driver);
+		modem = ofono_modem_create(NULL, driver);
 		if (modem == NULL)
 			return;
 
