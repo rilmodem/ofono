@@ -62,6 +62,7 @@ enum ofono_sim_phase {
 	OFONO_SIM_PHASE_2G,
 	OFONO_SIM_PHASE_2G_PLUS,
 	OFONO_SIM_PHASE_3G,
+	OFONO_SIM_PHASE_UNKNOWN,
 };
 
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,

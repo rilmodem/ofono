@@ -1899,6 +1899,7 @@ struct ofono_sim *ofono_sim_create(struct ofono_modem *modem,
 	if (sim == NULL)
 		return NULL;
 
+	sim->phase = OFONO_SIM_PHASE_UNKNOWN;
 	sim->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_SIM,
 						sim_remove, sim);
 
