@@ -95,7 +95,7 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 			return;
 
 		isi->idx = idx;
-		isi->modem = ofono_modem_create("isimodem");
+		isi->modem = ofono_modem_create(NULL, "isimodem");
 
 		if (!isi->modem) {
 			g_free(isi);
