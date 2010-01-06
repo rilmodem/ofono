@@ -69,6 +69,24 @@ static const char *get_driver(struct udev_device *udev_device)
 	return driver;
 }
 
+static const char *get_serial(struct udev_device *udev_device)
+{
+	struct udev_list_entry *entry;
+	const char *serial = NULL;
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+
+		if (g_strcmp0(name, "ID_SERIAL_SHORT") == 0)
+			serial = udev_list_entry_get_value(entry);
+
+		entry = udev_list_entry_get_next(entry);
+	}
+
+	return serial;
+}
+
 #define MODEM_DEVICE		"ModemDevice"
 #define DATA_DEVICE		"DataDevice"
 #define GPS_DEVICE		"GPSDevice"
@@ -211,7 +229,7 @@ static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
 	struct udev_device *parent;
-	const char *devpath, *driver = NULL;
+	const char *devpath, *driver;
 
 	parent = udev_device_get_parent(udev_device);
 	if (parent == NULL)
@@ -235,7 +253,9 @@ static void add_modem(struct udev_device *udev_device)
 
 	modem = find_modem(devpath);
 	if (modem == NULL) {
-		modem = ofono_modem_create(NULL, driver);
+		const char *serial = get_serial(parent);
+
+		modem = ofono_modem_create(serial, driver);
 		if (modem == NULL)
 			return;
 
