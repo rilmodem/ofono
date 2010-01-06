@@ -1226,11 +1226,9 @@ static void sim_efphase_read_cb(const struct ofono_error *error,
 	struct ofono_sim *sim = user;
 
 	if (!error || error->type != OFONO_ERROR_TYPE_NO_ERROR || len != 1)
-		sim->phase = OFONO_SIM_PHASE_G3;
-	else if (data[0] != 0x00)
-		sim->phase = OFONO_SIM_PHASE_G2;
+		sim->phase = OFONO_SIM_PHASE_3G;
 	else
-		sim->phase = OFONO_SIM_PHASE_G1;
+		sim->phase = data[0];
 
 	/* Proceed with SIM initialization */
 	sim_retrieve_efli_and_efpl(sim);

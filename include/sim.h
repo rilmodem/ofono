@@ -58,9 +58,10 @@ enum ofono_sim_password_type {
 };
 
 enum ofono_sim_phase {
-	OFONO_SIM_PHASE_G1,
-	OFONO_SIM_PHASE_G2,
-	OFONO_SIM_PHASE_G3,
+	OFONO_SIM_PHASE_1G,
+	OFONO_SIM_PHASE_2G,
+	OFONO_SIM_PHASE_2G_PLUS,
+	OFONO_SIM_PHASE_3G,
 };
 
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
