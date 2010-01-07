@@ -51,6 +51,7 @@ struct ofono_message_waiting {
 	unsigned char efmwis_length;
 	unsigned char efmbdn_length;
 	unsigned char efmbdn_record_id[5];
+	unsigned char ef_cphs_mbdn_length;
 	gboolean mbdn_not_provided;
 	struct ofono_phone_number mailbox_number[5];
 	struct ofono_sim *sim;
@@ -93,6 +94,18 @@ static const char *mw_mailbox_property_name[5] = {
 	"VideomailMailboxNumber",
 #endif
 };
+
+static const int mw_mailbox_to_cphs_record[5] = {
+	1, /* Line 1 mailbox */
+#if 0
+	4, /* Fax mailbox */
+	0,
+	3, /* Data mailbox */
+	0,
+#endif
+};
+
+static void mbdn_set_cb(int ok, void *data);
 
 static DBusMessage *mw_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
@@ -146,6 +159,47 @@ static DBusMessage *mw_get_properties(DBusConnection *conn,
 	return reply;
 }
 
+static DBusMessage *set_cphs_mbdn(struct ofono_message_waiting *mw,
+				int mailbox,
+				const char *number,
+				DBusMessage *msg)
+{
+	struct mbdn_set_request *req;
+	unsigned char efmbdn[255];
+
+	if (mw_mailbox_to_cphs_record[mailbox] == 0 ||
+			mw->ef_cphs_mbdn_length == 0) {
+		if (!msg)
+			return NULL;
+
+		if (mw->mbdn_not_provided == TRUE)
+			return __ofono_error_not_supported(msg);
+		else
+			return __ofono_error_sim_not_ready(msg);
+	}
+
+	req = g_new0(struct mbdn_set_request, 1);
+
+	req->mw = mw;
+	req->mailbox = mailbox;
+	string_to_phone_number(number, &req->number);
+	req->msg = msg ? dbus_message_ref(msg) : NULL;
+
+	sim_adn_build(efmbdn, req->mw->ef_cphs_mbdn_length,
+			&req->number, NULL);
+
+	if (ofono_sim_write(mw->sim, SIM_EF_CPHS_MBDN_FILEID, mbdn_set_cb,
+			OFONO_SIM_FILE_STRUCTURE_FIXED,
+			mw_mailbox_to_cphs_record[mailbox],
+			efmbdn, mw->ef_cphs_mbdn_length, NULL) == -1) {
+
+		if (msg)
+			return __ofono_error_failed(msg);
+	}
+
+	return NULL;
+}
+
 static void mbdn_set_cb(int ok, void *data)
 {
 	struct mbdn_set_request *req = data;
@@ -159,6 +213,9 @@ static void mbdn_set_cb(int ok, void *data)
 
 		goto out;
 	}
+
+	if (req->msg)
+		reply = dbus_message_new_method_return(req->msg);
 
 	if (g_str_equal(req->number.number, old->number) &&
 			req->number.type == old->type)
@@ -181,8 +238,10 @@ static void mbdn_set_cb(int ok, void *data)
 						&number);
 	}
 
-	if (req->msg)
-		reply = dbus_message_new_method_return(req->msg);
+	/* Make a single attempt at keeping the CPHS version of the file
+	 * in sync.  */
+	set_cphs_mbdn(req->mw, req->mailbox,
+			phone_number_to_string(&req->number), NULL);
 
 out:
 	if (req->msg && reply)
@@ -197,12 +256,10 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 	struct mbdn_set_request *req;
 	unsigned char efmbdn[255];
 
-	if (mw->efmbdn_record_id[mailbox] == 0) {
-		if (msg)
-			return __ofono_error_sim_not_ready(msg);
-
-		return NULL;
-	}
+	if (mw->efmbdn_length == 0 || mw->efmbdn_record_id[mailbox] == 0)
+		/* If we have no 3GPP EFmbdn on the card, maybe the
+		 * CPHS version is available */
+		return set_cphs_mbdn(mw, mailbox, number, msg);
 
 	req = g_new0(struct mbdn_set_request, 1);
 
@@ -234,12 +291,6 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 	DBusMessageIter var;
 	const char *name, *value;
 	int i;
-
-	if (mw->mbdn_not_provided == TRUE)
-		return __ofono_error_not_supported(msg);
-
-	if (mw->efmbdn_length == 0)
-		return __ofono_error_sim_not_ready(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
 		return __ofono_error_invalid_args(msg);
@@ -425,6 +476,51 @@ static void mw_mbi_read_cb(int ok, int total_length, int record,
 
 	if (err != 0)
 		ofono_error("Unable to read EF-MBDN from SIM");
+}
+
+static void mw_cphs_mbdn_read_cb(int ok, int total_length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_message_waiting *mw = userdata;
+	int i;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *value;
+
+	if (!ok || record_length < 14 || total_length < record_length) {
+		ofono_error("Unable to read mailbox dialling numbers "
+			"from SIM");
+
+		mw->ef_cphs_mbdn_length = 0;
+		return;
+	}
+
+	for (i = 0; i < 5; i++)
+		if (record == mw_mailbox_to_cphs_record[i])
+			break;
+
+	if (i == 5)
+		return;
+
+	mw->ef_cphs_mbdn_length = record_length;
+
+	if (mw->mbdn_not_provided != TRUE)
+		return;
+
+	if (sim_adn_parse(data, record_length, &mw->mailbox_number[i], NULL) ==
+			FALSE)
+		mw->mailbox_number[i].number[0] = '\0';
+
+	if (mw_mailbox_property_name[i]) {
+		const char *path = __ofono_atom_get_path(mw->atom);
+
+		value = phone_number_to_string(&mw->mailbox_number[i]);
+
+		ofono_dbus_signal_property_changed(conn, path,
+				MESSAGE_WAITING_INTERFACE,
+				mw_mailbox_property_name[i],
+				DBUS_TYPE_STRING, &value);
+	}
 }
 
 static void mw_mwis_write_cb(int ok, void *userdata)
@@ -739,6 +835,12 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 		ofono_sim_read(mw->sim, SIM_EFMBI_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				mw_mbi_read_cb, mw);
+		if ((ofono_sim_get_cphs_support(mw->sim) &
+				OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK) ==
+			OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK)
+			ofono_sim_read(mw->sim, SIM_EF_CPHS_MBDN_FILEID,
+					OFONO_SIM_FILE_STRUCTURE_FIXED,
+					mw_cphs_mbdn_read_cb, mw);
 	}
 
 	__ofono_atom_register(mw->atom, message_waiting_unregister);
