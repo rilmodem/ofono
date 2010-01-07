@@ -38,6 +38,7 @@
 
 #include "common.h"
 #include "storage.h"
+#include "idmap.h"
 
 #define DATA_CONNECTION_MANAGER_INTERFACE "org.ofono.DataConnectionManager"
 #define DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
@@ -73,7 +74,7 @@ struct ofono_gprs {
 	int next_context_id;
 	unsigned int cid_min;
 	unsigned int cid_max;
-	unsigned char *cid_bitmap;
+	struct idmap *cid_map;
 	int netreg_status;
 	struct ofono_netreg *netreg;
 	unsigned int netreg_watch;
@@ -145,36 +146,17 @@ static enum gprs_context_type gprs_context_string_to_type(const char *str)
 
 static unsigned int gprs_cid_alloc(struct ofono_gprs *gprs)
 {
-	unsigned int i, j;
-	unsigned int num_cids = gprs->cid_max - gprs->cid_min + 1;
-	unsigned int offset = num_cids / 8;
-	unsigned int max_bit = num_cids % 8;
+	unsigned int bit = idmap_alloc(gprs->cid_map);
 
-	for (i = 0; i < offset; i++) {
-		for (j = 0; j < 8; j++) {
-			if (gprs->cid_bitmap[i] & (1 << j))
-				continue;
+	if (bit == 0)
+		return 0;
 
-			gprs->cid_bitmap[i] |= (1 << j);
-			return i * 8 + j + 1;
-		}
-	}
-
-	for (j = 0; j < max_bit; j++) {
-		if (gprs->cid_bitmap[offset] & (1 << j))
-			continue;
-
-		gprs->cid_bitmap[i] |= (1 << j);
-		return offset * 8 + j + 1;
-	}
-
-	return 0;
+	return gprs->cid_min + bit - 1;
 }
 
 static void gprs_cid_release(struct ofono_gprs *gprs, unsigned int id)
 {
-	unsigned int offset = (id - 1) / 8;
-	unsigned int bit = (id - 1) % 8;
+	unsigned int bit = id - gprs->cid_min + 1;
 
 	if (id > gprs->cid_max)
 		return;
@@ -182,7 +164,7 @@ static void gprs_cid_release(struct ofono_gprs *gprs, unsigned int id)
 	if (id < gprs->cid_min)
 		return;
 
-	gprs->cid_bitmap[offset] &= ~(1 << bit);
+	idmap_put(gprs->cid_map, bit);
 }
 
 static struct pri_context *gprs_context_by_path(struct ofono_gprs *gprs,
@@ -710,7 +692,7 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 			if (ctx->context.cid == 0)
 				return __ofono_error_failed(msg);
 
-			if (ctx->context.cid != 1) {
+			if (ctx->context.cid != ctx->gprs->cid_min) {
 				ofono_error("Multiple active contexts are"
 						" not yet supported");
 
@@ -1455,8 +1437,10 @@ void ofono_gprs_set_cid_range(struct ofono_gprs *gprs,
 	if (gprs == NULL)
 		return;
 
-	g_free(gprs->cid_bitmap);
-	gprs->cid_bitmap = g_new0(unsigned char, (max - min + 8) / 8);
+	if (gprs->cid_map)
+		idmap_free(gprs->cid_map);
+
+	gprs->cid_map = idmap_new(max - min + 1);
 
 	gprs->cid_min = min;
 	gprs->cid_max = max;
@@ -1643,6 +1627,11 @@ static void gprs_unregister(struct ofono_atom *atom)
 	}
 
 	g_slist_free(gprs->contexts);
+
+	if (gprs->cid_map) {
+		idmap_free(gprs->cid_map);
+		gprs->cid_map = NULL;
+	}
 
 	if (gprs->netreg_watch) {
 		if (gprs->status_watch) {
