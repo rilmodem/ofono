@@ -88,6 +88,8 @@ struct ofono_sim {
 	unsigned char efmsisdn_records;
 	unsigned char *efli;
 	unsigned char efli_length;
+	enum ofono_sim_cphs_phase cphs_phase;
+	unsigned short cphs_support;
 	struct ofono_watchlist *ready_watches;
 	const struct ofono_sim_driver *driver;
 	void *driver_data;
@@ -951,6 +953,29 @@ static void sim_ready(void *user)
 			sim_sdn_read_cb, sim);
 }
 
+static void sim_cphs_information_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	sim->cphs_phase = OFONO_SIM_CPHS_NONE;
+	sim->cphs_support = 0;
+
+	if (!ok || length < 3)
+		goto ready;
+
+	if (data[0] == 0x01)
+		sim->cphs_phase = OFONO_SIM_CPHS_PHASE1;
+	else if (data[0] >= 0x02)
+		sim->cphs_phase = OFONO_SIM_CPHS_PHASE2;
+
+	sim->cphs_support = (data[2] << 8) | data[1];
+
+ready:
+	ofono_sim_set_ready(sim);
+}
+
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 		void *data)
 {
@@ -963,7 +988,11 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 
 	sim->imsi = g_strdup(imsi);
 
-	ofono_sim_set_ready(sim);
+	/* Read CPHS-support bits, this is still part of the SIM
+	 * initialisation but no order is specified for it.  */
+	ofono_sim_read(sim, SIM_EF_CPHS_INFORMATION_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_cphs_information_read_cb, sim);
 }
 
 static void sim_retrieve_imsi(struct ofono_sim *sim)
@@ -1696,6 +1725,22 @@ enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim)
 		return 0;
 
 	return sim->phase;
+}
+
+enum ofono_sim_cphs_phase ofono_sim_get_cphs_phase(struct ofono_sim *sim)
+{
+	if (sim == NULL)
+		return OFONO_SIM_CPHS_NONE;
+
+	return sim->cphs_phase;
+}
+
+unsigned short ofono_sim_get_cphs_support(struct ofono_sim *sim)
+{
+	if (sim == NULL)
+		return 0;
+
+	return sim->cphs_support;
 }
 
 unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,

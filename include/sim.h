@@ -65,6 +65,12 @@ enum ofono_sim_phase {
 	OFONO_SIM_PHASE_UNKNOWN,
 };
 
+enum ofono_sim_cphs_phase {
+	OFONO_SIM_CPHS_NONE,
+	OFONO_SIM_CPHS_PHASE1,
+	OFONO_SIM_CPHS_PHASE2,
+};
+
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
 					enum ofono_sim_file_structure structure,
@@ -163,6 +169,9 @@ void *ofono_sim_get_data(struct ofono_sim *sim);
 
 const char *ofono_sim_get_imsi(struct ofono_sim *sim);
 enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim);
+
+enum ofono_sim_cphs_phase ofono_sim_get_cphs_phase(struct ofono_sim *sim);
+unsigned short ofono_sim_get_cphs_support(struct ofono_sim *sim);
 
 unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
 				ofono_sim_ready_notify_cb_t cb,
