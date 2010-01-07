@@ -1740,6 +1740,13 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	gboolean ret = FALSE;
 	struct pri_context *context;
 	enum gprs_context_type type;
+	unsigned int id;
+
+	if (sscanf(group, "primarycontext%d", &id) != 1)
+		goto error;
+
+	if (id < 1 || id > MAX_CONTEXTS)
+		goto error;
 
 	if ((name = g_key_file_get_string(gprs->settings, group,
 					"Name", NULL)) == NULL)
@@ -1787,12 +1794,16 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if ((context = pri_context_create(gprs, name, type)) == NULL)
 		goto error;
 
+	idmap_take(gprs->pid_map, id);
+	context->id = id;
 	strcpy(context->context.username, username);
 	strcpy(context->context.password, password);
 	strcpy(context->context.apn, apn);
 
 	if (context_dbus_register(context) == FALSE)
 		goto error;
+
+	gprs->last_context_id = id;
 
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 	ret = TRUE;
