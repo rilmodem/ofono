@@ -176,6 +176,9 @@ unsigned int idmap_alloc_next(struct idmap *idmap, unsigned int last)
 	unsigned int bit;
 	unsigned int offset;
 
+	if (last < idmap->min || last > idmap->max)
+		return idmap->max + 1;
+
 	bit = find_next_zero_bit(idmap->bits, idmap->size,
 					last - idmap->min + 1);
 
