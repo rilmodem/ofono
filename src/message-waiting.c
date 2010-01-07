@@ -51,6 +51,7 @@ struct ofono_message_waiting {
 	unsigned char efmwis_length;
 	unsigned char efmbdn_length;
 	unsigned char efmbdn_record_id[5];
+	unsigned char ef_cphs_mwis_length;
 	unsigned char ef_cphs_mbdn_length;
 	gboolean mbdn_not_provided;
 	struct ofono_phone_number mailbox_number[5];
@@ -478,6 +479,60 @@ static void mw_mbi_read_cb(int ok, int total_length, int record,
 		ofono_error("Unable to read EF-MBDN from SIM");
 }
 
+static void mw_cphs_mwis_read_cb(int ok, int total_length, int record,
+					const unsigned char *data,
+					int record_length, void *userdata)
+{
+	struct ofono_message_waiting *mw = userdata;
+	int i;
+	struct mailbox_state info;
+	dbus_bool_t indication;
+	unsigned char count;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(mw->atom);
+
+	if (!ok || total_length < 1) {
+		ofono_error("Unable to read waiting messages indicator "
+			"status from SIM");
+
+		mw->ef_cphs_mwis_length = 0;
+
+		return;
+	}
+
+	mw->ef_cphs_mwis_length = total_length;
+
+	if (mw->efmwis_length != 0)
+		return;
+
+	for (i = 0; i < 5 && i < total_length; i++) {
+		info.indication = (data[i] == 0xa);
+		info.message_count = 0;
+
+		if (mw->messages[i].indication != info.indication ||
+				mw->messages[i].message_count !=
+				info.message_count) {
+			memcpy(&mw->messages[i], &info, sizeof(info));
+
+			indication = info.indication;
+			count = info.message_count;
+
+			if (!mw_message_waiting_property_name[i])
+				continue;
+
+			ofono_dbus_signal_property_changed(conn, path,
+					MESSAGE_WAITING_INTERFACE,
+					mw_message_waiting_property_name[i],
+					DBUS_TYPE_BOOLEAN, &indication);
+
+			ofono_dbus_signal_property_changed(conn, path,
+					MESSAGE_WAITING_INTERFACE,
+					mw_message_count_property_name[i],
+					DBUS_TYPE_BYTE, &count);
+		}
+	}
+}
+
 static void mw_cphs_mbdn_read_cb(int ok, int total_length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -526,7 +581,7 @@ static void mw_cphs_mbdn_read_cb(int ok, int total_length, int record,
 static void mw_mwis_write_cb(int ok, void *userdata)
 {
 	if (!ok)
-		ofono_error("Writing new EF-MBDN failed");
+		ofono_error("Writing new EF-MWIS failed");
 }
 
 static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
@@ -575,7 +630,10 @@ static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
 	}
 
 	/* Writes MWI states and/or MBDN back to SIM */
-	if ((mw->efmwis_length < 5)) {
+	if (mw->efmwis_length < 5) {
+		if (mw->ef_cphs_mwis_length >= 1)
+			goto try_cphs;
+
 		ofono_error("Unable to update MWIS indicator");
 		return;
 	}
@@ -594,6 +652,18 @@ static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
 				efmwis, mw->efmwis_length, mw) != 0) {
 		ofono_error("Queuing a EF-MWI write to SIM failed");
 	}
+
+	if (mw->ef_cphs_mwis_length == 0)
+		return;
+
+try_cphs:
+	for (i = 0; i < 5 && i < mw->ef_cphs_mwis_length; i++)
+		efmwis[i] = mw->messages[i].indication ? 0xa : 0x5;
+
+	if (ofono_sim_write(mw->sim, SIM_EF_CPHS_MWIS_FILEID, mw_mwis_write_cb,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT, 0,
+				efmwis, mw->ef_cphs_mwis_length, mw) != 0)
+		ofono_error("Queuing a EF-MWIS write to SIM failed (CPHS)");
 }
 
 static void handle_special_sms_iei(struct ofono_message_waiting *mw,
@@ -835,12 +905,17 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 		ofono_sim_read(mw->sim, SIM_EFMBI_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				mw_mbi_read_cb, mw);
+
 		if ((ofono_sim_get_cphs_support(mw->sim) &
 				OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK) ==
-			OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK)
+			OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK) {
+			ofono_sim_read(mw->sim, SIM_EF_CPHS_MWIS_FILEID,
+					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+					mw_cphs_mwis_read_cb, mw);
 			ofono_sim_read(mw->sim, SIM_EF_CPHS_MBDN_FILEID,
 					OFONO_SIM_FILE_STRUCTURE_FIXED,
 					mw_cphs_mbdn_read_cb, mw);
+		}
 	}
 
 	__ofono_atom_register(mw->atom, message_waiting_unregister);
