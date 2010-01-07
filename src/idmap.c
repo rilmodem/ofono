@@ -146,7 +146,7 @@ unsigned int idmap_alloc(struct idmap *idmap)
 	bit = find_next_zero_bit(idmap->bits, idmap->size, 0);
 
 	if (bit >= idmap->size)
-		return 0;
+		return idmap->max + 1;
 
 	offset = bit / BITS_PER_LONG;
 	idmap->bits[offset] |= 1 << (bit % BITS_PER_LONG);
