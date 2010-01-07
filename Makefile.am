@@ -261,7 +261,8 @@ dist_man_MANS = doc/ofonod.8
 unit_objects =
 
 noinst_PROGRAMS = unit/test-common unit/test-util \
-			unit/test-sms unit/test-simutil unit/test-mux
+			unit/test-sms unit/test-simutil unit/test-mux \
+			unit/test-idmap
 
 unit_test_common_SOURCES = unit/test-common.c src/common.c
 unit_test_common_LDADD = @GLIB_LIBS@
@@ -285,6 +286,9 @@ unit_test_mux_SOURCES = unit/test-mux.c $(gatchat_sources)
 unit_test_mux_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_mux_OBJECTS)
 
+unit_test_idmap_SOURCES = unit/test-idmap.c src/idmap.c
+unit_test_idmap_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_idmap_OBJECTS)
 
 noinst_PROGRAMS += gatchat/gsmdial
 
