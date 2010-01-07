@@ -43,15 +43,15 @@ static void test_alloc()
 	g_assert(bit == 2);
 
 	bit = idmap_alloc(idmap);
-	g_assert(bit == 0);
+	g_assert(bit == 3);
 
 	idmap_put(idmap, 3);
 	bit = idmap_alloc(idmap);
-	g_assert(bit == 0);
+	g_assert(bit == 3);
 
 	idmap_put(idmap, 0);
 	bit = idmap_alloc(idmap);
-	g_assert(bit == 0);
+	g_assert(bit == 3);
 
 	idmap_put(idmap, 1);
 	bit = idmap_alloc(idmap);
