@@ -35,6 +35,7 @@ unit/test-util
 unit/test-sms
 unit/test-simutil
 unit/test-mux
+unit/test-idmap
 
 plugins/*-ofono.rules
 gatchat/gsmdial
