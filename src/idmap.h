@@ -26,3 +26,6 @@ void idmap_free(struct idmap *idmap);
 void idmap_put(struct idmap *idmap, unsigned int bit);
 unsigned int idmap_alloc(struct idmap *idmap);
 unsigned int idmap_alloc_next(struct idmap *idmap, unsigned int last);
+struct idmap *idmap_new_from_range(unsigned int min, unsigned int max);
+unsigned int idmap_get_min(struct idmap *idmap);
+unsigned int idmap_get_max(struct idmap *idmap);

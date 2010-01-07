@@ -36,6 +36,8 @@
 struct idmap {
 	unsigned long *bits;
 	unsigned int size;
+	unsigned int min;
+	unsigned int max;
 };
 
 static inline int ffz(unsigned long word)
@@ -97,15 +99,23 @@ found_middle:
 	return result + ffz(tmp);
 }
 
-struct idmap *idmap_new(unsigned int size)
+struct idmap *idmap_new_from_range(unsigned int min, unsigned int max)
 {
 	struct idmap *ret = g_new0(struct idmap, 1);
+	unsigned int size = max - min + 1;
 
 	ret->bits = g_new0(unsigned long,
 				(size + BITS_PER_LONG - 1) / BITS_PER_LONG);
 	ret->size = size;
+	ret->min = min;
+	ret->max = max;
 
 	return ret;
+}
+
+struct idmap *idmap_new(unsigned int size)
+{
+	return idmap_new_from_range(1, size);
 }
 
 void idmap_free(struct idmap *idmap)
@@ -114,18 +124,18 @@ void idmap_free(struct idmap *idmap)
 	g_free(idmap);
 }
 
-void idmap_put(struct idmap *idmap, unsigned int bit)
+void idmap_put(struct idmap *idmap, unsigned int id)
 {
-	unsigned int offset = (bit - 1) / BITS_PER_LONG;
+	unsigned int offset = (id - idmap->min) / BITS_PER_LONG;
 
-	bit -= 1;
+	id -= idmap->min;
 
-	if (bit > idmap->size)
+	if (id > idmap->size)
 		return;
 
-	bit %= BITS_PER_LONG;
+	id %= BITS_PER_LONG;
 
-	idmap->bits[offset] &= ~(1 << bit);
+	idmap->bits[offset] &= ~(1 << id);
 }
 
 unsigned int idmap_alloc(struct idmap *idmap)
@@ -141,18 +151,21 @@ unsigned int idmap_alloc(struct idmap *idmap)
 	offset = bit / BITS_PER_LONG;
 	idmap->bits[offset] |= 1 << (bit % BITS_PER_LONG);
 
-	return bit + 1;
+	return bit + idmap->min;
 }
 
 /*
- * Allocate the next bit skipping the first last bits
+ * Allocate the next bit skipping the ids up to and including last.  If there
+ * is no free ids until the max id is encountered, the counter is wrapped back
+ * to min and the search starts again.
  */
 unsigned int idmap_alloc_next(struct idmap *idmap, unsigned int last)
 {
 	unsigned int bit;
 	unsigned int offset;
 
-	bit = find_next_zero_bit(idmap->bits, idmap->size, last);
+	bit = find_next_zero_bit(idmap->bits, idmap->size,
+					last - idmap->min + 1);
 
 	if (bit >= idmap->size)
 		return idmap_alloc(idmap);
@@ -160,5 +173,15 @@ unsigned int idmap_alloc_next(struct idmap *idmap, unsigned int last)
 	offset = bit / BITS_PER_LONG;
 	idmap->bits[offset] |= 1 << (bit % BITS_PER_LONG);
 
-	return bit + 1;
+	return bit + idmap->min;
+}
+
+unsigned int idmap_get_min(struct idmap *idmap)
+{
+	return idmap->min;
+}
+
+unsigned int idmap_get_max(struct idmap *idmap)
+{
+	return idmap->max;
 }
