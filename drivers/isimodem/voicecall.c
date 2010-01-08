@@ -59,7 +59,6 @@ struct isi_voicecall {
 
 	struct isi_call_req_context *queue;
 
-	struct isi_version version;
 	struct isi_call calls[8];
 };
 
@@ -421,7 +420,7 @@ static bool isi_call_create_resp(GIsiClient *client,
 
 	if (m != NULL && len < (sizeof *m))
 		return false;
-	if (m == NULL || m->message_id == COMMON_MESSAGE)
+	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_CREATE_RESP)
 		return false;
@@ -531,7 +530,7 @@ static bool isi_call_answer_resp(GIsiClient *client,
 
 	if (m != NULL && len < (sizeof *m))
 		return false;
-	if (m == NULL || m->message_id == COMMON_MESSAGE)
+	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_ANSWER_RESP)
 		return false;
@@ -546,7 +545,7 @@ static bool isi_call_answer_resp(GIsiClient *client,
 static struct isi_call_req_context *
 isi_call_release_req(struct ofono_voicecall *ovc,
 		     uint8_t call_id,
-		     enum isi_call_cause_type cause_type,
+		     enum call_cause_type cause_type,
 		     uint8_t cause,
 		     ofono_voicecall_cb_t cb,
 		     void *data)
@@ -574,7 +573,7 @@ static bool isi_call_release_resp(GIsiClient *client,
 
 	if (m != NULL && len < (sizeof *m))
 		return false;
-	if (m == NULL || m->message_id == COMMON_MESSAGE)
+	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_RELEASE_RESP)
 		return false;
@@ -631,7 +630,7 @@ static bool isi_call_status_resp(GIsiClient *client,
 
 	if (m != NULL && len < (sizeof *m))
 		return false;
-	if (m == NULL || m->message_id == COMMON_MESSAGE)
+	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_STATUS_RESP)
 		return false;
@@ -664,7 +663,7 @@ static bool isi_call_status_resp(GIsiClient *client,
 static struct isi_call_req_context *
 isi_call_control_req(struct ofono_voicecall *ovc,
 		     uint8_t call_id,
-		     enum isi_call_operation op,
+		     enum call_operation op,
 		     uint8_t info,
 		     ofono_voicecall_cb_t cb,
 		     void *data)
@@ -725,7 +724,7 @@ static bool isi_call_control_resp(GIsiClient *client,
 
 	if (m != NULL && len < sizeof *m)
 		return false;
-	if (m == NULL || m->message_id == COMMON_MESSAGE)
+	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_CONTROL_RESP)
 		return false;
@@ -794,7 +793,7 @@ static bool isi_call_dtmf_send_resp(GIsiClient *client,
 
 	if (m != NULL && len < (sizeof *m))
 		return false;
-	if (m == NULL || m->message_id == COMMON_MESSAGE)
+	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_DTMF_SEND_RESP)
 		return false;
@@ -829,7 +828,7 @@ static void isi_call_notify(struct ofono_voicecall *ovc,
 	struct ofono_call ocall;
 
 	DBG("called with status=%s (0x%02X)",
-	    isi_call_status_name(call->status), call->status);
+	    call_status_name(call->status), call->status);
 
 	for (queue = &ivc->queue; (irc = *queue);) {
 		irc->step(irc, call->status);
@@ -1306,16 +1305,17 @@ static void isi_call_verify_cb(GIsiClient *client,
 			       bool alive, uint16_t object,
 			       void *ovc)
 {
-	if (alive) {
-		DBG("PN_CALL (0x%02X) with version %03d.%03d reachable",
-		    g_isi_client_resource(client),
-		    g_isi_version_major(client),
-		    g_isi_version_minor(client));
-		g_idle_add(isi_call_register, ovc);
-	}
-	else {
+	if (!alive) {
 		DBG("Unable to bootstrap voice call driver");
+		return;
 	}
+
+	DBG("%s (v.%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	g_idle_add(isi_call_register, ovc);
 }
 
 static gboolean isi_call_register(gpointer _ovc)
@@ -1323,7 +1323,10 @@ static gboolean isi_call_register(gpointer _ovc)
 	struct ofono_voicecall *ovc = _ovc;
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
 
-	g_isi_client_set_debug(ivc->client, isi_call_debug, NULL);
+	const char *debug = getenv("OFONO_ISI_DEBUG");
+
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "call") == 0))
+		g_isi_client_set_debug(ivc->client, call_debug, NULL);
 
 	g_isi_subscribe(ivc->client,
 			CALL_STATUS_IND, isi_call_status_ind_cb,
@@ -1343,6 +1346,8 @@ static gboolean isi_call_register(gpointer _ovc)
 static void isi_voicecall_remove(struct ofono_voicecall *call)
 {
 	struct isi_voicecall *data = ofono_voicecall_get_data(call);
+
+	DBG("");
 
 	if (data) {
 		g_isi_client_destroy(data->client);
