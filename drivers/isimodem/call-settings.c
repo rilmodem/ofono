@@ -32,14 +32,15 @@
 #include <glib.h>
 
 #include <gisi/client.h>
+#include <gisi/iter.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/call-settings.h>
 
-#include "isi.h"
+#include "isimodem.h"
+#include "isiutil.h"
 #include "ss.h"
-#include "iter.h"
 
 struct settings_data {
 	GIsiClient *client;

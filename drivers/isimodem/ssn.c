@@ -39,13 +39,12 @@
 #include <ofono/modem.h>
 #include <ofono/ssn.h>
 
-#include "isi.h"
+#include "isimodem.h"
 
 #define PN_SS			0x06
 
 struct ssn_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
 
 static int isi_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,

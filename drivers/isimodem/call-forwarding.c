@@ -38,7 +38,8 @@
 #include <ofono/modem.h>
 #include <ofono/call-forwarding.h>
 
-#include "isi.h"
+#include "isimodem.h"
+#include "isiutil.h"
 #include "ss.h"
 
 struct forw_data {

@@ -39,13 +39,12 @@
 #include <ofono/modem.h>
 #include <ofono/ussd.h>
 
-#include "isi.h"
+#include "isimodem.h"
 
 #define PN_SS			0x06
 
 struct ussd_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
 
 static void isi_request(struct ofono_ussd *ussd, const char *str,

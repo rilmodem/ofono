@@ -39,7 +39,8 @@
 #include <ofono/call-barring.h>
 #include "util.h"
 
-#include "isi.h"
+#include "isimodem.h"
+#include "isiutil.h"
 #include "ss.h"
 
 struct barr_data {
