@@ -64,25 +64,24 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3) {
-		DBG("Truncated message.");
-		goto error;
+		DBG("truncated message");
+		return false;
 	}
 
-	if (msg[0] != INFO_PRODUCT_INFO_READ_RESP &&
-		msg[0] != INFO_VERSION_READ_RESP &&
-		msg[0] != INFO_SERIAL_NUMBER_READ_RESP) {
-		DBG("Unexpected message ID: 0x%02x", msg[0]);
-		goto error;
-	}
+	if (msg[0] != INFO_PRODUCT_INFO_READ_RESP
+		&& msg[0] != INFO_VERSION_READ_RESP
+		&& msg[0] != INFO_SERIAL_NUMBER_READ_RESP)
+		return false;
 
 	if (msg[1] != INFO_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("request failed: %s", info_isi_cause_name(msg[1]));
 		goto error;
 	}
 
 	for (g_isi_sb_iter_init(&iter, msg, len, 3);
-	     g_isi_sb_iter_is_valid(&iter);
-	     g_isi_sb_iter_next(&iter)) {
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
+
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case INFO_SB_PRODUCT_INFO_MANUFACTURER:
@@ -90,24 +89,21 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 		case INFO_SB_MCUSW_VERSION:
 		case INFO_SB_SN_IMEI_PLAIN:
 
-			if (g_isi_sb_iter_get_len(&iter) < 5)
+			if (g_isi_sb_iter_get_len(&iter) < 5
+				|| !g_isi_sb_iter_get_byte(&iter, &chars, 3)
+				|| !g_isi_sb_iter_get_latin_tag(&iter,
+							&info, chars, 4))
 				goto error;
 
-			if (!g_isi_sb_iter_get_byte(&iter, &chars, 3))
-				goto error;
-
-			if (!g_isi_sb_iter_get_latin_tag(&iter,
-					&info, chars, 4))
-				goto error;
-
-			DBG("info=<%s>", info);
 			CALLBACK_WITH_SUCCESS(cb, info, cbd->data);
 			g_free(info);
-			goto out;
+
+			g_free(cbd);
+			return true;
 
 		default:
-			DBG("Unknown sub-block: 0x%02X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("skipping: %s (%zu bytes)",
+				info_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -115,8 +111,6 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 
 error:
 	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
-
-out:
 	g_free(cbd);
 	return true;
 }
@@ -136,15 +130,13 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd))
+	if (g_isi_request_make(dev->client, msg, sizeof(msg),
+				INFO_TIMEOUT, info_resp_cb, cbd))
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, "", data);
+	g_free(cbd);
 }
 
 static void isi_query_model(struct ofono_devinfo *info,
@@ -162,15 +154,13 @@ static void isi_query_model(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd))
+	if (g_isi_request_make(dev->client, msg, sizeof(msg),
+				INFO_TIMEOUT, info_resp_cb, cbd))
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, "", data);
+	g_free(cbd);
 }
 
 static void isi_query_revision(struct ofono_devinfo *info,
@@ -189,15 +179,13 @@ static void isi_query_revision(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd))
+	if (g_isi_request_make(dev->client, msg, sizeof(msg),
+				INFO_TIMEOUT, info_resp_cb, cbd))
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, "", data);
+	g_free(cbd);
 }
 
 static void isi_query_serial(struct ofono_devinfo *info,
@@ -215,20 +203,24 @@ static void isi_query_serial(struct ofono_devinfo *info,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd))
+	if (g_isi_request_make(dev->client, msg, sizeof(msg),
+				INFO_TIMEOUT, info_resp_cb, cbd))
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, "", data);
+	g_free(cbd);
 }
 
 static gboolean isi_devinfo_register(gpointer user)
 {
 	struct ofono_devinfo *info = user;
+	struct devinfo_data *dd = ofono_devinfo_get_data(info);
+
+	const char *debug = getenv("OFONO_ISI_DEBUG");
+
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "info") == 0))
+		g_isi_client_set_debug(dd->client, info_debug, NULL);
 
 	ofono_devinfo_register(info);
 
@@ -240,15 +232,17 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 {
 	struct ofono_devinfo *info = opaque;
 
-	if (alive == true) {
-		DBG("Resource 0x%02X, with version %03d.%03d reachable",
-			g_isi_client_resource(client),
-			g_isi_version_major(client),
-			g_isi_version_minor(client));
-		g_idle_add(isi_devinfo_register, info);
+	if (!alive) {
+		DBG("devinfo driver bootstrap failed");
 		return;
 	}
-	DBG("Unable to bootsrap devinfo driver");
+
+	DBG("%s (v%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	g_idle_add(isi_devinfo_register, info);
 }
 
 static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
@@ -260,8 +254,6 @@ static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 	if (!data)
 		return -ENOMEM;
 
-	DBG("idx=%p", idx);
-
 	data->client = g_isi_client_create(idx, PN_PHONE_INFO);
 	if (!data->client) {
 		g_free(data);
@@ -270,8 +262,7 @@ static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 
 	ofono_devinfo_set_data(info, data);
 
-	if (!g_isi_verify(data->client, reachable_cb, info))
-		DBG("Unable to verify reachability");
+	g_isi_verify(data->client, reachable_cb, info);
 
 	return 0;
 }
