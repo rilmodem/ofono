@@ -62,12 +62,6 @@ static inline guint8 *mccmnc_to_bcd(const char *mcc, const char *mnc,
 	return bcd;
 }
 
-static void net_debug(const void *restrict buf, size_t len, void *data)
-{
-	DBG("");
-	dump_msg(buf, len);
-}
-
 static inline int isi_status_to_at_status(guint8 status)
 {
 	switch (status) {
@@ -172,8 +166,8 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zu bytes)",
+				net_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -181,7 +175,9 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 		g_isi_sb_iter_next(&iter);
 	}
 
-	DBG("status=%d, lac=%d, ci=%d, tech=%d", *status, *lac, *ci, *tech);
+	DBG("status=%s, lac=%d, ci=%d, tech=%d",
+		net_status_name(*status), *lac, *ci, *tech);
+
 	return TRUE;
 }
 
@@ -220,8 +216,6 @@ static bool reg_status_resp_cb(GIsiClient *client, const void *restrict data,
 	int ci = -1;
 	int tech = -1;
 
-	DBG("");
-
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
@@ -231,7 +225,7 @@ static bool reg_status_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
 		goto error;
 	}
 
@@ -288,16 +282,18 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 
 	DBG("");
 
+	memset(&op, 0, sizeof(struct ofono_network_operator));
+
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
 
 	if (len < 3 || msg[0] != NET_OPER_NAME_READ_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
 		goto error;
 	}
 
@@ -316,11 +312,9 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 			char *tag = NULL;
 			guint8 taglen = 0;
 
-			if (!g_isi_sb_iter_get_byte(&iter, &taglen, 3))
-				goto error;
-
-			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag,
-						taglen * 2, 4))
+			if (!g_isi_sb_iter_get_byte(&iter, &taglen, 3)
+				|| !g_isi_sb_iter_get_alpha_tag(&iter, &tag,
+								taglen * 2, 4))
 				goto error;
 
 			strncpy(op.name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);
@@ -330,16 +324,14 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zu bytes)",
+				net_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-
 		g_isi_sb_iter_next(&iter);
 	}
 
-	DBG("mnc=%s, mcc=%s, name=%s", op.mnc, op.mcc, op.name);
 	CALLBACK_WITH_SUCCESS(cb, &op, cbd->data);
 	goto out;
 		
@@ -377,10 +369,8 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
+	g_free(cbd);
 }
 
 
@@ -403,10 +393,10 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_AVAILABLE_GET_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
 		goto error;
 	}
 
@@ -456,8 +446,8 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zu bytes)",
+				net_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -503,10 +493,8 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
+	g_free(cbd);
 }
 
 static bool set_auto_resp_cb(GIsiClient *client, const void *restrict data,
@@ -522,11 +510,11 @@ static bool set_auto_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 	}
 
-	if (!msg|| len < 3 || msg[0] != NET_SET_RESP)
+	if (!msg || len < 3 || msg[0] != NET_SET_RESP)
 		goto error;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
 		goto error;
 	}
 
@@ -570,10 +558,8 @@ static void isi_register_auto(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
 }
 
 static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
@@ -594,7 +580,7 @@ static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
 		goto error;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
 		goto error;
 	}
 
@@ -644,10 +630,8 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
 }
 
 static void isi_deregister(struct ofono_netreg *netreg,
@@ -693,8 +677,8 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zu bytes)",
+				net_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -717,10 +701,10 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_RAT_RESP)
-		return true;
+		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
 		return true;
 	}
 
@@ -733,22 +717,19 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 		case NET_RAT_INFO: {
 			guint8 info = 0;
 			
-			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2))
-				return true;
-
-			if (!g_isi_sb_iter_get_byte(&iter, &info, 3))
-				return true;
-
-			if (info)
-				if (!g_isi_sb_iter_get_byte(&iter,
+			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2)
+				|| !g_isi_sb_iter_get_byte(&iter, &info, 3)
+				|| !info
+				|| !g_isi_sb_iter_get_byte(&iter,
 							&nd->gsm_compact, 4))
-					return true;
+				return true;
+
 			break;
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zu bytes)",
+				net_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -785,10 +766,10 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_RSSI_GET_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
+		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
 		goto error;
 	}
 
@@ -809,8 +790,8 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 
 		default:
-			DBG("Skipping sub-block: 0x%02X (%zd bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				net_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -850,10 +831,8 @@ static void isi_strength(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, -1, data);
+	g_free(cbd);
 }
 
 static gboolean isi_netreg_register(gpointer user)
@@ -866,7 +845,10 @@ static gboolean isi_netreg_register(gpointer user)
 		NET_CURRENT_RAT
 	};
 
-	g_isi_client_set_debug(nd->client, net_debug, NULL);
+	const char *debug = getenv("OFONO_ISI_DEBUG");
+
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "net") == 0))
+		g_isi_client_set_debug(nd->client, net_debug, NULL);
 
 	g_isi_subscribe(nd->client, NET_RSSI_IND, rssi_ind_cb, netreg);
 	g_isi_subscribe(nd->client, NET_REG_STATUS_IND, reg_status_ind_cb,
@@ -889,15 +871,17 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 {
 	struct ofono_netreg *netreg = opaque;
 
-	if (alive == true) {
-		DBG("Resource 0x%02X, with version %03d.%03d reachable",
-			g_isi_client_resource(client),
-			g_isi_version_major(client),
-			g_isi_version_minor(client));
-		g_idle_add(isi_netreg_register, netreg);
+	if (!alive) {
+		DBG("Unable to bootsrap netreg driver");
 		return;
 	}
-	DBG("Unable to bootsrap netreg driver");
+
+	DBG("%s (v%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	g_idle_add(isi_netreg_register, netreg);
 }
 
 static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
@@ -916,9 +900,7 @@ static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	}
 
 	ofono_netreg_set_data(netreg, nd);
-
-	if (!g_isi_verify(nd->client, reachable_cb, netreg))
-		DBG("Unable to verify reachability");
+	g_isi_verify(nd->client, reachable_cb, netreg);
 
 	return 0;
 }
