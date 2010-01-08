@@ -193,7 +193,7 @@ static void read_next_entry(GIsiClient *client, int location, GIsiResponseFunc r
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(client, msg, sizeof(msg), PHONEBOOK_TIMEOUT,
+	if (g_isi_request_make(client, msg, sizeof(msg), SIM_TIMEOUT,
 				read_cb, cbd))
 		return;
 
@@ -262,7 +262,7 @@ static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
 	if (strcmp(storage, "SM"))
 		goto error;
 
-	if (g_isi_request_make(pbd->client, msg, sizeof(msg), PHONEBOOK_TIMEOUT,
+	if (g_isi_request_make(pbd->client, msg, sizeof(msg), SIM_TIMEOUT,
 				read_resp_cb, cbd))
 		return;
 
@@ -287,15 +287,17 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 {
 	struct ofono_phonebook *pb = opaque;
 
-	if (alive == true) {
-		DBG("Resource 0x%02X, with version %03d.%03d reachable",
-			g_isi_client_resource(client),
-			g_isi_version_major(client),
-			g_isi_version_minor(client));
-		g_idle_add(isi_phonebook_register, pb);
+	if (!alive) {
+		DBG("Unable to bootsrap phonebook driver");
 		return;
 	}
-	DBG("Unable to bootsrap phonebook driver");
+
+	DBG("%s (v.%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	g_idle_add(isi_phonebook_register, pb);
 }
 
 static int isi_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
