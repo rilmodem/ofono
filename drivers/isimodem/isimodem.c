@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
  *
- * Contact: Aki Niemi <aki.niemi@nokia.com>
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 2 as published by the Free Software Foundation.
@@ -26,6 +24,7 @@
 #endif
 
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
@@ -51,11 +50,15 @@
 #include <ofono/call-barring.h>
 #include <ofono/call-meter.h>
 
-#include "isi.h"
+#include "isimodem.h"
+#include "isiutil.h"
+#include "mtc.h"
+#include "debug.h"
 
 struct isi_data {
 	struct ofono_modem *modem;
 	GIsiModem *idx;
+	GIsiClient *client;
 };
 
 static GPhonetNetlink *link = NULL;
@@ -74,6 +77,75 @@ static struct isi_data *find_modem_by_idx(GSList *modems, GIsiModem *idx)
 	return NULL;
 }
 
+static void mtc_state_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct isi_data *isi = opaque;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		return;
+	}
+
+	if (len < 3 || msg[0] != MTC_STATE_INFO_IND)
+		return;
+
+	DBG("current modem state: %s (0x%02X)",
+		mtc_modem_state_name(msg[1]), msg[1]);
+	DBG("target modem state: %s (0x%02X)",
+		mtc_modem_state_name(msg[2]), msg[2]);
+
+	ofono_modem_set_powered(isi->modem, msg[1] != MTC_POWER_OFF);
+}
+
+static bool mtc_query_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct isi_data *isi = opaque;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		return true;
+	}
+
+	if (len < 3 || msg[0] != MTC_STATE_QUERY_RESP)
+		return false;
+
+	DBG("current modem state: %s (0x%02X)",
+		mtc_modem_state_name(msg[1]), msg[1]);
+	DBG("target modem state: %s (0x%02X)",
+		mtc_modem_state_name(msg[2]), msg[2]);
+
+	ofono_modem_set_powered(isi->modem, msg[1] != MTC_POWER_OFF);
+
+	return true;
+}
+
+static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+				void *opaque)
+{
+	const unsigned char msg[] = {
+		MTC_STATE_QUERY_REQ,
+		0x00, 0x00 /* Filler */
+	};
+
+	if (!alive) {
+		DBG("Unable to bootstrap mtc driver");
+		return;
+	}
+
+	DBG("%s (v.%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	g_isi_subscribe(client, MTC_STATE_INFO_IND, mtc_state_cb, opaque);
+	g_isi_request_make(client, msg, sizeof(msg), MTC_TIMEOUT,
+				mtc_query_cb, opaque);
+}
+
 static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 				void *data)
 {
@@ -82,9 +154,10 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 	DBG("PhoNet is %s, addr=0x%02x, idx=%p",
 		up ? "up" : "down", addr, idx);
 	
-
 	if (up) {
+
 		if (isi) {
+
 			DBG("Modem already registered: (0x%02x)",
 				g_isi_modem_index(idx));
 			return;
@@ -96,17 +169,17 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 
 		isi->idx = idx;
 		isi->modem = ofono_modem_create(NULL, "isimodem");
-
 		if (!isi->modem) {
 			g_free(isi);
 			return;
 		}
 
 		g_modems = g_slist_prepend(g_modems, isi);
-
 		ofono_modem_set_data(isi->modem, isi);
 		ofono_modem_register(isi->modem);
-		ofono_modem_set_powered(isi->modem, TRUE);
+
+		DBG("Done regging modem");
+
  	} else {
 
 		if (!isi) {
@@ -115,39 +188,113 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 			return;
 		}
 
-		ofono_modem_remove(isi->modem);
-
 		g_modems = g_slist_remove(g_modems, isi);
+		g_isi_client_destroy(isi->client);
+
+		DBG("Now removing modem");
+			ofono_modem_remove(isi->modem);
 		g_free(isi);
+		isi = NULL;
 	}
+}
+
+static bool mtc_power_on_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct isi_data *isi = opaque;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		return true;
+	}
+
+	if (len < 2 || msg[0] != MTC_POWER_ON_RESP)
+		return false;
+
+	if (msg[1] == MTC_OK)
+		ofono_modem_set_powered(isi->modem, TRUE);
+
+	return true;
+}
+
+static bool mtc_power_off_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct isi_data *isi = opaque;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		return true;
+	}
+
+	if (len < 2 || msg[0] != MTC_POWER_OFF_RESP)
+		return false;
+
+	if (msg[1] == MTC_OK)
+		ofono_modem_set_powered(isi->modem, FALSE);
+
+	return true;
 }
 
 static int isi_modem_probe(struct ofono_modem *modem)
 {
+	struct isi_data *isi = ofono_modem_get_data(modem);
+
+	isi->client = g_isi_client_create(isi->idx, PN_MTC);
+	if (!isi->client)
+		return -ENOMEM;
+
+	g_isi_verify(isi->client, reachable_cb, isi);
+
 	return 0;
 }
 
 static void isi_modem_remove(struct ofono_modem *modem)
 {
+	DBG("");
 }
 
 static int isi_modem_enable(struct ofono_modem *modem)
 {
-	return 0;
+	struct isi_data *isi = ofono_modem_get_data(modem);
+
+	const unsigned char msg[] = {
+		MTC_POWER_ON_REQ,
+		0x00, 0x00 /* Filler */
+	};
+
+	if (!g_isi_request_make(isi->client, msg, sizeof(msg), MTC_TIMEOUT,
+				mtc_power_on_cb, isi))
+		return -EINVAL;
+
+	return -EINPROGRESS;
 }
 
 static int isi_modem_disable(struct ofono_modem *modem)
 {
-	return 0;
+	struct isi_data *isi = ofono_modem_get_data(modem);
+
+	const unsigned char msg[] = {
+		MTC_POWER_OFF_REQ,
+		0x00, 0x00 /* Filler */
+	};
+
+	if (!g_isi_request_make(isi->client, msg, sizeof(msg), MTC_TIMEOUT,
+				mtc_power_off_cb, isi))
+		return -EINVAL;
+
+	return -EINPROGRESS;
 }
 
 static void isi_modem_pre_sim(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
+	ofono_sim_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_devinfo_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_voicecall_create(isi->modem, 0, "isimodem", isi->idx);
-	ofono_sim_create(isi->modem, 0, "isimodem", isi->idx);
 }
 
 static void isi_modem_post_sim(struct ofono_modem *modem)
