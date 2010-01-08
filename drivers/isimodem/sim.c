@@ -38,39 +38,16 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/sim.h>
-
-#include "isi.h"
 #include "simutil.h"
 
-#define PN_SIM			0x09
-#define SIM_TIMEOUT		5
-#define SIM_MAX_IMSI_LENGTH	15
-
-enum return_code {
-	SIM_SERV_OK = 0x01,
-};
-
-enum message_id {
-	SIM_IMSI_REQ_READ_IMSI = 0x1D,
-	SIM_IMSI_RESP_READ_IMSI = 0x1E,
-	SIM_SERV_PROV_NAME_REQ = 0x21,
-	SIM_SERV_PROV_NAME_RESP = 0x22
-};
-
-enum service_types {
-	SIM_ST_READ_SERV_PROV_NAME = 0x2C,
-	READ_IMSI = 0x2D,
-};
+#include "isimodem.h"
+#include "isiutil.h"
+#include "sim.h"
+#include "debug.h"
 
 struct sim_data {
 	GIsiClient *client;
 };
-
-static void sim_debug(const void *restrict buf, size_t len, void *data)
-{
-	DBG("");
-	dump_msg(buf, len);
-}
 
 /* Returns fake (static) file info for EFSPN */
 static gboolean efspn_file_info(gpointer user)

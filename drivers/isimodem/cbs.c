@@ -39,53 +39,14 @@
 #include <ofono/modem.h>
 #include <ofono/cbs.h>
 
-#include "isi.h"
-
-#define PN_SMS			0x02
-#define CBS_TIMEOUT		5
-
-enum message_id {
-	SMS_GSM_CB_ROUTING_REQ = 0x0B,
-	SMS_GSM_CB_ROUTING_RESP = 0x0C,
-	SMS_GSM_CB_ROUTING_NTF = 0x0D
-};
-
-enum routing_command {
-	SMS_ROUTING_RELEASE = 0x00,
-	SMS_ROUTING_SET = 0x01,
-	SMS_ROUTING_SUSPEND = 0x02,
-	SMS_ROUTING_RESUME = 0x03,
-	SMS_ROUTING_UPDATE = 0x04
-};
-
-enum routing_mode {
-	SMS_GSM_ROUTING_MODE_ALL = 0x0B,
-	SMS_GSM_ROUTING_MODE_CB_DDL = 0x0C
-};
-
-enum cause {
-	SMS_OK = 0x00,
-	SMS_ERR_ROUTING_RELEASED = 0x01,
-	SMS_ERR_INVALID_PARAMETER = 0x02,
-	SMS_ERR_DEVICE_FAILURE = 0x03,
-	SMS_ERR_PP_RESERVED = 0x04
-};
-
-enum subject_list_type {
-	SMS_CB_ALLOWED_IDS_LIST = 0x00,
-	SMS_CB_NOT_ALLOWED_IDS_LIST = 0x01
-};
+#include "isimodem.h"
+#include "isiutil.h"
+#include "sms.h"
+#include "debug.h"
 
 struct cbs_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
-
-static void cbs_debug(const void *restrict buf, size_t len, void *data)
-{
-	DBG("");
-	dump_msg(buf, len);
-}
 
 static void isi_set_topics(struct ofono_cbs *cbs, const char *topics,
 				ofono_cbs_set_cb_t cb, void *data)

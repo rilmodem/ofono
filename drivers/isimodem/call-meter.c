@@ -39,13 +39,12 @@
 #include <ofono/modem.h>
 #include <ofono/call-meter.h>
 
-#include "isi.h"
-
-#define PN_SS			0x06
+#include "isimodem.h"
+#include "isiutil.h"
+#include "ss.h"
 
 struct call_meter_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
 
 static void isi_call_meter_query(struct ofono_call_meter *cm,

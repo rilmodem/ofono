@@ -39,81 +39,14 @@
 #include <ofono/modem.h>
 #include <ofono/sms.h>
 
-#include "isi.h"
-
-#define PN_SMS			0x02
-#define SMS_TIMEOUT		5
+#include "isimodem.h"
+#include "isiutil.h"
+#include "sms.h"
+#include "debug.h"
 
 struct sms_data {
 	GIsiClient *client;
-	struct isi_version version;
 };
-
-enum message_id {
-	SMS_MESSAGE_SEND_REQ = 0x02,
-	SMS_MESSAGE_SEND_RESP = 0x03,
-	SMS_PP_ROUTING_REQ = 0x06,
-	SMS_PP_ROUTING_RESP = 0x07,
-	SMS_PP_ROUTING_NTF = 0x08
-};
-
-enum sub_block_id {
-	SMS_GSM_DELIVER = 0x00,
-	SMS_GSM_STATUS_REPORT = 0x01,
-	SMS_GSM_SUBMIT = 0x02,
-	SMS_GSM_COMMAND = 0x03,
-	SMS_GSM_ROUTING = 0x0D
-};
-
-enum routing_command {
-	SMS_ROUTING_RELEASE = 0x00,
-	SMS_ROUTING_SET = 0x01,
-	SMS_ROUTING_SUSPEND = 0x02,
-	SMS_ROUTING_RESUME = 0x03,
-	SMS_ROUTING_UPDATE = 0x04
-};
-
-enum routing_mode {
-	SMS_GSM_ROUTING_MODE_ALL = 0x0B
-};
-
-enum routing_type {
-	SMS_GSM_TPDU_ROUTING = 0x06
-};
-
-enum message_type {
-	SMS_GSM_MT_ALL_TYPE = 0x06
-};
-
-enum route_preference {
-	SMS_ROUTE_GPRS_PREF = 0x00,
-	SMS_ROUTE_CS = 0x01,
-	SMS_ROUTE_GPRS = 0x02,
-	SMS_ROUTE_CS_PREF = 0x03,
-	SMS_ROUTE_DEFAULT = 0x04
-};
-
-enum sender_type {
-	SMS_SENDER_ANY = 0x00,
-	SMS_SENDER_SIM_ATK = 0x01
-};
-
-enum content_type {
-	SMS_TYPE_DEFAULT = 0x00,
-	SMS_TYPE_TEXT_MESSAGE = 0x01
-};
-
-enum cause {
-	SMS_OK = 0x00,
-	SMS_ERR_ROUTING_RELEASED = 0x01,
-	SMS_ERR_INVALID_PARAMETER = 0x02
-};
-
-static void sms_debug(const void *restrict buf, size_t len, void *data)
-{
-	DBG("");
-	dump_msg(buf, len);
-}
 
 static void isi_sca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
 				void *data)

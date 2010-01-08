@@ -24,13 +24,14 @@
 #ifndef __ISIMODEM_SS_H
 #define __ISIMODEM_SS_H
 
-#define PN_SS			0x06
-#define SS_TIMEOUT		15
+#define PN_SS		0x06
+#define SS_TIMEOUT	15
 
 enum ss_message_id {
 	SS_SERVICE_REQ = 0x00,
 	SS_SERVICE_COMPLETED_RESP = 0x01,
-	SS_SERVICE_FAILED_RESP = 0x02
+	SS_SERVICE_FAILED_RESP = 0x02,
+	SS_COMMON_MESSAGE = 0xF0
 };
 
 enum ss_operations {
@@ -80,7 +81,7 @@ enum ss_response_data {
 	SS_SEND_ADDITIONAL_INFO = 0x01
 };
 
-enum ss_sub_block_id {
+enum ss_subblock {
 	SS_FORWARDING = 0x00,
 	SS_STATUS_RESULT = 0x01,
 	SS_GSM_PASSWORD = 0x03,
@@ -94,7 +95,7 @@ enum ss_sub_block_id {
 	SS_GSM_ADDITIONAL_INFO = 0x2F
 };
 
-enum ss_status_codes {
+enum ss_isi_cause {
 	SS_GSM_ACTIVE = 0x01,
 	SS_GSM_REGISTERED = 0x02,
 	SS_GSM_PROVISIONED = 0x04,

@@ -40,107 +40,13 @@
 #include <ofono/modem.h>
 #include <ofono/netreg.h>
 
-#include "isi.h"
-
-#define PN_NETWORK		0x0A
-#define NETWORK_TIMEOUT		5
-#define NETWORK_SCAN_TIMEOUT	180
-#define NETWORK_SET_TIMEOUT	240
-
-enum message_id {
-	NET_SET_REQ = 0x07,
-	NET_SET_RESP = 0x08,
-	NET_RSSI_GET_REQ = 0x0B,
-	NET_RSSI_GET_RESP = 0x0C,
-	NET_RSSI_IND = 0x1E,
-	NET_RAT_IND = 0x35,
-	NET_RAT_REQ = 0x36,
-	NET_RAT_RESP = 0x37,
-	NET_REG_STATUS_GET_REQ = 0xE0,
-	NET_REG_STATUS_GET_RESP = 0xE1,
-	NET_REG_STATUS_IND = 0xE2,
-	NET_AVAILABLE_GET_REQ = 0xE3,
-	NET_AVAILABLE_GET_RESP = 0xE4,
-	NET_OPER_NAME_READ_REQ = 0xE5,
-	NET_OPER_NAME_READ_RESP = 0xE6,
-};
-
-enum sub_block_id {
-	NET_REG_INFO_COMMON = 0x00,
-	NET_OPERATOR_INFO_COMMON = 0x02,
-	NET_RSSI_CURRENT = 0x04,
- 	NET_GSM_REG_INFO = 0x09,
- 	NET_DETAILED_NETWORK_INFO = 0x0B,
-	NET_GSM_OPERATOR_INFO = 0x0C,
-	NET_GSM_BAND_INFO = 0x11,
-	NET_RAT_INFO = 0x2C,
-	NET_AVAIL_NETWORK_INFO_COMMON = 0xE1,
-	NET_OPER_NAME_INFO = 0xE7
-};
-
-enum reg_status {
-	NET_REG_STATUS_HOME = 0x00,
-	NET_REG_STATUS_ROAM = 0x01,
-	NET_REG_STATUS_NOSERV = 0x03,
-	NET_REG_STATUS_NOSERV_SEARCHING = 0x04,
-	NET_REG_STATUS_NOSERV_NOTSEARCHING = 0x05,
-	NET_REG_STATUS_NOSERV_NOSIM = 0x06,
-	NET_REG_STATUS_POWER_OFF = 0x08,
-	NET_REG_STATUS_NSPS = 0x09,
-	NET_REG_STATUS_NSPS_NO_COVERAGE = 0x0A,
-	NET_REG_STATUS_NOSERV_SIM_REJECTED_BY_NW = 0x0B
-};
-
-enum cs_type {
-	NET_CS_GSM = 0x00
-};
-
-enum rat_name {
-	NET_GSM_RAT = 0x01,
-	NET_UMTS_RAT = 0x02
-};
-
-enum rat_type {
-	NET_CURRENT_RAT = 0x00,
-	NET_SUPPORTED_RATS = 0x01
-};
-
-enum measurement_type {
-	NET_CURRENT_CELL_RSSI = 0x02
-};
-
-enum search_mode {
-	NET_MANUAL_SEARCH = 0x00
-};
-
-enum oper_name_type {
-	NET_HARDCODED_LATIN_OPER_NAME = 0x00
-};
-
-enum band_info {
-	NET_GSM_BAND_INFO_NOT_AVAIL = 0x02,
-	NET_GSM_BAND_ALL_SUPPORTED_BANDS = 0x03
-};
-
-enum select_mode {
-	NET_SELECT_MODE_UNKNOWN = 0x00,
-	NET_SELECT_MODE_MANUAL = 0x01,
-	NET_SELECT_MODE_AUTOMATIC = 0x02,
-	NET_SELECT_MODE_USER_RESELECTION = 0x03,
-	NET_SELECT_MODE_NO_SELECTION = 0x04
-};
-
-enum return_code {
-	NET_CAUSE_OK = 0x00,
-	NET_CAUSE_COMMUNICATION_ERROR = 0x01,
-	NET_CAUSE_NET_NOT_FOUND = 0x05,
-	NET_CAUSE_NO_SELECTED_NETWORK = 0x11
-};
+#include "isimodem.h"
+#include "isiutil.h"
+#include "network.h"
+#include "debug.h"
 
 struct netreg_data {
 	GIsiClient *client;
-	struct isi_version version;
-
 	guint8 last_reg_mode;
 	guint8 rat;
 	guint8 gsm_compact;

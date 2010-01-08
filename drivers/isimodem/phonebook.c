@@ -39,41 +39,10 @@
 #include <ofono/phonebook.h>
 #include "util.h"
 
-#include "isi.h"
-
-#define PHONEBOOK_TIMEOUT	5
-#define PN_SIM			0x09
-
-enum pb_message_id {
-	SIM_PB_REQ_SIM_PB_READ = 0xDC,
-	SIM_PB_RESP_SIM_PB_READ = 0xDD
-};
-
-enum pb_service_types {
-	SIM_PB_READ = 0x0F
-};
-
-enum pb_sub_block_id {
-	SIM_PB_INFO_REQUEST = 0xE4,
-	SIM_PB_STATUS = 0xFB,
-	SIM_PB_LOCATION = 0xFE,
-	SIM_PB_LOCATION_SEARCH = 0xFF
-};
-
-enum pb_type {
-	SIM_PB_ADN = 0xC8
-};
-
-enum pb_tag {
-	SIM_PB_ANR = 0xCA,
-	SIM_PB_EMAIL = 0xDD,
-	SIM_PB_SNE = 0xF7
-};
-
-enum pb_status {
-	SIM_SERV_OK = 0x01,
-	SIM_SERV_NO_MATCH = 0x16
-};
+#include "isimodem.h"
+#include "isiutil.h"
+#include "sim.h"
+#include "debug.h"
 
 struct pb_data {
 	GIsiClient *client;

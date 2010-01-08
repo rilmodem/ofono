@@ -42,8 +42,10 @@
 #include <ofono/modem.h>
 #include <ofono/voicecall.h>
 
-#include "isi.h"
-#include "isi-call.h"
+#include "isimodem.h"
+#include "isiutil.h"
+#include "call.h"
+#include "debug.h"
 
 struct isi_call {
 	uint8_t id, call_id, status, mode, mode_info, cause_type, cause;

@@ -40,46 +40,10 @@
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
 
-#include "isi.h"
-
-#define PN_PHONE_INFO		0x1B
-#define INFO_TIMEOUT		5
-
-enum return_code {
-	INFO_OK = 0x00,
-	INFO_FAIL = 0x01,
-	INFO_NO_NUMBER = 0x02,
-	INFO_NOT_SUPPORTED = 0x03
-};
-
-enum message_id {
-	INFO_SERIAL_NUMBER_READ_REQ = 0x00,
-	INFO_SERIAL_NUMBER_READ_RESP = 0x01,
-	INFO_VERSION_READ_REQ = 0x07,
-	INFO_VERSION_READ_RESP = 0x08,
-	INFO_PRODUCT_INFO_READ_REQ = 0x15,
-	INFO_PRODUCT_INFO_READ_RESP = 0x16
-};
-
-enum sub_block_id {
-	INFO_SB_PRODUCT_INFO_NAME = 0x01,
-	INFO_SB_PRODUCT_INFO_MANUFACTURER = 0x07,
-	INFO_SB_SN_IMEI_PLAIN = 0x41,
-	INFO_SB_MCUSW_VERSION = 0x48
-};
-
-enum product_info_type {
-	INFO_PRODUCT_NAME = 0x01,
-	INFO_PRODUCT_MANUFACTURER = 0x07
-};
-
-enum serial_number_type {
-	INFO_SN_IMEI_PLAIN = 0x41
-};
-
-enum version_type {
-	INFO_MCUSW = 0x01
-};
+#include "isimodem.h"
+#include "isiutil.h"
+#include "debug.h"
+#include "info.h"
 
 struct devinfo_data {
 	GIsiClient *client;
