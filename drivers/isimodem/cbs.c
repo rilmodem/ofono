@@ -131,7 +131,7 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 
 	ofono_cbs_set_data(cbs, cd);
 
-	g_isi_client_set_debug(cd->client, cbs_debug, NULL);
+	g_isi_client_set_debug(cd->client, sms_debug, NULL);
 	g_isi_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb, cbs);
 
 	if (!g_isi_request_make(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
