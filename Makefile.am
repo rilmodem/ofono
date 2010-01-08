@@ -71,24 +71,31 @@ endif
 if ISIMODEM
 builtin_modules += isimodem
 builtin_sources += $(gisi_sources) \
-				drivers/isimodem/isi.h \
-				drivers/isimodem/ss.h \
+				drivers/isimodem/isimodem.h \
 				drivers/isimodem/isimodem.c \
+				drivers/isimodem/mtc.h \
+				drivers/isimodem/debug.h \
+				drivers/isimodem/isiutil.h \
+				drivers/isimodem/debug.c \
 				drivers/isimodem/phonebook.c \
 				drivers/isimodem/devinfo.c \
+				drivers/isimodem/info.h \
 				drivers/isimodem/network-registration.c \
+				drivers/isimodem/network.h \
 				drivers/isimodem/voicecall.c \
-				drivers/isimodem/isi-call.h \
-				drivers/isimodem/isi-call-debug.c \
+				drivers/isimodem/call.h \
 				drivers/isimodem/sms.c \
+				drivers/isimodem/sms.h \
 				drivers/isimodem/cbs.c \
 				drivers/isimodem/sim.c \
+				drivers/isimodem/sim.h \
 				drivers/isimodem/ssn.c \
 				drivers/isimodem/ussd.c \
 				drivers/isimodem/call-forwarding.c \
 				drivers/isimodem/call-settings.c \
 				drivers/isimodem/call-barring.c \
-				drivers/isimodem/call-meter.c
+				drivers/isimodem/call-meter.c \
+				drivers/isimodem/ss.h
 endif
 
 if ATMODEM
