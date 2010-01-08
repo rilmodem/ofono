@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
  *
- * Contact: Aki Niemi <aki.niemi@nokia.com>
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 2 as published by the Free Software Foundation.
@@ -20,60 +18,6 @@
  * 02110-1301 USA
  *
  */
-
-#define CALLBACK_WITH_FAILURE(f, args...)		\
-	do {						\
-		struct ofono_error e;			\
-		e.type = OFONO_ERROR_TYPE_FAILURE;	\
-		e.error = 0;				\
-		f(&e, ##args);				\
-	} while(0)					\
-
-#define CALLBACK_WITH_SUCCESS(f, args...)		\
-	do {						\
-		struct ofono_error e;			\
-		e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
-		e.error = 0;				\
-		f(&e, ##args);				\
-	} while(0)					\
-
-struct isi_cb_data {
-	void *cb;
-	void *data;
-	void *user;
-};
-
-struct isi_version {
-	unsigned short major;
-	unsigned short minor;
-};
-
-static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
-							void *data)
-{
-	struct isi_cb_data *ret;
-
-	ret = g_try_new0(struct isi_cb_data, 1);
-
-	if (ret) {
-		ret->cb = cb;
-		ret->data = data;
-		ret->user = user;
-	}
-	return ret;
-}
-
-static inline void dump_msg(const unsigned char *msg, size_t len)
-{
-	char dumpstr[len * 5 + len / 10 + 1];
-	size_t i;
-
-	for (i = 0; i < len; i++)
-		sprintf(dumpstr + i * 5, "0x%02x%s",
-			msg[i], (i + 1) % 10 == 0 ? "\n" : " ");
-
-	DBG("\n%s\n", dumpstr);
-}
 
 extern void isi_phonebook_init();
 extern void isi_phonebook_exit();
