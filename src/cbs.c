@@ -348,6 +348,12 @@ static void cbs_set_topics_cb(const struct ofono_error *error, void *data)
 						CBS_MANAGER_INTERFACE,
 						"Topics",
 						DBUS_TYPE_STRING, &topics);
+
+	if (cbs->settings) {
+		g_key_file_set_string(cbs->settings, SETTINGS_GROUP,
+					"Topics", topics);
+		storage_sync(cbs->imsi, SETTINGS_STORE, cbs->settings);
+	}
 	g_free(topics);
 }
 
@@ -669,6 +675,51 @@ struct ofono_cbs *ofono_cbs_create(struct ofono_modem *modem,
 	return cbs;
 }
 
+static void cbs_got_file_contents(struct ofono_cbs *cbs)
+{
+	gboolean powered;
+	GSList *initial_topics = NULL;
+	char *topics_str;
+	GError *error = NULL;
+
+	if (cbs->topics == NULL) {
+		if (cbs->efcbmi_contents != NULL)
+			initial_topics = g_slist_concat(initial_topics,
+					g_slist_copy(cbs->efcbmi_contents));
+
+		if (cbs->efcbmir_contents != NULL)
+			initial_topics = g_slist_concat(initial_topics,
+					g_slist_copy(cbs->efcbmir_contents));
+
+		cbs->topics = cbs_optimize_ranges(initial_topics);
+		g_slist_free(initial_topics);
+
+		topics_str = cbs_topic_ranges_to_string(cbs->topics);
+		g_key_file_set_string(cbs->settings, SETTINGS_GROUP,
+					"Topics", topics_str);
+		g_free(topics_str);
+		storage_sync(cbs->imsi, SETTINGS_STORE, cbs->settings);
+	}
+
+	if (cbs->efcbmi_length) {
+		cbs->efcbmi_length = 0;
+		g_slist_foreach(cbs->efcbmi_contents, (GFunc) g_free, NULL);
+		g_slist_free(cbs->efcbmi_contents);
+		cbs->efcbmi_contents = NULL;
+	}
+
+	if (cbs->efcbmir_length) {
+		cbs->efcbmir_length = 0;
+		g_slist_foreach(cbs->efcbmir_contents, (GFunc) g_free, NULL);
+		g_slist_free(cbs->efcbmir_contents);
+		cbs->efcbmir_contents = NULL;
+	}
+
+	powered = g_key_file_get_boolean(cbs->settings, SETTINGS_GROUP,
+						"Powered", &error);
+	cbs_set_powered(cbs, powered, NULL);
+}
+
 static void sim_cbmi_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -708,16 +759,9 @@ static void sim_cbmi_read_cb(int ok, int length, int record,
 	if (cbs->efcbmi_contents == NULL)
 		return;
 
-	cbs->efcbmi_contents = g_slist_reverse(cbs->efcbmi_contents);
-
 	str = cbs_topic_ranges_to_string(cbs->efcbmi_contents);
 	ofono_debug("Got cbmi: %s", str);
 	g_free(str);
-
-	cbs->efcbmi_length = 0;
-	g_slist_foreach(cbs->efcbmi_contents, (GFunc)g_free, NULL);
-	g_slist_free(cbs->efcbmi_contents);
-	cbs->efcbmi_contents = NULL;
 }
 
 static void sim_cbmir_read_cb(int ok, int length, int record,
@@ -762,16 +806,9 @@ static void sim_cbmir_read_cb(int ok, int length, int record,
 	if (cbs->efcbmir_contents == NULL)
 		return;
 
-	cbs->efcbmir_contents = g_slist_reverse(cbs->efcbmir_contents);
-
 	str = cbs_topic_ranges_to_string(cbs->efcbmir_contents);
 	ofono_debug("Got cbmir: %s", str);
 	g_free(str);
-
-	cbs->efcbmir_length = 0;
-	g_slist_foreach(cbs->efcbmir_contents, (GFunc)g_free, NULL);
-	g_slist_free(cbs->efcbmir_contents);
-	cbs->efcbmir_contents = NULL;
 }
 
 static void sim_cbmid_read_cb(int ok, int length, int record,
@@ -815,12 +852,14 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	str = cbs_topic_ranges_to_string(cbs->efcbmid_contents);
 	ofono_debug("Got cbmid: %s", str);
 	g_free(str);
+
+	cbs_got_file_contents(cbs);
 }
 
 static void cbs_got_imsi(struct ofono_cbs *cbs)
 {
 	const char *imsi = ofono_sim_get_imsi(cbs->sim);
-	gboolean powered;
+	char *topics_str;
 
 	ofono_debug("Got IMSI: %s", imsi);
 
@@ -830,16 +869,28 @@ static void cbs_got_imsi(struct ofono_cbs *cbs)
 
 	cbs->imsi = g_strdup(imsi);
 
-	powered = g_key_file_get_boolean(cbs->settings, SETTINGS_GROUP,
-						"Powered", NULL);
-	cbs_set_powered(cbs, powered, NULL);
+	cbs->topics = NULL;
 
-	ofono_sim_read(cbs->sim, SIM_EFCBMI_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_cbmi_read_cb, cbs);
-	ofono_sim_read(cbs->sim, SIM_EFCBMIR_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_cbmir_read_cb, cbs);
+	topics_str = g_key_file_get_string(cbs->settings, SETTINGS_GROUP,
+						"Topics", NULL);
+	if (topics_str)
+		cbs->topics = cbs_extract_topic_ranges(topics_str);
+
+	/* If stored value is invalid or no stored value, bootstrap
+	 * topics list from SIM contents */
+	if (topics_str == NULL ||
+			(cbs->topics == NULL && topics_str[0] != '\0')) {
+		ofono_sim_read(cbs->sim, SIM_EFCBMI_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				sim_cbmi_read_cb, cbs);
+		ofono_sim_read(cbs->sim, SIM_EFCBMIR_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				sim_cbmir_read_cb, cbs);
+	}
+
+	if (topics_str)
+		g_free(topics_str);
+
 	ofono_sim_read(cbs->sim, SIM_EFCBMID_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_cbmid_read_cb, cbs);
