@@ -45,12 +45,12 @@ static inline int ffz(unsigned long word)
 	return __builtin_ctzl(~word);
 }
 
-/* 
+/*
  * Stolen from linux kernel lib/find_next_bit.c
  */
 static unsigned int find_next_zero_bit(const unsigned long *addr,
 					unsigned int size,
-				 	unsigned int offset)
+					unsigned int offset)
 {
 	const unsigned long *p = addr + offset / BITS_PER_LONG;
 	unsigned int result = offset & ~(BITS_PER_LONG-1);
