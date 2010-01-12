@@ -915,7 +915,7 @@ out:
 	 * that time
 	 */
 	if (lac_changed || ci_changed) {
-		cbs->reset_source = 
+		cbs->reset_source =
 			g_timeout_add_seconds(3, reset_base_station_name, cbs);
 	}
 

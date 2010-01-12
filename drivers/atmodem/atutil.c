@@ -160,7 +160,7 @@ gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 
 	if (g_at_result_iter_next(&iter, prefix) == FALSE)
 		return FALSE;
-		
+
 	if (g_at_result_iter_next_number(&iter, &s) == FALSE)
 		return FALSE;
 
@@ -240,6 +240,6 @@ out:
 
 		return TRUE;
 	}
-	
+
 	return FALSE;
 }

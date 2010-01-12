@@ -492,7 +492,7 @@ static unsigned short gsm_single_shift_lookup(unsigned char k,
 	struct codepoint key = { k, 0 };
 	const struct codepoint *table;
 	unsigned int len;
-	
+
 	table = alphabet_lookup[lang].togsm_single_shift;
 	len = alphabet_lookup[lang].togsm_single_shift_len;
 
@@ -508,7 +508,7 @@ static unsigned short unicode_locking_shift_lookup(unsigned short k,
 
 	table = alphabet_lookup[lang].tounicode_locking_shift;
 
-	return codepoint_lookup(&key, table, len); 
+	return codepoint_lookup(&key, table, len);
 }
 
 static unsigned short unicode_single_shift_lookup(unsigned short k,

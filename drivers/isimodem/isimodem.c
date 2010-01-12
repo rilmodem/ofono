@@ -153,7 +153,7 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 
 	DBG("PhoNet is %s, addr=0x%02x, idx=%p",
 		up ? "up" : "down", addr, idx);
-	
+
 	if (up) {
 
 		if (isi) {
@@ -181,7 +181,6 @@ static void netlink_status_cb(bool up, uint8_t addr, GIsiModem *idx,
 		DBG("Done regging modem");
 
  	} else {
-
 		if (!isi) {
 			DBG("Unknown modem: (0x%02x)",
 				g_isi_modem_index(idx));

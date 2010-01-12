@@ -147,7 +147,7 @@ static void mbm_get_ip_details(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_modem *modem;
-	const char *interface;	
+	const char *interface;
 
 	if (gcd->have_e2ipcfg) {
 		g_at_chat_send(gcd->chat, "AT*E2IPCFG?", e2ipcfg_prefix,
@@ -253,13 +253,13 @@ static void at_enap_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
-	
+
 	/* Now we have to wait for the unsolicited notification to arrive */
 	if (ok && gcd->enap != 0) {
 		gcd->mbm_state = MBM_DISABLING;
 		gcd->down_cb = cb;
 		gcd->cb_data = cbd->data;
-		
+
 		if (gcd->have_e2nap == FALSE)
 			g_at_chat_send(gcd->chat, "AT*ENAP?", enap_prefix,
 					mbm_enap_poll_cb, gc, NULL);
@@ -356,7 +356,7 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				NULL, NULL, NULL) == 0)
 		goto error;
-						
+
 	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)

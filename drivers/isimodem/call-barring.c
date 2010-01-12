@@ -232,7 +232,7 @@ static bool query_resp_cb(GIsiClient *client, const void *restrict data,
 				if (!g_isi_sb_iter_get_byte(&iter, &bsc, 3 + i))
 					goto error;
 
-			        update_status_mask(&mask, bsc);
+				update_status_mask(&mask, bsc);
 			}
 			break;
 		}

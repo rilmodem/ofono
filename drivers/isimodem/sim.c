@@ -222,7 +222,7 @@ static bool imsi_resp_cb(GIsiClient *client, const void *restrict data,
 	octets = msg[3];
 	if (octets != 8 || octets > len)
 		goto error;
-	
+
 	msg += 4;
 
 	/* Ignore the low-order semi-octet of the first byte */
@@ -263,7 +263,7 @@ static void isi_read_imsi(struct ofono_sim *sim,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(sd->client, msg, sizeof(msg), 
+	if (g_isi_request_make(sd->client, msg, sizeof(msg),
 				SIM_TIMEOUT,
 				imsi_resp_cb, cbd))
 		return;

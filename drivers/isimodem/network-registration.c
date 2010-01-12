@@ -267,7 +267,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);  
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
 }
 
 static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
@@ -334,7 +334,7 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 
 	CALLBACK_WITH_SUCCESS(cb, &op, cbd->data);
 	goto out;
-		
+
 error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 
@@ -618,7 +618,7 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 		0x08,  /* Sub-block length */
 		bcd[0], bcd[1], bcd[2],
 		NET_GSM_BAND_INFO_NOT_AVAIL,  /* Pick any supported band */
-		0x00, 0x00  /* Filler */ 
+		0x00, 0x00  /* Filler */
 	};
 
 	if (!cbd)
@@ -650,7 +650,7 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
 	GIsiSubBlockIter iter;
-	
+
 	if (!msg || len < 3 || msg[0] != NET_RAT_IND)
 		return;
 
@@ -662,7 +662,7 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 
 		case NET_RAT_INFO: {
 			guint8 info = 0;
-			
+
 			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2))
 				return;
 
@@ -716,7 +716,7 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 
 		case NET_RAT_INFO: {
 			guint8 info = 0;
-			
+
 			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2)
 				|| !g_isi_sb_iter_get_byte(&iter, &info, 3)
 				|| !info

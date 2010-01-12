@@ -66,10 +66,10 @@ static int g1_probe(struct ofono_modem *modem)
 static void g1_remove(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
- 
+
 	DBG("");
- 
- 	if (chat) {
+
+	if (chat) {
 		g_at_chat_unref(chat);
 		ofono_modem_set_data(modem, NULL);
 	}
@@ -78,7 +78,7 @@ static void g1_remove(struct ofono_modem *modem)
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
- 
+
 	DBG("");
 
 	if (ok)
@@ -129,9 +129,9 @@ static void cfun_set_off_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	GAtChat *chat = ofono_modem_get_data(modem);
- 
+
 	DBG("");
- 
+
 	g_at_chat_unref(chat);
 	ofono_modem_set_data(modem, NULL);
 
