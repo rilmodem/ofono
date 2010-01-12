@@ -377,6 +377,38 @@ static GDBusSignalTable message_waiting_signals[] = {
 	{ }
 };
 
+static void update_indicator_and_emit(struct ofono_message_waiting *mw,
+					int mailbox,
+					struct mailbox_state *info)
+{
+	dbus_bool_t indication;
+	unsigned char count;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(mw->atom);
+
+	if (mw->messages[mailbox].message_count == info->message_count &&
+			mw->messages[mailbox].indication == info->indication)
+		return;
+
+	memcpy(&mw->messages[mailbox], info, sizeof(struct mailbox_state));
+
+	indication = info->indication;
+	count = info->message_count;
+
+	if (!mw_message_waiting_property_name[mailbox])
+		return;
+
+	ofono_dbus_signal_property_changed(conn, path,
+				MESSAGE_WAITING_INTERFACE,
+				mw_message_waiting_property_name[mailbox],
+				DBUS_TYPE_BOOLEAN, &indication);
+
+	ofono_dbus_signal_property_changed(conn, path,
+				MESSAGE_WAITING_INTERFACE,
+				mw_message_count_property_name[mailbox],
+				DBUS_TYPE_BYTE, &count);
+}
+
 static void mw_cphs_mwis_read_cb(int ok, int total_length, int record,
 					const unsigned char *data,
 					int record_length, void *userdata)
@@ -438,10 +470,6 @@ static void mw_mwis_read_cb(int ok, int total_length, int record,
 	struct ofono_message_waiting *mw = userdata;
 	int i, status;
 	struct mailbox_state info;
-	dbus_bool_t indication;
-	unsigned char count;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(mw->atom);
 
 	if (!ok || record_length < 5) {
 		ofono_error("Unable to read waiting messages numbers "
@@ -463,27 +491,7 @@ static void mw_mwis_read_cb(int ok, int total_length, int record,
 		info.indication = (status >> i) & 1;
 		info.message_count = info.indication ? data[0] : 0;
 
-		if (mw->messages[i].indication != info.indication ||
-				mw->messages[i].message_count !=
-				info.message_count) {
-			memcpy(&mw->messages[i], &info, sizeof(info));
-
-			indication = info.indication;
-			count = info.message_count;
-
-			if (!mw_message_waiting_property_name[i])
-				continue;
-
-			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_message_waiting_property_name[i],
-					DBUS_TYPE_BOOLEAN, &indication);
-
-			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_message_count_property_name[i],
-					DBUS_TYPE_BYTE, &count);
-		}
+		update_indicator_and_emit(mw, i, &info);
 	}
 
 	mw->efmwis_length = record_length;
