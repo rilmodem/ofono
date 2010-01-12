@@ -133,8 +133,8 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 				!g_isi_sb_iter_get_byte(&iter, &hsupa, 21))
 				return FALSE;
 
-			*ci = word;
-			*lac = dword;
+			*ci = (int)dword;
+			*lac = (int)word;
 
 			switch (nd->rat) {
 
