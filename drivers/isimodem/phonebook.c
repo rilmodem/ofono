@@ -292,7 +292,7 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 		return;
 	}
 
-	DBG("%s (v.%03d.%03d) reachable",
+	DBG("%s (v%03d.%03d) reachable",
 		pn_resource_name(g_isi_client_resource(client)),
 		g_isi_version_major(client),
 		g_isi_version_minor(client));

@@ -1310,7 +1310,7 @@ static void isi_call_verify_cb(GIsiClient *client,
 		return;
 	}
 
-	DBG("%s (v.%03d.%03d) reachable",
+	DBG("%s (v%03d.%03d) reachable",
 		pn_resource_name(g_isi_client_resource(client)),
 		g_isi_version_major(client),
 		g_isi_version_minor(client));
@@ -1346,8 +1346,6 @@ static gboolean isi_call_register(gpointer _ovc)
 static void isi_voicecall_remove(struct ofono_voicecall *call)
 {
 	struct isi_voicecall *data = ofono_voicecall_get_data(call);
-
-	DBG("");
 
 	if (data) {
 		g_isi_client_destroy(data->client);

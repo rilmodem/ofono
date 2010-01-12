@@ -264,10 +264,8 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
+	g_free(cbd);
 }
 
 static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
@@ -663,16 +661,16 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 		case NET_RAT_INFO: {
 			guint8 info = 0;
 
-			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2))
+			if (!g_isi_sb_iter_get_byte(&iter, &nd->rat, 2)
+				|| !g_isi_sb_iter_get_byte(&iter, &info, 3))
 				return;
 
-			if (!g_isi_sb_iter_get_byte(&iter, &info, 3))
-				return;
+			if (info) {
 
-			if (info)
 				if (!g_isi_sb_iter_get_byte(&iter,
 							&nd->gsm_compact, 4))
 					return;
+			}
 			break;
 		}
 
@@ -769,7 +767,8 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
-		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
+		DBG("Request failed: %s (0x%02X)",
+			net_isi_cause_name(msg[1]), msg[1]);
 		goto error;
 	}
 
