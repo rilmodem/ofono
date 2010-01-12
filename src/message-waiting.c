@@ -414,19 +414,12 @@ static void mw_cphs_mwis_read_cb(int ok, int total_length, int record,
 					int record_length, void *userdata)
 {
 	struct ofono_message_waiting *mw = userdata;
-	int i;
 	struct mailbox_state info;
-	dbus_bool_t indication;
-	unsigned char count;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(mw->atom);
+	unsigned char indication;
 
 	if (!ok || total_length < 1) {
-		ofono_error("Unable to read CPHS waiting messages indicator "
-			"status from SIM");
-
+		ofono_debug("No CPHS MWIS on SIM");
 		mw->ef_cphs_mwis_length = 0;
-
 		return;
 	}
 
@@ -435,32 +428,26 @@ static void mw_cphs_mwis_read_cb(int ok, int total_length, int record,
 	if (mw->efmwis_length != 0)
 		return;
 
-	for (i = 0; i < 5 && i < total_length; i++) {
-		info.indication = (data[i] == 0xa);
-		info.message_count = 0;
+	/* Read Line 1 indication */
+	indication = data[0] & 0xf;
+	info.indication = (indication == 0xa);
+	info.message_count = 0;
+	update_indicator_and_emit(mw, 0, &info);
 
-		if (mw->messages[i].indication != info.indication ||
-				mw->messages[i].message_count !=
-				info.message_count) {
-			memcpy(&mw->messages[i], &info, sizeof(info));
+	if (total_length == 1)
+		return;
 
-			indication = info.indication;
-			count = info.message_count;
+	/* Read Fax indication */
+	indication = data[1] & 0xf;
+	info.indication = (indication == 0xa);
+	info.message_count = 0;
+	update_indicator_and_emit(mw, 1, &info);
 
-			if (!mw_message_waiting_property_name[i])
-				continue;
-
-			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_message_waiting_property_name[i],
-					DBUS_TYPE_BOOLEAN, &indication);
-
-			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_message_count_property_name[i],
-					DBUS_TYPE_BYTE, &count);
-		}
-	}
+	/* Read Data indication, map to 'Other' */
+	indication = (data[1] >> 4) & 0xf;
+	info.indication = (indication == 0xa);
+	info.message_count = 0;
+	update_indicator_and_emit(mw, 3, &info);
 }
 
 static void mw_mwis_read_cb(int ok, int total_length, int record,
