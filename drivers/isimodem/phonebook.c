@@ -140,15 +140,16 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 			break;
 
 		default:
-			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				sim_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
 	}
 
 	if (status != SIM_SERV_OK) {
-		DBG("PB read returned status: 0x%02X", status);
+		DBG("Request failed: %s (0x%02X)",
+			sim_isi_cause_name(status), status);
 		goto error;
 	}
 
@@ -286,6 +287,7 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_phonebook *pb = opaque;
+	const char *debug = NULL;
 
 	if (!alive) {
 		DBG("Unable to bootsrap phonebook driver");
@@ -296,6 +298,10 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 		pn_resource_name(g_isi_client_resource(client)),
 		g_isi_version_major(client),
 		g_isi_version_minor(client));
+
+	debug = getenv("OFONO_ISI_DEBUG");
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "sim") == 0))
+		g_isi_client_set_debug(client, sim_debug, NULL);
 
 	g_idle_add(isi_phonebook_register, pb);
 }
