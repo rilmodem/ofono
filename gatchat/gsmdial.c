@@ -202,7 +202,7 @@ out:
 
 		return TRUE;
 	}
-	
+
 	return FALSE;
 }
 
@@ -342,7 +342,8 @@ static void start_dial(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(control, "AT+CREG=2", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(control, "AT+CGREG=2", none_prefix, NULL, NULL, NULL);
 
-	g_at_chat_send(control, "AT+COPS=0", none_prefix, register_cb, NULL, NULL);
+	g_at_chat_send(control, "AT+COPS=0", none_prefix,
+			register_cb, NULL, NULL);
 }
 
 static int open_serial()

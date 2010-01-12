@@ -1367,7 +1367,7 @@ gboolean g_at_chat_unregister_all(GAtChat *chat)
 			at_notify_node_destroy(l->data);
 
 		g_slist_free(notify->nodes);
-		notify->nodes=  NULL;
+		notify->nodes = NULL;
 		g_hash_table_iter_remove(&iter);
 	}
 
