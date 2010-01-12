@@ -77,7 +77,7 @@ static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
 }
 
-static bool spn_resp_cb(GIsiClient * client, const void *restrict data,
+static bool spn_resp_cb(GIsiClient *client, const void *restrict data,
 			size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
