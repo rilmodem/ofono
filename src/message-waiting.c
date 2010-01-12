@@ -362,6 +362,60 @@ static GDBusSignalTable message_waiting_signals[] = {
 	{ }
 };
 
+static void mw_cphs_mwis_read_cb(int ok, int total_length, int record,
+					const unsigned char *data,
+					int record_length, void *userdata)
+{
+	struct ofono_message_waiting *mw = userdata;
+	int i;
+	struct mailbox_state info;
+	dbus_bool_t indication;
+	unsigned char count;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(mw->atom);
+
+	if (!ok || total_length < 1) {
+		ofono_error("Unable to read CPHS waiting messages indicator "
+			"status from SIM");
+
+		mw->ef_cphs_mwis_length = 0;
+
+		return;
+	}
+
+	mw->ef_cphs_mwis_length = total_length;
+
+	if (mw->efmwis_length != 0)
+		return;
+
+	for (i = 0; i < 5 && i < total_length; i++) {
+		info.indication = (data[i] == 0xa);
+		info.message_count = 0;
+
+		if (mw->messages[i].indication != info.indication ||
+				mw->messages[i].message_count !=
+				info.message_count) {
+			memcpy(&mw->messages[i], &info, sizeof(info));
+
+			indication = info.indication;
+			count = info.message_count;
+
+			if (!mw_message_waiting_property_name[i])
+				continue;
+
+			ofono_dbus_signal_property_changed(conn, path,
+					MESSAGE_WAITING_INTERFACE,
+					mw_message_waiting_property_name[i],
+					DBUS_TYPE_BOOLEAN, &indication);
+
+			ofono_dbus_signal_property_changed(conn, path,
+					MESSAGE_WAITING_INTERFACE,
+					mw_message_count_property_name[i],
+					DBUS_TYPE_BYTE, &count);
+		}
+	}
+}
+
 static void mw_mwis_read_cb(int ok, int total_length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -420,6 +474,54 @@ static void mw_mwis_read_cb(int ok, int total_length, int record,
 	mw->efmwis_length = record_length;
 }
 
+static void mw_cphs_mbdn_read_cb(int ok, int total_length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_message_waiting *mw = userdata;
+	int i;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *value;
+
+	if (!ok || record_length < 14 || total_length < record_length) {
+		ofono_error("Unable to read CPHS mailbox dialling numbers "
+				"from SIM");
+
+		mw->ef_cphs_mbdn_length = 0;
+		mw->cphs_mbdn_not_provided = TRUE;
+		return;
+	}
+
+	for (i = 0; i < 5; i++)
+		if (record == mw_mailbox_to_cphs_record[i])
+			break;
+
+	if (i == 5)
+		return;
+
+	mw->ef_cphs_mbdn_length = record_length;
+
+	if (mw->mbdn_not_provided != TRUE)
+		return;
+
+	ofono_info("3GPP MBDN not provided, parsing CPHS..");
+
+	if (sim_adn_parse(data, record_length, &mw->mailbox_number[i], NULL) ==
+			FALSE)
+		mw->mailbox_number[i].number[0] = '\0';
+
+	if (mw_mailbox_property_name[i]) {
+		const char *path = __ofono_atom_get_path(mw->atom);
+
+		value = phone_number_to_string(&mw->mailbox_number[i]);
+
+		ofono_dbus_signal_property_changed(conn, path,
+				MESSAGE_WAITING_INTERFACE,
+				mw_mailbox_property_name[i],
+				DBUS_TYPE_STRING, &value);
+	}
+}
+
 static void mw_mbdn_read_cb(int ok, int total_length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -469,6 +571,7 @@ static void mw_mbi_read_cb(int ok, int total_length, int record,
 {
 	struct ofono_message_waiting *mw = userdata;
 	int i, err;
+	const unsigned char *st;
 
 	if (!ok || record_length < 4) {
 		ofono_error("Unable to read mailbox identifies "
@@ -476,7 +579,8 @@ static void mw_mbi_read_cb(int ok, int total_length, int record,
 
 		mw->efmbdn_length = 0;
 		mw->mbdn_not_provided = TRUE;
-		return;
+
+		goto out;
 	}
 
 	/* Handle only current identity (TODO: currently assumes first) */
@@ -492,105 +596,18 @@ static void mw_mbi_read_cb(int ok, int total_length, int record,
 
 	if (err != 0)
 		ofono_error("Unable to read EF-MBDN from SIM");
-}
 
-static void mw_cphs_mwis_read_cb(int ok, int total_length, int record,
-					const unsigned char *data,
-					int record_length, void *userdata)
-{
-	struct ofono_message_waiting *mw = userdata;
-	int i;
-	struct mailbox_state info;
-	dbus_bool_t indication;
-	unsigned char count;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(mw->atom);
+out:
+	/*
+	 * Mailbox numbers located in Byte 1, bits 6 & 5,
+	 * Check for Activated & Allocated
+	 */
+	st = ofono_sim_get_cphs_service_table(mw->sim);
 
-	if (!ok || total_length < 1) {
-		ofono_error("Unable to read waiting messages indicator "
-			"status from SIM");
-
-		mw->ef_cphs_mwis_length = 0;
-
-		return;
-	}
-
-	mw->ef_cphs_mwis_length = total_length;
-
-	if (mw->efmwis_length != 0)
-		return;
-
-	for (i = 0; i < 5 && i < total_length; i++) {
-		info.indication = (data[i] == 0xa);
-		info.message_count = 0;
-
-		if (mw->messages[i].indication != info.indication ||
-				mw->messages[i].message_count !=
-				info.message_count) {
-			memcpy(&mw->messages[i], &info, sizeof(info));
-
-			indication = info.indication;
-			count = info.message_count;
-
-			if (!mw_message_waiting_property_name[i])
-				continue;
-
-			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_message_waiting_property_name[i],
-					DBUS_TYPE_BOOLEAN, &indication);
-
-			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
-					mw_message_count_property_name[i],
-					DBUS_TYPE_BYTE, &count);
-		}
-	}
-}
-
-static void mw_cphs_mbdn_read_cb(int ok, int total_length, int record,
-				const unsigned char *data,
-				int record_length, void *userdata)
-{
-	struct ofono_message_waiting *mw = userdata;
-	int i;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *value;
-
-	if (!ok || record_length < 14 || total_length < record_length) {
-		ofono_error("Unable to read mailbox dialling numbers "
-			"from SIM");
-
-		mw->ef_cphs_mbdn_length = 0;
-		return;
-	}
-
-	for (i = 0; i < 5; i++)
-		if (record == mw_mailbox_to_cphs_record[i])
-			break;
-
-	if (i == 5)
-		return;
-
-	mw->ef_cphs_mbdn_length = record_length;
-
-	if (mw->mbdn_not_provided != TRUE)
-		return;
-
-	if (sim_adn_parse(data, record_length, &mw->mailbox_number[i], NULL) ==
-			FALSE)
-		mw->mailbox_number[i].number[0] = '\0';
-
-	if (mw_mailbox_property_name[i]) {
-		const char *path = __ofono_atom_get_path(mw->atom);
-
-		value = phone_number_to_string(&mw->mailbox_number[i]);
-
-		ofono_dbus_signal_property_changed(conn, path,
-				MESSAGE_WAITING_INTERFACE,
-				mw_mailbox_property_name[i],
-				DBUS_TYPE_STRING, &value);
-	}
+	if (st && bit_field(st[0], 4, 2) == 3)
+		ofono_sim_read(mw->sim, SIM_EF_CPHS_MBDN_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				mw_cphs_mbdn_read_cb, mw);
 }
 
 static void mw_mwis_write_cb(int ok, void *userdata)
@@ -910,8 +927,6 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
 	if (sim_atom) {
-		const unsigned char *st;
-
 		/* Assume that if sim atom exists, it is ready */
 		mw->sim = __ofono_atom_get_data(sim_atom);
 
@@ -923,20 +938,10 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				mw_mbi_read_cb, mw);
 
-		st = ofono_sim_get_cphs_service_table(mw->sim);
-
-		/*
-		 * Mailbox numbers located in Byte 1, bits 6 & 5,
-		 * Check for Activated & Allocated
-		 */
-		if (st && bit_field(st[0], 5, 2) == 3) { 
-			ofono_sim_read(mw->sim, SIM_EF_CPHS_MWIS_FILEID,
-					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-					mw_cphs_mwis_read_cb, mw);
-			ofono_sim_read(mw->sim, SIM_EF_CPHS_MBDN_FILEID,
-					OFONO_SIM_FILE_STRUCTURE_FIXED,
-					mw_cphs_mbdn_read_cb, mw);
-		}
+		/* Also read CPHS MWIS field */
+		ofono_sim_read(mw->sim, SIM_EF_CPHS_MWIS_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				mw_cphs_mwis_read_cb, mw);
 	}
 
 	__ofono_atom_register(mw->atom, message_waiting_unregister);
