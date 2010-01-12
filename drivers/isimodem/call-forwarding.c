@@ -41,6 +41,7 @@
 #include "isimodem.h"
 #include "isiutil.h"
 #include "ss.h"
+#include "debug.h"
 
 struct forw_data {
 	GIsiClient *client;
@@ -118,8 +119,8 @@ static bool decode_gsm_forwarding_info(const void *restrict data, size_t len,
 			return true;
 		}
 		default:
-			DBG("Skipping sub-sub-block: 0x%04X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				ss_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -141,7 +142,7 @@ static bool registration_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 7 || msg[0] != SS_SERVICE_COMPLETED_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != SS_REGISTRATION)
 		goto error;
@@ -177,8 +178,8 @@ static bool registration_resp_cb(GIsiClient *client, const void *restrict data,
 			break;
 		}
 		default:
-			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				ss_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -308,8 +309,8 @@ static bool erasure_resp_cb(GIsiClient *client, const void *restrict data,
 			break;
 		}
 		default:
-			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				ss_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -433,8 +434,8 @@ static bool query_resp_cb(GIsiClient *client, const void *restrict data,
 			break;
 		}
 		default:
-			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				ss_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -508,16 +509,23 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_call_forwarding *cf = opaque;
+	const char *debug = NULL;
 
-	if (alive == true) {
-		DBG("Resource 0x%02X, with version %03d.%03d reachable",
-			g_isi_client_resource(client),
-			g_isi_version_major(client),
-			g_isi_version_minor(client));
-		g_idle_add(isi_call_forwarding_register, cf);
+	if (!alive) {
+		DBG("Unable to bootsrap call forwarding driver");
 		return;
 	}
-	DBG("Unable to bootsrap call forwarding driver");
+
+	DBG("%s (v%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	debug = getenv("OFONO_ISI_DEBUG");
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "ss") == 0))
+		g_isi_client_set_debug(client, ss_debug, NULL);
+
+	g_idle_add(isi_call_forwarding_register, cf);
 }
 
 
@@ -537,6 +545,7 @@ static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
 		return -ENOMEM;
 
 	ofono_call_forwarding_set_data(cf, data);
+
 	if (!g_isi_verify(data->client, reachable_cb, cf))
 		DBG("Unable to verify reachability");
 

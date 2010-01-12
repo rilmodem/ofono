@@ -41,6 +41,7 @@
 #include "isimodem.h"
 #include "isiutil.h"
 #include "ss.h"
+#include "debug.h"
 
 struct settings_data {
 	GIsiClient *client;
@@ -137,8 +138,8 @@ static bool query_resp_cb(GIsiClient *client, const void *restrict data,
 			break;
 		}
 		default:
-			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				ss_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -228,8 +229,8 @@ static bool set_resp_cb(GIsiClient *client, const void *restrict data,
 			break;
 		}
 		default:
-			DBG("Skipping sub-block: 0x%04X (%zu bytes)",
-				g_isi_sb_iter_get_id(&iter),
+			DBG("Skipping sub-block: %s (%zd bytes)",
+				ss_subblock_name(g_isi_sb_iter_get_id(&iter)),
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
@@ -290,16 +291,23 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_call_settings *cs = opaque;
+	const char *debug = NULL;
 
-	if (alive == true) {
-		DBG("Resource 0x%02X, with version %03d.%03d reachable",
-			g_isi_client_resource(client),
-			g_isi_version_major(client),
-			g_isi_version_minor(client));
-		g_idle_add(isi_call_settings_register, cs);
+	if (!alive) {
+		DBG("Unable to bootsrap call settings driver");
 		return;
 	}
-	DBG("Unable to bootsrap call settings driver");
+
+	DBG("%s (v%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	debug = getenv("OFONO_ISI_DEBUG");
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "ss") == 0))
+		g_isi_client_set_debug(client, ss_debug, NULL);
+
+	g_idle_add(isi_call_settings_register, cs);
 }
 
 
@@ -320,6 +328,7 @@ static int isi_call_settings_probe(struct ofono_call_settings *cs, unsigned int 
 		return -ENOMEM;
 
 	ofono_call_settings_set_data(cs, data);
+
 	if (!g_isi_verify(data->client, reachable_cb, cs))
 		DBG("Unable to verify reachability");
 
