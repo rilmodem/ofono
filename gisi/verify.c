@@ -54,7 +54,7 @@ static bool verify_cb(GIsiClient *client, const void *restrict data,
 
 	bool alive = false;
 
-	if(!msg)
+	if (!msg)
 		goto out;
 
 	if (len < 2 || msg[0] != COMMON_MESSAGE)
