@@ -66,13 +66,9 @@ enum ofono_sim_phase {
 };
 
 enum ofono_sim_cphs_phase {
-	OFONO_SIM_CPHS_NONE,
-	OFONO_SIM_CPHS_PHASE1,
-	OFONO_SIM_CPHS_PHASE2,
-};
-
-enum ofono_sim_cphs_support_masks {
-	OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK = 0x30,
+	OFONO_SIM_CPHS_PHASE_NONE,
+	OFONO_SIM_CPHS_PHASE_1G,
+	OFONO_SIM_CPHS_PHASE_2G,
 };
 
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,

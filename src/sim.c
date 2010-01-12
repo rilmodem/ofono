@@ -959,16 +959,15 @@ static void sim_cphs_information_read_cb(int ok, int length, int record,
 {
 	struct ofono_sim *sim = userdata;
 
-	sim->cphs_phase = OFONO_SIM_CPHS_NONE;
-	sim->cphs_support = 0;
+	sim->cphs_phase = OFONO_SIM_CPHS_PHASE_NONE;
 
 	if (!ok || length < 3)
 		goto ready;
 
 	if (data[0] == 0x01)
-		sim->cphs_phase = OFONO_SIM_CPHS_PHASE1;
+		sim->cphs_phase = OFONO_SIM_CPHS_PHASE_1G;
 	else if (data[0] >= 0x02)
-		sim->cphs_phase = OFONO_SIM_CPHS_PHASE2;
+		sim->cphs_phase = OFONO_SIM_CPHS_PHASE_2G;
 
 	sim->cphs_support = (data[2] << 8) | data[1];
 
