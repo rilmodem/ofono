@@ -64,6 +64,7 @@ struct mbdn_set_request {
 	int mailbox;
 	struct ofono_phone_number number;
 	DBusMessage *msg;
+	gboolean cphs;
 };
 
 static const char *mw_message_waiting_property_name[5] = {
@@ -184,7 +185,7 @@ static DBusMessage *set_cphs_mbdn(struct ofono_message_waiting *mw,
 	req->mw = mw;
 	req->mailbox = mailbox;
 	string_to_phone_number(number, &req->number);
-	req->msg = msg ? dbus_message_ref(msg) : NULL;
+	req->cphs = TRUE;
 
 	sim_adn_build(efmbdn, req->mw->ef_cphs_mbdn_length,
 			&req->number, NULL);
@@ -192,11 +193,13 @@ static DBusMessage *set_cphs_mbdn(struct ofono_message_waiting *mw,
 	if (ofono_sim_write(mw->sim, SIM_EF_CPHS_MBDN_FILEID, mbdn_set_cb,
 			OFONO_SIM_FILE_STRUCTURE_FIXED,
 			mw_mailbox_to_cphs_record[mailbox],
-			efmbdn, mw->ef_cphs_mbdn_length, NULL) == -1) {
+			efmbdn, mw->ef_cphs_mbdn_length, req) == -1) {
+		g_free(req);
 
 		if (msg)
 			return __ofono_error_failed(msg);
-	}
+	} else
+		req->msg = msg ? dbus_message_ref(msg) : NULL;
 
 	return NULL;
 }
@@ -241,8 +244,9 @@ static void mbdn_set_cb(int ok, void *data)
 
 	/* Make a single attempt at keeping the CPHS version of the file
 	 * in sync.  */
-	set_cphs_mbdn(req->mw, req->mailbox,
-			phone_number_to_string(&req->number), NULL);
+	if (req->cphs == FALSE)
+		set_cphs_mbdn(req->mw, TRUE, req->mailbox,
+				phone_number_to_string(&req->number), NULL);
 
 out:
 	if (req->msg && reply)
@@ -267,7 +271,7 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 	req->mw = mw;
 	req->mailbox = mailbox;
 	string_to_phone_number(number, &req->number);
-	req->msg = msg ? dbus_message_ref(msg) : NULL;
+	req->cphs = FALSE;
 
 	sim_adn_build(efmbdn, req->mw->efmbdn_length, &req->number, NULL);
 
@@ -279,7 +283,8 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 
 		if (msg)
 			return __ofono_error_failed(msg);
-	}
+	} else
+		req->msg = msg ? dbus_message_ref(msg) : NULL;
 
 	return NULL;
 }
