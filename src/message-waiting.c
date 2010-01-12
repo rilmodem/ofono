@@ -54,6 +54,7 @@ struct ofono_message_waiting {
 	unsigned char ef_cphs_mwis_length;
 	unsigned char ef_cphs_mbdn_length;
 	gboolean mbdn_not_provided;
+	gboolean cphs_mbdn_not_provided;
 	struct ofono_phone_number mailbox_number[5];
 	struct ofono_sim *sim;
 	struct ofono_atom *atom;
@@ -178,15 +179,19 @@ static DBusMessage *set_cphs_mbdn(struct ofono_message_waiting *mw,
 	struct mbdn_set_request *req;
 	unsigned char efmbdn[255];
 
-	if (mw_mailbox_to_cphs_record[mailbox] == 0 ||
-			mw->ef_cphs_mbdn_length == 0) {
-		if (!msg)
-			return NULL;
-
-		if (mw->mbdn_not_provided == TRUE)
+	if ((mw->ef_cphs_mbdn_length && !mw_mailbox_to_cphs_record[mailbox]) ||
+			mw->cphs_mbdn_not_provided == TRUE) {
+		if (msg)
 			return __ofono_error_not_supported(msg);
-		else
+
+		return NULL;
+	}
+
+	if (mw->ef_cphs_mbdn_length == 0) {
+		if (msg)
 			return __ofono_error_sim_not_ready(msg);
+
+		return NULL;
 	}
 
 	req = g_new0(struct mbdn_set_request, 1);
@@ -271,10 +276,20 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 	struct mbdn_set_request *req;
 	unsigned char efmbdn[255];
 
-	if (mw->efmbdn_length == 0 || mw->efmbdn_record_id[mailbox] == 0)
-		/* If we have no 3GPP EFmbdn on the card, maybe the
-		 * CPHS version is available */
-		return set_cphs_mbdn(mw, mailbox, number, msg);
+	/* 
+	 * If we have no 3GPP EFmbdn on the card, maybe the
+	 * CPHS version is available
+	 */
+	if ((mw->efmbdn_length > 0 && mw->efmbdn_record_id[mailbox] == 0) ||
+			mw->mbdn_not_provided == TRUE)
+		return set_cphs_mbdn(mw, FALSE, mailbox, number, msg);
+
+	if (mw->efmbdn_length == 0) {
+		if (msg)
+			return __ofono_error_sim_not_ready(msg);
+
+		return NULL;
+	}
 
 	req = g_new0(struct mbdn_set_request, 1);
 
