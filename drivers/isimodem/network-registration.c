@@ -387,7 +387,7 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 	int common = 0;
 	int detail = 0;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
@@ -505,7 +505,7 @@ static bool set_auto_resp_cb(GIsiClient *client, const void *restrict data,
 	struct netreg_data *net = cbd->user;
 	ofono_netreg_register_cb_t cb = cbd->cb;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
@@ -694,8 +694,8 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
 	GIsiSubBlockIter iter;
-	
-	if(!msg) {
+
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		return true;
 	}
@@ -760,7 +760,7 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 	GIsiSubBlockIter iter;
 	int strength = -1;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}

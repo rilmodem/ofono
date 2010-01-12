@@ -58,7 +58,7 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 	char *info = NULL;
 	guint8 chars;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}

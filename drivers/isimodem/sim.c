@@ -208,7 +208,7 @@ static bool imsi_resp_cb(GIsiClient *client, const void *restrict data,
 	size_t j = 0;
 	size_t octets = 0;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}

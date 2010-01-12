@@ -82,7 +82,7 @@ static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
 
 	DBG("");
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
