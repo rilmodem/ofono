@@ -89,7 +89,7 @@ struct ofono_sim {
 	unsigned char *efli;
 	unsigned char efli_length;
 	enum ofono_sim_cphs_phase cphs_phase;
-	unsigned short cphs_support;
+	unsigned char cphs_service_table[2];
 	struct ofono_watchlist *ready_watches;
 	const struct ofono_sim_driver *driver;
 	void *driver_data;
@@ -969,7 +969,7 @@ static void sim_cphs_information_read_cb(int ok, int length, int record,
 	else if (data[0] >= 0x02)
 		sim->cphs_phase = OFONO_SIM_CPHS_PHASE_2G;
 
-	sim->cphs_support = (data[2] << 8) | data[1];
+	memcpy(sim->cphs_service_table, data + 1, 2);
 
 ready:
 	ofono_sim_set_ready(sim);
@@ -1729,17 +1729,17 @@ enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim)
 enum ofono_sim_cphs_phase ofono_sim_get_cphs_phase(struct ofono_sim *sim)
 {
 	if (sim == NULL)
-		return OFONO_SIM_CPHS_NONE;
+		return OFONO_SIM_CPHS_PHASE_NONE;
 
 	return sim->cphs_phase;
 }
 
-unsigned short ofono_sim_get_cphs_support(struct ofono_sim *sim)
+const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim)
 {
 	if (sim == NULL)
-		return 0;
+		return NULL;
 
-	return sim->cphs_support;
+	return sim->cphs_service_table;
 }
 
 unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,

@@ -171,7 +171,7 @@ const char *ofono_sim_get_imsi(struct ofono_sim *sim);
 enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim);
 
 enum ofono_sim_cphs_phase ofono_sim_get_cphs_phase(struct ofono_sim *sim);
-unsigned short ofono_sim_get_cphs_support(struct ofono_sim *sim);
+const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim);
 
 unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
 				ofono_sim_ready_notify_cb_t cb,

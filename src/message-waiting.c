@@ -895,6 +895,8 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
 	if (sim_atom) {
+		const unsigned char *st;
+
 		/* Assume that if sim atom exists, it is ready */
 		mw->sim = __ofono_atom_get_data(sim_atom);
 
@@ -906,9 +908,13 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				mw_mbi_read_cb, mw);
 
-		if ((ofono_sim_get_cphs_support(mw->sim) &
-				OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK) ==
-			OFONO_SIM_CPHS_ST_MAILBOX_NUMBERS_MASK) {
+		st = ofono_sim_get_cphs_service_table(mw->sim);
+
+		/*
+		 * Mailbox numbers located in Byte 1, bits 6 & 5,
+		 * Check for Activated & Allocated
+		 */
+		if (st && bit_field(st[0], 5, 2) == 3) { 
 			ofono_sim_read(mw->sim, SIM_EF_CPHS_MWIS_FILEID,
 					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 					mw_cphs_mwis_read_cb, mw);
