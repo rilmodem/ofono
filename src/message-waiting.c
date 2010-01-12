@@ -99,12 +99,10 @@ static const char *mw_mailbox_property_name[5] = {
 
 static const int mw_mailbox_to_cphs_record[5] = {
 	1, /* Line 1 mailbox */
-#if 0
 	4, /* Fax mailbox */
 	0,
 	3, /* Data mailbox */
 	0,
-#endif
 };
 
 static void mbdn_set_cb(int ok, void *data);
