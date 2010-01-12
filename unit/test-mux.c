@@ -186,7 +186,7 @@ static void test_mux(void)
 	GAtSyntax *syntax;
 	int sk;
 
-	sk= do_connect("192.168.0.202", 2000);
+	sk = do_connect("192.168.0.202", 2000);
 	if (sk < 0) {
 		g_printerr("connect failed\n");
 		return;
@@ -392,7 +392,8 @@ static void test_extract_basic()
 
 	/* Try to read with just the open flag */
 	nread = gsm0710_basic_extract_frame(basic_input + total,
-						basic_frame_size + 1, &dlc, &ctrl,
+						basic_frame_size + 1,
+						&dlc, &ctrl,
 						&frame, &frame_size);
 
 	g_assert(nread == 0);
@@ -400,7 +401,8 @@ static void test_extract_basic()
 
 	/* Now read with the close flag as well */
 	nread = gsm0710_basic_extract_frame(basic_input + total,
-						basic_frame_size + 2, &dlc, &ctrl,
+						basic_frame_size + 2,
+						&dlc, &ctrl,
 						&frame, &frame_size);
 
 	/* Extracted the open flag + frame */
