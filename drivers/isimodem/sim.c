@@ -73,7 +73,7 @@ static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 		return;
 	}
 
-	DBG("Not implemented (fileid = %04x)",fileid);
+	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
 }
 
@@ -150,7 +150,7 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	DBG("Not implemented (fileid = %04x)",fileid);
+	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
@@ -158,7 +158,7 @@ static void isi_read_file_linear(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
-	DBG("Not implemented (fileid = %04x)",fileid);
+	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
@@ -166,7 +166,7 @@ static void isi_read_file_cyclic(struct ofono_sim *sim, int fileid,
 					int record, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
-	DBG("Not implemented (fileid = %04x)",fileid);
+	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
@@ -175,7 +175,7 @@ static void isi_write_file_transparent(struct ofono_sim *sim, int fileid,
 					const unsigned char *value,
 					ofono_sim_write_cb_t cb, void *data)
 {
-	DBG("Not implemented (fileid = %04x)",fileid);
+	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
@@ -184,7 +184,7 @@ static void isi_write_file_linear(struct ofono_sim *sim, int fileid,
 					const unsigned char *value,
 					ofono_sim_write_cb_t cb, void *data)
 {
-	DBG("Not implemented (fileid = %04x)",fileid);
+	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
@@ -192,7 +192,7 @@ static void isi_write_file_cyclic(struct ofono_sim *sim, int fileid,
 					int length, const unsigned char *value,
 					ofono_sim_write_cb_t cb, void *data)
 {
-	DBG("Not implemented (fileid = %04x)",fileid);
+	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
