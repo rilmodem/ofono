@@ -79,27 +79,30 @@ static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
 {
 	const unsigned char *msg = data;
 	struct ofono_cbs *cbs = opaque;
-
-	DBG("");
+	const char *debug = NULL;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
+		return true;
 	}
 
 	if (len < 3 || msg[0] != SMS_GSM_CB_ROUTING_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != SMS_OK) {
-		DBG("Request failed: 0x%02X", msg[1]);
-		goto error;
+		DBG("Request failed: 0x%02X (%s).\n\n  Unable to bootstrap CBS"
+			" routing.\n  It appears some other component is"
+			" already\n  registered as the CBS routing endpoint.\n "
+			" As a consequence, receiving CBSs is NOT going"
+			" to work.\n\n", msg[1], sms_isi_cause_name(msg[1]));
+		return true;
 	}
 
-	ofono_cbs_register(cbs);
-	return true;
+	debug = getenv("OFONO_ISI_DEBUG");
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "cbs") == 0))
+		g_isi_client_set_debug(client, sms_debug, NULL);
 
-error:
-	DBG("Unable to bootstrap CB routing.");
+	ofono_cbs_register(cbs);
 	return true;
 }
 
@@ -131,12 +134,11 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 
 	ofono_cbs_set_data(cbs, cd);
 
-	g_isi_client_set_debug(cd->client, sms_debug, NULL);
-	g_isi_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb, cbs);
-
 	if (!g_isi_request_make(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
 				routing_resp_cb, cbs))
 		DBG("Failed to set CBS routing.");
+
+	g_isi_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb, cbs);
 
 	return 0;
 }
