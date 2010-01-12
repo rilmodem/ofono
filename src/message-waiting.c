@@ -159,10 +159,21 @@ static DBusMessage *mw_get_properties(DBusConnection *conn,
 	return reply;
 }
 
+static void cphs_mbdn_sync_cb(int ok, void *data)
+{
+	struct mbdn_set_request *req = data;
+
+	if (!ok)
+		ofono_info("Failed to synchronize CPHS MBDN record");
+
+	g_free(req);
+}
+
 static DBusMessage *set_cphs_mbdn(struct ofono_message_waiting *mw,
-				int mailbox,
-				const char *number,
-				DBusMessage *msg)
+					gboolean sync,
+					int mailbox,
+					const char *number,
+					DBusMessage *msg)
 {
 	struct mbdn_set_request *req;
 	unsigned char efmbdn[255];
@@ -188,7 +199,8 @@ static DBusMessage *set_cphs_mbdn(struct ofono_message_waiting *mw,
 	sim_adn_build(efmbdn, req->mw->ef_cphs_mbdn_length,
 			&req->number, NULL);
 
-	if (ofono_sim_write(mw->sim, SIM_EF_CPHS_MBDN_FILEID, mbdn_set_cb,
+	if (ofono_sim_write(mw->sim, SIM_EF_CPHS_MBDN_FILEID,
+			sync ? cphs_mbdn_sync_cb : mbdn_set_cb,
 			OFONO_SIM_FILE_STRUCTURE_FIXED,
 			mw_mailbox_to_cphs_record[mailbox],
 			efmbdn, mw->ef_cphs_mbdn_length, req) == -1) {
