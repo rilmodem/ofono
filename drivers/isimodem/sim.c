@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
  *
- * Contact: Aki Niemi <aki.niemi@nokia.com>
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * version 2 as published by the Free Software Foundation.
@@ -92,13 +90,20 @@ static bool spn_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 39 || msg[0] != SIM_SERV_PROV_NAME_RESP)
-		 goto error;
+		return false;
 
-	if (msg[1] != SIM_ST_READ_SERV_PROV_NAME || msg[2] != SIM_SERV_OK)
+	if (msg[1] != SIM_ST_READ_SERV_PROV_NAME)
 		goto error;
+
+	if (msg[2] != SIM_SERV_OK) {
+		DBG("Request failed: %s (0x%02X)",
+			sim_isi_cause_name(msg[2]), msg[2]);
+		goto error;
+	}
 
 	/* Set display condition bits */
 	spn[0] = ((msg[38] & 1) << 1) + (msg[37] & 1);
+
 	/* Dirty conversion from 16bit unicode to ascii */
 	for (i = 0; i < 16; i++) {
 		unsigned char c = msg[3 + i * 2 + 1];
@@ -108,7 +113,6 @@ static bool spn_resp_cb(GIsiClient *client, const void *restrict data,
 			c = '?';
 		spn[i + 1] = c;
 	}
-	DBG("SPN read successfully");
 	CALLBACK_WITH_SUCCESS(cb, spn, 17, cbd->data);
 	goto out;
 
@@ -125,33 +129,30 @@ static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
-	struct isi_cb_data *cbd = NULL;
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	struct isi_cb_data *cbd = isi_cb_data_new(sim, cb, data);
 
-	if (fileid == SIM_EFSPN_FILEID) {
-		/* Hack support for EFSPN reading */
-		struct sim_data *simd = ofono_sim_get_data(sim);
-		const unsigned char msg[] = {
-			SIM_SERV_PROV_NAME_REQ,
-			SIM_ST_READ_SERV_PROV_NAME,
-			0
-		};
-		cbd = isi_cb_data_new(NULL, cb, data);
+	const unsigned char msg[] = {
+		SIM_SERV_PROV_NAME_REQ,
+		SIM_ST_READ_SERV_PROV_NAME,
+		0
+	};
 
-		if (!simd)
-			goto error;
+	/* Hack support for EFSPN reading only */
+	if (fileid != SIM_EFSPN_FILEID)
+		goto error;
 
-		cbd->user = sim;
+	if (!cbd)
+		goto error;
 
-		if (g_isi_request_make(simd->client, msg, sizeof(msg),
-				       SIM_TIMEOUT, spn_resp_cb, cbd))
-			return;
-	}
+	if (g_isi_request_make(sd->client, msg, sizeof(msg),
+				SIM_TIMEOUT, spn_resp_cb, cbd))
+		return;
+
 error:
-	if (cbd)
-		g_free(cbd);
-
 	DBG("Not implemented (fileid = %04x)", fileid);
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
+	g_free(cbd);
 }
 
 static void isi_read_file_linear(struct ofono_sim *sim, int fileid,
@@ -269,10 +270,8 @@ static void isi_read_imsi(struct ofono_sim *sim,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
+	g_free(cbd);
 }
 
 static gboolean isi_sim_register(gpointer user)
@@ -280,7 +279,10 @@ static gboolean isi_sim_register(gpointer user)
 	struct ofono_sim *sim = user;
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
-	g_isi_client_set_debug(sd->client, sim_debug, NULL);
+	const char *debug = getenv("OFONO_ISI_DEBUG");
+
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "sim") == 0))
+		g_isi_client_set_debug(sd->client, sim_debug, NULL);
 
 	ofono_sim_register(sim);
 
