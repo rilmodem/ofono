@@ -1,3 +1,11 @@
+ver 0.16:
+	Fix unregister of operators with null MCC/MNC.
+	Fix CPHS mailbox usage for 3GPP SIM cards.
+	Add support for persistent CBS Topics list.
+	Add support for persistent primary context identifiers.
+	Add support for SIM cache indexing by phase.
+	Add netmask to HSO GPRS context driver.
+
 ver 0.15:
 	Fix missing netmask value for newer MBM devices.
 	Fix concatenation of datagram SMS messages.
