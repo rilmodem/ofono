@@ -1607,8 +1607,14 @@ static void netreg_unregister(struct ofono_atom *atom)
 	__ofono_watchlist_free(netreg->status_watches);
 	netreg->status_watches = NULL;
 
-	for (l = netreg->operator_list; l; l = l->next)
+	for (l = netreg->operator_list; l; l = l->next) {
+		struct network_operator_data *opd = l->data;
+
+		if (opd->mcc[0] == '\0' && opd->mnc[0] == '\0')
+			continue;
+
 		network_operator_dbus_unregister(netreg, l->data);
+	}
 
 	g_slist_free(netreg->operator_list);
 	netreg->operator_list = NULL;
