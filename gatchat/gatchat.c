@@ -801,7 +801,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	if (cond & (G_IO_HUP | G_IO_ERR))
 		return FALSE;
 
-	if (err != G_IO_ERROR_NONE && err != G_IO_ERROR_AGAIN)
+	if (rbytes == 0 && err != G_IO_ERROR_AGAIN)
 		return FALSE;
 
 	return TRUE;
