@@ -776,13 +776,12 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 
 	/* Regardless of condition, try to read all the data available */
 	do {
-		rbytes = 0;
-
 		toread = ring_buffer_avail_no_wrap(chat->buf);
 
 		if (toread == 0)
 			break;
 
+		rbytes = 0;
 		buf = ring_buffer_write_ptr(chat->buf);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
