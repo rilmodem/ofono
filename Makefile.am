@@ -51,7 +51,9 @@ gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/ringbuffer.h gatchat/ringbuffer.c \
 				gatchat/gatmux.h gatchat/gatmux.c \
 				gatchat/gsm0710.h gatchat/gsm0710.c \
-				gatchat/gattty.h gatchat/gattty.c
+				gatchat/gattty.h gatchat/gattty.c \
+				gatchat/gatutil.h gatchat/gatutil.c \
+				gatchat/gat.h
 
 udev_files = plugins/ofono.rules
 

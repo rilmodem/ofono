@@ -28,6 +28,7 @@ extern "C" {
 
 #include "gatresult.h"
 #include "gatsyntax.h"
+#include "gatutil.h"
 
 struct _GAtChat;
 
@@ -36,8 +37,6 @@ typedef struct _GAtChat GAtChat;
 typedef void (*GAtResultFunc)(gboolean success, GAtResult *result,
 				gpointer user_data);
 typedef void (*GAtNotifyFunc)(GAtResult *result, gpointer user_data);
-typedef void (*GAtDisconnectFunc)(gpointer user_data);
-typedef void (*GAtDebugFunc)(const char *str, gpointer user_data);
 
 GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax);
 

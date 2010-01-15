@@ -40,7 +40,6 @@
 static const char *none_prefix[] = { NULL };
 
 static void g_at_chat_wakeup_writer(GAtChat *chat);
-static void debug_chat(GAtChat *chat, gboolean in, const char *str, gsize len);
 
 struct at_command {
 	char *cmd;
@@ -686,81 +685,6 @@ static void new_bytes(GAtChat *p)
 	g_at_chat_unref(p);
 }
 
-static void debug_chat(GAtChat *chat, gboolean in, const char *str, gsize len)
-{
-	char type = in ? '<' : '>';
-	gsize escaped = 2; /* Enough for '<', ' ' */
-	char *escaped_str;
-	const char *esc = "<ESC>";
-	gsize esc_size = strlen(esc);
-	const char *ctrlz = "<CtrlZ>";
-	gsize ctrlz_size = strlen(ctrlz);
-	gsize i;
-
-	if (!chat->debugf || !len)
-		return;
-
-	for (i = 0; i < len; i++) {
-		char c = str[i];
-
-		if (isprint(c))
-			escaped += 1;
-		else if (c == '\r' || c == '\t' || c == '\n')
-			escaped += 2;
-		else if (c == 26)
-			escaped += ctrlz_size;
-		else if (c == 25)
-			escaped += esc_size;
-		else
-			escaped += 4;
-	}
-
-	escaped_str = g_malloc(escaped + 1);
-	escaped_str[0] = type;
-	escaped_str[1] = ' ';
-	escaped_str[2] = '\0';
-	escaped_str[escaped] = '\0';
-
-	for (escaped = 2, i = 0; i < len; i++) {
-		char c = str[i];
-
-		switch (c) {
-		case '\r':
-			escaped_str[escaped++] = '\\';
-			escaped_str[escaped++] = 'r';
-			break;
-		case '\t':
-			escaped_str[escaped++] = '\\';
-			escaped_str[escaped++] = 't';
-			break;
-		case '\n':
-			escaped_str[escaped++] = '\\';
-			escaped_str[escaped++] = 'n';
-			break;
-		case 26:
-			strncpy(&escaped_str[escaped], ctrlz, ctrlz_size);
-			escaped += ctrlz_size;
-			break;
-		case 25:
-			strncpy(&escaped_str[escaped], esc, esc_size);
-			escaped += esc_size;
-			break;
-		default:
-			if (isprint(c))
-				escaped_str[escaped++] = c;
-			else {
-				escaped_str[escaped++] = '\\';
-				escaped_str[escaped++] = '0' + ((c >> 6) & 07);
-				escaped_str[escaped++] = '0' + ((c >> 3) & 07);
-				escaped_str[escaped++] = '0' + (c & 07);
-			}
-		}
-	}
-
-	chat->debugf(escaped_str, chat->debug_data);
-	g_free(escaped_str);
-}
-
 static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
@@ -785,7 +709,8 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		buf = ring_buffer_write_ptr(chat->buf);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
-		debug_chat(chat, TRUE, (char *)buf, rbytes);
+		g_at_util_debug_chat(chat->debugf, TRUE, (char *)buf, rbytes,
+							chat->debug_data);
 
 		total_read += rbytes;
 
@@ -931,8 +856,9 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 	}
 
-	debug_chat(chat, FALSE, cmd->cmd + chat->cmd_bytes_written,
-			bytes_written);
+	g_at_util_debug_chat(chat->debugf, FALSE,
+					cmd->cmd + chat->cmd_bytes_written,
+					bytes_written, chat->debug_data);
 	chat->cmd_bytes_written += bytes_written;
 
 	if (bytes_written < towrite)
@@ -960,7 +886,6 @@ static void g_at_chat_wakeup_writer(GAtChat *chat)
 GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
 {
 	GAtChat *chat;
-	GIOFlags io_flags;
 
 	if (!channel)
 		return NULL;
@@ -991,19 +916,8 @@ GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
 	chat->notify_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 				g_free, (GDestroyNotify)at_notify_destroy);
 
-	if (g_io_channel_set_encoding(channel, NULL, NULL) !=
-			G_IO_STATUS_NORMAL)
+	if (!g_at_util_setup_io(channel))
 		goto error;
-
-	io_flags = g_io_channel_get_flags(channel);
-
-	io_flags |= G_IO_FLAG_NONBLOCK;
-
-	if (g_io_channel_set_flags(channel, io_flags, NULL) !=
-			G_IO_STATUS_NORMAL)
-		goto error;
-
-	g_io_channel_set_close_on_unref(channel, TRUE);
 
 	chat->channel = channel;
 	chat->read_watch = g_io_add_watch_full(channel, G_PRIORITY_DEFAULT,
