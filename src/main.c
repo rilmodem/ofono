@@ -93,15 +93,18 @@ static void system_bus_disconnected(DBusConnection *conn, void *user_data)
 	g_main_loop_quit(event_loop);
 }
 
-static gboolean option_detach = TRUE;
 static gboolean option_debug = FALSE;
+static gboolean option_detach = TRUE;
+static gboolean option_version = FALSE;
 
 static GOptionEntry options[] = {
+	{ "debug", 'd', 0, G_OPTION_ARG_NONE, &option_debug,
+				"Enable debug information output" },
 	{ "nodetach", 'n', G_OPTION_FLAG_REVERSE,
 				G_OPTION_ARG_NONE, &option_detach,
 				"Don't run as daemon in background" },
-	{ "debug", 'd', 0, G_OPTION_ARG_NONE, &option_debug,
-				"Enable debug information output" },
+	{ "version", 'v', 0, G_OPTION_ARG_NONE, &option_version,
+				"Show version information and exit" },
 	{ NULL },
 };
 
@@ -160,6 +163,11 @@ int main(int argc, char **argv)
 	}
 
 	g_option_context_free(context);
+
+	if (option_version == TRUE) {
+		printf("%s\n", VERSION);
+		exit(0);
+	}
 
 	if (option_detach == TRUE) {
 		if (daemon(0, 0)) {
