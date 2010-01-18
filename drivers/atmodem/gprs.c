@@ -45,6 +45,7 @@ static const char *none_prefix[] = { NULL };
 
 struct gprs_data {
 	GAtChat *chat;
+	unsigned int vendor;
 };
 
 static void at_cgatt_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -88,6 +89,7 @@ static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_gprs_status_cb_t cb = cbd->cb;
 	struct ofono_error error;
 	int status, lac, ci, tech;
+	struct gprs_data *gd = cbd->user;
 
 	dump_response("at_cgreg_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -98,7 +100,7 @@ static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	if (at_util_parse_reg(result, "+CGREG:", NULL, &status,
-				&lac, &ci, &tech) == FALSE) {
+				&lac, &ci, &tech, gd->vendor) == FALSE) {
 		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 		return;
 	}
@@ -116,6 +118,8 @@ static void at_gprs_registration_status(struct ofono_gprs *gprs,
 	if (!cbd)
 		goto error;
 
+	cbd->user = gd;
+
 	if (g_at_chat_send(gd->chat, "AT+CGREG?", cgreg_prefix,
 				at_cgreg_cb, cbd, g_free) > 0)
 		return;
@@ -131,11 +135,12 @@ static void cgreg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
 	int status, lac, ci, tech;
+	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 
 	dump_response("cgreg_notify", TRUE, result);
 
 	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
-				&lac, &ci, &tech) == FALSE)
+				&lac, &ci, &tech, gd->vendor) == FALSE)
 		return;
 
 	ofono_gprs_status_notify(gprs, status, lac, ci, tech);
@@ -289,6 +294,7 @@ static int at_gprs_probe(struct ofono_gprs *gprs,
 
 	gd = g_new0(struct gprs_data, 1);
 	gd->chat = chat;
+	gd->vendor = vendor;
 
 	ofono_gprs_set_data(gprs, gd);
 

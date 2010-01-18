@@ -38,6 +38,7 @@
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
 #include <ofono/sms.h>
+#include <ofono/gprs.h>
 #include <ofono/voicecall.h>
 #include <ofono/log.h>
 
@@ -176,7 +177,7 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->chat);
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem", data->chat);
 }
 

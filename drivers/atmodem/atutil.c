@@ -33,6 +33,7 @@
 #include <ofono/types.h>
 
 #include "atutil.h"
+#include "vendor.h"
 
 void dump_response(const char *func, gboolean ok, GAtResult *result)
 {
@@ -149,7 +150,8 @@ GSList *at_util_parse_clcc(GAtResult *result)
 
 gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 					int *status,
-					int *lac, int *ci, int *tech)
+					int *lac, int *ci, int *tech,
+					unsigned int vendor)
 {
 	GAtResultIter iter;
 	int s;
@@ -164,15 +166,30 @@ gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 	if (g_at_result_iter_next_number(&iter, &s) == FALSE)
 		return FALSE;
 
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		l = strtol(str, NULL, 16);
-	else
-		goto out;
+	switch (vendor) {
+	case OFONO_VENDOR_HUAWEI:
+		if (g_at_result_iter_next_unquoted_string(&iter, &str) == TRUE)
+			l = strtol(str, NULL, 16);
+		else
+			goto out;
 
-	if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-		c = strtol(str, NULL, 16);
-	else
-		goto out;
+		if (g_at_result_iter_next_unquoted_string(&iter, &str) == TRUE)
+			c = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		break;
+	default:
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			l = strtol(str, NULL, 16);
+		else
+			goto out;
+
+		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+			c = strtol(str, NULL, 16);
+		else
+			goto out;
+	}
 
 	g_at_result_iter_next_number(&iter, &t);
 
@@ -194,7 +211,8 @@ out:
 
 gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 				int *mode, int *status,
-				int *lac, int *ci, int *tech)
+				int *lac, int *ci, int *tech,
+				unsigned int vendor)
 {
 	GAtResultIter iter;
 	int m, s;
@@ -210,15 +228,30 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 		if (g_at_result_iter_next_number(&iter, &s) == FALSE)
 			continue;
 
-		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-			l = strtol(str, NULL, 16);
-		else
-			goto out;
+		switch (vendor) {
+		case OFONO_VENDOR_HUAWEI:
+			if (g_at_result_iter_next_unquoted_string(&iter, &str) == TRUE)
+				l = strtol(str, NULL, 16);
+			else
+				goto out;
 
-		if (g_at_result_iter_next_string(&iter, &str) == TRUE)
-			c = strtol(str, NULL, 16);
-		else
-			goto out;
+			if (g_at_result_iter_next_unquoted_string(&iter, &str) == TRUE)
+				c = strtol(str, NULL, 16);
+			else
+				goto out;
+
+			break;
+		default:
+			if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+				l = strtol(str, NULL, 16);
+			else
+				goto out;
+
+			if (g_at_result_iter_next_string(&iter, &str) == TRUE)
+				c = strtol(str, NULL, 16);
+			else
+				goto out;
+		}
 
 		g_at_result_iter_next_number(&iter, &t);
 

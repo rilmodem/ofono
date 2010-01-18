@@ -69,6 +69,7 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_netreg_status_cb_t cb = cbd->cb;
 	int status, lac, ci, tech;
 	struct ofono_error error;
+	struct netreg_data *nd = cbd->user;
 
 	dump_response("at_creg_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -79,7 +80,7 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	if (at_util_parse_reg(result, "+CREG:", NULL, &status,
-				&lac, &ci, &tech) == FALSE) {
+				&lac, &ci, &tech, nd->vendor) == FALSE) {
 		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 		return;
 	}
@@ -96,6 +97,8 @@ static void at_registration_status(struct ofono_netreg *netreg,
 
 	if (!cbd)
 		goto error;
+
+	cbd->user = nd;
 
 	if (g_at_chat_send(nd->chat, "AT+CREG?", creg_prefix,
 				at_creg_cb, cbd, g_free) > 0)
@@ -626,11 +629,12 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	int status, lac, ci, tech;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
 	dump_response("creg_notify", TRUE, result);
 
 	if (at_util_parse_reg_unsolicited(result, "+CREG:", &status,
-				&lac, &ci, &tech) == FALSE)
+				&lac, &ci, &tech, nd->vendor) == FALSE)
 		return;
 
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);

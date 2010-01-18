@@ -27,10 +27,12 @@ gint at_util_call_compare(gconstpointer a, gconstpointer b);
 GSList *at_util_parse_clcc(GAtResult *result);
 gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 				int *mode, int *status,
-				int *lac, int *ci, int *tech);
+				int *lac, int *ci, int *tech,
+				unsigned int vendor);
 gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 					int *status, int *lac,
-					int *ci, int *tech);
+					int *ci, int *tech,
+					unsigned int vendor);
 
 struct cb_data {
 	void *cb;
