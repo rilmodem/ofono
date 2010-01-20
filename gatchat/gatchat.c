@@ -709,8 +709,8 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		buf = ring_buffer_write_ptr(chat->buf);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
-		g_at_util_debug_chat(chat->debugf, TRUE, (char *)buf, rbytes,
-							chat->debug_data);
+		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,
+					chat->debugf, chat->debug_data);
 
 		total_read += rbytes;
 
@@ -856,9 +856,8 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 	}
 
-	g_at_util_debug_chat(chat->debugf, FALSE,
-					cmd->cmd + chat->cmd_bytes_written,
-					bytes_written, chat->debug_data);
+	g_at_util_debug_chat(FALSE, cmd->cmd + chat->cmd_bytes_written,
+				bytes_written, chat->debugf, chat->debug_data);
 	chat->cmd_bytes_written += bytes_written;
 
 	if (bytes_written < towrite)

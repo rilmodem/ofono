@@ -28,8 +28,8 @@ extern "C" {
 
 #include "gat.h"
 
-void g_at_util_debug_chat(GAtDebugFunc debugf, gboolean in, const char *str,
-						gsize len, gpointer user_data);
+void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
+				GAtDebugFunc debugf, gpointer user_data);
 
 gboolean g_at_util_setup_io(GIOChannel *io);
 
