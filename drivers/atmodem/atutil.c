@@ -222,6 +222,8 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 	g_at_result_iter_init(&iter, result);
 
 	while (g_at_result_iter_next(&iter, prefix)) {
+		gboolean r;
+
 		g_at_result_iter_next_number(&iter, &m);
 
 		/* Sometimes we get an unsolicited CREG/CGREG here, skip it */
@@ -230,12 +232,16 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 
 		switch (vendor) {
 		case OFONO_VENDOR_HUAWEI:
-			if (g_at_result_iter_next_unquoted_string(&iter, &str) == TRUE)
+			r = g_at_result_iter_next_unquoted_string(&iter, &str);
+
+			if (r == TRUE)
 				l = strtol(str, NULL, 16);
 			else
 				goto out;
 
-			if (g_at_result_iter_next_unquoted_string(&iter, &str) == TRUE)
+			r = g_at_result_iter_next_unquoted_string(&iter, &str);
+
+			if (r == TRUE)
 				c = strtol(str, NULL, 16);
 			else
 				goto out;
