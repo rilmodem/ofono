@@ -717,6 +717,13 @@ static void cbs_got_file_contents(struct ofono_cbs *cbs)
 
 	powered = g_key_file_get_boolean(cbs->settings, SETTINGS_GROUP,
 						"Powered", &error);
+
+	if (error) {
+		cbs->powered = TRUE;
+		g_key_file_set_boolean(cbs->settings, SETTINGS_GROUP,
+					"Powered", cbs->powered);
+	}
+
 	cbs_set_powered(cbs, powered, NULL);
 }
 
