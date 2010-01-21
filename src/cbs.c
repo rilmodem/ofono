@@ -832,10 +832,10 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	GSList *contents = NULL;
 
 	if (!ok)
-		return;
+		goto done;
 
 	if ((length % 2) == 1 || length < 2)
-		return;
+		goto done;
 
 	cbs->efcbmid_length = length;
 
@@ -855,7 +855,7 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	}
 
 	if (contents == NULL)
-		return;
+		goto done;
 
 	cbs->efcbmid_contents = g_slist_reverse(contents);
 
@@ -863,6 +863,7 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	ofono_debug("Got cbmid: %s", str);
 	g_free(str);
 
+done:
 	cbs_got_file_contents(cbs);
 }
 
