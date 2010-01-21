@@ -186,8 +186,10 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	if (cbs->assembly == NULL)
 		return;
 
-	if (!cbs->powered)
+	if (!cbs->powered) {
+		ofono_error("Ignoring CBS because powered is off");
 		return;
+	}
 
 	if (!cbs_decode(pdu, pdu_len, &c)) {
 		ofono_error("Unable to decode CBS PDU");
@@ -397,7 +399,8 @@ static void cbs_set_powered_cb(const struct ofono_error *error, void *data)
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Setting Cell Broadcast topics failed");
+		ofono_error("Setting Cell Broadcast topics failed");
+
 		if (!cbs->pending)
 			return;
 
