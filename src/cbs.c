@@ -437,7 +437,7 @@ static DBusMessage *cbs_set_powered(struct ofono_cbs *cbs, gboolean value,
 	if (cbs->powered == value)
 		goto reply;
 
-	if (!cbs->driver->set_topics)
+	if (!cbs->driver->set_topics || !cbs->driver->clear_topics)
 		goto done;
 
 	if (msg)
