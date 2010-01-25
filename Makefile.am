@@ -154,6 +154,11 @@ builtin_sources += drivers/atmodem/atutil.h \
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
 
+builtin_modules += stemodem
+builtin_sources += drivers/atmodem/atutil.h \
+                   drivers/stemodem/stemodem.h \
+                   drivers/stemodem/stemodem.c
+
 if DATAFILES
 conf_DATA += plugins/modem.conf
 endif
@@ -187,6 +192,10 @@ builtin_sources += plugins/hfp.c
 
 builtin_modules += palmpre
 builtin_sources += plugins/palmpre.c
+
+builtin_modules += ste
+builtin_sources += plugins/ste.c
+
 endif
 
 if MAINTAINER_MODE
