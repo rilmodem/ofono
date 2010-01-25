@@ -3,6 +3,7 @@
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2010  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2010 ST-Ericsson AB.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -38,6 +39,7 @@
 #include "gatresult.h"
 
 #include "atmodem.h"
+#include "vendor.h"
 
 static const char *cgreg_prefix[] = { "+CGREG:", NULL };
 static const char *cgdcont_prefix[] = { "+CGDCONT:", NULL };
@@ -221,7 +223,13 @@ static void at_cgreg_test_cb(gboolean ok, GAtResult *result,
 
 	g_at_chat_send(gd->chat, cmd, none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(gd->chat, "AT+CGAUTO=0", none_prefix, NULL, NULL, NULL);
-	g_at_chat_send(gd->chat, "AT+CGEREP=2,1", none_prefix,
+
+	/* ST-E modem does not support AT+CGEREP = 2,1 */
+	if (gd->vendor == OFONO_VENDOR_STE)
+		g_at_chat_send(gd->chat, "AT+CGEREP=1,0", none_prefix,
+			gprs_initialized, gprs, NULL);
+	else
+		g_at_chat_send(gd->chat, "AT+CGEREP=2,1", none_prefix,
 			gprs_initialized, gprs, NULL);
 	return;
 

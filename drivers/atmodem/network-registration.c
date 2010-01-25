@@ -3,6 +3,7 @@
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2010  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2010 ST-Ericsson AB.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -44,6 +45,9 @@ static const char *none_prefix[] = { NULL };
 static const char *creg_prefix[] = { "+CREG:", NULL };
 static const char *cops_prefix[] = { "+COPS:", NULL };
 static const char *csq_prefix[] = { "+CSQ:", NULL };
+static const char *cind_prefix[] = { "+CIND:", NULL };
+
+#define SIGNAL_STRENGTH_IND 2
 
 struct netreg_data {
 	GAtChat *chat;
@@ -554,6 +558,64 @@ static void option_octi_notify(GAtResult *result, gpointer user_data)
 	ofono_info("OCTI mode: %d", mode);
 }
 
+static void ste_ciev_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	int strength, ind;
+	GAtResultIter iter;
+
+	dump_response("ciev_notify", TRUE, result);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CIEV:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &ind))
+		return;
+
+	if (ind == SIGNAL_STRENGTH_IND) {
+		if (!g_at_result_iter_next_number(&iter, &strength))
+			return;
+
+		strength = (strength * 100) / 5;
+		ofono_netreg_strength_notify(netreg, strength);
+	}
+}
+
+static void ste_cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_netreg_strength_cb_t cb = cbd->cb;
+	int strength;
+	GAtResultIter iter;
+	struct ofono_error error;
+
+	dump_response("cind_cb", ok, result);
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CIND:")) {
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+		return;
+	}
+
+	/* Skip battery charge level, which is the first reported  */
+	g_at_result_iter_skip_next(&iter);
+
+	g_at_result_iter_next_number(&iter, &strength);
+
+	strength = (strength * 100) / 5;
+
+	cb(&error, strength, cbd->data);
+}
+
 static void option_ossysi_notify(GAtResult *result, gpointer user_data)
 {
 	int mode;
@@ -614,9 +676,15 @@ static void at_signal_strength(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(nd->chat, "AT+CSQ", csq_prefix,
+	if (nd->vendor == OFONO_VENDOR_STE) {
+		if (g_at_chat_send(nd->chat, "AT+CIND?", cind_prefix,
+				ste_cind_cb, cbd, g_free) > 0)
+			return;
+	} else {
+		if (g_at_chat_send(nd->chat, "AT+CSQ", csq_prefix,
 				csq_cb, cbd, g_free) > 0)
-		return;
+			return;
+	}
 
 error:
 	if (cbd)
@@ -703,6 +771,12 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_ODO=0", none_prefix,
 				NULL, NULL, NULL);
+		break;
+	case OFONO_VENDOR_STE:
+		g_at_chat_send(nd->chat, "AT+CMER=3,0,0,1", NULL,
+				NULL, NULL, NULL);
+		g_at_chat_register(nd->chat, "+CIEV:",
+				ste_ciev_notify, FALSE, netreg, NULL);
 		break;
 	default:
 		break;
