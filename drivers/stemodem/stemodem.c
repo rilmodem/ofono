@@ -36,13 +36,11 @@
 
 static int stemodem_init(void)
 {
-
 	return 0;
 }
 
 static void stemodem_exit(void)
 {
-
 }
 
 OFONO_PLUGIN_DEFINE(stemodem, "STE modem driver", VERSION,
