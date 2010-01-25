@@ -23,6 +23,7 @@ void decode_at_error(struct ofono_error *error, const char *final);
 void dump_response(const char *func, gboolean ok, GAtResult *result);
 gint at_util_call_compare_by_status(gconstpointer a, gconstpointer b);
 gint at_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
+gint at_util_call_compare_by_id(gconstpointer a, gconstpointer b);
 gint at_util_call_compare(gconstpointer a, gconstpointer b);
 GSList *at_util_parse_clcc(GAtResult *result);
 gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
