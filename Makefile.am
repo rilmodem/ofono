@@ -156,7 +156,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/stemodem.h \
 			drivers/stemodem/stemodem.c \
 			drivers/stemodem/caif_socket.h \
-			drivers/stemodem/if_caif.h
+			drivers/stemodem/if_caif.h \
+			drivers/stemodem/gprs-context.c
 
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c

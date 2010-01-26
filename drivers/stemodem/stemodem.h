@@ -21,3 +21,7 @@
  */
 
 #include <drivers/atmodem/atutil.h>
+
+extern void ste_gprs_context_init();
+extern void ste_gprs_context_exit();
+
