@@ -74,8 +74,6 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 
 		terminated++;
 		break;
-	case SIGPIPE:
-		break;
 	default:
 		break;
 	}
@@ -119,7 +117,6 @@ int main(int argc, char **argv)
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGTERM);
 	sigaddset(&mask, SIGINT);
-	sigaddset(&mask, SIGPIPE);
 
 	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
 		perror("Can't set signal mask");
