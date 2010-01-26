@@ -23,6 +23,8 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 
+#include <ofono/types.h>
+
 void __ofono_exit();
 
 int __ofono_manager_init();
@@ -33,10 +35,8 @@ void __ofono_modem_shutdown();
 
 #include <ofono/log.h>
 
-int __ofono_log_init(gboolean detach, gboolean debug);
+int __ofono_log_init(const char *debug, ofono_bool_t detach);
 void __ofono_log_cleanup(void);
-
-void __ofono_toggle_debug(void);
 
 #include <ofono/dbus.h>
 
@@ -60,8 +60,6 @@ DBusMessage *__ofono_error_attach_in_progress(DBusMessage *msg);
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 
 gboolean __ofono_dbus_valid_object_path(const char *path);
-
-#include <ofono/types.h>
 
 struct ofono_watchlist_item {
 	unsigned int id;

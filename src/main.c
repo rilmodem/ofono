@@ -74,9 +74,6 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 
 		terminated++;
 		break;
-	case SIGUSR2:
-		__ofono_toggle_debug();
-		break;
 	case SIGPIPE:
 		break;
 	default:
@@ -93,13 +90,13 @@ static void system_bus_disconnected(DBusConnection *conn, void *user_data)
 	g_main_loop_quit(event_loop);
 }
 
-static gboolean option_debug = FALSE;
+static gchar *option_debug = NULL;
 static gboolean option_detach = TRUE;
 static gboolean option_version = FALSE;
 
 static GOptionEntry options[] = {
-	{ "debug", 'd', 0, G_OPTION_ARG_NONE, &option_debug,
-				"Enable debug information output" },
+	{ "debug", 'd', 0, G_OPTION_ARG_STRING, &option_debug,
+				"Specify debug options to enable", "DEBUG" },
 	{ "nodetach", 'n', G_OPTION_FLAG_REVERSE,
 				G_OPTION_ARG_NONE, &option_detach,
 				"Don't run as daemon in background" },
@@ -122,7 +119,6 @@ int main(int argc, char **argv)
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGTERM);
 	sigaddset(&mask, SIGINT);
-	sigaddset(&mask, SIGUSR2);
 	sigaddset(&mask, SIGPIPE);
 
 	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
@@ -185,7 +181,7 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	__ofono_log_init(option_detach, option_debug);
+	__ofono_log_init(option_debug, option_detach);
 
 	dbus_error_init(&error);
 

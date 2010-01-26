@@ -28,8 +28,6 @@
 
 #include "ofono.h"
 
-static volatile gboolean debug_enabled = FALSE;
-
 /**
  * ofono_info:
  * @format: format string
@@ -98,9 +96,6 @@ void ofono_debug(const char *format, ...)
 {
 	va_list ap;
 
-	if (debug_enabled == FALSE)
-		return;
-
 	va_start(ap, format);
 
 	vsyslog(LOG_DEBUG, format, ap);
@@ -108,17 +103,51 @@ void ofono_debug(const char *format, ...)
 	va_end(ap);
 }
 
-void __ofono_toggle_debug(void)
+extern struct ofono_debug_desc __start___debug[];
+extern struct ofono_debug_desc __stop___debug[];
+
+static gchar **enabled = NULL;
+
+static ofono_bool_t is_enabled(struct ofono_debug_desc *desc)
 {
-	if (debug_enabled == TRUE)
-		debug_enabled = FALSE;
-	else
-		debug_enabled = TRUE;
+	int i;
+
+	if (enabled == NULL)
+		return FALSE;
+
+	for (i = 0; enabled[i] != NULL; i++) {
+		if (desc->name != NULL && g_pattern_match_simple(enabled[i],
+							desc->name) == TRUE)
+			return TRUE;
+		if (desc->file != NULL && g_pattern_match_simple(enabled[i],
+							desc->file) == TRUE)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
-int __ofono_log_init(gboolean detach, gboolean debug)
+int __ofono_log_init(const char *debug, ofono_bool_t detach)
 {
 	int option = LOG_NDELAY | LOG_PID;
+	struct ofono_debug_desc *desc;
+	const char *name = NULL, *file = NULL;
+
+	if (debug != NULL)
+		enabled = g_strsplit_set(debug, ":, ", 0);
+
+	for (desc = __start___debug; desc < __stop___debug; desc++) {
+		if (file != NULL || name != NULL) {
+			if (g_strcmp0(desc->file, file) == 0) {
+				if (desc->name == NULL)
+					desc->name = name;
+			} else
+				file = NULL;
+		}
+
+		if (is_enabled(desc) == TRUE)
+			desc->flags |= OFONO_DEBUG_FLAG_PRINT;
+	}
 
 	if (detach == FALSE)
 		option |= LOG_PERROR;
@@ -126,8 +155,6 @@ int __ofono_log_init(gboolean detach, gboolean debug)
 	openlog("ofonod", option, LOG_DAEMON);
 
 	syslog(LOG_INFO, "oFono version %s", VERSION);
-
-	debug_enabled = debug;
 
 	return 0;
 }
@@ -137,4 +164,6 @@ void __ofono_log_cleanup(void)
 	syslog(LOG_INFO, "Exit");
 
 	closelog();
+
+	g_strfreev(enabled);
 }
