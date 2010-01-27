@@ -320,8 +320,8 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		length = strlen(res_string);
 
 		if (!g_markup_parse_context_parse(context, res_string,
-			length, NULL))
-				goto error;
+							length, NULL))
+			goto error;
 	}
 
 	if (!g_markup_parse_context_end_parse(context, NULL))
@@ -337,7 +337,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (!caif_if_create(conn->interface, conn->channel_id)) {
 		ofono_error("Failed to create caif interface %s.",
-			conn->interface);
+				conn->interface);
 		CALLBACK_WITH_SUCCESS(cb, NULL, FALSE, rsp.ip_address,
 				rsp.subnet_mask, rsp.default_gateway,
 				dns, cbd->data);
