@@ -811,6 +811,9 @@ static int hfp_init(void)
 {
 	int err;
 
+	if (DBUS_TYPE_UNIX_FD < 0)
+		return -EBADF;
+
 	connection = ofono_dbus_get_connection();
 
 	added_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
