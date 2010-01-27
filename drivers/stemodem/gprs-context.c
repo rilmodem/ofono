@@ -110,16 +110,16 @@ static void start_element_handler(GMarkupParseContext *context,
 }
 
 static void end_element_handler(GMarkupParseContext *context,
-		const gchar *element_name, gpointer user_data,
-		GError **error)
+				const gchar *element_name, gpointer user_data,
+				GError **error)
 {
 	struct eppsd_response *rsp = user_data;
 	rsp->current = NULL;
 }
 
 static void text_handler(GMarkupParseContext *context,
-		const gchar *text, gsize text_len,
-		gpointer user_data, GError **error)
+				const gchar *text, gsize text_len,
+				gpointer user_data, GError **error)
 {
 	struct eppsd_response *rsp = user_data;
 
@@ -130,7 +130,7 @@ static void text_handler(GMarkupParseContext *context,
 }
 
 static void error_handler(GMarkupParseContext *context,
-		GError *error, gpointer user_data)
+				GError *error, gpointer user_data)
 {
 	ofono_debug("Error parsing xml response from eppsd: %s\n",
 		error->message);
@@ -173,8 +173,7 @@ static struct conn_info *conn_info_create(unsigned int device,
 /*
  * Creates a new IP interface for CAIF.
  */
-static gboolean caif_if_create(const char *interface,
-	unsigned int connid)
+static gboolean caif_if_create(const char *interface, unsigned int connid)
 {
 	int s;
 	static struct ifcaif_param param;
@@ -195,7 +194,7 @@ static gboolean caif_if_create(const char *interface,
 		goto error;
 	}
 
-return TRUE;
+	return TRUE;
 
 error:
 	return FALSE;
@@ -204,8 +203,7 @@ error:
 /*
  * Removes IP interface for CAIF.
  */
-static gboolean caif_if_remove(const char *interface,
-	unsigned int connid)
+static gboolean caif_if_remove(const char *interface, unsigned int connid)
 {
 	int s;
 	static struct ifcaif_param param;
@@ -239,8 +237,8 @@ error:
 	return FALSE;
 }
 
-static void ste_eppsd_down_cb(gboolean ok,
-			      GAtResult *result, gpointer user_data)
+static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_gprs_context_cb_t cb = cbd->cb;
@@ -265,11 +263,14 @@ static void ste_eppsd_down_cb(gboolean ok,
 					gcd->active_context);
 		goto error;
 	}
+
 	conn = l->data;
+
 	if (!caif_if_remove(conn->interface, conn->channel_id)) {
 		ofono_debug("Failed to remove caif interface %s.",
-			conn->interface);
+				conn->interface);
 	}
+
 	conn->cid = 0;
 
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -308,6 +309,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					gcd->active_context);
 		goto error;
 	}
+
 	conn = l->data;
 
 	if (!ok)
@@ -318,6 +320,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	memset(&rsp, 0, sizeof(rsp));
 
 	g_at_result_iter_init(&iter, result);
+
 	for (i = 0; i < g_at_result_num_response_lines(result); i++) {
 		g_at_result_iter_next(&iter, NULL);
 		res_string = strdup(g_at_result_iter_raw_line(&iter));
@@ -350,6 +353,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				FALSE, rsp.ip_address, rsp.subnet_mask,
 				rsp.default_gateway, dns, cbd->data);
 	}
+
 	return;
 
 error:
@@ -404,6 +408,7 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_debug("at_cgdcont_cb, no more available devices");
 		goto error;
 	}
+
 	conn = l->data;
 	conn->cid = gcd->active_context;
 	sprintf(buf, "AT*EPPSD=1,%u,%u", conn->channel_id, conn->cid);
@@ -418,7 +423,7 @@ error:
 	gcd->active_context = 0;
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL,
-						NULL, NULL, cbd->data);
+				NULL, NULL, cbd->data);
 }
 
 static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
@@ -447,6 +452,7 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				ste_cgdcont_cb, cbd, g_free) > 0)
 		return;
+
 error:
 	if (cbd)
 		g_free(cbd);
@@ -478,6 +484,7 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 			"data (channel id) for connection with cid; %d", id);
 		goto error;
 	}
+
 	conn = l->data;
 
 	sprintf(buf, "AT*EPPSD=0,%u,%u", conn->channel_id, id);
@@ -494,7 +501,7 @@ error:
 }
 
 static void ste_cgact_read_cb(gboolean ok, GAtResult *result,
-			      gpointer user_data)
+				gpointer user_data)
 {
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
@@ -505,6 +512,7 @@ static void ste_cgact_read_cb(gboolean ok, GAtResult *result,
 
 	if (!ok)
 		return;
+
 	g_at_result_iter_init(&iter, result);
 
 	while (g_at_result_iter_next(&iter, "+CGACT:")) {
@@ -549,7 +557,6 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 			g_str_has_prefix(event, "NW DEACT ") ||
 			g_str_has_prefix(event, "ME DEACT ")) {
 		/* Ask what primary contexts are active now */
-
 		g_at_chat_send(gcd->chat, "AT+CGACT?", cgact_prefix,
 				ste_cgact_read_cb, gc, NULL);
 	}
