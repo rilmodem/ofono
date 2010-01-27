@@ -400,7 +400,7 @@ static GDBusMethodTable agent_methods[] = {
 	{ "NewConnection", "h", "", hfp_agent_new_connection,
 		G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Release", "", "", hfp_agent_release },
-	{NULL, NULL, NULL, NULL}
+	{ NULL, NULL, NULL, NULL }
 };
 
 static int hfp_create_modem(const char *device)
@@ -441,6 +441,7 @@ static void parse_uuids(DBusMessageIter *i, const char *device)
 
 	while (dbus_message_iter_get_arg_type(&ai) != DBUS_TYPE_INVALID) {
 		dbus_message_iter_get_basic(&ai, &value);
+
 		if (!strcasecmp(value, HFP_AG_UUID))
 			hfp_create_modem(device);
 
@@ -465,6 +466,7 @@ static void parse_get_properties(DBusMessage *reply, const char *device)
 	}
 
 	dbus_message_iter_recurse(&arg, &element);
+
 	while (dbus_message_iter_get_arg_type(&element) != DBUS_TYPE_INVALID) {
 		if (dbus_message_iter_get_arg_type(&element) ==
 				DBUS_TYPE_DICT_ENTRY) {
@@ -543,6 +545,7 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 	}
 
 	dbus_error_init(&err);
+
 	if (dbus_message_get_args(reply, &err, DBUS_TYPE_ARRAY,
 				DBUS_TYPE_OBJECT_PATH, &device,
 				&num, DBUS_TYPE_INVALID) == FALSE) {
@@ -555,6 +558,7 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 			ofono_error("%s", err.message);
 			dbus_error_free(&err);
 		}
+
 		goto done;
 	}
 
@@ -606,6 +610,7 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 	}
 
 	dbus_error_init(&err);
+
 	if (dbus_message_get_args(reply, &err, DBUS_TYPE_ARRAY,
 				DBUS_TYPE_OBJECT_PATH, &adapter,
 				&num, DBUS_TYPE_INVALID) == FALSE) {
@@ -618,6 +623,7 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 			ofono_error("%s", err.message);
 			dbus_error_free(&err);
 		}
+
 		goto done;
 	}
 
