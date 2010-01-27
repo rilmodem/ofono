@@ -84,7 +84,7 @@ struct eppsd_response {
 	char p_cscf_server[MAX_ELEM];
 };
 
-static void start_element_handler (GMarkupParseContext *context,
+static void start_element_handler(GMarkupParseContext *context,
 		const gchar *element_name, const gchar **attribute_names,
 		const gchar **attribute_values, gpointer user_data,
 		GError **error)
@@ -109,7 +109,7 @@ static void start_element_handler (GMarkupParseContext *context,
 		rsp->current = rsp->p_cscf_server;
 }
 
-static void end_element_handler (GMarkupParseContext *context,
+static void end_element_handler(GMarkupParseContext *context,
 		const gchar *element_name, gpointer user_data,
 		GError **error)
 {
@@ -117,7 +117,7 @@ static void end_element_handler (GMarkupParseContext *context,
 	rsp->current = NULL;
 }
 
-static void text_handler (GMarkupParseContext *context,
+static void text_handler(GMarkupParseContext *context,
 		const gchar *text, gsize text_len,
 		gpointer user_data, GError **error)
 {
@@ -129,7 +129,7 @@ static void text_handler (GMarkupParseContext *context,
 	}
 }
 
-static void error_handler (GMarkupParseContext *context,
+static void error_handler(GMarkupParseContext *context,
 		GError *error, gpointer user_data)
 {
 	ofono_debug("Error parsing xml response from eppsd: %s\n",
