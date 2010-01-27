@@ -170,9 +170,9 @@ static struct conn_info *conn_info_create(unsigned int device,
 	return connection;
 }
 
-/* Creates a new IP interface for CAIF.
- *
-*/
+/*
+ * Creates a new IP interface for CAIF.
+ */
 static gboolean caif_if_create(const char *interface,
 	unsigned int connid)
 {
@@ -201,9 +201,9 @@ error:
 	return FALSE;
 }
 
-/* Removes IP interface for CAIF.
- *
-*/
+/*
+ * Removes IP interface for CAIF.
+ */
 static gboolean caif_if_remove(const char *interface,
 	unsigned int connid)
 {
