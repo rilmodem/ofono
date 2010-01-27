@@ -129,7 +129,6 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 
 	if (!g_strcmp0(driver, "atgen") || !g_strcmp0(driver, "g1") ||
 						!g_strcmp0(driver, "calypso") ||
-						!g_strcmp0(driver, "hfp") ||
 						!g_strcmp0(driver, "palmpre"))
 		set_device(modem, keyfile, group);
 

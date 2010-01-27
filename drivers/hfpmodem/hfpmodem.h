@@ -22,6 +22,7 @@
 #define __BLUETOOTH_H__
 
 #include <drivers/atmodem/atutil.h>
+#include <ofono/dbus.h>
 
 /* AG supported features bitmap. Bluetooth HFP 1.5 spec page 77 */
 #define AG_FEATURE_3WAY 0x1
@@ -63,11 +64,14 @@ enum hfp_indicator {
 
 struct hfp_data {
 	GAtChat *chat;
+	char *handsfree_path;
+	DBusMessage *slc_msg;
 	unsigned int ag_features;
 	unsigned int ag_mpty_features;
 	unsigned int hf_features;
 	unsigned char cind_pos[HFP_INDICATOR_LAST];
 	unsigned int cind_val[HFP_INDICATOR_LAST];
+	unsigned int at_timeout;
 };
 
 extern void hfp_netreg_init();
