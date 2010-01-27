@@ -186,18 +186,15 @@ static gboolean caif_if_create(const char *interface, unsigned int connid)
 	s = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
 	if (s < 0) {
 		ofono_debug("Failed to create socket for CAIF interface");
-		goto error;
+		return FALSE;
 	}
 
 	if (ioctl(s, SIOCCAIFNETNEW, &ifr) < 0) {
 		ofono_debug("Failed to create IP interface for CAIF");
-		goto error;
+		return FALSE;
 	}
 
 	return TRUE;
-
-error:
-	return FALSE;
 }
 
 /*
@@ -216,25 +213,21 @@ static gboolean caif_if_remove(const char *interface, unsigned int connid)
 	s = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
 	if (s < 0) {
 		ofono_debug("Failed to create socket for CAIF interface");
-		goto error;
+		return FALSE;
 	}
 
-	if (ioctl(s, SIOCGIFINDEX, &ifr) == 0) {
-		if (ioctl(s, SIOCCAIFNETREMOVE, &ifr) < 0) {
-			ofono_debug("Failed to remove IP interface"
-				"for CAIF");
-			goto error;
-		}
-	} else {
+	if (ioctl(s, SIOCGIFINDEX, &ifr) != 0) {
 		ofono_debug("Did not find interface (%s) to remove",
 				interface);
-		goto error;
+		return FALSE;
+	}
+
+	if (ioctl(s, SIOCCAIFNETREMOVE, &ifr) < 0) {
+		ofono_debug("Failed to remove IP interface for CAIF");
+		return FALSE;
 	}
 
 	return TRUE;
-
-error:
-	return FALSE;
 }
 
 static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
