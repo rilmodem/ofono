@@ -364,7 +364,8 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 	return -EINPROGRESS;
 }
 
-static DBusMessage *hfp_agent_new_connection(DBusConnection *conn, DBusMessage *msg, void *data)
+static DBusMessage *hfp_agent_new_connection(DBusConnection *conn,
+						DBusMessage *msg, void *data)
 {
 	int fd;
 	struct ofono_modem *modem = data;
@@ -382,7 +383,8 @@ static DBusMessage *hfp_agent_new_connection(DBusConnection *conn, DBusMessage *
 	return NULL;
 }
 
-static DBusMessage *hfp_agent_release(DBusConnection *conn, DBusMessage *msg, void *data)
+static DBusMessage *hfp_agent_release(DBusConnection *conn,
+					DBusMessage *msg, void *data)
 {
 	struct ofono_modem *modem = data;
 
