@@ -62,8 +62,6 @@ static GSList *g_caif_devices;
 struct gprs_context_data {
 	GAtChat *chat;
 	unsigned int active_context;
-	char *username;
-	char *password;
 };
 
 struct conn_info {
@@ -368,8 +366,8 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *ncbd = NULL;
+	char buf[128];
 	struct conn_info *conn;
-	char buf[AUTH_BUF_LENGTH];
 	GSList *l;
 
 	dump_response("cgdcont_cb", ok, result);
@@ -383,14 +381,6 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		cb(&error, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
 		return;
 	}
-
-	/* Set username and password */
-	sprintf(buf, "AT*EIAAUW=%d,1,\"%s\",\"%s\"", gcd->active_context,
-		gcd->username, gcd->password);
-
-	if (g_at_chat_send(gcd->chat, buf, none_prefix,
-				NULL, NULL, NULL) == 0)
-		goto error;
 
 	ncbd = g_memdup(cbd, sizeof(struct cb_data));
 
@@ -409,6 +399,7 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (g_at_chat_send(gcd->chat, buf, NULL,
 				ste_eppsd_up_cb, ncbd, g_free) > 0)
 		return;
+
 error:
 	if (ncbd)
 		g_free(ncbd);
@@ -425,16 +416,21 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char buf[OFONO_GPRS_MAX_APN_LENGTH + 128];
+	char buf[AUTH_BUF_LENGTH];
 	int len;
 
 	if (!cbd)
 		goto error;
 
 	gcd->active_context = ctx->cid;
-	gcd->username = g_strdup(ctx->username);
-	gcd->password = g_strdup(ctx->password);
 	cbd->user = gc;
+
+	/* Set username and password */
+	sprintf(buf, "AT*EIAAUW=%d,1,\"%s\",\"%s\"", ctx->cid,
+		ctx->username, ctx->password);
+
+	if (g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL) == 0)
+		goto error;
 
 	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
