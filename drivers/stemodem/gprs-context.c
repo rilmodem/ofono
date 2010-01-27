@@ -74,7 +74,7 @@ struct conn_info {
 };
 
 struct eppsd_response {
-	char *_current;
+	char *current;
 	char ip_address[MAX_ELEM];
 	char subnet_mask[MAX_ELEM];
 	char mtu[MAX_ELEM];
@@ -90,23 +90,23 @@ static void start_element_handler (GMarkupParseContext *context,
 		GError **error)
 {
 	struct eppsd_response *rsp = user_data;
-	rsp->_current = NULL;
+	rsp->current = NULL;
 
 	if (!strcmp(element_name, "ip_address"))
-		rsp->_current = rsp->ip_address;
+		rsp->current = rsp->ip_address;
 	else if (!strcmp(element_name, "subnet_mask"))
-		rsp->_current = rsp->subnet_mask;
+		rsp->current = rsp->subnet_mask;
 	else if (!strcmp(element_name, "mtu"))
-		rsp->_current = rsp->mtu;
+		rsp->current = rsp->mtu;
 	else if (!strcmp(element_name, "default_gateway"))
-		rsp->_current = rsp->default_gateway;
+		rsp->current = rsp->default_gateway;
 	else if (!strcmp(element_name, "dns_server") &&
 		rsp->dns_server1[0] == '\0')
-		rsp->_current = rsp->dns_server1;
+		rsp->current = rsp->dns_server1;
 	else if (!strcmp(element_name, "dns_server"))
-		rsp->_current = rsp->dns_server2;
+		rsp->current = rsp->dns_server2;
 	else if (!strcmp(element_name, "p_cscf_server"))
-		rsp->_current = rsp->p_cscf_server;
+		rsp->current = rsp->p_cscf_server;
 }
 
 static void end_element_handler (GMarkupParseContext *context,
@@ -114,7 +114,7 @@ static void end_element_handler (GMarkupParseContext *context,
 		GError **error)
 {
 	struct eppsd_response *rsp = user_data;
-	rsp->_current = NULL;
+	rsp->current = NULL;
 }
 
 static void text_handler (GMarkupParseContext *context,
@@ -123,9 +123,9 @@ static void text_handler (GMarkupParseContext *context,
 {
 	struct eppsd_response *rsp = user_data;
 
-	if (rsp->_current) {
-		strncpy(rsp->_current, text, MAX_ELEM);
-		rsp->_current[MAX_ELEM] = 0;
+	if (rsp->current) {
+		strncpy(rsp->current, text, MAX_ELEM);
+		rsp->current[MAX_ELEM] = 0;
 	}
 }
 
@@ -313,7 +313,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!ok)
 		goto error;
 
-	rsp._current = NULL;
+	rsp.current = NULL;
 	context = g_markup_parse_context_new(&parser, 0, &rsp, NULL);
 	memset(&rsp, 0, sizeof(rsp));
 
