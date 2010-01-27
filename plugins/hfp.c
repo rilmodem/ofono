@@ -37,18 +37,7 @@
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 #include <ofono/modem.h>
-#include <ofono/call-barring.h>
-#include <ofono/call-forwarding.h>
-#include <ofono/call-meter.h>
-#include <ofono/call-settings.h>
-#include <ofono/devinfo.h>
-#include <ofono/message-waiting.h>
 #include <ofono/netreg.h>
-#include <ofono/phonebook.h>
-#include <ofono/sim.h>
-#include <ofono/sms.h>
-#include <ofono/ssn.h>
-#include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 #include <ofono/call-volume.h>
 
