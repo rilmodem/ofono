@@ -39,10 +39,8 @@ if __name__ == "__main__":
 	global vcmanager
 
 	if (len(sys.argv) < 2):
-		print "Useage: %s <number>" % (sys.argv[0])
+		print "Useage: %s [modem] <number>" % (sys.argv[0])
 		sys.exit(1)
-
-	number = sys.argv[1]
 
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -52,9 +50,17 @@ if __name__ == "__main__":
 							'org.ofono.Manager')
 
 	modems = manager.GetProperties()['Modems']
+	modem = modems[0]
 	print modems
 
-	vcmanager = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+	if (len(sys.argv) == 3):
+		modem = sys.argv[1]
+		number = sys.argv[2]
+	else:
+		number = sys.argv[1]
+	print "Using modem %s" % modem
+
+	vcmanager = dbus.Interface(bus.get_object('org.ofono', modem),
 						'org.ofono.VoiceCallManager')
 
 	vcmanager.connect_to_signal("PropertyChanged",
