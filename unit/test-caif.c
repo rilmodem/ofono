@@ -49,6 +49,7 @@ static int do_connect(void)
 		g_printerr("CAIF socket creation failed (%d)\n", errno);
 		return -EIO;
 	}
+
 	memset(&addr, 0, sizeof(addr));
 	addr.family = AF_CAIF;
 	addr.u.at.type = CAIF_ATTYPE_PLAIN;

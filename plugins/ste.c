@@ -53,6 +53,7 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <drivers/atmodem/vendor.h>
+
 #include <drivers/stemodem/caif_socket.h>
 #include <drivers/stemodem/if_caif.h>
 
@@ -67,11 +68,11 @@ static int ste_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct ste_data, 1);
-
 	if (!data)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
+
 	return 0;
 }
 
@@ -117,9 +118,10 @@ static int ste_enable(struct ofono_modem *modem)
 	/* Create a CAIF socket for AT Service */
 	fd = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
 	if (fd < 0) {
-		ofono_debug("Failed to create CAIF socket for AT");
+		ofono_error("Failed to create CAIF socket for AT");
 		return -EIO;
 	}
+
 	memset(&addr, 0, sizeof(addr));
 	addr.family = AF_CAIF;
 	addr.u.at.type = CAIF_ATTYPE_PLAIN;
@@ -127,6 +129,7 @@ static int ste_enable(struct ofono_modem *modem)
 	/* Connect to the AT Service at the modem */
 	err = connect(fd, (struct sockaddr *) &addr, sizeof(addr));
 	if (err < 0) {
+		ofono_error("Failed to connect CAIF socket for AT");
 		close(fd);
 		return err;
 	}
@@ -190,6 +193,7 @@ static int ste_disable(struct ofono_modem *modem)
 static void ste_pre_sim(struct ofono_modem *modem)
 {
 	struct ste_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
@@ -205,6 +209,7 @@ static void ste_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
+
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
@@ -250,4 +255,4 @@ static void ste_exit(void)
 }
 
 OFONO_PLUGIN_DEFINE(ste, "ST-Ericsson modem driver", VERSION,
-		OFONO_PLUGIN_PRIORITY_DEFAULT, ste_init, ste_exit)
+			OFONO_PLUGIN_PRIORITY_DEFAULT, ste_init, ste_exit)
