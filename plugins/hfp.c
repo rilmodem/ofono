@@ -388,9 +388,6 @@ static DBusMessage *hfp_agent_release(DBusConnection *conn,
 {
 	struct ofono_modem *modem = data;
 
-	if (ofono_modem_get_powered(modem))
-		hfp_disable(modem);
-
 	ofono_modem_remove(modem);
 
 	return dbus_message_new_method_return(msg);
