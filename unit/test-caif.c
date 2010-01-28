@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 
 #include <glib.h>
 #include <glib/gprintf.h>
@@ -41,13 +42,21 @@ static GMainLoop *mainloop;
 
 static int do_open(void)
 {
+	struct termios ti;
 	int fd;
 
-	fd = open("/dev/chnlat10", O_RDWR);
+	fd = open("/dev/chnlat11", O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if (fd < 0) {
-		g_printerr("Open of chnlat10 failed (%d)\n", errno);
+		g_printerr("Open of chnlat11 failed (%d)\n", errno);
 		return -EIO;
 	}
+
+	/* Switch TTY to raw mode */
+	memset(&ti, 0, sizeof(ti));
+	cfmakeraw(&ti);
+
+	tcflush(fd, TCIOFLUSH);
+	tcsetattr(fd, TCSANOW, &ti);
 
 	return fd;
 }
