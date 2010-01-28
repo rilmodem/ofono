@@ -367,7 +367,7 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 static DBusMessage *hfp_agent_new_connection(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	int fd;
+	int fd, err;
 	struct ofono_modem *modem = data;
 	struct hfp_data *hfp_data = ofono_modem_get_data(modem);
 
@@ -375,7 +375,9 @@ static DBusMessage *hfp_agent_new_connection(DBusConnection *conn,
 				DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
-	service_level_connection(modem, fd);
+	err = service_level_connection(modem, fd);
+	if (err < 0 && err != -EINPROGRESS)
+		return __ofono_error_failed(msg);
 
 	hfp_data->slc_msg = msg;
 	dbus_message_ref(msg);
