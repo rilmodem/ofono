@@ -155,9 +155,9 @@ builtin_modules += stemodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/stemodem.h \
 			drivers/stemodem/stemodem.c \
+			drivers/stemodem/gprs-context.c \
 			drivers/stemodem/caif_socket.h \
-			drivers/stemodem/if_caif.h \
-			drivers/stemodem/gprs-context.c
+			drivers/stemodem/if_caif.h
 
 builtin_modules += modemconf
 builtin_sources += plugins/modemconf.c
@@ -281,9 +281,9 @@ dist_man_MANS = doc/ofonod.8
 
 unit_objects =
 
-noinst_PROGRAMS = unit/test-common unit/test-util \
-			unit/test-sms unit/test-simutil unit/test-mux \
-			unit/test-idmap
+noinst_PROGRAMS = unit/test-common unit/test-util unit/test-idmap \
+					unit/test-sms unit/test-simutil \
+					unit/test-mux unit/test-caif
 
 unit_test_common_SOURCES = unit/test-common.c src/common.c
 unit_test_common_LDADD = @GLIB_LIBS@
@@ -293,13 +293,16 @@ unit_test_util_SOURCES = unit/test-util.c src/util.c
 unit_test_util_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_utils_OBJECTS)
 
+unit_test_idmap_SOURCES = unit/test-idmap.c src/idmap.c
+unit_test_idmap_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_idmap_OBJECTS)
+
 unit_test_sms_SOURCES = unit/test-sms.c src/util.c src/smsutil.c src/storage.c
 unit_test_sms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_sms_OBJECTS)
 
 unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
-						src/simutil.c src/smsutil.c \
-						src/storage.c
+				src/simutil.c src/smsutil.c src/storage.c
 unit_test_simutil_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_simutil_OBJECTS)
 
@@ -307,9 +310,11 @@ unit_test_mux_SOURCES = unit/test-mux.c $(gatchat_sources)
 unit_test_mux_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_mux_OBJECTS)
 
-unit_test_idmap_SOURCES = unit/test-idmap.c src/idmap.c
-unit_test_idmap_LDADD = @GLIB_LIBS@
-unit_objects += $(unit_test_idmap_OBJECTS)
+unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
+					drivers/stemodem/caif_socket.h \
+					drivers/stemodem/if_caif.h 
+unit_test_caif_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_caif_OBJECTS)
 
 noinst_PROGRAMS += gatchat/gsmdial
 

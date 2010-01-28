@@ -32,10 +32,11 @@ src/ofono.ver
 
 unit/test-common
 unit/test-util
+unit/test-idmap
 unit/test-sms
 unit/test-simutil
 unit/test-mux
-unit/test-idmap
+unit/test-caif
 
 plugins/*-ofono.rules
 gatchat/gsmdial
