@@ -70,6 +70,9 @@ rules_DATA = $(foreach file,$(udev_files), plugins/97-$(notdir $(file)))
 endif
 endif
 
+builtin_modules += caif
+builtin_sources += plugins/caif.c
+
 if ISIMODEM
 builtin_modules += isimodem
 builtin_sources += $(gisi_sources) \
