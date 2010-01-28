@@ -448,9 +448,10 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 	g_at_result_iter_skip_next(&iter);
 
 	status = call_status_ste_to_ofono(status);
+
 	if (status == CALL_STATUS_DIALING ||
-	    status == CALL_STATUS_WAITING ||
-	    status == CALL_STATUS_INCOMING) {
+			status == CALL_STATUS_WAITING ||
+			status == CALL_STATUS_INCOMING) {
 		if (!g_at_result_iter_next_string(&iter, &num))
 			return;
 
@@ -467,14 +468,15 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 	 */
 	l = g_slist_find_custom(vd->calls, GUINT_TO_POINTER(id),
 				at_util_call_compare_by_id);
+
 	if (l)
 		existing_call = l->data;
 
 	if (l == NULL && status != CALL_STATUS_DIALING &&
-					 status != CALL_STATUS_WAITING &&
-					 status != CALL_STATUS_INCOMING) {
+				status != CALL_STATUS_WAITING &&
+				status != CALL_STATUS_INCOMING) {
 		ofono_error("ECAV notification for unknow call."
-			    " id: %d, status: %d", id, status);
+				" id: %d, status: %d", id, status);
 		return;
 	}
 
@@ -490,11 +492,12 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 			reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
 
 		ofono_voicecall_disconnected(vc, existing_call->id,
-					     reason, NULL);
+						reason, NULL);
 
 		vd->calls = g_slist_remove(vd->calls, l->data);
 		break;
 	}
+
 	case CALL_STATUS_DIALING:
 	case CALL_STATUS_WAITING:
 	case CALL_STATUS_INCOMING: {
@@ -512,10 +515,11 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 			clip_validity = CLIP_VALIDITY_NOT_AVAILABLE;
 
 		new_call = create_call(vc, call_type, direction, status,
-				       num, num_type, clip_validity);
+					num, num_type, clip_validity);
+
 		if (!new_call) {
 			ofono_error("Unable to malloc. "
-				    "Call management is fubar");
+					"Call management is fubar");
 			return;
 		}
 
@@ -523,17 +527,18 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 		ofono_voicecall_notify(vc, new_call);
 		break;
 	}
+
 	case CALL_STATUS_ALERTING:
 	case CALL_STATUS_ACTIVE:
 	case CALL_STATUS_HELD:
 		existing_call->status = status;
 		ofono_voicecall_notify(vc, existing_call);
 		break;
+
 	default:
 		break;
 	}
 }
-
 
 static int ste_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 				void *data)
