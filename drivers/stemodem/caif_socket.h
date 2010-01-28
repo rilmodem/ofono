@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 #ifndef AF_CAIF
-#define AF_CAIF    28          /* CAIF Socket Address Family */
+#define AF_CAIF    37          /* CAIF Socket Address Family */
 #endif
 #ifndef PF_CAIF
 #define PF_CAIF    AF_CAIF      /* CAIF Socket Protocol Family */
