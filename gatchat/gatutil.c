@@ -106,7 +106,7 @@ void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
 	g_free(escaped_str);
 }
 
-gboolean g_at_util_setup_io(GIOChannel *io)
+gboolean g_at_util_setup_io(GIOChannel *io, GIOFlags flags)
 {
 	GIOFlags io_flags;
 
@@ -116,7 +116,7 @@ gboolean g_at_util_setup_io(GIOChannel *io)
 
 	io_flags = g_io_channel_get_flags(io);
 
-	io_flags |= G_IO_FLAG_NONBLOCK;
+	io_flags |= (flags & G_IO_FLAG_SET_MASK);
 
 	if (g_io_channel_set_flags(io, io_flags, NULL) !=
 			G_IO_STATUS_NORMAL)

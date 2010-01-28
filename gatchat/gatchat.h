@@ -39,6 +39,7 @@ typedef void (*GAtResultFunc)(gboolean success, GAtResult *result,
 typedef void (*GAtNotifyFunc)(GAtResult *result, gpointer user_data);
 
 GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax);
+GAtChat *g_at_chat_new_blocking(GIOChannel *channel, GAtSyntax *syntax);
 
 GIOChannel *g_at_chat_get_channel(GAtChat *chat);
 

@@ -70,6 +70,7 @@ struct _GAtChat {
 	guint next_notify_id;			/* Next notify id */
 	guint read_watch;			/* GSource read id, 0 if none */
 	guint write_watch;			/* GSource write id, 0 if none */
+	gboolean use_write_watch;		/* watch usage for non blocking */
 	GIOChannel *channel;			/* channel */
 	GQueue *command_queue;			/* Command queue */
 	guint cmd_bytes_written;		/* bytes written from cmd */
@@ -880,14 +881,20 @@ static void g_at_chat_wakeup_writer(GAtChat *chat)
 	if (chat->write_watch != 0)
 		return;
 
-	chat->write_watch = g_io_add_watch_full(chat->channel,
+	if (chat->use_write_watch == TRUE) {
+		chat->write_watch = g_io_add_watch_full(chat->channel,
 				G_PRIORITY_DEFAULT,
 				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				can_write_data, chat,
 				(GDestroyNotify)write_watcher_destroy_notify);
+	} else {
+		while (can_write_data(chat->channel, G_IO_OUT, chat) == TRUE);
+		write_watcher_destroy_notify(chat);
+	}
 }
 
-GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
+static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
+				GAtSyntax *syntax)
 {
 	GAtChat *chat;
 
@@ -907,7 +914,13 @@ GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
 	chat->next_notify_id = 1;
 	chat->debugf = NULL;
 
-	chat->max_read_attempts = 1;
+	if (flags & G_IO_FLAG_NONBLOCK) {
+		chat->use_write_watch = TRUE;
+		chat->max_read_attempts = 1;
+	} else {
+		chat->use_write_watch = FALSE;
+		chat->max_read_attempts = 1;
+	}
 
 	chat->buf = ring_buffer_new(4096);
 
@@ -922,7 +935,7 @@ GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
 	chat->notify_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 				g_free, (GDestroyNotify)at_notify_destroy);
 
-	if (!g_at_util_setup_io(channel))
+	if (!g_at_util_setup_io(channel, flags))
 		goto error;
 
 	chat->channel = channel;
@@ -947,6 +960,16 @@ error:
 
 	g_free(chat);
 	return NULL;
+}
+
+GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
+{
+	return create_chat(channel, G_IO_FLAG_NONBLOCK, syntax);
+}
+
+GAtChat *g_at_chat_new_blocking(GIOChannel *channel, GAtSyntax *syntax)
+{
+	return create_chat(channel, 0, syntax);
 }
 
 GIOChannel *g_at_chat_get_channel(GAtChat *chat)
