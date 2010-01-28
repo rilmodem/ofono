@@ -704,10 +704,8 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	do {
 		toread = ring_buffer_avail_no_wrap(chat->buf);
 
-		if (toread == 0) {
-			err = G_IO_ERROR_NONE;
+		if (toread == 0)
 			break;
-		}
 
 		rbytes = 0;
 		buf = ring_buffer_write_ptr(chat->buf);
@@ -732,7 +730,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	if (cond & (G_IO_HUP | G_IO_ERR))
 		return FALSE;
 
-	if (rbytes == 0 && err != G_IO_ERROR_AGAIN)
+	if (read_count > 0 && rbytes == 0 && err != G_IO_ERROR_AGAIN)
 		return FALSE;
 
 	return TRUE;
