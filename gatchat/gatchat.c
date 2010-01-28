@@ -916,7 +916,7 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 
 	if (flags & G_IO_FLAG_NONBLOCK) {
 		chat->use_write_watch = TRUE;
-		chat->max_read_attempts = 1;
+		chat->max_read_attempts = 3;
 	} else {
 		chat->use_write_watch = FALSE;
 		chat->max_read_attempts = 1;
