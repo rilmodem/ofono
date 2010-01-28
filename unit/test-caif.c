@@ -119,7 +119,7 @@ static void test_connect(gboolean use_socket)
 	g_io_channel_set_close_on_unref(io, TRUE);
 
 	syntax = g_at_syntax_new_gsm_permissive();
-	chat = g_at_chat_new(io, syntax);
+	chat = g_at_chat_new_blocking(io, syntax);
 	g_at_syntax_unref(syntax);
 
 	g_io_channel_unref(io);
