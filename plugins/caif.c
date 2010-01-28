@@ -37,6 +37,7 @@ static GSList *modem_list = NULL;
 
 static int caif_init(void)
 {
+#if 0
 	struct ofono_modem *modem;
 
 	modem = ofono_modem_create("caif", "ste");
@@ -46,6 +47,7 @@ static int caif_init(void)
 	modem_list = g_slist_prepend(modem_list, modem);
 
 	ofono_modem_register(modem);
+#endif
 
 	return 0;
 }
