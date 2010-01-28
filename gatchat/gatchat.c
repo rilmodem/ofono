@@ -78,6 +78,7 @@ struct _GAtChat {
 	gpointer user_disconnect_data;		/* user disconnect data */
 	struct ring_buffer *buf;		/* Current read buffer */
 	guint read_so_far;			/* Number of bytes processed */
+	guint max_read_attempts;		/* max number of read attempts */
 	GAtDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
 	char *pdu_notify;			/* Unsolicited Resp w/ PDU */
@@ -694,6 +695,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	gsize rbytes;
 	gsize toread;
 	gsize total_read = 0;
+	guint read_count = 0;
 
 	if (cond & G_IO_NVAL)
 		return FALSE;
@@ -702,8 +704,10 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	do {
 		toread = ring_buffer_avail_no_wrap(chat->buf);
 
-		if (toread == 0)
+		if (toread == 0) {
+			err = G_IO_ERROR_NONE;
 			break;
+		}
 
 		rbytes = 0;
 		buf = ring_buffer_write_ptr(chat->buf);
@@ -712,12 +716,15 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,
 					chat->debugf, chat->debug_data);
 
+		read_count++;
+
 		total_read += rbytes;
 
 		if (rbytes > 0)
 			ring_buffer_write_advance(chat->buf, rbytes);
 
-	} while (err == G_IO_ERROR_NONE && rbytes > 0);
+	} while (err == G_IO_ERROR_NONE && rbytes > 0 &&
+					read_count < chat->max_read_attempts);
 
 	if (total_read > 0)
 		new_bytes(chat);
@@ -901,6 +908,8 @@ GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax)
 	chat->next_cmd_id = 1;
 	chat->next_notify_id = 1;
 	chat->debugf = NULL;
+
+	chat->max_read_attempts = 1;
 
 	chat->buf = ring_buffer_new(4096);
 
