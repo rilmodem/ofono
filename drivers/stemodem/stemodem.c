@@ -36,16 +36,16 @@
 
 static int stemodem_init(void)
 {
-	ste_gprs_context_init();
 	ste_voicecall_init();
+	ste_gprs_context_init();
 
 	return 0;
 }
 
 static void stemodem_exit(void)
 {
-	ste_gprs_context_exit();
 	ste_voicecall_exit();
+	ste_gprs_context_exit();
 }
 
 OFONO_PLUGIN_DEFINE(stemodem, "STE modem driver", VERSION,

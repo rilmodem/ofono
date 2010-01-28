@@ -158,8 +158,8 @@ builtin_modules += stemodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/stemodem.h \
 			drivers/stemodem/stemodem.c \
-			drivers/stemodem/gprs-context.c \
 			drivers/stemodem/voicecall.c \
+			drivers/stemodem/gprs-context.c \
 			drivers/stemodem/caif_socket.h \
 			drivers/stemodem/if_caif.h
 
