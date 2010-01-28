@@ -198,7 +198,7 @@ static void ste_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	ofono_sim_create(modem, 0, "atmodem", data->chat);
-	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
+	ofono_voicecall_create(modem, 0, "stemodem", data->chat);
 }
 
 static void ste_post_sim(struct ofono_modem *modem)
