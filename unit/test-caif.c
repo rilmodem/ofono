@@ -24,6 +24,7 @@
 #endif
 
 #include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +38,19 @@
 #include <drivers/stemodem/if_caif.h>
 
 static GMainLoop *mainloop;
+
+static int do_open(void)
+{
+	int fd;
+
+	fd = open("/dev/chnlat10", O_RDWR);
+	if (fd < 0) {
+		g_printerr("Open of chnlat10 failed (%d)\n", errno);
+		return -EIO;
+	}
+
+	return fd;
+}
 
 static int do_connect(void)
 {
@@ -86,18 +100,22 @@ static void caif_init(gboolean ok, GAtResult *result, gpointer data)
 	g_main_loop_quit(mainloop);
 }
 
-static void test_connect(void)
+static void test_connect(gboolean use_socket)
 {
 	GIOChannel *io;
 	GAtChat *chat;
 	GAtSyntax *syntax;
-	int sk;
+	int fd;
 
-	sk = do_connect();
-	if (sk < 0)
+	if (use_socket == TRUE)
+		fd = do_connect();
+	else
+		fd = do_open();
+
+	if (fd < 0)
 		return;
 
-	io = g_io_channel_unix_new(sk);
+	io = g_io_channel_unix_new(fd);
 	g_io_channel_set_close_on_unref(io, TRUE);
 
 	syntax = g_at_syntax_new_gsm_permissive();
@@ -123,7 +141,18 @@ static void test_connect(void)
 static void test_basic(void)
 {
 	if (g_test_trap_fork(60 * 1000 * 1000, 0) == TRUE) {
-		test_connect();
+		test_connect(TRUE);
+		exit(0);
+	}
+
+	g_test_trap_assert_passed();
+	//g_test_trap_assert_stderr("failed");
+}
+
+static void test_chnlat(void)
+{
+	if (g_test_trap_fork(60 * 1000 * 1000, 0) == TRUE) {
+		test_connect(FALSE);
 		exit(0);
 	}
 
@@ -136,6 +165,7 @@ int main(int argc, char **argv)
 	g_test_init(&argc, &argv, NULL);
 
 	g_test_add_func("/testcaif/basic", test_basic);
+	g_test_add_func("/testcaif/chnlat", test_chnlat);
 
 	return g_test_run();
 }
