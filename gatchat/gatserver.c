@@ -389,11 +389,6 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	server->ref_count = 1;
 	v250_settings_create(&server->v250);
 	server->server_io = io;
-	server->read_so_far = 0;
-	server->user_disconnect = NULL;
-	server->user_disconnect_data = NULL;
-	server->debugf = NULL;
-	server->debug_data = NULL;
 	server->buf = ring_buffer_new(4096);
 	server->max_read_attempts = 3;
 
@@ -403,8 +398,7 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	if (!g_at_util_setup_io(server->server_io, G_IO_FLAG_NONBLOCK))
 		goto error;
 
-	server->server_watch = g_io_add_watch_full(io,
-				G_PRIORITY_DEFAULT,
+	server->server_watch = g_io_add_watch_full(io, G_PRIORITY_DEFAULT,
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				received_data, server,
 				(GDestroyNotify)server_watcher_destroy_notify);
