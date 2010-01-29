@@ -32,24 +32,30 @@
 #include "ringbuffer.h"
 #include "gatserver.h"
 
-struct result_codes {
-	const char *v1;
-	unsigned int v0;
-};
-
 /* V.250 Table 1/V.250 Result codes */
-static struct result_codes at_server_result_codes[] = {
-	{ "OK",			0, },
-	{ "CONNECT",		1, },
-	{ "RING",		2, },
-	{ "NO CARRIER",		3, },
-	{ "ERROR",		4, },
-	{ "NO DIALTONE",	5, },
-	{ "BUSY",		6, },
-	{ "NO ANSWER",		7, },
-	{ "CONNECT",		8, },
-	{ NULL },
-};
+static const char *server_result_to_string(GAtServerResult result)
+{
+	switch (result) {
+	case G_AT_SERVER_RESULT_OK:
+		return "OK";
+	case G_AT_SERVER_RESULT_CONNECT:
+		return "CONNECT";
+	case G_AT_SERVER_RESULT_RING:
+		return "RING";
+	case G_AT_SERVER_RESULT_NO_CARRIER:
+		return "NO CARRIER";
+	case G_AT_SERVER_RESULT_ERROR:
+		return "ERROR";
+	case G_AT_SERVER_RESULT_NO_DIALTONE:
+		return "NO DIALTONE";
+	case G_AT_SERVER_RESULT_BUSY:
+		return "BUSY";
+	case G_AT_SERVER_RESULT_NO_ANSWER:
+		return "NO ANSWER";
+	default:
+		return NULL;
+	}
+}
 
 /* Basic command setting for V.250 */
 struct v250_settings {
@@ -79,33 +85,25 @@ struct _GAtServer {
 
 static int at_server_parse(GAtServer *server, char *buf);
 
-static void g_at_server_send_result_code(GAtServer *server, int error)
+static void g_at_server_send_result(GAtServer *server, GAtServerResult result)
 {
 	struct v250_settings v250 = server->v250;
+	const char *result_str = server_result_to_string(result);
 	char buf[1024];
-	char text[1024];
 	char t = v250.s3;
 	char r = v250.s4;
-	struct result_codes c;
 	gsize wbuf;
-
-	memset(buf, 0, sizeof(buf));
-	memset(text, 0, sizeof(text));
 
 	if (v250.quiet)
 		return;
 
-	c = at_server_result_codes[error];
+	if (result_str == NULL)
+		return;
 
 	if (v250.is_v1)
-		sprintf(text, "%s", c.v1);
+		sprintf(buf, "%c%c%s%c%c", t, r, result_str, t, r);
 	else
-		sprintf(text, "%d", c.v0);
-
-	if (v250.is_v1)
-		sprintf(buf, "%c%c%s%c%c", t, r, text, t, r);
-	else
-		sprintf(buf, "%s%c", text, t);
+		sprintf(buf, "%u%c", (unsigned int) result, t);
 
 	g_at_util_debug_chat(FALSE, buf, strlen(buf),
 				server->debugf, server->debug_data);
@@ -190,7 +188,7 @@ static void parse_buffer(GAtServer *server, char *buf)
 				g_str_has_prefix(buf, "at"))
 		res = at_server_parse(server, (char *) buf + 2);
 
-	g_at_server_send_result_code(server, res);
+	g_at_server_send_result(server, res);
 
 	/* We're overflowing the buffer, shutdown the socket */
 	if (server->buf && ring_buffer_avail(server->buf) == 0)
