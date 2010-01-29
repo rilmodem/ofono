@@ -107,8 +107,8 @@ static void g_at_server_send_result_code(GAtServer *server, int error)
 	else
 		sprintf(buf, "%s%c", text, t);
 
-	g_at_util_debug_chat(server->debugf, FALSE, buf, strlen(buf),
-							server->debug_data);
+	g_at_util_debug_chat(FALSE, buf, strlen(buf),
+				server->debugf, server->debug_data);
 
 	g_io_channel_write(server->server_io, (char *) buf, strlen(buf),
 							&wbuf);
@@ -179,8 +179,8 @@ static void parse_buffer(GAtServer *server, char *buf)
 	if (!buf)
 		return;
 
-	g_at_util_debug_chat(server->debugf, TRUE, (char *) buf,
-					strlen(buf), server->debug_data);
+	g_at_util_debug_chat(TRUE, (char *) buf, strlen(buf),
+				server->debugf, server->debug_data);
 
 	/* skip header space */
 	buf += skip_space(buf, i);
@@ -324,8 +324,8 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		buf = ring_buffer_write_ptr(server->buf);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
-		g_at_util_debug_chat(server->debugf, TRUE, (char *)buf, rbytes,
-							server->debug_data);
+		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,
+					server->debugf, server->debug_data);
 
 		if (rbytes > 0) {
 			ring_buffer_write_advance(server->buf, rbytes);
@@ -394,7 +394,7 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	if (!server->buf)
 		goto error;
 
-	if (!g_at_util_setup_io(server->server_io))
+	if (!g_at_util_setup_io(server->server_io, G_IO_FLAG_NONBLOCK))
 		goto error;
 
 	server->server_watch = g_io_add_watch_full(io,
