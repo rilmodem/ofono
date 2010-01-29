@@ -81,6 +81,7 @@ struct _GAtServer {
 	GAtDebugFunc debugf;			/* Debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
 	struct ring_buffer *buf;		/* Current read buffer */
+	guint max_read_attempts;		/* Max reads per select */
 };
 
 static int at_server_parse(GAtServer *server, char *buf);
@@ -308,6 +309,8 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	GIOError err;
 	gsize rbytes;
 	gsize toread;
+	guint total_read = 0;
+	guint read_count = 0;
 
 	if (cond & G_IO_NVAL)
 		return FALSE;
@@ -325,18 +328,22 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,
 					server->debugf, server->debug_data);
 
-		if (rbytes > 0) {
+		read_count++;
+
+		total_read += rbytes;
+
+		if (rbytes > 0)
 			ring_buffer_write_advance(server->buf, rbytes);
+	} while (err == G_IO_ERROR_NONE && rbytes > 0 &&
+					read_count < server->max_read_attempts);
 
-			new_bytes(server);
-		}
-
-	} while (err == G_IO_ERROR_NONE && rbytes > 0);
+	if (total_read > 0)
+		new_bytes(server);
 
 	if (cond & (G_IO_HUP | G_IO_ERR))
 		return FALSE;
 
-	if (rbytes == 0 && err != G_IO_ERROR_AGAIN)
+	if (read_count > 0 && rbytes == 0 && err != G_IO_ERROR_AGAIN)
 		return FALSE;
 
 	return TRUE;
@@ -388,6 +395,7 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	server->debugf = NULL;
 	server->debug_data = NULL;
 	server->buf = ring_buffer_new(4096);
+	server->max_read_attempts = 3;
 
 	if (!server->buf)
 		goto error;
