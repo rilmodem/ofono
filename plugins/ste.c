@@ -157,7 +157,7 @@ static int ste_enable(struct ofono_modem *modem)
 
 	syntax = g_at_syntax_new_gsm_permissive();
 
-	data->chat = g_at_chat_new(channel, syntax);
+	data->chat = g_at_chat_new_blocking(channel, syntax);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
