@@ -121,6 +121,7 @@ static struct {
 	{ "phonesim",	set_address	},
 	{ "atgen",	set_device	},
 	{ "g1",		set_device	},
+	{ "ste",	set_device	},
 	{ "calypso",	set_device	},
 	{ "palmpre",	set_device	},
 	{ NULL }

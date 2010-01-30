@@ -25,6 +25,8 @@
 #endif
 
 #include <errno.h>
+#include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -110,29 +112,42 @@ static int ste_enable(struct ofono_modem *modem)
 	struct ste_data *data = ofono_modem_get_data(modem);
 	GIOChannel *channel;
 	GAtSyntax *syntax;
-	int fd, err;
-	struct sockaddr_caif addr;
+	const char *device;
+	int fd;
 
 	DBG("%p", modem);
 
-	/* Create a CAIF socket for AT Service */
-	fd = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
-	if (fd < 0) {
-		ofono_error("Failed to create CAIF socket for AT");
-		return -EIO;
+	device = ofono_modem_get_string(modem, "Device");
+	if (!device) {
+		struct sockaddr_caif addr;
+		int err;
+
+		/* Create a CAIF socket for AT Service */
+		fd = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
+		if (fd < 0) {
+			ofono_error("Failed to create CAIF socket for AT");
+			return -EIO;
+		}
+
+		memset(&addr, 0, sizeof(addr));
+		addr.family = AF_CAIF;
+		addr.u.at.type = CAIF_ATTYPE_PLAIN;
+
+		/* Connect to the AT Service at the modem */
+		err = connect(fd, (struct sockaddr *) &addr, sizeof(addr));
+		if (err < 0) {
+			ofono_error("Failed to connect CAIF socket for AT");
+			close(fd);
+			return err;
+		}
+	} else {
+		fd = open(device, O_RDWR);
+		if (fd < 0) {
+			ofono_error("Failed to open device %s", device);
+			return -EIO;
+		}
 	}
 
-	memset(&addr, 0, sizeof(addr));
-	addr.family = AF_CAIF;
-	addr.u.at.type = CAIF_ATTYPE_PLAIN;
-
-	/* Connect to the AT Service at the modem */
-	err = connect(fd, (struct sockaddr *) &addr, sizeof(addr));
-	if (err < 0) {
-		ofono_error("Failed to connect CAIF socket for AT");
-		close(fd);
-		return err;
-	}
 	channel = g_io_channel_unix_new(fd);
 	if (!channel)  {
 		close(fd);
