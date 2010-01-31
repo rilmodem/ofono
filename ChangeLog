@@ -1,3 +1,10 @@
+ver 0.17:
+	Add support for ST-Ericsson based modems.
+	Add support for processing CBS even if no EFcbmid.
+	Add support for devices with CSCB mode 0 only.
+	Add support for Handsfree devices via BlueZ.
+	Add CID and LAC quirk handling for Huawei modems.
+
 ver 0.16:
 	Fix unregister of operators with null MCC/MNC.
 	Fix CPHS mailbox usage for 3GPP SIM cards.
