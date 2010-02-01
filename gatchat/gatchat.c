@@ -758,6 +758,9 @@ static gboolean wakeup_no_response(gpointer user)
 	if (chat->debugf)
 		chat->debugf("Wakeup got no response\n", chat->debug_data);
 
+	if (cmd == NULL)
+		return FALSE;
+
 	g_at_chat_finish_command(chat, FALSE, NULL);
 	cmd = at_command_create(chat->wakeup, none_prefix, FALSE,
 				NULL, wakeup_cb, chat, NULL, TRUE);
