@@ -32,6 +32,22 @@
 #include "ringbuffer.h"
 #include "gatserver.h"
 
+enum ParserState {
+	PARSER_STATE_IDLE,
+	PARSER_STATE_A,
+	PARSER_STATE_SLASH,
+	PARSER_STATE_COMMAND,
+	PARSER_STATE_GARBAGE,
+};
+
+enum ParserResult {
+	PARSER_RESULT_COMMAND,
+	PARSER_RESULT_EMPTY_COMMAND,
+	PARSER_RESULT_REPEAT_LAST,
+	PARSER_RESULT_GARBAGE,
+	PARSER_RESULT_UNSURE,
+};
+
 /* V.250 Table 1/V.250 Result codes */
 static const char *server_result_to_string(GAtServerResult result)
 {
@@ -82,9 +98,8 @@ struct _GAtServer {
 	gpointer debug_data;			/* Data to pass to debug func */
 	struct ring_buffer *buf;		/* Current read buffer */
 	guint max_read_attempts;		/* Max reads per select */
+	enum ParserState parser_state;
 };
-
-static int at_server_parse(GAtServer *server, char *buf);
 
 static void g_at_server_send_result(GAtServer *server, GAtServerResult result)
 {
@@ -113,111 +128,155 @@ static void g_at_server_send_result(GAtServer *server, GAtServerResult result)
 							&wbuf);
 }
 
-static gsize skip_space(const char *buf, gsize pos)
-{
-	gsize i = pos;
-	char c = buf[i];
-
-	while (c == ' ')
-		c = buf[++i];
-
-	return i;
-}
-
 static inline gboolean is_at_command_prefix(const char c)
 {
-	if (c == '&')
+	switch (c) {
+	case '+':
+	case '*':
+	case '!':
+	case '%':
+		return TRUE;
+	default:
 		return FALSE;
-
-	return g_ascii_ispunct(c);
+	}
 }
 
-static int parse_at_command(GAtServer *server, char *buf)
+static void parse_at_command(GAtServer *server, char *buf)
 {
-	int res = G_AT_SERVER_RESULT_ERROR;
-
-	return res;
+	g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static int parse_v250_settings(GAtServer *server, char *buf)
+static void parse_v250_settings(GAtServer *server, char *buf)
 {
-	int res = G_AT_SERVER_RESULT_ERROR;
-
-	return res;
+	g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static int at_server_parse(GAtServer *server, char *buf)
+static void server_parse_line(GAtServer *server, char *line)
 {
-	int res = G_AT_SERVER_RESULT_ERROR;
 	gsize i = 0;
 	char c;
 
-	/* skip space after "AT" or previous command */
-	i = skip_space(buf, i);
+	if (line == NULL) {
+		g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
+		goto done;
+	}
 
-	c = buf[i];
+	if (line[0] == '\0') {
+		g_at_server_send_result(server, G_AT_SERVER_RESULT_OK);
+		goto done;
+	}
+
+	c = line[i];
 	/* skip semicolon */
 	if (c == ';')
-		c = buf[++i];
+		c = line[++i];
 
 	if (is_at_command_prefix(c) || c == 'A' || c == 'D' || c == 'H')
-		res = parse_at_command(server, buf + i);
+		parse_at_command(server, line + i);
 	else if (g_ascii_isalpha(c) || c == '&')
-		res = parse_v250_settings(server, buf + i);
-	else if (c == '\0')
-		res = G_AT_SERVER_RESULT_OK;
+		parse_v250_settings(server, line + i);
+	else
+		g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
 
+done:
+	g_free(line);
+}
+
+static enum ParserResult server_feed(GAtServer *server,
+					const char *bytes, gsize *len)
+{
+	gsize i = 0;
+	enum ParserResult res = PARSER_RESULT_UNSURE;
+	char s3 = server->v250.s3;
+
+	while (i < *len) {
+		char byte = bytes[i];
+
+		switch (server->parser_state) {
+		case PARSER_STATE_IDLE:
+			if (byte == s3) {
+				i += 1;
+				res = PARSER_RESULT_EMPTY_COMMAND;
+				goto out;
+			} else if (byte == '\n') {
+				i += 1;
+				res = PARSER_RESULT_GARBAGE;
+				goto out;
+			} else if (byte == 'A' || byte == 'a')
+				server->parser_state = PARSER_STATE_A;
+			else if (byte != ' ' && byte != '\t')
+				server->parser_state = PARSER_STATE_GARBAGE;
+			break;
+
+		case PARSER_STATE_A:
+			if (byte == s3) {
+				server->parser_state = PARSER_STATE_IDLE;
+				i += 1;
+				res = PARSER_RESULT_GARBAGE;
+				goto out;
+			} else if (byte == '/')
+				server->parser_state = PARSER_STATE_SLASH;
+			else if (byte == 'T' || byte == 't')
+				server->parser_state = PARSER_STATE_COMMAND;
+			else
+				server->parser_state = PARSER_STATE_GARBAGE;
+
+			break;
+
+		case PARSER_STATE_SLASH:
+			if (byte == s3) {
+				server->parser_state = PARSER_STATE_IDLE;
+				i+= 1;
+				res = PARSER_RESULT_REPEAT_LAST;
+				goto out;
+			} else if (byte != ' ' && byte != '\t')
+				server->parser_state = PARSER_STATE_GARBAGE;
+
+			break;
+
+		case PARSER_STATE_COMMAND:
+			if (byte == s3) {
+				server->parser_state = PARSER_STATE_IDLE;
+				i += 1;
+				res = PARSER_RESULT_COMMAND;
+				goto out;
+			}
+			break;
+
+		case PARSER_STATE_GARBAGE:
+			if (byte == s3) {
+				server->parser_state = PARSER_STATE_IDLE;
+
+				i += 1;
+				res = PARSER_RESULT_GARBAGE;
+				goto out;
+			}
+			break;
+
+		default:
+			break;
+		};
+
+		i += 1;
+	}
+
+out:
+	*len = i;
 	return res;
 }
 
-static void parse_buffer(GAtServer *server, char *buf)
-{
-	int res = G_AT_SERVER_RESULT_ERROR;
-	gsize i = 0;
-
-	if (!buf)
-		return;
-
-	g_at_util_debug_chat(TRUE, (char *) buf, strlen(buf),
-				server->debugf, server->debug_data);
-
-	/* skip header space */
-	buf += skip_space(buf, i);
-
-	/* Make sure the command line prefix is "AT" or "at" */
-	if (g_str_has_prefix(buf, "AT") ||
-				g_str_has_prefix(buf, "at"))
-		res = at_server_parse(server, (char *) buf + 2);
-
-	g_at_server_send_result(server, res);
-
-	/* We're overflowing the buffer, shutdown the socket */
-	if (server->buf && ring_buffer_avail(server->buf) == 0)
-		g_at_server_shutdown(server);
-
-	if (buf)
-		g_free(buf);
-}
-
-static char *extract_line(GAtServer *p, unsigned int *unread)
+static char *extract_line(GAtServer *p)
 {
 	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
 	unsigned int pos = 0;
 	unsigned char *buf = ring_buffer_read_ptr(p->buf, pos);
-	char s3 = p->v250.s3;
-	char s4 = p->v250.s4;
+	int strip_front = 0;
+	int line_length = 0;
 	char *line;
 
-	int strip_front = 0;
-	int strip_tail = 0;
-	int line_length = 0;
-
 	while (pos < p->read_so_far) {
-		if (*buf == s3 || *buf == s4)
-			if (!line_length)
+		if (line_length == 0 && (*buf == ' ' || *buf == '\t'))
 				strip_front += 1;
-			else
-				break;
 		else
 			line_length += 1;
 
@@ -228,10 +287,8 @@ static char *extract_line(GAtServer *p, unsigned int *unread)
 			buf = ring_buffer_read_ptr(p->buf, pos);
 	}
 
-	if (!line_length) {
-		ring_buffer_drain(p->buf, strip_front);
-		return NULL;
-	}
+	/* We will strip AT and \r */
+	line_length -= 3;
 
 	line = g_try_new(char, line_length + 1);
 
@@ -240,27 +297,13 @@ static char *extract_line(GAtServer *p, unsigned int *unread)
 		return NULL;
 	}
 
-	ring_buffer_drain(p->buf, strip_front);
+	/* Strip leading whitespace + AT */
+	ring_buffer_drain(p->buf, strip_front + 2);
 	ring_buffer_read(p->buf, line, line_length);
+	/* Strip \r */
+	ring_buffer_drain(p->buf, 1);
 
 	line[line_length] = '\0';
-
-	while (pos < p->read_so_far) {
-		if (*buf == s3 || *buf == s4)
-			strip_tail += 1;
-		else
-			break;
-
-		buf += 1;
-		pos += 1;
-
-		if (pos == wrap)
-			buf = ring_buffer_read_ptr(p->buf, pos);
-	}
-
-	ring_buffer_drain(p->buf, strip_tail);
-
-	*unread = p->read_so_far - strip_front - line_length - strip_tail;
 
 	return line;
 }
@@ -270,35 +313,56 @@ static void new_bytes(GAtServer *p)
 	unsigned int len = ring_buffer_len(p->buf);
 	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
 	unsigned char *buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
-	char s3 = p->v250.s3;
+	enum ParserState result;
 
-	while (p->read_so_far < len) {
+	while (p->server_io && (p->read_so_far < len)) {
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
-		unsigned char *s3_pos = memchr(buf, s3, rbytes);
-		char *line = NULL;
-		unsigned int unread = 0;
+		result = server_feed(p, (char *)buf, &rbytes);
 
+		buf += rbytes;
 		p->read_so_far += rbytes;
-
-		if (s3_pos)
-			line = extract_line(p, &unread);
-
-		buf += rbytes - unread;
-		p->read_so_far -= unread;
 
 		if (p->read_so_far == wrap) {
 			buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
 			wrap = len;
 		}
 
-		if (s3_pos) {
-			parse_buffer(p, line);
+		if (result == PARSER_RESULT_UNSURE)
+			continue;
 
-			len -= p->read_so_far;
-			wrap -= p->read_so_far;
-			p->read_so_far = 0;
+		switch (result) {
+		case PARSER_RESULT_EMPTY_COMMAND:
+			/*
+			 * According to section 5.2.4 and 5.6 of V250,
+			 * Empty commands must be OK by the DCE
+			 */
+			g_at_server_send_result(p, G_AT_SERVER_RESULT_OK);
+			ring_buffer_drain(p->buf, p->read_so_far);
+			break;
+
+		case PARSER_RESULT_COMMAND:
+			server_parse_line(p, extract_line(p));
+			break;
+
+		case PARSER_RESULT_REPEAT_LAST:
+			/* TODO */
+			g_at_server_send_result(p, G_AT_SERVER_RESULT_OK);
+			ring_buffer_drain(p->buf, p->read_so_far);
+			break;
+
+		default:
+			ring_buffer_drain(p->buf, p->read_so_far);
+			break;
 		}
+
+		len -= p->read_so_far;
+		wrap -= p->read_so_far;
+		p->read_so_far = 0;
 	}
+
+	/* We're overflowing the buffer, shutdown the socket */
+	if (p->buf && ring_buffer_avail(p->buf) == 0)
+		g_source_remove(p->server_watch);
 }
 
 static gboolean received_data(GIOChannel *channel, GIOCondition cond,
