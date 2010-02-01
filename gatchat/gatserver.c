@@ -272,14 +272,21 @@ static char *extract_line(GAtServer *p)
 	unsigned char *buf = ring_buffer_read_ptr(p->buf, pos);
 	int strip_front = 0;
 	int line_length = 0;
+	gboolean in_string = FALSE;
 	char *line;
+	int i;
 
 	while (pos < p->read_so_far) {
-		if (line_length == 0 && (*buf == ' ' || *buf == '\t'))
+		if (*buf == '"')
+			in_string = !in_string;
+
+		if (in_string == FALSE && (*buf == ' ' || *buf == '\t')) {
+			if (line_length == 0)
 				strip_front += 1;
-		else
+		} else
 			line_length += 1;
 
+next:
 		buf += 1;
 		pos += 1;
 
@@ -299,11 +306,32 @@ static char *extract_line(GAtServer *p)
 
 	/* Strip leading whitespace + AT */
 	ring_buffer_drain(p->buf, strip_front + 2);
-	ring_buffer_read(p->buf, line, line_length);
-	/* Strip \r */
-	ring_buffer_drain(p->buf, 1);
 
-	line[line_length] = '\0';
+	pos = 0;
+	i = 0;
+	wrap = ring_buffer_len_no_wrap(p->buf);
+	buf = ring_buffer_read_ptr(p->buf, pos);
+
+	while (pos < (p->read_so_far - strip_front - 2)) {
+		if (*buf == '"')
+			in_string = !in_string;
+
+		if ((*buf == ' ' || *buf == '\t') && in_string == FALSE)
+			; /* Skip */
+		else if (*buf != '\r')
+			line[i++] = *buf;
+
+		buf += 1;
+		pos += 1;
+
+		if (pos == wrap)
+			buf = ring_buffer_read_ptr(p->buf, pos);
+	}
+
+	/* Strip \r */
+	ring_buffer_drain(p->buf, p->read_so_far - strip_front - 2);
+
+	line[i] = '\0';
 
 	return line;
 }
