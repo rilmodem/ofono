@@ -353,8 +353,7 @@ static gboolean g_at_chat_match_notify(GAtChat *chat, char *line)
 	return ret;
 }
 
-static void g_at_chat_finish_command(GAtChat *p, gboolean ok,
-						char *final)
+static void g_at_chat_finish_command(GAtChat *p, gboolean ok, char *final)
 {
 	struct at_command *cmd = g_queue_pop_head(p->command_queue);
 	GSList *response_lines;
