@@ -157,13 +157,10 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	client_io = g_io_channel_unix_new(fd);
 
 	server = g_at_server_new(client_io);
+	g_io_channel_unref(client_io);
 
-	if (!server) {
-		g_io_channel_shutdown(client_io, FALSE, NULL);
-		g_io_channel_unref(client_io);
-
+	if (!server)
 		goto error;
-	}
 
 	add_handler(server);
 
