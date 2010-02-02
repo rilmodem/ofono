@@ -286,7 +286,6 @@ static char *extract_line(GAtServer *p)
 		} else
 			line_length += 1;
 
-next:
 		buf += 1;
 		pos += 1;
 
