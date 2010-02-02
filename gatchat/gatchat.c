@@ -312,7 +312,6 @@ static gboolean g_at_chat_match_notify(GAtChat *chat, char *line)
 {
 	GHashTableIter iter;
 	struct at_notify *notify;
-	char *prefix;
 	gpointer key, value;
 	gboolean ret = FALSE;
 	GAtResult result;
@@ -322,7 +321,6 @@ static gboolean g_at_chat_match_notify(GAtChat *chat, char *line)
 	result.final_or_pdu = 0;
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
-		prefix = key;
 		notify = value;
 
 		if (!g_str_has_prefix(line, key))
@@ -1259,7 +1257,6 @@ gboolean g_at_chat_unregister(GAtChat *chat, guint id)
 {
 	GHashTableIter iter;
 	struct at_notify *notify;
-	char *prefix;
 	gpointer key, value;
 	GSList *l;
 
@@ -1269,7 +1266,6 @@ gboolean g_at_chat_unregister(GAtChat *chat, guint id)
 	g_hash_table_iter_init(&iter, chat->notify_list);
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
-		prefix = key;
 		notify = value;
 
 		l = g_slist_find_custom(notify->nodes, GUINT_TO_POINTER(id),
@@ -1294,7 +1290,6 @@ gboolean g_at_chat_unregister_all(GAtChat *chat)
 {
 	GHashTableIter iter;
 	struct at_notify *notify;
-	char *prefix;
 	gpointer key, value;
 	GSList *l;
 
@@ -1304,7 +1299,6 @@ gboolean g_at_chat_unregister_all(GAtChat *chat)
 	g_hash_table_iter_init(&iter, chat->notify_list);
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
-		prefix = key;
 		notify = value;
 
 		for (l = notify->nodes; l; l = l->next)
