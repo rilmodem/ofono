@@ -35,7 +35,6 @@
 enum ParserState {
 	PARSER_STATE_IDLE,
 	PARSER_STATE_A,
-	PARSER_STATE_SLASH,
 	PARSER_STATE_COMMAND,
 	PARSER_STATE_GARBAGE,
 };
@@ -214,22 +213,14 @@ static enum ParserResult server_feed(GAtServer *server,
 				i += 1;
 				res = PARSER_RESULT_GARBAGE;
 				goto out;
-			} else if (byte == '/')
-				server->parser_state = PARSER_STATE_SLASH;
-			else if (byte == 'T' || byte == 't')
-				server->parser_state = PARSER_STATE_COMMAND;
-			else
-				server->parser_state = PARSER_STATE_GARBAGE;
-
-			break;
-
-		case PARSER_STATE_SLASH:
-			if (byte == s3) {
+			} else if (byte == '/') {
 				server->parser_state = PARSER_STATE_IDLE;
-				i+= 1;
+				i += 1;
 				res = PARSER_RESULT_REPEAT_LAST;
 				goto out;
-			} else if (byte != ' ' && byte != '\t')
+			} else if (byte == 'T' || byte == 't')
+				server->parser_state = PARSER_STATE_COMMAND;
+			else
 				server->parser_state = PARSER_STATE_GARBAGE;
 
 			break;
@@ -246,7 +237,6 @@ static enum ParserResult server_feed(GAtServer *server,
 		case PARSER_STATE_GARBAGE:
 			if (byte == s3) {
 				server->parser_state = PARSER_STATE_IDLE;
-
 				i += 1;
 				res = PARSER_RESULT_GARBAGE;
 				goto out;
