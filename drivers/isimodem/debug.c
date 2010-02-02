@@ -50,7 +50,7 @@ const char *pn_resource_name(int value)
 		_(PN_SIM);
 		_(PN_MTC);
 	}
-	return "<UNKNOWN>";
+	return "PN_<UNKNOWN>";
 }
 
 const char *ss_message_id_name(enum ss_message_id value)
@@ -61,7 +61,7 @@ const char *ss_message_id_name(enum ss_message_id value)
 		_(SS_SERVICE_FAILED_RESP);
 		_(SS_COMMON_MESSAGE);
 	}
-	return "<UNKNOWN>";
+	return "SS_<UNKNOWN>";
 }
 
 const char *ss_subblock_name(enum ss_subblock value)
@@ -79,7 +79,7 @@ const char *ss_subblock_name(enum ss_subblock value)
 		_(SS_GSM_INDICATE_ERROR);
 		_(SS_GSM_ADDITIONAL_INFO);
 	}
-	return "<UNKNOWN>";
+	return "SS_<UNKNOWN>";
 }
 
 const char *mtc_isi_cause_name(enum mtc_isi_cause value)
@@ -96,7 +96,7 @@ const char *mtc_isi_cause_name(enum mtc_isi_cause value)
 		_(MTC_TRANSITION_ONGOING);
 		_(MTC_RESET_REQUIRED);
 	}
-	return "<UNKNOWN>";
+	return "MTC_<UNKNOWN>";
 }
 
 const char *mtc_message_id_name(enum mtc_message_id value)
@@ -111,7 +111,7 @@ const char *mtc_message_id_name(enum mtc_message_id value)
 		_(MTC_STATE_INFO_IND);
 		_(MTC_COMMON_MESSAGE);
 	}
-	return "<UNKNOWN>";
+	return "MTC_<UNKNOWN>";
 }
 
 const char *mtc_modem_state_name(enum mtc_modem_state value)
@@ -134,7 +134,7 @@ const char *mtc_modem_state_name(enum mtc_modem_state value)
 		_(MTC_SW_RESET);
 		_(MTC_CMT_ONLY_MODE);
 	}
-	return "<UNKNOWN>";
+	return "MTC_<UNKNOWN>";
 }
 
 const char *sms_isi_cause_name(enum sms_isi_cause value)
@@ -162,7 +162,7 @@ const char *sms_isi_cause_name(enum sms_isi_cause value)
 		_(SMS_ERR_SAT_MO_CONTROL_REJECT);
 		_(SMS_ERR_TRACFONE_FAILED);
 	}
-	return "<UNKNOWN>";
+	return "SMS_<UNKNOWN>";
 }
 
 const char *sms_gsm_cause_name(enum sms_gsm_cause value)
@@ -221,7 +221,7 @@ const char *sms_gsm_cause_name(enum sms_gsm_cause value)
 		_(SMS_GSM_ERR_CS_BARRED);
 		_(SMS_GSM_ERR_LOW_LAYER_PROTOCOL_ERROR);
 	}
-	return "<UNKNOWN>";
+	return "SMS_<UNKNOWN>";
 }
 
 const char *sms_message_id_name(enum sms_message_id value)
@@ -237,7 +237,7 @@ const char *sms_message_id_name(enum sms_message_id value)
 		_(SMS_GSM_CB_ROUTING_NTF);
 		_(SMS_COMMON_MESSAGE);
 	}
-	return "<UNKNOWN>";
+	return "SMS_<UNKNOWN>";
 }
 
 const char *sms_subblock_name(enum sms_subblock value)
@@ -249,7 +249,7 @@ const char *sms_subblock_name(enum sms_subblock value)
 		_(SMS_GSM_COMMAND);
 		_(SMS_GSM_ROUTING);
 	}
-	return "<UNKNOWN>";
+	return "SMS_<UNKNOWN>";
 }
 
 const char *sim_isi_cause_name(enum sim_isi_cause value)
@@ -330,7 +330,7 @@ const char *sim_isi_cause_name(enum sim_isi_cause value)
 		_(SIM_SERV_CIPHERING_INDICATOR_DISPLAY_NOT_REQUIRED);
 		_(SIM_SERV_FILE_NOT_AVAILABLE);
 	}
-	return "<UNKNOWN>";
+	return "SIM_<UNKNOWN>";
 }
 
 const char *sim_message_id_name(enum sim_message_id value)
@@ -344,7 +344,7 @@ const char *sim_message_id_name(enum sim_message_id value)
 		_(SIM_PB_RESP_SIM_PB_READ);
 		_(SIM_COMMON_MESSAGE);
 	}
-	return "<UNKNOWN>";
+	return "SIM_<UNKNOWN>";
 }
 
 const char *sim_subblock_name(enum sim_subblock value)
@@ -355,7 +355,7 @@ const char *sim_subblock_name(enum sim_subblock value)
 		_(SIM_PB_LOCATION);
 		_(SIM_PB_LOCATION_SEARCH);
 	}
-	return "<UNKNOWN>";
+	return "SIM_<UNKNOWN>";
 }
 
 const char *info_isi_cause_name(enum info_isi_cause value)
@@ -366,7 +366,7 @@ const char *info_isi_cause_name(enum info_isi_cause value)
 		_(INFO_NO_NUMBER);
 		_(INFO_NOT_SUPPORTED);
 	}
-	return "<UNKNOWN>";
+	return "INFO_<UNKNOWN>";
 }
 
 const char *info_message_id_name(enum info_message_id value)
@@ -380,7 +380,7 @@ const char *info_message_id_name(enum info_message_id value)
 		_(INFO_PRODUCT_INFO_READ_RESP);
 		_(INFO_COMMON_MESSAGE);
 	}
-	return "<UNKNOWN>";
+	return "INFO_<UNKNOWN>";
 }
 
 const char *info_subblock_name(enum info_subblock value)
@@ -391,7 +391,7 @@ const char *info_subblock_name(enum info_subblock value)
 		_(INFO_SB_SN_IMEI_PLAIN);
 		_(INFO_SB_MCUSW_VERSION);
 	}
-	return "<UNKNOWN>";
+	return "INFO_<UNKNOWN>";
 }
 
 const char *call_status_name(enum call_status value)
@@ -415,7 +415,7 @@ const char *call_status_name(enum call_status value)
 		_(CALL_STATUS_TERMINATED);
 		_(CALL_STATUS_SWAP_INITIATED);
 	}
-	return "<UNKNOWN>";
+	return "CALL_<UNKNOWN>";
 }
 
 char const *call_message_id_name(enum call_message_id value)
@@ -504,7 +504,7 @@ char const *call_message_id_name(enum call_message_id value)
 		_(CALL_MEDIA_HANDLE_RESP);
 		_(CALL_COMMON_MESSAGE);
 	}
-	return "<UNKNOWN>";
+	return "CALL_<UNKNOWN>";
 }
 
 char const *call_isi_cause_name(enum call_isi_cause value)
@@ -562,7 +562,7 @@ char const *call_isi_cause_name(enum call_isi_cause value)
 		_(CALL_CAUSE_SECURE_CALL_NOT_POSSIBLE);
 		_(CALL_CAUSE_INTERCEPT);
 	}
-	return "<UNKNOWN>";
+	return "CALL_<UNKNOWN>";
 }
 
 char const *call_gsm_cause_name(enum call_gsm_cause value)
@@ -617,7 +617,7 @@ char const *call_gsm_cause_name(enum call_gsm_cause value)
 		_(CALL_GSM_CAUSE_PROTOCOL_ERROR);
 		_(CALL_GSM_CAUSE_INTERWORKING);
 	}
-	return "<UNKNOWN>";
+	return "CALL_<UNKNOWN>";
 }
 
 const char *net_gsm_cause_name(enum net_gsm_cause value)
@@ -655,7 +655,7 @@ const char *net_gsm_cause_name(enum net_gsm_cause value)
 		_(NET_GSM_MSG_TYPE_WRONG_STATE);
 		_(NET_GSM_PROTOCOL_ERROR_UNSPECIFIED);
 	}
-	return "<UNKNOWN>";
+	return "NET_<UNKNOWN>";
 }
 
 const char *net_isi_cause_name(enum net_isi_cause value)
@@ -685,7 +685,7 @@ const char *net_isi_cause_name(enum net_isi_cause value)
 		_(NET_CAUSE_SERVICE_NOT_ALLOWED);
 		_(NET_CAUSE_NOT_SUPPORTED_IN_TECH);
 	}
-	return "<UNKNOWN>";
+	return "NET_<UNKNOWN>";
 }
 
 const char *net_status_name(enum net_reg_status value)
@@ -703,7 +703,7 @@ const char *net_status_name(enum net_reg_status value)
 		_(NET_REG_STATUS_NSPS_NO_COVERAGE);
 		_(NET_REG_STATUS_NOSERV_SIM_REJECTED_BY_NW);
 	}
-	return "<UNKNOWN>";
+	return "NET_<UNKNOWN>";
 }
 
 const char *net_message_id_name(enum net_message_id value)
@@ -726,7 +726,7 @@ const char *net_message_id_name(enum net_message_id value)
 		_(NET_OPER_NAME_READ_RESP);
 		_(NET_COMMON_MESSAGE);
 	}
-	return "<UNKNOWN>";
+	return "NET_<UNKNOWN>";
 }
 
 const char *net_subblock_name(enum net_subblock value)
@@ -743,7 +743,7 @@ const char *net_subblock_name(enum net_subblock value)
 		_(NET_AVAIL_NETWORK_INFO_COMMON);
 		_(NET_OPER_NAME_INFO);
 	}
-	return "<UNKNOWN>";
+	return "NET_<UNKNOWN>";
 }
 
 #undef _
@@ -764,7 +764,7 @@ static void hex_dump(const char *name, const uint8_t m[], size_t len)
 		sprintf(hex + j, " %02X", m[i]), j += 3;
 		ascii[k++] = g_ascii_isgraph(m[i]) ? m[i] : '.';
 
-		if ((i & 15) == 15) {
+		if ((j & 48) == 48) {
 			ofono_debug("    *%-48s : %.*s", hex, (int)k, ascii);
 			j = 0, k = 0;
 		}
