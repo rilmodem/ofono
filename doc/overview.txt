@@ -87,26 +87,40 @@ Current implemented features:
 
 	Short message service
 
-		The SMS support is available, but is currently still missing
-		some integration with the driver framework.
+		The SMS support for text messages is available.  oFono
+		supports concatenated messages of up to 255 segments, UCS2 and
+		GSM alphabets as well as extended alphabets.  SMS status
+		report features are not yet available.
+		
+	SIM PIN handling
 
+		SIM PIN locks, network and service provider locks are
+		supported.
+
+	Cell Broadcast
+
+		Cell broadcasts should be fully supported by oFono, but have
+		not been well tested.  Base station name ids have been
+		confirmed to work.
+
+	GPRS
+
+		GPRS data connections are fully supported by oFono.  However
+		this support is currently limited to just one active GPRS
+		context (network interface).
 
 Work in progress features:
 
-	SIM PIN handling
+	USSD
 
-		At this moment only SIM cards with deactivated PIN request
-		are supported. The full support for SIM PIN is planned, but
-		not yet implemented.
+		User initiated USSD support is available, but not
+		network-initiated USSD support.
 
-	Cell broadcast and USSD
+	PPP
 
-		Both features are work in progress right now.
-
-	GPRS data connection
-
-		No work on this has been done so far, but it is planned
-		feature.
+		Modems that use PPP for data connections are currently not
+		supported.  This feature will be available once a functional
+		userspace ppp stack is available.
 
 Not implemented features:
 
