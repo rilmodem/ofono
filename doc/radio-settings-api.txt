@@ -1,0 +1,43 @@
+Radio settings hierarchy
+========================
+
+Service		org.ofono
+Interface	org.ofono.RadioSettings
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all radio access properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+					 [service].Error.InProgress
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string TechnologyPreference [read-write]
+
+			The current radio access selection mode, also known
+			as network preference.
+
+			The possible values are:
+				"any"      Radio access technology
+					   selection is done automatically,
+					   based on reception and
+					   availability.
+				"2g"       Only GSM used for radio access.
+				"3g"       Only UMTS used for radio access.
+				"4g"       Only LTE used for radio acccess.

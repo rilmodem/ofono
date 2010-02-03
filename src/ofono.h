@@ -113,6 +113,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPES_CALL_VOLUME = 15,
 	OFONO_ATOM_TYPE_GPRS = 16,
 	OFONO_ATOM_TYPE_GPRS_CONTEXT = 17,
+	OFONO_ATOM_TYPE_RADIO_SETTINGS = 18,
 };
 
 enum ofono_atom_watch_condition {
@@ -168,6 +169,7 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/radio-settings.h>
 
 #include <ofono/sim.h>
 
