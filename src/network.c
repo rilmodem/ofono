@@ -564,11 +564,11 @@ static void set_network_operator_eons_info(struct network_operator_data *opd,
 		oldinfo = "";
 
 	if (eons_info && eons_info->info)
-		newname = eons_info->info;
+		newinfo = eons_info->info;
 	else
 		newinfo = "";
 
-	if (oldname != newname && strcmp(oldname, newname))
+	if (oldinfo != newinfo && strcmp(oldinfo, newinfo))
 		ofono_dbus_signal_property_changed(conn, path,
 						NETWORK_OPERATOR_INTERFACE,
 						"AdditionalInformation",
