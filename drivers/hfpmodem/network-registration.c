@@ -128,10 +128,11 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 		ofono_netreg_status_notify(netreg, status, -1, -1, -1);
 	} else if (index == nd->cind_pos[HFP_INDICATOR_ROAM]) {
 		nd->cind_val[HFP_INDICATOR_ROAM] = value;
-		if (value)
-			status = NETWORK_REGISTRATION_STATUS_ROAMING;
 
-		ofono_netreg_status_notify(netreg, status, -1, -1, -1);
+		if (value) {
+			status = NETWORK_REGISTRATION_STATUS_ROAMING;
+			ofono_netreg_status_notify(netreg, status, -1, -1, -1);
+		}
 	} else if (index == nd->cind_pos[HFP_INDICATOR_SIGNAL]) {
 		nd->cind_val[HFP_INDICATOR_SIGNAL] = value;
 		ofono_netreg_strength_notify(netreg, value * 20);
