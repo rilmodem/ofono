@@ -294,12 +294,11 @@ static void wakeup_writer(GAtMux *mux)
 int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite)
 {
 	GError *error = NULL;
-	GIOStatus status;
 	gssize count = towrite;
 	gsize bytes_written;
 
-	status = g_io_channel_write_chars(mux->channel, (gchar *) data,
-						count, &bytes_written, &error);
+	g_io_channel_write_chars(mux->channel, (gchar *) data,
+					count, &bytes_written, &error);
 
 	return bytes_written;
 }
