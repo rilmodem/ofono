@@ -67,11 +67,23 @@ static const char *chld_prefix[] = { "+CHLD:", NULL };
 
 static DBusConnection *connection;
 
-static int hfp_disable(struct ofono_modem *modem);
-
 static void hfp_debug(const char *str, void *user_data)
 {
 	ofono_info("%s", str);
+}
+
+static void clear_data(struct ofono_modem *modem)
+{
+	struct hfp_data *data = ofono_modem_get_data(modem);
+
+	if (!data->chat)
+		return;
+
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
+
+	memset(data->cind_val, 0, sizeof(data->cind_val));
+	memset(data->cind_pos, 0, sizeof(data->cind_pos));
 }
 
 static void sevice_level_conn_established(struct ofono_modem *modem)
@@ -106,6 +118,8 @@ static void service_level_conn_failed(struct ofono_modem *modem)
 	data->slc_msg = NULL;
 
 	ofono_error("Service level connection failed");
+	ofono_modem_set_powered(modem, FALSE);
+	clear_data(modem);
 }
 
 static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -158,7 +172,7 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
 	if (!ok) {
-		hfp_disable(modem);
+		service_level_conn_failed(modem);
 		return;
 	}
 
@@ -212,17 +226,6 @@ static int send_method_call(const char *dest, const char *path,
 	return 0;
 }
 
-static gboolean hfp_enable_timeout(gpointer user)
-{
-	struct ofono_modem *modem = user;
-
-	if (ofono_modem_get_powered(modem))
-		return FALSE;
-
-	hfp_disable(modem);
-	return FALSE;
-}
-
 static void cind_status_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
@@ -260,7 +263,7 @@ static void cind_status_cb(gboolean ok, GAtResult *result,
 	return;
 
 error:
-	hfp_disable(modem);
+	service_level_conn_failed(modem);
 }
 
 static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -320,7 +323,7 @@ static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	return;
 
 error:
-	hfp_disable(modem);
+	service_level_conn_failed(modem);
 }
 
 static void brsf_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -344,7 +347,7 @@ static void brsf_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	return;
 
 error:
-	hfp_disable(modem);
+	service_level_conn_failed(modem);
 }
 
 /* either oFono or Phone could request SLC connection */
@@ -728,11 +731,8 @@ static void hfp_remove(struct ofono_modem *modem)
 
 	hfp_unregister_ofono_handsfree(modem);
 
-	if (data->handsfree_path)
-		g_free(data->handsfree_path);
-
-	if (data)
-		g_free(data);
+	g_free(data->handsfree_path);
+	g_free(data);
 
 	ofono_modem_set_data(modem, NULL);
 }
@@ -754,12 +754,7 @@ static int hfp_connect_ofono_handsfree(struct ofono_modem *modem)
 /* power up hardware */
 static int hfp_enable(struct ofono_modem *modem)
 {
-	struct hfp_data *data = ofono_modem_get_data(modem);
-
 	DBG("%p", modem);
-
-	data->at_timeout =
-		g_timeout_add_seconds(10, hfp_enable_timeout, modem);
 
 	if (hfp_connect_ofono_handsfree(modem) < 0)
 		return -EINVAL;
@@ -781,22 +776,9 @@ static int hfp_disconnect_ofono_handsfree(struct ofono_modem *modem)
 
 static int hfp_disable(struct ofono_modem *modem)
 {
-	struct hfp_data *data = ofono_modem_get_data(modem);
-
 	DBG("%p", modem);
 
-	if (!data->chat)
-		return 0;
-
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
-
-	memset(data->cind_val, 0, sizeof(data->cind_val));
-	memset(data->cind_pos, 0, sizeof(data->cind_pos));
-
-	g_source_remove(data->at_timeout);
-
-	ofono_modem_set_powered(modem, FALSE);
+	clear_data(modem);
 
 	hfp_disconnect_ofono_handsfree(modem);
 	return 0;
