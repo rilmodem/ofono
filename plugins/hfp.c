@@ -687,9 +687,6 @@ static int hfp_register_ofono_handsfree(struct ofono_modem *modem)
 
 	ofono_debug("Registering oFono Agent to bluetooth daemon");
 
-	if (!data->handsfree_path)
-		return -EINVAL;
-
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "RegisterAgent",
 				NULL, NULL, DBUS_TYPE_OBJECT_PATH,
@@ -702,9 +699,6 @@ static int hfp_unregister_ofono_handsfree(struct ofono_modem *modem)
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
 	ofono_debug("Unregistering oFono Agent from bluetooth daemon");
-
-	if (!data->handsfree_path)
-		return -EINVAL;
 
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "UnregisterAgent",
@@ -743,9 +737,6 @@ static int hfp_connect_ofono_handsfree(struct ofono_modem *modem)
 
 	ofono_debug("Connect to bluetooth daemon");
 
-	if (!data->handsfree_path || !connection)
-		return -EINVAL;
-
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Connect",
 				NULL, NULL, DBUS_TYPE_INVALID);
@@ -765,9 +756,6 @@ static int hfp_enable(struct ofono_modem *modem)
 static int hfp_disconnect_ofono_handsfree(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
-
-	if (!data->handsfree_path || !connection)
-		return -EINVAL;
 
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Disconnect",
