@@ -29,6 +29,7 @@
 #include "info.h"
 #include "call.h"
 #include "network.h"
+#include "gss.h"
 
 const char *ss_message_id_name(enum ss_message_id value);
 const char *ss_subblock_name(enum ss_subblock value);
@@ -61,6 +62,9 @@ const char *net_status_name(enum net_reg_status value);
 const char *net_message_id_name(enum net_message_id value);
 const char *net_subblock_name(enum net_subblock value);
 
+const char *gss_message_id_name(enum gss_message_id value);
+const char *gss_subblock_name(enum gss_subblock value);
+
 void ss_debug(const void *restrict buf, size_t len, void *data);
 void mtc_debug(const void *restrict buf, size_t len, void *data);
 void sms_debug(const void *restrict buf, size_t len, void *data);
@@ -68,6 +72,7 @@ void sim_debug(const void *restrict buf, size_t len, void *data);
 void info_debug(const void *restrict buf, size_t len, void *data);
 void call_debug(const void *restrict buf, size_t len, void *data);
 void net_debug(const void *restrict buf, size_t len, void *data);
+void gss_debug(const void *restrict buf, size_t len, void *data);
 
 const char *pn_resource_name(int value);
 

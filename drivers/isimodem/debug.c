@@ -49,6 +49,7 @@ const char *pn_resource_name(int value)
 		_(PN_SMS);
 		_(PN_SIM);
 		_(PN_MTC);
+		_(PN_GSS);
 	}
 	return "PN_<UNKNOWN>";
 }
@@ -746,6 +747,24 @@ const char *net_subblock_name(enum net_subblock value)
 	return "NET_<UNKNOWN>";
 }
 
+const char *gss_message_id_name(enum gss_message_id value)
+{
+	switch (value) {
+		_(GSS_CS_SERVICE_REQ);
+		_(GSS_CS_SERVICE_RESP);
+		_(GSS_CS_SERVICE_FAIL_RESP);
+	}
+	return "GSS_<UNKNOWN>";
+}
+
+const char *gss_subblock_name(enum gss_subblock value)
+{
+	switch (value) {
+		_(GSS_RAT_INFO);
+	}
+	return "GSS_<UNKNOWN>";
+}
+
 #undef _
 
 static void hex_dump(const char *name, const uint8_t m[], size_t len)
@@ -815,4 +834,10 @@ void net_debug(const void *restrict buf, size_t len, void *data)
 {
 	const uint8_t *m = buf;
 	hex_dump(net_message_id_name(m[0]), m, len);
+}
+
+void gss_debug(const void *restrict buf, size_t len, void *data)
+{
+	const uint8_t *m = buf;
+	hex_dump(gss_message_id_name(m[0]), m, len);
 }

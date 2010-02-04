@@ -102,7 +102,8 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/call-settings.c \
 				drivers/isimodem/call-barring.c \
 				drivers/isimodem/call-meter.c \
-				drivers/isimodem/ss.h
+				drivers/isimodem/ss.h \
+				drivers/isimodem/gss.h
 endif
 
 if ATMODEM
