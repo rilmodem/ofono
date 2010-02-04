@@ -428,10 +428,12 @@ static int hfp_create_modem(const char *device)
 	ofono_info("Using device: %s", device);
 
 	modem = ofono_modem_create(NULL, "hfp");
+	if (modem == NULL)
+		return -ENOMEM;
 
 	data = g_try_new0(struct hfp_data, 1);
 	if (!data)
-		return -ENOMEM;
+		goto free;
 
 	data->hf_features |= HF_FEATURE_3WAY;
 	data->hf_features |= HF_FEATURE_CLIP;
@@ -440,12 +442,19 @@ static int hfp_create_modem(const char *device)
 	data->hf_features |= HF_FEATURE_ENHANCED_CALL_CONTROL;
 
 	data->handsfree_path = g_strdup(device);
+	if (data->handsfree_path == NULL)
+		goto free;
 
 	ofono_modem_set_data(modem, data);
-
 	ofono_modem_register(modem);
 
 	return 0;
+
+free:
+	g_free(data);
+	ofono_modem_remove(modem);
+
+	return -ENOMEM;
 }
 
 static void parse_uuids(DBusMessageIter *i, const char *device)
