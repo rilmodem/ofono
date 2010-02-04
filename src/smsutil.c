@@ -2099,7 +2099,7 @@ char *sms_decode_text(GSList *sms_list)
 {
 	GSList *l;
 	GString *str;
-	const struct sms *sms = sms_list->data;
+	const struct sms *sms;
 	int guess_size = g_slist_length(sms_list);
 	char *utf8;
 
@@ -3030,7 +3030,7 @@ gboolean iso639_2_from_language(enum cbs_language lang, char *iso639)
 char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 {
 	GSList *l;
-	const struct cbs *cbs = cbs_list->data;
+	const struct cbs *cbs;
 	enum sms_charset uninitialized_var(charset);
 	enum cbs_language lang;
 	gboolean uninitialized_var(iso639);
