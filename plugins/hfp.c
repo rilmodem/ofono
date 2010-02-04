@@ -52,6 +52,7 @@
 #define	BLUEZ_GATEWAY_INTERFACE		BLUEZ_SERVICE ".HandsfreeGateway"
 
 #define HFP_AGENT_INTERFACE "org.bluez.HandsfreeAgent"
+#define HFP_AGENT_ERROR_INTERFACE "org.bluez.Error"
 
 #define HFP_AG_UUID	"0000111F-0000-1000-8000-00805F9B34FB"
 
@@ -67,7 +68,6 @@ static const char *chld_prefix[] = { "+CHLD:", NULL };
 static DBusConnection *connection;
 
 static int hfp_disable(struct ofono_modem *modem);
-static void hfp_remove(struct ofono_modem *modem);
 
 static void hfp_debug(const char *str, void *user_data)
 {
@@ -84,10 +84,28 @@ static void sevice_level_conn_established(struct ofono_modem *modem)
 	msg = dbus_message_new_method_return(data->slc_msg);
 	g_dbus_send_message(connection, msg);
 	dbus_message_unref(data->slc_msg);
+	data->slc_msg = NULL;
 
 	ofono_info("Service level connection established");
 
 	g_at_chat_send(data->chat, "AT+CMEE=1", NULL, NULL, NULL, NULL);
+}
+
+static void service_level_conn_failed(struct ofono_modem *modem)
+{
+	struct hfp_data *data = ofono_modem_get_data(modem);
+	DBusMessage *msg;
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	msg = g_dbus_create_error(data->slc_msg, HFP_AGENT_ERROR_INTERFACE
+					".Failed",
+					"HFP Handshake failed");
+	g_dbus_send_message(connection, msg);
+	dbus_message_unref(data->slc_msg);
+	data->slc_msg = NULL;
+
+	ofono_error("Service level connection failed");
 }
 
 static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
