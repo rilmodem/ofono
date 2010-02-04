@@ -3160,7 +3160,7 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 			}
 
 			while (i < max_offset) {
-				if (ud[i] == 0x00 && ud[i] == '\r')
+				if (ud[i] == 0x00 && ud[i+1] == '\r')
 					break;
 
 				buf[bufsize] = ud[i];
