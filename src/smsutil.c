@@ -2808,6 +2808,8 @@ gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 			ch = (enum sms_charset)((dcs & 0x0c) >> 2);
 		else
 			return FALSE;
+
+		break;
 	case 9:
 		udh = TRUE;
 		cl = (enum sms_class)(dcs & 0x03);
