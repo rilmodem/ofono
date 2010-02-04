@@ -823,6 +823,7 @@ static void test_prepare_concat()
 			g_print("PDU Len: %ld\n", len);
 
 		ok = sms_decode(pdu, len, TRUE, len - 1, &decoded);
+		g_assert(ok);
 
 		if (g_test_verbose())
 			g_print("Pdu udl: %d\n", (int)decoded.submit.udl);

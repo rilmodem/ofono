@@ -617,7 +617,6 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	const char *line;
 	int type;
-	struct ofono_call *call;
 
 	dump_response("cring_notify", TRUE, result);
 
@@ -654,7 +653,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 		type = 9;
 
 	/* Generate an incoming call */
-	call = create_call(vc, type, 1, 4, NULL, 128, 2);
+	create_call(vc, type, 1, 4, NULL, 128, 2);
 
 	/* We have a call, and call type but don't know the number and
 	 * must wait for the CLIP to arrive before announcing the call.

@@ -86,12 +86,11 @@ static void at_call_barring_query(struct ofono_call_barring *cb,
 	GAtChat *chat = ofono_call_barring_get_data(cb);
 	struct cb_data *cbd = cb_data_new(callback, data);
 	char buf[64];
-	int len;
 
 	if (!cbd || strlen(lock) != 2)
 		goto error;
 
-	len = sprintf(buf, "AT+CLCK=\"%s\",2", lock);
+	sprintf(buf, "AT+CLCK=\"%s\",2", lock);
 
 	if (g_at_chat_send(chat, buf, clck_prefix,
 				clck_query_cb, cbd, g_free) > 0)
@@ -134,8 +133,7 @@ static void at_call_barring_set(struct ofono_call_barring *cb, const char *lock,
 				",\"%s\"", passwd);
 		/* Assume cls == 7 means use defaults */
 		if (cls != 7)
-			len += snprintf(buf + len, sizeof(buf) - len,
-					",%i", cls);
+			snprintf(buf + len, sizeof(buf) - len, ",%i", cls);
 	}
 
 	if (g_at_chat_send(chat, buf, none_prefix,
