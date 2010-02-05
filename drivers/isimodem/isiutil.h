@@ -59,6 +59,4 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 		f(&e, ##args);				\
 	} while(0)
 
-void dump_msg(const unsigned char *msg, size_t len);
-
 #endif /* !__ISIMODEM_UTIL_H */
