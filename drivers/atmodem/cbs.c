@@ -144,9 +144,9 @@ static void at_cbs_clear_topics(struct ofono_cbs *cbs,
 		goto error;
 
 	if (data->cscb_mode_1)
-		sprintf(buf, "AT+CSCB=1,\"0-65535\"");
+		snprintf(buf, sizeof(buf), "AT+CSCB=1,\"0-65535\"");
 	else
-		sprintf(buf, "AT+CSCB=0,\"\"");
+		snprintf(buf, sizeof(buf), "AT+CSCB=0,\"\"");
 
 	if (g_at_chat_send(data->chat, buf, none_prefix,
 				at_cscb_set_cb, cbd, g_free) > 0)
@@ -209,9 +209,9 @@ static void at_cscb_support_cb(gboolean ok, GAtResult *result, gpointer user)
 	 * of new topics using CSCB mode 0.
 	 */
 	if (data->cscb_mode_1)
-		sprintf(buf, "AT+CSCB=1,\"0-65535\"");
+		snprintf(buf, sizeof(buf), "AT+CSCB=1,\"0-65535\"");
 	else
-		sprintf(buf, "AT+CSCB=0,\"\"");
+		snprintf(buf, sizeof(buf), "AT+CSCB=0,\"\"");
 
 	if (g_at_chat_send(data->chat, buf, none_prefix,
 				at_cbs_register, cbs, NULL) > 0)

@@ -72,7 +72,7 @@ static void at_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "AT+CGATT=%i", attached ? 1 : 0);
+	snprintf(buf, sizeof(buf), "AT+CGATT=%i", attached ? 1 : 0);
 
 	if (g_at_chat_send(gd->chat, buf, none_prefix,
 				at_cgatt_cb, cbd, g_free) > 0)

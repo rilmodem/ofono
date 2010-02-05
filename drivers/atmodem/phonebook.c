@@ -232,7 +232,7 @@ static void at_read_entries_cb(gboolean ok, GAtResult *result,
 	charset = best_charset(pbd->supported);
 
 	if (strcmp(pbd->old_charset, charset)) {
-		sprintf(buf, "AT+CSCS=\"%s\"", pbd->old_charset);
+		snprintf(buf, sizeof(buf), "AT+CSCS=\"%s\"", pbd->old_charset);
 		g_at_chat_send(pbd->chat, buf, none_prefix, NULL, NULL, NULL);
 	}
 
@@ -246,7 +246,8 @@ static void at_read_entries(struct cb_data *cbd)
 	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	char buf[32];
 
-	sprintf(buf, "AT+CPBR=%d,%d", pbd->index_min, pbd->index_max);
+	snprintf(buf, sizeof(buf), "AT+CPBR=%d,%d",
+			pbd->index_min, pbd->index_max);
 	if (g_at_chat_send_listing(pbd->chat, buf, cpbr_prefix,
 					at_cpbr_notify, at_read_entries_cb,
 					cbd, NULL) > 0)
@@ -302,7 +303,7 @@ static void at_read_charset_cb(gboolean ok, GAtResult *result,
 		return;
 	}
 
-	sprintf(buf, "AT+CSCS=\"%s\"", charset);
+	snprintf(buf, sizeof(buf), "AT+CSCS=\"%s\"", charset);
 	if (g_at_chat_send(pbd->chat, buf, none_prefix,
 				at_set_charset_cb, cbd, NULL) > 0)
 		return;
@@ -379,7 +380,7 @@ static void at_export_entries(struct ofono_phonebook *pb, const char *storage,
 
 	cbd->user = pb;
 
-	sprintf(buf, "AT+CPBS=\"%s\"", storage);
+	snprintf(buf, sizeof(buf), "AT+CPBS=\"%s\"", storage);
 	if (g_at_chat_send(pbd->chat, buf, none_prefix,
 				at_select_storage_cb, cbd, NULL) > 0)
 		return;

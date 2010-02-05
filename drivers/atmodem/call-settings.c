@@ -90,9 +90,9 @@ static void at_ccwa_query(struct ofono_call_settings *cs, int cls,
 	cbd->user = GINT_TO_POINTER(cls);
 
 	if (cls == 7)
-		sprintf(buf, "AT+CCWA=1,2");
+		snprintf(buf, sizeof(buf), "AT+CCWA=1,2");
 	else
-		sprintf(buf, "AT+CCWA=1,2,%d", cls);
+		snprintf(buf, sizeof(buf), "AT+CCWA=1,2,%d", cls);
 
 	if (g_at_chat_send(chat, buf, ccwa_prefix,
 				ccwa_query_cb, cbd, g_free) > 0)
@@ -127,7 +127,7 @@ static void at_ccwa_set(struct ofono_call_settings *cs, int mode, int cls,
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "AT+CCWA=1,%d,%d", mode, cls);
+	snprintf(buf, sizeof(buf), "AT+CCWA=1,%d,%d", mode, cls);
 
 	if (g_at_chat_send(chat, buf, none_prefix,
 				ccwa_set_cb, cbd, g_free) > 0)
@@ -319,7 +319,7 @@ static void at_clir_set(struct ofono_call_settings *cs, int mode,
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "AT+CLIR=%d", mode);
+	snprintf(buf, sizeof(buf), "AT+CLIR=%d", mode);
 
 	if (g_at_chat_send(chat, buf, none_prefix,
 				clir_set_cb, cbd, g_free) > 0)

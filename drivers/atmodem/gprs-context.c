@@ -99,7 +99,7 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	ncbd = g_memdup(cbd, sizeof(struct cb_data));
 
-	sprintf(buf, "AT+CGACT=1,%u", gcd->active_context);
+	snprintf(buf, sizeof(buf), "AT+CGACT=1,%u", gcd->active_context);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				at_cgact_up_cb, ncbd, g_free) > 0)
@@ -130,7 +130,7 @@ static void at_gprs_activate_primary(struct ofono_gprs_context *gc,
 	cbd->user = gc;
 
 	/* TODO: Handle username / password fields */
-	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)
 		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
@@ -159,7 +159,7 @@ static void at_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	cbd->user = gc;
 
-	sprintf(buf, "AT+CGACT=0,%u", id);
+	snprintf(buf, sizeof(buf), "AT+CGACT=0,%u", id);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				at_cgact_down_cb, cbd, g_free) > 0)

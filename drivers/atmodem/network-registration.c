@@ -423,7 +423,7 @@ static void at_register_manual(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "AT+COPS=1,2,\"%s%s\"", mcc, mnc);
+	snprintf(buf, sizeof(buf), "AT+COPS=1,2,\"%s%s\"", mcc, mnc);
 
 	if (g_at_chat_send(nd->chat, buf, none_prefix,
 				register_cb, cbd, g_free) > 0)

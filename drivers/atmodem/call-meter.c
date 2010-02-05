@@ -218,7 +218,7 @@ static void at_camm_set(struct ofono_call_meter *cm,
 	if (!cbd)
 		goto error;
 
-	sprintf(buf, "AT+CAMM=\"%06X\",\"%s\"", accmax, passwd);
+	snprintf(buf, sizeof(buf), "AT+CAMM=\"%06X\",\"%s\"", accmax, passwd);
 
 	if (g_at_chat_send(chat, buf, none_prefix,
 				generic_set_cb, cbd, g_free) > 0)
