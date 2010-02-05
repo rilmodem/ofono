@@ -136,7 +136,7 @@ static void hso_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	ncbd = g_memdup(cbd, sizeof(struct cb_data));
 
-	sprintf(buf, "AT_OWANCALL=%u,1,1", gcd->active_context);
+	snprintf(buf, sizeof(buf), "AT_OWANCALL=%u,1,1", gcd->active_context);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				hso_owancall_up_cb, ncbd, g_free) > 0)
@@ -167,19 +167,19 @@ static void hso_gprs_activate_primary(struct ofono_gprs_context *gc,
 	cbd->user = gc;
 
 	if (ctx->username[0] && ctx->password[0])
-		sprintf(buf, "AT$QCPDPP=%u,1,\"%s\",\"%s\"",
+		snprintf(buf, sizeof(buf), "AT$QCPDPP=%u,1,\"%s\",\"%s\"",
 			ctx->cid, ctx->username, ctx->password);
 	else if (ctx->password[0])
-		sprintf(buf, "AT$QCPDPP=%u,2,,\"%s\"",
-			ctx->cid, ctx->password);
+		snprintf(buf, sizeof(buf), "AT$QCPDPP=%u,2,,\"%s\"",
+				ctx->cid, ctx->password);
 	else
-		sprintf(buf, "AT$QCPDPP=%u,0", ctx->cid);
+		snprintf(buf, sizeof(buf), "AT$QCPDPP=%u,0", ctx->cid);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				NULL, NULL, NULL) == 0)
 		goto error;
 
-	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)
 		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
@@ -208,7 +208,7 @@ static void hso_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	cbd->user = gc;
 
-	sprintf(buf, "AT_OWANCALL=%u,0,1", cid);
+	snprintf(buf, sizeof(buf), "AT_OWANCALL=%u,0,1", cid);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				at_owancall_down_cb, cbd, g_free) > 0)
@@ -328,7 +328,8 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 		if (gcd->hso_state == HSO_ENABLING) {
 			char buf[128];
 
-			sprintf(buf, "AT_OWANDATA=%u", gcd->active_context);
+			snprintf(buf, sizeof(buf), "AT_OWANDATA=%u",
+					gcd->active_context);
 
 			g_at_chat_send(gcd->chat, buf, owandata_prefix,
 					owandata_cb, gc, NULL);
