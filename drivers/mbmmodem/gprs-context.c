@@ -320,7 +320,7 @@ static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	ncbd = g_memdup(cbd, sizeof(struct cb_data));
 
-	sprintf(buf, "AT*ENAP=1,%u", gcd->active_context);
+	snprintf(buf, sizeof(buf), "AT*ENAP=1,%u", gcd->active_context);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				mbm_enap_up_cb, ncbd, g_free) > 0)
@@ -350,14 +350,14 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	cbd->user = gc;
 
-	sprintf(buf, "AT*EIAAUW=%d,1,\"%s\",\"%s\"", ctx->cid,
-		ctx->username, ctx->password);
+	snprintf(buf, sizeof(buf), "AT*EIAAUW=%d,1,\"%s\",\"%s\"",
+			ctx->cid, ctx->username, ctx->password);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				NULL, NULL, NULL) == 0)
 		goto error;
 
-	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)
 		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
