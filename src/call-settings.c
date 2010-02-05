@@ -292,7 +292,8 @@ static void set_cw(struct ofono_call_settings *cs, int new_cw, int mask)
 		else
 			value = "disabled";
 
-		sprintf(buf, "%sCallWaiting", bearer_class_to_string(j));
+		snprintf(buf, sizeof(buf), "%sCallWaiting",
+				bearer_class_to_string(j));
 		ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_SETTINGS_INTERFACE,
 						buf, DBUS_TYPE_STRING,
@@ -313,7 +314,8 @@ static void property_append_cw_conditions(DBusMessageIter *dict,
 		if (!(mask & i))
 			continue;
 
-		sprintf(prop, "%sCallWaiting", bearer_class_to_string(i));
+		snprintf(prop, sizeof(prop), "%sCallWaiting",
+				bearer_class_to_string(i));
 
 		if (conditions & i)
 			value = "enabled";

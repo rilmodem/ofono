@@ -230,11 +230,11 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 		timeout = lc->time;
 		number = phone_number_to_string(&lc->phone_number);
 
-		sprintf(attr, "%s%s", bearer_class_to_string(lc->cls),
-					cf_type_lut[type]);
+		snprintf(attr, sizeof(attr), "%s%s",
+			bearer_class_to_string(lc->cls), cf_type_lut[type]);
 
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY)
-			sprintf(tattr, "%sTimeout", attr);
+			snprintf(tattr, sizeof(tattr), "%sTimeout", attr);
 
 		o = g_slist_find_custom(old, GINT_TO_POINTER(lc->cls),
 					cf_condition_find_with_cls);
@@ -283,11 +283,11 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 	for (o = old; o; o = o->next) {
 		oc = o->data;
 
-		sprintf(attr, "%s%s", bearer_class_to_string(oc->cls),
-					cf_type_lut[type]);
+		snprintf(attr, sizeof(attr), "%s%s",
+			bearer_class_to_string(oc->cls), cf_type_lut[type]);
 
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY)
-			sprintf(tattr, "%sTimeout", attr);
+			snprintf(tattr, sizeof(tattr), "%sTimeout", attr);
 
 		ofono_dbus_signal_property_changed(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE, attr,
@@ -314,11 +314,12 @@ static inline void property_append_cf_condition(DBusMessageIter *dict, int cls,
 	char tattr[64];
 	int addt = !strcmp(postfix, "NoReply");
 
-	sprintf(attr, "%s%s", bearer_class_to_string(cls), postfix);
+	snprintf(attr, sizeof(attr), "%s%s",
+			bearer_class_to_string(cls), postfix);
 
 	if (addt)
-		sprintf(tattr, "%s%sTimeout", bearer_class_to_string(cls),
-			postfix);
+		snprintf(tattr, sizeof(tattr), "%s%sTimeout",
+				bearer_class_to_string(cls), postfix);
 
 	ofono_dbus_dict_append(dict, attr, DBUS_TYPE_STRING, &value);
 
