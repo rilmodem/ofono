@@ -573,7 +573,6 @@ done:
 
 static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 {
-	DBusError err;
 	DBusMessage *reply;
 	char **device_list = NULL;
 	int num, ret, i;
@@ -585,23 +584,10 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	dbus_error_init(&err);
-
-	if (dbus_message_get_args(reply, &err, DBUS_TYPE_ARRAY,
+	if (dbus_message_get_args(reply, NULL, DBUS_TYPE_ARRAY,
 				DBUS_TYPE_OBJECT_PATH, &device_list,
-				&num, DBUS_TYPE_INVALID) == FALSE) {
-		if (device_list == NULL) {
-			dbus_error_free(&err);
-			goto done;
-		}
-
-		if (dbus_error_is_set(&err) == TRUE) {
-			ofono_error("%s", err.message);
-			dbus_error_free(&err);
-		}
-
+				&num, DBUS_TYPE_INVALID) == FALSE)
 		goto done;
-	}
 
 	for (i = 0 ; i < num ; i++) {
 		ret = send_method_call(BLUEZ_SERVICE, device_list[i],
@@ -668,7 +654,6 @@ static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
 
 static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 {
-	DBusError err;
 	DBusMessage *reply;
 	char **adapter_list = NULL;
 	int num, ret, i;
@@ -680,23 +665,10 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	dbus_error_init(&err);
-
-	if (dbus_message_get_args(reply, &err, DBUS_TYPE_ARRAY,
+	if (dbus_message_get_args(reply, NULL, DBUS_TYPE_ARRAY,
 				DBUS_TYPE_OBJECT_PATH, &adapter_list,
-				&num, DBUS_TYPE_INVALID) == FALSE) {
-		if (adapter_list == NULL) {
-			dbus_error_free(&err);
-			goto done;
-		}
-
-		if (dbus_error_is_set(&err) == TRUE) {
-			ofono_error("%s", err.message);
-			dbus_error_free(&err);
-		}
-
+				&num, DBUS_TYPE_INVALID) == FALSE)
 		goto done;
-	}
 
 	for (i = 0 ; i < num ; i++) {
 		ret = send_method_call(BLUEZ_SERVICE, adapter_list[i],
