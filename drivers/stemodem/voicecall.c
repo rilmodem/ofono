@@ -196,9 +196,9 @@ static void ste_dial(struct ofono_voicecall *vc,
 	cbd->user = vc;
 
 	if (ph->type == 145)
-		sprintf(buf, "ATD+%s", ph->number);
+		snprintf(buf, sizeof(buf), "ATD+%s", ph->number);
 	else
-		sprintf(buf, "ATD%s", ph->number);
+		snprintf(buf, sizeof(buf), "ATD%s", ph->number);
 
 	switch (clir) {
 	case OFONO_CLIR_OPTION_INVOCATION:
@@ -312,7 +312,7 @@ static void ste_release_specific(struct ofono_voicecall *vc, int id,
 	req->data = data;
 	req->id = id;
 
-	sprintf(buf, "AT+CHLD=1%d", id);
+	snprintf(buf, sizeof(buf), "AT+CHLD=1%d", id);
 
 	if (g_at_chat_send(vd->chat, buf, none_prefix,
 				release_id_cb, req, g_free) > 0)
@@ -330,7 +330,7 @@ static void ste_private_chat(struct ofono_voicecall *vc, int id,
 {
 	char buf[32];
 
-	sprintf(buf, "AT+CHLD=2%d", id);
+	snprintf(buf, sizeof(buf), "AT+CHLD=2%d", id);
 	ste_template(buf, vc, ste_generic_cb, 0, cb, data);
 }
 
@@ -362,7 +362,7 @@ static void ste_deflect(struct ofono_voicecall *vc,
 	char buf[128];
 	unsigned int incoming_or_waiting = (0x1 << 4) | (0x1 << 5);
 
-	sprintf(buf, "AT+CTFR=\"%s\",%d", ph->number, ph->type);
+	snprintf(buf, sizeof(buf), "AT+CTFR=\"%s\",%d", ph->number, ph->type);
 	ste_template(buf, vc, ste_generic_cb, incoming_or_waiting, cb, data);
 }
 

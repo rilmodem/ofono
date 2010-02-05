@@ -394,7 +394,8 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	conn = l->data;
 	conn->cid = gcd->active_context;
-	sprintf(buf, "AT*EPPSD=1,%u,%u", conn->channel_id, conn->cid);
+	snprintf(buf, sizeof(buf), "AT*EPPSD=1,%u,%u",
+			conn->channel_id, conn->cid);
 
 	if (g_at_chat_send(gcd->chat, buf, NULL,
 				ste_eppsd_up_cb, ncbd, g_free) > 0)
@@ -426,13 +427,13 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 	cbd->user = gc;
 
 	/* Set username and password */
-	sprintf(buf, "AT*EIAAUW=%d,1,\"%s\",\"%s\"", ctx->cid,
-		ctx->username, ctx->password);
+	snprintf(buf, sizeof(buf), "AT*EIAAUW=%d,1,\"%s\",\"%s\"",
+			ctx->cid, ctx->username, ctx->password);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL) == 0)
 		goto error;
 
-	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)
 		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
@@ -476,7 +477,7 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	conn = l->data;
 
-	sprintf(buf, "AT*EPPSD=0,%u,%u", conn->channel_id, id);
+	snprintf(buf, sizeof(buf), "AT*EPPSD=0,%u,%u", conn->channel_id, id);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				ste_eppsd_down_cb, cbd, g_free) > 0)
