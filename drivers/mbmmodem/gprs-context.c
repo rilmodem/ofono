@@ -350,13 +350,6 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	cbd->user = gc;
 
-	snprintf(buf, sizeof(buf), "AT*EIAAUW=%d,1,\"%s\",\"%s\"",
-			ctx->cid, ctx->username, ctx->password);
-
-	if (g_at_chat_send(gcd->chat, buf, none_prefix,
-				NULL, NULL, NULL) == 0)
-		goto error;
-
 	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)
@@ -364,8 +357,21 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 				ctx->apn);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
-				mbm_cgdcont_cb, cbd, g_free) > 0)
-		return;
+				mbm_cgdcont_cb, cbd, g_free) == 0)
+		goto error;
+
+	/*
+	 * Set username and password, this should be done after CGDCONT
+	 * or an error can occur.  We don't bother with error checking
+	 * here
+	 * */
+	snprintf(buf, sizeof(buf), "AT*EIAAUW=%d,1,\"%s\",\"%s\"",
+			ctx->cid, ctx->username, ctx->password);
+
+	g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL);
+
+	return;
+
 error:
 	if (cbd)
 		g_free(cbd);
