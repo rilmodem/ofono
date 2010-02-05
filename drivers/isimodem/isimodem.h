@@ -60,3 +60,6 @@ extern void isi_call_meter_exit();
 
 extern void isi_radio_settings_init();
 extern void isi_radio_settings_exit();
+
+extern void isi_gprs_init();
+extern void isi_gprs_exit();

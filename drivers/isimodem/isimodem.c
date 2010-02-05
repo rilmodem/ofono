@@ -50,6 +50,7 @@
 #include <ofono/call-barring.h>
 #include <ofono/call-meter.h>
 #include <ofono/radio-settings.h>
+#include <ofono/gprs.h>
 
 #include "isimodem.h"
 #include "isiutil.h"
@@ -312,6 +313,7 @@ static void isi_modem_post_sim(struct ofono_modem *modem)
 	ofono_call_barring_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_meter_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_radio_settings_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_gprs_create(isi->modem, 0, "isimodem", isi->idx);
 }
 
 static struct ofono_modem_driver driver = {
@@ -342,6 +344,7 @@ static int isimodem_init(void)
 	isi_call_barring_init();
 	isi_call_meter_init();
 	isi_radio_settings_init();
+	isi_gprs_init();
 
 	ofono_modem_driver_register(&driver);
 
@@ -383,6 +386,7 @@ static void isimodem_exit(void)
 	isi_call_barring_exit();
 	isi_call_meter_exit();
 	isi_radio_settings_exit();
+	isi_gprs_exit();
 }
 
 OFONO_PLUGIN_DEFINE(isimodem, "PhoNet / ISI modem driver", VERSION,
