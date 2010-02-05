@@ -87,9 +87,9 @@ static void calypso_dial(struct ofono_voicecall *vc,
 	char buf[256];
 
 	if (ph->type == 145)
-		sprintf(buf, "ATD+%s", ph->number);
+		snprintf(buf, sizeof(buf), "ATD+%s", ph->number);
 	else
-		sprintf(buf, "ATD%s", ph->number);
+		snprintf(buf, sizeof(buf), "ATD%s", ph->number);
 
 	switch (clir) {
 	case OFONO_CLIR_OPTION_INVOCATION:
@@ -159,7 +159,7 @@ static void calypso_release_specific(struct ofono_voicecall *vc, int id,
 	/* On calypso, 1X only releases active calls, while 7X releases
 	 * active or held calls
 	 */
-	sprintf(buf, "AT%%CHLD=7%d", id);
+	snprintf(buf, sizeof(buf), "AT%%CHLD=7%d", id);
 	calypso_template(vc, buf, cb, data);
 }
 
@@ -168,7 +168,7 @@ static void calypso_private_chat(struct ofono_voicecall *vc, int id,
 {
 	char buf[32];
 
-	sprintf(buf, "AT+CHLD=2%d", id);
+	snprintf(buf, sizeof(buf), "AT+CHLD=2%d", id);
 	calypso_template(vc, buf, cb, data);
 }
 
@@ -190,7 +190,7 @@ static void calypso_deflect(struct ofono_voicecall *vc,
 {
 	char buf[128];
 
-	sprintf(buf, "AT+CTFR=%s,%d", ph->number, ph->type);
+	snprintf(buf, sizeof(buf), "AT+CTFR=%s,%d", ph->number, ph->type);
 	calypso_template(vc, buf, cb, data);
 }
 
