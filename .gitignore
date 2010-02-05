@@ -40,3 +40,4 @@ unit/test-caif
 
 plugins/*-ofono.rules
 gatchat/gsmdial
+gatchat/test-server
