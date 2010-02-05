@@ -374,9 +374,9 @@ static void hfp_dial(struct ofono_voicecall *vc,
 
 	cbd->user = vc;
 	if (ph->type == 145)
-		sprintf(buf, "ATD+%s", ph->number);
+		snprintf(buf, sizeof(buf), "ATD+%s", ph->number);
 	else
-		sprintf(buf, "ATD%s", ph->number);
+		snprintf(buf, sizeof(buf), "ATD%s", ph->number);
 
 	if ((clir != OFONO_CLIR_OPTION_DEFAULT) ||
 			(cug != OFONO_CUG_OPTION_DEFAULT))
@@ -526,7 +526,7 @@ static void hfp_release_specific(struct ofono_voicecall *vc, int id,
 	req->data = data;
 	req->id = id;
 
-	sprintf(buf, "AT+CHLD=1%d", id);
+	snprintf(buf, sizeof(buf), "AT+CHLD=1%d", id);
 
 	if (g_at_chat_send(vd->chat, buf, none_prefix,
 				release_id_cb, req, g_free) > 0)
@@ -546,7 +546,7 @@ static void hfp_private_chat(struct ofono_voicecall *vc, int id,
 	char buf[32];
 
 	if (vd->ag_mpty_features & AG_CHLD_2x) {
-		sprintf(buf, "AT+CHLD=2%d", id);
+		snprintf(buf, sizeof(buf), "AT+CHLD=2%d", id);
 
 		hfp_template(buf, vc, generic_cb, 0, cb, data);
 

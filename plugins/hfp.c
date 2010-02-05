@@ -377,7 +377,7 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, hfp_debug, NULL);
 
-	sprintf(buf, "AT+BRSF=%d", data->hf_features);
+	snprintf(buf, sizeof(buf), "AT+BRSF=%d", data->hf_features);
 	g_at_chat_send(chat, buf, brsf_prefix,
 				brsf_cb, modem, NULL);
 	data->chat = chat;
