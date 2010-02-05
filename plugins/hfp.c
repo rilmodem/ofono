@@ -606,7 +606,7 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 	for (i = 0 ; i < num ; i++) {
 		ret = send_method_call(BLUEZ_SERVICE, device[i],
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				get_properties_cb, (void *)device[i],
+				get_properties_cb, device[i],
 				DBUS_TYPE_INVALID);
 		if (ret < 0) {
 			g_free(device[i]);
@@ -870,7 +870,7 @@ static struct ofono_modem_driver hfp_driver = {
 static guint adapter_watch;
 static guint uuid_watch;
 
-static int hfp_init(void)
+static int hfp_init()
 {
 	int err;
 
@@ -916,7 +916,7 @@ remove:
 	return err;
 }
 
-static void hfp_exit(void)
+static void hfp_exit()
 {
 	g_dbus_remove_watch(connection, adapter_watch);
 	g_dbus_remove_watch(connection, uuid_watch);
