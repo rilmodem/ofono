@@ -575,7 +575,7 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusError err;
 	DBusMessage *reply;
-	char **device = NULL;
+	char **device_list = NULL;
 	int num, ret, i;
 
 	reply = dbus_pending_call_steal_reply(call);
@@ -588,9 +588,9 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 	dbus_error_init(&err);
 
 	if (dbus_message_get_args(reply, &err, DBUS_TYPE_ARRAY,
-				DBUS_TYPE_OBJECT_PATH, &device,
+				DBUS_TYPE_OBJECT_PATH, &device_list,
 				&num, DBUS_TYPE_INVALID) == FALSE) {
-		if (device == NULL) {
+		if (device_list == NULL) {
 			dbus_error_free(&err);
 			goto done;
 		}
@@ -604,18 +604,18 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 	}
 
 	for (i = 0 ; i < num ; i++) {
-		ret = send_method_call(BLUEZ_SERVICE, device[i],
+		ret = send_method_call(BLUEZ_SERVICE, device_list[i],
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				get_properties_cb, device[i],
+				get_properties_cb, device_list[i],
 				DBUS_TYPE_INVALID);
 		if (ret < 0) {
-			g_free(device[i]);
+			g_free(device_list[i]);
 			ofono_error("GetProperties failed(%d)", ret);
 		}
 	}
 
 done:
-	g_free(device);
+	g_free(device_list);
 	dbus_message_unref(reply);
 }
 
@@ -670,7 +670,7 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusError err;
 	DBusMessage *reply;
-	char **adapter = NULL;
+	char **adapter_list = NULL;
 	int num, ret, i;
 
 	reply = dbus_pending_call_steal_reply(call);
@@ -683,9 +683,9 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 	dbus_error_init(&err);
 
 	if (dbus_message_get_args(reply, &err, DBUS_TYPE_ARRAY,
-				DBUS_TYPE_OBJECT_PATH, &adapter,
+				DBUS_TYPE_OBJECT_PATH, &adapter_list,
 				&num, DBUS_TYPE_INVALID) == FALSE) {
-		if (adapter == NULL) {
+		if (adapter_list == NULL) {
 			dbus_error_free(&err);
 			goto done;
 		}
@@ -699,7 +699,7 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 	}
 
 	for (i = 0 ; i < num ; i++) {
-		ret = send_method_call(BLUEZ_SERVICE, adapter[i],
+		ret = send_method_call(BLUEZ_SERVICE, adapter_list[i],
 				BLUEZ_ADAPTER_INTERFACE, "ListDevices",
 				list_devices_cb, NULL,
 				DBUS_TYPE_INVALID);
@@ -708,7 +708,7 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 			ofono_error("ListDevices failed(%d)", ret);
 	}
 
-	g_strfreev(adapter);
+	g_strfreev(adapter_list);
 
 done:
 	dbus_message_unref(reply);
