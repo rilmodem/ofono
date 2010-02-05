@@ -111,7 +111,8 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/call-meter.c \
 				drivers/isimodem/ss.h \
 				drivers/isimodem/radio-settings.c \
-				drivers/isimodem/gss.h
+				drivers/isimodem/gss.h \
+				drivers/isimodem/gpds.h
 endif
 
 if ATMODEM
