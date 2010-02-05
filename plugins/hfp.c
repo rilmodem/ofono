@@ -547,7 +547,7 @@ static void parse_get_properties(DBusMessage *reply, const char *device)
 static void get_properties_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusMessage *reply;
-	const char *device = user_data;
+	char *device = user_data;
 
 	reply = dbus_pending_call_steal_reply(call);
 
@@ -567,6 +567,7 @@ static void get_properties_cb(DBusPendingCall *call, gpointer user_data)
 	parse_get_properties(reply, device);
 
 done:
+	g_free(device);
 	dbus_message_unref(reply);
 }
 
@@ -574,7 +575,7 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusError err;
 	DBusMessage *reply;
-	const char **device = NULL;
+	char **device = NULL;
 	int num, ret, i;
 
 	reply = dbus_pending_call_steal_reply(call);
@@ -607,11 +608,14 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
 				get_properties_cb, (void *)device[i],
 				DBUS_TYPE_INVALID);
-		if (ret < 0)
+		if (ret < 0) {
+			g_free(device[i]);
 			ofono_error("GetProperties failed(%d)", ret);
+		}
 	}
 
 done:
+	g_free(device);
 	dbus_message_unref(reply);
 }
 
