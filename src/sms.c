@@ -206,7 +206,7 @@ static void sca_set_callback(const struct ofono_error *error, void *data)
 	struct ofono_sms *sms = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Setting SCA failed");
+		DBG("Setting SCA failed");
 		__ofono_dbus_pending_reply(&sms->pending,
 					__ofono_error_failed(sms->pending));
 		return;
@@ -272,20 +272,20 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	struct tx_queue_entry *entry = g_queue_peek_head(sms->txq);
 
-	ofono_debug("tx_finished");
+	DBG("tx_finished");
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		entry->retry += 1;
 
 		if (entry->retry != TXQ_MAX_RETRIES) {
-			ofono_debug("Sending failed, retry in %d secs",
+			DBG("Sending failed, retry in %d secs",
 					entry->retry * 5);
 			sms->tx_source = g_timeout_add_seconds(entry->retry * 5,
 								tx_next, sms);
 			return;
 		}
 
-		ofono_debug("Max retries reached, giving up");
+		DBG("Max retries reached, giving up");
 
 		entry = g_queue_pop_head(sms->txq);
 		__ofono_dbus_pending_reply(&entry->msg,
@@ -299,7 +299,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		g_free(entry);
 
 		if (g_queue_peek_head(sms->txq)) {
-			ofono_debug("Previous send failed, scheduling next");
+			DBG("Previous send failed, scheduling next");
 			sms->tx_source = g_timeout_add(0, tx_next, sms);
 		}
 
@@ -325,7 +325,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 	g_free(entry);
 
 	if (g_queue_peek_head(sms->txq)) {
-		ofono_debug("Scheduling next");
+		DBG("Scheduling next");
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 	}
 }
@@ -341,7 +341,7 @@ static gboolean tx_next(gpointer user_data)
 
 	error.type = OFONO_ERROR_TYPE_NO_ERROR;
 
-	ofono_debug("tx_next: %p", entry);
+	DBG("tx_next: %p", entry);
 
 	sms->tx_source = 0;
 
@@ -393,7 +393,7 @@ static struct tx_queue_entry *create_tx_queue_entry(GSList *msg_list)
 
 		sms_encode(s, &pdu->pdu_len, &pdu->tpdu_len, pdu->pdu);
 
-		ofono_debug("pdu_len: %d, tpdu_len: %d",
+		DBG("pdu_len: %d, tpdu_len: %d",
 				pdu->pdu_len, pdu->tpdu_len);
 	}
 
@@ -424,7 +424,7 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	if (!msg_list)
 		return __ofono_error_invalid_format(msg);
 
-	ofono_debug("ref: %d, offset: %d", sms->ref, ref_offset);
+	DBG("ref: %d, offset: %d", sms->ref, ref_offset);
 
 	set_ref_and_to(msg_list, sms->ref, ref_offset, to);
 	entry = create_tx_queue_entry(msg_list);
@@ -474,9 +474,9 @@ static GDBusSignalTable sms_manager_signals[] = {
 static void dispatch_app_datagram(struct ofono_sms *sms, int dst, int src,
 					unsigned char *buf, long len)
 {
-	ofono_debug("Got app datagram for dst port: %d, src port: %d",
+	DBG("Got app datagram for dst port: %d, src port: %d",
 			dst, src);
-	ofono_debug("Contents-Len: %ld", len);
+	DBG("Contents-Len: %ld", len);
 }
 
 static void dispatch_text_message(struct ofono_sms *sms,
@@ -714,7 +714,7 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 	}
 
 	if (s.deliver.pid == SMS_PID_TYPE_SM_TYPE_0) {
-		ofono_debug("Explicitly ignoring type 0 SMS");
+		DBG("Explicitly ignoring type 0 SMS");
 		return;
 	}
 

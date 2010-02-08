@@ -416,7 +416,7 @@ static void pri_activate_callback(const struct ofono_error *error,
 	DBG("%p %s", ctx, interface);
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Activating context failed with error: %s",
+		DBG("Activating context failed with error: %s",
 				telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&gc->pending,
 					__ofono_error_failed(gc->pending));
@@ -453,7 +453,7 @@ static void pri_deactivate_callback(const struct ofono_error *error, void *data)
 	dbus_bool_t value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Deactivating context failed with error: %s",
+		DBG("Deactivating context failed with error: %s",
 				telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&gc->pending,
 					__ofono_error_failed(gc->pending));
@@ -1223,7 +1223,7 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 		return __ofono_error_failed(msg);
 	}
 
-	ofono_debug("Registering new context");
+	DBG("Registering new context");
 
 	if (!context_dbus_register(context)) {
 		ofono_error("Unable to register primary context");
@@ -1275,7 +1275,7 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 	char **objpath_list;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Removing context failed with error: %s",
+		DBG("Removing context failed with error: %s",
 				telephony_error_to_str(error));
 
 		__ofono_dbus_pending_reply(&gprs->pending,
@@ -1341,7 +1341,7 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
 	}
 
-	ofono_debug("Unregistering context: %s\n", ctx->path);
+	DBG("Unregistering context: %s\n", ctx->path);
 	context_dbus_unregister(ctx);
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
 

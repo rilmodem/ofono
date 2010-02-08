@@ -335,7 +335,7 @@ static void set_acm_max_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_meter *cm = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Setting acm_max failed");
+		DBG("Setting acm_max failed");
 		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
@@ -396,7 +396,7 @@ static void set_puct_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_meter *cm = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("setting puct failed");
+		DBG("setting puct failed");
 		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;
@@ -592,7 +592,7 @@ static void acm_reset_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_meter *cm = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("reseting acm failed");
+		DBG("reseting acm failed");
 		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
 		return;

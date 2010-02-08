@@ -331,7 +331,7 @@ static void cbs_set_topics_cb(const struct ofono_error *error, void *data)
 		g_slist_free(cbs->new_topics);
 		cbs->new_topics = NULL;
 
-		ofono_debug("Setting Cell Broadcast topics failed");
+		DBG("Setting Cell Broadcast topics failed");
 		__ofono_dbus_pending_reply(&cbs->pending,
 					__ofono_error_failed(cbs->pending));
 		return;
@@ -770,7 +770,7 @@ static void sim_cbmi_read_cb(int ok, int length, int record,
 		return;
 
 	str = cbs_topic_ranges_to_string(cbs->efcbmi_contents);
-	ofono_debug("Got cbmi: %s", str);
+	DBG("Got cbmi: %s", str);
 	g_free(str);
 }
 
@@ -817,7 +817,7 @@ static void sim_cbmir_read_cb(int ok, int length, int record,
 		return;
 
 	str = cbs_topic_ranges_to_string(cbs->efcbmir_contents);
-	ofono_debug("Got cbmir: %s", str);
+	DBG("Got cbmir: %s", str);
 	g_free(str);
 }
 
@@ -860,7 +860,7 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	cbs->efcbmid_contents = g_slist_reverse(contents);
 
 	str = cbs_topic_ranges_to_string(cbs->efcbmid_contents);
-	ofono_debug("Got cbmid: %s", str);
+	DBG("Got cbmid: %s", str);
 	g_free(str);
 
 done:
@@ -872,7 +872,7 @@ static void cbs_got_imsi(struct ofono_cbs *cbs)
 	const char *imsi = ofono_sim_get_imsi(cbs->sim);
 	char *topics_str;
 
-	ofono_debug("Got IMSI: %s", imsi);
+	DBG("Got IMSI: %s", imsi);
 
 	cbs->settings = storage_open(imsi, SETTINGS_STORE);
 	if (cbs->settings == NULL)

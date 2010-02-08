@@ -129,7 +129,7 @@ static void cf_cond_list_print(GSList *list)
 	for (l = list; l; l = l->next) {
 		cond = l->data;
 
-		ofono_debug("CF Condition status: %d, class: %d, number: %s,"
+		DBG("CF Condition status: %d, class: %d, number: %s,"
 			" number_type: %d, time: %d",
 			cond->status, cond->cls, cond->phone_number.number,
 			cond->phone_number.type, cond->time);
@@ -396,7 +396,7 @@ static void get_query_cf_callback(const struct ofono_error *error, int total,
 		l = cf_cond_list_create(total, list);
 		set_new_cond_list(cf, cf->query_next, l);
 
-		ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
+		DBG("%s conditions:", cf_type_lut[cf->query_next]);
 		cf_cond_list_print(l);
 
 		if (cf->query_next == CALL_FORWARDING_TYPE_NOT_REACHABLE)
@@ -519,7 +519,7 @@ static void set_query_cf_callback(const struct ofono_error *error, int total,
 	l = cf_cond_list_create(total, list);
 	set_new_cond_list(cf, cf->query_next, l);
 
-	ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
+	DBG("%s conditions:", cf_type_lut[cf->query_next]);
 	cf_cond_list_print(l);
 
 	if (cf->query_next != cf->query_end) {
@@ -539,7 +539,7 @@ static void set_property_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during set/erasure");
+		DBG("Error occurred during set/erasure");
 		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
 		return;
@@ -565,8 +565,7 @@ static DBusMessage *set_property_request(struct ofono_call_forwarding *cf,
 	cf->query_next = type;
 	cf->query_end = type;
 
-	ofono_debug("Farming off request, will be erasure: %d",
-			ph->number[0] == '\0');
+	DBG("Farming off request, will be erasure: %d", ph->number[0] == '\0');
 
 	if (ph->number[0] != '\0')
 		cf->driver->registration(cf, type, cls, ph, timeout,
@@ -664,7 +663,7 @@ static void disable_conditional_callback(const struct ofono_error *error,
 	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during conditional erasure");
+		DBG("Error occurred during conditional erasure");
 
 		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
@@ -682,7 +681,7 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during erasure of all");
+		DBG("Error occurred during erasure of all");
 
 		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
@@ -835,7 +834,7 @@ static void ss_set_query_cf_callback(const struct ofono_error *error, int total,
 	}
 
 	l = cf_cond_list_create(total, list);
-	ofono_debug("%s conditions:", cf_type_lut[cf->query_next]);
+	DBG("%s conditions:", cf_type_lut[cf->query_next]);
 	cf_cond_list_print(l);
 
 	cf->ss_req->cf_list[cf->query_next] = l;
@@ -866,7 +865,7 @@ static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during cf ss control set/erasure");
+		DBG("Error occurred during cf ss control set/erasure");
 
 		__ofono_dbus_pending_reply(&cf->pending,
 					__ofono_error_failed(cf->pending));
@@ -903,10 +902,10 @@ static gboolean cf_ss_control(int type, const char *sc,
 		return TRUE;
 	}
 
-	ofono_debug("Received call forwarding ss control request");
+	DBG("Received call forwarding ss control request");
 
-	ofono_debug("type: %d, sc: %s, sia: %s, sib: %s, sic: %s, dn: %s",
-			type, sc, sia, sib, sic, dn);
+	DBG("type: %d, sc: %s, sia: %s, sib: %s, sic: %s, dn: %s",
+		type, sc, sia, sib, sic, dn);
 
 	if (!strcmp(sc, "21"))
 		cf_type = CALL_FORWARDING_TYPE_UNCONDITIONAL;

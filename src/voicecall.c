@@ -879,7 +879,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 	gboolean need_to_emit = FALSE;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Dial callback returned error: %s",
+		DBG("Dial callback returned error: %s",
 			telephony_error_to_str(error));
 		reply = __ofono_error_failed(vc->pending);
 		__ofono_dbus_pending_reply(&vc->pending, reply);
@@ -917,7 +917,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 
 		v->detect_time = time(NULL);
 
-		ofono_debug("Registering new call: %d", call->id);
+		DBG("Registering new call: %d", call->id);
 		voicecall_dbus_register(v);
 
 		vc->call_list = g_slist_insert_sorted(vc->call_list, v,
@@ -1167,7 +1167,7 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 	GSList *l;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("command failed with error: %s",
+		DBG("command failed with error: %s",
 				telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&vc->pending,
 					__ofono_error_failed(vc->pending));
@@ -1261,7 +1261,7 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("command failed with error: %s",
+		DBG("command failed with error: %s",
 				telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&vc->pending,
 					__ofono_error_failed(vc->pending));
@@ -1465,7 +1465,7 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 	time_t ts;
 	enum call_status prev_status;
 
-	ofono_debug("Got disconnection event for id: %d, reason: %d", id, reason);
+	DBG("Got disconnection event for id: %d, reason: %d", id, reason);
 
 	__ofono_modem_callid_release(modem, id);
 
@@ -1527,14 +1527,14 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 	struct voicecall *v = NULL;
 	struct ofono_call *newcall;
 
-	ofono_debug("Got a voicecall event, status: %d, id: %u, number: %s",
+	DBG("Got a voicecall event, status: %d, id: %u, number: %s",
 			call->status, call->id, call->phone_number.number);
 
 	l = g_slist_find_custom(vc->call_list, GUINT_TO_POINTER(call->id),
 				call_compare_by_id);
 
 	if (l) {
-		ofono_debug("Found call with id: %d\n", call->id);
+		DBG("Found call with id: %d\n", call->id);
 		voicecall_set_call_status(l->data, call->status);
 		voicecall_set_call_lineid(l->data, &call->phone_number,
 						call->clip_validity);
@@ -1542,7 +1542,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 		return;
 	}
 
-	ofono_debug("Did not find a call with id: %d\n", call->id);
+	DBG("Did not find a call with id: %d\n", call->id);
 
 	__ofono_modem_callid_hold(modem, call->id);
 
@@ -1587,7 +1587,7 @@ static void generic_callback(const struct ofono_error *error, void *data)
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_debug("command failed with error: %s",
+		DBG("command failed with error: %s",
 				telephony_error_to_str(error));
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)

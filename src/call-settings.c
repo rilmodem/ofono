@@ -372,7 +372,7 @@ static void cw_ss_query_callback(const struct ofono_error *error, int status,
 	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("setting CW via SS failed");
+		DBG("setting CW via SS failed");
 
 		cs->flags &= ~CALL_SETTINGS_FLAG_CACHED;
 		__ofono_dbus_pending_reply(&cs->pending,
@@ -391,7 +391,7 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("setting CW via SS failed");
+		DBG("setting CW via SS failed");
 		__ofono_dbus_pending_reply(&cs->pending,
 					__ofono_error_failed(cs->pending));
 
@@ -527,7 +527,7 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 	const char *value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during ss control query");
+		DBG("Error occurred during ss control query");
 		__ofono_dbus_pending_reply(&cs->pending,
 					__ofono_error_failed(cs->pending));
 
@@ -611,7 +611,7 @@ static gboolean clip_colp_colr_ss(int type,
 		return TRUE;
 	}
 
-	ofono_debug("Received CLIP/COLR/COLP query ss control");
+	DBG("Received CLIP/COLR/COLP query ss control");
 
 	cs->pending = dbus_message_ref(msg);
 
@@ -627,7 +627,7 @@ static void clir_ss_query_callback(const struct ofono_error *error,
 	const char *value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("setting clir via SS failed");
+		DBG("setting clir via SS failed");
 		__ofono_dbus_pending_reply(&cs->pending,
 					__ofono_error_failed(cs->pending));
 
@@ -675,7 +675,7 @@ static void clir_ss_set_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("setting clir via SS failed");
+		DBG("setting clir via SS failed");
 		__ofono_dbus_pending_reply(&cs->pending,
 					__ofono_error_failed(cs->pending));
 
@@ -996,7 +996,7 @@ static void clir_set_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("setting clir failed");
+		DBG("setting clir failed");
 		__ofono_dbus_pending_reply(&cs->pending,
 					__ofono_error_failed(cs->pending));
 
@@ -1058,7 +1058,7 @@ static void cw_set_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during CW set");
+		DBG("Error occurred during CW set");
 
 		__ofono_dbus_pending_reply(&cs->pending,
 					__ofono_error_failed(cs->pending));

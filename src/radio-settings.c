@@ -134,7 +134,7 @@ static void radio_mode_set_callback(const struct ofono_error *error, void *data)
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error setting radio access mode");
+		DBG("Error setting radio access mode");
 		rs->pending_mode = rs->mode;
 		reply = __ofono_error_failed(rs->pending);
 		__ofono_dbus_pending_reply(&rs->pending, reply);
@@ -155,7 +155,7 @@ static void radio_rat_mode_query_callback(const struct ofono_error *error,
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during radio access mode query");
+		DBG("Error during radio access mode query");
 		reply = __ofono_error_failed(rs->pending);
 		__ofono_dbus_pending_reply(&rs->pending, reply);
 		return;

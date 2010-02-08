@@ -418,7 +418,7 @@ static void mw_cphs_mwis_read_cb(int ok, int total_length, int record,
 	unsigned char indication;
 
 	if (!ok || total_length < 1) {
-		ofono_debug("No CPHS MWIS on SIM");
+		DBG("No CPHS MWIS on SIM");
 		mw->ef_cphs_mwis_length = 0;
 		return;
 	}

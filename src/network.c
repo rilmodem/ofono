@@ -246,7 +246,7 @@ static void network_operator_populate_registered(struct ofono_netreg *netreg,
 				__ofono_atom_get_path(netreg->atom));
 
 	if (!dbus_connection_list_registered(conn, path, &children)) {
-		ofono_debug("Unable to obtain registered NetworkOperator(s)");
+		DBG("Unable to obtain registered NetworkOperator(s)");
 		*network_operators = g_try_new0(char *, 1);
 		return;
 	}
@@ -1153,7 +1153,7 @@ static void operator_list_callback(const struct ofono_error *error, int total,
 	gboolean need_to_emit;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error occurred during operator list");
+		DBG("Error occurred during operator list");
 		__ofono_dbus_pending_reply(&netreg->pending,
 					__ofono_error_failed(netreg->pending));
 		return;
@@ -1194,7 +1194,7 @@ static void current_operator_callback(const struct ofono_error *error,
 	DBG("%p, %p", netreg, netreg->current_operator);
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during current operator");
+		DBG("Error during current operator");
 		return;
 	}
 
@@ -1273,7 +1273,7 @@ static void registration_status_callback(const struct ofono_error *error,
 	struct ofono_netreg *netreg = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during registration status query");
+		DBG("Error during registration status query");
 		return;
 	}
 
@@ -1287,7 +1287,7 @@ static void init_registration_status(const struct ofono_error *error,
 	struct ofono_netreg *netreg = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during registration status query");
+		DBG("Error during registration status query");
 		return;
 	}
 
@@ -1346,7 +1346,7 @@ static void signal_strength_callback(const struct ofono_error *error,
 	struct ofono_netreg *netreg = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Error during signal strength query");
+		DBG("Error during signal strength query");
 		return;
 	}
 

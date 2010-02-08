@@ -231,13 +231,13 @@ static gboolean recognized_control_string(struct ofono_ussd *ussd,
 	int type;
 	gboolean ret = FALSE;
 
-	ofono_debug("parsing control string");
+	DBG("parsing control string");
 
 	if (parse_ss_control_string(str, &type, &sc,
 				&sia, &sib, &sic, &sid, &dn)) {
 		GSList *l = ussd->ss_control_list;
 
-		ofono_debug("Got parse result: %d, %s, %s, %s, %s, %s, %s",
+		DBG("Got parse result: %d, %s, %s, %s, %s, %s, %s",
 				type, sc, sia, sib, sic, sid, dn);
 
 		/* A password change string needs to be treated separately
@@ -332,7 +332,7 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 		ussd->state = USSD_STATE_IDLE;
 	} else {
 		ofono_error("Received an unsolicited USSD, ignoring for now...");
-		ofono_debug("USSD is: status: %d, %s", status, str);
+		DBG("USSD is: status: %d, %s", status, str);
 
 		return;
 	}
@@ -351,7 +351,7 @@ static void ussd_callback(const struct ofono_error *error, void *data)
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_debug("ussd request failed with error: %s",
+		DBG("ussd request failed with error: %s",
 				telephony_error_to_str(error));
 
 	ussd->flags &= ~USSD_FLAG_PENDING;
@@ -391,15 +391,15 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 	if (strlen(str) == 0)
 		return __ofono_error_invalid_format(msg);
 
-	ofono_debug("checking if this is a recognized control string");
+	DBG("checking if this is a recognized control string");
 	if (recognized_control_string(ussd, str, msg))
 		return NULL;
 
-	ofono_debug("No.., checking if this is a USSD string");
+	DBG("No.., checking if this is a USSD string");
 	if (!valid_ussd_string(str))
 		return __ofono_error_invalid_format(msg);
 
-	ofono_debug("OK, running USSD request");
+	DBG("OK, running USSD request");
 
 	if (!ussd->driver->request)
 		return __ofono_error_not_implemented(msg);
@@ -418,7 +418,7 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_debug("ussd cancel failed with error: %s",
+		DBG("ussd cancel failed with error: %s",
 				telephony_error_to_str(error));
 
 	ussd->flags &= ~USSD_FLAG_PENDING;

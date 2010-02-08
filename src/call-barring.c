@@ -328,7 +328,7 @@ static void cb_ss_set_lock_callback(const struct ofono_error *error,
 	struct ofono_call_barring *cb = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Enabling/disabling Call Barring via SS failed");
+		DBG("Enabling/disabling Call Barring via SS failed");
 		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;
@@ -380,10 +380,10 @@ static gboolean cb_ss_control(int type, const char *sc,
 		return TRUE;
 	}
 
-	ofono_debug("Received call barring ss control request");
+	DBG("Received call barring ss control request");
 
-	ofono_debug("type: %d, sc: %s, sia: %s, sib: %s, sic: %s, dn: %s",
-			type, sc, sia, sib, sic, dn);
+	DBG("type: %d, sc: %s, sia: %s, sib: %s, sic: %s, dn: %s",
+		type, sc, sia, sib, sic, dn);
 
 	fac = cb_ss_service_to_fac(sc);
 	if (!fac)
@@ -490,7 +490,7 @@ static void cb_set_passwd_callback(const struct ofono_error *error, void *data)
 		reply = dbus_message_new_method_return(cb->pending);
 	else {
 		reply = __ofono_error_failed(cb->pending);
-		ofono_debug("Changing Call Barring password via SS failed");
+		DBG("Changing Call Barring password via SS failed");
 	}
 
 	__ofono_dbus_pending_reply(&cb->pending, reply);
@@ -512,9 +512,9 @@ static gboolean cb_ss_passwd(const char *sc,
 		return TRUE;
 	}
 
-	ofono_debug("Received call barring ss password change request");
+	DBG("Received call barring ss password change request");
 
-	ofono_debug("sc: %s", sc);
+	DBG("sc: %s", sc);
 
 	if (!strcmp(sc, ""))
 		fac = "AB";
@@ -728,7 +728,7 @@ static void set_lock_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_barring *cb = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Enabling/disabling a lock failed");
+		DBG("Enabling/disabling a lock failed");
 		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;
@@ -876,7 +876,7 @@ static void disable_all_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_barring *cb = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_debug("Disabling all barring failed");
+		DBG("Disabling all barring failed");
 		__ofono_dbus_pending_reply(&cb->pending,
 					__ofono_error_failed(cb->pending));
 		return;

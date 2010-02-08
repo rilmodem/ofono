@@ -1506,7 +1506,7 @@ static gboolean sim_op_check_cached(struct ofono_sim *sim)
 
 	if (fd == -1) {
 		if (errno != ENOENT)
-			ofono_debug("Error %i opening cache file for "
+			DBG("Error %i opening cache file for "
 					"fileid %04x, IMSI %s",
 					errno, op->id, imsi);
 
@@ -1810,7 +1810,7 @@ static void sim_cb_download_cb(const struct ofono_error *error,
 		return;
 	}
 
-	ofono_debug("CellBroadcast download to UICC reported no error");
+	DBG("CellBroadcast download to UICC reported no error");
 }
 
 void __ofono_cbs_sim_download(struct ofono_sim *sim,
