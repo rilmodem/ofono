@@ -91,7 +91,6 @@ static void at_csca_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_sms_sca_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("csca_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -130,7 +129,6 @@ static void at_csca_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_phone_number sca;
 	const char *number;
 
-	dump_response("at_csca_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -196,7 +194,6 @@ static void at_cmgs_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	int mr;
 
-	dump_response("at_cmgs_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -289,8 +286,6 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 	const char *pdu;
 	char buf[256];
 
-	dump_response("at_cds_notify", TRUE, result);
-
 	if (!at_parse_pdu_common(result, "+CDS:", &pdu, &pdulen)) {
 		ofono_error("Unable to parse CDS notification");
 		return;
@@ -317,8 +312,6 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 	int tpdu_len;
 	unsigned char pdu[176];
 	char buf[256];
-
-	dump_response("at_cmt_notify", TRUE, result);
 
 	if (!at_parse_pdu_common(result, "+CMT:", &hexpdu, &tpdu_len)) {
 		ofono_error("Unable to parse CMT notification");
@@ -353,8 +346,6 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 	unsigned char pdu[176];
 	long pdu_len;
 	int tpdu_len;
-
-	dump_response("at_cmgr_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 
@@ -428,8 +419,6 @@ static void at_cmti_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int index;
 
-	dump_response("at_cmti_notify", TRUE, result);
-
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CMTI:"))
@@ -500,8 +489,6 @@ static void at_cmgl_notify(GAtResult *result, gpointer user_data)
 	int index;
 	int status;
 	char buf[16];
-
-	dump_response("at_cmgl_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 
@@ -753,8 +740,6 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	gboolean supported = FALSE;
 	char buf[128];
 
-	dump_response("at_cnmi_query_cb", ok, result);
-
 	if (!ok)
 		goto out;
 
@@ -807,8 +792,6 @@ static void at_cpms_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_sms *sms = user_data;
 	struct sms_data *data = ofono_sms_get_data(sms);
 
-	dump_response("at_cpms_set_cb", ok, result);
-
 	if (ok)
 		return at_query_cnmi(sms);
 
@@ -843,8 +826,6 @@ static void at_cmgf_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_sms *sms = user_data;
 	struct sms_data *data = ofono_sms_get_data(sms);
 
-	dump_response("at_cmgf_set_cb", ok, result);
-
 	if (ok) {
 		data->retries = 0;
 		set_cpms(sms);
@@ -877,8 +858,6 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 	struct ofono_sms *sms = user_data;
 	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean supported = FALSE;
-
-	dump_response("cpms_query_cb", ok, result);
 
 	if (ok) {
 		int mem = 0;
@@ -954,8 +933,6 @@ static void at_cmgf_query_cb(gboolean ok, GAtResult *result,
 	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean supported = FALSE;
 
-	dump_response("cmgf_query_cb", ok, result);
-
 	if (ok) {
 		GAtResultIter iter;
 		int mode;
@@ -988,8 +965,6 @@ static void at_csms_status_cb(gboolean ok, GAtResult *result,
 	struct ofono_sms *sms = user_data;
 	struct sms_data *data = ofono_sms_get_data(sms);
 	gboolean supported = FALSE;
-
-	dump_response("csms_status_cb", ok, result);
 
 	if (ok) {
 		GAtResultIter iter;
@@ -1046,8 +1021,6 @@ static void at_csms_query_cb(gboolean ok, GAtResult *result,
 	GAtResultIter iter;
 	int status_min, status_max;
 	char buf[128];
-
-	dump_response("csms_query_cb", ok, result);
 
 	if (!ok)
 		return at_sms_not_supported(sms);

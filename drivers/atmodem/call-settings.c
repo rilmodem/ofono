@@ -55,7 +55,6 @@ static void ccwa_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	GAtResultIter iter;
 
-	dump_response("ccwa_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok)
@@ -111,7 +110,6 @@ static void ccwa_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_call_settings_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("ccwa_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -149,7 +147,6 @@ static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int status = -1;
 
-	dump_response("clip_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -201,7 +198,6 @@ static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int status;
 
-	dump_response("colp_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -253,7 +249,6 @@ static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int override = 0, network = 2;
 
-	dump_response("clir_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -302,7 +297,6 @@ static void clir_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_call_settings_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("clir_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);

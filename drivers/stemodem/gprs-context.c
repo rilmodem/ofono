@@ -239,8 +239,6 @@ static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
 	struct conn_info *conn;
 	GSList *l;
 
-	dump_response("ste_eppsd_down_cb", ok, result);
-
 	if (!ok)
 		goto error;
 
@@ -287,8 +285,6 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *dns[MAX_DNS + 1];
 	struct eppsd_response rsp;
 	GMarkupParseContext *context = NULL;
-
-	dump_response("ste_eppsd_up_cb", ok, result);
 
 	l = g_slist_find_custom(g_caif_devices,
 				GUINT_TO_POINTER(gcd->active_context),
@@ -369,8 +365,6 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	char buf[128];
 	struct conn_info *conn;
 	GSList *l;
-
-	dump_response("cgdcont_cb", ok, result);
 
 	if (!ok) {
 		struct ofono_error error;
@@ -503,8 +497,6 @@ static void ste_cgact_read_cb(gboolean ok, GAtResult *result,
 	gint cid, state;
 	GAtResultIter iter;
 
-	dump_response("cgact_read_cb", ok, result);
-
 	if (!ok)
 		return;
 
@@ -537,8 +529,6 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	GAtResultIter iter;
 	const char *event;
-
-	dump_response("cgev_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 

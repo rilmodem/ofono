@@ -35,17 +35,6 @@
 #include "atutil.h"
 #include "vendor.h"
 
-void dump_response(const char *func, gboolean ok, GAtResult *result)
-{
-	GSList *l;
-
-	ofono_debug("%s got result: %d", func, ok);
-	ofono_debug("Final response: %s", result->final_or_pdu);
-
-	for (l = result->lines; l; l = l->next)
-		ofono_debug("Response line: %s", (char *) l->data);
-}
-
 void decode_at_error(struct ofono_error *error, const char *final)
 {
 	if (!strcmp(final, "OK")) {

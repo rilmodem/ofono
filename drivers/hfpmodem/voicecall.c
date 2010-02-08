@@ -207,8 +207,6 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	unsigned int num_active = 0;
 	unsigned int num_held = 0;
 
-	dump_response("clcc_poll_cb", ok, result);
-
 	if (!ok)
 		return;
 
@@ -300,7 +298,6 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
 
-	dump_response("generic_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok && req->affected_types) {
@@ -329,8 +326,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	struct ofono_call *call;
 	GSList *l;
-
-	dump_response("atd_cb", ok, result);
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -497,7 +492,6 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
 
-	dump_response("release_id_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
@@ -642,8 +636,6 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	int num_type, validity;
 	struct ofono_call *call;
 
-	dump_response("ccwa_notify", TRUE, result);
-
 	/* CCWA can repeat, ignore if we already have an waiting call */
 	if (g_slist_find_custom(vd->calls,
 				GINT_TO_POINTER(CALL_STATUS_WAITING),
@@ -709,8 +701,6 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 	struct ofono_call *call;
 	GSList *waiting;
 
-	dump_response("ring_notify", TRUE, result);
-
 	/* RING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls,
 				GINT_TO_POINTER(CALL_STATUS_INCOMING),
@@ -761,8 +751,6 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	int type, validity;
 	GSList *l;
 	struct ofono_call *call;
-
-	dump_response("clip_notify", TRUE, result);
 
 	l = g_slist_find_custom(vd->calls,
 				GINT_TO_POINTER(CALL_STATUS_INCOMING),
@@ -880,7 +868,6 @@ static void sync_dialing_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_call *oc;
 	struct ofono_call *nc;
 
-	dump_response("sync_dialing_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok)

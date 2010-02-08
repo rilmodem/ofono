@@ -50,7 +50,6 @@ static void clck_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int status_mask, status, class, line;
 
-	dump_response("clck_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	status_mask = 0;
@@ -109,7 +108,6 @@ static void clck_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_call_barring_set_cb_t callback = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("clck_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 	callback(&error, cbd->data);
 }
@@ -153,7 +151,6 @@ static void cpwd_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_call_barring_set_cb_t callback = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("cpwd_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 	callback(&error, cbd->data);
 }

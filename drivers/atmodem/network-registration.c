@@ -75,7 +75,6 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	struct netreg_data *nd = cbd->user;
 
-	dump_response("at_creg_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -126,7 +125,6 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *name;
 	struct ofono_error error;
 
-	dump_response("cops_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok || nd->mcc[0] == '\0' || nd->mnc[0] == '\0') {
@@ -188,8 +186,6 @@ static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	const char *str;
 	int format;
-
-	dump_response("cops_numeric_cb", ok, result);
 
 	if (!ok)
 		goto error;
@@ -267,7 +263,6 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int num = 0;
 	struct ofono_error error;
 
-	dump_response("cops_list_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -386,7 +381,6 @@ static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_netreg_register_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("register_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -475,8 +469,6 @@ static void csq_notify(GAtResult *result, gpointer user_data)
 	int strength;
 	GAtResultIter iter;
 
-	dump_response("csq_notify", TRUE, result);
-
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CSQ:"))
@@ -494,8 +486,6 @@ static void calypso_csq_notify(GAtResult *result, gpointer user_data)
 	int strength;
 	GAtResultIter iter;
 
-	dump_response("calypso_csq_notify", TRUE, result);
-
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "%CSQ:"))
@@ -512,8 +502,6 @@ static void option_osigq_notify(GAtResult *result, gpointer user_data)
 	struct ofono_netreg *netreg = user_data;
 	int strength;
 	GAtResultIter iter;
-
-	dump_response("option_osigq_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 
@@ -564,8 +552,6 @@ static void ste_ciev_notify(GAtResult *result, gpointer user_data)
 	int strength, ind;
 	GAtResultIter iter;
 
-	dump_response("ciev_notify", TRUE, result);
-
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CIEV:"))
@@ -591,7 +577,6 @@ static void ste_cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	struct ofono_error error;
 
-	dump_response("cind_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -640,7 +625,6 @@ static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	struct ofono_error error;
 
-	dump_response("csq_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -698,8 +682,6 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	struct ofono_netreg *netreg = user_data;
 	int status, lac, ci, tech;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-
-	dump_response("creg_notify", TRUE, result);
 
 	if (at_util_parse_reg_unsolicited(result, "+CREG:", &status,
 				&lac, &ci, &tech, nd->vendor) == FALSE)
@@ -793,8 +775,6 @@ static void at_creg_test_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int creg1 = 0;
 	int creg2 = 0;
-
-	dump_response("creg_read_cb", ok, result);
 
 	if (!ok)
 		goto error;

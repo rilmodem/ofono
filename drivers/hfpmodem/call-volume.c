@@ -59,7 +59,6 @@ static void cv_generic_set_cb(gboolean ok, GAtResult *result,
 	ofono_call_volume_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("generic_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);

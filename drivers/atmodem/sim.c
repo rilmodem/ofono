@@ -60,7 +60,6 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int str;
 	unsigned char access[3];
 
-	dump_response("at_crsm_info_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -137,7 +136,6 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 	const guint8 *response;
 	gint sw1, sw2, len;
 
-	dump_response("at_crsm_read_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -226,7 +224,6 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 	struct ofono_error error;
 	gint sw1, sw2;
 
-	dump_response("at_crsm_update_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -364,7 +361,6 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *imsi;
 	int i;
 
-	dump_response("at_cimi_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -437,7 +433,6 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int i;
 	int len = sizeof(at_sim_name) / sizeof(*at_sim_name);
 
-	dump_response("at_cpin_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -499,7 +494,6 @@ static void at_lock_unlock_cb(gboolean ok, GAtResult *result,
 	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("at_lock_unlock_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -653,7 +647,6 @@ static void at_lock_status_cb(gboolean ok, GAtResult *result,
 	struct ofono_error error;
 	int locked;
 
-	dump_response("at_lock_status_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -714,7 +707,6 @@ static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
 	const guint8 *response;
 	gint rlen, len;
 
-	dump_response("at_csim_envelope_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok)

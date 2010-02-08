@@ -122,8 +122,6 @@ static void hso_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct cb_data *ncbd;
 	char buf[64];
 
-	dump_response("cgdcont_cb", ok, result);
-
 	if (!ok) {
 		struct ofono_error error;
 

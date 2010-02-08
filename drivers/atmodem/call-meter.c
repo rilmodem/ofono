@@ -56,7 +56,6 @@ static void caoc_cacm_camm_query_cb(gboolean ok,
 	char *end;
 	int meter;
 
-	dump_response("caoc_cacm_camm_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -88,8 +87,6 @@ static void cccm_notify(GAtResult *result, gpointer user_data)
 	const char *meter_hex;
 	char *end;
 	int meter;
-
-	dump_response("cccm_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 
@@ -156,7 +153,6 @@ static void generic_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_call_meter_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("generic_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -242,7 +238,6 @@ static void cpuc_query_cb(gboolean ok,
 	char currency_buf[64];
 	double ppuval;
 
-	dump_response("cpuc_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -316,8 +311,6 @@ static void ccwv_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_call_meter *cm = user_data;
 	GAtResultIter iter;
-
-	dump_response("ccwv_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 	if (!g_at_result_iter_next(&iter, "+CCWV"))

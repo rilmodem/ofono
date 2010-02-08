@@ -56,8 +56,6 @@ static void at_cbm_notify(GAtResult *result, gpointer user_data)
 	unsigned char pdu[88];
 	long hexpdulen;
 
-	dump_response("at_cbm_notify", TRUE, result);
-
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CBM:"))
@@ -99,7 +97,6 @@ static void at_cscb_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_cbs_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("cscb_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -184,8 +181,6 @@ static void at_cscb_support_cb(gboolean ok, GAtResult *result, gpointer user)
 	gint range[2];
 	GAtResultIter iter;
 	char buf[256];
-
-	dump_response("at_cscb_support_cb", ok, result);
 
 	if (!ok)
 		goto error;

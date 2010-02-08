@@ -128,8 +128,6 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_call *nc, *oc;
 	gboolean poll_again = FALSE;
 
-	dump_response("clcc_poll_cb", ok, result);
-
 	if (!ok) {
 		ofono_error("We are polling CLCC and received an error");
 		ofono_error("All bets are off for call management");
@@ -217,7 +215,6 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
 
-	dump_response("generic_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok && req->affected_types) {
@@ -246,7 +243,6 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
 
-	dump_response("release_id_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
@@ -272,8 +268,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	struct ofono_call *call;
 	GSList *l;
-
-	dump_response("atd_cb", ok, result);
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -536,7 +530,6 @@ static void vts_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_voicecall_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("vts_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 	cb(&error, cbd->data);
 }
@@ -586,8 +579,6 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct ofono_call *call;
 
-	dump_response("ring_notify", TRUE, result);
-
 	/* See comment in CRING */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),
 				at_util_call_compare_by_status))
@@ -617,8 +608,6 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	const char *line;
 	int type;
-
-	dump_response("cring_notify", TRUE, result);
 
 	/* Handle the following situation:
 	 * Active Call + Waiting Call.  Active Call is Released.  The Waiting
@@ -674,8 +663,6 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	int type, validity;
 	GSList *l;
 	struct ofono_call *call;
-
-	dump_response("clip_notify", TRUE, result);
 
 	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
 				at_util_call_compare_by_status);
@@ -739,8 +726,6 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	const char *num;
 	int num_type, validity, cls;
 	struct ofono_call *call;
-
-	dump_response("ccwa_notify", TRUE, result);
 
 	/* Some modems resend CCWA, ignore it the second time around */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),

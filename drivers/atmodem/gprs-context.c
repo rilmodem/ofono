@@ -58,7 +58,6 @@ static void at_cgact_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (ok)
 		gcd->active_context = 0;
 
-	dump_response("cgact_down_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -70,7 +69,6 @@ static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_gprs_context_up_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("cgact_up_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
@@ -84,8 +82,6 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *ncbd;
 	char buf[64];
-
-	dump_response("cgdcont_cb", ok, result);
 
 	if (!ok) {
 		struct ofono_error error;
@@ -179,8 +175,6 @@ static void at_cgact_read_cb(gboolean ok, GAtResult *result,
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	gint cid, state;
 	GAtResultIter iter;
-
-	dump_response("cgact_read_cb", ok, result);
 
 	if (!ok)
 		return;

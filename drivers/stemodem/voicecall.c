@@ -134,7 +134,6 @@ static void ste_generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
 
-	dump_response("ste_generic_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok && req->affected_types) {
@@ -159,7 +158,6 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	struct voicecall_data *vd = ofono_voicecall_get_data(req->vc);
 	struct ofono_error error;
 
-	dump_response("release_id_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
@@ -173,8 +171,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct cb_data *cbd = user_data;
 	struct ofono_error error;
 	ofono_voicecall_cb_t cb = cbd->cb;
-
-	dump_response("atd_cb", ok, result);
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -372,7 +368,6 @@ static void vts_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_voicecall_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("vts_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 	cb(&error, cbd->data);
 }
@@ -427,8 +422,6 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 	GSList *l;
 
 	/* Parse ECAV */
-	dump_response("ecav_notify", TRUE, result);
-
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "*ECAV:"))

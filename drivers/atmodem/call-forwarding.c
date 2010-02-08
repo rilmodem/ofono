@@ -53,7 +53,6 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int i;
 	int maxlen;
 
-	dump_response("ccfc_query_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok)
@@ -156,7 +155,6 @@ static void ccfc_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_call_forwarding_set_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("ccfc_set_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);

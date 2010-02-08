@@ -56,7 +56,6 @@ static void at_cgatt_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_gprs_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("cgatt_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -93,7 +92,6 @@ static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int status, lac, ci, tech;
 	struct gprs_data *gd = cbd->user;
 
-	dump_response("at_cgreg_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -138,8 +136,6 @@ static void cgreg_notify(GAtResult *result, gpointer user_data)
 	struct ofono_gprs *gprs = user_data;
 	int status, lac, ci, tech;
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-
-	dump_response("cgreg_notify", TRUE, result);
 
 	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
 				&lac, &ci, &tech, gd->vendor) == FALSE)
@@ -191,8 +187,6 @@ static void at_cgreg_test_cb(gboolean ok, GAtResult *result,
 	int cgreg1 = 0;
 	int cgreg2 = 0;
 	const char *cmd;
-
-	dump_response("cgreg_read_cb", ok, result);
 
 	if (!ok)
 		goto error;

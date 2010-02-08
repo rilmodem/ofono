@@ -45,8 +45,6 @@ static void cssi_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int code1, index;
 
-	dump_response("cssi_notify", TRUE, result);
-
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CSSI:"))
@@ -72,8 +70,6 @@ static void cssu_notify(GAtResult *result, gpointer user_data)
 
 	ph.number[0] = '\0';
 	ph.type = 129;
-
-	dump_response("cssu_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 

@@ -52,7 +52,6 @@ static void calypso_generic_cb(gboolean ok, GAtResult *result,
 	ofono_voicecall_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("calypso_generic_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -234,8 +233,6 @@ static void cpi_notify(GAtResult *result, gpointer user_data)
 	int line = 0;
 	int validity;
 	struct ofono_call call;
-
-	dump_response("cpi_notify", TRUE, result);
 
 	g_at_result_iter_init(&iter, result);
 

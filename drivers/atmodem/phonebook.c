@@ -95,8 +95,6 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int current;
 
-	dump_response("at_cbpr_notify", 1, result);
-
 	if (pbd->supported & CHARSET_IRA)
 		current = CHARSET_IRA;
 
@@ -282,8 +280,6 @@ static void at_read_charset_cb(gboolean ok, GAtResult *result,
 	const char *charset;
 	char buf[32];
 
-	dump_response("at_read_charset_cb", ok, result);
-
 	if (!ok)
 		goto error;
 
@@ -355,8 +351,6 @@ static void at_select_storage_cb(gboolean ok, GAtResult *result,
 	struct ofono_phonebook *pb = cbd->user;
 	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 
-	dump_response("at_select_storage_cb", ok, result);
-
 	if (!ok)
 		goto error;
 
@@ -410,8 +404,6 @@ static void at_list_storages_cb(gboolean ok, GAtResult *result,
 	GAtResultIter iter;
 	const char *storage;
 
-	dump_response("at_list_storages_cb", ok, result);
-
 	if (!ok)
 		goto error;
 
@@ -451,8 +443,6 @@ static void at_list_charsets_cb(gboolean ok, GAtResult *result,
 	gboolean in_list = FALSE;
 	GAtResultIter iter;
 	const char *charset;
-
-	dump_response("at_list_charsets_cb", ok, result);
 
 	if (!ok)
 		goto error;

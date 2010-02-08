@@ -109,7 +109,6 @@ static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct cusd_req *cbd = user_data;
 	struct ofono_error error;
 
-	dump_response("cusd_request_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cbd->cb(&error, cbd->data);
@@ -173,7 +172,6 @@ static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_ussd_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
-	dump_response("cusd_cancel_cb", ok, result);
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	cb(&error, cbd->data);
@@ -202,8 +200,6 @@ error:
 static void cusd_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_ussd *ussd = user_data;
-
-	dump_response("cusd_notify", TRUE, result);
 
 	cusd_parse(result, ussd);
 }

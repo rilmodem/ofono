@@ -60,7 +60,6 @@ static void attr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int i;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-	dump_response("attr_cb", ok, result);
 
 	if (!ok) {
 		cb(&error, NULL, cbd->data);
