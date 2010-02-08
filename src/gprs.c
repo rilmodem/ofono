@@ -988,10 +988,10 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_gprs *gprs = data;
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
-		gprs->driver_attached = !gprs->driver_attached;
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		gprs_attached_update(gprs);
-	}
+	else
+		gprs->driver_attached = !gprs->driver_attached;
 
 	if (gprs->driver->registration_status) {
 		gprs->driver->registration_status(gprs, registration_status_cb,
@@ -1029,6 +1029,7 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 	gprs->flags |= GPRS_FLAG_ATTACHING;
 
 	gprs->driver->set_attached(gprs, attach, gprs_attach_callback, gprs);
+	gprs->driver_attached = attach;
 }
 
 static void netreg_status_changed(int status, int lac, int ci, int tech,
@@ -1422,8 +1423,7 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 				int status, int lac, int ci, int tech)
 {
 	/* If we are not attached and haven't tried to attach, ignore */
-	if (gprs->driver_attached == FALSE &&
-			(gprs->flags & GPRS_FLAG_ATTACHING) == 0)
+	if (gprs->driver_attached == FALSE)
 		return;
 
 	if (gprs->status != status)
