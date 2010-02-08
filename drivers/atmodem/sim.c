@@ -425,6 +425,7 @@ static struct {
 static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
+	struct sim_data *sd = ofono_sim_get_data(cbd->user);
 	GAtResultIter iter;
 	ofono_sim_passwd_cb_t cb = cbd->cb;
 	struct ofono_error error;
@@ -432,22 +433,31 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int pin_type = OFONO_SIM_PASSWORD_INVALID;
 	int i;
 	int len = sizeof(at_sim_name) / sizeof(*at_sim_name);
+	const char *final = g_at_result_final_response(result);
 
-	decode_at_error(&error, g_at_result_final_response(result));
+	if (sd->vendor == OFONO_VENDOR_WAVECOM && ok && strlen(final) > 7)
+		decode_at_error(&error, "OK");
+	else
+		decode_at_error(&error, final);
 
 	if (!ok) {
 		cb(&error, -1, cbd->data);
 		return;
 	}
 
-	g_at_result_iter_init(&iter, result);
+	if (sd->vendor == OFONO_VENDOR_WAVECOM) {
+		/* +CPIN: <pin> */
+		pin_required = final + 7;
+	} else {
+		g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "+CPIN:")) {
-		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-		return;
+		if (!g_at_result_iter_next(&iter, "+CPIN:")) {
+			CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+			return;
+		}
+
+		g_at_result_iter_next_unquoted_string(&iter, &pin_required);
 	}
-
-	g_at_result_iter_next_unquoted_string(&iter, &pin_required);
 
 	for (i = 0; i < len; i++) {
 		if (strcmp(pin_required, at_sim_name[i].name))
@@ -475,6 +485,8 @@ static void at_pin_query(struct ofono_sim *sim, ofono_sim_passwd_cb_t cb,
 
 	if (!cbd)
 		goto error;
+
+	cbd->user = sim;
 
 	if (g_at_chat_send(sd->chat, "AT+CPIN?", NULL,
 				at_cpin_cb, cbd, g_free) > 0)
@@ -791,6 +803,9 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd = g_new0(struct sim_data, 1);
 	sd->chat = chat;
 	sd->vendor = vendor;
+
+	if (sd->vendor == OFONO_VENDOR_WAVECOM)
+		g_at_chat_add_terminator(chat, "+CPIN:", 6, TRUE);
 
 	ofono_sim_set_data(sim, sd);
 	g_idle_add(at_sim_register, sim);
