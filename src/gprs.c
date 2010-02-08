@@ -44,6 +44,7 @@
 #define DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 
 #define GPRS_FLAG_ATTACHING 0x1
+#define GPRS_FLAG_RECHECK 0x2
 
 #define SETTINGS_STORE "gprs"
 #define SETTINGS_GROUP "Settings"
@@ -976,6 +977,11 @@ static void registration_status_cb(const struct ofono_error *error,
 		ofono_gprs_status_notify(gprs, status, lac, ci, tech);
 
 	gprs->flags &= ~GPRS_FLAG_ATTACHING;
+
+	if (gprs->flags & GPRS_FLAG_RECHECK) {
+		gprs->flags &= ~GPRS_FLAG_RECHECK;
+		gprs_netreg_update(gprs);
+	}
 }
 
 static void gprs_attach_callback(const struct ofono_error *error, void *data)
@@ -994,6 +1000,11 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 	}
 
 	gprs->flags &= ~GPRS_FLAG_ATTACHING;
+
+	if (gprs->flags & GPRS_FLAG_RECHECK) {
+		gprs->flags &= ~GPRS_FLAG_RECHECK;
+		gprs_netreg_update(gprs);
+	}
 }
 
 static void gprs_netreg_update(struct ofono_gprs *gprs)
@@ -1010,8 +1021,10 @@ static void gprs_netreg_update(struct ofono_gprs *gprs)
 	if (gprs->driver_attached == attach)
 		return;
 
-	if (gprs->flags & GPRS_FLAG_ATTACHING)
+	if (gprs->flags & GPRS_FLAG_ATTACHING) {
+		gprs->flags |= GPRS_FLAG_RECHECK;
 		return;
+	}
 
 	gprs->flags |= GPRS_FLAG_ATTACHING;
 
