@@ -496,12 +496,12 @@ static void parse_get_properties(DBusMessage *reply, const char *device)
 	const char *key;
 
 	if (!dbus_message_iter_init(reply, &arg)) {
-		ofono_debug("GetProperties reply has no arguments.");
+		DBG("GetProperties reply has no arguments.");
 		return;
 	}
 
 	if (dbus_message_iter_get_arg_type(&arg) != DBUS_TYPE_ARRAY) {
-		ofono_debug("GetProperties argument is not an array.");
+		DBG("GetProperties argument is not an array.");
 		return;
 	}
 
@@ -516,20 +516,20 @@ static void parse_get_properties(DBusMessage *reply, const char *device)
 
 			if (dbus_message_iter_get_arg_type(&dict) !=
 					DBUS_TYPE_STRING) {
-				ofono_debug("Property name not a string.");
+				DBG("Property name not a string.");
 				return;
 			}
 
 			dbus_message_iter_get_basic(&dict, &key);
 
 			if (!dbus_message_iter_next(&dict))  {
-				ofono_debug("Property value missing");
+				DBG("Property value missing");
 				return;
 			}
 
 			if (dbus_message_iter_get_arg_type(&dict) !=
 					DBUS_TYPE_VARIANT) {
-				ofono_debug("Property value not a variant.");
+				DBG("Property value not a variant.");
 				return;
 			}
 
@@ -552,7 +552,7 @@ static void get_properties_cb(DBusPendingCall *call, gpointer user_data)
 	reply = dbus_pending_call_steal_reply(call);
 
 	if (dbus_message_is_error(reply, DBUS_ERROR_SERVICE_UNKNOWN)) {
-		ofono_debug("Bluetooth daemon is apparently not available.");
+		DBG("Bluetooth daemon is apparently not available.");
 		goto done;
 	}
 
@@ -580,7 +580,7 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 	reply = dbus_pending_call_steal_reply(call);
 
 	if (dbus_message_is_error(reply, DBUS_ERROR_SERVICE_UNKNOWN)) {
-		ofono_debug("Bluetooth daemon is apparently not available.");
+		DBG("Bluetooth daemon is apparently not available.");
 		goto done;
 	}
 
@@ -661,7 +661,7 @@ static void list_adapters_cb(DBusPendingCall *call, gpointer user_data)
 	reply = dbus_pending_call_steal_reply(call);
 
 	if (dbus_message_is_error(reply, DBUS_ERROR_SERVICE_UNKNOWN)) {
-		ofono_debug("Bluetooth daemon is apparently not available.");
+		DBG("Bluetooth daemon is apparently not available.");
 		goto done;
 	}
 
@@ -699,7 +699,7 @@ static int hfp_register_ofono_handsfree(struct ofono_modem *modem)
 	const char *obj_path = ofono_modem_get_path(modem);
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
-	ofono_debug("Registering oFono Agent to bluetooth daemon");
+	DBG("Registering oFono Agent to bluetooth daemon");
 
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "RegisterAgent",
@@ -712,7 +712,7 @@ static int hfp_unregister_ofono_handsfree(struct ofono_modem *modem)
 	const char *obj_path = ofono_modem_get_path(modem);
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
-	ofono_debug("Unregistering oFono Agent from bluetooth daemon");
+	DBG("Unregistering oFono Agent from bluetooth daemon");
 
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "UnregisterAgent",
@@ -754,7 +754,7 @@ static int hfp_connect_ofono_handsfree(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
-	ofono_debug("Connect to bluetooth daemon");
+	DBG("Connect to bluetooth daemon");
 
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Connect",
@@ -782,7 +782,7 @@ static void hfp_power_down(DBusPendingCall *call, gpointer user_data)
 
 	dbus_error_init(&derr);
 	if (dbus_set_error_from_message(&derr, reply)) {
-		ofono_debug("Disconnect reply: %s", derr.message);
+		DBG("Disconnect reply: %s", derr.message);
 		dbus_error_free(&derr);
 		goto done;
 	}

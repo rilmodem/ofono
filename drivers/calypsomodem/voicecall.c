@@ -373,7 +373,7 @@ static void calypso_voicecall_initialized(gboolean ok, GAtResult *result,
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	ofono_debug("voicecall_init: registering to notifications");
+	DBG("voicecall_init: registering to notifications");
 
 	g_at_chat_register(vd->chat, "%CPI:", cpi_notify, FALSE, vc, NULL);
 

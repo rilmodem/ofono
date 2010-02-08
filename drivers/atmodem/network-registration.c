@@ -166,7 +166,7 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	op.status = 2;
 	op.tech = tech;
 
-	ofono_debug("cops_cb: %s, %s %s %d", name, nd->mcc, nd->mnc, tech);
+	DBG("cops_cb: %s, %s %s %d", name, nd->mcc, nd->mnc, tech);
 
 	cb(&error, &op, cbd->data);
 
@@ -212,7 +212,7 @@ static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	extract_mcc_mnc(str, nd->mcc, nd->mnc);
 
-	ofono_debug("Cops numeric got mcc: %s, mnc: %s", nd->mcc, nd->mnc);
+	DBG("Cops numeric got mcc: %s, mnc: %s", nd->mcc, nd->mnc);
 
 	return;
 
@@ -282,7 +282,7 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			num += 1;
 	}
 
-	ofono_debug("Got %d elements", num);
+	DBG("Got %d elements", num);
 
 	list = g_try_new0(struct ofono_network_operator, num);
 
@@ -343,15 +343,15 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		}
 	}
 
-	ofono_debug("Got %d operators", num);
+	DBG("Got %d operators", num);
 
 {
 	int i = 0;
 
 	for (; i < num; i++) {
-		ofono_debug("Operator: %s, %s, %s, status: %d, %d",
-				list[i].name, list[i].mcc, list[i].mnc,
-				list[i].status, list[i].tech);
+		DBG("Operator: %s, %s, %s, status: %d, %d",
+			list[i].name, list[i].mcc, list[i].mnc,
+			list[i].status, list[i].tech);
 	}
 }
 
@@ -459,7 +459,7 @@ error:
 static inline void report_signal_strength(struct ofono_netreg *netreg,
 						int strength)
 {
-	ofono_debug("csq_notify: %d", strength);
+	DBG("csq_notify: %d", strength);
 
 	if (strength == 99)
 		strength = -1;
@@ -657,7 +657,7 @@ static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_next_number(&iter, &strength);
 
-	ofono_debug("csq_cb: %d", strength);
+	DBG("csq_cb: %d", strength);
 
 	if (strength == 99)
 		strength = -1;

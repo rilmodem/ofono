@@ -78,7 +78,7 @@ static void at_cbm_notify(GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_debug("Got new Cell Broadcast via CBM: %s, %d", hexpdu, pdulen);
+	DBG("Got new Cell Broadcast via CBM: %s, %d", hexpdu, pdulen);
 
 	if (decode_hex_own_buf(hexpdu, -1, &hexpdulen, 0, pdu) == NULL) {
 		ofono_error("Unable to hex-decode the PDU");

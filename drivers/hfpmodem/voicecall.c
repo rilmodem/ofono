@@ -666,7 +666,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	else
 		validity = 2;
 
-	ofono_debug("ccwa_notify: %s %d %d", num, num_type, validity);
+	DBG("ccwa_notify: %s %d %d", num, num_type, validity);
 
 	call = create_call(vc, 0, 1, 5, num, num_type, validity);
 
@@ -795,7 +795,7 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	g_at_result_iter_skip_next(&iter);
 	g_at_result_iter_skip_next(&iter);
 
-	ofono_debug("clip_notify: %s %d %d", num, type, validity);
+	DBG("clip_notify: %s %d %d", num, type, validity);
 
 	call = l->data;
 
@@ -1120,7 +1120,7 @@ static void hfp_voicecall_initialized(gboolean ok, GAtResult *result,
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	ofono_debug("hfp_voicecall_init: registering to notifications");
+	DBG("hfp_voicecall_init: registering to notifications");
 
 	g_at_chat_register(vd->chat, "RING", ring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CLIP:", clip_notify, FALSE, vc, NULL);

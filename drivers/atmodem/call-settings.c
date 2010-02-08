@@ -71,7 +71,7 @@ static void ccwa_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			conditions |= cls;
 	}
 
-	ofono_debug("CW enabled for: %d", conditions);
+	DBG("CW enabled for: %d", conditions);
 
 out:
 	cb(&error, conditions, cbd->data);
@@ -168,7 +168,7 @@ static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_skip_next(&iter);
 	g_at_result_iter_next_number(&iter, &status);
 
-	ofono_debug("clip_query_cb: network: %d", status);
+	DBG("clip_query_cb: network: %d", status);
 
 	cb(&error, status, cbd->data);
 }
@@ -220,7 +220,7 @@ static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_skip_next(&iter);
 	g_at_result_iter_next_number(&iter, &status);
 
-	ofono_debug("colp_query_cb: network: %d", status);
+	DBG("colp_query_cb: network: %d", status);
 
 	cb(&error, status, cbd->data);
 }
@@ -271,8 +271,7 @@ static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &override);
 	g_at_result_iter_next_number(&iter, &network);
 
-	ofono_debug("clir_query_cb: override: %d, network: %d",
-			override, network);
+	DBG("clir_query_cb: override: %d, network: %d", override, network);
 
 	cb(&error, override, network, cbd->data);
 }

@@ -130,7 +130,7 @@ static void text_handler(GMarkupParseContext *context,
 static void error_handler(GMarkupParseContext *context,
 				GError *error, gpointer user_data)
 {
-	ofono_debug("Error parsing xml response from eppsd: %s\n",
+	DBG("Error parsing xml response from eppsd: %s\n",
 		error->message);
 }
 
@@ -183,12 +183,12 @@ static gboolean caif_if_create(const char *interface, unsigned int connid)
 
 	s = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
 	if (s < 0) {
-		ofono_debug("Failed to create socket for CAIF interface");
+		DBG("Failed to create socket for CAIF interface");
 		return FALSE;
 	}
 
 	if (ioctl(s, SIOCCAIFNETNEW, &ifr) < 0) {
-		ofono_debug("Failed to create IP interface for CAIF");
+		DBG("Failed to create IP interface for CAIF");
 		return FALSE;
 	}
 
@@ -210,18 +210,18 @@ static gboolean caif_if_remove(const char *interface, unsigned int connid)
 
 	s = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
 	if (s < 0) {
-		ofono_debug("Failed to create socket for CAIF interface");
+		DBG("Failed to create socket for CAIF interface");
 		return FALSE;
 	}
 
 	if (ioctl(s, SIOCGIFINDEX, &ifr) != 0) {
-		ofono_debug("Did not find interface (%s) to remove",
+		DBG("Did not find interface (%s) to remove",
 				interface);
 		return FALSE;
 	}
 
 	if (ioctl(s, SIOCCAIFNETREMOVE, &ifr) < 0) {
-		ofono_debug("Failed to remove IP interface for CAIF");
+		DBG("Failed to remove IP interface for CAIF");
 		return FALSE;
 	}
 
@@ -249,7 +249,7 @@ static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
 				conn_compare_by_cid);
 
 	if (!l) {
-		ofono_debug("Did not find data (used caif device) for"
+		DBG("Did not find data (used caif device) for"
 					"connection with cid; %d",
 					gcd->active_context);
 		goto error;
@@ -258,7 +258,7 @@ static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
 	conn = l->data;
 
 	if (!caif_if_remove(conn->interface, conn->channel_id)) {
-		ofono_debug("Failed to remove caif interface %s.",
+		DBG("Failed to remove caif interface %s.",
 				conn->interface);
 	}
 
@@ -295,7 +295,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				conn_compare_by_cid);
 
 	if (!l) {
-		ofono_debug("Did not find data (device and channel id)"
+		DBG("Did not find data (device and channel id)"
 					"for connection with cid; %d",
 					gcd->active_context);
 		goto error;
@@ -348,7 +348,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	return;
 
 error:
-	ofono_debug("ste_eppsd_up_cb error");
+	DBG("ste_eppsd_up_cb error");
 
 	if (context)
 		g_markup_parse_context_free(context);
@@ -388,7 +388,7 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				conn_compare_by_cid);
 
 	if (!l) {
-		ofono_debug("at_cgdcont_cb, no more available devices");
+		DBG("at_cgdcont_cb, no more available devices");
 		goto error;
 	}
 
@@ -475,7 +475,7 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 				conn_compare_by_cid);
 
 	if (!l) {
-		ofono_debug("at_gprs_deactivate_primary, did not find"
+		DBG("at_gprs_deactivate_primary, did not find"
 			"data (channel id) for connection with cid; %d", id);
 		goto error;
 	}

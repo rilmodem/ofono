@@ -176,7 +176,7 @@ static void signal_strength_cb(gboolean ok, GAtResult *result,
 		index++;
 	}
 
-	ofono_debug("signal_strength_cb: %d", strength);
+	DBG("signal_strength_cb: %d", strength);
 
 	cb(&error, strength * 20, cbd->data);
 }

@@ -81,7 +81,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			(sw1 == 0x90 && sw2 != 0x00))
 		goto error;
 
-	ofono_debug("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
+	DBG("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
 
 	if (response[0] == 0x62)
 		ok = sim_parse_3g_get_response(response, len, &flen, &rlen,
@@ -162,7 +162,7 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 		return;
 	}
 
-	ofono_debug("crsm_read_cb: %02x, %02x, %d", sw1, sw2, len);
+	DBG("crsm_read_cb: %02x, %02x, %d", sw1, sw2, len);
 
 	cb(&error, response, len, cbd->data);
 }
@@ -250,7 +250,7 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 		return;
 	}
 
-	ofono_debug("crsm_update_cb: %02x, %02x", sw1, sw2);
+	DBG("crsm_update_cb: %02x, %02x", sw1, sw2);
 
 	cb(&error, cbd->data);
 }
@@ -379,7 +379,7 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	imsi = g_at_result_iter_raw_line(&iter);
 
-	ofono_debug("cimi_cb: %s", imsi);
+	DBG("cimi_cb: %s", imsi);
 
 	cb(&error, imsi, cbd->data);
 }
@@ -467,7 +467,7 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_debug("crsm_pin_cb: %s", pin_required);
+	DBG("crsm_pin_cb: %s", pin_required);
 
 	cb(&error, pin_type, cbd->data);
 }
@@ -670,7 +670,7 @@ static void at_lock_status_cb(gboolean ok, GAtResult *result,
 
 	g_at_result_iter_next_number(&iter, &locked);
 
-	ofono_debug("lock_status_cb: %i", locked);
+	DBG("lock_status_cb: %i", locked);
 
 	cb(&error, locked, cbd->data);
 }
@@ -735,7 +735,7 @@ static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
 			response[len - 2] != 0x90 || response[len - 1] != 0)
 		goto error;
 
-	ofono_debug("csim_envelope_cb: %i", len);
+	DBG("csim_envelope_cb: %i", len);
 
 	cb(&error, response, len - 2, cbd->data);
 	return;

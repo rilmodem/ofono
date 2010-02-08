@@ -158,7 +158,7 @@ static void at_csca_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_next_number(&iter, &sca.type);
 
-	ofono_debug("csca_query_cb: %s, %d", sca.number, sca.type);
+	DBG("csca_query_cb: %s, %d", sca.number, sca.type);
 
 	cb(&error, &sca, cbd->data);
 
@@ -212,7 +212,7 @@ static void at_cmgs_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &mr))
 		goto err;
 
-	ofono_debug("Got MR: %d", mr);
+	DBG("Got MR: %d", mr);
 
 	cb(&error, mr, cbd->data);
 	return;
@@ -296,7 +296,7 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_debug("Got new Status-Report PDU via CDS: %s, %d", pdu, pdulen);
+	DBG("Got new Status-Report PDU via CDS: %s, %d", pdu, pdulen);
 
 	/* We must acknowledge the PDU using CNMA */
 	if (data->cnma_ack_pdu)
@@ -330,8 +330,7 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_debug("Got new SMS Deliver PDU via CMT: %s, %d",
-			hexpdu, tpdu_len);
+	DBG("Got new SMS Deliver PDU via CMT: %s, %d", hexpdu, tpdu_len);
 
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
@@ -376,7 +375,7 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 	if (strlen(hexpdu) > sizeof(pdu) * 2)
 		goto err;
 
-	ofono_debug("Got PDU: %s, with len: %d", hexpdu, tpdu_len);
+	DBG("Got PDU: %s, with len: %d", hexpdu, tpdu_len);
 
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
@@ -449,7 +448,7 @@ static void at_cmti_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &index))
 		goto err;
 
-	ofono_debug("Got a CMTI indication at %s, index: %d", strstore, index);
+	DBG("Got a CMTI indication at %s, index: %d", strstore, index);
 
 	if (store == data->store) {
 		struct cpms_request req;
@@ -525,7 +524,7 @@ static void at_cmgl_notify(GAtResult *result, gpointer user_data)
 
 		hexpdu = g_at_result_pdu(result);
 
-		ofono_debug("Found an old SMS PDU: %s, with len: %d",
+		DBG("Found an old SMS PDU: %s, with len: %d",
 				hexpdu, tpdu_len);
 
 		if (strlen(hexpdu) > sizeof(pdu) * 2)
@@ -550,7 +549,7 @@ static void at_cmgl_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_sms *sms = user_data;
 
 	if (!ok)
-		ofono_debug("Initial listing SMS storage failed!");
+		DBG("Initial listing SMS storage failed!");
 
 	at_cmgl_done(sms);
 }
@@ -855,7 +854,7 @@ static void at_cmgf_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	data->retries += 1;
 
 	if (data->retries == MAX_CMGF_RETRIES) {
-		ofono_debug("Unable to enter PDU mode");
+		DBG("Unable to enter PDU mode");
 		return at_sms_not_supported(sms);
 	}
 
@@ -1065,7 +1064,7 @@ static void at_csms_query_cb(gboolean ok, GAtResult *result,
 		if (status_min <= 1 && 1 <= status_max)
 			cnma_supported = TRUE;
 
-	ofono_debug("CSMS query parsed successfully");
+	DBG("CSMS query parsed successfully");
 
 out:
 	snprintf(buf, sizeof(buf), "AT+CSMS=%d", cnma_supported ? 1 : 0);

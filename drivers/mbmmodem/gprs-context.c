@@ -174,7 +174,7 @@ static void mbm_state_changed(struct ofono_gprs_context *gc, int state)
 
 	switch (state) {
 	case MBM_E2NAP_DISCONNECTED:
-		ofono_debug("MBM Context: disconnected");
+		DBG("MBM Context: disconnected");
 
 		if (gcd->mbm_state == MBM_DISABLING) {
 			CALLBACK_WITH_SUCCESS(gcd->down_cb, gcd->cb_data);
@@ -194,7 +194,7 @@ static void mbm_state_changed(struct ofono_gprs_context *gc, int state)
 		break;
 
 	case MBM_E2NAP_CONNECTED:
-		ofono_debug("MBM Context: connected");
+		DBG("MBM Context: connected");
 
 		if (gcd->mbm_state == MBM_ENABLING)
 			mbm_get_ip_details(gc);
@@ -202,7 +202,7 @@ static void mbm_state_changed(struct ofono_gprs_context *gc, int state)
 		break;
 
 	case MBM_E2NAP_CONNECTING:
-		ofono_debug("MBM Context: connecting");
+		DBG("MBM Context: connecting");
 		break;
 
 	default:

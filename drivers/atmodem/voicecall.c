@@ -302,7 +302,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		else
 			validity = 2;
 
-		ofono_debug("colp_notify: %s %d %d", num, type, validity);
+		DBG("colp_notify: %s %d %d", num, type, validity);
 	}
 
 	/* Generate a voice call that was just dialed, we guess the ID */
@@ -662,7 +662,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	 */
 	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
 
-	ofono_debug("cring_notify");
+	DBG("cring_notify");
 }
 
 static void clip_notify(GAtResult *result, gpointer user_data)
@@ -709,7 +709,7 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	/* If we have CLI validity field, override our guessed value */
 	g_at_result_iter_next_number(&iter, &validity);
 
-	ofono_debug("clip_notify: %s %d %d", num, type, validity);
+	DBG("clip_notify: %s %d %d", num, type, validity);
 
 	call = l->data;
 
@@ -772,7 +772,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	/* If we have CLI validity field, override our guessed value */
 	g_at_result_iter_next_number(&iter, &validity);
 
-	ofono_debug("ccwa_notify: %s %d %d %d", num, num_type, cls, validity);
+	DBG("ccwa_notify: %s %d %d %d", num, num_type, cls, validity);
 
 	call = create_call(vc, class_to_call_type(cls), 1, 5,
 				num, num_type, validity);
@@ -827,7 +827,7 @@ static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
-	ofono_debug("voicecall_init: registering to notifications");
+	DBG("voicecall_init: registering to notifications");
 
 	g_at_chat_register(vd->chat, "RING", ring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CRING:", cring_notify, FALSE, vc, NULL);

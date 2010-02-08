@@ -112,10 +112,10 @@ static void ccfc_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	for (i = 0; i < num; i++)
-		ofono_debug("ccfc_cb: %d, %d, %s(%d) - %d sec",
-				list[i].status, list[i].cls,
-				list[i].phone_number.number,
-				list[i].phone_number.type, list[i].time);
+		DBG("ccfc_cb: %d, %d, %s(%d) - %d sec",
+			list[i].status, list[i].cls,
+			list[i].phone_number.number,
+			list[i].phone_number.type, list[i].time);
 
 out:
 	cb(&error, num, list, cbd->data);

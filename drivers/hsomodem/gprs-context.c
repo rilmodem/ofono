@@ -308,7 +308,7 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 
 	switch (state) {
 	case HSO_DISCONNECTED:
-		ofono_debug("HSO Context: disconnected");
+		DBG("HSO Context: disconnected");
 
 		if (gcd->hso_state == HSO_DISABLING) {
 			CALLBACK_WITH_SUCCESS(gcd->down_cb, gcd->cb_data);
@@ -323,7 +323,7 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 		break;
 
 	case HSO_CONNECTED:
-		ofono_debug("HSO Context: connected");
+		DBG("HSO Context: connected");
 
 		if (gcd->hso_state == HSO_ENABLING) {
 			char buf[128];
@@ -338,7 +338,7 @@ static void owancall_notifier(GAtResult *result, gpointer user_data)
 		break;
 
 	case HSO_FAILED:
-		ofono_debug("HSO Context: failed");
+		DBG("HSO Context: failed");
 
 		if (gcd->hso_state == HSO_ENABLING) {
 			CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL,
