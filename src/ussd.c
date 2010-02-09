@@ -285,22 +285,26 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 
 	if (status == OFONO_USSD_STATUS_NOT_SUPPORTED) {
 		ussd->state = USSD_STATE_IDLE;
+
+		if (!ussd->pending)
+			return;
+
 		reply = __ofono_error_not_supported(ussd->pending);
 		goto out;
 	}
 
 	if (status == OFONO_USSD_STATUS_TIMED_OUT) {
 		ussd->state = USSD_STATE_IDLE;
+
+		if (!ussd->pending)
+			return;
+
 		reply = __ofono_error_timed_out(ussd->pending);
 		goto out;
 	}
 
 	/* TODO: Rework this in the Agent framework */
 	if (ussd->state == USSD_STATE_ACTIVE) {
-		if (status == OFONO_USSD_STATUS_ACTION_REQUIRED) {
-			ofono_error("Unable to handle action required ussd");
-			return;
-		}
 
 		reply = dbus_message_new_method_return(ussd->pending);
 
@@ -320,7 +324,11 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 
 		dbus_message_iter_close_container(&iter, &variant);
 
-		ussd->state = USSD_STATE_IDLE;
+		if (status == OFONO_USSD_STATUS_ACTION_REQUIRED)
+			ussd->state = USSD_STATE_USER_ACTION;
+		else
+			ussd->state = USSD_STATE_IDLE;
+
 	} else {
 		ofono_error("Received an unsolicited USSD, ignoring for now...");
 		DBG("USSD is: status: %d, %s", status, str);
