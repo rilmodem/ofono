@@ -88,7 +88,7 @@ struct v250_settings {
 struct _GAtServer {
 	gint ref_count;				/* Ref count */
 	struct v250_settings v250;		/* V.250 command setting */
-	GIOChannel *server_io;			/* Server IO */
+	GIOChannel *channel;			/* Server IO */
 	int server_watch;			/* Watch for server IO */
 	guint read_so_far;			/* Number of bytes processed */
 	GAtDisconnectFunc user_disconnect;	/* User disconnect func */
@@ -124,7 +124,7 @@ static void g_at_server_send_result(GAtServer *server, GAtServerResult result)
 	g_at_util_debug_chat(FALSE, buf, strlen(buf),
 				server->debugf, server->debug_data);
 
-	g_io_channel_write(server->server_io, (char *) buf, strlen(buf),
+	g_io_channel_write(server->channel, (char *) buf, strlen(buf),
 							&wbuf);
 }
 
@@ -333,7 +333,7 @@ static void new_bytes(GAtServer *p)
 	unsigned char *buf = ring_buffer_read_ptr(p->read_buf, p->read_so_far);
 	enum ParserState result;
 
-	while (p->server_io && (p->read_so_far < len)) {
+	while (p->channel && (p->read_so_far < len)) {
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
 		result = server_feed(p, (char *)buf, &rbytes);
 
@@ -438,7 +438,7 @@ static void server_watcher_destroy_notify(GAtServer *server)
 	ring_buffer_free(server->read_buf);
 	server->read_buf = NULL;
 
-	server->server_io = NULL;
+	server->channel = NULL;
 
 	if (server->user_disconnect)
 		server->user_disconnect(server->user_disconnect_data);
@@ -470,14 +470,14 @@ GAtServer *g_at_server_new(GIOChannel *io)
 
 	server->ref_count = 1;
 	v250_settings_create(&server->v250);
-	server->server_io = io;
+	server->channel = io;
 	server->read_buf = ring_buffer_new(4096);
 	server->max_read_attempts = 3;
 
 	if (!server->read_buf)
 		goto error;
 
-	if (!g_at_util_setup_io(server->server_io, G_IO_FLAG_NONBLOCK))
+	if (!g_at_util_setup_io(server->channel, G_IO_FLAG_NONBLOCK))
 		goto error;
 
 	server->server_watch = g_io_add_watch_full(io, G_PRIORITY_DEFAULT,
