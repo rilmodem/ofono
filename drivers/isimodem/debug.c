@@ -60,6 +60,10 @@ const char *ss_message_id_name(enum ss_message_id value)
 		_(SS_SERVICE_REQ);
 		_(SS_SERVICE_COMPLETED_RESP);
 		_(SS_SERVICE_FAILED_RESP);
+		_(SS_GSM_USSD_SEND_REQ);
+		_(SS_GSM_USSD_SEND_RESP);
+		_(SS_GSM_USSD_RECEIVE_IND);
+		_(SS_STATUS_IND);
 		_(SS_COMMON_MESSAGE);
 	}
 	return "SS_<UNKNOWN>";
@@ -79,6 +83,7 @@ const char *ss_subblock_name(enum ss_subblock value)
 		_(SS_GSM_INDICATE_PASSWORD_ERROR);
 		_(SS_GSM_INDICATE_ERROR);
 		_(SS_GSM_ADDITIONAL_INFO);
+		_(SS_GSM_USSD_STRING);
 	}
 	return "SS_<UNKNOWN>";
 }
