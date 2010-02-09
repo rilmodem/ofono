@@ -41,15 +41,6 @@
 
 static GSList *g_drivers = NULL;
 
-enum ussd_status {
-	USSD_STATUS_NOTIFY = 0,
-	USSD_STATUS_ACTION_REQUIRED = 1,
-	USSD_STATUS_TERMINATED = 2,
-	USSD_STATUS_LOCAL_CLIENT_RESPONDED = 3,
-	USSD_STATUS_NOT_SUPPORTED = 4,
-	USSD_STATUS_TIMED_OUT = 5,
-};
-
 enum ussd_state {
 	USSD_STATE_IDLE = 0,
 	USSD_STATE_ACTIVE = 1,
@@ -292,13 +283,13 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 	DBusMessageIter iter;
 	DBusMessageIter variant;
 
-	if (status == USSD_STATUS_NOT_SUPPORTED) {
+	if (status == OFONO_USSD_STATUS_NOT_SUPPORTED) {
 		ussd->state = USSD_STATE_IDLE;
 		reply = __ofono_error_not_supported(ussd->pending);
 		goto out;
 	}
 
-	if (status == USSD_STATUS_TIMED_OUT) {
+	if (status == OFONO_USSD_STATUS_TIMED_OUT) {
 		ussd->state = USSD_STATE_IDLE;
 		reply = __ofono_error_timed_out(ussd->pending);
 		goto out;
@@ -306,7 +297,7 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 
 	/* TODO: Rework this in the Agent framework */
 	if (ussd->state == USSD_STATE_ACTIVE) {
-		if (status == USSD_STATUS_ACTION_REQUIRED) {
+		if (status == OFONO_USSD_STATUS_ACTION_REQUIRED) {
 			ofono_error("Unable to handle action required ussd");
 			return;
 		}

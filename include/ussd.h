@@ -28,6 +28,15 @@ extern "C" {
 
 #include <ofono/types.h>
 
+enum ofono_ussd_status {
+	OFONO_USSD_STATUS_NOTIFY = 0,
+	OFONO_USSD_STATUS_ACTION_REQUIRED = 1,
+	OFONO_USSD_STATUS_TERMINATED = 2,
+	OFONO_USSD_STATUS_LOCAL_CLIENT_RESPONDED = 3,
+	OFONO_USSD_STATUS_NOT_SUPPORTED = 4,
+	OFONO_USSD_STATUS_TIMED_OUT = 5,
+};
+
 struct ofono_ussd;
 
 typedef void (*ofono_ussd_cb_t)(const struct ofono_error *error, void *data);
