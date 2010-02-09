@@ -116,9 +116,10 @@ static void g_at_server_send_result(GAtServer *server, GAtServerResult result)
 		return;
 
 	if (v250.is_v1)
-		sprintf(buf, "%c%c%s%c%c", t, r, result_str, t, r);
+		snprintf(buf, sizeof(buf), "%c%c%s%c%c", t, r, result_str,
+				t, r);
 	else
-		sprintf(buf, "%u%c", (unsigned int) result, t);
+		snprintf(buf, sizeof(buf), "%u%c", (unsigned int) result, t);
 
 	g_at_util_debug_chat(FALSE, buf, strlen(buf),
 				server->debugf, server->debug_data);
