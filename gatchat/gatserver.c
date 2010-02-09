@@ -95,7 +95,7 @@ struct _GAtServer {
 	gpointer user_disconnect_data;		/* User disconnect data */
 	GAtDebugFunc debugf;			/* Debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
-	struct ring_buffer *buf;		/* Current read buffer */
+	struct ring_buffer *read_buf;		/* Current read buffer */
 	guint max_read_attempts;		/* Max reads per select */
 	enum ParserState parser_state;
 };
@@ -257,9 +257,9 @@ out:
 
 static char *extract_line(GAtServer *p)
 {
-	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
+	unsigned int wrap = ring_buffer_len_no_wrap(p->read_buf);
 	unsigned int pos = 0;
-	unsigned char *buf = ring_buffer_read_ptr(p->buf, pos);
+	unsigned char *buf = ring_buffer_read_ptr(p->read_buf, pos);
 	int strip_front = 0;
 	int line_length = 0;
 	gboolean in_string = FALSE;
@@ -280,7 +280,7 @@ static char *extract_line(GAtServer *p)
 		pos += 1;
 
 		if (pos == wrap)
-			buf = ring_buffer_read_ptr(p->buf, pos);
+			buf = ring_buffer_read_ptr(p->read_buf, pos);
 	}
 
 	/* We will strip AT and \r */
@@ -289,17 +289,17 @@ static char *extract_line(GAtServer *p)
 	line = g_try_new(char, line_length + 1);
 
 	if (!line) {
-		ring_buffer_drain(p->buf, p->read_so_far);
+		ring_buffer_drain(p->read_buf, p->read_so_far);
 		return NULL;
 	}
 
 	/* Strip leading whitespace + AT */
-	ring_buffer_drain(p->buf, strip_front + 2);
+	ring_buffer_drain(p->read_buf, strip_front + 2);
 
 	pos = 0;
 	i = 0;
-	wrap = ring_buffer_len_no_wrap(p->buf);
-	buf = ring_buffer_read_ptr(p->buf, pos);
+	wrap = ring_buffer_len_no_wrap(p->read_buf);
+	buf = ring_buffer_read_ptr(p->read_buf, pos);
 
 	while (pos < (p->read_so_far - strip_front - 2)) {
 		if (*buf == '"')
@@ -314,11 +314,11 @@ static char *extract_line(GAtServer *p)
 		pos += 1;
 
 		if (pos == wrap)
-			buf = ring_buffer_read_ptr(p->buf, pos);
+			buf = ring_buffer_read_ptr(p->read_buf, pos);
 	}
 
 	/* Strip \r */
-	ring_buffer_drain(p->buf, p->read_so_far - strip_front - 2);
+	ring_buffer_drain(p->read_buf, p->read_so_far - strip_front - 2);
 
 	line[i] = '\0';
 
@@ -327,9 +327,9 @@ static char *extract_line(GAtServer *p)
 
 static void new_bytes(GAtServer *p)
 {
-	unsigned int len = ring_buffer_len(p->buf);
-	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
-	unsigned char *buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
+	unsigned int len = ring_buffer_len(p->read_buf);
+	unsigned int wrap = ring_buffer_len_no_wrap(p->read_buf);
+	unsigned char *buf = ring_buffer_read_ptr(p->read_buf, p->read_so_far);
 	enum ParserState result;
 
 	while (p->server_io && (p->read_so_far < len)) {
@@ -340,7 +340,7 @@ static void new_bytes(GAtServer *p)
 		p->read_so_far += rbytes;
 
 		if (p->read_so_far == wrap) {
-			buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
+			buf = ring_buffer_read_ptr(p->read_buf, p->read_so_far);
 			wrap = len;
 		}
 
@@ -354,7 +354,7 @@ static void new_bytes(GAtServer *p)
 			 * Empty commands must be OK by the DCE
 			 */
 			g_at_server_send_result(p, G_AT_SERVER_RESULT_OK);
-			ring_buffer_drain(p->buf, p->read_so_far);
+			ring_buffer_drain(p->read_buf, p->read_so_far);
 			break;
 
 		case PARSER_RESULT_COMMAND:
@@ -364,11 +364,11 @@ static void new_bytes(GAtServer *p)
 		case PARSER_RESULT_REPEAT_LAST:
 			/* TODO */
 			g_at_server_send_result(p, G_AT_SERVER_RESULT_OK);
-			ring_buffer_drain(p->buf, p->read_so_far);
+			ring_buffer_drain(p->read_buf, p->read_so_far);
 			break;
 
 		default:
-			ring_buffer_drain(p->buf, p->read_so_far);
+			ring_buffer_drain(p->read_buf, p->read_so_far);
 			break;
 		}
 
@@ -378,7 +378,7 @@ static void new_bytes(GAtServer *p)
 	}
 
 	/* We're overflowing the buffer, shutdown the socket */
-	if (p->buf && ring_buffer_avail(p->buf) == 0)
+	if (p->read_buf && ring_buffer_avail(p->read_buf) == 0)
 		g_source_remove(p->server_watch);
 }
 
@@ -397,13 +397,13 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 
 	do {
-		toread = ring_buffer_avail_no_wrap(server->buf);
+		toread = ring_buffer_avail_no_wrap(server->read_buf);
 
 		if (toread == 0)
 			break;
 
 		rbytes = 0;
-		buf = ring_buffer_write_ptr(server->buf);
+		buf = ring_buffer_write_ptr(server->read_buf);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
 		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,
@@ -414,7 +414,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		total_read += rbytes;
 
 		if (rbytes > 0)
-			ring_buffer_write_advance(server->buf, rbytes);
+			ring_buffer_write_advance(server->read_buf, rbytes);
 	} while (err == G_IO_ERROR_NONE && rbytes > 0 &&
 					read_count < server->max_read_attempts);
 
@@ -434,8 +434,8 @@ static void server_watcher_destroy_notify(GAtServer *server)
 {
 	server->server_watch = 0;
 
-	ring_buffer_free(server->buf);
-	server->buf = NULL;
+	ring_buffer_free(server->read_buf);
+	server->read_buf = NULL;
 
 	server->server_io = NULL;
 
@@ -470,10 +470,10 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	server->ref_count = 1;
 	v250_settings_create(&server->v250);
 	server->server_io = io;
-	server->buf = ring_buffer_new(4096);
+	server->read_buf = ring_buffer_new(4096);
 	server->max_read_attempts = 3;
 
-	if (!server->buf)
+	if (!server->read_buf)
 		goto error;
 
 	if (!g_at_util_setup_io(server->server_io, G_IO_FLAG_NONBLOCK))
@@ -487,8 +487,8 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	return server;
 
 error:
-	if (server->buf)
-		ring_buffer_free(server->buf);
+	if (server->read_buf)
+		ring_buffer_free(server->read_buf);
 
 	if (server)
 		g_free(server);
