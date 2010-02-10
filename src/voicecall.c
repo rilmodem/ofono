@@ -198,8 +198,9 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 				DBUS_TYPE_STRING, &callerid);
 
 	if (call->status == CALL_STATUS_ACTIVE ||
-		(call->status == CALL_STATUS_DISCONNECTED && v->start_time != 0) ||
-		call->status == CALL_STATUS_HELD) {
+			call->status == CALL_STATUS_HELD ||
+			(call->status == CALL_STATUS_DISCONNECTED &&
+				v->start_time != 0)) {
 		timestr = time_to_str(&v->start_time);
 
 		ofono_dbus_dict_append(&dict, "StartTime", DBUS_TYPE_STRING,
