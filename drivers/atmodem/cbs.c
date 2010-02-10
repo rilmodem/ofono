@@ -236,6 +236,11 @@ static int at_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 
 static void at_cbs_remove(struct ofono_cbs *cbs)
 {
+	struct cbs_data *data = ofono_cbs_get_data(cbs);
+
+	ofono_cbs_set_data(cbs, NULL);
+
+	g_free(data);
 }
 
 static struct ofono_cbs_driver driver = {
