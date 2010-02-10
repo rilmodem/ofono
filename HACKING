@@ -77,7 +77,7 @@ to use "make install" when testing "ofonod". The "bootstrap-configure"
 automatically includes this option.
 
   Run daemon in foreground with debugging
-    # sudo ./src/ofonod -n -d
+    # sudo ./src/ofonod -n -d 'plugins/*'
 
 For production installations or distribution packaging it is important that
 the "--enable-maintainer-mode" option is NOT used.
