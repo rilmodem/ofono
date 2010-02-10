@@ -881,7 +881,12 @@ void *ofono_devinfo_get_data(struct ofono_devinfo *info)
 	return info->driver_data;
 }
 
-/* Clients only need to free *modems */
+/* Clients only need to free *modems
+ *
+ * Note: this function will never return NULL. It will abort if it
+ * can't allocate memory for *modems; thus even an empty list will
+ * returns a non-NULL pointer.
+ */
 const char **__ofono_modem_get_list()
 {
 	GSList *l;
