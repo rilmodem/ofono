@@ -723,6 +723,10 @@ static int hfp_unregister_ofono_handsfree(struct ofono_modem *modem)
 static int hfp_probe(struct ofono_modem *modem)
 {
 	const char *obj_path = ofono_modem_get_path(modem);
+	struct hfp_data *data = ofono_modem_get_data(modem);
+
+	if (!data)
+		return -EINVAL;
 
 	g_dbus_register_interface(connection, obj_path, HFP_AGENT_INTERFACE,
 			agent_methods, NULL, NULL, modem, NULL);
