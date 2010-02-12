@@ -999,14 +999,13 @@ static int hfp_init()
 						"PropertyChanged",
 						uuid_emitted, NULL, NULL);
 
-
-	uuid_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
-			g_free, g_free);
-
 	if (adapter_watch == 0 || uuid_watch == 0) {
 		err = -EIO;
 		goto remove;
 	}
+
+	uuid_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
+						g_free, g_free);
 
 	err = ofono_modem_driver_register(&hfp_driver);
 	if (err < 0)
