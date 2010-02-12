@@ -860,7 +860,7 @@ static int hfp_disable(struct ofono_modem *modem)
 	status = send_method_call_with_reply(BLUEZ_SERVICE,
 				data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Disconnect",
-				hfp_power_down, modem, -1, DBUS_TYPE_INVALID);
+				hfp_power_down, modem, 15, DBUS_TYPE_INVALID);
 
 	if (status < 0)
 		return -EINVAL;
