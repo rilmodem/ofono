@@ -579,7 +579,7 @@ static int hfp_create_modem(const char *device)
 	ofono_modem_register(modem);
 
 	path = ofono_modem_get_path(modem);
-	g_hash_table_insert(uuid_hash, g_strdup(device), g_strdup(path));
+	g_hash_table_insert(uuid_hash, g_strdup(device), modem);
 
 	return 0;
 
@@ -1053,7 +1053,7 @@ static int hfp_init()
 	}
 
 	uuid_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
-						g_free, g_free);
+						g_free, NULL);
 
 	adapter_address_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
 							g_free, g_free);
