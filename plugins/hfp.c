@@ -709,13 +709,6 @@ done:
 	dbus_message_unref(reply);
 }
 
-static int hfp_load_modems()
-{
-	return send_method_call_with_reply(BLUEZ_SERVICE, "/",
-				BLUEZ_MANAGER_INTERFACE, "ListAdapters",
-				list_adapters_cb, NULL, -1, DBUS_TYPE_INVALID);
-}
-
 static int hfp_register_ofono_handsfree(struct ofono_modem *modem)
 {
 	const char *obj_path = ofono_modem_get_path(modem);
@@ -936,7 +929,9 @@ static int hfp_init()
 	if (err < 0)
 		goto remove;
 
-	hfp_load_modems();
+	send_method_call_with_reply(BLUEZ_SERVICE, "/",
+				BLUEZ_MANAGER_INTERFACE, "ListAdapters",
+				list_adapters_cb, NULL, -1, DBUS_TYPE_INVALID);
 
 	return 0;
 
