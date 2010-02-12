@@ -590,13 +590,10 @@ free:
 	return -ENOMEM;
 }
 
-static void parse_uuids(DBusMessageIter *array, gpointer user_data)
+static void has_hfp_uuid(DBusMessageIter *array, gpointer user_data)
 {
-	char *device = user_data;
+	gboolean *hfp = user_data;
 	DBusMessageIter value;
-
-	if (g_hash_table_lookup(uuid_hash, device))
-		return;
 
 	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
 		return;
@@ -609,7 +606,7 @@ static void parse_uuids(DBusMessageIter *array, gpointer user_data)
 		dbus_message_iter_get_basic(&value, &uuid);
 
 		if (!strcasecmp(uuid, HFP_AG_UUID)) {
-			hfp_create_modem(device);
+			*hfp = TRUE;
 			return;
 		}
 
@@ -620,7 +617,8 @@ static void parse_uuids(DBusMessageIter *array, gpointer user_data)
 static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusMessage *reply;
-	char *device = user_data;
+	char *path = user_data;
+	gboolean have_hfp = FALSE;
 
 	reply = dbus_pending_call_steal_reply(call);
 
@@ -637,10 +635,12 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	parse_properties_reply(reply, "UUIDs", parse_uuids, device, NULL);
+	parse_properties_reply(reply, "UUIDs", has_hfp_uuid, &have_hfp, NULL);
+
+	if (have_hfp == TRUE)
+		hfp_create_modem(path);
 
 done:
-	g_free(device);
 	dbus_message_unref(reply);
 }
 
@@ -662,7 +662,7 @@ static void parse_devices(DBusMessageIter *array, gpointer user_data)
 
 		dbus_message_iter_get_basic(&value, &path);
 
-		*device_list = g_slist_prepend(*device_list, g_strdup(path));
+		*device_list = g_slist_prepend(*device_list, (gpointer) path);
 
 		dbus_message_iter_next(&value);
 	}
@@ -702,18 +702,12 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 				g_strdup(path), g_strdup(addr));
 
 	for (l = device_list; l; l = l->next) {
-		char *device = l->data;
-		int ret;
+		const char *device = l->data;
 
-		ret = send_method_call_with_reply(BLUEZ_SERVICE, device,
+		send_method_call_with_reply(BLUEZ_SERVICE, device,
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				device_properties_cb, device, NULL,
+				device_properties_cb, g_strdup(device), g_free,
 				-1, DBUS_TYPE_INVALID);
-
-		if (ret < 0) {
-			g_free(device);
-			ofono_error("GetProperties failed(%d)", ret);
-		}
 	}
 
 done:
@@ -753,7 +747,7 @@ static gboolean adapter_removed(DBusConnection *connection,
 static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
 				void *user_data)
 {
-	const char *device, *property;
+	const char *property;
 	DBusMessageIter iter;
 
 	dbus_message_iter_init(message, &iter);
@@ -762,19 +756,32 @@ static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
 		return FALSE;
 
 	dbus_message_iter_get_basic(&iter, &property);
-	if (g_str_equal(property, "UUIDs") == FALSE)
-		return TRUE;
+	if (g_str_equal(property, "UUIDs") == TRUE) {
+		gboolean have_hfp = FALSE;
+		const char *path = dbus_message_get_path(message);
 
-	if (!dbus_message_iter_next(&iter))
-		return FALSE;
+		/* We already have this device in our hash, ignore */
+		if (g_hash_table_lookup(uuid_hash, path) != NULL)
+			return TRUE;
 
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-		return FALSE;
+		if (!dbus_message_iter_next(&iter))
+			return FALSE;
 
-	device = dbus_message_get_path(message);
+		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
+			return FALSE;
 
-	/* parse_uuids only reads device, so it is a safe cast here */
-	parse_uuids(&iter, (gpointer) device);
+		has_hfp_uuid(&iter, &have_hfp);
+
+		/* We need the full set of properties to be able to create
+		 * the modem properly, including Adapter and Alias, so
+		 * refetch everything again
+		 */
+		if (have_hfp)
+			send_method_call_with_reply(BLUEZ_SERVICE, path,
+				BLUEZ_DEVICE_INTERFACE, "GetProperties",
+				device_properties_cb, g_strdup(path), g_free,
+				-1, DBUS_TYPE_INVALID);
+	}
 
 	return TRUE;
 }
