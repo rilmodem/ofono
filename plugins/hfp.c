@@ -804,24 +804,21 @@ done:
 	dbus_message_unref(reply);
 }
 
-static int hfp_connect_ofono_handsfree(struct ofono_modem *modem)
-{
-	struct hfp_data *data = ofono_modem_get_data(modem);
-
-	DBG("Connect to bluetooth daemon");
-
-	return send_method_call_with_reply(BLUEZ_SERVICE, data->handsfree_path,
-				BLUEZ_GATEWAY_INTERFACE, "Connect",
-				hfp_connect_reply, modem, 15,
-				DBUS_TYPE_INVALID);
-}
-
 /* power up hardware */
 static int hfp_enable(struct ofono_modem *modem)
 {
+	struct hfp_data *data = ofono_modem_get_data(modem);
+	int status;
+
 	DBG("%p", modem);
 
-	if (hfp_connect_ofono_handsfree(modem) < 0)
+	status = send_method_call_with_reply(BLUEZ_SERVICE,
+				data->handsfree_path,
+				BLUEZ_GATEWAY_INTERFACE, "Connect",
+				hfp_connect_reply, modem, 15,
+				DBUS_TYPE_INVALID);
+
+	if (status < 0)
 		return -EINVAL;
 
 	return -EINPROGRESS;
