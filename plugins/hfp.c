@@ -67,6 +67,7 @@ static const char *chld_prefix[] = { "+CHLD:", NULL };
 
 static DBusConnection *connection;
 static GHashTable *uuid_hash = NULL;
+static GHashTable *adapter_address_hash;
 
 static void hfp_debug(const char *str, void *user_data)
 {
@@ -669,6 +670,7 @@ static void parse_string(DBusMessageIter *iter, gpointer user_data)
 
 static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 {
+	const char *path = user_data;
 	DBusMessage *reply;
 	GSList *device_list = NULL;
 	GSList *l;
@@ -684,7 +686,9 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 	parse_properties_reply(reply, "Devices", parse_devices, &device_list,
 				"Address", parse_string, &addr, NULL);
 
-	DBG("Adapter Address: %s", addr);
+	DBG("Adapter Address: %s, Path: %s", addr, path);
+	g_hash_table_insert(adapter_address_hash,
+				g_strdup(path), g_strdup(addr));
 
 	for (l = device_list; l; l = l->next) {
 		char *device = l->data;
@@ -717,8 +721,20 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 
 	ret = send_method_call_with_reply(BLUEZ_SERVICE, path,
 			BLUEZ_ADAPTER_INTERFACE, "GetProperties",
-			adapter_properties_cb, NULL, NULL,
+			adapter_properties_cb, g_strdup(path), g_free,
 			-1, DBUS_TYPE_INVALID);
+
+	return TRUE;
+}
+
+static gboolean adapter_removed(DBusConnection *connection,
+				DBusMessage *message, void *user_data)
+{
+	const char *path;
+
+	if (dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID) == TRUE)
+		g_hash_table_remove(adapter_address_hash, path);
 
 	return TRUE;
 }
@@ -773,7 +789,7 @@ static void parse_adapters(DBusMessageIter *array, gpointer user_data)
 
 		send_method_call_with_reply(BLUEZ_SERVICE, path,
 				BLUEZ_ADAPTER_INTERFACE, "GetProperties",
-				adapter_properties_cb, NULL, NULL,
+				adapter_properties_cb, g_strdup(path), g_free,
 				-1, DBUS_TYPE_INVALID);
 
 		dbus_message_iter_next(&value);
@@ -980,7 +996,8 @@ static struct ofono_modem_driver hfp_driver = {
 	.post_sim	= hfp_post_sim,
 };
 
-static guint adapter_watch;
+static guint adapter_added_watch;
+static guint adapter_removed_watch;
 static guint uuid_watch;
 
 static int hfp_init()
@@ -992,17 +1009,23 @@ static int hfp_init()
 
 	connection = ofono_dbus_get_connection();
 
-	adapter_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+	adapter_added_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
 						BLUEZ_MANAGER_INTERFACE,
 						"AdapterAdded",
 						adapter_added, NULL, NULL);
+
+	adapter_removed_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+						BLUEZ_MANAGER_INTERFACE,
+						"AdapterRemoved",
+						adapter_removed, NULL, NULL);
 
 	uuid_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
 						BLUEZ_DEVICE_INTERFACE,
 						"PropertyChanged",
 						uuid_emitted, NULL, NULL);
 
-	if (adapter_watch == 0 || uuid_watch == 0) {
+	if (adapter_added_watch == 0 || adapter_removed_watch == 0||
+			uuid_watch == 0) {
 		err = -EIO;
 		goto remove;
 	}
@@ -1010,33 +1033,44 @@ static int hfp_init()
 	uuid_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, g_free);
 
+	adapter_address_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
+							g_free, g_free);
+
 	err = ofono_modem_driver_register(&hfp_driver);
 	if (err < 0)
 		goto remove;
 
 	send_method_call_with_reply(BLUEZ_SERVICE, "/",
 				BLUEZ_MANAGER_INTERFACE, "GetProperties",
-				manager_properties_cb, NULL, -1,
+				manager_properties_cb, NULL, NULL, -1,
 				DBUS_TYPE_INVALID);
 
 	return 0;
 
 remove:
-	g_dbus_remove_watch(connection, adapter_watch);
+	g_dbus_remove_watch(connection, adapter_added_watch);
+	g_dbus_remove_watch(connection, adapter_removed_watch);
 	g_dbus_remove_watch(connection, uuid_watch);
-	g_hash_table_destroy(uuid_hash);
+
+	if (uuid_hash)
+		g_hash_table_destroy(uuid_hash);
+
+	if (adapter_address_hash)
+		g_hash_table_destroy(adapter_address_hash);
 
 	return err;
 }
 
 static void hfp_exit()
 {
-	g_dbus_remove_watch(connection, adapter_watch);
+	g_dbus_remove_watch(connection, adapter_added_watch);
+	g_dbus_remove_watch(connection, adapter_removed_watch);
 	g_dbus_remove_watch(connection, uuid_watch);
 
 	ofono_modem_driver_unregister(&hfp_driver);
 
 	g_hash_table_destroy(uuid_hash);
+	g_hash_table_destroy(adapter_address_hash);
 }
 
 OFONO_PLUGIN_DEFINE(hfp, "Hands-Free Profile Plugins", VERSION,
