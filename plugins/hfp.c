@@ -1023,8 +1023,6 @@ remove:
 	g_dbus_remove_watch(connection, uuid_watch);
 	g_hash_table_destroy(uuid_hash);
 
-	dbus_connection_unref(connection);
-
 	return err;
 }
 
