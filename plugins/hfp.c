@@ -848,22 +848,22 @@ done:
 	dbus_message_unref(reply);
 }
 
-static int hfp_disconnect_ofono_handsfree(struct ofono_modem *modem)
-{
-	struct hfp_data *data = ofono_modem_get_data(modem);
-
-	return send_method_call_with_reply(BLUEZ_SERVICE, data->handsfree_path,
-				BLUEZ_GATEWAY_INTERFACE, "Disconnect",
-				hfp_power_down, modem, -1, DBUS_TYPE_INVALID);
-}
-
 static int hfp_disable(struct ofono_modem *modem)
 {
+	struct hfp_data *data = ofono_modem_get_data(modem);
+	int status;
+
 	DBG("%p", modem);
 
 	clear_data(modem);
 
-	hfp_disconnect_ofono_handsfree(modem);
+	status = send_method_call_with_reply(BLUEZ_SERVICE,
+				data->handsfree_path,
+				BLUEZ_GATEWAY_INTERFACE, "Disconnect",
+				hfp_power_down, modem, -1, DBUS_TYPE_INVALID);
+
+	if (status < 0)
+		return -EINVAL;
 
 	return -EINPROGRESS;
 }
