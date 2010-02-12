@@ -952,20 +952,24 @@ done:
 static int hfp_disable(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
+	const char *obj_path = ofono_modem_get_path(modem);
 	int status;
 
 	DBG("%p", modem);
 
 	clear_data(modem);
 
-	status = send_method_call_with_reply(BLUEZ_SERVICE,
-				data->handsfree_path,
-				BLUEZ_GATEWAY_INTERFACE, "Disconnect",
-				hfp_power_down, modem, NULL, 15,
-				DBUS_TYPE_INVALID);
+	if (g_dbus_unregister_interface(connection, obj_path,
+					HFP_AGENT_INTERFACE)) {
+		status = send_method_call_with_reply(BLUEZ_SERVICE,
+					data->handsfree_path,
+					BLUEZ_GATEWAY_INTERFACE, "Disconnect",
+					hfp_power_down, modem, NULL, 15,
+					DBUS_TYPE_INVALID);
 
-	if (status < 0)
-		return -EINVAL;
+		if (status < 0)
+			return -EINVAL;
+	}
 
 	return -EINPROGRESS;
 }
