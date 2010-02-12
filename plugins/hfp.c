@@ -577,83 +577,34 @@ free:
 	return -ENOMEM;
 }
 
-static void parse_uuids(DBusMessageIter *i, const char *device)
+static void parse_uuids(DBusMessageIter *array, gpointer user_data)
 {
-	DBusMessageIter variant, ai;
-	const char *value;
+	char *device = user_data;
+	DBusMessageIter value;
 
 	if (g_hash_table_lookup(uuid_hash, device))
 		return;
 
-	dbus_message_iter_recurse(i, &variant);
-	dbus_message_iter_recurse(&variant, &ai);
+	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
+		return;
 
-	while (dbus_message_iter_get_arg_type(&ai) != DBUS_TYPE_INVALID) {
-		dbus_message_iter_get_basic(&ai, &value);
+	dbus_message_iter_recurse(array, &value);
 
-		if (!strcasecmp(value, HFP_AG_UUID))
+	while (dbus_message_iter_get_arg_type(&value) == DBUS_TYPE_STRING) {
+		const char *uuid;
+
+		dbus_message_iter_get_basic(&value, &uuid);
+
+		if (!strcasecmp(uuid, HFP_AG_UUID)) {
 			hfp_create_modem(device);
-
-		if (!dbus_message_iter_next(&ai))
 			return;
-	}
-}
-
-static void parse_get_properties(DBusMessage *reply, const char *device)
-{
-	DBusMessageIter arg, element, variant;
-	const char *key;
-
-	if (!dbus_message_iter_init(reply, &arg)) {
-		DBG("GetProperties reply has no arguments.");
-		return;
-	}
-
-	if (dbus_message_iter_get_arg_type(&arg) != DBUS_TYPE_ARRAY) {
-		DBG("GetProperties argument is not an array.");
-		return;
-	}
-
-	dbus_message_iter_recurse(&arg, &element);
-
-	while (dbus_message_iter_get_arg_type(&element) != DBUS_TYPE_INVALID) {
-		if (dbus_message_iter_get_arg_type(&element) ==
-				DBUS_TYPE_DICT_ENTRY) {
-			DBusMessageIter dict;
-
-			dbus_message_iter_recurse(&element, &dict);
-
-			if (dbus_message_iter_get_arg_type(&dict) !=
-					DBUS_TYPE_STRING) {
-				DBG("Property name not a string.");
-				return;
-			}
-
-			dbus_message_iter_get_basic(&dict, &key);
-
-			if (!dbus_message_iter_next(&dict))  {
-				DBG("Property value missing");
-				return;
-			}
-
-			if (dbus_message_iter_get_arg_type(&dict) !=
-					DBUS_TYPE_VARIANT) {
-				DBG("Property value not a variant.");
-				return;
-			}
-
-			if (!strcmp(key, "UUIDs"))
-				parse_uuids(&dict, device);
-
-			dbus_message_iter_recurse(&dict, &variant);
 		}
 
-		if (!dbus_message_iter_next(&element))
-			return;
+		dbus_message_iter_next(&value);
 	}
 }
 
-static void get_properties_cb(DBusPendingCall *call, gpointer user_data)
+static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusMessage *reply;
 	char *device = user_data;
@@ -673,7 +624,7 @@ static void get_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	parse_get_properties(reply, device);
+	parse_properties_reply(reply, "UUIDs", parse_uuids, device, NULL);
 
 done:
 	g_free(device);
@@ -740,7 +691,7 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 
 		ret = send_method_call_with_reply(BLUEZ_SERVICE, device,
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				get_properties_cb, device, -1,
+				device_properties_cb, device, -1,
 				DBUS_TYPE_INVALID);
 
 		if (ret < 0) {
@@ -792,7 +743,9 @@ static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
 		return FALSE;
 
 	device = dbus_message_get_path(message);
-	parse_uuids(&iter, device);
+
+	/* parse_uuids only reads device, so it is a safe cast here */
+	parse_uuids(&iter, (gpointer) device);
 
 	return TRUE;
 }
