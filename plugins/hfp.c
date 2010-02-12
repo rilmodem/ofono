@@ -214,7 +214,8 @@ static int send_method_call(const char *dest, const char *path,
 static int send_method_call_with_reply(const char *dest, const char *path,
 				const char *interface, const char *method,
 				DBusPendingCallNotifyFunction cb,
-				void *user_data, int timeout, int type, ...)
+				void *user_data, DBusFreeFunction free_func,
+				int timeout, int type, ...)
 {
 	DBusMessage *msg;
 	DBusPendingCall *call;
@@ -245,7 +246,7 @@ static int send_method_call_with_reply(const char *dest, const char *path,
 		return -EIO;
 	}
 
-	dbus_pending_call_set_notify(call, cb, user_data, NULL);
+	dbus_pending_call_set_notify(call, cb, user_data, free_func);
 	dbus_pending_call_unref(call);
 	dbus_message_unref(msg);
 
@@ -691,8 +692,8 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 
 		ret = send_method_call_with_reply(BLUEZ_SERVICE, device,
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				device_properties_cb, device, -1,
-				DBUS_TYPE_INVALID);
+				device_properties_cb, device, NULL,
+				-1, DBUS_TYPE_INVALID);
 
 		if (ret < 0) {
 			g_free(device);
@@ -716,7 +717,8 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 
 	ret = send_method_call_with_reply(BLUEZ_SERVICE, path,
 			BLUEZ_ADAPTER_INTERFACE, "GetProperties",
-			adapter_properties_cb, NULL, -1, DBUS_TYPE_INVALID);
+			adapter_properties_cb, NULL, NULL,
+			-1, DBUS_TYPE_INVALID);
 
 	return TRUE;
 }
@@ -771,8 +773,8 @@ static void parse_adapters(DBusMessageIter *array, gpointer user_data)
 
 		send_method_call_with_reply(BLUEZ_SERVICE, path,
 				BLUEZ_ADAPTER_INTERFACE, "GetProperties",
-				adapter_properties_cb, NULL, -1,
-				DBUS_TYPE_INVALID);
+				adapter_properties_cb, NULL, NULL,
+				-1, DBUS_TYPE_INVALID);
 
 		dbus_message_iter_next(&value);
 	}
@@ -901,8 +903,8 @@ static int hfp_enable(struct ofono_modem *modem)
 	status = send_method_call_with_reply(BLUEZ_SERVICE,
 				data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Connect",
-				hfp_connect_reply, modem, 15,
-				DBUS_TYPE_INVALID);
+				hfp_connect_reply, modem, NULL,
+				15, DBUS_TYPE_INVALID);
 
 	if (status < 0)
 		return -EINVAL;
@@ -943,7 +945,8 @@ static int hfp_disable(struct ofono_modem *modem)
 	status = send_method_call_with_reply(BLUEZ_SERVICE,
 				data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Disconnect",
-				hfp_power_down, modem, 15, DBUS_TYPE_INVALID);
+				hfp_power_down, modem, NULL, 15,
+				DBUS_TYPE_INVALID);
 
 	if (status < 0)
 		return -EINVAL;
