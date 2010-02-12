@@ -680,11 +680,47 @@ done:
 	dbus_message_unref(reply);
 }
 
-static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
+static void parse_devices(DBusMessageIter *array, gpointer user_data)
+{
+	DBusMessageIter value;
+	GSList **device_list = user_data;
+
+	DBG("");
+
+	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
+		return;
+
+	dbus_message_iter_recurse(array, &value);
+
+	while (dbus_message_iter_get_arg_type(&value)
+			== DBUS_TYPE_OBJECT_PATH) {
+		const char *path;
+
+		dbus_message_iter_get_basic(&value, &path);
+
+		*device_list = g_slist_prepend(*device_list, g_strdup(path));
+
+		dbus_message_iter_next(&value);
+	}
+}
+
+static void parse_string(DBusMessageIter *iter, gpointer user_data)
+{
+	char **str = user_data;
+	int arg_type = dbus_message_iter_get_arg_type(iter);
+
+	if (arg_type != DBUS_TYPE_OBJECT_PATH && arg_type != DBUS_TYPE_STRING)
+		return;
+
+	dbus_message_iter_get_basic(iter, str);
+}
+
+static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusMessage *reply;
-	char **device_list = NULL;
-	int num, ret, i;
+	GSList *device_list = NULL;
+	GSList *l;
+	const char *addr;
 
 	reply = dbus_pending_call_steal_reply(call);
 
@@ -693,24 +729,28 @@ static void list_devices_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	if (dbus_message_get_args(reply, NULL, DBUS_TYPE_ARRAY,
-				DBUS_TYPE_OBJECT_PATH, &device_list,
-				&num, DBUS_TYPE_INVALID) == FALSE)
-		goto done;
+	parse_properties_reply(reply, "Devices", parse_devices, &device_list,
+				"Address", parse_string, &addr, NULL);
 
-	for (i = 0 ; i < num ; i++) {
-		ret = send_method_call_with_reply(BLUEZ_SERVICE, device_list[i],
+	DBG("Adapter Address: %s", addr);
+
+	for (l = device_list; l; l = l->next) {
+		char *device = l->data;
+		int ret;
+
+		ret = send_method_call_with_reply(BLUEZ_SERVICE, device,
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				get_properties_cb, (void *)device_list[i], -1,
+				get_properties_cb, device, -1,
 				DBUS_TYPE_INVALID);
+
 		if (ret < 0) {
-			g_free(device_list[i]);
+			g_free(device);
 			ofono_error("GetProperties failed(%d)", ret);
 		}
 	}
 
 done:
-	g_free(device_list);
+	g_slist_free(device_list);
 	dbus_message_unref(reply);
 }
 
@@ -724,11 +764,8 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 				DBUS_TYPE_INVALID);
 
 	ret = send_method_call_with_reply(BLUEZ_SERVICE, path,
-			BLUEZ_ADAPTER_INTERFACE, "ListDevices",
-			list_devices_cb, NULL, -1, DBUS_TYPE_INVALID);
-
-	if (ret < 0)
-		ofono_error("ListDevices failed(%d)", ret);
+			BLUEZ_ADAPTER_INTERFACE, "GetProperties",
+			adapter_properties_cb, NULL, -1, DBUS_TYPE_INVALID);
 
 	return TRUE;
 }
@@ -777,11 +814,12 @@ static void parse_adapters(DBusMessageIter *array, gpointer user_data)
 
 		dbus_message_iter_get_basic(&value, &path);
 
-		DBG("Calling list devices on %s", path);
+		DBG("Calling GetProperties on %s", path);
 
 		send_method_call_with_reply(BLUEZ_SERVICE, path,
-				BLUEZ_ADAPTER_INTERFACE, "ListDevices",
-				list_devices_cb, NULL, -1, DBUS_TYPE_INVALID);
+				BLUEZ_ADAPTER_INTERFACE, "GetProperties",
+				adapter_properties_cb, NULL, -1,
+				DBUS_TYPE_INVALID);
 
 		dbus_message_iter_next(&value);
 	}
