@@ -221,19 +221,21 @@ static int send_method_call_with_reply(const char *dest, const char *path,
 	DBusMessage *msg;
 	DBusPendingCall *call;
 	va_list args;
+	int err;
 
 	msg = dbus_message_new_method_call(dest, path, interface, method);
 	if (!msg) {
 		ofono_error("Unable to allocate new D-Bus %s message", method);
-		return -ENOMEM;
+		err = -ENOMEM;
+		goto fail;
 	}
 
 	va_start(args, type);
 
 	if (!dbus_message_append_args_valist(msg, type, args)) {
-		dbus_message_unref(msg);
 		va_end(args);
-		return -EIO;
+		err = -EIO;
+		goto fail;
 	}
 
 	va_end(args);
@@ -243,8 +245,8 @@ static int send_method_call_with_reply(const char *dest, const char *path,
 
 	if (!dbus_connection_send_with_reply(connection, msg, &call, timeout)) {
 		ofono_error("Sending %s failed", method);
-		dbus_message_unref(msg);
-		return -EIO;
+		err = -EIO;
+		goto fail;
 	}
 
 	dbus_pending_call_set_notify(call, cb, user_data, free_func);
@@ -252,6 +254,15 @@ static int send_method_call_with_reply(const char *dest, const char *path,
 	dbus_message_unref(msg);
 
 	return 0;
+
+fail:
+	if (free_func && user_data)
+		free_func(user_data);
+
+	if (msg)
+		dbus_message_unref(msg);
+
+	return err;
 }
 
 typedef void (*PropertyHandler)(DBusMessageIter *iter, gpointer user_data);
