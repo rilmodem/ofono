@@ -50,6 +50,8 @@ void ofono_modem_remove(struct ofono_modem *modem);
 void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered);
 ofono_bool_t ofono_modem_get_powered(struct ofono_modem *modem);
 
+void ofono_modem_set_name(struct ofono_modem *modem, const char *name);
+
 int ofono_modem_set_string(struct ofono_modem *modem,
 				const char *key, const char *value);
 const char *ofono_modem_get_string(struct ofono_modem *modem, const char *key);

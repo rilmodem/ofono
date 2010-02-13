@@ -67,6 +67,7 @@ struct ofono_modem {
 	const struct ofono_modem_driver *driver;
 	void			*driver_data;
 	char			*driver_type;
+	char			*name;
 };
 
 struct ofono_devinfo {
@@ -393,6 +394,10 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 					&interfaces);
 
 	g_free(interfaces);
+
+	if (modem->name)
+		ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING,
+					&modem->name);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -1038,6 +1043,26 @@ bool ofono_modem_get_boolean(struct ofono_modem *modem, const char *key)
 		return FALSE;
 
 	return value;
+}
+
+void ofono_modem_set_name(struct ofono_modem *modem, const char *name)
+{
+	if (modem->name)
+		g_free(modem->name);
+
+	if (!name)
+		return;
+
+	modem->name = g_strdup(name);
+
+	if (modem->driver) {
+		DBusConnection *conn = ofono_dbus_get_connection();
+
+		ofono_dbus_signal_property_changed(conn, modem->path,
+						OFONO_MODEM_INTERFACE,
+						"Name", DBUS_TYPE_STRING,
+						&modem->name);
+	}
 }
 
 struct ofono_modem *ofono_modem_create(const char *name, const char *type)
