@@ -349,6 +349,17 @@ done:
 	g_slist_free(prop_handlers);
 }
 
+static void parse_string(DBusMessageIter *iter, gpointer user_data)
+{
+	char **str = user_data;
+	int arg_type = dbus_message_iter_get_arg_type(iter);
+
+	if (arg_type != DBUS_TYPE_OBJECT_PATH && arg_type != DBUS_TYPE_STRING)
+		return;
+
+	dbus_message_iter_get_basic(iter, str);
+}
+
 static void cind_status_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
@@ -549,15 +560,42 @@ static GDBusMethodTable agent_methods[] = {
 	{ NULL, NULL, NULL, NULL }
 };
 
-static int hfp_create_modem(const char *device)
+static void create_path(const char *dev_addr, const char *adapter_addr,
+			char *buf, int size)
+{
+	int i, j;
+
+	for (i = 0, j = 0; adapter_addr[j] && i < size - 1; j++)
+		if (adapter_addr[j] >= '0' && adapter_addr[j] <= '9')
+			buf[i++] = adapter_addr[j];
+		else if (adapter_addr[j] >= 'A' && adapter_addr[j] <= 'F')
+			buf[i++] = adapter_addr[j];
+
+	if (i < size - 1)
+		buf[i++] = '_';
+
+	for (j = 0; dev_addr[j] && i < size - 1; j++)
+		if (dev_addr[j] >= '0' && dev_addr[j] <= '9')
+			buf[i++] = dev_addr[j];
+		else if (dev_addr[j] >= 'A' && dev_addr[j] <= 'F')
+			buf[i++] = dev_addr[j];
+
+	buf[i] = '\0';
+}
+
+static int hfp_create_modem(const char *device, const char *dev_addr,
+				const char *adapter_addr)
 {
 	struct ofono_modem *modem;
 	struct hfp_data *data;
-	const char *path;
+	char buf[256];
 
-	ofono_info("Using device: %s", device);
+	ofono_info("Using device: %s, devaddr: %s, adapter: %s",
+			device, dev_addr, adapter_addr);
 
-	modem = ofono_modem_create(NULL, "hfp");
+	create_path(dev_addr, adapter_addr, buf, sizeof(buf));
+
+	modem = ofono_modem_create(buf, "hfp");
 	if (modem == NULL)
 		return -ENOMEM;
 
@@ -578,7 +616,6 @@ static int hfp_create_modem(const char *device)
 	ofono_modem_set_data(modem, data);
 	ofono_modem_register(modem);
 
-	path = ofono_modem_get_path(modem);
 	g_hash_table_insert(uuid_hash, g_strdup(device), modem);
 
 	return 0;
@@ -619,6 +656,9 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 	DBusMessage *reply;
 	char *path = user_data;
 	gboolean have_hfp = FALSE;
+	const char *adapter = NULL;
+	const char *adapter_addr = NULL;
+	const char *device_addr = NULL;
 
 	reply = dbus_pending_call_steal_reply(call);
 
@@ -635,10 +675,16 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	parse_properties_reply(reply, "UUIDs", has_hfp_uuid, &have_hfp, NULL);
+	parse_properties_reply(reply, "UUIDs", has_hfp_uuid, &have_hfp,
+				"Adapter", parse_string, &adapter,
+				"Address", parse_string, &device_addr, NULL);
 
-	if (have_hfp == TRUE)
-		hfp_create_modem(path);
+	if (adapter)
+		adapter_addr = g_hash_table_lookup(adapter_address_hash,
+							adapter);
+
+	if (have_hfp && device_addr && adapter_addr)
+		hfp_create_modem(path, device_addr, adapter_addr);
 
 done:
 	dbus_message_unref(reply);
@@ -666,17 +712,6 @@ static void parse_devices(DBusMessageIter *array, gpointer user_data)
 
 		dbus_message_iter_next(&value);
 	}
-}
-
-static void parse_string(DBusMessageIter *iter, gpointer user_data)
-{
-	char **str = user_data;
-	int arg_type = dbus_message_iter_get_arg_type(iter);
-
-	if (arg_type != DBUS_TYPE_OBJECT_PATH && arg_type != DBUS_TYPE_STRING)
-		return;
-
-	dbus_message_iter_get_basic(iter, str);
 }
 
 static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
