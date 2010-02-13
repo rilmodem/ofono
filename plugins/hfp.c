@@ -544,9 +544,11 @@ static DBusMessage *hfp_agent_release(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_modem *modem = data;
+	struct hfp_data *hfp_data = ofono_modem_get_data(modem);
 	const char *obj_path = ofono_modem_get_path(modem);
 
 	g_dbus_unregister_interface(connection, obj_path, HFP_AGENT_INTERFACE);
+	hfp_data->agent_registered = FALSE;
 
 	ofono_modem_remove(modem);
 
@@ -931,6 +933,8 @@ static int hfp_probe(struct ofono_modem *modem)
 	g_dbus_register_interface(connection, obj_path, HFP_AGENT_INTERFACE,
 			agent_methods, NULL, NULL, modem, NULL);
 
+	data->agent_registered = TRUE;
+
 	if (hfp_register_ofono_handsfree(modem) != 0)
 		return -EINVAL;
 
@@ -1033,15 +1037,13 @@ done:
 static int hfp_disable(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
-	const char *obj_path = ofono_modem_get_path(modem);
 	int status;
 
 	DBG("%p", modem);
 
 	clear_data(modem);
 
-	if (g_dbus_unregister_interface(connection, obj_path,
-					HFP_AGENT_INTERFACE)) {
+	if (data->agent_registered) {
 		status = send_method_call_with_reply(BLUEZ_SERVICE,
 					data->handsfree_path,
 					BLUEZ_GATEWAY_INTERFACE, "Disconnect",

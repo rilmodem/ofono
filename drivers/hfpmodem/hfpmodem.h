@@ -71,6 +71,7 @@ struct hfp_data {
 	unsigned int hf_features;
 	unsigned char cind_pos[HFP_INDICATOR_LAST];
 	unsigned int cind_val[HFP_INDICATOR_LAST];
+	gboolean agent_registered;
 };
 
 extern void hfp_netreg_init();
