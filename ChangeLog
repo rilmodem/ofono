@@ -1,3 +1,11 @@
+ver 0.18:
+	Fix handling of GPRS attach logic.
+	Fix handling of username/password settings for STE/MBM modems.
+	Add support for Bluetooth Handsfree handling.
+	Add support for USSD_STATE_USER_ACTION.
+	Add radio settings atom and driver API.
+	Add framework for AT command server.
+
 ver 0.17:
 	Add support for ST-Ericsson based modems.
 	Add support for processing CBS even if no EFcbmid.
