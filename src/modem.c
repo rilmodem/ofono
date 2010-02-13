@@ -1050,9 +1050,6 @@ void ofono_modem_set_name(struct ofono_modem *modem, const char *name)
 	if (modem->name)
 		g_free(modem->name);
 
-	if (!name)
-		return;
-
 	modem->name = g_strdup(name);
 
 	if (modem->driver) {
