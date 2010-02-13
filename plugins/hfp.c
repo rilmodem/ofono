@@ -584,7 +584,7 @@ static void create_path(const char *dev_addr, const char *adapter_addr,
 }
 
 static int hfp_create_modem(const char *device, const char *dev_addr,
-				const char *adapter_addr)
+				const char *adapter_addr, const char *alias)
 {
 	struct ofono_modem *modem;
 	struct hfp_data *data;
@@ -614,6 +614,7 @@ static int hfp_create_modem(const char *device, const char *dev_addr,
 		goto free;
 
 	ofono_modem_set_data(modem, data);
+	ofono_modem_set_name(modem, alias);
 	ofono_modem_register(modem);
 
 	g_hash_table_insert(uuid_hash, g_strdup(device), modem);
@@ -659,6 +660,7 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 	const char *adapter = NULL;
 	const char *adapter_addr = NULL;
 	const char *device_addr = NULL;
+	const char *alias = NULL;
 
 	reply = dbus_pending_call_steal_reply(call);
 
@@ -677,14 +679,15 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 
 	parse_properties_reply(reply, "UUIDs", has_hfp_uuid, &have_hfp,
 				"Adapter", parse_string, &adapter,
-				"Address", parse_string, &device_addr, NULL);
+				"Address", parse_string, &device_addr,
+				"Alias", parse_string, &alias, NULL);
 
 	if (adapter)
 		adapter_addr = g_hash_table_lookup(adapter_address_hash,
 							adapter);
 
 	if (have_hfp && device_addr && adapter_addr)
-		hfp_create_modem(path, device_addr, adapter_addr);
+		hfp_create_modem(path, device_addr, adapter_addr, alias);
 
 done:
 	dbus_message_unref(reply);
