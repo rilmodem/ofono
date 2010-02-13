@@ -782,13 +782,13 @@ static gboolean adapter_removed(DBusConnection *connection,
 	return TRUE;
 }
 
-static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
+static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
 				void *user_data)
 {
 	const char *property;
 	DBusMessageIter iter;
 
-	dbus_message_iter_init(message, &iter);
+	dbus_message_iter_init(msg, &iter);
 
 	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
 		return FALSE;
@@ -796,7 +796,8 @@ static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
 	dbus_message_iter_get_basic(&iter, &property);
 	if (g_str_equal(property, "UUIDs") == TRUE) {
 		gboolean have_hfp = FALSE;
-		const char *path = dbus_message_get_path(message);
+		const char *path = dbus_message_get_path(msg);
+		DBusMessageIter variant;
 
 		/* We already have this device in our hash, ignore */
 		if (g_hash_table_lookup(uuid_hash, path) != NULL)
@@ -808,7 +809,9 @@ static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
 		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
 			return FALSE;
 
-		has_hfp_uuid(&iter, &have_hfp);
+		dbus_message_iter_recurse(&iter, &variant);
+
+		has_hfp_uuid(&variant, &have_hfp);
 
 		/* We need the full set of properties to be able to create
 		 * the modem properly, including Adapter and Alias, so
@@ -819,6 +822,27 @@ static gboolean uuid_emitted(DBusConnection *connection, DBusMessage *message,
 				BLUEZ_DEVICE_INTERFACE, "GetProperties",
 				device_properties_cb, g_strdup(path), g_free,
 				-1, DBUS_TYPE_INVALID);
+	} else if (g_str_equal(property, "Alias") == TRUE) {
+		const char *path = dbus_message_get_path(msg);
+		struct ofono_modem *modem =
+			g_hash_table_lookup(uuid_hash, path);
+		const char *alias = NULL;
+		DBusMessageIter variant;
+
+		if (modem == NULL)
+			return TRUE;
+
+		if (!dbus_message_iter_next(&iter))
+			return FALSE;
+
+		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
+			return FALSE;
+
+		dbus_message_iter_recurse(&iter, &variant);
+
+		parse_string(&variant, &alias);
+
+		ofono_modem_set_name(modem, alias);
 	}
 
 	return TRUE;
@@ -1082,7 +1106,7 @@ static int hfp_init()
 	uuid_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
 						BLUEZ_DEVICE_INTERFACE,
 						"PropertyChanged",
-						uuid_emitted, NULL, NULL);
+						property_changed, NULL, NULL);
 
 	if (adapter_added_watch == 0 || adapter_removed_watch == 0||
 			uuid_watch == 0) {
