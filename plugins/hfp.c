@@ -593,7 +593,8 @@ static int hfp_create_modem(const char *device, const char *dev_addr,
 	ofono_info("Using device: %s, devaddr: %s, adapter: %s",
 			device, dev_addr, adapter_addr);
 
-	create_path(dev_addr, adapter_addr, buf, sizeof(buf));
+	strcpy(buf, "hfp/");
+	create_path(dev_addr, adapter_addr, buf + 4, sizeof(buf) - 4);
 
 	modem = ofono_modem_create(buf, "hfp");
 	if (modem == NULL)
