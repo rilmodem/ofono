@@ -482,6 +482,14 @@ error:
 	service_level_conn_failed(modem);
 }
 
+static void hfp_disconnected_cb(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+
+	ofono_modem_set_powered(modem, FALSE);
+	clear_data(modem);
+}
+
 /* either oFono or Phone could request SLC connection */
 static int service_level_connection(struct ofono_modem *modem, int fd)
 {
@@ -505,6 +513,8 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 
 	if (!chat)
 		return -ENOMEM;
+
+	g_at_chat_set_disconnect_function(chat, hfp_disconnected_cb, modem);
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, hfp_debug, NULL);
