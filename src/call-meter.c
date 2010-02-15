@@ -652,18 +652,10 @@ void ofono_call_meter_changed_notify(struct ofono_call_meter *cm, int new_value)
 void ofono_call_meter_maximum_notify(struct ofono_call_meter *cm)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	DBusMessage *signal;
 	const char *path = __ofono_atom_get_path(cm->atom);
 
-	signal = dbus_message_new_signal(path, OFONO_CALL_METER_INTERFACE,
-						"NearMaximumWarning");
-	if (!signal) {
-		ofono_error("Unable to allocate new %s.NearMaximumWarning "
-				"signal", OFONO_CALL_METER_INTERFACE);
-		return;
-	}
-
-	g_dbus_send_message(conn, signal);
+	g_dbus_emit_signal(conn, path, OFONO_CALL_METER_INTERFACE,
+			"NearMaximumWarning", DBUS_TYPE_INVALID);
 }
 
 int ofono_call_meter_driver_register(const struct ofono_call_meter_driver *d)

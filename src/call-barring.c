@@ -991,18 +991,9 @@ static void call_barring_incoming_enabled_notify(int idx, void *userdata)
 	struct ofono_call_barring *cb = userdata;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cb->atom);
-	DBusMessage *signal;
 
-	signal = dbus_message_new_signal(path, OFONO_CALL_BARRING_INTERFACE,
-						"IncomingBarringInEffect");
-
-	if (!signal) {
-		ofono_error("Unable to allocate new %s.IncomingBarringInEffect"
-				" signal", OFONO_CALL_BARRING_INTERFACE);
-		return;
-	}
-
-	g_dbus_send_message(conn, signal);
+	g_dbus_emit_signal(conn, path, OFONO_CALL_BARRING_INTERFACE,
+			"IncomingBarringInEffect", DBUS_TYPE_INVALID);
 }
 
 static void call_barring_outgoing_enabled_notify(int idx, void *userdata)
