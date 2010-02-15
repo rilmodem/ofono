@@ -1,0 +1,64 @@
+SupplementaryServices hierarchy
+==========================
+
+Service		org.ofono
+Interface	org.ofono.SupplementaryServices
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		string, variant Initiate(string command)
+
+			Sends a USSD command string to the network
+			initiating a session.  When the request is handled
+			by the appropriate node of the network, the
+			method returns the response or an appropriate
+			error.  The network may be awaiting further response
+			from the ME after returning from this method and no
+			new command can be initiated until this one is
+			cancelled or ended.
+
+		void Respond(string reply)
+
+			Send a response to the network either when
+			it is awaiting further input after Initiate()
+			was called or after a network-initiated request.
+
+		void Cancel()
+
+			Cancel an ongoing USSD session, mobile- or
+			network-initiated.
+
+		dict GetProperties()
+
+			Returns Supplementary Services related properties. See
+			the properties section for available properties.
+
+Signals		NotificationReceived(string message)
+
+			Signal is emitted on a network-initiated USSD
+			request for which no response is needed.
+
+		RequestReceived(string message)
+
+			Signal is emitted on a network-initiated USSD
+			request for which a response must be sent using
+			the Respond method unless it is cancelled or
+			the request is not supported.
+
+		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
+
+Properties	string USSDState [readonly]
+
+			Reflects the state of current USSD session.  The
+			values have the following meanings:
+
+			"idle"			 No active USSD session.
+			"active"		 A session is active between the
+						 network and the ME, the ME is
+						 waiting for a reply from the
+						 network.
+			"awaiting-user-response" The network is waiting for the
+						 user's response, client must
+						 call Respond().
