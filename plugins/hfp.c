@@ -110,8 +110,6 @@ static void service_level_conn_failed(struct ofono_modem *modem)
 	struct hfp_data *data = ofono_modem_get_data(modem);
 	DBusMessage *msg;
 
-	ofono_modem_set_powered(modem, FALSE);
-
 	msg = g_dbus_create_error(data->slc_msg, HFP_AGENT_ERROR_INTERFACE
 					".Failed",
 					"HFP Handshake failed");
