@@ -6,6 +6,18 @@ import gobject
 import dbus
 import dbus.mainloop.glib
 
+def ussd_notification_received(content):
+	print("Network sent a Notification: " + content)
+
+def ussd_request_received(content):
+	print("Network sent a Request: " + content)
+	ss.Cancel()
+
+def ussd_property_changed(name, value):
+	if name != "USSDState":
+		return
+	print("USSD session state is " + value)
+
 if __name__ == "__main__":
 	if (len(sys.argv) < 2):
 		print "Useage: %s <ussd-string>" % (sys.argv[0])
@@ -26,8 +38,15 @@ if __name__ == "__main__":
 	ss = dbus.Interface(bus.get_object('org.ofono', modems[0]),
 							'org.ofono.SupplementaryServices')
 
+	props = ss.GetProperties()
+	for p in props:
+		ussd_property_changed(p, props[p])
+
+	ss.connect_to_signal("NotificationReceived", ussd_notification_received)
+	ss.connect_to_signal("RequestReceived", ussd_request_received)
+	ss.connect_to_signal("PropertyChanged", ussd_property_changed)
+
 	print ss.Initiate(sys.argv[1], timeout=100)
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()
-
