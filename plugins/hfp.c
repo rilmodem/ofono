@@ -894,6 +894,23 @@ done:
 	dbus_message_unref(reply);
 }
 
+static gboolean hfp_remove_each_modem(gpointer key, gpointer value, gpointer user_data)
+{
+	struct ofono_modem *modem = value;
+
+	ofono_modem_remove(modem);
+
+	return TRUE;
+}
+
+static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
+{
+	if (uuid_hash == NULL)
+		return;
+
+	g_hash_table_foreach_remove(uuid_hash, hfp_remove_each_modem, NULL);
+}
+
 static int hfp_register_ofono_handsfree(struct ofono_modem *modem)
 {
 	const char *obj_path = ofono_modem_get_path(modem);
@@ -1081,6 +1098,7 @@ static struct ofono_modem_driver hfp_driver = {
 	.post_sim	= hfp_post_sim,
 };
 
+static guint bluetooth_exit_watch;
 static guint adapter_added_watch;
 static guint adapter_removed_watch;
 static guint uuid_watch;
@@ -1093,6 +1111,9 @@ static int hfp_init()
 		return -EBADF;
 
 	connection = ofono_dbus_get_connection();
+
+	bluetooth_exit_watch = g_dbus_add_service_watch(connection, BLUEZ_SERVICE,
+			NULL, bluetooth_disconnect, NULL, NULL);
 
 	adapter_added_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
 						BLUEZ_MANAGER_INTERFACE,
@@ -1109,8 +1130,8 @@ static int hfp_init()
 						"PropertyChanged",
 						property_changed, NULL, NULL);
 
-	if (adapter_added_watch == 0 || adapter_removed_watch == 0||
-			uuid_watch == 0) {
+	if (bluetooth_exit_watch == 0 || adapter_added_watch == 0 ||
+			adapter_removed_watch == 0|| uuid_watch == 0) {
 		err = -EIO;
 		goto remove;
 	}
@@ -1133,6 +1154,7 @@ static int hfp_init()
 	return 0;
 
 remove:
+	g_dbus_remove_watch(connection, bluetooth_exit_watch);
 	g_dbus_remove_watch(connection, adapter_added_watch);
 	g_dbus_remove_watch(connection, adapter_removed_watch);
 	g_dbus_remove_watch(connection, uuid_watch);
@@ -1148,6 +1170,7 @@ remove:
 
 static void hfp_exit()
 {
+	g_dbus_remove_watch(connection, bluetooth_exit_watch);
 	g_dbus_remove_watch(connection, adapter_added_watch);
 	g_dbus_remove_watch(connection, adapter_removed_watch);
 	g_dbus_remove_watch(connection, uuid_watch);
