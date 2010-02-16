@@ -280,7 +280,7 @@ static const char *ussd_get_state_string(struct ofono_ussd *ussd)
 	case USSD_STATE_ACTIVE:
 		return "active";
 	case USSD_STATE_USER_ACTION:
-		return "awaiting-user-response";
+		return "user-response";
 	}
 
 	return "";
@@ -300,7 +300,7 @@ static void ussd_change_state(struct ofono_ussd *ussd, int state)
 	value = ussd_get_state_string(ussd);
 	ofono_dbus_signal_property_changed(conn, path,
 			SUPPLEMENTARY_SERVICES_INTERFACE,
-			"USSDState", DBUS_TYPE_STRING, &value);
+			"State", DBUS_TYPE_STRING, &value);
 }
 
 void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
@@ -572,7 +572,7 @@ static DBusMessage *ussd_get_properties(DBusConnection *conn,
 					&dict);
 
 	value = ussd_get_state_string(ussd);
-	ofono_dbus_dict_append(&dict, "USSDState", DBUS_TYPE_STRING, &value);
+	ofono_dbus_dict_append(&dict, "State", DBUS_TYPE_STRING, &value);
 
 	dbus_message_iter_close_container(&iter, &dict);
 

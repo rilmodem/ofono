@@ -49,16 +49,16 @@ Signals		NotificationReceived(string message)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
-Properties	string USSDState [readonly]
+Properties	string State [readonly]
 
 			Reflects the state of current USSD session.  The
 			values have the following meanings:
 
-			"idle"			 No active USSD session.
-			"active"		 A session is active between the
-						 network and the ME, the ME is
-						 waiting for a reply from the
-						 network.
-			"awaiting-user-response" The network is waiting for the
-						 user's response, client must
-						 call Respond().
+			"idle"			No active USSD session.
+			"active"		A session is active between the
+						network and the ME, the ME is
+						waiting for a reply from the
+						network.
+			"user-response"		The network is waiting for the
+						user's response, client must
+						call Respond().
