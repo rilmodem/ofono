@@ -42,7 +42,8 @@ static GSList *g_drivers = NULL;
 enum ussd_state {
 	USSD_STATE_IDLE = 0,
 	USSD_STATE_ACTIVE = 1,
-	USSD_STATE_USER_ACTION = 2
+	USSD_STATE_USER_ACTION = 2,
+	USSD_STATE_RESPONSE_SENT,
 };
 
 struct ofono_ussd {
@@ -278,6 +279,7 @@ static const char *ussd_get_state_string(struct ofono_ussd *ussd)
 	case USSD_STATE_IDLE:
 		return "idle";
 	case USSD_STATE_ACTIVE:
+	case USSD_STATE_RESPONSE_SENT:
 		return "active";
 	case USSD_STATE_USER_ACTION:
 		return "user-response";
@@ -358,7 +360,8 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 		else
 			ussd_change_state(ussd, USSD_STATE_IDLE);
 
-	} else if (ussd->state == USSD_STATE_IDLE) {
+	} else if (ussd->state == USSD_STATE_IDLE ||
+			ussd->state == USSD_STATE_RESPONSE_SENT) {
 		const char *signal_name;
 		const char *path = __ofono_atom_get_path(ussd->atom);
 		int new_state;
@@ -457,26 +460,16 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 static void ussd_response_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_ussd *ussd = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
-	if (!ussd->pending)
-		return;
-
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
-		ussd_change_state(ussd, USSD_STATE_IDLE);
-
+		ussd_change_state(ussd, USSD_STATE_ACTIVE);
 		reply = dbus_message_new_method_return(ussd->pending);
 	} else {
-		DBG("ussd response failed with error: %s",
-				telephony_error_to_str(error));
-
+		ussd_change_state(ussd, USSD_STATE_IDLE);
 		reply = __ofono_error_failed(ussd->pending);
 	}
 
-	g_dbus_send_message(conn, reply);
-
-	reply = __ofono_error_failed(ussd->pending);
 	__ofono_dbus_pending_reply(&ussd->pending, reply);
 }
 
