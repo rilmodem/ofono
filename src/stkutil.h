@@ -19,6 +19,21 @@
  *
  */
 
+/*
+ * TS 101.220, Section 7.2, Card Application Toolkit assigned templates,
+ * These are the same as 3GPP 11.14 Sections 13.1 and 13.2 
+ */
+enum stk_envelope_type {
+	STK_ENVELOPE_TYPE_SMS_PP_DOWNLOAD = 0xD1,
+	STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD = 0xD2,
+	STK_ENVELOPE_TYPE_MENU_SELECTION = 0xD3,
+	STK_ENVELOPE_TYPE_CALL_CONTROL = 0xD4,
+	STK_ENVELOPE_TYPE_MO_SMS_CONTROL = 0xD5,
+	STK_ENVELOPE_TYPE_EVENT_DOWNLOAD = 0xD6,
+	STK_ENVELOPE_TYPE_TIMER_EXPIRATION = 0xD7,
+	STK_ENVELOPE_TYPE_USSD_DOWNLOAD = 0xD9,
+};
+
 /* TS 102.223 Section 9.4 */
 enum stk_command_type {
 	STK_COMMAND_TYPE_REFRESH = 0x01,
