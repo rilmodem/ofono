@@ -317,7 +317,8 @@ unit_test_simutil_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_simutil_OBJECTS)
 
 unit_test_stkutil_SOURCES = unit/test-stkutil.c src/util.c \
-				src/stkutil.c
+				src/storage.c src/smsutil.c \
+				src/simutil.c src/stkutil.c
 unit_test_stkutil_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_stkutil_OBJECTS)
 
