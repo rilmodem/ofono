@@ -264,43 +264,22 @@ void ber_tlv_iter_recurse(struct ber_tlv_iter *iter,
 	recurse->pos = 0;
 }
 
-/* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
 static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 						int in_len, int *out_len)
 {
-	guint8 tag;
-	int len;
-	const guint8 *end = pdu + in_len;
+	struct ber_tlv_iter iter;
 
-	do {
-		while (pdu < end && (*pdu == 0x00 || *pdu == 0xff))
-			pdu++;
-		if (pdu == end)
-			break;
+	ber_tlv_iter_init(&iter, pdu, in_len);
 
-		tag = *pdu++;
-		if (!(0x1f & ~tag))
-			while (pdu < end && (*pdu++ & 0x80))
-				;
-		if (pdu == end)
-			break;
+	while (ber_tlv_iter_next(&iter)) {
+		if (ber_tlv_iter_get_short_tag(&iter) != in_tag)
+			continue;
 
-		for (len = 0; pdu + 1 < end && (*pdu & 0x80);
-				len = (len | (*pdu++ & 0x7f)) << 7)
-			;
+		if (out_len)
+			*out_len = ber_tlv_iter_get_length(&iter);
 
-		if (*pdu & 0x80)
-			break;
-		len |= *pdu++;
-
-		if (tag == in_tag && pdu + len <= end) {
-			if (out_len)
-				*out_len = len;
-			return pdu;
-		}
-
-		pdu += len;
-	} while (pdu < end);
+		return ber_tlv_iter_get_data(&iter);
+	}
 
 	return NULL;
 }
