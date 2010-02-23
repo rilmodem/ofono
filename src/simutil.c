@@ -378,22 +378,30 @@ struct sim_spdi {
 
 struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length)
 {
+	const guint8 *plmn_list_tlv;
 	const guint8 *plmn_list;
 	struct sim_spdi *spdi;
 	struct spdi_operator *oper;
 	int tlv_length;
+	int list_length;
 
-	if (length <= 5)
+	if (length < 7)
 		return NULL;
 
-	plmn_list = ber_tlv_find_by_tag(tlv, 0x80, length, &tlv_length);
+	plmn_list_tlv = ber_tlv_find_by_tag(tlv, 0xA3, length, &tlv_length);
+
+	if (plmn_list_tlv == NULL)
+		return NULL;
+
+	plmn_list = ber_tlv_find_by_tag(plmn_list_tlv, 0x80, tlv_length,
+						&list_length);
 
 	if (!plmn_list)
 		return NULL;
 
 	spdi = g_new0(struct sim_spdi, 1);
 
-	for (tlv_length /= 3; tlv_length--; plmn_list += 3) {
+	for (list_length /= 3; list_length--; plmn_list += 3) {
 		if ((plmn_list[0] & plmn_list[1] & plmn_list[2]) == 0xff)
 			continue;
 
