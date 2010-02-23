@@ -55,6 +55,18 @@ enum sim_file_access {
 #define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
 #define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
 
+enum ber_tlv_data_type {
+	BER_TLV_DATA_TYPE_UNIVERSAL = 0,
+	BER_TLV_DATA_TYPE_APPLICATION = 1,
+	BER_TLV_DATA_TYPE_CONTEXT_SPECIFIC = 2,
+	BER_TLV_DATA_TYPE_PRIVATE = 3,
+};
+
+enum ber_tlv_data_encoding_type {
+	BER_TLV_DATA_ENCODING_TYPE_PRIMITIVE = 0,
+	BER_TLV_DATA_ENCODING_TYPE_CONSTRUCTED = 1,
+};
+
 struct sim_eons_operator_info {
 	char *longname;
 	gboolean long_ci;
@@ -72,7 +84,46 @@ struct sim_ef_info {
 	enum sim_file_access perm_update;
 };
 
+struct ber_tlv_iter {
+	unsigned int max;
+	unsigned int pos;
+	const unsigned char *pdu;
+	unsigned int tag;
+	enum ber_tlv_data_type class;
+	enum ber_tlv_data_encoding_type encoding;
+	unsigned int len;
+	const unsigned char *data;
+};
+
 #define ROOTMF 0x3F00
+
+void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
+			unsigned int len);
+/*
+ * Returns the tag value of the TLV.  Note that the tag value can be either
+ * short (0-30) or long
+ */
+unsigned int ber_tlv_iter_get_tag(struct ber_tlv_iter *iter);
+
+enum ber_tlv_data_type ber_tlv_iter_get_class(struct ber_tlv_iter *iter);
+enum ber_tlv_data_encoding_type
+	ber_tlv_iter_get_encoding(struct ber_tlv_iter *iter);
+
+/*
+ * This will return the short tag along with class and encoding information.
+ * This is more convenient to use for TLV contents of SIM Elementary Files
+ * and SIM toolkit since these elements only use short tags.  In case of an
+ * error (e.g. not a short tag) a zero is returned.  According to ISO 7816,
+ * a tag value of '00' is invalid.
+ */
+unsigned char ber_tlv_iter_get_short_tag(struct ber_tlv_iter *iter);
+unsigned int ber_tlv_iter_get_length(struct ber_tlv_iter *iter);
+
+const unsigned char *ber_tlv_iter_get_data(struct ber_tlv_iter *iter);
+
+gboolean ber_tlv_iter_next(struct ber_tlv_iter *iter);
+void ber_tlv_iter_recurse(struct ber_tlv_iter *iter,
+				struct ber_tlv_iter *recurse);
 
 struct sim_eons *sim_eons_new(int pnn_records);
 void sim_eons_add_pnn_record(struct sim_eons *eons, int record,

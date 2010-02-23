@@ -115,6 +115,153 @@ static struct sim_ef_info ef_db[] = {
 {	0x6FE3, 0x0000, BINARY, 18,	PIN,	PIN	},
 };
 
+void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
+			unsigned int len)
+{
+	iter->pdu = pdu;
+	iter->max = len;
+	iter->pos = 0;
+}
+
+unsigned int ber_tlv_iter_get_tag(struct ber_tlv_iter *iter)
+{
+	return iter->tag;
+}
+
+enum ber_tlv_data_type ber_tlv_iter_get_class(struct ber_tlv_iter *iter)
+{
+	return iter->class;
+}
+
+enum ber_tlv_data_encoding_type
+	ber_tlv_iter_get_encoding(struct ber_tlv_iter *iter)
+{
+	return iter->encoding;
+}
+
+unsigned char ber_tlv_iter_get_short_tag(struct ber_tlv_iter *iter)
+{
+	if (iter->tag > 30)
+		return 0;
+
+	return iter->tag | (iter->encoding << 5) | (iter->class << 6);
+}
+
+unsigned int ber_tlv_iter_get_length(struct ber_tlv_iter *iter)
+{
+	return iter->len;
+}
+
+const unsigned char *ber_tlv_iter_get_data(struct ber_tlv_iter *iter)
+{
+	return iter->data;
+}
+
+/* BER TLV structure is defined in ISO/IEC 7816-4 */
+gboolean ber_tlv_iter_next(struct ber_tlv_iter *iter)
+{
+	const unsigned char *pdu = iter->pdu + iter->pos;
+	const unsigned char *end = iter->pdu + iter->max;
+	unsigned int tag;
+	int len;
+	enum ber_tlv_data_type class;
+	enum ber_tlv_data_encoding_type encoding;
+
+	while ((pdu < end) && (*pdu == 0x00 || *pdu == 0xff))
+		pdu++;
+
+	if (pdu == end)
+		return FALSE;
+
+	class = bit_field(*pdu, 6, 2);
+	encoding = bit_field(*pdu, 5, 1);
+	tag = bit_field(*pdu, 0, 5);
+
+	pdu++;
+
+	/*
+	 * ISO 7816-4, Section 5.2.2.1:
+	 * "If bits 5 to 1 of the first byte of the tag are not
+	 * all set to 1, then they encode a tag number from zero
+	 * to thirty and the tag field consists of a single byte.
+	 *
+	 * Otherwise, the tag field continues on one or more
+	 * subsequent bytes
+	 * 	- Bit 8 of each subsequent byte shall be set to 1,
+	 * 	  unless it is the last subsequent byte
+	 * 	- Bits 7 to 1 of the first subsequent byte shall not be
+	 * 	  all set to 0
+	 * 	- Bits 7 to 1 of the first subsequent byte, followed by
+	 * 	  bits 7 to 1 of each further subsequent byte, up to
+	 * 	  and including bits 7 to 1 of the last subsequent
+	 * 	  byte encode a tag number.
+	 */
+	if (tag == 0x1f) {
+		if (pdu == end)
+			return FALSE;
+
+		/* First byte of the extended tag cannot contain 0 */
+		if ((*pdu & 0x7f) == 0)
+			return FALSE;
+
+		tag = 0;
+
+		while ((pdu < end) && (*pdu & 0x80)) {
+			tag = (tag << 7) | (*pdu & 0x7f);
+			pdu++;
+		}
+
+		if (pdu == end)
+			return FALSE;
+
+		tag = (tag << 7) | *pdu;
+		pdu++;
+	}
+
+	if (pdu == end)
+		return FALSE;
+
+	len = *pdu++;
+
+	if (len >= 0x80) {
+		unsigned int extended_bytes = len - 0x80;
+		unsigned int i;
+
+		if (extended_bytes == 0 || extended_bytes > 4)
+			return FALSE;
+
+		if ((pdu + extended_bytes) > end)
+			return FALSE;
+
+		if (pdu[0] == 0)
+			return FALSE;
+
+		for (len = 0, i = 0; i < extended_bytes; i++)
+			len = (len << 8) | *pdu++;
+	}
+
+	if (pdu + len > end)
+		return FALSE;
+
+	iter->tag = tag;
+	iter->class = class;
+	iter->encoding = encoding;
+	iter->len = len;
+	iter->data = pdu;
+
+	iter->pos = pdu + len - iter->pdu;
+
+	return TRUE;
+}
+
+void ber_tlv_iter_recurse(struct ber_tlv_iter *iter,
+				struct ber_tlv_iter *recurse)
+{
+	recurse->pdu = iter->data;
+	recurse->max = iter->len;
+	recurse->pos = 0;
+}
+
 /* Parse ASN.1 Basic Encoding Rules TLVs per ISO/IEC 7816 */
 static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 						int in_len, int *out_len)
