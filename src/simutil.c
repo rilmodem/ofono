@@ -117,6 +117,87 @@ static struct sim_ef_info ef_db[] = {
 {	0x6FE3, 0x0000, BINARY, 18,	PIN,	PIN	},
 };
 
+void simple_tlv_iter_init(struct simple_tlv_iter *iter,
+				const unsigned char *pdu, unsigned int len)
+{
+	iter->pdu = pdu;
+	iter->max = len;
+	iter->pos = 0;
+	iter->tag = 0;
+	iter->len = 0;
+	iter->data = NULL;
+}
+
+gboolean simple_tlv_iter_next(struct simple_tlv_iter *iter)
+{
+	const unsigned char *pdu = iter->pdu + iter->pos;
+	const unsigned char *end = iter->pdu + iter->max;
+	unsigned char tag;
+	unsigned short len;
+
+	if (pdu == end)
+		return FALSE;
+
+	tag = *pdu;
+	pdu++;
+
+	/*
+	 * ISO 7816-4, Section 5.2.1:
+	 *
+	 * The tag field consists of a single byte encoding a tag number from
+	 * 1 to 254.  The values 00 and FF are invalid for tag fields.
+	 *
+	 * The length field consists of one or three consecutive bytes.
+	 * 	- If the first byte is not set to FF, then the length field
+	 * 	  consists of a single byte encoding a number from zero to
+	 * 	  254 and denoted N.
+	 * 	- If the first byte is set to FF, then the length field
+	 * 	  continues on the subsequent two bytes with any value
+	 * 	  encoding a number from zero to 65535 and denoted N
+	 *
+	 * If N is zero, there is no value field, i.e. data object is empty.
+	 */
+	if (pdu == end)
+		return FALSE;
+
+	len = *pdu++;
+
+	if (len == 0xFF) {
+		if ((pdu + 2) > end)
+			return FALSE;
+
+		len = (pdu[0] << 8) | pdu[1];
+
+		pdu += 2;
+	}
+
+	if (pdu + len > end)
+		return FALSE;
+
+	iter->tag = tag;
+	iter->len = len;
+	iter->data = pdu;
+
+	iter->pos = pdu + len - iter->pdu;
+
+	return TRUE;
+}
+
+unsigned char simple_tlv_iter_get_tag(struct simple_tlv_iter *iter)
+{
+	return iter->tag;
+}
+
+unsigned short simple_tlv_iter_get_length(struct simple_tlv_iter *iter)
+{
+	return iter->len;
+}
+
+const unsigned char *simple_tlv_iter_get_data(struct simple_tlv_iter *iter)
+{
+	return iter->data;
+}
+
 void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 			unsigned int len)
 {
@@ -262,6 +343,12 @@ void ber_tlv_iter_recurse(struct ber_tlv_iter *iter,
 	recurse->pdu = iter->data;
 	recurse->max = iter->len;
 	recurse->pos = 0;
+}
+
+void ber_tlv_iter_recurse_simple(struct ber_tlv_iter *iter,
+					struct simple_tlv_iter *container)
+{
+	simple_tlv_iter_init(container, iter->data, iter->len);
 }
 
 static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,

@@ -84,6 +84,15 @@ struct sim_ef_info {
 	enum sim_file_access perm_update;
 };
 
+struct simple_tlv_iter {
+	unsigned int max;
+	unsigned int pos;
+	const unsigned char *pdu;
+	unsigned char tag;
+	unsigned short len;
+	const unsigned char *data;
+};
+
 struct ber_tlv_iter {
 	unsigned int max;
 	unsigned int pos;
@@ -94,6 +103,13 @@ struct ber_tlv_iter {
 	unsigned int len;
 	const unsigned char *data;
 };
+
+void simple_tlv_iter_init(struct simple_tlv_iter *iter,
+				const unsigned char *pdu, unsigned int len);
+gboolean simple_tlv_iter_next(struct simple_tlv_iter *iter);
+unsigned char simple_tlv_iter_get_tag(struct simple_tlv_iter *iter);
+unsigned short simple_tlv_iter_get_length(struct simple_tlv_iter *iter);
+const unsigned char *simple_tlv_iter_get_data(struct simple_tlv_iter *iter);
 
 void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 			unsigned int len);
@@ -122,6 +138,8 @@ const unsigned char *ber_tlv_iter_get_data(struct ber_tlv_iter *iter);
 gboolean ber_tlv_iter_next(struct ber_tlv_iter *iter);
 void ber_tlv_iter_recurse(struct ber_tlv_iter *iter,
 				struct ber_tlv_iter *recurse);
+void ber_tlv_iter_recurse_simple(struct ber_tlv_iter *iter,
+					struct simple_tlv_iter *container);
 
 struct sim_eons *sim_eons_new(int pnn_records);
 void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
