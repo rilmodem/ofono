@@ -81,7 +81,7 @@ enum stk_command_type {
 
 enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_COMMAND_DETAILS = 0x01,
-	STK_DATA_OBJECT_TYPE_DEVICE_IDENTITY = 0x02,
+	STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES = 0x02,
 	STK_DATA_OBJECT_TYPE_RESULT = 0x03,
 	STK_DATA_OBJECT_TYPE_DURATION = 0x04,
 	STK_DATA_OBJECT_TYPE_ALPHA_IDENTIFIER = 0x05,
@@ -184,3 +184,28 @@ enum stk_device_identity_type {
 	STK_DEVICE_IDENTITY_TYPE_TERMINAL = 0x82,
 	STK_DEVICE_IDENTITY_TYPE_NETWORK = 0x83,
 };
+
+struct stk_command_display_text {
+	char *text;
+	unsigned char icon_id;
+	unsigned char icon_qualifier;
+	ofono_bool_t immediate_response;
+};
+
+struct stk_command {
+	unsigned char number;
+	unsigned char type;
+	unsigned char qualifier;
+	enum stk_device_identity_type src;
+	enum stk_device_identity_type dst;
+
+	union {
+		struct stk_command_display_text display_text;
+	};
+
+	void (*destructor)(struct stk_command *command);
+};
+
+struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
+						unsigned int len);
+void stk_command_free(struct stk_command *command);
