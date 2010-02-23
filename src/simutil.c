@@ -63,6 +63,8 @@ struct opl_operator {
 #define ADM	4
 #define NEV	15
 
+#define ROOTMF 0x3F00
+
 static struct sim_ef_info ef_db[] = {
 {	0x2F05, ROOTMF, BINARY, 0,	ALW,	PIN	},
 {	0x2F06, ROOTMF, RECORD, 0,	ALW,	PIN	},

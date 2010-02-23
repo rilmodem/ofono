@@ -95,8 +95,6 @@ struct ber_tlv_iter {
 	const unsigned char *data;
 };
 
-#define ROOTMF 0x3F00
-
 void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 			unsigned int len);
 /*
