@@ -93,6 +93,16 @@ struct simple_tlv_iter {
 	const unsigned char *data;
 };
 
+struct comprehension_tlv_iter {
+	unsigned int max;
+	unsigned int pos;
+	const unsigned char *pdu;
+	unsigned short tag;
+	gboolean cr;
+	unsigned int len;
+	const unsigned char *data;
+};
+
 struct ber_tlv_iter {
 	unsigned int max;
 	unsigned int pos;
@@ -110,6 +120,17 @@ gboolean simple_tlv_iter_next(struct simple_tlv_iter *iter);
 unsigned char simple_tlv_iter_get_tag(struct simple_tlv_iter *iter);
 unsigned short simple_tlv_iter_get_length(struct simple_tlv_iter *iter);
 const unsigned char *simple_tlv_iter_get_data(struct simple_tlv_iter *iter);
+
+void comprehension_tlv_iter_init(struct comprehension_tlv_iter *iter,
+					const unsigned char *pdu,
+					unsigned int len);
+gboolean comprehension_tlv_iter_next(struct comprehension_tlv_iter *iter);
+unsigned short comprehension_tlv_iter_get_tag(struct comprehension_tlv_iter *i);
+gboolean comprehension_tlv_get_cr(struct comprehension_tlv_iter *iter);
+unsigned int comprehension_tlv_iter_get_length(
+					struct comprehension_tlv_iter *iter);
+const unsigned char *comprehension_tlv_iter_get_data(
+					struct comprehension_tlv_iter *iter);
 
 void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 			unsigned int len);
@@ -140,6 +161,8 @@ void ber_tlv_iter_recurse(struct ber_tlv_iter *iter,
 				struct ber_tlv_iter *recurse);
 void ber_tlv_iter_recurse_simple(struct ber_tlv_iter *iter,
 					struct simple_tlv_iter *container);
+void ber_tlv_iter_recurse_comprehension(struct ber_tlv_iter *iter,
+					struct comprehension_tlv_iter *recurse);
 
 struct sim_eons *sim_eons_new(int pnn_records);
 void sim_eons_add_pnn_record(struct sim_eons *eons, int record,

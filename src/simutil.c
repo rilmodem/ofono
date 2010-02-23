@@ -198,6 +198,115 @@ const unsigned char *simple_tlv_iter_get_data(struct simple_tlv_iter *iter)
 	return iter->data;
 }
 
+void comprehension_tlv_iter_init(struct comprehension_tlv_iter *iter,
+					const unsigned char *pdu,
+					unsigned int len)
+{
+	iter->pdu = pdu;
+	iter->max = len;
+	iter->pos = 0;
+	iter->tag = 0;
+	iter->cr = FALSE;
+	iter->data = 0;
+}
+
+/* Comprehension TLVs defined in Section 7 of ETSI TS 102.220 */
+gboolean comprehension_tlv_iter_next(struct comprehension_tlv_iter *iter)
+{
+	const unsigned char *pdu = iter->pdu + iter->pos;
+	const unsigned char *end = iter->pdu + iter->max;
+	unsigned short tag;
+	unsigned short len;
+	gboolean cr;
+
+	if (pdu == end)
+		return FALSE;
+
+	cr = bit_field(*pdu, 7, 1);
+	tag = bit_field(*pdu, 0, 7);
+	pdu++;
+
+	if (tag == 0x00 || tag == 0xFF || tag == 0x80)
+		return FALSE;
+
+	/*
+	 * ETSI TS 102.220, Section 7.1.1.2
+	 * 
+	 * If byte 1 of the tag is equal to 0x7F, then the tag is encoded
+	 * on the following two bytes, with bit 8 of the 2nd byte of the tag
+	 * being the CR flag.
+	 */
+	if (tag == 0x7F) {
+		if ((pdu + 2) > end)
+			return FALSE;
+
+		cr = bit_field(pdu[0], 7, 1);
+		tag = ((pdu[0] & 0x7f) << 7) | pdu[1];
+
+		if (tag < 0x0001 || tag > 0x7fff)
+			return FALSE;
+
+		pdu += 2;
+	}
+
+	if (pdu == end)
+		return FALSE;
+
+	len = *pdu++;
+
+	if (len >= 0x80) {
+		unsigned int extended_bytes = len - 0x80;
+		unsigned int i;
+
+		if (extended_bytes == 0 || extended_bytes > 3)
+			return FALSE;
+
+		if ((pdu + extended_bytes) > end)
+			return FALSE;
+
+		if (pdu[0] == 0)
+			return FALSE;
+
+		for (len = 0, i = 0; i < extended_bytes; i++)
+			len = (len << 8) | *pdu++;
+	}
+
+	if (pdu + len > end)
+		return FALSE;
+
+	iter->tag = tag;
+	iter->cr = cr;
+	iter->len = len;
+	iter->data = pdu;
+
+	iter->pos = pdu + len - iter->pdu;
+
+	return TRUE;
+}
+
+unsigned short comprehension_tlv_iter_get_tag(
+					struct comprehension_tlv_iter *iter)
+{
+	return iter->tag;
+}
+
+gboolean comprehension_tlv_get_cr(struct comprehension_tlv_iter *iter)
+{
+	return iter->cr;
+}
+
+unsigned int comprehension_tlv_iter_get_length(
+					struct comprehension_tlv_iter *iter)
+{
+	return iter->len;
+}
+
+const unsigned char *comprehension_tlv_iter_get_data(
+					struct comprehension_tlv_iter *iter)
+{
+	return iter->data;
+}
+
 void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 			unsigned int len)
 {
@@ -349,6 +458,12 @@ void ber_tlv_iter_recurse_simple(struct ber_tlv_iter *iter,
 					struct simple_tlv_iter *container)
 {
 	simple_tlv_iter_init(container, iter->data, iter->len);
+}
+
+void ber_tlv_iter_recurse_comprehension(struct ber_tlv_iter *iter,
+					struct comprehension_tlv_iter *recurse)
+{
+	comprehension_tlv_iter_init(recurse, iter->data, iter->len);
 }
 
 static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
