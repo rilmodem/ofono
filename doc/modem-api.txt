@@ -32,6 +32,10 @@ Properties	boolean Powered [readwrite]
 			Boolean representing the power state of the modem
 			device.
 
+		string Name [readonly, optional]
+
+			Friendly name of the modem device.
+
 		string Manufacturer [readonly, optional]
 
 			String representing the manufacturer of the modem
