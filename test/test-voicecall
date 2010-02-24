@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
 	voicecalls_property_changed('Calls', properties['Calls'])
 
-	print "Dialing...."
+	print "Dialing %s..." % number
 	obj = vcmanager.Dial(number, "")
 	print "Dialing in progress, got obj: %s" % (obj)
 
