@@ -33,6 +33,7 @@
 #include "gatserver.h"
 
 #define BUF_SIZE 4096
+/* #define WRITE_SCHEDULER_DEBUG 1 */
 
 enum ParserState {
 	PARSER_STATE_IDLE,
@@ -473,6 +474,71 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
+	GAtServer *server = data;
+	GIOError err;
+	gsize bytes_written;
+	gsize towrite;
+	struct ring_buffer *write_buf;
+	unsigned char *buf;
+	gboolean write_again = FALSE;
+#ifdef WRITE_SCHEDULER_DEBUG
+	int limiter;
+#endif
+
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR))
+		return FALSE;
+
+	if (!server->write_queue)
+		return FALSE;
+
+	/* Write data out from the head of the queue */
+	write_buf = g_queue_peek_head(server->write_queue);
+
+	buf = ring_buffer_read_ptr(write_buf, 0);
+
+	towrite = ring_buffer_len_no_wrap(write_buf);
+	if (towrite < (gsize)ring_buffer_len(write_buf))
+		write_again = TRUE;
+
+#ifdef WRITE_SCHEDULER_DEBUG
+	limiter = towrite;
+
+	if (limiter > 5)
+		limiter = 5;
+#endif
+
+	err = g_io_channel_write(server->channel,
+			(char *)buf,
+#ifdef WRITE_SCHEDULER_DEBUG
+			limiter,
+#else
+			towrite,
+#endif
+			&bytes_written);
+
+	if (err != G_IO_ERROR_NONE) {
+		g_source_remove(server->read_watch);
+		return FALSE;
+	}
+
+	g_at_util_debug_chat(FALSE, (char *)buf, bytes_written, server->debugf,
+				server->debug_data);
+
+	ring_buffer_drain(write_buf, bytes_written);
+
+	/* All data in current buffer is written, free it
+	 * unless it's the last buffer in the queue.
+	 */
+	if ((ring_buffer_len(write_buf) == 0) &&
+			(g_queue_get_length(server->write_queue) != 1)) {
+		write_buf = g_queue_pop_head(server->write_queue);
+		ring_buffer_free(write_buf);
+		return TRUE;
+	}
+
+	if (bytes_written < towrite || write_again == TRUE)
+		return TRUE;
+
 	return FALSE;
 }
 
