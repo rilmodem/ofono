@@ -136,7 +136,12 @@ static void send_common(GAtServer *server, const char *buf, unsigned int len)
 							buf + bytes_written,
 							wbytes);
 
-		if (ring_buffer_avail(write_buf) == 0)
+		/*
+		 * Make sure we don't allocate a buffer if we've written
+		 * everything out already
+		 */
+		if (ring_buffer_avail(write_buf) == 0 &&
+				bytes_written < towrite)
 			write_buf = allocate_next(server);
 	}
 
