@@ -32,6 +32,8 @@
 #include "ringbuffer.h"
 #include "gatserver.h"
 
+#define BUF_SIZE 4096
+
 enum ParserState {
 	PARSER_STATE_IDLE,
 	PARSER_STATE_A,
@@ -480,7 +482,7 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	server->ref_count = 1;
 	v250_settings_create(&server->v250);
 	server->channel = io;
-	server->read_buf = ring_buffer_new(4096);
+	server->read_buf = ring_buffer_new(BUF_SIZE);
 	server->max_read_attempts = 3;
 
 	if (!server->read_buf)
