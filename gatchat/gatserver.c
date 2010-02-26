@@ -485,7 +485,6 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	gsize towrite;
 	struct ring_buffer *write_buf;
 	unsigned char *buf;
-	gboolean write_again = FALSE;
 #ifdef WRITE_SCHEDULER_DEBUG
 	int limiter;
 #endif
@@ -502,8 +501,6 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	buf = ring_buffer_read_ptr(write_buf, 0);
 
 	towrite = ring_buffer_len_no_wrap(write_buf);
-	if (towrite < (gsize)ring_buffer_len(write_buf))
-		write_again = TRUE;
 
 #ifdef WRITE_SCHEDULER_DEBUG
 	limiter = towrite;
@@ -535,13 +532,13 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	 * unless it's the last buffer in the queue.
 	 */
 	if ((ring_buffer_len(write_buf) == 0) &&
-			(g_queue_get_length(server->write_queue) != 1)) {
+			(g_queue_get_length(server->write_queue) > 1)) {
 		write_buf = g_queue_pop_head(server->write_queue);
 		ring_buffer_free(write_buf);
-		return TRUE;
+		write_buf = g_queue_peek_head(server->write_queue);
 	}
 
-	if (bytes_written < towrite || write_again == TRUE)
+	if (ring_buffer_len(write_buf) > 0)
 		return TRUE;
 
 	return FALSE;
