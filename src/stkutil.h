@@ -185,6 +185,12 @@ enum stk_device_identity_type {
 	STK_DEVICE_IDENTITY_TYPE_NETWORK = 0x83,
 };
 
+enum stk_duration_type {
+	STK_DURATION_TYPE_MINUTES = 0x00,
+	STK_DURATION_TYPE_SECONDS = 0x01,
+	STK_DURATION_TYPE_SECOND_TENTHS = 0x02,
+};
+
 struct stk_command_display_text {
 	char *text;
 	unsigned char icon_id;
