@@ -209,11 +209,23 @@ struct stk_duration {
 	unsigned char interval;
 };
 
+/*
+ * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
+ * byte.  This means that the maximum size is 127 according to the rules
+ * of CTLVs.  Empty attribute options will have len of 0.
+ */
+struct stk_text_attribute {
+	unsigned char attributes[127];
+	unsigned char len;
+};
+
 struct stk_command_display_text {
 	char *text;
 	struct stk_icon_identifier icon_id;
 	ofono_bool_t immediate_response;
 	struct stk_duration duration;
+	struct stk_text_attribute text_attribute;
+	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
 };
 
 struct stk_command {
