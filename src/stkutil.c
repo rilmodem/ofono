@@ -34,13 +34,18 @@
 #include "simutil.h"
 #include "util.h"
 
-static gboolean parse_dataobj_text(struct stk_command *command,
-					struct comprehension_tlv_iter *iter)
-{
-	unsigned int len;
+enum stk_data_object_flag {
+	DATAOBJ_FLAG_MANDATORY = 1,
+	DATAOBJ_FLAG_MINIMUM = 2
+};
 
-	if (comprehension_tlv_iter_next(iter) != TRUE)
-		return FALSE;
+typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
+
+static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	char **text = user;
+	unsigned int len;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
 			STK_DATA_OBJECT_TYPE_TEXT)
@@ -91,9 +96,9 @@ static gboolean parse_dataobj_text(struct stk_command *command,
 		if (utf8 == NULL)
 			return FALSE;
 
-		command->display_text.text = utf8;
+		*text = utf8;
 	} else
-		command->display_text.text = NULL;
+		*text = NULL;
 
 	return TRUE;
 }
@@ -103,10 +108,89 @@ static void destroy_display_text(struct stk_command *command)
 	g_free(command->display_text.text);
 }
 
+static dataobj_handler handler_for_type(enum stk_data_object_type type)
+{
+	switch (type) {
+	case STK_DATA_OBJECT_TYPE_TEXT:
+		return parse_dataobj_text;
+	default:
+		return NULL;
+	};
+}
+
+struct dataobj_handler_entry {
+	enum stk_data_object_type type;
+	int flags;
+	void *data;
+	gboolean parsed;
+};
+
+static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
+				enum stk_data_object_type type, ...)
+{
+	GSList *entries = NULL;
+	GSList *l;
+	va_list args;
+	gboolean minimum_set = TRUE;
+
+	va_start(args, type);
+
+	while (type != STK_DATA_OBJECT_TYPE_INVALID) {
+		struct dataobj_handler_entry *entry;
+
+		entry = g_new0(struct dataobj_handler_entry, 1);
+
+		entry->type = type;
+		entry->flags = va_arg(args, int);
+		entry->data = va_arg(args, void *);
+
+		type = va_arg(args, enum stk_data_object_type);
+		entries = g_slist_prepend(entries, entry);
+	}
+
+	entries = g_slist_reverse(entries);
+
+	for (l = entries; l; l = l->next) {
+		gboolean ret;
+		dataobj_handler handler;
+		struct dataobj_handler_entry *entry = l->data;
+
+		handler = handler_for_type(entry->type);
+		if (handler == NULL)
+			continue;
+
+		ret = handler(iter, entry->data);
+		entry->parsed = ret;
+
+		if (ret && comprehension_tlv_iter_next(iter) == FALSE)
+			break;
+	}
+
+	for (l = entries; l; l = l->next) {
+		struct dataobj_handler_entry *entry = l->data;
+
+		if ((entry->flags & DATAOBJ_FLAG_MINIMUM) &&
+				entry->parsed == FALSE)
+			minimum_set = TRUE;
+	}
+
+	g_slist_foreach(entries, (GFunc)g_free, NULL);
+	g_slist_free(entries);
+
+	return minimum_set;
+}
+
 static gboolean parse_display_text(struct stk_command *command,
 					struct comprehension_tlv_iter *iter)
 {
-	if (parse_dataobj_text(command, iter) == FALSE)
+	gboolean ret;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&command->display_text.text,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
 		return FALSE;
 
 	command->destructor = destroy_display_text;
@@ -170,6 +254,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 
 	command->src = data[0];
 	command->dst = data[1];
+
+	if (comprehension_tlv_iter_next(&iter) != TRUE)
+		return FALSE;
 
 	switch (command->type) {
 	case STK_COMMAND_TYPE_DISPLAY_TEXT:
