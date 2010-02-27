@@ -200,10 +200,20 @@ struct stk_icon_identifier {
 	unsigned char icon_qualifier;
 };
 
+/*
+ * According to 102.223 Section 8.8 interval values of 0x00 are reserved.
+ * We use this to denote empty duration objects.
+ */
+struct stk_duration {
+	enum stk_duration_type unit;
+	unsigned char interval;
+};
+
 struct stk_command_display_text {
 	char *text;
 	struct stk_icon_identifier icon_id;
 	ofono_bool_t immediate_response;
+	struct stk_duration duration;
 };
 
 struct stk_command {
