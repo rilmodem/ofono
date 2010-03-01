@@ -41,6 +41,7 @@ enum stk_data_object_flag {
 
 typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
 
+/* Described in TS 102.223 Section 8.8 */
 static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 					void *user)
 {
@@ -131,16 +132,6 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
-static void destroy_display_text(struct stk_command *command)
-{
-	g_free(command->display_text.text);
-}
-
-static void destroy_get_inkey(struct stk_command *command)
-{
-	g_free(command->get_inkey.text);
-}
-
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -191,7 +182,7 @@ static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 	unsigned int len;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE)
+			STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE)
 		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
@@ -234,14 +225,14 @@ static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
+	case STK_DATA_OBJECT_TYPE_DURATION:
+		return parse_dataobj_duration;
 	case STK_DATA_OBJECT_TYPE_TEXT:
 		return parse_dataobj_text;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
-	case STK_DATA_OBJECT_TYPE_DURATION:
-		return parse_dataobj_duration;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
@@ -313,6 +304,11 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 	return minimum_set;
 }
 
+static void destroy_display_text(struct stk_command *command)
+{
+	g_free(command->display_text.text);
+}
+
 static gboolean parse_display_text(struct stk_command *command,
 					struct comprehension_tlv_iter *iter)
 {
@@ -342,6 +338,11 @@ static gboolean parse_display_text(struct stk_command *command,
 	command->destructor = destroy_display_text;
 
 	return TRUE;
+}
+
+static void destroy_get_inkey(struct stk_command *command)
+{
+	g_free(command->get_inkey.text);
 }
 
 static gboolean parse_get_inkey(struct stk_command *command,
