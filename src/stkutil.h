@@ -238,6 +238,7 @@ struct stk_command {
 
 	union {
 		struct stk_command_display_text display_text;
+		struct stk_command_display_text get_inkey;
 	};
 
 	void (*destructor)(struct stk_command *command);

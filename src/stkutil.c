@@ -136,6 +136,11 @@ static void destroy_display_text(struct stk_command *command)
 	g_free(command->display_text.text);
 }
 
+static void destroy_get_inkey(struct stk_command *command)
+{
+	g_free(command->get_inkey.text);
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -311,29 +316,61 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 static gboolean parse_display_text(struct stk_command *command,
 					struct comprehension_tlv_iter *iter)
 {
+	struct stk_command_display_text *obj = &command->display_text;
 	gboolean ret;
 
-	command->display_text.frame_id = 0xFF;
+	obj->frame_id = 0xFF;
 
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
 				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
-				&command->display_text.text,
+				&obj->text,
 				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
-				&command->display_text.icon_id,
+				&obj->icon_id,
 				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE, 0,
-				&command->display_text.immediate_response,
+				&obj->immediate_response,
 				STK_DATA_OBJECT_TYPE_DURATION, 0,
-				&command->display_text.duration,
+				&obj->duration,
 				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
-				&command->display_text.text_attribute,
+				&obj->text_attribute,
 				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
-				&command->display_text.frame_id,
+				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
 		return FALSE;
 
 	command->destructor = destroy_display_text;
+
+	return TRUE;
+}
+
+static gboolean parse_get_inkey(struct stk_command *command,
+				struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_display_text *obj = &command->get_inkey;
+	gboolean ret;
+
+	obj->frame_id = 0xFF;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->text,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE, 0,
+				&obj->immediate_response,
+				STK_DATA_OBJECT_TYPE_DURATION, 0,
+				&obj->duration,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attribute,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_get_inkey;
 
 	return TRUE;
 }
@@ -401,6 +438,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 	switch (command->type) {
 	case STK_COMMAND_TYPE_DISPLAY_TEXT:
 		ok = parse_display_text(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_GET_INKEY:
+		ok = parse_get_inkey(command, &iter);
 		break;
 	default:
 		ok = FALSE;
