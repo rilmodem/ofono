@@ -41,6 +41,33 @@ enum stk_data_object_flag {
 
 typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
 
+static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_duration *duration = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_DURATION)
+		return FALSE;
+
+	if (comprehension_tlv_iter_get_length(iter) != 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if (data[0] > 0x02)
+		return FALSE;
+
+	if (data[1] == 0)
+		return FALSE;
+
+	duration->unit = data[0];
+	duration->interval = data[1];
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.15 */
 static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -159,6 +186,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
+	case STK_DATA_OBJECT_TYPE_DURATION:
+		return parse_dataobj_duration;
 	default:
 		return NULL;
 	};
@@ -238,6 +267,8 @@ static gboolean parse_display_text(struct stk_command *command,
 				&command->display_text.icon_id,
 				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE, 0,
 				&command->display_text.immediate_response,
+				STK_DATA_OBJECT_TYPE_DURATION, 0,
+				&command->display_text.duration,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
