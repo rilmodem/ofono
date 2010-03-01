@@ -41,6 +41,8 @@ struct display_text_test {
 	unsigned char qualifier;
 	unsigned char icon_qualifier;
 	unsigned char icon_id;
+	enum stk_duration_type duration_unit;
+	unsigned char duration_interval;
 };
 
 unsigned char display_text_111[] = { 0xD0, 0x1A, 0x81, 0x03, 0x01, 0x21, 0x80,
@@ -130,6 +132,12 @@ unsigned char display_text_611[] = { 0xD0, 0x24, 0x81, 0x03, 0x01, 0x21, 0x80,
 					0x23, 0x04, 0x19, 0x04, 0x22, 0x04,
 					0x15 };
 
+unsigned char display_text_711[] = { 0xD0, 0x19, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x0A,
+					0x04, 0x31, 0x30, 0x20, 0x53, 0x65,
+					0x63, 0x6F, 0x6E, 0x64, 0x84, 0x02,
+					0x01, 0x0A };
+
 unsigned char display_text_911[] = { 0xD0, 0x10, 0x81, 0x03, 0x01, 0x21, 0x80,
 					0x82, 0x02, 0x81, 0x02, 0x8D, 0x05,
 					0x08, 0x4F, 0x60, 0x59, 0x7D };
@@ -218,6 +226,15 @@ static struct display_text_test display_text_data_611 = {
 	.qualifier = 0x80
 };
 
+static struct display_text_test display_text_data_711 = {
+	.pdu = display_text_711,
+	.pdu_len = sizeof(display_text_711),
+	.expected = "10 Second",
+	.qualifier = 0x80,
+	.duration_unit = STK_DURATION_TYPE_SECONDS,
+	.duration_interval = 10,
+};
+
 static struct display_text_test display_text_data_911 = {
 	.pdu = display_text_911,
 	.pdu_len = sizeof(display_text_911),
@@ -259,6 +276,13 @@ static void test_display_text(gconstpointer data)
 				test->icon_qualifier);
 	}
 
+	if (test->duration_interval > 0) {
+		g_assert(command->display_text.duration.unit ==
+				test->duration_unit);
+		g_assert(command->display_text.duration.interval ==
+				test->duration_interval);
+	}
+
 	stk_command_free(command);
 }
 
@@ -286,6 +310,8 @@ int main(int argc, char **argv)
 				&display_text_data_531, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 6.1.1",
 				&display_text_data_611, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 7.1.1",
+				&display_text_data_711, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 9.1.1",
 				&display_text_data_911, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 10.1.1",
