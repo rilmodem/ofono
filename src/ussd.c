@@ -463,7 +463,7 @@ static void ussd_response_callback(const struct ofono_error *error, void *data)
 	DBusMessage *reply;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
-		ussd_change_state(ussd, USSD_STATE_ACTIVE);
+		ussd_change_state(ussd, USSD_STATE_RESPONSE_SENT);
 		reply = dbus_message_new_method_return(ussd->pending);
 	} else {
 		ussd_change_state(ussd, USSD_STATE_IDLE);
