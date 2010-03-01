@@ -39,6 +39,8 @@ struct display_text_test {
 	unsigned int pdu_len;
 	const char *expected;
 	unsigned char qualifier;
+	unsigned char icon_qualifier;
+	unsigned char icon_id;
 };
 
 unsigned char display_text_111[] = { 0xD0, 0x1A, 0x81, 0x03, 0x01, 0x21, 0x80,
@@ -102,6 +104,24 @@ unsigned char display_text_171[] = { 0xD0, 0x1A, 0x81, 0x03, 0x01, 0x21, 0x80,
 					0x41, 0x43, 0x4B, 0x57, 0x41, 0x52,
 					0x44, 0x53, 0x3E };
 
+unsigned char display_text_511[] = { 0xD0, 0x1A, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x0B,
+					0x04, 0x42, 0x61, 0x73, 0x69, 0x63,
+					0x20, 0x49, 0x63, 0x6F, 0x6E, 0x9E,
+					0x02, 0x00, 0x01 };
+
+unsigned char display_text_521[] = { 0xD0, 0x1B, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x0C,
+					0x04, 0x43, 0x6F, 0x6C, 0x6F, 0x75,
+					0x72, 0x20, 0x49, 0x63, 0x6F, 0x6E,
+					0x9E, 0x02, 0x00, 0x02 };
+
+unsigned char display_text_531[] = { 0xD0, 0x1A, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x0B,
+					0x04, 0x42, 0x61, 0x73, 0x69, 0x63,
+					0x20, 0x49, 0x63, 0x6F, 0x6E, 0x9E,
+					0x02, 0x01, 0x01 };
+
 unsigned char display_text_611[] = { 0xD0, 0x24, 0x81, 0x03, 0x01, 0x21, 0x80,
 					0x82, 0x02, 0x81, 0x02, 0x8D, 0x19,
 					0x08, 0x04, 0x17, 0x04, 0x14, 0x04,
@@ -164,6 +184,33 @@ static struct display_text_test display_text_data_171 = {
 	.qualifier = 0x80
 };
 
+static struct display_text_test display_text_data_511 = {
+	.pdu = display_text_511,
+	.pdu_len = sizeof(display_text_511),
+	.expected = "Basic Icon",
+	.qualifier = 0x80,
+	.icon_id = 0x01,
+	.icon_qualifier = 0x00,
+};
+
+static struct display_text_test display_text_data_521 = {
+	.pdu = display_text_521,
+	.pdu_len = sizeof(display_text_521),
+	.expected = "Colour Icon",
+	.qualifier = 0x80,
+	.icon_id = 0x02,
+	.icon_qualifier = 0x00,
+};
+
+static struct display_text_test display_text_data_531 = {
+	.pdu = display_text_531,
+	.pdu_len = sizeof(display_text_531),
+	.expected = "Basic Icon",
+	.qualifier = 0x80,
+	.icon_id = 0x01,
+	.icon_qualifier = 0x01,
+};
+
 static struct display_text_test display_text_data_611 = {
 	.pdu = display_text_611,
 	.pdu_len = sizeof(display_text_611),
@@ -206,6 +253,12 @@ static void test_display_text(gconstpointer data)
 
 	g_assert(g_str_equal(test->expected, command->display_text.text));
 
+	if (test->icon_id > 0) {
+		g_assert(command->display_text.icon_id.id == test->icon_id);
+		g_assert(command->display_text.icon_id.qualifier ==
+				test->icon_qualifier);
+	}
+
 	stk_command_free(command);
 }
 
@@ -225,6 +278,12 @@ int main(int argc, char **argv)
 				&display_text_data_161, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 1.7.1",
 				&display_text_data_171, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 5.1.1",
+				&display_text_data_511, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 5.2.1",
+				&display_text_data_521, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 5.3.1",
+				&display_text_data_531, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 6.1.1",
 				&display_text_data_611, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 9.1.1",
