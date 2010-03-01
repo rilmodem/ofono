@@ -41,6 +41,7 @@ enum stk_data_object_flag {
 
 typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
 
+/* Defined in TS 102.223 Section 8.15 */
 static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 					void *user)
 {
@@ -108,6 +109,7 @@ static void destroy_display_text(struct stk_command *command)
 	g_free(command->display_text.text);
 }
 
+/* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
 {
@@ -129,6 +131,7 @@ static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
 {
