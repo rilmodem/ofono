@@ -108,11 +108,34 @@ static void destroy_display_text(struct stk_command *command)
 	g_free(command->display_text.text);
 }
 
+static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_icon_identifier *id = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_ICON_ID)
+		return FALSE;
+
+	if (comprehension_tlv_iter_get_length(iter) != 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	id->qualifier = data[0];
+	id->id = data[1];
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
 	case STK_DATA_OBJECT_TYPE_TEXT:
 		return parse_dataobj_text;
+	case STK_DATA_OBJECT_TYPE_ICON_ID:
+		return parse_dataobj_icon_id;
 	default:
 		return NULL;
 	};
@@ -188,6 +211,8 @@ static gboolean parse_display_text(struct stk_command *command,
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
 				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
 				&command->display_text.text,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&command->display_text.icon_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)

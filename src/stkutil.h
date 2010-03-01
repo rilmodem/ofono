@@ -197,8 +197,8 @@ enum stk_duration_type {
  * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects
  */
 struct stk_icon_identifier {
-	unsigned char icon_id;
-	unsigned char icon_qualifier;
+	unsigned char qualifier;
+	unsigned char id;
 };
 
 /*
