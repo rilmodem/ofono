@@ -129,6 +129,24 @@ static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	gboolean *resp = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE)
+		return FALSE;
+
+	if (comprehension_tlv_iter_get_length(iter) != 0)
+		return FALSE;
+
+	*resp = TRUE;
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -136,6 +154,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_text;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
+	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
+		return parse_dataobj_imm_resp;
 	default:
 		return NULL;
 	};
@@ -213,6 +233,8 @@ static gboolean parse_display_text(struct stk_command *command,
 				&command->display_text.text,
 				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
 				&command->display_text.icon_id,
+				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE, 0,
+				&command->display_text.immediate_response,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
