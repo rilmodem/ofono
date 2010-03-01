@@ -177,6 +177,31 @@ static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.72 */
+static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_text_attribute *attr = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+
+	if (len > 127)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	memcpy(attr->attributes, data, len);
+	attr->len = len;
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -188,6 +213,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_DURATION:
 		return parse_dataobj_duration;
+	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
+		return parse_dataobj_text_attr;
 	default:
 		return NULL;
 	};
@@ -269,6 +296,8 @@ static gboolean parse_display_text(struct stk_command *command,
 				&command->display_text.immediate_response,
 				STK_DATA_OBJECT_TYPE_DURATION, 0,
 				&command->display_text.duration,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&command->display_text.text_attribute,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
