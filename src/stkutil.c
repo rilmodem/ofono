@@ -97,9 +97,12 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 {
 	char **text = user;
 	unsigned int len;
+	enum stk_data_object_type tag;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_TEXT)
+	tag = comprehension_tlv_iter_get_tag(iter);
+
+	if (tag != STK_DATA_OBJECT_TYPE_TEXT &&
+			tag != STK_DATA_OBJECT_TYPE_DEFAULT_TEXT)
 		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
@@ -148,8 +151,12 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 			return FALSE;
 
 		*text = utf8;
-	} else
+	} else {
+		if (tag == STK_DATA_OBJECT_TYPE_DEFAULT_TEXT)
+			return FALSE;
+
 		*text = NULL;
+	}
 
 	return TRUE;
 }
@@ -252,6 +259,7 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 	case STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH:
 		return parse_dataobj_response_len;
 	case STK_DATA_OBJECT_TYPE_TEXT:
+	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
 		return parse_dataobj_text;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
