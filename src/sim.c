@@ -42,6 +42,7 @@
 #include "smsutil.h"
 #include "simutil.h"
 #include "storage.h"
+#include "stkutil.h"
 
 #define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 
@@ -1824,7 +1825,7 @@ void __ofono_cbs_sim_download(struct ofono_sim *sim,
 	if (sim->driver->envelope == NULL)
 		return;
 
-	tlv[0] = 0xd2; /* Cell Broadcast Download */
+	tlv[0] = STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD;
 	tlv[1] = 6 + pdu_len;
 	tlv[2] = 0x82; /* Device Identities */
 	tlv[3] = 0x02; /* Device Identities length */
