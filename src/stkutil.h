@@ -238,6 +238,15 @@ struct stk_command_display_text {
 	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
 };
 
+struct stk_command_get_input {
+	char *text;
+	struct stk_response_length response_length;
+	char *default_text;
+	struct stk_icon_identifier icon_id;
+	struct stk_text_attribute text_attribute;
+	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -248,6 +257,7 @@ struct stk_command {
 	union {
 		struct stk_command_display_text display_text;
 		struct stk_command_display_text get_inkey;
+		struct stk_command_get_input get_input;
 	};
 
 	void (*destructor)(struct stk_command *command);

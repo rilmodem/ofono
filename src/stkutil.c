@@ -408,6 +408,43 @@ static gboolean parse_get_inkey(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_get_input(struct stk_command *command)
+{
+	g_free(command->get_input.text);
+}
+
+static gboolean parse_get_input(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_get_input *obj = &command->get_input;
+	gboolean ret;
+
+	obj->frame_id = 0xFF;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->text,
+				STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->response_length,
+				STK_DATA_OBJECT_TYPE_DEFAULT_TEXT, 0,
+				&obj->default_text,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attribute,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_get_input;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -474,6 +511,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_GET_INKEY:
 		ok = parse_get_inkey(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_GET_INPUT:
+		ok = parse_get_input(command, &iter);
 		break;
 	default:
 		ok = FALSE;
