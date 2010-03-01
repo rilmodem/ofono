@@ -220,6 +220,15 @@ struct stk_text_attribute {
 	unsigned char len;
 };
 
+/*
+ * According to 102.223 Section 8.11, the maximum length should never be set
+ * to 0.
+ */
+struct stk_response_length {
+	unsigned char min;
+	unsigned char max;
+};
+
 struct stk_command_display_text {
 	char *text;
 	struct stk_icon_identifier icon_id;
