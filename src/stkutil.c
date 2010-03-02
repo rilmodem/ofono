@@ -347,6 +347,12 @@ static gboolean parse_display_text(struct stk_command *command,
 	struct stk_command_display_text *obj = &command->display_text;
 	gboolean ret;
 
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_DISPLAY)
+		return FALSE;
+
 	obj->frame_id = 0xFF;
 
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
@@ -382,6 +388,12 @@ static gboolean parse_get_inkey(struct stk_command *command,
 {
 	struct stk_command_display_text *obj = &command->get_inkey;
 	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
 
 	obj->frame_id = 0xFF;
 
@@ -420,6 +432,12 @@ static gboolean parse_get_input(struct stk_command *command,
 	gboolean ret;
 
 	obj->frame_id = 0xFF;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
 
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
 				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
