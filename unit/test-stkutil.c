@@ -249,7 +249,7 @@ static struct display_text_test display_text_data_1011 = {
 	.qualifier = 0x80
 };
 
-/* Defined in TS 102.384 Section 27.22.4.1.1.4.2 */
+/* Defined in TS 102.384 Section 27.22.4.1 */
 static void test_display_text(gconstpointer data)
 {
 	const struct display_text_test *test = data;
@@ -286,6 +286,66 @@ static void test_display_text(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct get_input_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+	const char *expected;
+	unsigned char min;
+	unsigned char max;
+	unsigned char icon_qualifier;
+	unsigned char icon_id;
+};
+
+static unsigned char get_input_111[] = { 0xD0, 0x1B, 0x81, 0x03, 0x01, 0x23,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0x8D, 0x0C, 0x04, 0x45, 0x6E,
+						0x74, 0x65, 0x72, 0x20, 0x31,
+						0x32, 0x33, 0x34, 0x35, 0x91,
+						0x02, 0x05, 0x05 };
+
+static struct get_input_test get_input_data_111 = {
+	.pdu = get_input_111,
+	.pdu_len = sizeof(get_input_111),
+	.expected = "Enter 12345",
+	.qualifier = 0x00,
+	.min = 5,
+	.max = 5
+};
+
+/* Defined in TS 102.384 Section 27.22.4.3 */
+static void test_get_input(gconstpointer data)
+{
+	const struct get_input_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_GET_INPUT);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	g_assert(command->get_input.text);
+
+	g_assert(g_str_equal(test->expected, command->get_input.text));
+
+	g_assert(command->get_input.response_length.min == test->min);
+	g_assert(command->get_input.response_length.max == test->max);
+
+	if (test->icon_id > 0) {
+		g_assert(command->get_input.icon_id.id == test->icon_id);
+		g_assert(command->get_input.icon_id.qualifier ==
+				test->icon_qualifier);
+	}
+
+	stk_command_free(command);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -316,6 +376,9 @@ int main(int argc, char **argv)
 				&display_text_data_911, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 10.1.1",
 				&display_text_data_1011, test_display_text);
+
+	g_test_add_data_func("/teststk/Get Input 1.1.1",
+				&get_input_data_111, test_get_input);
 
 	return g_test_run();
 }
