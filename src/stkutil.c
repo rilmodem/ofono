@@ -188,7 +188,6 @@ static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
 {
 	gboolean *resp = user;
-	const unsigned char *data;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
 			STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE)
