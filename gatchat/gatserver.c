@@ -382,6 +382,9 @@ static void new_bytes(GAtServer *p)
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
 		result = server_feed(p, (char *)buf, &rbytes);
 
+		if (p->v250.echo)
+			send_common(p, (char *)buf, rbytes);
+
 		buf += rbytes;
 		p->read_so_far += rbytes;
 
