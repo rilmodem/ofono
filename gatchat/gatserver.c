@@ -376,7 +376,7 @@ static void new_bytes(GAtServer *p)
 	unsigned int len = ring_buffer_len(p->read_buf);
 	unsigned int wrap = ring_buffer_len_no_wrap(p->read_buf);
 	unsigned char *buf = ring_buffer_read_ptr(p->read_buf, p->read_so_far);
-	enum ParserState result;
+	enum ParserResult result;
 
 	while (p->channel && (p->read_so_far < len)) {
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
