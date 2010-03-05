@@ -67,6 +67,28 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.2 */
+static gboolean parse_dataobj_alpha_identifier(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	char **alpha_id = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_ALPHA_IDENTIFIER)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	*alpha_id = sim_string_to_utf8(data, len);
+
+	return TRUE;
+}
+
 /* Described in TS 102.223 Section 8.8 */
 static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -281,6 +303,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 	switch (type) {
 	case STK_DATA_OBJECT_TYPE_ADDRESS:
 		return parse_dataobj_address;
+	case STK_DATA_OBJECT_TYPE_ALPHA_IDENTIFIER:
+		return parse_dataobj_alpha_identifier;
 	case STK_DATA_OBJECT_TYPE_DURATION:
 		return parse_dataobj_duration;
 	case STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH:
