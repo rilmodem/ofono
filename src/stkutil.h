@@ -87,7 +87,7 @@ enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_DURATION = 0x04,
 	STK_DATA_OBJECT_TYPE_ALPHA_IDENTIFIER = 0x05,
 	STK_DATA_OBJECT_TYPE_ADDRESS = 0x06,
-	STK_DATA_OBJECT_TYPE_CCP = 0x07,
+	STK_DATA_OBJECT_TYPE_CAPABILITY_CONFIGURATION_PARAMETERS = 0x07,
 	STK_DATA_OBJECT_TYPE_SUBADDRESS = 0x08,
 	STK_DATA_OBJECT_TYPE_SS_STRING = 0x09,
 	STK_DATA_OBJECT_TYPE_USSD_STRING = 0x0A,
@@ -203,6 +203,12 @@ struct stk_address {
 struct stk_subaddress {
 	unsigned int subaddr_len;
 	unsigned char *subaddr;
+};
+
+/* Defined in TS 102.223 Section 8.4 */
+struct stk_capability_configuration_parameters {
+	unsigned int ccp_len;
+	unsigned char *ccp;
 };
 
 /*
