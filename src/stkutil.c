@@ -230,6 +230,38 @@ static gboolean parse_dataobj_response_len(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.12 */
+static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	struct stk_result *result = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_RESULT)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if ((len < 2) && ((data[0] == 0x20) || (data[0] == 0x21) ||
+				(data[0] == 0x26) || (data[0] == 0x38) ||
+				(data[0] == 0x39) || (data[0] == 0x3a) ||
+				(data[0] == 0x3c) || (data[0] == 0x3d)))
+		return FALSE;
+
+	result->general = data[0];
+	result->additional_len = len - 1;
+	result->additional = g_malloc(len-1);
+	memcpy(result->additional, data+1, len-1);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.15 */
 static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -408,6 +440,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_item_identifier;
 	case STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH:
 		return parse_dataobj_response_len;
+	case STK_DATA_OBJECT_TYPE_RESULT:
+		return parse_dataobj_result;
 	case STK_DATA_OBJECT_TYPE_TEXT:
 	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
 		return parse_dataobj_text;
