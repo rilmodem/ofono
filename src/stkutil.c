@@ -165,6 +165,29 @@ static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.9 */
+static gboolean parse_dataobj_item(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_item *item = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_ITEM)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	item->id = data[0];
+	item->text = sim_string_to_utf8(data+1, len-1);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.11 */
 static gboolean parse_dataobj_response_len(struct comprehension_tlv_iter *iter,
 						void *user)
@@ -359,6 +382,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_capability_configuration_parameters;
 	case STK_DATA_OBJECT_TYPE_DURATION:
 		return parse_dataobj_duration;
+	case STK_DATA_OBJECT_TYPE_ITEM:
+		return parse_dataobj_item;
 	case STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH:
 		return parse_dataobj_response_len;
 	case STK_DATA_OBJECT_TYPE_TEXT:
