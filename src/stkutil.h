@@ -192,6 +192,13 @@ enum stk_duration_type {
 	STK_DURATION_TYPE_SECOND_TENTHS = 0x02,
 };
 
+/* Defined in TS 102.223 Section 8.1 */
+struct stk_address {
+	unsigned char ton;
+	unsigned char npi;
+	char *number;
+};
+
 /*
  * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
  * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects

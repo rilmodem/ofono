@@ -41,6 +41,32 @@ enum stk_data_object_flag {
 
 typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
 
+/* Defined in TS 102.223 Section 8.1 */
+static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_address *addr = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_ADDRESS)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	addr->ton = (data[0] >> 4) & 0x07;
+	addr->npi = data[0] & 0x0f;
+	addr->number = g_malloc(len*2-1);
+	extract_bcd_number(data+1, len-1, addr->number);
+
+	return TRUE;
+}
+
 /* Described in TS 102.223 Section 8.8 */
 static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -253,6 +279,8 @@ static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
+	case STK_DATA_OBJECT_TYPE_ADDRESS:
+		return parse_dataobj_address;
 	case STK_DATA_OBJECT_TYPE_DURATION:
 		return parse_dataobj_duration;
 	case STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH:
