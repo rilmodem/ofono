@@ -199,6 +199,12 @@ struct stk_address {
 	char *number;
 };
 
+/* Defined in TS 102.223 Section 8.3 */
+struct stk_subaddress {
+	unsigned int subaddr_len;
+	unsigned char *subaddr;
+};
+
 /*
  * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
  * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects

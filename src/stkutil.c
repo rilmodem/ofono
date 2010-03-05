@@ -89,6 +89,30 @@ static gboolean parse_dataobj_alpha_identifier(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.3 */
+static gboolean parse_dataobj_subaddress(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_subaddress *subaddr = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_SUBADDRESS)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	subaddr->subaddr_len = len;
+	subaddr->subaddr = g_malloc(len);
+	memcpy(subaddr->subaddr, data, len);
+
+	return TRUE;
+}
+
 /* Described in TS 102.223 Section 8.8 */
 static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -305,6 +329,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_address;
 	case STK_DATA_OBJECT_TYPE_ALPHA_IDENTIFIER:
 		return parse_dataobj_alpha_identifier;
+	case STK_DATA_OBJECT_TYPE_SUBADDRESS:
+		return parse_dataobj_subaddress;
 	case STK_DATA_OBJECT_TYPE_DURATION:
 		return parse_dataobj_duration;
 	case STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH:
