@@ -1,3 +1,10 @@
+ver 0.19:
+	Fix parsing of EFspdi for PLMN list.
+	Fix issues with Bluetooth handsfree handling.
+	Fix non-blocking handling for AT command server.
+	Add support for network-initiated USSD requests.
+	Add utility functions for SIM Toolkit support.
+
 ver 0.18:
 	Fix handling of GPRS attach logic.
 	Fix handling of username/password settings for STE/MBM modems.
