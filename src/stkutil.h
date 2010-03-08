@@ -242,6 +242,12 @@ struct stk_result {
 	unsigned char *additional;
 };
 
+/* Defined in TS 102.223 Section 8.13 */
+struct stk_sms_tpdu {
+	unsigned int tpdu_len;
+	unsigned char *tpdu;
+};
+
 /*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules

@@ -262,6 +262,31 @@ static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.13 */
+static gboolean parse_dataobj_sms_tpdu(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	struct stk_sms_tpdu *tpdu = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_SMS_TPDU)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	tpdu->tpdu_len = data[0];
+	tpdu->tpdu = g_malloc(len-1);
+	memcpy(tpdu->tpdu, data+1, len-1);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.15 */
 static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -442,6 +467,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_response_len;
 	case STK_DATA_OBJECT_TYPE_RESULT:
 		return parse_dataobj_result;
+	case STK_DATA_OBJECT_TYPE_SMS_TPDU:
+		return parse_dataobj_sms_tpdu;
 	case STK_DATA_OBJECT_TYPE_TEXT:
 	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
 		return parse_dataobj_text;
