@@ -357,6 +357,27 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.16 */
+static gboolean parse_dataobj_tone(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	unsigned char *tone = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_TONE)
+		return FALSE;
+
+	if (comprehension_tlv_iter_get_length(iter) !=  1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	*tone = data[0];
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -472,6 +493,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 	case STK_DATA_OBJECT_TYPE_TEXT:
 	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
 		return parse_dataobj_text;
+	case STK_DATA_OBJECT_TYPE_TONE:
+		return parse_dataobj_tone;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
