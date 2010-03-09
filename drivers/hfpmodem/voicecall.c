@@ -373,10 +373,6 @@ static void hfp_dial(struct ofono_voicecall *vc,
 	else
 		snprintf(buf, sizeof(buf), "ATD%s", ph->number);
 
-	if ((clir != OFONO_CLIR_OPTION_DEFAULT) ||
-			(cug != OFONO_CUG_OPTION_DEFAULT))
-		goto error;
-
 	strcat(buf, ";");
 
 	if (g_at_chat_send(vd->chat, buf, none_prefix,
