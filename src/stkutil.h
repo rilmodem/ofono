@@ -194,8 +194,7 @@ enum stk_duration_type {
 
 /* Defined in TS 102.223 Section 8.1 */
 struct stk_address {
-	unsigned char ton;
-	unsigned char npi;
+	unsigned char ton_npi;
 	char *number;
 };
 

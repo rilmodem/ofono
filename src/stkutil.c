@@ -59,8 +59,7 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 
 	data = comprehension_tlv_iter_get_data(iter);
 
-	addr->ton = (data[0] >> 4) & 0x07;
-	addr->npi = data[0] & 0x0f;
+	addr->ton_npi = data[0];
 	addr->number = g_malloc(len*2-1);
 	extract_bcd_number(data+1, len-1, addr->number);
 
