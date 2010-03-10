@@ -198,10 +198,23 @@ struct stk_address {
 	char *number;
 };
 
-/* Defined in TS 102.223 Section 8.3 */
+/*
+ * Defined in TS 102.223 Section 8.3
+ *
+ * The maximum size of the subaddress is different depending on the referenced
+ * specification.  According to TS 24.008 Section 10.5.4.8: "The called party
+ * subaddress is a type 4 information element with a minimum length of 2 octets
+ * and a maximum length of 23 octets"
+ *
+ * According to TS 31.102 Section 4.4.2.4: "The subaddress data contains
+ * information as defined for this purpose in TS 24.008 [9]. All information
+ * defined in TS 24.008, except the information element identifier, shall be
+ * stored in the USIM. The length of this subaddress data can be up to 22
+ * bytes."
+ */
 struct stk_subaddress {
-	unsigned int subaddr_len;
-	unsigned char *subaddr;
+	unsigned char len;
+	unsigned char *subaddr[23];
 };
 
 /* Defined in TS 102.223 Section 8.4 */

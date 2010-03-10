@@ -95,8 +95,8 @@ static gboolean parse_dataobj_alpha_id(struct comprehension_tlv_iter *iter,
 }
 
 /* Defined in TS 102.223 Section 8.3 */
-static gboolean parse_dataobj_subaddress(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_subaddress(struct comprehension_tlv_iter *iter,
+						void *user)
 {
 	struct stk_subaddress *subaddr = user;
 	const unsigned char *data;
@@ -110,9 +110,11 @@ static gboolean parse_dataobj_subaddress(
 	if (len < 1)
 		return FALSE;
 
+	if (len > sizeof(subaddr->subaddr))
+		return FALSE;
+
 	data = comprehension_tlv_iter_get_data(iter);
-	subaddr->subaddr_len = len;
-	subaddr->subaddr = g_malloc(len);
+	subaddr->len = len;
 	memcpy(subaddr->subaddr, data, len);
 
 	return TRUE;
