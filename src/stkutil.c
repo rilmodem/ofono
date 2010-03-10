@@ -67,15 +67,16 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 }
 
 /* Defined in TS 102.223 Section 8.2 */
-static gboolean parse_dataobj_alpha_identifier(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_alpha_id(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	char **alpha_id = user;
 	const unsigned char *data;
 	unsigned int len;
+	char *utf8;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_ALPHA_IDENTIFIER)
+			STK_DATA_OBJECT_TYPE_ALPHA_ID)
 		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
@@ -83,7 +84,12 @@ static gboolean parse_dataobj_alpha_identifier(
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
-	*alpha_id = sim_string_to_utf8(data, len);
+	utf8 = sim_string_to_utf8(data, len);
+
+	if (utf8 == NULL)
+		return FALSE;
+
+	*alpha_id = utf8;
 
 	return TRUE;
 }
@@ -471,8 +477,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 	switch (type) {
 	case STK_DATA_OBJECT_TYPE_ADDRESS:
 		return parse_dataobj_address;
-	case STK_DATA_OBJECT_TYPE_ALPHA_IDENTIFIER:
-		return parse_dataobj_alpha_identifier;
+	case STK_DATA_OBJECT_TYPE_ALPHA_ID:
+		return parse_dataobj_alpha_id;
 	case STK_DATA_OBJECT_TYPE_SUBADDRESS:
 		return parse_dataobj_subaddress;
 	case STK_DATA_OBJECT_TYPE_CAPABILITY_CONFIGURATION_PARAMETERS:
