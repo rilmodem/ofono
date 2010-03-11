@@ -121,24 +121,26 @@ static gboolean parse_dataobj_subaddress(struct comprehension_tlv_iter *iter,
 }
 
 /* Defined in TS 102.223 Section 8.4 */
-static gboolean parse_dataobj_capability_configuration_parameters(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_ccp(struct comprehension_tlv_iter *iter,
+					void *user)
 {
-	struct stk_capability_configuration_parameters *ccp = user;
+	struct stk_ccp *ccp = user;
 	const unsigned char *data;
 	unsigned int len;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
-		STK_DATA_OBJECT_TYPE_CAPABILITY_CONFIGURATION_PARAMETERS)
+			STK_DATA_OBJECT_TYPE_CCP)
 		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 1)
 		return FALSE;
 
+	if (len > sizeof(ccp->ccp))
+		return FALSE;
+
 	data = comprehension_tlv_iter_get_data(iter);
-	ccp->ccp_len = len;
-	ccp->ccp = g_malloc(len);
+	ccp->len = len;
 	memcpy(ccp->ccp, data, len);
 
 	return TRUE;
@@ -483,8 +485,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_alpha_id;
 	case STK_DATA_OBJECT_TYPE_SUBADDRESS:
 		return parse_dataobj_subaddress;
-	case STK_DATA_OBJECT_TYPE_CAPABILITY_CONFIGURATION_PARAMETERS:
-		return parse_dataobj_capability_configuration_parameters;
+	case STK_DATA_OBJECT_TYPE_CCP:
+		return parse_dataobj_ccp;
 	case STK_DATA_OBJECT_TYPE_DURATION:
 		return parse_dataobj_duration;
 	case STK_DATA_OBJECT_TYPE_ITEM:

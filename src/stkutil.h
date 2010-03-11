@@ -87,7 +87,7 @@ enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_DURATION = 0x04,
 	STK_DATA_OBJECT_TYPE_ALPHA_ID = 0x05,
 	STK_DATA_OBJECT_TYPE_ADDRESS = 0x06,
-	STK_DATA_OBJECT_TYPE_CAPABILITY_CONFIGURATION_PARAMETERS = 0x07,
+	STK_DATA_OBJECT_TYPE_CCP = 0x07,
 	STK_DATA_OBJECT_TYPE_SUBADDRESS = 0x08,
 	STK_DATA_OBJECT_TYPE_SS_STRING = 0x09,
 	STK_DATA_OBJECT_TYPE_USSD_STRING = 0x0A,
@@ -217,10 +217,20 @@ struct stk_subaddress {
 	unsigned char *subaddr[23];
 };
 
-/* Defined in TS 102.223 Section 8.4 */
-struct stk_capability_configuration_parameters {
-	unsigned int ccp_len;
-	unsigned char *ccp;
+/*
+ * Defined in TS 102.223 Section 8.4
+ *
+ * According to 24.008 Section 10.5.4.5 "The bearer capability is a type 4
+ * information element with a minimum length of 3 octets and a maximum length
+ * of 16 octets."
+ *
+ * According to TS 31.102 Section 4.2.38 the CCP length is 15 bytes.
+ *
+ * The CCP structure is not decoded, but stored as is from the CTLV
+ */
+struct stk_ccp {
+	unsigned char len;
+	unsigned char ccp[16];
 };
 
 /*
