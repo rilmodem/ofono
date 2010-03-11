@@ -203,8 +203,8 @@ static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
 }
 
 /* Defined in TS 102.223 Section 8.10 */
-static gboolean parse_dataobj_item_identifier(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_item_id(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	unsigned char *id = user;
 	const unsigned char *data;
@@ -497,7 +497,7 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 	case STK_DATA_OBJECT_TYPE_ITEM:
 		return parse_dataobj_item;
 	case STK_DATA_OBJECT_TYPE_ITEM_ID:
-		return parse_dataobj_item_identifier;
+		return parse_dataobj_item_id;
 	case STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH:
 		return parse_dataobj_response_len;
 	case STK_DATA_OBJECT_TYPE_RESULT:
