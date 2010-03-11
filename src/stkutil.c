@@ -175,8 +175,8 @@ static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 }
 
 /* Defined in TS 102.223 Section 8.9 */
-static gboolean parse_dataobj_item(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	struct stk_item *item = user;
 	const unsigned char *data;
@@ -191,6 +191,11 @@ static gboolean parse_dataobj_item(
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
+
+	/* The identifier is between 0x01 and 0xFF */
+	if (data[0] == 0)
+		return FALSE;
+
 	item->id = data[0];
 	item->text = sim_string_to_utf8(data+1, len-1);
 
