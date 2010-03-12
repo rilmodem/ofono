@@ -257,6 +257,15 @@ struct stk_item {
 	char *text;
 };
 
+/*
+ * According to 102.223 Section 8.11, the maximum length should never be set
+ * to 0.
+ */
+struct stk_response_length {
+	unsigned char min;
+	unsigned char max;
+};
+
 /* Defined in TS 102.223 Section 8.12 */
 struct stk_result {
 	unsigned char general;
@@ -278,15 +287,6 @@ struct stk_sms_tpdu {
 struct stk_text_attribute {
 	unsigned char attributes[127];
 	unsigned char len;
-};
-
-/*
- * According to 102.223 Section 8.11, the maximum length should never be set
- * to 0.
- */
-struct stk_response_length {
-	unsigned char min;
-	unsigned char max;
 };
 
 struct stk_command_display_text {
