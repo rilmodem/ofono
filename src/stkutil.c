@@ -246,7 +246,7 @@ static gboolean parse_dataobj_response_len(struct comprehension_tlv_iter *iter,
 
 /* Defined in TS 102.223 Section 8.12 */
 static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
-						void *user)
+					void *user)
 {
 	struct stk_result *result = user;
 	const unsigned char *data;
@@ -268,7 +268,7 @@ static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
 				(data[0] == 0x3c) || (data[0] == 0x3d)))
 		return FALSE;
 
-	result->general = data[0];
+	result->type = data[0];
 	result->additional_len = len - 1;
 	result->additional = g_malloc(len-1);
 	memcpy(result->additional, data+1, len-1);
