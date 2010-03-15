@@ -1,0 +1,46 @@
+SmsManager hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.SmsManager
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the modem object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
+		void SendMessage(string to, string text)
+
+			Send the message in text to the number in to.
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+		ImmediateMessage(string message, dict info)
+
+			New immediate (class 0) SMS received. Info has Sender,
+			LocalSentTime, and SentTime information.
+
+		IncomingMessage(string message, dict info)
+
+			New incoming (class >= 1) SMS received. Info has Sender,
+			LocalSentTime, and SentTime information.
+
+Properties	string ServiceCenterAddress
+
+			Contains the number of the SMS service center.
