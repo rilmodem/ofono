@@ -72,10 +72,10 @@ static gboolean g_isi_pep_callback(GIOChannel *channel, GIOCondition cond,
 
 GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback cb, void *opaque)
 {
-	GIsiPEP *pep = g_malloc(sizeof(*pep));
+	unsigned ifi = g_isi_modem_index(modem);
+	GIsiPEP *pep = NULL;
 	GIOChannel *channel;
 	int fd;
-	unsigned ifi = g_isi_modem_index(modem);
 	char buf[IF_NAMESIZE];
 
 	fd = socket(PF_PHONET, SOCK_SEQPACKET, 0);
@@ -89,6 +89,10 @@ GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback cb, void *opaque)
 		goto error;
 
 	if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE) != 0)
+		goto error;
+
+	pep = g_try_malloc(sizeof(GIsiPEP));
+	if (pep == NULL)
 		goto error;
 
 	pep->ready = cb;
