@@ -286,7 +286,7 @@ struct stk_address {
  */
 struct stk_subaddress {
 	unsigned char len;
-	unsigned char *subaddr[23];
+	unsigned char subaddr[23];
 };
 
 /*
