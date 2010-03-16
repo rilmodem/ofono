@@ -206,12 +206,12 @@ static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
 	if (data[0] == 0)
 		return FALSE;
 
-	item->id = data[0];
 	utf8 = sim_string_to_utf8(data + 1, len - 1);
 
 	if (utf8 == NULL)
 		return FALSE;
 
+	item->id = data[0];
 	item->text = utf8;
 
 	return TRUE;
