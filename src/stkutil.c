@@ -57,6 +57,7 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 	struct stk_address *addr = user;
 	const unsigned char *data;
 	unsigned int len;
+	char *number;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
 			STK_DATA_OBJECT_TYPE_ADDRESS)
@@ -68,8 +69,12 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 
 	data = comprehension_tlv_iter_get_data(iter);
 
+	number = g_try_malloc(len * 2 - 1);
+	if (number == NULL)
+		return FALSE;
+
 	addr->ton_npi = data[0];
-	addr->number = g_malloc(len * 2 - 1);
+	addr->number = number;
 	extract_bcd_number(data + 1, len - 1, addr->number);
 
 	return TRUE;
