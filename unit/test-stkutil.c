@@ -32,6 +32,7 @@
 #include <glib/gprintf.h>
 
 #include <ofono/types.h>
+#include "smsutil.h"
 #include "stkutil.h"
 
 struct display_text_test {
@@ -346,6 +347,83 @@ static void test_get_input(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct send_sms_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+	const char *alpha_id;
+	unsigned char ton_npi;
+	const char *address;
+	unsigned char sms_mr;
+	const char *sms_address;
+	unsigned char sms_udl;
+	const char *sms_ud;
+};
+
+/* 3GPP TS 31.124 Section 27.22.4.10.1.4.2 */
+static unsigned char send_sms_11[] = { 0xD0, 0x37, 0x81, 0x03, 0x01, 0x13, 0x00,
+					0x82, 0x02, 0x81, 0x83, 0x85, 0x07,
+					0x53, 0x65, 0x6E, 0x64, 0x20, 0x53,
+					0x4D, 0x86, 0x09, 0x91, 0x11, 0x22,
+					0x33, 0x44, 0x55, 0x66, 0x77, 0xF8,
+					0x8B, 0x18, 0x01, 0x00, 0x09, 0x91,
+					0x10, 0x32, 0x54, 0x76, 0xF8, 0x40,
+					0xF4, 0x0C, 0x54, 0x65, 0x73, 0x74,
+					0x20, 0x4D, 0x65, 0x73, 0x73, 0x61,
+					0x67, 0x65 };
+
+static struct send_sms_test send_sms_data_11 = {
+	.pdu = send_sms_11,
+	.pdu_len = sizeof(send_sms_11),
+	.qualifier = 0x00,
+	.alpha_id = "Send SM",
+	.ton_npi = 0x91,
+	.address = "112233445566778",
+	.sms_mr = 0x00,
+	.sms_address = "012345678",
+	.sms_udl = 12,
+	.sms_ud = "Test Message",
+};
+
+static void test_send_sms(gconstpointer data)
+{
+	const struct send_sms_test *test = data;
+	struct stk_command *command;
+	int i;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_SEND_SMS);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_NETWORK);
+
+	if (test->alpha_id)
+		g_assert(g_str_equal(test->alpha_id,
+					command->send_sms.alpha_id));
+
+	if (test->address) {
+		g_assert(test->ton_npi == command->send_sms.address.ton_npi);
+		g_assert(g_str_equal(test->address,
+					command->send_sms.address.number));
+	}
+
+	g_assert(test->sms_mr == command->send_sms.gsm_sms.submit.mr);
+	g_assert(test->sms_udl == command->send_sms.gsm_sms.submit.udl);
+	g_assert(g_str_equal(test->sms_address,
+			command->send_sms.gsm_sms.submit.daddr.address));
+
+	for (i = 0; i < test->sms_udl; i++)
+		g_assert(test->sms_ud[i] ==
+				command->send_sms.gsm_sms.submit.ud[i]);
+
+	stk_command_free(command);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -379,6 +457,9 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/Get Input 1.1.1",
 				&get_input_data_111, test_get_input);
+
+	g_test_add_data_func("/teststk/Send SMS 1.1",
+				&send_sms_data_11, test_send_sms);
 
 	return g_test_run();
 }
