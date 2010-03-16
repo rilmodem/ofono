@@ -588,7 +588,7 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 		res_length += UTF8_LENGTH(c);
 	}
 
-	res = g_malloc(res_length + 1);
+	res = g_try_malloc(res_length + 1);
 
 	if (!res)
 		goto error;
@@ -692,7 +692,7 @@ unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len,
 		nchars += 1;
 	}
 
-	res = g_malloc(res_len + (terminator ? 1 : 0));
+	res = g_try_malloc(res_len + (terminator ? 1 : 0));
 
 	if (!res)
 		goto err_out;
@@ -1189,7 +1189,7 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 		if (buffer[i] != 0xff)
 			return NULL;
 
-	utf8 = g_malloc(res_len + 1);
+	utf8 = g_try_malloc(res_len + 1);
 
 	if (!utf8)
 		return NULL;
