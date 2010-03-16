@@ -190,6 +190,7 @@ static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
 	struct stk_item *item = user;
 	const unsigned char *data;
 	unsigned int len;
+	char *utf8;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
 			STK_DATA_OBJECT_TYPE_ITEM)
@@ -206,7 +207,12 @@ static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
 		return FALSE;
 
 	item->id = data[0];
-	item->text = sim_string_to_utf8(data+1, len-1);
+	utf8 = sim_string_to_utf8(data+1, len-1);
+
+	if (utf8 == NULL)
+		return FALSE;
+
+	item->text = utf8;
 
 	return TRUE;
 }
