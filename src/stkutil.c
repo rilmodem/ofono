@@ -719,6 +719,55 @@ static gboolean parse_get_input(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_send_sms(struct stk_command *command)
+{
+	g_free(command->send_sms.alpha_id);
+	g_free(command->send_sms.address.number);
+}
+
+static gboolean parse_send_sms(struct stk_command *command, 
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_send_sms *obj = &command->send_sms;
+	struct gsm_sms_tpdu tpdu;
+	gboolean ret;
+
+	obj->frame_id = 0xFF;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ADDRESS, 0,
+				&obj->address,
+				STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU, 0,
+				&tpdu,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attribute,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_send_sms;
+
+	if (sms_decode(tpdu.tpdu, tpdu.len, TRUE, tpdu.len, &obj->gsm_sms)
+			== FALSE) {
+		command->destructor(command);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -788,6 +837,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_GET_INPUT:
 		ok = parse_get_input(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SEND_SMS:
+		ok = parse_send_sms(command, &iter);
 		break;
 	default:
 		ok = FALSE;

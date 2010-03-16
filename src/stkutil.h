@@ -342,6 +342,15 @@ struct stk_command_get_input {
 	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
 };
 
+struct stk_command_send_sms {
+	char *alpha_id;
+	struct stk_address address;
+	struct sms gsm_sms;
+	struct stk_icon_identifier icon_id;
+	struct stk_text_attribute text_attribute;
+	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -353,6 +362,7 @@ struct stk_command {
 		struct stk_command_display_text display_text;
 		struct stk_command_display_text get_inkey;
 		struct stk_command_get_input get_input;
+		struct stk_command_send_sms send_sms;
 	};
 
 	void (*destructor)(struct stk_command *command);
