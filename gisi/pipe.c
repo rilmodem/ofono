@@ -211,7 +211,10 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem, void (*created)(GIsiPipe *),
 		.type2 = type2,
 		.n_sb = 0,
 	};
-	GIsiPipe *pipe = g_malloc(sizeof(*pipe));
+	GIsiPipe *pipe = g_try_malloc(sizeof(GIsiPipe));
+
+	if (pipe == NULL)
+		return NULL;
 
 	pipe->client = g_isi_client_create(modem, PN_PIPE);
 	pipe->handler = created;
