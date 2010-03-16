@@ -6,6 +6,7 @@ ENV{DEVTYPE}!="usb_device", GOTO="ofono_end"
 
 # HUAWEI Technology
 ATTRS{idVendor}=="12d1", ENV{OFONO_DRIVER}="huawei"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1404", ENV{OFONO_DRIVER}="em770"
 
 # Novatel Wireless
 ATTRS{idVendor}=="1410", ENV{OFONO_DRIVER}="novatel"
