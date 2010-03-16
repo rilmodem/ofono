@@ -69,8 +69,8 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 	data = comprehension_tlv_iter_get_data(iter);
 
 	addr->ton_npi = data[0];
-	addr->number = g_malloc(len*2-1);
-	extract_bcd_number(data+1, len-1, addr->number);
+	addr->number = g_malloc(len * 2 - 1);
+	extract_bcd_number(data + 1, len - 1, addr->number);
 
 	return TRUE;
 }
@@ -207,7 +207,7 @@ static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
 		return FALSE;
 
 	item->id = data[0];
-	utf8 = sim_string_to_utf8(data+1, len-1);
+	utf8 = sim_string_to_utf8(data + 1, len - 1);
 
 	if (utf8 == NULL)
 		return FALSE;
@@ -285,8 +285,8 @@ static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
 
 	result->type = data[0];
 	result->additional_len = len - 1;
-	result->additional = g_malloc(len-1);
-	memcpy(result->additional, data+1, len-1);
+	result->additional = g_malloc(len - 1);
+	memcpy(result->additional, data + 1, len - 1);
 
 	return TRUE;
 }
