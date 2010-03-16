@@ -34,11 +34,13 @@ Signals		PropertyChanged(string name, variant value)
 		ImmediateMessage(string message, dict info)
 
 			New immediate (class 0) SMS received. Info has Sender,
-			LocalSentTime, and SentTime information.
+			LocalSentTime, and SentTime information.  Sender
+			address is given in string format.  LocalSentTime and
+			SentTime are given in string form using ISO8601 format.
 
 		IncomingMessage(string message, dict info)
 
-			New incoming (class >= 1) SMS received. Info has Sender,
+			New incoming text SMS received. Info has Sender,
 			LocalSentTime, and SentTime information.
 
 Properties	string ServiceCenterAddress
