@@ -85,8 +85,10 @@ GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback cb, void *opaque)
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 	fcntl(fd, F_SETFL, O_NONBLOCK|fcntl(fd, F_GETFL));
 
-	if (if_indextoname(ifi, buf) == NULL ||
-	    setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
+	if (if_indextoname(ifi, buf) == NULL)
+		goto error;
+
+	if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE) != 0)
 		goto error;
 
 	pep->ready = cb;
