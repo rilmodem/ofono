@@ -29,8 +29,8 @@
 #include <glib.h>
 
 #include <ofono/types.h>
-#include "stkutil.h"
 #include "smsutil.h"
+#include "stkutil.h"
 #include "simutil.h"
 #include "util.h"
 
@@ -40,6 +40,15 @@ enum stk_data_object_flag {
 };
 
 typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
+
+/*
+ * Defined in TS 102.223 Section 8.13
+ * GSM SMS PDUs are limited to 164 bytes according to 23.040
+ */
+struct gsm_sms_tpdu {
+	unsigned int len;
+	unsigned char tpdu[164];
+};
 
 /* Defined in TS 102.223 Section 8.1 */
 static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
@@ -277,26 +286,25 @@ static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
 }
 
 /* Defined in TS 102.223 Section 8.13 */
-static gboolean parse_dataobj_sms_tpdu(struct comprehension_tlv_iter *iter,
+static gboolean parse_dataobj_gsm_sms_tpdu(struct comprehension_tlv_iter *iter,
 						void *user)
 {
-	struct stk_sms_tpdu *tpdu = user;
+	struct gsm_sms_tpdu *tpdu = user;
 	const unsigned char *data;
 	unsigned int len;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_SMS_TPDU)
+			STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU)
 		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
-	if (len < 1)
+	if (len < 1 || len > 164)
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
 
-	tpdu->tpdu_len = data[0];
-	tpdu->tpdu = g_malloc(len-1);
-	memcpy(tpdu->tpdu, data+1, len-1);
+	tpdu->len = len;
+	memcpy(tpdu->tpdu, data, len);
 
 	return TRUE;
 }
@@ -502,8 +510,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_response_len;
 	case STK_DATA_OBJECT_TYPE_RESULT:
 		return parse_dataobj_result;
-	case STK_DATA_OBJECT_TYPE_SMS_TPDU:
-		return parse_dataobj_sms_tpdu;
+	case STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU:
+		return parse_dataobj_gsm_sms_tpdu;
 	case STK_DATA_OBJECT_TYPE_TEXT:
 	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
 		return parse_dataobj_text;

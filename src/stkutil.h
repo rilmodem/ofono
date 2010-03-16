@@ -91,7 +91,7 @@ enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_SUBADDRESS = 0x08,
 	STK_DATA_OBJECT_TYPE_SS_STRING = 0x09,
 	STK_DATA_OBJECT_TYPE_USSD_STRING = 0x0A,
-	STK_DATA_OBJECT_TYPE_SMS_TPDU = 0x0B,
+	STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU = 0x0B,
 	STK_DATA_OBJECT_TYPE_CBS_PAGE = 0x0C,
 	STK_DATA_OBJECT_TYPE_TEXT = 0x0D,
 	STK_DATA_OBJECT_TYPE_TONE = 0x0E,
@@ -312,12 +312,6 @@ struct stk_result {
 	enum stk_result_type type;
 	unsigned int additional_len;
 	unsigned char *additional;
-};
-
-/* Defined in TS 102.223 Section 8.13 */
-struct stk_sms_tpdu {
-	unsigned int tpdu_len;
-	unsigned char *tpdu;
 };
 
 /*
