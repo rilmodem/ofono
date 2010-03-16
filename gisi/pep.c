@@ -95,6 +95,7 @@ GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback cb, void *opaque)
 	pep->opaque = opaque;
 	pep->gprs_fd = -1;
 	pep->handle = 0;
+
 	if (listen(fd, 1) || ioctl(fd, SIOCPNGETOBJECT, &pep->handle))
 		goto error;
 
@@ -106,7 +107,9 @@ GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback cb, void *opaque)
 					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
 					g_isi_pep_callback, pep);
 	g_io_channel_unref(channel);
+
 	return pep;
+
 error:
 	close(fd);
 	g_free(pep);
