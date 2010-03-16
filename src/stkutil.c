@@ -271,6 +271,7 @@ static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
 	struct stk_result *result = user;
 	const unsigned char *data;
 	unsigned int len;
+	unsigned char *additional;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
 			STK_DATA_OBJECT_TYPE_RESULT)
@@ -288,9 +289,13 @@ static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
 				(data[0] == 0x3c) || (data[0] == 0x3d)))
 		return FALSE;
 
+	additional = g_try_malloc(len - 1);
+	if (additional == NULL)
+		return FALSE;
+
 	result->type = data[0];
 	result->additional_len = len - 1;
-	result->additional = g_malloc(len - 1);
+	result->additional = additional;
 	memcpy(result->additional, data + 1, len - 1);
 
 	return TRUE;
