@@ -1502,6 +1502,9 @@ static gboolean sim_op_check_cached(struct ofono_sim *sim)
 
 	path = g_strdup_printf(SIM_CACHE_PATH, imsi, sim->phase, op->id);
 
+	if (path == NULL)
+		return FALSE;
+
 	fd = TFR(open(path, O_RDONLY));
 	g_free(path);
 
@@ -1537,7 +1540,10 @@ static gboolean sim_op_check_cached(struct ofono_sim *sim)
 		goto cleanup;
 	}
 
-	buffer = g_malloc(file_length);
+	buffer = g_try_malloc(file_length);
+
+	if (buffer == NULL)
+		goto cleanup;
 
 	len = TFR(read(fd, buffer, file_length));
 
