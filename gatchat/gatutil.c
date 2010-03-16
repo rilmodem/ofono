@@ -60,7 +60,10 @@ void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
 			escaped += 4;
 	}
 
-	escaped_str = g_malloc(escaped + 1);
+	escaped_str = g_try_malloc(escaped + 1);
+	if (escaped_str == NULL)
+		return;
+
 	escaped_str[0] = type;
 	escaped_str[1] = ' ';
 	escaped_str[2] = '\0';
