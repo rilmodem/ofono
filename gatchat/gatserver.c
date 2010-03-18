@@ -393,9 +393,6 @@ static void new_bytes(GAtServer *p)
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
 		result = server_feed(p, (char *)buf, &rbytes);
 
-		if (p->v250.echo)
-			send_common(p, (char *)buf, rbytes);
-
 		buf += rbytes;
 		p->read_so_far += rbytes;
 
@@ -473,8 +470,12 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 
 		total_read += rbytes;
 
-		if (rbytes > 0)
+		if (rbytes > 0) {
+			if (server->v250.echo)
+				send_common(server, (char *)buf, rbytes);
+
 			ring_buffer_write_advance(server->read_buf, rbytes);
+		}
 	} while (err == G_IO_ERROR_NONE && rbytes > 0 &&
 					read_count < server->max_read_attempts);
 
