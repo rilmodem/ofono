@@ -191,7 +191,7 @@ static void parse_extended_command(GAtServer *server, char *buf)
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static void parse_v250_settings(GAtServer *server, char *buf)
+static void parse_basic_command(GAtServer *server, char *buf)
 {
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
@@ -219,7 +219,7 @@ static void server_parse_line(GAtServer *server, char *line)
 	if (is_extended_command_prefix(c) || c == 'A' || c == 'D' || c == 'H')
 		parse_extended_command(server, line + i);
 	else if (g_ascii_isalpha(c) || c == '&')
-		parse_v250_settings(server, line + i);
+		parse_basic_command(server, line + i);
 	else
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 
