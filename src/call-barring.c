@@ -146,9 +146,8 @@ static void update_barrings(struct ofono_call_barring *cb, int mask)
 					"Incoming", cls);
 	}
 
-	for (i = cb->query_start; i <= cb->query_end; i++) {
+	for (i = cb->query_start; i <= cb->query_end; i++)
 		cb->cur_locks[i] = cb->new_locks[i];
-	}
 }
 
 static void cb_ss_property_append(struct ofono_call_barring *cb,
