@@ -457,13 +457,13 @@ static gboolean cb_ss_control(int type, const char *sc,
 	switch (type) {
 	case SS_CONTROL_TYPE_ACTIVATION:
 	case SS_CONTROL_TYPE_REGISTRATION:
-		cb->ss_req_type = SS_CONTROL_TYPE_REGISTRATION;
+		cb->ss_req_type = SS_CONTROL_TYPE_ACTIVATION;
 		cb->driver->set(cb, fac, 1, sia, cls,
 				cb_ss_set_lock_callback, cb);
 		break;
 	case SS_CONTROL_TYPE_ERASURE:
 	case SS_CONTROL_TYPE_DEACTIVATION:
-		cb->ss_req_type = SS_CONTROL_TYPE_ERASURE;
+		cb->ss_req_type = SS_CONTROL_TYPE_DEACTIVATION;
 		cb->driver->set(cb, fac, 0, sia, cls,
 				cb_ss_set_lock_callback, cb);
 		break;
