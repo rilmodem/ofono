@@ -186,6 +186,17 @@ static inline gboolean is_extended_command_prefix(const char c)
 	}
 }
 
+static gboolean is_basic_command_prefix(const char *buf)
+{
+	if (g_ascii_isalpha(buf[0]))
+		return TRUE;
+
+	if (buf[0] == '&' && g_ascii_isalpha(buf[1]))
+		return TRUE;
+
+	return FALSE;
+}
+
 static void parse_extended_command(GAtServer *server, char *buf)
 {
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
@@ -216,9 +227,9 @@ static void server_parse_line(GAtServer *server, char *line)
 	if (c == ';')
 		c = line[++i];
 
-	if (is_extended_command_prefix(c) || c == 'A' || c == 'D' || c == 'H')
+	if (is_extended_command_prefix(c))
 		parse_extended_command(server, line + i);
-	else if (g_ascii_isalpha(c) || c == '&')
+	else if (is_basic_command_prefix(line + i))
 		parse_basic_command(server, line + i);
 	else
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
