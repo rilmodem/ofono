@@ -37,6 +37,7 @@
 #include "common.h"
 
 #define CALL_BARRING_FLAG_CACHED 0x1
+#define NUM_OF_BARRINGS 5
 
 static GSList *g_drivers = NULL;
 
@@ -47,8 +48,8 @@ static void set_query_next_lock(struct ofono_call_barring *cb);
 struct ofono_call_barring {
 	int flags;
 	DBusMessage *pending;
-	int *cur_locks;
-	int *new_locks;
+	int cur_locks[NUM_OF_BARRINGS];
+	int new_locks[NUM_OF_BARRINGS];
 	int query_start;
 	int query_end;
 	int query_next;
@@ -1069,9 +1070,6 @@ static void call_barring_remove(struct ofono_atom *atom)
 	if (cb->driver && cb->driver->remove)
 		cb->driver->remove(cb);
 
-	g_free(cb->cur_locks);
-	g_free(cb->new_locks);
-
 	g_free(cb);
 }
 
@@ -1082,7 +1080,6 @@ struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 {
 	struct ofono_call_barring *cb;
 	GSList *l;
-	int lcount;
 
 	if (driver == NULL)
 		return NULL;
@@ -1092,10 +1089,6 @@ struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 	if (cb == NULL)
 		return NULL;
 
-	lcount = CB_ALL_END - CB_ALL_START + 1;
-
-	cb->cur_locks = g_new0(int, lcount);
-	cb->new_locks = g_new0(int, lcount);
 	cb->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_CALL_BARRING,
 						call_barring_remove, cb);
 
