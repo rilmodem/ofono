@@ -148,7 +148,7 @@ static void send_common(GAtServer *server, const char *buf, unsigned int len)
 	g_at_server_wakeup_writer(server);
 }
 
-static void g_at_server_send_result(GAtServer *server, GAtServerResult result)
+static void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 {
 	struct v250_settings v250 = server->v250;
 	const char *result_str = server_result_to_string(result);
@@ -188,12 +188,12 @@ static inline gboolean is_at_command_prefix(const char c)
 
 static void parse_at_command(GAtServer *server, char *buf)
 {
-	g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
 static void parse_v250_settings(GAtServer *server, char *buf)
 {
-	g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
 static void server_parse_line(GAtServer *server, char *line)
@@ -202,12 +202,12 @@ static void server_parse_line(GAtServer *server, char *line)
 	char c;
 
 	if (line == NULL) {
-		g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		goto done;
 	}
 
 	if (line[0] == '\0') {
-		g_at_server_send_result(server, G_AT_SERVER_RESULT_OK);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		goto done;
 	}
 
@@ -221,7 +221,7 @@ static void server_parse_line(GAtServer *server, char *line)
 	else if (g_ascii_isalpha(c) || c == '&')
 		parse_v250_settings(server, line + i);
 	else
-		g_at_server_send_result(server, G_AT_SERVER_RESULT_ERROR);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 
 done:
 	g_free(line);
@@ -402,7 +402,7 @@ static void new_bytes(GAtServer *p)
 			 * According to section 5.2.4 and 5.6 of V250,
 			 * Empty commands must be OK by the DCE
 			 */
-			g_at_server_send_result(p, G_AT_SERVER_RESULT_OK);
+			g_at_server_send_final(p, G_AT_SERVER_RESULT_OK);
 			ring_buffer_drain(p->read_buf, p->read_so_far);
 			break;
 
@@ -412,7 +412,7 @@ static void new_bytes(GAtServer *p)
 
 		case PARSER_RESULT_REPEAT_LAST:
 			/* TODO */
-			g_at_server_send_result(p, G_AT_SERVER_RESULT_OK);
+			g_at_server_send_final(p, G_AT_SERVER_RESULT_OK);
 			ring_buffer_drain(p->read_buf, p->read_so_far);
 			break;
 
