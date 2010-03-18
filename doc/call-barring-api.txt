@@ -1,0 +1,65 @@
+Call Barring hierarchy
+======================
+
+Service		org.ofono
+Interface	org.ofono.CallBarring
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Contains the properties for this object.
+
+		void ChangePassword(string old_password, string new_password)
+
+			Register new network password for the barring
+			services.
+
+		void DisableAll(string password)
+
+			Disables all call barrings.
+
+		void DisableAllIncoming(string password)
+
+			Disables barrings for incoming calls.
+
+		void DisableAllOutgoing(string password)
+
+			Disables barrings for outgoing calls.
+
+		void SetProperty(string property, variant value)
+
+			Sets the given property value to that specified in
+			call parameter.
+
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.  The new
+			value is passed as the signal argument.
+
+		IncomingBarringInEffect()
+
+			Signal is emitted when a call is made and an
+			incoming call barring supplementary service is in use.
+
+		OutgoingBarringInEffect()
+
+			Signal is emitted when a call is made and an
+			outgoing call barring supplementary service is in use.
+
+Properties	string VoiceIncoming [readwrite]
+
+			Contains the value of the barrings for the incoming
+			voice calls. The possible values are:
+			- "always" bar all incoming voice calls
+			- "whenroaming" bar incoming voice calls when roaming,
+			- "disabled" if no barring is active
+
+		string VoiceOutgoing [readwrite]
+
+			Contains the value of the barrings for the outgoing
+			voice calls. The possible values are:
+			- "all" bar all outgoing calls
+			- "international" bar all outgoing international calls
+			- "internationalnothome" bar all outgoing
+			  international calls except to home country
+			- "disabled" if no barring is active
