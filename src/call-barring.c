@@ -402,7 +402,7 @@ static gboolean cb_ss_control(int type, const char *sc,
 	if (strlen(dn) > 0)
 		goto bad_format;
 
-	if (!is_valid_pin(sia))
+	if (type != SS_CONTROL_TYPE_QUERY && !is_valid_pin(sia))
 		goto bad_format;
 
 	switch (type) {
