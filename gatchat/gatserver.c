@@ -173,7 +173,7 @@ static void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 	send_common(server, buf, MIN(len, sizeof(buf)-1));
 }
 
-static inline gboolean is_at_command_prefix(const char c)
+static inline gboolean is_extended_command_prefix(const char c)
 {
 	switch (c) {
 	case '+':
@@ -216,7 +216,7 @@ static void server_parse_line(GAtServer *server, char *line)
 	if (c == ';')
 		c = line[++i];
 
-	if (is_at_command_prefix(c) || c == 'A' || c == 'D' || c == 'H')
+	if (is_extended_command_prefix(c) || c == 'A' || c == 'D' || c == 'H')
 		parse_at_command(server, line + i);
 	else if (g_ascii_isalpha(c) || c == '&')
 		parse_v250_settings(server, line + i);
