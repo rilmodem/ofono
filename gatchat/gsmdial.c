@@ -29,6 +29,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/signalfd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <glib.h>
 #include <gatchat.h>
@@ -388,6 +391,49 @@ static int open_serial()
 	return 0;
 }
 
+static int open_ip()
+{
+	int sk, err;
+	struct sockaddr_in addr;
+	GAtSyntax *syntax;
+	GIOChannel *channel;
+
+	sk = socket(PF_INET, SOCK_STREAM, 0);
+	if (sk < 0)
+		return -EINVAL;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(option_ip);
+	addr.sin_port = htons(option_port);
+
+	err = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
+	if (err < 0) {
+		close(sk);
+		return err;
+	}
+
+	channel = g_io_channel_unix_new(sk);
+	if (channel == NULL) {
+		close(sk);
+		return -ENOMEM;
+	}
+
+	syntax = g_at_syntax_new_gsmv1();
+	control = g_at_chat_new(channel, syntax);
+	g_io_channel_unref(channel);
+	g_at_syntax_unref(syntax);
+
+	if (control == NULL)
+		return -ENOMEM;
+
+	g_at_chat_ref(control);
+	modem = control;
+	g_at_chat_set_debug(control, gsmdial_debug, "");
+
+	return 0;
+}
+
 static GOptionEntry options[] = {
 	{ "ip", 'i', 0, G_OPTION_ARG_STRING, &option_ip,
 				"Specify IP" },
@@ -448,11 +494,15 @@ int main(int argc, char **argv)
 		if (ret < 0)
 			goto out;
 	} else {
+		int ret;
+
 		g_print("IP: %s\n", option_ip);
 		g_print("Port: %d\n", option_port);
+		ret = open_ip();
 		g_free(option_ip);
 
-		goto out;
+		if (ret < 0)
+			goto out;
 	}
 
 	g_print("APN: %s\n", option_apn);
