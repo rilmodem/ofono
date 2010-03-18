@@ -148,7 +148,6 @@ static void update_barrings(struct ofono_call_barring *cb, int mask)
 
 	for (i = cb->query_start; i <= cb->query_end; i++) {
 		cb->cur_locks[i] = cb->new_locks[i];
-		cb->new_locks[i] = 0;
 	}
 }
 
@@ -164,7 +163,7 @@ static void cb_ss_property_append(struct ofono_call_barring *cb,
 		if (!(mask & i))
 			continue;
 
-		strvalue = (cb->cur_locks[lock] & i) ? "enabled" : "disabled";
+		strvalue = (cb->new_locks[lock] & i) ? "enabled" : "disabled";
 
 		snprintf(property_name, sizeof(property_name), "%s%s",
 				bearer_class_to_string(i),
@@ -590,7 +589,7 @@ static inline void cb_append_property(struct ofono_call_barring *cb,
 	int i;
 
 	for (i = start; i <= end; i++)
-		if (cb->cur_locks[i] & cls)
+		if (cb->new_locks[i] & cls)
 			break;
 
 	if (i <= end)
