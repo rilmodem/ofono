@@ -546,7 +546,7 @@ static DBusMessage *cm_set_property(DBusConnection *conn, DBusMessage *msg,
 
 	dbus_message_iter_get_basic(&iter, &passwd);
 
-	if (!is_valid_pin(passwd))
+	if (!is_valid_pin(passwd, PIN_TYPE_PIN))
 		return __ofono_error_invalid_format(msg);
 
 	for (property = cm_properties; property->name; property++) {
@@ -618,7 +618,7 @@ static DBusMessage *cm_acm_reset(DBusConnection *conn, DBusMessage *msg,
 					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (!is_valid_pin(pin2))
+	if (!is_valid_pin(pin2, PIN_TYPE_PIN))
 		return __ofono_error_invalid_format(msg);
 
 	cm->pending = dbus_message_ref(msg);

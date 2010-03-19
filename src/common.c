@@ -580,7 +580,7 @@ const char *bearer_class_to_string(enum bearer_class cls)
 	return NULL;
 }
 
-gboolean is_valid_pin(const char *pin)
+gboolean is_valid_pin(const char *pin, enum pin_type type)
 {
 	unsigned int i;
 
@@ -588,14 +588,33 @@ gboolean is_valid_pin(const char *pin)
 	if (pin == NULL || pin[0] == '\0')
 		return FALSE;
 
-	for (i = 0; i < strlen(pin); i++)
-		if (pin[i] < '0' || pin[i] > '9')
-			return FALSE;
-
-	if (i > 8)
+	i = strlen(pin);
+	if (i != strspn(pin, "012345679"))
 		return FALSE;
 
-	return TRUE;
+	switch (type)
+	{
+	case PIN_TYPE_PIN:
+		/* 11.11 Section 9.3 ("CHV"): 4..8 IA-5 digits */
+		if (4 <= i && i <= 8)
+			return TRUE;
+		break;
+	case PIN_TYPE_PUK:
+		/* 11.11 Section 9.3 ("UNBLOCK CHV"), 8 IA-5 digits */
+		if (i == 8)
+			return TRUE;
+		break;
+	case PIN_TYPE_NET:
+		/* 22.004 Section 5.2, 4 IA-5 digits */
+		if (i == 4)
+			return TRUE;
+		break;
+	case PIN_TYPE_NONE:
+		if (i < 8)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 const char *registration_status_to_string(int status)

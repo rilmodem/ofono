@@ -554,7 +554,7 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 			type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(pin))
+	if (!is_valid_pin(pin, PIN_TYPE_PIN))
 		return __ofono_error_invalid_format(msg);
 
 	sim->pending = dbus_message_ref(msg);
@@ -621,10 +621,10 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	if (password_is_pin(type) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(old))
+	if (!is_valid_pin(old, PIN_TYPE_PIN))
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(new))
+	if (!is_valid_pin(new, PIN_TYPE_PIN))
 		return __ofono_error_invalid_format(msg);
 
 	if (!strcmp(new, old))
@@ -676,7 +676,7 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(pin))
+	if (!is_valid_pin(pin, PIN_TYPE_PIN))
 		return __ofono_error_invalid_format(msg);
 
 	sim->pending = dbus_message_ref(msg);
@@ -711,10 +711,10 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(puk))
+	if (!is_valid_pin(puk, PIN_TYPE_PUK))
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(pin))
+	if (!is_valid_pin(pin, PIN_TYPE_PIN))
 		return __ofono_error_invalid_format(msg);
 
 	sim->pending = dbus_message_ref(msg);
