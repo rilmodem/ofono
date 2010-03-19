@@ -197,10 +197,77 @@ static gboolean is_basic_command_prefix(const char *buf)
 	return FALSE;
 }
 
-static void parse_extended_command(GAtServer *server, char *buf,
+static gboolean is_extended_character(const char c)
+{
+	if (g_ascii_isalpha(c))
+		return TRUE;
+
+	if (g_ascii_isdigit(c))
+		return TRUE;
+
+	switch (c) {
+	case '!':
+	case '%':
+	case '-':
+	case '.':
+	case '/':
+	case ':':
+	case '_':
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static gboolean at_command_notify(GAtServer *server, char *command,
+						char *prefix)
+{
+	return FALSE;
+}
+
+static gboolean get_extended_prefix(const char *buf, char *prefix)
+{
+	char c;
+	int i = 0;
+
+	/* Skip '+' */
+	prefix[0] = buf[0];
+
+	while ((c = buf[++i])) {
+		/* V.250 5.4.1 Extended command naming rules */
+		if (!is_extended_character(c))
+			break;
+
+		prefix[i] = g_ascii_toupper(c);
+	}
+
+	prefix[i] = '\0';
+
+	return TRUE;
+}
+
+static void parse_extended_command(GAtServer *server, const char *buf,
 					unsigned int *len)
 {
-	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	char *command = NULL;
+	char prefix[20];
+	char t = server->v250.s3;
+	char c = *buf;
+	int i = 0;
+
+	while (c && c != t && c != ';')
+		c = buf[++i];
+
+	command = g_strndup(buf, i);
+
+	get_extended_prefix(command, prefix);
+
+	if (at_command_notify(server, command, prefix))
+		*len = i;
+	else
+		*len = 0;
+
+	g_free(command);
 }
 
 static void parse_basic_command(GAtServer *server, char *buf,
