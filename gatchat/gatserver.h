@@ -43,6 +43,7 @@ enum _GAtServerResult {
 	G_AT_SERVER_RESULT_NO_DIALTONE = 6,
 	G_AT_SERVER_RESULT_BUSY = 7,
 	G_AT_SERVER_RESULT_NO_ANSWER = 8,
+	G_AT_SERVER_RESULT_EXT_ERROR = 256,
 };
 
 typedef enum _GAtServerResult GAtServerResult;
