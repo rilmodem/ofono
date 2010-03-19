@@ -612,6 +612,9 @@ gboolean is_valid_pin(const char *pin, enum pin_type type)
 	case PIN_TYPE_NONE:
 		if (i < 8)
 			return TRUE;
+		break;
+	default:
+		break;
 	}
 
 	return FALSE;
