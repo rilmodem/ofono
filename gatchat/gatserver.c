@@ -197,42 +197,48 @@ static gboolean is_basic_command_prefix(const char *buf)
 	return FALSE;
 }
 
-static void parse_extended_command(GAtServer *server, char *buf)
+static void parse_extended_command(GAtServer *server, char *buf,
+					unsigned int *len)
 {
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static void parse_basic_command(GAtServer *server, char *buf)
+static void parse_basic_command(GAtServer *server, char *buf,
+					unsigned int *len)
 {
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
 static void server_parse_line(GAtServer *server, char *line)
 {
-	gsize i = 0;
-	char c;
+	char *buf = line;
 
-	if (line == NULL) {
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
-		goto done;
-	}
-
-	if (line[0] == '\0') {
+	if (*buf == '\0') {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		goto done;
 	}
 
-	c = line[i];
-	/* skip semicolon */
-	if (c == ';')
-		c = line[++i];
+	while (*buf) {
+		unsigned int len = 0;
+		char c = *buf;
 
-	if (is_extended_command_prefix(c))
-		parse_extended_command(server, line + i);
-	else if (is_basic_command_prefix(line + i))
-		parse_basic_command(server, line + i);
-	else
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		/* skip semicolon */
+		if (c == ';')
+			c = *(++buf);
+
+		if (c == '\0')
+			break;
+
+		if (is_extended_command_prefix(c))
+			parse_extended_command(server, buf, &len);
+		else if (is_basic_command_prefix(buf))
+			parse_basic_command(server, buf, &len);
+
+		if (len == 0)
+			break;
+
+		buf += len;
+	}
 
 done:
 	g_free(line);
