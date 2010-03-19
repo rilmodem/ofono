@@ -898,3 +898,51 @@ gboolean g_at_server_set_debug(GAtServer *server, GAtDebugFunc func,
 
 	return TRUE;
 }
+
+gboolean g_at_server_register(GAtServer *server, char *prefix,
+					GAtServerNotifyFunc notify,
+					gpointer user_data,
+					GDestroyNotify destroy_notify)
+{
+	struct at_command *node;
+
+	if (server == NULL || server->command_list == NULL)
+		return FALSE;
+
+	if (notify == NULL)
+		return FALSE;
+
+	if (prefix == NULL || strlen(prefix) == 0)
+		return FALSE;
+
+	node = g_try_new0(struct at_command, 1);
+	if (!node)
+		return FALSE;
+
+	node->notify = notify;
+	node->user_data = user_data;
+	node->destroy_notify = destroy_notify;
+
+	g_hash_table_replace(server->command_list, g_strdup(prefix), node);
+
+	return TRUE;
+}
+
+gboolean g_at_server_unregister(GAtServer *server, const char *prefix)
+{
+	struct at_command *node;
+
+	if (server == NULL || server->command_list == NULL)
+		return FALSE;
+
+	if (prefix == NULL || strlen(prefix) == 0)
+		return FALSE;
+
+	node = g_hash_table_lookup(server->command_list, prefix);
+	if (!node)
+		return FALSE;
+
+	g_hash_table_remove(server->command_list, prefix);
+
+	return TRUE;
+}
