@@ -88,6 +88,13 @@ struct v250_settings {
 	unsigned int c108;		/* set by &D<val> */
 };
 
+/* AT command set that server supported */
+struct at_command {
+	GAtServerNotifyFunc notify;
+	gpointer user_data;
+	GDestroyNotify destroy_notify;
+};
+
 struct _GAtServer {
 	gint ref_count;				/* Ref count */
 	struct v250_settings v250;		/* V.250 command setting */
@@ -99,6 +106,7 @@ struct _GAtServer {
 	gpointer user_disconnect_data;		/* User disconnect data */
 	GAtDebugFunc debugf;			/* Debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
+	GHashTable *command_list;		/* List of AT commands */
 	struct ring_buffer *read_buf;		/* Current read buffer */
 	GQueue *write_queue;			/* Write buffer queue */
 	guint max_read_attempts;		/* Max reads per select */
@@ -651,6 +659,9 @@ static void g_at_server_cleanup(GAtServer *server)
 	/* Cleanup pending data to write */
 	write_queue_free(server->write_queue);
 
+	g_hash_table_destroy(server->command_list);
+	server->command_list = NULL;
+
 	server->channel = NULL;
 }
 
@@ -696,6 +707,16 @@ static void v250_settings_create(struct v250_settings *v250)
 	v250->c108 = 0;
 }
 
+static void at_notify_node_destroy(gpointer data)
+{
+	struct at_command *node = data;
+
+	if (node->destroy_notify)
+		node->destroy_notify(node->user_data);
+
+	g_free(node);
+}
+
 GAtServer *g_at_server_new(GIOChannel *io)
 {
 	GAtServer *server;
@@ -710,6 +731,9 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	server->ref_count = 1;
 	v250_settings_create(&server->v250);
 	server->channel = io;
+	server->command_list = g_hash_table_new_full(g_str_hash, g_str_equal,
+							g_free,
+							at_notify_node_destroy);
 	server->read_buf = ring_buffer_new(BUF_SIZE);
 	if (!server->read_buf)
 		goto error;
@@ -734,6 +758,9 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	return server;
 
 error:
+	if (server->command_list)
+		g_hash_table_destroy(server->command_list);
+
 	if (server->read_buf)
 		ring_buffer_free(server->read_buf);
 
