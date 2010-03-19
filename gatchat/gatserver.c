@@ -227,9 +227,57 @@ static gboolean is_extended_character(const char c)
 	}
 }
 
+static GAtServerRequestType get_command_type(char *buf, char *prefix)
+{
+	GAtServerRequestType type = G_AT_SERVER_REQUEST_TYPE_ERROR;
+
+	buf += strlen(prefix);
+
+	if (buf[0] == '\0')
+		/* Action command could have no sub-parameters */
+		type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
+	else if (buf[0] == '?')
+		type = G_AT_SERVER_REQUEST_TYPE_QUERY;
+	else if (buf[0] == '=' && buf[1] == '?')
+		type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
+	else if (buf[0] == '=')
+		type = G_AT_SERVER_REQUEST_TYPE_SET;
+	else if (is_basic_command_prefix(prefix))
+		/* Basic command could follow digits value, like ATE1 */
+		type = G_AT_SERVER_REQUEST_TYPE_SET;
+
+	return type;
+}
+
 static gboolean at_command_notify(GAtServer *server, char *command,
 						char *prefix)
 {
+	GAtServerResult res = G_AT_SERVER_RESULT_ERROR;
+	struct at_command *node;
+
+	node = g_hash_table_lookup(server->command_list, prefix);
+	if (node && node->notify) {
+		GAtServerRequestType type;
+		GAtResult result;
+
+		type = get_command_type(command, prefix);
+		if (type == G_AT_SERVER_REQUEST_TYPE_ERROR)
+			goto done;
+
+		result.lines = g_slist_prepend(NULL, command);
+		result.final_or_pdu = 0;
+
+		res = node->notify(type, &result, node->user_data);
+
+		g_slist_free(result.lines);
+	}
+
+done:
+	g_at_server_send_final(server, res);
+
+	if (res == G_AT_SERVER_RESULT_OK)
+		return TRUE;
+
 	return FALSE;
 }
 
