@@ -592,8 +592,7 @@ gboolean is_valid_pin(const char *pin, enum pin_type type)
 	if (i != strspn(pin, "012345679"))
 		return FALSE;
 
-	switch (type)
-	{
+	switch (type) {
 	case PIN_TYPE_PIN:
 		/* 11.11 Section 9.3 ("CHV"): 4..8 IA-5 digits */
 		if (4 <= i && i <= 8)
@@ -612,8 +611,6 @@ gboolean is_valid_pin(const char *pin, enum pin_type type)
 	case PIN_TYPE_NONE:
 		if (i < 8)
 			return TRUE;
-		break;
-	default:
 		break;
 	}
 

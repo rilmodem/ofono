@@ -116,10 +116,10 @@ enum ss_cssu {
 };
 
 enum pin_type {
-	PIN_TYPE_NONE = 0,
-	PIN_TYPE_PIN = 1,
-	PIN_TYPE_PUK = 2,
-	PIN_TYPE_NET = 3,
+	PIN_TYPE_NONE,
+	PIN_TYPE_PIN,
+	PIN_TYPE_PUK,
+	PIN_TYPE_NET,
 };
 
 const char *telephony_error_to_str(const struct ofono_error *error);
