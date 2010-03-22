@@ -37,6 +37,7 @@ extern "C" {
 #define OFONO_CALL_METER_INTERFACE "org.ofono.CallMeter"
 #define OFONO_CALL_SETTINGS_INTERFACE "org.ofono.CallSettings"
 #define OFONO_CALL_VOLUME_INTERFACE OFONO_SERVICE ".CallVolume"
+#define OFONO_CBS_MANAGER_INTERFACE "org.ofono.CbsManager"
 #define OFONO_MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
 #define OFONO_PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define OFONO_RADIO_SETTINGS_INTERFACE "org.ofono.RadioSettings"
