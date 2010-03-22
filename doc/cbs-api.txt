@@ -1,0 +1,71 @@
+CbsManager hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.CbsManager
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the CbsManager object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string property, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+		IncomingBroadcast(string text, uint16 topic)
+
+			This signal is emitted whenever a new cell broadcast
+			is received.  The string text contains contents of the
+			broadcast and topic contains the channel this
+			broadcast was received on.
+
+			Please note that base station name broadcasts are
+			handled by the NetworkRegistration interface.
+
+		EmergencyBroadcast(string text, dict properties)
+
+			This signal is emitted whenever an ETWS cell broadcast
+			is received.  The string text contains contents of the
+			broadcast.  The dict is made up of the following
+			entries:
+				EmergencyType - string value, possible values
+						include: "Earthquake",
+							"Tsunami",
+							"Earthquake+Tsunami",
+							"Other"
+				EmergencyAlert - boolean value hinting whether
+						an extra emergency indicator
+						should be activated (e.g.
+						vibrate mode, emergency alert
+						mode.)
+
+				Popup - boolean value hinting whether the UI
+					should popup a message box with the
+					emergency information.
+
+Properties	boolean Powered [readwrite]
+
+			Boolean representing the power state of the cell
+			broadcast service.  If powered is False, then no
+			Cell Broadcast information is received.
+
+		string Topics [readwrite]
+
+			Returns a list of topics currently subscribed to by
+			this modem.  If the list is empty, then only emergency
+			broadcasts will ever be received.
