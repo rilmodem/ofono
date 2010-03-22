@@ -871,7 +871,7 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 	struct ofono_netreg *netreg = opaque;
 
 	if (!alive) {
-		DBG("Unable to bootsrap netreg driver");
+		DBG("Unable to bootstrap netreg driver");
 		return;
 	}
 

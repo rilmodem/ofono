@@ -267,7 +267,7 @@ static void ussd_reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 	struct ofono_ussd *ussd = opaque;
 
 	if (!alive) {
-		DBG("Unable to bootsrap ussd driver");
+		DBG("Unable to bootstrap ussd driver");
 		return;
 	}
 

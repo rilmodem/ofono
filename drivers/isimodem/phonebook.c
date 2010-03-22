@@ -290,7 +290,7 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 	const char *debug = NULL;
 
 	if (!alive) {
-		DBG("Unable to bootsrap phonebook driver");
+		DBG("Unable to bootstrap phonebook driver");
 		return;
 	}
 

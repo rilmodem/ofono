@@ -294,7 +294,7 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 	const char *debug = NULL;
 
 	if (!alive) {
-		DBG("Unable to bootsrap call settings driver");
+		DBG("Unable to bootstrap call settings driver");
 		return;
 	}
 
