@@ -33,8 +33,6 @@
 #include "ofono.h"
 #include "common.h"
 
-#define RADIO_SETTINGS_INTERFACE "org.ofono.RadioSettings"
-
 #define RADIO_SETTINGS_MODE_CACHED 0x1
 
 static GSList *g_drivers = NULL;
@@ -123,7 +121,7 @@ static void radio_set_rat_mode(struct ofono_radio_settings *rs,
 	str_mode = radio_access_mode_to_string(rs->mode);
 
 	ofono_dbus_signal_property_changed(conn, path,
-					RADIO_SETTINGS_INTERFACE,
+					OFONO_RADIO_SETTINGS_INTERFACE,
 					"TechnologyPreference", DBUS_TYPE_STRING,
 					&str_mode);
 }
@@ -284,8 +282,8 @@ static void radio_settings_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(rs->atom);
 
-	ofono_modem_remove_interface(modem, RADIO_SETTINGS_INTERFACE);
-	g_dbus_unregister_interface(conn, path, RADIO_SETTINGS_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_RADIO_SETTINGS_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_RADIO_SETTINGS_INTERFACE);
 }
 
 static void radio_settings_remove(struct ofono_atom *atom)
@@ -346,16 +344,16 @@ void ofono_radio_settings_register(struct ofono_radio_settings *rs)
 	const char *path = __ofono_atom_get_path(rs->atom);
 
 	if (!g_dbus_register_interface(conn, path,
-					RADIO_SETTINGS_INTERFACE,
+					OFONO_RADIO_SETTINGS_INTERFACE,
 					radio_methods, radio_signals,
 					NULL, rs, NULL)) {
 		ofono_error("Could not create %s interface",
-				RADIO_SETTINGS_INTERFACE);
+				OFONO_RADIO_SETTINGS_INTERFACE);
 
 		return;
 	}
 
-	ofono_modem_add_interface(modem, RADIO_SETTINGS_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_RADIO_SETTINGS_INTERFACE);
 	__ofono_atom_register(rs->atom, radio_settings_unregister);
 }
 
