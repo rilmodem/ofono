@@ -341,9 +341,6 @@ static void server_parse_line(GAtServer *server, char *line)
 
 		pos += consumed;
 	}
-
-done:
-	g_free(line);
 }
 
 static enum ParserResult server_feed(GAtServer *server,
@@ -523,8 +520,17 @@ static void new_bytes(GAtServer *p)
 			break;
 
 		case PARSER_RESULT_COMMAND:
-			server_parse_line(p, extract_line(p));
+		{
+			char *line = extract_line(p);
+
+			if (line) {
+				server_parse_line(p, line);
+				g_free(line);
+			} else
+				g_at_server_send_final(p,
+						G_AT_SERVER_RESULT_ERROR);
 			break;
+		}
 
 		case PARSER_RESULT_REPEAT_LAST:
 			/* TODO */
