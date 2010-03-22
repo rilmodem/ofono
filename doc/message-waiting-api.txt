@@ -1,0 +1,45 @@
+MessageWaiting hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.MessageWaiting
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the MessageWaiting object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string property, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	boolean VoicemailWaiting [readonly]
+
+			Boolean representing whether there is a voicemail
+			message waiting for the user on the voicemail server.
+
+		byte VoicemailMessageCount [readonly]
+
+			The total number of voicemail messages waiting.
+			Values of 255 indicate 255 messages or more.
+
+		string VoicemailMailboxNumber [readwrite]
+
+			String containing the dialing number to be used for
+			voice mailbox access.  This number is generally
+			pre-provisioned on the SIM.  However, the user can
+			change this number if required.
