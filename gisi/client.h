@@ -49,9 +49,6 @@ typedef void (*GIsiIndicationFunc) (GIsiClient *client,
 		const void *restrict data, size_t len,
 		uint16_t object, void *opaque);
 
-typedef void (*GIsiDebugFunc) (const void *restrict data, size_t len,
-		void *opaque);
-
 GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource);
 
 GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,

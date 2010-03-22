@@ -25,4 +25,7 @@ static inline unsigned g_isi_modem_index(GIsiModem *m)
 	return (uintptr_t)m;
 }
 
+typedef void (*GIsiDebugFunc) (const void *restrict data, size_t len,
+		void *opaque);
+
 #endif
