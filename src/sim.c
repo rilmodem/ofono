@@ -44,8 +44,6 @@
 #include "storage.h"
 #include "stkutil.h"
 
-#define SIM_MANAGER_INTERFACE "org.ofono.SimManager"
-
 #define SIM_CACHE_MODE 0600
 #define SIM_CACHE_PATH STORAGEDIR "/%s-%i/%04x"
 #define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 3 + imsilen)
@@ -494,10 +492,9 @@ static void sim_locked_cb(struct ofono_sim *sim, gboolean locked)
 
 	locked_pins = get_locked_pins(sim);
 	ofono_dbus_signal_array_property_changed(conn, path,
-							SIM_MANAGER_INTERFACE,
-							"LockedPins",
-							DBUS_TYPE_STRING,
-							&locked_pins);
+						OFONO_SIM_MANAGER_INTERFACE,
+						"LockedPins", DBUS_TYPE_STRING,
+						&locked_pins);
 	g_strfreev(locked_pins);
 }
 
@@ -814,10 +811,10 @@ check:
 		own_numbers = get_own_numbers(sim->own_numbers);
 
 		ofono_dbus_signal_array_property_changed(conn, path,
-							SIM_MANAGER_INTERFACE,
-							"SubscriberNumbers",
-							DBUS_TYPE_STRING,
-							&own_numbers);
+						OFONO_SIM_MANAGER_INTERFACE,
+						"SubscriberNumbers",
+						DBUS_TYPE_STRING, &own_numbers);
+
 		g_strfreev(own_numbers);
 	} else {
 		g_slist_foreach(sim->new_numbers, (GFunc) g_free, NULL);
@@ -850,7 +847,7 @@ static void sim_ad_read_cb(int ok, int length, int record,
 	sim->mnc_length = new_mnc_length;
 
 	ofono_dbus_signal_property_changed(conn, path,
-					SIM_MANAGER_INTERFACE,
+					OFONO_SIM_MANAGER_INTERFACE,
 					"MobileNetworkCodeLength",
 					DBUS_TYPE_BYTE, &sim->mnc_length);
 }
@@ -927,7 +924,7 @@ check:
 		service_numbers = get_service_numbers(sim->service_numbers);
 
 		ofono_dbus_signal_dict_property_changed(conn, path,
-						SIM_MANAGER_INTERFACE,
+						OFONO_SIM_MANAGER_INTERFACE,
 						"ServiceDiallingNumbers",
 						DBUS_TYPE_STRING,
 						&service_numbers);
@@ -1028,10 +1025,9 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 		sim->locked_pins[pin_type] = TRUE;
 
 		ofono_dbus_signal_property_changed(conn, path,
-							SIM_MANAGER_INTERFACE,
-							"PinRequired",
-							DBUS_TYPE_STRING,
-							&pin_name);
+						OFONO_SIM_MANAGER_INTERFACE,
+						"PinRequired", DBUS_TYPE_STRING,
+						&pin_name);
 	}
 
 checkdone:
@@ -1226,10 +1222,10 @@ skip_efpl:
 		return;
 
 	ofono_dbus_signal_array_property_changed(conn, path,
-							SIM_MANAGER_INTERFACE,
-							"PreferredLanguages",
-							DBUS_TYPE_STRING,
-							&sim->language_prefs);
+						OFONO_SIM_MANAGER_INTERFACE,
+						"PreferredLanguages",
+						DBUS_TYPE_STRING,
+						&sim->language_prefs);
 }
 
 static void sim_retrieve_efli_and_efpl(struct ofono_sim *sim)
@@ -1874,9 +1870,8 @@ static void sim_unregister(struct ofono_atom *atom)
 	__ofono_watchlist_free(sim->ready_watches);
 	sim->ready_watches = NULL;
 
-	g_dbus_unregister_interface(conn, path,
-					SIM_MANAGER_INTERFACE);
-	ofono_modem_remove_interface(modem, SIM_MANAGER_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_SIM_MANAGER_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
 }
 
 static void sim_remove(struct ofono_atom *atom)
@@ -1977,16 +1972,16 @@ void ofono_sim_register(struct ofono_sim *sim)
 	const char *path = __ofono_atom_get_path(sim->atom);
 
 	if (!g_dbus_register_interface(conn, path,
-					SIM_MANAGER_INTERFACE,
+					OFONO_SIM_MANAGER_INTERFACE,
 					sim_methods, sim_signals, NULL,
 					sim, NULL)) {
 		ofono_error("Could not create %s interface",
-				SIM_MANAGER_INTERFACE);
+				OFONO_SIM_MANAGER_INTERFACE);
 
 		return;
 	}
 
-	ofono_modem_add_interface(modem, SIM_MANAGER_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
 	sim->ready_watches = __ofono_watchlist_new(g_free);
 
 	__ofono_atom_register(sim->atom, sim_unregister);
