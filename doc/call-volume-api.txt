@@ -1,0 +1,42 @@
+CallVolume hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.CallVolume
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the CallVolume object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string property, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	boolean Muted [readwrite]
+
+			Boolean representing whether the microphone is muted.
+
+		byte SpeakerVolume [readwrite]
+
+			Represents the current volume of the speaker in
+			percentage points.  Valid values are 0-100.
+
+		byte MicrophoneVolume [readwrite]
+
+			Represents the current volume of the microphone in
+			percentage points.  Valid values are 0-100.
