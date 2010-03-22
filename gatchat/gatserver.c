@@ -425,6 +425,7 @@ static char *extract_line(GAtServer *p)
 	int strip_front = 0;
 	int line_length = 0;
 	gboolean in_string = FALSE;
+	char s3 = p->v250.s3;
 	char *line;
 	int i;
 
@@ -445,7 +446,7 @@ static char *extract_line(GAtServer *p)
 			buf = ring_buffer_read_ptr(p->read_buf, pos);
 	}
 
-	/* We will strip AT and \r */
+	/* We will strip AT and S3 */
 	line_length -= 3;
 
 	line = g_try_new(char, line_length + 1);
@@ -469,7 +470,7 @@ static char *extract_line(GAtServer *p)
 
 		if ((*buf == ' ' || *buf == '\t') && in_string == FALSE)
 			; /* Skip */
-		else if (*buf != '\r')
+		else if (*buf != s3)
 			line[i++] = *buf;
 
 		buf += 1;
@@ -479,7 +480,7 @@ static char *extract_line(GAtServer *p)
 			buf = ring_buffer_read_ptr(p->read_buf, pos);
 	}
 
-	/* Strip \r */
+	/* Strip S3 */
 	ring_buffer_drain(p->read_buf, p->read_so_far - strip_front - 2);
 
 	line[i] = '\0';
