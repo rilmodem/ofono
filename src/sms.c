@@ -39,8 +39,6 @@
 
 #define uninitialized_var(x) x = x
 
-#define SMS_MANAGER_INTERFACE "org.ofono.SmsManager"
-
 #define SMS_MANAGER_FLAG_CACHED 0x1
 
 #define SETTINGS_STORE "sms"
@@ -105,7 +103,7 @@ static void set_sca(struct ofono_sms *sms,
 	value = phone_number_to_string(&sms->sca);
 
 	ofono_dbus_signal_property_changed(conn, path,
-						SMS_MANAGER_INTERFACE,
+						OFONO_SMS_MANAGER_INTERFACE,
 						"ServiceCenterAddress",
 						DBUS_TYPE_STRING, &value);
 }
@@ -506,7 +504,7 @@ static void dispatch_text_message(struct ofono_sms *sms,
 	else
 		signal_name = "IncomingMessage";
 
-	signal = dbus_message_new_signal(path, SMS_MANAGER_INTERFACE,
+	signal = dbus_message_new_signal(path, OFONO_SMS_MANAGER_INTERFACE,
 						signal_name);
 
 	if (!signal)
@@ -845,8 +843,8 @@ static void sms_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
-	g_dbus_unregister_interface(conn, path, SMS_MANAGER_INTERFACE);
-	ofono_modem_remove_interface(modem, SMS_MANAGER_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_SMS_MANAGER_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_SMS_MANAGER_INTERFACE);
 
 	if (sms->mw_watch) {
 		__ofono_modem_remove_atom_watch(modem, sms->mw_watch);
@@ -978,16 +976,16 @@ void ofono_sms_register(struct ofono_sms *sms)
 	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
-					SMS_MANAGER_INTERFACE,
+					OFONO_SMS_MANAGER_INTERFACE,
 					sms_manager_methods,
 					sms_manager_signals,
 					NULL, sms, NULL)) {
 		ofono_error("Could not create %s interface",
-				SMS_MANAGER_INTERFACE);
+				OFONO_SMS_MANAGER_INTERFACE);
 		return;
 	}
 
-	ofono_modem_add_interface(modem, SMS_MANAGER_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_SMS_MANAGER_INTERFACE);
 
 	sms->mw_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_MESSAGE_WAITING,
