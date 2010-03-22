@@ -56,7 +56,6 @@ typedef enum _GAtServerResult GAtServerResult;
  * 	or, basic command followed with sub-parameters, e.g. ATD12345;
  */
 enum _GAtServerRequestType {
-	G_AT_SERVER_REQUEST_TYPE_ERROR,
 	G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY,
 	G_AT_SERVER_REQUEST_TYPE_QUERY,
 	G_AT_SERVER_REQUEST_TYPE_SUPPORT,
@@ -65,14 +64,14 @@ enum _GAtServerRequestType {
 
 typedef enum _GAtServerRequestType GAtServerRequestType;
 
-typedef GAtServerResult (*GAtServerNotifyFunc)(GAtServerRequestType type,
-						GAtResult *result,
-						gpointer user_data);
+typedef void (*GAtServerNotifyFunc)(GAtServerRequestType type,
+					GAtResult *result, gpointer user_data);
 
 GAtServer *g_at_server_new(GIOChannel *io);
 
 GAtServer *g_at_server_ref(GAtServer *server);
 void g_at_server_unref(GAtServer *server);
+
 gboolean g_at_server_shutdown(GAtServer *server);
 
 gboolean g_at_server_set_disconnect_function(GAtServer *server,

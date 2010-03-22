@@ -205,162 +205,141 @@ static gboolean is_basic_command_prefix(const char *buf)
 	return FALSE;
 }
 
-static gboolean is_extended_character(const char c)
+static void at_command_notify(GAtServer *server, char *command,
+				char *prefix, GAtServerRequestType type)
 {
-	if (g_ascii_isalpha(c))
-		return TRUE;
-
-	if (g_ascii_isdigit(c))
-		return TRUE;
-
-	switch (c) {
-	case '!':
-	case '%':
-	case '-':
-	case '.':
-	case '/':
-	case ':':
-	case '_':
-		return TRUE;
-	default:
-		return FALSE;
-	}
-}
-
-static GAtServerRequestType get_command_type(char *buf, char *prefix)
-{
-	GAtServerRequestType type = G_AT_SERVER_REQUEST_TYPE_ERROR;
-
-	buf += strlen(prefix);
-
-	if (buf[0] == '\0')
-		/* Action command could have no sub-parameters */
-		type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
-	else if (buf[0] == '?')
-		type = G_AT_SERVER_REQUEST_TYPE_QUERY;
-	else if (buf[0] == '=' && buf[1] == '?')
-		type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
-	else if (buf[0] == '=')
-		type = G_AT_SERVER_REQUEST_TYPE_SET;
-	else if (is_basic_command_prefix(prefix))
-		/* Basic command could follow digits value, like ATE1 */
-		type = G_AT_SERVER_REQUEST_TYPE_SET;
-
-	return type;
-}
-
-static gboolean at_command_notify(GAtServer *server, char *command,
-						char *prefix)
-{
-	GAtServerResult res = G_AT_SERVER_RESULT_ERROR;
 	struct at_command *node;
+	GAtResult result;
 
 	node = g_hash_table_lookup(server->command_list, prefix);
-	if (node && node->notify) {
-		GAtServerRequestType type;
-		GAtResult result;
 
-		type = get_command_type(command, prefix);
-		if (type == G_AT_SERVER_REQUEST_TYPE_ERROR)
-			goto done;
-
-		result.lines = g_slist_prepend(NULL, command);
-		result.final_or_pdu = 0;
-
-		res = node->notify(type, &result, node->user_data);
-
-		g_slist_free(result.lines);
+	if (node == NULL) {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		return;
 	}
 
-done:
-	g_at_server_send_final(server, res);
+	result.lines = g_slist_prepend(NULL, command);
+	result.final_or_pdu = 0;
 
-	if (res == G_AT_SERVER_RESULT_OK)
-		return TRUE;
+	node->notify(type, &result, node->user_data);
 
-	return FALSE;
+	g_slist_free(result.lines);
 }
 
-static gboolean get_extended_prefix(const char *buf, char *prefix)
+static unsigned int parse_extended_command(GAtServer *server, char *buf)
 {
-	char c;
-	int i = 0;
+	const char *valid_extended_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+						"0123456789!%-./:_";
+	const char *separators = ";?=";
+	unsigned int prefix_len, i;
+	gboolean in_string = FALSE;
+	gboolean seen_question = FALSE;
+	gboolean seen_equals = FALSE;
+	char prefix[18]; /* According to V250, 5.4.1 */
+	GAtServerRequestType type;
 
-	/* Skip '+' */
-	prefix[0] = buf[0];
+	prefix_len = strcspn(buf, separators);
 
-	while ((c = buf[++i])) {
-		/* V.250 5.4.1 Extended command naming rules */
-		if (!is_extended_character(c))
-			break;
+	if (prefix_len > 17 || prefix_len < 2)
+		return 0;
 
-		prefix[i] = g_ascii_toupper(c);
+	/* Convert to upper case, we will always use upper case naming */
+	for (i = 0; i < prefix_len; i++)
+		prefix[i] = g_ascii_toupper(buf[i]);
+
+	prefix[prefix_len] = '\0';
+
+	if (strspn(prefix + 1, valid_extended_chars) != (prefix_len - 1))
+		return 0;
+
+	/*
+	 * V.250 Section 5.4.1: "The first character following "+" shall be
+	 * an alphabetic character in the range "A" through "Z".
+	 */
+	if (prefix[1] <= 'A' || prefix[1] >= 'Z')
+		return 0;
+
+	if (buf[i] != '\0' && buf[i] != ';' && buf[i] != '?' && buf[i] != '=')
+		return 0;
+
+	type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
+
+	/* Continue until we hit eol or ';' */
+	while (buf[i] && !(buf[i] == ';' && in_string == FALSE)) {
+		if (buf[i] == '"') {
+			in_string = !in_string;
+			goto next;
+		}
+
+		if (in_string == TRUE)
+			goto next;
+
+		if (buf[i] == '?') {
+			if (seen_question || seen_equals)
+				return 0;
+
+			if (buf[i + 1] != '\0' && buf[i + 1] != ';')
+				return 0;
+
+			seen_question = TRUE;
+			type = G_AT_SERVER_REQUEST_TYPE_QUERY;
+		} else if (buf[i] == '=') {
+			if (seen_equals || seen_question)
+				return 0;
+
+			seen_equals = TRUE;
+
+			if (buf[i + 1] == '?')
+				type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
+			else
+				type = G_AT_SERVER_REQUEST_TYPE_SET;
+		}
+
+next:
+		i++;
 	}
 
-	prefix[i] = '\0';
+	/* We can scratch in this buffer, so mark ';' as null */
+	buf[i] = '\0';
 
-	return TRUE;
+	at_command_notify(server, buf, prefix, type);
+
+	/* Also consume the terminating null */
+	return i + 1;
 }
 
-static void parse_extended_command(GAtServer *server, const char *buf,
-					unsigned int *len)
+static unsigned int parse_basic_command(GAtServer *server, char *buf)
 {
-	char *command = NULL;
-	char prefix[20];
-	char t = server->v250.s3;
-	char c = *buf;
-	int i = 0;
-
-	while (c && c != t && c != ';')
-		c = buf[++i];
-
-	command = g_strndup(buf, i);
-
-	get_extended_prefix(command, prefix);
-
-	if (at_command_notify(server, command, prefix))
-		*len = i;
-	else
-		*len = 0;
-
-	g_free(command);
-}
-
-static void parse_basic_command(GAtServer *server, char *buf,
-					unsigned int *len)
-{
-	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	return 0;
 }
 
 static void server_parse_line(GAtServer *server, char *line)
 {
-	char *buf = line;
+	unsigned int pos = 0;
+	unsigned int len = strlen(line);
 
-	if (*buf == '\0') {
+	if (len == 0) {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
-		goto done;
+		return;
 	}
 
-	while (*buf) {
-		unsigned int len = 0;
-		char c = *buf;
+	while (pos < len) {
+		unsigned int consumed;
 
-		/* skip semicolon */
-		if (c == ';')
-			c = *(++buf);
+		if (is_extended_command_prefix(line[pos]))
+			consumed = parse_extended_command(server, line + pos);
+		else if (is_basic_command_prefix(line + pos))
+			consumed = parse_basic_command(server, line + pos);
+		else
+			consumed = 0;
 
-		if (c == '\0')
+		if (consumed == 0) {
+			g_at_server_send_final(server,
+						G_AT_SERVER_RESULT_ERROR);
 			break;
+		}
 
-		if (is_extended_command_prefix(c))
-			parse_extended_command(server, buf, &len);
-		else if (is_basic_command_prefix(buf))
-			parse_basic_command(server, buf, &len);
-
-		if (len == 0)
-			break;
-
-		buf += len;
+		pos += consumed;
 	}
 
 done:
