@@ -37,9 +37,6 @@
 #include "simutil.h"
 #include "smsutil.h"
 
-#define VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
-#define VOICECALL_INTERFACE "org.ofono.VoiceCall"
-
 #define VOICECALLS_FLAG_MULTI_RELEASE 0x1
 
 #define MAX_VOICE_CALLS 16
@@ -401,7 +398,8 @@ static void voicecall_emit_disconnect_reason(struct voicecall *call,
 	reason_str = disconnect_reason_to_string(reason);
 	path = voicecall_build_path(call->vc, call->call);
 
-	g_dbus_emit_signal(conn, path, VOICECALL_INTERFACE, "DisconnectReason",
+	g_dbus_emit_signal(conn, path, OFONO_VOICECALL_INTERFACE,
+				"DisconnectReason",
 				DBUS_TYPE_STRING, &reason_str,
 				DBUS_TYPE_INVALID);
 }
@@ -424,7 +422,8 @@ static void voicecall_set_call_status(struct voicecall *call,
 	status_str = call_status_to_string(status);
 	path = voicecall_build_path(call->vc, call->call);
 
-	ofono_dbus_signal_property_changed(conn, path, VOICECALL_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_VOICECALL_INTERFACE,
 						"State", DBUS_TYPE_STRING,
 						&status_str);
 
@@ -439,10 +438,9 @@ static void voicecall_set_call_status(struct voicecall *call,
 		timestr = time_to_str(&call->start_time);
 
 		ofono_dbus_signal_property_changed(conn, path,
-							VOICECALL_INTERFACE,
-							"StartTime",
-							DBUS_TYPE_STRING,
-							&timestr);
+						OFONO_VOICECALL_INTERFACE,
+						"StartTime", DBUS_TYPE_STRING,
+						&timestr);
 	}
 }
 
@@ -481,7 +479,8 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 	else
 		lineid_str = phone_number_to_string(ph);
 
-	ofono_dbus_signal_property_changed(conn, path, VOICECALL_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_VOICECALL_INTERFACE,
 						"LineIdentification",
 						DBUS_TYPE_STRING, &lineid_str);
 }
@@ -496,7 +495,7 @@ static gboolean voicecall_dbus_register(struct voicecall *v)
 
 	path = voicecall_build_path(v->vc, v->call);
 
-	if (!g_dbus_register_interface(conn, path, VOICECALL_INTERFACE,
+	if (!g_dbus_register_interface(conn, path, OFONO_VOICECALL_INTERFACE,
 					voicecall_methods,
 					voicecall_signals,
 					NULL, v, voicecall_destroy)) {
@@ -516,7 +515,7 @@ static gboolean voicecall_dbus_unregister(struct ofono_voicecall *vc,
 	const char *path = voicecall_build_path(vc, v->call);
 
 	return g_dbus_unregister_interface(conn, path,
-					VOICECALL_INTERFACE);
+						OFONO_VOICECALL_INTERFACE);
 }
 
 
@@ -693,10 +692,9 @@ static gboolean real_emit_call_list_changed(void *data)
 	voicecalls_path_list(vc, vc->call_list, &objpath_list);
 
 	ofono_dbus_signal_array_property_changed(conn, path,
-				VOICECALL_MANAGER_INTERFACE,
-				"Calls",
-				DBUS_TYPE_OBJECT_PATH,
-				&objpath_list);
+					OFONO_VOICECALL_MANAGER_INTERFACE,
+					"Calls", DBUS_TYPE_OBJECT_PATH,
+					&objpath_list);
 
 	g_strfreev(objpath_list);
 
@@ -722,9 +720,9 @@ static gboolean real_emit_multiparty_call_list_changed(void *data)
 	voicecalls_path_list(vc, vc->multiparty_list, &objpath_list);
 
 	ofono_dbus_signal_array_property_changed(conn, path,
-				VOICECALL_MANAGER_INTERFACE, "MultipartyCalls",
-				DBUS_TYPE_OBJECT_PATH,
-				&objpath_list);
+					OFONO_VOICECALL_MANAGER_INTERFACE,
+					"MultipartyCalls",
+					DBUS_TYPE_OBJECT_PATH, &objpath_list);
 
 	g_strfreev(objpath_list);
 
@@ -1628,10 +1626,8 @@ static void emit_en_list_changed(struct ofono_voicecall *vc)
 		list[i] = g_strdup(l->data);
 
 	ofono_dbus_signal_array_property_changed(conn, path,
-				VOICECALL_MANAGER_INTERFACE,
-				"EmergencyNumbers",
-				DBUS_TYPE_STRING,
-				&list);
+				OFONO_VOICECALL_MANAGER_INTERFACE,
+				"EmergencyNumbers", DBUS_TYPE_STRING, &list);
 
 	g_strfreev(list);
 }
@@ -1780,9 +1776,9 @@ static void voicecall_unregister(struct ofono_atom *atom)
 
 	g_slist_free(vc->call_list);
 
-	ofono_modem_remove_interface(modem, VOICECALL_MANAGER_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_VOICECALL_MANAGER_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
-					VOICECALL_MANAGER_INTERFACE);
+					OFONO_VOICECALL_MANAGER_INTERFACE);
 }
 
 static void voicecall_remove(struct ofono_atom *atom)
@@ -1874,16 +1870,16 @@ void ofono_voicecall_register(struct ofono_voicecall *vc)
 	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
-					VOICECALL_MANAGER_INTERFACE,
+					OFONO_VOICECALL_MANAGER_INTERFACE,
 					manager_methods, manager_signals, NULL,
 					vc, NULL)) {
 		ofono_error("Could not create %s interface",
-				VOICECALL_MANAGER_INTERFACE);
+				OFONO_VOICECALL_MANAGER_INTERFACE);
 
 		return;
 	}
 
-	ofono_modem_add_interface(modem, VOICECALL_MANAGER_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_VOICECALL_MANAGER_INTERFACE);
 
 	/* Start out with the 22.101 mandated numbers, if we have a SIM and
 	 * the SIM contains EFecc, then we update the list once we've read them

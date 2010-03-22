@@ -37,6 +37,8 @@ extern "C" {
 #define OFONO_CALL_METER_INTERFACE "org.ofono.CallMeter"
 #define OFONO_PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define OFONO_CALL_SETTINGS_INTERFACE "org.ofono.CallSettings"
+#define OFONO_VOICECALL_INTERFACE "org.ofono.VoiceCall"
+#define OFONO_VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
 
 /* Essentially a{sv} */
 #define OFONO_PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \
