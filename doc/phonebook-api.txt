@@ -1,0 +1,18 @@
+Phonebook hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.Phonebook
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		string Import()
+
+			Returns the contents of the SIM and ME phonebook in
+			VCard 3.0 format.  If several entries are determined
+			to be related to the same contact, then they are
+			merged into a single VCard entry.
+
+			The phonebook is returned as a single UTF8 encoded
+			string with zero or more VCard entries.
+
+			Possible Errors: [service].Error.Failed
