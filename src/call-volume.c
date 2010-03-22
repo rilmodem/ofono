@@ -40,8 +40,6 @@
 #include "ofono.h"
 #include "common.h"
 
-#define CALL_VOLUME_INTERFACE OFONO_SERVICE ".CallVolume"
-
 static GSList *g_drivers = NULL;
 
 struct ofono_call_volume {
@@ -67,7 +65,8 @@ void ofono_call_volume_set_speaker_volume(struct ofono_call_volume *cv,
 	if (__ofono_atom_get_registered(cv->atom) == FALSE)
 		return;
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_VOLUME_INTERFACE,
 						"SpeakerVolume",
 						DBUS_TYPE_BYTE, &percent);
 }
@@ -83,7 +82,8 @@ void ofono_call_volume_set_microphone_volume(struct ofono_call_volume *cv,
 	if (__ofono_atom_get_registered(cv->atom) == FALSE)
 		return;
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_VOLUME_INTERFACE,
 						"MicrophoneVolume",
 						DBUS_TYPE_BYTE, &percent);
 }
@@ -100,7 +100,8 @@ void ofono_call_volume_set_muted(struct ofono_call_volume *cv, int muted)
 		return;
 
 	m = muted;
-	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_VOLUME_INTERFACE,
 						"Muted", DBUS_TYPE_BOOLEAN, &m);
 }
 
@@ -154,7 +155,8 @@ static void sv_set_callback(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&cv->pending,
 				dbus_message_new_method_return(cv->pending));
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_CALL_VOLUME_INTERFACE,
 					"SpeakerVolume",
 					DBUS_TYPE_BYTE, &cv->speaker_volume);
 }
@@ -176,7 +178,8 @@ static void mv_set_callback(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&cv->pending,
 				dbus_message_new_method_return(cv->pending));
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_CALL_VOLUME_INTERFACE,
 					"MicrophoneVolume",
 					DBUS_TYPE_BYTE, &cv->microphone_volume);
 }
@@ -201,7 +204,8 @@ static void muted_set_callback(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&cv->pending,
 				dbus_message_new_method_return(cv->pending));
 
-	ofono_dbus_signal_property_changed(conn, path, CALL_VOLUME_INTERFACE,
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_VOLUME_INTERFACE,
 						"Muted", DBUS_TYPE_BOOLEAN, &m);
 }
 
@@ -366,9 +370,9 @@ static void call_volume_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
-	ofono_modem_remove_interface(modem, CALL_VOLUME_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_CALL_VOLUME_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
-					CALL_VOLUME_INTERFACE);
+					OFONO_CALL_VOLUME_INTERFACE);
 }
 
 void ofono_call_volume_register(struct ofono_call_volume *cv)
@@ -378,16 +382,16 @@ void ofono_call_volume_register(struct ofono_call_volume *cv)
 	const char *path = __ofono_atom_get_path(cv->atom);
 
 	if (!g_dbus_register_interface(conn, path,
-					CALL_VOLUME_INTERFACE,
+					OFONO_CALL_VOLUME_INTERFACE,
 					cv_methods, cv_signals, NULL,
 					cv, NULL)) {
 		ofono_error("Could not create %s interface",
-					CALL_VOLUME_INTERFACE);
+					OFONO_CALL_VOLUME_INTERFACE);
 
 		return;
 	}
 
-	ofono_modem_add_interface(modem, CALL_VOLUME_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_CALL_VOLUME_INTERFACE);
 
 	__ofono_atom_register(cv->atom, call_volume_unregister);
 }
