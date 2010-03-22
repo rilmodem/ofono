@@ -39,8 +39,6 @@
 #include "simutil.h"
 #include "smsutil.h"
 
-#define MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
-
 struct mailbox_state {
 	gboolean indication;
 	unsigned char message_count;
@@ -252,7 +250,7 @@ static void mbdn_set_cb(int ok, void *data)
 		number = phone_number_to_string(old);
 
 		ofono_dbus_signal_property_changed(conn, path,
-						MESSAGE_WAITING_INTERFACE,
+						OFONO_MESSAGE_WAITING_INTERFACE,
 						property, DBUS_TYPE_STRING,
 						&number);
 	}
@@ -399,12 +397,12 @@ static void update_indicator_and_emit(struct ofono_message_waiting *mw,
 		return;
 
 	ofono_dbus_signal_property_changed(conn, path,
-				MESSAGE_WAITING_INTERFACE,
+				OFONO_MESSAGE_WAITING_INTERFACE,
 				mw_message_waiting_property_name[mailbox],
 				DBUS_TYPE_BOOLEAN, &indication);
 
 	ofono_dbus_signal_property_changed(conn, path,
-				MESSAGE_WAITING_INTERFACE,
+				OFONO_MESSAGE_WAITING_INTERFACE,
 				mw_message_count_property_name[mailbox],
 				DBUS_TYPE_BYTE, &count);
 }
@@ -526,7 +524,7 @@ static void mw_cphs_mbdn_read_cb(int ok, int total_length, int record,
 		value = phone_number_to_string(&mw->mailbox_number[i]);
 
 		ofono_dbus_signal_property_changed(conn, path,
-				MESSAGE_WAITING_INTERFACE,
+				OFONO_MESSAGE_WAITING_INTERFACE,
 				mw_mailbox_property_name[i],
 				DBUS_TYPE_STRING, &value);
 	}
@@ -567,7 +565,7 @@ static void mw_mbdn_read_cb(int ok, int total_length, int record,
 		value = phone_number_to_string(&mw->mailbox_number[i]);
 
 		ofono_dbus_signal_property_changed(conn, path,
-				MESSAGE_WAITING_INTERFACE,
+				OFONO_MESSAGE_WAITING_INTERFACE,
 				mw_mailbox_property_name[i],
 				DBUS_TYPE_STRING, &value);
 	}
@@ -654,7 +652,7 @@ static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
 
 		if (mw_message_waiting_property_name[type])
 			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
+					OFONO_MESSAGE_WAITING_INTERFACE,
 					mw_message_waiting_property_name[type],
 					DBUS_TYPE_BOOLEAN, &indication);
 	}
@@ -666,7 +664,7 @@ static void mw_set_indicator(struct ofono_message_waiting *mw, int profile,
 
 		if (mw_message_waiting_property_name[type])
 			ofono_dbus_signal_property_changed(conn, path,
-					MESSAGE_WAITING_INTERFACE,
+					OFONO_MESSAGE_WAITING_INTERFACE,
 					mw_message_count_property_name[type],
 					DBUS_TYPE_BYTE, &messages);
 	}
@@ -916,8 +914,8 @@ static void message_waiting_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 
 	g_dbus_unregister_interface(conn, path,
-					MESSAGE_WAITING_INTERFACE);
-	ofono_modem_remove_interface(modem, MESSAGE_WAITING_INTERFACE);
+					OFONO_MESSAGE_WAITING_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_MESSAGE_WAITING_INTERFACE);
 }
 
 void ofono_message_waiting_register(struct ofono_message_waiting *mw)
@@ -928,16 +926,16 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
-					MESSAGE_WAITING_INTERFACE,
+					OFONO_MESSAGE_WAITING_INTERFACE,
 					message_waiting_methods,
 					message_waiting_signals,
 					NULL, mw, NULL)) {
 		ofono_error("Could not create %s interface",
-				MESSAGE_WAITING_INTERFACE);
+				OFONO_MESSAGE_WAITING_INTERFACE);
 		return;
 	}
 
-	ofono_modem_add_interface(modem, MESSAGE_WAITING_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_MESSAGE_WAITING_INTERFACE);
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 

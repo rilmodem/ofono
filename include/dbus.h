@@ -35,6 +35,7 @@ extern "C" {
 #define OFONO_CALL_BARRING_INTERFACE "org.ofono.CallBarring"
 #define OFONO_CALL_FORWARDING_INTERFACE "org.ofono.CallForwarding"
 #define OFONO_CALL_METER_INTERFACE "org.ofono.CallMeter"
+#define OFONO_MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
 #define OFONO_PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define OFONO_RADIO_SETTINGS_INTERFACE "org.ofono.RadioSettings"
 #define OFONO_SMS_MANAGER_INTERFACE "org.ofono.SmsManager"
