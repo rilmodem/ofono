@@ -416,6 +416,92 @@ static gboolean parse_dataobj_tone(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.18 */
+static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	GSList **fl = user;
+	const unsigned char *data;
+	unsigned int len;
+	unsigned int i;
+	unsigned int start = 0;
+	struct stk_file *sf;
+	unsigned char last_type = 0x2f;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_FILE_LIST)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 5)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	for (i = 1; i < len; i += 2) {
+		/* Check the validity of file type.
+		 * According to TS 11.11, each file id contains of two bytes,
+		 * in which the first byte is the type of file. For GSM is:
+		 * 0x3f: master file
+		 * 0x7f: 1st level dedicated file
+		 * 0x5f: 2nd level dedicated file
+		 * 0x2f: elementary file under the master file
+		 * 0x6f: elementary file under 1st level dedicated file
+		 * 0x4f: elementary file under 2nd level dedicated file
+		 */
+		if (data[i] == 0x3f) {
+			if ((last_type != 0x2f) && (last_type != 0x6f) &&
+							(last_type != 0x4f))
+				goto error;
+			start = i;
+		} else if (data[i] == 0x2f) {
+			if (last_type != 0x3f)
+				goto error;
+		} else if (data[i] == 0x6f) {
+			if (last_type != 0x7f)
+				goto error;
+		} else if (data[i] == 0x4f) {
+			if (last_type != 0x5f)
+				goto error;
+		} else if (data[i] == 0x7f) {
+			if (last_type != 0x3f)
+				goto error;
+		} else if (data[i] == 0x5f) {
+			if (last_type != 0x7f)
+				goto error;
+		} else
+			goto error;
+
+		if ((data[i] == 0x2f) || (data[i] == 0x6f) ||
+						(data[i] == 0x4f)) {
+			if (i + 1 >= len)
+				goto error;
+
+			sf = g_try_new0(struct stk_file, 1);
+			if (sf == NULL)
+				goto error;
+
+			sf->len = i - start + 2;
+			memcpy(sf->file, data + start, i - start + 2);
+			*fl = g_slist_prepend(*fl, sf);
+		}
+
+		last_type = data[i];
+	}
+
+	if ((data[len - 2] != 0x2f) && (data[len - 2] != 0x6f) &&
+						(data[len - 2] != 0x4f))
+		goto error;
+
+	*fl = g_slist_reverse(*fl);
+	return TRUE;
+
+error:
+	g_slist_foreach(*fl, (GFunc)g_free, NULL);
+	g_slist_free(*fl);
+	return FALSE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -533,6 +619,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_text;
 	case STK_DATA_OBJECT_TYPE_TONE:
 		return parse_dataobj_tone;
+	case STK_DATA_OBJECT_TYPE_FILE_LIST:
+		return parse_dataobj_file_list;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:

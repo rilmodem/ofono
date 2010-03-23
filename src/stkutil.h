@@ -345,6 +345,17 @@ struct stk_result {
 	unsigned char *additional;
 };
 
+/* Define the struct of single file in TS102.223 Section 8.18.
+ * According to TS 11.11 Section 6.2, each file id has two bytes, and the
+ * maximum Dedicated File level is 2. So the maximum size of file is 8, which
+ * contains two bytes of Master File, 2 bytes of 1st level Dedicated File,
+ * 2 bytes of 2nd level Dedicated File and 2 bytes of Elementary File.
+ */
+struct stk_file {
+	unsigned char file[8];
+	unsigned int len;
+};
+
 /*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
