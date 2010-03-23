@@ -18,6 +18,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
+#include "ppp_cp.h"
+
 #define DEFAULT_MRU	1500
 #define BUFFERSZ	DEFAULT_MRU*2
 #define DEFAULT_ACCM	0x00000000
