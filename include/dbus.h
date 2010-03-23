@@ -39,6 +39,8 @@ extern "C" {
 #define OFONO_CALL_VOLUME_INTERFACE OFONO_SERVICE ".CallVolume"
 #define OFONO_CBS_MANAGER_INTERFACE "org.ofono.CbsManager"
 #define OFONO_MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
+#define OFONO_NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
+#define OFONO_NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
 #define OFONO_PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define OFONO_RADIO_SETTINGS_INTERFACE "org.ofono.RadioSettings"
 #define OFONO_SIM_MANAGER_INTERFACE "org.ofono.SimManager"
