@@ -104,11 +104,19 @@ struct auth_data {
 	GAtPPP *ppp;
 };
 
+struct ppp_net_data {
+	GAtPPP *ppp;
+	char *if_name;
+	GIOChannel *channel;
+	struct pppcp_data *ipcp;
+};
+
 struct _GAtPPP {
 	gint ref_count;
 	enum ppp_phase phase;
 	struct pppcp_data *lcp;
 	struct auth_data *auth;
+	struct ppp_net_data *net;
 	guint8 buffer[BUFFERSZ];
 	int index;
 	gint mru;
@@ -152,3 +160,7 @@ void auth_set_credentials(struct auth_data *data, const char *username,
 void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method);
 struct auth_data *auth_new(GAtPPP *ppp);
 void auth_free(struct auth_data *auth);
+struct ppp_net_data *ppp_net_new(GAtPPP *ppp);
+void ppp_net_open(struct ppp_net_data *data);
+void ppp_net_free(struct ppp_net_data *data);
+void ppp_net_close(struct ppp_net_data *data);

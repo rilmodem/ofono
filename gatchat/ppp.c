@@ -381,6 +381,7 @@ static void ppp_dead(GAtPPP *ppp)
 static void ppp_network(GAtPPP *ppp)
 {
 	/* bring network phase up */
+	ppp_net_open(ppp->net);
 }
 
 static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)

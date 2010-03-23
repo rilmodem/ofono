@@ -136,6 +136,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->auth = auth_new(ppp);
 
 	/* intialize the network state */
+	ppp->net = ppp_net_new(ppp);
 
 	/* start listening for packets from the modem */
 	ppp->modem_watch = g_io_add_watch(modem,
