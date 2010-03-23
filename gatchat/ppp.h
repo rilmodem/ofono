@@ -101,7 +101,7 @@ struct auth_data {
 	gpointer proto_data;
 	void (*process_packet)(struct auth_data *data, guint8 *packet);
 	char *username;
-	char *passwd;
+	char *password;
 	GAtPPP *ppp;
 };
 

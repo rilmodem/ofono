@@ -55,7 +55,7 @@ enum chap_code {
 };
 
 void auth_set_credentials(struct auth_data *data, const char *username,
-				const char *passwd)
+				const char *password)
 {
 	if (data == NULL)
 		return;
@@ -63,8 +63,8 @@ void auth_set_credentials(struct auth_data *data, const char *username,
 	g_free(data->username);
 	data->username = g_strdup(username);
 
-	g_free(data->passwd);
-	data->passwd = g_strdup(passwd);
+	g_free(data->password);
+	data->password = g_strdup(password);
 }
 
 static void chap_process_challenge(struct auth_data *auth, guint8 *packet)
@@ -73,7 +73,7 @@ static void chap_process_challenge(struct auth_data *auth, guint8 *packet)
 	struct chap_header *response;
 	struct chap_data *data = auth->proto_data;
 	GChecksum *checksum;
-	gchar *secret = data->auth->passwd;
+	gchar *secret = data->auth->password;
 	guint16 response_length;
 	struct ppp_header *ppp_packet;
 	gsize digest_len;
