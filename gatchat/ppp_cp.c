@@ -34,15 +34,16 @@
 #include "ppp.h"
 
 #ifdef DEBUG
-const char *pppcp_state_strings[] =
+static const char *pppcp_state_strings[] =
 	{"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
 	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED" };
 
-#define pppcp_trace(p) \
-	(g_print("%s: current state %d:%s\n", __FUNCTION__, \
-		p->state, pppcp_state_strings[p->state]))
+#define pppcp_trace(p) do { \
+	g_print("%s: current state %d:%s\n", __FUNCTION__, \
+		p->state, pppcp_state_strings[p->state]); \
+} while (0)
 #else
-#define pppcp_trace(p)
+#define pppcp_trace(p) do { } while (0)
 #endif
 
 #define pppcp_to_ppp_packet(p) \
