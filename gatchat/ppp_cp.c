@@ -1061,6 +1061,7 @@ static void verify_config_option(gpointer elem, gpointer user_data)
 	struct ppp_option *config = elem;
 	struct pppcp_data *data = user_data;
 	guint type = config->type;
+	struct ppp_option *option;
 	GList *list;
 
 	/*
@@ -1071,24 +1072,23 @@ static void verify_config_option(gpointer elem, gpointer user_data)
 		return;
 
 	list = g_list_find_custom(data->acceptable_options,
-				GUINT_TO_POINTER(type), is_option);
-	if (!list) {
-		struct ppp_option *option;
+					GUINT_TO_POINTER(type), is_option);
+	if (list)
+		return;
 
-		/*
-		 * if the option did not exist, we need to store a copy
-		 * of the option in the unacceptable_options list so it
-		 * can be nak'ed.
-		 */
-		option = g_try_malloc0(config->length);
-		if (option == NULL)
-			return;
+	/*
+	 * if the option did not exist, we need to store a copy
+	 * of the option in the unacceptable_options list so it
+	 * can be nak'ed.
+	 */
+	option = g_try_malloc0(config->length);
+	if (option == NULL)
+		return;
 
-		option->type = config->type;
-		option->length = config->length;
-		data->unacceptable_options =
+	option->type = config->type;
+	option->length = config->length;
+	data->unacceptable_options =
 			g_list_append(data->unacceptable_options, option);
-	}
 }
 
 static void remove_config_option(gpointer elem, gpointer user_data)
@@ -1106,10 +1106,11 @@ static void remove_config_option(gpointer elem, gpointer user_data)
 		return;
 
 	list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER(type), is_option);
-	if (list)
-		data->config_options =
-				g_list_delete_link(data->config_options, list);
+					GUINT_TO_POINTER(type), is_option);
+	if (!list)
+		return;
+
+	data->config_options = g_list_delete_link(data->config_options, list);
 }
 
 static guint8 pppcp_process_configure_request(struct pppcp_data *data,
