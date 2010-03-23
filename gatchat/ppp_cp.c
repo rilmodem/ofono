@@ -312,8 +312,7 @@ static void pppcp_send_configure_ack(struct pppcp_data *data,
 	/* copy the applied options in. */
 	odata = packet->data;
 
-	if (g_list_length(data->acceptable_options))
-		g_list_foreach(data->acceptable_options, copy_option, &odata);
+	g_list_foreach(data->acceptable_options, copy_option, &odata);
 
 	/* match identifier of the request */
 	packet->identifier = pppcp_header->identifier;
@@ -1068,9 +1067,6 @@ static void verify_config_option(gpointer elem, gpointer user_data)
 	 * determine whether this config option is in the
 	 * acceptable options list
 	 */
-	if (g_list_length(data->acceptable_options) == 0)
-		return;
-
 	list = g_list_find_custom(data->acceptable_options,
 					GUINT_TO_POINTER(type), is_option);
 	if (list)
@@ -1102,9 +1098,6 @@ static void remove_config_option(gpointer elem, gpointer user_data)
 	 * determine whether this config option is in the
 	 * applied options list
 	 */
-	if (g_list_length(data->config_options) == 0)
-		return;
-
 	list = g_list_find_custom(data->config_options,
 					GUINT_TO_POINTER(type), is_option);
 	if (!list)
