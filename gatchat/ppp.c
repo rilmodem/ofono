@@ -184,15 +184,14 @@ static gint is_proto_handler(gconstpointer a, gconstpointer b)
 /* called when we have received a complete ppp frame */
 static void ppp_recv(GAtPPP *ppp)
 {
-	guint16 protocol;
-	guint8 *frame, *packet;
 	GList *list;
-	struct ppp_packet_handler *h;
+	guint8 *frame;
 
 	/* pop frames off of receive queue */
 	while ((frame = g_queue_pop_head(ppp->recv_queue))) {
-		protocol = ppp_proto(frame);
-		packet = ppp_info(frame);
+		guint protocol = ppp_proto(frame);
+		guint8 *packet = ppp_info(frame);
+		struct ppp_packet_handler *h;
 
 		/*
 		 * check to see if we have a protocol handler
