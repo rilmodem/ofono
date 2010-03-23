@@ -98,6 +98,7 @@ static inline guint16 __get_unaligned_short(const gpointer p)
 struct _GAtPPP {
 	gint ref_count;
 	enum ppp_phase phase;
+	struct pppcp_data *lcp;
 	guint8 buffer[BUFFERSZ];
 	int index;
 	gint mru;
@@ -130,3 +131,9 @@ void ppp_set_pfc(GAtPPP *ppp, gboolean pfc);
 gboolean ppp_get_pfc(GAtPPP *ppp);
 void ppp_set_acfc(GAtPPP *ppp, gboolean acfc);
 gboolean ppp_get_acfc(GAtPPP *ppp);
+struct pppcp_data * lcp_new(GAtPPP *ppp);
+void lcp_free(struct pppcp_data *lcp);
+void lcp_open(struct pppcp_data *data);
+void lcp_close(struct pppcp_data *data);
+void lcp_establish(struct pppcp_data *data);
+void lcp_terminate(struct pppcp_data *data);

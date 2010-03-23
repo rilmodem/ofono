@@ -40,6 +40,7 @@
 void g_at_ppp_open(GAtPPP *ppp)
 {
 	/* send an OPEN event to the lcp layer */
+	lcp_open(ppp->lcp);
 }
 
 void g_at_ppp_set_connect_function(GAtPPP *ppp,
@@ -69,6 +70,9 @@ void g_at_ppp_shutdown(GAtPPP *ppp)
 	/* cleanup modem channel */
 	g_source_remove(ppp->modem_watch);
 	g_io_channel_unref(ppp->modem);
+
+	/* remove lcp */
+	lcp_free(ppp->lcp);
 }
 
 void g_at_ppp_ref(GAtPPP *ppp)
@@ -117,7 +121,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->index = 0;
 
 	/* initialize the lcp state */
-
+	ppp->lcp = lcp_new(ppp);
 
 	/* initialize the autentication state */
 

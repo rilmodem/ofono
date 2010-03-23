@@ -350,16 +350,19 @@ gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 void ppp_close(GAtPPP *ppp)
 {
 	/* send a CLOSE event to the lcp layer */
+	lcp_close(ppp->lcp);
 }
 
 static void ppp_link_establishment(GAtPPP *ppp)
 {
 	/* signal UP event to LCP */
+	lcp_establish(ppp->lcp);
 }
 
 static void ppp_terminate(GAtPPP *ppp)
 {
 	/* signal DOWN event to LCP */
+	lcp_terminate(ppp->lcp);
 }
 
 static void ppp_authenticate(GAtPPP *ppp)
@@ -451,4 +454,48 @@ void ppp_generate_event(GAtPPP *ppp, enum ppp_event event)
 {
 	g_queue_push_tail(ppp->event_queue, GUINT_TO_POINTER(event));
 	ppp_handle_event(ppp);
+}
+
+void ppp_set_auth(GAtPPP *ppp, guint8* auth_data)
+{
+	guint16 proto = get_host_short(auth_data);
+
+	switch (proto) {
+	case CHAP_PROTOCOL:
+		/* get the algorithm */
+		break;
+	default:
+		g_printerr("unknown authentication proto\n");
+		break;
+	}
+}
+
+void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)
+{
+	ppp->recv_accm = accm;
+}
+
+guint32 ppp_get_xmit_accm(GAtPPP *ppp)
+{
+	return ppp->xmit_accm[0];
+}
+
+void ppp_set_pfc(GAtPPP *ppp, gboolean pfc)
+{
+	ppp->pfc = pfc;
+}
+
+gboolean ppp_get_pfc(GAtPPP *ppp)
+{
+	return ppp->pfc;
+}
+
+void ppp_set_acfc(GAtPPP *ppp, gboolean acfc)
+{
+	ppp->acfc = acfc;
+}
+
+gboolean ppp_get_acfc(GAtPPP *ppp)
+{
+	return ppp->acfc;
 }
