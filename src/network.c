@@ -423,6 +423,7 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	struct network_operator_data *opd = netreg->current_operator;
 	const char *plmn;
 	static char name[1024];
+	static char mccmnc[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
 	int len = sizeof(name);
 	int home_or_spdi;
 
@@ -436,6 +437,16 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	}
 
 	plmn = opd->name;
+
+	/*
+	 * This is a fallback on some really broken hardware which do not
+	 * report the COPS name
+	 */
+	if (plmn[0] == '\0') {
+		snprintf(mccmnc, sizeof(mccmnc), "%s%s", opd->mcc, opd->mnc);
+		plmn = mccmnc;
+	}
+
 	if (opd->eons_info && opd->eons_info->longname)
 		plmn = opd->eons_info->longname;
 
@@ -475,6 +486,9 @@ static void set_network_operator_name(struct network_operator_data *opd,
 	struct ofono_netreg *netreg = opd->netreg;
 	const char *path;
 	const char *operator;
+
+	if (name[0] == '\0')
+		return;
 
 	if (!strncmp(opd->name, name, OFONO_MAX_OPERATOR_NAME_LENGTH))
 		return;
@@ -579,6 +593,7 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
+	char mccmnc[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
 
 	const char *name = opd->name;
 	const char *status =
@@ -596,6 +611,11 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
+
+	if (name[0] == '\0') {
+		snprintf(mccmnc, sizeof(mccmnc), "%s%s", opd->mcc, opd->mnc);
+		name = mccmnc;
+	}
 
 	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
 
