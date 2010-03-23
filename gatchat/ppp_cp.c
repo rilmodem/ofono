@@ -30,6 +30,7 @@
 #include <termios.h>
 #include <glib.h>
 #include <arpa/inet.h>
+
 #include "gatppp.h"
 #include "ppp.h"
 
@@ -95,6 +96,7 @@ static gboolean pppcp_timeout(gpointer user_data)
 		pppcp_generate_event(data, TO_PLUS, NULL, 0);
 	else
 		pppcp_generate_event(data, TO_MINUS, NULL, 0);
+
 	return FALSE;
 }
 
@@ -224,7 +226,7 @@ static void pppcp_zero_restart_count(struct pppcp_data *data)
  */
 static guint8 new_identity(struct pppcp_data *data, guint prev_identifier)
 {
-	return prev_identifier+1;
+	return prev_identifier + 1;
 }
 
 static void get_option_length(gpointer data, gpointer user_data)
@@ -1413,10 +1415,11 @@ void pppcp_process_packet(gpointer priv, guint8 *new_packet)
 		return;
 
 	/* check flags to see if we support this code */
-	if (!(data->valid_codes & (1 << packet->code))) {
+	if (!(data->valid_codes & (1 << packet->code)))
 		event_type = RUC;
-	} else
+	else
 		event_type = data->packet_ops[packet->code-1](data, packet);
+
 	if (event_type) {
 		data_len = ntohs(packet->length);
 		event_data = packet;

@@ -30,16 +30,17 @@
 #include <termios.h>
 #include <glib.h>
 #include <arpa/inet.h>
+
 #include "gatppp.h"
 #include "ppp.h"
 
 enum lcp_options {
-	RESERVED 	= 0,
-	MRU		= 1,
-	ACCM		= 2,
-	AUTH_PROTO	= 3,
-	QUAL_PROTO	= 4,
-	MAGIC_NUMBER	= 5,
+	RESERVED 		= 0,
+	MRU			= 1,
+	ACCM			= 2,
+	AUTH_PROTO		= 3,
+	QUAL_PROTO		= 4,
+	MAGIC_NUMBER		= 5,
 	DEPRECATED_QUAL_PROTO	= 6,
 	PFC			= 7,
 	ACFC			= 8,

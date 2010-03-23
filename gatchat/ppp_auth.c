@@ -153,7 +153,7 @@ static void chap_process_packet(gpointer priv, guint8 *new_packet)
 		chap_process_failure(data, new_packet);
 		break;
 	default:
-		g_print("unknown auth code\n");
+		g_print("Unknown auth code\n");
 		break;
 	}
 }

@@ -409,7 +409,6 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 		ppp_network(ppp);
 		break;
 	}
-
 }
 
 static void ppp_handle_event(GAtPPP *ppp)
