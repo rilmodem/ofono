@@ -83,7 +83,8 @@ Properties	string CallingLinePresentation [readonly]
 			property).  The three possible values are:
 				"default" - Uses the network setting
 				"enabled" - CLIR invoked, caller id is witheld
-				"disabled" - CLIR suppressed, caller id is provided
+				"disabled" - CLIR suppressed, caller id is
+						provided
 
 			This setting can also be changed on a per-call basis,
 			see the VoiceCallManager Dial method documentation.
