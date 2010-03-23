@@ -424,9 +424,9 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len;
 	unsigned int i;
-	unsigned int start = 0;
+	unsigned int start;
 	struct stk_file *sf;
-	unsigned char last_type = 0x2f;
+	unsigned char last_type;
 
 	if (comprehension_tlv_iter_get_tag(iter) !=
 			STK_DATA_OBJECT_TYPE_FILE_LIST)
@@ -438,7 +438,14 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 
 	data = comprehension_tlv_iter_get_data(iter);
 
-	for (i = 1; i < len; i += 2) {
+	/* SIM EFs always start with ROOT MF, 0x3f */
+	if (data[1] != 0x3f)
+		return FALSE;
+
+	start = 1;
+	last_type = 0x3f;
+
+	for (i = 3; i < len; i += 2) {
 		/* Check the validity of file type.
 		 * According to TS 11.11, each file id contains of two bytes,
 		 * in which the first byte is the type of file. For GSM is:
@@ -449,28 +456,38 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 		 * 0x6f: elementary file under 1st level dedicated file
 		 * 0x4f: elementary file under 2nd level dedicated file
 		 */
-		if (data[i] == 0x3f) {
+		switch (data[i]) {
+		case 0x3f:
 			if ((last_type != 0x2f) && (last_type != 0x6f) &&
-							(last_type != 0x4f))
+					(last_type != 0x4f))
 				goto error;
+
 			start = i;
-		} else if (data[i] == 0x2f) {
+
+			break;
+		case 0x2f:
 			if (last_type != 0x3f)
 				goto error;
-		} else if (data[i] == 0x6f) {
+			break;
+		case 0x6f:
 			if (last_type != 0x7f)
 				goto error;
-		} else if (data[i] == 0x4f) {
+			break;
+		case 0x4f:
 			if (last_type != 0x5f)
 				goto error;
-		} else if (data[i] == 0x7f) {
+			break;
+		case 0x7f:
 			if (last_type != 0x3f)
 				goto error;
-		} else if (data[i] == 0x5f) {
+			break;
+		case 0x5f:
 			if (last_type != 0x7f)
 				goto error;
-		} else
+			break;
+		default:
 			goto error;
+		}
 
 		if ((data[i] == 0x2f) || (data[i] == 0x6f) ||
 						(data[i] == 0x4f)) {
