@@ -43,6 +43,12 @@ void g_at_ppp_open(GAtPPP *ppp)
 	lcp_open(ppp->lcp);
 }
 
+void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
+				const char *passwd)
+{
+	auth_set_credentials(ppp->auth, username, passwd);
+}
+
 void g_at_ppp_set_connect_function(GAtPPP *ppp,
 			       GAtPPPConnectFunc callback, gpointer user_data)
 {
@@ -73,6 +79,9 @@ void g_at_ppp_shutdown(GAtPPP *ppp)
 
 	/* remove lcp */
 	lcp_free(ppp->lcp);
+
+	/* remove auth */
+	auth_free(ppp->auth);
 }
 
 void g_at_ppp_ref(GAtPPP *ppp)
@@ -124,7 +133,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->lcp = lcp_new(ppp);
 
 	/* initialize the autentication state */
-
+	ppp->auth = auth_new(ppp);
 
 	/* intialize the network state */
 

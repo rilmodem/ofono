@@ -463,6 +463,7 @@ void ppp_set_auth(GAtPPP *ppp, guint8* auth_data)
 	switch (proto) {
 	case CHAP_PROTOCOL:
 		/* get the algorithm */
+		auth_set_proto(ppp->auth, proto, auth_data[2]);
 		break;
 	default:
 		g_printerr("unknown authentication proto\n");

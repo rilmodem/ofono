@@ -51,6 +51,8 @@ void g_at_ppp_set_disconnect_function(GAtPPP *ppp,
 void g_at_ppp_shutdown(GAtPPP *ppp);
 void g_at_ppp_ref(GAtPPP *ppp);
 void g_at_ppp_unref(GAtPPP *ppp);
+void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
+				const char *passwd);
 #ifdef __cplusplus
 }
 #endif

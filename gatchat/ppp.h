@@ -95,10 +95,20 @@ static inline guint16 __get_unaligned_short(const gpointer p)
 #define ppp_proto(packet) \
 	(get_host_short(packet + 2))
 
+struct auth_data {
+	guint16 proto;
+	gpointer proto_data;
+	void (*process_packet)(struct auth_data *data, guint8 *packet);
+	char *username;
+	char *passwd;
+	GAtPPP *ppp;
+};
+
 struct _GAtPPP {
 	gint ref_count;
 	enum ppp_phase phase;
 	struct pppcp_data *lcp;
+	struct auth_data *auth;
 	guint8 buffer[BUFFERSZ];
 	int index;
 	gint mru;
@@ -137,3 +147,8 @@ void lcp_open(struct pppcp_data *data);
 void lcp_close(struct pppcp_data *data);
 void lcp_establish(struct pppcp_data *data);
 void lcp_terminate(struct pppcp_data *data);
+void auth_set_credentials(struct auth_data *data, const char *username,
+				const char *passwd);
+void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method);
+struct auth_data *auth_new(GAtPPP *ppp);
+void auth_free(struct auth_data *auth);
