@@ -36,6 +36,7 @@
 #include <glib.h>
 #include <gatchat.h>
 #include <gattty.h>
+#include <gatppp.h>
 
 static const char *none_prefix[] = { NULL };
 static const char *cgreg_prefix[] = { "+CGREG:", NULL };
@@ -48,7 +49,11 @@ static gint option_cid = 0;
 static gchar *option_apn = NULL;
 static gint option_offmode = 0;
 static gboolean option_legacy = FALSE;
+static gboolean option_ppp = FALSE;
+static gchar *option_username = NULL;
+static gchar *option_password = NULL;
 
+static GAtPPP *ppp;
 static GAtChat *control;
 static GAtChat *modem;
 static GMainLoop *event_loop;
@@ -223,6 +228,76 @@ static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(modem, buf, none_prefix, NULL, NULL, NULL);
 }
 
+static void print_ip_address(const char *label, guint32 ip_addr)
+{
+	struct in_addr addr;
+	char buf[INET_ADDRSTRLEN];
+
+	addr.s_addr = ip_addr;
+
+	if (inet_ntop(AF_INET, &addr, buf, INET_ADDRSTRLEN))
+		g_print("%s: %s\n", label, buf);
+}
+
+static void ppp_connect(GAtPPP *ppp, GAtPPPConnectStatus success,
+			guint32 ip_addr, guint32 dns1, guint32 dns2,
+			gpointer user_data)
+{
+	if (success != G_AT_PPP_CONNECT_SUCCESS) {
+		g_print("Failed to create PPP interface!\n");
+		return;
+	}
+
+	/* print out the negotiated address and dns server */
+	print_ip_address("IP Address", ip_addr);
+	print_ip_address("Primary DNS Server", dns1);
+	print_ip_address("Secondary DNS Server", dns2);
+}
+
+static void ppp_disconnect(GAtPPP *ppp, gpointer user_data)
+{
+	g_print("PPP Link down\n");
+}
+
+static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	GIOChannel *channel;
+
+	if (!ok) {
+		g_print("Unable to define context\n");
+		exit(1);
+	}
+
+	if (option_ppp == FALSE)
+		return;
+
+	/* get the data IO channel */
+	channel = g_at_chat_get_channel(modem);
+
+	/*
+	 * shutdown gatchat or else it tries to take all the input
+	 * from the modem and does not let PPP get it.
+	 */
+	g_at_chat_shutdown(control);
+	g_at_chat_shutdown(modem);
+
+	/* open ppp */
+	ppp = g_at_ppp_new(channel);
+	if (!ppp) {
+		g_print("Unable to create PPP object\n");
+		return;
+	}
+	g_at_ppp_set_credentials(ppp, option_username,
+				option_password);
+
+	/* set connect and disconnect callbacks */
+	g_at_ppp_set_connect_function(ppp, ppp_connect, NULL);
+	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, NULL);
+
+	/* open the ppp connection */
+	g_at_ppp_open(ppp);
+}
+
 static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	char buf[64];
@@ -233,9 +308,9 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	if (option_legacy == TRUE) {
-			sprintf(buf, "ATD*99***%u#", option_cid);
-			g_at_chat_send(modem, buf, none_prefix,
-					NULL, NULL, NULL);
+		sprintf(buf, "ATD*99***%u#", option_cid);
+		g_at_chat_send(modem, buf, none_prefix,
+				connect_cb, NULL, NULL);
 	} else {
 		sprintf(buf, "AT+CGACT=1,%u", option_cid);
 		g_at_chat_send(control, buf, none_prefix,
@@ -452,6 +527,12 @@ static GOptionEntry options[] = {
 				"Specify CFUN offmode" },
 	{ "legacy", 'l', 0, G_OPTION_ARG_NONE, &option_legacy,
 				"Use ATD*99***<cid>#" },
+	{ "ppp", 'P', 0, G_OPTION_ARG_NONE, &option_ppp,
+				"Connect using PPP" },
+	{ "username", 'u', 0, G_OPTION_ARG_STRING, &option_username,
+				"Specify PPP username" },
+	{ "password", 'w', 0, G_OPTION_ARG_STRING, &option_password,
+				"Specifiy PPP password" },
 	{ NULL },
 };
 
