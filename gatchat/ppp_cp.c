@@ -1064,10 +1064,13 @@ static void verify_config_option(gpointer elem, gpointer user_data)
 	 * determine whether this config option is in the
 	 * acceptable options list
 	 */
-	if (g_list_length(data->acceptable_options))
+	if (g_list_length(data->acceptable_options)) {
+		guint type = config->type;
+
 		list = g_list_find_custom(data->acceptable_options,
-				GUINT_TO_POINTER(config->type),
-				is_option);
+				GUINT_TO_POINTER(type), is_option);
+	}
+
 	if (!list) {
 		/*
 		 * if the option did not exist, we need to store a copy
@@ -1096,9 +1099,10 @@ static void remove_config_option(gpointer elem, gpointer user_data)
 	 * applied options list
 	 */
 	if (g_list_length(data->config_options)) {
+		guint type = config->type;
+
 		list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER(config->type),
-				is_option);
+					GUINT_TO_POINTER(type), is_option);
 		if (list)
 			data->config_options =
 				g_list_delete_link(data->config_options, list);
@@ -1216,8 +1220,7 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 		acked_option->length = olen;
 		memcpy(acked_option->data, &packet->data[i + 2], olen - 2);
 		list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER(acked_option->type),
-				is_option);
+				GUINT_TO_POINTER((guint) otype), is_option);
 		if (list) {
 			/*
 			 * once we've applied the option, delete it from
@@ -1280,8 +1283,7 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 			 * match.
 			 */
 			list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER(otype),
-				is_option);
+				GUINT_TO_POINTER((guint) otype), is_option);
 			if (list) {
 				/* modify current option value to match */
 				config_option = list->data;
