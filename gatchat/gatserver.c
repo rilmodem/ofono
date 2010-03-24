@@ -308,9 +308,119 @@ next:
 	return i + 1;
 }
 
+static gboolean get_basic_prefix(const char *buf, char *prefix)
+{
+	char c = *buf;
+
+	if (!g_ascii_isalpha(c) && c != '&')
+		return FALSE;
+
+	if (g_ascii_isalpha(c)) {
+		c = g_ascii_toupper(c);
+		if (c == 'S') {
+			int i = 0;
+
+			prefix[0] = 'S';
+
+			/* V.250 5.3.2 'S' command follows with a parameter
+			 * number. Limited to two digits since 100
+			 * S-registers should be enough.
+			 */
+			while (i <= 2 && g_ascii_isdigit(buf[++i]))
+				prefix[i] = buf[i];
+
+			prefix[i] = '\0';
+		} else {
+			prefix[0] = c;
+			prefix[1] = '\0';
+		}
+	} else if (c == '&') {
+		prefix[0] = '&';
+		prefix[1] = g_ascii_toupper(buf[1]);
+		prefix[2] = '\0';
+	}
+
+	return TRUE;
+}
+
 static unsigned int parse_basic_command(GAtServer *server, char *buf)
 {
-	return 0;
+	char *command;
+	char prefix[4];
+	unsigned int i;
+	GAtServerRequestType type;
+	gboolean seen_equals = FALSE;
+
+	if (!get_basic_prefix(buf, prefix))
+		return 0;
+
+	i = strlen(prefix);
+
+	if (*prefix == 'D') {
+		type = G_AT_SERVER_REQUEST_TYPE_SET;
+
+		/* All characters appearing on the same line, up to a
+		 * semicolon character (IA5 3/11) or the end of the
+		 * command line is the part of the call.
+		 */
+		while (buf[i] != '\0' || buf[i] != ';')
+			i += 1;
+
+		goto done;
+	}
+
+	if (buf[i] == '\0' || buf[i] == ';') {
+		type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
+		goto done;
+	}
+
+	/* Additional commands may follow a command without any character
+	 * required for separation.
+	 */
+	if (is_basic_command_prefix(&buf[i])) {
+		type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
+		goto done;
+	}
+
+	/* Match '?', '=',  '=?' and '=xxx' */
+	if (buf[i] == '=') {
+		seen_equals = TRUE;
+		i += 1;
+	}
+
+	if (buf[i] == '?') {
+		i += 1;
+
+		if (seen_equals)
+			type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
+		else
+			type = G_AT_SERVER_REQUEST_TYPE_QUERY;
+	} else {
+		/* V.250 5.3.1 The subparameter (if any) are all digits */
+		while (g_ascii_isdigit(buf[i]))
+			i++;
+
+		type = G_AT_SERVER_REQUEST_TYPE_SET;
+	}
+
+done:
+	command = g_strndup(buf, i);
+
+	at_command_notify(server, command, prefix, type);
+
+	g_free(command);
+
+	/* Commands like ATA, ATZ cause the remainder line
+	 * to be ignored.
+	 */
+	if (*prefix == 'A' || *prefix == 'Z')
+		return strlen(buf);
+
+	/* Consumed the seperator ';' */
+	if (buf[i] == ';')
+		i += 1;
+
+	return i;
 }
 
 static void server_parse_line(GAtServer *server, char *line)
