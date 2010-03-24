@@ -371,7 +371,7 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 
 	i = strlen(prefix);
 
-	if (*prefix == 'D') {
+	if (prefix[0] == 'D') {
 		type = G_AT_SERVER_REQUEST_TYPE_SET;
 
 		/* All characters appearing on the same line, up to a
@@ -428,7 +428,7 @@ done:
 	/* Commands like ATA, ATZ cause the remainder line
 	 * to be ignored.
 	 */
-	if (*prefix == 'A' || *prefix == 'Z')
+	if (prefix[0] == 'A' || prefix[0] == 'Z')
 		return strlen(buf);
 
 	/* Consumed the seperator ';' */
