@@ -1,3 +1,11 @@
+ver 0.20:
+	Fix issue with empty operator names.
+	Add missing API documentation.
+	Add support for Huawei EM770 modem.
+	Add more detailed parsing support for SIM Toolkit.
+	Add additional functionality for AT command server.
+	Add initial PPP implementation.
+
 ver 0.19:
 	Fix parsing of EFspdi for PLMN list.
 	Fix issues with Bluetooth handsfree handling.
