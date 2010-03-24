@@ -308,17 +308,16 @@ next:
 	return i + 1;
 }
 
-static gboolean get_basic_prefix(const char *buf, char *prefix)
+static gboolean get_basic_prefix(const char *buf, char *out_prefix)
 {
 	char c = *buf;
-
-	if (!g_ascii_isalpha(c) && c != '&')
-		return FALSE;
+	char prefix[4];
 
 	if (g_ascii_isalpha(c)) {
 		c = g_ascii_toupper(c);
+
 		if (c == 'S') {
-			int i = 0;
+			int i;
 
 			prefix[0] = 'S';
 
@@ -326,19 +325,35 @@ static gboolean get_basic_prefix(const char *buf, char *prefix)
 			 * number. Limited to two digits since 100
 			 * S-registers should be enough.
 			 */
-			while (i <= 2 && g_ascii_isdigit(buf[++i]))
+			for (i = 1; i < 3 && g_ascii_isdigit(buf[i]); i++)
 				prefix[i] = buf[i];
 
 			prefix[i] = '\0';
+
+			/*
+			 * Do some basic sanity checking, don't accept 00, 01,
+			 * etc or empty S values
+			 */
+			if (prefix[1] == '\0')
+				return FALSE;
+
+			if (prefix[1] == '0' && prefix[2] != '\0')
+				return FALSE;
 		} else {
 			prefix[0] = c;
 			prefix[1] = '\0';
 		}
 	} else if (c == '&') {
 		prefix[0] = '&';
+
+		if (g_ascii_isalpha(buf[1] == FALSE))
+			return FALSE;
+
 		prefix[1] = g_ascii_toupper(buf[1]);
 		prefix[2] = '\0';
 	}
+
+	memcpy(out_prefix, prefix, sizeof(prefix));
 
 	return TRUE;
 }
