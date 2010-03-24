@@ -187,17 +187,11 @@ static void pppcp_this_layer_finished(struct pppcp_data *data)
 		action->this_layer_finished(data);
 }
 
-static void pppcp_free_option(gpointer data, gpointer user_data)
-{
-	struct ppp_option *option = data;
-	g_free(option);
-}
-
 static void pppcp_clear_options(struct pppcp_data *data)
 {
-	g_list_foreach(data->acceptable_options, pppcp_free_option, NULL);
-	g_list_foreach(data->unacceptable_options, pppcp_free_option, NULL);
-	g_list_foreach(data->rejected_options, pppcp_free_option, NULL);
+	g_list_foreach(data->acceptable_options, (GFunc) g_free, NULL);
+	g_list_foreach(data->unacceptable_options, (GFunc) g_free, NULL);
+	g_list_foreach(data->rejected_options, (GFunc) g_free, NULL);
 	g_list_free(data->acceptable_options);
 	g_list_free(data->unacceptable_options);
 	g_list_free(data->rejected_options);
@@ -212,7 +206,7 @@ static void pppcp_free_options(struct pppcp_data *data)
 	pppcp_clear_options(data);
 
 	/* remove default option list */
-	g_list_foreach(data->config_options, pppcp_free_option, NULL);
+	g_list_foreach(data->config_options, (GFunc) g_free, NULL);
 	g_list_free(data->config_options);
 }
 
