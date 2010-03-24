@@ -201,6 +201,16 @@ static void pppcp_clear_options(struct pppcp_data *data)
 	data->rejected_options = NULL;
 }
 
+static void pppcp_free_options(struct pppcp_data *data)
+{
+	/* remove all config options */
+	pppcp_clear_options(data);
+
+	/* remove default option list */
+	g_list_foreach(data->config_options, pppcp_free_option, NULL);
+	g_list_free(data->config_options);
+}
+
 /*
  * set the restart counter to either max-terminate
  * or max-configure.  The counter is decremented for
@@ -1103,6 +1113,7 @@ static void remove_config_option(gpointer elem, gpointer user_data)
 	if (!list)
 		return;
 
+	g_free(list->data);
 	data->config_options = g_list_delete_link(data->config_options, list);
 }
 
@@ -1226,6 +1237,8 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 			if (action->option_process)
 				action->option_process(acked_option,
 							data->priv);
+
+			g_free(list->data);
 			data->config_options =
 				g_list_delete_link(data->config_options, list);
 		} else
@@ -1440,7 +1453,7 @@ void pppcp_free(struct pppcp_data *data)
 	g_queue_free(data->event_queue);
 
 	/* remove all config options */
-	pppcp_clear_options(data);
+	pppcp_free_options(data);
 
 	/* free self */
 	g_free(data);
