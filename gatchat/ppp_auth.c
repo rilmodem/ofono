@@ -112,6 +112,7 @@ static void chap_process_challenge(struct auth_data *auth, guint8 *packet)
 
 	/* transmit the packet */
 	ppp_transmit(auth->ppp, (guint8 *) ppp_packet, response_length);
+	g_free(ppp_packet);
 
 challenge_out:
 	g_checksum_free(checksum);
