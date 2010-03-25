@@ -50,6 +50,23 @@ struct gsm_sms_tpdu {
 	unsigned char tpdu[164];
 };
 
+/* For data object only to indicate its existence */
+static gboolean parse_dataobj_common_bool(struct comprehension_tlv_iter *iter,
+		void *user, enum stk_data_object_type type)
+{
+	gboolean *ret = user;
+
+	if (comprehension_tlv_iter_get_tag(iter) != type)
+		return FALSE;
+
+	if (comprehension_tlv_iter_get_length(iter) != 0)
+		return FALSE;
+
+	*ret = TRUE;
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.1 */
 static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 					void *user)
