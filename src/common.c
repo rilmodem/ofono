@@ -641,21 +641,21 @@ const char *registration_tech_to_string(int tech)
 {
 	switch (tech) {
 	case ACCESS_TECHNOLOGY_GSM:
-		return "GSM";
+		return "gsm";
 	case ACCESS_TECHNOLOGY_GSM_COMPACT:
-		return "GSMCompact";
+		return "gsm";
 	case ACCESS_TECHNOLOGY_UTRAN:
-		return "UTRAN";
+		return "umts";
 	case ACCESS_TECHNOLOGY_GSM_EGPRS:
-		return "GSM+EGPRS";
+		return "edge";
 	case ACCESS_TECHNOLOGY_UTRAN_HSDPA:
-		return "UTRAN+HSDPA";
+		return "hspa";
 	case ACCESS_TECHNOLOGY_UTRAN_HSUPA:
-		return "UTRAN+HSUPA";
+		return "hspa";
 	case ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA:
-		return "UTRAN+HSDPA+HSUPA";
+		return "hspa";
 	case ACCESS_TECHNOLOGY_EUTRAN:
-		return "EUTRAN";
+		return "lte";
 	default:
 		return "";
 	}

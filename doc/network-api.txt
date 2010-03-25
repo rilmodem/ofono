@@ -100,10 +100,8 @@ Properties	string Mode [readonly]
 
 			Contains the technology of the current network.
 
-			The possible values are: "GSM", "GSMCompact", "UTRAN",
-						 "GSM+EGPS", "UTRAN+HSDPA",
-						 "UTRAN+HSUPA",
-						 "UTRAN+HSDPA+HSUPA"
+			The possible values are: "gsm", "edge", "umts", "hspa",
+							"lte"
 
 			TODO: Values for CDMA and EVDO based networks.
 
@@ -197,10 +195,8 @@ Properties	string Name [readonly]
 			Contains a list of technologies currently available
 			from this network provider.
 
-			The possible values are: "GSM", "GSMCompact", "UTRAN",
-						 "GSM+EGPS", "UTRAN+HSDPA",
-						 "UTRAN+HSUPA",
-						 "UTRAN+HSDPA+HSUPA"
+			The possible values are: "gsm", "edge", "umts", "hspa",
+							"lte"
 
 		string AdditionalInformation [readonly, optional]
 
