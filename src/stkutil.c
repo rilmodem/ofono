@@ -637,18 +637,8 @@ static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	gboolean *resp = user;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE)
-		return FALSE;
-
-	if (comprehension_tlv_iter_get_length(iter) != 0)
-		return FALSE;
-
-	*resp = TRUE;
-
-	return TRUE;
+	return parse_dataobj_common_bool(iter, user,
+				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE);
 }
 
 /* Defined in TS 102.223 Section 8.72 */
