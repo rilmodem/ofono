@@ -101,6 +101,8 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	case SIGTERM:
 		if (terminated == 0) {
 			char buf[64];
+			if (ppp)
+				g_at_ppp_shutdown(ppp);
 
 			g_timeout_add_seconds(10, quit_eventloop, NULL);
 			sprintf(buf, "AT+CFUN=%u", option_offmode);
@@ -285,7 +287,7 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ppp = g_at_ppp_new(channel);
 	if (!ppp) {
 		g_print("Unable to create PPP object\n");
-		return;
+		exit(1);
 	}
 	g_at_ppp_set_credentials(ppp, option_username,
 				option_password);
