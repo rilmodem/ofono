@@ -182,11 +182,11 @@ Properties	string Name [readonly]
 			The possible values are: "unknown", "available",
 						 "current" and "forbidden"
 
-		uint16 MobileCountryCode [readonly, optional]
+		string MobileCountryCode [readonly, optional]
 
 			Contains the Mobile Country Code (MCC).
 
-		uint16 MobileNetworkCode [readonly, optional]
+		string MobileNetworkCode [readonly, optional]
 
 			Contains the Mobile Network Code (MNC)
 

@@ -49,7 +49,7 @@ Properties	string SubscriberIdentity [readonly, optional]
 
 			Contains the ISMI of the SIM, if available
 
-		uint16 MobileCountryCode [readonly, optional]
+		string MobileCountryCode [readonly, optional]
 
 			Contains the Mobile Country Code (MCC) of the home
 			network (not to be confused with the currently
@@ -57,7 +57,7 @@ Properties	string SubscriberIdentity [readonly, optional]
 			interface) and is read directly from the SIM if
 			available.
 
-		uint16 MobileNetworkCode [readonly, optional]
+		string MobileNetworkCode [readonly, optional]
 
 			Contains the Mobile Network Code (MNC) of the home
 			network (not to be confused with the currently
