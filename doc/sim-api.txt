@@ -49,9 +49,21 @@ Properties	string SubscriberIdentity [readonly, optional]
 
 			Contains the ISMI of the SIM, if available
 
-		uint8 MobileNetworkCodeLength [readonly, optional]
+		uint16 MobileCountryCode [readonly, optional]
 
-			Contains the length of the MNC (2 or 3 digits)
+			Contains the Mobile Country Code (MCC) of the home
+			network (not to be confused with the currently
+			registered network reported on NetworkRegistration
+			interface) and is read directly from the SIM if
+			available.
+
+		uint16 MobileNetworkCode [readonly, optional]
+
+			Contains the Mobile Network Code (MNC) of the home
+			network (not to be confused with the currently
+			registered network reported on NetworkRegistration
+			interface) and is read directly from the SIM if
+			available.
 
 		array{string} SubscriberNumbers [readwrite]
 

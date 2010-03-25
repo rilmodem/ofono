@@ -286,9 +286,24 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 		ofono_dbus_dict_append(&dict, "SubscriberIdentity",
 					DBUS_TYPE_STRING, &sim->imsi);
 
-	if (sim->mnc_length)
-		ofono_dbus_dict_append(&dict, "MobileNetworkCodeLength",
-					DBUS_TYPE_BYTE, &sim->mnc_length);
+	if (sim->mnc_length) {
+		char mcc[OFONO_MAX_MCC_LENGTH + 1];
+		char mnc[OFONO_MAX_MNC_LENGTH + 1];
+		const char *str;
+
+		strncpy(mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
+		mcc[OFONO_MAX_MCC_LENGTH] = '\0';
+		strncpy(mnc, sim->imsi + OFONO_MAX_MCC_LENGTH, sim->mnc_length);
+		mnc[sim->mnc_length] = '\0';
+
+		str = mcc;
+		ofono_dbus_dict_append(&dict, "MobileCountryCode",
+					DBUS_TYPE_STRING, &str);
+
+		str = mnc;
+		ofono_dbus_dict_append(&dict, "MobileNetworkCode",
+					DBUS_TYPE_STRING, &str);
+	}
 
 	own_numbers = get_own_numbers(sim->own_numbers);
 
@@ -832,6 +847,9 @@ static void sim_ad_read_cb(int ok, int length, int record,
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(sim->atom);
 	int new_mnc_length;
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	const char *str;
 
 	if (!ok)
 		return;
@@ -846,10 +864,22 @@ static void sim_ad_read_cb(int ok, int length, int record,
 
 	sim->mnc_length = new_mnc_length;
 
+	strncpy(mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
+	mcc[OFONO_MAX_MCC_LENGTH] = '\0';
+	strncpy(mnc, sim->imsi + OFONO_MAX_MCC_LENGTH, sim->mnc_length);
+	mnc[sim->mnc_length] = '\0';
+
+	str = mcc;
 	ofono_dbus_signal_property_changed(conn, path,
-					OFONO_SIM_MANAGER_INTERFACE,
-					"MobileNetworkCodeLength",
-					DBUS_TYPE_BYTE, &sim->mnc_length);
+						OFONO_SIM_MANAGER_INTERFACE,
+						"MobileCountryCode",
+						DBUS_TYPE_STRING, &str);
+
+	str = mnc;
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"MobileNetworkCode",
+						DBUS_TYPE_STRING, &str);
 }
 
 static gint service_number_compare(gconstpointer a, gconstpointer b)
