@@ -328,10 +328,8 @@ gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	gsize bytes_read;
 	GError *error = NULL;
 
-	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP)) {
-		g_print("G_IO_NVAL | G_IO_ERR");
+	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP))
 		return FALSE;
-	}
 
 	if (cond & G_IO_IN) {
 		status = g_io_channel_read_chars(channel, buf, 256,
