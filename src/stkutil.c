@@ -604,7 +604,7 @@ static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
 	if ((data[0] & 0x0f) != 0x0a)
 		return FALSE;
 
-	*imei = g_try_malloc(16);
+	/* Assume imei is at least 16 bytes long (15 for imei + null) */
 	(*imei)[0] = digit_lut[(data[0] & 0xf0) >> 4];
 	extract_bcd_number(data + 1, 7, *imei + 1);
 
