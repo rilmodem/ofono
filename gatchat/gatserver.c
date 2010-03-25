@@ -194,17 +194,6 @@ static inline gboolean is_extended_command_prefix(const char c)
 	}
 }
 
-static gboolean is_basic_command_prefix(const char *buf)
-{
-	if (g_ascii_isalpha(buf[0]))
-		return TRUE;
-
-	if (buf[0] == '&' && g_ascii_isalpha(buf[1]))
-		return TRUE;
-
-	return FALSE;
-}
-
 static void at_command_notify(GAtServer *server, char *command,
 				char *prefix, GAtServerRequestType type)
 {
@@ -440,10 +429,8 @@ static void server_parse_line(GAtServer *server, char *line)
 
 		if (is_extended_command_prefix(line[pos]))
 			consumed = parse_extended_command(server, line + pos);
-		else if (is_basic_command_prefix(line + pos))
-			consumed = parse_basic_command(server, line + pos);
 		else
-			consumed = 0;
+			consumed = parse_basic_command(server, line + pos);
 
 		if (consumed == 0) {
 			g_at_server_send_final(server,
