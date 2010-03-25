@@ -13,7 +13,7 @@ def network_property_changed(name, value):
 	print "Network Registration property '%s' changed to '%s'" %\
 		(name, value)
 
-	if name == 'Operator' and canexit:
+	if name == 'Name' and canexit:
 		mainloop.quit()
 
 if __name__ == "__main__":
@@ -44,8 +44,8 @@ if __name__ == "__main__":
 
 	props = netreg.GetProperties()
 
-	print "Status is: '%s', Operator is: '%s'" %\
-		(props['Status'], props['Operator'])
+	print "Status is: '%s', Operator Name is: '%s'" %\
+		(props['Status'], props['Name'])
 
 	if props.has_key('LocationAreaCode') and props.has_key('CellId'):
 		print "Location: '%d', Cell: '%d'" %\
