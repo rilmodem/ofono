@@ -75,36 +75,6 @@ Properties	array{object} PrimaryContexts [readonly]
 			this value to off detaches the modem from the
 			Packet Domain network.
 
-		string Status [readonly]
-
-			The current packet radio registration status of a modem.
-
-			The possible values are:
-				"unregistered"  Not registered to any network
-				"registered"    Registered to home network
-				"searching"     Not registered, but searching
-				"denied"        Registration has been denied
-				"unknown"       Status is unknown
-				"roaming"       Registered, but roaming
-
-		uint16 LocationAreaCode [readonly, optional]
-
-			Contains the current location area code.
-
-		uint32 CellId [readonly, optional]
-
-			Contains the current network cell id.
-
-		string Technology [readonly, optional]
-
-			Contains the technology of the current network.
-
-			The possible values are: "GSM", "GSMCompact", "UTRAN",
-						 "GSM+EGPS", "UTRAN+HSDPA",
-						 "UTRAN+HSUPA",
-						 "UTRAN+HSDPA+HSUPA",
-						 "E-UTRAN"
-
 Primary Data Context hierarchy
 =================
 
