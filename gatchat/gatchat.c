@@ -392,7 +392,7 @@ static struct terminator_info terminator_table[] = {
 	{ "NO DIALTONE", -1, FALSE },
 	{ "BUSY", -1, FALSE },
 	{ "NO CARRIER", -1, FALSE },
-	{ "CONNECT", -1, TRUE },
+	{ "CONNECT", 7, TRUE },
 	{ "NO ANSWER", -1, FALSE },
 	{ "+CMS ERROR:", 11, FALSE },
 	{ "+CME ERROR:", 11, FALSE },
