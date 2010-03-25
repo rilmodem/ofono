@@ -308,68 +308,58 @@ next:
 	return i + 1;
 }
 
-static gboolean get_basic_prefix(const char *buf, char *out_prefix)
+static int get_basic_prefix_size(const char *buf)
 {
-	char c = *buf;
-	char prefix[4];
-
-	if (g_ascii_isalpha(c)) {
-		c = g_ascii_toupper(c);
-
-		if (c == 'S') {
-			int i;
-
-			prefix[0] = 'S';
+	if (g_ascii_isalpha(buf[0])) {
+		if (g_ascii_toupper(buf[0]) == 'S') {
+			int size;
 
 			/* V.250 5.3.2 'S' command follows with a parameter
-			 * number. Limited to two digits since 100
-			 * S-registers should be enough.
+			 * number.
 			 */
-			for (i = 1; i < 3 && g_ascii_isdigit(buf[i]); i++)
-				prefix[i] = buf[i];
-
-			prefix[i] = '\0';
+			for (size = 1; g_ascii_isdigit(buf[size]); size++)
+				;
 
 			/*
 			 * Do some basic sanity checking, don't accept 00, 01,
 			 * etc or empty S values
 			 */
-			if (prefix[1] == '\0')
-				return FALSE;
+			if (size == 1)
+				return 0;
 
-			if (prefix[1] == '0' && prefix[2] != '\0')
-				return FALSE;
-		} else {
-			prefix[0] = c;
-			prefix[1] = '\0';
+			if (size > 2 && buf[1] == '0')
+				return 0;
+
+			return size;
 		}
-	} else if (c == '&') {
-		prefix[0] = '&';
 
-		if (g_ascii_isalpha(buf[1] == FALSE))
-			return FALSE;
+		/* All other cases it is a simple 1 character prefix */
+		return 1;
+	}
+	
+	if (buf[0] == '&') {
+		if (g_ascii_isalpha(buf[0] == FALSE))
+			return 0;
 
-		prefix[1] = g_ascii_toupper(buf[1]);
-		prefix[2] = '\0';
+		return 2;
 	}
 
-	memcpy(out_prefix, prefix, sizeof(prefix));
-
-	return TRUE;
+	return 0;
 }
 
 static unsigned int parse_basic_command(GAtServer *server, char *buf)
 {
-	char *command;
-	char prefix[4];
-	unsigned int i;
-	GAtServerRequestType type;
 	gboolean seen_equals = FALSE;
+	char prefix[4], tmp;
+	unsigned int i, prefix_size;
+	GAtServerRequestType type;
 
-	if (!get_basic_prefix(buf, prefix))
+	prefix_size = get_basic_prefix_size(buf);
+	if (prefix_size == 0)
 		return 0;
 
-	i = strlen(prefix);
+	i = prefix_size;
+	prefix[0] = g_ascii_toupper(buf[0]);
 
 	if (prefix[0] == 'D') {
 		type = G_AT_SERVER_REQUEST_TYPE_SET;
@@ -384,18 +374,7 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 		goto done;
 	}
 
-	if (buf[i] == '\0' || buf[i] == ';') {
-		type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
-		goto done;
-	}
-
-	/* Additional commands may follow a command without any character
-	 * required for separation.
-	 */
-	if (is_basic_command_prefix(&buf[i])) {
-		type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
-		goto done;
-	}
+	type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
 
 	/* Match '?', '=',  '=?' and '=xxx' */
 	if (buf[i] == '=') {
@@ -411,19 +390,27 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 		else
 			type = G_AT_SERVER_REQUEST_TYPE_QUERY;
 	} else {
+		int before = i;
+
 		/* V.250 5.3.1 The subparameter (if any) are all digits */
 		while (g_ascii_isdigit(buf[i]))
 			i++;
 
-		type = G_AT_SERVER_REQUEST_TYPE_SET;
+		if (i - before > 0)
+			type = G_AT_SERVER_REQUEST_TYPE_SET;
 	}
 
 done:
-	command = g_strndup(buf, i);
+	if (prefix_size <= 3) {
+		memcpy(prefix + 1, buf + 1, prefix_size - 1);
+		prefix[prefix_size] = '\0';
 
-	at_command_notify(server, command, prefix, type);
-
-	g_free(command);
+		tmp = buf[i];
+		buf[i] = '\0';
+		at_command_notify(server, buf, prefix, type);
+		buf[i] = tmp;
+	} else /* Handle S-parameter with 100+ */
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 
 	/* Commands like ATA, ATZ cause the remainder line
 	 * to be ignored.
@@ -431,7 +418,7 @@ done:
 	if (prefix[0] == 'A' || prefix[0] == 'Z')
 		return strlen(buf);
 
-	/* Consumed the seperator ';' */
+	/* Consume the seperator ';' */
 	if (buf[i] == ';')
 		i += 1;
 
