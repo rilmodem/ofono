@@ -40,6 +40,7 @@
 
 static const char *none_prefix[] = { NULL };
 static const char *cfun_prefix[] = { "+CFUN:", NULL };
+static const char *creg_prefix[] = { "+CREG:", NULL };
 static const char *cgreg_prefix[] = { "+CGREG:", NULL };
 
 static gchar *option_ip = NULL;
@@ -345,7 +346,7 @@ static void cgreg_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
-				&lac, &ci, &tech) == FALSE)
+						&lac, &ci, &tech) == FALSE)
 		return;
 
 	if (status != 1 && status != 5)
@@ -358,8 +359,11 @@ static void cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	int status, lac, ci, tech;
 
+	if (!ok)
+		return;
+
 	if (at_util_parse_reg(result, "+CGREG:", NULL, &status,
-				&lac, &ci, &tech) == FALSE)
+						&lac, &ci, &tech) == FALSE)
 		return;
 
 	if (status != 1 && status != 5)
@@ -374,7 +378,17 @@ static void attached_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 
 	g_at_chat_send(control, "AT+CGREG?", cgreg_prefix,
-			cgreg_cb, NULL, NULL);
+						cgreg_cb, NULL, NULL);
+}
+
+static void activate_gprs(int status)
+{
+	g_print("Registered to network, roaming=%s\n",
+					status == 5 ? "True" : "False");
+
+	g_print("Activating gprs network...\n");
+	g_at_chat_send(control, "AT+CGATT=1", none_prefix,
+						attached_cb, NULL, NULL);
 }
 
 static void creg_notify(GAtResult *result, gpointer user_data)
@@ -385,17 +399,30 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	if (at_util_parse_reg_unsolicited(result, "+CREG:", &status,
-				&lac, &ci, &tech) == FALSE)
+						&lac, &ci, &tech) == FALSE)
 		return;
 
-	if (status == 1 || status == 5) {
-		g_print("Registered to network, roaming=%s\n",
-				status == 5 ? "True" : "False");
+	if (status != 1 && status != 5)
+		return;
 
-		g_print("Activating gprs network...\n");
-		g_at_chat_send(control, "AT+CGATT=1", none_prefix,
-				attached_cb, NULL, NULL);
-	}
+	activate_gprs(status);
+}
+
+static void creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	int status, lac, ci, tech;
+
+	if (!ok)
+		return;
+
+	if (at_util_parse_reg(result, "+CREG:", NULL, &status,
+						&lac, &ci, &tech) == FALSE)
+		return;
+
+	if (status != 1 && status != 5)
+		return;
+
+	activate_gprs(status);
 }
 
 static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -407,6 +434,9 @@ static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	state = STATE_REGISTERING;
 	g_print("Waiting for network registration...\n");
+
+	g_at_chat_send(control, "AT+CREG?", creg_prefix,
+						creg_cb, NULL, NULL);
 }
 
 static void start_dial(gboolean ok, GAtResult *result, gpointer user_data)
@@ -425,7 +455,7 @@ static void start_dial(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(control, "AT+CGREG=2", none_prefix, NULL, NULL, NULL);
 
 	g_at_chat_send(control, "AT+COPS=0", none_prefix,
-			register_cb, NULL, NULL);
+						register_cb, NULL, NULL);
 }
 
 static void check_mode(gboolean ok, GAtResult *result, gpointer user_data)
@@ -444,7 +474,7 @@ static void check_mode(gboolean ok, GAtResult *result, gpointer user_data)
 	g_print("Current modem mode is %d\n", oldmode);
 
 	if (oldmode == 1) {
-		start_dial(ok, result, NULL);
+		start_dial(ok, result, user_data);
 		return;
 	}
 
