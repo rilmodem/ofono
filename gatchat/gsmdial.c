@@ -39,6 +39,7 @@
 #include <gatppp.h>
 
 static const char *none_prefix[] = { NULL };
+static const char *cfun_prefix[] = { "+CFUN:", NULL };
 static const char *cgreg_prefix[] = { "+CGREG:", NULL };
 
 static gchar *option_ip = NULL;
@@ -65,6 +66,7 @@ enum state {
 };
 
 static int state = 0;
+static int oldmode = 0;
 
 static void gsmdial_debug(const char *str, void *data)
 {
@@ -426,6 +428,29 @@ static void start_dial(gboolean ok, GAtResult *result, gpointer user_data)
 			register_cb, NULL, NULL);
 }
 
+static void check_mode(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+
+	if (!ok) {
+		g_print("Checking modem mode failed\n");
+		exit(1);
+	}
+
+	g_at_result_iter_init(&iter, result);
+	g_at_result_iter_next(&iter, "+CFUN:");
+	g_at_result_iter_next_number(&iter, &oldmode);
+
+	g_print("Current modem mode is %d\n", oldmode);
+
+	if (oldmode == 1) {
+		start_dial(ok, result, NULL);
+		return;
+	}
+
+	g_at_chat_send(control, "AT+CFUN=1", NULL, start_dial, NULL, NULL);
+}
+
 static int open_serial()
 {
 	GAtSyntax *syntax;
@@ -618,7 +643,8 @@ int main(int argc, char **argv)
 	event_loop = g_main_loop_new(NULL, FALSE);
 
 	g_at_chat_send(control, "ATE0Q0V1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(control, "AT+CFUN=1", NULL, start_dial, NULL, NULL);
+	g_at_chat_send(control, "AT+CFUN?", cfun_prefix,
+						check_mode, NULL, NULL);
 
 	g_main_loop_run(event_loop);
 	g_source_remove(signal_source);
