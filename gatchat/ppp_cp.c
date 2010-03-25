@@ -399,6 +399,8 @@ static void pppcp_send_terminate_request(struct pppcp_data *data)
 	struct pppcp_packet *packet;
 	struct pppcp_timer_data *timer_data = &data->terminate_timer_data;
 
+	pppcp_trace(data);
+
 	/*
 	 * the data field can be used by the sender (us).
 	 * leave this empty for now.
@@ -429,6 +431,8 @@ static void pppcp_send_terminate_ack(struct pppcp_data *data,
 {
 	struct pppcp_packet *packet;
 	struct pppcp_packet *pppcp_header = (struct pppcp_packet *) request;
+
+	pppcp_trace(data);
 
 	packet = pppcp_packet_new(data, TERMINATE_ACK, 0);
 
@@ -621,6 +625,8 @@ static void pppcp_open_event(struct pppcp_data *data, guint8 *packet, guint len)
 
 static void pppcp_close_event(struct pppcp_data *data, guint8* packet, guint len)
 {
+	pppcp_trace(data);
+
 	switch (data->state) {
 	case INITIAL:
 		pppcp_transition_state(INITIAL, data);
@@ -1366,6 +1372,8 @@ static guint8 pppcp_process_configure_reject(struct pppcp_data *data,
 static guint8 pppcp_process_terminate_request(struct pppcp_data *data,
 					struct pppcp_packet *packet)
 {
+	pppcp_trace(data);
+
 	return RTR;
 }
 
@@ -1378,6 +1386,8 @@ static guint8 pppcp_process_terminate_ack(struct pppcp_data *data,
 	 * even if the identifiers don't match, we still handle
 	 * a terminate ack, as it is allowed to be unelicited
 	 */
+	pppcp_trace(data);
+
 	return RTA;
 }
 
