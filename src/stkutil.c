@@ -611,6 +611,14 @@ static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.21 */
+static gboolean parse_dataobj_help_request(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	return parse_dataobj_common_bool(iter, user,
+				STK_DATA_OBJECT_TYPE_HELP_REQUEST);
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -724,6 +732,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_location_info;
 	case STK_DATA_OBJECT_TYPE_IMEI:
 		return parse_dataobj_imei;
+	case STK_DATA_OBJECT_TYPE_HELP_REQUEST:
+		return parse_dataobj_help_request;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
