@@ -52,12 +52,12 @@ static const char *radio_access_mode_to_string(enum ofono_radio_access_mode mode
 	switch (mode) {
 	case OFONO_RADIO_ACCESS_MODE_ANY:
 		return "any";
-	case OFONO_RADIO_ACCESS_MODE_2G:
-		return "2g";
-	case OFONO_RADIO_ACCESS_MODE_3G:
-		return "3g";
-	case OFONO_RADIO_ACCESS_MODE_4G:
-		return "4g";
+	case OFONO_RADIO_ACCESS_MODE_GSM:
+		return "gsm";
+	case OFONO_RADIO_ACCESS_MODE_UMTS:
+		return "umts";
+	case OFONO_RADIO_ACCESS_MODE_LTE:
+		return "lte";
 	default:
 		return "";
 	}
@@ -68,12 +68,12 @@ static int string_to_radio_access_mode(const char *mode)
 {
 	if (g_strcmp0(mode, "any") == 0)
 		return OFONO_RADIO_ACCESS_MODE_ANY;
-	if (g_strcmp0(mode, "2g") == 0)
-		return OFONO_RADIO_ACCESS_MODE_2G;
-	if (g_strcmp0(mode, "3g") == 0)
-		return OFONO_RADIO_ACCESS_MODE_3G;
-	if (g_strcmp0(mode, "4g") == 0)
-		return OFONO_RADIO_ACCESS_MODE_4G;
+	if (g_strcmp0(mode, "gsm") == 0)
+		return OFONO_RADIO_ACCESS_MODE_GSM;
+	if (g_strcmp0(mode, "umts") == 0)
+		return OFONO_RADIO_ACCESS_MODE_UMTS;
+	if (g_strcmp0(mode, "lte") == 0)
+		return OFONO_RADIO_ACCESS_MODE_LTE;
 	return -1;
 }
 

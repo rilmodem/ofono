@@ -34,10 +34,10 @@ Properties	string TechnologyPreference [read-write]
 			as network preference.
 
 			The possible values are:
-				"any"      Radio access technology
-					   selection is done automatically,
-					   based on reception and
-					   availability.
-				"2g"       Only GSM used for radio access.
-				"3g"       Only UMTS used for radio access.
-				"4g"       Only LTE used for radio acccess.
+				"any"	Radio access technology
+					selection is done automatically,
+					based on reception and
+					availability.
+				"gsm"	Only GSM used for radio access.
+				"umts"	Only UMTS used for radio access.
+				"lte"	Only LTE used for radio acccess.

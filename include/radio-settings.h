@@ -29,10 +29,10 @@ extern "C" {
 #include <ofono/types.h>
 
 enum ofono_radio_access_mode {
-	OFONO_RADIO_ACCESS_MODE_ANY = 0,
-	OFONO_RADIO_ACCESS_MODE_2G = 1,
-	OFONO_RADIO_ACCESS_MODE_3G = 2,
-	OFONO_RADIO_ACCESS_MODE_4G = 3,
+	OFONO_RADIO_ACCESS_MODE_ANY	= 0,
+	OFONO_RADIO_ACCESS_MODE_GSM	= 1,
+	OFONO_RADIO_ACCESS_MODE_UMTS	= 2,
+	OFONO_RADIO_ACCESS_MODE_LTE	= 3,
 };
 
 struct ofono_radio_settings;
