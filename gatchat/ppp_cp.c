@@ -56,7 +56,7 @@ struct pppcp_event {
 	guint8 data[0];
 };
 
-#define INITIAL_RESTART_TIMEOUT	3000
+#define INITIAL_RESTART_TIMEOUT	3	/* restart interval in seconds */
 #define MAX_TERMINATE		2
 #define MAX_CONFIGURE		10
 #define MAX_FAILURE		5
@@ -107,7 +107,7 @@ static gboolean pppcp_timeout(gpointer user_data)
 
 static void pppcp_start_timer(struct pppcp_data *data)
 {
-	data->restart_timer = g_timeout_add(data->restart_interval,
+	data->restart_timer = g_timeout_add_seconds(data->restart_interval,
 				pppcp_timeout, data);
 }
 
