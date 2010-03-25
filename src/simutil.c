@@ -538,7 +538,7 @@ static char *sim_network_name_parse(const unsigned char *buffer, int length,
 	return ret;
 }
 
-static void parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
+void sim_parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
 {
 	static const char digit_lut[] = "0123456789*#abd\0";
 	guint8 digit;
@@ -609,7 +609,7 @@ struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length)
 
 		oper = g_new0(struct spdi_operator, 1);
 
-		parse_mcc_mnc(plmn_list, oper->mcc, oper->mnc);
+		sim_parse_mcc_mnc(plmn_list, oper->mcc, oper->mnc);
 		spdi->operators = g_slist_insert_sorted(spdi->operators, oper,
 						spdi_operator_compare);
 	}
@@ -694,7 +694,7 @@ static struct opl_operator *opl_operator_alloc(const guint8 *record)
 {
 	struct opl_operator *oper = g_new0(struct opl_operator, 1);
 
-	parse_mcc_mnc(record, oper->mcc, oper->mnc);
+	sim_parse_mcc_mnc(record, oper->mcc, oper->mnc);
 	record += 3;
 
 	oper->lac_tac_low = (record[0] << 8) | record[1];

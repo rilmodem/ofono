@@ -181,6 +181,7 @@ const struct sim_eons_operator_info *sim_eons_lookup(struct sim_eons *eons,
 						const char *mnc);
 void sim_eons_free(struct sim_eons *eons);
 
+void sim_parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc);
 struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length);
 gboolean sim_spdi_lookup(struct sim_spdi *spdi,
 				const char *mcc, const char *mnc);
