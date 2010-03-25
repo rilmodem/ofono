@@ -68,9 +68,6 @@ struct ofono_gprs {
 	ofono_bool_t roaming_allowed;
 	ofono_bool_t powered;
 	int status;
-	int location;
-	int cellid;
-	int technology;
 	int flags;
 	struct idmap *pid_map;
 	unsigned int last_context_id;
@@ -847,79 +844,6 @@ static char **gprs_contexts_path_list(GSList *context_list)
 	return objlist;
 }
 
-static void set_registration_status(struct ofono_gprs *gprs, int status)
-{
-	const char *str_status = registration_status_to_string(status);
-	const char *path = __ofono_atom_get_path(gprs->atom);
-	DBusConnection *conn = ofono_dbus_get_connection();
-
-	if (gprs->status == status)
-		return;
-
-	gprs->status = status;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"Status", DBUS_TYPE_STRING,
-					&str_status);
-}
-
-static void set_registration_location(struct ofono_gprs *gprs,
-					int lac)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(gprs->atom);
-	dbus_uint16_t dbus_lac = lac;
-
-	if (lac > 0xffff)
-		return;
-
-	gprs->location = lac;
-
-	if (gprs->location == -1)
-		return;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"LocationAreaCode",
-					DBUS_TYPE_UINT16, &dbus_lac);
-}
-
-static void set_registration_cellid(struct ofono_gprs *gprs, int ci)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(gprs->atom);
-	dbus_uint32_t dbus_ci = ci;
-
-	gprs->cellid = ci;
-
-	if (gprs->cellid == -1)
-		return;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"CellId", DBUS_TYPE_UINT32,
-					&dbus_ci);
-}
-
-static void set_registration_technology(struct ofono_gprs *gprs,
-					int tech)
-{
-	const char *tech_str = registration_tech_to_string(tech);
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(gprs->atom);
-
-	gprs->technology = tech;
-
-	if (gprs->technology == -1)
-		return;
-
-	ofono_dbus_signal_property_changed(conn, path,
-					DATA_CONNECTION_MANAGER_INTERFACE,
-					"Technology", DBUS_TYPE_STRING,
-					&tech_str);
-}
-
 static void gprs_attached_update(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1057,7 +981,6 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	char **objpath_list;
 	dbus_bool_t value;
-	const char *status = registration_status_to_string(gprs->status);
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -1087,28 +1010,6 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 
 	value = gprs->powered;
 	ofono_dbus_dict_append(&dict, "Powered", DBUS_TYPE_BOOLEAN, &value);
-
-	ofono_dbus_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
-
-	if (gprs->location != -1) {
-		dbus_uint16_t location = gprs->location;
-		ofono_dbus_dict_append(&dict, "LocationAreaCode",
-					DBUS_TYPE_UINT16, &location);
-	}
-
-	if (gprs->cellid != -1) {
-		dbus_uint32_t cellid = gprs->cellid;
-		ofono_dbus_dict_append(&dict, "CellId",
-					DBUS_TYPE_UINT32, &cellid);
-	}
-
-	if (gprs->technology != -1) {
-		const char *technology =
-			registration_tech_to_string(gprs->technology);
-
-		ofono_dbus_dict_append(&dict, "Technology", DBUS_TYPE_STRING,
-					&technology);
-	}
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -1426,18 +1327,7 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs,
 	if (gprs->driver_attached == FALSE)
 		return;
 
-	if (gprs->status != status)
-		set_registration_status(gprs, status);
-
-	if (gprs->location != lac)
-		set_registration_location(gprs, lac);
-
-	if (gprs->cellid != ci)
-		set_registration_cellid(gprs, ci);
-
-	if (gprs->technology != tech)
-		set_registration_technology(gprs, tech);
-
+	gprs->status = status;
 	gprs_attached_update(gprs);
 }
 
@@ -1715,9 +1605,6 @@ struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
 
 	gprs->status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
 	gprs->netreg_status = NETWORK_REGISTRATION_STATUS_UNKNOWN;
-	gprs->technology = -1;
-	gprs->cellid = -1;
-	gprs->location = -1;
 	gprs->pid_map = idmap_new(MAX_CONTEXTS);
 
 	return gprs;
