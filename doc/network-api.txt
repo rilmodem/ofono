@@ -105,7 +105,7 @@ Properties	string Mode [readonly]
 
 			TODO: Values for CDMA and EVDO based networks.
 
-		string Operator [readonly]
+		string Name [readonly]
 
 			Contains the current operator name, suitable for
 			display on the idle screen or an empty string if

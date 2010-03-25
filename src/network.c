@@ -509,7 +509,7 @@ static void set_network_operator_name(struct network_operator_data *opd,
 
 		ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Operator", DBUS_TYPE_STRING,
+					"Name", DBUS_TYPE_STRING,
 					&operator);
 	}
 
@@ -563,7 +563,7 @@ static void set_network_operator_eons_info(struct network_operator_data *opd,
 
 			ofono_dbus_signal_property_changed(conn, npath,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Operator", DBUS_TYPE_STRING,
+					"Name", DBUS_TYPE_STRING,
 					&operator);
 		}
 	}
@@ -777,7 +777,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 	}
 
 	operator = get_operator_display_name(netreg);
-	ofono_dbus_dict_append(&dict, "Operator", DBUS_TYPE_STRING, &operator);
+	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &operator);
 
 	network_operator_populate_registered(netreg, &network_operators);
 
@@ -1276,7 +1276,7 @@ emit:
 
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Operator", DBUS_TYPE_STRING,
+					"Name", DBUS_TYPE_STRING,
 					&operator);
 
 	notify_status_watches(netreg);
@@ -1469,7 +1469,7 @@ static void sim_spdi_read_cb(int ok, int length, int record,
 
 		ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Operator", DBUS_TYPE_STRING,
+					"Name", DBUS_TYPE_STRING,
 					&operator);
 	}
 }
@@ -1534,7 +1534,7 @@ static void sim_spn_read_cb(int ok, int length, int record,
 
 		ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Operator", DBUS_TYPE_STRING,
+					"Name", DBUS_TYPE_STRING,
 					&operator);
 	}
 }
