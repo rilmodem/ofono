@@ -54,9 +54,9 @@ static enum ofono_radio_access_mode isi_mode_to_ofono_mode(guint8 mode)
 	case GSS_DUAL_RAT:
 		return OFONO_RADIO_ACCESS_MODE_ANY;
 	case GSS_GSM_RAT:
-		return OFONO_RADIO_ACCESS_MODE_2G;
+		return OFONO_RADIO_ACCESS_MODE_GSM;
 	case GSS_UMTS_RAT:
-		return OFONO_RADIO_ACCESS_MODE_3G;
+		return OFONO_RADIO_ACCESS_MODE_UMTS;
 	default:
 		return -1;
 	}
@@ -67,9 +67,9 @@ static int ofono_mode_to_isi_mode(enum ofono_radio_access_mode mode)
 	switch (mode) {
 	case OFONO_RADIO_ACCESS_MODE_ANY:
 		return GSS_DUAL_RAT;
-	case OFONO_RADIO_ACCESS_MODE_2G:
+	case OFONO_RADIO_ACCESS_MODE_GSM:
 		return GSS_GSM_RAT;
-	case OFONO_RADIO_ACCESS_MODE_3G:
+	case OFONO_RADIO_ACCESS_MODE_UMTS:
 		return GSS_UMTS_RAT;
 	default:
 		return -1;
