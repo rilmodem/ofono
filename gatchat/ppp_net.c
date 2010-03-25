@@ -249,6 +249,8 @@ static void ipcp_finished(struct pppcp_data *data)
 	g_print("ipcp finished\n");
 }
 
+static const char ipcp_prefix[] = "ipcp";
+
 struct pppcp_action ipcp_action = {
 	.this_layer_up =	ipcp_up,
 	.this_layer_down = 	ipcp_down,
@@ -256,6 +258,11 @@ struct pppcp_action ipcp_action = {
 	.this_layer_finished =	ipcp_finished,
 	.option_scan = 		ipcp_option_scan,
 	.option_process = 	ipcp_option_process,
+};
+
+static struct pppcp_protocol_data ipcp_protocol_data = {
+	.proto = IPCP_PROTO,
+	.prefix = ipcp_prefix,
 };
 
 struct ppp_packet_handler ipcp_packet_handler = {
@@ -326,14 +333,15 @@ static struct pppcp_data * ipcp_new(GAtPPP *ppp)
 	if (!data)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, IPCP_PROTO, data);
+	ipcp_protocol_data.ppp = ppp;
+	ipcp_protocol_data.priv = data;
+	pppcp = pppcp_new(&ipcp_protocol_data);
 	if (!pppcp) {
 		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(data);
 		return NULL;
 	}
 	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
-	pppcp->priv = data;
 
 	/* set the actions */
 	pppcp->action = &ipcp_action;

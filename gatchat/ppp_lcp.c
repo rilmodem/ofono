@@ -153,6 +153,13 @@ static void lcp_option_process(gpointer data, gpointer user)
 	}
 }
 
+static const char lcp_prefix[] = "lcp";
+
+static struct pppcp_protocol_data lcp_protocol_data = {
+	.proto = LCP_PROTOCOL,
+	.prefix = lcp_prefix,
+};
+
 struct ppp_packet_handler lcp_packet_handler = {
 	.proto = LCP_PROTOCOL,
 	.handler = pppcp_process_packet,
@@ -213,13 +220,14 @@ void lcp_free(struct pppcp_data *lcp)
 	pppcp_free(lcp);
 }
 
-struct pppcp_data * lcp_new(GAtPPP *ppp)
+struct pppcp_data *lcp_new(GAtPPP *ppp)
 {
 	struct pppcp_data *pppcp;
 	struct ppp_option *option;
 	guint16 codes = LCP_SUPPORTED_CODES;
 
-	pppcp = pppcp_new(ppp, LCP_PROTOCOL, NULL);
+	lcp_protocol_data.ppp = ppp;
+	pppcp = pppcp_new(&lcp_protocol_data);
 	if (!pppcp) {
 		g_print("Failed to allocate PPPCP struct\n");
 		return NULL;

@@ -40,7 +40,7 @@ static const char *pppcp_state_strings[] =
 	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED" };
 
 #define pppcp_trace(p) do { \
-	g_print("%s: current state %d:%s\n", __FUNCTION__, \
+	g_print("%s: %s: current state %d:%s\n", p->prefix, __FUNCTION__, \
 		p->state, pppcp_state_strings[p->state]); \
 } while (0)
 #else
@@ -1483,8 +1483,7 @@ void pppcp_free(struct pppcp_data *data)
 	g_free(data);
 }
 
-struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
-				gpointer priv)
+struct pppcp_data *pppcp_new(struct pppcp_protocol_data *protocol_data)
 {
 	struct pppcp_data *data;
 
@@ -1502,9 +1501,10 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
 	data->max_failure = MAX_FAILURE;
 	data->event_queue = g_queue_new();
 	data->identifier = 0;
-	data->ppp = ppp;
-	data->proto = proto;
-	data->priv = priv;
+	data->ppp = protocol_data->ppp;
+	data->proto = protocol_data->proto;
+	data->priv = protocol_data->priv;
+	data->prefix = protocol_data->prefix;
 
 	/* setup func ptrs for processing packet by pppcp code */
 	data->packet_ops[CONFIGURE_REQUEST - 1] =
