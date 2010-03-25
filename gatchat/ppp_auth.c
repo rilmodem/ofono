@@ -128,7 +128,8 @@ static void chap_process_failure(struct auth_data *data, guint8 *packet)
 {
 	struct chap_header *header = (struct chap_header *) packet;
 
-	g_print("Failed to authenticate, message %s\n", header->data);
+	ppp_generate_event(data->ppp, PPP_FAIL);
+	g_printerr("Failed to authenticate, message %s\n", header->data);
 }
 
 /*
