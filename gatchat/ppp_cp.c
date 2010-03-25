@@ -168,7 +168,7 @@ static void pppcp_this_layer_down(struct pppcp_data *data)
 {
 	struct pppcp_action *action = data->action;
 
-	if (action->this_layer_up)
+	if (action->this_layer_down)
 		action->this_layer_down(data);
 }
 
@@ -176,7 +176,7 @@ static void pppcp_this_layer_started(struct pppcp_data *data)
 {
 	struct pppcp_action *action = data->action;
 
-	if (action->this_layer_up)
+	if (action->this_layer_started)
 		action->this_layer_started(data);
 }
 
@@ -184,7 +184,7 @@ static void pppcp_this_layer_finished(struct pppcp_data *data)
 {
 	struct pppcp_action *action = data->action;
 
-	if (action->this_layer_up)
+	if (action->this_layer_finished)
 		action->this_layer_finished(data);
 }
 
