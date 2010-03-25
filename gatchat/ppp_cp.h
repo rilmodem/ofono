@@ -98,13 +98,18 @@ struct pppcp_packet {
 	guint8 data[0];
 } __attribute__((packed));
 
-struct pppcp_data {
-	enum pppcp_state state;
-	guint restart_timer;
+struct pppcp_timer_data {
+	struct pppcp_data *data;
 	guint restart_counter;
 	guint restart_interval;
-	guint max_terminate;
-	guint max_configure;
+	guint max_counter;
+	guint restart_timer;
+};
+
+struct pppcp_data {
+	enum pppcp_state state;
+	struct pppcp_timer_data config_timer_data;
+	struct pppcp_timer_data terminate_timer_data;
 	guint max_failure;
 	guint32 magic_number;
 	GQueue *event_queue;
