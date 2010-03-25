@@ -66,22 +66,8 @@ void g_at_ppp_set_disconnect_function(GAtPPP *ppp,
 
 void g_at_ppp_shutdown(GAtPPP *ppp)
 {
-	/* close the ppp */
+	/* close the ppp link */
 	ppp_close(ppp);
-
-	/* clean up all the queues */
-	g_queue_free(ppp->event_queue);
-	g_queue_free(ppp->recv_queue);
-
-	/* cleanup modem channel */
-	g_source_remove(ppp->modem_watch);
-	g_io_channel_unref(ppp->modem);
-
-	/* remove lcp */
-	lcp_free(ppp->lcp);
-
-	/* remove auth */
-	auth_free(ppp->auth);
 }
 
 void g_at_ppp_ref(GAtPPP *ppp)
@@ -91,10 +77,13 @@ void g_at_ppp_ref(GAtPPP *ppp)
 
 void g_at_ppp_unref(GAtPPP *ppp)
 {
-	if (g_atomic_int_dec_and_test(&ppp->ref_count)) {
+	if (g_atomic_int_dec_and_test(&ppp->ref_count))
 		g_at_ppp_shutdown(ppp);
-		g_free(ppp);
-	}
+
+	/*
+	 * we can't free the link yet, because we need to terminate
+	 * the link first.
+	 */
 }
 
 GAtPPP *g_at_ppp_new(GIOChannel *modem)

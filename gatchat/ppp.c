@@ -372,7 +372,28 @@ static void ppp_authenticate(GAtPPP *ppp)
 
 static void ppp_dead(GAtPPP *ppp)
 {
-	/* re-initialize everything */
+	/* notify interested parties */
+	if (ppp->disconnect_cb)
+		ppp->disconnect_cb(ppp, ppp->disconnect_data);
+
+	if (g_atomic_int_get(&ppp->ref_count))
+		return;
+
+	/* clean up all the queues */
+	g_queue_free(ppp->event_queue);
+	g_queue_free(ppp->recv_queue);
+
+	/* cleanup modem channel */
+	g_source_remove(ppp->modem_watch);
+	g_io_channel_unref(ppp->modem);
+
+	/* remove lcp */
+	lcp_free(ppp->lcp);
+
+	/* remove auth */
+	auth_free(ppp->auth);
+
+	g_free(ppp);
 }
 
 static void ppp_network(GAtPPP *ppp)
