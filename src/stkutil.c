@@ -553,6 +553,47 @@ static gboolean parse_dataobj_location_info(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.20.
+ *
+ * According to 3GPP TS 24.008, Section 10.5.1.4, IMEI is composed of
+ * 15 digits and totally 8 bytes are used to represent it.
+ *
+ * Bits 1-3 of first byte represent the type of identity, and they
+ * are 0 1 0 separately for IMEI. Bit 4 of first byte is the odd/even
+ * indication, and it's 1 to indicate IMEI has odd number of digits (15).
+ * The rest bytes are coded using BCD coding.
+ *
+ * For example, if the IMEI is "123456789012345", then it's coded as
+ * "1A 32 54 76 98 10 32 54".
+ */
+static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	char **imei = user;
+	const unsigned char *data;
+	unsigned int len;
+	static const char digit_lut[] = "0123456789*#abc\0";
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_IMEI)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len != 8)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if ((data[0] & 0x0f) != 0x0a)
+		return FALSE;
+
+	*imei = g_try_malloc(16);
+	(*imei)[0] = digit_lut[(data[0] & 0xf0) >> 4];
+	extract_bcd_number(data + 1, 7, *imei + 1);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -674,6 +715,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_file_list;
 	case STK_DATA_OBJECT_TYPE_LOCATION_INFO:
 		return parse_dataobj_location_info;
+	case STK_DATA_OBJECT_TYPE_IMEI:
+		return parse_dataobj_imei;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
