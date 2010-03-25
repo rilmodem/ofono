@@ -10,7 +10,7 @@ def property_changed(name, value, path, interface):
 	if name in ["Modems", "Interfaces",
 				"Technologies",
 				"SubscriberNumbers",
-				"AvailableOperators",
+				"Operators",
 				"PreferredLanguages"]:
 		val = ""
 		for i in value:

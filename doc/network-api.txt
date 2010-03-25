@@ -131,7 +131,7 @@ Properties	string Mode [readonly]
 			unavailable, this property will not be returned by
 			GetProperties or will be set to an empty string.
 
-		array{object} AvailableOperators [readonly]
+		array{object} Operators [readonly]
 
 			List of all operator object paths known to the
 			telephony stack. The scanning for new operators is

@@ -54,7 +54,7 @@ if __name__ == "__main__":
 	if props.has_key('Technology'):
 		print "Technology: '%s'" % (props['Technology'])
 
-	for path in props['AvailableOperators']:
+	for path in props['Operators']:
 		op = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.NetworkOperator')
 		op.connect_to_signal("PropertyChanged",

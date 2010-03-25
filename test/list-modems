@@ -38,7 +38,7 @@ for path in properties["Modems"]:
 			continue
 
 		for key in properties.keys():
-			if key in ["AvailableOperators", "Calls",
+			if key in ["Operators", "Calls",
 						"MultipartyCalls",
 						"EmergencyNumbers",
 						"SubscriberNumbers",

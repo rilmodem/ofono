@@ -363,7 +363,7 @@ static void network_operator_emit_available_operators(struct ofono_netreg *netre
 
 	ofono_dbus_signal_array_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"AvailableOperators",
+					"Operators",
 					DBUS_TYPE_OBJECT_PATH,
 					&network_operators);
 
@@ -781,7 +781,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 
 	network_operator_populate_registered(netreg, &network_operators);
 
-	ofono_dbus_dict_append_array(&dict, "AvailableOperators",
+	ofono_dbus_dict_append_array(&dict, "Operators",
 					DBUS_TYPE_OBJECT_PATH,
 					&network_operators);
 

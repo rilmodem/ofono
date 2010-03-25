@@ -25,7 +25,7 @@ for path in properties["Modems"]:
 
 	properties = netreg.GetProperties()
 
-	for path in properties["AvailableOperators"]:
+	for path in properties["Operators"]:
 		operator = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.NetworkOperator')
 
