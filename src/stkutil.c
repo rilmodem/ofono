@@ -519,6 +519,40 @@ error:
 	return FALSE;
 }
 
+/* Defined in TS 102.223 Section 8.19 */
+static gboolean parse_dataobj_location_info(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_location_info *li = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_LOCATION_INFO)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if ((len != 5) && (len != 7) && (len != 9))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	sim_parse_mcc_mnc(data, li->mcc, li->mnc);
+	li->lac_tac = (data[3] << 8) + data[4];
+
+	if (len >= 7) {
+		li->has_ci = TRUE;
+		li->ci = (data[5] << 8) + data[6];
+	}
+
+	if (len == 9) {
+		li->has_ext_ci = TRUE;
+		li->ext_ci = (data[7] << 8) + data[8];
+	}
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -638,6 +672,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_tone;
 	case STK_DATA_OBJECT_TYPE_FILE_LIST:
 		return parse_dataobj_file_list;
+	case STK_DATA_OBJECT_TYPE_LOCATION_INFO:
+		return parse_dataobj_location_info;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:

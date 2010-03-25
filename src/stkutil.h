@@ -347,6 +347,17 @@ struct stk_result {
 	unsigned char *additional;
 };
 
+/* Defined in TS 102.223 Section 8.19 */
+struct stk_location_info {
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	unsigned short lac_tac;
+	ofono_bool_t has_ci;
+	unsigned short ci;
+	ofono_bool_t has_ext_ci;
+	unsigned short ext_ci;
+};
+
 /* Define the struct of single file in TS102.223 Section 8.18.
  * According to TS 11.11 Section 6.2, each file id has two bytes, and the
  * maximum Dedicated File level is 2. So the maximum size of file is 8, which
