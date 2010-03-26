@@ -306,7 +306,8 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 		ofono_netreg_create(modem, OFONO_VENDOR_CALYPSO,
 							"atmodem", data->chat);
 	else
-		ofono_netreg_create(modem, 0, "atmodem", data->chat);
+		ofono_netreg_create(modem, OFONO_VENDOR_PHONESIM,
+							"atmodem", data->chat);
 
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);

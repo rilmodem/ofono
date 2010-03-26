@@ -779,6 +779,13 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				creg_notify, FALSE, netreg, NULL);
 
 	switch (nd->vendor) {
+	case OFONO_VENDOR_PHONESIM:
+		g_at_chat_register(nd->chat, "+CSQ:",
+					csq_notify, FALSE, netreg, NULL);
+
+		ofono_netreg_register(netreg);
+
+		break;
 	case OFONO_VENDOR_CALYPSO:
 		g_at_chat_send(nd->chat, "AT%CSQ=1", none_prefix,
 				NULL, NULL, NULL);
