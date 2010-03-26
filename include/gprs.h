@@ -32,8 +32,7 @@ struct ofono_gprs;
 struct ofono_gprs_context;
 
 typedef void (*ofono_gprs_status_cb_t)(const struct ofono_error *error,
-						int status, int lac, int ci,
-						int tech, void *data);
+						int status, void *data);
 
 typedef void (*ofono_gprs_cb_t)(const struct ofono_error *error, void *data);
 
@@ -44,13 +43,11 @@ struct ofono_gprs_driver {
 	void (*remove)(struct ofono_gprs *gprs);
 	void (*set_attached)(struct ofono_gprs *gprs, int attached,
 				ofono_gprs_cb_t cb, void *data);
-	void (*registration_status)(struct ofono_gprs *gprs,
+	void (*attached_status)(struct ofono_gprs *gprs,
 					ofono_gprs_status_cb_t cb, void *data);
 };
 
-void ofono_gprs_status_notify(struct ofono_gprs *gprs,
-				int status, int lac, int ci, int tech);
-
+void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status);
 void ofono_gprs_detached_notify(struct ofono_gprs *gprs);
 
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d);

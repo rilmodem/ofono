@@ -892,13 +892,12 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 }
 
 static void registration_status_cb(const struct ofono_error *error,
-					int status, int lac, int ci, int tech,
-					void *data)
+					int status, void *data)
 {
 	struct ofono_gprs *gprs = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_gprs_status_notify(gprs, status, lac, ci, tech);
+		ofono_gprs_status_notify(gprs, status);
 
 	gprs->flags &= ~GPRS_FLAG_ATTACHING;
 
@@ -917,9 +916,9 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 	else
 		gprs->driver_attached = !gprs->driver_attached;
 
-	if (gprs->driver->registration_status) {
-		gprs->driver->registration_status(gprs, registration_status_cb,
-							gprs);
+	if (gprs->driver->attached_status) {
+		gprs->driver->attached_status(gprs, registration_status_cb,
+						gprs);
 		return;
 	}
 
@@ -1320,8 +1319,7 @@ void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
 	 */
 }
 
-void ofono_gprs_status_notify(struct ofono_gprs *gprs,
-				int status, int lac, int ci, int tech)
+void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 {
 	/* If we are not attached and haven't tried to attach, ignore */
 	if (gprs->driver_attached == FALSE)
