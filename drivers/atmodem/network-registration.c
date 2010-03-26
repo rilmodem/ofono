@@ -47,12 +47,13 @@ static const char *cops_prefix[] = { "+COPS:", NULL };
 static const char *csq_prefix[] = { "+CSQ:", NULL };
 static const char *cind_prefix[] = { "+CIND:", NULL };
 
-#define SIGNAL_STRENGTH_IND 2
-
 struct netreg_data {
 	GAtChat *chat;
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	int signal_index; /* If strength is reported via CIND */
+	int signal_min; /* min strength reported via CIND */
+	int signal_max; /* max strength reported via CIND */
 	unsigned int vendor;
 };
 
@@ -546,9 +547,10 @@ static void option_octi_notify(GAtResult *result, gpointer user_data)
 	ofono_info("OCTI mode: %d", mode);
 }
 
-static void ste_ciev_notify(GAtResult *result, gpointer user_data)
+static void ciev_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	int strength, ind;
 	GAtResultIter iter;
 
@@ -560,19 +562,22 @@ static void ste_ciev_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &ind))
 		return;
 
-	if (ind == SIGNAL_STRENGTH_IND) {
-		if (!g_at_result_iter_next_number(&iter, &strength))
-			return;
+	if (ind != nd->signal_index)
+		return;
 
-		strength = (strength * 100) / 5;
-		ofono_netreg_strength_notify(netreg, strength);
-	}
+	if (!g_at_result_iter_next_number(&iter, &strength))
+		return;
+
+	strength = (strength * 100) / (nd->signal_max - nd->signal_min);
+	ofono_netreg_strength_notify(netreg, strength);
 }
 
-static void ste_cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_netreg_strength_cb_t cb = cbd->cb;
+	struct netreg_data *nd = cbd->user;
+	int index;
 	int strength;
 	GAtResultIter iter;
 	struct ofono_error error;
@@ -591,12 +596,12 @@ static void ste_cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	/* Skip battery charge level, which is the first reported  */
-	g_at_result_iter_skip_next(&iter);
+	for (index = 1; index < nd->signal_index; index++)
+		g_at_result_iter_skip_next(&iter);
 
 	g_at_result_iter_next_number(&iter, &strength);
 
-	strength = (strength * 100) / 5;
+	strength = (strength * 100) / (nd->signal_max - nd->signal_min);
 
 	cb(&error, strength, cbd->data);
 }
@@ -660,9 +665,15 @@ static void at_signal_strength(struct ofono_netreg *netreg,
 	if (!cbd)
 		goto error;
 
-	if (nd->vendor == OFONO_VENDOR_STE) {
+	cbd->user = nd;
+
+	/*
+	 * If we defaulted to using CIND, then keep using it,
+	 * otherwise fall back to CSQ
+	 */
+	if (nd->signal_index > 0) {
 		if (g_at_chat_send(nd->chat, "AT+CIND?", cind_prefix,
-				ste_cind_cb, cbd, g_free) > 0)
+					cind_cb, cbd, g_free) > 0)
 			return;
 	} else {
 		if (g_at_chat_send(nd->chat, "AT+CSQ", csq_prefix,
@@ -690,8 +701,70 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
-static void at_network_registration_initialized(gboolean ok, GAtResult *result,
-							gpointer user_data)
+static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	GAtResultIter iter;
+	const char *str;
+	int index;
+	int min, max;
+
+	if (!ok)
+		goto error;
+
+	g_at_result_iter_init(&iter, result);
+	if (!g_at_result_iter_next(&iter, "+CIND:"))
+		goto error;
+
+	index = 1;
+
+	while (g_at_result_iter_open_list(&iter)) {
+		if (!g_at_result_iter_next_string(&iter, &str))
+			goto error;
+
+		if (!g_at_result_iter_open_list(&iter))
+			goto error;
+
+		while (g_at_result_iter_next_range(&iter, &min, &max))
+			;
+
+		if (!g_at_result_iter_close_list(&iter))
+			goto error;
+
+		if (!g_at_result_iter_close_list(&iter))
+			goto error;
+
+		if (g_str_equal("signal", str) == TRUE) {
+			nd->signal_index = index;
+			nd->signal_min = min;
+			nd->signal_max = max;
+		}
+
+		index += 1;
+	}
+
+	if (nd->signal_index == 0)
+		goto error;
+
+	g_at_chat_send(nd->chat, "AT+CMER=3,0,0,1", NULL,
+			NULL, NULL, NULL);
+	g_at_chat_register(nd->chat, "+CIEV:",
+				ciev_notify, FALSE, netreg, NULL);
+
+	ofono_netreg_register(netreg);
+	return;
+
+error:
+	ofono_error("This driver is not setup with Signal Strength reporting"
+			" via CIND indications, please write proper netreg"
+			" handling for this device");
+
+	ofono_netreg_remove(netreg);
+}
+
+
+static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -704,8 +777,6 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 
 	g_at_chat_register(nd->chat, "+CREG:",
 				creg_notify, FALSE, netreg, NULL);
-	g_at_chat_register(nd->chat, "+CSQ:",
-				csq_notify, FALSE, netreg, NULL);
 
 	switch (nd->vendor) {
 	case OFONO_VENDOR_CALYPSO:
@@ -713,6 +784,8 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 				NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "%CSQ:", calypso_csq_notify,
 					FALSE, netreg, NULL);
+
+		ofono_netreg_register(netreg);
 
 		break;
 	case OFONO_VENDOR_OPTION_HSO:
@@ -753,18 +826,15 @@ static void at_network_registration_initialized(gboolean ok, GAtResult *result,
 				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_ODO=0", none_prefix,
 				NULL, NULL, NULL);
-		break;
-	case OFONO_VENDOR_STE:
-		g_at_chat_send(nd->chat, "AT+CMER=3,0,0,1", NULL,
-				NULL, NULL, NULL);
-		g_at_chat_register(nd->chat, "+CIEV:",
-				ste_ciev_notify, FALSE, netreg, NULL);
+
+		ofono_netreg_register(netreg);
+
 		break;
 	default:
+		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
+				cind_support_cb, netreg, NULL);
 		break;
 	}
-
-	ofono_netreg_register(netreg);
 }
 
 static void at_creg_test_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -798,15 +868,13 @@ static void at_creg_test_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (creg2) {
 		g_at_chat_send(nd->chat, "AT+CREG=2", none_prefix,
-				at_network_registration_initialized,
-				netreg, NULL);
+				at_creg_set_cb, netreg, NULL);
 		return;
 	}
 
 	if (creg1) {
 		g_at_chat_send(nd->chat, "AT+CREG=1", none_prefix,
-				at_network_registration_initialized,
-				netreg, NULL);
+				at_creg_set_cb, netreg, NULL);
 		return;
 	}
 
