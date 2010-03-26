@@ -50,6 +50,7 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
+#include <drivers/atmodem/vendor.h>
 
 static const char *cfun_prefix[] = { "+CFUN:", NULL };
 static const char *none_prefix[] = { NULL };
@@ -294,7 +295,7 @@ static void mbm_post_sim(struct ofono_modem *modem)
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
-	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	ofono_netreg_create(modem, OFONO_VENDOR_MBM, "atmodem", data->chat);
 	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
