@@ -89,23 +89,23 @@ static void at_cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct cb_data *cbd = user_data;
 	ofono_gprs_status_cb_t cb = cbd->cb;
 	struct ofono_error error;
-	int status, lac, ci, tech;
+	int status;
 	struct gprs_data *gd = cbd->user;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
-		cb(&error, -1, -1, -1, -1, cbd->data);
+		cb(&error, -1, cbd->data);
 		return;
 	}
 
 	if (at_util_parse_reg(result, "+CGREG:", NULL, &status,
-				&lac, &ci, &tech, gd->vendor) == FALSE) {
-		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
+				NULL, NULL, NULL, gd->vendor) == FALSE) {
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 		return;
 	}
 
-	cb(&error, status, lac, ci, tech, cbd->data);
+	cb(&error, status, cbd->data);
 }
 
 static void at_gprs_registration_status(struct ofono_gprs *gprs,
@@ -128,20 +128,20 @@ error:
 	if (cbd)
 		g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
+	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
 static void cgreg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
-	int status, lac, ci, tech;
+	int status;
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 
 	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
-				&lac, &ci, &tech, gd->vendor) == FALSE)
+				NULL, NULL, NULL, gd->vendor) == FALSE)
 		return;
 
-	ofono_gprs_status_notify(gprs, status, lac, ci, tech);
+	ofono_gprs_status_notify(gprs, status);
 }
 
 static void cgev_notify(GAtResult *result, gpointer user_data)
@@ -319,7 +319,7 @@ static struct ofono_gprs_driver driver = {
 	.probe			= at_gprs_probe,
 	.remove			= at_gprs_remove,
 	.set_attached		= at_gprs_set_attached,
-	.registration_status	= at_gprs_registration_status,
+	.attached_status	= at_gprs_registration_status,
 };
 
 void at_gprs_init()
