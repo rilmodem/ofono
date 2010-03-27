@@ -83,7 +83,8 @@ static void chap_process_challenge(struct auth_data *auth, guint8 *packet)
 	if (!checksum)
 		return;
 	g_checksum_update(checksum, &header->identifier, 1);
-	g_checksum_update(checksum, (guchar *) secret, strlen(secret));
+	if (secret)
+		g_checksum_update(checksum, (guchar *) secret, strlen(secret));
 	g_checksum_update(checksum, &header->data[1], header->data[0]);
 
 	/* transmit a response packet */
