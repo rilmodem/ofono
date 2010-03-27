@@ -454,9 +454,12 @@ static void pppcp_send_code_reject(struct pppcp_data *data,
 					guint8 *rejected_packet)
 {
 	struct pppcp_packet *packet;
+	struct pppcp_packet *old_packet =
+				(struct pppcp_packet *) rejected_packet;
 
-	packet = pppcp_packet_new(data, CODE_REJECT,
-			ntohs(((struct pppcp_packet *) rejected_packet)->length));
+	pppcp_trace(data);
+
+	packet = pppcp_packet_new(data, CODE_REJECT, ntohs(old_packet->length));
 
 	/*
 	 * Identifier must be changed for each Code-Reject sent
@@ -468,7 +471,7 @@ static void pppcp_send_code_reject(struct pppcp_data *data,
 	 * truncated if it needs to be to comply with mtu requirement
 	 */
 	memcpy(packet->data, rejected_packet,
-			ntohs(packet->length - CP_HEADER_SZ));
+			ntohs(packet->length) - CP_HEADER_SZ);
 
 	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
