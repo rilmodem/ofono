@@ -1140,6 +1140,22 @@ static void remove_config_option(gpointer elem, gpointer user_data)
 	data->config_options = g_list_delete_link(data->config_options, list);
 }
 
+static struct ppp_option *extract_ppp_option(guint8 *packet_data)
+{
+	struct ppp_option *option;
+	guint8 otype = packet_data[0];
+	guint8 olen = packet_data[1];
+
+	option = g_try_malloc0(olen);
+	if (option == NULL)
+		return NULL;
+
+	option->type = otype;
+	option->length = olen;
+	memcpy(option->data, &packet_data[2], olen-2);
+	return option;
+}
+
 static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 					struct pppcp_packet *packet)
 {
@@ -1157,14 +1173,13 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	 * check the options.
 	 */
 	while (i < len) {
-		guint8 otype = packet->data[i];
-		guint8 olen = packet->data[i+1];
-		option = g_try_malloc0(olen);
+		option = extract_ppp_option(&packet->data[i]);
 		if (option == NULL)
 			break;
-		option->type = otype;
-		option->length = olen;
-		memcpy(option->data, &packet->data[i+2], olen-2);
+
+		/* skip ahead to the next option */
+		i += option->length;
+
 		if (action->option_scan)
 			rval = action->option_scan(option, data);
 		switch (rval) {
@@ -1182,10 +1197,9 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 						option);
 			break;
 		case OPTION_ERR:
-			g_printerr("unhandled option type %d\n", otype);
+			g_printerr("unhandled option type %d\n", option->type);
+			g_free(option);
 		}
-		/* skip ahead to the next option */
-		i += olen;
 	}
 
 	/* make sure all required config options were included */
@@ -1242,16 +1256,12 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 	 * and apply them.
 	 */
 	while (i < len) {
-		guint8 otype = packet->data[i];
-		guint8 olen = packet->data[i + 1];
-		acked_option = g_try_malloc0(olen);
+		acked_option = extract_ppp_option(&packet->data[i]);
 		if (acked_option == NULL)
 			break;
-		acked_option->type = otype;
-		acked_option->length = olen;
-		memcpy(acked_option->data, &packet->data[i + 2], olen - 2);
 		list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER((guint) otype), is_option);
+				GUINT_TO_POINTER((guint) acked_option->type),
+				is_option);
 		if (list) {
 			/*
 			 * once we've applied the option, delete it from
@@ -1266,10 +1276,11 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 				g_list_delete_link(data->config_options, list);
 		} else
 			g_printerr("oops -- found acked option %d we didn't request\n", acked_option->type);
-		g_free(acked_option);
 
 		/* skip ahead to the next option */
-		i += olen;
+		i += acked_option->length;
+
+		g_free(acked_option);
 	}
 	return RCA;
 }
@@ -1300,14 +1311,13 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 	 * modify a value there, or add a new option.
 	 */
 	while (i < len) {
-		guint8 otype = packet->data[i];
-		guint8 olen = packet->data[i+1];
-		naked_option = g_try_malloc0(olen);
+		naked_option = extract_ppp_option(&packet->data[i]);
 		if (naked_option == NULL)
 			break;
-		naked_option->type = otype;
-		naked_option->length = olen;
-		memcpy(naked_option->data, &packet->data[i + 2], olen - 2);
+
+		/* skip ahead to the next option */
+		i += naked_option->length;
+
 		if (action->option_scan)
 			rval = action->option_scan(naked_option, data);
 		if (rval == OPTION_ACCEPT) {
@@ -1316,7 +1326,8 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 			 * match.
 			 */
 			list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER((guint) otype), is_option);
+				GUINT_TO_POINTER((guint) naked_option->type),
+				is_option);
 			if (list) {
 				/* modify current option value to match */
 				config_option = list->data;
@@ -1326,10 +1337,11 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 				 * we need to reallocate
 				 */
 				if ((config_option->length ==
-					naked_option->length) && (olen - 2)) {
+					naked_option->length) &&
+							(naked_option - 2)) {
 						memcpy(config_option->data,
-							naked_option->data,
-							olen - 2);
+						   naked_option->data,
+						   naked_option->length - 2);
 				} else {
 					/* XXX implement this */
 					g_printerr("uh oh, option value doesn't match\n");
@@ -1344,9 +1356,6 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 			g_printerr("oops, option wasn't acceptable\n");
 			g_free(naked_option);
 		}
-
-		/* skip ahead to the next option */
-		i += olen;
 	}
 	return RCN;
 }
