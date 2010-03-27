@@ -1401,6 +1401,10 @@ static guint8 pppcp_process_code_reject(struct pppcp_data *data,
 	 * determine if the code reject is catastrophic or not.
 	 * return RXJ_PLUS if this reject is acceptable, RXJ_MINUS if
 	 * it is catastrophic.
+	 *
+	 * for now we always return RXJ_MINUS.  Any code
+	 * reject will be catastrophic, since we only support the
+	 * bare minimum number of codes necessary to function.
 	 */
 	return RXJ_MINUS;
 }
@@ -1412,6 +1416,10 @@ static guint8 pppcp_process_protocol_reject(struct pppcp_data *data,
 	 * determine if the protocol reject is catastrophic or not.
 	 * return RXJ_PLUS if this reject is acceptable, RXJ_MINUS if
 	 * it is catastrophic.
+	 *
+	 * for now we always return RXJ_MINUS.  Any protocol
+	 * reject will be catastrophic, since we only support the
+	 * bare minimum number of protocols necessary to function.
 	 */
 	return RXJ_MINUS;
 }
