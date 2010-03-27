@@ -220,6 +220,11 @@ void lcp_free(struct pppcp_data *lcp)
 	pppcp_free(lcp);
 }
 
+void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len)
+{
+	pppcp_send_protocol_reject(lcp, packet, len);
+}
+
 struct pppcp_data *lcp_new(GAtPPP *ppp)
 {
 	struct pppcp_data *pppcp;

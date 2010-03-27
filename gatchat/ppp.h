@@ -156,6 +156,7 @@ void lcp_open(struct pppcp_data *data);
 void lcp_close(struct pppcp_data *data);
 void lcp_establish(struct pppcp_data *data);
 void lcp_terminate(struct pppcp_data *data);
+void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
 void auth_set_credentials(struct auth_data *data, const char *username,
 				const char *passwd);
 void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method);

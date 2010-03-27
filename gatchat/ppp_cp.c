@@ -1442,6 +1442,48 @@ static guint8 pppcp_process_discard_request(struct pppcp_data *data,
 	return 0;
 }
 
+void pppcp_send_protocol_reject(struct pppcp_data *data,
+				guint8 *rejected_packet, gsize len)
+{
+	struct pppcp_packet *packet;
+	struct ppp_header *ppp_packet = (struct ppp_header *) rejected_packet;
+
+	pppcp_trace(data);
+
+	/*
+	 * Protocol-Reject can only be sent when we are in
+	 * the OPENED state.  If in any other state, silently discard.
+	 */
+	if (data->state != OPENED) {
+		g_free(ppp_packet);
+		return;
+	}
+
+	/*
+	 * info should contain the old packet info, plus the 16bit
+	 * protocol number we are rejecting.
+	 */
+	packet = pppcp_packet_new(data, PROTOCOL_REJECT, len);
+
+	/*
+	 * Identifier must be changed for each Protocol-Reject sent
+	 */
+	packet->identifier = new_identity(data, data->reject_identifier);
+
+	/*
+	 * rejected packet should be copied in, but it should be
+	 * truncated if it needs to be to comply with mtu requirement
+	 */
+	memcpy(packet->data, rejected_packet,
+			(ntohs(packet->length) - CP_HEADER_SZ));
+
+	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
+			ntohs(packet->length));
+
+	pppcp_packet_free(packet);
+
+}
+
 /*
  * parse the packet and determine which event this packet caused
  */

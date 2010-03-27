@@ -150,3 +150,5 @@ void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
 				gpointer event_data, guint data_len);
 void pppcp_process_packet(gpointer priv, guint8 *new_packet);
+void pppcp_send_protocol_reject(struct pppcp_data *data,
+				guint8 *rejected_packet, gsize len);

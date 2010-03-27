@@ -39,6 +39,11 @@
 #define PPPINITFCS16    0xffff  /* Initial FCS value */
 #define PPPGOODFCS16    0xf0b8  /* Good final FCS value */
 
+struct frame_buffer {
+	gsize len;
+	guint8 bytes[0];
+};
+
 static GList *packet_handlers = NULL;
 
 void ppp_register_packet_handler(struct ppp_packet_handler *handler)
@@ -185,12 +190,12 @@ static gint is_proto_handler(gconstpointer a, gconstpointer b)
 static void ppp_recv(GAtPPP *ppp)
 {
 	GList *list;
-	guint8 *frame;
+	struct frame_buffer *frame;
 
 	/* pop frames off of receive queue */
 	while ((frame = g_queue_pop_head(ppp->recv_queue))) {
-		guint protocol = ppp_proto(frame);
-		guint8 *packet = ppp_info(frame);
+		guint protocol = ppp_proto(frame->bytes);
+		guint8 *packet = ppp_info(frame->bytes);
 		struct ppp_packet_handler *h;
 
 		/*
@@ -203,23 +208,26 @@ static void ppp_recv(GAtPPP *ppp)
 		if (list) {
 			h = list->data;
 			h->handler(h->priv, packet);
-		}
+		} else
+			lcp_protocol_reject(ppp->lcp, frame->bytes, frame->len);
 		g_free(frame);
 	}
 }
 
 /* XXX - Implement PFC and ACFC */
-static guint8 *ppp_decode(GAtPPP *ppp, guint8 *frame)
+static struct frame_buffer *ppp_decode(GAtPPP *ppp, guint8 *frame)
 {
 	guint8 *data;
 	guint pos = 0;
 	int i = 0;
 	int len;
 	guint16 fcs;
+	struct frame_buffer *fb;
 
-	data = g_try_malloc0(ppp->mru + 10);
-	if (!data)
+	fb = g_try_malloc0(sizeof(struct frame_buffer) + ppp->mru + 10);
+	if (!fb)
 		return NULL;
+	data = fb->bytes;
 
 	/* skip the first flag char */
 	pos++;
@@ -237,6 +245,7 @@ static guint8 *ppp_decode(GAtPPP *ppp, guint8 *frame)
 	}
 
 	len = i;
+	fb->len = len;
 
 	/* see if we have a good FCS */
 	fcs = PPPINITFCS16;
@@ -244,16 +253,16 @@ static guint8 *ppp_decode(GAtPPP *ppp, guint8 *frame)
 		fcs = ppp_fcs(fcs, data[i]);
 
 	if (fcs != PPPGOODFCS16) {
-		g_free(data);
+		g_free(fb);
 		return NULL;
 	}
-	return data;
+	return fb;
 }
 
 static void ppp_feed(GAtPPP *ppp, guint8 *data, gsize len)
 {
 	guint pos = 0;
-	guint8 *frame;
+	struct frame_buffer *frame;
 
 	/* collect bytes until we detect we have received a complete frame */
 	/* examine the data.  If we are at the beginning of a new frame,
