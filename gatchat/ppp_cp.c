@@ -1363,22 +1363,49 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 static guint8 pppcp_process_configure_reject(struct pppcp_data *data,
 					struct pppcp_packet *packet)
 {
+	guint len;
+	GList *list;
+	struct ppp_option *rejected_option;
+	guint i = 0;
+
+	len = ntohs(packet->length) - CP_HEADER_SZ;
+
 	/*
 	 * make sure identifier matches that of last sent configure
 	 * request
 	 */
-	if (packet->identifier == data->config_identifier) {
-		/*
-		 * check to see which options were rejected
-		 * Rejected options must be a subset of requested
-		 * options.
-		 *
-		 * when a new configure-request is sent, we may
-		 * not request any of these options be negotiated
-		 */
-		return RCN;
+	if (packet->identifier != data->config_identifier)
+		return 0;
+
+	/*
+	 * check to see which options were rejected
+	 * Rejected options must be a subset of requested
+	 * options.
+	 *
+	 * when a new configure-request is sent, we may
+	 * not request any of these options be negotiated
+	 */
+	while (i < len) {
+		rejected_option = extract_ppp_option(&packet->data[i]);
+		if (rejected_option == NULL)
+			break;
+
+		/* skip ahead to the next option */
+		i += rejected_option->length;
+
+		/* find this option in our config options list */
+		list = g_list_find_custom(data->config_options,
+			GUINT_TO_POINTER((guint) rejected_option->type),
+			is_option);
+		if (list) {
+			/* delete this config option */
+			g_free(list->data);
+			data->config_options =
+				g_list_delete_link(data->config_options, list);
+		}
+		g_free(rejected_option);
 	}
-	return 0;
+	return RCN;
 }
 
 static guint8 pppcp_process_terminate_request(struct pppcp_data *data,
