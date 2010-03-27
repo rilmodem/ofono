@@ -331,7 +331,7 @@ static void setup_context(int status)
 	state = STATE_ACTIVATING;
 
 	g_print("Registered to GPRS network, roaming=%s\n",
-			status == 5 ? "True" : "False");
+					status == 5 ? "true" : "false");
 
 	len = sprintf(buf, "AT+CGDCONT=%u,\"IP\"", option_cid);
 	snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"", option_apn);
@@ -384,9 +384,9 @@ static void attached_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void activate_gprs(int status)
 {
 	g_print("Registered to network, roaming=%s\n",
-					status == 5 ? "True" : "False");
+					status == 5 ? "true" : "false");
 
-	g_print("Activating gprs network...\n");
+	g_print("Activating GPRS network...\n");
 	g_at_chat_send(control, "AT+CGATT=1", none_prefix,
 						attached_cb, NULL, NULL);
 }
