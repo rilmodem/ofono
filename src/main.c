@@ -23,14 +23,18 @@
 #include <config.h>
 #endif
 
-#include <gdbus.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/signalfd.h>
+
+#include <gdbus.h>
+
+#ifdef HAVE_CAPNG
+#include <cap-ng.h>
+#endif
 
 #include "ofono.h"
 
@@ -113,6 +117,10 @@ int main(int argc, char **argv)
 	int signal_fd;
 	GIOChannel *signal_io;
 	int signal_source;
+
+#ifdef HAVE_CAPNG
+	/* Drop capabilities */
+#endif
 
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGTERM);

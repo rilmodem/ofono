@@ -12,4 +12,5 @@ fi
 		--mandir=/usr/share/man \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
+		--enable-capng \
 		--disable-datafiles $*
