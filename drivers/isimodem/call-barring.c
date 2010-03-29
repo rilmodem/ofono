@@ -48,6 +48,28 @@ struct barr_data {
 	GIsiClient *client;
 };
 
+static int lock_code_to_mmi(char const *lock)
+{
+	if (strcmp(lock, "AO") == 0)
+		return SS_GSM_BARR_ALL_OUT;
+	else if (strcmp(lock, "OI") == 0)
+		return SS_GSM_BARR_OUT_INTER;
+	else if (strcmp(lock, "OX") == 0)
+		return SS_GSM_BARR_OUT_INTER_EXC_HOME;
+	else if (strcmp(lock, "AI") == 0)
+		return SS_GSM_BARR_ALL_IN;
+	else if (strcmp(lock, "IR") == 0)
+		return SS_GSM_BARR_ALL_IN_ROAM;
+	else if (strcmp(lock, "AB") == 0)
+		return SS_GSM_ALL_BARRINGS;
+	else if (strcmp(lock, "AG") == 0)
+		return SS_GSM_OUTGOING_BARR_SERV;
+	else if (strcmp(lock, "AC") == 0)
+		return SS_GSM_INCOMING_BARR_SERV;
+	else
+		return 0;
+}
+
 static bool set_resp_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
 {
@@ -84,19 +106,19 @@ static void isi_set(struct ofono_call_barring *barr, const char *lock,
 {
 	struct barr_data *bd = ofono_call_barring_get_data(barr);
 	struct isi_cb_data *cbd = isi_cb_data_new(barr, cb, data);
-	int ss_code;
-	char *ucs2 = NULL;
+	int ss_code = lock_code_to_mmi(lock);
 
 	unsigned char msg[] = {
 		SS_SERVICE_REQ,
 		enable ? SS_ACTIVATION : SS_DEACTIVATION,
 		SS_ALL_TELE_AND_BEARER,
-		0, 0,				/* Supplementary services code */
-		SS_SEND_ADDITIONAL_INFO,
+		ss_code >> 8, ss_code & 0xFF,	/* Supplementary services code */
+		SS_SEND_ADDITIONAL_INFO,	/* ? */
 		1,				/* Subblock count */
 		SS_GSM_PASSWORD,
 		28,				/* Subblock length */
-		0, 0, 0, 0, 0, 0, 0, 0,		/* Password */
+		0, passwd[0], 0, passwd[1],	/* Password */
+		0, passwd[2], 0, passwd[3],
 		0, 0, 0, 0, 0, 0, 0, 0,		/* Filler */
 		0, 0, 0, 0, 0, 0, 0, 0,		/* Filler */
 		0, 0				/* Filler */
@@ -105,43 +127,10 @@ static void isi_set(struct ofono_call_barring *barr, const char *lock,
 	DBG("lock code %s enable %d class %d password %s\n",
 		lock, enable, cls, passwd);
 
-	if (!cbd || !passwd || strlen(passwd) > 4 || cls != 7)
-		goto error;
-
-	if (strcmp(lock, "AO") == 0)
-		ss_code = SS_GSM_BARR_ALL_OUT;
-	else if (strcmp(lock, "OI") == 0)
-		ss_code = SS_GSM_BARR_OUT_INTER;
-	else if (strcmp(lock, "OX") == 0)
-		ss_code = SS_GSM_BARR_OUT_INTER_EXC_HOME;
-	else if (strcmp(lock, "AI") == 0)
-		ss_code = SS_GSM_BARR_ALL_IN;
-	else if (strcmp(lock, "IR") == 0)
-		ss_code = SS_GSM_BARR_ALL_IN_ROAM;
-	else if (strcmp(lock, "AB") == 0)
-		ss_code = SS_GSM_ALL_BARRINGS;
-	else if (strcmp(lock, "AG") == 0)
-		ss_code = SS_GSM_BARR_ALL_OUT;
-	else if (strcmp(lock, "AC") == 0)
-		ss_code = SS_GSM_BARR_ALL_IN;
-	else
-		goto error;
-
-	msg[3] = ss_code >> 8;
-	msg[4] = ss_code & 0xFF;
-
-	ucs2 = g_convert(passwd, 4, "UCS-2BE", "UTF-8//TRANSLIT",
-				NULL, NULL, NULL);
-	if (ucs2 == NULL)
-		goto error;
-
-	memcpy((char *)msg + 9, ucs2, 8);
-	g_free(ucs2);
-
-	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
-				set_resp_cb, cbd))
+	if (cbd && g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
+					set_resp_cb, cbd))
 		return;
-error:
+
 	CALLBACK_WITH_FAILURE(cb, data);
 	g_free(cbd);
 }
@@ -267,43 +256,23 @@ static void isi_query(struct ofono_call_barring *barr, const char *lock, int cls
 {
 	struct barr_data *bd = ofono_call_barring_get_data(barr);
 	struct isi_cb_data *cbd = isi_cb_data_new(barr, cb, data);
-	int ss_code;
+	int ss_code = lock_code_to_mmi(lock);
 
 	unsigned char msg[] = {
 		SS_SERVICE_REQ,
 		SS_INTERROGATION,
 		SS_ALL_TELE_AND_BEARER,
-		0, 0,				/* Supplementary services code */
-		SS_SEND_ADDITIONAL_INFO,
+		ss_code >> 8, ss_code & 0xFF,	/* Supplementary services code */
+		SS_SEND_ADDITIONAL_INFO,	/* Get BER-encoded result, too */
 		0				/* Subblock count */
 	};
 
-	DBG("barring query lock code %s class %d\n", lock, cls);
+	DBG("barring query lock code %s\n", lock);
 
-	if (!cbd || cls != 7)
-		goto error;
-
-	if (strcmp(lock, "AO") == 0)
-		ss_code = SS_GSM_BARR_ALL_OUT;
-	else if (strcmp(lock, "OI") == 0)
-		ss_code = SS_GSM_BARR_OUT_INTER;
-	else if (strcmp(lock, "OX") == 0)
-		ss_code = SS_GSM_BARR_OUT_INTER_EXC_HOME;
-	else if (strcmp(lock, "AI") == 0)
-		ss_code = SS_GSM_BARR_ALL_IN;
-	else if (strcmp(lock, "IR") == 0)
-		ss_code = SS_GSM_BARR_ALL_IN_ROAM;
-	else
-		goto error;
-
-	msg[3] = ss_code >> 8;
-	msg[4] = ss_code & 0xFF;
-
-	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
-				query_resp_cb, cbd))
+	if (cbd && g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
+					query_resp_cb, cbd))
 		return;
 
-error:
 	CALLBACK_WITH_FAILURE(cb, 0, data);
 	g_free(cbd);
 }
@@ -343,60 +312,34 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 {
 	struct barr_data *bd = ofono_call_barring_get_data(barr);
 	struct isi_cb_data *cbd = isi_cb_data_new(barr, cb, data);
-	int ss_code;
-	char *ucs2 = NULL;
+	int ss_code = lock_code_to_mmi(lock);
 
 	unsigned char msg[] = {
 		SS_SERVICE_REQ,
 		SS_GSM_PASSWORD_REGISTRATION,
 		SS_ALL_TELE_AND_BEARER,
-		0, 0,				/* Supplementary services code */
+		ss_code >> 8, ss_code & 0xFF,	/* Supplementary services code */
 		SS_SEND_ADDITIONAL_INFO,
 		1,				/* Subblock count */
 		SS_GSM_PASSWORD,
 		28,				/* Subblock length */
-		0, 0, 0, 0, 0, 0, 0, 0,		/* Old password */
-		0, 0, 0, 0, 0, 0, 0, 0,		/* New password */
-		0, 0, 0, 0, 0, 0, 0, 0,		/* New password */
+		0, old_passwd[0], 0, old_passwd[1],
+		0, old_passwd[2], 0, old_passwd[3],
+		0, new_passwd[0], 0, new_passwd[1],
+		0, new_passwd[2], 0, new_passwd[3],
+		0, new_passwd[0], 0, new_passwd[1],
+		0, new_passwd[2], 0, new_passwd[3],
 		0, 0				/* Filler */
 	};
 
-	if (!cbd || strlen(old_passwd) > 4 || strlen(new_passwd) > 4)
-		goto error;
+	DBG("lock code %s (%u) old password %s new password %s\n",
+		lock, ss_code, old_passwd, new_passwd);
 
-	DBG("lock code %s old password %s new password %s\n",
-		lock, old_passwd, new_passwd);
-
-	if (strcmp(lock, "AB") == 0)
-		ss_code = SS_GSM_ALL_BARRINGS;
-	else
-		goto error;
-
-	msg[3] = ss_code >> 8;
-	msg[4] = ss_code & 0xFF;
-
-	ucs2 = g_convert(old_passwd, 4, "UCS-2BE", "UTF-8//TRANSLIT",
-				NULL, NULL, NULL);
-	if (ucs2 == NULL)
-		goto error;
-
-	memcpy((char *)msg + 9, ucs2, 8);
-	g_free(ucs2);
-
-	ucs2 = g_convert(new_passwd, 4, "UCS-2BE", "UTF-8//TRANSLIT",
-				NULL, NULL, NULL);
-	if (ucs2 == NULL)
-		goto error;
-
-	memcpy((char *)msg + 17, ucs2, 8);
-	memcpy((char *)msg + 25, ucs2, 8);
-	g_free(ucs2);
-
-	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
+	if (cbd &&
+		g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
 				set_passwd_resp_cb, cbd))
 		return;
 
-error:
 	CALLBACK_WITH_FAILURE(cb, data);
 	g_free(cbd);
 }
