@@ -688,6 +688,23 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
+static void mbm_erinfo_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	int mode, gsm, umts;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "*ERINFO:") == FALSE)
+		return;
+
+	g_at_result_iter_next_number(&iter, &mode);
+	g_at_result_iter_next_number(&iter, &gsm);
+	g_at_result_iter_next_number(&iter, &umts);
+
+	ofono_info("network capability: GSM %d UMTS %d", gsm, umts);
+}
+
 static void creg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -835,6 +852,16 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				NULL, NULL, NULL);
 
 		ofono_netreg_register(netreg);
+
+		break;
+
+	case OFONO_VENDOR_MBM:
+		g_at_chat_send(nd->chat, "AT*ERINFO=1", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_register(nd->chat, "*ERINFO:", mbm_erinfo_notify,
+					FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
+				cind_support_cb, netreg, NULL);
 
 		break;
 	default:

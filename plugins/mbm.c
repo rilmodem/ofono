@@ -59,23 +59,6 @@ struct mbm_data {
 	GAtChat *chat;
 };
 
-static void erinfo_notifier(GAtResult *result, gpointer user_data)
-{
-	GAtResultIter iter;
-	int mode, gsm, umts;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (g_at_result_iter_next(&iter, "*ERINFO:") == FALSE)
-		return;
-
-	g_at_result_iter_next_number(&iter, &mode);
-	g_at_result_iter_next_number(&iter, &gsm);
-	g_at_result_iter_next_number(&iter, &umts);
-
-	ofono_info("network capability: GSM %d UMTS %d", gsm, umts);
-}
-
 static int mbm_probe(struct ofono_modem *modem)
 {
 	struct mbm_data *data;
@@ -111,7 +94,6 @@ static void mbm_debug(const char *str, void *user_data)
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct mbm_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
@@ -119,11 +101,6 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_modem_set_powered(modem, FALSE);
 
 	ofono_modem_set_powered(modem, TRUE);
-
-	g_at_chat_send(data->chat, "AT*ERINFO=1", none_prefix,
-			NULL, NULL, NULL);
-	g_at_chat_register(data->chat, "*ERINFO:", erinfo_notifier,
-							FALSE, modem, NULL);
 }
 
 static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
