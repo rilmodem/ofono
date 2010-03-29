@@ -623,7 +623,7 @@ static gboolean parse_dataobj_help_request(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_network_measurement_results(
 		struct comprehension_tlv_iter *iter, void *user)
 {
-	char **nmr = user;
+	unsigned char **nmr = user;
 	const unsigned char *data;
 	unsigned int len;
 
