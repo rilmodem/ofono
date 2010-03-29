@@ -619,6 +619,30 @@ static gboolean parse_dataobj_help_request(struct comprehension_tlv_iter *iter,
 				STK_DATA_OBJECT_TYPE_HELP_REQUEST);
 }
 
+/* Defined in TS 102.223 Section 8.22 */
+static gboolean parse_dataobj_network_measurement_results(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	char **nmr = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	if (comprehension_tlv_iter_get_tag(iter) !=
+			STK_DATA_OBJECT_TYPE_NETWORK_MEASUREMENT_RESULTS)
+		return FALSE;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len != 0x10)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	/* Assume network measurement result is 16 bytes long */
+	memcpy(*nmr, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -734,6 +758,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_imei;
 	case STK_DATA_OBJECT_TYPE_HELP_REQUEST:
 		return parse_dataobj_help_request;
+	case STK_DATA_OBJECT_TYPE_NETWORK_MEASUREMENT_RESULTS:
+		return parse_dataobj_network_measurement_results;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
