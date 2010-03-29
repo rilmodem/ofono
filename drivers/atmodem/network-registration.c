@@ -104,6 +104,14 @@ static void at_registration_status(struct ofono_netreg *netreg,
 
 	cbd->user = nd;
 
+	/*
+	 * Send *ERINFO to find out the current tech, it will be intercepted
+	 * in mbm_erinfo_notify
+	 */
+	if (nd->vendor == OFONO_VENDOR_MBM)
+		g_at_chat_send(nd->chat, "AT*ERINFO?", none_prefix,
+				NULL, NULL, NULL);
+
 	if (g_at_chat_send(nd->chat, "AT+CREG?", creg_prefix,
 				at_creg_cb, cbd, g_free) > 0)
 		return;
@@ -698,9 +706,21 @@ static void mbm_erinfo_notify(GAtResult *result, gpointer user_data)
 	if (g_at_result_iter_next(&iter, "*ERINFO:") == FALSE)
 		return;
 
-	g_at_result_iter_next_number(&iter, &mode);
-	g_at_result_iter_next_number(&iter, &gsm);
-	g_at_result_iter_next_number(&iter, &umts);
+	if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
+		return;
+
+	if (g_at_result_iter_next_number(&iter, &gsm) == FALSE)
+		return;
+
+	/*
+	 * According to MBM the ERINFO unsolicited response does not contain
+	 * the mode parameter, however at least the MD300 does report it.  So
+	 * we handle both 2 and 3 argument versions
+	 */
+	if (g_at_result_iter_next_number(&iter, &umts) == FALSE) {
+		gsm = mode;
+		umts = gsm;
+	}
 
 	ofono_info("network capability: GSM %d UMTS %d", gsm, umts);
 }
