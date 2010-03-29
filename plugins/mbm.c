@@ -47,6 +47,7 @@
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
 #include <ofono/call-volume.h>
+#include <ofono/call-forwarding.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
@@ -267,6 +268,7 @@ static void mbm_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
