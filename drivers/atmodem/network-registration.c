@@ -54,6 +54,7 @@ struct netreg_data {
 	int signal_index; /* If strength is reported via CIND */
 	int signal_min; /* min strength reported via CIND */
 	int signal_max; /* max strength reported via CIND */
+	int tech;
 	unsigned int vendor;
 };
 
@@ -88,6 +89,9 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, cbd->data);
 		return;
 	}
+
+	if ((status == 1 || status == 5) && (tech == -1))
+		tech = nd->tech;
 
 	cb(&error, status, lac, ci, tech, cbd->data);
 }
@@ -698,6 +702,8 @@ error:
 
 static void mbm_erinfo_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	GAtResultIter iter;
 	int mode, gsm, umts;
 
@@ -723,6 +729,29 @@ static void mbm_erinfo_notify(GAtResult *result, gpointer user_data)
 	}
 
 	ofono_info("network capability: GSM %d UMTS %d", gsm, umts);
+
+	/* Convert to tech values from 27.007 */
+	switch (gsm) {
+	case 1: /* GSM */
+		nd->tech = 0;
+		break;
+	case 2: /* EDGE */
+		nd->tech = 3;
+		break;
+	default:
+		nd->tech = -1;
+	}
+
+	switch (umts) {
+	case 1: /* UMTS */
+		nd->tech = 2;
+		break;
+	case 2: /* UMTS + HSDPA */
+		nd->tech = 4;
+		break;
+	default:
+		break;
+	}
 }
 
 static void creg_notify(GAtResult *result, gpointer user_data)
@@ -734,6 +763,9 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	if (at_util_parse_reg_unsolicited(result, "+CREG:", &status,
 				&lac, &ci, &tech, nd->vendor) == FALSE)
 		return;
+
+	if ((status == 1 || status == 5) && (tech == -1))
+		tech = nd->tech;
 
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
@@ -947,6 +979,7 @@ static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 
 	nd->chat = chat;
 	nd->vendor = vendor;
+	nd->tech = -1;
 	ofono_netreg_set_data(netreg, nd);
 
 	g_at_chat_send(chat, "AT+CREG=?", creg_prefix,
