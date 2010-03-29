@@ -764,7 +764,7 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 				&lac, &ci, &tech, nd->vendor) == FALSE)
 		return;
 
-	if ((status == 1 || status == 5) && (tech == -1))
+	if ((status == 1 || status == 5) && tech == -1)
 		tech = nd->tech;
 
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
