@@ -280,7 +280,6 @@ static unsigned int parse_extended_command(GAtServer *server, char *buf)
 	const char *separators = ";?=";
 	unsigned int prefix_len, i;
 	gboolean in_string = FALSE;
-	gboolean seen_question = FALSE;
 	gboolean seen_equals = FALSE;
 	char prefix[18]; /* According to V250, 5.4.1 */
 	GAtServerRequestType type;
@@ -322,24 +321,22 @@ static unsigned int parse_extended_command(GAtServer *server, char *buf)
 			goto next;
 
 		if (buf[i] == '?') {
-			if (seen_question || seen_equals)
+			if (seen_equals && buf[i-1] != '=')
 				return 0;
 
 			if (buf[i + 1] != '\0' && buf[i + 1] != ';')
 				return 0;
 
-			seen_question = TRUE;
 			type = G_AT_SERVER_REQUEST_TYPE_QUERY;
+
+			if (seen_equals)
+				type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
 		} else if (buf[i] == '=') {
-			if (seen_equals || seen_question)
+			if (seen_equals)
 				return 0;
 
 			seen_equals = TRUE;
-
-			if (buf[i + 1] == '?')
-				type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
-			else
-				type = G_AT_SERVER_REQUEST_TYPE_SET;
+			type = G_AT_SERVER_REQUEST_TYPE_SET;
 		}
 
 next:
