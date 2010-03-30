@@ -103,7 +103,7 @@ static void set_raw_mode(int fd)
 	tcsetattr(fd, TCSANOW, &options);
 }
 
-static GAtServer *create_tty(const char *modem_path)
+static gboolean create_tty(const char *modem_path)
 {
 	int master, slave;
 	char pty_name[256];
@@ -111,10 +111,10 @@ static GAtServer *create_tty(const char *modem_path)
 	GIOChannel *client_io;
 
 	if (!modem_path)
-		return NULL;
+		return FALSE;
 
 	if (openpty(&master, &slave, pty_name, NULL, NULL) < 0)
-		return NULL;
+		return FALSE;
 
 	set_raw_mode(slave);
 
@@ -133,9 +133,7 @@ static GAtServer *create_tty(const char *modem_path)
 		return FALSE;
 	}
 
-	add_handler(server);
-
-	return server;
+	return TRUE;
 }
 
 static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
@@ -300,16 +298,17 @@ static void test_server(int type)
 {
 	switch (type) {
 	case 0:
-		server = create_tty("/phonesim1");
+		if (create_tty("/phonesim1") == FALSE)
+			exit(-1);
 
 		add_handler(server);
 		break;
 	case 1:
-		if (!create_tcp("/phonesim1", DEFAULT_TCP_PORT))
+		if (create_tcp("/phonesim1", DEFAULT_TCP_PORT) == FALSE)
 			exit(-1);
 		break;
 	case 2:
-		if (!create_unix("/phonesim1", DEFAULT_SOCK_PATH))
+		if (create_unix("/phonesim1", DEFAULT_SOCK_PATH) == FALSE)
 			exit(-1);
 		break;
 	}
