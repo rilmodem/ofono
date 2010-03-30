@@ -202,6 +202,8 @@ static struct sock_server *socket_common(int sk, struct sockaddr *addr,
 	struct sock_server *sock;
 	int reuseaddr = 1;
 
+	setsockopt(sk, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
+
 	if (bind(sk, addr, sizeof(struct sockaddr)) < 0) {
 		g_print("Can't bind socket: %s (%d)", strerror(errno), errno);
 
@@ -209,8 +211,6 @@ static struct sock_server *socket_common(int sk, struct sockaddr *addr,
 
 		return NULL;
 	}
-
-	setsockopt(sk, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
 
 	if (listen(sk, 1) < 0) {
 		g_print("Can't listen on socket: %s (%d)",
