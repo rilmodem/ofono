@@ -284,6 +284,7 @@ static unsigned int parse_extended_command(GAtServer *server, char *buf)
 	gboolean seen_equals = FALSE;
 	char prefix[18]; /* According to V250, 5.4.1 */
 	GAtServerRequestType type;
+	char tmp;
 
 	prefix_len = strcspn(buf, separators);
 
@@ -345,9 +346,10 @@ next:
 	}
 
 	/* We can scratch in this buffer, so mark ';' as null */
+	tmp = buf[i];
 	buf[i] = '\0';
-
 	at_command_notify(server, buf, prefix, type);
+	buf[i] = tmp;
 
 	/* Also consume the terminating null */
 	return i + 1;
