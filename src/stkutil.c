@@ -76,10 +76,6 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 	unsigned int len;
 	char *number;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_ADDRESS)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 2)
 		return FALSE;
@@ -106,10 +102,6 @@ static gboolean parse_dataobj_alpha_id(struct comprehension_tlv_iter *iter,
 	unsigned int len;
 	char *utf8;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_ALPHA_ID)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 1)
 		return FALSE;
@@ -133,10 +125,6 @@ static gboolean parse_dataobj_subaddress(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_SUBADDRESS)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 1)
 		return FALSE;
@@ -159,10 +147,6 @@ static gboolean parse_dataobj_ccp(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_CCP)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 1)
 		return FALSE;
@@ -183,10 +167,6 @@ static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 {
 	struct stk_duration *duration = user;
 	const unsigned char *data;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_DURATION)
-		return FALSE;
 
 	if (comprehension_tlv_iter_get_length(iter) != 2)
 		return FALSE;
@@ -213,10 +193,6 @@ static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len;
 	char *utf8;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_ITEM)
-		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 2)
@@ -246,10 +222,6 @@ static gboolean parse_dataobj_item_id(struct comprehension_tlv_iter *iter,
 	unsigned char *id = user;
 	const unsigned char *data;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_ITEM_ID)
-		return FALSE;
-
 	if (comprehension_tlv_iter_get_length(iter) != 1)
 		return FALSE;
 
@@ -265,10 +237,6 @@ static gboolean parse_dataobj_response_len(struct comprehension_tlv_iter *iter,
 {
 	struct stk_response_length *response_len = user;
 	const unsigned char *data;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_RESPONSE_LENGTH)
-		return FALSE;
 
 	if (comprehension_tlv_iter_get_length(iter) != 2)
 		return FALSE;
@@ -289,10 +257,6 @@ static gboolean parse_dataobj_result(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len;
 	unsigned char *additional;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_RESULT)
-		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 1)
@@ -325,10 +289,6 @@ static gboolean parse_dataobj_gsm_sms_tpdu(struct comprehension_tlv_iter *iter,
 	struct gsm_sms_tpdu *tpdu = user;
 	const unsigned char *data;
 	unsigned int len;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU)
-		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 1 || len > 164)
@@ -419,10 +379,6 @@ static gboolean parse_dataobj_tone(struct comprehension_tlv_iter *iter,
 	unsigned char *tone = user;
 	const unsigned char *data;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_TONE)
-		return FALSE;
-
 	if (comprehension_tlv_iter_get_length(iter) !=  1)
 		return FALSE;
 
@@ -444,10 +400,6 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 	unsigned int start;
 	struct stk_file *sf;
 	unsigned char last_type;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_FILE_LIST)
-		return FALSE;
 
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 5)
@@ -544,10 +496,6 @@ static gboolean parse_dataobj_location_info(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_LOCATION_INFO)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 	if ((len != 5) && (len != 7) && (len != 9))
 		return FALSE;
@@ -591,10 +539,6 @@ static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
 	unsigned int len;
 	static const char digit_lut[] = "0123456789*#abc\0";
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_IMEI)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len != 8)
 		return FALSE;
@@ -627,10 +571,6 @@ static gboolean parse_dataobj_network_measurement_results(
 	const unsigned char *data;
 	unsigned int len;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_NETWORK_MEASUREMENT_RESULTS)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len != 0x10)
 		return FALSE;
@@ -649,10 +589,6 @@ static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 {
 	struct stk_icon_identifier *id = user;
 	const unsigned char *data;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_ICON_ID)
-		return FALSE;
 
 	if (comprehension_tlv_iter_get_length(iter) != 2)
 		return FALSE;
@@ -681,10 +617,6 @@ static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len;
 
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE)
-		return FALSE;
-
 	len = comprehension_tlv_iter_get_length(iter);
 
 	if (len > 127)
@@ -704,10 +636,6 @@ static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 {
 	unsigned char *frame_id = user;
 	const unsigned char *data;
-
-	if (comprehension_tlv_iter_get_tag(iter) !=
-			STK_DATA_OBJECT_TYPE_FRAME_ID)
-		return FALSE;
 
 	if (comprehension_tlv_iter_get_length(iter) != 1)
 		return FALSE;
@@ -814,7 +742,11 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 		if (handler == NULL)
 			continue;
 
-		ret = handler(iter, entry->data);
+		if (comprehension_tlv_iter_get_tag(iter) == entry->type)
+			ret = handler(iter, entry->data);
+		else
+			ret = FALSE;
+
 		entry->parsed = ret;
 
 		if (ret && comprehension_tlv_iter_next(iter) == FALSE)
