@@ -114,6 +114,7 @@ struct _GAtServer {
 	guint max_read_attempts;		/* Max reads per select */
 	enum ParserState parser_state;
 	gboolean destroyed;			/* Re-entrancy guard */
+	char *last_line;			/* Last read line */
 };
 
 static void g_at_server_wakeup_writer(GAtServer *server);
@@ -469,9 +470,10 @@ done:
 	return i;
 }
 
-static void server_parse_line(GAtServer *server, char *line)
+static void server_parse_line(GAtServer *server)
 {
 	unsigned int pos = 0;
+	char *line = server->last_line;
 	unsigned int len = strlen(line);
 
 	if (len == 0) {
@@ -676,12 +678,13 @@ static void new_bytes(GAtServer *p)
 
 		case PARSER_RESULT_COMMAND:
 		{
-			char *line = extract_line(p);
+			g_free(p->last_line);
 
-			if (line) {
-				server_parse_line(p, line);
-				g_free(line);
-			} else
+			p->last_line = extract_line(p);
+
+			if (p->last_line)
+				server_parse_line(p);
+			else
 				g_at_server_send_final(p,
 						G_AT_SERVER_RESULT_ERROR);
 			break;
@@ -849,6 +852,8 @@ static void g_at_server_cleanup(GAtServer *server)
 
 	g_hash_table_destroy(server->command_list);
 	server->command_list = NULL;
+
+	g_free(server->last_line);
 
 	server->channel = NULL;
 }
