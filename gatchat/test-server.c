@@ -77,9 +77,34 @@ static void server_debug(const char *str, void *data)
 	g_print("%s: %s\n", (char *) data, str);
 }
 
+static void cgmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+}
+
+static void cgmm_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+}
+
+static void cgmr_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+}
+
+static void cgsn_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+}
+
+static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+}
+
 static void add_handler(GAtServer *server)
 {
 	g_at_server_set_debug(server, server_debug, "Server");
+	g_at_server_register(server, "+CGMI", cgmi_cb, NULL, NULL);
+	g_at_server_register(server, "+CGMM", cgmm_cb, NULL, NULL);
+	g_at_server_register(server, "+CGMR", cgmr_cb, NULL, NULL);
+	g_at_server_register(server, "+CGSN", cgsn_cb, NULL, NULL);
+	g_at_server_register(server, "+CFUN", cfun_cb, NULL, NULL);
 }
 
 static void server_destroy(gpointer user)
