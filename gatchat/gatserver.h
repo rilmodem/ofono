@@ -102,7 +102,15 @@ void g_at_server_send_unsolicited(GAtServer *server, const char *result);
 /* Send an information text. The text could contain multiple lines. Each
  * line, including line terminators, should not exceed 2048 characters.
  */
-void g_at_server_send_info_text(GAtServer *server, GSList *text);
+void g_at_server_send_info_lines(GAtServer *server, GSList *text);
+
+/*
+ * Send a single response line for the command.  The line should be no longer
+ * than 2048 characters.  If the response contains multiple lines, use
+ * g_at_server_send_info_lines instead, since the formatting of 27.007
+ * compliant multi-line responses is different.
+ */
+void g_at_server_send_info(GAtServer *server, const char *line);
 
 #ifdef __cplusplus
 }

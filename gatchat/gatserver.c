@@ -210,7 +210,12 @@ void g_at_server_send_unsolicited(GAtServer *server, const char *result)
 	send_result_common(server, result);
 }
 
-void g_at_server_send_info_text(GAtServer *server, GSList *text)
+void g_at_server_send_info(GAtServer *server, const char *info)
+{
+	send_result_common(server, info);
+}
+
+void g_at_server_send_info_lines(GAtServer *server, GSList *text)
 {
 	char buf[MAX_TEXT_SIZE];
 	char t = server->v250.s3;
