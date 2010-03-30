@@ -303,7 +303,7 @@ static gboolean create_tcp(const char *modem_path, int port)
 
 	sk = socket(PF_INET, SOCK_STREAM, 0);
 	if (sk < 0) {
-		g_print("Can't create tcp/ip socket: %s (%d)",
+		g_print("Can't create tcp/ip socket: %s (%d)\n",
 						strerror(errno), errno);
 		return FALSE;
 	}
@@ -346,7 +346,7 @@ static gboolean create_unix(const char *modem_path, const char *sock_path)
 
 	sk = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sk < 0) {
-		g_print("Can't create unix socket: %s (%d)",
+		g_print("Can't create unix socket: %s (%d)\n",
 						strerror(errno), errno);
 
 		return FALSE;
