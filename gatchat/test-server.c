@@ -114,10 +114,12 @@ static void cgmm_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 static void cgmr_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
 	GAtServer *server = user;
+	char buf[256];
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
-		g_at_server_send_info(server, "oFono pre-1.0 0.20");
+		sprintf(buf, "oFono pre-1.0 version: %s", VERSION);
+		g_at_server_send_info(server, buf);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
