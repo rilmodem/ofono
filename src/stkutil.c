@@ -50,6 +50,41 @@ struct gsm_sms_tpdu {
 	unsigned char tpdu[164];
 };
 
+static char *decode_text(unsigned char dcs, int len, const unsigned char *data)
+{
+	char *utf8;
+
+	switch (dcs) {
+	case 0x00:
+	{
+		long written;
+		unsigned long max_to_unpack = len * 8 / 7;
+		unsigned char *unpacked = unpack_7bit(data, len, 0, FALSE,
+							max_to_unpack,
+							&written, 0);
+		if (unpacked == NULL)
+			return FALSE;
+
+		utf8 = convert_gsm_to_utf8(unpacked, written,
+						NULL, NULL, 0);
+		g_free(unpacked);
+		break;
+	}
+	case 0x04:
+		utf8 = convert_gsm_to_utf8(data, len, NULL, NULL, 0);
+		break;
+	case 0x08:
+		utf8 = g_convert((const gchar *) data, len,
+					"UTF-8//TRANSLIT", "UCS-2BE",
+					NULL, NULL, NULL);
+		break;
+	default:
+		utf8 = NULL;
+	}
+
+	return utf8;
+}
+
 /* For data object only to indicate its existence */
 static gboolean parse_dataobj_common_bool(struct comprehension_tlv_iter *iter,
 						gboolean *out) 
