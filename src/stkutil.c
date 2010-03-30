@@ -414,7 +414,7 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 
 /* Defined in TS 102.223 Section 8.16 */
 static gboolean parse_dataobj_tone(struct comprehension_tlv_iter *iter,
-						void *user)
+					void *user)
 {
 	unsigned char *tone = user;
 	const unsigned char *data;
@@ -435,7 +435,7 @@ static gboolean parse_dataobj_tone(struct comprehension_tlv_iter *iter,
 
 /* Defined in TS 102.223 Section 8.18 */
 static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
-						void *user)
+					void *user)
 {
 	GSList **fl = user;
 	const unsigned char *data;
@@ -537,8 +537,8 @@ error:
 }
 
 /* Defined in TS 102.223 Section 8.19 */
-static gboolean parse_dataobj_location_info(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_location_info(struct comprehension_tlv_iter *iter,
+						void *user)
 {
 	struct stk_location_info *li = user;
 	const unsigned char *data;
@@ -584,7 +584,7 @@ static gboolean parse_dataobj_location_info(
  * "1A 32 54 76 98 10 32 54".
  */
 static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
-						void *user)
+					void *user)
 {
 	char **imei = user;
 	const unsigned char *data;
