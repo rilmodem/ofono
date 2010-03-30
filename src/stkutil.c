@@ -337,68 +337,25 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 					void *user)
 {
 	char **text = user;
-	unsigned int len;
-	enum stk_data_object_type tag;
-
-	tag = comprehension_tlv_iter_get_tag(iter);
-
-	if (tag != STK_DATA_OBJECT_TYPE_TEXT &&
-			tag != STK_DATA_OBJECT_TYPE_DEFAULT_TEXT)
-		return FALSE;
-
-	len = comprehension_tlv_iter_get_length(iter);
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+	const unsigned char *data = comprehension_tlv_iter_get_data(iter);
+	char *utf8;
 
 	/* DCS followed by some text, cannot be 1 */
 	if (len == 1)
 		return FALSE;
 
-	if (len > 0) {
-		const unsigned char *data =
-			comprehension_tlv_iter_get_data(iter);
-		unsigned char dcs = data[0];
-		char *utf8;
-
-		switch (dcs) {
-		case 0x00:
-		{
-			long written;
-			unsigned long max_to_unpack = (len - 1) * 8 / 7;
-			unsigned char *unpacked = unpack_7bit(data + 1, len - 1,
-								0, FALSE,
-								max_to_unpack,
-								&written, 0);
-			if (unpacked == NULL)
-				return FALSE;
-
-			utf8 = convert_gsm_to_utf8(unpacked, written,
-							NULL, NULL, 0);
-			g_free(unpacked);
-			break;
-		}
-		case 0x04:
-			utf8 = convert_gsm_to_utf8(data + 1, len - 1,
-							NULL, NULL, 0);
-			break;
-		case 0x08:
-			utf8 = g_convert((const gchar *) data + 1, len - 1,
-						"UTF-8//TRANSLIT", "UCS-2BE",
-						NULL, NULL, NULL);
-			break;
-		default:
-			return FALSE;;
-		}
-
-		if (utf8 == NULL)
-			return FALSE;
-
-		*text = utf8;
-	} else {
-		if (tag == STK_DATA_OBJECT_TYPE_DEFAULT_TEXT)
-			return FALSE;
-
+	if (len == 0) {
 		*text = NULL;
+		return TRUE;
 	}
 
+	utf8 = decode_text(data[0], len - 1, data + 1);
+
+	if (utf8 == NULL)
+		return FALSE;
+
+	*text = utf8;
 	return TRUE;
 }
 
@@ -613,6 +570,28 @@ static gboolean parse_dataobj_network_measurement_results(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.23 */
+static gboolean parse_dataobj_default_text(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	char **text = user;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+	const unsigned char *data = comprehension_tlv_iter_get_data(iter);
+	char *utf8;
+
+	/* DCS followed by some text, cannot be 1 */
+	if (len <= 1)
+		return FALSE;
+
+	utf8 = decode_text(data[0], len - 1, data + 1);
+
+	if (utf8 == NULL)
+		return FALSE;
+
+	*text = utf8;
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -704,7 +683,6 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 	case STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU:
 		return parse_dataobj_gsm_sms_tpdu;
 	case STK_DATA_OBJECT_TYPE_TEXT:
-	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
 		return parse_dataobj_text;
 	case STK_DATA_OBJECT_TYPE_TONE:
 		return parse_dataobj_tone;
@@ -718,6 +696,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_help_request;
 	case STK_DATA_OBJECT_TYPE_NETWORK_MEASUREMENT_RESULTS:
 		return parse_dataobj_network_measurement_results;
+	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
+		return parse_dataobj_default_text;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
