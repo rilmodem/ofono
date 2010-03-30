@@ -105,9 +105,9 @@ static void chap_process_challenge(struct auth_data *auth, guint8 *packet)
 		response->code = RESPONSE;
 		response->identifier = header->identifier;
 		response->length = htons(response_length);
+		g_checksum_get_digest(checksum, response->data + 1,
+							&digest_len);
 		response->data[0] = digest_len;
-		g_checksum_get_digest(checksum, &response->data[1],
-					(gsize *) &response->data[0]);
 		/* leave the name empty? */
 	}
 
