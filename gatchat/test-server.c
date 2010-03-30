@@ -79,32 +79,93 @@ static void server_debug(const char *str, void *data)
 
 static void cgmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
+	GAtServer *server = user;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_info(server, "oFono");
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
 }
 
 static void cgmm_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
+	GAtServer *server = user;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_info(server, "oFono pre-1.0");
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
 }
 
 static void cgmr_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
+	GAtServer *server = user;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_info(server, "oFono pre-1.0 0.20");
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
 }
 
 static void cgsn_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
+	GAtServer *server = user;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_info(server, "123456789");
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
 }
 
 static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
+	GAtServer *server = user;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
 }
 
 static void add_handler(GAtServer *server)
 {
 	g_at_server_set_debug(server, server_debug, "Server");
-	g_at_server_register(server, "+CGMI", cgmi_cb, NULL, NULL);
-	g_at_server_register(server, "+CGMM", cgmm_cb, NULL, NULL);
-	g_at_server_register(server, "+CGMR", cgmr_cb, NULL, NULL);
-	g_at_server_register(server, "+CGSN", cgsn_cb, NULL, NULL);
-	g_at_server_register(server, "+CFUN", cfun_cb, NULL, NULL);
+	g_at_server_register(server, "+CGMI", cgmi_cb, server, NULL);
+	g_at_server_register(server, "+CGMM", cgmm_cb, server, NULL);
+	g_at_server_register(server, "+CGMR", cgmr_cb, server, NULL);
+	g_at_server_register(server, "+CGSN", cgsn_cb, server, NULL);
+	g_at_server_register(server, "+CFUN", cfun_cb, server, NULL);
 }
 
 static void server_destroy(gpointer user)
