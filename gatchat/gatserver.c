@@ -33,6 +33,8 @@
 #include "gatserver.h"
 
 #define BUF_SIZE 4096
+/* <cr><lf> + the max length of information text + <cr><lf> */
+#define MAX_TEXT_SIZE 2052
 /* #define WRITE_SCHEDULER_DEBUG 1 */
 
 enum ParserState {
@@ -156,11 +158,11 @@ static void send_common(GAtServer *server, const char *buf, unsigned int len)
 	g_at_server_wakeup_writer(server);
 }
 
-static void g_at_server_send_final(GAtServer *server, GAtServerResult result)
+static void send_result_common(GAtServer *server, const char *result)
+
 {
 	struct v250_settings v250 = server->v250;
-	const char *result_str = server_result_to_string(result);
-	char buf[1024];
+	char buf[MAX_TEXT_SIZE];
 	char t = v250.s3;
 	char r = v250.s4;
 	unsigned int len;
@@ -168,17 +170,68 @@ static void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 	if (v250.quiet)
 		return;
 
-	if (result_str == NULL)
+	if (result == NULL)
 		return;
 
 	if (v250.is_v1)
-		len = snprintf(buf, sizeof(buf), "%c%c%s%c%c", t, r, result_str,
+		len = snprintf(buf, sizeof(buf), "%c%c%s%c%c", t, r, result,
 				t, r);
 	else
-		len = snprintf(buf, sizeof(buf), "%u%c", (unsigned int) result,
+		len = snprintf(buf, sizeof(buf), "%s%c", result,
 				t);
 
 	send_common(server, buf, MIN(len, sizeof(buf)-1));
+}
+
+void g_at_server_send_final(GAtServer *server, GAtServerResult result)
+{
+	char buf[1024];
+
+	if (server->v250.is_v1)
+		sprintf(buf, "%s", server_result_to_string(result));
+	else
+		sprintf(buf, "%u", (unsigned int)result);
+
+	send_result_common(server, buf);
+}
+
+void g_at_server_send_ext_final(GAtServer *server, const char *result)
+{
+	send_result_common(server, result);
+}
+
+void g_at_server_send_intermediate(GAtServer *server, const char *result)
+{
+	send_result_common(server, result);
+}
+
+void g_at_server_send_unsolicited(GAtServer *server, const char *result)
+{
+	send_result_common(server, result);
+}
+
+void g_at_server_send_info_text(GAtServer *server, GSList *text)
+{
+	char buf[MAX_TEXT_SIZE];
+	char t = server->v250.s3;
+	char r = server->v250.s4;
+	unsigned int len;
+	GSList *l;
+
+	if (!text)
+		return;
+
+	for (l = text; l; l = l->next) {
+		char *line = l->data;
+		if (!line)
+			return;
+
+		len = snprintf(buf, sizeof(buf), "%c%c%s", t, r, line);
+		send_common(server, buf, MIN(len, sizeof(buf)-1));
+	}
+
+	len = snprintf(buf, sizeof(buf), "%c%c", t, r);
+	send_common(server, buf, len);
 }
 
 static inline gboolean is_extended_command_prefix(const char c)

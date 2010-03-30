@@ -87,6 +87,23 @@ gboolean g_at_server_register(GAtServer *server, char *prefix,
 					GDestroyNotify destroy_notify);
 gboolean g_at_server_unregister(GAtServer *server, const char *prefix);
 
+/* Send a final result code. E.g. G_AT_SERVER_RESULT_NO_DIALTONE */
+void g_at_server_send_final(GAtServer *server, GAtServerResult result);
+
+/* Send an extended final result code. E.g. +CME ERROR: SIM failure. */
+void g_at_server_send_ext_final(GAtServer *server, const char *result);
+
+/* Send an intermediate result code to report the progress. E.g. CONNECT */
+void g_at_server_send_intermediate(GAtServer *server, const char *result);
+
+/* Send an unsolicited result code. E.g. RING */
+void g_at_server_send_unsolicited(GAtServer *server, const char *result);
+
+/* Send an information text. The text could contain multiple lines. Each
+ * line, including line terminators, should not exceed 2048 characters.
+ */
+void g_at_server_send_info_text(GAtServer *server, GSList *text);
+
 #ifdef __cplusplus
 }
 #endif
