@@ -145,17 +145,49 @@ static void cgsn_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	};
 }
 
+static gboolean send_ok(gpointer user)
+{
+	GAtServer *server = user;
+
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+	return FALSE;
+}
+
 static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
 	GAtServer *server = user;
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_info(server, "+CFUN: (0-1)");
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int mode;
+
+		g_at_result_iter_init(&iter, cmd);
+		g_at_result_iter_next(&iter, "+CFUN=");
+
+		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
+			goto error;
+
+		if (mode != 0 && mode != 1)
+			goto error;
+
+		g_timeout_add_seconds(3, send_ok, server);
+		break;
+	}
 	default:
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		goto error;
 	};
+
+	return;
+
+error:
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
 static void add_handler(GAtServer *server)
