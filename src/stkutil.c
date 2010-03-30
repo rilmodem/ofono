@@ -52,17 +52,12 @@ struct gsm_sms_tpdu {
 
 /* For data object only to indicate its existence */
 static gboolean parse_dataobj_common_bool(struct comprehension_tlv_iter *iter,
-		void *user, enum stk_data_object_type type)
+						gboolean *out) 
 {
-	gboolean *ret = user;
-
-	if (comprehension_tlv_iter_get_tag(iter) != type)
-		return FALSE;
-
 	if (comprehension_tlv_iter_get_length(iter) != 0)
 		return FALSE;
 
-	*ret = TRUE;
+	*out = TRUE;
 
 	return TRUE;
 }
@@ -559,8 +554,8 @@ static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_help_request(struct comprehension_tlv_iter *iter,
 						void *user)
 {
-	return parse_dataobj_common_bool(iter, user,
-				STK_DATA_OBJECT_TYPE_HELP_REQUEST);
+	gboolean *ret = user;
+	return parse_dataobj_common_bool(iter, ret);
 }
 
 /* Defined in TS 102.223 Section 8.22 */
@@ -605,8 +600,8 @@ static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	return parse_dataobj_common_bool(iter, user,
-				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE);
+	gboolean *ret = user;
+	return parse_dataobj_common_bool(iter, ret);
 }
 
 /* Defined in TS 102.223 Section 8.72 */
