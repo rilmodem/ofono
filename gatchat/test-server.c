@@ -83,7 +83,7 @@ static void cgmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
-		g_at_server_send_info(server, "oFono");
+		g_at_server_send_info(server, "oFono", TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
@@ -100,7 +100,7 @@ static void cgmm_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
-		g_at_server_send_info(server, "oFono pre-1.0");
+		g_at_server_send_info(server, "oFono pre-1.0", TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
@@ -119,7 +119,7 @@ static void cgmr_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
 		sprintf(buf, "oFono pre-1.0 version: %s", VERSION);
-		g_at_server_send_info(server, buf);
+		g_at_server_send_info(server, buf, TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
@@ -136,7 +136,7 @@ static void cgsn_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
-		g_at_server_send_info(server, "123456789");
+		g_at_server_send_info(server, "123456789", TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
@@ -162,7 +162,7 @@ static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
-		g_at_server_send_info(server, "+CFUN: (0-1)");
+		g_at_server_send_info(server, "+CFUN: (0-1)", TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
