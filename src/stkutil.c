@@ -910,7 +910,6 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 	entries = g_slist_reverse(entries);
 
 	for (l = entries; l; l = l->next) {
-		gboolean ret;
 		dataobj_handler handler;
 		struct dataobj_handler_entry *entry = l->data;
 
@@ -918,15 +917,12 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 		if (handler == NULL)
 			continue;
 
-		if (comprehension_tlv_iter_get_tag(iter) == entry->type)
-			ret = handler(iter, entry->data);
-		else
-			ret = FALSE;
-
-		entry->parsed = ret;
-
-		if (ret && comprehension_tlv_iter_next(iter) == FALSE)
-			break;
+		if (comprehension_tlv_iter_get_tag(iter) == entry->type) {
+			if (handler(iter, entry->data))
+				entry->parsed = TRUE;
+			if (comprehension_tlv_iter_next(iter) == FALSE)
+				break;
+		}
 	}
 
 	for (l = entries; l; l = l->next) {
