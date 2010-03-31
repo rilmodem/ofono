@@ -219,19 +219,9 @@ out:
 	return FALSE;
 }
 
-static void print_ip_address(const char *label, guint32 ip_addr)
-{
-	struct in_addr addr;
-	char buf[INET_ADDRSTRLEN];
-
-	addr.s_addr = ip_addr;
-
-	if (inet_ntop(AF_INET, &addr, buf, INET_ADDRSTRLEN))
-		g_print("%s: %s\n", label, buf);
-}
-
-static void ppp_connect(GAtPPP *ppp, GAtPPPConnectStatus success,
-			guint32 ip_addr, guint32 dns1, guint32 dns2,
+static void ppp_connect(GAtPPPConnectStatus success,
+			const char *iface, const char *ip,
+			const char *dns1, const char *dns2,
 			gpointer user_data)
 {
 	if (success != G_AT_PPP_CONNECT_SUCCESS) {
@@ -240,12 +230,13 @@ static void ppp_connect(GAtPPP *ppp, GAtPPPConnectStatus success,
 	}
 
 	/* print out the negotiated address and dns server */
-	print_ip_address("IP Address", ip_addr);
-	print_ip_address("Primary DNS Server", dns1);
-	print_ip_address("Secondary DNS Server", dns2);
+	g_print("Network Device: %s\n", iface);
+	g_print("IP Address: %s\n", ip);
+	g_print("Primary DNS Server: %s\n", dns1);
+	g_print("Secondary DNS Server: %s\n", dns2);
 }
 
-static void ppp_disconnect(GAtPPP *ppp, gpointer user_data)
+static void ppp_disconnect(gpointer user_data)
 {
 	g_print("PPP Link down\n");
 }
