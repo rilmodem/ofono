@@ -1859,11 +1859,11 @@ void __ofono_cbs_sim_download(struct ofono_sim *sim,
 
 	tlv[0] = STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD;
 	tlv[1] = 6 + pdu_len;
-	tlv[2] = 0x82; /* Device Identities */
+	tlv[2] = 0x80 | STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
 	tlv[3] = 0x02; /* Device Identities length */
-	tlv[4] = 0x83; /* Network */
-	tlv[5] = 0x81; /* UICC */
-	tlv[6] = 0x8c; /* Cell Broadcast page */
+	tlv[4] = STK_DEVICE_IDENTITY_TYPE_NETWORK;
+	tlv[5] = STK_DEVICE_IDENTITY_TYPE_UICC;
+	tlv[6] = 0x80 | STK_DATA_OBJECT_TYPE_CBS_PAGE;
 	tlv[7] = pdu_len;
 
 	memcpy(tlv + 8, pdu, pdu_len);
