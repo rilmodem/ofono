@@ -116,7 +116,10 @@ static void add_mbm(struct ofono_modem *modem,
 			g_str_has_suffix(desc, "Broadband Modem") ||
 			g_str_has_suffix(desc, "Broadband USB Modem")) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
+		if (ofono_modem_get_string(modem, MODEM_DEVICE) == NULL)
+			ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
+		else
+			ofono_modem_set_string(modem, DATA_DEVICE, devnode);
 	} else if (g_str_has_suffix(desc, "Minicard Data Modem") ||
 			g_str_has_suffix(desc, "Mini-Card Data Modem") ||
 			g_str_has_suffix(desc, "Broadband Data Modem")) {
