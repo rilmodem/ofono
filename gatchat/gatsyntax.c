@@ -42,6 +42,7 @@ enum GSMV1_STATE {
 	GSMV1_STATE_PDU_CR,
 	GSMV1_STATE_PROMPT,
 	GSMV1_STATE_ECHO,
+	GSMV1_PPP_DATA,
 };
 
 enum GSM_PERMISSIVE_STATE {
@@ -79,6 +80,8 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 		case GSMV1_STATE_IDLE:
 			if (byte == '\r')
 				syntax->state = GSMV1_STATE_INITIAL_CR;
+			else if (byte == '~')
+				syntax->state = GSMV1_PPP_DATA;
 			else
 				syntax->state = GSMV1_STATE_ECHO;
 			break;
@@ -191,6 +194,16 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 			 * by CtrlZ character
 			 */
 			if (byte == 26 || byte == '\r') {
+				syntax->state = GSMV1_STATE_IDLE;
+				res = G_AT_SYNTAX_RESULT_UNRECOGNIZED;
+				i += 1;
+				goto out;
+			}
+
+			break;
+
+		case GSMV1_PPP_DATA:
+			if (byte == '~') {
 				syntax->state = GSMV1_STATE_IDLE;
 				res = G_AT_SYNTAX_RESULT_UNRECOGNIZED;
 				i += 1;
