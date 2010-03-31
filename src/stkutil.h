@@ -290,6 +290,12 @@ enum stk_event_type {
 	STK_EVENT_TYPE_MULTIPLE_ACCESS_TECHNOLOGIES_CHANGE =	0x14
 };
 
+enum stk_service_state {
+	STK_NORMAL_SERVICE = 	0x00,
+	STK_LIMITED_SERVICE = 	0x01,
+	STK_NO_SERVICE = 	0x02
+};
+
 /* Defined in TS 102.223 Section 8.1 */
 struct stk_address {
 	unsigned char ton_npi;

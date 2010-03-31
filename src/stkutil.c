@@ -97,6 +97,21 @@ static gboolean parse_dataobj_common_bool(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* For data object that only has one byte */
+static gboolean parse_dataobj_common_byte(
+		struct comprehension_tlv_iter *iter, unsigned char *out)
+{
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_length(iter) != 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	*out = data[0];
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.1 */
 static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -651,6 +666,15 @@ static gboolean parse_dataobj_cause(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.27 */
+static gboolean parse_dataobj_location_status(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -763,6 +787,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_event_list;
 	case STK_DATA_OBJECT_TYPE_CAUSE:
 		return parse_dataobj_cause;
+	case STK_DATA_OBJECT_TYPE_LOCATION_STATUS:
+		return parse_dataobj_location_status;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
