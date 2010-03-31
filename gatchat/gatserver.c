@@ -252,6 +252,130 @@ void g_at_server_send_info(GAtServer *server, const char *line, gboolean last)
 	send_common(server, buf, len);
 }
 
+static gboolean get_result_value(GAtServer *server, GAtResult *result,
+						const char *command,
+						int min, int max, int *value)
+{
+	GAtResultIter iter;
+	int val;
+	char prefix[10];
+
+	if (command[0] != 'S')
+		return FALSE;
+
+	sprintf(prefix, "%s=", command);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, prefix))
+		return FALSE;
+
+	if (!g_at_result_iter_next_number(&iter, &val))
+		return FALSE;
+
+	if (val < min || val > max)
+		return FALSE;
+
+	*value = val;
+
+	return TRUE;
+}
+
+static void set_s_value(GAtServer *server, const char *prefix, int val)
+{
+	switch (prefix[1]) {
+	case '3':
+		server->v250.s3 = val;
+		break;
+	case '4':
+		server->v250.s4 = val;
+		break;
+	case '5':
+		server->v250.s5 = val;
+		break;
+	default:
+		break;
+	}
+}
+
+static int get_s_value(GAtServer *server, const char *prefix)
+{
+	int val = 0;
+
+	switch (prefix[1]) {
+	case '3':
+		val = server->v250.s3;
+		break;
+	case '4':
+		val = server->v250.s4;
+		break;
+	case '5':
+		val = server->v250.s5;
+		break;
+	default:
+		break;
+	}
+
+	return val;
+}
+
+static void s_template_cb(GAtServerRequestType type, GAtResult *result,
+					gpointer user_data, const char *prefix,
+					int min, int max)
+{
+	GAtServer *server = user_data;
+	char buf[20];
+	int val;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		if (!get_result_value(server, result, prefix, min, max, &val)) {
+			g_at_server_send_final(server,
+						G_AT_SERVER_RESULT_ERROR);
+			return;
+		}
+
+		set_s_value(server, prefix, val);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		val = get_s_value(server, prefix);
+		sprintf(buf, "%03d", val);
+		g_at_server_send_info(server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		sprintf(buf, "%s: (%d-%d)", prefix, min, max);
+		g_at_server_send_info(server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
+static void at_s3_cb(GAtServerRequestType type, GAtResult *result,
+					gpointer user_data)
+{
+	s_template_cb(type, result, user_data, "S3", 0, 127);
+}
+
+static void at_s4_cb(GAtServerRequestType type, GAtResult *result,
+					gpointer user_data)
+{
+	s_template_cb(type, result, user_data, "S4", 0, 127);
+}
+
+static void at_s5_cb(GAtServerRequestType type, GAtResult *result,
+					gpointer user_data)
+{
+	s_template_cb(type, result, user_data, "S5", 0, 127);
+}
+
 static inline gboolean is_extended_command_prefix(const char c)
 {
 	switch (c) {
@@ -947,6 +1071,13 @@ static void at_notify_node_destroy(gpointer data)
 	g_free(node);
 }
 
+static void basic_command_register(GAtServer *server)
+{
+	g_at_server_register(server, "S3", at_s3_cb, server, NULL);
+	g_at_server_register(server, "S4", at_s4_cb, server, NULL);
+	g_at_server_register(server, "S5", at_s5_cb, server, NULL);
+}
+
 GAtServer *g_at_server_new(GIOChannel *io)
 {
 	GAtServer *server;
@@ -984,6 +1115,8 @@ GAtServer *g_at_server_new(GIOChannel *io)
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				received_data, server,
 				(GDestroyNotify)read_watcher_destroy_notify);
+
+	basic_command_register(server);
 
 	return server;
 
