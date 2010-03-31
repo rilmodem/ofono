@@ -115,9 +115,15 @@ struct _GAtServer {
 	enum ParserState parser_state;
 	gboolean destroyed;			/* Re-entrancy guard */
 	char *last_line;			/* Last read line */
+	unsigned int cur_pos;			/* Where we are on the line */
+	GAtServerResult last_result;
+	gboolean processing_cmdline;
+	gboolean final_sent;
+	gboolean final_async;
 };
 
 static void g_at_server_wakeup_writer(GAtServer *server);
+static void server_parse_line(GAtServer *server);
 
 static struct ring_buffer *allocate_next(GAtServer *server)
 {
@@ -188,6 +194,18 @@ void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 {
 	char buf[1024];
 
+	server->final_sent = TRUE;
+	server->last_result = result;
+
+	if (result == G_AT_SERVER_RESULT_OK && server->processing_cmdline) {
+		if (server->final_async)
+			server_parse_line(server);
+
+		return;
+	}
+
+	server->processing_cmdline = FALSE;
+
 	if (server->v250.is_v1)
 		sprintf(buf, "%s", server_result_to_string(result));
 	else
@@ -198,6 +216,10 @@ void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 
 void g_at_server_send_ext_final(GAtServer *server, const char *result)
 {
+	server->final_sent = TRUE;
+	server->last_result = G_AT_SERVER_RESULT_EXT_ERROR;
+	server->processing_cmdline = FALSE;
+
 	send_result_common(server, result);
 }
 
@@ -474,17 +496,19 @@ done:
 
 static void server_parse_line(GAtServer *server)
 {
-	unsigned int pos = 0;
 	char *line = server->last_line;
+	unsigned int pos = server->cur_pos;
 	unsigned int len = strlen(line);
 
-	if (len == 0) {
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
-		return;
-	}
+	server->final_async = FALSE;
+
+	if (pos == 0)
+		server->processing_cmdline = TRUE;
 
 	while (pos < len) {
 		unsigned int consumed;
+
+		server->final_sent = FALSE;
 
 		if (is_extended_command_prefix(line[pos]))
 			consumed = parse_extended_command(server, line + pos);
@@ -494,11 +518,27 @@ static void server_parse_line(GAtServer *server)
 		if (consumed == 0) {
 			g_at_server_send_final(server,
 						G_AT_SERVER_RESULT_ERROR);
-			break;
+			return;
 		}
 
 		pos += consumed;
+		server->cur_pos = pos;
+
+		/*
+		 * We wait the callback until it finished processing
+		 * the command and called the send_final.
+		 */
+		if (server->final_sent == FALSE) {
+			server->final_async = TRUE;
+			return;
+		}
+
+		if (server->last_result != G_AT_SERVER_RESULT_OK)
+			return;
 	}
+
+	server->processing_cmdline = FALSE;
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 }
 
 static enum ParserResult server_feed(GAtServer *server,
@@ -683,6 +723,7 @@ static void new_bytes(GAtServer *p)
 			g_free(p->last_line);
 
 			p->last_line = extract_line(p);
+			p->cur_pos = 0;
 
 			if (p->last_line)
 				server_parse_line(p);
