@@ -442,7 +442,7 @@ struct stk_transaction_id {
  * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
  * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects
  */
-struct stk_icon_identifier {
+struct stk_icon_id {
 	unsigned char qualifier;
 	unsigned char id;
 };
@@ -471,7 +471,7 @@ struct stk_text_attribute {
 
 struct stk_command_display_text {
 	char *text;
-	struct stk_icon_identifier icon_id;
+	struct stk_icon_id icon_id;
 	ofono_bool_t immediate_response;
 	struct stk_duration duration;
 	struct stk_text_attribute text_attribute;
@@ -482,7 +482,7 @@ struct stk_command_get_input {
 	char *text;
 	struct stk_response_length response_length;
 	char *default_text;
-	struct stk_icon_identifier icon_id;
+	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attribute;
 	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
 };
@@ -491,7 +491,7 @@ struct stk_command_send_sms {
 	char *alpha_id;
 	struct stk_address address;
 	struct sms gsm_sms;
-	struct stk_icon_identifier icon_id;
+	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attribute;
 	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
 };

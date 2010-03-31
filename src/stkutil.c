@@ -729,7 +729,7 @@ static gboolean parse_dataobj_call_control_requested_action(
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	struct stk_icon_identifier *id = user;
+	struct stk_icon_id *id = user;
 	const unsigned char *data;
 
 	if (comprehension_tlv_iter_get_length(iter) != 2)
