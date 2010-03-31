@@ -675,6 +675,24 @@ static gboolean parse_dataobj_location_status(
 	return parse_dataobj_common_byte(iter, byte);
 }
 
+/* Defined in TS 102.223 Section 8.28 */
+static gboolean parse_dataobj_transaction_id(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_transaction_id *ti = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len < 1) || (len > sizeof(ti->list)))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	ti->len = len;
+	memcpy(ti->list, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -789,6 +807,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_cause;
 	case STK_DATA_OBJECT_TYPE_LOCATION_STATUS:
 		return parse_dataobj_location_status;
+	case STK_DATA_OBJECT_TYPE_TRANSACTION_ID:
+		return parse_dataobj_transaction_id;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:

@@ -418,6 +418,15 @@ struct stk_cause {
 };
 
 /*
+ * According to 102.223 Section 8.28 the length of CTLV is 1 byte. This means
+ * that the maximum size is 127 according to the rules of CTLVs.
+ */
+struct stk_transaction_id {
+	unsigned char list[127];
+	unsigned int len;
+};
+
+/*
  * Defined in TS 102.223 Section 8.31
  * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
  * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects
