@@ -592,6 +592,24 @@ static gboolean parse_dataobj_default_text(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.24 */
+static gboolean parse_dataobj_items_next_action_indicator(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_items_next_action_indicator *inai = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len < 1) || (len > sizeof(inai->list)))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	inai->len = len;
+	memcpy(inai->list, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -698,6 +716,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_network_measurement_results;
 	case STK_DATA_OBJECT_TYPE_DEFAULT_TEXT:
 		return parse_dataobj_default_text;
+	case STK_DATA_OBJECT_TYPE_ITEMS_NEXT_ACTION_INDICATOR:
+		return parse_dataobj_items_next_action_indicator;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
