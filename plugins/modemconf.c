@@ -138,12 +138,15 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 		return NULL;
 
 	modem = ofono_modem_create(group, driver);
+	if (modem == NULL)
+		goto error;
 
 	for (i = 0; setup_helpers[i].driver; i++) {
 		if (!g_strcmp0(driver, setup_helpers[i].driver))
 			setup_helpers[i].func(modem, keyfile, group);
 	}
 
+error:
 	g_free(driver);
 
 	return modem;
