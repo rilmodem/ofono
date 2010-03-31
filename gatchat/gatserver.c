@@ -570,9 +570,9 @@ static int get_basic_prefix_size(const char *buf)
 		/* All other cases it is a simple 1 character prefix */
 		return 1;
 	}
-	
+
 	if (buf[0] == '&') {
-		if (g_ascii_isalpha(buf[0] == FALSE))
+		if (g_ascii_isalpha(buf[1]) == FALSE)
 			return 0;
 
 		return 2;
