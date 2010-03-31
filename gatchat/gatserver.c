@@ -996,8 +996,13 @@ static void new_bytes(GAtServer *p)
 		}
 
 		case PARSER_RESULT_REPEAT_LAST:
-			/* TODO */
-			g_at_server_send_final(p, G_AT_SERVER_RESULT_ERROR);
+			p->cur_pos = 0;
+
+			if (p->last_line)
+				server_parse_line(p);
+			else
+				g_at_server_send_final(p,
+						G_AT_SERVER_RESULT_OK);
 			ring_buffer_drain(p->read_buf, p->read_so_far);
 			break;
 
