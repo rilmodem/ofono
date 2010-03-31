@@ -112,6 +112,29 @@ static gboolean parse_dataobj_common_byte(
 	return TRUE;
 }
 
+/* For data object that only has a byte array with undetermined length */
+static gboolean parse_dataobj_common_byte_array(
+			struct comprehension_tlv_iter *iter,
+			struct stk_common_byte_array *array)
+{
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	array->len = len;
+
+	array->array = g_try_malloc(len);
+	if (array->array == NULL)
+		return FALSE;
+
+	memcpy(array->array, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.1 */
 static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -693,6 +716,15 @@ static gboolean parse_dataobj_transaction_id(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.30 */
+static gboolean parse_dataobj_call_control_requested_action(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_common_byte_array *array = user;
+
+	return parse_dataobj_common_byte_array(iter, array);
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -809,6 +841,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_location_status;
 	case STK_DATA_OBJECT_TYPE_TRANSACTION_ID:
 		return parse_dataobj_transaction_id;
+	case STK_DATA_OBJECT_TYPE_CALL_CONTROL_REQUESTED_ACTION:
+		return parse_dataobj_call_control_requested_action;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
