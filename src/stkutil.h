@@ -296,6 +296,11 @@ enum stk_service_state {
 	STK_NO_SERVICE = 	0x02
 };
 
+enum stk_icon_qualifier {
+	STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY = 	0x00,
+	STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY =	0x01
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
