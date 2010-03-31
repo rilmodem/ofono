@@ -281,67 +281,28 @@ static gboolean get_result_value(GAtServer *server, GAtResult *result,
 	return TRUE;
 }
 
-static void set_s_value(GAtServer *server, const char *prefix, int val)
-{
-	switch (prefix[1]) {
-	case '3':
-		server->v250.s3 = val;
-		break;
-	case '4':
-		server->v250.s4 = val;
-		break;
-	case '5':
-		server->v250.s5 = val;
-		break;
-	default:
-		break;
-	}
-}
-
-static int get_s_value(GAtServer *server, const char *prefix)
-{
-	int val = 0;
-
-	switch (prefix[1]) {
-	case '3':
-		val = server->v250.s3;
-		break;
-	case '4':
-		val = server->v250.s4;
-		break;
-	case '5':
-		val = server->v250.s5;
-		break;
-	default:
-		break;
-	}
-
-	return val;
-}
-
 static void s_template_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data, const char *prefix,
-					int min, int max)
+					GAtServer *server, char *sreg,
+					const char *prefix, int min, int max)
 {
-	GAtServer *server = user_data;
 	char buf[20];
-	int val;
+	int tmp;
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
-		if (!get_result_value(server, result, prefix, min, max, &val)) {
+		if (!get_result_value(server, result, prefix, min, max, &tmp)) {
 			g_at_server_send_final(server,
 						G_AT_SERVER_RESULT_ERROR);
 			return;
 		}
 
-		set_s_value(server, prefix, val);
+		*sreg = tmp;
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 
 	case G_AT_SERVER_REQUEST_TYPE_QUERY:
-		val = get_s_value(server, prefix);
-		sprintf(buf, "%03d", val);
+		tmp = *sreg;
+		sprintf(buf, "%03d", tmp);
 		g_at_server_send_info(server, buf, TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
@@ -359,21 +320,24 @@ static void s_template_cb(GAtServerRequestType type, GAtResult *result,
 }
 
 static void at_s3_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	s_template_cb(type, result, user_data, "S3", 0, 127);
+	GAtServer *server = user_data;
+	s_template_cb(type, result, server, &server->v250.s3, "S3", 0, 127);
 }
 
 static void at_s4_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	s_template_cb(type, result, user_data, "S4", 0, 127);
+	GAtServer *server = user_data;
+	s_template_cb(type, result, server, &server->v250.s4, "S4", 0, 127);
 }
 
 static void at_s5_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	s_template_cb(type, result, user_data, "S5", 0, 127);
+	GAtServer *server = user_data;
+	s_template_cb(type, result, server, &server->v250.s5, "S5", 0, 127);
 }
 
 static void set_v250_value(GAtServer *server, const char *prefix, int val)
