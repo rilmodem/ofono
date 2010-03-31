@@ -35,19 +35,19 @@ typedef enum _GAtPPPConnectStatus {
 } GAtPPPConnectStatus;
 
 typedef void (*GAtPPPConnectFunc)(GAtPPP *ppp, GAtPPPConnectStatus success,
-				 guint32 ip_address,
-				 guint32 dns1, guint32 dns2,
-				 gpointer user_data);
+					guint32 ip_address,
+					guint32 dns1, guint32 dns2,
+					gpointer user_data);
 
 typedef void (*GAtPPPDisconnectFunc)(GAtPPP *ppp, gpointer user_data);
 
 GAtPPP * g_at_ppp_new(GIOChannel *modem);
 void g_at_ppp_open(GAtPPP *ppp);
-void g_at_ppp_set_connect_function(GAtPPP *ppp,
-			       GAtPPPConnectFunc callback, gpointer user_data);
+void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc callback,
+					gpointer user_data);
 void g_at_ppp_set_disconnect_function(GAtPPP *ppp,
-				  GAtPPPDisconnectFunc callback,
-				  gpointer user_data);
+					GAtPPPDisconnectFunc callback,
+					gpointer user_data);
 void g_at_ppp_shutdown(GAtPPP *ppp);
 void g_at_ppp_ref(GAtPPP *ppp);
 void g_at_ppp_unref(GAtPPP *ppp);
