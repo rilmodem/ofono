@@ -1050,19 +1050,19 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 
 		read_count++;
 
+		if (rbytes == 0)
+			break;
+
+		if (server->v250.echo)
+			send_common(server, (char *)buf, rbytes);
+
 		/* Ignore incoming bytes when processing a command line */
 		if (server->processing_cmdline)
 			continue;
 
 		total_read += rbytes;
-
-		if (rbytes > 0) {
-			if (server->v250.echo)
-				send_common(server, (char *)buf, rbytes);
-
-			ring_buffer_write_advance(server->read_buf, rbytes);
-		}
-	} while (err == G_IO_ERROR_NONE && rbytes > 0 &&
+		ring_buffer_write_advance(server->read_buf, rbytes);
+	} while (err == G_IO_ERROR_NONE &&
 					read_count < server->max_read_attempts);
 
 	if (total_read > 0)
