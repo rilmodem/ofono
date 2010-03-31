@@ -14,7 +14,7 @@ def ussd_request_received(content):
 	ss.Cancel()
 
 def ussd_property_changed(name, value):
-	if name != "USSDState":
+	if name != "State":
 		return
 	print("USSD session state is " + value)
 
