@@ -403,6 +403,15 @@ struct stk_event_list {
 };
 
 /*
+ * According to 102.223 Section 8.26, the maximum length of cause is 30.
+ */
+struct stk_cause {
+	unsigned char cause[30];
+	unsigned int len;
+	ofono_bool_t has_cause;
+};
+
+/*
  * Defined in TS 102.223 Section 8.31
  * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
  * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects

@@ -628,6 +628,29 @@ static gboolean parse_dataobj_event_list(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.26 */
+static gboolean parse_dataobj_cause(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_cause *cause = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len == 1) || (len > sizeof(cause->cause)))
+		return FALSE;
+
+	cause->has_cause = TRUE;
+
+	if (len == 0)
+		return TRUE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	cause->len = len;
+	memcpy(cause->cause, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.31 */
 static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -738,6 +761,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_items_next_action_indicator;
 	case STK_DATA_OBJECT_TYPE_EVENT_LIST:
 		return parse_dataobj_event_list;
+	case STK_DATA_OBJECT_TYPE_CAUSE:
+		return parse_dataobj_cause;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
