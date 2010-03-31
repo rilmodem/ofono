@@ -99,18 +99,14 @@ void g_at_server_send_intermediate(GAtServer *server, const char *result);
 /* Send an unsolicited result code. E.g. RING */
 void g_at_server_send_unsolicited(GAtServer *server, const char *result);
 
-/* Send an information text. The text could contain multiple lines. Each
- * line, including line terminators, should not exceed 2048 characters.
- */
-void g_at_server_send_info_lines(GAtServer *server, GSList *text);
-
 /*
  * Send a single response line for the command.  The line should be no longer
  * than 2048 characters.  If the response contains multiple lines, use
- * g_at_server_send_info_lines instead, since the formatting of 27.007
- * compliant multi-line responses is different.
+ * FALSE for the 'last' parameter for lines 1 .. n -1, and 'TRUE' for the last
+ * line.  This is required for formatting of 27.007 compliant multi-line
+ * responses.
  */
-void g_at_server_send_info(GAtServer *server, const char *line);
+void g_at_server_send_info(GAtServer *server, const char *line, gboolean last);
 
 #ifdef __cplusplus
 }

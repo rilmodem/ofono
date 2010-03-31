@@ -169,7 +169,7 @@ static void send_result_common(GAtServer *server, const char *result)
 
 {
 	struct v250_settings v250 = server->v250;
-	char buf[MAX_TEXT_SIZE];
+	char buf[MAX_TEXT_SIZE + 1];
 	char t = v250.s3;
 	char r = v250.s4;
 	unsigned int len;
@@ -180,14 +180,15 @@ static void send_result_common(GAtServer *server, const char *result)
 	if (result == NULL)
 		return;
 
-	if (v250.is_v1)
-		len = snprintf(buf, sizeof(buf), "%c%c%s%c%c", t, r, result,
-				t, r);
-	else
-		len = snprintf(buf, sizeof(buf), "%s%c", result,
-				t);
+	if (strlen(result) > 2048)
+		return;
 
-	send_common(server, buf, MIN(len, sizeof(buf)-1));
+	if (v250.is_v1)
+		len = sprintf(buf, "%c%c%s%c%c", t, r, result, t, r);
+	else
+		len = sprintf(buf, "%s%c", result, t);
+
+	send_common(server, buf, len);
 }
 
 void g_at_server_send_final(GAtServer *server, GAtServerResult result)
@@ -233,32 +234,21 @@ void g_at_server_send_unsolicited(GAtServer *server, const char *result)
 	send_result_common(server, result);
 }
 
-void g_at_server_send_info(GAtServer *server, const char *info)
+void g_at_server_send_info(GAtServer *server, const char *line, gboolean last)
 {
-	send_result_common(server, info);
-}
-
-void g_at_server_send_info_lines(GAtServer *server, GSList *text)
-{
-	char buf[MAX_TEXT_SIZE];
+	char buf[MAX_TEXT_SIZE + 1];
 	char t = server->v250.s3;
 	char r = server->v250.s4;
 	unsigned int len;
-	GSList *l;
 
-	if (!text)
+	if (strlen(line) > 2048)
 		return;
 
-	for (l = text; l; l = l->next) {
-		char *line = l->data;
-		if (!line)
-			return;
+	if (last)
+		len = sprintf(buf, "%c%c%s%c%c", t, r, line, t, r);
+	else
+		len = sprintf(buf, "%c%c%s", t, r, line);
 
-		len = snprintf(buf, sizeof(buf), "%c%c%s", t, r, line);
-		send_common(server, buf, MIN(len, sizeof(buf)-1));
-	}
-
-	len = snprintf(buf, sizeof(buf), "%c%c", t, r);
 	send_common(server, buf, len);
 }
 
