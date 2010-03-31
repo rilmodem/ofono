@@ -308,15 +308,6 @@ struct stk_ccp {
 };
 
 /*
- * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
- * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects
- */
-struct stk_icon_identifier {
-	unsigned char qualifier;
-	unsigned char id;
-};
-
-/*
  * According to 102.223 Section 8.8 interval values of 0x00 are reserved.
  * We use this to denote empty duration objects.
  */
@@ -347,6 +338,17 @@ struct stk_result {
 	unsigned char *additional;
 };
 
+/* Define the struct of single file in TS102.223 Section 8.18.
+ * According to TS 11.11 Section 6.2, each file id has two bytes, and the
+ * maximum Dedicated File level is 2. So the maximum size of file is 8, which
+ * contains two bytes of Master File, 2 bytes of 1st level Dedicated File,
+ * 2 bytes of 2nd level Dedicated File and 2 bytes of Elementary File.
+ */
+struct stk_file {
+	unsigned char file[8];
+	unsigned int len;
+};
+
 /* Defined in TS 102.223 Section 8.19 */
 struct stk_location_info {
 	char mnc[OFONO_MAX_MNC_LENGTH + 1];
@@ -358,15 +360,14 @@ struct stk_location_info {
 	unsigned short ext_ci;
 };
 
-/* Define the struct of single file in TS102.223 Section 8.18.
- * According to TS 11.11 Section 6.2, each file id has two bytes, and the
- * maximum Dedicated File level is 2. So the maximum size of file is 8, which
- * contains two bytes of Master File, 2 bytes of 1st level Dedicated File,
- * 2 bytes of 2nd level Dedicated File and 2 bytes of Elementary File.
+/*
+ * Defined in TS 102.223 Section 8.31
+ * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
+ * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects
  */
-struct stk_file {
-	unsigned char file[8];
-	unsigned int len;
+struct stk_icon_identifier {
+	unsigned char qualifier;
+	unsigned char id;
 };
 
 /*
