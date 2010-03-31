@@ -34,6 +34,7 @@
 #include "gatppp.h"
 #include "ppp.h"
 
+#define DEBUG
 #ifdef DEBUG
 static const char *pppcp_state_strings[] =
 	{"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",

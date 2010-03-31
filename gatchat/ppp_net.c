@@ -75,7 +75,7 @@ static void ip_process_packet(gpointer priv, guint8 *packet)
 	/* find the length of the packet to transmit */
 	len = get_host_short(&packet[2]);
 	status = g_io_channel_write_chars(data->channel, (gchar *) packet,
-                                          len, &bytes_written, &error);
+						len, &bytes_written, &error);
 }
 
 /*

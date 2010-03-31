@@ -164,7 +164,7 @@ static guint8 *ppp_encode(GAtPPP *ppp, guint8 *data, int len,
 	}
 
 	/* add FCS */
-	fcs ^= 0xffff;                 /* complement */
+	fcs ^= 0xffff;		/* complement */
 	ppp_put(ppp, frame, &pos, (guint8)(fcs & 0x00ff), lcp);
 	ppp_put(ppp, frame, &pos, (guint8)((fcs >> 8) & 0x00ff), lcp);
 
@@ -324,7 +324,7 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 	 * we won't block, or allow ourselves to block here?
 	 */
 	status = g_io_channel_write_chars(ppp->modem, (gchar *) frame,
-                                          framelen, &bytes_written, &error);
+					framelen, &bytes_written, &error);
 
 	g_free(frame);
 }
