@@ -34,9 +34,9 @@ typedef enum _GAtPPPConnectStatus {
 	G_AT_PPP_CONNECT_FAIL
 } GAtPPPConnectStatus;
 
-typedef void (*GAtPPPConnectFunc)(GAtPPP *ppp, GAtPPPConnectStatus success,
-					guint32 ip_address,
-					guint32 dns1, guint32 dns2,
+typedef void (*GAtPPPConnectFunc)(GAtPPPConnectStatus success,
+					const char *iface, const char *ip,
+					const char *dns1, const char *dns2,
 					gpointer user_data);
 
 typedef void (*GAtPPPDisconnectFunc)(GAtPPP *ppp, gpointer user_data);

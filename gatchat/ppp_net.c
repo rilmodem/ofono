@@ -222,14 +222,32 @@ static void ipcp_up(struct pppcp_data *pppcp)
 {
 	struct ipcp_data *data = pppcp->priv;
 	GAtPPP *ppp = pppcp->ppp;
+	char ip[INET_ADDRSTRLEN];
+	char dns1[INET_ADDRSTRLEN];
+	char dns2[INET_ADDRSTRLEN];
+	struct in_addr addr;
 
-	/* call the connect function */
-	if (ppp->connect_cb)
-		ppp->connect_cb(ppp, G_AT_PPP_CONNECT_SUCCESS,
-				__get_unaligned_long(data->ip_address),
-				__get_unaligned_long(data->primary_dns),
-				__get_unaligned_long(data->secondary_dns),
-				ppp->connect_data);
+	if (ppp->connect_cb == NULL)
+		return;
+
+	memset(ip, 0, sizeof(ip));
+	addr.s_addr = __get_unaligned_long(data->ip_address);
+	inet_ntop(AF_INET, &addr, ip, INET_ADDRSTRLEN);
+
+	memset(dns1, 0, sizeof(dns1));
+	addr.s_addr = __get_unaligned_long(data->primary_dns);
+	inet_ntop(AF_INET, &addr, dns1, INET_ADDRSTRLEN);
+
+	memset(dns2, 0, sizeof(dns2));
+	addr.s_addr = __get_unaligned_long(data->secondary_dns);
+	inet_ntop(AF_INET, &addr, dns2, INET_ADDRSTRLEN);
+
+	ppp->connect_cb(G_AT_PPP_CONNECT_SUCCESS,
+			pppcp->ppp->net->if_name,
+			ip[0] ? ip : NULL,
+			dns1[0] ? dns1 : NULL,
+			dns2[0] ? dns2 : NULL,
+			ppp->connect_data);
 }
 
 static void ipcp_down(struct pppcp_data *data)

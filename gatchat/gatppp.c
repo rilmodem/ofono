@@ -49,10 +49,13 @@ void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
 	auth_set_credentials(ppp->auth, username, passwd);
 }
 
-void g_at_ppp_set_connect_function(GAtPPP *ppp,
-			       GAtPPPConnectFunc callback, gpointer user_data)
+void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,
+					gpointer user_data)
 {
-	ppp->connect_cb = callback;
+	if (func == NULL)
+		return;
+
+	ppp->connect_cb = func;
 	ppp->connect_data = user_data;
 }
 
