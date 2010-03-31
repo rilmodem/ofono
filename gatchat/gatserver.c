@@ -85,9 +85,9 @@ struct v250_settings {
 	gboolean echo;			/* set by E<val> */
 	gboolean quiet;			/* set by Q<val> */
 	gboolean is_v1;			/* set by V<val>, v0 or v1 */
-	unsigned int res_format;	/* set by X<val> */
-	unsigned int c109;		/* set by &C<val> */
-	unsigned int c108;		/* set by &D<val> */
+	int res_format;			/* set by X<val> */
+	int c109;			/* set by &C<val> */
+	int c108;			/* set by &D<val> */
 };
 
 /* AT command set that server supported */
@@ -340,97 +340,29 @@ static void at_s5_cb(GAtServerRequestType type, GAtResult *result,
 	s_template_cb(type, result, server, &server->v250.s5, "S5", 0, 127);
 }
 
-static void set_v250_value(GAtServer *server, const char *prefix, int val)
-{
-	if (prefix[0] == '&') {
-		switch (prefix[1]) {
-		case 'C':
-			server->v250.c109 = val;
-			break;
-		case 'D':
-			server->v250.c108 = val;
-			break;
-		default:
-			break;
-		}
-	} else {
-		switch (prefix[0]) {
-		case 'E':
-			server->v250.echo = val;
-			break;
-		case 'Q':
-			server->v250.quiet = val;
-			break;
-		case 'V':
-			server->v250.is_v1 = val;
-			break;
-		case 'X':
-			server->v250.res_format = val;
-			break;
-		}
-	}
-}
-
-static int get_v250_value(GAtServer *server, const char *prefix)
-{
-	int val = 0;
-
-	if (prefix[0] == '&') {
-		switch (prefix[1]) {
-		case 'C':
-			val = server->v250.c109;
-			break;
-		case 'D':
-			val = server->v250.c108;
-			break;
-		default:
-			break;
-		}
-	} else {
-		switch (prefix[0]) {
-		case 'E':
-			val = server->v250.echo;
-			break;
-		case 'Q':
-			val = server->v250.quiet;
-			break;
-		case 'V':
-			val = server->v250.is_v1;
-			break;
-		case 'X':
-			val = server->v250.res_format;
-			break;
-		default:
-			break;
-		}
-	}
-
-	return val;
-}
-
 static void at_template_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data, const char *prefix,
+					GAtServer *server, int *value,
+					const char *prefix,
 					int min, int max, int deftval)
 {
-	GAtServer *server = user_data;
 	char buf[20];
-	int val;
+	int tmp;
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
-		if (!get_result_value(server, result, prefix, min, max, &val)) {
+		if (!get_result_value(server, result, prefix, min, max, &tmp)) {
 			g_at_server_send_final(server,
 						G_AT_SERVER_RESULT_ERROR);
 			return;
 		}
 
-		set_v250_value(server, prefix, val);
+		*value = tmp;
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 
 	case G_AT_SERVER_REQUEST_TYPE_QUERY:
-		val = get_v250_value(server, prefix);
-		sprintf(buf, "%s: %d", prefix, val);
+		tmp = *value;
+		sprintf(buf, "%s: %d", prefix, tmp);
 		g_at_server_send_info(server, buf, TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
@@ -442,7 +374,7 @@ static void at_template_cb(GAtServerRequestType type, GAtResult *result,
 		break;
 
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
-		set_v250_value(server, prefix, deftval);
+		*value = deftval;
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 
@@ -453,39 +385,46 @@ static void at_template_cb(GAtServerRequestType type, GAtResult *result,
 }
 
 static void at_e_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	at_template_cb(type, result, user_data, "E", 0, 1, 1);
+	GAtServer *server = user_data;
+	at_template_cb(type, result, server, &server->v250.echo, "E", 0, 1, 1);
 }
 
 static void at_q_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	at_template_cb(type, result, user_data, "Q", 0, 1, 0);
+	GAtServer *server = user_data;
+	at_template_cb(type, result, server, &server->v250.quiet, "Q", 0, 1, 0);
 }
 
 static void at_v_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	at_template_cb(type, result, user_data, "V", 0, 1, 1);
+	GAtServer *server = user_data;
+	at_template_cb(type, result, server, &server->v250.is_v1, "V", 0, 1, 1);
 }
 
 static void at_x_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	at_template_cb(type, result, user_data, "X", 0, 4, 4);
+	GAtServer *server = user_data;
+	at_template_cb(type, result, server, &server->v250.res_format,
+			"X", 0, 4, 4);
 }
 
 static void at_c109_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	at_template_cb(type, result, user_data, "&C", 0, 1, 1);
+	GAtServer *server = user_data;
+	at_template_cb(type, result, server, &server->v250.c109, "&C", 0, 1, 1);
 }
 
 static void at_c108_cb(GAtServerRequestType type, GAtResult *result,
-					gpointer user_data)
+			gpointer user_data)
 {
-	at_template_cb(type, result, user_data, "&D", 0, 2, 2);
+	GAtServer *server = user_data;
+	at_template_cb(type, result, server, &server->v250.c108, "&D", 0, 2, 2);
 }
 
 static inline gboolean is_extended_command_prefix(const char c)
