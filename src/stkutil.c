@@ -98,8 +98,8 @@ static gboolean parse_dataobj_common_bool(struct comprehension_tlv_iter *iter,
 }
 
 /* For data object that only has one byte */
-static gboolean parse_dataobj_common_byte(
-		struct comprehension_tlv_iter *iter, unsigned char *out)
+static gboolean parse_dataobj_common_byte(struct comprehension_tlv_iter *iter,
+						unsigned char *out)
 {
 	const unsigned char *data;
 
@@ -649,8 +649,8 @@ static gboolean parse_dataobj_items_next_action_indicator(
 }
 
 /* Defined in TS 102.223 Section 8.25 */
-static gboolean parse_dataobj_event_list(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_event_list(struct comprehension_tlv_iter *iter,
+						void *user)
 {
 	struct stk_event_list *el = user;
 	const unsigned char *data;
@@ -667,8 +667,8 @@ static gboolean parse_dataobj_event_list(
 }
 
 /* Defined in TS 102.223 Section 8.26 */
-static gboolean parse_dataobj_cause(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_cause(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	struct stk_cause *cause = user;
 	const unsigned char *data;
