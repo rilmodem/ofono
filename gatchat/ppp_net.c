@@ -159,7 +159,6 @@ void ppp_net_open(struct ppp_net_data *data)
 			ppp_net_callback, (gpointer) data);
 
 	pppcp_generate_event(data->ipcp, OPEN, NULL, 0);
-
 }
 
 struct ppp_packet_handler ip_packet_handler = {
