@@ -771,6 +771,10 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,
 					server->debugf, server->debug_data);
 
+		/* Ignore incoming bytes when processing a command line */
+		if (server->processing_cmdline)
+			continue;
+
 		read_count++;
 
 		total_read += rbytes;
