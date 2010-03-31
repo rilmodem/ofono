@@ -359,7 +359,7 @@ static gboolean parse_dataobj_gsm_sms_tpdu(struct comprehension_tlv_iter *iter,
 	unsigned int len;
 
 	len = comprehension_tlv_iter_get_length(iter);
-	if (len < 1 || len > 164)
+	if (len < 1 || len > sizeof(tpdu->tpdu))
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
@@ -780,7 +780,7 @@ static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 
 	len = comprehension_tlv_iter_get_length(iter);
 
-	if (len > 127)
+	if (len > sizeof(attr->attributes))
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
