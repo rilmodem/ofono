@@ -360,8 +360,20 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 		else
 			ussd_change_state(ussd, USSD_STATE_IDLE);
 
-	} else if (ussd->state == USSD_STATE_IDLE ||
-			ussd->state == USSD_STATE_RESPONSE_SENT) {
+	} else if (ussd->state == USSD_STATE_RESPONSE_SENT) {
+		reply = dbus_message_new_method_return(ussd->pending);
+
+		if (!str)
+			str = "";
+
+		dbus_message_append_args(reply, DBUS_TYPE_STRING, &str,
+						DBUS_TYPE_INVALID);
+
+		if (status == OFONO_USSD_STATUS_ACTION_REQUIRED)
+			ussd_change_state(ussd, USSD_STATE_USER_ACTION);
+		else
+			ussd_change_state(ussd, USSD_STATE_IDLE);
+	} else if (ussd->state == USSD_STATE_IDLE) {
 		const char *signal_name;
 		const char *path = __ofono_atom_get_path(ussd->atom);
 		int new_state;
@@ -462,14 +474,19 @@ static void ussd_response_callback(const struct ofono_error *error, void *data)
 	struct ofono_ussd *ussd = data;
 	DBusMessage *reply;
 
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		DBG("ussd response failed with error: %s",
+				telephony_error_to_str(error));
+
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
 		ussd_change_state(ussd, USSD_STATE_RESPONSE_SENT);
-		reply = dbus_message_new_method_return(ussd->pending);
-	} else {
-		ussd_change_state(ussd, USSD_STATE_IDLE);
-		reply = __ofono_error_failed(ussd->pending);
+		return;
 	}
 
+	if (!ussd->pending)
+		return;
+
+	reply = __ofono_error_failed(ussd->pending);
 	__ofono_dbus_pending_reply(&ussd->pending, reply);
 }
 
@@ -575,7 +592,7 @@ static DBusMessage *ussd_get_properties(DBusConnection *conn,
 static GDBusMethodTable ussd_methods[] = {
 	{ "Initiate",		"s",	"sv",		ussd_initiate,
 					G_DBUS_METHOD_FLAG_ASYNC },
-	{ "Respond",		"s",	"",		ussd_respond,
+	{ "Respond",		"s",	"s",		ussd_respond,
 					G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Cancel",		"",	"",		ussd_cancel,
 					G_DBUS_METHOD_FLAG_ASYNC },
