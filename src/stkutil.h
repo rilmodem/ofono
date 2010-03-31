@@ -266,6 +266,30 @@ enum stk_tone_type {
 	STK_TONE_TYPE_MELODY_8 =	0x47
 };
 
+enum stk_event_type {
+	STK_EVENT_TYPE_MT_CALL =				0x00,
+	STK_EVENT_TYPE_CALL_CONNECTED =				0x01,
+	STK_EVENT_TYPE_CALL_DISCONNECTED =			0x02,
+	STK_EVENT_TYPE_LOCATION_STATUS =			0x03,
+	STK_EVENT_TYPE_USER_ACTIVITY =				0x04,
+	STK_EVENT_TYPE_IDLE_SCREEN_AVAILABLE =			0x05,
+	STK_EVENT_TYPE_CARD_READER_STATUS =			0x06,
+	STK_EVENT_TYPE_LANGUAGE_SELECTION =			0x07,
+	STK_EVENT_TYPE_BROWSER_TERMINATION =			0x08,
+	STK_EVENT_TYPE_DATA_AVAILABLE =				0x09,
+	STK_EVENT_TYPE_CHANNEL_STATUS =				0x0A,
+	STK_EVENT_TYPE_SINGLE_ACCESS_TECHNOLOGY_CHANGE =	0x0B,
+	STK_EVENT_TYPE_DISPLAY_PARAMETERS_CHANGED =		0x0C,
+	STK_EVENT_TYPE_LOCAL_CONNECTION =			0x0D,
+	STK_EVENT_TYPE_NETWORK_SEARCH_MODE_CHANGE =		0x0E,
+	STK_EVENT_TYPE_BROWSING_STATUS =			0x0F,
+	STK_EVENT_TYPE_FRAMES_INFORMATION_CHANGE =		0x10,
+	STK_EVENT_TYPE_I_WLAN_ACCESS_STATUS =			0x11,
+	STK_EVENT_TYPE_NETWORK_REJECTION =			0x12,
+	STK_EVENT_TYPE_HCI_CONNECTIVITY_EVENT =			0x13,
+	STK_EVENT_TYPE_MULTIPLE_ACCESS_TECHNOLOGIES_CHANGE =	0x14
+};
+
 /* Defined in TS 102.223 Section 8.1 */
 struct stk_address {
 	unsigned char ton_npi;
@@ -366,6 +390,15 @@ struct stk_location_info {
  */
 struct stk_items_next_action_indicator {
 	unsigned char list[127];
+	unsigned int len;
+};
+
+/*
+ * According to 102.223 Section 8.25, there are 21 kinds of event type and no
+ * one should appear more than once.
+ */
+struct stk_event_list {
+	unsigned char list[21];
 	unsigned int len;
 };
 
