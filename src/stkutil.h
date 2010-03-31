@@ -448,6 +448,18 @@ struct stk_icon_identifier {
 };
 
 /*
+ * According to 102.223 Section 8.32 the length of CTLV is 1 byte. This means
+ * that the maximum size is 127 according to the rules of CTLVs. This size also
+ * includes icon list qualifier for 1 byte, so the maxmimum size of icon
+ * identifier list is 126.
+ */
+struct stk_item_icon_id_list {
+	unsigned char qualifier;
+	unsigned char list[126];
+	unsigned int len;
+};
+
+/*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
  * of CTLVs.  Empty attribute options will have len of 0.

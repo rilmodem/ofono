@@ -743,6 +743,25 @@ static gboolean parse_dataobj_icon_id(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.32 */
+static gboolean parse_dataobj_item_icon_id_list(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_item_icon_id_list *iiil = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len < 2) || (len > 127))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	iiil->qualifier = data[0];
+	iiil->len = len - 1;
+	memcpy(iiil->list, data + 1, iiil->len);
+
+	return TRUE;
+}
+
 /* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -845,6 +864,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_call_control_requested_action;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:
 		return parse_dataobj_icon_id;
+	case STK_DATA_OBJECT_TYPE_ITEM_ICON_ID_LIST:
+		return parse_dataobj_item_icon_id_list;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
