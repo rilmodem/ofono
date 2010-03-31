@@ -361,6 +361,29 @@ static void cmgl_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
+static void cpbs_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+	GAtServer *server = user;
+	char buf[2048];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		sprintf(buf, "+CPBS: (\"FD\",\"SM\",\"SN\")");
+		g_at_server_send_info(server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void add_handler(GAtServer *server)
 {
 	g_at_server_set_debug(server, server_debug, "Server");
@@ -377,6 +400,7 @@ static void add_handler(GAtServer *server)
 	g_at_server_register(server, "+CNMI", cnmi_cb, server, NULL);
 	g_at_server_register(server, "+CSCS", cscs_cb, server, NULL);
 	g_at_server_register(server, "+CMGL", cmgl_cb, server, NULL);
+	g_at_server_register(server, "+CPBS", cpbs_cb, server, NULL);
 }
 
 static void server_destroy(gpointer user)
