@@ -133,7 +133,7 @@ struct _GAtPPP {
 	GQueue *recv_queue;
 	GAtPPPConnectFunc connect_cb;
 	gpointer connect_data;
-	GAtPPPDisconnectFunc disconnect_cb;
+	GAtDisconnectFunc disconnect_cb;
 	gpointer disconnect_data;
 	gint modem_watch;
 };

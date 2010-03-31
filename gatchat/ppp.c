@@ -383,7 +383,7 @@ static void ppp_dead(GAtPPP *ppp)
 {
 	/* notify interested parties */
 	if (ppp->disconnect_cb)
-		ppp->disconnect_cb(ppp, ppp->disconnect_data);
+		ppp->disconnect_cb(ppp->disconnect_data);
 
 	if (g_atomic_int_get(&ppp->ref_count))
 		return;

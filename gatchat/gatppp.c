@@ -59,11 +59,13 @@ void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,
 	ppp->connect_data = user_data;
 }
 
-void g_at_ppp_set_disconnect_function(GAtPPP *ppp,
-				  GAtPPPDisconnectFunc callback,
-				  gpointer user_data)
+void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtDisconnectFunc func,
+					  gpointer user_data)
 {
-	ppp->disconnect_cb = callback;
+	if (func == NULL)
+		return;
+
+	ppp->disconnect_cb = func;
 	ppp->disconnect_data = user_data;
 }
 
