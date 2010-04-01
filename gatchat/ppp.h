@@ -139,6 +139,7 @@ struct _GAtPPP {
 	gint modem_watch;
 	GAtDebugFunc debugf;
 	gpointer debug_data;
+	int record_fd;
 };
 
 gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data);

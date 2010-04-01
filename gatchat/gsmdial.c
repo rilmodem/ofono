@@ -54,6 +54,7 @@ static gboolean option_legacy = FALSE;
 static gboolean option_ppp = FALSE;
 static gchar *option_username = NULL;
 static gchar *option_password = NULL;
+static gchar *option_pppdump = NULL;
 
 static GAtPPP *ppp;
 static GAtChat *control;
@@ -270,6 +271,9 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		exit(1);
 	}
 	g_at_ppp_set_debug(ppp, gsmdial_debug, "PPP");
+
+	if (option_pppdump)
+		g_at_ppp_set_recording(ppp, option_pppdump);
 
 	g_at_ppp_set_credentials(ppp, option_username, option_password);
 
@@ -581,7 +585,9 @@ static GOptionEntry options[] = {
 	{ "username", 'u', 0, G_OPTION_ARG_STRING, &option_username,
 				"Specify PPP username" },
 	{ "password", 'w', 0, G_OPTION_ARG_STRING, &option_password,
-				"Specifiy PPP password" },
+				"Specify PPP password" },
+	{ "pppdump", 'D', 0, G_OPTION_ARG_STRING, &option_pppdump,
+				"Specify pppdump filename" },
 	{ NULL },
 };
 

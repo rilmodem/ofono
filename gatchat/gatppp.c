@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <termios.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 
 #include <glib.h>
@@ -44,7 +45,7 @@ void g_at_ppp_open(GAtPPP *ppp)
 }
 
 void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
-							const char *passwd)
+						const char *passwd)
 {
 	auth_set_credentials(ppp->auth, username, passwd);
 }
@@ -78,6 +79,21 @@ void g_at_ppp_set_debug(GAtPPP *ppp, GAtDebugFunc func, gpointer user_data)
 	ppp->debug_data = user_data;
 }
 
+void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename)
+{
+	if (ppp == NULL)
+		return;
+
+	if (ppp->record_fd > fileno(stderr))
+		close(ppp->record_fd);
+
+	if (filename == NULL)
+		return;
+
+	ppp->record_fd = open(filename, O_WRONLY | O_CREAT | O_APPEND,
+					S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+}
+
 void g_at_ppp_shutdown(GAtPPP *ppp)
 {
 	/* close the ppp link */
@@ -98,6 +114,9 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	 * we can't free the link yet, because we need to terminate
 	 * the link first.
 	 */
+
+	if (ppp->record_fd > fileno(stderr))
+		close(ppp->record_fd);
 }
 
 GAtPPP *g_at_ppp_new(GIOChannel *modem)
@@ -145,6 +164,8 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->modem_watch = g_io_add_watch(modem,
 			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 			ppp_cb, ppp);
+
+	ppp->record_fd = -1;
 
 	return ppp;
 }

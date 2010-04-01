@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <termios.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 
 #include <glib.h>
@@ -295,6 +296,30 @@ static void ppp_feed(GAtPPP *ppp, guint8 *data, gsize len)
 	ppp_recv(ppp);
 }
 
+static void ppp_record(GAtPPP *ppp, gboolean in, guint8 *data, guint16 length)
+{
+	guint16 len = htons(length);
+	guint32 ts;
+	struct timeval now;
+	unsigned char id;
+	int err;
+
+	if (ppp->record_fd < 0)
+		return;
+
+	gettimeofday(&now, NULL);
+	ts = htonl(now.tv_sec & 0xffffffff);
+
+	id = 0x07;
+	err = write(ppp->record_fd, &id, 1);
+	err = write(ppp->record_fd, &ts, 4);
+
+	id = in ? 0x02 : 0x01;
+	err = write(ppp->record_fd, &id, 1);
+	err = write(ppp->record_fd, &len, 2);
+	err = write(ppp->record_fd, data, length);
+}
+
 /*
  * transmit out through the lower layer interface
  *
@@ -325,6 +350,7 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 	 */
 	status = g_io_channel_write_chars(ppp->modem, (gchar *) frame,
 					framelen, &bytes_written, &error);
+	ppp_record(ppp, FALSE, frame, bytes_written);
 
 	g_free(frame);
 }
@@ -343,8 +369,10 @@ gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	if (cond & G_IO_IN) {
 		status = g_io_channel_read_chars(channel, buf, 256,
 				&bytes_read, &error);
-		if (bytes_read > 0)
-			ppp_feed(ppp, (guint8 *)buf, bytes_read);
+		if (bytes_read > 0) {
+			ppp_feed(ppp, (guint8 *) buf, bytes_read);
+			ppp_record(ppp, TRUE, (guint8 *) buf, bytes_read);
+		}
 		if (status != G_IO_STATUS_NORMAL && status != G_IO_STATUS_AGAIN)
 			return FALSE;
 	}
