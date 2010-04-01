@@ -264,7 +264,7 @@ static void print_option(gpointer data, gpointer user_data)
 	struct pppcp_data *pppcp = user_data;
 
 	g_print("%s: option %d len %d (%s)", pppcp->prefix, option->type,
-				option->length, pppcp->options[option->type]);
+			option->length, pppcp->option_strings[option->type]);
 	if (option->length > 2) {
 		int i;
 		for (i = 0; i < option->length - 2; i++)
@@ -1605,7 +1605,7 @@ void pppcp_free(struct pppcp_data *data)
 	g_free(data);
 }
 
-struct pppcp_data *pppcp_new(struct pppcp_protocol_data *protocol_data)
+struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 {
 	struct pppcp_data *data;
 
@@ -1623,11 +1623,9 @@ struct pppcp_data *pppcp_new(struct pppcp_protocol_data *protocol_data)
 	data->max_failure = MAX_FAILURE;
 	data->event_queue = g_queue_new();
 	data->identifier = 0;
-	data->ppp = protocol_data->ppp;
-	data->proto = protocol_data->proto;
-	data->priv = protocol_data->priv;
-	data->prefix = protocol_data->prefix;
-	data->options = protocol_data->options;
+
+	data->ppp = ppp;
+	data->proto = proto;
 
 	/* setup func ptrs for processing packet by pppcp code */
 	data->packet_ops[CONFIGURE_REQUEST - 1] =

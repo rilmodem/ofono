@@ -153,8 +153,6 @@ static void lcp_option_process(gpointer data, gpointer user)
 	}
 }
 
-static const char lcp_prefix[] = "lcp";
-
 static const char *lcp_option_strings[256] = {
 	[0]	= "Vendor Specific",
 	[1]	= "Maximum-Receive-Unit",
@@ -170,12 +168,6 @@ static const char *lcp_option_strings[256] = {
 	[11]	= "Numbered-Mode",
 	[12]	= "Multi-Link-Procedure (deprecated)",
 	[13]	= "Callback",
-};
-
-static struct pppcp_protocol_data lcp_protocol_data = {
-	.proto = LCP_PROTOCOL,
-	.prefix = lcp_prefix,
-	.options = lcp_option_strings,
 };
 
 struct ppp_packet_handler lcp_packet_handler = {
@@ -249,13 +241,14 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	struct ppp_option *option;
 	guint16 codes = LCP_SUPPORTED_CODES;
 
-	lcp_protocol_data.ppp = ppp;
-	pppcp = pppcp_new(&lcp_protocol_data);
+	pppcp = pppcp_new(ppp, LCP_PROTOCOL);
 	if (!pppcp) {
 		g_print("Failed to allocate PPPCP struct\n");
 		return NULL;
 	}
 	pppcp_set_valid_codes(pppcp, codes);
+	pppcp->option_strings = lcp_option_strings;
+	pppcp->prefix = "lcp";
 	pppcp->priv = pppcp;
 
 	/* set the actions */

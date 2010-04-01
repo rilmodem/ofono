@@ -106,14 +106,6 @@ struct pppcp_timer_data {
 	guint restart_timer;
 };
 
-struct pppcp_protocol_data {
-	guint16 proto;
-	const char *prefix;
-	const char **options;
-	gpointer priv;
-	GAtPPP *ppp;
-};
-
 struct pppcp_data {
 	enum pppcp_state state;
 	struct pppcp_timer_data config_timer_data;
@@ -140,10 +132,10 @@ struct pppcp_data {
 	gpointer priv;
 	guint16 proto;
 	const char *prefix;
-	const char **options;
+	const char **option_strings;
 };
 
-struct pppcp_data *pppcp_new(struct pppcp_protocol_data *proto_data);
+struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto);
 void pppcp_free(struct pppcp_data *data);
 void pppcp_add_config_option(struct pppcp_data *data,
 				struct ppp_option *option);

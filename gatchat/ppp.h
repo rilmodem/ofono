@@ -30,6 +30,7 @@
 #define PPP_CTRL	0x03
 #define LCP_PROTOCOL	0xc021
 #define CHAP_PROTOCOL	0xc223
+#define IPCP_PROTO	0x8021
 #define PPP_HEADROOM	2
 #define HDLC_HEADROOM	3
 #define HDLC_TAIL	3

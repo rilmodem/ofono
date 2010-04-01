@@ -169,8 +169,6 @@ struct ppp_packet_handler ip_packet_handler = {
 				  (1 << TERMINATE_ACK) | \
 				  (1 << CODE_REJECT))
 
-#define IPCP_PROTO		0x8021
-
 enum ipcp_option_types {
 	IP_ADDRESSES		= 1,
 	IP_COMPRESSION_PROTO	= 2,
@@ -291,8 +289,6 @@ struct pppcp_action ipcp_action = {
 	.option_process = 	ipcp_option_process,
 };
 
-static const char ipcp_prefix[] = "ipcp";
-
 static const char *ipcp_option_strings[256] = {
 	[IP_ADDRESSES]		= "IP-Addresses (deprecated)",
 	[IP_COMPRESSION_PROTO]	= "IP-Compression-Protocol",
@@ -302,12 +298,6 @@ static const char *ipcp_option_strings[256] = {
 	[PRIMARY_NBNS_SERVER]	= "Primary NBNS Server Address",
 	[SECONDARY_DNS_SERVER]	= "Secondary DNS Server Address",
 	[SECONDARY_NBNS_SERVER]	= "Secondary NBNS Server Address",
-};
-
-static struct pppcp_protocol_data ipcp_protocol_data = {
-	.proto = IPCP_PROTO,
-	.prefix = ipcp_prefix,
-	.options = ipcp_option_strings,
 };
 
 struct ppp_packet_handler ipcp_packet_handler = {
@@ -325,15 +315,16 @@ static struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	if (!data)
 		return NULL;
 
-	ipcp_protocol_data.ppp = ppp;
-	ipcp_protocol_data.priv = data;
-	pppcp = pppcp_new(&ipcp_protocol_data);
+	pppcp = pppcp_new(ppp, IPCP_PROTO);
 	if (!pppcp) {
 		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(data);
 		return NULL;
 	}
 	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
+	pppcp->option_strings = ipcp_option_strings;
+	pppcp->prefix = "ipcp";
+	pppcp->priv = data;
 
 	/* set the actions */
 	pppcp->action = &ipcp_action;
