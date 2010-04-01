@@ -258,6 +258,21 @@ static void copy_option(gpointer data, gpointer user_data)
 	*location += option->length;
 }
 
+static void print_option(gpointer data, gpointer user_data)
+{
+	struct ppp_option *option = data;
+	struct pppcp_data *pppcp = user_data;
+
+	g_print("%s: option %d len %d (%s)", pppcp->prefix, option->type,
+				option->length, pppcp->options[option->type]);
+	if (option->length > 2) {
+		int i;
+		for (i = 0; i < option->length - 2; i++)
+			g_print(" %02x", option->data[i]);
+	}
+	g_print("\n");
+}
+
 void pppcp_add_config_option(struct pppcp_data *data, struct ppp_option *option)
 {
 	data->config_options = g_list_append(data->config_options, option);
@@ -276,6 +291,8 @@ static void pppcp_send_configure_request(struct pppcp_data *data)
 	struct pppcp_timer_data *timer_data = &data->config_timer_data;
 
 	pppcp_trace(data);
+
+	g_list_foreach(data->config_options, print_option, data);
 
 	/* figure out how much space to allocate for options */
 	g_list_foreach(data->config_options, get_option_length, &olength);
@@ -318,6 +335,8 @@ static void pppcp_send_configure_ack(struct pppcp_data *data,
 
 	pppcp_trace(data);
 
+	g_list_foreach(data->acceptable_options, print_option, data);
+
 	/* subtract for header. */
 	len = ntohs(pppcp_header->length) - sizeof(*packet);
 
@@ -345,12 +364,17 @@ static void pppcp_send_configure_nak(struct pppcp_data *data,
 	struct pppcp_packet *packet;
 	struct pppcp_packet *pppcp_header =
 			(struct pppcp_packet *) configure_packet;
-	guint8 olength = 0;
+	guint8 olength;
 	guint8 *odata;
 
 	/* if we have any rejected options, send a config-reject */
 	if (g_list_length(data->rejected_options)) {
+		pppcp_trace(data);
+
+		g_list_foreach(data->rejected_options, print_option, data);
+
 		/* figure out how much space to allocate for options */
+		olength = 0;
 		g_list_foreach(data->rejected_options, get_option_length,
 				&olength);
 
@@ -367,11 +391,15 @@ static void pppcp_send_configure_nak(struct pppcp_data *data,
 
 		pppcp_packet_free(packet);
 	}
+
 	/* if we have any unacceptable options, send a config-nak */
 	if (g_list_length(data->unacceptable_options)) {
-		olength = 0;
+		pppcp_trace(data);
+
+		g_list_foreach(data->unacceptable_options, print_option, data);
 
 		/* figure out how much space to allocate for options */
+		olength = 0;
 		g_list_foreach(data->unacceptable_options, get_option_length,
 				&olength);
 
@@ -1141,7 +1169,8 @@ static void remove_config_option(gpointer elem, gpointer user_data)
 	data->config_options = g_list_delete_link(data->config_options, list);
 }
 
-static struct ppp_option *extract_ppp_option(guint8 *packet_data)
+static struct ppp_option *extract_ppp_option(struct pppcp_data *data,
+						guint8 *packet_data)
 {
 	struct ppp_option *option;
 	guint8 otype = packet_data[0];
@@ -1154,6 +1183,9 @@ static struct ppp_option *extract_ppp_option(guint8 *packet_data)
 	option->type = otype;
 	option->length = olen;
 	memcpy(option->data, &packet_data[2], olen-2);
+
+	print_option(option, data);
+
 	return option;
 }
 
@@ -1174,7 +1206,7 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	 * check the options.
 	 */
 	while (i < len) {
-		option = extract_ppp_option(&packet->data[i]);
+		option = extract_ppp_option(data, &packet->data[i]);
 		if (option == NULL)
 			break;
 
@@ -1257,9 +1289,10 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 	 * and apply them.
 	 */
 	while (i < len) {
-		acked_option = extract_ppp_option(&packet->data[i]);
+		acked_option = extract_ppp_option(data, &packet->data[i]);
 		if (acked_option == NULL)
 			break;
+
 		list = g_list_find_custom(data->config_options,
 				GUINT_TO_POINTER((guint) acked_option->type),
 				is_option);
@@ -1312,7 +1345,7 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 	 * modify a value there, or add a new option.
 	 */
 	while (i < len) {
-		naked_option = extract_ppp_option(&packet->data[i]);
+		naked_option = extract_ppp_option(data, &packet->data[i]);
 		if (naked_option == NULL)
 			break;
 
@@ -1387,7 +1420,7 @@ static guint8 pppcp_process_configure_reject(struct pppcp_data *data,
 	 * not request any of these options be negotiated
 	 */
 	while (i < len) {
-		rejected_option = extract_ppp_option(&packet->data[i]);
+		rejected_option = extract_ppp_option(data, &packet->data[i]);
 		if (rejected_option == NULL)
 			break;
 
@@ -1518,7 +1551,6 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 			ntohs(packet->length));
 
 	pppcp_packet_free(packet);
-
 }
 
 /*
@@ -1595,6 +1627,7 @@ struct pppcp_data *pppcp_new(struct pppcp_protocol_data *protocol_data)
 	data->proto = protocol_data->proto;
 	data->priv = protocol_data->priv;
 	data->prefix = protocol_data->prefix;
+	data->options = protocol_data->options;
 
 	/* setup func ptrs for processing packet by pppcp code */
 	data->packet_ops[CONFIGURE_REQUEST - 1] =

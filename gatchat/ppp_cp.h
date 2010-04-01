@@ -109,6 +109,7 @@ struct pppcp_timer_data {
 struct pppcp_protocol_data {
 	guint16 proto;
 	const char *prefix;
+	const char **options;
 	gpointer priv;
 	GAtPPP *ppp;
 };
@@ -139,6 +140,7 @@ struct pppcp_data {
 	gpointer priv;
 	guint16 proto;
 	const char *prefix;
+	const char **options;
 };
 
 struct pppcp_data *pppcp_new(struct pppcp_protocol_data *proto_data);

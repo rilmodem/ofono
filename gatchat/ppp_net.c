@@ -273,6 +273,17 @@ static void ipcp_finished(struct pppcp_data *data)
 
 static const char ipcp_prefix[] = "ipcp";
 
+static const char *ipcp_option_strings[256] = {
+	[1]	= "IP-Address (deprecated)",
+	[2]	= "IP-Compression-Protocol",
+	[3]	= "IP-Address",
+	[4]	= "Mobile-IPv4",
+	[129]	= "Primary DNS Server Address",
+	[130]	= "Primary NBNS Server Address",
+	[131]	= "Secondary DNS Server Address",
+	[132]	= "Secondary NBNS Server Address",
+};
+
 struct pppcp_action ipcp_action = {
 	.this_layer_up =	ipcp_up,
 	.this_layer_down = 	ipcp_down,
@@ -285,6 +296,7 @@ struct pppcp_action ipcp_action = {
 static struct pppcp_protocol_data ipcp_protocol_data = {
 	.proto = IPCP_PROTO,
 	.prefix = ipcp_prefix,
+	.options = ipcp_option_strings,
 };
 
 struct ppp_packet_handler ipcp_packet_handler = {
