@@ -133,6 +133,7 @@ void ppp_net_open(struct ppp_net_data *data)
 
 	memset(&ifr, 0, sizeof(ifr));
 	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+	strcpy(ifr.ifr_name, "ppp%d");
 	err = ioctl(fd, TUNSETIFF, (void *)&ifr);
 	if (err < 0) {
 		g_printerr("error %d setting ifr\n", err);
