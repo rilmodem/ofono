@@ -370,8 +370,8 @@ gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 		status = g_io_channel_read_chars(channel, buf, 256,
 				&bytes_read, &error);
 		if (bytes_read > 0) {
-			ppp_feed(ppp, (guint8 *) buf, bytes_read);
 			ppp_record(ppp, TRUE, (guint8 *) buf, bytes_read);
+			ppp_feed(ppp, (guint8 *) buf, bytes_read);
 		}
 		if (status != G_IO_STATUS_NORMAL && status != G_IO_STATUS_AGAIN)
 			return FALSE;
