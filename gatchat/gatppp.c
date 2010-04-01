@@ -44,13 +44,13 @@ void g_at_ppp_open(GAtPPP *ppp)
 }
 
 void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
-				const char *passwd)
+							const char *passwd)
 {
 	auth_set_credentials(ppp->auth, username, passwd);
 }
 
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,
-					gpointer user_data)
+							gpointer user_data)
 {
 	if (func == NULL)
 		return;
@@ -60,13 +60,22 @@ void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,
 }
 
 void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtDisconnectFunc func,
-					  gpointer user_data)
+							gpointer user_data)
 {
 	if (func == NULL)
 		return;
 
 	ppp->disconnect_cb = func;
 	ppp->disconnect_data = user_data;
+}
+
+void g_at_ppp_set_debug(GAtPPP *ppp, GAtDebugFunc func, gpointer user_data)
+{
+	if (ppp == NULL)
+		return;
+
+	ppp->debugf = func;
+	ppp->debug_data = user_data;
 }
 
 void g_at_ppp_shutdown(GAtPPP *ppp)

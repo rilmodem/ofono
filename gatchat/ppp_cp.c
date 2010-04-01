@@ -34,19 +34,25 @@
 #include "gatppp.h"
 #include "ppp.h"
 
-#define DEBUG
-#ifdef DEBUG
 static const char *pppcp_state_strings[] =
 	{"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
 	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED" };
 
-#define pppcp_trace(p) do { \
-	g_print("%s: %s: current state %d:%s\n", p->prefix, __FUNCTION__, \
-		p->state, pppcp_state_strings[p->state]); \
-} while (0)
-#else
-#define pppcp_trace(p) do { } while (0)
-#endif
+static void pppcp_debug(struct pppcp_data *p, const char *func)
+{
+	GAtPPP *ppp = p->ppp;
+	char *str;
+
+	if (!ppp || !ppp->debugf)
+		return;
+
+	str = g_strdup_printf("%s: %s: current state %d:%s",
+		p->prefix, func, p->state, pppcp_state_strings[p->state]);
+	ppp->debugf(str, ppp->debug_data);
+	g_free(str);
+}
+
+#define pppcp_trace(p) pppcp_debug(p, __FUNCTION__)
 
 #define pppcp_to_ppp_packet(p) \
 	(((guint8 *) p) - PPP_HEADROOM)

@@ -137,6 +137,8 @@ struct _GAtPPP {
 	GAtDisconnectFunc disconnect_cb;
 	gpointer disconnect_data;
 	gint modem_watch;
+	GAtDebugFunc debugf;
+	gpointer debug_data;
 };
 
 gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data);

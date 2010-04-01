@@ -71,7 +71,7 @@ static int oldmode = 0;
 
 static void gsmdial_debug(const char *str, void *data)
 {
-	g_print("%s: %s\n", (const char *)data, str);
+	g_print("%s: %s\n", (const char *) data, str);
 }
 
 static gboolean quit_eventloop(gpointer user_data)
@@ -269,8 +269,9 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_print("Unable to create PPP object\n");
 		exit(1);
 	}
-	g_at_ppp_set_credentials(ppp, option_username,
-				option_password);
+	g_at_ppp_set_debug(ppp, gsmdial_debug, "PPP");
+
+	g_at_ppp_set_credentials(ppp, option_username, option_password);
 
 	/* set connect and disconnect callbacks */
 	g_at_ppp_set_connect_function(ppp, ppp_connect, NULL);
