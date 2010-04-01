@@ -142,19 +142,22 @@ static void chap_process_packet(gpointer priv, guint8 *new_packet)
 
 	switch (code) {
 	case CHALLENGE:
+		g_print("chap: challenge\n");
 		chap_process_challenge(data, new_packet);
 		break;
 	case RESPONSE:
-		g_print("Oops, received RESPONSE, but I've not implemented\n");
+		g_print("chap: response (not implemented)\n");
 		break;
 	case SUCCESS:
+		g_print("chap: success\n");
 		chap_process_success(data, new_packet);
 		break;
 	case FAILURE:
+		g_print("chap: failure\n");
 		chap_process_failure(data, new_packet);
 		break;
 	default:
-		g_print("Unknown auth code\n");
+		g_print("chap: unknown auth code\n");
 		break;
 	}
 }
@@ -201,7 +204,7 @@ void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method)
 
 	switch (proto) {
 	case CHAP_PROTOCOL:
-		data->proto_data = (gpointer) chap_new(data, method);
+		data->proto_data = chap_new(data, method);
 		break;
 	default:
 		g_print("Unknown auth protocol 0x%x\n", proto);
