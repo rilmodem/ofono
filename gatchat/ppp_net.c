@@ -38,8 +38,6 @@
 #include "gatppp.h"
 #include "ppp.h"
 
-static void ipcp_free(struct pppcp_data *data);
-
 /* XXX should be maximum IP Packet size */
 #define MAX_PACKET 1500
 #define PPP_IP_PROTO	0x0021
@@ -52,10 +50,6 @@ struct ipcp_data {
 	guint8 secondary_nbns[4];
 	struct pppcp_data *pppcp;
 };
-
-static struct pppcp_data *ipcp_new(GAtPPP *ppp);
-static void ipcp_option_process(gpointer data, gpointer user);
-static guint ipcp_option_scan(struct ppp_option *option, gpointer user);
 
 static void ip_process_packet(gpointer priv, guint8 *packet)
 {
@@ -167,38 +161,6 @@ struct ppp_packet_handler ip_packet_handler = {
 	.handler = ip_process_packet,
 };
 
-void ppp_net_free(struct ppp_net_data *data)
-{
-	/* TBD unregister packet handler */
-
-	/* cleanup tun interface */
-	ppp_net_close(data);
-
-	/* free ipcp data */
-	ipcp_free(data->ipcp);
-
-	/* free self */
-	g_free(data);
-}
-
-struct ppp_net_data *ppp_net_new(GAtPPP *ppp)
-{
-	struct ppp_net_data *data;
-
-	data = g_try_malloc0(sizeof(*data));
-	if (!data)
-		return NULL;
-
-	data->ppp = ppp;
-	data->ipcp = ipcp_new(ppp);
-
-	/* register packet handler for IP protocol */
-	ip_packet_handler.priv = data;
-	ppp_register_packet_handler(&ip_packet_handler);
-	return data;
-}
-
-/****** IPCP support ****************/
 #define IPCP_SUPPORTED_CODES	  ((1 << CONFIGURE_REQUEST) | \
 				  (1 << CONFIGURE_ACK) | \
 				  (1 << CONFIGURE_NAK) | \
@@ -213,6 +175,7 @@ enum ipcp_option_types {
 	IP_ADDRESSES		= 1,
 	IP_COMPRESSION_PROTO	= 2,
 	IP_ADDRESS		= 3,
+	MOBILE_IPV4		= 4,
 	PRIMARY_DNS_SERVER	= 129,
 	PRIMARY_NBNS_SERVER	= 130,
 	SECONDARY_DNS_SERVER	= 131,
@@ -271,39 +234,6 @@ static void ipcp_finished(struct pppcp_data *data)
 	g_print("ipcp finished\n");
 }
 
-static const char ipcp_prefix[] = "ipcp";
-
-static const char *ipcp_option_strings[256] = {
-	[1]	= "IP-Address (deprecated)",
-	[2]	= "IP-Compression-Protocol",
-	[3]	= "IP-Address",
-	[4]	= "Mobile-IPv4",
-	[129]	= "Primary DNS Server Address",
-	[130]	= "Primary NBNS Server Address",
-	[131]	= "Secondary DNS Server Address",
-	[132]	= "Secondary NBNS Server Address",
-};
-
-struct pppcp_action ipcp_action = {
-	.this_layer_up =	ipcp_up,
-	.this_layer_down = 	ipcp_down,
-	.this_layer_started = 	ipcp_started,
-	.this_layer_finished =	ipcp_finished,
-	.option_scan = 		ipcp_option_scan,
-	.option_process = 	ipcp_option_process,
-};
-
-static struct pppcp_protocol_data ipcp_protocol_data = {
-	.proto = IPCP_PROTO,
-	.prefix = ipcp_prefix,
-	.options = ipcp_option_strings,
-};
-
-struct ppp_packet_handler ipcp_packet_handler = {
-	.proto = IPCP_PROTO,
-	.handler = pppcp_process_packet,
-};
-
 /*
  * Scan the option to see if it is acceptable, unacceptable, or rejected
  */
@@ -352,20 +282,40 @@ static void ipcp_option_process(gpointer data, gpointer user)
 	}
 }
 
-static void ipcp_free(struct pppcp_data *data)
-{
-	struct ipcp_data *ipcp = data->priv;
+struct pppcp_action ipcp_action = {
+	.this_layer_up =	ipcp_up,
+	.this_layer_down = 	ipcp_down,
+	.this_layer_started = 	ipcp_started,
+	.this_layer_finished =	ipcp_finished,
+	.option_scan = 		ipcp_option_scan,
+	.option_process = 	ipcp_option_process,
+};
 
-	/* TBD unregister IPCP packet handler */
+static const char ipcp_prefix[] = "ipcp";
 
-	/* free ipcp */
-	g_free(ipcp);
+static const char *ipcp_option_strings[256] = {
+	[IP_ADDRESSES]		= "IP-Addresses (deprecated)",
+	[IP_COMPRESSION_PROTO]	= "IP-Compression-Protocol",
+	[IP_ADDRESS]		= "IP-Address",
+	[MOBILE_IPV4]		= "Mobile-IPv4",
+	[PRIMARY_DNS_SERVER]	= "Primary DNS Server Address",
+	[PRIMARY_NBNS_SERVER]	= "Primary NBNS Server Address",
+	[SECONDARY_DNS_SERVER]	= "Secondary DNS Server Address",
+	[SECONDARY_NBNS_SERVER]	= "Secondary NBNS Server Address",
+};
 
-	/* free pppcp */
-	pppcp_free(data);
-}
+static struct pppcp_protocol_data ipcp_protocol_data = {
+	.proto = IPCP_PROTO,
+	.prefix = ipcp_prefix,
+	.options = ipcp_option_strings,
+};
 
-static struct pppcp_data * ipcp_new(GAtPPP *ppp)
+struct ppp_packet_handler ipcp_packet_handler = {
+	.proto = IPCP_PROTO,
+	.handler = pppcp_process_packet,
+};
+
+static struct pppcp_data *ipcp_new(GAtPPP *ppp)
 {
 	struct ipcp_data *data;
 	struct pppcp_data *pppcp;
@@ -403,4 +353,48 @@ static struct pppcp_data * ipcp_new(GAtPPP *ppp)
 	ipcp_packet_handler.priv = pppcp;
 	ppp_register_packet_handler(&ipcp_packet_handler);
 	return pppcp;
+}
+
+static void ipcp_free(struct pppcp_data *data)
+{
+	struct ipcp_data *ipcp = data->priv;
+
+	/* TBD unregister IPCP packet handler */
+
+	/* free ipcp */
+	g_free(ipcp);
+
+	/* free pppcp */
+	pppcp_free(data);
+}
+
+struct ppp_net_data *ppp_net_new(GAtPPP *ppp)
+{
+	struct ppp_net_data *data;
+
+	data = g_try_malloc0(sizeof(*data));
+	if (!data)
+		return NULL;
+
+	data->ppp = ppp;
+	data->ipcp = ipcp_new(ppp);
+
+	/* register packet handler for IP protocol */
+	ip_packet_handler.priv = data;
+	ppp_register_packet_handler(&ip_packet_handler);
+	return data;
+}
+
+void ppp_net_free(struct ppp_net_data *data)
+{
+	/* TBD unregister packet handler */
+
+	/* cleanup tun interface */
+	ppp_net_close(data);
+
+	/* free ipcp data */
+	ipcp_free(data->ipcp);
+
+	/* free self */
+	g_free(data);
 }
