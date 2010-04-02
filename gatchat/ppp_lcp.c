@@ -71,7 +71,7 @@ static void lcp_up(struct pppcp_data *pppcp)
  */
 static void lcp_down(struct pppcp_data *pppcp)
 {
-	ppp_generate_event(pppcp->ppp, PPP_DOWN);
+	/* XXX should implement a way to signal NCP */
 }
 
 /*
@@ -89,7 +89,7 @@ static void lcp_started(struct pppcp_data *pppcp)
  */
 static void lcp_finished(struct pppcp_data *pppcp)
 {
-	ppp_generate_event(pppcp->ppp, PPP_CLOSING);
+	ppp_generate_event(pppcp->ppp, PPP_DOWN);
 }
 
 /*
@@ -193,15 +193,6 @@ void lcp_open(struct pppcp_data *data)
 	pppcp_generate_event(data, OPEN, NULL, 0);
 }
 
-void lcp_close(struct pppcp_data *data)
-{
-	if (data == NULL)
-		return;
-
-	/* send a CLOSE  event to the lcp layer */
-	pppcp_generate_event(data, CLOSE, NULL, 0);
-}
-
 void lcp_establish(struct pppcp_data *data)
 {
 	if (data == NULL)
@@ -216,8 +207,8 @@ void lcp_terminate(struct pppcp_data *data)
 	if (data == NULL)
 		return;
 
-	/* send a DOWN event to the lcp layer */
-	pppcp_generate_event(data, DOWN, NULL, 0);
+	/* send a CLOSE event to the lcp layer */
+	pppcp_generate_event(data, CLOSE, NULL, 0);
 }
 
 void lcp_free(struct pppcp_data *lcp)

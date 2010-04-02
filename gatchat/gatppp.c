@@ -419,7 +419,6 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 		/* otherwise we need to wait for the peer to send us a challenge */
 		break;
 	case PPP_TERMINATION:
-		/* signal DOWN event to LCP */
 		lcp_terminate(ppp->lcp);
 		break;
 	case PPP_DEAD:
@@ -570,8 +569,7 @@ void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename)
 
 void g_at_ppp_shutdown(GAtPPP *ppp)
 {
-	/* send a CLOSE event to the lcp layer */
-	lcp_close(ppp->lcp);
+	ppp_generate_event(ppp, PPP_CLOSING);
 }
 
 void g_at_ppp_ref(GAtPPP *ppp)
