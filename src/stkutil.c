@@ -112,6 +112,28 @@ static gboolean parse_dataobj_common_byte(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* For data object that only has text terminated by '\0' */
+static gboolean parse_dataobj_common_text(struct comprehension_tlv_iter *iter,
+					unsigned char **text)
+{
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	*text = g_try_malloc(len + 1);
+	if (*text == NULL)
+		return FALSE;
+
+	memcpy(*text, data, len);
+	(*text)[len] = '\0';
+
+	return TRUE;
+}
+
 /* For data object that only has a byte array with undetermined length */
 static gboolean parse_dataobj_common_byte_array(
 			struct comprehension_tlv_iter *iter,
@@ -899,6 +921,14 @@ static gboolean parse_dataobj_datetime_timezone(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.40 */
+static gboolean parse_dataobj_at_command(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char **command = user;
+	return parse_dataobj_common_text(iter, command);
+}
+
 /* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1017,6 +1047,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_timer_value;
 	case STK_DATA_OBJECT_TYPE_DATETIME_TIMEZONE:
 		return parse_dataobj_datetime_timezone;
+	case STK_DATA_OBJECT_TYPE_AT_COMMAND:
+		return parse_dataobj_at_command;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
