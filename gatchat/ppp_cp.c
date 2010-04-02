@@ -57,12 +57,6 @@ static void pppcp_debug(struct pppcp_data *p, const char *func)
 #define pppcp_to_ppp_packet(p) \
 	(((guint8 *) p) - PPP_HEADROOM)
 
-struct pppcp_event {
-	enum pppcp_event_type type;
-	gint len;
-	guint8 data[0];
-};
-
 #define INITIAL_RESTART_TIMEOUT	3	/* restart interval in seconds */
 #define MAX_TERMINATE		2
 #define MAX_CONFIGURE		10
@@ -133,27 +127,6 @@ static void pppcp_stop_timer(struct pppcp_timer_data *timer_data)
 static gboolean is_first_request(struct pppcp_timer_data *timer_data)
 {
 	return (timer_data->restart_counter == timer_data->max_counter);
-}
-
-static struct pppcp_event *pppcp_event_new(enum pppcp_event_type type,
-					gpointer event_data, guint len)
-{
-	struct pppcp_event *event;
-	guint8 *data = event_data;
-
-	event = g_try_malloc0(sizeof(struct pppcp_event) + len);
-	if (!event)
-		return NULL;
-
-	event->type = type;
-	memcpy(event->data, data, len);
-	event->len = len;
-	return event;
-}
-
-static struct pppcp_event *pppcp_get_event(struct pppcp_data *data)
-{
-	return g_queue_pop_head(data->event_queue);
 }
 
 /* actions */
@@ -1082,21 +1055,6 @@ static void pppcp_rxr_event(struct pppcp_data *data, guint8 *packet, guint len)
 	}
 }
 
-static void pppcp_handle_event(gpointer user_data)
-{
-	struct pppcp_event *event;
-	struct pppcp_data *data = user_data;
-
-	while ((event = pppcp_get_event(data))) {
-		if (event->type > RXR)
-			pppcp_illegal_event(data->state, event->type);
-		else
-			data->event_ops[event->type](data, event->data,
-							event->len);
-		g_free(event);
-	}
-}
-
 /*
  * send the event handler a new event to process
  */
@@ -1104,12 +1062,10 @@ void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
 				gpointer event_data, guint data_len)
 {
-	struct pppcp_event *event;
-
-	event = pppcp_event_new(event_type, event_data, data_len);
-	if (event)
-		g_queue_push_tail(data->event_queue, event);
-	pppcp_handle_event(data);
+	if (event_type > RXR)
+		pppcp_illegal_event(data->state, event_type);
+	else
+		data->event_ops[event_type](data, event_data, data_len);
 }
 
 static gint is_option(gconstpointer a, gconstpointer b)
@@ -1599,11 +1555,6 @@ void pppcp_free(struct pppcp_data *data)
 	if (data == NULL)
 		return;
 
-	/* free event queue */
-	if (!g_queue_is_empty(data->event_queue))
-		g_queue_foreach(data->event_queue, (GFunc) g_free, NULL);
-	g_queue_free(data->event_queue);
-
 	/* remove all config options */
 	pppcp_free_options(data);
 
@@ -1627,7 +1578,6 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 	data->config_timer_data.data = data;
 	data->terminate_timer_data.data = data;
 	data->max_failure = MAX_FAILURE;
-	data->event_queue = g_queue_new();
 	data->identifier = 0;
 
 	data->ppp = ppp;

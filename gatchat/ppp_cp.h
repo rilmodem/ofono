@@ -112,7 +112,6 @@ struct pppcp_data {
 	struct pppcp_timer_data terminate_timer_data;
 	guint max_failure;
 	guint32 magic_number;
-	GQueue *event_queue;
 	GList *config_options;
 	GList *acceptable_options;
 	GList *unacceptable_options;
