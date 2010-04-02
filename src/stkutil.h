@@ -493,6 +493,13 @@ struct stk_r_apdu {
 	unsigned int len;
 };
 
+/* Defined in TS 102.223 Section 8.38 */
+struct stk_timer_value {
+	unsigned char hour;
+	unsigned char minute;
+	unsigned char second;
+};
+
 /*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
