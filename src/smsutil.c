@@ -372,6 +372,11 @@ static gboolean encode_scts(const struct sms_scts *in, unsigned char *pdu,
 	return TRUE;
 }
 
+guint8 sms_decode_semi_octet(guint8 in)
+{
+	return (in & 0x0f) * 10 + (in >> 4);
+}
+
 static gboolean decode_scts(const unsigned char *pdu, int len,
 				int *offset, struct sms_scts *out)
 {
@@ -381,22 +386,22 @@ static gboolean decode_scts(const unsigned char *pdu, int len,
 		return FALSE;
 
 	next_octet(pdu, len, offset, &oct);
-	out->year = (oct & 0x0f) * 10 + ((oct & 0xf0) >> 4);
+	out->year = sms_decode_semi_octet(oct);
 
 	next_octet(pdu, len, offset, &oct);
-	out->month = (oct & 0x0f) * 10 + ((oct & 0xf0) >> 4);
+	out->month = sms_decode_semi_octet(oct);
 
 	next_octet(pdu, len, offset, &oct);
-	out->day = (oct & 0x0f) * 10 + ((oct & 0xf0) >> 4);
+	out->day = sms_decode_semi_octet(oct);
 
 	next_octet(pdu, len, offset, &oct);
-	out->hour = (oct & 0x0f) * 10 + ((oct & 0xf0) >> 4);
+	out->hour = sms_decode_semi_octet(oct);
 
 	next_octet(pdu, len, offset, &oct);
-	out->minute = (oct & 0x0f) * 10 + ((oct & 0xf0) >> 4);
+	out->minute = sms_decode_semi_octet(oct);
 
 	next_octet(pdu, len, offset, &oct);
-	out->second = (oct & 0x0f) * 10 + ((oct & 0xf0) >> 4);
+	out->second = sms_decode_semi_octet(oct);
 
 	next_octet(pdu, len, offset, &oct);
 

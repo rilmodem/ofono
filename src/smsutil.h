@@ -422,6 +422,8 @@ gboolean sms_decode_address_field(const unsigned char *pdu, int len,
 gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
 					unsigned char *pdu, int *offset);
 
+guint8 sms_decode_semi_octet(guint8 in);
+
 int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
 time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote);
