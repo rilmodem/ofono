@@ -1158,7 +1158,7 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	gint len;
 	int i = 0;
 	struct ppp_option *option;
-	enum option_rval rval = OPTION_ERR;
+	enum option_rval rval;
 	struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
@@ -1178,6 +1178,9 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 
 		if (action->option_scan)
 			rval = action->option_scan(option, data);
+		else
+			rval = OPTION_ERR;
+
 		switch (rval) {
 		case OPTION_ACCEPT:
 			data->acceptable_options =
@@ -1290,7 +1293,7 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 	struct ppp_option *naked_option;
 	struct ppp_option *config_option;
 	guint i = 0;
-	enum option_rval rval = OPTION_ERR;
+	enum option_rval rval;
 	struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
@@ -1317,6 +1320,9 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 
 		if (action->option_scan)
 			rval = action->option_scan(naked_option, data);
+		else
+			rval = OPTION_ERR;
+
 		if (rval == OPTION_ACCEPT) {
 			/*
 			 * check the current config options to see if they
