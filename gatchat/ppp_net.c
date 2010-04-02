@@ -64,8 +64,6 @@ void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet)
 /*
  * packets received by the tun interface need to be written to
  * the modem.  So, just read a packet, write out to the modem
- *
- * TBD - how do we know we have a full packet?  Do we care?
  */
 static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 				gpointer userdata)
@@ -76,6 +74,9 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 	GError *error = NULL;
 	struct ppp_header *ppp = (struct ppp_header *) buf;
 	struct ppp_net_data *data = (struct ppp_net_data *) userdata;
+
+	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP))
+		return FALSE;
 
 	if (cond & G_IO_IN) {
 		/* leave space to add PPP protocol field */
@@ -93,7 +94,8 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 
 void ppp_net_close(struct ppp_net_data *data)
 {
-	/* Not Implemented Yet */
+	g_source_remove(data->watch);
+	g_io_channel_unref(data->channel);
 }
 
 void ppp_net_open(struct ppp_net_data *data)
@@ -101,7 +103,6 @@ void ppp_net_open(struct ppp_net_data *data)
 	int fd;
 	struct ifreq ifr;
 	GIOChannel *channel;
-	int signal_source;
 	int err;
 
 	if (data == NULL)
@@ -138,7 +139,7 @@ void ppp_net_open(struct ppp_net_data *data)
 	}
 	data->channel = channel;
 	g_io_channel_set_buffered(channel, FALSE);
-	signal_source = g_io_add_watch(channel,
+	data->watch = g_io_add_watch(channel,
 			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 			ppp_net_callback, (gpointer) data);
 }

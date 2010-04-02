@@ -105,6 +105,7 @@ struct ppp_net_data {
 	GAtPPP *ppp;
 	char *if_name;
 	GIOChannel *channel;
+	gint watch;
 };
 
 struct _GAtPPP {
