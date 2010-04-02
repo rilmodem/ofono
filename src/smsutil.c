@@ -377,7 +377,7 @@ guint8 sms_decode_semi_octet(guint8 in)
 	return (in & 0x0f) * 10 + (in >> 4);
 }
 
-static gboolean decode_scts(const unsigned char *pdu, int len,
+gboolean sms_decode_scts(const unsigned char *pdu, int len,
 				int *offset, struct sms_scts *out)
 {
 	unsigned char oct = 0;
@@ -433,7 +433,7 @@ static gboolean decode_validity_period(const unsigned char *pdu, int len,
 
 		return TRUE;
 	case SMS_VALIDITY_PERIOD_FORMAT_ABSOLUTE:
-		if (!decode_scts(pdu, len, offset, &vp->absolute))
+		if (!sms_decode_scts(pdu, len, offset, &vp->absolute))
 			return FALSE;
 
 		return TRUE;
@@ -718,7 +718,7 @@ static gboolean decode_deliver(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &out->deliver.dcs))
 		return FALSE;
 
-	if (!decode_scts(pdu, len, &offset, &out->deliver.scts))
+	if (!sms_decode_scts(pdu, len, &offset, &out->deliver.scts))
 		return FALSE;
 
 	if (!next_octet(pdu, len, &offset, &out->deliver.udl))
@@ -849,7 +849,7 @@ static gboolean decode_submit_report(const unsigned char *pdu, int len,
 
 	pi = octet & 0x07;
 
-	if (!decode_scts(pdu, len, &offset, scts))
+	if (!sms_decode_scts(pdu, len, &offset, scts))
 		return FALSE;
 
 	if (pi & 0x01) {
@@ -976,10 +976,10 @@ static gboolean decode_status_report(const unsigned char *pdu, int len,
 					&out->status_report.raddr))
 		return FALSE;
 
-	if (!decode_scts(pdu, len, &offset, &out->status_report.scts))
+	if (!sms_decode_scts(pdu, len, &offset, &out->status_report.scts))
 		return FALSE;
 
-	if (!decode_scts(pdu, len, &offset, &out->status_report.dt))
+	if (!sms_decode_scts(pdu, len, &offset, &out->status_report.dt))
 		return FALSE;
 
 	if (!next_octet(pdu, len, &offset, &octet))
