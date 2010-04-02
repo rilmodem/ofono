@@ -789,6 +789,48 @@ static gboolean parse_dataobj_card_atr(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.35 */
+static gboolean parse_dataobj_c_apdu(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_c_apdu *ca = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len < 4) || (len > 241))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	ca->cla = data[0];
+	ca->ins = data[1];
+	ca->p1 = data[2];
+	ca->p2 = data[3];
+
+	/* lc is 0 has the same meaning as lc is absent. But le is 0 means
+	 * the maximum number of bytes expected in the response data field
+	 * is 256. So we need to rely on has_le to know if it presents.
+	 */
+	if (len > 5) {
+		ca->lc = data[4];
+		if (ca->lc > sizeof(ca->data))
+			return FALSE;
+
+		memcpy(ca->data, data+5, ca->lc);
+
+		if ((len - ca->lc) == 6) {
+			ca->le = data[len-1];
+			ca->has_le = TRUE;
+		} else if (len - ca->lc != 5)
+			return FALSE;
+	} else if (len == 5) {
+		ca->lc = 0;
+		ca->le = data[4];
+		ca->has_le = TRUE;
+	}
+
+	return TRUE;
+}
+
 /* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -897,6 +939,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_card_reader_status;
 	case STK_DATA_OBJECT_TYPE_CARD_ATR:
 		return parse_dataobj_card_atr;
+	case STK_DATA_OBJECT_TYPE_C_APDU:
+		return parse_dataobj_c_apdu;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:

@@ -469,6 +469,21 @@ struct stk_card_atr {
 };
 
 /*
+ * Defined in TS 102.223 Section 8.35. According to it, the maximum size
+ * of data is 236.
+ */
+struct stk_c_apdu {
+	unsigned char cla;
+	unsigned char ins;
+	unsigned char p1;
+	unsigned char p2;
+	unsigned char lc;
+	unsigned char data[236];
+	ofono_bool_t has_le;
+	unsigned char le;
+};
+
+/*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
  * of CTLVs.  Empty attribute options will have len of 0.
