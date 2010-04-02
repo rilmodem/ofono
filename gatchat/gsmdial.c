@@ -285,20 +285,6 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_ppp_open(ppp);
 }
 
-static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	char buf[64];
-
-	if (!ok) {
-		g_print("Error activating context\n");
-		exit(1);
-	}
-
-	sprintf(buf, "AT+CGDATA=\"PPP\",%u", option_cid);
-
-	g_at_chat_send(modem, buf, none_prefix, connect_cb, NULL, NULL);
-}
-
 static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	char buf[64];
@@ -308,15 +294,12 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		exit(1);
 	}
 
-	if (option_legacy == TRUE) {
+	if (option_legacy == TRUE)
 		sprintf(buf, "ATD*99***%u#", option_cid);
-		g_at_chat_send(modem, buf, none_prefix,
-						connect_cb, NULL, NULL);
-	} else {
-		sprintf(buf, "AT+CGACT=1,%u", option_cid);
-		g_at_chat_send(control, buf, none_prefix,
-						at_cgact_up_cb, NULL, NULL);
-	}
+	else
+		sprintf(buf, "AT+CGDATA=\"PPP\",%u", option_cid);
+
+	g_at_chat_send(modem, buf, none_prefix, connect_cb, NULL, NULL);
 }
 
 static void setup_context(int status)
