@@ -140,8 +140,6 @@ struct _GAtPPP {
 	int record_fd;
 };
 
-gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data);
-void ppp_close(GAtPPP *ppp);
 void ppp_generate_event(GAtPPP *ppp, enum ppp_event event);
 void ppp_register_packet_handler(struct ppp_packet_handler *handler);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);

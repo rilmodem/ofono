@@ -351,7 +351,7 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 	g_free(frame);
 }
 
-gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
+static gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 {
 	GAtPPP *ppp = data;
 	GIOStatus status;
@@ -376,33 +376,6 @@ gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	return TRUE;
 }
 
-/* Administrative Close */
-void ppp_close(GAtPPP *ppp)
-{
-	/* send a CLOSE event to the lcp layer */
-	lcp_close(ppp->lcp);
-}
-
-static void ppp_link_establishment(GAtPPP *ppp)
-{
-	/* signal UP event to LCP */
-	lcp_establish(ppp->lcp);
-}
-
-static void ppp_terminate(GAtPPP *ppp)
-{
-	/* signal DOWN event to LCP */
-	lcp_terminate(ppp->lcp);
-}
-
-static void ppp_authenticate(GAtPPP *ppp)
-{
-	/* we don't do authentication right now, so send NONE */
-	if (!ppp->auth_proto)
-		ppp_generate_event(ppp, PPP_NONE);
-	/* otherwise we need to wait for the peer to send us a challenge */
-}
-
 static void ppp_dead(GAtPPP *ppp)
 {
 	/* notify interested parties */
@@ -425,12 +398,6 @@ static void ppp_dead(GAtPPP *ppp)
 	g_free(ppp);
 }
 
-static void ppp_network(GAtPPP *ppp)
-{
-	/* bring network phase up */
-	ppp_net_open(ppp->net);
-}
-
 static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 {
 	/* don't do anything if we're already there */
@@ -442,19 +409,25 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 
 	switch (phase) {
 	case PPP_ESTABLISHMENT:
-		ppp_link_establishment(ppp);
+		/* signal UP event to LCP */
+		lcp_establish(ppp->lcp);
 		break;
 	case PPP_AUTHENTICATION:
-		ppp_authenticate(ppp);
+		/* we don't do authentication right now, so send NONE */
+		if (!ppp->auth_proto)
+			ppp_generate_event(ppp, PPP_NONE);
+		/* otherwise we need to wait for the peer to send us a challenge */
 		break;
 	case PPP_TERMINATION:
-		ppp_terminate(ppp);
+		/* signal DOWN event to LCP */
+		lcp_terminate(ppp->lcp);
 		break;
 	case PPP_DEAD:
 		ppp_dead(ppp);
 		break;
 	case PPP_NETWORK:
-		ppp_network(ppp);
+		/* bring network phase up */
+		ppp_net_open(ppp->net);
 		break;
 	}
 }
@@ -597,8 +570,8 @@ void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename)
 
 void g_at_ppp_shutdown(GAtPPP *ppp)
 {
-	/* close the ppp link */
-	ppp_close(ppp);
+	/* send a CLOSE event to the lcp layer */
+	lcp_close(ppp->lcp);
 }
 
 void g_at_ppp_ref(GAtPPP *ppp)
