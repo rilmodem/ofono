@@ -762,6 +762,15 @@ static gboolean parse_dataobj_item_icon_id_list(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.33 */
+static gboolean parse_dataobj_card_reader_status(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -866,6 +875,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_icon_id;
 	case STK_DATA_OBJECT_TYPE_ITEM_ICON_ID_LIST:
 		return parse_dataobj_item_icon_id_list;
+	case STK_DATA_OBJECT_TYPE_CARD_READER_STATUS:
+		return parse_dataobj_card_reader_status;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
