@@ -636,7 +636,7 @@ static gboolean ppp_xmit_cb(GIOChannel *channel, GIOCondition cond,
 		while ((fb = g_queue_peek_head(ppp->xmit_queue))) {
 			status = g_io_channel_write_chars(ppp->modem,
 					(gchar *) fb->bytes, fb->len,
-                                        &bytes_written, &error);
+					&bytes_written, &error);
 			if (status != G_IO_STATUS_NORMAL &&
 				status != G_IO_STATUS_AGAIN)
 				return FALSE;
