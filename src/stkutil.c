@@ -988,7 +988,6 @@ static gboolean parse_dataobj_language(struct comprehension_tlv_iter *iter,
 
 	data = comprehension_tlv_iter_get_data(iter);
 
-	/* Assume network measurement result is 2 bytes long */
 	memcpy(*lang, data, len);
 
 	return TRUE;
