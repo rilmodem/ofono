@@ -135,17 +135,20 @@ static void ppp_put(GAtPPP *ppp, guint8 *buf, int *pos,
 }
 
 /* XXX implement PFC and ACFC */
-static guint8 *ppp_encode(GAtPPP *ppp, guint8 *data, int len,
-				guint *newlen)
+static struct frame_buffer *ppp_encode(GAtPPP *ppp, guint8 *data, int len)
 {
 	int pos = 0;
 	int i = 0;
 	guint16 fcs = PPPINITFCS16;
 	guint16 proto = get_host_short(data);
 	gboolean lcp = (proto == LCP_PROTOCOL);
-	guint8 *frame = g_try_malloc0(BUFFERSZ);
-	if (!frame)
+	guint8 *frame;
+	struct frame_buffer *fb =
+		g_try_malloc0(BUFFERSZ + sizeof(struct frame_buffer));
+
+	if (!fb)
 		return NULL;
+	frame = fb->bytes;
 
 	/* copy in the HDLC framing */
 	frame[pos++] = PPP_FLAG_SEQ;
@@ -173,8 +176,8 @@ static guint8 *ppp_encode(GAtPPP *ppp, guint8 *data, int len,
 	/* add flag */
 	frame[pos++] = PPP_FLAG_SEQ;
 
-	*newlen = pos;
-	return frame;
+	fb->len = pos;
+	return fb;
 }
 
 static gint is_proto_handler(gconstpointer a, gconstpointer b)
@@ -316,41 +319,6 @@ static void ppp_record(GAtPPP *ppp, gboolean in, guint8 *data, guint16 length)
 	err = write(ppp->record_fd, data, length);
 }
 
-/*
- * transmit out through the lower layer interface
- *
- * infolen - length of the information part of the packet
- */
-void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
-{
-	guint8 *frame;
-	guint framelen;
-	GError *error = NULL;
-	GIOStatus status;
-	gsize bytes_written;
-
-	/*
-	 * do the octet stuffing.  Add 2 bytes to the infolen to
-	 * include the protocol field.
-	 */
-	frame = ppp_encode(ppp, packet, infolen + 2, &framelen);
-	if (!frame) {
-		g_printerr("Failed to encode packet to transmit\n");
-		return;
-	}
-
-	/* transmit through the lower layer interface */
-	/*
-	 * TBD - should we just put this on a queue and transmit when
-	 * we won't block, or allow ourselves to block here?
-	 */
-	status = g_io_channel_write_chars(ppp->modem, (gchar *) frame,
-					framelen, &bytes_written, &error);
-	ppp_record(ppp, FALSE, frame, bytes_written);
-
-	g_free(frame);
-}
-
 static gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 {
 	GAtPPP *ppp = data;
@@ -378,6 +346,9 @@ static gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 
 static void ppp_dead(GAtPPP *ppp)
 {
+	if (ppp->write_watch)
+		return;
+
 	/* notify interested parties */
 	if (ppp->disconnect_cb)
 		ppp->disconnect_cb(ppp->disconnect_data);
@@ -385,8 +356,12 @@ static void ppp_dead(GAtPPP *ppp)
 	if (g_atomic_int_get(&ppp->ref_count))
 		return;
 
+	/* cleanup queue */
+	g_queue_free(ppp->xmit_queue);
+
 	/* cleanup modem channel */
-	g_source_remove(ppp->modem_watch);
+	g_source_remove(ppp->read_watch);
+	g_source_remove(ppp->write_watch);
 	g_io_channel_unref(ppp->modem);
 
 	lcp_free(ppp->lcp);
@@ -619,6 +594,9 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 
 	ppp->index = 0;
 
+	/* intialize the queue */
+	ppp->xmit_queue = g_queue_new();
+
 	/* initialize the lcp state */
 	ppp->lcp = lcp_new(ppp);
 
@@ -632,11 +610,80 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->net = ppp_net_new(ppp);
 
 	/* start listening for packets from the modem */
-	ppp->modem_watch = g_io_add_watch(modem,
+	ppp->read_watch = g_io_add_watch(modem,
 			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 			ppp_cb, ppp);
 
 	ppp->record_fd = -1;
 
 	return ppp;
+}
+
+static gboolean ppp_xmit_cb(GIOChannel *channel, GIOCondition cond,
+				gpointer data)
+{
+	GAtPPP *ppp = data;
+	struct frame_buffer *fb;
+	GError *error = NULL;
+	GIOStatus status;
+	gsize bytes_written;
+
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR))
+		return FALSE;
+
+	if (cond & G_IO_OUT) {
+		while ((fb = g_queue_peek_head(ppp->xmit_queue))) {
+			status = g_io_channel_write_chars(ppp->modem,
+					(gchar *) fb->bytes, fb->len,
+                                        &bytes_written, &error);
+			if (status != G_IO_STATUS_NORMAL &&
+				status != G_IO_STATUS_AGAIN)
+				return FALSE;
+
+			if (bytes_written < fb->len)
+				return TRUE;
+
+			ppp_record(ppp, FALSE, fb->bytes, bytes_written);
+			g_free(g_queue_pop_head(ppp->xmit_queue));
+		}
+	}
+	return FALSE;
+}
+
+static void ppp_xmit_destroy_notify(gpointer destroy_data)
+{
+	GAtPPP *ppp = destroy_data;
+
+	g_print("%s\n", __FUNCTION__);
+
+	ppp->write_watch = 0;
+	if (ppp->phase == PPP_DEAD)
+		ppp_dead(ppp);
+}
+
+/*
+ * transmit out through the lower layer interface
+ *
+ * infolen - length of the information part of the packet
+ */
+void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
+{
+	struct frame_buffer *fb;
+
+	/*
+	 * do the octet stuffing.  Add 2 bytes to the infolen to
+	 * include the protocol field.
+	 */
+	fb = ppp_encode(ppp, packet, infolen + 2);
+	if (!fb) {
+		g_printerr("Failed to encode packet to transmit\n");
+		return;
+	}
+	/* push decoded frame onto xmit queue */
+	g_queue_push_tail(ppp->xmit_queue, fb);
+
+	/* transmit this whenever we can write without blocking */
+	ppp->write_watch = g_io_add_watch_full(ppp->modem, G_PRIORITY_DEFAULT,
+				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				ppp_xmit_cb, ppp, ppp_xmit_destroy_notify);
 }

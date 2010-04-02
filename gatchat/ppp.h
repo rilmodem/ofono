@@ -135,10 +135,12 @@ struct _GAtPPP {
 	gpointer connect_data;
 	GAtDisconnectFunc disconnect_cb;
 	gpointer disconnect_data;
-	gint modem_watch;
+	gint read_watch;
+	gint write_watch;
 	GAtDebugFunc debugf;
 	gpointer debug_data;
 	int record_fd;
+	GQueue *xmit_queue;
 };
 
 void ppp_generate_event(GAtPPP *ppp, enum ppp_event event);

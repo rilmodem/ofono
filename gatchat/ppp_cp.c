@@ -164,6 +164,7 @@ static void pppcp_this_layer_finished(struct pppcp_data *data)
 {
 	struct pppcp_action *action = data->action;
 
+	pppcp_trace(data);
 	if (action->this_layer_finished)
 		action->this_layer_finished(data);
 }
