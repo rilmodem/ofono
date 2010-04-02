@@ -794,8 +794,8 @@ static gboolean parse_dataobj_card_reader_status(
 }
 
 /* Defined in TS 102.223 Section 8.34 */
-static gboolean parse_dataobj_card_atr(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_card_atr(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	struct stk_card_atr *ca = user;
 	const unsigned char *data;
@@ -812,8 +812,8 @@ static gboolean parse_dataobj_card_atr(
 }
 
 /* Defined in TS 102.223 Section 8.35 */
-static gboolean parse_dataobj_c_apdu(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_c_apdu(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	struct stk_c_apdu *ca = user;
 	const unsigned char *data;
@@ -854,8 +854,8 @@ static gboolean parse_dataobj_c_apdu(
 }
 
 /* Defined in TS 102.223 Section 8.36 */
-static gboolean parse_dataobj_r_apdu(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_r_apdu(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	struct stk_r_apdu *ra = user;
 	const unsigned char *data;
@@ -878,8 +878,8 @@ static gboolean parse_dataobj_r_apdu(
 }
 
 /* Defined in TS 102.223 Section 8.37 */
-static gboolean parse_dataobj_timer_id(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_timer_id(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	unsigned char *byte = user;
 
@@ -887,8 +887,8 @@ static gboolean parse_dataobj_timer_id(
 }
 
 /* Defined in TS 102.223 Section 8.38 */
-static gboolean parse_dataobj_timer_value(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_timer_value(struct comprehension_tlv_iter *iter,
+						void *user)
 {
 	struct stk_timer_value *tv = user;
 	const unsigned char *data;
@@ -922,16 +922,16 @@ static gboolean parse_dataobj_datetime_timezone(
 }
 
 /* Defined in TS 102.223 Section 8.40 */
-static gboolean parse_dataobj_at_command(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_at_command(struct comprehension_tlv_iter *iter,
+						void *user)
 {
 	unsigned char **command = user;
 	return parse_dataobj_common_text(iter, command);
 }
 
 /* Defined in TS 102.223 Section 8.41 */
-static gboolean parse_dataobj_at_response(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_at_response(struct comprehension_tlv_iter *iter,
+						void *user)
 {
 	unsigned char **response = user;
 	return parse_dataobj_common_text(iter, response);
@@ -955,7 +955,7 @@ static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 
 /* Defined in 102.223 Section 8.44 */
 static gboolean parse_dataobj_dtmf_string(struct comprehension_tlv_iter *iter,
-					void *user)
+						void *user)
 {
 	char **dtmf = user;
 	const unsigned char *data;
@@ -996,7 +996,7 @@ static gboolean parse_dataobj_language(struct comprehension_tlv_iter *iter,
 
 /* Defined in 102.223 Section 8.47 */
 static gboolean parse_dataobj_browser_id(struct comprehension_tlv_iter *iter,
-					void *user)
+						void *user)
 {
 	unsigned char *byte = user;
 	return parse_dataobj_common_byte(iter, byte);
