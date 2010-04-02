@@ -462,7 +462,8 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 	last_type = 0x3f;
 
 	for (i = 3; i < len; i += 2) {
-		/* Check the validity of file type.
+		/*
+		 * Check the validity of file type.
 		 * According to TS 11.11, each file id contains of two bytes,
 		 * in which the first byte is the type of file. For GSM is:
 		 * 0x3f: master file
@@ -565,7 +566,8 @@ static gboolean parse_dataobj_location_info(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
-/* Defined in TS 102.223 Section 8.20.
+/*
+ * Defined in TS 102.223 Section 8.20.
  *
  * According to 3GPP TS 24.008, Section 10.5.1.4, IMEI is composed of
  * 15 digits and totally 8 bytes are used to represent it.
@@ -828,7 +830,8 @@ static gboolean parse_dataobj_c_apdu(struct comprehension_tlv_iter *iter,
 	ca->p1 = data[2];
 	ca->p2 = data[3];
 
-	/* lc is 0 has the same meaning as lc is absent. But le is 0 means
+	/*
+	 * lc is 0 has the same meaning as lc is absent. But le is 0 means
 	 * the maximum number of bytes expected in the response data field
 	 * is 256. So we need to rely on has_le to know if it presents.
 	 */
