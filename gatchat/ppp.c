@@ -217,9 +217,8 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 static struct frame_buffer *ppp_decode(GAtPPP *ppp, guint8 *frame)
 {
 	guint8 *data;
-	guint pos = 0;
-	int i = 0;
-	int len;
+	guint pos;
+	int i;
 	guint16 fcs;
 	struct frame_buffer *fb;
 
@@ -229,7 +228,10 @@ static struct frame_buffer *ppp_decode(GAtPPP *ppp, guint8 *frame)
 	data = fb->bytes;
 
 	/* skip the first flag char */
-	pos++;
+	pos = 1;
+
+	fcs = PPPINITFCS16;
+	i = 0;
 
 	/* TBD - how to deal with recv_accm */
 	while (frame[pos] != PPP_FLAG_SEQ) {
@@ -240,21 +242,20 @@ static struct frame_buffer *ppp_decode(GAtPPP *ppp, guint8 *frame)
 			data[i] = frame[pos] ^ 0x20;
 		} else
 			data[i] = frame[pos];
+
+		fcs = ppp_fcs(fcs, data[i]);
+
 		i++; pos++;
 	}
 
-	len = i;
-	fb->len = len;
+	fb->len = i;
 
 	/* see if we have a good FCS */
-	fcs = PPPINITFCS16;
-	for (i = 0; i < len; i++)
-		fcs = ppp_fcs(fcs, data[i]);
-
 	if (fcs != PPPGOODFCS16) {
 		g_free(fb);
 		return NULL;
 	}
+
 	return fb;
 }
 
