@@ -114,7 +114,7 @@ static gboolean parse_dataobj_common_byte(struct comprehension_tlv_iter *iter,
 
 /* For data object that only has text terminated by '\0' */
 static gboolean parse_dataobj_common_text(struct comprehension_tlv_iter *iter,
-					unsigned char **text)
+						char **text)
 {
 	const unsigned char *data;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
@@ -925,7 +925,7 @@ static gboolean parse_dataobj_datetime_timezone(
 static gboolean parse_dataobj_at_command(struct comprehension_tlv_iter *iter,
 						void *user)
 {
-	unsigned char **command = user;
+	char **command = user;
 	return parse_dataobj_common_text(iter, command);
 }
 
@@ -933,7 +933,7 @@ static gboolean parse_dataobj_at_command(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_at_response(struct comprehension_tlv_iter *iter,
 						void *user)
 {
-	unsigned char **response = user;
+	char **response = user;
 	return parse_dataobj_common_text(iter, response);
 }
 
