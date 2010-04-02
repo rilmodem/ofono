@@ -591,7 +591,7 @@ static void pppcp_down_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case OPENED:
 		pppcp_transition_state(STARTING, data);
 		pppcp_this_layer_down(data);
-		/* fall through */
+		break;
 	case INITIAL:
 	case STARTING:
 		/* illegal */
@@ -840,7 +840,7 @@ static void pppcp_rca_event(struct pppcp_data *data, guint8 *packet, guint len)
 		/* scr/6x */
 		pppcp_send_configure_request(data);
 		pppcp_transition_state(REQSENT, data);
-		/* fall through */
+		break;
 	case ACKSENT:
 		pppcp_initialize_restart_count(&data->config_timer_data);
 		pppcp_this_layer_up(data);
@@ -870,7 +870,7 @@ static void pppcp_rcn_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case CLOSING:
 	case STOPPING:
 		pppcp_transition_state(data->state, data);
-		/* fall through */
+		break;
 	case REQSENT:
 		pppcp_initialize_restart_count(&data->config_timer_data);
 		pppcp_send_configure_request(data);
@@ -905,10 +905,9 @@ static void pppcp_rtr_event(struct pppcp_data *data, guint8 *packet, guint len)
 	switch (data->state) {
 	case CLOSED:
 	case STOPPED:
-		pppcp_send_terminate_ack(data, packet);
-		/* fall through */
 	case CLOSING:
 	case STOPPING:
+		pppcp_send_terminate_ack(data, packet);
 		break;
 	case REQSENT:
 	case ACKRCVD:
