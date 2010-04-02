@@ -30,6 +30,7 @@
 #include <net/if.h>
 #include <linux/if_tun.h>
 #include <sys/ioctl.h>
+#include <arpa/inet.h>
 
 #include <glib.h>
 
