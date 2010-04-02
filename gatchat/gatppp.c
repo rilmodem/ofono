@@ -389,11 +389,10 @@ static void ppp_dead(GAtPPP *ppp)
 	g_source_remove(ppp->modem_watch);
 	g_io_channel_unref(ppp->modem);
 
-	/* remove lcp */
 	lcp_free(ppp->lcp);
-
-	/* remove auth */
 	auth_free(ppp->auth);
+	ipcp_free(ppp->ipcp);
+	ppp_net_free(ppp->net);
 
 	g_free(ppp);
 }
@@ -427,6 +426,7 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 	case PPP_NETWORK:
 		/* bring network phase up */
 		ppp_net_open(ppp->net);
+		pppcp_generate_event(ppp->ipcp, OPEN, NULL, 0);
 		break;
 	}
 }
@@ -624,6 +624,9 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 
 	/* initialize the autentication state */
 	ppp->auth = auth_new(ppp);
+
+	/* initialize IPCP state */
+	ppp->ipcp = ipcp_new(ppp);
 
 	/* intialize the network state */
 	ppp->net = ppp_net_new(ppp);

@@ -31,6 +31,7 @@
 #define LCP_PROTOCOL	0xc021
 #define CHAP_PROTOCOL	0xc223
 #define IPCP_PROTO	0x8021
+#define PPP_IP_PROTO	0x0021
 #define PPP_HEADROOM	2
 #define HDLC_HEADROOM	3
 #define HDLC_TAIL	3
@@ -110,7 +111,6 @@ struct ppp_net_data {
 	GAtPPP *ppp;
 	char *if_name;
 	GIOChannel *channel;
-	struct pppcp_data *ipcp;
 };
 
 struct _GAtPPP {
@@ -118,6 +118,7 @@ struct _GAtPPP {
 	enum ppp_phase phase;
 	struct pppcp_data *lcp;
 	struct auth_data *auth;
+	struct pppcp_data *ipcp;
 	struct ppp_net_data *net;
 	guint8 buffer[BUFFERSZ];
 	int index;
@@ -165,3 +166,5 @@ struct ppp_net_data *ppp_net_new(GAtPPP *ppp);
 void ppp_net_open(struct ppp_net_data *data);
 void ppp_net_free(struct ppp_net_data *data);
 void ppp_net_close(struct ppp_net_data *data);
+struct pppcp_data *ipcp_new(GAtPPP *ppp);
+void ipcp_free(struct pppcp_data *data);
