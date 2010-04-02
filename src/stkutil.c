@@ -820,6 +820,7 @@ static gboolean parse_dataobj_c_apdu(struct comprehension_tlv_iter *iter,
 	struct stk_c_apdu *ca = user;
 	const unsigned char *data;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
+	unsigned int pos;
 
 	if ((len < 4) || (len > 241))
 		return FALSE;
@@ -829,6 +830,8 @@ static gboolean parse_dataobj_c_apdu(struct comprehension_tlv_iter *iter,
 	ca->ins = data[1];
 	ca->p1 = data[2];
 	ca->p2 = data[3];
+
+	pos = 4;
 
 	/*
 	 * lc is 0 has the same meaning as lc is absent. But le is 0 means
@@ -840,16 +843,17 @@ static gboolean parse_dataobj_c_apdu(struct comprehension_tlv_iter *iter,
 		if (ca->lc > sizeof(ca->data))
 			return FALSE;
 
-		memcpy(ca->data, data+5, ca->lc);
+		pos += ca->lc + 1;
 
-		if ((len - ca->lc) == 6) {
-			ca->le = data[len-1];
-			ca->has_le = TRUE;
-		} else if (len - ca->lc != 5)
+		if (len - pos > 1)
 			return FALSE;
-	} else if (len == 5) {
+
+		memcpy(ca->data, data+5, ca->lc);
+	}
+	
+	if (len - pos > 0) {
 		ca->lc = 0;
-		ca->le = data[4];
+		ca->le = data[len - 1];
 		ca->has_le = TRUE;
 	}
 
