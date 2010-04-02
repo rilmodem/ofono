@@ -564,6 +564,7 @@ static void pppcp_up_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case ACKRCVD:
 	case ACKSENT:
 		pppcp_illegal_event(data->state, UP);
+		break;
 	}
 }
 
@@ -590,10 +591,12 @@ static void pppcp_down_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case OPENED:
 		pppcp_transition_state(STARTING, data);
 		pppcp_this_layer_down(data);
+		/* fall through */
 	case INITIAL:
 	case STARTING:
-		pppcp_illegal_event(data->state, DOWN);
 		/* illegal */
+		pppcp_illegal_event(data->state, DOWN);
+		break;
 	}
 }
 
@@ -657,6 +660,7 @@ static void pppcp_close_event(struct pppcp_data *data, guint8* packet, guint len
 		break;
 	case OPENED:
 		pppcp_this_layer_down(data);
+		/* fall through */
 	case REQSENT:
 	case ACKRCVD:
 	case ACKSENT:
@@ -695,6 +699,7 @@ static void pppcp_to_plus_event(struct pppcp_data *data, guint8 *packet, guint l
 	case STOPPED:
 	case OPENED:
 		pppcp_illegal_event(data->state, TO_PLUS);
+		break;
 	}
 }
 
@@ -723,6 +728,7 @@ static void pppcp_to_minus_event(struct pppcp_data *data, guint8 *packet, guint 
 	case STOPPED:
 	case OPENED:
 		pppcp_illegal_event(data->state, TO_MINUS);
+		break;
 	}
 }
 
@@ -767,6 +773,7 @@ static void pppcp_rcr_plus_event(struct pppcp_data *data,
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RCR_PLUS);
+		break;
 	}
 }
 
@@ -808,6 +815,7 @@ static void pppcp_rcr_minus_event(struct pppcp_data *data,
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RCR_MINUS);
+		break;
 	}
 }
 
@@ -819,6 +827,7 @@ static void pppcp_rca_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case CLOSED:
 	case STOPPED:
 		pppcp_send_terminate_ack(data, packet);
+		/* fall through */
 	case CLOSING:
 	case STOPPING:
 		pppcp_transition_state(data->state, data);
@@ -831,6 +840,7 @@ static void pppcp_rca_event(struct pppcp_data *data, guint8 *packet, guint len)
 		/* scr/6x */
 		pppcp_send_configure_request(data);
 		pppcp_transition_state(REQSENT, data);
+		/* fall through */
 	case ACKSENT:
 		pppcp_initialize_restart_count(&data->config_timer_data);
 		pppcp_this_layer_up(data);
@@ -844,6 +854,7 @@ static void pppcp_rca_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RCA);
+		break;
 	}
 }
 
@@ -855,9 +866,11 @@ static void pppcp_rcn_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case CLOSED:
 	case STOPPED:
 		pppcp_send_terminate_ack(data, packet);
+		/* fall through */
 	case CLOSING:
 	case STOPPING:
 		pppcp_transition_state(data->state, data);
+		/* fall through */
 	case REQSENT:
 		pppcp_initialize_restart_count(&data->config_timer_data);
 		pppcp_send_configure_request(data);
@@ -881,6 +894,7 @@ static void pppcp_rcn_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RCN);
+		break;
 	}
 }
 
@@ -892,6 +906,7 @@ static void pppcp_rtr_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case CLOSED:
 	case STOPPED:
 		pppcp_send_terminate_ack(data, packet);
+		/* fall through */
 	case CLOSING:
 	case STOPPING:
 		break;
@@ -910,6 +925,7 @@ static void pppcp_rtr_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RTR);
+		break;
 	}
 }
 
@@ -945,6 +961,7 @@ static void pppcp_rta_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RTA);
+		break;
 	}
 }
 
@@ -967,6 +984,7 @@ static void pppcp_ruc_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RUC);
+		break;
 	}
 }
 
@@ -992,6 +1010,7 @@ static void pppcp_rxj_plus_event(struct pppcp_data *data, guint8 *packet, guint 
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RXJ_PLUS);
+		break;
 	}
 }
 
@@ -1029,6 +1048,7 @@ static void pppcp_rxj_minus_event(struct pppcp_data *data,
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RXJ_MINUS);
+		break;
 	}
 }
 
@@ -1053,6 +1073,7 @@ static void pppcp_rxr_event(struct pppcp_data *data, guint8 *packet, guint len)
 	case INITIAL:
 	case STARTING:
 		pppcp_illegal_event(data->state, RXR);
+		break;
 	}
 }
 
