@@ -589,7 +589,7 @@ gboolean is_valid_pin(const char *pin, enum pin_type type)
 		return FALSE;
 
 	i = strlen(pin);
-	if (i != strspn(pin, "012345679"))
+	if (i != strspn(pin, "0123456789"))
 		return FALSE;
 
 	switch (type) {
