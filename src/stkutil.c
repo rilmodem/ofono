@@ -994,6 +994,14 @@ static gboolean parse_dataobj_language(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in 102.223 Section 8.47 */
+static gboolean parse_dataobj_browser_id(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1116,6 +1124,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_dtmf_string;
 	case STK_DATA_OBJECT_TYPE_LANGUAGE:
 		return parse_dataobj_language;
+	case STK_DATA_OBJECT_TYPE_BROWSER_ID:
+		return parse_dataobj_browser_id;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:

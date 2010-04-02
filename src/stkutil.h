@@ -301,6 +301,14 @@ enum stk_icon_qualifier {
 	STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY =	0x01
 };
 
+enum stk_browser_id {
+	STK_BROWSER_ID_DEFAULT =	0x00,
+	STK_BROWSER_ID_WML =		0x01,
+	STK_BROWSER_ID_HTML =		0x02,
+	STK_BROWSER_ID_XHTML =		0x03,
+	STK_BROWSER_ID_CHTML =		0x04
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
