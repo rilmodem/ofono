@@ -953,6 +953,28 @@ static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 	return parse_dataobj_common_bool(iter, ret);
 }
 
+/* Defined in 102.223 Section 8.44 */
+static gboolean parse_dataobj_dtmf_string(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	char **dtmf = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	*dtmf = g_try_malloc(len * 2 + 1);
+	if (*dtmf == NULL)
+		return FALSE;
+
+	extract_bcd_number(data, len, *dtmf);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1071,6 +1093,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_bc_repeat_indicator;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
+	case STK_DATA_OBJECT_TYPE_DTMF_STRING:
+		return parse_dataobj_dtmf_string;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
