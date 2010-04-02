@@ -831,6 +831,30 @@ static gboolean parse_dataobj_c_apdu(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.36 */
+static gboolean parse_dataobj_r_apdu(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_r_apdu *ra = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len < 2) || (len > 239))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	ra->sw1 = data[len-2];
+	ra->sw2 = data[len-1];
+
+	if (len > 2) {
+		ra->len = len - 2;
+		memcpy(ra->data, data, ra->len);
+	} else
+		ra->len = 0;
+
+	return TRUE;
+}
+
 /* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -941,6 +965,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_card_atr;
 	case STK_DATA_OBJECT_TYPE_C_APDU:
 		return parse_dataobj_c_apdu;
+	case STK_DATA_OBJECT_TYPE_R_APDU:
+		return parse_dataobj_r_apdu;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:

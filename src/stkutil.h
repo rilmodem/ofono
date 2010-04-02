@@ -483,6 +483,16 @@ struct stk_c_apdu {
 	unsigned char le;
 };
 
+/* Defined in TS 102.223 Section 8.36. According to it, the maximum size
+ * of data is 237.
+ */
+struct stk_r_apdu {
+	unsigned char sw1;
+	unsigned char sw2;
+	unsigned char data[237];
+	unsigned int len;
+};
+
 /*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
