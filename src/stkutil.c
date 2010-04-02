@@ -937,6 +937,14 @@ static gboolean parse_dataobj_at_response(
 	return parse_dataobj_common_text(iter, response);
 }
 
+/* Defined in TS 102.223 Section 8.42 */
+static gboolean parse_dataobj_bc_repeat_indicator(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1059,6 +1067,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_at_command;
 	case STK_DATA_OBJECT_TYPE_AT_RESPONSE:
 		return parse_dataobj_at_response;
+	case STK_DATA_OBJECT_TYPE_BC_REPEAT_INDICATOR:
+		return parse_dataobj_bc_repeat_indicator;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
