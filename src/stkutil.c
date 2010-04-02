@@ -882,6 +882,23 @@ static gboolean parse_dataobj_timer_value(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.39 */
+static gboolean parse_dataobj_datetime_timezone(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct sms_scts *scts = user;
+	const unsigned char *data;
+	int offset = 0;
+
+	if (comprehension_tlv_iter_get_length(iter) != 7)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	sms_decode_scts(data, 7, &offset, scts);
+
+	return TRUE;
+}
+
 /* Defined in 102.223 Section 8.43 */
 static gboolean parse_dataobj_imm_resp(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -998,6 +1015,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_timer_id;
 	case STK_DATA_OBJECT_TYPE_TIMER_VALUE:
 		return parse_dataobj_timer_value;
+	case STK_DATA_OBJECT_TYPE_DATETIME_TIMEZONE:
+		return parse_dataobj_datetime_timezone;
 	case STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE:
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
