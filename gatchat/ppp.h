@@ -55,12 +55,6 @@ enum ppp_event {
 	PPP_DOWN
 };
 
-struct ppp_packet_handler {
-	guint16 proto;
-	void (*handler)(gpointer priv, guint8 *packet);
-	gpointer priv;
-};
-
 struct ppp_header {
 	guint16 proto;
 	guint8 info[0];
@@ -144,7 +138,6 @@ struct _GAtPPP {
 };
 
 void ppp_generate_event(GAtPPP *ppp, enum ppp_event event);
-void ppp_register_packet_handler(struct ppp_packet_handler *handler);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
 void ppp_set_auth(GAtPPP *ppp, guint8 *auth_data);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
@@ -159,6 +152,7 @@ void lcp_open(struct pppcp_data *data);
 void lcp_establish(struct pppcp_data *data);
 void lcp_terminate(struct pppcp_data *data);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
+void auth_process_packet(struct auth_data *data, guint8 *new_packet);
 void auth_set_credentials(struct auth_data *data, const char *username,
 				const char *passwd);
 void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method);
@@ -166,7 +160,8 @@ struct auth_data *auth_new(GAtPPP *ppp);
 void auth_free(struct auth_data *auth);
 struct ppp_net_data *ppp_net_new(GAtPPP *ppp);
 void ppp_net_open(struct ppp_net_data *data);
-void ppp_net_free(struct ppp_net_data *data);
+void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet);
 void ppp_net_close(struct ppp_net_data *data);
+void ppp_net_free(struct ppp_net_data *data);
 struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);

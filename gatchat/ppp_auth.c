@@ -135,9 +135,8 @@ static void chap_process_failure(struct auth_data *data, guint8 *packet)
 /*
  * parse the packet
  */
-static void chap_process_packet(gpointer priv, guint8 *new_packet)
+static void chap_process_packet(struct auth_data *data, guint8 *new_packet)
 {
-	struct auth_data *data = priv;
 	guint8 code = new_packet[0];
 
 	switch (code) {
@@ -161,11 +160,6 @@ static void chap_process_packet(gpointer priv, guint8 *new_packet)
 		break;
 	}
 }
-
-struct ppp_packet_handler chap_packet_handler = {
-	.proto = CHAP_PROTOCOL,
-	.handler = chap_process_packet,
-};
 
 static void chap_free(struct auth_data *auth)
 {
@@ -192,9 +186,6 @@ static struct chap_data *chap_new(struct auth_data *auth, guint8 method)
 		break;
 	}
 
-	/* register packet handler for CHAP protocol */
-	chap_packet_handler.priv = auth;
-	ppp_register_packet_handler(&chap_packet_handler);
 	return data;
 }
 
@@ -205,7 +196,9 @@ void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method)
 
 	switch (proto) {
 	case CHAP_PROTOCOL:
+		data->proto = proto;
 		data->proto_data = chap_new(data, method);
+		data->process_packet = chap_process_packet;
 		break;
 	default:
 		g_print("Unknown auth protocol 0x%x\n", proto);

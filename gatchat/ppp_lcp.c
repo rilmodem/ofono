@@ -170,11 +170,6 @@ static const char *lcp_option_strings[256] = {
 	[13]	= "Callback",
 };
 
-struct ppp_packet_handler lcp_packet_handler = {
-	.proto = LCP_PROTOCOL,
-	.handler = pppcp_process_packet,
-};
-
 struct pppcp_action lcp_action = {
 	.this_layer_up =	lcp_up,
 	.this_layer_down = 	lcp_down,
@@ -255,8 +250,5 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	option->length = 6;
 	pppcp_add_config_option(pppcp, option);
 
-	/* register packet handler for LCP protocol */
-	lcp_packet_handler.priv = pppcp;
-	ppp_register_packet_handler(&lcp_packet_handler);
 	return pppcp;
 }

@@ -183,11 +183,6 @@ static const char *ipcp_option_strings[256] = {
 	[SECONDARY_NBNS_SERVER]	= "Secondary NBNS Server Address",
 };
 
-struct ppp_packet_handler ipcp_packet_handler = {
-	.proto = IPCP_PROTO,
-	.handler = pppcp_process_packet,
-};
-
 struct pppcp_data *ipcp_new(GAtPPP *ppp)
 {
 	struct ipcp_data *data;
@@ -223,9 +218,6 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	ipcp_option->length= 6;
 	pppcp_add_config_option(pppcp, ipcp_option);
 
-	/* register packet handler for IPCP protocol */
-	ipcp_packet_handler.priv = pppcp;
-	ppp_register_packet_handler(&ipcp_packet_handler);
 	return pppcp;
 }
 

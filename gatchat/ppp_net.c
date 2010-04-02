@@ -41,9 +41,8 @@
 /* XXX should be maximum IP Packet size */
 #define MAX_PACKET 1500
 
-static void ip_process_packet(gpointer priv, guint8 *packet)
+void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet)
 {
-	struct ppp_net_data *data = priv;
 	GError *error = NULL;
 	GIOStatus status;
 	gsize bytes_written;
@@ -144,11 +143,6 @@ void ppp_net_open(struct ppp_net_data *data)
 			ppp_net_callback, (gpointer) data);
 }
 
-struct ppp_packet_handler ip_packet_handler = {
-	.proto = PPP_IP_PROTO,
-	.handler = ip_process_packet,
-};
-
 struct ppp_net_data *ppp_net_new(GAtPPP *ppp)
 {
 	struct ppp_net_data *data;
@@ -159,9 +153,6 @@ struct ppp_net_data *ppp_net_new(GAtPPP *ppp)
 
 	data->ppp = ppp;
 
-	/* register packet handler for IP protocol */
-	ip_packet_handler.priv = data;
-	ppp_register_packet_handler(&ip_packet_handler);
 	return data;
 }
 

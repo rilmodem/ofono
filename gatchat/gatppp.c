@@ -46,13 +46,6 @@ struct frame_buffer {
 	guint8 bytes[0];
 };
 
-static GList *packet_handlers = NULL;
-
-void ppp_register_packet_handler(struct ppp_packet_handler *handler)
-{
-	packet_handlers = g_list_append(packet_handlers, handler);
-}
-
 /*
  * FCS lookup table copied from rfc1662.
  */
@@ -180,39 +173,35 @@ static struct frame_buffer *ppp_encode(GAtPPP *ppp, guint8 *data, int len)
 	return fb;
 }
 
-static gint is_proto_handler(gconstpointer a, gconstpointer b)
-{
-	const struct ppp_packet_handler *h = a;
-	const guint16 proto = (guint16) GPOINTER_TO_UINT(b);
-
-	if (h->proto == proto)
-		return 0;
-	else
-		return -1;
-}
-
 /* called when we have received a complete ppp frame */
 static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 {
 	guint protocol = ppp_proto(frame->bytes);
 	guint8 *packet = ppp_info(frame->bytes);
-	struct ppp_packet_handler *h;
-	GList *list;
 
 	if (!frame)
 		return;
 
-	/*
-	 * check to see if we have a protocol handler
-	 * registered for this packet
-	 */
-	list = g_list_find_custom(packet_handlers,
-				GUINT_TO_POINTER(protocol), is_proto_handler);
-	if (list) {
-		h = list->data;
-		h->handler(h->priv, packet);
-	} else
+	switch (protocol) {
+	case PPP_IP_PROTO:
+		ppp_net_process_packet(ppp->net, packet);
+		break;
+	case LCP_PROTOCOL:
+		pppcp_process_packet(ppp->lcp, packet);
+		break;
+	case IPCP_PROTO:
+		pppcp_process_packet(ppp->ipcp, packet);
+		break;
+	case CHAP_PROTOCOL:
+		if (ppp->auth->proto == protocol &&
+				ppp->auth->proto_data != NULL) {
+			ppp->auth->process_packet(ppp->auth, packet);
+			break;
+		}
+		/* Otherwise fall through */
+	default:
 		lcp_protocol_reject(ppp->lcp, frame->bytes, frame->len);
+	};
 
 	g_free(frame);
 }
