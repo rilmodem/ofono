@@ -29,6 +29,7 @@ extern "C" {
 #include "gat.h"
 
 struct _GAtPPP;
+
 typedef struct _GAtPPP GAtPPP;
 
 typedef enum _GAtPPPConnectStatus {
