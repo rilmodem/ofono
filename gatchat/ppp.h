@@ -130,7 +130,6 @@ struct _GAtPPP {
 	guint32 xmit_accm[8];
 	guint32 recv_accm;
 	GIOChannel *modem;
-	GQueue *event_queue;
 	GAtPPPConnectFunc connect_cb;
 	gpointer connect_data;
 	GAtDisconnectFunc disconnect_cb;

@@ -411,9 +411,6 @@ static void ppp_dead(GAtPPP *ppp)
 	if (g_atomic_int_get(&ppp->ref_count))
 		return;
 
-	/* clean up all the queues */
-	g_queue_free(ppp->event_queue);
-
 	/* cleanup modem channel */
 	g_source_remove(ppp->modem_watch);
 	g_io_channel_unref(ppp->modem);
@@ -461,48 +458,38 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 	}
 }
 
-static void ppp_handle_event(GAtPPP *ppp)
-{
-	enum ppp_event event;
-
-	while ((event = GPOINTER_TO_UINT(g_queue_pop_head(ppp->event_queue)))){
-		switch (event) {
-		case PPP_UP:
-			/* causes transition to ppp establishment */
-			ppp_transition_phase(ppp, PPP_ESTABLISHMENT);
-			break;
-		case PPP_OPENED:
-			ppp_transition_phase(ppp, PPP_AUTHENTICATION);
-			break;
-		case PPP_CLOSING:
-			/* causes transition to termination phase */
-			ppp_transition_phase(ppp, PPP_TERMINATION);
-			break;
-		case PPP_DOWN:
-			/* cases transition to dead phase */
-			ppp_transition_phase(ppp, PPP_DEAD);
-			break;
-		case PPP_NONE:
-		case PPP_SUCCESS:
-			/* causes transition to network phase */
-			ppp_transition_phase(ppp, PPP_NETWORK);
-			break;
-		case PPP_FAIL:
-			if (ppp->phase == PPP_ESTABLISHMENT)
-				ppp_transition_phase(ppp, PPP_DEAD);
-			else if (ppp->phase == PPP_AUTHENTICATION)
-				ppp_transition_phase(ppp, PPP_TERMINATION);
-		}
-	}
-}
-
 /*
  * send the event handler a new event to process
  */
 void ppp_generate_event(GAtPPP *ppp, enum ppp_event event)
 {
-	g_queue_push_tail(ppp->event_queue, GUINT_TO_POINTER(event));
-	ppp_handle_event(ppp);
+	switch (event) {
+	case PPP_UP:
+		/* causes transition to ppp establishment */
+		ppp_transition_phase(ppp, PPP_ESTABLISHMENT);
+		break;
+	case PPP_OPENED:
+		ppp_transition_phase(ppp, PPP_AUTHENTICATION);
+		break;
+	case PPP_CLOSING:
+		/* causes transition to termination phase */
+		ppp_transition_phase(ppp, PPP_TERMINATION);
+		break;
+	case PPP_DOWN:
+		/* cases transition to dead phase */
+		ppp_transition_phase(ppp, PPP_DEAD);
+		break;
+	case PPP_NONE:
+	case PPP_SUCCESS:
+		/* causes transition to network phase */
+		ppp_transition_phase(ppp, PPP_NETWORK);
+		break;
+	case PPP_FAIL:
+		if (ppp->phase == PPP_ESTABLISHMENT)
+			ppp_transition_phase(ppp, PPP_DEAD);
+		else if (ppp->phase == PPP_AUTHENTICATION)
+			ppp_transition_phase(ppp, PPP_TERMINATION);
+	}
 }
 
 void ppp_set_auth(GAtPPP *ppp, guint8* auth_data)

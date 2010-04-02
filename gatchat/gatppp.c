@@ -145,9 +145,6 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->pfc = FALSE;
 	ppp->acfc = FALSE;
 
-	/* allocate the queues */
-	ppp->event_queue = g_queue_new();
-
 	ppp->index = 0;
 
 	/* initialize the lcp state */
