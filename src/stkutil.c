@@ -975,6 +975,25 @@ static gboolean parse_dataobj_dtmf_string(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in 102.223 Section 8.45 */
+static gboolean parse_dataobj_language(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	char **lang = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len != 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	/* Assume network measurement result is 2 bytes long */
+	memcpy(*lang, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1095,6 +1114,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_imm_resp;
 	case STK_DATA_OBJECT_TYPE_DTMF_STRING:
 		return parse_dataobj_dtmf_string;
+	case STK_DATA_OBJECT_TYPE_LANGUAGE:
+		return parse_dataobj_language;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
