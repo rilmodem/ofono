@@ -108,10 +108,9 @@ static guint lcp_option_scan(struct ppp_option *option, gpointer user)
 	case PFC:
 	case ACFC:
 		return OPTION_ACCEPT;
-		break;
-	default:
-		return OPTION_REJECT;
 	}
+
+	return OPTION_REJECT;
 }
 
 /*
@@ -150,6 +149,7 @@ static void lcp_option_process(gpointer data, gpointer user)
 		break;
 	default:
 		g_printerr("unhandled option %d\n", option->type);
+		break;
 	}
 }
 

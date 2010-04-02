@@ -437,6 +437,7 @@ void ppp_generate_event(GAtPPP *ppp, enum ppp_event event)
 			ppp_transition_phase(ppp, PPP_DEAD);
 		else if (ppp->phase == PPP_AUTHENTICATION)
 			ppp_transition_phase(ppp, PPP_TERMINATION);
+		break;
 	}
 }
 

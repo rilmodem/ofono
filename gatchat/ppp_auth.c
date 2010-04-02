@@ -189,6 +189,7 @@ static struct chap_data *chap_new(struct auth_data *auth, guint8 method)
 		break;
 	default:
 		g_print("Unknown method\n");
+		break;
 	}
 
 	/* register packet handler for CHAP protocol */
@@ -208,6 +209,7 @@ void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method)
 		break;
 	default:
 		g_print("Unknown auth protocol 0x%x\n", proto);
+		break;
 	}
 }
 
