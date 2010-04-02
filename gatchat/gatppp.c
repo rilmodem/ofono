@@ -198,9 +198,10 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 			ppp->auth->process_packet(ppp->auth, packet);
 			break;
 		}
-		/* Otherwise fall through */
+		/* fall through */
 	default:
 		lcp_protocol_reject(ppp->lcp, frame->bytes, frame->len);
+		break;
 	};
 
 	g_free(frame);
