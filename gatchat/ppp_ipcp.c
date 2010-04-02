@@ -225,8 +225,6 @@ void ipcp_free(struct pppcp_data *data)
 {
 	struct ipcp_data *ipcp = data->priv;
 
-	/* TBD unregister IPCP packet handler */
-
 	/* free ipcp */
 	g_free(ipcp);
 

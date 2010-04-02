@@ -163,8 +163,6 @@ static void chap_process_packet(struct auth_data *data, guint8 *new_packet)
 
 static void chap_free(struct auth_data *auth)
 {
-	/* TBD unregister protocol handler */
-
 	g_free(auth->proto_data);
 }
 

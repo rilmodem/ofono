@@ -211,8 +211,6 @@ void lcp_free(struct pppcp_data *lcp)
 	if (lcp == NULL)
 		return;
 
-	/* TBD unregister packet handler */
-
 	pppcp_free(lcp);
 }
 

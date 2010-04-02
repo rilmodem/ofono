@@ -158,8 +158,6 @@ struct ppp_net_data *ppp_net_new(GAtPPP *ppp)
 
 void ppp_net_free(struct ppp_net_data *data)
 {
-	/* TBD unregister packet handler */
-
 	/* cleanup tun interface */
 	ppp_net_close(data);
 
