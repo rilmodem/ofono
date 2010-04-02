@@ -51,7 +51,6 @@ static gint option_cid = 0;
 static gchar *option_apn = NULL;
 static gint option_offmode = 0;
 static gboolean option_legacy = FALSE;
-static gboolean option_ppp = FALSE;
 static gchar *option_username = NULL;
 static gchar *option_password = NULL;
 static gchar *option_pppdump = NULL;
@@ -251,9 +250,6 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_print("Unable to define context\n");
 		exit(1);
 	}
-
-	if (option_ppp == FALSE)
-		return;
 
 	/* get the data IO channel */
 	channel = g_at_chat_get_channel(modem);
@@ -566,8 +562,6 @@ static GOptionEntry options[] = {
 				"Specify CFUN offmode" },
 	{ "legacy", 'l', 0, G_OPTION_ARG_NONE, &option_legacy,
 				"Use ATD*99***<cid>#" },
-	{ "ppp", 'P', 0, G_OPTION_ARG_NONE, &option_ppp,
-				"Connect using PPP" },
 	{ "username", 'u', 0, G_OPTION_ARG_STRING, &option_username,
 				"Specify PPP username" },
 	{ "password", 'w', 0, G_OPTION_ARG_STRING, &option_password,
