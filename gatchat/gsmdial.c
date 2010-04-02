@@ -64,6 +64,7 @@ static GMainLoop *event_loop;
 enum state {
 	STATE_NONE = 0,
 	STATE_REGISTERING,
+	STATE_ATTACHING,
 	STATE_ACTIVATING
 };
 
@@ -321,7 +322,7 @@ static void cgreg_notify(GAtResult *result, gpointer user_data)
 {
 	int status, lac, ci, tech;
 
-	if (state != STATE_REGISTERING)
+	if (state != STATE_ATTACHING)
 		return;
 
 	if (at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
@@ -345,8 +346,11 @@ static void cgreg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 						&lac, &ci, &tech) == FALSE)
 		return;
 
-	if (status != 1 && status != 5)
+	if (status != 1 && status != 5) {
+		g_at_chat_register(control, "+CGREG:",
+					cgreg_notify, FALSE, NULL, NULL);
 		return;
+	}
 
 	setup_context(status);
 }
@@ -362,6 +366,7 @@ static void attached_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 static void activate_gprs(int status)
 {
+	state = STATE_ATTACHING;
 	g_print("Registered to network, roaming=%s\n",
 					status == 5 ? "true" : "false");
 
@@ -398,8 +403,11 @@ static void creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 						&lac, &ci, &tech) == FALSE)
 		return;
 
-	if (status != 1 && status != 5)
+	if (status != 1 && status != 5) {
+		g_at_chat_register(control, "+CREG:",
+						creg_notify, FALSE, NULL, NULL);
 		return;
+	}
 
 	activate_gprs(status);
 }
@@ -424,11 +432,6 @@ static void start_dial(gboolean ok, GAtResult *result, gpointer user_data)
 		g_print("Turning on the modem failed\n");
 		exit(1);
 	}
-
-	g_at_chat_register(control, "+CREG:",
-				creg_notify, FALSE, NULL, NULL);
-	g_at_chat_register(control, "+CGREG:",
-				cgreg_notify, FALSE, NULL, NULL);
 
 	g_at_chat_send(control, "AT+CREG=2", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(control, "AT+CGREG=2", none_prefix, NULL, NULL, NULL);
