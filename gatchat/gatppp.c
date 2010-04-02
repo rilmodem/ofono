@@ -147,7 +147,6 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 
 	/* allocate the queues */
 	ppp->event_queue = g_queue_new();
-	ppp->recv_queue = g_queue_new();
 
 	ppp->index = 0;
 

@@ -188,31 +188,29 @@ static gint is_proto_handler(gconstpointer a, gconstpointer b)
 }
 
 /* called when we have received a complete ppp frame */
-static void ppp_recv(GAtPPP *ppp)
+static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 {
+	guint protocol = ppp_proto(frame->bytes);
+	guint8 *packet = ppp_info(frame->bytes);
+	struct ppp_packet_handler *h;
 	GList *list;
-	struct frame_buffer *frame;
 
-	/* pop frames off of receive queue */
-	while ((frame = g_queue_pop_head(ppp->recv_queue))) {
-		guint protocol = ppp_proto(frame->bytes);
-		guint8 *packet = ppp_info(frame->bytes);
-		struct ppp_packet_handler *h;
+	if (!frame)
+		return;
 
-		/*
-		 * check to see if we have a protocol handler
-		 * registered for this packet
-		 */
-		list = g_list_find_custom(packet_handlers,
-				GUINT_TO_POINTER(protocol),
-				is_proto_handler);
-		if (list) {
-			h = list->data;
-			h->handler(h->priv, packet);
-		} else
-			lcp_protocol_reject(ppp->lcp, frame->bytes, frame->len);
-		g_free(frame);
-	}
+	/*
+	 * check to see if we have a protocol handler
+	 * registered for this packet
+	 */
+	list = g_list_find_custom(packet_handlers,
+				GUINT_TO_POINTER(protocol), is_proto_handler);
+	if (list) {
+		h = list->data;
+		h->handler(h->priv, packet);
+	} else
+		lcp_protocol_reject(ppp->lcp, frame->bytes, frame->len);
+
+	g_free(frame);
 }
 
 /* XXX - Implement PFC and ACFC */
@@ -277,10 +275,8 @@ static void ppp_feed(GAtPPP *ppp, guint8 *data, gsize len)
 				ppp->buffer[ppp->index++] = data[pos];
 				frame = ppp_decode(ppp, ppp->buffer);
 
-				/* push decoded frame onto receive queue */
-				if (frame)
-					g_queue_push_tail(ppp->recv_queue,
-								frame);
+				/* process receive frame */
+				ppp_recv(ppp, frame);
 
 				/* zero buffer */
 				memset(ppp->buffer, 0, BUFFERSZ);
@@ -292,8 +288,6 @@ static void ppp_feed(GAtPPP *ppp, guint8 *data, gsize len)
 		if (ppp->index < BUFFERSZ)
 			ppp->buffer[ppp->index++] = data[pos];
 	}
-	/* process receive queue */
-	ppp_recv(ppp);
 }
 
 static void ppp_record(GAtPPP *ppp, gboolean in, guint8 *data, guint16 length)
@@ -418,7 +412,6 @@ static void ppp_dead(GAtPPP *ppp)
 
 	/* clean up all the queues */
 	g_queue_free(ppp->event_queue);
-	g_queue_free(ppp->recv_queue);
 
 	/* cleanup modem channel */
 	g_source_remove(ppp->modem_watch);
