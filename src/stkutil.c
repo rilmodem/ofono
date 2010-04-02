@@ -979,7 +979,7 @@ static gboolean parse_dataobj_dtmf_string(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_language(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	char **lang = user;
+	char *lang = user;
 	const unsigned char *data;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
 
@@ -988,7 +988,14 @@ static gboolean parse_dataobj_language(struct comprehension_tlv_iter *iter,
 
 	data = comprehension_tlv_iter_get_data(iter);
 
-	memcpy(*lang, data, len);
+	/*
+	 * This is a 2 character pair as defined in ISO 639, coded using
+	 * GSM default 7 bit alphabet with bit 8 set to 0.  Since the english
+	 * letters have the same mapping in GSM as ASCII, no conversion
+	 * is required here
+	 */
+	memcpy(lang, data, len);
+	lang[len] = '\0';
 
 	return TRUE;
 }
