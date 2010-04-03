@@ -179,9 +179,6 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 	guint protocol = ppp_proto(frame->bytes);
 	guint8 *packet = ppp_info(frame->bytes);
 
-	if (!frame)
-		return;
-
 	switch (protocol) {
 	case PPP_IP_PROTO:
 		ppp_net_process_packet(ppp->net, packet);
@@ -203,8 +200,6 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 		lcp_protocol_reject(ppp->lcp, frame->bytes, frame->len);
 		break;
 	};
-
-	g_free(frame);
 }
 
 /* XXX - Implement PFC and ACFC */
@@ -269,9 +264,11 @@ static void ppp_feed(GAtPPP *ppp, guint8 *data, gsize len)
 				/* store last flag character & decode */
 				ppp->buffer[ppp->index++] = data[pos];
 				frame = ppp_decode(ppp, ppp->buffer);
-
-				/* process receive frame */
-				ppp_recv(ppp, frame);
+				if (frame) {
+					/* process receive frame */
+					ppp_recv(ppp, frame);
+					g_free(frame);
+				}
 
 				/* zero buffer */
 				memset(ppp->buffer, 0, BUFFERSZ);
