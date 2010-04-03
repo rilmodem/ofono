@@ -19,12 +19,7 @@
  *
  */
 
-struct ring_buffer {
-	unsigned char *buffer;
-	unsigned int size;
-	unsigned int in;
-	unsigned int out;
-};
+struct ring_buffer;
 
 /*!
  * Creates a new ring buffer with capacity size

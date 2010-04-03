@@ -31,6 +31,13 @@
 
 #define MAX_SIZE 262144
 
+struct ring_buffer {
+	unsigned char *buffer;
+	unsigned int size;
+	unsigned int in;
+	unsigned int out;
+};
+
 struct ring_buffer *ring_buffer_new(unsigned int size)
 {
 	unsigned int real_size = 1;
