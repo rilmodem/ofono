@@ -539,7 +539,7 @@ GAtMux *g_at_mux_new(GIOChannel *channel, const GAtMuxDriver *driver)
 	if (!channel)
 		return NULL;
 
-	mux = g_new0(GAtMux, 1);
+	mux = g_try_new0(GAtMux, 1);
 	if (!mux)
 		return NULL;
 

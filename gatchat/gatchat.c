@@ -171,13 +171,11 @@ static struct at_command *at_command_create(const char *cmd,
 	}
 
 	c = g_try_new0(struct at_command, 1);
-
 	if (!c)
 		return 0;
 
 	len = strlen(cmd);
 	c->cmd = g_try_new(char, len + 2);
-
 	if (!c->cmd) {
 		g_free(c);
 		return 0;
@@ -612,7 +610,6 @@ static char *extract_line(GAtChat *p)
 	}
 
 	line = g_try_new(char, line_length + 1);
-
 	if (!line) {
 		ring_buffer_drain(p->buf, p->read_so_far);
 		return NULL;
@@ -905,7 +902,6 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 		return NULL;
 
 	chat = g_try_new0(GAtChat, 1);
-
 	if (!chat)
 		return chat;
 
@@ -1200,7 +1196,6 @@ static struct at_notify *at_notify_create(GAtChat *chat, const char *prefix,
 		return 0;
 
 	notify = g_try_new0(struct at_notify, 1);
-
 	if (!notify) {
 		g_free(key);
 		return 0;
@@ -1239,7 +1234,6 @@ guint g_at_chat_register(GAtChat *chat, const char *prefix,
 		return 0;
 
 	node = g_try_new0(struct at_notify_node, 1);
-
 	if (!node)
 		return 0;
 

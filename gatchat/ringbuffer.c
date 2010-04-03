@@ -43,13 +43,11 @@ struct ring_buffer *ring_buffer_new(unsigned int size)
 	if (real_size > MAX_SIZE)
 		return NULL;
 
-	buffer = g_new(struct ring_buffer, 1);
-
+	buffer = g_try_new(struct ring_buffer, 1);
 	if (!buffer)
 		return NULL;
 
-	buffer->buffer = g_new(unsigned char, real_size);
-
+	buffer->buffer = g_try_new(unsigned char, real_size);
 	if (!buffer->buffer) {
 		g_free(buffer);
 		return NULL;

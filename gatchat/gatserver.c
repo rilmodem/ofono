@@ -813,7 +813,6 @@ static char *extract_line(GAtServer *p)
 	line_length -= 3;
 
 	line = g_try_new(char, line_length + 1);
-
 	if (!line) {
 		ring_buffer_drain(p->read_buf, p->read_so_far);
 		return NULL;
