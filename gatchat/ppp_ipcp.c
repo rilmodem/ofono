@@ -164,12 +164,12 @@ static void ipcp_option_process(gpointer data, gpointer user)
 }
 
 struct pppcp_action ipcp_action = {
-	.this_layer_up =	ipcp_up,
-	.this_layer_down = 	ipcp_down,
-	.this_layer_started = 	ipcp_started,
-	.this_layer_finished =	ipcp_finished,
-	.option_scan = 		ipcp_option_scan,
-	.option_process = 	ipcp_option_process,
+	.this_layer_up		= ipcp_up,
+	.this_layer_down	= ipcp_down,
+	.this_layer_started	= ipcp_started,
+	.this_layer_finished	= ipcp_finished,
+	.option_scan		= ipcp_option_scan,
+	.option_process		= ipcp_option_process,
 };
 
 static const char *ipcp_option_strings[256] = {

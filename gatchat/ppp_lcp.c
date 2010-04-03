@@ -171,12 +171,12 @@ static const char *lcp_option_strings[256] = {
 };
 
 struct pppcp_action lcp_action = {
-	.this_layer_up =	lcp_up,
-	.this_layer_down = 	lcp_down,
-	.this_layer_started = 	lcp_started,
-	.this_layer_finished =	lcp_finished,
-	.option_scan = 		lcp_option_scan,
-	.option_process = 	lcp_option_process,
+	.this_layer_up		= lcp_up,
+	.this_layer_down	= lcp_down,
+	.this_layer_started	= lcp_started,
+	.this_layer_finished	= lcp_finished,
+	.option_scan		= lcp_option_scan,
+	.option_process		= lcp_option_process,
 };
 
 void lcp_open(struct pppcp_data *data)
