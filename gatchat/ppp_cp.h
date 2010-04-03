@@ -111,6 +111,7 @@ struct pppcp_data {
 	struct pppcp_timer_data config_timer_data;
 	struct pppcp_timer_data terminate_timer_data;
 	guint max_failure;
+	guint failure_counter;
 	guint32 magic_number;
 	GList *config_options;
 	GList *acceptable_options;

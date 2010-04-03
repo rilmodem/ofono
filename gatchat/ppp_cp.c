@@ -232,6 +232,15 @@ static void copy_option(gpointer data, gpointer user_data)
 	*location += option->length;
 }
 
+static void reject_option(gpointer data, gpointer user_data)
+{
+	struct ppp_option *option = data;
+	struct pppcp_data *pppcp = user_data;
+
+	pppcp->rejected_options =
+		g_list_append(pppcp->rejected_options, option);
+}
+
 static void print_option(gpointer data, gpointer user_data)
 {
 	struct ppp_option *option = data;
@@ -309,6 +318,8 @@ static void pppcp_send_configure_ack(struct pppcp_data *data,
 
 	pppcp_trace(data);
 
+	data->failure_counter = 0;
+
 	g_list_foreach(data->acceptable_options, print_option, data);
 
 	/* subtract for header. */
@@ -340,6 +351,16 @@ static void pppcp_send_configure_nak(struct pppcp_data *data,
 			(struct pppcp_packet *) configure_packet;
 	guint8 olength;
 	guint8 *odata;
+
+	/*
+	 * if we have exceeded our Max-Failure counter, we need
+	 * to convert all packets to Configure-Reject
+	 */
+	if (data->failure_counter >= data->max_failure) {
+		g_list_foreach(data->unacceptable_options, reject_option, data);
+		g_list_free(data->unacceptable_options);
+		data->unacceptable_options = NULL;
+	}
 
 	/* if we have any rejected options, send a config-reject */
 	if (g_list_length(data->rejected_options)) {
@@ -389,6 +410,7 @@ static void pppcp_send_configure_nak(struct pppcp_data *data,
 				ntohs(packet->length));
 
 		pppcp_packet_free(packet);
+		data->failure_counter++;
 	}
 }
 
