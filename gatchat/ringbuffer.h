@@ -19,13 +19,6 @@
  *
  */
 
-#ifndef __GATCHAT_RINGBUFFER_H
-#define __GATCHAT_RINGBUFFER_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct ring_buffer {
 	unsigned char *buffer;
 	unsigned int size;
@@ -116,9 +109,3 @@ int ring_buffer_len_no_wrap(struct ring_buffer *buf);
  * read counter was actually advanced.
  */
 int ring_buffer_drain(struct ring_buffer *buf, unsigned int len);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __GATCHAT_RINGBUFFER_H */
