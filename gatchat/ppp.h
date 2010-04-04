@@ -22,7 +22,6 @@
 #include "ppp_cp.h"
 
 #define DEFAULT_MRU	1500
-#define BUFFERSZ	DEFAULT_MRU*2
 #define DEFAULT_ACCM	0x00000000
 #define PPP_ESC		0x7d
 #define PPP_FLAG_SEQ 	0x7e
@@ -108,36 +107,7 @@ struct ppp_net_data {
 	gint watch;
 };
 
-struct _GAtPPP {
-	gint ref_count;
-	enum ppp_phase phase;
-	struct pppcp_data *lcp;
-	struct auth_data *auth;
-	struct pppcp_data *ipcp;
-	struct ppp_net_data *net;
-	guint8 buffer[BUFFERSZ];
-	int index;
-	gint mru;
-	guint16 auth_proto;
-	char user_name[256];
-	char passwd[256];
-	gboolean pfc;
-	gboolean acfc;
-	guint32 xmit_accm[8];
-	guint32 recv_accm;
-	GIOChannel *modem;
-	GAtPPPConnectFunc connect_cb;
-	gpointer connect_data;
-	GAtDisconnectFunc disconnect_cb;
-	gpointer disconnect_data;
-	gint read_watch;
-	gint write_watch;
-	GAtDebugFunc debugf;
-	gpointer debug_data;
-	int record_fd;
-	GQueue *xmit_queue;
-};
-
+void ppp_debug(GAtPPP *ppp, const char *str);
 void ppp_generate_event(GAtPPP *ppp, enum ppp_event event);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
 void ppp_set_auth(GAtPPP *ppp, guint8 *auth_data);
@@ -166,3 +136,5 @@ void ppp_net_close(struct ppp_net_data *data);
 void ppp_net_free(struct ppp_net_data *data);
 struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);
+void ppp_connect_cb(GAtPPP *ppp, GAtPPPConnectStatus success,
+			const char *ip, const char *dns1, const char *dns2);

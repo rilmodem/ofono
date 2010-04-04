@@ -38,6 +38,56 @@
 #include "gatppp.h"
 #include "ppp.h"
 
+#define BUFFERSZ	DEFAULT_MRU*2
+
+struct _GAtPPP {
+	gint ref_count;
+	enum ppp_phase phase;
+	struct pppcp_data *lcp;
+	struct auth_data *auth;
+	struct pppcp_data *ipcp;
+	struct ppp_net_data *net;
+	guint8 buffer[BUFFERSZ];
+	int index;
+	gint mru;
+	guint16 auth_proto;
+	char user_name[256];
+	char passwd[256];
+	gboolean pfc;
+	gboolean acfc;
+	guint32 xmit_accm[8];
+	guint32 recv_accm;
+	GIOChannel *modem;
+	GAtPPPConnectFunc connect_cb;
+	gpointer connect_data;
+	GAtDisconnectFunc disconnect_cb;
+	gpointer disconnect_data;
+	gint read_watch;
+	gint write_watch;
+	GAtDebugFunc debugf;
+	gpointer debug_data;
+	int record_fd;
+	GQueue *xmit_queue;
+};
+
+void ppp_debug(GAtPPP *ppp, const char *str)
+{
+	if (!ppp || !ppp->debugf)
+		return;
+
+	ppp->debugf(str, ppp->debug_data);
+}
+
+void ppp_connect_cb(GAtPPP *ppp, GAtPPPConnectStatus success,
+			const char *ip, const char *dns1, const char *dns2)
+{
+	if (ppp->connect_cb == NULL)
+		return;
+
+	ppp->connect_cb(success, ppp->net->if_name,
+				ip, dns1, dns2,  ppp->connect_data);
+}
+
 #define PPPINITFCS16    0xffff  /* Initial FCS value */
 #define PPPGOODFCS16    0xf0b8  /* Good final FCS value */
 
