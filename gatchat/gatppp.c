@@ -38,7 +38,23 @@
 #include "gatppp.h"
 #include "ppp.h"
 
-#define BUFFERSZ	DEFAULT_MRU*2
+#define DEFAULT_MRU	1500
+#define DEFAULT_ACCM	0x00000000
+
+#define BUFFERSZ	(DEFAULT_MRU * 2)
+
+#define PPP_ESC		0x7d
+#define PPP_FLAG_SEQ 	0x7e
+#define PPP_ADDR_FIELD	0xff
+#define PPP_CTRL	0x03
+
+enum ppp_phase {
+	PPP_DEAD = 0,
+	PPP_ESTABLISHMENT,
+	PPP_AUTHENTICATION,
+	PPP_NETWORK,
+	PPP_TERMINATION,
+};
 
 struct _GAtPPP {
 	gint ref_count;

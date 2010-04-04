@@ -21,28 +21,10 @@
 
 #include "ppp_cp.h"
 
-#define DEFAULT_MRU	1500
-#define DEFAULT_ACCM	0x00000000
-#define PPP_ESC		0x7d
-#define PPP_FLAG_SEQ 	0x7e
-#define PPP_ADDR_FIELD	0xff
-#define PPP_CTRL	0x03
 #define LCP_PROTOCOL	0xc021
 #define CHAP_PROTOCOL	0xc223
 #define IPCP_PROTO	0x8021
 #define PPP_IP_PROTO	0x0021
-#define PPP_HEADROOM	2
-#define HDLC_HEADROOM	3
-#define HDLC_TAIL	3
-#define MD5		5
-
-enum ppp_phase {
-	PPP_DEAD = 0,
-	PPP_ESTABLISHMENT,
-	PPP_AUTHENTICATION,
-	PPP_NETWORK,
-	PPP_TERMINATION,
-};
 
 enum ppp_event {
 	PPP_UP = 1,

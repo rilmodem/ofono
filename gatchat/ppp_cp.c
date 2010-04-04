@@ -46,6 +46,8 @@ static const char *pppcp_state_strings[] =
 	g_free(str); \
 } while (0);
 
+#define PPP_HEADROOM	2
+
 #define pppcp_to_ppp_packet(p) \
 	(((guint8 *) p) - PPP_HEADROOM)
 
