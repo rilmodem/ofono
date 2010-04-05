@@ -111,6 +111,9 @@ GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp);
 void pppcp_set_option_strings(struct pppcp_data *pppcp, const char **opts);
 void pppcp_set_prefix(struct pppcp_data *pppcp, const char *prefix);
 
+void pppcp_set_magic_number(struct pppcp_data *pppcp, guint32 magic);
+guint32 pppcp_get_magic_number(struct pppcp_data *pppcp);
+
 void pppcp_add_config_option(struct pppcp_data *data,
 				struct ppp_option *option);
 void pppcp_set_valid_codes(struct pppcp_data *data, guint16 codes);

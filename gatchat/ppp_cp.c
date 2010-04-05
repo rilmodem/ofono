@@ -1299,6 +1299,16 @@ void pppcp_set_prefix(struct pppcp_data *pppcp, const char *prefix)
 	pppcp->prefix = prefix;
 }
 
+void pppcp_set_magic_number(struct pppcp_data *pppcp, guint32 magic)
+{
+	pppcp->magic_number = magic;
+}
+
+guint32 pppcp_get_magic_number(struct pppcp_data *pppcp)
+{
+	return pppcp->magic_number;
+}
+
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 {
 	struct pppcp_data *data;

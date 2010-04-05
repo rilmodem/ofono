@@ -136,8 +136,8 @@ static void lcp_option_process(struct pppcp_data *pppcp,
 	case MAGIC_NUMBER:
 		/* XXX handle loopback */
 		magic = get_host_long(option->data);
-		if (magic != pppcp->magic_number)
-			pppcp->magic_number = magic;
+		if (magic != pppcp_get_magic_number(pppcp))
+			pppcp_set_magic_number(pppcp, magic);
 		else
 			g_print("looped back? I should do something\n");
 		break;
