@@ -135,6 +135,40 @@ static int cp_transitions[16][10] = {
 { INV, INV, 2, 3, 4, 5, 6, 7, 8, SER|9 },
 };
 
+enum pppcp_code {
+	CONFIGURE_REQUEST = 1,
+	CONFIGURE_ACK,
+	CONFIGURE_NAK,
+	CONFIGURE_REJECT,
+	TERMINATE_REQUEST,
+	TERMINATE_ACK,
+	CODE_REJECT,
+	PROTOCOL_REJECT,
+	ECHO_REQUEST,
+	ECHO_REPLY,
+	DISCARD_REQUEST
+};
+
+#define LCP_SUPPORTED_CODES	((1 << CONFIGURE_REQUEST) | \
+				(1 << CONFIGURE_ACK) | \
+				(1 << CONFIGURE_NAK) | \
+				(1 << CONFIGURE_REJECT) | \
+				(1 << TERMINATE_REQUEST) | \
+				(1 << TERMINATE_ACK) | \
+				(1 << CODE_REJECT) | \
+				(1 << PROTOCOL_REJECT) | \
+				(1 << ECHO_REQUEST) | \
+				(1 << ECHO_REPLY) | \
+				(1 << DISCARD_REQUEST))
+
+#define IPCP_SUPPORTED_CODES	  ((1 << CONFIGURE_REQUEST) | \
+				  (1 << CONFIGURE_ACK) | \
+				  (1 << CONFIGURE_NAK) | \
+				  (1 << CONFIGURE_REJECT) | \
+				  (1 << TERMINATE_REQUEST) | \
+				  (1 << TERMINATE_ACK) | \
+				  (1 << CODE_REJECT))
+
 enum pppcp_event_type {
 	UP		= 0,
 	DOWN		= 1,
@@ -1256,6 +1290,7 @@ void pppcp_free(struct pppcp_data *data)
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 {
 	struct pppcp_data *data;
+	guint16 codes;
 
 	data = g_try_malloc0(sizeof(struct pppcp_data));
 	if (!data)
@@ -1288,6 +1323,20 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 	data->packet_ops[ECHO_REQUEST - 1] = pppcp_process_echo_request;
 	data->packet_ops[ECHO_REPLY - 1] = pppcp_process_echo_reply;
 	data->packet_ops[DISCARD_REQUEST - 1] = pppcp_process_discard_request;
+
+	switch (proto) {
+	case LCP_PROTOCOL:
+		codes = LCP_SUPPORTED_CODES;
+		break;
+	case IPCP_PROTO:
+		codes = IPCP_SUPPORTED_CODES;
+		break;
+	default:
+		codes = 0;
+		break;
+	}
+
+	pppcp_set_valid_codes(data, codes);
 
 	return data;
 }

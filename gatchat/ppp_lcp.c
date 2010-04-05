@@ -46,18 +46,6 @@ enum lcp_options {
 	ACFC			= 8,
 };
 
-#define LCP_SUPPORTED_CODES	((1 << CONFIGURE_REQUEST) | \
-				(1 << CONFIGURE_ACK) | \
-				(1 << CONFIGURE_NAK) | \
-				(1 << CONFIGURE_REJECT) | \
-				(1 << TERMINATE_REQUEST) | \
-				(1 << TERMINATE_ACK) | \
-				(1 << CODE_REJECT) | \
-				(1 << PROTOCOL_REJECT) | \
-				(1 << ECHO_REQUEST) | \
-				(1 << ECHO_REPLY) | \
-				(1 << DISCARD_REQUEST))
-
 /*
  * signal the Up event to the NCP
  */
@@ -223,14 +211,13 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 {
 	struct pppcp_data *pppcp;
 	struct ppp_option *option;
-	guint16 codes = LCP_SUPPORTED_CODES;
 
 	pppcp = pppcp_new(ppp, LCP_PROTOCOL);
 	if (!pppcp) {
 		g_print("Failed to allocate PPPCP struct\n");
 		return NULL;
 	}
-	pppcp_set_valid_codes(pppcp, codes);
+
 	pppcp->option_strings = lcp_option_strings;
 	pppcp->prefix = "lcp";
 	pppcp->priv = pppcp;

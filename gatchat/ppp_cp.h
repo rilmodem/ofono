@@ -21,20 +21,6 @@
 
 struct pppcp_data;
 
-enum pppcp_code {
-	CONFIGURE_REQUEST = 1,
-	CONFIGURE_ACK,
-	CONFIGURE_NAK,
-	CONFIGURE_REJECT,
-	TERMINATE_REQUEST,
-	TERMINATE_ACK,
-	CODE_REJECT,
-	PROTOCOL_REJECT,
-	ECHO_REQUEST,
-	ECHO_REPLY,
-	DISCARD_REQUEST
-};
-
 /* option format */
 struct ppp_option {
 	guint8 type;

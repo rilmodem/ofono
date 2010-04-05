@@ -44,14 +44,6 @@ struct ipcp_data {
 	struct pppcp_data *pppcp;
 };
 
-#define IPCP_SUPPORTED_CODES	  ((1 << CONFIGURE_REQUEST) | \
-				  (1 << CONFIGURE_ACK) | \
-				  (1 << CONFIGURE_NAK) | \
-				  (1 << CONFIGURE_REJECT) | \
-				  (1 << TERMINATE_REQUEST) | \
-				  (1 << TERMINATE_ACK) | \
-				  (1 << CODE_REJECT))
-
 enum ipcp_option_types {
 	IP_ADDRESSES		= 1,
 	IP_COMPRESSION_PROTO	= 2,
@@ -193,7 +185,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 		g_free(data);
 		return NULL;
 	}
-	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
+
 	pppcp->option_strings = ipcp_option_strings;
 	pppcp->prefix = "ipcp";
 	pppcp->priv = data;
