@@ -80,8 +80,6 @@ struct pppcp_data {
 	guint8 reject_identifier;
 	struct pppcp_action *action;
 	guint16 valid_codes;
-	guint8 (*packet_ops[11])(struct pppcp_data *data,
-					struct pppcp_packet *packet);
 	gpointer priv;
 	guint16 proto;
 	const char *prefix;

@@ -1242,6 +1242,21 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 	pppcp_packet_free(packet);
 }
 
+static guint8 (*packet_ops[11])(struct pppcp_data *data,
+					struct pppcp_packet *packet) = {
+	pppcp_process_configure_request,
+	pppcp_process_configure_ack,
+	pppcp_process_configure_nak,
+	pppcp_process_configure_reject,
+	pppcp_process_terminate_request,
+	pppcp_process_terminate_ack,
+	pppcp_process_code_reject,
+	pppcp_process_protocol_reject,
+	pppcp_process_echo_request,
+	pppcp_process_echo_reply,
+	pppcp_process_discard_request,
+};
+
 /*
  * parse the packet and determine which event this packet caused
  */
@@ -1260,7 +1275,7 @@ void pppcp_process_packet(gpointer priv, guint8 *new_packet)
 	if (!(data->valid_codes & (1 << packet->code)))
 		event_type = RUC;
 	else
-		event_type = data->packet_ops[packet->code-1](data, packet);
+		event_type = packet_ops[packet->code-1](data, packet);
 
 	if (event_type) {
 		data_len = ntohs(packet->length);
@@ -1320,21 +1335,6 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 
 	data->ppp = ppp;
 	data->proto = proto;
-
-	/* setup func ptrs for processing packet by pppcp code */
-	data->packet_ops[CONFIGURE_REQUEST - 1] =
-					pppcp_process_configure_request;
-	data->packet_ops[CONFIGURE_ACK - 1] = pppcp_process_configure_ack;
-	data->packet_ops[CONFIGURE_NAK - 1] = pppcp_process_configure_nak;
-	data->packet_ops[CONFIGURE_REJECT - 1] = pppcp_process_configure_reject;
-	data->packet_ops[TERMINATE_REQUEST - 1] =
-					pppcp_process_terminate_request;
-	data->packet_ops[TERMINATE_ACK - 1] = pppcp_process_terminate_ack;
-	data->packet_ops[CODE_REJECT - 1] = pppcp_process_code_reject;
-	data->packet_ops[PROTOCOL_REJECT - 1] = pppcp_process_protocol_reject;
-	data->packet_ops[ECHO_REQUEST - 1] = pppcp_process_echo_request;
-	data->packet_ops[ECHO_REPLY - 1] = pppcp_process_echo_reply;
-	data->packet_ops[DISCARD_REQUEST - 1] = pppcp_process_discard_request;
 
 	switch (proto) {
 	case LCP_PROTOCOL:
