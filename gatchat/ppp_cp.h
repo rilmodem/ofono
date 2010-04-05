@@ -75,32 +75,8 @@ struct pppcp_timer_data {
 	guint restart_timer;
 };
 
-struct pppcp_data {
-	unsigned char state;
-	struct pppcp_timer_data config_timer_data;
-	struct pppcp_timer_data terminate_timer_data;
-	guint max_failure;
-	guint failure_counter;
-	guint32 magic_number;
-	GList *config_options;
-	GList *acceptable_options;
-	GList *unacceptable_options;
-	GList *rejected_options;
-	GList *applied_options;
-	GAtPPP *ppp;
-	guint8 identifier;  /* don't think I need this now */
-	guint8 config_identifier;
-	guint8 terminate_identifier;
-	guint8 reject_identifier;
-	struct pppcp_action *action;
-	guint16 valid_codes;
-	gpointer priv;
-	guint16 proto;
-	const char *prefix;
-	const char **option_strings;
-};
-
-struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto);
+struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
+				const struct pppcp_action *action);
 void pppcp_free(struct pppcp_data *data);
 
 void pppcp_set_data(struct pppcp_data *pppcp, gpointer data);

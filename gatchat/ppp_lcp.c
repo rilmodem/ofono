@@ -224,7 +224,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	struct pppcp_data *pppcp;
 	struct ppp_option *option;
 
-	pppcp = pppcp_new(ppp, LCP_PROTOCOL);
+	pppcp = pppcp_new(ppp, LCP_PROTOCOL, &lcp_action);
 	if (!pppcp) {
 		g_print("Failed to allocate PPPCP struct\n");
 		return NULL;
@@ -234,9 +234,6 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	pppcp_set_prefix(pppcp, "lcp");
 
 	pppcp_set_valid_codes(pppcp, LCP_SUPPORTED_CODES);
-
-	/* set the actions */
-	pppcp->action = &lcp_action;
 
 	/* add the default config options */
 	option = g_try_malloc0(6);

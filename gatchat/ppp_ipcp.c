@@ -188,7 +188,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	if (!data)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, IPCP_PROTO);
+	pppcp = pppcp_new(ppp, IPCP_PROTO, &ipcp_action);
 	if (!pppcp) {
 		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(data);
@@ -200,9 +200,6 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 
 	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
 	pppcp_set_data(pppcp, data);
-
-	/* set the actions */
-	pppcp->action = &ipcp_action;
 
 	/* add the default config options */
 	ipcp_option = g_try_malloc0(6);

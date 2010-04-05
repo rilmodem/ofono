@@ -154,6 +154,31 @@ enum pppcp_event_type {
 	RXR		= 15,
 };
 
+struct pppcp_data {
+	unsigned char state;
+	struct pppcp_timer_data config_timer_data;
+	struct pppcp_timer_data terminate_timer_data;
+	guint max_failure;
+	guint failure_counter;
+	guint32 magic_number;
+	GList *config_options;
+	GList *acceptable_options;
+	GList *unacceptable_options;
+	GList *rejected_options;
+	GList *applied_options;
+	GAtPPP *ppp;
+	guint8 identifier;  /* don't think I need this now */
+	guint8 config_identifier;
+	guint8 terminate_identifier;
+	guint8 reject_identifier;
+	const struct pppcp_action *action;
+	guint16 valid_codes;
+	gpointer priv;
+	guint16 proto;
+	const char *prefix;
+	const char **option_strings;
+};
+
 static void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
 				guint8 *packet, guint len);
@@ -233,7 +258,7 @@ static void pppcp_illegal_event(guint8 state, guint8 type)
 
 static void pppcp_this_layer_up(struct pppcp_data *data)
 {
-	struct pppcp_action *action = data->action;
+	const struct pppcp_action *action = data->action;
 
 	if (action->this_layer_up)
 		action->this_layer_up(data);
@@ -241,7 +266,7 @@ static void pppcp_this_layer_up(struct pppcp_data *data)
 
 static void pppcp_this_layer_down(struct pppcp_data *data)
 {
-	struct pppcp_action *action = data->action;
+	const struct pppcp_action *action = data->action;
 
 	if (action->this_layer_down)
 		action->this_layer_down(data);
@@ -249,7 +274,7 @@ static void pppcp_this_layer_down(struct pppcp_data *data)
 
 static void pppcp_this_layer_started(struct pppcp_data *data)
 {
-	struct pppcp_action *action = data->action;
+	const struct pppcp_action *action = data->action;
 
 	if (action->this_layer_started)
 		action->this_layer_started(data);
@@ -257,7 +282,7 @@ static void pppcp_this_layer_started(struct pppcp_data *data)
 
 static void pppcp_this_layer_finished(struct pppcp_data *data)
 {
-	struct pppcp_action *action = data->action;
+	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
 	if (action->this_layer_finished)
@@ -847,7 +872,7 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	int i = 0;
 	struct ppp_option *option;
 	enum option_rval rval;
-	struct pppcp_action *action = data->action;
+	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
 
@@ -924,7 +949,7 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 	GList *list;
 	struct ppp_option *acked_option;
 	guint i = 0;
-	struct pppcp_action *action = data->action;
+	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
 
@@ -984,7 +1009,7 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 	struct ppp_option *config_option;
 	guint i = 0;
 	enum option_rval rval;
-	struct pppcp_action *action = data->action;
+	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
 
@@ -1309,7 +1334,8 @@ guint32 pppcp_get_magic_number(struct pppcp_data *pppcp)
 	return pppcp->magic_number;
 }
 
-struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
+struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
+				const struct pppcp_action *action)
 {
 	struct pppcp_data *data;
 
@@ -1329,6 +1355,7 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 
 	data->ppp = ppp;
 	data->proto = proto;
+	data->action = action;
 
 	return data;
 }
