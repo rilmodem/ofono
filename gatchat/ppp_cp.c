@@ -135,40 +135,6 @@ static int cp_transitions[16][10] = {
 { INV, INV, 2, 3, 4, 5, 6, 7, 8, SER|9 },
 };
 
-enum pppcp_code {
-	CONFIGURE_REQUEST = 1,
-	CONFIGURE_ACK,
-	CONFIGURE_NAK,
-	CONFIGURE_REJECT,
-	TERMINATE_REQUEST,
-	TERMINATE_ACK,
-	CODE_REJECT,
-	PROTOCOL_REJECT,
-	ECHO_REQUEST,
-	ECHO_REPLY,
-	DISCARD_REQUEST
-};
-
-#define LCP_SUPPORTED_CODES	((1 << CONFIGURE_REQUEST) | \
-				(1 << CONFIGURE_ACK) | \
-				(1 << CONFIGURE_NAK) | \
-				(1 << CONFIGURE_REJECT) | \
-				(1 << TERMINATE_REQUEST) | \
-				(1 << TERMINATE_ACK) | \
-				(1 << CODE_REJECT) | \
-				(1 << PROTOCOL_REJECT) | \
-				(1 << ECHO_REQUEST) | \
-				(1 << ECHO_REPLY) | \
-				(1 << DISCARD_REQUEST))
-
-#define IPCP_SUPPORTED_CODES	  ((1 << CONFIGURE_REQUEST) | \
-				  (1 << CONFIGURE_ACK) | \
-				  (1 << CONFIGURE_NAK) | \
-				  (1 << CONFIGURE_REJECT) | \
-				  (1 << TERMINATE_REQUEST) | \
-				  (1 << TERMINATE_ACK) | \
-				  (1 << CODE_REJECT))
-
 enum pppcp_event_type {
 	UP		= 0,
 	DOWN		= 1,
@@ -415,7 +381,8 @@ static void pppcp_send_configure_request(struct pppcp_data *data)
 	/* figure out how much space to allocate for options */
 	g_list_foreach(data->config_options, get_option_length, &olength);
 
-	packet = pppcp_packet_new(data, CONFIGURE_REQUEST, olength);
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_CONFIGURE_REQUEST,
+								olength);
 
 	/* copy config options into packet data */
 	odata = packet->data;
@@ -460,7 +427,7 @@ static void pppcp_send_configure_ack(struct pppcp_data *data,
 	/* subtract for header. */
 	len = ntohs(pppcp_header->length) - sizeof(*packet);
 
-	packet = pppcp_packet_new(data, CONFIGURE_ACK, len);
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_CONFIGURE_ACK, len);
 
 	/* copy the applied options in. */
 	odata = packet->data;
@@ -508,7 +475,8 @@ static void pppcp_send_configure_nak(struct pppcp_data *data,
 		g_list_foreach(data->rejected_options, get_option_length,
 				&olength);
 
-		packet = pppcp_packet_new(data, CONFIGURE_REJECT, olength);
+		packet = pppcp_packet_new(data,
+				PPPCP_CODE_TYPE_CONFIGURE_REJECT, olength);
 
 		/* copy the rejected options in. */
 		odata = packet->data;
@@ -533,7 +501,8 @@ static void pppcp_send_configure_nak(struct pppcp_data *data,
 		g_list_foreach(data->unacceptable_options, get_option_length,
 				&olength);
 
-		packet = pppcp_packet_new(data, CONFIGURE_NAK, olength);
+		packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_CONFIGURE_NAK,
+								olength);
 
 		/* copy the unacceptable options in. */
 		odata = packet->data;
@@ -565,7 +534,7 @@ static void pppcp_send_terminate_request(struct pppcp_data *data)
 	 * the data field can be used by the sender (us).
 	 * leave this empty for now.
 	 */
-	packet = pppcp_packet_new(data, TERMINATE_REQUEST, 0);
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_TERMINATE_REQUEST, 0);
 
 	/*
 	 * Is this a retransmission?  If so, do not change
@@ -594,7 +563,7 @@ static void pppcp_send_terminate_ack(struct pppcp_data *data,
 
 	pppcp_trace(data);
 
-	packet = pppcp_packet_new(data, TERMINATE_ACK, 0);
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_TERMINATE_ACK, 0);
 
 	/* match identifier of the request */
 	packet->identifier = pppcp_header->identifier;
@@ -619,7 +588,8 @@ static void pppcp_send_code_reject(struct pppcp_data *data,
 
 	pppcp_trace(data);
 
-	packet = pppcp_packet_new(data, CODE_REJECT, ntohs(old_packet->length));
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_CODE_REJECT,
+						ntohs(old_packet->length));
 
 	/*
 	 * Identifier must be changed for each Code-Reject sent
@@ -651,7 +621,7 @@ static void pppcp_send_echo_reply(struct pppcp_data *data,
 	/*
 	 * 0 bytes for data, 4 bytes for magic number
 	 */
-	packet = pppcp_packet_new(data, ECHO_REPLY, 4);
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_ECHO_REPLY, 4);
 
 	/*
 	 * match identifier of request
@@ -1222,7 +1192,7 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 	 * info should contain the old packet info, plus the 16bit
 	 * protocol number we are rejecting.
 	 */
-	packet = pppcp_packet_new(data, PROTOCOL_REJECT, len);
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_PROTOCOL_REJECT, len);
 
 	/*
 	 * Identifier must be changed for each Protocol-Reject sent
@@ -1317,7 +1287,6 @@ gpointer pppcp_get_data(struct pppcp_data *pppcp)
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 {
 	struct pppcp_data *data;
-	guint16 codes;
 
 	data = g_try_malloc0(sizeof(struct pppcp_data));
 	if (!data)
@@ -1335,20 +1304,6 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 
 	data->ppp = ppp;
 	data->proto = proto;
-
-	switch (proto) {
-	case LCP_PROTOCOL:
-		codes = LCP_SUPPORTED_CODES;
-		break;
-	case IPCP_PROTO:
-		codes = IPCP_SUPPORTED_CODES;
-		break;
-	default:
-		codes = 0;
-		break;
-	}
-
-	pppcp_set_valid_codes(data, codes);
 
 	return data;
 }

@@ -35,6 +35,14 @@
 #include "gatppp.h"
 #include "ppp.h"
 
+#define IPCP_SUPPORTED_CODES	  ((1 << PPPCP_CODE_TYPE_CONFIGURE_REQUEST) | \
+				  (1 << PPPCP_CODE_TYPE_CONFIGURE_ACK) | \
+				  (1 << PPPCP_CODE_TYPE_CONFIGURE_NAK) | \
+				  (1 << PPPCP_CODE_TYPE_CONFIGURE_REJECT) | \
+				  (1 << PPPCP_CODE_TYPE_TERMINATE_REQUEST) | \
+				  (1 << PPPCP_CODE_TYPE_TERMINATE_ACK) | \
+				  (1 << PPPCP_CODE_TYPE_CODE_REJECT))
+
 struct ipcp_data {
 	guint8 ip_address[4];
 	guint8 primary_dns[4];
@@ -190,6 +198,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	pppcp->option_strings = ipcp_option_strings;
 	pppcp->prefix = "ipcp";
 
+	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
 	pppcp_set_data(pppcp, data);
 
 	/* set the actions */

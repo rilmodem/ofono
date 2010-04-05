@@ -34,6 +34,18 @@
 #include "gatppp.h"
 #include "ppp.h"
 
+#define LCP_SUPPORTED_CODES	((1 << PPPCP_CODE_TYPE_CONFIGURE_REQUEST) | \
+				(1 << PPPCP_CODE_TYPE_CONFIGURE_ACK) | \
+				(1 << PPPCP_CODE_TYPE_CONFIGURE_NAK) | \
+				(1 << PPPCP_CODE_TYPE_CONFIGURE_REJECT) | \
+				(1 << PPPCP_CODE_TYPE_TERMINATE_REQUEST) | \
+				(1 << PPPCP_CODE_TYPE_TERMINATE_ACK) | \
+				(1 << PPPCP_CODE_TYPE_CODE_REJECT) | \
+				(1 << PPPCP_CODE_TYPE_PROTOCOL_REJECT) | \
+				(1 << PPPCP_CODE_TYPE_ECHO_REQUEST) | \
+				(1 << PPPCP_CODE_TYPE_ECHO_REPLY) | \
+				(1 << PPPCP_CODE_TYPE_DISCARD_REQUEST))
+
 enum lcp_options {
 	RESERVED 		= 0,
 	MRU			= 1,
@@ -220,6 +232,8 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 
 	pppcp->option_strings = lcp_option_strings;
 	pppcp->prefix = "lcp";
+
+	pppcp_set_valid_codes(pppcp, LCP_SUPPORTED_CODES);
 
 	/* set the actions */
 	pppcp->action = &lcp_action;
