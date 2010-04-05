@@ -935,8 +935,11 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	 * when the ppp goes down.
 	 */
 	if (action->option_process) {
-		g_list_foreach(data->acceptable_options,
-				action->option_process, data);
+		GList *l;
+
+		for (l = data->acceptable_options; l; l = l->next)
+			action->option_process(data, l->data);
+
 		g_list_foreach(data->acceptable_options, remove_config_option,
 				data);
 	}
@@ -986,7 +989,7 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 			 * the config_options list.
 			 */
 			if (action->option_process)
-				action->option_process(acked_option, data);
+				action->option_process(data, acked_option);
 
 			g_free(list->data);
 			data->config_options =

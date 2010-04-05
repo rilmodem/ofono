@@ -107,10 +107,9 @@ static guint lcp_option_scan(struct ppp_option *option, gpointer user)
  * We need to use a default case here because this option type value
  * could be anything.
  */
-static void lcp_option_process(gpointer data, gpointer user)
+static void lcp_option_process(struct pppcp_data *pppcp,
+						struct ppp_option *option)
 {
-	struct ppp_option *option = data;
-	struct pppcp_data *pppcp = user;
 	GAtPPP *ppp = pppcp->ppp;
 	guint32 magic;
 

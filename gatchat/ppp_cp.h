@@ -42,7 +42,8 @@ struct pppcp_action {
 	void (*this_layer_finished)(struct pppcp_data *data);
 	enum option_rval (*option_scan)(struct ppp_option *option,
 						gpointer user_data);
-	void (*option_process)(gpointer option, gpointer user_data);
+	void (*option_process)(struct pppcp_data *data,
+				struct ppp_option *option);
 };
 
 struct pppcp_packet {

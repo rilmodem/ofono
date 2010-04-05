@@ -122,10 +122,9 @@ static guint ipcp_option_scan(struct ppp_option *option, gpointer user)
 /*
  * act on an acceptable option
  */
-static void ipcp_option_process(gpointer data, gpointer user)
+static void ipcp_option_process(struct pppcp_data *pppcp,
+						struct ppp_option *option)
 {
-	struct ppp_option *option = data;
-	struct pppcp_data *pppcp = user;
 	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
 
 	switch (option->type) {
