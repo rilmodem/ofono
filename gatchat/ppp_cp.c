@@ -135,6 +135,29 @@ static int cp_transitions[16][10] = {
 { INV, INV, 2, 3, 4, 5, 6, 7, 8, SER|9 },
 };
 
+enum pppcp_event_type {
+	UP		= 0,
+	DOWN		= 1,
+	OPEN		= 2,
+	CLOSE		= 3,
+	TO_PLUS		= 4,
+	TO_MINUS	= 5,
+	RCR_PLUS	= 6,
+	RCR_MINUS	= 7,
+	RCA		= 8,
+	RCN		= 9,
+	RTR		= 10,
+	RTA		= 11,
+	RUC		= 12,
+	RXJ_PLUS	= 13,
+	RXJ_MINUS	= 14,
+	RXR		= 15,
+};
+
+static void pppcp_generate_event(struct pppcp_data *data,
+				enum pppcp_event_type event_type,
+				guint8 *packet, guint len);
+
 static void pppcp_packet_free(struct pppcp_packet *packet)
 {
 	g_free(pppcp_to_ppp_packet(packet));
@@ -638,7 +661,7 @@ static void pppcp_transition_state(enum pppcp_state new_state,
 /*
  * send the event handler a new event to process
  */
-void pppcp_generate_event(struct pppcp_data *data,
+static void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
 				guint8 *packet, guint len)
 {
@@ -713,6 +736,21 @@ void pppcp_generate_event(struct pppcp_data *data,
 
 error:
 	pppcp_illegal_event(data->state, event_type);
+}
+
+void pppcp_signal_open(struct pppcp_data *data)
+{
+	pppcp_generate_event(data, OPEN, NULL, 0);
+}
+
+void pppcp_signal_close(struct pppcp_data *data)
+{
+	pppcp_generate_event(data, CLOSE, NULL, 0);
+}
+
+void pppcp_signal_up(struct pppcp_data *data)
+{
+	pppcp_generate_event(data, UP, NULL, 0);
 }
 
 static gint is_option(gconstpointer a, gconstpointer b)

@@ -35,25 +35,6 @@ enum pppcp_code {
 	DISCARD_REQUEST
 };
 
-enum pppcp_event_type {
-	UP		= 0,
-	DOWN		= 1,
-	OPEN		= 2,
-	CLOSE		= 3,
-	TO_PLUS		= 4,
-	TO_MINUS	= 5,
-	RCR_PLUS	= 6,
-	RCR_MINUS	= 7,
-	RCA		= 8,
-	RCN		= 9,
-	RTR		= 10,
-	RTA		= 11,
-	RUC		= 12,
-	RXJ_PLUS	= 13,
-	RXJ_MINUS	= 14,
-	RXR		= 15,
-};
-
 /* option format */
 struct ppp_option {
 	guint8 type;
@@ -125,9 +106,9 @@ void pppcp_free(struct pppcp_data *data);
 void pppcp_add_config_option(struct pppcp_data *data,
 				struct ppp_option *option);
 void pppcp_set_valid_codes(struct pppcp_data *data, guint16 codes);
-void pppcp_generate_event(struct pppcp_data *data,
-				enum pppcp_event_type event_type,
-				guint8 *packet, guint len);
 void pppcp_process_packet(gpointer priv, guint8 *new_packet);
 void pppcp_send_protocol_reject(struct pppcp_data *data,
 				guint8 *rejected_packet, gsize len);
+void pppcp_signal_open(struct pppcp_data *data);
+void pppcp_signal_close(struct pppcp_data *data);
+void pppcp_signal_up(struct pppcp_data *data);

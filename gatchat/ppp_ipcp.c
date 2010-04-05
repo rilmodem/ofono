@@ -101,7 +101,7 @@ static void ipcp_down(struct pppcp_data *data)
  */
 static void ipcp_started(struct pppcp_data *data)
 {
-	pppcp_generate_event(data, UP, NULL, 0);
+	pppcp_signal_up(data);
 }
 
 static void ipcp_finished(struct pppcp_data *data)

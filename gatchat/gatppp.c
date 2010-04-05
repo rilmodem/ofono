@@ -454,7 +454,7 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 	case PPP_NETWORK:
 		/* bring network phase up */
 		ppp_net_open(ppp->net);
-		pppcp_generate_event(ppp->ipcp, OPEN, NULL, 0);
+		pppcp_signal_open(ppp->ipcp);
 		break;
 	}
 }

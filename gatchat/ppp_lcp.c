@@ -185,7 +185,7 @@ void lcp_open(struct pppcp_data *data)
 		return;
 
 	/* send an open event to the lcp layer */
-	pppcp_generate_event(data, OPEN, NULL, 0);
+	pppcp_signal_open(data);
 }
 
 void lcp_establish(struct pppcp_data *data)
@@ -194,7 +194,7 @@ void lcp_establish(struct pppcp_data *data)
 		return;
 
 	/* send an UP event to the lcp layer */
-	pppcp_generate_event(data, UP, NULL, 0);
+	pppcp_signal_up(data);
 }
 
 void lcp_terminate(struct pppcp_data *data)
@@ -203,7 +203,7 @@ void lcp_terminate(struct pppcp_data *data)
 		return;
 
 	/* send a CLOSE event to the lcp layer */
-	pppcp_generate_event(data, CLOSE, NULL, 0);
+	pppcp_signal_close(data);
 }
 
 void lcp_free(struct pppcp_data *lcp)
