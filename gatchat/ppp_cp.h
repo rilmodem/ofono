@@ -114,8 +114,6 @@ struct pppcp_data {
 	guint16 valid_codes;
 	guint8 (*packet_ops[11])(struct pppcp_data *data,
 					struct pppcp_packet *packet);
-	void (*event_ops[16])(struct pppcp_data *data, guint8 *packet,
-				guint length);
 	gpointer priv;
 	guint16 proto;
 	const char *prefix;
@@ -129,7 +127,7 @@ void pppcp_add_config_option(struct pppcp_data *data,
 void pppcp_set_valid_codes(struct pppcp_data *data, guint16 codes);
 void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
-				gpointer event_data, guint data_len);
+				guint8 *packet, guint len);
 void pppcp_process_packet(gpointer priv, guint8 *new_packet);
 void pppcp_send_protocol_reject(struct pppcp_data *data,
 				guint8 *rejected_packet, gsize len);

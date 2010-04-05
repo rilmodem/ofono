@@ -66,9 +66,74 @@ enum pppcp_state {
 	OPENED		= 9,
 };
 
-static const char *pppcp_state_strings[] =
-	{"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
-	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED" };
+enum actions {
+	INV = 0x10,
+	IRC = 0x20,
+	ZRC = 0x40,
+	TLU = 0x100,
+	TLD = 0x200,
+	TLS = 0x400,
+	TLF = 0x800,
+	SCR = 0x1000,
+	SCA = 0x2000,
+	SCN = 0x4000,
+	STR = 0x8000,
+	STA = 0x10000,
+	SCJ = 0x20000,
+	SER = 0x40000,
+};
+
+static const char *pppcp_state_strings[] = {
+	"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
+	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED"
+};
+
+static const char *pppcp_event_strings[] = {
+	"Up", "Down", "Open", "Close", "TO+", "TO-", "RCR+", "RCR-",
+	"RCA", "RCN", "RTR", "RTA", "RUC", "RXJ+", "RXJ-", "RXR"
+};
+
+/*
+ * Transition table straight from RFC 1661 Section 4.1
+ * Y coordinate is the events, while X coordinate is the state
+ *
+ * Magic of bitwise operations allows the table to describe all state
+ * transitions defined in the specification
+ */
+static int cp_transitions[16][10] = {
+/* Up */
+{ 2, IRC|SCR|6, INV, INV, INV, INV, INV, INV, INV, INV },
+/* Down */
+{ INV, INV, 0, TLS|1, 0, 1, 1, 1, 1, TLD|1 },
+/* Open */
+{ TLS|1, 1, IRC|SCR|6, 3, 5, 5, 6, 7, 8, 9 },
+/* Close */
+{ 0, TLF|0, 2, 2, 4, 4, IRC|STR|4, IRC|STR|4, IRC|STR|4, TLD|IRC|STR|4 },
+/* TO+ */
+{ INV, INV, INV, INV, STR|4, STR|5, SCR|6, SCR|6, SCR|8, INV },
+/* TO- */
+{ INV, INV, INV, INV, TLF|2, TLF|3, TLF|3, TLF|3, TLF|3, INV },
+/* RCR+ */
+{ INV, INV, STA|2, IRC|SCR|SCA|8, 4, 5, SCA|8, SCA|TLU|9, SCA|8, TLD|SCR|SCA|8 },
+/* RCR- */
+{ INV, INV, STA|2, IRC|SCR|SCN|6, 4, 5, SCN|6, SCN|7, SCN|6, TLD|SCR|SCN|6 },
+/* RCA */
+{ INV, INV, STA|2, STA|3, 4, 5, IRC|7, SCR|6, IRC|TLU|9, TLD|SCR|6 },
+/* RCN */
+{ INV, INV, STA|2, STA|3, 4, 5, IRC|SCR|6, SCR|6, IRC|SCR|8, TLD|SCR|6 },
+/* RTR */
+{ INV, INV, STA|2, STA|3, STA|4, STA|5, STA|6, STA|6, STA|6, TLD|ZRC|STA|5 },
+/* RTA */
+{ INV, INV, 2, 3, TLF|2, TLF|3, 6, 6, 8, TLD|SCR|6 },
+/* RUC */
+{ INV, INV, SCJ|2, SCJ|3, SCJ|4, SCJ|5, SCJ|6, SCJ|7, SCJ|8, SCJ|9 },
+/* RXJ+ */
+{ INV, INV, 2, 3, 4, 5, 6, 6, 8, 9 },
+/* RXJ- */
+{ INV, INV, TLF|2, TLF|3, TLF|2, TLF|3, TLF|3, TLF|3, TLF|3, TLD|IRC|STR|5 },
+/* RXR */
+{ INV, INV, 2, 3, 4, 5, 6, 7, 8, SER|9 },
+};
 
 static void pppcp_packet_free(struct pppcp_packet *packet)
 {
@@ -570,552 +635,84 @@ static void pppcp_transition_state(enum pppcp_state new_state,
 	data->state = new_state;
 }
 
-static void pppcp_up_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-	switch (data->state) {
-	case INITIAL:
-		/* switch state to CLOSED */
-		pppcp_transition_state(CLOSED, data);
-		break;
-	case STARTING:
-		/* irc, scr/6 */
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case CLOSED:
-	case STOPPED:
-	case OPENED:
-	case CLOSING:
-	case STOPPING:
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		pppcp_illegal_event(data->state, UP);
-		break;
-	}
-}
-
-static void pppcp_down_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	switch (data->state) {
-	case CLOSED:
-		pppcp_transition_state(INITIAL, data);
-		break;
-	case STOPPED:
-		/* tls/1 */
-		pppcp_transition_state(STARTING, data);
-		pppcp_this_layer_started(data);
-		break;
-	case CLOSING:
-		pppcp_transition_state(INITIAL, data);
-		break;
-	case STOPPING:
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		pppcp_transition_state(STARTING, data);
-		break;
-	case OPENED:
-		pppcp_transition_state(STARTING, data);
-		pppcp_this_layer_down(data);
-		break;
-	case INITIAL:
-	case STARTING:
-		/* illegal */
-		pppcp_illegal_event(data->state, DOWN);
-		break;
-	}
-}
-
-static void pppcp_open_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-	switch (data->state) {
-	case INITIAL:
-		/* tls/1 */
-		pppcp_transition_state(STARTING, data);
-		pppcp_this_layer_started(data);
-		break;
-	case STARTING:
-		pppcp_transition_state(STARTING, data);
-		break;
-	case CLOSED:
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case STOPPED:
-		/* 3r */
-		pppcp_transition_state(STOPPED, data);
-		break;
-	case CLOSING:
-	case STOPPING:
-		/* 5r */
-		pppcp_transition_state(STOPPING, data);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		pppcp_transition_state(data->state, data);
-		break;
-	case OPENED:
-		/* 9r */
-		pppcp_transition_state(data->state, data);
-		break;
-	}
-}
-
-static void pppcp_close_event(struct pppcp_data *data, guint8* packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case INITIAL:
-		pppcp_transition_state(INITIAL, data);
-		break;
-	case STARTING:
-		pppcp_this_layer_finished(data);
-		pppcp_transition_state(INITIAL, data);
-		break;
-	case CLOSED:
-	case STOPPED:
-		pppcp_transition_state(CLOSED, data);
-		break;
-	case CLOSING:
-	case STOPPING:
-		pppcp_transition_state(CLOSING, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		/* fall through */
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		pppcp_initialize_restart_count(&data->terminate_timer_data);
-		pppcp_send_terminate_request(data);
-		pppcp_transition_state(CLOSING, data);
-		break;
-	}
-}
-
-static void pppcp_to_plus_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSING:
-		pppcp_send_terminate_request(data);
-		pppcp_transition_state(CLOSING, data);
-		break;
-	case STOPPING:
-		pppcp_send_terminate_request(data);
-		pppcp_transition_state(STOPPING, data);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case ACKSENT:
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(ACKSENT, data);
-		break;
-	case INITIAL:
-	case STARTING:
-	case CLOSED:
-	case STOPPED:
-	case OPENED:
-		pppcp_illegal_event(data->state, TO_PLUS);
-		break;
-	}
-}
-
-static void pppcp_to_minus_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-	switch (data->state) {
-	case CLOSING:
-		pppcp_transition_state(CLOSED, data);
-		pppcp_this_layer_finished(data);
-		break;
-	case STOPPING:
-		pppcp_transition_state(STOPPED, data);
-		pppcp_this_layer_finished(data);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		/* tlf/3p */
-		pppcp_transition_state(STOPPED, data);
-		pppcp_this_layer_finished(data);
-		break;
-	case INITIAL:
-	case STARTING:
-	case CLOSED:
-	case STOPPED:
-	case OPENED:
-		pppcp_illegal_event(data->state, TO_MINUS);
-		break;
-	}
-}
-
-static void pppcp_rcr_plus_event(struct pppcp_data *data,
-				guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-	switch (data->state) {
-	case CLOSED:
-		pppcp_send_terminate_ack(data, packet);
-		pppcp_transition_state(CLOSED, data);
-		break;
-	case STOPPED:
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_send_configure_request(data);
-		pppcp_send_configure_ack(data, packet);
-		pppcp_transition_state(ACKSENT, data);
-		break;
-	case CLOSING:
-	case STOPPING:
-		pppcp_transition_state(data->state, data);
-		break;
-	case REQSENT:
-		pppcp_send_configure_ack(data, packet);
-		pppcp_transition_state(ACKSENT, data);
-		break;
-	case ACKRCVD:
-		pppcp_send_configure_ack(data, packet);
-		pppcp_this_layer_up(data);
-		pppcp_transition_state(OPENED, data);
-		break;
-	case ACKSENT:
-		pppcp_send_configure_ack(data, packet);
-		pppcp_transition_state(ACKSENT, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		pppcp_send_configure_request(data);
-		pppcp_send_configure_ack(data, packet);
-		pppcp_transition_state(ACKSENT, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RCR_PLUS);
-		break;
-	}
-}
-
-static void pppcp_rcr_minus_event(struct pppcp_data *data,
-				guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-		pppcp_send_terminate_ack(data, packet);
-		pppcp_transition_state(CLOSED, data);
-		break;
-	case STOPPED:
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_send_configure_request(data);
-		pppcp_send_configure_nak(data, packet);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case CLOSING:
-	case STOPPING:
-		pppcp_transition_state(data->state, data);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-		pppcp_send_configure_nak(data, packet);
-		pppcp_transition_state(data->state, data);
-		break;
-	case ACKSENT:
-		pppcp_send_configure_nak(data, packet);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		pppcp_send_configure_request(data);
-		pppcp_send_configure_nak(data, packet);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RCR_MINUS);
-		break;
-	}
-}
-
-static void pppcp_rca_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-		pppcp_send_terminate_ack(data, packet);
-		/* fall through */
-	case CLOSING:
-	case STOPPING:
-		pppcp_transition_state(data->state, data);
-		break;
-	case REQSENT:
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_transition_state(ACKRCVD, data);
-		break;
-	case ACKRCVD:
-		/* scr/6x */
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case ACKSENT:
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_this_layer_up(data);
-		pppcp_transition_state(OPENED, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RCA);
-		break;
-	}
-}
-
-static void pppcp_rcn_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-		pppcp_send_terminate_ack(data, packet);
-		/* fall through */
-	case CLOSING:
-	case STOPPING:
-		pppcp_transition_state(data->state, data);
-		break;
-	case REQSENT:
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case ACKRCVD:
-		/* scr/6x */
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case ACKSENT:
-		pppcp_initialize_restart_count(&data->config_timer_data);
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(ACKSENT, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RCN);
-		break;
-	}
-}
-
-static void pppcp_rtr_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-	case CLOSING:
-	case STOPPING:
-		pppcp_send_terminate_ack(data, packet);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		pppcp_send_terminate_ack(data, packet);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		pppcp_zero_restart_count(&data->terminate_timer_data);
-		pppcp_send_terminate_ack(data, packet);
-		pppcp_transition_state(STOPPING, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RTR);
-		break;
-	}
-}
-
-static void pppcp_rta_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-		pppcp_transition_state(data->state, data);
-		break;
-	case CLOSING:
-		pppcp_this_layer_finished(data);
-		pppcp_transition_state(CLOSED, data);
-		break;
-	case STOPPING:
-		pppcp_this_layer_finished(data);
-		pppcp_transition_state(STOPPED, data);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case ACKSENT:
-		pppcp_transition_state(ACKSENT, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		pppcp_send_configure_request(data);
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RTA);
-		break;
-	}
-}
-
-static void pppcp_ruc_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-	case CLOSING:
-	case STOPPING:
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-	case OPENED:
-		pppcp_send_code_reject(data, packet);
-		pppcp_transition_state(data->state, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RUC);
-		break;
-	}
-}
-
-static void pppcp_rxj_plus_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-	case CLOSING:
-	case STOPPING:
-		pppcp_transition_state(data->state, data);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-		pppcp_transition_state(REQSENT, data);
-		break;
-	case ACKSENT:
-	case OPENED:
-		pppcp_transition_state(data->state, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RXJ_PLUS);
-		break;
-	}
-}
-
-static void pppcp_rxj_minus_event(struct pppcp_data *data,
-				guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-		pppcp_this_layer_finished(data);
-		pppcp_transition_state(data->state, data);
-		break;
-	case CLOSING:
-		pppcp_this_layer_finished(data);
-		pppcp_transition_state(CLOSED, data);
-		break;
-	case STOPPING:
-		pppcp_this_layer_finished(data);
-		pppcp_transition_state(STOPPED, data);
-		break;
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		pppcp_this_layer_finished(data);
-		pppcp_transition_state(STOPPED, data);
-		break;
-	case OPENED:
-		pppcp_this_layer_down(data);
-		pppcp_initialize_restart_count(&data->terminate_timer_data);
-		pppcp_send_terminate_request(data);
-		pppcp_transition_state(STOPPING, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RXJ_MINUS);
-		break;
-	}
-}
-
-static void pppcp_rxr_event(struct pppcp_data *data, guint8 *packet, guint len)
-{
-	pppcp_trace(data);
-
-	switch (data->state) {
-	case CLOSED:
-	case STOPPED:
-	case CLOSING:
-	case STOPPING:
-	case REQSENT:
-	case ACKRCVD:
-	case ACKSENT:
-		pppcp_transition_state(data->state, data);
-		break;
-	case OPENED:
-		pppcp_send_echo_reply(data, packet);
-		pppcp_transition_state(OPENED, data);
-		break;
-	case INITIAL:
-	case STARTING:
-		pppcp_illegal_event(data->state, RXR);
-		break;
-	}
-}
-
 /*
  * send the event handler a new event to process
  */
 void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
-				gpointer event_data, guint data_len)
+				guint8 *packet, guint len)
 {
+	int actions;
+	unsigned char new_state;
+
 	if (event_type > RXR)
-		pppcp_illegal_event(data->state, event_type);
-	else
-		data->event_ops[event_type](data, event_data, data_len);
+		goto error;
+
+	pppcp_trace(data);
+
+	actions = cp_transitions[event_type][data->state];
+	new_state = actions & 0xf;
+
+	g_print("event: %d (%s), action: %x, new_state: %d (%s)\n",
+			event_type, pppcp_event_strings[event_type],
+			actions, new_state, pppcp_state_strings[new_state]);
+
+	if (actions & INV)
+		goto error;
+
+	if (actions & TLD)
+		pppcp_this_layer_down(data);
+
+	if (actions & TLF)
+		pppcp_this_layer_finished(data);
+
+	if (actions & IRC) {
+		struct pppcp_timer_data *timer_data;
+
+		if (new_state == CLOSING || new_state == STOPPING)
+			timer_data = &data->terminate_timer_data;
+		else
+			timer_data = &data->config_timer_data;
+
+		pppcp_initialize_restart_count(timer_data);
+	} else if (actions & ZRC)
+		pppcp_zero_restart_count(&data->terminate_timer_data);
+
+	if (actions & SCR)
+		pppcp_send_configure_request(data);
+
+	if (actions & SCA)
+		pppcp_send_configure_ack(data, packet);
+	else if (actions & SCN)
+		pppcp_send_configure_nak(data, packet);
+
+	if (actions & STR)
+		pppcp_send_terminate_request(data);
+	else if (actions & STA)
+		pppcp_send_terminate_ack(data, packet);
+
+	if (actions & SCJ)
+		pppcp_send_code_reject(data, packet);
+
+	if (actions & SER)
+		pppcp_send_echo_reply(data, packet);
+
+	if (actions & TLU)
+		pppcp_this_layer_up(data);
+
+	pppcp_transition_state(new_state, data);
+
+	/*
+	 * The logic elsewhere generates the UP events when this is
+	 * signaled.  So we must call this last
+	 */
+	if (actions & TLS)
+		pppcp_this_layer_started(data);
+
+	return;
+
+error:
+	pppcp_illegal_event(data->state, event_type);
 }
 
 static gint is_option(gconstpointer a, gconstpointer b)
@@ -1653,24 +1250,6 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 	data->packet_ops[ECHO_REQUEST - 1] = pppcp_process_echo_request;
 	data->packet_ops[ECHO_REPLY - 1] = pppcp_process_echo_reply;
 	data->packet_ops[DISCARD_REQUEST - 1] = pppcp_process_discard_request;
-
-	/* setup func ptrs for handling events by event type */
-	data->event_ops[UP] = pppcp_up_event;
-	data->event_ops[DOWN] = pppcp_down_event;
-	data->event_ops[OPEN] = pppcp_open_event;
-	data->event_ops[CLOSE] = pppcp_close_event;
-	data->event_ops[TO_PLUS] = pppcp_to_plus_event;
-	data->event_ops[TO_MINUS] = pppcp_to_minus_event;
-	data->event_ops[RCR_PLUS] = pppcp_rcr_plus_event;
-	data->event_ops[RCR_MINUS] = pppcp_rcr_minus_event;
-	data->event_ops[RCA] = pppcp_rca_event;
-	data->event_ops[RCN] = pppcp_rcn_event;
-	data->event_ops[RTR] = pppcp_rtr_event;
-	data->event_ops[RTA] = pppcp_rta_event;
-	data->event_ops[RUC] = pppcp_ruc_event;
-	data->event_ops[RXJ_PLUS] = pppcp_rxj_plus_event;
-	data->event_ops[RXJ_MINUS] = pppcp_rxj_minus_event;
-	data->event_ops[RXR] = pppcp_rxr_event;
 
 	return data;
 }
