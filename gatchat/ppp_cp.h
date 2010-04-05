@@ -36,22 +36,22 @@ enum pppcp_code {
 };
 
 enum pppcp_event_type {
-	UP,
-	DOWN,
-	OPEN,
-	CLOSE,
-	TO_PLUS,
-	TO_MINUS,
-	RCR_PLUS,
-	RCR_MINUS,
-	RCA,
-	RCN,
-	RTR,
-	RTA,
-	RUC,
-	RXJ_PLUS,
-	RXJ_MINUS,
-	RXR,
+	UP		= 0,
+	DOWN		= 1,
+	OPEN		= 2,
+	CLOSE		= 3,
+	TO_PLUS		= 4,
+	TO_MINUS	= 5,
+	RCR_PLUS	= 6,
+	RCR_MINUS	= 7,
+	RCA		= 8,
+	RCN		= 9,
+	RTR		= 10,
+	RTA		= 11,
+	RUC		= 12,
+	RXJ_PLUS	= 13,
+	RXJ_MINUS	= 14,
+	RXR		= 15,
 };
 
 /* option format */
