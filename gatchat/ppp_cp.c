@@ -1284,6 +1284,11 @@ gpointer pppcp_get_data(struct pppcp_data *pppcp)
 	return pppcp->priv;
 }
 
+GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp)
+{
+	return pppcp->ppp;
+}
+
 void pppcp_set_option_strings(struct pppcp_data *pppcp, const char **opts)
 {
 	pppcp->option_strings = opts;

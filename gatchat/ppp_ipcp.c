@@ -83,7 +83,7 @@ static void ipcp_up(struct pppcp_data *pppcp)
 	addr.s_addr = __get_unaligned_long(data->secondary_dns);
 	inet_ntop(AF_INET, &addr, dns2, INET_ADDRSTRLEN);
 
-	ppp_connect_cb(pppcp->ppp, G_AT_PPP_CONNECT_SUCCESS,
+	ppp_connect_cb(pppcp_get_ppp(pppcp), G_AT_PPP_CONNECT_SUCCESS,
 					ip[0] ? ip : NULL,
 					dns1[0] ? dns1 : NULL,
 					dns2[0] ? dns2 : NULL);

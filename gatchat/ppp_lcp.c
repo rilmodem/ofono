@@ -63,7 +63,7 @@ enum lcp_options {
  */
 static void lcp_up(struct pppcp_data *pppcp)
 {
-	ppp_generate_event(pppcp->ppp, PPP_OPENED);
+	ppp_generate_event(pppcp_get_ppp(pppcp), PPP_OPENED);
 }
 
 /*
@@ -80,7 +80,7 @@ static void lcp_down(struct pppcp_data *pppcp)
  */
 static void lcp_started(struct pppcp_data *pppcp)
 {
-	ppp_generate_event(pppcp->ppp, PPP_UP);
+	ppp_generate_event(pppcp_get_ppp(pppcp), PPP_UP);
 }
 
 /*
@@ -89,7 +89,7 @@ static void lcp_started(struct pppcp_data *pppcp)
  */
 static void lcp_finished(struct pppcp_data *pppcp)
 {
-	ppp_generate_event(pppcp->ppp, PPP_DOWN);
+	ppp_generate_event(pppcp_get_ppp(pppcp), PPP_DOWN);
 }
 
 /*
@@ -123,7 +123,7 @@ static guint lcp_option_scan(struct pppcp_data *pppcp,
 static void lcp_option_process(struct pppcp_data *pppcp,
 						struct ppp_option *option)
 {
-	GAtPPP *ppp = pppcp->ppp;
+	GAtPPP *ppp = pppcp_get_ppp(pppcp);
 	guint32 magic;
 
 	switch (option->type) {
