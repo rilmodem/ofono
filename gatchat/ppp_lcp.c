@@ -86,7 +86,8 @@ static void lcp_finished(struct pppcp_data *pppcp)
  * We need to use a default case here because this option type value
  * could be anything.
  */
-static guint lcp_option_scan(struct ppp_option *option, gpointer user)
+static guint lcp_option_scan(struct pppcp_data *pppcp,
+						struct ppp_option *option)
 {
 	switch (option->type) {
 	case ACCM:

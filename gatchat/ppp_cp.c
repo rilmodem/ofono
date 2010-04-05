@@ -895,7 +895,7 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 		i += option->length;
 
 		if (action->option_scan)
-			rval = action->option_scan(option, data);
+			rval = action->option_scan(data, option);
 		else
 			rval = OPTION_ERR;
 
@@ -1039,7 +1039,7 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 		i += naked_option->length;
 
 		if (action->option_scan)
-			rval = action->option_scan(naked_option, data);
+			rval = action->option_scan(data, naked_option);
 		else
 			rval = OPTION_ERR;
 

@@ -104,7 +104,8 @@ static void ipcp_finished(struct pppcp_data *data)
 /*
  * Scan the option to see if it is acceptable, unacceptable, or rejected
  */
-static guint ipcp_option_scan(struct ppp_option *option, gpointer user)
+static guint ipcp_option_scan(struct pppcp_data *pppcp,
+						struct ppp_option *option)
 {
 	switch (option->type) {
 	case IP_ADDRESS:
