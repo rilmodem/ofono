@@ -34,10 +34,6 @@
 #include "gatppp.h"
 #include "ppp.h"
 
-static const char *pppcp_state_strings[] =
-	{"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
-	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED" };
-
 #define pppcp_trace(p) do { \
 	char *str = g_strdup_printf("%s: %s: current state %d:%s", \
 				p->prefix, __FUNCTION__, \
@@ -56,6 +52,23 @@ static const char *pppcp_state_strings[] =
 #define MAX_CONFIGURE		10
 #define MAX_FAILURE		5
 #define CP_HEADER_SZ		4
+
+enum pppcp_state {
+	INITIAL		= 0,
+	STARTING	= 1,
+	CLOSED		= 2,
+	STOPPED		= 3,
+	CLOSING		= 4,
+	STOPPING	= 5,
+	REQSENT		= 6,
+	ACKRCVD		= 7,
+	ACKSENT		= 8,
+	OPENED		= 9,
+};
+
+static const char *pppcp_state_strings[] =
+	{"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
+	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED" };
 
 static void pppcp_packet_free(struct pppcp_packet *packet)
 {

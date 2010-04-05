@@ -54,19 +54,6 @@ enum pppcp_event_type {
 	RXR,
 };
 
-enum pppcp_state {
-	INITIAL,
-	STARTING,
-	CLOSED,
-	STOPPED,
-	CLOSING,
-	STOPPING,
-	REQSENT,
-	ACKRCVD,
-	ACKSENT,
-	OPENED,
-};
-
 /* option format */
 struct ppp_option {
 	guint8 type;
@@ -107,7 +94,7 @@ struct pppcp_timer_data {
 };
 
 struct pppcp_data {
-	enum pppcp_state state;
+	unsigned char state;
 	struct pppcp_timer_data config_timer_data;
 	struct pppcp_timer_data terminate_timer_data;
 	guint max_failure;
