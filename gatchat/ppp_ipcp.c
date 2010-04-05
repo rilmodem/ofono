@@ -57,7 +57,7 @@ enum ipcp_option_types {
 
 static void ipcp_up(struct pppcp_data *pppcp)
 {
-	struct ipcp_data *data = pppcp->priv;
+	struct ipcp_data *data = pppcp_get_data(pppcp);
 	char ip[INET_ADDRSTRLEN];
 	char dns1[INET_ADDRSTRLEN];
 	char dns2[INET_ADDRSTRLEN];
@@ -125,7 +125,8 @@ static guint ipcp_option_scan(struct ppp_option *option, gpointer user)
 static void ipcp_option_process(gpointer data, gpointer user)
 {
 	struct ppp_option *option = data;
-	struct ipcp_data *ipcp = user;
+	struct pppcp_data *pppcp = user;
+	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
 
 	switch (option->type) {
 	case IP_ADDRESS:
@@ -188,7 +189,8 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 
 	pppcp->option_strings = ipcp_option_strings;
 	pppcp->prefix = "ipcp";
-	pppcp->priv = data;
+
+	pppcp_set_data(pppcp, data);
 
 	/* set the actions */
 	pppcp->action = &ipcp_action;
@@ -209,11 +211,8 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 
 void ipcp_free(struct pppcp_data *data)
 {
-	struct ipcp_data *ipcp = data->priv;
+	struct ipcp_data *ipcp = pppcp_get_data(data);
 
-	/* free ipcp */
 	g_free(ipcp);
-
-	/* free pppcp */
 	pppcp_free(data);
 }

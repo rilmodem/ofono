@@ -89,6 +89,10 @@ struct pppcp_data {
 
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto);
 void pppcp_free(struct pppcp_data *data);
+
+void pppcp_set_data(struct pppcp_data *pppcp, gpointer data);
+gpointer pppcp_get_data(struct pppcp_data *pppcp);
+
 void pppcp_add_config_option(struct pppcp_data *data,
 				struct ppp_option *option);
 void pppcp_set_valid_codes(struct pppcp_data *data, guint16 codes);

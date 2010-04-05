@@ -936,7 +936,7 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	 */
 	if (action->option_process) {
 		g_list_foreach(data->acceptable_options,
-				action->option_process, data->priv);
+				action->option_process, data);
 		g_list_foreach(data->acceptable_options, remove_config_option,
 				data);
 	}
@@ -986,8 +986,7 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 			 * the config_options list.
 			 */
 			if (action->option_process)
-				action->option_process(acked_option,
-							data->priv);
+				action->option_process(acked_option, data);
 
 			g_free(list->data);
 			data->config_options =
@@ -1285,6 +1284,16 @@ void pppcp_free(struct pppcp_data *data)
 
 	/* free self */
 	g_free(data);
+}
+
+void pppcp_set_data(struct pppcp_data *pppcp, gpointer data)
+{
+	pppcp->priv = data;
+}
+
+gpointer pppcp_get_data(struct pppcp_data *pppcp)
+{
+	return pppcp->priv;
 }
 
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)

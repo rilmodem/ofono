@@ -220,7 +220,6 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 
 	pppcp->option_strings = lcp_option_strings;
 	pppcp->prefix = "lcp";
-	pppcp->priv = pppcp;
 
 	/* set the actions */
 	pppcp->action = &lcp_action;
