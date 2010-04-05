@@ -196,7 +196,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	}
 
 	pppcp_set_option_strings(pppcp, ipcp_option_strings);
-	pppcp->prefix = "ipcp";
+	pppcp_set_prefix(pppcp, "ipcp");
 
 	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
 	pppcp_set_data(pppcp, data);

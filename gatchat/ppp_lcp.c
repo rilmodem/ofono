@@ -231,7 +231,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	}
 
 	pppcp_set_option_strings(pppcp, lcp_option_strings);
-	pppcp->prefix = "lcp";
+	pppcp_set_prefix(pppcp, "lcp");
 
 	pppcp_set_valid_codes(pppcp, LCP_SUPPORTED_CODES);
 

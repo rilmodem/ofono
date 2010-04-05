@@ -1294,6 +1294,11 @@ void pppcp_set_option_strings(struct pppcp_data *pppcp, const char **opts)
 	pppcp->option_strings = opts;
 }
 
+void pppcp_set_prefix(struct pppcp_data *pppcp, const char *prefix)
+{
+	pppcp->prefix = prefix;
+}
+
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto)
 {
 	struct pppcp_data *data;

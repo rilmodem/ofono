@@ -109,6 +109,7 @@ gpointer pppcp_get_data(struct pppcp_data *pppcp);
 GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp);
 
 void pppcp_set_option_strings(struct pppcp_data *pppcp, const char **opts);
+void pppcp_set_prefix(struct pppcp_data *pppcp, const char *prefix);
 
 void pppcp_add_config_option(struct pppcp_data *data,
 				struct ppp_option *option);
