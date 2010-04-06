@@ -1196,6 +1196,21 @@ static guint8 pppcp_process_discard_request(struct pppcp_data *data,
 	return 0;
 }
 
+static guint8 (*packet_ops[11])(struct pppcp_data *data,
+					struct pppcp_packet *packet) = {
+	pppcp_process_configure_request,
+	pppcp_process_configure_ack,
+	pppcp_process_configure_nak,
+	pppcp_process_configure_reject,
+	pppcp_process_terminate_request,
+	pppcp_process_terminate_ack,
+	pppcp_process_code_reject,
+	pppcp_process_protocol_reject,
+	pppcp_process_echo_request,
+	pppcp_process_echo_reply,
+	pppcp_process_discard_request,
+};
+
 void pppcp_send_protocol_reject(struct pppcp_data *data,
 				guint8 *rejected_packet, gsize len)
 {
@@ -1236,21 +1251,6 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 
 	pppcp_packet_free(packet);
 }
-
-static guint8 (*packet_ops[11])(struct pppcp_data *data,
-					struct pppcp_packet *packet) = {
-	pppcp_process_configure_request,
-	pppcp_process_configure_ack,
-	pppcp_process_configure_nak,
-	pppcp_process_configure_reject,
-	pppcp_process_terminate_request,
-	pppcp_process_terminate_ack,
-	pppcp_process_code_reject,
-	pppcp_process_protocol_reject,
-	pppcp_process_echo_request,
-	pppcp_process_echo_reply,
-	pppcp_process_discard_request,
-};
 
 /*
  * parse the packet and determine which event this packet caused
