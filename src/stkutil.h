@@ -332,6 +332,11 @@ enum stk_bearer_type {
 	STK_BEARER_TYPE_USB = 			0x10
 };
 
+enum stk_address_type {
+	STK_ADDRESS_IPV4 = 	0x21,
+	STK_ADDRESS_IPV6 = 	0x57
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -550,6 +555,15 @@ struct stk_bearer_description {
 struct stk_card_reader_id {
 	unsigned char id[127];
 	unsigned char len;
+};
+
+/*
+ * According to 102.223 Section 8.58 the address can be either ipv4 or ipv6.
+ * So the maximum size is 16 (for ipv6).
+ */
+struct stk_other_address {
+	unsigned char addr[16];
+	unsigned char type;
 };
 
 /*
