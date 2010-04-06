@@ -321,6 +321,17 @@ enum stk_browser_termination_cause {
 	STK_BROWSER_ERROR_TERMINATION = 	0x01
 };
 
+enum stk_bearer_type {
+	STK_BEARER_TYPE_DEFAULT = 		0x03,
+	STK_BEARER_TYPE_INDEPENDENT = 		0x04,
+	STK_BEARER_TYPE_BLUETOOTH =		0x05,
+	STK_BEARER_TYPE_IRDA =			0x06,
+	STK_BEARER_TYPE_RS232 = 		0x07,
+	STK_BEARER_TYPE_PACKET_DATA_SERVICE = 	0x08,
+	STK_BEARER_TYPE_I_WLAN = 		0x0a,
+	STK_BEARER_TYPE_USB = 			0x10
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -518,6 +529,18 @@ struct stk_timer_value {
 	unsigned char hour;
 	unsigned char minute;
 	unsigned char second;
+};
+
+/*
+ * According to 102.223 Section 8.52 the length of CTLV is 1 byte. This means
+ * that the maximum size is 127 according to the rules of CTLVs. This size also
+ * includes bearer type for 1 byte, so the maxmimum size of bearer parameters
+ * is 126.
+ */
+struct stk_bearer_description {
+	unsigned char type;
+	unsigned char pars[126];
+	unsigned int len;
 };
 
 /*

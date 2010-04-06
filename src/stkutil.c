@@ -1099,6 +1099,25 @@ static gboolean parse_dataobj_browser_termination_cause(
 	return parse_dataobj_common_byte(iter, byte);
 }
 
+/* Defined in TS 102.223 Section 8.52 */
+static gboolean parse_dataobj_bearer_description(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_bearer_description *bd = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	bd->type = data[0];
+	bd->len = len - 1;
+	memcpy(bd->pars, data + 1, bd->len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1231,6 +1250,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_provisioning_file_reference;
 	case STK_DATA_OBJECT_TYPE_BROWSER_TERMINATION_CAUSE:
 		return parse_dataobj_browser_termination_cause;
+	case STK_DATA_OBJECT_TYPE_BEARER_DESCRIPTION:
+		return parse_dataobj_bearer_description;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
