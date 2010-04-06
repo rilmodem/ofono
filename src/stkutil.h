@@ -309,6 +309,13 @@ enum stk_browser_id {
 	STK_BROWSER_ID_CHTML =		0x04
 };
 
+enum stk_bearer {
+	STK_BEARER_SMS = 	0x00,
+	STK_BEARER_CS_DATA =	0x01,
+	STK_BEARER_GSM_3G =	0x02,
+	STK_BEARER_PS = 	0x03
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
