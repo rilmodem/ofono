@@ -316,6 +316,11 @@ enum stk_bearer {
 	STK_BEARER_PS = 	0x03
 };
 
+enum stk_browser_termination_cause {
+	STK_BROWSER_USER_TERMINATION = 		0x00,
+	STK_BROWSER_ERROR_TERMINATION = 	0x01
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;

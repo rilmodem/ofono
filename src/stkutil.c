@@ -1091,6 +1091,14 @@ static gboolean parse_dataobj_provisioning_file_reference(
 	return TRUE;
 }
 
+/* Defined in 102.223 Section 8.51 */
+static gboolean parse_dataobj_browser_termination_cause(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1221,6 +1229,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_bearer;
 	case STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REFERENCE:
 		return parse_dataobj_provisioning_file_reference;
+	case STK_DATA_OBJECT_TYPE_BROWSER_TERMINATION_CAUSE:
+		return parse_dataobj_browser_termination_cause;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
