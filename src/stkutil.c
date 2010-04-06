@@ -1065,6 +1065,32 @@ static gboolean parse_dataobj_bearer(struct comprehension_tlv_iter *iter,
 	return parse_dataobj_common_byte_array(iter, array);
 }
 
+/* Defined in TS 102.223 Section 8.50 */
+static gboolean parse_dataobj_provisioning_file_reference(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_file *f = user;
+	const unsigned char *data;
+	struct stk_file_iter sf_iter;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len < 1) || (len > 8))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	stk_file_iter_init(&sf_iter, data, len);
+	stk_file_iter_next(&sf_iter);
+
+	if (sf_iter.pos != sf_iter.max)
+		return FALSE;
+
+	f->len = len;
+	memcpy(f->file, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1193,6 +1219,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_url;
 	case STK_DATA_OBJECT_TYPE_BEARER:
 		return parse_dataobj_bearer;
+	case STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REFERENCE:
+		return parse_dataobj_provisioning_file_reference;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
