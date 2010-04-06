@@ -288,8 +288,14 @@ static struct frame_buffer *ppp_decode(GAtPPP *ppp, guint8 *frame)
 	fcs = PPPINITFCS16;
 	i = 0;
 
-	/* TBD - how to deal with recv_accm */
 	while (frame[pos] != PPP_FLAG_SEQ) {
+		/* Skip the characters in receive ACCM */
+		if (frame[pos] < 0x20 &&
+				(ppp->recv_accm & (1 << frame[pos])) != 0) {
+			pos++;
+			continue;
+		}
+
 		/* scan for escape character */
 		if (frame[pos] == PPP_ESC) {
 			/* skip that char */
@@ -640,7 +646,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 
 	/* set options to defaults */
 	ppp->mru = DEFAULT_MRU;
-	ppp->recv_accm = DEFAULT_ACCM;
+	ppp->recv_accm = ~0U;
 	ppp->xmit_accm[0] = DEFAULT_ACCM;
 	ppp->xmit_accm[3] = 0x60000000; /* 0x7d, 0x7e */
 	ppp->pfc = FALSE;
