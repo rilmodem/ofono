@@ -1168,6 +1168,24 @@ static gboolean parse_dataobj_channel_status(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.57 */
+static gboolean parse_dataobj_card_reader_id(
+			struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_card_reader_id *cr_id = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	cr_id->len = len;
+	memcpy(cr_id->id, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1310,6 +1328,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_buffer_size;
 	case STK_DATA_OBJECT_TYPE_CHANNEL_STATUS:
 		return parse_dataobj_channel_status;
+	case STK_DATA_OBJECT_TYPE_CARD_READER_ID:
+		return parse_dataobj_card_reader_id;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
