@@ -852,7 +852,6 @@ static gboolean parse_dataobj_c_apdu(struct comprehension_tlv_iter *iter,
 	}
 	
 	if (len - pos > 0) {
-		ca->lc = 0;
 		ca->le = data[len - 1];
 		ca->has_le = TRUE;
 	}
