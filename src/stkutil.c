@@ -1118,6 +1118,14 @@ static gboolean parse_dataobj_bearer_description(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.53 */
+static gboolean parse_dataobj_channel_data(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	struct stk_common_byte_array *array = user;
+	return parse_dataobj_common_byte_array(iter, array);
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1252,6 +1260,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_browser_termination_cause;
 	case STK_DATA_OBJECT_TYPE_BEARER_DESCRIPTION:
 		return parse_dataobj_bearer_description;
+	case STK_DATA_OBJECT_TYPE_CHANNEL_DATA:
+		return parse_dataobj_channel_data;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
