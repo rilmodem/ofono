@@ -1150,6 +1150,24 @@ static gboolean parse_dataobj_buffer_size(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.56 */
+static gboolean parse_dataobj_channel_status(
+			struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *status = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_length(iter) != 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	/* Assume channel status is 2 bytes long */
+	memcpy(status, data, 2);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1290,6 +1308,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_channel_data_length;
 	case STK_DATA_OBJECT_TYPE_BUFFER_SIZE:
 		return parse_dataobj_buffer_size;
+	case STK_DATA_OBJECT_TYPE_CHANNEL_STATUS:
+		return parse_dataobj_channel_status;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
