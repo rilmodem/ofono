@@ -105,10 +105,19 @@ static guint lcp_option_scan(struct pppcp_data *pppcp,
 	case ACCM:
 	case AUTH_PROTO:
 		/* XXX check to make sure it's a proto we recognize */
-	case MAGIC_NUMBER:
 	case PFC:
 	case ACFC:
 		return OPTION_ACCEPT;
+
+	case MAGIC_NUMBER:
+	{
+		guint32 magic = get_host_long(option->data);
+
+		if (magic == 0)
+			return OPTION_REJECT;
+
+		return OPTION_ACCEPT;
+	}
 	}
 
 	return OPTION_REJECT;
