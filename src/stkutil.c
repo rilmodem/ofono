@@ -39,6 +39,14 @@ enum stk_data_object_flag {
 	DATAOBJ_FLAG_MINIMUM = 2
 };
 
+struct stk_file_iter {
+	const unsigned char *start;
+	unsigned int pos;
+	unsigned int max;
+	unsigned char len;
+	const unsigned char *file;
+};
+
 typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
 
 /*
@@ -155,6 +163,86 @@ static gboolean parse_dataobj_common_byte_array(
 	memcpy(array->array, data, len);
 
 	return TRUE;
+}
+
+static void stk_file_iter_init(struct stk_file_iter *iter,
+				const unsigned char *start, unsigned int len)
+{
+	iter->start = start;
+	iter->max = len;
+	iter->pos = 0;
+}
+
+static gboolean stk_file_iter_next(struct stk_file_iter *iter)
+{
+	unsigned int pos = iter->pos;
+	const unsigned int max = iter->max;
+	const unsigned char *start = iter->start;
+	unsigned int i;
+	unsigned char last_type;
+
+	/* SIM EFs always start with ROOT MF, 0x3f */
+	if (start[iter->pos] != 0x3f)
+		return FALSE;
+
+	if (pos + 2 >= max)
+		return FALSE;
+
+	last_type = 0x3f;
+
+	for (i = pos + 2; i < max; i += 2) {
+		/*
+		 * Check the validity of file type.
+		 * According to TS 11.11, each file id contains of two bytes,
+		 * in which the first byte is the type of file. For GSM is:
+		 * 0x3f: master file
+		 * 0x7f: 1st level dedicated file
+		 * 0x5f: 2nd level dedicated file
+		 * 0x2f: elementary file under the master file
+		 * 0x6f: elementary file under 1st level dedicated file
+		 * 0x4f: elementary file under 2nd level dedicated file
+		 */
+		switch (start[i]) {
+		case 0x2f:
+			if (last_type != 0x3f)
+				return FALSE;
+			break;
+		case 0x6f:
+			if (last_type != 0x7f)
+				return FALSE;
+			break;
+		case 0x4f:
+			if (last_type != 0x5f)
+				return FALSE;
+			break;
+		case 0x7f:
+			if (last_type != 0x3f)
+				return FALSE;
+			break;
+		case 0x5f:
+			if (last_type != 0x7f)
+				return FALSE;
+			break;
+		default:
+			return FALSE;
+		}
+
+		if ((start[i] == 0x2f) || (start[i] == 0x6f) ||
+						(start[i] == 0x4f)) {
+			if (i + 1 >= max)
+				return FALSE;
+
+			iter->file = start + pos;
+			iter->len = i - pos + 2;
+			iter->pos = i + 2;
+
+			return TRUE;
+		}
+
+		last_type = start[i];
+	}
+
+	return FALSE;
 }
 
 /* Defined in TS 102.223 Section 8.1 */
@@ -443,10 +531,8 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 	GSList **fl = user;
 	const unsigned char *data;
 	unsigned int len;
-	unsigned int i;
-	unsigned int start;
 	struct stk_file *sf;
-	unsigned char last_type;
+	struct stk_file_iter sf_iter;
 
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len < 5)
@@ -454,77 +540,19 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 
 	data = comprehension_tlv_iter_get_data(iter);
 
-	/* SIM EFs always start with ROOT MF, 0x3f */
-	if (data[1] != 0x3f)
-		return FALSE;
+	stk_file_iter_init(&sf_iter, data + 1, len - 1);
 
-	start = 1;
-	last_type = 0x3f;
-
-	for (i = 3; i < len; i += 2) {
-		/*
-		 * Check the validity of file type.
-		 * According to TS 11.11, each file id contains of two bytes,
-		 * in which the first byte is the type of file. For GSM is:
-		 * 0x3f: master file
-		 * 0x7f: 1st level dedicated file
-		 * 0x5f: 2nd level dedicated file
-		 * 0x2f: elementary file under the master file
-		 * 0x6f: elementary file under 1st level dedicated file
-		 * 0x4f: elementary file under 2nd level dedicated file
-		 */
-		switch (data[i]) {
-		case 0x3f:
-			if ((last_type != 0x2f) && (last_type != 0x6f) &&
-					(last_type != 0x4f))
-				goto error;
-
-			start = i;
-
-			break;
-		case 0x2f:
-			if (last_type != 0x3f)
-				goto error;
-			break;
-		case 0x6f:
-			if (last_type != 0x7f)
-				goto error;
-			break;
-		case 0x4f:
-			if (last_type != 0x5f)
-				goto error;
-			break;
-		case 0x7f:
-			if (last_type != 0x3f)
-				goto error;
-			break;
-		case 0x5f:
-			if (last_type != 0x7f)
-				goto error;
-			break;
-		default:
+	while (stk_file_iter_next(&sf_iter)) {
+		sf = g_try_new0(struct stk_file, 1);
+		if (sf == NULL)
 			goto error;
-		}
 
-		if ((data[i] == 0x2f) || (data[i] == 0x6f) ||
-						(data[i] == 0x4f)) {
-			if (i + 1 >= len)
-				goto error;
-
-			sf = g_try_new0(struct stk_file, 1);
-			if (sf == NULL)
-				goto error;
-
-			sf->len = i - start + 2;
-			memcpy(sf->file, data + start, i - start + 2);
-			*fl = g_slist_prepend(*fl, sf);
-		}
-
-		last_type = data[i];
+		sf->len = sf_iter.len;
+		memcpy(sf->file, sf_iter.file, sf_iter.len);
+		*fl = g_slist_prepend(*fl, sf);
 	}
 
-	if ((data[len - 2] != 0x2f) && (data[len - 2] != 0x6f) &&
-						(data[len - 2] != 0x4f))
+	if (sf_iter.pos != sf_iter.max)
 		goto error;
 
 	*fl = g_slist_reverse(*fl);
