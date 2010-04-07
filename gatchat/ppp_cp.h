@@ -32,7 +32,6 @@ enum option_rval {
 	OPTION_ACCEPT,
 	OPTION_REJECT,
 	OPTION_NAK,
-	OPTION_ERR,
 };
 
 enum pppcp_code {

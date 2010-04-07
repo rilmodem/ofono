@@ -892,7 +892,7 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 		if (action->option_scan)
 			rval = action->option_scan(data, option);
 		else
-			rval = OPTION_ERR;
+			rval = OPTION_REJECT;
 
 		switch (rval) {
 		case OPTION_ACCEPT:
@@ -908,9 +908,6 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 				g_list_append(data->unacceptable_options,
 						option);
 			break;
-		case OPTION_ERR:
-			g_printerr("unhandled option type %d\n", option->type);
-			g_free(option);
 		}
 	}
 
@@ -1036,7 +1033,7 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 		if (action->option_scan)
 			rval = action->option_scan(data, naked_option);
 		else
-			rval = OPTION_ERR;
+			rval = OPTION_REJECT;
 
 		if (rval == OPTION_ACCEPT) {
 			/*
