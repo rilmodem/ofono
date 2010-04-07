@@ -154,6 +154,14 @@ enum pppcp_event_type {
 	RXR		= 15,
 };
 
+struct pppcp_timer_data {
+	struct pppcp_data *data;
+	guint restart_counter;
+	guint restart_interval;
+	guint max_counter;
+	guint restart_timer;
+};
+
 struct pppcp_data {
 	unsigned char state;
 	struct pppcp_timer_data config_timer_data;

@@ -66,14 +66,6 @@ struct pppcp_packet {
 	guint8 data[0];
 } __attribute__((packed));
 
-struct pppcp_timer_data {
-	struct pppcp_data *data;
-	guint restart_counter;
-	guint restart_interval;
-	guint max_counter;
-	guint restart_timer;
-};
-
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
 				const struct pppcp_action *action);
 void pppcp_free(struct pppcp_data *data);
