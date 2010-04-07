@@ -20,6 +20,7 @@
  */
 
 struct pppcp_data;
+struct ppp_option_iter;
 
 /* option format */
 struct ppp_option {
@@ -48,6 +49,15 @@ enum pppcp_code {
 	PPPCP_CODE_TYPE_DISCARD_REQUEST
 };
 
+struct ppp_option_iter {
+	guint16 max;
+	guint16 pos;
+	const guint8 *pdata;
+	guint8 type;
+	guint8 len;
+	const guint8 *option_data;
+};
+
 struct pppcp_action {
 	void (*this_layer_up)(struct pppcp_data *data);
 	void (*this_layer_down)(struct pppcp_data *data);
@@ -65,6 +75,13 @@ struct pppcp_packet {
 	guint16 length;
 	guint8 data[0];
 } __attribute__((packed));
+
+void ppp_option_iter_init(struct ppp_option_iter *iter,
+					const struct pppcp_packet *packet);
+gboolean ppp_option_iter_next(struct ppp_option_iter *iter);
+guint8 ppp_option_iter_get_type(struct ppp_option_iter *iter);
+guint8 ppp_option_iter_get_length(struct ppp_option_iter *iter);
+const guint8 *ppp_option_iter_get_data(struct ppp_option_iter *iter);
 
 struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
 				const struct pppcp_action *action);

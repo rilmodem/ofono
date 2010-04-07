@@ -217,6 +217,52 @@ static struct pppcp_packet *pppcp_packet_new(struct pppcp_data *data,
 	return packet;
 }
 
+void ppp_option_iter_init(struct ppp_option_iter *iter,
+					const struct pppcp_packet *packet)
+{
+	iter->max = ntohs(packet->length) - CP_HEADER_SZ;
+	iter->pdata = packet->data;
+	iter->pos = 0;
+	iter->type = 0;
+	iter->len = 0;
+	iter->option_data = NULL;
+}
+
+gboolean ppp_option_iter_next(struct ppp_option_iter *iter)
+{
+	const guint8 *cur = iter->pdata + iter->pos;
+	const guint8 *end = iter->pdata + iter->max;
+
+	if (cur + 1 > end)
+		return FALSE;
+
+	if (cur + cur[1] > end)
+		return FALSE;
+
+	iter->type = cur[0];
+	iter->len = cur[1] - 2;
+	iter->option_data = cur + 2;
+
+	iter->pdata += cur[1];
+
+	return TRUE;
+}
+
+guint8 ppp_option_iter_get_type(struct ppp_option_iter *iter)
+{
+	return iter->type;
+}
+
+guint8 ppp_option_iter_get_length(struct ppp_option_iter *iter)
+{
+	return iter->len;
+}
+
+const guint8 *ppp_option_iter_get_data(struct ppp_option_iter *iter)
+{
+	return iter->option_data;
+}
+
 static gboolean pppcp_timeout(gpointer user_data)
 {
 	struct pppcp_timer_data *timer_data = user_data;
