@@ -262,7 +262,7 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 		}
 		/* fall through */
 	default:
-		lcp_protocol_reject(ppp->lcp, frame->bytes, frame->len);
+		pppcp_send_protocol_reject(ppp->lcp, frame->bytes, frame->len);
 		break;
 	};
 }
