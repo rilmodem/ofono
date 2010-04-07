@@ -94,7 +94,7 @@ void ppp_generate_event(GAtPPP *ppp, enum ppp_event event);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
 void ppp_set_auth(GAtPPP *ppp, guint8 *auth_data);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
-guint32 ppp_get_xmit_accm(GAtPPP *ppp);
+void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_pfc(GAtPPP *ppp, gboolean pfc);
 gboolean ppp_get_pfc(GAtPPP *ppp);
 void ppp_set_acfc(GAtPPP *ppp, gboolean acfc);

@@ -520,9 +520,9 @@ void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)
 	ppp->recv_accm = accm;
 }
 
-guint32 ppp_get_xmit_accm(GAtPPP *ppp)
+void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm)
 {
-	return ppp->xmit_accm[0];
+	ppp->xmit_accm[0] = accm;
 }
 
 void ppp_set_pfc(GAtPPP *ppp, gboolean pfc)
@@ -647,7 +647,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	/* set options to defaults */
 	ppp->mru = DEFAULT_MRU;
 	ppp->recv_accm = ~0U;
-	ppp->xmit_accm[0] = DEFAULT_ACCM;
+	ppp->xmit_accm[0] = ~0U;
 	ppp->xmit_accm[3] = 0x60000000; /* 0x7d, 0x7e */
 	ppp->pfc = FALSE;
 	ppp->acfc = FALSE;
