@@ -49,6 +49,13 @@ enum pppcp_code {
 	PPPCP_CODE_TYPE_DISCARD_REQUEST
 };
 
+struct pppcp_packet {
+	guint8 code;
+	guint8 identifier;
+	guint16 length;
+	guint8 data[0];
+} __attribute__((packed));
+
 struct ppp_option_iter {
 	guint16 max;
 	guint16 pos;
@@ -63,18 +70,13 @@ struct pppcp_action {
 	void (*this_layer_down)(struct pppcp_data *data);
 	void (*this_layer_started)(struct pppcp_data *data);
 	void (*this_layer_finished)(struct pppcp_data *data);
+	/* Remote side acked these options, we can now use them */
+	void (*rca)(struct pppcp_data *pppcp, const struct pppcp_packet *pkt);
 	enum option_rval (*option_scan)(struct pppcp_data *pppcp,
 					struct ppp_option *option);
 	void (*option_process)(struct pppcp_data *data,
 				struct ppp_option *option);
 };
-
-struct pppcp_packet {
-	guint8 code;
-	guint8 identifier;
-	guint16 length;
-	guint8 data[0];
-} __attribute__((packed));
 
 void ppp_option_iter_init(struct ppp_option_iter *iter,
 					const struct pppcp_packet *packet);

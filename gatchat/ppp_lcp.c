@@ -96,6 +96,23 @@ static void lcp_finished(struct pppcp_data *pppcp)
 	ppp_generate_event(pppcp_get_ppp(pppcp), PPP_DOWN);
 }
 
+static void lcp_rca(struct pppcp_data *pppcp, const struct pppcp_packet *packet)
+{
+	struct ppp_option_iter iter;
+
+	ppp_option_iter_init(&iter, packet);
+
+	while (ppp_option_iter_next(&iter) == TRUE) {
+		switch (ppp_option_iter_get_type(&iter)) {
+		case ACCM:
+			ppp_set_xmit_accm(pppcp_get_ppp(pppcp), 0);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 /*
  * Scan the option to see if it is acceptable, unacceptable, or rejected
  *
@@ -189,6 +206,7 @@ struct pppcp_action lcp_action = {
 	.this_layer_down	= lcp_down,
 	.this_layer_started	= lcp_started,
 	.this_layer_finished	= lcp_finished,
+	.rca			= lcp_rca,
 	.option_scan		= lcp_option_scan,
 	.option_process		= lcp_option_process,
 };

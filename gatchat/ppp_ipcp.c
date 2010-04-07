@@ -108,6 +108,26 @@ static void ipcp_finished(struct pppcp_data *data)
 	g_print("ipcp finished\n");
 }
 
+static void ipcp_rca(struct pppcp_data *pppcp,
+					const struct pppcp_packet *packet)
+{
+	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
+	struct ppp_option_iter iter;
+
+	ppp_option_iter_init(&iter, packet);
+
+	while (ppp_option_iter_next(&iter) == TRUE) {
+		switch (ppp_option_iter_get_type(&iter)) {
+		case IP_ADDRESS:
+			memcpy(ipcp->ip_address,
+					ppp_option_iter_get_data(&iter), 4);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 /*
  * Scan the option to see if it is acceptable, unacceptable, or rejected
  */
@@ -136,9 +156,6 @@ static void ipcp_option_process(struct pppcp_data *pppcp,
 	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
 
 	switch (option->type) {
-	case IP_ADDRESS:
-		memcpy(ipcp->ip_address, option->data, 4);
-		break;
 	case PRIMARY_DNS_SERVER:
 		memcpy(ipcp->primary_dns, option->data, 4);
 		break;
@@ -162,6 +179,7 @@ struct pppcp_action ipcp_action = {
 	.this_layer_down	= ipcp_down,
 	.this_layer_started	= ipcp_started,
 	.this_layer_finished	= ipcp_finished,
+	.rca			= ipcp_rca,
 	.option_scan		= ipcp_option_scan,
 	.option_process		= ipcp_option_process,
 };

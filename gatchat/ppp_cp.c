@@ -997,8 +997,7 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 {
 	guint len;
 	GList *list;
-	struct ppp_option *acked_option;
-	guint i = 0;
+	guint i;
 	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
@@ -1013,40 +1012,34 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 	}
 
 	/*
-	 * check each acked option.  If it is what we requested,
-	 * then we can apply these option values.
-	 *
-	 * XXX what if it isn't?  Do this correctly -- for now
-	 * we are just going to assume that all options matched
-	 * and apply them.
+	 * First we must sanity check that all config options acked are
+	 * equal to the config options sent and are in the same order.
+	 * If this is not the case, then silently drop the packet
 	 */
-	while (i < len) {
-		acked_option = extract_ppp_option(data, &packet->data[i]);
-		if (acked_option == NULL)
-			break;
+	for (i = 0, list = data->config_options; list; list = list->next) {
+		struct ppp_option *sent_option = list->data;
 
-		list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER((guint) acked_option->type),
-				is_option);
-		if (list) {
-			/*
-			 * once we've applied the option, delete it from
-			 * the config_options list.
-			 */
-			if (action->option_process)
-				action->option_process(data, acked_option);
+		if (sent_option->type != packet->data[i])
+			return 0;
 
-			g_free(list->data);
-			data->config_options =
-				g_list_delete_link(data->config_options, list);
-		} else
-			g_printerr("oops -- found acked option %d we didn't request\n", acked_option->type);
+		if (sent_option->length != packet->data[i + 1])
+			return 0;
 
-		/* skip ahead to the next option */
-		i += acked_option->length;
+		if (memcmp(sent_option->data, packet->data + i + 2,
+						sent_option->length) != 0)
+			return 0;
 
-		g_free(acked_option);
+		i += packet->data[i + 1];
 	}
+
+	/* Otherwise, apply local options */
+	if (action->rca)
+		action->rca(data, packet);
+
+	g_list_foreach(data->config_options, (GFunc)g_free, NULL);
+	g_list_free(data->config_options);
+	data->config_options = NULL;
+
 	return RCA;
 }
 
