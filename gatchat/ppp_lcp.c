@@ -58,6 +58,10 @@ enum lcp_options {
 	ACFC			= 8,
 };
 
+struct lcp_data {
+	guint32 magic_number;
+};
+
 /*
  * signal the Up event to the NCP
  */
@@ -132,6 +136,7 @@ static guint lcp_option_scan(struct pppcp_data *pppcp,
 static void lcp_option_process(struct pppcp_data *pppcp,
 						struct ppp_option *option)
 {
+	struct lcp_data *lcp = pppcp_get_data(pppcp);
 	GAtPPP *ppp = pppcp_get_ppp(pppcp);
 	guint32 magic;
 
@@ -145,8 +150,8 @@ static void lcp_option_process(struct pppcp_data *pppcp,
 	case MAGIC_NUMBER:
 		/* XXX handle loopback */
 		magic = get_host_long(option->data);
-		if (magic != pppcp_get_magic_number(pppcp))
-			pppcp_set_magic_number(pppcp, magic);
+		if (lcp->magic_number != magic)
+			lcp->magic_number = magic;
 		else
 			g_print("looped back? I should do something\n");
 		break;
@@ -215,12 +220,12 @@ void lcp_terminate(struct pppcp_data *data)
 	pppcp_signal_close(data);
 }
 
-void lcp_free(struct pppcp_data *lcp)
+void lcp_free(struct pppcp_data *pppcp)
 {
-	if (lcp == NULL)
-		return;
+	struct ipcp_data *lcp = pppcp_get_data(pppcp);
 
-	pppcp_free(lcp);
+	g_free(lcp);
+	pppcp_free(pppcp);
 }
 
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len)
@@ -232,10 +237,15 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 {
 	struct pppcp_data *pppcp;
 	struct ppp_option *option;
+	struct lcp_data *lcp;
+
+	lcp = g_try_new0(struct lcp_data, 1);
+	if (!lcp)
+		return NULL;
 
 	pppcp = pppcp_new(ppp, LCP_PROTOCOL, &lcp_action);
 	if (!pppcp) {
-		g_print("Failed to allocate PPPCP struct\n");
+		g_free(lcp);
 		return NULL;
 	}
 
@@ -243,11 +253,12 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	pppcp_set_prefix(pppcp, "lcp");
 
 	pppcp_set_valid_codes(pppcp, LCP_SUPPORTED_CODES);
+	pppcp_set_data(pppcp, lcp);
 
 	/* add the default config options */
 	option = g_try_malloc0(6);
 	if (option == NULL) {
-		pppcp_free(pppcp);
+		lcp_free(pppcp);
 		return NULL;
 	}
 	option->type = ACCM;
