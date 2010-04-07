@@ -49,7 +49,6 @@ struct ipcp_data {
 	guint8 secondary_dns[4];
 	guint8 primary_nbns[4];
 	guint8 secondary_nbns[4];
-	struct pppcp_data *pppcp;
 };
 
 enum ipcp_option_types {
@@ -180,18 +179,18 @@ static const char *ipcp_option_strings[256] = {
 
 struct pppcp_data *ipcp_new(GAtPPP *ppp)
 {
-	struct ipcp_data *data;
+	struct ipcp_data *ipcp;
 	struct pppcp_data *pppcp;
 	struct ppp_option *ipcp_option;
 
-	data = g_try_malloc0(sizeof(*data));
-	if (!data)
+	ipcp = g_try_new0(struct ipcp_data, 1);
+	if (!ipcp)
 		return NULL;
 
 	pppcp = pppcp_new(ppp, IPCP_PROTO, &ipcp_action);
 	if (!pppcp) {
 		g_printerr("Failed to allocate PPPCP struct\n");
-		g_free(data);
+		g_free(ipcp);
 		return NULL;
 	}
 
@@ -199,13 +198,12 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	pppcp_set_prefix(pppcp, "ipcp");
 
 	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
-	pppcp_set_data(pppcp, data);
+	pppcp_set_data(pppcp, ipcp);
 
 	/* add the default config options */
 	ipcp_option = g_try_malloc0(6);
 	if (!ipcp_option) {
-		pppcp_free(pppcp);
-		g_free(data);
+		ipcp_free(pppcp);
 		return NULL;
 	}
 	ipcp_option->type = IP_ADDRESS;
