@@ -66,7 +66,6 @@ struct _GAtPPP {
 	guint8 buffer[BUFFERSZ];
 	int index;
 	gint mru;
-	guint16 auth_proto;
 	char user_name[256];
 	char passwd[256];
 	gboolean pfc;
@@ -447,7 +446,7 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 		break;
 	case PPP_AUTHENTICATION:
 		/* we don't do authentication right now, so send NONE */
-		if (!ppp->auth_proto)
+		if (ppp->auth->proto == 0)
 			ppp_generate_event(ppp, PPP_NONE);
 		/* otherwise we need to wait for the peer to send us a challenge */
 		break;
