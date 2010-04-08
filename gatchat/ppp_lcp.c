@@ -58,9 +58,35 @@ enum lcp_options {
 	ACFC			= 8,
 };
 
+/* Maximum size of all options, we only ever request ACCM */ 
+#define MAX_CONFIG_OPTION_SIZE 6
+
 struct lcp_data {
 	guint32 magic_number;
+	guint8 options[MAX_CONFIG_OPTION_SIZE];
+	guint16 options_len;
+	gboolean req_accm;		/* Should we request ACCM */
+	guint32 accm;			/* ACCM value */
 };
+
+static void lcp_generate_config_options(struct lcp_data *lcp)
+{
+	guint16 len = 0;
+
+	if (lcp->req_accm) {
+		guint32 accm;
+
+		accm = htonl(lcp->accm);
+
+		lcp->options[len] = ACCM;
+		lcp->options[len + 1] = 6;
+		memcpy(lcp->options + len + 2, &accm, sizeof(accm));
+
+		len += 6;
+	}
+
+	lcp->options_len = len;
+}
 
 /*
  * signal the Up event to the NCP
@@ -113,75 +139,79 @@ static void lcp_rca(struct pppcp_data *pppcp, const struct pppcp_packet *packet)
 	}
 }
 
-/*
- * Scan the option to see if it is acceptable, unacceptable, or rejected
- *
- * We need to use a default case here because this option type value
- * could be anything.
- */
-static guint lcp_option_scan(struct pppcp_data *pppcp,
-						struct ppp_option *option)
+static void lcp_rcn_nak(struct pppcp_data *pppcp,
+				const struct pppcp_packet *packet)
 {
-	switch (option->type) {
-	case ACCM:
-	case AUTH_PROTO:
-		/* XXX check to make sure it's a proto we recognize */
-	case PFC:
-	case ACFC:
-		return OPTION_ACCEPT;
 
-	case MAGIC_NUMBER:
-	{
-		guint32 magic = get_host_long(option->data);
-
-		if (magic == 0)
-			return OPTION_REJECT;
-
-		return OPTION_ACCEPT;
-	}
-	}
-
-	return OPTION_REJECT;
 }
 
-/*
- * act on an acceptable option
- *
- * We need to use a default case here because this option type value
- * could be anything.
- */
-static void lcp_option_process(struct pppcp_data *pppcp,
-						struct ppp_option *option)
+static void lcp_rcn_rej(struct pppcp_data *pppcp,
+				const struct pppcp_packet *packet)
+{
+
+}
+
+static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
+					const struct pppcp_packet *packet,
+					guint8 **new_options, guint16 *new_len)
 {
 	struct lcp_data *lcp = pppcp_get_data(pppcp);
 	GAtPPP *ppp = pppcp_get_ppp(pppcp);
-	guint32 magic;
+	struct ppp_option_iter iter;
 
-	switch (option->type) {
-	case ACCM:
-		ppp_set_recv_accm(ppp, get_host_long(option->data));
-		break;
-	case AUTH_PROTO:
-		ppp_set_auth(ppp, option->data);
-		break;
-	case MAGIC_NUMBER:
-		/* XXX handle loopback */
-		magic = get_host_long(option->data);
-		if (lcp->magic_number != magic)
-			lcp->magic_number = magic;
-		else
-			g_print("looped back? I should do something\n");
-		break;
-	case PFC:
-		ppp_set_pfc(ppp, TRUE);
-		break;
-	case ACFC:
-		ppp_set_acfc(ppp, TRUE);
-		break;
-	default:
-		g_printerr("unhandled option %d\n", option->type);
-		break;
+	ppp_option_iter_init(&iter, packet);
+
+	while (ppp_option_iter_next(&iter) == TRUE) {
+		switch (ppp_option_iter_get_type(&iter)) {
+		case ACCM:
+		/* TODO check to make sure it's a proto we recognize */
+		case AUTH_PROTO:
+		case PFC:
+		case ACFC:
+			break;
+
+		case MAGIC_NUMBER:
+		{
+			guint32 magic =
+				get_host_long(ppp_option_iter_get_data(&iter));
+
+			if (magic == 0)
+				return RCR_REJECT;
+
+			/* TODO: Handle loopback */
+			break;
+		}
+		default:
+			return RCR_REJECT;
+		}
 	}
+
+	/* All options were found acceptable, apply them here and return */
+	ppp_option_iter_init(&iter, packet);
+
+	while (ppp_option_iter_next(&iter) == TRUE) {
+		switch (ppp_option_iter_get_type(&iter)) {
+		case ACCM:
+			ppp_set_recv_accm(ppp,
+				get_host_long(ppp_option_iter_get_data(&iter)));
+			break;
+		case AUTH_PROTO:
+			ppp_set_auth(ppp, ppp_option_iter_get_data(&iter));
+			break;
+		case MAGIC_NUMBER:
+			lcp->magic_number =
+				get_host_long(ppp_option_iter_get_data(&iter));
+			break;
+		case PFC:
+			ppp_set_pfc(ppp, TRUE);
+			break;
+		case ACFC:
+			ppp_set_acfc(ppp, TRUE);
+			break;
+		}
+	}
+
+	return RCR_ACCEPT;
 }
 
 static const char *lcp_option_strings[256] = {
@@ -211,8 +241,9 @@ struct pppcp_proto lcp_proto = {
 	.this_layer_started	= lcp_started,
 	.this_layer_finished	= lcp_finished,
 	.rca			= lcp_rca,
-	.option_scan		= lcp_option_scan,
-	.option_process		= lcp_option_process,
+	.rcn_nak		= lcp_rcn_nak,
+	.rcn_rej		= lcp_rcn_rej,
+	.rcr			= lcp_rcr,
 };
 
 void lcp_open(struct pppcp_data *data)
@@ -253,7 +284,6 @@ void lcp_free(struct pppcp_data *pppcp)
 struct pppcp_data *lcp_new(GAtPPP *ppp)
 {
 	struct pppcp_data *pppcp;
-	struct ppp_option *option;
 	struct lcp_data *lcp;
 
 	lcp = g_try_new0(struct lcp_data, 1);
@@ -268,15 +298,11 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 
 	pppcp_set_data(pppcp, lcp);
 
-	/* add the default config options */
-	option = g_try_malloc0(6);
-	if (option == NULL) {
-		lcp_free(pppcp);
-		return NULL;
-	}
-	option->type = ACCM;
-	option->length = 6;
-	pppcp_add_config_option(pppcp, option);
+	lcp->req_accm = TRUE;
+	lcp->accm = 0;
+
+	lcp_generate_config_options(lcp);
+	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
 
 	return pppcp;
 }
