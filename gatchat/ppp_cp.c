@@ -239,7 +239,7 @@ gboolean ppp_option_iter_next(struct ppp_option_iter *iter)
 	iter->len = cur[1] - 2;
 	iter->option_data = cur + 2;
 
-	iter->pdata += cur[1];
+	iter->pos += cur[1];
 
 	return TRUE;
 }
