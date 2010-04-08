@@ -273,22 +273,10 @@ static enum rcr_result ipcp_rcr(struct pppcp_data *pppcp,
 	return RCR_REJECT;
 }
 
-static const char *ipcp_option_strings[256] = {
-	[IP_ADDRESSES]		= "IP-Addresses (deprecated)",
-	[IP_COMPRESSION_PROTO]	= "IP-Compression-Protocol",
-	[IP_ADDRESS]		= "IP-Address",
-	[MOBILE_IPV4]		= "Mobile-IPv4",
-	[PRIMARY_DNS_SERVER]	= "Primary DNS Server Address",
-	[PRIMARY_NBNS_SERVER]	= "Primary NBNS Server Address",
-	[SECONDARY_DNS_SERVER]	= "Secondary DNS Server Address",
-	[SECONDARY_NBNS_SERVER]	= "Secondary NBNS Server Address",
-};
-
 struct pppcp_proto ipcp_proto = {
 	.proto			= IPCP_PROTO,
 	.name			= "ipcp",
 	.supported_codes	= IPCP_SUPPORTED_CODES,
-	.option_strings		= ipcp_option_strings,
 	.this_layer_up		= ipcp_up,
 	.this_layer_down	= ipcp_down,
 	.this_layer_started	= ipcp_started,

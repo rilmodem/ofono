@@ -69,7 +69,6 @@ struct pppcp_proto {
 	guint16 proto;
 	const char *name;
 	guint16 supported_codes;
-	const char **option_strings;
 	void (*this_layer_up)(struct pppcp_data *data);
 	void (*this_layer_down)(struct pppcp_data *data);
 	void (*this_layer_started)(struct pppcp_data *data);

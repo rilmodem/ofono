@@ -214,27 +214,9 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 	return RCR_ACCEPT;
 }
 
-static const char *lcp_option_strings[256] = {
-	[0]	= "Vendor Specific",
-	[1]	= "Maximum-Receive-Unit",
-	[2]	= "Async-Control-Character-Map",
-	[3]	= "Authentication-Protocol",
-	[4]	= "Quality-Protocol",
-	[5]	= "Magic-Number",
-	[6]	= "Quality-Protocol (deprecated)",
-	[7]	= "Protocol-Field-Compression",
-	[8]	= "Address-and-Control-Field-Compression",
-	[9]	= "FCS-Alternatives",
-	[10]	= "Self-Describing-Pad",
-	[11]	= "Numbered-Mode",
-	[12]	= "Multi-Link-Procedure (deprecated)",
-	[13]	= "Callback",
-};
-
 struct pppcp_proto lcp_proto = {
 	.proto			= LCP_PROTOCOL,
 	.name			= "lcp",
-	.option_strings		= lcp_option_strings,
 	.supported_codes	= LCP_SUPPORTED_CODES,
 	.this_layer_up		= lcp_up,
 	.this_layer_down	= lcp_down,
