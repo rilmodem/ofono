@@ -201,7 +201,11 @@ static const char *lcp_option_strings[256] = {
 	[13]	= "Callback",
 };
 
-struct pppcp_action lcp_action = {
+struct pppcp_proto lcp_proto = {
+	.proto			= LCP_PROTOCOL,
+	.name			= "lcp",
+	.option_strings		= lcp_option_strings,
+	.supported_codes	= LCP_SUPPORTED_CODES,
 	.this_layer_up		= lcp_up,
 	.this_layer_down	= lcp_down,
 	.this_layer_started	= lcp_started,
@@ -256,16 +260,12 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	if (!lcp)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, LCP_PROTOCOL, &lcp_action);
+	pppcp = pppcp_new(ppp, &lcp_proto);
 	if (!pppcp) {
 		g_free(lcp);
 		return NULL;
 	}
 
-	pppcp_set_option_strings(pppcp, lcp_option_strings);
-	pppcp_set_prefix(pppcp, "lcp");
-
-	pppcp_set_valid_codes(pppcp, LCP_SUPPORTED_CODES);
 	pppcp_set_data(pppcp, lcp);
 
 	/* add the default config options */

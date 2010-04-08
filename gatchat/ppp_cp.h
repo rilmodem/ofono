@@ -65,7 +65,11 @@ struct ppp_option_iter {
 	const guint8 *option_data;
 };
 
-struct pppcp_action {
+struct pppcp_proto {
+	guint16 proto;
+	const char *name;
+	guint16 supported_codes;
+	const char **option_strings;
 	void (*this_layer_up)(struct pppcp_data *data);
 	void (*this_layer_down)(struct pppcp_data *data);
 	void (*this_layer_started)(struct pppcp_data *data);
@@ -85,8 +89,7 @@ guint8 ppp_option_iter_get_type(struct ppp_option_iter *iter);
 guint8 ppp_option_iter_get_length(struct ppp_option_iter *iter);
 const guint8 *ppp_option_iter_get_data(struct ppp_option_iter *iter);
 
-struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
-				const struct pppcp_action *action);
+struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto);
 void pppcp_free(struct pppcp_data *data);
 
 void pppcp_set_data(struct pppcp_data *pppcp, gpointer data);
@@ -94,12 +97,8 @@ gpointer pppcp_get_data(struct pppcp_data *pppcp);
 
 GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp);
 
-void pppcp_set_option_strings(struct pppcp_data *pppcp, const char **opts);
-void pppcp_set_prefix(struct pppcp_data *pppcp, const char *prefix);
-
 void pppcp_add_config_option(struct pppcp_data *data,
 				struct ppp_option *option);
-void pppcp_set_valid_codes(struct pppcp_data *data, guint16 codes);
 void pppcp_process_packet(gpointer priv, guint8 *new_packet);
 void pppcp_send_protocol_reject(struct pppcp_data *data,
 				guint8 *rejected_packet, gsize len);

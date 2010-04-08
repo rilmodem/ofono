@@ -174,16 +174,6 @@ static void ipcp_option_process(struct pppcp_data *pppcp,
 	}
 }
 
-struct pppcp_action ipcp_action = {
-	.this_layer_up		= ipcp_up,
-	.this_layer_down	= ipcp_down,
-	.this_layer_started	= ipcp_started,
-	.this_layer_finished	= ipcp_finished,
-	.rca			= ipcp_rca,
-	.option_scan		= ipcp_option_scan,
-	.option_process		= ipcp_option_process,
-};
-
 static const char *ipcp_option_strings[256] = {
 	[IP_ADDRESSES]		= "IP-Addresses (deprecated)",
 	[IP_COMPRESSION_PROTO]	= "IP-Compression-Protocol",
@@ -193,6 +183,20 @@ static const char *ipcp_option_strings[256] = {
 	[PRIMARY_NBNS_SERVER]	= "Primary NBNS Server Address",
 	[SECONDARY_DNS_SERVER]	= "Secondary DNS Server Address",
 	[SECONDARY_NBNS_SERVER]	= "Secondary NBNS Server Address",
+};
+
+struct pppcp_proto ipcp_proto = {
+	.proto			= IPCP_PROTO,
+	.name			= "ipcp",
+	.supported_codes	= IPCP_SUPPORTED_CODES,
+	.option_strings		= ipcp_option_strings,
+	.this_layer_up		= ipcp_up,
+	.this_layer_down	= ipcp_down,
+	.this_layer_started	= ipcp_started,
+	.this_layer_finished	= ipcp_finished,
+	.rca			= ipcp_rca,
+	.option_scan		= ipcp_option_scan,
+	.option_process		= ipcp_option_process,
 };
 
 struct pppcp_data *ipcp_new(GAtPPP *ppp)
@@ -205,17 +209,13 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	if (!ipcp)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, IPCP_PROTO, &ipcp_action);
+	pppcp = pppcp_new(ppp, &ipcp_proto);
 	if (!pppcp) {
 		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(ipcp);
 		return NULL;
 	}
 
-	pppcp_set_option_strings(pppcp, ipcp_option_strings);
-	pppcp_set_prefix(pppcp, "ipcp");
-
-	pppcp_set_valid_codes(pppcp, IPCP_SUPPORTED_CODES);
 	pppcp_set_data(pppcp, ipcp);
 
 	/* add the default config options */

@@ -36,7 +36,7 @@
 
 #define pppcp_trace(p) do { \
 	char *str = g_strdup_printf("%s: %s: current state %d:%s", \
-				p->prefix, __FUNCTION__, \
+				p->driver->name, __FUNCTION__, \
 				p->state, pppcp_state_strings[p->state]); \
 	ppp_debug(p->ppp, str); \
 	g_free(str); \
@@ -178,12 +178,8 @@ struct pppcp_data {
 	guint8 config_identifier;
 	guint8 terminate_identifier;
 	guint8 reject_identifier;
-	const struct pppcp_action *action;
-	guint16 valid_codes;
+	const struct pppcp_proto *driver;
 	gpointer priv;
-	guint16 proto;
-	const char *prefix;
-	const char **option_strings;
 };
 
 static void pppcp_generate_event(struct pppcp_data *data,
@@ -207,7 +203,7 @@ static struct pppcp_packet *pppcp_packet_new(struct pppcp_data *data,
 		return NULL;
 
 	/* add our protocol information */
-	ppp_packet->proto = htons(data->proto);
+	ppp_packet->proto = htons(data->driver->proto);
 
 	/* advance past protocol to add CP header information */
 	packet = (struct pppcp_packet *) (ppp_packet->info);
@@ -311,35 +307,27 @@ static void pppcp_illegal_event(guint8 state, guint8 type)
 
 static void pppcp_this_layer_up(struct pppcp_data *data)
 {
-	const struct pppcp_action *action = data->action;
-
-	if (action->this_layer_up)
-		action->this_layer_up(data);
+	if (data->driver->this_layer_up)
+		data->driver->this_layer_up(data);
 }
 
 static void pppcp_this_layer_down(struct pppcp_data *data)
 {
-	const struct pppcp_action *action = data->action;
-
-	if (action->this_layer_down)
-		action->this_layer_down(data);
+	if (data->driver->this_layer_down)
+		data->driver->this_layer_down(data);
 }
 
 static void pppcp_this_layer_started(struct pppcp_data *data)
 {
-	const struct pppcp_action *action = data->action;
-
-	if (action->this_layer_started)
-		action->this_layer_started(data);
+	if (data->driver->this_layer_started)
+		data->driver->this_layer_started(data);
 }
 
 static void pppcp_this_layer_finished(struct pppcp_data *data)
 {
-	const struct pppcp_action *action = data->action;
-
 	pppcp_trace(data);
-	if (action->this_layer_finished)
-		action->this_layer_finished(data);
+	if (data->driver->this_layer_finished)
+		data->driver->this_layer_finished(data);
 }
 
 static void pppcp_clear_options(struct pppcp_data *data)
@@ -425,8 +413,10 @@ static void print_option(gpointer data, gpointer user_data)
 	struct ppp_option *option = data;
 	struct pppcp_data *pppcp = user_data;
 
-	g_print("%s: option %d len %d (%s)", pppcp->prefix, option->type,
-			option->length, pppcp->option_strings[option->type]);
+	g_print("%s: option %d len %d (%s)", pppcp->driver->name, option->type,
+			option->length,
+			pppcp->driver->option_strings[option->type]);
+
 	if (option->length > 2) {
 		int i;
 		for (i = 0; i < option->length - 2; i++)
@@ -925,7 +915,6 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	int i = 0;
 	struct ppp_option *option;
 	enum option_rval rval;
-	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
 
@@ -942,8 +931,8 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 		/* skip ahead to the next option */
 		i += option->length;
 
-		if (action->option_scan)
-			rval = action->option_scan(data, option);
+		if (data->driver->option_scan)
+			rval = data->driver->option_scan(data, option);
 		else
 			rval = OPTION_REJECT;
 
@@ -979,11 +968,11 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *data,
 	 * protocol will have to re-add them if they want them renegotiated
 	 * when the ppp goes down.
 	 */
-	if (action->option_process) {
+	if (data->driver->option_process) {
 		GList *l;
 
 		for (l = data->acceptable_options; l; l = l->next)
-			action->option_process(data, l->data);
+			data->driver->option_process(data, l->data);
 
 		g_list_foreach(data->acceptable_options, remove_config_option,
 				data);
@@ -998,7 +987,6 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 	guint len;
 	GList *list;
 	guint i;
-	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
 
@@ -1033,8 +1021,8 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 	}
 
 	/* Otherwise, apply local options */
-	if (action->rca)
-		action->rca(data, packet);
+	if (data->driver->rca)
+		data->driver->rca(data, packet);
 
 	g_list_foreach(data->config_options, (GFunc)g_free, NULL);
 	g_list_free(data->config_options);
@@ -1052,7 +1040,6 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 	struct ppp_option *config_option;
 	guint i = 0;
 	enum option_rval rval;
-	const struct pppcp_action *action = data->action;
 
 	pppcp_trace(data);
 
@@ -1076,8 +1063,8 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
 		/* skip ahead to the next option */
 		i += naked_option->length;
 
-		if (action->option_scan)
-			rval = action->option_scan(data, naked_option);
+		if (data->driver->option_scan)
+			rval = data->driver->option_scan(data, naked_option);
 		else
 			rval = OPTION_REJECT;
 
@@ -1310,7 +1297,7 @@ void pppcp_process_packet(gpointer priv, guint8 *new_packet)
 		return;
 
 	/* check flags to see if we support this code */
-	if (!(data->valid_codes & (1 << packet->code)))
+	if (!(data->driver->supported_codes & (1 << packet->code)))
 		event_type = RUC;
 	else
 		event_type = packet_ops[packet->code-1](data, packet);
@@ -1320,14 +1307,6 @@ void pppcp_process_packet(gpointer priv, guint8 *new_packet)
 		event_data = packet;
 		pppcp_generate_event(data, event_type, event_data, data_len);
 	}
-}
-
-void pppcp_set_valid_codes(struct pppcp_data *data, guint16 codes)
-{
-	if (data == NULL)
-		return;
-
-	data->valid_codes = codes;
 }
 
 void pppcp_free(struct pppcp_data *data)
@@ -1357,18 +1336,7 @@ GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp)
 	return pppcp->ppp;
 }
 
-void pppcp_set_option_strings(struct pppcp_data *pppcp, const char **opts)
-{
-	pppcp->option_strings = opts;
-}
-
-void pppcp_set_prefix(struct pppcp_data *pppcp, const char *prefix)
-{
-	pppcp->prefix = prefix;
-}
-
-struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
-				const struct pppcp_action *action)
+struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto)
 {
 	struct pppcp_data *data;
 
@@ -1387,8 +1355,6 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, guint16 proto,
 	data->identifier = 0;
 
 	data->ppp = ppp;
-	data->proto = proto;
-	data->action = action;
 
 	return data;
 }
