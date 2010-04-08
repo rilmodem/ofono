@@ -499,7 +499,7 @@ void ppp_generate_event(GAtPPP *ppp, enum ppp_event event)
 	}
 }
 
-void ppp_set_auth(GAtPPP *ppp, guint8* auth_data)
+void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
 {
 	guint16 proto = get_host_short(auth_data);
 

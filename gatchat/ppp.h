@@ -49,13 +49,13 @@ struct packed_long {
 	guint32 l;
 } __attribute__((packed));
 
-static inline guint32 __get_unaligned_long(const gpointer p)
+static inline guint32 __get_unaligned_long(const void *p)
 {
 	const struct packed_long *ptr = p;
 	return ptr->l;
 }
 
-static inline guint16 __get_unaligned_short(const gpointer p)
+static inline guint16 __get_unaligned_short(const void *p)
 {
 	const struct packed_short *ptr = p;
 	return ptr->s;
@@ -92,7 +92,7 @@ struct ppp_net_data {
 void ppp_debug(GAtPPP *ppp, const char *str);
 void ppp_generate_event(GAtPPP *ppp, enum ppp_event event);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
-void ppp_set_auth(GAtPPP *ppp, guint8 *auth_data);
+void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_pfc(GAtPPP *ppp, gboolean pfc);
