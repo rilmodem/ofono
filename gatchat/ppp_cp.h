@@ -29,10 +29,10 @@ struct ppp_option {
 	guint8 data[0];
 };
 
-enum option_rval {
-	OPTION_ACCEPT,
-	OPTION_REJECT,
-	OPTION_NAK,
+enum rcr_result {
+	RCR_ACCEPT,
+	RCR_REJECT,
+	RCR_NAK,
 };
 
 enum pppcp_code {
@@ -76,10 +76,25 @@ struct pppcp_proto {
 	void (*this_layer_finished)(struct pppcp_data *data);
 	/* Remote side acked these options, we can now use them */
 	void (*rca)(struct pppcp_data *pppcp, const struct pppcp_packet *pkt);
-	enum option_rval (*option_scan)(struct pppcp_data *pppcp,
-					struct ppp_option *option);
-	void (*option_process)(struct pppcp_data *data,
-				struct ppp_option *option);
+	/*
+	 * Remote side sent us an Conf-Req-Nak or Conf-Req-Rej.  The protocol
+	 * driver should examine the packet and update its options accordingly,
+	 * then use set_local_options to set a new set of options to try
+	 * before returning
+	 */
+	void (*rcn_nak)(struct pppcp_data *pppcp,
+					const struct pppcp_packet *pkt);
+	void (*rcn_rej)(struct pppcp_data *pppcp,
+					const struct pppcp_packet *pkt);
+	/*
+	 * Remote side has sent us a request with its options, return whether
+	 * we should ack / nak / rej these options.  In the case of nak / rej,
+	 * the list of options to be sent to the peer is given in the
+	 * new_options & new_len out arguments
+	 */
+	enum rcr_result (*rcr)(struct pppcp_data *pppcp,
+					const struct pppcp_packet *pkt,
+					guint8 **new_options, guint16 *new_len);
 };
 
 void ppp_option_iter_init(struct ppp_option_iter *iter,
@@ -94,11 +109,12 @@ void pppcp_free(struct pppcp_data *data);
 
 void pppcp_set_data(struct pppcp_data *pppcp, gpointer data);
 gpointer pppcp_get_data(struct pppcp_data *pppcp);
-
 GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp);
 
-void pppcp_add_config_option(struct pppcp_data *data,
-				struct ppp_option *option);
+void pppcp_set_local_options(struct pppcp_data *data,
+				const guint8 *options,
+				guint16 len);
+
 void pppcp_process_packet(gpointer priv, guint8 *new_packet);
 void pppcp_send_protocol_reject(struct pppcp_data *data,
 				guint8 *rejected_packet, gsize len);

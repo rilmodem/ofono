@@ -168,16 +168,15 @@ struct pppcp_data {
 	struct pppcp_timer_data terminate_timer_data;
 	guint max_failure;
 	guint failure_counter;
-	GList *config_options;
-	GList *acceptable_options;
-	GList *unacceptable_options;
-	GList *rejected_options;
-	GList *applied_options;
 	GAtPPP *ppp;
-	guint8 identifier;  /* don't think I need this now */
 	guint8 config_identifier;
 	guint8 terminate_identifier;
 	guint8 reject_identifier;
+	const guint8 *local_options;
+	guint16 local_options_len;
+	guint8 *peer_options;
+	guint16 peer_options_len;
+	gboolean send_reject;
 	const struct pppcp_proto *driver;
 	gpointer priv;
 };
@@ -330,29 +329,6 @@ static void pppcp_this_layer_finished(struct pppcp_data *data)
 		data->driver->this_layer_finished(data);
 }
 
-static void pppcp_clear_options(struct pppcp_data *data)
-{
-	g_list_foreach(data->acceptable_options, (GFunc) g_free, NULL);
-	g_list_foreach(data->unacceptable_options, (GFunc) g_free, NULL);
-	g_list_foreach(data->rejected_options, (GFunc) g_free, NULL);
-	g_list_free(data->acceptable_options);
-	g_list_free(data->unacceptable_options);
-	g_list_free(data->rejected_options);
-	data->acceptable_options = NULL;
-	data->unacceptable_options = NULL;
-	data->rejected_options = NULL;
-}
-
-static void pppcp_free_options(struct pppcp_data *data)
-{
-	/* remove all config options */
-	pppcp_clear_options(data);
-
-	/* remove default option list */
-	g_list_foreach(data->config_options, (GFunc) g_free, NULL);
-	g_list_free(data->config_options);
-}
-
 /*
  * set the restart counter to either max-terminate
  * or max-configure.  The counter is decremented for
@@ -363,7 +339,7 @@ static void pppcp_initialize_restart_count(struct pppcp_timer_data *timer_data)
 	struct pppcp_data *data = timer_data->data;
 
 	pppcp_trace(data);
-	pppcp_clear_options(data);
+
 	timer_data->restart_counter = timer_data->max_counter;
 }
 
@@ -383,89 +359,32 @@ static guint8 new_identity(struct pppcp_data *data, guint prev_identifier)
 	return prev_identifier + 1;
 }
 
-static void get_option_length(gpointer data, gpointer user_data)
-{
-	struct ppp_option *option = data;
-	guint8 *length = user_data;
-
-	*length += option->length;
-}
-
-static void copy_option(gpointer data, gpointer user_data)
-{
-	struct ppp_option *option = data;
-	guint8 **location = user_data;
-	memcpy(*location, (guint8 *) option, option->length);
-	*location += option->length;
-}
-
-static void reject_option(gpointer data, gpointer user_data)
-{
-	struct ppp_option *option = data;
-	struct pppcp_data *pppcp = user_data;
-
-	pppcp->rejected_options =
-		g_list_append(pppcp->rejected_options, option);
-}
-
-static void print_option(gpointer data, gpointer user_data)
-{
-	struct ppp_option *option = data;
-	struct pppcp_data *pppcp = user_data;
-
-	g_print("%s: option %d len %d (%s)", pppcp->driver->name, option->type,
-			option->length,
-			pppcp->driver->option_strings[option->type]);
-
-	if (option->length > 2) {
-		int i;
-		for (i = 0; i < option->length - 2; i++)
-			g_print(" %02x", option->data[i]);
-	}
-	g_print("\n");
-}
-
-void pppcp_add_config_option(struct pppcp_data *data, struct ppp_option *option)
-{
-	data->config_options = g_list_append(data->config_options, option);
-}
-
 /*
  * transmit a Configure-Request packet
  * start the restart timer
  * decrement the restart counter
  */
-static void pppcp_send_configure_request(struct pppcp_data *data)
+static void pppcp_send_configure_request(struct pppcp_data *pppcp)
 {
 	struct pppcp_packet *packet;
-	guint8 olength = 0;
-	guint8 *odata;
-	struct pppcp_timer_data *timer_data = &data->config_timer_data;
+	struct pppcp_timer_data *timer_data = &pppcp->config_timer_data;
 
-	pppcp_trace(data);
+	pppcp_trace(pppcp);
 
-	g_list_foreach(data->config_options, print_option, data);
-
-	/* figure out how much space to allocate for options */
-	g_list_foreach(data->config_options, get_option_length, &olength);
-
-	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_CONFIGURE_REQUEST,
-								olength);
-
-	/* copy config options into packet data */
-	odata = packet->data;
-	g_list_foreach(data->config_options, copy_option, &odata);
+	packet = pppcp_packet_new(pppcp, PPPCP_CODE_TYPE_CONFIGURE_REQUEST,
+					pppcp->local_options_len);
+	memcpy(packet->data, pppcp->local_options, pppcp->local_options_len);
 
 	/*
 	 * if this is the first request, we need a new identifier.
 	 * if this is a retransmission, leave the identifier alone.
 	 */
 	if (is_first_request(timer_data))
-		data->config_identifier =
-			new_identity(data, data->config_identifier);
-	packet->identifier = data->config_identifier;
+		pppcp->config_identifier =
+			new_identity(pppcp, pppcp->config_identifier);
+	packet->identifier = pppcp->config_identifier;
 
-	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
+	ppp_transmit(pppcp->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
 
 	pppcp_packet_free(packet);
@@ -478,34 +397,25 @@ static void pppcp_send_configure_request(struct pppcp_data *data)
 /*
  * transmit a Configure-Ack packet
  */
-static void pppcp_send_configure_ack(struct pppcp_data *data,
+static void pppcp_send_configure_ack(struct pppcp_data *pppcp,
 					guint8 *request)
 {
 	struct pppcp_packet *packet;
-	struct pppcp_packet *pppcp_header = (struct pppcp_packet *) request;
-	guint len;
-	guint8 *odata;
+	struct pppcp_packet *cr_req = (struct pppcp_packet *) request;
+	guint16 len;
 
-	pppcp_trace(data);
+	pppcp_trace(pppcp);
 
-	data->failure_counter = 0;
-
-	g_list_foreach(data->acceptable_options, print_option, data);
+	pppcp->failure_counter = 0;
 
 	/* subtract for header. */
-	len = ntohs(pppcp_header->length) - sizeof(*packet);
+	len = ntohs(cr_req->length) - CP_HEADER_SZ;
 
-	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_CONFIGURE_ACK, len);
+	packet = pppcp_packet_new(pppcp, PPPCP_CODE_TYPE_CONFIGURE_ACK, len);
 
-	/* copy the applied options in. */
-	odata = packet->data;
-
-	g_list_foreach(data->acceptable_options, copy_option, &odata);
-
-	/* match identifier of the request */
-	packet->identifier = pppcp_header->identifier;
-
-	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
+	memcpy(packet->data, cr_req->data, len);
+	packet->identifier = cr_req->identifier;
+	ppp_transmit(pppcp->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
 	pppcp_packet_free(packet);
 }
@@ -513,77 +423,46 @@ static void pppcp_send_configure_ack(struct pppcp_data *data,
 /*
  * transmit a Configure-Nak or Configure-Reject packet
  */
-static void pppcp_send_configure_nak(struct pppcp_data *data,
-					guint8 *configure_packet)
+static void pppcp_send_configure_nak(struct pppcp_data *pppcp,
+					guint8 *request)
 {
 	struct pppcp_packet *packet;
-	struct pppcp_packet *pppcp_header =
-			(struct pppcp_packet *) configure_packet;
-	guint8 olength;
-	guint8 *odata;
+	struct pppcp_packet *cr_req = (struct pppcp_packet *) request;
+
+	pppcp_trace(pppcp);
 
 	/*
-	 * if we have exceeded our Max-Failure counter, we need
-	 * to convert all packets to Configure-Reject
+	 * if we have exceeded our Max-Failure counter, we simply reject all
+	 * the options.
 	 */
-	if (data->failure_counter >= data->max_failure) {
-		g_list_foreach(data->unacceptable_options, reject_option, data);
-		g_list_free(data->unacceptable_options);
-		data->unacceptable_options = NULL;
+	if (pppcp->failure_counter >= pppcp->max_failure) {
+		guint16 len = ntohs(cr_req->length) - CP_HEADER_SZ;
+
+		packet = pppcp_packet_new(pppcp,
+					PPPCP_CODE_TYPE_CONFIGURE_REJECT, len);
+		memcpy(packet->data, cr_req->data, len);
+	} else {
+		enum pppcp_code code = PPPCP_CODE_TYPE_CONFIGURE_NAK;
+
+		if (pppcp->send_reject == TRUE)
+			code = PPPCP_CODE_TYPE_CONFIGURE_REJECT;
+		else
+			pppcp->failure_counter++;
+
+		packet = pppcp_packet_new(pppcp, code, pppcp->peer_options_len);
+		memcpy(packet->data, pppcp->peer_options,
+						pppcp->peer_options_len);
 	}
 
-	/* if we have any rejected options, send a config-reject */
-	if (g_list_length(data->rejected_options)) {
-		pppcp_trace(data);
-
-		g_list_foreach(data->rejected_options, print_option, data);
-
-		/* figure out how much space to allocate for options */
-		olength = 0;
-		g_list_foreach(data->rejected_options, get_option_length,
-				&olength);
-
-		packet = pppcp_packet_new(data,
-				PPPCP_CODE_TYPE_CONFIGURE_REJECT, olength);
-
-		/* copy the rejected options in. */
-		odata = packet->data;
-		g_list_foreach(data->rejected_options, copy_option,
-				&odata);
-
-		packet->identifier = pppcp_header->identifier;
-		ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
+	packet->identifier = cr_req->identifier;
+	ppp_transmit(pppcp->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
 
-		pppcp_packet_free(packet);
-	}
+	pppcp_packet_free(packet);
 
-	/* if we have any unacceptable options, send a config-nak */
-	if (g_list_length(data->unacceptable_options)) {
-		pppcp_trace(data);
-
-		g_list_foreach(data->unacceptable_options, print_option, data);
-
-		/* figure out how much space to allocate for options */
-		olength = 0;
-		g_list_foreach(data->unacceptable_options, get_option_length,
-				&olength);
-
-		packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_CONFIGURE_NAK,
-								olength);
-
-		/* copy the unacceptable options in. */
-		odata = packet->data;
-		g_list_foreach(data->unacceptable_options, copy_option,
-				&odata);
-
-		packet->identifier = pppcp_header->identifier;
-		ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
-				ntohs(packet->length));
-
-		pppcp_packet_free(packet);
-		data->failure_counter++;
-	}
+	g_free(pppcp->peer_options);
+	pppcp->peer_options = NULL;
+	pppcp->peer_options_len = 0;
 }
 
 /*
@@ -825,177 +704,44 @@ void pppcp_signal_up(struct pppcp_data *data)
 	pppcp_generate_event(data, UP, NULL, 0);
 }
 
-static gint is_option(gconstpointer a, gconstpointer b)
-{
-	const struct ppp_option *o = a;
-	guint8 otype = (guint8) GPOINTER_TO_UINT(b);
-
-	if (o->type == otype)
-		return 0;
-	else
-		return -1;
-}
-
-static void verify_config_option(gpointer elem, gpointer user_data)
-{
-	struct ppp_option *config = elem;
-	struct pppcp_data *data = user_data;
-	guint type = config->type;
-	struct ppp_option *option;
-	GList *list;
-
-	/*
-	 * determine whether this config option is in the
-	 * acceptable options list
-	 */
-	list = g_list_find_custom(data->acceptable_options,
-					GUINT_TO_POINTER(type), is_option);
-	if (list)
-		return;
-
-	/*
-	 * if the option did not exist, we need to store a copy
-	 * of the option in the unacceptable_options list so it
-	 * can be nak'ed.
-	 */
-	option = g_try_malloc0(config->length);
-	if (option == NULL)
-		return;
-
-	option->type = config->type;
-	option->length = config->length;
-	data->unacceptable_options =
-			g_list_append(data->unacceptable_options, option);
-}
-
-static void remove_config_option(gpointer elem, gpointer user_data)
-{
-	struct ppp_option *config = elem;
-	struct pppcp_data *data = user_data;
-	guint type = config->type;
-	GList *list;
-
-	/*
-	 * determine whether this config option is in the
-	 * applied options list
-	 */
-	list = g_list_find_custom(data->config_options,
-					GUINT_TO_POINTER(type), is_option);
-	if (!list)
-		return;
-
-	g_free(list->data);
-	data->config_options = g_list_delete_link(data->config_options, list);
-}
-
-static struct ppp_option *extract_ppp_option(struct pppcp_data *data,
-						guint8 *packet_data)
-{
-	struct ppp_option *option;
-	guint8 otype = packet_data[0];
-	guint8 olen = packet_data[1];
-
-	option = g_try_malloc0(olen);
-	if (option == NULL)
-		return NULL;
-
-	option->type = otype;
-	option->length = olen;
-	memcpy(option->data, &packet_data[2], olen-2);
-
-	print_option(option, data);
-
-	return option;
-}
-
-static guint8 pppcp_process_configure_request(struct pppcp_data *data,
+static guint8 pppcp_process_configure_request(struct pppcp_data *pppcp,
 					struct pppcp_packet *packet)
 {
-	gint len;
-	int i = 0;
-	struct ppp_option *option;
-	enum option_rval rval;
+	pppcp_trace(pppcp);
 
-	pppcp_trace(data);
-
-	len = ntohs(packet->length) - CP_HEADER_SZ;
-
-	/*
-	 * check the options.
-	 */
-	while (i < len) {
-		option = extract_ppp_option(data, &packet->data[i]);
-		if (option == NULL)
-			break;
-
-		/* skip ahead to the next option */
-		i += option->length;
-
-		if (data->driver->option_scan)
-			rval = data->driver->option_scan(data, option);
-		else
-			rval = OPTION_REJECT;
-
-		switch (rval) {
-		case OPTION_ACCEPT:
-			data->acceptable_options =
-				g_list_append(data->acceptable_options, option);
-			break;
-		case OPTION_REJECT:
-			data->rejected_options =
-				g_list_append(data->rejected_options, option);
-			break;
-		case OPTION_NAK:
-			data->unacceptable_options =
-				g_list_append(data->unacceptable_options,
-						option);
-			break;
-		}
-	}
-
-	/* make sure all required config options were included */
-	g_list_foreach(data->config_options, verify_config_option, data);
-
-	if (g_list_length(data->unacceptable_options) ||
-			g_list_length(data->rejected_options))
+	if (pppcp->failure_counter >= pppcp->max_failure)
 		return RCR_MINUS;
 
-	/*
-	 * all options were acceptable, so we should apply them before
-	 * sending a configure-ack
-	 *
-	 * Remove all applied options from the config_option list.  The
-	 * protocol will have to re-add them if they want them renegotiated
-	 * when the ppp goes down.
-	 */
-	if (data->driver->option_process) {
-		GList *l;
+	if (pppcp->driver->rcr) {
+		enum rcr_result res;
 
-		for (l = data->acceptable_options; l; l = l->next)
-			data->driver->option_process(data, l->data);
+		res = pppcp->driver->rcr(pppcp, packet,
+						&pppcp->peer_options,
+						&pppcp->peer_options_len);
 
-		g_list_foreach(data->acceptable_options, remove_config_option,
-				data);
+		if (res == RCR_REJECT) {
+			pppcp->send_reject = TRUE;
+			return RCR_MINUS;
+		} else if (res == RCR_NAK) {
+			pppcp->send_reject = FALSE;
+			return RCR_MINUS;
+		}
 	}
 
 	return RCR_PLUS;
 }
 
-static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
+static guint8 pppcp_process_configure_ack(struct pppcp_data *pppcp,
 					struct pppcp_packet *packet)
 {
-	guint len;
-	GList *list;
-	guint i;
+	gint len;
 
-	pppcp_trace(data);
+	pppcp_trace(pppcp);
 
 	len = ntohs(packet->length) - CP_HEADER_SZ;
 
 	/* if identifiers don't match, we should silently discard */
-	if (packet->identifier != data->config_identifier) {
-		g_printerr("received an ack id %d, but config id is %d\n",
-			packet->identifier, data->config_identifier);
+	if (packet->identifier != pppcp->config_identifier) {
 		return 0;
 	}
 
@@ -1004,155 +750,57 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *data,
 	 * equal to the config options sent and are in the same order.
 	 * If this is not the case, then silently drop the packet
 	 */
-	for (i = 0, list = data->config_options; list; list = list->next) {
-		struct ppp_option *sent_option = list->data;
+	if (pppcp->local_options_len != len)
+		return 0;
 
-		if (sent_option->type != packet->data[i])
-			return 0;
-
-		if (sent_option->length != packet->data[i + 1])
-			return 0;
-
-		if (memcmp(sent_option->data, packet->data + i + 2,
-						sent_option->length) != 0)
-			return 0;
-
-		i += packet->data[i + 1];
-	}
+	if (memcmp(pppcp->local_options, packet->data, len))
+		return 0;
 
 	/* Otherwise, apply local options */
-	if (data->driver->rca)
-		data->driver->rca(data, packet);
-
-	g_list_foreach(data->config_options, (GFunc)g_free, NULL);
-	g_list_free(data->config_options);
-	data->config_options = NULL;
+	if (pppcp->driver->rca)
+		pppcp->driver->rca(pppcp, packet);
 
 	return RCA;
 }
 
-static guint8 pppcp_process_configure_nak(struct pppcp_data *data,
+static guint8 pppcp_process_configure_nak(struct pppcp_data *pppcp,
 					struct pppcp_packet *packet)
 {
-	guint len;
-	GList *list;
-	struct ppp_option *naked_option;
-	struct ppp_option *config_option;
-	guint i = 0;
-	enum option_rval rval;
-
-	pppcp_trace(data);
-
-	len = ntohs(packet->length) - CP_HEADER_SZ;
+	pppcp_trace(pppcp);
 
 	/* if identifiers don't match, we should silently discard */
-	if (packet->identifier != data->config_identifier)
+	if (packet->identifier != pppcp->config_identifier)
 		return 0;
 
-	/*
-	 * check each unacceptable option.  If it is acceptable, then
-	 * we can resend the configure request with this value. we need
-	 * to check the current config options to see if we need to
-	 * modify a value there, or add a new option.
-	 */
-	while (i < len) {
-		naked_option = extract_ppp_option(data, &packet->data[i]);
-		if (naked_option == NULL)
-			break;
+	if (pppcp->driver->rcn_nak)
+		pppcp->driver->rcn_nak(pppcp, packet);
 
-		/* skip ahead to the next option */
-		i += naked_option->length;
-
-		if (data->driver->option_scan)
-			rval = data->driver->option_scan(data, naked_option);
-		else
-			rval = OPTION_REJECT;
-
-		if (rval == OPTION_ACCEPT) {
-			/*
-			 * check the current config options to see if they
-			 * match.
-			 */
-			list = g_list_find_custom(data->config_options,
-				GUINT_TO_POINTER((guint) naked_option->type),
-				is_option);
-			if (list) {
-				/* modify current option value to match */
-				config_option = list->data;
-
-				/*
-				 * option values should match, otherwise
-				 * we need to reallocate
-				 */
-				if ((config_option->length ==
-					naked_option->length) &&
-							(naked_option - 2)) {
-						memcpy(config_option->data,
-						   naked_option->data,
-						   naked_option->length - 2);
-				} else {
-					/* XXX implement this */
-					g_printerr("uh oh, option value doesn't match\n");
-				}
-				g_free(naked_option);
-			} else {
-				/* add to list of config options */
-				pppcp_add_config_option(data, naked_option);
-			}
-		} else {
-			/* XXX handle this correctly */
-			g_printerr("oops, option wasn't acceptable\n");
-			g_free(naked_option);
-		}
-	}
 	return RCN;
 }
 
-static guint8 pppcp_process_configure_reject(struct pppcp_data *data,
+static guint8 pppcp_process_configure_reject(struct pppcp_data *pppcp,
 					struct pppcp_packet *packet)
 {
-	guint len;
-	GList *list;
-	struct ppp_option *rejected_option;
-	guint i = 0;
-
-	len = ntohs(packet->length) - CP_HEADER_SZ;
+	pppcp_trace(pppcp);
 
 	/*
 	 * make sure identifier matches that of last sent configure
 	 * request
 	 */
-	if (packet->identifier != data->config_identifier)
+	if (packet->identifier != pppcp->config_identifier)
 		return 0;
 
 	/*
 	 * check to see which options were rejected
 	 * Rejected options must be a subset of requested
-	 * options.
+	 * options and in the same order.
 	 *
 	 * when a new configure-request is sent, we may
 	 * not request any of these options be negotiated
 	 */
-	while (i < len) {
-		rejected_option = extract_ppp_option(data, &packet->data[i]);
-		if (rejected_option == NULL)
-			break;
+	if (pppcp->driver->rcn_rej)
+		pppcp->driver->rcn_rej(pppcp, packet);
 
-		/* skip ahead to the next option */
-		i += rejected_option->length;
-
-		/* find this option in our config options list */
-		list = g_list_find_custom(data->config_options,
-			GUINT_TO_POINTER((guint) rejected_option->type),
-			is_option);
-		if (list) {
-			/* delete this config option */
-			g_free(list->data);
-			data->config_options =
-				g_list_delete_link(data->config_options, list);
-		}
-		g_free(rejected_option);
-	}
 	return RCN;
 }
 
@@ -1309,16 +957,10 @@ void pppcp_process_packet(gpointer priv, guint8 *new_packet)
 	}
 }
 
-void pppcp_free(struct pppcp_data *data)
+void pppcp_free(struct pppcp_data *pppcp)
 {
-	if (data == NULL)
-		return;
-
-	/* remove all config options */
-	pppcp_free_options(data);
-
-	/* free self */
-	g_free(data);
+	g_free(pppcp->peer_options);
+	g_free(pppcp);
 }
 
 void pppcp_set_data(struct pppcp_data *pppcp, gpointer data)
@@ -1334,6 +976,13 @@ gpointer pppcp_get_data(struct pppcp_data *pppcp)
 GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp)
 {
 	return pppcp->ppp;
+}
+
+void pppcp_set_local_options(struct pppcp_data *pppcp,
+					const guint8 *options, guint16 len)
+{
+	pppcp->local_options = options;
+	pppcp->local_options_len = len;
 }
 
 struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto)
@@ -1352,9 +1001,9 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto)
 	data->config_timer_data.data = data;
 	data->terminate_timer_data.data = data;
 	data->max_failure = MAX_FAILURE;
-	data->identifier = 0;
 
 	data->ppp = ppp;
+	data->driver = proto;
 
 	return data;
 }
