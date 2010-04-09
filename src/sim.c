@@ -77,7 +77,7 @@ struct ofono_sim {
 	GSList *new_numbers;
 	GSList *service_numbers;
 	gboolean sdn_ready;
-	gboolean ready;
+	enum ofono_sim_state state;
 	enum ofono_sim_password_type pin_type;
 	gboolean locked_pins[OFONO_SIM_PASSWORD_INVALID];
 	char **language_prefs;
@@ -89,7 +89,7 @@ struct ofono_sim {
 	unsigned char efli_length;
 	enum ofono_sim_cphs_phase cphs_phase;
 	unsigned char cphs_service_table[2];
-	struct ofono_watchlist *ready_watches;
+	struct ofono_watchlist *state_watches;
 	const struct ofono_sim_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -968,9 +968,12 @@ static void sim_own_numbers_update(struct ofono_sim *sim)
 			sim_msisdn_read_cb, sim);
 }
 
-static void sim_ready(void *user)
+static void sim_ready(void *user, enum ofono_sim_state new_state)
 {
 	struct ofono_sim *sim = user;
+
+	if (new_state != OFONO_SIM_STATE_READY)
+		return;
 
 	sim_own_numbers_update(sim);
 
@@ -1775,8 +1778,8 @@ const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim)
 	return sim->cphs_service_table;
 }
 
-unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
-				ofono_sim_ready_notify_cb_t notify,
+unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
+				ofono_sim_state_event_notify_cb_t notify,
 				void *data, ofono_destroy_func destroy)
 {
 	struct ofono_watchlist_item *item;
@@ -1795,43 +1798,40 @@ unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
 	item->destroy = destroy;
 	item->notify_data = data;
 
-	return __ofono_watchlist_add_item(sim->ready_watches, item);
+	return __ofono_watchlist_add_item(sim->state_watches, item);
 }
 
-void ofono_sim_remove_ready_watch(struct ofono_sim *sim, unsigned int id)
+void ofono_sim_remove_state_watch(struct ofono_sim *sim, unsigned int id)
 {
-	__ofono_watchlist_remove_item(sim->ready_watches, id);
+	__ofono_watchlist_remove_item(sim->state_watches, id);
 }
 
-int ofono_sim_get_ready(struct ofono_sim *sim)
+enum ofono_sim_state ofono_sim_get_state(struct ofono_sim *sim)
 {
 	if (sim == NULL)
-		return 0;
+		return OFONO_SIM_STATE_NOT_PRESENT;
 
-	if (sim->ready == TRUE)
-		return 1;
-
-	return 0;
+	return sim->state;
 }
 
 void ofono_sim_set_ready(struct ofono_sim *sim)
 {
 	GSList *l;
-	ofono_sim_ready_notify_cb_t notify;
+	ofono_sim_state_event_notify_cb_t notify;
 
 	if (sim == NULL)
 		return;
 
-	if (sim->ready == TRUE)
+	if (sim->state != OFONO_SIM_STATE_INSERTED)
 		return;
 
-	sim->ready = TRUE;
+	sim->state = OFONO_SIM_STATE_READY;
 
-	for (l = sim->ready_watches->items; l; l = l->next) {
+	for (l = sim->state_watches->items; l; l = l->next) {
 		struct ofono_watchlist_item *item = l->data;
 		notify = item->notify;
 
-		notify(item->notify_data);
+		notify(item->notify_data, sim->state);
 	}
 }
 
@@ -1851,7 +1851,7 @@ void __ofono_cbs_sim_download(struct ofono_sim *sim,
 {
 	guint8 tlv[pdu_len + 8];
 
-	if (sim->ready != TRUE)
+	if (sim->state != OFONO_SIM_STATE_READY)
 		return;
 
 	if (sim->driver->envelope == NULL)
@@ -1897,8 +1897,8 @@ static void sim_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 	struct ofono_sim *sim = __ofono_atom_get_data(atom);
 
-	__ofono_watchlist_free(sim->ready_watches);
-	sim->ready_watches = NULL;
+	__ofono_watchlist_free(sim->state_watches);
+	sim->state_watches = NULL;
 
 	g_dbus_unregister_interface(conn, path, OFONO_SIM_MANAGER_INTERFACE);
 	ofono_modem_remove_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
@@ -2012,11 +2012,12 @@ void ofono_sim_register(struct ofono_sim *sim)
 	}
 
 	ofono_modem_add_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
-	sim->ready_watches = __ofono_watchlist_new(g_free);
+	sim->state_watches = __ofono_watchlist_new(g_free);
+	sim->state = OFONO_SIM_STATE_INSERTED;
 
 	__ofono_atom_register(sim->atom, sim_unregister);
 
-	ofono_sim_add_ready_watch(sim, sim_ready, sim, NULL);
+	ofono_sim_add_state_watch(sim, sim_ready, sim, NULL);
 
 	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
 	 * The assumption here is that if sim manager is being initialized,

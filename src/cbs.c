@@ -1046,7 +1046,7 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 	if (sim_atom) {
 		cbs->sim = __ofono_atom_get_data(sim_atom);
 
-		if (ofono_sim_get_ready(cbs->sim) == TRUE)
+		if (ofono_sim_get_state(cbs->sim) == OFONO_SIM_STATE_READY)
 			cbs_got_imsi(cbs);
 	}
 

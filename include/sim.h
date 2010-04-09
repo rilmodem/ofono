@@ -71,6 +71,12 @@ enum ofono_sim_cphs_phase {
 	OFONO_SIM_CPHS_PHASE_2G,
 };
 
+enum ofono_sim_state {
+	OFONO_SIM_STATE_NOT_PRESENT,
+	OFONO_SIM_STATE_INSERTED,
+	OFONO_SIM_STATE_READY,
+};
+
 typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					int filelength,
 					enum ofono_sim_file_structure structure,
@@ -88,7 +94,8 @@ typedef void (*ofono_sim_write_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_sim_imsi_cb_t)(const struct ofono_error *error,
 					const char *imsi, void *data);
 
-typedef void (*ofono_sim_ready_notify_cb_t)(void *data);
+typedef void (*ofono_sim_state_event_notify_cb_t)(void *data,
+					enum ofono_sim_state new_state);
 
 typedef void (*ofono_sim_file_read_cb_t)(int ok, int total_length, int record,
 					const unsigned char *data,
@@ -173,13 +180,13 @@ enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim);
 enum ofono_sim_cphs_phase ofono_sim_get_cphs_phase(struct ofono_sim *sim);
 const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim);
 
-unsigned int ofono_sim_add_ready_watch(struct ofono_sim *sim,
-				ofono_sim_ready_notify_cb_t cb,
+unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
+				ofono_sim_state_event_notify_cb_t cb,
 				void *data, ofono_destroy_func destroy);
 
-void ofono_sim_remove_ready_watch(struct ofono_sim *sim, unsigned int id);
+void ofono_sim_remove_state_watch(struct ofono_sim *sim, unsigned int id);
 
-int ofono_sim_get_ready(struct ofono_sim *sim);
+enum ofono_sim_state ofono_sim_get_state(struct ofono_sim *sim);
 void ofono_sim_set_ready(struct ofono_sim *sim);
 
 /* This will queue an operation to read all available records with id from the

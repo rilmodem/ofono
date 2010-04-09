@@ -1117,9 +1117,12 @@ static void emit_modems()
 	g_free(modems);
 }
 
-static void modem_sim_ready(void *user)
+static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 {
 	struct ofono_modem *modem = user;
+
+	if (new_state != OFONO_SIM_STATE_READY)
+		return;
 
 	if (modem->driver->post_sim)
 		modem->driver->post_sim(modem);
@@ -1138,12 +1141,10 @@ static void sim_watch(struct ofono_atom *atom,
 	}
 
 	modem->sim = __ofono_atom_get_data(atom);
-	modem->sim_ready_watch = ofono_sim_add_ready_watch(modem->sim,
+	modem->sim_ready_watch = ofono_sim_add_state_watch(modem->sim,
 							modem_sim_ready,
 							modem, NULL);
-
-	if (ofono_sim_get_ready(modem->sim))
-		modem_sim_ready(modem);
+	modem_sim_ready(modem, ofono_sim_get_state(modem->sim));
 }
 
 int ofono_modem_register(struct ofono_modem *modem)
