@@ -349,30 +349,9 @@ static gboolean ppp_read_cb(GIOChannel *channel, GIOCondition cond,
 
 static void ppp_dead(GAtPPP *ppp)
 {
-	if (ppp->write_watch)
-		return;
-
 	/* notify interested parties */
 	if (ppp->disconnect_cb)
 		ppp->disconnect_cb(ppp->disconnect_data);
-
-	if (g_atomic_int_get(&ppp->ref_count))
-		return;
-
-	/* cleanup queue */
-	g_queue_free(ppp->xmit_queue);
-
-	/* cleanup modem channel */
-	g_source_remove(ppp->read_watch);
-	g_source_remove(ppp->write_watch);
-	g_io_channel_unref(ppp->modem);
-
-	lcp_free(ppp->lcp);
-	auth_free(ppp->auth);
-	ipcp_free(ppp->ipcp);
-	ppp_net_free(ppp->net);
-
-	g_free(ppp);
 }
 
 static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
@@ -568,16 +547,30 @@ void g_at_ppp_ref(GAtPPP *ppp)
 
 void g_at_ppp_unref(GAtPPP *ppp)
 {
-	if (g_atomic_int_dec_and_test(&ppp->ref_count))
-		g_at_ppp_shutdown(ppp);
+	gboolean is_zero;
 
-	/*
-	 * we can't free the link yet, because we need to terminate
-	 * the link first.
-	 */
+	is_zero = g_atomic_int_dec_and_test(&ppp->ref_count);
+
+	if (is_zero == FALSE)
+		return;
 
 	if (ppp->record_fd > fileno(stderr))
 		close(ppp->record_fd);
+
+	/* cleanup queue */
+	g_queue_free(ppp->xmit_queue);
+
+	/* cleanup modem channel */
+	g_source_remove(ppp->read_watch);
+	g_source_remove(ppp->write_watch);
+	g_io_channel_unref(ppp->modem);
+
+	lcp_free(ppp->lcp);
+	auth_free(ppp->auth);
+	ipcp_free(ppp->ipcp);
+	ppp_net_free(ppp->net);
+
+	g_free(ppp);
 }
 
 GAtPPP *g_at_ppp_new(GIOChannel *modem)
