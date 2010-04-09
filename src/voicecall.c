@@ -54,6 +54,7 @@ struct ofono_voicecall {
 	gint emit_calls_source;
 	gint emit_multi_source;
 	unsigned int sim_watch;
+	unsigned int sim_state_watch;
 	const struct ofono_voicecall_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -1784,6 +1785,10 @@ static void voicecall_unregister(struct ofono_atom *atom)
 static void voicecall_remove(struct ofono_atom *atom)
 {
 	struct ofono_voicecall *vc = __ofono_atom_get_data(atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
+	struct ofono_atom *sim_atom =
+		__ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+	struct ofono_sim *sim = NULL;
 
 	DBG("atom: %p", atom);
 
@@ -1803,6 +1808,14 @@ static void voicecall_remove(struct ofono_atom *atom)
 		g_slist_foreach(vc->new_en_list, (GFunc)g_free, NULL);
 		g_slist_free(vc->new_en_list);
 		vc->new_en_list = NULL;
+	}
+
+	if (sim_atom && __ofono_atom_get_registered(sim_atom))
+		sim = __ofono_atom_get_data(sim_atom);
+
+	if (sim && vc->sim_state_watch) {
+		ofono_sim_remove_state_watch(sim, vc->sim_state_watch);
+		vc->sim_state_watch = 0;
 	}
 
 	g_free(vc);
@@ -1843,6 +1856,46 @@ struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
 	return vc;
 }
 
+static void sim_state_watch(void *user, enum ofono_sim_state new_state)
+{
+	struct ofono_voicecall *vc = user;
+
+	if (new_state == OFONO_SIM_STATE_INSERTED) {
+		struct ofono_modem *modem =
+			__ofono_atom_get_modem(vc->atom);
+		struct ofono_atom *sim_atom =
+			__ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+		struct ofono_sim *sim =
+			__ofono_atom_get_data(sim_atom);
+
+		/* Try both formats, only one or none will work */
+		ofono_sim_read(sim, SIM_EFECC_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				ecc_g2_read_cb, vc);
+		ofono_sim_read(sim, SIM_EFECC_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				ecc_g3_read_cb, vc);
+
+		return;
+	}
+
+	if (new_state != OFONO_SIM_STATE_NOT_PRESENT)
+		return;
+
+	if (vc->call_list) {
+		/* TODO: Must release all non-emergency calls */
+	}
+
+	if (vc->new_en_list) {
+		g_slist_foreach(vc->new_en_list, (GFunc) g_free, NULL);
+		g_slist_free(vc->new_en_list);
+		vc->new_en_list = NULL;
+	}
+
+	add_to_en_list(&vc->new_en_list, default_en_list_no_sim);
+	set_new_ecc(vc);
+}
+
 static void sim_watch(struct ofono_atom *atom,
 			enum ofono_atom_watch_condition cond, void *data)
 {
@@ -1850,16 +1903,14 @@ static void sim_watch(struct ofono_atom *atom,
 	struct ofono_sim *sim = __ofono_atom_get_data(atom);
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		vc->sim_state_watch = 0;
 		return;
 	}
 
-	/* Try both formats, only one or none will work */
-	ofono_sim_read(sim, SIM_EFECC_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			ecc_g2_read_cb, vc);
-	ofono_sim_read(sim, SIM_EFECC_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_FIXED,
-			ecc_g3_read_cb, vc);
+	vc->sim_state_watch = ofono_sim_add_state_watch(sim,
+			sim_state_watch, vc, NULL);
+
+	sim_state_watch(vc, ofono_sim_get_state(sim));
 }
 
 void ofono_voicecall_register(struct ofono_voicecall *vc)
