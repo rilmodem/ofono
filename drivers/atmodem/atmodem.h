@@ -45,6 +45,9 @@ extern void at_call_barring_exit();
 extern void at_sim_init();
 extern void at_sim_exit();
 
+extern void at_stk_init();
+extern void at_stk_exit();
+
 extern void at_sms_init();
 extern void at_sms_exit();
 

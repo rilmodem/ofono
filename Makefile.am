@@ -126,6 +126,7 @@ builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/call-meter.c \
 				drivers/atmodem/network-registration.c \
 				drivers/atmodem/sim.c \
+				drivers/atmodem/stk.c \
 				drivers/atmodem/ussd.c \
 				drivers/atmodem/voicecall.c \
 				drivers/atmodem/call-barring.c \

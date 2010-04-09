@@ -43,6 +43,7 @@
 #include <ofono/netreg.h>
 #include <ofono/phonebook.h>
 #include <ofono/sim.h>
+#include <ofono/stk.h>
 #include <ofono/sms.h>
 #include <ofono/ssn.h>
 #include <ofono/ussd.h>
@@ -163,6 +164,7 @@ static void atgen_pre_sim(struct ofono_modem *modem)
 	ofono_devinfo_create(modem, 0, "atmodem", chat);
 	sim = ofono_sim_create(modem, 0, "atmodem", chat);
 	ofono_voicecall_create(modem, 0, "atmodem", chat);
+	ofono_stk_create(modem, 0, "atmodem", chat);
 
 	if (sim)
 		ofono_sim_inserted_notify(sim, TRUE);
