@@ -53,6 +53,7 @@ enum ofono_property_type {
 struct ofono_modem {
 	char			*path;
 	GSList			*atoms;
+	GSList			*pre_sim_atoms;
 	struct ofono_watchlist	*atom_watches;
 	GSList         		*interface_list;
 	unsigned int		call_ids;
@@ -301,6 +302,7 @@ void __ofono_atom_free(struct ofono_atom *atom)
 	struct ofono_modem *modem = atom->modem;
 
 	modem->atoms = g_slist_remove(modem->atoms, atom);
+	modem->pre_sim_atoms = g_slist_remove(modem->pre_sim_atoms, atom);
 
 	__ofono_atom_unregister(atom);
 
@@ -330,7 +332,35 @@ static void remove_all_atoms(struct ofono_modem *modem)
 	}
 
 	g_slist_free(modem->atoms);
+	g_slist_free(modem->pre_sim_atoms);
 	modem->atoms = NULL;
+	modem->pre_sim_atoms = NULL;
+}
+
+static void remove_post_sim_atoms(struct ofono_modem *modem)
+{
+	GSList *l;
+	struct ofono_atom *atom;
+
+	if (modem == NULL)
+		return;
+
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		if (g_slist_find(modem->pre_sim_atoms, atom))
+			continue;
+
+		__ofono_atom_unregister(atom);
+
+		if (atom->destruct)
+			atom->destruct(atom);
+
+		g_free(atom);
+	}
+
+	g_slist_free(modem->atoms);
+	modem->atoms = g_slist_copy(modem->pre_sim_atoms);
 }
 
 static DBusMessage *modem_get_properties(DBusConnection *conn,
@@ -1122,8 +1152,18 @@ static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 {
 	struct ofono_modem *modem = user;
 
+	if (new_state == OFONO_SIM_STATE_NOT_PRESENT) {
+		if (modem->pre_sim_atoms)
+			remove_post_sim_atoms(modem);
+
+		return;
+	}
+
 	if (new_state != OFONO_SIM_STATE_READY)
 		return;
+
+	if (modem->pre_sim_atoms == NULL)
+		modem->pre_sim_atoms = g_slist_copy(modem->atoms);
 
 	if (modem->driver->post_sim)
 		modem->driver->post_sim(modem);
