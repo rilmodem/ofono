@@ -114,6 +114,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_GPRS = 16,
 	OFONO_ATOM_TYPE_GPRS_CONTEXT = 17,
 	OFONO_ATOM_TYPE_RADIO_SETTINGS = 18,
+	OFONO_ATOM_TYPE_STK = 19,
 };
 
 enum ofono_atom_watch_condition {
@@ -172,8 +173,9 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/radio-settings.h>
 
 #include <ofono/sim.h>
+#include <ofono/stk.h>
 
-void __ofono_cbs_sim_download(struct ofono_sim *sim,
+void __ofono_cbs_sim_download(struct ofono_stk *stk,
 				const guint8 *pdu, int pdu_len);
 
 #include <ofono/ssn.h>

@@ -31,6 +31,7 @@
 #include <gdbus.h>
 
 #include "ofono.h"
+#include "sim.h"
 
 #include "common.h"
 

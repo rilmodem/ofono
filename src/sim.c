@@ -42,7 +42,6 @@
 #include "smsutil.h"
 #include "simutil.h"
 #include "storage.h"
-#include "stkutil.h"
 
 #define SIM_CACHE_MODE 0600
 #define SIM_CACHE_PATH STORAGEDIR "/%s-%i/%04x"
@@ -1958,42 +1957,6 @@ static void sim_set_ready(struct ofono_sim *sim)
 
 		notify(item->notify_data, sim->state);
 	}
-}
-
-static void sim_cb_download_cb(const struct ofono_error *error,
-				const unsigned char *data, int len, void *user)
-{
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("CellBroadcast download to UICC failed");
-		return;
-	}
-
-	DBG("CellBroadcast download to UICC reported no error");
-}
-
-void __ofono_cbs_sim_download(struct ofono_sim *sim,
-				const guint8 *pdu, int pdu_len)
-{
-	guint8 tlv[pdu_len + 8];
-
-	if (sim->state != OFONO_SIM_STATE_READY)
-		return;
-
-	if (sim->driver->envelope == NULL)
-		return;
-
-	tlv[0] = STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD;
-	tlv[1] = 6 + pdu_len;
-	tlv[2] = 0x80 | STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
-	tlv[3] = 0x02; /* Device Identities length */
-	tlv[4] = STK_DEVICE_IDENTITY_TYPE_NETWORK;
-	tlv[5] = STK_DEVICE_IDENTITY_TYPE_UICC;
-	tlv[6] = 0x80 | STK_DATA_OBJECT_TYPE_CBS_PAGE;
-	tlv[7] = pdu_len;
-
-	memcpy(tlv + 8, pdu, pdu_len);
-
-	sim->driver->envelope(sim, pdu_len + 8, tlv, sim_cb_download_cb, sim);
 }
 
 int ofono_sim_driver_register(const struct ofono_sim_driver *d)

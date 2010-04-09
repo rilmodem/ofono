@@ -12,7 +12,7 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/netreg.h include/voicecall.h include/devinfo.h \
 			include/cbs.h include/call-volume.h \
 			include/gprs.h include/gprs-context.h \
-			include/radio-settings.h
+			include/radio-settings.h include/stk.h
 
 nodist_include_HEADERS = include/version.h
 
@@ -233,7 +233,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
 			src/network.c src/voicecall.c src/ussd.c src/sms.c \
 			src/call-settings.c src/call-forwarding.c \
 			src/call-meter.c src/smsutil.h src/smsutil.c \
-			src/ssn.c src/call-barring.c src/sim.c \
+			src/ssn.c src/call-barring.c src/sim.c src/stk.c \
 			src/phonebook.c src/history.c src/message-waiting.c \
 			src/simutil.h src/simutil.c src/storage.h \
 			src/storage.c src/cbs.c src/watch.c src/call-volume.c \

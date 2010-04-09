@@ -57,6 +57,7 @@ struct ofono_cbs {
 	GSList *topics;
 	GSList *new_topics;
 	struct ofono_sim *sim;
+	struct ofono_stk *stk;
 	struct ofono_netreg *netreg;
 	unsigned int netreg_watch;
 	unsigned int location_watch;
@@ -195,7 +196,7 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	}
 
 	if (cbs_topic_in_range(c.message_identifier, cbs->efcbmid_contents)) {
-		__ofono_cbs_sim_download(cbs->sim, pdu, pdu_len);
+		__ofono_cbs_sim_download(cbs->stk, pdu, pdu_len);
 		return;
 	}
 
@@ -590,6 +591,7 @@ static void cbs_unregister(struct ofono_atom *atom)
 	}
 
 	cbs->sim = NULL;
+	cbs->stk = NULL;
 
 	if (cbs->reset_source) {
 		g_source_remove(cbs->reset_source);
@@ -1027,6 +1029,7 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 	struct ofono_modem *modem = __ofono_atom_get_modem(cbs->atom);
 	const char *path = __ofono_atom_get_path(cbs->atom);
 	struct ofono_atom *sim_atom;
+	struct ofono_atom *stk_atom;
 	struct ofono_atom *netreg_atom;
 
 	if (!g_dbus_register_interface(conn, path,
@@ -1049,6 +1052,11 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 		if (ofono_sim_get_state(cbs->sim) == OFONO_SIM_STATE_READY)
 			cbs_got_imsi(cbs);
 	}
+
+	stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+	if (stk_atom)
+		cbs->stk = __ofono_atom_get_data(stk_atom);
 
 	cbs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,

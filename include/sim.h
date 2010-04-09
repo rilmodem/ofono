@@ -156,9 +156,6 @@ struct ofono_sim_driver {
 	void (*query_locked)(struct ofono_sim *sim,
 			enum ofono_sim_password_type type,
 			ofono_sim_locked_cb_t cb, void *data);
-	void (*envelope)(struct ofono_sim *sim, int length,
-				const guint8 *command,
-				ofono_sim_read_cb_t cb, void *data);
 };
 
 int ofono_sim_driver_register(const struct ofono_sim_driver *d);
