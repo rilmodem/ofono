@@ -40,7 +40,6 @@
 #include "ppp.h"
 
 #define DEFAULT_MRU	1500
-#define DEFAULT_ACCM	0x00000000
 
 #define BUFFERSZ	(DEFAULT_MRU * 2)
 
