@@ -448,6 +448,8 @@ void ppp_generate_event(GAtPPP *ppp, enum ppp_event event)
 static void read_watcher_destroy_notify(GAtPPP *ppp)
 {
 	ppp->read_watch = 0;
+	pppcp_signal_down(ppp->lcp);
+	pppcp_signal_close(ppp->lcp);
 }
 
 void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
