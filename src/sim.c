@@ -55,6 +55,7 @@ static gboolean sim_op_next(gpointer user_data);
 static gboolean sim_op_retrieve_next(gpointer user);
 static void sim_own_numbers_update(struct ofono_sim *sim);
 static void sim_pin_check(struct ofono_sim *sim);
+static void sim_set_ready(struct ofono_sim *sim);
 
 struct sim_file_op {
 	int id;
@@ -1003,7 +1004,7 @@ static void sim_cphs_information_read_cb(int ok, int length, int record,
 	memcpy(sim->cphs_service_table, data + 1, 2);
 
 ready:
-	ofono_sim_set_ready(sim);
+	sim_set_ready(sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
@@ -1778,6 +1779,53 @@ const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim)
 	return sim->cphs_service_table;
 }
 
+void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
+{
+	ofono_sim_state_event_notify_cb_t notify;
+	GSList *l;
+
+	if (inserted && sim->state == OFONO_SIM_STATE_NOT_PRESENT)
+		sim->state = OFONO_SIM_STATE_INSERTED;
+	else if (!inserted && sim->state != OFONO_SIM_STATE_NOT_PRESENT)
+		sim->state = OFONO_SIM_STATE_NOT_PRESENT;
+	else
+		return;
+
+	if (!__ofono_atom_get_registered(sim->atom))
+		return;
+
+	for (l = sim->state_watches->items; l; l = l->next) {
+		struct ofono_watchlist_item *item = l->data;
+		notify = item->notify;
+
+		notify(item->notify_data, sim->state);
+	}
+
+	if (!inserted)
+		return;
+
+	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
+	 * The assumption here is that if sim manager is being initialized,
+	 * then sim commands are implemented, and the sim manager is then
+	 * responsible for checking the PIN, reading the IMSI and signaling
+	 * SIM ready condition.
+	 *
+	 * The procedure according to 31.102 is roughly:
+	 * Read EFecc
+	 * Read EFli and EFpl
+	 * SIM Pin check
+	 * Request SIM phase (only in 51.011)
+	 * Read EFust
+	 * Read EFest
+	 * Read IMSI
+	 *
+	 * At this point we signal the SIM ready condition and allow
+	 * arbitrary files to be written or read, assuming their presence
+	 * in the EFust
+	 */
+	sim_determine_phase(sim);
+}
+
 unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
 				ofono_sim_state_event_notify_cb_t notify,
 				void *data, ofono_destroy_func destroy)
@@ -1814,7 +1862,7 @@ enum ofono_sim_state ofono_sim_get_state(struct ofono_sim *sim)
 	return sim->state;
 }
 
-void ofono_sim_set_ready(struct ofono_sim *sim)
+static void sim_set_ready(struct ofono_sim *sim)
 {
 	GSList *l;
 	ofono_sim_state_event_notify_cb_t notify;
@@ -2000,6 +2048,7 @@ void ofono_sim_register(struct ofono_sim *sim)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(sim->atom);
 	const char *path = __ofono_atom_get_path(sim->atom);
+	ofono_bool_t inserted;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_SIM_MANAGER_INTERFACE,
@@ -2013,32 +2062,15 @@ void ofono_sim_register(struct ofono_sim *sim)
 
 	ofono_modem_add_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
 	sim->state_watches = __ofono_watchlist_new(g_free);
-	sim->state = OFONO_SIM_STATE_INSERTED;
 
 	__ofono_atom_register(sim->atom, sim_unregister);
 
 	ofono_sim_add_state_watch(sim, sim_ready, sim, NULL);
 
-	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
-	 * The assumption here is that if sim manager is being initialized,
-	 * then sim commands are implemented, and the sim manager is then
-	 * responsible for checking the PIN, reading the IMSI and signaling
-	 * SIM ready condition.
-	 *
-	 * The procedure according to 31.102 is roughly:
-	 * Read EFecc
-	 * Read EFli and EFpl
-	 * SIM Pin check
-	 * Request SIM phase (only in 51.011)
-	 * Read EFust
-	 * Read EFest
-	 * Read IMSI
-	 *
-	 * At this point we signal the SIM ready condition and allow
-	 * arbitrary files to be written or read, assuming their presence
-	 * in the EFust
-	 */
-	sim_determine_phase(sim);
+	inserted = sim->state != OFONO_SIM_STATE_NOT_PRESENT;
+	sim->state = OFONO_SIM_STATE_NOT_PRESENT;
+
+	ofono_sim_inserted_notify(sim, inserted);
 }
 
 void ofono_sim_remove(struct ofono_sim *sim)

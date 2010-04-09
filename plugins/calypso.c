@@ -431,12 +431,16 @@ static int calypso_disable(struct ofono_modem *modem)
 static void calypso_pre_sim(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
+	struct ofono_sim *sim;
 
 	DBG("");
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	sim = ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_voicecall_create(modem, 0, "calypsomodem", data->dlcs[VOICE_DLC]);
+
+	if (sim)
+		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void calypso_post_sim(struct ofono_modem *modem)

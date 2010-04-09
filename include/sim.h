@@ -187,7 +187,8 @@ unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
 void ofono_sim_remove_state_watch(struct ofono_sim *sim, unsigned int id);
 
 enum ofono_sim_state ofono_sim_get_state(struct ofono_sim *sim);
-void ofono_sim_set_ready(struct ofono_sim *sim);
+
+void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted);
 
 /* This will queue an operation to read all available records with id from the
  * SIM.  Callback cb will be called every time a record has been read, or once

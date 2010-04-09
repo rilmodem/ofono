@@ -156,12 +156,16 @@ static int g1_disable(struct ofono_modem *modem)
 static void g1_pre_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
+	struct ofono_sim *sim;
 
 	DBG("");
 
 	ofono_devinfo_create(modem, 0, "atmodem", chat);
-	ofono_sim_create(modem, 0, "atmodem", chat);
+	sim = ofono_sim_create(modem, 0, "atmodem", chat);
 	ofono_voicecall_create(modem, 0, "atmodem", chat);
+
+	if (sim)
+		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void g1_post_sim(struct ofono_modem *modem)

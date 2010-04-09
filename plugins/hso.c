@@ -198,11 +198,15 @@ static int hso_disable(struct ofono_modem *modem)
 static void hso_pre_sim(struct ofono_modem *modem)
 {
 	struct hso_data *data = ofono_modem_get_data(modem);
+	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->control);
-	ofono_sim_create(modem, 0, "atmodem", data->control);
+	sim = ofono_sim_create(modem, 0, "atmodem", data->control);
+
+	if (sim)
+		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void hso_post_sim(struct ofono_modem *modem)

@@ -163,12 +163,16 @@ static int huawei_disable(struct ofono_modem *modem)
 static void huawei_pre_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
+	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	ofono_sim_create(modem, 0, "atmodem", data->chat);
+	sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
 	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
+
+	if (sim)
+		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void huawei_post_sim(struct ofono_modem *modem)

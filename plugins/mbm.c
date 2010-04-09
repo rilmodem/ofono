@@ -285,12 +285,16 @@ static int mbm_disable(struct ofono_modem *modem)
 static void mbm_pre_sim(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
+	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->modem_port);
-	ofono_sim_create(modem, 0, "atmodem", data->modem_port);
+	sim = ofono_sim_create(modem, 0, "atmodem", data->modem_port);
 	ofono_voicecall_create(modem, 0, "atmodem", data->modem_port);
+
+	if (sim)
+		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void mbm_post_sim(struct ofono_modem *modem)
