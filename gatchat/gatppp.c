@@ -321,7 +321,8 @@ static void ppp_record(GAtPPP *ppp, gboolean in, guint8 *data, guint16 length)
 	err = write(ppp->record_fd, data, length);
 }
 
-static gboolean ppp_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
+static gboolean ppp_read_cb(GIOChannel *channel, GIOCondition cond,
+								gpointer data)
 {
 	GAtPPP *ppp = data;
 	GIOStatus status;
@@ -441,6 +442,11 @@ void ppp_generate_event(GAtPPP *ppp, enum ppp_event event)
 			ppp_transition_phase(ppp, PPP_TERMINATION);
 		break;
 	}
+}
+
+static void read_watcher_destroy_notify(GAtPPP *ppp)
+{
+	ppp->read_watch = 0;
 }
 
 void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
@@ -615,9 +621,10 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->net = ppp_net_new(ppp);
 
 	/* start listening for packets from the modem */
-	ppp->read_watch = g_io_add_watch(modem,
-			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-			ppp_cb, ppp);
+	ppp->read_watch = g_io_add_watch_full(modem, G_PRIORITY_DEFAULT,
+				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				ppp_read_cb, ppp,
+				(GDestroyNotify)read_watcher_destroy_notify);
 
 	ppp->record_fd = -1;
 
