@@ -710,6 +710,11 @@ void pppcp_signal_up(struct pppcp_data *data)
 	pppcp_generate_event(data, UP, NULL, 0);
 }
 
+void pppcp_signal_down(struct pppcp_data *data)
+{
+	pppcp_generate_event(data, DOWN, NULL, 0);
+}
+
 static guint8 pppcp_process_configure_request(struct pppcp_data *pppcp,
 					struct pppcp_packet *packet)
 {

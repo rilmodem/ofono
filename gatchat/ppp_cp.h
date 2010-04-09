@@ -120,3 +120,4 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 void pppcp_signal_open(struct pppcp_data *data);
 void pppcp_signal_close(struct pppcp_data *data);
 void pppcp_signal_up(struct pppcp_data *data);
+void pppcp_signal_down(struct pppcp_data *data);
