@@ -266,7 +266,7 @@ static gboolean pppcp_timeout(gpointer user_data)
 
 	timer_data->restart_timer = 0;
 
-	if (timer_data->restart_counter)
+	if (timer_data->restart_counter > 0)
 		pppcp_generate_event(timer_data->data, TO_PLUS, NULL, 0);
 	else
 		pppcp_generate_event(timer_data->data, TO_MINUS, NULL, 0);
@@ -276,7 +276,7 @@ static gboolean pppcp_timeout(gpointer user_data)
 
 static void pppcp_stop_timer(struct pppcp_timer_data *timer_data)
 {
-	if (timer_data->restart_timer) {
+	if (timer_data->restart_timer > 0) {
 		g_source_remove(timer_data->restart_timer);
 		timer_data->restart_timer = 0;
 	}
