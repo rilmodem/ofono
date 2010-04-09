@@ -341,15 +341,16 @@ unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
 unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
 
-noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server
+noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm
 
 gatchat_gsmdial_SOURCES = gatchat/gsmdial.c $(gatchat_sources)
-
 gatchat_gsmdial_LDADD = @GLIB_LIBS@
 
 gatchat_test_server_SOURCES = gatchat/test-server.c $(gatchat_sources)
-
 gatchat_test_server_LDADD = @GLIB_LIBS@ -lutil
+
+gatchat_test_qcdm_SOURCES = gatchat/test-qcdm.c $(gatchat_sources)
+gatchat_test_qcdm_LDADD = @GLIB_LIBS@
 
 
 DISTCHECK_CONFIGURE_FLAGS = --disable-datafiles
