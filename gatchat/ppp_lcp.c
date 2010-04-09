@@ -61,11 +61,13 @@ enum lcp_options {
 /* Maximum size of all options, we only ever request ACCM */ 
 #define MAX_CONFIG_OPTION_SIZE 6
 
+#define REQ_OPTION_ACCM 0x1
+
 struct lcp_data {
 	guint32 magic_number;
 	guint8 options[MAX_CONFIG_OPTION_SIZE];
 	guint16 options_len;
-	gboolean req_accm;		/* Should we request ACCM */
+	guint8 req_options;
 	guint32 accm;			/* ACCM value */
 };
 
@@ -73,7 +75,7 @@ static void lcp_generate_config_options(struct lcp_data *lcp)
 {
 	guint16 len = 0;
 
-	if (lcp->req_accm) {
+	if (lcp->req_options & REQ_OPTION_ACCM) {
 		guint32 accm;
 
 		accm = htonl(lcp->accm);
@@ -280,7 +282,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 
 	pppcp_set_data(pppcp, lcp);
 
-	lcp->req_accm = TRUE;
+	lcp->req_options = REQ_OPTION_ACCM;
 	lcp->accm = 0;
 
 	lcp_generate_config_options(lcp);
