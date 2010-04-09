@@ -133,7 +133,6 @@ gboolean g_at_chat_set_wakeup_command(GAtChat *chat, const char *cmd,
 void g_at_chat_add_terminator(GAtChat *chat, char *terminator,
 				int len, gboolean success);
 
-
 #ifdef __cplusplus
 }
 #endif
