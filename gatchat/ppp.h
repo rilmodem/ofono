@@ -101,9 +101,6 @@ void ppp_set_acfc(GAtPPP *ppp, gboolean acfc);
 gboolean ppp_get_acfc(GAtPPP *ppp);
 struct pppcp_data * lcp_new(GAtPPP *ppp);
 void lcp_free(struct pppcp_data *lcp);
-void lcp_open(struct pppcp_data *data);
-void lcp_establish(struct pppcp_data *data);
-void lcp_terminate(struct pppcp_data *data);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
 void auth_process_packet(struct auth_data *data, guint8 *new_packet);
 void auth_set_credentials(struct auth_data *data, const char *username,

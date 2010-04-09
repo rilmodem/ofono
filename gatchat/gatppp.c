@@ -386,8 +386,8 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 
 	switch (phase) {
 	case PPP_ESTABLISHMENT:
-		/* signal UP event to LCP */
-		lcp_establish(ppp->lcp);
+		/* send an UP event to the lcp layer */
+		pppcp_signal_up(ppp->lcp);
 		break;
 	case PPP_AUTHENTICATION:
 		/* we don't do authentication right now, so send NONE */
@@ -396,7 +396,8 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 		/* otherwise we need to wait for the peer to send us a challenge */
 		break;
 	case PPP_TERMINATION:
-		lcp_terminate(ppp->lcp);
+		/* send a CLOSE event to the lcp layer */
+		pppcp_signal_close(ppp->lcp);
 		break;
 	case PPP_DEAD:
 		ppp_dead(ppp);
@@ -497,8 +498,8 @@ gboolean ppp_get_acfc(GAtPPP *ppp)
 /* Administrative Open */
 void g_at_ppp_open(GAtPPP *ppp)
 {
-	/* send an OPEN event to the lcp layer */
-	lcp_open(ppp->lcp);
+	/* send an open event to the lcp layer */
+	pppcp_signal_open(ppp->lcp);
 }
 
 void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,

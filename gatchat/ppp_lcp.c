@@ -230,33 +230,6 @@ struct pppcp_proto lcp_proto = {
 	.rcr			= lcp_rcr,
 };
 
-void lcp_open(struct pppcp_data *data)
-{
-	if (data == NULL)
-		return;
-
-	/* send an open event to the lcp layer */
-	pppcp_signal_open(data);
-}
-
-void lcp_establish(struct pppcp_data *data)
-{
-	if (data == NULL)
-		return;
-
-	/* send an UP event to the lcp layer */
-	pppcp_signal_up(data);
-}
-
-void lcp_terminate(struct pppcp_data *data)
-{
-	if (data == NULL)
-		return;
-
-	/* send a CLOSE event to the lcp layer */
-	pppcp_signal_close(data);
-}
-
 void lcp_free(struct pppcp_data *pppcp)
 {
 	struct ipcp_data *lcp = pppcp_get_data(pppcp);
