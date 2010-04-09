@@ -274,22 +274,21 @@ static gboolean pppcp_timeout(gpointer user_data)
 	return FALSE;
 }
 
-static void pppcp_start_timer(struct pppcp_timer_data *timer_data)
-{
-	if (timer_data->restart_timer)
-		return;
-
-	timer_data->restart_timer =
-		g_timeout_add_seconds(timer_data->restart_interval,
-				pppcp_timeout, timer_data);
-}
-
 static void pppcp_stop_timer(struct pppcp_timer_data *timer_data)
 {
 	if (timer_data->restart_timer) {
 		g_source_remove(timer_data->restart_timer);
 		timer_data->restart_timer = 0;
 	}
+}
+
+static void pppcp_start_timer(struct pppcp_timer_data *timer_data)
+{
+	pppcp_stop_timer(timer_data);
+
+	timer_data->restart_timer =
+		g_timeout_add_seconds(timer_data->restart_interval,
+				pppcp_timeout, timer_data);
 }
 
 static gboolean is_first_request(struct pppcp_timer_data *timer_data)
