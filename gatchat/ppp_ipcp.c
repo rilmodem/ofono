@@ -57,18 +57,20 @@ enum ipcp_option_types {
 /* We request IP_ADDRESS, PRIMARY/SECONDARY DNS & NBNS */
 #define MAX_CONFIG_OPTION_SIZE 5*6
 
+#define REQ_OPTION_IPADDR	0x01
+#define REQ_OPTION_DNS1		0x02
+#define REQ_OPTION_DNS2		0x04
+#define REQ_OPTION_NBNS1	0x08
+#define REQ_OPTION_NBNS2	0x10
+
 struct ipcp_data {
 	guint8 options[MAX_CONFIG_OPTION_SIZE];
 	guint16 options_len;
-	gboolean req_ipaddr;
+	guint8 req_options;
 	guint32 ipaddr;
-	gboolean req_dns1;
 	guint32 dns1;
-	gboolean req_dns2;
 	guint32 dns2;
-	gboolean req_nbns1;
 	guint32 nbns1;
-	gboolean req_nbns2;
 	guint32 nbns2;
 };
 
@@ -85,11 +87,16 @@ static void ipcp_generate_config_options(struct ipcp_data *ipcp)
 {
 	guint16 len = 0;
 
-	FILL_IP(ipcp->req_ipaddr, IP_ADDRESS, &ipcp->ipaddr);
-	FILL_IP(ipcp->req_dns1, PRIMARY_DNS_SERVER, &ipcp->dns1);
-	FILL_IP(ipcp->req_dns2, SECONDARY_DNS_SERVER, &ipcp->dns2);
-	FILL_IP(ipcp->req_nbns1, PRIMARY_NBNS_SERVER, &ipcp->nbns1);
-	FILL_IP(ipcp->req_nbns2, SECONDARY_NBNS_SERVER, &ipcp->nbns2);
+	FILL_IP(ipcp->req_options & REQ_OPTION_IPADDR,
+					IP_ADDRESS, &ipcp->ipaddr);
+	FILL_IP(ipcp->req_options & REQ_OPTION_DNS1,
+					PRIMARY_DNS_SERVER, &ipcp->dns1);
+	FILL_IP(ipcp->req_options & REQ_OPTION_DNS2,
+					SECONDARY_DNS_SERVER, &ipcp->dns2);
+	FILL_IP(ipcp->req_options & REQ_OPTION_NBNS1,
+					PRIMARY_NBNS_SERVER, &ipcp->nbns1);
+	FILL_IP(ipcp->req_options & REQ_OPTION_NBNS2,
+					SECONDARY_NBNS_SERVER, &ipcp->nbns2);
 
 	ipcp->options_len = len;
 }
@@ -189,27 +196,27 @@ static void ipcp_rcn_nak(struct pppcp_data *pppcp,
 		switch (ppp_option_iter_get_type(&iter)) {
 		case IP_ADDRESS:
 			g_print("Setting suggested ip addr\n");
-			ipcp->req_ipaddr = TRUE;
+			ipcp->req_options |= REQ_OPTION_IPADDR;
 			memcpy(&ipcp->ipaddr, data, 4);
 			break;
 		case PRIMARY_DNS_SERVER:
 			g_print("Setting suggested dns1\n");
-			ipcp->req_dns1 = TRUE;
+			ipcp->req_options |= REQ_OPTION_DNS1;
 			memcpy(&ipcp->dns1, data, 4);
 			break;
 		case PRIMARY_NBNS_SERVER:
 			g_print("Setting suggested nbns1\n");
-			ipcp->req_nbns1 = TRUE;
+			ipcp->req_options |= REQ_OPTION_NBNS1;
 			memcpy(&ipcp->nbns1, data, 4);
 			break;
 		case SECONDARY_DNS_SERVER:
 			g_print("Setting suggested dns2\n");
-			ipcp->req_dns2 = TRUE;
+			ipcp->req_options |= REQ_OPTION_DNS2;
 			memcpy(&ipcp->dns2, data, 4);
 			break;
 		case SECONDARY_NBNS_SERVER:
 			g_print("Setting suggested nbns2\n");
-			ipcp->req_nbns2 = TRUE;
+			ipcp->req_options |= REQ_OPTION_NBNS2;
 			memcpy(&ipcp->nbns2, data, 4);
 			break;
 		default:
@@ -232,19 +239,19 @@ static void ipcp_rcn_rej(struct pppcp_data *pppcp,
 	while (ppp_option_iter_next(&iter) == TRUE) {
 		switch (ppp_option_iter_get_type(&iter)) {
 		case IP_ADDRESS:
-			ipcp->req_ipaddr = FALSE;
+			ipcp->req_options &= ~REQ_OPTION_IPADDR;
 			break;
 		case PRIMARY_DNS_SERVER:
-			ipcp->req_dns1 = FALSE;
+			ipcp->req_options &= ~REQ_OPTION_DNS1;
 			break;
 		case PRIMARY_NBNS_SERVER:
-			ipcp->req_nbns1 = FALSE;
+			ipcp->req_options &= ~REQ_OPTION_NBNS1;
 			break;
 		case SECONDARY_DNS_SERVER:
-			ipcp->req_dns2 = FALSE;
+			ipcp->req_options &= ~REQ_OPTION_DNS2;
 			break;
 		case SECONDARY_NBNS_SERVER:
-			ipcp->req_nbns2 = FALSE;
+			ipcp->req_options &= ~REQ_OPTION_NBNS2;
 			break;
 		default:
 			break;
@@ -305,11 +312,9 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 
 	pppcp_set_data(pppcp, ipcp);
 
-	ipcp->req_ipaddr = TRUE;
-	ipcp->req_dns1 = TRUE;
-	ipcp->req_dns2 = TRUE;
-	ipcp->req_nbns1 = TRUE;
-	ipcp->req_nbns2 = TRUE;
+	ipcp->req_options = REQ_OPTION_IPADDR | REQ_OPTION_DNS1 |
+				REQ_OPTION_DNS2 | REQ_OPTION_NBNS1 |
+				REQ_OPTION_NBNS2;
 
 	ipcp_generate_config_options(ipcp);
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
