@@ -49,6 +49,8 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 
+#include <drivers/atmodem/sim-poll.h>
+
 static const char *tty_opts[] = {
 	"Baud",
 	"Read",
@@ -157,17 +159,15 @@ static int atgen_disable(struct ofono_modem *modem)
 static void atgen_pre_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", chat);
-	sim = ofono_sim_create(modem, 0, "atmodem", chat);
+	ofono_sim_create(modem, 0, "atmodem", chat);
 	ofono_voicecall_create(modem, 0, "atmodem", chat);
 	ofono_stk_create(modem, 0, "atmodem", chat);
 
-	if (sim)
-		ofono_sim_inserted_notify(sim, TRUE);
+	ofono_atmodem_poll_enable(modem, chat);
 }
 
 static void atgen_post_sim(struct ofono_modem *modem)
