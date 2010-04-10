@@ -651,6 +651,7 @@ int main(int argc, char **argv)
 	event_loop = g_main_loop_new(NULL, FALSE);
 
 	g_at_chat_send(control, "ATE0Q0V1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(control, "AT+CPIN?", NULL, NULL, NULL, NULL);
 	g_at_chat_send(control, "AT+CFUN?", cfun_prefix,
 						check_mode, NULL, NULL);
 
