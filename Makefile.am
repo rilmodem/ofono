@@ -57,6 +57,7 @@ gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/gatutil.h gatchat/gatutil.c \
 				gatchat/gat.h \
 				gatchat/gatserver.h gatchat/gatserver.c \
+				gatchat/gathdlc.c gatchat/gathdlc.h \
 				gatchat/gatppp.c gatchat/gatppp.h \
 				gatchat/ppp.h gatchat/ppp_cp.h \
 				gatchat/ppp_cp.c gatchat/ppp_lcp.c \
