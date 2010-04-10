@@ -42,3 +42,4 @@ unit/test-stkutil
 plugins/*-ofono.rules
 gatchat/gsmdial
 gatchat/test-server
+gatchat/test-qcdm
