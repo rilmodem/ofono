@@ -22,11 +22,15 @@
 #ifndef __GAT_H
 #define __GAT_H
 
+#include <glib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef void (*GAtDisconnectFunc)(gpointer user_data);
+typedef void (*GAtReceiveFunc)(const unsigned char *data, gsize size,
+							gpointer user_data);
 typedef void (*GAtDebugFunc)(const char *str, gpointer user_data);
 
 #ifdef __cplusplus
