@@ -425,7 +425,7 @@ static void register_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void start_dial(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	if (!ok) {
-		g_print("Turning on the modem failed\n");
+		g_print("Checking PIN status failed\n");
 		exit(1);
 	}
 
@@ -434,6 +434,16 @@ static void start_dial(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_send(control, "AT+COPS=0", none_prefix,
 						register_cb, NULL, NULL);
+}
+
+static void check_pin(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	if (!ok) {
+		g_print("Turning on the modem failed\n");
+		exit(1);
+	}
+
+	g_at_chat_send(control, "AT+CPIN?", NULL, start_dial, NULL, NULL);
 }
 
 static void check_mode(gboolean ok, GAtResult *result, gpointer user_data)
@@ -452,11 +462,11 @@ static void check_mode(gboolean ok, GAtResult *result, gpointer user_data)
 	g_print("Current modem mode is %d\n", oldmode);
 
 	if (oldmode == 1) {
-		start_dial(ok, result, user_data);
+		check_pin(ok, result, user_data);
 		return;
 	}
 
-	g_at_chat_send(control, "AT+CFUN=1", NULL, start_dial, NULL, NULL);
+	g_at_chat_send(control, "AT+CFUN=1", NULL, check_pin, NULL, NULL);
 }
 
 static int open_serial()
@@ -651,7 +661,6 @@ int main(int argc, char **argv)
 	event_loop = g_main_loop_new(NULL, FALSE);
 
 	g_at_chat_send(control, "ATE0Q0V1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(control, "AT+CPIN?", NULL, NULL, NULL, NULL);
 	g_at_chat_send(control, "AT+CFUN?", cfun_prefix,
 						check_mode, NULL, NULL);
 
