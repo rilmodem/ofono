@@ -745,9 +745,9 @@ static void wakeup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	chat->timeout_source = 0;
 }
 
-static gboolean wakeup_no_response(gpointer user)
+static gboolean wakeup_no_response(gpointer user_data)
 {
-	GAtChat *chat = user;
+	GAtChat *chat = user_data;
 	struct at_command *cmd = g_queue_peek_head(chat->command_queue);
 
 	if (chat->debugf)
@@ -1053,13 +1053,14 @@ gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
 	return TRUE;
 }
 
-gboolean g_at_chat_set_debug(GAtChat *chat, GAtDebugFunc func, gpointer user)
+gboolean g_at_chat_set_debug(GAtChat *chat,
+				GAtDebugFunc func, gpointer user_data)
 {
 	if (chat == NULL)
 		return FALSE;
 
 	chat->debugf = func;
-	chat->debug_data = user;
+	chat->debug_data = user_data;
 
 	return TRUE;
 }

@@ -58,7 +58,8 @@ gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
  * provided to GAtChat the logging function will be called with the
  * input/output string and user data
  */
-gboolean g_at_chat_set_debug(GAtChat *chat, GAtDebugFunc func, gpointer user);
+gboolean g_at_chat_set_debug(GAtChat *chat,
+				GAtDebugFunc func, gpointer user_data);
 
 /*!
  * Queue an AT command for execution.  The command contents are given

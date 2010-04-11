@@ -79,7 +79,7 @@ gboolean g_at_server_set_disconnect_function(GAtServer *server,
 					gpointer user_data);
 gboolean g_at_server_set_debug(GAtServer *server,
 					GAtDebugFunc func,
-					gpointer user);
+					gpointer user_data);
 
 gboolean g_at_server_register(GAtServer *server, char *prefix,
 					GAtServerNotifyFunc notify,

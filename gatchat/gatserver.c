@@ -1252,25 +1252,25 @@ gboolean g_at_server_shutdown(GAtServer *server)
 
 gboolean g_at_server_set_disconnect_function(GAtServer *server,
 						GAtDisconnectFunc disconnect,
-						gpointer user)
+						gpointer user_data)
 {
 	if (server == NULL)
 		return FALSE;
 
 	server->user_disconnect = disconnect;
-	server->user_disconnect_data = user;
+	server->user_disconnect_data = user_data;
 
 	return TRUE;
 }
 
 gboolean g_at_server_set_debug(GAtServer *server, GAtDebugFunc func,
-						gpointer user)
+						gpointer user_data)
 {
 	if (server == NULL)
 		return FALSE;
 
 	server->debugf = func;
-	server->debug_data = user;
+	server->debug_data = user_data;
 
 	return TRUE;
 }

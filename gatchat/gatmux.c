@@ -642,13 +642,13 @@ gboolean g_at_mux_set_disconnect_function(GAtMux *mux,
 	return TRUE;
 }
 
-gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user)
+gboolean g_at_mux_set_debug(GAtMux *mux, GAtDebugFunc func, gpointer user_data)
 {
 	if (mux == NULL)
 		return FALSE;
 
 	mux->debugf = func;
-	mux->debug_data = user;
+	mux->debug_data = user_data;
 
 	return TRUE;
 }
