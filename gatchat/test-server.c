@@ -227,6 +227,49 @@ static void cpin_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
+static void cops_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+	GAtServer *server = user;
+
+	if (modem_mode == 0) {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_timeout_add_seconds(3, send_ok, server);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_info(server, "+COPS: 0", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtServerResult result;
+		GAtResultIter iter;
+		int mode;
+
+		g_at_result_iter_init(&iter, cmd);
+		g_at_result_iter_next(&iter, "+COPS=");
+
+		if (g_at_result_iter_next_number(&iter, &mode) == TRUE) {
+			if (mode == 0)
+				result = G_AT_SERVER_RESULT_OK;
+			else
+				result = G_AT_SERVER_RESULT_ERROR;
+		} else
+			result = G_AT_SERVER_RESULT_ERROR;
+
+		g_at_server_send_final(server, result);
+		break;
+	}
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void cimi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
 	GAtServer *server = user;
@@ -407,6 +450,7 @@ static void add_handler(GAtServer *server)
 	g_at_server_register(server, "+CGSN", cgsn_cb, server, NULL);
 	g_at_server_register(server, "+CFUN", cfun_cb, server, NULL);
 	g_at_server_register(server, "+CPIN", cpin_cb, server, NULL);
+	g_at_server_register(server, "+COPS", cops_cb, server, NULL);
 	g_at_server_register(server, "+CIMI", cimi_cb, server, NULL);
 	g_at_server_register(server, "+CSMS", csms_cb, server, NULL);
 	g_at_server_register(server, "+CMGF", cmgf_cb, server, NULL);
