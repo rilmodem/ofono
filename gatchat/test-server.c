@@ -193,7 +193,7 @@ static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		}
 
 		modem_mode = mode;
-		g_timeout_add_seconds(3, send_ok, server);
+		g_timeout_add_seconds(1, send_ok, server);
 		break;
 	}
 	default:
