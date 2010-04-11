@@ -41,7 +41,7 @@ void g_at_hdlc_set_debug(GAtHDLC *hdlc, GAtDebugFunc func, gpointer user_data);
 
 void g_at_hdlc_set_receive(GAtHDLC *hdlc, GAtReceiveFunc func,
 							gpointer user_data);
-gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *buf, gsize len);
+gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size);
 
 #ifdef __cplusplus
 }

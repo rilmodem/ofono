@@ -36,7 +36,9 @@ struct _GAtHDLC {
 	gint ref_count;
 	GIOChannel *channel;
 	guint read_watch;
+	guint write_watch;
 	struct ring_buffer *read_buffer;
+	struct ring_buffer *write_buffer;
 	guint max_read_attempts;
 	unsigned char *decode_buffer;
 	guint decode_offset;
@@ -46,13 +48,6 @@ struct _GAtHDLC {
 	GAtDebugFunc debugf;
 	gpointer debug_data;
 };
-
-static void read_watch_destroy(gpointer user_data)
-{
-	GAtHDLC *hdlc = user_data;
-
-	hdlc->read_watch = 0;
-}
 
 static void new_bytes(GAtHDLC *hdlc)
 {
@@ -144,6 +139,13 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	return TRUE;
 }
 
+static void read_watch_destroy(gpointer user_data)
+{
+	GAtHDLC *hdlc = user_data;
+
+	hdlc->read_watch = 0;
+}
+
 GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 {
 	GAtHDLC *hdlc;
@@ -162,6 +164,10 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 
 	hdlc->read_buffer = ring_buffer_new(BUFFER_SIZE);
 	if (!hdlc->read_buffer)
+		goto error;
+
+	hdlc->write_buffer = ring_buffer_new(BUFFER_SIZE * 2);
+	if (!hdlc->write_buffer)
 		goto error;
 
 	hdlc->decode_buffer = g_try_malloc(BUFFER_SIZE * 2);
@@ -184,6 +190,9 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 error:
 	if (hdlc->read_buffer)
 		ring_buffer_free(hdlc->read_buffer);
+
+	if (hdlc->write_buffer)
+		ring_buffer_free(hdlc->write_buffer);
 
 	if (hdlc->decode_buffer)
 		g_free(hdlc->decode_buffer);
@@ -217,6 +226,7 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 	g_io_channel_unref(hdlc->channel);
 
 	ring_buffer_free(hdlc->read_buffer);
+	ring_buffer_free(hdlc->write_buffer);
 	g_free(hdlc->decode_buffer);
 }
 
@@ -239,6 +249,59 @@ void g_at_hdlc_set_receive(GAtHDLC *hdlc, GAtReceiveFunc func,
 	hdlc->receive_data = user_data;
 }
 
+static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
+							gpointer user_data)
+{
+	GAtHDLC *hdlc = user_data;
+	GIOError err;
+	unsigned int len;
+	unsigned char *buf;
+	gsize bytes_written;
+
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR))
+		return FALSE;
+
+	len = ring_buffer_len_no_wrap(hdlc->write_buffer);
+	buf = ring_buffer_read_ptr(hdlc->write_buffer, 0);
+
+	err = g_io_channel_write(hdlc->channel, (const char *) buf,
+							len, &bytes_written);
+
+	if (err != G_IO_ERROR_NONE) {
+		g_source_remove(hdlc->read_watch);
+		return FALSE;
+	}
+
+	g_at_util_debug_dump(FALSE, buf, bytes_written,
+					hdlc->debugf, hdlc->debug_data);
+
+	ring_buffer_drain(hdlc->write_buffer, bytes_written);
+
+	if (ring_buffer_len(hdlc->write_buffer) > 0)
+		return TRUE;
+
+	return FALSE;
+}
+
+static void write_watch_destroy(gpointer user_data)
+{
+	GAtHDLC *hdlc = user_data;
+
+	hdlc->write_watch = 0;
+}
+
+static void wakeup_write(GAtHDLC *hdlc)
+{
+	GIOChannel *channel = hdlc->channel;
+
+	if (hdlc->write_watch > 0)
+		return;
+
+	hdlc->write_watch = g_io_add_watch_full(channel, G_PRIORITY_DEFAULT,
+				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				can_write_data, hdlc, write_watch_destroy);
+}
+
 static inline void hdlc_put(GAtHDLC *hdlc, guint8 *buf, gsize *pos, guint8 c)
 {
 	gsize i = *pos;
@@ -252,31 +315,36 @@ static inline void hdlc_put(GAtHDLC *hdlc, guint8 *buf, gsize *pos, guint8 c)
 	*pos = i;
 }
 
-gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *buf, gsize len)
+gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 {
-	unsigned char newbuf[BUFFER_SIZE * 2];
-	GIOError err;
-	gsize bytes_written;
-	gsize pos = 0, i = 0;
+	unsigned char *buf;
+	unsigned int space, i = 0;
 	guint16 fcs = 0xffff;
+	gsize pos;
 
-	newbuf[pos++] = 0x7e;
+	do {
+		space = ring_buffer_avail_no_wrap(hdlc->write_buffer);
+		if (space == 0)
+			break;
 
-	while (len--) {
-		fcs = crc_ccitt_byte(fcs, buf[i]);
-		hdlc_put(hdlc, newbuf, &pos, buf[i++]);
-	}
+		buf = ring_buffer_write_ptr(hdlc->write_buffer);
+		pos = 0;
 
-	fcs ^= 0xffff;
-	hdlc_put(hdlc, newbuf, &pos, fcs & 0xff);
-	hdlc_put(hdlc, newbuf, &pos, fcs >> 8);
+		while (size--) {
+			fcs = crc_ccitt_byte(fcs, data[i]);
+			hdlc_put(hdlc, buf, &pos, data[i++]);
+		}
 
-	newbuf[pos++] = 0x7e;
+		fcs ^= 0xffff;
+		hdlc_put(hdlc, buf, &pos, fcs & 0xff);
+		hdlc_put(hdlc, buf, &pos, fcs >> 8);
 
-	err = g_io_channel_write(hdlc->channel, (const char *) newbuf,
-							pos, &bytes_written);
-	g_at_util_debug_dump(FALSE, newbuf, bytes_written,
-					hdlc->debugf, hdlc->debug_data);
+		buf[pos++] = 0x7e;
+
+		ring_buffer_write_advance(hdlc->write_buffer, pos);
+	} while (0);
+
+	wakeup_write(hdlc);
 
 	return TRUE;
 }
