@@ -49,6 +49,8 @@
 #define DEFAULT_TCP_PORT 12346
 #define DEFAULT_SOCK_PATH "./server_sock"
 
+static int modem_mode = 0;
+
 struct sock_server{
 	int server_sock;
 };
@@ -159,10 +161,16 @@ static gboolean send_ok(gpointer user)
 static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
 	GAtServer *server = user;
+	char buf[12];
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
 		g_at_server_send_info(server, "+CFUN: (0-1)", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		snprintf(buf, sizeof(buf), "+CFUN: %d", modem_mode);
+		g_at_server_send_info(server, buf, TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
@@ -179,6 +187,12 @@ static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		if (mode != 0 && mode != 1)
 			goto error;
 
+		if (modem_mode == mode) {
+			g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+			break;
+		}
+
+		modem_mode = mode;
 		g_timeout_add_seconds(3, send_ok, server);
 		break;
 	}
