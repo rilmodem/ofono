@@ -210,11 +210,17 @@ static void cpin_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
 	GAtServer *server = user;
 
+	if (modem_mode == 0) {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_info(server, "+CPIN: (READY)", TRUE);
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_QUERY:
