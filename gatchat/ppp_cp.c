@@ -583,7 +583,7 @@ static void pppcp_send_echo_reply(struct pppcp_data *data,
 	 */
 	packet->identifier = header->identifier;
 
-	/* magic number? */
+	/* magic number will always be zero */
 	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
 
@@ -860,6 +860,12 @@ static guint8 pppcp_process_protocol_reject(struct pppcp_data *data,
 	return RXJ_MINUS;
 }
 
+/*
+ * For Echo-Request, Echo-Reply, and Discard-Request, we will not
+ * bother checking the magic number of the packet, because we will
+ * never send an echo or discard request.  We can't reliably detect
+ * loop back anyway, since we don't negotiate a magic number.
+ */
 static guint8 pppcp_process_echo_request(struct pppcp_data *data,
 					struct pppcp_packet *packet)
 {

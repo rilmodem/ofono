@@ -64,7 +64,6 @@ enum lcp_options {
 #define REQ_OPTION_ACCM 0x1
 
 struct lcp_data {
-	guint32 magic_number;
 	guint8 options[MAX_CONFIG_OPTION_SIZE];
 	guint16 options_len;
 	guint8 req_options;
@@ -160,7 +159,6 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 					const struct pppcp_packet *packet,
 					guint8 **new_options, guint16 *new_len)
 {
-	struct lcp_data *lcp = pppcp_get_data(pppcp);
 	GAtPPP *ppp = pppcp_get_ppp(pppcp);
 	struct ppp_option_iter iter;
 
@@ -183,7 +181,6 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 			if (magic == 0)
 				return RCR_REJECT;
 
-			/* TODO: Handle loopback */
 			break;
 		}
 		default:
@@ -204,8 +201,7 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 			ppp_set_auth(ppp, ppp_option_iter_get_data(&iter));
 			break;
 		case MAGIC_NUMBER:
-			lcp->magic_number =
-				get_host_long(ppp_option_iter_get_data(&iter));
+			/* don't care */
 			break;
 		case PFC:
 			ppp_set_pfc(ppp, TRUE);
