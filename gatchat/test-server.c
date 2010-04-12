@@ -467,7 +467,7 @@ static void cgdata_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_CONNECT);
 		break;
 	default:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
