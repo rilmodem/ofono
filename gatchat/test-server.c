@@ -450,6 +450,56 @@ error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
+static void cgdata_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+	GAtServer *server = user;
+
+	if (modem_mode == 0) {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
+static void cgdcont_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+	GAtServer *server = user;
+
+	if (modem_mode == 0) {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void cimi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
 	GAtServer *server = user;
@@ -634,6 +684,8 @@ static void add_handler(GAtServer *server)
 	g_at_server_register(server, "+CREG", creg_cb, server, NULL);
 	g_at_server_register(server, "+CGREG", cgreg_cb, server, NULL);
 	g_at_server_register(server, "+CGATT", cgatt_cb, server, NULL);
+	g_at_server_register(server, "+CGDATA",  cgdata_cb,  server, NULL);
+	g_at_server_register(server, "+CGDCONT", cgdcont_cb, server, NULL);
 	g_at_server_register(server, "+CIMI", cimi_cb, server, NULL);
 	g_at_server_register(server, "+CSMS", csms_cb, server, NULL);
 	g_at_server_register(server, "+CMGF", cmgf_cb, server, NULL);
