@@ -51,6 +51,7 @@
 
 static int modem_mode = 0;
 static int modem_creg = 0;
+static int modem_cgreg = 0;
 static int network_status = 4;
 
 struct sock_server{
@@ -346,6 +347,55 @@ error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
+static void cgreg_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+	GAtServer *server = user;
+	char buf[20];
+
+	if (modem_mode == 0) {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_info(server, "+CGREG: (0-2)", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		snprintf(buf, sizeof(buf), "+CGREG: %d,%d",
+						modem_cgreg, network_status);
+		g_at_server_send_info(server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int mode;
+
+		g_at_result_iter_init(&iter, cmd);
+		g_at_result_iter_next(&iter, "+CGREG=");
+
+		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
+			goto error;
+
+		if (mode != 0 && mode != 1 && mode != 2)
+			goto error;
+
+		modem_cgreg = mode;
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	}
+	default:
+		goto error;
+	};
+
+	return;
+
+error:
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+}
+
 static void cimi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 {
 	GAtServer *server = user;
@@ -528,6 +578,7 @@ static void add_handler(GAtServer *server)
 	g_at_server_register(server, "+CPIN", cpin_cb, server, NULL);
 	g_at_server_register(server, "+COPS", cops_cb, server, NULL);
 	g_at_server_register(server, "+CREG", creg_cb, server, NULL);
+	g_at_server_register(server, "+CGREG", cgreg_cb, server, NULL);
 	g_at_server_register(server, "+CIMI", cimi_cb, server, NULL);
 	g_at_server_register(server, "+CSMS", csms_cb, server, NULL);
 	g_at_server_register(server, "+CMGF", cmgf_cb, server, NULL);
