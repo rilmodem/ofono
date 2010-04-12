@@ -84,10 +84,6 @@ void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 void ppp_net_down_notify(GAtPPP *ppp);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
-void ppp_set_pfc(GAtPPP *ppp, gboolean pfc);
-gboolean ppp_get_pfc(GAtPPP *ppp);
-void ppp_set_acfc(GAtPPP *ppp, gboolean acfc);
-gboolean ppp_get_acfc(GAtPPP *ppp);
 struct pppcp_data * lcp_new(GAtPPP *ppp);
 void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);

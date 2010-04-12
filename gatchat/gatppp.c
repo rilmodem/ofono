@@ -60,8 +60,6 @@ struct _GAtPPP {
 	gint mru;
 	char username[256];
 	char password[256];
-	gboolean pfc;
-	gboolean acfc;
 	guint32 xmit_accm[8];
 	guint32 recv_accm;
 	GIOChannel *modem;
@@ -118,7 +116,6 @@ static void ppp_put(GAtPPP *ppp, guint8 *buf, int *pos,
 	*pos = i;
 }
 
-/* XXX implement PFC and ACFC */
 static struct frame_buffer *ppp_encode(GAtPPP *ppp, guint8 *data, int len)
 {
 	int pos = 0;
@@ -194,7 +191,6 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 	};
 }
 
-/* XXX - Implement PFC and ACFC */
 static struct frame_buffer *ppp_decode(GAtPPP *ppp, guint8 *frame)
 {
 	guint8 *data;
@@ -439,26 +435,6 @@ void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm)
 	ppp->xmit_accm[0] = accm;
 }
 
-void ppp_set_pfc(GAtPPP *ppp, gboolean pfc)
-{
-	ppp->pfc = pfc;
-}
-
-gboolean ppp_get_pfc(GAtPPP *ppp)
-{
-	return ppp->pfc;
-}
-
-void ppp_set_acfc(GAtPPP *ppp, gboolean acfc)
-{
-	ppp->acfc = acfc;
-}
-
-gboolean ppp_get_acfc(GAtPPP *ppp)
-{
-	return ppp->acfc;
-}
-
 /* Administrative Open */
 void g_at_ppp_open(GAtPPP *ppp)
 {
@@ -605,8 +581,6 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->recv_accm = ~0U;
 	ppp->xmit_accm[0] = ~0U;
 	ppp->xmit_accm[3] = 0x60000000; /* 0x7d, 0x7e */
-	ppp->pfc = FALSE;
-	ppp->acfc = FALSE;
 
 	ppp->index = 0;
 

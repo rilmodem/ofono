@@ -201,13 +201,9 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 			ppp_set_auth(ppp, ppp_option_iter_get_data(&iter));
 			break;
 		case MAGIC_NUMBER:
-			/* don't care */
-			break;
 		case PFC:
-			ppp_set_pfc(ppp, TRUE);
-			break;
 		case ACFC:
-			ppp_set_acfc(ppp, TRUE);
+			/* don't care */
 			break;
 		}
 	}
