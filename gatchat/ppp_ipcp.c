@@ -127,11 +127,8 @@ static void ipcp_up(struct pppcp_data *pppcp)
 					dns2[0] ? dns2 : NULL);
 }
 
-static void ipcp_down(struct pppcp_data *data)
+static void ipcp_down(struct pppcp_data *pppcp)
 {
-	g_print("ipcp down\n");
-
-	/* re-add what default config options we want negotiated */
 }
 
 /*
@@ -142,9 +139,8 @@ static void ipcp_started(struct pppcp_data *data)
 	pppcp_signal_up(data);
 }
 
-static void ipcp_finished(struct pppcp_data *data)
+static void ipcp_finished(struct pppcp_data *pppcp)
 {
-	g_print("ipcp finished\n");
 }
 
 static void ipcp_rca(struct pppcp_data *pppcp,
