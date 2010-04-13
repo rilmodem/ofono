@@ -41,6 +41,8 @@
 #define PNPIPE_ENCAP_IP		1
 
 #define SIOCPNGETOBJECT		(SIOCPROTOPRIVATE + 0)
+#define SIOCPNADDRESOURCE	(SIOCPROTOPRIVATE + 14)
+#define SIOCPNDELRESOURCE	(SIOCPROTOPRIVATE + 15)
 
 struct sockaddr_pn {
 	sa_family_t spn_family;

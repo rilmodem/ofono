@@ -43,6 +43,7 @@ gdbus_sources = gdbus/gdbus.h gdbus/mainloop.c gdbus/object.c gdbus/watch.c
 
 gisi_sources = gisi/phonet.h gisi/modem.h gisi/netlink.h gisi/netlink.c \
 		gisi/socket.h gisi/socket.c gisi/client.h gisi/client.c \
+		gisi/server.h gisi/server.c \
 		gisi/pep.h gisi/pep.c gisi/pipe.h gisi/pipe.c gisi/iter.h \
 		gisi/iter.c gisi/verify.c
 
