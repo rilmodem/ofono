@@ -640,12 +640,6 @@ static void pppcp_generate_event(struct pppcp_data *data,
 	if (actions & INV)
 		goto error;
 
-	if (actions & TLD)
-		pppcp_this_layer_down(data);
-
-	if (actions & TLF)
-		pppcp_this_layer_finished(data);
-
 	if (actions & IRC) {
 		struct pppcp_timer_data *timer_data;
 
@@ -677,17 +671,16 @@ static void pppcp_generate_event(struct pppcp_data *data,
 	if (actions & SER)
 		pppcp_send_echo_reply(data, packet);
 
-	if (actions & TLU)
-		pppcp_this_layer_up(data);
-
 	pppcp_transition_state(new_state, data);
 
-	/*
-	 * The logic elsewhere generates the UP events when this is
-	 * signaled.  So we must call this last
-	 */
 	if (actions & TLS)
 		pppcp_this_layer_started(data);
+	else if (actions & TLU)
+		pppcp_this_layer_up(data);
+	else if (actions & TLD)
+		pppcp_this_layer_down(data);
+	else if (actions & TLF)
+		pppcp_this_layer_finished(data);
 
 	return;
 
