@@ -674,26 +674,27 @@ static void cpbs_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 static void add_handler(GAtServer *server)
 {
 	g_at_server_set_debug(server, server_debug, "Server");
-	g_at_server_register(server, "+CGMI", cgmi_cb, server, NULL);
-	g_at_server_register(server, "+CGMM", cgmm_cb, server, NULL);
-	g_at_server_register(server, "+CGMR", cgmr_cb, server, NULL);
-	g_at_server_register(server, "+CGSN", cgsn_cb, server, NULL);
-	g_at_server_register(server, "+CFUN", cfun_cb, server, NULL);
-	g_at_server_register(server, "+CPIN", cpin_cb, server, NULL);
-	g_at_server_register(server, "+COPS", cops_cb, server, NULL);
-	g_at_server_register(server, "+CREG", creg_cb, server, NULL);
-	g_at_server_register(server, "+CGREG", cgreg_cb, server, NULL);
-	g_at_server_register(server, "+CGATT", cgatt_cb, server, NULL);
+
+	g_at_server_register(server, "+CGMI",    cgmi_cb,    server, NULL);
+	g_at_server_register(server, "+CGMM",    cgmm_cb,    server, NULL);
+	g_at_server_register(server, "+CGMR",    cgmr_cb,    server, NULL);
+	g_at_server_register(server, "+CGSN",    cgsn_cb,    server, NULL);
+	g_at_server_register(server, "+CFUN",    cfun_cb,    server, NULL);
+	g_at_server_register(server, "+CPIN",    cpin_cb,    server, NULL);
+	g_at_server_register(server, "+COPS",    cops_cb,    server, NULL);
+	g_at_server_register(server, "+CREG",    creg_cb,    server, NULL);
+	g_at_server_register(server, "+CGREG",   cgreg_cb,   server, NULL);
+	g_at_server_register(server, "+CGATT",   cgatt_cb,   server, NULL);
 	g_at_server_register(server, "+CGDATA",  cgdata_cb,  server, NULL);
 	g_at_server_register(server, "+CGDCONT", cgdcont_cb, server, NULL);
-	g_at_server_register(server, "+CIMI", cimi_cb, server, NULL);
-	g_at_server_register(server, "+CSMS", csms_cb, server, NULL);
-	g_at_server_register(server, "+CMGF", cmgf_cb, server, NULL);
-	g_at_server_register(server, "+CPMS", cpms_cb, server, NULL);
-	g_at_server_register(server, "+CNMI", cnmi_cb, server, NULL);
-	g_at_server_register(server, "+CSCS", cscs_cb, server, NULL);
-	g_at_server_register(server, "+CMGL", cmgl_cb, server, NULL);
-	g_at_server_register(server, "+CPBS", cpbs_cb, server, NULL);
+	g_at_server_register(server, "+CIMI",    cimi_cb,    server, NULL);
+	g_at_server_register(server, "+CSMS",    csms_cb,    server, NULL);
+	g_at_server_register(server, "+CMGF",    cmgf_cb,    server, NULL);
+	g_at_server_register(server, "+CPMS",    cpms_cb,    server, NULL);
+	g_at_server_register(server, "+CNMI",    cnmi_cb,    server, NULL);
+	g_at_server_register(server, "+CSCS",    cscs_cb,    server, NULL);
+	g_at_server_register(server, "+CMGL",    cmgl_cb,    server, NULL);
+	g_at_server_register(server, "+CPBS",    cpbs_cb,    server, NULL);
 }
 
 static void server_destroy(gpointer user)
