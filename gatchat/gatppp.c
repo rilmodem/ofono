@@ -48,14 +48,6 @@
 #define PPP_ADDR_FIELD	0xff
 #define PPP_CTRL	0x03
 
-enum ppp_phase {
-	PPP_DEAD = 0,
-	PPP_ESTABLISHMENT,
-	PPP_AUTHENTICATION,
-	PPP_NETWORK,
-	PPP_TERMINATION,
-};
-
 struct _GAtPPP {
 	gint ref_count;
 	enum ppp_phase phase;
@@ -354,7 +346,7 @@ static void ppp_dead(GAtPPP *ppp)
 		ppp->disconnect_cb(ppp->disconnect_data);
 }
 
-static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
+void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 {
 	/* don't do anything if we're already there */
 	if (ppp->phase == phase)
@@ -363,64 +355,33 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 	/* set new phase */
 	ppp->phase = phase;
 
+	g_print("Entering new phase: %d\n", phase);
+
 	switch (phase) {
-	case PPP_ESTABLISHMENT:
-		/* send an UP event to the lcp layer */
+	case PPP_PHASE_ESTABLISHMENT:
+		/* send an UP & OPEN events to the lcp layer */
 		pppcp_signal_up(ppp->lcp);
+		pppcp_signal_open(ppp->lcp);
 		break;
-	case PPP_AUTHENTICATION:
-		/* we don't do authentication right now, so send NONE */
-		if (ppp->auth->proto == 0)
-			ppp_generate_event(ppp, PPP_NONE);
-		/* otherwise we need to wait for the peer to send us a challenge */
+	case PPP_PHASE_AUTHENTICATION:
+		/* If we don't expect auth, move on to network phase */
+		if (ppp->chap == NULL)
+			ppp_enter_phase(ppp, PPP_PHASE_NETWORK);
+
+		/* otherwise wait for the peer to send us a challenge */
 		break;
-	case PPP_TERMINATION:
-		/* send a CLOSE event to the lcp layer */
-		pppcp_signal_close(ppp->lcp);
-		break;
-	case PPP_DEAD:
-		ppp_dead(ppp);
-		break;
-	case PPP_NETWORK:
-		/* bring network phase up */
-		ppp_net_open(ppp->net);
+	case PPP_PHASE_NETWORK:
+		/* Send UP & OPEN events to the IPCP layer */
 		pppcp_signal_open(ppp->ipcp);
 		pppcp_signal_up(ppp->ipcp);
+		/* bring network phase up */
+		ppp_net_open(ppp->net);
 		break;
-	}
-}
-
-/*
- * send the event handler a new event to process
- */
-void ppp_generate_event(GAtPPP *ppp, enum ppp_event event)
-{
-	switch (event) {
-	case PPP_UP:
-		/* causes transition to ppp establishment */
-		ppp_transition_phase(ppp, PPP_ESTABLISHMENT);
+	case PPP_PHASE_TERMINATION:
+		pppcp_signal_close(ppp->lcp);
 		break;
-	case PPP_OPENED:
-		ppp_transition_phase(ppp, PPP_AUTHENTICATION);
-		break;
-	case PPP_CLOSING:
-		/* causes transition to termination phase */
-		ppp_transition_phase(ppp, PPP_TERMINATION);
-		break;
-	case PPP_DOWN:
-		/* cases transition to dead phase */
-		ppp_transition_phase(ppp, PPP_DEAD);
-		break;
-	case PPP_NONE:
-	case PPP_SUCCESS:
-		/* causes transition to network phase */
-		ppp_transition_phase(ppp, PPP_NETWORK);
-		break;
-	case PPP_FAIL:
-		if (ppp->phase == PPP_ESTABLISHMENT)
-			ppp_transition_phase(ppp, PPP_DEAD);
-		else if (ppp->phase == PPP_AUTHENTICATION)
-			ppp_transition_phase(ppp, PPP_TERMINATION);
+	case PPP_PHASE_DEAD:
+		ppp_dead(ppp);
 		break;
 	}
 }
@@ -429,7 +390,6 @@ static void read_watcher_destroy_notify(GAtPPP *ppp)
 {
 	ppp->read_watch = 0;
 	pppcp_signal_down(ppp->lcp);
-	pppcp_signal_close(ppp->lcp);
 }
 
 void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
@@ -480,9 +440,7 @@ gboolean ppp_get_acfc(GAtPPP *ppp)
 /* Administrative Open */
 void g_at_ppp_open(GAtPPP *ppp)
 {
-	/* send an open event to the lcp layer */
-	pppcp_signal_open(ppp->lcp);
-	pppcp_signal_up(ppp->lcp);
+	ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
 }
 
 void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
@@ -539,7 +497,7 @@ void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename)
 
 void g_at_ppp_shutdown(GAtPPP *ppp)
 {
-	ppp_generate_event(ppp, PPP_CLOSING);
+	pppcp_signal_close(ppp->lcp);
 }
 
 void g_at_ppp_ref(GAtPPP *ppp)
@@ -666,7 +624,7 @@ static void ppp_xmit_destroy_notify(gpointer destroy_data)
 
 	ppp->write_watch = 0;
 
-	if (ppp->phase == PPP_DEAD)
+	if (ppp->phase == PPP_PHASE_DEAD)
 		ppp_dead(ppp);
 }
 

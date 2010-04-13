@@ -26,14 +26,12 @@
 #define IPCP_PROTO	0x8021
 #define PPP_IP_PROTO	0x0021
 
-enum ppp_event {
-	PPP_UP = 1,
-	PPP_OPENED,
-	PPP_SUCCESS,
-	PPP_NONE,
-	PPP_CLOSING,
-	PPP_FAIL,
-	PPP_DOWN
+enum ppp_phase {
+	PPP_PHASE_DEAD = 0,		/* Link dead */
+	PPP_PHASE_ESTABLISHMENT,	/* LCP started */
+	PPP_PHASE_AUTHENTICATION,	/* Auth started */
+	PPP_PHASE_NETWORK,		/* IPCP started */
+	PPP_PHASE_TERMINATION,		/* LCP Terminate phase */
 };
 
 struct ppp_header {
@@ -90,7 +88,7 @@ struct ppp_net_data {
 };
 
 void ppp_debug(GAtPPP *ppp, const char *str);
-void ppp_generate_event(GAtPPP *ppp, enum ppp_event event);
+void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
 void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
