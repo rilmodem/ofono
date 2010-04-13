@@ -140,16 +140,17 @@ gboolean g_at_util_setup_io(GIOChannel *io, GIOFlags flags)
 			G_IO_STATUS_NORMAL)
 		return FALSE;
 
-	io_flags = g_io_channel_get_flags(io);
+	if (flags & G_IO_FLAG_SET_MASK) {
+		io_flags = g_io_channel_get_flags(io);
 
-	io_flags |= (flags & G_IO_FLAG_SET_MASK);
+		io_flags |= (flags & G_IO_FLAG_SET_MASK);
 
-	if (g_io_channel_set_flags(io, io_flags, NULL) !=
-			G_IO_STATUS_NORMAL)
-		return FALSE;
+		if (g_io_channel_set_flags(io, io_flags, NULL) !=
+				G_IO_STATUS_NORMAL)
+			return FALSE;
+	}
 
 	g_io_channel_set_close_on_unref(io, TRUE);
 
 	return TRUE;
 }
-
