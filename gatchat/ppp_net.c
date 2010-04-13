@@ -55,13 +55,6 @@ void ppp_net_process_packet(struct ppp_net *net, guint8 *packet)
 	gsize bytes_written;
 	guint16 len;
 
-	/*
-	 * since ppp_net_open can fail, we need to make sure
-	 * channel is valid
-	 */
-	if (net->channel == NULL)
-		return;
-
 	/* find the length of the packet to transmit */
 	len = get_host_short(&packet[2]);
 	status = g_io_channel_write_chars(net->channel, (gchar *) packet,
@@ -99,58 +92,6 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 	return TRUE;
 }
 
-void ppp_net_close(struct ppp_net *net)
-{
-	g_source_remove(net->watch);
-	g_io_channel_unref(net->channel);
-}
-
-void ppp_net_open(struct ppp_net *net)
-{
-	int fd;
-	struct ifreq ifr;
-	GIOChannel *channel;
-	int err;
-
-	if (net == NULL)
-		return;
-
-	/* open a tun interface */
-	fd = open("/dev/net/tun", O_RDWR);
-	if (fd < 0) {
-		g_printerr("error opening tun\n");
-		return;
-	}
-
-	memset(&ifr, 0, sizeof(ifr));
-	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
-	strcpy(ifr.ifr_name, "ppp%d");
-	err = ioctl(fd, TUNSETIFF, (void *)&ifr);
-	if (err < 0) {
-		g_printerr("error %d setting ifr\n", err);
-		close(fd);
-		return;
-	}
-	net->if_name = strdup(ifr.ifr_name);
-
-	/* create a channel for reading and writing to this interface */
-	channel = g_io_channel_unix_new(fd);
-	if (!channel) {
-		g_printerr("Error creating I/O Channel to TUN device\n");
-		close(fd);
-		return;
-	}
-	if (!g_at_util_setup_io(channel, G_IO_FLAG_NONBLOCK)) {
-		g_io_channel_unref(channel);
-		return;
-	}
-	net->channel = channel;
-	g_io_channel_set_buffered(channel, FALSE);
-	net->watch = g_io_add_watch(channel,
-			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-			ppp_net_callback, net);
-}
-
 const char *ppp_net_get_interface(struct ppp_net *net)
 {
 	return net->if_name;
@@ -159,21 +100,64 @@ const char *ppp_net_get_interface(struct ppp_net *net)
 struct ppp_net *ppp_net_new(GAtPPP *ppp)
 {
 	struct ppp_net *net;
+	int fd;
+	struct ifreq ifr;
+	GIOChannel *channel = NULL;
+	int err;
 
 	net = g_try_new0(struct ppp_net, 1);
 	if (net == NULL)
 		return NULL;
 
+	/* open a tun interface */
+	fd = open("/dev/net/tun", O_RDWR);
+	if (fd < 0)
+		goto error;
+
+	memset(&ifr, 0, sizeof(ifr));
+	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+	strcpy(ifr.ifr_name, "ppp%d");
+
+	err = ioctl(fd, TUNSETIFF, (void *)&ifr);
+	if (err < 0)
+		goto error;
+
+	net->if_name = strdup(ifr.ifr_name);
+
+	/* create a channel for reading and writing to this interface */
+	channel = g_io_channel_unix_new(fd);
+	if (channel == NULL)
+		goto error;
+
+	if (!g_at_util_setup_io(channel, G_IO_FLAG_NONBLOCK))
+		goto error;
+
+	g_io_channel_set_buffered(channel, FALSE);
+
+	net->channel = channel;
+	net->watch = g_io_add_watch(channel,
+			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+			ppp_net_callback, net);
 	net->ppp = ppp;
 
 	return net;
+
+error:
+	if (channel)
+		g_io_channel_unref(channel);
+
+	if (fd >= 0)
+		close(fd);
+
+	g_free(net);
+	return NULL;
 }
 
 void ppp_net_free(struct ppp_net *net)
 {
-	/* cleanup tun interface */
-	ppp_net_close(net);
+	g_source_remove(net->watch);
+	g_io_channel_unref(net->channel);
 
-	/* free self */
+	g_free(net->if_name);
 	g_free(net);
 }

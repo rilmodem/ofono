@@ -172,7 +172,9 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 
 	switch (protocol) {
 	case PPP_IP_PROTO:
-		ppp_net_process_packet(ppp->net, packet);
+		/* If network is up & open, process the packet, if not, drop */
+		if (ppp->net)
+			ppp_net_process_packet(ppp->net, packet);
 		break;
 	case LCP_PROTOCOL:
 		pppcp_process_packet(ppp->lcp, packet);
@@ -407,20 +409,24 @@ void ppp_auth_notify(GAtPPP *ppp, gboolean success)
 void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 					const char *dns1, const char *dns2)
 {
-	/* bring network phase up */
-	ppp_net_open(ppp->net);
+	ppp->net = ppp_net_new(ppp);
 
 	if (ppp->connect_cb == NULL)
 		return;
 
-	ppp->connect_cb(G_AT_PPP_CONNECT_SUCCESS,
-				ppp_net_get_interface(ppp->net),
-				ip, dns1, dns2, ppp->connect_data);
+	if (ppp->net == NULL)
+		ppp->connect_cb(G_AT_PPP_CONNECT_FAIL, NULL,
+					NULL, NULL, NULL, ppp->connect_data);
+	else
+		ppp->connect_cb(G_AT_PPP_CONNECT_SUCCESS,
+					ppp_net_get_interface(ppp->net),
+					ip, dns1, dns2, ppp->connect_data);
 }
 
 void ppp_net_down_notify(GAtPPP *ppp)
 {
-	ppp_net_close(ppp->net);
+	ppp_net_free(ppp->net);
+	ppp->net = NULL;
 }
 
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)
@@ -569,7 +575,9 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	lcp_free(ppp->lcp);
 	ppp_chap_free(ppp->chap);
 	ipcp_free(ppp->ipcp);
-	ppp_net_free(ppp->net);
+
+	if (ppp->net)
+		ppp_net_free(ppp->net);
 
 	g_free(ppp);
 }
@@ -610,9 +618,6 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 
 	/* initialize IPCP state */
 	ppp->ipcp = ipcp_new(ppp);
-
-	/* intialize the network state */
-	ppp->net = ppp_net_new(ppp);
 
 	/* start listening for packets from the modem */
 	ppp->read_watch = g_io_add_watch_full(modem, G_PRIORITY_DEFAULT,
