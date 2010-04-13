@@ -34,6 +34,8 @@ enum ppp_phase {
 	PPP_PHASE_TERMINATION,		/* LCP Terminate phase */
 };
 
+struct ppp_chap;
+
 struct ppp_header {
 	guint16 proto;
 	guint8 info[0];
@@ -71,15 +73,6 @@ static inline guint16 __get_unaligned_short(const void *p)
 #define ppp_proto(packet) \
 	(get_host_short(packet + 2))
 
-struct auth_data {
-	guint16 proto;
-	gpointer proto_data;
-	void (*process_packet)(struct auth_data *data, guint8 *packet);
-	char *username;
-	char *password;
-	GAtPPP *ppp;
-};
-
 struct ppp_net_data {
 	GAtPPP *ppp;
 	char *if_name;
@@ -101,12 +94,6 @@ gboolean ppp_get_acfc(GAtPPP *ppp);
 struct pppcp_data * lcp_new(GAtPPP *ppp);
 void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
-void auth_process_packet(struct auth_data *data, guint8 *new_packet);
-void auth_set_credentials(struct auth_data *data, const char *username,
-				const char *passwd);
-void auth_set_proto(struct auth_data *data, guint16 proto, guint8 method);
-struct auth_data *auth_new(GAtPPP *ppp);
-void auth_free(struct auth_data *auth);
 struct ppp_net_data *ppp_net_new(GAtPPP *ppp);
 void ppp_net_open(struct ppp_net_data *data);
 void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet);
@@ -116,3 +103,9 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);
 void ppp_connect_cb(GAtPPP *ppp, GAtPPPConnectStatus success,
 			const char *ip, const char *dns1, const char *dns2);
+
+/* CHAP related functions */
+struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method);
+void ppp_chap_free(struct ppp_chap *chap);
+void ppp_chap_process_packet(struct ppp_chap *chap, guint8 *new_packet);
+
