@@ -113,7 +113,7 @@ static void lcp_down(struct pppcp_data *pppcp)
 {
 	struct lcp_data *lcp = pppcp_get_data(pppcp);
 
-	lcp_reset_local_options(lcp);
+	lcp_reset_config_options(lcp);
 	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
 }
 
@@ -266,7 +266,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 
 	pppcp_set_data(pppcp, lcp);
 
-	lcp_reset_local_options(lcp);
+	lcp_reset_config_options(lcp);
 	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
 
 	return pppcp;
