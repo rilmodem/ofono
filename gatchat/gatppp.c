@@ -418,6 +418,11 @@ void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 				ip, dns1, dns2, ppp->connect_data);
 }
 
+void ppp_net_down_notify(GAtPPP *ppp)
+{
+	ppp_net_close(ppp->net);
+}
+
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)
 {
 	ppp->recv_accm = accm;

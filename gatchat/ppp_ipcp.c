@@ -146,6 +146,7 @@ static void ipcp_down(struct pppcp_data *pppcp)
 
 	ipcp_reset_config_options(ipcp);
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
+	ppp_net_down_notify(pppcp_get_ppp(pppcp));
 }
 
 static void ipcp_finished(struct pppcp_data *pppcp)

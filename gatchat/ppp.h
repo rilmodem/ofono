@@ -81,6 +81,7 @@ void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
 void ppp_auth_notify(GAtPPP *ppp, gboolean success);
 void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 					const char *dns1, const char *dns2);
+void ppp_net_down_notify(GAtPPP *ppp);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_pfc(GAtPPP *ppp, gboolean pfc);
