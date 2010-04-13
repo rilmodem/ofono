@@ -343,12 +343,17 @@ const char *sim_isi_cause_name(enum sim_isi_cause value)
 const char *sim_message_id_name(enum sim_message_id value)
 {
 	switch (value) {
+		_(SIM_NETWORK_INFO_REQ);
+		_(SIM_NETWORK_INFO_RESP);
 		_(SIM_IMSI_REQ_READ_IMSI);
 		_(SIM_IMSI_RESP_READ_IMSI);
 		_(SIM_SERV_PROV_NAME_REQ);
 		_(SIM_SERV_PROV_NAME_RESP);
+		_(SIM_READ_FIELD_REQ);
+		_(SIM_READ_FIELD_RESP);
 		_(SIM_PB_REQ_SIM_PB_READ);
 		_(SIM_PB_RESP_SIM_PB_READ);
+		_(SIM_IND);
 		_(SIM_COMMON_MESSAGE);
 	}
 	return "SIM_<UNKNOWN>";

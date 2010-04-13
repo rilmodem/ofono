@@ -45,6 +45,8 @@
 
 struct sim_data {
 	GIsiClient *client;
+	bool iccid;
+	bool registered;
 };
 
 /* Returns fake (static) file info for EFSPN */
@@ -215,7 +217,7 @@ static bool imsi_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 5 || msg[0] != SIM_IMSI_RESP_READ_IMSI)
-		 goto error;
+		goto error;
 
 	if (msg[1] != READ_IMSI || msg[2] != SIM_SERV_OK)
 		goto error;
@@ -274,21 +276,129 @@ error:
 	g_free(cbd);
 }
 
-static gboolean isi_sim_register(gpointer user)
+static void isi_sim_register(struct ofono_sim *sim)
 {
-	struct ofono_sim *sim = user;
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
-	const char *debug = getenv("OFONO_ISI_DEBUG");
+	if (!sd->registered) {
+		sd->registered = true;
+		ofono_sim_register(sim);
+		ofono_sim_inserted_notify(sim, TRUE);
+	}
+}
 
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "sim") == 0))
-		g_isi_client_set_debug(sd->client, sim_debug, NULL);
+static bool read_iccid_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	struct ofono_sim *sim = opaque;
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	const unsigned char *msg = data;
 
-	ofono_sim_register(sim);
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		return true;
+	}
 
-	/* TODO: trigger this from actual SIM status indications */
-	ofono_sim_inserted_notify(sim, TRUE);
-	return FALSE;
+	if (len < 3 || msg[0] != SIM_READ_FIELD_RESP || msg[1] != 0x66)
+		return false;
+
+	if (msg[2] == SIM_SERV_OK)
+		sd->iccid = true;
+
+	return true;
+}
+
+static void isi_read_iccid(struct ofono_sim *sim)
+{
+	struct sim_data *sd = ofono_sim_get_data(sim);
+
+	const unsigned char req[] = {
+		SIM_READ_FIELD_REQ,
+		0x66 /* ICC ID */
+	};
+
+	g_isi_request_make(sd->client, req, sizeof(req), SIM_TIMEOUT,
+				read_iccid_resp_cb, sim);
+}
+
+static bool read_hplmn_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	struct ofono_sim *sim = opaque;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		return true;
+	}
+
+	if (len < 3 || msg[0] != SIM_NETWORK_INFO_RESP || msg[1] != READ_HPLMN)
+		return false;
+
+	if (msg[2] != SIM_SERV_NOTREADY)
+		isi_sim_register(sim);
+
+	return true;
+}
+
+
+static void isi_read_hplmn(struct ofono_sim *sim)
+{
+	struct sim_data *sd = ofono_sim_get_data(sim);
+
+	const unsigned char req[] = {
+		SIM_NETWORK_INFO_REQ,
+		READ_HPLMN, 0
+	};
+
+	g_isi_request_make(sd->client, req, sizeof(req), SIM_TIMEOUT,
+				read_hplmn_resp_cb, sim);
+}
+
+static void sim_ind_cb(GIsiClient *client, const void *restrict data,
+			size_t len, uint16_t object, void *opaque)
+{
+	struct ofono_sim *sim = opaque;
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	const unsigned char *msg = data;
+
+	if (sd->registered)
+		return;
+
+	if (!sd->iccid)
+		isi_read_iccid(sim);
+
+	switch (msg[1]) {
+	case SIM_ST_PIN:
+		isi_sim_register(sim);
+		break;
+	case SIM_ST_INFO:
+		isi_read_hplmn(sim);
+		break;
+	}
+}
+
+static void sim_reachable_cb(GIsiClient *client, bool alive,
+				uint16_t object, void *opaque)
+{
+	struct ofono_sim *sim = opaque;
+
+	if (!alive) {
+		DBG("SIM client: %s", strerror(-g_isi_client_error(client)));
+		ofono_sim_remove(sim);
+		return;
+	}
+
+	DBG("%s (v.%03d.%03d) reachable",
+		pn_resource_name(g_isi_client_resource(client)),
+		g_isi_version_major(client),
+		g_isi_version_minor(client));
+
+	g_isi_subscribe(client, SIM_IND, sim_ind_cb, opaque);
+
+	/* Check if SIM is ready. */
+	isi_read_iccid(sim);
+	isi_read_hplmn(sim);
 }
 
 static int isi_sim_probe(struct ofono_sim *sim, unsigned int vendor,
@@ -296,6 +406,7 @@ static int isi_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 {
 	GIsiModem *idx = user;
 	struct sim_data *sd = g_try_new0(struct sim_data, 1);
+	const char *debug = getenv("OFONO_ISI_DEBUG");
 
 	if (!sd)
 		return -ENOMEM;
@@ -306,7 +417,10 @@ static int isi_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 
 	ofono_sim_set_data(sim, sd);
 
-	g_idle_add(isi_sim_register, sim);
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "sim") == 0))
+		g_isi_client_set_debug(sd->client, sim_debug, NULL);
+
+	g_isi_verify(sd->client, sim_reachable_cb, sim);
 
 	return 0;
 }
@@ -332,7 +446,7 @@ static struct ofono_sim_driver driver = {
 	.write_file_transparent	= isi_write_file_transparent,
 	.write_file_linear	= isi_write_file_linear,
 	.write_file_cyclic	= isi_write_file_cyclic,
-	.read_imsi		= isi_read_imsi
+	.read_imsi		= isi_read_imsi,
 };
 
 void isi_sim_init()
