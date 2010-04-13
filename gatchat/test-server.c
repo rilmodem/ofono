@@ -913,17 +913,17 @@ static void test_server(int type)
 	switch (type) {
 	case 0:
 		if (create_tty("/phonesim1") == FALSE)
-			exit(-1);
+			exit(1);
 
 		add_handler(server);
 		break;
 	case 1:
 		if (create_tcp("/phonesim1", DEFAULT_TCP_PORT) == FALSE)
-			exit(-1);
+			exit(1);
 		break;
 	case 2:
 		if (create_unix("/phonesim1", DEFAULT_SOCK_PATH) == FALSE)
-			exit(-1);
+			exit(1);
 		break;
 	}
 }
