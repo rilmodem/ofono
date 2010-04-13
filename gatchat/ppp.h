@@ -25,6 +25,7 @@
 #define CHAP_PROTOCOL	0xc223
 #define IPCP_PROTO	0x8021
 #define PPP_IP_PROTO	0x0021
+#define MD5		5
 
 enum ppp_phase {
 	PPP_PHASE_DEAD = 0,		/* Link dead */
@@ -62,11 +63,20 @@ static inline guint16 __get_unaligned_short(const void *p)
 	return ptr->s;
 }
 
+static inline void __put_unaligned_short(void *p, guint16 val)
+{
+	struct packed_short *ptr = p;
+	ptr->s = val;
+}
+
 #define get_host_long(p) \
 	(ntohl(__get_unaligned_long(p)))
 
 #define get_host_short(p) \
 	(ntohs(__get_unaligned_short(p)))
+
+#define put_network_short(p, val) \
+	(__put_unaligned_short(p, htons(val)))
 
 #define ppp_info(packet) \
 	(packet + 4)

@@ -35,8 +35,6 @@
 #include "gatppp.h"
 #include "ppp.h"
 
-#define MD5	5
-
 struct chap_header {
 	guint8 code;
 	guint8 identifier;

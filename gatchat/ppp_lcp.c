@@ -166,9 +166,35 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 
 	while (ppp_option_iter_next(&iter) == TRUE) {
 		switch (ppp_option_iter_get_type(&iter)) {
-		case ACCM:
-		/* TODO check to make sure it's a proto we recognize */
 		case AUTH_PROTO:
+		{
+			const guint8 *option_data =
+				ppp_option_iter_get_data(&iter);
+			guint16 proto = get_host_short(option_data);
+			guint8 method = option_data[2];
+			guint8 *option;
+
+			if ((proto == CHAP_PROTOCOL) && (method == MD5))
+				break;
+
+			/*
+			 * try to suggest CHAP & MD5.  If we are out
+			 * of memory, just reject.
+			 */
+
+			option = g_try_malloc0(5);
+			if (!option)
+				return RCR_REJECT;
+
+			option[0] = AUTH_PROTO;
+			option[1] = 5;
+			put_network_short(&option[2], CHAP_PROTOCOL);
+			option[4] = MD5;
+			*new_options = option;
+			*new_len = 5;
+			return RCR_NAK;
+		}
+		case ACCM:
 		case PFC:
 		case ACFC:
 			break;
