@@ -660,9 +660,8 @@ static void ppp_xmit_destroy_notify(gpointer destroy_data)
 {
 	GAtPPP *ppp = destroy_data;
 
-	g_print("%s\n", __FUNCTION__);
-
 	ppp->write_watch = 0;
+
 	if (ppp->phase == PPP_DEAD)
 		ppp_dead(ppp);
 }
