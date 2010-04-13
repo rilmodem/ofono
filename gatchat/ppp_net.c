@@ -41,7 +41,14 @@
 /* XXX should be maximum IP Packet size */
 #define MAX_PACKET 1500
 
-void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet)
+struct ppp_net {
+	GAtPPP *ppp;
+	char *if_name;
+	GIOChannel *channel;
+	gint watch;
+};
+
+void ppp_net_process_packet(struct ppp_net *net, guint8 *packet)
 {
 	GError *error = NULL;
 	GIOStatus status;
@@ -52,12 +59,12 @@ void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet)
 	 * since ppp_net_open can fail, we need to make sure
 	 * channel is valid
 	 */
-	if (data->channel == NULL)
+	if (net->channel == NULL)
 		return;
 
 	/* find the length of the packet to transmit */
 	len = get_host_short(&packet[2]);
-	status = g_io_channel_write_chars(data->channel, (gchar *) packet,
+	status = g_io_channel_write_chars(net->channel, (gchar *) packet,
 						len, &bytes_written, &error);
 }
 
@@ -68,12 +75,12 @@ void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet)
 static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 				gpointer userdata)
 {
+	struct ppp_net *net = (struct ppp_net *) userdata;
 	GIOStatus status;
 	gchar buf[MAX_PACKET + 2];
 	gsize bytes_read;
 	GError *error = NULL;
 	struct ppp_header *ppp = (struct ppp_header *) buf;
-	struct ppp_net_data *data = (struct ppp_net_data *) userdata;
 
 	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP))
 		return FALSE;
@@ -84,7 +91,7 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 				&bytes_read, &error);
 		if (bytes_read > 0) {
 			ppp->proto = htons(PPP_IP_PROTO);
-			ppp_transmit(data->ppp, (guint8 *) buf, bytes_read);
+			ppp_transmit(net->ppp, (guint8 *) buf, bytes_read);
 		}
 		if (status != G_IO_STATUS_NORMAL && status != G_IO_STATUS_AGAIN)
 			return FALSE;
@@ -92,20 +99,20 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 	return TRUE;
 }
 
-void ppp_net_close(struct ppp_net_data *data)
+void ppp_net_close(struct ppp_net *net)
 {
-	g_source_remove(data->watch);
-	g_io_channel_unref(data->channel);
+	g_source_remove(net->watch);
+	g_io_channel_unref(net->channel);
 }
 
-void ppp_net_open(struct ppp_net_data *data)
+void ppp_net_open(struct ppp_net *net)
 {
 	int fd;
 	struct ifreq ifr;
 	GIOChannel *channel;
 	int err;
 
-	if (data == NULL)
+	if (net == NULL)
 		return;
 
 	/* open a tun interface */
@@ -124,7 +131,7 @@ void ppp_net_open(struct ppp_net_data *data)
 		close(fd);
 		return;
 	}
-	data->if_name = strdup(ifr.ifr_name);
+	net->if_name = strdup(ifr.ifr_name);
 
 	/* create a channel for reading and writing to this interface */
 	channel = g_io_channel_unix_new(fd);
@@ -137,31 +144,36 @@ void ppp_net_open(struct ppp_net_data *data)
 		g_io_channel_unref(channel);
 		return;
 	}
-	data->channel = channel;
+	net->channel = channel;
 	g_io_channel_set_buffered(channel, FALSE);
-	data->watch = g_io_add_watch(channel,
+	net->watch = g_io_add_watch(channel,
 			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-			ppp_net_callback, (gpointer) data);
+			ppp_net_callback, net);
 }
 
-struct ppp_net_data *ppp_net_new(GAtPPP *ppp)
+const char *ppp_net_get_interface(struct ppp_net *net)
 {
-	struct ppp_net_data *data;
+	return net->if_name;
+}
 
-	data = g_try_malloc0(sizeof(*data));
-	if (!data)
+struct ppp_net *ppp_net_new(GAtPPP *ppp)
+{
+	struct ppp_net *net;
+
+	net = g_try_new0(struct ppp_net, 1);
+	if (net == NULL)
 		return NULL;
 
-	data->ppp = ppp;
+	net->ppp = ppp;
 
-	return data;
+	return net;
 }
 
-void ppp_net_free(struct ppp_net_data *data)
+void ppp_net_free(struct ppp_net *net)
 {
 	/* cleanup tun interface */
-	ppp_net_close(data);
+	ppp_net_close(net);
 
 	/* free self */
-	g_free(data);
+	g_free(net);
 }

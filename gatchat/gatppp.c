@@ -53,7 +53,7 @@ struct _GAtPPP {
 	enum ppp_phase phase;
 	struct pppcp_data *lcp;
 	struct pppcp_data *ipcp;
-	struct ppp_net_data *net;
+	struct ppp_net *net;
 	struct ppp_chap *chap;
 	guint8 buffer[BUFFERSZ];
 	int index;
@@ -91,7 +91,7 @@ void ppp_connect_cb(GAtPPP *ppp, GAtPPPConnectStatus success,
 	if (ppp->connect_cb == NULL)
 		return;
 
-	ppp->connect_cb(success, ppp->net->if_name,
+	ppp->connect_cb(success, ppp_net_get_interface(ppp->net),
 				ip, dns1, dns2,  ppp->connect_data);
 }
 

@@ -35,6 +35,7 @@ enum ppp_phase {
 };
 
 struct ppp_chap;
+struct ppp_net;
 
 struct ppp_header {
 	guint16 proto;
@@ -73,13 +74,6 @@ static inline guint16 __get_unaligned_short(const void *p)
 #define ppp_proto(packet) \
 	(get_host_short(packet + 2))
 
-struct ppp_net_data {
-	GAtPPP *ppp;
-	char *if_name;
-	GIOChannel *channel;
-	gint watch;
-};
-
 void ppp_debug(GAtPPP *ppp, const char *str);
 void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
@@ -94,11 +88,6 @@ gboolean ppp_get_acfc(GAtPPP *ppp);
 struct pppcp_data * lcp_new(GAtPPP *ppp);
 void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
-struct ppp_net_data *ppp_net_new(GAtPPP *ppp);
-void ppp_net_open(struct ppp_net_data *data);
-void ppp_net_process_packet(struct ppp_net_data *data, guint8 *packet);
-void ppp_net_close(struct ppp_net_data *data);
-void ppp_net_free(struct ppp_net_data *data);
 struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);
 void ppp_connect_cb(GAtPPP *ppp, GAtPPPConnectStatus success,
@@ -109,3 +98,10 @@ struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method);
 void ppp_chap_free(struct ppp_chap *chap);
 void ppp_chap_process_packet(struct ppp_chap *chap, guint8 *new_packet);
 
+/* TUN / Network related functions */
+struct ppp_net *ppp_net_new(GAtPPP *ppp);
+void ppp_net_open(struct ppp_net *net);
+void ppp_net_process_packet(struct ppp_net *net, guint8 *packet);
+void ppp_net_close(struct ppp_net *net);
+void ppp_net_free(struct ppp_net *net);
+const char *ppp_net_get_interface(struct ppp_net *net);
