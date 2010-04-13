@@ -129,7 +129,7 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp)
 	if (channel == NULL)
 		goto error;
 
-	if (!g_at_util_setup_io(channel, G_IO_FLAG_NONBLOCK))
+	if (!g_at_util_setup_io(channel, 0))
 		goto error;
 
 	g_io_channel_set_buffered(channel, FALSE);
