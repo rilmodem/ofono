@@ -74,19 +74,12 @@ static inline guint16 __get_unaligned_short(const void *p)
 #define ppp_proto(packet) \
 	(get_host_short(packet + 2))
 
-void ppp_debug(GAtPPP *ppp, const char *str);
-void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase);
-void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
-void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
-void ppp_auth_notify(GAtPPP *ppp, gboolean success);
-void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
-					const char *dns1, const char *dns2);
-void ppp_net_down_notify(GAtPPP *ppp);
-void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
-void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
-struct pppcp_data * lcp_new(GAtPPP *ppp);
+/* LCP related functions */
+struct pppcp_data *lcp_new(GAtPPP *ppp);
 void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
+
+/* IPCP related functions */
 struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);
 
@@ -100,3 +93,15 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp);
 const char *ppp_net_get_interface(struct ppp_net *net);
 void ppp_net_process_packet(struct ppp_net *net, guint8 *packet);
 void ppp_net_free(struct ppp_net *net);
+
+/* PPP functions related to main GAtPPP object */
+void ppp_debug(GAtPPP *ppp, const char *str);
+void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase);
+void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
+void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
+void ppp_auth_notify(GAtPPP *ppp, gboolean success);
+void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
+					const char *dns1, const char *dns2);
+void ppp_net_down_notify(GAtPPP *ppp);
+void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
+void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
