@@ -161,7 +161,7 @@ void g_isi_version_set(GIsiClient *client, int major, int minor)
  */
 int g_isi_version_major(GIsiClient *client)
 {
-	return client->version.major;
+	return client ? client->version.major : 0;
 }
 
 /**
@@ -172,7 +172,7 @@ int g_isi_version_major(GIsiClient *client)
  */
 int g_isi_version_minor(GIsiClient *client)
 {
-	return client->version.minor;
+	return client ? client->version.minor : 0;
 }
 
 /**
@@ -182,7 +182,7 @@ int g_isi_version_minor(GIsiClient *client)
  */
 uint8_t g_isi_client_resource(GIsiClient *client)
 {
-	return client->resource;
+	return client ? client->resource : 0;
 }
 
 /**
@@ -204,11 +204,14 @@ void g_isi_client_set_debug(GIsiClient *client, GIsiDebugFunc func,
 
 /**
  * Destroys an ISI client, cancels all pending transactions and subscriptions.
- * @param client client to destroy
+ * @param client client to destroy (may be NULL)
  */
 void g_isi_client_destroy(GIsiClient *client)
 {
 	unsigned id;
+
+	if (!client)
+		return;
 
 	g_source_remove(client->source);
 	for (id = 0; id < 256; id++)
@@ -225,6 +228,7 @@ void g_isi_client_destroy(GIsiClient *client)
  * @param cl ISI client (from g_isi_client_create())
  * @param buf pointer to request payload
  * @param len request payload byte length
+ * @param timeout timeout in seconds
  * @param cb callback to process response(s)
  * @param opaque data for the callback
  */
@@ -238,6 +242,9 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 	};
 	GIsiRequest *req;
 
+	if (!cl)
+		return NULL;
+
 	req = g_isi_request_vmake(cl, &iov, 1, timeout, cb, opaque);
 	if (cl->debug_func)
 		cl->debug_func(buf, len, cl->debug_data);
@@ -250,6 +257,7 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
  * @param cl ISI client (from g_isi_client_create())
  * @param iov scatter-gather array to the request payload
  * @param iovlen number of vectors in the scatter-gather array
+ * @param timeout timeout in seconds
  * @param cb callback to process response(s)
  * @param opaque data for the callback
  */
@@ -259,14 +267,13 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *cl,
 				GIsiResponseFunc cb, void *opaque)
 {
 	struct iovec _iov[1 + iovlen];
-	const struct sockaddr_pn dst = {
+	struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
-		.spn_resource = cl->resource,
 	};
-	const struct msghdr msg = {
-		.msg_name = (struct sockaddr *)&dst,
+	struct msghdr msg = {
+		.msg_name = (void *)&dst,
 		.msg_namelen = sizeof(dst),
-		.msg_iov = (struct iovec *)_iov,
+		.msg_iov = _iov,
 		.msg_iovlen = 1 + iovlen,
 		.msg_control = NULL,
 		.msg_controllen = 0,
@@ -274,7 +281,14 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *cl,
 	};
 	ssize_t ret;
 	size_t i, len;
-	uint8_t id = cl->next[0];
+	uint8_t id;
+
+	if (!cl) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	id = cl->next[0];
 
 	if (id == 0) {
 		errno = EBUSY;
@@ -284,6 +298,8 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *cl,
 		errno = EINVAL;
 		return NULL;
 	}
+
+	dst.spn_resource = cl->resource,
 
 	_iov[0].iov_base = &id;
 	_iov[0].iov_len = 1;
@@ -369,7 +385,7 @@ static int g_isi_indication_init(GIsiClient *cl)
 	/* Send subscribe indication */
 	cl->ind.fd = g_io_channel_unix_get_fd(channel);
 	sendto(cl->ind.fd, msg, 4, MSG_NOSIGNAL,
-		(const struct sockaddr *)&commgr, sizeof(commgr));
+		(void *)&commgr, sizeof(commgr));
 	cl->ind.source = g_io_add_watch(channel,
 					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
 					g_isi_callback, cl);
@@ -384,7 +400,7 @@ static void g_isi_indication_deinit(GIsiClient *client)
 
 	/* Send empty subscribe indication */
 	sendto(client->ind.fd, msg, 3, MSG_NOSIGNAL,
-		(const struct sockaddr *)&commgr, sizeof(commgr));
+		(void *)&commgr, sizeof(commgr));
 	g_source_remove(client->ind.source);
 }
 
