@@ -56,11 +56,10 @@ GIOChannel *phonet_new(GIsiModem *modem, uint8_t resource)
 
 	if (ifi == 0)
 		g_warning("Unspecified GIsiModem!");
-	else
-	if (if_indextoname(ifi, buf) == NULL ||
-	    setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
+	else if (if_indextoname(ifi, buf) == NULL ||
+		setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
 		goto error;
-	if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)))
+	if (bind(fd, (void *)&addr, sizeof(addr)))
 		goto error;
 
 	channel = g_io_channel_unix_new(fd);
@@ -88,7 +87,7 @@ ssize_t phonet_read(GIOChannel *channel, void *restrict buf, size_t len,
 	ssize_t ret;
 
 	ret = recvfrom(g_io_channel_unix_get_fd(channel), buf, len,
-			MSG_DONTWAIT, (struct sockaddr *)&addr, &addrlen);
+			MSG_DONTWAIT, (void *)&addr, &addrlen);
 	if (ret == -1)
 		return -1;
 
