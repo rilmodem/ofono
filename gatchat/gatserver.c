@@ -602,7 +602,7 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 		 * semicolon character (IA5 3/11) or the end of the
 		 * command line is the part of the call.
 		 */
-		while (buf[i] != '\0' || buf[i] != ';')
+		while (buf[i] != '\0' && buf[i] != ';')
 			i += 1;
 
 		goto done;
