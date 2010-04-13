@@ -90,6 +90,14 @@ static void lcp_generate_config_options(struct lcp_data *lcp)
 	lcp->options_len = len;
 }
 
+static void lcp_reset_config_options(struct lcp_data *lcp)
+{
+	lcp->req_options = REQ_OPTION_ACCM;
+	lcp->accm = 0;
+
+	lcp_generate_config_options(lcp);
+}
+
 /*
  * signal the Up event to the NCP
  */
@@ -103,7 +111,10 @@ static void lcp_up(struct pppcp_data *pppcp)
  */
 static void lcp_down(struct pppcp_data *pppcp)
 {
-	/* XXX should implement a way to signal NCP */
+	struct lcp_data *lcp = pppcp_get_data(pppcp);
+
+	lcp_reset_local_options(lcp);
+	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
 }
 
 /*
@@ -255,10 +266,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 
 	pppcp_set_data(pppcp, lcp);
 
-	lcp->req_options = REQ_OPTION_ACCM;
-	lcp->accm = 0;
-
-	lcp_generate_config_options(lcp);
+	lcp_reset_local_options(lcp);
 	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
 
 	return pppcp;

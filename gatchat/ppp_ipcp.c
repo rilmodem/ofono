@@ -101,6 +101,20 @@ static void ipcp_generate_config_options(struct ipcp_data *ipcp)
 	ipcp->options_len = len;
 }
 
+static void ipcp_reset_config_options(struct ipcp_data *ipcp)
+{
+	ipcp->req_options = REQ_OPTION_IPADDR | REQ_OPTION_DNS1 |
+				REQ_OPTION_DNS2 | REQ_OPTION_NBNS1 |
+				REQ_OPTION_NBNS2;
+	ipcp->ipaddr = 0;
+	ipcp->dns1 = 0;
+	ipcp->dns2 = 0;
+	ipcp->nbns1 = 0;
+	ipcp->nbns2 = 0;
+
+	ipcp_generate_config_options(ipcp);
+}
+
 static void ipcp_up(struct pppcp_data *pppcp)
 {
 	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
@@ -129,6 +143,10 @@ static void ipcp_up(struct pppcp_data *pppcp)
 
 static void ipcp_down(struct pppcp_data *pppcp)
 {
+	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
+
+	ipcp_reset_config_options(ipcp);
+	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
 }
 
 /*
@@ -307,12 +325,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	}
 
 	pppcp_set_data(pppcp, ipcp);
-
-	ipcp->req_options = REQ_OPTION_IPADDR | REQ_OPTION_DNS1 |
-				REQ_OPTION_DNS2 | REQ_OPTION_NBNS1 |
-				REQ_OPTION_NBNS2;
-
-	ipcp_generate_config_options(ipcp);
+	ipcp_reset_config_options(ipcp);
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
 
 	return pppcp;
