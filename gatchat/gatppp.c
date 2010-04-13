@@ -52,9 +52,9 @@ struct _GAtPPP {
 	gint ref_count;
 	enum ppp_phase phase;
 	struct pppcp_data *lcp;
-	struct auth_data *auth;
 	struct pppcp_data *ipcp;
 	struct ppp_net_data *net;
+	struct ppp_chap *chap;
 	guint8 buffer[BUFFERSZ];
 	int index;
 	gint mru;
@@ -177,7 +177,7 @@ static struct frame_buffer *ppp_encode(GAtPPP *ppp, guint8 *data, int len)
 /* called when we have received a complete ppp frame */
 static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 {
-	guint protocol = ppp_proto(frame->bytes);
+	guint16 protocol = ppp_proto(frame->bytes);
 	guint8 *packet = ppp_info(frame->bytes);
 
 	switch (protocol) {
@@ -191,9 +191,8 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 		pppcp_process_packet(ppp->ipcp, packet);
 		break;
 	case CHAP_PROTOCOL:
-		if (ppp->auth->proto == protocol &&
-				ppp->auth->proto_data != NULL) {
-			ppp->auth->process_packet(ppp->auth, packet);
+		if (ppp->chap) {
+			ppp_chap_process_packet(ppp->chap, packet);
 			break;
 		}
 		/* fall through */
@@ -398,8 +397,10 @@ void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
 
 	switch (proto) {
 	case CHAP_PROTOCOL:
-		/* get the algorithm */
-		auth_set_proto(ppp->auth, proto, auth_data[2]);
+		if (ppp->chap)
+			ppp_chap_free(ppp->chap);
+
+		ppp->chap = ppp_chap_new(ppp, auth_data[2]);
 		break;
 	default:
 		g_printerr("unknown authentication proto\n");
@@ -559,7 +560,7 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	g_io_channel_unref(ppp->modem);
 
 	lcp_free(ppp->lcp);
-	auth_free(ppp->auth);
+	ppp_chap_free(ppp->chap);
 	ipcp_free(ppp->ipcp);
 	ppp_net_free(ppp->net);
 
@@ -599,9 +600,6 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 
 	/* initialize the lcp state */
 	ppp->lcp = lcp_new(ppp);
-
-	/* initialize the autentication state */
-	ppp->auth = auth_new(ppp);
 
 	/* initialize IPCP state */
 	ppp->ipcp = ipcp_new(ppp);
