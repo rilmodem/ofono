@@ -401,6 +401,7 @@ const char *info_subblock_name(enum info_subblock value)
 		_(INFO_SB_PRODUCT_INFO_NAME);
 		_(INFO_SB_PRODUCT_INFO_MANUFACTURER);
 		_(INFO_SB_SN_IMEI_PLAIN);
+		_(INFO_SB_SN_IMEI_SV_TO_NET);
 		_(INFO_SB_MCUSW_VERSION);
 	}
 	return "INFO_<UNKNOWN>";

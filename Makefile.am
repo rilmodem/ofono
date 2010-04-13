@@ -97,6 +97,8 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/info.h \
 				drivers/isimodem/network-registration.c \
 				drivers/isimodem/network.h \
+				drivers/isimodem/infoserver.h \
+				drivers/isimodem/infoserver.c \
 				drivers/isimodem/voicecall.c \
 				drivers/isimodem/call.h \
 				drivers/isimodem/sms.c \

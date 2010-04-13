@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #define PN_PHONE_INFO	0x1B
+#define PN_EPOC_INFO    98
 #define INFO_TIMEOUT 	5
 
 enum info_isi_cause {
@@ -50,6 +51,7 @@ enum info_subblock {
 	INFO_SB_PRODUCT_INFO_NAME = 0x01,
 	INFO_SB_PRODUCT_INFO_MANUFACTURER = 0x07,
 	INFO_SB_SN_IMEI_PLAIN = 0x41,
+	INFO_SB_SN_IMEI_SV_TO_NET = 0x43,
 	INFO_SB_MCUSW_VERSION = 0x48
 };
 
