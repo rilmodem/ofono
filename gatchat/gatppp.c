@@ -536,8 +536,10 @@ void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename)
 	if (ppp == NULL)
 		return;
 
-	if (ppp->record_fd > fileno(stderr))
+	if (ppp->record_fd > fileno(stderr)) {
 		close(ppp->record_fd);
+		ppp->record_fd = -1;
+	}
 
 	if (filename == NULL)
 		return;
