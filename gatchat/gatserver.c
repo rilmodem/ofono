@@ -1074,8 +1074,10 @@ static void g_at_server_cleanup(GAtServer *server)
 	server->channel = NULL;
 }
 
-static void read_watcher_destroy_notify(GAtServer *server)
+static void read_watcher_destroy_notify(gpointer user_data)
 {
+	GAtServer *server = user_data;
+
 	g_at_server_cleanup(server);
 	server->read_watch = 0;
 
@@ -1086,8 +1088,10 @@ static void read_watcher_destroy_notify(GAtServer *server)
 		g_free(server);
 }
 
-static void write_watcher_destroy_notify(GAtServer *server)
+static void write_watcher_destroy_notify(gpointer user_data)
 {
+	GAtServer *server = user_data;
+
 	server->write_watch = 0;
 }
 
@@ -1100,7 +1104,7 @@ static void g_at_server_wakeup_writer(GAtServer *server)
 			G_PRIORITY_DEFAULT,
 			G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 			can_write_data, server,
-			(GDestroyNotify)write_watcher_destroy_notify);
+			write_watcher_destroy_notify);
 }
 
 static void v250_settings_create(struct v250_settings *v250)
@@ -1175,7 +1179,7 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	server->read_watch = g_io_add_watch_full(io, G_PRIORITY_DEFAULT,
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				received_data, server,
-				(GDestroyNotify)read_watcher_destroy_notify);
+				read_watcher_destroy_notify);
 
 	basic_command_register(server);
 

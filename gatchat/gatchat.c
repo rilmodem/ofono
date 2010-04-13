@@ -114,17 +114,21 @@ static gint at_notify_node_compare_by_id(gconstpointer a, gconstpointer b)
 	return 0;
 }
 
-static void at_notify_node_destroy(struct at_notify_node *node)
+static void at_notify_node_destroy(gpointer data, gpointer user_data)
 {
+	struct at_notify_node *node = data;
+
 	if (node->notify)
 		node->notify(node->user_data);
 
 	g_free(node);
 }
 
-static void at_notify_destroy(struct at_notify *notify)
+static void at_notify_destroy(gpointer user_data)
 {
-	g_slist_foreach(notify->nodes, (GFunc) at_notify_node_destroy, NULL);
+	struct at_notify *notify = user_data;
+
+	g_slist_foreach(notify->nodes, at_notify_node_destroy, NULL);
 	g_free(notify);
 }
 
@@ -281,8 +285,10 @@ static void g_at_chat_cleanup(GAtChat *chat)
 	}
 }
 
-static void read_watcher_destroy_notify(GAtChat *chat)
+static void read_watcher_destroy_notify(gpointer user_data)
 {
+	GAtChat *chat = user_data;
+
 	g_at_chat_cleanup(chat);
 	chat->read_watch = 0;
 
@@ -293,8 +299,10 @@ static void read_watcher_destroy_notify(GAtChat *chat)
 		g_free(chat);
 }
 
-static void write_watcher_destroy_notify(GAtChat *chat)
+static void write_watcher_destroy_notify(gpointer user_data)
 {
+	GAtChat *chat = user_data;
+
 	chat->write_watch = 0;
 }
 
@@ -883,7 +891,7 @@ static void g_at_chat_wakeup_writer(GAtChat *chat)
 				G_PRIORITY_DEFAULT,
 				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				can_write_data, chat,
-				(GDestroyNotify)write_watcher_destroy_notify);
+				write_watcher_destroy_notify);
 	} else {
 		while (can_write_data(chat->channel, G_IO_OUT, chat) == TRUE);
 		write_watcher_destroy_notify(chat);
@@ -929,7 +937,7 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 		goto error;
 
 	chat->notify_list = g_hash_table_new_full(g_str_hash, g_str_equal,
-				g_free, (GDestroyNotify)at_notify_destroy);
+						g_free, at_notify_destroy);
 
 	if (!g_at_util_setup_io(channel, flags))
 		goto error;
@@ -938,7 +946,7 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 	chat->read_watch = g_io_add_watch_full(channel, G_PRIORITY_DEFAULT,
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				received_data, chat,
-				(GDestroyNotify)read_watcher_destroy_notify);
+				read_watcher_destroy_notify);
 
 	chat->syntax = g_at_syntax_ref(syntax);
 
@@ -1269,7 +1277,7 @@ gboolean g_at_chat_unregister(GAtChat *chat, guint id)
 		if (!l)
 			continue;
 
-		at_notify_node_destroy(l->data);
+		at_notify_node_destroy(l->data, NULL);
 		notify->nodes = g_slist_remove(notify->nodes, l->data);
 
 		if (notify->nodes == NULL)
@@ -1297,7 +1305,7 @@ gboolean g_at_chat_unregister_all(GAtChat *chat)
 		notify = value;
 
 		for (l = notify->nodes; l; l = l->next)
-			at_notify_node_destroy(l->data);
+			at_notify_node_destroy(l->data, NULL);
 
 		g_slist_free(notify->nodes);
 		notify->nodes = NULL;

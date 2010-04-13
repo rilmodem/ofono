@@ -223,8 +223,10 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	return TRUE;
 }
 
-static void write_watcher_destroy_notify(GAtMux *mux)
+static void write_watcher_destroy_notify(gpointer user_data)
 {
+	GAtMux *mux = user_data;
+
 	mux->write_watch = 0;
 }
 
@@ -288,7 +290,7 @@ static void wakeup_writer(GAtMux *mux)
 				G_PRIORITY_DEFAULT,
 				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				can_write_data, mux,
-				(GDestroyNotify)write_watcher_destroy_notify);
+				write_watcher_destroy_notify);
 }
 
 int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite)
