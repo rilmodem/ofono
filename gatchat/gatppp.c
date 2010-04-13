@@ -85,16 +85,6 @@ void ppp_debug(GAtPPP *ppp, const char *str)
 	ppp->debugf(str, ppp->debug_data);
 }
 
-void ppp_connect_cb(GAtPPP *ppp, GAtPPPConnectStatus success,
-			const char *ip, const char *dns1, const char *dns2)
-{
-	if (ppp->connect_cb == NULL)
-		return;
-
-	ppp->connect_cb(success, ppp_net_get_interface(ppp->net),
-				ip, dns1, dns2,  ppp->connect_data);
-}
-
 #define PPPINITFCS16    0xffff  /* Initial FCS value */
 #define PPPGOODFCS16    0xf0b8  /* Good final FCS value */
 
@@ -373,8 +363,6 @@ void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 		/* Send UP & OPEN events to the IPCP layer */
 		pppcp_signal_open(ppp->ipcp);
 		pppcp_signal_up(ppp->ipcp);
-		/* bring network phase up */
-		ppp_net_open(ppp->net);
 		break;
 	case PPP_PHASE_TERMINATION:
 		pppcp_signal_close(ppp->lcp);
@@ -414,6 +402,20 @@ void ppp_auth_notify(GAtPPP *ppp, gboolean success)
 		ppp_enter_phase(ppp, PPP_PHASE_NETWORK);
 	else
 		ppp_enter_phase(ppp, PPP_PHASE_TERMINATION);
+}
+
+void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
+					const char *dns1, const char *dns2)
+{
+	/* bring network phase up */
+	ppp_net_open(ppp->net);
+
+	if (ppp->connect_cb == NULL)
+		return;
+
+	ppp->connect_cb(G_AT_PPP_CONNECT_SUCCESS,
+				ppp_net_get_interface(ppp->net),
+				ip, dns1, dns2, ppp->connect_data);
 }
 
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)

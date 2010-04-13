@@ -79,6 +79,8 @@ void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
 void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
 void ppp_auth_notify(GAtPPP *ppp, gboolean success);
+void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
+					const char *dns1, const char *dns2);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_pfc(GAtPPP *ppp, gboolean pfc);
@@ -90,8 +92,6 @@ void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
 struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);
-void ppp_connect_cb(GAtPPP *ppp, GAtPPPConnectStatus success,
-			const char *ip, const char *dns1, const char *dns2);
 
 /* CHAP related functions */
 struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method);
