@@ -566,9 +566,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	if (!ppp)
 		return NULL;
 
-	ppp->modem = g_io_channel_ref(modem);
-	if (!g_at_util_setup_io(ppp->modem, G_IO_FLAG_NONBLOCK)) {
-		g_io_channel_unref(modem);
+	if (!g_at_util_setup_io(modem, G_IO_FLAG_NONBLOCK)) {
 		g_free(ppp);
 		return NULL;
 	}
@@ -599,6 +597,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 				ppp_read_cb, ppp,
 				(GDestroyNotify)read_watcher_destroy_notify);
 
+	ppp->modem = modem;
 	ppp->record_fd = -1;
 
 	return ppp;
