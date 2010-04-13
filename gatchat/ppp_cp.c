@@ -34,10 +34,29 @@
 #include "gatppp.h"
 #include "ppp.h"
 
+static const char *pppcp_state_strings[] = {
+	"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
+	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED"
+};
+
+static const char *pppcp_event_strings[] = {
+	"Up", "Down", "Open", "Close", "TO+", "TO-", "RCR+", "RCR-",
+	"RCA", "RCN", "RTR", "RTA", "RUC", "RXJ+", "RXJ-", "RXR"
+};
+
 #define pppcp_trace(p) do { \
 	char *str = g_strdup_printf("%s: %s: current state %d:%s", \
 				p->driver->name, __FUNCTION__, \
 				p->state, pppcp_state_strings[p->state]); \
+	ppp_debug(p->ppp, str); \
+	g_free(str); \
+} while (0);
+
+#define pppcp_trace_event(p, type, actions, state) do { \
+	char *str = g_strdup_printf("event: %d (%s), " \
+				"action: %x, new_state: %d (%s)", \
+				type, pppcp_event_strings[type], \
+				actions, state, pppcp_state_strings[state]); \
 	ppp_debug(p->ppp, str); \
 	g_free(str); \
 } while (0);
@@ -81,16 +100,6 @@ enum actions {
 	STA = 0x10000,
 	SCJ = 0x20000,
 	SER = 0x40000,
-};
-
-static const char *pppcp_state_strings[] = {
-	"INITIAL", "STARTING", "CLOSED", "STOPPED", "CLOSING", "STOPPING",
-	"REQSENT", "ACKRCVD", "ACKSENT", "OPENED"
-};
-
-static const char *pppcp_event_strings[] = {
-	"Up", "Down", "Open", "Close", "TO+", "TO-", "RCR+", "RCR-",
-	"RCA", "RCN", "RTR", "RTA", "RUC", "RXJ+", "RXJ-", "RXR"
 };
 
 /*
@@ -626,9 +635,7 @@ static void pppcp_generate_event(struct pppcp_data *data,
 	actions = cp_transitions[event_type][data->state];
 	new_state = actions & 0xf;
 
-	g_print("event: %d (%s), action: %x, new_state: %d (%s)\n",
-			event_type, pppcp_event_strings[event_type],
-			actions, new_state, pppcp_state_strings[new_state]);
+	pppcp_trace_event(data, event_type, actions, new_state);
 
 	if (actions & INV)
 		goto error;
