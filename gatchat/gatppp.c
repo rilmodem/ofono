@@ -58,8 +58,8 @@ struct _GAtPPP {
 	guint8 buffer[BUFFERSZ];
 	int index;
 	gint mru;
-	char user_name[256];
-	char passwd[256];
+	char username[256];
+	char password[256];
 	gboolean pfc;
 	gboolean acfc;
 	guint32 xmit_accm[8];
@@ -443,10 +443,35 @@ void g_at_ppp_open(GAtPPP *ppp)
 	ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
 }
 
-void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
-						const char *passwd)
+gboolean g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
+					const char *password)
 {
-	auth_set_credentials(ppp->auth, username, passwd);
+	if (username && strlen(username) > 255)
+		return FALSE;
+
+	if (password && strlen(password) > 255)
+		return FALSE;
+
+	memset(ppp->username, 0, sizeof(ppp->username));
+	memset(ppp->password, 0, sizeof(ppp->password));
+
+	if (username)
+		strcpy(ppp->username, username);
+
+	if (password)
+		strcpy(ppp->password, password);
+
+	return TRUE;
+}
+
+const char *g_at_ppp_get_username(GAtPPP *ppp)
+{
+	return ppp->username;
+}
+
+const char *g_at_ppp_get_password(GAtPPP *ppp)
+{
+	return ppp->password;
 }
 
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,

@@ -53,8 +53,11 @@ void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename);
 void g_at_ppp_shutdown(GAtPPP *ppp);
 void g_at_ppp_ref(GAtPPP *ppp);
 void g_at_ppp_unref(GAtPPP *ppp);
-void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
+
+gboolean g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
 						const char *passwd);
+const char *g_at_ppp_get_username(GAtPPP *ppp);
+const char *g_at_ppp_get_password(GAtPPP *ppp);
 
 #ifdef __cplusplus
 }
