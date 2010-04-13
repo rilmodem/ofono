@@ -118,15 +118,6 @@ static void lcp_down(struct pppcp_data *pppcp)
 }
 
 /*
- * Indicate that the lower layer is now needed
- * Should trigger Up event
- */
-static void lcp_started(struct pppcp_data *pppcp)
-{
-	ppp_generate_event(pppcp_get_ppp(pppcp), PPP_UP);
-}
-
-/*
  * Indicate that the lower layer is not needed
  * Should trigger Down event
  */
@@ -233,7 +224,6 @@ struct pppcp_proto lcp_proto = {
 	.supported_codes	= LCP_SUPPORTED_CODES,
 	.this_layer_up		= lcp_up,
 	.this_layer_down	= lcp_down,
-	.this_layer_started	= lcp_started,
 	.this_layer_finished	= lcp_finished,
 	.rca			= lcp_rca,
 	.rcn_nak		= lcp_rcn_nak,

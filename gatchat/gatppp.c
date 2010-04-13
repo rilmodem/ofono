@@ -385,6 +385,7 @@ static void ppp_transition_phase(GAtPPP *ppp, enum ppp_phase phase)
 		/* bring network phase up */
 		ppp_net_open(ppp->net);
 		pppcp_signal_open(ppp->ipcp);
+		pppcp_signal_up(ppp->ipcp);
 		break;
 	}
 }
@@ -481,6 +482,7 @@ void g_at_ppp_open(GAtPPP *ppp)
 {
 	/* send an open event to the lcp layer */
 	pppcp_signal_open(ppp->lcp);
+	pppcp_signal_up(ppp->lcp);
 }
 
 void g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,

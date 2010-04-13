@@ -149,14 +149,6 @@ static void ipcp_down(struct pppcp_data *pppcp)
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
 }
 
-/*
- * Tell the protocol to start the handshake
- */
-static void ipcp_started(struct pppcp_data *data)
-{
-	pppcp_signal_up(data);
-}
-
 static void ipcp_finished(struct pppcp_data *pppcp)
 {
 }
@@ -300,7 +292,6 @@ struct pppcp_proto ipcp_proto = {
 	.supported_codes	= IPCP_SUPPORTED_CODES,
 	.this_layer_up		= ipcp_up,
 	.this_layer_down	= ipcp_down,
-	.this_layer_started	= ipcp_started,
 	.this_layer_finished	= ipcp_finished,
 	.rca			= ipcp_rca,
 	.rcn_nak		= ipcp_rcn_nak,
