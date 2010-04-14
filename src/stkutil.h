@@ -562,7 +562,11 @@ struct stk_card_reader_id {
  * So the maximum size is 16 (for ipv6).
  */
 struct stk_other_address {
-	unsigned char addr[16];
+	union {
+		/* Network Byte Order */
+		unsigned int ipv4;
+		unsigned char ipv6[16];
+	} addr;
 	unsigned char type;
 };
 

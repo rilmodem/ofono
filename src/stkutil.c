@@ -1202,7 +1202,7 @@ static gboolean parse_dataobj_other_address(
 
 	data = comprehension_tlv_iter_get_data(iter);
 	oa->type = data[0];
-	memcpy(oa->addr, data + 1, len - 1);
+	memcpy(&oa->addr, data + 1, len - 1);
 
 	return TRUE;
 }
