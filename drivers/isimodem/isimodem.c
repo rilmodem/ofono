@@ -51,6 +51,7 @@
 #include <ofono/call-meter.h>
 #include <ofono/radio-settings.h>
 #include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 
 #include "isimodem.h"
 #include "isiutil.h"
@@ -301,6 +302,8 @@ static void isi_modem_pre_sim(struct ofono_modem *modem)
 static void isi_modem_post_sim(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	ofono_phonebook_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_netreg_create(isi->modem, 0, "isimodem", isi->idx);
@@ -313,7 +316,13 @@ static void isi_modem_post_sim(struct ofono_modem *modem)
 	ofono_call_barring_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_meter_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_radio_settings_create(isi->modem, 0, "isimodem", isi->idx);
-	ofono_gprs_create(isi->modem, 0, "isimodem", isi->idx);
+	gprs = ofono_gprs_create(isi->modem, 0, "isimodem", isi->idx);
+	gc = ofono_gprs_context_create(isi->modem, 0, "isimodem", isi->idx);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
+	else
+		DBG("Failed to add context");
 }
 
 static struct ofono_modem_driver driver = {
@@ -345,6 +354,7 @@ static int isimodem_init(void)
 	isi_call_meter_init();
 	isi_radio_settings_init();
 	isi_gprs_init();
+	isi_gprs_context_init();
 
 	ofono_modem_driver_register(&driver);
 
@@ -387,6 +397,7 @@ static void isimodem_exit(void)
 	isi_call_meter_exit();
 	isi_radio_settings_exit();
 	isi_gprs_exit();
+	isi_gprs_context_exit();
 }
 
 OFONO_PLUGIN_DEFINE(isimodem, "PhoNet / ISI modem driver", VERSION,

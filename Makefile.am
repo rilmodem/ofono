@@ -113,6 +113,7 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/radio-settings.c \
 				drivers/isimodem/gss.h \
 				drivers/isimodem/gprs.c \
+				drivers/isimodem/gprs-context.c \
 				drivers/isimodem/gpds.h
 endif
 

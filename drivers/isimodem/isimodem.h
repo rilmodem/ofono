@@ -63,3 +63,6 @@ extern void isi_radio_settings_exit();
 
 extern void isi_gprs_init();
 extern void isi_gprs_exit();
+
+extern void isi_gprs_context_init();
+extern void isi_gprs_context_exit();
