@@ -433,6 +433,9 @@ static GIOStatus channel_read(GIOChannel *channel, gchar *buf, gsize count,
 
 	*bytes_read = ring_buffer_read(mux_channel->buffer, buf, avail);
 
+	if (*bytes_read == 0)
+		return G_IO_STATUS_AGAIN;
+
 	return G_IO_STATUS_NORMAL;
 }
 
