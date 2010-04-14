@@ -1019,6 +1019,13 @@ static gboolean parse_dataobj_url(struct comprehension_tlv_iter *iter,
 					void *user)
 {
 	char **url = user;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len == 0) {
+		*url = NULL;
+		return TRUE;
+	}
+
 	return parse_dataobj_common_text(iter, url);
 }
 
