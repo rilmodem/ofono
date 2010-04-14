@@ -66,7 +66,10 @@ static gboolean g_isi_pep_callback(GIOChannel *channel, GIOCondition cond,
 		return TRUE;
 	}
 	pep->gprs_fd = fd;
-	pep->ready(pep, pep->opaque);
+
+	if (pep->ready)
+		pep->ready(pep, pep->opaque);
+
 	return FALSE;
 }
 
