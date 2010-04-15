@@ -44,7 +44,7 @@ struct ofono_stk {
 	struct ofono_atom *atom;
 };
 
-static void stk_cb_download_cb(const struct ofono_error *error,
+static void stk_cbs_download_cb(const struct ofono_error *error,
 				const unsigned char *data, int len, void *user)
 {
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
@@ -77,7 +77,7 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk,
 
 	memcpy(tlv + 8, pdu, pdu_len);
 
-	stk->driver->envelope(stk, pdu_len + 8, tlv, stk_cb_download_cb, stk);
+	stk->driver->envelope(stk, pdu_len + 8, tlv, stk_cbs_download_cb, stk);
 }
 
 void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
