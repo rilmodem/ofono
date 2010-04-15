@@ -31,21 +31,22 @@ extern "C" {
 struct ofono_stk;
 
 typedef void (*ofono_stk_envelope_cb_t)(const struct ofono_error *error,
-		const unsigned char *rdata, int length, void *data);
+					const unsigned char *rdata,
+					int length, void *data);
 
 typedef void (*ofono_stk_generic_cb_t)(const struct ofono_error *error,
-		void *data);
+					void *data);
 
 struct ofono_stk_driver {
 	const char *name;
 	int (*probe)(struct ofono_stk *stk, unsigned int vendor, void *data);
 	void (*remove)(struct ofono_stk *stk);
-	void (*envelope)(struct ofono_stk *stk, int length,
-			const guint8 *command, ofono_stk_envelope_cb_t cb,
-			void *data);
-	void (*terminal_response)(struct ofono_stk *stk, int length,
-			const unsigned char *value, ofono_stk_generic_cb_t cb,
-			void *data);
+	void (*envelope)(struct ofono_stk *stk,
+				int length, const unsigned char *command,
+				ofono_stk_envelope_cb_t cb, void *data);
+	void (*terminal_response)(struct ofono_stk *stk,
+					int length, const unsigned char *resp,
+					ofono_stk_generic_cb_t cb, void *data);
 };
 
 int ofono_stk_driver_register(const struct ofono_stk_driver *d);
@@ -62,7 +63,7 @@ void ofono_stk_set_data(struct ofono_stk *stk, void *data);
 void *ofono_stk_get_data(struct ofono_stk *stk);
 
 void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
-		int length, const guint8 *pdu);
+					int length, const guint8 *pdu);
 
 #ifdef __cplusplus
 }
