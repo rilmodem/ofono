@@ -701,8 +701,7 @@ static void server_destroy(gpointer user)
 {
 	struct sock_server *data = user;
 
-	if (data)
-		g_free(data);
+	g_free(data);
 }
 
 static void set_raw_mode(int fd)
@@ -780,8 +779,7 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	return TRUE;
 
 error:
-	if (data)
-		g_free(data);
+	g_free(data);
 
 	return FALSE;
 }
