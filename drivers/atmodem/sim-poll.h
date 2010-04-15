@@ -19,4 +19,4 @@
  *
  */
 
-void ofono_atmodem_poll_enable(struct ofono_modem *modem, GAtChat *chat);
+void atmodem_poll_enable(struct ofono_modem *modem, GAtChat *chat);

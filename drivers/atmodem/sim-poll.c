@@ -288,7 +288,7 @@ static void stk_watch(struct ofono_atom *atom,
 		spd->stk = NULL;
 }
 
-void ofono_atmodem_poll_enable(struct ofono_modem *modem, GAtChat *chat)
+void atmodem_poll_enable(struct ofono_modem *modem, GAtChat *chat)
 {
 	struct ofono_atom *sim_atom;
 	struct ofono_atom *stk_atom;

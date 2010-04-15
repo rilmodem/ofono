@@ -294,7 +294,7 @@ static void phonesim_pre_sim(struct ofono_modem *modem)
 	ofono_stk_create(modem, 0, "atmodem", data->chat);
 
 	if (!data->calypso)
-		ofono_atmodem_poll_enable(modem, data->chat);
+		atmodem_poll_enable(modem, data->chat);
 	else if (sim)
 		ofono_sim_inserted_notify(sim, TRUE);
 }

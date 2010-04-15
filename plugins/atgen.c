@@ -167,7 +167,7 @@ static void atgen_pre_sim(struct ofono_modem *modem)
 	ofono_voicecall_create(modem, 0, "atmodem", chat);
 	ofono_stk_create(modem, 0, "atmodem", chat);
 
-	ofono_atmodem_poll_enable(modem, chat);
+	atmodem_poll_enable(modem, chat);
 }
 
 static void atgen_post_sim(struct ofono_modem *modem)
