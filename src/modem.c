@@ -1152,23 +1152,20 @@ static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 {
 	struct ofono_modem *modem = user;
 
-	if (new_state == OFONO_SIM_STATE_NOT_PRESENT) {
-		if (modem->pre_sim_atoms)
-			remove_post_sim_atoms(modem);
-
-		return;
-	}
-
-	if (new_state != OFONO_SIM_STATE_READY)
-		return;
-
-	if (modem->pre_sim_atoms == NULL)
+	switch (new_state) {
+	case OFONO_SIM_STATE_NOT_PRESENT:
+		remove_post_sim_atoms(modem);
+		break;
+	case OFONO_SIM_STATE_INSERTED:
+		break;
+	case OFONO_SIM_STATE_READY:
 		modem->pre_sim_atoms = g_slist_copy(modem->atoms);
 
-	if (modem->driver->post_sim)
-		modem->driver->post_sim(modem);
+		if (modem->driver->post_sim)
+			modem->driver->post_sim(modem);
 
-	__ofono_history_probe_drivers(modem);
+		__ofono_history_probe_drivers(modem);
+	}
 }
 
 static void sim_watch(struct ofono_atom *atom,
