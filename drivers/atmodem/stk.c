@@ -90,7 +90,7 @@ error:
 }
 
 static void at_stk_envelope(struct ofono_stk *stk, int length,
-				const guint8 *command,
+				const unsigned char *command,
 				ofono_stk_envelope_cb_t cb, void *data)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
