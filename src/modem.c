@@ -1161,7 +1161,6 @@ static void sim_watch(struct ofono_atom *atom,
 	modem->sim_ready_watch = ofono_sim_add_state_watch(modem->sim,
 							modem_sim_ready,
 							modem, NULL);
-	modem_sim_ready(modem, ofono_sim_get_state(modem->sim));
 }
 
 int ofono_modem_register(struct ofono_modem *modem)
