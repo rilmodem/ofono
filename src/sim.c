@@ -1028,9 +1028,9 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 	sim->imsi = g_strdup(imsi);
 
 	ofono_dbus_signal_property_changed(conn, path,
-					OFONO_SIM_MANAGER_INTERFACE,
-					"SubscriberIdentity",
-					DBUS_TYPE_STRING, &sim->imsi);
+						OFONO_SIM_MANAGER_INTERFACE,
+						"SubscriberIdentity",
+						DBUS_TYPE_STRING, &sim->imsi);
 
 	/* Read CPHS-support bits, this is still part of the SIM
 	 * initialisation but no order is specified for it.  */
@@ -1818,13 +1818,14 @@ const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim)
 
 static void sim_inserted_update(struct ofono_sim *sim)
 {
-	dbus_bool_t present = sim->state != OFONO_SIM_STATE_NOT_PRESENT;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(sim->atom);
+	dbus_bool_t present = sim->state != OFONO_SIM_STATE_NOT_PRESENT;
 
 	ofono_dbus_signal_property_changed(conn, path,
-			OFONO_SIM_MANAGER_INTERFACE, "Present",
-			DBUS_TYPE_BOOLEAN, &present);
+						OFONO_SIM_MANAGER_INTERFACE,
+						"Present",
+						DBUS_TYPE_BOOLEAN, &present);
 }
 
 static void sim_free_state(struct ofono_sim *sim)
