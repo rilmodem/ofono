@@ -1908,7 +1908,8 @@ static void sim_watch(struct ofono_atom *atom,
 	}
 
 	vc->sim_state_watch = ofono_sim_add_state_watch(sim,
-			sim_state_watch, vc, NULL);
+							sim_state_watch,
+							vc, NULL);
 
 	sim_state_watch(vc, ofono_sim_get_state(sim));
 }
