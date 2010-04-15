@@ -46,7 +46,7 @@ struct stk_data {
 static const char *csim_prefix[] = { "+CSIM:", NULL };
 
 static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
-		gpointer user_data)
+				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
@@ -129,7 +129,7 @@ error:
 }
 
 static void at_csim_terminal_response_cb(gboolean ok, GAtResult *result,
-		gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
@@ -173,8 +173,9 @@ error:
 }
 
 static void at_stk_terminal_response(struct ofono_stk *stk, int length,
-		const unsigned char *value, ofono_stk_generic_cb_t cb,
-		void *data)
+					const unsigned char *value,
+					ofono_stk_generic_cb_t cb,
+					void *data)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -215,8 +216,7 @@ static gboolean at_stk_register(gpointer user)
 	return FALSE;
 }
 
-static int at_stk_probe(struct ofono_stk *stk, unsigned int vendor,
-		void *data)
+static int at_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 {
 	GAtChat *chat = data;
 	struct stk_data *sd;
