@@ -1054,7 +1054,7 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 			cbs_got_imsi(cbs);
 	}
 
-	stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+	stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
 
 	if (stk_atom)
 		cbs->stk = __ofono_atom_get_data(stk_atom);
