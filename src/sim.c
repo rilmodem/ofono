@@ -1319,6 +1319,30 @@ static void sim_determine_phase(struct ofono_sim *sim)
 						sim_efphase_read_cb, sim);
 }
 
+static void sim_initialize(struct ofono_sim *sim)
+{
+	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
+	 * The assumption here is that if sim manager is being initialized,
+	 * then sim commands are implemented, and the sim manager is then
+	 * responsible for checking the PIN, reading the IMSI and signaling
+	 * SIM ready condition.
+	 *
+	 * The procedure according to 31.102 is roughly:
+	 * Read EFecc
+	 * Read EFli and EFpl
+	 * SIM Pin check
+	 * Request SIM phase (only in 51.011)
+	 * Read EFust
+	 * Read EFest
+	 * Read IMSI
+	 *
+	 * At this point we signal the SIM ready condition and allow
+	 * arbitrary files to be written or read, assuming their presence
+	 * in the EFust
+	 */
+	sim_determine_phase(sim);
+}
+
 static void sim_op_error(struct ofono_sim *sim)
 {
 	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
@@ -1873,32 +1897,10 @@ void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 		notify(item->notify_data, sim->state);
 	}
 
-	if (!inserted) {
+	if (inserted)
+		sim_initialize(sim);
+	else
 		sim_free_state(sim);
-
-		return;
-	}
-
-	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
-	 * The assumption here is that if sim manager is being initialized,
-	 * then sim commands are implemented, and the sim manager is then
-	 * responsible for checking the PIN, reading the IMSI and signaling
-	 * SIM ready condition.
-	 *
-	 * The procedure according to 31.102 is roughly:
-	 * Read EFecc
-	 * Read EFli and EFpl
-	 * SIM Pin check
-	 * Request SIM phase (only in 51.011)
-	 * Read EFust
-	 * Read EFest
-	 * Read IMSI
-	 *
-	 * At this point we signal the SIM ready condition and allow
-	 * arbitrary files to be written or read, assuming their presence
-	 * in the EFust
-	 */
-	sim_determine_phase(sim);
 }
 
 unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
@@ -2085,7 +2087,6 @@ void ofono_sim_register(struct ofono_sim *sim)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(sim->atom);
 	const char *path = __ofono_atom_get_path(sim->atom);
-	ofono_bool_t inserted;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_SIM_MANAGER_INTERFACE,
@@ -2104,10 +2105,8 @@ void ofono_sim_register(struct ofono_sim *sim)
 
 	ofono_sim_add_state_watch(sim, sim_ready, sim, NULL);
 
-	inserted = sim->state != OFONO_SIM_STATE_NOT_PRESENT;
-	sim->state = OFONO_SIM_STATE_NOT_PRESENT;
-
-	ofono_sim_inserted_notify(sim, inserted);
+	if (sim->state > OFONO_SIM_STATE_NOT_PRESENT)
+		sim_initialize(sim);
 }
 
 void ofono_sim_remove(struct ofono_sim *sim)
