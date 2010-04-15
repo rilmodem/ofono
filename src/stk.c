@@ -81,7 +81,7 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk,
 }
 
 void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
-		int length, const guint8 *pdu)
+					int length, const unsigned char *pdu)
 {
 	struct stk_command *cmd;
 	char *buf;
