@@ -258,6 +258,14 @@ gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem,
 	return __ofono_watchlist_remove_item(modem->atom_watches, id);
 }
 
+#define FIND_ATOM_IN_LIST(list)			\
+	for (l = list; l; l = l->next) {	\
+		atom = l->data;			\
+						\
+		if (atom->type == type)		\
+			return atom;		\
+	}					\
+
 struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 						enum ofono_atom_type type)
 {
@@ -267,15 +275,21 @@ struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 	if (modem == NULL)
 		return NULL;
 
-	for (l = modem->atoms; l; l = l->next) {
-		atom = l->data;
-
-		if (atom->type == type)
-			return atom;
-	}
+	FIND_ATOM_IN_LIST(modem->atoms)
+	FIND_ATOM_IN_LIST(modem->pre_sim_atoms);
 
 	return NULL;
 }
+
+#define FOREACH_ATOM_IN_LIST(list)		\
+	for (l = list; l; l = l->next) {	\
+		atom = l->data;			\
+						\
+		if (atom->type != type)		\
+			continue;		\
+						\
+		callback(atom, data);		\
+	}					\
 
 void __ofono_modem_foreach_atom(struct ofono_modem *modem,
 				enum ofono_atom_type type,
@@ -287,14 +301,8 @@ void __ofono_modem_foreach_atom(struct ofono_modem *modem,
 	if (modem == NULL)
 		return;
 
-	for (l = modem->atoms; l; l = l->next) {
-		atom = l->data;
-
-		if (atom->type != type)
-			continue;
-
-		callback(atom, data);
-	}
+	FOREACH_ATOM_IN_LIST(modem->atoms)
+	FOREACH_ATOM_IN_LIST(modem->pre_sim_atoms)
 }
 
 void __ofono_atom_free(struct ofono_atom *atom)
@@ -312,15 +320,12 @@ void __ofono_atom_free(struct ofono_atom *atom)
 	g_free(atom);
 }
 
-static void remove_all_atoms(struct ofono_modem *modem)
+static void remove_all_atoms(GSList **atoms)
 {
 	GSList *l;
 	struct ofono_atom *atom;
 
-	if (modem == NULL)
-		return;
-
-	for (l = modem->atoms; l; l = l->next) {
+	for (l = *atoms; l; l = l->next) {
 		atom = l->data;
 
 		__ofono_atom_unregister(atom);
@@ -331,36 +336,8 @@ static void remove_all_atoms(struct ofono_modem *modem)
 		g_free(atom);
 	}
 
-	g_slist_free(modem->atoms);
-	g_slist_free(modem->pre_sim_atoms);
-	modem->atoms = NULL;
-	modem->pre_sim_atoms = NULL;
-}
-
-static void remove_post_sim_atoms(struct ofono_modem *modem)
-{
-	GSList *l;
-	struct ofono_atom *atom;
-
-	if (modem == NULL)
-		return;
-
-	for (l = modem->atoms; l; l = l->next) {
-		atom = l->data;
-
-		if (g_slist_find(modem->pre_sim_atoms, atom))
-			continue;
-
-		__ofono_atom_unregister(atom);
-
-		if (atom->destruct)
-			atom->destruct(atom);
-
-		g_free(atom);
-	}
-
-	g_slist_free(modem->atoms);
-	modem->atoms = g_slist_copy(modem->pre_sim_atoms);
+	g_slist_free(*atoms);
+	*atoms = NULL;
 }
 
 static DBusMessage *modem_get_properties(DBusConnection *conn,
@@ -445,7 +422,8 @@ static int set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 
 	/* Remove the atoms even if the driver is no longer available */
 	if (powered == FALSE) {
-		remove_all_atoms(modem);
+		remove_all_atoms(&modem->atoms);
+		remove_all_atoms(&modem->pre_sim_atoms);
 		modem->call_ids = 0;
 	}
 
@@ -623,7 +601,8 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 			if (modem->driver->pre_sim)
 				modem->driver->pre_sim(modem);
 		} else {
-			remove_all_atoms(modem);
+			remove_all_atoms(&modem->atoms);
+			remove_all_atoms(&modem->pre_sim_atoms);
 			modem->call_ids = 0;
 		}
 	}
@@ -1154,12 +1133,13 @@ static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 
 	switch (new_state) {
 	case OFONO_SIM_STATE_NOT_PRESENT:
-		remove_post_sim_atoms(modem);
+		remove_all_atoms(&modem->atoms);
 		break;
 	case OFONO_SIM_STATE_INSERTED:
 		break;
 	case OFONO_SIM_STATE_READY:
-		modem->pre_sim_atoms = g_slist_copy(modem->atoms);
+		modem->pre_sim_atoms = modem->atoms;
+		modem->atoms = NULL;
 
 		if (modem->driver->post_sim)
 			modem->driver->post_sim(modem);
