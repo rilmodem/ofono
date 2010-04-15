@@ -60,9 +60,6 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk,
 {
 	guint8 tlv[pdu_len + 8];
 
-	if (stk == NULL)
-		return;
-
 	if (stk->driver->envelope == NULL)
 		return;
 
