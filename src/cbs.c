@@ -196,7 +196,8 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	}
 
 	if (cbs_topic_in_range(c.message_identifier, cbs->efcbmid_contents)) {
-		__ofono_cbs_sim_download(cbs->stk, pdu, pdu_len);
+		if (cbs->stk)
+			__ofono_cbs_sim_download(cbs->stk, pdu, pdu_len);
 		return;
 	}
 
