@@ -32,6 +32,10 @@ for path in properties["Modems"]:
 	context = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.PrimaryDataContext')
 
-	context.SetProperty("AccessPointName", sys.argv[1])
+	try:
+		context.SetProperty("AccessPointName", sys.argv[1])
+	except IndexError:
+		print "Usage: %s <apn_name>" % sys.argv[0]
+		exit(1)
 
 	print "Setting APN of %s to %s" % (path, sys.argv[1])

@@ -35,4 +35,8 @@ for path in properties["Modems"]:
 	context = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.PrimaryDataContext')
 
-	context.SetProperty("Active", dbus.Boolean(1))
+	try:
+		context.SetProperty("Active", dbus.Boolean(1))
+	except dbus.DBusException, e:
+		print "Error activating %s: %s" % (path, str(e))
+		exit(2)
