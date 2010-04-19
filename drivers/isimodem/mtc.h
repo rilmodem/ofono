@@ -42,13 +42,27 @@ enum mtc_isi_cause {
 	MTC_RESET_REQUIRED = 0x17
 };
 
+enum mtc_isi_action {
+	MTC_START = 0x03,
+	MTC_READY = 0x04,
+	MTC_NOS_READY = 0x0C,
+	MTC_SOS_START = 0x11,
+	MTC_SOS_READY = 0x12,
+};
+
 enum mtc_message_id {
+	MTC_STATE_REQ = 0x01,
 	MTC_STATE_QUERY_REQ = 0x02,
 	MTC_POWER_OFF_REQ = 0x03,
 	MTC_POWER_ON_REQ = 0x04,
+	MTC_STARTUP_SYNQ_REQ = 0x0B,
+	MTC_SHUTDOWN_SYNC_REQ = 0x12,
+	MTC_STATE_RESP = 0x64,
 	MTC_STATE_QUERY_RESP = 0x65,
 	MTC_POWER_OFF_RESP = 0x66,
 	MTC_POWER_ON_RESP = 0x67,
+	MTC_STARTUP_SYNQ_RESP = 0x6E,
+	MTC_SHUTDOWN_SYNC_RESP = 0x75,
 	MTC_STATE_INFO_IND = 0xC0,
 	MTC_COMMON_MESSAGE = 0xF0
 };
@@ -69,7 +83,8 @@ enum mtc_modem_state {
 	MTC_DISCHARGING = 0x0C,
 	MTC_DISK_WIPE = 0x0D,
 	MTC_SW_RESET = 0x0E,
-	MTC_CMT_ONLY_MODE = 0xFF
+	MTC_CMT_ONLY_MODE = 0xFF,
+	MTC_STATE_NONE = -1,	/* Used only internally */
 };
 
 #ifdef __cplusplus

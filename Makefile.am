@@ -118,6 +118,10 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/gprs.c \
 				drivers/isimodem/gprs-context.c \
 				drivers/isimodem/gpds.h
+
+builtin_modules += usbpnmodem
+builtin_sources += plugins/usbpnmodem.c
+
 endif
 
 if ATMODEM

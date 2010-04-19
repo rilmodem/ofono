@@ -18,12 +18,16 @@
 #ifndef GISI_MODEM_H
 #define GISI_MODEM_H
 
+#include <stdint.h>
+
 typedef struct _GIsiModem GIsiModem;
 
 static inline unsigned g_isi_modem_index(GIsiModem *m)
 {
 	return (uintptr_t)m;
 }
+
+GIsiModem *g_isi_modem_by_name(char const *name);
 
 typedef void (*GIsiDebugFunc) (const void *restrict data, size_t len,
 		void *opaque);

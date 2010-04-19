@@ -19,6 +19,8 @@
  *
  */
 
+extern struct ofono_modem *isi_modem_by_interface(char const *ifname);
+
 extern void isi_phonebook_init();
 extern void isi_phonebook_exit();
 

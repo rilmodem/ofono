@@ -109,12 +109,18 @@ const char *mtc_isi_cause_name(enum mtc_isi_cause value)
 const char *mtc_message_id_name(enum mtc_message_id value)
 {
 	switch (value) {
+		_(MTC_STATE_REQ);
 		_(MTC_STATE_QUERY_REQ);
 		_(MTC_POWER_OFF_REQ);
 		_(MTC_POWER_ON_REQ);
+		_(MTC_STARTUP_SYNQ_REQ);
+		_(MTC_SHUTDOWN_SYNC_REQ);
+		_(MTC_STATE_RESP);
 		_(MTC_STATE_QUERY_RESP);
 		_(MTC_POWER_OFF_RESP);
 		_(MTC_POWER_ON_RESP);
+		_(MTC_STARTUP_SYNQ_RESP);
+		_(MTC_SHUTDOWN_SYNC_RESP);
 		_(MTC_STATE_INFO_IND);
 		_(MTC_COMMON_MESSAGE);
 	}
@@ -140,6 +146,7 @@ const char *mtc_modem_state_name(enum mtc_modem_state value)
 		_(MTC_DISK_WIPE);
 		_(MTC_SW_RESET);
 		_(MTC_CMT_ONLY_MODE);
+		_(MTC_STATE_NONE);
 	}
 	return "MTC_<UNKNOWN>";
 }

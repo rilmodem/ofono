@@ -35,10 +35,25 @@ extern "C" {
 struct _GPhonetNetlink;
 typedef struct _GPhonetNetlink GPhonetNetlink;
 
-typedef void (*GPhonetNetlinkFunc)(bool up, uint8_t addr, GIsiModem *idx,
-					void *data);
+typedef enum {
+	PN_LINK_REMOVED,
+	PN_LINK_DOWN,
+	PN_LINK_UP
+} GPhonetLinkState;
 
-GPhonetNetlink *g_pn_netlink_start(GPhonetNetlinkFunc func, void *data);
+typedef void (*GPhonetNetlinkFunc)(GIsiModem *idx,
+			GPhonetLinkState st,
+			char const *iface,
+			void *data);
+
+GPhonetNetlink *g_pn_netlink_by_name(char const *ifname);
+
+GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx);
+
+GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,
+			GPhonetNetlinkFunc callback,
+			void *data);
+
 void g_pn_netlink_stop(GPhonetNetlink *self);
 
 #ifdef __cplusplus

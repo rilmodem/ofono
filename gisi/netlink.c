@@ -38,22 +38,91 @@
 #endif
 #include "phonet.h"
 #include <linux/rtnetlink.h>
+#include <linux/if.h>
 #include <sys/ioctl.h>
-#include <net/if.h>
 #include <errno.h>
 #include <glib.h>
 
 #include "netlink.h"
+#include "modem.h"
+
+#ifndef ARPHRD_PHONET
+#define ARPHRD_PHONET (820)
+#endif
+
+/*
+ * GCC -Wcast-align does not like rtlink alignment macros,
+ * fixed macros by Andrzej Zaborowski <balrogg@gmail.com>.
+ */
+#undef IFA_RTA
+#define IFA_RTA(r)  ((struct rtattr*)(void*)(((char*)(r)) + NLMSG_ALIGN(sizeof(struct ifaddrmsg))))
+
+#undef IFLA_RTA
+#define IFLA_RTA(r)  ((struct rtattr*)(void *)(((char*)(r)) + NLMSG_ALIGN(sizeof(struct ifinfomsg))))
+
+#undef NLMSG_NEXT
+#define NLMSG_NEXT(nlh,len)	 ((len) -= NLMSG_ALIGN((nlh)->nlmsg_len), \
+	(struct nlmsghdr*)(void*)(((char*)(nlh)) + NLMSG_ALIGN((nlh)->nlmsg_len)))
+
+#undef RTA_NEXT
+#define RTA_NEXT(rta,attrlen)	((attrlen) -= RTA_ALIGN((rta)->rta_len), \
+	(struct rtattr*)(void*)(((char*)(rta)) + RTA_ALIGN((rta)->rta_len)))
+
 
 struct _GPhonetNetlink {
 	GPhonetNetlinkFunc callback;
 	void *opaque;
 	guint watch;
+	unsigned interface;
 };
+
+/* if_nametoindex is in #include <net/if.h>,
+   but it is not compatible with <linux/if.h> */
+
+extern unsigned if_nametoindex (char const *name);
+
+GIsiModem *g_isi_modem_by_name(char const *name)
+{
+	unsigned index = if_nametoindex(name);
+
+	if (errno == 0)
+		errno = ENODEV;
+
+	return (GIsiModem *)(void *)index;
+}
 
 static inline GIsiModem *make_modem(unsigned idx)
 {
 	return (void *)(uintptr_t)idx;
+}
+
+static GSList *netlink_list = NULL;
+
+GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx)
+{
+	GSList *m;
+	unsigned index = g_isi_modem_index(idx);
+
+	for (m = netlink_list; m; m = m->next) {
+		GPhonetNetlink *self = m->data;
+
+		if (index == self->interface)
+			return self;
+	}
+
+	return NULL;
+}
+
+GPhonetNetlink *g_pn_netlink_by_name(char const *ifname)
+{
+	if (ifname == NULL) {
+		return g_pn_netlink_by_modem(make_modem(0));
+	} else {
+		unsigned index = if_nametoindex(ifname);
+		if (index == 0)
+			return NULL;
+		return g_pn_netlink_by_modem(make_modem(index));
+	}
 }
 
 static void bring_up(unsigned ifindex)
@@ -70,16 +139,81 @@ error:
 	close(fd);
 }
 
+static void g_pn_nl_addr(GPhonetNetlink *self, struct nlmsghdr *nlh)
+{
+	int len;
+	uint8_t local = 0xff;
+	uint8_t remote = 0xff;
+
+	const struct ifaddrmsg *ifa;
+	const struct rtattr *rta;
+
+	ifa = NLMSG_DATA(nlh);
+	len = IFA_PAYLOAD(nlh);
+
+	/* If Phonet is absent, kernel transmits other families... */
+	if (ifa->ifa_family != AF_PHONET)
+		return;
+	if (ifa->ifa_index != self->interface)
+		return;
+
+	for (rta = IFA_RTA(ifa); RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
+		if (rta->rta_type == IFA_LOCAL)
+			local = *(uint8_t *)RTA_DATA(rta);
+		else if (rta->rta_type == IFA_ADDRESS)
+			remote = *(uint8_t *)RTA_DATA(rta);
+	}
+}
+
+static void g_pn_nl_link(GPhonetNetlink *self, struct nlmsghdr *nlh)
+{
+	const struct ifinfomsg *ifi;
+	const struct rtattr *rta;
+	int len;
+	const char *ifname = NULL;
+	GIsiModem *idx = NULL;
+	GPhonetLinkState st;
+
+	ifi = NLMSG_DATA(nlh);
+	len = IFA_PAYLOAD(nlh);
+
+	if (ifi->ifi_type != ARPHRD_PHONET)
+		return;
+
+	if (self->interface != 0 && self->interface != (unsigned)ifi->ifi_index)
+		return;
+
+	idx = make_modem(ifi->ifi_index);
+
+#define UP (IFF_UP | IFF_LOWER_UP | IFF_RUNNING)
+
+	if (nlh->nlmsg_type == RTM_DELLINK)
+		st = PN_LINK_REMOVED;
+	else if ((ifi->ifi_flags & UP) != UP)
+		st = PN_LINK_DOWN;
+	else
+		st = PN_LINK_UP;
+
+	for (rta = IFLA_RTA(ifi); RTA_OK(rta, len);
+	     rta = RTA_NEXT(rta, len)) {
+		if (rta->rta_type == IFLA_IFNAME)
+			ifname = RTA_DATA(rta);
+	}
+
+	if (ifname && idx)
+		self->callback(idx, st, ifname, self->opaque);
+}
+
+
 /* Parser Netlink messages */
 static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
 	struct {
 		struct nlmsghdr nlh;
-		struct rtmsg rtm;
-		char buf[1024];
-	} req;
-	struct iovec iov = { &req, sizeof(req), };
+		char buf[16384];
+	} resp;
+	struct iovec iov = { &resp, (sizeof resp), };
 	struct msghdr msg = { .msg_iov = &iov, .msg_iovlen = 1, };
 	ssize_t ret;
 	struct nlmsghdr *nlh;
@@ -90,19 +224,20 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 
 	ret = recvmsg(fd, &msg, 0);
-	if (ret == -1 || (msg.msg_flags & MSG_TRUNC))
+	if (ret == -1)
 		return TRUE;
 
-	for (nlh = (struct nlmsghdr *)&req; NLMSG_OK(nlh, (size_t)ret);
-						nlh = NLMSG_NEXT(nlh, ret)) {
-		const struct ifaddrmsg *ifa;
-		const struct rtattr *rta;
-		int len;
-		bool up;
-		uint8_t addr = 0;
+	if (msg.msg_flags & MSG_TRUNC) {
+		g_critical("Netlink message of %zu bytes truncated at %zu",
+			   ret, (sizeof resp));
+		return TRUE;
+	}
 
+	for (nlh = &resp.nlh; NLMSG_OK(nlh, (size_t)ret);
+						nlh = NLMSG_NEXT(nlh, ret)) {
 		if (nlh->nlmsg_type == NLMSG_DONE)
 			break;
+
 		switch (nlh->nlmsg_type) {
 		case NLMSG_ERROR: {
 			const struct nlmsgerr *err;
@@ -111,85 +246,74 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 			return FALSE;
 		}
 		case RTM_NEWADDR:
-			up = true;
-			break;
 		case RTM_DELADDR:
-			up = false;
+			g_pn_nl_addr(self, nlh);
+			break;
+		case RTM_NEWLINK:
+		case RTM_DELLINK:
+			g_pn_nl_link(self, nlh);
 			break;
 		default:
 			continue;
 		}
-		/* We have a route message */
-		ifa = NLMSG_DATA(nlh);
-		len = IFA_PAYLOAD(nlh);
-
-		/* If Phonet is absent, kernel transmits other families... */
-		if (ifa->ifa_family != AF_PHONET)
-			continue;
-		for (rta = IFA_RTA(ifa); RTA_OK(rta, len);
-						rta = RTA_NEXT(rta, len))
-			if (rta->rta_type == IFA_LOCAL)
-				memcpy(&addr, RTA_DATA(rta), 1);
-		if (up)
-			bring_up(ifa->ifa_index);
-		self->callback(up, addr,
-				make_modem(ifa->ifa_index), self->opaque);
 	}
 	return TRUE;
 }
 
-/* Dump current Phonet address table */
-static int g_pn_netlink_query(int fd)
+/* Dump current links */
+static int g_pn_netlink_getlink(int fd)
 {
 	struct {
 		struct nlmsghdr nlh;
-		struct rtmsg rtm;
-	} req;
+		struct ifinfomsg ifi;
+	} req = {
+		.nlh = {
+			.nlmsg_type = RTM_GETLINK,
+			.nlmsg_len = sizeof req,
+			.nlmsg_flags = NLM_F_REQUEST | NLM_F_ROOT | NLM_F_MATCH,
+			.nlmsg_pid = getpid(),
+		},
+		.ifi = {
+			.ifi_family = AF_UNSPEC,
+			.ifi_type = ARPHRD_PHONET,
+			.ifi_change = 0xffFFffFF,
+		}
+	};
+
 	struct sockaddr_nl addr = { .nl_family = AF_NETLINK, };
 
-	req.nlh.nlmsg_type = RTM_GETADDR;
-	req.nlh.nlmsg_len = NLMSG_LENGTH(sizeof(req.rtm));
-	req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_ROOT;
-	req.nlh.nlmsg_seq = 0;
-	req.nlh.nlmsg_pid = getpid();
-
-	req.rtm.rtm_family = AF_PHONET;
-	req.rtm.rtm_dst_len = 6;
-	req.rtm.rtm_src_len = 0;
-	req.rtm.rtm_tos = 0;
-
-	req.rtm.rtm_table = RT_TABLE_MAIN;
-	req.rtm.rtm_protocol = RTPROT_STATIC;
-	req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
-	req.rtm.rtm_type = RTN_UNICAST;
-	req.rtm.rtm_flags = 0;
-
-	if (sendto(fd, &req, req.nlh.nlmsg_len, 0,
-			(struct sockaddr *)&addr, sizeof(addr)) == -1)
-		return -1;
-	return 0;
+	return sendto(fd, &req, (sizeof req), 0,
+		      (struct sockaddr *)&addr, sizeof(addr));
 }
 
-GPhonetNetlink *g_pn_netlink_start(GPhonetNetlinkFunc cb, void *opaque)
+GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,
+				   GPhonetNetlinkFunc callback,
+				   void *data)
 {
 	GIOChannel *chan;
 	GPhonetNetlink *self;
-	unsigned group = RTNLGRP_PHONET_IFADDR;
 	int fd;
-
-	self = malloc(sizeof(*self));
-	if (self == NULL)
-		return NULL;
+	unsigned group = RTNLGRP_LINK;
+	unsigned interface = g_isi_modem_index(idx);
 
 	fd = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_ROUTE);
 	if (fd == -1)
+		return NULL;
+
+	self = calloc(1, sizeof(*self));
+	if (self == NULL)
 		goto error;
 
 	fcntl(fd, F_SETFL, O_NONBLOCK | fcntl(fd, F_GETFL));
+
 	if (setsockopt(fd, SOL_NETLINK, NETLINK_ADD_MEMBERSHIP,
-			&group, sizeof(group)))
+		       &group, sizeof(group)))
 		goto error;
-	g_pn_netlink_query(fd);
+
+	if (interface)
+		bring_up(interface);
+
+	g_pn_netlink_getlink(fd);
 
 	chan = g_io_channel_unix_new(fd);
 	if (chan == NULL)
@@ -198,22 +322,28 @@ GPhonetNetlink *g_pn_netlink_start(GPhonetNetlinkFunc cb, void *opaque)
 	g_io_channel_set_encoding(chan, NULL, NULL);
 	g_io_channel_set_buffered(chan, FALSE);
 
-	self->callback = cb;
-	self->opaque = opaque;
+	self->callback = callback;
+	self->opaque = data;
+	self->interface = interface;
 	self->watch = g_io_add_watch(chan, G_IO_IN|G_IO_ERR|G_IO_HUP,
 					g_pn_nl_process, self);
 	g_io_channel_unref(chan);
+
+	netlink_list = g_slist_prepend(netlink_list, self);
+
 	return self;
 
 error:
-	if (fd != -1)
-		close(fd);
+	close(fd);
 	free(self);
 	return NULL;
 }
 
 void g_pn_netlink_stop(GPhonetNetlink *self)
 {
-	g_source_remove(self->watch);
-	free(self);
+	if (self) {
+		netlink_list = g_slist_remove(netlink_list, self);
+		g_source_remove(self->watch);
+		free(self);
+	}
 }
