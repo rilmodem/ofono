@@ -113,6 +113,21 @@ static int set_device(struct ofono_modem *modem,
 	return 0;
 }
 
+static int set_interface(struct ofono_modem *modem,
+					GKeyFile *keyfile, const char *group)
+{
+	char *iface;
+
+	iface = g_key_file_get_string(keyfile, group, "Interface", NULL);
+	if (!iface)
+		return -EINVAL;
+
+	ofono_modem_set_string(modem, "Interface", iface);
+	g_free(iface);
+
+	return 0;
+}
+
 static struct {
 	const char *driver;
 	int (*func) (struct ofono_modem *modem,
@@ -124,6 +139,8 @@ static struct {
 	{ "ste",	set_device	},
 	{ "calypso",	set_device	},
 	{ "palmpre",	set_device	},
+	{ "isimodem",	set_interface	},
+	{ "n900modem",	set_interface	},
 	{ NULL }
 };
 
