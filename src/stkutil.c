@@ -1225,6 +1225,24 @@ static gboolean parse_dataobj_uicc_te_interface(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.60 */
+static gboolean parse_dataobj_aid(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_aid *aid = user;
+	const unsigned char *data;
+	unsigned char len = comprehension_tlv_iter_get_length(iter);
+
+	if ((len > 16) || (len < 12))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	aid->len = len;
+	memcpy(aid->aid, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1373,6 +1391,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_other_address;
 	case STK_DATA_OBJECT_TYPE_UICC_TE_INTERFACE:
 		return parse_dataobj_uicc_te_interface;
+	case STK_DATA_OBJECT_TYPE_AID:
+		return parse_dataobj_aid;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:

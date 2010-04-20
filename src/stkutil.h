@@ -337,6 +337,18 @@ enum stk_address_type {
 	STK_ADDRESS_IPV6 = 	0x57
 };
 
+enum stk_access_technology_type {
+	STK_ACCESS_TECHNOLOGY_GSM = 		0x00,
+	STK_ACCESS_TECHNOLOGY_TIA_EIA_553 =	0x01,
+	STK_ACCESS_TECHNOLOGY_TIA_EIA_136_C =	0x02,
+	STK_ACCESS_TECHNOLOGY_UTRAN = 		0x03,
+	STK_ACCESS_TECHNOLOGY_TETRA = 		0x04,
+	STK_ACCESS_TECHNOLOGY_TIA_EIA_95 = 	0x05,
+	STK_ACCESS_TECHNOLOGY_CDMA2000_1X =	0x06,
+	STK_ACCESS_TECHNOLOGY_CDMA2000_HRPD = 	0x07,
+	STK_ACCESS_TECHNOLOGY_EUTRAN = 		0x08
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -574,6 +586,17 @@ struct stk_other_address {
 struct stk_uicc_te_interface {
 	unsigned char protocol;
 	unsigned short port;
+};
+
+/*
+ * Defined in TS 102.223 Section 8.60.
+ * According to 101.220, Section 4, aid contains two fields RID and PIX.
+ * RID has 5 bytes, while PIX contains information between 7 to 11 bytes.
+ * So the maximum size of aid is 16 bytes.
+ */
+struct stk_aid {
+	unsigned char aid[16];
+	unsigned int len;
 };
 
 /*
