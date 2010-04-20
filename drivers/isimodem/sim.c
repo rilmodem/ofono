@@ -286,6 +286,8 @@ static gboolean isi_sim_register(gpointer user)
 
 	ofono_sim_register(sim);
 
+	/* TODO: trigger this from actual SIM status indications */
+	ofono_sim_inserted_notify(sim, TRUE);
 	return FALSE;
 }
 
