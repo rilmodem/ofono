@@ -93,9 +93,8 @@ static int wavecom_enable(struct ofono_modem *modem)
 
 	g_hash_table_destroy(options);
 
-	if (!channel) {
+	if (!channel)
 		return -EIO;
-	}
 
 	/* Could not figure out whether it is fully compliant or not */
 	syntax = g_at_syntax_new_gsm_permissive();
