@@ -287,19 +287,37 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 			doc/call-meter-api.txt \
 			doc/dataconnectionmanager-api.txt
 
-test_scripts = test/test-manager test/test-modem test/test-voicecall \
-		test/test-network-registration test/test-phonebook \
-		test/test-advice-of-charge test/test-call-settings \
-		test/test-call-forwarding test/test-call-barring \
-		test/test-ss-control-cb test/test-ss-control-cf \
-		test/test-ss-control-cs \
-		test/monitor-ofono test/list-modems test/enable-modem \
-		test/list-operators test/dial-number test/hangup-all \
-		test/receive-sms test/send-sms \
-		test/list-contexts test/create-context \
-		test/activate-context test/deactivate-context \
+test_scripts = test/activate-context \
+		test/create-context \
+		test/deactivate-context \
+		test/dial-number \
+		test/disable-modem \
+		test/enable-modem \
+		test/enter-pin \
+		test/hangup-all \
+		test/list-contexts \
+		test/list-modems \
+		test/list-operators \
+		test/monitor-ofono \
 		test/process-context-settings \
-		test/set-mic-volume
+		test/receive-sms \
+		test/remove-contexts \
+		test/send-sms \
+		test/set-mic-volume \
+		test/set-speaker-volume \
+		test/test-advice-of-charge \
+		test/test-call-barring \
+		test/test-call-forwarding \
+		test/test-call-settings \
+		test/test-manager \
+		test/test-modem \
+		test/test-network-registration \
+		test/test-phonebook \
+		test/test-ss-control-cb \
+		test/test-ss-control-cf \
+		test/test-ss-control-cs \
+		test/test-ussd \
+		test/test-voicecall
 
 if TEST
 testdir = $(pkglibdir)/test
