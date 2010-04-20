@@ -203,6 +203,9 @@ builtin_sources += plugins/atgen.c
 builtin_modules += g1
 builtin_sources += plugins/g1.c
 
+builtin_modules += wavecom
+builtin_sources += plugins/wavecom.c
+
 builtin_modules += calypso
 builtin_sources += plugins/calypso.c
 
