@@ -310,12 +310,9 @@ static bool context_activate_cb(GIsiClient *client, const void *restrict data,
 	return true;
 }
 
-static bool context_conf_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static bool send_context_activate(GIsiClient *client, void *opaque)
 {
 	struct context_data *cd = opaque;
-	struct ofono_gprs_context *gc = cd->driver;
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
 	const unsigned char msg[] = {
 		GPDS_CONTEXT_ACTIVATE_REQ,
@@ -323,12 +320,7 @@ static bool context_conf_cb(GIsiClient *client, const void *restrict data,
 		0,		/* sub blocks */
 	};
 
-	if (!check_resp(client, data, len, GPDS_CONTEXT_CONFIGURE_RESP, cd))
-		return gprs_up_fail(cd);
-
-	/* TODO: user authentication */
-
-	if (!g_isi_request_make(gcd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+	if (!g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
 				context_activate_cb, cd))
 		return gprs_up_fail(cd);
 
@@ -336,13 +328,75 @@ static bool context_conf_cb(GIsiClient *client, const void *restrict data,
 	return true;
 }
 
+static bool context_auth_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	struct context_data *cd = opaque;
+
+	if (!check_resp(client, data, len, GPDS_CONTEXT_AUTH_RESP, cd))
+		return gprs_up_fail(cd);
+
+	send_context_activate(client, cd);
+	return true;
+}
+
+static bool send_context_authenticate(GIsiClient *client, void *opaque)
+{
+	struct context_data *cd = opaque;
+	size_t username_len = strlen(cd->username);
+	size_t password_len = strlen(cd->password);
+
+	const unsigned char top[] = {
+		GPDS_CONTEXT_AUTH_REQ,
+		cd->handle,
+		2,	/* sub blocks */
+		GPDS_USER_NAME_INFO,
+		(3 + username_len + 3) & ~3,
+		username_len,
+		/* Username goes here */
+	};
+
+	const unsigned char bottom[] = {
+		GPDS_PASSWORD_INFO,
+		(3 + password_len + 3) & ~3,
+		password_len,
+		/* Password goes here */
+	};
+
+	const struct iovec iov[4] = {
+		{ (uint8_t *)top, sizeof(top) },
+		{ cd->username, username_len },
+		{ (uint8_t *)bottom, sizeof(bottom) },
+		{ cd->password, password_len },
+	};
+
+	if (!g_isi_request_vmake(client, iov, 4, GPDS_TIMEOUT,
+					context_auth_cb, cd))
+		return gprs_up_fail(cd);
+
+	return true;
+}
+
+static bool context_conf_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	struct context_data *cd = opaque;
+
+	if (!check_resp(client, data, len, GPDS_CONTEXT_CONFIGURE_RESP, cd))
+		return gprs_up_fail(cd);
+
+	if (cd->username[0] != '\0')
+		send_context_authenticate(client, cd);
+	else
+		send_context_activate(client, cd);
+
+	return true;
+}
+
 static bool link_conf_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
 {
 	struct context_data *cd = opaque;
-	struct ofono_gprs_context *gc = cd->driver;
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-
 	size_t apn_len = strlen(cd->apn);
 
 	const unsigned char msg[] = {
@@ -369,7 +423,7 @@ static bool link_conf_cb(GIsiClient *client, const void *restrict data,
 	if (!check_resp(client, data, len, GPDS_LL_CONFIGURE_RESP, cd))
 		return gprs_up_fail(cd);
 
-	if (!g_isi_request_vmake(gcd->client, iov, 2, GPDS_TIMEOUT,
+	if (!g_isi_request_vmake(client, iov, 2, GPDS_TIMEOUT,
 					context_conf_cb, cd))
 		return gprs_up_fail(cd);
 
@@ -381,8 +435,6 @@ static bool create_context_cb(GIsiClient *client, const void *restrict data,
 {
 	const unsigned char *resp = data;
 	struct context_data *cd = opaque;
-	struct ofono_gprs_context *gc = cd->driver;
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
 	unsigned char msg[] = {
 		GPDS_LL_CONFIGURE_REQ,
@@ -396,8 +448,8 @@ static bool create_context_cb(GIsiClient *client, const void *restrict data,
 
 	cd->handle = msg[1] = resp[1];
 
-	if (!g_isi_request_make(gcd->client, msg, sizeof(msg),
-					GPDS_TIMEOUT, link_conf_cb, cd))
+	if (!g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
+				link_conf_cb, cd))
 		return gprs_up_fail(cd);
 
 	/* TODO: send context configuration at the same time? */
