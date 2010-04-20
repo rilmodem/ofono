@@ -112,7 +112,7 @@ static void example_history_sms_received(struct ofono_history_context *context,
 
 	ofono_debug("Incoming SMS on modem: %p", context->modem);
 	ofono_debug("InternalMessageId: %u", msg_id);
-	ofono_debug("From: %s:", from);
+	ofono_debug("From: %s", from);
 
 	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", local);
 	buf[127] = '\0';
