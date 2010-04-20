@@ -177,7 +177,7 @@ bool g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
 
 	*utf8 = g_convert((const char *)ucs2, len, "UTF-8//TRANSLIT", "UCS-2BE",
 				NULL, NULL, NULL);
-	return utf8 != NULL;
+	return *utf8 != NULL;
 }
 
 bool g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
@@ -197,7 +197,7 @@ bool g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
 
 	*latin = g_strndup((char *)str, len);
 
-	return latin != NULL;
+	return *latin != NULL;
 }
 
 bool g_isi_sb_iter_next(GIsiSubBlockIter *iter)
