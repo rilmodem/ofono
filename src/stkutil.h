@@ -570,6 +570,12 @@ struct stk_other_address {
 	unsigned char type;
 };
 
+/* Defined in TS 102.223 Section 8.59 */
+struct stk_uicc_te_interface {
+	unsigned char protocol;
+	unsigned short port;
+};
+
 /*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
