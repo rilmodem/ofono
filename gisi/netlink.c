@@ -88,7 +88,7 @@ GIsiModem *g_isi_modem_by_name(char const *name)
 	if (errno == 0)
 		errno = ENODEV;
 
-	return (GIsiModem *)(void *)index;
+	return (GIsiModem *)(void *)(uintptr_t)index;
 }
 
 static inline GIsiModem *make_modem(unsigned idx)
