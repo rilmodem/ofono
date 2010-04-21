@@ -1554,6 +1554,14 @@ static gboolean parse_dataobj_imeisv(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.75 */
+static gboolean parse_dataobj_network_search_mode(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in TS 102.223 Section 8.80 */
 static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1711,6 +1719,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_item_text_attribute_list;
 	case STK_DATA_OBJECT_TYPE_IMEISV:
 		return parse_dataobj_imeisv;
+	case STK_DATA_OBJECT_TYPE_NETWORK_SEARCH_MODE:
+		return parse_dataobj_network_search_mode;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
 		return parse_dataobj_frame_id;
 	default:
