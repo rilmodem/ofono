@@ -1243,6 +1243,18 @@ static gboolean parse_dataobj_aid(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/*
+ * Defined in TS 102.223 Section 8.61. According to it, the technology field
+ * can have at most 127 bytes. However, all the defined values are only 1 byte,
+ * so we just use 1 byte to represent it.
+ */
+static gboolean parse_dataobj_access_technology(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1393,6 +1405,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_uicc_te_interface;
 	case STK_DATA_OBJECT_TYPE_AID:
 		return parse_dataobj_aid;
+	case STK_DATA_OBJECT_TYPE_ACCESS_TECHNOLOGY:
+		return parse_dataobj_access_technology;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
