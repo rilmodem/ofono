@@ -1464,8 +1464,8 @@ static gboolean parse_dataobj_network_access_name(
 }
 
 /* Defined in TS 102.223 Section 8.71 */
-static gboolean parse_dataobj_cdma_sms_tpdu(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_cdma_sms_tpdu(struct comprehension_tlv_iter *iter,
+						void *user)
 {
 	struct stk_common_byte_array *array = user;
 	return parse_dataobj_common_byte_array(iter, array);
