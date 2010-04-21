@@ -357,6 +357,14 @@ enum stk_technology_id {
 	STK_TECHNOLOGY_USB = 		0x04
 };
 
+enum stk_battery_state {
+	STK_BATTERY_VERY_LOW = 	0x00,
+	STK_BATTERY_LOW = 	0x01,
+	STK_BATTERY_AVERAGE = 	0x02,
+	STK_BATTERY_GOOD = 	0x03,
+	STK_BATTERY_FULL = 	0x04
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;

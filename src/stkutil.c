@@ -1562,6 +1562,14 @@ static gboolean parse_dataobj_network_search_mode(
 	return parse_dataobj_common_byte(iter, byte);
 }
 
+/* Defined in TS 102.223 Section 8.76 */
+static gboolean parse_dataobj_battery_state(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /* Defined in TS 102.223 Section 8.80 */
 static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1721,6 +1729,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_imeisv;
 	case STK_DATA_OBJECT_TYPE_NETWORK_SEARCH_MODE:
 		return parse_dataobj_network_search_mode;
+	case STK_DATA_OBJECT_TYPE_BATTERY_STATE:
+		return parse_dataobj_battery_state;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
 		return parse_dataobj_frame_id;
 	default:
