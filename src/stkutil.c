@@ -1427,8 +1427,8 @@ static gboolean parse_dataobj_remote_entity_address(
 }
 
 /* Defined in TS 102.223 Section 8.69 */
-static gboolean parse_dataobj_esn(
-		struct comprehension_tlv_iter *iter, void *user)
+static gboolean parse_dataobj_esn(struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	unsigned char **esn = user;
 	const unsigned char *data;
