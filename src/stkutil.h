@@ -656,6 +656,15 @@ struct stk_remote_entity_address {
 };
 
 /*
+ * According to 102.223 Section 8.70 the length of CTLV is 1 byte. This means
+ * that the maximum size is 127 according to the rules of CTLVs.
+ */
+struct stk_network_access_name {
+	unsigned char name[127];
+	unsigned char len;
+};
+
+/*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
  * of CTLVs.  Empty attribute options will have len of 0.

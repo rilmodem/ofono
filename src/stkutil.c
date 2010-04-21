@@ -1445,6 +1445,24 @@ static gboolean parse_dataobj_esn(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.70 */
+static gboolean parse_dataobj_network_access_name(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_network_access_name *nan = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len == 0)
+		return TRUE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	nan->len = len;
+	memcpy(nan->name, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1613,6 +1631,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_remote_entity_address;
 	case STK_DATA_OBJECT_TYPE_ESN:
 		return parse_dataobj_esn;
+	case STK_DATA_OBJECT_TYPE_NETWORK_ACCESS_NAME:
+		return parse_dataobj_network_access_name;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
