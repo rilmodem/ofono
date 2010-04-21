@@ -1,6 +1,4 @@
-/*
- * This file is part of oFono - Open Source Telephony
- *
+/**
  * Copyright (C) 2010 Nokia Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -18,29 +16,21 @@
  * 02110-1301 USA
  */
 
-#ifndef __GISI_MODEM_H
-#define __GISI_MODEM_H
-
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
 
-typedef void (*GIsiDebugFunc) (const void *restrict data, size_t len,
-		void *opaque);
+#include <errno.h>
+#include <net/if.h>
 
-typedef struct _GIsiModem GIsiModem;
+#include "modem.h"
 
-static inline unsigned g_isi_modem_index(GIsiModem *m)
+GIsiModem *g_isi_modem_by_name(char const *name)
 {
-	return (uintptr_t)m;
+	unsigned index = if_nametoindex(name);
+
+	if (errno == 0)
+		errno = ENODEV;
+
+	return (GIsiModem *)(void *)(uintptr_t)index;
 }
-
-GIsiModem *g_isi_modem_by_name(const char *name);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __GISI_MODEM_H */

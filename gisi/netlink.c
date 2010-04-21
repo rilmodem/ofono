@@ -76,21 +76,6 @@ struct _GPhonetNetlink {
 	unsigned interface;
 };
 
-/* if_nametoindex is in #include <net/if.h>,
-   but it is not compatible with <linux/if.h> */
-
-extern unsigned if_nametoindex (char const *name);
-
-GIsiModem *g_isi_modem_by_name(char const *name)
-{
-	unsigned index = if_nametoindex(name);
-
-	if (errno == 0)
-		errno = ENODEV;
-
-	return (GIsiModem *)(void *)(uintptr_t)index;
-}
-
 static inline GIsiModem *make_modem(unsigned idx)
 {
 	return (void *)(uintptr_t)idx;
@@ -113,15 +98,15 @@ GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx)
 	return NULL;
 }
 
-GPhonetNetlink *g_pn_netlink_by_name(char const *ifname)
+GPhonetNetlink *g_pn_netlink_by_name(const char *ifname)
 {
 	if (ifname == NULL) {
 		return g_pn_netlink_by_modem(make_modem(0));
 	} else {
-		unsigned index = if_nametoindex(ifname);
-		if (index == 0)
+		GIsiModem *idx = g_isi_modem_by_name(ifname);
+		if (!idx)
 			return NULL;
-		return g_pn_netlink_by_modem(make_modem(index));
+		return g_pn_netlink_by_modem(idx);
 	}
 }
 
