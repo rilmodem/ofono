@@ -1389,6 +1389,14 @@ static gboolean parse_dataobj_attribute_info(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.67 */
+static gboolean parse_dataobj_service_availability(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_common_byte_array *array = user;
+	return parse_dataobj_common_byte_array(iter, array);
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1551,6 +1559,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_service_search;
 	case STK_DATA_OBJECT_TYPE_ATTRIBUTE_INFO:
 		return parse_dataobj_attribute_info;
+	case STK_DATA_OBJECT_TYPE_SERVICE_AVAILABILITY:
+		return parse_dataobj_service_availability;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
