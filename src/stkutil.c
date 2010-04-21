@@ -1255,6 +1255,24 @@ static gboolean parse_dataobj_access_technology(
 	return parse_dataobj_common_byte(iter, byte);
 }
 
+/* Defined in TS 102.223 Section 8.62 */
+static gboolean parse_dataobj_display_parameters(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_display_parameters *dp = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_length(iter) != 3)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	dp->height = data[0];
+	dp->width = data[1];
+	dp->effects = data[2];
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1407,6 +1425,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_aid;
 	case STK_DATA_OBJECT_TYPE_ACCESS_TECHNOLOGY:
 		return parse_dataobj_access_technology;
+	case STK_DATA_OBJECT_TYPE_DISPLAY_PARAMETERS:
+		return parse_dataobj_display_parameters;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:

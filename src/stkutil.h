@@ -599,6 +599,13 @@ struct stk_aid {
 	unsigned int len;
 };
 
+/* Defined in TS 102.223 Section 8.62 */
+struct stk_display_parameters {
+	unsigned char height;
+	unsigned char width;
+	unsigned char effects;
+};
+
 /*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
