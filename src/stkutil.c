@@ -1511,6 +1511,49 @@ static gboolean parse_dataobj_item_text_attribute_list(
 	return TRUE;
 }
 
+/*
+ * Defined in TS 102.223 Section 8.74.
+ *
+ * According to 3GPP TS 24.008, Section 10.5.1.4, IMEISV is composed of
+ * 16 digits and totally 9 bytes are used to represent it.
+ *
+ * Bits 1-3 of first byte represent the type of identity, and they
+ * are 0 1 1 separately for IMEISV. Bit 4 of first byte is the odd/even
+ * indication, and it's 0 to indicate IMEISV has odd number of digits (16).
+ * The rest bytes are coded using BCD coding.
+ *
+ * For example, if the IMEISV is "1234567890123456", then it's coded as
+ * "13 32 54 76 98 10 32 54 F6".
+ */
+static gboolean parse_dataobj_imeisv(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	char **imeisv = user;
+	const unsigned char *data;
+	unsigned int len;
+	static const char digit_lut[] = "0123456789*#abc\0";
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len != 9)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if ((data[0] & 0x0f) != 0x03)
+		return FALSE;
+
+	if (data[8] >> 4 != 0x0f)
+		return FALSE;
+
+	/* Assume imeisv is at least 17 bytes long (16 for imeisv + null) */
+	(*imeisv)[0] = digit_lut[data[0] >> 4];
+	extract_bcd_number(data + 1, 7, *imeisv + 1);
+	(*imeisv)[15] = digit_lut[data[8] & 0x0f];
+	(*imeisv)[16] = '\0';
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.80 */
 static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1666,6 +1709,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_ITEM_TEXT_ATTRIBUTE_LIST:
 		return parse_dataobj_item_text_attribute_list;
+	case STK_DATA_OBJECT_TYPE_IMEISV:
+		return parse_dataobj_imeisv;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
 		return parse_dataobj_frame_id;
 	default:
