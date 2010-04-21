@@ -1397,6 +1397,35 @@ static gboolean parse_dataobj_service_availability(
 	return parse_dataobj_common_byte_array(iter, array);
 }
 
+/* Defined in TS 102.223 Section 8.68 */
+static gboolean parse_dataobj_remote_entity_address(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_remote_entity_address *rea = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	rea->coding_type = data[0];
+	switch (rea->coding_type) {
+	case 0x00:
+		if (len != 7)
+			return FALSE;
+		break;
+	case 0x01:
+		if (len != 5)
+			return FALSE;
+		break;
+	default:
+		return FALSE;
+	}
+
+	memcpy(&rea->addr, data + 1, len - 1);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1561,6 +1590,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_attribute_info;
 	case STK_DATA_OBJECT_TYPE_SERVICE_AVAILABILITY:
 		return parse_dataobj_service_availability;
+	case STK_DATA_OBJECT_TYPE_REMOTE_ENTITY_ADDRESS:
+		return parse_dataobj_remote_entity_address;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:

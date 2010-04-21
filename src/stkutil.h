@@ -644,6 +644,18 @@ struct stk_attribute_info {
 };
 
 /*
+ * According to TS 102.223 Section 8.68, remote entity address can be either
+ * 6-bytes IEEE-802 address, or 4-bytes IrDA device address.
+ */
+struct stk_remote_entity_address {
+	unsigned char coding_type;
+	union {
+		unsigned char ieee802[6];
+		unsigned char irda[4];
+	} addr;
+};
+
+/*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
  * of CTLVs.  Empty attribute options will have len of 0.
