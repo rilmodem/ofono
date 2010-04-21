@@ -40,6 +40,7 @@
 #include "ppp.h"
 
 #define DEFAULT_MRU	1500
+#define DEFAULT_MTU	1500
 
 #define BUFFERSZ	(DEFAULT_MRU * 2)
 
@@ -58,6 +59,7 @@ struct _GAtPPP {
 	guint8 buffer[BUFFERSZ];
 	int index;
 	gint mru;
+	gint mtu;
 	char username[256];
 	char password[256];
 	guint32 xmit_accm[8];
@@ -407,6 +409,8 @@ void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 {
 	ppp->net = ppp_net_new(ppp);
 
+	ppp_net_set_mtu(ppp->net, ppp->mtu);
+
 	if (ppp->connect_cb == NULL)
 		return;
 
@@ -433,6 +437,17 @@ void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm)
 {
 	ppp->xmit_accm[0] = accm;
+}
+
+/*
+ * The only time we use other than default MTU is when we are in
+ * the network phase.
+ */
+void ppp_set_mtu(GAtPPP *ppp, const guint8 *data)
+{
+	guint16 mtu = get_host_short(data);
+
+	ppp->mtu = mtu;
 }
 
 /* Administrative Open */
@@ -576,6 +591,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 
 	/* set options to defaults */
 	ppp->mru = DEFAULT_MRU;
+	ppp->mtu = DEFAULT_MTU;
 	ppp->recv_accm = ~0U;
 	ppp->xmit_accm[0] = ~0U;
 	ppp->xmit_accm[3] = 0x60000000; /* 0x7d, 0x7e */

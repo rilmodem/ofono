@@ -103,6 +103,7 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp);
 const char *ppp_net_get_interface(struct ppp_net *net);
 void ppp_net_process_packet(struct ppp_net *net, guint8 *packet);
 void ppp_net_free(struct ppp_net *net);
+void ppp_net_set_mtu(struct ppp_net *net, guint16 mtu);
 
 /* PPP functions related to main GAtPPP object */
 void ppp_debug(GAtPPP *ppp, const char *str);
@@ -115,3 +116,4 @@ void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 void ppp_net_down_notify(GAtPPP *ppp);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
+void ppp_set_mtu(GAtPPP *ppp, const guint8 *data);

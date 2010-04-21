@@ -197,6 +197,7 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 		case ACCM:
 		case PFC:
 		case ACFC:
+		case MRU:
 			break;
 
 		case MAGIC_NUMBER:
@@ -225,6 +226,9 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 			break;
 		case AUTH_PROTO:
 			ppp_set_auth(ppp, ppp_option_iter_get_data(&iter));
+			break;
+		case MRU:
+			ppp_set_mtu(ppp, ppp_option_iter_get_data(&iter));
 			break;
 		case MAGIC_NUMBER:
 		case PFC:

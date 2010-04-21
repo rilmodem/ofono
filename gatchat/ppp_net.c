@@ -38,7 +38,6 @@
 #include "gatppp.h"
 #include "ppp.h"
 
-/* XXX should be maximum IP Packet size */
 #define MAX_PACKET 1500
 
 struct ppp_net {
@@ -46,7 +45,16 @@ struct ppp_net {
 	char *if_name;
 	GIOChannel *channel;
 	gint watch;
+	gint mtu;
 };
+
+void ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
+{
+	if (net == NULL)
+		return;
+
+	net->mtu = mtu;
+}
 
 void ppp_net_process_packet(struct ppp_net *net, guint8 *packet)
 {
@@ -80,7 +88,7 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 
 	if (cond & G_IO_IN) {
 		/* leave space to add PPP protocol field */
-		status = g_io_channel_read_chars(channel, buf + 2, MAX_PACKET,
+		status = g_io_channel_read_chars(channel, buf + 2, net->mtu,
 				&bytes_read, &error);
 		if (bytes_read > 0) {
 			ppp->proto = htons(PPP_IP_PROTO);
@@ -140,6 +148,7 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp)
 			ppp_net_callback, net);
 	net->ppp = ppp;
 
+	net->mtu = MAX_PACKET;
 	return net;
 
 error:
