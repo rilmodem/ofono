@@ -1367,13 +1367,16 @@ static gboolean parse_dataobj_attribute_info(
 	const unsigned char *data;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
 
-	if (len < 1)
+	if (len < 2)
 		return FALSE;
 
-	if (len == 1)
-		return TRUE;
-
 	data = comprehension_tlv_iter_get_data(iter);
+
+	/* According to TS 102.223, everything except BT & IRDA is RFU */
+	if (data[0] != STK_TECHNOLOGY_BLUETOOTH &&
+			data[0] != STK_TECHNOLOGY_IRDA)
+		return FALSE;
+
 	ai->tech_id = data[0];
 	ai->len = len - 1;
 
