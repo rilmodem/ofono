@@ -622,6 +622,13 @@ struct stk_service_record {
 	unsigned int len;
 };
 
+/* Defined in TS 102.223 Section 8.64 */
+struct stk_device_filter {
+	unsigned char tech_id;
+	unsigned char *dev_filter;
+	unsigned int len;
+};
+
 /*
  * According to 102.223 Section 8.72 the length of text attribute CTLV is 1
  * byte.  This means that the maximum size is 127 according to the rules
