@@ -1273,6 +1273,32 @@ static gboolean parse_dataobj_display_parameters(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.63 */
+static gboolean parse_dataobj_service_record(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_service_record *sr = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 3)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	sr->tech_id = data[0];
+	sr->serv_id = data[1];
+	sr->len = len - 2;
+
+	sr->serv_rec = g_try_malloc(sr->len);
+	if (sr->serv_rec == NULL)
+		return FALSE;
+
+	memcpy(sr->serv_rec, data + 2, sr->len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1427,6 +1453,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_access_technology;
 	case STK_DATA_OBJECT_TYPE_DISPLAY_PARAMETERS:
 		return parse_dataobj_display_parameters;
+	case STK_DATA_OBJECT_TYPE_SERVICE_RECORD:
+		return parse_dataobj_service_record;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:

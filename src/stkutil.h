@@ -349,6 +349,14 @@ enum stk_access_technology_type {
 	STK_ACCESS_TECHNOLOGY_EUTRAN = 		0x08
 };
 
+enum stk_technology_id {
+	STK_TECHNOLOGY_INDEPENDENT = 	0x00,
+	STK_TECHNOLOGY_BLUETOOTH = 	0x01,
+	STK_TECHNOLOGY_IRDA = 		0x02,
+	STK_TECHNOLOGY_RS232 = 		0x03,
+	STK_TECHNOLOGY_USB = 		0x04
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -604,6 +612,14 @@ struct stk_display_parameters {
 	unsigned char height;
 	unsigned char width;
 	unsigned char effects;
+};
+
+/* Defined in TS 102.223 Section 8.63 */
+struct stk_service_record {
+	unsigned char tech_id;
+	unsigned char serv_id;
+	unsigned char *serv_rec;
+	unsigned int len;
 };
 
 /*
