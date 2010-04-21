@@ -1454,7 +1454,7 @@ static gboolean parse_dataobj_network_access_name(
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
 
 	if (len == 0)
-		return TRUE;
+		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
 	nan->len = len;
