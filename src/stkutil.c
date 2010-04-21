@@ -1407,8 +1407,7 @@ static gboolean parse_dataobj_remote_entity_address(
 
 	data = comprehension_tlv_iter_get_data(iter);
 
-	rea->coding_type = data[0];
-	switch (rea->coding_type) {
+	switch (data[0]) {
 	case 0x00:
 		if (len != 7)
 			return FALSE;
@@ -1421,6 +1420,7 @@ static gboolean parse_dataobj_remote_entity_address(
 		return FALSE;
 	}
 
+	rea->coding_type = data[0];
 	memcpy(&rea->addr, data + 1, len - 1);
 
 	return TRUE;
