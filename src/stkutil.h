@@ -674,6 +674,17 @@ struct stk_text_attribute {
 	unsigned char len;
 };
 
+/*
+ * According to 102.223 Section 8.73 the length of CTLV is 1 byte. This means
+ * that the maximum size is 127 according to the rules of CTLVs. In addition,
+ * the length should be also the number multiplied by 4, so the maximum number
+ * is 124.
+ */
+struct stk_item_text_attribute_list {
+	unsigned char list[124];
+	unsigned char len;
+};
+
 struct stk_command_display_text {
 	char *text;
 	struct stk_icon_id icon_id;
