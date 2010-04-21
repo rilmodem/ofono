@@ -1426,6 +1426,25 @@ static gboolean parse_dataobj_remote_entity_address(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.69 */
+static gboolean parse_dataobj_esn(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char **esn = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len != 4)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	/* Assume esn is 4 bytes long */
+	memcpy(*esn, data, len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1592,6 +1611,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_service_availability;
 	case STK_DATA_OBJECT_TYPE_REMOTE_ENTITY_ADDRESS:
 		return parse_dataobj_remote_entity_address;
+	case STK_DATA_OBJECT_TYPE_ESN:
+		return parse_dataobj_esn;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
