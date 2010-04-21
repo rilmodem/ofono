@@ -1329,6 +1329,33 @@ static gboolean parse_dataobj_device_filter(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.65 */
+static gboolean parse_dataobj_service_search(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_service_search *ss = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	if (len == 1)
+		return TRUE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	ss->tech_id = data[0];
+	ss->len = len - 1;
+
+	ss->ser_search = g_try_malloc(ss->len);
+	if (ss->ser_search == NULL)
+		return FALSE;
+
+	memcpy(ss->ser_search, data + 1, ss->len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1487,6 +1514,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_service_record;
 	case STK_DATA_OBJECT_TYPE_DEVICE_FILTER:
 		return parse_dataobj_device_filter;
+	case STK_DATA_OBJECT_TYPE_SERVICE_SEARCH:
+		return parse_dataobj_service_search;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
