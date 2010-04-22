@@ -411,7 +411,8 @@ void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 {
 	ppp->net = ppp_net_new(ppp);
 
-	ppp_net_set_mtu(ppp->net, ppp->mtu);
+	if (ppp_net_set_mtu(ppp->net, ppp->mtu) == FALSE)
+		g_printerr("Unable to set MTU\n");
 
 	if (ppp->connect_cb == NULL)
 		return;

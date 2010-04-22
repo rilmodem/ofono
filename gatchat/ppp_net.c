@@ -48,12 +48,29 @@ struct ppp_net {
 	gint mtu;
 };
 
-void ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
+gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
 {
-	if (net == NULL)
-		return;
+	struct ifreq ifr;
+	int sock;
+	int rc;
+
+	if (net == NULL || mtu >= MAX_PACKET)
+		return FALSE;
 
 	net->mtu = mtu;
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0)
+		return FALSE;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, net->if_name, sizeof(ifr.ifr_name));
+	ifr.ifr_mtu = mtu;
+
+	rc = ioctl(sock, SIOCSIFMTU, (caddr_t) &ifr);
+
+	close(sock);
+	return (rc < 0) ? FALSE: TRUE;
 }
 
 void ppp_net_process_packet(struct ppp_net *net, guint8 *packet)
