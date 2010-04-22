@@ -739,6 +739,15 @@ struct stk_mms_id {
 	unsigned char len;
 };
 
+/*
+ * According to 102.223 Section 8.84 the length of CTLV is 1 byte. This means
+ * that the maximum size is 127 according to the rules of CTLVs.
+ */
+struct stk_mms_transfer_status {
+	unsigned char status[127];
+	unsigned char len;
+};
+
 struct stk_command_display_text {
 	char *text;
 	struct stk_icon_id icon_id;
