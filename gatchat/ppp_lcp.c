@@ -58,16 +58,18 @@ enum lcp_options {
 	ACFC			= 8,
 };
 
-/* Maximum size of all options, we only ever request ACCM */ 
-#define MAX_CONFIG_OPTION_SIZE 6
+/* Maximum size of all options, we only ever request ACCM and MRU */ 
+#define MAX_CONFIG_OPTION_SIZE 10
 
-#define REQ_OPTION_ACCM 0x1
+#define REQ_OPTION_ACCM	0x1
+#define REQ_OPTION_MRU	0x2
 
 struct lcp_data {
 	guint8 options[MAX_CONFIG_OPTION_SIZE];
 	guint16 options_len;
 	guint8 req_options;
 	guint32 accm;			/* ACCM value */
+	guint16 mru;
 };
 
 static void lcp_generate_config_options(struct lcp_data *lcp)
@@ -84,6 +86,18 @@ static void lcp_generate_config_options(struct lcp_data *lcp)
 		memcpy(lcp->options + len + 2, &accm, sizeof(accm));
 
 		len += 6;
+	}
+
+	if (lcp->req_options & REQ_OPTION_MRU) {
+		guint16 mru;
+
+		mru = htons(lcp->mru);
+
+		lcp->options[len] = MRU;
+		lcp->options[len + 1] = 4;
+		memcpy(lcp->options + len + 2, &mru, sizeof(mru));
+
+		len += 4;
 	}
 
 	lcp->options_len = len;
@@ -146,7 +160,35 @@ static void lcp_rca(struct pppcp_data *pppcp, const struct pppcp_packet *packet)
 static void lcp_rcn_nak(struct pppcp_data *pppcp,
 				const struct pppcp_packet *packet)
 {
+	struct lcp_data *lcp = pppcp_get_data(pppcp);
+	struct ppp_option_iter iter;
 
+	ppp_option_iter_init(&iter, packet);
+
+	while (ppp_option_iter_next(&iter) == TRUE) {
+		const guint8 *data = ppp_option_iter_get_data(&iter);
+
+		switch (ppp_option_iter_get_type(&iter)) {
+		case MRU:
+		{
+			guint16 mru = get_host_short(data);
+
+			if (mru < 2048) {
+				g_print("Setting peer's suggested mru: %hd\n",
+						mru);
+				lcp->mru = get_host_short(data);
+				lcp->req_options |= REQ_OPTION_MRU;
+			}
+
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
+	lcp_generate_config_options(lcp);
+	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
 }
 
 static void lcp_rcn_rej(struct pppcp_data *pppcp,
