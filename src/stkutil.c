@@ -1803,6 +1803,29 @@ static gboolean parse_dataobj_activate_descriptor(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.90 */
+static gboolean parse_dataobj_broadcast_network_info(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_broadcast_network_information *bni = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if (data[0] > 0x03)
+		return FALSE;
+
+	bni->tech = data[0];
+	bni->len = len - 1;
+	memcpy(bni->loc_info, data + 1, bni->len);
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -1970,6 +1993,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_registry_application_data;
 	case STK_DATA_OBJECT_TYPE_ACTIVATE_DESCRIPTOR:
 		return parse_dataobj_activate_descriptor;
+	case STK_DATA_OBJECT_TYPE_BROADCAST_NETWORK_INFO:
+		return parse_dataobj_broadcast_network_info;
 	default:
 		return NULL;
 	};

@@ -370,6 +370,13 @@ enum stk_frame_layout_type {
 	STK_LAYOUT_VERTICAL = 		0x02
 };
 
+enum stk_broadcast_network_technology {
+	STK_BROADCAST_NETWORK_DVB_H = 0x00,
+	STK_BROADCAST_NETWORK_DVB_T = 0x01,
+	STK_BROADCAST_NETWORK_DVB_SH = 0x02,
+	STK_BROADCAST_NETWORK_T_DMB = 0x03
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -762,6 +769,18 @@ struct stk_registry_application_data {
 	unsigned short port;
 	unsigned char type;
 	char *name;
+};
+
+/*
+ * According to 102.223 Section 8.90 the length of CTLV is 1 byte. This means
+ * that the maximum length is 127 bytes for the total length of broadcast
+ * network technology and location information. Thus the maximum length of
+ * location information is 126 bytes.
+ */
+struct stk_broadcast_network_information {
+	unsigned char tech;
+	unsigned char loc_info[126];
+	unsigned int len;
 };
 
 struct stk_command_display_text {
