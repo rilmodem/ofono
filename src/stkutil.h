@@ -757,6 +757,13 @@ struct stk_mms_content_id {
 	unsigned char len;
 };
 
+/* Defined in TS 102.223 Section 8.88 */
+struct stk_registry_application_data {
+	unsigned short port;
+	unsigned char type;
+	char *name;
+};
+
 struct stk_command_display_text {
 	char *text;
 	struct stk_icon_id icon_id;

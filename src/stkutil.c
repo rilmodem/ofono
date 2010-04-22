@@ -1757,6 +1757,32 @@ static gboolean parse_dataobj_last_envelope(struct comprehension_tlv_iter *iter,
 	return parse_dataobj_common_bool(iter, ret);
 }
 
+/* Defined in TS 102.223 Section 8.88 */
+static gboolean parse_dataobj_registry_application_data(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_registry_application_data *rad = user;
+	const unsigned char *data;
+	char *utf8;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 5)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	utf8 = decode_text(data[2], len - 4, data + 4);
+
+	if (utf8 == NULL)
+		return FALSE;
+
+	rad->name = utf8;
+	rad->port = (data[0] << 8) + data[1];
+	rad->type = data[3];
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -1920,6 +1946,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_mms_notification;
 	case STK_DATA_OBJECT_TYPE_LAST_ENVELOPE:
 		return parse_dataobj_last_envelope;
+	case STK_DATA_OBJECT_TYPE_REGISTRY_APPLICATION_DATA:
+		return parse_dataobj_registry_application_data;
 	default:
 		return NULL;
 	};
