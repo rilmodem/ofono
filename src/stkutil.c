@@ -1687,6 +1687,24 @@ static gboolean parse_dataobj_mms_reference(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.83 */
+static gboolean parse_dataobj_mms_id(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_mms_id *mi = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	mi->len = len;
+	memcpy(mi->id, data, len);
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -1840,6 +1858,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_meid;
 	case STK_DATA_OBJECT_TYPE_MMS_REFERENCE:
 		return parse_dataobj_mms_reference;
+	case STK_DATA_OBJECT_TYPE_MMS_ID:
+		return parse_dataobj_mms_id;
 	default:
 		return NULL;
 	};
