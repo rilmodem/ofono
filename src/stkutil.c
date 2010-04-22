@@ -1783,6 +1783,26 @@ static gboolean parse_dataobj_registry_application_data(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.89 */
+static gboolean parse_dataobj_activate_descriptor(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_length(iter) != 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if (data[0] != 0x01)
+		return FALSE;
+
+	*byte = data[0];
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -1948,6 +1968,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_last_envelope;
 	case STK_DATA_OBJECT_TYPE_REGISTRY_APPLICATION_DATA:
 		return parse_dataobj_registry_application_data;
+	case STK_DATA_OBJECT_TYPE_ACTIVATE_DESCRIPTOR:
+		return parse_dataobj_activate_descriptor;
 	default:
 		return NULL;
 	};
