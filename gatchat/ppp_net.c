@@ -70,7 +70,7 @@ gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
 	rc = ioctl(sock, SIOCSIFMTU, (caddr_t) &ifr);
 
 	close(sock);
-	return (rc < 0) ? FALSE: TRUE;
+	return (rc < 0) ? FALSE : TRUE;
 }
 
 void ppp_net_process_packet(struct ppp_net *net, guint8 *packet)
