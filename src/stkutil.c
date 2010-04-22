@@ -1602,6 +1602,35 @@ static gboolean parse_dataobj_frame_layout(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.79 */
+static gboolean parse_dataobj_frames_info(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	struct stk_frames_info *fi = user;
+	const unsigned char *data;
+	unsigned char len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if (data[0] > 0x0f)
+		return FALSE;
+
+	if ((len == 1 && data[0] != 0) || (len > 1 && data[0] == 0))
+		return FALSE;
+
+	if (len == 1)
+		return TRUE;
+
+	fi->id = data[0];
+	fi->len = len - 1;
+	memcpy(fi->list, data + 1, fi->len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.80 */
 static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1767,6 +1796,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_browsing_status;
 	case STK_DATA_OBJECT_TYPE_FRAME_LAYOUT:
 		return parse_dataobj_frame_layout;
+	case STK_DATA_OBJECT_TYPE_FRAMES_INFO:
+		return parse_dataobj_frames_info;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
 		return parse_dataobj_frame_id;
 	default:

@@ -709,6 +709,18 @@ struct stk_frame_layout {
 	unsigned int len;
 };
 
+/*
+ * According to 102.223 Section 8.79 the length of CTLV is 1 byte. This means
+ * that the maximum length is 127 bytes for the total length of default frame
+ * id and frame information list. Thus the maximum length of frame information
+ * list is 126 bytes.
+ */
+struct stk_frames_info {
+	unsigned char id;
+	unsigned char list[126];
+	unsigned int len;
+};
+
 struct stk_command_display_text {
 	char *text;
 	struct stk_icon_id icon_id;
