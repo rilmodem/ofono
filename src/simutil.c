@@ -210,7 +210,7 @@ void comprehension_tlv_iter_init(struct comprehension_tlv_iter *iter,
 	iter->data = 0;
 }
 
-/* Comprehension TLVs defined in Section 7 of ETSI TS 102.220 */
+/* Comprehension TLVs defined in Section 7 of ETSI TS 101.220 */
 gboolean comprehension_tlv_iter_next(struct comprehension_tlv_iter *iter)
 {
 	const unsigned char *pdu = iter->pdu + iter->pos;
@@ -222,15 +222,15 @@ gboolean comprehension_tlv_iter_next(struct comprehension_tlv_iter *iter)
 	if (pdu == end)
 		return FALSE;
 
+	if (*pdu == 0x00 || *pdu == 0xFF || *pdu == 0x80)
+		return FALSE;
+
 	cr = bit_field(*pdu, 7, 1);
 	tag = bit_field(*pdu, 0, 7);
 	pdu++;
 
-	if (tag == 0x00 || tag == 0xFF || tag == 0x80)
-		return FALSE;
-
 	/*
-	 * ETSI TS 102.220, Section 7.1.1.2
+	 * ETSI TS 101.220, Section 7.1.1.2
 	 * 
 	 * If byte 1 of the tag is equal to 0x7F, then the tag is encoded
 	 * on the following two bytes, with bit 8 of the 2nd byte of the tag
@@ -241,7 +241,7 @@ gboolean comprehension_tlv_iter_next(struct comprehension_tlv_iter *iter)
 			return FALSE;
 
 		cr = bit_field(pdu[0], 7, 1);
-		tag = ((pdu[0] & 0x7f) << 7) | pdu[1];
+		tag = ((pdu[0] & 0x7f) << 8) | pdu[1];
 
 		if (tag < 0x0001 || tag > 0x7fff)
 			return FALSE;
