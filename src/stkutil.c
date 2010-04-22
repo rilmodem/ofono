@@ -1723,6 +1723,24 @@ static gboolean parse_dataobj_mms_transfer_status(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.85 */
+static gboolean parse_dataobj_mms_content_id(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_mms_content_id *mci = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	mci->len = len;
+	memcpy(mci->id, data, len);
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -1880,6 +1898,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_mms_id;
 	case STK_DATA_OBJECT_TYPE_MMS_TRANSFER_STATUS:
 		return parse_dataobj_mms_transfer_status;
+	case STK_DATA_OBJECT_TYPE_MMS_CONTENT_ID:
+		return parse_dataobj_mms_content_id;
 	default:
 		return NULL;
 	};
