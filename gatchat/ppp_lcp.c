@@ -256,7 +256,7 @@ struct pppcp_proto lcp_proto = {
 
 void lcp_free(struct pppcp_data *pppcp)
 {
-	struct ipcp_data *lcp = pppcp_get_data(pppcp);
+	struct lcp_data *lcp = pppcp_get_data(pppcp);
 
 	g_free(lcp);
 	pppcp_free(pppcp);
