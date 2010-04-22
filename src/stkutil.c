@@ -1651,6 +1651,24 @@ static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.81 */
+static gboolean parse_dataobj_meid(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	unsigned char **meid = user;
+	const unsigned char *data;
+
+	if (comprehension_tlv_iter_get_length(iter) != 8)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	/* Assume meid is 8 bytes long */
+	memcpy(*meid, data, 8);
+
+	return TRUE;
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -1800,6 +1818,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_frames_info;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
 		return parse_dataobj_frame_id;
+	case STK_DATA_OBJECT_TYPE_MEID:
+		return parse_dataobj_meid;
 	default:
 		return NULL;
 	};
