@@ -1741,6 +1741,14 @@ static gboolean parse_dataobj_mms_content_id(
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.86 */
+static gboolean parse_dataobj_mms_notification(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_common_byte_array *array = user;
+	return parse_dataobj_common_byte_array(iter, array);
+}
+
 static dataobj_handler handler_for_type(enum stk_data_object_type type)
 {
 	switch (type) {
@@ -1900,6 +1908,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_mms_transfer_status;
 	case STK_DATA_OBJECT_TYPE_MMS_CONTENT_ID:
 		return parse_dataobj_mms_content_id;
+	case STK_DATA_OBJECT_TYPE_MMS_NOTIFICATION:
+		return parse_dataobj_mms_notification;
 	default:
 		return NULL;
 	};
