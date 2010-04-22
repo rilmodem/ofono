@@ -1578,6 +1578,30 @@ static gboolean parse_dataobj_browsing_status(
 	return parse_dataobj_common_byte_array(iter, array);
 }
 
+/* Defined in TS 102.223 Section 8.78 */
+static gboolean parse_dataobj_frame_layout(struct comprehension_tlv_iter *iter,
+						void *user)
+{
+	struct stk_frame_layout *fl = user;
+	const unsigned char *data;
+	unsigned char len = comprehension_tlv_iter_get_length(iter);
+
+	if (len < 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	if (data[0] != STK_LAYOUT_HORIZONTAL &&
+			data[0] != STK_LAYOUT_VERTICAL)
+		return FALSE;
+
+	fl->layout = data[0];
+	fl->len = len - 1;
+	memcpy(fl->size, data + 1, fl->len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.80 */
 static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1741,6 +1765,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_battery_state;
 	case STK_DATA_OBJECT_TYPE_BROWSING_STATUS:
 		return parse_dataobj_browsing_status;
+	case STK_DATA_OBJECT_TYPE_FRAME_LAYOUT:
+		return parse_dataobj_frame_layout;
 	case STK_DATA_OBJECT_TYPE_FRAME_ID:
 		return parse_dataobj_frame_id;
 	default:

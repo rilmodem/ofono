@@ -365,6 +365,11 @@ enum stk_battery_state {
 	STK_BATTERY_FULL = 	0x04
 };
 
+enum stk_frame_layout_type {
+	STK_LAYOUT_HORIZONTAL = 	0x01,
+	STK_LAYOUT_VERTICAL = 		0x02
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -691,6 +696,17 @@ struct stk_text_attribute {
 struct stk_item_text_attribute_list {
 	unsigned char list[124];
 	unsigned char len;
+};
+
+/*
+ * According to 102.223 Section 8.78 the length of CTLV is 1 byte. This means
+ * that the maximum length is 127 bytes for the total length of layout and
+ * relative-sized frame. Thus the maximum length of relative size is 126 bytes.
+ */
+struct stk_frame_layout {
+	unsigned char layout;
+	unsigned char size[126];
+	unsigned int len;
 };
 
 struct stk_command_display_text {
