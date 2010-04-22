@@ -365,6 +365,8 @@ void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 		pppcp_signal_up(ppp->ipcp);
 		break;
 	case PPP_PHASE_TERMINATION:
+		pppcp_signal_down(ppp->ipcp);
+		pppcp_signal_close(ppp->ipcp);
 		pppcp_signal_close(ppp->lcp);
 		break;
 	case PPP_PHASE_DEAD:
