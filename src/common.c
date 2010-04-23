@@ -273,7 +273,7 @@ const char *telephony_error_to_str(const struct ofono_error *error)
 		break;
 	case OFONO_ERROR_TYPE_CMS:
 		e = cms_errors;
-		maxentries = sizeof(cme_errors) / sizeof(struct error_entry);
+		maxentries = sizeof(cms_errors) / sizeof(struct error_entry);
 		break;
 	case OFONO_ERROR_TYPE_CEER:
 		e = ceer_errors;
