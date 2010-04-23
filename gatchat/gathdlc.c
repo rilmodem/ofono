@@ -319,9 +319,9 @@ static inline void hdlc_put(GAtHDLC *hdlc, guint8 *buf, gsize *pos, guint8 c)
 {
 	gsize i = *pos;
 
-	if (c == 0x7e || c == 0x7d) {
-		buf[i++] = 0x7d;
-		buf[i++] = c ^ 0x20;
+	if (c == HDLC_FLAG || c == HDLC_ESCAPE) {
+		buf[i++] = HDLC_ESCAPE;
+		buf[i++] = c ^ HDLC_TRANS;
 	} else
 		buf[i++] = c;
 
@@ -352,7 +352,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 		hdlc_put(hdlc, buf, &pos, fcs & 0xff);
 		hdlc_put(hdlc, buf, &pos, fcs >> 8);
 
-		buf[pos++] = 0x7e;
+		buf[pos++] = HDLC_FLAG;
 
 		ring_buffer_write_advance(hdlc->write_buffer, pos);
 	} while (0);
