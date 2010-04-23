@@ -32,6 +32,15 @@
 
 #define BUFFER_SIZE 2048
 
+#define HDLC_FLAG	0x7e	/* Flag sequence */
+#define HDLC_ESCAPE	0x7d	/* Asynchronous control escape */
+#define HDLC_TRANS	0x20	/* Asynchronous transparency modifier */
+
+#define HDLC_INITFCS	0xffff	/* Initial FCS value */
+#define HDLC_GOODFCS	0xf0b8	/* Good final FCS value */
+
+#define HDLC_FCS(fcs, c) crc_ccitt_byte(fcs, c)
+
 struct _GAtHDLC {
 	gint ref_count;
 	GIOChannel *channel;
@@ -43,6 +52,7 @@ struct _GAtHDLC {
 	unsigned char *decode_buffer;
 	guint decode_offset;
 	guint16 decode_fcs;
+	gboolean decode_escape;
 	GAtReceiveFunc receive_func;
 	gpointer receive_data;
 	GAtDebugFunc debugf;
@@ -52,38 +62,40 @@ struct _GAtHDLC {
 static void new_bytes(GAtHDLC *hdlc)
 {
 	unsigned int len = ring_buffer_len(hdlc->read_buffer);
+	unsigned int wrap = ring_buffer_len_no_wrap(hdlc->read_buffer);
 	unsigned char *buf = ring_buffer_read_ptr(hdlc->read_buffer, 0);
-	unsigned char val;
 	unsigned int pos = 0;
 
 	while (pos < len) {
-		if (buf[pos] == 0x7e) {
+		if (hdlc->decode_escape == TRUE) {
+			unsigned char val = *buf ^ HDLC_TRANS;
+
+			hdlc->decode_buffer[hdlc->decode_offset++] = val;
+			hdlc->decode_fcs = HDLC_FCS(hdlc->decode_fcs, val);
+
+			hdlc->decode_escape = FALSE;
+		} else if (*buf == HDLC_ESCAPE) {
+			hdlc->decode_escape = TRUE;
+		} else if (*buf == HDLC_FLAG) {
 			if (hdlc->receive_func && hdlc->decode_offset > 2 &&
-						hdlc->decode_fcs == 0xf0b8) {
+					hdlc->decode_fcs == HDLC_GOODFCS) {
 				hdlc->receive_func(hdlc->decode_buffer,
 							hdlc->decode_offset - 2,
 							hdlc->receive_data);
 			}
 
-			hdlc->decode_fcs = 0xffff;
+			hdlc->decode_fcs = HDLC_INITFCS;
 			hdlc->decode_offset = 0;
-			pos++;
-			continue;
+		} else {
+			hdlc->decode_buffer[hdlc->decode_offset++] = *buf;
+			hdlc->decode_fcs = HDLC_FCS(hdlc->decode_fcs, *buf);
 		}
 
-		if (buf[pos] == 0x7d) {
-			if (pos + 2 > len)
-				break;
-			pos++;
-			val = buf[pos] ^ 0x20;
-		} else
-			val = buf[pos];
-
-		hdlc->decode_buffer[hdlc->decode_offset] = val;
-		hdlc->decode_fcs = crc_ccitt_byte(hdlc->decode_fcs, val);
-
-		hdlc->decode_offset++;
+		buf++;
 		pos++;
+
+		if (pos == wrap)
+			buf = ring_buffer_read_ptr(hdlc->read_buffer, pos);
 	}
 
 	ring_buffer_drain(hdlc->read_buffer, pos);
@@ -158,8 +170,9 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 		return NULL;
 
 	hdlc->ref_count = 1;
-	hdlc->decode_fcs = 0xffff;
+	hdlc->decode_fcs = HDLC_INITFCS;
 	hdlc->decode_offset = 0;
+	hdlc->decode_escape = FALSE;
 	hdlc->max_read_attempts = 8;
 
 	hdlc->read_buffer = ring_buffer_new(BUFFER_SIZE);
@@ -319,7 +332,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 {
 	unsigned char *buf;
 	unsigned int space, i = 0;
-	guint16 fcs = 0xffff;
+	guint16 fcs = HDLC_INITFCS;
 	gsize pos;
 
 	do {
@@ -335,7 +348,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 			hdlc_put(hdlc, buf, &pos, data[i++]);
 		}
 
-		fcs ^= 0xffff;
+		fcs ^= HDLC_INITFCS;
 		hdlc_put(hdlc, buf, &pos, fcs & 0xff);
 		hdlc_put(hdlc, buf, &pos, fcs >> 8);
 
