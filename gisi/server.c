@@ -44,7 +44,7 @@
 struct _GIsiIncoming
 {
 	struct sockaddr_pn spn;
-	uint8_t id;
+	uint8_t trans_id;
 };
 
 struct _GIsiServer {
@@ -60,8 +60,6 @@ struct _GIsiServer {
 	guint source;
 	GIsiRequestFunc func[256];
 	void *data[256];
-
-	GIsiIncoming irq[1];
 
 	/* Debugging */
 	GIsiDebugFunc debug_func;
@@ -87,7 +85,7 @@ GIsiServer *g_isi_server_create(GIsiModem *modem, uint8_t resource,
 		abort();
 
 	self = ptr;
-	memset (self, 0, sizeof *self);
+	memset(self, 0, sizeof(*self));
 	self->resource = resource;
 	self->version.major = major;
 	self->version.minor = minor;
@@ -174,9 +172,11 @@ g_isi_server_add_name(GIsiServer *self)
 			0, 0,
 		};
 
-		if (sendto(self->fd, req, sizeof(req), 0, (void *)&spn,
-				sizeof(spn)) != sizeof(spn))
-			return;
+		if (sendto(self->fd, req, sizeof(req), 0,
+				(void *)&spn, sizeof(spn)) != sizeof(req)) {
+			g_warning("%s: %s", "sendto(PN_NAMESERVICE)",
+				  strerror(errno));
+		}
 	}
 }
 
@@ -236,7 +236,7 @@ int g_isi_vrespond(GIsiServer *self, const struct iovec *iov, size_t iovlen,
 		return -1;
 	}
 
-	_iov[0].iov_base = &irq->id;
+	_iov[0].iov_base = &irq->trans_id;
 	_iov[0].iov_len = 1;
 	for (i = 0, len = 1; i < iovlen; i++) {
 		_iov[1 + i] = iov[i];
@@ -245,8 +245,7 @@ int g_isi_vrespond(GIsiServer *self, const struct iovec *iov, size_t iovlen,
 
 	ret = sendmsg(self->fd, &msg, MSG_NOSIGNAL);
 
-	if (irq != self->irq)
-		g_free(irq);
+	g_free(irq);
 
 	return ret;
 }
@@ -285,65 +284,63 @@ void g_isi_server_unhandle(GIsiServer *self, uint8_t type)
 		self->func[type] = NULL;
 }
 
+
+static void generic_error_response(GIsiServer *self,
+			uint8_t trans_id, uint8_t error, uint8_t message_id,
+			void *addr, socklen_t addrlen)
+{
+	uint8_t common[] = { trans_id, 0xF0, error, message_id };
+
+	sendto(self->fd, common, sizeof(common), MSG_NOSIGNAL, addr, addrlen);
+}
+
+static void process_message(GIsiServer *self, int len)
+{
+	uint8_t msg[len + 1];
+	struct sockaddr_pn addr;
+	socklen_t addrlen = sizeof(addr);
+	uint8_t message_id;
+	GIsiRequestFunc func;
+	void *data;
+
+	len = recvfrom(self->fd, msg, sizeof(msg), MSG_DONTWAIT,
+			(void *)&addr, &addrlen);
+
+	if (len < 2 || addr.spn_resource != self->resource)
+		return;
+
+	if (self->debug_func)
+		self->debug_func(msg + 1, len - 1, self->debug_data);
+
+	message_id = msg[1];
+	func = self->func[message_id];
+	data = self->data[message_id];
+
+	if (func) {
+		GIsiIncoming *irq = g_new0(GIsiIncoming, 1);
+
+		if (irq) {
+			irq->spn = addr;
+			irq->trans_id = msg[0];
+			func(self, msg + 1, len - 1, irq, data);
+			return;
+		}
+	}
+
+	/* Respond with COMMON MESSAGE COMM_SERVICE_NOT_AUTHENTICATED_RESP */
+	generic_error_response(self, msg[0], 0x17, msg[1], &addr, addrlen);
+}
+
 /* Data callback */
 static gboolean g_isi_server_callback(GIOChannel *channel, GIOCondition cond,
 					gpointer opaque)
 {
-	GIsiServer *self = opaque;
-	int len;
-	GIsiIncoming *irq = self->irq;
-	struct sockaddr_pn *addr = &irq->spn;
-	socklen_t addrlen = sizeof(irq->spn);
-
 	if (cond & (G_IO_NVAL|G_IO_HUP)) {
 		g_warning("Unexpected event on Phonet channel %p", channel);
 		return FALSE;
 	}
 
-	len = phonet_peek_length(channel);
-	{
-		uint32_t buf[(len + 3) / 4];
-		uint8_t *msg;
-		uint8_t id;
-		uint8_t failure;
-		len = recvfrom(self->fd, buf, len, MSG_DONTWAIT,
-				(void *)addr, &addrlen);
-
-		if (len < 2 || irq->spn.spn_resource != self->resource)
-			return TRUE;
-
-		msg = (uint8_t *)buf;
-
-		if (self->debug_func)
-			self->debug_func(msg + 1, len - 1, self->debug_data);
-
-		irq->id = id = msg[1];
-
-		if (self->func[id]) {
-			irq = g_new0(GIsiIncoming, 1);
-
-			if (irq) {
-				*irq = *self->irq;
-				self->func[id](self, msg + 1, len - 1,
-						irq, self->data[id]);
-				return TRUE;
-			}
-			g_free(irq);
-			failure = 0x14;
-
-		} else {
-
-			failure = 0x17;
-
-			{
-				uint8_t common[] = {
-					0xF0, failure, msg[1]
-				};
-				g_isi_respond(self, common, sizeof(common),
-						irq);
-			}
-		}
-	}
+	process_message(opaque, phonet_peek_length(channel));
 
 	return TRUE;
 }
