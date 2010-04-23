@@ -344,7 +344,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 		pos = 0;
 
 		while (size--) {
-			fcs = crc_ccitt_byte(fcs, data[i]);
+			fcs = HDLC_FCS(fcs, data[i]);
 			hdlc_put(hdlc, buf, &pos, data[i++]);
 		}
 
