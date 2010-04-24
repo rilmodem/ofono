@@ -56,11 +56,12 @@ int ring_buffer_write(struct ring_buffer *buf, const void *data,
 int ring_buffer_write_advance(struct ring_buffer *buf, unsigned int len);
 
 /*!
- * Returns the write pointer.  Careful not to write past the end of the
- * buffer.  Use the ring_buffer_avail_no_wrap function,
- * ring_buffer_write_advance.
+ * Returns the write pointer with write offset specified by offset.  Careful
+ * not to write past the end of the buffer.  Use the ring_buffer_avail_no_wrap
+ * function, and ring_buffer_write_advance.
  */
-unsigned char *ring_buffer_write_ptr(struct ring_buffer *buf);
+unsigned char *ring_buffer_write_ptr(struct ring_buffer *buf,
+					unsigned int offset);
 
 /*!
  * Returns the number of free bytes available in the buffer

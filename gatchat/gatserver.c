@@ -944,7 +944,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 			break;
 
 		rbytes = 0;
-		buf = ring_buffer_write_ptr(server->read_buf);
+		buf = ring_buffer_write_ptr(server->read_buf, 0);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
 		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,

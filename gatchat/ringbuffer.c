@@ -90,9 +90,10 @@ int ring_buffer_write(struct ring_buffer *buf, const void *data,
 	return len;
 }
 
-unsigned char *ring_buffer_write_ptr(struct ring_buffer *buf)
+unsigned char *ring_buffer_write_ptr(struct ring_buffer *buf,
+					unsigned int offset)
 {
-	return buf->buffer + buf->in % buf->size;
+	return buf->buffer + (buf->in + offset) % buf->size;
 }
 
 int ring_buffer_avail_no_wrap(struct ring_buffer *buf)

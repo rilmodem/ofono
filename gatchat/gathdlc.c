@@ -123,7 +123,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 			break;
 
 		rbytes = 0;
-		buf = ring_buffer_write_ptr(hdlc->read_buffer);
+		buf = ring_buffer_write_ptr(hdlc->read_buffer, 0);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
 		g_at_util_debug_dump(TRUE, buf, rbytes,
@@ -319,7 +319,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 {
 	unsigned int avail = ring_buffer_avail(hdlc->write_buffer);
 	unsigned int wrap = ring_buffer_avail_no_wrap(hdlc->write_buffer);
-	unsigned char *buf = ring_buffer_write_ptr(hdlc->write_buffer);
+	unsigned char *buf = ring_buffer_write_ptr(hdlc->write_buffer, 0);
 	unsigned char tail[3];
 	unsigned int i = 0;
 	guint16 fcs = HDLC_INITFCS;
