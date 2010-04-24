@@ -315,47 +315,74 @@ static void wakeup_write(GAtHDLC *hdlc)
 				can_write_data, hdlc, write_watch_destroy);
 }
 
-static inline void hdlc_put(GAtHDLC *hdlc, guint8 *buf, gsize *pos, guint8 c)
-{
-	gsize i = *pos;
-
-	if (c == HDLC_FLAG || c == HDLC_ESCAPE) {
-		buf[i++] = HDLC_ESCAPE;
-		buf[i++] = c ^ HDLC_TRANS;
-	} else
-		buf[i++] = c;
-
-	*pos = i;
-}
-
 gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 {
-	unsigned char *buf;
-	unsigned int space, i = 0;
+	unsigned int avail = ring_buffer_avail(hdlc->write_buffer);
+	unsigned int wrap = ring_buffer_avail_no_wrap(hdlc->write_buffer);
+	unsigned char *buf = ring_buffer_write_ptr(hdlc->write_buffer);
+	unsigned char tail[3];
+	unsigned int i = 0;
 	guint16 fcs = HDLC_INITFCS;
-	gsize pos;
+	gboolean escape = FALSE;
+	gsize pos = 0;
 
-	do {
-		space = ring_buffer_avail_no_wrap(hdlc->write_buffer);
-		if (space == 0)
-			break;
+	if (avail < size)
+		return FALSE;
 
-		buf = ring_buffer_write_ptr(hdlc->write_buffer);
-		pos = 0;
+	i = 0;
 
-		while (size--) {
+	while (pos < avail && i < size) {
+		if (escape == TRUE) {
 			fcs = HDLC_FCS(fcs, data[i]);
-			hdlc_put(hdlc, buf, &pos, data[i++]);
+			*buf = data[i++] ^ HDLC_TRANS;
+			escape = FALSE;
+		} else if (*buf == HDLC_FLAG || *buf == HDLC_ESCAPE) {
+			*buf = HDLC_ESCAPE;
+			escape = TRUE;
+		} else {
+			fcs = HDLC_FCS(fcs, data[i]);
+			*buf = data[i++];
 		}
 
-		fcs ^= HDLC_INITFCS;
-		hdlc_put(hdlc, buf, &pos, fcs & 0xff);
-		hdlc_put(hdlc, buf, &pos, fcs >> 8);
+		buf++;
+		pos++;
 
-		buf[pos++] = HDLC_FLAG;
+		if (pos == wrap)
+			return FALSE;
+	}
 
-		ring_buffer_write_advance(hdlc->write_buffer, pos);
-	} while (0);
+	if (i < size)
+		return FALSE;
+
+	fcs ^= HDLC_INITFCS;
+	tail[0] = fcs & 0xff;
+	tail[1] = fcs >> 8;
+	tail[2] = HDLC_FLAG;
+
+	i = 0;
+
+	while (pos < avail && i < sizeof(tail)) {
+		if (escape == TRUE) {
+			*buf = tail[i++] ^ HDLC_TRANS;
+			escape = FALSE;
+		} else if (*buf == HDLC_FLAG || *buf == HDLC_ESCAPE) {
+			*buf = HDLC_ESCAPE;
+			escape = TRUE;
+		} else {
+			*buf = tail[i++];
+		}
+
+		buf++;
+		pos++;
+
+		if (pos == wrap)
+			return FALSE;
+	}
+
+	if (i < sizeof(tail))
+		return FALSE;
+
+	ring_buffer_write_advance(hdlc->write_buffer, pos);
 
 	wakeup_write(hdlc);
 
