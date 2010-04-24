@@ -78,8 +78,7 @@ static void report_powered(struct isi_data *isi, ofono_bool_t powered)
 
 static void set_power_by_mtc_state(struct isi_data *isi, int state)
 {
-	switch (isi->mtc_state = state)
-	{
+	switch (isi->mtc_state = state) {
 	case MTC_STATE_NONE:
 	case MTC_POWER_OFF:
 	case MTC_CHARGING:
@@ -132,7 +131,7 @@ static bool mtc_poll_query_cb(GIsiClient *client, const void *restrict data,
 			MTC_STATE_QUERY_REQ, 0x00, 0x00
 		};
 
-		if (!isi-> iface_up)
+		if (!isi->iface_up)
 			return true;
 
 		isi->interval *= 2;

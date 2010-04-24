@@ -38,10 +38,9 @@
 #include "info.h"
 #include "infoserver.h"
 
-struct isi_infoserver
-{
+struct isi_infoserver {
 	GIsiServer *server;
-	unsigned sv;		/* Software version in 0..98 */
+	unsigned sv;	/* Software version in 0..98 */
 };
 
 static bool serial_number_read_req(GIsiServer *server, void const *data,

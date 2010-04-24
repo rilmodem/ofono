@@ -112,16 +112,16 @@ static void isi_set(struct ofono_call_barring *barr, const char *lock,
 		SS_SERVICE_REQ,
 		enable ? SS_ACTIVATION : SS_DEACTIVATION,
 		SS_ALL_TELE_AND_BEARER,
-		ss_code >> 8, ss_code & 0xFF,	/* Supplementary services code */
-		SS_SEND_ADDITIONAL_INFO,	/* ? */
-		1,				/* Subblock count */
+		ss_code >> 8, ss_code & 0xFF,	/* Service code */
+		SS_SEND_ADDITIONAL_INFO,
+		1,			/* Subblock count */
 		SS_GSM_PASSWORD,
-		28,				/* Subblock length */
-		0, passwd[0], 0, passwd[1],	/* Password */
+		28,			/* Subblock length */
+		0, passwd[0], 0, passwd[1],
 		0, passwd[2], 0, passwd[3],
-		0, 0, 0, 0, 0, 0, 0, 0,		/* Filler */
-		0, 0, 0, 0, 0, 0, 0, 0,		/* Filler */
-		0, 0				/* Filler */
+		0, 0, 0, 0, 0, 0, 0, 0,	/* Filler */
+		0, 0, 0, 0, 0, 0, 0, 0,	/* Filler */
+		0, 0			/* Filler */
 	};
 
 	DBG("lock code %s enable %d class %d password %s\n",
@@ -251,8 +251,8 @@ out:
 
 }
 
-static void isi_query(struct ofono_call_barring *barr, const char *lock, int cls,
-			ofono_call_barring_query_cb_t cb, void *data)
+static void isi_query(struct ofono_call_barring *barr, const char *lock,
+			int cls, ofono_call_barring_query_cb_t cb, void *data)
 {
 	struct barr_data *bd = ofono_call_barring_get_data(barr);
 	struct isi_cb_data *cbd = isi_cb_data_new(barr, cb, data);
@@ -262,8 +262,8 @@ static void isi_query(struct ofono_call_barring *barr, const char *lock, int cls
 		SS_SERVICE_REQ,
 		SS_INTERROGATION,
 		SS_ALL_TELE_AND_BEARER,
-		ss_code >> 8, ss_code & 0xFF,	/* Supplementary services code */
-		SS_SEND_ADDITIONAL_INFO,	/* Get BER-encoded result, too */
+		ss_code >> 8, ss_code & 0xFF,	/* services code */
+		SS_SEND_ADDITIONAL_INFO,	/* Get BER-encoded result */
 		0				/* Subblock count */
 	};
 
@@ -318,7 +318,7 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 		SS_SERVICE_REQ,
 		SS_GSM_PASSWORD_REGISTRATION,
 		SS_ALL_TELE_AND_BEARER,
-		ss_code >> 8, ss_code & 0xFF,	/* Supplementary services code */
+		ss_code >> 8, ss_code & 0xFF,	/* Service code */
 		SS_SEND_ADDITIONAL_INFO,
 		1,				/* Subblock count */
 		SS_GSM_PASSWORD,

@@ -138,7 +138,8 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 				routing_resp_cb, cbs))
 		DBG("Failed to set CBS routing.");
 
-	g_isi_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb, cbs);
+	g_isi_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb,
+			cbs);
 
 	return 0;
 }

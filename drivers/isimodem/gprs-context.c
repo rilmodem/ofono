@@ -279,7 +279,8 @@ error:
 }
 
 static void activate_fail_ind_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+					size_t len, uint16_t object,
+					void *opaque)
 {
 	const unsigned char *msg = data;
 	struct gprs_context_data *gcd = opaque;
@@ -443,7 +444,7 @@ static bool create_context_cb(GIsiClient *client, const void *restrict data,
 		GPDS_LL_PLAIN,	/* link type */
 	};
 
-	if(!check_resp(client, data, len, GPDS_CONTEXT_ID_CREATE_RESP, cd))
+	if (!check_resp(client, data, len, GPDS_CONTEXT_ID_CREATE_RESP, cd))
 		return gprs_up_fail(cd);
 
 	cd->handle = msg[1] = resp[1];
@@ -545,8 +546,9 @@ static void isi_gprs_activate_primary(struct ofono_gprs_context *gc,
 		goto error;
 
 	cd->pipe = g_isi_pipe_create(gcd->idx, create_pipe_cb,
-					g_isi_pep_get_object(cd->pep), gcd->gpds,
-					PN_PEP_TYPE_GPRS, PN_PEP_TYPE_GPRS);
+					g_isi_pep_get_object(cd->pep),
+					gcd->gpds, PN_PEP_TYPE_GPRS,
+					PN_PEP_TYPE_GPRS);
 	if (cd->pipe == NULL)
 		goto error;
 
@@ -558,7 +560,8 @@ error:
 }
 
 static bool context_deactivate_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+					size_t len, uint16_t object,
+					void *opaque)
 {
 	struct context_data *cd = opaque;
 	struct ofono_gprs_context *gc = cd->driver;

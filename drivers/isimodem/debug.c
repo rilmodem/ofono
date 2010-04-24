@@ -991,9 +991,8 @@ static void hex_dump(const char *name, const uint8_t m[], size_t len)
 		}
 	}
 
-	if (j) {
+	if (j)
 		ofono_debug("    *%-48s : %.*s", hex, (int)k, ascii);
-	}
 }
 
 void ss_debug(const void *restrict buf, size_t len, void *data)

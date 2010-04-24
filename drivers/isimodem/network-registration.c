@@ -302,7 +302,8 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
 		case NET_GSM_OPERATOR_INFO:
-			if (!g_isi_sb_iter_get_oper_code(&iter, op.mcc, op.mnc, 2))
+			if (!g_isi_sb_iter_get_oper_code(&iter, op.mcc,
+								op.mnc, 2))
 				goto error;
 			break;
 
@@ -569,7 +570,7 @@ static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	ofono_netreg_register_cb_t cb = cbd->cb;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}

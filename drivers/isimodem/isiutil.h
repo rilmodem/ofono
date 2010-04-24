@@ -49,7 +49,7 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 		e.type = OFONO_ERROR_TYPE_FAILURE;	\
 		e.error = 0;				\
 		f(&e, ##args);				\
-	} while(0)
+	} while (0)
 
 #define CALLBACK_WITH_SUCCESS(f, args...)		\
 	do {						\
@@ -57,6 +57,6 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 		e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
 		e.error = 0;				\
 		f(&e, ##args);				\
-	} while(0)
+	} while (0)
 
 #endif /* !__ISIMODEM_UTIL_H */

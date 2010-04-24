@@ -55,7 +55,7 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 
 	char *name = NULL;
 	char *number = NULL;
-	char *sne= NULL;
+	char *sne = NULL;
 	char *anr = NULL;
 	char *email = NULL;
 
@@ -135,7 +135,7 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 		case SIM_PB_STATUS:
 
 			if (!g_isi_sb_iter_get_byte(&iter, &status, 4))
-				 goto error;
+				goto error;
 
 			break;
 
@@ -166,7 +166,9 @@ error:
 	return location;
 }
 
-static void read_next_entry(GIsiClient *client, int location, GIsiResponseFunc read_cb, struct isi_cb_data *cbd)
+static void read_next_entry(GIsiClient *client, int location,
+				GIsiResponseFunc read_cb,
+				struct isi_cb_data *cbd)
 {
 	ofono_phonebook_cb_t cb = cbd->cb;
 	const unsigned char msg[] = {
@@ -176,7 +178,8 @@ static void read_next_entry(GIsiClient *client, int location, GIsiResponseFunc r
 		0, SIM_PB_LOCATION_SEARCH,	/* subblock id */
 		0, 8,				/* subblock size */
 		0, SIM_PB_ADN,
-		location >> 8, location & 0xFF,	/* read next entry after specified by location */
+		location >> 8, location & 0xFF,	/* read next entry after
+						 * specified by location */
 		0, SIM_PB_INFO_REQUEST,		/* subblock id */
 		0, 16,				/* subblock size */
 		4,				/* number of tags */
@@ -211,7 +214,7 @@ static bool read_resp_cb(GIsiClient *client, const void *restrict data,
 	ofono_phonebook_cb_t cb = cbd->cb;
 	int location;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}

@@ -77,7 +77,8 @@ static int ofono_mode_to_isi_mode(enum ofono_radio_access_mode mode)
 }
 
 static bool rat_mode_read_resp_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+					size_t len, uint16_t object,
+					void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -118,7 +119,8 @@ static bool rat_mode_read_resp_cb(GIsiClient *client, const void *restrict data,
 			}
 			default:
 				DBG("Skipping sub-block: %s (%zu bytes)",
-					gss_subblock_name(g_isi_sb_iter_get_id(&iter)),
+					gss_subblock_name(
+						g_isi_sb_iter_get_id(&iter)),
 					g_isi_sb_iter_get_len(&iter));
 				break;
 			}
@@ -163,8 +165,8 @@ error:
 	g_free(cbd);
 }
 
-static bool rat_mode_write_resp_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object, void *opaque)
+static bool mode_write_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -224,7 +226,7 @@ static void isi_set_rat_mode(struct ofono_radio_settings *rs,
 		goto error;
 
 	if (g_isi_request_make(rd->client, msg, sizeof(msg), GSS_TIMEOUT,
-				rat_mode_write_resp_cb, cbd))
+				mode_write_resp_cb, cbd))
 		return;
 
 error:

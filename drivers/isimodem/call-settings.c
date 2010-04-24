@@ -133,7 +133,7 @@ static bool query_resp_cb(GIsiClient *client, const void *restrict data,
 			for (i = 0; i < count; i++) {
 				if (!g_isi_sb_iter_get_byte(&iter, &bsc, 3 + i))
 					goto error;
-			        update_status_mask(&mask, bsc);
+				update_status_mask(&mask, bsc);
 			}
 			break;
 		}
@@ -311,8 +311,8 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 }
 
 
-static int isi_call_settings_probe(struct ofono_call_settings *cs, unsigned int vendor,
-					void *user)
+static int isi_call_settings_probe(struct ofono_call_settings *cs,
+					unsigned int vendor, void *user)
 {
 	GIsiModem *idx = user;
 	struct settings_data *data;

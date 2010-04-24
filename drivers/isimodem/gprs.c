@@ -139,7 +139,7 @@ static bool attach_resp_cb(GIsiClient *client, const void *restrict data,
 	struct isi_cb_data *cbd = opaque;
 	ofono_gprs_cb_t cb = cbd->cb;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
@@ -170,7 +170,7 @@ static bool detach_resp_cb(GIsiClient *client, const void *restrict data,
 	struct isi_cb_data *cbd = opaque;
 	ofono_gprs_cb_t cb = cbd->cb;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
@@ -242,13 +242,13 @@ error:
 }
 
 static bool status_resp_cb(GIsiClient *client, const void *restrict data,
-			   size_t len, uint16_t object, void *opaque)
+				size_t len, uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_gprs_status_cb_t cb = cbd->cb;
 
-	if(!msg) {
+	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
 		goto error;
 	}
@@ -286,9 +286,9 @@ static void isi_gprs_attached_status(struct ofono_gprs *gprs,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-			       status_resp_cb, cbd))
-	    return;
+	if (!g_isi_request_make(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+					status_resp_cb, cbd))
+		return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);

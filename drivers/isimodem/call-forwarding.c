@@ -422,7 +422,8 @@ static bool query_resp_cb(GIsiClient *client, const void *restrict data,
 							&ton, &norply, &number))
 				goto error;
 
-			list.status = status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED
+			list.status = status & (SS_GSM_ACTIVE
+						| SS_GSM_REGISTERED
 						| SS_GSM_PROVISIONED);
 			list.time = norply;
 			list.phone_number.type = ton | 128;
