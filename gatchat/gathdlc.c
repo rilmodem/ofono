@@ -348,7 +348,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 		pos++;
 
 		if (pos == wrap)
-			return FALSE;
+			buf = ring_buffer_write_ptr(hdlc->write_buffer, pos);
 	}
 
 	if (i < size)
@@ -376,7 +376,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 		pos++;
 
 		if (pos == wrap)
-			return FALSE;
+			buf = ring_buffer_write_ptr(hdlc->write_buffer, pos);
 	}
 
 	if (i < sizeof(tail))
