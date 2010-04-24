@@ -336,7 +336,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 			fcs = HDLC_FCS(fcs, data[i]);
 			*buf = data[i++] ^ HDLC_TRANS;
 			escape = FALSE;
-		} else if (*buf == HDLC_FLAG || *buf == HDLC_ESCAPE) {
+		} else if (data[i] == HDLC_FLAG || data[i] == HDLC_ESCAPE) {
 			*buf = HDLC_ESCAPE;
 			escape = TRUE;
 		} else {
@@ -365,7 +365,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 		if (escape == TRUE) {
 			*buf = tail[i++] ^ HDLC_TRANS;
 			escape = FALSE;
-		} else if (*buf == HDLC_FLAG || *buf == HDLC_ESCAPE) {
+		} else if (tail[i] == HDLC_FLAG || tail[i] == HDLC_ESCAPE) {
 			*buf = HDLC_ESCAPE;
 			escape = TRUE;
 		} else {
