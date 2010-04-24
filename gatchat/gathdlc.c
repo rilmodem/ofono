@@ -161,6 +161,7 @@ static void read_watch_destroy(gpointer user_data)
 GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 {
 	GAtHDLC *hdlc;
+	unsigned char *buf;
 
 	if (!channel)
 		return NULL;
@@ -182,6 +183,11 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 	hdlc->write_buffer = ring_buffer_new(BUFFER_SIZE * 2);
 	if (!hdlc->write_buffer)
 		goto error;
+
+	/* Write an initial 0x7e as wakeup character */
+	buf = ring_buffer_write_ptr(hdlc->write_buffer, 0);
+	*buf = HDLC_FLAG;
+	ring_buffer_write_advance(hdlc->write_buffer, 1);
 
 	hdlc->decode_buffer = g_try_malloc(BUFFER_SIZE * 2);
 	if (!hdlc->decode_buffer)
@@ -320,7 +326,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 	unsigned int avail = ring_buffer_avail(hdlc->write_buffer);
 	unsigned int wrap = ring_buffer_avail_no_wrap(hdlc->write_buffer);
 	unsigned char *buf = ring_buffer_write_ptr(hdlc->write_buffer, 0);
-	unsigned char tail[3];
+	unsigned char tail[2];
 	unsigned int i = 0;
 	guint16 fcs = HDLC_INITFCS;
 	gboolean escape = FALSE;
@@ -357,7 +363,6 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 	fcs ^= HDLC_INITFCS;
 	tail[0] = fcs & 0xff;
 	tail[1] = fcs >> 8;
-	tail[2] = HDLC_FLAG;
 
 	i = 0;
 
@@ -381,6 +386,12 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 
 	if (i < sizeof(tail))
 		return FALSE;
+
+	if (pos + 1 > avail)
+		return FALSE;
+
+	*buf = HDLC_FLAG;
+	pos++;
 
 	ring_buffer_write_advance(hdlc->write_buffer, pos);
 
