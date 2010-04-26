@@ -2053,7 +2053,7 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 
 		if ((entry->flags & DATAOBJ_FLAG_MINIMUM) &&
 				entry->parsed == FALSE)
-			minimum_set = TRUE;
+			minimum_set = FALSE;
 	}
 
 	g_slist_foreach(entries, (GFunc)g_free, NULL);
