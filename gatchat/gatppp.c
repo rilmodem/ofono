@@ -169,6 +169,13 @@ static void ppp_recv(GAtPPP *ppp, struct frame_buffer *frame)
 	guint16 protocol = ppp_proto(frame->bytes);
 	guint8 *packet = ppp_info(frame->bytes);
 
+	/*
+	 * Any non-LCP packets received during Link Establishment
+	 * phase must be silently discarded.
+	 */
+	if (ppp->phase == PPP_PHASE_ESTABLISHMENT && protocol != LCP_PROTOCOL)
+		return;
+
 	switch (protocol) {
 	case PPP_IP_PROTO:
 		/* If network is up & open, process the packet, if not, drop */
