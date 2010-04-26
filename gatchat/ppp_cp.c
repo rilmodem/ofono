@@ -267,6 +267,14 @@ const guint8 *ppp_option_iter_get_data(struct ppp_option_iter *iter)
 	return iter->option_data;
 }
 
+guint8 pppcp_get_code(const guint8 *data)
+{
+	struct ppp_header *ppp_packet = (struct ppp_header *) data;
+	struct pppcp_packet *packet = (struct pppcp_packet *) ppp_packet->info;
+
+	return packet->code;
+}
+
 static gboolean pppcp_timeout(gpointer user_data)
 {
 	struct pppcp_timer_data *timer_data = user_data;

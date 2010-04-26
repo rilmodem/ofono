@@ -124,6 +124,7 @@ static struct frame_buffer *ppp_encode(GAtPPP *ppp, guint8 *data, int len)
 	int i = 0;
 	guint16 fcs = PPPINITFCS16;
 	guint16 proto = get_host_short(data);
+	guint8 code;
 	gboolean lcp = (proto == LCP_PROTOCOL);
 	guint8 *frame;
 	struct frame_buffer *fb =
@@ -132,6 +133,15 @@ static struct frame_buffer *ppp_encode(GAtPPP *ppp, guint8 *data, int len)
 	if (!fb)
 		return NULL;
 	frame = fb->bytes;
+
+	/*
+	 * all LCP Link Configuration, Link Termination, and Code-Reject
+	 * packets must be sent with the default sending ACCM
+	 */
+	if (lcp) {
+		code = pppcp_get_code(data);
+		lcp = code > 0 && code < 8;
+	}
 
 	/* copy in the HDLC framing */
 	frame[pos++] = PPP_FLAG_SEQ;

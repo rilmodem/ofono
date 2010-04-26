@@ -110,6 +110,8 @@ void pppcp_set_data(struct pppcp_data *pppcp, gpointer data);
 gpointer pppcp_get_data(struct pppcp_data *pppcp);
 GAtPPP *pppcp_get_ppp(struct pppcp_data *pppcp);
 
+guint8 pppcp_get_code(const guint8 *data);
+
 void pppcp_set_local_options(struct pppcp_data *data,
 				const guint8 *options,
 				guint16 len);
