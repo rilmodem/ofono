@@ -115,6 +115,10 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	if (read_count > 0 && rbytes == 0 && err != G_IO_ERROR_AGAIN)
 		return FALSE;
 
+	/* We're overflowing the buffer, shutdown the socket */
+	if (ring_buffer_avail(io->buf) == 0)
+		return FALSE;
+
 	return TRUE;
 }
 
