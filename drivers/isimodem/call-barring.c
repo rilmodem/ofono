@@ -401,10 +401,12 @@ static void isi_call_barring_remove(struct ofono_call_barring *barr)
 {
 	struct barr_data *data = ofono_call_barring_get_data(barr);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	if (!data)
+		return;
+
+	ofono_call_barring_set_data(barr, NULL);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_call_barring_driver driver = {

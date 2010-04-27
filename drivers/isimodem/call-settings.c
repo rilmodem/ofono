@@ -339,10 +339,12 @@ static void isi_call_settings_remove(struct ofono_call_settings *cs)
 {
 	struct settings_data *data = ofono_call_settings_get_data(cs);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	if (!data)
+		return;
+
+	ofono_call_settings_set_data(cs, NULL);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_call_settings_driver driver = {

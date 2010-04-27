@@ -557,10 +557,12 @@ static void isi_call_forwarding_remove(struct ofono_call_forwarding *cf)
 {
 	struct forw_data *data = ofono_call_forwarding_get_data(cf);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	if (!data)
+		return;
+
+	ofono_call_forwarding_set_data(cf, NULL);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_call_forwarding_driver driver = {

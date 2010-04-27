@@ -429,10 +429,12 @@ static void isi_sim_remove(struct ofono_sim *sim)
 {
 	struct sim_data *data = ofono_sim_get_data(sim);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	if (!data)
+		return;
+
+	ofono_sim_set_data(sim, NULL);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_sim_driver driver = {

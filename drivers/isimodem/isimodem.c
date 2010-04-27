@@ -285,11 +285,10 @@ static void isi_modem_remove(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
-	DBG("(%p) with %s", modem, isi ? isi->ifname : NULL);
-
-	if (isi == NULL)
+	if (!isi)
 		return;
 
+	ofono_modem_set_data(modem, NULL);
 	g_isi_client_destroy(isi->client);
 	g_free(isi);
 }

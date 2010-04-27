@@ -302,9 +302,11 @@ static void isi_ussd_remove(struct ofono_ussd *ussd)
 {
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 
-	if (data && data->client)
-		g_isi_client_destroy(data->client);
+	if (!data)
+		return;
 
+	ofono_ussd_set_data(ussd, NULL);
+	g_isi_client_destroy(data->client);
 	g_free(data);
 }
 

@@ -122,14 +122,14 @@ static int isi_gprs_probe(struct ofono_gprs *gprs,
 
 static void isi_gprs_remove(struct ofono_gprs *gprs)
 {
-	struct gprs_data *gd = ofono_gprs_get_data(gprs);
+	struct gprs_data *data = ofono_gprs_get_data(gprs);
+
+	if (!data)
+		return;
 
 	ofono_gprs_set_data(gprs, NULL);
-
-	if (gd->client)
-		g_isi_client_destroy(gd->client);
-
-	g_free(gd);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static bool attach_resp_cb(GIsiClient *client, const void *restrict data,
