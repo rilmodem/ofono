@@ -611,7 +611,7 @@ static gboolean parse_dataobj_location_info(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	char **imei = user;
+	char *imei = user;
 	const unsigned char *data;
 	unsigned int len;
 	static const char digit_lut[] = "0123456789*#abc\0";
@@ -626,8 +626,8 @@ static gboolean parse_dataobj_imei(struct comprehension_tlv_iter *iter,
 		return FALSE;
 
 	/* Assume imei is at least 16 bytes long (15 for imei + null) */
-	(*imei)[0] = digit_lut[(data[0] & 0xf0) >> 4];
-	extract_bcd_number(data + 1, 7, *imei + 1);
+	imei[0] = digit_lut[(data[0] & 0xf0) >> 4];
+	extract_bcd_number(data + 1, 7, imei + 1);
 
 	return TRUE;
 }
@@ -644,7 +644,7 @@ static gboolean parse_dataobj_help_request(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_network_measurement_results(
 		struct comprehension_tlv_iter *iter, void *user)
 {
-	unsigned char **nmr = user;
+	unsigned char *nmr = user;
 	const unsigned char *data;
 	unsigned int len;
 
@@ -655,7 +655,7 @@ static gboolean parse_dataobj_network_measurement_results(
 	data = comprehension_tlv_iter_get_data(iter);
 
 	/* Assume network measurement result is 16 bytes long */
-	memcpy(*nmr, data, len);
+	memcpy(nmr, data, len);
 
 	return TRUE;
 }
@@ -1430,7 +1430,7 @@ static gboolean parse_dataobj_remote_entity_address(
 static gboolean parse_dataobj_esn(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	unsigned char **esn = user;
+	unsigned char *esn = user;
 	const unsigned char *data;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
 
@@ -1440,7 +1440,7 @@ static gboolean parse_dataobj_esn(struct comprehension_tlv_iter *iter,
 	data = comprehension_tlv_iter_get_data(iter);
 
 	/* Assume esn is 4 bytes long */
-	memcpy(*esn, data, len);
+	memcpy(esn, data, len);
 
 	return TRUE;
 }
@@ -1528,7 +1528,7 @@ static gboolean parse_dataobj_item_text_attribute_list(
 static gboolean parse_dataobj_imeisv(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	char **imeisv = user;
+	char *imeisv = user;
 	const unsigned char *data;
 	unsigned int len;
 	static const char digit_lut[] = "0123456789*#abc\0";
@@ -1546,10 +1546,10 @@ static gboolean parse_dataobj_imeisv(struct comprehension_tlv_iter *iter,
 		return FALSE;
 
 	/* Assume imeisv is at least 17 bytes long (16 for imeisv + null) */
-	(*imeisv)[0] = digit_lut[data[0] >> 4];
-	extract_bcd_number(data + 1, 7, *imeisv + 1);
-	(*imeisv)[15] = digit_lut[data[8] & 0x0f];
-	(*imeisv)[16] = '\0';
+	imeisv[0] = digit_lut[data[0] >> 4];
+	extract_bcd_number(data + 1, 7, imeisv + 1);
+	imeisv[15] = digit_lut[data[8] & 0x0f];
+	imeisv[16] = '\0';
 
 	return TRUE;
 }
@@ -1656,7 +1656,7 @@ static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_meid(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	unsigned char **meid = user;
+	unsigned char *meid = user;
 	const unsigned char *data;
 
 	if (comprehension_tlv_iter_get_length(iter) != 8)
@@ -1665,7 +1665,7 @@ static gboolean parse_dataobj_meid(struct comprehension_tlv_iter *iter,
 	data = comprehension_tlv_iter_get_data(iter);
 
 	/* Assume meid is 8 bytes long */
-	memcpy(*meid, data, 8);
+	memcpy(meid, data, 8);
 
 	return TRUE;
 }
