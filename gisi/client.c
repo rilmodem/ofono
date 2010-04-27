@@ -1,9 +1,7 @@
 /*
  * This file is part of oFono - Open Source Telephony
  *
- * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
- *
- * Contact: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+ * Copyright (C) 2009-2010  Nokia Corporation and/or its subsidiary(-ies).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,10 +23,11 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <search.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -39,6 +38,29 @@
 #include "socket.h"
 #include "client.h"
 
+#define PN_COMMGR			0x10
+#define PNS_SUBSCRIBED_RESOURCES_IND	0x10
+
+static const struct sockaddr_pn commgr = {
+	.spn_family = AF_PHONET,
+	.spn_resource = PN_COMMGR,
+};
+
+struct _GIsiRequest {
+	unsigned int id; /* don't move, see g_isi_cmp */
+	GIsiClient *client;
+	guint timeout;
+	GIsiResponseFunc func;
+	void *data;
+};
+
+struct _GIsiIndication {
+	unsigned int type; /* don't move, see g_isi_cmp */
+	GIsiIndicationFunc func;
+	void *data;
+};
+typedef struct _GIsiIndication GIsiIndication;
+
 struct _GIsiClient {
 	uint8_t resource;
 	struct {
@@ -46,23 +68,23 @@ struct _GIsiClient {
 		int minor;
 	} version;
 	GIsiModem *modem;
+	int error;
 
 	/* Requests */
-	int fd;
-	guint source;
-	uint8_t prev[256], next[256];
-	guint timeout[256];
-	GIsiResponseFunc func[256];
-	void *data[256];
+	struct {
+		int fd;
+		guint source;
+		unsigned int last; /* last used transaction ID */
+		void *pending;
+	} reqs;
 
 	/* Indications */
 	struct {
 		int fd;
 		guint source;
-		uint16_t count;
-		GIsiIndicationFunc func[256];
-		void *data[256];
-	} ind;
+		unsigned int count;
+		void *subs;
+	} inds;
 
 	/* Debugging */
 	GIsiDebugFunc debug_func;
@@ -73,19 +95,12 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 				gpointer data);
 static gboolean g_isi_timeout(gpointer data);
 
-static inline GIsiRequest *g_isi_req(GIsiClient *cl, uint8_t id)
+static int g_isi_cmp(const void *a, const void *b)
 {
-	return (GIsiRequest *)(((uint8_t *)(void *)cl) + id);
-}
+	const unsigned int *ua = (const unsigned int *)a;
+	const unsigned int *ub = (const unsigned int *)b;
 
-static inline uint8_t g_isi_id(void *ptr)
-{
-	return ((uintptr_t)ptr) & 255;
-}
-
-static inline GIsiClient *g_isi_cl(void *ptr)
-{
-	return (GIsiClient *)(((uintptr_t)ptr) & ~255);
+	return *ua - *ub;
 }
 
 /**
@@ -95,47 +110,40 @@ static inline GIsiClient *g_isi_cl(void *ptr)
  */
 GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 {
-	void *ptr;
-	GIsiClient *cl;
+	GIsiClient *client;
 	GIOChannel *channel;
-	unsigned i;
 
-	if (G_UNLIKELY(posix_memalign(&ptr, 256, sizeof(*cl))))
-		abort();
-	cl = ptr;
-	cl->resource = resource;
-	cl->version.major = -1;
-	cl->version.minor = -1;
-	cl->modem = modem;
-	cl->debug_func = NULL;
-	memset(cl->timeout, 0, sizeof(cl->timeout));
-	for (i = 0; i < 256; i++) {
-		cl->data[i] = cl->ind.data[i] = NULL;
-		cl->func[i] = NULL;
-		cl->ind.func[i] = NULL;
-	}
-	cl->ind.count = 0;
-
-	/* Reserve 0 as head of available IDs, and 255 as head of busy ones */
-	cl->prev[0] = 254;
-	for (i = 0; i < 254; i++) {
-		cl->next[i] = i + 1;
-		cl->prev[i + 1] = i;
-	}
-	cl->next[254] = 0;
-	cl->prev[255] = cl->next[255] = 255;
-
-	channel = phonet_new(modem, resource);
-	if (channel == NULL) {
-		free(cl);
+	client  = g_try_new0(GIsiClient, 1);
+	if (!client) {
+		errno = ENOMEM;
 		return NULL;
 	}
-	cl->fd = g_io_channel_unix_get_fd(channel);
-	cl->source = g_io_add_watch(channel,
+
+	client->resource = resource;
+	client->version.major = -1;
+	client->version.minor = -1;
+	client->modem = modem;
+	client->error = 0;
+	client->debug_func = NULL;
+
+	client->reqs.last = 0;
+	client->reqs.pending = NULL;
+
+	client->inds.count = 0;
+	client->inds.subs = NULL;
+
+	channel = phonet_new(modem, resource);
+	if (!channel) {
+		g_free(client);
+		return NULL;
+	}
+	client->reqs.fd = g_io_channel_unix_get_fd(channel);
+	client->reqs.source = g_io_add_watch(channel,
 					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
-					g_isi_callback, cl);
+					g_isi_callback, client);
 	g_io_channel_unref(channel);
-	return cl;
+
+	return client;
 }
 
 /**
@@ -161,7 +169,7 @@ void g_isi_version_set(GIsiClient *client, int major, int minor)
  */
 int g_isi_version_major(GIsiClient *client)
 {
-	return client ? client->version.major : 0;
+	return client ? client->version.major : -1;
 }
 
 /**
@@ -172,7 +180,7 @@ int g_isi_version_major(GIsiClient *client)
  */
 int g_isi_version_minor(GIsiClient *client)
 {
-	return client ? client->version.minor : 0;
+	return client ? client->version.minor : -1;
 }
 
 /**
@@ -202,24 +210,92 @@ void g_isi_client_set_debug(GIsiClient *client, GIsiDebugFunc func,
 	client->debug_data = opaque;
 }
 
+static void g_isi_cleanup_req(void *data)
+{
+	GIsiRequest *req = data;
+
+	if (!req)
+		return;
+
+	/* Finalize any pending requests */
+	req->client->error = ESHUTDOWN;
+	if (req->func)
+		req->func(req->client, NULL, 0, 0, req->data);
+	req->client->error = 0;
+
+	if (req->timeout > 0)
+		g_source_remove(req->timeout);
+
+	g_free(req);
+}
+
+static void g_isi_cleanup_ind(void *data)
+{
+	GIsiIndication *ind = data;
+
+	if (!ind)
+		return;
+
+	g_free(ind);
+}
+
+static int g_isi_indication_init(GIsiClient *client)
+{
+	GIOChannel *channel;
+	uint8_t msg[] = {
+		0, PNS_SUBSCRIBED_RESOURCES_IND,
+		1, client->resource,
+	};
+
+	channel = phonet_new(client->modem, PN_COMMGR);
+	if (!channel)
+		return errno;
+
+	client->inds.fd = g_io_channel_unix_get_fd(channel);
+
+	/* Subscribe by sending an indication */
+	sendto(client->inds.fd, msg, 4, MSG_NOSIGNAL, (void *)&commgr,
+		sizeof(commgr));
+	client->inds.source = g_io_add_watch(channel,
+					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
+					g_isi_callback, client);
+
+	g_io_channel_unref(channel);
+	return 0;
+}
+
+static void g_isi_indication_deinit(GIsiClient *client)
+{
+	uint8_t msg[] = {
+		0, PNS_SUBSCRIBED_RESOURCES_IND,
+		0,
+	};
+
+	/* Unsubscribe by sending an empty subscribe indication */
+	sendto(client->inds.fd, msg, 3, MSG_NOSIGNAL, (void *)&commgr,
+		sizeof(commgr));
+}
+
 /**
  * Destroys an ISI client, cancels all pending transactions and subscriptions.
  * @param client client to destroy (may be NULL)
  */
 void g_isi_client_destroy(GIsiClient *client)
 {
-	unsigned id;
-
 	if (!client)
 		return;
 
-	g_source_remove(client->source);
-	for (id = 0; id < 256; id++)
-		if (client->timeout[id] > 0)
-			g_source_remove(client->timeout[id]);
-	if (client->ind.count > 0)
-		g_source_remove(client->ind.source);
-	free(client);
+	tdestroy(client->reqs.pending, g_isi_cleanup_req);
+	tdestroy(client->inds.subs, g_isi_cleanup_ind);
+
+	if (client->reqs.source > 0)
+		g_source_remove(client->reqs.source);
+
+	if (client->inds.source > 0)
+		g_source_remove(client->inds.source);
+
+	g_isi_indication_deinit(client);
+	g_free(client);
 }
 
 /**
@@ -232,7 +308,7 @@ void g_isi_client_destroy(GIsiClient *client)
  * @param cb callback to process response(s)
  * @param opaque data for the callback
  */
-GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
+GIsiRequest *g_isi_request_make(GIsiClient *client, const void *__restrict buf,
 				size_t len, unsigned timeout,
 				GIsiResponseFunc cb, void *opaque)
 {
@@ -240,15 +316,11 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
 		.iov_base = (void *)buf,
 		.iov_len = len,
 	};
-	GIsiRequest *req;
 
-	if (!cl)
+	if (!client)
 		return NULL;
 
-	req = g_isi_request_vmake(cl, &iov, 1, timeout, cb, opaque);
-	if (cl->debug_func)
-		cl->debug_func(buf, len, cl->debug_data);
-	return req;
+	return g_isi_request_vmake(client, &iov, 1, timeout, cb, opaque);
 }
 
 /**
@@ -261,10 +333,10 @@ GIsiRequest *g_isi_request_make(GIsiClient *cl,	const void *__restrict buf,
  * @param cb callback to process response(s)
  * @param opaque data for the callback
  */
-GIsiRequest *g_isi_request_vmake(GIsiClient *cl,
-				const struct iovec *__restrict iov,
-				size_t iovlen, unsigned timeout,
-				GIsiResponseFunc cb, void *opaque)
+GIsiRequest *g_isi_request_vmake(GIsiClient *client,
+					const struct iovec *__restrict iov,
+					size_t iovlen, unsigned timeout,
+					GIsiResponseFunc cb, void *opaque)
 {
 	struct iovec _iov[1 + iovlen];
 	struct sockaddr_pn dst = {
@@ -283,58 +355,73 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *cl,
 	size_t i, len;
 	uint8_t id;
 
-	if (!cl) {
+	GIsiRequest *req;
+	GIsiRequest **old;
+
+	if (!client) {
 		errno = EINVAL;
 		return NULL;
 	}
 
-	id = cl->next[0];
+	req = g_try_new0(GIsiRequest, 1);
+	if (!req) {
+		errno = ENOMEM;
+		return NULL;
+	}
 
-	if (id == 0) {
+	req->client = client;
+	req->id = (client->reqs.last + 1) % 255;
+	req->func = cb;
+	req->data = opaque;
+
+	old = tsearch(req, &client->reqs.pending, g_isi_cmp);
+	if (!old) {
+		errno = ENOMEM;
+		goto error;
+	}
+
+	if (*old != req) {
+		/* FIXME: perhaps retry with randomized access after
+		 * initial miss. Although if the rate at which
+		 * requests are sent is so high that the transaction
+		 * ID wraps it's likely there is something wrong and
+		 * we might as well fail here. */
 		errno = EBUSY;
-		return NULL;
-	}
-	if (cb == NULL) {
-		errno = EINVAL;
-		return NULL;
+		goto error;
 	}
 
-	dst.spn_resource = cl->resource,
+	dst.spn_resource = client->resource,
 
+	id = req->id;
 	_iov[0].iov_base = &id;
 	_iov[0].iov_len = 1;
+
 	for (i = 0, len = 1; i < iovlen; i++) {
 		_iov[1 + i] = iov[i];
 		len += iov[i].iov_len;
 	}
 
-	ret = sendmsg(cl->fd, &msg, MSG_NOSIGNAL);
+	/* TODO: call debug function */
+	/* if (client->debug_func) */
+	/* 	client->debug_func(buf, len, client->debug_data); */
+
+	ret = sendmsg(client->reqs.fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
-		return NULL;
+		goto error;
+
 	if (ret != (ssize_t)len) {
 		errno = EMSGSIZE;
-		return NULL;
+		goto error;
 	}
 
-	cl->func[id] = cb;
-	cl->data[id] = opaque;
+	req->timeout = g_timeout_add_seconds(timeout, g_isi_timeout, req);
+	client->reqs.last = req->id;
+	return req;
 
-	/* Remove transaction from available list */
-	cl->next[0] = cl->next[id];
-	cl->prev[cl->next[id]] = 0;
-	/* Insert into busy list */
-	cl->next[id] = cl->next[255];
-	cl->prev[cl->next[id]] = id;
-	cl->next[255] = id;
-	cl->prev[id] = 255;
-
-	if (timeout > 0)
-		cl->timeout[id] = g_timeout_add_seconds(timeout,
-							g_isi_timeout,
-							g_isi_req(cl, id));
-	else
-		cl->timeout[id] = 0;
-	return g_isi_req(cl, id);
+error:
+	tdelete(req, &client->reqs.pending, g_isi_cmp);
+	g_free(req);
+	return NULL;
 }
 
 /**
@@ -344,64 +431,14 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *cl,
  */
 void g_isi_request_cancel(GIsiRequest *req)
 {
-	GIsiClient *cl = g_isi_cl(req);
-	uint8_t id = g_isi_id(req);
+	if (!req)
+		return;
 
-	cl->func[id] = NULL;
-	cl->data[id] = NULL;
+	if (req->timeout > 0)
+		g_source_remove(req->timeout);
 
-	/* Remove transaction from pending circular list */
-	cl->prev[cl->next[id]] = cl->prev[id];
-	cl->next[cl->prev[id]] = cl->next[id];
-	/* Insert transaction into available circular list */
-	cl->prev[id] = cl->prev[0];
-	cl->prev[0] = id;
-	cl->next[id] = 0;
-	cl->next[cl->prev[id]] = id;
-
-	if (cl->timeout[id] > 0) {
-		g_source_remove(cl->timeout[id]);
-		cl->timeout[id] = 0;
-	}
-}
-
-#define PN_COMMGR 0x10
-#define PNS_SUBSCRIBED_RESOURCES_IND	0x10
-
-static const struct sockaddr_pn commgr = {
-	.spn_family = AF_PHONET,
-	.spn_resource = PN_COMMGR,
-};
-
-static int g_isi_indication_init(GIsiClient *cl)
-{
-	uint8_t msg[] = {
-		0, PNS_SUBSCRIBED_RESOURCES_IND, 1, cl->resource,
-	};
-	GIOChannel *channel = phonet_new(cl->modem, PN_COMMGR);
-
-	if (channel == NULL)
-		return errno;
-	/* Send subscribe indication */
-	cl->ind.fd = g_io_channel_unix_get_fd(channel);
-	sendto(cl->ind.fd, msg, 4, MSG_NOSIGNAL,
-		(void *)&commgr, sizeof(commgr));
-	cl->ind.source = g_io_add_watch(channel,
-					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
-					g_isi_callback, cl);
-	return 0;
-}
-
-static void g_isi_indication_deinit(GIsiClient *client)
-{
-	uint8_t msg[] = {
-		0, PNS_SUBSCRIBED_RESOURCES_IND, 0,
-	};
-
-	/* Send empty subscribe indication */
-	sendto(client->ind.fd, msg, 3, MSG_NOSIGNAL,
-		(void *)&commgr, sizeof(commgr));
-	g_source_remove(client->ind.source);
+	tdelete(req, &req->client->reqs.pending, g_isi_cmp);
+	g_free(req);
 }
 
 /**
@@ -414,22 +451,47 @@ static void g_isi_indication_deinit(GIsiClient *client)
  * @param data data for the callback
  * @return 0 on success, a system error code otherwise.
  */
-int g_isi_subscribe(GIsiClient *cl, uint8_t type,
+int g_isi_subscribe(GIsiClient *client, uint8_t type,
 			GIsiIndicationFunc cb, void *data)
 {
+	GIsiIndication *ind;
+	GIsiIndication **old;
+
 	if (cb == NULL)
 		return EINVAL;
 
-	if (cl->ind.func[type] == NULL) {
-		if (cl->ind.count == 0) {
-			int ret = g_isi_indication_init(cl);
-			if (ret)
-				return ret;
-		}
-		cl->ind.count++;
+	ind = g_try_new0(GIsiIndication, 1);
+	if (!ind)
+		return -ENOMEM;
+
+	ind->type = type;
+
+	old = tsearch(ind, &client->inds.subs, g_isi_cmp);
+	if (!old) {
+		g_free(ind);
+		return -ENOMEM;
 	}
-	cl->ind.func[type] = cb;
-	cl->ind.data[type] = data;
+
+	/* FIXME: This overrides any existing subscription. We should
+	 * enable multiple subscriptions to a single indication in
+	 * order to allow efficient client sharing. */
+	if (*old != ind) {
+		g_free(ind);
+		ind = *old;
+	}
+
+	ind->func = cb;
+	ind->data = data;
+
+	if (client->inds.count == 0) {
+		int ret = g_isi_indication_init(client);
+		if (ret) {
+			tdelete(ind, &client->inds.subs, g_isi_cmp);
+			g_free(ind);
+			return ret;
+		}
+		client->inds.count++;
+	}
 	return 0;
 }
 
@@ -440,21 +502,68 @@ int g_isi_subscribe(GIsiClient *cl, uint8_t type,
  */
 void g_isi_unsubscribe(GIsiClient *client, uint8_t type)
 {
-	/* Unsubscribe */
-	if (client->ind.func[type] == NULL)
+	GIsiIndication *ind;
+	unsigned int id = type;
+
+	if (!client)
 		return;
-	client->ind.func[type] = NULL;
-	if (--client->ind.count == 0)
+
+	ind = tdelete(&id, &client->inds.subs, g_isi_cmp);
+	if (!ind)
+		return;
+
+	if (--client->inds.count == 0)
 		g_isi_indication_deinit(client);
+
+	g_free(ind);
+}
+
+static void g_isi_dispatch_indication(GIsiClient *client, uint16_t obj,
+					uint8_t *msg, size_t len)
+{
+	void *ret;
+	GIsiIndication *ind;
+	unsigned type = msg[0];
+
+	ret = tfind(&type, &client->inds.subs, g_isi_cmp);
+	if (!ret)
+		return;
+
+	ind = *(GIsiIndication **)ret;
+
+	if (ind->func)
+		ind->func(client, msg, len, obj, ind->data);
+}
+
+static void g_isi_dispatch_response(GIsiClient *client, uint16_t obj,
+					uint8_t *msg, size_t len)
+{
+	void *ret;
+	GIsiRequest *req;
+	unsigned id = msg[0];
+
+	ret = tfind(&id, &client->reqs.pending, g_isi_cmp);
+	if (!ret)
+		return;
+
+	req = *(GIsiRequest **)ret;
+
+	if (req->func) {
+		bool handled;
+
+		handled = req->func(client, msg + 1, len - 1, obj, req->data);
+		if (!handled)
+			return;
+	}
+	g_isi_request_cancel(req);
 }
 
 /* Data callback for both responses and indications */
 static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
-	GIsiClient *cl = data;
+	GIsiClient *client = data;
 	int fd = g_io_channel_unix_get_fd(channel);
-	bool indication = (fd != cl->fd);
 	int len;
 
 	if (cond & (G_IO_NVAL|G_IO_HUP)) {
@@ -463,39 +572,30 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 	}
 
 	len = phonet_peek_length(channel);
-	{
+
+	if (len > 0) {
 		uint32_t buf[(len + 3) / 4];
 		uint8_t *msg;
 		uint16_t obj;
-		uint8_t res, id;
+		uint8_t res;
 
 		len = phonet_read(channel, buf, len, &obj, &res);
-		if (len < 2 || res != cl->resource)
+		if (len < 2 || res != client->resource)
 			return TRUE;
 
 		msg = (uint8_t *)buf;
 
-		if (cl->debug_func)
-			cl->debug_func(msg + 1, len - 1, cl->debug_data);
+		if (client->debug_func)
+			client->debug_func(msg + 1, len - 1,
+						client->debug_data);
 
-		if (indication) {
-			/* Message ID at offset 1 */
-			id = msg[1];
-			if (cl->ind.func[id] == NULL)
-				return TRUE; /* Unsubscribed indication */
-
-			cl->ind.func[id](cl, msg + 1, len - 1, obj,
-						cl->ind.data[id]);
-		} else {
-			/* Transaction ID at offset 0 */
-			id = msg[0];
-			if (cl->func[id] == NULL)
-				return TRUE; /* Bad transaction ID */
-
-			if ((cl->func[id])(cl, msg + 1, len - 1, obj,
-						cl->data[id]))
-				g_isi_request_cancel(g_isi_req(cl, id));
-		}
+		if (fd == client->reqs.fd)
+			g_isi_dispatch_response(client, obj, msg, len);
+		else
+			/* Transaction field at first byte is
+			 * discarded with indications */
+			g_isi_dispatch_indication(client, obj, msg + 1,
+							len - 1);
 	}
 	return TRUE;
 }
@@ -503,16 +603,17 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 static gboolean g_isi_timeout(gpointer data)
 {
 	GIsiRequest *req = data;
-	GIsiClient *cl = g_isi_cl(req);
-	uint8_t id = g_isi_id(req);
 
-	assert(cl->func[id]);
-	(cl->func[id])(cl, NULL, 0, 0, cl->data[id]);
+	req->client->error = ETIMEDOUT;
+	if (req->func)
+		req->func(req->client, NULL, 0, 0, req->data);
+	req->client->error = 0;
+
 	g_isi_request_cancel(req);
 	return FALSE;
 }
 
 int g_isi_client_error(const GIsiClient *client)
-{	/* The only possible error at the moment */
-	return -ETIMEDOUT;
+{
+	return -client->error;
 }

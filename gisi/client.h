@@ -1,9 +1,7 @@
 /*
  * This file is part of oFono - Open Source Telephony
  *
- * Copyright (C) 2009 Nokia Corporation and/or its subsidiary(-ies).
- *
- * Contact: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+ * Copyright (C) 2009-2010 Nokia Corporation and/or its subsidiary(-ies).
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
