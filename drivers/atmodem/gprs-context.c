@@ -125,7 +125,7 @@ static gboolean setup_ppp(struct ofono_gprs_context *gc)
 	GIOChannel *channel;
 
 	channel = g_at_chat_get_channel(gcd->chat);
-	g_at_chat_shutdown(gcd->chat);
+	g_at_chat_unref(gcd->chat);
 
 	/* open ppp */
 	gcd->ppp = g_at_ppp_new(channel);
