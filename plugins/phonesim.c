@@ -261,8 +261,6 @@ static int phonesim_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	g_at_chat_shutdown(data->chat);
-
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
 

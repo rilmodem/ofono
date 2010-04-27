@@ -126,7 +126,6 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	g_at_chat_shutdown(data->chat);
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
 

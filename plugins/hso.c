@@ -165,7 +165,6 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	g_at_chat_shutdown(data->control);
 	g_at_chat_unref(data->control);
 	data->control = NULL;
 
@@ -185,7 +184,6 @@ static int hso_disable(struct ofono_modem *modem)
 	g_at_chat_cancel_all(data->control);
 	g_at_chat_unregister_all(data->control);
 
-	g_at_chat_shutdown(data->app);
 	g_at_chat_unref(data->app);
 	data->app = NULL;
 

@@ -203,7 +203,6 @@ static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		int i;
 
 		for (i = 0; i < NUM_DLC; i++) {
-			g_at_chat_shutdown(data->dlcs[i]);
 			g_at_chat_unref(data->dlcs[i]);
 			data->dlcs[i] = NULL;
 		}
@@ -410,7 +409,6 @@ static int calypso_disable(struct ofono_modem *modem)
 	DBG("");
 
 	for (i = 0; i < NUM_DLC; i++) {
-		g_at_chat_shutdown(data->dlcs[i]);
 		g_at_chat_unref(data->dlcs[i]);
 		data->dlcs[i] = NULL;
 	}

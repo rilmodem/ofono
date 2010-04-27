@@ -253,11 +253,9 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	g_at_chat_shutdown(data->modem_port);
 	g_at_chat_unref(data->modem_port);
 	data->modem_port = NULL;
 
-	g_at_chat_shutdown(data->data_port);
 	g_at_chat_unref(data->data_port);
 	data->data_port = NULL;
 
