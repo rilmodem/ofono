@@ -1635,7 +1635,7 @@ static gboolean parse_dataobj_frames_info(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	unsigned char *frame_id = user;
+	struct stk_frame_id *fi = user;
 	const unsigned char *data;
 
 	if (comprehension_tlv_iter_get_length(iter) != 1)
@@ -1646,7 +1646,8 @@ static gboolean parse_dataobj_frame_id(struct comprehension_tlv_iter *iter,
 	if (data[0] >= 0x10)
 		return FALSE;
 
-	*frame_id = data[0];
+	fi->has_id = TRUE;
+	fi->id = data[0];
 
 	return TRUE;
 }
@@ -2084,8 +2085,6 @@ static gboolean parse_display_text(struct stk_command *command,
 	if (command->dst != STK_DEVICE_IDENTITY_TYPE_DISPLAY)
 		return FALSE;
 
-	obj->frame_id = 0xFF;
-
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
 				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
 				&obj->text,
@@ -2126,8 +2125,6 @@ static gboolean parse_get_inkey(struct stk_command *command,
 	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
 		return FALSE;
 
-	obj->frame_id = 0xFF;
-
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
 				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
 				&obj->text,
@@ -2161,8 +2158,6 @@ static gboolean parse_get_input(struct stk_command *command,
 {
 	struct stk_command_get_input *obj = &command->get_input;
 	gboolean ret;
-
-	obj->frame_id = 0xFF;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
 		return FALSE;
@@ -2206,8 +2201,6 @@ static gboolean parse_send_sms(struct stk_command *command,
 	struct stk_command_send_sms *obj = &command->send_sms;
 	struct gsm_sms_tpdu tpdu;
 	gboolean ret;
-
-	obj->frame_id = 0xFF;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
 		return FALSE;

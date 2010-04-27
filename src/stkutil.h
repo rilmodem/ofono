@@ -728,6 +728,12 @@ struct stk_frames_info {
 	unsigned int len;
 };
 
+/* Defined in TS 102.223 Section 8.80 */
+struct stk_frame_id {
+	ofono_bool_t has_id;
+	unsigned char id;
+};
+
 /*
  * According to 102.223 Section 8.82 the length of CTLV is 1 byte. This means
  * that the maximum size is 127 according to the rules of CTLVs.
@@ -789,7 +795,7 @@ struct stk_command_display_text {
 	ofono_bool_t immediate_response;
 	struct stk_duration duration;
 	struct stk_text_attribute text_attribute;
-	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
+	struct stk_frame_id frame_id;
 };
 
 struct stk_command_get_input {
@@ -798,7 +804,7 @@ struct stk_command_get_input {
 	char *default_text;
 	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attribute;
-	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
+	struct stk_frame_id frame_id;
 };
 
 struct stk_command_send_sms {
@@ -807,7 +813,7 @@ struct stk_command_send_sms {
 	struct sms gsm_sms;
 	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attribute;
-	unsigned char frame_id; /* Values 0x10 to 0xFF reserved */
+	struct stk_frame_id frame_id;
 };
 
 struct stk_command {
