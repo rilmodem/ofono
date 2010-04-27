@@ -1000,7 +1000,8 @@ gboolean g_at_chat_set_debug(GAtChat *chat,
 	chat->debugf = func;
 	chat->debug_data = user_data;
 
-	g_at_io_set_debug(chat->io, func, user_data);
+	if (chat->io)
+		g_at_io_set_debug(chat->io, func, user_data);
 
 	return TRUE;
 }
