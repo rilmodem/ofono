@@ -222,7 +222,7 @@ static bool reg_status_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_REG_STATUS_GET_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
@@ -403,25 +403,23 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 	total = msg[2] / 2;
 	list = alloca(total * sizeof(struct ofono_network_operator));
 
-	g_isi_sb_iter_init(&iter, msg, len, 3);
+	for (g_isi_sb_iter_init(&iter, msg, len, 3);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
 
-	while (g_isi_sb_iter_is_valid(&iter)) {
+		struct ofono_network_operator *op;
+		char *tag = NULL;
+		guint8 taglen = 0;
+		guint8 status = 0;
+		guint8 umts = 0;
 
 		switch (g_isi_sb_iter_get_id(&iter)) {
 
-		case NET_AVAIL_NETWORK_INFO_COMMON: {
-			struct ofono_network_operator *op;
-			char *tag = NULL;
-			guint8 taglen = 0;
-			guint8 status = 0;
+		case NET_AVAIL_NETWORK_INFO_COMMON:
 
-			if (!g_isi_sb_iter_get_byte(&iter, &status, 2))
-				goto error;
-
-			if (!g_isi_sb_iter_get_byte(&iter, &taglen, 5))
-				goto error;
-
-			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag,
+			if (!g_isi_sb_iter_get_byte(&iter, &status, 2)
+				|| !g_isi_sb_iter_get_byte(&iter, &taglen, 5)
+				|| !g_isi_sb_iter_get_alpha_tag(&iter, &tag,
 						taglen * 2, 6))
 				goto error;
 
@@ -432,17 +430,17 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 			op->name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 			g_free(tag);
 			break;
-		}
 
-		case NET_DETAILED_NETWORK_INFO: {
-			struct ofono_network_operator *op;
-
+		case NET_DETAILED_NETWORK_INFO:
 			op = list + detail++;
+
 			if (!g_isi_sb_iter_get_oper_code(&iter, op->mcc,
-								op->mnc, 2))
+								op->mnc, 2)
+				|| !g_isi_sb_iter_get_byte(&iter, &umts, 7))
 				goto error;
+
+			op->tech = umts ? 2 : 3;
 			break;
-		}
 
 		default:
 			DBG("Skipping sub-block: %s (%zu bytes)",
@@ -450,7 +448,6 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 				g_isi_sb_iter_get_len(&iter));
 			break;
 		}
-		g_isi_sb_iter_next(&iter);
 	}
 
 	if (common == detail && detail == total) {
@@ -510,7 +507,7 @@ static bool set_auto_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (!msg || len < 3 || msg[0] != NET_SET_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
@@ -576,7 +573,7 @@ static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_SET_RESP)
-		goto error;
+		return false;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
