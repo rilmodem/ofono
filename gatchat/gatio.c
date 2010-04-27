@@ -208,6 +208,18 @@ GAtIO *g_at_io_ref(GAtIO *io)
 	return io;
 }
 
+static gboolean io_shutdown(GAtIO *io)
+{
+	/* Don't trigger user disconnect on shutdown */
+	io->user_disconnect = NULL;
+	io->user_disconnect_data = NULL;
+
+	if (io->read_watch > 0)
+		g_source_remove(io->read_watch);
+
+	return TRUE;
+}
+
 void g_at_io_unref(GAtIO *io)
 {
 	gboolean is_zero;
@@ -220,7 +232,7 @@ void g_at_io_unref(GAtIO *io)
 	if (is_zero == FALSE)
 		return;
 
-	g_at_io_shutdown(io);
+	io_shutdown(io);
 
 	/* glib delays the destruction of the watcher until it exits, this
 	 * means we can't free the data just yet, even though we've been
@@ -231,21 +243,6 @@ void g_at_io_unref(GAtIO *io)
 		io->destroyed = TRUE;
 	else
 		g_free(io);
-}
-
-gboolean g_at_io_shutdown(GAtIO *io)
-{
-	if (io->channel == NULL)
-		return FALSE;
-
-	/* Don't trigger user disconnect on shutdown */
-	io->user_disconnect = NULL;
-	io->user_disconnect_data = NULL;
-
-	if (io->read_watch > 0)
-		g_source_remove(io->read_watch);
-
-	return TRUE;
 }
 
 gboolean g_at_io_set_disconnect_function(GAtIO *io,

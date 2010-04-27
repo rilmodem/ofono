@@ -43,8 +43,6 @@ GIOChannel *g_at_io_get_channel(GAtIO *io);
 GAtIO *g_at_io_ref(GAtIO *io);
 void g_at_io_unref(GAtIO *io);
 
-gboolean g_at_io_shutdown(GAtIO *io);
-
 gboolean g_at_io_set_read_handler(GAtIO *io, GAtIOReadFunc read_handler,
 					gpointer user_data);
 
