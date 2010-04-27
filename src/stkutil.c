@@ -2189,6 +2189,18 @@ static gboolean parse_get_input(struct stk_command *command,
 	return TRUE;
 }
 
+static gboolean parse_more_time(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	return TRUE;
+}
+
 static void destroy_send_sms(struct stk_command *command)
 {
 	g_free(command->send_sms.alpha_id);
@@ -2302,6 +2314,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_GET_INPUT:
 		ok = parse_get_input(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_MORE_TIME:
+		ok = parse_more_time(command, &iter);
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
 		ok = parse_send_sms(command, &iter);
