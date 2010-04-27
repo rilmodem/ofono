@@ -34,6 +34,7 @@
 
 #include "ringbuffer.h"
 #include "gatchat.h"
+#include "gatio.h"
 
 /* #define WRITE_SCHEDULER_DEBUG 1 */
 
@@ -68,18 +69,16 @@ struct _GAtChat {
 	gint ref_count;				/* Ref count */
 	guint next_cmd_id;			/* Next command id */
 	guint next_notify_id;			/* Next notify id */
-	guint read_watch;			/* GSource read id, 0 if none */
 	guint write_watch;			/* GSource write id, 0 if none */
 	gboolean use_write_watch;		/* watch usage for non blocking */
 	GIOChannel *channel;			/* channel */
+	GAtIO *io;				/* AT IO */
 	GQueue *command_queue;			/* Command queue */
 	guint cmd_bytes_written;		/* bytes written from cmd */
 	GHashTable *notify_list;		/* List of notification reg */
 	GAtDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
-	struct ring_buffer *buf;		/* Current read buffer */
 	guint read_so_far;			/* Number of bytes processed */
-	guint max_read_attempts;		/* max number of read attempts */
 	GAtDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
 	char *pdu_notify;			/* Unsolicited Resp w/ PDU */
@@ -233,9 +232,6 @@ static void g_at_chat_cleanup(GAtChat *chat)
 {
 	struct at_command *c;
 
-	ring_buffer_free(chat->buf);
-	chat->buf = NULL;
-
 	/* Cleanup pending commands */
 	while ((c = g_queue_pop_head(chat->command_queue)))
 		at_command_destroy(c);
@@ -276,6 +272,7 @@ static void g_at_chat_cleanup(GAtChat *chat)
 	chat->syntax = NULL;
 
 	chat->channel = NULL;
+	chat->io = NULL;
 
 	if (chat->terminator_list) {
 		g_slist_foreach(chat->terminator_list,
@@ -285,18 +282,16 @@ static void g_at_chat_cleanup(GAtChat *chat)
 	}
 }
 
-static void read_watcher_destroy_notify(gpointer user_data)
+static void io_disconnect(gpointer user_data)
 {
 	GAtChat *chat = user_data;
 
+	g_at_io_set_read_handler(chat->io, NULL, NULL);
+	g_at_io_unref(chat->io);
 	g_at_chat_cleanup(chat);
-	chat->read_watch = 0;
 
 	if (chat->user_disconnect)
 		chat->user_disconnect(chat->user_disconnect_data);
-
-	if (chat->destroyed)
-		g_free(chat);
 }
 
 static void write_watcher_destroy_notify(gpointer user_data)
@@ -592,11 +587,11 @@ error:
 		g_free(pdu);
 }
 
-static char *extract_line(GAtChat *p)
+static char *extract_line(GAtChat *p, struct ring_buffer *rbuf)
 {
-	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
+	unsigned int wrap = ring_buffer_len_no_wrap(rbuf);
 	unsigned int pos = 0;
-	unsigned char *buf = ring_buffer_read_ptr(p->buf, pos);
+	unsigned char *buf = ring_buffer_read_ptr(rbuf, pos);
 	int strip_front = 0;
 	int line_length = 0;
 	char *line;
@@ -614,29 +609,30 @@ static char *extract_line(GAtChat *p)
 		pos += 1;
 
 		if (pos == wrap)
-			buf = ring_buffer_read_ptr(p->buf, pos);
+			buf = ring_buffer_read_ptr(rbuf, pos);
 	}
 
 	line = g_try_new(char, line_length + 1);
 	if (!line) {
-		ring_buffer_drain(p->buf, p->read_so_far);
+		ring_buffer_drain(rbuf, p->read_so_far);
 		return NULL;
 	}
 
-	ring_buffer_drain(p->buf, strip_front);
-	ring_buffer_read(p->buf, line, line_length);
-	ring_buffer_drain(p->buf, p->read_so_far - strip_front - line_length);
+	ring_buffer_drain(rbuf, strip_front);
+	ring_buffer_read(rbuf, line, line_length);
+	ring_buffer_drain(rbuf, p->read_so_far - strip_front - line_length);
 
 	line[line_length] = '\0';
 
 	return line;
 }
 
-static void new_bytes(GAtChat *p)
+static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 {
-	unsigned int len = ring_buffer_len(p->buf);
-	unsigned int wrap = ring_buffer_len_no_wrap(p->buf);
-	unsigned char *buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
+	GAtChat *p = user_data;
+	unsigned int len = ring_buffer_len(rbuf);
+	unsigned int wrap = ring_buffer_len_no_wrap(rbuf);
+	unsigned char *buf = ring_buffer_read_ptr(rbuf, p->read_so_far);
 
 	GAtSyntaxResult result;
 
@@ -650,7 +646,7 @@ static void new_bytes(GAtChat *p)
 		p->read_so_far += rbytes;
 
 		if (p->read_so_far == wrap) {
-			buf = ring_buffer_read_ptr(p->buf, p->read_so_far);
+			buf = ring_buffer_read_ptr(rbuf, p->read_so_far);
 			wrap = len;
 		}
 
@@ -660,20 +656,20 @@ static void new_bytes(GAtChat *p)
 		switch (result) {
 		case G_AT_SYNTAX_RESULT_LINE:
 		case G_AT_SYNTAX_RESULT_MULTILINE:
-			have_line(p, extract_line(p));
+			have_line(p, extract_line(p, rbuf));
 			break;
 
 		case G_AT_SYNTAX_RESULT_PDU:
-			have_pdu(p, extract_line(p));
+			have_pdu(p, extract_line(p, rbuf));
 			break;
 
 		case G_AT_SYNTAX_RESULT_PROMPT:
 			g_at_chat_wakeup_writer(p);
-			ring_buffer_drain(p->buf, p->read_so_far);
+			ring_buffer_drain(rbuf, p->read_so_far);
 			break;
 
 		default:
-			ring_buffer_drain(p->buf, p->read_so_far);
+			ring_buffer_drain(rbuf, p->read_so_far);
 			break;
 		}
 
@@ -682,61 +678,7 @@ static void new_bytes(GAtChat *p)
 		p->read_so_far = 0;
 	}
 
-	/* We're overflowing the buffer, shutdown the socket */
-	if (p->buf && ring_buffer_avail(p->buf) == 0)
-		g_source_remove(p->read_watch);
-
 	g_at_chat_unref(p);
-}
-
-static gboolean received_data(GIOChannel *channel, GIOCondition cond,
-				gpointer data)
-{
-	unsigned char *buf;
-	GAtChat *chat = data;
-	GIOError err;
-	gsize rbytes;
-	gsize toread;
-	gsize total_read = 0;
-	guint read_count = 0;
-
-	if (cond & G_IO_NVAL)
-		return FALSE;
-
-	/* Regardless of condition, try to read all the data available */
-	do {
-		toread = ring_buffer_avail_no_wrap(chat->buf);
-
-		if (toread == 0)
-			break;
-
-		rbytes = 0;
-		buf = ring_buffer_write_ptr(chat->buf, 0);
-
-		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
-		g_at_util_debug_chat(TRUE, (char *)buf, rbytes,
-					chat->debugf, chat->debug_data);
-
-		read_count++;
-
-		total_read += rbytes;
-
-		if (rbytes > 0)
-			ring_buffer_write_advance(chat->buf, rbytes);
-
-	} while (err == G_IO_ERROR_NONE && rbytes > 0 &&
-					read_count < chat->max_read_attempts);
-
-	if (total_read > 0)
-		new_bytes(chat);
-
-	if (cond & (G_IO_HUP | G_IO_ERR))
-		return FALSE;
-
-	if (read_count > 0 && rbytes == 0 && err != G_IO_ERROR_AGAIN)
-		return FALSE;
-
-	return TRUE;
 }
 
 static void wakeup_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -863,7 +805,7 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 			&bytes_written);
 
 	if (err != G_IO_ERROR_NONE) {
-		g_source_remove(chat->read_watch);
+		io_disconnect(chat);
 		return FALSE;
 	}
 
@@ -920,16 +862,16 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 
 	if (flags & G_IO_FLAG_NONBLOCK) {
 		chat->use_write_watch = TRUE;
-		chat->max_read_attempts = 3;
+		chat->io = g_at_io_new(channel);
 	} else {
 		chat->use_write_watch = FALSE;
-		chat->max_read_attempts = 1;
+		chat->io = g_at_io_new_blocking(channel);
 	}
 
-	chat->buf = ring_buffer_new(4096);
-
-	if (!chat->buf)
+	if (!chat->io)
 		goto error;
+
+	g_at_io_set_disconnect_function(chat->io, io_disconnect, chat);
 
 	chat->command_queue = g_queue_new();
 
@@ -943,18 +885,15 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 		goto error;
 
 	chat->channel = channel;
-	chat->read_watch = g_io_add_watch_full(channel, G_PRIORITY_DEFAULT,
-				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-				received_data, chat,
-				read_watcher_destroy_notify);
+
+	g_at_io_set_read_handler(chat->io, new_bytes, chat);
 
 	chat->syntax = g_at_syntax_ref(syntax);
 
 	return chat;
 
 error:
-	if (chat->buf)
-		ring_buffer_free(chat->buf);
+	g_at_io_unref(chat->io);
 
 	if (chat->command_queue)
 		g_queue_free(chat->command_queue);
@@ -1007,32 +946,20 @@ void g_at_chat_unref(GAtChat *chat)
 		return;
 
 	g_at_chat_shutdown(chat);
-
-	/* glib delays the destruction of the watcher until it exits, this
-	 * means we can't free the data just yet, even though we've been
-	 * destroyed already.  We have to wait until the read_watcher
-	 * destroy function gets called
-	 */
-	if (chat->read_watch != 0)
-		chat->destroyed = TRUE;
-	else
-		g_free(chat);
+	g_free(chat);
 }
 
 gboolean g_at_chat_shutdown(GAtChat *chat)
 {
-	if (chat->channel == NULL)
+	if (chat->io == NULL)
 		return FALSE;
-
-	/* Don't trigger user disconnect on shutdown */
-	chat->user_disconnect = NULL;
-	chat->user_disconnect_data = NULL;
-
-	if (chat->read_watch)
-		g_source_remove(chat->read_watch);
 
 	if (chat->write_watch)
 		g_source_remove(chat->write_watch);
+
+	g_at_io_set_read_handler(chat->io, NULL, NULL);
+	g_at_io_unref(chat->io);
+	g_at_chat_cleanup(chat);
 
 	return TRUE;
 }
@@ -1057,6 +984,8 @@ gboolean g_at_chat_set_debug(GAtChat *chat,
 
 	chat->debugf = func;
 	chat->debug_data = user_data;
+
+	g_at_io_set_debug(chat->io, func, user_data);
 
 	return TRUE;
 }
