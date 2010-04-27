@@ -61,11 +61,10 @@ static void read_watcher_destroy_notify(gpointer user_data)
 	io->channel = NULL;
 	io->read_watch = 0;
 
-	if (io->user_disconnect)
-		io->user_disconnect(io->user_disconnect_data);
-
 	if (io->destroyed)
 		g_free(io);
+	else if (io->user_disconnect)
+		io->user_disconnect(io->user_disconnect_data);
 }
 
 static gboolean received_data(GIOChannel *channel, GIOCondition cond,
@@ -238,6 +237,10 @@ gboolean g_at_io_shutdown(GAtIO *io)
 {
 	if (io->channel == NULL)
 		return FALSE;
+
+	/* Don't trigger user disconnect on shutdown */
+	io->user_disconnect = NULL;
+	io->user_disconnect_data = NULL;
 
 	if (io->read_watch > 0)
 		g_source_remove(io->read_watch);
