@@ -79,6 +79,7 @@ struct _GAtChat {
 	GAtDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
 	guint read_so_far;			/* Number of bytes processed */
+	gboolean suspended;			/* Are we suspended? */
 	GAtDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
 	char *pdu_notify;			/* Unsolicited Resp w/ PDU */
@@ -638,7 +639,7 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 
 	g_at_chat_ref(p);
 
-	while (p->channel && (p->read_so_far < len)) {
+	while (p->suspended == FALSE && (p->read_so_far < len)) {
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
 		result = p->syntax->feed(p->syntax, (char *)buf, &rbytes);
 
@@ -933,6 +934,28 @@ GAtChat *g_at_chat_ref(GAtChat *chat)
 	return chat;
 }
 
+void g_at_chat_suspend(GAtChat *chat)
+{
+	if (chat == NULL)
+		return;
+
+	chat->suspended = TRUE;
+
+	g_at_io_set_read_handler(chat->io, NULL, NULL);
+	g_at_io_set_debug(chat->io, NULL, NULL);
+}
+
+void g_at_chat_resume(GAtChat *chat)
+{
+	if (chat == NULL)
+		return;
+
+	chat->suspended = FALSE;
+
+	g_at_io_set_read_handler(chat->io, new_bytes, chat);
+	g_at_io_set_debug(chat->io, chat->debugf, chat->debug_data);
+}
+
 void g_at_chat_unref(GAtChat *chat)
 {
 	gboolean is_zero;
@@ -945,23 +968,15 @@ void g_at_chat_unref(GAtChat *chat)
 	if (is_zero == FALSE)
 		return;
 
-	g_at_chat_shutdown(chat);
-	g_free(chat);
-}
-
-gboolean g_at_chat_shutdown(GAtChat *chat)
-{
-	if (chat->io == NULL)
-		return FALSE;
-
 	if (chat->write_watch)
 		g_source_remove(chat->write_watch);
 
-	g_at_io_set_read_handler(chat->io, NULL, NULL);
+	g_at_chat_suspend(chat);
+
 	g_at_io_unref(chat->io);
 	g_at_chat_cleanup(chat);
 
-	return TRUE;
+	g_free(chat);
 }
 
 gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
