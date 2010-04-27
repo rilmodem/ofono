@@ -35,15 +35,72 @@
 #include "smsutil.h"
 #include "stkutil.h"
 
+static gboolean g_mem_equal(const unsigned char *v1, const unsigned char *v2,
+				unsigned int len)
+{
+	unsigned int i;
+
+	for (i = 0; i < len; i++)
+		if (v1[i] != v2[i])
+			return FALSE;
+	return TRUE;
+}
+
+static inline void check_common_bool(const ofono_bool_t command,
+					const ofono_bool_t test)
+{
+	g_assert(command == test);
+}
+
+/* Defined in TS 102.223 Section 8.8 */
+static void check_duration(const struct stk_duration *command,
+					const struct stk_duration *test)
+{
+	g_assert(command->unit == test->unit);
+	g_assert(command->interval == test->interval);
+}
+
+/* Defined in TS 102.223 Section 8.15 */
+static inline void check_text(const char *command, const char *test)
+{
+	g_assert(g_str_equal(command, test));
+}
+
+/* Defined in TS 102.223 Section 8.31 */
+static void check_icon_id(const struct stk_icon_id *command,
+					const struct stk_icon_id *test)
+{
+	g_assert(command->id == test->id);
+	g_assert(command->qualifier == test->qualifier);
+}
+
+/* Defined in TS 102.223 Section 8.72 */
+static void check_text_attr(const struct stk_text_attribute *command,
+					const struct stk_text_attribute *test)
+{
+	g_assert(command->len == test->len);
+	g_assert(g_mem_equal(command->attributes, test->attributes, test->len));
+}
+
+/* Defined in TS 102.223 Section 8.80 */
+static void check_frame_id(const struct stk_frame_id *command,
+					const struct stk_frame_id *test)
+{
+	g_assert(command->has_id == test->has_id);
+	if (test->has_id)
+		g_assert(command->id == test->id);
+}
+
 struct display_text_test {
 	const unsigned char *pdu;
 	unsigned int pdu_len;
-	const char *expected;
 	unsigned char qualifier;
-	unsigned char icon_qualifier;
-	unsigned char icon_id;
-	enum stk_duration_type duration_unit;
-	unsigned char duration_interval;
+	const char *text;
+	struct stk_icon_id icon_id;
+	ofono_bool_t immediate_response;
+	struct stk_duration duration;
+	struct stk_text_attribute text_attribute;
+	struct stk_frame_id frame_id;
 };
 
 unsigned char display_text_111[] = { 0xD0, 0x1A, 0x81, 0x03, 0x01, 0x21, 0x80,
@@ -151,103 +208,111 @@ unsigned char display_text_1011[] = { 0xD0, 0x12, 0x81, 0x03, 0x01, 0x21, 0x80,
 static struct display_text_test display_text_data_111 = {
 	.pdu = display_text_111,
 	.pdu_len = sizeof(display_text_111),
-	.expected = "Toolkit Test 1",
-	.qualifier = 0x80
+	.qualifier = 0x80,
+	.text = "Toolkit Test 1"
 };
 
 static struct display_text_test display_text_data_131 = {
 	.pdu = display_text_131,
 	.pdu_len = sizeof(display_text_131),
-	.expected = "Toolkit Test 2",
-	.qualifier = 0x81
+	.qualifier = 0x81,
+	.text = "Toolkit Test 2"
 };
 
 static struct display_text_test display_text_data_141 = {
 	.pdu = display_text_141,
 	.pdu_len = sizeof(display_text_141),
-	.expected = "Toolkit Test 3",
-	.qualifier = 0x80
+	.qualifier = 0x80,
+	.text = "Toolkit Test 3"
 };
 
 static struct display_text_test display_text_data_151 = {
 	.pdu = display_text_151,
 	.pdu_len = sizeof(display_text_151),
-	.expected = "Toolkit Test 4",
-	.qualifier = 0x00
+	.qualifier = 0x00,
+	.text = "Toolkit Test 4"
 };
 
 static struct display_text_test display_text_data_161 = {
 	.pdu = display_text_161,
 	.pdu_len = sizeof(display_text_161),
-	.expected = "This command instructs the ME to display a text message. "
+	.qualifier = 0x80,
+	.text = "This command instructs the ME to display a text message. "
 			"It allows the SIM to define the priority of that "
 			"message, and the text string format. Two types of "
-			"prio",
-	.qualifier = 0x80
+			"prio"
 };
 
 static struct display_text_test display_text_data_171 = {
 	.pdu = display_text_171,
 	.pdu_len = sizeof(display_text_171),
-	.expected = "<GO-BACKWARDS>",
-	.qualifier = 0x80
+	.qualifier = 0x80,
+	.text = "<GO-BACKWARDS>"
 };
 
 static struct display_text_test display_text_data_511 = {
 	.pdu = display_text_511,
 	.pdu_len = sizeof(display_text_511),
-	.expected = "Basic Icon",
 	.qualifier = 0x80,
-	.icon_id = 0x01,
-	.icon_qualifier = 0x00,
+	.text = "Basic Icon",
+	.icon_id = {
+		.qualifier = 0x00,
+		.id = 0x01
+	}
 };
 
 static struct display_text_test display_text_data_521 = {
 	.pdu = display_text_521,
 	.pdu_len = sizeof(display_text_521),
-	.expected = "Colour Icon",
 	.qualifier = 0x80,
-	.icon_id = 0x02,
-	.icon_qualifier = 0x00,
+	.text = "Colour Icon",
+	.icon_id = {
+		.qualifier = 0x00,
+		.id = 0x02
+	}
 };
 
 static struct display_text_test display_text_data_531 = {
 	.pdu = display_text_531,
 	.pdu_len = sizeof(display_text_531),
-	.expected = "Basic Icon",
 	.qualifier = 0x80,
-	.icon_id = 0x01,
-	.icon_qualifier = 0x01,
+	.text = "Basic Icon",
+	.icon_id = {
+		.qualifier = 0x01,
+		.id = 0x01
+	}
 };
 
 static struct display_text_test display_text_data_611 = {
 	.pdu = display_text_611,
 	.pdu_len = sizeof(display_text_611),
-	.expected = "ЗДРАВСТВУЙТЕ",
-	.qualifier = 0x80
+	.qualifier = 0x80,
+	.text = "ЗДРАВСТВУЙТЕ"
 };
 
 static struct display_text_test display_text_data_711 = {
 	.pdu = display_text_711,
 	.pdu_len = sizeof(display_text_711),
-	.expected = "10 Second",
 	.qualifier = 0x80,
-	.duration_unit = STK_DURATION_TYPE_SECONDS,
-	.duration_interval = 10,
+	.text = "10 Second",
+	.duration = {
+		.unit = STK_DURATION_TYPE_SECONDS,
+		.interval = 10,
+	}
 };
 
 static struct display_text_test display_text_data_911 = {
 	.pdu = display_text_911,
 	.pdu_len = sizeof(display_text_911),
-	.expected = "你好",
-	.qualifier = 0x80
+	.qualifier = 0x80,
+	.text = "你好"
 };
 
 static struct display_text_test display_text_data_1011 = {
 	.pdu = display_text_1011,
 	.pdu_len = sizeof(display_text_1011),
-	.expected = "80ル",
-	.qualifier = 0x80
+	.qualifier = 0x80,
+	.text = "80ル"
 };
 
 /* Defined in TS 102.384 Section 27.22.4.1 */
@@ -268,21 +333,14 @@ static void test_display_text(gconstpointer data)
 	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_DISPLAY);
 
 	g_assert(command->display_text.text);
-
-	g_assert(g_str_equal(test->expected, command->display_text.text));
-
-	if (test->icon_id > 0) {
-		g_assert(command->display_text.icon_id.id == test->icon_id);
-		g_assert(command->display_text.icon_id.qualifier ==
-				test->icon_qualifier);
-	}
-
-	if (test->duration_interval > 0) {
-		g_assert(command->display_text.duration.unit ==
-				test->duration_unit);
-		g_assert(command->display_text.duration.interval ==
-				test->duration_interval);
-	}
+	check_text(command->display_text.text, test->text);
+	check_icon_id(&command->display_text.icon_id, &test->icon_id);
+	check_common_bool(command->display_text.immediate_response,
+						test->immediate_response);
+	check_duration(&command->display_text.duration, &test->duration);
+	check_text_attr(&command->display_text.text_attribute,
+						&test->text_attribute);
+	check_frame_id(&command->display_text.frame_id, &test->frame_id);
 
 	stk_command_free(command);
 }
