@@ -2030,6 +2030,10 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 		entries = g_slist_prepend(entries, entry);
 	}
 
+
+	if (comprehension_tlv_iter_next(iter) != TRUE)
+		goto out;
+
 	entries = g_slist_reverse(entries);
 
 	for (l = entries; l; l = l->next) {
@@ -2048,6 +2052,7 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 		}
 	}
 
+out:
 	for (l = entries; l; l = l->next) {
 		struct dataobj_handler_entry *entry = l->data;
 
@@ -2294,9 +2299,6 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 
 	command->src = data[0];
 	command->dst = data[1];
-
-	if (comprehension_tlv_iter_next(&iter) != TRUE)
-		return FALSE;
 
 	switch (command->type) {
 	case STK_COMMAND_TYPE_DISPLAY_TEXT:
