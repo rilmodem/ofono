@@ -15,6 +15,9 @@ path = properties["Modems"][0]
 manager = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.VoiceCallManager')
 
-path = manager.Dial(sys.argv[1], sys.argv[2])
+if len(sys.argv) > 2:
+    path = manager.Dial(sys.argv[1], sys.argv[2])
+else:
+    path = manager.Dial(sys.argv[1], "")
 
 print path
