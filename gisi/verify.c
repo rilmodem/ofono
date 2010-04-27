@@ -38,8 +38,6 @@
 #define COMM_ISI_VERSION_GET_RESP		0x13
 #define COMM_ISA_ENTITY_NOT_REACHABLE_RESP	0x14
 
-#define PN_SIM			0x09
-
 struct verify_data {
 	GIsiVerifyFunc func;
 	void *data;
