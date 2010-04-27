@@ -2116,7 +2116,7 @@ static void destroy_get_inkey(struct stk_command *command)
 static gboolean parse_get_inkey(struct stk_command *command,
 				struct comprehension_tlv_iter *iter)
 {
-	struct stk_command_display_text *obj = &command->get_inkey;
+	struct stk_command_get_inkey *obj = &command->get_inkey;
 	gboolean ret;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
@@ -2130,12 +2130,10 @@ static gboolean parse_get_inkey(struct stk_command *command,
 				&obj->text,
 				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
 				&obj->icon_id,
-				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE, 0,
-				&obj->immediate_response,
 				STK_DATA_OBJECT_TYPE_DURATION, 0,
 				&obj->duration,
 				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
-				&obj->text_attribute,
+				&obj->text_attr,
 				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);

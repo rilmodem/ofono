@@ -798,6 +798,14 @@ struct stk_command_display_text {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_get_inkey {
+	char *text;
+	struct stk_icon_id icon_id;
+	struct stk_duration duration;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
 struct stk_command_get_input {
 	char *text;
 	struct stk_response_length response_length;
@@ -825,7 +833,7 @@ struct stk_command {
 
 	union {
 		struct stk_command_display_text display_text;
-		struct stk_command_display_text get_inkey;
+		struct stk_command_get_inkey get_inkey;
 		struct stk_command_get_input get_input;
 		struct stk_command_send_sms send_sms;
 	};
