@@ -258,8 +258,8 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * shutdown gatchat or else it tries to take all the input
 	 * from the modem and does not let PPP get it.
 	 */
-	g_at_chat_shutdown(control);
-	g_at_chat_shutdown(modem);
+	g_at_chat_unref(control);
+	g_at_chat_unref(modem);
 
 	/* open ppp */
 	ppp = g_at_ppp_new(channel);
