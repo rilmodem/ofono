@@ -104,14 +104,15 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	case SIGINT:
 	case SIGTERM:
 		if (terminated == 0) {
-			char buf[64];
-			if (ppp)
-				g_at_ppp_shutdown(ppp);
-
 			g_timeout_add_seconds(10, quit_eventloop, NULL);
-			sprintf(buf, "AT+CFUN=%u", option_offmode);
-			g_at_chat_send(control, buf, none_prefix,
-					power_down, NULL, NULL);
+
+			if (ppp == NULL) {
+				char buf[64];
+				sprintf(buf, "AT+CFUN=%u", option_offmode);
+				g_at_chat_send(control, buf, none_prefix,
+						power_down, NULL, NULL);
+			} else
+				g_at_ppp_shutdown(ppp);
 		}
 
 		terminated++;
@@ -259,7 +260,9 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * from the modem and does not let PPP get it.
 	 */
 	g_at_chat_unref(control);
+	control = NULL;
 	g_at_chat_unref(modem);
+	modem = NULL;
 
 	/* open ppp */
 	ppp = g_at_ppp_new(channel);
@@ -669,8 +672,12 @@ int main(int argc, char **argv)
 	g_main_loop_unref(event_loop);
 
 out:
-	g_at_chat_unref(control);
-	g_at_chat_unref(modem);
+	if (ppp == NULL) {
+		g_at_chat_unref(control);
+		g_at_chat_unref(modem);
+	} else
+		g_at_ppp_unref(ppp);
+
 	g_free(option_apn);
 
 	return 0;
