@@ -286,7 +286,7 @@ static void isi_gprs_attached_status(struct ofono_gprs *gprs,
 	if (!cbd)
 		goto error;
 
-	if (!g_isi_request_make(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+	if (g_isi_request_make(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
 					status_resp_cb, cbd))
 		return;
 
