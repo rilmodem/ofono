@@ -405,6 +405,41 @@ static void test_get_input(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct more_time_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+};
+
+static unsigned char more_time_111[] = { 0xD0, 0x09, 0x81, 0x03, 0x01, 0x02,
+						0x00, 0x82, 0x02, 0x81, 0x82 };
+
+static struct more_time_test more_time_data_111 = {
+	.pdu = more_time_111,
+	.pdu_len = sizeof(more_time_111),
+	.qualifier = 0x00,
+};
+
+/* Defined in TS 102.384 Section 27.22.4.4 */
+static void test_more_time(gconstpointer data)
+{
+	const struct get_input_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_MORE_TIME);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	stk_command_free(command);
+}
+
 struct send_sms_test {
 	const unsigned char *pdu;
 	unsigned int pdu_len;
@@ -515,6 +550,9 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/Get Input 1.1.1",
 				&get_input_data_111, test_get_input);
+
+	g_test_add_data_func("/teststk/More Time 1.1.1",
+				&more_time_data_111, test_more_time);
 
 	g_test_add_data_func("/teststk/Send SMS 1.1",
 				&send_sms_data_11, test_send_sms);
