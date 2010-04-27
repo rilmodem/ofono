@@ -228,7 +228,7 @@ void g_at_io_unref(GAtIO *io)
 	 * destroyed already.  We have to wait until the read_watcher
 	 * destroy function gets called
 	 */
-	if (io->read_watch != 0)
+	if (io->read_watch > 0)
 		io->destroyed = TRUE;
 	else
 		g_free(io);
@@ -239,7 +239,7 @@ gboolean g_at_io_shutdown(GAtIO *io)
 	if (io->channel == NULL)
 		return FALSE;
 
-	if (io->read_watch)
+	if (io->read_watch > 0)
 		g_source_remove(io->read_watch);
 
 	return TRUE;
