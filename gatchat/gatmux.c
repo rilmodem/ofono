@@ -722,7 +722,8 @@ static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	channel = g_at_chat_get_channel(msd->chat);
 	channel = g_io_channel_ref(channel);
 
-	g_at_chat_shutdown(msd->chat);
+	g_at_chat_unref(msd->chat);
+	msd->chat = NULL;
 
 	flags = g_io_channel_get_flags(channel) | G_IO_FLAG_NONBLOCK;
 	g_io_channel_set_flags(channel, flags, NULL);
