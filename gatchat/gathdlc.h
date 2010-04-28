@@ -39,6 +39,9 @@ void g_at_hdlc_unref(GAtHDLC *hdlc);
 
 void g_at_hdlc_set_debug(GAtHDLC *hdlc, GAtDebugFunc func, gpointer user_data);
 
+void g_at_hdlc_set_xmit_accm(GAtHDLC *hdlc, guint32 accm);
+guint32 g_at_hdlc_get_xmit_accm(GAtHDLC *hdlc);
+
 void g_at_hdlc_set_receive(GAtHDLC *hdlc, GAtReceiveFunc func,
 							gpointer user_data);
 gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size);

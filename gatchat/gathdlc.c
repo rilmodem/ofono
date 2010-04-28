@@ -53,6 +53,7 @@ struct _GAtHDLC {
 	guint decode_offset;
 	guint16 decode_fcs;
 	gboolean decode_escape;
+	guint32 xmit_accm[8];
 	GAtReceiveFunc receive_func;
 	gpointer receive_data;
 	GAtDebugFunc debugf;
@@ -175,6 +176,9 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 	hdlc->decode_offset = 0;
 	hdlc->decode_escape = FALSE;
 	hdlc->max_read_attempts = 8;
+
+	hdlc->xmit_accm[0] = ~0U;
+	hdlc->xmit_accm[3] = 0x60000000; /* 0x7d, 0x7e */
 
 	hdlc->read_buffer = ring_buffer_new(BUFFER_SIZE);
 	if (!hdlc->read_buffer)
@@ -321,6 +325,24 @@ static void wakeup_write(GAtHDLC *hdlc)
 				can_write_data, hdlc, write_watch_destroy);
 }
 
+void g_at_hdlc_set_xmit_accm(GAtHDLC *hdlc, guint32 accm)
+{
+	if (hdlc == NULL)
+		return;
+
+	hdlc->xmit_accm[0] = accm;
+}
+
+guint32 g_at_hdlc_get_xmit_accm(GAtHDLC *hdlc)
+{
+	if (hdlc == NULL)
+		return 0;
+
+	return hdlc->xmit_accm[0];
+}
+
+#define NEED_ESCAPE(xmit_accm, c) xmit_accm[c >> 5] & (1 << (c & 0x1f))
+
 gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 {
 	unsigned int avail = ring_buffer_avail(hdlc->write_buffer);
@@ -342,7 +364,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 			fcs = HDLC_FCS(fcs, data[i]);
 			*buf = data[i++] ^ HDLC_TRANS;
 			escape = FALSE;
-		} else if (data[i] == HDLC_FLAG || data[i] == HDLC_ESCAPE) {
+		} else if (NEED_ESCAPE(hdlc->xmit_accm, data[i])) {
 			*buf = HDLC_ESCAPE;
 			escape = TRUE;
 		} else {
@@ -370,7 +392,7 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 		if (escape == TRUE) {
 			*buf = tail[i++] ^ HDLC_TRANS;
 			escape = FALSE;
-		} else if (tail[i] == HDLC_FLAG || tail[i] == HDLC_ESCAPE) {
+		} else if (NEED_ESCAPE(hdlc->xmit_accm, tail[i])) {
 			*buf = HDLC_ESCAPE;
 			escape = TRUE;
 		} else {
