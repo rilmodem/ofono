@@ -91,6 +91,7 @@ struct _GAtChat {
 	GTimer *wakeup_timer;			/* Keep track of elapsed time */
 	GAtSyntax *syntax;
 	gboolean destroyed;			/* Re-entrancy guard */
+	gboolean in_read_handler;		/* Re-entrancy guard */
 	GSList *terminator_list;		/* Non-standard terminator */
 };
 
@@ -229,7 +230,7 @@ static void free_terminator(struct terminator_info *info)
 	info = NULL;
 }
 
-static void g_at_chat_cleanup(GAtChat *chat)
+static void chat_cleanup(GAtChat *chat)
 {
 	struct at_command *c;
 
@@ -289,7 +290,7 @@ static void io_disconnect(gpointer user_data)
 
 	g_at_io_set_read_handler(chat->io, NULL, NULL);
 	g_at_io_unref(chat->io);
-	g_at_chat_cleanup(chat);
+	chat_cleanup(chat);
 
 	if (chat->user_disconnect)
 		chat->user_disconnect(chat->user_disconnect_data);
@@ -637,7 +638,7 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 
 	GAtSyntaxResult result;
 
-	g_at_chat_ref(p);
+	p->in_read_handler = TRUE;
 
 	while (p->suspended == FALSE && (p->read_so_far < len)) {
 		gsize rbytes = MIN(len - p->read_so_far, wrap - p->read_so_far);
@@ -679,7 +680,10 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 		p->read_so_far = 0;
 	}
 
-	g_at_chat_unref(p);
+	p->in_read_handler = FALSE;
+
+	if (p->destroyed)
+		g_free(p);
 }
 
 static void wakeup_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -974,9 +978,12 @@ void g_at_chat_unref(GAtChat *chat)
 	g_at_chat_suspend(chat);
 
 	g_at_io_unref(chat->io);
-	g_at_chat_cleanup(chat);
+	chat_cleanup(chat);
 
-	g_free(chat);
+	if (chat->in_read_handler)
+		chat->destroyed = TRUE;
+	else
+		g_free(chat);
 }
 
 gboolean g_at_chat_set_disconnect_function(GAtChat *chat,
