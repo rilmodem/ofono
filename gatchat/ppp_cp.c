@@ -192,7 +192,7 @@ struct pppcp_data {
 
 static void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
-				guint8 *packet, guint len);
+				const guint8 *packet, guint len);
 
 static void pppcp_packet_free(struct pppcp_packet *packet)
 {
@@ -414,7 +414,7 @@ static void pppcp_send_configure_request(struct pppcp_data *pppcp)
  * transmit a Configure-Ack packet
  */
 static void pppcp_send_configure_ack(struct pppcp_data *pppcp,
-					guint8 *request)
+					const guint8 *request)
 {
 	struct pppcp_packet *packet;
 	struct pppcp_packet *cr_req = (struct pppcp_packet *) request;
@@ -440,7 +440,7 @@ static void pppcp_send_configure_ack(struct pppcp_data *pppcp,
  * transmit a Configure-Nak or Configure-Reject packet
  */
 static void pppcp_send_configure_nak(struct pppcp_data *pppcp,
-					guint8 *request)
+					const guint8 *request)
 {
 	struct pppcp_packet *packet;
 	struct pppcp_packet *cr_req = (struct pppcp_packet *) request;
@@ -519,7 +519,7 @@ static void pppcp_send_terminate_request(struct pppcp_data *data)
  * transmit a Terminate-Ack packet
  */
 static void pppcp_send_terminate_ack(struct pppcp_data *data,
-					guint8 *request)
+					const guint8 *request)
 {
 	struct pppcp_packet *packet;
 	struct pppcp_packet *pppcp_header = (struct pppcp_packet *) request;
@@ -543,11 +543,11 @@ static void pppcp_send_terminate_ack(struct pppcp_data *data,
  * XXX this seg faults.
  */
 static void pppcp_send_code_reject(struct pppcp_data *data,
-					guint8 *rejected_packet)
+					const guint8 *rejected_packet)
 {
 	struct pppcp_packet *packet;
-	struct pppcp_packet *old_packet =
-				(struct pppcp_packet *) rejected_packet;
+	const struct pppcp_packet *old_packet =
+				(const struct pppcp_packet *) rejected_packet;
 
 	pppcp_trace(data);
 
@@ -576,7 +576,7 @@ static void pppcp_send_code_reject(struct pppcp_data *data,
  * transmit an Echo-Reply packet
  */
 static void pppcp_send_echo_reply(struct pppcp_data *data,
-				guint8 *request)
+						const guint8 *request)
 {
 	struct pppcp_packet *packet;
 	struct pppcp_packet *header = (struct pppcp_packet *) request;
@@ -630,7 +630,7 @@ static void pppcp_transition_state(enum pppcp_state new_state,
  */
 static void pppcp_generate_event(struct pppcp_data *data,
 				enum pppcp_event_type event_type,
-				guint8 *packet, guint len)
+				const guint8 *packet, guint len)
 {
 	int actions;
 	unsigned char new_state;
@@ -717,7 +717,7 @@ void pppcp_signal_down(struct pppcp_data *data)
 }
 
 static guint8 pppcp_process_configure_request(struct pppcp_data *pppcp,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	pppcp_trace(pppcp);
 
@@ -744,7 +744,7 @@ static guint8 pppcp_process_configure_request(struct pppcp_data *pppcp,
 }
 
 static guint8 pppcp_process_configure_ack(struct pppcp_data *pppcp,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	gint len;
 
@@ -776,7 +776,7 @@ static guint8 pppcp_process_configure_ack(struct pppcp_data *pppcp,
 }
 
 static guint8 pppcp_process_configure_nak(struct pppcp_data *pppcp,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	pppcp_trace(pppcp);
 
@@ -791,7 +791,7 @@ static guint8 pppcp_process_configure_nak(struct pppcp_data *pppcp,
 }
 
 static guint8 pppcp_process_configure_reject(struct pppcp_data *pppcp,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	pppcp_trace(pppcp);
 
@@ -817,7 +817,7 @@ static guint8 pppcp_process_configure_reject(struct pppcp_data *pppcp,
 }
 
 static guint8 pppcp_process_terminate_request(struct pppcp_data *data,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	pppcp_trace(data);
 
@@ -825,7 +825,7 @@ static guint8 pppcp_process_terminate_request(struct pppcp_data *data,
 }
 
 static guint8 pppcp_process_terminate_ack(struct pppcp_data *data,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	/*
 	 * if we wind up using the data field for anything, then
@@ -839,7 +839,7 @@ static guint8 pppcp_process_terminate_ack(struct pppcp_data *data,
 }
 
 static guint8 pppcp_process_code_reject(struct pppcp_data *data,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	/*
 	 * determine if the code reject is catastrophic or not.
@@ -854,7 +854,7 @@ static guint8 pppcp_process_code_reject(struct pppcp_data *data,
 }
 
 static guint8 pppcp_process_protocol_reject(struct pppcp_data *data,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	/*
 	 * determine if the protocol reject is catastrophic or not.
@@ -875,25 +875,25 @@ static guint8 pppcp_process_protocol_reject(struct pppcp_data *data,
  * loop back anyway, since we don't negotiate a magic number.
  */
 static guint8 pppcp_process_echo_request(struct pppcp_data *data,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	return RXR;
 }
 
 static guint8 pppcp_process_echo_reply(struct pppcp_data *data,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	return 0;
 }
 
 static guint8 pppcp_process_discard_request(struct pppcp_data *data,
-					struct pppcp_packet *packet)
+					const struct pppcp_packet *packet)
 {
 	return 0;
 }
 
 static guint8 (*packet_ops[11])(struct pppcp_data *data,
-					struct pppcp_packet *packet) = {
+					const struct pppcp_packet *packet) = {
 	pppcp_process_configure_request,
 	pppcp_process_configure_ack,
 	pppcp_process_configure_nak,
@@ -908,10 +908,9 @@ static guint8 (*packet_ops[11])(struct pppcp_data *data,
 };
 
 void pppcp_send_protocol_reject(struct pppcp_data *data,
-				guint8 *rejected_packet, gsize len)
+				const guint8 *rejected_packet, gsize len)
 {
 	struct pppcp_packet *packet;
-	struct ppp_header *ppp_packet = (struct ppp_header *) rejected_packet;
 
 	pppcp_trace(data);
 
@@ -919,10 +918,8 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 	 * Protocol-Reject can only be sent when we are in
 	 * the OPENED state.  If in any other state, silently discard.
 	 */
-	if (data->state != OPENED) {
-		g_free(ppp_packet);
+	if (data->state != OPENED)
 		return;
-	}
 
 	/*
 	 * info should contain the old packet info, plus the 16bit
@@ -944,19 +941,17 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 
 	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
-
-	pppcp_packet_free(packet);
 }
 
 /*
  * parse the packet and determine which event this packet caused
  */
-void pppcp_process_packet(gpointer priv, guint8 *new_packet)
+void pppcp_process_packet(gpointer priv, const guint8 *new_packet)
 {
 	struct pppcp_data *data = priv;
-	struct pppcp_packet *packet = (struct pppcp_packet *) new_packet;
+	const struct pppcp_packet *packet =
+				(const struct pppcp_packet *) new_packet;
 	guint8 event_type;
-	gpointer event_data = NULL;
 	guint data_len = 0;
 
 	if (data == NULL)
@@ -970,8 +965,7 @@ void pppcp_process_packet(gpointer priv, guint8 *new_packet)
 
 	if (event_type) {
 		data_len = ntohs(packet->length);
-		event_data = packet;
-		pppcp_generate_event(data, event_type, event_data, data_len);
+		pppcp_generate_event(data, event_type, new_packet, data_len);
 	}
 }
 
