@@ -73,7 +73,7 @@ gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
 	return (rc < 0) ? FALSE : TRUE;
 }
 
-void ppp_net_process_packet(struct ppp_net *net, guint8 *packet)
+void ppp_net_process_packet(struct ppp_net *net, const guint8 *packet)
 {
 	GError *error = NULL;
 	GIOStatus status;

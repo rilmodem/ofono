@@ -101,7 +101,7 @@ void ppp_chap_process_packet(struct ppp_chap *chap, guint8 *new_packet);
 /* TUN / Network related functions */
 struct ppp_net *ppp_net_new(GAtPPP *ppp);
 const char *ppp_net_get_interface(struct ppp_net *net);
-void ppp_net_process_packet(struct ppp_net *net, guint8 *packet);
+void ppp_net_process_packet(struct ppp_net *net, const guint8 *packet);
 void ppp_net_free(struct ppp_net *net);
 gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu);
 
