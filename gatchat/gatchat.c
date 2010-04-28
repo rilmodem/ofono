@@ -38,9 +38,9 @@
 
 /* #define WRITE_SCHEDULER_DEBUG 1 */
 
-static const char *none_prefix[] = { NULL };
+static void chat_wakeup_writer(GAtChat *chat);
 
-static void g_at_chat_wakeup_writer(GAtChat *chat);
+static const char *none_prefix[] = { NULL };
 
 struct at_command {
 	char *cmd;
@@ -69,9 +69,6 @@ struct _GAtChat {
 	gint ref_count;				/* Ref count */
 	guint next_cmd_id;			/* Next command id */
 	guint next_notify_id;			/* Next notify id */
-	guint write_watch;			/* GSource write id, 0 if none */
-	gboolean use_write_watch;		/* watch usage for non blocking */
-	GIOChannel *channel;			/* channel */
 	GAtIO *io;				/* AT IO */
 	GQueue *command_queue;			/* Command queue */
 	guint cmd_bytes_written;		/* bytes written from cmd */
@@ -273,7 +270,6 @@ static void chat_cleanup(GAtChat *chat)
 	g_at_syntax_unref(chat->syntax);
 	chat->syntax = NULL;
 
-	chat->channel = NULL;
 	chat->io = NULL;
 
 	if (chat->terminator_list) {
@@ -294,13 +290,6 @@ static void io_disconnect(gpointer user_data)
 
 	if (chat->user_disconnect)
 		chat->user_disconnect(chat->user_disconnect_data);
-}
-
-static void write_watcher_destroy_notify(gpointer user_data)
-{
-	GAtChat *chat = user_data;
-
-	chat->write_watch = 0;
 }
 
 static void at_notify_call_callback(gpointer data, gpointer user_data)
@@ -366,7 +355,7 @@ static void g_at_chat_finish_command(GAtChat *p, gboolean ok, char *final)
 	p->cmd_bytes_written = 0;
 
 	if (g_queue_peek_head(p->command_queue))
-		g_at_chat_wakeup_writer(p);
+		chat_wakeup_writer(p);
 
 	response_lines = p->response_lines;
 	p->response_lines = NULL;
@@ -666,7 +655,7 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 			break;
 
 		case G_AT_SYNTAX_RESULT_PROMPT:
-			g_at_chat_wakeup_writer(p);
+			chat_wakeup_writer(p);
 			ring_buffer_drain(rbuf, p->read_so_far);
 			break;
 
@@ -725,23 +714,15 @@ static gboolean wakeup_no_response(gpointer user_data)
 	return TRUE;
 }
 
-static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
-				gpointer data)
+static gboolean can_write_data(gpointer data)
 {
 	GAtChat *chat = data;
 	struct at_command *cmd;
-	GIOError err;
 	gsize bytes_written;
 	gsize towrite;
 	gsize len;
 	char *cr;
 	gboolean wakeup_first = FALSE;
-#ifdef WRITE_SCHEDULER_DEBUG
-	int limiter;
-#endif
-
-	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR))
-		return FALSE;
 
 	/* Grab the first command off the queue and write as
 	 * much of it as we can
@@ -794,28 +775,17 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 		towrite = cr - (cmd->cmd + chat->cmd_bytes_written) + 1;
 
 #ifdef WRITE_SCHEDULER_DEBUG
-	limiter = towrite;
-
-	if (limiter > 5)
-		limiter = 5;
+	if (towrite > 5)
+		towrite = 5;
 #endif
 
-	err = g_io_channel_write(chat->channel,
-			cmd->cmd + chat->cmd_bytes_written,
-#ifdef WRITE_SCHEDULER_DEBUG
-			limiter,
-#else
-			towrite,
-#endif
-			&bytes_written);
+	bytes_written = g_at_io_write(chat->io,
+					cmd->cmd + chat->cmd_bytes_written,
+					towrite);
 
-	if (err != G_IO_ERROR_NONE) {
-		io_disconnect(chat);
+	if (bytes_written == 0)
 		return FALSE;
-	}
 
-	g_at_util_debug_chat(FALSE, cmd->cmd + chat->cmd_bytes_written,
-				bytes_written, chat->debugf, chat->debug_data);
 	chat->cmd_bytes_written += bytes_written;
 
 	if (bytes_written < towrite)
@@ -828,21 +798,9 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	return FALSE;
 }
 
-static void g_at_chat_wakeup_writer(GAtChat *chat)
+static void chat_wakeup_writer(GAtChat *chat)
 {
-	if (chat->write_watch != 0)
-		return;
-
-	if (chat->use_write_watch == TRUE) {
-		chat->write_watch = g_io_add_watch_full(chat->channel,
-				G_PRIORITY_DEFAULT,
-				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-				can_write_data, chat,
-				write_watcher_destroy_notify);
-	} else {
-		while (can_write_data(chat->channel, G_IO_OUT, chat) == TRUE);
-		write_watcher_destroy_notify(chat);
-	}
+	g_at_io_set_write_handler(chat->io, can_write_data, chat);
 }
 
 static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
@@ -865,13 +823,10 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 	chat->next_notify_id = 1;
 	chat->debugf = NULL;
 
-	if (flags & G_IO_FLAG_NONBLOCK) {
-		chat->use_write_watch = TRUE;
+	if (flags & G_IO_FLAG_NONBLOCK)
 		chat->io = g_at_io_new(channel);
-	} else {
-		chat->use_write_watch = FALSE;
+	else
 		chat->io = g_at_io_new_blocking(channel);
-	}
 
 	if (!chat->io)
 		goto error;
@@ -885,9 +840,6 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 
 	chat->notify_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, at_notify_destroy);
-
-
-	chat->channel = channel;
 
 	g_at_io_set_read_handler(chat->io, new_bytes, chat);
 
@@ -943,6 +895,7 @@ void g_at_chat_suspend(GAtChat *chat)
 
 	chat->suspended = TRUE;
 
+	g_at_io_set_write_handler(chat->io, NULL, NULL);
 	g_at_io_set_read_handler(chat->io, NULL, NULL);
 	g_at_io_set_debug(chat->io, NULL, NULL);
 }
@@ -954,8 +907,11 @@ void g_at_chat_resume(GAtChat *chat)
 
 	chat->suspended = FALSE;
 
-	g_at_io_set_read_handler(chat->io, new_bytes, chat);
 	g_at_io_set_debug(chat->io, chat->debugf, chat->debug_data);
+	g_at_io_set_read_handler(chat->io, new_bytes, chat);
+
+	if (g_queue_get_length(chat->command_queue) > 0)
+		chat_wakeup_writer(chat);
 }
 
 void g_at_chat_unref(GAtChat *chat)
@@ -1033,7 +989,7 @@ static guint send_common(GAtChat *chat, const char *cmd,
 	g_queue_push_tail(chat->command_queue, c);
 
 	if (g_queue_get_length(chat->command_queue) == 1)
-		g_at_chat_wakeup_writer(chat);
+		chat_wakeup_writer(chat);
 
 	return c->id;
 }
