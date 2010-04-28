@@ -39,6 +39,7 @@
 struct _GAtIO {
 	gint ref_count;				/* Ref count */
 	guint read_watch;			/* GSource read id, 0 if no */
+	guint write_watch;			/* GSource write id, 0 if no */
 	GIOChannel *channel;			/* comms channel */
 	GAtDisconnectFunc user_disconnect;	/* user disconnect func */
 	gpointer user_disconnect_data;		/* user disconnect data */
@@ -46,6 +47,9 @@ struct _GAtIO {
 	guint max_read_attempts;		/* max reads / select */
 	GAtIOReadFunc read_handler;		/* Read callback */
 	gpointer read_data;			/* Read callback userdata */
+	gboolean use_write_watch;		/* Use write select */
+	GAtIOWriteFunc write_handler;		/* Write callback */
+	gpointer write_data;			/* Write callback userdata */
 	GAtDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
 	gboolean destroyed;			/* Re-entrancy guard */
@@ -58,8 +62,14 @@ static void read_watcher_destroy_notify(gpointer user_data)
 	ring_buffer_free(io->buf);
 	io->buf = NULL;
 
-	io->channel = NULL;
+	io->debugf = NULL;
+	io->debug_data = NULL;
+
 	io->read_watch = 0;
+	io->read_handler = NULL;
+	io->read_data = NULL;
+
+	io->channel = NULL;
 
 	if (io->destroyed)
 		g_free(io);
@@ -121,6 +131,48 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	return TRUE;
 }
 
+gsize g_at_io_write(GAtIO *io, const gchar *data, gsize count)
+{
+	GIOError err;
+	gsize bytes_written;
+
+	err = g_io_channel_write(io->channel, data, count, &bytes_written);
+
+	if (err != G_IO_ERROR_NONE) {
+		g_source_remove(io->read_watch);
+		return 0;
+	}
+
+	g_at_util_debug_chat(FALSE, data, bytes_written,
+				io->debugf, io->debug_data);
+
+	return bytes_written;
+}
+
+static void write_watcher_destroy_notify(gpointer user_data)
+{
+	GAtIO *io = user_data;
+
+	io->write_watch = 0;
+	io->write_handler = NULL;
+	io->write_data = NULL;
+}
+
+static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
+				gpointer data)
+{
+	GAtIO *io = data;
+
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR))
+		return FALSE;
+
+	if (io->write_handler == NULL)
+		return FALSE;
+
+	return io->write_handler(io->write_data);
+
+}
+
 static GAtIO *create_io(GIOChannel *channel, GIOFlags flags)
 {
 	GAtIO *io;
@@ -135,10 +187,13 @@ static GAtIO *create_io(GIOChannel *channel, GIOFlags flags)
 	io->ref_count = 1;
 	io->debugf = NULL;
 
-	if (flags & G_IO_FLAG_NONBLOCK)
+	if (flags & G_IO_FLAG_NONBLOCK) {
 		io->max_read_attempts = 3;
-	else
+		io->use_write_watch = TRUE;
+	} else {
 		io->max_read_attempts = 1;
+		io->use_write_watch = FALSE;
+	}
 
 	io->buf = ring_buffer_new(4096);
 
@@ -194,6 +249,49 @@ gboolean g_at_io_set_read_handler(GAtIO *io, GAtIOReadFunc read_handler,
 
 	if (read_handler && ring_buffer_len(io->buf) > 0)
 		read_handler(io->buf, user_data);
+
+	return TRUE;
+}
+
+static gboolean call_blocking_read(gpointer user_data)
+{
+	GAtIO *io = user_data;
+
+	while (can_write_data(io->channel, G_IO_OUT, io) == TRUE);
+	write_watcher_destroy_notify(io);
+
+	return FALSE;
+}
+
+gboolean g_at_io_set_write_handler(GAtIO *io, GAtIOWriteFunc write_handler,
+					gpointer user_data)
+{
+	if (io == NULL)
+		return FALSE;
+
+	if (io->write_watch > 0) {
+		if (write_handler == NULL) {
+			g_source_remove(io->write_watch);
+			return TRUE;
+		}
+
+		return FALSE;
+	}
+
+	if (write_handler == NULL)
+		return FALSE;
+
+	io->write_handler = write_handler;
+	io->write_data = user_data;
+
+	if (io->use_write_watch == TRUE)
+		io->write_watch = g_io_add_watch_full(io->channel,
+				G_PRIORITY_DEFAULT,
+				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				can_write_data, io,
+				write_watcher_destroy_notify);
+	else
+		io->write_watch = g_idle_add(call_blocking_read, io);
 
 	return TRUE;
 }

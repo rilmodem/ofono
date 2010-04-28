@@ -33,7 +33,7 @@ struct _GAtIO;
 typedef struct _GAtIO GAtIO;
 
 typedef void (*GAtIOReadFunc)(struct ring_buffer *buffer, gpointer user_data);
-typedef void (*GAtIOWriteFunc)(gpointer user_data);
+typedef gboolean (*GAtIOWriteFunc)(gpointer user_data);
 
 GAtIO *g_at_io_new(GIOChannel *channel);
 GAtIO *g_at_io_new_blocking(GIOChannel *channel);
@@ -45,6 +45,9 @@ void g_at_io_unref(GAtIO *io);
 
 gboolean g_at_io_set_read_handler(GAtIO *io, GAtIOReadFunc read_handler,
 					gpointer user_data);
+gboolean g_at_io_set_write_handler(GAtIO *io, GAtIOWriteFunc write_handler,
+					gpointer user_data);
+gsize g_at_io_write(GAtIO *io, const gchar *data, gsize count);
 
 gboolean g_at_io_set_disconnect_function(GAtIO *io,
 			GAtDisconnectFunc disconnect, gpointer user_data);
