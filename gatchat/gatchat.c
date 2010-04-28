@@ -886,8 +886,6 @@ static GAtChat *create_chat(GIOChannel *channel, GIOFlags flags,
 	chat->notify_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, at_notify_destroy);
 
-	if (!g_at_util_setup_io(channel, flags))
-		goto error;
 
 	chat->channel = channel;
 
