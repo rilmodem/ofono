@@ -23,6 +23,7 @@
 #define __G_AT_HDLC_H
 
 #include "gat.h"
+#include "gatio.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,6 +51,8 @@ void g_at_hdlc_set_receive(GAtHDLC *hdlc, GAtReceiveFunc func,
 gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size);
 
 void g_at_hdlc_set_recording(GAtHDLC *hdlc, const char *filename);
+
+GAtIO *g_at_hdlc_get_io(GAtHDLC *hdlc);
 
 #ifdef __cplusplus
 }

@@ -313,6 +313,14 @@ guint32 g_at_hdlc_get_xmit_accm(GAtHDLC *hdlc)
 	return hdlc->xmit_accm[0];
 }
 
+GAtIO *g_at_hdlc_get_io(GAtHDLC *hdlc)
+{
+	if (hdlc == NULL)
+		return NULL;
+
+	return hdlc->io;
+}
+
 #define NEED_ESCAPE(xmit_accm, c) xmit_accm[c >> 5] & (1 << (c & 0x1f))
 
 gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)

@@ -32,6 +32,8 @@ struct _GAtIO;
 
 typedef struct _GAtIO GAtIO;
 
+struct ring_buffer;
+
 typedef void (*GAtIOReadFunc)(struct ring_buffer *buffer, gpointer user_data);
 typedef gboolean (*GAtIOWriteFunc)(gpointer user_data);
 
