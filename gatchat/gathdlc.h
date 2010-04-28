@@ -49,6 +49,8 @@ void g_at_hdlc_set_receive(GAtHDLC *hdlc, GAtReceiveFunc func,
 							gpointer user_data);
 gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size);
 
+void g_at_hdlc_set_recording(GAtHDLC *hdlc, const char *filename);
+
 #ifdef __cplusplus
 }
 #endif

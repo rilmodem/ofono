@@ -23,6 +23,13 @@
 #include <config.h>
 #endif
 
+#include <arpa/inet.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <glib.h>
 
 #include "crc-ccitt.h"
@@ -59,7 +66,49 @@ struct _GAtHDLC {
 	gpointer receive_data;
 	GAtDebugFunc debugf;
 	gpointer debug_data;
+	int record_fd;
 };
+
+static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
+{
+	guint16 len = htons(length);
+	guint32 ts;
+	struct timeval now;
+	unsigned char id;
+	int err;
+
+	if (fd < 0)
+		return;
+
+	gettimeofday(&now, NULL);
+	ts = htonl(now.tv_sec & 0xffffffff);
+
+	id = 0x07;
+	err = write(fd, &id, 1);
+	err = write(fd, &ts, 4);
+
+	id = in ? 0x02 : 0x01;
+	err = write(fd, &id, 1);
+	err = write(fd, &len, 2);
+	err = write(fd, data, length);
+}
+
+void g_at_hdlc_set_recording(GAtHDLC *hdlc, const char *filename)
+{
+	if (hdlc == NULL)
+		return;
+
+	if (hdlc->record_fd > fileno(stderr)) {
+		close(hdlc->record_fd);
+		hdlc->record_fd = -1;
+	}
+
+	if (filename == NULL)
+		return;
+
+	hdlc->record_fd = open(filename, O_WRONLY | O_CREAT | O_APPEND,
+					S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+}
 
 void g_at_hdlc_set_recv_accm(GAtHDLC *hdlc, guint32 accm)
 {
@@ -145,6 +194,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 		buf = ring_buffer_write_ptr(hdlc->read_buffer, 0);
 
 		err = g_io_channel_read(channel, (char *) buf, toread, &rbytes);
+		hdlc_record(hdlc->record_fd, TRUE, buf, rbytes);
 		g_at_util_debug_dump(TRUE, buf, rbytes,
 					hdlc->debugf, hdlc->debug_data);
 
@@ -227,6 +277,8 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				received_data, hdlc, read_watch_destroy);
 
+	hdlc->record_fd = -1;
+
 	return hdlc;
 
 error:
@@ -264,6 +316,11 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 
 	if (hdlc->read_watch > 0)
 		g_source_remove(hdlc->read_watch);
+
+	if (hdlc->record_fd > fileno(stderr)) {
+		close(hdlc->record_fd);
+		hdlc->record_fd = -1;
+	}
 
 	g_io_channel_unref(hdlc->channel);
 
@@ -314,6 +371,7 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 	}
 
+	hdlc_record(hdlc->record_fd, FALSE, buf, bytes_written);
 	g_at_util_debug_dump(FALSE, buf, bytes_written,
 					hdlc->debugf, hdlc->debug_data);
 
