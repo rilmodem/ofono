@@ -54,11 +54,28 @@ struct _GAtHDLC {
 	guint16 decode_fcs;
 	gboolean decode_escape;
 	guint32 xmit_accm[8];
+	guint32 recv_accm;
 	GAtReceiveFunc receive_func;
 	gpointer receive_data;
 	GAtDebugFunc debugf;
 	gpointer debug_data;
 };
+
+void g_at_hdlc_set_recv_accm(GAtHDLC *hdlc, guint32 accm)
+{
+	if (hdlc == NULL)
+		return;
+
+	hdlc->recv_accm = accm;
+}
+
+guint32 g_at_hdlc_get_recv_accm(GAtHDLC *hdlc)
+{
+	if (hdlc == NULL)
+		return 0;
+
+	return hdlc->recv_accm;
+}
 
 static void new_bytes(GAtHDLC *hdlc)
 {
@@ -87,7 +104,8 @@ static void new_bytes(GAtHDLC *hdlc)
 
 			hdlc->decode_fcs = HDLC_INITFCS;
 			hdlc->decode_offset = 0;
-		} else {
+		} else if (*buf >= 0x20 ||
+					(hdlc->recv_accm & (1 << *buf)) == 0) {
 			hdlc->decode_buffer[hdlc->decode_offset++] = *buf;
 			hdlc->decode_fcs = HDLC_FCS(hdlc->decode_fcs, *buf);
 		}
@@ -179,6 +197,7 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 
 	hdlc->xmit_accm[0] = ~0U;
 	hdlc->xmit_accm[3] = 0x60000000; /* 0x7d, 0x7e */
+	hdlc->recv_accm = ~0U;
 
 	hdlc->read_buffer = ring_buffer_new(BUFFER_SIZE);
 	if (!hdlc->read_buffer)
