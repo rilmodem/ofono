@@ -96,7 +96,7 @@ void ipcp_free(struct pppcp_data *data);
 /* CHAP related functions */
 struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method);
 void ppp_chap_free(struct ppp_chap *chap);
-void ppp_chap_process_packet(struct ppp_chap *chap, guint8 *new_packet);
+void ppp_chap_process_packet(struct ppp_chap *chap, const guint8 *new_packet);
 
 /* TUN / Network related functions */
 struct ppp_net *ppp_net_new(GAtPPP *ppp);

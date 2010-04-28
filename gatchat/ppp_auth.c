@@ -54,9 +54,9 @@ enum chap_code {
 	FAILURE
 };
 
-static void chap_process_challenge(struct ppp_chap *chap, guint8 *packet)
+static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 {
-	struct chap_header *header = (struct chap_header *) packet;
+	const struct chap_header *header = (const struct chap_header *) packet;
 	struct chap_header *response;
 	GChecksum *checksum;
 	const char *secret = g_at_ppp_get_password(chap->ppp);
@@ -111,7 +111,7 @@ challenge_out:
 /*
  * parse the packet
  */
-void ppp_chap_process_packet(struct ppp_chap *chap, guint8 *new_packet)
+void ppp_chap_process_packet(struct ppp_chap *chap, const guint8 *new_packet)
 {
 	guint8 code = new_packet[0];
 
