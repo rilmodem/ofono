@@ -264,6 +264,13 @@ void ppp_set_mtu(GAtPPP *ppp, const guint8 *data)
 	ppp->mtu = mtu;
 }
 
+static void io_disconnect(gpointer user_data)
+{
+	GAtPPP *ppp = user_data;
+
+	pppcp_signal_down(ppp->lcp);
+}
+
 /* Administrative Open */
 void g_at_ppp_open(GAtPPP *ppp)
 {
@@ -397,6 +404,8 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	ppp->ipcp = ipcp_new(ppp);
 
 	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
+	g_at_io_set_disconnect_function(g_at_hdlc_get_io(ppp->hdlc),
+						io_disconnect, ppp);
 
 	return ppp;
 }
