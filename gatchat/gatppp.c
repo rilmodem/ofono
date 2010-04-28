@@ -235,6 +235,10 @@ void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 
 void ppp_net_down_notify(GAtPPP *ppp)
 {
+	/* Most likely we failed to create the interface */
+	if (ppp->net == NULL)
+		return;
+
 	ppp_net_free(ppp->net);
 	ppp->net = NULL;
 }
