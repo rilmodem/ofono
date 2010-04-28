@@ -920,10 +920,10 @@ GAtChat *g_at_chat_new_blocking(GIOChannel *channel, GAtSyntax *syntax)
 
 GIOChannel *g_at_chat_get_channel(GAtChat *chat)
 {
-	if (chat == NULL)
+	if (chat == NULL || chat->io == NULL)
 		return NULL;
 
-	return chat->channel;
+	return g_at_io_get_channel(chat->io);
 }
 
 GAtChat *g_at_chat_ref(GAtChat *chat)
