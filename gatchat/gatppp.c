@@ -297,6 +297,14 @@ const char *g_at_ppp_get_password(GAtPPP *ppp)
 	return ppp->password;
 }
 
+GAtHDLC *g_at_ppp_get_hdlc(GAtPPP *ppp)
+{
+	if (ppp == NULL)
+		return NULL;
+
+	return ppp->hdlc;
+}
+
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,
 							gpointer user_data)
 {

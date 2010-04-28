@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include "gat.h"
+#include "gathdlc.h"
 
 struct _GAtPPP;
 
@@ -57,6 +58,8 @@ gboolean g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
 						const char *passwd);
 const char *g_at_ppp_get_username(GAtPPP *ppp);
 const char *g_at_ppp_get_password(GAtPPP *ppp);
+
+GAtHDLC *g_at_ppp_get_hdlc(GAtPPP *ppp);
 
 #ifdef __cplusplus
 }
