@@ -46,8 +46,6 @@ typedef void (*GPhonetNetlinkFunc)(GIsiModem *idx,
 			char const *iface,
 			void *data);
 
-GPhonetNetlink *g_pn_netlink_by_name(char const *ifname);
-
 GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx);
 
 GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,

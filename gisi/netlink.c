@@ -98,18 +98,6 @@ GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx)
 	return NULL;
 }
 
-GPhonetNetlink *g_pn_netlink_by_name(const char *ifname)
-{
-	if (ifname == NULL) {
-		return g_pn_netlink_by_modem(make_modem(0));
-	} else {
-		GIsiModem *idx = g_isi_modem_by_name(ifname);
-		if (!idx)
-			return NULL;
-		return g_pn_netlink_by_modem(idx);
-	}
-}
-
 static void bring_up(unsigned ifindex)
 {
 	struct ifreq req = { .ifr_ifindex = ifindex, };
