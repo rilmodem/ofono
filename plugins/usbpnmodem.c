@@ -63,8 +63,7 @@ static void usbpn_status_cb(GIsiModem *idx,
 	if (st == PN_LINK_REMOVED)
 		return;
 
-	link = g_pn_netlink_by_name(ifname);
-	if (link) {
+	if (g_pn_netlink_by_modem(idx)) {
 		DBG("Modem for interface %s already exists", ifname);
 		return;
 	}
