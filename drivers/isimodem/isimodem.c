@@ -255,8 +255,7 @@ static int isi_modem_probe(struct ofono_modem *modem)
 		return -errno;
 	}
 
-	link = g_pn_netlink_by_name(ifname);
-	if (link) {
+	if (g_pn_netlink_by_modem(idx)) {
 		DBG("%s: %s", ifname, strerror(EBUSY));
 		return -EBUSY;
 	}
