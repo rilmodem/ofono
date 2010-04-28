@@ -54,7 +54,7 @@ gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
 	int sock;
 	int rc;
 
-	if (net == NULL || mtu >= MAX_PACKET)
+	if (net == NULL || mtu > MAX_PACKET)
 		return FALSE;
 
 	net->mtu = mtu;
