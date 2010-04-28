@@ -270,8 +270,6 @@ static void chat_cleanup(GAtChat *chat)
 	g_at_syntax_unref(chat->syntax);
 	chat->syntax = NULL;
 
-	chat->io = NULL;
-
 	if (chat->terminator_list) {
 		g_slist_foreach(chat->terminator_list,
 					(GFunc)free_terminator, NULL);
@@ -284,9 +282,9 @@ static void io_disconnect(gpointer user_data)
 {
 	GAtChat *chat = user_data;
 
-	g_at_io_set_read_handler(chat->io, NULL, NULL);
-	g_at_io_unref(chat->io);
 	chat_cleanup(chat);
+	g_at_io_unref(chat->io);
+	chat->io = NULL;
 
 	if (chat->user_disconnect)
 		chat->user_disconnect(chat->user_disconnect_data);
@@ -926,13 +924,12 @@ void g_at_chat_unref(GAtChat *chat)
 	if (is_zero == FALSE)
 		return;
 
-	if (chat->write_watch)
-		g_source_remove(chat->write_watch);
-
-	g_at_chat_suspend(chat);
-
-	g_at_io_unref(chat->io);
-	chat_cleanup(chat);
+	if (chat->io) {
+		g_at_chat_suspend(chat);
+		g_at_io_unref(chat->io);
+		chat->io = NULL;
+		chat_cleanup(chat);
+	}
 
 	if (chat->in_read_handler)
 		chat->destroyed = TRUE;
