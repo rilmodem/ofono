@@ -41,6 +41,12 @@ typedef enum {
 	PN_LINK_UP
 } GPhonetLinkState;
 
+enum {
+	PN_DEV_PC = 0x10,	/* PC Suite */
+	PN_DEV_HOST = 0x00,	/* Modem */
+	PN_DEV_SOS = 0x6C,	/* Symbian or Linux */
+};
+
 typedef void (*GPhonetNetlinkFunc)(GIsiModem *idx,
 			GPhonetLinkState st,
 			char const *iface,
@@ -53,6 +59,9 @@ GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,
 			void *data);
 
 void g_pn_netlink_stop(GPhonetNetlink *self);
+
+int g_pn_netlink_set_address(GIsiModem *, uint8_t local);
+int g_pn_netlink_add_route(GIsiModem *, uint8_t remote);
 
 #ifdef __cplusplus
 }
