@@ -49,7 +49,6 @@ void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc callback,
 void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtDisconnectFunc func,
 					gpointer user_data);
 void g_at_ppp_set_debug(GAtPPP *ppp, GAtDebugFunc func, gpointer user_data);
-void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename);
 void g_at_ppp_shutdown(GAtPPP *ppp);
 void g_at_ppp_ref(GAtPPP *ppp);
 void g_at_ppp_unref(GAtPPP *ppp);
