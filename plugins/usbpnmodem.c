@@ -49,6 +49,7 @@ static void usbpn_status_cb(GIsiModem *idx,
 				void *data)
 {
 	struct ofono_modem *modem;
+	int error;
 
 	DBG("Phonet link %s (%u) is %s",
 		ifname, g_isi_modem_index(idx),
@@ -65,6 +66,12 @@ static void usbpn_status_cb(GIsiModem *idx,
 
 	if (g_pn_netlink_by_modem(idx)) {
 		DBG("Modem for interface %s already exists", ifname);
+		return;
+	}
+
+	error = g_pn_netlink_set_address(idx, PN_DEV_SOS);
+	if (error && error != -EEXIST) {
+		DBG("g_pn_netlink_set_address: %s\n", strerror(-error));
 		return;
 	}
 
