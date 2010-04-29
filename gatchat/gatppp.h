@@ -59,7 +59,7 @@ gboolean g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
 const char *g_at_ppp_get_username(GAtPPP *ppp);
 const char *g_at_ppp_get_password(GAtPPP *ppp);
 
-GAtHDLC *g_at_ppp_get_hdlc(GAtPPP *ppp);
+void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename);
 
 #ifdef __cplusplus
 }

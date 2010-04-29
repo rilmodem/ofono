@@ -308,12 +308,12 @@ const char *g_at_ppp_get_password(GAtPPP *ppp)
 	return ppp->password;
 }
 
-GAtHDLC *g_at_ppp_get_hdlc(GAtPPP *ppp)
+void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename)
 {
 	if (ppp == NULL)
-		return NULL;
+		return;
 
-	return ppp->hdlc;
+	g_at_hdlc_set_recording(ppp->hdlc, filename);
 }
 
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,

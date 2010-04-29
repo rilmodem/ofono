@@ -273,7 +273,7 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_ppp_set_debug(ppp, gsmdial_debug, "PPP");
 
 	if (option_pppdump)
-		g_at_hdlc_set_recording(g_at_ppp_get_hdlc(ppp), option_pppdump);
+		g_at_ppp_set_recording(ppp, option_pppdump);
 
 	g_at_ppp_set_credentials(ppp, option_username, option_password);
 
