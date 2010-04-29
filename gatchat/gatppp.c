@@ -89,7 +89,7 @@ static inline gboolean ppp_drop_packet(GAtPPP *ppp, guint16 protocol)
 	case PPP_PHASE_DEAD:
 		return TRUE;
 	case PPP_PHASE_NETWORK:
-		if (ppp->net == NULL)
+		if (ppp->net == NULL && protocol == PPP_IP_PROTO)
 			return TRUE;
 		break;
 	}
