@@ -34,6 +34,7 @@ struct _GAtHDLC;
 typedef struct _GAtHDLC GAtHDLC;
 
 GAtHDLC *g_at_hdlc_new(GIOChannel *channel);
+GAtHDLC *g_at_hdlc_new_from_io(GAtIO *io);
 
 GAtHDLC *g_at_hdlc_ref(GAtHDLC *hdlc);
 void g_at_hdlc_unref(GAtHDLC *hdlc);

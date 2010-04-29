@@ -171,16 +171,16 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 	ring_buffer_drain(rbuf, pos);
 }
 
-GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
+GAtHDLC *g_at_hdlc_new_from_io(GAtIO *io)
 {
 	GAtHDLC *hdlc;
 	unsigned char *buf;
 
-	if (!channel)
+	if (io == NULL)
 		return NULL;
 
 	hdlc = g_try_new0(GAtHDLC, 1);
-	if (!hdlc)
+	if (hdlc == NULL)
 		return NULL;
 
 	hdlc->ref_count = 1;
@@ -191,8 +191,6 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 	hdlc->xmit_accm[0] = ~0U;
 	hdlc->xmit_accm[3] = 0x60000000; /* 0x7d, 0x7e */
 	hdlc->recv_accm = ~0U;
-
-	hdlc->io = g_at_io_new(channel);
 
 	hdlc->write_buffer = ring_buffer_new(BUFFER_SIZE * 2);
 	if (!hdlc->write_buffer)
@@ -207,6 +205,7 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 	if (!hdlc->decode_buffer)
 		goto error;
 
+	hdlc->io = g_at_io_ref(io);
 	g_at_io_set_read_handler(hdlc->io, new_bytes, hdlc);
 
 	hdlc->record_fd = -1;
@@ -214,9 +213,6 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 	return hdlc;
 
 error:
-	if (hdlc->io)
-		g_at_io_unref(hdlc->io);
-
 	if (hdlc->write_buffer)
 		ring_buffer_free(hdlc->write_buffer);
 
@@ -226,6 +222,21 @@ error:
 	g_free(hdlc);
 
 	return NULL;
+}
+
+GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
+{
+	GAtIO *io;
+	GAtHDLC *hdlc;
+
+	io = g_at_io_new(channel);
+	if (io == NULL)
+		return NULL;
+
+	hdlc = g_at_hdlc_new_from_io(io);
+	g_at_io_unref(io);
+
+	return hdlc;
 }
 
 GAtHDLC *g_at_hdlc_ref(GAtHDLC *hdlc)
