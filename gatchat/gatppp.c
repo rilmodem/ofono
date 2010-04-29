@@ -180,7 +180,6 @@ void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 	case PPP_PHASE_TERMINATION:
 		pppcp_signal_down(ppp->ipcp);
 		pppcp_signal_close(ppp->ipcp);
-		pppcp_signal_close(ppp->lcp);
 		break;
 	case PPP_PHASE_DEAD:
 		ppp_dead(ppp);
@@ -269,6 +268,7 @@ static void io_disconnect(gpointer user_data)
 	GAtPPP *ppp = user_data;
 
 	pppcp_signal_down(ppp->lcp);
+	ppp_enter_phase(ppp, PPP_PHASE_DEAD);
 }
 
 /* Administrative Open */

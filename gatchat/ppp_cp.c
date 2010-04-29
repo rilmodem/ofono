@@ -523,6 +523,7 @@ static void pppcp_send_terminate_ack(struct pppcp_data *data,
 {
 	struct pppcp_packet *packet;
 	struct pppcp_packet *pppcp_header = (struct pppcp_packet *) request;
+	struct pppcp_timer_data *timer_data = &data->terminate_timer_data;
 
 	pppcp_trace(data);
 
@@ -535,6 +536,7 @@ static void pppcp_send_terminate_ack(struct pppcp_data *data,
 			ntohs(pppcp_header->length));
 
 	pppcp_packet_free(packet);
+	pppcp_start_timer(timer_data);
 }
 
 /*
