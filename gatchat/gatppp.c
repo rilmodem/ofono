@@ -71,24 +71,44 @@ void ppp_debug(GAtPPP *ppp, const char *str)
 	ppp->debugf(str, ppp->debug_data);
 }
 
+/*
+ * Silently discard packets which are received when they shouldn't be
+ */
+static inline gboolean ppp_drop_packet(GAtPPP *ppp, guint16 protocol)
+{
+	switch (ppp->phase) {
+	case PPP_PHASE_ESTABLISHMENT:
+	case PPP_PHASE_TERMINATION:
+		if (protocol != LCP_PROTOCOL)
+			return TRUE;
+		break;
+	case PPP_PHASE_AUTHENTICATION:
+		if (protocol != LCP_PROTOCOL && protocol != CHAP_PROTOCOL)
+			return TRUE;
+		break;
+	case PPP_PHASE_DEAD:
+		return TRUE;
+	case PPP_PHASE_NETWORK:
+		if (ppp->net == NULL)
+			return TRUE;
+		break;
+	}
+
+	return FALSE;
+}
+
 static void ppp_receive(const unsigned char *buf, gsize len, void *data)
 {
 	GAtPPP *ppp = data;
 	guint16 protocol = ppp_proto(buf);
 	const guint8 *packet = ppp_info(buf);
 
-	/*
-	 * Any non-LCP packets received during Link Establishment
-	 * phase must be silently discarded.
-	 */
-	if (ppp->phase == PPP_PHASE_ESTABLISHMENT && protocol != LCP_PROTOCOL)
+	if (ppp_drop_packet(ppp, protocol))
 		return;
 
 	switch (protocol) {
 	case PPP_IP_PROTO:
-		/* If network is up & open, process the packet, if not, drop */
-		if (ppp->net)
-			ppp_net_process_packet(ppp->net, packet);
+		ppp_net_process_packet(ppp->net, packet);
 		break;
 	case LCP_PROTOCOL:
 		pppcp_process_packet(ppp->lcp, packet);
