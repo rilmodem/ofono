@@ -396,7 +396,7 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	g_free(ppp);
 }
 
-GAtPPP *g_at_ppp_new(GIOChannel *modem)
+static GAtPPP *ppp_init_common(GAtHDLC *hdlc)
 {
 	GAtPPP *ppp;
 
@@ -404,12 +404,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	if (!ppp)
 		return NULL;
 
-	ppp->hdlc = g_at_hdlc_new(modem);
-
-	if (ppp->hdlc == NULL) {
-		g_free(ppp);
-		return NULL;
-	}
+	ppp->hdlc = g_at_hdlc_ref(hdlc);
 
 	ppp->ref_count = 1;
 
@@ -426,6 +421,36 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
 	g_at_io_set_disconnect_function(g_at_hdlc_get_io(ppp->hdlc),
 						io_disconnect, ppp);
+
+	return ppp;
+}
+
+GAtPPP *g_at_ppp_new(GIOChannel *modem)
+{
+	GAtHDLC *hdlc;
+	GAtPPP *ppp;
+	
+	hdlc = g_at_hdlc_new(modem);
+	if (hdlc == NULL)
+		return NULL;
+
+	ppp = ppp_init_common(hdlc);
+	g_at_hdlc_unref(hdlc);
+
+	return ppp;
+}
+
+GAtPPP *g_at_ppp_new_from_io(GAtIO *io)
+{
+	GAtHDLC *hdlc;
+	GAtPPP *ppp;
+	
+	hdlc = g_at_hdlc_new_from_io(io);
+	if (hdlc == NULL)
+		return NULL;
+
+	ppp = ppp_init_common(hdlc);
+	g_at_hdlc_unref(hdlc);
 
 	return ppp;
 }

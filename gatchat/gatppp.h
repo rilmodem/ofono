@@ -43,7 +43,8 @@ typedef void (*GAtPPPConnectFunc)(GAtPPPConnectStatus success,
 					const char *dns1, const char *dns2,
 					gpointer user_data);
 
-GAtPPP * g_at_ppp_new(GIOChannel *modem);
+GAtPPP *g_at_ppp_new(GIOChannel *modem);
+GAtPPP *g_at_ppp_new_from_io(GAtIO *io);
 void g_at_ppp_open(GAtPPP *ppp);
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc callback,
 					gpointer user_data);
