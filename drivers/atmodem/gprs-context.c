@@ -81,23 +81,13 @@ static void at_cgact_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void ppp_connect(GAtPPPConnectStatus success,
-			const char *interface, const char *ip,
+static void ppp_connect(const char *interface, const char *ip,
 			const char *dns1, const char *dns2,
 			gpointer user_data)
 {
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	const char *dns[3];
-
-	if (success != G_AT_PPP_CONNECT_SUCCESS) {
-		gcd->active_context = 0;
-		gcd->state = STATE_IDLE;
-
-		CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL, NULL, NULL,
-					NULL, gcd->cb_data);
-		return;
-	}
 
 	dns[0] = dns1;
 	dns[1] = dns2;
@@ -109,10 +99,16 @@ static void ppp_connect(GAtPPPConnectStatus success,
 					dns, gcd->cb_data);
 }
 
-static void ppp_disconnect(gpointer user_data)
+static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 {
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	if (gcd->state == STATE_ENABLING) {
+		CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, FALSE, NULL,
+					NULL, NULL, NULL, gcd->cb_data);
+		return;
+	}
 
 	ofono_gprs_context_deactivated(gc, gcd->active_context);
 	gcd->active_context = 0;
