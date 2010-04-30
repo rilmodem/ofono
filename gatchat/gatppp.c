@@ -66,8 +66,9 @@ struct _GAtPPP {
 	char password[256];
 	GAtPPPConnectFunc connect_cb;
 	gpointer connect_data;
-	GAtDisconnectFunc disconnect_cb;
+	GAtPPPDisconnectFunc disconnect_cb;
 	gpointer disconnect_data;
+	GAtPPPDisconnectReason disconnect_reason;
 	GAtDebugFunc debugf;
 	gpointer debug_data;
 };
@@ -177,7 +178,8 @@ static void ppp_dead(GAtPPP *ppp)
 {
 	/* notify interested parties */
 	if (ppp->disconnect_cb)
-		ppp->disconnect_cb(ppp->disconnect_data);
+		ppp->disconnect_cb(ppp->disconnect_reason,
+					ppp->disconnect_data);
 }
 
 static inline void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
@@ -209,6 +211,7 @@ void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
 void ppp_auth_notify(GAtPPP *ppp, gboolean success)
 {
 	if (success == FALSE) {
+		ppp->disconnect_reason = G_AT_PPP_REASON_AUTH_FAIL;
 		pppcp_signal_close(ppp->lcp);
 		return;
 	}
@@ -225,20 +228,19 @@ void ppp_ipcp_up_notify(GAtPPP *ppp, const char *ip,
 {
 	ppp->net = ppp_net_new(ppp);
 
+	if (ppp->net == NULL) {
+		ppp->disconnect_reason = G_AT_PPP_REASON_NET_FAIL;
+		pppcp_signal_close(ppp->lcp);
+		return;
+	}
+
 	if (ppp_net_set_mtu(ppp->net, ppp->mtu) == FALSE)
 		g_printerr("Unable to set MTU\n");
 
 	ppp_enter_phase(ppp, PPP_PHASE_LINK_UP);
 
-	if (ppp->connect_cb == NULL)
-		return;
-
-	if (ppp->net == NULL)
-		ppp->connect_cb(G_AT_PPP_CONNECT_FAIL, NULL,
-					NULL, NULL, NULL, ppp->connect_data);
-	else
-		ppp->connect_cb(G_AT_PPP_CONNECT_SUCCESS,
-					ppp_net_get_interface(ppp->net),
+	if (ppp->connect_cb)
+		ppp->connect_cb(ppp_net_get_interface(ppp->net),
 					ip, dns1, dns2, ppp->connect_data);
 }
 
@@ -258,6 +260,7 @@ void ppp_ipcp_finished_notify(GAtPPP *ppp)
 		return;
 
 	/* Our IPCP parameter negotiation failed */
+	ppp->disconnect_reason = G_AT_PPP_REASON_IPCP_FAIL;
 	pppcp_signal_close(ppp->ipcp);
 	pppcp_signal_close(ppp->lcp);
 }
@@ -278,6 +281,9 @@ void ppp_lcp_down_notify(GAtPPP *ppp)
 {
 	if (ppp->phase == PPP_PHASE_NETWORK || ppp->phase == PPP_PHASE_LINK_UP)
 		pppcp_signal_down(ppp->ipcp);
+
+	if (ppp->disconnect_reason == G_AT_PPP_REASON_UNKNOWN)
+		ppp->disconnect_reason = G_AT_PPP_REASON_PEER_CLOSED;
 
 	ppp_enter_phase(ppp, PPP_PHASE_TERMINATION);
 }
@@ -312,6 +318,7 @@ static void io_disconnect(gpointer user_data)
 {
 	GAtPPP *ppp = user_data;
 
+	ppp->disconnect_reason = G_AT_PPP_REASON_LINK_DEAD;
 	pppcp_signal_down(ppp->lcp);
 	pppcp_signal_close(ppp->lcp);
 }
@@ -375,7 +382,7 @@ void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc func,
 	ppp->connect_data = user_data;
 }
 
-void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtDisconnectFunc func,
+void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtPPPDisconnectFunc func,
 							gpointer user_data)
 {
 	if (func == NULL)
@@ -399,6 +406,7 @@ void g_at_ppp_shutdown(GAtPPP *ppp)
 	if (ppp->phase == PPP_PHASE_DEAD || ppp->phase == PPP_PHASE_TERMINATION)
 		return;
 
+	ppp->disconnect_reason = G_AT_PPP_REASON_LOCAL_CLOSE;
 	pppcp_signal_close(ppp->lcp);
 }
 

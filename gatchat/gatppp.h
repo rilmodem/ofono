@@ -33,14 +33,20 @@ struct _GAtPPP;
 
 typedef struct _GAtPPP GAtPPP;
 
-typedef enum _GAtPPPConnectStatus {
-	G_AT_PPP_CONNECT_SUCCESS,
-	G_AT_PPP_CONNECT_FAIL
-} GAtPPPConnectStatus;
+typedef enum _GAtPPPDisconnectReason {
+	G_AT_PPP_REASON_UNKNOWN,
+	G_AT_PPP_REASON_AUTH_FAIL,	/* Failed to authenticate */
+	G_AT_PPP_REASON_IPCP_FAIL,	/* Failed to negotiate IPCP */
+	G_AT_PPP_REASON_NET_FAIL,	/* Failed to create tun */
+	G_AT_PPP_REASON_PEER_CLOSED,	/* Peer initiated a close */
+	G_AT_PPP_REASON_LINK_DEAD,	/* Link to the peer died */
+	G_AT_PPP_REASON_LOCAL_CLOSE,	/* Normal user close */
+} GAtPPPDisconnectReason;
 
-typedef void (*GAtPPPConnectFunc)(GAtPPPConnectStatus success,
-					const char *iface, const char *ip,
+typedef void (*GAtPPPConnectFunc)(const char *iface, const char *ip,
 					const char *dns1, const char *dns2,
+					gpointer user_data);
+typedef void (*GAtPPPDisconnectFunc)(GAtPPPDisconnectReason reason,
 					gpointer user_data);
 
 GAtPPP *g_at_ppp_new(GIOChannel *modem);
@@ -48,7 +54,7 @@ GAtPPP *g_at_ppp_new_from_io(GAtIO *io);
 void g_at_ppp_open(GAtPPP *ppp);
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc callback,
 					gpointer user_data);
-void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtDisconnectFunc func,
+void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtPPPDisconnectFunc func,
 					gpointer user_data);
 void g_at_ppp_set_debug(GAtPPP *ppp, GAtDebugFunc func, gpointer user_data);
 void g_at_ppp_shutdown(GAtPPP *ppp);
