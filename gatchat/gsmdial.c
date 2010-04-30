@@ -221,16 +221,10 @@ out:
 	return FALSE;
 }
 
-static void ppp_connect(GAtPPPConnectStatus success,
-			const char *iface, const char *ip,
+static void ppp_connect(const char *iface, const char *ip,
 			const char *dns1, const char *dns2,
 			gpointer user_data)
 {
-	if (success != G_AT_PPP_CONNECT_SUCCESS) {
-		g_print("Failed to create PPP interface!\n");
-		return;
-	}
-
 	/* print out the negotiated address and dns server */
 	g_print("Network Device: %s\n", iface);
 	g_print("IP Address: %s\n", ip);
@@ -238,9 +232,9 @@ static void ppp_connect(GAtPPPConnectStatus success,
 	g_print("Secondary DNS Server: %s\n", dns2);
 }
 
-static void ppp_disconnect(gpointer user_data)
+static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 {
-	g_print("PPP Link down\n");
+	g_print("PPP Link down: %d\n", reason);
 }
 
 static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
