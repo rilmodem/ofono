@@ -135,7 +135,7 @@ static void ipcp_up(struct pppcp_data *pppcp)
 	addr.s_addr = ipcp->dns2;
 	inet_ntop(AF_INET, &addr, dns2, INET_ADDRSTRLEN);
 
-	ppp_net_up_notify(pppcp_get_ppp(pppcp), ip[0] ? ip : NULL,
+	ppp_ipcp_up_notify(pppcp_get_ppp(pppcp), ip[0] ? ip : NULL,
 					dns1[0] ? dns1 : NULL,
 					dns2[0] ? dns2 : NULL);
 }
@@ -146,11 +146,12 @@ static void ipcp_down(struct pppcp_data *pppcp)
 
 	ipcp_reset_config_options(ipcp);
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
-	ppp_net_down_notify(pppcp_get_ppp(pppcp));
+	ppp_ipcp_down_notify(pppcp_get_ppp(pppcp));
 }
 
 static void ipcp_finished(struct pppcp_data *pppcp)
 {
+	ppp_ipcp_finished_notify(pppcp_get_ppp(pppcp));
 }
 
 static void ipcp_rca(struct pppcp_data *pppcp,

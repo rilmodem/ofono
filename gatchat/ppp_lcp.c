@@ -116,7 +116,7 @@ static void lcp_reset_config_options(struct lcp_data *lcp)
  */
 static void lcp_up(struct pppcp_data *pppcp)
 {
-	ppp_enter_phase(pppcp_get_ppp(pppcp), PPP_PHASE_AUTHENTICATION);
+	ppp_lcp_up_notify(pppcp_get_ppp(pppcp));
 }
 
 /*
@@ -128,7 +128,7 @@ static void lcp_down(struct pppcp_data *pppcp)
 
 	lcp_reset_config_options(lcp);
 	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
-	ppp_enter_phase(pppcp_get_ppp(pppcp), PPP_PHASE_TERMINATION);
+	ppp_lcp_down_notify(pppcp_get_ppp(pppcp));
 }
 
 /*
@@ -137,7 +137,7 @@ static void lcp_down(struct pppcp_data *pppcp)
  */
 static void lcp_finished(struct pppcp_data *pppcp)
 {
-	ppp_enter_phase(pppcp_get_ppp(pppcp), PPP_PHASE_DEAD);
+	ppp_lcp_finished_notify(pppcp_get_ppp(pppcp));
 }
 
 static void lcp_rca(struct pppcp_data *pppcp, const struct pppcp_packet *packet)

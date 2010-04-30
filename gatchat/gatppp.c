@@ -43,6 +43,15 @@
 #define DEFAULT_MRU	1500
 #define DEFAULT_MTU	1500
 
+enum ppp_phase {
+	PPP_PHASE_DEAD = 0,		/* Link dead */
+	PPP_PHASE_ESTABLISHMENT,	/* LCP started */
+	PPP_PHASE_AUTHENTICATION,	/* Auth started */
+	PPP_PHASE_NETWORK,		/* IPCP started */
+	PPP_PHASE_LINK_UP,		/* IPCP negotiation succeded, link up */
+	PPP_PHASE_TERMINATION,		/* LCP Terminate phase */
+};
+
 struct _GAtPPP {
 	gint ref_count;
 	enum ppp_phase phase;
@@ -89,8 +98,11 @@ static inline gboolean ppp_drop_packet(GAtPPP *ppp, guint16 protocol)
 	case PPP_PHASE_DEAD:
 		return TRUE;
 	case PPP_PHASE_NETWORK:
-		if (ppp->net == NULL && protocol == PPP_IP_PROTO)
+		if (protocol != LCP_PROTOCOL && protocol != CHAP_PROTOCOL &&
+					protocol != IPCP_PROTO)
 			return TRUE;
+		break;
+	case PPP_PHASE_LINK_UP:
 		break;
 	}
 
@@ -168,43 +180,13 @@ static void ppp_dead(GAtPPP *ppp)
 		ppp->disconnect_cb(ppp->disconnect_data);
 }
 
-void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
+static inline void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 {
-	/* don't do anything if we're already there */
-	if (ppp->phase == phase)
-		return;
-
-	/* set new phase */
+	g_print("Entering new phase: %d\n", phase);
 	ppp->phase = phase;
 
-	g_print("Entering new phase: %d\n", phase);
-
-	switch (phase) {
-	case PPP_PHASE_ESTABLISHMENT:
-		/* send an UP & OPEN events to the lcp layer */
-		pppcp_signal_up(ppp->lcp);
-		pppcp_signal_open(ppp->lcp);
-		break;
-	case PPP_PHASE_AUTHENTICATION:
-		/* If we don't expect auth, move on to network phase */
-		if (ppp->chap == NULL)
-			ppp_enter_phase(ppp, PPP_PHASE_NETWORK);
-
-		/* otherwise wait for the peer to send us a challenge */
-		break;
-	case PPP_PHASE_NETWORK:
-		/* Send UP & OPEN events to the IPCP layer */
-		pppcp_signal_open(ppp->ipcp);
-		pppcp_signal_up(ppp->ipcp);
-		break;
-	case PPP_PHASE_TERMINATION:
-		pppcp_signal_down(ppp->ipcp);
-		pppcp_signal_close(ppp->ipcp);
-		break;
-	case PPP_PHASE_DEAD:
+	if (phase == PPP_PHASE_DEAD)
 		ppp_dead(ppp);
-		break;
-	}
 }
 
 void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
@@ -226,19 +208,27 @@ void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
 
 void ppp_auth_notify(GAtPPP *ppp, gboolean success)
 {
-	if (success)
-		ppp_enter_phase(ppp, PPP_PHASE_NETWORK);
-	else
-		ppp_enter_phase(ppp, PPP_PHASE_TERMINATION);
+	if (success == FALSE) {
+		pppcp_signal_close(ppp->lcp);
+		return;
+	}
+
+	ppp_enter_phase(ppp, PPP_PHASE_NETWORK);
+
+	/* Send UP & OPEN events to the IPCP layer */
+	pppcp_signal_open(ppp->ipcp);
+	pppcp_signal_up(ppp->ipcp);
 }
 
-void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
+void ppp_ipcp_up_notify(GAtPPP *ppp, const char *ip,
 					const char *dns1, const char *dns2)
 {
 	ppp->net = ppp_net_new(ppp);
 
 	if (ppp_net_set_mtu(ppp->net, ppp->mtu) == FALSE)
 		g_printerr("Unable to set MTU\n");
+
+	ppp_enter_phase(ppp, PPP_PHASE_LINK_UP);
 
 	if (ppp->connect_cb == NULL)
 		return;
@@ -252,7 +242,7 @@ void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
 					ip, dns1, dns2, ppp->connect_data);
 }
 
-void ppp_net_down_notify(GAtPPP *ppp)
+void ppp_ipcp_down_notify(GAtPPP *ppp)
 {
 	/* Most likely we failed to create the interface */
 	if (ppp->net == NULL)
@@ -260,6 +250,41 @@ void ppp_net_down_notify(GAtPPP *ppp)
 
 	ppp_net_free(ppp->net);
 	ppp->net = NULL;
+}
+
+void ppp_ipcp_finished_notify(GAtPPP *ppp)
+{
+	if (ppp->phase != PPP_PHASE_NETWORK)
+		return;
+
+	/* Our IPCP parameter negotiation failed */
+	pppcp_signal_close(ppp->ipcp);
+	pppcp_signal_close(ppp->lcp);
+}
+
+void ppp_lcp_up_notify(GAtPPP *ppp)
+{
+	/* Wait for the peer to send us a challenge if we expect auth */
+	if (ppp->chap != NULL) {
+		ppp_enter_phase(ppp, PPP_PHASE_AUTHENTICATION);
+		return;
+	}
+
+	/* Otherwise proceed as if auth succeeded */
+	ppp_auth_notify(ppp, TRUE);
+}
+
+void ppp_lcp_down_notify(GAtPPP *ppp)
+{
+	if (ppp->phase == PPP_PHASE_NETWORK || ppp->phase == PPP_PHASE_LINK_UP)
+		pppcp_signal_down(ppp->ipcp);
+
+	ppp_enter_phase(ppp, PPP_PHASE_TERMINATION);
+}
+
+void ppp_lcp_finished_notify(GAtPPP *ppp)
+{
+	ppp_dead(ppp);
 }
 
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)
@@ -288,13 +313,17 @@ static void io_disconnect(gpointer user_data)
 	GAtPPP *ppp = user_data;
 
 	pppcp_signal_down(ppp->lcp);
-	ppp_enter_phase(ppp, PPP_PHASE_DEAD);
+	pppcp_signal_close(ppp->lcp);
 }
 
 /* Administrative Open */
 void g_at_ppp_open(GAtPPP *ppp)
 {
 	ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
+
+	/* send an UP & OPEN events to the lcp layer */
+	pppcp_signal_up(ppp->lcp);
+	pppcp_signal_open(ppp->lcp);
 }
 
 gboolean g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
@@ -367,6 +396,9 @@ void g_at_ppp_set_debug(GAtPPP *ppp, GAtDebugFunc func, gpointer user_data)
 
 void g_at_ppp_shutdown(GAtPPP *ppp)
 {
+	if (ppp->phase == PPP_PHASE_DEAD || ppp->phase == PPP_PHASE_TERMINATION)
+		return;
+
 	pppcp_signal_close(ppp->lcp);
 }
 

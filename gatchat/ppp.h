@@ -27,14 +27,6 @@
 #define PPP_IP_PROTO	0x0021
 #define MD5		5
 
-enum ppp_phase {
-	PPP_PHASE_DEAD = 0,		/* Link dead */
-	PPP_PHASE_ESTABLISHMENT,	/* LCP started */
-	PPP_PHASE_AUTHENTICATION,	/* Auth started */
-	PPP_PHASE_NETWORK,		/* IPCP started */
-	PPP_PHASE_TERMINATION,		/* LCP Terminate phase */
-};
-
 struct ppp_chap;
 struct ppp_net;
 
@@ -107,13 +99,16 @@ gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu);
 
 /* PPP functions related to main GAtPPP object */
 void ppp_debug(GAtPPP *ppp, const char *str);
-void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
 void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
 void ppp_auth_notify(GAtPPP *ppp, gboolean success);
-void ppp_net_up_notify(GAtPPP *ppp, const char *ip,
+void ppp_ipcp_up_notify(GAtPPP *ppp, const char *ip,
 					const char *dns1, const char *dns2);
-void ppp_net_down_notify(GAtPPP *ppp);
+void ppp_ipcp_down_notify(GAtPPP *ppp);
+void ppp_ipcp_finished_notify(GAtPPP *ppp);
+void ppp_lcp_up_notify(GAtPPP *ppp);
+void ppp_lcp_down_notify(GAtPPP *ppp);
+void ppp_lcp_finished_notify(GAtPPP *ppp);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_mtu(GAtPPP *ppp, const guint8 *data);
