@@ -42,6 +42,10 @@ ATTRS{idVendor}=="413c", ATTRS{idProduct}=="8147", ENV{OFONO_DRIVER}="mbm"
 ATTRS{idVendor}=="413c", ATTRS{idProduct}=="8183", ENV{OFONO_DRIVER}="mbm"
 ATTRS{idVendor}=="413c", ATTRS{idProduct}=="8184", ENV{OFONO_DRIVER}="mbm"
 
+# Dell F3307
+ATTRS{idVendor}=="413c", ATTRS{idProduct}=="818b", ENV{OFONO_DRIVER}="mbm"
+ATTRS{idVendor}=="413c", ATTRS{idProduct}=="818c", ENV{OFONO_DRIVER}="mbm"
+
 # Toshiba
 ATTRS{idVendor}=="0930", ATTRS{idProduct}=="130b", ENV{OFONO_DRIVER}="mbm"
 
