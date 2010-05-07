@@ -1132,13 +1132,16 @@ static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 
 	switch (new_state) {
 	case OFONO_SIM_STATE_NOT_PRESENT:
-		remove_all_atoms(&modem->atoms);
+		if (modem->pre_sim_atoms != NULL)
+			remove_all_atoms(&modem->atoms);
 		break;
 	case OFONO_SIM_STATE_INSERTED:
 		break;
 	case OFONO_SIM_STATE_READY:
-		modem->pre_sim_atoms = modem->atoms;
-		modem->atoms = NULL;
+		if (modem->pre_sim_atoms == NULL) {
+			modem->pre_sim_atoms = modem->atoms;
+			modem->atoms = NULL;
+		}
 
 		if (modem->driver->post_sim)
 			modem->driver->post_sim(modem);
