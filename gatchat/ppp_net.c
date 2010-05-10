@@ -95,7 +95,7 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 {
 	struct ppp_net *net = (struct ppp_net *) userdata;
 	GIOStatus status;
-	gchar buf[MAX_PACKET + 2];
+	gchar buf[MAX_PACKET + sizeof(struct ppp_header)];
 	gsize bytes_read;
 	GError *error = NULL;
 	struct ppp_header *ppp = (struct ppp_header *) buf;
