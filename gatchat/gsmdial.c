@@ -241,7 +241,7 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 
 static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	GIOChannel *channel;
+	GAtIO *io;
 
 	if (!ok) {
 		g_print("Unable to define context\n");
@@ -249,7 +249,7 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	/* get the data IO channel */
-	channel = g_at_chat_get_channel(modem);
+	io = g_at_chat_get_io(modem);
 
 	/*
 	 * shutdown gatchat or else it tries to take all the input
@@ -259,7 +259,7 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_suspend(modem);
 
 	/* open ppp */
-	ppp = g_at_ppp_new(channel);
+	ppp = g_at_ppp_new_from_io(io);
 	if (!ppp) {
 		g_print("Unable to create PPP object\n");
 		exit(1);
