@@ -290,7 +290,7 @@ void ppp_lcp_down_notify(GAtPPP *ppp)
 
 void ppp_lcp_finished_notify(GAtPPP *ppp)
 {
-	ppp_dead(ppp);
+	ppp_enter_phase(ppp, PPP_PHASE_DEAD);
 }
 
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm)
@@ -317,6 +317,9 @@ void ppp_set_mtu(GAtPPP *ppp, const guint8 *data)
 static void io_disconnect(gpointer user_data)
 {
 	GAtPPP *ppp = user_data;
+
+	if (ppp->phase == PPP_PHASE_DEAD)
+		return;
 
 	ppp->disconnect_reason = G_AT_PPP_REASON_LINK_DEAD;
 	pppcp_signal_down(ppp->lcp);
