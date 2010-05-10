@@ -83,7 +83,7 @@ static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 	 */
 	digest_len = g_checksum_type_get_length(chap->method);
 	response_length = digest_len + sizeof(*header) + 1;
-	ppp_packet = g_try_malloc0(response_length + 2);
+	ppp_packet = g_try_malloc0(response_length + sizeof(struct ppp_header));
 	if (!ppp_packet)
 		goto challenge_out;
 

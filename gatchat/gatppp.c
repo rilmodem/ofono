@@ -148,7 +148,8 @@ static void ppp_receive(const unsigned char *buf, gsize len, void *data)
  */
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 {
-	guint16 proto = get_host_short(packet);
+	struct ppp_header *header = (struct ppp_header *) packet;
+	guint16 proto = ppp_proto(packet);
 	guint8 code;
 	gboolean lcp = (proto == LCP_PROTOCOL);
 	guint32 xmit_accm = 0;
@@ -167,7 +168,11 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 		g_at_hdlc_set_xmit_accm(ppp->hdlc, ~0U);
 	}
 
-	if (g_at_hdlc_send(ppp->hdlc, packet, infolen + 2) == FALSE)
+	header->address = PPP_ADDR_FIELD;
+	header->control = PPP_CTRL;
+
+	if (g_at_hdlc_send(ppp->hdlc, packet,
+			infolen + sizeof(*header)) == FALSE)
 		g_print("Failed to send a frame\n");
 
 	if (lcp)

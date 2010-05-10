@@ -61,10 +61,8 @@ static const char *pppcp_event_strings[] = {
 	g_free(str); \
 } while (0);
 
-#define PPP_HEADROOM	2
-
 #define pppcp_to_ppp_packet(p) \
-	(((guint8 *) p) - PPP_HEADROOM)
+	(((guint8 *) p) - sizeof(struct ppp_header))
 
 #define INITIAL_RESTART_TIMEOUT	3	/* restart interval in seconds */
 #define MAX_TERMINATE		2
@@ -206,7 +204,7 @@ static struct pppcp_packet *pppcp_packet_new(struct pppcp_data *data,
 	struct ppp_header *ppp_packet;
 	guint16 packet_length = bufferlen + sizeof(*packet);
 
-	ppp_packet = g_try_malloc0(packet_length + 2);
+	ppp_packet = g_try_malloc0(packet_length + sizeof(*ppp_packet));
 	if (!ppp_packet)
 		return NULL;
 
