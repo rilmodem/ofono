@@ -2234,13 +2234,14 @@ static void destroy_send_sms(struct stk_command *command)
 {
 	g_free(command->send_sms.alpha_id);
 	g_free(command->send_sms.address.number);
+	g_free(command->send_sms.cdma_sms.array);
 }
 
 static gboolean parse_send_sms(struct stk_command *command, 
 					struct comprehension_tlv_iter *iter)
 {
 	struct stk_command_send_sms *obj = &command->send_sms;
-	struct gsm_sms_tpdu tpdu;
+	struct gsm_sms_tpdu gsm_tpdu;
 	gboolean ret;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
@@ -2254,7 +2255,9 @@ static gboolean parse_send_sms(struct stk_command *command,
 				STK_DATA_OBJECT_TYPE_ADDRESS, 0,
 				&obj->address,
 				STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU, 0,
-				&tpdu,
+				&gsm_tpdu,
+				STK_DATA_OBJECT_TYPE_CDMA_SMS_TPDU, 0,
+				&obj->cdma_sms,
 				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
 				&obj->icon_id,
 				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
@@ -2268,8 +2271,13 @@ static gboolean parse_send_sms(struct stk_command *command,
 
 	command->destructor = destroy_send_sms;
 
-	if (sms_decode(tpdu.tpdu, tpdu.len, TRUE, tpdu.len, &obj->gsm_sms)
-			== FALSE) {
+	if (gsm_tpdu.len > 0) {
+		if (sms_decode(gsm_tpdu.tpdu, gsm_tpdu.len, TRUE, gsm_tpdu.len,
+				&obj->gsm_sms) == FALSE) {
+			command->destructor(command);
+			return FALSE;
+		}
+	} else if (obj->cdma_sms.len == 0) {
 		command->destructor(command);
 		return FALSE;
 	}
