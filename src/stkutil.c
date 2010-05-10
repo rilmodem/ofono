@@ -511,17 +511,8 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_tone(struct comprehension_tlv_iter *iter,
 					void *user)
 {
-	unsigned char *tone = user;
-	const unsigned char *data;
-
-	if (comprehension_tlv_iter_get_length(iter) !=  1)
-		return FALSE;
-
-	data = comprehension_tlv_iter_get_data(iter);
-
-	*tone = data[0];
-
-	return TRUE;
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
 }
 
 /* Defined in TS 102.223 Section 8.18 */
