@@ -43,6 +43,9 @@
 #define DEFAULT_MRU	1500
 #define DEFAULT_MTU	1500
 
+#define PPP_ADDR_FIELD	0xff
+#define PPP_CTRL	0x03
+
 enum ppp_phase {
 	PPP_PHASE_DEAD = 0,		/* Link dead */
 	PPP_PHASE_ESTABLISHMENT,	/* LCP started */

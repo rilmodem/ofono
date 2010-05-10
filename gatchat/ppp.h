@@ -26,8 +26,6 @@
 #define IPCP_PROTO	0x8021
 #define PPP_IP_PROTO	0x0021
 #define MD5		5
-#define PPP_ADDR_FIELD	0xff
-#define PPP_CTRL	0x03
 
 struct ppp_chap;
 struct ppp_net;
