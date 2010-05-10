@@ -29,6 +29,7 @@ extern "C" {
 #include "gatresult.h"
 #include "gatsyntax.h"
 #include "gatutil.h"
+#include "gatio.h"
 
 struct _GAtChat;
 
@@ -42,6 +43,7 @@ GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax);
 GAtChat *g_at_chat_new_blocking(GIOChannel *channel, GAtSyntax *syntax);
 
 GIOChannel *g_at_chat_get_channel(GAtChat *chat);
+GAtIO *g_at_chat_get_io(GAtChat *chat);
 
 GAtChat *g_at_chat_ref(GAtChat *chat);
 void g_at_chat_unref(GAtChat *chat);

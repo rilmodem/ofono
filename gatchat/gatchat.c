@@ -876,6 +876,14 @@ GIOChannel *g_at_chat_get_channel(GAtChat *chat)
 	return g_at_io_get_channel(chat->io);
 }
 
+GAtIO *g_at_chat_get_io(GAtChat *chat)
+{
+	if (chat == NULL)
+		return NULL;
+
+	return chat->io;
+}
+
 GAtChat *g_at_chat_ref(GAtChat *chat)
 {
 	if (chat == NULL)
