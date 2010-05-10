@@ -794,7 +794,7 @@ struct stk_command_display_text {
 	struct stk_icon_id icon_id;
 	ofono_bool_t immediate_response;
 	struct stk_duration duration;
-	struct stk_text_attribute text_attribute;
+	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
 };
 
@@ -808,10 +808,10 @@ struct stk_command_get_inkey {
 
 struct stk_command_get_input {
 	char *text;
-	struct stk_response_length response_length;
+	struct stk_response_length resp_len;
 	char *default_text;
 	struct stk_icon_id icon_id;
-	struct stk_text_attribute text_attribute;
+	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
 };
 
@@ -820,7 +820,7 @@ struct stk_command_send_sms {
 	struct stk_address address;
 	struct sms gsm_sms;
 	struct stk_icon_id icon_id;
-	struct stk_text_attribute text_attribute;
+	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
 };
 

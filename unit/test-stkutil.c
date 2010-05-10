@@ -113,7 +113,7 @@ struct display_text_test {
 	struct stk_icon_id icon_id;
 	ofono_bool_t immediate_response;
 	struct stk_duration duration;
-	struct stk_text_attribute text_attribute;
+	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
 };
 
@@ -352,8 +352,8 @@ static void test_display_text(gconstpointer data)
 	check_common_bool(command->display_text.immediate_response,
 						test->immediate_response);
 	check_duration(&command->display_text.duration, &test->duration);
-	check_text_attr(&command->display_text.text_attribute,
-						&test->text_attribute);
+	check_text_attr(&command->display_text.text_attr,
+						&test->text_attr);
 	check_frame_id(&command->display_text.frame_id, &test->frame_id);
 
 	stk_command_free(command);
@@ -1299,10 +1299,10 @@ struct get_input_test {
 	unsigned int pdu_len;
 	unsigned char qualifier;
 	char *text;
-	struct stk_response_length response_length;
+	struct stk_response_length resp_len;
 	char *default_text;
 	struct stk_icon_id icon_id;
-	struct stk_text_attribute text_attribute;
+	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
 };
 
@@ -1864,7 +1864,7 @@ static struct get_input_test get_input_data_111 = {
 	.pdu_len = sizeof(get_input_111),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -1875,7 +1875,7 @@ static struct get_input_test get_input_data_121 = {
 	.pdu_len = sizeof(get_input_121),
 	.qualifier = 0x08,
 	.text = "Enter 67*#+",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -1886,7 +1886,7 @@ static struct get_input_test get_input_data_131 = {
 	.pdu_len = sizeof(get_input_131),
 	.qualifier = 0x01,
 	.text = "Enter AbCdE",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -1897,7 +1897,7 @@ static struct get_input_test get_input_data_141 = {
 	.pdu_len = sizeof(get_input_141),
 	.qualifier = 0x04,
 	.text = "Password 1<SEND>2345678",
-	.response_length = {
+	.resp_len = {
 		.min = 4,
 		.max = 8
 	}
@@ -1908,7 +1908,7 @@ static struct get_input_test get_input_data_151 = {
 	.pdu_len = sizeof(get_input_151),
 	.qualifier = 0x00,
 	.text = "Enter 1..9,0..9,0(1)",
-	.response_length = {
+	.resp_len = {
 		.min = 1,
 		.max = 20
 	}
@@ -1919,7 +1919,7 @@ static struct get_input_test get_input_data_161 = {
 	.pdu_len = sizeof(get_input_161),
 	.qualifier = 0x00,
 	.text = "<GO-BACKWARDS>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 8
 	}
@@ -1930,7 +1930,7 @@ static struct get_input_test get_input_data_171 = {
 	.pdu_len = sizeof(get_input_171),
 	.qualifier = 0x00,
 	.text = "<ABORT>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 8
 	}
@@ -1944,7 +1944,7 @@ static struct get_input_test get_input_data_181 = {
 		"***4444444444###***5555555555###***6666666666###"
 		"***7777777777###***8888888888###***9999999999###"
 		"***0000000000###",
-	.response_length = {
+	.resp_len = {
 		.min = 160,
 		.max = 160
 	}
@@ -1955,7 +1955,7 @@ static struct get_input_test get_input_data_191 = {
 	.pdu_len = sizeof(get_input_191),
 	.qualifier = 0x00,
 	.text = "<SEND>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 1
 	}
@@ -1966,7 +1966,7 @@ static struct get_input_test get_input_data_1101 = {
 	.pdu_len = sizeof(get_input_1101),
 	.qualifier = 0x00,
 	.text = NULL,
-	.response_length = {
+	.resp_len = {
 		.min = 1,
 		.max = 5
 	}
@@ -1977,7 +1977,7 @@ static struct get_input_test get_input_data_211 = {
 	.pdu_len = sizeof(get_input_211),
 	.qualifier = 0x00,
 	.text = "<TIME-OUT>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 10
 	}
@@ -1988,7 +1988,7 @@ static struct get_input_test get_input_data_311 = {
 	.pdu_len = sizeof(get_input_311),
 	.qualifier = 0x01,
 	.text = "ЗДРАВСТВУЙТЕ",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2001,7 +2001,7 @@ static struct get_input_test get_input_data_321 = {
 	.text = "ЗДРАВСТВУЙТЕЗДРАВСТВУЙТЕ"
 		"ЗДРАВСТВУЙТЕЗДРАВСТВУЙТЕ"
 		"ЗДРАВСТВУЙТЕЗДРАВСТВУЙ",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2012,7 +2012,7 @@ static struct get_input_test get_input_data_411 = {
 	.pdu_len = sizeof(get_input_411),
 	.qualifier = 0x03,
 	.text = "Enter Hello",
-	.response_length = {
+	.resp_len = {
 		.min = 12,
 		.max = 12
 	}
@@ -2023,7 +2023,7 @@ static struct get_input_test get_input_data_421 = {
 	.pdu_len = sizeof(get_input_421),
 	.qualifier = 0x03,
 	.text = "Enter Hello",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 0xFF
 	}
@@ -2034,7 +2034,7 @@ static struct get_input_test get_input_data_511 = {
 	.pdu_len = sizeof(get_input_511),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
@@ -2046,7 +2046,7 @@ static struct get_input_test get_input_data_521 = {
 	.pdu_len = sizeof(get_input_521),
 	.qualifier = 0x00,
 	.text = "Enter:",
-	.response_length = {
+	.resp_len = {
 		.min = 160,
 		.max = 160
 	},
@@ -2061,7 +2061,7 @@ static struct get_input_test get_input_data_611 = {
 	.pdu_len = sizeof(get_input_611),
 	.qualifier = 0x00,
 	.text = "<NO-ICON>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 10
 	},
@@ -2076,7 +2076,7 @@ static struct get_input_test get_input_data_621 = {
 	.pdu_len = sizeof(get_input_621),
 	.qualifier = 0x00,
 	.text = "<BASIC-ICON>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 10
 	},
@@ -2091,7 +2091,7 @@ static struct get_input_test get_input_data_631 = {
 	.pdu_len = sizeof(get_input_631),
 	.qualifier = 0x00,
 	.text = "<NO-ICON>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 10
 	},
@@ -2106,7 +2106,7 @@ static struct get_input_test get_input_data_641 = {
 	.pdu_len = sizeof(get_input_641),
 	.qualifier = 0x00,
 	.text = "<COLOUR-ICON>",
-	.response_length = {
+	.resp_len = {
 		.min = 0,
 		.max = 10
 	},
@@ -2121,7 +2121,7 @@ static struct get_input_test get_input_data_711 = {
 	.pdu_len = sizeof(get_input_711),
 	.qualifier = 0x80,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2132,11 +2132,11 @@ static struct get_input_test get_input_data_811 = {
 	.pdu_len = sizeof(get_input_811),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2147,7 +2147,7 @@ static struct get_input_test get_input_data_812 = {
 	.pdu_len = sizeof(get_input_812),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2158,11 +2158,11 @@ static struct get_input_test get_input_data_821 = {
 	.pdu_len = sizeof(get_input_821),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x01, 0xB4 }
 	}
@@ -2173,7 +2173,7 @@ static struct get_input_test get_input_data_822 = {
 	.pdu_len = sizeof(get_input_822),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2184,11 +2184,11 @@ static struct get_input_test get_input_data_831 = {
 	.pdu_len = sizeof(get_input_831),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x02, 0xB4 }
 	}
@@ -2199,7 +2199,7 @@ static struct get_input_test get_input_data_832 = {
 	.pdu_len = sizeof(get_input_832),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2210,11 +2210,11 @@ static struct get_input_test get_input_data_841 = {
 	.pdu_len = sizeof(get_input_841),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x04, 0xB4 }
 	}
@@ -2225,11 +2225,11 @@ static struct get_input_test get_input_data_842 = {
 	.pdu_len = sizeof(get_input_842),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2240,7 +2240,7 @@ static struct get_input_test get_input_data_843 = {
 	.pdu_len = sizeof(get_input_843),
 	.qualifier = 0x00,
 	.text = "Enter 33333",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2251,11 +2251,11 @@ static struct get_input_test get_input_data_851 = {
 	.pdu_len = sizeof(get_input_851),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x08, 0xB4 }
 	}
@@ -2266,11 +2266,11 @@ static struct get_input_test get_input_data_852 = {
 	.pdu_len = sizeof(get_input_852),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2281,7 +2281,7 @@ static struct get_input_test get_input_data_853 = {
 	.pdu_len = sizeof(get_input_853),
 	.qualifier = 0x00,
 	.text = "Enter 33333",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2292,11 +2292,11 @@ static struct get_input_test get_input_data_861 = {
 	.pdu_len = sizeof(get_input_861),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x10, 0xB4 }
 	}
@@ -2307,11 +2307,11 @@ static struct get_input_test get_input_data_862 = {
 	.pdu_len = sizeof(get_input_862),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2322,7 +2322,7 @@ static struct get_input_test get_input_data_863 = {
 	.pdu_len = sizeof(get_input_863),
 	.qualifier = 0x00,
 	.text = "Enter 33333",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2333,11 +2333,11 @@ static struct get_input_test get_input_data_871 = {
 	.pdu_len = sizeof(get_input_871),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x20, 0xB4 }
 	}
@@ -2348,11 +2348,11 @@ static struct get_input_test get_input_data_872 = {
 	.pdu_len = sizeof(get_input_872),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2363,7 +2363,7 @@ static struct get_input_test get_input_data_873 = {
 	.pdu_len = sizeof(get_input_873),
 	.qualifier = 0x00,
 	.text = "Enter 33333",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2374,11 +2374,11 @@ static struct get_input_test get_input_data_881 = {
 	.pdu_len = sizeof(get_input_881),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x40, 0xB4 }
 	}
@@ -2389,11 +2389,11 @@ static struct get_input_test get_input_data_882 = {
 	.pdu_len = sizeof(get_input_882),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2404,7 +2404,7 @@ static struct get_input_test get_input_data_883 = {
 	.pdu_len = sizeof(get_input_883),
 	.qualifier = 0x00,
 	.text = "Enter 33333",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2415,11 +2415,11 @@ static struct get_input_test get_input_data_891 = {
 	.pdu_len = sizeof(get_input_891),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x80, 0xB4 }
 	}
@@ -2430,11 +2430,11 @@ static struct get_input_test get_input_data_892 = {
 	.pdu_len = sizeof(get_input_892),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2445,7 +2445,7 @@ static struct get_input_test get_input_data_893 = {
 	.pdu_len = sizeof(get_input_893),
 	.qualifier = 0x00,
 	.text = "Enter 33333",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2456,11 +2456,11 @@ static struct get_input_test get_input_data_8101 = {
 	.pdu_len = sizeof(get_input_8101),
 	.qualifier = 0x00,
 	.text = "Enter 12345",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	},
-	.text_attribute = {
+	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
 	}
@@ -2471,7 +2471,7 @@ static struct get_input_test get_input_data_8102 = {
 	.pdu_len = sizeof(get_input_8102),
 	.qualifier = 0x00,
 	.text = "Enter 22222",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2482,7 +2482,7 @@ static struct get_input_test get_input_data_911 = {
 	.pdu_len = sizeof(get_input_911),
 	.qualifier = 0x01,
 	.text = "你好",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2496,7 +2496,7 @@ static struct get_input_test get_input_data_921 = {
 		"你好你好你好你好你好你好你好你好你好你好"
 		"你好你好你好你好你好你好你好你好你好你好"
 		"你好你好你好你好你好",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2507,7 +2507,7 @@ static struct get_input_test get_input_data_1011 = {
 	.pdu_len = sizeof(get_input_1011),
 	.qualifier = 0x03,
 	.text = "Enter Hello",
-	.response_length = {
+	.resp_len = {
 		.min = 2,
 		.max = 2
 	}
@@ -2518,7 +2518,7 @@ static struct get_input_test get_input_data_1021 = {
 	.pdu_len = sizeof(get_input_1021),
 	.qualifier = 0x03,
 	.text = "Enter Hello",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 0xFF
 	}
@@ -2529,7 +2529,7 @@ static struct get_input_test get_input_data_1111 = {
 	.pdu_len = sizeof(get_input_1111),
 	.qualifier = 0x01,
 	.text = "ル",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2543,7 +2543,7 @@ static struct get_input_test get_input_data_1121 = {
 		"ルルルルルルルルルルルルルルルルルルルル"
 		"ルルルルルルルルルルルルルルルルルルルル"
 		"ルルルルルルルルルル",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 5
 	}
@@ -2554,7 +2554,7 @@ static struct get_input_test get_input_data_1211 = {
 	.pdu_len = sizeof(get_input_1211),
 	.qualifier = 0x03,
 	.text = "Enter Hello",
-	.response_length = {
+	.resp_len = {
 		.min = 2,
 		.max = 2
 	}
@@ -2565,7 +2565,7 @@ static struct get_input_test get_input_data_1221 = {
 	.pdu_len = sizeof(get_input_1221),
 	.qualifier = 0x03,
 	.text = "Enter Hello",
-	.response_length = {
+	.resp_len = {
 		.min = 5,
 		.max = 0xFF
 	}
@@ -2591,12 +2591,11 @@ static void test_get_input(gconstpointer data)
 	if (test->text)
 		g_assert(command->get_input.text);
 	check_text(command->get_input.text, test->text);
-	check_response_length(&command->get_input.response_length,
-				&test->response_length);
+	check_response_length(&command->get_input.resp_len, &test->resp_len);
 	check_text(command->get_input.default_text, test->default_text);
 	check_icon_id(&command->get_input.icon_id, &test->icon_id);
-	check_text_attr(&command->get_input.text_attribute,
-						&test->text_attribute);
+	check_text_attr(&command->get_input.text_attr,
+						&test->text_attr);
 	check_frame_id(&command->get_input.frame_id, &test->frame_id);
 
 	stk_command_free(command);
