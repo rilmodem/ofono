@@ -234,9 +234,12 @@ static void ppp_connect(const char *iface, const char *ip,
 
 static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 {
+	char buf[64];
 	g_print("PPP Link down: %d\n", reason);
-	g_at_chat_resume(control);
 	g_at_chat_resume(modem);
+
+	sprintf(buf, "AT+CFUN=%u", option_offmode);
+	g_at_chat_send(control, buf, none_prefix, power_down, NULL, NULL);
 }
 
 static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -255,7 +258,6 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * shutdown gatchat or else it tries to take all the input
 	 * from the modem and does not let PPP get it.
 	 */
-	g_at_chat_suspend(control);
 	g_at_chat_suspend(modem);
 
 	/* open ppp */
