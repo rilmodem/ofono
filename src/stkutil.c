@@ -2200,6 +2200,45 @@ static gboolean parse_more_time(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_play_tone(struct stk_command *command)
+{
+	g_free(command->play_tone.alpha_id);
+}
+
+static gboolean parse_play_tone(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_play_tone *obj = &command->play_tone;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_EARPIECE)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_TONE, 0,
+				&obj->tone,
+				STK_DATA_OBJECT_TYPE_DURATION, 0,
+				&obj->duration,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_play_tone;
+
+	return TRUE;
+}
+
 static void destroy_send_sms(struct stk_command *command)
 {
 	g_free(command->send_sms.alpha_id);
@@ -2316,6 +2355,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_MORE_TIME:
 		ok = parse_more_time(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_PLAY_TONE:
+		ok = parse_play_tone(command, &iter);
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
 		ok = parse_send_sms(command, &iter);
