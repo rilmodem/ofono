@@ -270,7 +270,7 @@ static struct display_text_test display_text_data_511 = {
 	.qualifier = 0x80,
 	.text = "Basic Icon",
 	.icon_id = {
-		.qualifier = 0x00,
+		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
 		.id = 0x01
 	}
 };
@@ -281,7 +281,7 @@ static struct display_text_test display_text_data_521 = {
 	.qualifier = 0x80,
 	.text = "Colour Icon",
 	.icon_id = {
-		.qualifier = 0x00,
+		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
 		.id = 0x02
 	}
 };
@@ -292,7 +292,7 @@ static struct display_text_test display_text_data_531 = {
 	.qualifier = 0x80,
 	.text = "Basic Icon",
 	.icon_id = {
-		.qualifier = 0x01,
+		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
 		.id = 0x01
 	}
 };
