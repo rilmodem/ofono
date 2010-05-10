@@ -2149,6 +2149,7 @@ static gboolean parse_get_inkey(struct stk_command *command,
 static void destroy_get_input(struct stk_command *command)
 {
 	g_free(command->get_input.text);
+	g_free(command->get_input.default_text);
 }
 
 static gboolean parse_get_input(struct stk_command *command,
