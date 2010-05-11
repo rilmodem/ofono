@@ -75,6 +75,7 @@ struct sms_data {
 	gboolean cnma_enabled;
 	char *cnma_ack_pdu;
 	int cnma_ack_pdu_len;
+	guint timeout_source;
 	GAtChat *chat;
 	unsigned int vendor;
 };
@@ -802,7 +803,7 @@ static void at_cpms_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return at_sms_not_supported(sms);
 	}
 
-	g_timeout_add_seconds(1, set_cpms, sms);
+	data->timeout_source = g_timeout_add_seconds(1, set_cpms, sms);
 }
 
 static gboolean set_cpms(gpointer user_data)
@@ -818,6 +819,9 @@ static gboolean set_cpms(gpointer user_data)
 
 	g_at_chat_send(data->chat, buf, cpms_prefix,
 			at_cpms_set_cb, sms, NULL);
+
+	data->timeout_source = 0;
+
 	return FALSE;
 }
 
@@ -839,7 +843,7 @@ static void at_cmgf_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return at_sms_not_supported(sms);
 	}
 
-	g_timeout_add_seconds(1, set_cmgf, sms);
+	data->timeout_source = g_timeout_add_seconds(1, set_cmgf, sms);
 }
 
 static gboolean set_cmgf(gpointer user_data)
@@ -849,6 +853,9 @@ static gboolean set_cmgf(gpointer user_data)
 
 	g_at_chat_send(data->chat, "AT+CMGF=0", cmgf_prefix,
 			at_cmgf_set_cb, sms, NULL);
+
+	data->timeout_source = 0;
+
 	return FALSE;
 }
 
@@ -1069,6 +1076,9 @@ static void at_sms_remove(struct ofono_sms *sms)
 
 	if (data->cnma_ack_pdu)
 		g_free(data->cnma_ack_pdu);
+
+	if (data->timeout_source > 0)
+		g_source_remove(data->timeout_source);
 
 	g_free(data);
 }
