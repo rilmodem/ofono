@@ -64,10 +64,10 @@ struct isi_data {
 	GIsiModem *idx;
 	GIsiClient *client;
 	GPhonetNetlink *link;
+	GPhonetLinkState linkstate;
 	unsigned interval;
 	int reported;
 	int mtc_state;
-	int iface_up;
 };
 
 static void report_powered(struct isi_data *isi, ofono_bool_t powered)
@@ -131,7 +131,7 @@ static bool mtc_poll_query_cb(GIsiClient *client, const void *restrict data,
 			MTC_STATE_QUERY_REQ, 0x00, 0x00
 		};
 
-		if (!isi->iface_up)
+		if (isi->linkstate != PN_LINK_UP)
 			return true;
 
 		isi->interval *= 2;
@@ -197,7 +197,7 @@ static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
 	if (!alive) {
 		DBG("MTC client: %s", strerror(-g_isi_client_error(client)));
 
-		if (isi->iface_up)
+		if (isi->linkstate == PN_LINK_UP)
 			g_isi_request_make(client, msg, sizeof(msg),
 						isi->interval = MTC_TIMEOUT,
 						mtc_poll_query_cb, opaque);
@@ -227,7 +227,7 @@ static void phonet_status_cb(GIsiModem *idx,
 		st == PN_LINK_REMOVED ? "removed" :
 		st == PN_LINK_DOWN ? "down" : "up");
 
-	isi->iface_up = st == PN_LINK_UP;
+	isi->linkstate = st;
 
 	if (st == PN_LINK_UP)
 		g_isi_verify(isi->client, reachable_cb, isi);
