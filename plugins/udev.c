@@ -36,6 +36,7 @@
 #include <ofono/log.h>
 
 static GSList *modem_list = NULL;
+static GHashTable *devpath_list = NULL;
 
 static struct ofono_modem *find_modem(const char *devpath)
 {
@@ -259,7 +260,7 @@ static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
 	struct udev_device *parent;
-	const char *devpath, *driver;
+	const char *devpath, *curpath, *driver;
 
 	parent = udev_device_get_parent(udev_device);
 	if (parent == NULL)
@@ -295,6 +296,12 @@ static void add_modem(struct udev_device *udev_device)
 		modem_list = g_slist_prepend(modem_list, modem);
 	}
 
+	curpath = udev_device_get_devpath(udev_device);
+	if (curpath == NULL)
+		return;
+
+	g_hash_table_insert(devpath_list, g_strdup(curpath), g_strdup(devpath));
+
 	if (g_strcmp0(driver, "mbm") == 0)
 		add_mbm(modem, udev_device);
 	else if (g_strcmp0(driver, "hso") == 0)
@@ -307,30 +314,25 @@ static void add_modem(struct udev_device *udev_device)
 		add_novatel(modem, udev_device);
 }
 
+static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
+{
+	const char *path = value;
+	const char *devpath = user_data;
+
+	return g_str_equal(path, devpath);
+}
+
 static void remove_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
-	struct udev_device *parent;
-	const char *devpath, *driver = NULL;
+	const char *curpath = udev_device_get_devpath(udev_device);
+	char *devpath, *remove;
 
-	parent = udev_device_get_parent(udev_device);
-	if (parent == NULL)
+	if (curpath == NULL)
 		return;
 
-	driver = get_driver(parent);
-	if (driver == NULL) {
-		parent = udev_device_get_parent(parent);
-		driver = get_driver(parent);
-		if (driver == NULL) {
-			parent = udev_device_get_parent(parent);
-			driver = get_driver(parent);
-			if (driver == NULL)
-				return;
-		}
-	}
-
-	devpath = udev_device_get_devpath(parent);
-	if (devpath == NULL)
+	devpath = g_hash_table_lookup(devpath_list, curpath);
+	if (!devpath)
 		return;
 
 	modem = find_modem(devpath);
@@ -340,6 +342,12 @@ static void remove_modem(struct udev_device *udev_device)
 	modem_list = g_slist_remove(modem_list, modem);
 
 	ofono_modem_remove(modem);
+
+	remove = g_strdup(devpath);
+
+	g_hash_table_foreach_remove(devpath_list, devpath_remove, remove);
+
+	g_free(remove);
 }
 
 static void enumerate_devices(struct udev *context)
@@ -444,15 +452,24 @@ static void udev_start(void)
 
 static int udev_init(void)
 {
+	devpath_list = g_hash_table_new_full(g_str_hash, g_str_equal,
+						g_free, g_free);
+	if (!devpath_list) {
+		ofono_error("Failed to create udev path list");
+		return -ENOMEM;
+	}
+
 	udev_ctx = udev_new();
 	if (udev_ctx == NULL) {
 		ofono_error("Failed to create udev context");
+		g_hash_table_destroy(devpath_list);
 		return -EIO;
 	}
 
 	udev_mon = udev_monitor_new_from_netlink(udev_ctx, "udev");
 	if (udev_mon == NULL) {
 		ofono_error("Failed to create udev monitor");
+		g_hash_table_destroy(devpath_list);
 		udev_unref(udev_ctx);
 		udev_ctx = NULL;
 		return -EIO;
@@ -483,6 +500,9 @@ static void udev_exit(void)
 
 	g_slist_free(modem_list);
 	modem_list = NULL;
+
+	g_hash_table_destroy(devpath_list);
+	devpath_list = NULL;
 
 	if (udev_ctx == NULL)
 		return;
