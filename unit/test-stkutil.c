@@ -3235,10 +3235,11 @@ static struct play_tone_test play_tone_data_119 = {
 	.pdu = play_tone_119,
 	.pdu_len = sizeof(play_tone_119),
 	.qualifier = 0x00,
-	.alpha_id = "This command instructs the ME to play an audio tone. \
-Upon receiving this command, the ME shall check if it is currently in, or \
-in the process of setting up (SET-UP message sent to the network, \
-see GSM\"04.08\"(8)), a speech call. - If the ME I"
+	.alpha_id = "This command instructs the ME to play an audio tone. "
+			"Upon receiving this command, the ME shall check "
+			"if it is currently in, or in the process of setting "
+			"up (SET-UP message sent to the network, see "
+			"GSM\"04.08\"(8)), a speech call. - If the ME I"
 };
 
 static struct play_tone_test play_tone_data_1110 = {
