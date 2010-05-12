@@ -117,11 +117,7 @@ static void mbm_stkr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (ok)
-		cb(&error, cbd->data);
-	else
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	cb(&error, cbd->data);
 }
 
 static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
