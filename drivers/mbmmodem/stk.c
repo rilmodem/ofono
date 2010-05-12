@@ -90,7 +90,7 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 	len += sprintf(buf + len, "\"");
 
 	ret = g_at_chat_send(sd->chat, buf, stke_prefix,
-			mbm_stke_cb, cbd, g_free);
+				mbm_stke_cb, cbd, g_free);
 
 	g_free(buf);
 	buf = NULL;
@@ -123,8 +123,8 @@ static void mbm_stkr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 }
 
 static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
-				const unsigned char *command,
-				ofono_stk_generic_cb_t cb, void *data)
+					const unsigned char *command,
+					ofono_stk_generic_cb_t cb, void *data)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -140,7 +140,7 @@ static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
 	len += sprintf(buf + len, "\"");
 
 	ret = g_at_chat_send(sd->chat, buf, none_prefix,
-			mbm_stkr_cb, cbd, g_free);
+				mbm_stkr_cb, cbd, g_free);
 
 	g_free(buf);
 	buf = NULL;
@@ -200,7 +200,7 @@ static gboolean mbm_stk_register(gpointer user)
 	g_at_chat_register(sd->chat, "*STKI:", stki_notify, FALSE, stk, NULL);
 	g_at_chat_register(sd->chat, "*STKN:", stkn_notify, FALSE, stk, NULL);
 	g_at_chat_register(sd->chat, "*STKEND",
-			stkend_notify, FALSE, stk, NULL);
+					stkend_notify, FALSE, stk, NULL);
 
 	/* Perform PROFILE DOWNLOAD and enable *STKI / *STKN */
 	g_at_chat_send(sd->chat, "AT*STKC=1,\"19E1FFFF0000FF7FFF03FEFF\"",
@@ -211,8 +211,7 @@ static gboolean mbm_stk_register(gpointer user)
 	return FALSE;
 }
 
-static int mbm_stk_probe(struct ofono_stk *stk,
-		unsigned int vendor, void *data)
+static int mbm_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 {
 	GAtChat *chat = data;
 	struct stk_data *sd;
