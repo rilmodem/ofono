@@ -37,6 +37,7 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
+#include <ofono/stk.h>
 #include <ofono/sms.h>
 #include <ofono/cbs.h>
 #include <ofono/ssn.h>
@@ -290,6 +291,7 @@ static void mbm_pre_sim(struct ofono_modem *modem)
 	ofono_devinfo_create(modem, 0, "atmodem", data->modem_port);
 	sim = ofono_sim_create(modem, 0, "atmodem", data->modem_port);
 	ofono_voicecall_create(modem, 0, "atmodem", data->modem_port);
+	ofono_stk_create(modem, 0, "mbmmodem", data->modem_port);
 
 	if (sim)
 		ofono_sim_inserted_notify(sim, TRUE);
