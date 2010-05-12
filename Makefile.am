@@ -175,7 +175,8 @@ builtin_modules += mbmmodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/mbmmodem/mbmmodem.h \
 			drivers/mbmmodem/mbmmodem.c \
-			drivers/mbmmodem/gprs-context.c
+			drivers/mbmmodem/gprs-context.c \
+			drivers/mbmmodem/stk.c
 
 builtin_modules += hsomodem
 builtin_sources += drivers/atmodem/atutil.h \

@@ -35,12 +35,14 @@
 static int mbmmodem_init(void)
 {
 	mbm_gprs_context_init();
+	mbm_stk_init();
 
 	return 0;
 }
 
 static void mbmmodem_exit(void)
 {
+	mbm_stk_exit();
 	mbm_gprs_context_exit();
 }
 

@@ -23,3 +23,6 @@
 
 extern void mbm_gprs_context_init();
 extern void mbm_gprs_context_exit();
+
+extern void mbm_stk_init();
+extern void mbm_stk_exit();
