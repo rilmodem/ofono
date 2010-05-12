@@ -99,11 +99,8 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 		return;
 
 error:
-	if (buf)
-		g_free(buf);
-
-	if (cbd)
-		g_free(cbd);
+	g_free(buf);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
@@ -149,11 +146,8 @@ static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
 		return;
 
 error:
-	if (buf)
-		g_free(buf);
-
-	if (cbd)
-		g_free(cbd);
+	g_free(buf);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
