@@ -47,6 +47,9 @@ struct sim_data {
 };
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
+static const char *cpin_prefix[] = { "+CPIN:", NULL };
+static const char *clck_prefix[] = { "+CLCK:", NULL };
+static const char *none_prefix[] = { NULL };
 
 static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -488,7 +491,7 @@ static void at_pin_query(struct ofono_sim *sim, ofono_sim_passwd_cb_t cb,
 
 	cbd->user = sim;
 
-	if (g_at_chat_send(sd->chat, "AT+CPIN?", NULL,
+	if (g_at_chat_send(sd->chat, "AT+CPIN?", cpin_prefix,
 				at_cpin_cb, cbd, g_free) > 0)
 		return;
 
@@ -524,7 +527,7 @@ static void at_pin_send(struct ofono_sim *sim, const char *passwd,
 
 	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\"", passwd);
 
-	ret = g_at_chat_send(sd->chat, buf, NULL,
+	ret = g_at_chat_send(sd->chat, buf, none_prefix,
 				at_lock_unlock_cb, cbd, g_free);
 
 	memset(buf, 0, sizeof(buf));
@@ -553,7 +556,7 @@ static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
 
 	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\",\"%s\"", puk, passwd);
 
-	ret = g_at_chat_send(sd->chat, buf, NULL,
+	ret = g_at_chat_send(sd->chat, buf, none_prefix,
 				at_lock_unlock_cb, cbd, g_free);
 
 	memset(buf, 0, sizeof(buf));
@@ -599,7 +602,7 @@ static void at_pin_enable(struct ofono_sim *sim,
 	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",%i,\"%s\"",
 			at_clck_cpwd_fac[passwd_type], enable ? 1 : 0, passwd);
 
-	ret = g_at_chat_send(sd->chat, buf, NULL,
+	ret = g_at_chat_send(sd->chat, buf, none_prefix,
 				at_lock_unlock_cb, cbd, g_free);
 
 	memset(buf, 0, sizeof(buf));
@@ -635,7 +638,7 @@ static void at_change_passwd(struct ofono_sim *sim,
 	snprintf(buf, sizeof(buf), "AT+CPWD=\"%s\",\"%s\",\"%s\"",
 			at_clck_cpwd_fac[passwd_type], old, new);
 
-	ret = g_at_chat_send(sd->chat, buf, NULL,
+	ret = g_at_chat_send(sd->chat, buf, none_prefix,
 				at_lock_unlock_cb, cbd, g_free);
 
 	memset(buf, 0, sizeof(buf));
@@ -698,7 +701,7 @@ static void at_pin_query_enabled(struct ofono_sim *sim,
 	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",2",
 			at_clck_cpwd_fac[passwd_type]);
 
-	if (g_at_chat_send(sd->chat, buf, NULL,
+	if (g_at_chat_send(sd->chat, buf, clck_prefix,
 				at_lock_status_cb, cbd, g_free) > 0)
 		return;
 
