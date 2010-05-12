@@ -55,11 +55,13 @@
 #include <drivers/atmodem/vendor.h>
 
 static const char *cfun_prefix[] = { "+CFUN:", NULL };
+static const char *crsm_prefix[] = { "+CRSM:", NULL };
 static const char *none_prefix[] = { NULL };
 
 struct mbm_data {
 	GAtChat *modem_port;
 	GAtChat *data_port;
+	gboolean have_sim;
 };
 
 static int mbm_probe(struct ofono_modem *modem)
@@ -97,16 +99,49 @@ static void mbm_debug(const char *str, void *user_data)
 	ofono_info("%s %s", prefix, str);
 }
 
-static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+static void status_check(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	gint sw[2];
 
 	DBG("");
 
 	if (!ok)
-		ofono_modem_set_powered(modem, FALSE);
+		goto poweron;
 
+	/* Modem fakes a 94 04 response from card (File Id not found /
+	 * Pattern not found) when there's no card in the slot.
+	 */
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CRSM:"))
+		goto poweron;
+
+	g_at_result_iter_next_number(&iter, &sw[0]);
+	g_at_result_iter_next_number(&iter, &sw[1]);
+
+	data->have_sim = sw[0] != 0x94 || sw[1] != 0x04;
+
+poweron:
 	ofono_modem_set_powered(modem, TRUE);
+}
+
+static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	if (!ok) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	g_at_chat_send(data->modem_port, "AT+CRSM=242", crsm_prefix,
+			status_check, modem, NULL);
 }
 
 static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
@@ -134,7 +169,7 @@ static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_modem_set_powered(modem, TRUE);
+	cfun_enable(TRUE, NULL, modem);
 }
 
 static void emrdy_notifier(GAtResult *result, gpointer user_data)
@@ -293,7 +328,7 @@ static void mbm_pre_sim(struct ofono_modem *modem)
 	ofono_voicecall_create(modem, 0, "atmodem", data->modem_port);
 	ofono_stk_create(modem, 0, "mbmmodem", data->modem_port);
 
-	if (sim)
+	if (data->have_sim && sim)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
