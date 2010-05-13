@@ -95,7 +95,7 @@ static char *decode_text(unsigned char dcs, int len, const unsigned char *data)
 
 /* For data object only to indicate its existence */
 static gboolean parse_dataobj_common_bool(struct comprehension_tlv_iter *iter,
-						gboolean *out) 
+						gboolean *out)
 {
 	if (comprehension_tlv_iter_get_length(iter) != 0)
 		return FALSE;
@@ -873,7 +873,7 @@ static gboolean parse_dataobj_c_apdu(struct comprehension_tlv_iter *iter,
 
 		memcpy(ca->data, data+5, ca->lc);
 	}
-	
+
 	if (len - pos > 0) {
 		ca->le = data[len - 1];
 		ca->has_le = TRUE;
@@ -2420,7 +2420,7 @@ static void destroy_send_sms(struct stk_command *command)
 	g_free(command->send_sms.cdma_sms.array);
 }
 
-static gboolean parse_send_sms(struct stk_command *command, 
+static gboolean parse_send_sms(struct stk_command *command,
 					struct comprehension_tlv_iter *iter)
 {
 	struct stk_command_send_sms *obj = &command->send_sms;
