@@ -874,6 +874,15 @@ struct stk_command_setup_call {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_refresh {
+	GSList *fl;
+	struct stk_aid aid;
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -891,6 +900,7 @@ struct stk_command {
 		struct stk_command_select_item select_item;
 		struct stk_command_send_sms send_sms;
 		struct stk_command_setup_call setup_call;
+		struct stk_command_refresh refresh;
 	};
 
 	void (*destructor)(struct stk_command *command);

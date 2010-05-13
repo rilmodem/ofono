@@ -2520,6 +2520,47 @@ static gboolean parse_setup_call(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_refresh(struct stk_command *command)
+{
+	g_slist_foreach(command->refresh.fl, (GFunc)g_free, NULL);
+	g_slist_free(command->refresh.fl);
+	g_free(command->refresh.alpha_id);
+}
+
+static gboolean parse_refresh(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_refresh *obj = &command->refresh;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_FILE_LIST, 0,
+				&obj->fl,
+				STK_DATA_OBJECT_TYPE_AID, 0,
+				&obj->aid,
+				STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_refresh;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2607,6 +2648,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SETUP_CALL:
 		ok = parse_setup_call(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_REFRESH:
+		ok = parse_refresh(command, &iter);
 		break;
 	default:
 		ok = FALSE;
