@@ -8889,7 +8889,7 @@ struct refresh_test {
 	const unsigned char *pdu;
 	unsigned int pdu_len;
 	unsigned char qualifier;
-	struct stk_file fl[MAX_ITEM];
+	struct stk_file file_list[MAX_ITEM];
 	struct stk_aid aid;
 	char *alpha_id;
 	struct stk_icon_id icon_id;
@@ -8909,7 +8909,7 @@ static struct refresh_test refresh_data_121 = {
 	.pdu = refresh_121,
 	.pdu_len = sizeof(refresh_121),
 	.qualifier = 0x01,
-	.fl[0] = {
+	.file_list[0] = {
 		.len = 4,
 		.file = { 0x3F, 0x00, 0x2F, 0xE2 }
 	}
@@ -8938,7 +8938,7 @@ static void test_refresh(gconstpointer data)
 	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
 	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
 
-	check_file_list(command->refresh.fl, test->fl);
+	check_file_list(command->refresh.file_list, test->file_list);
 	check_aid(&command->refresh.aid, &test->aid);
 	check_alpha_id(command->refresh.alpha_id, test->alpha_id);
 	check_icon_id(&command->refresh.icon_id, &test->icon_id);
