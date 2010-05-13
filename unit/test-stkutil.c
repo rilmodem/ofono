@@ -9425,6 +9425,48 @@ static void test_perform_card_apdu(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct get_reader_status_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+};
+
+static unsigned char get_reader_status_111[] = { 0xD0, 0x09, 0x81, 0x03, 0x01,
+						0x33, 0x00, 0x82, 0x02, 0x81,
+						0x82 };
+
+static struct get_reader_status_test get_reader_status_data_111 = {
+	.pdu = get_reader_status_111,
+	.pdu_len = sizeof(get_reader_status_111),
+	.qualifier = STK_QUALIFIER_TYPE_CARD_READER_STATUS,
+};
+
+static void test_get_reader_status(gconstpointer data)
+{
+	const struct get_reader_status_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_GET_READER_STATUS);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+
+	if (command->qualifier == STK_QUALIFIER_TYPE_CARD_READER_STATUS)
+		g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+	else
+		g_assert(command->dst <
+				STK_DEVICE_IDENTITY_TYPE_CARD_READER_0 ||
+			command->dst >
+				STK_DEVICE_IDENTITY_TYPE_CARD_READER_7);
+
+	stk_command_free(command);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -10103,6 +10145,9 @@ int main(int argc, char **argv)
 			&perform_card_apdu_data_151, test_perform_card_apdu);
 	g_test_add_data_func("/teststk/Perform Card APDU 2.1.1",
 			&perform_card_apdu_data_211, test_perform_card_apdu);
+
+	g_test_add_data_func("/teststk/Get Reader Status 1.1.1",
+			&get_reader_status_data_111, test_get_reader_status);
 
 	return g_test_run();
 }
