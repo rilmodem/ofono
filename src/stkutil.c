@@ -2611,6 +2611,30 @@ static gboolean parse_setup_event_list(struct stk_command *command,
 	return TRUE;
 }
 
+static gboolean parse_perform_card_apdu(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_perform_card_apdu *obj = &command->perform_card_apdu;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if ((command->dst < STK_DEVICE_IDENTITY_TYPE_CARD_READER_0) ||
+			(command->dst > STK_DEVICE_IDENTITY_TYPE_CARD_READER_7))
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_C_APDU,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->c_apdu,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2710,6 +2734,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SETUP_EVENT_LIST:
 		ok = parse_setup_event_list(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_PERFORM_CARD_APDU:
+		ok = parse_perform_card_apdu(command, &iter);
 		break;
 	default:
 		ok = FALSE;
