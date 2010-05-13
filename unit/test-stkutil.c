@@ -270,6 +270,22 @@ static void check_c_apdu(const struct stk_c_apdu *command,
 		g_assert(command->le == test->le);
 }
 
+/* Defined in TS 102.223 Section 8.37 */
+static inline void check_timer_id(const unsigned char command,
+					const unsigned char test)
+{
+	check_common_byte(command, test);
+}
+
+/* Defined in TS 102.223 Section 8.38 */
+static inline void check_timer_value(const struct stk_timer_value *command,
+					const struct stk_timer_value *test)
+{
+	g_assert(command->hour == test->hour);
+	g_assert(command->minute == test->minute);
+	g_assert(command->second == test->second);
+}
+
 /* Defined in TS 102.223 Section 8.43 */
 static inline void check_imm_resp(const unsigned char command,
 					const unsigned char test)
@@ -9467,6 +9483,522 @@ static void test_get_reader_status(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct timer_mgmt_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+	unsigned char timer_id;
+	struct stk_timer_value timer_value;
+};
+
+static unsigned char timer_mgmt_111[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01, 0xA5, 0x03,
+						0x00, 0x50, 0x00 };
+
+static unsigned char timer_mgmt_112[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01 };
+
+static unsigned char timer_mgmt_113[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01, 0xA5, 0x03,
+						0x00, 0x10, 0x03 };
+
+static unsigned char timer_mgmt_114[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01 };
+
+static unsigned char timer_mgmt_121[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x02, 0xA5, 0x03,
+						0x32, 0x95, 0x95 };
+
+static unsigned char timer_mgmt_122[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x02 };
+
+static unsigned char timer_mgmt_123[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x02, 0xA5, 0x03,
+						0x00, 0x10, 0x01 };
+
+static unsigned char timer_mgmt_124[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x02 };
+
+static unsigned char timer_mgmt_131[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x08, 0xA5, 0x03,
+						0x00, 0x02, 0x00 };
+
+static unsigned char timer_mgmt_132[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x08 };
+
+static unsigned char timer_mgmt_133[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x08, 0xA5, 0x03,
+						0x10, 0x00, 0x00 };
+
+static unsigned char timer_mgmt_134[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x08 };
+
+static unsigned char timer_mgmt_141[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01 };
+
+static unsigned char timer_mgmt_142[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x02 };
+
+static unsigned char timer_mgmt_143[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x03 };
+
+static unsigned char timer_mgmt_144[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x04 };
+
+static unsigned char timer_mgmt_145[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x05 };
+
+static unsigned char timer_mgmt_146[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x06 };
+
+static unsigned char timer_mgmt_147[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x07 };
+
+static unsigned char timer_mgmt_148[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x02, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x08 };
+
+static unsigned char timer_mgmt_151[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01 };
+
+static unsigned char timer_mgmt_152[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x02 };
+
+static unsigned char timer_mgmt_153[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x03 };
+
+static unsigned char timer_mgmt_154[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x04 };
+
+static unsigned char timer_mgmt_155[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x05 };
+
+static unsigned char timer_mgmt_156[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x06 };
+
+static unsigned char timer_mgmt_157[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x07 };
+
+static unsigned char timer_mgmt_158[] = { 0xD0, 0x0C, 0x81, 0x03, 0x01, 0x27,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x08 };
+
+static unsigned char timer_mgmt_161[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_162[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x02, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_163[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x03, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_164[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x04, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_165[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x05, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_166[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x06, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_167[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x07, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_168[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x08, 0xA5, 0x03,
+						0x00, 0x00, 0x50 };
+
+static unsigned char timer_mgmt_211[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01, 0xA5, 0x03,
+						0x00, 0x00, 0x01 };
+
+static unsigned char timer_mgmt_221[] = { 0xD0, 0x11, 0x81, 0x03, 0x01, 0x27,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0xA4, 0x01, 0x01, 0xA5, 0x03,
+						0x00, 0x00, 0x03 };
+
+static struct timer_mgmt_test timer_mgmt_data_111 = {
+	.pdu = timer_mgmt_111,
+	.pdu_len = sizeof(timer_mgmt_111),
+	.qualifier = 0x00,
+	.timer_id = 1,
+	.timer_value = {
+		.minute = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_112 = {
+	.pdu = timer_mgmt_112,
+	.pdu_len = sizeof(timer_mgmt_112),
+	.qualifier = 0x02,
+	.timer_id = 1
+};
+
+static struct timer_mgmt_test timer_mgmt_data_113 = {
+	.pdu = timer_mgmt_113,
+	.pdu_len = sizeof(timer_mgmt_113),
+	.qualifier = 0x00,
+	.timer_id = 1,
+	.timer_value = {
+		.minute = 1,
+		.second = 30
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_114 = {
+	.pdu = timer_mgmt_114,
+	.pdu_len = sizeof(timer_mgmt_114),
+	.qualifier = 0x01,
+	.timer_id = 1
+};
+
+static struct timer_mgmt_test timer_mgmt_data_121 = {
+	.pdu = timer_mgmt_121,
+	.pdu_len = sizeof(timer_mgmt_121),
+	.qualifier = 0x00,
+	.timer_id = 2,
+	.timer_value = {
+		.hour = 23,
+		.minute = 59,
+		.second = 59
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_122 = {
+	.pdu = timer_mgmt_122,
+	.pdu_len = sizeof(timer_mgmt_122),
+	.qualifier = 0x02,
+	.timer_id = 2
+};
+
+static struct timer_mgmt_test timer_mgmt_data_123 = {
+	.pdu = timer_mgmt_123,
+	.pdu_len = sizeof(timer_mgmt_123),
+	.qualifier = 0x00,
+	.timer_id = 2,
+	.timer_value = {
+		.minute = 1,
+		.second = 10
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_124 = {
+	.pdu = timer_mgmt_124,
+	.pdu_len = sizeof(timer_mgmt_124),
+	.qualifier = 0x01,
+	.timer_id = 2
+};
+
+static struct timer_mgmt_test timer_mgmt_data_131 = {
+	.pdu = timer_mgmt_131,
+	.pdu_len = sizeof(timer_mgmt_131),
+	.qualifier = 0x00,
+	.timer_id = 8,
+	.timer_value = {
+		.minute = 20
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_132 = {
+	.pdu = timer_mgmt_132,
+	.pdu_len = sizeof(timer_mgmt_132),
+	.qualifier = 0x02,
+	.timer_id = 8
+};
+
+static struct timer_mgmt_test timer_mgmt_data_133 = {
+	.pdu = timer_mgmt_133,
+	.pdu_len = sizeof(timer_mgmt_133),
+	.qualifier = 0x00,
+	.timer_id = 8,
+	.timer_value = {
+		.hour = 1
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_134 = {
+	.pdu = timer_mgmt_134,
+	.pdu_len = sizeof(timer_mgmt_134),
+	.qualifier = 0x01,
+	.timer_id = 8
+};
+
+static struct timer_mgmt_test timer_mgmt_data_141 = {
+	.pdu = timer_mgmt_141,
+	.pdu_len = sizeof(timer_mgmt_141),
+	.qualifier = 0x02,
+	.timer_id = 1
+};
+
+static struct timer_mgmt_test timer_mgmt_data_142 = {
+	.pdu = timer_mgmt_142,
+	.pdu_len = sizeof(timer_mgmt_142),
+	.qualifier = 0x02,
+	.timer_id = 2
+};
+
+static struct timer_mgmt_test timer_mgmt_data_143 = {
+	.pdu = timer_mgmt_143,
+	.pdu_len = sizeof(timer_mgmt_143),
+	.qualifier = 0x02,
+	.timer_id = 3
+};
+
+static struct timer_mgmt_test timer_mgmt_data_144 = {
+	.pdu = timer_mgmt_144,
+	.pdu_len = sizeof(timer_mgmt_144),
+	.qualifier = 0x02,
+	.timer_id = 4
+};
+
+static struct timer_mgmt_test timer_mgmt_data_145 = {
+	.pdu = timer_mgmt_145,
+	.pdu_len = sizeof(timer_mgmt_145),
+	.qualifier = 0x02,
+	.timer_id = 5
+};
+
+static struct timer_mgmt_test timer_mgmt_data_146 = {
+	.pdu = timer_mgmt_146,
+	.pdu_len = sizeof(timer_mgmt_146),
+	.qualifier = 0x02,
+	.timer_id = 6
+};
+
+static struct timer_mgmt_test timer_mgmt_data_147 = {
+	.pdu = timer_mgmt_147,
+	.pdu_len = sizeof(timer_mgmt_147),
+	.qualifier = 0x02,
+	.timer_id = 7
+};
+
+static struct timer_mgmt_test timer_mgmt_data_148 = {
+	.pdu = timer_mgmt_148,
+	.pdu_len = sizeof(timer_mgmt_148),
+	.qualifier = 0x02,
+	.timer_id = 8
+};
+
+static struct timer_mgmt_test timer_mgmt_data_151 = {
+	.pdu = timer_mgmt_151,
+	.pdu_len = sizeof(timer_mgmt_151),
+	.qualifier = 0x01,
+	.timer_id = 1
+};
+
+static struct timer_mgmt_test timer_mgmt_data_152 = {
+	.pdu = timer_mgmt_152,
+	.pdu_len = sizeof(timer_mgmt_152),
+	.qualifier = 0x01,
+	.timer_id = 2
+};
+
+static struct timer_mgmt_test timer_mgmt_data_153 = {
+	.pdu = timer_mgmt_153,
+	.pdu_len = sizeof(timer_mgmt_153),
+	.qualifier = 0x01,
+	.timer_id = 3
+};
+
+static struct timer_mgmt_test timer_mgmt_data_154 = {
+	.pdu = timer_mgmt_154,
+	.pdu_len = sizeof(timer_mgmt_154),
+	.qualifier = 0x01,
+	.timer_id = 4
+};
+
+static struct timer_mgmt_test timer_mgmt_data_155 = {
+	.pdu = timer_mgmt_155,
+	.pdu_len = sizeof(timer_mgmt_155),
+	.qualifier = 0x01,
+	.timer_id = 5
+};
+
+static struct timer_mgmt_test timer_mgmt_data_156 = {
+	.pdu = timer_mgmt_156,
+	.pdu_len = sizeof(timer_mgmt_156),
+	.qualifier = 0x01,
+	.timer_id = 6
+};
+
+static struct timer_mgmt_test timer_mgmt_data_157 = {
+	.pdu = timer_mgmt_157,
+	.pdu_len = sizeof(timer_mgmt_157),
+	.qualifier = 0x01,
+	.timer_id = 7
+};
+
+static struct timer_mgmt_test timer_mgmt_data_158 = {
+	.pdu = timer_mgmt_158,
+	.pdu_len = sizeof(timer_mgmt_158),
+	.qualifier = 0x01,
+	.timer_id = 8
+};
+
+static struct timer_mgmt_test timer_mgmt_data_161 = {
+	.pdu = timer_mgmt_161,
+	.pdu_len = sizeof(timer_mgmt_161),
+	.qualifier = 0x00,
+	.timer_id = 1,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_162 = {
+	.pdu = timer_mgmt_162,
+	.pdu_len = sizeof(timer_mgmt_162),
+	.qualifier = 0x00,
+	.timer_id = 2,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_163 = {
+	.pdu = timer_mgmt_163,
+	.pdu_len = sizeof(timer_mgmt_163),
+	.qualifier = 0x00,
+	.timer_id = 3,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_164 = {
+	.pdu = timer_mgmt_164,
+	.pdu_len = sizeof(timer_mgmt_164),
+	.qualifier = 0x00,
+	.timer_id = 4,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_165 = {
+	.pdu = timer_mgmt_165,
+	.pdu_len = sizeof(timer_mgmt_165),
+	.qualifier = 0x00,
+	.timer_id = 5,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_166 = {
+	.pdu = timer_mgmt_166,
+	.pdu_len = sizeof(timer_mgmt_166),
+	.qualifier = 0x00,
+	.timer_id = 6,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_167 = {
+	.pdu = timer_mgmt_167,
+	.pdu_len = sizeof(timer_mgmt_167),
+	.qualifier = 0x00,
+	.timer_id = 7,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_168 = {
+	.pdu = timer_mgmt_168,
+	.pdu_len = sizeof(timer_mgmt_168),
+	.qualifier = 0x00,
+	.timer_id = 8,
+	.timer_value = {
+		.second = 5
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_211 = {
+	.pdu = timer_mgmt_211,
+	.pdu_len = sizeof(timer_mgmt_211),
+	.qualifier = 0x00,
+	.timer_id = 1,
+	.timer_value = {
+		.second = 10
+	}
+};
+
+static struct timer_mgmt_test timer_mgmt_data_221 = {
+	.pdu = timer_mgmt_221,
+	.pdu_len = sizeof(timer_mgmt_221),
+	.qualifier = 0x00,
+	.timer_id = 1,
+	.timer_value = {
+		.second = 30
+	}
+};
+
+static void test_timer_mgmt(gconstpointer data)
+{
+	const struct timer_mgmt_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_TIMER_MANAGEMENT);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	check_timer_id(command->timer_mgmt.timer_id, test->timer_id);
+	check_timer_value(&command->timer_mgmt.timer_value, &test->timer_value);
+
+	stk_command_free(command);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -10148,6 +10680,83 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/Get Reader Status 1.1.1",
 			&get_reader_status_data_111, test_get_reader_status);
+
+	g_test_add_data_func("/teststk/Timer Management 1.1.1",
+			&timer_mgmt_data_111, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.1.2",
+			&timer_mgmt_data_112, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.1.3",
+			&timer_mgmt_data_113, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.1.4",
+			&timer_mgmt_data_114, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.2.1",
+			&timer_mgmt_data_121, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.2.2",
+			&timer_mgmt_data_122, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.2.3",
+			&timer_mgmt_data_123, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.2.4",
+			&timer_mgmt_data_124, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.3.1",
+			&timer_mgmt_data_131, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.3.2",
+			&timer_mgmt_data_132, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.3.3",
+			&timer_mgmt_data_133, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.3.4",
+			&timer_mgmt_data_134, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.1",
+			&timer_mgmt_data_141, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.2",
+			&timer_mgmt_data_142, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.3",
+			&timer_mgmt_data_143, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.4",
+			&timer_mgmt_data_144, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.5",
+			&timer_mgmt_data_145, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.6",
+			&timer_mgmt_data_146, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.7",
+			&timer_mgmt_data_147, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.4.8",
+			&timer_mgmt_data_148, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.1",
+			&timer_mgmt_data_151, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.2",
+			&timer_mgmt_data_152, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.3",
+			&timer_mgmt_data_153, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.4",
+			&timer_mgmt_data_154, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.5",
+			&timer_mgmt_data_155, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.6",
+			&timer_mgmt_data_156, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.7",
+			&timer_mgmt_data_157, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.5.8",
+			&timer_mgmt_data_158, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.1",
+			&timer_mgmt_data_161, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.2",
+			&timer_mgmt_data_162, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.3",
+			&timer_mgmt_data_163, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.4",
+			&timer_mgmt_data_164, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.5",
+			&timer_mgmt_data_165, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.6",
+			&timer_mgmt_data_166, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.7",
+			&timer_mgmt_data_167, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 1.6.8",
+			&timer_mgmt_data_168, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 2.1.1",
+			&timer_mgmt_data_211, test_timer_mgmt);
+	g_test_add_data_func("/teststk/Timer Management 2.2.1",
+			&timer_mgmt_data_221, test_timer_mgmt);
 
 	return g_test_run();
 }
