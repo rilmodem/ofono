@@ -872,10 +872,10 @@ struct stk_command {
 		struct stk_command_get_inkey get_inkey;
 		struct stk_command_get_input get_input;
 		struct stk_command_play_tone play_tone;
-		struct stk_command_select_item select_item;
-		struct stk_command_send_sms send_sms;
 		struct stk_command_poll_interval poll_interval;
 		struct stk_command_setup_menu setup_menu;
+		struct stk_command_select_item select_item;
+		struct stk_command_send_sms send_sms;
 	};
 
 	void (*destructor)(struct stk_command *command);
