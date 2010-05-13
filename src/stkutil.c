@@ -2661,6 +2661,30 @@ static gboolean parse_power_on_card(struct stk_command *command,
 	return TRUE;
 }
 
+static gboolean parse_get_reader_status(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	switch (command->qualifier) {
+	case STK_QUALIFIER_TYPE_CARD_READER_STATUS:
+		if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+			return FALSE;
+		break;
+	case STK_QUALIFIER_TYPE_CARD_READER_ID:
+		if ((command->dst < STK_DEVICE_IDENTITY_TYPE_CARD_READER_0) ||
+				(command->dst >
+					STK_DEVICE_IDENTITY_TYPE_CARD_READER_7))
+			return FALSE;
+		break;
+	default:
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2769,6 +2793,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_POWER_ON_CARD:
 		ok = parse_power_on_card(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_GET_READER_STATUS:
+		ok = parse_get_reader_status(command, &iter);
 		break;
 	default:
 		ok = FALSE;

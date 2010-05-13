@@ -198,6 +198,11 @@ enum stk_device_identity_type {
 	STK_DEVICE_IDENTITY_TYPE_NETWORK =	0x83,
 };
 
+enum stk_qualifier_get_reader_status_type {
+	STK_QUALIFIER_TYPE_CARD_READER_STATUS = 	0x00,
+	STK_QUALIFIER_TYPE_CARD_READER_ID = 		0x01,
+};
+
 enum stk_duration_type {
 	STK_DURATION_TYPE_MINUTES =		0x00,
 	STK_DURATION_TYPE_SECONDS =		0x01,
