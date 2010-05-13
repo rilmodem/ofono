@@ -132,6 +132,9 @@ unsigned int comprehension_tlv_iter_get_length(
 const unsigned char *comprehension_tlv_iter_get_data(
 					struct comprehension_tlv_iter *iter);
 
+void comprehension_tlv_iter_copy(struct comprehension_tlv_iter *from,
+					struct comprehension_tlv_iter *to);
+
 void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 			unsigned int len);
 /*

@@ -307,6 +307,18 @@ const unsigned char *comprehension_tlv_iter_get_data(
 	return iter->data;
 }
 
+void comprehension_tlv_iter_copy(struct comprehension_tlv_iter *from,
+					struct comprehension_tlv_iter *to)
+{
+	to->max = from->max;
+	to->pos = from->pos;
+	to->pdu = from->pdu;
+	to->tag = from->tag;
+	to->cr = from->cr;
+	to->len = from->len;
+	to->data = from->data;
+}
+
 void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 			unsigned int len)
 {
