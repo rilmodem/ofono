@@ -2561,6 +2561,18 @@ static gboolean parse_refresh(struct stk_command *command,
 	return TRUE;
 }
 
+static gboolean parse_polling_off(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2651,6 +2663,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_REFRESH:
 		ok = parse_refresh(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_POLLING_OFF:
+		ok = parse_polling_off(command, &iter);
 		break;
 	default:
 		ok = FALSE;
