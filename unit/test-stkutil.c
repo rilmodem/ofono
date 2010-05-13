@@ -8982,6 +8982,91 @@ static void test_polling_off(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct provide_local_info_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+};
+
+static unsigned char provide_local_info_121[] = { 0xD0, 0x09, 0x81, 0x03, 0x01,
+						0x26, 0x01, 0x82, 0x02, 0x81,
+						0x82 };
+
+static unsigned char provide_local_info_141[] = { 0xD0, 0x09, 0x81, 0x03, 0x01,
+						0x26, 0x03, 0x82, 0x02, 0x81,
+						0x82 };
+
+static unsigned char provide_local_info_151[] = { 0xD0, 0x09, 0x81, 0x03, 0x01,
+						0x26, 0x04, 0x82, 0x02, 0x81,
+						0x82 };
+
+static unsigned char provide_local_info_181[] = { 0xD0, 0x09, 0x81, 0x03, 0x01,
+						0x26, 0x07, 0x82, 0x02, 0x81,
+						0x82 };
+
+static unsigned char provide_local_info_191[] = { 0xD0, 0x09, 0x81, 0x03, 0x01,
+						0x26, 0x08, 0x82, 0x02, 0x81,
+						0x82 };
+
+static unsigned char provide_local_info_1111[] = { 0xD0, 0x09, 0x81, 0x03, 0x01,
+						0x26, 0x0A, 0x82, 0x02, 0x81,
+						0x82 };
+
+static struct provide_local_info_test provide_local_info_data_121 = {
+	.pdu = provide_local_info_121,
+	.pdu_len = sizeof(provide_local_info_121),
+	.qualifier = 0x01
+};
+
+static struct provide_local_info_test provide_local_info_data_141 = {
+	.pdu = provide_local_info_141,
+	.pdu_len = sizeof(provide_local_info_141),
+	.qualifier = 0x03
+};
+
+static struct provide_local_info_test provide_local_info_data_151 = {
+	.pdu = provide_local_info_151,
+	.pdu_len = sizeof(provide_local_info_151),
+	.qualifier = 0x04
+};
+
+static struct provide_local_info_test provide_local_info_data_181 = {
+	.pdu = provide_local_info_181,
+	.pdu_len = sizeof(provide_local_info_181),
+	.qualifier = 0x07
+};
+
+static struct provide_local_info_test provide_local_info_data_191 = {
+	.pdu = provide_local_info_191,
+	.pdu_len = sizeof(provide_local_info_191),
+	.qualifier = 0x08
+};
+
+static struct provide_local_info_test provide_local_info_data_1111 = {
+	.pdu = provide_local_info_1111,
+	.pdu_len = sizeof(provide_local_info_1111),
+	.qualifier = 0x0A
+};
+
+static void test_provide_local_info(gconstpointer data)
+{
+	const struct provide_local_info_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_PROVIDE_LOCAL_INFO);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	stk_command_free(command);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -9615,6 +9700,19 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/Polling off 1.1.2",
 				&polling_off_data_112, test_polling_off);
+
+	g_test_add_data_func("/teststk/Provide Local Info 1.2.1",
+			&provide_local_info_data_121, test_provide_local_info);
+	g_test_add_data_func("/teststk/Provide Local Info 1.4.1",
+			&provide_local_info_data_141, test_provide_local_info);
+	g_test_add_data_func("/teststk/Provide Local Info 1.5.1",
+			&provide_local_info_data_151, test_provide_local_info);
+	g_test_add_data_func("/teststk/Provide Local Info 1.8.1",
+			&provide_local_info_data_181, test_provide_local_info);
+	g_test_add_data_func("/teststk/Provide Local Info 1.9.1",
+			&provide_local_info_data_191, test_provide_local_info);
+	g_test_add_data_func("/teststk/Provide Local Info 1.11.1",
+			&provide_local_info_data_1111, test_provide_local_info);
 
 	return g_test_run();
 }
