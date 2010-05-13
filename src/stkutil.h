@@ -883,6 +883,10 @@ struct stk_command_refresh {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_setup_event_list {
+	struct stk_event_list event_list;
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -901,6 +905,7 @@ struct stk_command {
 		struct stk_command_send_sms send_sms;
 		struct stk_command_setup_call setup_call;
 		struct stk_command_refresh refresh;
+		struct stk_command_setup_event_list setup_event_list;
 	};
 
 	void (*destructor)(struct stk_command *command);

@@ -703,7 +703,10 @@ static gboolean parse_dataobj_event_list(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
 
-	if ((len < 1) || (len > sizeof(el->list)))
+	if (len == 0)
+		return TRUE;
+
+	if (len > sizeof(el->list))
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
@@ -2585,6 +2588,29 @@ static gboolean parse_provide_local_info(struct stk_command *command,
 	return TRUE;
 }
 
+static gboolean parse_setup_event_list(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_setup_event_list *obj = &command->setup_event_list;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_EVENT_LIST,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->event_list,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2681,6 +2707,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_PROVIDE_LOCAL_INFO:
 		ok = parse_provide_local_info(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SETUP_EVENT_LIST:
+		ok = parse_setup_event_list(command, &iter);
 		break;
 	default:
 		ok = FALSE;
