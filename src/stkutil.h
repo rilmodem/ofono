@@ -824,6 +824,10 @@ struct stk_command_play_tone {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_poll_interval {
+	struct stk_duration duration;
+};
+
 struct stk_command_send_sms {
 	char *alpha_id;
 	struct stk_address address;
@@ -847,6 +851,7 @@ struct stk_command {
 		struct stk_command_get_input get_input;
 		struct stk_command_play_tone play_tone;
 		struct stk_command_send_sms send_sms;
+		struct stk_command_poll_interval poll_interval;
 	};
 
 	void (*destructor)(struct stk_command *command);

@@ -2230,6 +2230,31 @@ static gboolean parse_play_tone(struct stk_command *command,
 	return TRUE;
 }
 
+static gboolean parse_poll_interval(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_poll_interval *obj = &command->poll_interval;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_DURATION,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->duration,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = NULL;
+
+	return TRUE;
+}
+
 static void destroy_send_sms(struct stk_command *command)
 {
 	g_free(command->send_sms.alpha_id);
@@ -2357,6 +2382,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_PLAY_TONE:
 		ok = parse_play_tone(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_POLL_INTERVAL:
+		ok = parse_poll_interval(command, &iter);
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
 		ok = parse_send_sms(command, &iter);
