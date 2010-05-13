@@ -84,6 +84,21 @@ void ppp_debug(GAtPPP *ppp, const char *str)
 	ppp->debugf(str, ppp->debug_data);
 }
 
+struct ppp_header *ppp_packet_new(gsize infolen, guint16 protocol)
+{
+	struct ppp_header *ppp_packet;
+
+	ppp_packet = g_try_malloc0(infolen + sizeof(*ppp_packet));
+	if (ppp_packet == NULL)
+		return NULL;
+
+	ppp_packet->proto = htons(protocol);
+	ppp_packet->address = PPP_ADDR_FIELD;
+	ppp_packet->control = PPP_CTRL;
+
+	return ppp_packet;
+}
+
 /*
  * Silently discard packets which are received when they shouldn't be
  */

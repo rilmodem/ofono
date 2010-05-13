@@ -204,12 +204,9 @@ static struct pppcp_packet *pppcp_packet_new(struct pppcp_data *data,
 	struct ppp_header *ppp_packet;
 	guint16 packet_length = bufferlen + sizeof(*packet);
 
-	ppp_packet = g_try_malloc0(packet_length + sizeof(*ppp_packet));
+	ppp_packet = ppp_packet_new(packet_length, data->driver->proto);
 	if (!ppp_packet)
 		return NULL;
-
-	/* add our protocol information */
-	ppp_packet->proto = htons(data->driver->proto);
 
 	/* advance past protocol to add CP header information */
 	packet = (struct pppcp_packet *) (ppp_packet->info);

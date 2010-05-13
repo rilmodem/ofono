@@ -83,12 +83,10 @@ static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 	 */
 	digest_len = g_checksum_type_get_length(chap->method);
 	response_length = digest_len + sizeof(*header) + 1;
-	ppp_packet = g_try_malloc0(response_length + sizeof(struct ppp_header));
+	ppp_packet = ppp_packet_new(response_length, CHAP_PROTOCOL);
 	if (!ppp_packet)
 		goto challenge_out;
 
-	/* add our protocol information */
-	ppp_packet->proto = htons(CHAP_PROTOCOL);
 	response = (struct chap_header *) &ppp_packet->info;
 	if (response) {
 		response->code = RESPONSE;

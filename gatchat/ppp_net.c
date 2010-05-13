@@ -46,6 +46,7 @@ struct ppp_net {
 	GIOChannel *channel;
 	gint watch;
 	gint mtu;
+	struct ppp_header *ppp_packet;
 };
 
 gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
@@ -95,23 +96,21 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 {
 	struct ppp_net *net = (struct ppp_net *) userdata;
 	GIOStatus status;
-	gchar buf[MAX_PACKET + sizeof(struct ppp_header)];
 	gsize bytes_read;
 	GError *error = NULL;
-	struct ppp_header *ppp = (struct ppp_header *) buf;
+	gchar *buf = (gchar *) net->ppp_packet->info;
 
 	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP))
 		return FALSE;
 
 	if (cond & G_IO_IN) {
 		/* leave space to add PPP protocol field */
-		status = g_io_channel_read_chars(channel,
-				buf + sizeof(struct ppp_header), net->mtu,
-				&bytes_read, &error);
-		if (bytes_read > 0) {
-			ppp->proto = htons(PPP_IP_PROTO);
-			ppp_transmit(net->ppp, (guint8 *) buf, bytes_read);
-		}
+		status = g_io_channel_read_chars(channel, buf, net->mtu,
+						 &bytes_read, &error);
+		if (bytes_read > 0)
+			ppp_transmit(net->ppp, (guint8 *) net->ppp_packet,
+					bytes_read);
+
 		if (status != G_IO_STATUS_NORMAL && status != G_IO_STATUS_AGAIN)
 			return FALSE;
 	}
@@ -134,6 +133,12 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp)
 	net = g_try_new0(struct ppp_net, 1);
 	if (net == NULL)
 		return NULL;
+
+	net->ppp_packet = ppp_packet_new(MAX_PACKET, PPP_IP_PROTO);
+	if (net->ppp_packet == NULL) {
+		g_free(net);
+		return NULL;
+	}
 
 	/* open a tun interface */
 	fd = open("/dev/net/tun", O_RDWR);
@@ -176,6 +181,8 @@ error:
 	if (fd >= 0)
 		close(fd);
 
+	g_free(net->if_name);
+	g_free(net->ppp_packet);
 	g_free(net);
 	return NULL;
 }
@@ -185,6 +192,7 @@ void ppp_net_free(struct ppp_net *net)
 	g_source_remove(net->watch);
 	g_io_channel_unref(net->channel);
 
+	g_free(net->ppp_packet);
 	g_free(net->if_name);
 	g_free(net);
 }
