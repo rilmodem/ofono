@@ -2026,7 +2026,6 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 		entries = g_slist_prepend(entries, entry);
 	}
 
-
 	if (comprehension_tlv_iter_next(iter) != TRUE)
 		goto out;
 
