@@ -2043,9 +2043,6 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 			if (handler(iter, entry->data))
 				entry->parsed = TRUE;
 
-			if (l->next == NULL)
-				break;
-
 			if (comprehension_tlv_iter_next(iter) == FALSE)
 				break;
 		}
@@ -2276,58 +2273,30 @@ static void destroy_setup_menu(struct stk_command *command)
 	g_slist_free(command->setup_menu.items);
 }
 
-static gboolean parse_list(struct comprehension_tlv_iter *iter,
-		enum stk_data_object_type type,	int flags, GSList **list)
+static GSList *parse_item_list(struct comprehension_tlv_iter *iter)
 {
+	unsigned short tag = STK_DATA_OBJECT_TYPE_ITEM;
 	struct comprehension_tlv_iter iter_old;
-	void *dataobj;
-	gboolean has_obj = FALSE;
-	dataobj_handler handler = handler_for_type(type);
-	gboolean ret;
+	struct stk_item item;
+	GSList *list = NULL;
 
-	if ((type != STK_DATA_OBJECT_TYPE_ITEM) && (type !=
-			STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REFERENCE))
-		return FALSE;
+	if (comprehension_tlv_iter_get_tag(iter) != tag)
+		return NULL;
 
-	comprehension_tlv_iter_copy(iter, &iter_old);
-
-	while (comprehension_tlv_iter_next(iter)) {
-		if (comprehension_tlv_iter_get_tag(iter) != type)
-			break;
-
+	do {
 		comprehension_tlv_iter_copy(iter, &iter_old);
+		memset(&item, 0, sizeof(item));
 
-		if (type == STK_DATA_OBJECT_TYPE_ITEM)
-			dataobj = g_try_new0(struct stk_item, 1);
-		else
-			dataobj = g_try_new0(struct stk_file, 1);
-
-		if (!dataobj)
-			goto out;
-
-		ret = handler(iter, dataobj);
-		has_obj |= ret;
-
-		if (type == STK_DATA_OBJECT_TYPE_ITEM) {
-			struct stk_item *item = dataobj;
-
-			/* either return is FALSE or item is empty */
-			if (item->id == 0)
-				g_free(dataobj);
-			else
-				*list = g_slist_prepend(*list, dataobj);
-		} else
-			*list = g_slist_prepend(*list, dataobj);
-	}
+		if (parse_dataobj_item(iter, &item) == TRUE)
+			list = g_slist_prepend(list,
+						g_memdup(&item, sizeof(item)));
+	} while (comprehension_tlv_iter_next(iter) == TRUE &&
+			comprehension_tlv_iter_get_tag(iter) == tag);
 
 	comprehension_tlv_iter_copy(&iter_old, iter);
-out:
-	if ((flags & DATAOBJ_FLAG_MANDATORY) && !has_obj)
-		return FALSE;
+	list = g_slist_reverse(list);
 
-	*list = g_slist_reverse(*list);
-
-	return TRUE;
+	return list;
 }
 
 static gboolean parse_setup_menu(struct stk_command *command,
@@ -2351,10 +2320,9 @@ static gboolean parse_setup_menu(struct stk_command *command,
 	if (ret == FALSE)
 		goto error;
 
-	ret = parse_list(iter, STK_DATA_OBJECT_TYPE_ITEM,
-				DATAOBJ_FLAG_MANDATORY, &obj->items);
+	obj->items = parse_item_list(iter);
 
-	if (ret == FALSE)
+	if (obj->items == NULL)
 		goto error;
 
 	ret = parse_dataobj(iter,
@@ -2411,10 +2379,9 @@ static gboolean parse_select_item(struct stk_command *command,
 	if (ret == FALSE)
 		goto error;
 
-	ret = parse_list(iter, STK_DATA_OBJECT_TYPE_ITEM,
-				DATAOBJ_FLAG_MANDATORY, &obj->items);
+	obj->items = parse_item_list(iter);
 
-	if (ret == FALSE)
+	if (obj->items == NULL)
 		goto error;
 
 	ret = parse_dataobj(iter,
