@@ -960,6 +960,11 @@ struct stk_command_perform_card_apdu {
 	struct stk_c_apdu c_apdu;
 };
 
+struct stk_command_timer_mgmt {
+	unsigned char timer_id;
+	struct stk_timer_value timer_value;
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -980,6 +985,7 @@ struct stk_command {
 		struct stk_command_refresh refresh;
 		struct stk_command_setup_event_list setup_event_list;
 		struct stk_command_perform_card_apdu perform_card_apdu;
+		struct stk_command_timer_mgmt timer_mgmt;
 	};
 
 	void (*destructor)(struct stk_command *command);
