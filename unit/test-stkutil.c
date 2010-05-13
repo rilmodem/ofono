@@ -84,7 +84,11 @@ static void check_item(const struct stk_item *command,
 					const struct stk_item *test)
 {
 	g_assert(command->id == test->id);
-	g_assert(g_str_equal(command->text, test->text));
+
+	if (command->text == NULL)
+		g_assert(test->text == NULL);
+	else
+		g_assert(g_str_equal(command->text, test->text));
 }
 
 /* Defined in TS 102.223 Section 8.10 */
