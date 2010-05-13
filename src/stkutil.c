@@ -2382,6 +2382,70 @@ error:
 	return FALSE;
 }
 
+static void destroy_select_item(struct stk_command *command)
+{
+	g_free(command->select_item.alpha_id);
+	g_slist_foreach(command->select_item.items,
+				(GFunc)destroy_stk_item, NULL);
+	g_slist_free(command->select_item.items);
+}
+
+static gboolean parse_select_item(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_select_item *obj = &command->select_item;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		goto error;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		goto error;
+
+	ret = parse_dataobj(iter,
+			STK_DATA_OBJECT_TYPE_ALPHA_ID,
+			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+			&obj->alpha_id,
+			STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		goto error;
+
+	ret = parse_list(iter, STK_DATA_OBJECT_TYPE_ITEM,
+				DATAOBJ_FLAG_MANDATORY, &obj->items);
+
+	if (ret == FALSE)
+		goto error;
+
+	ret = parse_dataobj(iter,
+			STK_DATA_OBJECT_TYPE_ITEMS_NEXT_ACTION_INDICATOR, 0,
+			&obj->next_act,
+			STK_DATA_OBJECT_TYPE_ITEM_ID, 0,
+			&obj->item_id,
+			STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+			&obj->icon_id,
+			STK_DATA_OBJECT_TYPE_ITEM_ICON_ID_LIST, 0,
+			&obj->item_icon_id_list,
+			STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+			&obj->text_attr,
+			STK_DATA_OBJECT_TYPE_ITEM_TEXT_ATTRIBUTE_LIST, 0,
+			&obj->item_text_attr_list,
+			STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+			&obj->frame_id,
+			STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		goto error;
+
+	command->destructor = destroy_setup_menu;
+
+	return TRUE;
+
+error:
+	destroy_select_item(command);
+	return FALSE;
+}
+
 static void destroy_send_sms(struct stk_command *command)
 {
 	g_free(command->send_sms.alpha_id);
@@ -2515,6 +2579,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SETUP_MENU:
 		ok = parse_setup_menu(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SELECT_ITEM:
+		ok = parse_select_item(command, &iter);
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
 		ok = parse_send_sms(command, &iter);
