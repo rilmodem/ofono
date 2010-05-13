@@ -2468,6 +2468,58 @@ static gboolean parse_send_sms(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_setup_call(struct stk_command *command)
+{
+	g_free(command->setup_call.alpha_id_usr_cfm);
+	g_free(command->setup_call.addr.number);
+	g_free(command->setup_call.alpha_id_call_setup);
+}
+
+static gboolean parse_setup_call(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_setup_call *obj = &command->setup_call;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id_usr_cfm,
+				STK_DATA_OBJECT_TYPE_ADDRESS,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->addr,
+				STK_DATA_OBJECT_TYPE_CCP, 0,
+				&obj->ccp,
+				STK_DATA_OBJECT_TYPE_SUBADDRESS, 0,
+				&obj->subaddr,
+				STK_DATA_OBJECT_TYPE_DURATION, 0,
+				&obj->duration,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id_usr_cfm,
+				STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id_call_setup,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id_call_setup,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr_usr_cfm,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr_call_setup,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_setup_call;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2552,6 +2604,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
 		ok = parse_send_sms(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SETUP_CALL:
+		ok = parse_setup_call(command, &iter);
 		break;
 	default:
 		ok = FALSE;

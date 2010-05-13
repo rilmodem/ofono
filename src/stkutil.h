@@ -860,6 +860,20 @@ struct stk_command_send_sms {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_setup_call {
+	char *alpha_id_usr_cfm;
+	struct stk_address addr;
+	struct stk_ccp ccp;
+	struct stk_subaddress subaddr;
+	struct stk_duration duration;
+	struct stk_icon_id icon_id_usr_cfm;
+	char *alpha_id_call_setup;
+	struct stk_icon_id icon_id_call_setup;
+	struct stk_text_attribute text_attr_usr_cfm;
+	struct stk_text_attribute text_attr_call_setup;
+	struct stk_frame_id frame_id;
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -876,6 +890,7 @@ struct stk_command {
 		struct stk_command_setup_menu setup_menu;
 		struct stk_command_select_item select_item;
 		struct stk_command_send_sms send_sms;
+		struct stk_command_setup_call setup_call;
 	};
 
 	void (*destructor)(struct stk_command *command);
