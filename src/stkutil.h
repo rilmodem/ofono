@@ -978,11 +978,11 @@ struct stk_command {
 		struct stk_command_get_input get_input;
 		struct stk_command_play_tone play_tone;
 		struct stk_command_poll_interval poll_interval;
+		struct stk_command_refresh refresh;
 		struct stk_command_setup_menu setup_menu;
 		struct stk_command_select_item select_item;
 		struct stk_command_send_sms send_sms;
 		struct stk_command_setup_call setup_call;
-		struct stk_command_refresh refresh;
 		struct stk_command_setup_event_list setup_event_list;
 		struct stk_command_perform_card_apdu perform_card_apdu;
 		struct stk_command_timer_mgmt timer_mgmt;
