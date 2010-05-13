@@ -8948,6 +8948,40 @@ static void test_refresh(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct polling_off_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+};
+
+static unsigned char polling_off_112[] = { 0xD0, 0x09, 0x81, 0x03, 0x01, 0x04,
+						0x00, 0x82, 0x02, 0x81, 0x82 };
+
+static struct polling_off_test polling_off_data_112 = {
+	.pdu = polling_off_112,
+	.pdu_len = sizeof(polling_off_112),
+	.qualifier = 0x00,
+};
+
+static void test_polling_off(gconstpointer data)
+{
+	const struct polling_off_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_POLLING_OFF);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	stk_command_free(command);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -9578,6 +9612,9 @@ int main(int argc, char **argv)
 				&refresh_data_121, test_refresh);
 	g_test_add_data_func("/teststk/Refresh 1.5.1",
 				&refresh_data_151, test_refresh);
+
+	g_test_add_data_func("/teststk/Polling off 1.1.2",
+				&polling_off_data_112, test_polling_off);
 
 	return g_test_run();
 }
