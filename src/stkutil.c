@@ -373,7 +373,11 @@ static gboolean parse_dataobj_item(struct comprehension_tlv_iter *iter,
 	char *utf8;
 
 	len = comprehension_tlv_iter_get_length(iter);
-	if (len < 2)
+
+	if (len == 0)
+		return TRUE;
+
+	if (len == 1)
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
