@@ -875,7 +875,7 @@ struct stk_command_setup_call {
 };
 
 struct stk_command_refresh {
-	GSList *fl;
+	GSList *file_list;
 	struct stk_aid aid;
 	char *alpha_id;
 	struct stk_icon_id icon_id;

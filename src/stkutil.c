@@ -2522,8 +2522,8 @@ static gboolean parse_setup_call(struct stk_command *command,
 
 static void destroy_refresh(struct stk_command *command)
 {
-	g_slist_foreach(command->refresh.fl, (GFunc)g_free, NULL);
-	g_slist_free(command->refresh.fl);
+	g_slist_foreach(command->refresh.file_list, (GFunc)g_free, NULL);
+	g_slist_free(command->refresh.file_list);
 	g_free(command->refresh.alpha_id);
 }
 
@@ -2540,7 +2540,7 @@ static gboolean parse_refresh(struct stk_command *command,
 		return FALSE;
 
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_FILE_LIST, 0,
-				&obj->fl,
+				&obj->file_list,
 				STK_DATA_OBJECT_TYPE_AID, 0,
 				&obj->aid,
 				STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
