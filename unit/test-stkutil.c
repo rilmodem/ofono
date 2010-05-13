@@ -198,6 +198,22 @@ static inline void check_tone(const ofono_bool_t command,
 	check_common_bool(command, test);
 }
 
+/* Defined in TS 102.223 Section 8.18 */
+static void check_file_list(GSList *command, const struct stk_file *test)
+{
+	struct stk_file *sf;
+	GSList *l;
+	unsigned int i = 0;
+
+	for (l = command; l; l = l->next) {
+		sf = l->data;
+		g_assert(sf->len == test[i].len);
+		g_assert(g_mem_equal(sf->file, test[i++].file, sf->len));
+	}
+
+	g_assert(test[i].len == 0);
+}
+
 /* Defined in TS 102.223 Section 8.23 */
 static inline void check_default_text(const char *command, const char *test)
 {
@@ -235,6 +251,13 @@ static inline void check_imm_resp(const unsigned char command,
 					const unsigned char test)
 {
 	check_common_byte(command, test);
+}
+
+/* Defined in TS 102.223 Section 8.60 */
+static inline void check_aid(const struct stk_aid *command,
+					const struct stk_aid *test)
+{
+	g_assert(g_mem_equal(command->aid, test->aid, test->len));
 }
 
 /* Defined in TS 102.223 Section 8.71 */
@@ -8862,6 +8885,69 @@ static void test_setup_call(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct refresh_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+	struct stk_file fl[MAX_ITEM];
+	struct stk_aid aid;
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+static unsigned char refresh_121[] = { 0xD0, 0x10, 0x81, 0x03, 0x01, 0x01,
+						0x01, 0x82, 0x02, 0x81, 0x82,
+						0x92, 0x05, 0x01, 0x3F, 0x00,
+						0x2F, 0xE2 };
+
+static unsigned char refresh_151[] = { 0xD0, 0x09, 0x81, 0x03, 0x01, 0x01,
+						0x04, 0x82, 0x02, 0x81, 0x82 };
+
+static struct refresh_test refresh_data_121 = {
+	.pdu = refresh_121,
+	.pdu_len = sizeof(refresh_121),
+	.qualifier = 0x01,
+	.fl[0] = {
+		.len = 4,
+		.file = { 0x3F, 0x00, 0x2F, 0xE2 }
+	}
+};
+
+static struct refresh_test refresh_data_151 = {
+	.pdu = refresh_151,
+	.pdu_len = sizeof(refresh_151),
+	.qualifier = 0x04
+};
+
+/* Defined in TS 102.384 Section 27.22.4.7 */
+static void test_refresh(gconstpointer data)
+{
+	const struct refresh_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_REFRESH);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	check_file_list(command->refresh.fl, test->fl);
+	check_aid(&command->refresh.aid, &test->aid);
+	check_alpha_id(command->refresh.alpha_id, test->alpha_id);
+	check_icon_id(&command->refresh.icon_id, &test->icon_id);
+	check_text_attr(&command->refresh.text_attr, &test->text_attr);
+	check_frame_id(&command->refresh.frame_id, &test->frame_id);
+
+	stk_command_free(command);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -9487,6 +9573,11 @@ int main(int argc, char **argv)
 				&setup_call_data_711, test_setup_call);
 	g_test_add_data_func("/teststk/Setup Call 7.2.1",
 				&setup_call_data_721, test_setup_call);
+
+	g_test_add_data_func("/teststk/Refresh 1.2.1",
+				&refresh_data_121, test_refresh);
+	g_test_add_data_func("/teststk/Refresh 1.5.1",
+				&refresh_data_151, test_refresh);
 
 	return g_test_run();
 }
