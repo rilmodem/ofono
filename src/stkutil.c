@@ -2042,6 +2042,10 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 		if (comprehension_tlv_iter_get_tag(iter) == entry->type) {
 			if (handler(iter, entry->data))
 				entry->parsed = TRUE;
+
+			if (l->next == NULL)
+				break;
+
 			if (comprehension_tlv_iter_next(iter) == FALSE)
 				break;
 		}
@@ -2258,6 +2262,126 @@ static gboolean parse_poll_interval(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_stk_item(struct stk_item *item)
+{
+	g_free(item->text);
+	g_free(item);
+}
+
+static void destroy_setup_menu(struct stk_command *command)
+{
+	g_free(command->setup_menu.alpha_id);
+	g_slist_foreach(command->setup_menu.items,
+				(GFunc)destroy_stk_item, NULL);
+	g_slist_free(command->setup_menu.items);
+}
+
+static gboolean parse_list(struct comprehension_tlv_iter *iter,
+		enum stk_data_object_type type,	int flags, GSList **list)
+{
+	struct comprehension_tlv_iter iter_old;
+	void *dataobj;
+	gboolean has_obj = FALSE;
+	dataobj_handler handler = handler_for_type(type);
+	gboolean ret;
+
+	if ((type != STK_DATA_OBJECT_TYPE_ITEM) && (type !=
+			STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REFERENCE))
+		return FALSE;
+
+	comprehension_tlv_iter_copy(iter, &iter_old);
+
+	while (comprehension_tlv_iter_next(iter)) {
+		if (comprehension_tlv_iter_get_tag(iter) != type)
+			break;
+
+		comprehension_tlv_iter_copy(iter, &iter_old);
+
+		if (type == STK_DATA_OBJECT_TYPE_ITEM)
+			dataobj = g_try_new0(struct stk_item, 1);
+		else
+			dataobj = g_try_new0(struct stk_file, 1);
+
+		if (!dataobj)
+			goto out;
+
+		ret = handler(iter, dataobj);
+		has_obj |= ret;
+
+		if (type == STK_DATA_OBJECT_TYPE_ITEM) {
+			struct stk_item *item = dataobj;
+
+			/* either return is FALSE or item is empty */
+			if (item->id == 0)
+				g_free(dataobj);
+			else
+				*list = g_slist_prepend(*list, dataobj);
+		} else
+			*list = g_slist_prepend(*list, dataobj);
+	}
+
+	comprehension_tlv_iter_copy(&iter_old, iter);
+out:
+	if ((flags & DATAOBJ_FLAG_MANDATORY) && !has_obj)
+		return FALSE;
+
+	*list = g_slist_reverse(*list);
+
+	return TRUE;
+}
+
+static gboolean parse_setup_menu(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_setup_menu *obj = &command->setup_menu;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		goto error;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		goto error;
+
+	ret = parse_dataobj(iter,
+			STK_DATA_OBJECT_TYPE_ALPHA_ID,
+			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+			&obj->alpha_id,
+			STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		goto error;
+
+	ret = parse_list(iter, STK_DATA_OBJECT_TYPE_ITEM,
+				DATAOBJ_FLAG_MANDATORY, &obj->items);
+
+	if (ret == FALSE)
+		goto error;
+
+	ret = parse_dataobj(iter,
+			STK_DATA_OBJECT_TYPE_ITEMS_NEXT_ACTION_INDICATOR, 0,
+			&obj->next_act,
+			STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+			&obj->icon_id,
+			STK_DATA_OBJECT_TYPE_ITEM_ICON_ID_LIST, 0,
+			&obj->item_icon_id_list,
+			STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+			&obj->text_attr,
+			STK_DATA_OBJECT_TYPE_ITEM_TEXT_ATTRIBUTE_LIST, 0,
+			&obj->item_text_attr_list,
+			STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		goto error;
+
+	command->destructor = destroy_setup_menu;
+
+	return TRUE;
+
+error:
+	destroy_setup_menu(command);
+	return FALSE;
+}
+
 static void destroy_send_sms(struct stk_command *command)
 {
 	g_free(command->send_sms.alpha_id);
@@ -2388,6 +2512,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_POLL_INTERVAL:
 		ok = parse_poll_interval(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SETUP_MENU:
+		ok = parse_setup_menu(command, &iter);
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
 		ok = parse_send_sms(command, &iter);

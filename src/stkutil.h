@@ -828,6 +828,16 @@ struct stk_command_poll_interval {
 	struct stk_duration duration;
 };
 
+struct stk_command_setup_menu {
+	char *alpha_id;
+	GSList *items;
+	struct stk_items_next_action_indicator next_act;
+	struct stk_icon_id icon_id;
+	struct stk_item_icon_id_list item_icon_id_list;
+	struct stk_text_attribute text_attr;
+	struct stk_item_text_attribute_list item_text_attr_list;
+};
+
 struct stk_command_send_sms {
 	char *alpha_id;
 	struct stk_address address;
@@ -852,6 +862,7 @@ struct stk_command {
 		struct stk_command_play_tone play_tone;
 		struct stk_command_send_sms send_sms;
 		struct stk_command_poll_interval poll_interval;
+		struct stk_command_setup_menu setup_menu;
 	};
 
 	void (*destructor)(struct stk_command *command);
