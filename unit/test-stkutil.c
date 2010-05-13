@@ -3883,6 +3883,49 @@ static void test_play_tone(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct poll_interval_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+	struct stk_duration duration;
+};
+
+static unsigned char poll_interval_111[] = { 0xD0, 0x0D, 0x81, 0x03, 0x01, 0x03,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0x84, 0x02, 0x01, 0x14 };
+
+static struct poll_interval_test poll_interval_data_111 = {
+	.pdu = poll_interval_111,
+	.pdu_len = sizeof(poll_interval_111),
+	.qualifier = 0x00,
+	.duration = {
+		.unit = STK_DURATION_TYPE_SECONDS,
+		.interval = 20
+	}
+};
+
+/* Defined in TS 102.384 Section 27.22.4.6 */
+static void test_poll_interval(gconstpointer data)
+{
+	const struct poll_interval_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_POLL_INTERVAL);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	check_duration(&command->poll_interval.duration, &test->duration);
+
+	stk_command_free(command);
+}
+
 struct send_sms_test {
 	const unsigned char *pdu;
 	unsigned int pdu_len;
@@ -4320,6 +4363,9 @@ int main(int argc, char **argv)
 				&play_tone_data_612, test_play_tone);
 	g_test_add_data_func("/teststk/Play Tone 6.1.3",
 				&play_tone_data_613, test_play_tone);
+
+	g_test_add_data_func("/teststk/Poll Interval 1.1.1",
+				&poll_interval_data_111, test_poll_interval);
 
 	g_test_add_data_func("/teststk/Send SMS 1.1",
 				&send_sms_data_11, test_send_sms);
