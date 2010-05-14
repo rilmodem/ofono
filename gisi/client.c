@@ -95,6 +95,23 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 				gpointer data);
 static gboolean g_isi_timeout(gpointer data);
 
+static void g_isi_vdebug(const struct iovec *__restrict iov,
+				size_t iovlen, size_t total_len,
+				GIsiDebugFunc func, void *data)
+{
+	uint8_t debug[total_len];
+	uint8_t *ptr = debug;
+	size_t i;
+
+	for (i = 0; i < iovlen; i++) {
+		memcpy(ptr, iov[i].iov_base, iov[i].iov_len);
+		ptr += iov[i].iov_len;
+	}
+
+	func(debug, total_len, data);
+}
+
+
 static int g_isi_cmp(const void *a, const void *b)
 {
 	const unsigned int *ua = (const unsigned int *)a;
@@ -401,9 +418,9 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *client,
 		len += iov[i].iov_len;
 	}
 
-	/* TODO: call debug function */
-	/* if (client->debug_func) */
-	/* 	client->debug_func(buf, len, client->debug_data); */
+	if (client->debug_func)
+		g_isi_vdebug(iov, iovlen, len - 1, client->debug_func,
+				client->debug_data);
 
 	ret = sendmsg(client->reqs.fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
