@@ -54,6 +54,10 @@ enum sms_isi_cause {
 	SMS_ERR_TRACFONE_FAILED = 0x14
 };
 
+enum sms_isi_cause_type {
+	SMS_CAUSE_TYPE_GSM = 0x01,
+};
+
 enum sms_gsm_cause {
 	SMS_GSM_ERR_UNASSIGNED_NUMBER = 0x01,
 	SMS_GSM_ERR_OPER_DETERMINED_BARR = 0x08,
@@ -115,9 +119,12 @@ enum sms_message_id {
 	SMS_PP_ROUTING_REQ = 0x06,
 	SMS_PP_ROUTING_RESP = 0x07,
 	SMS_PP_ROUTING_NTF = 0x08,
+	SMS_GSM_RECEIVED_PP_REPORT_REQ = 0x09,
+	SMS_GSM_RECEIVED_PP_REPORT_RESP = 0x0A,
 	SMS_GSM_CB_ROUTING_REQ = 0x0B,
 	SMS_GSM_CB_ROUTING_RESP = 0x0C,
 	SMS_GSM_CB_ROUTING_NTF = 0x0D,
+	SMS_MESSAGE_SEND_STATUS_IND = 0x22,
 	SMS_COMMON_MESSAGE = 0xF0
 };
 
@@ -126,7 +133,12 @@ enum sms_subblock {
 	SMS_GSM_STATUS_REPORT = 0x01,
 	SMS_GSM_SUBMIT = 0x02,
 	SMS_GSM_COMMAND = 0x03,
-	SMS_GSM_ROUTING = 0x0D
+	SMS_GSM_DELIVER_REPORT = 0x06,
+	SMS_GSM_REPORT = 0x0C,
+	SMS_GSM_ROUTING = 0x0D,
+	SMS_GSM_TPDU = 0x11,
+	SMS_COMMON_DATA = 0x80,
+	SMS_ADDRESS = 0x82,
 };
 
 enum sms_routing_command {
@@ -156,6 +168,12 @@ enum sms_routing_type {
 
 enum sms_message_type {
 	SMS_GSM_MT_ALL_TYPE = 0x06
+};
+
+enum sms_address_type {
+	SMS_UNICODE_ADDRESS = 0x00,
+	SMS_GSM_0340_ADDRESS = 0x01,
+	SMS_GSM_0411_ADDRESS = 0x02,
 };
 
 enum sms_sender_type {

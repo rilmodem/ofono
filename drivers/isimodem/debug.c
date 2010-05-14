@@ -246,9 +246,12 @@ const char *sms_message_id_name(enum sms_message_id value)
 		_(SMS_PP_ROUTING_REQ);
 		_(SMS_PP_ROUTING_RESP);
 		_(SMS_PP_ROUTING_NTF);
+		_(SMS_GSM_RECEIVED_PP_REPORT_REQ);
+		_(SMS_GSM_RECEIVED_PP_REPORT_RESP);
 		_(SMS_GSM_CB_ROUTING_REQ);
 		_(SMS_GSM_CB_ROUTING_RESP);
 		_(SMS_GSM_CB_ROUTING_NTF);
+		_(SMS_MESSAGE_SEND_STATUS_IND);
 		_(SMS_COMMON_MESSAGE);
 	}
 	return "SMS_<UNKNOWN>";
@@ -261,7 +264,12 @@ const char *sms_subblock_name(enum sms_subblock value)
 		_(SMS_GSM_STATUS_REPORT);
 		_(SMS_GSM_SUBMIT);
 		_(SMS_GSM_COMMAND);
+		_(SMS_GSM_DELIVER_REPORT);
+		_(SMS_GSM_REPORT);
 		_(SMS_GSM_ROUTING);
+		_(SMS_GSM_TPDU);
+		_(SMS_COMMON_DATA);
+		_(SMS_ADDRESS);
 	}
 	return "SMS_<UNKNOWN>";
 }
