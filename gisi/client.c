@@ -460,7 +460,7 @@ void g_isi_request_cancel(GIsiRequest *req)
 
 /**
  * Subscribe to a given indication type for the resource that an ISI client
- * is associated with. If the same type was already subscrived, the old
+ * is associated with. If the same type was already subscribed, the old
  * subscription is overriden.
  * @param cl ISI client (fomr g_isi_client_create())
  * @param type indication type
