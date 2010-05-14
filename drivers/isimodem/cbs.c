@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include <glib.h>
 
@@ -66,12 +67,10 @@ static void routing_ntf_cb(GIsiClient *client, const void *restrict data,
 	const unsigned char *msg = data;
 	struct ofono_cbs *cbs = opaque;
 
-	DBG("");
-
 	if (!msg || len < 3 || msg[0] != SMS_GSM_CB_ROUTING_NTF)
 		return;
 
-	ofono_cbs_notify(cbs, msg+3, len-3);
+	ofono_cbs_notify(cbs, msg+5, len-5);
 }
 
 static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
@@ -79,7 +78,6 @@ static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
 {
 	const unsigned char *msg = data;
 	struct ofono_cbs *cbs = opaque;
-	const char *debug = NULL;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -101,9 +99,8 @@ static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
 		return true;
 	}
 
-	debug = getenv("OFONO_ISI_DEBUG");
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "cbs") == 0))
-		g_isi_client_set_debug(client, sms_debug, NULL);
+	g_isi_subscribe(client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb,
+			cbs);
 
 	ofono_cbs_register(cbs);
 	return true;
@@ -114,6 +111,7 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 {
 	GIsiModem *idx = user;
 	struct cbs_data *cd = g_try_new0(struct cbs_data, 1);
+	const char *debug = NULL;
 
 	unsigned char msg[] = {
 		SMS_GSM_CB_ROUTING_REQ,
@@ -137,12 +135,13 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 
 	ofono_cbs_set_data(cbs, cd);
 
+	debug = getenv("OFONO_ISI_DEBUG");
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "cbs") == 0))
+		g_isi_client_set_debug(cd->client, sms_debug, NULL);
+
 	if (!g_isi_request_make(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
 				routing_resp_cb, cbs))
 		DBG("Failed to set CBS routing.");
-
-	g_isi_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb,
-			cbs);
 
 	return 0;
 }
@@ -151,10 +150,31 @@ static void isi_cbs_remove(struct ofono_cbs *cbs)
 {
 	struct cbs_data *data = ofono_cbs_get_data(cbs);
 
-	if (data) {
+	uint8_t msg[] = {
+		SMS_GSM_CB_ROUTING_REQ,
+		SMS_ROUTING_RELEASE,
+		SMS_GSM_ROUTING_MODE_ALL,
+		SMS_CB_NOT_ALLOWED_IDS_LIST,
+		0x00,  /* Subject count */
+		0x00,  /* Language count */
+		0x00,  /* CB range */
+		0x00,  /* Subject list MSBS */
+		0x00,  /* Subject list LSBS */
+		0x00   /* Languages */
+	};
+
+	if (!data)
+		return;
+
+	if (data->client) {
+		/* Send a promiscuous routing release, so as not to
+		 * hog resources unnecessarily after being removed */
+		g_isi_request_make(data->client, msg, sizeof(msg),
+					CBS_TIMEOUT, NULL, NULL);
 		g_isi_client_destroy(data->client);
-		g_free(data);
 	}
+
+	g_free(data);
 }
 
 static struct ofono_cbs_driver driver = {
