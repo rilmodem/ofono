@@ -560,8 +560,13 @@ static void g_isi_dispatch_response(GIsiClient *client, uint16_t obj,
 	unsigned id = msg[0];
 
 	ret = tfind(&id, &client->reqs.pending, g_isi_cmp);
-	if (!ret)
+	if (!ret) {
+		/* This could either be an unsolicited response, which
+		 * we will ignore, or an incoming request, which we
+		 * handle just like an incoming indication */
+		g_isi_dispatch_indication(client, obj, msg + 1, len - 1);
 		return;
+	}
 
 	req = *(GIsiRequest **)ret;
 
