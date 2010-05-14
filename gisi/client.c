@@ -475,7 +475,7 @@ int g_isi_subscribe(GIsiClient *client, uint8_t type,
 	GIsiIndication **old;
 
 	if (cb == NULL)
-		return EINVAL;
+		return -EINVAL;
 
 	ind = g_try_new0(GIsiIndication, 1);
 	if (!ind)
