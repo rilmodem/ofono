@@ -90,11 +90,14 @@ static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
 		return false;
 
 	if (msg[1] != SMS_OK) {
-		DBG("Request failed: 0x%02X (%s).\n\n  Unable to bootstrap CBS"
-			" routing.\n  It appears some other component is"
-			" already\n  registered as the CBS routing endpoint.\n "
-			" As a consequence, receiving CBSs is NOT going"
-			" to work.\n\n", msg[1], sms_isi_cause_name(msg[1]));
+		if (msg[1] == SMS_ERR_PP_RESERVED)
+			DBG("Request failed: 0x%02"PRIx8" (%s).\n\n  "
+				"Unable to bootstrap CBS routing.\n  "
+				"It appears some other component is "
+				"already\n  registered as the CBS "
+				"routing endpoint.\n  As a consequence, "
+				"receiving CBSs is NOT going to work.\n\n",
+				msg[1], sms_isi_cause_name(msg[1]));
 		return true;
 	}
 
