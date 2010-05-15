@@ -162,7 +162,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 		SIM_SMS_REQ,
 		UPDATE_PARAMETER,
 		1,	/* Location, default is 1 */
-		0xFD,	/* Params persent */
+		0xFD,	/* Params present, only SCA */
 	};
 
 	uint8_t filler[40];
