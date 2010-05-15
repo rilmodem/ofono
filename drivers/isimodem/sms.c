@@ -525,7 +525,7 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 	ofono_sms_set_data(sms, data);
 
 	debug = getenv("OFONO_ISI_DEBUG");
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "gpds") == 0)) {
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "sms") == 0)) {
 		g_isi_client_set_debug(data->client, sms_debug, NULL);
 		g_isi_client_set_debug(data->sim, sim_debug, NULL);
 	}
