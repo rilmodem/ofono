@@ -326,7 +326,6 @@ static void send_status_ind_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
-	//struct ofono_sms *sms = opaque;
 
 	if (!msg || len < 6 || msg[0] != SMS_MESSAGE_SEND_STATUS_IND)
 		return;
