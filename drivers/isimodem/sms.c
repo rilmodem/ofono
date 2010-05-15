@@ -495,6 +495,7 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 {
 	GIsiModem *idx = user;
 	struct sms_data *data = g_try_new0(struct sms_data, 1);
+	const char *debug;
 
 	const unsigned char msg[] = {
 		SMS_PP_ROUTING_REQ,
@@ -523,7 +524,12 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 
 	ofono_sms_set_data(sms, data);
 
-	g_isi_client_set_debug(data->client, sms_debug, NULL);
+	debug = getenv("OFONO_ISI_DEBUG");
+	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "gpds") == 0)) {
+		g_isi_client_set_debug(data->client, sms_debug, NULL);
+		g_isi_client_set_debug(data->sim, sim_debug, NULL);
+	}
+
 	g_isi_subscribe(data->client, SMS_MESSAGE_SEND_STATUS_IND,
 			send_status_ind_cb, sms);
 	if (!g_isi_request_make(data->client, msg, sizeof(msg), SMS_TIMEOUT,
