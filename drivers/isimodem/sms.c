@@ -48,21 +48,147 @@
 
 struct sms_data {
 	GIsiClient *client;
+	GIsiClient *sim;
 };
+
+static bool sca_query_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const uint8_t *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_sms_sca_query_cb_t cb = cbd->cb;
+
+	struct ofono_phone_number sca;
+	const uint8_t *bcd;
+	uint8_t bcd_len;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	if (len < 31 || msg[0] != SIM_SMS_RESP || msg[1] != READ_PARAMETER)
+		return false;
+
+	if (msg[3] != SIM_SERV_OK)
+		goto error;
+
+	/* Bitmask indicating presence of parameters -- second flag
+	 * set is an indicator that the SCA is absent */
+	if (msg[4] & 0x2)
+		goto error;
+
+	bcd = msg + 19;
+	bcd_len = bcd[0];
+
+	if (bcd_len <= 1 || bcd_len > 12)
+		goto error;
+
+	extract_bcd_number(bcd + 2, bcd_len - 1, sca.number);
+	sca.type = bcd[1];
+
+	CALLBACK_WITH_SUCCESS(cb, &sca, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
+}
 
 static void isi_sca_query(struct ofono_sms *sms,
 				ofono_sms_sca_query_cb_t cb, void *data)
 {
-	DBG("Not implemented.");
+	struct sms_data *sd = ofono_sms_get_data(sms);
+	struct isi_cb_data *cbd = isi_cb_data_new(sms, cb, data);
+
+	uint8_t msg[] = {
+		SIM_SMS_REQ,
+		READ_PARAMETER,
+		1,	/* Location, default is 1 */
+	};
+
+	if (!cbd)
+		goto error;
+
+	if (g_isi_request_make(sd->sim, msg, sizeof(msg), SIM_TIMEOUT,
+				sca_query_resp_cb, cbd))
+		return;
+
+error:
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
+	g_free(cbd);
+}
+
+static bool sca_set_resp_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
+{
+	const uint8_t *msg = data;
+	struct isi_cb_data *cbd = opaque;
+	ofono_sms_sca_set_cb_t cb = cbd->cb;
+
+	if (!msg) {
+		DBG("ISI client error: %d", g_isi_client_error(client));
+		goto error;
+	}
+
+	if (len < 3 || msg[0] != SIM_SMS_RESP || msg[1] != UPDATE_PARAMETER)
+		return false;
+
+	if (msg[2] != SIM_SERV_OK)
+		goto error;
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	goto out;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+out:
+	g_free(cbd);
+	return true;
 }
 
 static void isi_sca_set(struct ofono_sms *sms,
 			const struct ofono_phone_number *sca,
 			ofono_sms_sca_set_cb_t cb, void *data)
 {
-	DBG("Not implemented.");
+	struct sms_data *sd = ofono_sms_get_data(sms);
+	struct isi_cb_data *cbd = isi_cb_data_new(sms, cb, data);
+
+	uint8_t msg[] = {
+		SIM_SMS_REQ,
+		UPDATE_PARAMETER,
+		1,	/* Location, default is 1 */
+		0xFD,	/* Params persent */
+	};
+
+	uint8_t filler[40];
+	uint8_t bcd[12];
+
+	struct iovec iov[4] = {
+		{ msg, sizeof(msg) },
+		{ filler, 15 },
+		{ bcd, sizeof(bcd) },
+		{ filler, 38 },
+	};
+
+	if (!cbd)
+		goto error;
+
+	encode_bcd_number(sca->number, bcd + 2);
+	bcd[0] = 1 + (strlen(sca->number) + 1) / 2;
+	bcd[1] = sca->type;
+
+	if (g_isi_request_vmake(sd->sim, iov, 4, SIM_TIMEOUT,
+				sca_set_resp_cb, cbd))
+		return;
+
+error:
 	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
 }
 
 static bool submit_resp_cb(GIsiClient *client, const void *restrict data,
@@ -389,6 +515,12 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 	if (!data->client)
 		return -ENOMEM;
 
+	data->sim = g_isi_client_create(idx, PN_SIM);
+	if (!data->sim) {
+		g_free(data->client);
+		return -ENOMEM;
+	}
+
 	ofono_sms_set_data(sms, data);
 
 	g_isi_client_set_debug(data->client, sms_debug, NULL);
@@ -427,6 +559,9 @@ static void isi_sms_remove(struct ofono_sms *sms)
 					SMS_TIMEOUT, NULL, NULL);
 		g_isi_client_destroy(data->client);
 	}
+
+	if (data->sim)
+		g_isi_client_destroy(data->sim);
 
 	g_free(data);
 }
