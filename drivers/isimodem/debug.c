@@ -366,6 +366,8 @@ const char *sim_message_id_name(enum sim_message_id value)
 		_(SIM_SERV_PROV_NAME_RESP);
 		_(SIM_READ_FIELD_REQ);
 		_(SIM_READ_FIELD_RESP);
+		_(SIM_SMS_REQ);
+		_(SIM_SMS_RESP);
 		_(SIM_PB_REQ_SIM_PB_READ);
 		_(SIM_PB_RESP_SIM_PB_READ);
 		_(SIM_IND);
