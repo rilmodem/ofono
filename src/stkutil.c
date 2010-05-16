@@ -3218,6 +3218,7 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					NULL);
 		break;
 	case STK_COMMAND_TYPE_REFRESH:
+	case STK_COMMAND_TYPE_SETUP_MENU:
 		break;
 	default:
 		return 0;

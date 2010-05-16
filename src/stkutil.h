@@ -1033,6 +1033,7 @@ struct stk_response {
 		struct stk_response_generic play_tone;
 		struct stk_response_poll_interval poll_interval;
 		struct stk_response_generic refresh;
+		struct stk_response_generic set_up_menu;
 		struct stk_response_generic send_sms;
 	};
 
