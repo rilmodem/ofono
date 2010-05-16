@@ -498,6 +498,316 @@ static const guint8 *ber_tlv_find_by_tag(const guint8 *pdu, guint8 in_tag,
 	return NULL;
 }
 
+#define MAX_BER_TLV_HEADER 8
+
+gboolean ber_tlv_builder_init(struct ber_tlv_builder *builder,
+				unsigned char *pdu, unsigned int size)
+{
+	if (size < MAX_BER_TLV_HEADER)
+		return FALSE;
+
+	builder->pdu = pdu;
+	builder->pos = 0;
+	builder->max = size;
+	builder->parent = NULL;
+	builder->tag = 0xff;
+	builder->len = 0;
+
+	return TRUE;
+}
+
+static void ber_tlv_builder_write_header(struct ber_tlv_builder *builder)
+{
+	int header_len = 0;
+	int start = builder->pos + MAX_BER_TLV_HEADER;
+
+	/* Write length at end of the header space */
+	if (builder->len <= 0x7f)
+		builder->pdu[start - ++header_len] = builder->len;
+	else {
+		while (builder->len >> (header_len * 8)) {
+			builder->pdu[start - 1 - header_len] =
+				builder->len >> (header_len * 8);
+			header_len++;
+		}
+		builder->pdu[start - 1 - header_len] = 0x80 + header_len;
+		header_len++;
+	}
+
+	/* Write the tag before length */
+	if (builder->tag < 0x1f)
+		builder->pdu[start - ++header_len] =
+			(builder->class << 6) |
+			(builder->encoding << 5) |
+			builder->tag;
+	else {
+		int i = 0;
+
+		while (builder->tag >> (i * 7)) {
+			builder->pdu[start - ++header_len] =
+				i ? 0x80 | (builder->tag >> (i * 7)) :
+				(builder->tag & 0x7f);
+			i++;
+		}
+
+		builder->pdu[start - ++header_len] =
+			(builder->class << 6) | (builder->encoding << 5) | 0x1f;
+	}
+
+	/* Pad with stuff bytes */
+	if (header_len < MAX_BER_TLV_HEADER)
+		memset(builder->pdu + builder->pos, 0xff,
+				MAX_BER_TLV_HEADER - header_len);
+}
+
+gboolean ber_tlv_builder_next(struct ber_tlv_builder *builder,
+				enum ber_tlv_data_type class,
+				enum ber_tlv_data_encoding_type encoding,
+				unsigned int new_tag)
+{
+	if (builder->tag != 0xff) {
+		ber_tlv_builder_write_header(builder);
+
+		builder->pos += MAX_BER_TLV_HEADER + builder->len;
+	}
+
+	if (builder->pos + MAX_BER_TLV_HEADER > builder->max)
+		return FALSE;
+
+	if (builder->parent)
+		if (ber_tlv_builder_set_length(builder->parent, builder->pos +
+					MAX_BER_TLV_HEADER) == FALSE)
+			return FALSE;
+
+	builder->class = class;
+	builder->encoding = encoding;
+	builder->tag = new_tag;
+	builder->len = 0;
+
+	return TRUE;
+}
+
+/* Resize the TLV because the content of Value field needs more space.  If
+ * this TLV is part of another TLV, resize that one too.  */
+gboolean ber_tlv_builder_set_length(struct ber_tlv_builder *builder,
+					unsigned int new_len)
+{
+	if (builder->pos + MAX_BER_TLV_HEADER + new_len > builder->max)
+		return FALSE;
+
+	if (builder->parent)
+		if (ber_tlv_builder_set_length(builder->parent,
+					builder->pos + MAX_BER_TLV_HEADER +
+					new_len) == FALSE)
+			return FALSE;
+
+	builder->len = new_len;
+
+	return TRUE;
+}
+
+unsigned char *ber_tlv_builder_get_data(struct ber_tlv_builder *builder)
+{
+	return builder->pdu + builder->pos + MAX_BER_TLV_HEADER;
+}
+
+gboolean ber_tlv_builder_recurse(struct ber_tlv_builder *builder,
+					struct ber_tlv_builder *recurse)
+{
+	unsigned char *end = builder->pdu + builder->max;
+	unsigned char *data = ber_tlv_builder_get_data(builder);
+
+	if (ber_tlv_builder_init(recurse, data, end - data) == FALSE)
+		return FALSE;
+
+	recurse->parent = builder;
+
+	return TRUE;
+}
+
+gboolean ber_tlv_builder_recurse_comprehension(struct ber_tlv_builder *builder,
+				struct comprehension_tlv_builder *recurse)
+{
+	unsigned char *end = builder->pdu + builder->max;
+	unsigned char *data = ber_tlv_builder_get_data(builder);
+
+	if (comprehension_tlv_builder_init(recurse, data, end - data) == FALSE)
+		return FALSE;
+
+	recurse->parent = builder;
+
+	return TRUE;
+}
+
+void ber_tlv_builder_optimize(struct ber_tlv_builder *builder,
+				unsigned char **pdu, unsigned int *len)
+{
+	ber_tlv_builder_write_header(builder);
+
+	if (pdu == NULL)
+		return;
+
+	*len = builder->pos + MAX_BER_TLV_HEADER + builder->len;
+	*pdu = builder->pdu;
+
+	while (**pdu == 0xff) {
+		(*len)--;
+		(*pdu)++;
+	}
+}
+
+gboolean comprehension_tlv_builder_init(
+				struct comprehension_tlv_builder *builder,
+				unsigned char *pdu, unsigned int size)
+{
+	if (size < 2)
+		return FALSE;
+
+	builder->pdu = pdu;
+	builder->pos = 0;
+	builder->max = size;
+	builder->parent = NULL;
+
+	builder->pdu[0] = 0;
+	builder->pdu[1] = 0;
+
+	return TRUE;
+}
+
+static inline unsigned int comprehension_tlv_get_tag_len(unsigned char *start)
+{
+	return bit_field(*start, 0, 7) == 0x7f ? 3 : 1;
+}
+
+static inline unsigned int comprehension_tlv_get_len_len(unsigned char *start)
+{
+	return *start >= 0x80 ? *start - 0x7f : 1;
+}
+
+gboolean comprehension_tlv_builder_next(
+				struct comprehension_tlv_builder *builder,
+				gboolean cr, unsigned short tag)
+{
+	unsigned int taglen = 0;
+	unsigned int lenlen = 0;
+	unsigned int len = 0;
+
+	if (builder->pdu[builder->pos] != 0) {
+		taglen = comprehension_tlv_get_tag_len(builder->pdu +
+							builder->pos);
+		lenlen = 1;
+		len = builder->pdu[builder->pos + taglen];
+
+		if (len >= 0x80) {
+			unsigned int extended_bytes = len - 0x80;
+			unsigned int i;
+
+			for (len = 0, i = 1; i <= extended_bytes; i++)
+				len = (len << 8) |
+					builder->pdu[builder->pos + taglen + i];
+
+			lenlen += extended_bytes;
+		}
+	}
+
+	if (builder->pos + taglen + lenlen + len + (tag < 0x7f ? 1 : 3) + 1 >
+			builder->max)
+		return FALSE;
+
+	builder->pos += taglen + lenlen + len;
+	if (tag < 0x7f) {
+		builder->pdu[builder->pos + 0] = (cr ? 0x80 : 0x00) | tag;
+		builder->pdu[builder->pos + 1] = 0; /* Length */
+	} else {
+		if (builder->pos + 4 > builder->max)
+			return FALSE;
+
+		builder->pdu[builder->pos + 0] = 0x7f;
+		builder->pdu[builder->pos + 1] = (cr ? 0x80 : 0) | (tag >> 8);
+		builder->pdu[builder->pos + 2] = tag & 0xff;
+		builder->pdu[builder->pos + 3] = 0; /* Length */
+	}
+
+	return TRUE;
+}
+
+/* Resize the TLV because the content of Value field needs more space.  If
+ * this TLV is part of another TLV, resize that one too.  */
+gboolean comprehension_tlv_builder_set_length(
+				struct comprehension_tlv_builder *builder,
+				unsigned int new_len)
+{
+	unsigned char *tlv = builder->pdu + builder->pos;
+	unsigned int taglen = comprehension_tlv_get_tag_len(tlv);
+	unsigned int lenlen = 1, new_lenlen = 1;
+	unsigned int len = tlv[taglen];
+	unsigned int ctlv_len, new_ctlv_len;
+
+	/* How much space do we occupy now */
+	if (len >= 0x80) {
+		unsigned int extended_bytes = len - 0x80;
+		unsigned int i;
+
+		for (len = 0, i = 1; i <= extended_bytes; i++)
+			len = (len << 8) | tlv[taglen + i];
+
+		lenlen += extended_bytes;
+	}
+
+	ctlv_len = taglen + lenlen + len;
+
+	/* How much do we need */
+	if (new_len >= 0x80) {
+		unsigned int extended_bytes = 0;
+		while (new_len >> (extended_bytes * 8))
+			extended_bytes += 1;
+		new_lenlen += extended_bytes;
+	}
+
+	new_ctlv_len = taglen + new_lenlen + new_len;
+
+	/* Check there is enough space */
+	if (builder->pos + new_ctlv_len > builder->max)
+		return FALSE;
+
+	if (builder->parent)
+		if (ber_tlv_builder_set_length(builder->parent, builder->pos +
+					new_ctlv_len) == FALSE)
+			return FALSE;
+
+	len = MIN(len, new_len);
+	if (len > 0 && new_lenlen != lenlen)
+		memmove(tlv + taglen + new_lenlen, tlv + taglen + lenlen, len);
+
+	/* Write new length */
+	if (new_len < 0x80)
+		tlv[taglen] = new_len;
+	else {
+		unsigned int extended_bytes = 0;
+		unsigned int i;
+		while (new_len >> (extended_bytes * 8))
+			extended_bytes += 1;
+
+		for (i = 1; i <= extended_bytes; i++)
+			tlv[taglen + i] =
+				(new_len >> ((extended_bytes - i) * 8)) & 0xff;
+
+		tlv[taglen] = 0x80 + extended_bytes;
+	}
+
+	return TRUE;
+}
+
+unsigned char *comprehension_tlv_builder_get_data(
+				struct comprehension_tlv_builder *builder)
+{
+	unsigned char *tlv = builder->pdu + builder->pos;
+	unsigned int taglen = comprehension_tlv_get_tag_len(tlv);
+	unsigned int lenlen = comprehension_tlv_get_len_len(tlv + taglen);
+
+	return tlv + taglen + lenlen;
+}
+
 static char *sim_network_name_parse(const unsigned char *buffer, int length,
 					gboolean *add_ci)
 {
