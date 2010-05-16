@@ -3038,6 +3038,21 @@ static inline gboolean stk_tlv_append_bytes(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
+/* Described in TS 102.223 Section 8.6 */
+static gboolean build_dataobj_item_id(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const unsigned char *item_id = data;
+
+	if (*item_id == 0)
+		return TRUE;
+
+	return stk_tlv_open_container(tlv, cr,
+				STK_DATA_OBJECT_TYPE_ITEM_ID, FALSE) &&
+		stk_tlv_append_byte(tlv, *item_id) &&
+		stk_tlv_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.8 */
 static gboolean build_dataobj_duration(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -3219,6 +3234,12 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 		break;
 	case STK_COMMAND_TYPE_REFRESH:
 	case STK_COMMAND_TYPE_SETUP_MENU:
+		break;
+	case STK_COMMAND_TYPE_SELECT_ITEM:
+		ok = build_dataobj(&builder,
+					build_dataobj_item_id, DATAOBJ_FLAG_CR,
+					&response->select_item.item_id,
+					NULL);
 		break;
 	default:
 		return 0;

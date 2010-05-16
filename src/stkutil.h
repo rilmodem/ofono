@@ -1018,6 +1018,10 @@ struct stk_response_poll_interval {
 	struct stk_duration max_interval;
 };
 
+struct stk_response_select_item {
+	unsigned char item_id;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1034,6 +1038,7 @@ struct stk_response {
 		struct stk_response_poll_interval poll_interval;
 		struct stk_response_generic refresh;
 		struct stk_response_generic set_up_menu;
+		struct stk_response_select_item select_item;
 		struct stk_response_generic send_sms;
 	};
 
