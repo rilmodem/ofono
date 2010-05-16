@@ -842,6 +842,23 @@ void sim_parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
 	*mnc++ = digit_lut[digit];
 }
 
+void sim_encode_mcc_mnc(guint8 *out, const char *mcc, const char *mnc)
+{
+	char str[7] = "ffffff";
+
+	str[0] = mcc[0];
+	str[1] = mcc[1];
+	if (mcc[2])
+		str[2] = mcc[2];
+
+	str[4] = mnc[0];
+	str[5] = mnc[1];
+	if (mnc[2])
+		str[3] = mnc[2];
+
+	encode_bcd_number(str, out);
+}
+
 static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
 {
 	const struct spdi_operator *opa = a;
