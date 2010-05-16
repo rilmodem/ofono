@@ -2849,3 +2849,188 @@ void stk_command_free(struct stk_command *command)
 
 	g_free(command);
 }
+
+struct stk_tlv_builder {
+	struct comprehension_tlv_builder ctlv;
+	unsigned char *value;
+	unsigned int len;
+	unsigned int max_len;
+};
+
+static inline gboolean stk_tlv_builder_init(struct stk_tlv_builder *iter,
+						unsigned char *pdu,
+						unsigned int size)
+{
+	iter->value = NULL;
+	iter->len = 0;
+
+	return comprehension_tlv_builder_init(&iter->ctlv, pdu, size);
+}
+
+static inline gboolean stk_tlv_open_container(struct stk_tlv_builder *iter,
+						gboolean cr,
+						unsigned char shorttag,
+						gboolean relocatable)
+{
+	if (comprehension_tlv_builder_next(&iter->ctlv, cr, shorttag) != TRUE)
+		return FALSE;
+
+	iter->len = 0;
+	iter->max_len = relocatable ? 0xff : 0x7f;
+	if (comprehension_tlv_builder_set_length(&iter->ctlv, iter->max_len) !=
+			TRUE)
+		return FALSE;
+
+	iter->value = comprehension_tlv_builder_get_data(&iter->ctlv);
+
+	return TRUE;
+}
+
+static inline gboolean stk_tlv_close_container(struct stk_tlv_builder *iter)
+{
+	return comprehension_tlv_builder_set_length(&iter->ctlv, iter->len);
+}
+
+static inline unsigned int stk_tlv_get_length(struct stk_tlv_builder *iter)
+{
+	return comprehension_tlv_builder_get_data(&iter->ctlv) -
+		iter->ctlv.pdu + iter->len;
+}
+
+static inline gboolean stk_tlv_append_byte(struct stk_tlv_builder *iter,
+						unsigned char num)
+{
+	if (iter->len >= iter->max_len)
+		return FALSE;
+
+	iter->value[iter->len++] = num;
+	return TRUE;
+}
+
+static inline gboolean stk_tlv_append_text(struct stk_tlv_builder *iter,
+						int dcs, const char *text)
+{
+	unsigned int len;
+	unsigned char *gsm, *ucs2;
+	long written = 0;
+	gsize gwritten;
+
+	if (text == NULL)
+		return TRUE;
+
+	len = strlen(text);
+
+	switch (dcs) {
+	case 0x00:
+		gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
+		if (gsm == NULL && len > 0)
+			return FALSE;
+		if (iter->len + (written * 7 + 7) / 8 >= iter->max_len) {
+			g_free(gsm);
+			return FALSE;
+		}
+
+		iter->value[iter->len++] = 0x00;
+
+		pack_7bit_own_buf(gsm, len, 0, FALSE, &written, 0,
+					iter->value + iter->len);
+		g_free(gsm);
+		if (written < 1 && len > 0)
+			return FALSE;
+		iter->len += written;
+
+		return TRUE;
+	case 0x04:
+		gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
+		if (gsm == NULL && len > 0)
+			return FALSE;
+		if (iter->len + written >= iter->max_len) {
+			g_free(gsm);
+			return FALSE;
+		}
+
+		iter->value[iter->len++] = 0x04;
+
+		memcpy(iter->value + iter->len, gsm, written);
+		iter->len += written;
+
+		g_free(gsm);
+
+		return TRUE;
+	case 0x08:
+		ucs2 = (unsigned char *) g_convert((const gchar *) text, len,
+						"UCS-2BE", "UTF-8//TRANSLIT",
+						NULL, &gwritten, NULL);
+		if (ucs2 == NULL)
+			return FALSE;
+		if (iter->len + gwritten >= iter->max_len) {
+			g_free(ucs2);
+			return FALSE;
+		}
+
+		iter->value[iter->len++] = 0x08;
+
+		memcpy(iter->value + iter->len, ucs2, gwritten);
+		iter->len += gwritten;
+
+		g_free(ucs2);
+
+		return TRUE;
+	case -1:
+		/* Fake DCS to mean unpacked GSM alphabet if possible
+		 * to encode the string and UCS2 if not.  */
+		gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
+
+		if (gsm == NULL && len > 0) {
+			/* Use UCS2. */
+			ucs2 = (unsigned char *) g_convert(
+					(const gchar *) text, len,
+					"UCS-2BE", "UTF-8//TRANSLIT",
+					NULL, &gwritten, NULL);
+			if (ucs2 == NULL)
+				return FALSE;
+			if (iter->len + gwritten >= iter->max_len) {
+				g_free(ucs2);
+				return FALSE;
+			}
+
+			iter->value[iter->len++] = 0x08;
+
+			memcpy(iter->value + iter->len, ucs2, gwritten);
+			iter->len += gwritten;
+
+			g_free(ucs2);
+
+			return TRUE;
+		}
+
+		if (iter->len + written >= iter->max_len) {
+			g_free(gsm);
+			return FALSE;
+		}
+
+		iter->value[iter->len++] = 0x04;
+
+		memcpy(iter->value + iter->len, gsm, written);
+		iter->len += written;
+
+		g_free(gsm);
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static inline gboolean stk_tlv_append_bytes(struct stk_tlv_builder *iter,
+						const unsigned char *data,
+						unsigned int length)
+{
+	if (iter->len + length > iter->max_len)
+		return FALSE;
+
+	memcpy(iter->value + iter->len, data, length);
+	iter->len += length;
+
+	return TRUE;
+}
