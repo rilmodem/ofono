@@ -11776,6 +11776,300 @@ static const struct terminal_response_test set_up_menu_response_data_511 = {
 	},
 };
 
+static const unsigned char select_item_response_111[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0x02,
+};
+
+static const struct terminal_response_test select_item_response_data_111 = {
+	.pdu = select_item_response_111,
+	.pdu_len = sizeof(select_item_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 2,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_121[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0x3d,
+};
+
+static const struct terminal_response_test select_item_response_data_121 = {
+	.pdu = select_item_response_121,
+	.pdu_len = sizeof(select_item_response_121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 61,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_131[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0xfb,
+};
+
+static const struct terminal_response_test select_item_response_data_131 = {
+	.pdu = select_item_response_131,
+	.pdu_len = sizeof(select_item_response_131),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 251,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_141[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x11,
+};
+
+static const struct terminal_response_test select_item_response_data_141 = {
+	/* The response can be select_item_response_141 or it can optionally
+	 * have an ITEM_ID data object appended with any id (90 01 XX).  */
+	.pdu = select_item_response_141,
+	.pdu_len = sizeof(select_item_response_141),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_GO_BACK,
+		},
+	},
+};
+
+static const unsigned char select_item_response_142[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x10,
+};
+
+static const struct terminal_response_test select_item_response_data_142 = {
+	/* The response can be select_item_response_142 or it can optionally
+	 * have an ITEM_ID data object appended with any id (90 01 XX).  */
+	.pdu = select_item_response_142,
+	.pdu_len = sizeof(select_item_response_142),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_USER_TERMINATED,
+		},
+	},
+};
+
+static const unsigned char select_item_response_151[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0x01,
+};
+
+static const struct terminal_response_test select_item_response_data_151 = {
+	.pdu = select_item_response_151,
+	.pdu_len = sizeof(select_item_response_151),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 1,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_311[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0x03,
+};
+
+static const struct terminal_response_test select_item_response_data_311 = {
+	.pdu = select_item_response_311,
+	.pdu_len = sizeof(select_item_response_311),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 3,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_411[] = {
+	0x81, 0x03, 0x01, 0x24, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x13, 0x90, 0x01, 0x01,
+};
+
+static const struct terminal_response_test select_item_response_data_411 = {
+	.pdu = select_item_response_411,
+	.pdu_len = sizeof(select_item_response_411),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x80, /* Help information available */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_HELP_REQUESTED,
+		},
+		{ .select_item = {
+			.item_id = 1,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_511b[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04, 0x90, 0x01, 0x01,
+};
+
+static const struct terminal_response_test select_item_response_data_511b = {
+	.pdu = select_item_response_511b,
+	.pdu_len = sizeof(select_item_response_511b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+		{ .select_item = {
+			.item_id = 1,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_611[] = {
+	0x81, 0x03, 0x01, 0x24, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0x01,
+};
+
+static const struct terminal_response_test select_item_response_data_611 = {
+	.pdu = select_item_response_611,
+	.pdu_len = sizeof(select_item_response_611),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x03, /* Choice of navigation options */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 1,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_621[] = {
+	0x81, 0x03, 0x01, 0x24, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0x01,
+};
+
+static const struct terminal_response_test select_item_response_data_621 = {
+	.pdu = select_item_response_621,
+	.pdu_len = sizeof(select_item_response_621),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x01, /* Choice of data values presentation */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 1,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_711[] = {
+	0x81, 0x03, 0x01, 0x24, 0x04, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x90, 0x01, 0x01,
+};
+
+static const struct terminal_response_test select_item_response_data_711 = {
+	.pdu = select_item_response_711,
+	.pdu_len = sizeof(select_item_response_711),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x04, /* Selection using soft keys preferred */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .select_item = {
+			.item_id = 1,
+		}},
+	},
+};
+
+static const unsigned char select_item_response_811[] = {
+	0x81, 0x03, 0x01, 0x24, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x12,
+};
+
+static const struct terminal_response_test select_item_response_data_811 = {
+	.pdu = select_item_response_811,
+	.pdu_len = sizeof(select_item_response_811),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SELECT_ITEM,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_RESPONSE,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -12484,6 +12778,46 @@ int main(int argc, char **argv)
 				&select_item_data_1221, test_select_item);
 	g_test_add_data_func("/teststk/Select Item 12.3.1",
 				&select_item_data_1231, test_select_item);
+
+	g_test_add_data_func("/teststk/Select Item response 1.1.1",
+				&select_item_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 1.2.1",
+				&select_item_response_data_121,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 1.3.1",
+				&select_item_response_data_131,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 1.4.1",
+				&select_item_response_data_141,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 1.4.2",
+				&select_item_response_data_142,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 1.5.1",
+				&select_item_response_data_151,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 3.1.1",
+				&select_item_response_data_311,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 4.1.1",
+				&select_item_response_data_411,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 5.1.1B",
+				&select_item_response_data_511b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 6.1.1",
+				&select_item_response_data_611,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 6.2.1",
+				&select_item_response_data_621,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 7.1.1",
+				&select_item_response_data_711,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Select Item response 8.1.1",
+				&select_item_response_data_811,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Send SMS 1.1.1",
 				&send_sms_data_111, test_send_sms);
