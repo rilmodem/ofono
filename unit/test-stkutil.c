@@ -11392,6 +11392,66 @@ static const struct terminal_response_test play_tone_response_data_311b = {
 	},
 };
 
+/* TS 102 384 */
+static const unsigned char poll_interval_response_111[] = {
+	0x81, 0x03, 0x01, 0x03, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x84, 0x02, 0x01, 0x14,
+};
+
+static const struct terminal_response_test poll_interval_response_data_111 = {
+	.pdu = poll_interval_response_111,
+	.pdu_len = sizeof(poll_interval_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_POLL_INTERVAL,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .poll_interval = {
+			.max_interval = {
+				.unit = STK_DURATION_TYPE_SECONDS,
+				.interval = 20,
+			},
+		}},
+	},
+};
+
+/* 3GPP TS 31.124 */
+static const unsigned char poll_interval_response_111a[] = {
+	0x81, 0x03, 0x01, 0x03, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x84, 0x02, 0x00, 0x01,
+};
+
+static const unsigned char poll_interval_response_111b[] = {
+	0x81, 0x03, 0x01, 0x03, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x84, 0x02, 0x01, 0x3c,
+};
+
+static const struct terminal_response_test poll_interval_response_data_111a = {
+	/* Either poll_interval_response_111a or b is ok */
+	.pdu = poll_interval_response_111a,
+	.pdu_len = sizeof(poll_interval_response_111a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_POLL_INTERVAL,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .poll_interval = {
+			.max_interval = {
+				.unit = STK_DURATION_TYPE_MINUTES,
+				.interval = 1,
+			},
+		}},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -11915,6 +11975,13 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/Poll Interval 1.1.1",
 				&poll_interval_data_111, test_poll_interval);
+
+	g_test_add_data_func("/teststk/Poll Interval response 1.1.1",
+				&poll_interval_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Poll Interval response 1.1.1A",
+				&poll_interval_response_data_111a,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Setup Menu 1.1.1",
 				&setup_menu_data_111, test_setup_menu);
