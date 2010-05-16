@@ -3202,6 +3202,12 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					&response->get_inkey.duration,
 					NULL);
 		break;
+	case STK_COMMAND_TYPE_GET_INPUT:
+		ok = build_dataobj(&builder,
+					build_dataobj_text, DATAOBJ_FLAG_CR,
+					&response->get_input.text,
+					NULL);
+		break;
 	default:
 		return 0;
 	};

@@ -1010,6 +1010,10 @@ struct stk_response_get_inkey {
 	struct stk_duration duration;
 };
 
+struct stk_response_get_input {
+	struct stk_answer_text text;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1021,6 +1025,7 @@ struct stk_response {
 	union {
 		struct stk_response_generic display_text;
 		struct stk_response_get_inkey get_inkey;
+		struct stk_response_get_input get_input;
 	};
 
 	void (*destructor)(struct stk_response *response);
