@@ -11312,6 +11312,86 @@ static const struct terminal_response_test send_sms_response_data_311b = {
 	},
 };
 
+static const unsigned char play_tone_response_111[] = {
+	0x81, 0x03, 0x01, 0x20, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test play_tone_response_data_111 = {
+	.pdu = play_tone_response_111,
+	.pdu_len = sizeof(play_tone_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_PLAY_TONE,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char play_tone_response_119b[] = {
+	0x81, 0x03, 0x01, 0x20, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x30,
+};
+
+static const struct terminal_response_test play_tone_response_data_119b = {
+	.pdu = play_tone_response_119b,
+	.pdu_len = sizeof(play_tone_response_119b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_PLAY_TONE,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NOT_CAPABLE,
+		},
+	},
+};
+
+static const unsigned char play_tone_response_1114[] = {
+	0x81, 0x03, 0x01, 0x20, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x10,
+};
+
+static const struct terminal_response_test play_tone_response_data_1114 = {
+	.pdu = play_tone_response_1114,
+	.pdu_len = sizeof(play_tone_response_1114),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_PLAY_TONE,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_USER_TERMINATED,
+		},
+	},
+};
+
+static const unsigned char play_tone_response_311b[] = {
+	0x81, 0x03, 0x01, 0x20, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test play_tone_response_data_311b = {
+	.pdu = play_tone_response_311b,
+	.pdu_len = sizeof(play_tone_response_311b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_PLAY_TONE,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -11819,6 +11899,19 @@ int main(int argc, char **argv)
 				&play_tone_data_612, test_play_tone);
 	g_test_add_data_func("/teststk/Play Tone 6.1.3",
 				&play_tone_data_613, test_play_tone);
+
+	g_test_add_data_func("/teststk/Play Tone response 1.1.1",
+				&play_tone_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Play Tone response 1.1.9B",
+				&play_tone_response_data_119b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Play Tone response 1.1.14",
+				&play_tone_response_data_1114,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Play Tone response 3.1.1B",
+				&play_tone_response_data_311b,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Poll Interval 1.1.1",
 				&poll_interval_data_111, test_poll_interval);
