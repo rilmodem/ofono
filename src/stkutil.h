@@ -995,6 +995,21 @@ struct stk_command {
 struct stk_response_generic {
 };
 
+struct stk_answer_text {
+	char *text;
+	ofono_bool_t packed;
+	ofono_bool_t yesno;
+	/* If a "Yes/No" answer was requested in a GET INKEY command,
+	 * .yesno must be TRUE and text should be non-NULL to indicate
+	 * a Yes response or NULL to indicate a No response.
+	 */
+};
+
+struct stk_response_get_inkey {
+	struct stk_answer_text text;
+	struct stk_duration duration;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1005,6 +1020,7 @@ struct stk_response {
 
 	union {
 		struct stk_response_generic display_text;
+		struct stk_response_get_inkey get_inkey;
 	};
 
 	void (*destructor)(struct stk_response *response);

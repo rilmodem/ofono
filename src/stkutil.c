@@ -36,7 +36,8 @@
 
 enum stk_data_object_flag {
 	DATAOBJ_FLAG_MANDATORY = 1,
-	DATAOBJ_FLAG_MINIMUM = 2
+	DATAOBJ_FLAG_MINIMUM = 2,
+	DATAOBJ_FLAG_CR = 4
 };
 
 struct stk_file_iter {
@@ -3035,6 +3036,23 @@ static inline gboolean stk_tlv_append_bytes(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
+/* Described in TS 102.223 Section 8.8 */
+static gboolean build_dataobj_duration(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_duration *duration = data;
+
+	if (duration->interval == 0x00)
+		return TRUE;
+
+	return stk_tlv_open_container(tlv, cr,
+				STK_DATA_OBJECT_TYPE_DURATION, FALSE) &&
+		stk_tlv_append_byte(tlv, duration->unit) &&
+		stk_tlv_append_byte(tlv, duration->interval) &&
+		stk_tlv_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.12 */
 static gboolean build_dataobj_result(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
 {
@@ -3054,6 +3072,65 @@ static gboolean build_dataobj_result(struct stk_tlv_builder *tlv,
 
 	if (stk_tlv_close_container(tlv) == FALSE)
 		return FALSE;
+}
+
+/* Defined in TS 102.223 Section 8.15 */
+static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_answer_text *text = data;
+
+	if (!text->text && !text->yesno)
+		return TRUE;
+
+	if (stk_tlv_open_container(tlv, cr, STK_DATA_OBJECT_TYPE_TEXT,
+					TRUE) != TRUE)
+		return FALSE;
+
+	if (text->yesno == TRUE) {
+		/* Section 6.8.5:
+		 * When the terminal issues [...] command qualifier set
+		 * to "Yes/No", it shall supply the value "01" when the
+		 * answer is "positive" and the value '00' when the
+		 * answer is "negative" in the text string data object.
+		 */
+		if (stk_tlv_append_byte(tlv, 0x04) != TRUE)
+			return FALSE;
+		if (stk_tlv_append_byte(tlv, text->text ? 0x01 : 0x00) != TRUE)
+			return FALSE;
+	} else if (text->packed) {
+		if (stk_tlv_append_text(tlv, 0x00, text->text) != TRUE)
+			return FALSE;
+	} else {
+		if (stk_tlv_append_text(tlv, -1, text->text) != TRUE)
+			return FALSE;
+	}
+
+	return stk_tlv_close_container(tlv);
+}
+
+static gboolean build_dataobj(struct stk_tlv_builder *tlv, gboolean
+				(*builder_func)(struct stk_tlv_builder *,
+						const void *, gboolean), ...)
+{
+	va_list args;
+
+	va_start(args, builder_func);
+
+	while (builder_func) {
+		unsigned int flags = va_arg(args, enum stk_data_object_flag);
+		const void *data = va_arg(args, const void *);
+		gboolean cr = (flags & DATAOBJ_FLAG_CR) ? TRUE : FALSE;
+
+		if (builder_func(tlv, data, cr) != TRUE)
+			return FALSE;
+
+		builder_func = va_arg(args, gboolean (*)(
+						struct stk_tlv_builder *,
+						const void *, gboolean));
+	}
+
+	return TRUE;
 }
 
 unsigned int stk_pdu_from_response(const struct stk_response *response,
@@ -3114,6 +3191,14 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 
 	switch (response->type) {
 	case STK_COMMAND_TYPE_DISPLAY_TEXT:
+		break;
+	case STK_COMMAND_TYPE_GET_INKEY:
+		ok = build_dataobj(&builder,
+					build_dataobj_text, DATAOBJ_FLAG_CR,
+					&response->get_inkey.text,
+					build_dataobj_duration, 0,
+					&response->get_inkey.duration,
+					NULL);
 		break;
 	default:
 		return 0;
