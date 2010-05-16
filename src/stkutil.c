@@ -3034,3 +3034,73 @@ static inline gboolean stk_tlv_append_bytes(struct stk_tlv_builder *iter,
 
 	return TRUE;
 }
+
+static gboolean build_dataobj_result(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_result *result = data;
+
+	return stk_tlv_open_container(tlv, cr, STK_DATA_OBJECT_TYPE_RESULT,
+					FALSE) &&
+		stk_tlv_append_byte(tlv, result->type) &&
+		(result->additional_len == 0 ||
+		 stk_tlv_append_bytes(tlv, result->additional,
+					result->additional_len)) &&
+		stk_tlv_close_container(tlv);
+}
+
+unsigned int stk_pdu_from_response(const struct stk_response *response,
+					unsigned char *pdu, unsigned int size)
+{
+	struct stk_tlv_builder builder;
+	gboolean ok = TRUE;
+
+	stk_tlv_builder_init(&builder, pdu, size);
+
+	/*
+	 * Encode command details, they come in order with
+	 * Command Details TLV first, followed by Device Identities TLV
+	 * and the Result TLV.  Comprehension required everywhere.
+	 */
+	if ((stk_tlv_open_container(&builder, TRUE,
+					STK_DATA_OBJECT_TYPE_COMMAND_DETAILS,
+					FALSE) &&
+			stk_tlv_append_byte(&builder, response->number) &&
+			stk_tlv_append_byte(&builder, response->type) &&
+			stk_tlv_append_byte(&builder, response->qualifier) &&
+			stk_tlv_close_container(&builder)) != TRUE)
+		return 0;
+
+	/* TS 102 223 section 6.8 states:
+	 * "For all COMPREHENSION-TLV objects with Min = N, the terminal
+	 * should set the CR flag to comprehension not required."
+	 * All the data objects except "Command Details" and "Result" have
+	 * Min = N.
+	 *
+	 * However comprehension required is set for many of the TLVs in
+	 * TS 102 384 conformace tests so we set it per command and per
+	 * data object type.
+	 */
+	if ((stk_tlv_open_container(&builder, TRUE,
+					STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES,
+					FALSE) &&
+			stk_tlv_append_byte(&builder, response->src) &&
+			stk_tlv_append_byte(&builder, response->dst) &&
+			stk_tlv_close_container(&builder)) != TRUE)
+		return 0;
+
+	if (build_dataobj_result(&builder, &response->result, TRUE) != TRUE)
+		return 0;
+
+	switch (response->type) {
+	case STK_COMMAND_TYPE_DISPLAY_TEXT:
+		break;
+	default:
+		return 0;
+	};
+
+	if (ok != TRUE)
+		return 0;
+
+	return stk_tlv_get_length(&builder);
+}

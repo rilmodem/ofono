@@ -991,6 +991,29 @@ struct stk_command {
 	void (*destructor)(struct stk_command *command);
 };
 
+/* TERMINAL RESPONSEs defined in TS 102.223 Section 6.8 */
+struct stk_response_generic {
+};
+
+struct stk_response {
+	unsigned char number;
+	unsigned char type;
+	unsigned char qualifier;
+	enum stk_device_identity_type src;
+	enum stk_device_identity_type dst;
+	struct stk_result result;
+
+	union {
+		struct stk_response_generic display_text;
+	};
+
+	void (*destructor)(struct stk_response *response);
+};
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len);
 void stk_command_free(struct stk_command *command);
+
+/* Returns # of bytes written or zero on error */
+unsigned int stk_pdu_from_response(const struct stk_response *response,
+					unsigned char *pdu, unsigned int size);
