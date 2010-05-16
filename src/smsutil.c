@@ -325,7 +325,7 @@ static inline gboolean set_octet(unsigned char *pdu, int *offset,
 	return TRUE;
 }
 
-static gboolean encode_scts(const struct sms_scts *in, unsigned char *pdu,
+gboolean sms_encode_scts(const struct sms_scts *in, unsigned char *pdu,
 				int *offset)
 {
 	guint timezone;
@@ -467,7 +467,7 @@ static gboolean encode_validity_period(const struct sms_validity_period *vp,
 		set_octet(pdu, offset, vp->relative);
 		return TRUE;
 	case SMS_VALIDITY_PERIOD_FORMAT_ABSOLUTE:
-		return encode_scts(&vp->absolute, pdu, offset);
+		return sms_encode_scts(&vp->absolute, pdu, offset);
 	case SMS_VALIDITY_PERIOD_FORMAT_ENHANCED:
 		/* TODO: Write out proper enhanced VP structure */
 		memcpy(pdu + *offset, vp->enhanced, 7);
@@ -677,7 +677,7 @@ static gboolean encode_deliver(const struct sms_deliver *in, unsigned char *pdu,
 	set_octet(pdu, offset, in->pid);
 	set_octet(pdu, offset, in->dcs);
 
-	if (encode_scts(&in->scts, pdu, offset) == FALSE)
+	if (sms_encode_scts(&in->scts, pdu, offset) == FALSE)
 		return FALSE;
 
 	set_octet(pdu, offset, in->udl);
@@ -748,7 +748,7 @@ static gboolean encode_submit_ack_report(const struct sms_submit_ack_report *in,
 
 	set_octet(pdu, offset, in->pi);
 
-	if (!encode_scts(&in->scts, pdu, offset))
+	if (!sms_encode_scts(&in->scts, pdu, offset))
 		return FALSE;
 
 	if (in->pi & 0x1)
@@ -784,7 +784,7 @@ static gboolean encode_submit_err_report(const struct sms_submit_err_report *in,
 
 	set_octet(pdu, offset, in->pi);
 
-	if (!encode_scts(&in->scts, pdu, offset))
+	if (!sms_encode_scts(&in->scts, pdu, offset))
 		return FALSE;
 
 	if (in->pi & 0x1)
@@ -923,10 +923,10 @@ static gboolean encode_status_report(const struct sms_status_report *in,
 	if (!sms_encode_address_field(&in->raddr, FALSE, pdu, offset))
 		return FALSE;
 
-	if (!encode_scts(&in->scts, pdu, offset))
+	if (!sms_encode_scts(&in->scts, pdu, offset))
 		return FALSE;
 
-	if (!encode_scts(&in->dt, pdu, offset))
+	if (!sms_encode_scts(&in->dt, pdu, offset))
 		return FALSE;
 
 	octet = in->st;

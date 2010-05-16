@@ -427,6 +427,9 @@ guint8 sms_decode_semi_octet(guint8 in);
 gboolean sms_decode_scts(const unsigned char *pdu, int len,
 				int *offset, struct sms_scts *out);
 
+gboolean sms_encode_scts(const struct sms_scts *in, unsigned char *pdu,
+				int *offset);
+
 int sms_udl_in_bytes(guint8 ud_len, guint8 dcs);
 
 time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote);
