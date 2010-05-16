@@ -11716,6 +11716,66 @@ static const struct terminal_response_test refresh_response_data_312 = {
 	},
 };
 
+static const unsigned char set_up_menu_response_111[] = {
+	0x81, 0x03, 0x01, 0x25, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test set_up_menu_response_data_111 = {
+	.pdu = set_up_menu_response_111,
+	.pdu_len = sizeof(set_up_menu_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_MENU,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char set_up_menu_response_411b[] = {
+	0x81, 0x03, 0x01, 0x25, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test set_up_menu_response_data_411b = {
+	.pdu = set_up_menu_response_411b,
+	.pdu_len = sizeof(set_up_menu_response_411b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_MENU,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
+static const unsigned char set_up_menu_response_511[] = {
+	0x81, 0x03, 0x01, 0x25, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test set_up_menu_response_data_511 = {
+	.pdu = set_up_menu_response_511,
+	.pdu_len = sizeof(set_up_menu_response_511),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_MENU,
+		.qualifier = 0x01, /* Soft key selection preferred */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -12317,6 +12377,16 @@ int main(int argc, char **argv)
 				&setup_menu_data_912, test_setup_menu);
 	g_test_add_data_func("/teststk/Setup Menu 9.1.3",
 				&setup_menu_data_913, test_setup_menu);
+
+	g_test_add_data_func("/teststk/Set Up Menu response 1.1.1",
+				&set_up_menu_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Menu response 4.1.1B",
+				&set_up_menu_response_data_411b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Menu response 5.1.1",
+				&set_up_menu_response_data_511,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Select Item 1.1.1",
 				&select_item_data_111, test_select_item);
