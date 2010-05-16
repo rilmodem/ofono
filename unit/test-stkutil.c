@@ -11252,6 +11252,66 @@ static const struct terminal_response_test get_input_response_data_1221 = {
 	},
 };
 
+static const unsigned char send_sms_response_111[] = {
+	0x81, 0x03, 0x01, 0x13, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test send_sms_response_data_111 = {
+	.pdu = send_sms_response_111,
+	.pdu_len = sizeof(send_sms_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SEND_SMS,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char send_sms_response_121[] = {
+	0x81, 0x03, 0x01, 0x13, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test send_sms_response_data_121 = {
+	.pdu = send_sms_response_121,
+	.pdu_len = sizeof(send_sms_response_121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SEND_SMS,
+		.qualifier = 0x01, /* Packing required */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char send_sms_response_311b[] = {
+	0x81, 0x03, 0x01, 0x13, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test send_sms_response_data_311b = {
+	.pdu = send_sms_response_311b,
+	.pdu_len = sizeof(send_sms_response_311b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SEND_SMS,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -11933,6 +11993,16 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/Send SMS 1.1.1",
 				&send_sms_data_111, test_send_sms);
+
+	g_test_add_data_func("/teststk/Send SMS response 1.1.1",
+				&send_sms_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Send SMS response 1.2.1",
+				&send_sms_response_data_121,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Send SMS response 3.1.1B",
+				&send_sms_response_data_311b,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Setup Call 1.1.1",
 				&setup_call_data_111, test_setup_call);
