@@ -9999,6 +9999,206 @@ static void test_timer_mgmt(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct terminal_response_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	struct stk_response response;
+};
+
+static void test_terminal_response_encoding(gconstpointer data)
+{
+	const struct terminal_response_test *test = data;
+	unsigned char buf[512];
+	unsigned int len;
+
+	len = stk_pdu_from_response(&test->response, buf, sizeof(buf));
+
+	g_assert(len == test->pdu_len);
+	g_assert(memcmp(buf, test->pdu, len) == 0);
+}
+
+static const unsigned char display_text_response_111[] = {
+	0x81, 0x03, 0x01, 0x21, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test display_text_response_data_111 = {
+	.pdu = display_text_response_111,
+	.pdu_len = sizeof(display_text_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x80, /* Wait for user to clear */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char display_text_response_121[] = {
+	0x81, 0x03, 0x01, 0x21, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x20, 0x01,
+};
+
+static const struct terminal_response_test display_text_response_data_121 = {
+	.pdu = display_text_response_121,
+	.pdu_len = sizeof(display_text_response_121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x80, /* Wait for user to clear */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TERMINAL_BUSY,
+			.additional_len = 1, /* Screen is busy */
+			.additional = (unsigned char *) "\1",
+		},
+	},
+};
+
+static const unsigned char display_text_response_131[] = {
+	0x81, 0x03, 0x01, 0x21, 0x81, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test display_text_response_data_131 = {
+	.pdu = display_text_response_131,
+	.pdu_len = sizeof(display_text_response_131),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x81, /* Wait for user to clear, High priority */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char display_text_response_151[] = {
+	0x81, 0x03, 0x01, 0x21, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test display_text_response_data_151 = {
+	.pdu = display_text_response_151,
+	.pdu_len = sizeof(display_text_response_151),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char display_text_response_171[] = {
+	0x81, 0x03, 0x01, 0x21, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x11,
+};
+
+static const struct terminal_response_test display_text_response_data_171 = {
+	.pdu = display_text_response_171,
+	.pdu_len = sizeof(display_text_response_171),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x80, /* Wait for user to clear */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_GO_BACK,
+		},
+	},
+};
+
+static const unsigned char display_text_response_181[] = {
+	0x81, 0x03, 0x01, 0x21, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x10,
+};
+
+static const struct terminal_response_test display_text_response_data_181 = {
+	.pdu = display_text_response_181,
+	.pdu_len = sizeof(display_text_response_181),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x80, /* Wait for user to clear */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_USER_TERMINATED,
+		},
+	},
+};
+
+static const unsigned char display_text_response_191[] = {
+	0x81, 0x03, 0x01, 0x21, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x32,
+};
+
+static const struct terminal_response_test display_text_response_data_191 = {
+	.pdu = display_text_response_191,
+	.pdu_len = sizeof(display_text_response_191),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x80, /* Wait for user to clear */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD,
+		},
+	},
+};
+
+static const unsigned char display_text_response_211[] = {
+	0x81, 0x03, 0x01, 0x21, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x12,
+};
+
+static const struct terminal_response_test display_text_response_data_211 = {
+	.pdu = display_text_response_211,
+	.pdu_len = sizeof(display_text_response_211),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x80, /* Wait for user to clear */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_RESPONSE,
+		},
+	},
+};
+
+static const unsigned char display_text_response_511b[] = {
+	0x81, 0x03, 0x01, 0x21, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test display_text_response_data_511b = {
+	.pdu = display_text_response_511b,
+	.pdu_len = sizeof(display_text_response_511b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_DISPLAY_TEXT,
+		.qualifier = 0x80, /* Wait for user to clear */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -10029,6 +10229,34 @@ int main(int argc, char **argv)
 				&display_text_data_911, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 10.1.1",
 				&display_text_data_1011, test_display_text);
+
+	g_test_add_data_func("/teststk/Display Text response 1.1.1",
+				&display_text_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 1.2.1",
+				&display_text_response_data_121,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 1.3.1",
+				&display_text_response_data_131,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 1.5.1",
+				&display_text_response_data_151,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 1.7.1",
+				&display_text_response_data_171,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 1.8.1",
+				&display_text_response_data_181,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 1.9.1",
+				&display_text_response_data_191,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 2.1.1",
+				&display_text_response_data_211,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Display Text response 5.1.1B",
+				&display_text_response_data_511b,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Get Inkey 1.1.1",
 				&get_inkey_data_111, test_get_inkey);
