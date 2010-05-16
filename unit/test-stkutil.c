@@ -11452,6 +11452,270 @@ static const struct terminal_response_test poll_interval_response_data_111a = {
 	},
 };
 
+static const unsigned char refresh_response_111a[] = {
+	0x81, 0x03, 0x01, 0x01, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test refresh_response_data_111a = {
+	.pdu = refresh_response_111a,
+	.pdu_len = sizeof(refresh_response_111a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x03, /* USIM Initialization */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_111b[] = {
+	0x81, 0x03, 0x01, 0x01, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x03,
+};
+
+static const struct terminal_response_test refresh_response_data_111b = {
+	.pdu = refresh_response_111b,
+	.pdu_len = sizeof(refresh_response_111b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x03, /* USIM Initialization */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_REFRESH_WITH_EFS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_121a[] = {
+	0x81, 0x03, 0x01, 0x01, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test refresh_response_data_121a = {
+	.pdu = refresh_response_121a,
+	.pdu_len = sizeof(refresh_response_121a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x01, /* File Change Notification */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_121b[] = {
+	0x81, 0x03, 0x01, 0x01, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x03,
+};
+
+static const struct terminal_response_test refresh_response_data_121b = {
+	.pdu = refresh_response_121b,
+	.pdu_len = sizeof(refresh_response_121b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x01, /* File Change Notification */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_REFRESH_WITH_EFS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_131a[] = {
+	0x81, 0x03, 0x01, 0x01, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test refresh_response_data_131a = {
+	.pdu = refresh_response_131a,
+	.pdu_len = sizeof(refresh_response_131a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x02, /* USIM Initialization & File Change */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_131b[] = {
+	0x81, 0x03, 0x01, 0x01, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x03,
+};
+
+static const struct terminal_response_test refresh_response_data_131b = {
+	.pdu = refresh_response_131b,
+	.pdu_len = sizeof(refresh_response_131b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x02, /* USIM Initialization & File Change */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_REFRESH_WITH_EFS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_141a[] = {
+	0x81, 0x03, 0x01, 0x01, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test refresh_response_data_141a = {
+	.pdu = refresh_response_141a,
+	.pdu_len = sizeof(refresh_response_141a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x00, /* USIM Initialization & Full File Change */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_141b[] = {
+	0x81, 0x03, 0x01, 0x01, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x03,
+};
+
+static const struct terminal_response_test refresh_response_data_141b = {
+	.pdu = refresh_response_141b,
+	.pdu_len = sizeof(refresh_response_141b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x00, /* USIM Initialization & Full File Change */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_REFRESH_WITH_EFS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_171[] = {
+	0x81, 0x03, 0x01, 0x01, 0x05, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test refresh_response_data_171 = {
+	.pdu = refresh_response_171,
+	.pdu_len = sizeof(refresh_response_171),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x05, /* USIM Application Reset */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char refresh_response_241a[] = {
+	0x81, 0x03, 0x01, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x20, 0x02,
+};
+
+static const struct terminal_response_test refresh_response_data_241a = {
+	.pdu = refresh_response_241a,
+	.pdu_len = sizeof(refresh_response_241a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x06, /* 3G Session Reset */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TERMINAL_BUSY,
+			.additional_len = 1, /* ME currently busy on call */
+			.additional = (unsigned char *) "\2",
+		},
+	},
+};
+
+static const unsigned char refresh_response_241b[] = {
+	0x81, 0x03, 0x01, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x20, 0x01,
+};
+
+static const struct terminal_response_test refresh_response_data_241b = {
+	.pdu = refresh_response_241b,
+	.pdu_len = sizeof(refresh_response_241b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x06, /* 3G Session Reset */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TERMINAL_BUSY,
+			.additional_len = 1, /* Screen is busy */
+			.additional = (unsigned char *) "\1",
+		},
+	},
+};
+
+static const unsigned char refresh_response_311[] = {
+	0x81, 0x03, 0x01, 0x01, 0x07, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x20,
+};
+
+static const struct terminal_response_test refresh_response_data_311 = {
+	.pdu = refresh_response_311,
+	.pdu_len = sizeof(refresh_response_311),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x07, /* Steering of roaming */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TERMINAL_BUSY,
+		},
+	},
+};
+
+static const unsigned char refresh_response_312[] = {
+	0x81, 0x03, 0x01, 0x01, 0x07, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test refresh_response_data_312 = {
+	.pdu = refresh_response_312,
+	.pdu_len = sizeof(refresh_response_312),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_REFRESH,
+		.qualifier = 0x07, /* Steering of roaming */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -12259,6 +12523,46 @@ int main(int argc, char **argv)
 				&refresh_data_121, test_refresh);
 	g_test_add_data_func("/teststk/Refresh 1.5.1",
 				&refresh_data_151, test_refresh);
+
+	g_test_add_data_func("/teststk/Refresh response 1.1.1A",
+				&refresh_response_data_111a,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.1.1B",
+				&refresh_response_data_111b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.2.1A",
+				&refresh_response_data_121a,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.2.1B",
+				&refresh_response_data_121b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.3.1A",
+				&refresh_response_data_131a,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.3.1B",
+				&refresh_response_data_141b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.4.1A",
+				&refresh_response_data_141a,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.4.1B",
+				&refresh_response_data_141b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 1.7.1",
+				&refresh_response_data_171,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 2.4.1A",
+				&refresh_response_data_241a,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 2.4.1B",
+				&refresh_response_data_241b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 3.1.1",
+				&refresh_response_data_311,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Refresh response 3.1.2",
+				&refresh_response_data_312,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Polling off 1.1.2",
 				&polling_off_data_112, test_polling_off);

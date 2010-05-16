@@ -3217,7 +3217,7 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					&response->poll_interval.max_interval,
 					NULL);
 		break;
-	case STK_COMMAND_TYPE_PLAY_REFRESH:
+	case STK_COMMAND_TYPE_REFRESH:
 		break;
 	default:
 		return 0;
