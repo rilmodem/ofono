@@ -10199,6 +10199,417 @@ static const struct terminal_response_test display_text_response_data_511b = {
 	},
 };
 
+static const unsigned char get_inkey_response_111[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x2b,
+};
+
+static const struct terminal_response_test get_inkey_response_data_111 = {
+	.pdu = get_inkey_response_111,
+	.pdu_len = sizeof(get_inkey_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "+",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_121[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x30,
+};
+
+static const struct terminal_response_test get_inkey_response_data_121 = {
+	.pdu = get_inkey_response_121,
+	.pdu_len = sizeof(get_inkey_response_121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "0",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_131[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x11,
+};
+
+static const struct terminal_response_test get_inkey_response_data_131 = {
+	.pdu = get_inkey_response_131,
+	.pdu_len = sizeof(get_inkey_response_131),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_GO_BACK,
+		},
+	},
+};
+
+static const unsigned char get_inkey_response_141[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x10,
+};
+
+static const struct terminal_response_test get_inkey_response_data_141 = {
+	.pdu = get_inkey_response_141,
+	.pdu_len = sizeof(get_inkey_response_141),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_USER_TERMINATED,
+		},
+	},
+};
+
+static const unsigned char get_inkey_response_151[] = {
+	0x81, 0x03, 0x01, 0x22, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x71,
+};
+
+static const struct terminal_response_test get_inkey_response_data_151 = {
+	.pdu = get_inkey_response_151,
+	.pdu_len = sizeof(get_inkey_response_151),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x01, /* SMS alphabet */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "q",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_161[] = {
+	0x81, 0x03, 0x01, 0x22, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x78,
+};
+
+static const struct terminal_response_test get_inkey_response_data_161 = {
+	.pdu = get_inkey_response_161,
+	.pdu_len = sizeof(get_inkey_response_161),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x01, /* SMS alphabet */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "x",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_211[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x12,
+};
+
+static const struct terminal_response_test get_inkey_response_data_211 = {
+	.pdu = get_inkey_response_211,
+	.pdu_len = sizeof(get_inkey_response_211),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_RESPONSE,
+		},
+	},
+};
+
+static const unsigned char get_inkey_response_411[] = {
+	0x81, 0x03, 0x01, 0x22, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x03, 0x08, 0x04,
+	0x14,
+};
+
+static const struct terminal_response_test get_inkey_response_data_411 = {
+	.pdu = get_inkey_response_411,
+	.pdu_len = sizeof(get_inkey_response_411),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x03, /* UCS2 alphabet */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "Д",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_511[] = {
+	0x81, 0x03, 0x01, 0x22, 0x04, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x01,
+};
+
+static const struct terminal_response_test get_inkey_response_data_511 = {
+	.pdu = get_inkey_response_511,
+	.pdu_len = sizeof(get_inkey_response_511),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x04, /* Yes/No response */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "Yes",
+				.yesno = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_512[] = {
+	0x81, 0x03, 0x01, 0x22, 0x04, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x00,
+};
+
+static const struct terminal_response_test get_inkey_response_data_512 = {
+	.pdu = get_inkey_response_512,
+	.pdu_len = sizeof(get_inkey_response_512),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x04, /* Yes/No response */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = NULL,
+				.yesno = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_611b[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04, 0x8d, 0x02, 0x04, 0x2b,
+};
+
+static const struct terminal_response_test get_inkey_response_data_611b = {
+	.pdu = get_inkey_response_611b,
+	.pdu_len = sizeof(get_inkey_response_611b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "+",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_711[] = {
+	0x81, 0x03, 0x01, 0x22, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x13,
+};
+
+static const struct terminal_response_test get_inkey_response_data_711 = {
+	.pdu = get_inkey_response_711,
+	.pdu_len = sizeof(get_inkey_response_711),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x80, /* Help information available */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_HELP_REQUESTED,
+		},
+	},
+};
+
+static const unsigned char get_inkey_response_712[] = {
+	0x81, 0x03, 0x01, 0x22, 0x80, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x2b,
+};
+
+static const struct terminal_response_test get_inkey_response_data_712 = {
+	.pdu = get_inkey_response_712,
+	.pdu_len = sizeof(get_inkey_response_712),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x80, /* Help information available */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "+",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_811[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x12, 0x04, 0x02, 0x01, 0x11,
+};
+
+static const struct terminal_response_test get_inkey_response_data_811 = {
+	.pdu = get_inkey_response_811,
+	.pdu_len = sizeof(get_inkey_response_811),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_RESPONSE,
+		},
+		{ .get_inkey = {
+			.duration = {
+				.unit = STK_DURATION_TYPE_SECONDS,
+				.interval = 17,
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_912[] = {
+	0x81, 0x03, 0x01, 0x22, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x02, 0x04, 0x23,
+};
+
+static const struct terminal_response_test get_inkey_response_data_912 = {
+	.pdu = get_inkey_response_912,
+	.pdu_len = sizeof(get_inkey_response_912),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "#",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_1111[] = {
+	0x81, 0x03, 0x01, 0x22, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x03, 0x08, 0x59,
+	0x7d,
+};
+
+static const struct terminal_response_test get_inkey_response_data_1111 = {
+	.pdu = get_inkey_response_1111,
+	.pdu_len = sizeof(get_inkey_response_1111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x03, /* UCS2 alphabet */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "好",
+			},
+		}},
+	},
+};
+
+static const unsigned char get_inkey_response_1311[] = {
+	0x81, 0x03, 0x01, 0x22, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0x8d, 0x03, 0x08, 0x30,
+	0xeb,
+};
+
+static const struct terminal_response_test get_inkey_response_data_1311 = {
+	.pdu = get_inkey_response_1311,
+	.pdu_len = sizeof(get_inkey_response_1311),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_GET_INKEY,
+		.qualifier = 0x03, /* UCS2 alphabet */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .get_inkey = {
+			.text = {
+				.text = "ル",
+			},
+		}},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -10362,6 +10773,58 @@ int main(int argc, char **argv)
 				&get_inkey_data_1221, test_get_inkey);
 	g_test_add_data_func("/teststk/Get Inkey 13.1.1",
 				&get_inkey_data_1311, test_get_inkey);
+
+	g_test_add_data_func("/teststk/Get Inkey response 1.1.1",
+				&get_inkey_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 1.2.1",
+				&get_inkey_response_data_121,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 1.3.1",
+				&get_inkey_response_data_131,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 1.4.1",
+				&get_inkey_response_data_141,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 1.5.1",
+				&get_inkey_response_data_151,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 1.6.1",
+				&get_inkey_response_data_161,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 2.1.1",
+				&get_inkey_response_data_211,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 4.1.1",
+				&get_inkey_response_data_411,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 5.1.1",
+				&get_inkey_response_data_511,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 5.1.2",
+				&get_inkey_response_data_512,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 6.1.1B",
+				&get_inkey_response_data_611b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 7.1.1",
+				&get_inkey_response_data_711,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 7.1.2",
+				&get_inkey_response_data_712,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 8.1.1",
+				&get_inkey_response_data_811,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 9.1.2",
+				&get_inkey_response_data_912,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 11.1.1",
+				&get_inkey_response_data_1111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Get Inkey response 13.1.1",
+				&get_inkey_response_data_1311,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Get Input 1.1.1",
 				&get_input_data_111, test_get_input);
