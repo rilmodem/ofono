@@ -3209,6 +3209,7 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					NULL);
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
+	case STK_COMMAND_TYPE_PLAY_TONE:
 		break;
 	default:
 		return 0;
