@@ -3211,6 +3211,12 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	case STK_COMMAND_TYPE_SEND_SMS:
 	case STK_COMMAND_TYPE_PLAY_TONE:
 		break;
+	case STK_COMMAND_TYPE_POLL_INTERVAL:
+		ok = build_dataobj(&builder,
+					build_dataobj_duration, DATAOBJ_FLAG_CR,
+					&response->poll_interval.max_interval,
+					NULL);
+		break;
 	default:
 		return 0;
 	};

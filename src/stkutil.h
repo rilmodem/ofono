@@ -1014,6 +1014,10 @@ struct stk_response_get_input {
 	struct stk_answer_text text;
 };
 
+struct stk_response_poll_interval {
+	struct stk_duration max_interval;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1027,6 +1031,7 @@ struct stk_response {
 		struct stk_response_get_inkey get_inkey;
 		struct stk_response_get_input get_input;
 		struct stk_response_generic play_tone;
+		struct stk_response_poll_interval poll_interval;
 		struct stk_response_generic send_sms;
 	};
 
