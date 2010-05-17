@@ -104,9 +104,10 @@ static void bring_up(unsigned ifindex)
 	struct ifreq req = { .ifr_ifindex = ifindex, };
 	int fd = socket(PF_LOCAL, SOCK_DGRAM, 0);
 
-	if (ioctl(fd, SIOCGIFNAME, &req) ||
-	    ioctl(fd, SIOCGIFFLAGS, &req))
+	if (ioctl(fd, SIOCGIFNAME, &req)
+		|| ioctl(fd, SIOCGIFFLAGS, &req))
 		goto error;
+
 	req.ifr_flags |= IFF_UP | IFF_RUNNING;
 	ioctl(fd, SIOCSIFFLAGS, &req);
 error:
@@ -146,10 +147,12 @@ static void g_pn_nl_addr(GPhonetNetlink *self, struct nlmsghdr *nlh)
 	/* If Phonet is absent, kernel transmits other families... */
 	if (ifa->ifa_family != AF_PHONET)
 		return;
+
 	if (ifa->ifa_index != self->interface)
 		return;
 
 	for (rta = IFA_RTA(ifa); RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
+
 		if (rta->rta_type == IFA_LOCAL)
 			local = *(uint8_t *)RTA_DATA(rta);
 		else if (rta->rta_type == IFA_ADDRESS)
@@ -187,13 +190,16 @@ static void g_pn_nl_link(GPhonetNetlink *self, struct nlmsghdr *nlh)
 		st = PN_LINK_UP;
 
 	for (rta = IFLA_RTA(ifi); RTA_OK(rta, len);
-	     rta = RTA_NEXT(rta, len)) {
+		rta = RTA_NEXT(rta, len)) {
+
 		if (rta->rta_type == IFLA_IFNAME)
 			ifname = RTA_DATA(rta);
 	}
 
 	if (ifname && idx)
 		self->callback(idx, st, ifname, self->opaque);
+
+#undef UP
 }
 
 /* Parser Netlink messages */
@@ -204,7 +210,7 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 		struct nlmsghdr nlh;
 		char buf[SIZE_NLMSG];
 	} resp;
-	struct iovec iov = { &resp, (sizeof resp), };
+	struct iovec iov = { &resp, sizeof(resp), };
 	struct msghdr msg = { .msg_iov = &iov, .msg_iovlen = 1, };
 	ssize_t ret;
 	struct nlmsghdr *nlh;
@@ -220,7 +226,7 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 
 	if (msg.msg_flags & MSG_TRUNC) {
 		g_printerr("Netlink message of %zu bytes truncated at %zu\n",
-			ret, sizeof(resp));
+				ret, sizeof(resp));
 		return TRUE;
 	}
 
@@ -234,7 +240,7 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 			struct nlmsgerr *err = NLMSG_DATA(nlh);
 			if (err->error)
 				g_printerr("Netlink error: %s",
-					strerror(-err->error));
+						strerror(-err->error));
 			return TRUE;
 		}
 		case RTM_NEWADDR:
@@ -261,7 +267,7 @@ static int g_pn_netlink_getlink(int fd)
 	} req = {
 		.nlh = {
 			.nlmsg_type = RTM_GETLINK,
-			.nlmsg_len = sizeof req,
+			.nlmsg_len = sizeof(req),
 			.nlmsg_flags = NLM_F_REQUEST | NLM_F_ROOT | NLM_F_MATCH,
 			.nlmsg_pid = getpid(),
 		},
@@ -274,7 +280,7 @@ static int g_pn_netlink_getlink(int fd)
 
 	struct sockaddr_nl addr = { .nl_family = AF_NETLINK, };
 
-	return sendto(fd, &req, (sizeof req), 0,
+	return sendto(fd, &req, sizeof(req), 0,
 		      (struct sockaddr *)&addr, sizeof(addr));
 }
 
@@ -377,7 +383,8 @@ static int netlink_setaddr(uint32_t ifa_index, uint8_t ifa_local)
 {
 	struct ifaddrmsg *ifa;
 	struct rtattr *rta;
-	uint32_t reqlen = NLMSG_LENGTH(NLMSG_ALIGN(sizeof *ifa) + RTA_SPACE(1));
+	uint32_t reqlen = NLMSG_LENGTH(NLMSG_ALIGN(sizeof(*ifa))
+				+ RTA_SPACE(1));
 	struct req {
 		struct nlmsghdr nlh;
 		char buf[512];
@@ -435,9 +442,9 @@ static int netlink_addroute(uint32_t ifa_index, uint8_t remote)
 {
 	struct rtmsg *rtm;
 	struct rtattr *rta;
-	uint32_t reqlen = NLMSG_LENGTH(NLMSG_ALIGN(sizeof *rtm) +
+	uint32_t reqlen = NLMSG_LENGTH(NLMSG_ALIGN(sizeof(*rtm)) +
 				RTA_SPACE(1) +
-				RTA_SPACE(sizeof ifa_index));
+				RTA_SPACE(sizeof(ifa_index)));
 	struct req {
 		struct nlmsghdr nlh;
 		char buf[512];
