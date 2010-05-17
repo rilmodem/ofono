@@ -55,18 +55,22 @@
  * fixed macros by Andrzej Zaborowski <balrogg@gmail.com>.
  */
 #undef IFA_RTA
-#define IFA_RTA(r)  ((struct rtattr*)(void*)(((char*)(r)) + NLMSG_ALIGN(sizeof(struct ifaddrmsg))))
+#define IFA_RTA(r)  ((struct rtattr *)(void *)(((char *)(r)) \
+	+ NLMSG_ALIGN(sizeof(struct ifaddrmsg))))
 
 #undef IFLA_RTA
-#define IFLA_RTA(r)  ((struct rtattr*)(void *)(((char*)(r)) + NLMSG_ALIGN(sizeof(struct ifinfomsg))))
+#define IFLA_RTA(r)  ((struct rtattr *)(void *)(((char *)(r)) \
+	+ NLMSG_ALIGN(sizeof(struct ifinfomsg))))
 
 #undef NLMSG_NEXT
-#define NLMSG_NEXT(nlh,len)	 ((len) -= NLMSG_ALIGN((nlh)->nlmsg_len), \
-	(struct nlmsghdr*)(void*)(((char*)(nlh)) + NLMSG_ALIGN((nlh)->nlmsg_len)))
+#define NLMSG_NEXT(nlh, len)	 ((len) -= NLMSG_ALIGN((nlh)->nlmsg_len), \
+	(struct nlmsghdr *)(void *)(((char *)(nlh)) \
+	+ NLMSG_ALIGN((nlh)->nlmsg_len)))
 
 #undef RTA_NEXT
-#define RTA_NEXT(rta,attrlen)	((attrlen) -= RTA_ALIGN((rta)->rta_len), \
-	(struct rtattr*)(void*)(((char*)(rta)) + RTA_ALIGN((rta)->rta_len)))
+#define RTA_NEXT(rta, attrlen)	((attrlen) -= RTA_ALIGN((rta)->rta_len), \
+	(struct rtattr *)(void *)(((char *)(rta)) \
+	+ RTA_ALIGN((rta)->rta_len)))
 
 #define SIZE_NLMSG (16384)
 
@@ -82,7 +86,7 @@ static inline GIsiModem *make_modem(unsigned idx)
 	return (void *)(uintptr_t)idx;
 }
 
-static GSList *netlink_list = NULL;
+static GSList *netlink_list;
 
 GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx)
 {

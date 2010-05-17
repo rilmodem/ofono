@@ -41,8 +41,7 @@
 #define PN_NAMESERVICE		0xDB
 #define PNS_NAME_ADD_REQ	0x05
 
-struct _GIsiIncoming
-{
+struct _GIsiIncoming {
 	struct sockaddr_pn spn;
 	uint8_t trans_id;
 };
