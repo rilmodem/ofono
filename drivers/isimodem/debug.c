@@ -744,6 +744,7 @@ const char *net_message_id_name(enum net_message_id value)
 		_(NET_RSSI_GET_REQ);
 		_(NET_RSSI_GET_RESP);
 		_(NET_RSSI_IND);
+		_(NET_TIME_IND);
 		_(NET_RAT_IND);
 		_(NET_RAT_REQ);
 		_(NET_RAT_RESP);
@@ -768,6 +769,7 @@ const char *net_subblock_name(enum net_subblock value)
 		_(NET_GSM_REG_INFO);
 		_(NET_DETAILED_NETWORK_INFO);
 		_(NET_GSM_OPERATOR_INFO);
+		_(NET_TIME_INFO);
 		_(NET_GSM_BAND_INFO);
 		_(NET_RAT_INFO);
 		_(NET_AVAIL_NETWORK_INFO_COMMON);

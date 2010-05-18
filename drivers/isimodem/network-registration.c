@@ -746,6 +746,44 @@ static void rssi_ind_cb(GIsiClient *client, const void *restrict data,
 	ofono_netreg_strength_notify(netreg, msg[1]);
 }
 
+static void time_ind_cb(GIsiClient *client, const void *restrict data,
+			size_t len, uint16_t object, void *opaque)
+{
+	const unsigned char *msg = data;
+	const unsigned char *nitz = msg + 3;
+	struct ofono_netreg *netreg = opaque;
+
+	struct ofono_network_time info;
+
+	if (!msg || len < 13 || msg[0] != NET_TIME_IND
+		|| nitz[0] != NET_TIME_INFO)
+		return;
+
+	nitz += 2;
+
+	/* Value is years since last turn of century */
+	info.year = nitz[0] != NET_INVALID_TIME ? nitz[0] : -1;
+	info.year += 2000;
+
+	info.mon = nitz[1] != NET_INVALID_TIME ? nitz[1] : -1;
+	info.mday = nitz[2] != NET_INVALID_TIME ? nitz[2] : -1;
+	info.hour = nitz[3] != NET_INVALID_TIME ? nitz[3] : -1;
+	info.min = nitz[4] != NET_INVALID_TIME ? nitz[4] : -1;
+	info.sec = nitz[5] != NET_INVALID_TIME ? nitz[5] : -1;
+
+	/* Most significant bit set indicates negative offset. The
+	 * second most significant bit is 'reserved'. The value is the
+	 * offset from UTCin a count of 15min intervals, possibly
+	 * including the current DST adjustment. */
+	info.utcoff = (nitz[6] & 0x3F) * 15 * 60;
+	if (nitz[6] & 0x80)
+		info.utcoff *= -1;
+
+	info.dst = nitz[7] != NET_INVALID_TIME ? nitz[7] : -1;
+
+	ofono_netreg_time_notify(netreg, &info);
+}
+
 static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
 {
@@ -851,6 +889,7 @@ static gboolean isi_netreg_register(gpointer user)
 	g_isi_subscribe(nd->client, NET_REG_STATUS_IND, reg_status_ind_cb,
 			netreg);
 	g_isi_subscribe(nd->client, NET_RAT_IND, rat_ind_cb, netreg);
+	g_isi_subscribe(nd->client, NET_TIME_IND, time_ind_cb, netreg);
 
 	/* Bootstrap current RAT setting */
 	if (!g_isi_request_make(nd->client, rat, sizeof(rat),
