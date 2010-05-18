@@ -115,6 +115,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_GPRS_CONTEXT = 17,
 	OFONO_ATOM_TYPE_RADIO_SETTINGS = 18,
 	OFONO_ATOM_TYPE_STK = 19,
+	OFONO_ATOM_TYPE_NETTIME = 20,
 };
 
 enum ofono_atom_watch_condition {
@@ -264,3 +265,10 @@ struct sms;
 
 void __ofono_message_waiting_mwi(struct ofono_message_waiting *mw,
 				struct sms *sms, gboolean *out_discard);
+
+#include <ofono/nettime.h>
+
+void __ofono_nettime_probe_drivers(struct ofono_modem *modem);
+
+void __ofono_nettime_info_received(struct ofono_modem *modem,
+					struct ofono_network_time *info);

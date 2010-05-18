@@ -1147,6 +1147,7 @@ static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 			modem->driver->post_sim(modem);
 
 		__ofono_history_probe_drivers(modem);
+		__ofono_nettime_probe_drivers(modem);
 	}
 }
 

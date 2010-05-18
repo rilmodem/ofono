@@ -12,7 +12,8 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/netreg.h include/voicecall.h include/devinfo.h \
 			include/cbs.h include/call-volume.h \
 			include/gprs.h include/gprs-context.h \
-			include/radio-settings.h include/stk.h
+			include/radio-settings.h include/stk.h \
+			include/nettime.h
 
 nodist_include_HEADERS = include/version.h
 
@@ -242,8 +243,8 @@ builtin_sources += plugins/ste.c
 endif
 
 if MAINTAINER_MODE
-builtin_modules += example_history
-builtin_sources += plugins/example_history.c
+builtin_modules += example_history example_nettime
+builtin_sources += plugins/example_history.c plugins/example_nettime.c
 endif
 
 sbin_PROGRAMS = src/ofonod
@@ -260,7 +261,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
 			src/simutil.h src/simutil.c src/storage.h \
 			src/storage.c src/cbs.c src/watch.c src/call-volume.c \
 			src/gprs.c src/idmap.h src/idmap.c \
-			src/radio-settings.c src/stkutil.h src/stkutil.c
+			src/radio-settings.c src/stkutil.h src/stkutil.c \
+			src/nettime.c
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 

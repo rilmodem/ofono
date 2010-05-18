@@ -92,6 +92,17 @@ struct ofono_call {
 	int clip_validity;
 };
 
+struct ofono_network_time {
+	int sec;	/* Seconds [0..59], -1 if unavailable */
+	int min;	/* Minutes [0..59], -1 if unavailable */
+	int hour;	/* Hours [0..23], -1 if unavailable */
+	int mday;	/* Day of month [1..31], -1 if unavailable */
+	int mon;	/* Month [1..12], -1 if unavailable */
+	int year;	/* Current year, -1 if unavailable */
+	int dst;	/* Current adjustment, in seconds */
+	int utcoff;	/* Offset from UTC in seconds */
+};
+
 #ifdef __cplusplus
 }
 #endif

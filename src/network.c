@@ -1065,6 +1065,17 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 	notify_status_watches(netreg);
 }
 
+void ofono_netreg_time_notify(struct ofono_netreg *netreg,
+				struct ofono_network_time *info)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(netreg->atom);
+
+	if (!info)
+		return;
+
+	__ofono_nettime_info_received(modem, info);
+}
+
 static GSList *compress_operator_list(const struct ofono_network_operator *list,
 					int total)
 {
