@@ -305,6 +305,12 @@ static inline void check_dtmf_string(const char *command, const char *test)
 	check_common_text(command, test);
 }
 
+/* Defined in TS 102.223 Section 8.45 */
+static inline void check_language(const char *command, const char *test)
+{
+	check_common_text(command, test);
+}
+
 /* Defined in TS 102.223 Section 8.60 */
 static inline void check_aid(const struct stk_aid *command,
 					const struct stk_aid *test)
@@ -12147,6 +12153,56 @@ static void test_send_dtmf(gconstpointer data)
 	stk_command_free(command);
 }
 
+struct language_notification_test {
+	const unsigned char *pdu;
+	unsigned int pdu_len;
+	unsigned char qualifier;
+	char language[3];
+};
+
+static unsigned char language_notification_111[] = { 0xD0, 0x0D, 0x81, 0x03,
+						0x01, 0x35, 0x01, 0x82, 0x02,
+						0x81, 0x82, 0xAD, 0x02, 0x73,
+						0x65 };
+
+static unsigned char language_notification_121[] = { 0xD0, 0x09, 0x81, 0x03,
+						0x01, 0x35, 0x00, 0x82, 0x02,
+						0x81, 0x82 };
+
+static struct language_notification_test language_notification_data_111 = {
+	.pdu = language_notification_111,
+	.pdu_len = sizeof(language_notification_111),
+	.qualifier = 0x01,
+	.language = "se"
+};
+
+static struct language_notification_test language_notification_data_121 = {
+	.pdu = language_notification_121,
+	.pdu_len = sizeof(language_notification_121),
+	.qualifier = 0x00
+};
+
+static void test_language_notification(gconstpointer data)
+{
+	const struct language_notification_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+
+	g_assert(command->number == 1);
+	g_assert(command->type == STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION);
+	g_assert(command->qualifier == test->qualifier);
+
+	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
+	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
+
+	check_language(command->language_notification.language, test->language);
+
+	stk_command_free(command);
+}
+
 struct terminal_response_test {
 	const unsigned char *pdu;
 	unsigned int pdu_len;
@@ -15464,6 +15520,11 @@ int main(int argc, char **argv)
 			&send_dtmf_data_511, test_send_dtmf);
 	g_test_add_data_func("/teststk/Send DTMF 6.1.1",
 			&send_dtmf_data_611, test_send_dtmf);
+
+	g_test_add_data_func("/teststk/Language Notification 1.1.1",
+		&language_notification_data_111, test_language_notification);
+	g_test_add_data_func("/teststk/Language Notification 1.2.1",
+		&language_notification_data_121, test_language_notification);
 
 	return g_test_run();
 }
