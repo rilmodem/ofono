@@ -54,7 +54,7 @@ struct ofono_modem {
 	GSList			*atoms;
 	GSList			*pre_sim_atoms;
 	struct ofono_watchlist	*atom_watches;
-	GSList         		*interface_list;
+	GSList			*interface_list;
 	unsigned int		call_ids;
 	DBusMessage		*pending;
 	guint			interface_update;
