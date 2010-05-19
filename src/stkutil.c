@@ -2835,6 +2835,29 @@ static gboolean parse_send_dtmf(struct stk_command *command,
 	return TRUE;
 }
 
+static gboolean parse_language_notification(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_language_notification *obj =
+					&command->language_notification;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_LANGUAGE, 0,
+				&obj->language,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2958,6 +2981,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SEND_DTMF:
 		ok = parse_send_dtmf(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION:
+		ok = parse_language_notification(command, &iter);
 		break;
 	default:
 		ok = FALSE;

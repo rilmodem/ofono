@@ -988,6 +988,10 @@ struct stk_command_send_dtmf {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_language_notification {
+	char language[3];
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -1012,6 +1016,7 @@ struct stk_command {
 		struct stk_command_setup_idle_mode_text setup_idle_mode_text;
 		struct stk_command_run_at_command run_at_command;
 		struct stk_command_send_dtmf send_dtmf;
+		struct stk_command_language_notification language_notification;
 	};
 
 	void (*destructor)(struct stk_command *command);
