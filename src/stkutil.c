@@ -2720,6 +2720,43 @@ static gboolean parse_timer_mgmt(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_setup_idle_mode_text(struct stk_command *command)
+{
+	g_free(command->setup_idle_mode_text.text);
+}
+
+static gboolean parse_setup_idle_mode_text(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_setup_idle_mode_text *obj =
+					&command->setup_idle_mode_text;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TEXT,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->text,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_setup_idle_mode_text;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2834,6 +2871,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_TIMER_MANAGEMENT:
 		ok = parse_timer_mgmt(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
+		ok = parse_setup_idle_mode_text(command, &iter);
 		break;
 	default:
 		ok = FALSE;

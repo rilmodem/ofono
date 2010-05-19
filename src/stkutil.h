@@ -965,6 +965,13 @@ struct stk_command_timer_mgmt {
 	struct stk_timer_value timer_value;
 };
 
+struct stk_command_setup_idle_mode_text {
+	char *text;
+	struct stk_icon_id icon_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -986,6 +993,7 @@ struct stk_command {
 		struct stk_command_setup_event_list setup_event_list;
 		struct stk_command_perform_card_apdu perform_card_apdu;
 		struct stk_command_timer_mgmt timer_mgmt;
+		struct stk_command_setup_idle_mode_text setup_idle_mode_text;
 	};
 
 	void (*destructor)(struct stk_command *command);
