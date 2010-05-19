@@ -256,6 +256,15 @@ Supplementary Services
   Priority: Low
   Complexity: C8
 
+- Multiple Subscriber Profile (MSP) support
+
+  Priority: Low
+  Complexity: C2
+
+- CPHS Support.  This includes ALS and CPHS specific elementary files.
+
+  Priority: Low
+  Complexity: C8
 
 Miscellaneous
 =============
