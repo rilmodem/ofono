@@ -1,4 +1,5 @@
 Background
+==========
 
 - Priority scale: High, Medium and Low
 
@@ -13,7 +14,9 @@ Background
   Higher complexity tasks should be refined into several lower complexity tasks
   once the task is better understood.
 
+
 SMS
+===
 
 - SMS CS/PS bearer selection per 3GPP 27.007 +CGSMS command.  Several
   operators mandate a particular setting for the SMS bearer.  The question
@@ -106,7 +109,9 @@ SMS
   Priority: Medium
   Complexity: C4
 
+
 SIM / SIM File system
+=====================
 
 - Fixed Dialing support.  oFono should support Fixed Dialing Numbers.  This
   requires being able to edit the FD phonebook or assume that the FD phonebook
@@ -136,7 +141,9 @@ SIM / SIM File system
   Priority: Low
   Complexity: C2
 
+
 Modem Emulator
+==============
 
 - Support HFP AG emulator.  We should provide a new HFP_AG_EMULATOR atom type
   that will implement the Bluetooth HFP AG profile.  Voicecall atom, netreg
@@ -174,7 +181,9 @@ Modem Emulator
   Complexity: C4
   Priority: Medium
 
+
 Flight Mode
+===========
 
 - Flight Mode support.  Add an 'Online' property to the Modem interface that
   will control the online state of the modem.  When Online state is True all
@@ -185,7 +194,9 @@ Flight Mode
   Complexity: C4
   Priority: High
 
+
 GPRS
+====
 
 - PPP gprs-context driver support.  Add an implementation for 'atmodem' that
   will use the GAtPPP stack to drive a GPRS context interface.  Nicely support
@@ -214,7 +225,9 @@ Location Services
   Complexity: C4
   Priority: Medium
 
+
 Supplementary Services
+======================
 
 - Closed User Group (CUG) support.
 
@@ -236,7 +249,10 @@ Supplementary Services
   Priority: Low
   Complexity: C8
 
+
 Miscellaneous
+=============
+
 - Country Specific emergency numbers.  Figure out how to support countries with
   specific mandated emergency numbers which are not part of the standard
   emergency number list.
