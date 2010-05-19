@@ -106,7 +106,7 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 	if (cond & G_IO_IN) {
 		/* leave space to add PPP protocol field */
 		status = g_io_channel_read_chars(channel, buf, net->mtu,
-						 &bytes_read, &error);
+							&bytes_read, &error);
 		if (bytes_read > 0)
 			ppp_transmit(net->ppp, (guint8 *) net->ppp_packet,
 					bytes_read);
