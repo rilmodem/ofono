@@ -2757,6 +2757,45 @@ static gboolean parse_setup_idle_mode_text(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_run_at_command(struct stk_command *command)
+{
+	g_free(command->run_at_command.alpha_id);
+	g_free(command->run_at_command.at_command);
+}
+
+static gboolean parse_run_at_command(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_run_at_command *obj = &command->run_at_command;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_AT_COMMAND,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->at_command,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_run_at_command;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2874,6 +2913,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
 		ok = parse_setup_idle_mode_text(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_RUN_AT_COMMAND:
+		ok = parse_run_at_command(command, &iter);
 		break;
 	default:
 		ok = FALSE;
