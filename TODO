@@ -319,3 +319,16 @@ Miscellaneous
 
   Priority: High
   Complexity: C1
+
+- Add support for country / carrier specific emergency call list.  This needs
+  to be queried by the voicecall atom every time a new SIM is inserted.
+
+  Priority: High
+  Complexity: C1
+
+- Extend the voicecall interface with a property indicating whether this call
+  is an emergency call (essentially the CLI matches one of the numbers on the
+  emergency calling codes list.)
+
+  Priority: High
+  Complexity: C1
