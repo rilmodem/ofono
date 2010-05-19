@@ -1,0 +1,305 @@
+Background
+
+- Priority scale: High, Medium and Low
+
+- Complexity scale: C1, C2, C4 and C8.  The complexity scale is exponential,
+  with complexity 1 being the lowest complexity.  Complexity is a function
+  of both task 'complexity' and task 'scope'.
+
+  The general rule of thumb is that a complexity 1 task should take 1-2 weeks
+  for a person very familiar with oFono codebase.  Higher complexity tasks
+  require more time and have higher uncertainty.
+
+  Higher complexity tasks should be refined into several lower complexity tasks
+  once the task is better understood.
+
+SMS
+
+- SMS CS/PS bearer selection per 3GPP 27.007 +CGSMS command.  Several
+  operators mandate a particular setting for the SMS bearer.  The question
+  to figure out is whether this should be exposed as a property or a global
+  setting in e.g. /etc/ofono/main.conf.
+
+  Priority: Low
+  Complexity: C1
+
+- Add support for Enhanced SMS (EMS) from 3GPP 23.040.  These SMS messages
+  support a richer set of formatting elements, including bold/italic and
+  font size selection.  Embedding images and sounds into the SMS is also
+  supported.  This task should add support for receiving such SMS messages.
+
+  Proposed solution is to convert such messages to HTML and embed image /
+  sound data as embedded MIME in the generated HTML stream.  The EMS messages
+  will have to be detected (by the presence of particular tags in the SMS)
+  and signaled seperately from simple SMS messages.
+
+  Priority: Low
+  Complexity: C8
+
+- Source / Destination port addressing scheme from 3GPP 23.040.  A special
+  header is used to indicate the source / destination port of the application
+  this SMS message belongs to.  Such messages which are encoded in 8-bit should
+  be decoded by oFono automatically.  The handler associated with this source /
+  destination port is called with the decoded stream.
+
+  Proposed solution involves a registration / callback framework in the SMS
+  atom for plugins to register handlers.  Default (wildcard) handler is also
+  desired.
+
+  Priority: High
+  Complexity: C2
+
+- Smart Messaging Service.  This is a separate standard from Nokia and uses
+  the 3GPP 23.040 source / destination addressing scheme.  The main aim of
+  this task is to support vCards and vCalendar objects over SMS.
+
+  Proposed solution is to add a plugin with an extension API to send / receive
+  such messages.
+
+  Priority: Medium
+  Complexity: C2
+  Depends: Source / Destination port scheme
+
+- WAP PUSH notification support for MMS.  oFono should be able to receive
+  WAP PUSH messages over SMS, parse them and report them to the upper level
+  MMS stack.
+
+  Priority: Low
+  Complexity: C8
+
+- See / Cancel pending SMS messages over DBus.  When oFono sends SMS messages
+  the method call is only returned when the message has been submitted to the
+  network.  Instead we should return an object path and allow cancellation of
+  pending messages.
+
+  Priority: High
+  Complexity: C2
+
+- Persist outgoing SMS messages.  Currently oFono persists incoming messages
+  that are fragmented.  However oFono does not persist queued outgoing
+  messages.  oFono should persist such messages and restore / requeue them
+  on the next oFono startup.
+
+  Priority: High
+  Complexity: C1
+
+- Better unique ID for incoming / outgoing messages.  Currently oFono uses
+  a simple incremental counter stored in the settings store (NextMessageId).
+  This tends to break quite easily in strange situations (e.g. forced battery
+  removal, unexpected crashes).  This makes the uniqueness of this ID not
+  always guaranteed.
+
+  Proposed solution is to base the ID on SHA1 or MD5 hash.  Hash the contents
+  of the message + reception / sent time and the sender / originator address.
+
+  Priority: High
+  Complexity: C1
+
+- SMS Status Report support support according to 3GPP 23.040.  oFono should
+  support SMS start reports.  For fragmented SMS messages oFono should take
+  care of collating the status reports for each fragment and notifying once
+  all fragments are received.
+
+  SMS call history should be updated with support of SMS 'delivered' or
+  'undeliverable' status.
+
+  Priority: Medium
+  Complexity: C4
+
+SIM / SIM File system
+
+- Fixed Dialing support.  oFono should support Fixed Dialing Numbers.  This
+  requires being able to edit the FD phonebook or assume that the FD phonebook
+  has been appropriately bootstrapped.
+
+  Priority: Low
+  Complexity: C2
+
+- Barred Numbers.  oFono should support Barred Numbers capability.  This
+  requires ability to read & write EFadn entries on the SIM.
+
+  Priority: Low
+  Complexity: C4
+
+- Read / Write EFcfis.  Call forwarding settings can be bootstrapped on the
+  SIM for faster notification of the user that call forwarding is active.
+  These settings are stored in EFcfis.  oFono should read these settings and
+  update the call history atom appropriately.
+
+  Priority: Low
+  Complexity: C2
+
+- SIM Call History plugin.  New UICCs support four new SIM elementary files
+  for storing call history information on the SIM: EFici, EFict, EFoci, EFoct.
+  A plugin should be developed for oFono that will write to these files.
+
+  Priority: Low
+  Complexity: C2
+
+Modem Emulator
+
+- Support HFP AG emulator.  We should provide a new HFP_AG_EMULATOR atom type
+  that will implement the Bluetooth HFP AG profile.  Voicecall atom, netreg
+  atoms can register command handlers for this atom appropriately.
+
+  Complexity: C4
+  Priority: Medium
+
+- Support extensions to HFP AG emulator.  Some carkits support additional
+  AT command extensions to the Bluetooth HFP AG standard.  Refer to CE4A
+  white paper: "AT-commands for Automotive Premium Phone Integration".
+  Plugins can register additional command handlers appropriately to handle
+  such commands.
+
+  Complexity: C4
+  Priority: Medium
+  Depends: HFP AG emulator
+
+- Support HSP AG.  Similar to HFP AG emulator but implements the much reduced
+  Bluetooth HSP AG profile.
+
+  Priority: Low
+  Complexity: C1
+
+- Support DUN emulator. Implement the Bluetooth DUN profile with only mandatory
+  AT command support.
+
+  Complexity: C4
+  Priority: Medium
+
+  Depends: PPP Server mode
+
+- Support Bluetooth SPP profile.
+
+  Complexity: C4
+  Priority: Medium
+
+Flight Mode
+
+- Flight Mode support.  Add an 'Online' property to the Modem interface that
+  will control the online state of the modem.  When Online state is True all
+  atoms are available.  When Online state is False, all network related items
+  are removed (e.g. CallSettings) or enter into reduced functionality set
+  where only the SIM is available (e.g. DataConnectionManager, SimManager, etc)
+
+  Complexity: C4
+  Priority: High
+
+GPRS
+
+- PPP gprs-context driver support.  Add an implementation for 'atmodem' that
+  will use the GAtPPP stack to drive a GPRS context interface.  Nicely support
+  existing PPP based modems like Huawei, Novatel and Sierra.
+
+  Priority: High
+  Complexity: C2
+
+- PPP Server support.  Extend GAtPPP to support PPP Server role, similarly to
+  how existing GSM modems support PPP GPRS contexts.
+
+  Priority: High
+  Complexity: C2
+
+- On-demand SOCKS5 proxy support for MMS contexts.  When an MMS context type
+  is created, oFono should create a SOCKS5 proxy.  When a client connects to
+  the proxy, oFono can activate the GPRS context on-demand.
+
+  Priority: High
+  Complexity: C2
+
+Location Services
+- Neighbor Cell Info.  Add dedicated atom, D-Bus API and atom driver(s) for
+  Neighbor Cell information.
+
+  Complexity: C4
+  Priority: Medium
+
+Supplementary Services
+
+- Closed User Group (CUG) support.
+
+  Priority: Low
+  Complexity: C8
+
+- Call Completion to Busy Subscriber (CCBS) support
+
+  Priority: Low
+  Complexity: C8
+
+- Calling Name Presentation (CNAP) support
+
+  Priority: Low
+  Complexity: C2
+
+- User to User Signaling (UUS) support
+
+  Priority: Low
+  Complexity: C8
+
+Miscellaneous
+- Country Specific emergency numbers.  Figure out how to support countries with
+  specific mandated emergency numbers which are not part of the standard
+  emergency number list.
+
+  Complexity: C2
+  Priority: Low
+
+- Bluetooth SAP Client support.  The Telit UC864-G devices support Bluetooth
+  SAP client mode.  This requires the use of a modem side-channel to read the
+  APDU & CPDU data and send it to the remote phone device over Bluetooth RFCOMM
+  channel.
+
+  Complexity: C4
+  Priority: Low
+
+- Frequency Band Selection.  Add frequency band selection capability to the
+  RadioSettings atom.
+
+  Complexity: C2
+  Priority: Low
+
+- PolicyKit support.  Add support for PolicyKit checking of all oFono D-Bus
+  interfaces.
+
+  Complexity: C4
+  Priority: Low
+
+- Network Time (NITZ) support
+
+  Complexity: C1
+  Priority: Low
+
+- Internet Access Provider database.  Have oFono automatically configure
+  GPRS contexts based on an internal database.  Database format to be decided.
+  If there are multiple matches in the database, then some user intervention
+  might be required.
+
+  Priority: Medium
+  Complexity: C8
+
+- Support for modem 'silent' reset notifications.  oFono will remove all atoms
+  and re-initialize.
+
+  Priority: Medium
+  Complexity: C2
+
+- Add support for Modem 'power down & lock' and 'unlock & power up'.  When the
+  'power down & lock' is given, the calling application is noted and all
+  other applications are blocked from powering up the modem.  Only the calling
+  application can lift the lock.  Alternatively, if the calling application
+  exits prematurely the lock is lifted as well.
+
+  Priority: Medium
+  Complexity: C2
+
+- Add a property for Automatic Idle (sometimes referred to as Fast Dormancy)
+  in the RadioSettings atom.  This property will enable or disable the use of
+  automatic connection release by the modem for power consumption reasons.
+  This is a major power-saving feature for phones, but can be ignored for USB
+  sticks or PCI devices.
+
+  If the modem does not support such a feature the property should never be
+  exposed to the user.
+
+  Priority: High
+  Complexity: C1
