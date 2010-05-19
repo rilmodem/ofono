@@ -2796,6 +2796,45 @@ static gboolean parse_run_at_command(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_send_dtmf(struct stk_command *command)
+{
+	g_free(command->send_dtmf.alpha_id);
+	g_free(command->send_dtmf.dtmf);
+}
+
+static gboolean parse_send_dtmf(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_send_dtmf *obj = &command->send_dtmf;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_DTMF_STRING,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->dtmf,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_send_dtmf;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -2916,6 +2955,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_RUN_AT_COMMAND:
 		ok = parse_run_at_command(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SEND_DTMF:
+		ok = parse_send_dtmf(command, &iter);
 		break;
 	default:
 		ok = FALSE;
