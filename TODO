@@ -332,3 +332,10 @@ Miscellaneous
 
   Priority: High
   Complexity: C1
+
+- TTY (hearing impaired) support.  Add a new oFono atom type that will enable
+  the user to enable or disable the TTY support on the modem.  Support for
+  automatic detection of TTY (signaled by the driver) is also desired.
+
+  Priority: High
+  Complexity: C1
