@@ -115,3 +115,8 @@ Properties	string SubscriberIdentity [readonly, optional]
 
 			The list contains elements of the same format as the
 			PinRequired property.
+
+		string CardIdentifier [readonly]
+
+			Contains the Intergrated Circuit Card Identifer (ICCID)
+			and is read directly from the SIM.

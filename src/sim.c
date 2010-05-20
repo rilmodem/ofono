@@ -70,6 +70,7 @@ struct sim_file_op {
 };
 
 struct ofono_sim {
+	char *iccid;
 	char *imsi;
 	enum ofono_sim_phase phase;
 	unsigned char mnc_length;
@@ -287,6 +288,10 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 
 	if (!present)
 		goto done;
+
+	if (sim->iccid)
+		ofono_dbus_dict_append(&dict, "CardIdentifier",
+					DBUS_TYPE_STRING, &sim->iccid);
 
 	if (sim->imsi)
 		ofono_dbus_dict_append(&dict, "SubscriberIdentity",
@@ -1292,6 +1297,29 @@ static void sim_retrieve_efli_and_efpl(struct ofono_sim *sim)
 			sim_efpl_read_cb, sim);
 }
 
+static void sim_iccid_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	const char *path = __ofono_atom_get_path(sim->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	char iccid[OFONO_MAX_ICCID_LENGTH + 1];
+
+	if (!ok || length < 10)
+		return;
+
+	extract_bcd_number(data, length, iccid);
+	iccid[OFONO_MAX_ICCID_LENGTH] = '\0';
+	sim->iccid = g_strdup(iccid);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"CardIdentifier",
+						DBUS_TYPE_STRING,
+						&sim->iccid);
+}
+
 static void sim_efphase_read_cb(const struct ofono_error *error,
 				const unsigned char *data, int len, void *user)
 {
@@ -1320,6 +1348,10 @@ static void sim_determine_phase(struct ofono_sim *sim)
 
 static void sim_initialize(struct ofono_sim *sim)
 {
+	ofono_sim_read(sim, SIM_EF_ICCID_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_iccid_read_cb, sim);
+
 	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
 	 * The assumption here is that if sim manager is being initialized,
 	 * then sim commands are implemented, and the sim manager is then
@@ -1841,6 +1873,11 @@ static void sim_free_state(struct ofono_sim *sim)
 		g_queue_foreach(sim->simop_q, (GFunc)sim_file_op_free, NULL);
 		g_queue_free(sim->simop_q);
 		sim->simop_q = NULL;
+	}
+
+	if (sim->iccid) {
+		g_free(sim->iccid);
+		sim->iccid = NULL;
 	}
 
 	if (sim->imsi) {
