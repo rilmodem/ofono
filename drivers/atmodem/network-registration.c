@@ -463,19 +463,6 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static inline void report_signal_strength(struct ofono_netreg *netreg,
-						int strength)
-{
-	DBG("csq_notify: %d", strength);
-
-	if (strength == 99)
-		strength = -1;
-	else
-		strength = (strength * 100) / 31;
-
-	ofono_netreg_strength_notify(netreg, strength);
-}
-
 static void csq_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -490,7 +477,8 @@ static void csq_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &strength))
 		return;
 
-	report_signal_strength(netreg, strength);
+	ofono_netreg_strength_notify(netreg,
+				at_util_convert_signal_strength(strength));
 }
 
 static void calypso_csq_notify(GAtResult *result, gpointer user_data)
@@ -507,7 +495,8 @@ static void calypso_csq_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &strength))
 		return;
 
-	report_signal_strength(netreg, strength);
+	ofono_netreg_strength_notify(netreg,
+				at_util_convert_signal_strength(strength));
 }
 
 static void option_osigq_notify(GAtResult *result, gpointer user_data)
@@ -524,7 +513,8 @@ static void option_osigq_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &strength))
 		return;
 
-	report_signal_strength(netreg, strength);
+	ofono_netreg_strength_notify(netreg,
+				at_util_convert_signal_strength(strength));
 }
 
 static void option_owcti_notify(GAtResult *result, gpointer user_data)

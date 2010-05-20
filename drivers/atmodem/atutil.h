@@ -55,6 +55,18 @@ static inline struct cb_data *cb_data_new(void *cb, void *data)
 	return ret;
 }
 
+static inline int at_util_convert_signal_strength(int strength)
+{
+	int result;
+
+	if (strength == 99)
+		result = -1;
+	else
+		result = (strength * 100) / 31;
+
+	return result;
+}
+
 #define DECLARE_FAILURE(e) 			\
 	struct ofono_error e;			\
 	e.type = OFONO_ERROR_TYPE_FAILURE;	\
