@@ -1331,6 +1331,10 @@ static void sim_efphase_read_cb(const struct ofono_error *error,
 		sim->phase = data[0];
 
 	/* Proceed with SIM initialization */
+	ofono_sim_read(sim, SIM_EF_ICCID_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_iccid_read_cb, sim);
+
 	sim_retrieve_efli_and_efpl(sim);
 	sim_pin_check(sim);
 }
@@ -1348,10 +1352,6 @@ static void sim_determine_phase(struct ofono_sim *sim)
 
 static void sim_initialize(struct ofono_sim *sim)
 {
-	ofono_sim_read(sim, SIM_EF_ICCID_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_iccid_read_cb, sim);
-
 	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
 	 * The assumption here is that if sim manager is being initialized,
 	 * then sim commands are implemented, and the sim manager is then
