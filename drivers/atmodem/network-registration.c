@@ -810,6 +810,8 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			NULL, NULL, NULL);
 	g_at_chat_register(nd->chat, "+CIEV:",
 				ciev_notify, FALSE, netreg, NULL);
+	g_at_chat_register(nd->chat, "+CREG:",
+				creg_notify, FALSE, netreg, NULL);
 
 	ofono_netreg_register(netreg);
 	return;
@@ -834,25 +836,16 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	g_at_chat_register(nd->chat, "+CREG:",
-				creg_notify, FALSE, netreg, NULL);
-
 	switch (nd->vendor) {
 	case OFONO_VENDOR_PHONESIM:
 		g_at_chat_register(nd->chat, "+CSQ:",
 					csq_notify, FALSE, netreg, NULL);
-
-		ofono_netreg_register(netreg);
-
 		break;
 	case OFONO_VENDOR_CALYPSO:
 		g_at_chat_send(nd->chat, "AT%CSQ=1", none_prefix,
 				NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "%CSQ:", calypso_csq_notify,
 					FALSE, netreg, NULL);
-
-		ofono_netreg_register(netreg);
-
 		break;
 	case OFONO_VENDOR_OPTION_HSO:
 		g_at_chat_send(nd->chat, "AT_OSSYS=1", none_prefix,
@@ -892,9 +885,6 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_ODO=0", none_prefix,
 				NULL, NULL, NULL);
-
-		ofono_netreg_register(netreg);
-
 		break;
 
 	case OFONO_VENDOR_MBM:
@@ -904,17 +894,22 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					FALSE, netreg, NULL);
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
 				cind_support_cb, netreg, NULL);
-
-		break;
+		return;
 	case OFONO_VENDOR_HUAWEI:
-		/* huawei doesn't support CIND */
-		ofono_netreg_register(netreg);
+		/*
+		 * Huawei doesn't support CIND, signal strength reported
+		 * in the modem driver
+		 */
 		break;
 	default:
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
 				cind_support_cb, netreg, NULL);
-		break;
+		return;
 	}
+
+	g_at_chat_register(nd->chat, "+CREG:",
+				creg_notify, FALSE, netreg, NULL);
+	ofono_netreg_register(netreg);
 }
 
 static void at_creg_test_cb(gboolean ok, GAtResult *result, gpointer user_data)
