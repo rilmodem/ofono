@@ -367,7 +367,7 @@ gboolean ber_tlv_iter_next(struct ber_tlv_iter *iter)
 	const unsigned char *pdu = iter->pdu + iter->pos;
 	const unsigned char *end = iter->pdu + iter->max;
 	unsigned int tag;
-	int len;
+	unsigned int len;
 	enum ber_tlv_data_type class;
 	enum ber_tlv_data_encoding_type encoding;
 
