@@ -674,15 +674,11 @@ gboolean comprehension_tlv_builder_init(
 	return TRUE;
 }
 
-static inline unsigned int comprehension_tlv_get_tag_len(unsigned char *start)
-{
-	return bit_field(*start, 0, 7) == 0x7f ? 3 : 1;
-}
+#define CTLV_TAG_FIELD_SIZE(a)			\
+	bit_field((a), 0, 7) == 0x7f ? 3 : 1	\
 
-static inline unsigned int comprehension_tlv_get_len_len(unsigned char *start)
-{
-	return *start >= 0x80 ? *start - 0x7f : 1;
-}
+#define CTLV_LEN_FIELD_SIZE(a)			\
+	(a) >= 0x80 ? (a) - 0x7f : 1		\
 
 gboolean comprehension_tlv_builder_next(
 				struct comprehension_tlv_builder *builder,
@@ -693,8 +689,7 @@ gboolean comprehension_tlv_builder_next(
 	unsigned int len = 0;
 
 	if (builder->pdu[builder->pos] != 0) {
-		taglen = comprehension_tlv_get_tag_len(builder->pdu +
-							builder->pos);
+		taglen = CTLV_TAG_FIELD_SIZE(builder->pdu[builder->pos]);
 		lenlen = 1;
 		len = builder->pdu[builder->pos + taglen];
 
@@ -738,7 +733,7 @@ gboolean comprehension_tlv_builder_set_length(
 				unsigned int new_len)
 {
 	unsigned char *tlv = builder->pdu + builder->pos;
-	unsigned int taglen = comprehension_tlv_get_tag_len(tlv);
+	unsigned int taglen = CTLV_TAG_FIELD_SIZE(*tlv);
 	unsigned int lenlen = 1, new_lenlen = 1;
 	unsigned int len = tlv[taglen];
 	unsigned int ctlv_len, new_ctlv_len;
@@ -802,8 +797,8 @@ unsigned char *comprehension_tlv_builder_get_data(
 				struct comprehension_tlv_builder *builder)
 {
 	unsigned char *tlv = builder->pdu + builder->pos;
-	unsigned int taglen = comprehension_tlv_get_tag_len(tlv);
-	unsigned int lenlen = comprehension_tlv_get_len_len(tlv + taglen);
+	unsigned int taglen = CTLV_TAG_FIELD_SIZE(*tlv);
+	unsigned int lenlen = CTLV_LEN_FIELD_SIZE(tlv[taglen]);
 
 	return tlv + taglen + lenlen;
 }
