@@ -1304,13 +1304,13 @@ static void sim_iccid_read_cb(int ok, int length, int record,
 	struct ofono_sim *sim = userdata;
 	const char *path = __ofono_atom_get_path(sim->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
-	char iccid[OFONO_MAX_ICCID_LENGTH + 1];
+	char iccid[21]; /* ICCID max length is 20 + 1 for NULL */
 
 	if (!ok || length < 10)
 		return;
 
 	extract_bcd_number(data, length, iccid);
-	iccid[OFONO_MAX_ICCID_LENGTH] = '\0';
+	iccid[20] = '\0';
 	sim->iccid = g_strdup(iccid);
 
 	ofono_dbus_signal_property_changed(conn, path,
