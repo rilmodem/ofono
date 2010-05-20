@@ -906,6 +906,10 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				cind_support_cb, netreg, NULL);
 
 		break;
+	case OFONO_VENDOR_HUAWEI:
+		/* huawei doesn't support CIND */
+		ofono_netreg_register(netreg);
+		break;
 	default:
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
 				cind_support_cb, netreg, NULL);

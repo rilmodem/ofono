@@ -41,7 +41,10 @@
 #include <ofono/gprs.h>
 #include <ofono/voicecall.h>
 #include <ofono/log.h>
+#include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 
+#include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
 struct huawei_data {
@@ -213,14 +216,70 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
+static void huawei_cgreg_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	gboolean ret;
+	int status;
+
+	DBG("");
+
+	ret = at_util_parse_reg_unsolicited(result, "+CGREG:", &status,
+						NULL, NULL, NULL,
+						OFONO_VENDOR_HUAWEI);
+
+	if (ret == FALSE)
+		return;
+
+	ofono_gprs_status_notify(gprs, status);
+}
+
+static void huawei_rssi_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	GAtResultIter iter;
+	int strength;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^RSSI:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &strength))
+		return;
+
+	ofono_netreg_strength_notify(netreg,
+				at_util_convert_signal_strength(strength));
+}
+
 static void huawei_post_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs_context *gc;
+	struct ofono_netreg *netreg;
+	struct ofono_gprs *gprs;
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->chat);
+	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
+					data->chat);
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem", data->chat);
+
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
+					data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
+
+	if (gprs && gc) {
+		ofono_gprs_add_context(gprs, gc);
+
+		/* huawei has a separate channel for CGREG notifications */
+		g_at_chat_register(data->event, "+CGREG:",
+				huawei_cgreg_notify, FALSE, gprs, NULL);
+
+		/* huawei uses non-standard "^RSSI:18" strings */
+		g_at_chat_register(data->event, "^RSSI:",
+				huawei_rssi_notify, FALSE, netreg, NULL);
+	}
 }
 
 static struct ofono_modem_driver huawei_driver = {
