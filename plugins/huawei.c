@@ -46,6 +46,7 @@
 
 struct huawei_data {
 	GAtChat *chat;
+	GAtChat *event;
 };
 
 static int huawei_probe(struct ofono_modem *modem)
@@ -72,12 +73,14 @@ static void huawei_remove(struct ofono_modem *modem)
 	ofono_modem_set_data(modem, NULL);
 
 	g_at_chat_unref(data->chat);
+	g_at_chat_unref(data->event);
 	g_free(data);
 }
 
 static void huawei_debug(const char *str, void *user_data)
 {
-	ofono_info("%s", str);
+	const char *prefix = user_data;
+	ofono_info("%s%s", prefix, str);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -90,35 +93,64 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_modem_set_powered(modem, TRUE);
 }
 
-static int huawei_enable(struct ofono_modem *modem)
+static GAtChat *create_port(const char *device)
 {
-	struct huawei_data *data = ofono_modem_get_data(modem);
 	GAtSyntax *syntax;
 	GIOChannel *channel;
-	const char *device;
-
-	DBG("%p", modem);
-
-	device = ofono_modem_get_string(modem, "Device");
-	if (!device)
-			return -EINVAL;
+	GAtChat *chat;
 
 	channel = g_at_tty_open(device, NULL);
 	if (!channel)
-		return -EIO;
+		return NULL;
 
 	syntax = g_at_syntax_new_gsm_permissive();
-	data->chat = g_at_chat_new(channel, syntax);
+	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
-	if (!data->chat)
+	if (!chat)
+		return NULL;
+
+	return chat;
+}
+
+static int huawei_enable(struct ofono_modem *modem)
+{
+	struct huawei_data *data = ofono_modem_get_data(modem);
+	const char *modem_device, *event_device;
+
+	DBG("%p", modem);
+
+	modem_device = ofono_modem_get_string(modem, "Device");
+	event_device = ofono_modem_get_string(modem, "SecondaryDevice");
+
+	if (modem_device == NULL || event_device == NULL)
+		return -EINVAL;
+
+	data->chat = create_port(modem_device);
+
+	if (data->chat == NULL)
 		return -EIO;
 
 	g_at_chat_add_terminator(data->chat, "COMMAND NOT SUPPORT", -1, FALSE);
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, huawei_debug, NULL);
+		g_at_chat_set_debug(data->chat, huawei_debug, "");
+
+	data->event = create_port(event_device);
+
+	if (data->event == NULL) {
+		g_at_chat_unref(data->chat);
+		data->chat = NULL;
+		return -EIO;
+	}
+
+	g_at_chat_add_terminator(data->event, "COMMAND NOT SUPPORT", -1,
+					FALSE);
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(data->event, huawei_debug,
+					"EventChannel: ");
 
 	g_at_chat_send(data->chat, "ATE0", NULL, NULL, NULL, NULL);
 
@@ -147,6 +179,13 @@ static int huawei_disable(struct ofono_modem *modem)
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	if (data->event) {
+		g_at_chat_cancel_all(data->event);
+		g_at_chat_unregister_all(data->event);
+		g_at_chat_unref(data->event);
+		data->event = NULL;
+	}
 
 	if (!data->chat)
 		return 0;
