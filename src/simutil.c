@@ -516,48 +516,47 @@ gboolean ber_tlv_builder_init(struct ber_tlv_builder *builder,
 	return TRUE;
 }
 
+#define BTLV_LEN_FIELD_SIZE_NEEDED(a)				\
+	((a) <= 0x7f ? 1 :					\
+		((a) <= 0xff ? 2 :				\
+			((a) <= 0xffff ? 3 :			\
+				((a) <= 0xffffff ? 4 : 5))))
+
+#define BTLV_TAG_FIELD_SIZE_NEEDED(a)				\
+	((a) <= 0x1e ? 1 :					\
+		((a) <= 0x7f ? 2 : 3))
+
 static void ber_tlv_builder_write_header(struct ber_tlv_builder *builder)
 {
-	int header_len = 0;
-	int start = builder->pos + MAX_BER_TLV_HEADER;
-
-	/* Write length at end of the header space */
-	if (builder->len <= 0x7f)
-		builder->pdu[start - ++header_len] = builder->len;
-	else {
-		while (builder->len >> (header_len * 8)) {
-			builder->pdu[start - 1 - header_len] =
-				builder->len >> (header_len * 8);
-			header_len++;
-		}
-		builder->pdu[start - 1 - header_len] = 0x80 + header_len;
-		header_len++;
-	}
-
-	/* Write the tag before length */
-	if (builder->tag < 0x1f)
-		builder->pdu[start - ++header_len] =
-			(builder->class << 6) |
-			(builder->encoding << 5) |
-			builder->tag;
-	else {
-		int i = 0;
-
-		while (builder->tag >> (i * 7)) {
-			builder->pdu[start - ++header_len] =
-				i ? 0x80 | (builder->tag >> (i * 7)) :
-				(builder->tag & 0x7f);
-			i++;
-		}
-
-		builder->pdu[start - ++header_len] =
-			(builder->class << 6) | (builder->encoding << 5) | 0x1f;
-	}
+	int tag_size = BTLV_TAG_FIELD_SIZE_NEEDED(builder->tag);
+	int len_size = BTLV_LEN_FIELD_SIZE_NEEDED(builder->len);
+	int offset = MAX_BER_TLV_HEADER - tag_size - len_size;
+	unsigned char *pdu = builder->pdu + builder->pos;
 
 	/* Pad with stuff bytes */
-	if (header_len < MAX_BER_TLV_HEADER)
-		memset(builder->pdu + builder->pos, 0xff,
-				MAX_BER_TLV_HEADER - header_len);
+	memset(pdu, 0xff, offset);
+
+	/* Write the tag */
+	pdu[offset++] = (builder->class << 6) |
+				(builder->encoding << 5) |
+					(tag_size == 1 ? builder->tag : 0x1f);
+
+	if (tag_size == 3)
+		pdu[offset++] = 0x80 | (builder->tag >> 7);
+
+	if (tag_size > 2)
+		pdu[offset++] = builder->tag & 0x7f;
+
+	/* Write the length */
+	if (len_size > 1) {
+		int i;
+
+		pdu[offset++] = 0x80 + len_size - 1;
+
+		for (i = len_size - 2; i >= 0; i--)
+			pdu[offset++] = (builder->len >> (i * 8)) & 0xff;
+	} else
+		pdu[offset++] = builder->len;
 }
 
 gboolean ber_tlv_builder_next(struct ber_tlv_builder *builder,
