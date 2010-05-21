@@ -224,6 +224,7 @@ GPRS
   Priority: High
   Complexity: C1
 
+
 Location Services
 =================
 
@@ -232,6 +233,7 @@ Location Services
 
   Complexity: C4
   Priority: Medium
+
 
 Supplementary Services
 ======================
@@ -265,6 +267,7 @@ Supplementary Services
 
   Priority: Low
   Complexity: C8
+
 
 Miscellaneous
 =============
