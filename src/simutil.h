@@ -131,6 +131,7 @@ struct comprehension_tlv_builder {
 	unsigned int max;
 	unsigned int pos;
 	unsigned char *pdu;
+	unsigned int len;
 	struct ber_tlv_builder *parent;
 };
 

@@ -661,9 +661,9 @@ gboolean comprehension_tlv_builder_init(
 	builder->pos = 0;
 	builder->max = size;
 	builder->parent = NULL;
+	builder->len = 0;
 
 	builder->pdu[0] = 0;
-	builder->pdu[1] = 0;
 
 	return TRUE;
 }
@@ -678,44 +678,33 @@ gboolean comprehension_tlv_builder_next(
 				struct comprehension_tlv_builder *builder,
 				gboolean cr, unsigned short tag)
 {
-	unsigned int taglen = 0;
-	unsigned int lenlen = 0;
-	unsigned int len = 0;
+	unsigned char *tlv = builder->pdu + builder->pos;
+	unsigned int prev_size = 0;
+	unsigned int new_size;
 
-	if (builder->pdu[builder->pos] != 0) {
-		taglen = CTLV_TAG_FIELD_SIZE(builder->pdu[builder->pos]);
-		lenlen = 1;
-		len = builder->pdu[builder->pos + taglen];
-
-		if (len >= 0x80) {
-			unsigned int extended_bytes = len - 0x80;
-			unsigned int i;
-
-			for (len = 0, i = 1; i <= extended_bytes; i++)
-				len = (len << 8) |
-					builder->pdu[builder->pos + taglen + i];
-
-			lenlen += extended_bytes;
-		}
+	/* Tag is invalid when we start, means we've just been inited */
+	if (tlv[0] != 0) {
+		unsigned int tag_size = CTLV_TAG_FIELD_SIZE(tlv[0]);
+		prev_size = builder->len + tag_size;
+		prev_size += CTLV_LEN_FIELD_SIZE(tlv[tag_size]);
 	}
 
-	if (builder->pos + taglen + lenlen + len + (tag < 0x7f ? 1 : 3) + 1 >
-			builder->max)
+	new_size = (tag < 0x7f ? 1 : 3) + 1;
+
+	if (builder->pos + prev_size + new_size > builder->max)
 		return FALSE;
 
-	builder->pos += taglen + lenlen + len;
-	if (tag < 0x7f) {
-		builder->pdu[builder->pos + 0] = (cr ? 0x80 : 0x00) | tag;
-		builder->pdu[builder->pos + 1] = 0; /* Length */
-	} else {
-		if (builder->pos + 4 > builder->max)
-			return FALSE;
+	builder->pos += prev_size;
 
+	if (tag >= 0x7f) {
 		builder->pdu[builder->pos + 0] = 0x7f;
 		builder->pdu[builder->pos + 1] = (cr ? 0x80 : 0) | (tag >> 8);
 		builder->pdu[builder->pos + 2] = tag & 0xff;
-		builder->pdu[builder->pos + 3] = 0; /* Length */
-	}
+	} else
+		builder->pdu[builder->pos + 0] = (cr ? 0x80 : 0x00) | tag;
+
+	builder->len = 0;
+	builder->pdu[builder->pos + new_size - 1] = 0; /* Length */
 
 	return TRUE;
 }
@@ -727,62 +716,42 @@ gboolean comprehension_tlv_builder_set_length(
 				unsigned int new_len)
 {
 	unsigned char *tlv = builder->pdu + builder->pos;
-	unsigned int taglen = CTLV_TAG_FIELD_SIZE(*tlv);
-	unsigned int lenlen = 1, new_lenlen = 1;
-	unsigned int len = tlv[taglen];
+	unsigned int tag_size = CTLV_TAG_FIELD_SIZE(tlv[0]);
+	unsigned int len_size, new_len_size;
 	unsigned int ctlv_len, new_ctlv_len;
+	unsigned int len;
 
-	/* How much space do we occupy now */
-	if (len >= 0x80) {
-		unsigned int extended_bytes = len - 0x80;
-		unsigned int i;
-
-		for (len = 0, i = 1; i <= extended_bytes; i++)
-			len = (len << 8) | tlv[taglen + i];
-
-		lenlen += extended_bytes;
-	}
-
-	ctlv_len = taglen + lenlen + len;
-
-	/* How much do we need */
-	if (new_len >= 0x80) {
-		unsigned int extended_bytes = 0;
-		while (new_len >> (extended_bytes * 8))
-			extended_bytes += 1;
-		new_lenlen += extended_bytes;
-	}
-
-	new_ctlv_len = taglen + new_lenlen + new_len;
+	len_size = CTLV_LEN_FIELD_SIZE(tlv[tag_size]);
+	ctlv_len = tag_size + len_size + builder->len;
+	new_len_size = BTLV_LEN_FIELD_SIZE_NEEDED(new_len);
+	new_ctlv_len = tag_size + new_len_size + new_len;
 
 	/* Check there is enough space */
 	if (builder->pos + new_ctlv_len > builder->max)
 		return FALSE;
 
 	if (builder->parent)
-		if (ber_tlv_builder_set_length(builder->parent, builder->pos +
-					new_ctlv_len) == FALSE)
-			return FALSE;
+		ber_tlv_builder_set_length(builder->parent,
+						builder->pos + new_ctlv_len);
 
-	len = MIN(len, new_len);
-	if (len > 0 && new_lenlen != lenlen)
-		memmove(tlv + taglen + new_lenlen, tlv + taglen + lenlen, len);
+	len = MIN(builder->len, new_len);
+	if (len > 0 && new_len_size != len_size)
+		memmove(tlv + tag_size + new_len_size,
+				tlv + tag_size + len_size, len);
+
+	builder->len = new_len;
 
 	/* Write new length */
-	if (new_len < 0x80)
-		tlv[taglen] = new_len;
-	else {
-		unsigned int extended_bytes = 0;
-		unsigned int i;
-		while (new_len >> (extended_bytes * 8))
-			extended_bytes += 1;
+	if (new_len_size > 1) {
+		int i;
+		unsigned int offset = tag_size;
 
-		for (i = 1; i <= extended_bytes; i++)
-			tlv[taglen + i] =
-				(new_len >> ((extended_bytes - i) * 8)) & 0xff;
+		tlv[offset++] = 0x80 + new_len_size - 1;
 
-		tlv[taglen] = 0x80 + extended_bytes;
-	}
+		for (i = new_len_size - 2; i >= 0; i--)
+			tlv[offset++] = (builder->len >> (i * 8)) & 0xff;
+	} else
+		tlv[tag_size] = builder->len;
 
 	return TRUE;
 }
@@ -791,10 +760,10 @@ unsigned char *comprehension_tlv_builder_get_data(
 				struct comprehension_tlv_builder *builder)
 {
 	unsigned char *tlv = builder->pdu + builder->pos;
-	unsigned int taglen = CTLV_TAG_FIELD_SIZE(*tlv);
-	unsigned int lenlen = CTLV_LEN_FIELD_SIZE(tlv[taglen]);
+	unsigned int tag_size = CTLV_TAG_FIELD_SIZE(*tlv);
+	unsigned int len_size = CTLV_LEN_FIELD_SIZE(tlv[tag_size]);
 
-	return tlv + taglen + lenlen;
+	return tlv + tag_size + len_size;
 }
 
 static char *sim_network_name_parse(const unsigned char *buffer, int length,
