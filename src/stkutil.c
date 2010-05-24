@@ -2860,7 +2860,7 @@ void stk_command_free(struct stk_command *command)
 	g_free(command);
 }
 
-static inline gboolean stk_tlv_builder_init(struct stk_tlv_builder *iter,
+static gboolean stk_tlv_builder_init(struct stk_tlv_builder *iter,
 						unsigned char *pdu,
 						unsigned int size)
 {
@@ -2870,7 +2870,7 @@ static inline gboolean stk_tlv_builder_init(struct stk_tlv_builder *iter,
 	return comprehension_tlv_builder_init(&iter->ctlv, pdu, size);
 }
 
-static inline gboolean stk_tlv_open_container(struct stk_tlv_builder *iter,
+static gboolean stk_tlv_builder_open_container(struct stk_tlv_builder *iter,
 						gboolean cr,
 						unsigned char shorttag,
 						gboolean relocatable)
@@ -2889,18 +2889,18 @@ static inline gboolean stk_tlv_open_container(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
-static inline gboolean stk_tlv_close_container(struct stk_tlv_builder *iter)
+static gboolean stk_tlv_builder_close_container(struct stk_tlv_builder *iter)
 {
 	return comprehension_tlv_builder_set_length(&iter->ctlv, iter->len);
 }
 
-static inline unsigned int stk_tlv_get_length(struct stk_tlv_builder *iter)
+static unsigned int stk_tlv_builder_get_length(struct stk_tlv_builder *iter)
 {
 	return comprehension_tlv_builder_get_data(&iter->ctlv) -
 		iter->ctlv.pdu + iter->len;
 }
 
-static inline gboolean stk_tlv_append_byte(struct stk_tlv_builder *iter,
+static gboolean stk_tlv_builder_append_byte(struct stk_tlv_builder *iter,
 						unsigned char num)
 {
 	if (iter->len >= iter->max_len)
@@ -2910,8 +2910,8 @@ static inline gboolean stk_tlv_append_byte(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
-static inline gboolean stk_tlv_append_text(struct stk_tlv_builder *iter,
-						int dcs, const char *text)
+static gboolean stk_tlv_builder_append_gsm_packed(struct stk_tlv_builder *iter,
+							const char *text)
 {
 	unsigned int len;
 	unsigned char *gsm;
@@ -2944,8 +2944,9 @@ static inline gboolean stk_tlv_append_text(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
-static inline gboolean stk_tlv_append_gsm_unpacked(struct stk_tlv_builder *iter,
-							const char *text)
+static gboolean stk_tlv_builder_append_gsm_unpacked(
+						struct stk_tlv_builder *iter,
+						const char *text)
 {
 	unsigned int len;
 	unsigned char *gsm;
@@ -2974,8 +2975,8 @@ static inline gboolean stk_tlv_append_gsm_unpacked(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
-static inline gboolean stk_tlv_append_ucs2(struct stk_tlv_builder *iter,
-							const char *text)
+static gboolean stk_tlv_builder_append_ucs2(struct stk_tlv_builder *iter,
+						const char *text)
 {
 	unsigned char *ucs2;
 	gsize gwritten;
@@ -3001,31 +3002,31 @@ static inline gboolean stk_tlv_append_ucs2(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
-static inline gboolean stk_tlv_append_text(struct stk_tlv_builder *iter,
+static gboolean stk_tlv_builder_append_text(struct stk_tlv_builder *iter,
 						int dcs, const char *text)
 {
 	gboolean ret;
 
 	switch (dcs) {
 	case 0x00:
-		return stk_tlv_append_gsm_packed(iter, text);
+		return stk_tlv_builder_append_gsm_packed(iter, text);
 	case 0x04:
-		return stk_tlv_append_gsm_unpacked(iter, text);
+		return stk_tlv_builder_append_gsm_unpacked(iter, text);
 	case 0x08:
-		return stk_tlv_append_ucs2(iter, text);
+		return stk_tlv_builder_append_ucs2(iter, text);
 	case -1:
-		ret = stk_tlv_append_gsm_unpacked(iter, text);
+		ret = stk_tlv_builder_append_gsm_unpacked(iter, text);
 
 		if (ret == TRUE)
 			return ret;
 
-		return stk_tlv_append_ucs2(iter, text);
+		return stk_tlv_builder_append_ucs2(iter, text);
 	}
 
 	return FALSE;
 }
 
-static inline gboolean stk_tlv_append_bytes(struct stk_tlv_builder *iter,
+static inline gboolean stk_tlv_builder_append_bytes(struct stk_tlv_builder *iter,
 						const unsigned char *data,
 						unsigned int length)
 {
@@ -3048,9 +3049,9 @@ static gboolean build_dataobj_item_id(struct stk_tlv_builder *tlv,
 	if (*item_id == 0)
 		return TRUE;
 
-	return stk_tlv_open_container(tlv, cr, tag, FALSE) &&
-		stk_tlv_append_byte(tlv, *item_id) &&
-		stk_tlv_close_container(tlv);
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *item_id) &&
+		stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.8 */
@@ -3063,10 +3064,10 @@ static gboolean build_dataobj_duration(struct stk_tlv_builder *tlv,
 	if (duration->interval == 0x00)
 		return TRUE;
 
-	return stk_tlv_open_container(tlv, cr, tag, FALSE) &&
-		stk_tlv_append_byte(tlv, duration->unit) &&
-		stk_tlv_append_byte(tlv, duration->interval) &&
-		stk_tlv_close_container(tlv);
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, duration->unit) &&
+		stk_tlv_builder_append_byte(tlv, duration->interval) &&
+		stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.12 */
@@ -3076,18 +3077,18 @@ static gboolean build_dataobj_result(struct stk_tlv_builder *tlv,
 	const struct stk_result *result = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_RESULT;
 
-	if (stk_tlv_open_container(tlv, cr, tag, FALSE) == FALSE)
+	if (stk_tlv_builder_open_container(tlv, cr, tag, FALSE) == FALSE)
 		return FALSE;
 
-	if (stk_tlv_append_byte(tlv, result->type) == FALSE)
+	if (stk_tlv_builder_append_byte(tlv, result->type) == FALSE)
 		return FALSE;
 
 	if (result->additional_len > 0)
-		if (stk_tlv_append_bytes(tlv, result->additional,
+		if (stk_tlv_builder_append_bytes(tlv, result->additional,
 					result->additional_len) == FALSE)
 			return FALSE;
 
-	if (stk_tlv_close_container(tlv) == FALSE)
+	if (stk_tlv_builder_close_container(tlv) == FALSE)
 		return FALSE;
 }
 
@@ -3096,12 +3097,13 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
 {
 	const struct stk_answer_text *text = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_TEXT;
+	gboolean ret;
 
 	if (!text->text && !text->yesno)
 		return TRUE;
 
-	if (stk_tlv_open_container(tlv, cr, STK_DATA_OBJECT_TYPE_TEXT,
-					TRUE) != TRUE)
+	if (stk_tlv_builder_open_container(tlv, cr, tag, TRUE) != TRUE)
 		return FALSE;
 
 	if (text->yesno == TRUE) {
@@ -3111,20 +3113,20 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 		 * answer is "positive" and the value '00' when the
 		 * answer is "negative" in the text string data object.
 		 */
-		if (stk_tlv_append_byte(tlv, 0x04) != TRUE)
+		if (stk_tlv_builder_append_byte(tlv, 0x04) != TRUE)
 			return FALSE;
 
-		if (stk_tlv_append_byte(tlv, text->text ? 0x01 : 0x00) != TRUE)
-			return FALSE;
-	} else if (text->packed) {
-		if (stk_tlv_append_text(tlv, 0x00, text->text) != TRUE)
-			return FALSE;
-	} else {
-		if (stk_tlv_append_text(tlv, -1, text->text) != TRUE)
-			return FALSE;
-	}
+		ret = stk_tlv_builder_append_byte(tlv,
+						text->text ? 0x01 : 0x00);
+	} else if (text->packed)
+		ret = stk_tlv_builder_append_gsm_packed(tlv, text->text);
+	else
+		ret = stk_tlv_builder_append_text(tlv, -1, text->text);
 
-	return stk_tlv_close_container(tlv);
+	if (ret != TRUE)
+		return ret;
+
+	return stk_tlv_builder_close_container(tlv);
 }
 
 static gboolean build_dataobj(struct stk_tlv_builder *tlv,
@@ -3163,19 +3165,19 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	 * and the Result TLV.  Comprehension required everywhere.
 	 */
 	tag = STK_DATA_OBJECT_TYPE_COMMAND_DETAILS;
-	if (stk_tlv_open_container(&builder, TRUE, tag, FALSE) == FALSE)
+	if (stk_tlv_builder_open_container(&builder, TRUE, tag, FALSE) == FALSE)
 		return 0;
 
-	if (stk_tlv_append_byte(&builder, response->number) == FALSE)
+	if (stk_tlv_builder_append_byte(&builder, response->number) == FALSE)
 		return 0;
 
-	if (stk_tlv_append_byte(&builder, response->type) == FALSE)
+	if (stk_tlv_builder_append_byte(&builder, response->type) == FALSE)
 		return 0;
 
-	if (stk_tlv_append_byte(&builder, response->qualifier) == FALSE)
+	if (stk_tlv_builder_append_byte(&builder, response->qualifier) == FALSE)
 		return 0;
 
-	if (stk_tlv_close_container(&builder) == FALSE)
+	if (stk_tlv_builder_close_container(&builder) == FALSE)
 		return 0;
 
 	/* TS 102 223 section 6.8 states:
@@ -3189,16 +3191,16 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	 * data object type.
 	 */
 	tag = STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
-	if (stk_tlv_open_container(&builder, TRUE, tag, FALSE) == FALSE)
+	if (stk_tlv_builder_open_container(&builder, TRUE, tag, FALSE) == FALSE)
 		return 0;
 
-	if (stk_tlv_append_byte(&builder, response->src) == FALSE)
+	if (stk_tlv_builder_append_byte(&builder, response->src) == FALSE)
 		return 0;
 
-	if (stk_tlv_append_byte(&builder, response->dst) == FALSE)
+	if (stk_tlv_builder_append_byte(&builder, response->dst) == FALSE)
 		return 0;
 
-	if (stk_tlv_close_container(&builder) == FALSE)
+	if (stk_tlv_builder_close_container(&builder) == FALSE)
 		return 0;
 
 	if (build_dataobj_result(&builder, &response->result, TRUE) != TRUE)
@@ -3246,5 +3248,5 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	if (ok != TRUE)
 		return 0;
 
-	return stk_tlv_get_length(&builder);
+	return stk_tlv_builder_get_length(&builder);
 }
