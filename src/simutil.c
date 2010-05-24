@@ -631,20 +631,23 @@ gboolean ber_tlv_builder_recurse_comprehension(struct ber_tlv_builder *builder,
 }
 
 void ber_tlv_builder_optimize(struct ber_tlv_builder *builder,
-				unsigned char **pdu, unsigned int *len)
+				unsigned char **out_pdu, unsigned int *out_len)
 {
+	unsigned int len;
+	unsigned char *pdu;
+
 	ber_tlv_builder_write_header(builder);
 
-	if (pdu == NULL)
-		return;
+	len = builder->pos + MAX_BER_TLV_HEADER + builder->len;
 
-	*len = builder->pos + MAX_BER_TLV_HEADER + builder->len;
-	*pdu = builder->pdu;
+	for (pdu = builder->pdu; *pdu == 0xff; pdu++)
+		len--;
 
-	while (**pdu == 0xff) {
-		(*len)--;
-		(*pdu)++;
-	}
+	if (out_pdu)
+		*out_pdu = pdu;
+
+	if (out_len)
+		*out_len = len;
 }
 
 gboolean comprehension_tlv_builder_init(
