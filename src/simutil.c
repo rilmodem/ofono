@@ -566,22 +566,15 @@ gboolean ber_tlv_builder_next(struct ber_tlv_builder *builder,
 {
 	if (builder->tag != 0xff) {
 		ber_tlv_builder_write_header(builder);
-
 		builder->pos += MAX_BER_TLV_HEADER + builder->len;
 	}
 
-	if (builder->pos + MAX_BER_TLV_HEADER > builder->max)
+	if (ber_tlv_builder_set_length(builder, 0) == FALSE)
 		return FALSE;
-
-	if (builder->parent)
-		if (ber_tlv_builder_set_length(builder->parent, builder->pos +
-					MAX_BER_TLV_HEADER) == FALSE)
-			return FALSE;
 
 	builder->class = class;
 	builder->encoding = encoding;
 	builder->tag = new_tag;
-	builder->len = 0;
 
 	return TRUE;
 }
@@ -591,14 +584,13 @@ gboolean ber_tlv_builder_next(struct ber_tlv_builder *builder,
 gboolean ber_tlv_builder_set_length(struct ber_tlv_builder *builder,
 					unsigned int new_len)
 {
-	if (builder->pos + MAX_BER_TLV_HEADER + new_len > builder->max)
+	unsigned int new_pos = builder->pos + MAX_BER_TLV_HEADER + new_len;
+
+	if (new_pos > builder->max)
 		return FALSE;
 
 	if (builder->parent)
-		if (ber_tlv_builder_set_length(builder->parent,
-					builder->pos + MAX_BER_TLV_HEADER +
-					new_len) == FALSE)
-			return FALSE;
+		ber_tlv_builder_set_length(builder->parent, new_pos);
 
 	builder->len = new_len;
 
