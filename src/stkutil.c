@@ -3088,8 +3088,7 @@ static gboolean build_dataobj_result(struct stk_tlv_builder *tlv,
 					result->additional_len) == FALSE)
 			return FALSE;
 
-	if (stk_tlv_builder_close_container(tlv) == FALSE)
-		return FALSE;
+	return stk_tlv_builder_close_container(tlv);
 }
 
 /* Defined in TS 102.223 Section 8.15 */
