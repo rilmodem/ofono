@@ -48,7 +48,16 @@ struct stk_file_iter {
 	const unsigned char *file;
 };
 
+struct stk_tlv_builder {
+	struct comprehension_tlv_builder ctlv;
+	unsigned char *value;
+	unsigned int len;
+	unsigned int max_len;
+};
+
 typedef gboolean (*dataobj_handler)(struct comprehension_tlv_iter *, void *);
+typedef gboolean (*dataobj_writer)(struct stk_tlv_builder *,
+					const void *, gboolean);
 
 /*
  * Defined in TS 102.223 Section 8.13
@@ -2851,13 +2860,6 @@ void stk_command_free(struct stk_command *command)
 	g_free(command);
 }
 
-struct stk_tlv_builder {
-	struct comprehension_tlv_builder ctlv;
-	unsigned char *value;
-	unsigned int len;
-	unsigned int max_len;
-};
-
 static inline gboolean stk_tlv_builder_init(struct stk_tlv_builder *iter,
 						unsigned char *pdu,
 						unsigned int size)
@@ -3041,12 +3043,14 @@ static gboolean build_dataobj_duration(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
 {
 	const struct stk_duration *duration = data;
+	unsigned char tag;
 
 	if (duration->interval == 0x00)
 		return TRUE;
 
-	return stk_tlv_open_container(tlv, cr,
-				STK_DATA_OBJECT_TYPE_DURATION, FALSE) &&
+	tag = STK_DATA_OBJECT_TYPE_DURATION;
+
+	return stk_tlv_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_append_byte(tlv, duration->unit) &&
 		stk_tlv_append_byte(tlv, duration->interval) &&
 		stk_tlv_close_container(tlv);
@@ -3096,6 +3100,7 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 		 */
 		if (stk_tlv_append_byte(tlv, 0x04) != TRUE)
 			return FALSE;
+
 		if (stk_tlv_append_byte(tlv, text->text ? 0x01 : 0x00) != TRUE)
 			return FALSE;
 	} else if (text->packed) {
@@ -3109,9 +3114,8 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 	return stk_tlv_close_container(tlv);
 }
 
-static gboolean build_dataobj(struct stk_tlv_builder *tlv, gboolean
-				(*builder_func)(struct stk_tlv_builder *,
-						const void *, gboolean), ...)
+static gboolean build_dataobj(struct stk_tlv_builder *tlv,
+				dataobj_writer builder_func, ...)
 {
 	va_list args;
 
@@ -3125,9 +3129,7 @@ static gboolean build_dataobj(struct stk_tlv_builder *tlv, gboolean
 		if (builder_func(tlv, data, cr) != TRUE)
 			return FALSE;
 
-		builder_func = va_arg(args, gboolean (*)(
-						struct stk_tlv_builder *,
-						const void *, gboolean));
+		builder_func = va_arg(args, dataobj_writer);
 	}
 
 	return TRUE;
