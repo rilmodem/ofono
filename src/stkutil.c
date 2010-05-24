@@ -3039,14 +3039,21 @@ static gboolean build_dataobj_result(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
 {
 	const struct stk_result *result = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_RESULT;
 
-	return stk_tlv_open_container(tlv, cr, STK_DATA_OBJECT_TYPE_RESULT,
-					FALSE) &&
-		stk_tlv_append_byte(tlv, result->type) &&
-		(result->additional_len == 0 ||
-		 stk_tlv_append_bytes(tlv, result->additional,
-					result->additional_len)) &&
-		stk_tlv_close_container(tlv);
+	if (stk_tlv_open_container(tlv, cr, tag, FALSE) == FALSE)
+		return FALSE;
+
+	if (stk_tlv_append_byte(tlv, result->type) == FALSE)
+		return FALSE;
+
+	if (result->additional_len > 0)
+		if (stk_tlv_append_bytes(tlv, result->additional,
+					result->additional_len) == FALSE)
+			return FALSE;
+
+	if (stk_tlv_close_container(tlv) == FALSE)
+		return FALSE;
 }
 
 unsigned int stk_pdu_from_response(const struct stk_response *response,
@@ -3054,6 +3061,7 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 {
 	struct stk_tlv_builder builder;
 	gboolean ok = TRUE;
+	unsigned char tag;
 
 	stk_tlv_builder_init(&builder, pdu, size);
 
@@ -3062,13 +3070,20 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	 * Command Details TLV first, followed by Device Identities TLV
 	 * and the Result TLV.  Comprehension required everywhere.
 	 */
-	if ((stk_tlv_open_container(&builder, TRUE,
-					STK_DATA_OBJECT_TYPE_COMMAND_DETAILS,
-					FALSE) &&
-			stk_tlv_append_byte(&builder, response->number) &&
-			stk_tlv_append_byte(&builder, response->type) &&
-			stk_tlv_append_byte(&builder, response->qualifier) &&
-			stk_tlv_close_container(&builder)) != TRUE)
+	tag = STK_DATA_OBJECT_TYPE_COMMAND_DETAILS;
+	if (stk_tlv_open_container(&builder, TRUE, tag, FALSE) == FALSE)
+		return 0;
+
+	if (stk_tlv_append_byte(&builder, response->number) == FALSE)
+		return 0;
+
+	if (stk_tlv_append_byte(&builder, response->type) == FALSE)
+		return 0;
+
+	if (stk_tlv_append_byte(&builder, response->qualifier) == FALSE)
+		return 0;
+
+	if (stk_tlv_close_container(&builder) == FALSE)
 		return 0;
 
 	/* TS 102 223 section 6.8 states:
@@ -3081,12 +3096,17 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	 * TS 102 384 conformace tests so we set it per command and per
 	 * data object type.
 	 */
-	if ((stk_tlv_open_container(&builder, TRUE,
-					STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES,
-					FALSE) &&
-			stk_tlv_append_byte(&builder, response->src) &&
-			stk_tlv_append_byte(&builder, response->dst) &&
-			stk_tlv_close_container(&builder)) != TRUE)
+	tag = STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
+	if (stk_tlv_open_container(&builder, TRUE, tag, FALSE) == FALSE)
+		return 0;
+
+	if (stk_tlv_append_byte(&builder, response->src) == FALSE)
+		return 0;
+
+	if (stk_tlv_append_byte(&builder, response->dst) == FALSE)
+		return 0;
+
+	if (stk_tlv_close_container(&builder) == FALSE)
 		return 0;
 
 	if (build_dataobj_result(&builder, &response->result, TRUE) != TRUE)
