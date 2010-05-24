@@ -2911,112 +2911,112 @@ static inline gboolean stk_tlv_append_text(struct stk_tlv_builder *iter,
 						int dcs, const char *text)
 {
 	unsigned int len;
-	unsigned char *gsm, *ucs2;
+	unsigned char *gsm;
 	long written = 0;
-	gsize gwritten;
 
 	if (text == NULL)
 		return TRUE;
 
 	len = strlen(text);
 
-	switch (dcs) {
-	case 0x00:
-		gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
-		if (gsm == NULL && len > 0)
-			return FALSE;
-		if (iter->len + (written * 7 + 7) / 8 >= iter->max_len) {
-			g_free(gsm);
-			return FALSE;
-		}
+	gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
+	if (gsm == NULL && len > 0)
+		return FALSE;
 
-		iter->value[iter->len++] = 0x00;
-
-		pack_7bit_own_buf(gsm, len, 0, FALSE, &written, 0,
-					iter->value + iter->len);
+	if (iter->len + (written * 7 + 7) / 8 >= iter->max_len) {
 		g_free(gsm);
-		if (written < 1 && len > 0)
-			return FALSE;
-		iter->len += written;
+		return FALSE;
+	}
 
+	pack_7bit_own_buf(gsm, len, 0, FALSE, &written, 0,
+				iter->value + iter->len + 1);
+	g_free(gsm);
+
+	if (written < 1 && len > 0)
+		return FALSE;
+
+	iter->value[iter->len++] = 0x00;
+	iter->len += written;
+
+	return TRUE;
+}
+
+static inline gboolean stk_tlv_append_gsm_unpacked(struct stk_tlv_builder *iter,
+							const char *text)
+{
+	unsigned int len;
+	unsigned char *gsm;
+	long written = 0;
+
+	if (text == NULL)
 		return TRUE;
-	case 0x04:
-		gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
-		if (gsm == NULL && len > 0)
-			return FALSE;
-		if (iter->len + written >= iter->max_len) {
-			g_free(gsm);
-			return FALSE;
-		}
 
-		iter->value[iter->len++] = 0x04;
+	len = strlen(text);
 
-		memcpy(iter->value + iter->len, gsm, written);
-		iter->len += written;
+	gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
+	if (gsm == NULL && len > 0)
+		return FALSE;
 
+	if (iter->len + written >= iter->max_len) {
 		g_free(gsm);
+		return FALSE;
+	}
 
-		return TRUE;
-	case 0x08:
-		ucs2 = (unsigned char *) g_convert((const gchar *) text, len,
+	iter->value[iter->len++] = 0x04;
+	memcpy(iter->value + iter->len, gsm, written);
+	iter->len += written;
+
+	g_free(gsm);
+
+	return TRUE;
+}
+
+static inline gboolean stk_tlv_append_ucs2(struct stk_tlv_builder *iter,
+							const char *text)
+{
+	unsigned char *ucs2;
+	gsize gwritten;
+
+	ucs2 = (unsigned char *) g_convert((const gchar *) text, -1,
 						"UCS-2BE", "UTF-8//TRANSLIT",
 						NULL, &gwritten, NULL);
-		if (ucs2 == NULL)
-			return FALSE;
-		if (iter->len + gwritten >= iter->max_len) {
-			g_free(ucs2);
-			return FALSE;
-		}
+	if (ucs2 == NULL)
+		return FALSE;
 
-		iter->value[iter->len++] = 0x08;
-
-		memcpy(iter->value + iter->len, ucs2, gwritten);
-		iter->len += gwritten;
-
+	if (iter->len + gwritten >= iter->max_len) {
 		g_free(ucs2);
+		return FALSE;
+	}
 
-		return TRUE;
+	iter->value[iter->len++] = 0x08;
+
+	memcpy(iter->value + iter->len, ucs2, gwritten);
+	iter->len += gwritten;
+
+	g_free(ucs2);
+
+	return TRUE;
+}
+
+static inline gboolean stk_tlv_append_text(struct stk_tlv_builder *iter,
+						int dcs, const char *text)
+{
+	gboolean ret;
+
+	switch (dcs) {
+	case 0x00:
+		return stk_tlv_append_gsm_packed(iter, text);
+	case 0x04:
+		return stk_tlv_append_gsm_unpacked(iter, text);
+	case 0x08:
+		return stk_tlv_append_ucs2(iter, text);
 	case -1:
-		/* Fake DCS to mean unpacked GSM alphabet if possible
-		 * to encode the string and UCS2 if not.  */
-		gsm = convert_utf8_to_gsm(text, len, NULL, &written, 0);
+		ret = stk_tlv_append_gsm_unpacked(iter, text);
 
-		if (gsm == NULL && len > 0) {
-			/* Use UCS2. */
-			ucs2 = (unsigned char *) g_convert(
-					(const gchar *) text, len,
-					"UCS-2BE", "UTF-8//TRANSLIT",
-					NULL, &gwritten, NULL);
-			if (ucs2 == NULL)
-				return FALSE;
-			if (iter->len + gwritten >= iter->max_len) {
-				g_free(ucs2);
-				return FALSE;
-			}
+		if (ret == TRUE)
+			return ret;
 
-			iter->value[iter->len++] = 0x08;
-
-			memcpy(iter->value + iter->len, ucs2, gwritten);
-			iter->len += gwritten;
-
-			g_free(ucs2);
-
-			return TRUE;
-		}
-
-		if (iter->len + written >= iter->max_len) {
-			g_free(gsm);
-			return FALSE;
-		}
-
-		iter->value[iter->len++] = 0x04;
-
-		memcpy(iter->value + iter->len, gsm, written);
-		iter->len += written;
-
-		g_free(gsm);
-
-		return TRUE;
+		return stk_tlv_append_ucs2(iter, text);
 	}
 
 	return FALSE;
