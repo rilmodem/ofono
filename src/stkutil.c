@@ -3043,12 +3043,12 @@ static gboolean build_dataobj_item_id(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
 {
 	const unsigned char *item_id = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_ITEM_ID;
 
 	if (*item_id == 0)
 		return TRUE;
 
-	return stk_tlv_open_container(tlv, cr,
-				STK_DATA_OBJECT_TYPE_ITEM_ID, FALSE) &&
+	return stk_tlv_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_append_byte(tlv, *item_id) &&
 		stk_tlv_close_container(tlv);
 }
@@ -3058,12 +3058,10 @@ static gboolean build_dataobj_duration(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
 {
 	const struct stk_duration *duration = data;
-	unsigned char tag;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_DURATION;
 
 	if (duration->interval == 0x00)
 		return TRUE;
-
-	tag = STK_DATA_OBJECT_TYPE_DURATION;
 
 	return stk_tlv_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_append_byte(tlv, duration->unit) &&
