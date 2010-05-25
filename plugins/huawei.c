@@ -50,6 +50,7 @@
 struct huawei_data {
 	GAtChat *chat;
 	GAtChat *event;
+	struct ofono_sim *sim;
 	gint sim_state;
 };
 
@@ -87,6 +88,17 @@ static void huawei_debug(const char *str, void *user_data)
 	ofono_info("%s%s", prefix, str);
 }
 
+static void notify_sim_state(struct huawei_data *data, gint sim_state)
+{
+	if (data->sim_state == 0 && sim_state == 1) {
+		ofono_sim_inserted_notify(data->sim, TRUE);
+		data->sim_state = sim_state;
+	} else if (data->sim_state == 1 && sim_state == 0) {
+		ofono_sim_inserted_notify(data->sim, FALSE);
+		data->sim_state = sim_state;
+	}
+}
+
 static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -117,10 +129,7 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &sim_state))
 		return;
 
-	if (data->sim_state == 0 && sim_state == 1) {
-		ofono_modem_set_powered(modem, TRUE);
-		data->sim_state = sim_state;
-	}
+	notify_sim_state(data, sim_state);
 }
 
 static void simst_notify(GAtResult *result, gpointer user_data)
@@ -138,10 +147,7 @@ static void simst_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &state))
 		return;
 
-	if (data->sim_state == 0 && state == 1) {
-		ofono_modem_set_powered(modem, TRUE);
-		data->sim_state = state;
-	}
+	notify_sim_state(data, state);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -151,12 +157,16 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	if (!ok) {
-		ofono_modem_set_powered(modem, FALSE);
-		return;
-	}
+	ofono_modem_set_powered(modem, ok);
 
-	/* check sim state */
+	if (!ok)
+		return;
+
+	/* follow sim state */
+	g_at_chat_register(data->event, "^SIMST:", simst_notify,
+							FALSE, modem, NULL);
+
+	/* query current sim state */
 	g_at_chat_send(data->chat, "AT^SYSINFO", NULL, sysinfo_cb, modem, NULL);
 }
 
@@ -221,10 +231,6 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	data->sim_state = 0;
 
-	/* follow sim state */
-	g_at_chat_register(data->event, "^SIMST:", simst_notify,
-							FALSE, modem, NULL);
-
 	g_at_chat_send(data->chat, "ATE0", NULL, NULL, NULL, NULL);
 
 	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
@@ -274,16 +280,12 @@ static int huawei_disable(struct ofono_modem *modem)
 static void huawei_pre_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
+	data->sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
 	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
-
-	if (sim)
-		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void cgreg_notify(GAtResult *result, gpointer user_data)
