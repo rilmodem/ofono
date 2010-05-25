@@ -47,6 +47,9 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
+static const char *none_prefix[] = { NULL };
+static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
+
 struct huawei_data {
 	GAtChat *chat;
 	GAtChat *event;
@@ -167,7 +170,8 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 							FALSE, modem, NULL);
 
 	/* query current sim state */
-	g_at_chat_send(data->chat, "AT^SYSINFO", NULL, sysinfo_cb, modem, NULL);
+	g_at_chat_send(data->chat, "AT^SYSINFO", sysinfo_prefix,
+					sysinfo_cb, modem, NULL);
 }
 
 static GAtChat *create_port(const char *device)
@@ -231,9 +235,9 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	data->sim_state = 0;
 
-	g_at_chat_send(data->chat, "ATE0", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->chat, "ATE0", none_prefix, NULL, NULL, NULL);
 
-	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
+	g_at_chat_send(data->chat, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -271,7 +275,7 @@ static int huawei_disable(struct ofono_modem *modem)
 
 	g_at_chat_cancel_all(data->chat);
 	g_at_chat_unregister_all(data->chat);
-	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
+	g_at_chat_send(data->chat, "AT+CFUN=0", none_prefix,
 					cfun_disable, modem, NULL);
 
 	return -EINPROGRESS;
