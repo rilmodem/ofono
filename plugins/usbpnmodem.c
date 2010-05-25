@@ -69,7 +69,7 @@ static void usbpn_status_cb(GIsiModem *idx,
 		return;
 	}
 
-	error = g_pn_netlink_set_address(idx, PN_DEV_SOS);
+	error = g_pn_netlink_set_address(idx, PN_DEV_PC);
 	if (error && error != -EEXIST) {
 		DBG("g_pn_netlink_set_address: %s\n", strerror(-error));
 		return;
