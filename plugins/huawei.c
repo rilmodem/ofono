@@ -123,7 +123,7 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 }
 
-static void huawei_simst_notify(GAtResult *result, gpointer user_data)
+static void simst_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
@@ -212,18 +212,18 @@ static int huawei_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
-	g_at_chat_add_terminator(data->event, "COMMAND NOT SUPPORT", -1,
-					FALSE);
+	g_at_chat_add_terminator(data->event,
+					"COMMAND NOT SUPPORT", -1, FALSE);
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->event, huawei_debug,
-					"EventChannel: ");
+							"EventChannel: ");
 
 	data->sim_state = 0;
 
 	/* follow sim state */
-	g_at_chat_register(data->event, "^SIMST:", huawei_simst_notify,
-			FALSE, modem, NULL);
+	g_at_chat_register(data->event, "^SIMST:", simst_notify,
+							FALSE, modem, NULL);
 
 	g_at_chat_send(data->chat, "ATE0", NULL, NULL, NULL, NULL);
 
@@ -286,7 +286,7 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
-static void huawei_cgreg_notify(GAtResult *result, gpointer user_data)
+static void cgreg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
 	gboolean ret;
@@ -304,7 +304,7 @@ static void huawei_cgreg_notify(GAtResult *result, gpointer user_data)
 	ofono_gprs_status_notify(gprs, status);
 }
 
-static void huawei_rssi_notify(GAtResult *result, gpointer user_data)
+static void rssi_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	GAtResultIter iter;
@@ -332,11 +332,12 @@ static void huawei_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
-					data->chat);
-	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem", data->chat);
+								data->chat);
+	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem",
+								data->chat);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
-					data->chat);
+								data->chat);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
 
 	if (gprs && gc) {
@@ -344,11 +345,11 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 		/* huawei has a separate channel for CGREG notifications */
 		g_at_chat_register(data->event, "+CGREG:",
-				huawei_cgreg_notify, FALSE, gprs, NULL);
+					cgreg_notify, FALSE, gprs, NULL);
 
 		/* huawei uses non-standard "^RSSI:18" strings */
 		g_at_chat_register(data->event, "^RSSI:",
-				huawei_rssi_notify, FALSE, netreg, NULL);
+					rssi_notify, FALSE, netreg, NULL);
 	}
 }
 
