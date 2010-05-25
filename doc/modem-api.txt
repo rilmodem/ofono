@@ -32,6 +32,11 @@ Properties	boolean Powered [readwrite]
 			Boolean representing the power state of the modem
 			device.
 
+		boolean Online [readwrite]
+
+			Boolean representing the rf state of the modem.
+			Online is false in flight mode.
+
 		string Name [readonly, optional]
 
 			Friendly name of the modem device.
