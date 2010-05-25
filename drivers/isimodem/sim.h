@@ -151,6 +151,7 @@ enum sim_service_type {
 	READ_HPLMN = 0x2F,
 	READ_PARAMETER = 0x52,
 	UPDATE_PARAMETER = 0x53,
+	ICC = 0x66,
 };
 
 #ifdef __cplusplus
