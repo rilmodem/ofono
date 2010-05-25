@@ -91,7 +91,7 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
-	gint srv_status, srv_domain, roam, sys_mode, sim_state;
+	gint sim_state;
 	GAtResultIter iter;
 
 	if (!ok)
@@ -102,16 +102,16 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "^SYSINFO:"))
 		return;
 
-	if (!g_at_result_iter_next_number(&iter, &srv_status))
+	if (!g_at_result_iter_skip_next(&iter))
 		return;
 
-	if (!g_at_result_iter_next_number(&iter, &srv_domain))
+	if (!g_at_result_iter_skip_next(&iter))
 		return;
 
-	if (!g_at_result_iter_next_number(&iter, &roam))
+	if (!g_at_result_iter_skip_next(&iter))
 		return;
 
-	if (!g_at_result_iter_next_number(&iter, &sys_mode))
+	if (!g_at_result_iter_skip_next(&iter))
 		return;
 
 	if (!g_at_result_iter_next_number(&iter, &sim_state))
