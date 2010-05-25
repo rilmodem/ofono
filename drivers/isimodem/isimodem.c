@@ -289,6 +289,7 @@ static void isi_modem_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 	g_isi_client_destroy(isi->client);
+	g_pn_netlink_stop(isi->link);
 	g_free(isi);
 }
 
