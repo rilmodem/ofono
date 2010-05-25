@@ -289,7 +289,6 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	data->sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
-	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
 }
 
 static void cgreg_notify(GAtResult *result, gpointer user_data)
