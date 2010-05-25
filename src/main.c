@@ -96,8 +96,19 @@ static gchar *option_debug = NULL;
 static gboolean option_detach = TRUE;
 static gboolean option_version = FALSE;
 
+static gboolean parse_debug(const char *key, const char *value, gpointer user_data, GError **error)
+{
+	if (value)
+		option_debug = g_strdup(value);
+	else
+		option_debug = g_strdup("*");
+
+	return TRUE;
+}
+
 static GOptionEntry options[] = {
-	{ "debug", 'd', 0, G_OPTION_ARG_STRING, &option_debug,
+	{ "debug", 'd', G_OPTION_FLAG_OPTIONAL_ARG,
+				G_OPTION_ARG_CALLBACK, parse_debug,
 				"Specify debug options to enable", "DEBUG" },
 	{ "nodetach", 'n', G_OPTION_FLAG_REVERSE,
 				G_OPTION_ARG_NONE, &option_detach,
