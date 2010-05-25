@@ -49,7 +49,10 @@ struct sim_data {
 };
 
 struct file_info {
-	int fileid, length, structure, record_length;
+	int fileid;
+	int length;
+	int structure;
+	int record_length;
 	unsigned char access[3];
 };
 
@@ -97,7 +100,8 @@ static bool spn_resp_cb(GIsiClient *client, const void *restrict data,
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_sim_read_cb_t cb = cbd->cb;
-	unsigned char *spn = NULL, buffer[17];
+	unsigned char *spn = NULL;
+	unsigned char buffer[17];
 	int i;
 
 	if (!msg) {
@@ -204,11 +208,13 @@ static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 
 	switch (fileid) {
 	case SIM_EFSPN_FILEID:
+
 		if (isi_read_spn(sim, cbd))
 			return;
 		break;
 
 	case SIM_EF_ICCID_FILEID:
+
 		if (isi_read_iccid(sim, cbd))
 			return;
 		break;
