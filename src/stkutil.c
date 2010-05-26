@@ -61,11 +61,15 @@ typedef gboolean (*dataobj_writer)(struct stk_tlv_builder *,
 
 /*
  * Defined in TS 102.223 Section 8.13
- * GSM SMS PDUs are limited to 164 bytes according to 23.040
+ * The type of gsm sms can be SMS-COMMAND AND SMS-SUBMIT. According to 23.040,
+ * the maximum length is 164 bytes. But for SMS-SUBMIT, sms may be packed by
+ * ME. Thus the maximum length of messsage could be 160 bytes, instead of 140
+ * bytes. So the total maximum length could be 184 bytes. Refer TS 31.111,
+ * section 6.4.10 for details.
  */
 struct gsm_sms_tpdu {
 	unsigned int len;
-	unsigned char tpdu[164];
+	unsigned char tpdu[184];
 };
 
 static char *decode_text(unsigned char dcs, int len, const unsigned char *data)
@@ -2446,6 +2450,7 @@ static gboolean parse_send_sms(struct stk_command *command,
 	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
 		return FALSE;
 
+	memset(&gsm_tpdu, 0, sizeof(gsm_tpdu));
 	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
 				&obj->alpha_id,
 				STK_DATA_OBJECT_TYPE_ADDRESS, 0,
@@ -2462,20 +2467,49 @@ static gboolean parse_send_sms(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_send_sms;
+
 	if (ret == FALSE)
 		return FALSE;
 
-	command->destructor = destroy_send_sms;
+	if (gsm_tpdu.len == 0 && obj->cdma_sms.len == 0)
+		return FALSE;
+
+	if (gsm_tpdu.len > 0 && obj->cdma_sms.len > 0)
+		return FALSE;
 
 	if (gsm_tpdu.len > 0) {
 		if (sms_decode(gsm_tpdu.tpdu, gsm_tpdu.len, TRUE, gsm_tpdu.len,
-				&obj->gsm_sms) == FALSE) {
-			command->destructor(command);
-			return FALSE;
+						&obj->gsm_sms) == FALSE) {
+			/* packing by ME must be not required */
+			if ((command->qualifier & 0x01) == 0)
+				return FALSE;
+
+			if (obj->gsm_sms.type != SMS_TYPE_SUBMIT)
+				return FALSE;
+
+			if (obj->gsm_sms.submit.udl == 0)
+				return FALSE;
 		}
-	} else if (obj->cdma_sms.len == 0) {
-		command->destructor(command);
-		return FALSE;
+
+		/* packing is needed */
+		if (command->qualifier & 0x01) {
+			unsigned char *packed;
+			long packed_size;
+			unsigned char *in;
+			struct sms_submit *s = &obj->gsm_sms.submit;
+
+			if (obj->gsm_sms.type != SMS_TYPE_SUBMIT)
+				return FALSE;
+
+			/* Set dcs to default alphabet */
+			s->dcs = 0xF0;
+
+			in = gsm_tpdu.tpdu + gsm_tpdu.len - s->udl;
+			packed = pack_7bit(in, s->udl, 0,
+						FALSE, &packed_size, 0);
+			memcpy(s->ud, packed, packed_size);
+		}
 	}
 
 	return TRUE;
