@@ -99,7 +99,7 @@ struct ofono_atom {
 	struct ofono_modem *modem;
 };
 
-struct ofono_atom_watch {
+struct atom_watch {
 	struct ofono_watchlist_item item;
 	enum ofono_atom_type type;
 };
@@ -201,7 +201,7 @@ static void call_watches(struct ofono_atom *atom,
 	struct ofono_modem *modem = atom->modem;
 	GSList *atom_watches = modem->atom_watches->items;
 	GSList *l;
-	struct ofono_atom_watch *watch;
+	struct atom_watch *watch;
 	ofono_atom_watch_func notify;
 
 	for (l = atom_watches; l; l = l->next) {
@@ -246,12 +246,12 @@ unsigned int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					ofono_atom_watch_func notify,
 					void *data, ofono_destroy_func destroy)
 {
-	struct ofono_atom_watch *watch;
+	struct atom_watch *watch;
 
 	if (notify == NULL)
 		return 0;
 
-	watch = g_new0(struct ofono_atom_watch, 1);
+	watch = g_new0(struct atom_watch, 1);
 
 	watch->type = type;
 	watch->item.notify = notify;
