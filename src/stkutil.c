@@ -2112,10 +2112,10 @@ static gboolean parse_display_text(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_display_text;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_display_text;
 
 	return TRUE;
 }
@@ -2150,10 +2150,10 @@ static gboolean parse_get_inkey(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_get_inkey;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_get_inkey;
 
 	return TRUE;
 }
@@ -2192,10 +2192,10 @@ static gboolean parse_get_input(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_get_input;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_get_input;
 
 	return TRUE;
 }
@@ -2243,10 +2243,10 @@ static gboolean parse_play_tone(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_play_tone;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_play_tone;
 
 	return TRUE;
 }
@@ -2270,8 +2270,6 @@ static gboolean parse_poll_interval(struct stk_command *command,
 
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = NULL;
 
 	return TRUE;
 }
@@ -2323,10 +2321,12 @@ static gboolean parse_setup_menu(struct stk_command *command,
 	gboolean ret;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
-		goto error;
+		return FALSE;
 
 	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
-		goto error;
+		return FALSE;
+
+	command->destructor = destroy_setup_menu;
 
 	ret = parse_dataobj(iter,
 			STK_DATA_OBJECT_TYPE_ALPHA_ID,
@@ -2335,12 +2335,12 @@ static gboolean parse_setup_menu(struct stk_command *command,
 			STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
-		goto error;
+		return FALSE;
 
 	obj->items = parse_item_list(iter);
 
 	if (obj->items == NULL)
-		goto error;
+		return FALSE;
 
 	ret = parse_dataobj(iter,
 			STK_DATA_OBJECT_TYPE_ITEMS_NEXT_ACTION_INDICATOR, 0,
@@ -2356,15 +2356,9 @@ static gboolean parse_setup_menu(struct stk_command *command,
 			STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
-		goto error;
-
-	command->destructor = destroy_setup_menu;
+		return FALSE;
 
 	return TRUE;
-
-error:
-	destroy_setup_menu(command);
-	return FALSE;
 }
 
 static void destroy_select_item(struct stk_command *command)
@@ -2542,10 +2536,10 @@ static gboolean parse_setup_call(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_setup_call;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_setup_call;
 
 	return TRUE;
 }
@@ -2583,10 +2577,10 @@ static gboolean parse_refresh(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_refresh;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_refresh;
 
 	return TRUE;
 }
@@ -2766,10 +2760,10 @@ static gboolean parse_setup_idle_mode_text(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_setup_idle_mode_text;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_setup_idle_mode_text;
 
 	return TRUE;
 }
@@ -2805,10 +2799,10 @@ static gboolean parse_run_at_command(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_run_at_command;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_run_at_command;
 
 	return TRUE;
 }
@@ -2844,10 +2838,10 @@ static gboolean parse_send_dtmf(struct stk_command *command,
 				&obj->frame_id,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_send_dtmf;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_send_dtmf;
 
 	return TRUE;
 }
@@ -2963,10 +2957,10 @@ static gboolean parse_launch_browser(struct stk_command *command,
 			&obj->text_passwd,
 			STK_DATA_OBJECT_TYPE_INVALID);
 
+	command->destructor = destroy_launch_browser;
+
 	if (ret == FALSE)
 		return FALSE;
-
-	command->destructor = destroy_launch_browser;
 
 	return TRUE;
 
