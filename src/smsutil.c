@@ -2521,6 +2521,13 @@ static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
 		if (node->bitmap[offset] & bit)
 			return NULL;
 
+		/*
+		 * Iterate over the bitmap to find in which position
+		 * should the fragment be inserted -- basically we
+		 * walk each bit in the bitmap until the bit we care
+		 * about (offset:bit) and count which are stored --
+		 * that gives us in which position we have to insert.
+		 */
 		position = 0;
 		for (i = 0; i < offset; i++)
 			for (j = 0; j < 32; j++)
