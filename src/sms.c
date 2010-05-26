@@ -58,7 +58,6 @@ struct ofono_sms {
 	unsigned int next_msg_id;
 	guint ref;
 	GQueue *txq;
-	time_t last_mms;
 	gint tx_source;
 	struct ofono_message_waiting *mw;
 	unsigned int mw_watch;
@@ -331,7 +330,6 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 static gboolean tx_next(gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
-	time_t ts;
 	int send_mms = 0;
 	struct tx_queue_entry *entry = g_queue_peek_head(sms->txq);
 	struct pending_pdu *pdu = &entry->pdus[entry->cur_pdu];
@@ -346,14 +344,12 @@ static gboolean tx_next(gpointer user_data)
 	if (!entry)
 		return FALSE;
 
-	ts = time(NULL);
-
-	if ((g_queue_get_length(sms->txq) > 1) &&
-			((ts - sms->last_mms) > 60))
+	if (g_queue_get_length(sms->txq) > 1
+			|| (entry->num_pdus - entry->cur_pdu) > 1)
 		send_mms = 1;
 
-	sms->driver->submit(sms, pdu->pdu, pdu->pdu_len, pdu->tpdu_len, send_mms,
-				tx_finished, sms);
+	sms->driver->submit(sms, pdu->pdu, pdu->pdu_len, pdu->tpdu_len,
+				send_mms, tx_finished, sms);
 
 	return FALSE;
 }
