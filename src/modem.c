@@ -268,14 +268,6 @@ gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem,
 	return __ofono_watchlist_remove_item(modem->atom_watches, id);
 }
 
-#define FIND_ATOM_IN_LIST(list)			\
-	for (l = list; l; l = l->next) {	\
-		atom = l->data;			\
-						\
-		if (atom->type == type)		\
-			return atom;		\
-	}					\
-
 struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 						enum ofono_atom_type type)
 {
@@ -285,20 +277,15 @@ struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 	if (modem == NULL)
 		return NULL;
 
-	FIND_ATOM_IN_LIST(modem->atoms)
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		if (atom->type == type)
+			return atom;
+	}
 
 	return NULL;
 }
-
-#define FOREACH_ATOM_IN_LIST(list)		\
-	for (l = list; l; l = l->next) {	\
-		atom = l->data;			\
-						\
-		if (atom->type != type)		\
-			continue;		\
-						\
-		callback(atom, data);		\
-	}					\
 
 void __ofono_modem_foreach_atom(struct ofono_modem *modem,
 				enum ofono_atom_type type,
@@ -310,7 +297,14 @@ void __ofono_modem_foreach_atom(struct ofono_modem *modem,
 	if (modem == NULL)
 		return;
 
-	FOREACH_ATOM_IN_LIST(modem->atoms)
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		if (atom->type != type)
+			continue;
+
+		callback(atom, data);
+	}
 }
 
 void __ofono_atom_free(struct ofono_atom *atom)
