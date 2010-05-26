@@ -906,6 +906,17 @@ static void sms_remove(struct ofono_atom *atom)
 	g_free(sms);
 }
 
+
+/*
+ * Create a SMS driver
+ *
+ * This creates a SMS driver that is hung off a @modem
+ * object. However, for the driver to be used by the system, it has to
+ * be registered with the oFono core using ofono_sms_register().
+ *
+ * This is done once the modem driver determines that SMS is properly
+ * supported by the hardware.
+ */
 struct ofono_sms *ofono_sms_create(struct ofono_modem *modem,
 					unsigned int vendor,
 					const char *driver,
@@ -976,6 +987,14 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 
 }
 
+
+/*
+ * Indicate oFono that a SMS driver is ready for operation
+ *
+ * This is called after ofono_sms_create() was done and the modem
+ * driver determined that a modem supports SMS correctly. Once this
+ * call succeeds, the D-BUS interface for SMS goes live.
+ */
 void ofono_sms_register(struct ofono_sms *sms)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
