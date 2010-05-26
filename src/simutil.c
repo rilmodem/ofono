@@ -1103,6 +1103,37 @@ const struct sim_eons_operator_info *sim_eons_lookup_with_lac(
 	return sim_eons_lookup_common(eons, mcc, mnc, TRUE, lac);
 }
 
+/*
+ * Extract extended BCD format defined in 3GPP 11.11, 31.102.  The format
+ * is different from what is defined in 3GPP 24.008 and 23.040 (sms).
+ *
+ * Here the digits with values 'C', 'D' and 'E' are treated differently,
+ * for more details see 31.102 Table 4.4
+ *
+ * 'C' - DTMF Control Digit Separator, represented as 'c' by this function
+ * 'D' - Wild Value, represented as a '?' by this function
+ * 'E' - RFU, used to be used as a Shift Operator in 11.11
+ * 'F' - Endmark
+ *
+ * Note that a second or subsequent 'C' BCD value will be interpreted as a
+ * 3 second pause.
+ */
+void sim_extract_bcd_number(const unsigned char *buf, int len, char *out)
+{
+	static const char digit_lut[] = "0123456789*#c?e\0";
+	unsigned char oct;
+	int i;
+
+	for (i = 0; i < len; i++) {
+		oct = buf[i];
+
+		out[i*2] = digit_lut[oct & 0x0f];
+		out[i*2+1] = digit_lut[(oct & 0xf0) >> 4];
+	}
+
+	out[i*2] = '\0';
+}
+
 gboolean sim_adn_parse(const unsigned char *data, int length,
 			struct ofono_phone_number *ph, char **identifier)
 {
