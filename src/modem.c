@@ -1269,6 +1269,15 @@ static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 		break;
 	case OFONO_SIM_STATE_READY:
 		modem_change_state(modem, MODEM_STATE_OFFLINE);
+
+		/*
+		 * If we don't have the set_online method, also proceed
+		 * straight to the online state
+		 */
+		if (modem->driver->set_online == NULL)
+			modem_change_state(modem, MODEM_STATE_ONLINE);
+
+		break;
 	}
 }
 
