@@ -2875,6 +2875,106 @@ static gboolean parse_language_notification(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_launch_browser(struct stk_command *command)
+{
+	g_free(command->launch_browser.url);
+	g_free(command->launch_browser.bearer.array);
+	g_slist_foreach(command->launch_browser.prov_file_refs,
+				(GFunc)g_free, NULL);
+	g_slist_free(command->launch_browser.prov_file_refs);
+	g_free(command->launch_browser.text_gateway_proxy_id);
+	g_free(command->launch_browser.alpha_id);
+	g_free(command->launch_browser.network_name.array);
+	g_free(command->launch_browser.text_usr);
+	g_free(command->launch_browser.text_passwd);
+}
+
+static GSList *parse_provisioining_file_reference_list(
+					struct comprehension_tlv_iter *iter)
+{
+	unsigned short tag = STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REFERENCE;
+	struct comprehension_tlv_iter iter_old;
+	struct stk_file file;
+	GSList *list = NULL;
+
+	if (comprehension_tlv_iter_get_tag(iter) != tag)
+		return NULL;
+
+	do {
+		comprehension_tlv_iter_copy(iter, &iter_old);
+		memset(&file, 0, sizeof(file));
+
+		if (parse_dataobj_provisioning_file_reference(iter, &file)
+									== TRUE)
+			list = g_slist_prepend(list,
+						g_memdup(&file, sizeof(file)));
+	} while (comprehension_tlv_iter_next(iter) == TRUE &&
+			comprehension_tlv_iter_get_tag(iter) == tag);
+
+	comprehension_tlv_iter_copy(&iter_old, iter);
+	list = g_slist_reverse(list);
+
+	return list;
+}
+
+static gboolean parse_launch_browser(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_launch_browser *obj = &command->launch_browser;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter,
+				STK_DATA_OBJECT_TYPE_BROWSER_ID, 0,
+				&obj->browser_id,
+				STK_DATA_OBJECT_TYPE_URL,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->url,
+				STK_DATA_OBJECT_TYPE_BEARER, 0,
+				&obj->bearer,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		goto error;
+
+	obj->prov_file_refs = parse_provisioining_file_reference_list(iter);
+
+	ret = parse_dataobj(iter,
+			STK_DATA_OBJECT_TYPE_TEXT, 0,
+			&obj->text_gateway_proxy_id,
+			STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+			&obj->alpha_id,
+			STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+			&obj->icon_id,
+			STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+			&obj->text_attr,
+			STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+			&obj->frame_id,
+			STK_DATA_OBJECT_TYPE_NETWORK_ACCESS_NAME, 0,
+			&obj->network_name,
+			STK_DATA_OBJECT_TYPE_TEXT, 0,
+			&obj->text_usr,
+			STK_DATA_OBJECT_TYPE_TEXT, 0,
+			&obj->text_passwd,
+			STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	command->destructor = destroy_launch_browser;
+
+	return TRUE;
+
+error:
+	destroy_launch_browser(command);
+	return FALSE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -3001,6 +3101,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION:
 		ok = parse_language_notification(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
+		ok = parse_launch_browser(command, &iter);
 		break;
 	default:
 		ok = FALSE;

@@ -992,6 +992,21 @@ struct stk_command_language_notification {
 	char language[3];
 };
 
+struct stk_command_launch_browser {
+	unsigned char browser_id;
+	char *url;
+	struct stk_common_byte_array bearer;
+	GSList *prov_file_refs;
+	char *text_gateway_proxy_id;
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+	struct stk_common_byte_array network_name;
+	char *text_usr;
+	char *text_passwd;
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -1017,6 +1032,7 @@ struct stk_command {
 		struct stk_command_run_at_command run_at_command;
 		struct stk_command_send_dtmf send_dtmf;
 		struct stk_command_language_notification language_notification;
+		struct stk_command_launch_browser launch_browser;
 	};
 
 	void (*destructor)(struct stk_command *command);
