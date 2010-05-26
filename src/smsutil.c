@@ -1262,6 +1262,9 @@ static gboolean decode_submit(const unsigned char *pdu, int len,
 	if ((len - offset) < expected)
 		return FALSE;
 
+	if (expected > (int) sizeof(out->submit.ud))
+		return FALSE;
+
 	memcpy(out->submit.ud, pdu+offset, expected);
 
 	return TRUE;
