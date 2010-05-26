@@ -323,15 +323,37 @@ void __ofono_atom_free(struct ofono_atom *atom)
 
 static void flush_atoms(struct ofono_modem *modem, enum modem_state new_state)
 {
-	GSList *l, *next;
-	struct ofono_atom *atom;
+	GSList *cur;
+	GSList *prev;
+	GSList *tmp;
 
-	for (l = modem->atoms; l; l = next) {
-		atom = l->data;
-		next = l->next;
+	prev = NULL;
+	cur = modem->atoms;
 
-		if (atom->modem_state > new_state)
-			__ofono_atom_free(atom);
+	while (cur) {
+		struct ofono_atom *atom = cur->data;
+
+		if (atom->modem_state <= new_state) {
+			prev = cur;
+			cur = cur->next;
+			continue;
+		}
+
+		__ofono_atom_unregister(atom);
+
+		if (atom->destruct)
+			atom->destruct(atom);
+
+		g_free(atom);
+
+		if (prev)
+			prev->next = cur->next;
+		else
+			modem->atoms = cur->next;
+
+		tmp = cur;
+		cur = cur->next;
+		g_slist_free_1(tmp);
 	}
 }
 
