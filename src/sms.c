@@ -394,6 +394,19 @@ static struct tx_queue_entry *create_tx_queue_entry(GSList *msg_list)
 	return entry;
 }
 
+/*
+ * Pre-process a SMS text message and deliver it [D-Bus SendMessage()]
+ *
+ * @conn: D-Bus connection
+ * @msg: message data (telephone number and text)
+ * @data: SMS object to use for transmision
+ *
+ * An alphabet is chosen for the text and it (might be) segmented in
+ * fragments by sms_text_prepare() into @msg_list. A queue list @entry
+ * is created by create_tx_queue_entry() and g_queue_push_tail()
+ * appends that entry to the SMS transmit queue. Then the tx_next()
+ * function is scheduled to run to process the queue.
+ */
 static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
