@@ -248,6 +248,7 @@ static inline enum sim_file_access file_access_condition_decode(int bcd)
 }
 
 void sim_extract_bcd_number(const unsigned char *buf, int len, char *out);
+void sim_encode_bcd_number(const char *number, unsigned char *out);
 
 gboolean sim_adn_parse(const unsigned char *data, int length,
 			struct ofono_phone_number *ph, char **identifier);

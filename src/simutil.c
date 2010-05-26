@@ -1134,6 +1134,59 @@ void sim_extract_bcd_number(const unsigned char *buf, int len, char *out)
 	out[i*2] = '\0';
 }
 
+static inline int to_semi_oct(char in)
+{
+	int digit;
+
+	switch (in) {
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		digit = in - '0';
+		break;
+	case '*':
+		digit = 10;
+		break;
+	case '#':
+		digit = 11;
+		break;
+	case 'C':
+	case 'c':
+		digit = 12;
+		break;
+	case '?':
+		digit = 13;
+		break;
+	case 'E':
+	case 'e':
+		digit = 14;
+		break;
+	default:
+		digit = -1;
+		break;
+	}
+
+	return digit;
+}
+
+void sim_encode_bcd_number(const char *number, unsigned char *out)
+{
+	while (number[0] != '\0' && number[1] != '\0') {
+		*out = to_semi_oct(*number++);
+		*out++ |= to_semi_oct(*number++) << 4;
+	}
+
+	if (*number)
+		*out = to_semi_oct(*number) | 0xf0;
+}
+
 gboolean sim_adn_parse(const unsigned char *data, int length,
 			struct ofono_phone_number *ph, char **identifier)
 {
