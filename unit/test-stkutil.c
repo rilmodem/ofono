@@ -82,6 +82,7 @@ static inline void check_common_byte_array(
 	}
 
 	g_assert(command->len != 0);
+	g_assert(command->len == test->len);
 	g_assert(g_mem_equal(command->array, test->array, test->len));
 }
 
