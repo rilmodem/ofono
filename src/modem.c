@@ -49,16 +49,16 @@ enum ofono_property_type {
 	OFONO_PROPERTY_TYPE_BOOLEAN,
 };
 
-enum ofono_modem_state {
-	OFONO_MODEM_STATE_POWER_OFF,
-	OFONO_MODEM_STATE_PRE_SIM,
-	OFONO_MODEM_STATE_OFFLINE,
-	OFONO_MODEM_STATE_ONLINE,
+enum modem_state {
+	MODEM_STATE_POWER_OFF,
+	MODEM_STATE_PRE_SIM,
+	MODEM_STATE_OFFLINE,
+	MODEM_STATE_ONLINE,
 };
 
 struct ofono_modem {
 	char			*path;
-	enum ofono_modem_state   modem_state;
+	enum modem_state	modem_state;
 	GSList			*atoms;
 	struct ofono_watchlist	*atom_watches;
 	GSList			*interface_list;
@@ -92,7 +92,7 @@ struct ofono_devinfo {
 
 struct ofono_atom {
 	enum ofono_atom_type type;
-	enum ofono_modem_state modem_state;
+	enum modem_state modem_state;
 	void (*destruct)(struct ofono_atom *atom);
 	void (*unregister)(struct ofono_atom *atom);
 	void *data;
@@ -327,8 +327,7 @@ void __ofono_atom_free(struct ofono_atom *atom)
 	g_free(atom);
 }
 
-static void flush_atoms(struct ofono_modem *modem,
-			enum ofono_modem_state new_state)
+static void flush_atoms(struct ofono_modem *modem, enum modem_state new_state)
 {
 	GSList *l, *next;
 	struct ofono_atom *atom;
@@ -348,11 +347,11 @@ static void dummy_online_callback(const struct ofono_error *error,
 }
 
 static void modem_change_state(struct ofono_modem *modem,
-				enum ofono_modem_state new_state)
+				enum modem_state new_state)
 {
 	struct ofono_modem_driver const *driver = modem->driver;
-	enum ofono_modem_state old_state = modem->modem_state;
-	ofono_bool_t new_online = new_state == OFONO_MODEM_STATE_ONLINE;
+	enum modem_state old_state = modem->modem_state;
+	ofono_bool_t new_online = new_state == MODEM_STATE_ONLINE;
 
 	if (old_state == new_state)
 		return;
@@ -371,23 +370,23 @@ static void modem_change_state(struct ofono_modem *modem,
 		flush_atoms(modem, new_state);
 
 	switch (new_state) {
-	case OFONO_MODEM_STATE_POWER_OFF:
+	case MODEM_STATE_POWER_OFF:
 		modem->call_ids = 0;
 		break;
 
-	case OFONO_MODEM_STATE_PRE_SIM:
-		if (old_state < OFONO_MODEM_STATE_PRE_SIM) {
+	case MODEM_STATE_PRE_SIM:
+		if (old_state < MODEM_STATE_PRE_SIM) {
 			if (driver->pre_sim)
 				driver->pre_sim(modem);
-		} else if (old_state == OFONO_MODEM_STATE_ONLINE) {
+		} else if (old_state == MODEM_STATE_ONLINE) {
 			if (driver->set_online)
 				driver->set_online(modem, 0,
 						dummy_online_callback, modem);
 		}
 		break;
 
-	case OFONO_MODEM_STATE_OFFLINE:
-		if (old_state < OFONO_MODEM_STATE_OFFLINE) {
+	case MODEM_STATE_OFFLINE:
+		if (old_state < MODEM_STATE_OFFLINE) {
 			if (driver->post_sim)
 				driver->post_sim(modem);
 			__ofono_history_probe_drivers(modem);
@@ -395,7 +394,7 @@ static void modem_change_state(struct ofono_modem *modem,
 		}
 		break;
 
-	case OFONO_MODEM_STATE_ONLINE:
+	case MODEM_STATE_ONLINE:
 		if (driver->post_online)
 			driver->post_online(modem);
 		break;
@@ -412,7 +411,7 @@ static void set_online_callback(const struct ofono_error *error,
 	if (error && error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		reply = __ofono_error_failed(modem->pending);
 		online = modem->online;
-	} else if (online && modem->modem_state < OFONO_MODEM_STATE_OFFLINE) {
+	} else if (online && modem->modem_state < MODEM_STATE_OFFLINE) {
 		reply = __ofono_error_failed(modem->pending);
 		online = FALSE;
 	} else
@@ -426,9 +425,9 @@ static void set_online_callback(const struct ofono_error *error,
 		return;
 
 	if (online)
-		modem_change_state(modem, OFONO_MODEM_STATE_ONLINE);
+		modem_change_state(modem, MODEM_STATE_ONLINE);
 	else
-		modem_change_state(modem, OFONO_MODEM_STATE_OFFLINE);
+		modem_change_state(modem, MODEM_STATE_OFFLINE);
 }
 
 static DBusMessage *set_property_online(struct ofono_modem *modem,
@@ -553,7 +552,7 @@ static int set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 
 	/* Remove the atoms even if the driver is no longer available */
 	if (powered == FALSE)
-		modem_change_state(modem, OFONO_MODEM_STATE_POWER_OFF);
+		modem_change_state(modem, MODEM_STATE_POWER_OFF);
 
 	modem->powered_pending = powered;
 
@@ -668,7 +667,7 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 						&powered);
 
 		if (powered)
-			modem_change_state(modem, OFONO_MODEM_STATE_PRE_SIM);
+			modem_change_state(modem, MODEM_STATE_PRE_SIM);
 
 		return NULL;
 	}
@@ -727,9 +726,9 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 						&dbus_powered);
 
 		if (powered)
-			modem_change_state(modem, OFONO_MODEM_STATE_PRE_SIM);
+			modem_change_state(modem, MODEM_STATE_PRE_SIM);
 		else
-			modem_change_state(modem, OFONO_MODEM_STATE_POWER_OFF);
+			modem_change_state(modem, MODEM_STATE_POWER_OFF);
 	}
 
 	if (powering_down && powered == FALSE) {
@@ -1258,12 +1257,12 @@ static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
 
 	switch (new_state) {
 	case OFONO_SIM_STATE_NOT_PRESENT:
-		modem_change_state(modem, OFONO_MODEM_STATE_PRE_SIM);
+		modem_change_state(modem, MODEM_STATE_PRE_SIM);
 		break;
 	case OFONO_SIM_STATE_INSERTED:
 		break;
 	case OFONO_SIM_STATE_READY:
-		modem_change_state(modem, OFONO_MODEM_STATE_OFFLINE);
+		modem_change_state(modem, MODEM_STATE_OFFLINE);
 	}
 }
 
