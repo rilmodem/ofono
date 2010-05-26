@@ -1160,7 +1160,7 @@ gboolean sim_adn_parse(const unsigned char *data, int length,
 
 	/* BCD coded, however the TON/NPI is given by the first byte */
 	number_len -= 1;
-	extract_bcd_number(data, number_len, ph->number);
+	sim_extract_bcd_number(data, number_len, ph->number);
 
 	if (identifier == NULL)
 		return TRUE;
