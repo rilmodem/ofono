@@ -69,7 +69,6 @@ struct ofono_modem {
 	ofono_bool_t		powered_pending;
 	guint			timeout;
 	ofono_bool_t		online;
-	ofono_bool_t		online_pending;
 	GHashTable		*properties;
 	struct ofono_sim	*sim;
 	unsigned int		sim_watch;
@@ -417,32 +416,35 @@ static void modem_change_state(struct ofono_modem *modem,
 	}
 }
 
-static void set_online_callback(const struct ofono_error *error,
-				void *data)
+static void online_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
-	DBusMessage *reply = NULL;
-	ofono_bool_t online = modem->online_pending;
+	DBusMessage *reply;
 
-	if (error && error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		reply = __ofono_error_failed(modem->pending);
-		online = modem->online;
-	} else if (online && modem->modem_state < MODEM_STATE_OFFLINE) {
-		reply = __ofono_error_failed(modem->pending);
-		online = FALSE;
-	} else
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		reply = dbus_message_new_method_return(modem->pending);
+	else
+		reply = __ofono_error_failed(modem->pending);
 
 	__ofono_dbus_pending_reply(&modem->pending, reply);
 
-	modem->online_pending = online;
-
-	if (modem->online == online)
-		return;
-
-	if (online)
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		modem_change_state(modem, MODEM_STATE_ONLINE);
+}
+
+static void offline_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_modem *modem = data;
+	DBusMessage *reply;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		reply = dbus_message_new_method_return(modem->pending);
 	else
+		reply = __ofono_error_failed(modem->pending);
+
+	__ofono_dbus_pending_reply(&modem->pending, reply);
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		modem_change_state(modem, MODEM_STATE_OFFLINE);
 }
 
@@ -468,9 +470,9 @@ static DBusMessage *set_property_online(struct ofono_modem *modem,
 		return __ofono_error_busy(msg);
 
 	modem->pending = dbus_message_ref(msg);
-	modem->online_pending = online;
 
-	driver->set_online(modem, online, set_online_callback, modem);
+	driver->set_online(modem, online,
+				online ? online_cb : offline_cb, modem);
 
 	return NULL;
 }
