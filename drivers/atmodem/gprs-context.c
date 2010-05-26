@@ -65,22 +65,6 @@ struct gprs_context_data {
 	void *cb_data;                                  /* Callback data */
 };
 
-static void at_cgact_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct cb_data *cbd = user_data;
-	ofono_gprs_context_cb_t cb = cbd->cb;
-	struct ofono_gprs_context *gc = cbd->user;
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	struct ofono_error error;
-
-	if (ok)
-		gcd->active_context = 0;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	cb(&error, cbd->data);
-}
-
 static void ppp_connect(const char *interface, const char *ip,
 			const char *dns1, const char *dns2,
 			gpointer user_data)
@@ -104,13 +88,21 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
-	if (gcd->state == STATE_ENABLING) {
+	DBG("");
+
+	switch (gcd->state) {
+	case STATE_ENABLING:
 		CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, FALSE, NULL,
 					NULL, NULL, NULL, gcd->cb_data);
-		return;
+		break;
+	case STATE_DISABLING:
+		CALLBACK_WITH_SUCCESS(gcd->down_cb, gcd->cb_data);
+		break;
+	default:
+		ofono_gprs_context_deactivated(gc, gcd->active_context);
+		break;
 	}
 
-	ofono_gprs_context_deactivated(gc, gcd->active_context);
 	gcd->active_context = 0;
 	gcd->state = STATE_IDLE;
 }
@@ -227,25 +219,14 @@ static void at_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 					ofono_gprs_context_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	struct cb_data *cbd = cb_data_new(cb, data);
-	char buf[64];
 
-	if (!cbd)
-		goto error;
+	DBG("");
 
-	cbd->user = gc;
+	gcd->state = STATE_DISABLING;
+	gcd->down_cb = cb;
+	gcd->cb_data = data;
 
-	snprintf(buf, sizeof(buf), "AT+CGACT=0,%u", id);
-
-	if (g_at_chat_send(gcd->chat, buf, none_prefix,
-				at_cgact_down_cb, cbd, g_free) > 0)
-		return;
-
-error:
-	if (cbd)
-		g_free(cbd);
-
-	CALLBACK_WITH_FAILURE(cb, data);
+	g_at_ppp_shutdown(gcd->ppp);
 }
 
 static int at_gprs_context_probe(struct ofono_gprs_context *gc,
