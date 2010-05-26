@@ -356,11 +356,6 @@ static void flush_atoms(struct ofono_modem *modem, enum modem_state new_state)
 	}
 }
 
-static void dummy_online_callback(const struct ofono_error *error,
-				void *data)
-{
-}
-
 static void modem_change_state(struct ofono_modem *modem,
 				enum modem_state new_state)
 {
@@ -390,14 +385,8 @@ static void modem_change_state(struct ofono_modem *modem,
 		break;
 
 	case MODEM_STATE_PRE_SIM:
-		if (old_state < MODEM_STATE_PRE_SIM) {
-			if (driver->pre_sim)
-				driver->pre_sim(modem);
-		} else if (old_state == MODEM_STATE_ONLINE) {
-			if (driver->set_online)
-				driver->set_online(modem, 0,
-						dummy_online_callback, modem);
-		}
+		if (old_state < MODEM_STATE_PRE_SIM && driver->pre_sim)
+			driver->pre_sim(modem);
 		break;
 
 	case MODEM_STATE_OFFLINE:
