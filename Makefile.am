@@ -418,7 +418,7 @@ src/ofono.ver: src/ofono.exp
 	$(AM_V_at)echo "local: *; };" >> $@
 
 plugins/%.rules:
-	$(AM_V_GEN)cp $(subst 97-,,$@) $@
+	$(AM_V_GEN)cp $(srcdir)/$(subst 97-,,$@) $@
 
 $(src_ofonod_OBJECTS) $(unit_objects): $(local_headers)
 
