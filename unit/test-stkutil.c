@@ -91,7 +91,7 @@ static inline void check_address(const struct stk_address *command,
 					const struct stk_address *test)
 {
 	g_assert(command->ton_npi == test->ton_npi);
-	g_assert(g_str_equal(command->number, test->number));
+	check_common_text(command->number, test->number);
 }
 
 /* Defined in TS 102.223 Section 8.2 */
@@ -139,11 +139,7 @@ static void check_item(const struct stk_item *command,
 					const struct stk_item *test)
 {
 	g_assert(command->id == test->id);
-
-	if (command->text == NULL)
-		g_assert(test->text == NULL);
-	else
-		g_assert(g_str_equal(command->text, test->text));
+	check_common_text(command->text, test->text);
 }
 
 /* Defined in TS 102.223 Section 8.10 */
@@ -181,8 +177,8 @@ static void check_gsm_sms_tpdu(const struct sms *command,
 {
 	g_assert(command->submit.mr == test->submit.mr);
 	g_assert(command->submit.udl == test->submit.udl);
-	g_assert(g_str_equal(command->submit.daddr.address,
-					test->submit.daddr.address));
+	check_common_text(command->submit.daddr.address,
+					test->submit.daddr.address);
 	g_assert(g_mem_equal(command->submit.ud, test->submit.ud,
 					test->submit.udl));
 }
