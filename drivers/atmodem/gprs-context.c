@@ -90,6 +90,8 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 
 	DBG("");
 
+	g_at_chat_resume(gcd->chat);
+
 	switch (gcd->state) {
 	case STATE_ENABLING:
 		CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, FALSE, NULL,
@@ -110,16 +112,19 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 static gboolean setup_ppp(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	GIOChannel *channel;
+	GAtIO *io;
 
-	channel = g_at_chat_get_channel(gcd->chat);
-	g_at_chat_unref(gcd->chat);
+	io = g_at_chat_get_io(gcd->chat);
+
+	g_at_chat_suspend(gcd->chat);
 
 	/* open ppp */
-	gcd->ppp = g_at_ppp_new(channel);
+	gcd->ppp = g_at_ppp_new_from_io(io);
 
-	if (gcd->ppp == NULL)
+	if (gcd->ppp == NULL) {
+		g_at_chat_resume(gcd->chat);
 		return FALSE;
+	}
 
 	g_at_ppp_set_credentials(gcd->ppp, gcd->username, gcd->password);
 
