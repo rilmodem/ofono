@@ -4769,21 +4769,11 @@ static struct setup_menu_test setup_menu_data_111 = {
 	.pdu_len = sizeof(setup_menu_111),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
+		{ .id = 4, .text = "Item 4" },
 	}
 };
 
@@ -4792,13 +4782,9 @@ static struct setup_menu_test setup_menu_data_112 = {
 	.pdu_len = sizeof(setup_menu_112),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 0x11,
-		.text = "One"
-	},
-	.items[1] = {
-		.id = 0x12,
-		.text = "Two"
+	.items = {
+		{ .id = 0x11, .text = "One" },
+		{ .id = 0x12, .text = "Two" },
 	}
 };
 
@@ -4813,125 +4799,37 @@ static struct setup_menu_test setup_menu_data_121 = {
 	.pdu_len = sizeof(setup_menu_121),
 	.qualifier = 0x00,
 	.alpha_id = "LargeMenu1",
-	.items[0] = {
-		.id = 0x50,
-		.text = "Zero"
-	},
-	.items[1] = {
-		.id = 0x4F,
-		.text = "One"
-	},
-	.items[2] = {
-		.id = 0x4E,
-		.text = "Two"
-	},
-	.items[3] = {
-		.id = 0x4D,
-		.text = "Three"
-	},
-	.items[4] = {
-		.id = 0x4C,
-		.text = "Four"
-	},
-	.items[5] = {
-		.id = 0x4B,
-		.text = "Five"
-	},
-	.items[6] = {
-		.id = 0x4A,
-		.text = "Six"
-	},
-	.items[7] = {
-		.id = 0x49,
-		.text = "Seven"
-	},
-	.items[8] = {
-		.id = 0x48,
-		.text = "Eight"
-	},
-	.items[9] = {
-		.id = 0x47,
-		.text = "Nine"
-	},
-	.items[10] = {
-		.id = 0x46,
-		.text = "Alpha"
-	},
-	.items[11] = {
-		.id = 0x45,
-		.text = "Bravo"
-	},
-	.items[12] = {
-		.id = 0x44,
-		.text = "Charlie"
-	},
-	.items[13] = {
-		.id = 0x43,
-		.text = "Delta"
-	},
-	.items[14] = {
-		.id = 0x42,
-		.text = "Echo"
-	},
-	.items[15] = {
-		.id = 0x41,
-		.text = "Fox-trot"
-	},
-	.items[16] = {
-		.id = 0x40,
-		.text = "Black"
-	},
-	.items[17] = {
-		.id = 0x3F,
-		.text = "Brown"
-	},
-	.items[18] = {
-		.id = 0x3E,
-		.text = "Red"
-	},
-	.items[19] = {
-		.id = 0x3D,
-		.text = "Orange"
-	},
-	.items[20] = {
-		.id = 0x3C,
-		.text = "Yellow"
-	},
-	.items[21] = {
-		.id = 0x3B,
-		.text = "Green"
-	},
-	.items[22] = {
-		.id = 0x3A,
-		.text = "Blue"
-	},
-	.items[23] = {
-		.id = 0x39,
-		.text = "Violet"
-	},
-	.items[24] = {
-		.id = 0x38,
-		.text = "Grey"
-	},
-	.items[25] = {
-		.id = 0x37,
-		.text = "White"
-	},
-	.items[26] = {
-		.id = 0x36,
-		.text = "milli"
-	},
-	.items[27] = {
-		.id = 0x35,
-		.text = "micro"
-	},
-	.items[28] = {
-		.id = 0x34,
-		.text = "nano"
-	},
-	.items[29] = {
-		.id = 0x33,
-		.text = "pico"
+	.items = {
+		{ .id = 0x50, .text = "Zero" },
+		{ .id = 0x4F, .text = "One" },
+		{ .id = 0x4E, .text = "Two" },
+		{ .id = 0x4D, .text = "Three" },
+		{ .id = 0x4C, .text = "Four" },
+		{ .id = 0x4B, .text = "Five" },
+		{ .id = 0x4A, .text = "Six" },
+		{ .id = 0x49, .text = "Seven" },
+		{ .id = 0x48, .text = "Eight" },
+		{ .id = 0x47, .text = "Nine" },
+		{ .id = 0x46, .text = "Alpha" },
+		{ .id = 0x45, .text = "Bravo" },
+		{ .id = 0x44, .text = "Charlie" },
+		{ .id = 0x43, .text = "Delta" },
+		{ .id = 0x42, .text = "Echo" },
+		{ .id = 0x41, .text = "Fox-trot" },
+		{ .id = 0x40, .text = "Black" },
+		{ .id = 0x3F, .text = "Brown" },
+		{ .id = 0x3E, .text = "Red" },
+		{ .id = 0x3D, .text = "Orange" },
+		{ .id = 0x3C, .text = "Yellow" },
+		{ .id = 0x3B, .text = "Green" },
+		{ .id = 0x3A, .text = "Blue" },
+		{ .id = 0x39, .text = "Violet" },
+		{ .id = 0x38, .text = "Grey" },
+		{ .id = 0x37, .text = "White" },
+		{ .id = 0x36, .text = "milli" },
+		{ .id = 0x35, .text = "micro" },
+		{ .id = 0x34, .text = "nano" },
+		{ .id = 0x33, .text = "pico" },
 	}
 };
 
@@ -4940,33 +4838,14 @@ static struct setup_menu_test setup_menu_data_122 = {
 	.pdu_len = sizeof(setup_menu_122),
 	.qualifier = 0x00,
 	.alpha_id = "LargeMenu2",
-	.items[0] = {
-		.id = 0xFF,
-		.text = "1 Call Forward Unconditional"
-	},
-	.items[1] = {
-		.id = 0xFE,
-		.text = "2 Call Forward On User Busy"
-	},
-	.items[2] = {
-		.id = 0xFD,
-		.text = "3 Call Forward On No Reply"
-	},
-	.items[3] = {
-		.id = 0xFC,
-		.text = "4 Call Forward On User Not Reachable"
-	},
-	.items[4] = {
-		.id = 0xFB,
-		.text = "5 Barring Of All Outgoing Calls"
-	},
-	.items[5] = {
-		.id = 0xFA,
-		.text = "6 Barring Of All Outgoing Int Calls"
-	},
-	.items[6] = {
-		.id = 0xF9,
-		.text = "7 CLI Presentation"
+	.items = {
+		{ .id = 0xFF, .text = "1 Call Forward Unconditional" },
+		{ .id = 0xFE, .text = "2 Call Forward On User Busy" },
+		{ .id = 0xFD, .text = "3 Call Forward On No Reply" },
+		{ .id = 0xFC, .text = "4 Call Forward On User Not Reachable" },
+		{ .id = 0xFB, .text = "5 Barring Of All Outgoing Calls" },
+		{ .id = 0xFA, .text = "6 Barring Of All Outgoing Int Calls" },
+		{ .id = 0xF9, .text = "7 CLI Presentation" },
 	}
 };
 
@@ -4979,9 +4858,8 @@ static struct setup_menu_test setup_menu_data_123 = {
 			"facility) in order to give the user the opportunity "
 			"to choose one of these menu items at his own "
 			"discretion. Each item comprises a sh",
-	.items[0] = {
-		.id = 0x01,
-		.text = "Y"
+	.items = {
+		{ .id = 0x01, .text = "Y" }
 	}
 };
 
@@ -4990,21 +4868,11 @@ static struct setup_menu_test setup_menu_data_211 = {
 	.pdu_len = sizeof(setup_menu_211),
 	.qualifier = 0x80,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
+		{ .id = 4, .text = "Item 4" },
 	}
 };
 
@@ -5013,21 +4881,11 @@ static struct setup_menu_test setup_menu_data_311 = {
 	.pdu_len = sizeof(setup_menu_311),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
+		{ .id = 4, .text = "Item 4" },
 	},
 	.next_act = {
 		.list = { STK_COMMAND_TYPE_SEND_SMS,
@@ -5043,17 +4901,10 @@ static struct setup_menu_test setup_menu_data_411 = {
 	.pdu_len = sizeof(setup_menu_411),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
@@ -5071,17 +4922,10 @@ static struct setup_menu_test setup_menu_data_421 = {
 	.pdu_len = sizeof(setup_menu_421),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
@@ -5099,13 +4943,9 @@ static struct setup_menu_test setup_menu_data_511 = {
 	.pdu_len = sizeof(setup_menu_511),
 	.qualifier = 0x01,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	}
 };
 
@@ -5114,17 +4954,10 @@ static struct setup_menu_test setup_menu_data_611 = {
 	.pdu_len = sizeof(setup_menu_611),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5142,17 +4975,10 @@ static struct setup_menu_test setup_menu_data_612 = {
 	.pdu_len = sizeof(setup_menu_612),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 2",
-	.items[0] = {
-		.id = 4,
-		.text = "Item 4"
-	},
-	.items[1] = {
-		.id = 5,
-		.text = "Item 5"
-	},
-	.items[2] = {
-		.id = 6,
-		.text = "Item 6"
+	.items = {
+		{ .id = 4, .text = "Item 4" },
+		{ .id = 5, .text = "Item 5" },
+		{ .id = 6, .text = "Item 6" },
 	}
 };
 
@@ -5161,17 +4987,10 @@ static struct setup_menu_test setup_menu_data_621 = {
 	.pdu_len = sizeof(setup_menu_621),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5189,17 +5008,10 @@ static struct setup_menu_test setup_menu_data_622 = {
 	.pdu_len = sizeof(setup_menu_622),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 2",
-	.items[0] = {
-		.id = 4,
-		.text = "Item 4"
-	},
-	.items[1] = {
-		.id = 5,
-		.text = "Item 5"
-	},
-	.items[2] = {
-		.id = 6,
-		.text = "Item 6"
+	.items = {
+		{ .id = 4, .text = "Item 4" },
+		{ .id = 5, .text = "Item 5" },
+		{ .id = 6, .text = "Item 6" },
 	}
 };
 
@@ -5212,17 +5024,10 @@ static struct setup_menu_test setup_menu_data_631 = {
 	.pdu_len = sizeof(setup_menu_631),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5240,17 +5045,10 @@ static struct setup_menu_test setup_menu_data_632 = {
 	.pdu_len = sizeof(setup_menu_632),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 2",
-	.items[0] = {
-		.id = 4,
-		.text = "Item 4"
-	},
-	.items[1] = {
-		.id = 5,
-		.text = "Item 5"
-	},
-	.items[2] = {
-		.id = 6,
-		.text = "Item 6"
+	.items = {
+		{ .id = 4, .text = "Item 4" },
+		{ .id = 5, .text = "Item 5" },
+		{ .id = 6, .text = "Item 6" },
 	}
 };
 
@@ -5259,17 +5057,10 @@ static struct setup_menu_test setup_menu_data_641 = {
 	.pdu_len = sizeof(setup_menu_641),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5287,17 +5078,10 @@ static struct setup_menu_test setup_menu_data_642 = {
 	.pdu_len = sizeof(setup_menu_642),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 2",
-	.items[0] = {
-		.id = 4,
-		.text = "Item 4"
-	},
-	.items[1] = {
-		.id = 5,
-		.text = "Item 5"
-	},
-	.items[2] = {
-		.id = 6,
-		.text = "Item 6"
+	.items = {
+		{ .id = 4, .text = "Item 4" },
+		{ .id = 5, .text = "Item 5" },
+		{ .id = 6, .text = "Item 6" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5315,17 +5099,10 @@ static struct setup_menu_test setup_menu_data_643 = {
 	.pdu_len = sizeof(setup_menu_643),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 3",
-	.items[0] = {
-		.id = 7,
-		.text = "Item 7"
-	},
-	.items[1] = {
-		.id = 8,
-		.text = "Item 8"
-	},
-	.items[2] = {
-		.id = 9,
-		.text = "Item 9"
+	.items = {
+		{ .id = 7, .text = "Item 7" },
+		{ .id = 8, .text = "Item 8" },
+		{ .id = 9, .text = "Item 9" },
 	}
 };
 
@@ -5334,17 +5111,10 @@ static struct setup_menu_test setup_menu_data_651 = {
 	.pdu_len = sizeof(setup_menu_651),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5362,17 +5132,10 @@ static struct setup_menu_test setup_menu_data_661 = {
 	.pdu_len = sizeof(setup_menu_661),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5390,17 +5153,10 @@ static struct setup_menu_test setup_menu_data_671 = {
 	.pdu_len = sizeof(setup_menu_671),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5418,17 +5174,10 @@ static struct setup_menu_test setup_menu_data_681 = {
 	.pdu_len = sizeof(setup_menu_681),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5446,17 +5195,10 @@ static struct setup_menu_test setup_menu_data_691 = {
 	.pdu_len = sizeof(setup_menu_691),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5474,17 +5216,10 @@ static struct setup_menu_test setup_menu_data_6101 = {
 	.pdu_len = sizeof(setup_menu_6101),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Menu",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -5502,21 +5237,11 @@ static struct setup_menu_test setup_menu_data_711 = {
 	.pdu_len = sizeof(setup_menu_711),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.items[0] = {
-		.id = 1,
-		.text = "ЗДРАВСТВУЙТЕ1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "ЗДРАВСТВУЙТЕ2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "ЗДРАВСТВУЙТЕ3"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "ЗДРАВСТВУЙТЕ4"
+	.items = {
+		{ .id = 1, .text = "ЗДРАВСТВУЙТЕ1" },
+		{ .id = 2, .text = "ЗДРАВСТВУЙТЕ2" },
+		{ .id = 3, .text = "ЗДРАВСТВУЙТЕ3" },
+		{ .id = 4, .text = "ЗДРАВСТВУЙТЕ4" },
 	}
 };
 
@@ -5525,13 +5250,9 @@ static struct setup_menu_test setup_menu_data_712 = {
 	.pdu_len = sizeof(setup_menu_712),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.items[0] = {
-		.id = 0x11,
-		.text = "ЗДРАВСТВУЙТЕ5"
-	},
-	.items[1] = {
-		.id = 0x12,
-		.text = "ЗДРАВСТВУЙТЕ6"
+	.items = {
+		{ .id = 0x11, .text = "ЗДРАВСТВУЙТЕ5" },
+		{ .id = 0x12, .text = "ЗДРАВСТВУЙТЕ6" },
 	}
 };
 
@@ -5546,21 +5267,11 @@ static struct setup_menu_test setup_menu_data_811 = {
 	.pdu_len = sizeof(setup_menu_811),
 	.qualifier = 0x00,
 	.alpha_id = "工具箱单",
-	.items[0] = {
-		.id = 1,
-		.text = "项目一"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "项目二"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "项目三"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "项目四"
+	.items = {
+		{ .id = 1, .text = "项目一" },
+		{ .id = 2, .text = "项目二" },
+		{ .id = 3, .text = "项目三" },
+		{ .id = 4, .text = "项目四" },
 	}
 };
 
@@ -5569,13 +5280,9 @@ static struct setup_menu_test setup_menu_data_812 = {
 	.pdu_len = sizeof(setup_menu_812),
 	.qualifier = 0x00,
 	.alpha_id = "工具箱单",
-	.items[0] = {
-		.id = 0x11,
-		.text = "一"
-	},
-	.items[1] = {
-		.id = 0x12,
-		.text = "二"
+	.items = {
+		{ .id = 0x11, .text = "一" },
+		{ .id = 0x12, .text = "二" },
 	}
 };
 
@@ -5590,21 +5297,11 @@ static struct setup_menu_test setup_menu_data_911 = {
 	.pdu_len = sizeof(setup_menu_911),
 	.qualifier = 0x00,
 	.alpha_id = "80ル0",
-	.items[0] = {
-		.id = 1,
-		.text = "80ル1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "80ル2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "80ル3"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "80ル4"
+	.items = {
+		{ .id = 1, .text = "80ル1" },
+		{ .id = 2, .text = "80ル2" },
+		{ .id = 3, .text = "80ル3" },
+		{ .id = 4, .text = "80ル4" },
 	}
 };
 
@@ -5613,13 +5310,9 @@ static struct setup_menu_test setup_menu_data_912 = {
 	.pdu_len = sizeof(setup_menu_912),
 	.qualifier = 0x00,
 	.alpha_id = "80ル0",
-	.items[0] = {
-		.id = 0x11,
-		.text = "80ル5"
-	},
-	.items[1] = {
-		.id = 0x12,
-		.text = "80ル6"
+	.items = {
+		{ .id = 0x11, .text = "80ル5" },
+		{ .id = 0x12, .text = "80ル6" },
 	}
 };
 
@@ -6469,21 +6162,11 @@ static struct select_item_test select_item_data_111 = {
 	.pdu_len = sizeof(select_item_111),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
+		{ .id = 4, .text = "Item 4" },
 	}
 };
 
@@ -6492,125 +6175,37 @@ static struct select_item_test select_item_data_121 = {
 	.pdu_len = sizeof(select_item_121),
 	.qualifier = 0x00,
 	.alpha_id = "LargeMenu1",
-	.items[0] = {
-		.id = 0x50,
-		.text = "Zero"
-	},
-	.items[1] = {
-		.id = 0x4F,
-		.text = "One"
-	},
-	.items[2] = {
-		.id = 0x4E,
-		.text = "Two"
-	},
-	.items[3] = {
-		.id = 0x4D,
-		.text = "Three"
-	},
-	.items[4] = {
-		.id = 0x4C,
-		.text = "Four"
-	},
-	.items[5] = {
-		.id = 0x4B,
-		.text = "Five"
-	},
-	.items[6] = {
-		.id = 0x4A,
-		.text = "Six"
-	},
-	.items[7] = {
-		.id = 0x49,
-		.text = "Seven"
-	},
-	.items[8] = {
-		.id = 0x48,
-		.text = "Eight"
-	},
-	.items[9] = {
-		.id = 0x47,
-		.text = "Nine"
-	},
-	.items[10] = {
-		.id = 0x46,
-		.text = "Alpha"
-	},
-	.items[11] = {
-		.id = 0x45,
-		.text = "Bravo"
-	},
-	.items[12] = {
-		.id = 0x44,
-		.text = "Charlie"
-	},
-	.items[13] = {
-		.id = 0x43,
-		.text = "Delta"
-	},
-	.items[14] = {
-		.id = 0x42,
-		.text = "Echo"
-	},
-	.items[15] = {
-		.id = 0x41,
-		.text = "Fox-trot"
-	},
-	.items[16] = {
-		.id = 0x40,
-		.text = "Black"
-	},
-	.items[17] = {
-		.id = 0x3F,
-		.text = "Brown"
-	},
-	.items[18] = {
-		.id = 0x3E,
-		.text = "Red"
-	},
-	.items[19] = {
-		.id = 0x3D,
-		.text = "Orange"
-	},
-	.items[20] = {
-		.id = 0x3C,
-		.text = "Yellow"
-	},
-	.items[21] = {
-		.id = 0x3B,
-		.text = "Green"
-	},
-	.items[22] = {
-		.id = 0x3A,
-		.text = "Blue"
-	},
-	.items[23] = {
-		.id = 0x39,
-		.text = "Violet"
-	},
-	.items[24] = {
-		.id = 0x38,
-		.text = "Grey"
-	},
-	.items[25] = {
-		.id = 0x37,
-		.text = "White"
-	},
-	.items[26] = {
-		.id = 0x36,
-		.text = "milli"
-	},
-	.items[27] = {
-		.id = 0x35,
-		.text = "micro"
-	},
-	.items[28] = {
-		.id = 0x34,
-		.text = "nano"
-	},
-	.items[29] = {
-		.id = 0x33,
-		.text = "pico"
+	.items = {
+		{ .id = 0x50, .text = "Zero" },
+		{ .id = 0x4F, .text = "One" },
+		{ .id = 0x4E, .text = "Two" },
+		{ .id = 0x4D, .text = "Three" },
+		{ .id = 0x4C, .text = "Four" },
+		{ .id = 0x4B, .text = "Five" },
+		{ .id = 0x4A, .text = "Six" },
+		{ .id = 0x49, .text = "Seven" },
+		{ .id = 0x48, .text = "Eight" },
+		{ .id = 0x47, .text = "Nine" },
+		{ .id = 0x46, .text = "Alpha" },
+		{ .id = 0x45, .text = "Bravo" },
+		{ .id = 0x44, .text = "Charlie" },
+		{ .id = 0x43, .text = "Delta" },
+		{ .id = 0x42, .text = "Echo" },
+		{ .id = 0x41, .text = "Fox-trot" },
+		{ .id = 0x40, .text = "Black" },
+		{ .id = 0x3F, .text = "Brown" },
+		{ .id = 0x3E, .text = "Red" },
+		{ .id = 0x3D, .text = "Orange" },
+		{ .id = 0x3C, .text = "Yellow" },
+		{ .id = 0x3B, .text = "Green" },
+		{ .id = 0x3A, .text = "Blue" },
+		{ .id = 0x39, .text = "Violet" },
+		{ .id = 0x38, .text = "Grey" },
+		{ .id = 0x37, .text = "White" },
+		{ .id = 0x36, .text = "milli" },
+		{ .id = 0x35, .text = "micro" },
+		{ .id = 0x34, .text = "nano" },
+		{ .id = 0x33, .text = "pico" },
 	}
 };
 
@@ -6619,33 +6214,15 @@ static struct select_item_test select_item_data_131 = {
 	.pdu_len = sizeof(select_item_131),
 	.qualifier = 0x00,
 	.alpha_id = "LargeMenu2",
-	.items[0] = {
-		.id = 0xFF,
-		.text = "Call Forwarding Unconditional"
-	},
-	.items[1] = {
-		.id = 0xFE,
-		.text = "Call Forwarding On User Busy"
-	},
-	.items[2] = {
-		.id = 0xFD,
-		.text = "Call Forwarding On No Reply"
-	},
-	.items[3] = {
-		.id = 0xFC,
-		.text = "Call Forwarding On User Not Reachable"
-	},
-	.items[4] = {
-		.id = 0xFB,
-		.text = "Barring Of All Outgoing Calls"
-	},
-	.items[5] = {
-		.id = 0xFA,
-		.text = "Barring Of All Outgoing International Calls"
-	},
-	.items[6] = {
-		.id = 0xF9,
-		.text = "CLI Presentation"
+	.items = {
+		{ .id = 0xFF, .text = "Call Forwarding Unconditional" },
+		{ .id = 0xFE, .text = "Call Forwarding On User Busy" },
+		{ .id = 0xFD, .text = "Call Forwarding On No Reply" },
+		{ .id = 0xFC, .text = "Call Forwarding On User Not Reachable" },
+		{ .id = 0xFB, .text = "Barring Of All Outgoing Calls" },
+		{ .id = 0xFA,
+			.text = "Barring Of All Outgoing International Calls" },
+		{ .id = 0xF9, .text = "CLI Presentation" },
 	}
 };
 
@@ -6654,13 +6231,9 @@ static struct select_item_test select_item_data_141 = {
 	.pdu_len = sizeof(select_item_141),
 	.qualifier = 0x00,
 	.alpha_id = "Select Item",
-	.items[0] = {
-		.id = 0x11,
-		.text = "One"
-	},
-	.items[1] = {
-		.id = 0x12,
-		.text = "Two"
+	.items = {
+		{ .id = 0x11, .text = "One" },
+		{ .id = 0x12, .text = "Two" },
 	}
 };
 
@@ -6672,9 +6245,8 @@ static struct select_item_test select_item_data_151 = {
 		"may choose one. Each item comprises a short identifier (used "
 		"to indicate the selection) and a text string. Optionally the "
 		"SIM may include an alpha identifier. The alpha identifier i",
-	.items[0] = {
-		.id = 0x01,
-		.text = "Y"
+	.items = {
+		{ .id = 0x01, .text = "Y" },
 	}
 };
 
@@ -6683,33 +6255,14 @@ static struct select_item_test select_item_data_161 = {
 	.pdu_len = sizeof(select_item_161),
 	.qualifier = 0x00,
 	.alpha_id = "0LargeMenu",
-	.items[0] = {
-		.id = 0xFF,
-		.text = "1 Call Forward Unconditional"
-	},
-	.items[1] = {
-		.id = 0xFE,
-		.text = "2 Call Forward On User Busy"
-	},
-	.items[2] = {
-		.id = 0xFD,
-		.text = "3 Call Forward On No Reply"
-	},
-	.items[3] = {
-		.id = 0xFC,
-		.text = "4 Call Forward On User Not Reachable"
-	},
-	.items[4] = {
-		.id = 0xFB,
-		.text = "5 Barring Of All Outgoing Calls"
-	},
-	.items[5] = {
-		.id = 0xFA,
-		.text = "6 Barring Of All Outgoing Int Calls"
-	},
-	.items[6] = {
-		.id = 0xF9,
-		.text = "7 CLI Presentation"
+	.items = {
+		{ .id = 0xFF, .text = "1 Call Forward Unconditional" },
+		{ .id = 0xFE, .text = "2 Call Forward On User Busy" },
+		{ .id = 0xFD, .text = "3 Call Forward On No Reply" },
+		{ .id = 0xFC, .text = "4 Call Forward On User Not Reachable" },
+		{ .id = 0xFB, .text = "5 Barring Of All Outgoing Calls" },
+		{ .id = 0xFA, .text = "6 Barring Of All Outgoing Int Calls" },
+		{ .id = 0xF9, .text = "7 CLI Presentation" },
 	}
 };
 
@@ -6718,17 +6271,10 @@ static struct select_item_test select_item_data_211 = {
 	.pdu_len = sizeof(select_item_211),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.next_act = {
 		.list = { STK_COMMAND_TYPE_SEND_SMS,
@@ -6743,17 +6289,10 @@ static struct select_item_test select_item_data_311 = {
 	.pdu_len = sizeof(select_item_311),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.item_id = 0x02
 };
@@ -6763,17 +6302,10 @@ static struct select_item_test select_item_data_411 = {
 	.pdu_len = sizeof(select_item_411),
 	.qualifier = 0x80,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	}
 };
 
@@ -6782,17 +6314,10 @@ static struct select_item_test select_item_data_511 = {
 	.pdu_len = sizeof(select_item_511),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
@@ -6810,17 +6335,10 @@ static struct select_item_test select_item_data_521 = {
 	.pdu_len = sizeof(select_item_521),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	},
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
@@ -6838,17 +6356,10 @@ static struct select_item_test select_item_data_611 = {
 	.pdu_len = sizeof(select_item_611),
 	.qualifier = 0x03,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	}
 };
 
@@ -6857,17 +6368,10 @@ static struct select_item_test select_item_data_621 = {
 	.pdu_len = sizeof(select_item_621),
 	.qualifier = 0x01,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	}
 };
 
@@ -6876,13 +6380,9 @@ static struct select_item_test select_item_data_711 = {
 	.pdu_len = sizeof(select_item_711),
 	.qualifier = 0x04,
 	.alpha_id = "Toolkit Select",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	}
 };
 
@@ -6891,17 +6391,10 @@ static struct select_item_test select_item_data_811 = {
 	.pdu_len = sizeof(select_item_811),
 	.qualifier = 0x00,
 	.alpha_id = "<TIME-OUT>",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "Item 3"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
+		{ .id = 3, .text = "Item 3" },
 	}
 };
 
@@ -6910,13 +6403,9 @@ static struct select_item_test select_item_data_911 = {
 	.pdu_len = sizeof(select_item_911),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -6933,13 +6422,9 @@ static struct select_item_test select_item_data_912 = {
 	.pdu_len = sizeof(select_item_912),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	}
 };
 
@@ -6948,13 +6433,9 @@ static struct select_item_test select_item_data_921 = {
 	.pdu_len = sizeof(select_item_921),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -6971,13 +6452,9 @@ static struct select_item_test select_item_data_922 = {
 	.pdu_len = sizeof(select_item_922),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	}
 };
 
@@ -6986,13 +6463,9 @@ static struct select_item_test select_item_data_931 = {
 	.pdu_len = sizeof(select_item_931),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7009,13 +6482,9 @@ static struct select_item_test select_item_data_932 = {
 	.pdu_len = sizeof(select_item_932),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	}
 };
 
@@ -7024,13 +6493,9 @@ static struct select_item_test select_item_data_941 = {
 	.pdu_len = sizeof(select_item_941),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7047,13 +6512,9 @@ static struct select_item_test select_item_data_942 = {
 	.pdu_len = sizeof(select_item_942),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7070,13 +6531,9 @@ static struct select_item_test select_item_data_943 = {
 	.pdu_len = sizeof(select_item_943),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 3",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 5"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 6"
+	.items = {
+		{ .id = 1, .text = "Item 5" },
+		{ .id = 2, .text = "Item 6" },
 	}
 };
 
@@ -7085,13 +6542,9 @@ static struct select_item_test select_item_data_951 = {
 	.pdu_len = sizeof(select_item_951),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7108,13 +6561,9 @@ static struct select_item_test select_item_data_952 = {
 	.pdu_len = sizeof(select_item_952),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7131,13 +6580,9 @@ static struct select_item_test select_item_data_953 = {
 	.pdu_len = sizeof(select_item_953),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 3",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 5"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 6"
+	.items = {
+		{ .id = 1, .text = "Item 5" },
+		{ .id = 2, .text = "Item 6" },
 	}
 };
 
@@ -7146,13 +6591,9 @@ static struct select_item_test select_item_data_961 = {
 	.pdu_len = sizeof(select_item_961),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7169,13 +6610,9 @@ static struct select_item_test select_item_data_962 = {
 	.pdu_len = sizeof(select_item_962),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7192,13 +6629,9 @@ static struct select_item_test select_item_data_963 = {
 	.pdu_len = sizeof(select_item_963),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 3",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 5"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 6"
+	.items = {
+		{ .id = 1, .text = "Item 5" },
+		{ .id = 2, .text = "Item 6" },
 	}
 };
 
@@ -7207,13 +6640,9 @@ static struct select_item_test select_item_data_971 = {
 	.pdu_len = sizeof(select_item_971),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7230,13 +6659,9 @@ static struct select_item_test select_item_data_972 = {
 	.pdu_len = sizeof(select_item_972),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7253,13 +6678,9 @@ static struct select_item_test select_item_data_973 = {
 	.pdu_len = sizeof(select_item_973),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 3",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 5"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 6"
+	.items = {
+		{ .id = 1, .text = "Item 5" },
+		{ .id = 2, .text = "Item 6" },
 	}
 };
 
@@ -7268,13 +6689,9 @@ static struct select_item_test select_item_data_981 = {
 	.pdu_len = sizeof(select_item_981),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7291,13 +6708,9 @@ static struct select_item_test select_item_data_982 = {
 	.pdu_len = sizeof(select_item_982),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7314,13 +6727,9 @@ static struct select_item_test select_item_data_983 = {
 	.pdu_len = sizeof(select_item_983),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 3",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 5"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 6"
+	.items = {
+		{ .id = 1, .text = "Item 5" },
+		{ .id = 2, .text = "Item 6" },
 	}
 };
 
@@ -7329,13 +6738,9 @@ static struct select_item_test select_item_data_991 = {
 	.pdu_len = sizeof(select_item_991),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7352,13 +6757,9 @@ static struct select_item_test select_item_data_992 = {
 	.pdu_len = sizeof(select_item_992),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7375,13 +6776,9 @@ static struct select_item_test select_item_data_993 = {
 	.pdu_len = sizeof(select_item_993),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 3",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 5"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 6"
+	.items = {
+		{ .id = 1, .text = "Item 5" },
+		{ .id = 2, .text = "Item 6" },
 	}
 };
 
@@ -7390,13 +6787,9 @@ static struct select_item_test select_item_data_9101 = {
 	.pdu_len = sizeof(select_item_9101),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 1",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 2"
+	.items = {
+		{ .id = 1, .text = "Item 1" },
+		{ .id = 2, .text = "Item 2" },
 	},
 	.text_attr = {
 		.len = 4,
@@ -7413,13 +6806,9 @@ static struct select_item_test select_item_data_9102 = {
 	.pdu_len = sizeof(select_item_9102),
 	.qualifier = 0x00,
 	.alpha_id = "Toolkit Select 2",
-	.items[0] = {
-		.id = 1,
-		.text = "Item 3"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "Item 4"
+	.items = {
+		{ .id = 1, .text = "Item 3" },
+		{ .id = 2, .text = "Item 4" },
 	}
 };
 
@@ -7428,17 +6817,10 @@ static struct select_item_test select_item_data_1011 = {
 	.pdu_len = sizeof(select_item_1011),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.items[0] = {
-		.id = 1,
-		.text = "ЗДРАВСТВУЙТЕ1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "ЗДРАВСТВУЙТЕ2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "ЗДРАВСТВУЙТЕ3"
+	.items = {
+		{ .id = 1, .text = "ЗДРАВСТВУЙТЕ1" },
+		{ .id = 2, .text = "ЗДРАВСТВУЙТЕ2" },
+		{ .id = 3, .text = "ЗДРАВСТВУЙТЕ3" },
 	}
 };
 
@@ -7447,17 +6829,10 @@ static struct select_item_test select_item_data_1021 = {
 	.pdu_len = sizeof(select_item_1021),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.items[0] = {
-		.id = 1,
-		.text = "ЗДРАВСТВУЙТЕ1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "ЗДРАВСТВУЙТЕ2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "ЗДРАВСТВУЙТЕ3"
+	.items = {
+		{ .id = 1, .text = "ЗДРАВСТВУЙТЕ1" },
+		{ .id = 2, .text = "ЗДРАВСТВУЙТЕ2" },
+		{ .id = 3, .text = "ЗДРАВСТВУЙТЕ3" },
 	}
 };
 
@@ -7466,17 +6841,10 @@ static struct select_item_test select_item_data_1031 = {
 	.pdu_len = sizeof(select_item_1031),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.items[0] = {
-		.id = 1,
-		.text = "ЗДРАВСТВУЙТЕ1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "ЗДРАВСТВУЙТЕ2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "ЗДРАВСТВУЙТЕ3"
+	.items = {
+		{ .id = 1, .text = "ЗДРАВСТВУЙТЕ1" },
+		{ .id = 2, .text = "ЗДРАВСТВУЙТЕ2" },
+		{ .id = 3, .text = "ЗДРАВСТВУЙТЕ3" },
 	}
 };
 
@@ -7485,21 +6853,11 @@ static struct select_item_test select_item_data_1111 = {
 	.pdu_len = sizeof(select_item_1111),
 	.qualifier = 0x00,
 	.alpha_id = "工具箱选择",
-	.items[0] = {
-		.id = 1,
-		.text = "项目一"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "项目二"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "项目三"
-	},
-	.items[3] = {
-		.id = 4,
-		.text = "项目四"
+	.items = {
+		{ .id = 1, .text = "项目一" },
+		{ .id = 2, .text = "项目二" },
+		{ .id = 3, .text = "项目三" },
+		{ .id = 4, .text = "项目四" },
 	}
 };
 
@@ -7508,17 +6866,10 @@ static struct select_item_test select_item_data_1211 = {
 	.pdu_len = sizeof(select_item_1211),
 	.qualifier = 0x00,
 	.alpha_id = "80ル0",
-	.items[0] = {
-		.id = 1,
-		.text = "80ル1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "80ル2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "80ル3"
+	.items = {
+		{ .id = 1, .text = "80ル1" },
+		{ .id = 2, .text = "80ル2" },
+		{ .id = 3, .text = "80ル3" },
 	}
 };
 
@@ -7527,17 +6878,10 @@ static struct select_item_test select_item_data_1221 = {
 	.pdu_len = sizeof(select_item_1221),
 	.qualifier = 0x00,
 	.alpha_id = "81ル0",
-	.items[0] = {
-		.id = 1,
-		.text = "81ル1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "81ル2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "81ル3"
+	.items = {
+		{ .id = 1, .text = "81ル1" },
+		{ .id = 2, .text = "81ル2" },
+		{ .id = 3, .text = "81ル3" },
 	}
 };
 
@@ -7546,17 +6890,10 @@ static struct select_item_test select_item_data_1231 = {
 	.pdu_len = sizeof(select_item_1231),
 	.qualifier = 0x00,
 	.alpha_id = "82ル0",
-	.items[0] = {
-		.id = 1,
-		.text = "82ル1"
-	},
-	.items[1] = {
-		.id = 2,
-		.text = "82ル2"
-	},
-	.items[2] = {
-		.id = 3,
-		.text = "82ル3"
+	.items = {
+		{ .id = 1, .text = "82ル1" },
+		{ .id = 2, .text = "82ル2" },
+		{ .id = 3, .text = "82ル3" },
 	}
 };
 
@@ -8967,10 +8304,10 @@ static struct refresh_test refresh_data_121 = {
 	.pdu = refresh_121,
 	.pdu_len = sizeof(refresh_121),
 	.qualifier = 0x01,
-	.file_list[0] = {
+	.file_list = {{
 		.len = 4,
 		.file = { 0x3F, 0x00, 0x2F, 0xE2 }
-	}
+	}}
 };
 
 static struct refresh_test refresh_data_151 = {
