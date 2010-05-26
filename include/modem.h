@@ -50,6 +50,8 @@ void ofono_modem_remove(struct ofono_modem *modem);
 void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered);
 ofono_bool_t ofono_modem_get_powered(struct ofono_modem *modem);
 
+ofono_bool_t ofono_modem_get_online(struct ofono_modem *modem);
+
 void ofono_modem_set_name(struct ofono_modem *modem, const char *name);
 
 int ofono_modem_set_string(struct ofono_modem *modem,
@@ -63,6 +65,9 @@ int ofono_modem_get_integer(struct ofono_modem *modem, const char *key);
 int ofono_modem_set_boolean(struct ofono_modem *modem,
 				const char *key, bool value);
 bool ofono_modem_get_boolean(struct ofono_modem *modem, const char *key);
+
+typedef void (*ofono_modem_online_cb)(const struct ofono_error *error,
+				void *data);
 
 struct ofono_modem_driver {
 	const char *name;
@@ -80,11 +85,18 @@ struct ofono_modem_driver {
 	/* Power down device */
 	int (*disable)(struct ofono_modem *modem);
 
+	/* Enable or disable cellular radio */
+	void (*set_online)(struct ofono_modem *modem, ofono_bool_t online,
+		ofono_modem_online_cb callback, void *data);
+
 	/* Populate the atoms available without SIM / Locked SIM */
 	void (*pre_sim)(struct ofono_modem *modem);
 
 	/* Populate the atoms that are available with SIM / Unlocked SIM*/
 	void (*post_sim)(struct ofono_modem *modem);
+
+	/* Populate the atoms available online */
+	void (*post_online)(struct ofono_modem *modem);
 };
 
 int ofono_modem_driver_register(const struct ofono_modem_driver *);
