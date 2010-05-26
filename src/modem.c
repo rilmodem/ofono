@@ -69,7 +69,7 @@ struct ofono_modem {
 	ofono_bool_t		powered_pending;
 	guint			timeout;
 	ofono_bool_t		online;
-	ofono_bool_t            online_pending;
+	ofono_bool_t		online_pending;
 	GHashTable		*properties;
 	struct ofono_sim	*sim;
 	unsigned int		sim_watch;

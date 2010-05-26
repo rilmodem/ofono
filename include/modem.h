@@ -67,7 +67,7 @@ int ofono_modem_set_boolean(struct ofono_modem *modem,
 bool ofono_modem_get_boolean(struct ofono_modem *modem, const char *key);
 
 typedef void (*ofono_modem_online_cb)(const struct ofono_error *error,
-				void *data);
+					void *data);
 
 struct ofono_modem_driver {
 	const char *name;
@@ -87,7 +87,7 @@ struct ofono_modem_driver {
 
 	/* Enable or disable cellular radio */
 	void (*set_online)(struct ofono_modem *modem, ofono_bool_t online,
-		ofono_modem_online_cb callback, void *data);
+				ofono_modem_online_cb callback, void *data);
 
 	/* Populate the atoms available without SIM / Locked SIM */
 	void (*pre_sim)(struct ofono_modem *modem);
