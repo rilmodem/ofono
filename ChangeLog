@@ -1,3 +1,19 @@
+ver 0.21:
+	Add more parsing support for SIM Toolkit.
+	Add support for SIM insertion/removal events.
+	Add support for NITZ (network time) events.
+	Add support for reading EF_ICCID information.
+	Add support for advanced PPP integration.
+	Add support for HDLC specific abstraction.
+	Add support for simpler Technology values.
+	Add support for separate MCC/MNC SIM properties.
+	Add support for GPRS context with ISI modems.
+	Add support for SMS handling with ISI modems.
+	Add support for Wavecom WMP100 based devices.
+	Add support for Option iCON 451 based devices.
+	Add support for Huawei E1552 HSDPA USB devices.
+	Add support for Dell 5530 based devices.
+
 ver 0.20:
 	Fix issue with empty operator names.
 	Add missing API documentation.
