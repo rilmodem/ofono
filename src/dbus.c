@@ -298,6 +298,13 @@ DBusMessage *__ofono_error_not_supported(DBusMessage *msg)
 					" network / modem");
 }
 
+DBusMessage *__ofono_error_not_available(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE,
+					".NotAvailable",
+					"Operation currently not available");
+}
+
 DBusMessage *__ofono_error_timed_out(DBusMessage *msg)
 {
 	return g_dbus_create_error(msg, DBUS_GSM_ERROR_INTERFACE ".Timedout",
