@@ -104,7 +104,7 @@ struct ofono_atom_watch {
 	enum ofono_atom_type type;
 };
 
-struct ofono_property {
+struct modem_property {
 	enum property_type type;
 	void *value;
 };
@@ -1049,7 +1049,7 @@ const char **__ofono_modem_get_list()
 
 static void unregister_property(gpointer data)
 {
-	struct ofono_property *property = data;
+	struct modem_property *property = data;
 
 	DBG("property %p", property);
 
@@ -1060,7 +1060,7 @@ static void unregister_property(gpointer data)
 static int set_modem_property(struct ofono_modem *modem, const char *name,
 				enum property_type type, const void *value)
 {
-	struct ofono_property *property;
+	struct modem_property *property;
 
 	DBG("modem %p property %s", modem, name);
 
@@ -1068,7 +1068,7 @@ static int set_modem_property(struct ofono_modem *modem, const char *name,
 			type != PROPERTY_TYPE_INTEGER)
 		return -EINVAL;
 
-	property = g_try_new0(struct ofono_property, 1);
+	property = g_try_new0(struct modem_property, 1);
 	if (property == NULL)
 		return -ENOMEM;
 
@@ -1097,7 +1097,7 @@ static gboolean get_modem_property(struct ofono_modem *modem, const char *name,
 					enum property_type type,
 					void *value)
 {
-	struct ofono_property *property;
+	struct modem_property *property;
 
 	DBG("modem %p property %s", modem, name);
 
