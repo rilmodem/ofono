@@ -53,6 +53,10 @@ static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
 					guint16 ref, guint8 max, guint8 seq,
 					gboolean backup);
 
+/*
+ * This function uses the meanings of digits 10..15 according to the rules
+ * defined in 23.040 Section 9.1.2.3 and 24.008 Table 10.5.118
+ */
 void extract_bcd_number(const unsigned char *buf, int len, char *out)
 {
 	static const char digit_lut[] = "0123456789*#abc\0";
