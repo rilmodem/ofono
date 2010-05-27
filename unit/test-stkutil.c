@@ -17556,6 +17556,74 @@ static const struct terminal_response_test
 	},
 };
 
+static const unsigned char run_at_command_response_111[] = {
+	0x81, 0x03, 0x01, 0x34, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xA9, 0x05, 0x2b, 0x43,
+	0x47, 0x4d, 0x49,
+};
+
+static const struct terminal_response_test run_at_command_response_data_111 = {
+	.pdu = run_at_command_response_111,
+	.pdu_len = sizeof(run_at_command_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_RUN_AT_COMMAND,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .run_at_command = {
+			.at_response = "+CGMI",
+		}},
+	},
+};
+
+static const unsigned char run_at_command_response_211b[] = {
+	0x81, 0x03, 0x01, 0x34, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04, 0xA9, 0x05, 0x2b, 0x43,
+	0x47, 0x4d, 0x49,
+};
+
+static const struct terminal_response_test run_at_command_response_data_211b = {
+	.pdu = run_at_command_response_211b,
+	.pdu_len = sizeof(run_at_command_response_211b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_RUN_AT_COMMAND,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+		{ .run_at_command = {
+			.at_response = "+CGMI",
+		}},
+	},
+};
+
+static const unsigned char run_at_command_response_251[] = {
+	0x81, 0x03, 0x01, 0x34, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x32,
+};
+
+static const struct terminal_response_test run_at_command_response_data_251 = {
+	.pdu = run_at_command_response_251,
+	.pdu_len = sizeof(run_at_command_response_251),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_RUN_AT_COMMAND,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -19020,6 +19088,16 @@ int main(int argc, char **argv)
 			&run_at_command_data_511, test_run_at_command);
 	g_test_add_data_func("/teststk/Run At Command 6.1.1",
 			&run_at_command_data_611, test_run_at_command);
+
+	g_test_add_data_func("/teststk/Run AT Command response 1.1.1",
+			&run_at_command_response_data_111,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Run AT Command response 2.1.1B",
+			&run_at_command_response_data_211b,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Run AT Command response 2.5.1",
+			&run_at_command_response_data_251,
+			test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Send DTMF 1.1.1",
 			&send_dtmf_data_111, test_send_dtmf);
