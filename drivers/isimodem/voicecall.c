@@ -71,7 +71,7 @@ static struct ofono_call isi_call_as_ofono_call(struct isi_call const *);
 static int isi_call_status_to_clcc(struct isi_call const *call);
 static struct isi_call *isi_call_set_idle(struct isi_call *call);
 
-typedef void GIsiIndication (GIsiClient *client,
+typedef void GIsiIndication(GIsiClient *client,
 		const void *restrict data, size_t len,
 		uint16_t object, void *opaque);
 
@@ -106,7 +106,7 @@ struct isi_call_req_context {
 
 static struct isi_call_req_context *
 isi_call_req(struct ofono_voicecall *ovc,
-	     void const * restrict req,
+	     void const *restrict req,
 	     size_t len,
 	     GIsiResponse *handler,
 	     ofono_voicecall_cb_t cb,
@@ -143,10 +143,12 @@ static void isi_ctx_queue(struct isi_call_req_context *irc,
 	if (irc->prev == NULL) {
 		struct isi_voicecall *ivc = ofono_voicecall_get_data(irc->ovc);
 
-		irc->prev = &ivc->queue;
-		if ((irc->next = *irc->prev))
+		if (ivc->queue) {
+			irc->next = ivc->queue;
 			irc->next->prev = &irc->next;
-		*irc->prev = irc;
+		}
+		irc->prev = &ivc->queue;
+		ivc->queue = irc;
 	}
 
 	irc->step = next;
@@ -155,7 +157,9 @@ static void isi_ctx_queue(struct isi_call_req_context *irc,
 static void isi_ctx_remove(struct isi_call_req_context *irc)
 {
 	if (irc->prev) {
-		if ((*irc->prev = irc->next)) {
+		*irc->prev = irc->next;
+
+		if (irc->next) {
 			irc->next->prev = irc->prev;
 			irc->next = NULL;
 		}
@@ -285,7 +289,6 @@ static void isi_call_status_sb_proc(struct isi_voicecall *ivc,
 
 static struct isi_call *
 isi_call_status_info_sb_proc(struct isi_voicecall *ivc,
-			     struct isi_call calls[8],
 			     GIsiSubBlockIter const *sb)
 {
 	struct isi_call *call = NULL;
@@ -304,7 +307,7 @@ isi_call_status_info_sb_proc(struct isi_voicecall *ivc,
 	i = call_id & 7;
 
 	if (1 <= i && i <= 7) {
-		call = &calls[i];
+		call = &ivc->calls[i];
 		call->call_id = call_id;
 		call->status = status;
 		call->mode = mode;
@@ -316,7 +319,6 @@ isi_call_status_info_sb_proc(struct isi_voicecall *ivc,
 
 static struct isi_call *
 isi_call_addr_and_status_info_sb_proc(struct isi_voicecall *ivc,
-				      struct isi_call calls[8],
 				      GIsiSubBlockIter const *sb)
 {
 	struct isi_call *call = NULL;
@@ -343,7 +345,7 @@ isi_call_addr_and_status_info_sb_proc(struct isi_voicecall *ivc,
 	i = call_id & 7;
 
 	if (1 <= i && i <= 7) {
-		call = &calls[i];
+		call = &ivc->calls[i];
 		call->call_id = call_id;
 		call->status = status;
 		call->mode = mode;
@@ -433,7 +435,7 @@ static gboolean isi_call_create_resp(GIsiClient *client,
 }
 
 static void isi_call_status_ind_cb(GIsiClient *client,
-				   void const * restrict data,
+				   void const *restrict data,
 				   size_t len,
 				   uint16_t object,
 				   void *_ovc)
@@ -641,11 +643,11 @@ static gboolean isi_call_status_resp(GIsiClient *client,
 		switch (g_isi_sb_iter_get_id(sb)) {
 
 		case CALL_STATUS_INFO:
-			call = isi_call_status_info_sb_proc(ivc, ivc->calls, sb);
+			call = isi_call_status_info_sb_proc(ivc, sb);
 			break;
 
 		case CALL_ADDR_AND_STATUS_INFO:
-			call = isi_call_addr_and_status_info_sb_proc(ivc, ivc->calls, sb);
+			call = isi_call_addr_and_status_info_sb_proc(ivc, sb);
 			if (call)
 				isi_call_notify(ovc, call);
 			break;
@@ -965,7 +967,7 @@ static struct isi_call *isi_call_set_idle(struct isi_call *call)
 /* ---------------------------------------------------------------------- */
 
 static void isi_dial(struct ofono_voicecall *ovc,
-		     const struct ofono_phone_number * restrict number,
+		     const struct ofono_phone_number *restrict number,
 		     enum ofono_clir_option clir,
 		     enum ofono_cug_option cug,
 		     ofono_voicecall_cb_t cb,
@@ -973,8 +975,7 @@ static void isi_dial(struct ofono_voicecall *ovc,
 {
 	unsigned char presentation = CALL_GSM_PRESENTATION_DEFAULT;
 
-	switch (clir)
-	{
+	switch (clir) {
 	case OFONO_CLIR_OPTION_DEFAULT:
 		presentation = CALL_GSM_PRESENTATION_DEFAULT;
 		break;
@@ -986,8 +987,7 @@ static void isi_dial(struct ofono_voicecall *ovc,
 		break;
 	}
 
-	switch (cug)
-	{
+	switch (cug) {
 	case OFONO_CUG_OPTION_DEFAULT:
 		break;
 	case OFONO_CUG_OPTION_INVOCATION:
@@ -1092,8 +1092,7 @@ static void isi_release_all_active(struct ofono_voicecall *ovc,
 			isi_ctx_queue(irc, isi_wait_and_answer);
 		else if (hold)
 			isi_ctx_queue(irc, isi_wait_and_retrieve);
-	}
-	else
+	} else
 		CALLBACK_WITH_FAILURE(cb, data);
 }
 
@@ -1139,21 +1138,19 @@ static void isi_hold_all_active(struct ofono_voicecall *ovc,
 
 	if (waiting) {
 		isi_call_answer_req(ovc, CALL_ID_WAITING, cb, data);
-	}
-	else if (hold) {
+	} else if (hold) {
 		if (active) {
-			id = CALL_ID_ACTIVE, op = CALL_OP_SWAP;
-		}
-		else {
-			id = CALL_ID_HOLD, op = CALL_OP_RETRIEVE;
+			op = CALL_OP_SWAP;
+			id = CALL_ID_ACTIVE;
+		} else {
+			op = CALL_OP_RETRIEVE;
+			id = CALL_ID_HOLD;
 		}
 		isi_call_control_req(ovc, id, op, 0, cb, data);
-	}
-	else if (active) {
+	} else if (active) {
 		id = CALL_ID_ACTIVE, op = CALL_OP_HOLD;
 		isi_call_control_req(ovc, id, op, 0, cb, data);
-	}
-	else {
+	} else {
 		CALLBACK_WITH_FAILURE(cb, data);
 	}
 }
@@ -1182,8 +1179,7 @@ static void isi_release_specific(struct ofono_voicecall *ovc, int id,
 		isi_call_release_req(ovc, id,
 				     CALL_CAUSE_TYPE_CLIENT, cause,
 				     cb, data);
-	}
-	else
+	} else
 		CALLBACK_WITH_FAILURE(cb, data);
 }
 
@@ -1252,14 +1248,11 @@ static void isi_swap_without_accept(struct ofono_voicecall *ovc,
 
 	if (hold && active) {
 		id = CALL_ID_ACTIVE, op = CALL_OP_SWAP;
-	}
-	else if (active) {
+	} else if (active) {
 		id = CALL_ID_ACTIVE, op = CALL_OP_HOLD;
-	}
-	else if (hold) {
+	} else if (hold) {
 		id = CALL_ID_HOLD, op = CALL_OP_RETRIEVE;
-	}
-	else {
+	} else {
 		CALLBACK_WITH_FAILURE(cb, data);
 		return;
 	}
