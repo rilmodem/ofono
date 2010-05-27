@@ -42,13 +42,17 @@ for path in properties["Modems"]:
 						"MultipartyCalls",
 						"EmergencyNumbers",
 						"SubscriberNumbers",
-						"ServiceDiallingNumbers",
 						"PreferredLanguages",
 						"PrimaryContexts",
 						"LockedPins"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
+			elif key in ["ServiceNumbers"]:
+				val = ""
+				for i in properties[key]:
+					val += "[" + i + "] = '"
+					val += properties[key][i] + "' "
 			elif key in ["MobileNetworkCodeLength",
 						"VoicemailMessageCount",
 						"MicrophoneVolume",
