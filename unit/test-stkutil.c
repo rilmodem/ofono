@@ -7561,7 +7561,7 @@ static struct setup_call_test setup_call_data_111 = {
 	.alpha_id_usr_cfm = "Not busy",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	}
 };
 
@@ -7572,7 +7572,7 @@ static struct setup_call_test setup_call_data_141 = {
 	.alpha_id_usr_cfm = "On hold",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	}
 };
 
@@ -7583,7 +7583,7 @@ static struct setup_call_test setup_call_data_151 = {
 	.alpha_id_usr_cfm = "Disconnect",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	}
 };
 
@@ -7594,7 +7594,7 @@ static struct setup_call_test setup_call_data_181 = {
 	.alpha_id_usr_cfm = "Capability config",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.ccp = {
 		.len = 0x02,
@@ -7634,7 +7634,7 @@ static struct setup_call_test setup_call_data_1111 = {
 	.alpha_id_usr_cfm = "Called party",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.subaddr = {
 		.len = 0x07,
@@ -7649,7 +7649,7 @@ static struct setup_call_test setup_call_data_1121 = {
 	.alpha_id_usr_cfm = "Duration",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.duration = {
 		.unit = STK_DURATION_TYPE_SECONDS,
@@ -7664,7 +7664,7 @@ static struct setup_call_test setup_call_data_211 = {
 	.alpha_id_usr_cfm = "CONFIRMATION",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL"
 };
@@ -7676,7 +7676,7 @@ static struct setup_call_test setup_call_data_311 = {
 	.alpha_id_usr_cfm = "Set up call Icon 3.1.1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.icon_id_usr_cfm = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
@@ -7691,7 +7691,7 @@ static struct setup_call_test setup_call_data_321 = {
 	.alpha_id_usr_cfm = "Set up call Icon 3.2.1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.icon_id_usr_cfm = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
@@ -7706,7 +7706,7 @@ static struct setup_call_test setup_call_data_331 = {
 	.alpha_id_usr_cfm = "Set up call Icon 3.3.1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.icon_id_usr_cfm = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
@@ -7721,7 +7721,7 @@ static struct setup_call_test setup_call_data_341 = {
 	.alpha_id_usr_cfm = "Set up call Icon 3.4.1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.icon_id_usr_cfm = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
@@ -7741,7 +7741,7 @@ static struct setup_call_test setup_call_data_411 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -7761,7 +7761,7 @@ static struct setup_call_test setup_call_data_412 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2"
 };
@@ -7773,7 +7773,7 @@ static struct setup_call_test setup_call_data_421 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -7793,7 +7793,7 @@ static struct setup_call_test setup_call_data_422 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2"
 };
@@ -7805,7 +7805,7 @@ static struct setup_call_test setup_call_data_431 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -7825,7 +7825,7 @@ static struct setup_call_test setup_call_data_432 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2"
 };
@@ -7837,7 +7837,7 @@ static struct setup_call_test setup_call_data_441 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -7857,7 +7857,7 @@ static struct setup_call_test setup_call_data_442 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2",
 	.text_attr_usr_cfm = {
@@ -7877,7 +7877,7 @@ static struct setup_call_test setup_call_data_443 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 3",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 3"
 };
@@ -7889,7 +7889,7 @@ static struct setup_call_test setup_call_data_451 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -7909,7 +7909,7 @@ static struct setup_call_test setup_call_data_452 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2",
 	.text_attr_usr_cfm = {
@@ -7929,7 +7929,7 @@ static struct setup_call_test setup_call_data_453 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 3",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 3"
 };
@@ -7941,7 +7941,7 @@ static struct setup_call_test setup_call_data_461 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -7961,7 +7961,7 @@ static struct setup_call_test setup_call_data_462 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2",
 	.text_attr_usr_cfm = {
@@ -7981,7 +7981,7 @@ static struct setup_call_test setup_call_data_463 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 3",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 3"
 };
@@ -7993,7 +7993,7 @@ static struct setup_call_test setup_call_data_471 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -8013,7 +8013,7 @@ static struct setup_call_test setup_call_data_472 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2",
 	.text_attr_usr_cfm = {
@@ -8033,7 +8033,7 @@ static struct setup_call_test setup_call_data_473 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 3",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 3"
 };
@@ -8045,7 +8045,7 @@ static struct setup_call_test setup_call_data_481 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -8065,7 +8065,7 @@ static struct setup_call_test setup_call_data_482 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2",
 	.text_attr_usr_cfm = {
@@ -8085,7 +8085,7 @@ static struct setup_call_test setup_call_data_483 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 3",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 3"
 };
@@ -8097,7 +8097,7 @@ static struct setup_call_test setup_call_data_491 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -8117,7 +8117,7 @@ static struct setup_call_test setup_call_data_492 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2",
 	.text_attr_usr_cfm = {
@@ -8137,7 +8137,7 @@ static struct setup_call_test setup_call_data_493 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 3",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 3"
 };
@@ -8149,7 +8149,7 @@ static struct setup_call_test setup_call_data_4101 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 1",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 1",
 	.text_attr_usr_cfm = {
@@ -8169,7 +8169,7 @@ static struct setup_call_test setup_call_data_4102 = {
 	.alpha_id_usr_cfm = "CONFIRMATION 2",
 	.addr = {
 		.ton_npi = 0x91,
-		.number = "012340123456a1a2"
+		.number = "012340123456c1c2"
 	},
 	.alpha_id_call_setup = "CALL 2"
 };
@@ -11115,7 +11115,7 @@ static struct send_dtmf_test send_dtmf_data_111 = {
 	.pdu = send_dtmf_111,
 	.pdu_len = sizeof(send_dtmf_111),
 	.qualifier = 0x00,
-	.dtmf = "1a2"
+	.dtmf = "1c2"
 };
 
 static struct send_dtmf_test send_dtmf_data_121 = {
@@ -11130,7 +11130,7 @@ static struct send_dtmf_test send_dtmf_data_131 = {
 	.pdu = send_dtmf_131,
 	.pdu_len = sizeof(send_dtmf_131),
 	.qualifier = 0x00,
-	.dtmf = "1aaaaaaaaaa2"
+	.dtmf = "1cccccccccc2"
 };
 
 static struct send_dtmf_test send_dtmf_data_211 = {
@@ -11138,7 +11138,7 @@ static struct send_dtmf_test send_dtmf_data_211 = {
 	.pdu_len = sizeof(send_dtmf_211),
 	.qualifier = 0x00,
 	.alpha_id = "Basic Icon",
-	.dtmf = "1a2",
+	.dtmf = "1c2",
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
 		.id = 0x01
@@ -11150,7 +11150,7 @@ static struct send_dtmf_test send_dtmf_data_221 = {
 	.pdu_len = sizeof(send_dtmf_221),
 	.qualifier = 0x00,
 	.alpha_id = "Colour Icon",
-	.dtmf = "1a2",
+	.dtmf = "1c2",
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_SELF_EXPLANATORY,
 		.id = 0x02
@@ -11162,7 +11162,7 @@ static struct send_dtmf_test send_dtmf_data_231 = {
 	.pdu_len = sizeof(send_dtmf_231),
 	.qualifier = 0x00,
 	.alpha_id = "Send DTMF",
-	.dtmf = "1a2",
+	.dtmf = "1c2",
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
 		.id = 0x01
@@ -11174,7 +11174,7 @@ static struct send_dtmf_test send_dtmf_data_311 = {
 	.pdu_len = sizeof(send_dtmf_311),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.dtmf = "1a2"
+	.dtmf = "1c2"
 };
 
 static struct send_dtmf_test send_dtmf_data_411 = {
@@ -11454,7 +11454,7 @@ static struct send_dtmf_test send_dtmf_data_511 = {
 	.pdu_len = sizeof(send_dtmf_511),
 	.qualifier = 0x00,
 	.alpha_id = "你好",
-	.dtmf = "1a2"
+	.dtmf = "1c2"
 };
 
 static struct send_dtmf_test send_dtmf_data_611 = {
@@ -11462,7 +11462,7 @@ static struct send_dtmf_test send_dtmf_data_611 = {
 	.pdu_len = sizeof(send_dtmf_611),
 	.qualifier = 0x00,
 	.alpha_id = "ル",
-	.dtmf = "1a2"
+	.dtmf = "1c2"
 };
 
 static void test_send_dtmf(gconstpointer data)
