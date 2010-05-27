@@ -330,7 +330,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	if (sim->service_numbers && sim->sdn_ready) {
 		service_numbers = get_service_numbers(sim->service_numbers);
 
-		ofono_dbus_dict_append_dict(&dict, "ServiceDiallingNumbers",
+		ofono_dbus_dict_append_dict(&dict, "ServiceNumbers",
 						DBUS_TYPE_STRING,
 						&service_numbers);
 		g_strfreev(service_numbers);
@@ -967,7 +967,7 @@ check:
 
 		ofono_dbus_signal_dict_property_changed(conn, path,
 						OFONO_SIM_MANAGER_INTERFACE,
-						"ServiceDiallingNumbers",
+						"ServiceNumbers",
 						DBUS_TYPE_STRING,
 						&service_numbers);
 		g_strfreev(service_numbers);
