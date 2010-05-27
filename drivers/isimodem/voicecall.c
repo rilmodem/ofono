@@ -65,7 +65,7 @@ struct isi_voicecall {
 /* ------------------------------------------------------------------------- */
 
 static void isi_call_notify(struct ofono_voicecall *ovc,
-			    struct isi_call *call);
+				struct isi_call *call);
 static void isi_call_release(struct ofono_voicecall *, struct isi_call *);
 static struct ofono_call isi_call_as_ofono_call(struct isi_call const *);
 static int isi_call_status_to_clcc(struct isi_call const *call);
@@ -106,11 +106,10 @@ struct isi_call_req_context {
 
 static struct isi_call_req_context *
 isi_call_req(struct ofono_voicecall *ovc,
-	     void const *restrict req,
-	     size_t len,
-	     GIsiResponse *handler,
-	     ofono_voicecall_cb_t cb,
-	     void *data)
+		void const *restrict req,
+		size_t len,
+		GIsiResponse *handler,
+		ofono_voicecall_cb_t cb, void *data)
 {
 	struct isi_voicecall *ivc;
 	struct isi_call_req_context *irc;
@@ -125,7 +124,7 @@ isi_call_req(struct ofono_voicecall *ovc,
 		irc->data = data;
 
 		if (g_isi_request_make(ivc->client, req, len,
-				       ISI_CALL_TIMEOUT, handler, irc))
+					ISI_CALL_TIMEOUT, handler, irc))
 			return irc;
 	}
 
@@ -138,7 +137,7 @@ isi_call_req(struct ofono_voicecall *ovc,
 }
 
 static void isi_ctx_queue(struct isi_call_req_context *irc,
-			  isi_call_req_step *next)
+				isi_call_req_step *next)
 {
 	if (irc->prev == NULL) {
 		struct isi_voicecall *ivc = ofono_voicecall_get_data(irc->ovc);
@@ -211,17 +210,17 @@ static gboolean isi_ctx_return_success(struct isi_call_req_context *irc)
 /* Decoding subblocks */
 
 static void isi_call_any_address_sb_proc(struct isi_voicecall *ivc,
-					 struct isi_call *call,
-					 GIsiSubBlockIter const *sb)
+						struct isi_call *call,
+						GIsiSubBlockIter const *sb)
 {
 	uint8_t addr_type, presentation, addr_len;
 	char *address;
 
 	if (!g_isi_sb_iter_get_byte(sb, &addr_type, 2) ||
-	    !g_isi_sb_iter_get_byte(sb, &presentation, 3) ||
-	    /* fillerbyte */
-	    !g_isi_sb_iter_get_byte(sb, &addr_len, 5) ||
-	    !g_isi_sb_iter_get_alpha_tag(sb, &address, 2 * addr_len, 6))
+		!g_isi_sb_iter_get_byte(sb, &presentation, 3) ||
+		/* fillerbyte */
+		!g_isi_sb_iter_get_byte(sb, &addr_len, 5) ||
+		!g_isi_sb_iter_get_alpha_tag(sb, &address, 2 * addr_len, 6))
 		return;
 
 	call->addr_type = addr_type | 0x80;
@@ -232,29 +231,29 @@ static void isi_call_any_address_sb_proc(struct isi_voicecall *ivc,
 }
 
 static void isi_call_origin_address_sb_proc(struct isi_voicecall *ivc,
-					    struct isi_call *call,
-					    GIsiSubBlockIter const *sb)
+						struct isi_call *call,
+						GIsiSubBlockIter const *sb)
 {
 	if (!call->address[0])
 		isi_call_any_address_sb_proc(ivc, call, sb);
 }
 
 static void isi_call_destination_address_sb_proc(struct isi_voicecall *ivc,
-						 struct isi_call *call,
-						 GIsiSubBlockIter const *sb)
+						struct isi_call *call,
+						GIsiSubBlockIter const *sb)
 {
 	if (!call->address[0])
 		isi_call_any_address_sb_proc(ivc, call, sb);
 }
 
 static void isi_call_mode_sb_proc(struct isi_voicecall *ivc,
-				  struct isi_call *call,
-				  GIsiSubBlockIter const *sb)
+					struct isi_call *call,
+					GIsiSubBlockIter const *sb)
 {
 	uint8_t mode, mode_info;
 
 	if (!g_isi_sb_iter_get_byte(sb, &mode, 2) ||
-	    !g_isi_sb_iter_get_byte(sb, &mode_info, 3))
+			!g_isi_sb_iter_get_byte(sb, &mode_info, 3))
 		return;
 
 	call->mode = mode;
@@ -262,13 +261,13 @@ static void isi_call_mode_sb_proc(struct isi_voicecall *ivc,
 }
 
 static void isi_call_cause_sb_proc(struct isi_voicecall *ivc,
-				   struct isi_call *call,
-				   GIsiSubBlockIter const *sb)
+					struct isi_call *call,
+					GIsiSubBlockIter const *sb)
 {
 	uint8_t cause_type, cause;
 
 	if (!g_isi_sb_iter_get_byte(sb, &cause_type, 2) ||
-	    !g_isi_sb_iter_get_byte(sb, &cause, 3))
+			!g_isi_sb_iter_get_byte(sb, &cause, 3))
 		return;
 
 	call->cause_type = cause_type;
@@ -276,8 +275,8 @@ static void isi_call_cause_sb_proc(struct isi_voicecall *ivc,
 }
 
 static void isi_call_status_sb_proc(struct isi_voicecall *ivc,
-				    struct isi_call *call,
-				    GIsiSubBlockIter const *sb)
+					struct isi_call *call,
+					GIsiSubBlockIter const *sb)
 {
 	uint8_t status;
 
@@ -289,7 +288,7 @@ static void isi_call_status_sb_proc(struct isi_voicecall *ivc,
 
 static struct isi_call *
 isi_call_status_info_sb_proc(struct isi_voicecall *ivc,
-			     GIsiSubBlockIter const *sb)
+				GIsiSubBlockIter const *sb)
 {
 	struct isi_call *call = NULL;
 	int i;
@@ -299,9 +298,9 @@ isi_call_status_info_sb_proc(struct isi_voicecall *ivc,
 	uint8_t status;
 
 	if (!g_isi_sb_iter_get_byte(sb, &call_id, 2) ||
-	    !g_isi_sb_iter_get_byte(sb, &mode, 3) ||
-	    !g_isi_sb_iter_get_byte(sb, &mode_info, 4) ||
-	    !g_isi_sb_iter_get_byte(sb, &status, 5))
+			!g_isi_sb_iter_get_byte(sb, &mode, 3) ||
+			!g_isi_sb_iter_get_byte(sb, &mode_info, 4) ||
+			!g_isi_sb_iter_get_byte(sb, &status, 5))
 		return NULL;
 
 	i = call_id & 7;
@@ -319,7 +318,7 @@ isi_call_status_info_sb_proc(struct isi_voicecall *ivc,
 
 static struct isi_call *
 isi_call_addr_and_status_info_sb_proc(struct isi_voicecall *ivc,
-				      GIsiSubBlockIter const *sb)
+					GIsiSubBlockIter const *sb)
 {
 	struct isi_call *call = NULL;
 	int i;
@@ -333,13 +332,13 @@ isi_call_addr_and_status_info_sb_proc(struct isi_voicecall *ivc,
 	char *address;
 
 	if (!g_isi_sb_iter_get_byte(sb, &call_id, 2) ||
-	    !g_isi_sb_iter_get_byte(sb, &mode, 3) ||
-	    !g_isi_sb_iter_get_byte(sb, &mode_info, 4) ||
-	    !g_isi_sb_iter_get_byte(sb, &status, 5) ||
-	    !g_isi_sb_iter_get_byte(sb, &addr_type, 8) ||
-	    !g_isi_sb_iter_get_byte(sb, &presentation, 9) ||
-	    !g_isi_sb_iter_get_byte(sb, &addr_len, 11) ||
-	    !g_isi_sb_iter_get_alpha_tag(sb, &address, 2 * addr_len, 12))
+		!g_isi_sb_iter_get_byte(sb, &mode, 3) ||
+		!g_isi_sb_iter_get_byte(sb, &mode_info, 4) ||
+		!g_isi_sb_iter_get_byte(sb, &status, 5) ||
+		!g_isi_sb_iter_get_byte(sb, &addr_type, 8) ||
+		!g_isi_sb_iter_get_byte(sb, &presentation, 9) ||
+		!g_isi_sb_iter_get_byte(sb, &addr_len, 11) ||
+		!g_isi_sb_iter_get_alpha_tag(sb, &address, 2 * addr_len, 12))
 		return NULL;
 
 	i = call_id & 7;
@@ -372,11 +371,11 @@ static GIsiResponse isi_call_status_resp,
 
 static struct isi_call_req_context *
 isi_call_create_req(struct ofono_voicecall *ovc,
-		    uint8_t presentation,
-		    uint8_t addr_type,
-		    char const address[21],
-		    ofono_voicecall_cb_t cb,
-		    void *data)
+			uint8_t presentation,
+			uint8_t addr_type,
+			char const address[21],
+			ofono_voicecall_cb_t cb,
+			void *data)
 {
 	size_t addr_len = strlen(address);
 	size_t sub_len = (6 + 2 * addr_len + 3) & ~3;
@@ -435,10 +434,10 @@ static gboolean isi_call_create_resp(GIsiClient *client,
 }
 
 static void isi_call_status_ind_cb(GIsiClient *client,
-				   void const *restrict data,
-				   size_t len,
-				   uint16_t object,
-				   void *_ovc)
+					void const *restrict data,
+					size_t len,
+					uint16_t object,
+					void *_ovc)
 {
 	struct ofono_voicecall *ovc = _ovc;
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
@@ -461,8 +460,8 @@ static void isi_call_status_ind_cb(GIsiClient *client,
 	call->call_id = m->call_id;
 
 	for (g_isi_sb_iter_init(sb, data, len, (sizeof *m));
-	     g_isi_sb_iter_is_valid(sb);
-	     g_isi_sb_iter_next(sb)) {
+			g_isi_sb_iter_is_valid(sb);
+				g_isi_sb_iter_next(sb)) {
 		switch (g_isi_sb_iter_get_id(sb)) {
 		case CALL_STATUS:
 			isi_call_status_sb_proc(ivc, call, sb);
@@ -508,9 +507,7 @@ static void isi_call_status_ind_cb(GIsiClient *client,
 
 static struct isi_call_req_context *
 isi_call_answer_req(struct ofono_voicecall *ovc,
-		    uint8_t call_id,
-		    ofono_voicecall_cb_t cb,
-		    void *data)
+			uint8_t call_id, ofono_voicecall_cb_t cb, void *data)
 {
 	uint8_t const req[] = {
 		CALL_ANSWER_REQ, call_id, 0
@@ -546,11 +543,8 @@ static gboolean isi_call_answer_resp(GIsiClient *client,
 
 static struct isi_call_req_context *
 isi_call_release_req(struct ofono_voicecall *ovc,
-		     uint8_t call_id,
-		     enum call_cause_type cause_type,
-		     uint8_t cause,
-		     ofono_voicecall_cb_t cb,
-		     void *data)
+			uint8_t call_id, enum call_cause_type cause_type,
+			uint8_t cause, ofono_voicecall_cb_t cb, void *data)
 {
 	uint8_t const req[] = {
 		CALL_RELEASE_REQ, call_id, 1,
@@ -581,18 +575,18 @@ static gboolean isi_call_release_resp(GIsiClient *client,
 		return FALSE;
 
 	for (g_isi_sb_iter_init(i, m, len, (sizeof *m));
-	     g_isi_sb_iter_is_valid(i);
-	     g_isi_sb_iter_next(i)) {
+			g_isi_sb_iter_is_valid(i);
+				g_isi_sb_iter_next(i)) {
 		if (g_isi_sb_iter_get_id(i) != CALL_CAUSE ||
-		    !g_isi_sb_iter_get_byte(i, &cause_type, 2) ||
-		    !g_isi_sb_iter_get_byte(i, &cause, 3))
+				!g_isi_sb_iter_get_byte(i, &cause_type, 2) ||
+				!g_isi_sb_iter_get_byte(i, &cause, 3))
 			continue;
 	}
 
 	if ((cause_type == CALL_CAUSE_TYPE_SERVER ||
-	     cause_type == CALL_CAUSE_TYPE_CLIENT) &&
-	    (cause == CALL_CAUSE_RELEASE_BY_USER ||
-	     cause == CALL_CAUSE_BUSY_USER_REQUEST))
+			cause_type == CALL_CAUSE_TYPE_CLIENT) &&
+			(cause == CALL_CAUSE_RELEASE_BY_USER ||
+			cause == CALL_CAUSE_BUSY_USER_REQUEST))
 		return isi_ctx_return_success(irc);
 	else
 		return isi_ctx_return_failure(irc);
@@ -600,10 +594,8 @@ static gboolean isi_call_release_resp(GIsiClient *client,
 
 static struct isi_call_req_context *
 isi_call_status_req(struct ofono_voicecall *ovc,
-		    uint8_t id,
-		    uint8_t mode,
-		    ofono_voicecall_cb_t cb,
-		    void *data)
+			uint8_t id, uint8_t mode,
+			ofono_voicecall_cb_t cb, void *data)
 {
 	unsigned char req[] = {
 		CALL_STATUS_REQ, id, 1,
@@ -638,8 +630,8 @@ static gboolean isi_call_status_resp(GIsiClient *client,
 		return FALSE;
 
 	for (g_isi_sb_iter_init(sb, m, len, (sizeof *m));
-	     g_isi_sb_iter_is_valid(sb);
-	     g_isi_sb_iter_next(sb)) {
+			g_isi_sb_iter_is_valid(sb);
+				g_isi_sb_iter_next(sb)) {
 		switch (g_isi_sb_iter_get_id(sb)) {
 
 		case CALL_STATUS_INFO:
@@ -664,11 +656,8 @@ static gboolean isi_call_status_resp(GIsiClient *client,
 
 static struct isi_call_req_context *
 isi_call_control_req(struct ofono_voicecall *ovc,
-		     uint8_t call_id,
-		     enum call_operation op,
-		     uint8_t info,
-		     ofono_voicecall_cb_t cb,
-		     void *data)
+			uint8_t call_id, enum call_operation op, uint8_t info,
+			ofono_voicecall_cb_t cb, void *data)
 {
 	uint8_t const req[] = {
 		CALL_CONTROL_REQ, call_id, 1,
@@ -681,11 +670,9 @@ isi_call_control_req(struct ofono_voicecall *ovc,
 
 static struct isi_call_req_context *
 isi_call_deflect_req(struct ofono_voicecall *ovc,
-		     uint8_t call_id,
-		     uint8_t address_type,
-		     char const address[21],
-		     ofono_voicecall_cb_t cb,
-		     void *data)
+			uint8_t call_id, uint8_t address_type,
+			char const address[21],
+			ofono_voicecall_cb_t cb, void *data)
 {
 	size_t addr_len = strlen(address);
 	size_t sub_len = (6 + 2 * addr_len + 3) & ~3;
@@ -696,7 +683,7 @@ isi_call_deflect_req(struct ofono_voicecall *ovc,
 		CALL_OPERATION, 4, CALL_GSM_OP_DEFLECT, 0,
 		CALL_GSM_DEFLECTION_ADDRESS, sub_len,
 		address_type & 0x7F,
-		0x7, 		/* default presentation */
+		0x7,		/* default presentation */
 		0,		/* filler */
 		addr_len,
 	};
@@ -732,11 +719,11 @@ static gboolean isi_call_control_resp(GIsiClient *client,
 		return FALSE;
 
 	for (g_isi_sb_iter_init(i, m, len, (sizeof *m));
-	     g_isi_sb_iter_is_valid(i);
-	     g_isi_sb_iter_next(i)) {
+			g_isi_sb_iter_is_valid(i);
+				g_isi_sb_iter_next(i)) {
 		if (g_isi_sb_iter_get_id(i) != CALL_CAUSE ||
-		    !g_isi_sb_iter_get_byte(i, &cause_type, 2) ||
-		    !g_isi_sb_iter_get_byte(i, &cause, 3))
+				!g_isi_sb_iter_get_byte(i, &cause_type, 2) ||
+				!g_isi_sb_iter_get_byte(i, &cause, 3))
 			continue;
 	}
 
@@ -748,10 +735,8 @@ static gboolean isi_call_control_resp(GIsiClient *client,
 
 static struct isi_call_req_context *
 isi_call_dtmf_send_req(struct ofono_voicecall *ovc,
-		       uint8_t call_id,
-		       char const *string,
-		       ofono_voicecall_cb_t cb,
-		       void *data)
+			uint8_t call_id, char const *string,
+			ofono_voicecall_cb_t cb, void *data)
 {
 	size_t str_len = strlen(string);
 	size_t sub_len = 4 + ((2 * str_len + 3) & ~3);
@@ -804,11 +789,11 @@ static gboolean isi_call_dtmf_send_resp(GIsiClient *client,
 		return isi_ctx_return_success(irc);
 
 	for (g_isi_sb_iter_init(i, m, len, (sizeof *m));
-	     g_isi_sb_iter_is_valid(i);
-	     g_isi_sb_iter_next(i)) {
+			g_isi_sb_iter_is_valid(i);
+				g_isi_sb_iter_next(i)) {
 		if (g_isi_sb_iter_get_id(i) != CALL_CAUSE ||
-		    !g_isi_sb_iter_get_byte(i, &cause_type, 2) ||
-		    !g_isi_sb_iter_get_byte(i, &cause, 3))
+				!g_isi_sb_iter_get_byte(i, &cause_type, 2) ||
+				!g_isi_sb_iter_get_byte(i, &cause, 3))
 			continue;
 	}
 
@@ -823,14 +808,14 @@ static gboolean isi_call_dtmf_send_resp(GIsiClient *client,
 /* Notify */
 
 static void isi_call_notify(struct ofono_voicecall *ovc,
-			    struct isi_call *call)
+				struct isi_call *call)
 {
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
 	struct isi_call_req_context *irc, **queue;
 	struct ofono_call ocall;
 
 	DBG("called with status=%s (0x%02X)",
-	    call_status_name(call->status), call->status);
+		call_status_name(call->status), call->status);
 
 	for (queue = &ivc->queue; (irc = *queue);) {
 		irc->step(irc, call->status);
@@ -850,18 +835,18 @@ static void isi_call_notify(struct ofono_voicecall *ovc,
 	ocall = isi_call_as_ofono_call(call);
 
 	DBG("id=%u,%s,%u,\"%s\",%u,%u",
-	    ocall.id,
-	    ocall.direction ? "terminated" : "originated",
-	    ocall.status,
-	    ocall.phone_number.number,
-	    ocall.phone_number.type,
-	    ocall.clip_validity);
+		ocall.id,
+		ocall.direction ? "terminated" : "originated",
+		ocall.status,
+		ocall.phone_number.number,
+		ocall.phone_number.type,
+		ocall.clip_validity);
 
 	ofono_voicecall_notify(ovc, &ocall);
 }
 
 static void isi_call_release(struct ofono_voicecall *ovc,
-			     struct isi_call *call)
+				struct isi_call *call)
 {
 	struct ofono_error error = { OFONO_ERROR_TYPE_NO_ERROR, 0 };
 	enum ofono_disconnect_reason reason;
@@ -892,8 +877,7 @@ static void isi_call_release(struct ofono_voicecall *ovc,
 		isi_call_set_idle(call);
 }
 
-static struct ofono_call
-isi_call_as_ofono_call(struct isi_call const *call)
+static struct ofono_call isi_call_as_ofono_call(struct isi_call const *call)
 {
 	struct ofono_call ocall = { call->id };
 	struct ofono_phone_number *number = &ocall.phone_number;
@@ -911,8 +895,7 @@ isi_call_as_ofono_call(struct isi_call const *call)
 }
 
 /** Get +CLCC status */
-static int
-isi_call_status_to_clcc(struct isi_call const *call)
+static int isi_call_status_to_clcc(struct isi_call const *call)
 {
 	switch (call->status) {
 	case CALL_STATUS_CREATE:
@@ -967,11 +950,10 @@ static struct isi_call *isi_call_set_idle(struct isi_call *call)
 /* ---------------------------------------------------------------------- */
 
 static void isi_dial(struct ofono_voicecall *ovc,
-		     const struct ofono_phone_number *restrict number,
-		     enum ofono_clir_option clir,
-		     enum ofono_cug_option cug,
-		     ofono_voicecall_cb_t cb,
-		     void *data)
+			const struct ofono_phone_number *restrict number,
+			enum ofono_clir_option clir,
+			enum ofono_cug_option cug,
+			ofono_voicecall_cb_t cb, void *data)
 {
 	unsigned char presentation = CALL_GSM_PRESENTATION_DEFAULT;
 
@@ -996,14 +978,12 @@ static void isi_dial(struct ofono_voicecall *ovc,
 		return;
 	}
 
-	isi_call_create_req(ovc, presentation,
-			    number->type,
-			    number->number,
-			    cb, data);
+	isi_call_create_req(ovc, presentation, number->type, number->number,
+				cb, data);
 }
 
 static void isi_answer(struct ofono_voicecall *ovc,
-		       ofono_voicecall_cb_t cb, void *data)
+			ofono_voicecall_cb_t cb, void *data)
 {
 	isi_call_answer_req(ovc, CALL_ID_ALL, cb, data);
 }
@@ -1012,24 +992,20 @@ static void isi_hangup(struct ofono_voicecall *ovc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHUP */
-	isi_call_release_req(ovc, CALL_ID_ALL,
-			     CALL_CAUSE_TYPE_CLIENT,
-			     CALL_CAUSE_RELEASE_BY_USER,
-			     cb, data);
+	isi_call_release_req(ovc, CALL_ID_ALL, CALL_CAUSE_TYPE_CLIENT,
+				CALL_CAUSE_RELEASE_BY_USER, cb, data);
 }
 
 static void isi_release_all_held(struct ofono_voicecall *ovc,
-			ofono_voicecall_cb_t cb, void *data)
+				ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=0 (w/out incoming calls) */
-	isi_call_release_req(ovc, CALL_ID_HOLD,
-			     CALL_CAUSE_TYPE_CLIENT,
-			     CALL_CAUSE_RELEASE_BY_USER,
-			     cb, data);
+	isi_call_release_req(ovc, CALL_ID_HOLD, CALL_CAUSE_TYPE_CLIENT,
+				CALL_CAUSE_RELEASE_BY_USER, cb, data);
 }
 
 static void isi_set_udub(struct ofono_voicecall *ovc,
-			ofono_voicecall_cb_t cb, void *data)
+				ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=0 (w/ incoming calls) */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
@@ -1045,25 +1021,23 @@ static void isi_set_udub(struct ofono_voicecall *ovc,
 	}
 
 	if (id <= 7)
-		isi_call_release_req(ovc, id,
-				     CALL_CAUSE_TYPE_CLIENT,
-				     CALL_CAUSE_BUSY_USER_REQUEST,
-				     cb, data);
+		isi_call_release_req(ovc, id, CALL_CAUSE_TYPE_CLIENT,
+					CALL_CAUSE_BUSY_USER_REQUEST,
+					cb, data);
 	else
 		CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void isi_retrieve(struct ofono_voicecall *ovc,
-		       ofono_voicecall_cb_t cb, void *data)
+				ofono_voicecall_cb_t cb, void *data)
 {
-	isi_call_control_req(ovc, CALL_ID_HOLD, CALL_OP_RETRIEVE, 0,
-			     cb, data);
+	isi_call_control_req(ovc, CALL_ID_HOLD, CALL_OP_RETRIEVE, 0, cb, data);
 }
 
 static isi_call_req_step isi_wait_and_answer, isi_wait_and_retrieve;
 
 static void isi_release_all_active(struct ofono_voicecall *ovc,
-				   ofono_voicecall_cb_t cb, void *data)
+					ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=1 */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
@@ -1082,9 +1056,9 @@ static void isi_release_all_active(struct ofono_voicecall *ovc,
 		struct isi_call_req_context *irc;
 
 		irc = isi_call_release_req(ovc, CALL_ID_ACTIVE,
-					   CALL_CAUSE_TYPE_CLIENT,
-					   CALL_CAUSE_RELEASE_BY_USER,
-					   cb, data);
+						CALL_CAUSE_TYPE_CLIENT,
+						CALL_CAUSE_RELEASE_BY_USER,
+						cb, data);
 
 		if (irc == NULL)
 			;
@@ -1109,7 +1083,7 @@ static void isi_wait_and_answer(struct isi_call_req_context *irc,
 }
 
 static void isi_wait_and_retrieve(struct isi_call_req_context *irc,
-				int event)
+					int event)
 {
 	DBG("irc=%p event=%u", (void *)irc, event);
 	switch (event) {
@@ -1121,7 +1095,7 @@ static void isi_wait_and_retrieve(struct isi_call_req_context *irc,
 }
 
 static void isi_hold_all_active(struct ofono_voicecall *ovc,
-			ofono_voicecall_cb_t cb, void *data)
+					ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=2 */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
@@ -1156,7 +1130,7 @@ static void isi_hold_all_active(struct ofono_voicecall *ovc,
 }
 
 static void isi_release_specific(struct ofono_voicecall *ovc, int id,
-			ofono_voicecall_cb_t cb, void *data)
+					ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=1X */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
@@ -1177,31 +1151,29 @@ static void isi_release_specific(struct ofono_voicecall *ovc, int id,
 		}
 
 		isi_call_release_req(ovc, id,
-				     CALL_CAUSE_TYPE_CLIENT, cause,
-				     cb, data);
+					CALL_CAUSE_TYPE_CLIENT, cause,
+					cb, data);
 	} else
 		CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void isi_private_chat(struct ofono_voicecall *ovc, int id,
-			     ofono_voicecall_cb_t cb, void *data)
+				ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=2X */
 	if (1 <= id && id <= 7)
-		isi_call_control_req(ovc,
-				     id, CALL_OP_CONFERENCE_SPLIT, 0,
-				     cb, data);
+		isi_call_control_req(ovc, id, CALL_OP_CONFERENCE_SPLIT, 0,
+					cb, data);
 	else
 		CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void isi_create_multiparty(struct ofono_voicecall *ovc,
-				  ofono_voicecall_cb_t cb, void *data)
+					ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=3 */
-	isi_call_control_req(ovc,
-			     CALL_ID_ALL, CALL_OP_CONFERENCE_BUILD, 0,
-			     cb, data);
+	isi_call_control_req(ovc, CALL_ID_ALL, CALL_OP_CONFERENCE_BUILD, 0,
+				cb, data);
 }
 
 static void isi_transfer(struct ofono_voicecall *ovc,
@@ -1218,9 +1190,7 @@ static void isi_transfer(struct ofono_voicecall *ovc,
 	if (id > 7)
 		id = CALL_ID_ACTIVE;
 
-	isi_call_control_req(ovc,
-			     id, CALL_GSM_OP_TRANSFER, 0,
-			     cb, data);
+	isi_call_control_req(ovc, id, CALL_GSM_OP_TRANSFER, 0, cb, data);
 }
 
 static void isi_deflect(struct ofono_voicecall *ovc,
@@ -1229,8 +1199,7 @@ static void isi_deflect(struct ofono_voicecall *ovc,
 {
 	/* AT+CTFR=<number>,<type> */
 	int id = CALL_ID_WAITING;
-	isi_call_deflect_req(ovc, id, ph->type, ph->number,
-			     cb, data);
+	isi_call_deflect_req(ovc, id, ph->type, ph->number, cb, data);
 }
 
 static void isi_swap_without_accept(struct ofono_voicecall *ovc,
@@ -1261,14 +1230,13 @@ static void isi_swap_without_accept(struct ofono_voicecall *ovc,
 }
 
 static void isi_send_tones(struct ofono_voicecall *ovc, const char *tones,
-			   ofono_voicecall_cb_t cb, void *data)
+				ofono_voicecall_cb_t cb, void *data)
 {
 	isi_call_dtmf_send_req(ovc, CALL_ID_ALL, tones, cb, data);;
 }
 
 static int isi_voicecall_probe(struct ofono_voicecall *ovc,
-			       unsigned int vendor,
-			       void *user)
+				unsigned int vendor, void *user)
 {
 	GIsiModem *idx = user;
 	struct isi_voicecall *ivc = g_try_new0(struct isi_voicecall, 1);
@@ -1295,8 +1263,7 @@ static int isi_voicecall_probe(struct ofono_voicecall *ovc,
 }
 
 static void isi_call_verify_cb(GIsiClient *client,
-			       gboolean alive, uint16_t object,
-			       void *ovc)
+				gboolean alive, uint16_t object, void *ovc)
 {
 	if (!alive) {
 		DBG("Unable to bootstrap voice call driver");
@@ -1325,10 +1292,9 @@ static gboolean isi_call_register(gpointer _ovc)
 			CALL_STATUS_IND, isi_call_status_ind_cb,
 			ovc);
 
-	if (!isi_call_status_req(ovc,
-				 CALL_ID_ALL,
-				 CALL_STATUS_MODE_ADDR_AND_ORIGIN,
-				 NULL, NULL))
+	if (!isi_call_status_req(ovc, CALL_ID_ALL,
+					CALL_STATUS_MODE_ADDR_AND_ORIGIN,
+					NULL, NULL))
 		DBG("Failed to request call status");
 
 	ofono_voicecall_register(ovc);
