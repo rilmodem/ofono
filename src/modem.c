@@ -1095,7 +1095,7 @@ static int set_modem_property(struct ofono_modem *modem, const char *name,
 		property->value = g_memdup(value, sizeof(int));
 		break;
 	case PROPERTY_TYPE_BOOLEAN:
-		property->value = g_memdup(value, sizeof(bool));
+		property->value = g_memdup(value, sizeof(ofono_bool_t));
 		break;
 	default:
 		break;
@@ -1130,7 +1130,7 @@ static gboolean get_modem_property(struct ofono_modem *modem, const char *name,
 		memcpy(value, property->value, sizeof(int));
 		return TRUE;
 	case PROPERTY_TYPE_BOOLEAN:
-		memcpy(value, property->value, sizeof(bool));
+		memcpy(value, property->value, sizeof(ofono_bool_t));
 		return TRUE;
 	default:
 		return FALSE;
@@ -1150,7 +1150,7 @@ int ofono_modem_set_integer(struct ofono_modem *modem,
 }
 
 int ofono_modem_set_boolean(struct ofono_modem *modem,
-				const char *key, bool value)
+				const char *key, ofono_bool_t value)
 {
 	return set_modem_property(modem, key, PROPERTY_TYPE_BOOLEAN, &value);
 }
@@ -1177,9 +1177,9 @@ int ofono_modem_get_integer(struct ofono_modem *modem, const char *key)
 	return value;
 }
 
-bool ofono_modem_get_boolean(struct ofono_modem *modem, const char *key)
+ofono_bool_t ofono_modem_get_boolean(struct ofono_modem *modem, const char *key)
 {
-	bool value;
+	ofono_bool_t value;
 
 	if (get_modem_property(modem, key,
 				PROPERTY_TYPE_BOOLEAN, &value) == FALSE)
