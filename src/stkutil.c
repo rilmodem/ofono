@@ -4084,6 +4084,8 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					response->run_at_command.at_response,
 					NULL);
 		break;
+	case STK_COMMAND_TYPE_SEND_DTMF:
+		break;
 	default:
 		return 0;
 	};
