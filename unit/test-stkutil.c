@@ -17624,6 +17624,68 @@ static const struct terminal_response_test run_at_command_response_data_251 = {
 	},
 };
 
+static const unsigned char send_dtmf_response_111[] = {
+	0x81, 0x03, 0x01, 0x14, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test send_dtmf_response_data_111 = {
+	.pdu = send_dtmf_response_111,
+	.pdu_len = sizeof(send_dtmf_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SEND_DTMF,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char send_dtmf_response_141[] = {
+	0x81, 0x03, 0x01, 0x14, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x20, 0x07,
+};
+
+static const struct terminal_response_test send_dtmf_response_data_141 = {
+	.pdu = send_dtmf_response_141,
+	.pdu_len = sizeof(send_dtmf_response_141),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SEND_DTMF,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TERMINAL_BUSY,
+			.additional_len = 1, /* Not in speech call */
+			.additional = (unsigned char[1]) { 0x07 },
+		},
+	},
+};
+
+static const unsigned char send_dtmf_response_211b[] = {
+	0x81, 0x03, 0x01, 0x14, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test send_dtmf_response_data_211b = {
+	.pdu = send_dtmf_response_211b,
+	.pdu_len = sizeof(send_dtmf_response_211b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SEND_DTMF,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -19169,6 +19231,16 @@ int main(int argc, char **argv)
 			&send_dtmf_data_511, test_send_dtmf);
 	g_test_add_data_func("/teststk/Send DTMF 6.1.1",
 			&send_dtmf_data_611, test_send_dtmf);
+
+	g_test_add_data_func("/teststk/Send DTMF response 1.1.1",
+			&send_dtmf_response_data_111,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Send DTMF response 1.4.1",
+			&send_dtmf_response_data_141,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Send DTMF response 2.1.1B",
+			&send_dtmf_response_data_211b,
+			test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Language Notification 1.1.1",
 		&language_notification_data_111, test_language_notification);
