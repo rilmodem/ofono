@@ -1165,6 +1165,7 @@ struct stk_response {
 		struct stk_response_generic set_up_idle_mode_text;
 		struct stk_response_run_at_command run_at_command;
 		struct stk_response_generic send_dtmf;
+		struct stk_response_generic language_notification;
 	};
 
 	void (*destructor)(struct stk_response *response);
