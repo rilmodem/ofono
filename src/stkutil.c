@@ -3383,6 +3383,20 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 	return stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.30 */
+static gboolean build_dataobj_cc_requested_action(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_common_byte_array *action = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CALL_CONTROL_REQUESTED_ACTION;
+
+	return action->array == NULL ||
+		(stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		 stk_tlv_builder_append_bytes(tlv,
+						action->array, action->len) &&
+		 stk_tlv_builder_close_container(tlv));
+}
+
 static gboolean build_dataobj(struct stk_tlv_builder *tlv,
 				dataobj_writer builder_func, ...)
 {
@@ -3402,6 +3416,26 @@ static gboolean build_dataobj(struct stk_tlv_builder *tlv,
 	}
 
 	return TRUE;
+}
+
+static gboolean build_set_up_call(struct stk_tlv_builder *builder,
+					const struct stk_response *response)
+{
+	if (response->set_up_call.modified_result.cc_modified)
+		return build_dataobj(builder,
+				build_dataobj_cc_requested_action,
+				DATAOBJ_FLAG_CR,
+				&response->set_up_call.cc_requested_action,
+				build_dataobj_result,
+				DATAOBJ_FLAG_CR,
+				&response->set_up_call.modified_result.result,
+				NULL);
+	else
+		return build_dataobj(builder,
+				build_dataobj_cc_requested_action,
+				DATAOBJ_FLAG_CR,
+				&response->set_up_call.cc_requested_action,
+				NULL);
 }
 
 unsigned int stk_pdu_from_response(const struct stk_response *response,
@@ -3494,6 +3528,9 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					build_dataobj_item_id, DATAOBJ_FLAG_CR,
 					&response->select_item.item_id,
 					NULL);
+		break;
+	case STK_COMMAND_TYPE_SETUP_CALL:
+		ok = build_set_up_call(&builder, response);
 		break;
 	default:
 		return 0;

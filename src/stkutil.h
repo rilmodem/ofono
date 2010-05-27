@@ -1069,6 +1069,14 @@ struct stk_response_select_item {
 	unsigned char item_id;
 };
 
+struct stk_response_set_up_call {
+	struct stk_common_byte_array cc_requested_action;
+	struct {
+		ofono_bool_t cc_modified;
+		struct stk_result result;
+	} modified_result;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1087,6 +1095,7 @@ struct stk_response {
 		struct stk_response_generic set_up_menu;
 		struct stk_response_select_item select_item;
 		struct stk_response_generic send_sms;
+		struct stk_response_set_up_call set_up_call;
 	};
 
 	void (*destructor)(struct stk_response *response);
