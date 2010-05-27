@@ -51,8 +51,9 @@ struct sms_data {
 	GIsiClient *sim;
 };
 
-static bool sca_query_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean sca_query_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -68,7 +69,7 @@ static bool sca_query_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 31 || msg[0] != SIM_SMS_RESP || msg[1] != READ_PARAMETER)
-		return false;
+		return FALSE;
 
 	if (msg[3] != SIM_SERV_OK)
 		goto error;
@@ -95,7 +96,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_sca_query(struct ofono_sms *sms,
@@ -122,8 +123,9 @@ error:
 	g_free(cbd);
 }
 
-static bool sca_set_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean sca_set_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -135,7 +137,7 @@ static bool sca_set_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != SIM_SMS_RESP || msg[1] != UPDATE_PARAMETER)
-		return false;
+		return FALSE;
 
 	if (msg[2] != SIM_SERV_OK)
 		goto error;
@@ -148,7 +150,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_sca_set(struct ofono_sms *sms,
@@ -191,8 +193,9 @@ error:
 	g_free(cbd);
 }
 
-static bool submit_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean submit_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -207,7 +210,7 @@ static bool submit_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != SMS_MESSAGE_SEND_RESP)
-		return false;
+		return FALSE;
 
 	for (g_isi_sb_iter_init(&iter, msg, len, 3);
 		g_isi_sb_iter_is_valid(&iter);
@@ -257,7 +260,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
@@ -322,8 +325,9 @@ error:
 	g_free(cbd);
 }
 
-static void send_status_ind_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static void send_status_ind_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
 
@@ -337,24 +341,25 @@ static void send_status_ind_cb(GIsiClient *client, const void *restrict data,
 	DBG("TODO: Status notification");
 }
 
-static bool report_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean report_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
-		return true;
+		return TRUE;
 	}
 
 	if (len < 3 || msg[0] != SMS_GSM_RECEIVED_PP_REPORT_RESP)
-		return false;
+		return FALSE;
 
 	DBG("Report resp cause=0x%"PRIx8, msg[1]);
-	return true;
+	return TRUE;
 }
 
-static bool send_deliver_report(GIsiClient *client, bool success)
+static gboolean send_deliver_report(GIsiClient *client, gboolean success)
 {
 	uint8_t cause_type = !success ? SMS_CAUSE_TYPE_GSM : 0;
 	uint8_t cause = !success ? SMS_GSM_ERR_MEMORY_CAPACITY_EXC : 0;
@@ -374,11 +379,12 @@ static bool send_deliver_report(GIsiClient *client, bool success)
 	};
 
 	return g_isi_request_make(client, msg, sizeof(msg), SMS_TIMEOUT,
-					report_resp_cb, NULL);
+					report_resp_cb, NULL) != NULL;
 }
 
-static void routing_ntf_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static void routing_ntf_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
 	struct ofono_sms *sms = opaque;
@@ -446,11 +452,12 @@ static void routing_ntf_cb(GIsiClient *client, const void *restrict data,
 	 * reliably stored, i.e., written to disk. Currently, there is
 	 * no such indication from core, so we just blindly trust that
 	 * it did The Right Thing here. */
-	send_deliver_report(client, true);
+	send_deliver_report(client, TRUE);
 }
 
-static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean routing_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_sms *sms = opaque;
@@ -476,17 +483,17 @@ static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
 				msg[1], sms_isi_cause_name(msg[1]));
 			ofono_sms_register(sms);
 		}
-		return true;
+		return TRUE;
 	}
 
 	g_isi_subscribe(client, SMS_PP_ROUTING_NTF, routing_ntf_cb, sms);
 
 	ofono_sms_register(sms);
-	return true;
+	return TRUE;
 
 error:
 	DBG("Unable to bootstrap SMS routing.");
-	return true;
+	return TRUE;
 }
 
 static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,

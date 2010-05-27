@@ -76,8 +76,9 @@ static int ofono_mode_to_isi_mode(enum ofono_radio_access_mode mode)
 	}
 }
 
-static bool rat_mode_read_resp_cb(GIsiClient *client, const void *restrict data,
-					size_t len, uint16_t object,
+static gboolean rat_mode_read_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object,
 					void *opaque)
 {
 	const unsigned char *msg = data;
@@ -92,7 +93,7 @@ static bool rat_mode_read_resp_cb(GIsiClient *client, const void *restrict data,
 
 	if (len < 3) {
 		DBG("truncated message");
-		return false;
+		return FALSE;
 	}
 
 	if (msg[0] == GSS_CS_SERVICE_FAIL_RESP)
@@ -130,14 +131,14 @@ static bool rat_mode_read_resp_cb(GIsiClient *client, const void *restrict data,
 		goto out;
 	}
 
-	return false;
+	return FALSE;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_query_rat_mode(struct ofono_radio_settings *rs,
@@ -165,8 +166,9 @@ error:
 	g_free(cbd);
 }
 
-static bool mode_write_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean mode_write_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -179,7 +181,7 @@ static bool mode_write_resp_cb(GIsiClient *client, const void *restrict data,
 
 	if (len < 3) {
 		DBG("truncated message");
-		return false;
+		return FALSE;
 	}
 
 	if (msg[0] == GSS_CS_SERVICE_FAIL_RESP)
@@ -190,14 +192,14 @@ static bool mode_write_resp_cb(GIsiClient *client, const void *restrict data,
 		goto out;
 	}
 
-	return false;
+	return FALSE;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_set_rat_mode(struct ofono_radio_settings *rs,
@@ -250,7 +252,7 @@ static gboolean isi_radio_settings_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_radio_settings *rs = opaque;

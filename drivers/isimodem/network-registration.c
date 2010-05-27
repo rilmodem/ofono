@@ -181,8 +181,9 @@ static gboolean decode_reg_status(struct netreg_data *nd, const guint8 *msg,
 	return TRUE;
 }
 
-static void reg_status_ind_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static void reg_status_ind_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
@@ -202,8 +203,9 @@ static void reg_status_ind_cb(GIsiClient *client, const void *restrict data,
 	}
 }
 
-static bool reg_status_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean reg_status_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -222,7 +224,7 @@ static bool reg_status_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_REG_STATUS_GET_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
@@ -241,7 +243,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_registration_status(struct ofono_netreg *netreg,
@@ -268,8 +270,9 @@ error:
 	g_free(cbd);
 }
 
-static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean name_get_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -288,7 +291,7 @@ static bool name_get_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_OPER_NAME_READ_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
@@ -339,7 +342,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 
@@ -373,8 +376,9 @@ error:
 }
 
 
-static bool available_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean available_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -392,7 +396,7 @@ static bool available_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_AVAILABLE_GET_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
@@ -460,7 +464,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_list_operators(struct ofono_netreg *netreg,
@@ -493,8 +497,9 @@ error:
 	g_free(cbd);
 }
 
-static bool set_auto_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean set_auto_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -507,7 +512,7 @@ static bool set_auto_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (!msg || len < 3 || msg[0] != NET_SET_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
@@ -523,7 +528,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_register_auto(struct ofono_netreg *netreg,
@@ -558,8 +563,9 @@ error:
 	g_free(cbd);
 }
 
-static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean set_manual_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -573,7 +579,7 @@ static bool set_manual_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_SET_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
@@ -589,7 +595,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_register_manual(struct ofono_netreg *netreg,
@@ -638,8 +644,9 @@ static void isi_deregister(struct ofono_netreg *netreg,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void rat_ind_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static void rat_ind_cb(GIsiClient *client,
+			const void *restrict data, size_t len,
+			uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
@@ -682,8 +689,9 @@ static void rat_ind_cb(GIsiClient *client, const void *restrict data,
 	}
 }
 
-static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static gboolean rat_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
@@ -693,15 +701,15 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
-		return true;
+		return TRUE;
 	}
 
 	if (len < 3 || msg[0] != NET_RAT_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s", net_isi_cause_name(msg[1]));
-		return true;
+		return TRUE;
 	}
 
 	g_isi_sb_iter_init(&iter, msg, len, 3);
@@ -718,7 +726,7 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 				|| !info
 				|| !g_isi_sb_iter_get_byte(&iter,
 							&nd->gsm_compact, 4))
-				return true;
+				return TRUE;
 
 			break;
 		}
@@ -731,11 +739,12 @@ static bool rat_resp_cb(GIsiClient *client, const void *restrict data,
 		}
 		g_isi_sb_iter_next(&iter);
 	}
-	return true;
+	return TRUE;
 }
 
-static void rssi_ind_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static void rssi_ind_cb(GIsiClient *client,
+			const void *restrict data, size_t len,
+			uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
@@ -746,8 +755,9 @@ static void rssi_ind_cb(GIsiClient *client, const void *restrict data,
 	ofono_netreg_strength_notify(netreg, msg[1]);
 }
 
-static void time_ind_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static void time_ind_cb(GIsiClient *client,
+			const void *restrict data, size_t len,
+			uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	const unsigned char *nitz = msg + 3;
@@ -784,8 +794,9 @@ static void time_ind_cb(GIsiClient *client, const void *restrict data,
 	ofono_netreg_time_notify(netreg, &info);
 }
 
-static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean rssi_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -800,7 +811,7 @@ static bool rssi_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != NET_RSSI_GET_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != NET_CAUSE_OK) {
 		DBG("Request failed: %s (0x%02X)",
@@ -841,7 +852,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_strength(struct ofono_netreg *netreg,
@@ -902,7 +913,7 @@ static gboolean isi_netreg_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_netreg *netreg = opaque;

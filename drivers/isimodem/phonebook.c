@@ -68,7 +68,7 @@ static int decode_read_response(const unsigned char *msg, size_t len,
 	if (msg[1] != SIM_PB_READ)
 		goto error;
 
-	for (g_isi_sb_iter_init_full(&iter, msg, len, 3, true, msg[2]);
+	for (g_isi_sb_iter_init_full(&iter, msg, len, 3, TRUE, msg[2]);
 	     g_isi_sb_iter_is_valid(&iter);
 	     g_isi_sb_iter_next(&iter)) {
 
@@ -206,8 +206,9 @@ error:
 	g_free(cbd);
 }
 
-static bool read_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean read_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -222,7 +223,7 @@ static bool read_resp_cb(GIsiClient *client, const void *restrict data,
 	location = decode_read_response(data, len, cbd->user);
 	if (location != -1) {
 		read_next_entry(client, location, read_resp_cb, cbd);
-		return true;
+		return TRUE;
 	}
 
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
@@ -233,7 +234,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
@@ -286,7 +287,7 @@ static gboolean isi_phonebook_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_phonebook *pb = opaque;

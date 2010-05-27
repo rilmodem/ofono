@@ -118,8 +118,9 @@ out:
 }
 
 
-static bool ussd_send_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean ussd_send_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -131,13 +132,13 @@ static bool ussd_send_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3)
-		return false;
+		return FALSE;
 
 	if (msg[0] == SS_SERVICE_FAILED_RESP)
 		goto error;
 
 	if (len < 4 || msg[0] != SS_GSM_USSD_SEND_RESP)
-		return false;
+		return FALSE;
 
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 
@@ -149,7 +150,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static GIsiRequest *ussd_send_make(GIsiClient *client, uint8_t *str,
@@ -233,8 +234,9 @@ error:
 	g_free(cbd);
 }
 
-static void ussd_ind_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static void ussd_ind_cb(GIsiClient *client,
+			const void *restrict data, size_t len,
+			uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_ussd *ussd = opaque;
@@ -261,7 +263,8 @@ static gboolean isi_ussd_register(gpointer user)
 	return FALSE;
 }
 
-static void ussd_reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void ussd_reachable_cb(GIsiClient *client,
+				gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_ussd *ussd = opaque;

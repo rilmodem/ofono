@@ -43,7 +43,7 @@ struct isi_infoserver {
 	unsigned sv;	/* Software version in 0..98 */
 };
 
-static bool serial_number_read_req(GIsiServer *server, void const *data,
+static gboolean serial_number_read_req(GIsiServer *server, void const *data,
 					size_t len, GIsiIncoming *irq,
 					void *opaque)
 {

@@ -61,8 +61,9 @@ static void isi_clear_topics(struct ofono_cbs *cbs,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void routing_ntf_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static void routing_ntf_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_cbs *cbs = opaque;
@@ -73,19 +74,20 @@ static void routing_ntf_cb(GIsiClient *client, const void *restrict data,
 	ofono_cbs_notify(cbs, msg+5, len-5);
 }
 
-static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean routing_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_cbs *cbs = opaque;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
-		return true;
+		return TRUE;
 	}
 
 	if (len < 3 || msg[0] != SMS_GSM_CB_ROUTING_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != SMS_OK) {
 		if (msg[1] == SMS_ERR_PP_RESERVED)
@@ -96,14 +98,14 @@ static bool routing_resp_cb(GIsiClient *client, const void *restrict data,
 				"routing endpoint.\n  As a consequence, "
 				"receiving CBSs is NOT going to work.\n\n",
 				msg[1], sms_isi_cause_name(msg[1]));
-		return true;
+		return TRUE;
 	}
 
 	g_isi_subscribe(client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb,
 			cbs);
 
 	ofono_cbs_register(cbs);
-	return true;
+	return TRUE;
 }
 
 static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,

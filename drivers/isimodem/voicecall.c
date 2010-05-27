@@ -75,12 +75,12 @@ typedef void GIsiIndication (GIsiClient *client,
 		const void *restrict data, size_t len,
 		uint16_t object, void *opaque);
 
-typedef void GIsiVerify (GIsiClient *client, bool alive, uint16_t object,
+typedef void GIsiVerify(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque);
 
-typedef bool GIsiResponse(GIsiClient *client,
-			  void const * restrict data, size_t len,
-			  uint16_t object, void *opaque);
+typedef gboolean GIsiResponse(GIsiClient *client,
+				void const *restrict data, size_t len,
+				uint16_t object, void *opaque);
 
 static GIsiVerify isi_call_verify_cb;
 static gboolean isi_call_register(gpointer);
@@ -171,12 +171,12 @@ static void isi_ctx_free(struct isi_call_req_context *irc)
 	}
 }
 
-static bool isi_ctx_return(struct isi_call_req_context *irc,
-			   enum ofono_error_type type,
-			   int error)
+static gboolean isi_ctx_return(struct isi_call_req_context *irc,
+				enum ofono_error_type type,
+				int error)
 {
 	if (!irc)
-		return true;
+		return TRUE;
 
 	if (irc->cb) {
 		struct ofono_error e = { .type = type, .error = error };
@@ -185,19 +185,19 @@ static bool isi_ctx_return(struct isi_call_req_context *irc,
 
 	isi_ctx_free(irc);
 
-	return true;
+	return TRUE;
 }
 
-static bool isi_ctx_return_failure(struct isi_call_req_context *irc)
+static gboolean isi_ctx_return_failure(struct isi_call_req_context *irc)
 {
 	return isi_ctx_return(irc, OFONO_ERROR_TYPE_FAILURE, 0);
 }
 
-static bool isi_ctx_return_success(struct isi_call_req_context *irc)
+static gboolean isi_ctx_return_success(struct isi_call_req_context *irc)
 {
 	if (irc && irc->step) {
 		irc->step(irc, 0);
-		return true;
+		return TRUE;
 	}
 
 	return isi_ctx_return(irc, OFONO_ERROR_TYPE_NO_ERROR, 0);
@@ -408,22 +408,22 @@ isi_call_create_req(struct ofono_voicecall *ovc,
 	return isi_call_req(ovc, req, rlen, isi_call_create_resp, cb, data);
 }
 
-static bool isi_call_create_resp(GIsiClient *client,
-				 void const * restrict data,
-				 size_t len,
-				 uint16_t object,
-				 void *irc)
+static gboolean isi_call_create_resp(GIsiClient *client,
+					void const *restrict data,
+					size_t len,
+					uint16_t object,
+					void *irc)
 {
 	struct {
 		uint8_t message_id, call_id, sub_blocks;
 	} const *m = data;
 
 	if (m != NULL && len < (sizeof *m))
-		return false;
+		return FALSE;
 	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_CREATE_RESP)
-		return false;
+		return FALSE;
 
 	if (m->call_id != CALL_ID_NONE && m->sub_blocks == 0)
 		return isi_ctx_return_success(irc);
@@ -518,22 +518,22 @@ isi_call_answer_req(struct ofono_voicecall *ovc,
 	return isi_call_req(ovc, req, rlen, isi_call_answer_resp, cb, data);
 }
 
-static bool isi_call_answer_resp(GIsiClient *client,
-				 void const * restrict data,
-				 size_t len,
-				 uint16_t object,
-				 void *irc)
+static gboolean isi_call_answer_resp(GIsiClient *client,
+					void const *restrict data,
+					size_t len,
+					uint16_t object,
+					void *irc)
 {
 	struct {
 		uint8_t message_id, call_id, sub_blocks;
 	} const *m = data;
 
 	if (m != NULL && len < (sizeof *m))
-		return false;
+		return FALSE;
 	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_ANSWER_RESP)
-		return false;
+		return FALSE;
 
 	if (m->call_id != CALL_ID_NONE && m->sub_blocks == 0)
 		return isi_ctx_return_success(irc);
@@ -559,11 +559,11 @@ isi_call_release_req(struct ofono_voicecall *ovc,
 	return isi_call_req(ovc, req, rlen, isi_call_release_resp, cb, data);
 }
 
-static bool isi_call_release_resp(GIsiClient *client,
-				     void const * restrict data,
-				     size_t len,
-				     uint16_t object,
-				     void *irc)
+static gboolean isi_call_release_resp(GIsiClient *client,
+					void const *restrict data,
+					size_t len,
+					uint16_t object,
+					void *irc)
 {
 	struct {
 		uint8_t message_id, call_id, sub_blocks;
@@ -572,11 +572,11 @@ static bool isi_call_release_resp(GIsiClient *client,
 	uint8_t cause_type = 0, cause = 0;
 
 	if (m != NULL && len < (sizeof *m))
-		return false;
+		return FALSE;
 	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_RELEASE_RESP)
-		return false;
+		return FALSE;
 
 	for (g_isi_sb_iter_init(i, m, len, (sizeof *m));
 	     g_isi_sb_iter_is_valid(i);
@@ -613,11 +613,11 @@ isi_call_status_req(struct ofono_voicecall *ovc,
 }
 
 
-static bool isi_call_status_resp(GIsiClient *client,
-				 void const * restrict data,
-				 size_t len,
-				 uint16_t object,
-				 void *_irc)
+static gboolean isi_call_status_resp(GIsiClient *client,
+					void const *restrict data,
+					size_t len,
+					uint16_t object,
+					void *_irc)
 {
 	struct isi_call_req_context *irc = _irc;
 	struct ofono_voicecall *ovc = irc->ovc;
@@ -629,11 +629,11 @@ static bool isi_call_status_resp(GIsiClient *client,
 	struct isi_call *call = NULL;
 
 	if (m != NULL && len < (sizeof *m))
-		return false;
+		return FALSE;
 	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_STATUS_RESP)
-		return false;
+		return FALSE;
 
 	for (g_isi_sb_iter_init(sb, m, len, (sizeof *m));
 	     g_isi_sb_iter_is_valid(sb);
@@ -701,7 +701,7 @@ isi_call_deflect_req(struct ofono_voicecall *ovc,
 
 	if (addr_len > 20) {
 		CALLBACK_WITH_FAILURE(cb, data);
-		return false;
+		return FALSE;
 	}
 
 	for (i = 0; i < addr_len; i++)
@@ -710,11 +710,11 @@ isi_call_deflect_req(struct ofono_voicecall *ovc,
 	return isi_call_req(ovc, req, rlen, isi_call_control_resp, cb, data);
 }
 
-static bool isi_call_control_resp(GIsiClient *client,
-				  void const * restrict data,
-				  size_t len,
-				  uint16_t object,
-				  void *irc)
+static gboolean isi_call_control_resp(GIsiClient *client,
+					void const *restrict data,
+					size_t len,
+					uint16_t object,
+					void *irc)
 {
 	struct {
 		uint8_t message_id, call_id, sub_blocks;
@@ -723,11 +723,11 @@ static bool isi_call_control_resp(GIsiClient *client,
 	uint8_t cause_type = 0, cause = 0;
 
 	if (m != NULL && len < sizeof *m)
-		return false;
+		return FALSE;
 	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_CONTROL_RESP)
-		return false;
+		return FALSE;
 
 	for (g_isi_sb_iter_init(i, m, len, (sizeof *m));
 	     g_isi_sb_iter_is_valid(i);
@@ -770,7 +770,7 @@ isi_call_dtmf_send_req(struct ofono_voicecall *ovc,
 
 	if (sub_len >= 256) {
 		CALLBACK_WITH_FAILURE(cb, data);
-		return false;
+		return FALSE;
 	}
 
 	for (i = 0; i < str_len; i++)
@@ -779,11 +779,11 @@ isi_call_dtmf_send_req(struct ofono_voicecall *ovc,
 	return isi_call_req(ovc, req, rlen, isi_call_dtmf_send_resp, cb, data);
 }
 
-static bool isi_call_dtmf_send_resp(GIsiClient *client,
-				    void const * restrict data,
-				    size_t len,
-				    uint16_t object,
-				    void *irc)
+static gboolean isi_call_dtmf_send_resp(GIsiClient *client,
+					void const *restrict data,
+					size_t len,
+					uint16_t object,
+					void *irc)
 {
 	struct {
 		uint8_t message_id, call_id, sub_blocks;
@@ -792,11 +792,11 @@ static bool isi_call_dtmf_send_resp(GIsiClient *client,
 	uint8_t cause_type = 0, cause = 0;
 
 	if (m != NULL && len < (sizeof *m))
-		return false;
+		return FALSE;
 	if (m == NULL || m->message_id == CALL_COMMON_MESSAGE)
 		return isi_ctx_return_failure(irc);
 	if (m->message_id != CALL_DTMF_SEND_RESP)
-		return false;
+		return FALSE;
 
 	if (m->sub_blocks == 0)
 		return isi_ctx_return_success(irc);
@@ -1302,7 +1302,7 @@ static int isi_voicecall_probe(struct ofono_voicecall *ovc,
 }
 
 static void isi_call_verify_cb(GIsiClient *client,
-			       bool alive, uint16_t object,
+			       gboolean alive, uint16_t object,
 			       void *ovc)
 {
 	if (!alive) {

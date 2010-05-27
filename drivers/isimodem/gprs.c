@@ -45,8 +45,9 @@ struct gprs_data {
 	GIsiClient *client;
 };
 
-static void detach_ind_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static void detach_ind_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	/*struct ofono_gprs *gprs = opaque;*/
 	const unsigned char *msg = data;
@@ -78,7 +79,8 @@ static gboolean isi_gprs_register(gpointer user)
 	return FALSE;
 }
 
-static void gpds_reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void gpds_reachable_cb(GIsiClient *client,
+				gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_gprs *gprs = opaque;
@@ -132,8 +134,9 @@ static void isi_gprs_remove(struct ofono_gprs *gprs)
 	g_free(data);
 }
 
-static bool attach_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean attach_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -145,7 +148,7 @@ static bool attach_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len != 4 || msg[0] != GPDS_ATTACH_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != GPDS_OK) {
 		DBG("attach failed: %s", gpds_status_name(msg[1]));
@@ -160,11 +163,12 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
-static bool detach_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean detach_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -176,7 +180,7 @@ static bool detach_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len != 3 || msg[0] != GPDS_DETACH_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != GPDS_OK) {
 		DBG("detach failed: %s", gpds_status_name(msg[1]));
@@ -191,7 +195,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static GIsiRequest *attach_request_make(GIsiClient *client, void *data)
@@ -241,8 +245,9 @@ error:
 	g_free(cbd);
 }
 
-static bool status_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean status_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -254,7 +259,7 @@ static bool status_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 2 || msg[0] != GPDS_STATUS_RESP)
-		return false;
+		return FALSE;
 
 	/* FIXME: the core still expects reg status, and not a boolean
 	 * attached status here.*/
@@ -269,7 +274,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_gprs_attached_status(struct ofono_gprs *gprs,

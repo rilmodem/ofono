@@ -96,8 +96,9 @@ static void set_power_by_mtc_state(struct isi_data *isi, int state)
 	}
 }
 
-static void mtc_state_ind_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static void mtc_state_ind_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_data *isi = opaque;
@@ -120,8 +121,9 @@ static void mtc_state_ind_cb(GIsiClient *client, const void *restrict data,
 	}
 }
 
-static bool mtc_poll_query_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean mtc_poll_query_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_data *isi = opaque;
@@ -132,7 +134,7 @@ static bool mtc_poll_query_cb(GIsiClient *client, const void *restrict data,
 		};
 
 		if (isi->linkstate != PN_LINK_UP)
-			return true;
+			return TRUE;
 
 		isi->interval *= 2;
 		if (isi->interval >= 20)
@@ -142,11 +144,11 @@ static bool mtc_poll_query_cb(GIsiClient *client, const void *restrict data,
 					isi->interval,
 					mtc_poll_query_cb, opaque);
 
-		return true;
+		return TRUE;
 	}
 
 	if (len < 3 || msg[0] != MTC_STATE_QUERY_RESP)
-		return false;
+		return FALSE;
 
 	g_isi_subscribe(client, MTC_STATE_INFO_IND, mtc_state_ind_cb, opaque);
 
@@ -157,22 +159,23 @@ static bool mtc_poll_query_cb(GIsiClient *client, const void *restrict data,
 
 	set_power_by_mtc_state(isi, msg[1]);
 
-	return true;
+	return TRUE;
 }
 
-static bool mtc_query_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean mtc_query_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_data *isi = opaque;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
-		return true;
+		return TRUE;
 	}
 
 	if (len < 3 || msg[0] != MTC_STATE_QUERY_RESP)
-		return false;
+		return FALSE;
 
 	DBG("current modem state: %s (0x%02X)",
 		mtc_modem_state_name(msg[1]), msg[1]);
@@ -181,10 +184,10 @@ static bool mtc_query_cb(GIsiClient *client, const void *restrict data,
 
 	set_power_by_mtc_state(isi, msg[1]);
 
-	return true;
+	return TRUE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct isi_data *isi = opaque;

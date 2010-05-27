@@ -47,8 +47,9 @@ struct devinfo_data {
 	GIsiClient *client;
 };
 
-static bool info_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean info_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -65,13 +66,13 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 
 	if (len < 3) {
 		DBG("truncated message");
-		return false;
+		return FALSE;
 	}
 
 	if (msg[0] != INFO_PRODUCT_INFO_READ_RESP
 		&& msg[0] != INFO_VERSION_READ_RESP
 		&& msg[0] != INFO_SERIAL_NUMBER_READ_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != INFO_OK) {
 		DBG("request failed: %s", info_isi_cause_name(msg[1]));
@@ -99,7 +100,7 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 			g_free(info);
 
 			g_free(cbd);
-			return true;
+			return TRUE;
 
 		default:
 			DBG("skipping: %s (%zu bytes)",
@@ -112,7 +113,7 @@ static bool info_resp_cb(GIsiClient *client, const void *restrict data,
 error:
 	CALLBACK_WITH_FAILURE(cb, "", cbd->data);
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_query_manufacturer(struct ofono_devinfo *info,
@@ -227,7 +228,7 @@ static gboolean isi_devinfo_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_devinfo *info = opaque;

@@ -45,7 +45,7 @@
 
 struct sim_data {
 	GIsiClient *client;
-	bool registered;
+	gboolean registered;
 };
 
 struct file_info {
@@ -94,8 +94,9 @@ static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
 }
 
-static bool spn_resp_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static gboolean spn_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -111,7 +112,7 @@ static bool spn_resp_cb(GIsiClient *client, const void *restrict data,
 
 	if (len < 39 || msg[0] != SIM_SERV_PROV_NAME_RESP
 		|| msg[1] != SIM_ST_READ_SERV_PROV_NAME)
-		return false;
+		return FALSE;
 
 	if (msg[2] != SIM_SERV_OK) {
 		DBG("Request failed: %s (0x%02X)",
@@ -141,10 +142,10 @@ done:
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
-static bool isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
+static gboolean isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
@@ -158,8 +159,9 @@ static bool isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
 					SIM_TIMEOUT, spn_resp_cb, cbd) != NULL;
 }
 
-static bool read_iccid_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *user)
+static gboolean read_iccid_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *user)
 {
 	struct isi_cb_data *cbd = user;
 	ofono_sim_read_cb_t cb = cbd->cb;
@@ -172,7 +174,7 @@ static bool read_iccid_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != SIM_READ_FIELD_RESP || msg[1] != ICC)
-		return false;
+		return FALSE;
 
 	if (msg[2] == SIM_SERV_OK && len >= 13)
 		iccid = msg + 3;
@@ -186,10 +188,10 @@ done:
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
-static bool isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
+static gboolean isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	const unsigned char req[] = { SIM_READ_FIELD_REQ, ICC };
@@ -269,8 +271,9 @@ static void isi_write_file_cyclic(struct ofono_sim *sim, int fileid,
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static bool imsi_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean imsi_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -320,7 +323,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_read_imsi(struct ofono_sim *sim,
@@ -351,30 +354,31 @@ static void isi_sim_register(struct ofono_sim *sim)
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
 	if (!sd->registered) {
-		sd->registered = true;
+		sd->registered = TRUE;
 		ofono_sim_register(sim);
 		ofono_sim_inserted_notify(sim, TRUE);
 	}
 }
 
-static bool read_hplmn_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean read_hplmn_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct ofono_sim *sim = opaque;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
-		return true;
+		return TRUE;
 	}
 
 	if (len < 3 || msg[0] != SIM_NETWORK_INFO_RESP || msg[1] != READ_HPLMN)
-		return false;
+		return FALSE;
 
 	if (msg[2] != SIM_SERV_NOTREADY)
 		isi_sim_register(sim);
 
-	return true;
+	return TRUE;
 }
 
 
@@ -391,8 +395,9 @@ static void isi_read_hplmn(struct ofono_sim *sim)
 				read_hplmn_resp_cb, sim);
 }
 
-static void sim_ind_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static void sim_ind_cb(GIsiClient *client,
+			const void *restrict data, size_t len,
+			uint16_t object, void *opaque)
 {
 	struct ofono_sim *sim = opaque;
 	struct sim_data *sd = ofono_sim_get_data(sim);
@@ -411,7 +416,7 @@ static void sim_ind_cb(GIsiClient *client, const void *restrict data,
 	}
 }
 
-static void sim_reachable_cb(GIsiClient *client, bool alive,
+static void sim_reachable_cb(GIsiClient *client, gboolean alive,
 				uint16_t object, void *opaque)
 {
 	struct ofono_sim *sim = opaque;

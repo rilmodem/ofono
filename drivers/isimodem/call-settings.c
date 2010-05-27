@@ -89,8 +89,9 @@ static void update_status_mask(unsigned int *mask, int bsc)
 	}
 }
 
-static bool query_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean query_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	GIsiSubBlockIter iter;
 	const unsigned char *msg = data;
@@ -154,7 +155,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 
 }
 
@@ -188,8 +189,9 @@ error:
 	g_free(cbd);
 }
 
-static bool set_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean set_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	GIsiSubBlockIter iter;
 	const unsigned char *msg = data;
@@ -244,7 +246,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 
 }
 
@@ -287,7 +289,7 @@ static gboolean isi_call_settings_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_call_settings *cs = opaque;

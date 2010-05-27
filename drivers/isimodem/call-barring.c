@@ -70,8 +70,9 @@ static int lock_code_to_mmi(char const *lock)
 		return 0;
 }
 
-static bool set_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean set_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -83,7 +84,7 @@ static bool set_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != SS_SERVICE_COMPLETED_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != SS_ACTIVATION && msg[1] != SS_DEACTIVATION)
 		goto error;
@@ -96,7 +97,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 
@@ -177,8 +178,9 @@ static void update_status_mask(unsigned int *mask, int bsc)
 	}
 }
 
-static bool query_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean query_resp_cb(GIsiClient *client,
+				const void *restrict data, size_t len,
+				uint16_t object, void *opaque)
 {
 	GIsiSubBlockIter iter;
 	const unsigned char *msg = data;
@@ -193,7 +195,7 @@ static bool query_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 7 || msg[0] != SS_SERVICE_COMPLETED_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != SS_INTERROGATION)
 		goto error;
@@ -247,7 +249,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 
 }
 
@@ -277,8 +279,9 @@ static void isi_query(struct ofono_call_barring *barr, const char *lock,
 	g_free(cbd);
 }
 
-static bool set_passwd_resp_cb(GIsiClient *client, const void *restrict data,
-				size_t len, uint16_t object, void *opaque)
+static gboolean set_passwd_resp_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
 {
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
@@ -290,7 +293,7 @@ static bool set_passwd_resp_cb(GIsiClient *client, const void *restrict data,
 	}
 
 	if (len < 3 || msg[0] != SS_SERVICE_COMPLETED_RESP)
-		return false;
+		return FALSE;
 
 	if (msg[1] != SS_GSM_PASSWORD_REGISTRATION)
 		goto error;
@@ -303,7 +306,7 @@ error:
 
 out:
 	g_free(cbd);
-	return true;
+	return TRUE;
 }
 
 static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
@@ -353,7 +356,7 @@ static gboolean isi_call_barring_register(gpointer user)
 	return FALSE;
 }
 
-static void reachable_cb(GIsiClient *client, bool alive, uint16_t object,
+static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
 				void *opaque)
 {
 	struct ofono_call_barring *barr = opaque;
