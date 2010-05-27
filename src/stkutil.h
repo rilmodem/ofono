@@ -643,6 +643,7 @@ struct stk_r_apdu {
 
 /* Defined in TS 102.223 Section 8.38 */
 struct stk_timer_value {
+	ofono_bool_t has_value;
 	unsigned char hour;
 	unsigned char minute;
 	unsigned char second;
@@ -1129,6 +1130,11 @@ struct stk_response_local_info {
 	};
 };
 
+struct stk_response_timer_mgmt {
+	unsigned char id;
+	struct stk_timer_value value;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1151,6 +1157,7 @@ struct stk_response {
 		struct stk_response_generic polling_off;
 		struct stk_response_local_info provide_local_info;
 		struct stk_response_generic set_up_event_list;
+		struct stk_response_timer_mgmt timer_mgmt;
 	};
 
 	void (*destructor)(struct stk_response *response);

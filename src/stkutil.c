@@ -947,6 +947,7 @@ static gboolean parse_dataobj_timer_value(struct comprehension_tlv_iter *iter,
 	tv->hour = sms_decode_semi_octet(data[0]);
 	tv->minute = sms_decode_semi_octet(data[1]);
 	tv->second = sms_decode_semi_octet(data[2]);
+	tv->has_value = TRUE;
 
 	return TRUE;
 }
@@ -3540,6 +3541,36 @@ static gboolean build_dataobj_cc_requested_action(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.37 */
+static gboolean build_dataobj_timer_id(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const unsigned char *id = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_TIMER_ID;
+
+	return id[0] == 0 ||
+		(stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		 stk_tlv_builder_append_byte(tlv, id[0]) &&
+		 stk_tlv_builder_close_container(tlv));
+}
+
+/* Described in TS 102.223 Section 8.38 */
+static gboolean build_dataobj_timer_value(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_timer_value *value = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_TIMER_VALUE;
+
+	return value->has_value == FALSE ||
+		(stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+#define TO_BCD(bin) ((((bin) / 10) & 0xf) | (((bin) % 10) << 4))
+		 stk_tlv_builder_append_byte(tlv, TO_BCD(value->hour)) &&
+		 stk_tlv_builder_append_byte(tlv, TO_BCD(value->minute)) &&
+		 stk_tlv_builder_append_byte(tlv, TO_BCD(value->second)) &&
+#undef TO_BCD
+		 stk_tlv_builder_close_container(tlv));
+}
+
 /* Described in TS 102.223 Section 8.39 */
 static gboolean build_dataobj_datetime_timezone(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
@@ -4005,6 +4036,16 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 		ok = build_local_info(&builder, response);
 		break;
 	case STK_COMMAND_TYPE_SETUP_EVENT_LIST:
+		break;
+	case STK_COMMAND_TYPE_TIMER_MANAGEMENT:
+		ok = build_dataobj(&builder,
+					build_dataobj_timer_id,
+					DATAOBJ_FLAG_CR,
+					&response->timer_mgmt.id,
+					build_dataobj_timer_value,
+					DATAOBJ_FLAG_CR,
+					&response->timer_mgmt.value,
+					NULL);
 		break;
 	default:
 		return 0;
