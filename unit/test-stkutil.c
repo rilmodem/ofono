@@ -17728,6 +17728,108 @@ static const struct terminal_response_test
 	},
 };
 
+static const unsigned char launch_browser_response_111[] = {
+	0x81, 0x03, 0x01, 0x15, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test launch_browser_response_data_111 = {
+	.pdu = launch_browser_response_111,
+	.pdu_len = sizeof(launch_browser_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_LAUNCH_BROWSER,
+		.qualifier = 0x00, /* Launch browser, if not running */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char launch_browser_response_211[] = {
+	0x81, 0x03, 0x01, 0x15, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test launch_browser_response_data_211 = {
+	.pdu = launch_browser_response_211,
+	.pdu_len = sizeof(launch_browser_response_211),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_LAUNCH_BROWSER,
+		.qualifier = 0x02, /* Use the existing browser */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char launch_browser_response_221[] = {
+	0x81, 0x03, 0x01, 0x15, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test launch_browser_response_data_221 = {
+	.pdu = launch_browser_response_221,
+	.pdu_len = sizeof(launch_browser_response_221),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_LAUNCH_BROWSER,
+		.qualifier = 0x03, /* Re-start browser session */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char launch_browser_response_231[] = {
+	0x81, 0x03, 0x01, 0x15, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x26, 0x02,
+};
+
+static const struct terminal_response_test launch_browser_response_data_231 = {
+	.pdu = launch_browser_response_231,
+	.pdu_len = sizeof(launch_browser_response_231),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_LAUNCH_BROWSER,
+		.qualifier = 0x00, /* Launch browser, if not running */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_BROWSER_TEMPORARY,
+			.additional_len = 1, /* Browser unavailable */
+			.additional = (unsigned char[1]) { 0x02 },
+		},
+	},
+};
+
+static const unsigned char launch_browser_response_411b[] = {
+	0x81, 0x03, 0x01, 0x15, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test launch_browser_response_data_411b = {
+	.pdu = launch_browser_response_411b,
+	.pdu_len = sizeof(launch_browser_response_411b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_LAUNCH_BROWSER,
+		.qualifier = 0x02, /* Use the existing browser */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -19372,6 +19474,22 @@ int main(int argc, char **argv)
 				&launch_browser_data_611, test_launch_browser);
 	g_test_add_data_func("/teststk/Launch Browser 7.1.1",
 				&launch_browser_data_711, test_launch_browser);
+
+	g_test_add_data_func("/teststk/Launch Browser response 1.1.1",
+			&launch_browser_response_data_111,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Launch Browser response 2.1.1",
+			&launch_browser_response_data_211,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Launch Browser response 2.2.1",
+			&launch_browser_response_data_221,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Launch Browser response 2.3.1",
+			&launch_browser_response_data_231,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Launch Browser response 4.1.1B",
+			&launch_browser_response_data_411b,
+			test_terminal_response_encoding);
 
 	return g_test_run();
 }
