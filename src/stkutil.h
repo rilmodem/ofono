@@ -1166,6 +1166,7 @@ struct stk_response {
 		struct stk_response_run_at_command run_at_command;
 		struct stk_response_generic send_dtmf;
 		struct stk_response_generic language_notification;
+		struct stk_response_generic launch_browser;
 	};
 
 	void (*destructor)(struct stk_response *response);

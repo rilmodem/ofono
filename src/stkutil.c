@@ -4086,6 +4086,7 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 		break;
 	case STK_COMMAND_TYPE_SEND_DTMF:
 	case STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION:
+	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
 		break;
 	default:
 		return 0;
