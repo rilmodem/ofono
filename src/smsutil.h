@@ -412,6 +412,9 @@ void encode_bcd_number(const char *number, unsigned char *out);
 gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 			int tpdu_len, struct sms *out);
 
+gboolean sms_decode_unpacked_stk_pdu(const unsigned char *pdu, int len,
+					struct sms *out);
+
 gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 			unsigned char *pdu);
 

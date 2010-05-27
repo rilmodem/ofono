@@ -1219,6 +1219,58 @@ static gboolean encode_submit(const struct sms_submit *in,
 	return TRUE;
 }
 
+gboolean sms_decode_unpacked_stk_pdu(const unsigned char *pdu, int len,
+					struct sms *out)
+{
+	unsigned char octet;
+	int offset = 0;
+
+	if (!next_octet(pdu, len, &offset, &octet))
+		return FALSE;
+
+	if ((octet & 0x3) != 1)
+		return FALSE;
+
+	out->type = SMS_TYPE_SUBMIT;
+
+	out->submit.rd = is_bit_set(octet, 2);
+	out->submit.vpf = bit_field(octet, 3, 2);
+	out->submit.rp = is_bit_set(octet, 7);
+	out->submit.udhi = is_bit_set(octet, 6);
+	out->submit.srr = is_bit_set(octet, 5);
+
+	if (!next_octet(pdu, len, &offset, &out->submit.mr))
+		return FALSE;
+
+	if (!sms_decode_address_field(pdu, len, &offset,
+					FALSE, &out->submit.daddr))
+		return FALSE;
+
+	if (!next_octet(pdu, len, &offset, &out->submit.pid))
+		return FALSE;
+
+	if (!next_octet(pdu, len, &offset, &out->submit.dcs))
+		return FALSE;
+
+	/* Now we override the DCS */
+	out->submit.dcs = 0xF0;
+
+	if (!decode_validity_period(pdu, len, &offset, out->submit.vpf,
+					&out->submit.vp))
+		return FALSE;
+
+	if (!next_octet(pdu, len, &offset, &out->submit.udl))
+		return FALSE;
+
+	if ((len - offset) < out->submit.udl)
+		return FALSE;
+
+	pack_7bit_own_buf(pdu + offset, out->submit.udl, 0, FALSE,
+				NULL, 0, out->submit.ud);
+
+	return TRUE;
+}
+
 static gboolean decode_submit(const unsigned char *pdu, int len,
 					struct sms *out)
 {
