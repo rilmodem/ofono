@@ -17493,6 +17493,69 @@ static const struct terminal_response_test timer_mgmt_response_data_167 = {
 	},
 };
 
+static const unsigned char set_up_idle_mode_text_response_111[] = {
+	0x81, 0x03, 0x01, 0x28, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test
+		set_up_idle_mode_text_response_data_111 = {
+	.pdu = set_up_idle_mode_text_response_111,
+	.pdu_len = sizeof(set_up_idle_mode_text_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char set_up_idle_mode_text_response_211b[] = {
+	0x81, 0x03, 0x01, 0x28, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test
+		set_up_idle_mode_text_response_data_211b = {
+	.pdu = set_up_idle_mode_text_response_211b,
+	.pdu_len = sizeof(set_up_idle_mode_text_response_211b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
+static const unsigned char set_up_idle_mode_text_response_241[] = {
+	0x81, 0x03, 0x01, 0x28, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x32,
+};
+
+static const struct terminal_response_test
+		set_up_idle_mode_text_response_data_241 = {
+	.pdu = set_up_idle_mode_text_response_241,
+	.pdu_len = sizeof(set_up_idle_mode_text_response_241),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -18872,6 +18935,16 @@ int main(int argc, char **argv)
 		&setup_idle_mode_text_data_511, test_setup_idle_mode_text);
 	g_test_add_data_func("/teststk/Setup Idle Mode Text 6.1.1",
 		&setup_idle_mode_text_data_611, test_setup_idle_mode_text);
+
+	g_test_add_data_func("/teststk/Set Up Idle Mode Text response 1.1.1",
+			&set_up_idle_mode_text_response_data_111,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Idle Mode Text response 2.1.1B",
+			&set_up_idle_mode_text_response_data_211b,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Idle Mode Text response 2.4.1",
+			&set_up_idle_mode_text_response_data_241,
+			test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Run At Command 1.1.1",
 			&run_at_command_data_111, test_run_at_command);
