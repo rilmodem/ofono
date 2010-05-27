@@ -17686,6 +17686,48 @@ static const struct terminal_response_test send_dtmf_response_data_211b = {
 	},
 };
 
+static const unsigned char language_notification_response_111[] = {
+	0x81, 0x03, 0x01, 0x35, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test
+		language_notification_response_data_111 = {
+	.pdu = language_notification_response_111,
+	.pdu_len = sizeof(language_notification_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION,
+		.qualifier = 0x01,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char language_notification_response_121[] = {
+	0x81, 0x03, 0x01, 0x35, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test
+		language_notification_response_data_121 = {
+	.pdu = language_notification_response_121,
+	.pdu_len = sizeof(language_notification_response_121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -19246,6 +19288,13 @@ int main(int argc, char **argv)
 		&language_notification_data_111, test_language_notification);
 	g_test_add_data_func("/teststk/Language Notification 1.2.1",
 		&language_notification_data_121, test_language_notification);
+
+	g_test_add_data_func("/teststk/Language Notification response 1.1.1",
+			&language_notification_response_data_111,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Language Notification response 1.2.1",
+			&language_notification_response_data_121,
+			test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Launch Browser 1.1.1",
 			     &launch_browser_data_111, test_launch_browser);
