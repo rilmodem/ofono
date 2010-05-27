@@ -1158,6 +1158,7 @@ struct stk_response {
 		struct stk_response_local_info provide_local_info;
 		struct stk_response_generic set_up_event_list;
 		struct stk_response_timer_mgmt timer_mgmt;
+		struct stk_response_generic set_up_idle_mode_text;
 	};
 
 	void (*destructor)(struct stk_response *response);

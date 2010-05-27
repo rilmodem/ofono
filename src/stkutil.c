@@ -4051,6 +4051,8 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					&response->timer_mgmt.value,
 					NULL);
 		break;
+	case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
+		break;
 	default:
 		return 0;
 	};
