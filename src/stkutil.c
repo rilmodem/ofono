@@ -2478,39 +2478,22 @@ static gboolean parse_send_sms(struct stk_command *command,
 	if (gsm_tpdu.len > 0 && obj->cdma_sms.len > 0)
 		return FALSE;
 
-	if (gsm_tpdu.len > 0) {
-		if (sms_decode(gsm_tpdu.tpdu, gsm_tpdu.len, TRUE, gsm_tpdu.len,
-						&obj->gsm_sms) == FALSE) {
-			/* packing by ME must be not required */
-			if ((command->qualifier & 0x01) == 0)
-				return FALSE;
+	/* We don't process CDMA pdus for now */
+	if (obj->cdma_sms.len > 0)
+		return TRUE;
 
-			if (obj->gsm_sms.type != SMS_TYPE_SUBMIT)
-				return FALSE;
+	/* packing is needed */
+	if (command->qualifier & 0x01)
+		return sms_decode_unpacked_stk_pdu(gsm_tpdu.tpdu, gsm_tpdu.len,
+							&obj->gsm_sms);
 
-			if (obj->gsm_sms.submit.udl == 0)
-				return FALSE;
-		}
+	if (sms_decode(gsm_tpdu.tpdu, gsm_tpdu.len, TRUE,
+				gsm_tpdu.len, &obj->gsm_sms) == FALSE)
+		return FALSE;
 
-		/* packing is needed */
-		if (command->qualifier & 0x01) {
-			unsigned char *packed;
-			long packed_size;
-			unsigned char *in;
-			struct sms_submit *s = &obj->gsm_sms.submit;
-
-			if (obj->gsm_sms.type != SMS_TYPE_SUBMIT)
-				return FALSE;
-
-			/* Set dcs to default alphabet */
-			s->dcs = 0xF0;
-
-			in = gsm_tpdu.tpdu + gsm_tpdu.len - s->udl;
-			packed = pack_7bit(in, s->udl, 0,
-						FALSE, &packed_size, 0);
-			memcpy(s->ud, packed, packed_size);
-		}
-	}
+	if (obj->gsm_sms.type != SMS_TYPE_SUBMIT &&
+			obj->gsm_sms.type != SMS_TYPE_COMMAND)
+		return FALSE;
 
 	return TRUE;
 }
