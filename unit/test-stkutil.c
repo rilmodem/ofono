@@ -15956,6 +15956,234 @@ static const struct terminal_response_test select_item_response_data_811 = {
 	},
 };
 
+static const unsigned char set_up_call_response_111[] = {
+	0x81, 0x03, 0x01, 0x10, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test set_up_call_response_data_111 = {
+	.pdu = set_up_call_response_111,
+	.pdu_len = sizeof(set_up_call_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x00, /* Only if not busy on another call */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_121[] = {
+	0x81, 0x03, 0x01, 0x10, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x22,
+};
+
+static const struct terminal_response_test set_up_call_response_data_121 = {
+	.pdu = set_up_call_response_121,
+	.pdu_len = sizeof(set_up_call_response_121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x00, /* Only if not busy on another call */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_USER_REJECT,
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_141[] = {
+	0x81, 0x03, 0x01, 0x10, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test set_up_call_response_data_141 = {
+	.pdu = set_up_call_response_141,
+	.pdu_len = sizeof(set_up_call_response_141),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x02, /* Put all other calls on hold */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_151[] = {
+	0x81, 0x03, 0x01, 0x10, 0x04, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test set_up_call_response_data_151 = {
+	.pdu = set_up_call_response_151,
+	.pdu_len = sizeof(set_up_call_response_151),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x04, /* Disconnect all other calls */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_161[] = {
+	0x81, 0x03, 0x01, 0x10, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x20, 0x02,
+};
+
+static const struct terminal_response_test set_up_call_response_data_161 = {
+	.pdu = set_up_call_response_161,
+	.pdu_len = sizeof(set_up_call_response_161),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x00, /* Only if not busy on another call */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TERMINAL_BUSY,
+			.additional_len = 1, /* ME currently busy on call */
+			.additional = (unsigned char[1]) { 0x02 },
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_171a[] = {
+	0x81, 0x03, 0x01, 0x10, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x21, 0x00,
+};
+
+static const struct terminal_response_test set_up_call_response_data_171a = {
+	.pdu = set_up_call_response_171a,
+	.pdu_len = sizeof(set_up_call_response_171a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x02, /* Put all other calls on hold */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE,
+			.additional_len = 1, /* No specific cause given */
+			.additional = (unsigned char[1]) { 0x00 },
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_171b[] = {
+	0x81, 0x03, 0x01, 0x10, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x21, 0x9d,
+};
+
+static const struct terminal_response_test set_up_call_response_data_171b = {
+	.pdu = set_up_call_response_171b,
+	.pdu_len = sizeof(set_up_call_response_171b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x02, /* Put all other calls on hold */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE,
+			.additional_len = 1, /* Facility rejected */
+			.additional = (unsigned char[1]) { 0x9d },
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_1101[] = {
+	0x81, 0x03, 0x01, 0x10, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test set_up_call_response_data_1101 = {
+	.pdu = set_up_call_response_1101,
+	.pdu_len = sizeof(set_up_call_response_1101),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x01, /* Only if not busy, with redial */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_1111b[] = {
+	0x81, 0x03, 0x01, 0x10, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x30,
+};
+
+static const struct terminal_response_test set_up_call_response_data_1111b = {
+	.pdu = set_up_call_response_1111b,
+	.pdu_len = sizeof(set_up_call_response_1111b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x00, /* Only if not busy on another call */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NOT_CAPABLE,
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_1121[] = {
+	0x81, 0x03, 0x01, 0x10, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x02, 0x21, 0x91,
+};
+
+static const struct terminal_response_test set_up_call_response_data_1121 = {
+	.pdu = set_up_call_response_1121,
+	.pdu_len = sizeof(set_up_call_response_1121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x01, /* Only if not busy, with redial */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE,
+			.additional_len = 1, /* User busy */
+			.additional = (unsigned char[1]) { 0x91 },
+		},
+	},
+};
+
+static const unsigned char set_up_call_response_311b[] = {
+	0x81, 0x03, 0x01, 0x10, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x04,
+};
+
+static const struct terminal_response_test set_up_call_response_data_311b = {
+	.pdu = set_up_call_response_311b,
+	.pdu_len = sizeof(set_up_call_response_311b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_CALL,
+		.qualifier = 0x00, /* Only if not busy on another call */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_NO_ICON,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -16896,6 +17124,40 @@ int main(int argc, char **argv)
 				&setup_call_data_711, test_setup_call);
 	g_test_add_data_func("/teststk/Setup Call 7.2.1",
 				&setup_call_data_721, test_setup_call);
+
+	g_test_add_data_func("/teststk/Set Up Call response 1.1.1",
+				&set_up_call_response_data_111,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.2.1",
+				&set_up_call_response_data_121,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.4.1",
+				&set_up_call_response_data_141,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.5.1",
+				&set_up_call_response_data_151,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.6.1",
+				&set_up_call_response_data_161,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.7.1A",
+				&set_up_call_response_data_171a,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.7.1B",
+				&set_up_call_response_data_171b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.10.1",
+				&set_up_call_response_data_1101,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.11.1B",
+				&set_up_call_response_data_1111b,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 1.12.1",
+				&set_up_call_response_data_1121,
+				test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Set Up Call response 3.1.1B",
+				&set_up_call_response_data_311b,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Refresh 1.2.1",
 				&refresh_data_121, test_refresh);
