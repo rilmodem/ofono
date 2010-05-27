@@ -16707,6 +16707,27 @@ static const struct terminal_response_test
 	},
 };
 
+static const unsigned char set_up_event_list_response_111[] = {
+	0x81, 0x03, 0x01, 0x05, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test
+		set_up_event_list_response_data_111 = {
+	.pdu = set_up_event_list_response_111,
+	.pdu_len = sizeof(set_up_event_list_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_SETUP_EVENT_LIST,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -17811,6 +17832,10 @@ int main(int argc, char **argv)
 			&setup_event_list_data_132, test_setup_event_list);
 	g_test_add_data_func("/teststk/Setup Event List 1.4.1",
 			&setup_event_list_data_141, test_setup_event_list);
+
+	g_test_add_data_func("/teststk/Set Up Event List response 1.1.1",
+			&set_up_event_list_response_data_111,
+			test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Perform Card APDU 1.1.1",
 			&perform_card_apdu_data_111, test_perform_card_apdu);
