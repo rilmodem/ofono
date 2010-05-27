@@ -16184,6 +16184,26 @@ static const struct terminal_response_test set_up_call_response_data_311b = {
 	},
 };
 
+static const unsigned char polling_off_response_112[] = {
+	0x81, 0x03, 0x01, 0x04, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test polling_off_response_data_112 = {
+	.pdu = polling_off_response_112,
+	.pdu_len = sizeof(polling_off_response_112),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_POLLING_OFF,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -17206,6 +17226,10 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/Polling off 1.1.2",
 				&polling_off_data_112, test_polling_off);
+
+	g_test_add_data_func("/teststk/Polling off response 1.1.2",
+				&polling_off_response_data_112,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Provide Local Info 1.2.1",
 			&provide_local_info_data_121, test_provide_local_info);
