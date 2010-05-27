@@ -3532,6 +3532,8 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	case STK_COMMAND_TYPE_SETUP_CALL:
 		ok = build_set_up_call(&builder, response);
 		break;
+	case STK_COMMAND_TYPE_POLLING_OFF:
+		break;
 	default:
 		return 0;
 	};

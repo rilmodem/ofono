@@ -1096,6 +1096,7 @@ struct stk_response {
 		struct stk_response_select_item select_item;
 		struct stk_response_generic send_sms;
 		struct stk_response_set_up_call set_up_call;
+		struct stk_response_generic polling_off;
 	};
 
 	void (*destructor)(struct stk_response *response);
