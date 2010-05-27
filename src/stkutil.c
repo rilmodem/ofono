@@ -35,9 +35,10 @@
 #include "util.h"
 
 enum stk_data_object_flag {
-	DATAOBJ_FLAG_MANDATORY = 1,
-	DATAOBJ_FLAG_MINIMUM = 2,
-	DATAOBJ_FLAG_CR = 4
+	DATAOBJ_FLAG_MANDATORY =	1,
+	DATAOBJ_FLAG_MINIMUM =		2,
+	DATAOBJ_FLAG_CR =		4,
+	DATAOBJ_FLAG_LIST =		8,
 };
 
 struct stk_file_iter {
@@ -1926,7 +1927,7 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_url;
 	case STK_DATA_OBJECT_TYPE_BEARER:
 		return parse_dataobj_bearer;
-	case STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REFERENCE:
+	case STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REF:
 		return parse_dataobj_provisioning_file_reference;
 	case STK_DATA_OBJECT_TYPE_BROWSER_TERMINATION_CAUSE:
 		return parse_dataobj_browser_termination_cause;
@@ -2010,7 +2011,70 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_broadcast_network_info;
 	default:
 		return NULL;
-	};
+	}
+}
+
+static gboolean parse_item_list(struct comprehension_tlv_iter *iter,
+				void *data)
+{
+	GSList **out = data;
+	unsigned short tag = STK_DATA_OBJECT_TYPE_ITEM;
+	struct comprehension_tlv_iter iter_old;
+	struct stk_item item;
+	GSList *list = NULL;
+
+	do {
+		comprehension_tlv_iter_copy(iter, &iter_old);
+		memset(&item, 0, sizeof(item));
+
+		if (parse_dataobj_item(iter, &item) == TRUE)
+			list = g_slist_prepend(list,
+						g_memdup(&item, sizeof(item)));
+	} while (comprehension_tlv_iter_next(iter) == TRUE &&
+			comprehension_tlv_iter_get_tag(iter) == tag);
+
+	comprehension_tlv_iter_copy(&iter_old, iter);
+	*out = g_slist_reverse(list);
+
+	return TRUE;
+}
+
+static gboolean parse_provisioning_list(struct comprehension_tlv_iter *iter,
+					void *data)
+{
+	GSList **out = data;
+	unsigned short tag = STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REF;
+	struct comprehension_tlv_iter iter_old;
+	struct stk_file file;
+	GSList *list = NULL;
+
+	do {
+		comprehension_tlv_iter_copy(iter, &iter_old);
+		memset(&file, 0, sizeof(file));
+
+		if (parse_dataobj_provisioning_file_reference(iter, &file)
+									== TRUE)
+			list = g_slist_prepend(list,
+						g_memdup(&file, sizeof(file)));
+	} while (comprehension_tlv_iter_next(iter) == TRUE &&
+			comprehension_tlv_iter_get_tag(iter) == tag);
+
+	comprehension_tlv_iter_copy(&iter_old, iter);
+	*out = g_slist_reverse(list);
+
+	return TRUE;
+}
+
+static dataobj_handler list_handler_for_type(enum stk_data_object_type type)
+{
+	switch (type) {
+	case STK_DATA_OBJECT_TYPE_ITEM:
+		return parse_item_list;
+	case STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REF:
+		return parse_provisioning_list;
+	default:
+		return NULL;
+	}
 }
 
 struct dataobj_handler_entry {
@@ -2052,7 +2116,11 @@ static gboolean parse_dataobj(struct comprehension_tlv_iter *iter,
 		dataobj_handler handler;
 		struct dataobj_handler_entry *entry = l->data;
 
-		handler = handler_for_type(entry->type);
+		if (entry->flags & DATAOBJ_FLAG_LIST)
+			handler = list_handler_for_type(entry->type);
+		else
+			handler = handler_for_type(entry->type);
+
 		if (handler == NULL)
 			continue;
 
@@ -2288,32 +2356,6 @@ static void destroy_setup_menu(struct stk_command *command)
 	g_slist_free(command->setup_menu.items);
 }
 
-static GSList *parse_item_list(struct comprehension_tlv_iter *iter)
-{
-	unsigned short tag = STK_DATA_OBJECT_TYPE_ITEM;
-	struct comprehension_tlv_iter iter_old;
-	struct stk_item item;
-	GSList *list = NULL;
-
-	if (comprehension_tlv_iter_get_tag(iter) != tag)
-		return NULL;
-
-	do {
-		comprehension_tlv_iter_copy(iter, &iter_old);
-		memset(&item, 0, sizeof(item));
-
-		if (parse_dataobj_item(iter, &item) == TRUE)
-			list = g_slist_prepend(list,
-						g_memdup(&item, sizeof(item)));
-	} while (comprehension_tlv_iter_next(iter) == TRUE &&
-			comprehension_tlv_iter_get_tag(iter) == tag);
-
-	comprehension_tlv_iter_copy(&iter_old, iter);
-	list = g_slist_reverse(list);
-
-	return list;
-}
-
 static gboolean parse_setup_menu(struct stk_command *command,
 					struct comprehension_tlv_iter *iter)
 {
@@ -2332,17 +2374,9 @@ static gboolean parse_setup_menu(struct stk_command *command,
 			STK_DATA_OBJECT_TYPE_ALPHA_ID,
 			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
 			&obj->alpha_id,
-			STK_DATA_OBJECT_TYPE_INVALID);
-
-	if (ret == FALSE)
-		return FALSE;
-
-	obj->items = parse_item_list(iter);
-
-	if (obj->items == NULL)
-		return FALSE;
-
-	ret = parse_dataobj(iter,
+			STK_DATA_OBJECT_TYPE_ITEM,
+			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM |
+			DATAOBJ_FLAG_LIST, &obj->items,
 			STK_DATA_OBJECT_TYPE_ITEMS_NEXT_ACTION_INDICATOR, 0,
 			&obj->next_act,
 			STK_DATA_OBJECT_TYPE_ICON_ID, 0,
@@ -2356,6 +2390,9 @@ static gboolean parse_setup_menu(struct stk_command *command,
 			STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
+		return FALSE;
+
+	if (obj->items == NULL)
 		return FALSE;
 
 	return TRUE;
@@ -2376,26 +2413,20 @@ static gboolean parse_select_item(struct stk_command *command,
 	gboolean ret;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
-		goto error;
+		return FALSE;
 
 	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
-		goto error;
+		return FALSE;
+
+	command->destructor = destroy_select_item;
 
 	ret = parse_dataobj(iter,
 			STK_DATA_OBJECT_TYPE_ALPHA_ID,
 			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
 			&obj->alpha_id,
-			STK_DATA_OBJECT_TYPE_INVALID);
-
-	if (ret == FALSE)
-		goto error;
-
-	obj->items = parse_item_list(iter);
-
-	if (obj->items == NULL)
-		goto error;
-
-	ret = parse_dataobj(iter,
+			STK_DATA_OBJECT_TYPE_ITEM,
+			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM |
+			DATAOBJ_FLAG_LIST, &obj->items,
 			STK_DATA_OBJECT_TYPE_ITEMS_NEXT_ACTION_INDICATOR, 0,
 			&obj->next_act,
 			STK_DATA_OBJECT_TYPE_ITEM_ID, 0,
@@ -2413,15 +2444,12 @@ static gboolean parse_select_item(struct stk_command *command,
 			STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
-		goto error;
+		return FALSE;
 
-	command->destructor = destroy_setup_menu;
+	if (obj->items == NULL)
+		return FALSE;
 
 	return TRUE;
-
-error:
-	destroy_select_item(command);
-	return FALSE;
 }
 
 static void destroy_send_sms(struct stk_command *command)
@@ -2883,34 +2911,6 @@ static void destroy_launch_browser(struct stk_command *command)
 	g_free(command->launch_browser.text_passwd);
 }
 
-static GSList *parse_provisioining_file_reference_list(
-					struct comprehension_tlv_iter *iter)
-{
-	unsigned short tag = STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REFERENCE;
-	struct comprehension_tlv_iter iter_old;
-	struct stk_file file;
-	GSList *list = NULL;
-
-	if (comprehension_tlv_iter_get_tag(iter) != tag)
-		return NULL;
-
-	do {
-		comprehension_tlv_iter_copy(iter, &iter_old);
-		memset(&file, 0, sizeof(file));
-
-		if (parse_dataobj_provisioning_file_reference(iter, &file)
-									== TRUE)
-			list = g_slist_prepend(list,
-						g_memdup(&file, sizeof(file)));
-	} while (comprehension_tlv_iter_next(iter) == TRUE &&
-			comprehension_tlv_iter_get_tag(iter) == tag);
-
-	comprehension_tlv_iter_copy(&iter_old, iter);
-	list = g_slist_reverse(list);
-
-	return list;
-}
-
 static gboolean parse_launch_browser(struct stk_command *command,
 					struct comprehension_tlv_iter *iter)
 {
@@ -2931,31 +2931,26 @@ static gboolean parse_launch_browser(struct stk_command *command,
 				&obj->url,
 				STK_DATA_OBJECT_TYPE_BEARER, 0,
 				&obj->bearer,
+				STK_DATA_OBJECT_TYPE_PROVISIONING_FILE_REF,
+				DATAOBJ_FLAG_LIST,
+				&obj->prov_file_refs,
+				STK_DATA_OBJECT_TYPE_TEXT, 0,
+				&obj->text_gateway_proxy_id,
+				STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_NETWORK_ACCESS_NAME, 0,
+				&obj->network_name,
+				STK_DATA_OBJECT_TYPE_TEXT, 0,
+				&obj->text_usr,
+				STK_DATA_OBJECT_TYPE_TEXT, 0,
+				&obj->text_passwd,
 				STK_DATA_OBJECT_TYPE_INVALID);
-
-	if (ret == FALSE)
-		goto error;
-
-	obj->prov_file_refs = parse_provisioining_file_reference_list(iter);
-
-	ret = parse_dataobj(iter,
-			STK_DATA_OBJECT_TYPE_TEXT, 0,
-			&obj->text_gateway_proxy_id,
-			STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
-			&obj->alpha_id,
-			STK_DATA_OBJECT_TYPE_ICON_ID, 0,
-			&obj->icon_id,
-			STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
-			&obj->text_attr,
-			STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
-			&obj->frame_id,
-			STK_DATA_OBJECT_TYPE_NETWORK_ACCESS_NAME, 0,
-			&obj->network_name,
-			STK_DATA_OBJECT_TYPE_TEXT, 0,
-			&obj->text_usr,
-			STK_DATA_OBJECT_TYPE_TEXT, 0,
-			&obj->text_passwd,
-			STK_DATA_OBJECT_TYPE_INVALID);
 
 	command->destructor = destroy_launch_browser;
 
@@ -2963,10 +2958,6 @@ static gboolean parse_launch_browser(struct stk_command *command,
 		return FALSE;
 
 	return TRUE;
-
-error:
-	destroy_launch_browser(command);
-	return FALSE;
 }
 
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
