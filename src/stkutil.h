@@ -1135,6 +1135,10 @@ struct stk_response_timer_mgmt {
 	struct stk_timer_value value;
 };
 
+struct stk_response_run_at_command {
+	const char *at_response;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1159,6 +1163,7 @@ struct stk_response {
 		struct stk_response_generic set_up_event_list;
 		struct stk_response_timer_mgmt timer_mgmt;
 		struct stk_response_generic set_up_idle_mode_text;
+		struct stk_response_run_at_command run_at_command;
 	};
 
 	void (*destructor)(struct stk_response *response);

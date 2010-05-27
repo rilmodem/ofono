@@ -3604,6 +3604,28 @@ static gboolean build_dataobj_datetime_timezone(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.41 */
+static gboolean build_dataobj_at_response(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	unsigned char tag = STK_DATA_OBJECT_TYPE_AT_RESPONSE;
+	int len;
+
+	if (data == NULL)
+		return TRUE;
+
+	/* "If the AT Response string is longer than the maximum length
+	 * capable of being transmitted to the UICC then the AT Response
+	 * string shall be truncated to this length by the terminal." */
+	len = strlen(data);
+	if (len > 240) /* Safe pick */
+		len = 240;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_bytes(tlv, data, len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.45 */
 static gboolean build_dataobj_language(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -4052,6 +4074,13 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					NULL);
 		break;
 	case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
+		break;
+	case STK_COMMAND_TYPE_RUN_AT_COMMAND:
+		ok = build_dataobj(&builder,
+					build_dataobj_at_response,
+					DATAOBJ_FLAG_CR,
+					response->run_at_command.at_response,
+					NULL);
 		break;
 	default:
 		return 0;
