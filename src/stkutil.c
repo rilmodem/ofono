@@ -276,7 +276,7 @@ static gboolean parse_dataobj_address(struct comprehension_tlv_iter *iter,
 
 	addr->ton_npi = data[0];
 	addr->number = number;
-	extract_bcd_number(data + 1, len - 1, addr->number);
+	sim_extract_bcd_number(data + 1, len - 1, addr->number);
 
 	return TRUE;
 }
@@ -1012,7 +1012,7 @@ static gboolean parse_dataobj_dtmf_string(struct comprehension_tlv_iter *iter,
 	if (*dtmf == NULL)
 		return FALSE;
 
-	extract_bcd_number(data, len, *dtmf);
+	sim_extract_bcd_number(data, len, *dtmf);
 
 	return TRUE;
 }
