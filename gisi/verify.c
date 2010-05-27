@@ -26,7 +26,6 @@
 #endif
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <glib.h>
 
 #include "client.h"
@@ -43,14 +42,14 @@ struct verify_data {
 	void *data;
 };
 
-static bool verify_cb(GIsiClient *client, const void *restrict data,
-			size_t len, uint16_t object, void *opaque)
+static gboolean verify_cb(GIsiClient *client, const void *restrict data,
+				size_t len, uint16_t object, void *opaque)
 {
 	const uint8_t *msg = data;
 	struct verify_data *vd = opaque;
 	GIsiVerifyFunc func = vd->func;
 
-	bool alive = false;
+	gboolean alive = FALSE;
 
 	if (!msg)
 		goto out;
@@ -60,18 +59,18 @@ static bool verify_cb(GIsiClient *client, const void *restrict data,
 
 	if (msg[1] == COMM_ISI_VERSION_GET_RESP && len >= 4) {
 		g_isi_version_set(client, msg[2], msg[3]);
-		alive = true;
+		alive = TRUE;
 		goto out;
 	}
 
 	if (msg[1] != COMM_ISA_ENTITY_NOT_REACHABLE_RESP)
-		alive = true;
+		alive = TRUE;
 
 out:
 	if (func)
 		func(client, alive, object, vd->data);
 	g_free(vd);
-	return true;
+	return TRUE;
 }
 
 /**

@@ -570,14 +570,8 @@ static void g_isi_dispatch_response(GIsiClient *client, uint16_t obj,
 
 	req = *(GIsiRequest **)ret;
 
-	if (req->func) {
-		bool handled;
-
-		handled = req->func(client, msg + 1, len - 1, obj, req->data);
-		if (!handled)
-			return;
-	}
-	g_isi_request_cancel(req);
+	if (!req->func || req->func(client, msg + 1, len - 1, obj, req->data))
+		g_isi_request_cancel(req);
 }
 
 /* Data callback for both responses and indications */

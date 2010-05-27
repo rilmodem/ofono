@@ -27,7 +27,6 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <stdbool.h>
 #include <gisi/modem.h>
 
 struct _GIsiServer;
@@ -36,9 +35,9 @@ typedef struct _GIsiServer GIsiServer;
 struct _GIsiIncoming;
 typedef struct _GIsiIncoming GIsiIncoming;
 
-typedef bool (*GIsiRequestFunc)(GIsiServer *server,
-		const void *restrict data, size_t len,
-		GIsiIncoming *, void *opaque);
+typedef gboolean (*GIsiRequestFunc)(GIsiServer *server,
+					const void *restrict data, size_t len,
+					GIsiIncoming *, void *opaque);
 
 GIsiServer *g_isi_server_create(GIsiModem *modem, uint8_t resource,
 				uint8_t major, uint8_t minor);

@@ -21,7 +21,6 @@
  *
  */
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <gisi/modem.h>
 

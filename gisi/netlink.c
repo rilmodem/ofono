@@ -25,7 +25,6 @@
 #include <config.h>
 #endif
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
