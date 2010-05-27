@@ -3981,6 +3981,8 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	case STK_COMMAND_TYPE_PROVIDE_LOCAL_INFO:
 		ok = build_local_info(&builder, response);
 		break;
+	case STK_COMMAND_TYPE_SETUP_EVENT_LIST:
+		break;
 	default:
 		return 0;
 	};

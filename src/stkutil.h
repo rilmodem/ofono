@@ -1150,6 +1150,7 @@ struct stk_response {
 		struct stk_response_set_up_call set_up_call;
 		struct stk_response_generic polling_off;
 		struct stk_response_local_info provide_local_info;
+		struct stk_response_generic set_up_event_list;
 	};
 
 	void (*destructor)(struct stk_response *response);
