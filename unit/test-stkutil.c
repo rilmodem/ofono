@@ -16728,6 +16728,771 @@ static const struct terminal_response_test
 	},
 };
 
+static const unsigned char timer_mgmt_response_111[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x01,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_111 = {
+	.pdu = timer_mgmt_response_111,
+	.pdu_len = sizeof(timer_mgmt_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 1,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_112[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x01, 0xa5,
+	0x03, 0x00, 0x30, 0x95,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_112 = {
+	.pdu = timer_mgmt_response_112,
+	.pdu_len = sizeof(timer_mgmt_response_112),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 1,
+			.value = {
+				.minute = 3,
+				.second = 59,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_114[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x01, 0xa5,
+	0x03, 0x00, 0x00, 0x95,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_114 = {
+	.pdu = timer_mgmt_response_114,
+	.pdu_len = sizeof(timer_mgmt_response_114),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 1,
+			.value = {
+				.second = 59,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_121[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x02,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_121 = {
+	.pdu = timer_mgmt_response_121,
+	.pdu_len = sizeof(timer_mgmt_response_121),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 2,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_122[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x02, 0xa5,
+	0x03, 0x32, 0x85, 0x85,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_122 = {
+	.pdu = timer_mgmt_response_122,
+	.pdu_len = sizeof(timer_mgmt_response_122),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 2,
+			.value = {
+				.hour = 23,
+				.minute = 58,
+				.second = 58,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_124[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x02, 0xa5,
+	0x03, 0x00, 0x00, 0x95,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_124 = {
+	.pdu = timer_mgmt_response_124,
+	.pdu_len = sizeof(timer_mgmt_response_124),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 2,
+			.value = {
+				.second = 59,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_131[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x08,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_131 = {
+	.pdu = timer_mgmt_response_131,
+	.pdu_len = sizeof(timer_mgmt_response_131),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 8,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_132[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x08, 0xa5,
+	0x03, 0x00, 0x81, 0x95,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_132 = {
+	.pdu = timer_mgmt_response_132,
+	.pdu_len = sizeof(timer_mgmt_response_132),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 8,
+			.value = {
+				.minute = 18,
+				.second = 59,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_134[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x08, 0xa5,
+	0x03, 0x00, 0x95, 0x92,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_134 = {
+	.pdu = timer_mgmt_response_134,
+	.pdu_len = sizeof(timer_mgmt_response_134),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 8,
+			.value = {
+				.minute = 59,
+				.second = 29,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_141a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x01,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_141a = {
+	.pdu = timer_mgmt_response_141a,
+	.pdu_len = sizeof(timer_mgmt_response_141a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 1,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_141b[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_141b = {
+	.pdu = timer_mgmt_response_141b,
+	.pdu_len = sizeof(timer_mgmt_response_141b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+	},
+};
+
+static const unsigned char timer_mgmt_response_142a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x02,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_142a = {
+	.pdu = timer_mgmt_response_142a,
+	.pdu_len = sizeof(timer_mgmt_response_142a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 2,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_143a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x03,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_143a = {
+	.pdu = timer_mgmt_response_143a,
+	.pdu_len = sizeof(timer_mgmt_response_143a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 3,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_144a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x04,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_144a = {
+	.pdu = timer_mgmt_response_144a,
+	.pdu_len = sizeof(timer_mgmt_response_144a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 4,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_145a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x05,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_145a = {
+	.pdu = timer_mgmt_response_145a,
+	.pdu_len = sizeof(timer_mgmt_response_145a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 5,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_146a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x06,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_146a = {
+	.pdu = timer_mgmt_response_146a,
+	.pdu_len = sizeof(timer_mgmt_response_146a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 6,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_147a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x07,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_147a = {
+	.pdu = timer_mgmt_response_147a,
+	.pdu_len = sizeof(timer_mgmt_response_147a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 7,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_148a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x08,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_148a = {
+	.pdu = timer_mgmt_response_148a,
+	.pdu_len = sizeof(timer_mgmt_response_148a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x02, /* Get the current value of the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 8,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_151a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x01,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_151a = {
+	.pdu = timer_mgmt_response_151a,
+	.pdu_len = sizeof(timer_mgmt_response_151a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 1,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_151b[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_151b = {
+	.pdu = timer_mgmt_response_151b,
+	.pdu_len = sizeof(timer_mgmt_response_151b),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+	},
+};
+
+static const unsigned char timer_mgmt_response_152a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x02,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_152a = {
+	.pdu = timer_mgmt_response_152a,
+	.pdu_len = sizeof(timer_mgmt_response_152a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 2,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_153a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x03,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_153a = {
+	.pdu = timer_mgmt_response_153a,
+	.pdu_len = sizeof(timer_mgmt_response_153a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 3,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_154a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x04,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_154a = {
+	.pdu = timer_mgmt_response_154a,
+	.pdu_len = sizeof(timer_mgmt_response_154a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 4,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_155a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x05,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_155a = {
+	.pdu = timer_mgmt_response_155a,
+	.pdu_len = sizeof(timer_mgmt_response_155a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 5,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_156a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x06,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_156a = {
+	.pdu = timer_mgmt_response_156a,
+	.pdu_len = sizeof(timer_mgmt_response_156a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 6,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_157a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x07,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_157a = {
+	.pdu = timer_mgmt_response_157a,
+	.pdu_len = sizeof(timer_mgmt_response_157a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 7,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_158a[] = {
+	0x81, 0x03, 0x01, 0x27, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x24, 0xa4, 0x01, 0x08,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_158a = {
+	.pdu = timer_mgmt_response_158a,
+	.pdu_len = sizeof(timer_mgmt_response_158a),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x01, /* Deactivate the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_TIMER_CONFLICT,
+		},
+		{ .timer_mgmt = {
+			.id = 8,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_163[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x03,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_163 = {
+	.pdu = timer_mgmt_response_163,
+	.pdu_len = sizeof(timer_mgmt_response_163),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 3,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_164[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x04,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_164 = {
+	.pdu = timer_mgmt_response_164,
+	.pdu_len = sizeof(timer_mgmt_response_164),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 4,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_165[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x05,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_165 = {
+	.pdu = timer_mgmt_response_165,
+	.pdu_len = sizeof(timer_mgmt_response_165),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 5,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_166[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x06,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_166 = {
+	.pdu = timer_mgmt_response_166,
+	.pdu_len = sizeof(timer_mgmt_response_166),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 6,
+		}},
+	},
+};
+
+static const unsigned char timer_mgmt_response_167[] = {
+	0x81, 0x03, 0x01, 0x27, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00, 0xa4, 0x01, 0x07,
+};
+
+static const struct terminal_response_test timer_mgmt_response_data_167 = {
+	.pdu = timer_mgmt_response_167,
+	.pdu_len = sizeof(timer_mgmt_response_167),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_TIMER_MANAGEMENT,
+		.qualifier = 0x00, /* Start the Timer */
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+		{ .timer_mgmt = {
+			.id = 7,
+		}},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -17935,6 +18700,103 @@ int main(int argc, char **argv)
 			&timer_mgmt_data_211, test_timer_mgmt);
 	g_test_add_data_func("/teststk/Timer Management 2.2.1",
 			&timer_mgmt_data_221, test_timer_mgmt);
+
+	g_test_add_data_func("/teststk/Timer Management response 1.1.1",
+			&timer_mgmt_response_data_111,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.1.2",
+			&timer_mgmt_response_data_112,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.1.4",
+			&timer_mgmt_response_data_114,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.2.1",
+			&timer_mgmt_response_data_121,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.2.2",
+			&timer_mgmt_response_data_122,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.2.4",
+			&timer_mgmt_response_data_124,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.3.1",
+			&timer_mgmt_response_data_131,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.3.2",
+			&timer_mgmt_response_data_132,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.3.4",
+			&timer_mgmt_response_data_134,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.1A",
+			&timer_mgmt_response_data_141a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.1B",
+			&timer_mgmt_response_data_141b,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.2A",
+			&timer_mgmt_response_data_142a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.3A",
+			&timer_mgmt_response_data_143a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.4A",
+			&timer_mgmt_response_data_144a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.5A",
+			&timer_mgmt_response_data_145a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.6A",
+			&timer_mgmt_response_data_146a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.7A",
+			&timer_mgmt_response_data_147a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.4.8A",
+			&timer_mgmt_response_data_148a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.1A",
+			&timer_mgmt_response_data_151a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.1B",
+			&timer_mgmt_response_data_151b,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.2A",
+			&timer_mgmt_response_data_152a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.3A",
+			&timer_mgmt_response_data_153a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.4A",
+			&timer_mgmt_response_data_154a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.5A",
+			&timer_mgmt_response_data_155a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.6A",
+			&timer_mgmt_response_data_156a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.7A",
+			&timer_mgmt_response_data_157a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.5.8A",
+			&timer_mgmt_response_data_158a,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.6.3",
+			&timer_mgmt_response_data_163,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.6.4",
+			&timer_mgmt_response_data_164,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.6.5",
+			&timer_mgmt_response_data_165,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.6.6",
+			&timer_mgmt_response_data_166,
+			test_terminal_response_encoding);
+	g_test_add_data_func("/teststk/Timer Management response 1.6.7",
+			&timer_mgmt_response_data_167,
+			test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Setup Idle Mode Text 1.1.1",
 		&setup_idle_mode_text_data_111, test_setup_idle_mode_text);
