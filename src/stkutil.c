@@ -3165,6 +3165,17 @@ static gboolean stk_tlv_builder_append_byte(struct stk_tlv_builder *iter,
 	return TRUE;
 }
 
+static gboolean stk_tlv_builder_append_short(struct stk_tlv_builder *iter,
+						unsigned short num)
+{
+	if (iter->len + 2 > iter->max_len)
+		return FALSE;
+
+	iter->value[iter->len++] = num >> 8;
+	iter->value[iter->len++] = num & 0xff;
+	return TRUE;
+}
+
 static gboolean stk_tlv_builder_append_gsm_packed(struct stk_tlv_builder *iter,
 							const char *text)
 {
@@ -3383,6 +3394,118 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 	return stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.19 */
+static gboolean build_dataobj_location_info(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_location_info *li = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_LOCATION_INFO;
+	guint8 mccmnc[3];
+
+	if (li->mcc[0] == 0)
+		/*
+		 * "If no location information is available for an access
+		 * technology, the respective data object shall have
+		 * length zero."
+		 */
+		return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+			stk_tlv_builder_close_container(tlv);
+
+	sim_encode_mcc_mnc(mccmnc, li->mcc, li->mnc);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, mccmnc, 3) &&
+		stk_tlv_builder_append_short(tlv, li->lac_tac) &&
+		(li->has_ci == FALSE ||
+		 stk_tlv_builder_append_short(tlv, li->ci)) &&
+		(li->has_ext_ci == FALSE ||
+		 stk_tlv_builder_append_short(tlv, li->ext_ci)) &&
+		(li->has_eutran_ci == FALSE ||
+		 (stk_tlv_builder_append_short(tlv, li->eutran_ci >> 12) &&
+		  stk_tlv_builder_append_short(tlv,
+					(li->eutran_ci << 4) | 0xf))) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.20
+ *
+ * See format note in parse_dataobj_imei.
+ */
+static gboolean build_dataobj_imei(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	char byte0[3];
+	const char *imei = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_IMEI;
+	unsigned char value[8];
+
+	if (imei == NULL)
+		return TRUE;
+
+	if (strlen(imei) != 15)
+		return FALSE;
+
+	byte0[0] = '*';
+	byte0[1] = imei[0];
+	byte0[2] = '\0';
+	sim_encode_bcd_number(byte0, value);
+	sim_encode_bcd_number(imei + 1, value + 1);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, value, 8) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.22 */
+static gboolean build_dataobj_network_measurement_results(
+						struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_common_byte_array *nmr = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_NETWORK_MEASUREMENT_RESULTS;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		(nmr->len == 0 ||
+		 stk_tlv_builder_append_bytes(tlv, nmr->array, nmr->len)) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in 3GPP 31.111 Section 8.29 */
+static gboolean build_dataobj_bcch_channel_list(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_bcch_ch_list *list = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BCCH_CHANNEL_LIST;
+	int i, bytes, pos, shift;
+	unsigned char value;
+
+	/* To distinguish between no BCCH Channel List data object and
+	 * an empty object in a sequence of empty and non-empty objects,
+	 * .channels must be non-NULL in objects in sequences.  */
+	if (list->channels == NULL)
+		return TRUE;
+
+	if (stk_tlv_builder_open_container(tlv, cr, tag, TRUE) != TRUE)
+		return FALSE;
+
+	bytes = (list->length * 10 + 7) / 8;
+	for (i = 0; i < bytes; i++) {
+		pos = (i * 8 + 7) / 10;
+		shift = pos * 10 + 10 - i * 8 - 8;
+
+		value = 0;
+		if (pos < list->length)
+			value |= list->channels[pos] >> shift;
+		if (shift > 2)
+			value |= list->channels[pos - 1] << (10 - shift);
+
+		if (stk_tlv_builder_append_byte(tlv, value) != TRUE)
+			return FALSE;
+	}
+
+	return stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.30 */
 static gboolean build_dataobj_cc_requested_action(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
@@ -3395,6 +3518,195 @@ static gboolean build_dataobj_cc_requested_action(struct stk_tlv_builder *tlv,
 		 stk_tlv_builder_append_bytes(tlv,
 						action->array, action->len) &&
 		 stk_tlv_builder_close_container(tlv));
+}
+
+/* Described in TS 102.223 Section 8.39 */
+static gboolean build_dataobj_datetime_timezone(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct sms_scts *scts = data;
+	struct sms_scts timestamp;
+	unsigned char value[7];
+	int offset = 0;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_DATETIME_TIMEZONE;
+
+	if (scts->month == 0 && scts->day == 0)
+		return TRUE;
+
+	/* Time zone information is optional */
+	if (scts->timezone == (gint8) 0xff) {
+		memcpy(&timestamp, scts, sizeof(timestamp));
+		timestamp.timezone = 0;
+		if (sms_encode_scts(&timestamp, value, &offset) != TRUE)
+			return FALSE;
+		value[6] = 0xff;
+	} else
+		if (sms_encode_scts(scts, value, &offset) != TRUE)
+			return FALSE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, value, 7) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.45 */
+static gboolean build_dataobj_language(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	unsigned char tag = STK_DATA_OBJECT_TYPE_LANGUAGE;
+
+	if (data == NULL)
+		return TRUE;
+
+	/*
+	 * Coded as two GSM 7-bit characters with eighth bit clear.  Since
+	 * ISO 639-2 codes use only english alphabet letters, no conversion
+	 * from UTF-8 to GSM is needed.
+	 */
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, data, 2) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in 3GPP TS 31.111 Section 8.46 */
+static gboolean build_dataobj_timing_advance(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_timing_advance *tadv = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_TIMING_ADVANCE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, tadv->status) &&
+		stk_tlv_builder_append_byte(tlv, tadv->advance) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.61 */
+static gboolean build_dataobj_access_technologies(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_access_technologies *techs = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_ACCESS_TECHNOLOGY;
+	int i;
+
+	if (stk_tlv_builder_open_container(tlv, cr, tag, FALSE) != TRUE)
+		return FALSE;
+
+	for (i = 0; i < techs->length; i++)
+		if (stk_tlv_builder_append_byte(tlv, techs->techs[i]) != TRUE)
+			return FALSE;
+
+	return stk_tlv_builder_close_container(tlv);
+}
+
+/* Shortcut for a single Access Technology */
+static gboolean build_dataobj_access_technology(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	return build_dataobj_access_technologies(tlv,
+			&(const struct stk_access_technologies) {
+				.techs = data, .length = 1 }, cr);
+}
+
+/* Described in TS 102.223 Section 8.69 */
+static gboolean build_dataobj_esn(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const guint32 *esn = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_ESN;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_short(tlv, *esn >> 16) &&
+		stk_tlv_builder_append_short(tlv, *esn >> 0) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.74
+ *
+ * See format note in parse_dataobj_imeisv.
+ */
+static gboolean build_dataobj_imeisv(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	char byte0[3];
+	const char *imeisv = data;
+	unsigned char value[9];
+	unsigned char tag = STK_DATA_OBJECT_TYPE_IMEISV;
+
+	if (imeisv == NULL)
+		return TRUE;
+
+	if (strlen(imeisv) != 16)
+		return FALSE;
+
+	byte0[0] = '3';
+	byte0[1] = imeisv[0];
+	byte0[2] = '\0';
+	sim_encode_bcd_number(byte0, value);
+	sim_encode_bcd_number(imeisv + 1, value + 1);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, value, 9) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.75 */
+static gboolean build_dataobj_network_search_mode(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const enum stk_network_search_mode *mode = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_NETWORK_SEARCH_MODE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *mode) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.76 */
+static gboolean build_dataobj_battery_state(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const enum stk_battery_state *state = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BATTERY_STATE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *state) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.81 */
+static gboolean build_dataobj_meid(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const char *meid = data;
+	unsigned char value[8];
+	unsigned char tag = STK_DATA_OBJECT_TYPE_MEID;
+
+	if (meid == NULL)
+		return TRUE;
+
+	if (strlen(meid) != 16)
+		return FALSE;
+
+	sim_encode_bcd_number(meid, value);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, value, 8) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.90 */
+static gboolean build_dataobj_broadcast_network_information(
+						struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_broadcast_network_information *bni = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BROADCAST_NETWORK_INFO;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, bni->tech) &&
+		stk_tlv_builder_append_bytes(tlv, bni->loc_info, bni->len) &&
+		stk_tlv_builder_close_container(tlv);
 }
 
 static gboolean build_dataobj(struct stk_tlv_builder *tlv,
@@ -3436,6 +3748,138 @@ static gboolean build_set_up_call(struct stk_tlv_builder *builder,
 				DATAOBJ_FLAG_CR,
 				&response->set_up_call.cc_requested_action,
 				NULL);
+}
+
+static gboolean build_local_info(struct stk_tlv_builder *builder,
+					const struct stk_response *response)
+{
+	const struct stk_response_local_info *info =
+		&response->provide_local_info;
+	int i;
+
+	switch (response->qualifier) {
+	case 0x00: /* Location Information according to current NAA */
+		return build_dataobj(builder,
+					build_dataobj_location_info,
+					DATAOBJ_FLAG_CR, &info->location,
+					NULL);
+
+	case 0x01: /* IMEI of the terminal */
+		return build_dataobj(builder,
+					build_dataobj_imei,
+					DATAOBJ_FLAG_CR, info->imei,
+					NULL);
+
+	case 0x02: /* Network Measurement results according to current NAA */
+		return build_dataobj(builder,
+				build_dataobj_network_measurement_results,
+				DATAOBJ_FLAG_CR, &info->nmr.nmr,
+				build_dataobj_bcch_channel_list,
+				DATAOBJ_FLAG_CR, &info->nmr.bcch_ch_list,
+				NULL);
+
+	case 0x03: /* Date, time and time zone */
+		return build_dataobj(builder,
+					build_dataobj_datetime_timezone,
+					DATAOBJ_FLAG_CR, &info->datetime,
+					NULL);
+
+	case 0x04: /* Language setting */
+		return build_dataobj(builder,
+					build_dataobj_language,
+					DATAOBJ_FLAG_CR, info->language,
+					NULL);
+
+	case 0x05: /* Timing Advance */
+		return build_dataobj(builder,
+					build_dataobj_timing_advance,
+					DATAOBJ_FLAG_CR, &info->tadv,
+					NULL);
+
+	case 0x06: /* Access Technology (single access technology) */
+		return build_dataobj(builder,
+					build_dataobj_access_technology,
+					0, &info->access_technology,
+					NULL);
+
+	case 0x07: /* ESN of the terminal */
+		return build_dataobj(builder,
+					build_dataobj_esn,
+					DATAOBJ_FLAG_CR, &info->esn,
+					NULL);
+
+	case 0x08: /* IMEISV of the terminal */
+		return build_dataobj(builder,
+					build_dataobj_imeisv,
+					DATAOBJ_FLAG_CR, info->imeisv,
+					NULL);
+
+	case 0x09: /* Search Mode */
+		return build_dataobj(builder,
+					build_dataobj_network_search_mode,
+					0, &info->search_mode,
+					NULL);
+
+	case 0x0a: /* Charge State of the Battery */
+		return build_dataobj(builder,
+					build_dataobj_battery_state,
+					DATAOBJ_FLAG_CR, &info->battery_charge,
+					NULL);
+
+	case 0x0b: /* MEID of the terminal */
+		return build_dataobj(builder,
+					build_dataobj_meid,
+					0, info->meid,
+					NULL);
+
+	case 0x0d: /* Broadcast Network Information according to current tech */
+		return build_dataobj(builder,
+				build_dataobj_broadcast_network_information,
+				0, &info->broadcast_network_info,
+				NULL);
+
+	case 0x0e: /* Multiple Access Technologies */
+		return build_dataobj(builder,
+					build_dataobj_access_technologies,
+					0, &info->access_technologies,
+					NULL);
+
+	case 0x0f: /* Location Information for multiple NAAs */
+		if (build_dataobj(builder,
+					build_dataobj_access_technologies,
+					0, &info->location_infos.access_techs,
+					NULL) != TRUE)
+			return FALSE;
+
+		for (i = 0; i < info->location_infos.access_techs.length; i++)
+			if (build_dataobj(builder,
+					build_dataobj_location_info,
+					0, &info->location_infos.locations[i],
+					NULL) != TRUE)
+				return FALSE;
+
+		return TRUE;
+
+	case 0x10: /* Network Measurement results for multiple NAAs */
+		if (build_dataobj(builder,
+					build_dataobj_access_technologies,
+					0, &info->nmrs.access_techs,
+					NULL) != TRUE)
+			return FALSE;
+
+		for (i = 0; i < info->nmrs.access_techs.length; i++)
+			if (build_dataobj(builder,
+				build_dataobj_network_measurement_results,
+				0, &info->nmrs.nmrs[i].nmr,
+				build_dataobj_bcch_channel_list,
+				0, &info->nmrs.nmrs[i].bcch_ch_list,
+				NULL) != TRUE)
+				return FALSE;
+
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 unsigned int stk_pdu_from_response(const struct stk_response *response,
@@ -3533,6 +3977,9 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 		ok = build_set_up_call(&builder, response);
 		break;
 	case STK_COMMAND_TYPE_POLLING_OFF:
+		break;
+	case STK_COMMAND_TYPE_PROVIDE_LOCAL_INFO:
+		ok = build_local_info(&builder, response);
 		break;
 	default:
 		return 0;

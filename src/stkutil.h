@@ -110,6 +110,7 @@ enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_CAUSE =				0x1A,
 	STK_DATA_OBJECT_TYPE_LOCATION_STATUS =			0x1B,
 	STK_DATA_OBJECT_TYPE_TRANSACTION_ID =			0x1C,
+	STK_DATA_OBJECT_TYPE_BCCH_CHANNEL_LIST =		0x1D,
 	STK_DATA_OBJECT_TYPE_ICON_ID =				0x1E,
 	STK_DATA_OBJECT_TYPE_ITEM_ICON_ID_LIST =		0x1F,
 	STK_DATA_OBJECT_TYPE_CARD_READER_STATUS =		0x20,
@@ -544,6 +545,8 @@ struct stk_location_info {
 	unsigned short ci;
 	ofono_bool_t has_ext_ci;
 	unsigned short ext_ci;
+	ofono_bool_t has_eutran_ci;
+	guint32 eutran_ci;
 };
 
 /*
@@ -1077,6 +1080,55 @@ struct stk_response_set_up_call {
 	} modified_result;
 };
 
+struct stk_response_local_info {
+	union {
+		struct stk_location_info location;
+		const char *imei;
+		struct stk_network_measurement_results {
+			struct stk_common_byte_array nmr;
+			struct stk_bcch_ch_list {
+				const short *channels;
+				int length;
+			} bcch_ch_list;
+		} nmr;
+		struct sms_scts datetime;
+		const char *language;
+		enum stk_battery_state battery_charge;
+		enum stk_access_technology_type access_technology;
+		struct stk_timing_advance {
+			enum {
+				STK_TIMING_ADVANCE_ME_IDLE = 0x00,
+				STK_TIMING_ADVANCE_ME_NOT_IDLE = 0x01,
+			} status;
+			/* Contains bit periods number according to 3GPP TS
+			 * 44.118 Section 9.3.106 / 3GPP TS 44.018 Section
+			 * 10.5.2.40.1, not microseconds */
+			int advance;
+		} tadv;
+		/* Bits[31:24]: manufacturer, bits[23:0]: serial number */
+		guint32 esn;
+		const char *imeisv;
+		enum stk_network_search_mode {
+			STK_NETWORK_SEARCH_MODE_MANUAL = 0x00,
+			STK_NETWORK_SEARCH_MODE_AUTOMATIC = 0x01,
+		} search_mode;
+		const char *meid;
+		struct stk_broadcast_network_information broadcast_network_info;
+		struct stk_access_technologies {
+			const enum stk_access_technology_type *techs;
+			int length;
+		} access_technologies;
+		struct {
+			struct stk_access_technologies access_techs;
+			struct stk_location_info *locations;
+		} location_infos;
+		struct {
+			struct stk_access_technologies access_techs;
+			struct stk_network_measurement_results *nmrs;
+		} nmrs;
+	};
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1097,6 +1149,7 @@ struct stk_response {
 		struct stk_response_generic send_sms;
 		struct stk_response_set_up_call set_up_call;
 		struct stk_response_generic polling_off;
+		struct stk_response_local_info provide_local_info;
 	};
 
 	void (*destructor)(struct stk_response *response);
