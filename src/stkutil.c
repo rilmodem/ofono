@@ -3548,10 +3548,12 @@ static gboolean build_dataobj_timer_id(struct stk_tlv_builder *tlv,
 	const unsigned char *id = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_TIMER_ID;
 
-	return id[0] == 0 ||
-		(stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
-		 stk_tlv_builder_append_byte(tlv, id[0]) &&
-		 stk_tlv_builder_close_container(tlv));
+	if (id[0] == 0)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, id[0]) &&
+		stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.38 */
