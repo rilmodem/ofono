@@ -3623,9 +3623,12 @@ static gboolean build_dataobj_access_technologies(struct stk_tlv_builder *tlv,
 static gboolean build_dataobj_access_technology(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
 {
-	return build_dataobj_access_technologies(tlv,
-			&(const struct stk_access_technologies) {
-				.techs = data, .length = 1 }, cr);
+	const struct stk_access_technologies techs = {
+		.techs = data,
+		.length = 1,
+	};
+
+	return build_dataobj_access_technologies(tlv, &techs, cr);
 }
 
 /* Described in TS 102.223 Section 8.69 */
