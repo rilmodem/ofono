@@ -3479,10 +3479,14 @@ static gboolean build_dataobj_network_measurement_results(
 	const struct stk_common_byte_array *nmr = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_NETWORK_MEASUREMENT_RESULTS;
 
-	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
-		(nmr->len == 0 ||
-		 stk_tlv_builder_append_bytes(tlv, nmr->array, nmr->len)) &&
-		stk_tlv_builder_close_container(tlv);
+	if (stk_tlv_builder_open_container(tlv, cr, tag, FALSE) == FALSE)
+		return FALSE;
+
+	if (nmr->len > 0 && stk_tlv_builder_append_bytes(tlv,
+					nmr->array, nmr->len) == FALSE)
+		return FALSE;
+
+	return stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in 3GPP 31.111 Section 8.29 */
