@@ -3513,11 +3513,12 @@ static gboolean build_dataobj_cc_requested_action(struct stk_tlv_builder *tlv,
 	const struct stk_common_byte_array *action = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_CALL_CONTROL_REQUESTED_ACTION;
 
-	return action->array == NULL ||
-		(stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
-		 stk_tlv_builder_append_bytes(tlv,
-						action->array, action->len) &&
-		 stk_tlv_builder_close_container(tlv));
+	if (action->array == NULL)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, action->array, action->len) &&
+		stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.39 */
@@ -3730,7 +3731,7 @@ static gboolean build_dataobj(struct stk_tlv_builder *tlv,
 	return TRUE;
 }
 
-static gboolean build_set_up_call(struct stk_tlv_builder *builder,
+static gboolean build_setup_call(struct stk_tlv_builder *builder,
 					const struct stk_response *response)
 {
 	if (response->set_up_call.modified_result.cc_modified)
@@ -3974,7 +3975,7 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 					NULL);
 		break;
 	case STK_COMMAND_TYPE_SETUP_CALL:
-		ok = build_set_up_call(&builder, response);
+		ok = build_setup_call(&builder, response);
 		break;
 	case STK_COMMAND_TYPE_POLLING_OFF:
 		break;
