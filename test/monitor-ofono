@@ -11,6 +11,7 @@ def property_changed(name, value, path, interface):
 				"Technologies",
 				"SubscriberNumbers",
 				"Operators",
+				"EmergencyNumbers",
 				"PreferredLanguages"]:
 		val = ""
 		for i in value:
