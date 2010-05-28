@@ -3614,9 +3614,11 @@ static gboolean build_dataobj_at_response(struct stk_tlv_builder *tlv,
 	if (data == NULL)
 		return TRUE;
 
-	/* "If the AT Response string is longer than the maximum length
+	/*
+	 * "If the AT Response string is longer than the maximum length
 	 * capable of being transmitted to the UICC then the AT Response
-	 * string shall be truncated to this length by the terminal." */
+	 * string shall be truncated to this length by the terminal."
+	 */
 	len = strlen(data);
 	if (len > 240) /* Safe pick */
 		len = 240;
