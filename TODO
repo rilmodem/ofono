@@ -301,11 +301,6 @@ Miscellaneous
   Complexity: C4
   Priority: Low
 
-- Network Time (NITZ) support
-
-  Complexity: C1
-  Priority: Low
-
 - Internet Access Provider database.  Have oFono automatically configure
   GPRS contexts based on an internal database.  Database format to be decided.
   If there are multiple matches in the database, then some user intervention
