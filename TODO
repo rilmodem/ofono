@@ -51,6 +51,7 @@ SMS
 
   Priority: High
   Complexity: C2
+  Owner: Aki Niemi <aki.niemi@nokia.com>
 
 - Smart Messaging Service.  This is a separate standard from Nokia and uses
   the 3GPP 23.040 source / destination addressing scheme.  The main aim of
