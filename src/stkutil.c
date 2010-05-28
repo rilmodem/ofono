@@ -3413,18 +3413,33 @@ static gboolean build_dataobj_location_info(struct stk_tlv_builder *tlv,
 
 	sim_encode_mcc_mnc(mccmnc, li->mcc, li->mnc);
 
-	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
-		stk_tlv_builder_append_bytes(tlv, mccmnc, 3) &&
-		stk_tlv_builder_append_short(tlv, li->lac_tac) &&
-		(li->has_ci == FALSE ||
-		 stk_tlv_builder_append_short(tlv, li->ci)) &&
-		(li->has_ext_ci == FALSE ||
-		 stk_tlv_builder_append_short(tlv, li->ext_ci)) &&
-		(li->has_eutran_ci == FALSE ||
-		 (stk_tlv_builder_append_short(tlv, li->eutran_ci >> 12) &&
-		  stk_tlv_builder_append_short(tlv,
-					(li->eutran_ci << 4) | 0xf))) &&
-		stk_tlv_builder_close_container(tlv);
+	if (stk_tlv_builder_open_container(tlv, cr, tag, FALSE) == FALSE)
+		return FALSE;
+
+	if (stk_tlv_builder_append_bytes(tlv, mccmnc, 3) == FALSE)
+		return FALSE;
+
+	if (stk_tlv_builder_append_short(tlv, li->lac_tac) == FALSE)
+		return FALSE;
+
+	if (li->has_ci && stk_tlv_builder_append_short(tlv, li->ci) == FALSE)
+		return FALSE;
+
+	if (li->has_ext_ci &&
+			stk_tlv_builder_append_short(tlv, li->ext_ci) == FALSE)
+		return FALSE;
+
+	if (li->has_eutran_ci) {
+		if (stk_tlv_builder_append_short(tlv,
+					li->eutran_ci >> 12) == FALSE)
+			return FALSE;
+
+		if (stk_tlv_builder_append_short(tlv,
+					(li->eutran_ci << 4) | 0xf) == FALSE)
+			return FALSE;
+	}
+
+	return stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.20
