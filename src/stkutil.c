@@ -3563,14 +3563,16 @@ static gboolean build_dataobj_timer_value(struct stk_tlv_builder *tlv,
 	const struct stk_timer_value *value = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_TIMER_VALUE;
 
-	return value->has_value == FALSE ||
-		(stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+	if (value->has_value == FALSE)
+		return TRUE;
+
 #define TO_BCD(bin) ((((bin) / 10) & 0xf) | (((bin) % 10) << 4))
-		 stk_tlv_builder_append_byte(tlv, TO_BCD(value->hour)) &&
-		 stk_tlv_builder_append_byte(tlv, TO_BCD(value->minute)) &&
-		 stk_tlv_builder_append_byte(tlv, TO_BCD(value->second)) &&
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, TO_BCD(value->hour)) &&
+		stk_tlv_builder_append_byte(tlv, TO_BCD(value->minute)) &&
+		stk_tlv_builder_append_byte(tlv, TO_BCD(value->second)) &&
+		stk_tlv_builder_close_container(tlv);
 #undef TO_BCD
-		 stk_tlv_builder_close_container(tlv));
 }
 
 /* Described in TS 102.223 Section 8.39 */
