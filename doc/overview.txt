@@ -50,6 +50,17 @@ Current implemented features:
 		Additional information about the current network can be
 		easily retrieved and displayed to the user.
 
+	Network time indications
+
+		oFono includes support for receiving Network Identity and
+		Timezone (NITZ) indications, and handles processing of
+		this information via system-specific plugins.
+
+		An example network time plugin is provided that simply
+		prints out the received time information. A more advanced,
+		real-world plugin could automatically set the system time
+		based on the received information.
+
 	Voice call handling
 
 		The voice call interface handles simple call creation and
