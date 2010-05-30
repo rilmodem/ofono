@@ -89,24 +89,6 @@ static const char *get_serial(struct udev_device *udev_device)
 	return serial;
 }
 
-static const char *get_usb_num(struct udev_device *udev_device)
-{
-	struct udev_list_entry *entry;
-	const char *num = NULL;
-
-	entry = udev_device_get_properties_list_entry(udev_device);
-	while (entry) {
-		const char *name = udev_list_entry_get_name(entry);
-
-		if (g_strcmp0(name, "ID_USB_INTERFACE_NUM") == 0)
-			num = udev_list_entry_get_value(entry);
-
-		entry = udev_list_entry_get_next(entry);
-	}
-
-	return num;
-}
-
 #define MODEM_DEVICE		"ModemDevice"
 #define DATA_DEVICE		"DataDevice"
 #define GPS_DEVICE		"GPSDevice"
@@ -219,7 +201,8 @@ static void add_hso(struct ofono_modem *modem,
 static void add_huawei(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
-	const char *devnode, *num;
+	struct udev_list_entry *entry;
+	const char *devnode, *serial_typ = NULL;
 	int primary, secondary;
 
 	primary = ofono_modem_get_integer(modem, "PrimaryRegistered");
@@ -228,32 +211,40 @@ static void add_huawei(struct ofono_modem *modem,
 	if (primary && secondary)
 		return;
 
-	num = get_usb_num(udev_device);
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
 
-	/*
-	 * Here is is assumed that that usb port number 0 is the control
-	 * port and port 2 is the event port. This assumption will surely
-	 * be false with some devices and better heuristics is needed.
-	 */
-	if (g_strcmp0(num, "00") == 0) {
-		if (primary != 0)
-			return;
+		if (g_strcmp0(name, "OFONO_TYP") == 0) {
+			serial_typ = udev_list_entry_get_value(entry);
 
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Device", devnode);
+			if (g_strcmp0(serial_typ, "PRIMARY") == 0) {
+				if (primary != 0)
+					return;
 
-		primary = 1;
-		ofono_modem_set_integer(modem, "PrimaryRegistered", primary);
-	} else if (g_strcmp0(num, "01") == 0 || g_strcmp0(num, "02") == 0) {
-		if (secondary != 0)
-			return;
+				devnode = udev_device_get_devnode(udev_device);
+				ofono_modem_set_string(modem, "Device",
+							devnode);
 
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "SecondaryDevice", devnode);
+				primary = 1;
+				ofono_modem_set_integer(modem, "PrimaryRegistered", primary);
+			}
 
-		secondary = 1;
-		ofono_modem_set_integer(modem, "SecondaryRegistered",
-					secondary);
+			if (g_strcmp0(serial_typ, "SECONDARY") == 0) {
+				if (secondary != 0)
+					return;
+
+				devnode = udev_device_get_devnode(udev_device);
+				ofono_modem_set_string(modem, "SecondaryDevice", devnode);
+
+				secondary = 1;
+				ofono_modem_set_integer(modem, "SecondaryRegistered",
+							secondary);
+			}
+
+		}
+
+		entry = udev_list_entry_get_next(entry);
 	}
 
 	if (primary && secondary)
