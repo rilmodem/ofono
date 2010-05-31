@@ -4893,6 +4893,31 @@ static unsigned char setup_menu_913[] = { 0xD0, 0x0D, 0x81, 0x03, 0x01, 0x25,
 						0x00, 0x82, 0x02, 0x81, 0x82,
 						0x85, 0x00, 0x8F, 0x00 };
 
+/* Negative case: No item is present */
+static unsigned char setup_menu_neg_1[] = { 0xD0, 0x0B, 0x81, 0x03, 0x01, 0x25,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0x85, 0x00 };
+
+/* Negative case: Two empty items*/
+static unsigned char setup_menu_neg_2[] = { 0xD0, 0x0F, 0x81, 0x03, 0x01, 0x25,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0x85, 0x00, 0x8F, 0x00, 0x8F,
+						0x00 };
+
+/* Negative case: valid item + empty item */
+static unsigned char setup_menu_neg_3[] = { 0xD0, 0x16, 0x81, 0x03, 0x01, 0x25,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0x85, 0x00, 0x8F, 0x07, 0x01,
+						0x49, 0x74, 0x65, 0x6D, 0x20,
+						0x31, 0x8F, 0x00 };
+
+/* Negative case: empty item + valid item */
+static unsigned char setup_menu_neg_4[] = { 0xD0, 0x16, 0x81, 0x03, 0x01, 0x25,
+						0x00, 0x82, 0x02, 0x81, 0x82,
+						0x85, 0x00, 0x8F, 0x00, 0x8F,
+						0x07, 0x01, 0x49, 0x74, 0x65,
+						0x6D, 0x20, 0x31 };
+
 static struct setup_menu_test setup_menu_data_111 = {
 	.pdu = setup_menu_111,
 	.pdu_len = sizeof(setup_menu_111),
@@ -5451,6 +5476,26 @@ static struct setup_menu_test setup_menu_data_913 = {
 	.qualifier = 0x00
 };
 
+static struct setup_menu_test setup_menu_data_neg_1 = {
+	.pdu = setup_menu_neg_1,
+	.pdu_len = sizeof(setup_menu_neg_1)
+};
+
+static struct setup_menu_test setup_menu_data_neg_2 = {
+	.pdu = setup_menu_neg_2,
+	.pdu_len = sizeof(setup_menu_neg_2)
+};
+
+static struct setup_menu_test setup_menu_data_neg_3 = {
+	.pdu = setup_menu_neg_3,
+	.pdu_len = sizeof(setup_menu_neg_3)
+};
+
+static struct setup_menu_test setup_menu_data_neg_4 = {
+	.pdu = setup_menu_neg_4,
+	.pdu_len = sizeof(setup_menu_neg_4)
+};
+
 /* Defined in TS 102.384 Section 27.22.4.7 */
 static void test_setup_menu(gconstpointer data)
 {
@@ -5482,6 +5527,16 @@ static void test_setup_menu(gconstpointer data)
 					&test->item_text_attr_list);
 
 	stk_command_free(command);
+}
+
+static void test_setup_menu_neg(gconstpointer data)
+{
+	const struct setup_menu_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(!command);
 }
 
 struct select_item_test {
@@ -18431,6 +18486,15 @@ int main(int argc, char **argv)
 				&setup_menu_data_912, test_setup_menu);
 	g_test_add_data_func("/teststk/Setup Menu 9.1.3",
 				&setup_menu_data_913, test_setup_menu);
+
+	g_test_add_data_func("/teststk/Setup Menu Negative 1",
+			&setup_menu_data_neg_1, test_setup_menu_neg);
+	g_test_add_data_func("/teststk/Setup Menu Negative 2",
+			&setup_menu_data_neg_2, test_setup_menu_neg);
+	g_test_add_data_func("/teststk/Setup Menu Negative 3",
+			&setup_menu_data_neg_3, test_setup_menu_neg);
+	g_test_add_data_func("/teststk/Setup Menu Negative 4",
+			&setup_menu_data_neg_4, test_setup_menu_neg);
 
 	g_test_add_data_func("/teststk/Set Up Menu response 1.1.1",
 				&set_up_menu_response_data_111,
