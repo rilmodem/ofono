@@ -2015,6 +2015,12 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 	}
 }
 
+static void destroy_stk_item(struct stk_item *item)
+{
+	g_free(item->text);
+	g_free(item);
+}
+
 static gboolean parse_item_list(struct comprehension_tlv_iter *iter,
 				void *data)
 {
@@ -2023,21 +2029,40 @@ static gboolean parse_item_list(struct comprehension_tlv_iter *iter,
 	struct comprehension_tlv_iter iter_old;
 	struct stk_item item;
 	GSList *list = NULL;
+	unsigned int count = 0;
+	gboolean has_empty = FALSE;
 
 	do {
 		comprehension_tlv_iter_copy(iter, &iter_old);
 		memset(&item, 0, sizeof(item));
+		count++;
 
-		if (parse_dataobj_item(iter, &item) == TRUE)
+		if (parse_dataobj_item(iter, &item) == TRUE) {
+			if (item.id == 0) {
+				has_empty = TRUE;
+				continue;
+			}
+
 			list = g_slist_prepend(list,
 						g_memdup(&item, sizeof(item)));
+		}
 	} while (comprehension_tlv_iter_next(iter) == TRUE &&
 			comprehension_tlv_iter_get_tag(iter) == tag);
 
 	comprehension_tlv_iter_copy(&iter_old, iter);
-	*out = g_slist_reverse(list);
 
-	return TRUE;
+	if (!has_empty) {
+		*out = g_slist_reverse(list);
+		return TRUE;
+	}
+
+	if (count == 1)
+		return TRUE;
+
+	g_slist_foreach(list, (GFunc)destroy_stk_item, NULL);
+	g_slist_free(list);
+	return FALSE;
+
 }
 
 static gboolean parse_provisioning_list(struct comprehension_tlv_iter *iter,
@@ -2343,12 +2368,6 @@ static gboolean parse_poll_interval(struct stk_command *command,
 	return TRUE;
 }
 
-static void destroy_stk_item(struct stk_item *item)
-{
-	g_free(item->text);
-	g_free(item);
-}
-
 static void destroy_setup_menu(struct stk_command *command)
 {
 	g_free(command->setup_menu.alpha_id);
@@ -2391,9 +2410,6 @@ static gboolean parse_setup_menu(struct stk_command *command,
 			STK_DATA_OBJECT_TYPE_INVALID);
 
 	if (ret == FALSE)
-		return FALSE;
-
-	if (obj->items == NULL)
 		return FALSE;
 
 	return TRUE;
