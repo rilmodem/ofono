@@ -2483,16 +2483,16 @@ static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
 					guint16 ref, guint8 max, guint8 seq,
 					gboolean backup)
 {
-	int offset = seq / 32;
-	int bit = 1 << (seq % 32);
+	unsigned int offset = seq / 32;
+	unsigned int bit = 1 << (seq % 32);
 	GSList *l;
 	GSList *prev;
 	struct sms *newsms;
 	struct sms_assembly_node *node;
 	GSList *completed;
-	int position;
-	int i;
-	int j;
+	unsigned int position;
+	unsigned int i;
+	unsigned int j;
 
 	prev = NULL;
 
