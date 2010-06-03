@@ -37,7 +37,6 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
-#include <ofono/sms.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
@@ -162,7 +161,7 @@ static int novatel_enable(struct ofono_modem *modem)
 	if (!channel)
 		return -EIO;
 
-	syntax = g_at_syntax_new_gsmv1();
+	syntax = g_at_syntax_new_gsm_permissive();
 	data->chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
@@ -220,7 +219,7 @@ static int novatel_disable(struct ofono_modem *modem)
 	g_at_chat_send(data->chat, "AT$NWDMAT=0", nwdmat_prefix,
 						NULL, NULL, NULL);
 
-	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
+	g_at_chat_send(data->chat, "AT+CFUN=0", none_prefix,
 					cfun_disable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -266,7 +265,7 @@ static void novatel_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
+	netreg = ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
 								data->chat);
 
 	if (data->dmat_mode != 1)
@@ -280,7 +279,7 @@ static void novatel_post_sim(struct ofono_modem *modem)
 	if (!channel)
 		return;
 
-	syntax = g_at_syntax_new_gsmv1();
+	syntax = g_at_syntax_new_gsm_permissive();
 	data->gprs = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
