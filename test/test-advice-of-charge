@@ -15,8 +15,8 @@ def cm_maximum_reached():
 	print "Only 30 seconds call time remains, recharge."
 
 def print_useage(s):
-	print "Useage: %s <property> <newvalue> <password>" % (s)
-	print "Useage: %s reset <password>" % (s)
+	print "Usage: %s <property> <newvalue> <password>" % (s)
+	print "Usage: %s reset <password>" % (s)
 	sys.exit(1);
 
 if __name__ == "__main__":

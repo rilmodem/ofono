@@ -39,7 +39,7 @@ if __name__ == "__main__":
 	global vcmanager
 
 	if (len(sys.argv) < 2):
-		print "Useage: %s [modem] <number>" % (sys.argv[0])
+		print "Usage: %s [modem] <number>" % (sys.argv[0])
 		sys.exit(1)
 
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)

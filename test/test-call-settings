@@ -14,7 +14,7 @@ def property_changed(name, value):
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		print "Useage: %s <property> <newvalue>" % (sys.argv[0])
+		print "Usage: %s <property> <newvalue>" % (sys.argv[0])
 		print "Properties can be: VoiceCallWaiting, HideCallerId"
 		sys.exit(1)
 

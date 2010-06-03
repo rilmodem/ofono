@@ -12,8 +12,8 @@ def property_changed(name, value):
 		mainloop.quit()
 
 def print_useage(s):
-	print "Useage: %s <property> <newvalue> <password>" % (s)
-	print "Useage: %s disableall <password>" % (s)
+	print "Usage: %s <property> <newvalue> <password>" % (s)
+	print "Usage: %s disableall <password>" % (s)
 	sys.exit(1);
 
 if __name__ == "__main__":

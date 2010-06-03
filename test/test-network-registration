@@ -18,11 +18,11 @@ def network_property_changed(name, value):
 
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
-		print "Useage: %s <path> - Register to PLMN on <path>" %\
+		print "Usage: %s <path> - Register to PLMN on <path>" %\
 			(sys.argv[0])
-		print "Useage: %s default - Register to default PLMN" %\
+		print "Usage: %s default - Register to default PLMN" %\
 			(sys.argv[0])
-		print "Useage: %s unregister - Unregister from all PLMNs" %\
+		print "Usage: %s unregister - Unregister from all PLMNs" %\
 			(sys.argv[0])
 		sys.exit(1)
 
