@@ -216,7 +216,7 @@ static int huawei_enable(struct ofono_modem *modem)
 	g_at_chat_add_terminator(data->chat, "COMMAND NOT SUPPORT", -1, FALSE);
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, huawei_debug, "");
+		g_at_chat_set_debug(data->chat, huawei_debug, "Modem:");
 
 	data->event = create_port(event_device);
 
@@ -231,7 +231,7 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->event, huawei_debug,
-							"EventChannel: ");
+							"Event:");
 
 	data->sim_state = 0;
 
