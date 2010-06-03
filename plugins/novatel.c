@@ -36,11 +36,22 @@
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
+#include <ofono/sim.h>
 #include <ofono/sms.h>
+#include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 #include <ofono/log.h>
+
+#include <drivers/atmodem/atutil.h>
+#include <drivers/atmodem/vendor.h>
+
+static const char *none_prefix[] = { NULL };
+static const char *nwdmat_prefix[] = { "$NWDMAT:", NULL };
 
 struct novatel_data {
 	GAtChat *chat;
+	GAtChat *gprs;
+	gint dmat_mode;
 };
 
 static int novatel_probe(struct ofono_modem *modem)
@@ -72,7 +83,8 @@ static void novatel_remove(struct ofono_modem *modem)
 
 static void novatel_debug(const char *str, void *user_data)
 {
-	ofono_info("%s", str);
+	const char *prefix = user_data;
+	ofono_info("%s%s", prefix, str);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -83,6 +95,54 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (ok)
 		ofono_modem_set_powered(modem, TRUE);
+}
+
+static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct novatel_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	if (ok)
+		data->dmat_mode = 1;
+
+	g_at_chat_send(data->chat, "AT+CFUN=1", none_prefix,
+					cfun_enable, modem, NULL);
+}
+
+static void nwdmat_query(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct novatel_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	gint dmat_mode;
+
+	DBG("");
+
+	if (!ok)
+		goto error;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "$NWDMAT:"))
+		goto error;
+
+	if (!g_at_result_iter_next_number(&iter, &dmat_mode))
+		goto error;
+
+	if (dmat_mode == 1) {
+		nwdmat_action(TRUE, result, user_data);
+		return;
+	}
+
+	g_at_chat_send(data->chat, "AT$NWDMAT=1", nwdmat_prefix,
+					nwdmat_action, modem, NULL);
+
+	return;
+
+error:
+	nwdmat_action(FALSE, result, user_data);
 }
 
 static int novatel_enable(struct ofono_modem *modem)
@@ -96,7 +156,7 @@ static int novatel_enable(struct ofono_modem *modem)
 
 	device = ofono_modem_get_string(modem, "Device");
 	if (!device)
-			return -EINVAL;
+		return -EINVAL;
 
 	channel = g_at_tty_open(device, NULL);
 	if (!channel)
@@ -111,12 +171,16 @@ static int novatel_enable(struct ofono_modem *modem)
 		return -EIO;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, novatel_debug, NULL);
+		g_at_chat_set_debug(data->chat, novatel_debug, "Modem:");
 
-	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
-					cfun_enable, modem, NULL);
+	g_at_chat_send(data->chat, "ATE0 +CMEE=1", none_prefix,
+						NULL, NULL, NULL);
 
-	return 0;
+	/* Check mode of seconday port */
+	g_at_chat_send(data->chat, "AT$NWDMAT?", nwdmat_prefix,
+					nwdmat_query, modem, NULL);
+
+	return -EINPROGRESS;
 }
 
 static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -142,8 +206,20 @@ static int novatel_disable(struct ofono_modem *modem)
 	if (!data->chat)
 		return 0;
 
+	if (data->gprs) {
+		g_at_chat_cancel_all(data->gprs);
+		g_at_chat_unregister_all(data->gprs);
+
+		g_at_chat_unref(data->gprs);
+		data->gprs = NULL;
+	}
+
 	g_at_chat_cancel_all(data->chat);
 	g_at_chat_unregister_all(data->chat);
+
+	g_at_chat_send(data->chat, "AT$NWDMAT=0", nwdmat_prefix,
+						NULL, NULL, NULL);
+
 	g_at_chat_send(data->chat, "AT+CFUN=0", NULL,
 					cfun_disable, modem, NULL);
 
@@ -153,19 +229,81 @@ static int novatel_disable(struct ofono_modem *modem)
 static void novatel_pre_sim(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
+	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+	sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
+
+	if (sim)
+		ofono_sim_inserted_notify(sim, TRUE);
+}
+
+static void creg_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	int status, lac, ci, tech;
+
+	DBG("");
+
+	if (at_util_parse_reg_unsolicited(result, "+CREG:", &status,
+						&lac, &ci, &tech, 0) == FALSE)
+		return;
+
+	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
 static void novatel_post_sim(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
+	struct ofono_netreg *netreg;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
+	GAtSyntax *syntax;
+	GIOChannel *channel;
+	const char *device;
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
+								data->chat);
+
+	if (data->dmat_mode != 1)
+		return;
+
+	device = ofono_modem_get_string(modem, "Data");
+	if (!device)
+		return;
+
+	channel = g_at_tty_open(device, NULL);
+	if (!channel)
+		return;
+
+	syntax = g_at_syntax_new_gsmv1();
+	data->gprs = g_at_chat_new(channel, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(channel);
+
+	if (!data->gprs)
+		return;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(data->gprs, novatel_debug, "GPRS:");
+
+	g_at_chat_send(data->gprs, "ATE0 +CMEE=1", none_prefix,
+						NULL, NULL, NULL);
+
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->gprs);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->gprs);
+
+	if (gprs && gc) {
+		ofono_gprs_add_context(gprs, gc);
+
+		/* Handle CREG notifications from GPRS channel */
+		g_at_chat_register(data->gprs, "+CREG:",
+					creg_notify, FALSE, netreg, NULL);
+	}
 }
 
 static struct ofono_modem_driver novatel_driver = {
