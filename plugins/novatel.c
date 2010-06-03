@@ -37,7 +37,9 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
+#include <ofono/cbs.h>
 #include <ofono/sms.h>
+#include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
@@ -295,6 +297,8 @@ static void novatel_post_sim(struct ofono_modem *modem)
 						NULL, NULL, NULL);
 
 	ofono_sms_create(modem, OFONO_VENDOR_NOVATEL, "atmodem", data->gprs);
+	ofono_cbs_create(modem, 0, "atmodem", data->gprs);
+	ofono_ussd_create(modem, 0, "atmodem", data->gprs);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->gprs);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->gprs);
