@@ -847,6 +847,12 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_register(nd->chat, "%CSQ:", calypso_csq_notify,
 					FALSE, netreg, NULL);
 		break;
+	case OFONO_VENDOR_NOVATEL:
+		g_at_chat_send(nd->chat, "AT$NWCSQ", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT$CNTI=0", none_prefix,
+				NULL, NULL, NULL);
+		break;
 	case OFONO_VENDOR_OPTION_HSO:
 		g_at_chat_send(nd->chat, "AT_OSSYS=1", none_prefix,
 				NULL, NULL, NULL);
