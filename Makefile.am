@@ -325,7 +325,9 @@ test_scripts = test/activate-context \
 		test/test-ss-control-cf \
 		test/test-ss-control-cs \
 		test/test-ussd \
-		test/test-voicecall
+		test/test-voicecall \
+		test/offline-modem \
+		test/online-modem
 
 if TEST
 testdir = $(pkglibdir)/test
