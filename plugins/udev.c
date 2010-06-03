@@ -263,9 +263,9 @@ static void add_huawei(struct ofono_modem *modem,
 static void add_em770(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
-	const char *devnode, *intf_number;
-	int registered;
+	const char *devnode, *intfnum;
 	struct udev_device *parent;
+	int registered;
 
 	registered = ofono_modem_get_integer(modem, "Registered");
 	if (registered != 0)
@@ -273,9 +273,9 @@ static void add_em770(struct ofono_modem *modem,
 
 	parent = udev_device_get_parent(udev_device);
 	parent = udev_device_get_parent(parent);
-	intf_number = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
+	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
 
-	if (!strcmp(intf_number, "02")) {
+	if (g_strcmp0(intfnum, "02") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, "Device", devnode);
 
@@ -287,18 +287,28 @@ static void add_em770(struct ofono_modem *modem,
 static void add_novatel(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
-	const char *devnode;
+	const char *devnode, *intfnum;
+	struct udev_device *parent;
 	int registered;
 
 	registered = ofono_modem_get_integer(modem, "Registered");
 	if (registered != 0)
 		return;
 
-	devnode = udev_device_get_devnode(udev_device);
-	ofono_modem_set_string(modem, "Device", devnode);
+	parent = udev_device_get_parent(udev_device);
+	parent = udev_device_get_parent(parent);
+	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
 
-	ofono_modem_set_integer(modem, "Registered", 1);
-	ofono_modem_register(modem);
+	if (g_strcmp0(intfnum, "00") == 0) {
+		devnode = udev_device_get_devnode(udev_device);
+		ofono_modem_set_string(modem, "Device", devnode);
+	} else if (g_strcmp0(intfnum, "01") == 0) {
+		devnode = udev_device_get_devnode(udev_device);
+		ofono_modem_set_string(modem, "Data", devnode);
+
+		ofono_modem_set_integer(modem, "Registered", 1);
+		ofono_modem_register(modem);
+	}
 }
 
 static void add_modem(struct udev_device *udev_device)
