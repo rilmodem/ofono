@@ -669,7 +669,8 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	const char *mode;
 	int len = sprintf(buf, "AT+CNMI=");
 
-	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM)
+	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM ||
+			data->vendor == OFONO_VENDOR_NOVATEL)
 		/* MSM devices advertise support for mode 2, but return an
 		 * error if we attempt to actually use it. */
 		mode = "1";
@@ -769,7 +770,7 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (build_cnmi_string(buf, cnmi_opts, data))
 		supported = TRUE;
 
-	if (data->cnma_enabled)
+	if (data->cnma_enabled && data->vendor != OFONO_VENDOR_NOVATEL)
 		construct_ack_pdu(data);
 
 out:
