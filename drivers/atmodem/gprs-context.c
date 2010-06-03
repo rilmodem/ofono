@@ -40,7 +40,7 @@
 
 #include "atmodem.h"
 
-#define STATIC_IP_NETMASK "255.255.255.248"
+#define STATIC_IP_NETMASK "255.255.255.255"
 
 static const char *none_prefix[] = { NULL };
 
