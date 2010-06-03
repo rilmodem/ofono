@@ -1,3 +1,9 @@
+ver 0.22:
+	Fix issue with VPATH builds.
+	Fix issue with SMS and more than 31 fragments.
+	Add even more SIM Toolkit parsing support.
+	Add support for modem online property.
+
 ver 0.21:
 	Add more parsing support for SIM Toolkit.
 	Add support for SIM insertion/removal events.
