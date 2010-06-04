@@ -873,6 +873,8 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		g_at_chat_send(nd->chat, "AT_OSSYS?", none_prefix,
 				NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT_OWCTI?", none_prefix,
+				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OCTI?", none_prefix,
 				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OSQI?", none_prefix,
