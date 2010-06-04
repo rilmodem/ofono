@@ -517,14 +517,14 @@ static void option_osigq_notify(GAtResult *result, gpointer user_data)
 				at_util_convert_signal_strength(strength));
 }
 
-static void option_owcti_notify(GAtResult *result, gpointer user_data)
+static void option_ouwcti_notify(GAtResult *result, gpointer user_data)
 {
 	int mode;
 	GAtResultIter iter;
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "_OWCTI:"))
+	if (!g_at_result_iter_next(&iter, "_OUWCTI:"))
 		return;
 
 	if (!g_at_result_iter_next_number(&iter, &mode))
@@ -864,7 +864,7 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "_OSIGQ:", option_osigq_notify,
 					FALSE, netreg, NULL);
-		g_at_chat_register(nd->chat, "_OWCTI:", option_owcti_notify,
+		g_at_chat_register(nd->chat, "_OUWCTI:", option_ouwcti_notify,
 					FALSE, netreg, NULL);
 		g_at_chat_register(nd->chat, "_OCTI:", option_octi_notify,
 					FALSE, netreg, NULL);
