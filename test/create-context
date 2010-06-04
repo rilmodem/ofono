@@ -25,7 +25,7 @@ for path in properties["Modems"]:
 	properties = connmgr.GetProperties()
 
 	if (properties["PrimaryContexts"] == []):
-		path = connmgr.CreateContext("Example", "internet")
+		path = connmgr.CreateContext("Internet access", "internet")
 	else:
 		path = properties["PrimaryContexts"][0]
 
