@@ -279,15 +279,28 @@ static gboolean at_parse_pdu_common(GAtResult *result, const char *prefix,
 	return TRUE;
 }
 
+static inline void at_ack_delivery(struct ofono_sms *sms)
+{
+	struct sms_data *data = ofono_sms_get_data(sms);
+	char buf[256];
+
+	/* We must acknowledge the PDU using CNMA */
+	if (data->cnma_ack_pdu)
+		snprintf(buf, sizeof(buf), "AT+CNMA=1,%d\r%s",
+				data->cnma_ack_pdu_len, data->cnma_ack_pdu);
+	else /* Should be a safe fallback */
+		snprintf(buf, sizeof(buf), "AT+CNMA=0");
+
+	g_at_chat_send(data->chat, buf, none_prefix, at_cnma_cb, NULL, NULL);
+}
+
 static void at_cds_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
-	struct sms_data *data = ofono_sms_get_data(sms);
 	long pdu_len;
 	int tpdu_len;
 	const char *hexpdu;
 	unsigned char pdu[176];
-	char buf[256];
 
 	if (!at_parse_pdu_common(result, "+CDS:", &hexpdu, &tpdu_len)) {
 		ofono_error("Unable to parse CDS notification");
@@ -305,25 +318,16 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_status_notify(sms, pdu, pdu_len, tpdu_len);
 
-	/* We must acknowledge the PDU using CNMA */
-	if (data->cnma_ack_pdu)
-		snprintf(buf, sizeof(buf), "AT+CNMA=1,%d\r%s",
-				data->cnma_ack_pdu_len, data->cnma_ack_pdu);
-	else /* Should be a safe fallback */
-		snprintf(buf, sizeof(buf), "AT+CNMA=0");
-
-	g_at_chat_send(data->chat, buf, none_prefix, at_cnma_cb, NULL, NULL);
+	at_ack_delivery(sms);
 }
 
 static void at_cmt_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
-	struct sms_data *data = ofono_sms_get_data(sms);
 	const char *hexpdu;
 	long pdu_len;
 	int tpdu_len;
 	unsigned char pdu[176];
-	char buf[256];
 
 	if (!at_parse_pdu_common(result, "+CMT:", &hexpdu, &tpdu_len)) {
 		ofono_error("Unable to parse CMT notification");
@@ -340,14 +344,7 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
 
-	/* We must acknowledge the PDU using CNMA */
-	if (data->cnma_ack_pdu)
-		snprintf(buf, sizeof(buf), "AT+CNMA=1,%d\r%s",
-				data->cnma_ack_pdu_len, data->cnma_ack_pdu);
-	else /* Should be a safe fallback */
-		snprintf(buf, sizeof(buf), "AT+CNMA=0");
-
-	g_at_chat_send(data->chat, buf, none_prefix, at_cnma_cb, NULL, NULL);
+	at_ack_delivery(sms);
 }
 
 static void at_cmgr_notify(GAtResult *result, gpointer user_data)
