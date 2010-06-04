@@ -856,6 +856,8 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_OPTION_HSO:
 		g_at_chat_send(nd->chat, "AT_OSSYS=1", none_prefix,
 				NULL, NULL, NULL);
+		g_at_chat_send(nd->chat, "AT_OWCTI=1", none_prefix,
+				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OCTI=1", none_prefix,
 				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OSQI=1", none_prefix,
