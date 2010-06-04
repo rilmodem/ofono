@@ -770,7 +770,12 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (build_cnmi_string(buf, cnmi_opts, data))
 		supported = TRUE;
 
-	if (data->cnma_enabled && data->vendor != OFONO_VENDOR_NOVATEL)
+	/* support for ack pdu is not working */
+	if (data->vendor == OFONO_VENDOR_NOVATEL ||
+			data->vendor == OFONO_VENDOR_OPTION_HSO)
+		goto out;
+
+	if (data->cnma_enabled)
 		construct_ack_pdu(data);
 
 out:
