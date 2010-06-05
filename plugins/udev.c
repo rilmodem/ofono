@@ -301,10 +301,10 @@ static void add_novatel(struct ofono_modem *modem,
 
 	if (g_strcmp0(intfnum, "00") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Device", devnode);
+		ofono_modem_set_string(modem, "PrimaryDevice", devnode);
 	} else if (g_strcmp0(intfnum, "01") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Data", devnode);
+		ofono_modem_set_string(modem, "SecondaryDevice", devnode);
 
 		ofono_modem_set_integer(modem, "Registered", 1);
 		ofono_modem_register(modem);
