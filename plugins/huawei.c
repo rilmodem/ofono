@@ -37,12 +37,13 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
+#include <ofono/cbs.h>
 #include <ofono/sms.h>
+#include <ofono/ussd.h>
 #include <ofono/gprs.h>
-#include <ofono/voicecall.h>
-#include <ofono/log.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
@@ -338,8 +339,11 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
 								data->chat);
+
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem",
 								data->chat);
+	ofono_cbs_create(modem, 0, "atmodem", data->chat);
+	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
 								data->chat);
