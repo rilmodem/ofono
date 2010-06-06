@@ -382,7 +382,7 @@ static void hso_gprs_context_remove(struct ofono_gprs_context *gc)
 }
 
 static struct ofono_gprs_context_driver driver = {
-	.name			= "hso",
+	.name			= "hsomodem",
 	.probe			= hso_gprs_context_probe,
 	.remove			= hso_gprs_context_remove,
 	.activate_primary	= hso_gprs_activate_primary,

@@ -228,7 +228,7 @@ static void hso_post_sim(struct ofono_modem *modem)
 	ofono_ussd_create(modem, 0, "atmodem", data->app);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->app);
-	gc = ofono_gprs_context_create(modem, 0, "hso", data->control);
+	gc = ofono_gprs_context_create(modem, 0, "hsomodem", data->control);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
