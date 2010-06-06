@@ -42,6 +42,7 @@
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/radio-settings.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -306,6 +307,9 @@ static void novatel_post_sim(struct ofono_modem *modem)
 		gprs = ofono_gprs_create(modem, 0, "atmodem", data->primary);
 	} else {
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
+							data->secondary);
+
+		ofono_radio_settings_create(modem, 0, "nwmodem",
 							data->secondary);
 
 		ofono_sms_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
