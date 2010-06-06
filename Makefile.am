@@ -189,7 +189,8 @@ builtin_modules += hsomodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hsomodem/hsomodem.h \
 			drivers/hsomodem/hsomodem.c \
-			drivers/hsomodem/gprs-context.c
+			drivers/hsomodem/gprs-context.c \
+			drivers/hsomodem/radio-settings.c
 
 builtin_modules += stemodem
 builtin_sources += drivers/atmodem/atutil.h \
