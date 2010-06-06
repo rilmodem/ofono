@@ -909,24 +909,7 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OSQI?", none_prefix,
 				NULL, NULL, NULL);
-
-		/*
-		 * Option has the concept of Speech Service versus
-		 * Data Service. Problem is that in Data Service mode
-		 * the card will reject all voice calls. This is a
-		 * problem for Multi-SIM cards where one of the SIM
-		 * cards is used in a mobile phone and thus incoming
-		 * calls would be not signalled on the phone.
-		 *
-		 *   0 = Speech Service enabled
-		 *   1 = Data Service only mode
-		 */
-		g_at_chat_send(nd->chat, "AT_ODO?", none_prefix,
-				NULL, NULL, NULL);
-		g_at_chat_send(nd->chat, "AT_ODO=0", none_prefix,
-				NULL, NULL, NULL);
 		break;
-
 	case OFONO_VENDOR_MBM:
 		g_at_chat_send(nd->chat, "AT*ERINFO=1", none_prefix,
 				NULL, NULL, NULL);

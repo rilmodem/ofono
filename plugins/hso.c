@@ -90,11 +90,28 @@ static void hso_debug(const char *str, void *user_data)
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct hso_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
-	if (ok)
-		ofono_modem_set_powered(modem, TRUE);
+	ofono_modem_set_powered(modem, ok);
+
+	if (!ok)
+		return;
+
+	/*
+	 * Option has the concept of Speech Service versus
+	 * Data Service. Problem is that in Data Service mode
+	 * the card will reject all voice calls. This is a
+	 * problem for Multi-SIM cards where one of the SIM
+	 * cards is used in a mobile phone and thus incoming
+	 * calls would be not signalled on the phone.
+	 *
+	 *   0 = Speech Service enabled
+	 *   1 = Data Service only mode
+	 */
+	g_at_chat_send(data->app, "AT_ODO?", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(data->app, "AT_ODO=0", none_prefix, NULL, NULL, NULL);
 }
 
 static GAtChat *create_port(const char *device)
