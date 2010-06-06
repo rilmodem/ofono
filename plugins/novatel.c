@@ -137,6 +137,10 @@ static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->secondary, "ATE0 +CMEE=1", none_prefix,
 							NULL, NULL, NULL);
 
+	/* Check for all supported technologies */
+	g_at_chat_send(data->secondary, "AT$CNTI=2", none_prefix,
+							NULL, NULL, NULL);
+
 done:
 	g_at_chat_send(data->primary, "AT+CFUN=1", none_prefix,
 						cfun_enable, modem, NULL);
