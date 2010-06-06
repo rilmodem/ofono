@@ -244,7 +244,7 @@ static void add_huawei(struct ofono_modem *modem,
 
 		primary = 1;
 		ofono_modem_set_integer(modem, "PrimaryRegistered", primary);
-	} else if (g_strcmp0(num, "02") == 0) {
+	} else if (g_strcmp0(num, "01") == 0 || g_strcmp0(num, "02") == 0) {
 		if (secondary != 0)
 			return;
 
