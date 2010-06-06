@@ -161,7 +161,8 @@ builtin_sources += $(gatchat_sources) \
 builtin_modules += nwmodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/nwmodem/nwmodem.h \
-			drivers/nwmodem/nwmodem.c
+			drivers/nwmodem/nwmodem.c \
+			drivers/nwmodem/radio-settings.c
 
 builtin_modules += calypsomodem
 builtin_sources += drivers/atmodem/atutil.h \

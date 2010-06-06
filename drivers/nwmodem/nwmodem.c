@@ -34,11 +34,14 @@
 
 static int nwmodem_init(void)
 {
+	nw_radio_settings_init();
+
 	return 0;
 }
 
 static void nwmodem_exit(void)
 {
+	nw_radio_settings_exit();
 }
 
 OFONO_PLUGIN_DEFINE(nwmodem, "Novatel modem driver", VERSION,
