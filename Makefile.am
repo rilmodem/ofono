@@ -333,7 +333,9 @@ test_scripts = test/activate-context \
 		test/test-ussd \
 		test/test-voicecall \
 		test/offline-modem \
-		test/online-modem
+		test/online-modem \
+		test/get-tech-preference \
+		test/set-tech-preference
 
 if TEST
 testdir = $(pkglibdir)/test
