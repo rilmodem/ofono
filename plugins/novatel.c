@@ -308,7 +308,8 @@ static void novatel_post_sim(struct ofono_modem *modem)
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
 							data->primary);
 
-		gprs = ofono_gprs_create(modem, 0, "atmodem", data->primary);
+		gprs = ofono_gprs_create(modem, OFONO_VENDOR_NOVATEL,
+						"atmodem", data->primary);
 	} else {
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
 							data->secondary);
@@ -321,7 +322,8 @@ static void novatel_post_sim(struct ofono_modem *modem)
 		ofono_cbs_create(modem, 0, "atmodem", data->secondary);
 		ofono_ussd_create(modem, 0, "atmodem", data->secondary);
 
-		gprs = ofono_gprs_create(modem, 0, "atmodem", data->secondary);
+		gprs = ofono_gprs_create(modem, OFONO_VENDOR_NOVATEL,
+						"atmodem", data->secondary);
 	}
 
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->primary);
