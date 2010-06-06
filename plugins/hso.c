@@ -42,6 +42,7 @@
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/radio-settings.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/vendor.h>
@@ -219,6 +220,9 @@ static void hso_post_sim(struct ofono_modem *modem)
 
 	ofono_netreg_create(modem, OFONO_VENDOR_OPTION_HSO,
 				"atmodem", data->app);
+
+	ofono_radio_settings_create(modem, 0, "hsomodem", data->app);
+
 	ofono_sms_create(modem, OFONO_VENDOR_OPTION_HSO, "atmodem", data->app);
 	ofono_cbs_create(modem, 0, "atmodem", data->app);
 	ofono_ussd_create(modem, 0, "atmodem", data->app);
