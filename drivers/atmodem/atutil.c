@@ -171,6 +171,7 @@ gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 
 	switch (vendor) {
 	case OFONO_VENDOR_HUAWEI:
+	case OFONO_VENDOR_NOVATEL:
 		if (g_at_result_iter_next_unquoted_string(&iter, &str) == TRUE)
 			l = strtol(str, NULL, 16);
 		else
@@ -235,6 +236,7 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 
 		switch (vendor) {
 		case OFONO_VENDOR_HUAWEI:
+		case OFONO_VENDOR_NOVATEL:
 			r = g_at_result_iter_next_unquoted_string(&iter, &str);
 
 			if (r == TRUE)
