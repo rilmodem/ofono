@@ -158,6 +158,11 @@ builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/gprs.c \
 				drivers/atmodem/gprs-context.c
 
+builtin_modules += nwmodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/nwmodem/nwmodem.h \
+			drivers/nwmodem/nwmodem.c
+
 builtin_modules += calypsomodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/calypsomodem/calypsomodem.h \
