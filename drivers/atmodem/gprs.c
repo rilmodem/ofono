@@ -120,6 +120,17 @@ static void at_gprs_registration_status(struct ofono_gprs *gprs,
 
 	cbd->user = gd;
 
+	switch (gd->vendor) {
+	case OFONO_VENDOR_NOVATEL:
+		/*
+		 * Send $CNTI=0 to find out the current tech, it will be
+		 * intercepted in nw_cnti_notify in network registration
+		 */
+		g_at_chat_send(gd->chat, "AT$CNTI=0", none_prefix,
+				NULL, NULL, NULL);
+		break;
+	}
+
 	if (g_at_chat_send(gd->chat, "AT+CGREG?", cgreg_prefix,
 				at_cgreg_cb, cbd, g_free) > 0)
 		return;
