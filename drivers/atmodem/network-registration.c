@@ -151,10 +151,8 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok || nd->mcc[0] == '\0' || nd->mnc[0] == '\0') {
-		cb(&error, NULL, cbd->data);
-		goto out;
-	}
+	if (!ok)
+		goto error;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -191,14 +189,12 @@ static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	DBG("cops_cb: %s, %s %s %d", name, nd->mcc, nd->mnc, tech);
 
 	cb(&error, &op, cbd->data);
-
-out:
 	g_free(cbd);
 
 	return;
 
 error:
-	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+	cb(&error, NULL, cbd->data);
 
 	g_free(cbd);
 }
@@ -207,9 +203,14 @@ static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(cbd->user);
+	ofono_netreg_operator_cb_t cb = cbd->cb;
 	GAtResultIter iter;
 	const char *str;
 	int format;
+	int len;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok)
 		goto error;
@@ -226,19 +227,31 @@ static void cops_numeric_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (ok == FALSE || format != 2)
 		goto error;
 
-	if (g_at_result_iter_next_string(&iter, &str) == FALSE ||
-		strlen(str) == 0)
+	if (g_at_result_iter_next_string(&iter, &str) == FALSE)
+		goto error;
+
+	len = strspn(str, "0123456789");
+
+	if (len != 5 && len != 6)
 		goto error;
 
 	extract_mcc_mnc(str, nd->mcc, nd->mnc);
 
 	DBG("Cops numeric got mcc: %s, mnc: %s", nd->mcc, nd->mnc);
 
-	return;
+	ok = g_at_chat_send(nd->chat, "AT+COPS=3,0", none_prefix,
+					NULL, NULL, NULL);
+
+	if (ok)
+		ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
+					cops_cb, cbd, NULL);
+
+	if (ok)
+		return;
 
 error:
-	nd->mcc[0] = '\0';
-	nd->mnc[0] = '\0';
+	cb(&error, NULL, cbd->data);
+	g_free(cbd);
 }
 
 static void at_current_operator(struct ofono_netreg *netreg,
@@ -259,14 +272,6 @@ static void at_current_operator(struct ofono_netreg *netreg,
 	if (ok)
 		ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
 					cops_numeric_cb, cbd, NULL);
-
-	if (ok)
-		ok = g_at_chat_send(nd->chat, "AT+COPS=3,0", none_prefix,
-					NULL, NULL, NULL);
-
-	if (ok)
-		ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
-					cops_cb, cbd, NULL);
 
 	if (ok)
 		return;
