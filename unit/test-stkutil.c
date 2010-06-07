@@ -18158,6 +18158,151 @@ static const struct envelope_test cbs_pp_data_download_data_17 = {
 	},
 };
 
+static const unsigned char menu_selection_111[] = {
+	0xd3, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0x02,
+};
+
+static const struct envelope_test menu_selection_data_111 = {
+	.pdu = menu_selection_111,
+	.pdu_len = sizeof(menu_selection_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0x2,
+		}},
+	},
+};
+
+static const unsigned char menu_selection_112[] = {
+	0xd3, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0x12,
+};
+
+static const struct envelope_test menu_selection_data_112 = {
+	.pdu = menu_selection_112,
+	.pdu_len = sizeof(menu_selection_112),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0x12,
+		}},
+	},
+};
+
+static const unsigned char menu_selection_121[] = {
+	0xd3, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0x3d,
+};
+
+static const struct envelope_test menu_selection_data_121 = {
+	.pdu = menu_selection_121,
+	.pdu_len = sizeof(menu_selection_121),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0x3d,
+		}},
+	},
+};
+
+static const unsigned char menu_selection_122[] = {
+	0xd3, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0xfb,
+};
+
+static const struct envelope_test menu_selection_data_122 = {
+	.pdu = menu_selection_122,
+	.pdu_len = sizeof(menu_selection_122),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0xfb,
+		}},
+	},
+};
+
+static const unsigned char menu_selection_123[] = {
+	0xd3, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0x01,
+};
+
+static const struct envelope_test menu_selection_data_123 = {
+	.pdu = menu_selection_123,
+	.pdu_len = sizeof(menu_selection_123),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0x1,
+		}},
+	},
+};
+
+static const unsigned char menu_selection_211[] = {
+	0xd3, 0x09, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0x02, 0x15, 0x00,
+};
+
+static const struct envelope_test menu_selection_data_211 = {
+	.pdu = menu_selection_211,
+	.pdu_len = sizeof(menu_selection_211),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0x2,
+			.help_request = TRUE,
+		}},
+	},
+};
+
+static const unsigned char menu_selection_612[] = {
+	0xd3, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0x05,
+};
+
+static const struct envelope_test menu_selection_data_612 = {
+	.pdu = menu_selection_612,
+	.pdu_len = sizeof(menu_selection_612),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0x5,
+		}},
+	},
+};
+
+static const unsigned char menu_selection_641[] = {
+	0xd3, 0x07, 0x82, 0x02, 0x01, 0x81, 0x90, 0x01,
+	0x08,
+};
+
+static const struct envelope_test menu_selection_data_641 = {
+	.pdu = menu_selection_641,
+	.pdu_len = sizeof(menu_selection_641),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MENU_SELECTION,
+		.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .menu_selection = {
+			.item_id = 0x8,
+		}},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -19842,6 +19987,23 @@ int main(int argc, char **argv)
 			&cbs_pp_data_download_data_11, test_envelope_encoding);
 	g_test_add_data_func("/teststk/CBS-PP data download 1.7",
 			&cbs_pp_data_download_data_17, test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Menu Selection 1.1.1",
+			&menu_selection_data_111, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Menu Selection 1.1.2",
+			&menu_selection_data_112, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Menu Selection 1.2.1",
+			&menu_selection_data_121, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Menu Selection 1.2.2",
+			&menu_selection_data_122, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Menu Selection 1.2.3",
+			&menu_selection_data_123, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Menu Selection 2.1.1",
+			&menu_selection_data_211, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Menu Selection 6.1.2",
+			&menu_selection_data_612, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Menu Selection 6.4.1",
+			&menu_selection_data_641, test_envelope_encoding);
 
 	return g_test_run();
 }
