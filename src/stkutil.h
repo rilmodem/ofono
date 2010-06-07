@@ -1178,12 +1178,17 @@ struct stk_envelope_sms_pp_download {
 	struct sms_deliver message;
 };
 
+struct stk_envelope_cbs_pp_download {
+	struct cbs page;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
 	enum stk_device_identity_type dst;
 	union {
 		struct stk_envelope_sms_pp_download sms_pp_download;
+		struct stk_envelope_cbs_pp_download cbs_pp_download;
 	};
 };
 

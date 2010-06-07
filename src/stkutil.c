@@ -3357,6 +3357,22 @@ static gboolean build_dataobj_address(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 131.111 Section 8.5 */
+static gboolean build_dataobj_cbs_page(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct cbs *page = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CBS_PAGE;
+	unsigned char pdu[88];
+
+	if (cbs_encode(page, NULL, pdu) == FALSE)
+		return FALSE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_bytes(tlv, pdu, 88) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.6 */
 static gboolean build_dataobj_item_id(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -4214,6 +4230,16 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					build_dataobj_gsm_sms_tpdu,
 					DATAOBJ_FLAG_CR,
 					&envelope->sms_pp_download.message,
+					NULL);
+		break;
+	case STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD:
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids,
+					DATAOBJ_FLAG_CR,
+					envelope,
+					build_dataobj_cbs_page,
+					DATAOBJ_FLAG_CR,
+					&envelope->cbs_pp_download.page,
 					NULL);
 		break;
 	default:
