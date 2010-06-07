@@ -117,6 +117,8 @@ static struct sim_ef_info ef_db[] = {
 {	0x6FE3, 0x0000, BINARY, 18,	PIN,	PIN	},
 };
 
+static inline int to_semi_oct(char in);
+
 void simple_tlv_iter_init(struct simple_tlv_iter *iter,
 				const unsigned char *pdu, unsigned int len)
 {
@@ -844,19 +846,14 @@ void sim_parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
 
 void sim_encode_mcc_mnc(guint8 *out, const char *mcc, const char *mnc)
 {
-	char str[7] = "ffffff";
+	out[0] = to_semi_oct(mcc[0]);
+	out[0] |= to_semi_oct(mcc[1]) << 4;
 
-	str[0] = mcc[0];
-	str[1] = mcc[1];
-	if (mcc[2])
-		str[2] = mcc[2];
+	out[1] = mcc[2] ? to_semi_oct(mcc[2]) : 0xf;
+	out[1] |= (mnc[2] ? to_semi_oct(mnc[2]) : 0xf) << 4;
 
-	str[4] = mnc[0];
-	str[5] = mnc[1];
-	if (mnc[2])
-		str[3] = mnc[2];
-
-	encode_bcd_number(str, out);
+	out[2] = to_semi_oct(mnc[0]);
+	out[2] |= to_semi_oct(mnc[1]) << 4;
 }
 
 static gint spdi_operator_compare(gconstpointer a, gconstpointer b)
