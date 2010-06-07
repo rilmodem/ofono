@@ -1016,7 +1016,6 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 
 	if (sms->ref >= 65536)
 		sms->ref = 1;
-
 }
 
 
