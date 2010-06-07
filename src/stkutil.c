@@ -3980,14 +3980,15 @@ static gboolean build_local_info(struct stk_tlv_builder *builder,
 	return FALSE;
 }
 
-unsigned int stk_pdu_from_response(const struct stk_response *response,
-					unsigned char *pdu, unsigned int size)
+const unsigned char *stk_pdu_from_response(const struct stk_response *response,
+						unsigned int *out_length)
 {
 	struct stk_tlv_builder builder;
 	gboolean ok = TRUE;
 	unsigned char tag;
+	static unsigned char pdu[512];
 
-	stk_tlv_builder_init(&builder, pdu, size);
+	stk_tlv_builder_init(&builder, pdu, sizeof(pdu));
 
 	/*
 	 * Encode command details, they come in order with
@@ -3996,19 +3997,19 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	 */
 	tag = STK_DATA_OBJECT_TYPE_COMMAND_DETAILS;
 	if (stk_tlv_builder_open_container(&builder, TRUE, tag, FALSE) == FALSE)
-		return 0;
+		return NULL;
 
 	if (stk_tlv_builder_append_byte(&builder, response->number) == FALSE)
-		return 0;
+		return NULL;
 
 	if (stk_tlv_builder_append_byte(&builder, response->type) == FALSE)
-		return 0;
+		return NULL;
 
 	if (stk_tlv_builder_append_byte(&builder, response->qualifier) == FALSE)
-		return 0;
+		return NULL;
 
 	if (stk_tlv_builder_close_container(&builder) == FALSE)
-		return 0;
+		return NULL;
 
 	/* TS 102 223 section 6.8 states:
 	 * "For all COMPREHENSION-TLV objects with Min = N, the terminal
@@ -4022,19 +4023,19 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	 */
 	tag = STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
 	if (stk_tlv_builder_open_container(&builder, TRUE, tag, FALSE) == FALSE)
-		return 0;
+		return NULL;
 
 	if (stk_tlv_builder_append_byte(&builder, response->src) == FALSE)
-		return 0;
+		return NULL;
 
 	if (stk_tlv_builder_append_byte(&builder, response->dst) == FALSE)
-		return 0;
+		return NULL;
 
 	if (stk_tlv_builder_close_container(&builder) == FALSE)
-		return 0;
+		return NULL;
 
 	if (build_dataobj_result(&builder, &response->result, TRUE) != TRUE)
-		return 0;
+		return NULL;
 
 	switch (response->type) {
 	case STK_COMMAND_TYPE_DISPLAY_TEXT:
@@ -4105,11 +4106,14 @@ unsigned int stk_pdu_from_response(const struct stk_response *response,
 	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
 		break;
 	default:
-		return 0;
+		return NULL;
 	};
 
 	if (ok != TRUE)
-		return 0;
+		return NULL;
 
-	return stk_tlv_builder_get_length(&builder);
+	if (out_length)
+		*out_length = stk_tlv_builder_get_length(&builder);
+
+	return pdu;
 }

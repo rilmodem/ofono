@@ -1176,6 +1176,5 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len);
 void stk_command_free(struct stk_command *command);
 
-/* Returns # of bytes written or zero on error */
-unsigned int stk_pdu_from_response(const struct stk_response *response,
-					unsigned char *pdu, unsigned int size);
+const unsigned char *stk_pdu_from_response(const struct stk_response *response,
+						unsigned int *out_length);

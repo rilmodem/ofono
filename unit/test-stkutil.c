@@ -13949,13 +13949,18 @@ struct terminal_response_test {
 static void test_terminal_response_encoding(gconstpointer data)
 {
 	const struct terminal_response_test *test = data;
-	unsigned char buf[512];
-	unsigned int len;
+	const unsigned char *pdu;
+	unsigned int pdu_len;
 
-	len = stk_pdu_from_response(&test->response, buf, sizeof(buf));
+	pdu = stk_pdu_from_response(&test->response, &pdu_len);
 
-	g_assert(len == test->pdu_len);
-	g_assert(memcmp(buf, test->pdu, len) == 0);
+	if (test->pdu)
+		g_assert(pdu);
+	else
+		g_assert(pdu == NULL);
+
+	g_assert(pdu_len == test->pdu_len);
+	g_assert(memcmp(pdu, test->pdu, pdu_len) == 0);
 }
 
 static const unsigned char display_text_response_111[] = {
