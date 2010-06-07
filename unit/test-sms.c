@@ -685,7 +685,7 @@ static void test_assembly()
 	if (g_test_verbose())
 		g_printf("Text:\n%s\n", utf8);
 
-	l = sms_text_prepare(utf8, ref, TRUE, NULL);
+	l = sms_text_prepare(utf8, ref, TRUE, NULL, FALSE);
 	g_assert(l);
 	g_assert(g_slist_length(l) == 3);
 
@@ -715,7 +715,7 @@ static void test_prepare_7bit()
 	int encoded_tpdu_len;
 	char *encoded_pdu;
 
-	r = sms_text_prepare(test_no_fragmentation_7bit, 0, FALSE, NULL);
+	r = sms_text_prepare(test_no_fragmentation_7bit, 0, FALSE, NULL, FALSE);
 
 	g_assert(r != NULL);
 
@@ -798,8 +798,7 @@ static void test_prepare_concat(gconstpointer data)
 	if (g_test_verbose())
 		g_print("strlen: %zd\n", strlen(test->str));
 
-	r = sms_text_prepare(test->str, 0, TRUE, NULL);
-
+	r = sms_text_prepare(test->str, 0, TRUE, NULL, FALSE);
 	g_assert(r);
 	g_assert(g_slist_length(r) == test->segments);
 
@@ -875,7 +874,7 @@ static void test_limit(gunichar uni, int target_size, gboolean use_16bit)
 
 	utf8[i] = '\0';
 
-	l = sms_text_prepare(utf8, 0, use_16bit, NULL);
+	l = sms_text_prepare(utf8, 0, use_16bit, NULL, FALSE);
 
 	g_assert(l);
 	g_assert(g_slist_length(l) == 255);
@@ -888,7 +887,7 @@ static void test_limit(gunichar uni, int target_size, gboolean use_16bit)
 	memcpy(utf8 + i, utf8_char, stride);
 	utf8[i+stride] = '\0';
 
-	l = sms_text_prepare(utf8, 0, use_16bit, NULL);
+	l = sms_text_prepare(utf8, 0, use_16bit, NULL, FALSE);
 
 	g_assert(l == NULL);
 	g_free(utf8);
