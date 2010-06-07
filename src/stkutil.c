@@ -3561,6 +3561,20 @@ static gboolean build_dataobj_imei(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.21 */
+static gboolean build_dataobj_help_request(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const ofono_bool_t *help = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_HELP_REQUEST;
+
+	if (*help != TRUE)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.22 */
 static gboolean build_dataobj_network_measurement_results(
 						struct stk_tlv_builder *tlv,
@@ -4240,6 +4254,17 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					build_dataobj_cbs_page,
 					DATAOBJ_FLAG_CR,
 					&envelope->cbs_pp_download.page,
+					NULL);
+		break;
+	case STK_ENVELOPE_TYPE_MENU_SELECTION:
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids,
+					DATAOBJ_FLAG_CR,
+					envelope,
+					build_dataobj_item_id, DATAOBJ_FLAG_CR,
+					&envelope->menu_selection.item_id,
+					build_dataobj_help_request, 0,
+					&envelope->menu_selection.help_request,
 					NULL);
 		break;
 	default:

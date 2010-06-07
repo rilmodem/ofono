@@ -1182,6 +1182,11 @@ struct stk_envelope_cbs_pp_download {
 	struct cbs page;
 };
 
+struct stk_envelope_menu_selection {
+	unsigned char item_id;
+	ofono_bool_t help_request;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1189,6 +1194,7 @@ struct stk_envelope {
 	union {
 		struct stk_envelope_sms_pp_download sms_pp_download;
 		struct stk_envelope_cbs_pp_download cbs_pp_download;
+		struct stk_envelope_menu_selection menu_selection;
 	};
 };
 
