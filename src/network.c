@@ -1220,6 +1220,15 @@ static void current_operator_callback(const struct ofono_error *error,
 
 	DBG("%p, %p", netreg, netreg->current_operator);
 
+	/*
+	 * Sometimes we try to query COPS right when we roam off the cell,
+	 * in which case the operator information frequently comes in bogus.
+	 * We ignore it here
+	 */
+	if (netreg->status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
+			netreg->status != NETWORK_REGISTRATION_STATUS_ROAMING)
+		current = NULL;
+
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Error during current operator");
 		return;
