@@ -336,7 +336,8 @@ test_scripts = test/activate-context \
 		test/offline-modem \
 		test/online-modem \
 		test/get-tech-preference \
-		test/set-tech-preference
+		test/set-tech-preference \
+		test/enable-cbs
 
 if TEST
 testdir = $(pkglibdir)/test
