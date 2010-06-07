@@ -913,6 +913,8 @@ void g_at_chat_resume(GAtChat *chat)
 
 	chat->suspended = FALSE;
 
+	g_at_io_set_disconnect_function(chat->io, io_disconnect, chat);
+
 	g_at_io_set_debug(chat->io, chat->debugf, chat->debug_data);
 	g_at_io_set_read_handler(chat->io, new_bytes, chat);
 
