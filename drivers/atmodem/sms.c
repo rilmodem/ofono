@@ -678,6 +678,7 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	int len = sprintf(buf, "AT+CNMI=");
 
 	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM ||
+			data->vendor == OFONO_VENDOR_HUAWEI ||
 			data->vendor == OFONO_VENDOR_NOVATEL)
 		/* MSM devices advertise support for mode 2, but return an
 		 * error if we attempt to actually use it. */
@@ -780,6 +781,7 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* support for ack pdu is not working */
 	if (data->vendor == OFONO_VENDOR_NOVATEL ||
+			data->vendor == OFONO_VENDOR_HUAWEI ||
 			data->vendor == OFONO_VENDOR_OPTION_HSO)
 		goto out;
 
@@ -998,8 +1000,14 @@ static void at_csms_status_cb(gboolean ok, GAtResult *result,
 		if (!g_at_result_iter_next(&iter, "+CSMS:"))
 			goto out;
 
-		if (!g_at_result_iter_next_number(&iter, &service))
-			goto out;
+
+		if (data->vendor == OFONO_VENDOR_HUAWEI) {
+			g_at_result_iter_skip_next(&iter);
+			service = 0;
+		} else {
+			if (!g_at_result_iter_next_number(&iter, &service))
+				goto out;
+		}
 
 		if (!g_at_result_iter_next_number(&iter, &mt))
 			goto out;
