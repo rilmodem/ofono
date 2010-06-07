@@ -92,8 +92,10 @@ static void huawei_debug(const char *str, void *user_data)
 	ofono_info("%s%s", prefix, str);
 }
 
-static void notify_sim_state(struct huawei_data *data, gint sim_state)
+static void notify_sim_state(struct ofono_modem *modem, gint sim_state)
 {
+	struct huawei_data *data = ofono_modem_get_data(modem);
+
 	if (data->sim_state == 0 && sim_state == 1) {
 		ofono_sim_inserted_notify(data->sim, TRUE);
 		data->sim_state = sim_state;
@@ -106,7 +108,6 @@ static void notify_sim_state(struct huawei_data *data, gint sim_state)
 static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct huawei_data *data = ofono_modem_get_data(modem);
 	gint sim_state;
 	GAtResultIter iter;
 
@@ -133,13 +134,12 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &sim_state))
 		return;
 
-	notify_sim_state(data, sim_state);
+	notify_sim_state(modem, sim_state);
 }
 
 static void simst_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct huawei_data *data = ofono_modem_get_data(modem);
 	GAtResultIter iter;
 	int state;
 
@@ -151,7 +151,7 @@ static void simst_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &state))
 		return;
 
-	notify_sim_state(data, state);
+	notify_sim_state(modem, state);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -340,10 +340,9 @@ static void huawei_post_sim(struct ofono_modem *modem)
 	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
 								data->chat);
 
-	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem",
-								data->chat);
-	ofono_cbs_create(modem, 0, "atmodem", data->chat);
-	ofono_ussd_create(modem, 0, "atmodem", data->chat);
+	ofono_sms_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->event);
+	ofono_cbs_create(modem, 0, "atmodem", data->event);
+	ofono_ussd_create(modem, 0, "atmodem", data->event);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
 								data->chat);
