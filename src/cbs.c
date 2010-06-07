@@ -185,11 +185,6 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	if (cbs->assembly == NULL)
 		return;
 
-	if (!cbs->powered) {
-		ofono_error("Ignoring CBS because powered is off");
-		return;
-	}
-
 	if (!cbs_decode(pdu, pdu_len, &c)) {
 		ofono_error("Unable to decode CBS PDU");
 		return;
@@ -198,6 +193,11 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	if (cbs_topic_in_range(c.message_identifier, cbs->efcbmid_contents)) {
 		if (cbs->stk)
 			__ofono_cbs_sim_download(cbs->stk, &c);
+		return;
+	}
+
+	if (!cbs->powered) {
+		ofono_error("Ignoring CBS because powered is off");
 		return;
 	}
 
