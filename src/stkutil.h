@@ -1172,9 +1172,26 @@ struct stk_response {
 	void (*destructor)(struct stk_response *response);
 };
 
+/* ENVELOPEs defined in TS 102.223 Section 7 */
+struct stk_envelope_sms_pp_download {
+	struct stk_address address;
+	struct sms_deliver message;
+};
+
+struct stk_envelope {
+	enum stk_envelope_type type;
+	enum stk_device_identity_type src;
+	enum stk_device_identity_type dst;
+	union {
+		struct stk_envelope_sms_pp_download sms_pp_download;
+	};
+};
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len);
 void stk_command_free(struct stk_command *command);
 
 const unsigned char *stk_pdu_from_response(const struct stk_response *response,
+						unsigned int *out_length);
+const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 						unsigned int *out_length);

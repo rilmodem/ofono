@@ -3142,6 +3142,20 @@ static gboolean stk_tlv_builder_init(struct stk_tlv_builder *iter,
 	return comprehension_tlv_builder_init(&iter->ctlv, pdu, size);
 }
 
+static gboolean stk_tlv_builder_recurse(struct stk_tlv_builder *iter,
+					struct ber_tlv_builder *btlv,
+					unsigned char tag)
+{
+	iter->value = NULL;
+	iter->len = 0;
+
+	if (ber_tlv_builder_next(btlv, tag >> 6, (tag >> 5) & 1,
+					tag & 0x1f) != TRUE)
+		return FALSE;
+
+	return ber_tlv_builder_recurse_comprehension(btlv, &iter->ctlv);
+}
+
 static gboolean stk_tlv_builder_open_container(struct stk_tlv_builder *iter,
 						gboolean cr,
 						unsigned char shorttag,
@@ -3322,6 +3336,27 @@ static inline gboolean stk_tlv_builder_append_bytes(struct stk_tlv_builder *iter
 	return TRUE;
 }
 
+/* Described in TS 102.223 Section 8.1 */
+static gboolean build_dataobj_address(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_address *addr = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_ADDRESS;
+	unsigned int len;
+	unsigned char number[128];
+
+	if (addr->number == NULL)
+		return TRUE;
+
+	len = (strlen(addr->number) + 1) / 2;
+	sim_encode_bcd_number(addr->number, number);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, addr->ton_npi) &&
+		stk_tlv_builder_append_bytes(tlv, number, len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.6 */
 static gboolean build_dataobj_item_id(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -3372,6 +3407,28 @@ static gboolean build_dataobj_result(struct stk_tlv_builder *tlv,
 			return FALSE;
 
 	return stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.13 */
+static gboolean build_dataobj_gsm_sms_tpdu(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct sms_deliver *msg = data;
+	struct sms sms;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU;
+	unsigned char tpdu[165];
+	int tpdu_len;
+
+	sms.type = SMS_TYPE_DELIVER;
+	memset(&sms.sc_addr, 0, sizeof(sms.sc_addr));
+	memcpy(&sms.deliver, msg, sizeof(sms.deliver));
+
+	if (sms_encode(&sms, NULL, &tpdu_len, tpdu) == FALSE)
+		return FALSE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_bytes(tlv, tpdu + 1, tpdu_len) &&
+		stk_tlv_builder_close_container(tlv);
 }
 
 /* Defined in TS 102.223 Section 8.15 */
@@ -4114,6 +4171,59 @@ const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 
 	if (out_length)
 		*out_length = stk_tlv_builder_get_length(&builder);
+
+	return pdu;
+}
+
+/* Described in TS 102.223 Section 8.7 */
+static gboolean build_envelope_dataobj_device_ids(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_envelope *envelope = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, envelope->src) &&
+		stk_tlv_builder_append_byte(tlv, envelope->dst) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
+						unsigned int *out_length)
+{
+	struct ber_tlv_builder btlv;
+	struct stk_tlv_builder builder;
+	gboolean ok = TRUE;
+	static unsigned char buffer[512];
+	unsigned char *pdu;
+
+	if (ber_tlv_builder_init(&btlv, buffer, sizeof(buffer)) != TRUE)
+		return NULL;
+
+	if (stk_tlv_builder_recurse(&builder, &btlv, envelope->type) != TRUE)
+		return NULL;
+
+	switch (envelope->type) {
+	case STK_ENVELOPE_TYPE_SMS_PP_DOWNLOAD:
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids,
+					DATAOBJ_FLAG_CR,
+					envelope,
+					build_dataobj_address, 0,
+					&envelope->sms_pp_download.address,
+					build_dataobj_gsm_sms_tpdu,
+					DATAOBJ_FLAG_CR,
+					&envelope->sms_pp_download.message,
+					NULL);
+		break;
+	default:
+		return NULL;
+	};
+
+	if (ok != TRUE)
+		return NULL;
+
+	ber_tlv_builder_optimize(&btlv, &pdu, out_length);
 
 	return pdu;
 }
