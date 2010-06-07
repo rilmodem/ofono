@@ -18303,6 +18303,78 @@ static const struct envelope_test menu_selection_data_641 = {
 	},
 };
 
+static const unsigned char mo_short_message_control_111a[] = {
+	0xd5, 0x22, 0x02, 0x02, 0x82, 0x81, 0x06, 0x09,
+	0x91, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+	0xf8, 0x06, 0x06, 0x91, 0x10, 0x32, 0x54, 0x76,
+	0xf8, 0x13, 0x09, 0x00, 0xf1, 0x10, 0x00, 0x01,
+	0x00, 0x01, 0x00, 0x01,
+};
+
+static const struct envelope_test mo_short_message_control_data_111a = {
+	.pdu = mo_short_message_control_111a,
+	.pdu_len = sizeof(mo_short_message_control_111a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MO_SMS_CONTROL,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .sms_mo_control = {
+			.sc_address = {
+				.ton_npi = 0x91, /* Intl, ISDN */
+				.number = "112233445566778",
+			},
+			.dest_address = {
+				.ton_npi = 0x91, /* Intl, ISDN */
+				.number = "012345678",
+			},
+			.location = {
+				.mcc = "001",
+				.mnc = "01",
+				.lac_tac = 0x0001,
+				.has_ci = TRUE,
+				.ci = 0x0001,
+				.has_ext_ci = TRUE,
+				.ext_ci = 0x0001,
+			},
+		}},
+	},
+};
+
+static const unsigned char mo_short_message_control_111b[] = {
+	0xd5, 0x20, 0x02, 0x02, 0x82, 0x81, 0x06, 0x09,
+	0x91, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+	0xf8, 0x06, 0x06, 0x91, 0x10, 0x32, 0x54, 0x76,
+	0xf8, 0x13, 0x07, 0x00, 0x11, 0x10, 0x00, 0x01,
+	0x00, 0x01,
+};
+
+static const struct envelope_test mo_short_message_control_data_111b = {
+	.pdu = mo_short_message_control_111b,
+	.pdu_len = sizeof(mo_short_message_control_111b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_MO_SMS_CONTROL,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .sms_mo_control = {
+			.sc_address = {
+				.ton_npi = 0x91, /* Intl, ISDN */
+				.number = "112233445566778",
+			},
+			.dest_address = {
+				.ton_npi = 0x91, /* Intl, ISDN */
+				.number = "012345678",
+			},
+			.location = {
+				.mcc = "001",
+				.mnc = "011",
+				.lac_tac = 0x0001,
+				.has_ci = TRUE,
+				.ci = 0x0001,
+			},
+		}},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -20004,6 +20076,13 @@ int main(int argc, char **argv)
 			&menu_selection_data_612, test_envelope_encoding);
 	g_test_add_data_func("/teststk/Menu Selection 6.4.1",
 			&menu_selection_data_641, test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/MO Short Message Control 1.1.1A",
+			&mo_short_message_control_data_111a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/MO Short Message Control 1.1.1B",
+			&mo_short_message_control_data_111b,
+			test_envelope_encoding);
 
 	return g_test_run();
 }
