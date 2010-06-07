@@ -482,7 +482,8 @@ GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
 void sms_assembly_expire(struct sms_assembly *assembly, time_t before);
 
 GSList *sms_text_prepare(const char *utf8, guint16 ref,
-				gboolean use_16bit, int *ref_offset);
+				gboolean use_16bit, int *ref_offset,
+				gboolean use_delivery_reports);
 
 gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 			enum sms_charset *charset, gboolean *compressed,

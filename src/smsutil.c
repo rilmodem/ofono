@@ -2643,7 +2643,8 @@ static inline GSList *sms_list_append(GSList *l, const struct sms *in)
  * if no concatenation took place.
  */
 GSList *sms_text_prepare(const char *utf8, guint16 ref,
-				gboolean use_16bit, int *ref_offset)
+				gboolean use_16bit, int *ref_offset,
+				gboolean use_delivery_reports)
 {
 	struct sms template;
 	int offset = 0;
@@ -2659,7 +2660,7 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 	template.submit.rd = FALSE;
 	template.submit.vpf = SMS_VALIDITY_PERIOD_FORMAT_RELATIVE;
 	template.submit.rp = FALSE;
-	template.submit.srr = FALSE;
+	template.submit.srr = use_delivery_reports;
 	template.submit.mr = 0;
 	template.submit.vp.relative = 0xA7; /* 24 Hours */
 
