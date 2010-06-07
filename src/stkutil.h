@@ -1187,6 +1187,12 @@ struct stk_envelope_menu_selection {
 	ofono_bool_t help_request;
 };
 
+struct stk_envelope_sms_mo_control {
+	struct stk_address sc_address;
+	struct stk_address dest_address;
+	struct stk_location_info location;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1195,6 +1201,7 @@ struct stk_envelope {
 		struct stk_envelope_sms_pp_download sms_pp_download;
 		struct stk_envelope_cbs_pp_download cbs_pp_download;
 		struct stk_envelope_menu_selection menu_selection;
+		struct stk_envelope_sms_mo_control sms_mo_control;
 	};
 };
 

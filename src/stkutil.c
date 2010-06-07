@@ -4267,6 +4267,22 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					&envelope->menu_selection.help_request,
 					NULL);
 		break;
+	case STK_ENVELOPE_TYPE_MO_SMS_CONTROL:
+		/*
+		 * Comprehension Required according to the specs but not
+		 * enabled in conformance tests in 3GPP 31.124.
+		 */
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids, 0,
+					envelope,
+					build_dataobj_address, 0,
+					&envelope->sms_mo_control.sc_address,
+					build_dataobj_address, 0,
+					&envelope->sms_mo_control.dest_address,
+					build_dataobj_location_info, 0,
+					&envelope->sms_mo_control.location,
+					NULL);
+		break;
 	default:
 		return NULL;
 	};
