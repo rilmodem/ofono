@@ -49,32 +49,33 @@ static void stk_cbs_download_cb(const struct ofono_error *error,
 {
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("CellBroadcast download to UICC failed");
+		/* "The ME may retry to deliver the same Cell Broadcast
+		 * page." */
 		return;
 	}
 
 	DBG("CellBroadcast download to UICC reported no error");
 }
 
-void __ofono_cbs_sim_download(struct ofono_stk *stk,
-				const guint8 *pdu, int pdu_len)
+void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg)
 {
-	guint8 tlv[pdu_len + 8];
+	const guint8 *tlv;
+	unsigned int tlv_len;
+	struct stk_envelope e;
 
 	if (stk->driver->envelope == NULL)
 		return;
 
-	tlv[0] = STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD;
-	tlv[1] = 6 + pdu_len;
-	tlv[2] = 0x80 | STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
-	tlv[3] = 0x02; /* Device Identities length */
-	tlv[4] = STK_DEVICE_IDENTITY_TYPE_NETWORK;
-	tlv[5] = STK_DEVICE_IDENTITY_TYPE_UICC;
-	tlv[6] = 0x80 | STK_DATA_OBJECT_TYPE_CBS_PAGE;
-	tlv[7] = pdu_len;
+	e.type = STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD;
+	e.src = STK_DEVICE_IDENTITY_TYPE_NETWORK;
+	e.dst = STK_DEVICE_IDENTITY_TYPE_UICC;
+	memcpy(&e.cbs_pp_download.page, msg, sizeof(msg));
 
-	memcpy(tlv + 8, pdu, pdu_len);
+	tlv = stk_pdu_from_envelope(&e, &tlv_len);
+	if (!tlv)
+		return;
 
-	stk->driver->envelope(stk, pdu_len + 8, tlv, stk_cbs_download_cb, stk);
+	stk->driver->envelope(stk, tlv_len, tlv, stk_cbs_download_cb, stk);
 }
 
 void ofono_stk_proactive_command_notify(struct ofono_stk *stk,

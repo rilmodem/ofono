@@ -177,8 +177,8 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/sim.h>
 #include <ofono/stk.h>
 
-void __ofono_cbs_sim_download(struct ofono_stk *stk,
-				const guint8 *pdu, int pdu_len);
+struct cbs;
+void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg);
 
 #include <ofono/ssn.h>
 
