@@ -1215,3 +1215,49 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 
 	return utf8;
 }
+
+unsigned char *utf8_to_sim_string(const char *utf,
+					int max_length, int *out_length)
+{
+	unsigned char *result;
+	unsigned char *ucs2;
+	long gsm_bytes;
+	gsize converted;
+
+	result = convert_utf8_to_gsm(utf, -1, NULL, &gsm_bytes, 0);
+	if (result) {
+		if (gsm_bytes > max_length) {
+			gsm_bytes = max_length;
+			while (gsm_bytes && result[gsm_bytes - 1] == 0x1b)
+				gsm_bytes -= 1;
+		}
+
+		*out_length = gsm_bytes;
+		return result;
+	}
+
+	/* NOTE: UCS2 formats with an offset are never used */
+
+	ucs2 = (guint8 *) g_convert(utf, -1, "UCS-2BE//TRANSLIT", "UTF-8",
+					NULL, &converted, NULL);
+
+	if (!ucs2)
+		return NULL;
+
+	if (max_length != -1 && (int) converted + 1 > max_length)
+		converted = (max_length - 1) & ~1;
+
+	result = g_try_malloc(converted + 1);
+	if (!result) {
+		g_free(ucs2);
+		return NULL;
+	}
+
+	*out_length = converted + 1;
+
+	result[0] = 0x80;
+	memcpy(&result[1], ucs2, converted);
+	g_free(ucs2);
+
+	return result;
+}

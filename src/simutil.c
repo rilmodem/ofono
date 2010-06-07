@@ -1232,29 +1232,24 @@ void sim_adn_build(unsigned char *data, int length,
 			const char *identifier)
 {
 	int number_len = strlen(ph->number);
-	unsigned char *gsm_identifier = NULL;
-	long gsm_bytes;
-	long alpha_length;
+	unsigned char *alpha = NULL;
+	int alpha_written = 0;
+	int alpha_length;
 
 	alpha_length = length - 14;
 
 	/* Alpha-Identifier field */
 	if (alpha_length > 0) {
-		memset(data, 0xff, alpha_length);
-
 		if (identifier)
-			gsm_identifier = convert_utf8_to_gsm(identifier,
-					-1, NULL, &gsm_bytes, 0);
-
-		if (gsm_identifier) {
-			memcpy(data, gsm_identifier,
-				MIN(gsm_bytes, alpha_length));
-			g_free(gsm_identifier);
+			alpha = utf8_to_sim_string(identifier, alpha_length,
+							&alpha_written);
+		if (alpha) {
+			memcpy(data, alpha, alpha_written);
+			g_free(alpha);
 		}
 
-		/* TODO: figure out when the identifier needs to
-		 * be encoded in UCS2 and do this.
-		 */
+		memset(data + alpha_written, 0xff,
+				alpha_length - alpha_written);
 		data += alpha_length;
 	}
 

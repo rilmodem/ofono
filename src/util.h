@@ -77,3 +77,6 @@ unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
 				long *items_written, unsigned char terminator);
 
 char *sim_string_to_utf8(const unsigned char *buffer, int length);
+
+unsigned char *utf8_to_sim_string(const char *utf,
+					int max_length, int *out_length);
