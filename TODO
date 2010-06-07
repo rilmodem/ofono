@@ -143,6 +143,13 @@ SIM / SIM File system
   Priority: Low
   Complexity: C2
 
+- Support proprietory extensions for SIM PIN retry counter.  Most vendors
+  provide an extension commands to obtain such a retry counter for PINs and
+  PUKs.  Need to enable this as a property in oFono.
+
+  Priority: Low
+  Complexity: C2
+
 
 Modem Emulator
 ==============
