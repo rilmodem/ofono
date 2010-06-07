@@ -55,6 +55,8 @@ struct novatel_data {
 	GAtChat *primary;
 	GAtChat *secondary;
 	gint dmat_mode;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 };
 
 static int novatel_probe(struct ofono_modem *modem)
@@ -90,6 +92,36 @@ static void novatel_debug(const char *str, void *user_data)
 	ofono_info("%s%s", prefix, str);
 }
 
+static GAtChat *open_device(struct ofono_modem *modem,
+						const char *key, char *debug)
+{
+	GAtChat *chat;
+	GAtSyntax *syntax;
+	GIOChannel *channel;
+	const char *device;
+
+	device = ofono_modem_get_string(modem, key);
+	if (!device)
+		return NULL;
+
+	channel = g_at_tty_open(device, NULL);
+	if (!channel)
+		return NULL;
+
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(channel, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(channel);
+
+	if (!chat)
+		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, novatel_debug, debug);
+
+	return chat;
+}
+
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -104,9 +136,6 @@ static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct novatel_data *data = ofono_modem_get_data(modem);
-	GAtSyntax *syntax;
-	GIOChannel *channel;
-	const char *device;
 
 	DBG("");
 
@@ -115,24 +144,9 @@ static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
 
 	data->dmat_mode = 1;
 
-	device = ofono_modem_get_string(modem, "SecondaryDevice");
-	if (!device)
-		goto done;
-
-	channel = g_at_tty_open(device, NULL);
-	if (!channel)
-		goto done;
-
-	syntax = g_at_syntax_new_gsm_permissive();
-	data->secondary = g_at_chat_new(channel, syntax);
-	g_at_syntax_unref(syntax);
-	g_io_channel_unref(channel);
-
+	data->secondary = open_device(modem, "SecondaryDevice", "2nd:");
 	if (!data->secondary)
 		goto done;
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->secondary, novatel_debug, "2nd:");
 
 	g_at_chat_send(data->secondary, "ATE0 +CMEE=1", none_prefix,
 							NULL, NULL, NULL);
@@ -187,39 +201,36 @@ static void novatel_disconnect(gpointer user_data)
 
 	DBG("");
 
+	ofono_gprs_context_remove(data->gc);
+
 	g_at_chat_unref(data->primary);
 	data->primary = NULL;
 
-	ofono_info("Channel disconnected");
+	data->primary = open_device(modem, "PrimaryDevice", "1st:");
+	if (!data->primary)
+		return;
+
+	g_at_chat_set_disconnect_function(data->primary,
+						novatel_disconnect, modem);
+
+	ofono_info("Reopened GPRS context channel");
+
+	data->gc = ofono_gprs_context_create(modem, 0, "atmodem",
+							data->primary);
+
+	if (data->gprs && data->gc)
+		ofono_gprs_add_context(data->gprs, data->gc);
 }
 
 static int novatel_enable(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
-	GAtSyntax *syntax;
-	GIOChannel *channel;
-	const char *device;
 
 	DBG("%p", modem);
 
-	device = ofono_modem_get_string(modem, "PrimaryDevice");
-	if (!device)
-		return -EINVAL;
-
-	channel = g_at_tty_open(device, NULL);
-	if (!channel)
-		return -EIO;
-
-	syntax = g_at_syntax_new_gsm_permissive();
-	data->primary = g_at_chat_new(channel, syntax);
-	g_at_syntax_unref(syntax);
-	g_io_channel_unref(channel);
-
+	data->primary = open_device(modem, "PrimaryDevice", "1st:");
 	if (!data->primary)
 		return -EIO;
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->primary, novatel_debug, "1st:");
 
 	g_at_chat_set_disconnect_function(data->primary,
 						novatel_disconnect, modem);
@@ -299,8 +310,6 @@ static void novatel_pre_sim(struct ofono_modem *modem)
 static void novatel_post_sim(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
-	struct ofono_gprs *gprs;
-	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
@@ -308,7 +317,7 @@ static void novatel_post_sim(struct ofono_modem *modem)
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
 							data->primary);
 
-		gprs = ofono_gprs_create(modem, OFONO_VENDOR_NOVATEL,
+		data->gprs = ofono_gprs_create(modem, OFONO_VENDOR_NOVATEL,
 						"atmodem", data->primary);
 	} else {
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
@@ -322,14 +331,15 @@ static void novatel_post_sim(struct ofono_modem *modem)
 		ofono_cbs_create(modem, 0, "atmodem", data->secondary);
 		ofono_ussd_create(modem, 0, "atmodem", data->secondary);
 
-		gprs = ofono_gprs_create(modem, OFONO_VENDOR_NOVATEL,
+		data->gprs = ofono_gprs_create(modem, OFONO_VENDOR_NOVATEL,
 						"atmodem", data->secondary);
 	}
 
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->primary);
+	data->gc = ofono_gprs_context_create(modem, 0, "atmodem",
+							data->primary);
 
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
+	if (data->gprs && data->gc)
+		ofono_gprs_add_context(data->gprs, data->gc);
 }
 
 static struct ofono_modem_driver novatel_driver = {
