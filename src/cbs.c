@@ -302,8 +302,6 @@ static char *cbs_topics_to_str(struct ofono_cbs *cbs, GSList *user_topics)
 	char *topic_str;
 	struct cbs_topic_range etws_range = { 4352, 4356 };
 
-	topics = g_slist_append(topics, &etws_range);
-
 	if (user_topics != NULL)
 		topics = g_slist_concat(topics,
 					g_slist_copy(user_topics));
@@ -311,6 +309,8 @@ static char *cbs_topics_to_str(struct ofono_cbs *cbs, GSList *user_topics)
 	if (cbs->efcbmid_contents != NULL)
 		topics = g_slist_concat(topics,
 					g_slist_copy(cbs->efcbmid_contents));
+
+	topics = g_slist_append(topics, &etws_range);
 
 	topic_str = cbs_topic_ranges_to_string(topics);
 	g_slist_free(topics);
