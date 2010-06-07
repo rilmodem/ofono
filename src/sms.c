@@ -67,6 +67,7 @@ struct ofono_sms {
 	const struct ofono_sms_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
+	ofono_bool_t use_delivery_reports;
 };
 
 struct pending_pdu {
@@ -130,6 +131,9 @@ static DBusMessage *generate_get_properties_reply(struct ofono_sms *sms,
 
 	ofono_dbus_dict_append(&dict, "ServiceCenterAddress", DBUS_TYPE_STRING,
 				&sca);
+
+	ofono_dbus_dict_append(&dict, "UseDeliveryReports", DBUS_TYPE_BOOLEAN,
+				&sms->use_delivery_reports);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -257,6 +261,27 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 		sms->pending = dbus_message_ref(msg);
 
 		sms->driver->sca_set(sms, &sca, sca_set_callback, sms);
+		return NULL;
+	}
+
+	if (!strcmp(property, "UseDeliveryReports")) {
+		const char *path = __ofono_atom_get_path(sms->atom);
+		dbus_bool_t value;
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &value);
+
+		sms->use_delivery_reports = value;
+
+		g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SMS_MANAGER_INTERFACE,
+						"UseDeliveryReports",
+						DBUS_TYPE_BOOLEAN, &value);
+
 		return NULL;
 	}
 
@@ -426,7 +451,8 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	if (valid_phone_number_format(to) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
-	msg_list = sms_text_prepare(text, 0, TRUE, &ref_offset);
+	msg_list = sms_text_prepare(text, 0, TRUE, &ref_offset,
+					sms->use_delivery_reports);
 
 	if (!msg_list)
 		return __ofono_error_invalid_format(msg);
@@ -895,6 +921,9 @@ static void sms_remove(struct ofono_atom *atom)
 					"NextMessageId", sms->next_msg_id);
 		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
 					"NextReference", sms->ref);
+		g_key_file_set_boolean(sms->settings, SETTINGS_GROUP,
+					"UseDeliveryReports",
+					sms->use_delivery_reports);
 
 		storage_close(sms->imsi, SETTINGS_STORE, sms->settings, TRUE);
 
@@ -981,6 +1010,9 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 							"NextMessageId", NULL);
 	sms->ref = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
 							"NextReference", NULL);
+	sms->use_delivery_reports =
+		g_key_file_get_boolean(sms->settings, SETTINGS_GROUP,
+					"UseDeliveryReports", NULL);
 
 	if (sms->ref >= 65536)
 		sms->ref = 1;
