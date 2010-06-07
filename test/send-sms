@@ -16,9 +16,8 @@ manager = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.SmsManager')
 
 if len(sys.argv) == 4:
-	if sys.argv[3] == "1":
-		manager.SetProperty("UseDeliveryReports", dbus.Boolean(1))
-		manager.SendMessage(sys.argv[1], sys.argv[2])
+	manager.SetProperty("UseDeliveryReports",
+					dbus.Boolean(int(sys.argv[1])))
+	manager.SendMessage(sys.argv[1], sys.argv[2])
 else:
-	manager.SetProperty("UseDeliveryReports", dbus.Boolean(0))
 	manager.SendMessage(sys.argv[1], sys.argv[2])
