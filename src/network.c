@@ -1107,7 +1107,7 @@ static GSList *compress_operator_list(const struct ofono_network_operator *list,
 }
 
 static gboolean update_operator_list(struct ofono_netreg *netreg, int total,
-					const struct ofono_network_operator *list)
+				const struct ofono_network_operator *list)
 {
 	GSList *n = NULL;
 	GSList *o;
@@ -1168,8 +1168,8 @@ static gboolean update_operator_list(struct ofono_netreg *netreg, int total,
 }
 
 static void operator_list_callback(const struct ofono_error *error, int total,
-					const struct ofono_network_operator *list,
-					void *data)
+				const struct ofono_network_operator *list,
+				void *data)
 {
 	struct ofono_netreg *netreg = data;
 	DBusMessage *reply;
