@@ -18,8 +18,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  */
-#ifndef __BLUETOOTH_H__
-#define __BLUETOOTH_H__
 
 #include <drivers/atmodem/atutil.h>
 #include <ofono/dbus.h>
@@ -82,5 +80,3 @@ extern void hfp_call_volume_exit();
 
 extern void hfp_voicecall_init();
 extern void hfp_voicecall_exit();
-
-#endif
