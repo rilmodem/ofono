@@ -247,18 +247,24 @@ static void cpuc_query_cb(gboolean ok,
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, cbd->user)) {
-		CALLBACK_WITH_FAILURE(cb, 0, 0, cbd->data);
-		return;
-	}
+	if (g_at_result_iter_next(&iter, cbd->user) != TRUE)
+		goto error;
 
-	g_at_result_iter_next_string(&iter, &currency);
+	if (g_at_result_iter_next_string(&iter, &currency) != TRUE)
+		goto error;
+
 	strncpy(currency_buf, currency, sizeof(currency_buf));
 
-	g_at_result_iter_next_string(&iter, &ppu);
+	if (g_at_result_iter_next_string(&iter, &ppu) != TRUE)
+		goto error;
+
 	ppuval = strtod(ppu, NULL);
 
 	cb(&error, currency_buf, ppuval, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, 0, 0, cbd->data);
 }
 
 static void at_cpuc_query(struct ofono_call_meter *cm,
