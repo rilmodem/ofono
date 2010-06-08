@@ -202,52 +202,59 @@ static void add_huawei(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	struct udev_list_entry *entry;
-	const char *devnode, *serial_typ = NULL;
-	int primary, secondary;
+	const char *devnode, *type;
+	int ppp, pcui;
 
-	primary = ofono_modem_get_integer(modem, "PrimaryRegistered");
-	secondary = ofono_modem_get_integer(modem, "SecondaryRegistered");
+	/*
+	 * Huawei dongles tend to break up their ports into:
+	 * - Modem - Used for PPP
+	 * - Diag - Used for diagnostics, not usually AT command enabled
+	 * - PCUI - auxiliary channel where unsolicited events are sent
+	 *
+	 * The unsolicited events are controlled with ^PORTSEL command,
+	 * and defaults to 0 (the PCUI port)
+	 *
+	 * Surprising the PCUI port is usually last on the usb interface list
+	 */
+	ppp = ofono_modem_get_integer(modem, "ModemRegistered");
+	pcui = ofono_modem_get_integer(modem, "PcuiRegistered");
 
-	if (primary && secondary)
+	if (ppp & pcui)
 		return;
 
 	entry = udev_device_get_properties_list_entry(udev_device);
 	while (entry) {
 		const char *name = udev_list_entry_get_name(entry);
+		type = udev_list_entry_get_value(entry);
 
-		if (g_strcmp0(name, "OFONO_TYP") == 0) {
-			serial_typ = udev_list_entry_get_value(entry);
-
-			if (g_strcmp0(serial_typ, "PRIMARY") == 0) {
-				if (primary != 0)
-					return;
-
-				devnode = udev_device_get_devnode(udev_device);
-				ofono_modem_set_string(modem, "Device",
-							devnode);
-
-				primary = 1;
-				ofono_modem_set_integer(modem, "PrimaryRegistered", primary);
-			}
-
-			if (g_strcmp0(serial_typ, "SECONDARY") == 0) {
-				if (secondary != 0)
-					return;
-
-				devnode = udev_device_get_devnode(udev_device);
-				ofono_modem_set_string(modem, "SecondaryDevice", devnode);
-
-				secondary = 1;
-				ofono_modem_set_integer(modem, "SecondaryRegistered",
-							secondary);
-			}
-
+		if (g_str_equal(name, "OFONO_HUAWEI_TYPE") != TRUE) {
+			entry = udev_list_entry_get_next(entry);
+			continue;
 		}
 
-		entry = udev_list_entry_get_next(entry);
+		if (g_str_equal(type, "Modem") == TRUE) {
+			if (ppp != 0)
+				return;
+
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Modem", devnode);
+			ppp = 1;
+			ofono_modem_set_integer(modem, "ModemRegistered", ppp);
+		} else if (g_str_equal(type, "Pcui") == TRUE) {
+			if (pcui != 0)
+				return;
+
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Pcui", devnode);
+
+			pcui = 1;
+			ofono_modem_set_integer(modem, "PcuiRegistered", pcui);
+		}
+
+		break;
 	}
 
-	if (primary && secondary)
+	if (ppp && pcui)
 		ofono_modem_register(modem);
 }
 

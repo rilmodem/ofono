@@ -2,18 +2,32 @@
 
 ACTION!="add|change", GOTO="ofono_end"
 
-SUBSYSTEM!="tty", GOTO="ofono_typ_end"
-KERNEL!="ttyUSB[0-9]*", GOTO="ofono_typ_end"
+SUBSYSTEM!="tty", GOTO="ofono_huawei_end"
+KERNEL!="ttyUSB[0-9]*", GOTO="ofono_huawei_end"
 
-# HUAWEI E176
-ENV{ID_VENDOR_ID}=="12d1", ENV{ID_MODEL_ID}=="1003", ENV{ID_IFACE}=="00", ENV{OFONO_TYP}="PRIMARY"
-ENV{ID_VENDOR_ID}=="12d1", ENV{ID_MODEL_ID}=="1003", ENV{ID_IFACE}=="01", ENV{OFONO_TYP}="SECONDARY"
-# HUAWEI E1552
-# TODO: Add ID_MODEL_ID aka idProduct for E1552
-#ENV{ID_VENDOR_ID}=="12d1", ENV{ID_MODEL_ID}=="1003", ENV{ID_IFACE}=="00", ENV{OFONO_TYP}="PRIMARY"
-#ENV{ID_VENDOR_ID}=="12d1", ENV{ID_MODEL_ID}=="1003", ENV{ID_IFACE}=="02", ENV{OFONO_TYP}="SECONDARY"
+SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ENV{OFONO_IFACE_NUM}="$attr{bInterfaceNumber}"
 
-LABEL="ofono_typ_end"
+# Generic 0x1001
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1001", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1001", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+# Generic 0x1003
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1003", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1003", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+# E510
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1411", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1411", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+# K4505
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1464", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1464", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+# K3765
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1465", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1465", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+LABEL="ofono_huawei_end"
 
 SUBSYSTEM!="usb", GOTO="ofono_end"
 ENV{DEVTYPE}!="usb_device", GOTO="ofono_end"
