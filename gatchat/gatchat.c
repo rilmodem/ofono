@@ -913,6 +913,11 @@ void g_at_chat_resume(GAtChat *chat)
 
 	chat->suspended = FALSE;
 
+	if (g_at_io_get_channel(chat->io) == NULL) {
+		io_disconnect(chat);
+		return;
+	}
+
 	g_at_io_set_disconnect_function(chat->io, io_disconnect, chat);
 
 	g_at_io_set_debug(chat->io, chat->debugf, chat->debug_data);
