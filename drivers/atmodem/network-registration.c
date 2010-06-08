@@ -640,6 +640,24 @@ static void option_ossysi_notify(GAtResult *result, gpointer user_data)
 	ofono_info("OSSYSI mode: %d", mode);
 }
 
+static void huawei_rssi_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	GAtResultIter iter;
+	int strength;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^RSSI:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &strength))
+		return;
+
+	ofono_netreg_strength_notify(netreg,
+				at_util_convert_signal_strength(strength));
+}
+
 static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -933,10 +951,8 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_HUAWEI:
-		/*
-		 * Huawei doesn't support CIND, signal strength reported
-		 * in the modem driver
-		 */
+		g_at_chat_register(nd->chat, "^RSSI:", huawei_rssi_notify,
+					FALSE, netreg, NULL);
 		break;
 	default:
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
