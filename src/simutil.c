@@ -117,8 +117,6 @@ static struct sim_ef_info ef_db[] = {
 {	0x6FE3, 0x0000, BINARY, 18,	PIN,	PIN	},
 };
 
-static inline int to_semi_oct(char in);
-
 void simple_tlv_iter_init(struct simple_tlv_iter *iter,
 				const unsigned char *pdu, unsigned int len)
 {
@@ -844,6 +842,48 @@ void sim_parse_mcc_mnc(const guint8 *bcd, char *mcc, char *mnc)
 	*mnc++ = digit_lut[digit];
 }
 
+static inline int to_semi_oct(char in)
+{
+	int digit;
+
+	switch (in) {
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		digit = in - '0';
+		break;
+	case '*':
+		digit = 10;
+		break;
+	case '#':
+		digit = 11;
+		break;
+	case 'C':
+	case 'c':
+		digit = 12;
+		break;
+	case '?':
+		digit = 13;
+		break;
+	case 'E':
+	case 'e':
+		digit = 14;
+		break;
+	default:
+		digit = -1;
+		break;
+	}
+
+	return digit;
+}
+
 void sim_encode_mcc_mnc(guint8 *out, const char *mcc, const char *mnc)
 {
 	out[0] = to_semi_oct(mcc[0]);
@@ -1129,48 +1169,6 @@ void sim_extract_bcd_number(const unsigned char *buf, int len, char *out)
 	}
 
 	out[i*2] = '\0';
-}
-
-static inline int to_semi_oct(char in)
-{
-	int digit;
-
-	switch (in) {
-	case '0':
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-		digit = in - '0';
-		break;
-	case '*':
-		digit = 10;
-		break;
-	case '#':
-		digit = 11;
-		break;
-	case 'C':
-	case 'c':
-		digit = 12;
-		break;
-	case '?':
-		digit = 13;
-		break;
-	case 'E':
-	case 'e':
-		digit = 14;
-		break;
-	default:
-		digit = -1;
-		break;
-	}
-
-	return digit;
 }
 
 void sim_encode_bcd_number(const char *number, unsigned char *out)
