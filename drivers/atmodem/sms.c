@@ -487,8 +487,21 @@ static void at_cmgl_done(struct ofono_sms *sms)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
 
-	if (data->incoming == MT_STORE && data->store == ME_STORE)
+	if (data->incoming == MT_STORE && data->store == ME_STORE) {
 		at_cmgl_set_cpms(sms, SM_STORE);
+		return;
+	}
+
+	g_at_chat_register(data->chat, "+CMTI:", at_cmti_notify, FALSE,
+				sms, NULL);
+	g_at_chat_register(data->chat, "+CMT:", at_cmt_notify, TRUE,
+				sms, NULL);
+	g_at_chat_register(data->chat, "+CDS:", at_cds_notify, TRUE,
+				sms, NULL);
+
+	/* We treat CMGR just like a notification */
+	g_at_chat_register(data->chat, "+CMGR:", at_cmgr_notify, TRUE,
+				sms, NULL);
 }
 
 static void at_cmgl_notify(GAtResult *result, gpointer user_data)
@@ -604,17 +617,6 @@ static void at_cmgl_set_cpms(struct ofono_sms *sms, int store)
 static void at_sms_initialized(struct ofono_sms *sms)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
-
-	g_at_chat_register(data->chat, "+CMTI:", at_cmti_notify, FALSE,
-				sms, NULL);
-	g_at_chat_register(data->chat, "+CMT:", at_cmt_notify, TRUE,
-				sms, NULL);
-	g_at_chat_register(data->chat, "+CDS:", at_cds_notify, TRUE,
-				sms, NULL);
-
-	/* We treat CMGR just like a notification */
-	g_at_chat_register(data->chat, "+CMGR:", at_cmgr_notify, TRUE,
-				sms, NULL);
 
 	/* Inspect and free the incoming SMS storage */
 	if (data->incoming == MT_STORE)
