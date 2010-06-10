@@ -1,13 +1,13 @@
-CbsManager hierarchy
-===============
+Cell broadcast hierarchy
+========================
 
 Service		org.ofono
-Interface	org.ofono.CbsManager
+Interface	org.ofono.CellBroadcast
 Object path	[variable prefix]/{modem0,modem1,...}
 
 Methods		dict GetProperties()
 
-			Returns properties for the CbsManager object. See
+			Returns properties for the cell broadcast object. See
 			the properties section for available properties.
 
 			Possible Errors: [service].Error.InvalidArguments

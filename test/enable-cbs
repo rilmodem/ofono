@@ -15,6 +15,6 @@ else:
 
 print "Enabling cell broadcast on modem %s..." % path
 cbs = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.CbsManager')
+					'org.ofono.CellBroadcast')
 
 cbs.SetProperty("Powered", dbus.Boolean(1))

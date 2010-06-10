@@ -129,7 +129,7 @@ static void cbs_dispatch_emergency(struct ofono_cbs *cbs, const char *message,
 		return;
 	};
 
-	signal = dbus_message_new_signal(path, OFONO_CBS_MANAGER_INTERFACE,
+	signal = dbus_message_new_signal(path, OFONO_CELL_BROADCAST_INTERFACE,
 						"EmergencyBroadcast");
 
 	if (!signal)
@@ -163,7 +163,7 @@ static void cbs_dispatch_text(struct ofono_cbs *cbs, enum sms_class cls,
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cbs->atom);
 
-	g_dbus_emit_signal(conn, path, OFONO_CBS_MANAGER_INTERFACE,
+	g_dbus_emit_signal(conn, path, OFONO_CELL_BROADCAST_INTERFACE,
 				"IncomingBroadcast",
 				DBUS_TYPE_STRING, &message,
 				DBUS_TYPE_UINT16, &channel,
@@ -347,7 +347,7 @@ static void cbs_set_topics_cb(const struct ofono_error *error, void *data)
 
 	topics = cbs_topic_ranges_to_string(cbs->topics);
 	ofono_dbus_signal_property_changed(conn, path,
-						OFONO_CBS_MANAGER_INTERFACE,
+						OFONO_CELL_BROADCAST_INTERFACE,
 						"Topics",
 						DBUS_TYPE_STRING, &topics);
 
@@ -418,7 +418,7 @@ static void cbs_set_powered_cb(const struct ofono_error *error, void *data)
 	}
 
 	ofono_dbus_signal_property_changed(conn, path,
-						OFONO_CBS_MANAGER_INTERFACE,
+						OFONO_CELL_BROADCAST_INTERFACE,
 						"Powered",
 						DBUS_TYPE_BOOLEAN,
 						&cbs->powered);
@@ -467,7 +467,7 @@ done:
 	}
 
 	ofono_dbus_signal_property_changed(conn, path,
-						OFONO_CBS_MANAGER_INTERFACE,
+						OFONO_CELL_BROADCAST_INTERFACE,
 						"Powered",
 						DBUS_TYPE_BOOLEAN,
 						&cbs->powered);
@@ -529,14 +529,14 @@ static DBusMessage *cbs_set_property(DBusConnection *conn, DBusMessage *msg,
 	return __ofono_error_invalid_args(msg);
 }
 
-static GDBusMethodTable cbs_manager_methods[] = {
+static GDBusMethodTable cbs_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	cbs_get_properties },
 	{ "SetProperty",	"sv",	"",		cbs_set_property,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
-static GDBusSignalTable cbs_manager_signals[] = {
+static GDBusSignalTable cbs_signals[] = {
 	{ "PropertyChanged",	"sv"		},
 	{ "IncomingBroadcast",	"sq"		},
 	{ "EmergencyBroadcast", "sa{sv}"	},
@@ -569,8 +569,8 @@ static void cbs_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
-	g_dbus_unregister_interface(conn, path, OFONO_CBS_MANAGER_INTERFACE);
-	ofono_modem_remove_interface(modem, OFONO_CBS_MANAGER_INTERFACE);
+	g_dbus_unregister_interface(conn, path, OFONO_CELL_BROADCAST_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_CELL_BROADCAST_INTERFACE);
 
 	if (cbs->topics) {
 		g_slist_foreach(cbs->topics, (GFunc)g_free, NULL);
@@ -1034,16 +1034,15 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 	struct ofono_atom *netreg_atom;
 
 	if (!g_dbus_register_interface(conn, path,
-					OFONO_CBS_MANAGER_INTERFACE,
-					cbs_manager_methods,
-					cbs_manager_signals,
+					OFONO_CELL_BROADCAST_INTERFACE,
+					cbs_methods, cbs_signals,
 					NULL, cbs, NULL)) {
 		ofono_error("Could not create %s interface",
-				OFONO_CBS_MANAGER_INTERFACE);
+				OFONO_CELL_BROADCAST_INTERFACE);
 		return;
 	}
 
-	ofono_modem_add_interface(modem, OFONO_CBS_MANAGER_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_CELL_BROADCAST_INTERFACE);
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 

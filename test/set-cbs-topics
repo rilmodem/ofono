@@ -19,6 +19,6 @@ else:
 
 print "Setting cell broadcast topics for modem %s..." % path
 cbs = dbus.Interface(bus.get_object('org.ofono', path),
-				    'org.ofono.CbsManager')
+				    'org.ofono.CellBroadcast')
 
 cbs.SetProperty("Topics", topics);
