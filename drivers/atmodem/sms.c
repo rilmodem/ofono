@@ -397,7 +397,7 @@ static void at_cmgd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_error("Unable to delete received SMS");
 }
 
-static void at_cmti_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void at_cmgr_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cpms_request *req = user_data;
 	struct ofono_sms *sms = req->sms;
@@ -419,10 +419,38 @@ static void at_cmti_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->chat, buf, none_prefix, at_cmgd_cb, NULL, NULL);
 }
 
+static void at_send_cmgr_cpms(struct ofono_sms *sms, int store, int index)
+{
+	struct sms_data *data = ofono_sms_get_data(sms);
+
+	if (store == data->store) {
+		struct cpms_request req;
+
+		req.sms = sms;
+		req.store = store;
+		req.index = index;
+
+		at_cmgr_cpms_cb(TRUE, NULL, &req);
+	} else {
+		char buf[128];
+		const char *incoming = storages[data->incoming];
+		struct cpms_request *req = g_new(struct cpms_request, 1);
+
+		req->sms = sms;
+		req->store = store;
+		req->index = index;
+
+		snprintf(buf, sizeof(buf), "AT+CPMS=\"%s\",\"%s\",\"%s\"",
+				storages[store], storages[store], incoming);
+
+		g_at_chat_send(data->chat, buf, cpms_prefix, at_cmgr_cpms_cb,
+				req, g_free);
+	}
+}
+
 static void at_cmti_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
-	struct sms_data *data = ofono_sms_get_data(sms);
 	const char *strstore;
 	int store;
 	GAtResultIter iter;
@@ -448,30 +476,7 @@ static void at_cmti_notify(GAtResult *result, gpointer user_data)
 
 	DBG("Got a CMTI indication at %s, index: %d", strstore, index);
 
-	if (store == data->store) {
-		struct cpms_request req;
-
-		req.sms = sms;
-		req.store = store;
-		req.index = index;
-
-		at_cmti_cpms_cb(TRUE, NULL, &req);
-	} else {
-		char buf[128];
-		const char *incoming = storages[data->incoming];
-		struct cpms_request *req = g_new(struct cpms_request, 1);
-
-		req->sms = sms;
-		req->store = store;
-		req->index = index;
-
-		snprintf(buf, sizeof(buf), "AT+CPMS=\"%s\",\"%s\",\"%s\"",
-				strstore, strstore, incoming);
-
-		g_at_chat_send(data->chat, buf, cpms_prefix, at_cmti_cpms_cb,
-				req, g_free);
-	}
-
+	at_send_cmgr_cpms(sms, store, index);
 	return;
 
 err:
