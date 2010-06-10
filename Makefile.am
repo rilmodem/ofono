@@ -337,6 +337,7 @@ test_scripts = test/activate-context \
 		test/online-modem \
 		test/get-tech-preference \
 		test/set-tech-preference \
+		test/set-cbs-topics \
 		test/enable-cbs
 
 if TEST
