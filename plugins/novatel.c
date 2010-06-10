@@ -328,7 +328,8 @@ static void novatel_post_sim(struct ofono_modem *modem)
 
 		ofono_sms_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
 							data->secondary);
-		ofono_cbs_create(modem, 0, "atmodem", data->secondary);
+		ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem",
+							data->secondary);
 		ofono_ussd_create(modem, 0, "atmodem", data->secondary);
 
 		data->gprs = ofono_gprs_create(modem, OFONO_VENDOR_NOVATEL,
