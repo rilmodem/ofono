@@ -47,6 +47,8 @@ extern "C" {
 #define OFONO_SMS_MANAGER_INTERFACE "org.ofono.SmsManager"
 #define OFONO_VOICECALL_INTERFACE "org.ofono.VoiceCall"
 #define OFONO_VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
+#define OFONO_DATA_CONNECTION_MANAGER_INTERFACE "org.ofono.DataConnectionManager"
+#define OFONO_DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 
 /* Essentially a{sv} */
 #define OFONO_PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \
