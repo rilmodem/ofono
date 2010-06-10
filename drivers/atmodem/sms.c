@@ -1106,9 +1106,9 @@ static void at_sms_remove(struct ofono_sms *sms)
 }
 
 static struct ofono_sms_driver driver = {
-	.name = "atmodem",
-	.probe = at_sms_probe,
-	.remove = at_sms_remove,
+	.name		= "atmodem",
+	.probe		= at_sms_probe,
+	.remove		= at_sms_remove,
 	.sca_query	= at_csca_query,
 	.sca_set	= at_csca_set,
 	.submit		= at_cmgs,
