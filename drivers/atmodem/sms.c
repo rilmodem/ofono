@@ -314,7 +314,7 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 
 	DBG("Got new Status-Report PDU via CDS: %s, %d", hexpdu, tpdu_len);
 
-	/*Decode pdu and notify about new SMS status report*/
+	/* Decode pdu and notify about new SMS status report */
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_status_notify(sms, pdu, pdu_len, tpdu_len);
 
