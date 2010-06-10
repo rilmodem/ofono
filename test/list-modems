@@ -18,7 +18,7 @@ for path in properties["Modems"]:
 	print "[ %s ]" % (path)
 
 	for key in properties.keys():
-		if key in ["Interfaces"]:
+		if key in ["Interfaces", "Features"]:
 			val = ""
 			for i in properties[key]:
 				val += i + " "

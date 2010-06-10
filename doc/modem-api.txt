@@ -67,6 +67,11 @@ Properties	boolean Powered [readwrite]
 
 			This is usually obtained by using the +CGSN AT command.
 
+		array{string} Features [readonly]
+
+			List of currently enabled features. It uses simple
+			string abbreviations like "sms", "sim" etc.
+
 		array{string} Interfaces [readonly]
 
 			Set of interfaces currently supported by the mode

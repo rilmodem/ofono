@@ -62,6 +62,7 @@ struct ofono_modem {
 	GSList			*atoms;
 	struct ofono_watchlist	*atom_watches;
 	GSList			*interface_list;
+	GSList			*feature_list;
 	unsigned int		call_ids;
 	DBusMessage		*pending;
 	guint			interface_update;
@@ -488,6 +489,7 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	char **interfaces;
+	char **features;
 	int i;
 	GSList *l;
 	struct ofono_atom *devinfo_atom;
@@ -537,14 +539,19 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 	}
 
 	interfaces = g_new0(char *, g_slist_length(modem->interface_list) + 1);
-
 	for (i = 0, l = modem->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
-
 	ofono_dbus_dict_append_array(&dict, "Interfaces", DBUS_TYPE_STRING,
 					&interfaces);
-
 	g_free(interfaces);
+
+
+	features = g_new0(char *, g_slist_length(modem->feature_list) + 1);
+	for (i = 0, l = modem->feature_list; l; l = l->next, i++)
+		features[i] = l->data;
+	ofono_dbus_dict_append_array(&dict, "Features", DBUS_TYPE_STRING,
+					&features);
+	g_free(features);
 
 	if (modem->name)
 		ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING,
@@ -765,31 +772,70 @@ static gboolean trigger_interface_update(void *data)
 	struct ofono_modem *modem = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	char **interfaces;
+	char **features;
 	GSList *l;
 	int i;
 
 	interfaces = g_new0(char *, g_slist_length(modem->interface_list) + 1);
-
 	for (i = 0, l = modem->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
-
 	ofono_dbus_signal_array_property_changed(conn, modem->path,
 						OFONO_MODEM_INTERFACE,
 						"Interfaces", DBUS_TYPE_STRING,
 						&interfaces);
-
 	g_free(interfaces);
+
+	features = g_new0(char *, g_slist_length(modem->feature_list) + 1);
+	for (i = 0, l = modem->feature_list; l; l = l->next, i++)
+		features[i] = l->data;
+	ofono_dbus_signal_array_property_changed(conn, modem->path,
+						OFONO_MODEM_INTERFACE,
+						"Features", DBUS_TYPE_STRING,
+						&features);
+	g_free(features);
 
 	modem->interface_update = 0;
 
 	return FALSE;
 }
 
+static const struct {
+	const char *interface;
+	const char *feature;
+} feature_map[] = {
+	{ OFONO_NETWORK_REGISTRATION_INTERFACE,		"netreg"},
+	{ OFONO_RADIO_SETTINGS_INTERFACE,		"rat"	},
+	{ OFONO_CELL_BROADCAST_INTERFACE,		"cbs"	},
+	{ OFONO_SMS_MANAGER_INTERFACE,			"sms"	},
+	{ OFONO_SIM_MANAGER_INTERFACE,			"sim"	},
+	{ OFONO_DATA_CONNECTION_MANAGER_INTERFACE,	"gprs"	},
+	{ },
+};
+
+static const char *get_feature(const char *interface)
+{
+	int i;
+
+	for (i = 0; feature_map[i].interface; i++) {
+		if (strcmp(feature_map[i].interface, interface) == 0)
+			return feature_map[i].feature;
+	}
+
+	return NULL;
+}
+
 void ofono_modem_add_interface(struct ofono_modem *modem,
 				const char *interface)
 {
-	modem->interface_list =
-		g_slist_prepend(modem->interface_list, g_strdup(interface));
+	const char *feature;
+
+	modem->interface_list = g_slist_prepend(modem->interface_list,
+						g_strdup(interface));
+
+	feature = get_feature(interface);
+	if (feature)
+		modem->feature_list = g_slist_prepend(modem->feature_list,
+							g_strdup(feature));
 
 	if (modem->interface_update != 0)
 		return;
@@ -800,9 +846,11 @@ void ofono_modem_add_interface(struct ofono_modem *modem,
 void ofono_modem_remove_interface(struct ofono_modem *modem,
 				const char *interface)
 {
-	GSList *found = g_slist_find_custom(modem->interface_list, interface,
-						(GCompareFunc) strcmp);
+	GSList *found;
+	const char *feature;
 
+	found = g_slist_find_custom(modem->interface_list, interface,
+						(GCompareFunc) strcmp);
 	if (!found) {
 		ofono_error("Interface %s not found on the interface_list",
 				interface);
@@ -810,9 +858,19 @@ void ofono_modem_remove_interface(struct ofono_modem *modem,
 	}
 
 	g_free(found->data);
-
 	modem->interface_list = g_slist_remove(modem->interface_list,
 						found->data);
+
+	feature = get_feature(interface);
+	if (feature) {
+		found = g_slist_find_custom(modem->feature_list, feature,
+						(GCompareFunc) strcmp);
+		if (found) {
+			g_free(found->data);
+			modem->feature_list = g_slist_remove(modem->feature_list,
+								found->data);
+		}
+	}
 
 	if (modem->interface_update != 0)
 		return;
@@ -1370,9 +1428,13 @@ static void modem_unregister(struct ofono_modem *modem)
 	modem->sim_watch = 0;
 	modem->sim_ready_watch = 0;
 
-	g_slist_foreach(modem->interface_list, (GFunc)g_free, NULL);
+	g_slist_foreach(modem->interface_list, (GFunc) g_free, NULL);
 	g_slist_free(modem->interface_list);
 	modem->interface_list = NULL;
+
+	g_slist_foreach(modem->feature_list, (GFunc) g_free, NULL);
+	g_slist_free(modem->feature_list);
+	modem->feature_list = NULL;
 
 	if (modem->timeout) {
 		g_source_remove(modem->timeout);

@@ -32,7 +32,6 @@ struct ofono_modem;
 
 void ofono_modem_add_interface(struct ofono_modem *modem,
 				const char *interface);
-
 void ofono_modem_remove_interface(struct ofono_modem *modem,
 					const char *interface);
 
