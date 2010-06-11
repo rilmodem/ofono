@@ -70,6 +70,7 @@ struct sms_data {
 	int store;
 	int incoming;
 	int retries;
+	gboolean expect_sr;
 	gboolean cnma_enabled;
 	char *cnma_ack_pdu;
 	int cnma_ack_pdu_len;
@@ -82,6 +83,7 @@ struct cpms_request {
 	struct ofono_sms *sms;
 	int store;
 	int index;
+	gboolean expect_sr;
 };
 
 static void at_csca_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -378,7 +380,7 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 
-	if (data->store == AT_UTIL_SMS_STORE_SR)
+	if (data->expect_sr)
 		ofono_sms_status_notify(sms, pdu, pdu_len, tpdu_len);
 	else
 		ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
@@ -413,6 +415,7 @@ static void at_cmgr_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	data->store = req->store;
+	data->expect_sr = req->expect_sr;
 
 	snprintf(buf, sizeof(buf), "AT+CMGR=%d", req->index);
 	g_at_chat_send(data->chat, buf, none_prefix, at_cmgr_cb, NULL, NULL);
@@ -422,7 +425,8 @@ static void at_cmgr_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->chat, buf, none_prefix, at_cmgd_cb, NULL, NULL);
 }
 
-static void at_send_cmgr_cpms(struct ofono_sms *sms, int store, int index)
+static void at_send_cmgr_cpms(struct ofono_sms *sms, int store, int index,
+				gboolean expect_sr)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
 
@@ -432,6 +436,7 @@ static void at_send_cmgr_cpms(struct ofono_sms *sms, int store, int index)
 		req.sms = sms;
 		req.store = store;
 		req.index = index;
+		req.expect_sr = expect_sr;
 
 		at_cmgr_cpms_cb(TRUE, NULL, &req);
 	} else {
@@ -442,6 +447,7 @@ static void at_send_cmgr_cpms(struct ofono_sms *sms, int store, int index)
 		req->sms = sms;
 		req->store = store;
 		req->index = index;
+		req->expect_sr = expect_sr;
 
 		snprintf(buf, sizeof(buf), "AT+CPMS=\"%s\",\"%s\",\"%s\"",
 				storages[store], storages[store], incoming);
@@ -465,7 +471,7 @@ static void at_cmti_notify(GAtResult *result, gpointer user_data)
 		goto error;
 
 	DBG("Got a CMTI indication at %s, index: %d", storages[store], index);
-	at_send_cmgr_cpms(sms, store, index);
+	at_send_cmgr_cpms(sms, store, index, FALSE);
 	return;
 
 error:
@@ -482,11 +488,13 @@ static void at_cdsi_notify(GAtResult *result, gpointer user_data)
 						&store, &index) == FALSE)
 		goto error;
 
-	if (store != AT_UTIL_SMS_STORE_SR)
+	/* Some modems actually store status reports in SM, and not SR */
+	if (store != AT_UTIL_SMS_STORE_SR && store != AT_UTIL_SMS_STORE_SM &&
+			store != AT_UTIL_SMS_STORE_ME)
 		goto error;
 
 	DBG("Got a CDSI indication at %s, index: %d", storages[store], index);
-	at_send_cmgr_cpms(sms, store, index);
+	at_send_cmgr_cpms(sms, store, index, TRUE);
 	return;
 
 error:
