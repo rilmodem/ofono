@@ -719,8 +719,22 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	if (!append_cnmi_element(buf, &len, cnmi_opts[2], "20", FALSE))
 		return FALSE;
 
+	/*
+	 * Some manufacturers seem to have trouble with delivery via +CDS.
+	 * They report the status report properly, however refuse to +CNMA
+	 * ack it with error "CNMA not expected."  However, not acking it
+	 * sends the device into la-la land.
+	 */
+	if (data->vendor == OFONO_VENDOR_NOVATEL)
+		/* MSM devices advertise support for mode 2, but return an
+		 * error if we attempt to actually use it. */
+		mode = "2";
+	else
+		/* Sounds like 2 is the sanest mode */
+		mode = data->cnma_enabled ? "10" : "20";
+
 	/* Always deliver Status-Reports via +CDS or don't deliver at all */
-	if (!append_cnmi_element(buf, &len, cnmi_opts[3], "10", FALSE))
+	if (!append_cnmi_element(buf, &len, cnmi_opts[3], mode, FALSE))
 		return FALSE;
 
 	/* Don't care about buffering, 0 seems safer */
