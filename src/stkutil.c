@@ -329,6 +329,8 @@ static gboolean parse_dataobj_subaddress(struct comprehension_tlv_iter *iter,
 	subaddr->len = len;
 	memcpy(subaddr->subaddr, data, len);
 
+	subaddr->has_subaddr = TRUE;
+
 	return TRUE;
 }
 
@@ -3357,6 +3359,61 @@ static gboolean build_dataobj_address(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.2 */
+static gboolean build_dataobj_alpha_id(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	unsigned char tag = STK_DATA_OBJECT_TYPE_ALPHA_ID;
+	int len;
+	unsigned char *string;
+
+	if (data == NULL)
+		return TRUE;
+
+	if (strlen(data) == 0)
+		return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+			stk_tlv_builder_close_container(tlv);
+
+	string = utf8_to_sim_string(data, -1, &len);
+	if (string == NULL)
+		return FALSE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_bytes(tlv, string, len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.3 */
+static gboolean build_dataobj_subaddress(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_subaddress *sa = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_SUBADDRESS;
+
+	if (sa->has_subaddr == FALSE)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, sa->subaddr, sa->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.4 */
+static gboolean build_dataobj_ccp(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_ccp *ccp = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CCP;
+
+	if (ccp->len == 0)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, ccp->len) &&
+		stk_tlv_builder_append_bytes(tlv, ccp->ccp, ccp->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 131.111 Section 8.5 */
 static gboolean build_dataobj_cbs_page(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -3447,6 +3504,27 @@ static gboolean build_dataobj_gsm_sms_tpdu(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 131.111 Section 8.14 */
+static gboolean build_dataobj_ss_string(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_address *addr = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_SS_STRING;
+	unsigned int len;
+	unsigned char number[128];
+
+	if (addr->number == NULL)
+		return TRUE;
+
+	len = (strlen(addr->number) + 1) / 2;
+	sim_encode_bcd_number(addr->number, number);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, addr->ton_npi) &&
+		stk_tlv_builder_append_bytes(tlv, number, len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Defined in TS 102.223 Section 8.15 */
 static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -3482,6 +3560,22 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 		return ret;
 
 	return stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.17 */
+static gboolean build_dataobj_ussd_string(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_ussd_string *ussd = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_USSD_STRING;
+
+	if (ussd->string == NULL)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, ussd->dcs) &&
+		stk_tlv_builder_append_bytes(tlv, ussd->string, ussd->len) &&
+		stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.19 */
@@ -3734,6 +3828,21 @@ static gboolean build_dataobj_at_response(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 131.111 Section 8.42 */
+static gboolean build_dataobj_bc_repeat(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BC_REPEAT_INDICATOR;
+	const struct stk_bc_repeat *bcr = data;
+
+	if (bcr->has_bc_repeat == FALSE)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_byte(tlv, bcr->value) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.45 */
 static gboolean build_dataobj_language(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -3806,6 +3915,23 @@ static gboolean build_dataobj_esn(struct stk_tlv_builder *tlv,
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_short(tlv, *esn >> 16) &&
 		stk_tlv_builder_append_short(tlv, *esn >> 0) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.72, 3GPP 24.008 Section 9.5.7 */
+static gboolean build_dataobj_pdp_context_params(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_common_byte_array *params = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_PDP_ACTIVATION_PARAMETER;
+
+	if (params->len < 1)
+		return TRUE;
+	if (params->len > 0x7f)
+		return FALSE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, params->array, params->len) &&
 		stk_tlv_builder_close_container(tlv);
 }
 
@@ -3894,6 +4020,23 @@ static gboolean build_dataobj_broadcast_network_information(
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_byte(tlv, bni->tech) &&
 		stk_tlv_builder_append_bytes(tlv, bni->loc_info, bni->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.98, 3GPP 24.301 Section 6.5.1 */
+static gboolean build_dataobj_eps_pdn_conn_params(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_common_byte_array *params = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_EPS_PDN_CONN_ACTIVATION_REQ;
+
+	if (params->len < 1)
+		return TRUE;
+	if (params->len > 0x7f)
+		return FALSE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, params->array, params->len) &&
 		stk_tlv_builder_close_container(tlv);
 }
 
@@ -4231,6 +4374,55 @@ static gboolean build_envelope_dataobj_device_ids(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+static gboolean build_envelope_call_control(
+					struct stk_tlv_builder *builder,
+					const struct stk_envelope *envelope)
+{
+	const struct stk_envelope_call_control *cc = &envelope->call_control;
+	gboolean ok = FALSE;
+
+	if (build_dataobj(builder, build_envelope_dataobj_device_ids,
+				DATAOBJ_FLAG_CR, envelope, NULL) != TRUE)
+		return FALSE;
+
+	switch (cc->type) {
+	case STK_CC_TYPE_CALL_SETUP:
+		ok = build_dataobj(builder, build_dataobj_address,
+					DATAOBJ_FLAG_CR, &cc->address, NULL);
+		break;
+	case STK_CC_TYPE_SUPPLEMENTARY_SERVICE:
+		ok = build_dataobj(builder, build_dataobj_ss_string,
+					DATAOBJ_FLAG_CR, &cc->ss_string, NULL);
+		break;
+	case STK_CC_TYPE_USSD_OP:
+		ok = build_dataobj(builder, build_dataobj_ussd_string,
+					DATAOBJ_FLAG_CR, &cc->ussd_string,
+					NULL);
+		break;
+	case STK_CC_TYPE_PDP_CTX_ACTIVATION:
+		ok = build_dataobj(builder, build_dataobj_pdp_context_params,
+					DATAOBJ_FLAG_CR, &cc->pdp_ctx_params,
+					NULL);
+		break;
+	case STK_CC_TYPE_EPS_PDN_CONNECTION_ACTIVATION:
+		ok = build_dataobj(builder, build_dataobj_eps_pdn_conn_params,
+					DATAOBJ_FLAG_CR, &cc->eps_pdn_params,
+					NULL);
+		break;
+	}
+	if (ok != TRUE)
+		return FALSE;
+
+	return build_dataobj(builder,
+				build_dataobj_ccp, 0, &cc->ccp1,
+				build_dataobj_subaddress, 0, &cc->subaddress,
+				build_dataobj_location_info, 0, &cc->location,
+				build_dataobj_ccp, 0, &cc->ccp2,
+				build_dataobj_alpha_id, 0, cc->alpha_id,
+				build_dataobj_bc_repeat, 0, &cc->bc_repeat,
+				NULL);
+}
+
 const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 						unsigned int *out_length)
 {
@@ -4279,6 +4471,9 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					build_dataobj_help_request, 0,
 					&envelope->menu_selection.help_request,
 					NULL);
+		break;
+	case STK_ENVELOPE_TYPE_CALL_CONTROL:
+		ok = build_envelope_call_control(&builder, envelope);
 		break;
 	case STK_ENVELOPE_TYPE_MO_SMS_CONTROL:
 		/*

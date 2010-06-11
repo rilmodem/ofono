@@ -178,6 +178,7 @@ enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_PLMN_LIST =			0x79,
 	STK_DATA_OBJECT_TYPE_BROADCAST_NETWORK_INFO =		0x7A,
 	STK_DATA_OBJECT_TYPE_ACTIVATE_DESCRIPTOR =		0x7B,
+	STK_DATA_OBJECT_TYPE_EPS_PDN_CONN_ACTIVATION_REQ =	0x7C,
 };
 
 enum stk_device_identity_type {
@@ -474,6 +475,7 @@ struct stk_address {
  * bytes."
  */
 struct stk_subaddress {
+	ofono_bool_t has_subaddr;
 	unsigned char len;
 	unsigned char subaddr[23];
 };
@@ -523,6 +525,13 @@ struct stk_result {
 	enum stk_result_type type;
 	unsigned int additional_len;
 	unsigned char *additional;
+};
+
+/* Defined in TS 131.111 Section 8.17.  Length limit of 160 chars in 23.028 */
+struct stk_ussd_string {
+	unsigned char dcs;
+	unsigned char string[160];
+	int len;
 };
 
 /* Define the struct of single file in TS102.223 Section 8.18.
@@ -647,6 +656,12 @@ struct stk_timer_value {
 	unsigned char hour;
 	unsigned char minute;
 	unsigned char second;
+};
+
+/* Defined in TS 102.223 Section 8.42 */
+struct stk_bc_repeat {
+	ofono_bool_t has_bc_repeat;
+	unsigned char value;
 };
 
 /*
@@ -1193,6 +1208,37 @@ struct stk_envelope_sms_mo_control {
 	struct stk_location_info location;
 };
 
+enum stk_call_control_type {
+	STK_CC_TYPE_CALL_SETUP,
+	STK_CC_TYPE_SUPPLEMENTARY_SERVICE,
+	STK_CC_TYPE_USSD_OP,
+	STK_CC_TYPE_PDP_CTX_ACTIVATION,
+	STK_CC_TYPE_EPS_PDN_CONNECTION_ACTIVATION,
+};
+
+/* Used both in the ENVELOPE message to UICC and response from UICC */
+struct stk_envelope_call_control {
+	enum stk_call_control_type type;
+	union {
+		struct stk_address address;
+		struct stk_address ss_string;
+		struct stk_ussd_string ussd_string;
+		struct stk_common_byte_array pdp_ctx_params;
+		struct stk_common_byte_array eps_pdn_params;
+	};
+	/* At least one of the following two fields must be present in a
+	 * response indicating modification of the call.
+	 * In an EVELOPE message, only allowed for a call setup. */
+	struct stk_ccp ccp1;
+	struct stk_subaddress subaddress;
+	struct stk_location_info location;
+	/* Only allowed when ccp1 is present */
+	struct stk_ccp ccp2;
+	char *alpha_id;
+	/* Only allowed when both ccp1 and ccp2 are present */
+	struct stk_bc_repeat bc_repeat;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1201,6 +1247,7 @@ struct stk_envelope {
 		struct stk_envelope_sms_pp_download sms_pp_download;
 		struct stk_envelope_cbs_pp_download cbs_pp_download;
 		struct stk_envelope_menu_selection menu_selection;
+		struct stk_envelope_call_control call_control;
 		struct stk_envelope_sms_mo_control sms_mo_control;
 	};
 };
