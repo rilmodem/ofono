@@ -154,6 +154,8 @@ enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_NETWORK_ACCESS_NAME =		0x47,
 	STK_DATA_OBJECT_TYPE_CDMA_SMS_TPDU = 			0x48,
 	STK_DATA_OBJECT_TYPE_REMOTE_ENTITY_ADDRESS =		0x49,
+	STK_DATA_OBJECT_TYPE_I_WLAN_ID_TAG =			0x4A,
+	STK_DATA_OBJECT_TYPE_I_WLAN_ACCESS_STATUS =		0x4B,
 	STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE =			0x50,
 	STK_DATA_OBJECT_TYPE_ITEM_TEXT_ATTRIBUTE_LIST =		0x51,
 	STK_DATA_OBJECT_TYPE_PDP_ACTIVATION_PARAMETER =		0x52,
@@ -174,11 +176,13 @@ enum stk_data_object_type {
 	STK_DATA_OBJECT_TYPE_REGISTRY_APPLICATION_DATA =	0x71,
 	STK_DATA_OBJECT_TYPE_ROUTING_AREA_INFO =		0x73,
 	STK_DATA_OBJECT_TYPE_UPDATE_ATTACH_TYPE =		0x74,
+	STK_DATA_OBJECT_TYPE_REJECTION_CAUSE_CODE =		0x75,
 	STK_DATA_OBJECT_TYPE_NMEA_SENTENCE =			0x78,
 	STK_DATA_OBJECT_TYPE_PLMN_LIST =			0x79,
 	STK_DATA_OBJECT_TYPE_BROADCAST_NETWORK_INFO =		0x7A,
 	STK_DATA_OBJECT_TYPE_ACTIVATE_DESCRIPTOR =		0x7B,
 	STK_DATA_OBJECT_TYPE_EPS_PDN_CONN_ACTIVATION_REQ =	0x7C,
+	STK_DATA_OBJECT_TYPE_TRACKING_AREA_ID =			0x7D,
 };
 
 enum stk_device_identity_type {
@@ -449,6 +453,100 @@ enum stk_broadcast_network_technology {
 	STK_BROADCAST_NETWORK_T_DMB = 0x03
 };
 
+enum stk_i_wlan_access_status {
+	STK_I_WLAN_STATUS_NO_COVERAGE		= 0x00,
+	STK_I_WLAN_STATUS_NOT_CONNECTED		= 0x01,
+	STK_I_WLAN_STATUS_CONNECTED		= 0x02,
+};
+
+enum stk_update_attach_type {
+	STK_UPDATE_ATTACH_NORMAL_LOCATION_UPDATING	= 0x00,
+	STK_UPDATE_ATTACH_PERIODIC_UPDATING		= 0x01,
+	STK_UPDATE_ATTACH_IMSI_ATTACH			= 0x02,
+	STK_UPDATE_ATTACH_GPRS_ATTACH			= 0x03,
+	STK_UPDATE_ATTACH_GPRS_IMSI_ATTACH		= 0x04,
+	STK_UPDATE_ATTACH_RA_UPDATING			= 0x05,
+	STK_UPDATE_ATTACH_RA_LA_UPDATING		= 0x06,
+	STK_UPDATE_ATTACH_RA_LA_UPDATING_IMSI_ATTACH	= 0x07,
+	STK_UPDATE_ATTACH_PERIODIC_RA_UPDATING		= 0x08,
+	STK_UPDATE_ATTACH_EPS_ATTACH			= 0x09,
+	STK_UPDATE_ATTACH_EPS_IMSI_ATTACH		= 0x0a,
+	STK_UPDATE_ATTACH_TA_UPDATING			= 0x0b,
+	STK_UPDATE_ATTACH_TA_LA_UPDATING		= 0x0c,
+	STK_UPDATE_ATTACH_TA_LA_UPDATING_IMSI_ATTACH	= 0x0d,
+	STK_UPDATE_ATTACH_PERIDIC_TA_UPDATING		= 0x0e,
+};
+
+enum stk_rejection_cause_code {
+	/* MM and GMM codes (GERAN/UTRAN) */
+	STK_CAUSE_GMM_IMSI_UNKNOWN_IN_HLR		= 0x02,
+	STK_CAUSE_GMM_ILLEGAL_MS			= 0x03,
+	STK_CAUSE_GMM_IMSI_UNKNOWN_IN_VLR		= 0x04,
+	STK_CAUSE_GMM_IMEI_NOT_ACCEPTED			= 0x05,
+	STK_CAUSE_GMM_ILLEGAL_ME			= 0x06,
+	STK_CAUSE_GMM_GPRS_NOT_ALLOWED			= 0x07,
+	STK_CAUSE_GMM_GPRS_AND_NON_GPRS_NOT_ALLOWED	= 0x08,
+	STK_CAUSE_GMM_IMEI_NOT_DERIVED_BY_NETWORK	= 0x09,
+	STK_CAUSE_GMM_IMPLICITLY_DETACHED		= 0x0a,
+	STK_CAUSE_GMM_PLMN_NOT_ALLOWED			= 0x0b,
+	STK_CAUSE_GMM_LAC_NOT_ALLOWED			= 0x0c,
+	STK_CAUSE_GMM_ROAMING_NOT_ALLOWED		= 0x0d,
+	STK_CAUSE_GMM_GPRS_NOT_ALLOWED_IN_PLMN		= 0x0e,
+	STK_CAUSE_GMM_NO_SUITABLE_CELLS			= 0x0f,
+	STK_CAUSE_GMM_MSC_TEMPORARILY_UNREACHABLE	= 0x10,
+	STK_CAUSE_GMM_NETWORK_FAILURE			= 0x11,
+	STK_CAUSE_GMM_MAC_FAILURE			= 0x14,
+	STK_CAUSE_GMM_SYNCH_FAILURE			= 0x15,
+	STK_CAUSE_GMM_CONGESTION			= 0x16,
+	STK_CAUSE_GMM_GSM_AUTHENTICATION_UNACCEPTABLE	= 0x17,
+	STK_CAUSE_GMM_NOT_AUTHORISED_FOR_CSG		= 0x19,
+	STK_CAUSE_GMM_SERVICE_OPTION_NOT_SUPPORTED	= 0x20,
+	STK_CAUSE_GMM_SERVICE_OPTION_NOT_SUBSCRIBED	= 0x21,
+	STK_CAUSE_GMM_SERVICE_OPTION_TEMPORARY_DEFUNC	= 0x22,
+	STK_CAUSE_GMM_CALL_NOT_IDENTIFIED		= 0x26,
+	STK_CAUSE_GMM_NO_PDP_CONTEXT_ACTIVATED		= 0x28,
+	STK_CAUSE_GMM_RETRY_ON_NEW_CELL			= 0x30, /* to 0x3f */
+	STK_CAUSE_GMM_SEMANTICALLY_INCORRECT_MESSAGE	= 0x5f,
+	STK_CAUSE_GMM_INVALID_MANDATORY_INFO		= 0x60,
+	STK_CAUSE_GMM_MESSAGE_TYPE_UNKNOWN		= 0x61,
+	STK_CAUSE_GMM_MESSAGE_TYPE_INCOMPATIBLE_STATE	= 0x62,
+	STK_CAUSE_GMM_IE_UNKNOWN			= 0x63,
+	STK_CAUSE_GMM_CONDITIONAL_IE_ERROR		= 0x64,
+	STK_CAUSE_GMM_MESSAGE_INCOMPATIBLE_WITH_STATE	= 0x65,
+	STK_CAUSE_GMM_PROTOCOL_ERROR			= 0x6f,
+	/* EMM codes (E-UTRAN) */
+	STK_CAUSE_EMM_IMSI_UNKNOWN_IN_HSS		= 0x02,
+	STK_CAUSE_EMM_ILLEGAL_UE			= 0x03,
+	STK_CAUSE_EMM_ILLEGAL_ME			= 0x06,
+	STK_CAUSE_EMM_EPS_NOT_ALLOWED			= 0x07,
+	STK_CAUSE_EMM_EPS_AND_NON_EPS_NOT_ALLOWED	= 0x08,
+	STK_CAUSE_EMM_IMEI_NOT_DERIVED_BY_NETWORK	= 0x09,
+	STK_CAUSE_EMM_IMPLICITLY_DETACHED		= 0x0a,
+	STK_CAUSE_EMM_PLMN_NOT_ALLOWED			= 0x0b,
+	STK_CAUSE_EMM_TAC_NOT_ALLOWED			= 0x0c,
+	STK_CAUSE_EMM_ROAMING_NOT_ALLOWED		= 0x0d,
+	STK_CAUSE_EMM_EPS_NOT_ALLOWED_IN_PLMN		= 0x0e,
+	STK_CAUSE_EMM_NO_SUITABLE_CELLS			= 0x0f,
+	STK_CAUSE_EMM_MSC_TEMPORARILY_UNREACHABLE	= 0x10,
+	STK_CAUSE_EMM_NETWORK_FAILURE			= 0x11,
+	STK_CAUSE_EMM_MAC_FAILURE			= 0x14,
+	STK_CAUSE_EMM_SYNCH_FAILURE			= 0x15,
+	STK_CAUSE_EMM_CONGESTION			= 0x16,
+	STK_CAUSE_EMM_SECURITY_MODE_REJECTED		= 0x18,
+	STK_CAUSE_EMM_NOT_AUTHORISED_FOR_CSG		= 0x19,
+	STK_CAUSE_EMM_CS_FALLBACK_NOT_ALLOWED		= 0x26,
+	STK_CAUSE_EMM_CS_DOMAIN_TEMPORARY_UNAVAILABLE	= 0x27,
+	STK_CAUSE_EMM_NO_EPS_BEARER_CONTEXT_ACTIVATED	= 0x28,
+	STK_CAUSE_EMM_SEMANTICALLY_INCORRECT_MESSAGE	= 0x5f,
+	STK_CAUSE_EMM_INVALID_MANDATORY_INFO		= 0x60,
+	STK_CAUSE_EMM_MESSAGE_TYPE_UNKNOWN		= 0x61,
+	STK_CAUSE_EMM_MESSAGE_TYPE_INCOMPATIBLE_STATE	= 0x62,
+	STK_CAUSE_EMM_IE_UNKNOWN			= 0x63,
+	STK_CAUSE_EMM_CONDITIONAL_IE_ERROR		= 0x64,
+	STK_CAUSE_EMM_MESSAGE_INCOMPATIBLE_WITH_STATE	= 0x65,
+	STK_CAUSE_EMM_PROTOCOL_ERROR			= 0x6f,
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -617,6 +715,16 @@ struct stk_item_icon_id_list {
 	unsigned int len;
 };
 
+/* Defined in TS 102.223 Section 8.33 */
+struct stk_reader_status {
+	int id;
+	ofono_bool_t removable;
+	ofono_bool_t present;
+	ofono_bool_t id1_size;
+	ofono_bool_t card_present;
+	ofono_bool_t card_powered;
+};
+
 /*
  * According to 102.223 Section 8.34 the length of CTLV is 1 byte. This means
  * that the maximum size is 127 according to the rules of CTLVs.
@@ -758,6 +866,7 @@ struct stk_attribute_info {
  */
 struct stk_remote_entity_address {
 	unsigned char coding_type;
+	ofono_bool_t has_address;
 	union {
 		unsigned char ieee802[6];
 		unsigned char irda[4];
@@ -878,6 +987,21 @@ struct stk_broadcast_network_information {
 	unsigned char tech;
 	unsigned char loc_info[126];
 	unsigned int len;
+};
+
+/* Defined in TS 131.111 Section 8.91 */
+struct stk_routing_area_info {
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	unsigned short lac;
+	unsigned char rac;
+};
+
+/* Defined in TS 131.111 Section 8.99 */
+struct stk_tracking_area_id {
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	unsigned short tac;
 };
 
 struct stk_command_display_text {
@@ -1242,6 +1366,68 @@ struct stk_envelope_call_control {
 	struct stk_bc_repeat bc_repeat;
 };
 
+struct stk_envelope_event_download {
+	enum stk_event_type type;
+	union {
+		struct {
+			unsigned char transaction_id;
+			struct stk_address caller_address;
+			struct stk_subaddress caller_subaddress;
+		} mt_call;
+		struct {
+			unsigned char transaction_id;
+		} call_connected;
+		struct {
+			struct stk_transaction_id transaction_ids;
+			struct stk_cause cause;
+		} call_disconnected;
+		struct {
+			enum stk_service_state state;
+			/* Present when state indicated Normal Service */
+			struct stk_location_info info;
+		} location_status;
+		struct stk_reader_status card_reader_status;
+		char language_selection[3];
+		struct {
+			enum stk_browser_termination_cause cause;
+		} browser_termination;
+		struct {
+			unsigned char channel_status[2];
+			unsigned int channel_data_len;
+		} data_available;
+		struct {
+			unsigned char status[2];
+			struct stk_bearer_description bearer_desc;
+			struct stk_other_address address;
+		} channel_status;
+		struct stk_access_technologies access_technology_change;
+		struct stk_display_parameters display_params_changed;
+		struct {
+			/*
+			 * Note the service record subfield is not required,
+			 * only the Technology id and Service id.
+			 */
+			struct stk_service_record service_record;
+			struct stk_remote_entity_address remote_addr;
+			struct stk_uicc_te_interface transport_level;
+			/* Only present if transport_level present */
+			struct stk_other_address transport_addr;
+		} local_connection;
+		enum stk_network_search_mode network_search_mode_change;
+		struct stk_common_byte_array browsing_status;
+		struct stk_frames_info frames_information_change;
+		enum stk_i_wlan_access_status i_wlan_access_status;
+		struct {
+			struct stk_location_info location;
+			struct stk_routing_area_info rai;
+			struct stk_tracking_area_id tai;
+			enum stk_access_technology_type access_tech;
+			enum stk_update_attach_type update_attach;
+			enum stk_rejection_cause_code cause;
+		} network_rejection;
+	};
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1252,6 +1438,7 @@ struct stk_envelope {
 		struct stk_envelope_menu_selection menu_selection;
 		struct stk_envelope_call_control call_control;
 		struct stk_envelope_sms_mo_control sms_mo_control;
+		struct stk_envelope_event_download event_download;
 	};
 };
 

@@ -1439,6 +1439,7 @@ static gboolean parse_dataobj_remote_entity_address(
 		return FALSE;
 	}
 
+	rea->has_address = TRUE;
 	rea->coding_type = data[0];
 	memcpy(&rea->addr, data + 1, len - 1);
 
@@ -3700,6 +3701,81 @@ static gboolean build_dataobj_network_measurement_results(
 	return stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.25 */
+static gboolean build_dataobj_event_list(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_event_list *list = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_EVENT_LIST;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, list->list, list->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Shortcut for a single Event type */
+static gboolean build_dataobj_event_type(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_event_list list = {
+		.list = { *(uint8_t *) data },
+		.len = 1,
+	};
+
+	return build_dataobj_event_list(tlv, &list, cr);
+}
+
+/* Described in TS 102.223 Section 8.26 */
+static gboolean build_dataobj_cause(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_cause *cause = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CAUSE;
+
+	if (cause->has_cause == FALSE)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, cause->cause, cause->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.27 */
+static gboolean build_dataobj_location_status(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const enum stk_service_state *state = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_LOCATION_STATUS;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *state) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.28 */
+static gboolean build_dataobj_transaction_ids(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_transaction_id *id = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_TRANSACTION_ID;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, id->list, id->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Shortcut for a single Transaction ID */
+static gboolean build_dataobj_transaction_id(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_transaction_id ids = {
+		.list = { *(uint8_t *) data },
+		.len = 1,
+	};
+
+	return build_dataobj_transaction_ids(tlv, &ids, cr);
+}
+
 /* Described in 3GPP 31.111 Section 8.29 */
 static gboolean build_dataobj_bcch_channel_list(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
@@ -3748,6 +3824,26 @@ static gboolean build_dataobj_cc_requested_action(struct stk_tlv_builder *tlv,
 
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_bytes(tlv, action->array, action->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.33 */
+static gboolean build_dataobj_card_reader_status(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_reader_status *status = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CARD_READER_STATUS;
+	unsigned char byte;
+
+	byte = status->id |
+		(status->removable << 3) |
+		(status->present << 4) |
+		(status->id1_size << 5) |
+		(status->card_present << 6) |
+		(status->card_powered << 7);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, byte) &&
 		stk_tlv_builder_close_container(tlv);
 }
 
@@ -3885,6 +3981,112 @@ static gboolean build_dataobj_timing_advance(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.51 */
+static gboolean build_dataobj_browser_termination_cause(
+						struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const enum stk_browser_termination_cause *cause = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BROWSER_TERMINATION_CAUSE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *cause) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.52 */
+static gboolean build_dataobj_bearer_description(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_bearer_description *bd = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BEARER_DESCRIPTION;
+
+	if (bd->type == 0x00)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, bd->type) &&
+		stk_tlv_builder_append_bytes(tlv, bd->pars, bd->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.54 */
+static gboolean build_dataobj_channel_data_length(
+						struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const unsigned int *length = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CHANNEL_DATA_LENGTH;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, MIN(*length, 255)) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.56 */
+static gboolean build_dataobj_channel_status(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CHANNEL_STATUS;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, data, 2) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.58 */
+static gboolean build_dataobj_other_address(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_other_address *addr = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_OTHER_ADDRESS;
+	gboolean ok = FALSE;
+
+	if (!addr->type)
+		return TRUE;
+
+	if (stk_tlv_builder_open_container(tlv, cr, tag, FALSE) == FALSE)
+		return FALSE;
+
+	switch (addr->type) {
+	case STK_ADDRESS_AUTO:
+		ok = TRUE;
+		break;
+	case STK_ADDRESS_IPV4:
+		ok =
+			stk_tlv_builder_append_byte(tlv, addr->type) &&
+			stk_tlv_builder_append_bytes(tlv,
+					(const guint8 *) &addr->addr.ipv4, 4);
+		break;
+	case STK_ADDRESS_IPV6:
+		ok =
+			stk_tlv_builder_append_byte(tlv, addr->type) &&
+			stk_tlv_builder_append_bytes(tlv, addr->addr.ipv6, 16);
+		break;
+	}
+
+	if (!ok)
+		return FALSE;
+
+	return stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.59 */
+static gboolean build_dataobj_uicc_te_interface(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_uicc_te_interface *iface = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_UICC_TE_INTERFACE;
+
+	if (iface->protocol == 0 && iface->port == 0)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, iface->protocol) &&
+		stk_tlv_builder_append_short(tlv, iface->port) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.61 */
 static gboolean build_dataobj_access_technologies(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
@@ -3913,6 +4115,66 @@ static gboolean build_dataobj_access_technology(struct stk_tlv_builder *tlv,
 	};
 
 	return build_dataobj_access_technologies(tlv, &techs, cr);
+}
+
+/* Described in TS 102.223 Section 8.62 */
+static gboolean build_dataobj_display_parameters(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_display_parameters *params = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_DISPLAY_PARAMETERS;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, params->height) &&
+		stk_tlv_builder_append_byte(tlv, params->width) &&
+		stk_tlv_builder_append_byte(tlv, params->effects) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.63 */
+static gboolean build_dataobj_service_record(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_service_record *rec = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_SERVICE_RECORD;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_byte(tlv, rec->tech_id) &&
+		stk_tlv_builder_append_byte(tlv, rec->serv_id) &&
+		stk_tlv_builder_append_bytes(tlv, rec->serv_rec, rec->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.68 */
+static gboolean build_dataobj_remote_entity_address(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_remote_entity_address *addr = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_REMOTE_ENTITY_ADDRESS;
+	gboolean ok = FALSE;
+
+	if (addr->has_address != TRUE)
+		return TRUE;
+
+	if (stk_tlv_builder_open_container(tlv, cr, tag, TRUE) != TRUE)
+		return FALSE;
+
+	if (stk_tlv_builder_append_byte(tlv, addr->coding_type) != TRUE)
+		return FALSE;
+
+	switch (addr->coding_type) {
+	case 0x00:
+		ok = stk_tlv_builder_append_bytes(tlv, addr->addr.ieee802, 6);
+		break;
+	case 0x01:
+		ok = stk_tlv_builder_append_bytes(tlv, addr->addr.irda, 4);
+		break;
+	}
+
+	if (!ok)
+		return FALSE;
+
+	return stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.69 */
@@ -3998,6 +4260,44 @@ static gboolean build_dataobj_battery_state(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.77 */
+static gboolean build_dataobj_browsing_status(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_common_byte_array *bs = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BROWSING_STATUS;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_bytes(tlv, bs->array, bs->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.79 */
+static gboolean build_dataobj_frames_information(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_frames_info *info = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_FRAMES_INFO;
+	unsigned int i;
+
+	if (stk_tlv_builder_open_container(tlv, cr, tag, FALSE) != TRUE)
+		return FALSE;
+
+	if (stk_tlv_builder_append_byte(tlv, info->id) != TRUE)
+		return FALSE;
+
+	for (i = 0; i < info->len; i++) {
+		if (stk_tlv_builder_append_byte(tlv,
+						info->list[i].height) != TRUE)
+			return FALSE;
+		if (stk_tlv_builder_append_byte(tlv,
+						info->list[i].width) != TRUE)
+			return FALSE;
+	}
+
+	return stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.81 */
 static gboolean build_dataobj_meid(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -4019,6 +4319,18 @@ static gboolean build_dataobj_meid(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 131.111 Section 8.84 */
+static gboolean build_dataobj_i_wlan_access_status(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const enum stk_i_wlan_access_status *status = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_I_WLAN_ACCESS_STATUS;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *status) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.90 */
 static gboolean build_dataobj_broadcast_network_information(
 						struct stk_tlv_builder *tlv,
@@ -4030,6 +4342,50 @@ static gboolean build_dataobj_broadcast_network_information(
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_byte(tlv, bni->tech) &&
 		stk_tlv_builder_append_bytes(tlv, bni->loc_info, bni->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.91 / 3GPP 24.008 Section 10.5.5.15 */
+static gboolean build_dataobj_routing_area_id(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_routing_area_info *rai = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_ROUTING_AREA_INFO;
+	guint8 mccmnc[3];
+
+	if (rai->mcc[0] == 0)
+		return TRUE;
+
+	sim_encode_mcc_mnc(mccmnc, rai->mcc, rai->mnc);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, mccmnc, 3) &&
+		stk_tlv_builder_append_short(tlv, rai->lac) &&
+		stk_tlv_builder_append_byte(tlv, rai->rac) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.92 */
+static gboolean build_dataobj_update_attach_type(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const enum stk_update_attach_type *type = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_UPDATE_ATTACH_TYPE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *type) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.93 */
+static gboolean build_dataobj_rejection_cause_code(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const enum stk_rejection_cause_code *cause = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_REJECTION_CAUSE_CODE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_byte(tlv, *cause) &&
 		stk_tlv_builder_close_container(tlv);
 }
 
@@ -4047,6 +4403,25 @@ static gboolean build_dataobj_eps_pdn_conn_params(struct stk_tlv_builder *tlv,
 
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_bytes(tlv, params->array, params->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 131.111 Section 8.99 / 3GPP 24.301 Section 9.9.3.32 */
+static gboolean build_dataobj_tracking_area_id(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_tracking_area_id *tai = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_TRACKING_AREA_ID;
+	guint8 mccmnc[3];
+
+	if (tai->mcc[0] == 0)
+		return TRUE;
+
+	sim_encode_mcc_mnc(mccmnc, tai->mcc, tai->mnc);
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, mccmnc, 3) &&
+		stk_tlv_builder_append_short(tlv, tai->tac) &&
 		stk_tlv_builder_close_container(tlv);
 }
 
@@ -4433,6 +4808,169 @@ static gboolean build_envelope_call_control(
 				NULL);
 }
 
+static gboolean build_envelope_event_download(struct stk_tlv_builder *builder,
+					const struct stk_envelope *envelope)
+{
+	const struct stk_envelope_event_download *evt =
+		&envelope->event_download;
+
+	if (build_dataobj(builder,
+				build_dataobj_event_type, DATAOBJ_FLAG_CR,
+				&evt->type,
+				build_envelope_dataobj_device_ids,
+				DATAOBJ_FLAG_CR,
+				envelope,
+				NULL) == FALSE)
+		return FALSE;
+
+	switch (evt->type) {
+	case STK_EVENT_TYPE_MT_CALL:
+		return build_dataobj(builder,
+					build_dataobj_transaction_id,
+					DATAOBJ_FLAG_CR,
+					&evt->mt_call.transaction_id,
+					build_dataobj_address, 0,
+					&evt->mt_call.caller_address,
+					build_dataobj_subaddress, 0,
+					&evt->mt_call.caller_subaddress,
+					NULL);
+	case STK_EVENT_TYPE_CALL_CONNECTED:
+		return build_dataobj(builder,
+					build_dataobj_transaction_id,
+					DATAOBJ_FLAG_CR,
+					&evt->call_connected.transaction_id,
+					NULL);
+	case STK_EVENT_TYPE_CALL_DISCONNECTED:
+		return build_dataobj(builder,
+					build_dataobj_transaction_ids,
+					DATAOBJ_FLAG_CR,
+					&evt->call_disconnected.transaction_ids,
+					build_dataobj_cause, 0,
+					&evt->call_disconnected.cause,
+					NULL);
+	case STK_EVENT_TYPE_LOCATION_STATUS:
+		return build_dataobj(builder,
+					build_dataobj_location_status,
+					DATAOBJ_FLAG_CR,
+					&evt->location_status.state,
+					build_dataobj_location_info, 0,
+					&evt->location_status.info,
+					NULL);
+	case STK_EVENT_TYPE_USER_ACTIVITY:
+	case STK_EVENT_TYPE_IDLE_SCREEN_AVAILABLE:
+		return TRUE;
+	case STK_EVENT_TYPE_CARD_READER_STATUS:
+		return build_dataobj(builder,
+					build_dataobj_card_reader_status,
+					DATAOBJ_FLAG_CR,
+					&evt->card_reader_status,
+					NULL);
+	case STK_EVENT_TYPE_LANGUAGE_SELECTION:
+		return build_dataobj(builder,
+					build_dataobj_language, DATAOBJ_FLAG_CR,
+					evt->language_selection,
+					NULL);
+	case STK_EVENT_TYPE_BROWSER_TERMINATION:
+		return build_dataobj(builder,
+					build_dataobj_browser_termination_cause,
+					DATAOBJ_FLAG_CR,
+					&evt->browser_termination.cause,
+					NULL);
+	case STK_EVENT_TYPE_DATA_AVAILABLE:
+		return build_dataobj(builder,
+					build_dataobj_channel_status,
+					DATAOBJ_FLAG_CR,
+					&evt->data_available.channel_status,
+					build_dataobj_channel_data_length,
+					DATAOBJ_FLAG_CR,
+					&evt->data_available.channel_data_len,
+					NULL);
+	case STK_EVENT_TYPE_CHANNEL_STATUS:
+		return build_dataobj(builder,
+					build_dataobj_channel_status,
+					DATAOBJ_FLAG_CR,
+					&evt->channel_status.status,
+					build_dataobj_bearer_description,
+					DATAOBJ_FLAG_CR,
+					&evt->channel_status.bearer_desc,
+					build_dataobj_other_address,
+					DATAOBJ_FLAG_CR,
+					&evt->channel_status.address,
+					NULL);
+	case STK_EVENT_TYPE_SINGLE_ACCESS_TECHNOLOGY_CHANGE:
+		return build_dataobj(builder,
+					build_dataobj_access_technology,
+					DATAOBJ_FLAG_CR,
+					&evt->access_technology_change,
+					NULL);
+	case STK_EVENT_TYPE_DISPLAY_PARAMETERS_CHANGED:
+		return build_dataobj(builder,
+					build_dataobj_display_parameters,
+					DATAOBJ_FLAG_CR,
+					&evt->display_params_changed,
+					NULL);
+	case STK_EVENT_TYPE_LOCAL_CONNECTION:
+		return build_dataobj(builder,
+					build_dataobj_service_record,
+					DATAOBJ_FLAG_CR,
+					&evt->local_connection.service_record,
+					build_dataobj_remote_entity_address, 0,
+					&evt->local_connection.remote_addr,
+					build_dataobj_uicc_te_interface, 0,
+					&evt->local_connection.transport_level,
+					build_dataobj_other_address,
+					0,
+					&evt->local_connection.transport_addr,
+					NULL);
+	case STK_EVENT_TYPE_NETWORK_SEARCH_MODE_CHANGE:
+		return build_dataobj(builder,
+					build_dataobj_network_search_mode,
+					DATAOBJ_FLAG_CR,
+					&evt->network_search_mode_change,
+					NULL);
+	case STK_EVENT_TYPE_BROWSING_STATUS:
+		return build_dataobj(builder,
+					build_dataobj_browsing_status,
+					DATAOBJ_FLAG_CR,
+					&evt->browsing_status,
+					NULL);
+	case STK_EVENT_TYPE_FRAMES_INFORMATION_CHANGE:
+		return build_dataobj(builder,
+					build_dataobj_frames_information,
+					DATAOBJ_FLAG_CR,
+					&evt->frames_information_change,
+					NULL);
+	case STK_EVENT_TYPE_I_WLAN_ACCESS_STATUS:
+		return build_dataobj(builder,
+					build_dataobj_i_wlan_access_status,
+					DATAOBJ_FLAG_CR,
+					&evt->i_wlan_access_status,
+					NULL);
+	case STK_EVENT_TYPE_NETWORK_REJECTION:
+		return build_dataobj(builder,
+					build_dataobj_location_info, 0,
+					&evt->network_rejection.location,
+					build_dataobj_routing_area_id, 0,
+					&evt->network_rejection.rai,
+					build_dataobj_tracking_area_id, 0,
+					&evt->network_rejection.tai,
+					build_dataobj_access_technology,
+					DATAOBJ_FLAG_CR,
+					&evt->network_rejection.access_tech,
+					build_dataobj_update_attach_type,
+					DATAOBJ_FLAG_CR,
+					&evt->network_rejection.update_attach,
+					build_dataobj_rejection_cause_code,
+					DATAOBJ_FLAG_CR,
+					&evt->network_rejection.cause,
+					NULL);
+	case STK_EVENT_TYPE_HCI_CONNECTIVITY_EVENT:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 						unsigned int *out_length)
 {
@@ -4500,6 +5038,9 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					build_dataobj_location_info, 0,
 					&envelope->sms_mo_control.location,
 					NULL);
+		break;
+	case STK_ENVELOPE_TYPE_EVENT_DOWNLOAD:
+		ok = build_envelope_event_download(&builder, envelope);
 		break;
 	default:
 		return NULL;
