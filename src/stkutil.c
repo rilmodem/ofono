@@ -1628,6 +1628,7 @@ static gboolean parse_dataobj_frames_info(struct comprehension_tlv_iter *iter,
 	struct stk_frames_info *fi = user;
 	const unsigned char *data;
 	unsigned char len = comprehension_tlv_iter_get_length(iter);
+	unsigned int i;
 
 	if (len < 1)
 		return FALSE;
@@ -1640,12 +1641,18 @@ static gboolean parse_dataobj_frames_info(struct comprehension_tlv_iter *iter,
 	if ((len == 1 && data[0] != 0) || (len > 1 && data[0] == 0))
 		return FALSE;
 
+	if (len % 2 == 0)
+		return FALSE;
+
 	if (len == 1)
 		return TRUE;
 
 	fi->id = data[0];
-	fi->len = len - 1;
-	memcpy(fi->list, data + 1, fi->len);
+	fi->len = (len - 1) / 2;
+	for (i = 0; i < len; i++) {
+		fi->list[i].height = data[i * 2 + 1] & 0x1f;
+		fi->list[i].width = data[i * 2 + 2] & 0x7f;
+	}
 
 	return TRUE;
 }

@@ -813,7 +813,9 @@ struct stk_frame_layout {
  */
 struct stk_frames_info {
 	unsigned char id;
-	unsigned char list[126];
+	struct {
+		unsigned char width, height;
+	} list[63];
 	unsigned int len;
 };
 
