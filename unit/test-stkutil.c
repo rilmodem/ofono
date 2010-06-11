@@ -19603,6 +19603,50 @@ static const struct envelope_test event_download_network_rejection_data_121 = {
 	},
 };
 
+static const unsigned char timer_expiration_211[] = {
+	0xd7, 0x0c, 0x82, 0x02, 0x82, 0x81, 0xa4, 0x01,
+	0x01, 0xa5, 0x03, 0x00, 0x00, 0x01,
+};
+
+static const struct envelope_test timer_expiration_data_211 = {
+	.pdu = timer_expiration_211,
+	.pdu_len = sizeof(timer_expiration_211),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_TIMER_EXPIRATION,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .timer_expiration = {
+			.id = 1,
+			.value = {
+				.second = 10,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
+static const unsigned char timer_expiration_221a[] = {
+	0xd7, 0x0c, 0x82, 0x02, 0x82, 0x81, 0xa4, 0x01,
+	0x01, 0xa5, 0x03, 0x00, 0x00, 0x03,
+};
+
+static const struct envelope_test timer_expiration_data_221a = {
+	.pdu = timer_expiration_221a,
+	.pdu_len = sizeof(timer_expiration_221a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_TIMER_EXPIRATION,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .timer_expiration = {
+			.id = 1,
+			.value = {
+				.second = 30,
+				.has_value = TRUE,
+			},
+		}},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -21446,6 +21490,11 @@ int main(int argc, char **argv)
 	g_test_add_data_func("/teststk/Event: Network Rejection 1.2.1",
 			&event_download_network_rejection_data_121,
 			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Timer Expiration 2.1.1",
+			&timer_expiration_data_211, test_envelope_encoding);
+	g_test_add_data_func("/teststk/Timer Expiration 2.2.1A",
+			&timer_expiration_data_221a, test_envelope_encoding);
 
 	return g_test_run();
 }
