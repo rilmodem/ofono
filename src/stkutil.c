@@ -4402,6 +4402,32 @@ static gboolean build_dataobj_i_wlan_access_status(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.86 */
+static gboolean build_dataobj_mms_notification(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_common_byte_array *msg = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_MMS_NOTIFICATION;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_bytes(tlv, msg->array, msg->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.87 */
+static gboolean build_dataobj_last_envelope(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const ofono_bool_t *last = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_LAST_ENVELOPE;
+
+	if (!*last)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.90 */
 static gboolean build_dataobj_broadcast_network_information(
 						struct stk_tlv_builder *tlv,
@@ -5147,6 +5173,18 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					&envelope->mms_status.id,
 					build_dataobj_mms_transfer_status, 0,
 					&envelope->mms_status.transfer_status,
+					NULL);
+		break;
+	case STK_ENVELOPE_TYPE_MMS_NOTIFICATION:
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids,
+					DATAOBJ_FLAG_CR,
+					envelope,
+					build_dataobj_mms_notification,
+					DATAOBJ_FLAG_CR,
+					&envelope->mms_notification.msg,
+					build_dataobj_last_envelope, 0,
+					&envelope->mms_notification.last,
 					NULL);
 		break;
 	default:

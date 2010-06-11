@@ -1447,6 +1447,11 @@ struct stk_envelope_mms_transfer_status {
 	struct stk_mms_transfer_status transfer_status;
 };
 
+struct stk_envelope_mms_notification_download {
+	struct stk_common_byte_array msg;
+	ofono_bool_t last;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1461,6 +1466,7 @@ struct stk_envelope {
 		struct stk_envelope_timer_expiration timer_expiration;
 		struct stk_envelope_ussd_data_download ussd_data_download;
 		struct stk_envelope_mms_transfer_status mms_status;
+		struct stk_envelope_mms_notification_download mms_notification;
 	};
 };
 
