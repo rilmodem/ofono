@@ -19,6 +19,14 @@
  *
  */
 
+enum at_util_sms_store {
+	AT_UTIL_SMS_STORE_SM =	0,
+	AT_UTIL_SMS_STORE_ME =	1,
+	AT_UTIL_SMS_STORE_MT =	2,
+	AT_UTIL_SMS_STORE_SR =	3,
+	AT_UTIL_SMS_STORE_BM =	4,
+};
+
 void decode_at_error(struct ofono_error *error, const char *final);
 gint at_util_call_compare_by_status(gconstpointer a, gconstpointer b);
 gint at_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
@@ -33,6 +41,10 @@ gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 					int *status, int *lac,
 					int *ci, int *tech,
 					unsigned int vendor);
+
+gboolean at_util_parse_sms_index_delivery(GAtResult *result, const char *prefix,
+						enum at_util_sms_store *store,
+						int *index);
 
 struct cb_data {
 	void *cb;

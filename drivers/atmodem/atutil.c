@@ -287,3 +287,43 @@ out:
 
 	return FALSE;
 }
+
+gboolean at_util_parse_sms_index_delivery(GAtResult *result, const char *prefix,
+						enum at_util_sms_store *out_st,
+						int *out_index)
+{
+	GAtResultIter iter;
+	const char *strstore;
+	enum at_util_sms_store st;
+	int index;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, prefix))
+		return FALSE;
+
+	if (!g_at_result_iter_next_string(&iter, &strstore))
+		return FALSE;
+
+	if (g_str_equal(strstore, "ME"))
+		st = AT_UTIL_SMS_STORE_ME;
+	else if (g_str_equal(strstore, "SM"))
+		st = AT_UTIL_SMS_STORE_SM;
+	else if (g_str_equal(strstore, "SR"))
+		st = AT_UTIL_SMS_STORE_SR;
+	else if (g_str_equal(strstore, "BM"))
+		st = AT_UTIL_SMS_STORE_BM;
+	else
+		return FALSE;
+
+	if (!g_at_result_iter_next_number(&iter, &index))
+		return FALSE;
+
+	if (out_index)
+		*out_index = index;
+
+	if (out_st)
+		*out_st = st;
+
+	return TRUE;
+}
