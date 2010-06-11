@@ -267,6 +267,7 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 
 	ring_buffer_free(hdlc->write_buffer);
 	g_free(hdlc->decode_buffer);
+	g_free(hdlc);
 }
 
 void g_at_hdlc_set_debug(GAtHDLC *hdlc, GAtDebugFunc func, gpointer user_data)
