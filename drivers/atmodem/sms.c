@@ -1043,7 +1043,8 @@ static void at_csms_status_cb(gboolean ok, GAtResult *result,
 			goto out;
 
 
-		if (data->vendor == OFONO_VENDOR_HUAWEI) {
+		if (data->vendor == OFONO_VENDOR_HUAWEI ||
+				data->vendor == OFONO_VENDOR_NOVATEL) {
 			g_at_result_iter_skip_next(&iter);
 			service = 0;
 		} else {
