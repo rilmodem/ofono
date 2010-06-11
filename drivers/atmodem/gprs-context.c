@@ -90,6 +90,8 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 
 	DBG("");
 
+	g_at_ppp_unref(gcd->ppp);
+	gcd->ppp = NULL;
 	g_at_chat_resume(gcd->chat);
 
 	switch (gcd->state) {
