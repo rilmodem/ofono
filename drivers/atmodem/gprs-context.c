@@ -254,6 +254,13 @@ static void at_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
+	DBG("");
+
+	if (gcd->state != STATE_IDLE) {
+		g_at_ppp_unref(gcd->ppp);
+		g_at_chat_resume(gcd->chat);
+	}
+
 	ofono_gprs_context_set_data(gc, NULL);
 	g_free(gcd);
 }
