@@ -497,7 +497,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 {
 	GAtHDLC *hdlc;
 	GAtPPP *ppp;
-	
+
 	hdlc = g_at_hdlc_new(modem);
 	if (hdlc == NULL)
 		return NULL;
@@ -512,7 +512,7 @@ GAtPPP *g_at_ppp_new_from_io(GAtIO *io)
 {
 	GAtHDLC *hdlc;
 	GAtPPP *ppp;
-	
+
 	hdlc = g_at_hdlc_new_from_io(io);
 	if (hdlc == NULL)
 		return NULL;
