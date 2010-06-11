@@ -18525,6 +18525,1084 @@ static const struct envelope_test mo_short_message_control_data_111b = {
 	},
 };
 
+static const unsigned char event_download_mt_call_111[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x00, 0x82, 0x02, 0x83,
+	0x81, 0x9c, 0x01, 0x00,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c (Comprehension
+	 * Required should be set according to TS 102 223 7.5.1.2)
+	 */
+};
+
+static const struct envelope_test event_download_mt_call_data_111 = {
+	.pdu = event_download_mt_call_111,
+	.pdu_len = sizeof(event_download_mt_call_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_MT_CALL,
+			{ .mt_call = {
+				.transaction_id = 0,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_mt_call_112[] = {
+	0xd6, 0x0f, 0x99, 0x01, 0x00, 0x82, 0x02, 0x83,
+	0x81, 0x9c, 0x01, 0x00, 0x06, 0x03, 0x81, 0x89,
+	0x67,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c and byte 13 to
+	 * 0x06 (Comprehension Required should be set according to
+	 * TS 102 223 7.5.1.2)
+	 */
+};
+
+static const struct envelope_test event_download_mt_call_data_112 = {
+	.pdu = event_download_mt_call_112,
+	.pdu_len = sizeof(event_download_mt_call_112),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_MT_CALL,
+			{ .mt_call = {
+				.transaction_id = 0,
+				.caller_address = {
+					.ton_npi = 0x81, /* Unknown, ISDN */
+					.number = "9876",
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_connected_111[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x01, 0x82, 0x02, 0x82,
+	0x81, 0x9c, 0x01, 0x80,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c (Comprehension
+	 * Required should be set according to TS 102 223 7.5.2.2)
+	 */
+};
+
+static const struct envelope_test event_download_call_connected_data_111 = {
+	.pdu = event_download_call_connected_111,
+	.pdu_len = sizeof(event_download_call_connected_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_CONNECTED,
+			{ .call_connected = {
+				.transaction_id = 0x80,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_connected_112[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x01, 0x82, 0x02, 0x83,
+	0x81, 0x9c, 0x01, 0x80,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c (Comprehension
+	 * Required should be set according to TS 102 223 7.5.2.2)
+	 */
+};
+
+static const struct envelope_test event_download_call_connected_data_112 = {
+	.pdu = event_download_call_connected_112,
+	.pdu_len = sizeof(event_download_call_connected_112),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_CONNECTED,
+			{ .call_connected = {
+				.transaction_id = 0x80,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_111[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x02, 0x82, 0x02, 0x83,
+	0x81, 0x9c, 0x01, 0x80,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c (Comprehension
+	 * Required should be set according to TS 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test event_download_call_disconnected_data_111 = {
+	.pdu = event_download_call_disconnected_111,
+	.pdu_len = sizeof(event_download_call_disconnected_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0x80 },
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_112a[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x9c, 0x01, 0x80,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c (Comprehension
+	 * Required should be set according to TS 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_call_disconnected_data_112a = {
+	.pdu = event_download_call_disconnected_112a,
+	.pdu_len = sizeof(event_download_call_disconnected_112a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0x80 },
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_112b[] = {
+	0xd6, 0x0e, 0x99, 0x01, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x9c, 0x01, 0x80, 0x1a, 0x02, 0x60, 0x90,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c and byte 13 to
+	 * 1a (Comprehension Required should be set according to TS
+	 * 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_call_disconnected_data_112b = {
+	.pdu = event_download_call_disconnected_112b,
+	.pdu_len = sizeof(event_download_call_disconnected_112b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0x80 },
+				},
+				.cause = {
+					.has_cause = TRUE,
+					.len = 2,
+					/* Normal call clearing */
+					.cause = { 0x60, 0x90 },
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_112c[] = {
+	0xd6, 0x0e, 0x99, 0x01, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x9c, 0x01, 0x80, 0x1a, 0x02, 0xe0, 0x90,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c and byte 13 to
+	 * 1a (Comprehension Required should be set according to TS
+	 * 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_call_disconnected_data_112c = {
+	.pdu = event_download_call_disconnected_112c,
+	.pdu_len = sizeof(event_download_call_disconnected_112c),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0x80 },
+				},
+				.cause = {
+					.has_cause = TRUE,
+					.len = 2,
+					/* Normal call clearing */
+					.cause = { 0xe0, 0x90 },
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_113a[] = {
+	0xd6, 0x0e, 0x99, 0x01, 0x02, 0x82, 0x02, 0x83,
+	0x81, 0x9c, 0x01, 0x00, 0x1a, 0x02, 0x60, 0x90,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c and byte 13 to
+	 * 1a (Comprehension Required should be set according to TS
+	 * 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_call_disconnected_data_113a = {
+	.pdu = event_download_call_disconnected_113a,
+	.pdu_len = sizeof(event_download_call_disconnected_113a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0 },
+				},
+				.cause = {
+					.has_cause = TRUE,
+					.len = 2,
+					/* Normal call clearing */
+					.cause = { 0x60, 0x90 },
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_113b[] = {
+	0xd6, 0x0e, 0x99, 0x01, 0x02, 0x82, 0x02, 0x83,
+	0x81, 0x9c, 0x01, 0x00, 0x1a, 0x02, 0xe0, 0x90,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c and byte 13 to
+	 * 1a (Comprehension Required should be set according to TS
+	 * 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_call_disconnected_data_113b = {
+	.pdu = event_download_call_disconnected_113b,
+	.pdu_len = sizeof(event_download_call_disconnected_113b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0 },
+				},
+				.cause = {
+					.has_cause = TRUE,
+					.len = 2,
+					/* Normal call clearing */
+					.cause = { 0xe0, 0x90 },
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_114a[] = {
+	0xd6, 0x0c, 0x99, 0x01, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x9c, 0x01, 0x80, 0x1a, 0x00,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c and byte 13 to
+	 * 1a (Comprehension Required should be set according to TS
+	 * 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_call_disconnected_data_114a = {
+	.pdu = event_download_call_disconnected_114a,
+	.pdu_len = sizeof(event_download_call_disconnected_114a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0x80 },
+				},
+				.cause = {
+					.has_cause = TRUE,
+					/* Radio link failure */
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_call_disconnected_114b[] = {
+	0xd6, 0x0c, 0x99, 0x01, 0x02, 0x82, 0x02, 0x82,
+	0x81, 0x9c, 0x01, 0x00, 0x1a, 0x00,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9c and byte 13 to
+	 * 1a (Comprehension Required should be set according to TS
+	 * 102 223 7.5.3.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_call_disconnected_data_114b = {
+	.pdu = event_download_call_disconnected_114b,
+	.pdu_len = sizeof(event_download_call_disconnected_114b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CALL_DISCONNECTED,
+			{ .call_disconnected = {
+				.transaction_ids = {
+					.len = 1,
+					.list = { 0 },
+				},
+				.cause = {
+					.has_cause = TRUE,
+					/* Radio link failure */
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_location_status_111[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x9b, 0x01, 0x02,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9b (Comprehension
+	 * Required should be set according to TS 102 223 7.5.4.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_location_status_data_111 = {
+	.pdu = event_download_location_status_111,
+	.pdu_len = sizeof(event_download_location_status_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_LOCATION_STATUS,
+			{ .location_status = {
+				.state = STK_NO_SERVICE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_location_status_112a[] = {
+	0xd6, 0x15, 0x99, 0x01, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x9b, 0x01, 0x00, 0x13, 0x09, 0x00, 0xf1,
+	0x10, 0x00, 0x02, 0x00, 0x02, 0x00, 0x01,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9b (Comprehension
+	 * Required should be set according to TS 102 223 7.5.4.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_location_status_data_112a = {
+	.pdu = event_download_location_status_112a,
+	.pdu_len = sizeof(event_download_location_status_112a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_LOCATION_STATUS,
+			{ .location_status = {
+				.state = STK_NORMAL_SERVICE,
+				.info = {
+					.mcc = "001",
+					.mnc = "01",
+					.lac_tac = 0x0002,
+					.has_ci = TRUE,
+					.ci = 0x0002,
+					.has_ext_ci = TRUE,
+					.ext_ci = 0x0001,
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_location_status_112b[] = {
+	0xd6, 0x13, 0x99, 0x01, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x9b, 0x01, 0x00, 0x13, 0x07, 0x00, 0x11,
+	0x10, 0x00, 0x02, 0x00, 0x02,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9b (Comprehension
+	 * Required should be set according to TS 102 223 7.5.4.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_location_status_data_112b = {
+	.pdu = event_download_location_status_112b,
+	.pdu_len = sizeof(event_download_location_status_112b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_LOCATION_STATUS,
+			{ .location_status = {
+				.state = STK_NORMAL_SERVICE,
+				.info = {
+					.mcc = "001",
+					.mnc = "011",
+					.lac_tac = 0x0002,
+					.has_ci = TRUE,
+					.ci = 0x0002,
+				},
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_location_status_122[] = {
+	0xd6, 0x15, 0x99, 0x01, 0x03, 0x82, 0x02, 0x82,
+	0x81, 0x9b, 0x01, 0x00, 0x13, 0x09, 0x00, 0xf1,
+	0x10, 0x00, 0x02, 0x00, 0x00, 0x00, 0x2f,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0x9b (Comprehension
+	 * Required should be set according to TS 102 223 7.5.4.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_location_status_data_122 = {
+	.pdu = event_download_location_status_122,
+	.pdu_len = sizeof(event_download_location_status_122),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_LOCATION_STATUS,
+			{ .location_status = {
+				.state = STK_NORMAL_SERVICE,
+				.info = {
+					.mcc = "001",
+					.mnc = "01",
+					.lac_tac = 0x0002,
+					.has_eutran_ci = TRUE,
+					.eutran_ci = 0x0000002,
+				},
+			}},
+		}},
+	},
+};
+
+/*
+ * This is from 27.22.7.5.  The ENVELOPE given in 27.22.4.16.1.1 seems to
+ * have invalid length value (2nd byte), but in turn the Comprehension
+ * Required bit is set correctly..
+ */
+static const unsigned char event_download_user_activity_111[] = {
+	0xd6, 0x07, 0x99, 0x01, 0x04, 0x82, 0x02, 0x82,
+	0x81,
+	/*
+	 * Byte 3 changed to 0x99 (Comprehension Required should be
+	 * set according to TS 102 223 7.5.5.2)
+	 */
+};
+
+static const struct envelope_test event_download_user_activity_data_111 = {
+	.pdu = event_download_user_activity_111,
+	.pdu_len = sizeof(event_download_user_activity_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_USER_ACTIVITY,
+		}},
+	},
+};
+
+static const unsigned char event_download_idle_screen_available_111[] = {
+	0xd6, 0x07, 0x99, 0x01, 0x05, 0x82, 0x02, 0x02,
+	0x81,
+	/*
+	 * Byte 3 changed to 0x99 (Comprehension Required should be
+	 * set according to TS 102 223 7.5.6.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_idle_screen_available_data_111 = {
+	.pdu = event_download_idle_screen_available_111,
+	.pdu_len = sizeof(event_download_idle_screen_available_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_DISPLAY,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_IDLE_SCREEN_AVAILABLE,
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_111a[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x79,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_111a = {
+	.pdu = event_download_card_reader_status_111a,
+	.pdu_len = sizeof(event_download_card_reader_status_111a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = TRUE,
+				.present = TRUE,
+				.id1_size = TRUE,
+				.card_present = TRUE,
+				.card_powered = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_111b[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x59,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_111b = {
+	.pdu = event_download_card_reader_status_111b,
+	.pdu_len = sizeof(event_download_card_reader_status_111b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = TRUE,
+				.present = TRUE,
+				.id1_size = FALSE,
+				.card_present = TRUE,
+				.card_powered = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_111c[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x71,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_111c = {
+	.pdu = event_download_card_reader_status_111c,
+	.pdu_len = sizeof(event_download_card_reader_status_111c),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = FALSE,
+				.present = TRUE,
+				.id1_size = TRUE,
+				.card_present = TRUE,
+				.card_powered = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_111d[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x51,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_111d = {
+	.pdu = event_download_card_reader_status_111d,
+	.pdu_len = sizeof(event_download_card_reader_status_111d),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = FALSE,
+				.present = TRUE,
+				.id1_size = FALSE,
+				.card_present = TRUE,
+				.card_powered = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_112a[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x39,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_112a = {
+	.pdu = event_download_card_reader_status_112a,
+	.pdu_len = sizeof(event_download_card_reader_status_112a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = TRUE,
+				.present = TRUE,
+				.id1_size = TRUE,
+				.card_present = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_112b[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x19,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_112b = {
+	.pdu = event_download_card_reader_status_112b,
+	.pdu_len = sizeof(event_download_card_reader_status_112b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = TRUE,
+				.present = TRUE,
+				.id1_size = FALSE,
+				.card_present = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_112c[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x31,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_112c = {
+	.pdu = event_download_card_reader_status_112c,
+	.pdu_len = sizeof(event_download_card_reader_status_112c),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = FALSE,
+				.present = TRUE,
+				.id1_size = TRUE,
+				.card_present = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_112d[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x11,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_112d = {
+	.pdu = event_download_card_reader_status_112d,
+	.pdu_len = sizeof(event_download_card_reader_status_112d),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = FALSE,
+				.present = TRUE,
+				.id1_size = FALSE,
+				.card_present = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_212a[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x29,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_212a = {
+	.pdu = event_download_card_reader_status_212a,
+	.pdu_len = sizeof(event_download_card_reader_status_212a),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = TRUE,
+				.present = FALSE,
+				.id1_size = TRUE,
+				.card_present = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_card_reader_status_212b[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x06, 0x82, 0x02, 0x82,
+	0x81, 0xa0, 0x01, 0x09,
+};
+
+static const struct envelope_test
+		event_download_card_reader_status_data_212b = {
+	.pdu = event_download_card_reader_status_212b,
+	.pdu_len = sizeof(event_download_card_reader_status_212b),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CARD_READER_STATUS,
+			{ .card_reader_status = {
+				.id = 1,
+				.removable = TRUE,
+				.present = FALSE,
+				.id1_size = FALSE,
+				.card_present = FALSE,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_language_selection_111[] = {
+	0xd6, 0x0b, 0x99, 0x01, 0x07, 0x82, 0x02, 0x82,
+	0x81, 0xad, 0x02, 0x64, 0x65,
+	/*
+	 * Byte 3 changed to 0x99 and byte 10 to 0xad (Comprehension
+	 * Required should be set according to TS 102 223 7.5.8.2)
+	 */
+};
+
+static const struct envelope_test
+		event_download_language_selection_data_111 = {
+	.pdu = event_download_language_selection_111,
+	.pdu_len = sizeof(event_download_language_selection_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_LANGUAGE_SELECTION,
+			{ .language_selection = "de" },
+		}},
+	},
+};
+
+static const unsigned char event_download_language_selection_122[] = {
+	0xd6, 0x0b, 0x99, 0x01, 0x07, 0x82, 0x02, 0x82,
+	0x81, 0xad, 0x02, 0x73, 0x65,
+	/* Byte 5 changed to 0x07 (Event: Language Selection) */
+	/* Byte 8 changed to 0x82 (Source device: Terminal) */
+	/* Removed the (unexpected?) Transaction ID data object (0x2d) */
+};
+
+static const struct envelope_test
+		event_download_language_selection_data_122 = {
+	.pdu = event_download_language_selection_122,
+	.pdu_len = sizeof(event_download_language_selection_122),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_LANGUAGE_SELECTION,
+			{ .language_selection = "se" },
+		}},
+	},
+};
+
+static const unsigned char event_download_browser_termination_111[] = {
+	0xd6, 0x0a, 0x99, 0x01, 0x08, 0x82, 0x02, 0x82,
+	0x81, 0xb4, 0x01, 0x00,
+};
+
+static const struct envelope_test
+		event_download_browser_termination_data_111 = {
+	.pdu = event_download_browser_termination_111,
+	.pdu_len = sizeof(event_download_browser_termination_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_BROWSER_TERMINATION,
+			{ .browser_termination = {
+				.cause = STK_BROWSER_USER_TERMINATION,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_data_available_111[] = {
+	0xd6, 0x0e, 0x99, 0x01, 0x09, 0x82, 0x02, 0x82,
+	0x81, 0xb8, 0x02, 0x81, 0x00, 0xb7, 0x01, 0xff,
+};
+
+static const struct envelope_test event_download_data_available_data_111 = {
+	.pdu = event_download_data_available_111,
+	.pdu_len = sizeof(event_download_data_available_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_DATA_AVAILABLE,
+			{ .data_available = {
+				/* Channel 1 open, Link established */
+				.channel_status = { 0x81, 0x00 },
+				.channel_data_len = 255,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_data_available_211[] = {
+	0xd6, 0x0e, 0x99, 0x01, 0x09, 0x82, 0x02, 0x82,
+	0x81, 0xb8, 0x02, 0x81, 0x01, 0xb7, 0x01, 0xff,
+};
+
+static const struct envelope_test event_download_data_available_data_211 = {
+	.pdu = event_download_data_available_211,
+	.pdu_len = sizeof(event_download_data_available_211),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_DATA_AVAILABLE,
+			{ .data_available = {
+				/* Channel 1 open, Link established */
+				.channel_status = { 0x81, 0x01 },
+				.channel_data_len = 255,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_channel_status_131[] = {
+	0xd6, 0x0b, 0x99, 0x01, 0x0a, 0x82, 0x02, 0x82,
+	0x81, 0xb8, 0x02, 0x01, 0x05,
+};
+
+static const struct envelope_test event_download_channel_status_data_131 = {
+	.pdu = event_download_channel_status_131,
+	.pdu_len = sizeof(event_download_channel_status_131),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CHANNEL_STATUS,
+			{ .channel_status = {
+				/* Channel 1, Link dropped */
+				.status = { 0x01, 0x05 },
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_channel_status_211[] = {
+	0xd6, 0x0b, 0x99, 0x01, 0x0a, 0x82, 0x02, 0x82,
+	0x81, 0xb8, 0x02, 0x41, 0x00,
+	/*
+	 * Byte 10 changed to 0xb8 (Comprehension Required should be
+	 * set according to TS 102 223 7.5.11.2)
+	 */
+};
+
+static const struct envelope_test event_download_channel_status_data_211 = {
+	.pdu = event_download_channel_status_211,
+	.pdu_len = sizeof(event_download_channel_status_211),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CHANNEL_STATUS,
+			{ .channel_status = {
+				/* Channel 1, TCP in LISTEN state */
+				.status = { 0x41, 0x00 },
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_channel_status_221[] = {
+	0xd6, 0x0b, 0x99, 0x01, 0x0a, 0x82, 0x02, 0x82,
+	0x81, 0xb8, 0x02, 0x81, 0x01,
+	/*
+	 * Byte 10 changed to 0xb8 (Comprehension Required should be
+	 * set according to TS 102 223 7.5.11.2)
+	 */
+};
+
+static const struct envelope_test event_download_channel_status_data_221 = {
+	.pdu = event_download_channel_status_221,
+	.pdu_len = sizeof(event_download_channel_status_221),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_CHANNEL_STATUS,
+			{ .channel_status = {
+				/* Channel 1 open, TCP Link established */
+				.status = { 0x81, 0x01 },
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_network_rejection_111[] = {
+	0xd6, 0x17, 0x99, 0x01, 0x12, 0x82, 0x02, 0x83,
+	0x81, 0x7d, 0x05, 0x00, 0xf1, 0x10, 0x00, 0x01,
+	0xbf, 0x01, 0x08, 0xf4, 0x01, 0x09, 0xf5, 0x01,
+	0x0b,
+	/*
+	 * Byte 3 changed to 99, byte 17 changed to bf, byte 19 to f4 and
+	 * byte 22 to f5 (Comprehension Required should be set according
+	 * to TS 131 111 7.5.2.2)
+	 */
+};
+
+static const struct envelope_test event_download_network_rejection_data_111 = {
+	.pdu = event_download_network_rejection_111,
+	.pdu_len = sizeof(event_download_network_rejection_111),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_NETWORK_REJECTION,
+			{ .network_rejection = {
+				.tai = {
+					.mcc = "001",
+					.mnc = "01",
+					.tac = 0x0001,
+				},
+				.access_tech = STK_ACCESS_TECHNOLOGY_EUTRAN,
+				.update_attach = STK_UPDATE_ATTACH_EPS_ATTACH,
+				.cause = STK_CAUSE_EMM_PLMN_NOT_ALLOWED,
+			}},
+		}},
+	},
+};
+
+static const unsigned char event_download_network_rejection_121[] = {
+	0xd6, 0x17, 0x99, 0x01, 0x12, 0x82, 0x02, 0x83,
+	0x81, 0x7d, 0x05, 0x00, 0xf1, 0x10, 0x00, 0x01,
+	0xbf, 0x01, 0x08, 0xf4, 0x01, 0x0b, 0xf5, 0x01,
+	0x0c,
+	/*
+	 * Byte 3 changed to 99, byte 17 changed to bf, byte 19 to f4 and
+	 * byte 22 to f5 (Comprehension Required should be set according
+	 * to TS 131 111 7.5.2.2)
+	 */
+};
+
+static const struct envelope_test event_download_network_rejection_data_121 = {
+	.pdu = event_download_network_rejection_121,
+	.pdu_len = sizeof(event_download_network_rejection_121),
+	.envelope = {
+		.type = STK_ENVELOPE_TYPE_EVENT_DOWNLOAD,
+		.src = STK_DEVICE_IDENTITY_TYPE_NETWORK,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		{ .event_download = {
+			.type = STK_EVENT_TYPE_NETWORK_REJECTION,
+			{ .network_rejection = {
+				.tai = {
+					.mcc = "001",
+					.mnc = "01",
+					.tac = 0x0001,
+				},
+				.access_tech = STK_ACCESS_TECHNOLOGY_EUTRAN,
+				.update_attach = STK_UPDATE_ATTACH_TA_UPDATING,
+				.cause = STK_CAUSE_EMM_TAC_NOT_ALLOWED,
+			}},
+		}},
+	},
+};
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -20241,6 +21319,132 @@ int main(int argc, char **argv)
 			test_envelope_encoding);
 	g_test_add_data_func("/teststk/MO Short Message Control 1.1.1B",
 			&mo_short_message_control_data_111b,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: MT Call 1.1.1",
+			&event_download_mt_call_data_111,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: MT Call 1.1.2",
+			&event_download_mt_call_data_112,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Call Connected 1.1.1",
+			&event_download_call_connected_data_111,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Connected 1.1.2",
+			&event_download_call_connected_data_112,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.1",
+			&event_download_call_disconnected_data_111,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.2A",
+			&event_download_call_disconnected_data_112a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.2B",
+			&event_download_call_disconnected_data_112b,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.2C",
+			&event_download_call_disconnected_data_112c,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.3A",
+			&event_download_call_disconnected_data_113a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.3B",
+			&event_download_call_disconnected_data_113b,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.4A",
+			&event_download_call_disconnected_data_114a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Call Disconnected 1.1.4B",
+			&event_download_call_disconnected_data_114b,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Location Status 1.1.1",
+			&event_download_location_status_data_111,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Location Status 1.1.2A",
+			&event_download_location_status_data_112a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Location Status 1.1.2B",
+			&event_download_location_status_data_112b,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Location Status 1.2.2",
+			&event_download_location_status_data_122,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: User Activity 1.1.1",
+			&event_download_user_activity_data_111,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Idle Screen Available 1.1.1",
+			&event_download_idle_screen_available_data_111,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.1A",
+			&event_download_card_reader_status_data_111a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.1B",
+			&event_download_card_reader_status_data_111b,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.1C",
+			&event_download_card_reader_status_data_111c,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.1D",
+			&event_download_card_reader_status_data_111d,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.2A",
+			&event_download_card_reader_status_data_112a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.2B",
+			&event_download_card_reader_status_data_112b,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.2C",
+			&event_download_card_reader_status_data_112c,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 1.1.2D",
+			&event_download_card_reader_status_data_112d,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 2.1.2A",
+			&event_download_card_reader_status_data_212a,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Card Reader Status 2.1.2B",
+			&event_download_card_reader_status_data_212b,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Language Selection 1.1.1",
+			&event_download_language_selection_data_111,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Language Selection 1.2.2",
+			&event_download_language_selection_data_122,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Browser Termination 1.1.1",
+			&event_download_browser_termination_data_111,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Data Available 1.1.1",
+			&event_download_data_available_data_111,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Data Available 2.1.1",
+			&event_download_data_available_data_211,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Channel Status 1.3.1",
+			&event_download_channel_status_data_131,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Channel Status 2.1.1",
+			&event_download_channel_status_data_211,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Channel Status 2.2.1",
+			&event_download_channel_status_data_221,
+			test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/Event: Network Rejection 1.1.1",
+			&event_download_network_rejection_data_111,
+			test_envelope_encoding);
+	g_test_add_data_func("/teststk/Event: Network Rejection 1.2.1",
+			&event_download_network_rejection_data_121,
 			test_envelope_encoding);
 
 	return g_test_run();
