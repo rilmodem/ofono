@@ -1433,6 +1433,10 @@ struct stk_envelope_timer_expiration {
 	struct stk_timer_value value;
 };
 
+struct stk_envelope_ussd_data_download {
+	struct stk_ussd_string string;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1445,6 +1449,7 @@ struct stk_envelope {
 		struct stk_envelope_sms_mo_control sms_mo_control;
 		struct stk_envelope_event_download event_download;
 		struct stk_envelope_timer_expiration timer_expiration;
+		struct stk_envelope_ussd_data_download ussd_data_download;
 	};
 };
 

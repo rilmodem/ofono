@@ -5055,6 +5055,16 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					&envelope->timer_expiration.value,
 					NULL);
 		break;
+	case STK_ENVELOPE_TYPE_USSD_DOWNLOAD:
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids,
+					DATAOBJ_FLAG_CR,
+					envelope,
+					build_dataobj_ussd_string,
+					DATAOBJ_FLAG_CR,
+					&envelope->ussd_data_download.string,
+					NULL);
+		break;
 	default:
 		return NULL;
 	};
