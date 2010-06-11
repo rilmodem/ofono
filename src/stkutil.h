@@ -404,6 +404,7 @@ enum stk_bearer_type {
 };
 
 enum stk_address_type {
+	STK_ADDRESS_AUTO = 	-1,
 	STK_ADDRESS_IPV4 = 	0x21,
 	STK_ADDRESS_IPV6 = 	0x57
 };
@@ -692,10 +693,10 @@ struct stk_card_reader_id {
 struct stk_other_address {
 	union {
 		/* Network Byte Order */
-		unsigned int ipv4;
+		uint32_t ipv4;
 		unsigned char ipv6[16];
 	} addr;
-	unsigned char type;
+	enum stk_address_type type;
 };
 
 /* Defined in TS 102.223 Section 8.59 */

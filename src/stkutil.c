@@ -25,6 +25,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <glib.h>
 
@@ -1210,8 +1211,10 @@ static gboolean parse_dataobj_other_address(
 	const unsigned char *data;
 	unsigned char len = comprehension_tlv_iter_get_length(iter);
 
-	if (len == 0)
+	if (len == 0) {
+		oa->type = STK_ADDRESS_AUTO;
 		return TRUE;
+	}
 
 	if ((len != 5) && (len != 17))
 		return FALSE;
