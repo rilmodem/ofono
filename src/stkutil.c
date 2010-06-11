@@ -4428,6 +4428,38 @@ static gboolean build_dataobj_last_envelope(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.88 */
+static gboolean build_dataobj_registry_application_data(
+						struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_registry_application_data *rad = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_REGISTRY_APPLICATION_DATA;
+	guint8 dcs, *name;
+	gsize len;
+	long gsmlen;
+
+	name = convert_utf8_to_gsm(rad->name, -1, NULL, &gsmlen, 0);
+	len = gsmlen;
+	dcs = 0x04;
+	if (name == NULL) {
+		name = (guint8 *) g_convert((const gchar *) rad->name, -1,
+						"UCS-2BE", "UTF-8//TRANSLIT",
+						NULL, &len, NULL);
+		dcs = 0x08;
+
+		if (name == NULL)
+			return FALSE;
+	}
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_short(tlv, rad->port) &&
+		stk_tlv_builder_append_byte(tlv, dcs) &&
+		stk_tlv_builder_append_byte(tlv, rad->type) &&
+		stk_tlv_builder_append_bytes(tlv, name, len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.90 */
 static gboolean build_dataobj_broadcast_network_information(
 						struct stk_tlv_builder *tlv,
@@ -5068,6 +5100,28 @@ static gboolean build_envelope_event_download(struct stk_tlv_builder *builder,
 	}
 }
 
+static gboolean build_envelope_terminal_apps(struct stk_tlv_builder *builder,
+					const struct stk_envelope *envelope)
+{
+	const struct stk_envelope_terminal_apps *ta = &envelope->terminal_apps;
+	int i;
+
+	if (build_dataobj(builder,
+				build_envelope_dataobj_device_ids,
+				DATAOBJ_FLAG_CR, envelope, NULL) == FALSE)
+		return FALSE;
+
+	for (i = 0; i < ta->count; i++)
+		if (build_dataobj(builder,
+					build_dataobj_registry_application_data,
+					0, &ta->list[i], NULL) == FALSE)
+			return FALSE;
+
+	return build_dataobj(builder,
+				build_dataobj_last_envelope,
+				0, &ta->last, NULL);
+}
+
 const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 						unsigned int *out_length)
 {
@@ -5186,6 +5240,9 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					build_dataobj_last_envelope, 0,
 					&envelope->mms_notification.last,
 					NULL);
+		break;
+	case STK_ENVELOPE_TYPE_TERMINAL_APP:
+		ok = build_envelope_terminal_apps(&builder, envelope);
 		break;
 	default:
 		return NULL;
