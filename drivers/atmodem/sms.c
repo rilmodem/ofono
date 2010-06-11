@@ -348,6 +348,7 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	GAtResultIter iter;
 	const char *hexpdu;
 	unsigned char pdu[176];
@@ -376,7 +377,11 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 	DBG("Got PDU: %s, with len: %d", hexpdu, tpdu_len);
 
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
-	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
+
+	if (data->store == AT_UTIL_SMS_STORE_SR)
+		ofono_sms_status_notify(sms, pdu, pdu_len, tpdu_len);
+	else
+		ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
 	return;
 
 err:
@@ -403,7 +408,7 @@ static void at_cmgr_cpms_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	char buf[128];
 
 	if (!ok) {
-		ofono_error("Received CMTI, but CPMS request failed");
+		ofono_error("Received CMTI/CDSI, but CPMS request failed");
 		return;
 	}
 
@@ -467,6 +472,27 @@ error:
 	ofono_error("Unable to parse CMTI notification");
 }
 
+static void at_cdsi_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_sms *sms = user_data;
+	enum at_util_sms_store store;
+	int index;
+
+	if (at_util_parse_sms_index_delivery(result, "+CDSI:",
+						&store, &index) == FALSE)
+		goto error;
+
+	if (store != AT_UTIL_SMS_STORE_SR)
+		goto error;
+
+	DBG("Got a CDSI indication at %s, index: %d", storages[store], index);
+	at_send_cmgr_cpms(sms, store, index);
+	return;
+
+error:
+	ofono_error("Unable to parse CDSI notification");
+}
+
 static void at_cmgl_done(struct ofono_sms *sms)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
@@ -482,6 +508,8 @@ static void at_cmgl_done(struct ofono_sms *sms)
 	g_at_chat_register(data->chat, "+CMT:", at_cmt_notify, TRUE,
 				sms, NULL);
 	g_at_chat_register(data->chat, "+CDS:", at_cds_notify, TRUE,
+				sms, NULL);
+	g_at_chat_register(data->chat, "+CDSI:", at_cdsi_notify, FALSE,
 				sms, NULL);
 
 	/* We treat CMGR just like a notification */
