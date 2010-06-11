@@ -3589,6 +3589,43 @@ static gboolean build_dataobj_ussd_string(struct stk_tlv_builder *tlv,
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.18 */
+static gboolean build_dataobj_file_list(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	GSList *l = (void *) data;
+	const struct stk_file *file;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_FILE_LIST;
+
+	if (stk_tlv_builder_open_container(tlv, cr, tag, TRUE) != TRUE)
+		return FALSE;
+
+	if (stk_tlv_builder_append_byte(tlv, g_slist_length(l)) != TRUE)
+		return FALSE;
+
+	for (; l; l = l->next) {
+		file = l->data;
+
+		if (stk_tlv_builder_append_bytes(tlv, file->file,
+							file->len) != TRUE)
+			return FALSE;
+	}
+
+	return stk_tlv_builder_close_container(tlv);
+}
+
+/* Shortcut for a single File element */
+static gboolean build_dataobj_file(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	GSList l = {
+		.data = (void *) data,
+		.next = NULL,
+	};
+
+	return build_dataobj_file_list(tlv, &l, cr);
+}
+
 /* Described in TS 102.223 Section 8.19 */
 static gboolean build_dataobj_location_info(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
@@ -4316,6 +4353,40 @@ static gboolean build_dataobj_meid(struct stk_tlv_builder *tlv,
 
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_bytes(tlv, value, 8) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.83 */
+static gboolean build_dataobj_mms_id(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_mms_id *id = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_MMS_ID;
+
+	/* Assume the length is never 0 for a valid ID, however the whole
+	 * data object's presence is conditional.  */
+	if (id->len == 0)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, id->id, id->len) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.84 */
+static gboolean build_dataobj_mms_transfer_status(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_mms_transfer_status *mts = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_MMS_TRANSFER_STATUS;
+
+	/* Assume the length is never 0 for a valid Result message, however
+	 * the whole data object's presence is conditional.  */
+	if (mts->len == 0)
+		return TRUE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_bytes(tlv, mts->status, mts->len) &&
 		stk_tlv_builder_close_container(tlv);
 }
 
@@ -5063,6 +5134,19 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 					build_dataobj_ussd_string,
 					DATAOBJ_FLAG_CR,
 					&envelope->ussd_data_download.string,
+					NULL);
+		break;
+	case STK_ENVELOPE_TYPE_MMS_TRANSFER_STATUS:
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids,
+					DATAOBJ_FLAG_CR,
+					envelope,
+					build_dataobj_file, DATAOBJ_FLAG_CR,
+					&envelope->mms_status.transfer_file,
+					build_dataobj_mms_id, 0,
+					&envelope->mms_status.id,
+					build_dataobj_mms_transfer_status, 0,
+					&envelope->mms_status.transfer_status,
 					NULL);
 		break;
 	default:

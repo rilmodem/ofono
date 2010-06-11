@@ -32,6 +32,10 @@ enum stk_envelope_type {
 	STK_ENVELOPE_TYPE_EVENT_DOWNLOAD =	0xD6,
 	STK_ENVELOPE_TYPE_TIMER_EXPIRATION =	0xD7,
 	STK_ENVELOPE_TYPE_USSD_DOWNLOAD =	0xD9,
+	STK_ENVELOPE_TYPE_MMS_TRANSFER_STATUS =	0xDA,
+	STK_ENVELOPE_TYPE_MMS_NOTIFICATION =	0xDB,
+	STK_ENVELOPE_TYPE_TERMINAL_APP =	0xDC,
+	STK_ENVELOPE_TYPE_GEOLOCATION_REPORT =	0xDD,
 };
 
 /* TS 102.223 Section 9.4 */
@@ -1437,6 +1441,12 @@ struct stk_envelope_ussd_data_download {
 	struct stk_ussd_string string;
 };
 
+struct stk_envelope_mms_transfer_status {
+	struct stk_file transfer_file;
+	struct stk_mms_id id;
+	struct stk_mms_transfer_status transfer_status;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1450,6 +1460,7 @@ struct stk_envelope {
 		struct stk_envelope_event_download event_download;
 		struct stk_envelope_timer_expiration timer_expiration;
 		struct stk_envelope_ussd_data_download ussd_data_download;
+		struct stk_envelope_mms_transfer_status mms_status;
 	};
 };
 
