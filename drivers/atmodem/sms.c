@@ -62,11 +62,9 @@ static const char *storages[] = {
 	"SM",
 	"ME",
 	"MT",
+	"SR",
+	"BM",
 };
-
-#define SM_STORE 0
-#define ME_STORE 1
-#define MT_STORE 2
 
 struct sms_data {
 	int store;
@@ -451,35 +449,21 @@ static void at_send_cmgr_cpms(struct ofono_sms *sms, int store, int index)
 static void at_cmti_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
-	const char *strstore;
-	int store;
-	GAtResultIter iter;
+	enum at_util_sms_store store;
 	int index;
 
-	g_at_result_iter_init(&iter, result);
+	if (at_util_parse_sms_index_delivery(result, "+CMTI:",
+						&store, &index) == FALSE)
+		goto error;
 
-	if (!g_at_result_iter_next(&iter, "+CMTI:"))
-		goto err;
+	if (store != AT_UTIL_SMS_STORE_SM && store != AT_UTIL_SMS_STORE_ME)
+		goto error;
 
-	if (!g_at_result_iter_next_string(&iter, &strstore))
-		goto err;
-
-	if (!strcmp(strstore, "ME"))
-		store = ME_STORE;
-	else if (!strcmp(strstore, "SM"))
-		store = SM_STORE;
-	else
-		goto err;
-
-	if (!g_at_result_iter_next_number(&iter, &index))
-		goto err;
-
-	DBG("Got a CMTI indication at %s, index: %d", strstore, index);
-
+	DBG("Got a CMTI indication at %s, index: %d", storages[store], index);
 	at_send_cmgr_cpms(sms, store, index);
 	return;
 
-err:
+error:
 	ofono_error("Unable to parse CMTI notification");
 }
 
@@ -487,8 +471,9 @@ static void at_cmgl_done(struct ofono_sms *sms)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
 
-	if (data->incoming == MT_STORE && data->store == ME_STORE) {
-		at_cmgl_set_cpms(sms, SM_STORE);
+	if (data->incoming == AT_UTIL_SMS_STORE_MT &&
+			data->store == AT_UTIL_SMS_STORE_ME) {
+		at_cmgl_set_cpms(sms, AT_UTIL_SMS_STORE_SM);
 		return;
 	}
 
@@ -619,8 +604,8 @@ static void at_sms_initialized(struct ofono_sms *sms)
 	struct sms_data *data = ofono_sms_get_data(sms);
 
 	/* Inspect and free the incoming SMS storage */
-	if (data->incoming == MT_STORE)
-		at_cmgl_set_cpms(sms, ME_STORE);
+	if (data->incoming == AT_UTIL_SMS_STORE_MT)
+		at_cmgl_set_cpms(sms, AT_UTIL_SMS_STORE_ME);
 	else
 		at_cmgl_set_cpms(sms, data->incoming);
 
@@ -928,12 +913,12 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 
 		if (sm_supported[0] && sm_supported[1]) {
 			supported = TRUE;
-			data->store = SM_STORE;
+			data->store = AT_UTIL_SMS_STORE_SM;
 		}
 
 		if (me_supported[0] && me_supported[1]) {
 			supported = TRUE;
-			data->store = ME_STORE;
+			data->store = AT_UTIL_SMS_STORE_ME;
 		}
 
 		/* This seems to be a special case, where the modem will
@@ -941,13 +926,13 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 		 * mem1
 		 */
 		if (mt_supported[2] && (sm_supported[0] || me_supported[0]))
-			data->incoming = MT_STORE;
+			data->incoming = AT_UTIL_SMS_STORE_MT;
 
 		if (sm_supported[2])
-			data->incoming = SM_STORE;
+			data->incoming = AT_UTIL_SMS_STORE_SM;
 
 		if (me_supported[2])
-			data->incoming = ME_STORE;
+			data->incoming = AT_UTIL_SMS_STORE_ME;
 	}
 out:
 	if (!supported)
