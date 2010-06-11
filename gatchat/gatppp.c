@@ -459,6 +459,8 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	lcp_free(ppp->lcp);
 	ipcp_free(ppp->ipcp);
 
+	g_at_hdlc_unref(ppp->hdlc);
+
 	g_free(ppp);
 }
 
