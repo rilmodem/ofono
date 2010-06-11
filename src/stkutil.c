@@ -5042,6 +5042,19 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 	case STK_ENVELOPE_TYPE_EVENT_DOWNLOAD:
 		ok = build_envelope_event_download(&builder, envelope);
 		break;
+	case STK_ENVELOPE_TYPE_TIMER_EXPIRATION:
+		ok = build_dataobj(&builder,
+					build_envelope_dataobj_device_ids,
+					DATAOBJ_FLAG_CR,
+					envelope,
+					build_dataobj_timer_id,
+					DATAOBJ_FLAG_CR,
+					&envelope->timer_expiration.id,
+					build_dataobj_timer_value,
+					DATAOBJ_FLAG_CR,
+					&envelope->timer_expiration.value,
+					NULL);
+		break;
 	default:
 		return NULL;
 	};

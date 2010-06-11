@@ -1428,6 +1428,11 @@ struct stk_envelope_event_download {
 	};
 };
 
+struct stk_envelope_timer_expiration {
+	unsigned char id;
+	struct stk_timer_value value;
+};
+
 struct stk_envelope {
 	enum stk_envelope_type type;
 	enum stk_device_identity_type src;
@@ -1439,6 +1444,7 @@ struct stk_envelope {
 		struct stk_envelope_call_control call_control;
 		struct stk_envelope_sms_mo_control sms_mo_control;
 		struct stk_envelope_event_download event_download;
+		struct stk_envelope_timer_expiration timer_expiration;
 	};
 };
 
