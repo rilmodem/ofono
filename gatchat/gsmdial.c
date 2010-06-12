@@ -235,7 +235,12 @@ static void ppp_connect(const char *iface, const char *ip,
 static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 {
 	char buf[64];
+
 	g_print("PPP Link down: %d\n", reason);
+
+	g_at_ppp_unref(ppp);
+	ppp = NULL;
+
 	g_at_chat_resume(modem);
 
 	sprintf(buf, "AT+CFUN=%u", option_offmode);
