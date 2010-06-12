@@ -1,3 +1,13 @@
+ver 0.23:
+	Fix issue with operator info when not registered.
+	Fix issue with clean PPP shutdown on device removal.
+	Add support for status report notification via CDSI.
+	Add better support for Huawei E160 and E176 devices.
+	Add full GPRS support for Novatel based devices.
+	Add support for Novatel specific radio settings.
+	Add support for Option specific radio settings.
+	Add support for setting CBS topics on Qualcomm devices.
+
 ver 0.22:
 	Fix issue with VPATH builds.
 	Fix issue with SMS and more than 31 fragments.
