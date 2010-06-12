@@ -1164,6 +1164,11 @@ void g_at_server_resume(GAtServer *server)
 
 	server->suspended = FALSE;
 
+	if (g_at_io_get_channel(server->io) == NULL) {
+		io_disconnect(server);
+		return;
+	}
+
 	g_at_io_set_debug(server->io, server->debugf, server->debug_data);
 	g_at_io_set_read_handler(server->io, new_bytes, server);
 
