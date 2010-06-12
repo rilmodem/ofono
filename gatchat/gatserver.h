@@ -28,6 +28,7 @@ extern "C" {
 
 #include "gatresult.h"
 #include "gatutil.h"
+#include "gatio.h"
 
 struct _GAtServer;
 
@@ -68,8 +69,12 @@ typedef void (*GAtServerNotifyFunc)(GAtServerRequestType type,
 					GAtResult *result, gpointer user_data);
 
 GAtServer *g_at_server_new(GIOChannel *io);
+GIOChannel *g_at_server_get_channel(GAtServer *server);
+GAtIO *g_at_server_get_io(GAtServer *server);
 
 GAtServer *g_at_server_ref(GAtServer *server);
+void g_at_server_suspend(GAtServer *server);
+void g_at_server_resume(GAtServer *server);
 void g_at_server_unref(GAtServer *server);
 
 gboolean g_at_server_shutdown(GAtServer *server);
