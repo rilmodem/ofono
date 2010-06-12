@@ -722,7 +722,6 @@ static gboolean create_tty(const char *modem_path)
 	int master, slave;
 	char pty_name[256];
 	GIOChannel *server_io;
-	GIOChannel *client_io;
 
 	if (!modem_path)
 		return FALSE;
@@ -731,9 +730,6 @@ static gboolean create_tty(const char *modem_path)
 		return FALSE;
 
 	set_raw_mode(slave);
-
-	client_io = g_io_channel_unix_new(slave);
-	g_io_channel_set_close_on_unref(client_io, TRUE);
 
 	g_print("new pty is created at %s\n", pty_name);
 
@@ -746,6 +742,8 @@ static gboolean create_tty(const char *modem_path)
 
 		return FALSE;
 	}
+
+	g_io_channel_unref(server_io);
 
 	return TRUE;
 }
