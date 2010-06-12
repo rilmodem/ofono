@@ -803,7 +803,7 @@ static const struct {
 	const char *interface;
 	const char *feature;
 } feature_map[] = {
-	{ OFONO_NETWORK_REGISTRATION_INTERFACE,		"netreg"},
+	{ OFONO_NETWORK_REGISTRATION_INTERFACE,		"net"	},
 	{ OFONO_RADIO_SETTINGS_INTERFACE,		"rat"	},
 	{ OFONO_CELL_BROADCAST_INTERFACE,		"cbs"	},
 	{ OFONO_SMS_MANAGER_INTERFACE,			"sms"	},
