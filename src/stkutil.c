@@ -3057,6 +3057,440 @@ static gboolean parse_launch_browser(struct stk_command *command,
 	return TRUE;
 }
 
+/* TODO: parse_open_channel */
+
+static void destroy_close_channel(struct stk_command *command)
+{
+	g_free(command->close_channel.alpha_id);
+}
+
+static gboolean parse_close_channel(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_close_channel *obj = &command->close_channel;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_close_channel;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_receive_data(struct stk_command *command)
+{
+	g_free(command->receive_data.alpha_id);
+}
+
+static gboolean parse_receive_data(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_receive_data *obj = &command->receive_data;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if ((command->dst < STK_DEVICE_IDENTITY_TYPE_CHANNEL_1) ||
+			(command->dst > STK_DEVICE_IDENTITY_TYPE_CHANNEL_7))
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_CHANNEL_DATA_LENGTH,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->data_len,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_receive_data;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_send_data(struct stk_command *command)
+{
+	g_free(command->send_data.alpha_id);
+	g_free(command->send_data.data.array);
+}
+
+static gboolean parse_send_data(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_send_data *obj = &command->send_data;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if ((command->dst < STK_DEVICE_IDENTITY_TYPE_CHANNEL_1) ||
+			(command->dst > STK_DEVICE_IDENTITY_TYPE_CHANNEL_7))
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_CHANNEL_DATA,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->data,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_send_data;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static gboolean parse_get_channel_status(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_service_search(struct stk_command *command)
+{
+	g_free(command->service_search.alpha_id);
+	g_free(command->service_search.serv_search.ser_search);
+	g_free(command->service_search.dev_filter.dev_filter);
+}
+
+static gboolean parse_service_search(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_service_search *obj = &command->service_search;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_SERVICE_SEARCH,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->serv_search,
+				STK_DATA_OBJECT_TYPE_DEVICE_FILTER, 0,
+				&obj->dev_filter,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_service_search;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_get_service_info(struct stk_command *command)
+{
+	g_free(command->get_service_info.alpha_id);
+	g_free(command->get_service_info.attr_info.attr_info);
+}
+
+static gboolean parse_get_service_info(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_get_service_info *obj = &command->get_service_info;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_ATTRIBUTE_INFO,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->attr_info,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_get_service_info;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_declare_service(struct stk_command *command)
+{
+	g_free(command->declare_service.serv_rec.serv_rec);
+}
+
+static gboolean parse_declare_service(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_declare_service *obj = &command->declare_service;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_SERVICE_RECORD,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->serv_rec,
+				STK_DATA_OBJECT_TYPE_UICC_TE_INTERFACE, 0,
+				&obj->intf,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_declare_service;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static gboolean parse_set_frames(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_set_frames *obj = &command->set_frames;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_FRAME_ID,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_FRAME_LAYOUT, 0,
+				&obj->frame_layout,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id_default,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static gboolean parse_get_frames_status(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_retrieve_mms(struct stk_command *command)
+{
+	g_free(command->retrieve_mms.alpha_id);
+	g_slist_foreach(command->retrieve_mms.mms_rec_files,
+						(GFunc)g_free, NULL);
+	g_slist_free(command->retrieve_mms.mms_rec_files);
+}
+
+static gboolean parse_retrieve_mms(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_retrieve_mms *obj = &command->retrieve_mms;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_MMS_REFERENCE,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->mms_ref,
+				STK_DATA_OBJECT_TYPE_FILE_LIST,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->mms_rec_files,
+				STK_DATA_OBJECT_TYPE_MMS_CONTENT_ID,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->mms_content_id,
+				STK_DATA_OBJECT_TYPE_MMS_ID, 0,
+				&obj->mms_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_retrieve_mms;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_submit_mms(struct stk_command *command)
+{
+	g_free(command->submit_mms.alpha_id);
+	g_slist_foreach(command->submit_mms.mms_subm_files,
+						(GFunc)g_free, NULL);
+	g_slist_free(command->submit_mms.mms_subm_files);
+}
+
+static gboolean parse_submit_mms(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_submit_mms *obj = &command->submit_mms;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_FILE_LIST,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->mms_subm_files,
+				STK_DATA_OBJECT_TYPE_MMS_ID, 0,
+				&obj->mms_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_submit_mms;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_display_mms(struct stk_command *command)
+{
+	g_slist_foreach(command->display_mms.mms_subm_files,
+						(GFunc)g_free, NULL);
+	g_slist_free(command->display_mms.mms_subm_files);
+}
+
+static gboolean parse_display_mms(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_display_mms *obj = &command->display_mms;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_FILE_LIST,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->mms_subm_files,
+				STK_DATA_OBJECT_TYPE_MMS_ID,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->mms_id,
+				STK_DATA_OBJECT_TYPE_IMMEDIATE_RESPONSE, 0,
+				&obj->imd_resp,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_display_mms;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static gboolean parse_activate(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_activate *obj = &command->activate;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ACTIVATE_DESCRIPTOR,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->actv_desc,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
 struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 						unsigned int len)
 {
@@ -3189,6 +3623,45 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
 		ok = parse_launch_browser(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_CLOSE_CHANNEL:
+		ok = parse_close_channel(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_RECEIVE_DATA:
+		ok = parse_receive_data(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SEND_DATA:
+		ok = parse_send_data(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_GET_CHANNEL_STATUS:
+		ok = parse_get_channel_status(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SERVICE_SEARCH:
+		ok = parse_service_search(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_GET_SERVICE_INFO:
+		ok = parse_get_service_info(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_DECLARE_SERVICE:
+		ok = parse_declare_service(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SET_FRAMES:
+		ok = parse_set_frames(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_GET_FRAMES_STATUS:
+		ok = parse_get_frames_status(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_RETRIEVE_MMS:
+		ok = parse_retrieve_mms(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SUBMIT_MMS:
+		ok = parse_submit_mms(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_DISPLAY_MMS:
+		ok = parse_display_mms(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_ACTIVATE:
+		ok = parse_activate(command, &iter);
 		break;
 	default:
 		ok = FALSE;

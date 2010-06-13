@@ -1171,6 +1171,88 @@ struct stk_command_launch_browser {
 	char *text_passwd;
 };
 
+struct stk_command_close_channel {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_receive_data {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	unsigned char data_len;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_send_data {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_common_byte_array data;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_service_search {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_service_search serv_search;
+	struct stk_device_filter dev_filter;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_get_service_info {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_attribute_info attr_info;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_declare_service {
+	struct stk_service_record serv_rec;
+	struct stk_uicc_te_interface intf;
+};
+
+struct stk_command_set_frames {
+	struct stk_frame_id frame_id;
+	struct stk_frame_layout frame_layout;
+	struct stk_frame_id frame_id_default;
+};
+
+struct stk_command_retrieve_mms {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_mms_reference mms_ref;
+	GSList *mms_rec_files;
+	struct stk_mms_content_id mms_content_id;
+	struct stk_mms_id mms_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_submit_mms {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	GSList *mms_subm_files;
+	struct stk_mms_id mms_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_display_mms {
+	GSList *mms_subm_files;
+	struct stk_mms_id mms_id;
+	ofono_bool_t imd_resp;
+	struct stk_frame_id frame_id;
+};
+
+struct stk_command_activate {
+	unsigned char actv_desc;
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
@@ -1198,6 +1280,17 @@ struct stk_command {
 		struct stk_command_send_dtmf send_dtmf;
 		struct stk_command_language_notification language_notification;
 		struct stk_command_launch_browser launch_browser;
+		struct stk_command_close_channel close_channel;
+		struct stk_command_receive_data receive_data;
+		struct stk_command_send_data send_data;
+		struct stk_command_service_search service_search;
+		struct stk_command_get_service_info get_service_info;
+		struct stk_command_declare_service declare_service;
+		struct stk_command_set_frames set_frames;
+		struct stk_command_retrieve_mms retrieve_mms;
+		struct stk_command_submit_mms submit_mms;
+		struct stk_command_display_mms display_mms;
+		struct stk_command_activate activate;
 	};
 
 	void (*destructor)(struct stk_command *command);
