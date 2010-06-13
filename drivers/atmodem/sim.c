@@ -110,6 +110,15 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
+	if (sd->vendor == OFONO_VENDOR_OPTION_HSO) {
+		unsigned char access[3] = { 0x00, 0x00, 0x00 };
+
+		if (fileid == SIM_EFAD_FILEID) {
+			CALLBACK_WITH_SUCCESS(cb, 4, 0, 0, access, data);
+			return;
+		}
+	}
+
 	if (!cbd)
 		goto error;
 
