@@ -5,7 +5,7 @@ ACTION!="add|change", GOTO="ofono_end"
 SUBSYSTEM!="tty", GOTO="ofono_huawei_end"
 KERNEL!="ttyUSB[0-9]*", GOTO="ofono_huawei_end"
 
-SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ENV{OFONO_IFACE_NUM}="$attr{bInterfaceNumber}"
+SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="ff", ENV{OFONO_IFACE_NUM}="$attr{bInterfaceNumber}"
 
 # Generic 0x1001
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1001", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
@@ -15,9 +15,208 @@ ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1001", ENV{OFONO_IFACE_NUM}=="02", E
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1003", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1003", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
 
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1401", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1401", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1402", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1402", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1405", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1405", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1406", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1406", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1408", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1408", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1409", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1409", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1409", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="gps"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140A", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140A", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140B", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140B", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140C", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140C", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140D", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140D", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140E", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140E", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140F", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140F", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
 # E510
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1411", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1411", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1412", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1412", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1412", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="gps"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1412", ENV{OFONO_IFACE_NUM}=="05", ENV{OFONO_HUAWEI_TYPE}="pcvoice"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1413", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1413", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="gps"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1413", ENV{OFONO_IFACE_NUM}=="07", ENV{OFONO_HUAWEI_TYPE}="pcvoice"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1414", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1414", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1414", ENV{OFONO_IFACE_NUM}=="05", ENV{OFONO_HUAWEI_TYPE}="gps"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1414", ENV{OFONO_IFACE_NUM}=="06", ENV{OFONO_HUAWEI_TYPE}="pcvoice"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1415", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1415", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1416", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1416", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1417", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1417", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1418", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1418", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1419", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1419", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1419", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="gps"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141A", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141A", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141B", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141B", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141C", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141C", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141D", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141D", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141E", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141E", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141F", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="141F", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1420", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1420", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1421", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1421", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1422", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1422", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1427", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1427", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1428", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1428", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1429", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1429", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="142A", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="142A", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1448", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1448", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1433", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1433", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1434", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1434", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1436", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1436", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1438", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1438", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1439", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1439", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="143A", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="143A", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="143B", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="143B", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="pcsc"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="143E", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="143E", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="14AC", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="14AC", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1450", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1450", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1451", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1451", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1452", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1452", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1453", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1453", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1454", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1454", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1455", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1455", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1456", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1456", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1457", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1457", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1458", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1458", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1459", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1459", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145A", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145A", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145B", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145B", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145C", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145C", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145D", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145D", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145E", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145E", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145F", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="145F", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1460", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1460", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1461", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1461", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1462", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1462", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1463", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1463", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
 
 # K4505
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1464", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
@@ -27,6 +226,104 @@ ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1464", ENV{OFONO_IFACE_NUM}=="04", E
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1465", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1465", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
 
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1466", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1466", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1467", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1467", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1468", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1468", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1469", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1469", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146A", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146A", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146B", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146B", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146C", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146C", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146D", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146D", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146E", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146E", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146F", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="146F", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1470", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1470", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1471", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1471", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1472", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1472", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1473", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1473", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1474", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1474", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1475", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1475", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1476", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1476", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1477", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1477", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1478", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1478", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1479", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1479", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147A", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147A", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147B", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147B", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147C", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147C", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147D", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147D", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147E", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147E", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147F", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="147F", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1480", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1480", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1481", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1481", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1482", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1482", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1483", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1483", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1484", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1484", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1485", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1485", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1486", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1486", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
 LABEL="ofono_huawei_end"
 
 SUBSYSTEM!="usb", GOTO="ofono_end"
