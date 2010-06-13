@@ -599,6 +599,12 @@ struct stk_ccp {
 	unsigned char ccp[16];
 };
 
+/* Defined in TS 31.111 Section 8.5 */
+struct stk_cbs_page {
+	unsigned char len;
+	unsigned char page[88];
+};
+
 /*
  * According to 102.223 Section 8.8 interval values of 0x00 are reserved.
  * We use this to denote empty duration objects.

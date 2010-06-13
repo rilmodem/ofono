@@ -357,6 +357,28 @@ static gboolean parse_dataobj_ccp(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 31.111 Section 8.5 */
+static gboolean parse_dataobj_cbs_page(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_cbs_page *cp = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 1)
+		return FALSE;
+
+	if (len > sizeof(cp->page))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+	cp->len = len;
+	memcpy(cp->page, data, len);
+
+	return TRUE;
+}
+
 /* Described in TS 102.223 Section 8.8 */
 static gboolean parse_dataobj_duration(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1891,6 +1913,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_subaddress;
 	case STK_DATA_OBJECT_TYPE_CCP:
 		return parse_dataobj_ccp;
+	case STK_DATA_OBJECT_TYPE_CBS_PAGE:
+		return parse_dataobj_cbs_page;
 	case STK_DATA_OBJECT_TYPE_DURATION:
 		return parse_dataobj_duration;
 	case STK_DATA_OBJECT_TYPE_ITEM:
