@@ -107,7 +107,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 					void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct cb_data *cbd;
 	char buf[64];
 
 	if (sd->vendor == OFONO_VENDOR_OPTION_HSO) {
@@ -119,6 +119,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 		}
 	}
 
+	cbd = cb_data_new(cb, data);
 	if (!cbd)
 		goto error;
 
@@ -132,9 +133,6 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
 }
 
