@@ -832,6 +832,33 @@ static gboolean parse_dataobj_transaction_id(
 	return TRUE;
 }
 
+/* Defined in TS 31.111 Section 8.29 */
+static gboolean parse_dataobj_bcch_channel_list(
+		struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_bcch_channel_list *bcl = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+	unsigned int i;
+
+	if (len < 1)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	bcl->num = len * 8 / 10;
+
+	for (i = 0; i < bcl->num; i++) {
+		unsigned int index = i * 10 / 8;
+		unsigned int occupied = i * 10 % 8;
+
+		bcl->channel[i] = (data[index] << (2 + occupied)) +
+					(data[index + 1] >> (6 - occupied));
+	}
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.30 */
 static gboolean parse_dataobj_call_control_requested_action(
 		struct comprehension_tlv_iter *iter, void *user)
@@ -1955,6 +1982,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_location_status;
 	case STK_DATA_OBJECT_TYPE_TRANSACTION_ID:
 		return parse_dataobj_transaction_id;
+	case STK_DATA_OBJECT_TYPE_BCCH_CHANNEL_LIST:
+		return parse_dataobj_bcch_channel_list;
 	case STK_DATA_OBJECT_TYPE_CALL_CONTROL_REQUESTED_ACTION:
 		return parse_dataobj_call_control_requested_action;
 	case STK_DATA_OBJECT_TYPE_ICON_ID:

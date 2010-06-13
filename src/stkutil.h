@@ -710,6 +710,16 @@ struct stk_transaction_id {
 };
 
 /*
+ * According to 31.111 Section 8.29 the length of CTLV is 1 byte. This means
+ * that the maximum size is 127 according to the rules of CTLVs. Each channel
+ * is represented as 10 bits, so the maximum number of channel is 127*8/10=101.
+ */
+struct stk_bcch_channel_list {
+	unsigned short channel[101];
+	unsigned int num;
+};
+
+/*
  * Defined in TS 102.223 Section 8.31
  * Icon ID denotes a file on the SIM filesystem.  Since EF cannot have record
  * ids of 0, we use icon_id with 0 to denote empty icon_identifier objects
