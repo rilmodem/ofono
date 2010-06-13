@@ -630,6 +630,12 @@ struct stk_result {
 	unsigned char *additional;
 };
 
+/* Defined in TS 102.223 Section 8.14 */
+struct stk_ss {
+	unsigned char ton_npi;
+	char *ss;
+};
+
 /* Defined in TS 131.111 Section 8.17.  Length limit of 160 chars in 23.028 */
 struct stk_ussd_string {
 	unsigned char dcs;
@@ -1079,6 +1085,14 @@ struct stk_command_send_sms {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_send_ss {
+	char *alpha_id;
+	struct stk_ss ss;
+	struct stk_icon_id icon_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
 struct stk_command_setup_call {
 	char *alpha_id_usr_cfm;
 	struct stk_address addr;
@@ -1174,6 +1188,7 @@ struct stk_command {
 		struct stk_command_setup_menu setup_menu;
 		struct stk_command_select_item select_item;
 		struct stk_command_send_sms send_sms;
+		struct stk_command_send_ss send_ss;
 		struct stk_command_setup_call setup_call;
 		struct stk_command_setup_event_list setup_event_list;
 		struct stk_command_perform_card_apdu perform_card_apdu;

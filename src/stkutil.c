@@ -502,6 +502,32 @@ static gboolean parse_dataobj_gsm_sms_tpdu(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 102.223 Section 8.14 */
+static gboolean parse_dataobj_ss(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_ss *ss = user;
+	const unsigned char *data;
+	unsigned int len;
+	char *s;
+
+	len = comprehension_tlv_iter_get_length(iter);
+	if (len < 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	s = g_try_malloc(len * 2 - 1);
+	if (s == NULL)
+		return FALSE;
+
+	ss->ton_npi = data[0];
+	ss->ss = s;
+	sim_extract_bcd_number(data + 1, len - 1, ss->ss);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.15 */
 static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1877,6 +1903,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_result;
 	case STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU:
 		return parse_dataobj_gsm_sms_tpdu;
+	case STK_DATA_OBJECT_TYPE_SS_STRING:
+		return parse_dataobj_ss;
 	case STK_DATA_OBJECT_TYPE_TEXT:
 		return parse_dataobj_text;
 	case STK_DATA_OBJECT_TYPE_TONE:
@@ -2550,6 +2578,45 @@ static gboolean parse_send_sms(struct stk_command *command,
 	return TRUE;
 }
 
+static void destroy_send_ss(struct stk_command *command)
+{
+	g_free(command->send_ss.alpha_id);
+	g_free(command->send_ss.ss.ss);
+}
+
+static gboolean parse_send_ss(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_send_ss *obj = &command->send_ss;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_SS_STRING,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->ss,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_send_ss;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
 static void destroy_setup_call(struct stk_command *command)
 {
 	g_free(command->setup_call.alpha_id_usr_cfm);
@@ -3074,6 +3141,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SEND_SMS:
 		ok = parse_send_sms(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SEND_SS:
+		ok = parse_send_ss(command, &iter);
 		break;
 	case STK_COMMAND_TYPE_SETUP_CALL:
 		ok = parse_setup_call(command, &iter);
