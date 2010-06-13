@@ -1587,6 +1587,27 @@ static gboolean parse_dataobj_text_attr(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in TS 31.111 Section 8.72 */
+static gboolean parse_dataobj_pdp_act_par(
+			struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_pdp_act_par *pcap = user;
+	const unsigned char *data;
+	unsigned int len;
+
+	len = comprehension_tlv_iter_get_length(iter);
+
+	if (len > sizeof(pcap->par))
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	memcpy(pcap->par, data, len);
+	pcap->len = len;
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.73 */
 static gboolean parse_dataobj_item_text_attribute_list(
 		struct comprehension_tlv_iter *iter, void *user)
@@ -2068,6 +2089,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_cdma_sms_tpdu;
 	case STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE:
 		return parse_dataobj_text_attr;
+	case STK_DATA_OBJECT_TYPE_PDP_ACTIVATION_PARAMETER:
+		return parse_dataobj_pdp_act_par;
 	case STK_DATA_OBJECT_TYPE_ITEM_TEXT_ATTRIBUTE_LIST:
 		return parse_dataobj_item_text_attribute_list;
 	case STK_DATA_OBJECT_TYPE_IMEISV:

@@ -918,6 +918,12 @@ struct stk_text_attribute {
 	unsigned char len;
 };
 
+/* Defined in TS 31.111 Section 8.72 */
+struct stk_pdp_act_par {
+	unsigned char par[127];
+	unsigned char len;
+};
+
 /*
  * According to 102.223 Section 8.73 the length of CTLV is 1 byte. This means
  * that the maximum size is 127 according to the rules of CTLVs. In addition,
