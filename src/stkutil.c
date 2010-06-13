@@ -1627,6 +1627,14 @@ static gboolean parse_dataobj_item_text_attribute_list(
 	return TRUE;
 }
 
+/* Defined in TS 31.111 Section 8.73 */
+static gboolean parse_dataobj_utran_meas_qualifier(
+			struct comprehension_tlv_iter *iter, void *user)
+{
+	unsigned char *byte = user;
+	return parse_dataobj_common_byte(iter, byte);
+}
+
 /*
  * Defined in TS 102.223 Section 8.74.
  *
@@ -2093,6 +2101,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_pdp_act_par;
 	case STK_DATA_OBJECT_TYPE_ITEM_TEXT_ATTRIBUTE_LIST:
 		return parse_dataobj_item_text_attribute_list;
+	case STK_DATA_OBJECT_TYPE_UTRAN_MEASUREMENT_QUALIFIER:
+		return parse_dataobj_utran_meas_qualifier;
 	case STK_DATA_OBJECT_TYPE_IMEISV:
 		return parse_dataobj_imeisv;
 	case STK_DATA_OBJECT_TYPE_NETWORK_SEARCH_MODE:
