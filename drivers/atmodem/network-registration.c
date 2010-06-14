@@ -209,8 +209,8 @@ static void at_registration_status(struct ofono_netreg *netreg,
 		 * option_tech_cb will call fire CREG? to do the rest.
 		 */
 		if (g_at_chat_send(nd->chat, "AT_OCTI?;_OUWCTI?",
-				option_tech_prefix,
-				option_tech_cb, cbd, NULL) == 0)
+					option_tech_prefix,
+					option_tech_cb, cbd, NULL) == 0)
 			nd->tech = -1;
 		break;
 	}
@@ -879,8 +879,8 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 		tq->netreg = netreg;
 
 		if (g_at_chat_send(nd->chat, "AT_OCTI?;_OUWCTI?",
-			option_tech_prefix, option_query_tech_cb,
-					tq, g_free) > 0)
+					option_tech_prefix,
+					option_query_tech_cb, tq, g_free) > 0)
 			return;
 
 		g_free(tq);
