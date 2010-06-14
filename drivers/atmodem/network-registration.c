@@ -46,6 +46,7 @@ static const char *creg_prefix[] = { "+CREG:", NULL };
 static const char *cops_prefix[] = { "+COPS:", NULL };
 static const char *csq_prefix[] = { "+CSQ:", NULL };
 static const char *cind_prefix[] = { "+CIND:", NULL };
+static const char *option_tech_prefix[] = { "_OCTI:", "_OUWCTI:", NULL };
 
 struct netreg_data {
 	GAtChat *chat;
@@ -58,6 +59,13 @@ struct netreg_data {
 	unsigned int vendor;
 };
 
+struct tech_query {
+	int status;
+	int lac;
+	int ci;
+	struct ofono_netreg *netreg;
+};
+
 static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 {
 	/* Three digit country code */
@@ -67,6 +75,64 @@ static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 	/* Usually a 2 but sometimes 3 digit network code */
 	strncpy(mnc, str + OFONO_MAX_MCC_LENGTH, OFONO_MAX_MNC_LENGTH);
 	mnc[OFONO_MAX_MNC_LENGTH] = '\0';
+}
+
+static int option_parse_tech(GAtResult *result)
+{
+	GAtResultIter iter;
+	int s, octi, ouwcti;
+	int tech = -1;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OCTI:"))
+		return -1;
+
+	if (!g_at_result_iter_next_number(&iter, &s))
+		return -1;
+
+	if (!g_at_result_iter_next_number(&iter, &octi))
+		return -1;
+
+	if (!g_at_result_iter_next(&iter, "_OUWCTI:"))
+		return -1;
+
+	if (!g_at_result_iter_next_number(&iter, &s))
+		return -1;
+
+	if (!g_at_result_iter_next_number(&iter, &ouwcti))
+		return -1;
+
+	switch (octi) {
+	case 1: /* GSM */
+		tech = 0;
+		break;
+	case 2: /* GPRS */
+		tech = 1;
+		break;
+	case 3: /* EDGE */
+		tech = 3;
+		break;
+	}
+
+	switch (ouwcti) {
+	case 1: /* UMTS */
+		tech = 2;
+		break;
+	case 2: /* HSDPA */
+		tech = 4;
+		break;
+	case 3: /* HSUPA */
+		tech = 5;
+		break;
+	case 4: /* HSPA */
+		tech = 6;
+		break;
+	}
+
+	DBG("octi %d ouwcti %d tech %d", octi, ouwcti, tech);
+
+	return tech;
 }
 
 static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -94,6 +160,18 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		tech = nd->tech;
 
 	cb(&error, status, lac, ci, tech, cbd->data);
+}
+
+static void option_tech_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct ofono_netreg *netreg = cbd->data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	if (ok)
+		nd->tech = option_parse_tech(result);
+	else
+		nd->tech = -1;
 }
 
 static void at_registration_status(struct ofono_netreg *netreg,
@@ -124,6 +202,16 @@ static void at_registration_status(struct ofono_netreg *netreg,
 		 */
 		g_at_chat_send(nd->chat, "AT$CNTI=0", none_prefix,
 				NULL, NULL, NULL);
+		break;
+	case OFONO_VENDOR_OPTION_HSO:
+		/*
+		 * Send AT_OCTI?;_OUWCTI? to find out the current tech,
+		 * option_tech_cb will call fire CREG? to do the rest.
+		 */
+		if (g_at_chat_send(nd->chat, "AT_OCTI?;_OUWCTI?",
+				option_tech_prefix,
+				option_tech_cb, cbd, NULL) == 0)
+			nd->tech = -1;
 		break;
 	}
 
@@ -533,38 +621,6 @@ static void option_osigq_notify(GAtResult *result, gpointer user_data)
 				at_util_convert_signal_strength(strength));
 }
 
-static void option_ouwcti_notify(GAtResult *result, gpointer user_data)
-{
-	int mode;
-	GAtResultIter iter;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "_OUWCTI:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &mode))
-		return;
-
-	ofono_info("OWCTI mode: %d", mode);
-}
-
-static void option_octi_notify(GAtResult *result, gpointer user_data)
-{
-	int mode;
-	GAtResultIter iter;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "_OCTI:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &mode))
-		return;
-
-	ofono_info("OCTI mode: %d", mode);
-}
-
 static void ciev_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -622,22 +678,6 @@ static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	strength = (strength * 100) / (nd->signal_max - nd->signal_min);
 
 	cb(&error, strength, cbd->data);
-}
-
-static void option_ossysi_notify(GAtResult *result, gpointer user_data)
-{
-	int mode;
-	GAtResultIter iter;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "_OSSYSI:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &mode))
-		return;
-
-	ofono_info("OSSYSI mode: %d", mode);
 }
 
 static void huawei_rssi_notify(GAtResult *result, gpointer user_data)
@@ -803,15 +843,49 @@ static void nw_cnti_notify(GAtResult *result, gpointer user_data)
 	ofono_info("CNTI: %s", tech);
 }
 
+static void option_query_tech_cb(gboolean ok,
+			GAtResult *result, gpointer user_data)
+{
+	struct tech_query *tq = user_data;
+	int tech = -1;
+
+	if (ok)
+		tech = option_parse_tech(result);
+
+	ofono_netreg_status_notify(tq->netreg,
+			tq->status, tq->lac, tq->ci, tech);
+}
+
 static void creg_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	int status, lac, ci, tech;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct tech_query *tq;
 
 	if (at_util_parse_reg_unsolicited(result, "+CREG:", &status,
 				&lac, &ci, &tech, nd->vendor) == FALSE)
 		return;
+
+	switch (nd->vendor) {
+	case OFONO_VENDOR_OPTION_HSO:
+		tq = g_new0(struct tech_query, 1);
+		if (!tq)
+			break;
+
+		tq->status = status;
+		tq->lac = lac;
+		tq->ci = ci;
+		tq->netreg = netreg;
+
+		if (g_at_chat_send(nd->chat, "AT_OCTI?;_OUWCTI?",
+			option_tech_prefix, option_query_tech_cb,
+					tq, g_free) > 0)
+			return;
+
+		g_free(tq);
+		break;
+	}
 
 	if ((status == 1 || status == 5) && tech == -1)
 		tech = nd->tech;
@@ -909,26 +983,12 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_OPTION_HSO:
 		g_at_chat_send(nd->chat, "AT_OSSYS=1", none_prefix,
 				NULL, NULL, NULL);
-		g_at_chat_send(nd->chat, "AT_OUWCTI=1", none_prefix,
-				NULL, NULL, NULL);
-		g_at_chat_send(nd->chat, "AT_OCTI=1", none_prefix,
-				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OSQI=1", none_prefix,
 				NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "_OSIGQ:", option_osigq_notify,
 					FALSE, netreg, NULL);
-		g_at_chat_register(nd->chat, "_OUWCTI:", option_ouwcti_notify,
-					FALSE, netreg, NULL);
-		g_at_chat_register(nd->chat, "_OCTI:", option_octi_notify,
-					FALSE, netreg, NULL);
-		g_at_chat_register(nd->chat, "_OSSYSI:", option_ossysi_notify,
-					FALSE, netreg, NULL);
 
 		g_at_chat_send(nd->chat, "AT_OSSYS?", none_prefix,
-				NULL, NULL, NULL);
-		g_at_chat_send(nd->chat, "AT_OWCTI?", none_prefix,
-				NULL, NULL, NULL);
-		g_at_chat_send(nd->chat, "AT_OCTI?", none_prefix,
 				NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT_OSQI?", none_prefix,
 				NULL, NULL, NULL);
