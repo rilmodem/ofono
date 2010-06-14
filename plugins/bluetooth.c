@@ -40,6 +40,59 @@ static DBusConnection *connection;
 static GHashTable *uuid_hash = NULL;
 static GHashTable *adapter_address_hash = NULL;
 
+static int send_method_call_with_reply(const char *dest, const char *path,
+				const char *interface, const char *method,
+				DBusPendingCallNotifyFunction cb,
+				void *user_data, DBusFreeFunction free_func,
+				int timeout, int type, ...)
+{
+	DBusMessage *msg;
+	DBusPendingCall *call;
+	va_list args;
+	int err;
+
+	msg = dbus_message_new_method_call(dest, path, interface, method);
+	if (!msg) {
+		ofono_error("Unable to allocate new D-Bus %s message", method);
+		err = -ENOMEM;
+		goto fail;
+	}
+
+	va_start(args, type);
+
+	if (!dbus_message_append_args_valist(msg, type, args)) {
+		va_end(args);
+		err = -EIO;
+		goto fail;
+	}
+
+	va_end(args);
+
+	if (timeout > 0)
+		timeout *= 1000;
+
+	if (!dbus_connection_send_with_reply(connection, msg, &call, timeout)) {
+		ofono_error("Sending %s failed", method);
+		err = -EIO;
+		goto fail;
+	}
+
+	dbus_pending_call_set_notify(call, cb, user_data, free_func);
+	dbus_pending_call_unref(call);
+	dbus_message_unref(msg);
+
+	return 0;
+
+fail:
+	if (free_func && user_data)
+		free_func(user_data);
+
+	if (msg)
+		dbus_message_unref(msg);
+
+	return err;
+}
+
 int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 {
 	if (uuid_hash)
