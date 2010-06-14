@@ -238,8 +238,11 @@ builtin_sources += plugins/em770.c
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
 
+builtin_modules += bluetooth
+builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
+
 builtin_modules += hfp
-builtin_sources += plugins/hfp.c
+builtin_sources += plugins/hfp.c plugins/bluetooth.h
 
 builtin_modules += palmpre
 builtin_sources += plugins/palmpre.c

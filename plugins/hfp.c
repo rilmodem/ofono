@@ -45,16 +45,12 @@
 
 #include <ofono/dbus.h>
 
-#define	BLUEZ_SERVICE "org.bluez"
-#define	BLUEZ_MANAGER_INTERFACE		BLUEZ_SERVICE ".Manager"
-#define	BLUEZ_ADAPTER_INTERFACE		BLUEZ_SERVICE ".Adapter"
-#define	BLUEZ_DEVICE_INTERFACE		BLUEZ_SERVICE ".Device"
+#include "bluetooth.h"
+
 #define	BLUEZ_GATEWAY_INTERFACE		BLUEZ_SERVICE ".HandsfreeGateway"
 
 #define HFP_AGENT_INTERFACE "org.bluez.HandsfreeAgent"
 #define HFP_AGENT_ERROR_INTERFACE "org.bluez.Error"
-
-#define HFP_AG_UUID	"0000111F-0000-1000-8000-00805F9B34FB"
 
 #ifndef DBUS_TYPE_UNIX_FD
 #define DBUS_TYPE_UNIX_FD -1
