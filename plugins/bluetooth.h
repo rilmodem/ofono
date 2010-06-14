@@ -40,3 +40,6 @@ int bluetooth_register_uuid(const char *uuid,
 				struct bluetooth_profile *profile);
 void bluetooth_unregister_uuid(const char *uuid);
 
+void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
+							char *buf, int size);
+

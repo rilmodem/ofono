@@ -566,29 +566,6 @@ static GDBusMethodTable agent_methods[] = {
 	{ NULL, NULL, NULL, NULL }
 };
 
-static void create_path(const char *dev_addr, const char *adapter_addr,
-			char *buf, int size)
-{
-	int i, j;
-
-	for (i = 0, j = 0; adapter_addr[j] && i < size - 1; j++)
-		if (adapter_addr[j] >= '0' && adapter_addr[j] <= '9')
-			buf[i++] = adapter_addr[j];
-		else if (adapter_addr[j] >= 'A' && adapter_addr[j] <= 'F')
-			buf[i++] = adapter_addr[j];
-
-	if (i < size - 1)
-		buf[i++] = '_';
-
-	for (j = 0; dev_addr[j] && i < size - 1; j++)
-		if (dev_addr[j] >= '0' && dev_addr[j] <= '9')
-			buf[i++] = dev_addr[j];
-		else if (dev_addr[j] >= 'A' && dev_addr[j] <= 'F')
-			buf[i++] = dev_addr[j];
-
-	buf[i] = '\0';
-}
-
 static int hfp_create_modem(const char *device, const char *dev_addr,
 				const char *adapter_addr, const char *alias)
 {
@@ -600,7 +577,7 @@ static int hfp_create_modem(const char *device, const char *dev_addr,
 			device, dev_addr, adapter_addr);
 
 	strcpy(buf, "hfp/");
-	create_path(dev_addr, adapter_addr, buf + 4, sizeof(buf) - 4);
+	bluetooth_create_path(dev_addr, adapter_addr, buf + 4, sizeof(buf) - 4);
 
 	modem = ofono_modem_create(buf, "hfp");
 	if (modem == NULL)
