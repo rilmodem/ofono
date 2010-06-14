@@ -179,33 +179,11 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		sevice_level_conn_established(modem);
 }
 
-static int send_method_call(const char *dest, const char *path,
-				const char *interface, const char *method,
-				int type, ...)
-{
-	DBusMessage *msg;
-	va_list args;
-
-	msg = dbus_message_new_method_call(dest, path, interface, method);
-	if (!msg) {
-		ofono_error("Unable to allocate new D-Bus %s message", method);
-		return -ENOMEM;
-	}
-
-	va_start(args, type);
-
-	if (!dbus_message_append_args_valist(msg, type, args)) {
-		dbus_message_unref(msg);
-		va_end(args);
-		return -EIO;
-	}
-
-	va_end(args);
-
-	g_dbus_send_message(connection, msg);
-	return 0;
-}
-
+/*
+ * FIXME: Group all agent stuff DBus calls in bluetooth.c
+ * then we can reuse common agent code for all Bluetooth plugins.
+ * That will remove this function from hfp.c
+ */
 static int send_method_call_with_reply(const char *dest, const char *path,
 				const char *interface, const char *method,
 				DBusPendingCallNotifyFunction cb,
@@ -898,26 +876,40 @@ static int hfp_register_ofono_handsfree(struct ofono_modem *modem)
 {
 	const char *obj_path = ofono_modem_get_path(modem);
 	struct hfp_data *data = ofono_modem_get_data(modem);
+	DBusMessage *msg;
 
 	DBG("Registering oFono Agent to bluetooth daemon");
 
-	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
-				BLUEZ_GATEWAY_INTERFACE, "RegisterAgent",
-				DBUS_TYPE_OBJECT_PATH, &obj_path,
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, data->handsfree_path,
+				BLUEZ_GATEWAY_INTERFACE, "RegisterAgent");
+	if (!msg)
+		return -ENOMEM;
+
+	dbus_message_append_args(msg, DBUS_TYPE_OBJECT_PATH, &obj_path,
 				DBUS_TYPE_INVALID);
+
+	g_dbus_send_message(connection, msg);
+	return 0;
 }
 
 static int hfp_unregister_ofono_handsfree(struct ofono_modem *modem)
 {
 	const char *obj_path = ofono_modem_get_path(modem);
 	struct hfp_data *data = ofono_modem_get_data(modem);
+	DBusMessage *msg;
 
 	DBG("Unregistering oFono Agent from bluetooth daemon");
 
-	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
-				BLUEZ_GATEWAY_INTERFACE, "UnregisterAgent",
-				DBUS_TYPE_OBJECT_PATH, &obj_path,
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, data->handsfree_path,
+				BLUEZ_GATEWAY_INTERFACE, "UnregisterAgent");
+	if (!msg)
+		return -ENOMEM;
+
+	dbus_message_append_args(msg, DBUS_TYPE_OBJECT_PATH, &obj_path,
 				DBUS_TYPE_INVALID);
+
+	g_dbus_send_message(connection, msg);
+	return 0;
 }
 
 static int hfp_probe(struct ofono_modem *modem)
@@ -961,8 +953,7 @@ static void hfp_connect_reply(DBusPendingCall *call, gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct hfp_data *data = ofono_modem_get_data(modem);
 	DBusError derr;
-	DBusMessage *reply;
-	int ret;
+	DBusMessage *reply, *msg;
 
 	reply = dbus_pending_call_steal_reply(call);
 
@@ -976,11 +967,13 @@ static void hfp_connect_reply(DBusPendingCall *call, gpointer user_data)
 	DBG("Connect reply: %s", derr.message);
 
 	if (dbus_error_has_name(&derr, DBUS_ERROR_NO_REPLY)) {
-		ret = send_method_call(BLUEZ_SERVICE, data->handsfree_path,
-					BLUEZ_GATEWAY_INTERFACE, "Disconnect",
-					DBUS_TYPE_INVALID);
-		if (ret < 0)
-			ofono_error("Disconnect failed(%d)", ret);
+		msg = dbus_message_new_method_call(BLUEZ_SERVICE,
+				data->handsfree_path,
+				BLUEZ_GATEWAY_INTERFACE, "Disconnect");
+		if (!msg)
+			ofono_error("Disconnect failed");
+		else
+			g_dbus_send_message(connection, msg);
 	}
 
 	ofono_modem_set_powered(modem, FALSE);
