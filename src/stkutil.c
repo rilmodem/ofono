@@ -4236,6 +4236,7 @@ static gboolean build_dataobj_pdp_context_params(struct stk_tlv_builder *tlv,
 
 	if (params->len < 1)
 		return TRUE;
+
 	if (params->len > 0x7f)
 		return FALSE;
 
@@ -4527,6 +4528,7 @@ static gboolean build_dataobj_eps_pdn_conn_params(struct stk_tlv_builder *tlv,
 
 	if (params->len < 1)
 		return TRUE;
+
 	if (params->len > 0x7f)
 		return FALSE;
 
@@ -4924,6 +4926,7 @@ static gboolean build_envelope_call_control(
 					NULL);
 		break;
 	}
+
 	if (ok != TRUE)
 		return FALSE;
 
