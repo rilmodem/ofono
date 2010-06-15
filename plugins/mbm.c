@@ -38,20 +38,13 @@
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
 #include <ofono/stk.h>
-#include <ofono/sms.h>
 #include <ofono/cbs.h>
-#include <ofono/ssn.h>
+#include <ofono/sms.h>
 #include <ofono/ussd.h>
-#include <ofono/voicecall.h>
-#include <ofono/phonebook.h>
-#include <ofono/message-waiting.h>
-#include <ofono/call-meter.h>
-#include <ofono/call-settings.h>
-#include <ofono/call-volume.h>
-#include <ofono/call-forwarding.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
+
 #include <drivers/atmodem/vendor.h>
 
 static const char *cfun_prefix[] = { "+CFUN:", NULL };
@@ -325,7 +318,6 @@ static void mbm_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->modem_port);
 	sim = ofono_sim_create(modem, 0, "atmodem", data->modem_port);
-	ofono_voicecall_create(modem, 0, "atmodem", data->modem_port);
 	ofono_stk_create(modem, 0, "mbmmodem", data->modem_port);
 
 	if (data->have_sim && sim)
@@ -335,34 +327,23 @@ static void mbm_pre_sim(struct ofono_modem *modem)
 static void mbm_post_sim(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
-	struct ofono_message_waiting *mw;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
-	ofono_call_forwarding_create(modem, 0, "atmodem", data->modem_port);
-	ofono_call_settings_create(modem, 0, "atmodem", data->modem_port);
-	ofono_call_meter_create(modem, 0, "atmodem", data->modem_port);
-	ofono_call_volume_create(modem, 0, "atmodem", data->modem_port);
-
-	ofono_ussd_create(modem, 0, "atmodem", data->modem_port);
 	ofono_netreg_create(modem, OFONO_VENDOR_MBM, "atmodem",
 				data->modem_port);
-	ofono_phonebook_create(modem, 0, "atmodem", data->modem_port);
-	ofono_ssn_create(modem, 0, "atmodem", data->modem_port);
+
 	ofono_sms_create(modem, 0, "atmodem", data->modem_port);
 	ofono_cbs_create(modem, 0, "atmodem", data->modem_port);
+	ofono_ussd_create(modem, 0, "atmodem", data->modem_port);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->modem_port);
 	gc = ofono_gprs_context_create(modem, 0, "mbm", data->modem_port);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
-
-	mw = ofono_message_waiting_create(modem);
-	if (mw)
-		ofono_message_waiting_register(mw);
 }
 
 static struct ofono_modem_driver mbm_driver = {
