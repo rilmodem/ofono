@@ -852,9 +852,11 @@ static gboolean parse_dataobj_bcch_channel_list(
 		unsigned int index = i * 10 / 8;
 		unsigned int occupied = i * 10 % 8;
 
-		bcl->channel[i] = (data[index] << (2 + occupied)) +
+		bcl->channels[i] = (data[index] << (2 + occupied)) +
 					(data[index + 1] >> (6 - occupied));
 	}
+
+	bcl->has_list = TRUE;
 
 	return TRUE;
 }
@@ -4446,27 +4448,27 @@ static gboolean build_dataobj_transaction_id(struct stk_tlv_builder *tlv,
 static gboolean build_dataobj_bcch_channel_list(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
 {
-	const struct stk_bcch_ch_list *list = data;
+	const struct stk_bcch_channel_list *list = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_BCCH_CHANNEL_LIST;
-	int i, bytes, pos, shift;
+	unsigned int i, bytes, pos, shift;
 	unsigned char value;
 
 	/* To distinguish between no BCCH Channel List data object and
 	 * an empty object in a sequence of empty and non-empty objects,
 	 * .channels must be non-NULL in objects in sequences.  */
-	if (list->channels == NULL)
+	if (list->has_list == FALSE)
 		return TRUE;
 
 	if (stk_tlv_builder_open_container(tlv, cr, tag, TRUE) != TRUE)
 		return FALSE;
 
-	bytes = (list->length * 10 + 7) / 8;
+	bytes = (list->num * 10 + 7) / 8;
 	for (i = 0; i < bytes; i++) {
 		pos = (i * 8 + 7) / 10;
 		shift = pos * 10 + 10 - i * 8 - 8;
 
 		value = 0;
-		if (pos < list->length)
+		if (pos < list->num)
 			value |= list->channels[pos] >> shift;
 		if (shift > 2)
 			value |= list->channels[pos - 1] << (10 - shift);

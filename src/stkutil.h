@@ -716,8 +716,9 @@ struct stk_transaction_id {
  * is represented as 10 bits, so the maximum number of channel is 127*8/10=101.
  */
 struct stk_bcch_channel_list {
-	unsigned short channel[101];
+	unsigned short channels[101];
 	unsigned int num;
+	ofono_bool_t has_list;
 };
 
 /*
@@ -1365,10 +1366,7 @@ struct stk_response_local_info {
 		const char *imei;
 		struct stk_network_measurement_results {
 			struct stk_common_byte_array nmr;
-			struct stk_bcch_ch_list {
-				const short *channels;
-				int length;
-			} bcch_ch_list;
+			struct stk_bcch_channel_list bcch_ch_list;
 		} nmr;
 		struct sms_scts datetime;
 		const char *language;

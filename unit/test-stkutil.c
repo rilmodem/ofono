@@ -17370,11 +17370,12 @@ static const struct terminal_response_test
 					.len = 16,
 				},
 				.bcch_ch_list = {
-					.channels = (short[]) {
+					.channels = {
 						561, 565, 568, 569, 573,
 						575, 577, 581, 582, 585,
 					},
-					.length = 10,
+					.num = 10,
+					.has_list = TRUE,
 				},
 			}},
 		}},
