@@ -84,27 +84,30 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 {
 	struct stk_command *cmd;
 	char *buf;
+	int i;
 
 	buf = g_try_malloc(length * 2 + 1);
-	if (buf) {
-		int i;
-		for (i = 0; i < length; i ++)
-			sprintf(buf + i * 2, "%02hhx", pdu[i]);
-		ofono_info("Proactive command PDU: %s", buf);
-		g_free(buf);
-	}
+	if (!buf)
+		return;
+
+	for (i = 0; i < length; i ++)
+		sprintf(buf + i * 2, "%02hhx", pdu[i]);
 
 	cmd = stk_command_new_from_pdu(pdu, length);
 	if (!cmd) {
 		ofono_error("Can't parse proactive command: %s", buf);
 
 		/* TODO: return TERMINAL RESPONSE with permanent error */
-		return;
+		goto done;
 	}
 
 	/* TODO: execute */
+	ofono_info("Proactive command PDU: %s", buf);
 
 	stk_command_free(cmd);
+
+done:
+	g_free(buf);
 }
 
 int ofono_stk_driver_register(const struct ofono_stk_driver *d)
