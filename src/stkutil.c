@@ -1069,8 +1069,13 @@ static gboolean parse_dataobj_at_response(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_bc_repeat_indicator(
 		struct comprehension_tlv_iter *iter, void *user)
 {
-	unsigned char *byte = user;
-	return parse_dataobj_common_byte(iter, byte);
+	struct stk_bc_repeat *bc_repeat = user;
+
+	if (parse_dataobj_common_byte(iter, &bc_repeat->value) != TRUE)
+		return FALSE;
+
+	bc_repeat->has_bc_repeat = TRUE;
+	return TRUE;
 }
 
 /* Defined in 102.223 Section 8.43 */
