@@ -179,64 +179,6 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		sevice_level_conn_established(modem);
 }
 
-/*
- * FIXME: Group all agent stuff DBus calls in bluetooth.c
- * then we can reuse common agent code for all Bluetooth plugins.
- * That will remove this function from hfp.c
- */
-static int send_method_call_with_reply(const char *dest, const char *path,
-				const char *interface, const char *method,
-				DBusPendingCallNotifyFunction cb,
-				void *user_data, DBusFreeFunction free_func,
-				int timeout, int type, ...)
-{
-	DBusMessage *msg;
-	DBusPendingCall *call;
-	va_list args;
-	int err;
-
-	msg = dbus_message_new_method_call(dest, path, interface, method);
-	if (!msg) {
-		ofono_error("Unable to allocate new D-Bus %s message", method);
-		err = -ENOMEM;
-		goto fail;
-	}
-
-	va_start(args, type);
-
-	if (!dbus_message_append_args_valist(msg, type, args)) {
-		va_end(args);
-		err = -EIO;
-		goto fail;
-	}
-
-	va_end(args);
-
-	if (timeout > 0)
-		timeout *=1000;
-
-	if (!dbus_connection_send_with_reply(connection, msg, &call, timeout)) {
-		ofono_error("Sending %s failed", method);
-		err = -EIO;
-		goto fail;
-	}
-
-	dbus_pending_call_set_notify(call, cb, user_data, free_func);
-	dbus_pending_call_unref(call);
-	dbus_message_unref(msg);
-
-	return 0;
-
-fail:
-	if (free_func && user_data)
-		free_func(user_data);
-
-	if (msg)
-		dbus_message_unref(msg);
-
-	return err;
-}
-
 typedef void (*PropertyHandler)(DBusMessageIter *iter, gpointer user_data);
 
 struct property_handler {
@@ -704,10 +646,10 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 	for (l = device_list; l; l = l->next) {
 		const char *device = l->data;
 
-		send_method_call_with_reply(BLUEZ_SERVICE, device,
-				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				device_properties_cb, g_strdup(device), g_free,
-				-1, DBUS_TYPE_INVALID);
+		bluetooth_send_with_reply(device, BLUEZ_DEVICE_INTERFACE,
+					"GetProperties", device_properties_cb,
+					g_strdup(device), g_free,
+					-1, DBUS_TYPE_INVALID);
 	}
 
 done:
@@ -724,10 +666,10 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 	dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
 				DBUS_TYPE_INVALID);
 
-	ret = send_method_call_with_reply(BLUEZ_SERVICE, path,
-			BLUEZ_ADAPTER_INTERFACE, "GetProperties",
-			adapter_properties_cb, g_strdup(path), g_free,
-			-1, DBUS_TYPE_INVALID);
+	ret = bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
+					"GetProperties", adapter_properties_cb,
+					g_strdup(path), g_free,
+					-1, DBUS_TYPE_INVALID);
 
 	return TRUE;
 }
@@ -780,10 +722,11 @@ static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
 		 * refetch everything again
 		 */
 		if (have_hfp)
-			send_method_call_with_reply(BLUEZ_SERVICE, path,
-				BLUEZ_DEVICE_INTERFACE, "GetProperties",
-				device_properties_cb, g_strdup(path), g_free,
-				-1, DBUS_TYPE_INVALID);
+			bluetooth_send_with_reply(path, BLUEZ_DEVICE_INTERFACE,
+						"GetProperties",
+						device_properties_cb,
+						g_strdup(path), g_free,
+						-1, DBUS_TYPE_INVALID);
 	} else if (g_str_equal(property, "Alias") == TRUE) {
 		const char *path = dbus_message_get_path(msg);
 		struct ofono_modem *modem =
@@ -829,10 +772,11 @@ static void parse_adapters(DBusMessageIter *array, gpointer user_data)
 
 		DBG("Calling GetProperties on %s", path);
 
-		send_method_call_with_reply(BLUEZ_SERVICE, path,
-				BLUEZ_ADAPTER_INTERFACE, "GetProperties",
-				adapter_properties_cb, g_strdup(path), g_free,
-				-1, DBUS_TYPE_INVALID);
+		bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
+						"GetProperties",
+						adapter_properties_cb,
+						g_strdup(path), g_free,
+						-1, DBUS_TYPE_INVALID);
 
 		dbus_message_iter_next(&value);
 	}
@@ -992,11 +936,10 @@ static int hfp_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	status = send_method_call_with_reply(BLUEZ_SERVICE,
-				data->handsfree_path,
-				BLUEZ_GATEWAY_INTERFACE, "Connect",
-				hfp_connect_reply, modem, NULL,
-				15, DBUS_TYPE_INVALID);
+	status = bluetooth_send_with_reply(data->handsfree_path,
+					BLUEZ_GATEWAY_INTERFACE, "Connect",
+					hfp_connect_reply, modem, NULL,
+					15, DBUS_TYPE_INVALID);
 
 	if (status < 0)
 		return -EINVAL;
@@ -1035,8 +978,7 @@ static int hfp_disable(struct ofono_modem *modem)
 	clear_data(modem);
 
 	if (data->agent_registered) {
-		status = send_method_call_with_reply(BLUEZ_SERVICE,
-					data->handsfree_path,
+		status = bluetooth_send_with_reply(data->handsfree_path,
 					BLUEZ_GATEWAY_INTERFACE, "Disconnect",
 					hfp_power_down, modem, NULL, 15,
 					DBUS_TYPE_INVALID);
@@ -1122,10 +1064,9 @@ static int hfp_init()
 	if (err < 0)
 		goto remove;
 
-	send_method_call_with_reply(BLUEZ_SERVICE, "/",
-				BLUEZ_MANAGER_INTERFACE, "GetProperties",
-				manager_properties_cb, NULL, NULL, -1,
-				DBUS_TYPE_INVALID);
+	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
+					manager_properties_cb, NULL, NULL, -1,
+					DBUS_TYPE_INVALID);
 
 	return 0;
 
