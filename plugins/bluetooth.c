@@ -132,8 +132,7 @@ static gint property_handler_compare(gconstpointer a, gconstpointer b)
 	return strcmp(handler->property, property);
 }
 
-static void parse_properties_reply(DBusMessage *reply,
-					const char *property, ...)
+void bluetooth_parse_properties(DBusMessage *reply, const char *property, ...)
 {
 	va_list args;
 	GSList *prop_handlers = NULL;

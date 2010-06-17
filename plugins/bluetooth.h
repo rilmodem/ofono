@@ -48,4 +48,4 @@ int bluetooth_send_with_reply(const char *path, const char *interface,
 				DBusPendingCallNotifyFunction cb,
 				void *user_data, DBusFreeFunction free_func,
 				int timeout, int type, ...);
-
+void bluetooth_parse_properties(DBusMessage *reply, const char *property, ...);
