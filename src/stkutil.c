@@ -585,6 +585,24 @@ static gboolean parse_dataobj_tone(struct comprehension_tlv_iter *iter,
 	return parse_dataobj_common_byte(iter, byte);
 }
 
+/* Defined in TS 102.223 Section 8.17 */
+static gboolean parse_dataobj_ussd(struct comprehension_tlv_iter *iter,
+					void *user)
+{
+	struct stk_ussd_string *us = user;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+	const unsigned char *data = comprehension_tlv_iter_get_data(iter);
+
+	if (len <= 1)
+		return FALSE;
+
+	us->dcs = data[0];
+	us->len = len - 1;
+	memcpy(us->string, data + 1, us->len);
+
+	return TRUE;
+}
+
 /* Defined in TS 102.223 Section 8.18 */
 static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 					void *user)
@@ -1996,6 +2014,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_text;
 	case STK_DATA_OBJECT_TYPE_TONE:
 		return parse_dataobj_tone;
+	case STK_DATA_OBJECT_TYPE_USSD_STRING:
+		return parse_dataobj_ussd;
 	case STK_DATA_OBJECT_TYPE_FILE_LIST:
 		return parse_dataobj_file_list;
 	case STK_DATA_OBJECT_TYPE_LOCATION_INFO:
@@ -2703,6 +2723,44 @@ static gboolean parse_send_ss(struct stk_command *command,
 				STK_DATA_OBJECT_TYPE_INVALID);
 
 	command->destructor = destroy_send_ss;
+
+	if (ret == FALSE)
+		return FALSE;
+
+	return TRUE;
+}
+
+static void destroy_send_ussd(struct stk_command *command)
+{
+	g_free(command->send_ussd.alpha_id);
+}
+
+static gboolean parse_send_ussd(struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_send_ussd *obj = &command->send_ussd;
+	gboolean ret;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return FALSE;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_NETWORK)
+		return FALSE;
+
+	ret = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_USSD_STRING,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->ussd_string,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	command->destructor = destroy_send_ussd;
 
 	if (ret == FALSE)
 		return FALSE;
@@ -3671,6 +3729,9 @@ struct stk_command *stk_command_new_from_pdu(const unsigned char *pdu,
 		break;
 	case STK_COMMAND_TYPE_SEND_SS:
 		ok = parse_send_ss(command, &iter);
+		break;
+	case STK_COMMAND_TYPE_SEND_USSD:
+		ok = parse_send_ussd(command, &iter);
 		break;
 	case STK_COMMAND_TYPE_SETUP_CALL:
 		ok = parse_setup_call(command, &iter);

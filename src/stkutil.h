@@ -1117,6 +1117,14 @@ struct stk_command_send_ss {
 	struct stk_frame_id frame_id;
 };
 
+struct stk_command_send_ussd {
+	char *alpha_id;
+	struct stk_ussd_string ussd_string;
+	struct stk_icon_id icon_id;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
 struct stk_command_setup_call {
 	char *alpha_id_usr_cfm;
 	struct stk_address addr;
@@ -1295,6 +1303,7 @@ struct stk_command {
 		struct stk_command_select_item select_item;
 		struct stk_command_send_sms send_sms;
 		struct stk_command_send_ss send_ss;
+		struct stk_command_send_ussd send_ussd;
 		struct stk_command_setup_call setup_call;
 		struct stk_command_setup_event_list setup_event_list;
 		struct stk_command_perform_card_apdu perform_card_apdu;
