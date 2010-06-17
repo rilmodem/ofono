@@ -44,6 +44,7 @@
 struct sim_data {
 	GAtChat *chat;
 	unsigned int vendor;
+	guint epev_id;
 };
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
@@ -509,6 +510,45 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
+static void at_epev_notify(GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct sim_data *sd = cbd->user;
+	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+	struct ofono_error error = { .type = OFONO_ERROR_TYPE_NO_ERROR };
+
+	cb(&error, cbd->data);
+
+	g_at_chat_unregister(sd->chat, sd->epev_id);
+	sd->epev_id = 0;
+}
+
+static void at_pin_send_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct sim_data *sd = cbd->user;
+	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	/*
+	 * On the MBM modem, AT+CPIN? keeps returning SIM PIN for a moment
+	 * after successful AT+CPIN="..", but sends *EPEV when that changes.
+	 */
+	if (ok && sd->vendor == OFONO_VENDOR_MBM) {
+		sd->epev_id = g_at_chat_register(sd->chat, "*EPEV",
+							at_epev_notify,
+							FALSE, cbd, g_free);
+		return;
+	}
+
+	cb(&error, cbd->data);
+
+	g_free(cbd);
+}
+
 static void at_lock_unlock_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
@@ -532,10 +572,12 @@ static void at_pin_send(struct ofono_sim *sim, const char *passwd,
 	if (!cbd)
 		goto error;
 
+	cbd->user = sd;
+
 	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\"", passwd);
 
 	ret = g_at_chat_send(sd->chat, buf, none_prefix,
-				at_lock_unlock_cb, cbd, g_free);
+				at_pin_send_cb, cbd, NULL);
 
 	memset(buf, 0, sizeof(buf));
 
@@ -740,6 +782,8 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 
 	if (sd->vendor == OFONO_VENDOR_WAVECOM)
 		g_at_chat_add_terminator(chat, "+CPIN:", 6, TRUE);
+	if (sd->vendor == OFONO_VENDOR_MBM)
+		g_at_chat_send(chat, "AT*EPEE=1", NULL, NULL, NULL, NULL);
 
 	ofono_sim_set_data(sim, sd);
 	g_idle_add(at_sim_register, sim);
