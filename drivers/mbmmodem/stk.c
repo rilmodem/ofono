@@ -52,8 +52,8 @@ static void mbm_stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_stk_envelope_cb_t cb = cbd->cb;
 	GAtResultIter iter;
 	struct ofono_error error;
-	const guint8 *pdu;
-	gint len;
+	const guint8 *pdu = NULL;
+	gint len = 0;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -64,11 +64,9 @@ static void mbm_stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (g_at_result_iter_next(&iter, "*STKE:") == FALSE)
-		goto error;
-
-	if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
-		goto error;
+	if (g_at_result_iter_next(&iter, "*STKE:") == TRUE)
+		if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
+			goto error;
 
 	cb(&error, pdu, len, cbd->data);
 	return;
