@@ -1151,6 +1151,26 @@ static gboolean parse_dataobj_language(struct comprehension_tlv_iter *iter,
 	return TRUE;
 }
 
+/* Defined in 31.111 Section 8.46 */
+static gboolean parse_dataobj_timing_advance(
+			struct comprehension_tlv_iter *iter, void *user)
+{
+	struct stk_timing_advance *ta = user;
+	const unsigned char *data;
+	unsigned int len = comprehension_tlv_iter_get_length(iter);
+
+	if (len != 2)
+		return FALSE;
+
+	data = comprehension_tlv_iter_get_data(iter);
+
+	ta->has_value = TRUE;
+	ta->status = data[0];
+	ta->advance = data[1];
+
+	return TRUE;
+}
+
 /* Defined in 102.223 Section 8.47 */
 static gboolean parse_dataobj_browser_id(struct comprehension_tlv_iter *iter,
 						void *user)
@@ -2074,6 +2094,8 @@ static dataobj_handler handler_for_type(enum stk_data_object_type type)
 		return parse_dataobj_language;
 	case STK_DATA_OBJECT_TYPE_BROWSER_ID:
 		return parse_dataobj_browser_id;
+	case STK_DATA_OBJECT_TYPE_TIMING_ADVANCE:
+		return parse_dataobj_timing_advance;
 	case STK_DATA_OBJECT_TYPE_URL:
 		return parse_dataobj_url;
 	case STK_DATA_OBJECT_TYPE_BEARER:

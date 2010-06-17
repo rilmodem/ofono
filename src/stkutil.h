@@ -552,6 +552,11 @@ enum stk_rejection_cause_code {
 	STK_CAUSE_EMM_PROTOCOL_ERROR			= 0x6f,
 };
 
+enum stk_me_status {
+	STK_ME_STATUS_IDLE = 		0x00,
+	STK_ME_STATUS_NOT_IDLE = 	0x01
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -799,6 +804,18 @@ struct stk_timer_value {
 struct stk_bc_repeat {
 	ofono_bool_t has_bc_repeat;
 	unsigned char value;
+};
+
+/* Defined in TS 31.111 Section 8.46 */
+struct stk_timing_advance {
+	ofono_bool_t has_value;
+	enum stk_me_status status;
+	/*
+	 * Contains bit periods number according to 3GPP TS
+	 * 44.118 Section 9.3.106 / 3GPP TS 44.018 Section
+	 * 10.5.2.40.1, not microseconds
+	 */
+	unsigned char advance;
 };
 
 /*
@@ -1381,18 +1398,7 @@ struct stk_response_local_info {
 		const char *language;
 		enum stk_battery_state battery_charge;
 		enum stk_access_technology_type access_technology;
-		struct stk_timing_advance {
-			enum {
-				STK_TIMING_ADVANCE_ME_IDLE = 0x00,
-				STK_TIMING_ADVANCE_ME_NOT_IDLE = 0x01,
-			} status;
-			/*
-			 * Contains bit periods number according to 3GPP TS
-			 * 44.118 Section 9.3.106 / 3GPP TS 44.018 Section
-			 * 10.5.2.40.1, not microseconds
-			 */
-			int advance;
-		} tadv;
+		struct stk_timing_advance tadv;
 		/* Bits[31:24]: manufacturer, bits[23:0]: serial number */
 		guint32 esn;
 		const char *imeisv;

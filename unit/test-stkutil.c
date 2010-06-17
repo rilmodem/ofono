@@ -18699,7 +18699,7 @@ static const struct terminal_response_test
 		},
 		{ .provide_local_info = {
 			{ .tadv = {
-				.status = STK_TIMING_ADVANCE_ME_IDLE,
+				.status = STK_ME_STATUS_IDLE,
 				.advance = 0,
 			}},
 		}},
