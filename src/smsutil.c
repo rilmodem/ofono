@@ -2625,6 +2625,189 @@ void sms_assembly_expire(struct sms_assembly *assembly, time_t before)
 	}
 }
 
+struct status_report_assembly *status_report_assembly_new(const char *imsi)
+{
+	struct status_report_assembly *ret =
+				g_new0(struct status_report_assembly, 1);
+
+	ret->assembly_table = g_hash_table_new_full(g_str_hash, g_str_equal,
+				g_free, (GDestroyNotify)g_hash_table_destroy);
+
+	if (imsi)
+		ret->imsi = imsi;
+
+	return ret;
+}
+
+void status_report_assembly_free(struct status_report_assembly *assembly)
+{
+	g_hash_table_destroy(assembly->assembly_table);
+	g_free(assembly);
+}
+
+gboolean status_report_assembly_report(struct status_report_assembly *assembly,
+					const struct sms *status_report,
+					unsigned int *msg_id,
+					gboolean *msg_delivered)
+{
+	unsigned int offset = status_report->status_report.mr / 32;
+	unsigned int bit = 1 << (status_report->status_report.mr % 32);
+	GHashTable *id_table;
+	struct id_table_node *node;
+	unsigned int *key;
+	gpointer value;
+	GHashTableIter iter;
+	int i;
+	gboolean pending = FALSE;
+	gboolean update_history = FALSE;
+
+	id_table = g_hash_table_lookup(assembly->assembly_table,
+				status_report->status_report.raddr.address);
+
+	/* ERROR, key (receiver address) does not exist in assembly */
+	if (!id_table) {
+		*msg_delivered = FALSE;
+		return FALSE;
+	}
+
+	g_hash_table_iter_init(&iter, id_table);
+	while (g_hash_table_iter_next(&iter, (gpointer)&key, &value)) {
+		node = value;
+
+		if (!(node->mrs[offset] & bit))
+			continue;
+
+		/* Mr belongs to this node. */
+		node->mrs[offset] ^= bit;
+		*msg_id = *key;
+
+		for (i = 0; i < 8; i++) {
+				/* There are still pending mr(s). */
+				if (node->mrs[i] != 0 ||
+					(node->sent_mrs < node->total_mrs)) {
+					pending = TRUE;
+					break;
+				}
+		}
+		/* Mr is not delivered. */
+		if (status_report->status_report.st !=
+				SMS_ST_COMPLETED_RECEIVED) {
+			/* First mr which is not delivered. Update ofono history
+			 * and mark the whole message as undeliverable. Upcoming
+			 * mrs can not change the status to deliverable even if
+			 * they are considered as delivered.
+			 */
+			if (node->deliverable) {
+				node->deliverable = FALSE;
+				update_history = TRUE;
+			}
+		}
+
+		/* If there are pending mrs that relate to this message, we do
+		 * not delete the node yet.
+		 */
+		if (pending) {
+			*msg_delivered = FALSE;
+			return update_history;
+		} else {
+			*msg_delivered = node->deliverable;
+
+			g_hash_table_iter_remove(&iter);
+
+			if (g_hash_table_size(id_table) == 0)
+				g_hash_table_remove(assembly->assembly_table,
+				status_report->status_report.raddr.address);
+			/* If there has not been undelivered mrs, message is
+			 * delivered and the ofono history needs to be updated.
+			 * If the message is concidered as undelivered, the
+			 * ofono history has already been updated when the first
+			 * undelivered mr arrived, unless this one is the only
+			 * related mr and was marked undelivered.
+			 */
+			return *msg_delivered || update_history;
+		}
+	}
+	/* ERROR, mr not found. */
+	*msg_delivered = FALSE;
+	return FALSE;
+}
+
+void status_report_assembly_add_fragment(
+					struct status_report_assembly *assembly,
+					unsigned int msg_id,
+					const struct sms_address *to,
+					unsigned char mr, time_t expiration,
+					unsigned char total_mrs)
+{
+	unsigned int offset = mr / 32;
+	unsigned int bit = 1 << (mr % 32);
+	GHashTable *id_table;
+	struct id_table_node *node;
+	char *assembly_table_key;
+	unsigned int *id_table_key;
+
+	id_table = g_hash_table_lookup(assembly->assembly_table, to->address);
+	/* Create id_table and node */
+	if (id_table == NULL) {
+		id_table = g_hash_table_new_full(g_int_hash, g_int_equal,
+								g_free, g_free);
+		id_table_key = g_new0(unsigned int, 1);
+
+		node = g_new0(struct id_table_node, 1);
+		node->to = *to;
+		node->mrs[offset] |= bit;
+		node->expiration = expiration;
+		node->total_mrs = total_mrs;
+		node->sent_mrs = 1;
+		node->deliverable = TRUE;
+
+		*id_table_key = msg_id;
+		g_hash_table_insert(id_table, id_table_key, node);
+
+		assembly_table_key = g_try_malloc(sizeof(to->address));
+
+		if (assembly_table_key == NULL) {
+			g_free(node);
+			return;
+		}
+
+		g_strlcpy(assembly_table_key, to->address, sizeof(to->address));
+
+		g_hash_table_insert(assembly->assembly_table,
+					assembly_table_key, id_table);
+		return;
+	}
+
+	node = g_hash_table_lookup(id_table, &msg_id);
+	/* id_table exists, create new node */
+	if (node == NULL) {
+		id_table_key = g_new0(unsigned int, 1);
+		node = g_new0(struct id_table_node, 1);
+		node->to = *to;
+		node->mrs[offset] |= bit;
+		node->expiration = expiration;
+		node->total_mrs = total_mrs;
+		node->sent_mrs = 1;
+		node->deliverable = TRUE;
+
+		*id_table_key = msg_id;
+		g_hash_table_insert(id_table, id_table_key, node);
+
+		return;
+	}
+	/* id_table and node both exists */
+	node->mrs[offset] |= bit;
+	node->expiration = expiration;
+	node->sent_mrs++;
+}
+
+void status_report_assembly_expire(struct status_report_assembly *assembly,
+					time_t before, GFunc foreach_func,
+					gpointer data)
+{
+	/*TODO*/
+}
+
 static inline GSList *sms_list_append(GSList *l, const struct sms *in)
 {
 	struct sms *sms;
