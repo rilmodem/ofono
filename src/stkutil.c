@@ -5532,6 +5532,7 @@ const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 					&response->get_input.text,
 					NULL);
 		break;
+	case STK_COMMAND_TYPE_MORE_TIME:
 	case STK_COMMAND_TYPE_SEND_SMS:
 	case STK_COMMAND_TYPE_PLAY_TONE:
 		break;

@@ -1444,6 +1444,7 @@ struct stk_response {
 		struct stk_response_generic display_text;
 		struct stk_response_get_inkey get_inkey;
 		struct stk_response_get_input get_input;
+		struct stk_response_generic more_time;
 		struct stk_response_generic play_tone;
 		struct stk_response_poll_interval poll_interval;
 		struct stk_response_generic refresh;
