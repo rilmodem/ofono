@@ -317,7 +317,8 @@ static void mbm_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->modem_port);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->modem_port);
+	sim = ofono_sim_create(modem, OFONO_VENDOR_MBM, "atmodem",
+				data->modem_port);
 
 	if (data->have_sim && sim)
 		ofono_sim_inserted_notify(sim, TRUE);
