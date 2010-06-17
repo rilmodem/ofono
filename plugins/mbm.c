@@ -318,7 +318,6 @@ static void mbm_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->modem_port);
 	sim = ofono_sim_create(modem, 0, "atmodem", data->modem_port);
-	ofono_stk_create(modem, 0, "mbmmodem", data->modem_port);
 
 	if (data->have_sim && sim)
 		ofono_sim_inserted_notify(sim, TRUE);
@@ -331,6 +330,8 @@ static void mbm_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
+
+	ofono_stk_create(modem, 0, "mbmmodem", data->modem_port);
 
 	ofono_netreg_create(modem, OFONO_VENDOR_MBM, "atmodem",
 				data->modem_port);
