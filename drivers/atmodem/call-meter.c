@@ -65,19 +65,21 @@ static void caoc_cacm_camm_query_cb(gboolean ok,
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, cbd->user)) {
-		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-		return;
-	}
+	if (!g_at_result_iter_next(&iter, cbd->user))
+		goto error;
 
-	g_at_result_iter_next_string(&iter, &meter_hex);
+	if (g_at_result_iter_next_string(&iter, &meter_hex) == FALSE)
+		goto error;
+
 	meter = strtol(meter_hex, &end, 16);
-	if (*end) {
-		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-		return;
-	}
+	if (*end)
+		goto error;
 
 	cb(&error, meter, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 }
 
 static void cccm_notify(GAtResult *result, gpointer user_data)
@@ -93,14 +95,18 @@ static void cccm_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "+CCCM:"))
 		return;
 
-	g_at_result_iter_next_string(&iter, &meter_hex);
+	if (g_at_result_iter_next_string(&iter, &meter_hex) == FALSE)
+		goto error;
+
 	meter = strtol(meter_hex, &end, 16);
-	if (*end) {
-		ofono_error("Invalid CCCM value");
-		return;
-	}
+	if (*end)
+		goto error;
 
 	ofono_call_meter_changed_notify(cm, meter);
+	return;
+
+error:
+	ofono_error("Invalid CCCM value");
 }
 
 static void at_caoc_query(struct ofono_call_meter *cm,
