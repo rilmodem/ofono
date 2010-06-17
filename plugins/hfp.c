@@ -179,90 +179,6 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		sevice_level_conn_established(modem);
 }
 
-typedef void (*PropertyHandler)(DBusMessageIter *iter, gpointer user_data);
-
-struct property_handler {
-	const char *property;
-	PropertyHandler callback;
-	gpointer user_data;
-};
-
-static gint property_handler_compare(gconstpointer a, gconstpointer b)
-{
-	const struct property_handler *handler = a;
-	const char *property = b;
-
-	return strcmp(handler->property, property);
-}
-
-static void parse_properties_reply(DBusMessage *reply,
-					const char *property, ...)
-{
-	va_list args;
-	GSList *prop_handlers = NULL;
-	DBusMessageIter array, dict;
-
-	va_start(args, property);
-
-	while (property != NULL) {
-		struct property_handler *handler =
-					g_new0(struct property_handler, 1);
-
-		handler->property = property;
-		handler->callback = va_arg(args, PropertyHandler);
-		handler->user_data = va_arg(args, gpointer);
-
-		property = va_arg(args, const char *);
-
-		prop_handlers = g_slist_prepend(prop_handlers, handler);
-	}
-
-	va_end(args);
-
-	if (dbus_message_iter_init(reply, &array) == FALSE)
-		goto done;
-
-	if (dbus_message_iter_get_arg_type(&array) != DBUS_TYPE_ARRAY)
-		goto done;
-
-	dbus_message_iter_recurse(&array, &dict);
-
-	while (dbus_message_iter_get_arg_type(&dict) == DBUS_TYPE_DICT_ENTRY) {
-		DBusMessageIter entry, value;
-		const char *key;
-		GSList *l;
-
-		dbus_message_iter_recurse(&dict, &entry);
-
-		if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_STRING)
-			goto done;
-
-		dbus_message_iter_get_basic(&entry, &key);
-
-		dbus_message_iter_next(&entry);
-
-		if (dbus_message_iter_get_arg_type(&entry) != DBUS_TYPE_VARIANT)
-			goto done;
-
-		dbus_message_iter_recurse(&entry, &value);
-
-		l = g_slist_find_custom(prop_handlers, key,
-					property_handler_compare);
-
-		if (l) {
-			struct property_handler *handler = l->data;
-
-			handler->callback(&value, handler->user_data);
-		}
-
-		dbus_message_iter_next(&dict);
-	}
-
-done:
-	g_slist_foreach(prop_handlers, (GFunc)g_free, NULL);
-	g_slist_free(prop_handlers);
-}
-
 static void parse_string(DBusMessageIter *iter, gpointer user_data)
 {
 	char **str = user_data;
@@ -581,10 +497,11 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	parse_properties_reply(reply, "UUIDs", has_hfp_uuid, &have_hfp,
-				"Adapter", parse_string, &adapter,
-				"Address", parse_string, &device_addr,
-				"Alias", parse_string, &alias, NULL);
+	bluetooth_parse_properties(reply, "UUIDs", has_hfp_uuid, &have_hfp,
+					"Adapter", parse_string, &adapter,
+					"Address", parse_string, &device_addr,
+					"Alias", parse_string, &alias,
+					NULL);
 
 	if (adapter)
 		adapter_addr = g_hash_table_lookup(adapter_address_hash,
@@ -636,8 +553,10 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	parse_properties_reply(reply, "Devices", parse_devices, &device_list,
-				"Address", parse_string, &addr, NULL);
+	bluetooth_parse_properties(reply,
+				"Devices", parse_devices, &device_list,
+				"Address", parse_string, &addr,
+				NULL);
 
 	DBG("Adapter Address: %s, Path: %s", addr, path);
 	g_hash_table_insert(adapter_address_hash,
@@ -793,7 +712,8 @@ static void manager_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	parse_properties_reply(reply, "Adapters", parse_adapters, NULL, NULL);
+	bluetooth_parse_properties(reply, "Adapters", parse_adapters, NULL,
+					NULL);
 
 done:
 	dbus_message_unref(reply);
