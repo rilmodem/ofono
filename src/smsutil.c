@@ -3747,3 +3747,47 @@ gboolean cbs_topic_in_range(unsigned int topic, GSList *ranges)
 	return g_slist_find_custom(ranges, GUINT_TO_POINTER(topic),
 					cbs_topic_compare) != NULL;
 }
+
+char *ussd_decode(int dcs, int len, const unsigned char *data)
+{
+	gboolean udhi;
+	enum sms_charset charset;
+	gboolean compressed;
+	gboolean iso639;
+	char *utf8;
+
+	if (!cbs_dcs_decode(dcs, &udhi, NULL, &charset,
+				&compressed, NULL, &iso639))
+		return NULL;
+
+	if (udhi || compressed || iso639)
+		return NULL;
+
+	switch (charset) {
+	case SMS_CHARSET_7BIT:
+	{
+		long written;
+		unsigned char *unpacked = unpack_7bit(data, len, 0, TRUE, 0,
+							&written, 0);
+		if (unpacked == NULL)
+			return NULL;
+
+		utf8 = convert_gsm_to_utf8(unpacked, written, NULL, NULL, 0);
+		g_free(unpacked);
+
+		break;
+	}
+	case SMS_CHARSET_8BIT:
+		utf8 = convert_gsm_to_utf8(data, len, NULL, NULL, 0);
+		break;
+	case SMS_CHARSET_UCS2:
+		utf8 = g_convert((const gchar *) data, len,
+					"UTF-8//TRANSLIT", "UCS-2BE",
+					NULL, NULL, NULL);
+		break;
+	default:
+		utf8 = NULL;
+	}
+
+	return utf8;
+}

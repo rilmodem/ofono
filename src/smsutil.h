@@ -508,3 +508,5 @@ char *cbs_topic_ranges_to_string(GSList *ranges);
 GSList *cbs_extract_topic_ranges(const char *ranges);
 GSList *cbs_optimize_ranges(GSList *ranges);
 gboolean cbs_topic_in_range(unsigned int topic, GSList *ranges);
+
+char *ussd_decode(int dcs, int len, const unsigned char *data);
