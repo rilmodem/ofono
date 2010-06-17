@@ -17418,6 +17418,26 @@ static const struct terminal_response_test get_input_response_data_1221 = {
 	},
 };
 
+static const unsigned char more_time_response_111[] = {
+	0x81, 0x03, 0x01, 0x02, 0x00, 0x82, 0x02, 0x82,
+	0x81, 0x83, 0x01, 0x00,
+};
+
+static const struct terminal_response_test more_time_response_data_111 = {
+	.pdu = more_time_response_111,
+	.pdu_len = sizeof(more_time_response_111),
+	.response = {
+		.number = 1,
+		.type = STK_COMMAND_TYPE_MORE_TIME,
+		.qualifier = 0x00,
+		.src = STK_DEVICE_IDENTITY_TYPE_TERMINAL,
+		.dst = STK_DEVICE_IDENTITY_TYPE_UICC,
+		.result = {
+			.type = STK_RESULT_TYPE_SUCCESS,
+		},
+	},
+};
+
 static const unsigned char send_sms_response_111[] = {
 	0x81, 0x03, 0x01, 0x13, 0x00, 0x82, 0x02, 0x82,
 	0x81, 0x83, 0x01, 0x00,
@@ -22265,6 +22285,10 @@ int main(int argc, char **argv)
 
 	g_test_add_data_func("/teststk/More Time 1.1.1",
 				&more_time_data_111, test_more_time);
+
+	g_test_add_data_func("/teststk/More Time response 1.1.1",
+				&more_time_response_data_111,
+				test_terminal_response_encoding);
 
 	g_test_add_data_func("/teststk/Play Tone 1.1.1",
 				&play_tone_data_111, test_play_tone);
