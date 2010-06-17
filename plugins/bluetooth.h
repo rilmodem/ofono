@@ -43,3 +43,9 @@ void bluetooth_unregister_uuid(const char *uuid);
 void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
 							char *buf, int size);
 
+int bluetooth_send_with_reply(const char *path, const char *interface,
+				const char *method,
+				DBusPendingCallNotifyFunction cb,
+				void *user_data, DBusFreeFunction free_func,
+				int timeout, int type, ...);
+

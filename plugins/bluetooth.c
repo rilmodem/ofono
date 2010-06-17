@@ -62,8 +62,8 @@ void bluetooth_create_path(const char *dev_addr, const char *adapter_addr, char 
 	buf[i] = '\0';
 }
 
-static int send_method_call_with_reply(const char *dest, const char *path,
-				const char *interface, const char *method,
+int bluetooth_send_with_reply(const char *path, const char *interface,
+				const char *method,
 				DBusPendingCallNotifyFunction cb,
 				void *user_data, DBusFreeFunction free_func,
 				int timeout, int type, ...)
@@ -73,7 +73,8 @@ static int send_method_call_with_reply(const char *dest, const char *path,
 	va_list args;
 	int err;
 
-	msg = dbus_message_new_method_call(dest, path, interface, method);
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, path,
+						interface, method);
 	if (!msg) {
 		ofono_error("Unable to allocate new D-Bus %s message", method);
 		err = -ENOMEM;
