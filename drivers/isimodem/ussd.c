@@ -73,44 +73,21 @@ static void ussd_parse(struct ofono_ussd *ussd, const void *restrict data,
 			size_t len)
 {
 	const unsigned char *msg = data;
-	unsigned char buf[256];
-	unsigned char *unpacked;
-	long written;
-	int status;
+	int status = OFONO_USSD_STATUS_NOT_SUPPORTED;
 	char *converted = NULL;
-	gboolean udhi;
-	enum sms_charset charset;
-	gboolean compressed;
-	gboolean iso639;
 
 	if (!msg || len < 4)
-		goto error;
+		goto out;
 
 	status = isi_type_to_status(msg[2]);
 
 	if (msg[3] == 0 || (size_t)(msg[3] + 4) > len)
-		goto error;
+		goto out;
 
-	if (!cbs_dcs_decode(msg[1], &udhi, NULL, &charset,
-				&compressed, NULL, &iso639))
-		goto error;
+	converted = ussd_decode(msg[1], msg[3], msg + 4);
 
-	if (udhi || compressed || iso639)
-		goto error;
-
-	if (charset != SMS_CHARSET_7BIT)
-		goto error;
-
-	unpacked = unpack_7bit_own_buf(msg + 4, msg[3], 0, TRUE,
-					SS_MAX_USSD_LENGTH, &written, 0, buf);
-
-	converted = convert_gsm_to_utf8((const guint8 *)unpacked, written,
-					NULL, NULL, 0);
-
-	goto out;
-
-error:
-	status = OFONO_USSD_STATUS_NOT_SUPPORTED;
+	if (converted)
+		status = OFONO_USSD_STATUS_NOTIFY;
 
 out:
 	ofono_ussd_notify(ussd, status, converted);
