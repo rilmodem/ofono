@@ -64,6 +64,8 @@ struct _GAtHDLC {
 	GAtDebugFunc debugf;
 	gpointer debug_data;
 	int record_fd;
+	gboolean in_read_handler;
+	gboolean destroyed;
 };
 
 static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
@@ -133,6 +135,8 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 
 	hdlc_record(hdlc->record_fd, TRUE, buf, wrap);
 
+	hdlc->in_read_handler = TRUE;
+
 	while (pos < len) {
 		if (hdlc->decode_escape == TRUE) {
 			unsigned char val = *buf ^ HDLC_TRANS;
@@ -149,6 +153,9 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 				hdlc->receive_func(hdlc->decode_buffer,
 							hdlc->decode_offset - 2,
 							hdlc->receive_data);
+
+				if (hdlc->destroyed)
+					goto out;
 			}
 
 			hdlc->decode_fcs = HDLC_INITFCS;
@@ -169,6 +176,12 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 	}
 
 	ring_buffer_drain(rbuf, pos);
+
+out:
+	hdlc->in_read_handler = FALSE;
+
+	if (hdlc->destroyed)
+		g_free(hdlc);
 }
 
 GAtHDLC *g_at_hdlc_new_from_io(GAtIO *io)
@@ -267,7 +280,11 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 
 	ring_buffer_free(hdlc->write_buffer);
 	g_free(hdlc->decode_buffer);
-	g_free(hdlc);
+
+	if (hdlc->in_read_handler)
+		hdlc->destroyed = TRUE;
+	else
+		g_free(hdlc);
 }
 
 void g_at_hdlc_set_debug(GAtHDLC *hdlc, GAtDebugFunc func, gpointer user_data)
