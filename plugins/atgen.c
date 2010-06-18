@@ -51,6 +51,9 @@
 
 #include <drivers/atmodem/sim-poll.h>
 
+#include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
+
 static const char *tty_opts[] = {
 	"Baud",
 	"Read",
@@ -175,6 +178,8 @@ static void atgen_post_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
@@ -187,6 +192,10 @@ static void atgen_post_sim(struct ofono_modem *modem)
 	ofono_ssn_create(modem, 0, "atmodem", chat);
 	ofono_sms_create(modem, 0, "atmodem", chat);
 	ofono_phonebook_create(modem, 0, "atmodem", chat);
+	gprs = ofono_gprs_create(modem,0, "atmodem", chat);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", chat);
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
