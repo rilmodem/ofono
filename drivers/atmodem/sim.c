@@ -780,10 +780,16 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	sd->chat = chat;
 	sd->vendor = vendor;
 
-	if (sd->vendor == OFONO_VENDOR_WAVECOM)
+	switch (sd->vendor) {
+	case OFONO_VENDOR_WAVECOM:
 		g_at_chat_add_terminator(chat, "+CPIN:", 6, TRUE);
-	if (sd->vendor == OFONO_VENDOR_MBM)
+		break;
+	case OFONO_VENDOR_MBM:
 		g_at_chat_send(chat, "AT*EPEE=1", NULL, NULL, NULL, NULL);
+		break;
+	default:
+		break;
+	}
 
 	ofono_sim_set_data(sim, sd);
 	g_idle_add(at_sim_register, sim);
