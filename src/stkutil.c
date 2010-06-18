@@ -593,7 +593,7 @@ static gboolean parse_dataobj_ussd(struct comprehension_tlv_iter *iter,
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
 	const unsigned char *data = comprehension_tlv_iter_get_data(iter);
 
-	if (len <= 1)
+	if (len <= 1 || len > 161)
 		return FALSE;
 
 	us->dcs = data[0];
