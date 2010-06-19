@@ -342,7 +342,8 @@ test_scripts = test/activate-context \
 		test/set-tech-preference \
 		test/set-use-sms-reports \
 		test/set-cbs-topics \
-		test/enable-cbs
+		test/enable-cbs \
+		test/propose-scan
 
 if TEST
 testdir = $(pkglibdir)/test
