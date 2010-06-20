@@ -62,8 +62,7 @@ static const char *cmer_prefix[] = { "+CMER:", NULL };
 static const char *chld_prefix[] = { "+CHLD:", NULL };
 
 static DBusConnection *connection;
-static GHashTable *uuid_hash = NULL;
-static GHashTable *adapter_address_hash;
+static GHashTable *modem_hash = NULL;
 
 static void hfp_debug(const char *str, void *user_data)
 {
@@ -177,17 +176,6 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			chld_cb, modem, NULL);
 	else
 		sevice_level_conn_established(modem);
-}
-
-static void parse_string(DBusMessageIter *iter, gpointer user_data)
-{
-	char **str = user_data;
-	int arg_type = dbus_message_iter_get_arg_type(iter);
-
-	if (arg_type != DBUS_TYPE_OBJECT_PATH && arg_type != DBUS_TYPE_STRING)
-		return;
-
-	dbus_message_iter_get_basic(iter, str);
 }
 
 static void cind_status_cb(gboolean ok, GAtResult *result,
@@ -409,6 +397,10 @@ static int hfp_create_modem(const char *device, const char *dev_addr,
 	struct hfp_data *data;
 	char buf[256];
 
+	/* We already have this device in our hash, ignore */
+	if (g_hash_table_lookup(modem_hash, device) != NULL)
+		return -EALREADY;
+
 	ofono_info("Using device: %s, devaddr: %s, adapter: %s",
 			device, dev_addr, adapter_addr);
 
@@ -437,7 +429,7 @@ static int hfp_create_modem(const char *device, const char *dev_addr,
 	ofono_modem_set_name(modem, alias);
 	ofono_modem_register(modem);
 
-	g_hash_table_insert(uuid_hash, g_strdup(device), modem);
+	g_hash_table_insert(modem_hash, g_strdup(device), modem);
 
 	return 0;
 
@@ -446,277 +438,6 @@ free:
 	ofono_modem_remove(modem);
 
 	return -ENOMEM;
-}
-
-static void has_hfp_uuid(DBusMessageIter *array, gpointer user_data)
-{
-	gboolean *hfp = user_data;
-	DBusMessageIter value;
-
-	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
-		return;
-
-	dbus_message_iter_recurse(array, &value);
-
-	while (dbus_message_iter_get_arg_type(&value) == DBUS_TYPE_STRING) {
-		const char *uuid;
-
-		dbus_message_iter_get_basic(&value, &uuid);
-
-		if (!strcasecmp(uuid, HFP_AG_UUID)) {
-			*hfp = TRUE;
-			return;
-		}
-
-		dbus_message_iter_next(&value);
-	}
-}
-
-static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
-{
-	DBusMessage *reply;
-	char *path = user_data;
-	gboolean have_hfp = FALSE;
-	const char *adapter = NULL;
-	const char *adapter_addr = NULL;
-	const char *device_addr = NULL;
-	const char *alias = NULL;
-
-	reply = dbus_pending_call_steal_reply(call);
-
-	if (dbus_message_is_error(reply, DBUS_ERROR_SERVICE_UNKNOWN)) {
-		DBG("Bluetooth daemon is apparently not available.");
-		goto done;
-	}
-
-	if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
-		if (!dbus_message_is_error(reply, DBUS_ERROR_UNKNOWN_METHOD))
-			ofono_info("Error from GetProperties reply: %s",
-					dbus_message_get_error_name(reply));
-
-		goto done;
-	}
-
-	bluetooth_parse_properties(reply, "UUIDs", has_hfp_uuid, &have_hfp,
-					"Adapter", parse_string, &adapter,
-					"Address", parse_string, &device_addr,
-					"Alias", parse_string, &alias,
-					NULL);
-
-	if (adapter)
-		adapter_addr = g_hash_table_lookup(adapter_address_hash,
-							adapter);
-
-	if (have_hfp && device_addr && adapter_addr)
-		hfp_create_modem(path, device_addr, adapter_addr, alias);
-
-done:
-	dbus_message_unref(reply);
-}
-
-static void parse_devices(DBusMessageIter *array, gpointer user_data)
-{
-	DBusMessageIter value;
-	GSList **device_list = user_data;
-
-	DBG("");
-
-	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
-		return;
-
-	dbus_message_iter_recurse(array, &value);
-
-	while (dbus_message_iter_get_arg_type(&value)
-			== DBUS_TYPE_OBJECT_PATH) {
-		const char *path;
-
-		dbus_message_iter_get_basic(&value, &path);
-
-		*device_list = g_slist_prepend(*device_list, (gpointer) path);
-
-		dbus_message_iter_next(&value);
-	}
-}
-
-static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
-{
-	const char *path = user_data;
-	DBusMessage *reply;
-	GSList *device_list = NULL;
-	GSList *l;
-	const char *addr;
-
-	reply = dbus_pending_call_steal_reply(call);
-
-	if (dbus_message_is_error(reply, DBUS_ERROR_SERVICE_UNKNOWN)) {
-		DBG("Bluetooth daemon is apparently not available.");
-		goto done;
-	}
-
-	bluetooth_parse_properties(reply,
-				"Devices", parse_devices, &device_list,
-				"Address", parse_string, &addr,
-				NULL);
-
-	DBG("Adapter Address: %s, Path: %s", addr, path);
-	g_hash_table_insert(adapter_address_hash,
-				g_strdup(path), g_strdup(addr));
-
-	for (l = device_list; l; l = l->next) {
-		const char *device = l->data;
-
-		bluetooth_send_with_reply(device, BLUEZ_DEVICE_INTERFACE,
-					"GetProperties", device_properties_cb,
-					g_strdup(device), g_free,
-					-1, DBUS_TYPE_INVALID);
-	}
-
-done:
-	g_slist_free(device_list);
-	dbus_message_unref(reply);
-}
-
-static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
-				void *user_data)
-{
-	const char *path;
-	int ret;
-
-	dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
-				DBUS_TYPE_INVALID);
-
-	ret = bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
-					"GetProperties", adapter_properties_cb,
-					g_strdup(path), g_free,
-					-1, DBUS_TYPE_INVALID);
-
-	return TRUE;
-}
-
-static gboolean adapter_removed(DBusConnection *connection,
-				DBusMessage *message, void *user_data)
-{
-	const char *path;
-
-	if (dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
-				DBUS_TYPE_INVALID) == TRUE)
-		g_hash_table_remove(adapter_address_hash, path);
-
-	return TRUE;
-}
-
-static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
-				void *user_data)
-{
-	const char *property;
-	DBusMessageIter iter;
-
-	dbus_message_iter_init(msg, &iter);
-
-	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
-		return FALSE;
-
-	dbus_message_iter_get_basic(&iter, &property);
-	if (g_str_equal(property, "UUIDs") == TRUE) {
-		gboolean have_hfp = FALSE;
-		const char *path = dbus_message_get_path(msg);
-		DBusMessageIter variant;
-
-		/* We already have this device in our hash, ignore */
-		if (g_hash_table_lookup(uuid_hash, path) != NULL)
-			return TRUE;
-
-		if (!dbus_message_iter_next(&iter))
-			return FALSE;
-
-		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-			return FALSE;
-
-		dbus_message_iter_recurse(&iter, &variant);
-
-		has_hfp_uuid(&variant, &have_hfp);
-
-		/* We need the full set of properties to be able to create
-		 * the modem properly, including Adapter and Alias, so
-		 * refetch everything again
-		 */
-		if (have_hfp)
-			bluetooth_send_with_reply(path, BLUEZ_DEVICE_INTERFACE,
-						"GetProperties",
-						device_properties_cb,
-						g_strdup(path), g_free,
-						-1, DBUS_TYPE_INVALID);
-	} else if (g_str_equal(property, "Alias") == TRUE) {
-		const char *path = dbus_message_get_path(msg);
-		struct ofono_modem *modem =
-			g_hash_table_lookup(uuid_hash, path);
-		const char *alias = NULL;
-		DBusMessageIter variant;
-
-		if (modem == NULL)
-			return TRUE;
-
-		if (!dbus_message_iter_next(&iter))
-			return FALSE;
-
-		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
-			return FALSE;
-
-		dbus_message_iter_recurse(&iter, &variant);
-
-		parse_string(&variant, &alias);
-
-		ofono_modem_set_name(modem, alias);
-	}
-
-	return TRUE;
-}
-
-static void parse_adapters(DBusMessageIter *array, gpointer user_data)
-{
-	DBusMessageIter value;
-
-	DBG("");
-
-	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
-		return;
-
-	dbus_message_iter_recurse(array, &value);
-
-	while (dbus_message_iter_get_arg_type(&value)
-			== DBUS_TYPE_OBJECT_PATH) {
-		const char *path;
-
-		dbus_message_iter_get_basic(&value, &path);
-
-		DBG("Calling GetProperties on %s", path);
-
-		bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
-						"GetProperties",
-						adapter_properties_cb,
-						g_strdup(path), g_free,
-						-1, DBUS_TYPE_INVALID);
-
-		dbus_message_iter_next(&value);
-	}
-}
-
-static void manager_properties_cb(DBusPendingCall *call, gpointer user_data)
-{
-	DBusMessage *reply;
-
-	reply = dbus_pending_call_steal_reply(call);
-
-	if (dbus_message_is_error(reply, DBUS_ERROR_SERVICE_UNKNOWN)) {
-		DBG("Bluetooth daemon is apparently not available.");
-		goto done;
-	}
-
-	bluetooth_parse_properties(reply, "Adapters", parse_adapters, NULL,
-					NULL);
-
-done:
-	dbus_message_unref(reply);
 }
 
 static gboolean hfp_remove_each_modem(gpointer key, gpointer value, gpointer user_data)
@@ -728,12 +449,26 @@ static gboolean hfp_remove_each_modem(gpointer key, gpointer value, gpointer use
 	return TRUE;
 }
 
-static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
+static void hfp_remove_all_modem()
 {
-	if (uuid_hash == NULL)
+	if (modem_hash == NULL)
 		return;
 
-	g_hash_table_foreach_remove(uuid_hash, hfp_remove_each_modem, NULL);
+	g_hash_table_foreach_remove(modem_hash, hfp_remove_each_modem, NULL);
+}
+
+static void hfp_set_alias(const char *device, const char *alias)
+{
+	struct ofono_modem *modem;
+
+	if (!device || !alias)
+		return;
+
+	modem =	g_hash_table_lookup(modem_hash, device);
+	if (!modem)
+		return;
+
+	ofono_modem_set_name(modem, alias);
 }
 
 static int hfp_register_ofono_handsfree(struct ofono_modem *modem)
@@ -804,7 +539,7 @@ static void hfp_remove(struct ofono_modem *modem)
 					HFP_AGENT_INTERFACE))
 		hfp_unregister_ofono_handsfree(modem);
 
-	g_hash_table_remove(uuid_hash, data->handsfree_path);
+	g_hash_table_remove(modem_hash, data->handsfree_path);
 
 	g_free(data->handsfree_path);
 	g_free(data);
@@ -936,10 +671,12 @@ static struct ofono_modem_driver hfp_driver = {
 	.post_sim	= hfp_post_sim,
 };
 
-static guint bluetooth_exit_watch;
-static guint adapter_added_watch;
-static guint adapter_removed_watch;
-static guint uuid_watch;
+static struct bluetooth_profile hfp_profile = {
+	.name		= "hfp",
+	.create		= hfp_create_modem,
+	.remove_all	= hfp_remove_all_modem,
+	.set_alias	= hfp_set_alias,
+};
 
 static int hfp_init()
 {
@@ -950,72 +687,28 @@ static int hfp_init()
 
 	connection = ofono_dbus_get_connection();
 
-	bluetooth_exit_watch = g_dbus_add_service_watch(connection, BLUEZ_SERVICE,
-			NULL, bluetooth_disconnect, NULL, NULL);
-
-	adapter_added_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
-						BLUEZ_MANAGER_INTERFACE,
-						"AdapterAdded",
-						adapter_added, NULL, NULL);
-
-	adapter_removed_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
-						BLUEZ_MANAGER_INTERFACE,
-						"AdapterRemoved",
-						adapter_removed, NULL, NULL);
-
-	uuid_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
-						BLUEZ_DEVICE_INTERFACE,
-						"PropertyChanged",
-						property_changed, NULL, NULL);
-
-	if (bluetooth_exit_watch == 0 || adapter_added_watch == 0 ||
-			adapter_removed_watch == 0|| uuid_watch == 0) {
-		err = -EIO;
-		goto remove;
-	}
-
-	uuid_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
-						g_free, NULL);
-
-	adapter_address_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
-							g_free, g_free);
-
 	err = ofono_modem_driver_register(&hfp_driver);
 	if (err < 0)
-		goto remove;
+		return err;
 
-	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
-					manager_properties_cb, NULL, NULL, -1,
-					DBUS_TYPE_INVALID);
+	err = bluetooth_register_uuid(HFP_AG_UUID, &hfp_profile);
+	if (err < 0) {
+		ofono_modem_driver_unregister(&hfp_driver);
+		return err;
+	}
+
+	modem_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
+						g_free, NULL);
 
 	return 0;
-
-remove:
-	g_dbus_remove_watch(connection, bluetooth_exit_watch);
-	g_dbus_remove_watch(connection, adapter_added_watch);
-	g_dbus_remove_watch(connection, adapter_removed_watch);
-	g_dbus_remove_watch(connection, uuid_watch);
-
-	if (uuid_hash)
-		g_hash_table_destroy(uuid_hash);
-
-	if (adapter_address_hash)
-		g_hash_table_destroy(adapter_address_hash);
-
-	return err;
 }
 
 static void hfp_exit()
 {
-	g_dbus_remove_watch(connection, bluetooth_exit_watch);
-	g_dbus_remove_watch(connection, adapter_added_watch);
-	g_dbus_remove_watch(connection, adapter_removed_watch);
-	g_dbus_remove_watch(connection, uuid_watch);
-
+	bluetooth_unregister_uuid(HFP_AG_UUID);
 	ofono_modem_driver_unregister(&hfp_driver);
 
-	g_hash_table_destroy(uuid_hash);
-	g_hash_table_destroy(adapter_address_hash);
+	g_hash_table_destroy(modem_hash);
 }
 
 OFONO_PLUGIN_DEFINE(hfp, "Hands-Free Profile Plugins", VERSION,
