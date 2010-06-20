@@ -303,6 +303,72 @@ static void parse_devices(DBusMessageIter *array, gpointer user_data)
 	}
 }
 
+static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
+				void *user_data)
+{
+	const char *property;
+	DBusMessageIter iter;
+
+	dbus_message_iter_init(msg, &iter);
+
+	if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING)
+		return FALSE;
+
+	dbus_message_iter_get_basic(&iter, &property);
+	if (g_str_equal(property, "UUIDs") == TRUE) {
+		int profiles = 0;
+		const char *path = dbus_message_get_path(msg);
+		DBusMessageIter variant;
+
+
+		if (!dbus_message_iter_next(&iter))
+			return FALSE;
+
+		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
+			return FALSE;
+
+		dbus_message_iter_recurse(&iter, &variant);
+
+		has_uuid(&variant, &profiles);
+
+		/* We need the full set of properties to be able to create
+		 * the modem properly, including Adapter and Alias, so
+		 * refetch everything again
+		 */
+		if (profiles)
+			bluetooth_send_with_reply(path, BLUEZ_DEVICE_INTERFACE,
+					"GetProperties", device_properties_cb,
+					g_strdup(path), g_free, -1,
+					DBUS_TYPE_INVALID);
+	} else if (g_str_equal(property, "Alias") == TRUE) {
+		const char *path = dbus_message_get_path(msg);
+		struct bluetooth_profile *profile;
+		const char *alias = NULL;
+		DBusMessageIter variant;
+		GHashTableIter hash_iter;
+		gpointer key, value;
+
+		if (!dbus_message_iter_next(&iter))
+			return FALSE;
+
+		if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_VARIANT)
+			return FALSE;
+
+		dbus_message_iter_recurse(&iter, &variant);
+
+		parse_string(&variant, &alias);
+
+		g_hash_table_iter_init(&hash_iter, uuid_hash);
+		while (g_hash_table_iter_next(&hash_iter, &key, &value)) {
+			profile = value;
+			if (profile->set_alias)
+				profile->set_alias(path, alias);
+		}
+	}
+
+	return TRUE;
+}
+
 static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 {
 	const char *path = user_data;
@@ -430,6 +496,7 @@ static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
 static guint bluetooth_watch;
 static guint adapter_added_watch;
 static guint adapter_removed_watch;
+static guint property_watch;
 
 int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 {
@@ -453,8 +520,13 @@ int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 						"AdapterRemoved",
 						adapter_removed, NULL, NULL);
 
+	property_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+						BLUEZ_DEVICE_INTERFACE,
+						"PropertyChanged",
+						property_changed, NULL, NULL);
+
 	if (bluetooth_watch == 0 || adapter_added_watch == 0 ||
-			adapter_removed_watch == 0) {
+			adapter_removed_watch == 0 || property_watch == 0) {
 		err = -EIO;
 		goto remove;
 	}
@@ -478,6 +550,7 @@ remove:
 	g_dbus_remove_watch(connection, bluetooth_watch);
 	g_dbus_remove_watch(connection, adapter_added_watch);
 	g_dbus_remove_watch(connection, adapter_removed_watch);
+	g_dbus_remove_watch(connection, property_watch);
 	return err;
 }
 
@@ -491,6 +564,7 @@ void bluetooth_unregister_uuid(const char *uuid)
 	g_dbus_remove_watch(connection, bluetooth_watch);
 	g_dbus_remove_watch(connection, adapter_added_watch);
 	g_dbus_remove_watch(connection, adapter_removed_watch);
+	g_dbus_remove_watch(connection, property_watch);
 
 	g_hash_table_destroy(uuid_hash);
 	g_hash_table_destroy(adapter_address_hash);
