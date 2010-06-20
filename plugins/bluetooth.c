@@ -338,6 +338,34 @@ done:
 	dbus_message_unref(reply);
 }
 
+static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
+				void *user_data)
+{
+	const char *path;
+	int ret;
+
+	dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
+
+	ret = bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
+			"GetProperties", adapter_properties_cb, g_strdup(path),
+			g_free, -1, DBUS_TYPE_INVALID);
+
+	return TRUE;
+}
+
+static gboolean adapter_removed(DBusConnection *connection,
+				DBusMessage *message, void *user_data)
+{
+	const char *path;
+
+	if (dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID) == TRUE)
+		g_hash_table_remove(adapter_address_hash, path);
+
+	return TRUE;
+}
+
 static void parse_adapters(DBusMessageIter *array, gpointer user_data)
 {
 	DBusMessageIter value;
@@ -384,12 +412,52 @@ done:
 	dbus_message_unref(reply);
 }
 
+static void bluetooth_remove_all_modem(gpointer key, gpointer value, gpointer user_data)
+{
+	struct bluetooth_profile *profile = value;
+
+	profile->remove_all();
+}
+
+static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
+{
+	if (!uuid_hash)
+		return;
+
+	g_hash_table_foreach(uuid_hash, bluetooth_remove_all_modem, NULL);
+}
+
+static guint bluetooth_watch;
+static guint adapter_added_watch;
+static guint adapter_removed_watch;
+
 int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 {
+	int err;
+
 	if (uuid_hash)
 		goto done;
 
 	connection = ofono_dbus_get_connection();
+
+	bluetooth_watch = g_dbus_add_service_watch(connection, BLUEZ_SERVICE,
+					NULL, bluetooth_disconnect, NULL, NULL);
+
+	adapter_added_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+						BLUEZ_MANAGER_INTERFACE,
+						"AdapterAdded",
+						adapter_added, NULL, NULL);
+
+	adapter_removed_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+						BLUEZ_MANAGER_INTERFACE,
+						"AdapterRemoved",
+						adapter_removed, NULL, NULL);
+
+	if (bluetooth_watch == 0 || adapter_added_watch == 0 ||
+			adapter_removed_watch == 0) {
+		err = -EIO;
+		goto remove;
+	}
 
 	uuid_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, NULL);
@@ -405,6 +473,12 @@ done:
 				DBUS_TYPE_INVALID);
 
 	return 0;
+
+remove:
+	g_dbus_remove_watch(connection, bluetooth_watch);
+	g_dbus_remove_watch(connection, adapter_added_watch);
+	g_dbus_remove_watch(connection, adapter_removed_watch);
+	return err;
 }
 
 void bluetooth_unregister_uuid(const char *uuid)
@@ -413,6 +487,10 @@ void bluetooth_unregister_uuid(const char *uuid)
 
 	if (g_hash_table_size(uuid_hash))
 		return;
+
+	g_dbus_remove_watch(connection, bluetooth_watch);
+	g_dbus_remove_watch(connection, adapter_added_watch);
+	g_dbus_remove_watch(connection, adapter_removed_watch);
 
 	g_hash_table_destroy(uuid_hash);
 	g_hash_table_destroy(adapter_address_hash);
