@@ -199,6 +199,28 @@ done:
 	g_slist_free(prop_handlers);
 }
 
+static void has_uuid(DBusMessageIter *array, gpointer user_data)
+{
+	gboolean *profiles = user_data;
+	DBusMessageIter value;
+
+	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
+		return;
+
+	dbus_message_iter_recurse(array, &value);
+
+	while (dbus_message_iter_get_arg_type(&value) == DBUS_TYPE_STRING) {
+		const char *uuid;
+
+		dbus_message_iter_get_basic(&value, &uuid);
+
+		if (!strcasecmp(uuid, HFP_AG_UUID))
+			*profiles |= HFP_AG;
+
+		dbus_message_iter_next(&value);
+	}
+}
+
 static void parse_string(DBusMessageIter *iter, gpointer user_data)
 {
 	char **str = user_data;
@@ -208,6 +230,53 @@ static void parse_string(DBusMessageIter *iter, gpointer user_data)
 		return;
 
 	dbus_message_iter_get_basic(iter, str);
+}
+
+static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
+{
+	DBusMessage *reply;
+	int have_uuid = 0;
+	const char *path = user_data;
+	const char *adapter = NULL;
+	const char *adapter_addr = NULL;
+	const char *device_addr = NULL;
+	const char *alias = NULL;
+	struct bluetooth_profile *profile;
+
+	reply = dbus_pending_call_steal_reply(call);
+
+	if (dbus_message_is_error(reply, DBUS_ERROR_SERVICE_UNKNOWN)) {
+		DBG("Bluetooth daemon is apparently not available.");
+		goto done;
+	}
+
+	if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
+		if (!dbus_message_is_error(reply, DBUS_ERROR_UNKNOWN_METHOD))
+			ofono_info("Error from GetProperties reply: %s",
+					dbus_message_get_error_name(reply));
+
+		goto done;
+	}
+
+	bluetooth_parse_properties(reply, "UUIDs", has_uuid, &have_uuid,
+				"Adapter", parse_string, &adapter,
+				"Address", parse_string, &device_addr,
+				"Alias", parse_string, &alias, NULL);
+
+	if (adapter)
+		adapter_addr = g_hash_table_lookup(adapter_address_hash,
+							adapter);
+
+	if ((have_uuid & HFP_AG) && device_addr && adapter_addr) {
+		profile = g_hash_table_lookup(uuid_hash, HFP_AG_UUID);
+		if (!profile || !profile->create)
+			goto done;
+
+		profile->create(path, device_addr, adapter_addr, alias);
+	}
+
+done:
+	dbus_message_unref(reply);
 }
 
 static void parse_devices(DBusMessageIter *array, gpointer user_data)
@@ -257,13 +326,11 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 				g_strdup(path), g_strdup(addr));
 
 	for (l = device_list; l; l = l->next) {
-		/*
 		const char *device = l->data;
 
 		bluetooth_send_with_reply(device, BLUEZ_DEVICE_INTERFACE,
 				"GetProperties", device_properties_cb,
 				g_strdup(device), g_free, -1, DBUS_TYPE_INVALID);
-		*/
 	}
 
 done:
