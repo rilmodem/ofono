@@ -4541,9 +4541,6 @@ static gboolean build_dataobj_bcch_channel_list(struct stk_tlv_builder *tlv,
 	unsigned int i, bytes, pos, shift;
 	unsigned char value;
 
-	/* To distinguish between no BCCH Channel List data object and
-	 * an empty object in a sequence of empty and non-empty objects,
-	 * .channels must be non-NULL in objects in sequences.  */
 	if (list->has_list == FALSE)
 		return TRUE;
 
