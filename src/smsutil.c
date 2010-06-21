@@ -2652,8 +2652,8 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 {
 	unsigned int offset = status_report->status_report.mr / 32;
 	unsigned int bit = 1 << (status_report->status_report.mr % 32);
+	struct id_table_node *node = NULL;
 	GHashTable *id_table;
-	struct id_table_node *node;
 	unsigned int *key;
 	gpointer value;
 	GHashTableIter iter;
@@ -2672,67 +2672,68 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 	while (g_hash_table_iter_next(&iter, (gpointer)&key, &value)) {
 		node = value;
 
-		if (!(node->mrs[offset] & bit))
-			continue;
+		if (node->mrs[offset] & bit)
+			break;
 
-		/* Mr belongs to this node. */
-		node->mrs[offset] ^= bit;
-		*msg_id = *key;
+		node = NULL;
+	}
 
-		for (i = 0; i < 8; i++) {
-			/* There are still pending mr(s). */
-			if (node->mrs[i] != 0 ||
+	/* Unable to find a message reference belonging to this address */
+	if (node == NULL)
+		return FALSE;
+
+	/* Mr belongs to this node. */
+	node->mrs[offset] ^= bit;
+	*msg_id = *key;
+
+	for (i = 0; i < 8; i++) {
+		/* There are still pending mr(s). */
+		if (node->mrs[i] != 0 ||
 				(node->sent_mrs < node->total_mrs)) {
-				pending = TRUE;
-				break;
-			}
-		}
-
-		/* Mr is not delivered. */
-		if (status_report->status_report.st !=
-				SMS_ST_COMPLETED_RECEIVED) {
-			/*
-			 * First mr which is not delivered. Update ofono history
-			 * and mark the whole message as undeliverable. Upcoming
-			 * mrs can not change the status to deliverable even if
-			 * they are considered as delivered.
-			 */
-			if (node->deliverable) {
-				node->deliverable = FALSE;
-				update_history = TRUE;
-			}
-		}
-
-		/*
-		 * If there are pending mrs that relate to this message, we do
-		 * not delete the node yet.
-		 */
-		if (pending) {
-			*msg_delivered = FALSE;
-			return update_history;
-		} else {
-			*msg_delivered = node->deliverable;
-
-			g_hash_table_iter_remove(&iter);
-
-			if (g_hash_table_size(id_table) == 0)
-				g_hash_table_remove(assembly->assembly_table,
-				status_report->status_report.raddr.address);
-			/*
-			 * If there has not been undelivered mrs, message is
-			 * delivered and the ofono history needs to be updated.
-			 * If the message is concidered as undelivered, the
-			 * ofono history has already been updated when the first
-			 * undelivered mr arrived, unless this one is the only
-			 * related mr and was marked undelivered.
-			 */
-			return *msg_delivered || update_history;
+			pending = TRUE;
+			break;
 		}
 	}
 
-	/* ERROR, mr not found. */
-	*msg_delivered = FALSE;
-	return FALSE;
+	/* Mr is not delivered. */
+	if (status_report->status_report.st != SMS_ST_COMPLETED_RECEIVED) {
+		/*
+		 * First mr which is not delivered. Update ofono history
+		 * and mark the whole message as undeliverable. Upcoming
+		 * mrs can not change the status to deliverable even if
+		 * they are considered as delivered.
+		 */
+		if (node->deliverable) {
+			node->deliverable = FALSE;
+			update_history = TRUE;
+		}
+	}
+
+	/*
+	 * If there are pending mrs that relate to this message, we do
+	 * not delete the node yet.
+	 */
+	if (pending) {
+		*msg_delivered = FALSE;
+		return update_history;
+	} else {
+		*msg_delivered = node->deliverable;
+
+		g_hash_table_iter_remove(&iter);
+
+		if (g_hash_table_size(id_table) == 0)
+			g_hash_table_remove(assembly->assembly_table,
+			status_report->status_report.raddr.address);
+		/*
+		 * If there has not been undelivered mrs, message is
+		 * delivered and the ofono history needs to be updated.
+		 * If the message is concidered as undelivered, the
+		 * ofono history has already been updated when the first
+		 * undelivered mr arrived, unless this one is the only
+		 * related mr and was marked undelivered.
+		 */
+		return *msg_delivered || update_history;
+	}
 }
 
 void status_report_assembly_add_fragment(
