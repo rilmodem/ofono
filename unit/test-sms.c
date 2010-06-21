@@ -1168,6 +1168,50 @@ static void test_range_minimizer()
 	}
 }
 
+static void test_sr_assembly()
+{
+	const char *sr_pdu1 = "06040D91945152991136F00160124130340A0160124130"
+				"940A00";
+	const char *sr_pdu2 = "06050D91945152991136F00160124130640A0160124130"
+				"450A00";
+        struct sms sr1;
+	struct sms sr2;
+	unsigned char pdu[176];
+	long pdu_len;
+	struct status_report_assembly *sra;
+	gboolean delivered;
+	unsigned int id;
+	struct sms_address addr;
+
+	/* mr 4 & mr 5 */
+
+        decode_hex_own_buf(sr_pdu1, -1, &pdu_len, 0, pdu);
+	g_assert(sms_decode(pdu, pdu_len, FALSE, 26, &sr1) == TRUE);
+
+	decode_hex_own_buf(sr_pdu2, -1, &pdu_len, 0, pdu);
+	g_assert(sms_decode(pdu, pdu_len, FALSE, 26, &sr2) == TRUE);
+
+	g_print("sr1 address: %s, mr: %d\n",
+			sms_address_to_string(&sr1.status_report.raddr),
+			sr1.status_report.mr);
+
+	g_print("sr2 address: %s, mr: %d\n",
+			sms_address_to_string(&sr2.status_report.raddr),
+			sr2.status_report.mr);
+
+	sms_address_from_string(&addr, "+4915259911630");
+
+	sra = status_report_assembly_new(NULL);
+	status_report_assembly_add_fragment(sra, 42, &addr, 4, time(NULL), 2);
+	status_report_assembly_add_fragment(sra, 42, &addr, 5, time(NULL), 2);
+
+	g_assert(!status_report_assembly_report(sra, &sr1, &id, &delivered));
+	g_assert(status_report_assembly_report(sra, &sr2, &id, &delivered));
+
+	g_assert(id == 42);
+	g_assert(delivered == TRUE);
+}
+
 int main(int argc, char **argv)
 {
 	char long_string[152*33 + 1];
@@ -1209,6 +1253,8 @@ int main(int argc, char **argv)
 			test_serialize_assembly);
 
 	g_test_add_func("/testsms/Range minimizer", test_range_minimizer);
+
+	g_test_add_func("/testsms/Status Report Assembly", test_sr_assembly);
 
 	return g_test_run();
 }
