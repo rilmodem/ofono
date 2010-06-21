@@ -59,7 +59,7 @@ int create_dirs(const char *filename, const mode_t mode)
 		/* Skip consecutive '/' characters */
 		if (next - prev == 1)
 			continue;
-			
+
 		strncat(dir, prev + 1, next - prev);
 
 		if (mkdir(dir, mode) == -1 && errno != EEXIST) {
