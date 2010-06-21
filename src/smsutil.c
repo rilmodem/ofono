@@ -2664,11 +2664,9 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 	id_table = g_hash_table_lookup(assembly->assembly_table,
 				status_report->status_report.raddr.address);
 
-	/* ERROR, key (receiver address) does not exist in assembly */
-	if (!id_table) {
-		*msg_delivered = FALSE;
+	/* key (receiver address) does not exist in assembly */
+	if (id_table == NULL)
 		return FALSE;
-	}
 
 	g_hash_table_iter_init(&iter, id_table);
 	while (g_hash_table_iter_next(&iter, (gpointer)&key, &value)) {
@@ -2682,13 +2680,14 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 		*msg_id = *key;
 
 		for (i = 0; i < 8; i++) {
-				/* There are still pending mr(s). */
-				if (node->mrs[i] != 0 ||
-					(node->sent_mrs < node->total_mrs)) {
-					pending = TRUE;
-					break;
-				}
+			/* There are still pending mr(s). */
+			if (node->mrs[i] != 0 ||
+				(node->sent_mrs < node->total_mrs)) {
+				pending = TRUE;
+				break;
+			}
 		}
+
 		/* Mr is not delivered. */
 		if (status_report->status_report.st !=
 				SMS_ST_COMPLETED_RECEIVED) {
