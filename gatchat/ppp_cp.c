@@ -938,6 +938,8 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 
 	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
+
+	pppcp_packet_free(packet);
 }
 
 /*
