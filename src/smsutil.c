@@ -2691,7 +2691,8 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 		/* Mr is not delivered. */
 		if (status_report->status_report.st !=
 				SMS_ST_COMPLETED_RECEIVED) {
-			/* First mr which is not delivered. Update ofono history
+			/*
+			 * First mr which is not delivered. Update ofono history
 			 * and mark the whole message as undeliverable. Upcoming
 			 * mrs can not change the status to deliverable even if
 			 * they are considered as delivered.
@@ -2702,7 +2703,8 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 			}
 		}
 
-		/* If there are pending mrs that relate to this message, we do
+		/*
+		 * If there are pending mrs that relate to this message, we do
 		 * not delete the node yet.
 		 */
 		if (pending) {
@@ -2716,7 +2718,8 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 			if (g_hash_table_size(id_table) == 0)
 				g_hash_table_remove(assembly->assembly_table,
 				status_report->status_report.raddr.address);
-			/* If there has not been undelivered mrs, message is
+			/*
+			 * If there has not been undelivered mrs, message is
 			 * delivered and the ofono history needs to be updated.
 			 * If the message is concidered as undelivered, the
 			 * ofono history has already been updated when the first
@@ -2726,6 +2729,7 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 			return *msg_delivered || update_history;
 		}
 	}
+
 	/* ERROR, mr not found. */
 	*msg_delivered = FALSE;
 	return FALSE;
