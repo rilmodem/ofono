@@ -16,6 +16,7 @@ elif len(sys.argv) == 2:
 	enabled = sys.argv[1]
 else:
 	print "%s [PATH] topics" % (sys.argv[0])
+	sys.exit(1)
 
 print "Setting delivery report use for modem %s..." % path
 sms = dbus.Interface(bus.get_object('org.ofono', path),
