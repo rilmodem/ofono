@@ -69,7 +69,6 @@ struct ofono_sms {
 	struct ofono_atom *atom;
 	ofono_bool_t use_delivery_reports;
 	struct status_report_assembly *sr_assembly;
-
 };
 
 struct pending_pdu {
@@ -735,24 +734,17 @@ static void handle_deliver(struct ofono_sms *sms, const struct sms *incoming)
 static void handle_sms_status_report(struct ofono_sms *sms,
 						const struct sms *incoming)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	gboolean delivered;
 	unsigned int msg_id;
-	gboolean update_history;
-	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 
-	update_history = status_report_assembly_report(sms->sr_assembly,
-						incoming, &msg_id, &delivered);
+	if (status_report_assembly_report(sms->sr_assembly, incoming, &msg_id,
+						&delivered) == FALSE)
+		return;
 
-	if (update_history) {
-
-		if (delivered)
-			__ofono_history_sms_send_status(modem, msg_id,
-				time(NULL), OFONO_HISTORY_SMS_STATUS_DELIVERED);
-		else
-			__ofono_history_sms_send_status(modem, msg_id,
-				time(NULL),
-				OFONO_HISTORY_SMS_STATUS_DELIVER_FAILED);
-	}
+	__ofono_history_sms_send_status(modem, msg_id, time(NULL),
+			delivered ? OFONO_HISTORY_SMS_STATUS_DELIVERED :
+			OFONO_HISTORY_SMS_STATUS_DELIVER_FAILED);
 }
 
 
