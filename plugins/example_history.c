@@ -163,10 +163,16 @@ static void example_history_sms_send_status(struct ofono_history_context *contex
 		ofono_debug("Sending SMS %u failed", msg_id);
 		ofono_debug("Failure Time: %s", buf);
 		break;
+	case OFONO_HISTORY_SMS_STATUS_DELIVERED:
+		ofono_debug("SMS delivered, msg_id: %u, time: %s", msg_id, buf);
+		break;
+	case OFONO_HISTORY_SMS_STATUS_DELIVER_FAILED:
+		ofono_debug("SMS undeliverable, msg_id: %u, time: %s",
+				msg_id, buf);
+		break;
 	default:
 		break;
-	};
-
+	}
 }
 
 static struct ofono_history_driver example_driver = {
