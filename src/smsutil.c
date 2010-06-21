@@ -2747,27 +2747,15 @@ void status_report_assembly_add_fragment(
 	unsigned int *id_table_key;
 
 	id_table = g_hash_table_lookup(assembly->assembly_table, to->address);
-	/* Create id_table and node */
+
+	/* Create hashtable keyed by the to address if required */
 	if (id_table == NULL) {
 		id_table = g_hash_table_new_full(g_int_hash, g_int_equal,
 								g_free, g_free);
-		id_table_key = g_new0(unsigned int, 1);
-
-		node = g_new0(struct id_table_node, 1);
-		node->to = *to;
-		node->mrs[offset] |= bit;
-		node->expiration = expiration;
-		node->total_mrs = total_mrs;
-		node->sent_mrs = 1;
-		node->deliverable = TRUE;
-
-		*id_table_key = msg_id;
-		g_hash_table_insert(id_table, id_table_key, node);
-
 		assembly_table_key = g_try_malloc(sizeof(to->address));
 
 		if (assembly_table_key == NULL) {
-			g_free(node);
+			g_hash_table_destroy(id_table);
 			return;
 		}
 
@@ -2775,26 +2763,23 @@ void status_report_assembly_add_fragment(
 
 		g_hash_table_insert(assembly->assembly_table,
 					assembly_table_key, id_table);
-		return;
 	}
 
 	node = g_hash_table_lookup(id_table, &msg_id);
-	/* id_table exists, create new node */
+
+	/* Create node in the message id hashtable if required */
 	if (node == NULL) {
 		id_table_key = g_new0(unsigned int, 1);
+
 		node = g_new0(struct id_table_node, 1);
 		node->to = *to;
-		node->mrs[offset] |= bit;
-		node->expiration = expiration;
 		node->total_mrs = total_mrs;
-		node->sent_mrs = 1;
 		node->deliverable = TRUE;
 
 		*id_table_key = msg_id;
 		g_hash_table_insert(id_table, id_table_key, node);
-
-		return;
 	}
+
 	/* id_table and node both exists */
 	node->mrs[offset] |= bit;
 	node->expiration = expiration;
