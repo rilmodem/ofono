@@ -297,6 +297,7 @@ static inline void at_ack_delivery(struct ofono_sms *sms)
 static void at_cds_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	long pdu_len;
 	int tpdu_len;
 	const char *hexpdu;
@@ -318,7 +319,8 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_status_notify(sms, pdu, pdu_len, tpdu_len);
 
-	at_ack_delivery(sms);
+	if (data->cnma_enabled)
+		at_ack_delivery(sms);
 }
 
 static void at_cmt_notify(GAtResult *result, gpointer user_data)
@@ -734,14 +736,14 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	 * sends the device into la-la land.
 	 */
 	if (data->vendor == OFONO_VENDOR_NOVATEL)
-		/* MSM devices advertise support for mode 2, but return an
-		 * error if we attempt to actually use it. */
-		mode = "2";
+		mode = "20";
 	else
-		/* Sounds like 2 is the sanest mode */
-		mode = data->cnma_enabled ? "10" : "20";
+		mode = "120";
 
-	/* Always deliver Status-Reports via +CDS or don't deliver at all */
+	/*
+	 * Try to deliver Status-Reports via +CDS, then CDSI or don't
+	 * deliver at all
+	 * */
 	if (!append_cnmi_element(buf, &len, cnmi_opts[3], mode, FALSE))
 		return FALSE;
 
