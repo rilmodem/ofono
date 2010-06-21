@@ -78,7 +78,7 @@ static void test_invalid()
 
 		ret = parse_ss_control_string(str, &type, &sc,
 						&sia, &sib, &sic, &sid, &dn);
-		if (strlen(sid))
+		if (ret == TRUE && strlen(sid))
 			ret = FALSE;
 
 		g_assert(ret == FALSE);
