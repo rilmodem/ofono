@@ -2645,21 +2645,46 @@ void status_report_assembly_free(struct status_report_assembly *assembly)
 	g_free(assembly);
 }
 
+static gboolean sr_st_to_delivered(enum sms_st st, gboolean *delivered)
+{
+	if (st >= SMS_ST_TEMPFINAL_CONGESTION && st <= SMS_ST_TEMPFINAL_LAST)
+		return FALSE;
+
+	if (st >= SMS_ST_TEMPORARY_CONGESTION && st <= SMS_ST_TEMPORARY_LAST)
+		return FALSE;
+
+	if (st <= SMS_ST_COMPLETED_LAST) {
+		*delivered = TRUE;
+		return TRUE;
+	}
+
+	if (st >= SMS_ST_PERMANENT_RP_ERROR && st <= SMS_ST_PERMANENT_LAST) {
+		*delivered = FALSE;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 					const struct sms *status_report,
-					unsigned int *msg_id,
-					gboolean *msg_delivered)
+					unsigned int *out_id,
+					gboolean *out_delivered)
 {
 	unsigned int offset = status_report->status_report.mr / 32;
 	unsigned int bit = 1 << (status_report->status_report.mr % 32);
 	struct id_table_node *node = NULL;
 	GHashTable *id_table;
-	unsigned int *key;
-	gpointer value;
+	gpointer key, value;
+	gboolean delivered;
 	GHashTableIter iter;
+	gboolean pending;
 	int i;
-	gboolean pending = FALSE;
-	gboolean update_history = FALSE;
+
+	/* We ignore temporary or tempfinal status reports */
+	if (sr_st_to_delivered(status_report->status_report.st,
+				&delivered) == FALSE)
+		return FALSE;
 
 	id_table = g_hash_table_lookup(assembly->assembly_table,
 				status_report->status_report.raddr.address);
@@ -2669,7 +2694,7 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 		return FALSE;
 
 	g_hash_table_iter_init(&iter, id_table);
-	while (g_hash_table_iter_next(&iter, (gpointer)&key, &value)) {
+	while (g_hash_table_iter_next(&iter, &key, &value)) {
 		node = value;
 
 		if (node->mrs[offset] & bit)
@@ -2684,56 +2709,38 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 
 	/* Mr belongs to this node. */
 	node->mrs[offset] ^= bit;
-	*msg_id = *key;
 
-	for (i = 0; i < 8; i++) {
+	node->deliverable = node->deliverable && delivered;
+
+	/* If we haven't sent the entire message yet, wait until sent */
+	if (node->sent_mrs < node->total_mrs)
+		return FALSE;
+
+	/* Figure out if we are expecting more status reports */
+	for (i = 0, pending = FALSE; i < 8; i++) {
 		/* There are still pending mr(s). */
-		if (node->mrs[i] != 0 ||
-				(node->sent_mrs < node->total_mrs)) {
+		if (node->mrs[i] != 0) {
 			pending = TRUE;
 			break;
 		}
 	}
 
-	/* Mr is not delivered. */
-	if (status_report->status_report.st != SMS_ST_COMPLETED_RECEIVED) {
-		/*
-		 * First mr which is not delivered. Update ofono history
-		 * and mark the whole message as undeliverable. Upcoming
-		 * mrs can not change the status to deliverable even if
-		 * they are considered as delivered.
-		 */
-		if (node->deliverable) {
-			node->deliverable = FALSE;
-			update_history = TRUE;
-		}
-	}
+	if (pending == TRUE && node->deliverable == TRUE)
+		return FALSE;
 
-	/*
-	 * If there are pending mrs that relate to this message, we do
-	 * not delete the node yet.
-	 */
-	if (pending) {
-		*msg_delivered = FALSE;
-		return update_history;
-	} else {
-		*msg_delivered = node->deliverable;
+	if (out_delivered)
+		*out_delivered = node->deliverable;
 
-		g_hash_table_iter_remove(&iter);
+	if (out_id)
+		*out_id = *((unsigned int *) key);
 
-		if (g_hash_table_size(id_table) == 0)
-			g_hash_table_remove(assembly->assembly_table,
-			status_report->status_report.raddr.address);
-		/*
-		 * If there has not been undelivered mrs, message is
-		 * delivered and the ofono history needs to be updated.
-		 * If the message is concidered as undelivered, the
-		 * ofono history has already been updated when the first
-		 * undelivered mr arrived, unless this one is the only
-		 * related mr and was marked undelivered.
-		 */
-		return *msg_delivered || update_history;
-	}
+	g_hash_table_iter_remove(&iter);
+
+	if (g_hash_table_size(id_table) == 0)
+		g_hash_table_remove(assembly->assembly_table,
+				status_report->status_report.raddr.address);
+
+	return TRUE;
 }
 
 void status_report_assembly_add_fragment(
