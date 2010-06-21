@@ -2674,6 +2674,7 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 	unsigned int offset = status_report->status_report.mr / 32;
 	unsigned int bit = 1 << (status_report->status_report.mr % 32);
 	struct id_table_node *node = NULL;
+	const char *straddr;
 	GHashTable *id_table;
 	gpointer key, value;
 	gboolean delivered;
@@ -2686,8 +2687,8 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 				&delivered) == FALSE)
 		return FALSE;
 
-	id_table = g_hash_table_lookup(assembly->assembly_table,
-				status_report->status_report.raddr.address);
+	straddr = sms_address_to_string(&status_report->status_report.raddr);
+	id_table = g_hash_table_lookup(assembly->assembly_table, straddr);
 
 	/* key (receiver address) does not exist in assembly */
 	if (id_table == NULL)
@@ -2754,26 +2755,18 @@ void status_report_assembly_add_fragment(
 	unsigned int bit = 1 << (mr % 32);
 	GHashTable *id_table;
 	struct id_table_node *node;
-	char *assembly_table_key;
 	unsigned int *id_table_key;
 
-	id_table = g_hash_table_lookup(assembly->assembly_table, to->address);
+	id_table = g_hash_table_lookup(assembly->assembly_table,
+					sms_address_to_string(to));
 
 	/* Create hashtable keyed by the to address if required */
 	if (id_table == NULL) {
 		id_table = g_hash_table_new_full(g_int_hash, g_int_equal,
 								g_free, g_free);
-		assembly_table_key = g_try_malloc(sizeof(to->address));
-
-		if (assembly_table_key == NULL) {
-			g_hash_table_destroy(id_table);
-			return;
-		}
-
-		g_strlcpy(assembly_table_key, to->address, sizeof(to->address));
-
 		g_hash_table_insert(assembly->assembly_table,
-					assembly_table_key, id_table);
+					g_strdup(sms_address_to_string(to)),
+					id_table);
 	}
 
 	node = g_hash_table_lookup(id_table, &msg_id);
