@@ -220,6 +220,7 @@ GPRS
 
   Priority: High
   Complexity: C2
+  Owner: Zhenhua Zhang <zhenhua.zhang@intel.com>
 
 - On-demand SOCKS5 proxy support for MMS contexts.  When an MMS context type
   is created, oFono should create a SOCKS5 proxy.  When a client connects to
