@@ -2772,7 +2772,7 @@ void status_report_assembly_add_fragment(
 		id_table_key = g_new0(unsigned int, 1);
 
 		node = g_new0(struct id_table_node, 1);
-		node->to = *to;
+		memcpy(&node->to, to, sizeof(*to));
 		node->total_mrs = total_mrs;
 		node->deliverable = TRUE;
 
