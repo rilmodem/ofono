@@ -127,7 +127,8 @@ void encode_bcd_number(const char *number, unsigned char *out)
 		*out = to_semi_oct(*number) | 0xf0;
 }
 
-/* Returns whether the DCS could be parsed successfully, e.g. no reserved
+/*
+ * Returns whether the DCS could be parsed successfully, e.g. no reserved
  * values were used
  */
 gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
@@ -391,7 +392,8 @@ gboolean sms_decode_scts(const unsigned char *pdu, int len,
 
 	next_octet(pdu, len, offset, &oct);
 
-	/* Time Zone indicates the difference, expressed in quarters
+	/*
+	 * Time Zone indicates the difference, expressed in quarters
 	 * of an hour, between the local time and GMT. In the first of the two
 	 * semi‑octets, the first bit (bit 3 of the seventh octet of the
 	 * TP‑Service‑Centre‑Time‑Stamp field) represents the algebraic
@@ -424,7 +426,8 @@ static gboolean decode_validity_period(const unsigned char *pdu, int len,
 
 		return TRUE;
 	case SMS_VALIDITY_PERIOD_FORMAT_ENHANCED:
-		/* TODO: Parse out enhanced structure properly
+		/*
+		 * TODO: Parse out enhanced structure properly
 		 * 23.040 Section 9.2.3.12.3
 		 */
 		if ((len - *offset) < 7)
@@ -599,7 +602,8 @@ gboolean sms_decode_address_field(const unsigned char *pdu, int len,
 		else
 			chars = addr_len * 4 / 7;
 
-		/* This cannot happen according to 24.011, however
+		/*
+		 * This cannot happen according to 24.011, however
 		 * nothing is said in 23.040
 		 */
 		if (chars == 0) {
@@ -811,7 +815,8 @@ static gboolean decode_submit_report(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &octet))
 		return FALSE;
 
-	/* At this point we don't know whether this is an ACK or an ERROR.
+	/*
+	 * At this point we don't know whether this is an ACK or an ERROR.
 	 * FCS can only have values 0x80 and above, as 0x00 - 0x7F are reserved
 	 * according to 3GPP 23.040.  For PI, the values can be only in
 	 * bit 0, 1, 2 with the 7th bit reserved as an extension.  Since
@@ -973,7 +978,8 @@ static gboolean decode_status_report(const unsigned char *pdu, int len,
 
 	out->status_report.st = octet;
 
-	/* We have to be careful here, PI is labeled as Optional in 23.040
+	/*
+	 * We have to be careful here, PI is labeled as Optional in 23.040
 	 * which is different from RP-ERR & RP-ACK for both Deliver & Submit
 	 * reports
 	 */
@@ -1102,7 +1108,8 @@ static gboolean decode_deliver_report(const unsigned char *pdu, int len,
 	if (!next_octet(pdu, len, &offset, &octet))
 		return FALSE;
 
-	/* At this point we don't know whether this is an ACK or an ERROR.
+	/*
+	 * At this point we don't know whether this is an ACK or an ERROR.
 	 * FCS can only have values 0x80 and above, as 0x00 - 0x7F are reserved
 	 * according to 3GPP 23.040.  For PI, the values can be only in
 	 * bit 0, 1, 2 with the 7th bit reserved as an extension.  Since
@@ -1615,7 +1622,8 @@ static gboolean verify_udh(const guint8 *hdr, guint8 max_len)
 	if (hdr[0] >= max_len)
 		return FALSE;
 
-	/* According to 23.040: If the length of the User Data Header is
+	/*
+	 * According to 23.040: If the length of the User Data Header is
 	 * such that there are too few or too many octets in the final
 	 * Information Element then the whole User Data Header shall be
 	 * ignored.
@@ -1767,7 +1775,8 @@ gboolean sms_udh_iter_next(struct sms_udh_iter *iter)
 	return TRUE;
 }
 
-/* Returns both forms of time.  The time_t value returns the time in local
+/*
+ * Returns both forms of time.  The time_t value returns the time in local
  * timezone.  The struct tm is filled out with the remote time information
  */
 time_t sms_scts_to_time(const struct sms_scts *scts, struct tm *remote)
@@ -1841,7 +1850,8 @@ static gboolean extract_app_port_common(struct sms_udh_iter *iter, int *dst,
 	int dstport = -1;
 	gboolean uninitialized_var(is_addr_8bit);
 
-	/* According to the specification, we have to use the last
+	/*
+	 * According to the specification, we have to use the last
 	 * useable header.  Also, we have to ignore ports that are reserved:
 	 * A receiving entity shall ignore (i.e. skip over and commence
 	 * processing at the next information element) any information element
@@ -1929,7 +1939,8 @@ gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 	guint8 uninitialized_var(max), uninitialized_var(seq);
 	gboolean concatenated = FALSE;
 
-	/* We must ignore the entire user_data header here:
+	/*
+	 * We must ignore the entire user_data header here:
 	 * If the length of the User Data Header is such that there
 	 * are too few or too many octets in the final Information
 	 * Element then the whole User Data Header shall be ignored.
@@ -1937,7 +1948,8 @@ gboolean sms_extract_concatenation(const struct sms *sms, guint16 *ref_num,
 	if (!sms_udh_iter_init(sms, &iter))
 		return FALSE;
 
-	/* According to the specification, we have to use the last
+	/*
+	 * According to the specification, we have to use the last
 	 * useable header:
 	 * In the event that IEs determined as not repeatable are
 	 * duplicated, the last occurrence of the IE shall be used.
@@ -2013,7 +2025,8 @@ gboolean sms_extract_language_variant(const struct sms *sms, guint8 *locking,
 	enum sms_iei iei;
 	guint8 variant;
 
-	/* We must ignore the entire user_data header here:
+	/*
+	 * We must ignore the entire user_data header here:
 	 * If the length of the User Data Header is such that there
 	 * are too few or too many octets in the final Information
 	 * Element then the whole User Data Header shall be ignored.
@@ -2021,7 +2034,8 @@ gboolean sms_extract_language_variant(const struct sms *sms, guint8 *locking,
 	if (!sms_udh_iter_init(sms, &iter))
 		return FALSE;
 
-	/* According to the specification, we have to use the last
+	/*
+	 * According to the specification, we have to use the last
 	 * useable header:
 	 * In the event that IEs determined as not repeatable are
 	 * duplicated, the last occurrence of the IE shall be used.
@@ -2087,7 +2101,8 @@ unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
 		if (!ud)
 			return NULL;
 
-		/* Note we do this because we must check whether the UDH
+		/*
+		 * Note we do this because we must check whether the UDH
 		 * is properly formatted.  If not, the entire UDH is ignored
 		 */
 		if (sms_udh_iter_init(sms, &iter))
@@ -2205,8 +2220,10 @@ char *sms_decode_text(GSList *sms_list)
 
 			sms_extract_language_variant(sms, &locking_shift, &single_shift);
 
-			/* If language is not defined in 3GPP TS 23.038,
-	 		 * implementations are instructed to ignore it' */
+			/*
+			 * If language is not defined in 3GPP TS 23.038,
+			 * implementations are instructed to ignore it
+			 */
 			if (locking_shift >= GSM_DIALECT_INVALID)
 				locking_shift = GSM_DIALECT_DEFAULT;
 
@@ -2219,7 +2236,8 @@ char *sms_decode_text(GSList *sms_list)
 								single_shift);
 		} else {
 			const gchar *from = (const gchar *)(ud + taken);
-			/* According to the spec: A UCS2 character shall not be
+			/*
+			 * According to the spec: A UCS2 character shall not be
 			 * split in the middle; if the length of the User Data
 			 * Header is odd, the maximum length of the whole TP-UD
 			 * field is 139 octets
