@@ -276,14 +276,15 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		dbus_message_iter_get_basic(&var, &value);
 
-		sms->use_delivery_reports = value;
-
 		g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
 
-		ofono_dbus_signal_property_changed(conn, path,
+		if (sms->use_delivery_reports != (ofono_bool_t) value) {
+			sms->use_delivery_reports = value;
+			ofono_dbus_signal_property_changed(conn, path,
 						OFONO_SMS_MANAGER_INTERFACE,
 						"UseDeliveryReports",
 						DBUS_TYPE_BOOLEAN, &value);
+		}
 
 		return NULL;
 	}
