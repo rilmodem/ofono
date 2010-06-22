@@ -731,6 +731,7 @@ static void test_display_text(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_DISPLAY_TEXT);
@@ -1668,6 +1669,7 @@ static void test_get_inkey(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_GET_INKEY);
@@ -2973,6 +2975,7 @@ static void test_get_input(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_GET_INPUT);
@@ -3018,6 +3021,7 @@ static void test_more_time(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_MORE_TIME);
@@ -4253,6 +4257,7 @@ static void test_play_tone(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_PLAY_TONE);
@@ -4301,6 +4306,7 @@ static void test_poll_interval(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_POLL_INTERVAL);
@@ -5522,6 +5528,7 @@ static void test_setup_menu(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SETUP_MENU);
@@ -5546,6 +5553,17 @@ static void test_setup_menu(gconstpointer data)
 	stk_command_free(command);
 }
 
+static void test_setup_menu_missing_val(gconstpointer data)
+{
+	const struct setup_menu_test *test = data;
+	struct stk_command *command;
+
+	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
+
+	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_MISSING_VALUE);
+}
+
 static void test_setup_menu_neg(gconstpointer data)
 {
 	const struct setup_menu_test *test = data;
@@ -5553,7 +5571,8 @@ static void test_setup_menu_neg(gconstpointer data)
 
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
-	g_assert(!command);
+	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD);
 }
 
 struct select_item_test {
@@ -7106,6 +7125,7 @@ static void test_select_item(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SELECT_ITEM);
@@ -8730,6 +8750,7 @@ static void test_send_sms(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SEND_SMS);
@@ -9703,6 +9724,7 @@ static void test_send_ss(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SEND_SS);
@@ -10935,6 +10957,7 @@ static void test_send_ussd(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SEND_USSD);
@@ -12201,6 +12224,7 @@ static void test_setup_call(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SETUP_CALL);
@@ -12275,6 +12299,7 @@ static void test_refresh(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_REFRESH);
@@ -12316,6 +12341,7 @@ static void test_polling_off(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_POLLING_OFF);
@@ -12401,6 +12427,7 @@ static void test_provide_local_info(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_PROVIDE_LOCAL_INFO);
@@ -12508,6 +12535,7 @@ static void test_setup_event_list(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SETUP_EVENT_LIST);
@@ -12733,6 +12761,7 @@ static void test_perform_card_apdu(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_PERFORM_CARD_APDU);
@@ -12770,6 +12799,7 @@ static void test_get_reader_status(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_GET_READER_STATUS);
@@ -13290,6 +13320,7 @@ static void test_timer_mgmt(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_TIMER_MANAGEMENT);
@@ -14004,6 +14035,7 @@ static void test_setup_idle_mode_text(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT);
@@ -14758,6 +14790,7 @@ static void test_run_at_command(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_RUN_AT_COMMAND);
@@ -15423,6 +15456,7 @@ static void test_send_dtmf(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SEND_DTMF);
@@ -15477,6 +15511,7 @@ static void test_language_notification(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION);
@@ -16135,6 +16170,7 @@ static void test_launch_browser(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
+	g_assert(command->status == STK_PARSE_RESULT_OK);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_LAUNCH_BROWSER);
@@ -22494,7 +22530,7 @@ int main(int argc, char **argv)
 				&setup_menu_data_913, test_setup_menu);
 
 	g_test_add_data_func("/teststk/Setup Menu Negative 1",
-			&setup_menu_data_neg_1, test_setup_menu_neg);
+			&setup_menu_data_neg_1, test_setup_menu_missing_val);
 	g_test_add_data_func("/teststk/Setup Menu Negative 2",
 			&setup_menu_data_neg_2, test_setup_menu_neg);
 	g_test_add_data_func("/teststk/Setup Menu Negative 3",

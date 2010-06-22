@@ -1302,12 +1302,20 @@ struct stk_command_activate {
 	unsigned char actv_desc;
 };
 
+enum stk_command_parse_result {
+	STK_PARSE_RESULT_OK,
+	STK_PARSE_RESULT_TYPE_NOT_UNDERSTOOD,
+	STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD,
+	STK_PARSE_RESULT_MISSING_VALUE,
+};
+
 struct stk_command {
 	unsigned char number;
 	unsigned char type;
 	unsigned char qualifier;
 	enum stk_device_identity_type src;
 	enum stk_device_identity_type dst;
+	enum stk_command_parse_result status;
 
 	union {
 		struct stk_command_display_text display_text;
