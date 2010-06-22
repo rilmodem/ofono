@@ -40,7 +40,8 @@ static DBusConnection *connection;
 static GHashTable *uuid_hash = NULL;
 static GHashTable *adapter_address_hash = NULL;
 
-void bluetooth_create_path(const char *dev_addr, const char *adapter_addr, char *buf, int size)
+void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
+				char *buf, int size)
 {
 	int i, j;
 
@@ -320,7 +321,6 @@ static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
 		const char *path = dbus_message_get_path(msg);
 		DBusMessageIter variant;
 
-
 		if (!dbus_message_iter_next(&iter))
 			return FALSE;
 
@@ -384,8 +384,10 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
-	bluetooth_parse_properties(reply, "Devices", parse_devices, &device_list,
-				"Address", parse_string, &addr, NULL);
+	bluetooth_parse_properties(reply,
+					"Devices", parse_devices, &device_list,
+					"Address", parse_string, &addr,
+					NULL);
 
 	DBG("Adapter Address: %s, Path: %s", addr, path);
 	g_hash_table_insert(adapter_address_hash,
@@ -395,8 +397,9 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 		const char *device = l->data;
 
 		bluetooth_send_with_reply(device, BLUEZ_DEVICE_INTERFACE,
-				"GetProperties", device_properties_cb,
-				g_strdup(device), g_free, -1, DBUS_TYPE_INVALID);
+					"GetProperties", device_properties_cb,
+					g_strdup(device), g_free, -1,
+					DBUS_TYPE_INVALID);
 	}
 
 done:
@@ -472,13 +475,15 @@ static void manager_properties_cb(DBusPendingCall *call, gpointer user_data)
 
 	DBG("");
 
-	bluetooth_parse_properties(reply, "Adapters", parse_adapters, NULL, NULL);
+	bluetooth_parse_properties(reply, "Adapters", parse_adapters, NULL,
+						NULL);
 
 done:
 	dbus_message_unref(reply);
 }
 
-static void bluetooth_remove_all_modem(gpointer key, gpointer value, gpointer user_data)
+static void bluetooth_remove_all_modem(gpointer key, gpointer value,
+					gpointer user_data)
 {
 	struct bluetooth_profile *profile = value;
 
