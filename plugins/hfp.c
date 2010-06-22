@@ -440,7 +440,8 @@ free:
 	return -ENOMEM;
 }
 
-static gboolean hfp_remove_each_modem(gpointer key, gpointer value, gpointer user_data)
+static gboolean hfp_remove_each_modem(gpointer key, gpointer value,
+					gpointer user_data)
 {
 	struct ofono_modem *modem = value;
 
