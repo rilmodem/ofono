@@ -871,6 +871,10 @@ static void sim_ad_read_cb(int ok, int length, int record,
 
 	new_mnc_length = data[3] & 0xf;
 
+	/* sanity check for potential invalid values */
+	if (new_mnc_length < 2 || new_mnc_length > 3)
+		return;
+
 	if (sim->mnc_length == new_mnc_length)
 		return;
 
