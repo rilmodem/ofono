@@ -5,7 +5,7 @@ ACTION!="add|change", GOTO="ofono_end"
 SUBSYSTEM!="tty", GOTO="ofono_huawei_end"
 KERNEL!="ttyUSB[0-9]*", GOTO="ofono_huawei_end"
 
-SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="ff", ENV{OFONO_IFACE_NUM}="$attr{bInterfaceNumber}"
+SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ATTRS{bInterfaceClass}=="ff", ENV{OFONO_IFACE_NUM}="$attr{bInterfaceNumber}"
 
 # Generic 0x1001
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1001", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
