@@ -281,7 +281,7 @@ static enum rcr_result ipcp_rcr(struct pppcp_data *pppcp,
 		return RCR_ACCEPT;
 
 	/* Reject all options */
-	*new_len = packet->length - sizeof(*packet);
+	*new_len = ntohs(packet->length) - sizeof(*packet);
 	*new_options = g_memdup(packet->data, *new_len);
 
 	return RCR_REJECT;
