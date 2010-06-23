@@ -2601,8 +2601,7 @@ static enum stk_command_parse_result parse_select_item(
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
 
 	status = parse_dataobj(iter,
-			STK_DATA_OBJECT_TYPE_ALPHA_ID,
-			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+			STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
 			&obj->alpha_id,
 			STK_DATA_OBJECT_TYPE_ITEM,
 			DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM |
