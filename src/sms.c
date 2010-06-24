@@ -144,7 +144,8 @@ static DBusMessage *generate_get_properties_reply(struct ofono_sms *sms,
 }
 
 static void sms_sca_query_cb(const struct ofono_error *error,
-				const struct ofono_phone_number *sca, void *data)
+				const struct ofono_phone_number *sca,
+				void *data)
 {
 	struct ofono_sms *sms = data;
 
