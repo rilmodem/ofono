@@ -35,6 +35,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <sys/signalfd.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <utmp.h>
@@ -44,6 +45,7 @@
 #include <sys/stat.h>
 
 #include "gatserver.h"
+#include "gatppp.h"
 #include "ringbuffer.h"
 
 #define DEFAULT_TCP_PORT 12346
@@ -61,12 +63,18 @@ struct sock_server{
 
 static GMainLoop *mainloop;
 static GAtServer *server;
+static GAtPPP *ppp;
 unsigned int server_watch;
 
 static gboolean server_cleanup()
 {
 	if (server_watch)
 		g_source_remove(server_watch);
+
+	if (ppp) {
+		g_at_ppp_unref(ppp);
+		ppp = NULL;
+	}
 
 	g_at_server_unref(server);
 	server = NULL;
@@ -81,6 +89,81 @@ static gboolean server_cleanup()
 static void server_debug(const char *str, void *data)
 {
 	g_print("%s: %s\n", (char *) data, str);
+}
+
+static void ppp_connect(const char *iface, const char *local, const char *peer,
+			const char *dns1, const char *dns2,
+			gpointer user)
+{
+	g_print("Network Device: %s\n", iface);
+	g_print("IP Address: %s\n", local);
+	g_print("Peer IP Address: %s\n", peer);
+	g_print("Primary DNS Server: %s\n", dns1);
+	g_print("Secondary DNS Server: %s\n", dns2);
+}
+
+static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
+{
+	GAtServer *server = user;
+
+	g_print("PPP Link down: %d\n", reason);
+
+	g_at_ppp_unref(ppp);
+	ppp = NULL;
+
+	g_at_server_resume(server);
+	g_at_server_set_debug(server, server_debug, "Server");
+}
+
+static gboolean update_ppp(gpointer user)
+{
+	GAtPPP *ppp = user;
+	char local_ip[INET_ADDRSTRLEN] = "192.168.1.1";
+	char remote_ip[INET_ADDRSTRLEN] = "192.168.1.2";
+	char dns1[INET_ADDRSTRLEN] = "10.10.10.10";
+	char dns2[INET_ADDRSTRLEN] = "10.10.10.11";
+	guint32 l, r, d1, d2;
+
+	inet_pton(AF_INET, local_ip, &l);
+	inet_pton(AF_INET, remote_ip, &r);
+	inet_pton(AF_INET, dns1, &d1);
+	inet_pton(AF_INET, dns2, &d2);
+
+	g_at_ppp_set_server_info(ppp, l, r, d1, d2);
+
+	return FALSE;
+}
+
+static gboolean setup_ppp(gpointer user)
+{
+	GAtServer *server = user;
+	GAtIO *io;
+
+	io = g_at_server_get_io(server);
+
+	g_at_server_suspend(server);
+
+	/* open ppp */
+	ppp = g_at_ppp_new_from_io(io);
+	if (ppp == NULL) {
+		g_at_server_resume(server);
+		return FALSE;
+	}
+
+	g_at_ppp_set_debug(ppp, server_debug, "PPP");
+
+	g_at_ppp_set_credentials(ppp, "", "");
+
+	/* set connect and disconnect callbacks */
+	g_at_ppp_set_connect_function(ppp, ppp_connect, server);
+	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, server);
+
+	/* open the ppp connection */
+	g_at_ppp_open(ppp);
+
+	g_idle_add(update_ppp, ppp);
+
+	return FALSE;
 }
 
 static void cgmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
@@ -468,6 +551,7 @@ static void cgdata_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_CONNECT);
+		g_idle_add(setup_ppp, server);
 		break;
 	default:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
@@ -671,6 +755,40 @@ static void cpbs_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
+static void dial_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+{
+	GAtServer *server = user;
+	GAtServerResult res = G_AT_SERVER_RESULT_ERROR;
+	GAtResultIter iter;
+	const char *dial_str;
+	char c;
+
+	if (type != G_AT_SERVER_REQUEST_TYPE_SET)
+		goto error;
+
+	g_at_result_iter_init(&iter, cmd);
+
+	if (!g_at_result_iter_next(&iter, "D"))
+		goto error;
+
+	dial_str = g_at_result_iter_raw_line(&iter);
+	if (!dial_str)
+		goto error;
+
+	g_print("dial call %s\n", dial_str);
+
+	c = *dial_str;
+	if (c == '*' || c == '#' || c == 'T' || c == 't') {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_CONNECT);
+		g_idle_add(setup_ppp, server);
+	}
+
+	return;
+
+error:
+	g_at_server_send_final(server, res);
+}
+
 static void add_handler(GAtServer *server)
 {
 	g_at_server_set_debug(server, server_debug, "Server");
@@ -695,6 +813,7 @@ static void add_handler(GAtServer *server)
 	g_at_server_register(server, "+CSCS",    cscs_cb,    server, NULL);
 	g_at_server_register(server, "+CMGL",    cmgl_cb,    server, NULL);
 	g_at_server_register(server, "+CPBS",    cpbs_cb,    server, NULL);
+	g_at_server_register(server, "D",        dial_cb,    server, NULL);
 }
 
 static void server_destroy(gpointer user)
