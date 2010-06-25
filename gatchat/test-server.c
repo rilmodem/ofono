@@ -50,6 +50,7 @@
 
 #define DEFAULT_TCP_PORT 12346
 #define DEFAULT_SOCK_PATH "./server_sock"
+#define IFCONFIG_PATH "/sbin/ifconfig"
 
 static int modem_mode = 0;
 static int modem_creg = 0;
@@ -91,15 +92,40 @@ static void server_debug(const char *str, void *data)
 	g_print("%s: %s\n", (char *) data, str);
 }
 
+static gboolean execute(const char *cmd)
+{
+	int status;
+
+	status = system(cmd);
+	if (status < 0) {
+		g_print("Failed to execute command: %s\n", strerror(errno));
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 static void ppp_connect(const char *iface, const char *local, const char *peer,
 			const char *dns1, const char *dns2,
 			gpointer user)
 {
+	char buf[512];
+
 	g_print("Network Device: %s\n", iface);
 	g_print("IP Address: %s\n", local);
 	g_print("Peer IP Address: %s\n", peer);
 	g_print("Primary DNS Server: %s\n", dns1);
 	g_print("Secondary DNS Server: %s\n", dns2);
+
+	snprintf(buf, sizeof(buf), "%s %s up", IFCONFIG_PATH, iface);
+	execute(buf);
+
+	snprintf(buf, sizeof(buf), "%s %s %s pointopoint %s", IFCONFIG_PATH,
+				iface, local, peer);
+	execute(buf);
+
+	snprintf(buf, sizeof(buf), "echo 1 > /proc/sys/net/ipv4/ip_forward");
+	execute(buf);
 }
 
 static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
@@ -129,6 +155,11 @@ static gboolean setup_ppp(gpointer user)
 {
 	GAtServer *server = user;
 	GAtIO *io;
+
+	if (getuid() != 0) {
+		g_print("Need root priviledge for PPP connection\n");
+		return FALSE;
+	}
 
 	io = g_at_server_get_io(server);
 
