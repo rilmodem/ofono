@@ -65,7 +65,8 @@ struct gprs_context_data {
 	void *cb_data;                                  /* Callback data */
 };
 
-static void ppp_connect(const char *interface, const char *ip,
+static void ppp_connect(const char *interface, const char *local,
+			const char *remote,
 			const char *dns1, const char *dns2,
 			gpointer user_data)
 {
@@ -78,7 +79,7 @@ static void ppp_connect(const char *interface, const char *ip,
 	dns[2] = 0;
 
 	gcd->state = STATE_ACTIVE;
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, ip,
+	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, local,
 					STATIC_IP_NETMASK, NULL,
 					dns, gcd->cb_data);
 }
