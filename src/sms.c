@@ -64,6 +64,7 @@ struct ofono_sms {
 	struct ofono_sim *sim;
 	GKeyFile *settings;
 	char *imsi;
+	int bearer;
 	const struct ofono_sms_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -87,6 +88,55 @@ struct tx_queue_entry {
 	gboolean status_report;
 	struct sms_address receiver;
 };
+
+static const char *sms_bearer_to_string(int bearer)
+{
+	switch (bearer) {
+	case 0:
+		return "ps";
+	case 1:
+		return "cs";
+	case 2:
+		return "ps_preferred";
+	case 3:
+		return "cs_preferred";
+	};
+
+	return "unknown";
+}
+
+static int sms_bearer_from_string(const char *str)
+{
+	if (g_str_equal(str, "ps"))
+		return 0;
+	else if (g_str_equal(str, "cs"))
+		return 1;
+	else if (g_str_equal(str, "ps_preferred"))
+		return 2;
+	else if (g_str_equal(str, "cs_preferred"))
+		return 3;
+
+	return -1;
+}
+
+static void set_bearer(struct ofono_sms *sms, int bearer)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sms->atom);
+	const char *value;
+
+	if (sms->bearer == bearer)
+		return;
+
+	sms->bearer = bearer;
+
+	value = sms_bearer_to_string(sms->bearer);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SMS_MANAGER_INTERFACE,
+						"Bearer",
+						DBUS_TYPE_STRING, &value);
+}
 
 static void set_sca(struct ofono_sms *sms,
 			const struct ofono_phone_number *sca)
@@ -118,6 +168,7 @@ static DBusMessage *generate_get_properties_reply(struct ofono_sms *sms,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	const char *sca;
+	const char *bearer;
 
 	reply = dbus_message_new_method_return(msg);
 
@@ -137,6 +188,9 @@ static DBusMessage *generate_get_properties_reply(struct ofono_sms *sms,
 
 	ofono_dbus_dict_append(&dict, "UseDeliveryReports", DBUS_TYPE_BOOLEAN,
 				&sms->use_delivery_reports);
+
+	bearer = sms_bearer_to_string(sms->bearer);
+	ofono_dbus_dict_append(&dict, "Bearer", DBUS_TYPE_STRING, &bearer);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -183,6 +237,39 @@ static DBusMessage *sms_get_properties(DBusConnection *conn,
 	sms->driver->sca_query(sms, sms_sca_query_cb, sms);
 
 	return NULL;
+}
+
+static void bearer_set_query_callback(const struct ofono_error *error,
+					int bearer, void *data)
+{
+	struct ofono_sms *sms = data;
+	DBusMessage *reply;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("Set Bearer succeeded, but query failed");
+		reply = __ofono_error_failed(sms->pending);
+		__ofono_dbus_pending_reply(&sms->pending, reply);
+		return;
+	}
+
+	reply = dbus_message_new_method_return(sms->pending);
+	__ofono_dbus_pending_reply(&sms->pending, reply);
+
+	set_bearer(sms, bearer);
+}
+
+static void bearer_set_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_sms *sms = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBG("Setting Bearer failed");
+		__ofono_dbus_pending_reply(&sms->pending,
+					__ofono_error_failed(sms->pending));
+		return;
+	}
+
+	sms->driver->bearer_query(sms, bearer_set_query_callback, sms);
 }
 
 static void sca_set_query_callback(const struct ofono_error *error,
@@ -266,6 +353,29 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 		sms->pending = dbus_message_ref(msg);
 
 		sms->driver->sca_set(sms, &sca, sca_set_callback, sms);
+		return NULL;
+	}
+
+	if (!strcmp(property, "Bearer")) {
+		const char *value;
+		int bearer;
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &value);
+
+		bearer = sms_bearer_from_string(value);
+		if (bearer < 0)
+			return __ofono_error_invalid_format(msg);
+
+		if (sms->driver->bearer_set == NULL ||
+				sms->driver->bearer_query == NULL)
+			return __ofono_error_not_implemented(msg);
+
+		sms->pending = dbus_message_ref(msg);
+
+		sms->driver->bearer_set(sms, bearer, bearer_set_callback, sms);
 		return NULL;
 	}
 
@@ -980,6 +1090,8 @@ static void sms_remove(struct ofono_atom *atom)
 		g_key_file_set_boolean(sms->settings, SETTINGS_GROUP,
 					"UseDeliveryReports",
 					sms->use_delivery_reports);
+		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
+					"Bearer", sms->bearer);
 
 		storage_close(sms->imsi, SETTINGS_STORE, sms->settings, TRUE);
 
@@ -1060,6 +1172,8 @@ static void mw_watch(struct ofono_atom *atom,
 
 static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 {
+	GError *error = NULL;
+
 	sms->settings = storage_open(imsi, SETTINGS_STORE);
 
 	if (sms->settings == NULL)
@@ -1069,16 +1183,27 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 
 	sms->next_msg_id = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
 							"NextMessageId", NULL);
+
 	sms->ref = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
 							"NextReference", NULL);
+	if (sms->ref >= 65536)
+		sms->ref = 1;
+
 	sms->use_delivery_reports =
 		g_key_file_get_boolean(sms->settings, SETTINGS_GROUP,
 					"UseDeliveryReports", NULL);
 
-	if (sms->ref >= 65536)
-		sms->ref = 1;
+	sms->bearer = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
+							"Bearer", &error);
+	if (error)
+		sms->bearer = 3; /* Default to CS then PS */
 }
 
+static void bearer_init_callback(const struct ofono_error *error, void *data)
+{
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		ofono_error("Error bootstrapping SMS Bearer Preference");
+}
 
 /*
  * Indicate oFono that a SMS driver is ready for operation
@@ -1136,7 +1261,12 @@ void ofono_sms_register(struct ofono_sms *sms)
 	} else {
 		sms->assembly = sms_assembly_new(NULL);
 		sms->sr_assembly = status_report_assembly_new(NULL);
+		sms->bearer = 3; /* Default to CS then PS */
 	}
+
+	if (sms->driver->bearer_set)
+		sms->driver->bearer_set(sms, sms->bearer,
+						bearer_init_callback, sms);
 
 	__ofono_atom_register(sms->atom, sms_unregister);
 }

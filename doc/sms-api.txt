@@ -53,3 +53,12 @@ Properties	string ServiceCenterAddress
 			sometimes better known as Delivery Reports are to be
 			used.  If enabled, all outgoing SMS messages will be
 			flagged to request a status report from the SMSC.
+
+		string Bearer
+
+			Contains the bearer to use for SMS messages.  Possible
+			values are:
+				"cs" - Circuit Switched only
+				"ps" - Packet Domain only
+				"cs_preferred" - Use PS if CS is unavailable
+				"ps_preferred" - Use CS if PS is unavailable
