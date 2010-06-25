@@ -25,6 +25,7 @@ SMS
 
   Priority: Low
   Complexity: C1
+  Owner: Denis Kenzior <denkenz@gmail.com>
 
 - Add support for Enhanced SMS (EMS) from 3GPP 23.040.  These SMS messages
   support a richer set of formatting elements, including bold/italic and
