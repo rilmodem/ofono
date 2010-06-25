@@ -46,3 +46,10 @@ Signals		PropertyChanged(string name, variant value)
 Properties	string ServiceCenterAddress
 
 			Contains the number of the SMS service center.
+
+		boolean UseDeliveryReports
+
+			This property controls whether SMS Status Reports,
+			sometimes better known as Delivery Reports are to be
+			used.  If enabled, all outgoing SMS messages will be
+			flagged to request a status report from the SMSC.
