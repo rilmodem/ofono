@@ -102,7 +102,10 @@ Current implemented features:
 		supports concatenated messages of up to 255 segments, UCS2 and
 		GSM alphabets as well as extended alphabets.  SMS status
 		report features are not yet available.
-		
+
+		Selection of SMS bearer settings is supported through the
+		'Bearer' property on the SmsManager interface.
+
 	SIM PIN handling
 
 		SIM PIN locks, network and service provider locks are

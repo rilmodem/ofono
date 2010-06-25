@@ -18,15 +18,6 @@ Background
 SMS
 ===
 
-- SMS CS/PS bearer selection per 3GPP 27.007 +CGSMS command.  Several
-  operators mandate a particular setting for the SMS bearer.  The question
-  to figure out is whether this should be exposed as a property or a global
-  setting in e.g. /etc/ofono/main.conf.
-
-  Priority: Low
-  Complexity: C1
-  Owner: Denis Kenzior <denkenz@gmail.com>
-
 - Add support for Enhanced SMS (EMS) from 3GPP 23.040.  These SMS messages
   support a richer set of formatting elements, including bold/italic and
   font size selection.  Embedding images and sounds into the SMS is also
