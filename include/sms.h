@@ -37,6 +37,10 @@ typedef void (*ofono_sms_submit_cb_t)(const struct ofono_error *error, int mr,
 					void *data);
 typedef void (*ofono_sms_sca_set_cb_t)(const struct ofono_error *error,
 					void *data);
+typedef void (*ofono_sms_bearer_set_cb_t)(const struct ofono_error *error,
+						void *data);
+typedef void (*ofono_sms_bearer_query_cb_t)(const struct ofono_error *error,
+						int bearer, void *data);
 
 struct ofono_sms_driver {
 	const char *name;
@@ -50,6 +54,10 @@ struct ofono_sms_driver {
 	void (*submit)(struct ofono_sms *sms, unsigned char *pdu,
 			int pdu_len, int tpdu_len, int mms,
 			ofono_sms_submit_cb_t cb, void *data);
+	void (*bearer_query)(struct ofono_sms *sms,
+				ofono_sms_bearer_query_cb_t, void *data);
+	void (*bearer_set)(struct ofono_sms *sms, int bearer,
+				ofono_sms_bearer_set_cb_t, void *data);
 };
 
 void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
