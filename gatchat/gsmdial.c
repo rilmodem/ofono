@@ -38,6 +38,8 @@
 #include <gattty.h>
 #include <gatppp.h>
 
+#define IFCONFIG_PATH "/sbin/ifconfig"
+
 static const char *none_prefix[] = { NULL };
 static const char *cfun_prefix[] = { "+CFUN:", NULL };
 static const char *creg_prefix[] = { "+CREG:", NULL };
@@ -221,16 +223,43 @@ out:
 	return FALSE;
 }
 
+static gboolean execute(const char *cmd)
+{
+	int status;
+
+	status = system(cmd);
+	if (status < 0) {
+		g_print("Failed to execute command: %s\n", strerror(errno));
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 static void ppp_connect(const char *iface, const char *local, const char *peer,
 			const char *dns1, const char *dns2,
 			gpointer user_data)
 {
+	char buf[512];
+
 	/* print out the negotiated address and dns server */
 	g_print("Network Device: %s\n", iface);
 	g_print("IP Address: %s\n", local);
 	g_print("Peer IP Address: %s\n", peer);
 	g_print("Primary DNS Server: %s\n", dns1);
 	g_print("Secondary DNS Server: %s\n", dns2);
+
+	if (getuid() != 0) {
+		g_print("Need root priviledge to config PPP interface\n");
+		return;
+	}
+
+	snprintf(buf, sizeof(buf), "%s %s up", IFCONFIG_PATH, iface);
+	execute(buf);
+
+	snprintf(buf, sizeof(buf), "%s %s %s pointopoint %s", IFCONFIG_PATH,
+				iface, local, peer);
+	execute(buf);
 }
 
 static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
