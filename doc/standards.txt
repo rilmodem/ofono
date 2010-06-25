@@ -1,0 +1,8 @@
+Referencing standards in the source
+===================================
+
+When referencing standard documents use raw numbers xx.xxx for 3GPP
+documents or xxx.xxx for ETSI document (eg: 23.040). If needing to
+point to an specific section/subsection, explicitly say "Section foo"
+
+3GPP specs can be found in http://3gpp.org/ftp/Specs.
