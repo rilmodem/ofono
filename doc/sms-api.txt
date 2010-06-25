@@ -58,7 +58,7 @@ Properties	string ServiceCenterAddress
 
 			Contains the bearer to use for SMS messages.  Possible
 			values are:
-				"cs" - Circuit Switched only
-				"ps" - Packet Domain only
-				"cs_preferred" - Use PS if CS is unavailable
-				"ps_preferred" - Use CS if PS is unavailable
+				"cs-only" - Circuit Switched only
+				"ps-only" - Packet Domain only
+				"cs-preferred" - Use PS if CS is unavailable
+				"ps-preferred" - Use CS if PS is unavailable

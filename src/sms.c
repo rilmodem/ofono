@@ -93,13 +93,13 @@ static const char *sms_bearer_to_string(int bearer)
 {
 	switch (bearer) {
 	case 0:
-		return "ps";
+		return "ps-only";
 	case 1:
-		return "cs";
+		return "cs-only";
 	case 2:
-		return "ps_preferred";
+		return "ps-preferred";
 	case 3:
-		return "cs_preferred";
+		return "cs-preferred";
 	};
 
 	return "unknown";
@@ -107,13 +107,13 @@ static const char *sms_bearer_to_string(int bearer)
 
 static int sms_bearer_from_string(const char *str)
 {
-	if (g_str_equal(str, "ps"))
+	if (g_str_equal(str, "ps-only"))
 		return 0;
-	else if (g_str_equal(str, "cs"))
+	else if (g_str_equal(str, "cs-only"))
 		return 1;
-	else if (g_str_equal(str, "ps_preferred"))
+	else if (g_str_equal(str, "ps-preferred"))
 		return 2;
-	else if (g_str_equal(str, "cs_preferred"))
+	else if (g_str_equal(str, "cs-preferred"))
 		return 3;
 
 	return -1;
