@@ -62,3 +62,5 @@ Properties	string ServiceCenterAddress
 				"ps-only" - Packet Domain only
 				"cs-preferred" - Use PS if CS is unavailable
 				"ps-preferred" - Use CS if PS is unavailable
+
+			By default oFono uses "cs-preferred" setting.
