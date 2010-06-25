@@ -867,6 +867,9 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 				&lac, &ci, &tech, nd->vendor) == FALSE)
 		return;
 
+	if (status != 1 && status != 5)
+		goto notify;
+
 	switch (nd->vendor) {
 	case OFONO_VENDOR_OPTION_HSO:
 		tq = g_new0(struct tech_query, 1);
@@ -890,6 +893,7 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	if ((status == 1 || status == 5) && tech == -1)
 		tech = nd->tech;
 
+notify:
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
