@@ -86,6 +86,9 @@ void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
 /* IPCP related functions */
 struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);
+void ipcp_set_server_info(struct pppcp_data *ipcp, guint32 local_addr,
+				guint32 peer_addr,
+				guint32 dns1, guint32 dns2);
 
 /* CHAP related functions */
 struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method);
@@ -104,7 +107,7 @@ void ppp_debug(GAtPPP *ppp, const char *str);
 void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen);
 void ppp_set_auth(GAtPPP *ppp, const guint8 *auth_data);
 void ppp_auth_notify(GAtPPP *ppp, gboolean success);
-void ppp_ipcp_up_notify(GAtPPP *ppp, const char *ip,
+void ppp_ipcp_up_notify(GAtPPP *ppp, const char *local, const char *peer,
 					const char *dns1, const char *dns2);
 void ppp_ipcp_down_notify(GAtPPP *ppp);
 void ppp_ipcp_finished_notify(GAtPPP *ppp);

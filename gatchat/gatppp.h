@@ -43,7 +43,8 @@ typedef enum _GAtPPPDisconnectReason {
 	G_AT_PPP_REASON_LOCAL_CLOSE,	/* Normal user close */
 } GAtPPPDisconnectReason;
 
-typedef void (*GAtPPPConnectFunc)(const char *iface, const char *ip,
+typedef void (*GAtPPPConnectFunc)(const char *iface, const char *local,
+					const char *peer,
 					const char *dns1, const char *dns2,
 					gpointer user_data);
 typedef void (*GAtPPPDisconnectFunc)(GAtPPPDisconnectReason reason,
@@ -67,6 +68,9 @@ const char *g_at_ppp_get_username(GAtPPP *ppp);
 const char *g_at_ppp_get_password(GAtPPP *ppp);
 
 void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename);
+
+void g_at_ppp_set_server_info(GAtPPP *ppp, guint32 local, guint32 peer,
+				guint32 dns1, guint32 dns2);
 
 #ifdef __cplusplus
 }

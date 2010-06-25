@@ -246,7 +246,7 @@ void ppp_auth_notify(GAtPPP *ppp, gboolean success)
 	pppcp_signal_up(ppp->ipcp);
 }
 
-void ppp_ipcp_up_notify(GAtPPP *ppp, const char *ip,
+void ppp_ipcp_up_notify(GAtPPP *ppp, const char *local, const char *peer,
 					const char *dns1, const char *dns2)
 {
 	ppp->net = ppp_net_new(ppp);
@@ -264,7 +264,8 @@ void ppp_ipcp_up_notify(GAtPPP *ppp, const char *ip,
 
 	if (ppp->connect_cb)
 		ppp->connect_cb(ppp_net_get_interface(ppp->net),
-					ip, dns1, dns2, ppp->connect_data);
+					local, peer, dns1, dns2,
+					ppp->connect_data);
 }
 
 void ppp_ipcp_down_notify(GAtPPP *ppp)
@@ -462,6 +463,12 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	g_at_hdlc_unref(ppp->hdlc);
 
 	g_free(ppp);
+}
+
+void g_at_ppp_set_server_info(GAtPPP *ppp, guint32 local, guint32 peer,
+				guint32 dns1, guint32 dns2)
+{
+	ipcp_set_server_info(ppp->ipcp, local, peer, dns1, dns2);
 }
 
 static GAtPPP *ppp_init_common(GAtHDLC *hdlc)
