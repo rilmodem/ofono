@@ -221,13 +221,14 @@ out:
 	return FALSE;
 }
 
-static void ppp_connect(const char *iface, const char *ip,
+static void ppp_connect(const char *iface, const char *local, const char *peer,
 			const char *dns1, const char *dns2,
 			gpointer user_data)
 {
 	/* print out the negotiated address and dns server */
 	g_print("Network Device: %s\n", iface);
-	g_print("IP Address: %s\n", ip);
+	g_print("IP Address: %s\n", local);
+	g_print("Peer IP Address: %s\n", peer);
 	g_print("Primary DNS Server: %s\n", dns1);
 	g_print("Secondary DNS Server: %s\n", dns2);
 }
