@@ -393,14 +393,9 @@ static enum rcr_result ipcp_client_rcr(struct ipcp_data *ipcp,
 					const struct pppcp_packet *packet,
 					guint8 **new_options, guint16 *new_len)
 {
+	guint8 *options = NULL;
 	struct ppp_option_iter iter;
-	guint8 options[6];
-	guint16 len = 0;
-	guint32 peer_addr = 0;
-
-	/* Return Conf-Ack if we have received client info */
-	if (ipcp->local_addr && ipcp->dns1 && ipcp->dns2)
-		return RCR_ACCEPT;
+	guint8 len = 0;
 
 	ppp_option_iter_init(&iter, packet);
 
@@ -410,39 +405,42 @@ static enum rcr_result ipcp_client_rcr(struct ipcp_data *ipcp,
 
 		switch (type) {
 		case IP_ADDRESS:
-			memcpy(&peer_addr, data, 4);
-			break;
-		case PRIMARY_DNS_SERVER:
-		case SECONDARY_DNS_SERVER:
-		case PRIMARY_NBNS_SERVER:
-		case SECONDARY_NBNS_SERVER:
-			break;
+			memcpy(&ipcp->peer_addr, data, 4);
+			if (ipcp->peer_addr != 0)
+				break;
+
+			/*
+			 * Fall through, reject IP_ADDRESS if peer sends
+			 * us 0 (expecting us to provide its IP address)
+			 */
 		default:
-			FILL_IP(options, TRUE, type, data);
+			if (options == NULL) {
+				guint16 max_len = ntohs(packet->length) - 4;
+				options = g_new0(guint8, max_len);
+			}
+
+			if (options != NULL) {
+				guint8 opt_len =
+					ppp_option_iter_get_length(&iter);
+
+				options[len] = type;
+				options[len + 1] = opt_len + 2;
+				memcpy(options + len + 2, data, opt_len);
+				len += opt_len + 2;
+			}
+
 			break;
 		}
 	}
 
 	if (len > 0) {
 		*new_len = len;
-		*new_options = g_memdup(options, len);
+		*new_options = options;
 
 		return RCR_REJECT;
 	}
 
-	/* Accept server IP address as peer's address */
-	if (peer_addr) {
-		ipcp->peer_addr = peer_addr;
-		return RCR_ACCEPT;
-	}
-
-	/* Request server IP address */
-	FILL_IP(options, TRUE, IP_ADDRESS, &ipcp->peer_addr);
-
-	*new_len = len;
-	*new_options = g_memdup(options, len);
-
-	return RCR_NAK;
+	return RCR_ACCEPT;
 }
 
 static enum rcr_result ipcp_rcr(struct pppcp_data *pppcp,
