@@ -35,13 +35,13 @@
 #include "gatppp.h"
 #include "ppp.h"
 
-#define IPCP_SUPPORTED_CODES	  ((1 << PPPCP_CODE_TYPE_CONFIGURE_REQUEST) | \
-				  (1 << PPPCP_CODE_TYPE_CONFIGURE_ACK) | \
-				  (1 << PPPCP_CODE_TYPE_CONFIGURE_NAK) | \
-				  (1 << PPPCP_CODE_TYPE_CONFIGURE_REJECT) | \
-				  (1 << PPPCP_CODE_TYPE_TERMINATE_REQUEST) | \
-				  (1 << PPPCP_CODE_TYPE_TERMINATE_ACK) | \
-				  (1 << PPPCP_CODE_TYPE_CODE_REJECT))
+#define IPCP_SUPPORTED_CODES	((1 << PPPCP_CODE_TYPE_CONFIGURE_REQUEST) | \
+				(1 << PPPCP_CODE_TYPE_CONFIGURE_ACK) | \
+				(1 << PPPCP_CODE_TYPE_CONFIGURE_NAK) | \
+				(1 << PPPCP_CODE_TYPE_CONFIGURE_REJECT) | \
+				(1 << PPPCP_CODE_TYPE_TERMINATE_REQUEST) | \
+				(1 << PPPCP_CODE_TYPE_TERMINATE_ACK) | \
+				(1 << PPPCP_CODE_TYPE_CODE_REJECT))
 
 enum ipcp_option_types {
 	IP_ADDRESSES		= 1,
@@ -76,7 +76,7 @@ struct ipcp_data {
 	gboolean is_server;
 };
 
-#define FILL_IP(options, req, type, var) 		\
+#define FILL_IP(options, req, type, var)		\
 	if (req) {					\
 		options[len] = type;			\
 		options[len + 1] = 6;			\
@@ -435,7 +435,7 @@ static enum rcr_result ipcp_client_rcr(struct ipcp_data *ipcp,
 		return RCR_REJECT;
 	}
 
-	 /* Accept server IP address as peer's address */
+	/* Accept server IP address as peer's address */
 	if (peer_addr) {
 		ipcp->peer_addr = peer_addr;
 		return RCR_ACCEPT;
