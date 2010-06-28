@@ -135,18 +135,13 @@ void ipcp_set_server_info(struct pppcp_data *pppcp, guint32 local_addr,
 {
 	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
 
-	if (local_addr != 0)
-		ipcp->req_options = REQ_OPTION_IPADDR;
-	else
-		ipcp->req_options = 0;
-
 	ipcp->local_addr = local_addr;
 	ipcp->peer_addr = peer_addr;
 	ipcp->dns1 = dns1;
 	ipcp->dns2 = dns2;
 	ipcp->is_server = TRUE;
 
-	ipcp_generate_config_options(ipcp);
+	ipcp_reset_server_config_options(ipcp);
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
 }
 
