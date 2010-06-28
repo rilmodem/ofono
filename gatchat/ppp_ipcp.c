@@ -315,29 +315,16 @@ static void ipcp_rcn_rej(struct pppcp_data *pppcp,
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
 }
 
-static void ipcp_generate_peer_config_options(struct ipcp_data *ipcp,
-							guint8 *options,
-							guint16 *new_len)
-{
-	guint16 len = 0;
-
-	FILL_IP(options, TRUE, IP_ADDRESS, &ipcp->peer_addr);
-	FILL_IP(options, TRUE, PRIMARY_DNS_SERVER, &ipcp->dns1);
-	FILL_IP(options, TRUE, SECONDARY_DNS_SERVER, &ipcp->dns2);
-
-	*new_len = len;
-}
-
 static enum rcr_result ipcp_server_rcr(struct ipcp_data *ipcp,
 					const struct pppcp_packet *packet,
 					guint8 **new_options, guint16 *new_len)
 {
 	struct ppp_option_iter iter;
-	guint8 options[MAX_CONFIG_OPTION_SIZE];
+	guint8 nak_options[MAX_CONFIG_OPTION_SIZE];
 	guint16 len = 0;
-	guint32 peer_addr = 0;
-	guint32 dns1 = 0;
-	guint32 dns2 = 0;
+	guint8 *rej_options;
+	guint16 rej_len = 0;
+	guint32 addr;
 
 	ppp_option_iter_init(&iter, packet);
 
@@ -347,46 +334,59 @@ static enum rcr_result ipcp_server_rcr(struct ipcp_data *ipcp,
 
 		switch (type) {
 		case IP_ADDRESS:
-			memcpy(&peer_addr, data, 4);
+			memcpy(&addr, data, 4);
+
+			FILL_IP(nak_options, addr != ipcp->peer_addr,
+					type, &ipcp->peer_addr);
 			break;
 		case PRIMARY_DNS_SERVER:
-			memcpy(&dns1, data, 4);
+			memcpy(&addr, data, 4);
+
+			FILL_IP(nak_options, addr != ipcp->dns1,
+					type, &ipcp->dns1);
 			break;
 		case SECONDARY_DNS_SERVER:
-			memcpy(&dns2, data, 4);
+			memcpy(&addr, data, 4);
+
+			FILL_IP(nak_options, addr != ipcp->dns2,
+					type, &ipcp->dns2);
 			break;
-		case PRIMARY_NBNS_SERVER:
-		case SECONDARY_NBNS_SERVER:
 		default:
 			/* Reject */
-			FILL_IP(options, TRUE, type, data);
+			if (rej_options == NULL) {
+				guint16 max_len = ntohs(packet->length) - 4;
+				rej_options = g_new0(guint8, max_len);
+			}
+
+			if (rej_options != NULL) {
+				guint8 opt_len =
+					ppp_option_iter_get_length(&iter);
+
+				rej_options[rej_len] = type;
+				rej_options[rej_len + 1] = opt_len + 2;
+				memcpy(rej_options + rej_len + 2,
+								data, opt_len);
+				rej_len += opt_len + 2;
+			}
 			break;
 		}
 	}
 
-	if (len > 0) {
-		*new_len = len;
-		*new_options = g_memdup(options, len);
+	if (rej_len > 0) {
+		*new_len = rej_len;
+		*new_options = rej_options;
 
 		return RCR_REJECT;
 	}
 
-	/* Return Conf-Nak if we have not assign client address yet */
-	if (ipcp->peer_addr == 0 && ipcp->dns1 == 0 && ipcp->dns2 == 0)
+	if (len > 0) {
+		*new_len = len;
+		*new_options = g_memdup(nak_options, len);
+
 		return RCR_NAK;
+	}
 
-	/* Acknowledge client options if it matches with server options */
-	if (ipcp->peer_addr == peer_addr && ipcp->dns1 == dns1 &&
-			ipcp->dns2 == dns2)
-		return RCR_ACCEPT;
-
-	/* Send client IP/DNS/NBNS information in the config options */
-	ipcp_generate_peer_config_options(ipcp, options, &len);
-
-	*new_len = len;
-	*new_options = g_memdup(options, len);
-
-	return RCR_NAK;
+	return RCR_ACCEPT;
 }
 
 static enum rcr_result ipcp_client_rcr(struct ipcp_data *ipcp,
