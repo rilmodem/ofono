@@ -69,8 +69,9 @@ const char *g_at_ppp_get_password(GAtPPP *ppp);
 
 void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename);
 
-void g_at_ppp_set_server_info(GAtPPP *ppp, guint32 local, guint32 peer,
-				guint32 dns1, guint32 dns2);
+void g_at_ppp_set_server_info(GAtPPP *ppp,
+				const char *local_ip, const char *remote_ip,
+				const char *dns1, const char *dns2);
 
 #ifdef __cplusplus
 }

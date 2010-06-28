@@ -118,18 +118,9 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
 static gboolean update_ppp(gpointer user)
 {
 	GAtPPP *ppp = user;
-	char local_ip[INET_ADDRSTRLEN] = "192.168.1.1";
-	char remote_ip[INET_ADDRSTRLEN] = "192.168.1.2";
-	char dns1[INET_ADDRSTRLEN] = "10.10.10.10";
-	char dns2[INET_ADDRSTRLEN] = "10.10.10.11";
-	guint32 l, r, d1, d2;
 
-	inet_pton(AF_INET, local_ip, &l);
-	inet_pton(AF_INET, remote_ip, &r);
-	inet_pton(AF_INET, dns1, &d1);
-	inet_pton(AF_INET, dns2, &d2);
-
-	g_at_ppp_set_server_info(ppp, l, r, d1, d2);
+	g_at_ppp_set_server_info(ppp, "192.168.1.1", "192.168.1.2",
+					"10.10.10.10", "10.10.10.11");
 
 	return FALSE;
 }
