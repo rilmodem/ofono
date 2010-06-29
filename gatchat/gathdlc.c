@@ -221,10 +221,10 @@ GAtHDLC *g_at_hdlc_new_from_io(GAtIO *io)
 	if (!hdlc->decode_buffer)
 		goto error;
 
+	hdlc->record_fd = -1;
+
 	hdlc->io = g_at_io_ref(io);
 	g_at_io_set_read_handler(hdlc->io, new_bytes, hdlc);
-
-	hdlc->record_fd = -1;
 
 	return hdlc;
 
