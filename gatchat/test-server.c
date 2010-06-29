@@ -139,6 +139,8 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
 
 	g_at_server_resume(server);
 	g_at_server_set_debug(server, server_debug, "Server");
+
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_NO_CARRIER);
 }
 
 static gboolean update_ppp(gpointer user)
@@ -569,7 +571,7 @@ static void cgdata_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_CONNECT);
+		g_at_server_send_intermediate(server, "CONNECT");
 		g_idle_add(setup_ppp, server);
 		break;
 	default:
@@ -798,7 +800,7 @@ static void dial_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 
 	c = *dial_str;
 	if (c == '*' || c == '#' || c == 'T' || c == 't') {
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_CONNECT);
+		g_at_server_send_intermediate(server, "CONNECT");
 		g_idle_add(setup_ppp, server);
 	}
 
