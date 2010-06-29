@@ -45,6 +45,7 @@ struct sim_data {
 	GAtChat *chat;
 	unsigned int vendor;
 	guint epev_id;
+	guint epev_source;
 };
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
@@ -510,6 +511,18 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
+static gboolean at_epev_unregister(gpointer user_data)
+{
+	struct sim_data *sd = user_data;
+
+	sd->epev_source = 0;
+
+	g_at_chat_unregister(sd->chat, sd->epev_id);
+	sd->epev_id = 0;
+
+	return FALSE;
+}
+
 static void at_epev_notify(GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -517,10 +530,12 @@ static void at_epev_notify(GAtResult *result, gpointer user_data)
 	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
 	struct ofono_error error = { .type = OFONO_ERROR_TYPE_NO_ERROR };
 
+	if (sd->epev_source)
+		return;
+
 	cb(&error, cbd->data);
 
-	g_at_chat_unregister(sd->chat, sd->epev_id);
-	sd->epev_id = 0;
+	sd->epev_source = g_timeout_add(0, at_epev_unregister, sd);
 }
 
 static void at_pin_send_cb(gboolean ok, GAtResult *result,
@@ -802,6 +817,9 @@ static void at_sim_remove(struct ofono_sim *sim)
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
 	ofono_sim_set_data(sim, NULL);
+
+	if (sd->epev_source)
+		g_source_remove(sd->epev_source);
 
 	g_free(sd);
 }
