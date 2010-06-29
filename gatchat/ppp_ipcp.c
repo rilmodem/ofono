@@ -316,7 +316,7 @@ static enum rcr_result ipcp_server_rcr(struct ipcp_data *ipcp,
 	struct ppp_option_iter iter;
 	guint8 nak_options[MAX_CONFIG_OPTION_SIZE];
 	guint16 len = 0;
-	guint8 *rej_options;
+	guint8 *rej_options = NULL;
 	guint16 rej_len = 0;
 	guint32 addr;
 
@@ -462,7 +462,7 @@ struct pppcp_proto ipcp_proto = {
 	.rcr			= ipcp_rcr,
 };
 
-struct pppcp_data *ipcp_new(GAtPPP *ppp)
+struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip)
 {
 	struct ipcp_data *ipcp;
 	struct pppcp_data *pppcp;
@@ -471,7 +471,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	if (!ipcp)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, &ipcp_proto);
+	pppcp = pppcp_new(ppp, &ipcp_proto, FALSE);
 	if (!pppcp) {
 		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(ipcp);
@@ -479,7 +479,14 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp)
 	}
 
 	pppcp_set_data(pppcp, ipcp);
-	ipcp_reset_client_config_options(ipcp);
+	ipcp->is_server = is_server;
+
+	if (is_server) {
+		ipcp->local_addr = ip;
+		ipcp_reset_server_config_options(ipcp);
+	} else
+		ipcp_reset_client_config_options(ipcp);
+
 	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
 
 	return pppcp;

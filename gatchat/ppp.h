@@ -79,12 +79,12 @@ static inline void __put_unaligned_short(void *p, guint16 val)
 	(get_host_short(packet + 2))
 
 /* LCP related functions */
-struct pppcp_data *lcp_new(GAtPPP *ppp);
+struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean dormant);
 void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
 
 /* IPCP related functions */
-struct pppcp_data *ipcp_new(GAtPPP *ppp);
+struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip);
 void ipcp_free(struct pppcp_data *data);
 void ipcp_set_server_info(struct pppcp_data *ipcp, guint32 peer_addr,
 				guint32 dns1, guint32 dns2);

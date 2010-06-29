@@ -304,7 +304,7 @@ void lcp_free(struct pppcp_data *pppcp)
 	pppcp_free(pppcp);
 }
 
-struct pppcp_data *lcp_new(GAtPPP *ppp)
+struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean is_server)
 {
 	struct pppcp_data *pppcp;
 	struct lcp_data *lcp;
@@ -313,7 +313,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp)
 	if (!lcp)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, &lcp_proto);
+	pppcp = pppcp_new(ppp, &lcp_proto, is_server);
 	if (!pppcp) {
 		g_free(lcp);
 		return NULL;

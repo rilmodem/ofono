@@ -996,7 +996,8 @@ void pppcp_set_local_options(struct pppcp_data *pppcp,
 	pppcp->local_options_len = len;
 }
 
-struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto)
+struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto,
+				gboolean dormant)
 {
 	struct pppcp_data *data;
 
@@ -1004,7 +1005,11 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto)
 	if (!data)
 		return NULL;
 
-	data->state = INITIAL;
+	if (dormant)
+		data->state = STOPPED;
+	else
+		data->state = INITIAL;
+
 	data->config_timer_data.restart_interval = INITIAL_RESTART_TIMEOUT;
 	data->terminate_timer_data.restart_interval = INITIAL_RESTART_TIMEOUT;
 	data->config_timer_data.max_counter = MAX_CONFIGURE;

@@ -479,7 +479,7 @@ void g_at_ppp_set_server_info(GAtPPP *ppp, const char *remote,
 	ipcp_set_server_info(ppp->ipcp, r, d1, d2);
 }
 
-static GAtPPP *ppp_init_common(GAtHDLC *hdlc)
+static GAtPPP *ppp_init_common(GAtHDLC *hdlc, gboolean is_server, guint32 ip)
 {
 	GAtPPP *ppp;
 
@@ -496,14 +496,17 @@ static GAtPPP *ppp_init_common(GAtHDLC *hdlc)
 	ppp->mtu = DEFAULT_MTU;
 
 	/* initialize the lcp state */
-	ppp->lcp = lcp_new(ppp);
+	ppp->lcp = lcp_new(ppp, is_server);
 
 	/* initialize IPCP state */
-	ppp->ipcp = ipcp_new(ppp);
+	ppp->ipcp = ipcp_new(ppp, is_server, ip);
 
 	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
 	g_at_io_set_disconnect_function(g_at_hdlc_get_io(ppp->hdlc),
 						io_disconnect, ppp);
+
+	if (is_server)
+		ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
 
 	return ppp;
 }
@@ -517,7 +520,7 @@ GAtPPP *g_at_ppp_new(GIOChannel *modem)
 	if (hdlc == NULL)
 		return NULL;
 
-	ppp = ppp_init_common(hdlc);
+	ppp = ppp_init_common(hdlc, FALSE, 0);
 	g_at_hdlc_unref(hdlc);
 
 	return ppp;
@@ -532,7 +535,49 @@ GAtPPP *g_at_ppp_new_from_io(GAtIO *io)
 	if (hdlc == NULL)
 		return NULL;
 
-	ppp = ppp_init_common(hdlc);
+	ppp = ppp_init_common(hdlc, FALSE, 0);
+	g_at_hdlc_unref(hdlc);
+
+	return ppp;
+}
+
+GAtPPP *g_at_ppp_server_new(GIOChannel *modem, const char *local)
+{
+	GAtHDLC *hdlc;
+	GAtPPP *ppp;
+	guint32 ip;
+
+	if (local == NULL)
+		ip = 0;
+	else if (inet_pton(AF_INET, local, &ip) != 1)
+		return NULL;
+
+	hdlc = g_at_hdlc_new(modem);
+	if (hdlc == NULL)
+		return NULL;
+
+	ppp = ppp_init_common(hdlc, TRUE, ip);
+	g_at_hdlc_unref(hdlc);
+
+	return ppp;
+}
+
+GAtPPP *g_at_ppp_server_new_from_io(GAtIO *io, const char *local)
+{
+	GAtHDLC *hdlc;
+	GAtPPP *ppp;
+	guint32 ip;
+
+	if (local == NULL)
+		ip = 0;
+	else if (inet_pton(AF_INET, local, &ip) != 1)
+		return NULL;
+
+	hdlc = g_at_hdlc_new_from_io(io);
+	if (hdlc == NULL)
+		return NULL;
+
+	ppp = ppp_init_common(hdlc, TRUE, ip);
 	g_at_hdlc_unref(hdlc);
 
 	return ppp;

@@ -52,6 +52,9 @@ typedef void (*GAtPPPDisconnectFunc)(GAtPPPDisconnectReason reason,
 
 GAtPPP *g_at_ppp_new(GIOChannel *modem);
 GAtPPP *g_at_ppp_new_from_io(GAtIO *io);
+GAtPPP *g_at_ppp_server_new(GIOChannel *modem, const char *local);
+GAtPPP *g_at_ppp_server_new_from_io(GAtIO *io, const char *local);
+
 void g_at_ppp_open(GAtPPP *ppp);
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc callback,
 					gpointer user_data);

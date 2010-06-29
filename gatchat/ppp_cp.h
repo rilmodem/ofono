@@ -103,7 +103,8 @@ guint8 ppp_option_iter_get_type(struct ppp_option_iter *iter);
 guint8 ppp_option_iter_get_length(struct ppp_option_iter *iter);
 const guint8 *ppp_option_iter_get_data(struct ppp_option_iter *iter);
 
-struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto);
+struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto,
+				gboolean dormant);
 void pppcp_free(struct pppcp_data *data);
 
 void pppcp_set_data(struct pppcp_data *pppcp, gpointer data);
