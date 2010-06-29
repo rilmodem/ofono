@@ -330,19 +330,20 @@ static enum rcr_result ipcp_server_rcr(struct ipcp_data *ipcp,
 		case IP_ADDRESS:
 			memcpy(&addr, data, 4);
 
-			FILL_IP(nak_options, addr != ipcp->peer_addr,
+			FILL_IP(nak_options,
+					addr != ipcp->peer_addr || addr == 0,
 					type, &ipcp->peer_addr);
 			break;
 		case PRIMARY_DNS_SERVER:
 			memcpy(&addr, data, 4);
 
-			FILL_IP(nak_options, addr != ipcp->dns1,
+			FILL_IP(nak_options, addr != ipcp->dns1 || addr == 0,
 					type, &ipcp->dns1);
 			break;
 		case SECONDARY_DNS_SERVER:
 			memcpy(&addr, data, 4);
 
-			FILL_IP(nak_options, addr != ipcp->dns2,
+			FILL_IP(nak_options, addr != ipcp->dns2 || addr == 0,
 					type, &ipcp->dns2);
 			break;
 		default:
