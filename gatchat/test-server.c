@@ -166,7 +166,7 @@ static gboolean setup_ppp(gpointer user)
 	g_at_server_suspend(server);
 
 	/* open ppp */
-	ppp = g_at_ppp_new_from_io(io);
+	ppp = g_at_ppp_server_new_from_io(io, "192.168.1.1");
 	if (ppp == NULL) {
 		g_at_server_resume(server);
 		return FALSE;
@@ -179,9 +179,6 @@ static gboolean setup_ppp(gpointer user)
 	/* set connect and disconnect callbacks */
 	g_at_ppp_set_connect_function(ppp, ppp_connect, server);
 	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, server);
-
-	/* open the ppp connection */
-	g_at_ppp_open(ppp);
 
 	g_idle_add(update_ppp, ppp);
 
