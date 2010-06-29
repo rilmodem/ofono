@@ -79,6 +79,9 @@ static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
 	if (fd < 0)
 		return;
 
+	if (len == 0)
+		return;
+
 	gettimeofday(&now, NULL);
 	ts = htonl(now.tv_sec & 0xffffffff);
 
