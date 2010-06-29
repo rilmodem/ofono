@@ -130,12 +130,6 @@ Work in progress features:
 		User initiated USSD support is available, but not
 		network-initiated USSD support.
 
-	PPP
-
-		Modems that use PPP for data connections are currently not
-		supported.  This feature will be available once a functional
-		userspace ppp stack is available.
-
 Not implemented features:
 
 	SIM card storage

@@ -200,13 +200,6 @@ Flight Mode
 GPRS
 ====
 
-- PPP gprs-context driver support.  Add an implementation for 'atmodem' that
-  will use the GAtPPP stack to drive a GPRS context interface.  Nicely support
-  existing PPP based modems like Huawei, Novatel and Sierra.
-
-  Priority: High
-  Complexity: C2
-
 - PPP Server support.  Extend GAtPPP to support PPP Server role, similarly to
   how existing GSM modems support PPP GPRS contexts.
 
