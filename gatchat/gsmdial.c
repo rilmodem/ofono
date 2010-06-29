@@ -262,10 +262,16 @@ static void ppp_connect(const char *iface, const char *local, const char *peer,
 	execute(buf);
 }
 
-static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
+static void no_carrier_notify(GAtResult *result, gpointer user_data)
 {
 	char buf[64];
 
+	sprintf(buf, "AT+CFUN=%u", option_offmode);
+	g_at_chat_send(control, buf, none_prefix, power_down, NULL, NULL);
+}
+
+static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
+{
 	g_print("PPP Link down: %d\n", reason);
 
 	g_at_ppp_unref(ppp);
@@ -273,8 +279,8 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 
 	g_at_chat_resume(modem);
 
-	sprintf(buf, "AT+CFUN=%u", option_offmode);
-	g_at_chat_send(control, buf, none_prefix, power_down, NULL, NULL);
+	g_at_chat_register(modem, "NO CARRIER", no_carrier_notify,
+					FALSE, NULL, NULL);
 }
 
 static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
