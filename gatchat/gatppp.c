@@ -465,21 +465,18 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	g_free(ppp);
 }
 
-void g_at_ppp_set_server_info(GAtPPP *ppp,
-				const char *local, const char *remote,
+void g_at_ppp_set_server_info(GAtPPP *ppp, const char *remote,
 				const char *dns1, const char *dns2)
 {
-	guint32 l = 0;
 	guint32 r = 0;
 	guint32 d1 = 0;
 	guint32 d2 = 0;
 
-	inet_pton(AF_INET, local, &l);
 	inet_pton(AF_INET, remote, &r);
 	inet_pton(AF_INET, dns1, &d1);
 	inet_pton(AF_INET, dns2, &d2);
 
-	ipcp_set_server_info(ppp->ipcp, l, r, d1, d2);
+	ipcp_set_server_info(ppp->ipcp, r, d1, d2);
 }
 
 static GAtPPP *ppp_init_common(GAtHDLC *hdlc)

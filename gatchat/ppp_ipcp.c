@@ -129,20 +129,14 @@ static void ipcp_reset_server_config_options(struct ipcp_data *ipcp)
 	ipcp_generate_config_options(ipcp);
 }
 
-void ipcp_set_server_info(struct pppcp_data *pppcp, guint32 local_addr,
-				guint32 peer_addr,
+void ipcp_set_server_info(struct pppcp_data *pppcp, guint32 peer_addr,
 				guint32 dns1, guint32 dns2)
 {
 	struct ipcp_data *ipcp = pppcp_get_data(pppcp);
 
-	ipcp->local_addr = local_addr;
 	ipcp->peer_addr = peer_addr;
 	ipcp->dns1 = dns1;
 	ipcp->dns2 = dns2;
-	ipcp->is_server = TRUE;
-
-	ipcp_reset_server_config_options(ipcp);
-	pppcp_set_local_options(pppcp, ipcp->options, ipcp->options_len);
 }
 
 static void ipcp_up(struct pppcp_data *pppcp)

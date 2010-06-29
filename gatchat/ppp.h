@@ -86,8 +86,7 @@ void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
 /* IPCP related functions */
 struct pppcp_data *ipcp_new(GAtPPP *ppp);
 void ipcp_free(struct pppcp_data *data);
-void ipcp_set_server_info(struct pppcp_data *ipcp, guint32 local_addr,
-				guint32 peer_addr,
+void ipcp_set_server_info(struct pppcp_data *ipcp, guint32 peer_addr,
 				guint32 dns1, guint32 dns2);
 
 /* CHAP related functions */
