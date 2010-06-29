@@ -201,7 +201,6 @@ static GAtChat *create_port(const char *device)
 static GAtChat *open_device(struct ofono_modem *modem,
 				const char *key, char *debug)
 {
-	struct huawei_data *data = ofono_modem_get_data(modem);
 	const char *device;
 	GAtChat *chat;
 
@@ -254,7 +253,6 @@ static void huawei_disconnect(gpointer user_data)
 static int huawei_enable(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
-	const char *modem_device, *pcui_device;
 
 	DBG("%p", modem);
 
