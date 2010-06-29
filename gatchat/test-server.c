@@ -145,7 +145,7 @@ static gboolean update_ppp(gpointer user)
 {
 	GAtPPP *ppp = user;
 
-	g_at_ppp_set_server_info(ppp, "192.168.1.1", "192.168.1.2",
+	g_at_ppp_set_server_info(ppp, "192.168.1.2",
 					"10.10.10.10", "10.10.10.11");
 
 	return FALSE;
