@@ -225,8 +225,8 @@ static void check_gsm_sms(const struct sms *command,
 		g_assert(cs->srr == ts->srr);
 		g_assert(cs->mr == ts->mr);
 
-		g_assert(cs->daddr.number_type == cs->daddr.number_type);
-		g_assert(cs->daddr.numbering_plan == cs->daddr.numbering_plan);
+		g_assert(cs->daddr.number_type == ts->daddr.number_type);
+		g_assert(cs->daddr.numbering_plan == ts->daddr.numbering_plan);
 		g_assert(g_str_equal(cs->daddr.address, ts->daddr.address));
 
 		g_assert(cs->pid == ts->pid);
@@ -7799,7 +7799,11 @@ static struct send_sms_test send_sms_data_111 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF4,
 			.udl = 12,
@@ -7822,7 +7826,11 @@ static struct send_sms_test send_sms_data_121 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 7,
@@ -7845,7 +7853,11 @@ static struct send_sms_test send_sms_data_131 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 13,
@@ -7868,7 +7880,11 @@ static struct send_sms_test send_sms_data_141 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 160,
@@ -7894,7 +7910,11 @@ static struct send_sms_test send_sms_data_151 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 160,
@@ -7920,7 +7940,11 @@ static struct send_sms_test send_sms_data_161 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -7942,7 +7966,11 @@ static struct send_sms_test send_sms_data_171 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF4,
 			.udl = 12,
@@ -7964,7 +7992,11 @@ static struct send_sms_test send_sms_data_181 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF4,
 			.udl = 12,
@@ -7987,7 +8019,11 @@ static struct send_sms_test send_sms_data_211 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 24,
@@ -8010,7 +8046,11 @@ static struct send_sms_test send_sms_data_212 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 24,
@@ -8033,7 +8073,11 @@ static struct send_sms_test send_sms_data_213 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 24,
@@ -8056,7 +8100,11 @@ static struct send_sms_test send_sms_data_311 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF4,
 			.udl = 12,
@@ -8083,7 +8131,11 @@ static struct send_sms_test send_sms_data_321 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0xF4,
 			.udl = 12,
@@ -8105,7 +8157,11 @@ static struct send_sms_test send_sms_data_411 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8127,7 +8183,11 @@ static struct send_sms_test send_sms_data_412 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8145,7 +8205,11 @@ static struct send_sms_test send_sms_data_421 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8167,7 +8231,11 @@ static struct send_sms_test send_sms_data_422 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8185,7 +8253,11 @@ static struct send_sms_test send_sms_data_431 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8207,7 +8279,11 @@ static struct send_sms_test send_sms_data_432 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8225,7 +8301,11 @@ static struct send_sms_test send_sms_data_441 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8247,7 +8327,11 @@ static struct send_sms_test send_sms_data_442 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8269,7 +8353,11 @@ static struct send_sms_test send_sms_data_443 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8287,7 +8375,11 @@ static struct send_sms_test send_sms_data_451 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8309,7 +8401,11 @@ static struct send_sms_test send_sms_data_452 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8331,7 +8427,11 @@ static struct send_sms_test send_sms_data_453 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8349,7 +8449,11 @@ static struct send_sms_test send_sms_data_461 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8371,7 +8475,11 @@ static struct send_sms_test send_sms_data_462 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8393,7 +8501,11 @@ static struct send_sms_test send_sms_data_463 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8411,7 +8523,11 @@ static struct send_sms_test send_sms_data_471 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8433,7 +8549,11 @@ static struct send_sms_test send_sms_data_472 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8455,7 +8575,11 @@ static struct send_sms_test send_sms_data_473 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8473,7 +8597,11 @@ static struct send_sms_test send_sms_data_481 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8495,7 +8623,11 @@ static struct send_sms_test send_sms_data_482 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8517,7 +8649,11 @@ static struct send_sms_test send_sms_data_483 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8535,7 +8671,11 @@ static struct send_sms_test send_sms_data_491 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8557,7 +8697,11 @@ static struct send_sms_test send_sms_data_492 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8579,7 +8723,11 @@ static struct send_sms_test send_sms_data_493 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8597,7 +8745,11 @@ static struct send_sms_test send_sms_data_4101 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8619,7 +8771,11 @@ static struct send_sms_test send_sms_data_4102 = {
 		{}, SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "01",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "01",
+			},
 			.pid = 0x40,
 			.dcs = 0xF0,
 			.udl = 1,
@@ -8643,7 +8799,11 @@ static struct send_sms_test send_sms_data_511 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 4,
@@ -8667,7 +8827,11 @@ static struct send_sms_test send_sms_data_512 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 4,
@@ -8691,7 +8855,11 @@ static struct send_sms_test send_sms_data_513 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 4,
@@ -8714,7 +8882,11 @@ static struct send_sms_test send_sms_data_611 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 8,
@@ -8737,7 +8909,11 @@ static struct send_sms_test send_sms_data_612 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 8,
@@ -8760,7 +8936,11 @@ static struct send_sms_test send_sms_data_613 = {
 		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
-			.daddr.address = "012345678",
+			.daddr = {
+				.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+				.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+				.address = "012345678",
+			},
 			.pid = 0x40,
 			.dcs = 0x08,
 			.udl = 8,
