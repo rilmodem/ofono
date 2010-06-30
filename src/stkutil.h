@@ -1118,7 +1118,6 @@ struct stk_command_select_item {
 
 struct stk_command_send_sms {
 	char *alpha_id;
-	struct stk_address address;
 	struct sms gsm_sms;
 	struct stk_common_byte_array cdma_sms;
 	struct stk_icon_id icon_id;

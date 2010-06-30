@@ -2633,7 +2633,6 @@ static enum stk_command_parse_result parse_select_item(
 static void destroy_send_sms(struct stk_command *command)
 {
 	g_free(command->send_sms.alpha_id);
-	g_free(command->send_sms.address.number);
 	g_free(command->send_sms.cdma_sms.array);
 }
 
@@ -2644,6 +2643,7 @@ static enum stk_command_parse_result parse_send_sms(
 	struct stk_command_send_sms *obj = &command->send_sms;
 	enum stk_command_parse_result status;
 	struct gsm_sms_tpdu gsm_tpdu;
+	struct stk_address sc_address = { 0, NULL };
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
@@ -2655,7 +2655,7 @@ static enum stk_command_parse_result parse_send_sms(
 	status = parse_dataobj(iter, STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
 				&obj->alpha_id,
 				STK_DATA_OBJECT_TYPE_ADDRESS, 0,
-				&obj->address,
+				&sc_address,
 				STK_DATA_OBJECT_TYPE_GSM_SMS_TPDU, 0,
 				&gsm_tpdu,
 				STK_DATA_OBJECT_TYPE_CDMA_SMS_TPDU, 0,
@@ -2671,35 +2671,63 @@ static enum stk_command_parse_result parse_send_sms(
 	command->destructor = destroy_send_sms;
 
 	if (status != STK_PARSE_RESULT_OK)
-		return status;
+		goto out;
 
-	if (gsm_tpdu.len == 0 && obj->cdma_sms.len == 0)
-		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+	if (gsm_tpdu.len == 0 && obj->cdma_sms.len == 0) {
+		status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+		goto out;
+	}
 
-	if (gsm_tpdu.len > 0 && obj->cdma_sms.len > 0)
-		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+	if (gsm_tpdu.len > 0 && obj->cdma_sms.len > 0) {
+		status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+		goto out;
+	}
 
 	/* We don't process CDMA pdus for now */
 	if (obj->cdma_sms.len > 0)
-		return STK_PARSE_RESULT_OK;
+		goto out;
 
 	/* packing is needed */
 	if (command->qualifier & 0x01) {
 		if (sms_decode_unpacked_stk_pdu(gsm_tpdu.tpdu, gsm_tpdu.len,
-							&obj->gsm_sms) != TRUE)
+							&obj->gsm_sms) !=
+				TRUE) {
 			status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
-		return status;
+			goto out;
+		}
+
+		goto set_addr;
 	}
 
 	if (sms_decode(gsm_tpdu.tpdu, gsm_tpdu.len, TRUE,
-				gsm_tpdu.len, &obj->gsm_sms) == FALSE)
-		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+				gsm_tpdu.len, &obj->gsm_sms) == FALSE) {
+		status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+		goto out;
+	}
 
 	if (obj->gsm_sms.type != SMS_TYPE_SUBMIT &&
-			obj->gsm_sms.type != SMS_TYPE_COMMAND)
-		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+			obj->gsm_sms.type != SMS_TYPE_COMMAND) {
+		status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+		goto out;
+	}
 
-	return STK_PARSE_RESULT_OK;
+set_addr:
+	if (sc_address.number == NULL)
+		goto out;
+
+	if (strlen(sc_address.number) > 20) {
+		status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+		goto out;
+	}
+
+	strcpy(obj->gsm_sms.sc_addr.address, sc_address.number);
+	obj->gsm_sms.sc_addr.numbering_plan = sc_address.ton_npi & 15;
+	obj->gsm_sms.sc_addr.number_type = (sc_address.ton_npi >> 4) & 7;
+
+out:
+	g_free(sc_address.number);
+
+	return status;
 }
 
 static void destroy_send_ss(struct stk_command *command)

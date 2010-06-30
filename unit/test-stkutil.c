@@ -207,6 +207,11 @@ static void check_response_length(const struct stk_response_length *command,
 static void check_gsm_sms(const struct sms *command,
 					const struct sms_test *test)
 {
+	g_assert(command->sc_addr.number_type == test->sc_addr.number_type);
+	g_assert(command->sc_addr.numbering_plan ==
+			test->sc_addr.numbering_plan);
+	g_assert(g_str_equal(command->sc_addr.address, test->sc_addr.address));
+
 	switch (test->type) {
 	case SMS_TYPE_SUBMIT: {
 		const struct sms_submit *cs = &command->submit;
@@ -7156,7 +7161,6 @@ struct send_sms_test {
 	unsigned int pdu_len;
 	unsigned char qualifier;
 	char *alpha_id;
-	struct stk_address address;
 	struct sms_test gsm_sms;
 	struct stk_common_byte_array cdma_sms;
 	struct stk_icon_id icon_id;
@@ -7781,12 +7785,13 @@ static struct send_sms_test send_sms_data_111 = {
 	.pdu_len = sizeof(send_sms_111),
 	.qualifier = 0x00,
 	.alpha_id = "Send SM",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7803,12 +7808,13 @@ static struct send_sms_test send_sms_data_121 = {
 	.pdu_len = sizeof(send_sms_121),
 	.qualifier = 0x01,
 	.alpha_id = "Send SM",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7825,12 +7831,13 @@ static struct send_sms_test send_sms_data_131 = {
 	.pdu_len = sizeof(send_sms_131),
 	.qualifier = 0x00,
 	.alpha_id = "Short Message",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7847,12 +7854,13 @@ static struct send_sms_test send_sms_data_141 = {
 	.pdu_len = sizeof(send_sms_141),
 	.qualifier = 0x01,
 	.alpha_id = "The address data object holds the RP_Destination_Address",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7872,12 +7880,13 @@ static struct send_sms_test send_sms_data_151 = {
 	.pdu_len = sizeof(send_sms_151),
 	.qualifier = 0x00,
 	.alpha_id = "The address data object holds the RP Destination Address",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7919,12 +7928,13 @@ static struct send_sms_test send_sms_data_171 = {
 	.pdu = send_sms_171,
 	.pdu_len = sizeof(send_sms_171),
 	.qualifier = 0x00,
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7940,12 +7950,13 @@ static struct send_sms_test send_sms_data_181 = {
 	.pdu = send_sms_181,
 	.pdu_len = sizeof(send_sms_181),
 	.qualifier = 0x00,
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7962,12 +7973,13 @@ static struct send_sms_test send_sms_data_211 = {
 	.pdu_len = sizeof(send_sms_211),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -7984,12 +7996,13 @@ static struct send_sms_test send_sms_data_212 = {
 	.pdu_len = sizeof(send_sms_212),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8006,12 +8019,13 @@ static struct send_sms_test send_sms_data_213 = {
 	.pdu_len = sizeof(send_sms_213),
 	.qualifier = 0x00,
 	.alpha_id = "ЗДРАВСТВУЙТЕ",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8028,12 +8042,13 @@ static struct send_sms_test send_sms_data_311 = {
 	.pdu_len = sizeof(send_sms_311),
 	.qualifier = 0x00,
 	.alpha_id = "NO ICON",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8054,12 +8069,13 @@ static struct send_sms_test send_sms_data_321 = {
 	.pdu_len = sizeof(send_sms_321),
 	.qualifier = 0x00,
 	.alpha_id = "Send SM",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8613,12 +8629,13 @@ static struct send_sms_test send_sms_data_511 = {
 	.pdu_len = sizeof(send_sms_511),
 	.qualifier = 0x00,
 	.alpha_id = "中一",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8636,12 +8653,13 @@ static struct send_sms_test send_sms_data_512 = {
 	.pdu_len = sizeof(send_sms_512),
 	.qualifier = 0x00,
 	.alpha_id = "中一",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8659,12 +8677,13 @@ static struct send_sms_test send_sms_data_513 = {
 	.pdu_len = sizeof(send_sms_513),
 	.qualifier = 0x00,
 	.alpha_id = "中一",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8681,12 +8700,13 @@ static struct send_sms_test send_sms_data_611 = {
 	.pdu_len = sizeof(send_sms_611),
 	.qualifier = 0x00,
 	.alpha_id = "80ル0",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8703,12 +8723,13 @@ static struct send_sms_test send_sms_data_612 = {
 	.pdu_len = sizeof(send_sms_612),
 	.qualifier = 0x00,
 	.alpha_id = "81ル1",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8725,12 +8746,13 @@ static struct send_sms_test send_sms_data_613 = {
 	.pdu_len = sizeof(send_sms_613),
 	.qualifier = 0x00,
 	.alpha_id = "82ル2",
-	.address = {
-		.ton_npi = 0x91,
-		.number = "112233445566778"
-	},
 	.gsm_sms = {
-		{}, SMS_TYPE_SUBMIT,
+		{
+			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
+			.numbering_plan = SMS_NUMBERING_PLAN_ISDN,
+			.address = "112233445566778",
+		},
+		SMS_TYPE_SUBMIT,
 		{.submit = {
 			.mr = 0x00,
 			.daddr.address = "012345678",
@@ -8760,7 +8782,6 @@ static void test_send_sms(gconstpointer data)
 	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_NETWORK);
 
 	check_alpha_id(command->send_sms.alpha_id, test->alpha_id);
-	check_address(&command->send_sms.address, &test->address);
 	check_gsm_sms(&command->send_sms.gsm_sms, &test->gsm_sms);
 	check_cdma_sms_tpdu(&command->send_sms.cdma_sms, &test->cdma_sms);
 	check_icon_id(&command->send_sms.icon_id, &test->icon_id);
