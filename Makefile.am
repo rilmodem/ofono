@@ -232,9 +232,6 @@ builtin_sources += plugins/hso.c
 builtin_modules += huawei
 builtin_sources += plugins/huawei.c
 
-builtin_modules += em770
-builtin_sources += plugins/em770.c
-
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
 

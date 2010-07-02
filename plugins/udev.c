@@ -258,30 +258,6 @@ static void add_huawei(struct ofono_modem *modem,
 		ofono_modem_register(modem);
 }
 
-static void add_em770(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	const char *devnode, *intfnum;
-	struct udev_device *parent;
-	int registered;
-
-	registered = ofono_modem_get_integer(modem, "Registered");
-	if (registered != 0)
-		return;
-
-	parent = udev_device_get_parent(udev_device);
-	parent = udev_device_get_parent(parent);
-	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
-
-	if (g_strcmp0(intfnum, "02") == 0) {
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Device", devnode);
-
-		ofono_modem_set_integer(modem, "Registered", 1);
-		ofono_modem_register(modem);
-	}
-}
-
 static void add_novatel(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
@@ -361,8 +337,6 @@ static void add_modem(struct udev_device *udev_device)
 		add_hso(modem, udev_device);
 	else if (g_strcmp0(driver, "huawei") == 0)
 		add_huawei(modem, udev_device);
-	else if (g_strcmp0(driver, "em770") == 0)
-		add_em770(modem, udev_device);
 	else if (g_strcmp0(driver, "novatel") == 0)
 		add_novatel(modem, udev_device);
 }
