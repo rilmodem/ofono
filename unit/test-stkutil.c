@@ -305,6 +305,7 @@ static inline void check_ussd(const struct stk_ussd_string *command,
 {
 	char *utf8 = ussd_decode(command->dcs, command->len, command->string);
 	check_common_text(utf8, test);
+	g_free(utf8);
 }
 
 /* Defined in TS 102.223 Section 8.18 */
@@ -5567,6 +5568,8 @@ static void test_setup_menu_missing_val(gconstpointer data)
 
 	g_assert(command);
 	g_assert(command->status == STK_PARSE_RESULT_MISSING_VALUE);
+
+	stk_command_free(command);
 }
 
 static void test_setup_menu_neg(gconstpointer data)
@@ -5578,6 +5581,8 @@ static void test_setup_menu_neg(gconstpointer data)
 
 	g_assert(command);
 	g_assert(command->status == STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD);
+
+	stk_command_free(command);
 }
 
 struct select_item_test {
