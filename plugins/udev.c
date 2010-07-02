@@ -227,6 +227,14 @@ static void add_huawei(struct ofono_modem *modem,
 		const char *name = udev_list_entry_get_name(entry);
 		type = udev_list_entry_get_value(entry);
 
+		if (g_str_equal(name, "OFONO_HUAWEI_VOICE") == TRUE) {
+			gboolean value = g_str_equal(type, "1");
+
+			ofono_modem_set_boolean(modem, "HasVoice", value);
+			entry = udev_list_entry_get_next(entry);
+			continue;
+		}
+
 		if (g_str_equal(name, "OFONO_HUAWEI_TYPE") != TRUE) {
 			entry = udev_list_entry_get_next(entry);
 			continue;

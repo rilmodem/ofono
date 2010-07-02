@@ -43,6 +43,13 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/voicecall.h>
+#include <ofono/call-forwarding.h>
+#include <ofono/call-settings.h>
+#include <ofono/call-barring.h>
+#include <ofono/ssn.h>
+#include <ofono/phonebook.h>
+#include <ofono/message-waiting.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -326,12 +333,16 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->pcui);
 	data->sim = ofono_sim_create(modem, 0, "atmodem", data->pcui);
+
+	if (ofono_modem_get_boolean(modem, "HasVoice") == TRUE)
+		ofono_voicecall_create(modem, 0, "atmodem", data->pcui);
 }
 
 static void huawei_post_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
 	struct ofono_netreg *netreg;
+	struct ofono_message_waiting *mw;
 
 	DBG("%p", modem);
 
@@ -348,6 +359,18 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 	if (data->gprs && data->gc)
 		ofono_gprs_add_context(data->gprs, data->gc);
+
+	if (ofono_modem_get_boolean(modem, "HasVoice") == TRUE) {
+		ofono_call_forwarding_create(modem, 0, "atmodem", data->pcui);
+		ofono_call_settings_create(modem, 0, "atmodem", data->pcui);
+		ofono_call_barring_create(modem, 0, "atmodem", data->pcui);
+		ofono_ssn_create(modem, 0, "atmodem", data->pcui);
+		ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
+
+		mw = ofono_message_waiting_create(modem);
+		if (mw)
+			ofono_message_waiting_register(mw);
+	}
 }
 
 static struct ofono_modem_driver huawei_driver = {
