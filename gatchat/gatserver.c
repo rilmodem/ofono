@@ -1019,9 +1019,6 @@ static void io_disconnect(gpointer user_data)
 
 	if (server->user_disconnect)
 		server->user_disconnect(server->user_disconnect_data);
-
-	if (server->destroyed)
-		g_free(server);
 }
 
 static void server_wakeup_writer(GAtServer *server)
