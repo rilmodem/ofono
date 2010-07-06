@@ -108,10 +108,10 @@ Methods		dict GetProperties()
 
 		void SendTones(string tones)
 
-			Sends the DTMF tones to the network.  Under GSM the
-			tones have a fixed duration.  Tones can be one of:
-			'0' - '9', '*', '#', 'A', 'B', 'C', 'D'. The last four
-			are typically not used in normal circumstances.
+			Sends the DTMF tones to the network.  The tones have
+			a fixed duration.  Tones can be one of: '0' - '9',
+			'*', '#', 'A', 'B', 'C', 'D'.  The last four are
+			typically not used in normal circumstances.
 
 Signals		PropertyChanged(string property, variant value)
 
