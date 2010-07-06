@@ -3000,6 +3000,7 @@ static enum stk_command_parse_result parse_timer_mgmt(
 					struct comprehension_tlv_iter *iter)
 {
 	struct stk_command_timer_mgmt *obj = &command->timer_mgmt;
+	enum stk_data_object_flag value_flags = 0;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
@@ -3007,10 +3008,13 @@ static enum stk_command_parse_result parse_timer_mgmt(
 	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
 
+	if ((command->qualifier & 3) == 0) /* Start a timer */
+		value_flags = DATAOBJ_FLAG_MANDATORY;
+
 	return parse_dataobj(iter, STK_DATA_OBJECT_TYPE_TIMER_ID,
 				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
 				&obj->timer_id,
-				STK_DATA_OBJECT_TYPE_TIMER_VALUE, 0,
+				STK_DATA_OBJECT_TYPE_TIMER_VALUE, value_flags,
 				&obj->timer_value,
 				STK_DATA_OBJECT_TYPE_INVALID);
 }
