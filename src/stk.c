@@ -143,6 +143,15 @@ static void stk_command_cb(const struct ofono_error *error, void *data)
 	DBG("TERMINAL RESPONSE to a command reported no errors");
 }
 
+static gboolean handle_command_more_time(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	/* Do nothing */
+
+	return TRUE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (!stk->pending_cmd)
@@ -212,6 +221,10 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		default:
 			rsp.result.type =
 				STK_RESULT_TYPE_COMMAND_NOT_UNDERSTOOD;
+			break;
+		case STK_COMMAND_TYPE_MORE_TIME:
+			respond = handle_command_more_time(stk->pending_cmd,
+								&rsp, stk);
 			break;
 		}
 
