@@ -848,12 +848,10 @@ static void set_raw_mode(int fd)
 {
 	struct termios options;
 
+	memset(&options, 0, sizeof(struct termios));
 	tcgetattr(fd, &options);
-
-	/* Set TTY as raw mode to disable echo back of input characters
-	 * when they are received from Modem to avoid feedback loop */
-	options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-
+	tcflush(fd, TCIOFLUSH);
+	cfmakeraw(&options);
 	tcsetattr(fd, TCSANOW, &options);
 }
 
