@@ -65,6 +65,8 @@ void *ofono_stk_get_data(struct ofono_stk *stk);
 void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 					int length, const unsigned char *pdu);
 
+void ofono_stk_proactive_session_end_notify(struct ofono_stk *stk);
+
 #ifdef __cplusplus
 }
 #endif
