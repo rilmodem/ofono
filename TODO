@@ -265,6 +265,33 @@ Supplementary Services
   Complexity: C8
 
 
+Voicecall
+=========
+
+- Supplementary service notifications on remote party actions:
+  - call has been put on hold (+CSSU: 2)
+  - call has been retrieved (+CSSU: 3), and
+  - joining call to a multiparty conference (+CSSU: 4)
+
+  Priority: Medium
+  Complexity: C1
+  Owner: Pekka Pessi <pekka.pessi@nokia.com>
+
+- Dial strings. Include CLIR prefixes and 2nd stage dial strings in the
+  DialString call property. Add dialstring accessor method to C API.
+
+  Priority: Medium
+
+- Provide feedback of sent DTMF tones. Emit SendingTones signal if modem can
+  provide approximate starting and stopping times for DTMF tones. Signal
+  argument contains a string of DTMF tones to be sent, or empty string when
+  all tones has been sent.
+
+  Priority: Medium
+  Complexity: C2
+  Owner: Pekka Pessi <pekka.pessi@nokia.com>
+
+
 Miscellaneous
 =============
 
