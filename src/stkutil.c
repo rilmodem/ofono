@@ -2324,8 +2324,8 @@ static enum stk_command_parse_result parse_dataobj(
 			if (comprehension_tlv_iter_get_tag(iter) == entry->type)
 				break;
 
-			/* Can't skip over Minimum objects */
-			if (entry->flags & DATAOBJ_FLAG_MINIMUM) {
+			/* Can't skip over mandatory objects */
+			if (entry->flags & DATAOBJ_FLAG_MANDATORY) {
 				l2 = NULL;
 				break;
 			}
@@ -2352,7 +2352,7 @@ static enum stk_command_parse_result parse_dataobj(
 	for (; l; l = l->next) {
 		struct dataobj_handler_entry *entry = l->data;
 
-		if (entry->flags & DATAOBJ_FLAG_MINIMUM)
+		if (entry->flags & DATAOBJ_FLAG_MANDATORY)
 			minimum_set = FALSE;
 	}
 
