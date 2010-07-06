@@ -74,11 +74,13 @@ static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
 	if (rlen != len * 2 || len < 2)
 		goto error;
 
-	if (response[len - 2] != 0x90 && response[len - 2] != 0x91)
-		goto error;
+	if ((response[len - 2] != 0x90 && response[len - 2] != 0x91) ||
+			(response[len - 2] == 0x90 && response[len - 1] != 0)) {
+		memset(&error, 0, sizeof(error));
 
-	if (response[len - 2] == 0x90 && response[len - 1] != 0)
-		goto error;
+		error.type = OFONO_ERROR_TYPE_SIM;
+		error.error = (response[len - 2] << 8) | response[len - 1];
+	}
 
 	DBG("csim_envelope_cb: %i", len);
 
@@ -157,11 +159,13 @@ static void at_csim_terminal_response_cb(gboolean ok, GAtResult *result,
 	if (rlen != len * 2 || len < 2)
 		goto error;
 
-	if (response[len - 2] != 0x90 && response[len - 2] != 0x91)
-		goto error;
+	if ((response[len - 2] != 0x90 && response[len - 2] != 0x91) ||
+			(response[len - 2] == 0x90 && response[len - 1] != 0)) {
+		memset(&error, 0, sizeof(error));
 
-	if (response[len - 2] == 0x90 && response[len - 1] != 0)
-		goto error;
+		error.type = OFONO_ERROR_TYPE_SIM;
+		error.error = (response[len - 2] << 8) | response[len - 1];
+	}
 
 	DBG("csim_terminal_response_cb: %i", len);
 

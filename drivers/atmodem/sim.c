@@ -82,8 +82,15 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
 			(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92) ||
-			(sw1 == 0x90 && sw2 != 0x00))
-		goto error;
+			(sw1 == 0x90 && sw2 != 0x00)) {
+		memset(&error, 0, sizeof(error));
+
+		error.type = OFONO_ERROR_TYPE_SIM;
+		error.error = (sw1 << 8) | sw2;
+
+		cb(&error, -1, -1, -1, NULL, cbd->data);
+		return;
+	}
 
 	DBG("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
 
@@ -165,9 +172,18 @@ static void at_crsm_read_cb(gboolean ok, GAtResult *result,
 	g_at_result_iter_next_number(&iter, &sw1);
 	g_at_result_iter_next_number(&iter, &sw2);
 
-	if (!g_at_result_iter_next_hexstring(&iter, &response, &len) ||
-		(sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
-		(sw1 == 0x90 && sw2 != 0x00)) {
+	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
+			(sw1 == 0x90 && sw2 != 0x00)) {
+		memset(&error, 0, sizeof(error));
+
+		error.type = OFONO_ERROR_TYPE_SIM;
+		error.error = (sw1 << 8) | sw2;
+
+		cb(&error, NULL, 0, cbd->data);
+		return;
+	}
+
+	if (!g_at_result_iter_next_hexstring(&iter, &response, &len)) {
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 		return;
 	}
@@ -255,8 +271,10 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 
 	if ((sw1 != 0x90 && sw1 != 0x91 && sw1 != 0x92 && sw1 != 0x9f) ||
 			(sw1 == 0x90 && sw2 != 0x00)) {
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		return;
+		memset(&error, 0, sizeof(error));
+
+		error.type = OFONO_ERROR_TYPE_SIM;
+		error.error = (sw1 << 8) | sw2;
 	}
 
 	DBG("crsm_update_cb: %02x, %02x", sw1, sw2);
