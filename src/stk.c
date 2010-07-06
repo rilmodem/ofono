@@ -521,6 +521,47 @@ static gboolean handle_command_timer_mgmt(const struct stk_command *cmd,
 	return TRUE;
 }
 
+static gboolean handle_command_poll_interval(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(stk->atom);
+	int seconds;
+
+	switch (cmd->poll_interval.duration.unit) {
+	case STK_DURATION_TYPE_MINUTES:
+		seconds = cmd->poll_interval.duration.interval * 60;
+		break;
+	case STK_DURATION_TYPE_SECONDS:
+		seconds = cmd->poll_interval.duration.interval;
+		break;
+	case STK_DURATION_TYPE_SECOND_TENTHS:
+		seconds = (4 + cmd->poll_interval.duration.interval) / 10;
+		if (seconds < 1)
+			seconds = 1;
+		break;
+	}
+
+	if (ofono_modem_set_integer(modem, "status-poll-interval", seconds)) {
+		seconds = ofono_modem_get_integer(modem,
+							"status-poll-interval");
+		if (!seconds)
+			seconds = 30;
+	}
+
+	if (seconds > 255) {
+		rsp->poll_interval.max_interval.unit =
+			STK_DURATION_TYPE_MINUTES;
+		rsp->poll_interval.max_interval.interval = seconds / 60;
+	} else {
+		rsp->poll_interval.max_interval.unit =
+			STK_DURATION_TYPE_SECONDS;
+		rsp->poll_interval.max_interval.interval = seconds;
+	}
+
+	return TRUE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (!stk->pending_cmd)
@@ -591,6 +632,10 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 			break;
 		case STK_COMMAND_TYPE_TIMER_MANAGEMENT:
 			respond = handle_command_timer_mgmt(stk->pending_cmd,
+								&rsp, stk);
+			break;
+		case STK_COMMAND_TYPE_POLL_INTERVAL:
+			respond = handle_command_poll_interval(stk->pending_cmd,
 								&rsp, stk);
 			break;
 		}
