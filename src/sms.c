@@ -87,6 +87,8 @@ struct tx_queue_entry {
 	DBusMessage *msg;
 	gboolean status_report;
 	struct sms_address receiver;
+	ofono_sms_submit_cb_t cb;
+	void *data;
 };
 
 static const char *sms_bearer_to_string(int bearer)
@@ -413,6 +415,9 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 	DBG("tx_finished");
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		if (entry->cb)
+			goto callback;
+
 		entry->retry += 1;
 
 		if (entry->retry != TXQ_MAX_RETRIES) {
@@ -459,6 +464,9 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		return;
 	}
 
+	if (entry->cb)
+		goto callback;
+
 	entry = g_queue_pop_head(sms->txq);
 	__ofono_dbus_pending_reply(&entry->msg,
 				dbus_message_new_method_return(entry->msg));
@@ -473,6 +481,19 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		DBG("Scheduling next");
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 	}
+
+	return;
+
+callback:
+	entry = g_queue_pop_head(sms->txq);
+
+	entry->cb(error, mr, entry->data);
+
+	g_free(entry->pdus);
+	g_free(entry);
+
+	if (g_queue_peek_head(sms->txq))
+		sms->tx_source = g_timeout_add(0, tx_next, sms);
 }
 
 static gboolean tx_next(gpointer user_data)
@@ -1284,4 +1305,22 @@ void ofono_sms_set_data(struct ofono_sms *sms, void *data)
 void *ofono_sms_get_data(struct ofono_sms *sms)
 {
 	return sms->driver_data;
+}
+
+void __ofono_sms_submit(struct ofono_sms *sms, const struct sms *msg,
+			ofono_sms_submit_cb_t cb, void *data)
+{
+	GSList msg_list = {
+		.data = (void *) msg,
+		.next = NULL,
+	};
+	struct tx_queue_entry *entry = create_tx_queue_entry(&msg_list);
+
+	entry->cb = cb;
+	entry->data = data;
+
+	g_queue_push_tail(sms->txq, entry);
+
+	if (g_queue_get_length(sms->txq) == 1)
+		sms->tx_source = g_timeout_add(0, tx_next, sms);
 }

@@ -168,11 +168,16 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/cbs.h>
 #include <ofono/devinfo.h>
 #include <ofono/phonebook.h>
-#include <ofono/sms.h>
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
+
+#include <ofono/sms.h>
+
+struct sms;
+void __ofono_sms_submit(struct ofono_sms *sms, const struct sms *msg,
+			ofono_sms_submit_cb_t cb, void *data);
 
 #include <ofono/sim.h>
 #include <ofono/stk.h>
