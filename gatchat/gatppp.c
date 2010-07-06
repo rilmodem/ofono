@@ -446,6 +446,9 @@ void g_at_ppp_unref(GAtPPP *ppp)
 {
 	gboolean is_zero;
 
+	if (ppp == NULL)
+		return;
+
 	is_zero = g_atomic_int_dec_and_test(&ppp->ref_count);
 
 	if (is_zero == FALSE)
