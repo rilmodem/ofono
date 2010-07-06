@@ -179,6 +179,9 @@ static void stkn_notify(GAtResult *result, gpointer user_data)
 
 static void stkend_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_stk *stk = user_data;
+
+	ofono_stk_proactive_session_end_notify(stk);
 }
 
 static void mbm_stkc_cb(gboolean ok, GAtResult *result, gpointer user_data)
