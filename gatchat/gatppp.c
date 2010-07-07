@@ -454,6 +454,9 @@ void g_at_ppp_unref(GAtPPP *ppp)
 	if (is_zero == FALSE)
 		return;
 
+	g_at_io_set_disconnect_function(g_at_hdlc_get_io(ppp->hdlc),
+						NULL, NULL);
+
 	if (ppp->net)
 		ppp_net_free(ppp->net);
 
