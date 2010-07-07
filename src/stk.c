@@ -556,8 +556,7 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 {
 	struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_response rsp;
-	char *buf;
-	int i, err;
+	int err;
 	gboolean respond = TRUE;
 
 	/*
@@ -570,25 +569,16 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 	 */
 	stk_proactive_command_cancel(stk);
 
-	buf = g_try_malloc(length * 2 + 1);
-	if (!buf)
-		return;
-
-	for (i = 0; i < length; i ++)
-		sprintf(buf + i * 2, "%02hhx", pdu[i]);
-
 	stk->pending_cmd = stk_command_new_from_pdu(pdu, length);
 	if (!stk->pending_cmd) {
-		ofono_error("Can't parse proactive command: %s", buf);
+		ofono_error("Can't parse proactive command");
 
 		/*
 		 * Nothing we can do, we'd need at least Command Details
 		 * to be able to respond with an error.
 		 */
-		goto done;
+		return;
 	}
-
-	ofono_debug("Proactive command PDU: %s", buf);
 
 	memset(&rsp, 0, sizeof(rsp));
 
@@ -638,9 +628,6 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 	err = stk_respond(stk, &rsp, stk_command_cb);
 	if (err)
 		stk_command_cb(&error, stk);
-
-done:
-	g_free(buf);
 }
 
 int ofono_stk_driver_register(const struct ofono_stk_driver *d)
