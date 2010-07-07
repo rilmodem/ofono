@@ -135,11 +135,11 @@ out:
 
 static void envelope_queue_run(struct ofono_stk *stk)
 {
-	while (g_queue_get_length(stk->envelope_q) > 0) {
+	if (g_queue_get_length(stk->envelope_q) > 0) {
 		struct envelope_op *op = g_queue_peek_head(stk->envelope_q);
 
 		stk->driver->envelope(stk, op->tlv_len, op->tlv,
-				envelope_cb, stk);
+					envelope_cb, stk);
 	}
 }
 
