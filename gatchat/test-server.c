@@ -846,13 +846,13 @@ static void server_destroy(gpointer user)
 
 static void set_raw_mode(int fd)
 {
-	struct termios options;
+	struct termios ti;
 
-	memset(&options, 0, sizeof(struct termios));
-	tcgetattr(fd, &options);
+	memset(&ti, 0, sizeof(ti));
+	tcgetattr(fd, &ti);
 	tcflush(fd, TCIOFLUSH);
-	cfmakeraw(&options);
-	tcsetattr(fd, TCSANOW, &options);
+	cfmakeraw(&ti);
+	tcsetattr(fd, TCSANOW, &ti);
 }
 
 static gboolean create_tty(const char *modem_path)
