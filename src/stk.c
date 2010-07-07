@@ -211,8 +211,6 @@ static void stk_command_cb(const struct ofono_error *error, void *data)
 {
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("TERMINAL RESPONSE to a UICC command failed");
-		/* "The ME may retry to deliver the same Cell Broadcast
-		 * page." */
 		return;
 	}
 
