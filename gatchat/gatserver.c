@@ -1166,6 +1166,8 @@ void g_at_server_resume(GAtServer *server)
 		return;
 	}
 
+	g_at_io_set_disconnect_function(server->io, io_disconnect, server);
+
 	g_at_io_set_debug(server->io, server->debugf, server->debug_data);
 	g_at_io_set_read_handler(server->io, new_bytes, server);
 
