@@ -1,3 +1,15 @@
+ver 0.24:
+	Fix race condition with GRPS attach operation.
+	Fix some issues with Option based devices.
+	Fix Huawei TTY hangup on context termination.
+	Fix crash within HDLC handling.
+	Fix incorrect packet length within PPP.
+	Add support for PPP server side.
+	Add support for decoding USSD PDUs.
+	Add support for SMS status report assembly.
+	Add support for SMS bearer settings.
+	Add initial support for Bluetooth plugin.
+
 ver 0.23:
 	Fix issue with operator info when not registered.
 	Fix issue with clean PPP shutdown on device removal.
