@@ -52,7 +52,6 @@ struct ofono_stk {
 	struct ofono_atom *atom;
 	struct stk_command *pending_cmd;
 	void (*cancel_cmd)(struct ofono_stk *stk);
-	gboolean cancelled;
 	GQueue *envelope_q;
 
 	struct stk_timer timers[8];
@@ -539,8 +538,6 @@ static void stk_proactive_command_cancel(struct ofono_stk *stk)
 	if (!stk->pending_cmd)
 		return;
 
-	stk->cancelled = TRUE;
-
 	stk->cancel_cmd(stk);
 
 	if (stk->pending_cmd) {
@@ -579,8 +576,6 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 
 	for (i = 0; i < length; i ++)
 		sprintf(buf + i * 2, "%02hhx", pdu[i]);
-
-	stk->cancelled = FALSE;
 
 	stk->pending_cmd = stk_command_new_from_pdu(pdu, length);
 	if (!stk->pending_cmd) {
