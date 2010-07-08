@@ -545,12 +545,10 @@ static gboolean handle_command_poll_interval(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	if (ofono_modem_set_integer(modem, "status-poll-interval", seconds)) {
-		seconds = ofono_modem_get_integer(modem,
-							"status-poll-interval");
-		if (!seconds)
-			seconds = 30;
-	}
+	if (seconds == 0)
+		seconds = 30;
+
+	ofono_modem_set_integer(modem, "status-poll-interval", seconds);
 
 	if (seconds > 255) {
 		rsp->poll_interval.max_interval.unit =
