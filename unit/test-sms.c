@@ -1210,6 +1210,7 @@ static void test_sr_assembly()
 
 	g_assert(id == 42);
 	g_assert(delivered == TRUE);
+	status_report_assembly_free(sra);
 }
 
 int main(int argc, char **argv)
