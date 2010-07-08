@@ -540,6 +540,9 @@ static gboolean handle_command_poll_interval(const struct stk_command *cmd,
 		if (seconds < 1)
 			seconds = 1;
 		break;
+	default:
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+		return TRUE;
 	}
 
 	if (ofono_modem_set_integer(modem, "status-poll-interval", seconds)) {
