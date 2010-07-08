@@ -362,12 +362,9 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 		stk->idle_mode_text = NULL;
 	}
 
-	if (!cmd->setup_idle_mode_text.text)
-		goto out;
+	if (cmd->setup_idle_mode_text.text)
+		stk->idle_mode_text = g_strdup(cmd->setup_idle_mode_text.text);
 
-	stk->idle_mode_text = g_strdup(cmd->setup_idle_mode_text.text);
-
-out:
 	idle_mode_text = stk->idle_mode_text ?: "";
 	ofono_dbus_signal_property_changed(conn, path, OFONO_STK_INTERFACE,
 						"IdleModeText",
