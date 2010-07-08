@@ -420,7 +420,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 
 		entry->retry += 1;
 
-		if (entry->retry != TXQ_MAX_RETRIES) {
+		if (entry->retry < TXQ_MAX_RETRIES) {
 			DBG("Sending failed, retry in %d secs",
 					entry->retry * 5);
 			sms->tx_source = g_timeout_add_seconds(entry->retry * 5,
