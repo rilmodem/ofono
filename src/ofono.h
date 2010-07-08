@@ -176,8 +176,19 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/sms.h>
 
 struct sms;
-void __ofono_sms_submit(struct ofono_sms *sms, const struct sms *msg,
-			ofono_sms_submit_cb_t cb, void *data);
+
+enum ofono_sms_submit_flag {
+	OFONO_SMS_SUBMIT_FLAG_REQUEST_SR =	0x1,
+	OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY =	0x2,
+	OFONO_SMS_SUBMIT_FLAG_RETRY =		0x4,
+};
+
+typedef void (*ofono_sms_txq_submit_cb_t)(gboolean ok, void *data);
+
+unsigned int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
+					unsigned int flags,
+					ofono_sms_txq_submit_cb_t cb,
+					void *data, ofono_destroy_func destroy);
 
 #include <ofono/sim.h>
 #include <ofono/stk.h>

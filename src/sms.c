@@ -82,13 +82,13 @@ struct tx_queue_entry {
 	struct pending_pdu *pdus;
 	unsigned char num_pdus;
 	unsigned char cur_pdu;
+	struct sms_address receiver;
 	unsigned int msg_id;
 	unsigned int retry;
-	DBusMessage *msg;
-	gboolean status_report;
-	struct sms_address receiver;
-	ofono_sms_submit_cb_t cb;
+	unsigned int flags;
+	ofono_sms_txq_submit_cb_t cb;
 	void *data;
+	ofono_destroy_func destroy;
 };
 
 static const char *sms_bearer_to_string(int bearer)
@@ -411,12 +411,13 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 	struct ofono_sms *sms = data;
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	struct tx_queue_entry *entry = g_queue_peek_head(sms->txq);
+	gboolean ok = error->type == OFONO_ERROR_TYPE_NO_ERROR;
 
 	DBG("tx_finished");
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		if (entry->cb)
-			goto callback;
+	if (ok == FALSE) {
+		if (!(entry->flags & OFONO_SMS_SUBMIT_FLAG_RETRY))
+			goto next_q;
 
 		entry->retry += 1;
 
@@ -429,30 +430,13 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		}
 
 		DBG("Max retries reached, giving up");
-
-		entry = g_queue_pop_head(sms->txq);
-		__ofono_dbus_pending_reply(&entry->msg,
-					__ofono_error_failed(entry->msg));
-
-		__ofono_history_sms_send_status(modem, entry->msg_id,
-					time(NULL),
-					OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED);
-
-		g_free(entry->pdus);
-		g_free(entry);
-
-		if (g_queue_peek_head(sms->txq)) {
-			DBG("Previous send failed, scheduling next");
-			sms->tx_source = g_timeout_add(0, tx_next, sms);
-		}
-
-		return;
+		goto next_q;
 	}
 
 	entry->cur_pdu += 1;
 	entry->retry = 0;
 
-	if (entry->status_report)
+	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_REQUEST_SR)
 		status_report_assembly_add_fragment(sms->sr_assembly,
 							entry->msg_id,
 							&entry->receiver,
@@ -464,15 +448,26 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		return;
 	}
 
-	if (entry->cb)
-		goto callback;
-
+next_q:
 	entry = g_queue_pop_head(sms->txq);
-	__ofono_dbus_pending_reply(&entry->msg,
-				dbus_message_new_method_return(entry->msg));
-	__ofono_history_sms_send_status(modem, entry->msg_id,
-					time(NULL),
-					OFONO_HISTORY_SMS_STATUS_SUBMITTED);
+
+	if (entry->cb)
+		entry->cb(ok, entry->data);
+
+	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY) {
+		enum ofono_history_sms_status hs;
+
+		if (ok)
+			hs = OFONO_HISTORY_SMS_STATUS_SUBMITTED;
+		else
+			hs = OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED;
+
+		__ofono_history_sms_send_status(modem, entry->msg_id,
+						time(NULL), hs);
+	}
+
+	if (entry->destroy)
+		entry->destroy(entry->data);
 
 	g_free(entry->pdus);
 	g_free(entry);
@@ -481,19 +476,6 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		DBG("Scheduling next");
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 	}
-
-	return;
-
-callback:
-	entry = g_queue_pop_head(sms->txq);
-
-	entry->cb(error, mr, entry->data);
-
-	g_free(entry->pdus);
-	g_free(entry);
-
-	if (g_queue_peek_head(sms->txq))
-		sms->tx_source = g_timeout_add(0, tx_next, sms);
 }
 
 static gboolean tx_next(gpointer user_data)
@@ -563,6 +545,27 @@ static struct tx_queue_entry *create_tx_queue_entry(GSList *msg_list)
 	return entry;
 }
 
+static void send_message_cb(gboolean ok, void *data)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	DBusMessage *msg = data;
+	DBusMessage *reply;
+
+	if (ok)
+		reply = dbus_message_new_method_return(msg);
+	else
+		reply = __ofono_error_failed(msg);
+
+	g_dbus_send_message(conn, reply);
+}
+
+static void send_message_destroy(void *data)
+{
+	DBusMessage *msg = data;
+
+	dbus_message_unref(msg);
+}
+
 /*
  * Pre-process a SMS text message and deliver it [D-Bus SendMessage()]
  *
@@ -584,8 +587,9 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	const char *text;
 	GSList *msg_list;
 	int ref_offset;
-	struct tx_queue_entry *entry;
 	struct ofono_modem *modem;
+	unsigned int flags;
+	unsigned int msg_id;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &to,
 					DBUS_TYPE_STRING, &text,
@@ -601,15 +605,8 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	if (!msg_list)
 		return __ofono_error_invalid_format(msg);
 
-	DBG("ref: %d, offset: %d", sms->ref, ref_offset);
-
 	set_ref_and_to(msg_list, sms->ref, ref_offset, to);
-	entry = create_tx_queue_entry(msg_list);
-
-	sms_address_from_string(&entry->receiver, to);
-
-	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
-	g_slist_free(msg_list);
+	DBG("ref: %d, offset: %d", sms->ref, ref_offset);
 
 	if (ref_offset != 0) {
 		if (sms->ref == 65536)
@@ -618,18 +615,20 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 			sms->ref = sms->ref + 1;
 	}
 
-	entry->msg = dbus_message_ref(msg);
-	entry->msg_id = sms->next_msg_id++;
-	entry->status_report = sms->use_delivery_reports;
+	flags = OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY;
+	flags |= OFONO_SMS_SUBMIT_FLAG_RETRY;
+	if (sms->use_delivery_reports)
+		flags |= OFONO_SMS_SUBMIT_FLAG_REQUEST_SR;
 
-	g_queue_push_tail(sms->txq, entry);
+	msg_id = __ofono_sms_txq_submit(sms, msg_list, flags, send_message_cb,
+						dbus_message_ref(msg),
+						send_message_destroy);
+
+	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
+	g_slist_free(msg_list);
 
 	modem = __ofono_atom_get_modem(sms->atom);
-	__ofono_history_sms_send_pending(modem, entry->msg_id, to,
-						time(NULL), text);
-
-	if (g_queue_get_length(sms->txq) == 1)
-		sms->tx_source = g_timeout_add(0, tx_next, sms);
+	__ofono_history_sms_send_pending(modem, msg_id, to, time(NULL), text);
 
 	return NULL;
 }
@@ -1307,20 +1306,30 @@ void *ofono_sms_get_data(struct ofono_sms *sms)
 	return sms->driver_data;
 }
 
-void __ofono_sms_submit(struct ofono_sms *sms, const struct sms *msg,
-			ofono_sms_submit_cb_t cb, void *data)
+unsigned int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
+					unsigned int flags,
+					ofono_sms_txq_submit_cb_t cb,
+					void *data, ofono_destroy_func destroy)
 {
-	GSList msg_list = {
-		.data = (void *) msg,
-		.next = NULL,
-	};
-	struct tx_queue_entry *entry = create_tx_queue_entry(&msg_list);
+	struct tx_queue_entry *entry = create_tx_queue_entry(list);
 
+	if (flags & OFONO_SMS_SUBMIT_FLAG_REQUEST_SR) {
+		struct sms *head = list->data;
+
+		memcpy(&entry->receiver, &head->submit.daddr,
+				sizeof(entry->receiver));
+	}
+
+	entry->msg_id = sms->next_msg_id++;
+	entry->flags = flags;
 	entry->cb = cb;
 	entry->data = data;
+	entry->destroy = destroy;
 
 	g_queue_push_tail(sms->txq, entry);
 
 	if (g_queue_get_length(sms->txq) == 1)
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
+
+	return entry->msg_id;
 }

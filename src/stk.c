@@ -286,42 +286,32 @@ static void send_sms_cancel(struct ofono_stk *stk)
 	stk_alpha_id_unset(stk);
 }
 
-static void send_sms_submit_cb(const struct ofono_error *error, int mr,
-				void *data)
+static void send_sms_submit_cb(gboolean ok, void *data)
 {
-	struct stk_response rsp;
 	struct sms_submit_req *req = data;
 	struct ofono_stk *stk = req->stk;
 	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
+	struct stk_response rsp;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ofono_debug("SMS submission returned errors: %s",
-				telephony_error_to_str(error));
-	else
-		ofono_debug("SMS submission successful");
+	ofono_debug("SMS submission %s", ok ? "successful" : "failed");
 
 	if (req->cancelled) {
 		ofono_debug("Received an SMS submitted callback after the "
 				"proactive command was cancelled");
-		goto out;
+		return;
 	}
 
 	memset(&rsp, 0, sizeof(rsp));
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+	if (ok == FALSE)
 		rsp.result.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE;
 
 	if (stk_respond(stk, &rsp, stk_command_cb))
 		stk_command_cb(&failure, stk);
 
-	if (!stk->pending_cmd->send_sms.alpha_id ||
-			!stk->pending_cmd->send_sms.alpha_id[0])
-		goto out;
-
-	stk_alpha_id_unset(stk);
-
-out:
-	g_free(req);
+	if (stk->pending_cmd->send_sms.alpha_id &&
+			stk->pending_cmd->send_sms.alpha_id[0])
+		stk_alpha_id_unset(stk);
 }
 
 static gboolean handle_command_send_sms(const struct stk_command *cmd,
@@ -331,6 +321,7 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 	struct ofono_modem *modem = __ofono_atom_get_modem(stk->atom);
 	struct ofono_atom *sms_atom;
 	struct ofono_sms *sms;
+	GSList msg_list;
 
 	sms_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SMS);
 
@@ -344,15 +335,16 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 	stk->sms_submit_req = g_new0(struct sms_submit_req, 1);
 	stk->sms_submit_req->stk = stk;
 
-	__ofono_sms_submit(sms, &cmd->send_sms.gsm_sms,
-				send_sms_submit_cb, stk->sms_submit_req);
+	msg_list.data = (void *) &cmd->send_sms.gsm_sms;
+	msg_list.next = NULL;
+
+	__ofono_sms_txq_submit(sms, &msg_list, 0, send_sms_submit_cb,
+				stk->sms_submit_req, g_free);
 
 	stk->cancel_cmd = send_sms_cancel;
 
-	if (!cmd->send_sms.alpha_id || !cmd->send_sms.alpha_id[0])
-		return FALSE;
-
-	stk_alpha_id_set(stk, cmd->send_sms.alpha_id);
+	if (cmd->send_sms.alpha_id && cmd->send_sms.alpha_id[0])
+		stk_alpha_id_set(stk, cmd->send_sms.alpha_id);
 
 	return FALSE;
 }
