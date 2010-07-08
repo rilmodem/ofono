@@ -2936,11 +2936,11 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 		if (gsm_encoded) {
 			chunk = sms_text_capacity_gsm(160, offset);
 
-			if (gsm_encoded[written + chunk - 1] == 0x1b)
-				chunk -= 1;
-
 			if (left < chunk)
 				chunk = left;
+
+			if (gsm_encoded[written + chunk - 1] == 0x1b)
+				chunk -= 1;
 
 			template.submit.udl = chunk + (offset * 8 + 6) / 7;
 			pack_7bit_own_buf(gsm_encoded + written, chunk,
