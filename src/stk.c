@@ -234,7 +234,7 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-	const char *idle_mode_text = stk->idle_mode_text ?: "";
+	const char *idle_mode_text;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -246,6 +246,7 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
+	idle_mode_text = stk->idle_mode_text ? stk->idle_mode_text : "";
 	ofono_dbus_dict_append(&dict, "IdleModeText",
 				DBUS_TYPE_STRING, &idle_mode_text);
 
@@ -365,7 +366,7 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 	if (cmd->setup_idle_mode_text.text)
 		stk->idle_mode_text = g_strdup(cmd->setup_idle_mode_text.text);
 
-	idle_mode_text = stk->idle_mode_text ?: "";
+	idle_mode_text = stk->idle_mode_text ? stk->idle_mode_text : "";
 	ofono_dbus_signal_property_changed(conn, path, OFONO_STK_INTERFACE,
 						"IdleModeText",
 						DBUS_TYPE_STRING,
