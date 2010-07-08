@@ -175,7 +175,7 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	const char *status;
 	const char *callerid;
-	const char *timestr = "";
+	const char *timestr;
 
 	reply = dbus_message_new_method_return(msg);
 
