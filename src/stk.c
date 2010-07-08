@@ -353,9 +353,9 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 						struct stk_response *rsp,
 						struct ofono_stk *stk)
 {
-	const char *idle_mode_text;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(stk->atom);
+	const char *idle_mode_text;
 
 	if (stk->idle_mode_text) {
 		g_free(stk->idle_mode_text);
