@@ -4974,7 +4974,8 @@ static struct setup_menu_test setup_menu_data_112 = {
 static struct setup_menu_test setup_menu_data_113 = {
 	.pdu = setup_menu_113,
 	.pdu_len = sizeof(setup_menu_113),
-	.qualifier = 0x00
+	.qualifier = 0x00,
+	.alpha_id = ""
 };
 
 static struct setup_menu_test setup_menu_data_121 = {
@@ -5442,7 +5443,8 @@ static struct setup_menu_test setup_menu_data_712 = {
 static struct setup_menu_test setup_menu_data_713 = {
 	.pdu = setup_menu_713,
 	.pdu_len = sizeof(setup_menu_713),
-	.qualifier = 0x00
+	.qualifier = 0x00,
+	.alpha_id = ""
 };
 
 static struct setup_menu_test setup_menu_data_811 = {
@@ -5472,7 +5474,8 @@ static struct setup_menu_test setup_menu_data_812 = {
 static struct setup_menu_test setup_menu_data_813 = {
 	.pdu = setup_menu_813,
 	.pdu_len = sizeof(setup_menu_813),
-	.qualifier = 0x00
+	.qualifier = 0x00,
+	.alpha_id = ""
 };
 
 static struct setup_menu_test setup_menu_data_911 = {
@@ -5502,7 +5505,8 @@ static struct setup_menu_test setup_menu_data_912 = {
 static struct setup_menu_test setup_menu_data_913 = {
 	.pdu = setup_menu_913,
 	.pdu_len = sizeof(setup_menu_913),
-	.qualifier = 0x00
+	.qualifier = 0x00,
+	.alpha_id = ""
 };
 
 static struct setup_menu_test setup_menu_data_neg_1 = {
@@ -7957,6 +7961,7 @@ static struct send_sms_test send_sms_data_171 = {
 	.pdu = send_sms_171,
 	.pdu_len = sizeof(send_sms_171),
 	.qualifier = 0x00,
+	.alpha_id = "",
 	.gsm_sms = {
 		{
 			.number_type = SMS_NUMBER_TYPE_INTERNATIONAL,
@@ -9474,6 +9479,7 @@ static struct send_ss_test send_ss_data_161 = {
 	.pdu = send_ss_161,
 	.pdu_len = sizeof(send_ss_161),
 	.qualifier = 0x00,
+	.alpha_id = "",
 	.ss = {
 		.ton_npi = 0x91,
 		.ss = "**21*01234567890123456789*10#"
@@ -10774,6 +10780,7 @@ static struct send_ussd_test send_ussd_data_181 = {
 	.pdu = send_ussd_181,
 	.pdu_len = sizeof(send_ussd_181),
 	.qualifier = 0x00,
+	.alpha_id = "",
 	.ussd = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz-"
 		"1234567890"
 };
@@ -14621,6 +14628,7 @@ static struct run_at_command_test run_at_command_data_121 = {
 	.pdu = run_at_command_121,
 	.pdu_len = sizeof(run_at_command_121),
 	.qualifier = 0x00,
+	.alpha_id = "",
 	.at_command = "AT+CGMI"
 };
 
@@ -15319,6 +15327,7 @@ static struct send_dtmf_test send_dtmf_data_131 = {
 	.pdu = send_dtmf_131,
 	.pdu_len = sizeof(send_dtmf_131),
 	.qualifier = 0x00,
+	.alpha_id = "",
 	.dtmf = "1cccccccccc2"
 };
 
@@ -16039,6 +16048,7 @@ static struct launch_browser_test launch_browser_data_121 = {
 	.pdu = launch_browser_121,
 	.pdu_len = sizeof(launch_browser_121),
 	.qualifier = 0x00,
+	.alpha_id = "",
 	.url = "http://xxx.yyy.zzz"
 };
 
