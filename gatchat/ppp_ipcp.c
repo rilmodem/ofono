@@ -63,6 +63,8 @@ enum ipcp_option_types {
 #define REQ_OPTION_NBNS1	0x08
 #define REQ_OPTION_NBNS2	0x10
 
+#define MAX_IPCP_FAILURE	100
+
 struct ipcp_data {
 	guint8 options[MAX_CONFIG_OPTION_SIZE];
 	guint16 options_len;
@@ -472,7 +474,13 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip)
 	if (!ipcp)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, &ipcp_proto, FALSE);
+	/*
+	 * Some 3G modems use repeated IPCP NAKs as the way of stalling
+	 * util sending us the client IP address. So we increase the
+	 * default number of NAKs we accept before start treating them
+	 * as rejects.
+	 */
+	pppcp = pppcp_new(ppp, &ipcp_proto, FALSE, MAX_IPCP_FAILURE);
 	if (!pppcp) {
 		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(ipcp);

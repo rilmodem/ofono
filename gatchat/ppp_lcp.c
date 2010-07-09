@@ -313,7 +313,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean is_server)
 	if (!lcp)
 		return NULL;
 
-	pppcp = pppcp_new(ppp, &lcp_proto, is_server);
+	pppcp = pppcp_new(ppp, &lcp_proto, is_server, 0);
 	if (!pppcp) {
 		g_free(lcp);
 		return NULL;

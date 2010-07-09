@@ -997,7 +997,7 @@ void pppcp_set_local_options(struct pppcp_data *pppcp,
 }
 
 struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto,
-				gboolean dormant)
+				gboolean dormant, guint max_failure)
 {
 	struct pppcp_data *data;
 
@@ -1016,7 +1016,11 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto,
 	data->terminate_timer_data.max_counter = MAX_TERMINATE;
 	data->config_timer_data.data = data;
 	data->terminate_timer_data.data = data;
-	data->max_failure = MAX_FAILURE;
+
+	if (max_failure)
+		data->max_failure = max_failure;
+	else
+		data->max_failure = MAX_FAILURE;
 
 	data->ppp = ppp;
 	data->driver = proto;
