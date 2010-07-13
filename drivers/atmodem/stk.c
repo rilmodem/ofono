@@ -39,9 +39,11 @@
 
 #include "atmodem.h"
 #include "stk.h"
+#include "vendor.h"
 
 struct stk_data {
 	GAtChat *chat;
+	unsigned int vendor;
 };
 
 static const char *csim_prefix[] = { "+CSIM:", NULL };
@@ -262,10 +264,31 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void phonesim_tcmd_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_stk *stk = user_data;
+	GAtResultIter iter;
+	int length;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "*TCMD:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &length))
+		return;
+
+	at_sim_fetch_command(stk, length);
+}
+
 static gboolean at_stk_register(gpointer user)
 {
 	struct ofono_stk *stk = user;
+	struct stk_data *sd = ofono_stk_get_data(stk);
 
+	if (sd->vendor == OFONO_VENDOR_PHONESIM)
+		g_at_chat_register(sd->chat, "*TCMD", phonesim_tcmd_notify,
+							FALSE, stk, NULL);
 	ofono_stk_register(stk);
 
 	return FALSE;
@@ -278,6 +301,7 @@ static int at_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 
 	sd = g_new0(struct stk_data, 1);
 	sd->chat = chat;
+	sd->vendor = vendor;
 
 	ofono_stk_set_data(stk, sd);
 	g_idle_add(at_stk_register, stk);
