@@ -5989,6 +5989,7 @@ struct select_item_test {
 	struct stk_text_attribute text_attr;
 	struct stk_item_text_attribute_list item_text_attr_list;
 	struct stk_frame_id frame_id;
+	char *html;
 };
 
 static unsigned char select_item_111[] = { 0xD0, 0x3D, 0x81, 0x03, 0x01, 0x24,
@@ -7035,7 +7036,10 @@ static struct select_item_test select_item_data_911 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 1</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_912 = {
@@ -7065,7 +7069,10 @@ static struct select_item_test select_item_data_921 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x01, 0xB4, 0x00, 0x06, 0x01, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 1</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_922 = {
@@ -7095,7 +7102,10 @@ static struct select_item_test select_item_data_931 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x02, 0xB4, 0x00, 0x06, 0x02, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 1</span>"
+		"</div>"
 };
 
 static struct select_item_test select_item_data_932 = {
@@ -7125,7 +7135,10 @@ static struct select_item_test select_item_data_941 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x04, 0xB4, 0x00, 0x06, 0x04, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Select 1</span></div>",
 };
 
 static struct select_item_test select_item_data_942 = {
@@ -7144,7 +7157,10 @@ static struct select_item_test select_item_data_942 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 2</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_943 = {
@@ -7174,7 +7190,10 @@ static struct select_item_test select_item_data_951 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x08, 0xB4, 0x00, 0x06, 0x08, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Select 1</span></div>",
 };
 
 static struct select_item_test select_item_data_952 = {
@@ -7193,7 +7212,10 @@ static struct select_item_test select_item_data_952 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 2</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_953 = {
@@ -7223,7 +7245,10 @@ static struct select_item_test select_item_data_961 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x10, 0xB4, 0x00, 0x06, 0x10, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Select 1</span></div>",
 };
 
 static struct select_item_test select_item_data_962 = {
@@ -7242,7 +7267,10 @@ static struct select_item_test select_item_data_962 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 2</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_963 = {
@@ -7272,7 +7300,10 @@ static struct select_item_test select_item_data_971 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x20, 0xB4, 0x00, 0x06, 0x20, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Select 1</span></div>"
 };
 
 static struct select_item_test select_item_data_972 = {
@@ -7291,7 +7322,10 @@ static struct select_item_test select_item_data_972 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 2</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_973 = {
@@ -7321,7 +7355,10 @@ static struct select_item_test select_item_data_981 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x40, 0xB4, 0x00, 0x06, 0x40, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Toolkit Select 1</span></div>",
 };
 
 static struct select_item_test select_item_data_982 = {
@@ -7340,7 +7377,10 @@ static struct select_item_test select_item_data_982 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 2</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_983 = {
@@ -7370,7 +7410,10 @@ static struct select_item_test select_item_data_991 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x80, 0xB4, 0x00, 0x06, 0x80, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Toolkit Select 1</span></div>",
 };
 
 static struct select_item_test select_item_data_992 = {
@@ -7389,7 +7432,10 @@ static struct select_item_test select_item_data_992 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 2</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_993 = {
@@ -7419,7 +7465,10 @@ static struct select_item_test select_item_data_9101 = {
 	.item_text_attr_list = {
 		.len = 8,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Select 1</span>"
+		"</div>",
 };
 
 static struct select_item_test select_item_data_9102 = {
@@ -7547,6 +7596,8 @@ static void test_select_item(gconstpointer data)
 	check_item_text_attribute_list(
 				&command->select_item.item_text_attr_list,
 				&test->item_text_attr_list);
+	check_text_attr_html(&command->select_item.text_attr,
+				command->select_item.alpha_id, test->html);
 	check_frame_id(&command->select_item.frame_id, &test->frame_id);
 
 	stk_command_free(command);
