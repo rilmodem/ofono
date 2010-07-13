@@ -4689,6 +4689,7 @@ struct setup_menu_test {
 	struct stk_item_icon_id_list item_icon_id_list;
 	struct stk_text_attribute text_attr;
 	struct stk_item_text_attribute_list item_text_attr_list;
+	char *html;
 };
 
 static unsigned char setup_menu_111[] = { 0xD0, 0x3B, 0x81, 0x03, 0x01, 0x25,
@@ -5503,7 +5504,10 @@ static struct setup_menu_test setup_menu_data_611 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4,
 				0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Menu 1</span>"
+		"</div>",
 };
 
 static struct setup_menu_test setup_menu_data_612 = {
@@ -5536,7 +5540,10 @@ static struct setup_menu_test setup_menu_data_621 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x01, 0xB4, 0x00, 0x06, 0x01, 0xB4,
 				0x00, 0x06, 0x01, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Menu 1</span>"
+		"</div>"
 };
 
 static struct setup_menu_test setup_menu_data_622 = {
@@ -5573,7 +5580,10 @@ static struct setup_menu_test setup_menu_data_631 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x02, 0xB4, 0x00, 0x06, 0x02, 0xB4,
 				0x00, 0x06, 0x02, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Menu 1</span>"
+		"</div>"
 };
 
 static struct setup_menu_test setup_menu_data_632 = {
@@ -5606,7 +5616,10 @@ static struct setup_menu_test setup_menu_data_641 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x04, 0xB4, 0x00, 0x06, 0x04, 0xB4,
 				0x00, 0x06, 0x04, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Menu 1</span></div>",
 };
 
 static struct setup_menu_test setup_menu_data_642 = {
@@ -5627,7 +5640,10 @@ static struct setup_menu_test setup_menu_data_642 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4,
 				0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Menu 2</span>"
+		"</div>",
 };
 
 static struct setup_menu_test setup_menu_data_643 = {
@@ -5660,7 +5676,10 @@ static struct setup_menu_test setup_menu_data_651 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x08, 0xB4, 0x00, 0x06, 0x08, 0xB4,
 				0x00, 0x06, 0x08, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Menu 1</span></div>",
 };
 
 static struct setup_menu_test setup_menu_data_661 = {
@@ -5681,7 +5700,10 @@ static struct setup_menu_test setup_menu_data_661 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x10, 0xB4, 0x00, 0x06, 0x10, 0xB4,
 				0x00, 0x06, 0x10, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Menu 1</span></div>",
 };
 
 static struct setup_menu_test setup_menu_data_671 = {
@@ -5702,7 +5724,10 @@ static struct setup_menu_test setup_menu_data_671 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x20, 0xB4, 0x00, 0x06, 0x20, 0xB4,
 				0x00, 0x06, 0x20, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Toolkit Menu 1</span></div>"
 };
 
 static struct setup_menu_test setup_menu_data_681 = {
@@ -5723,7 +5748,10 @@ static struct setup_menu_test setup_menu_data_681 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x40, 0xB4, 0x00, 0x06, 0x40, 0xB4,
 				0x00, 0x06, 0x40, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Toolkit Menu 1</span></div>",
 };
 
 static struct setup_menu_test setup_menu_data_691 = {
@@ -5744,7 +5772,10 @@ static struct setup_menu_test setup_menu_data_691 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x80, 0xB4, 0x00, 0x06, 0x80, 0xB4,
 				0x00, 0x06, 0x80, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Toolkit Menu 1</span></div>",
 };
 
 static struct setup_menu_test setup_menu_data_6101 = {
@@ -5765,7 +5796,10 @@ static struct setup_menu_test setup_menu_data_6101 = {
 		.len = 12,
 		.list = { 0x00, 0x06, 0x00, 0xB4, 0x00, 0x06, 0x00, 0xB4,
 				0x00, 0x06, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Toolkit Menu</span>"
+		"</div>",
 };
 
 static struct setup_menu_test setup_menu_data_711 = {
@@ -5911,7 +5945,8 @@ static void test_setup_menu(gconstpointer data)
 	check_text_attr(&command->setup_menu.text_attr, &test->text_attr);
 	check_item_text_attribute_list(&command->setup_menu.item_text_attr_list,
 					&test->item_text_attr_list);
-
+	check_text_attr_html(&command->setup_menu.text_attr,
+				command->setup_menu.alpha_id, test->html);
 	stk_command_free(command);
 }
 
