@@ -545,9 +545,6 @@ static gboolean handle_command_poll_interval(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	if (seconds == 0)
-		seconds = 30;
-
 	ofono_modem_set_integer(modem, "status-poll-interval", seconds);
 
 	if (seconds > 255) {
