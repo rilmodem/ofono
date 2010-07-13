@@ -5957,10 +5957,8 @@ static void start_format(GString *string, guint16 attr)
 		g_string_append(string, "text-decoration: line-through;");
 
 	/* add any color */
-	if (fg)
-		g_string_append_printf(string, "color: %s;", html_colors[fg]);
-	if (bg)
-		g_string_append_printf(string, "background-color: %s;",
+	g_string_append_printf(string, "color: %s;", html_colors[fg]);
+	g_string_append_printf(string, "background-color: %s;",
 						html_colors[bg]);
 	g_string_append(string, "\">");
 }
