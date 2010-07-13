@@ -478,6 +478,29 @@ static inline void check_cdma_sms_tpdu(
 	check_common_byte_array(command, test);
 }
 
+static void check_text_attr_html(const struct stk_text_attribute *test,
+				char *text, const char *expected_html)
+{
+	char *html;
+	unsigned short attrs[256];
+	int i;
+
+	if (expected_html == NULL)
+		return;
+
+	for (i = 0; i < test->len; i += 4) {
+		attrs[i] = test->attributes[i];
+		attrs[i + 1] = test->attributes[i + 1];
+		attrs[i + 2] = test->attributes[i + 2];
+		attrs[i + 3] = test->attributes[i + 3];
+	}
+	html = stk_text_to_html(text, attrs, test->len / 4);
+
+	g_assert(memcmp(html, expected_html, strlen(expected_html)) == 0);
+
+	g_free(html);
+}
+
 /* Defined in TS 102.223 Section 8.72 */
 static void check_text_attr(const struct stk_text_attribute *command,
 					const struct stk_text_attribute *test)
@@ -22139,6 +22162,70 @@ static const struct envelope_test timer_expiration_data_221a = {
 	},
 };
 
+struct html_attr_test {
+	char *text;
+	struct stk_text_attribute text_attr;
+	char *html;
+};
+
+static struct html_attr_test html_attr_data_1 = {
+	.text = "Blue green green green",
+	.text_attr = {
+		.len = 8,
+		.attributes = {	0x00, 0x00, 0x03, 0x94, 0x00, 0x04, 0x03,
+				0x96 },
+	},
+	.html = "<span style=\"color: #0000A0;background-color: #FFFFFF;\">"
+		"Blue</span><span style=\"color: #347235;background-color: "
+		"#FFFFFF;\"> green green green</span>",
+};
+
+static struct html_attr_test html_attr_data_2 = {
+	.text = "abc",
+	.text_attr = {
+		.len = 8,
+		.attributes = { 0x00, 0x02, 0x03, 0x94, 0x01, 0x02, 0x03,
+				0x96 },
+	},
+	.html = "<span style=\"color: #347235;background-color: #FFFFFF;\">"
+		"a</span><span style=\"color: #0000A0;background-color: "
+		"#FFFFFF;\">bc</span>",
+};
+
+static struct html_attr_test html_attr_data_3 = {
+	.text = "1 < 2, 2 > 1, 1 & 0 == 0\nSpecial Chars are Fun\r\nTo Write",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x00, 0x03, 0x00 },
+	},
+	.html = "1 &lt; 2, 2 &gt; 1, 1 &amp; 0 == 0<br/>Special Chars are Fun"
+		"<br/>To Write",
+};
+
+static struct html_attr_test html_attr_data_4 = {
+	.text = "€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x00, 0x03, 0x94 },
+	},
+	.html = "<span style=\"color: #347235;background-color: #FFFFFF;\">"
+		"€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€"
+		"€€€€€€€€€€€€€€€</span>",
+};
+
+static void test_html_attr(gconstpointer data)
+{
+	const struct html_attr_test *test = data;
+	check_text_attr_html(&test->text_attr, test->text, test->html);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -24145,6 +24232,15 @@ int main(int argc, char **argv)
 			&timer_expiration_data_211, test_envelope_encoding);
 	g_test_add_data_func("/teststk/Timer Expiration 2.2.1A",
 			&timer_expiration_data_221a, test_envelope_encoding);
+
+	g_test_add_data_func("/teststk/HTML Attribute Test 1",
+				&html_attr_data_1, test_html_attr);
+	g_test_add_data_func("/teststk/HTML Attribute Test 2",
+				&html_attr_data_2, test_html_attr);
+	g_test_add_data_func("/teststk/HTML Attribute Test 3",
+				&html_attr_data_3, test_html_attr);
+	g_test_add_data_func("/teststk/HTML Attribute Test 4",
+				&html_attr_data_4, test_html_attr);
 
 	return g_test_run();
 }
