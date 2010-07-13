@@ -984,6 +984,7 @@ struct get_inkey_test {
 	struct stk_duration duration;
 	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
+	char *html;
 };
 
 static unsigned char get_inkey_111[] = { 0xD0, 0x15, 0x81, 0x03, 0x01, 0x22,
@@ -1589,7 +1590,9 @@ static struct get_inkey_test get_inkey_data_911 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_912 = {
@@ -1607,7 +1610,10 @@ static struct get_inkey_test get_inkey_data_921 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x01, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span>"
+		"</div>",
 };
 
 static struct get_inkey_test get_inkey_data_922 = {
@@ -1625,7 +1631,10 @@ static struct get_inkey_test get_inkey_data_931 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x02, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span>"
+		"</div>",
 };
 
 static struct get_inkey_test get_inkey_data_932 = {
@@ -1643,7 +1652,10 @@ static struct get_inkey_test get_inkey_data_941 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x04, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">Enter \"+\""
+		"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_942 = {
@@ -1654,7 +1666,9 @@ static struct get_inkey_test get_inkey_data_942 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"#\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_943 = {
@@ -1672,7 +1686,10 @@ static struct get_inkey_test get_inkey_data_951 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x08, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Enter \"+\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_952 = {
@@ -1683,7 +1700,9 @@ static struct get_inkey_test get_inkey_data_952 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"#\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_953 = {
@@ -1701,7 +1720,10 @@ static struct get_inkey_test get_inkey_data_961 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x10, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">Enter \"+\""
+		"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_962 = {
@@ -1712,7 +1734,9 @@ static struct get_inkey_test get_inkey_data_962 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"#\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_963 = {
@@ -1730,7 +1754,10 @@ static struct get_inkey_test get_inkey_data_971 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x20, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Enter \"+\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_972 = {
@@ -1741,7 +1768,9 @@ static struct get_inkey_test get_inkey_data_972 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"#\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_973 = {
@@ -1759,7 +1788,10 @@ static struct get_inkey_test get_inkey_data_981 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x40, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Enter \"+\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_982 = {
@@ -1770,7 +1802,9 @@ static struct get_inkey_test get_inkey_data_982 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"#\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_983 = {
@@ -1788,7 +1822,10 @@ static struct get_inkey_test get_inkey_data_991 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x80, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Enter \"+\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_992a = {
@@ -1799,7 +1836,9 @@ static struct get_inkey_test get_inkey_data_992a = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"#\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_992b = {
@@ -1824,7 +1863,9 @@ static struct get_inkey_test get_inkey_data_9101 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x09, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter \"+\"</span></div>",
 };
 
 static struct get_inkey_test get_inkey_data_9102 = {
@@ -1906,6 +1947,8 @@ static void test_get_inkey(gconstpointer data)
 	check_duration(&command->get_inkey.duration, &test->duration);
 	check_text_attr(&command->get_inkey.text_attr,
 						&test->text_attr);
+	check_text_attr_html(&command->get_inkey.text_attr,
+				command->get_inkey.text, test->html);
 	check_frame_id(&command->get_inkey.frame_id, &test->frame_id);
 
 	stk_command_free(command);
