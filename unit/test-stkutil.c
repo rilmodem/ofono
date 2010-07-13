@@ -13994,6 +13994,7 @@ struct setup_idle_mode_text_test {
 	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
+	char *html;
 };
 
 static unsigned char setup_idle_mode_text_111[] = { 0xD0, 0x1A, 0x81, 0x03,
@@ -14426,7 +14427,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_411 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 1</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_412 = {
@@ -14444,7 +14448,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_421 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x01, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 1</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_422 = {
@@ -14462,7 +14469,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_431 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x02, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 1</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_432 = {
@@ -14480,7 +14490,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_441 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x04, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">"
+		"Idle Mode Text 1</span></div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_442 = {
@@ -14491,7 +14504,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_442 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 2</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_443 = {
@@ -14509,7 +14525,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_451 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x08, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Idle Mode Text 1</span></div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_452 = {
@@ -14520,7 +14539,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_452 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 2</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_453 = {
@@ -14538,7 +14560,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_461 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x10, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">"
+		"Idle Mode Text 1</span></div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_462 = {
@@ -14549,7 +14574,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_462 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 2</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_463 = {
@@ -14567,7 +14595,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_471 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x20, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Idle Mode Text 1</span></div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_472 = {
@@ -14578,7 +14609,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_472 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 2</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_473 = {
@@ -14596,7 +14630,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_481 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x40, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Idle Mode Text 1</span></div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_482 = {
@@ -14607,7 +14644,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_482 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 2</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_483 = {
@@ -14625,7 +14665,11 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_491 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x80, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: line-through;color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 1</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_492 = {
@@ -14636,7 +14680,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_492 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 2</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_493 = {
@@ -14654,7 +14701,10 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_4101 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Idle Mode Text 1</span>"
+		"</div>",
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_4102 = {
@@ -14699,6 +14749,8 @@ static void test_setup_idle_mode_text(gconstpointer data)
 	check_icon_id(&command->setup_idle_mode_text.icon_id, &test->icon_id);
 	check_text_attr(&command->setup_idle_mode_text.text_attr,
 							&test->text_attr);
+	check_text_attr_html(&command->setup_idle_mode_text.text_attr,
+				command->setup_idle_mode_text.text, test->html);
 	check_frame_id(&command->setup_idle_mode_text.frame_id,
 							&test->frame_id);
 
