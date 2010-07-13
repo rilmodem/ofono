@@ -1964,6 +1964,7 @@ struct get_input_test {
 	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
+	char *html;
 };
 
 static unsigned char get_input_111[] = { 0xD0, 0x1B, 0x81, 0x03, 0x01, 0x23,
@@ -2799,7 +2800,9 @@ static struct get_input_test get_input_data_811 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span></div>"
 };
 
 static struct get_input_test get_input_data_812 = {
@@ -2825,7 +2828,10 @@ static struct get_input_test get_input_data_821 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x01, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span>"
+		"</div>",
 };
 
 static struct get_input_test get_input_data_822 = {
@@ -2851,7 +2857,10 @@ static struct get_input_test get_input_data_831 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x02, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span>"
+		"</div>",
 };
 
 static struct get_input_test get_input_data_832 = {
@@ -2877,7 +2886,10 @@ static struct get_input_test get_input_data_841 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x04, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">Enter 12345"
+		"</span></div>",
 };
 
 static struct get_input_test get_input_data_842 = {
@@ -2892,7 +2904,9 @@ static struct get_input_test get_input_data_842 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 22222</span></div>"
 };
 
 static struct get_input_test get_input_data_843 = {
@@ -2918,7 +2932,10 @@ static struct get_input_test get_input_data_851 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x08, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">Enter "
+		"12345</span></div>",
 };
 
 static struct get_input_test get_input_data_852 = {
@@ -2933,7 +2950,9 @@ static struct get_input_test get_input_data_852 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 22222</span></div>",
 };
 
 static struct get_input_test get_input_data_853 = {
@@ -2959,7 +2978,10 @@ static struct get_input_test get_input_data_861 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x10, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">Enter "
+		"12345</span></div>"
 };
 
 static struct get_input_test get_input_data_862 = {
@@ -2974,7 +2996,9 @@ static struct get_input_test get_input_data_862 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 22222</span></div>",
 };
 
 static struct get_input_test get_input_data_863 = {
@@ -3000,7 +3024,10 @@ static struct get_input_test get_input_data_871 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x20, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">Enter "
+		"12345</span></div>",
 };
 
 static struct get_input_test get_input_data_872 = {
@@ -3015,7 +3042,9 @@ static struct get_input_test get_input_data_872 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 22222</span></div>",
 };
 
 static struct get_input_test get_input_data_873 = {
@@ -3041,7 +3070,10 @@ static struct get_input_test get_input_data_881 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x40, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Enter 12345</span></div>",
 };
 
 static struct get_input_test get_input_data_882 = {
@@ -3056,7 +3088,9 @@ static struct get_input_test get_input_data_882 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 22222</span></div>",
 };
 
 static struct get_input_test get_input_data_883 = {
@@ -3082,7 +3116,10 @@ static struct get_input_test get_input_data_891 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x80, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Enter 12345</span></div>",
 };
 
 static struct get_input_test get_input_data_892 = {
@@ -3097,7 +3134,9 @@ static struct get_input_test get_input_data_892 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 22222</span></div>",
 };
 
 static struct get_input_test get_input_data_893 = {
@@ -3123,7 +3162,9 @@ static struct get_input_test get_input_data_8101 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0B, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Enter 12345</span></div>",
 };
 
 static struct get_input_test get_input_data_8102 = {
@@ -3257,6 +3298,8 @@ static void test_get_input(gconstpointer data)
 	check_icon_id(&command->get_input.icon_id, &test->icon_id);
 	check_text_attr(&command->get_input.text_attr,
 						&test->text_attr);
+	check_text_attr_html(&command->get_input.text_attr,
+				command->get_input.text, test->html);
 	check_frame_id(&command->get_input.frame_id, &test->frame_id);
 
 	stk_command_free(command);
