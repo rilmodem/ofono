@@ -38,12 +38,63 @@
 #include "gatresult.h"
 
 #include "atmodem.h"
+#include "stk.h"
 
 struct stk_data {
 	GAtChat *chat;
 };
 
 static const char *csim_prefix[] = { "+CSIM:", NULL };
+
+static void csim_fetch_cb(gboolean ok, GAtResult *result,
+		gpointer user_data)
+{
+	struct ofono_stk *stk = user_data;
+	GAtResultIter iter;
+	const guint8 *response;
+	gint rlen, len;
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSIM:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &rlen))
+		return;
+
+	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
+		return;
+
+	if (rlen != len * 2 || len < 2)
+		return;
+
+	/* Check that SW1 indicates success */
+	if (response[len - 2] != 0x90 && response[len - 2] != 0x91)
+		return;
+
+	if (response[len - 2] == 0x90 && response[len - 1] != 0)
+		return;
+
+	DBG("csim_fetch_cb: %i", len);
+
+	ofono_stk_proactive_command_notify(stk, len - 2, response);
+
+	/* Can this happen? */
+	if (response[len - 2] == 0x91)
+		at_sim_fetch_command(stk, response[len - 1]);
+}
+
+void at_sim_fetch_command(struct ofono_stk *stk, int length)
+{
+	char buf[64];
+	struct stk_data *sd = ofono_stk_get_data(stk);
+
+	snprintf(buf, sizeof(buf), "AT+CSIM=10,A0120000%02hhX", length);
+	g_at_chat_send(sd->chat, buf, csim_prefix, csim_fetch_cb, stk, NULL);
+}
 
 static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)

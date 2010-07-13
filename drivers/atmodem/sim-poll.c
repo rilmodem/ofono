@@ -39,6 +39,7 @@
 
 #include "atmodem.h"
 #include "sim-poll.h"
+#include "stk.h"
 
 struct sim_poll_data {
 	GAtChat *chat;
@@ -58,58 +59,6 @@ struct sim_poll_data {
 static const char *csim_prefix[] = { "+CSIM:", NULL };
 
 static gboolean sim_status_poll(gpointer user_data);
-static void sim_fetch_command(struct sim_poll_data *spd, int length);
-
-static void at_csim_fetch_cb(gboolean ok, GAtResult *result,
-		gpointer user_data)
-{
-	struct sim_poll_data *spd = user_data;
-	GAtResultIter iter;
-	const guint8 *response;
-	gint rlen, len;
-
-	if (!ok)
-		return;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CSIM:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &rlen))
-		return;
-
-	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
-		return;
-
-	if (rlen != len * 2 || len < 2)
-		return;
-
-	/* Check that SW1 indicates success */
-	if (response[len - 2] != 0x90 && response[len - 2] != 0x91)
-		return;
-
-	if (response[len - 2] == 0x90 && response[len - 1] != 0)
-		return;
-
-	DBG("csim_fetch_cb: %i", len);
-
-	ofono_stk_proactive_command_notify(spd->stk, len - 2, response);
-
-	/* Can this happen? */
-	if (response[len - 2] == 0x91)
-		sim_fetch_command(spd, response[len - 1]);
-}
-
-static void sim_fetch_command(struct sim_poll_data *spd, int length)
-{
-	char buf[64];
-
-	snprintf(buf, sizeof(buf), "AT+CSIM=10,A0120000%02hhX", length);
-
-	g_at_chat_send(spd->chat, buf, csim_prefix,
-			at_csim_fetch_cb, spd, NULL);
-}
 
 static void sim_status_poll_schedule(struct sim_poll_data *spd)
 {
@@ -196,7 +145,7 @@ static void at_csim_status_cb(gboolean ok, GAtResult *result,
 		return;
 
 	/* We have a proactive command pending, FETCH it */
-	sim_fetch_command(spd, response[len - 1]);
+	at_sim_fetch_command(spd->stk, response[len - 1]);
 }
 
 static gboolean sim_status_poll(gpointer user_data)
