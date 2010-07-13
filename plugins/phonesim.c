@@ -289,7 +289,7 @@ static void phonesim_pre_sim(struct ofono_modem *modem)
 	else
 		ofono_voicecall_create(modem, 0, "atmodem", data->chat);
 
-	ofono_stk_create(modem, 0, "atmodem", data->chat);
+	ofono_stk_create(modem, OFONO_VENDOR_PHONESIM, "atmodem", data->chat);
 
 	if (sim)
 		ofono_sim_inserted_notify(sim, TRUE);
