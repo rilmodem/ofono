@@ -537,6 +537,7 @@ struct display_text_test {
 	struct stk_duration duration;
 	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
+	const char *html;
 };
 
 unsigned char display_text_111[] = { 0xD0, 0x1A, 0x81, 0x03, 0x01, 0x21, 0x80,
@@ -631,6 +632,69 @@ unsigned char display_text_711[] = { 0xD0, 0x19, 0x81, 0x03, 0x01, 0x21, 0x80,
 					0x04, 0x31, 0x30, 0x20, 0x53, 0x65,
 					0x63, 0x6F, 0x6E, 0x64, 0x84, 0x02,
 					0x01, 0x0A };
+
+unsigned char display_text_811[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x00, 0xB4 };
+
+unsigned char display_text_821[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x01, 0xB4 };
+
+unsigned char display_text_831[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x02, 0xB4 };
+
+unsigned char display_text_841[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x04, 0xB4 };
+
+unsigned char display_text_851[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x08, 0xB4 };
+
+unsigned char display_text_861[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x10, 0xB4 };
+
+unsigned char display_text_871[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x20, 0xB4 };
+
+unsigned char display_text_881[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x40, 0xB4 };
+
+unsigned char display_text_891[] = { 0xD0, 0x22, 0x81, 0x03, 0x01, 0x21, 0x80,
+					0x82, 0x02, 0x81, 0x02, 0x8D, 0x11,
+					0x04, 0x54, 0x65, 0x78, 0x74, 0x20,
+					0x41, 0x74, 0x74, 0x72, 0x69, 0x62,
+					0x75, 0x74, 0x65, 0x20, 0x31, 0xD0,
+					0x04, 0x00, 0x10, 0x80, 0xB4 };
 
 unsigned char display_text_911[] = { 0xD0, 0x10, 0x81, 0x03, 0x01, 0x21, 0x80,
 					0x82, 0x02, 0x81, 0x02, 0x8D, 0x05,
@@ -737,6 +801,132 @@ static struct display_text_test display_text_data_711 = {
 	}
 };
 
+static struct display_text_test display_text_data_811 = {
+	.pdu = display_text_811,
+	.pdu_len = sizeof(display_text_811),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x00, 0xB4 },
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>",
+};
+
+static struct display_text_test display_text_data_821 = {
+	.pdu = display_text_821,
+	.pdu_len = sizeof(display_text_821),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x01, 0xB4 },
+	},
+	.html = "<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>",
+};
+
+static struct display_text_test display_text_data_831 = {
+	.pdu = display_text_831,
+	.pdu_len = sizeof(display_text_831),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x02, 0xB4 },
+	},
+	.html = "<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>",
+};
+
+static struct display_text_test display_text_data_841 = {
+	.pdu = display_text_841,
+	.pdu_len = sizeof(display_text_841),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x04, 0xB4 },
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>",
+};
+
+static struct display_text_test display_text_data_851 = {
+	.pdu = display_text_851,
+	.pdu_len = sizeof(display_text_851),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x08, 0xB4 },
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>",
+};
+
+static struct display_text_test display_text_data_861 = {
+	.pdu = display_text_861,
+	.pdu_len = sizeof(display_text_861),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x10, 0xB4 },
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>",
+};
+
+static struct display_text_test display_text_data_871 = {
+	.pdu = display_text_871,
+	.pdu_len = sizeof(display_text_871),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x20, 0xB4 },
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span>",
+};
+
+static struct display_text_test display_text_data_881 = {
+	.pdu = display_text_881,
+	.pdu_len = sizeof(display_text_881),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x40, 0xB4 },
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>",
+};
+
+static struct display_text_test display_text_data_891 = {
+	.pdu = display_text_891,
+	.pdu_len = sizeof(display_text_891),
+	.qualifier = 0x80,
+	.text = "Text Attribute 1",
+	.text_attr = {
+		.len = 4,
+		.attributes = { 0x00, 0x10, 0x80, 0xB4 },
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\""
+		"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span>",
+};
+
 static struct display_text_test display_text_data_911 = {
 	.pdu = display_text_911,
 	.pdu_len = sizeof(display_text_911),
@@ -777,6 +967,9 @@ static void test_display_text(gconstpointer data)
 	check_duration(&command->display_text.duration, &test->duration);
 	check_text_attr(&command->display_text.text_attr,
 						&test->text_attr);
+	check_text_attr_html(&command->display_text.text_attr,
+				command->display_text.text,
+				test->html);
 	check_frame_id(&command->display_text.frame_id, &test->frame_id);
 
 	stk_command_free(command);
@@ -22252,6 +22445,24 @@ int main(int argc, char **argv)
 				&display_text_data_611, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 7.1.1",
 				&display_text_data_711, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.1.1",
+				&display_text_data_811, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.2.1",
+				&display_text_data_821, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.3.1",
+				&display_text_data_831, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.4.1",
+				&display_text_data_841, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.5.1",
+				&display_text_data_851, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.6.1",
+				&display_text_data_861, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.7.1",
+				&display_text_data_871, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.8.1",
+				&display_text_data_881, test_display_text);
+	g_test_add_data_func("/teststk/Display Text 8.9.1",
+				&display_text_data_891, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 9.1.1",
 				&display_text_data_911, test_display_text);
 	g_test_add_data_func("/teststk/Display Text 10.1.1",
