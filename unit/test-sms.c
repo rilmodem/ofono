@@ -471,34 +471,152 @@ static void test_submit_encode()
 	g_free(encoded_pdu);
 }
 
-static const char *header_test = "0041000B915121551532F40000631A0A031906200A03"
-	"2104100A032705040A032E05080A043807002B8ACD29A85D9ECFC3E7F21C340EBB41E"
-	"3B79B1E4EBB41697A989D1EB340E2379BCC02B1C3F27399059AB7C36C3628EC2683C6"
-	"6FF65B5E2683E8653C1D";
-static int header_test_len = 100;
-static const char *header_test_expected = "EMS messages can contain italic, bold"
-	", large, small and colored text";
+struct text_format_header {
+	unsigned char len;
+	unsigned char start;
+	unsigned char span;
+	unsigned char format;
+	unsigned char color;
+};
 
-static void test_udh_iter()
+struct ems_udh_test {
+	const char *pdu;
+	unsigned int len;
+	const char *expected;
+	unsigned int udl;
+	unsigned int udhl;
+	unsigned int data_len;
+	struct text_format_header formats[];
+};
+
+static struct ems_udh_test ems_udh_test_1 = {
+	.pdu = "0041000B915121551532F40000631A0A031906200A032104100A03270504"
+		"0A032E05080A043807002B8ACD29A85D9ECFC3E7F21C340EBB41E3B79B1"
+		"E4EBB41697A989D1EB340E2379BCC02B1C3F27399059AB7C36C3628EC26"
+		"83C66FF65B5E2683E8653C1D",
+	.len = 100,
+	.expected = "EMS messages can contain italic, bold, large, small and"
+		" colored text",
+	.formats = {
+		{
+			.len = 3,
+			.start = 0x19,
+			.span = 0x06,
+			.format = 0x20,
+		},
+		{
+			.len = 3,
+			.start = 0x21,
+			.span = 0x04,
+			.format = 0x10,
+		},
+		{
+			.len = 3,
+			.start = 0x27,
+			.span = 0x05,
+			.format = 0x04,
+		},
+		{
+			.len = 3,
+			.start = 0x2E,
+			.span = 0x05,
+			.format = 0x08,
+		},
+		{
+			.len = 4,
+			.start = 0x38,
+			.span = 0x07,
+			.format = 0x00,
+			.color = 0x2B,
+		},
+		{
+			.len = 0,
+		}
+	},
+	.udl = 99,
+	.udhl = 26,
+	.data_len = 87,
+};
+
+static struct ems_udh_test ems_udh_test_2 = {
+	.pdu = "079194712272303351030B915121340195F60000FF80230A030F07230A031"
+		"806130A031E0A430A032E0D830A033D14020A035104F60A0355010600159"
+		"D9E83D2735018442FCFE98A243DCC4E97C92C90F8CD26B3407537B92C67A"
+		"7DD65320B1476934173BA3CBD2ED3D1F277FD8C76299CEF3B280C92A7CF6"
+		"83A28CC4E9FDD6532E8FE96935D",
+	.len = 126,
+	.expected = "This is a test\nItalied, bold, underlined, and "
+		"strikethrough.\nNow a right aligned word.",
+	.formats = {
+		{
+			.len = 3,
+			.start = 0x0f,
+			.span = 0x07,
+			.format = 0x23,
+		},
+		{
+			.len = 3,
+			.start = 0x18,
+			.span = 0x06,
+			.format = 0x13,
+		},
+		{
+			.len = 3,
+			.start = 0x1e,
+			.span = 0x0a,
+			.format = 0x43,
+		},
+		{
+			.len = 3,
+			.start = 0x2e,
+			.span = 0x0d,
+			.format = 0x83,
+		},
+		{
+			.len = 3,
+			.start = 0x3d,
+			.span = 0x14,
+			.format = 0x02,
+		},
+		{
+			.len = 3,
+			.start = 0x51,
+			.span = 0x04,
+			.format = 0xf6,
+		},
+		{
+			.len = 3,
+			.start = 0x55,
+			.span = 0x01,
+			.format = 0x06,
+		},
+	},
+	.udl = 128,
+	.udhl = 35,
+	.data_len = 112,
+};
+
+static void test_ems_udh(gconstpointer data)
 {
+	const struct ems_udh_test *test = data;
 	struct sms sms;
 	unsigned char *decoded_pdu;
 	long pdu_len;
 	gboolean ret;
-	int data_len;
-	int udhl;
+	unsigned int data_len;
+	unsigned int udhl;
 	struct sms_udh_iter iter;
 	int max_chars;
 	unsigned char *unpacked;
 	char *utf8;
+	int i;
 
-	decoded_pdu = decode_hex(header_test, -1, &pdu_len, 0);
+	decoded_pdu = decode_hex(test->pdu, -1, &pdu_len, 0);
 
 	g_assert(decoded_pdu);
-	g_assert(pdu_len == (long)strlen(header_test) / 2);
+	g_assert(pdu_len == (long)strlen(test->pdu) / 2);
 
-	ret = sms_decode(decoded_pdu, pdu_len, TRUE,
-				header_test_len, &sms);
+	ret = sms_decode(decoded_pdu, pdu_len, TRUE, test->len, &sms);
 
 	g_free(decoded_pdu);
 
@@ -531,42 +649,47 @@ static void test_udh_iter()
 	}
 
 	udhl = sms.submit.ud[0];
-	g_assert(sms.submit.udl == 99);
-	g_assert(udhl == 26);
+
+	g_assert(sms.submit.udl == test->udl);
+	g_assert(udhl == test->udhl);
 
 	ret = sms_udh_iter_init(&sms, &iter);
 
 	g_assert(ret);
 
-	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
-	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
-	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
-	g_assert(sms_udh_iter_next(&iter) == TRUE);
+	for (i = 0; test->formats[i].len; i++) {
+		if (g_test_verbose()) {
+			int j;
+			unsigned char data[4];
 
-	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
-	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
-	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
-	g_assert(sms_udh_iter_next(&iter) == TRUE);
+			sms_udh_iter_get_ie_data(&iter, data);
 
-	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
-	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
-	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
-	g_assert(sms_udh_iter_next(&iter) == TRUE);
+			g_print("Header:\n");
+			for (j = 0; j < sms_udh_iter_get_ie_length(&iter); j++)
+				g_print("0x%02x ", data[j]);
 
-	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
-	g_assert(sms_udh_iter_get_ie_length(&iter) == 3);
-	g_assert(sms_udh_iter_has_next(&iter) == TRUE);
-	g_assert(sms_udh_iter_next(&iter) == TRUE);
+			g_print("\n");
+		}
 
-	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_TEXT_FORMAT);
-	g_assert(sms_udh_iter_get_ie_length(&iter) == 4);
-	g_assert(sms_udh_iter_has_next(&iter) == FALSE);
-	g_assert(sms_udh_iter_next(&iter) == FALSE);
-	g_assert(sms_udh_iter_get_ie_type(&iter) == SMS_IEI_INVALID);
+		g_assert(sms_udh_iter_get_ie_type(&iter) ==
+				SMS_IEI_TEXT_FORMAT);
+		g_assert(sms_udh_iter_get_ie_length(&iter) ==
+				test->formats[i].len);
+
+		if (test->formats[i+1].len) {
+			g_assert(sms_udh_iter_has_next(&iter) == TRUE);
+			g_assert(sms_udh_iter_next(&iter) == TRUE);
+		} else {
+			g_assert(sms_udh_iter_has_next(&iter) == FALSE);
+			g_assert(sms_udh_iter_next(&iter) == FALSE);
+			g_assert(sms_udh_iter_get_ie_type(&iter) ==
+					SMS_IEI_INVALID);
+		}
+	}
 
 	data_len = sms_udl_in_bytes(sms.submit.udl, sms.submit.dcs);
 
-	g_assert(data_len == 87);
+	g_assert(data_len == test->data_len);
 
 	max_chars = (data_len - (udhl + 1)) * 8 / 7;
 
@@ -584,7 +707,7 @@ static void test_udh_iter()
 	if (g_test_verbose())
 		g_print("Decoded user data is: %s\n", utf8);
 
-	g_assert(strcmp(utf8, header_test_expected) == 0);
+	g_assert(strcmp(utf8, test->expected) == 0);
 
 	g_free(utf8);
 }
@@ -1225,7 +1348,12 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Test Deliver Encode", test_deliver_encode);
 	g_test_add_func("/testsms/Test Simple Submit", test_simple_submit);
 	g_test_add_func("/testsms/Test Submit Encode", test_submit_encode);
-	g_test_add_func("/testsms/Test UDH Iterator", test_udh_iter);
+
+	g_test_add_data_func("/testsms/Test EMS UDH 1",
+			&ems_udh_test_1, test_ems_udh);
+	g_test_add_data_func("/testsms/Test EMS UDH 2",
+			&ems_udh_test_2, test_ems_udh);
+
 	g_test_add_func("/testsms/Test Assembly", test_assembly);
 	g_test_add_func("/testsms/Test Prepare 7Bit", test_prepare_7bit);
 
