@@ -1642,3 +1642,5 @@ const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 						unsigned int *out_length);
 const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 						unsigned int *out_length);
+char *stk_text_to_html(const char *text,
+				const unsigned short *attrs, int num_attrs);

@@ -5853,3 +5853,228 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 
 	return pdu;
 }
+
+static const char *html_colors[] = {
+	"#000000", /* Black */
+	"#808080", /* Dark Grey */
+	"#C11B17", /* Dark Red */
+	"#FBB117", /* Dark Yellow */
+	"#347235", /* Dark Green */
+	"#307D7E", /* Dark Cyan */
+	"#0000A0", /* Dark Blue */
+	"#C031C7", /* Dark Magenta */
+	"#C0C0C0", /* Grey */
+	"#FFFFFF", /* White */
+	"#FF0000", /* Bright Red */
+	"#FFFF00", /* Bright Yellow */
+	"#00FF00", /* Bright Green */
+	"#00FFFF", /* Bright Cyan */
+	"#0000FF", /* Bright Blue */
+	"#FF00FF", /* Bright Magenta */
+};
+
+#define STK_TEXT_FORMAT_ALIGN_MASK 0x03
+#define STK_TEXT_FORMAT_FONT_MASK 0x0C
+#define STK_TEXT_FORMAT_STYLE_MASK 0xF0
+#define STK_DEFAULT_TEXT_ALIGNMENT 0x00
+#define STK_TEXT_FORMAT_INIT 0x9003
+
+/* Defined in ETSI 123 40 9.2.3.24.10.1.1 */
+enum stk_text_format_code {
+	STK_TEXT_FORMAT_LEFT_ALIGN = 0x00,
+	STK_TEXT_FORMAT_CENTER_ALIGN = 0x01,
+	STK_TEXT_FORMAT_RIGHT_ALIGN = 0x02,
+	STK_TEXT_FORMAT_NO_ALIGN = 0x03,
+	STK_TEXT_FORMAT_FONT_SIZE_LARGE = 0x04,
+	STK_TEXT_FORMAT_FONT_SIZE_SMALL = 0x08,
+	STK_TEXT_FORMAT_FONT_SIZE_RESERVED = 0x0c,
+	STK_TEXT_FORMAT_STYLE_BOLD = 0x10,
+	STK_TEXT_FORMAT_STYLE_ITALIC = 0x20,
+	STK_TEXT_FORMAT_STYLE_UNDERLINED = 0x40,
+	STK_TEXT_FORMAT_STYLE_STRIKETHROUGH = 0x80,
+};
+
+static void end_format(GString *string, guint16 attr)
+{
+	guint code = attr & 0xFF;
+	guint color = (attr >> 8) & 0xFF;
+
+	if ((code & ~STK_TEXT_FORMAT_ALIGN_MASK) || color)
+		g_string_append(string, "</span>");
+
+	if ((code & STK_TEXT_FORMAT_ALIGN_MASK) != STK_TEXT_FORMAT_NO_ALIGN)
+		g_string_append(string, "</div>");
+}
+
+static void start_format(GString *string, guint16 attr)
+{
+	guint8 code = attr & 0xFF;
+	guint8 color = (attr >> 8) & 0xFF;
+	guint8 align = code & STK_TEXT_FORMAT_ALIGN_MASK;
+	guint8 font = code & STK_TEXT_FORMAT_FONT_MASK;
+	guint8 style = code & STK_TEXT_FORMAT_STYLE_MASK;
+	int fg = color & 0x0f;
+	int bg = (color >> 4) & 0x0f;
+
+	/* align formatting applies to a block of text */
+	if (align != STK_TEXT_FORMAT_NO_ALIGN)
+		g_string_append(string, "<div style=\"");
+
+	switch (align) {
+	case STK_TEXT_FORMAT_RIGHT_ALIGN:
+		g_string_append(string, "text-align: right;\">");
+		break;
+	case STK_TEXT_FORMAT_CENTER_ALIGN:
+		g_string_append(string, "text-align: center;\">");
+		break;
+	case STK_TEXT_FORMAT_LEFT_ALIGN:
+		g_string_append(string, "text-align: left;\">");
+		break;
+	}
+
+	if ((font == 0) && (style == 0) && (color == 0))
+		return;
+
+	/* font, style, and color are inline */
+	g_string_append(string, "<span style=\"");
+
+	switch (font) {
+	case STK_TEXT_FORMAT_FONT_SIZE_LARGE:
+		g_string_append(string, "font-size: big;");
+		break;
+	case STK_TEXT_FORMAT_FONT_SIZE_SMALL:
+		g_string_append(string, "font-size: small;");
+		break;
+	}
+
+	if (style & STK_TEXT_FORMAT_STYLE_BOLD)
+		g_string_append(string, "font-weight: bold;");
+	if (style & STK_TEXT_FORMAT_STYLE_ITALIC)
+		g_string_append(string, "font-style: italic;");
+	if (style & STK_TEXT_FORMAT_STYLE_UNDERLINED)
+		g_string_append(string, "text-decoration: underline;");
+	if (style & STK_TEXT_FORMAT_STYLE_STRIKETHROUGH)
+		g_string_append(string, "text-decoration: line-through;");
+
+	/* add any color */
+	if (fg)
+		g_string_append_printf(string, "color: %s;", html_colors[fg]);
+	if (bg)
+		g_string_append_printf(string, "background-color: %s;",
+						html_colors[bg]);
+	g_string_append(string, "\">");
+}
+
+char *stk_text_to_html(const char *utf8,
+				const unsigned short *attrs, int num_attrs)
+{
+	long text_len = g_utf8_strlen(utf8, -1);
+	GString *string = g_string_sized_new(strlen(utf8) + 1);
+	short *formats;
+	int pos, i, j;
+	guint16 start, end, len, attr, prev_attr;
+	guint8 code, color, align;
+	const char *text = utf8;
+	int attrs_len = num_attrs * 4;
+
+	formats = g_try_new0(gint16, (text_len + 1));
+	if (formats == NULL) {
+		g_string_free(string, TRUE);
+		return NULL;
+	}
+
+	/* we will need formatting at the position beyond the last char */
+	for (i = 0; i <= text_len; i++)
+		formats[i] = STK_TEXT_FORMAT_INIT;
+
+	for (i = 0; i < attrs_len; i += 4) {
+		start = attrs[i];
+		len = attrs[i + 1];
+		code = attrs[i + 2] & 0xFF;
+		color = attrs[i + 3] & 0xFF;
+
+		if (len == 0)
+			end = text_len;
+		else
+			end = start + len;
+
+		/* sanity check values */
+		if (start > end || end > text_len)
+			continue;
+
+		/*
+		 * if the alignment is the same as either the default
+		 * or the last alignment used, don't set any alignment
+		 * value.
+		 */
+		if (start == 0)
+			align = STK_TEXT_FORMAT_NO_ALIGN;
+		else {
+			align = formats[start - 1] &
+					STK_TEXT_FORMAT_ALIGN_MASK;
+		}
+
+		if ((code & STK_TEXT_FORMAT_ALIGN_MASK) == align)
+			code |= STK_TEXT_FORMAT_NO_ALIGN;
+
+		attr = code | (color << 8);
+
+		for (j = start; j < end; j++)
+			formats[j] = attr;
+	}
+
+	prev_attr = STK_TEXT_FORMAT_INIT;
+
+	for (pos = 0; pos <= text_len; pos++) {
+		attr = formats[pos];
+		if (attr != prev_attr) {
+			if (prev_attr != STK_TEXT_FORMAT_INIT)
+				end_format(string, prev_attr);
+
+			if (attr != STK_TEXT_FORMAT_INIT)
+				start_format(string, attr);
+
+			prev_attr = attr;
+		}
+
+		if (pos == text_len)
+			break;
+
+		switch (g_utf8_get_char(text)) {
+		case '\n':
+			g_string_append(string, "<br/>");
+			break;
+		case '\r':
+		{
+			char *next = g_utf8_next_char(text);
+			gunichar c = g_utf8_get_char(next);
+
+			g_string_append(string, "<br/>");
+
+			if ((pos + 1 < text_len) && (c == '\n')) {
+				text = g_utf8_next_char(text);
+				pos++;
+			}
+			break;
+		}
+		case '<':
+			g_string_append(string, "&lt;");
+			break;
+		case '>':
+			g_string_append(string, "&gt;");
+			break;
+		case '&':
+			g_string_append(string, "&amp;");
+			break;
+		default:
+			g_string_append_unichar(string, g_utf8_get_char(text));
+		}
+
+		text = g_utf8_next_char(text);
+	}
+
+	g_free(formats);
+
+	/* return characters from string. Caller must free char data */
+	return g_string_free(string, FALSE);
+}
