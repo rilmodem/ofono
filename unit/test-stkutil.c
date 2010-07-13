@@ -3351,6 +3351,7 @@ struct play_tone_test {
 	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
+	char *html;
 };
 
 static unsigned char play_tone_111[] = { 0xD0, 0x1B, 0x81, 0x03, 0x01, 0x20,
@@ -4121,7 +4122,10 @@ static struct play_tone_test play_tone_data_411 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_412 = {
@@ -4149,7 +4153,10 @@ static struct play_tone_test play_tone_data_421 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x01, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: center;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_422 = {
@@ -4177,7 +4184,10 @@ static struct play_tone_test play_tone_data_431 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x02, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: right;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_432 = {
@@ -4205,7 +4215,10 @@ static struct play_tone_test play_tone_data_441 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x04, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"big;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>",
 };
 
 static struct play_tone_test play_tone_data_442 = {
@@ -4221,7 +4234,10 @@ static struct play_tone_test play_tone_data_442 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_443 = {
@@ -4249,7 +4265,10 @@ static struct play_tone_test play_tone_data_451 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x08, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-size: "
+		"small;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute 1</span></div>",
 };
 
 static struct play_tone_test play_tone_data_452 = {
@@ -4265,7 +4284,10 @@ static struct play_tone_test play_tone_data_452 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_453 = {
@@ -4293,7 +4315,10 @@ static struct play_tone_test play_tone_data_461 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0E, 0x10, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-weight: "
+		"bold;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute</span></div> 1"
 };
 
 static struct play_tone_test play_tone_data_462 = {
@@ -4309,7 +4334,10 @@ static struct play_tone_test play_tone_data_462 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_463 = {
@@ -4337,7 +4365,10 @@ static struct play_tone_test play_tone_data_471 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x0E, 0x20, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"font-style: "
+		"italic;color: #347235;background-color: #FFFF00;\">"
+		"Text Attribute</span></div> 1",
 };
 
 static struct play_tone_test play_tone_data_472 = {
@@ -4353,7 +4384,10 @@ static struct play_tone_test play_tone_data_472 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_473 = {
@@ -4381,7 +4415,10 @@ static struct play_tone_test play_tone_data_481 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x40, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: underline;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>",
 };
 
 static struct play_tone_test play_tone_data_482 = {
@@ -4397,7 +4434,10 @@ static struct play_tone_test play_tone_data_482 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_483 = {
@@ -4425,7 +4465,10 @@ static struct play_tone_test play_tone_data_491 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x80, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span "
+		"style=\"text-decoration: line-through;color: #347235;"
+		"background-color: #FFFF00;\">Text Attribute 1</span></div>",
 };
 
 static struct play_tone_test play_tone_data_492 = {
@@ -4441,7 +4484,10 @@ static struct play_tone_test play_tone_data_492 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 2</span>"
+		"</div>",
 };
 
 static struct play_tone_test play_tone_data_493 = {
@@ -4469,7 +4515,9 @@ static struct play_tone_test play_tone_data_4101 = {
 	.text_attr = {
 		.len = 4,
 		.attributes = { 0x00, 0x10, 0x00, 0xB4 }
-	}
+	},
+	.html = "<div style=\"text-align: left;\"><span style=\"color: "
+		"#347235;background-color: #FFFF00;\">Text Attribute 1</span>",
 };
 
 static struct play_tone_test play_tone_data_4102 = {
@@ -4579,6 +4627,8 @@ static void test_play_tone(gconstpointer data)
 	check_duration(&command->play_tone.duration, &test->duration);
 	check_icon_id(&command->play_tone.icon_id, &test->icon_id);
 	check_text_attr(&command->play_tone.text_attr, &test->text_attr);
+	check_text_attr_html(&command->play_tone.text_attr,
+				command->play_tone.alpha_id, test->html);
 	check_frame_id(&command->play_tone.frame_id, &test->frame_id);
 
 	stk_command_free(command);
