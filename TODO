@@ -220,6 +220,11 @@ GPRS
   Priority: High
   Complexity: C1
 
+- Add support for IPv6 GPRS contexts.
+
+  Priority: Medium
+  Complexity: C1
+
 
 Location Services
 =================
