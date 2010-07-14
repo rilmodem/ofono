@@ -301,12 +301,15 @@ Voicecall
 Miscellaneous
 =============
 
-- Country Specific emergency numbers.  Figure out how to support countries with
-  specific mandated emergency numbers which are not part of the standard
-  emergency number list.
+- Country / Operator specific emergency numbers.  Figure out how to support
+  countries / operators with specific mandated emergency numbers which are
+  not part of the standard emergency number list. This needs to be queried
+  by the voicecall atom every time a new SIM is inserted.  The list is
+  assumed to be managed by the modem.  If no such functionality is available,
+  then the 3GPP mandated behavior is used.
 
   Complexity: C2
-  Priority: Low
+  Priority: High
 
 - Bluetooth SAP Client support.  The Telit UC864-G devices support Bluetooth
   SAP client mode.  This requires the use of a modem side-channel to read the
@@ -359,12 +362,6 @@ Miscellaneous
 
   If the modem does not support such a feature the property should never be
   exposed to the user.
-
-  Priority: High
-  Complexity: C1
-
-- Add support for country / carrier specific emergency call list.  This needs
-  to be queried by the voicecall atom every time a new SIM is inserted.
 
   Priority: High
   Complexity: C1
