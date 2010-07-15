@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <glib.h>
 #include <gatchat.h>
@@ -54,6 +55,8 @@ static const char *none_prefix[] = { NULL };
 struct mbm_data {
 	GAtChat *modem_port;
 	GAtChat *data_port;
+	guint cpin_poll_source;
+	guint cpin_poll_count;
 	gboolean have_sim;
 };
 
@@ -82,6 +85,10 @@ static void mbm_remove(struct ofono_modem *modem)
 
 	g_at_chat_unref(data->data_port);
 	g_at_chat_unref(data->modem_port);
+
+	if (data->cpin_poll_source > 0)
+		g_source_remove(data->cpin_poll_source);
+
 	g_free(data);
 }
 
@@ -92,6 +99,8 @@ static void mbm_debug(const char *str, void *user_data)
 	ofono_info("%s %s", prefix, str);
 }
 
+static gboolean init_simpin_check(gpointer user_data);
+
 static void simpin_check(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -99,16 +108,39 @@ static void simpin_check(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	/* Modem returns error if there is no SIM in slot */
+	/* Modem returns +CME ERROR: 10 if SIM is not ready. */
+	if (!ok && result->final_or_pdu &&
+			!strcmp(result->final_or_pdu, "+CME ERROR: 10") &&
+			data->cpin_poll_count++ < 5) {
+		data->cpin_poll_source =
+			g_timeout_add_seconds(1, init_simpin_check, modem);
+		return;
+	}
+
+	data->cpin_poll_count = 0;
+
+	/* Modem returns ERROR if there is no SIM in slot. */
 	data->have_sim = ok;
 
 	ofono_modem_set_powered(modem, TRUE);
 }
 
-static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+static gboolean init_simpin_check(gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct mbm_data *data = ofono_modem_get_data(modem);
+
+	data->cpin_poll_source = 0;
+
+	g_at_chat_send(data->modem_port, "AT+CPIN?", cpin_prefix,
+			simpin_check, modem, NULL);
+
+	return FALSE;
+}
+
+static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
 
 	DBG("");
 
@@ -117,8 +149,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	g_at_chat_send(data->modem_port, "AT+CPIN?", cpin_prefix,
-			simpin_check, modem, NULL);
+	init_simpin_check(modem);
 }
 
 static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
