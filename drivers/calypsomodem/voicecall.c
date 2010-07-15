@@ -209,10 +209,10 @@ static void calypso_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 		return;
 	}
 
-	s = sprintf(buf, "AT+VTS=\"%c\"", dtmf[0]);
+	s = sprintf(buf, "AT+VTS=%c", dtmf[0]);
 
 	for (i = 1; i < len; i++)
-		s += sprintf(buf + s, ";+VTS=\"%c\"", dtmf[i]);
+		s += sprintf(buf + s, ";+VTS=%c", dtmf[i]);
 
 	calypso_template(vc, buf, cb, data);
 	g_free(buf);
