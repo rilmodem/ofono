@@ -337,6 +337,8 @@ static void add_modem(struct udev_device *udev_device)
 	if (curpath == NULL)
 		return;
 
+	DBG("%s (%s)", curpath, driver);
+
 	g_hash_table_insert(devpath_list, g_strdup(curpath), g_strdup(devpath));
 
 	if (g_strcmp0(driver, "mbm") == 0)
@@ -365,6 +367,8 @@ static void remove_modem(struct udev_device *udev_device)
 
 	if (curpath == NULL)
 		return;
+
+	DBG("%s", curpath);
 
 	devpath = g_hash_table_lookup(devpath_list, curpath);
 	if (!devpath)
