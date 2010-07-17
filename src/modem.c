@@ -808,6 +808,7 @@ static const struct {
 	{ OFONO_CELL_BROADCAST_INTERFACE,		"cbs"	},
 	{ OFONO_SMS_MANAGER_INTERFACE,			"sms"	},
 	{ OFONO_SIM_MANAGER_INTERFACE,			"sim"	},
+	{ OFONO_STK_INTERFACE,				"stk"	},
 	{ OFONO_DATA_CONNECTION_MANAGER_INTERFACE,	"gprs"	},
 	{ },
 };
