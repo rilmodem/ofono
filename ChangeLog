@@ -1,3 +1,14 @@
+ver 0.25:
+	Fix issue with PPP IPCP and too short timeouts.
+	Fix issue with Calypso modem and DTMF chars.
+	Fix issue with detection of some Huawei devices.
+	Fix issue with SIM polling and Ericsson MBM devices.
+	Fix potential overflow with SMS and GSM extension chars.
+	Add support for OFONO_ERROR_TYPE_SIM for negative SIM status.
+	Add support for display text decoding.
+	Add support for idle text proactive command.
+	Add support for SMS proactive commands.
+
 ver 0.24:
 	Fix race condition with GRPS attach operation.
 	Fix some issues with Option based devices.
