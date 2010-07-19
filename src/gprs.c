@@ -601,7 +601,7 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 	context_type = gprs_context_string_to_type(type);
 
 	if (context_type == GPRS_CONTEXT_TYPE_INVALID)
-		return __ofono_error_invalid_args(msg);
+		return __ofono_error_invalid_format(msg);
 
 	if (ctx->type == context_type)
 		return dbus_message_new_method_return(msg);
@@ -675,7 +675,8 @@ static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
 
 	ofono_dbus_signal_property_changed(conn, ctx->path,
 						OFONO_DATA_CONTEXT_INTERFACE,
-						"Name", DBUS_TYPE_STRING, &name);
+						"Name", DBUS_TYPE_STRING,
+						&name);
 
 	return NULL;
 }
