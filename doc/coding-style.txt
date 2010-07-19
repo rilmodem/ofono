@@ -10,12 +10,14 @@ First of all, oFono coding style must follow every rule for Linux kernel
 named checkpatch.pl to help you check the compliance with it. Just type
 "checkpatch.pl --no-tree patch_name" to check your patch. In theory, you need
 to clean up all the warnings and errors except this one: "ERROR: Missing
-Signed-off-by: line(s)". However, sometimes, the warning of exceeding maximum
-characters for a line (80 characters) can be ignored.
+Signed-off-by: line(s)". oFono does not used Signed-Off lines, so including
+them is actually an error.  In certain circumstances one can ignore the 80
+character per line limit.  This is generally only allowed if the alternative
+would make the code even less readable.
 
 Besides the kernel coding style above, oFono has special flavors for its own.
 Some of them are mandatory (marked as 'M'), while some others are optional
-(marked as 'O'), but nice to have.
+(marked as 'O'), but generally preferred.
 
 M1: Blank line before if statement
 ==================================
@@ -118,7 +120,7 @@ Better to use abbreviation, rather than full name, to name a variable,
 function, struct, etc.
 
 Example:
-supplementary_service  // worse
+supplementary_service  // too long
 ss  // better
 
 
