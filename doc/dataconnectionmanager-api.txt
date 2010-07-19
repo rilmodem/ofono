@@ -133,6 +133,11 @@ Properties	boolean Active [readwrite]
 			purposes.  This value cannot be changed when the
 			context is active.
 
+		string Protocol [readwrite]
+
+			Holds the protocol for this context.  Valid values
+			are: "ip" and "ipv6".
+
 		string Name [readwrite]
 
 			The name is a free form string that describes this
@@ -145,8 +150,8 @@ Properties	boolean Active [readwrite]
 
 			string Interface [readonly, optional]
 
-				Holds the interface of the network interface used
-				by this context (e.g. "ppp0" "usb0")
+				Holds the interface of the network interface
+				used by this context (e.g. "ppp0" "usb0")
 
 			string Method [readonly, optional]
 
