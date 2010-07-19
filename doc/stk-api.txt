@@ -1,0 +1,178 @@
+SimToolkit Hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.SimToolkit
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the SimToolkit object.  See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		array{byte} GetIcon(byte id)
+
+			Returns the icon data for icon identified by id.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.NotFound
+
+		void SelectItem(byte item, object agent)
+
+			Selects an item from the main menu, thus triggering
+			a new user session.  The agent parameter specifies
+			a new agent to be used for the duration of the
+			user session.
+
+		void RegisterAgent(object path)
+
+			Registers a default agent to be used for SIM initiated
+			actions such as Display Text, Get Inkey or Get Input.
+			These can typically occur when a special SMS is
+			received and might not involve interaction from the
+			user.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.InUse
+
+		void UnregisterAgent(object path)
+
+			Unregisters the default agent.  If no agent is
+			registered then unsolicited commands from the SIM
+			are rejected.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.NotFound
+					 [service].Error.NotAuthorized
+
+Properties	string IdleText
+
+			Contains the text to be used when the home screen is
+			idle.  This text is set by the SIM and can be changed
+			at any time.
+
+		array{string} MainMenuItems
+
+			Contains the items that make up the main menu.  This
+			is populated by the SIM when it sends the Setup Menu
+			Proactive Command.  The main menu is always available,
+			but its contents can be changed at any time.
+
+		string MainMenuTitle
+
+			Contains the title of the main menu.
+
+		array{byte} Icons
+
+			Contains the identifiers of all available icons for
+			this SIM.
+
+SimToolkitAgent Hierarchy
+===============
+
+Service		unique name
+Interface	org.ofono.SimToolkitAgent
+Object path	freely definable
+
+Methods		byte SelectItem(string title, array{string} items,
+				array{byte} icon_ids, byte default)
+
+			Tells the agent to ask the user to select an item
+			from the menu.  This function should return the index
+			of the item or an error given below:
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+
+			Implementation notes:
+
+			- Data / Navigation type not indicated
+			- Soft key preferred not indicated
+			- Help available ignored
+
+		void DisplayText(string text, byte icon_id, boolean urgent)
+
+			Tells the agent to display text from the SIM.  The
+			boolean urgent parameter tells the agent whether this
+			is an urgent message and all other messages should be
+			cleared prior to the display of this text.
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+
+			Implementation notes:
+
+			- High / normal priority indicated by urgent
+			- clear / wait for user handled by setting a higher
+			  timeout in the case of wait for user flag and using
+			  the Cancel() method appropriately.  If the agent
+			  returns earlier from this method call, a terminal
+			  response is sent.
+			- Immediate Response indication is handled internally,
+			  terminal response is sent immediately and no other
+			  indication is given to the user / agent.  Response
+			  from this method call is ignored and an infinite
+			  timeout is used for the method call.  Once another
+			  proactive command arrives, and the DisplayText is
+			  still pending, Cancel() is called.
+
+		string RequestInput(string alpha, byte icon_id,
+				string default, byte min, byte max,
+				boolean hide_typing)
+
+			Tells the agent to request an input string from the
+			user.  The alpha parameter and icon_id gives context
+			to the user.  The default string contains the suggested
+			default by the SIM.  The min and max parameters contain
+			how many characters the user should enter.  The
+			parameter hide_typing indicates whether user's typing
+			should be opaque.
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+
+		string RequestDigits(string alpha, byte icon_id,
+					string default, byte min, byte max,
+					boolean hide_typing)
+
+			Same as GetInput but only digit characters (0-9, *#+)
+			are expected.
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+
+		string RequestKey(string alpha, byte icon_id)
+
+			Tells the agent to request a single input key from
+			the user.  The alpha parameter contains the context
+			for the request.
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+
+		string RequestDigit(string alpha, byte icon_id)
+
+			Same as above, but only digits (0-9, *#+) are
+			expected.
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+
+		boolean RequestConfirmation(string alpha, byte icon_id)
+
+			Asks the agent to get confirmation from the user.
+
+			Possible Errors: [service].Error.SimToolkit.GoBack
+
+		void Cancel()
+
+			Asks the agent to cancel any ongoing operation in
+			progress.  This is usually either because the agent
+			is taking too long to respond or the Sim Application
+			has terminated the session.
+
+		void Release()
+
+			Agent is being released, possibly because of oFono
+			terminating, SimToolkit interface torn down or modem
+			off.  If the agent is registered as a global agent,
+			no UnregisterAgent call is expected.
