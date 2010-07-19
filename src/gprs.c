@@ -139,6 +139,32 @@ static enum gprs_context_type gprs_context_string_to_type(const char *str)
 	return GPRS_CONTEXT_TYPE_INVALID;
 }
 
+static const char *gprs_proto_to_string(enum ofono_gprs_proto proto)
+{
+	switch (proto) {
+	case OFONO_GPRS_PROTO_IP:
+		return "ip";
+	case OFONO_GPRS_PROTO_IPV6:
+		return "ipv6";
+	};
+
+	return NULL;
+}
+
+static gboolean gprs_proto_from_string(const char *str,
+					enum ofono_gprs_proto *proto)
+{
+	if (g_str_equal(str, "ip")) {
+		*proto = OFONO_GPRS_PROTO_IP;
+		return TRUE;
+	} else if (g_str_equal(str, "ipv6")) {
+		*proto = OFONO_GPRS_PROTO_IPV6;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 static unsigned int gprs_cid_alloc(struct ofono_gprs *gprs)
 {
 	return idmap_alloc(gprs->cid_map);
@@ -358,6 +384,7 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	dbus_bool_t value;
 	const char *type = gprs_context_type_to_string(ctx->type);
+	const char *proto = gprs_proto_to_string(ctx->context.proto);
 	const char *name = ctx->name;
 	const char *strvalue;
 
@@ -377,6 +404,8 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append(&dict, "Active", DBUS_TYPE_BOOLEAN, &value);
 
 	ofono_dbus_dict_append(&dict, "Type", DBUS_TYPE_STRING, &type);
+
+	ofono_dbus_dict_append(&dict, "Protocol", DBUS_TYPE_STRING, &proto);
 
 	strvalue = ctx->context.apn;
 	ofono_dbus_dict_append(&dict, "AccessPointName", DBUS_TYPE_STRING,
@@ -588,7 +617,38 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 
 	ofono_dbus_signal_property_changed(conn, ctx->path,
 						OFONO_DATA_CONTEXT_INTERFACE,
-						"Type", DBUS_TYPE_STRING, &type);
+						"Type", DBUS_TYPE_STRING,
+						&type);
+
+	return NULL;
+}
+
+static DBusMessage *pri_set_proto(struct pri_context *ctx,
+					DBusConnection *conn,
+					DBusMessage *msg, const char *str)
+{
+	GKeyFile *settings = ctx->gprs->settings;
+	enum ofono_gprs_proto proto;
+
+	if (gprs_proto_from_string(str, &proto) == FALSE)
+		return __ofono_error_invalid_format(msg);
+
+	if (ctx->context.proto == proto)
+		return dbus_message_new_method_return(msg);
+
+	ctx->context.proto = proto;
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key, "Protocol", str);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+						OFONO_DATA_CONTEXT_INTERFACE,
+						"Protocol", DBUS_TYPE_STRING,
+						&str);
 
 	return NULL;
 }
@@ -717,6 +777,13 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		dbus_message_iter_get_basic(&var, &str);
 
 		return pri_set_type(ctx, conn, msg, str);
+	} else if (!strcmp(property, "Protocol")) {
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &str);
+
+		return pri_set_proto(ctx, conn, msg, str);
 	} else if (!strcmp(property, "Username")) {
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 			return __ofono_error_invalid_args(msg);
@@ -1153,6 +1220,8 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 					"Password", context->context.password);
 		g_key_file_set_string(gprs->settings, context->key, "Type",
 				gprs_context_type_to_string(context->type));
+		g_key_file_set_string(gprs->settings, context->key, "Protocol",
+				gprs_proto_to_string(context->context.proto));
 		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
 	}
 
@@ -1628,12 +1697,14 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 {
 	char *name = NULL;
 	char *typestr = NULL;
+	char *protostr = NULL;
 	char *username = NULL;
 	char *password = NULL;
 	char *apn = NULL;
 	gboolean ret = FALSE;
 	struct pri_context *context;
 	enum gprs_context_type type;
+	enum ofono_gprs_proto proto;
 	unsigned int id;
 
 	if (sscanf(group, "primarycontext%d", &id) != 1)
@@ -1652,6 +1723,13 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 
 	type = gprs_context_string_to_type(typestr);
 	if (type == GPRS_CONTEXT_TYPE_INVALID)
+		goto error;
+
+	if ((protostr = g_key_file_get_string(gprs->settings, group,
+						"Protocol", NULL)) == NULL)
+		protostr = g_strdup("ip");
+
+	if (gprs_proto_from_string(protostr, &proto) == FALSE)
 		goto error;
 
 	username = g_key_file_get_string(gprs->settings, group,
@@ -1693,6 +1771,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	strcpy(context->context.username, username);
 	strcpy(context->context.password, password);
 	strcpy(context->context.apn, apn);
+	context->context.proto = proto;
 
 	if (context_dbus_register(context) == FALSE)
 		goto error;
@@ -1705,6 +1784,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 error:
 	g_free(name);
 	g_free(typestr);
+	g_free(protostr);
 	g_free(username);
 	g_free(password);
 	g_free(apn);
