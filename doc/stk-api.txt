@@ -1,4 +1,4 @@
-SimToolkit Hierarchy
+SimToolkit Hierarchy [experimental]
 ===============
 
 Service		org.ofono
@@ -72,7 +72,7 @@ Properties	string IdleText
 			Contains the identifiers of all available icons for
 			this SIM.
 
-SimToolkitAgent Hierarchy
+SimToolkitAgent Hierarchy [experimental]
 ===============
 
 Service		unique name
@@ -107,15 +107,27 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			Implementation notes:
 
 			- High / normal priority indicated by urgent
-			- clear / wait for user handled by setting a higher
-			  timeout in the case of wait for user flag and using
-			  the Cancel() method appropriately.  If the agent
-			  returns earlier from this method call, a terminal
-			  response is sent.
+
+			- The clear message after delay / wait for user to
+			  clear flags are handled as follows.  If the wait for
+			  user flag is set, then oFono sets a higher timeout
+			  for the Agent DisplayText method call.  It will then
+			  call Cancel() on the agent after this timeout
+			  expires and the "No response from user" terminal
+			  response is sent.  If the agent returns earlier from
+			  this method call, a terminal response "Command
+			  "performed successfully" is sent.
+
+			  It might be required to pass a flag to the UI to
+			  hint it that allocation of an 'acknowledgement'
+			  button is required in the case of a longer timeout.
+			  However, the UI can figure this out itself as well
+			  based on a timer threshold.  More input needed.
+
 			- Immediate Response indication is handled internally,
 			  terminal response is sent immediately and no other
 			  indication is given to the user / agent.  Response
-			  from this method call is ignored and an infinite
+			  from this method call is ignored and a short
 			  timeout is used for the method call.  Once another
 			  proactive command arrives, and the DisplayText is
 			  still pending, Cancel() is called.
@@ -133,6 +145,14 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			should be opaque.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+
+			Implementation notes:
+
+			- It is still unclear how to handle gsm vs ucs2
+			  accepted alphabet selection.  Can the reduced
+			  character set functionality from SMS be applied
+			  here?  If not, then an extra gsm vs ucs2 acceptance
+			  argument needs to be added.
 
 		string RequestDigits(string alpha, byte icon_id,
 					string default, byte min, byte max,
