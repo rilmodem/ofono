@@ -1480,6 +1480,7 @@ void ofono_modem_remove(struct ofono_modem *modem)
 	if (modem->driver_type)
 		g_free(modem->driver_type);
 
+	g_free(modem->name);
 	g_free(modem->path);
 	g_free(modem);
 }
