@@ -56,7 +56,7 @@ Properties	string IdleText
 			idle.  This text is set by the SIM and can be changed
 			at any time.
 
-		array{string} MainMenuItems
+		array{struct{string, byte}} MainMenu
 
 			Contains the items that make up the main menu.  This
 			is populated by the SIM when it sends the Setup Menu
@@ -79,8 +79,9 @@ Service		unique name
 Interface	org.ofono.SimToolkitAgent
 Object path	freely definable
 
-Methods		byte SelectItem(string title, array{string} items,
-				array{byte} icon_ids, byte default)
+Methods		byte RequestSelection(string title, byte icon_id,
+					array{struct(string, byte)} items,
+					byte default)
 
 			Tells the agent to ask the user to select an item
 			from the menu.  This function should return the index
