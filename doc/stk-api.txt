@@ -50,6 +50,11 @@ Methods		dict GetProperties()
 					 [service].Error.NotFound
 					 [service].Error.NotAuthorized
 
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
+
 Properties	string IdleText
 
 			Contains the text to be used when the home screen is
