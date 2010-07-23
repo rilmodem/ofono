@@ -523,7 +523,7 @@ static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
 	}
 }
 
-static struct tx_queue_entry *create_tx_queue_entry(GSList *msg_list)
+static struct tx_queue_entry *tx_queue_entry_new(GSList *msg_list)
 {
 	struct tx_queue_entry *entry = g_new0(struct tx_queue_entry, 1);
 	int i = 0;
@@ -575,7 +575,7 @@ static void send_message_destroy(void *data)
  *
  * An alphabet is chosen for the text and it (might be) segmented in
  * fragments by sms_text_prepare() into @msg_list. A queue list @entry
- * is created by create_tx_queue_entry() and g_queue_push_tail()
+ * is created by tx_queue_entry_new() and g_queue_push_tail()
  * appends that entry to the SMS transmit queue. Then the tx_next()
  * function is scheduled to run to process the queue.
  */
@@ -1311,7 +1311,7 @@ unsigned int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 					ofono_sms_txq_submit_cb_t cb,
 					void *data, ofono_destroy_func destroy)
 {
-	struct tx_queue_entry *entry = create_tx_queue_entry(list);
+	struct tx_queue_entry *entry = tx_queue_entry_new(list);
 
 	if (flags & OFONO_SMS_SUBMIT_FLAG_REQUEST_SR) {
 		struct sms *head = list->data;
