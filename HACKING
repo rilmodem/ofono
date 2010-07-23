@@ -81,3 +81,13 @@ automatically includes this option.
 
 For production installations or distribution packaging it is important that
 the "--enable-maintainer-mode" option is NOT used.
+
+Note multiple arguments to -d can be specified, colon, comma or space
+separated. The arguments are relative source code filenames for which
+debugging output should be enabled; output shell-style globs are
+accepted (e.g.: 'plugins/*:src/main.c').
+
+Other debugging settings that can be toggled:
+
+ - Environment variable OFONO_AT_DEBUG (set to 1): enable AT commands
+   debugging

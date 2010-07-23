@@ -18,7 +18,10 @@ is used to manage \fID-Bus\fP permissions for oFono.
 .SH OPTIONS
 .TP
 .B --debug, -d
-Enable debug information output.
+Enable debug information output. Note multiple arguments to -d can be
+specified, colon, comma or space separated. The arguments are relative
+source code filenames for which debugging output should be enabled;
+output shell-style globs are accepted (e.g.: "plugins/*:src/main.c").
 .TP
 .B --nodetach, -n
 Don't run as daemon in background.
