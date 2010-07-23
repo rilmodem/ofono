@@ -500,6 +500,8 @@ GSList *sms_assembly_add_fragment(struct sms_assembly *assembly,
 					const struct sms_address *addr,
 					guint16 ref, guint8 max, guint8 seq);
 void sms_assembly_expire(struct sms_assembly *assembly, time_t before);
+gboolean sms_address_to_hex_string(const struct sms_address *in,
+				   char *straddr);
 
 struct status_report_assembly *status_report_assembly_new(const char *imsi);
 void status_report_assembly_free(struct status_report_assembly *assembly);

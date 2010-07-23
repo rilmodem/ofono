@@ -2293,8 +2293,7 @@ static gboolean sms_assembly_extract_address(const char *straddr,
 	return sms_decode_address_field(pdu, len, &offset, FALSE, out);
 }
 
-static gboolean sms_assembly_encode_address(const struct sms_address *in,
-						char *straddr)
+gboolean sms_address_to_hex_string(const struct sms_address *in, char *straddr)
 {
 	unsigned char pdu[12];
 	int offset = 0;
@@ -2396,7 +2395,7 @@ static gboolean sms_assembly_store(struct sms_assembly *assembly,
 	if (!assembly->imsi)
 		return FALSE;
 
-	if (sms_assembly_encode_address(&node->addr, straddr) == FALSE)
+	if (sms_address_to_hex_string(&node->addr, straddr) == FALSE)
 		return FALSE;
 
 	len = sms_serialize(buf, sms);
@@ -2419,7 +2418,7 @@ static void sms_assembly_backup_free(struct sms_assembly *assembly,
 	if (!assembly->imsi)
 		return;
 
-	if (sms_assembly_encode_address(&node->addr, straddr) == FALSE)
+	if (sms_address_to_hex_string(&node->addr, straddr) == FALSE)
 		return;
 
 	for (seq = 0; seq < node->max_fragments; seq++) {
