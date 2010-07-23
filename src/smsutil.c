@@ -2314,7 +2314,7 @@ static void sms_assembly_load(struct sms_assembly *assembly,
 				const struct dirent *dir)
 {
 	struct sms_address addr;
-	char straddr[25];
+	DECLARE_SMS_ADDR_STR(straddr);
 	guint16 ref;
 	guint8 max;
 	guint8 seq;
@@ -2391,7 +2391,7 @@ static gboolean sms_assembly_store(struct sms_assembly *assembly,
 {
 	unsigned char buf[177];
 	int len;
-	char straddr[25];
+	DECLARE_SMS_ADDR_STR(straddr);
 
 	if (!assembly->imsi)
 		return FALSE;

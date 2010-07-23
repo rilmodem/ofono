@@ -432,6 +432,12 @@ gboolean sms_decode_unpacked_stk_pdu(const unsigned char *pdu, int len,
 gboolean sms_encode(const struct sms *in, int *len, int *tpdu_len,
 			unsigned char *pdu);
 
+/*
+ * Length is based on the address being 12 hex characters plus a
+ * terminating NUL char. See sms_assembly_extract_address().
+ */
+#define DECLARE_SMS_ADDR_STR(a) char a[25]
+
 gboolean sms_decode_address_field(const unsigned char *pdu, int len,
 					int *offset, gboolean sc,
 					struct sms_address *out);
