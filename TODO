@@ -303,6 +303,189 @@ Voicecall
   Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
 
+Sim Toolkit
+===========
+
+- Support Display Text proactive command.  This should be implemented
+  by making the appropriate call into the SimToolkitAgent.  This functionality
+  should support normal and high-priority messages; packed gsm, unpacked
+  gsm and ucs2 encoded strings; and immediate response command type.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support Get Inkey proactive command.  This should be implemented by
+  making the appropriate call into the SimToolkitAgent.  This functionality
+  should support digits only, gsm alphabet only and ucs2 alphabet only
+  user responses.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support Get Input proactive command.  This should be implemented by
+  making the appropriate call into the SimToolkitAgent.  This functionality
+  should support digits only; packed gsm, unpacked gsm and ucs2 encoded
+  responses; and opaque (e.g. password) user input.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support More Time proactive command.  This command should essentially
+  have no effect.
+
+  Priority: High
+  Complexity: C1
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support the Play Tone proactive command.  This should be implemented
+  by making the appropriate call into the SimToolkitAgent.  The sound
+  that will be played will be determined by the agent based on the sound
+  type.
+
+  Priority: High
+  Complexity: C2
+
+- Support Refresh proactive command.  The specification defines 7 types
+  of Refresh types:
+	- NAA Initialization
+	- NAA File Change Notification
+	- NAA Initialization and File Change Notification
+	- NAA Initialization and Full File Change Notification
+	- UICC Reset
+	- NAA Application Reset (2G only)
+	- NAA Session Reset (3G only)
+
+  The 'NAA Initialization' type will be ignored by oFono, it is assumed
+  this is handled by the modem.
+
+  For 'UICC Reset', 'NAA Application Reset' and 'NAA Session Reset' oFono
+  will first check whether there are any calls or ussd operations active.
+  If there are, the appropriate response will be sent (e.g. busy on call
+  or screen busy terminal response.)  Otherwise a positive response will be
+  sent to the driver.  In the case of a 'UICC Reset' the driver / modem
+  can interpret this that it is safe to reset the UICC.
+
+  Alternatively, the driver / modem can notify the core of the SIM removal
+  / SIM insertion events without using the Refresh proactive command.  It
+  is up to the driver / modem to perform a warm reset.  In particular, 3GPP
+  31.111 mandates that any change to EFimsi is done by using 'UICC Reset',
+  'NAA Application Reset' or 'NAA Session Reset'.  Please see 3GPP 31.111
+  Section 6.4.7.1.
+
+  Other types will be handled by oFono flushing the EF cache of the files
+  affected (or the entire SIM cache in case of Full File Change Notifications)
+  and re-reading the affected files.  Any properties derived from these
+  Elementary Files will be updated and signaled using PropertyChanged.
+
+  Priority: High
+  Complexity: C8
+
+- Support Setup Menu proactive command.  This should be supported by exporting
+  the main menu as a set of attributes on the SimToolkit interface.  Both
+  icons, menu items and the Alpha identifier should be exposed.  Support of
+  this command implies support of the 'Menu Selection' Envelope.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support Select Item proactive command.  This should be implemented by
+  making the appropriate call into the SimToolkitAgent.  Both icons, menu
+  items and the Alpha identifier should be sent to the agent.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support Send Short Message proactive command.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support Send SS proactive command.
+
+  Priority: High
+  Complexity: C4
+  Owner: Yang Gu <yang.gu@intel.com>
+
+- Support Send USSD proactive command.
+
+  Priority: High
+  Complexity: C4
+  Owner: Yang Gu <yang.gu@intel.com>
+
+- Support Set Up Call proactive command.  If the UICC has indicated that
+  the user should be informed, then the SimToolkitAgent will be called
+  in order to request user's confirmation of the call setup.  If the user
+  has confirmed, or if user's confirmation was not requested, oFono will
+  setup the call and optionally inform the user.
+
+  Priority: High
+  Complexity: C8
+
+- Support Timer Management proactive command.  This should be handled
+  completely internally to oFono and does not require any UI interaction.
+  Support of this proactive command implies support of the 'Timer Expiration'
+  Envelope.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support Set Up Idle Mode Text proactive command.  The idle mode text
+  should be exposed on the SimToolkit interface as a property.  The property
+  changed signal should be emitted whenever the idle mode text string changes.
+
+  Priority: High
+  Complexity: C2
+  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
+
+- Support Send DTMF proactive command.  The DTMF characters are passed
+  directly to the voicecall atom and the SimToolkitAgent is notified if the
+  USIM has indicated it is acceptable to inform the user.
+
+  Priority: High
+  Complexity: C4
+
+- Support 'SMS-PP' Download Envelope.  Whenever a special type of SMS is
+  received indicating that this is an SMS-PP Download message, this message
+  will be sent to the SIM via an SMS-PP Download Envelope.  No user interaction
+  will be required.  If the modem hardware supports this transparently, then
+  no indication to oFono will be necessary.
+
+  Priority: High
+  Complexity: C2
+
+- Support 'CBS-PP' Download Envelope.  Whenever a cell broadcast on a channel
+  listed in EFcbmid is received, this broadcast will be sent to the SIM via
+  a CBS-PP Download Envelope. No user interaction will be required.  If the
+  modem hardware supports this transparently, then no indication to oFono
+  will be necessary.
+
+  Priority: High
+  Complexity: C2
+
+- Support SIM icon files as defined in 3GPP 31.102.  The icons should be
+  automatically read from the SIM, converted to a usable format (such as XPM)
+  and cached inside the daemon.  This will require to read the contents of
+  EFimg and subsequently request the icon files.
+
+  Priority: High
+  Complexity: C8
+  Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
+
+- Provide access to SIM icons for UI applications.  This should be exposed via
+  the GetIcon method on the SimToolkit interface.
+
+  Priority: High
+  Complexity: C2
+  Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
+
+
 Miscellaneous
 =============
 
