@@ -6076,3 +6076,150 @@ char *stk_text_to_html(const char *utf8,
 	/* return characters from string. Caller must free char data */
 	return g_string_free(string, FALSE);
 }
+
+static const char chars_table[] = {
+	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C',
+	'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+	'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c',
+	'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
+	'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '+', '.' };
+
+char *stk_image_to_xpm(const unsigned char *img, unsigned int len,
+			enum stk_img_scheme scheme, const unsigned char *clut,
+			unsigned short clut_len)
+{
+	guint8 width, height;
+	unsigned int ncolors, nbits, entry, cpp;
+	unsigned int i, j;
+	int bit, k;
+	GString *xpm;
+	unsigned int pos = 0;
+	const char xpm_header[] = "/* XPM */\n";
+	const char declaration[] = "static char *xpm[] = {\n";
+	char c[3];
+
+	if (img == NULL)
+		return NULL;
+
+	/* sanity check length */
+	if (len < 3)
+		return NULL;
+
+	width = img[pos++];
+	height = img[pos++];
+
+	if (scheme == STK_IMG_SCHEME_BASIC) {
+		nbits = 1;
+		ncolors = 2;
+	} else {
+		/* sanity check length */
+		if ((pos + 4 > len) || (clut == NULL))
+			return NULL;
+
+		nbits = img[pos++];
+		ncolors = img[pos++];
+
+		/* the value of zero should be interpreted as 256 */
+		if (ncolors == 0)
+			ncolors = 256;
+
+		/* skip clut offset bytes */
+		pos += 2;
+
+		if ((ncolors * 3) > clut_len)
+			return NULL;
+	}
+
+	if (pos + ((width * height + 7) / 8) > len)
+		return NULL;
+
+	/* determine the number of chars need to represent the pixel */
+	cpp = ncolors > 64 ? 2 : 1;
+
+	/*
+	 * space needed:
+	 * 	header line
+	 *	declaration and beginning of assignment line
+	 *	values - max length of 19
+	 *	colors - ncolors * (cpp + whitespace + deliminators + color)
+	 *	pixels - width * height * cpp + height deliminators "",\n
+	 *	end of assignment - 2 chars "};"
+	 */
+	xpm = g_string_sized_new(strlen(xpm_header) + strlen(declaration) +
+				19 + ((cpp + 14) * ncolors) +
+				(width * height * cpp) + (4 * height) + 2);
+	if (xpm == NULL)
+		return NULL;
+
+	/* add header, declaration, values */
+	g_string_append(xpm, xpm_header);
+	g_string_append(xpm, declaration);
+	g_string_append_printf(xpm, "\"%d %d %d %d\",\n", width, height,
+				ncolors, cpp);
+
+	/* create colors */
+	if (scheme == STK_IMG_SCHEME_BASIC) {
+		g_string_append(xpm, "\"0\tc #000000\",\n");
+		g_string_append(xpm, "\"1\tc #FFFFFF\",\n");
+	} else {
+		for (i = 0; i < ncolors; i++) {
+			/* lookup char representation of this number */
+			if (ncolors > 64) {
+				c[0] = chars_table[i / 64];
+				c[1] = chars_table[i % 64];
+				c[2] = '\0';
+			} else {
+				c[0] = chars_table[i % 64];
+				c[1] = '\0';
+			}
+
+			if ((i == (ncolors - 1)) &&
+					scheme == STK_IMG_SCHEME_TRANSPARENCY)
+				g_string_append_printf(xpm,
+					"\"%s\tc None\",\n", c);
+			else
+				g_string_append_printf(xpm,
+					"\"%s\tc #%02hhX%02hhX%02hhX\",\n",
+					c, clut[0], clut[1], clut[2]);
+			clut += 3;
+		}
+	}
+
+	/* height rows of width pixels */
+	k = 7;
+	for (i = 0; i < height; i++) {
+		g_string_append(xpm, "\"");
+		for (j = 0; j < width; j++) {
+			entry = 0;
+			for (bit = nbits - 1; bit >= 0; bit--) {
+				entry |= (img[pos] >> k & 0x1) << bit;
+				k--;
+
+				/* see if we crossed a byte boundary */
+				if (k < 0) {
+					k = 7;
+					pos++;
+				}
+			}
+
+			/* lookup char representation of this number */
+			if (ncolors > 64) {
+				c[0] = chars_table[entry / 64];
+				c[1] = chars_table[entry % 64];
+				c[2] = '\0';
+			} else {
+				c[0] = chars_table[entry % 64];
+				c[1] = '\0';
+			}
+
+			g_string_append_printf(xpm, "%s", c);
+		}
+
+		g_string_append(xpm, "\",\n");
+	}
+
+	g_string_append(xpm, "};");
+
+	/* Caller must free char data */
+	return g_string_free(xpm, FALSE);
+}

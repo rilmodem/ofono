@@ -557,6 +557,12 @@ enum stk_me_status {
 	STK_ME_STATUS_NOT_IDLE = 	0x01
 };
 
+enum stk_img_scheme {
+	STK_IMG_SCHEME_BASIC =		0x11,
+	STK_IMG_SCHEME_COLOR =		0x21,
+	STK_IMG_SCHEME_TRANSPARENCY =	0x22,
+};
+
 /* For data object that only has a byte array with undetermined length */
 struct stk_common_byte_array {
 	unsigned char *array;
@@ -1644,3 +1650,6 @@ const unsigned char *stk_pdu_from_envelope(const struct stk_envelope *envelope,
 						unsigned int *out_length);
 char *stk_text_to_html(const char *text,
 				const unsigned short *attrs, int num_attrs);
+char *stk_image_to_xpm(const unsigned char *img, unsigned int len,
+			enum stk_img_scheme scheme, const unsigned char *clut,
+			unsigned short clut_len);
