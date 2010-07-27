@@ -776,6 +776,20 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 					&technology);
 	}
 
+	if (netreg->current_operator) {
+		if (netreg->current_operator->mcc[0] != '\0') {
+			const char *mcc = netreg->current_operator->mcc;
+			ofono_dbus_dict_append(&dict, "MobileCountryCode",
+						DBUS_TYPE_STRING, &mcc);
+		}
+
+		if (netreg->current_operator->mnc[0] != '\0') {
+			const char *mnc = netreg->current_operator->mnc;
+			ofono_dbus_dict_append(&dict, "MobileNetworkCode",
+						DBUS_TYPE_STRING, &mnc);
+		}
+	}
+
 	operator = get_operator_display_name(netreg);
 	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &operator);
 
@@ -1298,6 +1312,24 @@ emit:
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
 					"Name", DBUS_TYPE_STRING,
 					&operator);
+
+	if (netreg->current_operator) {
+		if (netreg->current_operator->mcc[0] != '\0') {
+			const char *mcc = netreg->current_operator->mcc;
+			ofono_dbus_signal_property_changed(conn, path,
+					OFONO_NETWORK_REGISTRATION_INTERFACE,
+					"MobileCountryCode",
+					DBUS_TYPE_STRING, &mcc);
+		}
+
+		if (netreg->current_operator->mnc[0] != '\0') {
+			const char *mnc = netreg->current_operator->mnc;
+			ofono_dbus_signal_property_changed(conn, path,
+					OFONO_NETWORK_REGISTRATION_INTERFACE,
+					"MobileNetworkCode",
+					DBUS_TYPE_STRING, &mnc);
+		}
+	}
 
 	notify_status_watches(netreg);
 }

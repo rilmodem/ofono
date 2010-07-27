@@ -96,6 +96,18 @@ Properties	string Mode [readonly]
 
 			TODO: Agent based location signalling would be better.
 
+		string MobileCountryCode [readonly, optional]
+
+			Contains the Mobile Country Code (MCC).  This is
+			repeated here for convenience.  It can also be obtained
+			from the NetworkOperator interface.
+
+		string MobileNetworkCode [readonly, optional]
+
+			Contains the Mobile Network Code (MNC).  This is
+			repeated here for convenience.  It can also be obtained
+			from the NetworkOperator interface.
+
 		string Technology [readonly, optional]
 
 			Contains the technology of the current network.
