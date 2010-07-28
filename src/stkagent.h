@@ -69,5 +69,10 @@ void stk_agent_request_selection(struct stk_agent *agent,
 					stk_agent_selection_cb cb,
 					void *user_data, int timeout);
 
+void stk_agent_display_text(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, ofono_bool_t urgent,
+				ofono_bool_t ack, stk_agent_generic_cb cb,
+				void *user_data, int timeout);
+
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);

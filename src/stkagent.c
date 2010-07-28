@@ -396,3 +396,39 @@ void stk_agent_request_selection(struct stk_agent *agent,
 
 	agent->request_selection_menu = menu;
 }
+
+static void display_text_cb(struct stk_agent *agent,
+				enum stk_agent_result result,
+				DBusMessage *reply)
+{
+	stk_agent_generic_cb cb = agent->user_cb;
+
+	if (result == STK_AGENT_RESULT_OK && dbus_message_get_args(
+				reply, NULL, DBUS_TYPE_INVALID) == FALSE) {
+		ofono_error("Can't parse the reply to DisplayText()");
+
+		result = STK_AGENT_RESULT_TERMINATE;
+	}
+
+	cb(result, agent->user_data);
+}
+
+void stk_agent_display_text(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, ofono_bool_t urgent,
+				ofono_bool_t ack, stk_agent_generic_cb cb,
+				void *user_data, int timeout)
+{
+	dbus_bool_t priority = urgent;
+	dbus_bool_t confirm = ack;
+
+	if (!stk_agent_request_start(agent, "DisplayText", display_text_cb,
+					cb, user_data, timeout))
+		return;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BOOLEAN, &priority,
+					DBUS_TYPE_BOOLEAN, &confirm,
+					DBUS_TYPE_INVALID);
+}

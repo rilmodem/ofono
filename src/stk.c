@@ -66,6 +66,7 @@ struct ofono_stk {
 	struct stk_agent *default_agent;
 	struct stk_agent *current_agent; /* Always equals one of the above */
 	struct stk_menu *main_menu, *select_item_menu;
+	gboolean session_ended;
 	struct sms_submit_req *sms_submit_req;
 	char *idle_mode_text;
 };
@@ -984,6 +985,90 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 	return FALSE;
 }
 
+static void request_text_cb(enum stk_agent_result result, void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
+	gboolean confirm;
+	struct stk_response rsp;
+
+	/*
+	 * Check if we have already responded to the proactive command
+	 * because immediate response was requested, or the command is
+	 * being cancelled.
+	 */
+	if (!stk->pending_cmd || stk->pending_cmd->type !=
+			STK_COMMAND_TYPE_DISPLAY_TEXT ||
+			result == STK_AGENT_RESULT_CANCEL) {
+		/*
+		 * If session has ended in the meantime now is the time
+		 * to go back to main menu or close the application
+		 * window.
+		 */
+		if (stk->session_ended && stk->session_agent)
+			session_agent_remove(stk);
+
+		return;
+	}
+
+	memset(&rsp, 0, sizeof(rsp));
+
+	switch (result) {
+	case STK_AGENT_RESULT_OK:
+		rsp.result.type = STK_RESULT_TYPE_SUCCESS;
+		break;
+
+	case STK_AGENT_RESULT_BACK:
+		rsp.result.type = STK_RESULT_TYPE_GO_BACK;
+		break;
+
+	case STK_AGENT_RESULT_TIMEOUT:
+		confirm = (stk->pending_cmd->qualifier & (1 << 7)) != 0;
+		rsp.result.type = confirm ?
+			STK_RESULT_TYPE_NO_RESPONSE : STK_RESULT_TYPE_SUCCESS;
+		break;
+
+	case STK_AGENT_RESULT_TERMINATE:
+	default:
+		rsp.result.type = STK_RESULT_TYPE_USER_TERMINATED;
+		break;
+	}
+
+	if (stk_respond(stk, &rsp, stk_command_cb))
+		stk_command_cb(&error, stk);
+}
+
+static gboolean handle_command_display_text(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	int timeout = stk->short_timeout * 1000;
+	struct stk_command_display_text *dt = &stk->pending_cmd->display_text;
+	uint8_t qualifier = stk->pending_cmd->qualifier;
+	ofono_bool_t confirm = (qualifier & (1 << 7)) != 0;
+	ofono_bool_t priority = (qualifier & (1 << 0)) != 0;
+
+	if (dt->duration.interval) {
+		timeout = dt->duration.interval;
+		switch (dt->duration.unit) {
+		case STK_DURATION_TYPE_MINUTES:
+			timeout *= 60;
+		case STK_DURATION_TYPE_SECONDS:
+			timeout *= 10;
+		case STK_DURATION_TYPE_SECOND_TENTHS:
+			timeout *= 100;
+		}
+	}
+
+	stk->cancel_cmd = stk_request_cancel;
+	stk->session_ended = FALSE;
+
+	stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
+				confirm, request_text_cb, stk, timeout);
+
+	return cmd->display_text.immediate_response;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (!stk->pending_cmd)
@@ -1069,6 +1154,10 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 			break;
 		case STK_COMMAND_TYPE_SELECT_ITEM:
 			respond = handle_command_select_item(stk->pending_cmd,
+								&rsp, stk);
+			break;
+		case STK_COMMAND_TYPE_DISPLAY_TEXT:
+			respond = handle_command_display_text(stk->pending_cmd,
 								&rsp, stk);
 			break;
 		}
