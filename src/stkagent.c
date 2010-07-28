@@ -52,6 +52,8 @@ struct stk_agent {
 	ofono_bool_t is_default;
 	GDestroyNotify destroy_notify;
 	void *destroy_data;
+
+	const struct stk_menu *request_selection_menu;
 };
 
 #define OFONO_NAVIGATION_PREFIX OFONO_SERVICE ".Error"
@@ -332,4 +334,65 @@ void append_menu_items_variant(DBusMessageIter *iter,
 	append_menu_items(&variant, items);
 
 	dbus_message_iter_close_container(iter, &variant);
+}
+
+static void request_selection_cb(struct stk_agent *agent,
+					enum stk_agent_result result,
+					DBusMessage *reply)
+{
+	const struct stk_menu *menu = agent->request_selection_menu;
+	stk_agent_selection_cb cb = (stk_agent_selection_cb) agent->user_cb;
+	unsigned char selection, i;
+
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, 0, agent->user_data);
+
+		return;
+	}
+
+	if (dbus_message_get_args(reply, NULL,
+					DBUS_TYPE_BYTE, &selection,
+					DBUS_TYPE_INVALID) == FALSE) {
+		ofono_error("Can't parse the reply to RequestSelection()");
+
+		cb(STK_AGENT_RESULT_TERMINATE, 0, agent->user_data);
+
+		return;
+	}
+
+	for (i = 0; i < selection && menu->items[i].text; i++);
+
+	if (i != selection) {
+		ofono_error("Invalid item selected");
+
+		cb(STK_AGENT_RESULT_TERMINATE, 0, agent->user_data);
+
+		return;
+	}
+
+	cb(result, menu->items[selection].item_id, agent->user_data);
+}
+
+void stk_agent_request_selection(struct stk_agent *agent,
+					const struct stk_menu *menu,
+					stk_agent_selection_cb cb,
+					void *user_data, int timeout)
+{
+	dbus_int16_t default_item = menu->default_item;
+	DBusMessageIter iter;
+
+	if (!stk_agent_request_start(agent, "RequestSelection",
+					request_selection_cb,
+					(stk_agent_generic_cb) cb,
+					user_data, timeout))
+		return;
+
+	dbus_message_iter_init_append(agent->msg, &iter);
+
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &menu->title);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_BYTE, &menu->icon_id);
+	append_menu_items(&iter, menu->items);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_INT16, &default_item);
+
+	agent->request_selection_menu = menu;
 }

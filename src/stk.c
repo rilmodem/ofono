@@ -65,7 +65,7 @@ struct ofono_stk {
 	struct stk_agent *session_agent;
 	struct stk_agent *default_agent;
 	struct stk_agent *current_agent; /* Always equals one of the above */
-	struct stk_menu *main_menu;
+	struct stk_menu *main_menu, *select_item_menu;
 	struct sms_submit_req *sms_submit_req;
 	char *idle_mode_text;
 };
@@ -923,6 +923,67 @@ static gboolean handle_command_set_up_menu(const struct stk_command *cmd,
 	return TRUE;
 }
 
+static void request_menu_cb(enum stk_agent_result result, uint8_t id,
+				void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
+	struct stk_response rsp;
+
+	memset(&rsp, 0, sizeof(rsp));
+
+	switch (result) {
+	case STK_AGENT_RESULT_OK:
+		rsp.result.type = STK_RESULT_TYPE_SUCCESS;
+		rsp.select_item.item_id = id;
+		break;
+
+	case STK_AGENT_RESULT_BACK:
+		rsp.result.type = STK_RESULT_TYPE_GO_BACK;
+		break;
+
+	case STK_AGENT_RESULT_TIMEOUT:
+		rsp.result.type = STK_RESULT_TYPE_NO_RESPONSE;
+		break;
+
+	case STK_AGENT_RESULT_CANCEL:
+		goto out;
+
+	case STK_AGENT_RESULT_TERMINATE:
+	default:
+		rsp.result.type = STK_RESULT_TYPE_USER_TERMINATED;
+		break;
+	}
+
+	if (stk_respond(stk, &rsp, stk_command_cb))
+		stk_command_cb(&error, stk);
+
+out:
+	stk_menu_free(stk->select_item_menu);
+	stk->select_item_menu = NULL;
+}
+
+static gboolean handle_command_select_item(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	stk->select_item_menu = stk_menu_create_from_select_item(cmd);
+
+	if (!stk->select_item_menu) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+
+		return TRUE;
+	}
+
+	stk->cancel_cmd = stk_request_cancel;
+
+	stk_agent_request_selection(stk->current_agent, stk->select_item_menu,
+					request_menu_cb, stk,
+					stk->timeout * 1000);
+
+	return FALSE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (!stk->pending_cmd)
@@ -1004,6 +1065,10 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 			break;
 		case STK_COMMAND_TYPE_SETUP_MENU:
 			respond = handle_command_set_up_menu(stk->pending_cmd,
+								&rsp, stk);
+			break;
+		case STK_COMMAND_TYPE_SELECT_ITEM:
+			respond = handle_command_select_item(stk->pending_cmd,
 								&rsp, stk);
 			break;
 		}

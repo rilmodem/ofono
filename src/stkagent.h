@@ -46,6 +46,9 @@ enum stk_agent_result {
 typedef void (*stk_agent_generic_cb)(enum stk_agent_result result,
 					void *user_data);
 
+typedef void (*stk_agent_selection_cb)(enum stk_agent_result result,
+					uint8_t id, void *user_data);
+
 struct stk_agent;
 
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
@@ -60,6 +63,11 @@ void stk_agent_set_destroy_watch(struct stk_agent *agent, GDestroyNotify notify,
 					void *user_data);
 
 void stk_agent_request_cancel(struct stk_agent *agent);
+
+void stk_agent_request_selection(struct stk_agent *agent,
+					const struct stk_menu *menu,
+					stk_agent_selection_cb cb,
+					void *user_data, int timeout);
 
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);
