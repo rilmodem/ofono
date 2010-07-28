@@ -19,6 +19,21 @@
  *
  */
 
+struct stk_menu_item {
+	char *text;
+	uint8_t icon_id;
+	uint8_t item_id;
+};
+
+struct stk_menu {
+	char *title;
+	uint8_t icon_id;
+	struct stk_menu_item *items;
+	int default_item;
+	gboolean soft_key;
+	gboolean has_help;
+};
+
 enum stk_agent_result {
 	STK_AGENT_RESULT_OK,
 	STK_AGENT_RESULT_BACK,
@@ -45,3 +60,6 @@ void stk_agent_set_destroy_watch(struct stk_agent *agent, GDestroyNotify notify,
 					void *user_data);
 
 void stk_agent_request_cancel(struct stk_agent *agent);
+
+void append_menu_items_variant(DBusMessageIter *iter,
+				const struct stk_menu_item *items);

@@ -297,3 +297,39 @@ struct stk_agent *stk_agent_new(const char *path, const char *sender,
 
 	return agent;
 }
+
+static void append_menu_items(DBusMessageIter *iter,
+				const struct stk_menu_item *item)
+{
+	DBusMessageIter array, entry;
+
+	dbus_message_iter_open_container(iter, DBUS_TYPE_ARRAY,
+						"(sy)", &array);
+
+	for (; item->text; item++) {
+		dbus_message_iter_open_container(&array, DBUS_TYPE_STRUCT,
+							NULL, &entry);
+
+		dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING,
+						&item->text);
+		dbus_message_iter_append_basic(&entry, DBUS_TYPE_BYTE,
+						&item->icon_id);
+
+		dbus_message_iter_close_container(&array, &entry);
+	}
+
+	dbus_message_iter_close_container(iter, &array);
+}
+
+void append_menu_items_variant(DBusMessageIter *iter,
+				const struct stk_menu_item *items)
+{
+	DBusMessageIter variant;
+
+	dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT,
+						"a(sy)", &variant);
+
+	append_menu_items(&variant, items);
+
+	dbus_message_iter_close_container(iter, &variant);
+}

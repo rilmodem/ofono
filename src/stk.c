@@ -224,6 +224,73 @@ static void stk_command_cb(const struct ofono_error *error, void *data)
 	DBG("TERMINAL RESPONSE to a command reported no errors");
 }
 
+static struct stk_menu *stk_menu_create(const char *title,
+		const struct stk_text_attribute *title_attr, GSList *items,
+		const struct stk_item_text_attribute_list *item_attrs,
+		int default_id, gboolean soft_key, gboolean has_help)
+{
+	struct stk_menu *ret = g_new(struct stk_menu, 1);
+	GSList *l;
+	int i;
+
+	ret->title = g_strdup(title ? title : "");
+	ret->icon_id = 0;
+	ret->items = g_new0(struct stk_menu_item, g_slist_length(items) + 1);
+	ret->default_item = -1;
+	ret->soft_key = soft_key;
+	ret->has_help = has_help;
+
+	for (l = items, i = 0; l; l = l->next, i++) {
+		struct stk_item *item = l->data;
+
+		ret->items[i].text = g_strdup(item->text);
+		ret->items[i].item_id = item->id;
+
+		if (item->id == default_id)
+			ret->default_item = i;
+	}
+
+	return ret;
+}
+
+static struct stk_menu *stk_menu_create_from_set_up_menu(
+						const struct stk_command *cmd)
+{
+	gboolean soft_key = (cmd->qualifier & (1 << 0)) != 0;
+	gboolean has_help = (cmd->qualifier & (1 << 7)) != 0;
+
+	return stk_menu_create(cmd->setup_menu.alpha_id,
+				&cmd->setup_menu.text_attr,
+				cmd->setup_menu.items,
+				&cmd->setup_menu.item_text_attr_list,
+				0, soft_key, has_help);
+}
+
+static struct stk_menu *stk_menu_create_from_select_item(
+						const struct stk_command *cmd)
+{
+	gboolean soft_key = (cmd->qualifier & (1 << 2)) != 0;
+	gboolean has_help = (cmd->qualifier & (1 << 7)) != 0;
+
+	return stk_menu_create(cmd->select_item.alpha_id,
+				&cmd->select_item.text_attr,
+				cmd->select_item.items,
+				&cmd->select_item.item_text_attr_list,
+				cmd->select_item.item_id, soft_key, has_help);
+}
+
+static void stk_menu_free(struct stk_menu *menu)
+{
+	struct stk_menu_item *i;
+
+	for (i = menu->items; i->text; i++)
+		g_free(i->text);
+
+	g_free(menu->items);
+	g_free(menu->title);
+	g_free(menu);
+}
+
 static void stk_alpha_id_set(struct ofono_stk *stk, const char *text)
 {
 	/* TODO */
