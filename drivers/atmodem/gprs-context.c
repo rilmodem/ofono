@@ -93,7 +93,6 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 
 	g_at_ppp_unref(gcd->ppp);
 	gcd->ppp = NULL;
-	g_at_chat_resume(gcd->chat);
 
 	switch (gcd->state) {
 	case STATE_ENABLING:
@@ -110,6 +109,12 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 
 	gcd->active_context = 0;
 	gcd->state = STATE_IDLE;
+	/*
+	 * If the channel of gcd->chat is NULL, it might cause
+	 * gprs_context_remove get called and the gprs context will be
+	 * removed.
+	 */
+	g_at_chat_resume(gcd->chat);
 }
 
 static gboolean setup_ppp(struct ofono_gprs_context *gc)
@@ -257,7 +262,7 @@ static void at_gprs_context_remove(struct ofono_gprs_context *gc)
 
 	DBG("");
 
-	if (gcd->state != STATE_IDLE) {
+	if (gcd->state != STATE_IDLE && gcd->ppp) {
 		g_at_ppp_unref(gcd->ppp);
 		g_at_chat_resume(gcd->chat);
 	}
