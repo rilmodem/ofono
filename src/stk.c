@@ -430,7 +430,7 @@ static gboolean session_agent_remove_cb(gpointer user_data)
 
 	stk->remove_agent_source = 0;
 
-	stk_agent_remove(stk->session_agent);
+	stk_agent_free(stk->session_agent);
 
 	return FALSE;
 }
@@ -493,7 +493,7 @@ static DBusMessage *stk_unregister_agent(DBusConnection *conn,
 	if (!stk_agent_matches(stk->default_agent, agent_path, agent_bus))
 		return __ofono_error_failed(msg);
 
-	stk_agent_remove(stk->default_agent);
+	stk_agent_free(stk->default_agent);
 
 	return dbus_message_new_method_return(msg);
 }
@@ -1087,7 +1087,7 @@ void ofono_stk_proactive_session_end_notify(struct ofono_stk *stk)
 	stk_proactive_command_cancel(stk);
 
 	if (stk->session_agent)
-		stk_agent_remove(stk->session_agent);
+		stk_agent_free(stk->session_agent);
 }
 
 void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
@@ -1212,10 +1212,10 @@ static void stk_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 
 	if (stk->session_agent)
-		stk_agent_remove(stk->session_agent);
+		stk_agent_free(stk->session_agent);
 
 	if (stk->default_agent)
-		stk_agent_remove(stk->default_agent);
+		stk_agent_free(stk->default_agent);
 
 	if (stk->pending_cmd) {
 		stk_command_free(stk->pending_cmd);

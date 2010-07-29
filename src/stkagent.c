@@ -134,7 +134,7 @@ static void stk_agent_request_terminate(struct stk_agent *agent)
 	stk_agent_request_end(agent);
 }
 
-void stk_agent_remove(struct stk_agent *agent)
+void stk_agent_free(struct stk_agent *agent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
@@ -205,7 +205,7 @@ static void stk_agent_request_reply_handle(DBusPendingCall *call, void *data)
 	if (agent->is_default)
 		return;
 
-	stk_agent_remove(agent);
+	stk_agent_free(agent);
 }
 
 static gboolean stk_agent_request_send(gpointer user_data)
@@ -277,7 +277,7 @@ static void stk_agent_disconnect_cb(DBusConnection *conn, void *user_data)
 
 	agent->disconnect_watch = 0;
 
-	stk_agent_remove(user_data);
+	stk_agent_free(user_data);
 }
 
 struct stk_agent *stk_agent_new(const char *path, const char *sender,

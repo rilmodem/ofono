@@ -54,7 +54,7 @@ typedef void (*stk_agent_selection_cb)(enum stk_agent_result result,
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
 					ofono_bool_t is_default);
 
-void stk_agent_remove(struct stk_agent *agent);
+void stk_agent_free(struct stk_agent *agent);
 
 ofono_bool_t stk_agent_busy(struct stk_agent *agent);
 ofono_bool_t stk_agent_matches(struct stk_agent *agent,
