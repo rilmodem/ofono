@@ -19,23 +19,40 @@ Besides the kernel coding style above, oFono has special flavors for its own.
 Some of them are mandatory (marked as 'M'), while some others are optional
 (marked as 'O'), but generally preferred.
 
-M1: Blank line before if statement
-==================================
+M1: Blank line before and after an if/while/do/for statement
+============================================================
 There should be a blank line before if statement unless the if is nested and
 not preceded by an expression or variable declaration.
 
 Example:
 1)
 a = 1;
-if (a) {  // correct
+if (b) {  // wrong
 
 2)
-a = 1;
-if (b) {  // wrong
+a = 1
+
+if (b) {
+}
+a = 2;	// wrong
 
 3)
 if (a) {
 	if (b)  // correct
+
+4)
+b = 2;
+
+if (a) {	// correct
+
+}
+
+b = 3;
+
+The only exception to this rule applies when a variable is being allocated:
+array = g_try_new0(int, 20);
+if (array == NULL)	// Correct
+	return;
 
 
 M2: Multiple line comment
@@ -112,6 +129,24 @@ Example:
 additional = g_try_malloc(len - 1);  // correct
 if (additional == NULL)
 	return FALSE;
+
+
+M9: Follow the order of include header elements
+===============================================
+When writing an include header the various elements should be in the following
+order:
+	- #includes
+	- forward declarations
+	- #defines
+	- enums
+	- typedefs
+	- function declarations and inline function definitions
+
+
+M10: Internal headers must not use include guards
+=================================================
+Any time when creating a new header file with non-public API, that header
+must not contain include guards.
 
 
 O1: Shorten the name
