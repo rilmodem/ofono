@@ -60,20 +60,30 @@ struct stk_agent {
 #define OFONO_NAVIGATION_GOBACK OFONO_NAVIGATION_PREFIX ".GoBack"
 #define OFONO_NAVIGATION_TERMINATED OFONO_NAVIGATION_PREFIX ".EndSession"
 
-static void stk_agent_request_send_cancel(struct stk_agent *agent)
+static void stk_agent_send_noreply(struct stk_agent *agent, const char *method)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *message;
 
 	message = dbus_message_new_method_call(agent->bus, agent->path,
 						OFONO_SIM_APP_INTERFACE,
-						"Cancel");
+						method);
 	if (message == NULL)
 		return;
 
 	dbus_message_set_no_reply(message, TRUE);
 
 	g_dbus_send_message(conn, message);
+}
+
+static inline void stk_agent_send_release(struct stk_agent *agent)
+{
+	stk_agent_send_noreply(agent, "Release");
+}
+
+static inline void stk_agent_send_cancel(struct stk_agent *agent)
+{
+	stk_agent_send_noreply(agent, "Cancel");
 }
 
 static void stk_agent_request_end(struct stk_agent *agent)
@@ -125,7 +135,7 @@ void stk_agent_request_cancel(struct stk_agent *agent)
 
 	stk_agent_request_end(agent);
 
-	stk_agent_request_send_cancel(agent);
+	stk_agent_send_cancel(agent);
 }
 
 static void stk_agent_request_terminate(struct stk_agent *agent)
@@ -138,30 +148,19 @@ static void stk_agent_request_terminate(struct stk_agent *agent)
 void stk_agent_free(struct stk_agent *agent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	gboolean busy = stk_agent_busy(agent);
+
+	if (busy)
+		stk_agent_request_terminate(agent);
 
 	if (agent->disconnect_watch) {
-		DBusMessage *message;
+		if (busy)
+			stk_agent_send_cancel(agent);
 
-		if (stk_agent_busy(agent)) {
-			stk_agent_request_terminate(agent);
-
-			stk_agent_request_send_cancel(agent);
-		}
-
-		message = dbus_message_new_method_call(agent->bus, agent->path,
-							OFONO_SIM_APP_INTERFACE,
-							"Release");
-		if (message) {
-			dbus_message_set_no_reply(message, TRUE);
-
-			g_dbus_send_message(conn, message);
-		}
+		stk_agent_send_release(agent);
 
 		g_dbus_remove_watch(conn, agent->disconnect_watch);
 		agent->disconnect_watch = 0;
-	} else {
-		if (stk_agent_busy(agent))
-			stk_agent_request_terminate(agent);
 	}
 
 	if (agent->removed_cb)
@@ -278,7 +277,7 @@ static void stk_agent_disconnect_cb(DBusConnection *conn, void *user_data)
 
 	agent->disconnect_watch = 0;
 
-	stk_agent_free(user_data);
+	stk_agent_free(agent);
 }
 
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
