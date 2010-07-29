@@ -19,6 +19,17 @@
  *
  */
 
+struct stk_agent;
+
+enum stk_agent_result {
+	STK_AGENT_RESULT_OK,
+	STK_AGENT_RESULT_BACK,
+	STK_AGENT_RESULT_TERMINATE,
+	STK_AGENT_RESULT_HELP,
+	STK_AGENT_RESULT_TIMEOUT,
+	STK_AGENT_RESULT_CANCEL,
+};
+
 struct stk_menu_item {
 	char *text;
 	uint8_t icon_id;
@@ -34,22 +45,11 @@ struct stk_menu {
 	gboolean has_help;
 };
 
-enum stk_agent_result {
-	STK_AGENT_RESULT_OK,
-	STK_AGENT_RESULT_BACK,
-	STK_AGENT_RESULT_TERMINATE,
-	STK_AGENT_RESULT_HELP,
-	STK_AGENT_RESULT_TIMEOUT,
-	STK_AGENT_RESULT_CANCEL,
-};
-
 typedef void (*stk_agent_generic_cb)(enum stk_agent_result result,
 					void *user_data);
 
 typedef void (*stk_agent_selection_cb)(enum stk_agent_result result,
 					uint8_t id, void *user_data);
-
-struct stk_agent;
 
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
 					ofono_bool_t is_default);
