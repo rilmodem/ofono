@@ -199,13 +199,8 @@ static void stk_agent_request_reply_handle(DBusPendingCall *call, void *data)
 
 	dbus_message_unref(reply);
 
-	if (result != STK_AGENT_RESULT_TERMINATE)
-		return;
-
-	if (agent->is_default)
-		return;
-
-	stk_agent_free(agent);
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->is_default == FALSE)
+		stk_agent_free(agent);
 }
 
 static gboolean stk_agent_request_send(gpointer user_data)
