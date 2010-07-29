@@ -233,12 +233,6 @@ static gboolean stk_agent_request_start(struct stk_agent *agent,
 					stk_agent_generic_cb user_cb,
 					void *user_data, int timeout)
 {
-	if (agent == NULL) {
-		cb(agent, STK_AGENT_RESULT_TERMINATE, NULL);
-
-		return FALSE;
-	}
-
 	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
 							OFONO_SIM_APP_INTERFACE,
 							method);
@@ -249,9 +243,6 @@ static gboolean stk_agent_request_start(struct stk_agent *agent,
 
 		return FALSE;
 	}
-
-	if (stk_agent_busy(agent))
-		stk_agent_request_cancel(agent);
 
 	agent->cmd_cb = cb;
 	agent->cmd_timeout = timeout;
