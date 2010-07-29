@@ -466,7 +466,7 @@ static DBusMessage *stk_register_agent(DBusConnection *conn,
 	if (!stk->default_agent)
 		return __ofono_error_failed(msg);
 
-	stk_agent_set_destroy_watch(stk->default_agent,
+	stk_agent_set_removed_notify(stk->default_agent,
 					default_agent_notify, stk);
 
 	if (!stk->session_agent)
@@ -533,7 +533,7 @@ static void menu_selection_envelope_cb(struct ofono_stk *stk, gboolean ok,
 		goto out;
 	}
 
-	stk_agent_set_destroy_watch(stk->session_agent,
+	stk_agent_set_removed_notify(stk->session_agent,
 					session_agent_notify, stk);
 
 	stk->current_agent = stk->session_agent;

@@ -39,19 +39,19 @@ typedef void (*stk_agent_request_return)(struct stk_agent *agent,
 						DBusMessage *reply);
 
 struct stk_agent {
-	char *path;
-	char *bus;
+	char *path;				/* Agent Path */
+	char *bus;				/* Agent bus */
+	ofono_bool_t is_default;		/* False if user-session */
+	guint disconnect_watch;			/* DBus disconnect watch */
+	ofono_destroy_func removed_cb;
+	void *removed_data;
 	DBusMessage *msg;
 	DBusPendingCall *call;
-	guint disconnect_watch;
 	guint cmd_send_source;
 	stk_agent_request_return cmd_cb;
 	int cmd_timeout;
 	stk_agent_generic_cb user_cb;
 	void *user_data;
-	ofono_bool_t is_default;
-	GDestroyNotify destroy_notify;
-	void *destroy_data;
 
 	const struct stk_menu *request_selection_menu;
 };
@@ -108,11 +108,12 @@ ofono_bool_t stk_agent_matches(struct stk_agent *agent,
 	return !strcmp(agent->path, path) && !strcmp(agent->bus, sender);
 }
 
-void stk_agent_set_destroy_watch(struct stk_agent *agent, GDestroyNotify notify,
+void stk_agent_set_removed_notify(struct stk_agent *agent,
+					ofono_destroy_func destroy,
 					void *user_data)
 {
-	agent->destroy_notify = notify;
-	agent->destroy_data = user_data;
+	agent->removed_cb = destroy;
+	agent->removed_data = user_data;
 }
 
 void stk_agent_request_cancel(struct stk_agent *agent)
@@ -163,8 +164,8 @@ void stk_agent_free(struct stk_agent *agent)
 			stk_agent_request_terminate(agent);
 	}
 
-	if (agent->destroy_notify)
-		agent->destroy_notify(agent->destroy_data);
+	if (agent->removed_cb)
+		agent->removed_cb(agent->removed_data);
 
 	g_free(agent->path);
 	g_free(agent->bus);

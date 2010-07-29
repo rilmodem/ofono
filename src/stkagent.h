@@ -56,11 +56,13 @@ struct stk_agent *stk_agent_new(const char *path, const char *sender,
 
 void stk_agent_free(struct stk_agent *agent);
 
+void stk_agent_set_removed_notify(struct stk_agent *agent,
+					ofono_destroy_func removed_cb,
+					void *user_data);
+
 ofono_bool_t stk_agent_busy(struct stk_agent *agent);
 ofono_bool_t stk_agent_matches(struct stk_agent *agent,
 				const char *path, const char *sender);
-void stk_agent_set_destroy_watch(struct stk_agent *agent, GDestroyNotify notify,
-					void *user_data);
 
 void stk_agent_request_cancel(struct stk_agent *agent);
 
