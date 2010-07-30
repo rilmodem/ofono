@@ -301,6 +301,7 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 			doc/voicecallmanager-api.txt doc/voicecall-api.txt \
 			doc/call-forwarding-api.txt doc/call-settings-api.txt \
 			doc/call-meter-api.txt \
+			doc/supplementaryservices-api.txt \
 			doc/dataconnectionmanager-api.txt
 
 test_scripts = test/activate-context \
