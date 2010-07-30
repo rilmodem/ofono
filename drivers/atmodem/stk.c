@@ -281,14 +281,26 @@ static void phonesim_tcmd_notify(GAtResult *result, gpointer user_data)
 	at_sim_fetch_command(stk, length);
 }
 
+static void phonesim_tend_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_stk *stk = user_data;
+
+	ofono_stk_proactive_session_end_notify(stk);
+}
+
 static gboolean at_stk_register(gpointer user)
 {
 	struct ofono_stk *stk = user;
 	struct stk_data *sd = ofono_stk_get_data(stk);
 
-	if (sd->vendor == OFONO_VENDOR_PHONESIM)
-		g_at_chat_register(sd->chat, "*TCMD", phonesim_tcmd_notify,
+	if (sd->vendor == OFONO_VENDOR_PHONESIM) {
+		g_at_chat_register(sd->chat, "*TCMD:", phonesim_tcmd_notify,
 							FALSE, stk, NULL);
+
+		g_at_chat_register(sd->chat, "*TEND", phonesim_tend_notify,
+							FALSE, stk, NULL);
+	}
+
 	ofono_stk_register(stk);
 
 	return FALSE;
