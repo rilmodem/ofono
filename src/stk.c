@@ -116,6 +116,29 @@ static int stk_respond(struct ofono_stk *stk, struct stk_response *rsp,
 	return 0;
 }
 
+static void stk_command_cb(const struct ofono_error *error, void *data)
+{
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("TERMINAL RESPONSE to a UICC command failed");
+		return;
+	}
+
+	DBG("TERMINAL RESPONSE to a command reported no errors");
+}
+
+static void send_simple_response(struct ofono_stk *stk,
+					enum stk_result_type result)
+{
+	struct stk_response rsp;
+	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
+
+	memset(&rsp, 0, sizeof(rsp));
+	rsp.result.type = result;
+
+	if (stk_respond(stk, &rsp, stk_command_cb))
+		stk_command_cb(&error, stk);
+}
+
 static void envelope_cb(const struct ofono_error *error, const uint8_t *data,
 			int length, void *user_data)
 {
@@ -215,16 +238,6 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg)
 				ENVELOPE_RETRIES_DEFAULT);
 	if (err)
 		stk_cbs_download_cb(stk, FALSE, NULL, -1);
-}
-
-static void stk_command_cb(const struct ofono_error *error, void *data)
-{
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("TERMINAL RESPONSE to a UICC command failed");
-		return;
-	}
-
-	DBG("TERMINAL RESPONSE to a command reported no errors");
 }
 
 static struct stk_menu *stk_menu_create(const char *title,
@@ -928,23 +941,31 @@ static void request_menu_cb(enum stk_agent_result result, uint8_t id,
 				void *user_data)
 {
 	struct ofono_stk *stk = user_data;
-	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
-	struct stk_response rsp;
-
-	memset(&rsp, 0, sizeof(rsp));
 
 	switch (result) {
 	case STK_AGENT_RESULT_OK:
+	{
+		static struct ofono_error error =
+			{ .type = OFONO_ERROR_TYPE_FAILURE };
+		struct stk_response rsp;
+
+		memset(&rsp, 0, sizeof(rsp));
+
 		rsp.result.type = STK_RESULT_TYPE_SUCCESS;
 		rsp.select_item.item_id = id;
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&error, stk);
+
 		break;
+	}
 
 	case STK_AGENT_RESULT_BACK:
-		rsp.result.type = STK_RESULT_TYPE_GO_BACK;
+		send_simple_response(stk, STK_RESULT_TYPE_GO_BACK);
 		break;
 
 	case STK_AGENT_RESULT_TIMEOUT:
-		rsp.result.type = STK_RESULT_TYPE_NO_RESPONSE;
+		send_simple_response(stk, STK_RESULT_TYPE_NO_RESPONSE);
 		break;
 
 	case STK_AGENT_RESULT_CANCEL:
@@ -952,12 +973,9 @@ static void request_menu_cb(enum stk_agent_result result, uint8_t id,
 
 	case STK_AGENT_RESULT_TERMINATE:
 	default:
-		rsp.result.type = STK_RESULT_TYPE_USER_TERMINATED;
+		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
-
-	if (stk_respond(stk, &rsp, stk_command_cb))
-		stk_command_cb(&error, stk);
 
 out:
 	stk_menu_free(stk->select_item_menu);
@@ -988,9 +1006,7 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 static void request_text_cb(enum stk_agent_result result, void *user_data)
 {
 	struct ofono_stk *stk = user_data;
-	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	gboolean confirm;
-	struct stk_response rsp;
 
 	/*
 	 * Check if we have already responded to the proactive command
@@ -1011,31 +1027,26 @@ static void request_text_cb(enum stk_agent_result result, void *user_data)
 		return;
 	}
 
-	memset(&rsp, 0, sizeof(rsp));
-
 	switch (result) {
 	case STK_AGENT_RESULT_OK:
-		rsp.result.type = STK_RESULT_TYPE_SUCCESS;
+		send_simple_response(stk, STK_RESULT_TYPE_SUCCESS);
 		break;
 
 	case STK_AGENT_RESULT_BACK:
-		rsp.result.type = STK_RESULT_TYPE_GO_BACK;
+		send_simple_response(stk, STK_RESULT_TYPE_GO_BACK);
 		break;
 
 	case STK_AGENT_RESULT_TIMEOUT:
 		confirm = (stk->pending_cmd->qualifier & (1 << 7)) != 0;
-		rsp.result.type = confirm ?
-			STK_RESULT_TYPE_NO_RESPONSE : STK_RESULT_TYPE_SUCCESS;
+		send_simple_response(stk, confirm ?
+			STK_RESULT_TYPE_NO_RESPONSE : STK_RESULT_TYPE_SUCCESS);
 		break;
 
 	case STK_AGENT_RESULT_TERMINATE:
 	default:
-		rsp.result.type = STK_RESULT_TYPE_USER_TERMINATED;
+		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
-
-	if (stk_respond(stk, &rsp, stk_command_cb))
-		stk_command_cb(&error, stk);
 }
 
 static gboolean handle_command_display_text(const struct stk_command *cmd,
