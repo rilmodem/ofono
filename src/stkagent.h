@@ -59,7 +59,6 @@ void stk_agent_set_removed_notify(struct stk_agent *agent,
 					ofono_destroy_func removed_cb,
 					void *user_data);
 
-ofono_bool_t stk_agent_busy(struct stk_agent *agent);
 ofono_bool_t stk_agent_matches(struct stk_agent *agent,
 				const char *path, const char *sender);
 

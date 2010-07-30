@@ -106,11 +106,6 @@ static void stk_agent_request_end(struct stk_agent *agent)
 	agent->user_cb = NULL;
 }
 
-ofono_bool_t stk_agent_busy(struct stk_agent *agent)
-{
-	return agent->call != NULL;
-}
-
 ofono_bool_t stk_agent_matches(struct stk_agent *agent,
 				const char *path, const char *sender)
 {
@@ -127,7 +122,7 @@ void stk_agent_set_removed_notify(struct stk_agent *agent,
 
 void stk_agent_request_cancel(struct stk_agent *agent)
 {
-	if (!stk_agent_busy(agent))
+	if (agent->call == NULL)
 		return;
 
 	dbus_pending_call_cancel(agent->call);
@@ -138,7 +133,7 @@ void stk_agent_request_cancel(struct stk_agent *agent)
 void stk_agent_free(struct stk_agent *agent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	gboolean busy = stk_agent_busy(agent);
+	gboolean busy = agent->call != NULL;
 
 	if (agent->disconnect_watch) {
 		if (busy)
