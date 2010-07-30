@@ -1014,9 +1014,14 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 
 	stk->cancel_cmd = stk_request_cancel;
 
-	stk_agent_request_selection(stk->current_agent, stk->select_item_menu,
+	/* We most likely got an out of memory error, tell SIM to retry */
+	if (stk_agent_request_selection(stk->current_agent,
+					stk->select_item_menu,
 					request_menu_cb, stk,
-					stk->timeout * 1000);
+					stk->timeout * 1000) < 0) {
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		return TRUE;
+	}
 
 	return FALSE;
 }
@@ -1091,8 +1096,12 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	stk->cancel_cmd = stk_request_cancel;
 	stk->session_ended = FALSE;
 
-	stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
-				request_text_cb, stk, timeout);
+	/* We most likely got an out of memory error, tell SIM to retry */
+	if (stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
+				request_text_cb, stk, timeout) < 0) {
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		return TRUE;
+	}
 
 	return cmd->display_text.immediate_response;
 }
