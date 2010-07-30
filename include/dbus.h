@@ -50,7 +50,7 @@ extern "C" {
 #define OFONO_DATA_CONNECTION_MANAGER_INTERFACE "org.ofono.DataConnectionManager"
 #define OFONO_DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 #define OFONO_STK_INTERFACE OFONO_SERVICE ".SimToolkit"
-#define OFONO_SIM_APP_INTERFACE OFONO_SERVICE ".SimApplicationAgent"
+#define OFONO_SIM_APP_INTERFACE OFONO_SERVICE ".SimToolkitAgent"
 
 /* Essentially a{sv} */
 #define OFONO_PROPERTIES_ARRAY_SIGNATURE DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING \
