@@ -61,12 +61,12 @@ struct ofono_stk {
 
 	int timeout;
 	int short_timeout;
-	guint remove_agent_source;
 	struct stk_agent *session_agent;
 	struct stk_agent *default_agent;
 	struct stk_agent *current_agent; /* Always equals one of the above */
 	struct stk_menu *main_menu, *select_item_menu;
-	gboolean session_ended;
+	ofono_bool_t immediate_response;
+	guint remove_agent_source;
 	struct sms_submit_req *sms_submit_req;
 	char *idle_mode_text;
 };
@@ -443,8 +443,12 @@ static void session_agent_notify(gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
-	if (stk->current_agent == stk->session_agent && agent_called(stk))
+	ofono_debug("Session Agent removed");
+
+	if (stk->current_agent == stk->session_agent && agent_called(stk)) {
+		ofono_debug("Sending Terminate response for session agent");
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
+	}
 
 	stk->session_agent = NULL;
 	stk->current_agent = stk->default_agent;
@@ -1028,25 +1032,42 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 	return FALSE;
 }
 
-static void request_text_cb(enum stk_agent_result result, void *user_data)
+static void display_text_destroy(void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+
+	stk->immediate_response = FALSE;
+}
+
+static void display_text_cb(enum stk_agent_result result, void *user_data)
 {
 	struct ofono_stk *stk = user_data;
 	gboolean confirm;
 
 	/*
-	 * Check if we have already responded to the proactive command
-	 * because immediate response was requested, or the command is
-	 * being cancelled.
+	 * There are four possible paths for DisplayText with immediate
+	 * response flag set:
+	 *	1. Agent drops off the bus.  In that case regular removal
+	 *	semantics apply and the agent is removed.
+	 *
+	 *	2. A new SIM command arrives.  In this case the agent is
+	 *	canceled and a new command is processed.  This function is
+	 *	not called in this case.
+	 *
+	 *	3. The session is ended by the SIM.  This case is ignored,
+	 *	and will result in either case 1, 2 or 3 occurring.
+	 *
+	 *	4. Agent reports an error or success.  This function is called
+	 *	with the result.
+	 *
+	 *	NOTE: If the agent reports a TERMINATE result, the agent will
+	 *	be removed.  Since the response has been already sent, there
+	 *	is no way to signal the end of session to the SIM.  Hence
+	 *	it is assumed that immediate response flagged commands will
+	 *	only occur at the end of session.
 	 */
-	if (!stk->pending_cmd || stk->pending_cmd->type !=
-			STK_COMMAND_TYPE_DISPLAY_TEXT ||
-			result == STK_AGENT_RESULT_CANCEL) {
-		/*
-		 * If session has ended in the meantime now is the time
-		 * to go back to main menu or close the application
-		 * window.
-		 */
-		if (stk->session_ended && stk->session_agent)
+	if (stk->immediate_response) {
+		if (stk->session_agent)
 			session_agent_remove(stk);
 
 		return;
@@ -1096,26 +1117,30 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	}
 
 	stk->cancel_cmd = stk_request_cancel;
-	stk->session_ended = FALSE;
 
 	/* We most likely got an out of memory error, tell SIM to retry */
 	if (stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
-				request_text_cb, stk, NULL, timeout) < 0) {
+					display_text_cb, stk,
+					display_text_destroy, timeout) < 0) {
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
 
-	return cmd->display_text.immediate_response;
+	if (cmd->display_text.immediate_response)
+		stk->immediate_response = TRUE;
+
+	DBG("Immediate Response: %d", stk->immediate_response);
+
+	return stk->immediate_response;
 }
 
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
-	if (!stk->pending_cmd)
-		return;
-
-	stk->cancel_cmd(stk);
+	if (stk->immediate_response)
+		stk_request_cancel(stk);
 
 	if (stk->pending_cmd) {
+		stk->cancel_cmd(stk);
 		stk_command_free(stk->pending_cmd);
 		stk->pending_cmd = NULL;
 	}
@@ -1123,6 +1148,10 @@ static void stk_proactive_command_cancel(struct ofono_stk *stk)
 
 void ofono_stk_proactive_session_end_notify(struct ofono_stk *stk)
 {
+	/* Wait until we receive the next command */
+	if (stk->immediate_response)
+		return;
+
 	stk_proactive_command_cancel(stk);
 
 	if (stk->session_agent)
@@ -1258,6 +1287,11 @@ static void stk_unregister(struct ofono_atom *atom)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
+
+	if (stk->remove_agent_source) {
+		g_source_remove(stk->remove_agent_source);
+		stk->remove_agent_source = 0;
+	}
 
 	if (stk->session_agent)
 		stk_agent_free(stk->session_agent);
