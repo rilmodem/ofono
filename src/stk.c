@@ -1307,11 +1307,6 @@ static void stk_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
-	if (stk->remove_agent_source) {
-		g_source_remove(stk->remove_agent_source);
-		stk->remove_agent_source = 0;
-	}
-
 	if (stk->session_agent)
 		stk_agent_free(stk->session_agent);
 
