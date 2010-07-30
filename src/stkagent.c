@@ -392,12 +392,11 @@ error:
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
-				ofono_bool_t ack, stk_agent_display_text_cb cb,
+				stk_agent_display_text_cb cb,
 				void *user_data, int timeout)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_bool_t priority = urgent;
-	dbus_bool_t confirm = ack;
 
 	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
 							OFONO_SIM_APP_INTERFACE,
@@ -409,7 +408,6 @@ int stk_agent_display_text(struct stk_agent *agent, const char *text,
 					DBUS_TYPE_STRING, &text,
 					DBUS_TYPE_BYTE, &icon_id,
 					DBUS_TYPE_BOOLEAN, &priority,
-					DBUS_TYPE_BOOLEAN, &confirm,
 					DBUS_TYPE_INVALID);
 
 	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,

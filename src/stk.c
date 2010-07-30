@@ -1045,7 +1045,6 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	int timeout = stk->short_timeout * 1000;
 	struct stk_command_display_text *dt = &stk->pending_cmd->display_text;
 	uint8_t qualifier = stk->pending_cmd->qualifier;
-	ofono_bool_t confirm = (qualifier & (1 << 7)) != 0;
 	ofono_bool_t priority = (qualifier & (1 << 0)) != 0;
 
 	if (dt->duration.interval) {
@@ -1064,7 +1063,7 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	stk->session_ended = FALSE;
 
 	stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
-				confirm, request_text_cb, stk, timeout);
+				request_text_cb, stk, timeout);
 
 	return cmd->display_text.immediate_response;
 }

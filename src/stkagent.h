@@ -73,7 +73,7 @@ int stk_agent_request_selection(struct stk_agent *agent,
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
-				ofono_bool_t ack, stk_agent_display_text_cb cb,
+				stk_agent_display_text_cb cb,
 				void *user_data, int timeout);
 
 void append_menu_items_variant(DBusMessageIter *iter,
