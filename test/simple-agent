@@ -1,0 +1,99 @@
+#!/usr/bin/python
+
+import gobject
+
+import sys
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+class GoBack(dbus.DBusException):
+	_dbus_error_name = "org.ofono.Error.GoBack"
+
+class EndSession(dbus.DBusException):
+	_dbus_error_name = "org.ofono.Error.EndSession"
+
+class StkAgent(dbus.service.Object):
+	exit_on_release = True
+
+	def set_exit_on_release(self, exit_on_release):
+		self.exit_on_release = exit_on_release
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+					in_signature="", out_signature="")
+	def Release(self):
+		print "Release"
+		if self.exit_on_release:
+			mainloop.quit()
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sya(sy)y", out_signature="y")
+	def RequestSelection(self, title, icon, items, default):
+		print "Title: (%s)" % (title)
+		index = 0;
+		for item in items:
+			print "%d. %s" % (index, item[0])
+			index += 1
+
+		print "\nDefault: %d" % (default)
+		select = raw_input("Enter Selection (t, b):")
+
+		if select == 'b':
+			raise GoBack("User wishes to go back")
+		elif select == 't':
+			raise EndSession("User wishes to terminate session")
+		else:
+			return int(select);
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+					in_signature="syb", out_signature="")
+	def DisplayText(self, title, icon, urgent):
+		print "DisplayText (%s, %s)" % (title, urgent)
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+					in_signature="", out_signature="")
+	def Cancel(self):
+		print "Cancel"
+
+if __name__ == '__main__':
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+	manager = dbus.Interface(bus.get_object("org.ofono", "/"),
+							"org.ofono.Manager")
+
+	properties = manager.GetProperties()
+
+	for path in properties["Modems"]:
+		modem = dbus.Interface(bus.get_object('org.ofono', path),
+							'org.ofono.Modem')
+
+		properties = modem.GetProperties()
+
+		if "org.ofono.SimToolkit" not in properties["Interfaces"]:
+			continue
+
+		stk = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.SimToolkit')
+
+	properties = stk.GetProperties()
+
+	print "Main Menu:"
+	print "%s" % (properties["MainMenuTitle"])
+
+	print "\nItems:"
+
+	index = 0
+	for item in properties["MainMenu"]:
+		print "%d. %s" % (index, item[0])
+		index += 1
+
+	path = "/test/agent"
+	agent = StkAgent(bus, path)
+
+	select = int(raw_input("Enter Selection: "))
+	stk.SelectItem(select, path)
+	print "Agent registered for session"
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
