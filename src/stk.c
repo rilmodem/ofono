@@ -1206,6 +1206,25 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		return;
 	}
 
+	/*
+	 * In case no agent is registered, we should reject commands destined
+	 * to the Agent with a NOT_CAPABLE error.
+	 */
+	if (stk->current_agent == NULL) {
+		switch (stk->pending_cmd->type) {
+		case STK_COMMAND_TYPE_SELECT_ITEM:
+		case STK_COMMAND_TYPE_DISPLAY_TEXT:
+		case STK_COMMAND_TYPE_GET_INKEY:
+		case STK_COMMAND_TYPE_GET_INPUT:
+		case STK_COMMAND_TYPE_PLAY_TONE:
+			send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
+			return;
+
+		default:
+			break;
+		}
+	}
+
 	memset(&rsp, 0, sizeof(rsp));
 
 	switch (stk->pending_cmd->type) {
