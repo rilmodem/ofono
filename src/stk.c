@@ -1055,7 +1055,7 @@ static void display_text_cb(enum stk_agent_result result, void *user_data)
 	 *	not called in this case.
 	 *
 	 *	3. The session is ended by the SIM.  This case is ignored,
-	 *	and will result in either case 1, 2 or 3 occurring.
+	 *	and will result in either case 1, 2 or 4 occurring.
 	 *
 	 *	4. Agent reports an error or success.  This function is called
 	 *	with the result.
