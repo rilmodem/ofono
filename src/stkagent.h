@@ -52,7 +52,7 @@ typedef void (*stk_agent_selection_cb)(enum stk_agent_result result,
 					uint8_t id, void *user_data);
 
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
-					ofono_bool_t is_default);
+					ofono_bool_t remove_on_terminate);
 
 void stk_agent_free(struct stk_agent *agent);
 
@@ -66,12 +66,12 @@ ofono_bool_t stk_agent_matches(struct stk_agent *agent,
 
 void stk_agent_request_cancel(struct stk_agent *agent);
 
-void stk_agent_request_selection(struct stk_agent *agent,
+int stk_agent_request_selection(struct stk_agent *agent,
 					const struct stk_menu *menu,
 					stk_agent_selection_cb cb,
 					void *user_data, int timeout);
 
-void stk_agent_display_text(struct stk_agent *agent, const char *text,
+int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
 				ofono_bool_t ack, stk_agent_generic_cb cb,
 				void *user_data, int timeout);

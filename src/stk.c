@@ -462,7 +462,7 @@ static DBusMessage *stk_register_agent(DBusConnection *conn,
 
 	stk->default_agent = stk_agent_new(agent_path,
 						dbus_message_get_sender(msg),
-						TRUE);
+						FALSE);
 	if (!stk->default_agent)
 		return __ofono_error_failed(msg);
 
@@ -526,7 +526,7 @@ static void menu_selection_envelope_cb(struct ofono_stk *stk, gboolean ok,
 
 	stk->session_agent = stk_agent_new(agent_path,
 					dbus_message_get_sender(stk->pending),
-					FALSE);
+					TRUE);
 	if (!stk->session_agent) {
 		reply = __ofono_error_failed(stk->pending);
 

@@ -26,6 +26,7 @@
 #define _GNU_SOURCE
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -34,31 +35,29 @@
 
 #include "stkagent.h"
 
-typedef void (*stk_agent_request_return)(struct stk_agent *agent,
-						enum stk_agent_result result,
-						DBusMessage *reply);
+enum allowed_error {
+	ALLOWED_ERROR_GO_BACK	= 0x1,
+	ALLOWED_ERROR_TERMINATE	= 0x2,
+};
 
 struct stk_agent {
 	char *path;				/* Agent Path */
 	char *bus;				/* Agent bus */
-	ofono_bool_t is_default;		/* False if user-session */
 	guint disconnect_watch;			/* DBus disconnect watch */
+	ofono_bool_t remove_on_terminate;
 	ofono_destroy_func removed_cb;
 	void *removed_data;
 	DBusMessage *msg;
 	DBusPendingCall *call;
-	guint cmd_send_source;
-	stk_agent_request_return cmd_cb;
-	int cmd_timeout;
-	stk_agent_generic_cb user_cb;
+	void *user_cb;
 	void *user_data;
 
 	const struct stk_menu *request_selection_menu;
 };
 
-#define OFONO_NAVIGATION_PREFIX OFONO_SERVICE ".Error"
-#define OFONO_NAVIGATION_GOBACK OFONO_NAVIGATION_PREFIX ".GoBack"
-#define OFONO_NAVIGATION_TERMINATED OFONO_NAVIGATION_PREFIX ".EndSession"
+#define ERROR_PREFIX OFONO_SERVICE ".Error"
+#define GOBACK_ERROR ERROR_PREFIX ".GoBack"
+#define TERMINATE_ERROR ERROR_PREFIX ".EndSession"
 
 static void stk_agent_send_noreply(struct stk_agent *agent, const char *method)
 {
@@ -88,20 +87,12 @@ static inline void stk_agent_send_cancel(struct stk_agent *agent)
 
 static void stk_agent_request_end(struct stk_agent *agent)
 {
-	agent->cmd_cb = NULL;
-
-	if (agent->cmd_send_source) {
-		g_source_remove(agent->cmd_send_source);
-		agent->cmd_send_source = 0;
-	}
-
 	if (agent->msg) {
 		dbus_message_unref(agent->msg);
 		agent->msg = NULL;
 	}
 
 	if (agent->call) {
-		dbus_pending_call_cancel(agent->call);
 		dbus_pending_call_unref(agent->call);
 		agent->call = NULL;
 	}
@@ -109,7 +100,7 @@ static void stk_agent_request_end(struct stk_agent *agent)
 
 ofono_bool_t stk_agent_busy(struct stk_agent *agent)
 {
-	return agent->cmd_cb != NULL;
+	return agent->call != NULL;
 }
 
 ofono_bool_t stk_agent_matches(struct stk_agent *agent,
@@ -131,17 +122,8 @@ void stk_agent_request_cancel(struct stk_agent *agent)
 	if (!stk_agent_busy(agent))
 		return;
 
-	agent->cmd_cb(agent, STK_AGENT_RESULT_CANCEL, NULL);
-
-	stk_agent_request_end(agent);
-
+	dbus_pending_call_cancel(agent->call);
 	stk_agent_send_cancel(agent);
-}
-
-static void stk_agent_request_terminate(struct stk_agent *agent)
-{
-	agent->cmd_cb(agent, STK_AGENT_RESULT_TERMINATE, NULL);
-
 	stk_agent_request_end(agent);
 }
 
@@ -149,9 +131,6 @@ void stk_agent_free(struct stk_agent *agent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	gboolean busy = stk_agent_busy(agent);
-
-	if (busy)
-		stk_agent_request_terminate(agent);
 
 	if (agent->disconnect_watch) {
 		if (busy)
@@ -171,88 +150,48 @@ void stk_agent_free(struct stk_agent *agent)
 	g_free(agent);
 }
 
-static void stk_agent_request_reply_handle(DBusPendingCall *call, void *data)
+static int check_error(struct stk_agent *agent, DBusMessage *reply,
+				int allowed_errors,
+				enum stk_agent_result *out_result)
 {
-	struct stk_agent *agent = data;
 	DBusError err;
-	DBusMessage *reply = dbus_pending_call_steal_reply(call);
-	enum stk_agent_result result = STK_AGENT_RESULT_OK;
+	int result = 0;
 
 	dbus_error_init(&err);
-	if (dbus_set_error_from_message(&err, reply)) {
-		ofono_error("SimAppAgent %s replied with error %s, %s",
-				agent->path, err.name, err.message);
 
-		if (g_str_equal(err.name, DBUS_ERROR_NO_REPLY))
-			result = STK_AGENT_RESULT_TIMEOUT;
-		if (g_str_equal(err.name, OFONO_NAVIGATION_GOBACK))
-			result = STK_AGENT_RESULT_BACK;
-		else
-			result = STK_AGENT_RESULT_TERMINATE;
-
-		dbus_error_free(&err);
+	if (dbus_set_error_from_message(&err, reply) == FALSE) {
+		*out_result = STK_AGENT_RESULT_OK;
+		return 0;
 	}
 
-	agent->cmd_cb(agent, result, reply);
+	ofono_debug("SimToolkitAgent %s replied with error %s, %s",
+			agent->path, err.name, err.message);
 
-	stk_agent_request_end(agent);
-
-	dbus_message_unref(reply);
-
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->is_default == FALSE)
-		stk_agent_free(agent);
-}
-
-static gboolean stk_agent_request_send(gpointer user_data)
-{
-	struct stk_agent *agent = user_data;
-	DBusConnection *conn = ofono_dbus_get_connection();
-
-	agent->cmd_send_source = 0;
-
-	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
-						agent->cmd_timeout) == FALSE ||
-			agent->call == NULL) {
-		ofono_error("Couldn't send a method call");
-
-		stk_agent_request_terminate(agent);
-
-		return FALSE;
+	/* Timeout is always valid */
+	if (g_str_equal(err.name, DBUS_ERROR_NO_REPLY)) {
+		/* Send a Cancel() to the agent since its taking too long */
+		stk_agent_send_cancel(agent);
+		*out_result = STK_AGENT_RESULT_TIMEOUT;
+		goto out;
 	}
 
-	dbus_pending_call_set_notify(agent->call,
-					stk_agent_request_reply_handle,
-					agent, NULL);
-
-	return FALSE;
-}
-
-static gboolean stk_agent_request_start(struct stk_agent *agent,
-					const char *method,
-					stk_agent_request_return cb,
-					stk_agent_generic_cb user_cb,
-					void *user_data, int timeout)
-{
-	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
-							OFONO_SIM_APP_INTERFACE,
-							method);
-	if (agent->msg == NULL) {
-		ofono_error("Couldn't make a DBusMessage");
-
-		cb(agent, STK_AGENT_RESULT_TERMINATE, NULL);
-
-		return FALSE;
+	if ((allowed_errors & ALLOWED_ERROR_GO_BACK) &&
+			g_str_equal(err.name, GOBACK_ERROR)) {
+		*out_result = STK_AGENT_RESULT_BACK;
+		goto out;
 	}
 
-	agent->cmd_cb = cb;
-	agent->cmd_timeout = timeout;
-	agent->user_cb = user_cb;
-	agent->user_data = user_data;
+	if ((allowed_errors & ALLOWED_ERROR_TERMINATE) &&
+			g_str_equal(err.name, TERMINATE_ERROR)) {
+		*out_result = STK_AGENT_RESULT_TERMINATE;
+		goto out;
+	}
 
-	agent->cmd_send_source = g_timeout_add(0, stk_agent_request_send,
-						agent);
+	result = -EINVAL;
 
-	return TRUE;
+out:
+	dbus_error_free(&err);
+	return result;
 }
 
 static void stk_agent_disconnect_cb(DBusConnection *conn, void *user_data)
@@ -267,7 +206,7 @@ static void stk_agent_disconnect_cb(DBusConnection *conn, void *user_data)
 }
 
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
-				ofono_bool_t is_default)
+				ofono_bool_t remove_on_terminate)
 {
 	struct stk_agent *agent = g_try_new0(struct stk_agent, 1);
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -277,7 +216,7 @@ struct stk_agent *stk_agent_new(const char *path, const char *sender,
 
 	agent->path = g_strdup(path);
 	agent->bus = g_strdup(sender);
-	agent->is_default = is_default;
+	agent->remove_on_terminate = remove_on_terminate;
 
 	agent->disconnect_watch = g_dbus_add_disconnect_watch(conn, sender,
 							stk_agent_disconnect_cb,
@@ -322,56 +261,74 @@ void append_menu_items_variant(DBusMessageIter *iter,
 	dbus_message_iter_close_container(iter, &variant);
 }
 
-static void request_selection_cb(struct stk_agent *agent,
-					enum stk_agent_result result,
-					DBusMessage *reply)
+static void request_selection_cb(DBusPendingCall *call, void *data)
 {
+	struct stk_agent *agent = data;
 	const struct stk_menu *menu = agent->request_selection_menu;
 	stk_agent_selection_cb cb = (stk_agent_selection_cb) agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
 	unsigned char selection, i;
+	enum stk_agent_result result;
+	gboolean remove_agent;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
+			&result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
 
 	if (result != STK_AGENT_RESULT_OK) {
 		cb(result, 0, agent->user_data);
-
-		return;
+		goto done;
 	}
 
 	if (dbus_message_get_args(reply, NULL,
 					DBUS_TYPE_BYTE, &selection,
 					DBUS_TYPE_INVALID) == FALSE) {
 		ofono_error("Can't parse the reply to RequestSelection()");
-
-		cb(STK_AGENT_RESULT_TERMINATE, 0, agent->user_data);
-
-		return;
+		remove_agent = TRUE;
+		goto error;
 	}
 
 	for (i = 0; i < selection && menu->items[i].text; i++);
 
 	if (i != selection) {
 		ofono_error("Invalid item selected");
-
-		cb(STK_AGENT_RESULT_TERMINATE, 0, agent->user_data);
-
-		return;
+		remove_agent = TRUE;
+		goto error;
 	}
 
 	cb(result, menu->items[selection].item_id, agent->user_data);
+
+done:
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
+		remove_agent = TRUE;
+	else
+		remove_agent = FALSE;
+
+error:
+	stk_agent_request_end(agent);
+	dbus_message_unref(reply);
+
+	if (remove_agent)
+		stk_agent_free(agent);
 }
 
-void stk_agent_request_selection(struct stk_agent *agent,
+int stk_agent_request_selection(struct stk_agent *agent,
 					const struct stk_menu *menu,
 					stk_agent_selection_cb cb,
 					void *user_data, int timeout)
 {
+	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_int16_t default_item = menu->default_item;
 	DBusMessageIter iter;
 
-	if (!stk_agent_request_start(agent, "RequestSelection",
-					request_selection_cb,
-					(stk_agent_generic_cb) cb,
-					user_data, timeout))
-		return;
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"RequestSelection");
+	if (agent->msg == NULL)
+		return -ENOMEM;
 
 	dbus_message_iter_init_append(agent->msg, &iter);
 
@@ -380,36 +337,73 @@ void stk_agent_request_selection(struct stk_agent *agent,
 	append_menu_items(&iter, menu->items);
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_INT16, &default_item);
 
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+
 	agent->request_selection_menu = menu;
+
+	dbus_pending_call_set_notify(agent->call, request_selection_cb,
+					agent, NULL);
+
+	return 0;
 }
 
-static void display_text_cb(struct stk_agent *agent,
-				enum stk_agent_result result,
-				DBusMessage *reply)
+static void display_text_cb(DBusPendingCall *call, void *data)
 {
+	struct stk_agent *agent = data;
 	stk_agent_generic_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
+			&result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
 
 	if (result == STK_AGENT_RESULT_OK && dbus_message_get_args(
 				reply, NULL, DBUS_TYPE_INVALID) == FALSE) {
 		ofono_error("Can't parse the reply to DisplayText()");
-
-		result = STK_AGENT_RESULT_TERMINATE;
+		remove_agent = TRUE;
+		goto error;
 	}
 
 	cb(result, agent->user_data);
+
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
+		remove_agent = TRUE;
+	else
+		remove_agent = FALSE;
+
+error:
+	stk_agent_request_end(agent);
+	dbus_message_unref(reply);
+
+	if (remove_agent)
+		stk_agent_free(agent);
 }
 
-void stk_agent_display_text(struct stk_agent *agent, const char *text,
+int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
 				ofono_bool_t ack, stk_agent_generic_cb cb,
 				void *user_data, int timeout)
 {
+	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_bool_t priority = urgent;
 	dbus_bool_t confirm = ack;
 
-	if (!stk_agent_request_start(agent, "DisplayText", display_text_cb,
-					cb, user_data, timeout))
-		return;
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"DisplayText");
+	if (agent->msg == NULL)
+		return -ENOMEM;
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
@@ -417,4 +411,17 @@ void stk_agent_display_text(struct stk_agent *agent, const char *text,
 					DBUS_TYPE_BOOLEAN, &priority,
 					DBUS_TYPE_BOOLEAN, &confirm,
 					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+
+	dbus_pending_call_set_notify(agent->call, display_text_cb,
+					agent, NULL);
+
+	return 0;
 }
