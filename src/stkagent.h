@@ -45,8 +45,8 @@ struct stk_menu {
 	gboolean has_help;
 };
 
-typedef void (*stk_agent_generic_cb)(enum stk_agent_result result,
-					void *user_data);
+typedef void (*stk_agent_display_text_cb)(enum stk_agent_result result,
+						void *user_data);
 
 typedef void (*stk_agent_selection_cb)(enum stk_agent_result result,
 					uint8_t id, void *user_data);
@@ -73,7 +73,7 @@ int stk_agent_request_selection(struct stk_agent *agent,
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
-				ofono_bool_t ack, stk_agent_generic_cb cb,
+				ofono_bool_t ack, stk_agent_display_text_cb cb,
 				void *user_data, int timeout);
 
 void append_menu_items_variant(DBusMessageIter *iter,

@@ -356,7 +356,7 @@ int stk_agent_request_selection(struct stk_agent *agent,
 static void display_text_cb(DBusPendingCall *call, void *data)
 {
 	struct stk_agent *agent = data;
-	stk_agent_generic_cb cb = agent->user_cb;
+	stk_agent_display_text_cb cb = agent->user_cb;
 	DBusMessage *reply = dbus_pending_call_steal_reply(call);
 	enum stk_agent_result result;
 	gboolean remove_agent;
@@ -392,7 +392,7 @@ error:
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
-				ofono_bool_t ack, stk_agent_generic_cb cb,
+				ofono_bool_t ack, stk_agent_display_text_cb cb,
 				void *user_data, int timeout)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
