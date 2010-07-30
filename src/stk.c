@@ -414,12 +414,28 @@ static void stk_request_cancel(struct ofono_stk *stk)
 		stk_agent_request_cancel(stk->default_agent);
 }
 
+static gboolean agent_called(struct ofono_stk *stk)
+{
+	if (stk->pending_cmd == NULL)
+		return FALSE;
+
+	switch (stk->pending_cmd->type) {
+	case STK_COMMAND_TYPE_SELECT_ITEM:
+	case STK_COMMAND_TYPE_DISPLAY_TEXT:
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 static void default_agent_notify(gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
-	stk->default_agent = NULL;
+	if (stk->current_agent == stk->default_agent && agent_called(stk))
+		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 
+	stk->default_agent = NULL;
 	stk->current_agent = stk->session_agent;
 }
 
@@ -427,8 +443,10 @@ static void session_agent_notify(gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
-	stk->session_agent = NULL;
+	if (stk->current_agent == stk->session_agent && agent_called(stk))
+		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 
+	stk->session_agent = NULL;
 	stk->current_agent = stk->default_agent;
 
 	if (stk->remove_agent_source) {
