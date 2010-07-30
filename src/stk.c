@@ -1147,66 +1147,75 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		return;
 	}
 
-	memset(&rsp, 0, sizeof(rsp));
-
 	switch (stk->pending_cmd->status) {
 	case STK_PARSE_RESULT_OK:
-		switch (stk->pending_cmd->type) {
-		default:
-			rsp.result.type =
-				STK_RESULT_TYPE_COMMAND_NOT_UNDERSTOOD;
-			break;
-		case STK_COMMAND_TYPE_MORE_TIME:
-			respond = handle_command_more_time(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		case STK_COMMAND_TYPE_SEND_SMS:
-			respond = handle_command_send_sms(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
-			respond = handle_command_set_idle_text(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		case STK_COMMAND_TYPE_TIMER_MANAGEMENT:
-			respond = handle_command_timer_mgmt(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		case STK_COMMAND_TYPE_POLL_INTERVAL:
-			respond = handle_command_poll_interval(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		case STK_COMMAND_TYPE_SETUP_MENU:
-			respond = handle_command_set_up_menu(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		case STK_COMMAND_TYPE_SELECT_ITEM:
-			respond = handle_command_select_item(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		case STK_COMMAND_TYPE_DISPLAY_TEXT:
-			respond = handle_command_display_text(stk->pending_cmd,
-								&rsp, stk);
-			break;
-		}
-
-		if (respond)
-			break;
-		return;
+		break;
 
 	case STK_PARSE_RESULT_MISSING_VALUE:
-		rsp.result.type = STK_RESULT_TYPE_MINIMUM_NOT_MET;
-		break;
+		send_simple_response(stk, STK_RESULT_TYPE_MINIMUM_NOT_MET);
+		return;
 
 	case STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD:
-		rsp.result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-		break;
+		send_simple_response(stk, STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD);
+		return;
 
 	case STK_PARSE_RESULT_TYPE_NOT_UNDERSTOOD:
+	default:
+		send_simple_response(stk,
+					STK_RESULT_TYPE_COMMAND_NOT_UNDERSTOOD);
+		return;
+	}
+
+	memset(&rsp, 0, sizeof(rsp));
+
+	switch (stk->pending_cmd->type) {
+	case STK_COMMAND_TYPE_MORE_TIME:
+		respond = handle_command_more_time(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_SEND_SMS:
+		respond = handle_command_send_sms(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
+		respond = handle_command_set_idle_text(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_TIMER_MANAGEMENT:
+		respond = handle_command_timer_mgmt(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_POLL_INTERVAL:
+		respond = handle_command_poll_interval(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_SETUP_MENU:
+		respond = handle_command_set_up_menu(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_SELECT_ITEM:
+		respond = handle_command_select_item(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_DISPLAY_TEXT:
+		respond = handle_command_display_text(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
 	default:
 		rsp.result.type = STK_RESULT_TYPE_COMMAND_NOT_UNDERSTOOD;
 		break;
 	}
+
+	if (respond == FALSE)
+		return;
 
 	err = stk_respond(stk, &rsp, stk_command_cb);
 	if (err)
