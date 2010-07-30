@@ -955,8 +955,16 @@ static gboolean handle_command_set_up_menu(const struct stk_command *cmd,
 	return TRUE;
 }
 
-static void request_menu_cb(enum stk_agent_result result, uint8_t id,
-				void *user_data)
+static void request_selection_destroy(void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+
+	stk_menu_free(stk->select_item_menu);
+	stk->select_item_menu = NULL;
+}
+
+static void request_selection_cb(enum stk_agent_result result, uint8_t id,
+					void *user_data)
 {
 	struct ofono_stk *stk = user_data;
 
@@ -986,18 +994,11 @@ static void request_menu_cb(enum stk_agent_result result, uint8_t id,
 		send_simple_response(stk, STK_RESULT_TYPE_NO_RESPONSE);
 		break;
 
-	case STK_AGENT_RESULT_CANCEL:
-		goto out;
-
 	case STK_AGENT_RESULT_TERMINATE:
 	default:
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
-
-out:
-	stk_menu_free(stk->select_item_menu);
-	stk->select_item_menu = NULL;
 }
 
 static gboolean handle_command_select_item(const struct stk_command *cmd,
@@ -1017,7 +1018,8 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 	/* We most likely got an out of memory error, tell SIM to retry */
 	if (stk_agent_request_selection(stk->current_agent,
 					stk->select_item_menu,
-					request_menu_cb, stk,
+					request_selection_cb, stk,
+					request_selection_destroy,
 					stk->timeout * 1000) < 0) {
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
@@ -1098,7 +1100,7 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 
 	/* We most likely got an out of memory error, tell SIM to retry */
 	if (stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
-				request_text_cb, stk, timeout) < 0) {
+				request_text_cb, stk, NULL, timeout) < 0) {
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}

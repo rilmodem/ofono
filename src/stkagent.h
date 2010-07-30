@@ -67,14 +67,16 @@ ofono_bool_t stk_agent_matches(struct stk_agent *agent,
 void stk_agent_request_cancel(struct stk_agent *agent);
 
 int stk_agent_request_selection(struct stk_agent *agent,
-					const struct stk_menu *menu,
-					stk_agent_selection_cb cb,
-					void *user_data, int timeout);
+				const struct stk_menu *menu,
+				stk_agent_selection_cb cb,
+				void *user_data, ofono_destroy_func destroy,
+				int timeout);
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
 				stk_agent_display_text_cb cb,
-				void *user_data, int timeout);
+				void *user_data, ofono_destroy_func destroy,
+				int timeout);
 
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);

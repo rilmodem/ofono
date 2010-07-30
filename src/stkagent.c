@@ -51,6 +51,7 @@ struct stk_agent {
 	DBusPendingCall *call;
 	void *user_cb;
 	void *user_data;
+	ofono_destroy_func user_destroy;
 
 	const struct stk_menu *request_selection_menu;
 };
@@ -96,6 +97,13 @@ static void stk_agent_request_end(struct stk_agent *agent)
 		dbus_pending_call_unref(agent->call);
 		agent->call = NULL;
 	}
+
+	if (agent->user_destroy)
+		agent->user_destroy(agent->user_data);
+
+	agent->user_destroy = NULL;
+	agent->user_data = NULL;
+	agent->user_cb = NULL;
 }
 
 ofono_bool_t stk_agent_busy(struct stk_agent *agent)
@@ -316,9 +324,10 @@ error:
 }
 
 int stk_agent_request_selection(struct stk_agent *agent,
-					const struct stk_menu *menu,
-					stk_agent_selection_cb cb,
-					void *user_data, int timeout)
+				const struct stk_menu *menu,
+				stk_agent_selection_cb cb,
+				void *user_data, ofono_destroy_func destroy,
+				int timeout)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_int16_t default_item = menu->default_item;
@@ -344,6 +353,7 @@ int stk_agent_request_selection(struct stk_agent *agent,
 
 	agent->user_cb = cb;
 	agent->user_data = user_data;
+	agent->user_destroy = destroy;
 
 	agent->request_selection_menu = menu;
 
@@ -393,7 +403,8 @@ error:
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				uint8_t icon_id, ofono_bool_t urgent,
 				stk_agent_display_text_cb cb,
-				void *user_data, int timeout)
+				void *user_data, ofono_destroy_func destroy,
+				int timeout)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_bool_t priority = urgent;
@@ -417,6 +428,7 @@ int stk_agent_display_text(struct stk_agent *agent, const char *text,
 
 	agent->user_cb = cb;
 	agent->user_data = user_data;
+	agent->user_destroy = destroy;
 
 	dbus_pending_call_set_notify(agent->call, display_text_cb,
 					agent, NULL);
