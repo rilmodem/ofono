@@ -1,3 +1,9 @@
+ver 0.26:
+	Fix busy loop in PPP disconnect with Huawei modem.
+	Add support for MCC/MNC via network registration interface.
+	Add support for SIM Toolkit agent interface.
+	Add initial support for IPv6 PDP context.
+
 ver 0.25:
 	Fix issue with PPP IPCP and too short timeouts.
 	Fix issue with Calypso modem and DTMF chars.
