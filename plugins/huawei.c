@@ -41,7 +41,6 @@
 #include <ofono/sms.h>
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
-#include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/voicecall.h>
 #include <ofono/call-forwarding.h>
