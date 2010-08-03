@@ -406,6 +406,26 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 	return __ofono_error_invalid_args(msg);
 }
 
+/*
+ * Destroy/release the contents of a 'struct tx_queue_entry'
+ *
+ * This releases resources allocated *inside* @entry and @entry
+ * itself.
+ */
+static void tx_queue_entry_destroy(struct tx_queue_entry *entry)
+{
+	if (entry->destroy)
+		entry->destroy(entry->data);
+
+	g_free(entry->pdus);
+	g_free(entry);
+}
+
+static void tx_queue_entry_destroy_foreach(gpointer _entry, gpointer unused)
+{
+	tx_queue_entry_destroy(_entry);
+}
+
 static void tx_finished(const struct ofono_error *error, int mr, void *data)
 {
 	struct ofono_sms *sms = data;
@@ -466,11 +486,7 @@ next_q:
 						time(NULL), hs);
 	}
 
-	if (entry->destroy)
-		entry->destroy(entry->data);
-
-	g_free(entry->pdus);
-	g_free(entry);
+	tx_queue_entry_destroy(entry);
 
 	if (g_queue_peek_head(sms->txq)) {
 		DBG("Scheduling next");
@@ -1097,7 +1113,7 @@ static void sms_remove(struct ofono_atom *atom)
 	}
 
 	if (sms->txq) {
-		g_queue_foreach(sms->txq, (GFunc)g_free, NULL);
+		g_queue_foreach(sms->txq, tx_queue_entry_destroy_foreach, NULL);
 		g_queue_free(sms->txq);
 		sms->txq = NULL;
 	}
