@@ -98,11 +98,21 @@ ssize_t read_file(unsigned char *buffer, size_t len,
 	return r;
 }
 
+/*
+ * Write a buffer to a file in a transactionally safe form
+ *
+ * Given a buffer, write it to a file named after
+ * @path_fmt+args. However, to make sure the file contents are
+ * consistent (ie: a crash right after opening or during write()
+ * doesn't leave a file half baked), the contents are written to a
+ * file with a temporary name and when closed, it is renamed to the
+ * specified name (@path_fmt+args).
+ */
 ssize_t write_file(const unsigned char *buffer, size_t len, mode_t mode,
 			const char *path_fmt, ...)
 {
 	va_list ap;
-	char *path;
+	char *tmp_path, *path;
 	ssize_t r;
 	int fd;
 
@@ -110,26 +120,41 @@ ssize_t write_file(const unsigned char *buffer, size_t len, mode_t mode,
 	path = g_strdup_vprintf(path_fmt, ap);
 	va_end(ap);
 
-	if (create_dirs(path, mode | S_IXUSR) != 0) {
-		g_free(path);
-		return -1;
-	}
+	tmp_path = g_strdup_printf("%s.XXXXXX.tmp", path);
 
-	fd = TFR(open(path, O_WRONLY | O_CREAT | O_TRUNC, mode));
-	if (fd == -1) {
-		g_free(path);
-		return -1;
-	}
+	r = -1;
+	if (create_dirs(path, mode | S_IXUSR) != 0)
+		goto error_create_dirs;
+
+	fd = TFR(g_mkstemp_full(tmp_path, O_WRONLY | O_CREAT | O_TRUNC, mode));
+	if (fd == -1)
+		goto error_mkstemp_full;
 
 	r = TFR(write(fd, buffer, len));
 
 	TFR(close(fd));
 
 	if (r != (ssize_t) len) {
-		unlink(path);
 		r = -1;
+		goto error_write;
 	}
 
+	/*
+	 * Now that the file contents are written, rename to the real
+	 * file name; this way we are uniquely sure that the whole
+	 * thing is there.
+	 */
+	unlink(path);
+
+	/* conserve @r's value from 'write' */
+	if (link(tmp_path, path) == -1)
+		r = -1;
+
+error_write:
+	unlink(tmp_path);
+error_mkstemp_full:
+error_create_dirs:
+	g_free(tmp_path);
 	g_free(path);
 	return r;
 }
