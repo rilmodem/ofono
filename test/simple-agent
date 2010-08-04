@@ -51,6 +51,76 @@ class StkAgent(dbus.service.Object):
 		print "DisplayText (%s, %s)" % (title, urgent)
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sysyyb", out_signature="s")
+	def RequestInput(self, title, icon, default, min_chars, max_chars,
+				hide_typing):
+		print "Title: (%s)" % (title)
+		print "Default: (%s)" % (default)
+		print "Enter characters, min: %d, max: %d:" % (min_chars,
+								max_chars)
+		userin = raw_input("");
+
+		return userin
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sysyyb", out_signature="s")
+	def RequestDigits(self, title, icon, default, min_chars, max_chars,
+				hide_typing):
+		print "Title: (%s)" % (title)
+		print "Default: (%s)" % (default)
+		print "Enter digits, min: %d, max: %d:" % (min_chars,
+								max_chars)
+		userin = raw_input("'t' terminates, 'b' goes back:");
+
+		if userin == 'b':
+			raise GoBack("User wishes to go back")
+		elif userin == 't':
+			raise EndSession("User wishes to terminate session")
+		else:
+			return userin
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sy", out_signature="s")
+	def RequestKey(self, title, icon):
+		print "Title: (%s)" % (title)
+		key = raw_input("Enter Key (t, b):")
+
+		if key == 'b':
+			raise GoBack("User wishes to go back");
+		elif key == 't':
+			raise EndSession("User wishes to terminate session");
+		else:
+			return key
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sy", out_signature="s")
+	def RequestDigit(self, title, icon):
+		print "Title: (%s)" % (title)
+		key = raw_input("Enter Digit (t, b):")
+
+		if key == 'b':
+			raise GoBack("User wishes to go back");
+		elif key == 't':
+			raise EndSession("User wishes to terminate session");
+		else:
+			return key
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sy", out_signature="b")
+	def RequestConfirmation(self, title, icon):
+		print "Title: (%s)" % (title)
+		key = raw_input("Enter Digit (t, b, y, n):")
+
+		if key == 'b':
+			raise GoBack("User wishes to go back");
+		elif key == 't':
+			raise EndSession("User wishes to terminate session");
+		elif key == 'y':
+			return True
+		else:
+			return False
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="", out_signature="")
 	def Cancel(self):
 		print "Cancel"
