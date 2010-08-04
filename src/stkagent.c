@@ -33,6 +33,7 @@
 
 #include "ofono.h"
 
+#include "common.h"
 #include "stkagent.h"
 
 enum allowed_error {
@@ -426,6 +427,245 @@ int stk_agent_display_text(struct stk_agent *agent, const char *text,
 	agent->user_destroy = destroy;
 
 	dbus_pending_call_set_notify(agent->call, display_text_cb,
+					agent, NULL);
+
+	return 0;
+}
+
+static void get_confirmation_cb(DBusPendingCall *call, void *data)
+{
+	struct stk_agent *agent = data;
+	stk_agent_confirmation_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+	dbus_bool_t confirm;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
+			&result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, FALSE, agent->user_data);
+		goto done;
+	}
+
+	if (dbus_message_get_args(reply, NULL,
+					DBUS_TYPE_BOOLEAN, &confirm,
+					DBUS_TYPE_INVALID) == FALSE) {
+		ofono_error("Can't parse the reply to GetConfirmation()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	cb(result, confirm, agent->user_data);
+
+done:
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
+		remove_agent = TRUE;
+	else
+		remove_agent = FALSE;
+
+error:
+	stk_agent_request_end(agent);
+	dbus_message_unref(reply);
+
+	if (remove_agent)
+		stk_agent_free(agent);
+}
+
+int stk_agent_request_confirmation(struct stk_agent *agent,
+					const char *text, uint8_t icon_id,
+					stk_agent_confirmation_cb cb,
+					void *user_data,
+					ofono_destroy_func destroy,
+					int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"RequestConfirmation");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, get_confirmation_cb,
+					agent, NULL);
+
+	return 0;
+}
+
+static void get_digit_cb(DBusPendingCall *call, void *data)
+{
+	struct stk_agent *agent = data;
+	stk_agent_string_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+	char *digit;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
+			&result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, NULL, agent->user_data);
+		goto done;
+	}
+
+	if (dbus_message_get_args(reply, NULL,
+					DBUS_TYPE_STRING, &digit,
+					DBUS_TYPE_INVALID) == FALSE ||
+			strlen(digit) != 1 ||
+			!valid_phone_number_format(digit)) {
+		ofono_error("Can't parse the reply to GetDigit()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	cb(result, digit, agent->user_data);
+
+done:
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
+		remove_agent = TRUE;
+	else
+		remove_agent = FALSE;
+
+error:
+	stk_agent_request_end(agent);
+	dbus_message_unref(reply);
+
+	if (remove_agent)
+		stk_agent_free(agent);
+}
+
+int stk_agent_request_digit(struct stk_agent *agent,
+				const char *text, uint8_t icon_id,
+				stk_agent_string_cb cb, void *user_data,
+				ofono_destroy_func destroy, int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"RequestDigit");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, get_digit_cb,
+					agent, NULL);
+
+	return 0;
+}
+
+static void get_key_cb(DBusPendingCall *call, void *data)
+{
+	struct stk_agent *agent = data;
+	stk_agent_string_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+	char *key;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
+			&result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, NULL, agent->user_data);
+		goto done;
+	}
+
+	if (dbus_message_get_args(reply, NULL,
+					DBUS_TYPE_STRING, &key,
+					DBUS_TYPE_INVALID) == FALSE ||
+			g_utf8_strlen(key, 10) != 1) {
+		ofono_error("Can't parse the reply to GetKey()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	cb(result, key, agent->user_data);
+
+done:
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
+		remove_agent = TRUE;
+	else
+		remove_agent = FALSE;
+
+error:
+	stk_agent_request_end(agent);
+	dbus_message_unref(reply);
+
+	if (remove_agent)
+		stk_agent_free(agent);
+}
+
+int stk_agent_request_key(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, ofono_bool_t unicode_charset,
+				stk_agent_string_cb cb, void *user_data,
+				ofono_destroy_func destroy, int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"RequestKey");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, get_key_cb,
 					agent, NULL);
 
 	return 0;

@@ -50,6 +50,13 @@ typedef void (*stk_agent_display_text_cb)(enum stk_agent_result result,
 typedef void (*stk_agent_selection_cb)(enum stk_agent_result result,
 					uint8_t id, void *user_data);
 
+typedef void (*stk_agent_confirmation_cb)(enum stk_agent_result result,
+						ofono_bool_t confirm,
+						void *user_data);
+
+typedef void (*stk_agent_string_cb)(enum stk_agent_result result,
+					char *string, void *user_data);
+
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
 					ofono_bool_t remove_on_terminate);
 
@@ -75,6 +82,23 @@ int stk_agent_display_text(struct stk_agent *agent, const char *text,
 				stk_agent_display_text_cb cb,
 				void *user_data, ofono_destroy_func destroy,
 				int timeout);
+
+int stk_agent_request_confirmation(struct stk_agent *agent,
+					const char *text, uint8_t icon_id,
+					stk_agent_confirmation_cb cb,
+					void *user_data,
+					ofono_destroy_func destroy,
+					int timeout);
+
+int stk_agent_request_digit(struct stk_agent *agent,
+				const char *text, uint8_t icon_id,
+				stk_agent_string_cb cb, void *user_data,
+				ofono_destroy_func destroy, int timeout);
+
+int stk_agent_request_key(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, ofono_bool_t unicode_charset,
+				stk_agent_string_cb cb, void *user_data,
+				ofono_destroy_func destroy, int timeout);
 
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);
