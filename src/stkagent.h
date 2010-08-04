@@ -100,5 +100,18 @@ int stk_agent_request_key(struct stk_agent *agent, const char *text,
 				stk_agent_string_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout);
 
+int stk_agent_request_digits(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, const char *default_text,
+				int min, int max, ofono_bool_t hidden,
+				stk_agent_string_cb cb, void *user_data,
+				ofono_destroy_func destroy, int timeout);
+
+int stk_agent_request_input(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, const char *default_text,
+				ofono_bool_t unicode_charset, int min, int max,
+				ofono_bool_t hidden, stk_agent_string_cb cb,
+				void *user_data, ofono_destroy_func destroy,
+				int timeout);
+
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);

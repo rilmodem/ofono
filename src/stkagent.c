@@ -670,3 +670,182 @@ int stk_agent_request_key(struct stk_agent *agent, const char *text,
 
 	return 0;
 }
+
+static void get_digits_cb(DBusPendingCall *call, void *data)
+{
+	struct stk_agent *agent = data;
+	stk_agent_string_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+	char *string;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
+			&result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, NULL, agent->user_data);
+		goto done;
+	}
+
+	if (dbus_message_get_args(reply, NULL,
+					DBUS_TYPE_STRING, &string,
+					DBUS_TYPE_INVALID) == FALSE) {
+		ofono_error("Can't parse the reply to GetDigits()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	cb(result, string, agent->user_data);
+
+done:
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
+		remove_agent = TRUE;
+	else
+		remove_agent = FALSE;
+
+error:
+	stk_agent_request_end(agent);
+	dbus_message_unref(reply);
+
+	if (remove_agent)
+		stk_agent_free(agent);
+}
+
+int stk_agent_request_digits(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, const char *default_text,
+				int min, int max, ofono_bool_t hidden,
+				stk_agent_string_cb cb, void *user_data,
+				ofono_destroy_func destroy, int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	uint8_t min_val = min;
+	uint8_t max_val = max;
+	dbus_bool_t hidden_val = hidden;
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"RequestDigits");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	if (default_text == NULL)
+		default_text = "";
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_STRING, &default_text,
+					DBUS_TYPE_BYTE, &min_val,
+					DBUS_TYPE_BYTE, &max_val,
+					DBUS_TYPE_BOOLEAN, &hidden_val,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, get_digits_cb,
+					agent, NULL);
+
+	return 0;
+}
+
+static void get_input_cb(DBusPendingCall *call, void *data)
+{
+	struct stk_agent *agent = data;
+	stk_agent_string_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+	char *string;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
+			&result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, NULL, agent->user_data);
+		goto done;
+	}
+
+	if (dbus_message_get_args(reply, NULL,
+					DBUS_TYPE_STRING, &string,
+					DBUS_TYPE_INVALID) == FALSE) {
+		ofono_error("Can't parse the reply to GetInput()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	cb(result, string, agent->user_data);
+
+done:
+	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
+		remove_agent = TRUE;
+	else
+		remove_agent = FALSE;
+
+error:
+	stk_agent_request_end(agent);
+	dbus_message_unref(reply);
+
+	if (remove_agent)
+		stk_agent_free(agent);
+}
+
+int stk_agent_request_input(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, const char *default_text,
+				ofono_bool_t unicode_charset, int min, int max,
+				ofono_bool_t hidden, stk_agent_string_cb cb,
+				void *user_data, ofono_destroy_func destroy,
+				int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	uint8_t min_val = min;
+	uint8_t max_val = max;
+	dbus_bool_t hidden_val = hidden;
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"RequestInput");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	if (default_text == NULL)
+		default_text = "";
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_STRING, &default_text,
+					DBUS_TYPE_BYTE, &min_val,
+					DBUS_TYPE_BYTE, &max_val,
+					DBUS_TYPE_BOOLEAN, &hidden_val,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, get_input_cb,
+					agent, NULL);
+
+	return 0;
+}
