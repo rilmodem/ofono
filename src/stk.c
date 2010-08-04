@@ -1167,7 +1167,6 @@ static void request_confirmation_cb(enum stk_agent_result result,
 	struct ofono_stk *stk = user_data;
 	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_command_get_inkey *cmd = &stk->pending_cmd->get_inkey;
-	uint8_t qualifier = stk->pending_cmd->qualifier;
 	struct stk_response rsp;
 
 	switch (result) {
@@ -1197,20 +1196,7 @@ static void request_confirmation_cb(enum stk_agent_result result,
 		send_simple_response(stk, STK_RESULT_TYPE_NO_RESPONSE);
 		break;
 
-	case STK_AGENT_RESULT_HELP:
-		if ((qualifier & (1 << 7)) == 0) {
-			ofono_error("Help requested but not available");
-
-			send_simple_response(stk,
-					STK_RESULT_TYPE_USER_TERMINATED);
-			break;
-		}
-
-		send_simple_response(stk, STK_RESULT_TYPE_HELP_REQUESTED);
-		break;
-
 	case STK_AGENT_RESULT_TERMINATE:
-	default:
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
@@ -1222,7 +1208,6 @@ static void request_key_cb(enum stk_agent_result result, char *string,
 	struct ofono_stk *stk = user_data;
 	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_command_get_inkey *cmd = &stk->pending_cmd->get_inkey;
-	uint8_t qualifier = stk->pending_cmd->qualifier;
 	struct stk_response rsp;
 
 	switch (result) {
@@ -1251,20 +1236,7 @@ static void request_key_cb(enum stk_agent_result result, char *string,
 		send_simple_response(stk, STK_RESULT_TYPE_NO_RESPONSE);
 		break;
 
-	case STK_AGENT_RESULT_HELP:
-		if ((qualifier & (1 << 7)) == 0) {
-			ofono_error("Help requested but not available");
-
-			send_simple_response(stk,
-					STK_RESULT_TYPE_USER_TERMINATED);
-			break;
-		}
-
-		send_simple_response(stk, STK_RESULT_TYPE_HELP_REQUESTED);
-		break;
-
 	case STK_AGENT_RESULT_TERMINATE:
-	default:
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
@@ -1359,20 +1331,7 @@ static void request_string_cb(enum stk_agent_result result, char *string,
 		send_simple_response(stk, STK_RESULT_TYPE_NO_RESPONSE);
 		break;
 
-	case STK_AGENT_RESULT_HELP:
-		if ((qualifier & (1 << 7)) == 0) {
-			ofono_error("Help requested but not available");
-
-			send_simple_response(stk,
-					STK_RESULT_TYPE_USER_TERMINATED);
-			break;
-		}
-
-		send_simple_response(stk, STK_RESULT_TYPE_HELP_REQUESTED);
-		break;
-
 	case STK_AGENT_RESULT_TERMINATE:
-	default:
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
