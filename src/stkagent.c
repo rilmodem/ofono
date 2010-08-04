@@ -562,8 +562,7 @@ int stk_agent_request_digit(struct stk_agent *agent,
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
 
-	dbus_pending_call_set_notify(agent->call, get_digit_cb,
-					agent, NULL);
+	dbus_pending_call_set_notify(agent->call, get_digit_cb, agent, NULL);
 
 	return 0;
 }
@@ -630,8 +629,7 @@ int stk_agent_request_key(struct stk_agent *agent, const char *text,
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
 
-	dbus_pending_call_set_notify(agent->call, get_key_cb,
-					agent, NULL);
+	dbus_pending_call_set_notify(agent->call, get_key_cb, agent, NULL);
 
 	return 0;
 }
@@ -708,8 +706,7 @@ int stk_agent_request_digits(struct stk_agent *agent, const char *text,
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
 
-	dbus_pending_call_set_notify(agent->call, get_digits_cb,
-					agent, NULL);
+	dbus_pending_call_set_notify(agent->call, get_digits_cb, agent, NULL);
 
 	return 0;
 }
@@ -787,8 +784,7 @@ int stk_agent_request_input(struct stk_agent *agent, const char *text,
 	agent->user_data = user_data;
 	agent->user_destroy = destroy;
 
-	dbus_pending_call_set_notify(agent->call, get_input_cb,
-					agent, NULL);
+	dbus_pending_call_set_notify(agent->call, get_input_cb, agent, NULL);
 
 	return 0;
 }
