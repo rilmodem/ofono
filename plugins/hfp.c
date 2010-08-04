@@ -595,7 +595,7 @@ static int hfp_enable(struct ofono_modem *modem)
 	status = bluetooth_send_with_reply(data->handsfree_path,
 					BLUEZ_GATEWAY_INTERFACE, "Connect",
 					hfp_connect_reply, modem, NULL,
-					15, DBUS_TYPE_INVALID);
+					DBUS_TIMEOUT, DBUS_TYPE_INVALID);
 
 	if (status < 0)
 		return -EINVAL;
@@ -636,8 +636,8 @@ static int hfp_disable(struct ofono_modem *modem)
 	if (data->agent_registered) {
 		status = bluetooth_send_with_reply(data->handsfree_path,
 					BLUEZ_GATEWAY_INTERFACE, "Disconnect",
-					hfp_power_down, modem, NULL, 15,
-					DBUS_TYPE_INVALID);
+					hfp_power_down, modem, NULL,
+					DBUS_TIMEOUT, DBUS_TYPE_INVALID);
 
 		if (status < 0)
 			return -EINVAL;
