@@ -265,6 +265,21 @@ void append_menu_items_variant(DBusMessageIter *iter,
 	dbus_message_iter_close_container(iter, &variant);
 }
 
+#define CALLBACK_END()						\
+done:								\
+	if (result == STK_AGENT_RESULT_TERMINATE &&		\
+			agent->remove_on_terminate)		\
+		remove_agent = TRUE;				\
+	else							\
+		remove_agent = FALSE;				\
+								\
+error:								\
+	stk_agent_request_end(agent);				\
+	dbus_message_unref(reply);				\
+								\
+	if (remove_agent)					\
+		stk_agent_free(agent)				\
+
 static void request_selection_cb(DBusPendingCall *call, void *data)
 {
 	struct stk_agent *agent = data;
@@ -305,18 +320,7 @@ static void request_selection_cb(DBusPendingCall *call, void *data)
 
 	cb(result, menu->items[selection].item_id, agent->user_data);
 
-done:
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
-		remove_agent = TRUE;
-	else
-		remove_agent = FALSE;
-
-error:
-	stk_agent_request_end(agent);
-	dbus_message_unref(reply);
-
-	if (remove_agent)
-		stk_agent_free(agent);
+	CALLBACK_END();
 }
 
 int stk_agent_request_selection(struct stk_agent *agent,
@@ -374,8 +378,12 @@ static void display_text_cb(DBusPendingCall *call, void *data)
 		goto error;
 	}
 
-	if (result == STK_AGENT_RESULT_OK && dbus_message_get_args(
-				reply, NULL, DBUS_TYPE_INVALID) == FALSE) {
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, agent->user_data);
+		goto done;
+	}
+
+	if (dbus_message_get_args(reply, NULL, DBUS_TYPE_INVALID) == FALSE) {
 		ofono_error("Can't parse the reply to DisplayText()");
 		remove_agent = TRUE;
 		goto error;
@@ -383,17 +391,7 @@ static void display_text_cb(DBusPendingCall *call, void *data)
 
 	cb(result, agent->user_data);
 
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
-		remove_agent = TRUE;
-	else
-		remove_agent = FALSE;
-
-error:
-	stk_agent_request_end(agent);
-	dbus_message_unref(reply);
-
-	if (remove_agent)
-		stk_agent_free(agent);
+	CALLBACK_END();
 }
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
@@ -463,18 +461,7 @@ static void get_confirmation_cb(DBusPendingCall *call, void *data)
 
 	cb(result, confirm, agent->user_data);
 
-done:
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
-		remove_agent = TRUE;
-	else
-		remove_agent = FALSE;
-
-error:
-	stk_agent_request_end(agent);
-	dbus_message_unref(reply);
-
-	if (remove_agent)
-		stk_agent_free(agent);
+	CALLBACK_END();
 }
 
 int stk_agent_request_confirmation(struct stk_agent *agent,
@@ -545,18 +532,7 @@ static void get_digit_cb(DBusPendingCall *call, void *data)
 
 	cb(result, digit, agent->user_data);
 
-done:
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
-		remove_agent = TRUE;
-	else
-		remove_agent = FALSE;
-
-error:
-	stk_agent_request_end(agent);
-	dbus_message_unref(reply);
-
-	if (remove_agent)
-		stk_agent_free(agent);
+	CALLBACK_END();
 }
 
 int stk_agent_request_digit(struct stk_agent *agent,
@@ -624,18 +600,7 @@ static void get_key_cb(DBusPendingCall *call, void *data)
 
 	cb(result, key, agent->user_data);
 
-done:
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
-		remove_agent = TRUE;
-	else
-		remove_agent = FALSE;
-
-error:
-	stk_agent_request_end(agent);
-	dbus_message_unref(reply);
-
-	if (remove_agent)
-		stk_agent_free(agent);
+	CALLBACK_END();
 }
 
 int stk_agent_request_key(struct stk_agent *agent, const char *text,
@@ -702,18 +667,7 @@ static void get_digits_cb(DBusPendingCall *call, void *data)
 
 	cb(result, string, agent->user_data);
 
-done:
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
-		remove_agent = TRUE;
-	else
-		remove_agent = FALSE;
-
-error:
-	stk_agent_request_end(agent);
-	dbus_message_unref(reply);
-
-	if (remove_agent)
-		stk_agent_free(agent);
+	CALLBACK_END();
 }
 
 int stk_agent_request_digits(struct stk_agent *agent, const char *text,
@@ -791,18 +745,7 @@ static void get_input_cb(DBusPendingCall *call, void *data)
 
 	cb(result, string, agent->user_data);
 
-done:
-	if (result == STK_AGENT_RESULT_TERMINATE && agent->remove_on_terminate)
-		remove_agent = TRUE;
-	else
-		remove_agent = FALSE;
-
-error:
-	stk_agent_request_end(agent);
-	dbus_message_unref(reply);
-
-	if (remove_agent)
-		stk_agent_free(agent);
+	CALLBACK_END();
 }
 
 int stk_agent_request_input(struct stk_agent *agent, const char *text,
