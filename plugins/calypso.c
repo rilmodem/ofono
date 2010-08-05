@@ -82,7 +82,10 @@ struct calypso_data {
 	enum powercycle_state state;
 	gboolean phonebook_added;
 	gboolean sms_added;
+	gboolean have_sim;
 };
+
+static const char *cpin_prefix[] = { "+CPIN:", NULL };
 
 static void calypso_debug(const char *str, void *data)
 {
@@ -217,6 +220,34 @@ static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_modem_set_powered(modem, ok);
 }
 
+static void simpin_check_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct calypso_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	/* Modem returns ERROR if there is no SIM in slot. */
+	data->have_sim = ok;
+
+	g_at_chat_send(data->dlcs[SETUP_DLC], "AT+CFUN=1", NULL,
+					cfun_set_on_cb, modem, NULL);
+}
+
+static void init_simpin_check(struct ofono_modem *modem)
+{
+	struct calypso_data *data = ofono_modem_get_data(modem);
+
+	/*
+	 * Check for SIM presence by seeing if AT+CPIN? succeeds.
+	 * The SIM can not be practically inserted/removed without
+	 * restarting the device so there's no need to check more
+	 * than once.
+	 */
+	g_at_chat_send(data->dlcs[SETUP_DLC], "AT+CPIN?", cpin_prefix,
+			simpin_check_cb, modem, NULL);
+}
+
 static void mux_setup(GAtMux *mux, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -254,8 +285,7 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 		g_at_chat_set_wakeup_command(data->dlcs[i], "AT\r", 500, 5000);
 	}
 
-	g_at_chat_send(data->dlcs[SETUP_DLC], "AT+CFUN=1", NULL,
-					cfun_set_on_cb, modem, NULL);
+	init_simpin_check(modem);
 }
 
 static void modem_initialize(struct ofono_modem *modem)
@@ -437,7 +467,7 @@ static void calypso_pre_sim(struct ofono_modem *modem)
 	sim = ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_voicecall_create(modem, 0, "calypsomodem", data->dlcs[VOICE_DLC]);
 
-	if (sim)
+	if (data->have_sim && sim)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
