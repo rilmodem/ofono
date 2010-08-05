@@ -172,6 +172,28 @@ static gboolean password_is_pin(enum ofono_sim_password_type type)
 	return FALSE;
 }
 
+static enum ofono_sim_password_type puk2pin(enum ofono_sim_password_type type)
+{
+	switch (type) {
+	case OFONO_SIM_PASSWORD_SIM_PUK:
+		return OFONO_SIM_PASSWORD_SIM_PIN;
+	case OFONO_SIM_PASSWORD_PHFSIM_PUK:
+		return OFONO_SIM_PASSWORD_PHFSIM_PIN;
+	case OFONO_SIM_PASSWORD_SIM_PUK2:
+		return OFONO_SIM_PASSWORD_SIM_PIN2;
+	case OFONO_SIM_PASSWORD_PHNET_PUK:
+		return OFONO_SIM_PASSWORD_PHNET_PUK;
+	case OFONO_SIM_PASSWORD_PHNETSUB_PUK:
+		return OFONO_SIM_PASSWORD_PHNETSUB_PIN;
+	case OFONO_SIM_PASSWORD_PHSP_PUK:
+		return OFONO_SIM_PASSWORD_PHSP_PIN;
+	case OFONO_SIM_PASSWORD_PHCORP_PUK:
+		return OFONO_SIM_PASSWORD_PHCORP_PIN;
+	default:
+		return OFONO_SIM_PASSWORD_INVALID;
+	}
+}
+
 static char **get_own_numbers(GSList *own_numbers)
 {
 	int nelem = 0;
@@ -1077,6 +1099,10 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 	if (sim->pin_type != pin_type) {
 		sim->pin_type = pin_type;
 		pin_name = sim_passwd_name(pin_type);
+
+		if (pin_type != OFONO_SIM_PASSWORD_NONE &&
+				password_is_pin(pin_type) == FALSE)
+			pin_type = puk2pin(pin_type);
 
 		sim->locked_pins[pin_type] = TRUE;
 
