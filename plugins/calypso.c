@@ -178,6 +178,8 @@ static void setup_modem(struct ofono_modem *modem)
 		g_at_chat_send(data->dlcs[i], "ATE0", NULL, NULL, NULL, NULL);
 		g_at_chat_send(data->dlcs[i], "AT%CUNS=0",
 				NULL, NULL, NULL, NULL);
+		g_at_chat_send(data->dlcs[i], "AT+CMEE=1",
+				NULL, NULL, NULL, NULL);
 	}
 
 	/* CSTAT tells us when SMS & Phonebook are ready to be used */
