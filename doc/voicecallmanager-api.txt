@@ -42,15 +42,15 @@ Methods		dict GetProperties()
 		void SwapCalls()
 
 			Swaps Active and Held calls.  The effect of this
-			is that all calls (0 or more including calls in a 
+			is that all calls (0 or more including calls in a
 			multi-party conversation) that were Active are now Held,
 			and all calls (0 or more) that were Held are now Active.
 
-			GSM specification does not allow calls to be swapped 
+			GSM specification does not allow calls to be swapped
 			in the case where Held, Active and Waiting calls exist.
-			Some modems implement this anyway, thus it is manufacturer
-			specific whether this method will succeed in the case
-			of Held, Active and Waiting calls.
+			Some modems implement this anyway, thus it is
+			manufacturer specific whether this method will succeed
+			in the case of Held, Active and Waiting calls.
 
 			This functionality is generally implemented by using
 			the +CHLD=2 AT command.
@@ -64,7 +64,7 @@ Methods		dict GetProperties()
 
 		void HoldAndAnswer()
 
-			Puts the current call (including multi-party calls) on 
+			Puts the current call (including multi-party calls) on
 			hold and answers the currently waiting call. Calling
 			this function when a user already has a both Active and
 			Held calls is invalid, since in GSM a user can have
@@ -72,7 +72,7 @@ Methods		dict GetProperties()
 
 		void HangupAll()
 
-			Releases all calls. 
+			Releases all calls.
 
 		array{object} PrivateChat(object call)
 
@@ -96,7 +96,7 @@ Methods		dict GetProperties()
 			participating in the multiparty call.
 
 			There can only be one subscriber controlled multi-party
-			call according to the GSM specification.  
+			call according to the GSM specification.
 
 			This is usually implemented using the +CHLD=3 AT
 			command.
