@@ -80,7 +80,7 @@ struct ofono_sim {
 	gboolean sdn_ready;
 	enum ofono_sim_state state;
 	enum ofono_sim_password_type pin_type;
-	gboolean locked_pins[OFONO_SIM_PASSWORD_INVALID];
+	gboolean locked_pins[OFONO_SIM_PASSWORD_SIM_PUK]; /* Number of PINs */
 	char **language_prefs;
 	GQueue *simop_q;
 	gint simop_source;
@@ -222,11 +222,8 @@ static char **get_locked_pins(struct ofono_sim *sim)
 	int nelem = 0;
 	char **ret;
 
-	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++) {
+	for (i = 1; i < OFONO_SIM_PASSWORD_SIM_PUK; i++) {
 		if (sim->locked_pins[i] == FALSE)
-			continue;
-
-		if (password_is_pin(i) == FALSE)
 			continue;
 
 		nelem += 1;
@@ -236,11 +233,8 @@ static char **get_locked_pins(struct ofono_sim *sim)
 
 	nelem = 0;
 
-	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++) {
+	for (i = 1; i < OFONO_SIM_PASSWORD_SIM_PUK; i++) {
 		if (sim->locked_pins[i] == FALSE)
-			continue;
-
-		if (password_is_pin(i) == FALSE)
 			continue;
 
 		ret[nelem] = g_strdup(sim_passwd_name(i));
@@ -536,6 +530,7 @@ static void sim_locked_cb(struct ofono_sim *sim, gboolean locked)
 
 	type = sim_string_to_passwd(typestr);
 
+	/* This is used by lock/unlock pin, no puks allowed */
 	sim->locked_pins[type] = locked;
 	__ofono_dbus_pending_reply(&sim->pending, reply);
 
@@ -1104,7 +1099,8 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 				password_is_pin(pin_type) == FALSE)
 			pin_type = puk2pin(pin_type);
 
-		sim->locked_pins[pin_type] = TRUE;
+		if (pin_type != OFONO_SIM_PASSWORD_INVALID)
+			sim->locked_pins[pin_type] = TRUE;
 
 		ofono_dbus_signal_property_changed(conn, path,
 						OFONO_SIM_MANAGER_INTERFACE,
