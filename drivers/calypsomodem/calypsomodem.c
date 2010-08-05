@@ -35,12 +35,14 @@
 static int calypsomodem_init(void)
 {
 	calypso_voicecall_init();
+	calypso_stk_init();
 
 	return 0;
 }
 
 static void calypsomodem_exit(void)
 {
+	calypso_stk_exit();
 	calypso_voicecall_exit();
 }
 

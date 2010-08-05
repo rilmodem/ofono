@@ -20,6 +20,11 @@
  */
 
 #include <drivers/atmodem/atutil.h>
+#include <modem.h>
+#include <stk.h>
 
 extern void calypso_voicecall_init();
 extern void calypso_voicecall_exit();
+
+extern void calypso_stk_init();
+extern void calypso_stk_exit();

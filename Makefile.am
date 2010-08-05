@@ -169,7 +169,8 @@ builtin_modules += calypsomodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/calypsomodem/calypsomodem.h \
 			drivers/calypsomodem/calypsomodem.c \
-			drivers/calypsomodem/voicecall.c
+			drivers/calypsomodem/voicecall.c \
+			drivers/calypsomodem/stk.c
 
 builtin_modules += hfpmodem
 builtin_sources += drivers/atmodem/atutil.h \
