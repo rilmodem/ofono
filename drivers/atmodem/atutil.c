@@ -40,6 +40,12 @@ void decode_at_error(struct ofono_error *error, const char *final)
 	if (!strcmp(final, "OK")) {
 		error->type = OFONO_ERROR_TYPE_NO_ERROR;
 		error->error = 0;
+	} else if (g_str_has_prefix(final, "+CMS ERROR:")) {
+		error->type = OFONO_ERROR_TYPE_CMS;
+		error->error = strtol(&final[11], NULL, 0);
+	} else if (g_str_has_prefix(final, "+CME ERROR:")) {
+		error->type = OFONO_ERROR_TYPE_CME;
+		error->error = strtol(&final[11], NULL, 0);
 	} else {
 		error->type = OFONO_ERROR_TYPE_FAILURE;
 		error->error = 0;
