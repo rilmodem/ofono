@@ -54,6 +54,7 @@
 #include <ofono/ssn.h>
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
+#include <ofono/stk.h>
 
 #include <drivers/atmodem/vendor.h>
 
@@ -86,6 +87,7 @@ struct calypso_data {
 };
 
 static const char *cpin_prefix[] = { "+CPIN:", NULL };
+static const char *none_prefix[] = { NULL };
 
 static void calypso_debug(const char *str, void *data)
 {
@@ -197,31 +199,6 @@ static void setup_modem(struct ofono_modem *modem)
 			NULL, NULL, NULL);
 }
 
-static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct calypso_data *data = ofono_modem_get_data(modem);
-
-	DBG("");
-
-	if (ok == FALSE) {
-		int i;
-
-		for (i = 0; i < NUM_DLC; i++) {
-			g_at_chat_unref(data->dlcs[i]);
-			data->dlcs[i] = NULL;
-		}
-
-		g_at_mux_shutdown(data->mux);
-		g_at_mux_unref(data->mux);
-		data->mux = NULL;
-	} else {
-		setup_modem(modem);
-	}
-
-	ofono_modem_set_powered(modem, ok);
-}
-
 static void simpin_check_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -232,8 +209,9 @@ static void simpin_check_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	/* Modem returns ERROR if there is no SIM in slot. */
 	data->have_sim = ok;
 
-	g_at_chat_send(data->dlcs[SETUP_DLC], "AT+CFUN=1", NULL,
-					cfun_set_on_cb, modem, NULL);
+	setup_modem(modem);
+
+	ofono_modem_set_powered(modem, TRUE);
 }
 
 static void init_simpin_check(struct ofono_modem *modem)
@@ -468,6 +446,55 @@ static void calypso_pre_sim(struct ofono_modem *modem)
 	ofono_devinfo_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	sim = ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_voicecall_create(modem, 0, "calypsomodem", data->dlcs[VOICE_DLC]);
+
+	/*
+	 * The STK atom is only useful after SIM has been initialised,
+	 * so really it belongs in post_sim.  However, the order of the
+	 * following three actions is adapted to work around different
+	 * issues with the Calypso's firmware in its different versions
+	 * (may have been fixed starting at some version, but this order
+	 * should work with any version).
+	 *
+	 * To deal with PIN-enabled and PIN-disabled SIM cards, the order
+	 * needs to be as follows:
+	 *
+	 * AT%SATC="..."
+	 * ...
+	 * AT+CFUN=1
+	 * ...
+	 * AT+CPIN="..."
+	 *
+	 * %SATC comes before the other two actions because it provides
+	 * the Terminal Profile data to the modem, which will be used
+	 * during the Profile Download either during +CFUN=1 (on
+	 * unprotected cards) or +CPIN="..." (on protected cards).
+	 * The STK atom needs to be present at this time because the
+	 * card may start issuing proactive commands immediately after
+	 * the Download.
+	 *
+	 * +CFUN=1 appears before PIN entry because switching from +CFUN
+	 * mode 0 later, on the Calypso has side effects at least on some
+	 * versions of the firmware:
+	 *
+	 * mode 0 -> 1 transition forces PIN re-authentication.
+	 * mode 0 -> 4 doesn't work at all.
+	 * mode 1 -> 4 and
+	 * mode 4 -> 1 transitions work and have no side effects.
+	 *
+	 * So in order to switch to Offline mode at startup,
+	 * AT+CFUN=1;+CFUN=4 would be needed.
+	 *
+	 * Additionally AT+CFUN=1 response is not checked: on PIN-enabled
+	 * cards, it will in most situations return "+CME ERROR: SIM PIN
+	 * required" (CME ERROR 11) even though the switch to mode 1
+	 * succeeds.  It will not perform Profile Download on those cards
+	 * though, until another +CPIN command.
+	 */
+	if (data->have_sim && sim)
+		ofono_stk_create(modem, 0, "calypsomodem", data->dlcs[AUX_DLC]);
+
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=1",
+			none_prefix, NULL, NULL, NULL);
 
 	if (data->have_sim && sim)
 		ofono_sim_inserted_notify(sim, TRUE);
