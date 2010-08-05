@@ -289,8 +289,6 @@ static void phonesim_pre_sim(struct ofono_modem *modem)
 	else
 		ofono_voicecall_create(modem, 0, "atmodem", data->chat);
 
-	ofono_stk_create(modem, OFONO_VENDOR_PHONESIM, "atmodem", data->chat);
-
 	if (sim)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
@@ -303,6 +301,10 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
+
+	if (!data->calypso)
+		ofono_stk_create(modem, OFONO_VENDOR_PHONESIM,
+					"atmodem", data->chat);
 
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
