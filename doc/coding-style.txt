@@ -149,6 +149,30 @@ Any time when creating a new header file with non-public API, that header
 must not contain include guards.
 
 
+M11: Naming of enums
+====================
+
+Enums must have a descriptive name.  The enum type should be small caps and
+it should not be typedef-ed.  Enum contents should be in CAPITAL letters and
+prefixed by the enum type name.
+
+Example:
+
+enum animal_type {
+	ANIMAL_TYPE_FOUR_LEGS,
+	ANIMAL_TYPE_EIGHT_LEGS,
+	ANIMAL_TYPE_TWO_LEGS,
+};
+
+If the enum contents have values (e.g. from specification) the preferred
+formatting is as follows:
+
+enum animal type {
+	ANIMAL_TYPE_FOUR_LEGS =		4,
+	ANIMAL_TYPE_EIGHT_LEGS =	8,
+	ANIMAL_TYPE_TWO_LEGS =		2,
+};
+
 O1: Shorten the name
 ====================
 Better to use abbreviation, rather than full name, to name a variable,
