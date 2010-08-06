@@ -29,6 +29,7 @@
 
 #include <glib.h>
 #include <gdbus.h>
+#include <sys/time.h>
 
 #include "ofono.h"
 
@@ -544,6 +545,52 @@ static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
 	}
 }
 
+/**
+ * Generate a UUID from an SMS PDU List
+ *
+ * @param pdu Pointer to array of PDUs data to generate the ID from
+ * @param pdus Number of entries in the \e pdu array
+ * @return 0 in error (no memory or serious code inconsistency in the
+ *     input data structures), otherwise the SMS UUID.
+ *
+ * @internal
+ *
+ * Note we use memcpy() instead of dropping the uuid param straight to
+ * g_checksum_get_digest(). This is because g_checksum_get_digest()
+ * seems to randomly not copy the digest data if the buffer is smaller
+ * than what the digest should have.
+ *
+ * The current time is added to avoid the UUID being the same when the
+ * same message is sent to the same destination repeatedly. Note we
+ * need a high resolution time (not just seconds), otherwise resending
+ * in the same second (not that rare) could yield the same UUID.
+ */
+static unsigned int sms_uuid_from_pdus(const struct pending_pdu *pdu,
+					size_t pdus)
+{
+	unsigned int uuid = 0;
+	GChecksum *checksum;
+	gsize uuid_size = g_checksum_type_get_length(G_CHECKSUM_SHA256);
+	guint8 data[uuid_size];
+	unsigned cnt;
+	struct timeval now;
+
+	checksum = g_checksum_new(G_CHECKSUM_SHA256);
+	if (checksum == NULL)
+		goto error_new;
+
+	for (cnt = 0; cnt < pdus; cnt++)
+		g_checksum_update(checksum, pdu[cnt].pdu, pdu[cnt].pdu_len);
+
+	gettimeofday(&now, NULL);
+	g_checksum_update(checksum, (void *) &now, sizeof(now));
+	g_checksum_get_digest(checksum, data, &uuid_size);
+	memcpy(&uuid, data, MIN(sizeof(uuid), sizeof(data)));
+	g_checksum_free(checksum);
+error_new:
+	return uuid;
+}
+
 static struct tx_queue_entry *tx_queue_entry_new(GSList *msg_list)
 {
 	struct tx_queue_entry *entry = g_new0(struct tx_queue_entry, 1);
@@ -562,6 +609,8 @@ static struct tx_queue_entry *tx_queue_entry_new(GSList *msg_list)
 		DBG("pdu_len: %d, tpdu_len: %d",
 				pdu->pdu_len, pdu->tpdu_len);
 	}
+
+	entry->msg_id = sms_uuid_from_pdus(entry->pdus, entry->num_pdus);
 
 	return entry;
 }
@@ -1388,7 +1437,6 @@ unsigned int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 				sizeof(entry->receiver));
 	}
 
-	entry->msg_id = sms->next_msg_id++;
 	entry->flags = flags;
 	entry->cb = cb;
 	entry->data = data;
