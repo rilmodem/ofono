@@ -90,8 +90,8 @@ error:
 }
 
 static void calypso_stk_envelope(struct ofono_stk *stk, int length,
-				const unsigned char *command,
-				ofono_stk_envelope_cb_t cb, void *data)
+					const unsigned char *command,
+					ofono_stk_envelope_cb_t cb, void *data)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -102,8 +102,10 @@ static void calypso_stk_envelope(struct ofono_stk *stk, int length,
 		goto error;
 
 	len = sprintf(buf, "AT%%SATE=\"");
+
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhX", *command++);
+
 	len += sprintf(buf + len, "\"");
 
 	ret = g_at_chat_send(sd->chat, buf, sate_prefix,
@@ -134,8 +136,9 @@ static void calypso_satr_cb(gboolean ok, GAtResult *result,
 }
 
 static void calypso_stk_terminal_response(struct ofono_stk *stk, int length,
-				const unsigned char *command,
-				ofono_stk_generic_cb_t cb, void *data)
+						const unsigned char *command,
+						ofono_stk_generic_cb_t cb,
+						void *data)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -146,8 +149,10 @@ static void calypso_stk_terminal_response(struct ofono_stk *stk, int length,
 		goto error;
 
 	len = sprintf(buf, "AT%%SATR=\"");
+
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhX", *command++);
+
 	len += sprintf(buf + len, "\"");
 
 	ret = g_at_chat_send(sd->chat, buf, none_prefix,
@@ -208,7 +213,7 @@ static void satn_notify(GAtResult *result, gpointer user_data)
 }
 
 static void calypso_stk_register(gboolean ok,
-		GAtResult *result, gpointer user_data)
+					GAtResult *result, gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 	struct stk_data *sd = ofono_stk_get_data(stk);
@@ -224,7 +229,7 @@ static void calypso_stk_register(gboolean ok,
 }
 
 static int calypso_stk_probe(struct ofono_stk *stk,
-		unsigned int vendor, void *data)
+				unsigned int vendor, void *data)
 {
 	GAtChat *chat = data;
 	struct stk_data *sd;
