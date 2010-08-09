@@ -173,26 +173,7 @@ static struct conn_info *conn_info_create(unsigned int device,
  */
 static gboolean caif_if_create(const char *interface, unsigned int connid)
 {
-	int s;
-	static struct ifcaif_param param;
-	static struct ifreq ifr;
-
-	param.ipv4_connid = connid;
-	ifr.ifr_data = (void *) &param;
-	strcpy(ifr.ifr_name, interface);
-
-	s = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
-	if (s < 0) {
-		DBG("Failed to create socket for CAIF interface");
-		return FALSE;
-	}
-
-	if (ioctl(s, SIOCCAIFNETNEW, &ifr) < 0) {
-		DBG("Failed to create IP interface for CAIF");
-		return FALSE;
-	}
-
-	return TRUE;
+	return FALSE;
 }
 
 /*
@@ -200,32 +181,7 @@ static gboolean caif_if_create(const char *interface, unsigned int connid)
  */
 static gboolean caif_if_remove(const char *interface, unsigned int connid)
 {
-	int s;
-	static struct ifcaif_param param;
-	static struct ifreq ifr;
-
-	param.ipv4_connid = connid;
-	ifr.ifr_data = (void *) &param;
-	strcpy(ifr.ifr_name, interface);
-
-	s = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
-	if (s < 0) {
-		DBG("Failed to create socket for CAIF interface");
-		return FALSE;
-	}
-
-	if (ioctl(s, SIOCGIFINDEX, &ifr) != 0) {
-		DBG("Did not find interface (%s) to remove",
-				interface);
-		return FALSE;
-	}
-
-	if (ioctl(s, SIOCCAIFNETREMOVE, &ifr) < 0) {
-		DBG("Failed to remove IP interface for CAIF");
-		return FALSE;
-	}
-
-	return TRUE;
+	return FALSE;
 }
 
 static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
