@@ -69,6 +69,8 @@ struct ofono_voicecall_driver {
 			ofono_voicecall_cb_t cb, void *data);
 	void (*hangup_active)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	void (*hangup_all)(struct ofono_voicecall *vc,
+			ofono_voicecall_cb_t cb, void *data);
 	void (*hold_all_active)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
 	void (*release_all_held)(struct ofono_voicecall *vc,

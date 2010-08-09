@@ -261,15 +261,18 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	/* According to various specs, other than 27.007, +CHUP is used
-	 * to reject an incoming call
-	 */
 	if (call->status == CALL_STATUS_INCOMING) {
-		if (vc->driver->hangup == NULL)
+
+		if (vc->driver->hangup_all == NULL &&
+				vc->driver->hangup_active == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		vc->pending = dbus_message_ref(msg);
-		vc->driver->hangup(vc, generic_callback, vc);
+
+		if (vc->driver->hangup_all)
+			vc->driver->hangup_all(vc, generic_callback, vc);
+		else
+			vc->driver->hangup_active(vc, generic_callback, vc);
 
 		return NULL;
 	}
@@ -286,12 +289,18 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 
 	num_calls = g_slist_length(vc->call_list);
 
-	if (num_calls == 1 && vc->driver->hangup &&
+	if (num_calls == 1 &&
 			(call->status == CALL_STATUS_ACTIVE ||
 				call->status == CALL_STATUS_DIALING ||
-				call->status == CALL_STATUS_ALERTING)) {
+				call->status == CALL_STATUS_ALERTING) &&
+				(vc->driver->hangup_all != NULL ||
+					vc->driver->hangup_active != NULL)) {
 		vc->pending = dbus_message_ref(msg);
-		vc->driver->hangup(vc, generic_callback, vc);
+
+		if (vc->driver->hangup_all)
+			vc->driver->hangup_all(vc, generic_callback, vc);
+		else
+			vc->driver->hangup_active(vc, generic_callback, vc);
 
 		return NULL;
 	}
@@ -300,6 +309,15 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 			call->status == CALL_STATUS_HELD) {
 		vc->pending = dbus_message_ref(msg);
 		vc->driver->release_all_held(vc, generic_callback, vc);
+
+		return NULL;
+	}
+
+	if (vc->driver->hangup_active != NULL &&
+		(call->status == CALL_STATUS_ALERTING ||
+			call->status == CALL_STATUS_DIALING)) {
+		vc->pending = dbus_message_ref(msg);
+		vc->driver->hangup_active(vc, generic_callback, vc);
 
 		return NULL;
 	}
@@ -762,7 +780,14 @@ static void voicecalls_release_next(struct ofono_voicecall *vc)
 
 	vc->release_list = g_slist_remove(vc->release_list, call);
 
-	vc->driver->release_specific(vc, call->call->id,
+	if (vc->driver->hangup_active != NULL &&
+			(call->call->status == CALL_STATUS_ALERTING ||
+				call->call->status == CALL_STATUS_DIALING ||
+				call->call->status == CALL_STATUS_INCOMING))
+
+		vc->driver->hangup_active(vc, multirelease_callback, vc);
+	else
+		vc->driver->release_specific(vc, call->call->id,
 						multirelease_callback, vc);
 }
 
@@ -1119,7 +1144,9 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	if (!vc->driver->release_specific)
+	if (vc->driver->hangup_all == NULL &&
+		(vc->driver->release_specific == NULL ||
+			vc->driver->hangup_active == NULL))
 		return __ofono_error_not_implemented(msg);
 
 	if (vc->call_list == NULL) {
@@ -1131,9 +1158,12 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 
 	vc->pending = dbus_message_ref(msg);
 
-	voicecalls_release_queue(vc, vc->call_list);
-	voicecalls_release_next(vc);
-
+	if (vc->driver->hangup_all != NULL)
+		vc->driver->hangup_all(vc, generic_callback, vc);
+	else {
+		voicecalls_release_queue(vc, vc->call_list);
+		voicecalls_release_next(vc);
+	}
 	return NULL;
 }
 
