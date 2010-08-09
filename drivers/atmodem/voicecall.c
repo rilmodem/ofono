@@ -409,7 +409,7 @@ static void at_answer(struct ofono_voicecall *vc,
 static void at_hangup(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	/* Hangup all calls */
+	/* Hangup active call */
 	at_template("AT+CHUP", vc, generic_cb, 0x3f, cb, data);
 }
 
@@ -874,7 +874,7 @@ static struct ofono_voicecall_driver driver = {
 	.remove			= at_voicecall_remove,
 	.dial			= at_dial,
 	.answer			= at_answer,
-	.hangup			= at_hangup,
+	.hangup_active		= at_hangup,
 	.hold_all_active	= at_hold_all_active,
 	.release_all_held	= at_release_all_held,
 	.set_udub		= at_set_udub,
