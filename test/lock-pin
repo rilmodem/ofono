@@ -1,0 +1,27 @@
+#!/usr/bin/python
+
+import dbus
+import sys
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 4:
+	path = sys.argv[1]
+	pin_type = sys.argv[2]
+	pin = sys.argv[3]
+elif len(sys.argv) == 3:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+				 'org.ofono.Manager')
+	properties = manager.GetProperties()
+	path = properties["Modems"][0]
+	pin_type = sys.argv[1]
+	pin = sys.argv[2]
+else:
+	print "%s [PATH] pin_type pin" % (sys.argv[0])
+	sys.exit(0)
+
+print "Lock %s %s for modem %s..." % (pin_type, pin, path)
+
+simmanager = dbus.Interface(bus.get_object('org.ofono', path),
+			    'org.ofono.SimManager')
+simmanager.LockPin(pin_type, pin)
