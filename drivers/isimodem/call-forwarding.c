@@ -426,9 +426,8 @@ static gboolean query_resp_cb(GIsiClient *client,
 							&ton, &norply, &number))
 				goto error;
 
-			list.status = status & (SS_GSM_ACTIVE
-						| SS_GSM_REGISTERED
-						| SS_GSM_PROVISIONED);
+			/* As in 27.007 section 7.11 */
+			list.status = status & SS_GSM_ACTIVE;
 			list.time = norply;
 			list.phone_number.type = ton | 128;
 			strncpy(list.phone_number.number, number,
