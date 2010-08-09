@@ -1262,6 +1262,9 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 		return;
 	}
 
+	gprs_cid_release(gprs, ctx->context.cid);
+	ctx->context.cid = 0;
+
 	if (gprs->settings) {
 		g_key_file_remove_group(gprs->settings, ctx->key, NULL);
 		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
