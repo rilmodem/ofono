@@ -93,9 +93,6 @@ if DATAFILES
 conf_DATA += plugins/modem.conf
 endif
 
-builtin_modules += caif
-builtin_sources += plugins/caif.c
-
 if ISIMODEM
 builtin_modules += isimodem
 builtin_sources += $(gisi_sources) \
@@ -247,6 +244,9 @@ builtin_sources += plugins/palmpre.c
 
 builtin_modules += ste
 builtin_sources += plugins/ste.c
+
+builtin_modules += caif
+builtin_sources += plugins/caif.c
 endif
 
 if MAINTAINER_MODE
