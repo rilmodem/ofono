@@ -39,7 +39,10 @@ for path in properties["Modems"]:
 
 		interface = settings["Interface"]
 		address = settings["Address"]
-		gateway = settings["Gateway"]
+		try:
+			gateway = settings["Gateway"]
+		except:
+			gateway = "0.0.0.0";
 
 		if settings["Method"] == "dhcp":
 			print "    Run DHCP on interface %s" % (interface)

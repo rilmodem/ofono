@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
 	call.connect_to_signal("PropertyChanged", voicecall_property_changed)
 
-	gobject.timeout_add(10000, hangup_all)
+	gobject.timeout_add(1000000, hangup_all)
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()
