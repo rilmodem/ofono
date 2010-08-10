@@ -48,6 +48,8 @@
 #include "gpds.h"
 #include "debug.h"
 
+#define STATIC_IP_NETMASK "255.255.255.255"
+
 #define INVALID_ID (0xff)
 # if (INVALID_ID < GPDS_MAX_CONTEXT_COUNT)
 #   error Uho! This should not happen!
@@ -271,8 +273,9 @@ static void activate_ind_cb(GIsiClient *client,
 	dns[1] = sdns;
 	dns[2] = 0;
 
-	CALLBACK_WITH_SUCCESS(cd->up_cb, ifname, 0, (const char *)ip, 0, NULL,
-				dns, cd->data);
+	CALLBACK_WITH_SUCCESS(cd->up_cb, ifname, TRUE, (const char *)ip,
+					STATIC_IP_NETMASK, NULL,
+					dns, cd->data);
 	return;
 
 error:
