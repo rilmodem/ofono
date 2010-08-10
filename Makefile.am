@@ -86,6 +86,13 @@ rules_DATA = $(foreach file,$(udev_files), plugins/97-$(notdir $(file)))
 endif
 endif
 
+builtin_modules += modemconf
+builtin_sources += plugins/modemconf.c
+
+if DATAFILES
+conf_DATA += plugins/modem.conf
+endif
+
 builtin_modules += caif
 builtin_sources += plugins/caif.c
 
@@ -127,7 +134,6 @@ builtin_sources += $(gisi_sources) \
 
 builtin_modules += usbpnmodem
 builtin_sources += plugins/usbpnmodem.c
-
 endif
 
 if ATMODEM
@@ -203,13 +209,6 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/caif_socket.h \
 			drivers/stemodem/if_caif.h
 
-builtin_modules += modemconf
-builtin_sources += plugins/modemconf.c
-
-if DATAFILES
-conf_DATA += plugins/modem.conf
-endif
-
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
 
@@ -248,7 +247,6 @@ builtin_sources += plugins/palmpre.c
 
 builtin_modules += ste
 builtin_sources += plugins/ste.c
-
 endif
 
 if MAINTAINER_MODE
