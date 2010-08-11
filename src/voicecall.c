@@ -766,12 +766,19 @@ static void emit_multiparty_call_list_changed(struct ofono_voicecall *vc)
 static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls)
 {
 	GSList *l;
+	struct ofono_call *call;
 
 	g_slist_free(vc->release_list);
 	vc->release_list = NULL;
 
-	for (l = calls; l; l = l->next)
+	for (l = calls; l; l = l->next) {
+		call = l->data;
+
+		if (call->status == CALL_STATUS_WAITING)
+			continue;
+
 		vc->release_list = g_slist_prepend(vc->release_list, l->data);
+	}
 }
 
 static void voicecalls_release_next(struct ofono_voicecall *vc)
