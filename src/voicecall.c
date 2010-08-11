@@ -573,8 +573,8 @@ static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_ACTIVE ||
-			v->call->status == CALL_STATUS_DIALING ||
-			v->call->status == CALL_STATUS_ALERTING)
+				v->call->status == CALL_STATUS_DIALING ||
+				v->call->status == CALL_STATUS_ALERTING)
 			return TRUE;
 	}
 
@@ -789,7 +789,6 @@ static void voicecalls_release_next(struct ofono_voicecall *vc)
 			(call->call->status == CALL_STATUS_ALERTING ||
 				call->call->status == CALL_STATUS_DIALING ||
 				call->call->status == CALL_STATUS_INCOMING))
-
 		vc->driver->hangup_active(vc, multirelease_callback, vc);
 	else
 		vc->driver->release_specific(vc, call->call->id,
