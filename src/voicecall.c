@@ -253,16 +253,16 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	struct voicecall *v = data;
 	struct ofono_voicecall *vc = v->vc;
 	struct ofono_call *call = v->call;
-	int num_calls;
-
-	if (call->status == CALL_STATUS_DISCONNECTED)
-		return __ofono_error_failed(msg);
+	gboolean single_call = vc->call_list->next != 0;
 
 	if (vc->pending)
 		return __ofono_error_busy(msg);
 
-	if (call->status == CALL_STATUS_INCOMING) {
+	switch (call->status) {
+	case CALL_STATUS_DISCONNECTED:
+		return __ofono_error_failed(msg);
 
+	case CALL_STATUS_INCOMING:
 		if (vc->driver->hangup_all == NULL &&
 				vc->driver->hangup_active == NULL)
 			return __ofono_error_not_implemented(msg);
@@ -275,9 +275,8 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 			vc->driver->hangup_active(vc, generic_callback, vc);
 
 		return NULL;
-	}
 
-	if (call->status == CALL_STATUS_WAITING) {
+	case CALL_STATUS_WAITING:
 		if (vc->driver->set_udub == NULL)
 			return __ofono_error_not_implemented(msg);
 
@@ -285,41 +284,47 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 		vc->driver->set_udub(vc, generic_callback, vc);
 
 		return NULL;
-	}
 
-	num_calls = g_slist_length(vc->call_list);
+	case CALL_STATUS_HELD:
+		if (single_call && vc->driver->release_all_held) {
+			vc->pending = dbus_message_ref(msg);
+			vc->driver->release_all_held(vc, generic_callback, vc);
 
-	if (num_calls == 1 &&
-			(call->status == CALL_STATUS_ACTIVE ||
-				call->status == CALL_STATUS_DIALING ||
-				call->status == CALL_STATUS_ALERTING) &&
-				(vc->driver->hangup_all != NULL ||
-					vc->driver->hangup_active != NULL)) {
-		vc->pending = dbus_message_ref(msg);
+			return NULL;
+		}
 
-		if (vc->driver->hangup_all)
-			vc->driver->hangup_all(vc, generic_callback, vc);
-		else
+		break;
+
+	case CALL_STATUS_DIALING:
+	case CALL_STATUS_ALERTING:
+		if (vc->driver->hangup_active != NULL) {
+			vc->pending = dbus_message_ref(msg);
 			vc->driver->hangup_active(vc, generic_callback, vc);
 
-		return NULL;
-	}
+			return NULL;
+		}
 
-	if (num_calls == 1 && vc->driver->release_all_held &&
-			call->status == CALL_STATUS_HELD) {
-		vc->pending = dbus_message_ref(msg);
-		vc->driver->release_all_held(vc, generic_callback, vc);
+		/*
+		 * Fall through, we check if we have a single alerting,
+		 * dialing or active call and try to hang it up with
+		 * hangup_all or hangup_active
+		 */
+	case CALL_STATUS_ACTIVE:
+		if (single_call == TRUE && vc->driver->hangup_all != NULL) {
+			vc->pending = dbus_message_ref(msg);
+			vc->driver->hangup_all(vc, generic_callback, vc);
 
-		return NULL;
-	}
+			return NULL;
+		}
 
-	if (vc->driver->hangup_active != NULL &&
-		(call->status == CALL_STATUS_ALERTING ||
-			call->status == CALL_STATUS_DIALING)) {
-		vc->pending = dbus_message_ref(msg);
-		vc->driver->hangup_active(vc, generic_callback, vc);
+		if (single_call == TRUE && vc->driver->hangup_active != NULL) {
+			vc->pending = dbus_message_ref(msg);
+			vc->driver->hangup_active(vc, generic_callback, vc);
 
-		return NULL;
+			return NULL;
+		}
+
+		break;
 	}
 
 	if (vc->driver->release_specific == NULL)
