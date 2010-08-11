@@ -97,6 +97,8 @@ static int stk_respond(struct ofono_stk *stk, struct stk_response *rsp,
 	const guint8 *tlv;
 	unsigned int tlv_len;
 
+	DBG("");
+
 	if (stk->driver->terminal_response == NULL)
 		return -ENOSYS;
 
@@ -134,6 +136,8 @@ static void send_simple_response(struct ofono_stk *stk,
 	struct stk_response rsp;
 	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 
+	DBG("result %d", result);
+
 	memset(&rsp, 0, sizeof(rsp));
 	rsp.result.type = result;
 
@@ -147,6 +151,8 @@ static void envelope_cb(const struct ofono_error *error, const uint8_t *data,
 	struct ofono_stk *stk = user_data;
 	struct envelope_op *op = g_queue_peek_head(stk->envelope_q);
 	gboolean result = TRUE;
+
+	DBG("length %d", length);
 
 	if (op->retries > 0 && error->type == OFONO_ERROR_TYPE_SIM &&
 			error->error == 0x9300) {
@@ -186,6 +192,8 @@ static int stk_send_envelope(struct ofono_stk *stk, struct stk_envelope *e,
 	const uint8_t *tlv;
 	unsigned int tlv_len;
 	struct envelope_op *op;
+
+	DBG("");
 
 	if (stk->driver->envelope == NULL)
 		return -ENOSYS;
@@ -230,6 +238,8 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg)
 	struct stk_envelope e;
 	int err;
 
+	DBG("");
+
 	memset(&e, 0, sizeof(e));
 
 	e.type = STK_ENVELOPE_TYPE_CBS_PP_DOWNLOAD;
@@ -250,6 +260,8 @@ static struct stk_menu *stk_menu_create(const char *title,
 	struct stk_menu *ret = g_new(struct stk_menu, 1);
 	GSList *l;
 	int i;
+
+	DBG("");
 
 	ret->title = g_strdup(title ? title : "");
 	ret->icon_id = 0;
@@ -445,10 +457,10 @@ static void session_agent_notify(gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
-	ofono_debug("Session Agent removed");
+	DBG("Session Agent removed");
 
 	if (stk->current_agent == stk->session_agent && agent_called(stk)) {
-		ofono_debug("Sending Terminate response for session agent");
+		DBG("Sending Terminate response for session agent");
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 	}
 
@@ -542,6 +554,8 @@ static void menu_selection_envelope_cb(struct ofono_stk *stk, gboolean ok,
 	const char *agent_path;
 	DBusMessage *reply;
 
+	DBG("");
+
 	if (!ok) {
 		ofono_error("Sending Menu Selection to UICC failed");
 
@@ -590,6 +604,8 @@ static DBusMessage *stk_select_item(DBusConnection *conn,
 	struct stk_envelope e;
 	struct stk_menu *menu = stk->main_menu;
 
+	DBG("");
+
 	if (stk->pending)
 		return __ofono_error_busy(msg);
 
@@ -615,6 +631,8 @@ static DBusMessage *stk_select_item(DBusConnection *conn,
 	e.src = STK_DEVICE_IDENTITY_TYPE_KEYPAD,
 	e.menu_selection.item_id = menu->items[selection].item_id;
 	e.menu_selection.help_request = FALSE;
+
+	DBG("");
 
 	if (stk_send_envelope(stk, &e, menu_selection_envelope_cb, 0))
 		return __ofono_error_failed(msg);
@@ -667,10 +685,10 @@ static void send_sms_submit_cb(gboolean ok, void *data)
 	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_response rsp;
 
-	ofono_debug("SMS submission %s", ok ? "successful" : "failed");
+	DBG("SMS submission %s", ok ? "successful" : "failed");
 
 	if (req->cancelled) {
-		ofono_debug("Received an SMS submitted callback after the "
+		DBG("Received an SMS submitted callback after the "
 				"proactive command was cancelled");
 		return;
 	}
