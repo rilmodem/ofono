@@ -55,6 +55,8 @@ static void mbm_stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const guint8 *pdu = NULL;
 	gint len = 0;
 
+	DBG("");
+
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
@@ -84,6 +86,8 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 	char *buf = g_try_new(char, 64 + length * 2);
 	int len, ret;
 
+	DBG("");
+
 	if (!cbd || !buf)
 		goto error;
 
@@ -92,8 +96,12 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 		len += sprintf(buf + len, "%02hhX", *command++);
 	len += sprintf(buf + len, "\"");
 
+	DBG("%s", buf);
+
 	ret = g_at_chat_send(sd->chat, buf, stke_prefix,
 				mbm_stke_cb, cbd, g_free);
+
+	DBG("ret %d", ret);
 
 	g_free(buf);
 	buf = NULL;
@@ -114,6 +122,8 @@ static void mbm_stkr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_stk_generic_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
+	DBG("");
+
 	decode_at_error(&error, g_at_result_final_response(result));
 	cb(&error, cbd->data);
 }
@@ -126,6 +136,8 @@ static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 64 + length * 2);
 	int len, ret;
+
+	DBG("");
 
 	if (!cbd || !buf)
 		goto error;
@@ -158,6 +170,8 @@ static void stki_notify(GAtResult *result, gpointer user_data)
 	const guint8 *pdu;
 	gint len;
 
+	DBG("");
+
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "*STKI:"))
@@ -171,6 +185,8 @@ static void stki_notify(GAtResult *result, gpointer user_data)
 
 static void stkn_notify(GAtResult *result, gpointer user_data)
 {
+	DBG("");
+
 	/* Proactive command has been handled by the modem.  Should
 	 * the core be notified?  For now we just ignore it because
 	 * we must not respond to the command.
@@ -181,6 +197,8 @@ static void stkend_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
+	DBG("");
+
 	ofono_stk_proactive_session_end_notify(stk);
 }
 
@@ -188,6 +206,8 @@ static void mbm_stkc_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 	struct stk_data *sd = ofono_stk_get_data(stk);
+
+	DBG("");
 
 	if (!ok)
 		return;
@@ -205,6 +225,8 @@ static int mbm_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 	GAtChat *chat = data;
 	struct stk_data *sd;
 
+	DBG("");
+
 	sd = g_new0(struct stk_data, 1);
 	sd->chat = chat;
 
@@ -220,6 +242,8 @@ static int mbm_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 static void mbm_stk_remove(struct ofono_stk *stk)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
+
+	DBG("");
 
 	ofono_stk_set_data(stk, NULL);
 
