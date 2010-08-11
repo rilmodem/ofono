@@ -1,8 +1,8 @@
-SmsManager hierarchy
+Message Manager hierarchy
 ===============
 
 Service		org.ofono
-Interface	org.ofono.SmsManager
+Interface	org.ofono.MessageManager
 Object path	[variable prefix]/{modem0,modem1,...}
 
 Methods		dict GetProperties()
