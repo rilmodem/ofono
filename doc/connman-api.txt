@@ -1,8 +1,8 @@
-Data Connection Manager hierarchy
+Connection Manager hierarchy
 =================
 
 Service		org.ofono
-Interface	org.ofono.DataConnectionManager
+Interface	org.ofono.ConnectionManager
 Object path	[variable]
 
 Methods		dict GetProperties()
@@ -24,14 +24,21 @@ Methods		dict GetProperties()
 
 			Deactivates all active contexts.
 
-		object CreateContext(string name, string type)
+		array{object,dict} GetContexts()
 
-			Creates a new Primary context.  The name is a free
-			form string that describes this context.  The name
-			should not be empty and limited to a short string
-			for display purposes.  The type contains the intended
-			purpose of the context.  For possible values see the
-			Type documentation of PrimaryDataContext interface.
+			Get array of context objects and properties.
+
+			The method should only be call once per application.
+			Further changes shall be monitored via ContextAdded
+			ContextRemoved signals.
+
+		object AddContext(string type)
+
+			Creates a new Primary context.  The type contains
+			the intended purpose of the context.
+
+			For possible values of the type parameter see the
+			Type documentation of ConnectionContext interface.
 			Returns the object path of the created context.
 
 		void RemoveContext(object context)
@@ -45,11 +52,20 @@ Signals		PropertyChanged(string property, variant value)
 			This signal indicates a changed value of the given
 			property.
 
-Properties	array{object} PrimaryContexts [readonly]
+		ContextAdded(object path, dict properties)
 
-			List of all primary context objects.
+			Signal that gets emitted when a new context has
+			been created.  It contains the context object path
+			and its properties.
 
-		boolean Attached [readonly]
+		ContextRemoved(object path)
+
+			Signal that gets emitted when a context has been
+			removed.  The object path of the context is only
+			included for reference.  Its properties are no
+			longer accessible at this point.
+
+Properties	boolean Attached [readonly]
 
 			Contains whether the Packet Radio Service is attached.
 			The attach state might change dynamically based on
@@ -75,11 +91,11 @@ Properties	array{object} PrimaryContexts [readonly]
 			this value to off detaches the modem from the
 			Packet Domain network.
 
-Primary Data Context hierarchy
+Connection Context hierarchy
 =================
 
 Service		org.ofono
-Interface	org.ofono.PrimaryDataContext
+Interface	org.ofono.ConnectionContext
 Object path	[variable]
 
 Methods		dict GetProperties()
