@@ -36,7 +36,20 @@ Methods		dict GetProperties()
 
 			Possible Errors: [service].Error.InvalidArguments
 
-		array{object} ProposeScan()
+		array{object,dict} GetOperators()
+
+			Retrieve array of operator object and properties.
+
+			This method can be used to retrieve the current
+			operator list.  This is eithe an empty list (when
+			not registered to any network) or a list with one
+			or more operators (when registered).
+
+			This list will also return cached values of previously
+			seen networks.  Manual updates to list can only be
+			done via the Scan method call.
+
+		array{object,dict} Scan()
 
 			Runs a network operator scan to discover the currently
 			available operators.  This operation can take several
@@ -142,16 +155,6 @@ Properties	string Mode [readonly]
 			suburb.  If no name is provided or becomes
 			unavailable, this property will not be returned by
 			GetProperties or will be set to an empty string.
-
-		array{object} Operators [readonly]
-
-			List of all operator object paths known to the
-			telephony stack. The scanning for new operators is
-			done in the background.
-
-			The list of operators is only useful when attempting
-			manual registration. The automatic registration is
-			the preferred method.
 
 
 Network operator hierarchy
