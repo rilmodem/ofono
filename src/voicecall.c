@@ -1162,12 +1162,12 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 
 	vc->pending = dbus_message_ref(msg);
 
-	if (vc->driver->hangup_all != NULL)
-		vc->driver->hangup_all(vc, generic_callback, vc);
-	else {
+	if (vc->driver->hangup_all == NULL) {
 		voicecalls_release_queue(vc, vc->call_list);
 		voicecalls_release_next(vc);
-	}
+	} else
+		vc->driver->hangup_all(vc, generic_callback, vc);
+
 	return NULL;
 }
 
