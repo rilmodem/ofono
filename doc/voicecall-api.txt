@@ -87,6 +87,14 @@ Properties	string LineIdentification [readonly]
 			"override category" option was not provisioned for
 			the current subscriber.
 
+		boolean Multiparty [readonly]
+
+			Contains the indication if the voice call is part
+			of a multiparty call or not.
+
+			Notifications if a call becomes part or leaves a
+			multipart call are sent.
+
 		string State [readonly]
 
 			Contains the state of the current call.  The state

@@ -5,12 +5,15 @@ Service		org.ofono
 Interface	org.ofono.VoiceCallManager
 Object path	[variable prefix]/{modem0,modem1,...}
 
-Methods		dict GetProperties()
+Methods		array{object,dict} GetCalls()
 
-			Returns all global system properties. See the
-			properties section for available properties.
+			Get an array of call object paths and properties
+			that represents the currently present calls.
 
-			Possible Errors: [service].Error.InvalidArguments
+			This method call should only be used once when an
+			application starts up.  Further call additions and
+			removal shall be monitored vi CallAdded and
+			CallRemoved signals.
 
 		object Dial(string number, string hide_callerid)
 
@@ -113,19 +116,18 @@ Methods		dict GetProperties()
 			'*', '#', 'A', 'B', 'C', 'D'.  The last four are
 			typically not used in normal circumstances.
 
-Signals		PropertyChanged(string property, variant value)
+Signals		CallAdded(object path, dict properties)
 
-			Signal is emitted whenever a property has changed. The
-			new value is passed as the signal argument.
+			Signal that is sent when a new call is added.  It
+			contains the object path of the new voice call and
+			also its properties.
 
-Properties	array{object} Calls [readonly]
+			Applications get the whole properties via this
+			signal and don't need to call GetProperties on
+			the voice call object.
 
-			Returns the list of calls currently present in the
-			system. If there are no calls, the list will be empty.
+		CallRemoved(object path)
 
-		array{object} MultipartyCalls [readonly]
-
-			Returns the list of calls that are currently
-			participating in the multi-party (MPTY) call.  The list
-			will be empty if no multi-party call is active, or a
-			list with at least two elements otherwise.
+			Signal that is sent when a voice call has been
+			released.  The object path is no longer accessible
+			after this signal and only emitted for reference.
