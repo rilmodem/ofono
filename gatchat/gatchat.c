@@ -1231,6 +1231,25 @@ GAtChat *g_at_chat_new_blocking(GIOChannel *channel, GAtSyntax *syntax)
 	return g_at_chat_new_common(channel, 0, syntax);
 }
 
+GAtChat *g_at_chat_clone(GAtChat *clone)
+{
+	GAtChat *chat;
+
+	if (clone == NULL)
+		return NULL;
+
+	chat = g_try_new0(GAtChat, 1);
+	if (chat == NULL)
+		return NULL;
+
+	chat->parent = clone->parent;
+	chat->group = chat->parent->next_gid++;
+	chat->ref_count = 1;
+	g_atomic_int_inc(&chat->parent->ref_count);
+
+	return chat;
+}
+
 GIOChannel *g_at_chat_get_channel(GAtChat *chat)
 {
 	if (chat == NULL || chat->parent->io == NULL)

@@ -48,6 +48,8 @@ GAtIO *g_at_chat_get_io(GAtChat *chat);
 GAtChat *g_at_chat_ref(GAtChat *chat);
 void g_at_chat_unref(GAtChat *chat);
 
+GAtChat *g_at_chat_clone(GAtChat *chat);
+
 void g_at_chat_suspend(GAtChat *chat);
 void g_at_chat_resume(GAtChat *chat);
 
