@@ -131,3 +131,11 @@ Signals		CallAdded(object path, dict properties)
 			Signal that is sent when a voice call has been
 			released.  The object path is no longer accessible
 			after this signal and only emitted for reference.
+
+Properties	array{string} EmergencyNumbers
+
+			Contains the list of emergency numbers recognized
+			by oFono.  This list is based on the default set
+			of numbers provided by the specification and any
+			extra numbers provisioned by the carrier on the
+			SIM.
