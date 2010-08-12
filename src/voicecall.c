@@ -354,7 +354,8 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 			return NULL;
 		}
 
-		if (single_call == TRUE && vc->driver->hangup_active != NULL) {
+		if (voicecalls_num_active(vc) == 1 &&
+				vc->driver->hangup_active != NULL) {
 			vc->pending = dbus_message_ref(msg);
 			vc->driver->hangup_active(vc, generic_callback, vc);
 
