@@ -80,7 +80,7 @@ static void report_powered(struct isi_data *isi, ofono_bool_t powered)
 static void report_online(struct isi_data *isi, ofono_bool_t online)
 {
 	struct isi_cb_data *cbd = isi->online_cbd;
-	ofono_modem_online_cb cb = cbd->cb;
+	ofono_modem_online_cb_t cb = cbd->cb;
 
 	isi->online_cbd = NULL;
 
@@ -321,7 +321,7 @@ static gboolean mtc_state_cb(GIsiClient *client,
 {
 	struct isi_cb_data *cbd = opaque;
 	struct ofono_modem *modem = cbd->user;
-	ofono_modem_online_cb cb = cbd->cb;
+	ofono_modem_online_cb_t cb = cbd->cb;
 	struct isi_data *isi = ofono_modem_get_data(modem);
 	const unsigned char *msg = data;
 
@@ -351,7 +351,7 @@ err:
 }
 
 static void isi_modem_online(struct ofono_modem *modem, ofono_bool_t online,
-				ofono_modem_online_cb cb, void *data)
+				ofono_modem_online_cb_t cb, void *data)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 	const unsigned char req[] = {
