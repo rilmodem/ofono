@@ -339,7 +339,7 @@ static int at_call_settings_probe(struct ofono_call_settings *cs,
 {
 	GAtChat *chat = data;
 
-	ofono_call_settings_set_data(cs, chat);
+	ofono_call_settings_set_data(cs, g_at_chat_clone(chat));
 	g_idle_add(at_call_settings_register, cs);
 
 	return 0;
@@ -347,6 +347,10 @@ static int at_call_settings_probe(struct ofono_call_settings *cs,
 
 static void at_call_settings_remove(struct ofono_call_settings *cs)
 {
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+
+	g_at_chat_unref(chat);
+	ofono_call_settings_set_data(cs, NULL);
 }
 
 static struct ofono_call_settings_driver driver = {

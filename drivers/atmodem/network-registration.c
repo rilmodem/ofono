@@ -1083,12 +1083,12 @@ static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 
 	nd = g_new0(struct netreg_data, 1);
 
-	nd->chat = chat;
+	nd->chat = g_at_chat_clone(chat);
 	nd->vendor = vendor;
 	nd->tech = -1;
 	ofono_netreg_set_data(netreg, nd);
 
-	g_at_chat_send(chat, "AT+CREG=?", creg_prefix,
+	g_at_chat_send(nd->chat, "AT+CREG=?", creg_prefix,
 			at_creg_test_cb, netreg, NULL);
 
 	return 0;
@@ -1100,6 +1100,7 @@ static void at_netreg_remove(struct ofono_netreg *netreg)
 
 	ofono_netreg_set_data(netreg, NULL);
 
+	g_at_chat_unref(nd->chat);
 	g_free(nd);
 }
 

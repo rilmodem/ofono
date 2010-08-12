@@ -237,12 +237,12 @@ static int at_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 	struct cbs_data *data;
 
 	data = g_new0(struct cbs_data, 1);
-	data->chat = chat;
+	data->chat = g_at_chat_clone(chat);
 	data->vendor = vendor;
 
 	ofono_cbs_set_data(cbs, data);
 
-	g_at_chat_send(chat, "AT+CSCB=?", cscb_prefix,
+	g_at_chat_send(data->chat, "AT+CSCB=?", cscb_prefix,
 			at_cscb_support_cb, cbs, NULL);
 
 	return 0;
@@ -254,6 +254,7 @@ static void at_cbs_remove(struct ofono_cbs *cbs)
 
 	ofono_cbs_set_data(cbs, NULL);
 
+	g_at_chat_unref(data->chat);
 	g_free(data);
 }
 

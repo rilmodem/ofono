@@ -224,6 +224,7 @@ static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 {
 	GAtChat *chat = data;
 
+	chat = g_at_chat_clone(chat);
 	ofono_ussd_set_data(ussd, chat);
 
 	g_at_chat_send(chat, "AT+CUSD=1", NULL, at_ussd_register, ussd, NULL);
@@ -233,6 +234,10 @@ static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 
 static void at_ussd_remove(struct ofono_ussd *ussd)
 {
+	GAtChat *chat = ofono_ussd_get_data(ussd);
+
+	g_at_chat_unref(chat);
+	ofono_ussd_set_data(ussd, NULL);
 }
 
 static struct ofono_ussd_driver driver = {

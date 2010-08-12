@@ -511,7 +511,7 @@ static int at_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 	struct pb_data *pbd;
 
 	pbd = g_new0(struct pb_data, 1);
-	pbd->chat = chat;
+	pbd->chat = g_at_chat_clone(chat);
 
 	ofono_phonebook_set_data(pb, pbd);
 
@@ -529,6 +529,7 @@ static void at_phonebook_remove(struct ofono_phonebook *pb)
 
 	ofono_phonebook_set_data(pb, NULL);
 
+	g_at_chat_unref(pbd->chat);
 	g_free(pbd);
 }
 

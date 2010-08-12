@@ -259,7 +259,7 @@ static int at_ccfc_probe(struct ofono_call_forwarding *cf, unsigned int vendor,
 {
 	GAtChat *chat = data;
 
-	ofono_call_forwarding_set_data(cf, chat);
+	ofono_call_forwarding_set_data(cf, g_at_chat_clone(chat));
 	g_idle_add(at_ccfc_register, cf);
 
 	return 0;
@@ -267,6 +267,10 @@ static int at_ccfc_probe(struct ofono_call_forwarding *cf, unsigned int vendor,
 
 static void at_ccfc_remove(struct ofono_call_forwarding *cf)
 {
+	GAtChat *chat = ofono_call_forwarding_get_data(cf);
+
+	g_at_chat_unref(chat);
+	ofono_call_forwarding_set_data(cf, NULL);
 }
 
 static struct ofono_call_forwarding_driver driver = {

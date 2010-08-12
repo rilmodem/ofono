@@ -113,6 +113,8 @@ static int at_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 {
 	GAtChat *chat = data;
 
+	chat = g_at_chat_clone(chat);
+
 	ofono_ssn_set_data(ssn, chat);
 	g_at_chat_send(chat, "AT+CSSN=1,1", none_prefix,
 			at_ssn_initialized, ssn, NULL);
@@ -122,6 +124,10 @@ static int at_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 
 static void at_ssn_remove(struct ofono_ssn *ssn)
 {
+	GAtChat *chat = ofono_ssn_get_data(ssn);
+
+	g_at_chat_unref(chat);
+	ofono_ssn_set_data(ssn, NULL);
 }
 
 static struct ofono_ssn_driver driver = {

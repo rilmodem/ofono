@@ -197,7 +197,7 @@ static int at_call_barring_probe(struct ofono_call_barring *cb,
 {
 	GAtChat *chat = user;
 
-	ofono_call_barring_set_data(cb, chat);
+	ofono_call_barring_set_data(cb, g_at_chat_clone(chat));
 	g_idle_add(at_call_barring_register, cb);
 
 	return 0;
@@ -205,6 +205,10 @@ static int at_call_barring_probe(struct ofono_call_barring *cb,
 
 static void at_call_barring_remove(struct ofono_call_barring *cb)
 {
+	GAtChat *chat = ofono_call_barring_get_data(cb);
+
+	g_at_chat_unref(chat);
+	ofono_call_barring_set_data(cb, NULL);
 }
 
 static struct ofono_call_barring_driver driver = {

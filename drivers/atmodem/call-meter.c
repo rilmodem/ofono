@@ -348,6 +348,7 @@ static int at_caoc_probe(struct ofono_call_meter *cm, unsigned int vendor,
 {
 	GAtChat *chat = data;
 
+	chat = g_at_chat_clone(chat);
 	ofono_call_meter_set_data(cm, chat);
 
 	g_at_chat_send(chat, "AT+CAOC=2", NULL, NULL, NULL, NULL);
@@ -359,6 +360,10 @@ static int at_caoc_probe(struct ofono_call_meter *cm, unsigned int vendor,
 
 static void at_caoc_remove(struct ofono_call_meter *cm)
 {
+	GAtChat *chat = ofono_call_meter_get_data(cm);
+
+	g_at_chat_unref(chat);
+	ofono_call_meter_set_data(cm, NULL);
 }
 
 static struct ofono_call_meter_driver driver = {

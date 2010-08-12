@@ -841,14 +841,14 @@ static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	struct voicecall_data *vd;
 
 	vd = g_new0(struct voicecall_data, 1);
-	vd->chat = chat;
+	vd->chat = g_at_chat_clone(chat);
 
 	ofono_voicecall_set_data(vc, vd);
 
-	g_at_chat_send(chat, "AT+CRC=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+COLP=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(chat, "AT+CCWA=1", NULL,
+	g_at_chat_send(vd->chat, "AT+CRC=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+COLP=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+CCWA=1", NULL,
 				at_voicecall_initialized, vc, NULL);
 	return 0;
 }
@@ -865,6 +865,7 @@ static void at_voicecall_remove(struct ofono_voicecall *vc)
 
 	ofono_voicecall_set_data(vc, NULL);
 
+	g_at_chat_unref(vd->chat);
 	g_free(vd);
 }
 

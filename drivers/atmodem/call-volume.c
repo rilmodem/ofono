@@ -189,15 +189,15 @@ static int at_call_volume_probe(struct ofono_call_volume *cv,
 	DBG("%p", cv);
 
 	cvd = g_new0(struct cv_data, 1);
-	cvd->chat = chat;
+	cvd->chat = g_at_chat_clone(chat);
 
 	ofono_call_volume_set_data(cv, cvd);
 
-	g_at_chat_send(chat, "AT+CMUT?", cmut_prefix,
+	g_at_chat_send(cvd->chat, "AT+CMUT?", cmut_prefix,
 			cmut_query, cv, NULL);
-	g_at_chat_send(chat, "AT+CLVL=?", clvl_prefix,
+	g_at_chat_send(cvd->chat, "AT+CLVL=?", clvl_prefix,
 			clvl_range_query, cv, NULL);
-	g_at_chat_send(chat, "AT+CLVL?", clvl_prefix,
+	g_at_chat_send(cvd->chat, "AT+CLVL?", clvl_prefix,
 			clvl_query, cv, NULL);
 
 	/* Generic driver does not support microphone level */
@@ -212,6 +212,7 @@ static void at_call_volume_remove(struct ofono_call_volume *cv)
 
 	ofono_call_volume_set_data(cv, NULL);
 
+	g_at_chat_unref(cvd->chat);
 	g_free(cvd);
 }
 

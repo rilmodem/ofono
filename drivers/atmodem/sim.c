@@ -810,15 +810,15 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	struct sim_data *sd;
 
 	sd = g_new0(struct sim_data, 1);
-	sd->chat = chat;
+	sd->chat = g_at_chat_clone(chat);
 	sd->vendor = vendor;
 
 	switch (sd->vendor) {
 	case OFONO_VENDOR_WAVECOM:
-		g_at_chat_add_terminator(chat, "+CPIN:", 6, TRUE);
+		g_at_chat_add_terminator(sd->chat, "+CPIN:", 6, TRUE);
 		break;
 	case OFONO_VENDOR_MBM:
-		g_at_chat_send(chat, "AT*EPEE=1", NULL, NULL, NULL, NULL);
+		g_at_chat_send(sd->chat, "AT*EPEE=1", NULL, NULL, NULL, NULL);
 		break;
 	default:
 		break;
@@ -839,6 +839,7 @@ static void at_sim_remove(struct ofono_sim *sim)
 	if (sd->epev_source)
 		g_source_remove(sd->epev_source);
 
+	g_at_chat_unref(sd->chat);
 	g_free(sd);
 }
 

@@ -1212,12 +1212,12 @@ static int at_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 	struct sms_data *data;
 
 	data = g_new0(struct sms_data, 1);
-	data->chat = chat;
+	data->chat = g_at_chat_clone(chat);
 	data->vendor = vendor;
 
 	ofono_sms_set_data(sms, data);
 
-	g_at_chat_send(chat, "AT+CSMS=?", csms_prefix,
+	g_at_chat_send(data->chat, "AT+CSMS=?", csms_prefix,
 			at_csms_query_cb, sms, NULL);
 
 	return 0;
@@ -1233,6 +1233,7 @@ static void at_sms_remove(struct ofono_sms *sms)
 	if (data->timeout_source > 0)
 		g_source_remove(data->timeout_source);
 
+	g_at_chat_unref(data->chat);
 	g_free(data);
 }
 

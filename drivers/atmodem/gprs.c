@@ -306,12 +306,12 @@ static int at_gprs_probe(struct ofono_gprs *gprs,
 	struct gprs_data *gd;
 
 	gd = g_new0(struct gprs_data, 1);
-	gd->chat = chat;
+	gd->chat = g_at_chat_clone(chat);
 	gd->vendor = vendor;
 
 	ofono_gprs_set_data(gprs, gd);
 
-	g_at_chat_send(chat, "AT+CGDCONT=?", cgdcont_prefix,
+	g_at_chat_send(gd->chat, "AT+CGDCONT=?", cgdcont_prefix,
 			at_cgdcont_test_cb, gprs, NULL);
 
 	return 0;
@@ -322,6 +322,8 @@ static void at_gprs_remove(struct ofono_gprs *gprs)
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 
 	ofono_gprs_set_data(gprs, NULL);
+
+	g_at_chat_unref(gd->chat);
 	g_free(gd);
 }
 
