@@ -30,6 +30,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdio.h>
 
 #include <glib.h>
 #include <gatmux.h>
@@ -60,6 +61,9 @@
 
 #include <drivers/atmodem/vendor.h>
 #include <drivers/atmodem/sim-poll.h>
+#include <drivers/atmodem/atutil.h>
+
+static const char *none_prefix[] = { NULL };
 
 struct phonesim_data {
 	GAtMux *mux;
@@ -247,12 +251,38 @@ static int phonesim_enable(struct ofono_modem *modem)
 		g_at_mux_setup_gsm0710(data->chat, mux_setup, modem, NULL);
 		g_at_chat_unref(data->chat);
 		data->chat = NULL;
-	} else {
-		g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
-					cfun_set_on_cb, modem, NULL);
 	}
 
-	return -EINPROGRESS;
+	return 0;
+}
+
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t callback = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	callback(&error, cbd->data);
+}
+
+static void phonesim_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char buf[64];
+
+	DBG("%p", modem);
+
+	snprintf(buf, sizeof(buf), "AT+CFUN=%d", online ? 1 : 4);
+
+	if (g_at_chat_send(data->chat, buf, none_prefix,
+				set_online_cb, cbd, g_free) > 0)
+		return;
+
+	CALLBACK_WITH_FAILURE(cb, user_data);
 }
 
 static int phonesim_disable(struct ofono_modem *modem)
@@ -296,6 +326,15 @@ static void phonesim_pre_sim(struct ofono_modem *modem)
 static void phonesim_post_sim(struct ofono_modem *modem)
 {
 	struct phonesim_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
+}
+
+static void phonesim_post_online(struct ofono_modem *modem)
+{
+	struct phonesim_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
@@ -324,7 +363,6 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 
 	if (!data->calypso) {
 		ofono_sms_create(modem, 0, "atmodem", data->chat);
-		ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 		ofono_cbs_create(modem, 0, "atmodem", data->chat);
 	}
 
@@ -337,6 +375,7 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
 		ofono_message_waiting_register(mw);
+
 }
 
 static struct ofono_modem_driver phonesim_driver = {
@@ -345,8 +384,10 @@ static struct ofono_modem_driver phonesim_driver = {
 	.remove		= phonesim_remove,
 	.enable		= phonesim_enable,
 	.disable	= phonesim_disable,
+	.set_online	= phonesim_set_online,
 	.pre_sim	= phonesim_pre_sim,
-	.post_sim	= phonesim_post_sim
+	.post_sim	= phonesim_post_sim,
+	.post_online	= phonesim_post_online,
 };
 
 static int phonesim_init(void)
