@@ -165,6 +165,43 @@ static const char *time_to_str(const time_t *t)
 	return buf;
 }
 
+static int voicecalls_num_with_status(struct ofono_voicecall *vc,
+					int status)
+{
+	GSList *l;
+	struct voicecall *v;
+	int num = 0;
+
+	for (l = vc->call_list; l; l = l->next) {
+		v = l->data;
+
+		if (v->call->status == status)
+			num += 1;
+	}
+
+	return num;
+}
+
+static int voicecalls_num_active(struct ofono_voicecall *vc)
+{
+	return voicecalls_num_with_status(vc, CALL_STATUS_ACTIVE);
+}
+
+static int voicecalls_num_held(struct ofono_voicecall *vc)
+{
+	return voicecalls_num_with_status(vc, CALL_STATUS_HELD);
+}
+
+static int voicecalls_num_connecting(struct ofono_voicecall *vc)
+{
+	int r = 0;
+
+	r += voicecalls_num_with_status(vc, CALL_STATUS_DIALING);
+	r += voicecalls_num_with_status(vc, CALL_STATUS_ALERTING);
+
+	return r;
+}
+
 static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -618,43 +655,6 @@ static gboolean voicecalls_have_with_status(struct ofono_voicecall *vc, int stat
 static gboolean voicecalls_have_held(struct ofono_voicecall *vc)
 {
 	return voicecalls_have_with_status(vc, CALL_STATUS_HELD);
-}
-
-static int voicecalls_num_with_status(struct ofono_voicecall *vc,
-					int status)
-{
-	GSList *l;
-	struct voicecall *v;
-	int num = 0;
-
-	for (l = vc->call_list; l; l = l->next) {
-		v = l->data;
-
-		if (v->call->status == status)
-			num += 1;
-	}
-
-	return num;
-}
-
-static int voicecalls_num_active(struct ofono_voicecall *vc)
-{
-	return voicecalls_num_with_status(vc, CALL_STATUS_ACTIVE);
-}
-
-static int voicecalls_num_held(struct ofono_voicecall *vc)
-{
-	return voicecalls_num_with_status(vc, CALL_STATUS_HELD);
-}
-
-static int voicecalls_num_connecting(struct ofono_voicecall *vc)
-{
-	int r = 0;
-
-	r += voicecalls_num_with_status(vc, CALL_STATUS_DIALING);
-	r += voicecalls_num_with_status(vc, CALL_STATUS_ALERTING);
-
-	return r;
 }
 
 static GSList *voicecalls_held_list(struct ofono_voicecall *vc)
