@@ -228,7 +228,7 @@ static int mbm_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 	DBG("");
 
 	sd = g_new0(struct stk_data, 1);
-	sd->chat = chat;
+	sd->chat = g_at_chat_clone(chat);
 
 	ofono_stk_set_data(stk, sd);
 
@@ -247,6 +247,7 @@ static void mbm_stk_remove(struct ofono_stk *stk)
 
 	ofono_stk_set_data(stk, NULL);
 
+	g_at_chat_unref(sd->chat);
 	g_free(sd);
 }
 

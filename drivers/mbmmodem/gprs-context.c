@@ -444,12 +444,13 @@ static int mbm_gprs_context_probe(struct ofono_gprs_context *gc,
 	struct gprs_context_data *gcd;
 
 	gcd = g_new0(struct gprs_context_data, 1);
-	gcd->chat = chat;
+	gcd->chat = g_at_chat_clone(chat);
 
 	ofono_gprs_context_set_data(gc, gcd);
 
-	g_at_chat_send(chat, "AT*E2NAP=1", none_prefix, mbm_e2nap_cb, gc, NULL);
-	g_at_chat_send(chat, "AT*E2IPCFG=?", e2ipcfg_prefix,
+	g_at_chat_send(gcd->chat, "AT*E2NAP=1", none_prefix,
+			mbm_e2nap_cb, gc, NULL);
+	g_at_chat_send(gcd->chat, "AT*E2IPCFG=?", e2ipcfg_prefix,
 			mbm_e2ipcfg_query_cb, gc, NULL);
 
 	return 0;
@@ -465,6 +466,8 @@ static void mbm_gprs_context_remove(struct ofono_gprs_context *gc)
 	}
 
 	ofono_gprs_context_set_data(gc, NULL);
+
+	g_at_chat_unref(gcd->chat);
 	g_free(gcd);
 }
 
