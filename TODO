@@ -566,6 +566,8 @@ Miscellaneous
   application can lift the lock.  Alternatively, if the calling application
   exits prematurely the lock is lifted as well.
 
+  The proposed property name is "Lockdown" as part of the Modem interface.
+
   Priority: Medium
   Complexity: C2
 
