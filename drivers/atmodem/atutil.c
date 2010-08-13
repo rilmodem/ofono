@@ -175,6 +175,10 @@ gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 	if (g_at_result_iter_next_number(&iter, &s) == FALSE)
 		return FALSE;
 
+	/* Some firmware will report bogus lac/ci when unregistered */
+	if (s != 1 && s != 5)
+		goto out;
+
 	switch (vendor) {
 	case OFONO_VENDOR_HUAWEI:
 	case OFONO_VENDOR_NOVATEL:
@@ -239,6 +243,10 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 		/* Sometimes we get an unsolicited CREG/CGREG here, skip it */
 		if (g_at_result_iter_next_number(&iter, &s) == FALSE)
 			continue;
+
+		/* Some firmware will report bogus lac/ci when unregistered */
+		if (s != 1 && s != 5)
+			goto out;
 
 		switch (vendor) {
 		case OFONO_VENDOR_HUAWEI:
