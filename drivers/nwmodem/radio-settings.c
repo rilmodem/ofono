@@ -170,7 +170,7 @@ static int nw_radio_settings_probe(struct ofono_radio_settings *rs,
 	if (!rsd)
 		return -ENOMEM;
 
-	rsd->chat = chat;
+	rsd->chat = g_at_chat_clone(chat);
 
 	ofono_radio_settings_set_data(rs, rsd);
 
@@ -185,6 +185,8 @@ static void nw_radio_settings_remove(struct ofono_radio_settings *rs)
 	struct radio_settings_data *rsd = ofono_radio_settings_get_data(rs);
 
 	ofono_radio_settings_set_data(rs, NULL);
+
+	g_at_chat_unref(rsd->chat);
 	g_free(rsd);
 }
 
