@@ -600,3 +600,14 @@ Miscellaneous
 
   Priority: High
   Complexity: C1
+
+
+- Add support for GPS power control atom.  Many modem manufacturers provide
+  a GPS unit with their modem hardware.  This unit can be turned on or off
+  and frequently takes over one of the tty ports that the modem provides.
+
+  This feature is not discussed in 27.007, thus manufacturer specific commands
+  are required.
+
+  Priority: Low
+  Complexity: C4
