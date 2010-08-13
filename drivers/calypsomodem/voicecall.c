@@ -384,11 +384,11 @@ static int calypso_voicecall_probe(struct ofono_voicecall *vc, unsigned int vend
 	struct voicecall_data *vd;
 
 	vd = g_new0(struct voicecall_data, 1);
-	vd->chat = chat;
+	vd->chat = g_at_chat_clone(chat);
 
 	ofono_voicecall_set_data(vc, vd);
 
-	g_at_chat_send(chat, "AT%CPI=3", NULL,
+	g_at_chat_send(vd->chat, "AT%CPI=3", NULL,
 				calypso_voicecall_initialized, vc, NULL);
 
 	return 0;
@@ -398,6 +398,9 @@ static void calypso_voicecall_remove(struct ofono_voicecall *vc)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
+	ofono_voicecall_set_data(vc, NULL);
+
+	g_at_chat_unref(vd->chat);
 	g_free(vd);
 }
 

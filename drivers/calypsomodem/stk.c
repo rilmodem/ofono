@@ -235,7 +235,7 @@ static int calypso_stk_probe(struct ofono_stk *stk,
 	struct stk_data *sd;
 
 	sd = g_new0(struct stk_data, 1);
-	sd->chat = chat;
+	sd->chat = g_at_chat_clone(chat);
 
 	ofono_stk_set_data(stk, sd);
 
@@ -260,6 +260,7 @@ static void calypso_stk_remove(struct ofono_stk *stk)
 
 	ofono_stk_set_data(stk, NULL);
 
+	g_at_chat_unref(sd->chat);
 	g_free(sd);
 }
 
