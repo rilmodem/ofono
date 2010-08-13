@@ -154,7 +154,7 @@ static gint conn_compare_by_cid(gconstpointer a, gconstpointer b)
 }
 
 static struct conn_info *conn_info_create(unsigned int device,
-					  unsigned int channel_id)
+						unsigned int channel_id)
 {
 	struct conn_info *connection = g_try_new0(struct conn_info, 1);
 
