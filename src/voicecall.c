@@ -793,14 +793,25 @@ static void voicecalls_release_next(struct ofono_voicecall *vc)
 
 	vc->release_list = g_slist_remove(vc->release_list, call);
 
-	if (vc->driver->hangup_active != NULL &&
-			(call->call->status == CALL_STATUS_ALERTING ||
-				call->call->status == CALL_STATUS_DIALING ||
-				call->call->status == CALL_STATUS_INCOMING))
+	if (vc->driver->hangup_active == NULL)
+		goto fallback;
+
+	if (call->call->status == CALL_STATUS_ACTIVE &&
+					voicecalls_num_active(vc) == 1) {
 		vc->driver->hangup_active(vc, multirelease_callback, vc);
-	else
-		vc->driver->release_specific(vc, call->call->id,
-						multirelease_callback, vc);
+		return;
+	}
+
+	if (call->call->status == CALL_STATUS_ALERTING ||
+		call->call->status == CALL_STATUS_DIALING ||
+			call->call->status == CALL_STATUS_INCOMING) {
+		vc->driver->hangup_active(vc, multirelease_callback, vc);
+		return;
+	}
+
+fallback:
+	vc->driver->release_specific(vc, call->call->id,
+					multirelease_callback, vc);
 }
 
 static DBusMessage *manager_get_properties(DBusConnection *conn,
