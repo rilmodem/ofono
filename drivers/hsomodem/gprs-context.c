@@ -363,9 +363,9 @@ static int hso_gprs_context_probe(struct ofono_gprs_context *gc,
 	struct gprs_context_data *gcd;
 
 	gcd = g_new0(struct gprs_context_data, 1);
-	gcd->chat = chat;
+	gcd->chat = g_at_chat_clone(chat);
 
-	g_at_chat_register(chat, "_OWANCALL:", owancall_notifier,
+	g_at_chat_register(gcd->chat, "_OWANCALL:", owancall_notifier,
 				FALSE, gc, NULL);
 
 	ofono_gprs_context_set_data(gc, gcd);
@@ -378,6 +378,8 @@ static void hso_gprs_context_remove(struct ofono_gprs_context *gc)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
 	ofono_gprs_context_set_data(gc, NULL);
+
+	g_at_chat_unref(gcd->chat);
 	g_free(gcd);
 }
 
