@@ -540,12 +540,12 @@ static int ste_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	struct voicecall_data *vd;
 
 	vd = g_new0(struct voicecall_data, 1);
-	vd->chat = chat;
+	vd->chat = g_at_chat_clone(chat);
 
 	ofono_voicecall_set_data(vc, vd);
 
-	g_at_chat_send(chat, "AT*ECAM=1", NULL, NULL, NULL, NULL);
-	g_at_chat_register(chat, "*ECAV:", ecav_notify, FALSE, vc, NULL);
+	g_at_chat_send(vd->chat, "AT*ECAM=1", NULL, NULL, NULL, NULL);
+	g_at_chat_register(vd->chat, "*ECAV:", ecav_notify, FALSE, vc, NULL);
 	ofono_voicecall_register(vc);
 
 	return 0;
@@ -560,6 +560,7 @@ static void ste_voicecall_remove(struct ofono_voicecall *vc)
 
 	ofono_voicecall_set_data(vc, NULL);
 
+	g_at_chat_unref(vd->chat);
 	g_free(vd);
 }
 

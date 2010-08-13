@@ -512,7 +512,7 @@ static int ste_gprs_context_probe(struct ofono_gprs_context *gc,
 	int i;
 
 	gcd = g_new0(struct gprs_context_data, 1);
-	gcd->chat = chat;
+	gcd->chat = g_at_chat_clone(chat);
 
 	g_at_chat_register(gcd->chat, "+CGEV:", cgev_notify, FALSE, gc, NULL);
 
@@ -536,6 +536,8 @@ static void ste_gprs_context_remove(struct ofono_gprs_context *gc)
 	g_caif_devices = NULL;
 
 	ofono_gprs_context_set_data(gc, NULL);
+
+	g_at_chat_unref(gcd->chat);
 	g_free(gcd);
 }
 
