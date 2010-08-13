@@ -1375,26 +1375,39 @@ static GDBusSignalTable manager_signals[] = {
 
 void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
 {
-	if (gprs->driver_attached == FALSE)
-		return;
-
 	gprs->driver_attached = FALSE;
-
 	gprs_attached_update(gprs);
 
-	/* TODO: The network forced a detach, we should wait for some time
-	 * and try to re-attach
+	/*
+	 * TODO: The network forced a detach, we should wait for some time
+	 * and try to re-attach.  This might also be related to a suspend
+	 * event while voicecall is active.
 	 */
 }
 
 void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 {
-	/* If we are not attached and haven't tried to attach, ignore */
-	if (gprs->driver_attached == FALSE)
-		return;
-
 	gprs->status = status;
 	gprs_attached_update(gprs);
+
+	if (status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
+			status != NETWORK_REGISTRATION_STATUS_ROAMING)
+		return;
+
+	/* We registered without being powered */
+	if (gprs->powered == FALSE)
+		goto detach;
+
+	if (gprs->roaming_allowed == FALSE &&
+			status == NETWORK_REGISTRATION_STATUS_ROAMING)
+		goto detach;
+
+	gprs->driver_attached = TRUE;
+	return;
+
+detach:
+	gprs->flags |= GPRS_FLAG_ATTACHING;
+	gprs->driver->set_attached(gprs, FALSE, gprs_attach_callback, gprs);
 }
 
 void ofono_gprs_set_cid_range(struct ofono_gprs *gprs,
