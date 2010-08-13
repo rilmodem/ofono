@@ -232,6 +232,9 @@ Location Services
 - Neighbor Cell Info.  Add dedicated atom, D-Bus API and atom driver(s) for
   Neighbor Cell information.
 
+  This feature is not discussed in 27.007, thus manufacturer specific commands
+  are required.
+
   Complexity: C4
   Priority: Medium
 
@@ -245,6 +248,9 @@ Supplementary Services
   Complexity: C8
 
 - Call Completion to Busy Subscriber (CCBS) support
+
+  This feature is not discussed in 27.007, thus manufacturer specific commands
+  are required.
 
   Priority: Low
   Complexity: C8
@@ -292,6 +298,7 @@ Voicecall
   DialString call property. Add dialstring accessor method to C API.
 
   Priority: Medium
+  Complexity: C4
 
 - Provide feedback of sent DTMF tones. Emit SendingTones signal if modem can
   provide approximate starting and stopping times for DTMF tones. Signal
@@ -510,6 +517,9 @@ Miscellaneous
 - Frequency Band Selection.  Add frequency band selection capability to the
   RadioSettings atom.
 
+  This feature is not discussed in 27.007, thus manufacturer specific commands
+  are required.
+
   Complexity: C2
   Priority: Low
 
@@ -551,6 +561,9 @@ Miscellaneous
   If the modem does not support such a feature the property should never be
   exposed to the user.
 
+  This feature is not discussed in 27.007, thus manufacturer specific commands
+  are required.
+
   Priority: High
   Complexity: C1
 
@@ -564,6 +577,9 @@ Miscellaneous
 - TTY (hearing impaired) support.  Add a new oFono atom type that will enable
   the user to enable or disable the TTY support on the modem.  Support for
   automatic detection of TTY (signaled by the driver) is also desired.
+
+  This feature is not discussed in 27.007, thus manufacturer specific commands
+  are required.
 
   Priority: High
   Complexity: C1
