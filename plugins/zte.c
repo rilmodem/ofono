@@ -226,7 +226,8 @@ static void zte_post_sim(struct ofono_modem *modem)
 					"atmodem", data->aux);
 	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->aux);
-	ofono_ussd_create(modem, 0, "atmodem", data->aux);
+	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+					"atmodem", data->aux);
 	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
 }
 
