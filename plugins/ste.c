@@ -54,6 +54,7 @@
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/stk.h>
 #include <drivers/atmodem/vendor.h>
 
 #include <drivers/stemodem/caif_socket.h>
@@ -228,6 +229,7 @@ static void ste_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	ofono_stk_create(modem, 0, "mbmmodem", data->chat);
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
