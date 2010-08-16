@@ -592,18 +592,23 @@ static char *extract_line(struct at_chat *p, struct ring_buffer *rbuf)
 	unsigned int wrap = ring_buffer_len_no_wrap(rbuf);
 	unsigned int pos = 0;
 	unsigned char *buf = ring_buffer_read_ptr(rbuf, pos);
+	gboolean in_string = FALSE;
 	int strip_front = 0;
 	int line_length = 0;
 	char *line;
 
 	while (pos < p->read_so_far) {
-		if (*buf == '\r' || *buf == '\n')
+		if (in_string == FALSE && (*buf == '\r' || *buf == '\n')) {
 			if (!line_length)
 				strip_front += 1;
 			else
 				break;
-		else
+		} else {
+			if (*buf == '"')
+				in_string = !in_string;
+
 			line_length += 1;
+		}
 
 		buf += 1;
 		pos += 1;
