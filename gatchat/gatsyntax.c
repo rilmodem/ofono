@@ -32,6 +32,7 @@ enum GSMV1_STATE {
 	GSMV1_STATE_INITIAL_CR,
 	GSMV1_STATE_INITIAL_LF,
 	GSMV1_STATE_RESPONSE,
+	GSMV1_STATE_RESPONSE_STRING,
 	GSMV1_STATE_TERMINATOR_CR,
 	GSMV1_STATE_GUESS_MULTILINE_RESPONSE,
 	GSMV1_STATE_MULTILINE_RESPONSE,
@@ -48,6 +49,7 @@ enum GSMV1_STATE {
 enum GSM_PERMISSIVE_STATE {
 	GSM_PERMISSIVE_STATE_IDLE = 0,
 	GSM_PERMISSIVE_STATE_RESPONSE,
+	GSM_PERMISSIVE_STATE_RESPONSE_STRING,
 	GSM_PERMISSIVE_STATE_GUESS_PDU,
 	GSM_PERMISSIVE_STATE_PDU,
 	GSM_PERMISSIVE_STATE_PROMPT,
@@ -105,6 +107,13 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 		case GSMV1_STATE_RESPONSE:
 			if (byte == '\r')
 				syntax->state = GSMV1_STATE_TERMINATOR_CR;
+			else if (byte == '"')
+				syntax->state = GSMV1_STATE_RESPONSE_STRING;
+			break;
+
+		case GSMV1_STATE_RESPONSE_STRING:
+			if (byte == '"')
+				syntax->state = GSMV1_STATE_RESPONSE;
 			break;
 
 		case GSMV1_STATE_TERMINATOR_CR:
@@ -256,7 +265,14 @@ static GAtSyntaxResult gsm_permissive_feed(GAtSyntax *syntax,
 				i += 1;
 				res = G_AT_SYNTAX_RESULT_LINE;
 				goto out;
-			}
+			} else if (byte == '"')
+				syntax->state =
+					GSM_PERMISSIVE_STATE_RESPONSE_STRING;
+			break;
+
+		case GSM_PERMISSIVE_STATE_RESPONSE_STRING:
+			if (byte == '"')
+				syntax->state = GSM_PERMISSIVE_STATE_RESPONSE;
 			break;
 
 		case GSM_PERMISSIVE_STATE_GUESS_PDU:
