@@ -49,6 +49,7 @@ enum ussd_state {
 struct ofono_ussd {
 	int state;
 	DBusMessage *pending;
+	DBusMessage *cancel;
 	int flags;
 	GSList *ss_control_list;
 	GSList *ss_passwd_list;
@@ -524,21 +525,25 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 	struct ofono_ussd *ussd = data;
 	DBusMessage *reply;
 
-	ussd_change_state(ussd, USSD_STATE_IDLE);
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("ussd cancel failed with error: %s",
 				telephony_error_to_str(error));
 
-	if (!ussd->pending)
+		reply = __ofono_error_failed(ussd->cancel);
+		__ofono_dbus_pending_reply(&ussd->cancel, reply);
+
 		return;
+	}
 
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		reply = dbus_message_new_method_return(ussd->pending);
-	else
-		reply = __ofono_error_failed(ussd->pending);
+	if (ussd->pending) {
+		reply = __ofono_error_canceled(ussd->pending);
+		__ofono_dbus_pending_reply(&ussd->pending, reply);
+	}
 
-	__ofono_dbus_pending_reply(&ussd->pending, reply);
+	reply = dbus_message_new_method_return(ussd->cancel);
+	__ofono_dbus_pending_reply(&ussd->cancel, reply);
+
+	ussd_change_state(ussd, USSD_STATE_IDLE);
 }
 
 static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,
@@ -546,16 +551,13 @@ static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,
 {
 	struct ofono_ussd *ussd = data;
 
-	if (ussd->pending)
-		return __ofono_error_busy(msg);
-
 	if (ussd->state == USSD_STATE_IDLE)
 		return __ofono_error_not_active(msg);
 
 	if (!ussd->driver->cancel)
 		return __ofono_error_not_implemented(msg);
 
-	ussd->pending = dbus_message_ref(msg);
+	ussd->cancel = dbus_message_ref(msg);
 
 	ussd->driver->cancel(ussd, ussd_cancel_callback, ussd);
 
