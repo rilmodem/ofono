@@ -339,6 +339,7 @@ test_scripts = test/activate-context \
 		test/test-voicecall \
 		test/test-ussd \
 		test/cancel-ussd \
+		test/initiate-ussd \
 		test/offline-modem \
 		test/online-modem \
 		test/get-tech-preference \

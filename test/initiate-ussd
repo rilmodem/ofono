@@ -1,0 +1,59 @@
+#!/usr/bin/python
+
+import sys
+import dbus
+
+if (len(sys.argv) < 2):
+	print "Usage: %s <ussd-string>" % (sys.argv[0])
+	sys.exit(1)
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+properties = manager.GetProperties()
+path = properties["Modems"][0]
+
+ussd = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.SupplementaryServices')
+
+properties = ussd.GetProperties()
+state = properties["State"]
+
+print "State: %s" % (state)
+
+if state != "idle":
+	sys.exit(1);
+
+result = ussd.Initiate(sys.argv[1], timeout=100)
+
+properties = ussd.GetProperties()
+state = properties["State"]
+
+print result[0] + ": " + result[1]
+
+if state == "idle":
+	sys.exit(0)
+
+print "State: %s" % (state)
+
+if state != "user-response":
+	ussd.Cancel()
+	sys.exit(0)
+
+response = raw_input("Enter response: ")
+
+result = ussd.Respond(response)
+
+properties = ussd.GetProperties()
+state = properties["State"]
+
+print result
+
+if state == "idle":
+	sys.exit(0)
+
+print "State: %s" % (state)
+
+ussd.Cancel()
