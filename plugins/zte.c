@@ -37,6 +37,10 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
+#include <ofono/cbs.h>
+#include <ofono/sms.h>
+#include <ofono/ussd.h>
+#include <ofono/phonebook.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/vendor.h>
@@ -149,7 +153,8 @@ static int zte_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
-	g_at_chat_send(data->aux, "ATE0 +CMEE=1", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "ATE0 +CMEE=1", none_prefix,
+						NULL, NULL, NULL);
 
 	g_at_chat_send(data->aux, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
@@ -216,6 +221,13 @@ static void zte_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, OFONO_VENDOR_ZTE, "atmodem", data->aux);
+
+	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+					"atmodem", data->aux);
+	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+					"atmodem", data->aux);
+	ofono_ussd_create(modem, 0, "atmodem", data->aux);
+	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
 }
 
 static struct ofono_modem_driver zte_driver = {
