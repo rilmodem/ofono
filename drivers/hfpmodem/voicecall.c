@@ -380,8 +380,7 @@ static void hfp_dial(struct ofono_voicecall *vc,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -406,8 +405,7 @@ static void hfp_template(const char *cmd, struct ofono_voicecall *vc,
 		return;
 
 error:
-	if (req)
-		g_free(req);
+	g_free(req);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -523,8 +521,7 @@ static void hfp_release_specific(struct ofono_voicecall *vc, int id,
 		return;
 
 error:
-	if (req)
-		g_free(req);
+	g_free(req);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -612,8 +609,7 @@ static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 		return;
 
 error:
-	if (req)
-		g_free(req);
+	g_free(req);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }

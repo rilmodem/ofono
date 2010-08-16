@@ -247,8 +247,7 @@ static void hfp_registration_status(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
 }
@@ -295,8 +294,7 @@ static void hfp_signal_strength(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }

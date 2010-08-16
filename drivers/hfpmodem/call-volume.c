@@ -86,8 +86,7 @@ static void hfp_speaker_volume(struct ofono_call_volume *cv,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -114,8 +113,7 @@ static void hfp_microphone_volume(struct ofono_call_volume *cv,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
