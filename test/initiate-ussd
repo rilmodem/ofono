@@ -38,22 +38,15 @@ if state == "idle":
 
 print "State: %s" % (state)
 
-if state != "user-response":
-	ussd.Cancel()
-	sys.exit(0)
+while state == "user-response":
+	response = raw_input("Enter response: ")
 
-response = raw_input("Enter response: ")
+	result = ussd.Respond(response, timeout=100)
 
-result = ussd.Respond(response)
+	properties = ussd.GetProperties()
+	state = properties["State"]
 
-properties = ussd.GetProperties()
-state = properties["State"]
+	print result
 
-print result
-
-if state == "idle":
-	sys.exit(0)
-
-print "State: %s" % (state)
-
-ussd.Cancel()
+	if state != "idle":
+		print "State: %s" % (state)
