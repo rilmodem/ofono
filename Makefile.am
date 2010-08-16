@@ -227,6 +227,9 @@ builtin_sources += plugins/mbm.c
 builtin_modules += hso
 builtin_sources += plugins/hso.c
 
+builtin_modules += zte
+builtin_sources += plugins/zte.c
+
 builtin_modules += huawei
 builtin_sources += plugins/huawei.c
 
