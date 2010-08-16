@@ -71,8 +71,7 @@ static void calypso_template(struct ofono_voicecall *vc, const char *cmd,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
