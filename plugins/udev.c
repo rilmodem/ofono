@@ -163,6 +163,8 @@ static void add_hso(struct ofono_modem *modem,
 	const char *app, *control, *network;
 	int registered;
 
+	DBG("modem %p", modem);
+
 	subsystem = udev_device_get_subsystem(udev_device);
 	if (subsystem == NULL)
 		return;
@@ -198,12 +200,66 @@ static void add_hso(struct ofono_modem *modem,
 	}
 }
 
+static void add_zte(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	struct udev_list_entry *entry;
+	const char *devnode, *type;
+
+	int ppp, aux;
+
+	DBG("modem %p", modem);
+
+	ppp = ofono_modem_get_integer(modem, "ModemRegistered");
+	aux = ofono_modem_get_integer(modem, "AuxRegistered");
+
+	if (ppp && aux)
+		return;
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+		type = udev_list_entry_get_value(entry);
+
+		if (g_str_equal(name, "OFONO_ZTE_TYPE") != TRUE) {
+			entry = udev_list_entry_get_next(entry);
+			continue;
+		}
+
+		if (g_str_equal(type, "modem") == TRUE) {
+			if (ppp != 0)
+				return;
+
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Modem", devnode);
+			ppp = 1;
+			ofono_modem_set_integer(modem, "ModemRegistered", ppp);
+		} else if (g_str_equal(type, "aux") == TRUE) {
+			if (aux != 0)
+				return;
+
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Aux", devnode);
+
+			aux = 1;
+			ofono_modem_set_integer(modem, "AuxRegistered", aux);
+		}
+
+		break;
+	}
+
+	if (ppp && aux)
+		ofono_modem_register(modem);
+}
+
 static void add_huawei(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	struct udev_list_entry *entry;
 	const char *devnode, *type;
 	int ppp, pcui;
+
+	DBG("modem %p", modem);
 
 	/*
 	 * Huawei dongles tend to break up their ports into:
@@ -272,6 +328,8 @@ static void add_novatel(struct ofono_modem *modem,
 	const char *devnode, *intfnum;
 	struct udev_device *parent;
 	int registered;
+
+	DBG("modem %p", modem);
 
 	registered = ofono_modem_get_integer(modem, "Registered");
 	if (registered != 0)
@@ -345,6 +403,8 @@ static void add_modem(struct udev_device *udev_device)
 		add_mbm(modem, udev_device);
 	else if (g_strcmp0(driver, "hso") == 0)
 		add_hso(modem, udev_device);
+	else if (g_strcmp0(driver, "zte") == 0)
+		add_zte(modem, udev_device);
 	else if (g_strcmp0(driver, "huawei") == 0)
 		add_huawei(modem, udev_device);
 	else if (g_strcmp0(driver, "novatel") == 0)

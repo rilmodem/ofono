@@ -2,10 +2,13 @@
 
 ACTION!="add|change", GOTO="ofono_end"
 
-SUBSYSTEM!="tty", GOTO="ofono_huawei_end"
-KERNEL!="ttyUSB[0-9]*", GOTO="ofono_huawei_end"
+SUBSYSTEM!="tty", GOTO="ofono_tty_end"
+KERNEL!="ttyUSB[0-9]*", GOTO="ofono_tty_end"
 
 SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ATTRS{bInterfaceClass}=="ff", ENV{OFONO_IFACE_NUM}="$attr{bInterfaceNumber}"
+
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0063", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0063", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
 # Generic 0x1001
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1001", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
@@ -328,16 +331,20 @@ ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1485", ENV{OFONO_IFACE_NUM}=="02", E
 
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1486", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1486", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
-LABEL="ofono_huawei_end"
+
+LABEL="ofono_tty_end"
 
 SUBSYSTEM!="usb", GOTO="ofono_end"
 ENV{DEVTYPE}!="usb_device", GOTO="ofono_end"
 
+# Novatel Wireless
+ATTRS{idVendor}=="1410", ENV{OFONO_DRIVER}="novatel"
+
 # HUAWEI Technology
 ATTRS{idVendor}=="12d1", ENV{OFONO_DRIVER}="huawei"
 
-# Novatel Wireless
-ATTRS{idVendor}=="1410", ENV{OFONO_DRIVER}="novatel"
+# ZTE Incorporated
+ATTRS{idVendor}=="19d2", ENV{OFONO_DRIVER}="zte"
 
 # Option Globetrotter
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="6911", ENV{OFONO_DRIVER}="hso"
