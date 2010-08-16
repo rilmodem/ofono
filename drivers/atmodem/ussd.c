@@ -73,15 +73,15 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 	if (!g_at_result_iter_next_string(&iter, &content))
 		goto out;
 
-	if (!g_at_result_iter_next_number(&iter, &dcs))
-		goto out;
+	if (g_at_result_iter_next_number(&iter, &dcs)) {
+		if (!cbs_dcs_decode(dcs, &udhi, NULL, &charset,
+					&compressed, NULL, &iso639))
+			goto out;
 
-	if (!cbs_dcs_decode(dcs, &udhi, NULL, &charset,
-				&compressed, NULL, &iso639))
-		goto out;
-
-	if (udhi || compressed || iso639)
-		goto out;
+		if (udhi || compressed || iso639)
+			goto out;
+	} else
+		charset = SMS_CHARSET_7BIT;
 
 	if (charset == SMS_CHARSET_7BIT)
 		converted = convert_gsm_to_utf8((const guint8 *) content,
