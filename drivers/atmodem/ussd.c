@@ -41,12 +41,6 @@
 
 #include "atmodem.h"
 
-struct cusd_req {
-	ofono_ussd_cb_t cb;
-	void *data;
-	struct ofono_ussd *ussd;
-};
-
 static const char *cusd_prefix[] = { "+CUSD:", NULL };
 static const char *none_prefix[] = { NULL };
 
@@ -105,21 +99,23 @@ out:
 
 static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct cusd_req *cbd = user_data;
+	struct cb_data *cbd = user_data;
+	ofono_ussd_cb_t cb = cbd->cb;
+	struct ofono_ussd *ussd = cbd->user;
 	struct ofono_error error;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	cbd->cb(&error, cbd->data);
+	cb(&error, cbd->data);
 
-	cusd_parse(result, cbd->ussd);
+	cusd_parse(result, ussd);
 }
 
 static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 				ofono_ussd_cb_t cb, void *data)
 {
 	GAtChat *chat = ofono_ussd_get_data(ussd);
-	struct cusd_req *cbd = g_try_new0(struct cusd_req, 1);
+	struct cb_data *cbd = cb_data_new(cb, data);
 	unsigned char *converted = NULL;
 	int dcs;
 	int max_len;
@@ -129,9 +125,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 	if (!cbd)
 		goto error;
 
-	cbd->cb = cb;
-	cbd->data = data;
-	cbd->ussd = ussd;
+	cbd->user = ussd;
 
 	converted = convert_utf8_to_gsm(str, strlen(str), NULL, &written, 0);
 
