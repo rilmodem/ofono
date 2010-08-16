@@ -554,6 +554,13 @@ static DBusMessage *ussd_cancel(DBusConnection *conn, DBusMessage *msg,
 	if (ussd->state == USSD_STATE_IDLE)
 		return __ofono_error_not_active(msg);
 
+	/* We have called Respond() but not returned from its callback yet */
+	if (ussd->state == USSD_STATE_USER_ACTION && ussd->pending)
+		return __ofono_error_busy(msg);
+
+	if (ussd->cancel)
+		return __ofono_error_busy(msg);
+
 	if (!ussd->driver->cancel)
 		return __ofono_error_not_implemented(msg);
 
