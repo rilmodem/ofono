@@ -35,6 +35,7 @@
 #include <ofono/ussd.h>
 #include "util.h"
 #include "smsutil.h"
+#include "vendor.h"
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -150,6 +151,15 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 	g_free(converted);
 	converted = NULL;
 
+	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM) {
+		/* Ensure that the modem is using GSM character set. It
+		 * seems it defaults to IRA and then umlauts are not
+		 * properly encoded. The modem returns some weird from
+		 * of Latin-1, but it is not really Latin-1 either. */
+		g_at_chat_send(data->chat, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+	}
+
 	if (g_at_chat_send(data->chat, buf, cusd_prefix,
 				cusd_request_cb, cbd, g_free) > 0)
 		return;
@@ -165,9 +175,18 @@ static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_ussd_cb_t cb = cbd->cb;
+	struct ussd_data *data = cbd->user;
 	struct ofono_error error;
 
 	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM) {
+		/* All errors and notifications arrive unexpected and
+		 * thus just reset the state here. This is safer than
+		 * getting stuck in a dead-lock. */
+		error.type = OFONO_ERROR_TYPE_NO_ERROR;
+		error.error = 0;
+	}
 
 	cb(&error, cbd->data);
 }
@@ -180,6 +199,8 @@ static void at_ussd_cancel(struct ofono_ussd *ussd,
 
 	if (!cbd)
 		goto error;
+
+	cbd->user = data;
 
 	if (g_at_chat_send(data->chat, "AT+CUSD=2", none_prefix,
 				cusd_cancel_cb, cbd, g_free) > 0)
