@@ -352,8 +352,7 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 
 error:
-	if (ncbd)
-		g_free(ncbd);
+	g_free(ncbd);
 
 	gcd->active_context = 0;
 
@@ -399,8 +398,7 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 	return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, data);
 }
@@ -439,8 +437,7 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
