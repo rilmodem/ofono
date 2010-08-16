@@ -275,7 +275,7 @@ static void add_huawei(struct ofono_modem *modem,
 	ppp = ofono_modem_get_integer(modem, "ModemRegistered");
 	pcui = ofono_modem_get_integer(modem, "PcuiRegistered");
 
-	if (ppp & pcui)
+	if (ppp && pcui)
 		return;
 
 	entry = udev_device_get_properties_list_entry(udev_device);
