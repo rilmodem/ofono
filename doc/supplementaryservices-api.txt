@@ -16,11 +16,17 @@ Methods		string, variant Initiate(string command)
 			new command can be initiated until this one is
 			cancelled or ended.
 
+			Possible Errors: [service].Error.Timedout
+			Possible Errors: [service].Error.Canceled
+
 		string Respond(string reply)
 
 			Send a response to the network either when
 			it is awaiting further input after Initiate()
 			was called or after a network-initiated request.
+
+			Possible Errors: [service].Error.Timedout
+			Possible Errors: [service].Error.Canceled
 
 		void Cancel()
 
