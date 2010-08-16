@@ -70,7 +70,7 @@ void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
 	escaped_str[escaped] = '\0';
 
 	for (escaped = 2, i = 0; i < len; i++) {
-		char c = str[i];
+		unsigned char c = str[i];
 
 		switch (c) {
 		case '\r':
