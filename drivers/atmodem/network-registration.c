@@ -1018,6 +1018,9 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_register(nd->chat, "^RSSI:", huawei_rssi_notify,
 					FALSE, netreg, NULL);
 		break;
+	case OFONO_VENDOR_ZTE:
+		/* Signal strength reporting via CIND is not supported */
+		break;
 	default:
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
 				cind_support_cb, netreg, NULL);
