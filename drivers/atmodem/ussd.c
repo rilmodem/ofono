@@ -44,6 +44,11 @@
 static const char *cusd_prefix[] = { "+CUSD:", NULL };
 static const char *none_prefix[] = { NULL };
 
+struct ussd_data {
+	GAtChat *chat;
+	unsigned int vendor;
+};
+
 static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 {
 	GAtResultIter iter;
@@ -112,10 +117,10 @@ static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 }
 
 static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
-				ofono_ussd_cb_t cb, void *data)
+				ofono_ussd_cb_t cb, void *user_data)
 {
-	GAtChat *chat = ofono_ussd_get_data(ussd);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct ussd_data *data = ofono_ussd_get_data(ussd);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
 	unsigned char *converted = NULL;
 	int dcs;
 	int max_len;
@@ -145,7 +150,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 	g_free(converted);
 	converted = NULL;
 
-	if (g_at_chat_send(chat, buf, cusd_prefix,
+	if (g_at_chat_send(data->chat, buf, cusd_prefix,
 				cusd_request_cb, cbd, g_free) > 0)
 		return;
 
@@ -153,7 +158,7 @@ error:
 	g_free(cbd);
 	g_free(converted);
 
-	CALLBACK_WITH_FAILURE(cb, data);
+	CALLBACK_WITH_FAILURE(cb, user_data);
 }
 
 static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -168,22 +173,22 @@ static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 }
 
 static void at_ussd_cancel(struct ofono_ussd *ussd,
-				ofono_ussd_cb_t cb, void *data)
+				ofono_ussd_cb_t cb, void *user_data)
 {
-	GAtChat *chat = ofono_ussd_get_data(ussd);
-	struct cb_data *cbd = cb_data_new(cb, data);
+	struct ussd_data *data = ofono_ussd_get_data(ussd);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
 
 	if (!cbd)
 		goto error;
 
-	if (g_at_chat_send(chat, "AT+CUSD=2", none_prefix,
+	if (g_at_chat_send(data->chat, "AT+CUSD=2", none_prefix,
 				cusd_cancel_cb, cbd, g_free) > 0)
 		return;
 
 error:
 	g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, data);
+	CALLBACK_WITH_FAILURE(cb, user_data);
 }
 
 static void cusd_notify(GAtResult *result, gpointer user_data)
@@ -196,25 +201,30 @@ static void cusd_notify(GAtResult *result, gpointer user_data)
 static void at_ussd_register(gboolean ok, GAtResult *result, gpointer user)
 {
 	struct ofono_ussd *ussd = user;
-	GAtChat *chat = ofono_ussd_get_data(ussd);
+	struct ussd_data *data = ofono_ussd_get_data(ussd);
 
 	if (!ok) {
 		ofono_error("Could not enable CUSD notifications");
 		return;
 	}
 
-	g_at_chat_register(chat, "+CUSD:", cusd_notify, FALSE, ussd, NULL);
+	g_at_chat_register(data->chat, "+CUSD:", cusd_notify,
+						FALSE, ussd, NULL);
 
 	ofono_ussd_register(ussd);
 }
 
 static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
-				void *data)
+				void *user)
 {
-	GAtChat *chat = data;
+	GAtChat *chat = user;
+	struct ussd_data *data;
 
-	chat = g_at_chat_clone(chat);
-	ofono_ussd_set_data(ussd, chat);
+	data = g_new0(struct ussd_data, 1);
+	data->chat = g_at_chat_clone(chat);
+	data->vendor = vendor;
+
+	ofono_ussd_set_data(ussd, data);
 
 	g_at_chat_send(chat, "AT+CUSD=1", NULL, at_ussd_register, ussd, NULL);
 
@@ -223,18 +233,20 @@ static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 
 static void at_ussd_remove(struct ofono_ussd *ussd)
 {
-	GAtChat *chat = ofono_ussd_get_data(ussd);
+	struct ussd_data *data = ofono_ussd_get_data(ussd);
 
-	g_at_chat_unref(chat);
 	ofono_ussd_set_data(ussd, NULL);
+
+	g_at_chat_unref(data->chat);
+	g_free(data);
 }
 
 static struct ofono_ussd_driver driver = {
-	.name = "atmodem",
-	.probe = at_ussd_probe,
-	.remove = at_ussd_remove,
-	.request = at_ussd_request,
-	.cancel = at_ussd_cancel
+	.name		= "atmodem",
+	.probe		= at_ussd_probe,
+	.remove		= at_ussd_remove,
+	.request	= at_ussd_request,
+	.cancel		= at_ussd_cancel
 };
 
 void at_ussd_init()
