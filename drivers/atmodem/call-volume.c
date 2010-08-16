@@ -151,8 +151,7 @@ static void at_call_volume_speaker_volume(struct ofono_call_volume *cv,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -174,8 +173,7 @@ static void at_call_volume_mute(struct ofono_call_volume *cv, int muted,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }

@@ -100,8 +100,7 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 out:
 	ofono_ussd_notify(ussd, status, converted);
 
-	if (converted)
-		g_free(converted);
+	g_free(converted);
 }
 
 static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -157,11 +156,8 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
-
-	if (converted)
-		g_free(converted);
+	g_free(cbd);
+	g_free(converted);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -191,8 +187,7 @@ static void at_ussd_cancel(struct ofono_ussd *ussd,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }

@@ -102,8 +102,7 @@ static void at_query_manufacturer(struct ofono_devinfo *info,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
@@ -124,8 +123,7 @@ static void at_query_model(struct ofono_devinfo *info,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
@@ -146,8 +144,7 @@ static void at_query_revision(struct ofono_devinfo *info,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
@@ -168,8 +165,7 @@ static void at_query_serial(struct ofono_devinfo *info,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }

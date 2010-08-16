@@ -78,8 +78,7 @@ static void at_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -136,8 +135,7 @@ static void at_gprs_registration_status(struct ofono_gprs *gprs,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }

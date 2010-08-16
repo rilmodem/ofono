@@ -220,8 +220,7 @@ static void at_registration_status(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
 }
@@ -365,8 +364,7 @@ static void at_current_operator(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
@@ -486,8 +484,7 @@ static void at_list_operators(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
 }
@@ -517,8 +514,7 @@ static void at_register_auto(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -541,8 +537,7 @@ static void at_register_manual(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -561,8 +556,7 @@ static void at_deregister(struct ofono_netreg *netreg,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -758,8 +752,7 @@ static void at_signal_strength(struct ofono_netreg *netreg,
 	}
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }

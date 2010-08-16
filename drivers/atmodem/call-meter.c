@@ -125,8 +125,7 @@ static void at_caoc_query(struct ofono_call_meter *cm,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
@@ -147,8 +146,7 @@ static void at_cacm_query(struct ofono_call_meter *cm,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
@@ -181,8 +179,7 @@ static void at_cacm_set(struct ofono_call_meter *cm, const char *passwd,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -203,8 +200,7 @@ static void at_camm_query(struct ofono_call_meter *cm,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
@@ -227,8 +223,7 @@ static void at_camm_set(struct ofono_call_meter *cm,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -288,8 +283,7 @@ static void at_cpuc_query(struct ofono_call_meter *cm,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, 0, 0, data);
 }
@@ -313,8 +307,7 @@ static void at_cpuc_set(struct ofono_call_meter *cm, const char *currency,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }

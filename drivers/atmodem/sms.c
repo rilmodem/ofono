@@ -116,8 +116,7 @@ static void at_csca_set(struct ofono_sms *sms,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
 }
@@ -182,8 +181,7 @@ static void at_csca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, user_data);
 }
@@ -246,8 +244,7 @@ static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, user_data);
 }
@@ -280,8 +277,7 @@ static void at_cgsms_set(struct ofono_sms *sms, int bearer,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
 }
@@ -331,8 +327,7 @@ static void at_cgsms_query(struct ofono_sms *sms,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, user_data);
 }
@@ -1227,8 +1222,7 @@ static void at_sms_remove(struct ofono_sms *sms)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
 
-	if (data->cnma_ack_pdu)
-		g_free(data->cnma_ack_pdu);
+	g_free(data->cnma_ack_pdu);
 
 	if (data->timeout_source > 0)
 		g_source_remove(data->timeout_source);

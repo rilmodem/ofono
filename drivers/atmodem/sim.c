@@ -212,8 +212,7 @@ static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
@@ -237,8 +236,7 @@ static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
@@ -310,8 +308,7 @@ static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -344,8 +341,7 @@ static void at_sim_update_record(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -376,8 +372,7 @@ static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -424,8 +419,7 @@ static void at_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
@@ -523,8 +517,7 @@ static void at_pin_query(struct ofono_sim *sim, ofono_sim_passwd_cb_t cb,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
@@ -618,8 +611,7 @@ static void at_pin_send(struct ofono_sim *sim, const char *passwd,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -647,8 +639,7 @@ static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -693,8 +684,7 @@ static void at_pin_enable(struct ofono_sim *sim,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -729,8 +719,7 @@ static void at_change_passwd(struct ofono_sim *sim,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -788,8 +777,7 @@ static void at_pin_query_enabled(struct ofono_sim *sim,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }

@@ -96,8 +96,7 @@ static void at_call_barring_query(struct ofono_call_barring *cb,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(callback, 0, data);
 }
@@ -139,8 +138,7 @@ static void at_call_barring_set(struct ofono_call_barring *cb, const char *lock,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(callback, data);
 }
@@ -177,8 +175,7 @@ static void at_call_barring_set_passwd(struct ofono_call_barring *cb,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(callback, data);
 }

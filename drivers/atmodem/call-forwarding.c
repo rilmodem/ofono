@@ -143,8 +143,7 @@ static void at_ccfc_query(struct ofono_call_forwarding *cf, int type, int cls,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
 }
@@ -174,8 +173,7 @@ static void at_ccfc_set(struct ofono_call_forwarding *cf, const char *buf,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }

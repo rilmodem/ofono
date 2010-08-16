@@ -137,8 +137,7 @@ static void at_cbs_set_topics(struct ofono_cbs *cbs, const char *topics,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
 }
@@ -163,8 +162,7 @@ static void at_cbs_clear_topics(struct ofono_cbs *cbs,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
 }

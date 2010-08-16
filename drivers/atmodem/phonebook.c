@@ -380,8 +380,7 @@ static void at_export_entries(struct ofono_phonebook *pb, const char *storage,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }

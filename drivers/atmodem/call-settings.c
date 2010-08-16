@@ -98,8 +98,7 @@ static void at_ccwa_query(struct ofono_call_settings *cs, int cls,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, 0, data);
 }
@@ -132,8 +131,7 @@ static void at_ccwa_set(struct ofono_call_settings *cs, int mode, int cls,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
@@ -184,8 +182,7 @@ static void at_clip_query(struct ofono_call_settings *cs,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
@@ -235,8 +232,7 @@ static void at_colp_query(struct ofono_call_settings *cs,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
@@ -285,8 +281,7 @@ static void at_clir_query(struct ofono_call_settings *cs,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, -1, data);
 }
@@ -319,8 +314,7 @@ static void at_clir_set(struct ofono_call_settings *cs, int mode,
 		return;
 
 error:
-	if (cbd)
-		g_free(cbd);
+	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
 }
