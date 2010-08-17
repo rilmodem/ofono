@@ -365,7 +365,6 @@ struct sms_assembly {
 };
 
 struct id_table_node {
-	struct sms_address to;
 	unsigned int mrs[8];
 	time_t expiration;
 	unsigned char total_mrs;
