@@ -167,7 +167,7 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 	if (data->calypso)
 		g_at_chat_set_wakeup_command(data->chat, "AT\r", 500, 5000);
 
-	g_at_chat_send(data->chat, "AT+CFUN=1", NULL,
+	g_at_chat_send(data->chat, "AT+CFUN=1", none_prefix,
 					cfun_set_on_cb, modem, NULL);
 }
 
