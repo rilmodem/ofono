@@ -168,7 +168,8 @@ static int ste_enable(struct ofono_modem *modem)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->chat, ste_debug, NULL);
 
-	g_at_chat_send(data->chat, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1",
+			NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->chat, "AT+CFUN=1", NULL, cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
