@@ -127,19 +127,20 @@ void stk_agent_request_cancel(struct stk_agent *agent)
 		return;
 
 	dbus_pending_call_cancel(agent->call);
-	stk_agent_send_cancel(agent);
+
+	if (agent->disconnect_watch)
+		stk_agent_send_cancel(agent);
+
 	stk_agent_request_end(agent);
 }
 
 void stk_agent_free(struct stk_agent *agent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	gboolean busy = agent->call != NULL;
+
+	stk_agent_request_cancel(agent);
 
 	if (agent->disconnect_watch) {
-		if (busy)
-			stk_agent_send_cancel(agent);
-
 		stk_agent_send_release(agent);
 
 		g_dbus_remove_watch(conn, agent->disconnect_watch);
