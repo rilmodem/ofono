@@ -213,7 +213,7 @@ static void ste_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
+	sim = ofono_sim_create(modem, OFONO_VENDOR_MBM, "atmodem", data->chat);
 	ofono_voicecall_create(modem, 0, "stemodem", data->chat);
 
 	if (sim)
