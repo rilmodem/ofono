@@ -1312,6 +1312,89 @@ static void test_sr_assembly()
 	status_report_assembly_free(sra);
 }
 
+struct wap_push_data {
+	const char *pdu;
+	int len;
+};
+
+static struct wap_push_data wap_push_1 = {
+	.pdu = "0791947122725014440185F039F501801140311480720605040B8423F00106"
+		"246170706C69636174696F6E2F766E642E7761702E6D6D732D6D657373616"
+		"76500AF84B4868C82984F67514B4B42008D9089088045726F74696B009650"
+		"696E2D557073008A808E0240008805810303F48083687474703A2F2F65707"
+		"3332E64652F4F2F5A39495A4F00",
+	.len = 128,
+};
+
+static void test_wap_push(gconstpointer data)
+{
+	const struct wap_push_data *test = data;
+	struct sms sms;
+	unsigned char *decoded_pdu;
+	gboolean ret;
+	long pdu_len;
+	long data_len;
+	enum sms_class cls;
+	enum sms_charset charset;
+	GSList *list;
+	unsigned char *wap_push;
+	int dst_port, src_port;
+	gboolean is_8bit;
+
+	decoded_pdu = decode_hex(test->pdu, -1, &pdu_len, 0);
+
+	g_assert(decoded_pdu);
+
+	ret = sms_decode(decoded_pdu, pdu_len, FALSE, test->len, &sms);
+
+	g_free(decoded_pdu);
+
+	g_assert(ret);
+	g_assert(sms.type == SMS_TYPE_DELIVER);
+
+	if (g_test_verbose())
+		dump_details(&sms);
+
+	ret = sms_dcs_decode(sms.deliver.dcs, &cls, &charset, NULL, NULL);
+
+	g_assert(ret == TRUE);
+	g_assert(charset == SMS_CHARSET_8BIT);
+
+	g_assert(sms_extract_app_port(&sms, &dst_port, &src_port, &is_8bit));
+
+	if (g_test_verbose()) {
+		g_print("8bit: %d\n", is_8bit);
+		g_print("src: %d, dst: %d\n", src_port, dst_port);
+	}
+
+	g_assert(is_8bit == FALSE);
+	g_assert(dst_port == 2948);
+
+	list = g_slist_append(NULL, &sms);
+
+	wap_push = sms_decode_datagram(list, &data_len);
+
+	if (g_test_verbose()) {
+		int i;
+
+		g_print("data_len: %ld\n", data_len);
+
+		for (i = 0; i < data_len; i++) {
+			g_print("%02x", wap_push[i]);
+
+			if ((i % 16) == 15)
+				g_print("\n");
+		}
+
+		g_print("\n");
+	}
+
+	g_assert(wap_push);
+
+	g_free(wap_push);
+	g_slist_free(list);
+}
+
 int main(int argc, char **argv)
 {
 	char long_string[152*33 + 1];
@@ -1360,6 +1443,9 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsms/Range minimizer", test_range_minimizer);
 
 	g_test_add_func("/testsms/Status Report Assembly", test_sr_assembly);
+
+	g_test_add_data_func("/testsms/Test WAP Push 1", &wap_push_1,
+				test_wap_push);
 
 	return g_test_run();
 }
