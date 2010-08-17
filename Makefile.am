@@ -207,7 +207,6 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/caif_socket.h \
 			drivers/stemodem/if_caif.h
 
-
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
 
