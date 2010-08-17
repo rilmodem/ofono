@@ -202,9 +202,11 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/stemodem.h \
 			drivers/stemodem/stemodem.c \
 			drivers/stemodem/voicecall.c \
+			drivers/stemodem/radio-settings.c \
 			drivers/stemodem/gprs-context.c \
 			drivers/stemodem/caif_socket.h \
 			drivers/stemodem/if_caif.h
+
 
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
