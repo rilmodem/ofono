@@ -92,6 +92,57 @@ static void print_vpf(enum sms_validity_period_format vpf,
 	}
 }
 
+static void dump_details(struct sms *sms)
+{
+	if (sms->sc_addr.address[0] == '\0')
+		g_print("SMSC Address absent, default will be used\n");
+	else
+		g_print("SMSC Address number_type: %d, number_plan: %d, %s\n",
+			(int)sms->sc_addr.number_type,
+			(int)sms->sc_addr.numbering_plan, sms->sc_addr.address);
+
+	switch (sms->type) {
+	case SMS_TYPE_DELIVER:
+		g_print("Type: Deliver\n");
+
+		g_print("Originator-Address: %d, %d, %s\n",
+			(int)sms->deliver.oaddr.number_type,
+			(int)sms->deliver.oaddr.numbering_plan,
+			sms->deliver.oaddr.address);
+
+		g_print("PID: %d\n", (int)sms->deliver.pid);
+		g_print("DCS: %d\n", (int)sms->deliver.dcs);
+
+		print_scts(&sms->deliver.scts, "Timestamp");
+
+		break;
+	case SMS_TYPE_SUBMIT:
+		g_print("Type: Submit\n");
+
+		g_print("Message Reference: %u\n", (int)sms->submit.mr);
+
+		g_print("Destination-Address: %d, %d, %s\n",
+			(int)sms->submit.daddr.number_type,
+			(int)sms->submit.daddr.numbering_plan,
+			sms->submit.daddr.address);
+
+		g_print("PID: %d\n", (int)sms->submit.pid);
+		g_print("DCS: %d\n", (int)sms->submit.dcs);
+
+		print_vpf(sms->submit.vpf, &sms->submit.vp);
+
+		break;
+	case SMS_TYPE_STATUS_REPORT:
+		break;
+	case SMS_TYPE_COMMAND:
+	case SMS_TYPE_DELIVER_REPORT_ACK:
+	case SMS_TYPE_DELIVER_REPORT_ERROR:
+	case SMS_TYPE_SUBMIT_REPORT_ACK:
+	case SMS_TYPE_SUBMIT_REPORT_ERROR:
+		break;
+	}
+}
+
 static void test_simple_deliver()
 {
 	struct sms sms;
@@ -114,23 +165,8 @@ static void test_simple_deliver()
 	g_assert(ret);
 	g_assert(sms.type == SMS_TYPE_DELIVER);
 
-	if (g_test_verbose()) {
-		g_print("SMSC Address number_type: %d, number_plan: %d, %s\n",
-			(int)sms.sc_addr.number_type,
-			(int)sms.sc_addr.numbering_plan, sms.sc_addr.address);
-
-		g_print("SMS type: %d\n", (int)sms.type);
-
-		g_print("Originator-Address: %d, %d, %s\n",
-			(int)sms.deliver.oaddr.number_type,
-			(int)sms.deliver.oaddr.numbering_plan,
-			sms.deliver.oaddr.address);
-
-		g_print("PID: %d\n", (int)sms.deliver.pid);
-		g_print("DCS: %d\n", (int)sms.deliver.dcs);
-
-		print_scts(&sms.deliver.scts, "Timezone");
-	}
+	if (g_test_verbose())
+		dump_details(&sms);
 
 	g_assert(sms.sc_addr.number_type == SMS_NUMBER_TYPE_INTERNATIONAL);
 	g_assert(sms.sc_addr.numbering_plan == SMS_NUMBERING_PLAN_ISDN);
@@ -200,23 +236,8 @@ static void test_alnum_sender()
 	g_assert(ret);
 	g_assert(sms.type == SMS_TYPE_DELIVER);
 
-	if (g_test_verbose()) {
-		g_print("SMSC Address number_type: %d, number_plan: %d, %s\n",
-			(int)sms.sc_addr.number_type,
-			(int)sms.sc_addr.numbering_plan, sms.sc_addr.address);
-
-		g_print("SMS type: %d\n", (int)sms.type);
-
-		g_print("Originator-Address: %d, %d, %s\n",
-			(int)sms.deliver.oaddr.number_type,
-			(int)sms.deliver.oaddr.numbering_plan,
-			sms.deliver.oaddr.address);
-
-		g_print("PID: %d\n", (int)sms.deliver.pid);
-		g_print("DCS: %d\n", (int)sms.deliver.dcs);
-
-		print_scts(&sms.deliver.scts, "Timestamp");
-	}
+	if (g_test_verbose())
+		dump_details(&sms);
 
 	g_assert(sms.sc_addr.number_type == SMS_NUMBER_TYPE_INTERNATIONAL);
 	g_assert(sms.sc_addr.numbering_plan == SMS_NUMBERING_PLAN_ISDN);
@@ -263,6 +284,7 @@ static void test_alnum_sender()
 
 	g_free(utf8);
 }
+
 static void test_deliver_encode()
 {
 	struct sms sms;
@@ -361,30 +383,8 @@ static void test_simple_submit()
 	g_assert(ret);
 	g_assert(sms.type == SMS_TYPE_SUBMIT);
 
-	if (g_test_verbose()) {
-		if (sms.sc_addr.address[0] == '\0')
-			g_print("SMSC Address absent, default will be used\n");
-		else
-			g_print("SMSC Address number_type: %d,"
-				" number_plan: %d, %s\n",
-				(int)sms.sc_addr.number_type,
-				(int)sms.sc_addr.numbering_plan,
-				sms.sc_addr.address);
-
-		g_print("SMS type: %d\n", (int)sms.type);
-
-		g_print("Message Reference: %u\n", (int)sms.submit.mr);
-
-		g_print("Destination-Address: %d, %d, %s\n",
-			(int)sms.submit.daddr.number_type,
-			(int)sms.submit.daddr.numbering_plan,
-			sms.submit.daddr.address);
-
-		g_print("PID: %d\n", (int)sms.submit.pid);
-		g_print("DCS: %d\n", (int)sms.submit.dcs);
-
-		print_vpf(sms.submit.vpf, &sms.submit.vp);
-	}
+	if (g_test_verbose())
+		dump_details(&sms);
 
 	g_assert(strlen(sms.sc_addr.address) == 0);
 
@@ -623,31 +623,8 @@ static void test_ems_udh(gconstpointer data)
 	g_assert(ret);
 	g_assert(sms.type == SMS_TYPE_SUBMIT);
 
-	if (g_test_verbose()) {
-		if (sms.sc_addr.address[0] == '\0')
-			g_print("SMSC Address absent, default will be used\n");
-		else
-			g_print("SMSC Address number_type: %d,"
-				" number_plan: %d, %s\n",
-				(int)sms.sc_addr.number_type,
-				(int)sms.sc_addr.numbering_plan,
-				sms.sc_addr.address);
-
-		g_print("SMS type: %d\n", (int)sms.type);
-
-		g_print("Message Reference: %u\n", (int)sms.submit.mr);
-
-		g_print("Destination-Address: %d, %d, %s\n",
-			(int)sms.submit.daddr.number_type,
-			(int)sms.submit.daddr.numbering_plan,
-			sms.submit.daddr.address);
-
-		g_print("PID: %d\n", (int)sms.submit.pid);
-		g_print("DCS: %d\n", (int)sms.submit.dcs);
-
-		print_vpf(sms.submit.vpf, &sms.submit.vp);
-	}
-
+	if (g_test_verbose())
+		dump_details(&sms);
 	udhl = sms.submit.ud[0];
 
 	g_assert(sms.submit.udl == test->udl);
@@ -889,7 +866,6 @@ struct sms_concat_data {
 	const char *str;
 	unsigned int segments;
 };
-
 
 static struct sms_concat_data shakespeare_test = {
 	.str = "Shakespeare divided his time between London and Str"
