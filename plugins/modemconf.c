@@ -138,6 +138,7 @@ static struct {
 	{ "g1",		set_device	},
 	{ "wavecom",	set_device	},
 	{ "ste",	set_device	},
+	{ "ste",	set_interface	},
 	{ "calypso",	set_device	},
 	{ "palmpre",	set_device	},
 	{ "isimodem",	set_interface	},
