@@ -58,6 +58,9 @@ for path in properties["Modems"]:
 						"MicrophoneVolume",
 						"SpeakerVolume"]:
 				val = int(properties[key])
+			elif key in ["MainMenu"]:
+				val = ", ".join([ text + " (" + str(int(icon)) +
+					")" for text, icon in properties[key] ])
 			else:
 				val = str(properties[key])
 			print "        %s = %s" % (key, val)
