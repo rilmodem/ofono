@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <net/if.h>
 
 #include <glib.h>
 #include <gatchat.h>
@@ -123,12 +124,29 @@ static int ste_enable(struct ofono_modem *modem)
 	if (!device) {
 		struct sockaddr_caif addr;
 		int err;
+		const char *interface;
 
 		/* Create a CAIF socket for AT Service */
-		fd = socket(AF_CAIF, SOCK_SEQPACKET, CAIFPROTO_AT);
+		fd = socket(AF_CAIF, SOCK_STREAM, CAIFPROTO_AT);
 		if (fd < 0) {
 			ofono_error("Failed to create CAIF socket for AT");
 			return -EIO;
+		}
+
+		/* Bind CAIF socket to specified interface */
+		interface = ofono_modem_get_string(modem, "Interface");
+		if (interface) {
+			struct ifreq ifreq;
+			memset(&ifreq, 0, sizeof(ifreq));
+			strcpy(ifreq.ifr_name, interface);
+			err = setsockopt(fd, SOL_SOCKET,
+					SO_BINDTODEVICE, &ifreq, sizeof(ifreq));
+			if (err < 0) {
+				ofono_error("Failed to bind caif socket "
+					"to interface");
+				close(fd);
+				return err;
+			}
 		}
 
 		memset(&addr, 0, sizeof(addr));
