@@ -436,6 +436,8 @@ static gboolean agent_called(struct ofono_stk *stk)
 	switch (stk->pending_cmd->type) {
 	case STK_COMMAND_TYPE_SELECT_ITEM:
 	case STK_COMMAND_TYPE_DISPLAY_TEXT:
+	case STK_COMMAND_TYPE_GET_INPUT:
+	case STK_COMMAND_TYPE_GET_INKEY:
 		return TRUE;
 	}
 
