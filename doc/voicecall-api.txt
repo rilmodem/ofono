@@ -114,3 +114,14 @@ Properties	string LineIdentification [readonly]
 			stamped when the call enters the "active" state.
 			Client applications can use this to infer somewhat
 			reliable call duration information.
+
+		string Information [readonly, optional]
+
+			Contains information related to the call for the
+			user.  Currently this property is set for calls
+			initiated by SIM Toolkit applications.
+
+		byte Icon [readonly, optional]
+
+			Icon identifier to be used instead of or together
+			with the text information.
