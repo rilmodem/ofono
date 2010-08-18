@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import dbus
+import sys
 
 bus = dbus.SystemBus()
 
@@ -23,14 +24,12 @@ for path in properties["Modems"]:
 	netreg = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.NetworkRegistration')
 
-	properties = netreg.GetProperties()
+	if len(sys.argv) == 2 and sys.argv[1] == 'scan':
+		operators = netreg.Scan()
+	else:
+		operators = netreg.GetOperators()
 
-	for path in properties["Operators"]:
-		operator = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.NetworkOperator')
-
-		properties = operator.GetProperties()
-
+	for path, properties in operators:
 		print "    [ %s ]" % (path)
 
 		for key in properties.keys():
@@ -41,5 +40,5 @@ for path in properties["Modems"]:
 			else:
 				val = str(properties[key])
 			print "        %s = %s" % (key, val)
-	
+
 		print
