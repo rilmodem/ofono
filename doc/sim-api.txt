@@ -48,7 +48,7 @@ Signals		PropertyChanged(string name, variant value)
 Properties	boolean Present [readonly]
 
 			True if a SIM card is detected.  There are
-			no other proprerties if false.
+			no other properties if false.
 
 		string SubscriberIdentity [readonly, optional]
 
