@@ -85,10 +85,6 @@ struct ofono_netreg {
 	struct ofono_atom *atom;
 };
 
-static void current_operator_callback(const struct ofono_error *error,
-				const struct ofono_network_operator *current,
-				void *data);
-
 static void signal_strength_callback(const struct ofono_error *error,
 					int strength, void *data);
 
@@ -1171,55 +1167,6 @@ static void notify_status_watches(struct ofono_netreg *netreg)
 	}
 }
 
-void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
-			int lac, int ci, int tech)
-{
-	if (!netreg)
-		return;
-
-	if (netreg->status != status)
-		set_registration_status(netreg, status);
-
-	if (netreg->location != lac)
-		set_registration_location(netreg, lac);
-
-	if (netreg->cellid != ci)
-		set_registration_cellid(netreg, ci);
-
-	if (netreg->technology != tech)
-		set_registration_technology(netreg, tech);
-
-	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
-		netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
-		if (netreg->driver->current_operator)
-			netreg->driver->current_operator(netreg,
-					current_operator_callback, netreg);
-	} else {
-		struct ofono_error error;
-
-		error.type = OFONO_ERROR_TYPE_NO_ERROR;
-		error.error = 0;
-
-		current_operator_callback(&error, NULL, netreg);
-		__ofono_netreg_set_base_station_name(netreg, NULL);
-
-		netreg->signal_strength = -1;
-	}
-
-	notify_status_watches(netreg);
-}
-
-void ofono_netreg_time_notify(struct ofono_netreg *netreg,
-				struct ofono_network_time *info)
-{
-	struct ofono_modem *modem = __ofono_atom_get_modem(netreg->atom);
-
-	if (!info)
-		return;
-
-	__ofono_nettime_info_received(modem, info);
-}
-
 static void current_operator_callback(const struct ofono_error *error,
 				const struct ofono_network_operator *current,
 				void *data)
@@ -1327,6 +1274,55 @@ emit:
 	}
 
 	notify_status_watches(netreg);
+}
+
+void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
+			int lac, int ci, int tech)
+{
+	if (!netreg)
+		return;
+
+	if (netreg->status != status)
+		set_registration_status(netreg, status);
+
+	if (netreg->location != lac)
+		set_registration_location(netreg, lac);
+
+	if (netreg->cellid != ci)
+		set_registration_cellid(netreg, ci);
+
+	if (netreg->technology != tech)
+		set_registration_technology(netreg, tech);
+
+	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
+		netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
+		if (netreg->driver->current_operator)
+			netreg->driver->current_operator(netreg,
+					current_operator_callback, netreg);
+	} else {
+		struct ofono_error error;
+
+		error.type = OFONO_ERROR_TYPE_NO_ERROR;
+		error.error = 0;
+
+		current_operator_callback(&error, NULL, netreg);
+		__ofono_netreg_set_base_station_name(netreg, NULL);
+
+		netreg->signal_strength = -1;
+	}
+
+	notify_status_watches(netreg);
+}
+
+void ofono_netreg_time_notify(struct ofono_netreg *netreg,
+				struct ofono_network_time *info)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(netreg->atom);
+
+	if (!info)
+		return;
+
+	__ofono_nettime_info_received(modem, info);
 }
 
 static void registration_status_callback(const struct ofono_error *error,
