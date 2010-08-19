@@ -38,13 +38,13 @@ for path in properties["Modems"]:
 			continue
 
 		for key in properties.keys():
-			if key in ["Operators", "Calls",
-						"MultipartyCalls",
-						"EmergencyNumbers",
-						"SubscriberNumbers",
-						"PreferredLanguages",
-						"PrimaryContexts",
-						"LockedPins"]:
+			if key in ["Calls",
+					"MultipartyCalls",
+					"EmergencyNumbers",
+					"SubscriberNumbers",
+					"PreferredLanguages",
+					"PrimaryContexts",
+					"LockedPins"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
