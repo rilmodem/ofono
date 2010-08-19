@@ -16,21 +16,21 @@ for path in properties["Modems"]:
 
 	properties = modem.GetProperties()
 
-	if "org.ofono.DataConnectionManager" not in properties["Interfaces"]:
+	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
 		continue
 
-	connmgr = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.DataConnectionManager')
+	connman = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.ConnectionManager')
 
-	properties = connmgr.GetProperties()
+	contexts = connman.GetContexts()
 
-	if (properties["PrimaryContexts"] == []):
-		path = connmgr.CreateContext("Internet access", "internet")
+	if (len(contexts) == 0):
+		path = connman.AddContext("internet")
 	else:
-		path = properties["PrimaryContexts"][0]
+		path = contexts[0][0]
 
 	context = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.PrimaryDataContext')
+					'org.ofono.ConnectionContext')
 
 	try:
 		context.SetProperty("AccessPointName", sys.argv[1])
