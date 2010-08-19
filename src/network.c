@@ -85,9 +85,6 @@ struct ofono_netreg {
 	struct ofono_atom *atom;
 };
 
-static void signal_strength_callback(const struct ofono_error *error,
-					int strength, void *data);
-
 static void registration_status_callback(const struct ofono_error *error,
 					int status, int lac, int ci, int tech,
 					void *data);
@@ -1345,6 +1342,19 @@ static void registration_status_callback(const struct ofono_error *error,
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
+static void signal_strength_callback(const struct ofono_error *error,
+					int strength, void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBG("Error during signal strength query");
+		return;
+	}
+
+	ofono_netreg_strength_notify(netreg, strength);
+}
+
 static void init_registration_status(const struct ofono_error *error,
 					int status, int lac, int ci, int tech,
 					void *data)
@@ -1403,19 +1413,6 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 					"Strength", DBUS_TYPE_UINT16,
 					&strength);
 	}
-}
-
-static void signal_strength_callback(const struct ofono_error *error,
-					int strength, void *data)
-{
-	struct ofono_netreg *netreg = data;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Error during signal strength query");
-		return;
-	}
-
-	ofono_netreg_strength_notify(netreg, strength);
 }
 
 static void sim_opl_read_cb(int ok, int length, int record,
