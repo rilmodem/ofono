@@ -1167,6 +1167,16 @@ static void notify_status_watches(struct ofono_netreg *netreg)
 	}
 }
 
+static gboolean reset_available(struct network_operator_data *old,
+				const struct ofono_network_operator *new)
+{
+	if (old == NULL)
+		return;
+
+	if (new == NULL || network_operator_compare(old, new) != 0)
+		set_network_operator_status(old, OPERATOR_STATUS_AVAILABLE);
+}
+
 static void current_operator_callback(const struct ofono_error *error,
 				const struct ofono_network_operator *current,
 				void *data)
@@ -1198,11 +1208,7 @@ static void current_operator_callback(const struct ofono_error *error,
 
 	/* We got a new network operator, reset the previous one's status */
 	/* It will be updated properly later */
-	if (netreg->current_operator &&
-		(!current ||
-			network_operator_compare(netreg->current_operator, current)))
-		set_network_operator_status(netreg->current_operator,
-						OPERATOR_STATUS_AVAILABLE);
+	reset_available(netreg->current_operator, current);
 
 	if (current)
 		op = g_slist_find_custom(netreg->operator_list, current,
