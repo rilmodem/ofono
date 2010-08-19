@@ -1150,6 +1150,48 @@ static void write_context_settings(struct ofono_gprs *gprs,
 				gprs_proto_to_string(context->context.proto));
 }
 
+static struct pri_context *add_context(struct ofono_gprs *gprs,
+					const char *name,
+					enum gprs_context_type type)
+{
+	unsigned int id;
+	struct pri_context *context;
+
+	if (gprs->last_context_id)
+		id = idmap_alloc_next(gprs->pid_map, gprs->last_context_id);
+	else
+		id = idmap_alloc(gprs->pid_map);
+
+	if (id > idmap_get_max(gprs->pid_map))
+		return NULL;
+
+	context = pri_context_create(gprs, name, type);
+	if (!context) {
+		ofono_error("Unable to allocate context struct");
+		return NULL;
+	}
+
+	context->id = id;
+
+	DBG("Registering new context");
+
+	if (!context_dbus_register(context)) {
+		ofono_error("Unable to register primary context");
+		return NULL;
+	}
+
+	gprs->last_context_id = id;
+
+	if (gprs->settings) {
+		write_context_settings(gprs, context);
+		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
+	}
+
+	gprs->contexts = g_slist_append(gprs->contexts, context);
+
+	return context;
+}
+
 static DBusMessage *gprs_add_context(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1158,7 +1200,6 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	const char *typestr;
 	const char *path;
 	enum gprs_context_type type;
-	unsigned int id;
 	DBusMessage *signal;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
@@ -1170,37 +1211,9 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	if (type == GPRS_CONTEXT_TYPE_INVALID)
 		return __ofono_error_invalid_format(msg);
 
-	if (gprs->last_context_id)
-		id = idmap_alloc_next(gprs->pid_map, gprs->last_context_id);
-	else
-		id = idmap_alloc(gprs->pid_map);
-
-	if (id > idmap_get_max(gprs->pid_map))
-		return __ofono_error_not_supported(msg);
-
-	context = pri_context_create(gprs, typestr, type);
-	context->id = id;
-
-	if (!context) {
-		ofono_error("Unable to allocate context struct");
+	context = add_context(gprs, typestr, type);
+	if (context == NULL)
 		return __ofono_error_failed(msg);
-	}
-
-	DBG("Registering new context");
-
-	if (!context_dbus_register(context)) {
-		ofono_error("Unable to register primary context");
-		return __ofono_error_failed(msg);
-	}
-
-	gprs->last_context_id = id;
-
-	if (gprs->settings) {
-		write_context_settings(gprs, context);
-		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
-	}
-
-	gprs->contexts = g_slist_append(gprs->contexts, context);
 
 	path = context->path;
 
@@ -1952,6 +1965,9 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 
 		gprs_load_settings(gprs, imsi);
 	}
+
+	if (gprs->contexts == NULL)
+		add_context(gprs, "internet", GPRS_CONTEXT_TYPE_INTERNET);
 
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
