@@ -56,6 +56,7 @@
 
 static const char *none_prefix[] = { NULL };
 static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
+static const char *ussdmode_prefix[] = { "^USSDMODE:", NULL };
 
 enum huawei_sim_state {
 	HUAWEI_SIM_STATE_INVALID_OR_LOCKED =	0,
@@ -107,6 +108,51 @@ static void huawei_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;
 	ofono_info("%s%s", prefix, str);
+}
+
+static void ussdmode_query_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct huawei_data *data = user_data;
+	GAtResultIter iter;
+	gint ussdmode;
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^USSDMODE:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &ussdmode))
+		return;
+
+	if (ussdmode == 0)
+		return;
+
+	/* set USSD mode to text mode */
+	g_at_chat_send(data->pcui, "AT^USSDMODE=0", none_prefix,
+						NULL, NULL, NULL);
+}
+
+static void ussdmode_support_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct huawei_data *data = user_data;
+	GAtResultIter iter;
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^USSDMODE:"))
+		return;
+
+	/* query current USSD mode */
+	g_at_chat_send(data->pcui, "AT^USSDMODE?", ussdmode_prefix,
+					ussdmode_query_cb, data, NULL);
 }
 
 static void notify_sim_state(struct ofono_modem *modem,
@@ -185,11 +231,15 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* follow sim state */
 	g_at_chat_register(data->pcui, "^SIMST:", simst_notify,
-							FALSE, modem, NULL);
+						FALSE, modem, NULL);
 
 	/* query current sim state */
 	g_at_chat_send(data->pcui, "AT^SYSINFO", sysinfo_prefix,
-					sysinfo_cb, modem, NULL);
+						sysinfo_cb, modem, NULL);
+
+	/* check USSD mode support */
+	g_at_chat_send(data->pcui, "AT^USSDMODE=?", ussdmode_prefix,
+					ussdmode_support_cb, data, NULL);
 }
 
 static GAtChat *create_port(const char *device)
@@ -369,9 +419,10 @@ static void huawei_post_sim(struct ofono_modem *modem)
 								data->pcui);
 
 	ofono_sms_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->pcui);
-	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem",
-								data->pcui);
-	ofono_ussd_create(modem, 0, "atmodem", data->pcui);
+	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+						"atmodem", data->pcui);
+	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+						"atmodem", data->pcui);
 	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
 
 	if (data->sim_state == HUAWEI_SIM_STATE_VALID ||
