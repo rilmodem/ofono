@@ -1388,11 +1388,12 @@ void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
 void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 {
 	gprs->status = status;
-	gprs_attached_update(gprs);
 
 	if (status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
-			status != NETWORK_REGISTRATION_STATUS_ROAMING)
+			status != NETWORK_REGISTRATION_STATUS_ROAMING) {
+		gprs_attached_update(gprs);
 		return;
+	}
 
 	/* We registered without being powered */
 	if (gprs->powered == FALSE)
@@ -1403,6 +1404,8 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 		goto detach;
 
 	gprs->driver_attached = TRUE;
+	gprs_attached_update(gprs);
+
 	return;
 
 detach:
