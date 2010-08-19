@@ -5,10 +5,6 @@ import sys
 import dbus
 import dbus.mainloop.glib
 
-def operator_property_changed(name, value, path=None):
-	print "Operator on path: '%s', property '%s' changed to '%s'" %\
-		(path, name, value)
-
 def network_property_changed(name, value):
 	print "Network Registration property '%s' changed to '%s'" %\
 		(name, value)
@@ -53,22 +49,6 @@ if __name__ == "__main__":
 
 	if props.has_key('Technology'):
 		print "Technology: '%s'" % (props['Technology'])
-
-	for path in props['Operators']:
-		op = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.NetworkOperator')
-		op.connect_to_signal("PropertyChanged",
-					operator_property_changed,
-					path_keyword='path')
-
-		props = op.GetProperties()
-
-		print ""
-
-		print "Operator at path: '%s'" % (path)
-		print "Name: '%s', MCC: '%s', MNC: '%s', status: '%s'" %\
-			(props['Name'], props['MobileCountryCode'],
-				props['MobileNetworkCode'], props['Status'])
 
 	try:
 		if sys.argv[1] == 'default':
