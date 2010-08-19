@@ -95,6 +95,10 @@ struct ofono_sim {
 	void *driver_data;
 	struct ofono_atom *atom;
 	DBusMessage *pending;
+	unsigned char *efust;
+	unsigned char efust_length;
+	unsigned char *efest;
+	unsigned char efest_length;
 };
 
 struct msisdn_set_request {
@@ -1076,6 +1080,61 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 }
 
+static void sim_efest_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (!ok)
+		goto out;
+
+	if (length < 1) {
+		ofono_error("EFest shall contain at least one byte");
+		goto out;
+	}
+
+	sim->efest = g_memdup(data, length);
+	sim->efest_length = length;
+
+out:
+	sim_retrieve_imsi(sim);
+}
+
+static void sim_efust_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (!ok)
+		goto out;
+
+	if (length < 1) {
+		ofono_error("EFust shall contain at least one byte");
+		goto out;
+	}
+
+	sim->efust = g_memdup(data, length);
+	sim->efust_length = length;
+
+	ofono_sim_read(sim, SIM_EFEST_FILEID,
+		OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+		sim_efest_read_cb, sim);
+
+	return;
+
+out:
+	sim_retrieve_imsi(sim);
+}
+
+static inline void sim_retrieve_efust(struct ofono_sim *sim)
+{
+	ofono_sim_read(sim, SIM_EFUST_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efust_read_cb, sim);
+}
+
 static void sim_pin_query_cb(const struct ofono_error *error,
 				enum ofono_sim_password_type pin_type,
 				void *data)
@@ -1110,13 +1169,13 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 
 checkdone:
 	if (pin_type == OFONO_SIM_PASSWORD_NONE)
-		sim_retrieve_imsi(sim);
+		sim_retrieve_efust(sim);
 }
 
 static void sim_pin_check(struct ofono_sim *sim)
 {
 	if (!sim->driver->query_passwd_state) {
-		sim_retrieve_imsi(sim);
+		sim_retrieve_efust(sim);
 		return;
 	}
 
@@ -1933,6 +1992,18 @@ static void sim_free_state(struct ofono_sim *sim)
 	if (sim->language_prefs) {
 		g_strfreev(sim->language_prefs);
 		sim->language_prefs = NULL;
+	}
+
+	if (sim->efust) {
+		g_free(sim->efust);
+		sim->efust = NULL;
+		sim->efust_length = 0;
+	}
+
+	if (sim->efest) {
+		g_free(sim->efest);
+		sim->efest = NULL;
+		sim->efest_length = 0;
 	}
 }
 
