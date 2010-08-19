@@ -16,24 +16,24 @@ for path in properties["Modems"]:
 
 	properties = modem.GetProperties()
 
-	if "org.ofono.DataConnectionManager" not in properties["Interfaces"]:
+	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
 		continue
 
-	connmgr = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.DataConnectionManager')
+	connman = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.ConnectionManager')
 
-	properties = connmgr.GetProperties()
+	contexts = connman.GetContexts()
 
-	if (properties["PrimaryContexts"] == []):
+	if (len(contexts) == 0):
 		print "No context available"
 		sys.exit(1)
 
-	connmgr.SetProperty("Powered", dbus.Boolean(1))
+	connman.SetProperty("Powered", dbus.Boolean(1))
 
-	path = properties["PrimaryContexts"][0]
+	path = contexts[0][0]
 
 	context = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.PrimaryDataContext')
+					'org.ofono.ConnectionContext')
 
 	try:
 		context.SetProperty("Active", dbus.Boolean(1))
