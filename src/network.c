@@ -1175,7 +1175,7 @@ static void notify_status_watches(struct ofono_netreg *netreg)
 	}
 }
 
-static gboolean reset_available(struct network_operator_data *old,
+static void reset_available(struct network_operator_data *old,
 				const struct ofono_network_operator *new)
 {
 	if (old == NULL)
