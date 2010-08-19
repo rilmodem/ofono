@@ -1133,6 +1133,23 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 	return dbus_message_new_method_return(msg);
 }
 
+static void write_context_settings(struct ofono_gprs *gprs,
+					struct pri_context *context)
+{
+	g_key_file_set_string(gprs->settings, context->key,
+				"Name", context->name);
+	g_key_file_set_string(gprs->settings, context->key,
+				"AccessPointName", context->context.apn);
+	g_key_file_set_string(gprs->settings, context->key,
+				"Username", context->context.username);
+	g_key_file_set_string(gprs->settings, context->key,
+				"Password", context->context.password);
+	g_key_file_set_string(gprs->settings, context->key, "Type",
+				gprs_context_type_to_string(context->type));
+	g_key_file_set_string(gprs->settings, context->key, "Protocol",
+				gprs_proto_to_string(context->context.proto));
+}
+
 static DBusMessage *gprs_add_context(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1179,19 +1196,7 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	gprs->last_context_id = id;
 
 	if (gprs->settings) {
-		g_key_file_set_string(gprs->settings, context->key,
-					"Name", context->name);
-		g_key_file_set_string(gprs->settings, context->key,
-					"AccessPointName",
-					context->context.apn);
-		g_key_file_set_string(gprs->settings, context->key,
-					"Username", context->context.username);
-		g_key_file_set_string(gprs->settings, context->key,
-					"Password", context->context.password);
-		g_key_file_set_string(gprs->settings, context->key, "Type",
-				gprs_context_type_to_string(context->type));
-		g_key_file_set_string(gprs->settings, context->key, "Protocol",
-				gprs_proto_to_string(context->context.proto));
+		write_context_settings(gprs, context);
 		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
 	}
 
