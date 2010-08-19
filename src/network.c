@@ -85,10 +85,6 @@ struct ofono_netreg {
 	struct ofono_atom *atom;
 };
 
-static void registration_status_callback(const struct ofono_error *error,
-					int status, int lac, int ci, int tech,
-					void *data);
-
 struct network_operator_data {
 	char name[OFONO_MAX_OPERATOR_NAME_LENGTH + 1];
 	char mcc[OFONO_MAX_MCC_LENGTH + 1];
@@ -176,6 +172,20 @@ static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
 					"Mode", DBUS_TYPE_STRING, &strmode);
+}
+
+static void registration_status_callback(const struct ofono_error *error,
+					int status, int lac, int ci, int tech,
+					void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBG("Error during registration status query");
+		return;
+	}
+
+	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
 static void register_callback(const struct ofono_error *error, void *data)
@@ -1326,20 +1336,6 @@ void ofono_netreg_time_notify(struct ofono_netreg *netreg,
 		return;
 
 	__ofono_nettime_info_received(modem, info);
-}
-
-static void registration_status_callback(const struct ofono_error *error,
-					int status, int lac, int ci, int tech,
-					void *data)
-{
-	struct ofono_netreg *netreg = data;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Error during registration status query");
-		return;
-	}
-
-	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
 static void signal_strength_callback(const struct ofono_error *error,
