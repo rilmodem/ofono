@@ -394,7 +394,8 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->pcui);
-	data->sim = ofono_sim_create(modem, 0, "atmodem", data->pcui);
+	data->sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+					"atmodem", data->pcui);
 
 	if ((data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_PS) &&
