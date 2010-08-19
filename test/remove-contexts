@@ -15,14 +15,14 @@ for path in properties["Modems"]:
 
 	properties = modem.GetProperties()
 
-	if "org.ofono.DataConnectionManager" not in properties["Interfaces"]:
+	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
 		continue
 
-	connmgr = dbus.Interface(bus.get_object('org.ofono', path),
-					'org.ofono.DataConnectionManager')
+	connman = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.ConnectionManager')
 
-	properties = connmgr.GetProperties()
+	contexts = connman.GetContexts()
 
-	for path in properties["PrimaryContexts"]:
-		connmgr.RemoveContext(path)
+	for path, properties in contexts:
+		connman.RemoveContext(path)
 		print"Removed: [ %s ]" % (path)
