@@ -376,6 +376,39 @@ static void pri_update_context_settings(struct pri_context *ctx,
 	pri_context_signal_settings(ctx);
 }
 
+static void append_context_properties(struct pri_context *ctx,
+					DBusMessageIter *dict)
+{
+	const char *type = gprs_context_type_to_string(ctx->type);
+	const char *proto = gprs_proto_to_string(ctx->context.proto);
+	const char *name = ctx->name;
+	dbus_bool_t value;
+	const char *strvalue;
+
+	ofono_dbus_dict_append(dict, "Name", DBUS_TYPE_STRING, &name);
+
+	value = ctx->active;
+	ofono_dbus_dict_append(dict, "Active", DBUS_TYPE_BOOLEAN, &value);
+
+	ofono_dbus_dict_append(dict, "Type", DBUS_TYPE_STRING, &type);
+
+	ofono_dbus_dict_append(dict, "Protocol", DBUS_TYPE_STRING, &proto);
+
+	strvalue = ctx->context.apn;
+	ofono_dbus_dict_append(dict, "AccessPointName", DBUS_TYPE_STRING,
+				&strvalue);
+
+	strvalue = ctx->context.username;
+	ofono_dbus_dict_append(dict, "Username", DBUS_TYPE_STRING,
+				&strvalue);
+
+	strvalue = ctx->context.password;
+	ofono_dbus_dict_append(dict, "Password", DBUS_TYPE_STRING,
+				&strvalue);
+
+	context_settings_append_dict(ctx->settings, dict);
+}
+
 static DBusMessage *pri_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -383,11 +416,6 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-	dbus_bool_t value;
-	const char *type = gprs_context_type_to_string(ctx->type);
-	const char *proto = gprs_proto_to_string(ctx->context.proto);
-	const char *name = ctx->name;
-	const char *strvalue;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -398,30 +426,7 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
-
-	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &name);
-
-	value = ctx->active;
-	ofono_dbus_dict_append(&dict, "Active", DBUS_TYPE_BOOLEAN, &value);
-
-	ofono_dbus_dict_append(&dict, "Type", DBUS_TYPE_STRING, &type);
-
-	ofono_dbus_dict_append(&dict, "Protocol", DBUS_TYPE_STRING, &proto);
-
-	strvalue = ctx->context.apn;
-	ofono_dbus_dict_append(&dict, "AccessPointName", DBUS_TYPE_STRING,
-				&strvalue);
-
-	strvalue = ctx->context.username;
-	ofono_dbus_dict_append(&dict, "Username", DBUS_TYPE_STRING,
-				&strvalue);
-
-	strvalue = ctx->context.password;
-	ofono_dbus_dict_append(&dict, "Password", DBUS_TYPE_STRING,
-				&strvalue);
-
-	context_settings_append_dict(ctx->settings, &dict);
-
+	append_context_properties(ctx, &dict);
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
