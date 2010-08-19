@@ -39,7 +39,7 @@
 
 #define uninitialized_var(x) x = x
 
-#define SMS_MANAGER_FLAG_CACHED 0x1
+#define MESSAGE_MANAGER_FLAG_CACHED 0x1
 
 #define SETTINGS_STORE "sms"
 #define SETTINGS_GROUP "Settings"
@@ -135,7 +135,7 @@ static void set_bearer(struct ofono_sms *sms, int bearer)
 	value = sms_bearer_to_string(sms->bearer);
 
 	ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SMS_MANAGER_INTERFACE,
+						OFONO_MESSAGE_MANAGER_INTERFACE,
 						"Bearer",
 						DBUS_TYPE_STRING, &value);
 }
@@ -158,7 +158,7 @@ static void set_sca(struct ofono_sms *sms,
 	value = phone_number_to_string(&sms->sca);
 
 	ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SMS_MANAGER_INTERFACE,
+						OFONO_MESSAGE_MANAGER_INTERFACE,
 						"ServiceCenterAddress",
 						DBUS_TYPE_STRING, &value);
 }
@@ -210,7 +210,7 @@ static void sms_sca_query_cb(const struct ofono_error *error,
 
 	set_sca(sms, sca);
 
-	sms->flags |= SMS_MANAGER_FLAG_CACHED;
+	sms->flags |= MESSAGE_MANAGER_FLAG_CACHED;
 
 out:
 	if (sms->pending) {
@@ -231,7 +231,7 @@ static DBusMessage *sms_get_properties(DBusConnection *conn,
 	if (!sms->driver->sca_query)
 		return __ofono_error_not_implemented(msg);
 
-	if (sms->flags & SMS_MANAGER_FLAG_CACHED)
+	if (sms->flags & MESSAGE_MANAGER_FLAG_CACHED)
 		return generate_get_properties_reply(sms, msg);
 
 	sms->pending = dbus_message_ref(msg);
@@ -283,7 +283,7 @@ static void sca_set_query_callback(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Set SCA succeeded, but query failed");
-		sms->flags &= ~SMS_MANAGER_FLAG_CACHED;
+		sms->flags &= ~MESSAGE_MANAGER_FLAG_CACHED;
 		reply = __ofono_error_failed(sms->pending);
 		__ofono_dbus_pending_reply(&sms->pending, reply);
 		return;
@@ -395,7 +395,7 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (sms->use_delivery_reports != (ofono_bool_t) value) {
 			sms->use_delivery_reports = value;
 			ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SMS_MANAGER_INTERFACE,
+						OFONO_MESSAGE_MANAGER_INTERFACE,
 						"UseDeliveryReports",
 						DBUS_TYPE_BOOLEAN, &value);
 		}
@@ -701,7 +701,7 @@ static void dispatch_text_message(struct ofono_sms *sms,
 	else
 		signal_name = "IncomingMessage";
 
-	signal = dbus_message_new_signal(path, OFONO_SMS_MANAGER_INTERFACE,
+	signal = dbus_message_new_signal(path, OFONO_MESSAGE_MANAGER_INTERFACE,
 						signal_name);
 
 	if (!signal)
@@ -1080,8 +1080,9 @@ static void sms_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
-	g_dbus_unregister_interface(conn, path, OFONO_SMS_MANAGER_INTERFACE);
-	ofono_modem_remove_interface(modem, OFONO_SMS_MANAGER_INTERFACE);
+	g_dbus_unregister_interface(conn, path,
+					OFONO_MESSAGE_MANAGER_INTERFACE);
+	ofono_modem_remove_interface(modem, OFONO_MESSAGE_MANAGER_INTERFACE);
 
 	if (sms->mw_watch) {
 		__ofono_modem_remove_atom_watch(modem, sms->mw_watch);
@@ -1257,16 +1258,16 @@ void ofono_sms_register(struct ofono_sms *sms)
 	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
-					OFONO_SMS_MANAGER_INTERFACE,
+					OFONO_MESSAGE_MANAGER_INTERFACE,
 					sms_manager_methods,
 					sms_manager_signals,
 					NULL, sms, NULL)) {
 		ofono_error("Could not create %s interface",
-				OFONO_SMS_MANAGER_INTERFACE);
+				OFONO_MESSAGE_MANAGER_INTERFACE);
 		return;
 	}
 
-	ofono_modem_add_interface(modem, OFONO_SMS_MANAGER_INTERFACE);
+	ofono_modem_add_interface(modem, OFONO_MESSAGE_MANAGER_INTERFACE);
 
 	sms->mw_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_MESSAGE_WAITING,
