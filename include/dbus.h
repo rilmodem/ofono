@@ -38,6 +38,8 @@ extern "C" {
 #define OFONO_CALL_SETTINGS_INTERFACE "org.ofono.CallSettings"
 #define OFONO_CALL_VOLUME_INTERFACE OFONO_SERVICE ".CallVolume"
 #define OFONO_CELL_BROADCAST_INTERFACE "org.ofono.CellBroadcast"
+#define OFONO_CONNECTION_CONTEXT_INTERFACE "org.ofono.ConnectionContext"
+#define OFONO_CONNECTION_MANAGER_INTERFACE "org.ofono.ConnectionManager"
 #define OFONO_MESSAGE_MANAGER_INTERFACE "org.ofono.MessageManager"
 #define OFONO_MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
 #define OFONO_NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
@@ -47,8 +49,6 @@ extern "C" {
 #define OFONO_SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 #define OFONO_VOICECALL_INTERFACE "org.ofono.VoiceCall"
 #define OFONO_VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"
-#define OFONO_DATA_CONNECTION_MANAGER_INTERFACE "org.ofono.DataConnectionManager"
-#define OFONO_DATA_CONTEXT_INTERFACE "org.ofono.PrimaryDataContext"
 #define OFONO_STK_INTERFACE OFONO_SERVICE ".SimToolkit"
 #define OFONO_SIM_APP_INTERFACE OFONO_SERVICE ".SimToolkitAgent"
 
