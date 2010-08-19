@@ -208,7 +208,8 @@ static void zte_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->aux);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->aux);
+	sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+				"atmodem", data->aux);
 
 	if (sim)
 		ofono_sim_inserted_notify(sim, TRUE);
