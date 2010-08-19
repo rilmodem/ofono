@@ -478,7 +478,8 @@ static void set_network_operator_eons_info(struct network_operator_data *opd,
 
 		if (opd == netreg->current_operator) {
 			const char *npath = __ofono_atom_get_path(netreg->atom);
-			const char *operator = get_operator_display_name(netreg);
+			const char *operator =
+				get_operator_display_name(netreg);
 
 			ofono_dbus_signal_property_changed(conn, npath,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
@@ -601,9 +602,9 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 }
 
 static GDBusMethodTable network_operator_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	network_operator_get_properties },
-	{ "Register",		"",	"",		network_operator_register,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetProperties",  "",  "a{sv}",  network_operator_get_properties },
+	{ "Register",       "",  "",       network_operator_register,
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
@@ -641,7 +642,7 @@ static gboolean network_operator_dbus_register(struct ofono_netreg *netreg,
 }
 
 static gboolean network_operator_dbus_unregister(struct ofono_netreg *netreg,
-						struct network_operator_data *opd)
+					struct network_operator_data *opd)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
