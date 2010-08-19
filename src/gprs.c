@@ -1338,15 +1338,68 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 	return __ofono_error_not_implemented(msg);
 }
 
+static DBusMessage *gprs_get_contexts(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_gprs *gprs = data;
+	DBusMessage *reply;
+	DBusMessageIter iter;
+	DBusMessageIter array;
+	DBusMessageIter entry, dict;
+	const char *path;
+	GSList *l;
+	struct pri_context *ctx;
+
+	reply = dbus_message_new_method_return(msg);
+	if (reply == NULL)
+		return NULL;
+
+	dbus_message_iter_init_append(reply, &iter);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					DBUS_STRUCT_BEGIN_CHAR_AS_STRING
+					DBUS_TYPE_OBJECT_PATH_AS_STRING
+					DBUS_TYPE_ARRAY_AS_STRING
+					DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
+					DBUS_TYPE_STRING_AS_STRING
+					DBUS_TYPE_VARIANT_AS_STRING
+					DBUS_DICT_ENTRY_END_CHAR_AS_STRING
+					DBUS_STRUCT_END_CHAR_AS_STRING,
+					&array);
+
+	for (l = gprs->contexts; l; l = l->next) {
+		ctx = l->data;
+
+		path = ctx->path;
+
+		dbus_message_iter_open_container(&array, DBUS_TYPE_STRUCT,
+							NULL, &entry);
+		dbus_message_iter_append_basic(&entry, DBUS_TYPE_OBJECT_PATH,
+						&path);
+		dbus_message_iter_open_container(&entry, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+
+		append_context_properties(ctx, &dict);
+		dbus_message_iter_close_container(&entry, &dict);
+		dbus_message_iter_close_container(&array, &entry);
+	}
+
+	dbus_message_iter_close_container(&iter, &array);
+
+	return reply;
+}
+
 static GDBusMethodTable manager_methods[] = {
-	{ "GetProperties",     "",     "a{sv}",    gprs_get_properties },
-	{ "SetProperty",       "sv",   "",         gprs_set_property },
-	{ "AddContext",        "s",    "o",        gprs_add_context,
+	{ "GetProperties",     "",     "a{sv}",     gprs_get_properties },
+	{ "SetProperty",       "sv",   "",          gprs_set_property },
+	{ "AddContext",        "s",    "o",         gprs_add_context,
 						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "RemoveContext",     "o",    "",         gprs_remove_context,
+	{ "RemoveContext",     "o",    "",          gprs_remove_context,
 						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "DeactivateAll",     "",     "",         gprs_deactivate_all,
+	{ "DeactivateAll",     "",     "",          gprs_deactivate_all,
 						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetContexts",       "",     "a(oa{sv})", gprs_get_contexts },
 	{ }
 };
 
