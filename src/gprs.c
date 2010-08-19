@@ -1967,7 +1967,7 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 	}
 
 	if (gprs->contexts == NULL)
-		add_context(gprs, "internet", GPRS_CONTEXT_TYPE_INTERNET);
+		add_context(gprs, "Internet", GPRS_CONTEXT_TYPE_INTERNET);
 
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
