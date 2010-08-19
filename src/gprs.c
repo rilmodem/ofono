@@ -1234,6 +1234,9 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 {
 	struct pri_context *ctx = data;
 	struct ofono_gprs *gprs = ctx->gprs;
+	DBusConnection *conn;
+	char *path;
+	const char *atompath;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Removing context failed with error: %s",
@@ -1252,11 +1255,21 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
 	}
 
+	/* Make a backup copy of path for signal emission below */
+	path = g_strdup(ctx->path);
+
 	context_dbus_unregister(ctx);
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
 
 	__ofono_dbus_pending_reply(&gprs->pending,
 				dbus_message_new_method_return(gprs->pending));
+
+	atompath = __ofono_atom_get_path(gprs->atom);
+	conn = ofono_dbus_get_connection();
+	g_dbus_emit_signal(conn, atompath, OFONO_CONNECTION_MANAGER_INTERFACE,
+				"ContextRemoved", DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
+	g_free(path);
 }
 
 static DBusMessage *gprs_remove_context(DBusConnection *conn,
@@ -1265,6 +1278,7 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	struct ofono_gprs *gprs = data;
 	struct pri_context *ctx;
 	const char *path;
+	const char *atompath;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID))
@@ -1296,6 +1310,11 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	atompath = __ofono_atom_get_path(gprs->atom);
+	g_dbus_emit_signal(conn, atompath, OFONO_CONNECTION_MANAGER_INTERFACE,
+				"ContextRemoved", DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
 
 	return NULL;
 }
@@ -1329,6 +1348,7 @@ static GDBusMethodTable manager_methods[] = {
 static GDBusSignalTable manager_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ "ContextAdded",	"oa{sv}" },
+	{ "ContextRemoved",     "o" },
 	{ }
 };
 
