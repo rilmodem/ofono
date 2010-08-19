@@ -1155,25 +1155,20 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 	return dbus_message_new_method_return(msg);
 }
 
-static DBusMessage *gprs_create_context(DBusConnection *conn,
+static DBusMessage *gprs_add_context(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_gprs *gprs = data;
 	struct pri_context *context;
-	const char *name;
 	const char *typestr;
 	const char *path;
 	enum gprs_context_type type;
 	char **objpath_list;
 	unsigned int id;
 
-	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &name,
-					DBUS_TYPE_STRING, &typestr,
+	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
 					DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
-
-	if (strlen(name) == 0 || strlen(name) > MAX_CONTEXT_NAME_LENGTH)
-		return __ofono_error_invalid_format(msg);
 
 	type = gprs_context_string_to_type(typestr);
 
@@ -1188,7 +1183,7 @@ static DBusMessage *gprs_create_context(DBusConnection *conn,
 	if (id > idmap_get_max(gprs->pid_map))
 		return __ofono_error_not_supported(msg);
 
-	context = pri_context_create(gprs, name, type);
+	context = pri_context_create(gprs, typestr, type);
 	context->id = id;
 
 	if (!context) {
@@ -1354,13 +1349,13 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 }
 
 static GDBusMethodTable manager_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	gprs_get_properties },
-	{ "SetProperty",	"sv",	"",		gprs_set_property },
-	{ "CreateContext",	"ss",	"o",		gprs_create_context },
-	{ "RemoveContext",	"o",	"",		gprs_remove_context,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "DeactivateAll",	"",	"",		gprs_deactivate_all,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetProperties",     "",     "a{sv}",    gprs_get_properties },
+	{ "SetProperty",       "sv",   "",         gprs_set_property },
+	{ "AddContext",        "s",    "o",        gprs_add_context },
+	{ "RemoveContext",     "o",    "",         gprs_remove_context,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "DeactivateAll",     "",     "",         gprs_deactivate_all,
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
