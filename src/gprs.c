@@ -433,7 +433,8 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 }
 
 static void pri_activate_callback(const struct ofono_error *error,
-					const char *interface, ofono_bool_t static_ip,
+					const char *interface,
+					ofono_bool_t static_ip,
 					const char *ip, const char *netmask,
 					const char *gateway, const char **dns,
 					void *data)
