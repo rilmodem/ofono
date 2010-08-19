@@ -863,7 +863,7 @@ static gboolean context_dbus_register(struct pri_context *ctx)
 
 	basepath = __ofono_atom_get_path(ctx->gprs->atom);
 
-	snprintf(path, sizeof(path), "%s/primarycontext%u", basepath, ctx->id);
+	snprintf(path, sizeof(path), "%s/context%u", basepath, ctx->id);
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CONNECTION_CONTEXT_INTERFACE,
@@ -1705,13 +1705,18 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	char *password = NULL;
 	char *apn = NULL;
 	gboolean ret = FALSE;
+	gboolean legacy = FALSE;
 	struct pri_context *context;
 	enum gprs_context_type type;
 	enum ofono_gprs_proto proto;
 	unsigned int id;
 
-	if (sscanf(group, "primarycontext%d", &id) != 1)
-		goto error;
+	if (sscanf(group, "context%d", &id) != 1) {
+		if (sscanf(group, "primarycontext%d", &id) != 1)
+			goto error;
+
+		legacy = TRUE;
+	}
 
 	if (id < 1 || id > MAX_CONTEXTS)
 		goto error;
@@ -1784,6 +1789,11 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 	ret = TRUE;
 
+	if (legacy) {
+		write_context_settings(gprs, context);
+		g_key_file_remove_group(gprs->settings, group, NULL);
+	}
+
 error:
 	g_free(name);
 	g_free(typestr);
@@ -1798,6 +1808,7 @@ error:
 static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 {
 	GError *error = NULL;
+	gboolean legacy = FALSE;
 	char **groups;
 	int i;
 
@@ -1836,12 +1847,15 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 	groups = g_key_file_get_groups(gprs->settings, NULL);
 
 	for (i = 0; groups[i]; i++) {
-
 		if (g_str_equal(groups[i], SETTINGS_GROUP))
 			continue;
 
-		if (!g_str_has_prefix(groups[i], "primarycontext"))
-			goto remove;
+		if (!g_str_has_prefix(groups[i], "context")) {
+			if (!g_str_has_prefix(groups[i], "primarycontext"))
+				goto remove;
+
+			legacy = TRUE;
+		}
 
 		if (load_context(gprs, groups[i]) == TRUE)
 			continue;
@@ -1851,6 +1865,9 @@ remove:
 	}
 
 	g_strfreev(groups);
+
+	if (legacy)
+		storage_sync(imsi, SETTINGS_STORE, gprs->settings);
 }
 
 void ofono_gprs_register(struct ofono_gprs *gprs)
