@@ -1142,6 +1142,7 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	const char *path;
 	enum gprs_context_type type;
 	unsigned int id;
+	DBusMessage *signal;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
 					DBUS_TYPE_INVALID))
@@ -1198,8 +1199,34 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 
 	path = context->path;
 
-	return g_dbus_create_reply(msg, DBUS_TYPE_OBJECT_PATH, &path,
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID);
+
+	path = __ofono_atom_get_path(gprs->atom);
+	signal = dbus_message_new_signal(path,
+					OFONO_CONNECTION_MANAGER_INTERFACE,
+					"ContextAdded");
+
+	if (signal) {
+		DBusMessageIter iter;
+		DBusMessageIter dict;
+
+		dbus_message_iter_init_append(signal, &iter);
+
+		path = context->path;
+		dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH,
+						&path);
+
+		dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+		append_context_properties(context, &dict);
+		dbus_message_iter_close_container(&iter, &dict);
+
+		g_dbus_send_message(conn, signal);
+	}
+
+	return NULL;
 }
 
 static void gprs_deactivate_for_remove(const struct ofono_error *error,
@@ -1290,7 +1317,8 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 static GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",     "",     "a{sv}",    gprs_get_properties },
 	{ "SetProperty",       "sv",   "",         gprs_set_property },
-	{ "AddContext",        "s",    "o",        gprs_add_context },
+	{ "AddContext",        "s",    "o",        gprs_add_context,
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "RemoveContext",     "o",    "",         gprs_remove_context,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "DeactivateAll",     "",     "",         gprs_deactivate_all,
@@ -1300,6 +1328,7 @@ static GDBusMethodTable manager_methods[] = {
 
 static GDBusSignalTable manager_signals[] = {
 	{ "PropertyChanged",	"sv" },
+	{ "ContextAdded",	"oa{sv}" },
 	{ }
 };
 
