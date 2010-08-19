@@ -888,24 +888,6 @@ static gboolean context_dbus_unregister(struct pri_context *ctx)
 					OFONO_CONNECTION_CONTEXT_INTERFACE);
 }
 
-static char **gprs_contexts_path_list(GSList *context_list)
-{
-	GSList *l;
-	char **i;
-	struct pri_context *ctx;
-	char **objlist = g_new0(char *, g_slist_length(context_list) + 1);
-
-	if (!objlist)
-		return NULL;
-
-	for (i = objlist, l = context_list; l; l = l->next) {
-		ctx = l->data;
-		*i++ = g_strdup(ctx->path);
-	}
-
-	return objlist;
-}
-
 static void gprs_attached_update(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1037,7 +1019,6 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-	char **objpath_list;
 	dbus_bool_t value;
 
 	reply = dbus_message_new_method_return(msg);
@@ -1049,15 +1030,6 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
-
-	objpath_list = gprs_contexts_path_list(gprs->contexts);
-	if (!objpath_list)
-		return NULL;
-
-	ofono_dbus_dict_append_array(&dict, "PrimaryContexts",
-					DBUS_TYPE_OBJECT_PATH, &objpath_list);
-
-	g_strfreev(objpath_list);
 
 	value = gprs->attached;
 	ofono_dbus_dict_append(&dict, "Attached", DBUS_TYPE_BOOLEAN, &value);
@@ -1163,7 +1135,6 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	const char *typestr;
 	const char *path;
 	enum gprs_context_type type;
-	char **objpath_list;
 	unsigned int id;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
@@ -1219,18 +1190,6 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 
-	objpath_list = gprs_contexts_path_list(gprs->contexts);
-
-	if (objpath_list) {
-		path = __ofono_atom_get_path(gprs->atom);
-		ofono_dbus_signal_array_property_changed(conn, path,
-					OFONO_CONNECTION_MANAGER_INTERFACE,
-					"PrimaryContexts",
-					DBUS_TYPE_OBJECT_PATH, &objpath_list);
-
-		g_strfreev(objpath_list);
-	}
-
 	path = context->path;
 
 	return g_dbus_create_reply(msg, DBUS_TYPE_OBJECT_PATH, &path,
@@ -1242,7 +1201,6 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 {
 	struct pri_context *ctx = data;
 	struct ofono_gprs *gprs = ctx->gprs;
-	char **objpath_list;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Removing context failed with error: %s",
@@ -1266,19 +1224,6 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 
 	__ofono_dbus_pending_reply(&gprs->pending,
 				dbus_message_new_method_return(gprs->pending));
-
-	objpath_list = gprs_contexts_path_list(gprs->contexts);
-
-	if (objpath_list) {
-		const char *path = __ofono_atom_get_path(gprs->atom);
-		DBusConnection *conn = ofono_dbus_get_connection();
-
-		ofono_dbus_signal_array_property_changed(conn, path,
-					OFONO_CONNECTION_MANAGER_INTERFACE,
-					"PrimaryContexts",
-					DBUS_TYPE_OBJECT_PATH, &objpath_list);
-		g_strfreev(objpath_list);
-	}
 }
 
 static DBusMessage *gprs_remove_context(DBusConnection *conn,
@@ -1287,7 +1232,6 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	struct ofono_gprs *gprs = data;
 	struct pri_context *ctx;
 	const char *path;
-	char **objpath_list;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID))
@@ -1319,17 +1263,6 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
 
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
-
-	objpath_list = gprs_contexts_path_list(gprs->contexts);
-
-	if (objpath_list) {
-		path = __ofono_atom_get_path(gprs->atom);
-		ofono_dbus_signal_array_property_changed(conn, path,
-					OFONO_CONNECTION_MANAGER_INTERFACE,
-					"PrimaryContexts",
-					DBUS_TYPE_OBJECT_PATH, &objpath_list);
-		g_strfreev(objpath_list);
-	}
 
 	return NULL;
 }
