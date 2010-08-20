@@ -58,6 +58,8 @@ static void at_cbm_notify(GAtResult *result, gpointer user_data)
 	unsigned char pdu[88];
 	long hexpdulen;
 
+	DBG("");
+
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CBM:"))
@@ -112,6 +114,8 @@ static void at_cbs_set_topics(struct ofono_cbs *cbs, const char *topics,
 	char *buf;
 	unsigned int id;
 
+	DBG("");
+
 	if (!cbd)
 		goto error;
 
@@ -148,6 +152,8 @@ static void at_cbs_clear_topics(struct ofono_cbs *cbs,
 	struct cbs_data *data = ofono_cbs_get_data(cbs);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 	char buf[256];
+
+	DBG("");
 
 	if (!cbd)
 		goto error;
