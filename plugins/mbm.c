@@ -358,7 +358,8 @@ static void mbm_post_sim(struct ofono_modem *modem)
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
 					"atmodem", data->modem_port);
-	gc = ofono_gprs_context_create(modem, 0, "mbm", data->modem_port);
+	gc = ofono_gprs_context_create(modem, 0,
+					"mbmmodem", data->modem_port);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);

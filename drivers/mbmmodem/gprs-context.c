@@ -469,7 +469,7 @@ static void mbm_gprs_context_remove(struct ofono_gprs_context *gc)
 }
 
 static struct ofono_gprs_context_driver driver = {
-	.name			= "mbm",
+	.name			= "mbmmodem",
 	.probe			= mbm_gprs_context_probe,
 	.remove			= mbm_gprs_context_remove,
 	.activate_primary	= mbm_gprs_activate_primary,
