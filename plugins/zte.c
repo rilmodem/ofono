@@ -40,6 +40,8 @@
 #include <ofono/cbs.h>
 #include <ofono/sms.h>
 #include <ofono/ussd.h>
+#include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 #include <ofono/phonebook.h>
 #include <ofono/log.h>
 
@@ -50,6 +52,8 @@ static const char *none_prefix[] = { NULL };
 struct zte_data {
 	GAtChat *modem;
 	GAtChat *aux;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 };
 
 static int zte_probe(struct ofono_modem *modem)
@@ -121,7 +125,29 @@ static GAtChat *open_device(struct ofono_modem *modem,
 
 static void zte_disconnect(gpointer user_data)
 {
+	struct ofono_modem *modem = user_data;
+	struct zte_data *data = ofono_modem_get_data(modem);
+
 	DBG("");
+
+	ofono_gprs_context_remove(data->gc);
+
+	g_at_chat_unref(data->modem);
+	data->modem = NULL;
+
+	data->modem = open_device(modem, "Modem", "Modem:");
+	if (!data->modem)
+		return;
+
+	g_at_chat_set_disconnect_function(data->modem,
+						zte_disconnect, modem);
+
+	ofono_info("Reopened GPRS context channel");
+
+	data->gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
+
+	if (data->gprs && data->gc)
+		ofono_gprs_add_context(data->gprs, data->gc);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -230,6 +256,13 @@ static void zte_post_sim(struct ofono_modem *modem)
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->aux);
 	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
+
+	data->gprs = ofono_gprs_create(modem, 0, "atmodem", data->aux);
+
+	data->gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
+
+	if (data->gprs && data->gc)
+		ofono_gprs_add_context(data->gprs, data->gc);
 }
 
 static struct ofono_modem_driver zte_driver = {
