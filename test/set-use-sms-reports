@@ -20,6 +20,6 @@ else:
 
 print "Setting delivery report use for modem %s..." % path
 sms = dbus.Interface(bus.get_object('org.ofono', path),
-				    'org.ofono.SmsManager')
+				    'org.ofono.MessageManager')
 
 sms.SetProperty("UseDeliveryReports", dbus.Boolean(enabled));

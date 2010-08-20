@@ -13,7 +13,7 @@ properties = manager.GetProperties()
 path = properties["Modems"][0]
 
 manager = dbus.Interface(bus.get_object('org.ofono', path),
-						'org.ofono.SmsManager')
+					'org.ofono.MessageManager')
 
 if len(sys.argv) == 4:
 	manager.SetProperty("UseDeliveryReports",
