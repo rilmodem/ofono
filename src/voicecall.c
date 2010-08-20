@@ -201,36 +201,21 @@ static int voicecalls_num_connecting(struct ofono_voicecall *vc)
 	return r;
 }
 
-static DBusMessage *voicecall_get_properties(DBusConnection *conn,
-						DBusMessage *msg, void *data)
+static void append_voicecall_properties(struct voicecall *v,
+					DBusMessageIter *dict)
 {
-	struct voicecall *v = data;
 	struct ofono_call *call = v->call;
-	DBusMessage *reply;
-	DBusMessageIter iter;
-	DBusMessageIter dict;
 	const char *status;
 	const char *callerid;
 	const char *timestr;
 	ofono_bool_t mpty;
 
-	reply = dbus_message_new_method_return(msg);
-
-	if (!reply)
-		return NULL;
-
 	status = call_status_to_string(call->status);
 	callerid = phone_number_to_string(&call->phone_number);
 
-	dbus_message_iter_init_append(reply, &iter);
+	ofono_dbus_dict_append(dict, "State", DBUS_TYPE_STRING, &status);
 
-	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-					OFONO_PROPERTIES_ARRAY_SIGNATURE,
-					&dict);
-
-	ofono_dbus_dict_append(&dict, "State", DBUS_TYPE_STRING, &status);
-
-	ofono_dbus_dict_append(&dict, "LineIdentification",
+	ofono_dbus_dict_append(dict, "LineIdentification",
 				DBUS_TYPE_STRING, &callerid);
 
 	if (call->status == CALL_STATUS_ACTIVE ||
@@ -239,19 +224,39 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 				v->start_time != 0)) {
 		timestr = time_to_str(&v->start_time);
 
-		ofono_dbus_dict_append(&dict, "StartTime", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(dict, "StartTime", DBUS_TYPE_STRING,
 					&timestr);
 	}
 
 	if (g_slist_find_custom(v->vc->multiparty_list,
-				GINT_TO_POINTER(v->call->id),
+				GINT_TO_POINTER(call->id),
 				call_compare_by_id))
 		mpty = TRUE;
 	else
 		mpty = FALSE;
 
-	ofono_dbus_dict_append(&dict, "Multiparty", DBUS_TYPE_BOOLEAN, &mpty);
+	ofono_dbus_dict_append(dict, "Multiparty", DBUS_TYPE_BOOLEAN, &mpty);
+}
 
+static DBusMessage *voicecall_get_properties(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct voicecall *v = data;
+	DBusMessage *reply;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+
+	reply = dbus_message_new_method_return(msg);
+
+	if (!reply)
+		return NULL;
+
+	dbus_message_iter_init_append(reply, &iter);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+	append_voicecall_properties(v, &dict);
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
