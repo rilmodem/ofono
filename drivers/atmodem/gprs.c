@@ -227,13 +227,23 @@ static void at_cgreg_test_cb(gboolean ok, GAtResult *result,
 	g_at_chat_send(gd->chat, cmd, none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(gd->chat, "AT+CGAUTO=0", none_prefix, NULL, NULL, NULL);
 
-	/* Ericsson MBM and ST-E modems do not support AT+CGEREP = 2,1 */
-	if (gd->vendor == OFONO_VENDOR_MBM)
+	switch (gd->vendor) {
+	case OFONO_VENDOR_MBM:
+		/* Ericsson MBM and ST-E modems don't support AT+CGEREP=2,1 */
 		g_at_chat_send(gd->chat, "AT+CGEREP=1,0", none_prefix,
 			gprs_initialized, gprs, NULL);
-	else
+		break;
+	case OFONO_VENDOR_NOKIA:
+		/* Nokia data cards don't support AT+CGEREP=1,0 either */
+		g_at_chat_send(gd->chat, "AT+CGEREP=1", none_prefix,
+			gprs_initialized, gprs, NULL);
+		break;
+	default:
 		g_at_chat_send(gd->chat, "AT+CGEREP=2,1", none_prefix,
 			gprs_initialized, gprs, NULL);
+		break;
+	}
+
 	return;
 
 error:
