@@ -310,8 +310,9 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 			doc/supplementaryservices-api.txt \
 			doc/connman-api.txt
 
-test_scripts = test/activate-context \
+test_scripts = test/backtrace \
 		test/create-context \
+		test/activate-context \
 		test/deactivate-context \
 		test/dial-number \
 		test/disable-modem \
