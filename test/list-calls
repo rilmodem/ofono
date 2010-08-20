@@ -1,0 +1,35 @@
+#!/usr/bin/python
+
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+properties = manager.GetProperties()
+
+for path in properties["Modems"]:
+	modem = dbus.Interface(bus.get_object('org.ofono', path),
+							'org.ofono.Modem')
+
+	properties = modem.GetProperties()
+
+	print "[ %s ]" % (path)
+
+	if "org.ofono.VoiceCallManager" not in properties["Interfaces"]:
+		continue
+
+	mgr = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.VoiceCallManager')
+
+	calls = mgr.GetCalls()
+
+	for path, properties in calls:
+		print "    [ %s ]" % (path)
+
+		for key in properties.keys():
+			val = str(properties[key])
+			print "        %s = %s" % (key, val)
+
+		print
