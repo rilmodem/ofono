@@ -1,0 +1,21 @@
+#!/usr/bin/python
+
+import sys
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+properties = manager.GetProperties()
+
+path = properties["Modems"][0]
+
+manager = dbus.Interface(bus.get_object('org.ofono', path),
+						'org.ofono.VoiceCallManager')
+
+mpty = manager.CreateMultiparty()
+
+for path in mpty:
+	print path
