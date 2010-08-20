@@ -365,6 +365,8 @@ static inline void at_ack_delivery(struct ofono_sms *sms)
 	struct sms_data *data = ofono_sms_get_data(sms);
 	char buf[256];
 
+	DBG("");
+
 	/* We must acknowledge the PDU using CNMA */
 	if (data->cnma_ack_pdu)
 		snprintf(buf, sizeof(buf), "AT+CNMA=1,%d\r%s",
@@ -439,6 +441,8 @@ static void at_cmgr_notify(GAtResult *result, gpointer user_data)
 	unsigned char pdu[176];
 	long pdu_len;
 	int tpdu_len;
+
+	DBG("");
 
 	g_at_result_iter_init(&iter, result);
 
@@ -588,6 +592,8 @@ static void at_cmgl_done(struct ofono_sms *sms)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
 
+	DBG("");
+
 	if (data->incoming == AT_UTIL_SMS_STORE_MT &&
 			data->store == AT_UTIL_SMS_STORE_ME) {
 		at_cmgl_set_cpms(sms, AT_UTIL_SMS_STORE_SM);
@@ -620,6 +626,8 @@ static void at_cmgl_notify(GAtResult *result, gpointer user_data)
 	int index;
 	int status;
 	char buf[16];
+
+	DBG("");
 
 	g_at_result_iter_init(&iter, result);
 
@@ -788,6 +796,8 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	const char *mode;
 	int len = sprintf(buf, "AT+CNMI=");
 
+	DBG("");
+
 	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM ||
 			data->vendor == OFONO_VENDOR_HUAWEI ||
 			data->vendor == OFONO_VENDOR_NOVATEL)
@@ -841,6 +851,8 @@ static void construct_ack_pdu(struct sms_data *d)
 	unsigned char pdu[164];
 	int len;
 	int tpdu_len;
+
+	DBG("");
 
 	memset(&ackpdu, 0, sizeof(ackpdu));
 
