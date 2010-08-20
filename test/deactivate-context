@@ -22,7 +22,7 @@ for path in properties["Modems"]:
 	connman = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.ConnectionManager')
 
-	contexts = connman.GetProperties()
+	contexts = connman.GetContexts()
 
 	if (len(contexts) == 0):
 		print "No context available"
