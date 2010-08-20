@@ -1012,6 +1012,7 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_ZTE:
+	case OFONO_VENDOR_NOKIA:
 		/* Signal strength reporting via CIND is not supported */
 		break;
 	default:
