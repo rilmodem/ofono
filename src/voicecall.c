@@ -1501,6 +1501,58 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 	return NULL;
 }
 
+static DBusMessage *manager_get_calls(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	DBusMessage *reply;
+	DBusMessageIter iter;
+	DBusMessageIter array;
+	DBusMessageIter entry, dict;
+	const char *path;
+	GSList *l;
+	struct voicecall *v;
+
+	reply = dbus_message_new_method_return(msg);
+	if (reply == NULL)
+		return NULL;
+
+	dbus_message_iter_init_append(reply, &iter);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					DBUS_STRUCT_BEGIN_CHAR_AS_STRING
+					DBUS_TYPE_OBJECT_PATH_AS_STRING
+					DBUS_TYPE_ARRAY_AS_STRING
+					DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
+					DBUS_TYPE_STRING_AS_STRING
+					DBUS_TYPE_VARIANT_AS_STRING
+					DBUS_DICT_ENTRY_END_CHAR_AS_STRING
+					DBUS_STRUCT_END_CHAR_AS_STRING,
+					&array);
+
+	for (l = vc->call_list; l; l = l->next) {
+		v = l->data;
+
+		path = voicecall_build_path(vc, v->call);
+
+		dbus_message_iter_open_container(&array, DBUS_TYPE_STRUCT,
+							NULL, &entry);
+		dbus_message_iter_append_basic(&entry, DBUS_TYPE_OBJECT_PATH,
+						&path);
+		dbus_message_iter_open_container(&entry, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+
+		append_voicecall_properties(v, &dict);
+		dbus_message_iter_close_container(&entry, &dict);
+		dbus_message_iter_close_container(&array, &entry);
+	}
+
+	dbus_message_iter_close_container(&iter, &array);
+
+	return reply;
+}
+
 static GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",     "",    "a{sv}",      manager_get_properties },
 	{ "Dial",              "ss",  "o",          manager_dial,
@@ -1523,6 +1575,7 @@ static GDBusMethodTable manager_methods[] = {
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SendTones",         "s",   "",           manager_tone,
 						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetCalls",          "",    "a(oa{sv})",  manager_get_calls },
 	{ }
 };
 
