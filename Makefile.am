@@ -237,6 +237,9 @@ builtin_sources += plugins/huawei.c
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
 
+builtin_modules += nokia
+builtin_sources += plugins/nokia.c
+
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
 
