@@ -608,11 +608,11 @@ static DBusMessage *stk_select_item(DBusConnection *conn,
 
 	DBG("");
 
-	if (stk->pending)
+	if (stk->pending || stk->session_agent)
 		return __ofono_error_busy(msg);
 
-	if (stk->session_agent || !menu)
-		return __ofono_error_busy(msg);
+	if (!menu)
+		return __ofono_error_not_supported(msg);
 
 	if (dbus_message_get_args(msg, NULL,
 					DBUS_TYPE_BYTE, &selection,
