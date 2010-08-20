@@ -227,8 +227,8 @@ static void at_cgreg_test_cb(gboolean ok, GAtResult *result,
 	g_at_chat_send(gd->chat, cmd, none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(gd->chat, "AT+CGAUTO=0", none_prefix, NULL, NULL, NULL);
 
-	/* ST-E modem does not support AT+CGEREP = 2,1 */
-	if (gd->vendor == OFONO_VENDOR_STE)
+	/* Ericsson MBM and ST-E modems do not support AT+CGEREP = 2,1 */
+	if (gd->vendor == OFONO_VENDOR_MBM)
 		g_at_chat_send(gd->chat, "AT+CGEREP=1,0", none_prefix,
 			gprs_initialized, gprs, NULL);
 	else
