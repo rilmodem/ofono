@@ -51,7 +51,6 @@ struct ofono_voicecall {
 	GSList *new_en_list; /* Emergency numbers being read from SIM */
 	int flags;
 	DBusMessage *pending;
-	gint emit_calls_source;
 	struct ofono_sim *sim;
 	unsigned int sim_watch;
 	unsigned int sim_state_watch;
@@ -734,34 +733,6 @@ static gboolean voicecalls_have_incoming(struct ofono_voicecall *vc)
 	return voicecalls_have_with_status(vc, CALL_STATUS_INCOMING);
 }
 
-static gboolean real_emit_call_list_changed(void *data)
-{
-	struct ofono_voicecall *vc = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(vc->atom);
-	char **objpath_list;
-
-	voicecalls_path_list(vc, vc->call_list, &objpath_list);
-
-	ofono_dbus_signal_array_property_changed(conn, path,
-					OFONO_VOICECALL_MANAGER_INTERFACE,
-					"Calls", DBUS_TYPE_OBJECT_PATH,
-					&objpath_list);
-
-	g_strfreev(objpath_list);
-
-	vc->emit_calls_source = 0;
-
-	return FALSE;
-}
-
-static void emit_call_list_changed(struct ofono_voicecall *vc)
-{
-	if (vc->emit_calls_source == 0)
-		vc->emit_calls_source =
-			g_timeout_add(0, real_emit_call_list_changed, vc);
-}
-
 static void voicecalls_multiparty_changed(GSList *old, GSList *new)
 {
 	GSList *o, *n;
@@ -785,6 +756,49 @@ static void voicecalls_multiparty_changed(GSList *old, GSList *new)
 			o = o->next;
 		}
 	}
+}
+
+static void voicecalls_emit_call_removed(struct ofono_voicecall *vc,
+						struct voicecall *v)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *atompath = __ofono_atom_get_path(vc->atom);
+	const char *path = voicecall_build_path(vc, v->call);
+
+	g_dbus_emit_signal(conn, atompath, OFONO_VOICECALL_MANAGER_INTERFACE,
+				"CallRemoved", DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
+}
+
+static void voicecalls_emit_call_added(struct ofono_voicecall *vc,
+					struct voicecall *v)
+{
+	DBusMessage *signal;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+	const char *path;
+
+	path = __ofono_atom_get_path(vc->atom);
+
+	signal = dbus_message_new_signal(path,
+					OFONO_VOICECALL_MANAGER_INTERFACE,
+					"CallAdded");
+
+	if (signal == NULL)
+		return;
+
+	dbus_message_iter_init_append(signal, &iter);
+
+	path = voicecall_build_path(vc, v->call);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &path);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+	append_voicecall_properties(v, &dict);
+	dbus_message_iter_close_container(&iter, &dict);
+
+	g_dbus_send_message(ofono_dbus_get_connection(), signal);
 }
 
 static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls)
@@ -939,6 +953,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 	struct ofono_voicecall *vc = data;
 	DBusMessage *reply;
 	GSList *l;
+	struct voicecall *v;
 	struct ofono_call *call;
 	const char *path;
 	gboolean need_to_emit = FALSE;
@@ -963,7 +978,6 @@ static void dial_callback(const struct ofono_error *error, void *data)
 	}
 
 	if (!l) {
-		struct voicecall *v;
 		call = synthesize_outgoing_call(vc, vc->pending);
 
 		if (!call) {
@@ -990,8 +1004,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 
 		need_to_emit = TRUE;
 	} else {
-		struct voicecall *v = l->data;
-
+		v = l->data;
 		call = v->call;
 	}
 
@@ -1002,7 +1015,7 @@ static void dial_callback(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&vc->pending, reply);
 
 	if (need_to_emit)
-		emit_call_list_changed(vc);
+		voicecalls_emit_call_added(vc, v);
 }
 
 static DBusMessage *manager_dial(DBusConnection *conn,
@@ -1581,6 +1594,8 @@ static GDBusMethodTable manager_methods[] = {
 
 static GDBusSignalTable manager_signals[] = {
 	{ "PropertyChanged",	"sv" },
+	{ "CallAdded",		"oa{sv}" },
+	{ "CallRemoved",	"o" },
 	{ }
 };
 
@@ -1642,11 +1657,11 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 		__ofono_history_call_ended(modem, call->call,
 						call->detect_time, ts);
 
+	voicecalls_emit_call_removed(vc, call);
+
 	voicecall_dbus_unregister(vc, call);
 
 	vc->call_list = g_slist_remove(vc->call_list, call);
-
-	emit_call_list_changed(vc);
 }
 
 void ofono_voicecall_notify(struct ofono_voicecall *vc,
@@ -1699,7 +1714,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 
 	vc->call_list = g_slist_insert_sorted(vc->call_list, v, call_compare);
 
-	emit_call_list_changed(vc);
+	voicecalls_emit_call_added(vc, v);
 
 	return;
 
@@ -1890,11 +1905,6 @@ static void voicecall_unregister(struct ofono_atom *atom)
 	if (vc->sim_watch) {
 		__ofono_modem_remove_atom_watch(modem, vc->sim_watch);
 		vc->sim_watch = 0;
-	}
-
-	if (vc->emit_calls_source) {
-		g_source_remove(vc->emit_calls_source);
-		vc->emit_calls_source = 0;
 	}
 
 	for (l = vc->call_list; l; l = l->next)
