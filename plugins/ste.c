@@ -310,8 +310,8 @@ static void ste_post_sim(struct ofono_modem *modem)
 	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
-	gprs = ofono_gprs_create(modem,
-			OFONO_VENDOR_STE, "atmodem", data->chat);
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
+					"atmodem", data->chat);
 	gc = ofono_gprs_context_create(modem, 0, "stemodem", data->chat);
 
 	if (gprs && gc)
