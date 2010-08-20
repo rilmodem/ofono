@@ -874,13 +874,6 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	voicecalls_path_list(vc, vc->call_list, &callobj_list);
-
-	ofono_dbus_dict_append_array(&dict, "Calls", DBUS_TYPE_OBJECT_PATH,
-				&callobj_list);
-
-	g_strfreev(callobj_list);
-
 	/* property EmergencyNumbers */
 	list = g_new0(char *, g_slist_length(vc->en_list) + 1);
 
