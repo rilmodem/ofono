@@ -86,7 +86,7 @@ static const char *get_serial(struct udev_device *udev_device)
 		entry = udev_list_entry_get_next(entry);
 	}
 
-	if (strpbrk(serial, ".-_?*") != NULL)
+	if (serial && strpbrk(serial, ".-_?*") != NULL)
 		return NULL;
 
 	return serial;
