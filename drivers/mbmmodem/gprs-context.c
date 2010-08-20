@@ -445,6 +445,9 @@ static int mbm_gprs_context_probe(struct ofono_gprs_context *gc,
 
 	ofono_gprs_context_set_data(gc, gcd);
 
+	g_at_chat_send(gcd->chat, "AT*ENAPDBG=1", none_prefix,
+				NULL, NULL, NULL);
+
 	g_at_chat_send(gcd->chat, "AT*E2NAP=1", none_prefix,
 			mbm_e2nap_cb, gc, NULL);
 	g_at_chat_send(gcd->chat, "AT*E2IPCFG=?", e2ipcfg_prefix,
