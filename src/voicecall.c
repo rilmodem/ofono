@@ -860,7 +860,6 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	int i;
 	GSList *l;
-	char **callobj_list;
 	char **list;
 
 	reply = dbus_message_new_method_return(msg);
