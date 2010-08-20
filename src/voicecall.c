@@ -52,7 +52,6 @@ struct ofono_voicecall {
 	int flags;
 	DBusMessage *pending;
 	gint emit_calls_source;
-	gint emit_multi_source;
 	struct ofono_sim *sim;
 	unsigned int sim_watch;
 	unsigned int sim_state_watch;
@@ -213,6 +212,7 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 	const char *status;
 	const char *callerid;
 	const char *timestr;
+	ofono_bool_t mpty;
 
 	reply = dbus_message_new_method_return(msg);
 
@@ -242,6 +242,15 @@ static DBusMessage *voicecall_get_properties(DBusConnection *conn,
 		ofono_dbus_dict_append(&dict, "StartTime", DBUS_TYPE_STRING,
 					&timestr);
 	}
+
+	if (g_slist_find_custom(v->vc->multiparty_list,
+				GINT_TO_POINTER(v->call->id),
+				call_compare_by_id))
+		mpty = TRUE;
+	else
+		mpty = FALSE;
+
+	ofono_dbus_dict_append(&dict, "Multiparty", DBUS_TYPE_BOOLEAN, &mpty);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -465,6 +474,18 @@ static void voicecall_emit_disconnect_reason(struct voicecall *call,
 				"DisconnectReason",
 				DBUS_TYPE_STRING, &reason_str,
 				DBUS_TYPE_INVALID);
+}
+
+static void voicecall_emit_multiparty(struct voicecall *call, gboolean mpty)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = voicecall_build_path(call->vc, call->call);
+	dbus_bool_t val = mpty;
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_VOICECALL_INTERFACE,
+						"Multiparty", DBUS_TYPE_BOOLEAN,
+						&val);
 }
 
 static void voicecall_set_call_status(struct voicecall *call,
@@ -736,32 +757,29 @@ static void emit_call_list_changed(struct ofono_voicecall *vc)
 			g_timeout_add(0, real_emit_call_list_changed, vc);
 }
 
-static gboolean real_emit_multiparty_call_list_changed(void *data)
+static void voicecalls_multiparty_changed(GSList *old, GSList *new)
 {
-	struct ofono_voicecall *vc = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(vc->atom);
-	char **objpath_list;
+	GSList *o, *n;
+	struct voicecall *nc, *oc;
 
-	voicecalls_path_list(vc, vc->multiparty_list, &objpath_list);
+	n = new;
+	o = old;
 
-	ofono_dbus_signal_array_property_changed(conn, path,
-					OFONO_VOICECALL_MANAGER_INTERFACE,
-					"MultipartyCalls",
-					DBUS_TYPE_OBJECT_PATH, &objpath_list);
+	while (n || o) {
+		nc = n ? n->data : NULL;
+		oc = o ? o->data : NULL;
 
-	g_strfreev(objpath_list);
-
-	vc->emit_multi_source = 0;
-
-	return FALSE;
-}
-
-static void emit_multiparty_call_list_changed(struct ofono_voicecall *vc)
-{
-	if (vc->emit_multi_source == 0)
-		vc->emit_multi_source = g_timeout_add(0,
-				real_emit_multiparty_call_list_changed, vc);
+		if (oc && (!nc || (nc->call->id > oc->call->id))) {
+			voicecall_emit_multiparty(oc, FALSE);
+			o = o->next;
+		} else if (nc && (!oc || (nc->call->id < oc->call->id))) {
+			voicecall_emit_multiparty(nc, TRUE);
+			n = n->next;
+		} else {
+			n = n->next;
+			o = o->next;
+		}
+	}
 }
 
 static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls)
@@ -841,13 +859,6 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 
 	ofono_dbus_dict_append_array(&dict, "Calls", DBUS_TYPE_OBJECT_PATH,
 				&callobj_list);
-
-	g_strfreev(callobj_list);
-
-	voicecalls_path_list(vc, vc->multiparty_list, &callobj_list);
-
-	ofono_dbus_dict_append_array(&dict, "MultipartyCalls",
-					DBUS_TYPE_OBJECT_PATH, &callobj_list);
 
 	g_strfreev(callobj_list);
 
@@ -1219,6 +1230,7 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 	const char *c;
 	int id;
 	GSList *l;
+	GSList *old;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("command failed with error: %s",
@@ -1235,6 +1247,8 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 	c = strrchr(callpath, '/');
 	sscanf(c, "/voicecall%2u", &id);
 
+	old = g_slist_copy(vc->multiparty_list);
+
 	l = g_slist_find_custom(vc->multiparty_list, GINT_TO_POINTER(id),
 				call_compare_by_id);
 
@@ -1242,7 +1256,7 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 		vc->multiparty_list =
 			g_slist_remove(vc->multiparty_list, l->data);
 
-		if (g_slist_length(vc->multiparty_list) < 2) {
+		if (vc->multiparty_list->next == NULL) {
 			g_slist_free(vc->multiparty_list);
 			vc->multiparty_list = 0;
 		}
@@ -1252,7 +1266,8 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 	multiparty_callback_common(vc, reply);
 	__ofono_dbus_pending_reply(&vc->pending, reply);
 
-	emit_multiparty_call_list_changed(vc);
+	voicecalls_multiparty_changed(old, vc->multiparty_list);
+	g_slist_free(old);
 }
 
 static DBusMessage *multiparty_private_chat(DBusConnection *conn,
@@ -1309,10 +1324,12 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	return NULL;
 }
 
-static void multiparty_create_callback(const struct ofono_error *error, void *data)
+static void multiparty_create_callback(const struct ofono_error *error,
+					void *data)
 {
 	struct ofono_voicecall *vc = data;
 	DBusMessage *reply;
+	GSList *old;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("command failed with error: %s",
@@ -1322,13 +1339,12 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 		return;
 	}
 
-	/* We just created a multiparty call, gather all held
+	/*
+	 * We just created a multiparty call, gather all held
 	 * active calls and add them to the multiparty list
 	 */
-	if (vc->multiparty_list) {
-		g_slist_free(vc->multiparty_list);
-		vc->multiparty_list = 0;
-	}
+	old = vc->multiparty_list;
+	vc->multiparty_list = 0;
 
 	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
 						voicecalls_held_list(vc));
@@ -1352,7 +1368,8 @@ static void multiparty_create_callback(const struct ofono_error *error, void *da
 	multiparty_callback_common(vc, reply);
 	__ofono_dbus_pending_reply(&vc->pending, reply);
 
-	emit_multiparty_call_list_changed(vc);
+	voicecalls_multiparty_changed(old, vc->multiparty_list);
+	g_slist_free(old);
 }
 
 static DBusMessage *multiparty_create(DBusConnection *conn,
@@ -1545,11 +1562,12 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 			g_slist_remove(vc->multiparty_list, call);
 
 		if (vc->multiparty_list->next == NULL) { /* Size == 1 */
+			struct voicecall *v = vc->multiparty_list->data;
+
+			voicecall_emit_multiparty(v, FALSE);
 			g_slist_free(vc->multiparty_list);
 			vc->multiparty_list = 0;
 		}
-
-		emit_multiparty_call_list_changed(vc);
 	}
 
 	vc->release_list = g_slist_remove(vc->release_list, call);
@@ -1819,11 +1837,6 @@ static void voicecall_unregister(struct ofono_atom *atom)
 	if (vc->emit_calls_source) {
 		g_source_remove(vc->emit_calls_source);
 		vc->emit_calls_source = 0;
-	}
-
-	if (vc->emit_multi_source) {
-		g_source_remove(vc->emit_multi_source);
-		vc->emit_multi_source = 0;
 	}
 
 	for (l = vc->call_list; l; l = l->next)
