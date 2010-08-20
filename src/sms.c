@@ -749,6 +749,8 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 	int srcport = -1;
 	int dstport = -1;
 
+	DBG("");
+
 	if (sms_list == NULL)
 		return;
 
@@ -854,6 +856,8 @@ static void handle_deliver(struct ofono_sms *sms, const struct sms *incoming)
 	guint8 max;
 	guint8 seq;
 
+	DBG("");
+
 	if (sms_extract_concatenation(incoming, &ref, &max, &seq)) {
 		GSList *sms_list;
 
@@ -887,6 +891,8 @@ static void handle_sms_status_report(struct ofono_sms *sms,
 	gboolean delivered;
 	unsigned int msg_id;
 
+	DBG("");
+
 	if (status_report_assembly_report(sms->sr_assembly, incoming, &msg_id,
 						&delivered) == FALSE)
 		return;
@@ -901,6 +907,8 @@ static inline gboolean handle_mwi(struct ofono_sms *sms, struct sms *s)
 {
 	gboolean discard;
 
+	DBG("");
+
 	if (sms->mw == NULL)
 		return FALSE;
 
@@ -914,6 +922,8 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 {
 	struct sms s;
 	enum sms_class cls;
+
+	DBG("len %d tpdu len %d", len, tpdu_len);
 
 	if (!sms_decode(pdu, len, FALSE, tpdu_len, &s)) {
 		ofono_error("Unable to decode PDU");
@@ -1030,6 +1040,8 @@ void ofono_sms_status_notify(struct ofono_sms *sms, unsigned char *pdu,
 {
 	struct sms s;
 	enum sms_class cls;
+
+	DBG("len %d tpdu len %d", len, tpdu_len);
 
 	if (!sms_decode(pdu, len, FALSE, tpdu_len, &s)) {
 		ofono_error("Unable to decode PDU");
