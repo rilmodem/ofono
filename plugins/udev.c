@@ -86,6 +86,9 @@ static const char *get_serial(struct udev_device *udev_device)
 		entry = udev_list_entry_get_next(entry);
 	}
 
+	if (strpbrk(serial, ".-_?*") != NULL)
+		return NULL;
+
 	return serial;
 }
 
@@ -339,12 +342,44 @@ static void add_novatel(struct ofono_modem *modem,
 	parent = udev_device_get_parent(parent);
 	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
 
+	DBG("intfnum %s", intfnum);
+
 	if (g_strcmp0(intfnum, "00") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, "PrimaryDevice", devnode);
 	} else if (g_strcmp0(intfnum, "01") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, "SecondaryDevice", devnode);
+
+		ofono_modem_set_integer(modem, "Registered", 1);
+		ofono_modem_register(modem);
+	}
+}
+
+static void add_nokia(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	const char *devnode, *intfnum;
+	struct udev_device *parent;
+	int registered;
+
+	DBG("modem %p", modem);
+
+	registered = ofono_modem_get_integer(modem, "Registered");
+	if (registered != 0)
+		return;
+
+	parent = udev_device_get_parent(udev_device);
+	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
+
+	DBG("intfnum %s", intfnum);
+
+	if (g_strcmp0(intfnum, "01") == 0) {
+		devnode = udev_device_get_devnode(udev_device);
+		ofono_modem_set_string(modem, "Modem", devnode);
+	} else if (g_strcmp0(intfnum, "03") == 0) {
+		devnode = udev_device_get_devnode(udev_device);
+		ofono_modem_set_string(modem, "Control", devnode);
 
 		ofono_modem_set_integer(modem, "Registered", 1);
 		ofono_modem_register(modem);
@@ -409,6 +444,8 @@ static void add_modem(struct udev_device *udev_device)
 		add_huawei(modem, udev_device);
 	else if (g_strcmp0(driver, "novatel") == 0)
 		add_novatel(modem, udev_device);
+	else if (g_strcmp0(driver, "nokia") == 0)
+		add_nokia(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)

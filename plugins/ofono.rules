@@ -388,4 +388,7 @@ ATTRS{idVendor}=="0930", ATTRS{idProduct}=="130b", ENV{OFONO_DRIVER}="mbm"
 ATTRS{idVendor}=="0930", ATTRS{idProduct}=="130c", ENV{OFONO_DRIVER}="mbm"
 ATTRS{idVendor}=="0930", ATTRS{idProduct}=="1311", ENV{OFONO_DRIVER}="mbm"
 
+# Nokia Internet Stick CS-10
+ATTRS{idVendor}=="0421", ATTRS{idProduct}=="060e", ENV{OFONO_DRIVER}="nokia"
+
 LABEL="ofono_end"
