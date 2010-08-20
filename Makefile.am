@@ -315,6 +315,9 @@ test_scripts = test/backtrace \
 		test/activate-context \
 		test/deactivate-context \
 		test/dial-number \
+		test/list-calls \
+		test/create-multiparty \
+		test/private-chat \
 		test/disable-modem \
 		test/enable-modem \
 		test/enter-pin \
