@@ -284,6 +284,12 @@ static int mbm_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->modem_port, "AT&F E0 V1 X4 &C1 +CMEE=1", NULL,
 					NULL, NULL, NULL);
+	g_at_chat_send(data->modem_port, "AT*E2CFUN=1", none_prefix,
+					NULL, NULL, NULL);
+	g_at_chat_send(data->modem_port, "AT*E2REG=1", none_prefix,
+					NULL, NULL, NULL);
+	g_at_chat_send(data->modem_port, "AT*EREG=2", none_prefix,
+					NULL, NULL, NULL);
 	g_at_chat_send(data->modem_port, "AT*EMRDY?", none_prefix,
 				emrdy_query, modem, NULL);
 
