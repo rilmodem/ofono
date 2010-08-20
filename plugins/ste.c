@@ -302,7 +302,7 @@ static void ste_post_sim(struct ofono_modem *modem)
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
-	ofono_netreg_create(modem, OFONO_VENDOR_STE, "atmodem", data->chat);
+	ofono_netreg_create(modem, OFONO_VENDOR_MBM, "atmodem", data->chat);
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
