@@ -1003,8 +1003,15 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				NULL, NULL, NULL);
 		break;
 	case OFONO_VENDOR_MBM:
+		g_at_chat_send(data->modem_port, "AT*E2REG=1", none_prefix,
+					NULL, NULL, NULL);
+		g_at_chat_send(data->modem_port, "AT*EREG=2", none_prefix,
+					NULL, NULL, NULL);
+		g_at_chat_send(data->modem_port, "AT*EPSB=1", none_prefix,
+					NULL, NULL, NULL);
+
 		g_at_chat_send(nd->chat, "AT*ERINFO=1", none_prefix,
-				NULL, NULL, NULL);
+					NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "*ERINFO:", mbm_erinfo_notify,
 					FALSE, netreg, NULL);
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
