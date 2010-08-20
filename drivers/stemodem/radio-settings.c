@@ -212,11 +212,11 @@ static void ste_radio_settings_remove(struct ofono_radio_settings *rs)
 }
 
 static struct ofono_radio_settings_driver driver = {
-	.name			= "stemodem",
-	.probe			= ste_radio_settings_probe,
+	.name		= "stemodem",
+	.probe		= ste_radio_settings_probe,
 	.remove		= ste_radio_settings_remove,
 	.query_rat_mode	= ste_query_rat_mode,
-	.set_rat_mode		= ste_set_rat_mode
+	.set_rat_mode	= ste_set_rat_mode
 };
 
 void ste_radio_settings_init()
