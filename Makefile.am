@@ -353,7 +353,6 @@ test_scripts = test/activate-context \
 		test/set-use-sms-reports \
 		test/set-cbs-topics \
 		test/enable-cbs \
-		test/propose-scan \
 		test/lock-pin \
 		test/unlock-pin
 
