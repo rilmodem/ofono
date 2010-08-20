@@ -695,6 +695,10 @@ static void send_sms_submit_cb(gboolean ok, void *data)
 		return;
 	}
 
+	if (stk->pending_cmd->send_sms.alpha_id &&
+			stk->pending_cmd->send_sms.alpha_id[0])
+		stk_alpha_id_unset(stk);
+
 	memset(&rsp, 0, sizeof(rsp));
 
 	if (ok == FALSE)
@@ -702,10 +706,6 @@ static void send_sms_submit_cb(gboolean ok, void *data)
 
 	if (stk_respond(stk, &rsp, stk_command_cb))
 		stk_command_cb(&failure, stk);
-
-	if (stk->pending_cmd->send_sms.alpha_id &&
-			stk->pending_cmd->send_sms.alpha_id[0])
-		stk_alpha_id_unset(stk);
 }
 
 static gboolean handle_command_send_sms(const struct stk_command *cmd,
