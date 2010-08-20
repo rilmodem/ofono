@@ -1231,6 +1231,8 @@ static void multiparty_callback_common(struct ofono_voicecall *vc,
 			DBUS_TYPE_OBJECT_PATH, &objpath_list[i]);
 
 	dbus_message_iter_close_container(&iter, &array_iter);
+
+	g_strfreev(objpath_list);
 }
 
 static void private_chat_callback(const struct ofono_error *error, void *data)
