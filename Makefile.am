@@ -321,6 +321,8 @@ test_scripts = test/activate-context \
 		test/list-contexts \
 		test/list-modems \
 		test/list-operators \
+		test/scan-for-operators \
+		test/get-operators\
 		test/monitor-ofono \
 		test/process-context-settings \
 		test/receive-sms \
