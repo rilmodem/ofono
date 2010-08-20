@@ -353,12 +353,24 @@ static void at_current_operator(struct ofono_netreg *netreg,
 
 	cbd->user = netreg;
 
-	ok = g_at_chat_send(nd->chat, "AT+COPS=3,2", none_prefix,
-				NULL, NULL, NULL);
+	/* Nokia modems have a broken return value for the string
+	 * returned for the numeric value. It misses a " at the end.
+	 * Trying to read this will stall the parser. So skip it. */
+	if (nd->vendor == OFONO_VENDOR_NOKIA) {
+		ok = g_at_chat_send(nd->chat, "AT+COPS=3,0", none_prefix,
+							NULL, NULL, NULL);
 
-	if (ok)
-		ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
-					cops_numeric_cb, cbd, NULL);
+		if (ok)
+			ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
+							cops_cb, cbd, NULL);
+	} else {
+		ok = g_at_chat_send(nd->chat, "AT+COPS=3,2", none_prefix,
+							NULL, NULL, NULL);
+
+		if (ok)
+			ok = g_at_chat_send(nd->chat, "AT+COPS?", cops_prefix,
+						cops_numeric_cb, cbd, NULL);
+	}
 
 	if (ok)
 		return;
