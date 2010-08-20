@@ -330,7 +330,7 @@ test_scripts = test/activate-context \
 		test/send-sms \
 		test/set-mic-volume \
 		test/set-speaker-volume \
-		test/simple-agent \
+		test/test-stk-menu \
 		test/test-advice-of-charge \
 		test/test-call-barring \
 		test/test-call-forwarding \
