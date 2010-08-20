@@ -148,15 +148,17 @@ if __name__ == '__main__':
 
 	properties = stk.GetProperties()
 
-	print "Main Menu:"
-	print "%s" % (properties["MainMenuTitle"])
+	if "MainMenuTitle" in properties:
+		print "Main Menu:"
+		print "%s" % (properties["MainMenuTitle"])
+		print "\n"
 
-	print "\nItems:"
-
-	index = 0
-	for item in properties["MainMenu"]:
-		print "%d. %s" % (index, item[0])
-		index += 1
+	if "MainMenu" in properties:
+		print "Items:"
+		index = 0
+		for item in properties["MainMenu"]:
+			print "%d. %s" % (index, item[0])
+			index += 1
 
 	path = "/test/agent"
 	agent = StkAgent(bus, path)
