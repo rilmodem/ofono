@@ -83,7 +83,7 @@ static void clear_data(struct ofono_modem *modem)
 	memset(data->cind_pos, 0, sizeof(data->cind_pos));
 }
 
-static void sevice_level_conn_established(struct ofono_modem *modem)
+static void service_level_conn_established(struct ofono_modem *modem)
 {
 	DBusMessage *msg;
 	struct hfp_data *data = ofono_modem_get_data(modem);
@@ -158,7 +158,7 @@ static void chld_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	data->ag_mpty_features = ag_mpty_feature;
 
-	sevice_level_conn_established(modem);
+	service_level_conn_established(modem);
 }
 
 static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -175,7 +175,7 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_send(data->chat, "AT+CHLD=?", chld_prefix,
 			chld_cb, modem, NULL);
 	else
-		sevice_level_conn_established(modem);
+		service_level_conn_established(modem);
 }
 
 static void cind_status_cb(gboolean ok, GAtResult *result,
