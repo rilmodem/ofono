@@ -91,7 +91,7 @@ static void at_owancall_down_cb(gboolean ok, GAtResult *result,
 	cb(&error, cbd->data);
 }
 
-static void hso_owancall_up_cb(gboolean ok, GAtResult *result,
+static void at_owancall_up_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -137,7 +137,7 @@ static void hso_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	snprintf(buf, sizeof(buf), "AT_OWANCALL=%u,1,1", gcd->active_context);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
-				hso_owancall_up_cb, ncbd, g_free) > 0)
+				at_owancall_up_cb, ncbd, g_free) > 0)
 		return;
 
 	g_free(ncbd);
@@ -185,6 +185,7 @@ static void hso_gprs_activate_primary(struct ofono_gprs_context *gc,
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				hso_cgdcont_cb, cbd, g_free) > 0)
 		return;
+
 error:
 	g_free(cbd);
 
@@ -271,8 +272,8 @@ static void owandata_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_info("IP: %s, Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns1, dns2);
 
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, ip, STATIC_IP_NETMASK,
-				gateway, dns, gcd->cb_data);
+	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, ip,
+				STATIC_IP_NETMASK, gateway, dns, gcd->cb_data);
 
 	gcd->hso_state = HSO_NONE;
 	gcd->up_cb = NULL;
