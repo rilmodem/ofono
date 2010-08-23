@@ -233,6 +233,14 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_register(data->pcui, "^SIMST:", simst_notify,
 						FALSE, modem, NULL);
 
+	/* query current device settings */
+	g_at_chat_send(data->pcui, "AT^U2DIAG?", none_prefix,
+						NULL, NULL, NULL);
+
+	/* query current port settings */
+	g_at_chat_send(data->pcui, "AT^GETPORTMODE", none_prefix,
+						NULL, NULL, NULL);
+
 	/* query current sim state */
 	g_at_chat_send(data->pcui, "AT^SYSINFO", sysinfo_prefix,
 						sysinfo_cb, modem, NULL);
