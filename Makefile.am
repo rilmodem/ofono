@@ -171,7 +171,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 builtin_modules += huaweimodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/huaweimodem/huaweimodem.h \
-			drivers/huaweimodem/huaweimodem.c
+			drivers/huaweimodem/huaweimodem.c \
+			drivers/huaweimodem/gprs-context.c
 
 builtin_modules += calypsomodem
 builtin_sources += drivers/atmodem/atutil.h \
