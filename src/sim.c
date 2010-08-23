@@ -1443,18 +1443,26 @@ static void sim_initialize(struct ofono_sim *sim)
 	 * responsible for checking the PIN, reading the IMSI and signaling
 	 * SIM ready condition.
 	 *
-	 * The procedure according to 31.102 is roughly:
+	 * The procedure according to 31.102, 51.011, 11.11 and CPHS 4.2 is
+	 * roughly:
+	 *
 	 * Read EFecc
 	 * Read EFli and EFpl
 	 * SIM Pin check
 	 * Request SIM phase (only in 51.011)
-	 * Read EFust
-	 * Read EFest
+	 * Administrative information request (read EFad)
+	 * Request CPHS Information (only in CPHS 4.2)
+	 * Read EFsst (only in 11.11 & 51.011)
+	 * Read EFust (only in 31.102)
+	 * Read EFest (only in 31.102)
 	 * Read IMSI
 	 *
 	 * At this point we signal the SIM ready condition and allow
 	 * arbitrary files to be written or read, assuming their presence
 	 * in the EFust
+	 *
+	 * We utilize the fact that EFphase is always readable and grab it
+	 * early.  We also grab the card ICCID if available.
 	 */
 	sim_determine_phase(sim);
 }
