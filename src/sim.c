@@ -872,53 +872,6 @@ check:
 	sim->new_numbers = NULL;
 }
 
-static void sim_ad_read_cb(int ok, int length, int record,
-				const unsigned char *data,
-				int record_length, void *userdata)
-{
-	struct ofono_sim *sim = userdata;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(sim->atom);
-	int new_mnc_length;
-	char mcc[OFONO_MAX_MCC_LENGTH + 1];
-	char mnc[OFONO_MAX_MNC_LENGTH + 1];
-	const char *str;
-
-	if (!ok)
-		return;
-
-	if (length < 4)
-		return;
-
-	new_mnc_length = data[3] & 0xf;
-
-	/* sanity check for potential invalid values */
-	if (new_mnc_length < 2 || new_mnc_length > 3)
-		return;
-
-	if (sim->mnc_length == new_mnc_length)
-		return;
-
-	sim->mnc_length = new_mnc_length;
-
-	strncpy(mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
-	mcc[OFONO_MAX_MCC_LENGTH] = '\0';
-	strncpy(mnc, sim->imsi + OFONO_MAX_MCC_LENGTH, sim->mnc_length);
-	mnc[sim->mnc_length] = '\0';
-
-	str = mcc;
-	ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SIM_MANAGER_INTERFACE,
-						"MobileCountryCode",
-						DBUS_TYPE_STRING, &str);
-
-	str = mnc;
-	ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SIM_MANAGER_INTERFACE,
-						"MobileNetworkCode",
-						DBUS_TYPE_STRING, &str);
-}
-
 static gint service_number_compare(gconstpointer a, gconstpointer b)
 {
 	const struct service_number *sdn = a;
@@ -1014,33 +967,8 @@ static void sim_ready(void *user, enum ofono_sim_state new_state)
 
 	sim_own_numbers_update(sim);
 
-	ofono_sim_read(sim, SIM_EFAD_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_ad_read_cb, sim);
 	ofono_sim_read(sim, SIM_EFSDN_FILEID, OFONO_SIM_FILE_STRUCTURE_FIXED,
 			sim_sdn_read_cb, sim);
-}
-
-static void sim_cphs_information_read_cb(int ok, int length, int record,
-				const unsigned char *data,
-				int record_length, void *userdata)
-{
-	struct ofono_sim *sim = userdata;
-
-	sim->cphs_phase = OFONO_SIM_CPHS_PHASE_NONE;
-
-	if (!ok || length < 3)
-		goto ready;
-
-	if (data[0] == 0x01)
-		sim->cphs_phase = OFONO_SIM_CPHS_PHASE_1G;
-	else if (data[0] >= 0x02)
-		sim->cphs_phase = OFONO_SIM_CPHS_PHASE_2G;
-
-	memcpy(sim->cphs_service_table, data + 1, 2);
-
-ready:
-	sim_set_ready(sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
@@ -1062,11 +990,30 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 						"SubscriberIdentity",
 						DBUS_TYPE_STRING, &sim->imsi);
 
-	/* Read CPHS-support bits, this is still part of the SIM
-	 * initialisation but no order is specified for it.  */
-	ofono_sim_read(sim, SIM_EF_CPHS_INFORMATION_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_cphs_information_read_cb, sim);
+	if (sim->mnc_length) {
+		char mcc[OFONO_MAX_MCC_LENGTH + 1];
+		char mnc[OFONO_MAX_MNC_LENGTH + 1];
+		const char *str;
+
+		strncpy(mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
+		mcc[OFONO_MAX_MCC_LENGTH] = '\0';
+		strncpy(mnc, sim->imsi + OFONO_MAX_MCC_LENGTH, sim->mnc_length);
+		mnc[sim->mnc_length] = '\0';
+
+		str = mcc;
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"MobileCountryCode",
+						DBUS_TYPE_STRING, &str);
+
+		str = mnc;
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"MobileNetworkCode",
+						DBUS_TYPE_STRING, &str);
+	}
+
+	sim_set_ready(sim);
 }
 
 static void sim_retrieve_imsi(struct ofono_sim *sim)
@@ -1128,8 +1075,62 @@ out:
 	sim_retrieve_imsi(sim);
 }
 
-static inline void sim_retrieve_efust(struct ofono_sim *sim)
+static void sim_cphs_information_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
+	struct ofono_sim *sim = userdata;
+
+	sim->cphs_phase = OFONO_SIM_CPHS_PHASE_NONE;
+
+	if (!ok || length < 3)
+		return;
+
+	if (data[0] == 0x01)
+		sim->cphs_phase = OFONO_SIM_CPHS_PHASE_1G;
+	else if (data[0] >= 0x02)
+		sim->cphs_phase = OFONO_SIM_CPHS_PHASE_2G;
+
+	memcpy(sim->cphs_service_table, data + 1, 2);
+}
+
+static void sim_ad_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	int new_mnc_length;
+
+	if (!ok)
+		return;
+
+	if (length < 4)
+		return;
+
+	new_mnc_length = data[3] & 0xf;
+
+	/* sanity check for potential invalid values */
+	if (new_mnc_length < 2 || new_mnc_length > 3)
+		return;
+
+	sim->mnc_length = new_mnc_length;
+}
+
+static void sim_initialize_after_pin(struct ofono_sim *sim)
+{
+	ofono_sim_read(sim, SIM_EFAD_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_ad_read_cb, sim);
+
+	/*
+	 * Read CPHS-support bits, this is still part of the SIM
+	 * initialisation but no order is specified for it.
+	 */
+	ofono_sim_read(sim, SIM_EF_CPHS_INFORMATION_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_cphs_information_read_cb, sim);
+
+	/* Also retrieve the GSM service table */
 	ofono_sim_read(sim, SIM_EFUST_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_efust_read_cb, sim);
@@ -1169,13 +1170,13 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 
 checkdone:
 	if (pin_type == OFONO_SIM_PASSWORD_NONE)
-		sim_retrieve_efust(sim);
+		sim_initialize_after_pin(sim);
 }
 
 static void sim_pin_check(struct ofono_sim *sim)
 {
 	if (!sim->driver->query_passwd_state) {
-		sim_retrieve_efust(sim);
+		sim_initialize_after_pin(sim);
 		return;
 	}
 
@@ -1363,23 +1364,8 @@ skip_efpl:
 						"PreferredLanguages",
 						DBUS_TYPE_STRING,
 						&sim->language_prefs);
-}
 
-static void sim_retrieve_efli_and_efpl(struct ofono_sim *sim)
-{
-	/* According to 31.102 the EFli is read first and EFpl is then
-	 * only read if none of the EFli languages are supported by user
-	 * interface.  51.011 mandates the exact opposite, making EFpl/EFelp
-	 * preferred over EFlp (same EFid as EFli, different format).
-	 * However we don't depend on the user interface and so
-	 * need to read both files now.
-	 */
-	ofono_sim_read(sim, SIM_EFLI_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_efli_read_cb, sim);
-	ofono_sim_read(sim, SIM_EFPL_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_efpl_read_cb, sim);
+	sim_pin_check(sim);
 }
 
 static void sim_iccid_read_cb(int ok, int length, int record,
@@ -1420,8 +1406,19 @@ static void sim_efphase_read_cb(const struct ofono_error *error,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_iccid_read_cb, sim);
 
-	sim_retrieve_efli_and_efpl(sim);
-	sim_pin_check(sim);
+	/* According to 31.102 the EFli is read first and EFpl is then
+	 * only read if none of the EFli languages are supported by user
+	 * interface.  51.011 mandates the exact opposite, making EFpl/EFelp
+	 * preferred over EFlp (same EFid as EFli, different format).
+	 * However we don't depend on the user interface and so
+	 * need to read both files now.
+	 */
+	ofono_sim_read(sim, SIM_EFLI_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efli_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFPL_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efpl_read_cb, sim);
 }
 
 static void sim_determine_phase(struct ofono_sim *sim)
