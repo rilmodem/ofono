@@ -297,10 +297,12 @@ static void novatel_pre_sim(struct ofono_modem *modem)
 
 	if (!data->secondary) {
 		ofono_devinfo_create(modem, 0, "atmodem", data->primary);
-		sim = ofono_sim_create(modem, 0, "atmodem", data->primary);
+		sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+						"atmodem", data->primary);
 	} else {
 		ofono_devinfo_create(modem, 0, "atmodem", data->secondary);
-		sim = ofono_sim_create(modem, 0, "atmodem", data->secondary);
+		sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+						"atmodem", data->secondary);
 	}
 
 	if (sim)
