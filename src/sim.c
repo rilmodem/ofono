@@ -1116,8 +1116,24 @@ static void sim_ad_read_cb(int ok, int length, int record,
 	sim->mnc_length = new_mnc_length;
 }
 
+static void sim_efphase_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (!ok || length != 1)
+		sim->phase = OFONO_SIM_PHASE_3G;
+	else
+		sim->phase = data[0];
+}
+
 static void sim_initialize_after_pin(struct ofono_sim *sim)
 {
+	ofono_sim_read(sim, SIM_EFPHASE_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efphase_read_cb, sim);
+
 	ofono_sim_read(sim, SIM_EFAD_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_ad_read_cb, sim);
@@ -1391,47 +1407,6 @@ static void sim_iccid_read_cb(int ok, int length, int record,
 						&sim->iccid);
 }
 
-static void sim_efphase_read_cb(const struct ofono_error *error,
-				const unsigned char *data, int len, void *user)
-{
-	struct ofono_sim *sim = user;
-
-	if (!error || error->type != OFONO_ERROR_TYPE_NO_ERROR || len != 1)
-		sim->phase = OFONO_SIM_PHASE_3G;
-	else
-		sim->phase = data[0];
-
-	/* Proceed with SIM initialization */
-	ofono_sim_read(sim, SIM_EF_ICCID_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_iccid_read_cb, sim);
-
-	/* According to 31.102 the EFli is read first and EFpl is then
-	 * only read if none of the EFli languages are supported by user
-	 * interface.  51.011 mandates the exact opposite, making EFpl/EFelp
-	 * preferred over EFlp (same EFid as EFli, different format).
-	 * However we don't depend on the user interface and so
-	 * need to read both files now.
-	 */
-	ofono_sim_read(sim, SIM_EFLI_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_efli_read_cb, sim);
-	ofono_sim_read(sim, SIM_EFPL_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_efpl_read_cb, sim);
-}
-
-static void sim_determine_phase(struct ofono_sim *sim)
-{
-	if (!sim->driver->read_file_transparent) {
-		sim_efphase_read_cb(NULL, NULL, 0, sim);
-		return;
-	}
-
-	sim->driver->read_file_transparent(sim, SIM_EFPHASE_FILEID, 0, 1,
-						sim_efphase_read_cb, sim);
-}
-
 static void sim_initialize(struct ofono_sim *sim)
 {
 	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
@@ -1457,11 +1432,28 @@ static void sim_initialize(struct ofono_sim *sim)
 	 * At this point we signal the SIM ready condition and allow
 	 * arbitrary files to be written or read, assuming their presence
 	 * in the EFust
-	 *
-	 * We utilize the fact that EFphase is always readable and grab it
-	 * early.  We also grab the card ICCID if available.
 	 */
-	sim_determine_phase(sim);
+
+	/* Grab the EFiccid which is always available */
+	ofono_sim_read(sim, SIM_EF_ICCID_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_iccid_read_cb, sim);
+
+	/* EFecc is read by the voicecall atom */
+
+	/* According to 31.102 the EFli is read first and EFpl is then
+	 * only read if none of the EFli languages are supported by user
+	 * interface.  51.011 mandates the exact opposite, making EFpl/EFelp
+	 * preferred over EFlp (same EFid as EFli, different format).
+	 * However we don't depend on the user interface and so
+	 * need to read both files now.
+	 */
+	ofono_sim_read(sim, SIM_EFLI_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efli_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFPL_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efpl_read_cb, sim);
 }
 
 static void sim_op_error(struct ofono_sim *sim)
