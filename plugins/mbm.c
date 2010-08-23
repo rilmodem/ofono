@@ -108,10 +108,8 @@ static void simpin_check(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	/* Modem returns +CME ERROR: 10 if SIM is not ready. */
-	if (!ok && result->final_or_pdu &&
-			!strcmp(result->final_or_pdu, "+CME ERROR: 10") &&
-			data->cpin_poll_count++ < 5) {
+	/* Modem returns an error if SIM is not ready. */
+	if (!ok && data->cpin_poll_count++ < 5) {
 		data->cpin_poll_source =
 			g_timeout_add_seconds(1, init_simpin_check, modem);
 		return;
@@ -119,7 +117,7 @@ static void simpin_check(gboolean ok, GAtResult *result, gpointer user_data)
 
 	data->cpin_poll_count = 0;
 
-	/* Modem returns ERROR if there is no SIM in slot. */
+	/* There is probably no SIM if SIM is not ready after 5 seconds. */
 	data->have_sim = ok;
 
 	ofono_modem_set_powered(modem, TRUE);
