@@ -1119,8 +1119,8 @@ static void sim_efust_read_cb(int ok, int length, int record,
 	sim->efust_length = length;
 
 	ofono_sim_read(sim, SIM_EFEST_FILEID,
-		OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-		sim_efest_read_cb, sim);
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efest_read_cb, sim);
 
 	return;
 
