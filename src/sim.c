@@ -2013,6 +2013,8 @@ static void sim_free_state(struct ofono_sim *sim)
 		sim->efest = NULL;
 		sim->efest_length = 0;
 	}
+
+	sim->mnc_length = 0;
 }
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
