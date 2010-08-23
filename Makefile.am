@@ -168,6 +168,11 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/nwmodem/nwmodem.c \
 			drivers/nwmodem/radio-settings.c
 
+builtin_modules += huaweimodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/huaweimodem/huaweimodem.h \
+			drivers/huaweimodem/huaweimodem.c
+
 builtin_modules += calypsomodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/calypsomodem/calypsomodem.h \
