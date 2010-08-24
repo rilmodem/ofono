@@ -31,6 +31,7 @@
 #include "client.h"
 
 #define VERSION_TIMEOUT				5
+#define VERSION_RETRIES				2
 
 #define COMMON_MESSAGE				0xF0
 #define COMM_ISI_VERSION_GET_REQ		0x12
@@ -40,7 +41,21 @@
 struct verify_data {
 	GIsiVerifyFunc func;
 	void *data;
+	guint count;
 };
+
+static GIsiRequest *send_version_query(GIsiClient *client, GIsiResponseFunc cb,
+					void *opaque)
+{
+	uint8_t msg[] = {
+		COMMON_MESSAGE,
+		COMM_ISI_VERSION_GET_REQ,
+		0x00  /* Filler */
+	};
+
+	return g_isi_request_make(client, msg, sizeof(msg), VERSION_TIMEOUT,
+					cb, opaque);
+}
 
 static gboolean verify_cb(GIsiClient *client, const void *restrict data,
 				size_t len, uint16_t object, void *opaque)
@@ -51,8 +66,20 @@ static gboolean verify_cb(GIsiClient *client, const void *restrict data,
 
 	gboolean alive = FALSE;
 
-	if (!msg)
+	if (!msg) {
+
+		if (++vd->count < VERSION_RETRIES) {
+
+			g_warning("Retry COMM_ISI_VERSION_GET_REQ");
+
+			if (send_version_query(client, verify_cb, opaque))
+				return TRUE;
+		}
+
+		g_warning("Timeout COMM_ISI_VERSION_GET_REQ");
+
 		goto out;
+	}
 
 	if (len < 2 || msg[0] != COMMON_MESSAGE)
 		goto out;
@@ -69,6 +96,7 @@ static gboolean verify_cb(GIsiClient *client, const void *restrict data,
 out:
 	if (func)
 		func(client, alive, object, vd->data);
+
 	g_free(vd);
 	return TRUE;
 }
@@ -87,17 +115,11 @@ GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,
 {
 	struct verify_data *data = g_try_new0(struct verify_data, 1);
 	GIsiRequest *req = NULL;
-	uint8_t msg[] = {
-		COMMON_MESSAGE,
-		COMM_ISI_VERSION_GET_REQ,
-		0x00  /* Filler */
-	};
 
 	data->func = func;
 	data->data = opaque;
 
-	req = g_isi_request_make(client, msg, sizeof(msg), VERSION_TIMEOUT,
-					verify_cb, data);
+	req = send_version_query(client, verify_cb, data);
 	if (!req)
 		g_free(data);
 
