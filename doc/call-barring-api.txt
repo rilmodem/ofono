@@ -26,10 +26,11 @@ Methods		dict GetProperties()
 
 			Disables barrings for outgoing calls.
 
-		void SetProperty(string property, variant value)
+		void SetProperty(string property, variant value, string pin2)
 
 			Sets the given property value to that specified in
-			call parameter.
+			call parameter.  For all properties, the password
+			(typically PIN2) must be provided.
 
 Signals		PropertyChanged(string property, variant value)
 
