@@ -112,5 +112,10 @@ int stk_agent_request_input(struct stk_agent *agent, const char *text,
 				void *user_data, ofono_destroy_func destroy,
 				int timeout);
 
+int stk_agent_confirm_call(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, stk_agent_confirmation_cb cb,
+				void *user_data, ofono_destroy_func destroy,
+				int timeout);
+
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);

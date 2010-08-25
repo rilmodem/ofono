@@ -789,3 +789,68 @@ int stk_agent_request_input(struct stk_agent *agent, const char *text,
 
 	return 0;
 }
+
+static void confirm_call_cb(DBusPendingCall *call, void *data)
+{
+	struct stk_agent *agent = data;
+	stk_agent_confirmation_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+	dbus_bool_t confirm;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_TERMINATE, &result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (result != STK_AGENT_RESULT_OK) {
+		cb(result, FALSE, agent->user_data);
+		goto done;
+	}
+
+	if (dbus_message_get_args(reply, NULL,
+					DBUS_TYPE_BOOLEAN, &confirm,
+					DBUS_TYPE_INVALID) == FALSE) {
+		ofono_error("Can't parse the reply to ConfirmCallSetup()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	cb(result, confirm, agent->user_data);
+
+	CALLBACK_END();
+}
+
+int stk_agent_confirm_call(struct stk_agent *agent, const char *text,
+				uint8_t icon_id, stk_agent_confirmation_cb cb,
+				void *user_data, ofono_destroy_func destroy,
+				int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"ConfirmCallSetup");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, confirm_call_cb, agent, NULL);
+
+	return 0;
+}
