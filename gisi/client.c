@@ -473,6 +473,7 @@ int g_isi_subscribe(GIsiClient *client, uint8_t type,
 {
 	GIsiIndication *ind;
 	GIsiIndication **old;
+	gboolean isnew = TRUE;
 
 	if (cb == NULL)
 		return -EINVAL;
@@ -495,6 +496,7 @@ int g_isi_subscribe(GIsiClient *client, uint8_t type,
 	if (*old != ind) {
 		g_free(ind);
 		ind = *old;
+		isnew = FALSE;
 	}
 
 	ind->func = cb;
@@ -507,8 +509,11 @@ int g_isi_subscribe(GIsiClient *client, uint8_t type,
 			g_free(ind);
 			return ret;
 		}
-		client->inds.count++;
 	}
+
+	if (isnew)
+		client->inds.count++;
+
 	return 0;
 }
 
