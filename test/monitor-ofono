@@ -54,6 +54,23 @@ def property_changed(name, value, path, interface):
 	iface = interface[interface.rfind(".") + 1:]
 	print "{%s} [%s] %s = %s" % (iface, path, name, pretty(value))
 
+def added(name, value, member, path, interface):
+	iface = interface[interface.rfind(".") + 1:]
+	print "{%s} [%s] %s %s" % (iface, member, name, pretty(value))
+
+def removed(name, member, path, interface):
+	iface = interface[interface.rfind(".") + 1:]
+	print "{%s} [%s] %s" % (iface, name, member)
+
+def event(member, path, interface):
+	iface = interface[interface.rfind(".") + 1:]
+	print "{%s} [%s] %s" % (iface, path, member)
+
+def message(msg, args, member, path, interface):
+	iface = interface[interface.rfind(".") + 1:]
+	print "{%s} [%s] %s %s (%s)" % (iface, path, member,
+					str(msg), pretty(args))
+
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -62,6 +79,52 @@ if __name__ == '__main__':
 	bus.add_signal_receiver(property_changed,
 					bus_name="org.ofono",
 					signal_name = "PropertyChanged",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	for member in ["IncomingBarringInEffect",
+		       "OutgoingBarringInEffect",
+		       "NearMaximumWarning"]:
+		bus.add_signal_receiver(event,
+					bus_name="org.ofono",
+					signal_name = member,
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	bus.add_signal_receiver(added,
+					bus_name="org.ofono",
+					signal_name = "ContextAdded",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	bus.add_signal_receiver(removed,
+					bus_name="org.ofono",
+					signal_name = "ContextRemoved",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	bus.add_signal_receiver(added,
+				bus_name="org.ofono",
+					signal_name = "CallAdded",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+	bus.add_signal_receiver(removed,
+				bus_name="org.ofono",
+					signal_name = "CallRemoved",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	for member in ["IncomingBroadcast", "EmergencyBroadcast",
+		       "IncomingMessage", "ImmediateMessage"]:
+		bus.add_signal_receiver(message,
+					bus_name="org.ofono",
+					signal_name = member,
+						member_keyword="member",
 						path_keyword="path",
 						interface_keyword="interface")
 
