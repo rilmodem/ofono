@@ -1372,10 +1372,8 @@ skip_efpl:
 		g_slist_free(efpl);
 	}
 
-	if (sim->language_prefs == NULL)
-		return;
-
-	ofono_dbus_signal_array_property_changed(conn, path,
+	if (sim->language_prefs != NULL)
+		ofono_dbus_signal_array_property_changed(conn, path,
 						OFONO_SIM_MANAGER_INTERFACE,
 						"PreferredLanguages",
 						DBUS_TYPE_STRING,
