@@ -852,7 +852,7 @@ struct stk_card_reader_id {
 struct stk_other_address {
 	union {
 		/* Network Byte Order */
-		uint32_t ipv4;
+		guint32 ipv4;
 		unsigned char ipv6[16];
 	} addr;
 	enum stk_address_type type;
