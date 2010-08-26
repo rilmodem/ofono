@@ -88,6 +88,8 @@ struct ofono_sim {
 	unsigned char efmsisdn_records;
 	unsigned char *efli;
 	unsigned char efli_length;
+	unsigned char *efimg;
+	int efimg_length;
 	enum ofono_sim_cphs_phase cphs_phase;
 	unsigned char cphs_service_table[2];
 	struct ofono_watchlist *state_watches;
@@ -958,6 +960,47 @@ static void sim_own_numbers_update(struct ofono_sim *sim)
 			sim_msisdn_read_cb, sim);
 }
 
+static void sim_efimg_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	unsigned char *efimg;
+	int num_records;
+
+	if (!ok)
+		return;
+
+	num_records = length / record_length;
+
+	/*
+	 * EFimg descriptors are 9 bytes long.
+	 * Byte 1 of the record is the number of descriptors per record.
+	 */
+	if ((record_length < 10) ||
+			((record_length % 9 != 2) && (record_length % 9 != 1)))
+		return;
+
+	if (sim->efimg == NULL) {
+		sim->efimg = g_try_malloc0(num_records * 9);
+
+		if (sim->efimg == NULL)
+			return;
+
+		sim->efimg_length = num_records * 9;
+	}
+
+	/*
+	 * TBD - if we have more than one descriptor per record,
+	 * pick the nicest one.  For now we use the first one.
+	 */
+
+	/* copy descriptor into slot for this record */
+	efimg = &sim->efimg[(record - 1) * 9];
+
+	memcpy(efimg, &data[1], 9);
+}
+
 static void sim_ready(void *user, enum ofono_sim_state new_state)
 {
 	struct ofono_sim *sim = user;
@@ -969,6 +1012,8 @@ static void sim_ready(void *user, enum ofono_sim_state new_state)
 
 	ofono_sim_read(sim, SIM_EFSDN_FILEID, OFONO_SIM_FILE_STRUCTURE_FIXED,
 			sim_sdn_read_cb, sim);
+	ofono_sim_read(sim, SIM_EFIMG_FILEID, OFONO_SIM_FILE_STRUCTURE_FIXED,
+			sim_efimg_read_cb, sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
@@ -2002,6 +2047,11 @@ static void sim_free_state(struct ofono_sim *sim)
 	}
 
 	sim->mnc_length = 0;
+
+	if (sim->efimg) {
+		g_free(sim->efimg);
+		sim->efimg = NULL;
+	}
 }
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
