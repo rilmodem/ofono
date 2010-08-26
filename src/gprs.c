@@ -945,6 +945,9 @@ static void registration_status_cb(const struct ofono_error *error,
 {
 	struct ofono_gprs *gprs = data;
 
+	DBG("%s error %d status %d", __ofono_atom_get_path(gprs->atom),
+		error->type, status);
+
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_gprs_status_notify(gprs, status);
 
@@ -957,6 +960,8 @@ static void registration_status_cb(const struct ofono_error *error,
 static void gprs_attach_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_gprs *gprs = data;
+
+	DBG("%s error = %d", __ofono_atom_get_path(gprs->atom), error->type);
 
 	gprs->flags &= ~GPRS_FLAG_ATTACHING;
 
@@ -1425,6 +1430,8 @@ static GDBusSignalTable manager_signals[] = {
 
 void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
 {
+	DBG("%s", __ofono_atom_get_path(gprs->atom));
+
 	gprs->driver_attached = FALSE;
 	gprs_attached_update(gprs);
 
@@ -1437,6 +1444,8 @@ void ofono_gprs_detached_notify(struct ofono_gprs *gprs)
 
 void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 {
+	DBG("%s status %d", __ofono_atom_get_path(gprs->atom), status);
+
 	gprs->status = status;
 
 	if (status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
