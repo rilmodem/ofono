@@ -1420,7 +1420,7 @@ gboolean sim_parse_2g_get_response(const unsigned char *response, int len,
 gboolean sim_ust_is_available(unsigned char *efust, unsigned char len,
 						enum sim_ust_service index)
 {
-	if (index >= len * 8)
+	if (index >= len * 8u)
 		return FALSE;
 
 	return (efust[index / 8] >> (index % 8)) & 1;
@@ -1429,7 +1429,7 @@ gboolean sim_ust_is_available(unsigned char *efust, unsigned char len,
 gboolean sim_est_is_active(unsigned char *efest, unsigned char len,
 						enum sim_est_service index)
 {
-	if (index >= len * 8)
+	if (index >= len * 8u)
 		return FALSE;
 
 	return (efest[index / 8] >> (index % 8)) & 1;
