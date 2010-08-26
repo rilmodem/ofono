@@ -1399,6 +1399,188 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 	return FALSE;
 }
 
+static void call_setup_connected(struct ofono_call *call, void *data)
+{
+	struct ofono_stk *stk = data;
+	struct stk_response rsp;
+	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
+	static unsigned char facility_rejected_result[] = { 0x9d };
+
+	if (!call) {
+		memset(&rsp, 0, sizeof(rsp));
+
+		rsp.result.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE;
+		rsp.result.additional_len = sizeof(facility_rejected_result);
+		rsp.result.additional = facility_rejected_result;
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&error, stk);
+
+		return;
+	}
+
+	if (call->status == CALL_STATUS_ACTIVE)
+		send_simple_response(stk, STK_RESULT_TYPE_SUCCESS);
+	else
+		send_simple_response(stk, STK_RESULT_TYPE_USER_CANCEL);
+}
+
+static void call_setup_cancel(struct ofono_stk *stk)
+{
+	struct ofono_voicecall *vc;
+	struct ofono_atom *vc_atom;
+
+	vc_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
+						OFONO_ATOM_TYPE_VOICECALL);
+	if (!vc_atom)
+		return;
+
+	vc = __ofono_atom_get_data(vc_atom);
+	if (vc)
+		__ofono_voicecall_dial_cancel(vc);
+}
+
+static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
+				void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
+	const struct stk_command_setup_call *sc = &stk->pending_cmd->setup_call;
+	uint8_t qualifier = stk->pending_cmd->qualifier;
+	static unsigned char busy_on_call_result[] = { 0x02 };
+	static unsigned char no_cause_result[] = { 0x00 };
+	struct ofono_voicecall *vc = NULL;
+	struct ofono_atom *vc_atom;
+	struct stk_response rsp;
+	int err;
+
+	switch (result) {
+	case STK_AGENT_RESULT_TIMEOUT:
+		confirm = FALSE;
+		/* Fall through */
+
+	case STK_AGENT_RESULT_OK:
+		if (confirm)
+			break;
+
+		send_simple_response(stk, STK_RESULT_TYPE_USER_REJECT);
+		return;
+
+	case STK_AGENT_RESULT_TERMINATE:
+	default:
+		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
+		return;
+	}
+
+	vc_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
+						OFONO_ATOM_TYPE_VOICECALL);
+	if (vc_atom)
+		vc = __ofono_atom_get_data(vc_atom);
+
+	if (!vc) {
+		send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
+		return;
+	}
+
+	err = __ofono_voicecall_dial(vc, sc->addr.number, sc->addr.ton_npi,
+					sc->alpha_id_call_setup, 0,
+					qualifier >> 1, call_setup_connected,
+					stk);
+	if (err >= 0) {
+		stk->cancel_cmd = call_setup_cancel;
+
+		return;
+	}
+
+	if (err == -EBUSY) {
+		memset(&rsp, 0, sizeof(rsp));
+
+		rsp.result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		rsp.result.additional_len = sizeof(busy_on_call_result);
+		rsp.result.additional = busy_on_call_result;
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&error, stk);
+
+		return;
+	}
+
+	if (err == -ENOSYS) {
+		send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
+
+		return;
+	}
+
+	memset(&rsp, 0, sizeof(rsp));
+
+	rsp.result.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE;
+	rsp.result.additional_len = sizeof(no_cause_result);
+	rsp.result.additional = no_cause_result;
+
+	if (stk_respond(stk, &rsp, stk_command_cb))
+		stk_command_cb(&error, stk);
+}
+
+static gboolean handle_command_set_up_call(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	const struct stk_command_setup_call *sc = &cmd->setup_call;
+	uint8_t qualifier = cmd->qualifier;
+	static unsigned char busy_on_call_result[] = { 0x02 };
+	struct ofono_voicecall *vc = NULL;
+	struct ofono_atom *vc_atom;
+	int err;
+
+	if (qualifier > 5) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+		return TRUE;
+	}
+
+	/*
+	 * Passing called party subaddress and establishing non-speech
+	 * calls are not supported.
+	 */
+	if (sc->ccp.len || sc->subaddr.len) {
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+
+	vc_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
+						OFONO_ATOM_TYPE_VOICECALL);
+	if (vc_atom)
+		vc = __ofono_atom_get_data(vc_atom);
+
+	if (!vc) {
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+
+	if (__ofono_voicecall_busy(vc) && (qualifier == 0 || qualifier == 1)) {
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		rsp->result.additional_len = sizeof(busy_on_call_result);
+		rsp->result.additional = busy_on_call_result;
+		return TRUE;
+	}
+
+	stk->cancel_cmd = stk_request_cancel;
+
+	err = stk_agent_confirm_call(stk->current_agent, sc->alpha_id_usr_cfm,
+					0, confirm_call_cb, stk, NULL,
+					stk->timeout * 1000);
+
+	if (err < 0) {
+		/*
+		 * We most likely got an out of memory error, tell SIM
+		 * to retry
+		 */
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (stk->immediate_response)
@@ -1482,6 +1664,7 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		case STK_COMMAND_TYPE_GET_INKEY:
 		case STK_COMMAND_TYPE_GET_INPUT:
 		case STK_COMMAND_TYPE_PLAY_TONE:
+		case STK_COMMAND_TYPE_SETUP_CALL:
 			send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
 			return;
 
@@ -1540,6 +1723,11 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 
 	case STK_COMMAND_TYPE_GET_INPUT:
 		respond = handle_command_get_input(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_SETUP_CALL:
+		respond = handle_command_set_up_call(stk->pending_cmd,
 							&rsp, stk);
 		break;
 
