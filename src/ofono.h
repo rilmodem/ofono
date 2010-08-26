@@ -169,10 +169,27 @@ void __ofono_atom_free(struct ofono_atom *atom);
 #include <ofono/cbs.h>
 #include <ofono/devinfo.h>
 #include <ofono/phonebook.h>
-#include <ofono/voicecall.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
+
+#include <ofono/voicecall.h>
+
+enum ofono_voicecall_interaction {
+	OFONO_VOICECALL_INTERACTION_NONE	= 0,
+	OFONO_VOICECALL_INTERACTION_PUT_ON_HOLD	= 1,
+	OFONO_VOICECALL_INTERACTION_DISCONNECT	= 2,
+};
+
+typedef void (*ofono_voicecall_dial_cb_t)(struct ofono_call *call, void *data);
+
+ofono_bool_t __ofono_voicecall_busy(struct ofono_voicecall *vc);
+int __ofono_voicecall_dial(struct ofono_voicecall *vc,
+				const char *addr, int addr_type,
+				const char *message, unsigned char icon_id,
+				enum ofono_voicecall_interaction interaction,
+				ofono_voicecall_dial_cb_t cb, void *user_data);
+void __ofono_voicecall_dial_cancel(struct ofono_voicecall *vc);
 
 #include <ofono/sms.h>
 
