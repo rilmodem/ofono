@@ -41,6 +41,16 @@
 #include "gpds.h"
 #include "debug.h"
 
+/* 27.007 Section 10.1.20 <stat> */
+enum network_registration_status {
+	GPRS_STAT_NOT_REGISTERED = 0,
+	GPRS_STAT_REGISTERED = 1,
+	GPRS_STAT_SEARCHING = 2,
+	GPRS_STAT_DENIED = 3,
+	GPRS_STAT_UNKNOWN = 4,
+	GPRS_STAT_ROAMING = 5
+};
+
 struct gprs_data {
 	GIsiClient *client;
 };
@@ -252,6 +262,7 @@ static gboolean status_resp_cb(GIsiClient *client,
 	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_gprs_status_cb_t cb = cbd->cb;
+	int status;
 
 	if (!msg) {
 		DBG("ISI client error: %d", g_isi_client_error(client));
@@ -263,9 +274,18 @@ static gboolean status_resp_cb(GIsiClient *client,
 
 	/* FIXME: the core still expects reg status, and not a boolean
 	 * attached status here.*/
+	switch (msg[1]) {
+	case GPDS_ATTACHED:
+		status = GPRS_STAT_REGISTERED;
+		break;
+	case GPDS_DETACHED:
+		status = GPRS_STAT_NOT_REGISTERED;
+		break;
+	default:
+		status = GPRS_STAT_UNKNOWN;
+	}
 
-	/* CALLBACK_WITH_SUCCESS(cb, msg[1] == GPDS_ATTACHED, cbd->data); */
-	CALLBACK_WITH_SUCCESS(cb, 1, cbd->data);
+	CALLBACK_WITH_SUCCESS(cb, status, cbd->data);
 
 	goto out;
 
