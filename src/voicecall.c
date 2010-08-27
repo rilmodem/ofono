@@ -179,8 +179,8 @@ static const char *time_to_str(const time_t *t)
 	return buf;
 }
 
-static int voicecalls_num_with_status(struct ofono_voicecall *vc,
-					int status)
+static unsigned int voicecalls_num_with_status(struct ofono_voicecall *vc,
+						int status)
 {
 	GSList *l;
 	struct voicecall *v;
@@ -196,19 +196,19 @@ static int voicecalls_num_with_status(struct ofono_voicecall *vc,
 	return num;
 }
 
-static int voicecalls_num_active(struct ofono_voicecall *vc)
+static unsigned int voicecalls_num_active(struct ofono_voicecall *vc)
 {
 	return voicecalls_num_with_status(vc, CALL_STATUS_ACTIVE);
 }
 
-static int voicecalls_num_held(struct ofono_voicecall *vc)
+static unsigned int voicecalls_num_held(struct ofono_voicecall *vc)
 {
 	return voicecalls_num_with_status(vc, CALL_STATUS_HELD);
 }
 
-static int voicecalls_num_connecting(struct ofono_voicecall *vc)
+static unsigned int voicecalls_num_connecting(struct ofono_voicecall *vc)
 {
-	int r = 0;
+	unsigned int r = 0;
 
 	r += voicecalls_num_with_status(vc, CALL_STATUS_DIALING);
 	r += voicecalls_num_with_status(vc, CALL_STATUS_ALERTING);
