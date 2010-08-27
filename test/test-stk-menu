@@ -109,7 +109,7 @@ class StkAgent(dbus.service.Object):
 				in_signature="sy", out_signature="b")
 	def RequestConfirmation(self, title, icon):
 		print "Title: (%s)" % (title)
-		key = raw_input("Enter Digit (t, b, y, n):")
+		key = raw_input("Enter Confirmation (t, b, y, n):")
 
 		if key == 'b':
 			raise GoBack("User wishes to go back");
@@ -124,7 +124,7 @@ class StkAgent(dbus.service.Object):
 				in_signature="sy", out_signature="b")
 	def ConfirmCallSetup(self, info, icon):
 		print "Information: (%s)" % (info)
-		key = raw_input("Enter Digit (t, y, n):")
+		key = raw_input("Enter Confirmation (t, y, n):")
 
 		if key == 't':
 			raise EndSession("User wishes to terminate session");
