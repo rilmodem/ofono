@@ -1039,8 +1039,6 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	stk->cancel_cmd = stk_request_cancel;
-
 	/* We most likely got an out of memory error, tell SIM to retry */
 	if (stk_agent_request_selection(stk->current_agent,
 					stk->select_item_menu,
@@ -1050,6 +1048,8 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
+
+	stk->cancel_cmd = stk_request_cancel;
 
 	return FALSE;
 }
@@ -1138,8 +1138,6 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 		}
 	}
 
-	stk->cancel_cmd = stk_request_cancel;
-
 	/* We most likely got an out of memory error, tell SIM to retry */
 	if (stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
 					display_text_cb, stk,
@@ -1152,6 +1150,9 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 		stk->immediate_response = TRUE;
 
 	DBG("Immediate Response: %d", stk->immediate_response);
+
+	if (stk->immediate_response == FALSE)
+		stk->cancel_cmd = stk_request_cancel;
 
 	return stk->immediate_response;
 }
@@ -1293,8 +1294,6 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 
 	gettimeofday(&stk->get_inkey_start_ts, NULL);
 
-	stk->cancel_cmd = stk_request_cancel;
-
 	if (yesno)
 		err = stk_agent_request_confirmation(stk->current_agent,
 							gi->text, icon_id,
@@ -1317,6 +1316,8 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
+
+	stk->cancel_cmd = stk_request_cancel;
 
 	return FALSE;
 }
@@ -1370,8 +1371,6 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 	uint8_t icon_id = 0;
 	int err;
 
-	stk->cancel_cmd = stk_request_cancel;
-
 	if (alphabet)
 		err = stk_agent_request_input(stk->current_agent, gi->text,
 						icon_id, gi->default_text, ucs2,
@@ -1395,6 +1394,8 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
+
+	stk->cancel_cmd = stk_request_cancel;
 
 	return FALSE;
 }
@@ -1563,8 +1564,6 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	stk->cancel_cmd = stk_request_cancel;
-
 	err = stk_agent_confirm_call(stk->current_agent, sc->alpha_id_usr_cfm,
 					0, confirm_call_cb, stk, NULL,
 					stk->timeout * 1000);
@@ -1577,6 +1576,8 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
+
+	stk->cancel_cmd = stk_request_cancel;
 
 	return FALSE;
 }
