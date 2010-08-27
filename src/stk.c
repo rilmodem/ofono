@@ -66,6 +66,7 @@ struct ofono_stk {
 	struct stk_agent *default_agent;
 	struct stk_agent *current_agent; /* Always equals one of the above */
 	struct stk_menu *main_menu, *select_item_menu;
+	gboolean respond_on_exit;
 	ofono_bool_t immediate_response;
 	guint remove_agent_source;
 	struct sms_submit_req *sms_submit_req;
@@ -429,31 +430,16 @@ static void stk_request_cancel(struct ofono_stk *stk)
 		stk_agent_request_cancel(stk->default_agent);
 }
 
-static gboolean agent_called(struct ofono_stk *stk)
-{
-	if (stk->pending_cmd == NULL)
-		return FALSE;
-
-	switch (stk->pending_cmd->type) {
-	case STK_COMMAND_TYPE_SELECT_ITEM:
-	case STK_COMMAND_TYPE_DISPLAY_TEXT:
-	case STK_COMMAND_TYPE_GET_INPUT:
-	case STK_COMMAND_TYPE_GET_INKEY:
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
 static void default_agent_notify(gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
-	if (stk->current_agent == stk->default_agent && agent_called(stk))
+	if (stk->current_agent == stk->default_agent && stk->respond_on_exit)
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 
 	stk->default_agent = NULL;
 	stk->current_agent = stk->session_agent;
+	stk->respond_on_exit = FALSE;
 }
 
 static void session_agent_notify(gpointer user_data)
@@ -462,13 +448,14 @@ static void session_agent_notify(gpointer user_data)
 
 	DBG("Session Agent removed");
 
-	if (stk->current_agent == stk->session_agent && agent_called(stk)) {
+	if (stk->current_agent == stk->session_agent && stk->respond_on_exit) {
 		DBG("Sending Terminate response for session agent");
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 	}
 
 	stk->session_agent = NULL;
 	stk->current_agent = stk->default_agent;
+	stk->respond_on_exit = FALSE;
 
 	if (stk->remove_agent_source) {
 		g_source_remove(stk->remove_agent_source);
@@ -995,6 +982,8 @@ static void request_selection_cb(enum stk_agent_result result, uint8_t id,
 {
 	struct ofono_stk *stk = user_data;
 
+	stk->respond_on_exit = FALSE;
+
 	switch (result) {
 	case STK_AGENT_RESULT_OK:
 	{
@@ -1053,6 +1042,7 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 	}
 
 	stk->cancel_cmd = stk_request_cancel;
+	stk->respond_on_exit = TRUE;
 
 	return FALSE;
 }
@@ -1068,6 +1058,8 @@ static void display_text_cb(enum stk_agent_result result, void *user_data)
 {
 	struct ofono_stk *stk = user_data;
 	gboolean confirm;
+
+	stk->respond_on_exit = FALSE;
 
 	/*
 	 * There are four possible paths for DisplayText with immediate
@@ -1154,8 +1146,10 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 
 	DBG("Immediate Response: %d", stk->immediate_response);
 
-	if (stk->immediate_response == FALSE)
+	if (stk->immediate_response == FALSE) {
+		stk->respond_on_exit = TRUE;
 		stk->cancel_cmd = stk_request_cancel;
+	}
 
 	return stk->immediate_response;
 }
@@ -1192,6 +1186,8 @@ static void request_confirmation_cb(enum stk_agent_result result,
 	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_command_get_inkey *cmd = &stk->pending_cmd->get_inkey;
 	struct stk_response rsp;
+
+	stk->respond_on_exit = FALSE;
 
 	switch (result) {
 	case STK_AGENT_RESULT_OK:
@@ -1233,6 +1229,8 @@ static void request_key_cb(enum stk_agent_result result, char *string,
 	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_command_get_inkey *cmd = &stk->pending_cmd->get_inkey;
 	struct stk_response rsp;
+
+	stk->respond_on_exit = FALSE;
 
 	switch (result) {
 	case STK_AGENT_RESULT_OK:
@@ -1320,6 +1318,7 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 		return TRUE;
 	}
 
+	stk->respond_on_exit = TRUE;
 	stk->cancel_cmd = stk_request_cancel;
 
 	return FALSE;
@@ -1333,6 +1332,8 @@ static void request_string_cb(enum stk_agent_result result, char *string,
 	uint8_t qualifier = stk->pending_cmd->qualifier;
 	gboolean packed = (qualifier & (1 << 3)) != 0;
 	struct stk_response rsp;
+
+	stk->respond_on_exit = FALSE;
 
 	switch (result) {
 	case STK_AGENT_RESULT_OK:
@@ -1398,6 +1399,7 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 		return TRUE;
 	}
 
+	stk->respond_on_exit = TRUE;
 	stk->cancel_cmd = stk_request_cancel;
 
 	return FALSE;
@@ -1457,6 +1459,8 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 	struct ofono_atom *vc_atom;
 	struct stk_response rsp;
 	int err;
+
+	stk->respond_on_exit = FALSE;
 
 	switch (result) {
 	case STK_AGENT_RESULT_TIMEOUT:
@@ -1580,6 +1584,7 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 		return TRUE;
 	}
 
+	stk->respond_on_exit = TRUE;
 	stk->cancel_cmd = stk_request_cancel;
 
 	return FALSE;
