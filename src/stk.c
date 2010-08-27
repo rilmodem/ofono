@@ -114,6 +114,7 @@ static int stk_respond(struct ofono_stk *stk, struct stk_response *rsp,
 
 	stk_command_free(stk->pending_cmd);
 	stk->pending_cmd = NULL;
+	stk->cancel_cmd = NULL;
 
 	stk->driver->terminal_response(stk, tlv_len, tlv, cb, stk);
 
@@ -1591,6 +1592,7 @@ static void stk_proactive_command_cancel(struct ofono_stk *stk)
 		stk->cancel_cmd(stk);
 		stk_command_free(stk->pending_cmd);
 		stk->pending_cmd = NULL;
+		stk->cancel_cmd = NULL;
 	}
 }
 
@@ -1780,6 +1782,7 @@ static void stk_unregister(struct ofono_atom *atom)
 	if (stk->pending_cmd) {
 		stk_command_free(stk->pending_cmd);
 		stk->pending_cmd = NULL;
+		stk->cancel_cmd = NULL;
 	}
 
 	if (stk->idle_mode_text) {
