@@ -2148,12 +2148,32 @@ int ofono_voicecall_get_next_callid(struct ofono_voicecall *vc)
 	return __ofono_modem_callid_next(modem);
 }
 
-ofono_bool_t __ofono_voicecall_busy(struct ofono_voicecall *vc)
+ofono_bool_t __ofono_voicecall_is_busy(struct ofono_voicecall *vc,
+					enum ofono_voicecall_interaction type)
 {
-	return vc->dial_req || vc->pending || voicecalls_have_active(vc) ||
-			g_slist_length(vc->call_list) >= MAX_VOICE_CALLS ||
-			voicecalls_have_incoming(vc) ||
-			voicecalls_num_connecting(vc) > 0;
+	if (vc->pending)
+		return TRUE;
+
+	switch (type) {
+	case OFONO_VOICECALL_INTERACTION_NONE:
+		return vc->call_list != NULL;
+	case OFONO_VOICECALL_INTERACTION_DISCONNECT:
+		/* Only support releasing active calls */
+		if (voicecalls_num_active(vc) == g_slist_length(vc->call_list))
+			return FALSE;
+
+		return TRUE;
+	case OFONO_VOICECALL_INTERACTION_PUT_ON_HOLD:
+		if (voicecalls_num_active(vc) == g_slist_length(vc->call_list))
+			return FALSE;
+
+		if (voicecalls_num_held(vc) == g_slist_length(vc->call_list))
+			return FALSE;
+
+		return TRUE;
+	}
+
+	return TRUE;
 }
 
 static void dial_request_cb(const struct ofono_error *error, void *data)
@@ -2191,34 +2211,27 @@ static void dial_request_cb(const struct ofono_error *error, void *data)
 		voicecalls_emit_call_added(vc, v);
 }
 
-static int dial_request(struct ofono_voicecall *vc)
+static void dial_request(struct ofono_voicecall *vc)
 {
-	if (g_slist_length(vc->call_list) >= MAX_VOICE_CALLS ||
-			voicecalls_have_incoming(vc) ||
-			voicecalls_num_connecting(vc) > 0 ||
-			vc->pending)
-		return -EBUSY;
-
 	vc->driver->dial(vc, &vc->dial_req->ph, OFONO_CLIR_OPTION_DEFAULT,
 				OFONO_CUG_OPTION_DEFAULT, dial_request_cb, vc);
-
-	return 0;
 }
 
-static void hold_or_disconnect_cb(const struct ofono_error *error, void *data)
+static void dial_req_disconnect_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	int err;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		dial_request_finish(vc, TRUE);
 		return;
 	}
 
-	err = dial_request(vc);
-
-	if (err < 0)
-		dial_request_finish(vc, TRUE);
+	/*
+	 * Note that the callback might come back fore we receive call
+	 * disconnection notifications.  So it makes no sense to recheck
+	 * whether we can dial here.  We simply dial and hope for the best.
+	 */
+	dial_request(vc);
 }
 
 int __ofono_voicecall_dial(struct ofono_voicecall *vc,
@@ -2228,8 +2241,6 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 				ofono_voicecall_dial_cb_t cb, void *user_data)
 {
 	struct dial_request *req;
-	int err = 0;
-	gboolean have_active;
 
 	if (!valid_phone_number_format(addr))
 		return -EINVAL;
@@ -2262,36 +2273,32 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 
 	vc->dial_req = req;
 
-	have_active = voicecalls_have_active(vc);
+	if (__ofono_voicecall_is_busy(vc, interaction) == TRUE) {
+		dial_request_finish(vc, FALSE);
+		return -EBUSY;
+	}
 
 	switch (interaction) {
 	case OFONO_VOICECALL_INTERACTION_NONE:
-		if (have_active)
-			err = -EBUSY;
-		else
-			err = dial_request(vc);
-
+		dial_request(vc);
 		break;
 
 	case OFONO_VOICECALL_INTERACTION_PUT_ON_HOLD:
 		/* Note: dialling automatically puts active calls on hold */
-		err = dial_request(vc);
+		dial_request(vc);
 		break;
 
 	case OFONO_VOICECALL_INTERACTION_DISCONNECT:
-		if (have_active)
+		if (voicecalls_have_active(vc))
 			vc->driver->release_all_active(vc,
-						hold_or_disconnect_cb, vc);
+						dial_req_disconnect_cb, vc);
 		else
-			err = dial_request(vc);
+			dial_request(vc);
 
 		break;
 	}
 
-	if (err < 0)
-		dial_request_finish(vc, FALSE);
-
-	return err;
+	return 0;
 }
 
 void __ofono_voicecall_dial_cancel(struct ofono_voicecall *vc)

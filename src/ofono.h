@@ -183,7 +183,9 @@ enum ofono_voicecall_interaction {
 
 typedef void (*ofono_voicecall_dial_cb_t)(struct ofono_call *call, void *data);
 
-ofono_bool_t __ofono_voicecall_busy(struct ofono_voicecall *vc);
+ofono_bool_t __ofono_voicecall_is_busy(struct ofono_voicecall *vc,
+					enum ofono_voicecall_interaction type);
+
 int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 				const char *addr, int addr_type,
 				const char *message, unsigned char icon_id,

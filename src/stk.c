@@ -1564,7 +1564,7 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	if (__ofono_voicecall_busy(vc) && (qualifier == 0 || qualifier == 1)) {
+	if (__ofono_voicecall_is_busy(vc, qualifier >> 1)) {
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		rsp->result.additional_len = sizeof(busy_on_call_result);
 		rsp->result.additional = busy_on_call_result;
