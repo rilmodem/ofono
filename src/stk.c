@@ -1046,6 +1046,8 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 					request_selection_cb, stk,
 					request_selection_destroy,
 					stk->timeout * 1000) < 0) {
+		request_selection_destroy(stk);
+
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
