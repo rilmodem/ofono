@@ -66,14 +66,14 @@ struct voicecall {
 	struct ofono_voicecall *vc;
 	time_t start_time;
 	time_t detect_time;
-	const char *message;
+	char *message;
 	uint8_t icon_id;
 	gboolean untracked;
 };
 
 struct dial_request {
 	struct ofono_voicecall *vc;
-	const char *message;
+	char *message;
 	uint8_t icon_id;
 	enum ofono_voicecall_interaction interaction;
 	ofono_voicecall_dial_cb_t cb;
@@ -214,6 +214,19 @@ static int voicecalls_num_connecting(struct ofono_voicecall *vc)
 	r += voicecalls_num_with_status(vc, CALL_STATUS_ALERTING);
 
 	return r;
+}
+
+static void dial_request_finish(struct ofono_voicecall *vc, gboolean callback)
+{
+	struct dial_request *dial_req = vc->dial_req;
+
+	if (callback && dial_req->cb)
+		dial_req->cb(dial_req->call ? dial_req->call->call : NULL,
+				dial_req->user_data);
+
+	g_free(dial_req->message);
+	g_free(dial_req);
+	vc->dial_req = NULL;
 }
 
 static void append_voicecall_properties(struct voicecall *v,
@@ -473,6 +486,7 @@ static void voicecall_destroy(gpointer userdata)
 	struct voicecall *voicecall = (struct voicecall *)userdata;
 
 	g_free(voicecall->call);
+	g_free(voicecall->message);
 
 	g_free(voicecall);
 }
@@ -516,8 +530,7 @@ static void voicecall_emit_multiparty(struct voicecall *call, gboolean mpty)
 						&val);
 }
 
-static void voicecall_set_call_status(struct voicecall *call,
-					int status)
+static void voicecall_set_call_status(struct voicecall *call, int status)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
@@ -554,32 +567,13 @@ static void voicecall_set_call_status(struct voicecall *call,
 						"StartTime", DBUS_TYPE_STRING,
 						&timestr);
 
-		if (call->vc->dial_req && call == call->vc->dial_req->call) {
-			struct dial_request *req = call->vc->dial_req;
-
-			if (req->cb)
-				req->cb(call->call, req->user_data);
-
-			/*
-			 * TODO: parse the called number for DTMF tones to be
-			 * sent after call becomes active, and send them.
-			 */
-
-			call->vc->dial_req = NULL;
-			g_free(req);
-		}
+		if (call->vc->dial_req && call == call->vc->dial_req->call)
+			dial_request_finish(call->vc, TRUE);
 	}
 
 	if (status == CALL_STATUS_DISCONNECTED && call->vc->dial_req &&
-			call == call->vc->dial_req->call) {
-		struct dial_request *req = call->vc->dial_req;
-
-		if (req->cb)
-			req->cb(NULL, req->user_data);
-
-		call->vc->dial_req = NULL;
-		g_free(req);
-	}
+			call == call->vc->dial_req->call)
+		dial_request_finish(call->vc, TRUE);
 }
 
 static void voicecall_set_call_lineid(struct voicecall *v,
@@ -2172,34 +2166,29 @@ static void dial_request_cb(const struct ofono_error *error, void *data)
 				phone_number_to_string(&vc->dial_req->ph),
 				&need_to_emit);
 
-	if (v) {
-		v->message = vc->dial_req->message;
-		v->icon_id = vc->dial_req->icon_id;
-
-		/*
-		 * TS 102 223 Section 6.4.13: The terminal shall not store
-		 * in the UICC the call set-up details (called party number
-		 * and associated parameters)
-		 */
-		v->untracked = TRUE;
+	if (v == NULL) {
+		dial_request_finish(vc, TRUE);
+		return;
 	}
+
+	v->message = vc->dial_req->message;
+	v->icon_id = vc->dial_req->icon_id;
+
+	vc->dial_req->message = NULL;
+	vc->dial_req->call = v;
+
+	/*
+	 * TS 102 223 Section 6.4.13: The terminal shall not store
+	 * in the UICC the call set-up details (called party number
+	 * and associated parameters)
+	 */
+	v->untracked = TRUE;
+
+	if (v->call->status == CALL_STATUS_ACTIVE)
+		dial_request_finish(vc, TRUE);
 
 	if (need_to_emit)
 		voicecalls_emit_call_added(vc, v);
-
-	if (vc->dial_req->cb) {
-		if (v && v->call->status != CALL_STATUS_ACTIVE) {
-			vc->dial_req->call = v;
-
-			/* Wait for the call connected message */
-			return;
-		}
-
-		vc->dial_req->cb(v ? v->call : NULL, vc->dial_req->user_data);
-	}
-
-	g_free(vc->dial_req);
-	vc->dial_req = NULL;
 }
 
 static int dial_request(struct ofono_voicecall *vc)
@@ -2207,12 +2196,8 @@ static int dial_request(struct ofono_voicecall *vc)
 	if (g_slist_length(vc->call_list) >= MAX_VOICE_CALLS ||
 			voicecalls_have_incoming(vc) ||
 			voicecalls_num_connecting(vc) > 0 ||
-			vc->pending) {
-		g_free(vc->dial_req);
-		vc->dial_req = NULL;
-
+			vc->pending)
 		return -EBUSY;
-	}
 
 	vc->driver->dial(vc, &vc->dial_req->ph, OFONO_CLIR_OPTION_DEFAULT,
 				OFONO_CUG_OPTION_DEFAULT, dial_request_cb, vc);
@@ -2223,30 +2208,17 @@ static int dial_request(struct ofono_voicecall *vc)
 static void hold_or_disconnect_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	ofono_voicecall_dial_cb_t cb = vc->dial_req->cb;
-	void *user_data = vc->dial_req->user_data;
 	int err;
 
-	if (!cb) {
-		g_free(vc->dial_req);
-		vc->dial_req = NULL;
-
-		return;
-	}
-
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		cb(FALSE, user_data);
-
-		g_free(vc->dial_req);
-		vc->dial_req = NULL;
-
+		dial_request_finish(vc, TRUE);
 		return;
 	}
 
 	err = dial_request(vc);
 
 	if (err < 0)
-		cb(FALSE, user_data);
+		dial_request_finish(vc, TRUE);
 }
 
 int __ofono_voicecall_dial(struct ofono_voicecall *vc,
@@ -2256,11 +2228,17 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 				ofono_voicecall_dial_cb_t cb, void *user_data)
 {
 	struct dial_request *req;
+	int err = 0;
+	gboolean have_active;
 
 	if (!valid_phone_number_format(addr))
 		return -EINVAL;
 
 	if (!vc->driver->dial)
+		return -ENOSYS;
+
+	if (interaction == OFONO_VOICECALL_INTERACTION_DISCONNECT &&
+			vc->driver->release_all_active == NULL)
 		return -ENOSYS;
 
 	if (vc->dial_req || vc->pending)
@@ -2272,7 +2250,7 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 	 */
 
 	req = g_try_new0(struct dial_request, 1);
-	req->message = message;
+	req->message = g_strdup(message);
 	req->icon_id = icon_id;
 	req->interaction = interaction;
 	req->cb = cb;
@@ -2282,36 +2260,38 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 	req->ph.type = addr_type;
 	strncpy(req->ph.number, addr, 20);
 
-	if (!voicecalls_have_active(vc)) {
-		vc->dial_req = req;
+	vc->dial_req = req;
 
-		return dial_request(vc);
-	}
+	have_active = voicecalls_have_active(vc);
 
 	switch (interaction) {
 	case OFONO_VOICECALL_INTERACTION_NONE:
-		return -EBUSY;
+		if (have_active)
+			err = -EBUSY;
+		else
+			err = dial_request(vc);
+
+		break;
 
 	case OFONO_VOICECALL_INTERACTION_PUT_ON_HOLD:
 		/* Note: dialling automatically puts active calls on hold */
-		vc->dial_req = req;
-
-		return dial_request(vc);
+		err = dial_request(vc);
+		break;
 
 	case OFONO_VOICECALL_INTERACTION_DISCONNECT:
-		if (!vc->driver->release_all_active) {
-			g_free(req);
+		if (have_active)
+			vc->driver->release_all_active(vc,
+						hold_or_disconnect_cb, vc);
+		else
+			err = dial_request(vc);
 
-			return -ENOSYS;
-		}
-
-		vc->driver->release_all_active(vc, hold_or_disconnect_cb, vc);
 		break;
 	}
 
-	vc->dial_req = req;
+	if (err < 0)
+		dial_request_finish(vc, FALSE);
 
-	return 0;
+	return err;
 }
 
 void __ofono_voicecall_dial_cancel(struct ofono_voicecall *vc)
@@ -2320,6 +2300,4 @@ void __ofono_voicecall_dial_cancel(struct ofono_voicecall *vc)
 		return;
 
 	vc->dial_req->cb = NULL;
-
-	/* XXX: If vc->dial_req->call is set, try to release it? */
 }
