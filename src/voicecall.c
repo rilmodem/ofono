@@ -1953,6 +1953,8 @@ static void voicecall_unregister(struct ofono_atom *atom)
 		vc->sim_watch = 0;
 	}
 
+	dial_request_finish(vc, TRUE);
+
 	for (l = vc->call_list; l; l = l->next)
 		voicecall_dbus_unregister(vc, l->data);
 
