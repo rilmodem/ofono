@@ -202,6 +202,10 @@ int ofono_sim_write(struct ofono_sim *sim, int id,
 			ofono_sim_file_write_cb_t cb,
 			enum ofono_sim_file_structure structure, int record,
 			const unsigned char *data, int length, void *userdata);
+
+int ofono_sim_read_bytes(struct ofono_sim *sim, int id,
+			unsigned short offset, int num_bytes,
+			ofono_sim_file_read_cb_t cb, void *data);
 #ifdef __cplusplus
 }
 #endif
