@@ -157,7 +157,7 @@ static void mbm_quirk_d5530(struct ofono_modem *modem)
 	/* Try to ignore them. */
 	g_at_chat_register(data->modem_port, "D5530", d5530_notify,
 				FALSE, NULL, NULL);
-	g_at_chat_register(data->modem_port, "+CGAP:", d5530_notify,
+	g_at_chat_register(data->modem_port, "+GCAP:", d5530_notify,
 				FALSE, NULL, NULL);
 }
 
