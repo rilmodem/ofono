@@ -412,7 +412,7 @@ static void online_cb(const struct ofono_error *error, void *data)
 	DBusMessage *reply;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
-		modem->modem_state == MODEM_STATE_OFFLINE)
+			modem->modem_state == MODEM_STATE_OFFLINE)
 		reply = dbus_message_new_method_return(modem->pending);
 	else
 		reply = __ofono_error_failed(modem->pending);
@@ -420,7 +420,7 @@ static void online_cb(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&modem->pending, reply);
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
-		modem->modem_state == MODEM_STATE_OFFLINE)
+			modem->modem_state == MODEM_STATE_OFFLINE)
 		modem_change_state(modem, MODEM_STATE_ONLINE);
 }
 
