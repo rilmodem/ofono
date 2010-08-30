@@ -2034,7 +2034,7 @@ struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
 	return vc;
 }
 
-static void sim_state_watch(void *user, enum ofono_sim_state new_state)
+static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 {
 	struct ofono_voicecall *vc = user;
 
@@ -2085,7 +2085,7 @@ static void sim_watch(struct ofono_atom *atom,
 							sim_state_watch,
 							vc, NULL);
 
-	sim_state_watch(vc, ofono_sim_get_state(sim));
+	sim_state_watch(ofono_sim_get_state(sim), vc);
 }
 
 void ofono_voicecall_register(struct ofono_voicecall *vc)

@@ -168,7 +168,7 @@ static gboolean sim_status_poll(gpointer user_data)
 	return FALSE;
 }
 
-static void sim_state_watch(void *user, enum ofono_sim_state new_state)
+static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 {
 	struct sim_poll_data *spd = user;
 
@@ -189,7 +189,7 @@ static void sim_watch(struct ofono_atom *atom,
 
 		spd->sim_state_watch = ofono_sim_add_state_watch(spd->sim,
 				sim_state_watch, spd, NULL);
-		sim_state_watch(spd, ofono_sim_get_state(spd->sim));
+		sim_state_watch(ofono_sim_get_state(spd->sim), spd);
 
 		sim_status_poll(spd);
 

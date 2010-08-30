@@ -1322,7 +1322,7 @@ static void emit_modems()
 	g_free(modems);
 }
 
-static void modem_sim_ready(void *user, enum ofono_sim_state new_state)
+static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 {
 	struct ofono_modem *modem = user;
 
@@ -1358,8 +1358,8 @@ static void sim_watch(struct ofono_atom *atom,
 
 	modem->sim = __ofono_atom_get_data(atom);
 	modem->sim_ready_watch = ofono_sim_add_state_watch(modem->sim,
-							modem_sim_ready,
-							modem, NULL);
+								sim_state_watch,
+								modem, NULL);
 }
 
 int ofono_modem_register(struct ofono_modem *modem)

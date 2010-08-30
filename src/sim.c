@@ -1001,7 +1001,7 @@ static void sim_efimg_read_cb(int ok, int length, int record,
 	memcpy(efimg, &data[1], 9);
 }
 
-static void sim_ready(void *user, enum ofono_sim_state new_state)
+static void sim_ready(enum ofono_sim_state new_state, void *user)
 {
 	struct ofono_sim *sim = user;
 
@@ -2056,7 +2056,7 @@ static void sim_free_state(struct ofono_sim *sim)
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 {
-	ofono_sim_state_event_notify_cb_t notify;
+	ofono_sim_state_event_cb_t notify;
 	GSList *l;
 
 	if (inserted == TRUE && sim->state == OFONO_SIM_STATE_NOT_PRESENT)
@@ -2075,7 +2075,7 @@ void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 		struct ofono_watchlist_item *item = l->data;
 		notify = item->notify;
 
-		notify(item->notify_data, sim->state);
+		notify(sim->state, item->notify_data);
 	}
 
 	if (inserted)
@@ -2085,8 +2085,8 @@ void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 }
 
 unsigned int ofono_sim_add_state_watch(struct ofono_sim *sim,
-				ofono_sim_state_event_notify_cb_t notify,
-				void *data, ofono_destroy_func destroy)
+					ofono_sim_state_event_cb_t notify,
+					void *data, ofono_destroy_func destroy)
 {
 	struct ofono_watchlist_item *item;
 
@@ -2123,7 +2123,7 @@ enum ofono_sim_state ofono_sim_get_state(struct ofono_sim *sim)
 static void sim_set_ready(struct ofono_sim *sim)
 {
 	GSList *l;
-	ofono_sim_state_event_notify_cb_t notify;
+	ofono_sim_state_event_cb_t notify;
 
 	if (sim == NULL)
 		return;
@@ -2137,7 +2137,7 @@ static void sim_set_ready(struct ofono_sim *sim)
 		struct ofono_watchlist_item *item = l->data;
 		notify = item->notify;
 
-		notify(item->notify_data, sim->state);
+		notify(sim->state, item->notify_data);
 	}
 }
 
