@@ -234,6 +234,7 @@ void __ofono_atom_unregister(struct ofono_atom *atom)
 	call_watches(atom, OFONO_ATOM_WATCH_CONDITION_UNREGISTERED);
 
 	atom->unregister(atom);
+	atom->unregister = NULL;
 }
 
 gboolean __ofono_atom_get_registered(struct ofono_atom *atom)
