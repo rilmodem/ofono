@@ -688,6 +688,8 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 
 		if (powered)
 			modem_change_state(modem, MODEM_STATE_PRE_SIM);
+		else
+			modem_change_state(modem, MODEM_STATE_POWER_OFF);
 
 		return NULL;
 	}
