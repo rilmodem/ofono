@@ -62,8 +62,8 @@ struct pb_data {
 static void warn_bad()
 {
 	ofono_warn("Name field conversion to UTF8 failed, this can indicate a"
-		" problem with modem integration, as this field"
-		" is required by 27.007.");
+			" problem with modem integration, as this field"
+			" is required by 27.007.");
 }
 
 static gboolean parse_text(GAtResultIter *iter, char **str, int encoding)
@@ -75,8 +75,8 @@ static gboolean parse_text(GAtResultIter *iter, char **str, int encoding)
 	/* charset_current is CHARSET_UCS2, CHARSET_IRA or CHARSET_UTF8 */
 	if (encoding == CHARSET_UCS2) {
 		/*
-		 * Some devices omit the quotes, so use hexstring,
-		 * which also decode to hex
+		 * Some devices omit the quotes, so use next_hexstring,
+		 * which handles quoted or unquoted hex strings
 		 */
 		if (g_at_result_iter_next_hexstring(iter, &hex, &len) == FALSE)
 			return FALSE;
@@ -92,6 +92,7 @@ static gboolean parse_text(GAtResultIter *iter, char **str, int encoding)
 
 		return FALSE;
 	}
+
 	/*
 	 * In the case of IRA charset, assume these are Latin1
 	 * characters, same as in UTF8
