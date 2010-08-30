@@ -407,6 +407,30 @@ static void modem_change_state(struct ofono_modem *modem,
 	}
 }
 
+static void sim_state_watch(enum ofono_sim_state new_state, void *user)
+{
+	struct ofono_modem *modem = user;
+
+	switch (new_state) {
+	case OFONO_SIM_STATE_NOT_PRESENT:
+		modem_change_state(modem, MODEM_STATE_PRE_SIM);
+		break;
+	case OFONO_SIM_STATE_INSERTED:
+		break;
+	case OFONO_SIM_STATE_READY:
+		modem_change_state(modem, MODEM_STATE_OFFLINE);
+
+		/*
+		 * If we don't have the set_online method, also proceed
+		 * straight to the online state
+		 */
+		if (modem->driver->set_online == NULL)
+			modem_change_state(modem, MODEM_STATE_ONLINE);
+
+		break;
+	}
+}
+
 static void online_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
@@ -687,9 +711,14 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 						"Powered", DBUS_TYPE_BOOLEAN,
 						&powered);
 
-		if (powered)
+		if (powered) {
 			modem_change_state(modem, MODEM_STATE_PRE_SIM);
-		else
+
+			/* Force SIM Ready for devies with no sim atom */
+			if (__ofono_modem_find_atom(modem,
+						OFONO_ATOM_TYPE_SIM) == NULL)
+				sim_state_watch(OFONO_SIM_STATE_READY, modem);
+		} else
 			modem_change_state(modem, MODEM_STATE_POWER_OFF);
 
 		return NULL;
@@ -748,9 +777,14 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 						"Powered", DBUS_TYPE_BOOLEAN,
 						&dbus_powered);
 
-		if (powered)
+		if (powered) {
 			modem_change_state(modem, MODEM_STATE_PRE_SIM);
-		else
+
+			/* Force SIM Ready for devies with no sim atom */
+			if (__ofono_modem_find_atom(modem,
+						OFONO_ATOM_TYPE_SIM) == NULL)
+				sim_state_watch(OFONO_SIM_STATE_READY, modem);
+		} else
 			modem_change_state(modem, MODEM_STATE_POWER_OFF);
 	}
 
@@ -1320,30 +1354,6 @@ static void emit_modems()
 				DBUS_TYPE_OBJECT_PATH, &modems);
 
 	g_free(modems);
-}
-
-static void sim_state_watch(enum ofono_sim_state new_state, void *user)
-{
-	struct ofono_modem *modem = user;
-
-	switch (new_state) {
-	case OFONO_SIM_STATE_NOT_PRESENT:
-		modem_change_state(modem, MODEM_STATE_PRE_SIM);
-		break;
-	case OFONO_SIM_STATE_INSERTED:
-		break;
-	case OFONO_SIM_STATE_READY:
-		modem_change_state(modem, MODEM_STATE_OFFLINE);
-
-		/*
-		 * If we don't have the set_online method, also proceed
-		 * straight to the online state
-		 */
-		if (modem->driver->set_online == NULL)
-			modem_change_state(modem, MODEM_STATE_ONLINE);
-
-		break;
-	}
 }
 
 static void sim_watch(struct ofono_atom *atom,
