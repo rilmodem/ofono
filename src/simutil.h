@@ -157,7 +157,7 @@ enum sim_est_service {
 
 /* 51.011 Section 10.3.7 */
 enum sim_sst_service {
-	SIM_SST_SERVICE_CHV1_DISABLE 			= 0,
+	SIM_SST_SERVICE_CHV1_DISABLE			= 0,
 	SIM_SST_SERVICE_ADN				= 1,
 	SIM_SST_SERVICE_FDN				= 2,
 	SIM_SST_SERVICE_SMS				= 3,
