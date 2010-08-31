@@ -2120,52 +2120,10 @@ static gboolean sim_op_next(gpointer user_data)
 	return FALSE;
 }
 
-int ofono_sim_read_bytes(struct ofono_sim *sim, int id,
-			unsigned short offset, int num_bytes,
-			ofono_sim_file_read_cb_t cb, void *data)
-{
-	struct sim_file_op *op;
-
-	if (!cb)
-		return -1;
-
-	if (sim == NULL)
-		return -1;
-
-	if (!sim->driver)
-		return -1;
-
-	if (!sim->driver->read_file_info)
-		return -1;
-
-	/* TODO: We must first check the EFust table to see whether
-	 * this file can be read at all
-	 */
-
-	if (!sim->simop_q)
-		sim->simop_q = g_queue_new();
-
-	op = g_new0(struct sim_file_op, 1);
-
-	op->id = id;
-	op->structure = OFONO_SIM_FILE_STRUCTURE_TRANSPARENT;
-	op->cb = cb;
-	op->userdata = data;
-	op->is_read = TRUE;
-	op->offset = offset;
-	op->num_bytes = num_bytes;
-
-	g_queue_push_tail(sim->simop_q, op);
-
-	if (g_queue_get_length(sim->simop_q) == 1)
-		sim->simop_source = g_timeout_add(0, sim_op_next, sim);
-
-	return 0;
-}
-
-int ofono_sim_read(struct ofono_sim *sim, int id,
-			enum ofono_sim_file_structure expected_type,
-			ofono_sim_file_read_cb_t cb, void *data)
+static int sim_read_common(struct ofono_sim *sim, int id,
+				enum ofono_sim_file_structure expected_type,
+				unsigned short offset, int num_bytes,
+				ofono_sim_file_read_cb_t cb, void *data)
 {
 	struct sim_file_op *op;
 
@@ -2195,7 +2153,8 @@ int ofono_sim_read(struct ofono_sim *sim, int id,
 	op->cb = cb;
 	op->userdata = data;
 	op->is_read = TRUE;
-	op->num_bytes = -1;
+	op->offset = offset;
+	op->num_bytes = num_bytes;
 
 	g_queue_push_tail(sim->simop_q, op);
 
@@ -2203,6 +2162,21 @@ int ofono_sim_read(struct ofono_sim *sim, int id,
 		sim->simop_source = g_timeout_add(0, sim_op_next, sim);
 
 	return 0;
+}
+
+int ofono_sim_read_bytes(struct ofono_sim *sim, int id,
+			unsigned short offset, int num_bytes,
+			ofono_sim_file_read_cb_t cb, void *data)
+{
+	return sim_read_common(sim, id, OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				offset, num_bytes, cb, data);
+}
+
+int ofono_sim_read(struct ofono_sim *sim, int id,
+			enum ofono_sim_file_structure expected_type,
+			ofono_sim_file_read_cb_t cb, void *data)
+{
+	return sim_read_common(sim, id, expected_type, 0, -1, cb, data);
 }
 
 int ofono_sim_write(struct ofono_sim *sim, int id,
