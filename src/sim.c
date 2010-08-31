@@ -89,7 +89,7 @@ struct ofono_sim {
 	unsigned char *efli;
 	unsigned char efli_length;
 	unsigned char *efimg;
-	int efimg_length;
+	unsigned short efimg_length;
 	enum ofono_sim_cphs_phase cphs_phase;
 	unsigned char cphs_service_table[2];
 	struct ofono_watchlist *state_watches;
@@ -2085,6 +2085,7 @@ static void sim_free_state(struct ofono_sim *sim)
 	if (sim->efimg) {
 		g_free(sim->efimg);
 		sim->efimg = NULL;
+		sim->efimg_length = 0;
 	}
 }
 
