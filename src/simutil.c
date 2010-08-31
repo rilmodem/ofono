@@ -1434,3 +1434,21 @@ gboolean sim_est_is_active(unsigned char *efest, unsigned char len,
 
 	return (efest[index / 8] >> (index % 8)) & 1;
 }
+
+gboolean sim_sst_is_available(unsigned char *efsst, unsigned char len,
+						enum sim_sst_service index)
+{
+	if (index >= len * 4u)
+		return FALSE;
+
+	return (efsst[index / 4] >> ((index % 4) * 2)) & 1;
+}
+
+gboolean sim_sst_is_active(unsigned char *efsst, unsigned char len,
+						enum sim_sst_service index)
+{
+	if (index >= len * 4u)
+		return FALSE;
+
+	return (efsst[index / 4] >> (((index % 4) * 2) + 1)) & 1;
+}

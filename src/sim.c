@@ -101,6 +101,8 @@ struct ofono_sim {
 	unsigned char efust_length;
 	unsigned char *efest;
 	unsigned char efest_length;
+	unsigned char *efsst;
+	unsigned char efsst_length;
 };
 
 struct msisdn_set_request {
@@ -1072,6 +1074,27 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 }
 
+static void sim_efsst_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (!ok)
+		goto out;
+
+	if (length < 2) {
+		ofono_error("EFsst shall contain at least two bytes");
+		goto out;
+	}
+
+	sim->efsst = g_memdup(data, length);
+	sim->efsst_length = length;
+
+out:
+	sim_retrieve_imsi(sim);
+}
+
 static void sim_efest_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -1192,9 +1215,14 @@ static void sim_initialize_after_pin(struct ofono_sim *sim)
 			sim_cphs_information_read_cb, sim);
 
 	/* Also retrieve the GSM service table */
-	ofono_sim_read(sim, SIM_EFUST_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_efust_read_cb, sim);
+	if (sim->phase >= OFONO_SIM_PHASE_3G)
+		ofono_sim_read(sim, SIM_EFUST_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				sim_efust_read_cb, sim);
+	else
+		ofono_sim_read(sim, SIM_EFSST_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				sim_efsst_read_cb, sim);
 }
 
 static void sim_pin_query_cb(const struct ofono_error *error,
@@ -2044,6 +2072,12 @@ static void sim_free_state(struct ofono_sim *sim)
 		g_free(sim->efest);
 		sim->efest = NULL;
 		sim->efest_length = 0;
+	}
+
+	if (sim->efsst) {
+		g_free(sim->efsst);
+		sim->efsst = NULL;
+		sim->efsst_length = 0;
 	}
 
 	sim->mnc_length = 0;
