@@ -38,8 +38,6 @@
 #include "simutil.h"
 #include "smsutil.h"
 
-#define VOICECALLS_FLAG_MULTI_RELEASE 0x1
-
 #define MAX_VOICE_CALLS 16
 
 GSList *g_drivers = NULL;
@@ -50,7 +48,6 @@ struct ofono_voicecall {
 	GSList *multiparty_list;
 	GSList *en_list;  /* emergency number list */
 	GSList *new_en_list; /* Emergency numbers being read from SIM */
-	int flags;
 	DBusMessage *pending;
 	struct ofono_sim *sim;
 	unsigned int sim_watch;
@@ -1248,8 +1245,6 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 		return reply;
 	}
 
-	vc->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
-
 	vc->pending = dbus_message_ref(msg);
 
 	if (vc->driver->hangup_all == NULL) {
@@ -1501,7 +1496,6 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 	}
 
 	/* Fall back to the old-fashioned way */
-	vc->flags |= VOICECALLS_FLAG_MULTI_RELEASE;
 	voicecalls_release_queue(vc, vc->multiparty_list);
 	voicecalls_release_next(vc);
 
@@ -1798,8 +1792,6 @@ static void multirelease_callback(const struct ofono_error *error, void *data)
 		voicecalls_release_next(vc);
 		return;
 	}
-
-	vc->flags &= ~VOICECALLS_FLAG_MULTI_RELEASE;
 
 	reply = dbus_message_new_method_return(vc->pending);
 	__ofono_dbus_pending_reply(&vc->pending, reply);
