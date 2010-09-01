@@ -2529,7 +2529,8 @@ static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
 		if (ref != node->ref)
 			continue;
 
-		/* Message Reference and address the same, but max is not
+		/*
+		 * Message Reference and address the same, but max is not
 		 * ignore the SMS completely
 		 */
 		if (max != node->max_fragments)
