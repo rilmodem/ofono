@@ -70,39 +70,50 @@ struct sim_file_op {
 };
 
 struct ofono_sim {
+	/* Contents of the SIM file system, in rough initialization order */
 	char *iccid;
-	char *imsi;
-	enum ofono_sim_phase phase;
-	unsigned char mnc_length;
-	GSList *own_numbers;
-	GSList *new_numbers;
-	GSList *service_numbers;
-	gboolean sdn_ready;
-	enum ofono_sim_state state;
-	enum ofono_sim_password_type pin_type;
-	gboolean locked_pins[OFONO_SIM_PASSWORD_SIM_PUK]; /* Number of PINs */
+
 	char **language_prefs;
-	GQueue *simop_q;
-	gint simop_source;
-	unsigned char efmsisdn_length;
-	unsigned char efmsisdn_records;
 	unsigned char *efli;
 	unsigned char efli_length;
-	unsigned char *efimg;
-	unsigned short efimg_length;
+
+	enum ofono_sim_password_type pin_type;
+	gboolean locked_pins[OFONO_SIM_PASSWORD_SIM_PUK]; /* Number of PINs */
+
+	enum ofono_sim_phase phase;
+	unsigned char mnc_length;
 	enum ofono_sim_cphs_phase cphs_phase;
 	unsigned char cphs_service_table[2];
-	struct ofono_watchlist *state_watches;
-	const struct ofono_sim_driver *driver;
-	void *driver_data;
-	struct ofono_atom *atom;
-	DBusMessage *pending;
 	unsigned char *efust;
 	unsigned char efust_length;
 	unsigned char *efest;
 	unsigned char efest_length;
 	unsigned char *efsst;
 	unsigned char efsst_length;
+
+	char *imsi;
+
+	GSList *own_numbers;
+	GSList *new_numbers;
+	unsigned char efmsisdn_length;
+	unsigned char efmsisdn_records;
+
+	GSList *service_numbers;
+	gboolean sdn_ready;
+
+	unsigned char *efimg;
+	unsigned short efimg_length;
+
+	enum ofono_sim_state state;
+	struct ofono_watchlist *state_watches;
+
+	GQueue *simop_q;
+	gint simop_source;
+
+	DBusMessage *pending;
+	const struct ofono_sim_driver *driver;
+	void *driver_data;
+	struct ofono_atom *atom;
 };
 
 struct msisdn_set_request {
