@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <glib/gtypes.h>
 #include <gisi/modem.h>
 
 struct _GIsiClient;
@@ -71,6 +72,17 @@ struct iovec;
 GIsiRequest *g_isi_request_vmake(GIsiClient *client, const struct iovec *iov,
 					size_t iovlen, unsigned timeout,
 					GIsiResponseFunc func, void *opaque);
+
+GIsiRequest *g_isi_send(GIsiClient *client, const void *data, size_t len,
+			unsigned timeout,
+			GIsiResponseFunc func, void *opaque,
+			GDestroyNotify notify);
+
+GIsiRequest *g_isi_vsend(GIsiClient *client,
+				const struct iovec *iov, size_t iovlen,
+				unsigned timeout,
+				GIsiResponseFunc func, void *opaque,
+				GDestroyNotify notify);
 
 void g_isi_request_cancel(GIsiRequest *req);
 

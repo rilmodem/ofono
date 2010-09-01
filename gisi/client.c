@@ -52,6 +52,7 @@ struct _GIsiRequest {
 	guint timeout;
 	GIsiResponseFunc func;
 	void *data;
+	GDestroyNotify notify;
 };
 
 struct _GIsiIndication {
@@ -240,6 +241,9 @@ static void g_isi_cleanup_req(void *data)
 		req->func(req->client, NULL, 0, 0, req->data);
 	req->client->error = 0;
 
+	if (req->notify)
+		req->notify(req->data);
+
 	if (req->timeout > 0)
 		g_source_remove(req->timeout);
 
@@ -329,15 +333,7 @@ GIsiRequest *g_isi_request_make(GIsiClient *client, const void *__restrict buf,
 				size_t len, unsigned timeout,
 				GIsiResponseFunc cb, void *opaque)
 {
-	const struct iovec iov = {
-		.iov_base = (void *)buf,
-		.iov_len = len,
-	};
-
-	if (!client)
-		return NULL;
-
-	return g_isi_request_vmake(client, &iov, 1, timeout, cb, opaque);
+	return g_isi_send(client, buf, len, timeout, cb, opaque, NULL);
 }
 
 /**
@@ -350,10 +346,71 @@ GIsiRequest *g_isi_request_make(GIsiClient *client, const void *__restrict buf,
  * @param cb callback to process response(s)
  * @param opaque data for the callback
  */
-GIsiRequest *g_isi_request_vmake(GIsiClient *client,
-					const struct iovec *__restrict iov,
+GIsiRequest *g_isi_request_vmake(GIsiClient *client, const struct iovec *iov,
 					size_t iovlen, unsigned timeout,
-					GIsiResponseFunc cb, void *opaque)
+					GIsiResponseFunc func, void *opaque)
+{
+	return g_isi_vsend(client, iov, iovlen, timeout, func, opaque, NULL);
+}
+
+/**
+ * Send an ISI request and register a callback to process the response(s) to
+ * the resulting transaction.
+ *
+ * @param cl ISI client (from g_isi_client_create())
+ * @param buf pointer to request payload
+ * @param len request payload byte length
+ * @param timeout timeout in seconds
+ * @param cb callback to process response(s)
+ * @param opaque data for the callback
+ * @param notify finalizer function for the @a opaque data (may be NULL)
+ *
+ * @return
+ * A pointer to a newly created GIsiRequest.
+ *
+ * @errors
+ * If an error occurs, @a errno is set accordingly and a NULL pointer is
+ * returned.
+ */
+GIsiRequest *g_isi_send(GIsiClient *client,
+			const void *__restrict buf, size_t len,
+			unsigned timeout,
+			GIsiResponseFunc cb, void *opaque,
+			GDestroyNotify notify)
+{
+	const struct iovec iov = {
+		.iov_base = (void *)buf,
+		.iov_len = len,
+	};
+
+	return g_isi_vsend(client, &iov, 1, timeout, cb, opaque, notify);
+}
+
+
+/**
+ * Send an ISI request and register a callback to process the response(s) to
+ * the resulting transaction.
+ *
+ * @param cl ISI client (from g_isi_client_create())
+ * @param iov scatter-gather array to the request payload
+ * @param iovlen number of vectors in the scatter-gather array
+ * @param timeout timeout in seconds
+ * @param cb callback to process response(s)
+ * @param opaque data for the callback
+ * @param notify finalizer function for the @a opaque data (may be NULL)
+ *
+ * @return
+ * A pointer to a newly created GIsiRequest.
+ *
+ * @errors
+ * If an error occurs, @a errno is set accordingly and a NULL pointer is
+ * returned.
+ */
+GIsiRequest *g_isi_vsend(GIsiClient *client,
+				const struct iovec *__restrict iov,
+				size_t iovlen, unsigned timeout,
+				GIsiResponseFunc cb, void *opaque,
+				GDestroyNotify notify)
 {
 	struct iovec _iov[1 + iovlen];
 	struct sockaddr_pn dst = {
@@ -390,6 +447,7 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *client,
 	req->id = (client->reqs.last + 1) % 255;
 	req->func = cb;
 	req->data = opaque;
+	req->notify = notify;
 
 	old = tsearch(req, &client->reqs.pending, g_isi_cmp);
 	if (!old) {
@@ -438,6 +496,7 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *client,
 error:
 	tdelete(req, &client->reqs.pending, g_isi_cmp);
 	g_free(req);
+
 	return NULL;
 }
 
@@ -455,6 +514,10 @@ void g_isi_request_cancel(GIsiRequest *req)
 		g_source_remove(req->timeout);
 
 	tdelete(req, &req->client->reqs.pending, g_isi_cmp);
+
+	if (req->notify)
+		req->notify(req->data);
+
 	g_free(req);
 }
 
