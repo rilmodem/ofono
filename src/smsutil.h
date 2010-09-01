@@ -370,7 +370,7 @@ struct id_table_node {
 	unsigned char total_mrs;
 	unsigned char sent_mrs;
 	gboolean deliverable;
-};
+} __attribute__((packed));
 
 struct status_report_assembly {
 	const char *imsi;
