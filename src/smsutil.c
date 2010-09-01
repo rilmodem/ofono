@@ -2413,7 +2413,7 @@ static void sms_assembly_backup_free(struct sms_assembly *assembly,
 {
 	char *path;
 	int seq;
-	char straddr[25];
+	DECLARE_SMS_ADDR_STR(straddr);
 
 	if (!assembly->imsi)
 		return;
