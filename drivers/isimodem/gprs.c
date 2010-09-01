@@ -160,19 +160,17 @@ static gboolean attach_resp_cb(GIsiClient *client,
 	if (len != 4 || msg[0] != GPDS_ATTACH_RESP)
 		return FALSE;
 
-	if (msg[1] != GPDS_OK) {
-		DBG("attach failed: %s", gpds_status_name(msg[1]));
-		goto error;
+	if (msg[1] == GPDS_OK) {
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+
+		return TRUE;
 	}
 
-	CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	goto out;
+	DBG("attach failed: %s", gpds_status_name(msg[1]));
 
 error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
 
-out:
-	g_free(cbd);
 	return TRUE;
 }
 
@@ -192,34 +190,32 @@ static gboolean detach_resp_cb(GIsiClient *client,
 	if (len != 3 || msg[0] != GPDS_DETACH_RESP)
 		return FALSE;
 
-	if (msg[1] != GPDS_OK) {
-		DBG("detach failed: %s", gpds_status_name(msg[1]));
-		goto error;
+	if (msg[1] == GPDS_OK) {
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+
+		return TRUE;
 	}
 
-	CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	goto out;
+	DBG("detach failed: %s", gpds_status_name(msg[1]));
 
 error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
 
-out:
-	g_free(cbd);
 	return TRUE;
 }
 
-static GIsiRequest *attach_request_make(GIsiClient *client, void *data)
+static GIsiRequest *attach_request_send(GIsiClient *client, void *data)
 {
 	const unsigned char msg[] = {
 		GPDS_ATTACH_REQ,
 		GPDS_FOLLOW_OFF
 	};
 
-	return g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
-					attach_resp_cb, data);
+	return g_isi_send(client, msg, sizeof(msg), GPDS_TIMEOUT,
+				attach_resp_cb, data, g_free);
 }
 
-static GIsiRequest *detach_request_make(GIsiClient *client, void *data)
+static GIsiRequest *detach_request_send(GIsiClient *client, void *data)
 {
 	const unsigned char msg[] = {
 		GPDS_DETACH_REQ,
@@ -227,8 +223,8 @@ static GIsiRequest *detach_request_make(GIsiClient *client, void *data)
 		0x00  /* sub-blocks */
 	};
 
-	return g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
-					detach_resp_cb, data);
+	return g_isi_send(client, msg, sizeof(msg), GPDS_TIMEOUT,
+				detach_resp_cb, data, g_free);
 }
 
 static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
@@ -243,9 +239,9 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 		goto error;
 
 	if (attached)
-		req = attach_request_make(gd->client, cbd);
+		req = attach_request_send(gd->client, cbd);
 	else
-		req = detach_request_make(gd->client, cbd);
+		req = detach_request_send(gd->client, cbd);
 
 	if (req)
 		return;
@@ -287,13 +283,11 @@ static gboolean status_resp_cb(GIsiClient *client,
 
 	CALLBACK_WITH_SUCCESS(cb, status, cbd->data);
 
-	goto out;
+	return TRUE;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 
-out:
-	g_free(cbd);
 	return TRUE;
 }
 
@@ -311,8 +305,8 @@ static void isi_gprs_attached_status(struct ofono_gprs *gprs,
 	if (!cbd)
 		goto error;
 
-	if (g_isi_request_make(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-					status_resp_cb, cbd))
+	if (g_isi_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+			status_resp_cb, cbd, g_free))
 		return;
 
 error:
