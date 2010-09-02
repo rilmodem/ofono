@@ -27,7 +27,7 @@ class StkAgent(dbus.service.Object):
 			mainloop.quit()
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
-				in_signature="sya(sy)y", out_signature="y")
+				in_signature="sya(sy)n", out_signature="y")
 	def RequestSelection(self, title, icon, items, default):
 		print "Title: (%s)" % (title)
 		index = 0;
