@@ -86,11 +86,14 @@ Object path	freely definable
 
 Methods		byte RequestSelection(string title, byte icon_id,
 					array{struct(string, byte)} items,
-					byte default)
+					int16 default)
 
 			Tells the agent to ask the user to select an item
-			from the menu.  This function should return the index
-			of the item or an error given below:
+			from the menu.  The default is set the the default
+			item index or -1 if no default is provided.
+
+			This function should return the index of the item or
+			an error given below.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
 
