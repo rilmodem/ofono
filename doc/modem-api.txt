@@ -37,6 +37,12 @@ Properties	boolean Powered [readwrite]
 			Boolean representing the rf state of the modem.
 			Online is false in flight mode.
 
+		boolean Emergency [readonly, optional, experimental]
+
+			Boolean representing the emergency mode of the
+			modem. The Emergency is true if an emergency call or
+			related operation is currently active.
+
 		string Name [readonly, optional]
 
 			Friendly name of the modem device.
