@@ -510,8 +510,30 @@ Sim Toolkit
   Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
 
 
-Miscellaneous
-=============
+Emergency Calls
+===============
+
+- Modem Emergency mode.  Support network registration and online/offline
+  mode during the emergency calls and related network activity (e.g.,
+  network-initiated location request via supplementary service channel).
+
+  Proposed solution is to introduce a new Emergency boolean property to the
+  Modem D-Bus interface and new functions to modem interface:
+
+  - ofono_modem_emergency_mode_inc()
+  - ofono_modem_emergency_mode_dec()
+  - ofono_modem_emergency_mode_get()
+  - ofono_modem_add_emergency_mode_watch()
+  - ofono_modem_remove_emergency_mode_watch()
+
+  When emergency mode is requested, modem is set to online (if needed) and
+  the watchers are notified. There can be multiple parties requesting
+  emergency mode.  When all of them have completed the emergency-related
+  operation and called ofono_modem_emergency_mode_dec(), modem is set to
+  offline (if needed) and the watchers are again notified.
+
+  Priority: High
+  Complexity: C2
 
 - Country / Operator specific emergency numbers.  Figure out how to support
   countries / operators with specific mandated emergency numbers which are
@@ -520,8 +542,25 @@ Miscellaneous
   assumed to be managed by the modem.  If no such functionality is available,
   then the 3GPP mandated behavior is used.
 
-  Complexity: C2
   Priority: High
+  Complexity: C2
+
+- Network updating the emergency number list. Support the list of emergency
+  numbers dynamically updated by the network.
+
+  Priority: High
+  Complexity: C2
+
+- Extend the voicecall interface with a property indicating whether this call
+  is an emergency call (essentially the CLI matches one of the numbers on the
+  emergency calling codes list.)
+
+  Priority: High
+  Complexity: C1
+
+
+Miscellaneous
+=============
 
 - Bluetooth SAP Client support.  The Telit UC864-G devices support Bluetooth
   SAP client mode.  This requires the use of a modem side-channel to read the
@@ -582,13 +621,6 @@ Miscellaneous
 
   This feature is not discussed in 27.007, thus manufacturer specific commands
   are required.
-
-  Priority: High
-  Complexity: C1
-
-- Extend the voicecall interface with a property indicating whether this call
-  is an emergency call (essentially the CLI matches one of the numbers on the
-  emergency calling codes list.)
 
   Priority: High
   Complexity: C1
