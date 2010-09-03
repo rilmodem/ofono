@@ -553,8 +553,8 @@ enum stk_rejection_cause_code {
 };
 
 enum stk_me_status {
-	STK_ME_STATUS_IDLE = 		0x00,
-	STK_ME_STATUS_NOT_IDLE = 	0x01
+	STK_ME_STATUS_IDLE =		0x00,
+	STK_ME_STATUS_NOT_IDLE =	0x01
 };
 
 enum stk_img_scheme {
