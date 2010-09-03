@@ -522,7 +522,7 @@ static gboolean tx_next(gpointer user_data)
 }
 
 static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
-				const char *to)
+				gboolean use_16bit, const char *to)
 {
 	GSList *l;
 	struct sms *sms;
@@ -530,12 +530,17 @@ static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
 	for (l = msg_list; l; l = l->next) {
 		sms = l->data;
 
-		if (offset != 0) {
-			sms->submit.ud[offset] = (ref & 0xf0) >> 8;
-			sms->submit.ud[offset+1] = (ref & 0x0f);
-		}
-
 		sms_address_from_string(&sms->submit.daddr, to);
+
+		if (offset == 0)
+			continue;
+
+		if (use_16bit) {
+			sms->submit.ud[offset] = (ref & 0xf0) >> 8;
+			sms->submit.ud[offset+1] = ref & 0x0f;
+		} else {
+			sms->submit.ud[offset] = ref & 0x0f;
+		}
 	}
 }
 
@@ -621,7 +626,7 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	if (!msg_list)
 		return __ofono_error_invalid_format(msg);
 
-	set_ref_and_to(msg_list, sms->ref, ref_offset, to);
+	set_ref_and_to(msg_list, sms->ref, ref_offset, TRUE, to);
 	DBG("ref: %d, offset: %d", sms->ref, ref_offset);
 
 	if (ref_offset != 0) {
