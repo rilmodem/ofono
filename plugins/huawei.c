@@ -57,6 +57,7 @@
 static const char *none_prefix[] = { NULL };
 static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
 static const char *ussdmode_prefix[] = { "^USSDMODE:", NULL };
+static const char *cvoice_prefix[] = { "^CVOICE:", NULL };
 
 enum huawei_sim_state {
 	HUAWEI_SIM_STATE_INVALID_OR_LOCKED =	0,
@@ -74,6 +75,7 @@ struct huawei_data {
 	enum huawei_sim_state sim_state;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
+	gboolean voice;
 };
 
 static int huawei_probe(struct ofono_modem *modem)
@@ -217,6 +219,60 @@ static void simst_notify(GAtResult *result, gpointer user_data)
 	notify_sim_state(modem, (enum huawei_sim_state) sim_state);
 }
 
+static void cvoice_query_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huawei_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+
+	if (!ok)
+		goto done;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CVOICE:"))
+		goto done;
+
+	data->voice = TRUE;
+
+done:
+	ofono_modem_set_powered(modem, TRUE);
+
+	/* query current sim state */
+        g_at_chat_send(data->pcui, "AT^SYSINFO", sysinfo_prefix,
+						sysinfo_cb, modem, NULL);
+}
+
+static void cvoice_support_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huawei_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+
+	if (!ok)
+		goto done;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CVOICE:"))
+		goto done;
+
+	/* query current voice setting */
+	g_at_chat_send(data->pcui, "AT^CVOICE?", cvoice_prefix,
+					cvoice_query_cb, modem, NULL);
+
+	return;
+
+done:
+	ofono_modem_set_powered(modem, TRUE);
+
+	/* query current sim state */
+	g_at_chat_send(data->pcui, "AT^SYSINFO", sysinfo_prefix,
+						sysinfo_cb, modem, NULL);
+}
+
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -224,10 +280,10 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	ofono_modem_set_powered(modem, ok);
-
-	if (!ok)
+	if (!ok) {
+		ofono_modem_set_powered(modem, FALSE);
 		return;
+	}
 
 	/* follow sim state */
 	g_at_chat_register(data->pcui, "^SIMST:", simst_notify,
@@ -241,13 +297,13 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->pcui, "AT^GETPORTMODE", none_prefix,
 						NULL, NULL, NULL);
 
-	/* query current sim state */
-	g_at_chat_send(data->pcui, "AT^SYSINFO", sysinfo_prefix,
-						sysinfo_cb, modem, NULL);
-
 	/* check USSD mode support */
 	g_at_chat_send(data->pcui, "AT^USSDMODE=?", ussdmode_prefix,
 					ussdmode_support_cb, data, NULL);
+
+	/* check for voice support */
+	g_at_chat_send(data->pcui, "AT^CVOICE=?", cvoice_prefix,
+					cvoice_support_cb, modem, NULL);
 }
 
 static GAtChat *create_port(const char *device)
@@ -347,6 +403,9 @@ static int huawei_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
+	if (ofono_modem_get_boolean(modem, "HasVoice") == TRUE)
+		data->voice = TRUE;
+
 	data->sim_state = 0;
 
 	g_at_chat_send(data->pcui, "ATE0", none_prefix, NULL, NULL, NULL);
@@ -405,10 +464,9 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 	data->sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->pcui);
 
-	if ((data->sim_state == HUAWEI_SIM_STATE_VALID ||
-			data->sim_state == HUAWEI_SIM_STATE_INVALID_PS) &&
-			ofono_modem_get_boolean(modem, "HasVoice") == TRUE)
-		ofono_voicecall_create(modem, 0, "atmodem", data->pcui);
+	if (data->voice == TRUE)
+		ofono_voicecall_create(modem, OFONO_VENDOR_HUAWEI,
+						"atmodem", data->pcui);
 }
 
 static void huawei_post_sim(struct ofono_modem *modem)
@@ -446,7 +504,7 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 	if ((data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_PS) &&
-			ofono_modem_get_boolean(modem, "HasVoice") == TRUE) {
+							data->voice == TRUE) {
 		ofono_call_forwarding_create(modem, 0, "atmodem", data->pcui);
 		ofono_call_settings_create(modem, 0, "atmodem", data->pcui);
 		ofono_call_barring_create(modem, 0, "atmodem", data->pcui);
