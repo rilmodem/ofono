@@ -24,6 +24,7 @@
 #endif
 
 #include <errno.h>
+#include <ctype.h>
 
 #include <libudev.h>
 
@@ -86,8 +87,14 @@ static const char *get_serial(struct udev_device *udev_device)
 		entry = udev_list_entry_get_next(entry);
 	}
 
-	if (serial && strpbrk(serial, ".-_?*") != NULL)
-		return NULL;
+	if (serial != NULL) {
+		unsigned int i, len = strlen(serial);
+
+		for (i = 0; i < len; i++) {
+			if (!isalnum(serial[i]))
+				return NULL;
+		}
+	}
 
 	return serial;
 }
