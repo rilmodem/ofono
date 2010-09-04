@@ -33,6 +33,7 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/voicecall.h>
+#include "vendor.h"
 
 #include "gatchat.h"
 #include "gatresult.h"
@@ -56,6 +57,7 @@ struct voicecall_data {
 	unsigned int local_release;
 	unsigned int clcc_source;
 	GAtChat *chat;
+	unsigned int vendor;
 };
 
 struct release_id_req {
@@ -115,6 +117,10 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 	call->clip_validity = clip;
 
 	d->calls = g_slist_insert_sorted(d->calls, call, at_util_call_compare);
+
+	if (d->vendor == OFONO_VENDOR_HUAWEI)
+		g_at_chat_send(d->chat, "AT^DDSETEX=2", none_prefix,
+							NULL, NULL, NULL);
 
 	return call;
 }
@@ -838,6 +844,7 @@ static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	vd = g_new0(struct voicecall_data, 1);
 	vd->chat = g_at_chat_clone(chat);
+	vd->vendor = vendor;
 
 	ofono_voicecall_set_data(vc, vd);
 
