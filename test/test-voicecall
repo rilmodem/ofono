@@ -10,30 +10,35 @@ def hangup_all():
 	print "Hanging up"
 	vcmanager.HangupAll()
 
-def print_calls(value):
-	for p in value:
-		call = dbus.Interface(bus.get_object('org.ofono', p),
-						'org.ofono.VoiceCall')
-		properties = call.GetProperties()
-		status = properties['State']
-		lineid = properties['LineIdentification']
-
-		print "Call %s, Status: %s, LineId: %s" %\
-			(p, status, lineid)
-
-def voicecalls_property_changed(name, value):
-	if name == 'Calls':
-		print "Call list modification>"
-		if len(value) == 0:
-			print "No calls in systems"
-		else:
-			print_calls(value)
+def print_calls():
+	calls = vcmanager.GetCalls()
+	if (len(calls) != 0):
+		print "No calls available"
 	else:
-		print "VoiceCallManager property: '%s' changed to '%s'" %\
-			(name, value)
+		for path, properties in calls:
+			print "    [ %s ]" % (path)
+
+			for key in properties.keys():
+				val = str(properties[key])
+				print "        %s = %s" % (key, val)
+			print
+
+def voicecalls_call_added(path, properties):
+	print "    Voice Call [ %s ] Added" % (path)
+
+	for key in properties.keys():
+		val = str(properties[key])
+		print "        %s = %s" % (key, val)
+	print
+
+def voicecalls_call_removed(path):
+	print "    Voice Call [ %s ] Removed" % (path)
 
 def voicecall_property_changed(name, value):
 	print "Voicecall property: '%s' changed to '%s'" % (name, value)
+
+def voicecall_disconnect_reason(reason):
+	print "Voicecall disconnect reason: '%s'" % (reason)
 
 if __name__ == "__main__":
 	global vcmanager
@@ -63,14 +68,11 @@ if __name__ == "__main__":
 	vcmanager = dbus.Interface(bus.get_object('org.ofono', modem),
 						'org.ofono.VoiceCallManager')
 
-	vcmanager.connect_to_signal("PropertyChanged",
-					voicecalls_property_changed)
+	vcmanager.connect_to_signal("CallAdded", voicecalls_call_added)
 
-	properties = vcmanager.GetProperties()
+	vcmanager.connect_to_signal("CallRemoved", voicecalls_call_removed)
 
-	print properties['Calls']
-
-	voicecalls_property_changed('Calls', properties['Calls'])
+	print_calls()
 
 	print "Dialing %s..." % number
 	obj = vcmanager.Dial(number, "")
@@ -85,6 +87,7 @@ if __name__ == "__main__":
 		(properties['State'], properties['LineIdentification'])
 
 	call.connect_to_signal("PropertyChanged", voicecall_property_changed)
+	call.connect_to_signal("DisconnectReason", voicecall_disconnect_reason)
 
 	gobject.timeout_add(1000000, hangup_all)
 
