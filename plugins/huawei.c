@@ -219,6 +219,87 @@ static void simst_notify(GAtResult *result, gpointer user_data)
 	notify_sim_state(modem, (enum huawei_sim_state) sim_state);
 }
 
+static void orig_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id, call_type;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^ORIG:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_type))
+		return;
+
+	ofono_info("Call origin: id %d type %d", call_id, call_type);
+}
+
+static void conf_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CONF:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	ofono_info("Call setup: id %d", call_id);
+}
+
+static void conn_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id, call_type;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CONN:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_type))
+		return;
+
+	ofono_info("Call connect: id %d type %d", call_id, call_type);
+}
+
+static void cend_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id, duration, end_status, cc_pause;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CEND:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &duration))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &end_status))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &cc_pause))
+		return;
+
+	ofono_info("Call end: id %d duration %ds status %d control %d",
+				call_id, duration, end_status, cc_pause);
+}
+
+
 static void cvoice_query_cb(gboolean ok, GAtResult *result,
 						gpointer user_data)
 {
@@ -251,6 +332,15 @@ static void cvoice_query_cb(gboolean ok, GAtResult *result,
 
 	ofono_info("Voice channel: %d Hz, %d bits, %dms period",
 						rate, bits, period);
+
+	g_at_chat_register(data->pcui, "^ORIG:", orig_notify,
+						FALSE, NULL, NULL);
+	g_at_chat_register(data->pcui, "^CONF:", conf_notify,
+						FALSE, NULL, NULL);
+	g_at_chat_register(data->pcui, "^CONN:", conn_notify,
+						FALSE, NULL, NULL);
+	g_at_chat_register(data->pcui, "^CEND:", cend_notify,
+						FALSE, NULL, NULL);
 
 	/* check available voice ports */
 	g_at_chat_send(data->pcui, "AT^DDSETEX=?", none_prefix,
