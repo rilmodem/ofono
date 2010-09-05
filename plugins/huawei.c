@@ -225,6 +225,7 @@ static void cvoice_query_cb(gboolean ok, GAtResult *result,
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
 	GAtResultIter iter;
+	gint mode, rate, bits, period;
 
 	if (!ok)
 		goto done;
@@ -234,7 +235,26 @@ static void cvoice_query_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next(&iter, "^CVOICE:"))
 		goto done;
 
+	if (!g_at_result_iter_next_number(&iter, &mode))
+		goto done;
+
+	if (!g_at_result_iter_next_number(&iter, &rate))
+		goto done;
+
+	if (!g_at_result_iter_next_number(&iter, &bits))
+		goto done;
+
+	if (!g_at_result_iter_next_number(&iter, &period))
+		goto done;
+
 	data->voice = TRUE;
+
+	ofono_info("Voice channel: %d Hz, %d bits, %dms period",
+						rate, bits, period);
+
+	/* check available voice ports */
+	g_at_chat_send(data->pcui, "AT^DDSETEX=?", none_prefix,
+						NULL, NULL, NULL);
 
 done:
 	ofono_modem_set_powered(modem, TRUE);
