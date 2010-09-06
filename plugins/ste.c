@@ -57,6 +57,8 @@
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
 #include <ofono/stk.h>
+
+#include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
 #include <drivers/stemodem/caif_socket.h>
@@ -237,7 +239,7 @@ static int ste_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1",
 			NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->chat, "AT+CFUN=1", NULL, cfun_enable, modem, NULL);
+	g_at_chat_send(data->chat, "AT+CFUN=4", NULL, cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
 }
@@ -273,6 +275,39 @@ static int ste_disable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+
+	if (ok)
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	else
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
+static void ste_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct ste_data *data = ofono_modem_get_data(modem);
+	GAtChat *chat = data->chat;
+	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+
+	DBG("modem %p %s", modem, online ? "online" : "offline");
+
+	if (!cbd)
+		goto error;
+
+	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
 static void ste_pre_sim(struct ofono_modem *modem)
 {
 	struct ste_data *data = ofono_modem_get_data(modem);
@@ -291,13 +326,22 @@ static void ste_pre_sim(struct ofono_modem *modem)
 static void ste_post_sim(struct ofono_modem *modem)
 {
 	struct ste_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_stk_create(modem, 0, "mbmmodem", data->chat);
+	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
+}
+
+static void ste_post_online(struct ofono_modem *modem)
+{
+	struct ste_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
-	ofono_stk_create(modem, 0, "mbmmodem", data->chat);
 	ofono_radio_settings_create(modem, 0, "stemodem", data->chat);
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
@@ -307,7 +351,6 @@ static void ste_post_sim(struct ofono_modem *modem)
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
-	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
@@ -329,8 +372,10 @@ static struct ofono_modem_driver ste_driver = {
 	.remove		= ste_remove,
 	.enable		= ste_enable,
 	.disable	= ste_disable,
+	.set_online     = ste_set_online,
 	.pre_sim	= ste_pre_sim,
 	.post_sim	= ste_post_sim,
+	.post_online    = ste_post_online,
 };
 
 static int ste_init(void)
