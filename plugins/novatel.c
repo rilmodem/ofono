@@ -156,7 +156,7 @@ static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
 							NULL, NULL, NULL);
 
 done:
-	g_at_chat_send(data->primary, "AT+CFUN=1", none_prefix,
+	g_at_chat_send(data->primary, "AT+CFUN=4", none_prefix,
 						cfun_enable, modem, NULL);
 }
 
@@ -288,6 +288,39 @@ static int novatel_disable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+
+	if (ok)
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	else
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
+static void novatel_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct novatel_data *data = ofono_modem_get_data(modem);
+	GAtChat *chat = data->primary;
+	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+
+	DBG("modem %p %s", modem, online ? "online" : "offline");
+
+	if (!cbd || !chat)
+		goto error;
+
+	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
 static void novatel_pre_sim(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
@@ -309,7 +342,7 @@ static void novatel_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
-static void novatel_post_sim(struct ofono_modem *modem)
+static void novatel_post_online(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
 
@@ -351,8 +384,9 @@ static struct ofono_modem_driver novatel_driver = {
 	.remove		= novatel_remove,
 	.enable		= novatel_enable,
 	.disable	= novatel_disable,
+	.set_online     = novatel_set_online,
 	.pre_sim	= novatel_pre_sim,
-	.post_sim	= novatel_post_sim,
+	.post_online	= novatel_post_online,
 };
 
 static int novatel_init(void)
