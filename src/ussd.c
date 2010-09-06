@@ -65,6 +65,17 @@ struct ssc_entry {
 	ofono_destroy_func destroy;
 };
 
+gboolean __ofono_ussd_is_busy(struct ofono_ussd *ussd)
+{
+	if (!ussd)
+		return FALSE;
+
+	if (ussd->pending || ussd->state != USSD_STATE_IDLE)
+		return TRUE;
+
+	return FALSE;
+}
+
 static struct ssc_entry *ssc_entry_create(const char *sc, void *cb, void *data,
 						ofono_destroy_func destroy)
 {

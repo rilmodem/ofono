@@ -254,6 +254,7 @@ gboolean __ofono_ussd_passwd_register(struct ofono_ussd *ussd, const char *sc,
 					ofono_ussd_passwd_cb_t cb, void *data,
 					ofono_destroy_func destroy);
 void __ofono_ussd_passwd_unregister(struct ofono_ussd *ussd, const char *sc);
+gboolean __ofono_ussd_is_busy(struct ofono_ussd *ussd);
 
 #include <ofono/netreg.h>
 
