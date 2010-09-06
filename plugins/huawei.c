@@ -520,7 +520,7 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->pcui, "ATE0", none_prefix, NULL, NULL, NULL);
 
-	g_at_chat_send(data->pcui, "AT+CFUN=1", none_prefix,
+	g_at_chat_send(data->pcui, "AT+CFUN=1;+CFUN=5", none_prefix,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -564,6 +564,39 @@ static int huawei_disable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+
+	if (ok)
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	else
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
+static void huawei_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct huawei_data *data = ofono_modem_get_data(modem);
+	GAtChat *chat = data->pcui;
+	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=5";
+
+	DBG("modem %p %s", modem, online ? "online" : "offline");
+
+	if (!cbd)
+		goto error;
+
+	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
 static void huawei_pre_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
@@ -582,15 +615,20 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 static void huawei_post_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
-	struct ofono_netreg *netreg;
-	struct ofono_message_waiting *mw;
 
 	DBG("%p", modem);
 
-	if (data->sim_state == HUAWEI_SIM_STATE_INVALID_PS_AND_CS) {
-		ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
+	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
+}
+
+static void huawei_post_online(struct ofono_modem *modem)
+{
+	struct huawei_data *data = ofono_modem_get_data(modem);
+	struct ofono_netreg *netreg;
+	struct ofono_message_waiting *mw;
+
+	if (data->sim_state == HUAWEI_SIM_STATE_INVALID_PS_AND_CS)
 		return;
-	}
 
 	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
 								data->pcui);
@@ -600,7 +638,6 @@ static void huawei_post_sim(struct ofono_modem *modem)
 						"atmodem", data->pcui);
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
-	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
 
 	if (data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_CS) {
@@ -632,8 +669,10 @@ static struct ofono_modem_driver huawei_driver = {
 	.remove		= huawei_remove,
 	.enable		= huawei_enable,
 	.disable	= huawei_disable,
+	.set_online     = huawei_set_online,
 	.pre_sim	= huawei_pre_sim,
 	.post_sim	= huawei_post_sim,
+	.post_online    = huawei_post_online,
 };
 
 static int huawei_init(void)
