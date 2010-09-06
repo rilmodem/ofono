@@ -49,6 +49,7 @@
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 
+#include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/sim-poll.h>
 
 #include <ofono/gprs.h>
@@ -154,9 +155,43 @@ static int atgen_disable(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
+	g_at_chat_send(chat, "AT+CFUN=4", NULL, NULL, NULL, NULL);
+
 	g_at_chat_unref(chat);
 
 	return 0;
+}
+
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+
+	if (ok)
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	else
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
+static void atgen_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	GAtChat *chat = ofono_modem_get_data(modem);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+
+	DBG("modem %p %s", modem, online ? "online" : "offline");
+
+	if (!cbd)
+		goto error;
+
+	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
 static void atgen_pre_sim(struct ofono_modem *modem)
@@ -177,6 +212,15 @@ static void atgen_pre_sim(struct ofono_modem *modem)
 static void atgen_post_sim(struct ofono_modem *modem)
 {
 	GAtChat *chat = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_phonebook_create(modem, 0, "atmodem", chat);
+}
+
+static void atgen_post_online(struct ofono_modem *modem)
+{
+	GAtChat *chat = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
@@ -191,7 +235,6 @@ static void atgen_post_sim(struct ofono_modem *modem)
 	ofono_call_barring_create(modem, 0, "atmodem", chat);
 	ofono_ssn_create(modem, 0, "atmodem", chat);
 	ofono_sms_create(modem, 0, "atmodem", chat);
-	ofono_phonebook_create(modem, 0, "atmodem", chat);
 	gprs = ofono_gprs_create(modem,0, "atmodem", chat);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", chat);
 	if (gprs && gc)
@@ -208,8 +251,10 @@ static struct ofono_modem_driver atgen_driver = {
 	.remove		= atgen_remove,
 	.enable		= atgen_enable,
 	.disable	= atgen_disable,
+	.set_online     = atgen_set_online,
 	.pre_sim	= atgen_pre_sim,
 	.post_sim	= atgen_post_sim,
+	.post_online	= atgen_post_online,
 };
 
 static int atgen_init(void)
