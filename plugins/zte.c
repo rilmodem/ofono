@@ -45,6 +45,7 @@
 #include <ofono/phonebook.h>
 #include <ofono/log.h>
 
+#include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
 static const char *none_prefix[] = { NULL };
@@ -182,7 +183,7 @@ static int zte_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->aux, "ATE0 +CMEE=1", none_prefix,
 						NULL, NULL, NULL);
 
-	g_at_chat_send(data->aux, "AT+CFUN=1", none_prefix,
+	g_at_chat_send(data->aux, "AT+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -226,6 +227,39 @@ static int zte_disable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+
+	if (ok)
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	else
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
+static void zte_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct zte_data *data = ofono_modem_get_data(modem);
+	GAtChat *chat = data->aux;
+	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+
+	DBG("modem %p %s", modem, online ? "online" : "offline");
+
+	if (!cbd || !chat)
+		goto error;
+
+	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
 static void zte_pre_sim(struct ofono_modem *modem)
 {
 	struct zte_data *data = ofono_modem_get_data(modem);
@@ -247,6 +281,15 @@ static void zte_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
+}
+
+static void zte_post_online(struct ofono_modem *modem)
+{
+	struct zte_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
 	ofono_netreg_create(modem, OFONO_VENDOR_ZTE, "atmodem", data->aux);
 
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
@@ -255,8 +298,6 @@ static void zte_post_sim(struct ofono_modem *modem)
 					"atmodem", data->aux);
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->aux);
-	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
-
 	data->gprs = ofono_gprs_create(modem, 0, "atmodem", data->aux);
 
 	data->gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
@@ -271,8 +312,10 @@ static struct ofono_modem_driver zte_driver = {
 	.remove		= zte_remove,
 	.enable		= zte_enable,
 	.disable	= zte_disable,
+	.set_online     = zte_set_online,
 	.pre_sim	= zte_pre_sim,
 	.post_sim	= zte_post_sim,
+	.post_online    = zte_post_online,
 };
 
 static int zte_init(void)
