@@ -42,36 +42,13 @@
 #include "smsutil.h"
 #include "simutil.h"
 #include "storage.h"
-
-#define SIM_CACHE_MODE 0600
-#define SIM_CACHE_PATH STORAGEDIR "/%s-%i/%04x"
-#define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 3 + imsilen)
-#define SIM_CACHE_HEADER_SIZE 38
-#define SIM_FILE_INFO_SIZE 6
+#include "simfs.h"
 
 static GSList *g_drivers = NULL;
 
-static gboolean sim_op_next(gpointer user_data);
-static gboolean sim_op_retrieve_next(gpointer user);
 static void sim_own_numbers_update(struct ofono_sim *sim);
 static void sim_pin_check(struct ofono_sim *sim);
 static void sim_set_ready(struct ofono_sim *sim);
-static gboolean sim_op_read_block(gpointer user_data);
-
-struct sim_file_op {
-	int id;
-	gboolean cache;
-	enum ofono_sim_file_structure structure;
-	unsigned short offset;
-	int num_bytes;
-	int length;
-	int record_length;
-	int current;
-	gconstpointer cb;
-	gboolean is_read;
-	void *buffer;
-	void *userdata;
-};
 
 struct ofono_sim {
 	/* Contents of the SIM file system, in rough initialization order */
@@ -111,8 +88,7 @@ struct ofono_sim {
 	enum ofono_sim_state state;
 	struct ofono_watchlist *state_watches;
 
-	GQueue *simop_q;
-	gint simop_source;
+	struct sim_fs *simfs;
 
 	DBusMessage *pending;
 	const struct ofono_sim_driver *driver;
@@ -287,11 +263,6 @@ static char **get_service_numbers(GSList *service_numbers)
 	}
 
 	return ret;
-}
-
-static void sim_file_op_free(struct sim_file_op *node)
-{
-	g_free(node);
 }
 
 static void service_number_free(struct service_number *num)
@@ -1542,633 +1513,17 @@ static void sim_initialize(struct ofono_sim *sim)
 			sim_efpl_read_cb, sim);
 }
 
-static void sim_op_error(struct ofono_sim *sim)
+int ofono_sim_read_bytes(struct ofono_sim *sim, int id,
+			unsigned short offset, unsigned short num_bytes,
+			ofono_sim_file_read_cb_t cb, void *data)
 {
-	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
-
-	if (g_queue_get_length(sim->simop_q) > 0)
-		sim->simop_source = g_timeout_add(0, sim_op_next, sim);
-
-	if (op->is_read == TRUE)
-		((ofono_sim_file_read_cb_t) op->cb)
-			(0, 0, 0, 0, 0, op->userdata);
-	else
-		((ofono_sim_file_write_cb_t) op->cb)
-			(0, op->userdata);
-
-	sim_file_op_free(op);
-}
-
-static gboolean cache_record(const char *path, int current, int record_len,
-				const unsigned char *data, int num_bytes,
-				enum ofono_sim_file_structure type)
-{
-	int r = 0;
-	int fd;
-
-	fd = TFR(open(path, O_RDWR));
-
-	if (fd == -1)
-		return FALSE;
-
-	if (lseek(fd, (current - 1) * record_len +
-				SIM_CACHE_HEADER_SIZE, SEEK_SET) != (off_t) -1)
-		r = TFR(write(fd, data, num_bytes));
-
-	/* update present bit for this block if we are a transparent file */
-	if (type == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT) {
-		/* figure out which byte the right bit location is */
-		int byte = (current - 1) / 8;
-		int bit = (current - 1) % 8;
-		guint8 cache;
-
-		/* lseek to correct byte (skip file info) */
-		lseek(fd, byte + SIM_FILE_INFO_SIZE, SEEK_SET);
-
-		/* read byte */
-		TFR(read(fd, &cache, 1));
-
-		/* set present bit */
-		cache |= (1 << bit);
-
-		/* write back */
-		lseek(fd, byte + SIM_FILE_INFO_SIZE, SEEK_SET);
-		TFR(write(fd, &cache, 1));
-	}
-
-	TFR(close(fd));
-
-	if (r < num_bytes) {
-		unlink(path);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-static void sim_op_retrieve_cb(const struct ofono_error *error,
-				const unsigned char *data, int len, void *user)
-{
-	struct ofono_sim *sim = user;
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-	int total = op->length / op->record_length;
-	ofono_sim_file_read_cb_t cb = op->cb;
-	char *imsi = sim->imsi;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		sim_op_error(sim);
-		return;
-	}
-
-	cb(1, op->length, op->current, data, op->record_length, op->userdata);
-
-	if (op->cache && imsi) {
-		char *path = g_strdup_printf(SIM_CACHE_PATH,
-						imsi, sim->phase, op->id);
-
-		op->cache = cache_record(path, op->current, op->record_length,
-						data, op->record_length,
-						op->structure);
-		g_free(path);
-	}
-
-	if (op->current == total) {
-		op = g_queue_pop_head(sim->simop_q);
-
-		sim_file_op_free(op);
-
-		if (g_queue_get_length(sim->simop_q) > 0)
-			sim->simop_source = g_timeout_add(0, sim_op_next, sim);
-	} else {
-		op->current += 1;
-		sim->simop_source = g_timeout_add(0, sim_op_retrieve_next, sim);
-	}
-}
-
-static gboolean sim_op_retrieve_next(gpointer user)
-{
-	struct ofono_sim *sim = user;
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-
-	sim->simop_source = 0;
-
-	switch (op->structure) {
-	case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
-		if (!sim->driver->read_file_transparent) {
-			sim_op_error(sim);
-			return FALSE;
-		}
-
-		sim->driver->read_file_transparent(sim, op->id, 0, op->length,
-						sim_op_retrieve_cb, sim);
-		break;
-	case OFONO_SIM_FILE_STRUCTURE_FIXED:
-		if (!sim->driver->read_file_linear) {
-			sim_op_error(sim);
-			return FALSE;
-		}
-
-		sim->driver->read_file_linear(sim, op->id, op->current,
-						op->record_length,
-						sim_op_retrieve_cb, sim);
-		break;
-	case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
-		if (!sim->driver->read_file_cyclic) {
-			sim_op_error(sim);
-			return FALSE;
-		}
-
-		sim->driver->read_file_cyclic(sim, op->id, op->current,
-						op->record_length,
-						sim_op_retrieve_cb, sim);
-		break;
-	default:
-		ofono_error("Unrecognized file structure, this can't happen");
-	}
-
-	return FALSE;
-}
-
-static void sim_op_info_cb(const struct ofono_error *error, int length,
-				enum ofono_sim_file_structure structure,
-				int record_length,
-				const unsigned char access[3], void *data)
-{
-	struct ofono_sim *sim = data;
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-	char *imsi = sim->imsi;
-	enum sim_file_access update;
-	enum sim_file_access invalidate;
-	enum sim_file_access rehabilitate;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		sim_op_error(sim);
-		return;
-	}
-
-	if (structure != op->structure) {
-		ofono_error("Requested file structure differs from SIM: %x",
-				op->id);
-		sim_op_error(sim);
-		return;
-	}
-
-	/* TS 11.11, Section 9.3 */
-	update = file_access_condition_decode(access[0] & 0xf);
-	rehabilitate = file_access_condition_decode((access[2] >> 4) & 0xf);
-	invalidate = file_access_condition_decode(access[2] & 0xf);
-
-	op->structure = structure;
-	op->length = length;
-	/* Never cache card holder writable files */
-	op->cache = (update == SIM_FILE_ACCESS_ADM ||
-			update == SIM_FILE_ACCESS_NEVER) &&
-			(invalidate == SIM_FILE_ACCESS_ADM ||
-				invalidate == SIM_FILE_ACCESS_NEVER) &&
-			(rehabilitate == SIM_FILE_ACCESS_ADM ||
-				rehabilitate == SIM_FILE_ACCESS_NEVER);
-
-	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
-		op->record_length = length;
-	else
-		op->record_length = record_length;
-
-	if (op->num_bytes > 0)
-		sim->simop_source = g_timeout_add(0, sim_op_read_block, sim);
-	else {
-		op->current = 1;
-		sim->simop_source = g_timeout_add(0, sim_op_retrieve_next, sim);
-	}
-
-	if (op->cache && imsi) {
-		unsigned char fileinfo[SIM_CACHE_HEADER_SIZE];
-
-		memset(fileinfo, 0, SIM_CACHE_HEADER_SIZE);
-
-		fileinfo[0] = error->type;
-		fileinfo[1] = length >> 8;
-		fileinfo[2] = length & 0xff;
-		fileinfo[3] = structure;
-		fileinfo[4] = record_length >> 8;
-		fileinfo[5] = record_length & 0xff;
-
-		if (write_file(fileinfo, SIM_CACHE_HEADER_SIZE, SIM_CACHE_MODE,
-					SIM_CACHE_PATH, imsi, sim->phase,
-					op->id) != SIM_CACHE_HEADER_SIZE)
-			op->cache = FALSE;
-	}
-}
-
-static void sim_op_write_cb(const struct ofono_error *error, void *data)
-{
-	struct ofono_sim *sim = data;
-	struct sim_file_op *op = g_queue_pop_head(sim->simop_q);
-	ofono_sim_file_write_cb_t cb = op->cb;
-
-	if (g_queue_get_length(sim->simop_q) > 0)
-		sim->simop_source = g_timeout_add(0, sim_op_next, sim);
-
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
-		cb(1, op->userdata);
-	else
-		cb(0, op->userdata);
-
-	sim_file_op_free(op);
-}
-
-static gboolean sim_op_check_cached(struct ofono_sim *sim)
-{
-	char *imsi = sim->imsi;
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-	ofono_sim_file_read_cb_t cb = op->cb;
-	char *path;
-	int fd;
-	unsigned char fileinfo[SIM_CACHE_HEADER_SIZE];
-	ssize_t len;
-	int error_type;
-	unsigned int file_length;
-	enum ofono_sim_file_structure structure;
-	unsigned int record_length;
-	unsigned int record;
-	guint8 *buffer = NULL;
-	gboolean ret = FALSE;
-
-	if (!imsi)
-		return FALSE;
-
-	path = g_strdup_printf(SIM_CACHE_PATH, imsi, sim->phase, op->id);
-
-	if (path == NULL)
-		return FALSE;
-
-	fd = TFR(open(path, O_RDONLY));
-	g_free(path);
-
-	if (fd == -1) {
-		if (errno != ENOENT)
-			DBG("Error %i opening cache file for "
-					"fileid %04x, IMSI %s",
-					errno, op->id, imsi);
-
-		return FALSE;
-	}
-
-	len = TFR(read(fd, fileinfo, SIM_CACHE_HEADER_SIZE));
-
-	if (len != SIM_CACHE_HEADER_SIZE)
-		goto cleanup;
-
-	error_type = fileinfo[0];
-	file_length = (fileinfo[1] << 8) | fileinfo[2];
-	structure = fileinfo[3];
-	record_length = (fileinfo[4] << 8) | fileinfo[5];
-
-	if (op->num_bytes > 0) {
-		op->length = file_length;
-		ret = TRUE;
-		goto cleanup;
-	}
-
-	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
-		record_length = file_length;
-
-	if (record_length == 0 || file_length < record_length)
-		goto cleanup;
-
-	if (error_type != OFONO_ERROR_TYPE_NO_ERROR ||
-			structure != op->structure) {
-		ret = TRUE;
-		cb(0, 0, 0, 0, 0, op->userdata);
-		goto cleanup;
-	}
-
-	buffer = g_try_malloc(file_length);
-
-	if (buffer == NULL)
-		goto cleanup;
-
-	len = TFR(read(fd, buffer, file_length));
-
-	if (len < (ssize_t)file_length)
-		goto cleanup;
-
-	for (record = 0; record < file_length / record_length; record++) {
-		cb(1, file_length, record + 1, &buffer[record * record_length],
-			record_length, op->userdata);
-	}
-
-	ret = TRUE;
-
-cleanup:
-	if (buffer)
-		g_free(buffer);
-
-	TFR(close(fd));
-
-	return ret;
-}
-
-static void sim_op_read_block_cb(const struct ofono_error *error,
-				const unsigned char *data, int len, void *user)
-{
-	struct ofono_sim *sim = user;
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-	char *imsi = sim->imsi;
-	int start_block, end_block;
-	int start, length;
-	unsigned char *buf;
-
-	if ((error->type != OFONO_ERROR_TYPE_NO_ERROR) || (len == 0)) {
-		sim_op_error(sim);
-		return;
-	}
-
-	/* buffer this block */
-	start_block = op->offset / 256;
-	end_block = (op->offset + (op->num_bytes - 1)) / 256;
-
-	if (op->current == start_block) {
-		start = op->offset % 256;
-		buf = op->buffer;
-	} else {
-		start = 0;
-		buf = op->buffer + (op->current * 256);
-	}
-
-	length = op->num_bytes % 256;
-
-	if ((length == 0) || (op->current != end_block))
-		length = 256;
-
-	memcpy(buf, &data[start], length);
-
-	/* cache this block */
-	if (op->cache && imsi) {
-		char *path = g_strdup_printf(SIM_CACHE_PATH,
-						sim->imsi, sim->phase, op->id);
-		op->cache = cache_record(path, op->current + 1, 256, data,
-						length, op->structure);
-
-		g_free(path);
-	}
-
-	op->current++;
-
-	sim->simop_source = g_timeout_add(0, sim_op_read_block, sim);
-}
-
-static gboolean sim_op_check_cached_block(struct ofono_sim *sim)
-{
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-	char *path;
-	int fd;
-	char *imsi = sim->imsi;
-	int start_block, end_block;
-	int start, length, len;
-	unsigned char *buf;
-	int bit, byte;
-	guint8 cache;
-	gboolean ret;
-
-	if (!imsi)
-		return FALSE;
-
-	path = g_strdup_printf(SIM_CACHE_PATH, sim->imsi, sim->phase, op->id);
-
-	if (path == NULL)
-		return FALSE;
-
-	fd = TFR(open(path, O_RDONLY));
-	g_free(path);
-
-	if (fd == -1) {
-		if (errno != ENOENT)
-			DBG("Error %i opening cache file for "
-					"fileid %04x, IMSI %s",
-					errno, op->id, imsi);
-
-		return FALSE;
-	}
-
-	/* read cache header to see if current block is present */
-	byte = op->current / 8;
-	bit = op->current % 8;
-
-	lseek(fd, SIM_FILE_INFO_SIZE + byte, SEEK_SET);
-
-	len = TFR(read(fd, &cache, 1));
-
-	if ((len != 1) || ((cache & (1 << bit)) == FALSE)) {
-		ret = FALSE;
-		goto cleanup;
-	}
-
-	/* figure out where we should start reading from */
-	start_block = op->offset / 256;
-	end_block = (op->offset + (op->num_bytes - 1)) / 256;
-
-	if (op->current == start_block) {
-		start = op->offset % 256;
-		buf = op->buffer;
-	} else {
-		start = 0;
-		buf = op->buffer + (op->current * 256);
-	}
-
-	length = op->num_bytes % 256;
-
-	if ((length == 0) || (op->current != end_block))
-		length = 256;
-
-	/* lseek to the right place in the file */
-	TFR(lseek(fd, start + SIM_CACHE_HEADER_SIZE, SEEK_SET));
-
-	len = TFR(read(fd, buf, length));
-
-	if (len != length) {
-		ret = FALSE;
-		goto cleanup;
-	}
-
-	ret = TRUE;
-
-	op->current++;
-
-	sim->simop_source = g_timeout_add(0, sim_op_read_block, sim);
-
-cleanup:
-	TFR(close(fd));
-
-	return ret;
-}
-
-static gboolean sim_op_read_block(gpointer user_data)
-{
-	struct ofono_sim *sim = user_data;
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-	int end_block;
-	ofono_sim_file_read_cb_t cb = op->cb;
-	int read_bytes;
-
-	end_block = (op->offset + (op->num_bytes - 1)) / 256;
-
-	if (op->current > end_block) {
-		cb(1, op->num_bytes, op->current, op->buffer,
-				op->record_length, op->userdata);
-
-		op = g_queue_pop_head(sim->simop_q);
-
-		g_free(op->buffer);
-
-		sim_file_op_free(op);
-
-		if (g_queue_get_length(sim->simop_q) > 0)
-			sim->simop_source = g_timeout_add(0, sim_op_next, sim);
-
-		return FALSE;
-	}
-
-	/* see if this block is cached */
-	if (sim_op_check_cached_block(sim) == TRUE)
-		return FALSE;
-
-	if (op->length < ((op->current + 1) * 256))
-		read_bytes = op->length % 256;
-	else
-		read_bytes = 256;
-
-	sim->driver->read_file_transparent(sim, op->id,
-						op->current * 256,
-						read_bytes,
-						sim_op_read_block_cb, sim);
-	return FALSE;
-}
-
-static void sim_op_get_blocks(struct ofono_sim *sim)
-{
-	struct sim_file_op *op = g_queue_peek_head(sim->simop_q);
-
-	/* allocate space to buffer the data till we've collected it all */
-	op->buffer = g_try_malloc0(op->num_bytes);
-
-	/* initialize current */
-	op->current = op->offset / 256;
-
-	/* need to get the length of the file */
-	if (sim_op_check_cached(sim) == FALSE)
-		sim->driver->read_file_info(sim, op->id, sim_op_info_cb, sim);
-	else
-		sim->simop_source = g_timeout_add(0, sim_op_read_block, sim);
-}
-
-static gboolean sim_op_next(gpointer user_data)
-{
-	struct ofono_sim *sim = user_data;
-	struct sim_file_op *op;
-
-	sim->simop_source = 0;
-
-	if (!sim->simop_q)
-		return FALSE;
-
-	op = g_queue_peek_head(sim->simop_q);
-
-	if (op->num_bytes > 0) {
-		sim_op_get_blocks(sim);
-		return FALSE;
-	}
-
-	if (op->is_read == TRUE) {
-		if (sim_op_check_cached(sim)) {
-			op = g_queue_pop_head(sim->simop_q);
-
-			sim_file_op_free(op);
-
-			if (g_queue_get_length(sim->simop_q) > 0)
-				sim->simop_source =
-					g_timeout_add(0, sim_op_next, sim);
-
-			return FALSE;
-		}
-
-		sim->driver->read_file_info(sim, op->id, sim_op_info_cb, sim);
-	} else {
-		switch (op->structure) {
-		case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
-			sim->driver->write_file_transparent(sim, op->id, 0,
-					op->length, op->buffer,
-					sim_op_write_cb, sim);
-			break;
-		case OFONO_SIM_FILE_STRUCTURE_FIXED:
-			sim->driver->write_file_linear(sim, op->id, op->current,
-					op->length, op->buffer,
-					sim_op_write_cb, sim);
-			break;
-		case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
-			sim->driver->write_file_cyclic(sim, op->id,
-					op->length, op->buffer,
-					sim_op_write_cb, sim);
-			break;
-		default:
-			ofono_error("Unrecognized file structure, "
-					"this can't happen");
-		}
-
-		g_free(op->buffer);
-	}
-
-	return FALSE;
-}
-
-static int sim_read_common(struct ofono_sim *sim, int id,
-				enum ofono_sim_file_structure expected_type,
-				unsigned short offset, int num_bytes,
-				ofono_sim_file_read_cb_t cb, void *data)
-{
-	struct sim_file_op *op;
-
-	if (!cb)
-		return -1;
-
 	if (sim == NULL)
 		return -1;
 
-	if (!sim->driver)
+	if (num_bytes == 0)
 		return -1;
 
-	if (!sim->driver->read_file_info)
-		return -1;
-
-	/* TODO: We must first check the EFust table to see whether
-	 * this file can be read at all
-	 */
-
-	if (!sim->simop_q)
-		sim->simop_q = g_queue_new();
-
-	op = g_new0(struct sim_file_op, 1);
-
-	op->id = id;
-	op->structure = expected_type;
-	op->cb = cb;
-	op->userdata = data;
-	op->is_read = TRUE;
-	op->offset = offset;
-	op->num_bytes = num_bytes;
-
-	g_queue_push_tail(sim->simop_q, op);
-
-	if (g_queue_get_length(sim->simop_q) == 1)
-		sim->simop_source = g_timeout_add(0, sim_op_next, sim);
-
-	return 0;
-}
-
-int ofono_sim_read_bytes(struct ofono_sim *sim, int id,
-			unsigned short offset, int num_bytes,
-			ofono_sim_file_read_cb_t cb, void *data)
-{
-	return sim_read_common(sim, id, OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+	return sim_fs_read(sim->simfs, id, OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				offset, num_bytes, cb, data);
 }
 
@@ -2176,7 +1531,10 @@ int ofono_sim_read(struct ofono_sim *sim, int id,
 			enum ofono_sim_file_structure expected_type,
 			ofono_sim_file_read_cb_t cb, void *data)
 {
-	return sim_read_common(sim, id, expected_type, 0, -1, cb, data);
+	if (sim == NULL)
+		return -1;
+
+	return sim_fs_read(sim->simfs, id, expected_type, 0, 0, cb, data);
 }
 
 int ofono_sim_write(struct ofono_sim *sim, int id,
@@ -2184,55 +1542,11 @@ int ofono_sim_write(struct ofono_sim *sim, int id,
 			enum ofono_sim_file_structure structure, int record,
 			const unsigned char *data, int length, void *userdata)
 {
-	struct sim_file_op *op;
-	gconstpointer fn = NULL;
-
-	if (!cb)
-		return -1;
-
 	if (sim == NULL)
 		return -1;
 
-	if (!sim->driver)
-		return -1;
-
-	switch (structure) {
-	case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
-		fn = sim->driver->write_file_transparent;
-		break;
-	case OFONO_SIM_FILE_STRUCTURE_FIXED:
-		fn = sim->driver->write_file_linear;
-		break;
-	case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
-		fn = sim->driver->write_file_cyclic;
-		break;
-	default:
-		ofono_error("Unrecognized file structure, this can't happen");
-	}
-
-	if (fn == NULL)
-		return -1;
-
-	if (!sim->simop_q)
-		sim->simop_q = g_queue_new();
-
-	op = g_new0(struct sim_file_op, 1);
-
-	op->id = id;
-	op->cb = cb;
-	op->userdata = userdata;
-	op->is_read = FALSE;
-	op->buffer = g_memdup(data, length);
-	op->structure = structure;
-	op->length = length;
-	op->current = record;
-
-	g_queue_push_tail(sim->simop_q, op);
-
-	if (g_queue_get_length(sim->simop_q) == 1)
-		sim->simop_source = g_timeout_add(0, sim_op_next, sim);
-
-	return 0;
+	return sim_fs_write(sim->simfs, id, cb, structure, record, data, length,
+				userdata);
 }
 
 const char *ofono_sim_get_imsi(struct ofono_sim *sim)
@@ -2281,17 +1595,9 @@ static void sim_inserted_update(struct ofono_sim *sim)
 
 static void sim_free_state(struct ofono_sim *sim)
 {
-	if (sim->simop_source) {
-		g_source_remove(sim->simop_source);
-		sim->simop_source = 0;
-	}
-
-	if (sim->simop_q) {
-		/* Note: users of ofono_sim_read/write must not assume that
-		 * the callback happens for operations still in progress.  */
-		g_queue_foreach(sim->simop_q, (GFunc)sim_file_op_free, NULL);
-		g_queue_free(sim->simop_q);
-		sim->simop_q = NULL;
+	if (sim->simfs) {
+		sim_fs_free(sim->simfs);
+		sim->simfs = NULL;
 	}
 
 	if (sim->iccid) {
@@ -2546,6 +1852,7 @@ void ofono_sim_register(struct ofono_sim *sim)
 
 	ofono_modem_add_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
 	sim->state_watches = __ofono_watchlist_new(g_free);
+	sim->simfs = sim_fs_new(sim, sim->driver);
 
 	__ofono_atom_register(sim->atom, sim_unregister);
 
