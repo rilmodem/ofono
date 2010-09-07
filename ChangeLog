@@ -1,3 +1,28 @@
+ver 0.27:
+	Update network registration D-Bus API.
+	Update voice call manager D-Bus API.
+	Update connection manager D-Bus API.
+	Update message manager D-Bus API.
+	Fix issue with GPRS attach/detach logic.
+	Fix issue with GPRS context IP configuration and ISI modems.
+	Fix issue with call forwarding and ISI modems.
+	Fix issue with LockedPins in case SIM wants a PUK first.
+	Fix issue with missing reset of MNC length on SIM removal.
+	Fix issue with SIM state logic of Huawei devices.
+	Fix issue with SIM Toolkit and GSMv1 parser for MBM devices.
+	Add more features for SIM Toolkit agent support.
+	Add SIM Toolkit support for Calypso modem.
+	Add SIM Toolkit support for ST-Ericsson devices.
+	Add support for radio settings of ST-Ericsson devices.
+	Add support for hangup all voice calls functionality.
+	Add support for reading EFust, EFest and EFimg.
+	Add support for adding a default empty PDP context.
+	Add support for embedded \r and \n in responses.
+	Add support for cloning GAtChat instances.
+	Add support for Nokia Datacard devices.
+	Add support for ZTE based devices.
+	Add support for creating backtraces.
+
 ver 0.26:
 	Fix busy loop in PPP disconnect with Huawei modem.
 	Add support for MCC/MNC via network registration interface.
