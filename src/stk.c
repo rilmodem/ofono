@@ -1412,7 +1412,7 @@ static void call_setup_connected(struct ofono_call *call, void *data)
 	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	static unsigned char facility_rejected_result[] = { 0x9d };
 
-	if (!call) {
+	if (!call || call->status == CALL_STATUS_DISCONNECTED) {
 		memset(&rsp, 0, sizeof(rsp));
 
 		rsp.result.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE;

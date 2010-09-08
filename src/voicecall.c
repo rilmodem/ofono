@@ -331,6 +331,16 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	return NULL;
 }
 
+static void dial_request_user_cancel(struct ofono_voicecall *vc,
+					struct voicecall *call)
+{
+	if (!vc->dial_req)
+		return;
+
+	if (!call || call == vc->dial_req->call)
+		dial_request_finish(vc->dial_req->call->vc, TRUE);
+}
+
 static DBusMessage *voicecall_hangup(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -341,6 +351,8 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 
 	if (vc->pending)
 		return __ofono_error_busy(msg);
+
+	dial_request_user_cancel(vc, v);
 
 	switch (call->status) {
 	case CALL_STATUS_DISCONNECTED:
@@ -1252,6 +1264,8 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 		voicecalls_release_next(vc);
 	} else
 		vc->driver->hangup_all(vc, generic_callback, vc);
+
+	dial_request_user_cancel(vc, NULL);
 
 	return NULL;
 }
