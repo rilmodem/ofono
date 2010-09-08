@@ -5,18 +5,26 @@ Service		org.ofono
 Interface	org.ofono.Manager
 Object path	/
 
-Methods		dict GetProperties()
+Methods		array{object,dict} GetModems()
 
-			Returns all global system properties. See the
-			properties section for available properties.
+			Get an array of modem objects and properties
+			that represents the currently attached modems.
+
+			This method call should only be used once when an
+			application starts up.  Further modem additions
+			and removal shall be monitored via ModemAdded and
+			ModemRemoved signals.
 
 			Possible Errors: [service].Error.InvalidArguments
 
-Signals		PropertyChanged(string property, variant value)
+Signals		ModemAdded(object path, dict properties)
 
-			This signal indicates a changed value of the given
-			property.
+			Signal that is sent when a new modem is added.  It
+			contains the object path of new modem and also its
+			properties.
 
-Properties	array{object} Modems [readonly]
+		ModemRemoved(object path)
 
-			List of all modem objects in the system.
+			Signal that is sent when a modem has been removed.
+			The object path is no longer accessible after this
+			signal and only emitted for reference.
