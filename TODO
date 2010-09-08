@@ -78,6 +78,7 @@ SMS
 
   Priority: High
   Complexity: C1
+  Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
 
 - Better unique ID for incoming / outgoing messages.  Currently oFono uses
   a simple incremental counter stored in the settings store (NextMessageId).
