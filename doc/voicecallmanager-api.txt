@@ -12,7 +12,7 @@ Methods		array{object,dict} GetCalls()
 
 			This method call should only be used once when an
 			application starts up.  Further call additions and
-			removal shall be monitored vi CallAdded and
+			removal shall be monitored via CallAdded and
 			CallRemoved signals.
 
 		object Dial(string number, string hide_callerid)
