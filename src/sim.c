@@ -1740,6 +1740,8 @@ static void sim_set_ready(struct ofono_sim *sim)
 
 	sim->state = OFONO_SIM_STATE_READY;
 
+	sim_fs_check_version(sim->simfs);
+
 	for (l = sim->state_watches->items; l; l = l->next) {
 		struct ofono_watchlist_item *item = l->data;
 		notify = item->notify;
