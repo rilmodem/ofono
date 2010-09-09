@@ -1550,3 +1550,14 @@ void __ofono_modem_shutdown()
 	if (modems_remaining == 0)
 		__ofono_exit();
 }
+
+void __ofono_modem_foreach(ofono_modem_foreach_func func, void *userdata)
+{
+	struct ofono_modem *modem;
+	GSList *l;
+
+	for (l = g_modem_list; l; l = l->next) {
+		modem = l->data;
+		func(modem, userdata);
+	}
+}
