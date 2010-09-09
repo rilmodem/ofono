@@ -40,7 +40,8 @@ builtin_sources =
 builtin_libadd =
 builtin_cflags =
 
-gdbus_sources = gdbus/gdbus.h gdbus/mainloop.c gdbus/object.c gdbus/watch.c
+gdbus_sources = gdbus/gdbus.h gdbus/mainloop.c gdbus/watch.c \
+					gdbus/object.c gdbus/polkit.c
 
 gisi_sources = gisi/modem.h gisi/modem.c \
 			gisi/netlink.h gisi/netlink.c \
