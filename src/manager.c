@@ -34,6 +34,7 @@ static GDBusMethodTable manager_methods[] = {
 };
 
 static GDBusSignalTable manager_signals[] = {
+	{ "ModemAdded",        "oa{sv}" },
 	{ }
 };
 

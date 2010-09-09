@@ -1333,6 +1333,33 @@ static void sim_watch(struct ofono_atom *atom,
 								modem, NULL);
 }
 
+static void emit_modem_added(struct ofono_modem *modem)
+{
+	DBusMessage *signal;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+	const char *path;
+
+	signal = dbus_message_new_signal(OFONO_MANAGER_PATH,
+						OFONO_MANAGER_INTERFACE,
+						"ModemAdded");
+
+	if (signal == NULL)
+		return;
+
+	dbus_message_iter_init_append(signal, &iter);
+
+	path = modem->path;
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &path);
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+	__ofono_modem_append_properties(modem, &dict);
+	dbus_message_iter_close_container(&iter, &dict);
+
+	g_dbus_send_message(ofono_dbus_get_connection(), signal);
+}
+
 int ofono_modem_register(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1380,6 +1407,8 @@ int ofono_modem_register(struct ofono_modem *modem)
 	modem->driver_type = NULL;
 
 	modem->atom_watches = __ofono_watchlist_new(g_free);
+
+	emit_modem_added(modem);
 
 	modem->sim_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_SIM,
