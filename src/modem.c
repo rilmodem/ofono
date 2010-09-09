@@ -1417,6 +1417,16 @@ int ofono_modem_register(struct ofono_modem *modem)
 	return 0;
 }
 
+static void emit_modem_removed(struct ofono_modem *modem)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = modem->path;
+
+	g_dbus_emit_signal(conn, OFONO_MANAGER_PATH, OFONO_MANAGER_INTERFACE,
+				"ModemRemoved", DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
+}
+
 static void modem_unregister(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1462,6 +1472,8 @@ static void modem_unregister(struct ofono_modem *modem)
 	modem->properties = NULL;
 
 	modem->driver = NULL;
+
+	emit_modem_removed(modem);
 }
 
 void ofono_modem_remove(struct ofono_modem *modem)
