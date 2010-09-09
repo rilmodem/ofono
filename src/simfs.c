@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "ofono.h"
 
@@ -41,10 +42,13 @@
 #include "storage.h"
 
 #define SIM_CACHE_MODE 0600
-#define SIM_CACHE_PATH STORAGEDIR "/%s-%i/%04x"
-#define SIM_CACHE_PATH_LEN(imsilen) (strlen(SIM_CACHE_PATH) - 3 + imsilen)
+#define SIM_CACHE_BASEPATH STORAGEDIR "/%s-%i"
+#define SIM_CACHE_VERSION SIM_CACHE_BASEPATH "/version"
+#define SIM_CACHE_PATH SIM_CACHE_BASEPATH "/%04x"
 #define SIM_CACHE_HEADER_SIZE 38
 #define SIM_FILE_INFO_SIZE 6
+
+#define SIM_FS_VERSION 1
 
 static gboolean sim_fs_op_next(gpointer user_data);
 static gboolean sim_fs_op_read_record(gpointer user);
@@ -487,9 +491,6 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 	fileinfo[5] = record_length & 0xff;
 
 	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
-	if (create_dirs(path, SIM_CACHE_MODE | S_IXUSR) != 0)
-		goto out;
-
 	fs->fd = TFR(open(path, O_RDWR | O_CREAT | O_TRUNC, SIM_CACHE_MODE));
 	g_free(path);
 
@@ -717,4 +718,54 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 		fs->op_source = g_idle_add(sim_fs_op_next, fs);
 
 	return 0;
+}
+
+static void remove_cachefile(const char *imsi, enum ofono_sim_phase phase,
+				const struct dirent *file)
+{
+	int id;
+	char *path;
+
+	if (file->d_type != DT_REG)
+		return;
+
+	if (sscanf(file->d_name, "%4x", &id) != 1)
+		return;
+
+	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, id);
+	remove(path);
+	g_free(path);
+}
+
+void sim_fs_check_version(struct sim_fs *fs)
+{
+	const char *imsi = ofono_sim_get_imsi(fs->sim);
+	enum ofono_sim_phase phase = ofono_sim_get_phase(fs->sim);
+	unsigned char version;
+	struct dirent **entries;
+	int len;
+	char *path;
+
+	if (read_file(&version, 1, SIM_CACHE_VERSION, imsi, phase) == 1)
+		if (version == SIM_FS_VERSION)
+			return;
+
+	path = g_strdup_printf(SIM_CACHE_BASEPATH, imsi, phase);
+
+	ofono_info("Detected old simfs version in %s, removing", path);
+	len = scandir(path, &entries, NULL, alphasort);
+	g_free(path);
+
+	if (len > 0) {
+		/* Remove all file ids */
+		while (len--) {
+			remove_cachefile(imsi, phase, entries[len]);
+			g_free(entries[len]);
+		}
+
+		g_free(entries);
+	}
+
+	version = SIM_FS_VERSION;
+	write_file(&version, 1, SIM_CACHE_MODE, SIM_CACHE_VERSION, imsi, phase);
 }

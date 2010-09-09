@@ -29,6 +29,8 @@ int sim_fs_read(struct sim_fs *fs, int id,
 		unsigned short offset, unsigned short num_bytes,
 		ofono_sim_file_read_cb_t cb, void *data);
 
+void sim_fs_check_version(struct sim_fs *fs);
+
 int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 			enum ofono_sim_file_structure structure, int record,
 			const unsigned char *data, int length, void *userdata);
