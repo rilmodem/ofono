@@ -1376,6 +1376,12 @@ struct stk_answer_text {
 	 */
 };
 
+struct stk_ussd_text {
+	const unsigned char *text;
+	int dcs;
+	int len;
+};
+
 struct stk_response_get_inkey {
 	struct stk_answer_text text;
 	struct stk_duration duration;
@@ -1447,6 +1453,10 @@ struct stk_response_run_at_command {
 	const char *at_response;
 };
 
+struct stk_response_send_ussd {
+	struct stk_ussd_text text;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1476,6 +1486,7 @@ struct stk_response {
 		struct stk_response_generic send_dtmf;
 		struct stk_response_generic language_notification;
 		struct stk_response_generic launch_browser;
+		struct stk_response_send_ussd send_ussd;
 	};
 
 	void (*destructor)(struct stk_response *response);
