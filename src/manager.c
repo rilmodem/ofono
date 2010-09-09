@@ -29,47 +29,11 @@
 
 #include "ofono.h"
 
-/*
- * Note __ofono_modem_get_list() will abort if it cannot allocate
- * memory; so no error path or cleanup is needed.
- */
-static DBusMessage *manager_get_properties(DBusConnection *conn,
-						DBusMessage *msg, void *data)
-{
-	DBusMessageIter iter;
-	DBusMessageIter dict;
-	DBusMessage *reply;
-	const char **modems;
-
-	reply = dbus_message_new_method_return(msg);
-	if (!reply)
-		return NULL;
-
-	modems = __ofono_modem_get_list();
-
-	dbus_message_iter_init_append(reply, &iter);
-
-	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-					OFONO_PROPERTIES_ARRAY_SIGNATURE,
-					&dict);
-
-	ofono_dbus_dict_append_array(&dict, "Modems", DBUS_TYPE_OBJECT_PATH,
-					&modems);
-
-	g_free(modems);
-
-	dbus_message_iter_close_container(&iter, &dict);
-
-	return reply;
-}
-
 static GDBusMethodTable manager_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	manager_get_properties },
 	{ }
 };
 
 static GDBusSignalTable manager_signals[] = {
-	{ "PropertyChanged", "sv" },
 	{ }
 };
 

@@ -1133,33 +1133,6 @@ void *ofono_devinfo_get_data(struct ofono_devinfo *info)
 	return info->driver_data;
 }
 
-/* Clients only need to free *modems
- *
- * Note: this function will never return NULL. It will abort if it
- * can't allocate memory for *modems; thus even an empty list will
- * returns a non-NULL pointer.
- */
-const char **__ofono_modem_get_list()
-{
-	GSList *l;
-	int i;
-	struct ofono_modem *modem;
-	const char **modems;
-
-	modems = g_new0(const char *, g_slist_length(g_modem_list) + 1);
-
-	for (l = g_modem_list, i = 0; l; l = l->next) {
-		modem = l->data;
-
-		if (modem->driver == NULL)
-			continue;
-
-		modems[i++] = modem->path;
-	}
-
-	return modems;
-}
-
 static void unregister_property(gpointer data)
 {
 	struct modem_property *property = data;
@@ -1344,22 +1317,6 @@ struct ofono_modem *ofono_modem_create(const char *name, const char *type)
 	return modem;
 }
 
-static void emit_modems()
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char **modems = __ofono_modem_get_list();
-
-	if (modems == NULL)
-		return;
-
-	ofono_dbus_signal_array_property_changed(conn,
-				OFONO_MANAGER_PATH,
-				OFONO_MANAGER_INTERFACE, "Modems",
-				DBUS_TYPE_OBJECT_PATH, &modems);
-
-	g_free(modems);
-}
-
 static void sim_watch(struct ofono_atom *atom,
 			enum ofono_atom_watch_condition cond, void *data)
 {
@@ -1424,8 +1381,6 @@ int ofono_modem_register(struct ofono_modem *modem)
 
 	modem->atom_watches = __ofono_watchlist_new(g_free);
 
-	emit_modems();
-
 	modem->sim_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_SIM,
 					sim_watch, modem, NULL);
@@ -1478,8 +1433,6 @@ static void modem_unregister(struct ofono_modem *modem)
 	modem->properties = NULL;
 
 	modem->driver = NULL;
-
-	emit_modems();
 }
 
 void ofono_modem_remove(struct ofono_modem *modem)
