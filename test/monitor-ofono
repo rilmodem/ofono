@@ -83,8 +83,8 @@ if __name__ == '__main__':
 						interface_keyword="interface")
 
 	for member in ["IncomingBarringInEffect",
-		       "OutgoingBarringInEffect",
-		       "NearMaximumWarning"]:
+			"OutgoingBarringInEffect",
+			"NearMaximumWarning"]:
 		bus.add_signal_receiver(event,
 					bus_name="org.ofono",
 					signal_name = member,
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 						interface_keyword="interface")
 
 	for member in ["IncomingBroadcast", "EmergencyBroadcast",
-		       "IncomingMessage", "ImmediateMessage"]:
+			"IncomingMessage", "ImmediateMessage"]:
 		bus.add_signal_receiver(message,
 					bus_name="org.ofono",
 					signal_name = member,
