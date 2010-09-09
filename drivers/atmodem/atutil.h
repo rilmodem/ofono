@@ -27,6 +27,27 @@ enum at_util_sms_store {
 	AT_UTIL_SMS_STORE_BM =	4,
 };
 
+/* 3GPP TS 27.007 Release 8 Section 5.5 */
+enum at_util_charset {
+	AT_UTIL_CHARSET_GSM =		0x1,
+	AT_UTIL_CHARSET_HEX =		0x2,
+	AT_UTIL_CHARSET_IRA =		0x4,
+	AT_UTIL_CHARSET_PCCP437 =	0x8,
+	AT_UTIL_CHARSET_PCDN =		0x10,
+	AT_UTIL_CHARSET_UCS2 =		0x20,
+	AT_UTIL_CHARSET_UTF8 =		0x40,
+	AT_UTIL_CHARSET_8859_1 =	0x80,
+	AT_UTIL_CHARSET_8859_2 =	0x100,
+	AT_UTIL_CHARSET_8859_3 =	0x200,
+	AT_UTIL_CHARSET_8859_4 =	0x400,
+	AT_UTIL_CHARSET_8859_5 =	0x800,
+	AT_UTIL_CHARSET_8859_6 =	0x1000,
+	AT_UTIL_CHARSET_8859_C =	0x2000,
+	AT_UTIL_CHARSET_8859_A =	0x4000,
+	AT_UTIL_CHARSET_8859_G =	0x8000,
+	AT_UTIL_CHARSET_8859_H =	0x10000,
+};
+
 void decode_at_error(struct ofono_error *error, const char *final);
 gint at_util_call_compare_by_status(gconstpointer a, gconstpointer b);
 gint at_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
@@ -45,6 +66,10 @@ gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 gboolean at_util_parse_sms_index_delivery(GAtResult *result, const char *prefix,
 						enum at_util_sms_store *store,
 						int *index);
+
+gboolean at_util_parse_cscs_supported(GAtResult *result, int *supported);
+gboolean at_util_parse_cscs_query(GAtResult *result,
+				enum at_util_charset *charset);
 
 struct cb_data {
 	void *cb;

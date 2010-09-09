@@ -341,3 +341,86 @@ gboolean at_util_parse_sms_index_delivery(GAtResult *result, const char *prefix,
 
 	return TRUE;
 }
+
+static gboolean at_util_charset_string_to_charset(const char *str,
+					enum at_util_charset *charset)
+{
+	if (!g_strcmp0(str, "GSM"))
+		*charset = AT_UTIL_CHARSET_GSM;
+	else if (!g_strcmp0(str, "HEX"))
+		*charset = AT_UTIL_CHARSET_HEX;
+	else if (!g_strcmp0(str, "IRA"))
+		*charset = AT_UTIL_CHARSET_IRA;
+	else if (!g_strcmp0(str, "PCCP437"))
+		*charset = AT_UTIL_CHARSET_PCCP437;
+	else if (!g_strcmp0(str, "PCDN"))
+		*charset = AT_UTIL_CHARSET_PCDN;
+	else if (!g_strcmp0(str, "UCS2"))
+		*charset = AT_UTIL_CHARSET_UCS2;
+	else if (!g_strcmp0(str, "UTF-8"))
+		*charset = AT_UTIL_CHARSET_UTF8;
+	else if (!g_strcmp0(str, "8859-1"))
+		*charset = AT_UTIL_CHARSET_8859_1;
+	else if (!g_strcmp0(str, "8859-2"))
+		*charset = AT_UTIL_CHARSET_8859_2;
+	else if (!g_strcmp0(str, "8859-3"))
+		*charset = AT_UTIL_CHARSET_8859_3;
+	else if (!g_strcmp0(str, "8859-4"))
+		*charset = AT_UTIL_CHARSET_8859_4;
+	else if (!g_strcmp0(str, "8859-5"))
+		*charset = AT_UTIL_CHARSET_8859_5;
+	else if (!g_strcmp0(str, "8859-6"))
+		*charset = AT_UTIL_CHARSET_8859_6;
+	else if (!g_strcmp0(str, "8859-C"))
+		*charset = AT_UTIL_CHARSET_8859_C;
+	else if (!g_strcmp0(str, "8859-A"))
+		*charset = AT_UTIL_CHARSET_8859_A;
+	else if (!g_strcmp0(str, "8859-G"))
+		*charset = AT_UTIL_CHARSET_8859_G;
+	else if (!g_strcmp0(str, "8859-H"))
+		*charset = AT_UTIL_CHARSET_8859_H;
+	else
+		return FALSE;
+
+	return TRUE;
+}
+
+gboolean at_util_parse_cscs_supported(GAtResult *result, int *supported)
+{
+	GAtResultIter iter;
+	const char *str;
+	enum at_util_charset charset;
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSCS:"))
+		return FALSE;
+
+	/* Some modems don't report CSCS in a proper list */
+	g_at_result_iter_open_list(&iter);
+
+	while (g_at_result_iter_next_string(&iter, &str)) {
+		if (at_util_charset_string_to_charset(str, &charset))
+			*supported |= charset;
+	}
+
+	g_at_result_iter_close_list(&iter);
+
+	return TRUE;
+}
+
+gboolean at_util_parse_cscs_query(GAtResult *result,
+				enum at_util_charset *charset)
+{
+	GAtResultIter iter;
+	const char *str;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSCS:"))
+		return FALSE;
+
+	if (g_at_result_iter_next_string(&iter, &str))
+		return at_util_charset_string_to_charset(str, charset);
+
+	return FALSE;
+}
