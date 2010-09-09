@@ -41,9 +41,9 @@ if __name__ == "__main__":
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 			'org.ofono.Manager')
 
-	modems = manager.GetProperties()['Modems']
+	modems = manager.GetModems()
 
-	cm = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+	cm = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
 			'org.ofono.CallMeter')
 
 	cm.connect_to_signal("PropertyChanged", cm_property_changed)

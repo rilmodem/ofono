@@ -10,15 +10,15 @@ if len(sys.argv) == 3:
 	tech = sys.argv[2]
 elif len(sys.argv) == 2:
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-						 'org.ofono.Manager')
-	properties = manager.GetProperties()
-	path = properties["Modems"][0]
+						'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
 	tech = sys.argv[1]
 else:
 	print "%s [PATH] technology" % (sys.argv[0])
 
 print "Setting technology preference for modem %s..." % path
 radiosettings = dbus.Interface(bus.get_object('org.ofono', path),
-					    'org.ofono.RadioSettings')
+						'org.ofono.RadioSettings')
 
 radiosettings.SetProperty("TechnologyPreference", tech);

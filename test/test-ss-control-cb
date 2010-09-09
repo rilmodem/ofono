@@ -22,12 +22,9 @@ if __name__ == "__main__":
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 							'org.ofono.Manager')
 
-	try:
-		modems = manager.GetProperties()['Modems']
-	except dbus.DBusException, e:
-		print "Unable to get the Modems property %s" % e
+	modems = manager.GetModems()
 
-	cb = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+	cb = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
                                                         'org.ofono.CallBarring')
 
         cb.connect_to_signal("PropertyChanged", property_changed)

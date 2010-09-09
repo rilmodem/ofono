@@ -8,8 +8,9 @@ bus = dbus.SystemBus()
 manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 						'org.ofono.Manager')
 
-properties = manager.GetProperties()
-path = properties["Modems"][0]
+modems = manager.GetModems()
+
+path, properties = modems[0]
 
 ussd = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.SupplementaryServices')

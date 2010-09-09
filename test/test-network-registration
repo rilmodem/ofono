@@ -31,9 +31,9 @@ if __name__ == "__main__":
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 							'org.ofono.Manager')
 
-	modems = manager.GetProperties()['Modems']
+	modems = manager.GetModems()
 
-	netreg = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+	netreg = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
 				'org.ofono.NetworkRegistration')
 
 	netreg.connect_to_signal("PropertyChanged", network_property_changed)

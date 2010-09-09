@@ -347,7 +347,6 @@ test_scripts = test/backtrace \
 		test/test-call-barring \
 		test/test-call-forwarding \
 		test/test-call-settings \
-		test/test-manager \
 		test/test-modem \
 		test/test-network-registration \
 		test/test-phonebook \

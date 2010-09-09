@@ -94,6 +94,20 @@ if __name__ == '__main__':
 
 	bus.add_signal_receiver(added,
 					bus_name="org.ofono",
+					signal_name = "ModemAdded",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	bus.add_signal_receiver(removed,
+					bus_name="org.ofono",
+					signal_name = "ModemRemoved",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	bus.add_signal_receiver(added,
+					bus_name="org.ofono",
 					signal_name = "ContextAdded",
 						member_keyword="member",
 						path_keyword="path",

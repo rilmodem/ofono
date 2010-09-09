@@ -54,9 +54,8 @@ if __name__ == "__main__":
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 							'org.ofono.Manager')
 
-	modems = manager.GetProperties()['Modems']
-	modem = modems[0]
-	print modems
+	modems = manager.GetModems()
+	modem = modems[0][0]
 
 	if (len(sys.argv) == 3):
 		modem = sys.argv[1]

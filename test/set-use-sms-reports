@@ -10,9 +10,9 @@ if len(sys.argv) == 3:
 	enabled = sys.argv[2]
 elif len(sys.argv) == 2:
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-						 'org.ofono.Manager')
-	properties = manager.GetProperties()
-	path = properties["Modems"][0]
+						'org.ofono.Manager')
+	modems = manager.getmodems()
+	path = modems[0][0]
 	enabled = sys.argv[1]
 else:
 	print "%s [PATH] topics" % (sys.argv[0])
@@ -20,6 +20,6 @@ else:
 
 print "Setting delivery report use for modem %s..." % path
 sms = dbus.Interface(bus.get_object('org.ofono', path),
-				    'org.ofono.MessageManager')
+					'org.ofono.MessageManager')
 
 sms.SetProperty("UseDeliveryReports", dbus.Boolean(enabled));

@@ -25,12 +25,9 @@ if __name__ == "__main__":
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 							'org.ofono.Manager')
 
-	try:
-		modems = manager.GetProperties()['Modems']
-	except dbus.DBusException, e:
-		print "Unable to get the modem list %s" % e
+	modems = manager.GetModems()
 
-	cf = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+	cf = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
 				'org.ofono.CallForwarding')
 
 	cf.connect_to_signal("PropertyChanged", property_changed)

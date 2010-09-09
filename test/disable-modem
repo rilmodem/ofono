@@ -10,8 +10,8 @@ if len(sys.argv) == 2:
 else:
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 			'org.ofono.Manager')
-	properties = manager.GetProperties()
-	path = properties["Modems"][0]
+	modems = manager.GetModems()
+	path = modems[0][0]
 
 print "Disconnecting modem %s..." % path
 modem = dbus.Interface(bus.get_object('org.ofono', path),
