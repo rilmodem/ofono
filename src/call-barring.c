@@ -580,6 +580,11 @@ static void cb_unregister_ss_controls(struct ofono_call_barring *cb)
 	__ofono_ussd_passwd_unregister(cb->ussd, "353");
 }
 
+gboolean __ofono_call_barring_is_busy(struct ofono_call_barring *cb)
+{
+	return cb->pending ? TRUE : FALSE;
+}
+
 static inline void cb_append_property(struct ofono_call_barring *cb,
 					DBusMessageIter *dict, int start,
 					int end, int cls, const char *property)

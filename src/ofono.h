@@ -163,6 +163,9 @@ gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem,
 void __ofono_atom_free(struct ofono_atom *atom);
 
 #include <ofono/call-barring.h>
+
+gboolean __ofono_call_barring_is_busy(struct ofono_call_barring *cb);
+
 #include <ofono/call-forwarding.h>
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
