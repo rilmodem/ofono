@@ -4684,14 +4684,12 @@ static gboolean build_dataobj_other_address(struct stk_tlv_builder *tlv,
 		ok = TRUE;
 		break;
 	case STK_ADDRESS_IPV4:
-		ok =
-			stk_tlv_builder_append_byte(tlv, addr->type) &&
+		ok = stk_tlv_builder_append_byte(tlv, addr->type) &&
 			stk_tlv_builder_append_bytes(tlv,
 					(const guint8 *) &addr->addr.ipv4, 4);
 		break;
 	case STK_ADDRESS_IPV6:
-		ok =
-			stk_tlv_builder_append_byte(tlv, addr->type) &&
+		ok = stk_tlv_builder_append_byte(tlv, addr->type) &&
 			stk_tlv_builder_append_bytes(tlv, addr->addr.ipv6, 16);
 		break;
 	}
