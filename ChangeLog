@@ -1,3 +1,15 @@
+ver 0.28:
+	Update modem manager D-Bus API.
+	Add support for online feature for ZTE devices.
+	Add support for online feature for Huawei devices.
+	Add support for online feature for Novatel devices.
+	Add support for online feature for Option HSO devices.
+	Add support for online feature for Ericsson MBM devices.
+	Add support for online feature for ST-Ericsson devices.
+	Add support for using 8-bit SMS reference numbers by default.
+	Fix wrong code point in Portuguese alphabet table.
+	Fix issue with EFiidf reads larger than 256 bytes.
+
 ver 0.27:
 	Update network registration D-Bus API.
 	Update voice call manager D-Bus API.
