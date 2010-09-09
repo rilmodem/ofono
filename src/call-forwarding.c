@@ -1092,6 +1092,11 @@ static void cf_unregister_ss_controls(struct ofono_call_forwarding *cf)
 	__ofono_ussd_ssc_unregister(cf->ussd, "004");
 }
 
+gboolean __ofono_call_forwarding_is_busy(struct ofono_call_forwarding *cf)
+{
+	return cf->pending ? TRUE : FALSE;
+}
+
 int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);

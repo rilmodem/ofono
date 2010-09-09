@@ -167,6 +167,9 @@ void __ofono_atom_free(struct ofono_atom *atom);
 gboolean __ofono_call_barring_is_busy(struct ofono_call_barring *cb);
 
 #include <ofono/call-forwarding.h>
+
+gboolean __ofono_call_forwarding_is_busy(struct ofono_call_forwarding *cf);
+
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
 #include <ofono/cbs.h>
