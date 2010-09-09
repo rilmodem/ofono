@@ -491,18 +491,17 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 		goto out;
 
 	fs->fd = TFR(open(path, O_RDWR | O_CREAT | O_TRUNC, SIM_CACHE_MODE));
+	g_free(path);
 
 	if (fs->fd == -1)
-		goto out;
+		return;
 
-	if (TFR(write(fs->fd, fileinfo, SIM_CACHE_HEADER_SIZE)) !=
-			SIM_CACHE_HEADER_SIZE) {
-		TFR(close(fs->fd));
-		fs->fd = -1;
-	}
+	if (TFR(write(fs->fd, fileinfo, SIM_CACHE_HEADER_SIZE)) ==
+			SIM_CACHE_HEADER_SIZE)
+		return;
 
-out:
-	g_free(path);
+	TFR(close(fs->fd));
+	fs->fd = -1;
 }
 
 static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
