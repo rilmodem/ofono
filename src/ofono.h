@@ -93,6 +93,8 @@ void __ofono_plugin_cleanup(void);
 unsigned int __ofono_modem_callid_next(struct ofono_modem *modem);
 void __ofono_modem_callid_hold(struct ofono_modem *modem, int id);
 void __ofono_modem_callid_release(struct ofono_modem *modem, int id);
+void __ofono_modem_append_properties(struct ofono_modem *modem,
+						DBusMessageIter *dict);
 
 struct ofono_atom;
 

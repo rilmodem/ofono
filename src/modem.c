@@ -506,33 +506,19 @@ ofono_bool_t ofono_modem_get_online(struct ofono_modem *modem)
 	return modem->online;
 }
 
-static DBusMessage *modem_get_properties(DBusConnection *conn,
-						DBusMessage *msg, void *data)
+void __ofono_modem_append_properties(struct ofono_modem *modem,
+						DBusMessageIter *dict)
 {
-	struct ofono_modem *modem = data;
-	DBusMessage *reply;
-	DBusMessageIter iter;
-	DBusMessageIter dict;
 	char **interfaces;
 	char **features;
 	int i;
 	GSList *l;
 	struct ofono_atom *devinfo_atom;
 
-	reply = dbus_message_new_method_return(msg);
-	if (!reply)
-		return NULL;
-
-	dbus_message_iter_init_append(reply, &iter);
-
-	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
-					OFONO_PROPERTIES_ARRAY_SIGNATURE,
-					&dict);
-
-	ofono_dbus_dict_append(&dict, "Online", DBUS_TYPE_BOOLEAN,
+	ofono_dbus_dict_append(dict, "Online", DBUS_TYPE_BOOLEAN,
 				&modem->online);
 
-	ofono_dbus_dict_append(&dict, "Powered", DBUS_TYPE_BOOLEAN,
+	ofono_dbus_dict_append(dict, "Powered", DBUS_TYPE_BOOLEAN,
 				&modem->powered);
 
 	devinfo_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_DEVINFO);
@@ -544,21 +530,21 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 		info = __ofono_atom_get_data(devinfo_atom);
 
 		if (info->manufacturer)
-			ofono_dbus_dict_append(&dict, "Manufacturer",
+			ofono_dbus_dict_append(dict, "Manufacturer",
 						DBUS_TYPE_STRING,
 						&info->manufacturer);
 
 		if (info->model)
-			ofono_dbus_dict_append(&dict, "Model", DBUS_TYPE_STRING,
+			ofono_dbus_dict_append(dict, "Model", DBUS_TYPE_STRING,
 						&info->model);
 
 		if (info->revision)
-			ofono_dbus_dict_append(&dict, "Revision",
+			ofono_dbus_dict_append(dict, "Revision",
 						DBUS_TYPE_STRING,
 						&info->revision);
 
 		if (info->serial)
-			ofono_dbus_dict_append(&dict, "Serial",
+			ofono_dbus_dict_append(dict, "Serial",
 						DBUS_TYPE_STRING,
 						&info->serial);
 	}
@@ -566,22 +552,40 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 	interfaces = g_new0(char *, g_slist_length(modem->interface_list) + 1);
 	for (i = 0, l = modem->interface_list; l; l = l->next, i++)
 		interfaces[i] = l->data;
-	ofono_dbus_dict_append_array(&dict, "Interfaces", DBUS_TYPE_STRING,
+	ofono_dbus_dict_append_array(dict, "Interfaces", DBUS_TYPE_STRING,
 					&interfaces);
 	g_free(interfaces);
-
 
 	features = g_new0(char *, g_slist_length(modem->feature_list) + 1);
 	for (i = 0, l = modem->feature_list; l; l = l->next, i++)
 		features[i] = l->data;
-	ofono_dbus_dict_append_array(&dict, "Features", DBUS_TYPE_STRING,
+	ofono_dbus_dict_append_array(dict, "Features", DBUS_TYPE_STRING,
 					&features);
 	g_free(features);
 
 	if (modem->name)
-		ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING,
+		ofono_dbus_dict_append(dict, "Name", DBUS_TYPE_STRING,
 					&modem->name);
+}
 
+static DBusMessage *modem_get_properties(DBusConnection *conn,
+						DBusMessage *msg, void *data)
+{
+	struct ofono_modem *modem = data;
+	DBusMessage *reply;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+
+	reply = dbus_message_new_method_return(msg);
+	if (!reply)
+		return NULL;
+
+	dbus_message_iter_init_append(reply, &iter);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+	__ofono_modem_append_properties(modem, &dict);
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
