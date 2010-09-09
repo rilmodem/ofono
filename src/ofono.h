@@ -172,6 +172,9 @@ gboolean __ofono_call_forwarding_is_busy(struct ofono_call_forwarding *cf);
 
 #include <ofono/call-meter.h>
 #include <ofono/call-settings.h>
+
+gboolean __ofono_call_settings_is_busy(struct ofono_call_settings *cs);
+
 #include <ofono/cbs.h>
 #include <ofono/devinfo.h>
 #include <ofono/phonebook.h>

@@ -778,6 +778,11 @@ static void cs_unregister_ss_controls(struct ofono_call_settings *cs)
 		__ofono_ussd_ssc_unregister(cs->ussd, "77");
 }
 
+gboolean __ofono_call_settings_is_busy(struct ofono_call_settings *cs)
+{
+	return cs->pending ? TRUE : FALSE;
+}
+
 static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs,
 							DBusMessage *msg)
 {
