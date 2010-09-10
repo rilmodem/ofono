@@ -513,8 +513,7 @@ void status_report_assembly_add_fragment(struct status_report_assembly
 					unsigned char mr, time_t expiration,
 					unsigned char total_mrs);
 void status_report_assembly_expire(struct status_report_assembly *assembly,
-					time_t before, GFunc foreach_func,
-					gpointer data);
+					time_t before);
 
 GSList *sms_text_prepare(const char *utf8, guint16 ref,
 				gboolean use_16bit, int *ref_offset,
