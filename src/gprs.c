@@ -47,6 +47,7 @@
 #define SETTINGS_GROUP "Settings"
 #define MAX_CONTEXT_NAME_LENGTH 127
 #define MAX_CONTEXTS 256
+#define SUSPEND_TIMEOUT 8
 
 static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
@@ -64,8 +65,10 @@ struct ofono_gprs {
 	ofono_bool_t driver_attached;
 	ofono_bool_t roaming_allowed;
 	ofono_bool_t powered;
+	ofono_bool_t suspended;
 	int status;
 	int flags;
+	guint suspend_timeout;
 	struct idmap *pid_map;
 	unsigned int last_context_id;
 	struct idmap *cid_map;
@@ -894,6 +897,66 @@ static gboolean context_dbus_unregister(struct pri_context *ctx)
 					OFONO_CONNECTION_CONTEXT_INTERFACE);
 }
 
+static void update_suspended_property(struct ofono_gprs *gprs,
+				ofono_bool_t suspended)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(gprs->atom);
+	dbus_bool_t value = suspended;
+
+	if (gprs->suspend_timeout) {
+		g_source_remove(gprs->suspend_timeout);
+		gprs->suspend_timeout = 0;
+	}
+
+	if (gprs->suspended == suspended)
+		return;
+
+	DBG("%s GPRS service %s", __ofono_atom_get_path(gprs->atom),
+		suspended ? "suspended" : "resumed");
+
+	gprs->suspended = suspended;
+
+	if (gprs->attached)
+		ofono_dbus_signal_property_changed(conn, path,
+					OFONO_CONNECTION_MANAGER_INTERFACE,
+					"Suspended", DBUS_TYPE_BOOLEAN, &value);
+}
+
+static gboolean suspend_timeout(gpointer data)
+{
+       struct ofono_gprs *gprs = data;
+
+       gprs->suspend_timeout = 0;
+       update_suspended_property(gprs, TRUE);
+       return FALSE;
+}
+
+void ofono_gprs_suspend_notify(struct ofono_gprs *gprs, int cause)
+{
+	switch (cause) {
+	case GPRS_SUSPENDED_DETACHED:
+	case GPRS_SUSPENDED_CALL:
+	case GPRS_SUSPENDED_NO_COVERAGE:
+		update_suspended_property(gprs, TRUE);
+		break;
+
+	case GPRS_SUSPENDED_SIGNALLING:
+	case GPRS_SUSPENDED_UNKNOWN_CAUSE:
+		if (gprs->suspend_timeout)
+			g_source_remove(gprs->suspend_timeout);
+		gprs->suspend_timeout = g_timeout_add_seconds(SUSPEND_TIMEOUT,
+							suspend_timeout,
+							gprs);
+		break;
+	}
+}
+
+void ofono_gprs_resume_notify(struct ofono_gprs *gprs)
+{
+	update_suspended_property(gprs, FALSE);
+}
+
 static void gprs_attached_update(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1051,6 +1114,12 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 
 	value = gprs->powered;
 	ofono_dbus_dict_append(&dict, "Powered", DBUS_TYPE_BOOLEAN, &value);
+
+	if (gprs->attached) {
+		value = gprs->suspended;
+		ofono_dbus_dict_append(&dict, "Suspended",
+				DBUS_TYPE_BOOLEAN, &value);
+	}
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -1696,6 +1765,9 @@ static void gprs_remove(struct ofono_atom *atom)
 
 	if (gprs == NULL)
 		return;
+
+	if (gprs->suspend_timeout)
+		g_source_remove(gprs->suspend_timeout);
 
 	if (gprs->pid_map) {
 		idmap_free(gprs->pid_map);

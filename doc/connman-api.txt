@@ -77,6 +77,25 @@ Properties	boolean Attached [readonly]
 			be available, e.g. receiving SMS over packet radio
 			or network initiated PDP activation.
 
+		boolean Suspended [readonly, optional]
+
+			Contains whether the GPRS service is suspended.
+			During suspended state the modem is attached to the
+			GPRS service and all contexts remain established,
+			however, data transfer is not possible.
+
+			The suspended state may be entered if the modem is
+			temporarily out of network coverage. GPRS class B
+			modems will suspend GPRS whenever a voice call is
+			active at the same time. GPRS may also be suspended
+			if the network does not support simultaneous packet
+			data and voice. Various signalling procedures may
+			also cause GPRS to be briefly suspended.
+
+			As the suspension may be brief, clients should wait
+			for an appropriate time for GPRS service to resume
+			before taking corrective action.
+
 		boolean RoamingAllowed [readwrite]
 
 			Contains whether data roaming is allowed.  In the off

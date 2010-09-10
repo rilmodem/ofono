@@ -47,8 +47,18 @@ struct ofono_gprs_driver {
 					ofono_gprs_status_cb_t cb, void *data);
 };
 
+enum gprs_suspend_cause {
+	GPRS_SUSPENDED_DETACHED,
+	GPRS_SUSPENDED_SIGNALLING,
+	GPRS_SUSPENDED_CALL,
+	GPRS_SUSPENDED_NO_COVERAGE,
+	GPRS_SUSPENDED_UNKNOWN_CAUSE,
+};
+
 void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status);
 void ofono_gprs_detached_notify(struct ofono_gprs *gprs);
+void ofono_gprs_suspend_notify(struct ofono_gprs *gprs, int cause);
+void ofono_gprs_resume_notify(struct ofono_gprs *gprs);
 
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d);
 void ofono_gprs_driver_unregister(const struct ofono_gprs_driver *d);
