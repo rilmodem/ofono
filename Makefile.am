@@ -365,7 +365,9 @@ test_scripts = test/backtrace \
 		test/set-cbs-topics \
 		test/enable-cbs \
 		test/lock-pin \
-		test/unlock-pin
+		test/unlock-pin \
+		test/enable-gprs \
+		test/disable-gprs
 
 if TEST
 testdir = $(pkglibdir)/test
