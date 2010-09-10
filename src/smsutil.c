@@ -46,7 +46,7 @@
 #define SMS_BACKUP_PATH_FILE SMS_BACKUP_PATH_DIR "/%03i"
 
 #define SMS_SR_BACKUP_PATH STORAGEDIR "/%s/sms_sr"
-#define SMS_SR_BACKUP_PATH_FILE SMS_SR_BACKUP_PATH "/%s-%i"
+#define SMS_SR_BACKUP_PATH_FILE SMS_SR_BACKUP_PATH "/%s-%u"
 
 #define SMS_ADDR_FMT "%24[0-9A-F]"
 
@@ -2761,7 +2761,7 @@ static gboolean sr_assembly_add_fragment_backup(const char *imsi,
 	if (sms_address_to_hex_string(addr, straddr) == FALSE)
 		return FALSE;
 
-	/* storagedir/%s/sms_sr/%s-%i */
+	/* storagedir/%s/sms_sr/%s-%u */
 	if (write_file((unsigned char *) node, len, SMS_BACKUP_MODE,
 			SMS_SR_BACKUP_PATH_FILE, imsi,
 			straddr, msg_id) != len)
