@@ -338,7 +338,7 @@ static void dial_request_user_cancel(struct ofono_voicecall *vc,
 		return;
 
 	if (!call || call == vc->dial_req->call)
-		dial_request_finish(vc->dial_req->call->vc, TRUE);
+		dial_request_finish(vc, TRUE);
 }
 
 static DBusMessage *voicecall_hangup(DBusConnection *conn,
