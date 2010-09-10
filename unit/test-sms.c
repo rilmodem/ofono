@@ -1301,6 +1301,13 @@ static void test_sr_assembly()
 	sms_address_from_string(&addr, "+4915259911630");
 
 	sra = status_report_assembly_new(NULL);
+
+	status_report_assembly_add_fragment(sra, 42, &addr, 4, time(NULL), 2);
+	status_report_assembly_add_fragment(sra, 42, &addr, 5, time(NULL), 2);
+
+	status_report_assembly_expire(sra, time(NULL) + 40);
+	g_assert(g_hash_table_size(sra->assembly_table) == 0);
+
 	status_report_assembly_add_fragment(sra, 42, &addr, 4, time(NULL), 2);
 	status_report_assembly_add_fragment(sra, 42, &addr, 5, time(NULL), 2);
 
