@@ -233,7 +233,8 @@ GPRS
   Complexity: C2
 
 - Add support for GPRS suspended event.  Expose this to the UI by adding a new
-  'Suspended' property on the DataConnectionManager D-Bus interface.
+  'Suspended' property on the ConnectionManager D-Bus interface.
+  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
 
   Priority: High
   Complexity: C1
