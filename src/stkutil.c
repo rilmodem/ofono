@@ -4170,6 +4170,23 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 	return stk_tlv_builder_close_container(tlv);
 }
 
+/* Defined in TS 102.223 Section 8.15 - USSD specific case*/
+static gboolean build_dataobj_ussd_text(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const struct stk_ussd_text *text = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_TEXT;
+
+	stk_tlv_builder_open_container(tlv, cr, tag, TRUE);
+
+	if (text->len > 0) {
+		stk_tlv_builder_append_byte(tlv, text->dcs);
+		stk_tlv_builder_append_bytes(tlv, text->text, text->len);
+	}
+
+	return stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 131.111 Section 8.17 */
 static gboolean build_dataobj_ussd_string(struct stk_tlv_builder *tlv,
 					const void *data, gboolean cr)
@@ -5456,6 +5473,13 @@ const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 	case STK_COMMAND_TYPE_SEND_DTMF:
 	case STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION:
 	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
+		break;
+	case STK_COMMAND_TYPE_SEND_USSD:
+		ok = build_dataobj(&builder,
+					build_dataobj_ussd_text,
+					DATAOBJ_FLAG_CR,
+					&response->send_ussd.text,
+					NULL);
 		break;
 	default:
 		return NULL;
