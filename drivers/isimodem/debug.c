@@ -979,6 +979,31 @@ const char *gpds_isi_cause_name(enum gpds_isi_cause value)
 	return "GPDS_<UNKNOWN>";
 }
 
+const char *gpds_transfer_status_name(enum gpds_transfer_status value)
+{
+	switch (value) {
+		_(GPDS_TRANSFER_NOT_AVAIL);
+		_(GPDS_TRANSFER_AVAIL);
+	}
+	return "GPDS_<UNKNOWN>";
+}
+
+const char *gpds_transfer_cause_name(enum gpds_transfer_cause value)
+{
+	switch (value) {
+		_(GPDS_TRANSFER_CAUSE_ATTACHED);
+		_(GPDS_TRANSFER_CAUSE_DETACHED);
+		_(GPDS_TRANSFER_CAUSE_RESUMED);
+		_(GPDS_TRANSFER_CAUSE_SUSPENDED_NO_COVERAGE);
+		_(GPDS_TRANSFER_CAUSE_SUSPENDED_CALL_SMS);
+		_(GPDS_TRANSFER_CAUSE_SUSPENDED_CALL);
+		_(GPDS_TRANSFER_CAUSE_SUSPENDED_RAU);
+		_(GPDS_TRANSFER_CAUSE_SUSPENDED_LU);
+		_(GPDS_TRANSFER_CAUSE_DSAC_RESTRICTION);
+	}
+	return "GPDS_<UNKNOWN>";
+}
+
 #undef _
 
 static void hex_dump(const char *name, const uint8_t m[], size_t len)
