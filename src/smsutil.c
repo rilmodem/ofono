@@ -2771,7 +2771,6 @@ static gboolean sr_assembly_add_fragment_backup(const char *imsi,
 }
 
 static gboolean sr_assembly_remove_fragment_backup(const char *imsi,
-					const struct id_table_node *node,
 					const struct sms_address *addr,
 					unsigned int msg_id)
 {
@@ -2901,7 +2900,7 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 	if (out_id)
 		*out_id = msg_id;
 
-	sr_assembly_remove_fragment_backup(assembly->imsi, node,
+	sr_assembly_remove_fragment_backup(assembly->imsi,
 					&status_report->status_report.raddr,
 					msg_id);
 
@@ -2997,7 +2996,6 @@ void status_report_assembly_expire(struct status_report_assembly *assembly,
 
 				sr_assembly_remove_fragment_backup(
 								assembly->imsi,
-								node,
 								&addr,
 								msg_id);
 			}
