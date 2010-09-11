@@ -93,6 +93,8 @@ static void system_bus_disconnected(DBusConnection *conn, void *user_data)
 }
 
 static gchar *option_debug = NULL;
+static gchar *option_plugin = NULL;
+static gchar *option_noplugin = NULL;
 static gboolean option_detach = TRUE;
 static gboolean option_version = FALSE;
 
@@ -111,6 +113,10 @@ static GOptionEntry options[] = {
 	{ "debug", 'd', G_OPTION_FLAG_OPTIONAL_ARG,
 				G_OPTION_ARG_CALLBACK, parse_debug,
 				"Specify debug options to enable", "DEBUG" },
+	{ "plugin", 'p', 0, G_OPTION_ARG_STRING, &option_plugin,
+				"Specify plugins to load", "NAME" },
+	{ "noplugin", 'P', 0, G_OPTION_ARG_STRING, &option_noplugin,
+				"Specify plugins not to load", "NAME" },
 	{ "nodetach", 'n', G_OPTION_FLAG_REVERSE,
 				G_OPTION_ARG_NONE, &option_detach,
 				"Don't run as daemon in background" },
@@ -222,7 +228,10 @@ int main(int argc, char **argv)
 
 	__ofono_manager_init();
 
-	__ofono_plugin_init(NULL, NULL);
+	__ofono_plugin_init(option_plugin, option_noplugin);
+
+	g_free(option_plugin);
+	g_free(option_noplugin);
 
 	g_main_loop_run(event_loop);
 
