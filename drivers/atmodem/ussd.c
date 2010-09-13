@@ -44,11 +44,24 @@
 
 static const char *cusd_prefix[] = { "+CUSD:", NULL };
 static const char *none_prefix[] = { NULL };
+static const char *cscs_prefix[] = { "+CSCS:", NULL };
 
 struct ussd_data {
 	GAtChat *chat;
 	unsigned int vendor;
+	enum at_util_charset charset;
 };
+
+static void read_charset_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ussd_data *data = user_data;
+
+	if (!ok)
+		return;
+
+	at_util_parse_cscs_query(result, &data->charset);
+}
 
 static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 {
@@ -246,6 +259,9 @@ static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 	data->vendor = vendor;
 
 	ofono_ussd_set_data(ussd, data);
+
+	g_at_chat_send(chat, "AT+CSCS?", cscs_prefix, read_charset_cb, data,
+			NULL);
 
 	g_at_chat_send(chat, "AT+CUSD=1", NULL, at_ussd_register, ussd, NULL);
 
