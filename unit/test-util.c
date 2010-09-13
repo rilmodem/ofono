@@ -38,6 +38,10 @@ const unsigned char invalid_gsm_extended_len[] = {
 	0x1b, 0x28, 0x1b
 };
 
+const unsigned char invalid_ucs2[] = {
+	0x03, 0x93, 0x00, 0x00
+};
+
 unsigned short gsm_to_unicode_map[] =
 {
 0x00,	0x0040,
@@ -342,6 +346,7 @@ static void test_invalid()
 	long nwritten;
 	long nread;
 	char *res;
+	unsigned char *gsm;
 
 	res = convert_gsm_to_utf8(invalid_gsm_extended, 0, &nread, &nwritten,
 					0);
@@ -362,6 +367,19 @@ static void test_invalid()
 					&nread, &nwritten, 0);
 	g_assert(res == NULL);
 	g_assert(nread == 3);
+
+	gsm = convert_ucs2_to_gsm(invalid_ucs2,
+					sizeof(invalid_ucs2),
+					&nread, &nwritten, 0);
+	g_assert(gsm == NULL);
+	g_assert(nread == 1);
+
+	nread = 0;
+	gsm = convert_ucs2_to_gsm(invalid_ucs2,
+					sizeof(invalid_ucs2) - 1,
+					&nread, &nwritten, 0);
+	g_assert(gsm == NULL);
+	g_assert(nread == 0);
 }
 
 static void test_valid()
@@ -905,6 +923,67 @@ static void test_sim()
 	g_assert(utf8 == NULL);
 }
 
+static void test_unicode_to_gsm()
+{
+	long nwritten;
+	long nread;
+	int i;
+	unsigned char *res;
+	char *utf8;
+	unsigned char buf[2];
+	unsigned char *back;
+	gunichar2 verify;
+
+	static int map_size =
+		sizeof(gsm_to_unicode_map) / sizeof(unsigned short) / 2;
+
+	for (i = 0; i < map_size; i++) {
+		unsigned short c = gsm_to_unicode_map[i*2+1];
+
+		buf[0] = c >> 8;
+		buf[1] = c & 0xff;
+
+		res = convert_ucs2_to_gsm(buf, 2, &nread, &nwritten, 0);
+		g_assert(res);
+
+		if (g_test_verbose())
+			g_print("nread:%ld, nwritten:%ld, %s\n",
+				nread, nwritten, res);
+
+		if (res[0] == 0x1B)
+			g_assert(nwritten == 2);
+		else
+			g_assert(nwritten == 1);
+
+		utf8 = g_convert((const gchar *) buf, 2,
+				"UTF-8", "UCS-2BE",
+				NULL, NULL, NULL);
+		g_assert(utf8);
+
+		back = convert_utf8_to_gsm(utf8, strlen(utf8), &nread,
+						&nwritten, 0);
+		g_assert(back);
+
+		if (back[0] == 0x1B) {
+			g_assert(nwritten == 2);
+			verify = back[0] << 8 | back[1];
+		} else {
+			g_assert(nwritten == 1);
+			verify = back[0];
+		}
+
+		if (g_test_verbose())
+			g_print("nwritten:%ld, verify: 0x%x\n",
+				nwritten, verify);
+
+		g_assert(verify == gsm_to_unicode_map[i*2]);
+
+		g_free(res);
+		g_free(back);
+		g_free(utf8);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -918,6 +997,7 @@ int main(int argc, char **argv)
 	g_test_add_func("/testutil/SMS Handling", test_sms_handling);
 	g_test_add_func("/testutil/Offset Handling", test_offset_handling);
 	g_test_add_func("/testutil/SIM conversions", test_sim);
+	g_test_add_func("/testutil/Valid Unicode to GSM Conversion", test_unicode_to_gsm);
 
 	return g_test_run();
 }
