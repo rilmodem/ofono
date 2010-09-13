@@ -544,3 +544,4 @@ GSList *cbs_optimize_ranges(GSList *ranges);
 gboolean cbs_topic_in_range(unsigned int topic, GSList *ranges);
 
 char *ussd_decode(int dcs, int len, const unsigned char *data);
+gboolean ussd_encode(const char *str, long *items_written, unsigned char *pdu);

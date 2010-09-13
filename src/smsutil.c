@@ -4179,3 +4179,32 @@ char *ussd_decode(int dcs, int len, const unsigned char *data)
 
 	return utf8;
 }
+
+gboolean ussd_encode(const char *str, long *items_written, unsigned char *pdu)
+{
+	unsigned char *converted = NULL;
+	long written;
+	long num_packed;
+
+	if (!pdu)
+		return FALSE;
+
+	converted = convert_utf8_to_gsm(str, -1, NULL, &written, 0);
+	if (!converted || written > 182)
+		goto error;
+
+	pack_7bit_own_buf(converted, written, 0, TRUE, &num_packed, 0, pdu);
+
+	g_free(converted);
+
+	if (num_packed < 1)
+		return FALSE;
+
+	if (items_written)
+		*items_written = num_packed;
+
+	return TRUE;
+error:
+	g_free(converted);
+	return FALSE;
+}
