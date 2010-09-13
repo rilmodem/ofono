@@ -80,3 +80,13 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length);
 
 unsigned char *utf8_to_sim_string(const char *utf,
 					int max_length, int *out_length);
+
+unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text, long len,
+					long *items_read, long *items_written,
+					unsigned char terminator,
+					enum gsm_dialect locking_lang,
+					enum gsm_dialect single_lang);
+
+unsigned char *convert_ucs2_to_gsm(const unsigned char *text, long len,
+				long *items_read, long *items_written,
+				unsigned char terminator);

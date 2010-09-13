@@ -1261,3 +1261,111 @@ unsigned char *utf8_to_sim_string(const char *utf,
 
 	return result;
 }
+
+/*!
+ * Converts UCS2 encoded text to GSM alphabet. The result is unpacked,
+ * with the 7th bit always 0. If terminator is not 0, a terminator character
+ * is appended to the result.
+ *
+ * Returns the encoded data or NULL if the data could not be encoded. The
+ * data must be freed by the caller. If items_read is not NULL, it contains
+ * the actual number of bytes read. If items_written is not NULL, contains
+ * the number of bytes written.
+ */
+unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text,
+					long len, long *items_read,
+					long *items_written,
+					unsigned char terminator,
+					enum gsm_dialect locking_lang,
+					enum gsm_dialect single_lang)
+{
+	long nchars = 0;
+	const unsigned char *in;
+	unsigned char *out;
+	unsigned char *res = NULL;
+	long res_len;
+	long i;
+
+	if (locking_lang >= GSM_DIALECT_INVALID)
+		return NULL;
+
+	if (single_lang >= GSM_DIALECT_INVALID)
+		return NULL;
+
+	if (len < 1 || len % 2)
+		return NULL;
+
+	in = text;
+	res_len = 0;
+
+	for (i = 0; i < len; i+=2) {
+		gunichar c = (in[i] << 8) | in[i+1];
+		unsigned short converted = GUND;
+
+		if (c > 0xffff)
+			goto err_out;
+
+		converted = unicode_locking_shift_lookup(c, locking_lang);
+
+		if (converted == GUND)
+			converted = unicode_single_shift_lookup(c, single_lang);
+
+		if (converted == GUND)
+			goto err_out;
+
+		if (converted & 0x1b00)
+			res_len += 2;
+		else
+			res_len += 1;
+
+		nchars += 1;
+	}
+
+	res = g_try_malloc(res_len + (terminator ? 1 : 0));
+	if (!res)
+		goto err_out;
+
+	in = text;
+	out = res;
+
+	for (i = 0; i < len; i+=2) {
+		gunichar c = (in[i] << 8) | in[i+1];
+		unsigned short converted = GUND;
+
+		converted = unicode_locking_shift_lookup(c, locking_lang);
+
+		if (converted == GUND)
+			converted = unicode_single_shift_lookup(c, single_lang);
+
+		if (converted & 0x1b00) {
+			*out = 0x1b;
+			++out;
+		}
+
+		*out = converted;
+		++out;
+	}
+
+	if (terminator)
+		*out = terminator;
+
+	if (items_written)
+		*items_written = out - res;
+
+err_out:
+	if (items_read)
+		*items_read = nchars;
+
+	return res;
+}
+
+unsigned char *convert_ucs2_to_gsm(const unsigned char *text, long len,
+				long *items_read, long *items_written,
+				unsigned char terminator)
+{
+	return convert_ucs2_to_gsm_with_lang(text, len, items_read,
+						items_written,
+						terminator,
+						GSM_DIALECT_DEFAULT,
+						GSM_DIALECT_DEFAULT);
+}
