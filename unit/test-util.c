@@ -430,6 +430,7 @@ static void test_valid()
 		g_assert(back);
 
 		g_assert(nwritten == size);
+
 		if (c & 0x1b00) {
 			g_assert(back[0] == 0x1b);
 			g_assert(back[1] == (c & 0x7f));
@@ -470,7 +471,8 @@ static void test_valid_turkish()
 			buf[0] = c & 0x7f;
 		}
 
-		res = convert_gsm_to_utf8_with_lang(buf, size, &nread, &nwritten, 0, 1, 1);
+		res = convert_gsm_to_utf8_with_lang(buf, size, &nread,
+							&nwritten, 0, 1, 1);
 		g_assert(res);
 
 		if (g_test_verbose())
@@ -486,11 +488,13 @@ static void test_valid_turkish()
 
 		g_assert(nwritten == UTF8_LENGTH(verify[0]));
 
-		back = convert_utf8_to_gsm_with_lang(res, -1, &nread, &nwritten, 0, 1, 1);
+		back = convert_utf8_to_gsm_with_lang(res, -1, &nread,
+							&nwritten, 0, 1, 1);
 
 		g_assert(back);
 
 		g_assert(nwritten == size);
+
 		if (c & 0x1b00) {
 			g_assert(back[0] == 0x1b);
 			g_assert(back[1] == (c & 0x7f));
@@ -507,7 +511,8 @@ static void test_valid_turkish()
 static const char hex_packed[] = "493A283D0795C3F33C88FE06C9CB6132885EC6D34"
 					"1EDF27C1E3E97E7207B3A0C0A5241E377BB1D"
 					"7693E72E";
-static const char expected[] = "It is easy to read text messages via AT commands.";
+static const char expected[] = "It is easy to read text messages via AT "
+				"commands.";
 static int reported_text_size = 49;
 
 static void test_decode_encode()
@@ -674,9 +679,11 @@ static void test_pack_size()
 static void test_cr_handling()
 {
 	unsigned char c7[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g' };
-	unsigned char c7_expected[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', '\r' };
+	unsigned char c7_expected[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+					'\r' };
 	unsigned char c8[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', '\r' };
-	unsigned char c8_expected[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', '\r', '\r' };
+	unsigned char c8_expected[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+					'\r', '\r' };
 
 	unsigned char *packed;
 	unsigned char *unpacked;
@@ -990,14 +997,16 @@ int main(int argc, char **argv)
 
 	g_test_add_func("/testutil/Invalid Conversions", test_invalid);
 	g_test_add_func("/testutil/Valid Conversions", test_valid);
-	g_test_add_func("/testutil/Valid Turkish National Variant Conversions", test_valid_turkish);
+	g_test_add_func("/testutil/Valid Turkish National Variant Conversions",
+			test_valid_turkish);
 	g_test_add_func("/testutil/Decode Encode", test_decode_encode);
 	g_test_add_func("/testutil/Pack Size", test_pack_size);
 	g_test_add_func("/testutil/CBS CR Handling", test_cr_handling);
 	g_test_add_func("/testutil/SMS Handling", test_sms_handling);
 	g_test_add_func("/testutil/Offset Handling", test_offset_handling);
 	g_test_add_func("/testutil/SIM conversions", test_sim);
-	g_test_add_func("/testutil/Valid Unicode to GSM Conversion", test_unicode_to_gsm);
+	g_test_add_func("/testutil/Valid Unicode to GSM Conversion",
+			test_unicode_to_gsm);
 
 	return g_test_run();
 }
