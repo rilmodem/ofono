@@ -511,6 +511,12 @@ Sim Toolkit
   Complexity: C2
   Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
 
+- Support Language Notification proactive command.
+
+  Priority: Medium
+  Complexity: C1
+  Owner: Jeevaka Badrappan <jeevaka.badrappan@elektrobit.com>
+
 
 Emergency Calls
 ===============
