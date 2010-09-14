@@ -372,7 +372,7 @@ static void test_invalid()
 					sizeof(invalid_ucs2),
 					&nread, &nwritten, 0);
 	g_assert(gsm == NULL);
-	g_assert(nread == 1);
+	g_assert(nread == 2);
 
 	nread = 0;
 	gsm = convert_ucs2_to_gsm(invalid_ucs2,
