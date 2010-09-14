@@ -562,7 +562,7 @@ static void hfp_transfer(struct ofono_voicecall *vc,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	/* Transfer can puts held & active calls together and disconnects
-	 * from both.  However, some networks support transfering of
+	 * from both.  However, some networks support transferring of
 	 * dialing/ringing calls as well.
 	 */
 	unsigned int transfer = 0x1 | 0x2 | 0x4 | 0x8;

@@ -340,7 +340,7 @@ static void ste_transfer(struct ofono_voicecall *vc,
 	unsigned int transfer = 0x1 | 0x2;
 
 	/* Transfer can puts held & active calls together and disconnects
-	 * from both.  However, some networks support transfering of
+	 * from both.  However, some networks support transferring of
 	 * dialing/ringing calls as well.
 	 */
 	transfer |= 0x4 | 0x8;
