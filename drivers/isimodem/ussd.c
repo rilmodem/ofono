@@ -74,24 +74,14 @@ static void ussd_parse(struct ofono_ussd *ussd, const void *restrict data,
 {
 	const unsigned char *msg = data;
 	int status = OFONO_USSD_STATUS_NOT_SUPPORTED;
-	char *converted = NULL;
 
 	if (!msg || len < 4)
-		goto out;
+		ofono_ussd_notify(ussd, status, 0, NULL, 0);
 
 	status = isi_type_to_status(msg[2]);
 
 	if (msg[3] == 0 || (size_t)(msg[3] + 4) > len)
-		goto out;
-
-	converted = ussd_decode(msg[1], msg[3], msg + 4);
-
-	if (converted)
-		status = OFONO_USSD_STATUS_NOTIFY;
-
-out:
-	ofono_ussd_notify(ussd, status, converted);
-	g_free(converted);
+		ofono_ussd_notify(ussd, status, msg[1], msg + 4, msg[3]);
 }
 
 
@@ -129,7 +119,7 @@ error:
 }
 
 static GIsiRequest *ussd_send(GIsiClient *client,
-				uint8_t *str, size_t len,
+				int dcs, uint8_t *str, size_t len,
 				void *data, GDestroyNotify notify)
 {
 	const uint8_t msg[] = {
@@ -138,7 +128,7 @@ static GIsiRequest *ussd_send(GIsiClient *client,
 		0x01,		/* subblock count */
 		SS_GSM_USSD_STRING,
 		4 + len + 3,	/* subblock length */
-		0x0f,		/* DCS */
+		dcs,		/* DCS */
 		len,		/* string length */
 		/* USSD string goes here */
 	};
@@ -152,33 +142,17 @@ static GIsiRequest *ussd_send(GIsiClient *client,
 				ussd_send_resp_cb, data, notify);
 }
 
-static void isi_request(struct ofono_ussd *ussd, const char *str,
-				ofono_ussd_cb_t cb, void *data)
+static void isi_request(struct ofono_ussd *ussd, int dcs,
+			const unsigned char *pdu, int len,
+			ofono_ussd_cb_t cb, void *data)
 {
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct isi_cb_data *cbd = isi_cb_data_new(ussd, cb, data);
-	unsigned char buf[256];
-	unsigned char *packed = NULL;
-	unsigned char *converted = NULL;
-	long num_packed;
-	long written;
 
 	if (!cbd)
 		goto error;
 
-	converted = convert_utf8_to_gsm(str, strlen(str), NULL, &written, 0);
-	if (!converted)
-		goto error;
-
-	packed = pack_7bit_own_buf(converted, written, 0, TRUE,
-					&num_packed, 0, buf);
-
-	g_free(converted);
-
-	if (written > SS_MAX_USSD_LENGTH)
-		goto error;
-
-	if (ussd_send(ud->client, packed, num_packed, cbd, g_free))
+	if (ussd_send(ud->client, dcs, (guint8 *) pdu, len, cbd, g_free))
 		return;
 
 error:

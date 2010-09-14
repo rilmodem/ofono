@@ -45,13 +45,15 @@ struct ofono_ussd_driver {
 	const char *name;
 	int (*probe)(struct ofono_ussd *ussd, unsigned int vendor, void *data);
 	void (*remove)(struct ofono_ussd *ussd);
-	void (*request)(struct ofono_ussd *ussd, const char *str,
-				ofono_ussd_cb_t, void *data);
+	void (*request)(struct ofono_ussd *ussd, int dcs,
+			const unsigned char *pdu, int len,
+			ofono_ussd_cb_t, void *data);
 	void (*cancel)(struct ofono_ussd *ussd,
 				ofono_ussd_cb_t cb, void *data);
 };
 
-void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str);
+void ofono_ussd_notify(struct ofono_ussd *ussd, int status, int dcs,
+			const unsigned char *data, int data_len);
 
 int ofono_ussd_driver_register(const struct ofono_ussd_driver *d);
 void ofono_ussd_driver_unregister(const struct ofono_ussd_driver *d);

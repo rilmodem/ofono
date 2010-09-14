@@ -34,8 +34,11 @@
 #include "ofono.h"
 
 #include "common.h"
+#include "smsutil.h"
+#include "util.h"
 
 #define SUPPLEMENTARY_SERVICES_INTERFACE "org.ofono.SupplementaryServices"
+#define MAX_USSD_LENGTH 160
 
 static GSList *g_drivers = NULL;
 
@@ -317,10 +320,13 @@ static void ussd_change_state(struct ofono_ussd *ussd, int state)
 			"State", DBUS_TYPE_STRING, &value);
 }
 
-void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
+void ofono_ussd_notify(struct ofono_ussd *ussd, int status, int dcs,
+			const unsigned char *data, int data_len)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *ussdstr = "USSD";
+	char *utf8_str = NULL;
+	const char *str;
 	const char sig[] = { DBUS_TYPE_STRING, 0 };
 	DBusMessage *reply;
 	DBusMessageIter iter;
@@ -345,6 +351,11 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 		reply = __ofono_error_timed_out(ussd->pending);
 		goto out;
 	}
+
+	if (data && data_len > 0)
+		utf8_str = ussd_decode(dcs, data_len, data);
+
+	str = utf8_str;
 
 	/* TODO: Rework this in the Agent framework */
 	if (ussd->state == USSD_STATE_ACTIVE) {
@@ -406,12 +417,12 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, const char *str)
 				DBUS_TYPE_STRING, &str, DBUS_TYPE_INVALID);
 
 		ussd_change_state(ussd, new_state);
-		return;
+		goto free;
 	} else {
 		ofono_error("Received an unsolicited USSD but can't handle.");
 		DBG("USSD is: status: %d, %s", status, str);
 
-		return;
+		goto free;
 	}
 
 out:
@@ -419,6 +430,9 @@ out:
 
 	dbus_message_unref(ussd->pending);
 	ussd->pending = NULL;
+
+free:
+	g_free(utf8_str);
 }
 
 static void ussd_callback(const struct ofono_error *error, void *data)
@@ -447,6 +461,9 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 {
 	struct ofono_ussd *ussd = data;
 	const char *str;
+	int dcs = 0x0f;
+	unsigned char buf[160];
+	long num_packed;
 
 	if (ussd->pending)
 		return __ofono_error_busy(msg);
@@ -469,14 +486,17 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 	if (!valid_ussd_string(str))
 		return __ofono_error_invalid_format(msg);
 
-	DBG("OK, running USSD request");
+	if (!ussd_encode(str, &num_packed, buf))
+		return __ofono_error_invalid_format(msg);
 
 	if (!ussd->driver->request)
 		return __ofono_error_not_implemented(msg);
 
+	DBG("OK, running USSD request");
+
 	ussd->pending = dbus_message_ref(msg);
 
-	ussd->driver->request(ussd, str, ussd_callback, ussd);
+	ussd->driver->request(ussd, dcs, buf, num_packed, ussd_callback, ussd);
 
 	return NULL;
 }
@@ -507,6 +527,9 @@ static DBusMessage *ussd_respond(DBusConnection *conn, DBusMessage *msg,
 {
 	struct ofono_ussd *ussd = data;
 	const char *str;
+	int dcs = 0x0f;
+	unsigned char buf[160];
+	long num_packed;
 
 	if (ussd->pending)
 		return __ofono_error_busy(msg);
@@ -521,12 +544,16 @@ static DBusMessage *ussd_respond(DBusConnection *conn, DBusMessage *msg,
 	if (strlen(str) == 0)
 		return __ofono_error_invalid_format(msg);
 
+	if (!ussd_encode(str, &num_packed, buf))
+		return __ofono_error_invalid_format(msg);
+
 	if (!ussd->driver->request)
 		return __ofono_error_not_implemented(msg);
 
 	ussd->pending = dbus_message_ref(msg);
 
-	ussd->driver->request(ussd, str, ussd_response_callback, ussd);
+	ussd->driver->request(ussd, dcs, buf, num_packed, ussd_response_callback,
+				ussd);
 
 	return NULL;
 }

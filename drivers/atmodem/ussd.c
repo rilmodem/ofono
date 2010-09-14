@@ -65,15 +65,17 @@ static void read_charset_cb(gboolean ok, GAtResult *result,
 
 static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 {
+	struct ussd_data *data = ofono_ussd_get_data(ussd);
 	GAtResultIter iter;
 	int status;
 	int dcs;
-	const char *content;
-	char *converted = NULL;
-	gboolean udhi;
+	const char *content = NULL;
 	enum sms_charset charset;
-	gboolean compressed;
-	gboolean iso639;
+	unsigned char msg[160];
+	const unsigned char *msg_ptr = NULL;
+	unsigned char *converted = NULL;
+	long written;
+	long msg_len = 0;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -86,34 +88,50 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 	if (!g_at_result_iter_next_string(&iter, &content))
 		goto out;
 
-	if (g_at_result_iter_next_number(&iter, &dcs)) {
-		if (!cbs_dcs_decode(dcs, &udhi, NULL, &charset,
-					&compressed, NULL, &iso639))
-			goto out;
+	if (!g_at_result_iter_next_number(&iter, &dcs))
+		dcs = 0;
 
-		if (udhi || compressed || iso639)
-			goto out;
-	} else
-		charset = SMS_CHARSET_7BIT;
-
-	if (charset == SMS_CHARSET_7BIT)
-		converted = convert_gsm_to_utf8((const guint8 *) content,
-						strlen(content), NULL, NULL, 0);
-
-	else if (charset == SMS_CHARSET_8BIT) {
-		/* TODO: Figure out what to do with 8 bit data */
-		ofono_error("8-bit coded USSD response received");
-		status = 4; /* Not supported */
-	} else {
-		/* No other encoding is mentioned in TS27007 7.15 */
+	if (!cbs_dcs_decode(dcs, NULL, NULL, &charset, NULL, NULL, NULL)) {
 		ofono_error("Unsupported USSD data coding scheme (%02x)", dcs);
 		status = 4; /* Not supported */
+		goto out;
+	}
+
+	switch (charset) {
+	case SMS_CHARSET_7BIT:
+		if (data->charset == AT_UTIL_CHARSET_GSM)
+			msg_ptr = pack_7bit_own_buf((const guint8 *) content,
+					strlen(content), 0, TRUE, &msg_len, 0, msg);
+		else if (data->charset == AT_UTIL_CHARSET_UTF8)
+			ussd_encode(content, &msg_len, msg);
+		else if (data->charset == AT_UTIL_CHARSET_UCS2) {
+			msg_ptr = decode_hex_own_buf(content, -1, &msg_len, 0, msg);
+
+			converted = convert_ucs2_to_gsm(msg_ptr, msg_len, NULL,
+							&written, 0);
+			if (!converted) {
+				msg_ptr = NULL;
+				msg_len = 0;
+				goto out;
+			}
+
+			msg_ptr = pack_7bit_own_buf(converted,
+						written, 0, TRUE,
+						&msg_len, 0, msg);
+
+			g_free(converted);
+		}
+		break;
+	case SMS_CHARSET_8BIT:
+		msg_ptr = decode_hex_own_buf(content, -1, &msg_len, 0, msg);
+		break;
+	case SMS_CHARSET_UCS2:
+		msg_ptr = decode_hex_own_buf(content, -1, &msg_len, 0, msg);
+		break;
 	}
 
 out:
-	ofono_ussd_notify(ussd, status, converted);
-
-	g_free(converted);
+	ofono_ussd_notify(ussd, status, dcs, msg_ptr, msg_len);
 }
 
 static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -130,39 +148,45 @@ static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cusd_parse(result, ussd);
 }
 
-static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
+static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
+				const unsigned char *pdu, int len,
 				ofono_ussd_cb_t cb, void *user_data)
 {
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	unsigned char *converted = NULL;
-	int dcs;
-	int max_len;
-	long written;
 	char buf[256];
+	unsigned char unpacked_buf[182];
+	char coded_buf[160];
+	char *converted;
+	long written;
+	enum sms_charset charset;
 
 	if (!cbd)
 		goto error;
 
 	cbd->user = ussd;
 
-	converted = convert_utf8_to_gsm(str, strlen(str), NULL, &written, 0);
-
-	if (!converted)
+	if (!cbs_dcs_decode(dcs, NULL, NULL, &charset,
+					NULL, NULL, NULL))
 		goto error;
-	else {
-		dcs = 15;
-		max_len = 182;
+
+	if (charset == SMS_CHARSET_7BIT) {
+		unpack_7bit_own_buf(pdu, len, 0, TRUE, sizeof(unpacked_buf),
+					&written, 0, unpacked_buf);
+
+		if (written < 1)
+			goto error;
+
+		snprintf(buf, sizeof(buf), "AT+CUSD=1,\"%.*s\",%d",
+				(int) written, unpacked_buf, dcs);
+	} else {
+		converted = encode_hex_own_buf(pdu, len, 0, coded_buf);
+		if (!converted)
+			goto error;
+
+		snprintf(buf, sizeof(buf), "AT+CUSD=1,\"%.*s\",%d",
+				strlen(converted), converted, dcs);
 	}
-
-	if (written > max_len)
-		goto error;
-
-	snprintf(buf, sizeof(buf), "AT+CUSD=1,\"%.*s\",%d",
-			(int) written, converted, dcs);
-
-	g_free(converted);
-	converted = NULL;
 
 	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM) {
 		/* Ensure that the modem is using GSM character set. It
@@ -179,7 +203,6 @@ static void at_ussd_request(struct ofono_ussd *ussd, const char *str,
 
 error:
 	g_free(cbd);
-	g_free(converted);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
 }
