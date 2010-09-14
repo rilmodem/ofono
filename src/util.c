@@ -535,7 +535,7 @@ static unsigned short unicode_single_shift_lookup(unsigned short k,
  * GSM encoded string in items_read (if not NULL), not including the
  * terminator character. Returns the number of bytes written into the UTF8
  * encoded string in items_written (if not NULL) not including the terminal
- * '\0' character.  The caller is reponsible for freeing the returned value.
+ * '\0' character.  The caller is responsible for freeing the returned value.
  */
 char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 					long *items_read, long *items_written,
