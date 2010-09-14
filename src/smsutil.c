@@ -4190,11 +4190,12 @@ gboolean ussd_encode(const char *str, long *items_written, unsigned char *pdu)
 		return FALSE;
 
 	converted = convert_utf8_to_gsm(str, -1, NULL, &written, 0);
-	if (!converted || written > 182)
-		goto error;
+	if (!converted || written > 182) {
+		g_free(converted);
+		return FALSE;
+	}
 
 	pack_7bit_own_buf(converted, written, 0, TRUE, &num_packed, 0, pdu);
-
 	g_free(converted);
 
 	if (num_packed < 1)
@@ -4204,7 +4205,4 @@ gboolean ussd_encode(const char *str, long *items_written, unsigned char *pdu)
 		*items_written = num_packed;
 
 	return TRUE;
-error:
-	g_free(converted);
-	return FALSE;
 }
