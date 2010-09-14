@@ -26,7 +26,7 @@ SMS
   Proposed solution is to convert such messages to HTML and embed image /
   sound data as embedded MIME in the generated HTML stream.  The EMS messages
   will have to be detected (by the presence of particular tags in the SMS)
-  and signaled seperately from simple SMS messages.
+  and signaled separately from simple SMS messages.
 
   Priority: Low
   Complexity: C8
@@ -136,7 +136,7 @@ SIM / SIM File system
   Priority: Low
   Complexity: C2
 
-- Support proprietory extensions for SIM PIN retry counter.  Most vendors
+- Support proprietary extensions for SIM PIN retry counter.  Most vendors
   provide an extension commands to obtain such a retry counter for PINs and
   PUKs.  Need to enable this as a property in oFono.
 
