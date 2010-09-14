@@ -49,6 +49,15 @@ enum ussd_state {
 	USSD_STATE_RESPONSE_SENT,
 };
 
+struct ussd_request {
+	struct ofono_ussd *ussd;
+	int dcs;
+	unsigned char *pdu;
+	int len;
+	ofono_ussd_request_cb_t cb;
+	void *user_data;
+};
+
 struct ofono_ussd {
 	int state;
 	DBusMessage *pending;
@@ -59,6 +68,7 @@ struct ofono_ussd {
 	const struct ofono_ussd_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
+	struct ussd_request *req;
 };
 
 struct ssc_entry {
@@ -73,7 +83,7 @@ gboolean __ofono_ussd_is_busy(struct ofono_ussd *ussd)
 	if (!ussd)
 		return FALSE;
 
-	if (ussd->pending || ussd->state != USSD_STATE_IDLE)
+	if (ussd->pending || ussd->state != USSD_STATE_IDLE || ussd->req)
 		return TRUE;
 
 	return FALSE;
@@ -320,6 +330,31 @@ static void ussd_change_state(struct ofono_ussd *ussd, int state)
 			"State", DBUS_TYPE_STRING, &value);
 }
 
+static void ussd_request_finish(struct ofono_ussd *ussd, int error, int dcs,
+				const unsigned char *pdu, int len)
+{
+	struct ussd_request *req = ussd->req;
+
+	if (req && req->cb)
+		req->cb(error, dcs, pdu, len, req->user_data);
+
+	g_free(req->pdu);
+	g_free(req);
+	ussd->req = NULL;
+}
+
+static int ussd_status_to_failure_code(int status)
+{
+	switch (status) {
+	case OFONO_USSD_STATUS_TIMED_OUT:
+		return -ETIMEDOUT;
+	case OFONO_USSD_STATUS_NOT_SUPPORTED:
+		return -ENOSYS;
+	}
+
+	return 0;
+}
+
 void ofono_ussd_notify(struct ofono_ussd *ussd, int status, int dcs,
 			const unsigned char *data, int data_len)
 {
@@ -331,6 +366,18 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, int dcs,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter variant;
+
+	if (ussd->req &&
+			(status == OFONO_USSD_STATUS_NOTIFY ||
+			status == OFONO_USSD_STATUS_TERMINATED ||
+			status == OFONO_USSD_STATUS_TIMED_OUT ||
+			status == OFONO_USSD_STATUS_NOT_SUPPORTED)) {
+		ussd_request_finish(ussd, ussd_status_to_failure_code(status),
+					dcs, data, data_len);
+
+		ussd_change_state(ussd, USSD_STATE_IDLE);
+		return;
+	}
 
 	if (status == OFONO_USSD_STATUS_NOT_SUPPORTED) {
 		ussd_change_state(ussd, USSD_STATE_IDLE);
@@ -465,10 +512,7 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 	unsigned char buf[160];
 	long num_packed;
 
-	if (ussd->pending)
-		return __ofono_error_busy(msg);
-
-	if (ussd->state != USSD_STATE_IDLE)
+	if (__ofono_ussd_is_busy(ussd))
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &str,
@@ -580,6 +624,9 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 
 	reply = dbus_message_new_method_return(ussd->cancel);
 	__ofono_dbus_pending_reply(&ussd->cancel, reply);
+
+	if (ussd->req)
+		ussd_request_finish(ussd, -1, -ECANCELED, NULL, -1);
 
 	ussd_change_state(ussd, USSD_STATE_IDLE);
 }
@@ -778,4 +825,48 @@ void ofono_ussd_set_data(struct ofono_ussd *ussd, void *data)
 void *ofono_ussd_get_data(struct ofono_ussd *ussd)
 {
 	return ussd->driver_data;
+}
+
+static void ussd_request_callback(const struct ofono_error *error, void *data)
+{
+	struct ofono_ussd *ussd = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		ussd_request_finish(ussd, error->error, -1, NULL, -1);
+	else
+		ussd_change_state(ussd, USSD_STATE_ACTIVE);
+}
+
+int __ofono_ussd_initiate(struct ofono_ussd *ussd, int dcs,
+				const unsigned char *pdu, int len,
+				ofono_ussd_request_cb_t cb, void *user_data)
+{
+	struct ussd_request *req;
+
+	if (!ussd->driver->request)
+		return -ENOSYS;
+
+	if (__ofono_ussd_is_busy(ussd))
+		return -EBUSY;
+
+	req = g_try_new0(struct ussd_request, 1);
+	req->dcs = dcs;
+	req->pdu = g_memdup(pdu, len);
+	req->len = len;
+	req->cb = cb;
+	req->user_data = user_data;
+
+	ussd->req = req;
+
+	ussd->driver->request(ussd, dcs, pdu, len, ussd_request_callback, ussd);
+
+	return 0;
+}
+
+void __ofono_ussd_initiate_cancel(struct ofono_ussd *ussd)
+{
+	if (!ussd->req || !ussd->req->cb)
+		return;
+
+	ussd->req->cb = NULL;
 }
