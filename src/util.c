@@ -1354,7 +1354,7 @@ unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text,
 
 err_out:
 	if (items_read)
-		*items_read = nchars;
+		*items_read = i;
 
 	return res;
 }
