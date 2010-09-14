@@ -253,7 +253,7 @@ int g_isi_vrespond(GIsiServer *self, const struct iovec *iov, size_t iovlen,
  * Prepare to handle given request type for the resource that an ISI server
  * is associated with. If the same type was already handled, the old
  * handler is overriden.
- * @param self ISI server (fomr g_isi_server_create())
+ * @param self ISI server (from g_isi_server_create())
  * @param type request message type
  * @param cb callback to process received requests
  * @param data data for the callback
