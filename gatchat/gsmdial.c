@@ -250,7 +250,7 @@ static void ppp_connect(const char *iface, const char *local, const char *peer,
 	g_print("Secondary DNS Server: %s\n", dns2);
 
 	if (getuid() != 0) {
-		g_print("Need root priviledge to config PPP interface\n");
+		g_print("Need root privilege to config PPP interface\n");
 		return;
 	}
 

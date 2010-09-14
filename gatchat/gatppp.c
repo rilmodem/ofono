@@ -51,7 +51,7 @@ enum ppp_phase {
 	PPP_PHASE_ESTABLISHMENT,	/* LCP started */
 	PPP_PHASE_AUTHENTICATION,	/* Auth started */
 	PPP_PHASE_NETWORK,		/* IPCP started */
-	PPP_PHASE_LINK_UP,		/* IPCP negotiation succeded, link up */
+	PPP_PHASE_LINK_UP,		/* IPCP negotiation succeeded, link up */
 	PPP_PHASE_TERMINATION,		/* LCP Terminate phase */
 };
 
