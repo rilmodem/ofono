@@ -47,7 +47,7 @@ Properties	string CallingLinePresentation [readonly]
 			Contains the value of the connected line identification
 			restriction property. The value indicates the state of
 			the COLR supplementary service in the network.  If
-			enabled, the network will withold subscriber number
+			enabled, the network will withhold subscriber number
 			information from the calling party on incoming calls.
 			The possible values are:
 				"disabled",
@@ -77,12 +77,12 @@ Properties	string CallingLinePresentation [readonly]
 		string HideCallerId [readwrite]
 
 			Sets whether the ID of the caller will should be
-			provided or witheld for outgoing calls.  This setting
+			provided or withheld for outgoing calls.  This setting
 			is also modified by the status of the CLIR supplementary
 			service in the network (see the CallingLineRestriction
 			property).  The three possible values are:
 				"default" - Uses the network setting
-				"enabled" - CLIR invoked, caller id is witheld
+				"enabled" - CLIR invoked, caller id is withheld
 				"disabled" - CLIR suppressed, caller id is
 						provided
 

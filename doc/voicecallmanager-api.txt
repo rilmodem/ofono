@@ -34,7 +34,7 @@ Methods		array{object,dict} GetCalls()
 
 			Joins the currently Active (or Outgoing, depending
 			on network support) and Held calls together and
-			disconnects both calls. In effect transfering
+			disconnects both calls. In effect transferring
 			one party to the other. This procedure requires
 			an Active and Held call and the Explicit Call Transfer
 			(ECT) supplementary service to be active.

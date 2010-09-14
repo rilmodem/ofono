@@ -7,7 +7,7 @@ Linux and other open source components are now used extensively on both desktop
 and mobile embedded devices.  They provide networking, power management,
 database and other core OS infrastructure.  However, up to this point no
 viable open source solution for mobile telephony existed.  oFono aims to
-change that; it is a telephony host stack specifically targetted at both
+change that; it is a telephony host stack specifically targeted at both
 mobile embedded and desktop systems.
 
 Launched on May 11, 2009 oFono aims to provide a solid framework for builidng
@@ -97,7 +97,7 @@ for low-level operations.  This interface is based on 3GPP TS 27.007 "AT
 command set for User Equipment" and 3GPP TS 27.005 "DTE-DCE interface for SMS
 and CBS".  oFono assumes that all operations are fully asynchronous.
 
-This means that oFono can accomodate a wide variety of devices, including
+This means that oFono can accommodate a wide variety of devices, including
 full-featured modems (AT command based and otherwise), data-only cards, and
 modem like devices (e.g. Bluetooth Handsfree and Sim Access Profile devices,
 etc.)
