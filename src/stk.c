@@ -1590,6 +1590,174 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 	return FALSE;
 }
 
+static void send_ussd_cancel(struct ofono_stk *stk)
+{
+	struct ofono_ussd *ussd;
+	struct ofono_atom *atom;
+
+	atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
+						OFONO_ATOM_TYPE_USSD);
+	if (!atom)
+		return;
+
+	ussd = __ofono_atom_get_data(atom);
+	if (ussd)
+		__ofono_ussd_initiate_cancel(ussd);
+
+	if (stk->pending_cmd->send_ussd.alpha_id &&
+			stk->pending_cmd->send_ussd.alpha_id[0])
+		stk_alpha_id_unset(stk);
+}
+
+static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
+				int msg_len, void *userdata)
+{
+	struct ofono_stk *stk = userdata;
+	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
+	struct stk_response rsp;
+	enum sms_charset charset;
+
+	if (stk->pending_cmd->send_ussd.alpha_id &&
+			stk->pending_cmd->send_ussd.alpha_id[0])
+		stk_alpha_id_unset(stk);
+
+	memset(&rsp, 0, sizeof(rsp));
+
+	switch (error) {
+	case 0:
+		if (cbs_dcs_decode(dcs, NULL, NULL, &charset,
+					NULL, NULL, NULL)) {
+			if (charset == SMS_CHARSET_7BIT)
+				rsp.send_ussd.text.dcs = 0x00;
+			else if (charset == SMS_CHARSET_8BIT)
+				rsp.send_ussd.text.dcs = 0x04;
+			else if (charset == SMS_CHARSET_UCS2)
+				rsp.send_ussd.text.dcs = 0x08;
+
+			rsp.result.type = STK_RESULT_TYPE_SUCCESS;
+			rsp.send_ussd.text.text = msg;
+			rsp.send_ussd.text.len = msg_len;
+		} else {
+			rsp.result.type = STK_RESULT_TYPE_USSD_RETURN_ERROR;
+			rsp.result.additional = (unsigned char *) &error;
+			rsp.result.additional_len = 1;
+			rsp.send_ussd.text.dcs = -1;
+		}
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&failure, stk);
+
+		break;
+	case -ECANCELED:
+		send_simple_response(stk,
+				STK_RESULT_TYPE_USSD_OR_SS_USER_TERMINATION);
+		break;
+	case -ETIMEDOUT:
+		send_simple_response(stk, STK_RESULT_TYPE_NETWORK_UNAVAILABLE);
+		break;
+	default:
+		rsp.result.type = STK_RESULT_TYPE_USSD_RETURN_ERROR;
+		rsp.result.additional = (unsigned char *) &error;
+		rsp.result.additional_len = 1;
+		rsp.send_ussd.text.dcs = -1;
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&failure, stk);
+
+		break;
+	}
+}
+
+static gboolean handle_command_send_ussd(const struct stk_command *cmd,
+					struct stk_response *rsp,
+					struct ofono_stk *stk)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(stk->atom);
+	static unsigned char busy_on_ss_result[] = { 0x03 };
+	static unsigned char busy_on_ussd_result[] = { 0x08 };
+	struct ofono_atom *atom;
+	struct ofono_ussd *ussd;
+	int err;
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_FORWARDING);
+	if (atom && __ofono_atom_get_registered(atom)) {
+		struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
+
+		if (__ofono_call_forwarding_is_busy(cf)) {
+			rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+			rsp->result.additional_len = sizeof(busy_on_ss_result);
+			rsp->result.additional = busy_on_ss_result;
+			return TRUE;
+		}
+	}
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_BARRING);
+	if (atom && __ofono_atom_get_registered(atom)) {
+		struct ofono_call_barring *cb = __ofono_atom_get_data(atom);
+
+		if (__ofono_call_barring_is_busy(cb)) {
+			rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+			rsp->result.additional_len = sizeof(busy_on_ss_result);
+			rsp->result.additional = busy_on_ss_result;
+			return TRUE;
+		}
+	}
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS);
+	if (atom && __ofono_atom_get_registered(atom)) {
+		struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
+
+		if (__ofono_call_settings_is_busy(cs)) {
+			rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+			rsp->result.additional_len = sizeof(busy_on_ss_result);
+			rsp->result.additional = busy_on_ss_result;
+			return TRUE;
+		}
+	}
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
+	if (!atom || !__ofono_atom_get_registered(atom)) {
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+
+	ussd = __ofono_atom_get_data(atom);
+	if (__ofono_ussd_is_busy(ussd)) {
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		rsp->result.additional_len = sizeof(busy_on_ussd_result);
+		rsp->result.additional = busy_on_ussd_result;
+		return TRUE;
+	}
+
+	err = __ofono_ussd_initiate(ussd, cmd->send_ussd.ussd_string.dcs,
+					cmd->send_ussd.ussd_string.string,
+					cmd->send_ussd.ussd_string.len,
+					send_ussd_callback, stk);
+
+	if (err >= 0) {
+		stk->cancel_cmd = send_ussd_cancel;
+
+		return FALSE;
+	}
+
+	if (err == -ENOSYS) {
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+
+	if (err == -EBUSY) {
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		rsp->result.additional_len = sizeof(busy_on_ussd_result);
+		rsp->result.additional = busy_on_ussd_result;
+		return TRUE;
+	}
+
+	if (cmd->send_ussd.alpha_id && cmd->send_ussd.alpha_id[0])
+		stk_alpha_id_set(stk, cmd->send_ussd.alpha_id);
+
+	return FALSE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (stk->immediate_response)
@@ -1740,7 +1908,10 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		respond = handle_command_set_up_call(stk->pending_cmd,
 							&rsp, stk);
 		break;
-
+	case STK_COMMAND_TYPE_SEND_USSD:
+		respond = handle_command_send_ussd(stk->pending_cmd,
+							&rsp, stk);
+		break;
 	default:
 		rsp.result.type = STK_RESULT_TYPE_COMMAND_NOT_UNDERSTOOD;
 		break;
