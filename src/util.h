@@ -30,18 +30,20 @@ enum gsm_dialect {
 char *convert_gsm_to_utf8(const unsigned char *text, long len, long *items_read,
 				long *items_written, unsigned char terminator);
 
-char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len, long *items_read,
-				long *items_written, unsigned char terminator,
-				enum gsm_dialect locking_shift_lang,
-				enum gsm_dialect single_shift_lang);
+char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
+					long *items_read, long *items_written,
+					unsigned char terminator,
+					enum gsm_dialect locking_shift_lang,
+					enum gsm_dialect single_shift_lang);
 
 unsigned char *convert_utf8_to_gsm(const char *text, long len, long *items_read,
 				long *items_written, unsigned char terminator);
 
-unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len, long *items_read,
-				long *items_written, unsigned char terminator,
-				enum gsm_dialect locking_shift_lang,
-				enum gsm_dialect single_shift_lang);
+unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len,
+					long *items_read, long *items_written,
+					unsigned char terminator,
+					enum gsm_dialect locking_shift_lang,
+					enum gsm_dialect single_shift_lang);
 
 unsigned char *decode_hex_own_buf(const char *in, long len, long *items_written,
 					unsigned char terminator,
@@ -81,12 +83,13 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length);
 unsigned char *utf8_to_sim_string(const char *utf,
 					int max_length, int *out_length);
 
-unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text, long len,
-					long *items_read, long *items_written,
-					unsigned char terminator,
-					enum gsm_dialect locking_lang,
-					enum gsm_dialect single_lang);
+unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text,
+						long len, long *items_read,
+						long *items_written,
+						unsigned char terminator,
+						enum gsm_dialect locking_lang,
+						enum gsm_dialect single_lang);
 
 unsigned char *convert_ucs2_to_gsm(const unsigned char *text, long len,
-				long *items_read, long *items_written,
-				unsigned char terminator);
+					long *items_read, long *items_written,
+					unsigned char terminator);
