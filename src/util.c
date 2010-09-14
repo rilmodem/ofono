@@ -782,9 +782,9 @@ unsigned char *decode_hex_own_buf(const char *in, long len, long *items_written,
 		c = toupper(in[i]);
 
 		if (c >= '0' && c <= '9')
-			b = b*16 + c - '0';
+			b = b * 16 + c - '0';
 		else if (c >= 'A' && c <= 'F')
-			b = b*16 + 10 + c - 'A';
+			b = b * 16 + 10 + c - 'A';
 		else
 			return NULL;
 
@@ -950,7 +950,7 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 	 * the message ends on an octet boundary with <CR> as the last
 	 * character.
 	 */
-	if (ussd && (((out - buf) % 8) == 0) && (*(out-1) == '\r'))
+	if (ussd && (((out - buf) % 8) == 0) && (*(out - 1) == '\r'))
 			out = out - 1;
 
 	if (terminator)
@@ -1034,7 +1034,7 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 	if (bits != 7)
 		out++;
 
-	if (ussd && ((total_bits % 8) == 0) && (in[len-1] == '\r')) {
+	if (ussd && ((total_bits % 8) == 0) && (in[len - 1] == '\r')) {
 		*out = '\r';
 		out++;
 	}
@@ -1072,7 +1072,7 @@ unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
 		total_bits += bits;
 
 	/* Round up number of bytes, must append <cr> if true */
-	if (ussd && ((total_bits % 8) == 0) && (in[len-1] == '\r'))
+	if (ussd && ((total_bits % 8) == 0) && (in[len - 1] == '\r'))
 		buf = g_new(unsigned char, (total_bits + 14) / 8);
 	else
 		buf = g_new(unsigned char, (total_bits + 7) / 8);
@@ -1298,8 +1298,8 @@ unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text,
 	in = text;
 	res_len = 0;
 
-	for (i = 0; i < len; i+=2) {
-		gunichar c = (in[i] << 8) | in[i+1];
+	for (i = 0; i < len; i += 2) {
+		gunichar c = (in[i] << 8) | in[i + 1];
 		unsigned short converted = GUND;
 
 		if (c > 0xffff)
@@ -1328,8 +1328,8 @@ unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text,
 	in = text;
 	out = res;
 
-	for (i = 0; i < len; i+=2) {
-		gunichar c = (in[i] << 8) | in[i+1];
+	for (i = 0; i < len; i += 2) {
+		gunichar c = (in[i] << 8) | in[i + 1];
 		unsigned short converted = GUND;
 
 		converted = unicode_locking_shift_lookup(c, locking_lang);
