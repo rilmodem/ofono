@@ -71,6 +71,10 @@ def message(msg, args, member, path, interface):
 	print "{%s} [%s] %s %s (%s)" % (iface, path, member,
 					str(msg), pretty(args))
 
+def ussd(msg, member, path, interface):
+	iface = interface[interface.rfind(".") + 1:]
+	print "{%s} [%s] %s %s" % (iface, path, member, str(msg))
+
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -136,6 +140,14 @@ if __name__ == '__main__':
 	for member in ["IncomingBroadcast", "EmergencyBroadcast",
 			"IncomingMessage", "ImmediateMessage"]:
 		bus.add_signal_receiver(message,
+					bus_name="org.ofono",
+					signal_name = member,
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	for member in ["NotificationReceived", "RequestReceived"]:
+		bus.add_signal_receiver(ussd,
 					bus_name="org.ofono",
 					signal_name = member,
 						member_keyword="member",
