@@ -1637,33 +1637,26 @@ static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
 			rsp.result.type = STK_RESULT_TYPE_SUCCESS;
 			rsp.send_ussd.text.text = msg;
 			rsp.send_ussd.text.len = msg_len;
-		} else {
+			rsp.send_ussd.text.has_text = TRUE;
+		} else
 			rsp.result.type = STK_RESULT_TYPE_USSD_RETURN_ERROR;
-			rsp.result.additional = (unsigned char *) &error;
-			rsp.result.additional_len = 1;
-			rsp.send_ussd.text.dcs = -1;
-		}
 
 		if (stk_respond(stk, &rsp, stk_command_cb))
 			stk_command_cb(&failure, stk);
 
 		break;
+
 	case -ECANCELED:
 		send_simple_response(stk,
 				STK_RESULT_TYPE_USSD_OR_SS_USER_TERMINATION);
 		break;
+
 	case -ETIMEDOUT:
 		send_simple_response(stk, STK_RESULT_TYPE_NETWORK_UNAVAILABLE);
 		break;
+
 	default:
-		rsp.result.type = STK_RESULT_TYPE_USSD_RETURN_ERROR;
-		rsp.result.additional = (unsigned char *) &error;
-		rsp.result.additional_len = 1;
-		rsp.send_ussd.text.dcs = -1;
-
-		if (stk_respond(stk, &rsp, stk_command_cb))
-			stk_command_cb(&failure, stk);
-
+		send_simple_response(stk, STK_RESULT_TYPE_USSD_RETURN_ERROR);
 		break;
 	}
 }
