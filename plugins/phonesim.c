@@ -253,6 +253,8 @@ static int phonesim_enable(struct ofono_modem *modem)
 		data->chat = NULL;
 	}
 
+	g_at_chat_send(data->chat, "AT+CSCS=\"GSM\"", none_prefix, NULL, NULL, NULL);
+
 	return 0;
 }
 
