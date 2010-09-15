@@ -316,7 +316,7 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 			doc/call-forwarding-api.txt doc/call-settings-api.txt \
 			doc/call-meter-api.txt \
 			doc/supplementaryservices-api.txt \
-			doc/connman-api.txt
+			doc/connman-api.txt doc/features.txt
 
 test_scripts = test/backtrace \
 		test/create-context \

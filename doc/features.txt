@@ -1,0 +1,88 @@
+oFono - Open Source Telephony
+*****************************
+
+Purpose
+=======
+
+The purpose of this document is to enumerate all major functionality areas
+of oFono.  In effect, this document will serve as the primary, up to date
+source of oFono feature information.  It is intended for developers, managers
+and users alike to quickly gauge the progress of the project and feature
+availability.
+
+Sim Toolkit
+===========
+
+Supported Proactive Commands:
+
+- Display Text proactive command support.  Upon receiving the proactive
+  command notification oFono decodes it, including performing character
+  conversion from packed/unpacked GSM 7bit and UCS2 to UTF-8 encoded text.
+  The registered agent is then called using the DisplayText method on the
+  SimToolkitAgent interface to handle the user interaction aspects.
+
+  SIM-specified duration are handled.  If immediate response to the SIM
+  is required, oFono sends a terminal response immediately.  DisplayText
+  method is still executed normally, until a timeout occurs or a new
+  proactive command arrives from the SIM.
+
+- Get Inkey proactive command support.  When this command is received,
+  oFono decodes it and checks what "flavor" it is.  Depending on this, the
+  SimToolkitAgent is called with a different method call:
+	* If the Get Inkey flavor indicates that this is a simple Yes/No
+	  confirmation, then the RequestConfirmation method is called.
+	* If the Get Inkey flavor indicates that the SIM only expects digits,
+	  then the RequestDigit method is called.
+	* Otherwise the RequestKey method is called
+
+  SIM specified durations are handled, if the user agent does not respond
+  in the time allowed, then the 'No Response' Terminal Response is generated
+  automatically.
+
+- Get Input proactive command support.  When this command is received,
+  oFono decodes it and checks what "flavor" it is.  Depending on this, the
+  SimToolkitAgent is called with a different method call:
+	* If the Get Input flavor indicates that the SIM only expects digits,
+	  then the RequestDigits method is called.
+	* Otherwise the RequestInput method is called
+
+- More Time proactive command support.  This command is intended to notify
+  that the SIM is still busy processing a command.  For oFono, this proactive
+  command is a no-op.  It is always replied to successfully.
+
+- Setup Menu proactive command support. When this command is received, oFono
+  parses the new main menu structure and updates its MainMenu and MainMenuTitle
+  properties which reflect the items, icons and the alpha text of the
+  proactive command.  Soft key support and menu help system are ignored by
+  oFono.
+
+- Select Item proactive command support.  When this command is received, oFono
+  decodes it and dispatches it to the SimToolkitAgent by calling the
+  RequestSelection method.  This method is passed the menu selection title,
+  the selectable items and the default, if any.
+
+- Timer Management proactive command support.  oFono supports starting,
+  stopping and querying timer state flavors of this command.  Up to eight
+  timers are supported.  This proactive command is handled completely
+  inside oFono and no external user interaction is required.
+
+- Set Up Idle Mode Text proactive command support.  Whenever oFono receives
+  this proactive command, it updates the IdleText property on the main
+  SimToolkit interface.  Indications that this property has changed are
+  handled by the usual means.
+
+Envelopes:
+
+- Timer Expiration envelope support.  Whenever a timer expires (as started by
+  the Timer Management proactive command) oFono forwards, this envelope type
+  to the SIM.  No external user interaction is required.
+
+- Menu Selection envelope support.  The user can initiate a proactive command
+  session by selecting something from the Sim Toolkit main menu.  This is done
+  by using the SimToolkit's SelectItem method.  As a result, oFono will send
+  the Menu Selection envelope to the SIM.
+
+- CBS-PP Download envelope support.  When oFono receives a cell broadcast
+  and on a channel listed in EFcbmid, it is dispatched to the SIM using the
+  CBS-PP Download envelope.  No user interaction is required or signaled
+  whenever this occurs.

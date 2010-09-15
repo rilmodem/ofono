@@ -332,40 +332,6 @@ Voicecall
 Sim Toolkit
 ===========
 
-- Support Display Text proactive command.  This should be implemented
-  by making the appropriate call into the SimToolkitAgent.  This functionality
-  should support normal and high-priority messages; packed gsm, unpacked
-  gsm and ucs2 encoded strings; and immediate response command type.
-
-  Priority: High
-  Complexity: C2
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
-- Support Get Inkey proactive command.  This should be implemented by
-  making the appropriate call into the SimToolkitAgent.  This functionality
-  should support digits only, gsm alphabet only and ucs2 alphabet only
-  user responses.
-
-  Priority: High
-  Complexity: C2
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
-- Support Get Input proactive command.  This should be implemented by
-  making the appropriate call into the SimToolkitAgent.  This functionality
-  should support digits only; packed gsm, unpacked gsm and ucs2 encoded
-  responses; and opaque (e.g. password) user input.
-
-  Priority: High
-  Complexity: C2
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
-- Support More Time proactive command.  This command should essentially
-  have no effect.
-
-  Priority: High
-  Complexity: C1
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
 - Support the Play Tone proactive command.  This should be implemented
   by making the appropriate call into the SimToolkitAgent.  The sound
   that will be played will be determined by the agent based on the sound
@@ -409,23 +375,6 @@ Sim Toolkit
   Priority: High
   Complexity: C8
 
-- Support Setup Menu proactive command.  This should be supported by exporting
-  the main menu as a set of attributes on the SimToolkit interface.  Both
-  icons, menu items and the Alpha identifier should be exposed.  Support of
-  this command implies support of the 'Menu Selection' Envelope.
-
-  Priority: High
-  Complexity: C2
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
-- Support Select Item proactive command.  This should be implemented by
-  making the appropriate call into the SimToolkitAgent.  Both icons, menu
-  items and the Alpha identifier should be sent to the agent.
-
-  Priority: High
-  Complexity: C2
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
 - Support Send Short Message proactive command.
 
   Priority: High
@@ -453,23 +402,6 @@ Sim Toolkit
   Priority: High
   Complexity: C8
 
-- Support Timer Management proactive command.  This should be handled
-  completely internally to oFono and does not require any UI interaction.
-  Support of this proactive command implies support of the 'Timer Expiration'
-  Envelope.
-
-  Priority: High
-  Complexity: C2
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
-- Support Set Up Idle Mode Text proactive command.  The idle mode text
-  should be exposed on the SimToolkit interface as a property.  The property
-  changed signal should be emitted whenever the idle mode text string changes.
-
-  Priority: High
-  Complexity: C2
-  Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
-
 - Support Send DTMF proactive command.  The DTMF characters are passed
   directly to the voicecall atom and the SimToolkitAgent is notified if the
   USIM has indicated it is acceptable to inform the user.
@@ -482,15 +414,6 @@ Sim Toolkit
   will be sent to the SIM via an SMS-PP Download Envelope.  No user interaction
   will be required.  If the modem hardware supports this transparently, then
   no indication to oFono will be necessary.
-
-  Priority: High
-  Complexity: C2
-
-- Support 'CBS-PP' Download Envelope.  Whenever a cell broadcast on a channel
-  listed in EFcbmid is received, this broadcast will be sent to the SIM via
-  a CBS-PP Download Envelope. No user interaction will be required.  If the
-  modem hardware supports this transparently, then no indication to oFono
-  will be necessary.
 
   Priority: High
   Complexity: C2
