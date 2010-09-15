@@ -1908,10 +1908,12 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		respond = handle_command_set_up_call(stk->pending_cmd,
 							&rsp, stk);
 		break;
+
 	case STK_COMMAND_TYPE_SEND_USSD:
 		respond = handle_command_send_ussd(stk->pending_cmd,
 							&rsp, stk);
 		break;
+
 	default:
 		rsp.result.type = STK_RESULT_TYPE_COMMAND_NOT_UNDERSTOOD;
 		break;
