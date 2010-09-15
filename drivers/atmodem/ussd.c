@@ -63,19 +63,52 @@ static void read_charset_cb(gboolean ok, GAtResult *result,
 	at_util_parse_cscs_query(result, &data->charset);
 }
 
+static const unsigned char *ucs2_gsm_to_packed(const char *content,
+						long *msg_len,
+						unsigned char *msg)
+{
+	unsigned char *decoded;
+	long len;
+	unsigned char *gsm;
+	long written;
+	unsigned char *packed;
+	unsigned char buf[182 * 4]; /* 182 USSD chars * 2 (UCS2) * 2 (hex) */
+
+	if (strlen(content) > sizeof(buf))
+		return NULL;
+
+	decoded = decode_hex_own_buf(content, -1, &len, 0, buf);
+
+	if (decoded == NULL)
+		return NULL;
+
+	gsm = convert_ucs2_to_gsm(decoded, len, NULL, &written, 0);
+
+	if (gsm == NULL)
+		return NULL;
+
+	if (written > 182) {
+		g_free(gsm);
+		return NULL;
+	}
+
+	packed = pack_7bit_own_buf(gsm, written, 0, TRUE, msg_len, 0, msg);
+	g_free(gsm);
+
+	return packed;
+}
+
 static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 {
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 	GAtResultIter iter;
 	int status;
+	const char *content;
 	int dcs;
-	const char *content = NULL;
 	enum sms_charset charset;
 	unsigned char msg[160];
 	const unsigned char *msg_ptr = NULL;
-	unsigned char *converted = NULL;
-	long written;
-	long msg_len = 0;
+	long msg_len;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -99,39 +132,36 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 
 	switch (charset) {
 	case SMS_CHARSET_7BIT:
-		if (data->charset == AT_UTIL_CHARSET_GSM)
+		switch (data->charset) {
+		case AT_UTIL_CHARSET_GSM:
 			msg_ptr = pack_7bit_own_buf((const guint8 *) content,
-					strlen(content), 0, TRUE, &msg_len, 0, msg);
-		else if (data->charset == AT_UTIL_CHARSET_UTF8)
-			ussd_encode(content, &msg_len, msg);
-		else if (data->charset == AT_UTIL_CHARSET_UCS2) {
-			msg_ptr = decode_hex_own_buf(content, -1, &msg_len, 0, msg);
+							-1, 0, TRUE, &msg_len,
+							0, msg);
+			break;
 
-			converted = convert_ucs2_to_gsm(msg_ptr, msg_len, NULL,
-							&written, 0);
-			if (!converted) {
-				msg_ptr = NULL;
-				msg_len = 0;
-				goto out;
-			}
+		case AT_UTIL_CHARSET_UTF8:
+			if (ussd_encode(content, &msg_len, msg) == TRUE)
+				msg_ptr = msg;
 
-			msg_ptr = pack_7bit_own_buf(converted,
-						written, 0, TRUE,
-						&msg_len, 0, msg);
+			break;
 
-			g_free(converted);
+		case AT_UTIL_CHARSET_UCS2:
+			msg_ptr = ucs2_gsm_to_packed(content, &msg_len, msg);
+			break;
+
+		default:
+			msg_ptr = NULL;
 		}
 		break;
+
 	case SMS_CHARSET_8BIT:
-		msg_ptr = decode_hex_own_buf(content, -1, &msg_len, 0, msg);
-		break;
 	case SMS_CHARSET_UCS2:
 		msg_ptr = decode_hex_own_buf(content, -1, &msg_len, 0, msg);
 		break;
 	}
 
 out:
-	ofono_ussd_notify(ussd, status, dcs, msg_ptr, msg_len);
+	ofono_ussd_notify(ussd, status, dcs, msg_ptr, msg_ptr ? msg_len : 0);
 }
 
 static void cusd_request_cb(gboolean ok, GAtResult *result, gpointer user_data)
