@@ -621,7 +621,7 @@ static void ussd_cancel_callback(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&ussd->cancel, reply);
 
 	if (ussd->req)
-		ussd_request_finish(ussd, -1, -ECANCELED, NULL, -1);
+		ussd_request_finish(ussd, -ECANCELED, 0, NULL, 0);
 
 	ussd_change_state(ussd, USSD_STATE_IDLE);
 }
@@ -827,7 +827,7 @@ static void ussd_request_callback(const struct ofono_error *error, void *data)
 	struct ofono_ussd *ussd = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
-		ussd_request_finish(ussd, error->error, -1, NULL, -1);
+		ussd_request_finish(ussd, -EINVAL, 0, NULL, 0);
 	else
 		ussd_change_state(ussd, USSD_STATE_ACTIVE);
 }
