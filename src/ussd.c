@@ -50,10 +50,6 @@ enum ussd_state {
 };
 
 struct ussd_request {
-	struct ofono_ussd *ussd;
-	int dcs;
-	unsigned char *pdu;
-	int len;
 	ofono_ussd_request_cb_t cb;
 	void *user_data;
 };
@@ -338,7 +334,6 @@ static void ussd_request_finish(struct ofono_ussd *ussd, int error, int dcs,
 	if (req && req->cb)
 		req->cb(error, dcs, pdu, len, req->user_data);
 
-	g_free(req->pdu);
 	g_free(req);
 	ussd->req = NULL;
 }
@@ -850,9 +845,6 @@ int __ofono_ussd_initiate(struct ofono_ussd *ussd, int dcs,
 		return -EBUSY;
 
 	req = g_try_new0(struct ussd_request, 1);
-	req->dcs = dcs;
-	req->pdu = g_memdup(pdu, len);
-	req->len = len;
 	req->cb = cb;
 	req->user_data = user_data;
 
