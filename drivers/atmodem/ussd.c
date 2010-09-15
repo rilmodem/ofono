@@ -184,11 +184,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
 {
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char buf[256];
-	unsigned char unpacked_buf[182];
-	char coded_buf[160];
-	char *converted;
-	long written;
+	char buf[512];
 	enum sms_charset charset;
 
 	if (!cbd)
@@ -201,6 +197,9 @@ static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
 		goto error;
 
 	if (charset == SMS_CHARSET_7BIT) {
+		unsigned char unpacked_buf[182];
+		long written;
+
 		unpack_7bit_own_buf(pdu, len, 0, TRUE, sizeof(unpacked_buf),
 					&written, 0, unpacked_buf);
 
@@ -210,12 +209,14 @@ static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
 		snprintf(buf, sizeof(buf), "AT+CUSD=1,\"%.*s\",%d",
 				(int) written, unpacked_buf, dcs);
 	} else {
-		converted = encode_hex_own_buf(pdu, len, 0, coded_buf);
+		char coded_buf[321];
+		char *converted = encode_hex_own_buf(pdu, len, 0, coded_buf);
+
 		if (!converted)
 			goto error;
 
-		snprintf(buf, sizeof(buf), "AT+CUSD=1,\"%.*s\",%d",
-				strlen(converted), converted, dcs);
+		snprintf(buf, sizeof(buf), "AT+CUSD=1,\"%s\",%d",
+				converted, dcs);
 	}
 
 	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM) {
