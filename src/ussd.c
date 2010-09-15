@@ -552,8 +552,8 @@ static DBusMessage *ussd_respond(DBusConnection *conn, DBusMessage *msg,
 
 	ussd->pending = dbus_message_ref(msg);
 
-	ussd->driver->request(ussd, dcs, buf, num_packed, ussd_response_callback,
-				ussd);
+	ussd->driver->request(ussd, dcs, buf, num_packed,
+				ussd_response_callback, ussd);
 
 	return NULL;
 }
