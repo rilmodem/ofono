@@ -1377,6 +1377,7 @@ struct stk_answer_text {
 };
 
 struct stk_ussd_text {
+	ofono_bool_t has_text;
 	const unsigned char *text;
 	int dcs;
 	int len;

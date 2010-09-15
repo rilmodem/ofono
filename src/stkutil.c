@@ -4177,11 +4177,19 @@ static gboolean build_dataobj_ussd_text(struct stk_tlv_builder *tlv,
 	const struct stk_ussd_text *text = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_TEXT;
 
-	stk_tlv_builder_open_container(tlv, cr, tag, TRUE);
+	if (text->has_text == FALSE)
+		return TRUE;
+
+	if (stk_tlv_builder_open_container(tlv, cr, tag, TRUE) != TRUE)
+		return FALSE;
 
 	if (text->len > 0) {
-		stk_tlv_builder_append_byte(tlv, text->dcs);
-		stk_tlv_builder_append_bytes(tlv, text->text, text->len);
+		if (stk_tlv_builder_append_byte(tlv, text->dcs) != TRUE)
+			return FALSE;
+
+		if (stk_tlv_builder_append_bytes(tlv, text->text,
+							text->len) != TRUE)
+			return FALSE;
 	}
 
 	return stk_tlv_builder_close_container(tlv);
