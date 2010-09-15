@@ -234,8 +234,8 @@ GPRS
 
 - Add support for GPRS suspended event.  Expose this to the UI by adding a new
   'Suspended' property on the ConnectionManager D-Bus interface.
-  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
 
+  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
   Priority: High
   Complexity: C1
 
@@ -439,6 +439,13 @@ Sim Toolkit
   Priority: Medium
   Complexity: C1
   Owner: Jeevaka Badrappan <jeevaka.badrappan@elektrobit.com>
+
+- Send HTML formatted text elements for all proactive commands, if the
+  proactive command supplies Text Attribute objects.  The stk_text_to_html
+  utility function can be used to convert raw text into HTML.
+
+  Priority: Low
+  Complexity: C2
 
 
 Emergency Calls
