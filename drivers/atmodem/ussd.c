@@ -72,9 +72,9 @@ static const unsigned char *ucs2_gsm_to_packed(const char *content,
 	unsigned char *gsm;
 	long written;
 	unsigned char *packed;
-	unsigned char buf[182 * 4]; /* 182 USSD chars * 2 (UCS2) * 2 (hex) */
+	unsigned char buf[182 * 2]; /* 182 USSD chars * 2 (UCS2) */
 
-	if (strlen(content) > sizeof(buf))
+	if (strlen(content) > sizeof(buf) * 2) /* Hex, 2 chars / byte */
 		return NULL;
 
 	decoded = decode_hex_own_buf(content, -1, &len, 0, buf);
