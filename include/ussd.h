@@ -28,6 +28,7 @@ extern "C" {
 
 #include <ofono/types.h>
 
+/* 3GPP TS 27.007 section 7.15, values for <m> */
 enum ofono_ussd_status {
 	OFONO_USSD_STATUS_NOTIFY = 0,
 	OFONO_USSD_STATUS_ACTION_REQUIRED = 1,
