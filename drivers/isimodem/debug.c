@@ -70,6 +70,19 @@ const char *ss_message_id_name(enum ss_message_id value)
 	return "SS_<UNKNOWN>";
 }
 
+const char *ss_ussd_type_name(enum ss_ussd_type value)
+{
+	switch (value) {
+		_(SS_GSM_USSD_MT_REPLY);
+		_(SS_GSM_USSD_COMMAND);
+		_(SS_GSM_USSD_REQUEST);
+		_(SS_GSM_USSD_NOTIFY);
+		_(SS_GSM_USSD_END);
+	}
+	return "SS_<UNKNOWN>";
+}
+
+
 const char *ss_subblock_name(enum ss_subblock value)
 {
 	switch (value) {

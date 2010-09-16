@@ -34,6 +34,7 @@
 
 const char *ss_message_id_name(enum ss_message_id value);
 const char *ss_subblock_name(enum ss_subblock value);
+const char *ss_ussd_type_name(enum ss_ussd_type value);
 
 const char *mtc_isi_cause_name(enum mtc_isi_cause value);
 const char *mtc_message_id_name(enum mtc_message_id value);
