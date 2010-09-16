@@ -116,14 +116,17 @@ static int set_device(struct ofono_modem *modem,
 static int set_interface(struct ofono_modem *modem,
 					GKeyFile *keyfile, const char *group)
 {
-	char *iface;
+	char *value;
 
-	iface = g_key_file_get_string(keyfile, group, "Interface", NULL);
-	if (!iface)
-		return -EINVAL;
+	value = g_key_file_get_string(keyfile, group, "Interface", NULL);
+	if (value)
+		ofono_modem_set_string(modem, "Interface", value);
+	g_free(value);
 
-	ofono_modem_set_string(modem, "Interface", iface);
-	g_free(iface);
+	value = g_key_file_get_string(keyfile, group, "Address", NULL);
+	if (value)
+		ofono_modem_set_integer(modem, "Address", atoi(value));
+	g_free(value);
 
 	return 0;
 }
@@ -141,8 +144,8 @@ static struct {
 	{ "ste",	set_interface	},
 	{ "calypso",	set_device	},
 	{ "palmpre",	set_device	},
-	{ "isimodem",	set_interface	},
-	{ "n900modem",	set_interface	},
+	{ "isigen",     set_interface   },
+	{ "n900",	set_interface	},
 	{ NULL }
 };
 
