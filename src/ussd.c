@@ -350,6 +350,43 @@ static int ussd_status_to_failure_code(int status)
 	return 0;
 }
 
+static char const *ussd_status_name(int status)
+{
+	switch (status) {
+	case OFONO_USSD_STATUS_NOTIFY:
+		return "NOTIFY";
+	case OFONO_USSD_STATUS_ACTION_REQUIRED:
+		return "ACTION_REQUIRED";
+	case OFONO_USSD_STATUS_TERMINATED:
+		return "TERMINATED";
+	case OFONO_USSD_STATUS_LOCAL_CLIENT_RESPONDED:
+		return "LOCAL_CLIENT_RESPONDED";
+	case OFONO_USSD_STATUS_NOT_SUPPORTED:
+		return "NOT_SUPPORTED";
+	case OFONO_USSD_STATUS_TIMED_OUT:
+		return "TIMED_OUT";
+	}
+
+	return "????";
+}
+
+static const char *ussd_state_name(enum ussd_state state)
+{
+	switch (state) {
+	case USSD_STATE_IDLE:
+		return "IDLE";
+	case USSD_STATE_ACTIVE:
+		return "ACTIVE";
+	case USSD_STATE_RESPONSE_SENT:
+		return "RESPONSE_SENT";
+	case USSD_STATE_USER_ACTION:
+		return "USER_ACTION";
+	}
+
+	return "????";
+}
+
+
 void ofono_ussd_notify(struct ofono_ussd *ussd, int status, int dcs,
 			const unsigned char *data, int data_len)
 {
@@ -361,6 +398,10 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, int dcs,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter variant;
+
+	DBG("status: %d %s, state: %d %s",
+		status, ussd_status_name(status),
+		ussd->state, ussd_state_name(ussd->state));
 
 	if (ussd->req &&
 			(status == OFONO_USSD_STATUS_NOTIFY ||
