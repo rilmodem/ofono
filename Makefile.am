@@ -130,6 +130,9 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/gprs-context.c \
 				drivers/isimodem/gpds.h
 
+builtin_modules += isigen
+builtin_sources += plugins/isigen.c
+
 builtin_modules += usbpnmodem
 builtin_sources += plugins/usbpnmodem.c
 endif
