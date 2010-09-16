@@ -119,7 +119,7 @@ error:
 }
 
 static GIsiRequest *ussd_send(GIsiClient *client,
-				int dcs, uint8_t *str, size_t len,
+				int dcs, uint8_t const *str, size_t len,
 				void *data, GDestroyNotify notify)
 {
 	const uint8_t msg[] = {
@@ -135,7 +135,7 @@ static GIsiRequest *ussd_send(GIsiClient *client,
 
 	const struct iovec iov[2] = {
 		{ (uint8_t *)msg, sizeof(msg) },
-		{ str, len }
+		{ (uint8_t *)str, len }
 	};
 
 	return g_isi_vsend(client, iov, 2, SS_TIMEOUT,
@@ -152,7 +152,7 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 	if (!cbd)
 		goto error;
 
-	if (ussd_send(ud->client, dcs, (guint8 *) pdu, len, cbd, g_free))
+	if (ussd_send(ud->client, dcs, pdu, len, cbd, g_free))
 		return;
 
 error:
