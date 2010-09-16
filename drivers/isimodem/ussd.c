@@ -122,7 +122,7 @@ static void ussd_ind_cb(GIsiClient *client,
 		status = OFONO_USSD_STATUS_NOT_SUPPORTED;
 	}
 
-	DBG("type: %u %s, dcs: 0x%02x, len: %u",
+	DBG("type: %u %s, dcs: 0x%02x, len: %zu",
 		type, ss_ussd_type_name(type), dcs, ussdlen);
 
 	ofono_ussd_notify(ussd, status, dcs, msg + 4, ussdlen);
