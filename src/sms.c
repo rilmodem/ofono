@@ -672,6 +672,33 @@ static GDBusSignalTable sms_manager_signals[] = {
 	{ }
 };
 
+static gboolean compute_incoming_msgid(GSList *sms_list,
+						struct ofono_uuid *uuid)
+{
+	GChecksum *checksum;
+	GSList *l;
+	const struct sms *s;
+	unsigned char buf[176];
+	gsize uuid_size = sizeof(uuid->uuid);
+	int len;
+
+	checksum = g_checksum_new(G_CHECKSUM_SHA1);
+	if (checksum == NULL)
+		return FALSE;
+
+	for (l = sms_list; l; l = l->next) {
+		s = l->data;
+
+		sms_encode(s, &len, NULL, buf);
+		g_checksum_update(checksum, buf, len);
+	}
+
+	g_checksum_get_digest(checksum, uuid->uuid, &uuid_size);
+	g_checksum_free(checksum);
+
+	return TRUE;
+}
+
 static void dispatch_app_datagram(struct ofono_sms *sms, int dst, int src,
 					unsigned char *buf, long len)
 {
@@ -681,6 +708,7 @@ static void dispatch_app_datagram(struct ofono_sms *sms, int dst, int src,
 }
 
 static void dispatch_text_message(struct ofono_sms *sms,
+					const struct ofono_uuid *uuid,
 					const char *message,
 					enum sms_class cls,
 					const struct sms_address *addr,
@@ -842,15 +870,20 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 
 		g_free(buf);
 	} else {
+		struct ofono_uuid uuid;
 		char *message = sms_decode_text(sms_list);
 
 		if (!message)
 			return;
 
-		s = sms_list->data;
+		if (compute_incoming_msgid(sms_list, &uuid)) {
+			s = sms_list->data;
 
-		dispatch_text_message(sms, message, cls, &s->deliver.oaddr,
-					&s->deliver.scts);
+			dispatch_text_message(sms, &uuid, message, cls,
+						&s->deliver.oaddr,
+						&s->deliver.scts);
+		}
+
 		g_free(message);
 	}
 }
