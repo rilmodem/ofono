@@ -1911,6 +1911,17 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 							&rsp, stk);
 		break;
 
+	case STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION:
+		/*
+		 * If any clients are interested, then the ISO639
+		 * 2-letter codes has to be convered to language strings.
+		 * Converted language strings has to be added to the
+		 * property list.
+		 */
+		ofono_info("Language Code: %s",
+			stk->pending_cmd->language_notification.language);
+		break;
+
 	default:
 		rsp.result.type = STK_RESULT_TYPE_COMMAND_NOT_UNDERSTOOD;
 		break;
