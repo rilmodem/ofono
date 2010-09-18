@@ -210,6 +210,19 @@ static void add_hso(struct ofono_modem *modem,
 	}
 }
 
+static void add_ifx(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	const char *devnode;
+
+	DBG("modem %p", modem);
+
+	devnode = udev_device_get_devnode(udev_device);
+	ofono_modem_set_string(modem, "Device", devnode);
+
+	ofono_modem_register(modem);
+}
+
 static void add_zte(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
@@ -399,6 +412,23 @@ static void add_modem(struct udev_device *udev_device)
 	struct udev_device *parent;
 	const char *devpath, *curpath, *driver;
 
+	driver = get_driver(udev_device);
+	if (driver != NULL) {
+		devpath = udev_device_get_devpath(udev_device);
+		if (devpath == NULL)
+			return;
+
+		modem = ofono_modem_create(NULL, driver);
+		if (modem == NULL)
+			return;
+
+		ofono_modem_set_string(modem, "Path", devpath);
+
+		modem_list = g_slist_prepend(modem_list, modem);
+
+		goto done;
+	}
+
 	parent = udev_device_get_parent(udev_device);
 	if (parent == NULL)
 		return;
@@ -433,6 +463,7 @@ static void add_modem(struct udev_device *udev_device)
 		modem_list = g_slist_prepend(modem_list, modem);
 	}
 
+done:
 	curpath = udev_device_get_devpath(udev_device);
 	if (curpath == NULL)
 		return;
@@ -445,6 +476,8 @@ static void add_modem(struct udev_device *udev_device)
 		add_mbm(modem, udev_device);
 	else if (g_strcmp0(driver, "hso") == 0)
 		add_hso(modem, udev_device);
+	else if (g_strcmp0(driver, "ifx") == 0)
+		add_ifx(modem, udev_device);
 	else if (g_strcmp0(driver, "zte") == 0)
 		add_zte(modem, udev_device);
 	else if (g_strcmp0(driver, "huawei") == 0)
