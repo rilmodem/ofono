@@ -256,6 +256,9 @@ builtin_sources += plugins/hfp.c plugins/bluetooth.h
 builtin_modules += palmpre
 builtin_sources += plugins/palmpre.c
 
+builtin_modules += ifx
+builtin_sources += plugins/ifx.c
+
 builtin_modules += ste
 builtin_sources += plugins/ste.c
 
