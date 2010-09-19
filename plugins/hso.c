@@ -36,6 +36,7 @@
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
+#include <ofono/phonebook.h>
 #include <ofono/sim.h>
 #include <ofono/cbs.h>
 #include <ofono/sms.h>
@@ -262,6 +263,15 @@ static void hso_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
+static void hso_post_sim(struct ofono_modem *modem)
+{
+	struct hso_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_phonebook_create(modem, 0, "atmodem", data->app);
+}
+
 static void hso_post_online(struct ofono_modem *modem)
 {
 	struct hso_data *data = ofono_modem_get_data(modem);
@@ -296,6 +306,7 @@ static struct ofono_modem_driver hso_driver = {
 	.disable	= hso_disable,
 	.set_online     = hso_set_online,
 	.pre_sim	= hso_pre_sim,
+	.post_sim	= hso_post_sim,
 	.post_online	= hso_post_online,
 };
 
