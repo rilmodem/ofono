@@ -65,6 +65,11 @@ struct gprs_context_data {
 	void *cb_data;                                  /* Callback data */
 };
 
+static void ppp_debug(const char *str, void *data)
+{
+	ofono_info("%s: %s", (const char *) data, str);
+}
+
 static void ppp_connect(const char *interface, const char *local,
 			const char *remote,
 			const char *dns1, const char *dns2,
@@ -133,6 +138,9 @@ static gboolean setup_ppp(struct ofono_gprs_context *gc)
 		g_at_chat_resume(gcd->chat);
 		return FALSE;
 	}
+
+	if (getenv("OFONO_PPP_DEBUG"))
+		g_at_ppp_set_debug(gcd->ppp, ppp_debug, "PPP");
 
 	g_at_ppp_set_credentials(gcd->ppp, gcd->username, gcd->password);
 
