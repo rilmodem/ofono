@@ -459,7 +459,7 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 
 	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_REQUEST_SR)
 		status_report_assembly_add_fragment(sms->sr_assembly,
-							entry->msg_id,
+							entry->uuid.uuid,
 							&entry->receiver,
 							mr, time(NULL),
 							entry->num_pdus);
@@ -725,7 +725,8 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 		return __ofono_error_failed(msg);
 
 	modem = __ofono_atom_get_modem(sms->atom);
-	__ofono_history_sms_send_pending(modem, msg_id, to, time(NULL), text);
+	__ofono_history_sms_send_pending(modem, msg_id,
+						to, time(NULL), text);
 
 	dbus_message_ref(msg);
 
@@ -1008,15 +1009,15 @@ static void handle_sms_status_report(struct ofono_sms *sms,
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	gboolean delivered;
-	unsigned int msg_id;
+	struct ofono_uuid uuid;
 
 	DBG("");
 
-	if (status_report_assembly_report(sms->sr_assembly, incoming, &msg_id,
+	if (status_report_assembly_report(sms->sr_assembly, incoming, uuid.uuid,
 						&delivered) == FALSE)
 		return;
 
-	__ofono_history_sms_send_status(modem, msg_id, time(NULL),
+	__ofono_history_sms_send_status(modem, 0, time(NULL),
 			delivered ? OFONO_HISTORY_SMS_STATUS_DELIVERED :
 			OFONO_HISTORY_SMS_STATUS_DELIVER_FAILED);
 }
