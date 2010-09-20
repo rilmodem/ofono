@@ -56,7 +56,6 @@ struct ofono_sms {
 	DBusMessage *pending;
 	struct ofono_phone_number sca;
 	struct sms_assembly *assembly;
-	unsigned int next_msg_id;
 	guint ref;
 	GQueue *txq;
 	gint tx_source;
@@ -850,11 +849,9 @@ static void dispatch_text_message(struct ofono_sms *sms,
 
 	g_dbus_send_message(conn, signal);
 
-	if (cls != SMS_CLASS_0) {
-		__ofono_history_sms_received(modem, sms->next_msg_id, str,
+	if (cls != SMS_CLASS_0)
+		__ofono_history_sms_received(modem, 0, str,
 						&remote, &local, message);
-		sms->next_msg_id += 1;
-	}
 }
 
 static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
@@ -1255,8 +1252,6 @@ static void sms_remove(struct ofono_atom *atom)
 
 	if (sms->settings) {
 		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
-					"NextMessageId", sms->next_msg_id);
-		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
 					"NextReference", sms->ref);
 		g_key_file_set_boolean(sms->settings, SETTINGS_GROUP,
 					"UseDeliveryReports",
@@ -1351,9 +1346,6 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 		return;
 
 	sms->imsi = g_strdup(imsi);
-
-	sms->next_msg_id = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
-							"NextMessageId", NULL);
 
 	sms->ref = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
 							"NextReference", NULL);
