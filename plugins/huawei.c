@@ -163,6 +163,22 @@ static void ussdmode_support_cb(gboolean ok, GAtResult *result,
 					ussdmode_query_cb, data, NULL);
 }
 
+static void cfun_offline(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huawei_data *data = ofono_modem_get_data(modem);
+
+	if (!ok) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	if (data->sim == NULL)
+		return;
+
+	ofono_sim_inserted_notify(data->sim, TRUE);
+}
+
 static gboolean notify_sim_state(struct ofono_modem *modem,
 				enum huawei_sim_state sim_state)
 {
@@ -170,16 +186,32 @@ static gboolean notify_sim_state(struct ofono_modem *modem,
 
 	DBG("%d", sim_state);
 
-	if (sim_state == HUAWEI_SIM_STATE_NOT_EXISTENT) {
-		ofono_sim_inserted_notify(data->sim, FALSE);
+	data->sim_state = sim_state;
 
+	switch (sim_state) {
+	case HUAWEI_SIM_STATE_NOT_EXISTENT:
 		/* SIM is not ready, try again a bit later */
 		return TRUE;
+	case HUAWEI_SIM_STATE_INVALID_OR_LOCKED:
+		ofono_modem_set_powered(modem, TRUE);
+
+		return FALSE;
+	case HUAWEI_SIM_STATE_VALID:
+	case HUAWEI_SIM_STATE_INVALID_CS:
+	case HUAWEI_SIM_STATE_INVALID_PS:
+	case HUAWEI_SIM_STATE_INVALID_PS_AND_CS:
+		/*
+		 * In the "warm start" case the modem skips
+		 * HUAWEI_SIM_STATE_INVALID_OR_LOCKED altogether, so need
+		 * to set power also here
+		 */
+		ofono_modem_set_powered(modem, TRUE);
+
+		g_at_chat_send(data->pcui, "AT+CFUN=5", none_prefix,
+				cfun_offline, modem, NULL);
+
+		return FALSE;
 	}
-
-	ofono_sim_inserted_notify(data->sim, TRUE);
-
-	data->sim_state = sim_state;
 
 	return FALSE;
 }
@@ -347,24 +379,24 @@ static void cvoice_query_cb(gboolean ok, GAtResult *result,
 	gint mode, rate, bits, period;
 
 	if (!ok)
-		goto done;
+		return;
 
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "^CVOICE:"))
-		goto done;
+		return;
 
 	if (!g_at_result_iter_next_number(&iter, &mode))
-		goto done;
+		return;
 
 	if (!g_at_result_iter_next_number(&iter, &rate))
-		goto done;
+		return;
 
 	if (!g_at_result_iter_next_number(&iter, &bits))
-		goto done;
+		return;
 
 	if (!g_at_result_iter_next_number(&iter, &period))
-		goto done;
+		return;
 
 	data->voice = TRUE;
 
@@ -383,9 +415,6 @@ static void cvoice_query_cb(gboolean ok, GAtResult *result,
 	/* check available voice ports */
 	g_at_chat_send(data->pcui, "AT^DDSETEX=?", none_prefix,
 						NULL, NULL, NULL);
-
-done:
-	ofono_modem_set_powered(modem, TRUE);
 }
 
 static void cvoice_support_cb(gboolean ok, GAtResult *result,
@@ -396,21 +425,16 @@ static void cvoice_support_cb(gboolean ok, GAtResult *result,
 	GAtResultIter iter;
 
 	if (!ok)
-		goto done;
+		return;
 
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "^CVOICE:"))
-		goto done;
+		return;
 
 	/* query current voice setting */
 	g_at_chat_send(data->pcui, "AT^CVOICE?", cvoice_prefix,
 					cvoice_query_cb, modem, NULL);
-
-	return;
-
-done:
-	ofono_modem_set_powered(modem, TRUE);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -550,7 +574,7 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->pcui, "ATE0", none_prefix, NULL, NULL, NULL);
 
-	g_at_chat_send(data->pcui, "AT+CFUN=1;+CFUN=5", none_prefix,
+	g_at_chat_send(data->pcui, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
 
 	query_sim_state(modem);
@@ -667,8 +691,13 @@ static void huawei_post_online(struct ofono_modem *modem)
 	struct ofono_netreg *netreg;
 	struct ofono_message_waiting *mw;
 
-	if (data->sim_state == HUAWEI_SIM_STATE_INVALID_PS_AND_CS)
+	if (data->sim_state != HUAWEI_SIM_STATE_VALID &&
+	    data->sim_state != HUAWEI_SIM_STATE_INVALID_CS &&
+	    data->sim_state != HUAWEI_SIM_STATE_INVALID_PS) {
+		ofono_info("huawei: invalid sim state in post online (%d)",
+				data->sim_state);
 		return;
+	}
 
 	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
 								data->pcui);
