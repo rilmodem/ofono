@@ -84,6 +84,7 @@ struct tx_queue_entry {
 	unsigned char num_pdus;
 	unsigned char cur_pdu;
 	struct sms_address receiver;
+	struct ofono_uuid uuid;
 	unsigned int msg_id;
 	unsigned int retry;
 	unsigned int flags;
@@ -555,40 +556,35 @@ static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
  *
  * @internal
  *
- * Note we use memcpy() instead of dropping the uuid param straight to
- * g_checksum_get_digest(). This is because g_checksum_get_digest()
- * seems to randomly not copy the digest data if the buffer is smaller
- * than what the digest should have.
- *
  * The current time is added to avoid the UUID being the same when the
  * same message is sent to the same destination repeatedly. Note we
  * need a high resolution time (not just seconds), otherwise resending
  * in the same second (not that rare) could yield the same UUID.
  */
-static unsigned int sms_uuid_from_pdus(const struct pending_pdu *pdu,
-					size_t pdus)
+static gboolean sms_uuid_from_pdus(const struct pending_pdu *pdu,
+					unsigned char pdus,
+					struct ofono_uuid *uuid)
+
 {
-	unsigned int uuid = 0;
 	GChecksum *checksum;
-	gsize uuid_size = g_checksum_type_get_length(G_CHECKSUM_SHA256);
-	guint8 data[uuid_size];
-	unsigned cnt;
+	gsize uuid_size = sizeof(uuid->uuid);
+	unsigned int cnt;
 	struct timeval now;
 
-	checksum = g_checksum_new(G_CHECKSUM_SHA256);
+	checksum = g_checksum_new(G_CHECKSUM_SHA1);
 	if (checksum == NULL)
-		goto error_new;
+		return FALSE;
 
 	for (cnt = 0; cnt < pdus; cnt++)
 		g_checksum_update(checksum, pdu[cnt].pdu, pdu[cnt].pdu_len);
 
 	gettimeofday(&now, NULL);
 	g_checksum_update(checksum, (void *) &now, sizeof(now));
-	g_checksum_get_digest(checksum, data, &uuid_size);
-	memcpy(&uuid, data, MIN(sizeof(uuid), sizeof(data)));
+
+	g_checksum_get_digest(checksum, uuid->uuid, &uuid_size);
 	g_checksum_free(checksum);
-error_new:
-	return uuid;
+
+	return TRUE;
 }
 
 static struct tx_queue_entry *tx_queue_entry_new(GSList *msg_list)
@@ -610,9 +606,10 @@ static struct tx_queue_entry *tx_queue_entry_new(GSList *msg_list)
 				pdu->pdu_len, pdu->tpdu_len);
 	}
 
-	entry->msg_id = sms_uuid_from_pdus(entry->pdus, entry->num_pdus);
+	if (sms_uuid_from_pdus(entry->pdus, entry->num_pdus, &entry->uuid))
+		return entry;
 
-	return entry;
+	return NULL;
 }
 
 static void send_message_cb(gboolean ok, void *data)
