@@ -739,12 +739,12 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 }
 
 static GDBusMethodTable sms_manager_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	sms_get_properties,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SetProperty",	"sv",	"",		sms_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SendMessage",	"ss",	"",		sms_send_message,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetProperties",    "",    "a{sv}",        sms_get_properties,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "SetProperty",      "sv",  "",             sms_set_property,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "SendMessage",      "ss",  "",             sms_send_message,
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
