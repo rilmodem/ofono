@@ -45,7 +45,7 @@ struct history_call_foreach_data {
 };
 
 struct history_sms_foreach_data {
-	unsigned int msg_id;
+	const struct ofono_uuid *uuid;
 	const char *address;
 	const char *text;
 	union {
@@ -170,12 +170,12 @@ static void history_sms_received(struct ofono_atom *atom, void *data)
 	if (context->driver->sms_received == NULL)
 		return;
 
-	context->driver->sms_received(context, hfd->msg_id, hfd->address,
+	context->driver->sms_received(context, hfd->uuid, hfd->address,
 					hfd->remote, hfd->local, hfd->text);
 }
 
 void __ofono_history_sms_received(struct ofono_modem *modem,
-					unsigned int msg_id,
+					const struct ofono_uuid *uuid,
 					const char *from,
 					const struct tm *remote,
 					const struct tm *local,
@@ -183,7 +183,7 @@ void __ofono_history_sms_received(struct ofono_modem *modem,
 {
 	struct history_sms_foreach_data hfd;
 
-	hfd.msg_id = msg_id;
+	hfd.uuid = uuid;
 	hfd.address = from;
 	hfd.remote = remote;
 	hfd.local = local;
@@ -201,17 +201,18 @@ static void history_sms_send_pending(struct ofono_atom *atom, void *data)
 	if (context->driver->sms_send_pending == NULL)
 		return;
 
-	context->driver->sms_send_pending(context, hfd->msg_id, hfd->address,
+	context->driver->sms_send_pending(context, hfd->uuid, hfd->address,
 						hfd->when, hfd->text);
 }
 
 void __ofono_history_sms_send_pending(struct ofono_modem *modem,
-					unsigned int msg_id, const char *to,
+					const struct ofono_uuid *uuid,
+					const char *to,
 					time_t when, const char *text)
 {
 	struct history_sms_foreach_data hfd;
 
-	hfd.msg_id = msg_id;
+	hfd.uuid = uuid;
 	hfd.address = to;
 	hfd.text = text;
 	hfd.when = when;
@@ -229,17 +230,18 @@ static void history_sms_send_status(struct ofono_atom *atom, void *data)
 	if (context->driver->sms_send_status == NULL)
 		return;
 
-	context->driver->sms_send_status(context, hfd->msg_id,
+	context->driver->sms_send_status(context, hfd->uuid,
 						hfd->when, hfd->status);
 }
 
 void __ofono_history_sms_send_status(struct ofono_modem *modem,
-					unsigned int msg_id, time_t when,
+					const struct ofono_uuid *uuid,
+					time_t when,
 					enum ofono_history_sms_status status)
 {
 	struct history_sms_foreach_data hfd;
 
-	hfd.msg_id = msg_id;
+	hfd.uuid = uuid;
 	hfd.address = NULL;
 	hfd.text = NULL;
 	hfd.when = when;

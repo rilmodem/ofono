@@ -305,17 +305,20 @@ void __ofono_history_call_missed(struct ofono_modem *modem,
 				const struct ofono_call *call, time_t when);
 
 void __ofono_history_sms_received(struct ofono_modem *modem,
-					unsigned int msg_id, const char *from,
+					const struct ofono_uuid *uuid,
+					const char *from,
 					const struct tm *remote,
 					const struct tm *local,
 					const char *text);
 
 void __ofono_history_sms_send_pending(struct ofono_modem *modem,
-					unsigned int msg_id, const char *to,
+					const struct ofono_uuid *uuid,
+					const char *to,
 					time_t when, const char *text);
 
 void __ofono_history_sms_send_status(struct ofono_modem *modem,
-					unsigned int msg_id, time_t when,
+					const struct ofono_uuid *uuid,
+					time_t when,
 					enum ofono_history_sms_status status);
 
 #include <ofono/message-waiting.h>
