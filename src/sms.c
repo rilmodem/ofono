@@ -84,7 +84,6 @@ struct tx_queue_entry {
 	unsigned char cur_pdu;
 	struct sms_address receiver;
 	struct ofono_uuid uuid;
-	unsigned int msg_id;
 	unsigned int retry;
 	unsigned int flags;
 	ofono_sms_txq_submit_cb_t cb;
@@ -483,7 +482,7 @@ next_q:
 		else
 			hs = OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED;
 
-		__ofono_history_sms_send_status(modem, entry->msg_id,
+		__ofono_history_sms_send_status(modem, &entry->uuid,
 						time(NULL), hs);
 	}
 
@@ -682,7 +681,6 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	int ref_offset;
 	struct ofono_modem *modem;
 	unsigned int flags;
-	unsigned int msg_id = 0;
 	gboolean use_16bit_ref = FALSE;
 	struct tx_queue_entry *entry;
 
@@ -725,7 +723,7 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 		return __ofono_error_failed(msg);
 
 	modem = __ofono_atom_get_modem(sms->atom);
-	__ofono_history_sms_send_pending(modem, msg_id,
+	__ofono_history_sms_send_pending(modem, &entry->uuid,
 						to, time(NULL), text);
 
 	dbus_message_ref(msg);
@@ -851,7 +849,7 @@ static void dispatch_text_message(struct ofono_sms *sms,
 	g_dbus_send_message(conn, signal);
 
 	if (cls != SMS_CLASS_0)
-		__ofono_history_sms_received(modem, 0, str,
+		__ofono_history_sms_received(modem, uuid, str,
 						&remote, &local, message);
 }
 
@@ -1017,7 +1015,7 @@ static void handle_sms_status_report(struct ofono_sms *sms,
 						&delivered) == FALSE)
 		return;
 
-	__ofono_history_sms_send_status(modem, 0, time(NULL),
+	__ofono_history_sms_send_status(modem, &uuid, time(NULL),
 			delivered ? OFONO_HISTORY_SMS_STATUS_DELIVERED :
 			OFONO_HISTORY_SMS_STATUS_DELIVER_FAILED);
 }
