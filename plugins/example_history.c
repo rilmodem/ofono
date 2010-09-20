@@ -102,7 +102,7 @@ static void example_history_call_missed(struct ofono_history_context *context,
 }
 
 static void example_history_sms_received(struct ofono_history_context *context,
-						unsigned int msg_id,
+						const struct ofono_uuid *uuid,
 						const char *from,
 						const struct tm *remote,
 						const struct tm *local,
@@ -111,7 +111,7 @@ static void example_history_sms_received(struct ofono_history_context *context,
 	char buf[128];
 
 	ofono_debug("Incoming SMS on modem: %p", context->modem);
-	ofono_debug("InternalMessageId: %u", msg_id);
+	ofono_debug("InternalMessageId: %s", ofono_uuid_to_str(uuid));
 	ofono_debug("From: %s", from);
 
 	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", local);
@@ -126,14 +126,14 @@ static void example_history_sms_received(struct ofono_history_context *context,
 }
 
 static void example_history_sms_send_pending(struct ofono_history_context *context,
-						unsigned int msg_id,
+						const struct ofono_uuid *uuid,
 						const char *to, time_t when,
 						const char *text)
 {
 	char buf[128];
 
 	ofono_debug("Sending SMS on modem: %p", context->modem);
-	ofono_debug("InternalMessageId: %u", msg_id);
+	ofono_debug("InternalMessageId: %s", ofono_uuid_to_str(uuid));
 	ofono_debug("To: %s:", to);
 
 	strftime(buf, 127, "%Y-%m-%dT%H:%M:%S%z", localtime(&when));
@@ -142,10 +142,11 @@ static void example_history_sms_send_pending(struct ofono_history_context *conte
 	ofono_debug("Text: %s", text);
 }
 
-static void example_history_sms_send_status(struct ofono_history_context *context,
-						unsigned int msg_id,
-						time_t when,
-						enum ofono_history_sms_status s)
+static void example_history_sms_send_status(
+					struct ofono_history_context *context,
+					const struct ofono_uuid *uuid,
+					time_t when,
+					enum ofono_history_sms_status s)
 {
 	char buf[128];
 
@@ -156,19 +157,21 @@ static void example_history_sms_send_status(struct ofono_history_context *contex
 	case OFONO_HISTORY_SMS_STATUS_PENDING:
 		break;
 	case OFONO_HISTORY_SMS_STATUS_SUBMITTED:
-		ofono_debug("SMS %u submitted successfully", msg_id);
+		ofono_debug("SMS %s submitted successfully",
+					ofono_uuid_to_str(uuid));
 		ofono_debug("Submission Time: %s", buf);
 		break;
 	case OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED:
-		ofono_debug("Sending SMS %u failed", msg_id);
+		ofono_debug("Sending SMS %s failed", ofono_uuid_to_str(uuid));
 		ofono_debug("Failure Time: %s", buf);
 		break;
 	case OFONO_HISTORY_SMS_STATUS_DELIVERED:
-		ofono_debug("SMS delivered, msg_id: %u, time: %s", msg_id, buf);
+		ofono_debug("SMS delivered, msg_id: %s, time: %s",
+					ofono_uuid_to_str(uuid), buf);
 		break;
 	case OFONO_HISTORY_SMS_STATUS_DELIVER_FAILED:
-		ofono_debug("SMS undeliverable, msg_id: %u, time: %s",
-				msg_id, buf);
+		ofono_debug("SMS undeliverable, msg_id: %s, time: %s",
+					ofono_uuid_to_str(uuid), buf);
 		break;
 	default:
 		break;
