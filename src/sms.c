@@ -1457,18 +1457,27 @@ void *ofono_sms_get_data(struct ofono_sms *sms)
 	return sms->driver_data;
 }
 
-unsigned int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
-					unsigned int flags,
-					ofono_sms_txq_submit_cb_t cb,
-					void *data, ofono_destroy_func destroy)
+int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
+				unsigned int flags,
+				struct ofono_uuid *uuid,
+				ofono_sms_txq_submit_cb_t cb,
+				void *data, ofono_destroy_func destroy)
 {
-	struct tx_queue_entry *entry = tx_queue_entry_new(list);
+	struct tx_queue_entry *entry;
 
+	entry = tx_queue_entry_new(list, flags, cb, data, destroy);
+	if (entry == NULL)
+		return -ENOMEM;
 
 	g_queue_push_tail(sms->txq, entry);
 
 	if (g_queue_get_length(sms->txq) == 1)
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 
-	return entry->msg_id;
+	if (uuid)
+		memcpy(uuid, &entry->uuid, sizeof(*uuid));
+
+	/* TODO: If this is exported via D-Bus, signal MessageAdded */
+
+	return 0;
 }

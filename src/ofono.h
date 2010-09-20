@@ -218,10 +218,10 @@ enum ofono_sms_submit_flag {
 
 typedef void (*ofono_sms_txq_submit_cb_t)(gboolean ok, void *data);
 
-unsigned int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
-					unsigned int flags,
-					ofono_sms_txq_submit_cb_t cb,
-					void *data, ofono_destroy_func destroy);
+int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
+				unsigned int flags, struct ofono_uuid *uuid,
+				ofono_sms_txq_submit_cb_t cb,
+				void *data, ofono_destroy_func destroy);
 
 #include <ofono/sim.h>
 #include <ofono/stk.h>

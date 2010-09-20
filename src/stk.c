@@ -720,8 +720,12 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 	msg_list.data = (void *) &cmd->send_sms.gsm_sms;
 	msg_list.next = NULL;
 
-	__ofono_sms_txq_submit(sms, &msg_list, 0, send_sms_submit_cb,
-				stk->sms_submit_req, g_free);
+	if (__ofono_sms_txq_submit(sms, &msg_list, 0, NULL, send_sms_submit_cb,
+				stk->sms_submit_req, g_free) < 0) {
+		g_free(stk->sms_submit_req);
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		return TRUE;
+	}
 
 	stk->cancel_cmd = send_sms_cancel;
 
