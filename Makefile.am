@@ -397,7 +397,7 @@ noinst_PROGRAMS = unit/test-common unit/test-util unit/test-idmap \
 					unit/test-mux unit/test-caif \
 					unit/test-stkutil
 
-unit_test_common_SOURCES = unit/test-common.c src/common.c
+unit_test_common_SOURCES = unit/test-common.c src/common.c src/util.c
 unit_test_common_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_common_OBJECTS)
 
