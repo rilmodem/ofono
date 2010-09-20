@@ -31,6 +31,7 @@
 
 #include <ofono/types.h>
 #include "common.h"
+#include "util.h"
 
 struct error_entry {
 	int error;
@@ -685,4 +686,11 @@ gboolean is_valid_apn(const char *apn)
 	}
 
 	return TRUE;
+}
+
+const char *ofono_uuid_to_str(const struct ofono_uuid *uuid)
+{
+	static char buf[OFONO_SHA1_UUID_LEN * 2 + 1];
+
+	return encode_hex_own_buf(uuid->uuid, OFONO_SHA1_UUID_LEN, 0, buf);
 }

@@ -104,9 +104,13 @@ struct ofono_network_time {
 	int utcoff;	/* Offset from UTC in seconds */
 };
 
+#define OFONO_SHA1_UUID_LEN 20
+
 struct ofono_uuid {
-	unsigned char uuid[20];
+	unsigned char uuid[OFONO_SHA1_UUID_LEN];
 };
+
+const char *ofono_uuid_to_str(const struct ofono_uuid *uuid);
 
 #ifdef __cplusplus
 }
