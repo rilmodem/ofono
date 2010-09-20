@@ -1279,8 +1279,11 @@ static void test_sr_assembly()
 	long pdu_len;
 	struct status_report_assembly *sra;
 	gboolean delivered;
-	unsigned int id;
 	struct sms_address addr;
+	unsigned char sha1[SMS_MSGID_LEN] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+						10, 11, 12, 13, 14, 15,
+						16, 17, 18, 19 };
+	unsigned char id[SMS_MSGID_LEN];
 
 	/* mr 4 & mr 5 */
 
@@ -1302,19 +1305,19 @@ static void test_sr_assembly()
 
 	sra = status_report_assembly_new(NULL);
 
-	status_report_assembly_add_fragment(sra, 42, &addr, 4, time(NULL), 2);
-	status_report_assembly_add_fragment(sra, 42, &addr, 5, time(NULL), 2);
+	status_report_assembly_add_fragment(sra, sha1, &addr, 4, time(NULL), 2);
+	status_report_assembly_add_fragment(sra, sha1, &addr, 5, time(NULL), 2);
 
 	status_report_assembly_expire(sra, time(NULL) + 40);
 	g_assert(g_hash_table_size(sra->assembly_table) == 0);
 
-	status_report_assembly_add_fragment(sra, 42, &addr, 4, time(NULL), 2);
-	status_report_assembly_add_fragment(sra, 42, &addr, 5, time(NULL), 2);
+	status_report_assembly_add_fragment(sra, sha1, &addr, 4, time(NULL), 2);
+	status_report_assembly_add_fragment(sra, sha1, &addr, 5, time(NULL), 2);
 
-	g_assert(!status_report_assembly_report(sra, &sr1, &id, &delivered));
-	g_assert(status_report_assembly_report(sra, &sr2, &id, &delivered));
+	g_assert(!status_report_assembly_report(sra, &sr1, id, &delivered));
+	g_assert(status_report_assembly_report(sra, &sr2, id, &delivered));
 
-	g_assert(id == 42);
+	g_assert(memcmp(id, sha1, SMS_MSGID_LEN) == 0);
 	g_assert(delivered == TRUE);
 	status_report_assembly_free(sra);
 }
