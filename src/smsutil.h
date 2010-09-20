@@ -20,6 +20,7 @@
  */
 
 #define CBS_MAX_GSM_CHARS 93
+#define SMS_MSGID_LEN 20
 
 enum sms_type {
 	SMS_TYPE_DELIVER = 0,
@@ -505,10 +506,10 @@ struct status_report_assembly *status_report_assembly_new(const char *imsi);
 void status_report_assembly_free(struct status_report_assembly *assembly);
 gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 					const struct sms *status_report,
-					unsigned int *msg_id,
+					unsigned char *out_msgid,
 					gboolean *msg_delivered);
 void status_report_assembly_add_fragment(struct status_report_assembly
-					*assembly, unsigned int msg_id,
+					*assembly, const unsigned char *msgid,
 					const struct sms_address *to,
 					unsigned char mr, time_t expiration,
 					unsigned char total_mrs);
