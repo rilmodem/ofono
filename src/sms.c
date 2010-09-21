@@ -918,6 +918,61 @@ err:
 	return __ofono_error_failed(msg);
 }
 
+static DBusMessage *sms_get_messages(DBusConnection *conn, DBusMessage *msg,
+					void *data)
+{
+	struct ofono_sms *sms = data;
+	DBusMessage *reply;
+	DBusMessageIter iter;
+	DBusMessageIter array;
+	DBusMessageIter entry, dict;
+	const char *path;
+	GHashTableIter hashiter;
+	gpointer key, value;
+	struct message *m;
+
+	reply = dbus_message_new_method_return(msg);
+	if (reply == NULL)
+		return NULL;
+
+	dbus_message_iter_init_append(reply, &iter);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					DBUS_STRUCT_BEGIN_CHAR_AS_STRING
+					DBUS_TYPE_OBJECT_PATH_AS_STRING
+					DBUS_TYPE_ARRAY_AS_STRING
+					DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
+					DBUS_TYPE_STRING_AS_STRING
+					DBUS_TYPE_VARIANT_AS_STRING
+					DBUS_DICT_ENTRY_END_CHAR_AS_STRING
+					DBUS_STRUCT_END_CHAR_AS_STRING,
+					&array);
+
+	g_hash_table_iter_init(&hashiter, sms->messages);
+
+	while (g_hash_table_iter_next(&hashiter, &key, &value)) {
+		m = value;
+
+		path = message_build_path(sms, m);
+
+		dbus_message_iter_open_container(&array, DBUS_TYPE_STRUCT,
+							NULL, &entry);
+		dbus_message_iter_append_basic(&entry, DBUS_TYPE_OBJECT_PATH,
+						&path);
+		dbus_message_iter_open_container(&entry, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+
+		append_message_properties(m, &dict);
+		dbus_message_iter_close_container(&entry, &dict);
+		dbus_message_iter_close_container(&array, &entry);
+	}
+
+	dbus_message_iter_close_container(&iter, &array);
+
+	return reply;
+}
+
 static GDBusMethodTable sms_manager_methods[] = {
 	{ "GetProperties",    "",    "a{sv}",        sms_get_properties,
 						G_DBUS_METHOD_FLAG_ASYNC },
@@ -925,6 +980,7 @@ static GDBusMethodTable sms_manager_methods[] = {
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SendMessage",      "ss",  "o",             sms_send_message,
 						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetMessages",       "",    "a(oa{sv})",    sms_get_messages },
 	{ }
 };
 
