@@ -1861,7 +1861,7 @@ static gboolean extract_app_port_common(struct sms_udh_iter *iter, int *dst,
 	 * processing at the next information element) any information element
 	 * where the value of the Information-Element-Data is Reserved or not
 	 * supported.
-	*/
+	 */
 	while ((iei = sms_udh_iter_get_ie_type(iter)) !=
 			SMS_IEI_INVALID) {
 		switch (iei) {
@@ -3048,7 +3048,8 @@ static inline GSList *sms_list_append(GSList *l, const struct sms *in)
 	return l;
 }
 
-/* Prepares the text for transmission.  Breaks up into fragments if
+/*
+ * Prepares the text for transmission.  Breaks up into fragments if
  * necessary using ref as the concatenated message reference number.
  * Returns a list of sms messages in order.  If ref_offset is given,
  * then the ref_offset contains the reference number offset or 0
@@ -3343,7 +3344,8 @@ gboolean cbs_decode(const unsigned char *pdu, int len, struct cbs *out)
 	out->max_pages = pdu[5] & 0xf;
 	out->page = (pdu[5] >> 4) & 0xf;
 
-	/* If a mobile receives the code 0000 in either the first field or
+	/*
+	 * If a mobile receives the code 0000 in either the first field or
 	 * the second field then it shall treat the CBS message exactly the
 	 * same as a CBS message with page parameter 0001 0001 (i.e. a single
 	 * page message).
@@ -3511,7 +3513,8 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 	if (cbs_list == NULL)
 		return NULL;
 
-	/* CBS can only come from the network, so we're much less lenient
+	/*
+	 * CBS can only come from the network, so we're much less lenient
 	 * on what we support.  Namely we require the same charset to be
 	 * used across all pages.
 	 */
@@ -3601,7 +3604,8 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 
 			i = iso639 ? 3 : 0;
 
-			/* CR is a padding character, which means we can
+			/*
+			 * CR is a padding character, which means we can
 			 * safely discard everything afterwards
 			 */
 			for (; i < written; i++, bufsize++) {
@@ -3611,7 +3615,8 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 				buf[bufsize] = unpacked[i];
 			}
 
-			/* It isn't clear whether extension sequences
+			/*
+			 * It isn't clear whether extension sequences
 			 * (2 septets) must be wholly present in the page
 			 * and not broken over multiple pages.  The behavior
 			 * is probably the same as SMS, but we don't make
@@ -3622,9 +3627,10 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 			int i = taken;
 			int max_offset = taken + num_ucs2_chars * 2;
 
-			/* It is completely unclear how UCS2 chars are handled
+			/*
+			 * It is completely unclear how UCS2 chars are handled
 			 * especially across pages or when the UDH is present.
-			 * For now do the best we can
+			 * For now do the best we can.
 			 */
 			if (iso639) {
 				i += 2;
@@ -3662,7 +3668,8 @@ static inline gboolean cbs_is_update_newer(unsigned int n, unsigned int o)
 	if (new_update == old_update)
 		return FALSE;
 
-	/* Any Update Number eight or less higher (modulo 16) than the last
+	/*
+	 * Any Update Number eight or less higher (modulo 16) than the last
 	 * received Update Number will be considered more recent, and shall be
 	 * treated as a new CBS message, provided the mobile has not been
 	 * switched off.
@@ -3741,8 +3748,9 @@ static void cbs_assembly_expire(struct cbs_assembly *assembly,
 	GSList *prev;
 	GSList *tmp;
 
-	/* Take care of the case where several updates are being
-	 * reassembled at the same time.  If the newer one is assembled
+	/*
+	 * Take care of the case where several updates are being
+	 * reassembled at the same time. If the newer one is assembled
 	 * first, then the subsequent old update is discarded, make
 	 * sure that we're also discarding the assembly node for the
 	 * partially assembled ones
@@ -3776,7 +3784,8 @@ static void cbs_assembly_expire(struct cbs_assembly *assembly,
 void cbs_assembly_location_changed(struct cbs_assembly *assembly, gboolean plmn,
 					gboolean lac, gboolean ci)
 {
-	/* Location Area wide (in GSM) (which means that a CBS message with the
+	/*
+	 * Location Area wide (in GSM) (which means that a CBS message with the
 	 * same Message Code and Update Number may or may not be "new" in the
 	 * next cell according to whether the next cell is in the same Location
 	 * Area as the current cell), or

@@ -465,7 +465,8 @@ static void pri_activate_callback(const struct ofono_error *error,
 	__ofono_dbus_pending_reply(&gc->pending,
 				dbus_message_new_method_return(gc->pending));
 
-	/* If we don't have the interface, don't bother emitting any settings,
+	/*
+	 * If we don't have the interface, don't bother emitting any settings,
 	 * as nobody can make use of them
 	 */
 	if (interface != NULL)
@@ -1913,8 +1914,10 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
 		goto error;
 
-	/* Accept empty (just created) APNs, but don't allow other
-	 * invalid ones */
+	/*
+	 * Accept empty (just created) APNs, but don't allow other
+	 * invalid ones
+	 */
 	if (apn[0] != '\0' && is_valid_apn(apn) == FALSE)
 		goto error;
 

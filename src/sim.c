@@ -582,7 +582,8 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 
 	type = sim_string_to_passwd(typestr);
 
-	/* SIM PIN2 cannot be locked / unlocked according to 27.007,
+	/*
+	 * SIM PIN2 cannot be locked / unlocked according to 27.007,
 	 * however the PIN combination can be changed
 	 */
 	if (password_is_pin(type) == FALSE ||
@@ -1283,7 +1284,8 @@ static gboolean sim_efli_format(const unsigned char *ef, int length)
 		if (ef[i] == 0xff && ef[i+1] == 0xff)
 			continue;
 
-		/* ISO 639 country codes are each two lower-case SMS 7-bit
+		/*
+		 * ISO 639 country codes are each two lower-case SMS 7-bit
 		 * characters while CB DCS language codes are in ranges
 		 * (0 - 15) or (32 - 47), so the ranges don't overlap
 		 */
@@ -1306,7 +1308,8 @@ static GSList *parse_language_list(const unsigned char *ef, int length)
 		if (ef[i] > 0x7f || ef[i+1] > 0x7f)
 			continue;
 
-		/* ISO 639 codes contain only characters that are coded
+		/*
+		 * ISO 639 codes contain only characters that are coded
 		 * identically in SMS 7 bit charset, ASCII or UTF8 so
 		 * no conversion.
 		 */
@@ -1395,7 +1398,8 @@ skip_efpl:
 			efli = parse_eflp(sim->efli, sim->efli_length);
 	}
 
-	/* If efli_format is TRUE, make a list of languages in both files in
+	/*
+	 * If efli_format is TRUE, make a list of languages in both files in
 	 * order of preference following TS 31.102.
 	 * Quoting 31.102 Section 5.1.1.2:
 	 * The preferred language selection shall always use the EFLI in
@@ -1466,7 +1470,8 @@ static void sim_iccid_read_cb(int ok, int length, int record,
 
 static void sim_initialize(struct ofono_sim *sim)
 {
-	/* Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
+	/*
+	 * Perform SIM initialization according to 3GPP 31.102 Section 5.1.1.2
 	 * The assumption here is that if sim manager is being initialized,
 	 * then sim commands are implemented, and the sim manager is then
 	 * responsible for checking the PIN, reading the IMSI and signaling
@@ -1498,7 +1503,8 @@ static void sim_initialize(struct ofono_sim *sim)
 
 	/* EFecc is read by the voicecall atom */
 
-	/* According to 31.102 the EFli is read first and EFpl is then
+	/*
+	 * According to 31.102 the EFli is read first and EFpl is then
 	 * only read if none of the EFli languages are supported by user
 	 * interface.  51.011 mandates the exact opposite, making EFpl/EFelp
 	 * preferred over EFlp (same EFid as EFli, different format).

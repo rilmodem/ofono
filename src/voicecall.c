@@ -599,10 +599,12 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 		call->clip_validity == clip_validity)
 		return;
 
-	/* Two cases: We get an incoming call with CLIP factored in, or
+	/*
+	 * Two cases: We get an incoming call with CLIP factored in, or
 	 * CLIP comes in later as a separate event
 	 * For COLP only the phone number should be checked, it can come
-	 * in with the initial call event or later as a separate event */
+	 * in with the initial call event or later as a separate event
+	 */
 
 	/* For plugins that don't keep state, ignore */
 	if (call->clip_validity == CLIP_VALIDITY_VALID &&
@@ -755,8 +757,10 @@ static GSList *voicecalls_held_list(struct ofono_voicecall *vc)
 	return r;
 }
 
-/* Intended to be used for multiparty, which cannot be incoming,
- * alerting or dialing */
+/*
+ * Intended to be used for multiparty, which cannot be incoming,
+ * alerting or dialing
+ */
 static GSList *voicecalls_active_list(struct ofono_voicecall *vc)
 {
 	GSList *l;
@@ -1007,8 +1011,10 @@ static struct voicecall *dial_handle_result(struct ofono_voicecall *vc,
 		return NULL;
 	}
 
-	/* Two things can happen, the call notification arrived before dial
-	 * callback or dial callback was first.	Handle here */
+	/*
+	 * Two things can happen, the call notification arrived before dial
+	 * callback or dial callback was first.	Handle here
+	 */
 	for (l = vc->call_list; l; l = l->next) {
 		v = l->data;
 
@@ -1130,7 +1136,8 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 
 	numactive = voicecalls_num_active(vc);
 
-	/* According to 22.091 section 5.8, the network has the option of
+	/*
+	 * According to 22.091 section 5.8, the network has the option of
 	 * implementing the call transfer operation for a call that is
 	 * still dialing/alerting.
 	 */
@@ -1223,7 +1230,8 @@ static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 	if (voicecalls_have_waiting(vc) == FALSE)
 		return __ofono_error_failed(msg);
 
-	/* We have waiting call and both an active and held call.  According
+	/*
+	 * We have waiting call and both an active and held call.  According
 	 * to 22.030 we cannot use CHLD=2 in this situation.
 	 */
 	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
@@ -1378,7 +1386,8 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	if (!l)
 		return __ofono_error_not_found(msg);
 
-	/* If we found id on the list of multiparty calls, then by definition
+	/*
+	 * If we found id on the list of multiparty calls, then by definition
 	 * the multiparty call exists.	Only thing to check is whether we have
 	 * held calls
 	 */
@@ -1498,7 +1507,8 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 			goto out;
 		}
 
-		/* Multiparty is currently active, if we have held calls
+		/*
+		 * Multiparty is currently active, if we have held calls
 		 * we shouldn't use release_all_active here since this also
 		 * has the side-effect of activating held calls
 		 */
@@ -2113,7 +2123,8 @@ void ofono_voicecall_register(struct ofono_voicecall *vc)
 
 	ofono_modem_add_interface(modem, OFONO_VOICECALL_MANAGER_INTERFACE);
 
-	/* Start out with the 22.101 mandated numbers, if we have a SIM and
+	/*
+	 * Start out with the 22.101 mandated numbers, if we have a SIM and
 	 * the SIM contains EFecc, then we update the list once we've read them
 	 */
 	add_to_en_list(&vc->en_list, default_en_list_no_sim);

@@ -426,7 +426,8 @@ static gboolean cb_ss_control(int type, const char *sc,
 		return TRUE;
 	}
 
-	/* According to 27.007, AG, AC and AB only work with mode = 0
+	/*
+	 * According to 27.007, AG, AC and AB only work with mode = 0
 	 * We support query by querying all relevant types, since we must
 	 * do this for the deactivation case anyway
 	 */
@@ -738,7 +739,8 @@ static void set_lock_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	/* If we successfully set the value, we must query it back
+	/*
+	 * If we successfully set the value, we must query it back
 	 * Call Barring is a special case, since according to 22.088 2.2.1:
 	 * "The PLMN will ensure that only one of the barring programs is
 	 * active per basic service group. The activation of one specific
@@ -785,7 +787,8 @@ static gboolean cb_lock_property_lookup(const char *property, const char *value,
 		return FALSE;
 	}
 
-	/* Gah, this is a special case.  If we're setting a barring to
+	/*
+	 * Gah, this is a special case.  If we're setting a barring to
 	 * disabled, then generate a disable all outgoing/incoming
 	 * request for a particular basic service
 	 */

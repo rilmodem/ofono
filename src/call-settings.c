@@ -462,7 +462,8 @@ static gboolean cw_ss_control(int type,
 
 	case SS_CONTROL_TYPE_QUERY:
 		cs->ss_req_type = SS_CONTROL_TYPE_QUERY;
-		/* Always query the entire set, SMS not applicable
+		/*
+		 * Always query the entire set, SMS not applicable
 		 * according to 22.004 Appendix A, so CLASS_DEFAULT
 		 * is safe to use here
 		 */

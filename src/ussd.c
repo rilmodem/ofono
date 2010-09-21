@@ -251,9 +251,11 @@ static gboolean recognized_control_string(struct ofono_ussd *ussd,
 		DBG("Got parse result: %d, %s, %s, %s, %s, %s, %s",
 				type, sc, sia, sib, sic, sid, dn);
 
-		/* A password change string needs to be treated separately
+		/*
+		 * A password change string needs to be treated separately
 		 * because it uses a fourth SI and is thus not a valid
-		 * control string.  */
+		 * control string.
+		 */
 		if (recognized_passwd_change_string(ussd, type, sc,
 					sia, sib, sic, sid, dn, msg)) {
 			ret = TRUE;
@@ -280,10 +282,10 @@ static gboolean recognized_control_string(struct ofono_ussd *ussd,
 
 	/* TODO: Handle all strings that control voice calls */
 
-	/* TODO: Handle Multiple subscriber profile DN*59#SEND and *59#SEND
-	 */
+	/* TODO: Handle Multiple subscriber profile DN*59#SEND and *59#SEND */
 
-	/* Note: SIM PIN/PIN2 change and unblock and IMEI presentation
+	/*
+	 * Note: SIM PIN/PIN2 change and unblock and IMEI presentation
 	 * procedures are not handled by the daemon since they are not followed
 	 * by SEND and are not valid USSD requests.
 	 */

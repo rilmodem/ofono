@@ -586,8 +586,8 @@ struct stk_address {
  * and a maximum length of 23 octets"
  *
  * According to TS 31.102 Section 4.4.2.4: "The subaddress data contains
- * information as defined for this purpose in TS 24.008 [9]. All information
- * defined in TS 24.008, except the information element identifier, shall be
+ * information as defined for this purpose in TS 24.008 [9]. All information
+ * defined in TS 24.008, except the information element identifier, shall be
  * stored in the USIM. The length of this subaddress data can be up to 22
  * bytes."
  */
@@ -602,7 +602,7 @@ struct stk_subaddress {
  *
  * According to 24.008 Section 10.5.4.5 "The bearer capability is a type 4
  * information element with a minimum length of 3 octets and a maximum length
- * of 16 octets."
+ * of 16 octets."
  *
  * According to TS 31.102 Section 4.2.38 the CCP length is 15 bytes.
  *
@@ -663,7 +663,8 @@ struct stk_ussd_string {
 	int len;
 };
 
-/* Define the struct of single file in TS102.223 Section 8.18.
+/*
+ * Define the struct of single file in TS102.223 Section 8.18.
  * According to TS 11.11 Section 6.2, each file id has two bytes, and the
  * maximum Dedicated File level is 2. So the maximum size of file is 8, which
  * contains two bytes of Master File, 2 bytes of 1st level Dedicated File,

@@ -292,7 +292,8 @@ static DBusMessage *cm_get_properties(DBusConnection *conn, DBusMessage *msg,
 
 	cm->pending = dbus_message_ref(msg);
 
-	/* We don't need to query ppu, currency & acm_max every time
+	/*
+	 * We don't need to query ppu, currency & acm_max every time
 	 * Not sure if we have to query acm & call_meter every time
 	 * so lets play on the safe side and query them.  They should be
 	 * fast to query anyway
@@ -406,7 +407,8 @@ static void set_puct_callback(const struct ofono_error *error, void *data)
 	cm->driver->puct_query(cm, set_puct_query_callback, cm);
 }
 
-/* This function is for the really bizarre case of someone trying to call
+/*
+ * This function is for the really bizarre case of someone trying to call
  * SetProperty before GetProperties.  But we must handle it...
  */
 static void set_puct_initial_query_callback(const struct ofono_error *error,

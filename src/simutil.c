@@ -579,8 +579,10 @@ gboolean ber_tlv_builder_next(struct ber_tlv_builder *builder,
 	return TRUE;
 }
 
-/* Resize the TLV because the content of Value field needs more space.  If
- * this TLV is part of another TLV, resize that one too.  */
+/*
+ * Resize the TLV because the content of Value field needs more space.
+ * If this TLV is part of another TLV, resize that one too.
+ */
 gboolean ber_tlv_builder_set_length(struct ber_tlv_builder *builder,
 					unsigned int new_len)
 {
@@ -709,8 +711,10 @@ gboolean comprehension_tlv_builder_next(
 	return TRUE;
 }
 
-/* Resize the TLV because the content of Value field needs more space.  If
- * this TLV is part of another TLV, resize that one too.  */
+/*
+ * Resize the TLV because the content of Value field needs more space.
+ * If this TLV is part of another TLV, resize that one too.
+ */
 gboolean comprehension_tlv_builder_set_length(
 				struct comprehension_tlv_builder *builder,
 				unsigned int new_len)
@@ -781,8 +785,10 @@ static char *sim_network_name_parse(const unsigned char *buffer, int length,
 	dcs = *buffer++;
 	length--;
 
-	/* "The MS should add the letters for the Country's Initials and a
-	 * separator (e.g. a space)" */
+	/*
+	 * "The MS should add the letters for the Country's Initials and a
+	 * separator (e.g. a space)"
+	 */
 	if (is_bit_set(dcs, 4))
 		ci = TRUE;
 
@@ -1303,8 +1309,10 @@ gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 	if (fcp == NULL)
 		return FALSE;
 
-	/* Find the file size tag 0x80 according to
-	 * ETSI 102.221 Section 11.1.1.3.2 */
+	/*
+	 * Find the file size tag 0x80 according to
+	 * ETSI 102.221 Section 11.1.1.3.2
+	 */
 	tlv = ber_tlv_find_by_tag(fcp, 0x80, fcp_length, &tlv_length);
 
 	if (!tlv || tlv_length < 2)
@@ -1347,14 +1355,17 @@ gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 	if (str != 0x00 && tlv_length != 5)
 		return FALSE;
 
-	/* strictly speaking the record length is 16 bit, but the valid
-	 * range is 0x01 to 0xFF according to 102.221 */
+	/*
+	 * strictly speaking the record length is 16 bit, but the valid
+	 * range is 0x01 to 0xFF according to 102.221
+	 */
 	if (str != 0x00)
 		rlen = tlv[3];
 	else
 		rlen = 0;
 
-	/* The 3G response data contains references to EFarr which actually
+	/*
+	 * The 3G response data contains references to EFarr which actually
 	 * contains the security attributes.  These are usually not carried
 	 * along with the response data unlike in 2G.  Instead of querying
 	 * this, we simply look it up in our database.  We fudge it somewhat

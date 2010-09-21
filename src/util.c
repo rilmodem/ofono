@@ -917,17 +917,21 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 		/* Figure out the remainder */
 		rest = (in[i] >> bits) & ((1 << (8-bits)) - 1);
 
-		/* We have the entire character, here we don't increate
+		/*
+		 * We have the entire character, here we don't increate
 		 * out if this is we started at an offset.  Instead
-		 * we effectively populate variable rest */
+		 * we effectively populate variable rest
+		 */
 		if (i != 0 || bits == 7)
 			out++;
 
 		if ((out-buf) == max_to_unpack)
 			break;
 
-		/* We expected only 1 bit from this octet, means there's 7
-		 * left, take care of them here */
+		/*
+		 * We expected only 1 bit from this octet, means there's 7
+		 * left, take care of them here
+		 */
 		if (bits == 1) {
 			*out = rest;
 			out++;
@@ -938,7 +942,8 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 		}
 	}
 
-	/* According to 23.038 6.1.2.3.1, last paragraph:
+	/*
+	 * According to 23.038 6.1.2.3.1, last paragraph:
 	 * "If the total number of characters to be sent equals (8n-1)
 	 * where n=1,2,3 etc. then there are 7 spare bits at the end
 	 * of the message. To avoid the situation where the receiving
@@ -1021,7 +1026,8 @@ unsigned char *pack_7bit_own_buf(const unsigned char *in, long len,
 			bits = bits - 1;
 	}
 
-	/* If <CR> is intended to be the last character and the message
+	/*
+	 * If <CR> is intended to be the last character and the message
 	 * (including the wanted <CR>) ends on an octet boundary, then
 	 * another <CR> must be added together with a padding bit 0. The
 	 * receiving entity will perform the carriage return function twice,
@@ -1096,7 +1102,8 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 		return NULL;
 
 	if (buffer[0] < 0x80) {
-		/* We have to find the real length, since on SIM file system
+		/*
+		 * We have to find the real length, since on SIM file system
 		 * alpha fields are 0xff padded
 		 */
 		for (i = 0; i < length; i++)

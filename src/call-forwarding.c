@@ -144,7 +144,8 @@ static GSList *cf_cond_list_create(int total,
 	int j;
 	struct ofono_call_forwarding_condition *cond;
 
-	/* Specification is not really clear how the results are reported,
+	/*
+	 * Specification is not really clear how the results are reported,
 	 * so assume both multiple list items & compound values of class
 	 * are possible
 	 */
@@ -219,7 +220,8 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 	for (l = list; l; l = l->next) {
 		lc = l->data;
 
-		/* New condition lists might have attributes we don't care about
+		/*
+		 * New condition lists might have attributes we don't care about
 		 * triggered by e.g. ss control magic strings just skip them
 		 * here.  For now we only support Voice, although Fax & all Data
 		 * basic services are applicable as well.
@@ -457,7 +459,8 @@ static gboolean cf_condition_enabled_property(struct ofono_call_forwarding *cf,
 		if (strncmp(property, prefix, len))
 			continue;
 
-		/* We check the 4 call forwarding types, e.g.
+		/*
+		 * We check the 4 call forwarding types, e.g.
 		 * unconditional, busy, no reply, not reachable
 		 */
 		for (j = 0; j < 4; j++)
@@ -928,7 +931,8 @@ static gboolean cf_ss_control(int type, const char *sc,
 		type == SS_CONTROL_TYPE_DEACTIVATION))
 		goto error;
 
-	/* Activation / Registration is figured context specific according to
+	/*
+	 * Activation / Registration is figured context specific according to
 	 * 22.030 Section 6.5.2 "The UE shall determine from the context
 	 * whether, an entry of a single *, activation or registration
 	 * was intended."
@@ -1030,7 +1034,8 @@ static gboolean cf_ss_control(int type, const char *sc,
 		break;
 	}
 
-	/* Some modems don't understand all classes very well, particularly
+	/*
+	 * Some modems don't understand all classes very well, particularly
 	 * the older models.  So if the bearer class is the default, we
 	 * just use the more commonly understood value of 7 since BEARER_SMS
 	 * is not applicable to CallForwarding conditions according to 22.004

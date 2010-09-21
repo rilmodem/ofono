@@ -105,8 +105,9 @@ static void vcard_printf(GString *str, const char *fmt, ...)
 	g_string_append(str, "\r\n");
 }
 
-/* According to RFC 2426, we need escape following characters:
- *  '\n', '\r', ';', ',', '\'.
+/*
+ * According to RFC 2426, we need escape following characters:
+ * '\n', '\r', ';', ',', '\'.
  */
 static void add_slash(char *dest, const char *src, int len_max, int len)
 {

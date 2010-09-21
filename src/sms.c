@@ -1151,7 +1151,8 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 	if (sms_list == NULL)
 		return;
 
-	/* Qutoting 23.040: The TP elements in the SMS‑SUBMIT PDU, apart from
+	/*
+	 * Qutoting 23.040: The TP elements in the SMS‑SUBMIT PDU, apart from
 	 * TP‑MR, TP-SRR, TP‑UDL and TP‑UD, should remain unchanged for each
 	 * SM which forms part of a concatenated SM, otherwise this may lead
 	 * to irrational behaviour
@@ -1342,8 +1343,10 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 		return;
 	}
 
-	/* This is an older style MWI notification, process MWI
-	 * headers and handle it like any other message */
+	/*
+	 * This is an older style MWI notification, process MWI
+	 * headers and handle it like any other message
+	 */
 	if (s.deliver.pid == SMS_PID_TYPE_RETURN_CALL) {
 		if (handle_mwi(sms, &s))
 			return;
@@ -1351,8 +1354,10 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 		goto out;
 	}
 
-	/* The DCS indicates this is an MWI notification, process it
-	 * and then handle the User-Data as any other message */
+	/*
+	 * The DCS indicates this is an MWI notification, process it
+	 * and then handle the User-Data as any other message
+	 */
 	if (sms_mwi_dcs_decode(s.deliver.dcs, NULL, NULL, NULL, NULL)) {
 		if (handle_mwi(sms, &s))
 			return;
@@ -1393,7 +1398,8 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 		break;
 	}
 
-	/* Check to see if the SMS has any other MWI related headers,
+	/*
+	 * Check to see if the SMS has any other MWI related headers,
 	 * as sometimes they are "tacked on" by the SMSC.
 	 * While we're doing this we also check for messages containing
 	 * WCMP headers or headers that can't possibly be in a normal
@@ -1417,9 +1423,11 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 			switch (iei) {
 			case SMS_IEI_SPECIAL_MESSAGE_INDICATION:
 			case SMS_IEI_ENHANCED_VOICE_MAIL_INFORMATION:
-				/* TODO: ignore if not in the very first
+				/*
+				 * TODO: ignore if not in the very first
 				 * segment of a concatenated SM so as not
-				 * to repeat the indication.  */
+				 * to repeat the indication.
+				 */
 				if (handle_mwi(sms, &s))
 					return;
 
@@ -1708,7 +1716,8 @@ void ofono_sms_register(struct ofono_sms *sms)
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
-	/* If we have a sim atom, we can uniquely identify the SIM,
+	/*
+	 * If we have a sim atom, we can uniquely identify the SIM,
 	 * otherwise create an sms assembly which doesn't backup the fragment
 	 * store.
 	 */

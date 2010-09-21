@@ -255,8 +255,10 @@ static void mbdn_set_cb(int ok, void *data)
 						&number);
 	}
 
-	/* Make a single attempt at keeping the CPHS version of the file
-	 * in sync.  */
+	/*
+	 * Make a single attempt at keeping the CPHS version of the file
+	 * in sync.
+	 */
 	if (req->cphs == FALSE)
 		set_cphs_mbdn(req->mw, TRUE, req->mailbox,
 				phone_number_to_string(&req->number), NULL);
@@ -274,7 +276,7 @@ static DBusMessage *set_mbdn(struct ofono_message_waiting *mw, int mailbox,
 	struct mbdn_set_request *req;
 	unsigned char efmbdn[255];
 
-	/* 
+	/*
 	 * If we have no 3GPP EFmbdn on the card, maybe the
 	 * CPHS version is available
 	 */
@@ -727,10 +729,12 @@ static void handle_special_sms_iei(struct ofono_message_waiting *mw,
 		if (type == (SMS_MWI_TYPE_OTHER | 4))
 			type = SMS_MWI_TYPE_VIDEO;
 		else
-			/* 23.040 9.2.3.24.2: "Terminals should be capable of
+			/*
+			 * 23.040 9.2.3.24.2: "Terminals should be capable of
 			 * receiving any values in octet 1, even including
 			 * those marked as Reserved."  Treat Reserved as
-			 * "Other".  */
+			 * "Other".
+			 */
 			type = SMS_MWI_TYPE_OTHER;
 	}
 
@@ -819,7 +823,8 @@ void __ofono_message_waiting_mwi(struct ofono_message_waiting *mw,
 	if (out_discard)
 		*out_discard = FALSE;
 
-	/* Check MWI types in the order from highest priority to lowest
+	/*
+	 * Check MWI types in the order from highest priority to lowest
 	 * because they must override one another.
 	 */
 
@@ -880,7 +885,8 @@ void __ofono_message_waiting_mwi(struct ofono_message_waiting *mw,
 		}
 
 		if (iei_found) {
-			/* 23.040 9.2.3.24.2 says "In the event of a
+			/*
+			 * 23.040 9.2.3.24.2 says "In the event of a
 			 * conflict between this setting and the setting
 			 * of the Data Coding Scheme (see 3GPP TS 23.038 [9])
 			 * then the message shall be stored if either the DCS

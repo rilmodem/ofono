@@ -249,7 +249,8 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 		goto out;
 	}
 
-	/* 3GPP 23.041: NOTE 5:	Code 00 is intended for use by the
+	/*
+	 * 3GPP 23.041: NOTE 5:	Code 00 is intended for use by the
 	 * network operators for base station IDs.
 	 */
 	if (c.gs == CBS_GEO_SCOPE_CELL_IMMEDIATE) {
@@ -888,8 +889,10 @@ static void cbs_got_imsi(struct ofono_cbs *cbs)
 	if (topics_str)
 		cbs->topics = cbs_extract_topic_ranges(topics_str);
 
-	/* If stored value is invalid or no stored value, bootstrap
-	 * topics list from SIM contents */
+	/*
+	 * If stored value is invalid or no stored value, bootstrap
+	 * topics list from SIM contents
+	 */
 	if (topics_str == NULL ||
 			(cbs->topics == NULL && topics_str[0] != '\0')) {
 		ofono_sim_read(cbs->sim, SIM_EFCBMI_FILEID,
@@ -972,7 +975,8 @@ static void cbs_location_changed(int status, int lac, int ci, int tech,
 out:
 	DBG("%d, %d, %d", plmn_changed, lac_changed, ci_changed);
 
-	/* In order to minimize signal transmissions we wait about X seconds
+	/*
+	 * In order to minimize signal transmissions we wait about X seconds
 	 * before reseting the base station id.  The hope is that we receive
 	 * another cell broadcast with the new base station name within
 	 * that time
@@ -1018,7 +1022,8 @@ static void netreg_watch(struct ofono_atom *atom,
 	cbs->lac = ofono_netreg_get_location(cbs->netreg);
 	cbs->ci = ofono_netreg_get_cellid(cbs->netreg);
 
-	/* Clear out the cbs assembly just in case, worst case
+	/*
+	 * Clear out the cbs assembly just in case, worst case
 	 * we will receive the cell broadcasts again
 	 */
 	cbs_assembly_location_changed(cbs->assembly, TRUE, TRUE, TRUE);

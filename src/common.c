@@ -38,7 +38,8 @@ struct error_entry {
 	const char *str;
 };
 
-/* 0-127 from 24.011 Annex E2
+/*
+ * 0-127 from 24.011 Annex E2
  * 127-255 23.040 Section 9.2.3.22
  * Rest are from 27.005 Section 3.2.5
  */
@@ -295,7 +296,8 @@ int mmi_service_code_to_bearer_class(int code)
 {
 	int cls = 0;
 
-	/* Teleservices according to 22.004
+	/*
+	 * Teleservices according to 22.004
 	 * 1 - Voice
 	 * 2 - SMS
 	 * 3,4,5 - Unallocated
@@ -398,7 +400,8 @@ int valid_ussd_string(const char *str)
 	if (!len)
 		return FALSE;
 
-	/* It is hard to understand exactly what constitutes a valid USSD string
+	/*
+	 * It is hard to understand exactly what constitutes a valid USSD string
 	 * According to 22.090:
 	 * Case a - 1, 2 or 3 digits from the set (*, #) followed by 1X(Y),
 	 * where X=any number 0‑4, Y=any number 0‑9, then, optionally "*
@@ -460,7 +463,8 @@ const char *ss_control_type_to_string(enum ss_control_type type)
 		}				\
 	} while (0)				\
 
-/* Note: The str will be modified, so in case of error you should
+/*
+ * Note: The str will be modified, so in case of error you should
  * throw it away and start over
  */
 gboolean parse_ss_control_string(char *str, int *ss_type,
@@ -519,7 +523,8 @@ gboolean parse_ss_control_string(char *str, int *ss_type,
 
 	NEXT_FIELD(c, *sc);
 
-	/* According to 22.030 SC is 2 or 3 digits, there can be
+	/*
+	 * According to 22.030 SC is 2 or 3 digits, there can be
 	 * an optional digit 'n' if this is a call setup string,
 	 * however 22.030 does not define any SC of length 3
 	 * with an 'n' present

@@ -346,9 +346,11 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	int len = sizeof(name);
 	int home_or_spdi;
 
-	/* The name displayed to user depends on whether we're in a home
+	/*
+	 * The name displayed to user depends on whether we're in a home
 	 * PLMN or roaming and on configuration bits from the SIM, all
-	 * together there are four cases to consider.  */
+	 * together there are four cases to consider.
+	 */
 
 	if (!opd) {
 		g_strlcpy(name, "", len);
@@ -415,7 +417,8 @@ static void set_network_operator_name(struct network_operator_data *opd,
 	strncpy(opd->name, name, OFONO_MAX_OPERATOR_NAME_LENGTH);
 	opd->name[OFONO_MAX_OPERATOR_NAME_LENGTH] = '\0';
 
-	/* If we have Enhanced Operator Name info on the SIM, we always use
+	/*
+	 * If we have Enhanced Operator Name info on the SIM, we always use
 	 * that, so do not need to emit the signal here
 	 */
 	if (opd->eons_info && opd->eons_info->longname)
@@ -896,7 +899,8 @@ static void append_operator_struct_list(struct ofono_netreg *netreg,
 		return;
 	}
 
-	/* Quoting 27.007: "The list of operators shall be in order: home
+	/*
+	 * Quoting 27.007: "The list of operators shall be in order: home
 	 * network, networks referenced in SIM or active application in the
 	 * UICC (GSM or USIM) in the following order: HPLMN selector, User
 	 * controlled PLMN selector, Operator controlled PLMN selector and
@@ -1108,8 +1112,10 @@ void __ofono_netreg_set_base_station_name(struct ofono_netreg *netreg,
 	if (name == NULL) {
 		netreg->base_station = NULL;
 
-		/* We just got unregistered, set name to NULL
-		 * but don't emit signal */
+		/*
+		 * We just got unregistered, set name to NULL
+		 * but don't emit signal
+		 */
 		if (netreg->current_operator == NULL)
 			return;
 	} else {
@@ -1365,7 +1371,8 @@ static void init_registration_status(const struct ofono_error *error,
 
 	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 
-	/* Bootstrap our signal strength value without waiting for the
+	/*
+	 * Bootstrap our signal strength value without waiting for the
 	 * stack to report it
 	 */
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
@@ -1392,7 +1399,8 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 	if (netreg->signal_strength == strength)
 		return;
 
-	/* Theoretically we can get signal strength even when not registered
+	/*
+	 * Theoretically we can get signal strength even when not registered
 	 * to any network.  However, what do we do with it in that case?
 	 */
 	if (netreg->status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
@@ -1474,10 +1482,12 @@ static void sim_pnn_read_cb(int ok, int length, int record,
 		return;
 
 check:
-	/* If PNN is not present then OPL is not useful, don't
+	/*
+	 * If PNN is not present then OPL is not useful, don't
 	 * retrieve it.  If OPL is not there then PNN[1] will
 	 * still be used for the HPLMN and/or EHPLMN, if PNN
-	 * is present.  */
+	 * is present.
+	 */
 	if (netreg->eons && !sim_eons_pnn_is_empty(netreg->eons))
 		ofono_sim_read(netreg->sim, SIM_EFOPL_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
@@ -1530,7 +1540,8 @@ static void sim_spn_read_cb(int ok, int length, int record,
 
 	dcbyte = data[0];
 
-	/* TS 31.102 says:
+	/*
+	 * TS 31.102 says:
 	 *
 	 * the string shall use:
 	 *
