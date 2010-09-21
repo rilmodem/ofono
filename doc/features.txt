@@ -86,3 +86,13 @@ Envelopes:
   and on a channel listed in EFcbmid, it is dispatched to the SIM using the
   CBS-PP Download envelope.  No user interaction is required or signaled
   whenever this occurs.
+
+Short Messaging Service
+=======================
+
+- Unique identifier for incoming and outgoing SMS messages.  Whenever a
+  message is received or sent by oFono, a unique ID is generated for that
+  message.  The id is relevant to all segments of an SMS and in the case of
+  incoming messages is only generated when the SMS is fully assembled.  The
+  hash used is SHA1.  This unique identifier is used to identify the SMS
+  message to history plugins as well.

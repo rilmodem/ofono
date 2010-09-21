@@ -80,18 +80,6 @@ SMS
   Complexity: C1
   Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
 
-- Better unique ID for incoming / outgoing messages.  Currently oFono uses
-  a simple incremental counter stored in the settings store (NextMessageId).
-  This tends to break quite easily in strange situations (e.g. forced battery
-  removal, unexpected crashes).  This makes the uniqueness of this ID not
-  always guaranteed.
-
-  Proposed solution is to base the ID on SHA1 or MD5 hash.  Hash the contents
-  of the message + reception / sent time and the sender / originator address.
-
-  Priority: High
-  Complexity: C1
-
 - SMS Status Report support support according to 3GPP 23.040.  oFono should
   support SMS start reports.  For fragmented SMS messages oFono should take
   care of collating the status reports for each fragment and notifying once
