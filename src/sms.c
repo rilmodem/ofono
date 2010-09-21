@@ -1768,7 +1768,20 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 	if (uuid)
 		memcpy(uuid, &entry->uuid, sizeof(*uuid));
 
-	/* TODO: If this is exported via D-Bus, signal MessageAdded */
+	if (flags & OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY) {
+		struct message *m;
 
+		m = message_create(&entry->uuid);
+		if (m == NULL)
+			goto out;
+
+		if (message_dbus_register(sms, m) == FALSE)
+			goto out;
+
+		g_hash_table_insert(sms->messages, &m->uuid, m);
+		emit_message_added(sms, m);
+	}
+
+out:
 	return 0;
 }
