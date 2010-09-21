@@ -278,7 +278,7 @@ endif
 
 sbin_PROGRAMS = src/ofonod
 
-src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
+src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/main.c src/ofono.h src/log.c src/plugin.c \
 			src/modem.c src/common.h src/common.c \
 			src/manager.c src/dbus.c src/util.h src/util.c \
@@ -296,9 +296,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) \
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 
-src_ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=src/ofono.ver
-
-src_ofonod_DEPENDENCIES = src/ofono.ver
+src_ofonod_LDFLAGS = -Wl,--export-dynamic \
+				-Wl,--version-script=$(srcdir)/src/ofono.ver
 
 CLEANFILES = src/builtin.h $(local_headers) $(rules_DATA)
 
