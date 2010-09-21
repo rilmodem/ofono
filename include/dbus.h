@@ -41,6 +41,7 @@ extern "C" {
 #define OFONO_CONNECTION_CONTEXT_INTERFACE "org.ofono.ConnectionContext"
 #define OFONO_CONNECTION_MANAGER_INTERFACE "org.ofono.ConnectionManager"
 #define OFONO_MESSAGE_MANAGER_INTERFACE "org.ofono.MessageManager"
+#define OFONO_MESSAGE_INTERFACE "org.ofono.Message"
 #define OFONO_MESSAGE_WAITING_INTERFACE "org.ofono.MessageWaiting"
 #define OFONO_NETWORK_REGISTRATION_INTERFACE "org.ofono.NetworkRegistration"
 #define OFONO_NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
