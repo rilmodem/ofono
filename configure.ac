@@ -95,15 +95,15 @@ AC_CHECK_LIB(dbus-1, dbus_connection_can_send_type, dummy=yes,
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
 
-AC_ARG_WITH(dbusconf, AC_HELP_STRING([--with-dbusconf=PATH],
+AC_ARG_WITH(dbusconfdir, AC_HELP_STRING([--with-dbusconfdir=PATH],
 	[path to D-Bus config directory]), [path_dbusconf=${withval}],
 		[path_dbusconf="`$PKG_CONFIG --variable=sysconfdir dbus-1`"])
 if (test -z "${path_dbusconf}"); then
-	DBUS_DATADIR="${sysconfdir}/dbus-1/system.d"
+	DBUS_CONFDIR="${sysconfdir}/dbus-1/system.d"
 else
-	DBUS_DATADIR="${path_dbusconf}/dbus-1/system.d"
+	DBUS_CONFDIR="${path_dbusconf}/dbus-1/system.d"
 fi
-AC_SUBST(DBUS_DATADIR)
+AC_SUBST(DBUS_CONFDIR)
 
 AC_ARG_ENABLE(udev, AC_HELP_STRING([--disable-udev],
 			[don't use udev support even if available]),

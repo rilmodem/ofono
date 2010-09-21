@@ -22,9 +22,9 @@ local_headers = $(foreach file,$(include_HEADERS) $(nodist_include_HEADERS), \
 
 
 if DATAFILES
-dbusdir = @DBUS_DATADIR@
+dbusconfdir = @DBUS_CONFDIR@
 
-dbus_DATA = src/ofono.conf
+dbusconf_DATA = src/ofono.conf
 
 confdir = $(sysconfdir)/ofono
 
