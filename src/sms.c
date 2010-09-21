@@ -301,6 +301,17 @@ static void emit_message_added(struct ofono_sms *sms, struct message *m)
 	g_dbus_send_message(ofono_dbus_get_connection(), signal);
 }
 
+static void emit_message_removed(struct ofono_sms *sms, struct message *m)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *atompath = __ofono_atom_get_path(sms->atom);
+	const char *path = message_build_path(sms, m);
+
+	g_dbus_emit_signal(conn, atompath, OFONO_MESSAGE_MANAGER_INTERFACE,
+				"MessageRemoved", DBUS_TYPE_OBJECT_PATH, &path,
+				DBUS_TYPE_INVALID);
+}
+
 static void message_set_state(struct ofono_sms *sms,
 					const struct ofono_uuid *uuid,
 					enum message_state new_state)
@@ -330,6 +341,7 @@ static void message_set_state(struct ofono_sms *sms,
 	if (m->state == MESSAGE_STATE_SENT ||
 			m->state == MESSAGE_STATE_FAILED) {
 		g_hash_table_remove(sms->messages, uuid);
+		emit_message_removed(sms, m);
 		message_dbus_unregister(sms, m);
 	}
 }
