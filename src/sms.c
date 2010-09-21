@@ -271,6 +271,36 @@ static gboolean message_dbus_unregister(struct ofono_sms *sms,
 						OFONO_MESSAGE_INTERFACE);
 }
 
+static void emit_message_added(struct ofono_sms *sms, struct message *m)
+{
+	DBusMessage *signal;
+	DBusMessageIter iter;
+	DBusMessageIter dict;
+	const char *path;
+
+	path = __ofono_atom_get_path(sms->atom);
+
+	signal = dbus_message_new_signal(path,
+					OFONO_MESSAGE_MANAGER_INTERFACE,
+					"MessageAdded");
+
+	if (signal == NULL)
+		return;
+
+	dbus_message_iter_init_append(signal, &iter);
+
+	path = message_build_path(sms, m);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &path);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					OFONO_PROPERTIES_ARRAY_SIGNATURE,
+					&dict);
+	append_message_properties(m, &dict);
+	dbus_message_iter_close_container(&iter, &dict);
+
+	g_dbus_send_message(ofono_dbus_get_connection(), signal);
+}
+
 static void message_set_state(struct ofono_sms *sms,
 					const struct ofono_uuid *uuid,
 					enum message_state new_state)
@@ -911,6 +941,8 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	modem = __ofono_atom_get_modem(sms->atom);
 	__ofono_history_sms_send_pending(modem, &entry->uuid,
 						to, time(NULL), text);
+
+	emit_message_added(sms, m);
 
 	return NULL;
 
