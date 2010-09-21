@@ -418,7 +418,7 @@ static gboolean cw_ss_control(int type,
 	if (strcmp(sc, "43"))
 		return FALSE;
 
-	if (cs->pending) {
+	if (__ofono_call_settings_is_busy(cs)) {
 		reply = __ofono_error_busy(msg);
 		goto error;
 	}
@@ -577,7 +577,7 @@ static gboolean clip_colp_colr_ss(int type,
 	if (!cs)
 		return FALSE;
 
-	if (cs->pending) {
+	if (__ofono_call_settings_is_busy(cs)) {
 		DBusMessage *reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
@@ -700,7 +700,7 @@ static gboolean clir_ss_control(int type,
 	if (strcmp(sc, "31"))
 		return FALSE;
 
-	if (cs->pending) {
+	if (__ofono_call_settings_is_busy(cs)) {
 		DBusMessage *reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
@@ -956,7 +956,7 @@ static DBusMessage *cs_get_properties(DBusConnection *conn, DBusMessage *msg,
 {
 	struct ofono_call_settings *cs = data;
 
-	if (cs->pending || __ofono_ussd_is_busy(cs->ussd))
+	if (__ofono_call_settings_is_busy(cs) || __ofono_ussd_is_busy(cs->ussd))
 		return __ofono_error_busy(msg);
 
 	if (cs->flags & CALL_SETTINGS_FLAG_CACHED)
@@ -977,7 +977,7 @@ static void clir_set_query_callback(const struct ofono_error *error,
 	struct ofono_call_settings *cs = data;
 	DBusMessage *reply;
 
-	if (!cs->pending)
+	if (!__ofono_call_settings_is_busy(cs))
 		return;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
@@ -1133,7 +1133,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 	const char *property;
 	int cls;
 
-	if (cs->pending || __ofono_ussd_is_busy(cs->ussd))
+	if (__ofono_call_settings_is_busy(cs) || __ofono_ussd_is_busy(cs->ussd))
 		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))

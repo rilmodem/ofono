@@ -432,7 +432,8 @@ static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
 	if (!cf->driver->query)
 		return __ofono_error_not_implemented(msg);
 
-	if (cf->pending || __ofono_ussd_is_busy(cf->ussd))
+	if (__ofono_call_forwarding_is_busy(cf) ||
+			__ofono_ussd_is_busy(cf->ussd))
 		return __ofono_error_busy(msg);
 
 	cf->pending = dbus_message_ref(msg);
@@ -589,7 +590,8 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 	int cls;
 	int type;
 
-	if (cf->pending || __ofono_ussd_is_busy(cf->ussd))
+	if (__ofono_call_forwarding_is_busy(cf) ||
+			__ofono_ussd_is_busy(cf->ussd))
 		return __ofono_error_busy(msg);
 
 	if (!dbus_message_iter_init(msg, &iter))
@@ -707,7 +709,8 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 	if (!cf->driver->erasure)
 		return __ofono_error_not_implemented(msg);
 
-	if (cf->pending || __ofono_ussd_is_busy(cf->ussd))
+	if (__ofono_call_forwarding_is_busy(cf) ||
+			__ofono_ussd_is_busy(cf->ussd))
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &strtype,
@@ -898,7 +901,7 @@ static gboolean cf_ss_control(int type, const char *sc,
 	if (!cf)
 		return FALSE;
 
-	if (cf->pending) {
+	if (__ofono_call_forwarding_is_busy(cf)) {
 		reply = __ofono_error_busy(msg);
 		g_dbus_send_message(conn, reply);
 
