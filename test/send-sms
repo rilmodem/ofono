@@ -17,6 +17,8 @@ manager = dbus.Interface(bus.get_object('org.ofono', path),
 if len(sys.argv) == 4:
 	manager.SetProperty("UseDeliveryReports",
 					dbus.Boolean(int(sys.argv[1])))
-	manager.SendMessage(sys.argv[1], sys.argv[2])
+	path = manager.SendMessage(sys.argv[1], sys.argv[2])
 else:
-	manager.SendMessage(sys.argv[1], sys.argv[2])
+	path = manager.SendMessage(sys.argv[1], sys.argv[2])
+
+print path
