@@ -7,10 +7,20 @@ Object path	[variable prefix]/{modem0,modem1,...}
 
 Methods		dict GetProperties()
 
-			Returns properties for the modem object. See
+			Returns properties for the manager object. See
 			the properties section for available properties.
 
 			Possible Errors: [service].Error.InvalidArguments
+
+		array{object,dict} GetMessages()
+
+			Get an array of message object paths and properties
+			that represents the currently pending messages.
+
+			This method call should only be used once when an
+			application starts up.  Further call additions and
+			removal shall be monitored via MessageAdded and
+			MessageRemoved signals.
 
 		void SetProperty(string name, variant value)
 
@@ -43,6 +53,16 @@ Signals		PropertyChanged(string name, variant value)
 			New incoming text SMS received. Info has Sender,
 			LocalSentTime, and SentTime information.
 
+		MessageAdded(object path, dict properties)
+
+			This signal is emitted whenever a new Message object
+			has been created.
+
+		MessageRemoved(object path)
+
+			This signal is emitted whenever a Message object
+			has been removed, e.g. when it reaches a final state.
+
 Properties	string ServiceCenterAddress
 
 			Contains the number of the SMS service center.
@@ -64,3 +84,30 @@ Properties	string ServiceCenterAddress
 				"ps-preferred" - Use CS if PS is unavailable
 
 			By default oFono uses "cs-preferred" setting.
+
+Message hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.Message
+Object path	[variable prefix]/{modem0,modem1,...}/{message_01,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the message object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string State
+
+			Contains the state of the message object.  Possible
+			values are:
+				"pending",
+				"sent",
+				"failed"
