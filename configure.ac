@@ -22,8 +22,6 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CC_PIE
 AC_PROG_INSTALL
-AC_PROG_SED
-AC_PROG_AWK
 AM_PROG_MKDIR_P
 
 m4_define([_LT_AC_TAGCONFIG], [])
@@ -31,7 +29,6 @@ m4_ifdef([AC_LIBTOOL_TAGS], [AC_LIBTOOL_TAGS([])])
 
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
-AC_PROG_NM
 
 AC_ARG_ENABLE(optimization, AC_HELP_STRING([--disable-optimization],
 			[disable code optimization through compiler]), [

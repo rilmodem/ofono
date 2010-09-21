@@ -27,8 +27,6 @@ include/ofono
 include/version.h
 src/builtin.h
 src/ofonod
-src/ofono.exp
-src/ofono.ver
 
 unit/test-common
 unit/test-util

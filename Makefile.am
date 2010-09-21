@@ -300,8 +300,7 @@ src_ofonod_LDFLAGS = -Wl,--export-dynamic -Wl,--version-script=src/ofono.ver
 
 src_ofonod_DEPENDENCIES = src/ofono.ver
 
-CLEANFILES = src/ofono.ver src/ofono.exp src/builtin.h \
-					$(local_headers) $(rules_DATA)
+CLEANFILES = src/builtin.h $(local_headers) $(rules_DATA)
 
 plugindir = $(libdir)/ofono/plugins
 
@@ -457,15 +456,6 @@ src/plugin.$(OBJEXT): src/builtin.h
 
 src/builtin.h: src/genbuiltin $(builtin_sources)
 	$(AM_V_GEN)$(srcdir)/src/genbuiltin $(builtin_modules) > $@
-
-src/ofono.exp: $(src_ofonod_OBJECTS)
-	$(AM_V_GEN)$(NM) $^ | $(AWK) '{ print $$3 }' | sort -u | \
-				$(EGREP) -e '^ofono_' -e '^g_dbus_' > $@
-
-src/ofono.ver: src/ofono.exp
-	$(AM_V_at)echo "{ global:" > $@
-	$(AM_V_GEN)$(SED) -e "s/\(.*\)/\1;/" $< >> $@
-	$(AM_V_at)echo "local: *; };" >> $@
 
 plugins/%.rules:
 	$(AM_V_GEN)cp $(srcdir)/$(subst 97-,,$@) $@

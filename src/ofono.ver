@@ -1,0 +1,7 @@
+{
+	global:
+		ofono_*;
+		g_dbus_*;
+	local:
+		*;
+};
