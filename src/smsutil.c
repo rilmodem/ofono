@@ -2850,120 +2850,122 @@ static gboolean sr_st_to_delivered(enum sms_st st, gboolean *delivered)
 	return FALSE;
 }
 
+static struct id_table_node *find_by_mr_and_mark(GHashTable *id_table,
+						unsigned char mr,
+						GHashTableIter *out_iter,
+						unsigned char **out_id)
+{
+	unsigned int offset = mr / 32;
+	unsigned int bit = 1 << (mr % 32);
+	gpointer key, value;
+	struct id_table_node *node;
+
+	g_hash_table_iter_init(out_iter, id_table);
+	while (g_hash_table_iter_next(out_iter, &key, &value)) {
+		node = value;
+
+		/* Address and MR matched */
+		if (node->mrs[offset] & bit) {
+			node->mrs[offset] ^= bit;
+			*out_id = key;
+
+			return node;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+ * Key (receiver address) does not exist in assembly. Some networks can change
+ * address to international format, although address is sent in the national
+ * format. Handle also change from national to international format.
+ * Notify these special cases by comparing only last six digits of the assembly
+ * addresses and received address. If address contains less than six digits,
+ * compare only existing digits.
+ */
+static struct id_table_node *fuzzy_lookup(struct status_report_assembly *assy,
+						const struct sms *sr,
+						const char **out_addr,
+						GHashTableIter *out_iter,
+						unsigned char **out_msgid)
+{
+	GHashTableIter iter_addr;
+	gpointer key, value;
+	const char *r_addr;
+
+	r_addr = sms_address_to_string(&sr->status_report.raddr);
+	g_hash_table_iter_init(&iter_addr, assy->assembly_table);
+
+	while (g_hash_table_iter_next(&iter_addr, &key, &value)) {
+		const char *s_addr = key;
+		GHashTable *id_table = value;
+		unsigned int len, r_len, s_len;
+		unsigned int i;
+		struct id_table_node *node;
+
+		if (r_addr[0] == '+' && s_addr[0] == '+')
+			continue;
+
+		if (r_addr[0] != '+' && s_addr[0] != '+')
+			continue;
+
+		r_len = strlen(r_addr);
+		s_len = strlen(s_addr);
+
+		len = MIN(6, MIN(r_len, s_len));
+
+		for (i = 0; i < len; i++)
+			if (s_addr[s_len - i - 1] != r_addr[r_len - i - 1])
+				break;
+
+		/* Not all digits matched. */
+		if (i < len)
+			continue;
+
+		/* Address matched. Check message reference. */
+		node = find_by_mr_and_mark(id_table, sr->status_report.mr,
+						out_iter, out_msgid);
+		if (node != NULL) {
+			*out_addr = s_addr;
+			return node;
+		}
+	}
+
+	return NULL;
+}
+
 gboolean status_report_assembly_report(struct status_report_assembly *assembly,
-					const struct sms *status_report,
+					const struct sms *sr,
 					unsigned char *out_msgid,
 					gboolean *out_delivered)
 {
-	unsigned int offset = status_report->status_report.mr / 32;
-	unsigned int bit = 1 << (status_report->status_report.mr % 32);
-	struct id_table_node *node = NULL;
-	const char *r_addr, *s_addr;
-	struct sms_address addr;
+	const char *straddr;
 	GHashTable *id_table;
-	gpointer key, value;
+	GHashTableIter iter;
+	struct sms_address addr;
+	struct id_table_node *node;
 	gboolean delivered;
-	GHashTableIter iter_addr, iter;
 	gboolean pending;
-	int i;
 	unsigned char *msgid;
-	unsigned int len, r_len, s_len;
+	int i;
 
 	/* We ignore temporary or tempfinal status reports */
-	if (sr_st_to_delivered(status_report->status_report.st,
-				&delivered) == FALSE)
+	if (sr_st_to_delivered(sr->status_report.st, &delivered) == FALSE)
 		return FALSE;
 
-	r_addr = sms_address_to_string(&status_report->status_report.raddr);
-	id_table = g_hash_table_lookup(assembly->assembly_table, r_addr);
+	straddr = sms_address_to_string(&sr->status_report.raddr);
+	id_table = g_hash_table_lookup(assembly->assembly_table, straddr);
 
-	/* key (receiver address) exists in assembly */
-	if (id_table != NULL) {
-
-		/* Found an identical address from assembly. */
-		s_addr = r_addr;
-
-		g_hash_table_iter_init(&iter, id_table);
-		while (g_hash_table_iter_next(&iter, &key, &value)) {
-			node = value;
-
-			if (node->mrs[offset] & bit)
-				break;
-
-			node = NULL;
-		}
-	}
-	/*
-	 * Key (receiver address) does not exist in assembly.
-	 * Some networks can change address to international format,
-	 * although address is sent in the national format.
-	 * Handle also change from national to international format.
-	 * So notify these special cases by comparing only
-	 * last six digits of the assembly addresses and received address.
-	 * If address contains less than six digits,
-	 * compare only existing digits.
-	 */
-	else {
-		g_hash_table_iter_init(&iter_addr, assembly->assembly_table);
-
-		/*
-		 * Go through all addresses using 'fuzzy' address-comparation.
-		 * Each address can relate to 1-n msg_ids.
-		 */
-		while (g_hash_table_iter_next(&iter_addr, (gpointer) &s_addr,
-						(gpointer) &id_table)) {
-
-			/* Notify international <-> national conversions */
-			if (((r_addr[0] == '+') && (s_addr[0] != '+')) ||
-				((r_addr[0] != '+') && (s_addr[0] == '+'))) {
-
-				r_len = strlen(r_addr);
-				s_len = strlen(s_addr);
-
-				len = MIN(6, MIN(r_len, s_len));
-
-				for (i = 0; i < len; i++) {
-					if (s_addr[s_len - i - 1] !=
-							r_addr[r_len - i - 1])
-						break;
-				}
-
-				/* Not all digits matched. */
-				if (i < len)
-					continue;
-			}
-			/* No conversions */
-			else
-				continue;
-
-			/* Address matched. Check message reference. */
-			g_hash_table_iter_init(&iter, id_table);
-			while (g_hash_table_iter_next(&iter, &key, &value)) {
-				node = value;
-
-				/* Address and MR matched */
-				if (node->mrs[offset] & bit)
-					break;
-
-				node = NULL;
-			}
-
-			/*
-			 * Received address with MR matched with one
-			 * of the stored addresses and MR, so no need
-			 * to continue searching.
-			 */
-			if (node)
-				break;
-		}
-	}
+	if (id_table != NULL)
+		node = find_by_mr_and_mark(id_table, sr->status_report.mr,
+						&iter, &msgid);
+	else
+		node = fuzzy_lookup(assembly, sr, &straddr, &iter, &msgid);
 
 	/* Unable to find a message reference belonging to this address */
 	if (node == NULL)
 		return FALSE;
-
-	/* Mr belongs to this node. */
-	node->mrs[offset] ^= bit;
 
 	node->deliverable = node->deliverable && delivered;
 
@@ -2980,9 +2982,7 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 		}
 	}
 
-	msgid = (unsigned char *) key;
-
-	sms_address_from_string(&addr, s_addr);
+	sms_address_from_string(&addr, straddr);
 
 	if (pending == TRUE && node->deliverable == TRUE) {
 		/*
@@ -2990,8 +2990,7 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 		 * reports completed. Update backup file.
 		 */
 		sr_assembly_add_fragment_backup(assembly->imsi, node,
-					&addr,
-					msgid);
+						&addr, msgid);
 
 		return FALSE;
 	}
@@ -3002,15 +3001,12 @@ gboolean status_report_assembly_report(struct status_report_assembly *assembly,
 	if (out_msgid)
 		memcpy(out_msgid, msgid, SMS_MSGID_LEN);
 
-	sr_assembly_remove_fragment_backup(assembly->imsi,
-					&addr,
-					msgid);
-
+	sr_assembly_remove_fragment_backup(assembly->imsi, &addr, msgid);
+	id_table = g_hash_table_iter_get_hash_table(&iter);
 	g_hash_table_iter_remove(&iter);
 
 	if (g_hash_table_size(id_table) == 0)
-		g_hash_table_remove(assembly->assembly_table,
-					s_addr);
+		g_hash_table_remove(assembly->assembly_table, straddr);
 
 	return TRUE;
 }
