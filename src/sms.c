@@ -1032,6 +1032,8 @@ static GDBusSignalTable sms_manager_signals[] = {
 	{ "PropertyChanged",	"sv"		},
 	{ "IncomingMessage",	"sa{sv}"	},
 	{ "ImmediateMessage",	"sa{sv}"	},
+	{ "MessageAdded",	"oa{sv}"	},
+	{ "MessageRemoved",	"o"		},
 	{ }
 };
 
