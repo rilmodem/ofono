@@ -771,15 +771,6 @@ int gpio_probe(GIsiModem *idx, unsigned addr, gpio_finished_cb_t cb, void *data)
 			DBG("g_pn_netlink_set_address: %s", strerror(-error));
 	}
 
-#if notyet
-	if (route) {
-		error = g_pn_netlink_add_route(idx, PN_DEV_HOST);
-		/* We get ENOTSUP on Maemo 5 kernel */
-		if (error && error != -ENOTSUP)
-			DBG("g_pn_netlink_add_route: %s", strerror(-error));
-	}
-#endif
-
 	return 0;
 }
 

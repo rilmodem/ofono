@@ -60,7 +60,6 @@ GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,
 void g_pn_netlink_stop(GPhonetNetlink *self);
 
 int g_pn_netlink_set_address(GIsiModem *, uint8_t local);
-int g_pn_netlink_add_route(GIsiModem *, uint8_t remote);
 
 #ifdef __cplusplus
 }
