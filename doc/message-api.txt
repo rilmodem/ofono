@@ -32,9 +32,11 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InvalidArguments
 					 [service].Error.DoesNotExist
 
-		void SendMessage(string to, string text)
+		object SendMessage(string to, string text)
 
-			Send the message in text to the number in to.
+			Send the message in text to the number in to.  If the
+			message could be queued successfully, this method
+			returns an object path to the created Message object.
 
 Signals		PropertyChanged(string name, variant value)
 
