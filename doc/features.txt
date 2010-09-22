@@ -96,3 +96,10 @@ Short Messaging Service
   incoming messages is only generated when the SMS is fully assembled.  The
   hash used is SHA1.  This unique identifier is used to identify the SMS
   message to history plugins as well.
+
+- SMS Status Report support.  oFono allows requesting of SMS Status Reports
+  via the MessageManager UseDeliveryReports property.  If enabled, oFono
+  will set the SRR bit and process incoming status reports.  oFono takes
+  care of collating the status reports for multi-fragment messages.  Once all
+  status reports are received, the UI is notified either via DBus or history
+  plugin API.

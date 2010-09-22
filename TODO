@@ -80,18 +80,6 @@ SMS
   Complexity: C1
   Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
 
-- SMS Status Report support support according to 3GPP 23.040.  oFono should
-  support SMS start reports.  For fragmented SMS messages oFono should take
-  care of collating the status reports for each fragment and notifying once
-  all fragments are received.
-
-  SMS call history should be updated with support of SMS 'delivered' or
-  'undeliverable' status.
-
-  Priority: Medium
-  Complexity: C4
-  Owner: Petteri Tikander <petteri.tikander@ixonos.com>
-
 
 SIM / SIM File system
 =====================
