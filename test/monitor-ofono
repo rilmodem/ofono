@@ -137,6 +137,19 @@ if __name__ == '__main__':
 						path_keyword="path",
 						interface_keyword="interface")
 
+	bus.add_signal_receiver(added,
+				bus_name="org.ofono",
+					signal_name = "MessageAdded",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+	bus.add_signal_receiver(removed,
+				bus_name="org.ofono",
+					signal_name = "MessageRemoved",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
 	for member in ["IncomingBroadcast", "EmergencyBroadcast",
 			"IncomingMessage", "ImmediateMessage"]:
 		bus.add_signal_receiver(message,
