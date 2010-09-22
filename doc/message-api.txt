@@ -18,8 +18,8 @@ Methods		dict GetProperties()
 			that represents the currently pending messages.
 
 			This method call should only be used once when an
-			application starts up.  Further call additions and
-			removal shall be monitored via MessageAdded and
+			application starts up.  Further message additions
+			and removal shall be monitored via MessageAdded and
 			MessageRemoved signals.
 
 		void SetProperty(string name, variant value)
