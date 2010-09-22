@@ -135,9 +135,6 @@ builtin_sources += plugins/isigen.c
 
 builtin_modules += n900
 builtin_sources += plugins/n900.c plugins/nokia-gpio.h plugins/nokia-gpio.c
-
-builtin_modules += usbpnmodem
-builtin_sources += plugins/usbpnmodem.c
 endif
 
 if ATMODEM
