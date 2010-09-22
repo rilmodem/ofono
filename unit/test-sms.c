@@ -1301,17 +1301,19 @@ static void test_sr_assembly()
 	decode_hex_own_buf(sr_pdu3, -1, &pdu_len, 0, pdu);
 	g_assert(sms_decode(pdu, pdu_len, FALSE, 24, &sr3) == TRUE);
 
-	g_print("sr1 address: %s, mr: %d\n",
+	if (g_test_verbose()) {
+		g_print("sr1 address: %s, mr: %d\n",
 			sms_address_to_string(&sr1.status_report.raddr),
 			sr1.status_report.mr);
 
-	g_print("sr2 address: %s, mr: %d\n",
+		g_print("sr2 address: %s, mr: %d\n",
 			sms_address_to_string(&sr2.status_report.raddr),
 			sr2.status_report.mr);
 
-	g_print("sr3 address: %s, mr: %d\n",
+		g_print("sr3 address: %s, mr: %d\n",
 			sms_address_to_string(&sr3.status_report.raddr),
 			sr3.status_report.mr);
+	}
 
 	sms_address_from_string(&addr, "+4915259911630");
 
