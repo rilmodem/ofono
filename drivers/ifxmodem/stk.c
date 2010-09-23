@@ -86,12 +86,13 @@ static void sate_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("sw1 %d sw2 %d envelope %d event %d", sw1, sw2, envelope, event);
 
-	if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == TRUE) {
-		DBG("len %d", len);
+	/* Response data is optional */
+	g_at_result_iter_next_hexstring(&iter, &pdu, &len);
 
-		cb(&error, pdu, len, cbd->data);
-		return;
-	}
+	DBG("len %d", len);
+
+	cb(&error, pdu, len, cbd->data);
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
