@@ -103,3 +103,10 @@ Short Messaging Service
   care of collating the status reports for multi-fragment messages.  Once all
   status reports are received, the UI is notified either via DBus or history
   plugin API.
+
+GPRS
+====
+
+- GPRS suspension event support.  The packet data service may be temporarily
+  suspended while a circuit switched service such as voice call or SMS is
+  active.
