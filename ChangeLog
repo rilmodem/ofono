@@ -1,3 +1,15 @@
+ver 0.29:
+	Fix issue with Huawei devices initial SIM state.
+	Fix issue with Huawei devices and online support.
+	Fix SIM Toolkit User Cancel response to Set Up Call.
+	Add support for handling of Send USSD proactive command.
+	Add support for Language Notification proactive command.
+	Add support for UCS2 to GSM 7bit conversions.
+	Add support for parsing CSCS queries.
+	Add support for USSD encoding function.
+	Add support for GPRS suspended notifications.
+	Add support for messaging D-Bus interface.
+
 ver 0.28:
 	Update modem manager D-Bus API.
 	Add support for online feature for ZTE devices.
