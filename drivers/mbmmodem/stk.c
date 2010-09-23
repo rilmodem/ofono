@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -43,10 +44,10 @@ struct stk_data {
 	GAtChat *chat;
 };
 
-static const char *stke_prefix[] = { "%STKE:", NULL };
 static const char *none_prefix[] = { NULL };
+static const char *stke_prefix[] = { "%STKE:", NULL };
 
-static void mbm_stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_stk_envelope_cb_t cb = cbd->cb;
@@ -84,7 +85,7 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 64 + length * 2);
-	int len, ret;
+	int len;
 
 	DBG("");
 
@@ -98,16 +99,11 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 
 	DBG("%s", buf);
 
-	ret = g_at_chat_send(sd->chat, buf, stke_prefix,
-				mbm_stke_cb, cbd, g_free);
-
-	DBG("ret %d", ret);
-
-	g_free(buf);
-	buf = NULL;
-
-	if (ret > 0)
+	if (g_at_chat_send(sd->chat, buf, stke_prefix,
+					stke_cb, cbd, g_free) > 0) {
+		g_free(buf);
 		return;
+	}
 
 error:
 	g_free(buf);
@@ -116,7 +112,7 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
-static void mbm_stkr_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void stkr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_stk_generic_cb_t cb = cbd->cb;
@@ -135,7 +131,7 @@ static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 64 + length * 2);
-	int len, ret;
+	int len;
 
 	DBG("");
 
@@ -147,14 +143,13 @@ static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
 		len += sprintf(buf + len, "%02hhX", *command++);
 	len += sprintf(buf + len, "\"");
 
-	ret = g_at_chat_send(sd->chat, buf, none_prefix,
-				mbm_stkr_cb, cbd, g_free);
+	DBG("%s", buf);
 
-	g_free(buf);
-	buf = NULL;
-
-	if (ret > 0)
+	if (g_at_chat_send(sd->chat, buf, none_prefix,
+					stkr_cb, cbd, g_free) > 0) {
+		g_free(buf);
 		return;
+	}
 
 error:
 	g_free(buf);
@@ -227,7 +222,10 @@ static int mbm_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 
 	DBG("");
 
-	sd = g_new0(struct stk_data, 1);
+	sd = g_try_new0(struct stk_data, 1);
+	if (!sd)
+		return -ENOMEM;
+
 	sd->chat = g_at_chat_clone(chat);
 
 	ofono_stk_set_data(stk, sd);
