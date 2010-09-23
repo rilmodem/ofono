@@ -1755,6 +1755,67 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 	return FALSE;
 }
 
+static gboolean handle_command_refresh(const struct stk_command *cmd,
+					struct stk_response *rsp,
+					struct ofono_stk *stk)
+{
+	GSList *l;
+
+	DBG("");
+
+	switch (cmd->qualifier) {
+	case 0:
+		DBG("NAA Initialization and "
+				"Full File Change Notification");
+		break;
+
+	case 1:
+		DBG("File Change Notification");
+		break;
+
+	case 2:
+		DBG("NAA Initialization and File Change Notification");
+		break;
+
+	case 3:
+		DBG("NAA Initialization");
+		break;
+
+	case 4:
+		DBG("UICC Reset");
+		break;
+
+	case 5:
+		DBG("NAA Application Reset");
+		break;
+
+	case 6:
+		DBG("NAA Session Reset");
+		break;
+
+	default:
+		ofono_info("Undefined Refresh qualifier: %d", cmd->qualifier);
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+
+	DBG("Files:");
+	for (l = cmd->refresh.file_list; l; l = l->next) {
+		struct stk_file *file = l->data;
+		char buf[17];
+
+		encode_hex_own_buf(file->file, file->len, 0, buf);
+		DBG("%s", buf);
+	}
+
+	DBG("Icon: %d, qualifier: %d", cmd->refresh.icon_id.id,
+					cmd->refresh.icon_id.qualifier);
+	DBG("Alpha ID: %s", cmd->refresh.alpha_id);
+
+	rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+	return TRUE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (stk->immediate_response)
@@ -1920,6 +1981,11 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		 */
 		ofono_info("Language Code: %s",
 			stk->pending_cmd->language_notification.language);
+		break;
+
+	case STK_COMMAND_TYPE_REFRESH:
+		respond = handle_command_refresh(stk->pending_cmd,
+							&rsp, stk);
 		break;
 
 	default:
