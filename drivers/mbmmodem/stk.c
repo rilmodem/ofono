@@ -45,7 +45,7 @@ struct stk_data {
 };
 
 static const char *none_prefix[] = { NULL };
-static const char *stke_prefix[] = { "%STKE:", NULL };
+static const char *stke_prefix[] = { "*STKE:", NULL };
 
 static void stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
