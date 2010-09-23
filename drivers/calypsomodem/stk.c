@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -43,18 +44,19 @@ struct stk_data {
 	GAtChat *chat;
 };
 
-static const char *sate_prefix[] = { "%SATE:", NULL };
 static const char *none_prefix[] = { NULL };
+static const char *sate_prefix[] = { "%SATE:", NULL };
 
-static void calypso_sate_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+static void sate_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_stk_envelope_cb_t cb = cbd->cb;
 	GAtResultIter iter;
 	struct ofono_error error;
-	const guint8 *pdu = { 0 };
+	const guint8 *pdu = NULL;
 	gint len = 0;
+
+	DBG("");
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -78,9 +80,13 @@ static void calypso_sate_cb(gboolean ok, GAtResult *result,
 
 	g_at_result_iter_init(&iter, result);
 
-	if (g_at_result_iter_next(&iter, "%SATE:"))
-		if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
-			goto error;
+	if (g_at_result_iter_next(&iter, "%SATE:") == FALSE)
+		goto error;
+
+	/* Response data is optional */
+	g_at_result_iter_next_hexstring(&iter, &pdu, &len);
+
+	DBG("len %d", len);
 
 	cb(&error, pdu, len, cbd->data);
 	return;
@@ -96,26 +102,25 @@ static void calypso_stk_envelope(struct ofono_stk *stk, int length,
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 64 + length * 2);
-	int len, ret;
+	int len;
+
+	DBG("");
 
 	if (!cbd || !buf)
 		goto error;
 
 	len = sprintf(buf, "AT%%SATE=\"");
-
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhX", *command++);
-
 	len += sprintf(buf + len, "\"");
 
-	ret = g_at_chat_send(sd->chat, buf, sate_prefix,
-				calypso_sate_cb, cbd, g_free);
+	DBG("%s", buf);
 
-	g_free(buf);
-	buf = NULL;
-
-	if (ret > 0)
+	if (g_at_chat_send(sd->chat, buf, sate_prefix,
+					sate_cb, cbd, g_free) > 0) {
+		g_free(buf);
 		return;
+	}
 
 error:
 	g_free(buf);
@@ -124,12 +129,13 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
-static void calypso_satr_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+static void satr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_stk_generic_cb_t cb = cbd->cb;
 	struct ofono_error error;
+
+	DBG("");
 
 	decode_at_error(&error, g_at_result_final_response(result));
 	cb(&error, cbd->data);
@@ -143,26 +149,25 @@ static void calypso_stk_terminal_response(struct ofono_stk *stk, int length,
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char *buf = g_try_new(char, 64 + length * 2);
-	int len, ret;
+	int len;
+
+	DBG("");
 
 	if (!cbd || !buf)
 		goto error;
 
 	len = sprintf(buf, "AT%%SATR=\"");
-
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhX", *command++);
-
 	len += sprintf(buf + len, "\"");
 
-	ret = g_at_chat_send(sd->chat, buf, none_prefix,
-				calypso_satr_cb, cbd, g_free);
+	DBG("%s", buf);
 
-	g_free(buf);
-	buf = NULL;
-
-	if (ret > 0)
+	if (g_at_chat_send(sd->chat, buf, none_prefix,
+					satr_cb, cbd, g_free) > 0) {
+		g_free(buf);
 		return;
+	}
 
 error:
 	g_free(buf);
@@ -178,6 +183,8 @@ static void sati_notify(GAtResult *result, gpointer user_data)
 	const guint8 *pdu;
 	gint len;
 	gboolean ret;
+
+	DBG("");
 
 	g_at_result_iter_init(&iter, result);
 
@@ -200,11 +207,15 @@ static void sati_notify(GAtResult *result, gpointer user_data)
 
 static void sata_notify(GAtResult *result, gpointer user_data)
 {
+	DBG("");
+
 	/* TODO: Pending call alert */
 }
 
 static void satn_notify(GAtResult *result, gpointer user_data)
 {
+	DBG("");
+
 	/*
 	 * Proactive command has been handled by the modem.  Should
 	 * the core be notified?  For now we just ignore it because
@@ -212,11 +223,13 @@ static void satn_notify(GAtResult *result, gpointer user_data)
 	 */
 }
 
-static void calypso_stk_register(gboolean ok,
-					GAtResult *result, gpointer user_data)
+static void calypso_stk_register(gboolean ok, GAtResult *result,
+						gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 	struct stk_data *sd = ofono_stk_get_data(stk);
+
+	DBG("");
 
 	if (!ok)
 		return;
@@ -234,7 +247,12 @@ static int calypso_stk_probe(struct ofono_stk *stk,
 	GAtChat *chat = data;
 	struct stk_data *sd;
 
-	sd = g_new0(struct stk_data, 1);
+	DBG("");
+
+	sd = g_try_new0(struct stk_data, 1);
+	if (!sd)
+		return -ENOMEM;
+
 	sd->chat = g_at_chat_clone(chat);
 
 	ofono_stk_set_data(stk, sd);
@@ -257,6 +275,8 @@ static int calypso_stk_probe(struct ofono_stk *stk,
 static void calypso_stk_remove(struct ofono_stk *stk)
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
+
+	DBG("");
 
 	ofono_stk_set_data(stk, NULL);
 
