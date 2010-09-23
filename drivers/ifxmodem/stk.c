@@ -240,7 +240,7 @@ static void satf_notify(GAtResult *result, gpointer user_data)
 
 	if (g_at_result_iter_next_number(&iter, &sw2) == FALSE)
 		return;
-	
+
 	DBG("sw1 %d sw2 %d", sw1, sw2);
 
 	ofono_stk_proactive_session_end_notify(stk);
