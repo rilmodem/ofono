@@ -93,8 +93,10 @@ void sim_fs_free(struct sim_fs *fs)
 	 * Note: users of sim_fs must not assume that the callback happens
 	 * for operations still in progress
 	 */
-	g_queue_foreach(fs->op_q, (GFunc)sim_fs_op_free, NULL);
-	g_queue_free(fs->op_q);
+	if (fs->op_q) {
+		g_queue_foreach(fs->op_q, (GFunc)sim_fs_op_free, NULL);
+		g_queue_free(fs->op_q);
+	}
 
 	g_free(fs);
 }
