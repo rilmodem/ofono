@@ -35,12 +35,14 @@
 static int ifxmodem_init(void)
 {
 	ifx_radio_settings_init();
+	ifx_stk_init();
 
 	return 0;
 }
 
 static void ifxmodem_exit(void)
 {
+	ifx_stk_exit();
 	ifx_radio_settings_exit();
 }
 

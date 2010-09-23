@@ -23,3 +23,6 @@
 
 extern void ifx_radio_settings_init();
 extern void ifx_radio_settings_exit();
+
+extern void ifx_stk_init();
+extern void ifx_stk_exit();
