@@ -67,9 +67,13 @@ static void stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (g_at_result_iter_next(&iter, "*STKE:") == TRUE)
-		if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
-			goto error;
+	if (g_at_result_iter_next(&iter, "*STKE:") == FALSE)
+		goto error;
+
+	/* Response data is optional */
+	g_at_result_iter_next_hexstring(&iter, &pdu, &len);
+
+	DBG("len %d", len);
 
 	cb(&error, pdu, len, cbd->data);
 	return;
