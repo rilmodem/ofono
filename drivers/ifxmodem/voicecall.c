@@ -45,7 +45,6 @@
  /* Amount of time we give for CLIP to arrive before we commence CLCC poll */
 #define CLIP_INTERVAL 200
 
-static const char *clcc_prefix[] = { "+CLCC:", NULL };
 static const char *none_prefix[] = { NULL };
 
 /* According to 27.007 COLP is an intermediate status for ATD */
@@ -54,7 +53,6 @@ static const char *atd_prefix[] = { "+COLP:", NULL };
 struct voicecall_data {
 	GSList *calls;
 	unsigned int local_release;
-	unsigned int clcc_source;
 	GAtChat *chat;
 	unsigned int vendor;
 };
@@ -72,8 +70,6 @@ struct change_state_req {
 	void *data;
 	int affected_types;
 };
-
-static gboolean poll_clcc(gpointer user_data);
 
 static int class_to_call_type(int cls)
 {
@@ -118,96 +114,6 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 	d->calls = g_slist_insert_sorted(d->calls, call, at_util_call_compare);
 
 	return call;
-}
-
-static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	GSList *calls;
-	GSList *n, *o;
-	struct ofono_call *nc, *oc;
-	gboolean poll_again = FALSE;
-
-	if (!ok) {
-		ofono_error("We are polling CLCC and received an error");
-		ofono_error("All bets are off for call management");
-		return;
-	}
-
-	calls = at_util_parse_clcc(result);
-
-	n = calls;
-	o = vd->calls;
-
-	while (n || o) {
-		nc = n ? n->data : NULL;
-		oc = o ? o->data : NULL;
-
-		if (nc && nc->status >= 2 && nc->status <= 5)
-			poll_again = TRUE;
-
-		if (oc && (!nc || (nc->id > oc->id))) {
-			enum ofono_disconnect_reason reason;
-
-			if (vd->local_release & (0x1 << oc->id))
-				reason = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
-			else
-				reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
-
-			if (!oc->type)
-				ofono_voicecall_disconnected(vc, oc->id,
-								reason, NULL);
-
-			o = o->next;
-		} else if (nc && (!oc || (nc->id < oc->id))) {
-			/* new call, signal it */
-			if (nc->type == 0)
-				ofono_voicecall_notify(vc, nc);
-
-			n = n->next;
-		} else {
-			/* Always use the clip_validity from old call
-			 * the only place this is truly told to us is
-			 * in the CLIP notify, the rest are fudged
-			 * anyway.  Useful when RING, CLIP is used,
-			 * and we're forced to use CLCC and clip_validity
-			 * is 1
-			 */
-			nc->clip_validity = oc->clip_validity;
-
-			if (memcmp(nc, oc, sizeof(struct ofono_call)) &&
-					!nc->type)
-				ofono_voicecall_notify(vc, nc);
-
-			n = n->next;
-			o = o->next;
-		}
-	}
-
-	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
-	g_slist_free(vd->calls);
-
-	vd->calls = calls;
-
-	vd->local_release = 0;
-
-	if (poll_again && !vd->clcc_source)
-		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
-						poll_clcc, vc);
-}
-
-static gboolean poll_clcc(gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-
-	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-				clcc_poll_cb, vc, NULL);
-
-	vd->clcc_source = 0;
-
-	return FALSE;
 }
 
 static void xcallstat_notify(GAtResult *result, gpointer user_data)
@@ -658,13 +564,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	/* Generate an incoming call */
 	create_call(vc, type, 1, 4, NULL, 128, 2);
 
-	/* We have a call, and call type but don't know the number and
-	 * must wait for the CLIP to arrive before announcing the call.
-	 * So we wait, and schedule the clcc call.  If the CLIP arrives
-	 * earlier, we announce the call there
-	 */
-	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
-
+	/* Assume the CLIP always arrives, and we signal the call there */
 	DBG("cring_notify");
 }
 
@@ -722,14 +622,6 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 
 	if (call->type == 0)
 		ofono_voicecall_notify(vc, call);
-
-	/* We started a CLCC, but the CLIP arrived and the call type
-	 * is known.  If we don't need to poll, cancel the GSource
-	 */
-	if (call->type != 9 && vd->clcc_source) {
-		g_source_remove(vd->clcc_source);
-		vd->clcc_source = 0;
-	}
 }
 
 static void ccwa_notify(GAtResult *result, gpointer user_data)
@@ -826,9 +718,6 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 static void ifx_voicecall_remove(struct ofono_voicecall *vc)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-
-	if (vd->clcc_source)
-		g_source_remove(vd->clcc_source);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
