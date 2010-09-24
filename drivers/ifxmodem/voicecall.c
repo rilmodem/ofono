@@ -477,11 +477,18 @@ static void ifx_answer(struct ofono_voicecall *vc,
 	ifx_template("ATA", vc, generic_cb, 0, cb, data);
 }
 
-static void ifx_hangup(struct ofono_voicecall *vc,
+static void ifx_ath(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	/* Hangup active call */
-	ifx_template("AT+CHUP", vc, generic_cb, 0x3f, cb, data);
+	/* Hangup active + held call, but not waiting */
+	ifx_template("ATH", vc, generic_cb, 0x1f, cb, data);
+}
+
+static void ifx_chup(struct ofono_voicecall *vc,
+			ofono_voicecall_cb_t cb, void *data)
+{
+	/* Hangup active + but not held or waiting */
+	ifx_template("ATH", vc, generic_cb, 0x1d, cb, data);
 }
 
 static void ifx_hold_all_active(struct ofono_voicecall *vc,
@@ -896,7 +903,8 @@ static struct ofono_voicecall_driver driver = {
 	.remove			= ifx_voicecall_remove,
 	.dial			= ifx_dial,
 	.answer			= ifx_answer,
-	.hangup_all		= ifx_hangup,
+	.hangup_all		= ifx_ath,
+	.hangup_active		= ifx_chup,
 	.hold_all_active	= ifx_hold_all_active,
 	.release_all_held	= ifx_release_all_held,
 	.set_udub		= ifx_set_udub,
