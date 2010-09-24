@@ -917,8 +917,9 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		supported = TRUE;
 
 	/* support for ack pdu is not working */
-	if (data->vendor == OFONO_VENDOR_NOVATEL ||
+	if (data->vendor == OFONO_VENDOR_IFX ||
 			data->vendor == OFONO_VENDOR_HUAWEI ||
+			data->vendor == OFONO_VENDOR_NOVATEL ||
 			data->vendor == OFONO_VENDOR_OPTION_HSO)
 		goto out;
 
