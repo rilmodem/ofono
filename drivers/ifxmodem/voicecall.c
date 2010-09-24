@@ -324,7 +324,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_voicecall *vc = cbd->user;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	ofono_voicecall_cb_t cb = cbd->cb;
 	GAtResultIter iter;
 	const char *num;
@@ -335,8 +334,10 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok)
-		goto out;
+	if (!ok) {
+		cb(&error, cbd->data);
+		return;
+	}
 
 	g_at_result_iter_init(&iter, result);
 
@@ -360,20 +361,14 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	/* oFono core will generate a call with the dialed number
-	 * inside its dial callback.  Unless we got COLP information
-	 * we do not need to communicate that a call is being
-	 * dialed
+	/* Let oFono core will generate a call with the dialed number
+	 * inside its dial callback.
 	 */
+	cb(&error, cbd->data);
+
+	/* If we got COLP information, then notify the core */
 	if (validity != 2)
 		ofono_voicecall_notify(vc, call);
-
-	if (!vd->clcc_source)
-		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
-						poll_clcc, vc);
-
-out:
-	cb(&error, cbd->data);
 }
 
 static void ifx_dial(struct ofono_voicecall *vc,
