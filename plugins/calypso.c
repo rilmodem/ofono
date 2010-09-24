@@ -104,7 +104,7 @@ static int calypso_probe(struct ofono_modem *modem)
 	const char *device;
 	struct calypso_data *data;
 
-	DBG("");
+	DBG("%p", modem);
 
 	device = ofono_modem_get_string(modem, "Device");
 	if (device == NULL)
@@ -123,7 +123,7 @@ static void calypso_remove(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
 
-	DBG("");
+	DBG("%p", modem);
 
 	g_free(data);
 }
@@ -420,6 +420,8 @@ static int calypso_enable(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
 
+	DBG("%p", modem);
+
 	if (write_file(CALYPSO_POWER_PATH, FALSE) == FALSE)
 		return -EINVAL;
 
@@ -434,7 +436,7 @@ static int calypso_disable(struct ofono_modem *modem)
 	struct calypso_data *data = ofono_modem_get_data(modem);
 	int i;
 
-	DBG("");
+	DBG("%p", modem);
 
 	for (i = 0; i < NUM_DLC; i++) {
 		g_at_chat_unref(data->dlcs[i]);
@@ -458,7 +460,7 @@ static void calypso_pre_sim(struct ofono_modem *modem)
 {
 	struct calypso_data *data = ofono_modem_get_data(modem);
 
-	DBG("");
+	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	data->sim = ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
@@ -522,7 +524,7 @@ static void calypso_post_sim(struct ofono_modem *modem)
 	struct calypso_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 
-	DBG("");
+	DBG("%p", modem);
 
 	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
