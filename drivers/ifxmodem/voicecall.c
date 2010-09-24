@@ -360,7 +360,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	/* Telephonyd will generate a call with the dialed number
+	/* oFono core will generate a call with the dialed number
 	 * inside its dial callback.  Unless we got COLP information
 	 * we do not need to communicate that a call is being
 	 * dialed
