@@ -627,6 +627,30 @@ static void option_osigq_notify(GAtResult *result, gpointer user_data)
 				at_util_convert_signal_strength(strength));
 }
 
+static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	int strength, ind;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XCIEV:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &ind))
+		return;
+
+	if (ind == 0)
+		strength = 0;
+	else if (ind == 7)
+		strength = 100;
+	else
+		strength = (ind * 15);
+
+	ofono_netreg_strength_notify(netreg, ind);
+}
+
 static void ciev_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1029,6 +1053,12 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_HUAWEI:
 		g_at_chat_register(nd->chat, "^RSSI:", huawei_rssi_notify,
 					FALSE, netreg, NULL);
+		break;
+	case OFONO_VENDOR_IFX:
+		g_at_chat_send(nd->chat, "AT+XMER=1", none_prefix,
+				NULL, NULL, NULL);
+		g_at_chat_register(nd->chat, "+XCIEV:", ifx_xciev_notify,
+				FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_ZTE:
 	case OFONO_VENDOR_NOKIA:
