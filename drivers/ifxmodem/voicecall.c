@@ -210,6 +210,78 @@ static gboolean poll_clcc(gpointer user_data)
 	return FALSE;
 }
 
+static void xcallstat_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GAtResultIter iter;
+	int id;
+	int status;
+	GSList *l;
+	struct ofono_call *call;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "+XCALLSTAT:") == FALSE)
+		return;
+
+	if (g_at_result_iter_next_number(&iter, &id) == FALSE)
+		return;
+
+	if (g_at_result_iter_next_number(&iter, &status) == FALSE)
+		return;
+
+	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(id),
+				at_util_call_compare_by_id);
+
+	if (l == NULL) {
+		/*
+		 * We should only receive XCALLSTAT on waiting and incoming
+		 * In the case of waiting, we will get the rest of the info
+		 * from CCWA indication.
+		 * In the case of incoming, we will get the info from CLIP
+		 * indications.
+		 */
+		if (status != 4 && status != 5) {
+			ofono_info("Received an XCALLSTAT for an untracked"
+					" call, this indicates a bug!");
+			return;
+		}
+
+		return;
+	}
+
+	call = l->data;
+
+	/* Check if call has been disconnected */
+	if (status == 6) {
+		enum ofono_disconnect_reason r;
+
+		if (vd->local_release & (0x1 << call->id))
+			r = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
+		else
+			r = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
+
+		if (call->type == 0)
+			ofono_voicecall_disconnected(vc, call->id, r, NULL);
+
+		vd->local_release &= ~(0x1 << call->id);
+		vd->calls = g_slist_remove(vd->calls, l);
+		g_free(call);
+
+		return;
+	}
+
+	/* For connected status, simply reset back to active */
+	if (status == 7)
+		status = 0;
+
+	call->status = status;
+
+	if (call->type == 0)
+		ofono_voicecall_notify(vc, call);
+}
+
 static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct change_state_req *req = user_data;
@@ -815,6 +887,8 @@ static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(vd->chat, "+CRING:", cring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CLIP:", clip_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CCWA:", ccwa_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+XCALLSTAT:", xcallstat_notify,
+				FALSE, vc, NULL);
 
 	/* Modems with 'better' call progress indicators should
 	 * probably not even bother registering to these
@@ -846,6 +920,7 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	g_at_chat_send(vd->chat, "AT+CRC=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+COLP=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(chat, "AT+XCALLSTAT=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CCWA=1", NULL,
 				ifx_voicecall_initialized, vc, NULL);
 	return 0;
