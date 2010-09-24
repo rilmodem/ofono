@@ -484,21 +484,6 @@ static void ifx_hangup(struct ofono_voicecall *vc,
 	ifx_template("AT+CHUP", vc, generic_cb, 0x3f, cb, data);
 }
 
-static void clcc_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	GSList *l;
-
-	if (!ok)
-		return;
-
-	vd->calls = at_util_parse_clcc(result);
-
-	for (l = vd->calls; l; l = l->next)
-		ofono_voicecall_notify(vc, l->data);
-}
-
 static void ifx_hold_all_active(struct ofono_voicecall *vc,
 				ofono_voicecall_cb_t cb, void *data)
 {
@@ -844,37 +829,6 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 						poll_clcc, vc);
 }
 
-static void no_carrier_notify(GAtResult *result, gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-
-	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-			clcc_poll_cb, vc, NULL);
-}
-
-static void no_answer_notify(GAtResult *result, gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-
-	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-			clcc_poll_cb, vc, NULL);
-}
-
-static void busy_notify(GAtResult *result, gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-
-	/* Call was rejected, most likely due to network congestion
-	 * or UDUB on the other side
-	 * TODO: Handle UDUB or other conditions somehow
-	 */
-	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-			clcc_poll_cb, vc, NULL);
-}
-
 static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
@@ -890,19 +844,7 @@ static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(vd->chat, "+XCALLSTAT:", xcallstat_notify,
 				FALSE, vc, NULL);
 
-	/* Modems with 'better' call progress indicators should
-	 * probably not even bother registering to these
-	 */
-	g_at_chat_register(vd->chat, "NO CARRIER",
-				no_carrier_notify, FALSE, vc, NULL);
-	g_at_chat_register(vd->chat, "NO ANSWER",
-				no_answer_notify, FALSE, vc, NULL);
-	g_at_chat_register(vd->chat, "BUSY", busy_notify, FALSE, vc, NULL);
-
 	ofono_voicecall_register(vc);
-
-	/* Populate the call list */
-	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix, clcc_cb, vc, NULL);
 }
 
 static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
