@@ -640,34 +640,6 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void ring_notify(GAtResult *result, gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct ofono_call *call;
-
-	/* See comment in CRING */
-	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(5),
-				at_util_call_compare_by_status))
-		return;
-
-	/* RING can repeat, ignore if we already have an incoming call */
-	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
-				at_util_call_compare_by_status))
-		return;
-
-	/* Generate an incoming call of unknown type */
-	call = create_call(vc, 9, 1, 4, NULL, 128, 2);
-
-	if (!call) {
-		ofono_error("Couldn't create call, call management is fubar!");
-		return;
-	}
-
-	/* We don't know the call type, we must run clcc */
-	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
-}
-
 static void cring_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
@@ -850,7 +822,6 @@ static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 
 	DBG("voicecall_init: registering to notifications");
 
-	g_at_chat_register(vd->chat, "RING", ring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CRING:", cring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CLIP:", clip_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CCWA:", ccwa_notify, FALSE, vc, NULL);
