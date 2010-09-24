@@ -208,9 +208,9 @@ builtin_modules += ifxmodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/ifxmodem/ifxmodem.h \
 			drivers/ifxmodem/ifxmodem.c \
+			drivers/ifxmodem/voicecall.c \
 			drivers/ifxmodem/radio-settings.c \
-			drivers/ifxmodem/stk.c \
-			drivers/ifxmodem/voicecall.c
+			drivers/ifxmodem/stk.c
 
 builtin_modules += stemodem
 builtin_sources += drivers/atmodem/atutil.h \

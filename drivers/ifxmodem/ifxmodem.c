@@ -34,9 +34,9 @@
 
 static int ifxmodem_init(void)
 {
+	ifx_voicecall_init();
 	ifx_radio_settings_init();
 	ifx_stk_init();
-	ifx_voicecall_init();
 
 	return 0;
 }
