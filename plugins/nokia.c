@@ -87,6 +87,7 @@ static void nokia_remove(struct ofono_modem *modem)
 static void nokia_debug(const char *str, void *user_data)
 {
         const char *prefix = user_data;
+
         ofono_info("%s%s", prefix, str);
 }
 
@@ -134,7 +135,7 @@ static void nokia_disconnect(gpointer user_data)
 	g_at_chat_unref(data->modem);
 	data->modem = NULL;
 
-	data->modem = open_device(modem, "Modem", "Modem:");
+	data->modem = open_device(modem, "Modem", "Modem: ");
 	if (!data->modem)
 		return;
 
@@ -164,14 +165,14 @@ static int nokia_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	data->modem = open_device(modem, "Modem", "Modem:");
+	data->modem = open_device(modem, "Modem", "Modem: ");
 	if (data->modem == NULL)
 		return -EINVAL;
 
 	g_at_chat_set_disconnect_function(data->modem,
 						nokia_disconnect, modem);
 
-	data->control = open_device(modem, "Control", "Control:");
+	data->control = open_device(modem, "Control", "Control: ");
 	if (data->control == NULL) {
 		g_at_chat_unref(data->modem);
 		data->modem = NULL;

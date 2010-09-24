@@ -103,7 +103,7 @@ static void mbm_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;
 
-	ofono_info("%s %s", prefix, str);
+	ofono_info("%s%s", prefix, str);
 }
 
 static gboolean init_simpin_check(gpointer user_data);
@@ -316,7 +316,7 @@ static int mbm_enable(struct ofono_modem *modem)
 		return -EIO;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->modem_port, mbm_debug, "Modem:");
+		g_at_chat_set_debug(data->modem_port, mbm_debug, "Modem: ");
 
 	data->data_port = create_port(data_dev);
 
@@ -328,7 +328,7 @@ static int mbm_enable(struct ofono_modem *modem)
 	}
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->data_port, mbm_debug, "Data:");
+		g_at_chat_set_debug(data->data_port, mbm_debug, "Data: ");
 
 	g_at_chat_register(data->modem_port, "*EMRDY:", emrdy_notifier,
 					FALSE, modem, NULL);

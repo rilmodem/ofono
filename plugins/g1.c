@@ -50,9 +50,11 @@
 
 #include <drivers/atmodem/vendor.h>
 
-static void g1_debug(const char *str, void *data)
+static void g1_debug(const char *str, void *user_data)
 {
-	ofono_info("%s", str);
+	const char *prefix = user_data;
+
+	ofono_info("%s%s", prefix, str);
 }
 
 /* Detect hardware, and initialize if found */
@@ -111,8 +113,8 @@ static int g1_enable(struct ofono_modem *modem)
 	if (chat == NULL)
 		return -EIO;
 
-	if (getenv("OFONO_AT_DEBUG") != NULL)
-		g_at_chat_set_debug(chat, g1_debug, NULL);
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, g1_debug, "");
 
 	ofono_modem_set_data(modem, chat);
 

@@ -89,6 +89,7 @@ static void zte_remove(struct ofono_modem *modem)
 static void zte_debug(const char *str, void *user_data)
 {
         const char *prefix = user_data;
+
         ofono_info("%s%s", prefix, str);
 }
 
@@ -136,7 +137,7 @@ static void zte_disconnect(gpointer user_data)
 	g_at_chat_unref(data->modem);
 	data->modem = NULL;
 
-	data->modem = open_device(modem, "Modem", "Modem:");
+	data->modem = open_device(modem, "Modem", "Modem: ");
 	if (!data->modem)
 		return;
 
@@ -166,14 +167,14 @@ static int zte_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	data->modem = open_device(modem, "Modem", "Modem:");
+	data->modem = open_device(modem, "Modem", "Modem: ");
 	if (data->modem == NULL)
 		return -EINVAL;
 
 	g_at_chat_set_disconnect_function(data->modem,
 						zte_disconnect, modem);
 
-	data->aux = open_device(modem, "Aux", "Aux:");
+	data->aux = open_device(modem, "Aux", "Aux: ");
 	if (data->aux == NULL) {
 		g_at_chat_unref(data->modem);
 		data->modem = NULL;

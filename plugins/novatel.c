@@ -89,6 +89,7 @@ static void novatel_remove(struct ofono_modem *modem)
 static void novatel_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;
+
 	ofono_info("%s%s", prefix, str);
 }
 
@@ -144,7 +145,7 @@ static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
 
 	data->dmat_mode = 1;
 
-	data->secondary = open_device(modem, "SecondaryDevice", "2nd:");
+	data->secondary = open_device(modem, "SecondaryDevice", "Control: ");
 	if (!data->secondary)
 		goto done;
 
@@ -206,7 +207,7 @@ static void novatel_disconnect(gpointer user_data)
 	g_at_chat_unref(data->primary);
 	data->primary = NULL;
 
-	data->primary = open_device(modem, "PrimaryDevice", "1st:");
+	data->primary = open_device(modem, "PrimaryDevice", "Modem: ");
 	if (!data->primary)
 		return;
 
@@ -228,7 +229,7 @@ static int novatel_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	data->primary = open_device(modem, "PrimaryDevice", "1st:");
+	data->primary = open_device(modem, "PrimaryDevice", "Modem: ");
 	if (!data->primary)
 		return -EIO;
 

@@ -115,6 +115,7 @@ static void huawei_remove(struct ofono_modem *modem)
 static void huawei_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;
+
 	ofono_info("%s%s", prefix, str);
 }
 
@@ -528,7 +529,7 @@ static void huawei_disconnect(gpointer user_data)
 	g_at_chat_unref(data->modem);
 	data->modem = NULL;
 
-	data->modem = open_device(modem, "Modem", "Modem:");
+	data->modem = open_device(modem, "Modem", "Modem: ");
 	if (data->modem == NULL)
 		return;
 
@@ -553,14 +554,14 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	data->modem = open_device(modem, "Modem", "Modem:");
+	data->modem = open_device(modem, "Modem", "Modem: ");
 	if (data->modem == NULL)
 		return -EINVAL;
 
 	g_at_chat_set_disconnect_function(data->modem,
 						huawei_disconnect, modem);
 
-	data->pcui = open_device(modem, "Pcui", "Pcui:");
+	data->pcui = open_device(modem, "Pcui", "PCUI: ");
 	if (data->pcui == NULL) {
 		g_at_chat_unref(data->modem);
 		data->modem = NULL;

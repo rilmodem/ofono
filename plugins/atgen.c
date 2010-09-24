@@ -78,7 +78,9 @@ static void atgen_remove(struct ofono_modem *modem)
 
 static void atgen_debug(const char *str, void *user_data)
 {
-	ofono_info("%s", str);
+	const char *prefix = user_data;
+
+	ofono_info("%s%s", prefix, str);
 }
 
 static int atgen_enable(struct ofono_modem *modem)
@@ -140,7 +142,7 @@ static int atgen_enable(struct ofono_modem *modem)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(chat, atgen_debug, NULL);
+		g_at_chat_set_debug(chat, atgen_debug, "");
 
 	ofono_modem_set_data(modem, chat);
 

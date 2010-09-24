@@ -79,7 +79,9 @@ static void palmpre_remove(struct ofono_modem *modem)
 
 static void palmpre_debug(const char *str, void *user_data)
 {
-	ofono_info("%s", str);
+	const char *prefix = user_data;
+
+	ofono_info("%s%s", prefix, str);
 }
 
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -126,7 +128,7 @@ static int palmpre_enable(struct ofono_modem *modem)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, palmpre_debug, NULL);
+		g_at_chat_set_debug(data->chat, palmpre_debug, "");
 
 	/* Ensure terminal is in a known state */
 	g_at_chat_send(data->chat, "ATZ E0 +CMEE=1", NULL, NULL, NULL, NULL);

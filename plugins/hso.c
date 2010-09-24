@@ -86,6 +86,7 @@ static void hso_remove(struct ofono_modem *modem)
 static void hso_debug(const char *str, void *user_data)
 {
 	const char *prefix = user_data;
+
 	ofono_info("%s%s", prefix, str);
 }
 
@@ -157,7 +158,7 @@ static int hso_enable(struct ofono_modem *modem)
 		return -EIO;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->control, hso_debug, "Control:");
+		g_at_chat_set_debug(data->control, hso_debug, "Control: ");
 
 	data->app = create_port(app);
 
@@ -169,7 +170,7 @@ static int hso_enable(struct ofono_modem *modem)
 	}
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->app, hso_debug, "App:");
+		g_at_chat_set_debug(data->app, hso_debug, "App: ");
 
 	g_at_chat_send(data->control, "ATE0", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(data->app, "ATE0", none_prefix, NULL, NULL, NULL);

@@ -106,7 +106,9 @@ static void ste_remove(struct ofono_modem *modem)
 
 static void ste_debug(const char *str, void *user_data)
 {
-	ofono_info("%s", str);
+	const char *prefix = user_data;
+
+	ofono_info("%s%s", prefix, str);
 }
 
 static gboolean init_simpin_check(gpointer user_data);
@@ -235,7 +237,7 @@ static int ste_enable(struct ofono_modem *modem)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, ste_debug, NULL);
+		g_at_chat_set_debug(data->chat, ste_debug, "");
 
 	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1",
 			NULL, NULL, NULL, NULL);

@@ -66,7 +66,9 @@ static GHashTable *modem_hash = NULL;
 
 static void hfp_debug(const char *str, void *user_data)
 {
-	ofono_info("%s", str);
+	const char *prefix = user_data;
+
+	ofono_info("%s%s", prefix, str);
 }
 
 static void clear_data(struct ofono_modem *modem)
@@ -337,7 +339,7 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 	g_at_chat_set_disconnect_function(chat, hfp_disconnected_cb, modem);
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(chat, hfp_debug, NULL);
+		g_at_chat_set_debug(chat, hfp_debug, "");
 
 	snprintf(buf, sizeof(buf), "AT+BRSF=%d", data->hf_features);
 	g_at_chat_send(chat, buf, brsf_prefix,
