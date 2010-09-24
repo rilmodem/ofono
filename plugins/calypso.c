@@ -71,11 +71,13 @@ enum powercycle_state {
 
 #define NUM_DLC 4
 
-#define VOICE_DLC 0
-#define NETREG_DLC 1
-#define SMS_DLC 2
-#define AUX_DLC 3
-#define SETUP_DLC 3
+#define VOICE_DLC   0
+#define NETREG_DLC  1
+#define SMS_DLC     2
+#define AUX_DLC     3
+#define SETUP_DLC   3
+
+static char *debug_prefixes[NUM_DLC] = { "Voice: ", "Net: ", "SMS: ", "Aux: " };
 
 struct calypso_data {
 	GAtMux *mux;
@@ -89,13 +91,6 @@ struct calypso_data {
 
 static const char *cpin_prefix[] = { "+CPIN:", NULL };
 static const char *none_prefix[] = { NULL };
-
-static void calypso_dlc_debug(const char *str, void *user_data)
-{
-	guint dlc = GPOINTER_TO_UINT(user_data);
-
-	ofono_info("DLC%u: %s", dlc, str);
-}
 
 static void calypso_debug(const char *str, void *user_data)
 {
@@ -282,8 +277,8 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 		g_io_channel_unref(io);
 
 		if (getenv("OFONO_AT_DEBUG"))
-			g_at_chat_set_debug(data->dlcs[i], calypso_dlc_debug,
-						GUINT_TO_POINTER(i));
+			g_at_chat_set_debug(data->dlcs[i], calypso_debug,
+							debug_prefixes[i]);
 
 		g_at_chat_set_wakeup_command(data->dlcs[i], "AT\r", 500, 5000);
 	}
