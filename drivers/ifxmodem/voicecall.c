@@ -302,10 +302,6 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		}
 	}
 
-	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-			clcc_poll_cb, req->vc, NULL);
-
-	/* We have to callback after we schedule a poll if required */
 	req->cb(&error, req->data);
 }
 
@@ -319,12 +315,8 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
-		vd->local_release = 0x1 << req->id;
+		vd->local_release |= 0x1 << req->id;
 
-	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-			clcc_poll_cb, req->vc, NULL);
-
-	/* We have to callback after we schedule a poll if required */
 	req->cb(&error, req->data);
 }
 
@@ -808,10 +800,6 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	if (call->type == 0) /* Only notify voice calls */
 		ofono_voicecall_notify(vc, call);
-
-	if (vd->clcc_source == 0)
-		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
-						poll_clcc, vc);
 }
 
 static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
