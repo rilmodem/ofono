@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
 
 #include <glib.h>
 #include <gatchat.h>
@@ -58,6 +60,8 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
+#define MUX_LDISC  23
+
 #define NUM_DLC  4
 
 #define VOICE_DLC   0
@@ -65,9 +69,17 @@
 #define GPRS_DLC    2
 #define AUX_DLC     3
 
+static char *dlc_prefixes[NUM_DLC] = { "Voice: ", "Net: ", "GPRS: ", "Aux: " };
+
+static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
+					"/dev/ttyGSM7", "/dev/ttyGSM8" };
+
 struct ifx_data {
-	GAtChat *master;
+	GIOChannel *device;
 	GAtChat *dlcs[NUM_DLC];
+	guint dlc_poll_count;
+	guint dlc_poll_source;
+	int saved_ldisc;
 };
 
 static void ifx_debug(const char *str, void *user_data)
@@ -87,6 +99,8 @@ static int ifx_probe(struct ofono_modem *modem)
 	if (!data)
 		return -ENOMEM;
 
+	data->saved_ldisc = -1;
+
 	ofono_modem_set_data(modem, data);
 
 	return 0;
@@ -101,6 +115,22 @@ static void ifx_remove(struct ofono_modem *modem)
 	ofono_modem_set_data(modem, NULL);
 
 	g_free(data);
+}
+
+static void xsim_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	int state;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XSIM:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	DBG("state %d", state);
 }
 
 static GAtChat *create_port(const char *device)
@@ -124,39 +154,150 @@ static GAtChat *create_port(const char *device)
 	return chat;
 }
 
-static GAtChat *open_device(const char *device, char *debug)
+static void shutdown_device(struct ifx_data *data)
 {
-	GAtChat *chat;
+	int i, fd;
 
-	chat = create_port(device);
-	if (!chat)
-		return NULL;
+	DBG("");
 
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(chat, ifx_debug, debug);
+	for (i = 0; i < NUM_DLC; i++) {
+		if (!data->dlcs[i])
+			continue;
 
-	return chat;
+		g_at_chat_unref(data->dlcs[i]);
+		data->dlcs[i] = NULL;
+	}
+
+	fd = g_io_channel_unix_get_fd(data->device);
+
+	if (ioctl(fd, TIOCSETD, &data->saved_ldisc) < 0)
+		ofono_error("Failed to restore line discipline");
+
+	g_io_channel_unref(data->device);
+	data->device = NULL;
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
 	if (!ok) {
+		shutdown_device(data);
+
 		ofono_modem_set_powered(modem, FALSE);
 		return;
 	}
 
+	g_at_chat_register(data->dlcs[AUX_DLC], "+XSIM:", xsim_notify,
+						FALSE, modem, NULL);
+
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XSIMSTATE=1", NULL,
+						NULL, NULL, NULL);
+
 	ofono_modem_set_powered(modem, TRUE);
+}
+
+static gboolean dlc_ready_check(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+	struct stat st;
+	int i;
+
+	DBG("");
+
+	data->dlc_poll_count++;
+
+	if (stat(dlc_nodes[AUX_DLC], &st) < 0) {
+		/* only possible error is ENOENT */
+		if (data->dlc_poll_count > 6)
+			goto error;
+
+		return TRUE;
+	}
+
+	for (i = 0; i < NUM_DLC; i++) {
+		data->dlcs[i] = create_port(dlc_nodes[i]);
+		if (!data->dlcs[i]) {
+			ofono_error("Failed to open %s", dlc_nodes[i]);
+			goto error;
+		}
+
+		if (getenv("OFONO_AT_DEBUG"))
+			g_at_chat_set_debug(data->dlcs[i], ifx_debug,
+							dlc_prefixes[i]);
+
+		g_at_chat_send(data->dlcs[i], "ATE0 +CMEE=1", NULL,
+						NULL, NULL, NULL);
+	}
+
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
+					cfun_enable, modem, NULL);
+
+	data->dlc_poll_source = 0;
+
+	return FALSE;
+
+error:
+	data->dlc_poll_source = 0;
+
+	shutdown_device(data);
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	return FALSE;
+}
+
+static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+	int fd, ldisc = MUX_LDISC;
+
+	DBG("");
+
+	g_at_chat_unref(data->dlcs[AUX_DLC]);
+	data->dlcs[AUX_DLC] = NULL;
+
+	if (!ok)
+		goto error;
+
+	fd = g_io_channel_unix_get_fd(data->device);
+
+	if (ioctl(fd, TIOCGETD, &data->saved_ldisc) < 0) {
+		ofono_error("Failed to get current line discipline");
+		goto error;
+	}
+
+	if (ioctl(fd, TIOCSETD, &ldisc) < 0) {
+		ofono_error("Failed to set multiplexer line discipline");
+		goto error;
+	}
+
+	data->dlc_poll_count = 0;
+	data->dlc_poll_source = g_timeout_add_seconds(1, dlc_ready_check,
+								modem);
+
+	return;
+
+error:
+	data->saved_ldisc = -1;
+
+	g_io_channel_unref(data->device);
+	data->device = NULL;
+
+	ofono_modem_set_powered(modem, FALSE);
 }
 
 static int ifx_enable(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
 	const char *device;
-	int i;
+	GAtSyntax *syntax;
+	GAtChat *chat;
 
 	DBG("%p", modem);
 
@@ -166,18 +307,29 @@ static int ifx_enable(struct ofono_modem *modem)
 
 	DBG("%s", device);
 
-	data->master = open_device(device, "");
-	if (!data->master)
-		return -EIO;
+	data->device = g_at_tty_open(device, NULL);
+	if (!data->device)
+                return -EIO;
 
-	for (i = 0; i < NUM_DLC; i++)
-		data->dlcs[i] = data->master;
+	syntax = g_at_syntax_new_gsmv1();
+	chat = g_at_chat_new(data->device, syntax);
+	g_at_syntax_unref(syntax);
 
-	g_at_chat_send(data->master, "ATE0 +CMEE=1", NULL,
+	if (!chat) {
+		g_io_channel_unref(data->device);
+                return -EIO;
+	}
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, ifx_debug, "Master: ");
+
+	g_at_chat_send(chat, "ATE0 +CMEE=1", NULL,
 					NULL, NULL, NULL);
 
-	g_at_chat_send(data->master, "AT+CFUN=4", NULL,
-					cfun_enable, modem, NULL);
+	g_at_chat_send(chat, "AT+CMUX=0,0,,1509,10,3,30,,", NULL,
+					mux_setup_cb, modem, NULL);
+
+	data->dlcs[AUX_DLC] = chat;
 
 	return -EINPROGRESS;
 }
@@ -186,15 +338,15 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	int i;
 
 	DBG("");
 
-	for (i = 0; i < NUM_DLC; i++)
-		data->dlcs[i] = NULL;
+	if (data->dlc_poll_source > 0) {
+		g_source_remove(data->dlc_poll_source);
+		data->dlc_poll_source = 0;
+	}
 
-	g_at_chat_unref(data->master);
-	data->master = NULL;
+	shutdown_device(data);
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
@@ -203,16 +355,16 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 static int ifx_disable(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
+	int i;
 
 	DBG("%p", modem);
 
-	if (!data->master)
-		return 0;
+	for (i = 0; i < NUM_DLC; i++) {
+		g_at_chat_cancel_all(data->dlcs[i]);
+		g_at_chat_unregister_all(data->dlcs[i]);
+	}
 
-	g_at_chat_cancel_all(data->master);
-	g_at_chat_unregister_all(data->master);
-
-	g_at_chat_send(data->master, "AT+CFUN=4", NULL,
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
 					cfun_disable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -280,6 +432,8 @@ static void ifx_post_online(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
@@ -302,6 +456,13 @@ static void ifx_post_online(struct ofono_modem *modem)
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
 		ofono_message_waiting_register(mw);
+
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->dlcs[NETREG_DLC]);
+	gc = ofono_gprs_context_create(modem, 0,
+					"atmodem", data->dlcs[GPRS_DLC]);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 }
 
 static struct ofono_modem_driver ifx_driver = {
