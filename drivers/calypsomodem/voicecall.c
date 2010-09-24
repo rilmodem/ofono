@@ -119,10 +119,16 @@ static void calypso_answer(struct ofono_voicecall *vc,
 	calypso_template(vc, "ATA", cb, data);
 }
 
-static void calypso_hangup(struct ofono_voicecall *vc,
+static void calypso_ath(struct ofono_voicecall *vc,
 				ofono_voicecall_cb_t cb, void *data)
 {
 	calypso_template(vc, "ATH", cb, data);
+}
+
+static void calypso_chup(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	calypso_template(vc, "AT+CHUP", cb, data);
 }
 
 static void calypso_hold_all_active(struct ofono_voicecall *vc,
@@ -409,7 +415,8 @@ static struct ofono_voicecall_driver driver = {
 	.remove			= calypso_voicecall_remove,
 	.dial			= calypso_dial,
 	.answer			= calypso_answer,
-	.hangup_active		= calypso_hangup,
+	.hangup_all		= calypso_ath,
+	.hangup_active		= calypso_chup,
 	.hold_all_active	= calypso_hold_all_active,
 	.release_all_held	= calypso_release_all_held,
 	.set_udub		= calypso_set_udub,
