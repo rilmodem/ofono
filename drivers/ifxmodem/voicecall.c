@@ -579,6 +579,12 @@ static void ifx_deflect(struct ofono_voicecall *vc,
 	ifx_template(buf, vc, generic_cb, incoming_or_waiting, cb, data);
 }
 
+static void ifx_swap_without_accept(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	ifx_template("AT+CHLD=6", vc, generic_cb, 0, cb, data);
+}
+
 static void vts_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -900,7 +906,7 @@ static struct ofono_voicecall_driver driver = {
 	.create_multiparty	= ifx_create_multiparty,
 	.transfer		= ifx_transfer,
 	.deflect		= ifx_deflect,
-	.swap_without_accept	= NULL,
+	.swap_without_accept	= ifx_swap_without_accept,
 	.send_tones		= ifx_send_dtmf
 };
 
