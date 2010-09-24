@@ -40,6 +40,7 @@
 #include "smsutil.h"
 #include "stkutil.h"
 #include "stkagent.h"
+#include "util.h"
 
 static GSList *g_drivers = NULL;
 
