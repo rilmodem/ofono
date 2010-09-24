@@ -54,7 +54,6 @@ struct voicecall_data {
 	GSList *calls;
 	unsigned int local_release;
 	GAtChat *chat;
-	unsigned int vendor;
 };
 
 struct release_id_req {
@@ -702,7 +701,6 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	vd = g_new0(struct voicecall_data, 1);
 	vd->chat = g_at_chat_clone(chat);
-	vd->vendor = vendor;
 
 	ofono_voicecall_set_data(vc, vd);
 
