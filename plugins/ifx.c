@@ -60,8 +60,6 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
-#define MUX_LDISC  23
-
 #define NUM_DLC  4
 
 #define VOICE_DLC   0
@@ -79,6 +77,7 @@ struct ifx_data {
 	GAtChat *dlcs[NUM_DLC];
 	guint dlc_poll_count;
 	guint dlc_poll_source;
+	int mux_ldisc;
 	int saved_ldisc;
 	struct ofono_sim *sim;
 	gboolean have_sim;
@@ -101,6 +100,7 @@ static int ifx_probe(struct ofono_modem *modem)
 	if (!data)
 		return -ENOMEM;
 
+	data->mux_ldisc = -1;
 	data->saved_ldisc = -1;
 
 	ofono_modem_set_data(modem, data);
@@ -202,7 +202,7 @@ static void shutdown_device(struct ifx_data *data)
 	fd = g_io_channel_unix_get_fd(data->device);
 
 	if (ioctl(fd, TIOCSETD, &data->saved_ldisc) < 0)
-		ofono_error("Failed to restore line discipline");
+		ofono_warn("Failed to restore line discipline");
 
 	g_io_channel_unref(data->device);
 	data->device = NULL;
@@ -290,7 +290,7 @@ static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	int fd, ldisc = MUX_LDISC;
+	int fd;
 
 	DBG("");
 
@@ -300,6 +300,11 @@ static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!ok)
 		goto error;
 
+	if (data->mux_ldisc < 0) {
+		ofono_error("No multiplexer line discipline specified");
+		goto error;
+	}
+
 	fd = g_io_channel_unix_get_fd(data->device);
 
 	if (ioctl(fd, TIOCGETD, &data->saved_ldisc) < 0) {
@@ -307,7 +312,7 @@ static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto error;
 	}
 
-	if (ioctl(fd, TIOCSETD, &ldisc) < 0) {
+	if (ioctl(fd, TIOCSETD, &data->mux_ldisc) < 0) {
 		ofono_error("Failed to set multiplexer line discipline");
 		goto error;
 	}
@@ -330,7 +335,7 @@ error:
 static int ifx_enable(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	const char *device;
+	const char *device, *ldisc;
 	GAtSyntax *syntax;
 	GAtChat *chat;
 
@@ -341,6 +346,13 @@ static int ifx_enable(struct ofono_modem *modem)
 		return -EINVAL;
 
 	DBG("%s", device);
+
+	ldisc = ofono_modem_get_string(modem, "LineDiscipline");
+	if (ldisc != NULL) {
+		data->mux_ldisc = atoi(ldisc);
+		ofono_info("Using multiplexer line discipline %d",
+							data->mux_ldisc);
+	}
 
 	data->device = g_at_tty_open(device, NULL);
 	if (!data->device)
