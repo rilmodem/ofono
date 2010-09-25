@@ -80,6 +80,8 @@ struct ifx_data {
 	guint dlc_poll_count;
 	guint dlc_poll_source;
 	int saved_ldisc;
+	struct ofono_sim *sim;
+	gboolean have_sim;
 };
 
 static void ifx_debug(const char *str, void *user_data)
@@ -119,8 +121,14 @@ static void ifx_remove(struct ofono_modem *modem)
 
 static void xsim_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+
 	GAtResultIter iter;
 	int state;
+
+	if (!data->sim)
+		return;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -131,6 +139,29 @@ static void xsim_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	DBG("state %d", state);
+
+	switch (state) {
+	case 0:	/* SIM not present */
+	case 9:	/* SIM Removed */
+		if (data->have_sim == TRUE) {
+			ofono_sim_inserted_notify(data->sim, FALSE);
+			data->have_sim = FALSE;
+		}
+		break;
+	case 1:	/* PIN verification needed */
+	case 2:	/* PIN verification not needed – Ready */
+	case 3:	/* PIN verified – Ready */
+	case 4:	/* PUK verification needed */
+	case 5:	/* SIM permanently blocked */
+	case 6:	/* SIM Error */
+	case 7:	/* ready for attach (+COPS) */
+	case 8:	/* SIM Technical Problem */
+		if (data->have_sim == FALSE) {
+			ofono_sim_inserted_notify(data->sim, TRUE);
+			data->have_sim = TRUE;
+		}
+		break;
+	}
 }
 
 static GAtChat *create_port(const char *device)
@@ -191,13 +222,17 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
+	data->have_sim = FALSE;
+
+	/* notify that the modem is ready so that pre_sim gets called */
+	ofono_modem_set_powered(modem, TRUE);
+
 	g_at_chat_register(data->dlcs[AUX_DLC], "+XSIM:", xsim_notify,
 						FALSE, modem, NULL);
 
+	/* enable XSIM and XLOCK notifications */
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XSIMSTATE=1", NULL,
 						NULL, NULL, NULL);
-
-	ofono_modem_set_powered(modem, TRUE);
 }
 
 static gboolean dlc_ready_check(gpointer user_data)
@@ -406,16 +441,13 @@ error:
 static void ifx_pre_sim(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	data->sim = ofono_sim_create(modem, OFONO_VENDOR_IFX,
+					"atmodem", data->dlcs[AUX_DLC]);
 	ofono_voicecall_create(modem, 0, "ifxmodem", data->dlcs[VOICE_DLC]);
-
-	if (sim)
-		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void ifx_post_sim(struct ofono_modem *modem)
