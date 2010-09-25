@@ -727,7 +727,7 @@ static void ifx_voicecall_remove(struct ofono_voicecall *vc)
 }
 
 static struct ofono_voicecall_driver driver = {
-	.name			= "ifx",
+	.name			= "ifxmodem",
 	.probe			= ifx_voicecall_probe,
 	.remove			= ifx_voicecall_remove,
 	.dial			= ifx_dial,
