@@ -31,6 +31,7 @@
 
 #include <glib.h>
 #include <gatchat.h>
+#include <gatmux.h>
 #include <gattty.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
@@ -74,9 +75,11 @@ static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
 
 struct ifx_data {
 	GIOChannel *device;
+	GAtMux *mux;
 	GAtChat *dlcs[NUM_DLC];
 	guint dlc_poll_count;
 	guint dlc_poll_source;
+	guint frame_size;
 	int mux_ldisc;
 	int saved_ldisc;
 	struct ofono_sim *sim;
@@ -164,13 +167,11 @@ static void xsim_notify(GAtResult *result, gpointer user_data)
 	}
 }
 
-static GAtChat *create_port(const char *device)
+static GAtChat *create_chat(GIOChannel *channel, char *debug)
 {
 	GAtSyntax *syntax;
-	GIOChannel *channel;
 	GAtChat *chat;
 
-	channel = g_at_tty_open(device, NULL);
 	if (!channel)
 		return NULL;
 
@@ -181,6 +182,12 @@ static GAtChat *create_port(const char *device)
 
 	if (!chat)
 		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, ifx_debug, debug);
+
+	g_at_chat_send(chat, "ATE0 +CMEE=1", NULL,
+					NULL, NULL, NULL);
 
 	return chat;
 }
@@ -199,11 +206,19 @@ static void shutdown_device(struct ifx_data *data)
 		data->dlcs[i] = NULL;
 	}
 
+	if (data->mux) {
+		g_at_mux_shutdown(data->mux);
+		g_at_mux_unref(data->mux);
+		data->mux = NULL;
+		goto done;
+	}
+
 	fd = g_io_channel_unix_get_fd(data->device);
 
 	if (ioctl(fd, TIOCSETD, &data->saved_ldisc) < 0)
 		ofono_warn("Failed to restore line discipline");
 
+done:
 	g_io_channel_unref(data->device);
 	data->device = NULL;
 }
@@ -255,18 +270,13 @@ static gboolean dlc_ready_check(gpointer user_data)
 	}
 
 	for (i = 0; i < NUM_DLC; i++) {
-		data->dlcs[i] = create_port(dlc_nodes[i]);
+		GIOChannel *channel = g_at_tty_open(dlc_nodes[i], NULL);
+
+		data->dlcs[i] = create_chat(channel, dlc_prefixes[i]);
 		if (!data->dlcs[i]) {
 			ofono_error("Failed to open %s", dlc_nodes[i]);
 			goto error;
 		}
-
-		if (getenv("OFONO_AT_DEBUG"))
-			g_at_chat_set_debug(data->dlcs[i], ifx_debug,
-							dlc_prefixes[i]);
-
-		g_at_chat_send(data->dlcs[i], "ATE0 +CMEE=1", NULL,
-						NULL, NULL, NULL);
 	}
 
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
@@ -286,6 +296,50 @@ error:
 	return FALSE;
 }
 
+static void setup_internal_mux(struct ofono_modem *modem)
+{
+	struct ifx_data *data = ofono_modem_get_data(modem);
+	GIOFlags flags;
+	int i;
+
+	DBG("");
+
+	flags = g_io_channel_get_flags(data->device) | G_IO_FLAG_NONBLOCK;
+	g_io_channel_set_flags(data->device, flags, NULL);
+
+	g_io_channel_set_encoding(data->device, NULL, NULL);
+	g_io_channel_set_buffered(data->device, FALSE);
+
+	data->mux = g_at_mux_new_gsm0710_basic(data->device, data->frame_size);
+	if (!data->mux)
+		goto error;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_mux_set_debug(data->mux, ifx_debug, "MUX: ");
+
+	g_at_mux_start(data->mux);
+
+	for (i = 0; i < NUM_DLC; i++) {
+		GIOChannel *channel = g_at_mux_create_channel(data->mux);
+
+		data->dlcs[i] = create_chat(channel, dlc_prefixes[i]);
+		if (!data->dlcs[i]) {
+			ofono_error("Failed to create channel");
+			goto error;
+		}
+        }
+
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
+					cfun_enable, modem, NULL);
+
+	return;
+
+error:
+	shutdown_device(data);
+
+	ofono_modem_set_powered(modem, FALSE);
+}
+
 static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -301,8 +355,9 @@ static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto error;
 
 	if (data->mux_ldisc < 0) {
-		ofono_error("No multiplexer line discipline specified");
-		goto error;
+		ofono_info("Using internal multiplexer");
+		setup_internal_mux(modem);
+		return;
 	}
 
 	fd = g_io_channel_unix_get_fd(data->device);
@@ -372,6 +427,8 @@ static int ifx_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(chat, "ATE0 +CMEE=1", NULL,
 					NULL, NULL, NULL);
+
+	data->frame_size = 1509;
 
 	g_at_chat_send(chat, "AT+CMUX=0,0,,1509,10,3,30,,", NULL,
 					mux_setup_cb, modem, NULL);
