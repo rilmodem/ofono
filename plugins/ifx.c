@@ -73,6 +73,8 @@ static char *dlc_prefixes[NUM_DLC] = { "Voice: ", "Net: ", "GPRS: ", "Aux: " };
 static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
 					"/dev/ttyGSM7", "/dev/ttyGSM8" };
 
+static const char *none_prefix[] = { NULL };
+
 struct ifx_data {
 	GIOChannel *device;
 	GAtMux *mux;
@@ -246,7 +248,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 						FALSE, modem, NULL);
 
 	/* enable XSIM and XLOCK notifications */
-	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XSIMSTATE=1", NULL,
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XSIMSTATE=1", none_prefix,
 						NULL, NULL, NULL);
 }
 
