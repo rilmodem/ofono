@@ -213,12 +213,26 @@ static void add_hso(struct ofono_modem *modem,
 static void add_ifx(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
+	struct udev_list_entry *entry;
 	const char *devnode;
 
 	DBG("modem %p", modem);
 
 	devnode = udev_device_get_devnode(udev_device);
 	ofono_modem_set_string(modem, "Device", devnode);
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+		const char *value;
+
+		if (g_str_equal(name, "OFONO_IFX_LDISC") == TRUE) {
+			value = udev_list_entry_get_value(entry);
+			ofono_modem_set_string(modem, "LineDiscipline", value);
+		}
+
+		entry = udev_list_entry_get_next(entry);
+	}
 
 	ofono_modem_register(modem);
 }
