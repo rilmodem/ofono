@@ -579,10 +579,6 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 	data->sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->pcui);
 
-	if (data->voice == TRUE)
-		ofono_voicecall_create(modem, OFONO_VENDOR_HUAWEI,
-						"atmodem", data->pcui);
-
 	data->sim_poll_count = 0;
 	query_sim_state(modem);
 }
@@ -592,6 +588,10 @@ static void huawei_post_sim(struct ofono_modem *modem)
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	if (data->voice == TRUE)
+		ofono_voicecall_create(modem, OFONO_VENDOR_HUAWEI,
+						"atmodem", data->pcui);
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
 }
