@@ -44,13 +44,135 @@ static const char *none_prefix[] = { NULL };
 
 struct voicecall_data {
 	GAtChat *chat;
+	GSList *calls;
 };
+
+static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
+					int direction, int status,
+					const char *num, int num_type, int clip)
+{
+	struct voicecall_data *d = ofono_voicecall_get_data(vc);
+	struct ofono_call *call;
+
+	/* Generate a call structure for the waiting call */
+	call = g_try_new0(struct ofono_call, 1);
+	if (!call)
+		return NULL;
+
+	call->id = ofono_voicecall_get_next_callid(vc);
+	call->type = type;
+	call->direction = direction;
+	call->status = status;
+
+	if (clip != 2) {
+		strncpy(call->phone_number.number, num,
+			OFONO_MAX_PHONE_NUMBER_LENGTH);
+		call->phone_number.type = num_type;
+	}
+
+	call->clip_validity = clip;
+
+	d->calls = g_slist_insert_sorted(d->calls, call, at_util_call_compare);
+
+	g_at_chat_send(d->chat, "AT^DDSETEX=2", none_prefix,
+						NULL, NULL, NULL);
+
+	return call;
+}
+
+static void huawei_generic_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_voicecall_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	cb(&error, cbd->data);
+}
+
+static void huawei_template(struct ofono_voicecall *vc, const char *cmd,
+					ofono_voicecall_cb_t cb, void *data)
+{
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	struct cb_data *cbd = cb_data_new(cb, data);
+
+	if (!cbd)
+		goto error;
+
+	if (g_at_chat_send(vd->chat, cmd, none_prefix,
+				huawei_generic_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void huawei_dial(struct ofono_voicecall *vc,
+				const struct ofono_phone_number *ph,
+				enum ofono_clir_option clir,
+				enum ofono_cug_option cug,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	char buf[256];
+
+	if (ph->type == 145)
+		snprintf(buf, sizeof(buf), "ATD+%s", ph->number);
+	else
+		snprintf(buf, sizeof(buf), "ATD%s", ph->number);
+
+	switch (clir) {
+	case OFONO_CLIR_OPTION_INVOCATION:
+		strcat(buf, "I");
+		break;
+	case OFONO_CLIR_OPTION_SUPPRESSION:
+		strcat(buf, "i");
+		break;
+	default:
+		break;
+	}
+
+	switch (cug) {
+	case OFONO_CUG_OPTION_INVOCATION:
+		strcat(buf, "G");
+		break;
+	default:
+		break;
+	}
+
+	strcat(buf, ";");
+
+	huawei_template(vc, buf, cb, data);
+}
+
+static void huawei_answer(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	huawei_template(vc, "ATA", cb, data);
+}
+
+static void huawei_hangup(struct ofono_voicecall *vc,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	/* Hangup active call */
+	huawei_template(vc, "AT+CHUP", cb, data);
+}
 
 static void cring_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GAtResultIter iter;
 	const char *line;
 	int type;
+
+	/* CRING can repeat, ignore if we already have an incoming call */
+	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
+					at_util_call_compare_by_status))
+		return;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -58,7 +180,6 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	line = g_at_result_iter_raw_line(&iter);
-
 	if (line == NULL)
 		return;
 
@@ -68,15 +189,29 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	else
 		type = 9;
 
+	/* Generate an incoming call */
+	create_call(vc, type, 1, 4, NULL, 128, 2);
+
 	/* Assume the CLIP always arrives, and we signal the call there */
 	DBG("%d", type);
 }
 
 static void clip_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GAtResultIter iter;
 	const char *num;
 	int type, validity;
+	GSList *l;
+	struct ofono_call *call;
+
+	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
+					at_util_call_compare_by_status);
+	if (l == NULL) {
+		ofono_error("CLIP for unknown call");
+		return;
+	}
 
 	g_at_result_iter_init(&iter, result);
 
@@ -103,6 +238,17 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &validity);
 
 	DBG("%s %d %d", num, type, validity);
+
+	call = l->data;
+
+	strncpy(call->phone_number.number, num,
+				OFONO_MAX_PHONE_NUMBER_LENGTH);
+	call->phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+	call->phone_number.type = type;
+	call->clip_validity = validity;
+
+	if (call->type == 0)
+		ofono_voicecall_notify(vc, call);
 }
 
 static void ccwa_notify(GAtResult *result, gpointer user_data)
@@ -276,6 +422,9 @@ static struct ofono_voicecall_driver driver = {
 	.name			= "huaweimodem",
 	.probe			= huawei_voicecall_probe,
 	.remove			= huawei_voicecall_remove,
+	.dial			= huawei_dial,
+	.answer			= huawei_answer,
+	.hangup_all		= huawei_hangup,
 };
 
 void huawei_voicecall_init()
