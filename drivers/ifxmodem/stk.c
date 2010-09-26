@@ -62,27 +62,25 @@ static void sate_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok) {
-		cb(&error, NULL, 0, cbd->data);
-		return;
-	}
+	if (!ok)
+		goto done;
 
 	g_at_result_iter_init(&iter, result);
 
 	if (g_at_result_iter_next(&iter, "+SATE:") == FALSE)
-		goto error;
+		goto done;
 
 	if (g_at_result_iter_next_number(&iter, &sw1) == FALSE)
-		goto error;
+		goto done;
 
 	if (g_at_result_iter_next_number(&iter, &sw2) == FALSE)
-		goto error;
+		goto done;
 
 	if (g_at_result_iter_next_number(&iter, &envelope) == FALSE)
-		goto error;
+		goto done;
 
 	if (g_at_result_iter_next_number(&iter, &event) == FALSE)
-		goto error;
+		goto done;
 
 	DBG("sw1 %d sw2 %d envelope %d event %d", sw1, sw2, envelope, event);
 
@@ -91,11 +89,8 @@ static void sate_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("len %d", len);
 
+done:
 	cb(&error, pdu, len, cbd->data);
-	return;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 }
 
 static void ifx_stk_envelope(struct ofono_stk *stk, int length,
