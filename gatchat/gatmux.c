@@ -36,9 +36,6 @@
 #include "gatmux.h"
 #include "gsm0710.h"
 
-/* #define DBG(fmt, arg...) g_print("%s: " fmt "\n" , __func__ , ## arg) */
-#define DBG(fmt, arg...)
-
 static const char *cmux_prefix[] = { "+CMUX:", NULL };
 static const char *none_prefix[] = { NULL };
 
@@ -101,6 +98,22 @@ struct mux_setup_data {
 	guint frame_size;
 };
 
+static inline void debug(GAtMux *mux, const char *format, ...)
+{
+	char str[256];
+	va_list ap;
+
+	if (mux->debugf == NULL)
+		return;
+
+	va_start(ap, format);
+
+	if (vsnprintf(str, sizeof(str), format, ap) > 0)
+		mux->debugf(str, mux->debug_data);
+
+	va_end(ap);
+}
+
 static void dispatch_sources(GAtMuxChannel *channel, GIOCondition condition)
 {
 	GAtMuxWatch *source;
@@ -116,7 +129,7 @@ static void dispatch_sources(GAtMuxChannel *channel, GIOCondition condition)
 
 		source = c->data;
 
-		DBG("Checking source: %p", source);
+		debug(channel->mux, "checking source: %p", source);
 
 		if (condition & source->condition) {
 			gpointer user_data = NULL;
@@ -125,7 +138,7 @@ static void dispatch_sources(GAtMuxChannel *channel, GIOCondition condition)
 			gpointer cb_data;
 			gboolean (*dispatch) (GSource *, GSourceFunc, gpointer);
 
-			DBG("dispatching source: %p", source);
+			debug(channel->mux, "dispatching source: %p", source);
 
 			dispatch = source->source.source_funcs->dispatch;
 			cb_funcs = source->source.callback_funcs;
@@ -146,7 +159,7 @@ static void dispatch_sources(GAtMuxChannel *channel, GIOCondition condition)
 		}
 
 		if (destroy) {
-			DBG("removing source: %p", source);
+			debug(channel->mux, "removing source: %p", source);
 
 			g_source_destroy((GSource *) source);
 
@@ -177,7 +190,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	if (cond & G_IO_NVAL)
 		return FALSE;
 
-	DBG("received data");
+	debug(mux, "received data");
 
 	bytes_read = 0;
 	status = g_io_channel_read_chars(mux->channel, mux->buf + mux->buf_used,
@@ -204,7 +217,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 			if (!(mux->newdata[offset] & (1 << bit)))
 				continue;
 
-			DBG("dispatching sources for channel: %p",
+			debug(mux, "dispatching sources for channel: %p",
 				mux->dlcs[i-1]);
 
 			dispatch_sources(mux->dlcs[i-1], G_IO_IN);
@@ -239,7 +252,7 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR))
 		return FALSE;
 
-	DBG("Can write data");
+	debug(mux, "can write data");
 
 	for (dlc = 0; dlc < MAX_CHANNELS; dlc += 1) {
 		GAtMuxChannel *channel = mux->dlcs[dlc];
@@ -247,12 +260,12 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 		if (channel == NULL)
 			continue;
 
-		DBG("Checking channel for write: %p", channel);
+		debug(mux, "checking channel for write: %p", channel);
 
 		if (channel->throttled)
 			continue;
 
-		DBG("Dispatching write sources: %p", channel);
+		debug(mux, "dispatching write sources: %p", channel);
 
 		dispatch_sources(channel, G_IO_OUT);
 	}
@@ -284,7 +297,7 @@ static void wakeup_writer(GAtMux *mux)
 	if (mux->write_watch != 0)
 		return;
 
-	DBG("Waking up writer");
+	debug(mux, "waking up writer");
 
 	mux->write_watch = g_io_add_watch_full(mux->channel,
 				G_PRIORITY_DEFAULT,
@@ -314,7 +327,7 @@ void g_at_mux_feed_dlc_data(GAtMux *mux, guint8 dlc,
 	int offset;
 	int bit;
 
-	DBG("deliver_data: dlc: %hu", dlc);
+	debug(mux, "deliver_data: dlc: %hu", dlc);
 
 	if (dlc < 1 || dlc > MAX_CHANNELS)
 		return;
@@ -340,7 +353,7 @@ void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status)
 {
 	GAtMuxChannel *channel;
 
-	DBG("Got status %d, for channel %hu", status, dlc);
+	debug(mux, "got status %d, for channel %hu", status, dlc);
 
 	if (dlc < 1 || dlc > MAX_CHANNELS)
 		return;
@@ -353,7 +366,7 @@ void g_at_mux_set_dlc_status(GAtMux *mux, guint8 dlc, int status)
 		GSList *l;
 
 		mux->dlcs[dlc-1]->throttled = FALSE;
-		DBG("setting throttled to FALSE");
+		debug(mux, "setting throttled to FALSE");
 
 		for (l = mux->dlcs[dlc-1]->sources; l; l = l->next) {
 			GAtMuxWatch *source = l->data;
@@ -463,7 +476,7 @@ static GIOStatus channel_close(GIOChannel *channel, GError **err)
 	GAtMuxChannel *mux_channel = (GAtMuxChannel *) channel;
 	GAtMux *mux = mux_channel->mux;
 
-	DBG("closing channel: %d", mux_channel->dlc);
+	debug(mux, "closing channel: %d", mux_channel->dlc);
 
 	dispatch_sources(mux_channel, G_IO_NVAL);
 
@@ -503,7 +516,7 @@ static GSource *channel_create_watch(GIOChannel *channel,
 	if ((watch->condition & G_IO_OUT) && dlc->throttled == FALSE)
 		wakeup_writer(mux);
 
-	DBG("Creating source: %p for channel: %p, writer: %d, reader: %d",
+	debug(mux, "creating source: %p, channel: %p, writer: %d, reader: %d",
 			watch, channel,
 			condition & G_IO_OUT,
 			condition & G_IO_IN);
@@ -694,7 +707,7 @@ GIOChannel *g_at_mux_create_channel(GAtMux *mux)
 
 	mux->dlcs[i] = mux_channel;
 
-	DBG("Created channel %p, dlc: %d", channel, i+1);
+	debug(mux, "created channel %p, dlc: %d", channel, i+1);
 
 	return channel;
 }
@@ -920,7 +933,7 @@ static gboolean gsm0710_packet(GAtMux *mux, int dlc, guint8 control,
 		}
 
 		/* Send the response to the status change request to ACK it */
-		DBG("received status line signal, sending response");
+		debug(mux, "received status line signal, sending response");
 		if (len > 31)
 			len = 31;
 		resp[0] = GSM0710_STATUS_ACK;
