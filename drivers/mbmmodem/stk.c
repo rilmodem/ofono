@@ -68,6 +68,7 @@ static void stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (g_at_result_iter_next(&iter, "*STKE:") == FALSE)
 		goto done;
 
+	/* Response data is optional */
 	g_at_result_iter_next_hexstring(&iter, &pdu, &len);
 
 	DBG("len %d", len);
