@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -498,14 +499,13 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 		else
 			direction = CALL_DIRECTION_MOBILE_TERMINATED;
 
-		if ((strlen(num)) > 0)
+		if (strlen(num) > 0)
 			clip_validity = CLIP_VALIDITY_VALID;
 		else
 			clip_validity = CLIP_VALIDITY_NOT_AVAILABLE;
 
 		new_call = create_call(vc, call_type, direction, status,
 					num, num_type, clip_validity);
-
 		if (!new_call) {
 			ofono_error("Unable to malloc. "
 					"Call management is fubar");
@@ -545,7 +545,10 @@ static int ste_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	GAtChat *chat = data;
 	struct voicecall_data *vd;
 
-	vd = g_new0(struct voicecall_data, 1);
+	vd = g_try_new0(struct voicecall_data, 1);
+	if (!vd)
+		return -ENOMEM;
+
 	vd->chat = g_at_chat_clone(chat);
 
 	ofono_voicecall_set_data(vc, vd);
