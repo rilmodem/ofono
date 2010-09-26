@@ -25,9 +25,14 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/soundcard.h>
 
 #include <gdbus.h>
 
@@ -48,13 +53,130 @@ struct modem_data {
 	guint call_changed_watch;
 
 	gboolean has_callmanager;
+	gboolean is_huawei;
+	gint audio_users;
+	guint audio_watch;
+
+	int format;
+	int channels;
+	int speed;
+	int dsp_out;
 };
 
 struct call_data {
 	char *path;
+	struct modem_data *modem;
 };
 
 static GHashTable *modem_list;
+
+static gboolean audio_receive(GIOChannel *channel,
+				GIOCondition condition, gpointer user_data)
+{
+	struct modem_data *modem = user_data;
+	char buf[512];
+	ssize_t rlen, wlen;
+	int fd;
+
+	if (condition & (G_IO_NVAL | G_IO_ERR)) {
+		modem->audio_watch = 0;
+		return FALSE;
+	}
+
+	fd = g_io_channel_unix_get_fd(channel);
+
+	rlen = read(fd, buf, sizeof(buf));
+	if (rlen < 0)
+		return TRUE;
+
+	wlen = write(modem->dsp_out, buf, rlen);
+
+	return TRUE;
+}
+
+static void open_audio(struct modem_data *modem)
+{
+	GIOChannel *channel;
+	struct termios ti;
+	int fd;
+
+	if (modem->is_huawei == FALSE)
+		return;
+
+	if (modem->audio_users > 0)
+		return;
+
+	g_print("enabling audio\n");
+
+	modem->dsp_out = open("/dev/dsp", O_WRONLY, 0);
+	if (modem->dsp_out < 0) {
+		g_printerr("Failed to open DSP device\n");
+		return;
+	}
+
+	if (ioctl(modem->dsp_out, SNDCTL_DSP_SETFMT, &modem->format) < 0)
+		g_printerr("Failed to set DSP format\n");
+
+	if (ioctl(modem->dsp_out, SNDCTL_DSP_CHANNELS, &modem->channels) < 0)
+		g_printerr("Failed to set DSP channels\n");
+
+	if (ioctl(modem->dsp_out, SNDCTL_DSP_SPEED, &modem->speed) < 0)
+		g_printerr("Failed to set DSP speed\n");
+
+	fd = open("/dev/ttyUSB1", O_RDWR | O_NOCTTY);
+	if (fd < 0) {
+		g_printerr("Failed to open audio port\n");
+		close(modem->dsp_out);
+		modem->dsp_out = -1;
+		return;
+	}
+
+	/* Switch TTY to raw mode */
+	memset(&ti, 0, sizeof(ti));
+	cfmakeraw(&ti);
+
+	tcflush(fd, TCIOFLUSH);
+	tcsetattr(fd, TCSANOW, &ti);
+
+	channel = g_io_channel_unix_new(fd);
+	if (channel == NULL) {
+		g_printerr("Failed to create IO channel\n");
+		close(modem->dsp_out);
+		modem->dsp_out = -1;
+		close(fd);
+		return;
+	}
+
+	g_io_channel_set_close_on_unref(channel, TRUE);
+
+	modem->audio_watch = g_io_add_watch(channel,
+				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				audio_receive, modem);
+
+	g_io_channel_unref(channel);
+
+	modem->audio_users++;
+}
+
+static void close_audio(struct modem_data *modem)
+{
+	if (modem->is_huawei == FALSE)
+		return;
+
+	modem->audio_users--;
+
+	if (modem->audio_users > 0)
+		return;
+
+	g_print("disabling audio\n");
+
+	if (modem->audio_watch > 0) {
+		g_source_remove(modem->audio_watch);
+		modem->audio_watch = 0;
+	}
+
+	close(modem->dsp_out);
+}
 
 static void call_set(struct call_data *call, const char *key,
 						DBusMessageIter *iter)
@@ -73,6 +195,8 @@ static void destroy_call(gpointer data)
 	struct call_data *call = data;
 
 	g_print("call removed (%s)\n", call->path);
+
+	close_audio(call->modem);
 
 	g_free(call->path);
 	g_free(call);
@@ -94,6 +218,10 @@ static void create_call(struct modem_data *modem,
 
 	g_print("call added (%s)\n", call->path);
 
+	call->modem = modem;
+
+	open_audio(modem);
+
 	dbus_message_iter_recurse(iter, &dict);
 
 	while (dbus_message_iter_get_arg_type(&dict) == DBUS_TYPE_DICT_ENTRY) {
@@ -110,7 +238,6 @@ static void create_call(struct modem_data *modem,
 
 		dbus_message_iter_next(&dict);
 	}
-
 }
 
 static gboolean call_added(DBusConnection *conn,
@@ -277,6 +404,18 @@ static void check_interfaces(struct modem_data *modem, DBusMessageIter *iter)
 		get_calls(modem);
 }
 
+static void check_manufacturer(struct modem_data *modem, DBusMessageIter *iter)
+{
+	const char *manufacturer;
+
+	dbus_message_iter_get_basic(iter, &manufacturer);
+
+	if (g_str_equal(manufacturer, "huawei") == TRUE) {
+		g_print("found Huawei modem\n");
+		modem->is_huawei = TRUE;
+	}
+}
+
 static void destroy_modem(gpointer data)
 {
 	struct modem_data *modem = data;
@@ -304,6 +443,11 @@ static void create_modem(DBusConnection *conn,
 		return;
 
 	modem->path = g_strdup(path);
+
+	modem->format = AFMT_S16_LE;
+	modem->channels = 1;
+	modem->speed = 8000;
+	modem->dsp_out = -1;
 
 	modem->call_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 							NULL, destroy_call);
@@ -338,6 +482,8 @@ static void create_modem(DBusConnection *conn,
 
 		if (g_str_equal(key, "Interfaces") == TRUE)
 			check_interfaces(modem, &value);
+		else if (g_str_equal(key, "Manufacturer") == TRUE)
+			check_manufacturer(modem, &value);
 
 		dbus_message_iter_next(&dict);
 	}
@@ -401,6 +547,8 @@ static gboolean modem_changed(DBusConnection *conn,
 
 	if (g_str_equal(key, "Interfaces") == TRUE)
 		check_interfaces(modem, &value);
+	else if (g_str_equal(key, "Manufacturer") == TRUE)
+		check_manufacturer(modem, &value);
 
 	return TRUE;
 }
