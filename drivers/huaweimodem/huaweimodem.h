@@ -21,5 +21,8 @@
 
 #include <drivers/atmodem/atutil.h>
 
+extern void huawei_voicecall_init();
+extern void huawei_voicecall_exit();
+
 extern void huawei_gprs_context_init();
 extern void huawei_gprs_context_exit();
