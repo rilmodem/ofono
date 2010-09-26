@@ -139,6 +139,86 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	DBG("%s %d %d %d", num, num_type, cls, validity);
 }
 
+static void orig_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id, call_type;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^ORIG:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_type))
+		return;
+
+	ofono_info("Call origin: id %d type %d", call_id, call_type);
+}
+
+static void conf_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CONF:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	ofono_info("Call setup: id %d", call_id);
+}
+
+static void conn_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id, call_type;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CONN:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_type))
+		return;
+
+	ofono_info("Call connect: id %d type %d", call_id, call_type);
+}
+
+static void cend_notify(GAtResult *result, gpointer user_data)
+{
+	GAtResultIter iter;
+	gint call_id, duration, end_status, cc_pause;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CEND:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &duration))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &end_status))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &cc_pause))
+		return;
+
+	ofono_info("Call end: id %d duration %ds status %d control %d",
+				call_id, duration, end_status, cc_pause);
+}
+
 static void huawei_voicecall_initialized(gboolean ok, GAtResult *result,
 							gpointer user_data)
 {
@@ -150,6 +230,11 @@ static void huawei_voicecall_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(vd->chat, "+CRING:", cring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CLIP:", clip_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CCWA:", ccwa_notify, FALSE, vc, NULL);
+
+	g_at_chat_register(vd->chat, "^ORIG:", orig_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "^CONF:", conf_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "^CONN:", conn_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "^CEND:", cend_notify, FALSE, vc, NULL);
 
 	ofono_voicecall_register(vc);
 }
