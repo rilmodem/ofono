@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -382,13 +383,16 @@ static void calypso_voicecall_initialized(gboolean ok, GAtResult *result,
 	ofono_voicecall_register(vc);
 }
 
-static int calypso_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
-					void *data)
+static int calypso_voicecall_probe(struct ofono_voicecall *vc,
+					unsigned int vendor, void *data)
 {
 	GAtChat *chat = data;
 	struct voicecall_data *vd;
 
-	vd = g_new0(struct voicecall_data, 1);
+	vd = g_try_new0(struct voicecall_data, 1);
+	if (!vd)
+		return -ENOMEM;
+
 	vd->chat = g_at_chat_clone(chat);
 
 	ofono_voicecall_set_data(vc, vd);
