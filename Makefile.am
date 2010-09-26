@@ -391,12 +391,12 @@ EXTRA_DIST = src/genbuiltin plugins/example_history.c $(doc_files) \
 dist_man_MANS = doc/ofonod.8
 
 
-unit_objects =
-
 noinst_PROGRAMS = unit/test-common unit/test-util unit/test-idmap \
 					unit/test-sms unit/test-simutil \
 					unit/test-mux unit/test-caif \
 					unit/test-stkutil
+
+unit_objects =
 
 unit_test_common_SOURCES = unit/test-common.c src/common.c src/util.c
 unit_test_common_LDADD = @GLIB_LIBS@
@@ -434,6 +434,11 @@ unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
 					drivers/stemodem/if_caif.h 
 unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
+
+noinst_PROGRAMS += tools/huawei-audio
+
+tools_huawei_audio_SOURCES = $(gdbus_sources) tools/huawei-audio.c
+tools_huawei_audio_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm
 
