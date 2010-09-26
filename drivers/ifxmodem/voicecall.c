@@ -549,7 +549,6 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	line = g_at_result_iter_raw_line(&iter);
-
 	if (line == NULL)
 		return;
 
@@ -578,7 +577,6 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 
 	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
 				at_util_call_compare_by_status);
-
 	if (l == NULL) {
 		ofono_error("CLIP for unknown call");
 		return;
