@@ -186,6 +186,13 @@ static void call_set(struct call_data *call, const char *key,
 	if (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_STRING)
 		dbus_message_iter_get_basic(iter, &str);
 
+	if (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_BOOLEAN) {
+		dbus_bool_t val;
+
+		dbus_message_iter_get_basic(iter, &val);
+		str = (val == TRUE) ? "yes" : "no";
+	}
+
 	g_print("updating call (%s) [ %s = %s ]\n", call->path,
 						key, str ? str : "...");
 }
