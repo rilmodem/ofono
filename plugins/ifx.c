@@ -166,6 +166,9 @@ static void xsim_notify(GAtResult *result, gpointer user_data)
 			data->have_sim = TRUE;
 		}
 		break;
+	default:
+		ofono_warn("Unknown SIM state %d received", state);
+		break;
 	}
 }
 
