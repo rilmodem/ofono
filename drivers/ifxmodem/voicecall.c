@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -93,7 +94,6 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 
 	/* Generate a call structure for the waiting call */
 	call = g_try_new0(struct ofono_call, 1);
-
 	if (!call)
 		return NULL;
 
@@ -260,7 +260,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* Generate a voice call that was just dialed, we guess the ID */
 	call = create_call(vc, 0, 0, 2, num, type, validity);
-
 	if (!call) {
 		ofono_error("Unable to malloc, call tracking will fail!");
 		return;
@@ -666,7 +665,6 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	call = create_call(vc, class_to_call_type(cls), 1, 5,
 				num, num_type, validity);
-
 	if (!call) {
 		ofono_error("Unable to malloc. Call management is fubar");
 		return;
@@ -699,7 +697,10 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	GAtChat *chat = data;
 	struct voicecall_data *vd;
 
-	vd = g_new0(struct voicecall_data, 1);
+	vd = g_try_new0(struct voicecall_data, 1);
+	if (!vd)
+		return -ENOMEM;
+
 	vd->chat = g_at_chat_clone(chat);
 
 	ofono_voicecall_set_data(vc, vd);
@@ -710,6 +711,7 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	g_at_chat_send(chat, "AT+XCALLSTAT=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CCWA=1", none_prefix,
 				ifx_voicecall_initialized, vc, NULL);
+
 	return 0;
 }
 
