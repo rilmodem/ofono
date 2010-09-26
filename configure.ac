@@ -106,10 +106,8 @@ AC_ARG_ENABLE(udev, AC_HELP_STRING([--disable-udev],
 			[don't use udev support even if available]),
 						[enable_udev=${enableval}])
 if (test "${enable_udev}" != "no"); then
-	PKG_CHECK_MODULES(UDEV, libudev >= 143,
-				[enable_udev="yes"], [enable_udev="no"])
-fi
-if (test "${enable_udev}" = "yes"); then
+	PKG_CHECK_MODULES(UDEV, libudev >= 143, [enable_udev="yes"],
+				AC_MSG_ERROR(libudev >= 143 is required))
 	UDEV_DATADIR="`$PKG_CONFIG --variable=udevdir udev`"
 	if (test -z "${UDEV_DATADIR}"); then
 		UDEV_DATADIR="${sysconfdir}/udev/rules.d"
