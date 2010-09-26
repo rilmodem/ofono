@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -301,7 +302,10 @@ static int huawei_gprs_context_probe(struct ofono_gprs_context *gc,
 	GAtChat *chat = data;
 	struct gprs_context_data *gcd;
 
-	gcd = g_new0(struct gprs_context_data, 1);
+	gcd = g_try_new0(struct gprs_context_data, 1);
+	if (!gcd)
+		return -ENOMEM;
+
 	gcd->chat = g_at_chat_clone(chat);
 
 	ofono_gprs_context_set_data(gc, gcd);
