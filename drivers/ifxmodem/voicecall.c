@@ -171,7 +171,7 @@ static void xcallstat_notify(GAtResult *result, gpointer user_data)
 			ofono_voicecall_disconnected(vc, call->id, r, NULL);
 
 		vd->local_release &= ~(0x1 << call->id);
-		vd->calls = g_slist_remove(vd->calls, l);
+		vd->calls = g_slist_remove(vd->calls, call);
 		g_free(call);
 
 		return;
