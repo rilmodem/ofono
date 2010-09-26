@@ -28,6 +28,8 @@ include/version.h
 src/builtin.h
 src/ofonod
 
+plugins/*-ofono.rules
+
 unit/test-common
 unit/test-util
 unit/test-idmap
@@ -37,7 +39,8 @@ unit/test-mux
 unit/test-caif
 unit/test-stkutil
 
-plugins/*-ofono.rules
+tools/huawei-audio
+
 gatchat/gsmdial
 gatchat/test-server
 gatchat/test-qcdm
