@@ -60,26 +60,20 @@ static void stke_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok) {
-		cb(&error, NULL, 0, cbd->data);
-		return;
-	}
+	if (!ok)
+		goto done;
 
 	g_at_result_iter_init(&iter, result);
 
 	if (g_at_result_iter_next(&iter, "*STKE:") == FALSE)
-		goto error;
+		goto done;
 
-	/* Response data is optional */
 	g_at_result_iter_next_hexstring(&iter, &pdu, &len);
 
 	DBG("len %d", len);
 
+done:
 	cb(&error, pdu, len, cbd->data);
-	return;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 }
 
 static void mbm_stk_envelope(struct ofono_stk *stk, int length,
