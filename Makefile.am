@@ -333,6 +333,7 @@ test_scripts = test/backtrace \
 		test/deactivate-context \
 		test/dial-number \
 		test/list-calls \
+		test/answer-calls \
 		test/create-multiparty \
 		test/private-chat \
 		test/disable-modem \
