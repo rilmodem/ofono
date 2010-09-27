@@ -315,7 +315,7 @@ static void orig_notify(GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	if (call_type == 0)
+	if (call->type == 0)
 		ofono_voicecall_notify(vc, call);
 }
 
@@ -349,7 +349,8 @@ static void conf_notify(GAtResult *result, gpointer user_data)
 	call = l->data;
 	call->status = 3;
 
-	ofono_voicecall_notify(vc, call);
+	if (call->type == 0)
+		ofono_voicecall_notify(vc, call);
 }
 
 static void conn_notify(GAtResult *result, gpointer user_data)
@@ -385,7 +386,8 @@ static void conn_notify(GAtResult *result, gpointer user_data)
 	call = l->data;
 	call->status = 0;
 
-	ofono_voicecall_notify(vc, call);
+	if (call->type == 0)
+		ofono_voicecall_notify(vc, call);
 }
 
 static void cend_notify(GAtResult *result, gpointer user_data)
