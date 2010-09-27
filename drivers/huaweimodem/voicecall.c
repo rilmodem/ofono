@@ -322,8 +322,12 @@ static void conf_notify(GAtResult *result, gpointer user_data)
 
 static void conn_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GAtResultIter iter;
 	gint call_id, call_type;
+	struct ofono_call *call;
+	GSList *l;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -337,12 +341,29 @@ static void conn_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	ofono_info("Call connect: id %d type %d", call_id, call_type);
+
+	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(call_id),
+				at_util_call_compare_by_id);
+	if (l == NULL) {
+		ofono_error("Received CONN for untracked call");
+		return;
+	}
+
+	/* Set call to active */
+	call = l->data;
+	call->status = 0;
+
+	ofono_voicecall_notify(vc, call);
 }
 
 static void cend_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GAtResultIter iter;
 	gint call_id, duration, end_status, cc_pause;
+	struct ofono_call *call;
+	GSList *l;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -363,6 +384,22 @@ static void cend_notify(GAtResult *result, gpointer user_data)
 
 	ofono_info("Call end: id %d duration %ds status %d control %d",
 				call_id, duration, end_status, cc_pause);
+
+	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(call_id),
+				at_util_call_compare_by_id);
+	if (l == NULL) {
+		ofono_error("Received CEND for untracked call");
+		return;
+	}
+
+	call = l->data;
+
+	if (call->type == 0)
+		ofono_voicecall_disconnected(vc, call->id,
+				OFONO_DISCONNECT_REASON_UNKNOWN, NULL);
+
+	vd->calls = g_slist_remove(vd->calls, call);
+	g_free(call);
 }
 
 static void huawei_voicecall_initialized(gboolean ok, GAtResult *result,
