@@ -413,11 +413,11 @@ static void cend_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &end_status))
 		return;
 
-	if (!g_at_result_iter_next_number(&iter, &cc_pause))
-		return;
+	/* parameter is not present on errors */
+	g_at_result_iter_next_number(&iter, &cc_pause);
 
-	ofono_info("Call end: id %d duration %ds status %d control %d",
-				call_id, duration, end_status, cc_pause);
+	ofono_info("Call end: id %d duration %ds status %d",
+				call_id, duration, end_status);
 
 	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(call_id),
 				at_util_call_compare_by_id);
