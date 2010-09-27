@@ -71,7 +71,15 @@ static void routing_ntf_cb(GIsiClient *client,
 	if (!msg || len < 3 || msg[0] != SMS_GSM_CB_ROUTING_NTF)
 		return;
 
-	ofono_cbs_notify(cbs, msg+5, len-5);
+	/* Skipping header(s) */
+	msg += 5;
+	len -= 5;
+
+	/*
+	 * The next 88 bytes of the sub-block are the actual CBS PDU,
+	 * followed by an informational data length field, and filler.
+	 */
+	ofono_cbs_notify(cbs, msg, len - 2);
 }
 
 static gboolean routing_resp_cb(GIsiClient *client,
