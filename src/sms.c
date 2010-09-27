@@ -1197,8 +1197,8 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 		}
 
 		if (sms_extract_app_port(s, &cdst, &csrc, &is_8bit)) {
-			csrc = is_8bit ? csrc : (csrc << 8);
-			cdst = is_8bit ? cdst : (cdst << 8);
+			csrc = is_8bit ? (csrc << 8) : csrc;
+			cdst = is_8bit ? (cdst << 8) : cdst;
 
 			if (l == sms_list) {
 				srcport = csrc;
