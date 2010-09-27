@@ -58,8 +58,8 @@
 
 #include <drivers/atmodem/vendor.h>
 
-#define CALYPSO_POWER_PATH "/sys/bus/platform/devices/neo1973-pm-gsm.0/power_on"
-#define CALYPSO_RESET_PATH "/sys/bus/platform/devices/neo1973-pm-gsm.0/reset"
+#define CALYPSO_POWER_PATH "/sys/bus/platform/devices/gta02-pm-gsm.0/power_on"
+#define CALYPSO_RESET_PATH "/sys/bus/platform/devices/gta02-pm-gsm.0/reset"
 
 enum powercycle_state {
 	POWERCYCLE_STATE_POWER0 = 0,
