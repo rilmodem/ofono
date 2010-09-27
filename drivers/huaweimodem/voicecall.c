@@ -49,7 +49,8 @@ struct voicecall_data {
 
 static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 					int direction, int status,
-					const char *num, int num_type, int clip)
+					const char *num, int num_type,
+					int clip, int id)
 {
 	struct voicecall_data *d = ofono_voicecall_get_data(vc);
 	struct ofono_call *call;
@@ -59,7 +60,7 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 	if (!call)
 		return NULL;
 
-	call->id = ofono_voicecall_get_next_callid(vc);
+	call->id = id;
 	call->type = type;
 	call->direction = direction;
 	call->status = status;
@@ -168,6 +169,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	const char *line;
 	int type;
+	int id;
 
 	/* CRING can repeat, ignore if we already have an incoming call */
 	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
@@ -189,8 +191,10 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	else
 		type = 9;
 
+	id = ofono_voicecall_get_next_callid(vc);
+
 	/* Generate an incoming call */
-	create_call(vc, type, 1, 4, NULL, 128, 2);
+	create_call(vc, type, 1, 4, NULL, 128, 2, id);
 
 	/* Assume the CLIP always arrives, and we signal the call there */
 	DBG("%d", type);
@@ -287,8 +291,10 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 static void orig_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_voicecall *vc = user_data;
 	GAtResultIter iter;
 	gint call_id, call_type;
+	struct ofono_call *call;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -302,6 +308,15 @@ static void orig_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	ofono_info("Call origin: id %d type %d", call_id, call_type);
+
+	call = create_call(vc, call_type, 0, 2, NULL, 128, 2, call_id);
+	if (!call) {
+		ofono_error("Unable to malloc, call tracking will fail!");
+		return;
+	}
+
+	if (call_type == 0)
+		ofono_voicecall_notify(vc, call);
 }
 
 static void conf_notify(GAtResult *result, gpointer user_data)
