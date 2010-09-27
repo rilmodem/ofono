@@ -50,15 +50,15 @@ struct cbs_data {
 static void isi_set_topics(struct ofono_cbs *cbs, const char *topics,
 				ofono_cbs_set_cb_t cb, void *data)
 {
-	DBG("Not implemented (topics=%s)", topics);
-	CALLBACK_WITH_FAILURE(cb, data);
+	DBG("Not implemented (topics=%s), all topics accepted", topics);
+	CALLBACK_WITH_SUCCESS(cb, data);
 }
 
 static void isi_clear_topics(struct ofono_cbs *cbs,
 				ofono_cbs_set_cb_t cb, void *data)
 {
 	DBG("Not implemented");
-	CALLBACK_WITH_FAILURE(cb, data);
+	CALLBACK_WITH_SUCCESS(cb, data);
 }
 
 static void routing_ntf_cb(GIsiClient *client,
