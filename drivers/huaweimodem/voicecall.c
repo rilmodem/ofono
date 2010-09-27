@@ -321,8 +321,12 @@ static void orig_notify(GAtResult *result, gpointer user_data)
 
 static void conf_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GAtResultIter iter;
 	gint call_id;
+	struct ofono_call *call;
+	GSList *l;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -333,6 +337,19 @@ static void conf_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	ofono_info("Call setup: id %d", call_id);
+
+	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(call_id),
+				at_util_call_compare_by_id);
+	if (l == NULL) {
+		ofono_error("Received CONF for untracked call");
+		return;
+	}
+
+	/* Set call to alerting */
+	call = l->data;
+	call->status = 3;
+
+	ofono_voicecall_notify(vc, call);
 }
 
 static void conn_notify(GAtResult *result, gpointer user_data)
