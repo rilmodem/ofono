@@ -341,6 +341,7 @@ test_scripts = test/backtrace \
 		test/enable-modem \
 		test/enter-pin \
 		test/hangup-all \
+		test/hangup-active \
 		test/set-context \
 		test/list-contexts \
 		test/list-modems \
