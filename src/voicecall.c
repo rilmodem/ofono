@@ -347,7 +347,7 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	struct voicecall *v = data;
 	struct ofono_voicecall *vc = v->vc;
 	struct ofono_call *call = v->call;
-	gboolean single_call = vc->call_list->next != 0;
+	gboolean single_call = vc->call_list->next == 0;
 
 	if (vc->pending)
 		return __ofono_error_busy(msg);
