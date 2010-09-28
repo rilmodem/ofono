@@ -495,7 +495,7 @@ static struct ofono_voicecall_driver driver = {
 	.remove			= huawei_voicecall_remove,
 	.dial			= huawei_dial,
 	.answer			= huawei_answer,
-	.hangup_all		= huawei_hangup,
+	.hangup_active		= huawei_hangup,
 };
 
 void huawei_voicecall_init()
