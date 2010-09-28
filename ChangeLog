@@ -1,3 +1,18 @@
+ver 0.30:
+	Fix issue with 8-bit port handling of SMS.
+	Fix issue with CBS decoding and ISI modem driver.
+	Fix issue with CBS topic settings and ISI modem driver.
+	Fix issue with username and password order for Option HSO.
+	Fix wrong power and reset paths of Calypso support.
+	Add Infineon modem plugin support.
+	Add support for Infineon specific voice call handling.
+	Add support for Infineon specific SIM ready handling.
+	Add support for Infineon signal strength reporting.
+	Add support for Infineon CNMA without PDU.
+	Add support for Infineon radio settings.
+	Add support for Huawei specific voice call handling.
+	Add Huawei audio utility for voice routing.
+
 ver 0.29:
 	Fix issue with Huawei devices initial SIM state.
 	Fix issue with Huawei devices and online support.
