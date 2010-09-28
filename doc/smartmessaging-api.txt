@@ -1,0 +1,58 @@
+Smart Messaging hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.SmartMessaging
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		object SendAppointment(array{bytes} appointment)
+
+			Sends a vCalendar object via SMS.  The object is given
+			in the appointment argument.  It is not interpreted
+			by oFono in any way.  If the object is too large to
+			fit into a single SMS, it is fragmented as
+			appropriate.  This method call returns the object
+			path of the queued SMS.
+
+		object SendBusinessCard(array{bytes} card)
+
+			Sends a vCard object via SMS.  The object is given
+			in the card argument.  It is not interpreted
+			by oFono in any way.  If the object is too large to
+			fit into a single SMS, it is fragmented as
+			appropriate.  This method call returns the object
+			path of the queued SMS.
+
+		void RegisterAgent(object path)
+
+			Registers an agent which will be called whenever a
+			new Smart Messaging based SMS arrives.
+
+		void UnregisterAgent(object path)
+
+			Unregisters an agent.
+
+SmartMessagingAgent Hierarchy [experimental]
+===============
+
+Service		unique name
+Interface	org.ofono.SimToolkitAgent
+Object path	freely definable
+
+Methods		void ReceiveAppointment(array{byte} appointment, dict info)
+
+			Requests the agent to process a new SMS that has
+			arrived containing a vCalendar object.  The info
+			dictionary contains 'Sender', 'LocalSentTime' and
+			'SentTime' properties.
+
+			Possible Errors: None
+
+		void ReceiveBusinessCard(array{byte} card, dict info)
+
+			Requests the agent to process a new SMS that has
+			arrived containing a vCalendar object.  The info
+			dictionary contains 'Sender', 'LocalSentTime' and
+			'SentTime' properties.
+
+			Possible Errors: None
