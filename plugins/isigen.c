@@ -253,17 +253,16 @@ static void phonet_status_cb(GIsiModem *idx,
 		g_isi_verify(isi->client, reachable_cb, isi);
 	else if (st == PN_LINK_DOWN)
 		set_power_by_mtc_state(isi, MTC_STATE_NONE);
-	else if (st == PN_LINK_REMOVED)
-		ofono_modem_remove(modem);
 }
 
 static int isigen_probe(struct ofono_modem *modem)
 {
 	struct isi_data *isi;
-	char const *ifname = ofono_modem_get_string(modem, "Interface");
+	const char *ifname = ofono_modem_get_string(modem, "Interface");
 	unsigned address = ofono_modem_get_integer(modem, "Address");
 	GIsiModem *idx;
 	GPhonetNetlink *link;
+
 	if (ifname == NULL)
 		return -EINVAL;
 

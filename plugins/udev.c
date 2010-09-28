@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include <libudev.h>
 
@@ -424,6 +425,24 @@ static void add_nokia(struct ofono_modem *modem,
 	}
 }
 
+static void add_isi(struct ofono_modem *modem,
+			struct udev_device *udev_device)
+{
+    const char *ifname, *addr;
+
+	DBG("modem %p", modem);
+
+	ifname = udev_device_get_sysname(udev_device);
+	ofono_modem_set_string(modem, "Interface", ifname);
+
+	DBG("Interface=%s", ifname);
+
+	addr = udev_device_get_property_value(udev_device, "OFONO_ISI_ADDRESS");
+	ofono_modem_set_integer(modem, "Address", atoi(addr));
+
+	ofono_modem_register(modem);
+}
+
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -504,6 +523,10 @@ done:
 		add_novatel(modem, udev_device);
 	else if (g_strcmp0(driver, "nokia") == 0)
 		add_nokia(modem, udev_device);
+	else if (g_strcmp0(driver, "isigen") == 0)
+		add_isi(modem, udev_device);
+	else if (g_strcmp0(driver, "n900") == 0)
+		add_isi(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)

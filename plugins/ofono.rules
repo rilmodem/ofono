@@ -337,6 +337,19 @@ ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1486", ENV{OFONO_IFACE_NUM}=="02", E
 
 LABEL="ofono_tty_end"
 
+# ISI/Phonet drivers
+SUBSYSTEM!="net", GOTO="ofono_isi_end"
+ATTRS{type}!="820", GOTO="ofono_isi_end"
+KERNELS=="gadget", GOTO="ofono_isi_end"
+
+# Generic / PC Suite mode
+SUBSYSTEMS=="usb", ENV{OFONO_DRIVER}="isigen", ENV{OFONO_ISI_ADDRESS}="16"
+
+# Nokia N900 modem
+SUBSYSTEMS=="hsi", ENV{OFONO_DRIVER}="n900", ENV{OFONO_ISI_ADDRESS}="108"
+
+LABEL="ofono_isi_end"
+
 SUBSYSTEM!="usb", GOTO="ofono_end"
 ENV{DEVTYPE}!="usb_device", GOTO="ofono_end"
 

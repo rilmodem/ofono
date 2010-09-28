@@ -392,7 +392,7 @@ static int n900_probe(struct ofono_modem *modem)
 	struct isi_data *isi;
 
 	if (ifname == NULL)
-		ifname = "phonet0";
+		return -EINVAL;
 
 	DBG("(%p) with %s", modem, ifname);
 
