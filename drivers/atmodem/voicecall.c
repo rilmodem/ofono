@@ -118,10 +118,6 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 
 	d->calls = g_slist_insert_sorted(d->calls, call, at_util_call_compare);
 
-	if (d->vendor == OFONO_VENDOR_HUAWEI)
-		g_at_chat_send(d->chat, "AT^DDSETEX=2", none_prefix,
-							NULL, NULL, NULL);
-
 	return call;
 }
 
