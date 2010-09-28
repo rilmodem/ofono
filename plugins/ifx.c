@@ -74,6 +74,7 @@ static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
 					"/dev/ttyGSM7", "/dev/ttyGSM8" };
 
 static const char *none_prefix[] = { NULL };
+static const char *xdrv_prefix[] = { "+XDRV:", NULL };
 
 struct ifx_data {
 	GIOChannel *device;
@@ -84,6 +85,11 @@ struct ifx_data {
 	guint frame_size;
 	int mux_ldisc;
 	int saved_ldisc;
+	int audio_source;
+	int audio_dest;
+	int audio_context;
+	const char *audio_setting;
+	int audio_loopback;
 	struct ofono_sim *sim;
 	gboolean have_sim;
 };
@@ -232,6 +238,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct ifx_data *data = ofono_modem_get_data(modem);
+	char buf[64];
 
 	DBG("");
 
@@ -240,6 +247,38 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 		ofono_modem_set_powered(modem, FALSE);
 		return;
+	}
+
+	if (data->audio_setting && data->audio_source && data->audio_dest) {
+		/* configure source */
+		snprintf(buf, sizeof(buf), "AT+XDRV=40,4,%d,%d,%s",
+						data->audio_source,
+						data->audio_context,
+						data->audio_setting);
+		g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
+						NULL, NULL, NULL);
+
+		/* configure destination */
+		snprintf(buf, sizeof(buf), "AT+XDRV=40,5,%d,%d,%s",
+						data->audio_dest,
+						data->audio_context,
+						data->audio_setting);
+		g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
+						NULL, NULL, NULL);
+
+		if (data->audio_loopback) {
+			/* set destination for source */
+			snprintf(buf, sizeof(buf), "AT+XDRV=40,6,%d,%d",
+					data->audio_source, data->audio_dest);
+			g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
+							NULL, NULL, NULL);
+
+			/* enable source */
+			snprintf(buf, sizeof(buf), "AT+XDRV=40,2,%d",
+							data->audio_source);
+			g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
+							NULL, NULL, NULL);
+		}
 	}
 
 	data->have_sim = FALSE;
@@ -395,7 +434,7 @@ error:
 static int ifx_enable(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	const char *device, *ldisc;
+	const char *device, *ldisc, *model, *audio, *loopback;
 	GAtSyntax *syntax;
 	GAtChat *chat;
 
@@ -406,6 +445,25 @@ static int ifx_enable(struct ofono_modem *modem)
 		return -EINVAL;
 
 	DBG("%s", device);
+
+	model = ofono_modem_get_string(modem, "Model");
+	if (g_strcmp0(model, "XMM6260") == 0) {
+		data->audio_source = 4;
+		data->audio_dest = 3;
+		data->audio_context = 0;
+	}
+
+	audio = ofono_modem_get_string(modem, "AudioSetting");
+	if (g_strcmp0(audio, "FULL_DUPLEX") == 0)
+		data->audio_setting = "0,0,0,0,0,0,0,0,0";
+	else if (g_strcmp0(audio, "BURSTMODE_48KHZ") == 0)
+		data->audio_setting = "0,0,8,0,2,0,0,0,0";
+	else if (g_strcmp0(audio, "BURSTMODE_96KHZ") == 0)
+		data->audio_setting = "0,0,9,0,2,0,0,0,0";
+
+	loopback = ofono_modem_get_string(modem, "AudioLoopback");
+	if (loopback != NULL)
+		data->audio_loopback = atoi(loopback);
 
 	ldisc = ofono_modem_get_string(modem, "LineDiscipline");
 	if (ldisc != NULL) {
