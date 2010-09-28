@@ -1,0 +1,41 @@
+#!/usr/bin/python
+
+import sys
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+modems = manager.GetModems()
+
+for path, properties in modems:
+	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
+		continue
+
+	connman = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.ConnectionManager')
+
+	contexts = connman.GetContexts()
+
+	if len(contexts) < 1:
+		print "No context available"
+		exit(1)
+	else:
+		path = contexts[0][0]
+
+	context = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.ConnectionContext')
+
+	try:
+		context.SetProperty("AccessPointName", sys.argv[1])
+		if len(sys.argv) > 2:
+			context.SetProperty("Username", sys.argv[2])
+		if len(sys.argv) > 3:
+			context.SetProperty("Password", sys.argv[3])
+	except IndexError:
+		print "Usage: %s <apn_name> [username] [password]" % sys.argv[0]
+		exit(1)
+
+	print "Setting APN of %s to %s" % (path, sys.argv[1])
