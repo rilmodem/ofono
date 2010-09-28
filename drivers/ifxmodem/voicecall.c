@@ -367,7 +367,7 @@ static void ifx_chup(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	/* Hangup active + but not held or waiting */
-	ifx_template("ATH", vc, generic_cb, 0x1d, cb, data);
+	ifx_template("AT+CHUP", vc, generic_cb, 0x1d, cb, data);
 }
 
 static void ifx_hold_all_active(struct ofono_voicecall *vc,
