@@ -42,6 +42,7 @@
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/audio-settings.h>
 #include <ofono/voicecall.h>
 #include <ofono/call-forwarding.h>
 #include <ofono/call-settings.h>
@@ -589,8 +590,11 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (data->voice == TRUE)
+	if (data->voice == TRUE) {
 		ofono_voicecall_create(modem, 0, "huaweimodem", data->pcui);
+		ofono_audio_settings_create(modem, 0,
+						"huaweimodem", data->pcui);
+	}
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
 }
