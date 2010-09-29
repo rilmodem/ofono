@@ -89,7 +89,8 @@ void __ofono_plugin_cleanup(void);
 
 #include <ofono/modem.h>
 
-typedef void (*ofono_modem_foreach_func)(struct ofono_modem *modem, void *data);
+typedef void (*ofono_modem_foreach_func)(struct ofono_modem *modem,
+						void *data);
 void __ofono_modem_foreach(ofono_modem_foreach_func cb, void *userdata);
 
 unsigned int __ofono_modem_callid_next(struct ofono_modem *modem);
@@ -160,7 +161,8 @@ gboolean __ofono_atom_get_registered(struct ofono_atom *atom);
 unsigned int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					enum ofono_atom_type type,
 					ofono_atom_watch_func notify,
-					void *data, ofono_destroy_func destroy);
+					void *data,
+					ofono_destroy_func destroy);
 gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem,
 						unsigned int id);
 
@@ -259,7 +261,8 @@ typedef gboolean (*ofono_ussd_passwd_cb_t)(const char *sc,
 					DBusMessage *msg, void *data);
 
 typedef void (*ofono_ussd_request_cb_t)(int error, int dcs,
-					const unsigned char *pdu, int len, void *data);
+					const unsigned char *pdu, int len,
+					void *data);
 
 gboolean __ofono_ussd_ssc_register(struct ofono_ussd *ussd, const char *sc,
 					ofono_ussd_ssc_cb_t cb, void *data,
