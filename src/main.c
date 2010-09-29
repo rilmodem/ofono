@@ -226,6 +226,8 @@ int main(int argc, char **argv)
 
 	__ofono_dbus_init(conn);
 
+	__ofono_modemwatch_init();
+
 	__ofono_manager_init();
 
 	__ofono_plugin_init(option_plugin, option_noplugin);
@@ -238,6 +240,8 @@ int main(int argc, char **argv)
 	__ofono_plugin_cleanup();
 
 	__ofono_manager_cleanup();
+
+	__ofono_modemwatch_cleanup();
 
 	__ofono_dbus_cleanup();
 	dbus_connection_unref(conn);

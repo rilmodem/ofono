@@ -168,6 +168,14 @@ gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem,
 
 void __ofono_atom_free(struct ofono_atom *atom);
 
+typedef void (*ofono_modemwatch_cb_t)(struct ofono_modem *modem,
+					gboolean added, void *data);
+void __ofono_modemwatch_init();
+void __ofono_modemwatch_cleanup();
+unsigned int __ofono_modemwatch_add(ofono_modemwatch_cb_t cb, void *user,
+					ofono_destroy_func destroy);
+gboolean __ofono_modemwatch_remove(unsigned int id);
+
 #include <ofono/call-barring.h>
 
 gboolean __ofono_call_barring_is_busy(struct ofono_call_barring *cb);
