@@ -80,7 +80,7 @@ unsigned int __ofono_ssn_mo_watch_add(struct ofono_ssn *ssn, int code1,
 	return add_ssn_handler(ssn->mo_handler_list, code1, cb, user, destroy);
 }
 
-gboolean __ofono_ssn_mo_watch_remove(struct ofono_ssn *ssn, int id)
+gboolean __ofono_ssn_mo_watch_remove(struct ofono_ssn *ssn, unsigned int id)
 {
 	if (ssn == NULL)
 		return FALSE;
@@ -102,7 +102,7 @@ unsigned int __ofono_ssn_mt_watch_add(struct ofono_ssn *ssn, int code2,
 	return add_ssn_handler(ssn->mt_handler_list, code2, cb, user, destroy);
 }
 
-gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, int id)
+gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, unsigned int id)
 {
 	if (ssn == NULL)
 		return FALSE;

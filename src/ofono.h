@@ -239,12 +239,12 @@ typedef void (*ofono_ssn_mt_notify_cb)(int index,
 unsigned int __ofono_ssn_mo_watch_add(struct ofono_ssn *ssn, int code1,
 					ofono_ssn_mo_notify_cb cb, void *user,
 					ofono_destroy_func destroy);
-gboolean __ofono_ssn_mo_watch_remove(struct ofono_ssn *ssn, int id);
+gboolean __ofono_ssn_mo_watch_remove(struct ofono_ssn *ssn, unsigned int id);
 
 unsigned int __ofono_ssn_mt_watch_add(struct ofono_ssn *ssn, int code2,
 					ofono_ssn_mt_notify_cb cb, void *user,
 					ofono_destroy_func destroy);
-gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, int id);
+gboolean __ofono_ssn_mt_watch_remove(struct ofono_ssn *ssn, unsigned int id);
 
 #include <ofono/ussd.h>
 
