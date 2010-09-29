@@ -280,6 +280,9 @@ builtin_modules += example_history example_nettime
 builtin_sources += plugins/example_history.c plugins/example_nettime.c
 endif
 
+builtin_modules += smart_messaging
+builtin_sources += plugins/smart_messaging.c
+
 sbin_PROGRAMS = src/ofonod
 
 src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
