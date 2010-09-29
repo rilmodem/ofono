@@ -42,6 +42,7 @@
 #define OFONO_MODEM_INTERFACE		OFONO_SERVICE ".Modem"
 #define OFONO_CALLMANAGER_INTERFACE	OFONO_SERVICE ".VoiceCallManager"
 #define OFONO_CALL_INTERFACE		OFONO_SERVICE ".VoiceCall"
+#define OFONO_AUDIO_INTERFACE		OFONO_SERVICE ".AudioSettings"
 
 struct modem_data {
 	char *path;
@@ -51,6 +52,7 @@ struct modem_data {
 	guint call_added_watch;
 	guint call_removed_watch;
 	guint call_changed_watch;
+	guint audio_changed_watch;
 
 	gboolean has_callmanager;
 	gboolean is_huawei;
@@ -176,6 +178,25 @@ static void close_audio(struct modem_data *modem)
 	}
 
 	close(modem->dsp_out);
+}
+
+static void audio_set(struct modem_data *modem, const char *key,
+						DBusMessageIter *iter)
+{
+	const char *str = NULL;
+
+	if (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_STRING)
+		dbus_message_iter_get_basic(iter, &str);
+
+	if (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_BOOLEAN) {
+		dbus_bool_t val;
+
+		dbus_message_iter_get_basic(iter, &val);
+		str = (val == TRUE) ? "yes" : "no";
+	}
+
+	g_print("updating audio (%s) [ %s = %s ]\n", modem->path,
+						key, str ? str : "...");
 }
 
 static void call_set(struct call_data *call, const char *key,
@@ -311,6 +332,26 @@ static gboolean call_changed(DBusConnection *conn,
 	return TRUE;
 }
 
+static gboolean audio_changed(DBusConnection *conn,
+				DBusMessage *msg, void *user_data)
+{
+	struct modem_data *modem = user_data;
+	DBusMessageIter iter, value;
+	const char *key;
+
+	if (dbus_message_iter_init(msg, &iter) == FALSE)
+		return TRUE;
+
+	dbus_message_iter_get_basic(&iter, &key);
+
+	dbus_message_iter_next(&iter);
+	dbus_message_iter_recurse(&iter, &value);
+
+	audio_set(modem, key, &value);
+
+	return TRUE;
+}
+
 static void get_calls_reply(DBusPendingCall *call, void *user_data)
 {
 	struct modem_data *modem = user_data;
@@ -389,6 +430,7 @@ static void check_interfaces(struct modem_data *modem, DBusMessageIter *iter)
 {
 	DBusMessageIter entry;
 	gboolean has_callmanager = FALSE;
+	gboolean has_audiosettings = FALSE;
 
 	dbus_message_iter_recurse(iter, &entry);
 
@@ -399,6 +441,9 @@ static void check_interfaces(struct modem_data *modem, DBusMessageIter *iter)
 
 		if (g_str_equal(interface, OFONO_CALLMANAGER_INTERFACE) == TRUE)
 			has_callmanager = TRUE;
+
+		if (g_str_equal(interface, OFONO_AUDIO_INTERFACE) == TRUE)
+			has_audiosettings = TRUE;
 
 		dbus_message_iter_next(&entry);
 	}
@@ -430,6 +475,7 @@ static void destroy_modem(gpointer data)
 	g_dbus_remove_watch(modem->conn, modem->call_added_watch);
 	g_dbus_remove_watch(modem->conn, modem->call_removed_watch);
 	g_dbus_remove_watch(modem->conn, modem->call_changed_watch);
+	g_dbus_remove_watch(modem->conn, modem->audio_changed_watch);
 
 	g_hash_table_destroy(modem->call_list);
 
@@ -470,6 +516,9 @@ static void create_modem(DBusConnection *conn,
 	modem->call_changed_watch = g_dbus_add_signal_watch(conn, NULL,
 				NULL, OFONO_CALL_INTERFACE,
 				"PropertyChanged", call_changed, modem, NULL);
+	modem->audio_changed_watch = g_dbus_add_signal_watch(conn, NULL,
+				NULL, OFONO_AUDIO_INTERFACE,
+				"PropertyChanged", audio_changed, modem, NULL);
 
 	g_hash_table_replace(modem_list, modem->path, modem);
 
