@@ -1,0 +1,37 @@
+Push Notification hierarchy
+===============
+
+Service		org.ofono
+Interface	org.ofono.PushNotification
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		void RegisterAgent(object path)
+
+			Registers an agent which will be called whenever a
+			new Smart Messaging based SMS arrives.
+
+		void UnregisterAgent(object path)
+
+			Unregisters an agent.
+
+PushNotificationAgent Hierarchy [experimental]
+===============
+
+Service		unique name
+Interface	org.ofono.PushNotificationAgent
+Object path	freely definable
+
+Methods		void ReceiveNotification(array{byte} appointment, dict info)
+
+			Requests the agent to process a new SMS that has
+			arrived containing a WAP PUSH.  The dictionary
+			info contains 'Sender', 'LocalSentTime' and
+			'SentTime' properties.
+
+			Possible Errors: None
+
+		void Release()
+
+			Agent is being released, possibly because of oFono
+			terminating, SMS interface is being torn down or modem
+			off.  No UnregisterAgent call is needed.
