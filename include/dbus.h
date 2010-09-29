@@ -47,6 +47,7 @@ extern "C" {
 #define OFONO_NETWORK_OPERATOR_INTERFACE "org.ofono.NetworkOperator"
 #define OFONO_PHONEBOOK_INTERFACE "org.ofono.Phonebook"
 #define OFONO_RADIO_SETTINGS_INTERFACE "org.ofono.RadioSettings"
+#define OFONO_AUDIO_SETTINGS_INTERFACE "org.ofono.AudioSettings"
 #define OFONO_SIM_MANAGER_INTERFACE "org.ofono.SimManager"
 #define OFONO_VOICECALL_INTERFACE "org.ofono.VoiceCall"
 #define OFONO_VOICECALL_MANAGER_INTERFACE "org.ofono.VoiceCallManager"

@@ -13,7 +13,7 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/cbs.h include/call-volume.h \
 			include/gprs.h include/gprs-context.h \
 			include/radio-settings.h include/stk.h \
-			include/nettime.h
+			include/audio-settings.h include/nettime.h
 
 nodist_include_HEADERS = include/version.h
 
@@ -299,7 +299,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/gprs.c src/idmap.h src/idmap.c \
 			src/radio-settings.c src/stkutil.h src/stkutil.c \
 			src/nettime.c src/stkagent.c src/stkagent.h \
-			src/simfs.c src/simfs.h
+			src/simfs.c src/simfs.h src/audio-settings.c
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 
