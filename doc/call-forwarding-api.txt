@@ -23,16 +23,16 @@ Methods		dict GetProperties()
 
 Signals		PropertyChanged(string property, variant value)
 
-			Signal is emitted whenever a property has changed.  The new
-			value is passed as the signal argument.
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
 
 Properties	string VoiceUnconditional [readwrite]
 
 			Contains the value of the voice unconditional call
 			forwarding property.  If the value is an empty string,
-			then this call forwarding rule is not active.  Otherwise
-			the rule is active with the string value as the phone
-			number.
+			then this call forwarding rule is not active.
+			Otherwise the rule is active with the string value
+			as the phone number.
 
 		string VoiceBusy [readwrite]
 
@@ -48,6 +48,10 @@ Properties	string VoiceUnconditional [readwrite]
 
 			Contains the value of the voice "No Reply" timeout in
 			seconds. The timeout can be between 1 and 30 seconds.
+			Please note that it is not possible to set this
+			property's value if GetProperties() has not been
+			previously called or the VoiceNoReply property
+			has not been set.
 
 		string VoiceNotReachable [readwrite]
 
