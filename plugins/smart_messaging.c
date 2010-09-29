@@ -35,13 +35,127 @@
 #include <ofono/modem.h>
 #include <ofono/dbus.h>
 
+#define SMART_MESSAGING_INTERFACE "org.ofono.SmartMessaging"
+
+static unsigned int modemwatch_id;
+
+struct smart_messaging {
+	struct ofono_modem *modem;
+	struct ofono_sms *sms;
+};
+
+static DBusMessage *smart_messaging_register_agent(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	return __ofono_error_not_implemented(msg);
+}
+
+static DBusMessage *smart_messaging_unregister_agent(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	return __ofono_error_not_implemented(msg);
+}
+
+static DBusMessage *smart_messaging_send_vcard(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	return __ofono_error_not_implemented(msg);
+}
+
+static DBusMessage *smart_messaging_send_vcal(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	return __ofono_error_not_implemented(msg);
+}
+
+static GDBusMethodTable smart_messaging_methods[] = {
+	{ "RegisterAgent",    "o",    "",  smart_messaging_register_agent },
+	{ "UnregisterAgent",  "o",    "",  smart_messaging_unregister_agent },
+	{ "SendBusinessCard", "ab",   "o", smart_messaging_send_vcard,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "SendAppointment",  "ab",   "o", smart_messaging_send_vcal,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ }
+};
+
+static void smart_messaging_cleanup(gpointer user)
+{
+	struct smart_messaging *sm = user;
+
+	DBG("%p", sm);
+}
+
+static void sms_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct smart_messaging *sm = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		DBG("unregistered");
+		sm->sms = NULL;
+
+		g_dbus_unregister_interface(conn,
+					ofono_modem_get_path(sm->modem),
+					SMART_MESSAGING_INTERFACE);
+		return;
+	}
+
+	DBG("registered");
+	sm->sms = __ofono_atom_get_data(atom);
+
+	if (!g_dbus_register_interface(conn, ofono_modem_get_path(sm->modem),
+					SMART_MESSAGING_INTERFACE,
+					smart_messaging_methods, NULL, NULL,
+					sm, smart_messaging_cleanup)) {
+		ofono_error("Could not create %s interface",
+				SMART_MESSAGING_INTERFACE);
+
+		return;
+	}
+
+	ofono_modem_add_interface(sm->modem, SMART_MESSAGING_INTERFACE);
+}
+
+static void modem_watch(struct ofono_modem *modem, gboolean added, void *user)
+{
+	struct smart_messaging *sm;
+	DBG("modem: %p, added: %d", modem, added);
+
+	if (added == FALSE)
+		return;
+
+	sm = g_try_new0(struct smart_messaging, 1);
+	if (sm == NULL)
+		return;
+
+	sm->modem = modem;
+	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_SMS,
+					sms_watch, sm, g_free);
+}
+
+static void call_modemwatch(struct ofono_modem *modem, void *user)
+{
+	modem_watch(modem, TRUE, user);
+}
+
 static int smart_messaging_init()
 {
+	DBG("");
+
+	modemwatch_id = __ofono_modemwatch_add(modem_watch, NULL, NULL);
+
+	__ofono_modem_foreach(call_modemwatch, NULL);
+
 	return 0;
 }
 
 static void smart_messaging_exit()
 {
+	DBG("");
+
+	__ofono_modemwatch_remove(modemwatch_id);
 }
 
 OFONO_PLUGIN_DEFINE(smart_messaging, "Smart Messaging Plugin", VERSION,
