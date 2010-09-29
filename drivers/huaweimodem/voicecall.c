@@ -162,6 +162,14 @@ static void huawei_hangup(struct ofono_voicecall *vc,
 	huawei_template(vc, "AT+CHUP", cb, data);
 }
 
+static void huawei_release_specific(struct ofono_voicecall *vc, int id,
+				ofono_voicecall_cb_t cb, void *data)
+{
+	char buf[32];
+
+	snprintf(buf, sizeof(buf), "AT+CHLD=1%d", id);
+	huawei_template(vc, buf, cb, data);
+}
 static void cring_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
@@ -496,6 +504,7 @@ static struct ofono_voicecall_driver driver = {
 	.dial			= huawei_dial,
 	.answer			= huawei_answer,
 	.hangup_active		= huawei_hangup,
+	.release_specific	= huawei_release_specific,
 };
 
 void huawei_voicecall_init()
