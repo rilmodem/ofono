@@ -21,7 +21,7 @@ Service		unique name
 Interface	org.ofono.PushNotificationAgent
 Object path	freely definable
 
-Methods		void ReceiveNotification(array{byte} appointment, dict info)
+Methods		void ReceiveNotification(array{byte} notification, dict info)
 
 			Requests the agent to process a new SMS that has
 			arrived containing a WAP PUSH.  The dictionary
