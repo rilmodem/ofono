@@ -337,7 +337,8 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 			doc/call-volume-api.txt doc/cell-broadcast-api.txt \
 			doc/message-api.txt doc/message-waiting-api.txt \
 			doc/phonebook-api.txt doc/radio-settings-api.txt \
-			doc/sim-api.txt doc/stk-api.txt
+			doc/sim-api.txt doc/stk-api.txt \
+			doc/audio-settings-api.txt
 
 
 test_scripts = test/backtrace \
