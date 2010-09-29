@@ -324,11 +324,16 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 		doc/manager-api.txt doc/modem-api.txt doc/network-api.txt \
 			doc/voicecallmanager-api.txt doc/voicecall-api.txt \
 			doc/call-forwarding-api.txt doc/call-settings-api.txt \
-			doc/call-meter-api.txt \
+			doc/call-meter-api.txt doc/call-barring-api.txt \
 			doc/supplementaryservices-api.txt \
 			doc/connman-api.txt doc/features.txt \
 			doc/pushnotification-api.txt \
-			doc/smartmessaging-api.txt
+			doc/smartmessaging-api.txt \
+			doc/call-volume-api.txt doc/cell-broadcast-api.txt \
+			doc/message-api.txt doc/message-waiting-api.txt \
+			doc/phonebook-api.txt doc/radio-settings-api.txt \
+			doc/sim-api.txt doc/stk-api.txt
+
 
 test_scripts = test/backtrace \
 		test/create-context \
