@@ -102,6 +102,16 @@ else
 fi
 AC_SUBST(DBUS_CONFDIR)
 
+AC_ARG_ENABLE(capng, AC_HELP_STRING([--enable-capng],
+		[enable capabilities support]), [enable_capng=${enableval}])
+if (test "${enable_capng}" = "yes"); then
+	PKG_CHECK_MODULES(CAPNG, libcap-ng, dummy=yes,
+				AC_MSG_ERROR(Capabilities library is required))
+	AC_SUBST(CAPNG_CFLAGS)
+	AC_SUBST(CAPNG_LIBS)
+	AC_DEFINE(HAVE_CAPNG, 1, [Define to 1 if you have capabilities library.])
+fi
+
 AC_ARG_ENABLE(udev, AC_HELP_STRING([--disable-udev],
 			[don't use udev support even if available]),
 						[enable_udev=${enableval}])
@@ -119,16 +129,6 @@ fi
 AC_SUBST(UDEV_CFLAGS)
 AC_SUBST(UDEV_LIBS)
 AM_CONDITIONAL(UDEV, test "${enable_udev}" = "yes")
-
-AC_ARG_ENABLE(capng, AC_HELP_STRING([--enable-capng],
-		[enable capabilities support]), [enable_capng=${enableval}])
-if (test "${enable_capng}" = "yes"); then
-	PKG_CHECK_MODULES(CAPNG, libcap-ng, dummy=yes,
-				AC_MSG_ERROR(Capabilities library is required))
-	AC_SUBST(CAPNG_CFLAGS)
-	AC_SUBST(CAPNG_LIBS)
-	AC_DEFINE(HAVE_CAPNG, 1, [Define to 1 if you have capabilities library.])
-fi
 
 AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
 				[disable PhoNet/ISI modem support]),
