@@ -211,6 +211,7 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/ifxmodem/ifxmodem.h \
 			drivers/ifxmodem/ifxmodem.c \
 			drivers/ifxmodem/voicecall.c \
+			drivers/ifxmodem/audio-settings.c \
 			drivers/ifxmodem/radio-settings.c \
 			drivers/ifxmodem/stk.c
 
