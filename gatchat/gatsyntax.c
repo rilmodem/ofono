@@ -100,6 +100,8 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 				syntax->state = GSMV1_STATE_TERMINATOR_CR;
 			else if (byte == '>')
 				syntax->state = GSMV1_STATE_PROMPT;
+			else if (byte == '"')
+				syntax->state = GSMV1_STATE_RESPONSE_STRING;
 			else
 				syntax->state = GSMV1_STATE_RESPONSE;
 			break;
