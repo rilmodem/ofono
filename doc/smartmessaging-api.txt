@@ -56,3 +56,9 @@ Methods		void ReceiveAppointment(array{byte} appointment, dict info)
 			'SentTime' properties.
 
 			Possible Errors: None
+
+		void Release()
+
+			Agent is being released, possibly because of oFono
+			terminating, SMS interface is being torn down or modem
+			off.  No UnregisterAgent call is needed.
