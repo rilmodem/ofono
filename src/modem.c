@@ -1022,7 +1022,8 @@ static void query_manufacturer_cb(const struct ofono_error *error,
 
 	ofono_dbus_signal_property_changed(conn, path,
 						OFONO_MODEM_INTERFACE,
-						"Manufacturer", DBUS_TYPE_STRING,
+						"Manufacturer",
+						DBUS_TYPE_STRING,
 						&info->manufacturer);
 
 out:
@@ -1329,8 +1330,8 @@ static void sim_watch(struct ofono_atom *atom,
 
 	modem->sim = __ofono_atom_get_data(atom);
 	modem->sim_ready_watch = ofono_sim_add_state_watch(modem->sim,
-								sim_state_watch,
-								modem, NULL);
+							sim_state_watch,
+							modem, NULL);
 }
 
 static void emit_modem_added(struct ofono_modem *modem)
@@ -1390,9 +1391,10 @@ int ofono_modem_register(struct ofono_modem *modem)
 	if (modem->driver == NULL)
 		return -ENODEV;
 
-	if (!g_dbus_register_interface(conn, modem->path, OFONO_MODEM_INTERFACE,
-				modem_methods, modem_signals, NULL,
-				modem, NULL)) {
+	if (!g_dbus_register_interface(conn, modem->path,
+					OFONO_MODEM_INTERFACE,
+					modem_methods, modem_signals, NULL,
+					modem, NULL)) {
 		ofono_error("Modem register failed on path %s", modem->path);
 
 		if (modem->driver->remove)
