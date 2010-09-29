@@ -590,8 +590,7 @@ static void huawei_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	if (data->voice == TRUE)
-		ofono_voicecall_create(modem, OFONO_VENDOR_HUAWEI,
-						"huaweimodem", data->pcui);
+		ofono_voicecall_create(modem, 0, "huaweimodem", data->pcui);
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
 }
