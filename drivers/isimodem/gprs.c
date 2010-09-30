@@ -59,7 +59,7 @@ static void detach_ind_cb(GIsiClient *client,
 				const void *restrict data, size_t len,
 				uint16_t object, void *opaque)
 {
-	/*struct ofono_gprs *gprs = opaque;*/
+	struct ofono_gprs *gprs = opaque;
 	const unsigned char *msg = data;
 
 	if (!msg || len < 3 || msg[0] != GPDS_DETACH_IND)
@@ -68,8 +68,7 @@ static void detach_ind_cb(GIsiClient *client,
 	DBG("detached: %s (0x%02"PRIx8")",
 		gpds_isi_cause_name(msg[1]), msg[1]);
 
-	/* TODO: Don't report this to core, it won't ever reattach */
-	/*ofono_gprs_detached_notify(gprs);*/
+	ofono_gprs_detached_notify(gprs);
 }
 
 static void suspend_notify(struct ofono_gprs *gprs, uint8_t suspend_status,
