@@ -99,6 +99,9 @@ static void sms_watch(struct ofono_atom *atom,
 		g_dbus_unregister_interface(conn,
 					ofono_modem_get_path(sm->modem),
 					SMART_MESSAGING_INTERFACE);
+
+		ofono_modem_remove_interface(sm->modem,
+						SMART_MESSAGING_INTERFACE);
 		return;
 	}
 
