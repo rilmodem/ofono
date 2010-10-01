@@ -1,3 +1,16 @@
+ver 0.31:
+	Fix issue with signal strength reporting for ISI modems.
+	Fix issue with GPRS detach reporting for ISI modems.
+	Fix issue with single voice call termination handling.
+	Fix issue with Huawei modem driver and release of voice calls.
+	Fix issue with Infineon modem driver not sending AT+CHUP.
+	Fix issue with Infineon SIM ready checking and newer firmware.
+	Add support for Infineon specific model detection handling.
+	Add support for Infineon specific audio configuration.
+	Add support for audio settings interface.
+	Add support for generic ISI modem driver.
+	Add support for N900 specific ISI modem driver.
+
 ver 0.30:
 	Fix issue with 8-bit port handling of SMS.
 	Fix issue with CBS decoding and ISI modem driver.
