@@ -335,7 +335,7 @@ static void gpio_power_state_machine(enum power_event event)
 
 	switch (event) {
 	case POWER_EVENT_ON:
-		self.target = POWER_EVENT_PHONET_LINK_UP;
+		self.target = PHONET_LINK_UP;
 
 		if (self.current == PHONET_LINK_NONE)
 			return;
