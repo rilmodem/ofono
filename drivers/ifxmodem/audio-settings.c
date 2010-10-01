@@ -89,6 +89,8 @@ static void xprogress_support_cb(gboolean ok, GAtResult *result,
 {
 	struct ofono_audio_settings *as = user_data;
 	struct audio_settings_data *asd = ofono_audio_settings_get_data(as);
+	struct ofono_modem *modem;
+	const char *setting;
 
 	if (!ok)
 		return;
@@ -100,6 +102,11 @@ static void xprogress_support_cb(gboolean ok, GAtResult *result,
 						NULL, NULL, NULL);
 
 	ofono_audio_settings_register(as);
+
+	modem = ofono_audio_settings_get_modem(as);
+	setting = ofono_modem_get_string(modem, "AudioSetting");
+
+	ofono_audio_settings_mode_notify(as, setting);
 }
 
 static int ifx_audio_settings_probe(struct ofono_audio_settings *as,
