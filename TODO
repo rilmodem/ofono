@@ -90,6 +90,7 @@ SIM / SIM File system
 
   Priority: Low
   Complexity: C2
+  Owner: Petteri Tikander <petteri.tikander@ixonos.com>
 
 - Barred Numbers.  oFono should support Barred Numbers capability.  This
   requires ability to read & write EFadn entries on the SIM.
