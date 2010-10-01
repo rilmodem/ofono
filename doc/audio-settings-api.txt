@@ -17,10 +17,17 @@ Signals		PropertyChanged(string property, variant value)
 			This signal indicates a changed value of the given
 			property.
 
-Properties	boolean Active [readonly]
+Properties	boolean Active [readonly] [EXPERIMENTAL]
 
 			Indicates if an audio PCM stream is active or not.
 
 			This is not supported by all modems. Only modems
 			where the audio data can be routed to the host
 			application processor will support this.
+
+		string Mode [readonly, optional] [EXPERIMENTAL]
+
+			Indicates the audio mode setting.
+
+			This is highly modem specific audio string. Every
+			modem might use different ones.
