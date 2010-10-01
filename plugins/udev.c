@@ -426,16 +426,16 @@ static void add_nokia(struct ofono_modem *modem,
 }
 
 static void add_isi(struct ofono_modem *modem,
-			struct udev_device *udev_device)
+					struct udev_device *udev_device)
 {
-    const char *ifname, *addr;
+	const char *ifname, *addr;
 
 	DBG("modem %p", modem);
 
 	ifname = udev_device_get_sysname(udev_device);
 	ofono_modem_set_string(modem, "Interface", ifname);
 
-	DBG("Interface=%s", ifname);
+	DBG("interface %s", ifname);
 
 	addr = udev_device_get_property_value(udev_device, "OFONO_ISI_ADDRESS");
 	ofono_modem_set_integer(modem, "Address", atoi(addr));
