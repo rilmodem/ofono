@@ -55,6 +55,7 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
+#include <ofono/audio-settings.h>
 #include <ofono/stk.h>
 #include <ofono/log.h>
 
@@ -617,6 +618,8 @@ static void ifx_pre_sim(struct ofono_modem *modem)
 	data->sim = ofono_sim_create(modem, OFONO_VENDOR_IFX,
 					"atmodem", data->dlcs[AUX_DLC]);
 	ofono_voicecall_create(modem, 0, "ifxmodem", data->dlcs[VOICE_DLC]);
+	ofono_audio_settings_create(modem, 0,
+					"ifxmodem", data->dlcs[VOICE_DLC]);
 }
 
 static void ifx_post_sim(struct ofono_modem *modem)
