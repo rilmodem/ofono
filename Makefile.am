@@ -289,7 +289,7 @@ builtin_sources += examples/nettime.c
 endif
 
 builtin_modules += smart_messaging
-builtin_sources += plugins/smart_messaging.c
+builtin_sources += plugins/smart-messaging.c
 
 sbin_PROGRAMS = src/ofonod
 
