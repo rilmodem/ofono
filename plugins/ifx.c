@@ -75,7 +75,6 @@ static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
 
 static const char *none_prefix[] = { NULL };
 static const char *xdrv_prefix[] = { "+XDRV:", NULL };
-static const char *xgendata_prefix[] = { "+XGENDATA:", NULL };
 
 struct ifx_data {
 	GIOChannel *device;
@@ -235,25 +234,38 @@ done:
 	data->device = NULL;
 }
 
-static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+static void xgendata_query(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	char buf[64];
+	GAtResultIter iter;
+	const char *gendata;
 
 	DBG("");
 
-	if (!ok) {
-		shutdown_device(data);
+	if (!ok)
+		goto error;
 
-		ofono_modem_set_powered(modem, FALSE);
-		return;
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XGENDATA:"))
+		goto error;
+
+	if (!g_at_result_iter_next_string(&iter, &gendata))
+		goto error;
+
+	DBG("\n%s", gendata);
+
+	if (g_str_has_prefix(gendata, "    XMM6260") == TRUE) {
+		ofono_info("Detected XMM6260 modem");
+		data->audio_source = 4;
+		data->audio_dest = 3;
+		data->audio_context = 0;
 	}
 
-	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XGENDATA", xgendata_prefix,
-							NULL, NULL, NULL);
-
 	if (data->audio_setting && data->audio_source && data->audio_dest) {
+		char buf[64];
+
 		/* configure source */
 		snprintf(buf, sizeof(buf), "AT+XDRV=40,4,%d,%d,%s",
 						data->audio_source,
@@ -296,6 +308,29 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	/* enable XSIM and XLOCK notifications */
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XSIMSTATE=1", none_prefix,
 						NULL, NULL, NULL);
+
+	return;
+
+error:
+	shutdown_device(data);
+	ofono_modem_set_powered(modem, FALSE);
+}
+
+static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	if (!ok) {
+		shutdown_device(data);
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XGENDATA", NULL,
+						xgendata_query, NULL, NULL);
 }
 
 static gboolean dlc_ready_check(gpointer user_data)
@@ -338,7 +373,6 @@ error:
 	data->dlc_poll_source = 0;
 
 	shutdown_device(data);
-
 	ofono_modem_set_powered(modem, FALSE);
 
 	return FALSE;
@@ -384,7 +418,6 @@ static void setup_internal_mux(struct ofono_modem *modem)
 
 error:
 	shutdown_device(data);
-
 	ofono_modem_set_powered(modem, FALSE);
 }
 
