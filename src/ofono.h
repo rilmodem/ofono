@@ -229,11 +229,36 @@ enum ofono_sms_submit_flag {
 };
 
 typedef void (*ofono_sms_txq_submit_cb_t)(gboolean ok, void *data);
+typedef void (*ofono_sms_text_notify_cb_t)(const char *from,
+						const struct tm *remote,
+						const struct tm *local,
+						const char *text,
+						void *data);
+typedef void (*ofono_sms_datagram_notify_cb_t)(const char *from,
+						const struct tm *remote,
+						const struct tm *local,
+						int dst, int src,
+						const unsigned char *buffer,
+						unsigned int len,
+						void *data);
 
 int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 				unsigned int flags, struct ofono_uuid *uuid,
 				ofono_sms_txq_submit_cb_t cb,
 				void *data, ofono_destroy_func destroy);
+
+unsigned int __ofono_sms_text_watch_add(struct ofono_sms *sms,
+					ofono_sms_text_notify_cb_t cb,
+					void *data, ofono_destroy_func destroy);
+gboolean __ofono_sms_text_watch_remove(struct ofono_sms *sms,
+					unsigned int id);
+
+unsigned int __ofono_sms_datagram_watch_add(struct ofono_sms *sms,
+					ofono_sms_datagram_notify_cb_t cb,
+					int dst, int src, void *data,
+					ofono_destroy_func destroy);
+gboolean __ofono_sms_datagram_watch_remove(struct ofono_sms *sms,
+					unsigned int id);
 
 #include <ofono/sim.h>
 #include <ofono/stk.h>
