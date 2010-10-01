@@ -245,3 +245,8 @@ void *ofono_audio_settings_get_data(struct ofono_audio_settings *as)
 {
 	return as->driver_data;
 }
+
+struct ofono_modem *ofono_audio_settings_get_modem(struct ofono_audio_settings *as)
+{
+	return __ofono_atom_get_modem(as->atom);
+}

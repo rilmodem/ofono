@@ -54,6 +54,8 @@ void ofono_audio_settings_remove(struct ofono_audio_settings *as);
 void ofono_audio_settings_set_data(struct ofono_audio_settings *as, void *data);
 void *ofono_audio_settings_get_data(struct ofono_audio_settings *as);
 
+struct ofono_modem *ofono_audio_settings_get_modem(struct ofono_audio_settings *as);
+
 #ifdef __cplusplus
 }
 #endif
