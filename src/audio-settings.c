@@ -37,6 +37,7 @@ static GSList *g_drivers = NULL;
 
 struct ofono_audio_settings {
 	ofono_bool_t active;
+	char *mode;
 	const struct ofono_audio_settings_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -61,6 +62,25 @@ void ofono_audio_settings_active_notify(struct ofono_audio_settings *as,
 
 }
 
+void ofono_audio_settings_mode_notify(struct ofono_audio_settings *as,
+						const char *mode)
+{
+	const char *path = __ofono_atom_get_path(as->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	DBG("mode %s", mode);
+
+	g_free(as->mode);
+	as->mode = g_strdup(mode);
+
+	if (!as->mode)
+		return;
+
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_AUDIO_SETTINGS_INTERFACE,
+				"Mode", DBUS_TYPE_STRING, &as->mode);
+}
+
 static DBusMessage *audio_get_properties_reply(DBusMessage *msg,
 					struct ofono_audio_settings *as)
 {
@@ -79,6 +99,10 @@ static DBusMessage *audio_get_properties_reply(DBusMessage *msg,
 					&dict);
 
 	ofono_dbus_dict_append(&dict, "Active", DBUS_TYPE_BOOLEAN, &as->active);
+
+	if (as->mode)
+		ofono_dbus_dict_append(&dict, "Mode",
+					DBUS_TYPE_STRING, &as->mode);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -149,6 +173,7 @@ static void audio_settings_remove(struct ofono_atom *atom)
 	if (as->driver && as->driver->remove)
 		as->driver->remove(as);
 
+	g_free(as->mode);
 	g_free(as);
 }
 

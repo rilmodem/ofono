@@ -39,6 +39,8 @@ struct ofono_audio_settings_driver {
 
 void ofono_audio_settings_active_notify(struct ofono_audio_settings *as,
 						ofono_bool_t active);
+void ofono_audio_settings_mode_notify(struct ofono_audio_settings *as,
+						const char *mode);
 
 int ofono_audio_settings_driver_register(const struct ofono_audio_settings_driver *d);
 void ofono_audio_settings_driver_unregister(const struct ofono_audio_settings_driver *d);
