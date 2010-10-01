@@ -128,7 +128,8 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/gss.h \
 				drivers/isimodem/gprs.c \
 				drivers/isimodem/gprs-context.c \
-				drivers/isimodem/gpds.h
+				drivers/isimodem/gpds.h \
+				drivers/isimodem/audio-settings.c
 
 builtin_modules += isigen
 builtin_sources += plugins/isigen.c
