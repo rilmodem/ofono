@@ -578,6 +578,7 @@ static void enumerate_devices(struct udev *context)
 
 	udev_enumerate_add_match_subsystem(enumerate, "tty");
 	udev_enumerate_add_match_subsystem(enumerate, "net");
+	udev_enumerate_add_match_subsystem(enumerate, "hsi");
 
 	udev_enumerate_scan_devices(enumerate);
 
@@ -593,7 +594,8 @@ static void enumerate_devices(struct udev *context)
 			subsystem = udev_device_get_subsystem(device);
 
 			if (g_strcmp0(subsystem, "tty") == 0 ||
-					g_strcmp0(subsystem, "net") == 0)
+					g_strcmp0(subsystem, "net") == 0 ||
+					g_strcmp0(subsystem, "hsi") == 0)
 				add_modem(device);
 
 			udev_device_unref(device);
@@ -626,11 +628,13 @@ static gboolean udev_event(GIOChannel *channel,
 
 	if (g_str_equal(action, "add") == TRUE) {
 		if (g_strcmp0(subsystem, "tty") == 0 ||
-					g_strcmp0(subsystem, "net") == 0)
+				g_strcmp0(subsystem, "net") == 0 ||
+					g_strcmp0(subsystem, "hsi") == 0)
 			add_modem(device);
 	} else if (g_str_equal(action, "remove") == TRUE) {
 		if (g_strcmp0(subsystem, "tty") == 0 ||
-					g_strcmp0(subsystem, "net") == 0)
+				g_strcmp0(subsystem, "net") == 0 ||
+					g_strcmp0(subsystem, "hsi") == 0)
 			remove_modem(device);
 	}
 
@@ -694,6 +698,7 @@ static int udev_init(void)
 
 	udev_monitor_filter_add_match_subsystem_devtype(udev_mon, "tty", NULL);
 	udev_monitor_filter_add_match_subsystem_devtype(udev_mon, "net", NULL);
+	udev_monitor_filter_add_match_subsystem_devtype(udev_mon, "hsi", NULL);
 
 	udev_monitor_filter_update(udev_mon);
 
