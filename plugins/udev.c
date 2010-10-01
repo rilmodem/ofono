@@ -227,9 +227,7 @@ static void add_ifx(struct ofono_modem *modem,
 		const char *name = udev_list_entry_get_name(entry);
 		const char *value = udev_list_entry_get_value(entry);
 
-		if (g_str_equal(name, "OFONO_IFX_MODEL") == TRUE)
-			ofono_modem_set_string(modem, "Model", value);
-		else if (g_str_equal(name, "OFONO_IFX_LDISC") == TRUE)
+		if (g_str_equal(name, "OFONO_IFX_LDISC") == TRUE)
 			ofono_modem_set_string(modem, "LineDiscipline", value);
 		else if (g_str_equal(name, "OFONO_IFX_AUDIO") == TRUE)
 			ofono_modem_set_string(modem, "AudioSetting", value);

@@ -472,7 +472,7 @@ error:
 static int ifx_enable(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	const char *device, *ldisc, *model, *audio, *loopback;
+	const char *device, *ldisc, *audio, *loopback;
 	GAtSyntax *syntax;
 	GAtChat *chat;
 
@@ -483,13 +483,6 @@ static int ifx_enable(struct ofono_modem *modem)
 		return -EINVAL;
 
 	DBG("%s", device);
-
-	model = ofono_modem_get_string(modem, "Model");
-	if (g_strcmp0(model, "XMM6260") == 0) {
-		data->audio_source = 4;
-		data->audio_dest = 3;
-		data->audio_context = 0;
-	}
 
 	audio = ofono_modem_get_string(modem, "AudioSetting");
 	if (g_strcmp0(audio, "FULL_DUPLEX") == 0)
