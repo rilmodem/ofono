@@ -36,9 +36,6 @@
 #include <gisi/netlink.h>
 #include <glib.h>
 
-#define OFONO_API_SUBJECT_TO_CHANGE
-#include <ofono/plugin.h>
-#include <ofono/modem.h>
 #include <ofono/log.h>
 
 #include <drivers/isimodem/debug.h>
