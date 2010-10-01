@@ -128,8 +128,11 @@ static void isi_audio_settings_remove(struct ofono_audio_settings *as)
 {
 	struct audio_settings_data *asd = ofono_audio_settings_get_data(as);
 
-	ofono_audio_settings_set_data(as, NULL);
+	if (!asd)
+		return;
 
+	ofono_audio_settings_set_data(as, NULL);
+	g_isi_client_destroy(asd->client);
 	g_free(asd);
 }
 
