@@ -436,7 +436,8 @@ static void add_isi(struct ofono_modem *modem,
 	DBG("interface %s", ifname);
 
 	addr = udev_device_get_property_value(udev_device, "OFONO_ISI_ADDRESS");
-	ofono_modem_set_integer(modem, "Address", atoi(addr));
+	if (addr)
+	    ofono_modem_set_integer(modem, "Address", atoi(addr));
 
 	ofono_modem_register(modem);
 }
