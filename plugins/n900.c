@@ -53,6 +53,7 @@
 #include <ofono/radio-settings.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/audio-settings.h>
 
 #include "drivers/isimodem/isimodem.h"
 #include "drivers/isimodem/isiutil.h"
@@ -480,6 +481,7 @@ static void n900_pre_sim(struct ofono_modem *modem)
 	ofono_sim_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_devinfo_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_voicecall_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_audio_settings_create(isi->modem, 0, "isimodem", isi->idx);
 }
 
 static void n900_post_sim(struct ofono_modem *modem)
