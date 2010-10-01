@@ -19,13 +19,6 @@
  *
  */
 
-#ifndef __NOKIA_GPIO_H
-#define __NOKIA_GPIO_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum power_state {
 	POWER_STATE_NONE,
 	POWER_STATE_ON_STARTED,
@@ -45,9 +38,3 @@ int gpio_disable(void *opaque);
 int gpio_remove(void *opaque);
 
 char const *gpio_power_state_name(enum power_state value);
-
-#ifdef __cplusplus
-};
-#endif
-
-#endif /* __NOKIA_GPIO_H */
