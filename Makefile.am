@@ -281,8 +281,11 @@ builtin_sources += plugins/caif.c
 endif
 
 if MAINTAINER_MODE
-builtin_modules += example_history example_nettime
-builtin_sources += plugins/example_history.c plugins/example_nettime.c
+builtin_modules += example_history
+builtin_sources += examples/history.c
+
+builtin_modules += example_nettime
+builtin_sources += examples/nettime.c
 endif
 
 builtin_modules += smart_messaging
@@ -405,8 +408,8 @@ endif
 
 conf_files = src/ofono.conf plugins/modem.conf
 
-EXTRA_DIST = src/genbuiltin plugins/example_history.c $(doc_files) \
-				$(test_scripts) $(conf_files) $(udev_files)
+EXTRA_DIST = src/genbuiltin $(conf_files) $(udev_files) \
+					$(doc_files) $(test_scripts)
 
 dist_man_MANS = doc/ofonod.8
 
