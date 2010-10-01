@@ -36,7 +36,7 @@ SmartMessagingAgent Hierarchy [experimental]
 ===============
 
 Service		unique name
-Interface	org.ofono.SimToolkitAgent
+Interface	org.ofono.SmartMessagingAgent
 Object path	freely definable
 
 Methods		void ReceiveAppointment(array{byte} appointment, dict info)
