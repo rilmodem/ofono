@@ -1,4 +1,5 @@
 /*
+ *
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2010 Gustavo F. Padovan <gustavo@padovan.org>

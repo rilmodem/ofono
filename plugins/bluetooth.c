@@ -1,9 +1,10 @@
 /*
+ *
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2008-2010  Intel Corporation. All rights reserved.
  *  Copyright (C) 2010  ProFUSION embedded systems
- *  Copyright (C) 2010 Gustavo F. Padovan <gustavo@padovan.org>
+ *  Copyright (C) 2010  Gustavo F. Padovan <gustavo@padovan.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
