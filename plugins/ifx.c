@@ -330,7 +330,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XGENDATA", NULL,
-						xgendata_query, NULL, NULL);
+					xgendata_query, modem, NULL);
 }
 
 static gboolean dlc_ready_check(gpointer user_data)
