@@ -71,7 +71,7 @@ static void xprogress_notify(GAtResult *result, gpointer user_data)
 	case 9:
 	case 10:
 	case 11:
-		ofono_audio_settings_notify(as, FALSE);
+		ofono_audio_settings_active_notify(as, FALSE);
 		break;
 	case 2:
 	case 3:
@@ -79,7 +79,7 @@ static void xprogress_notify(GAtResult *result, gpointer user_data)
 	case 6:
 	case 7:
 	case 8:
-		ofono_audio_settings_notify(as, TRUE);
+		ofono_audio_settings_active_notify(as, TRUE);
 		break;
 	}
 }

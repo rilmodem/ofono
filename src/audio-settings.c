@@ -42,7 +42,7 @@ struct ofono_audio_settings {
 	struct ofono_atom *atom;
 };
 
-void ofono_audio_settings_notify(struct ofono_audio_settings *as,
+void ofono_audio_settings_active_notify(struct ofono_audio_settings *as,
                                                 ofono_bool_t active)
 {
 	const char *path = __ofono_atom_get_path(as->atom);

@@ -50,21 +50,21 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_audio_settings *as = user_data;
 
-	ofono_audio_settings_notify(as, TRUE);
+	ofono_audio_settings_active_notify(as, TRUE);
 }
 
 static void orig_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_audio_settings *as = user_data;
 
-	ofono_audio_settings_notify(as, TRUE);
+	ofono_audio_settings_active_notify(as, TRUE);
 }
 
 static void cend_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_audio_settings *as = user_data;
 
-	ofono_audio_settings_notify(as, FALSE);
+	ofono_audio_settings_active_notify(as, FALSE);
 }
 
 static void cvoice_support_cb(gboolean ok, GAtResult *result,
