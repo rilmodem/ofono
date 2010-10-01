@@ -1621,6 +1621,7 @@ static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
 	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_response rsp;
 	enum sms_charset charset;
+	unsigned char no_cause[] = { 0x00 };
 
 	if (stk->pending_cmd->send_ussd.alpha_id &&
 			stk->pending_cmd->send_ussd.alpha_id[0])
@@ -1661,7 +1662,13 @@ static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
 		break;
 
 	default:
-		send_simple_response(stk, STK_RESULT_TYPE_USSD_RETURN_ERROR);
+		rsp.result.type = STK_RESULT_TYPE_USSD_RETURN_ERROR;
+		rsp.result.additional_len = sizeof(no_cause);
+		rsp.result.additional = no_cause;
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&failure, stk);
+
 		break;
 	}
 }
