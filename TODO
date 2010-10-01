@@ -517,11 +517,15 @@ Miscellaneous
   Priority: Medium
   Complexity: C2
 
-- Add a property for Automatic Idle (sometimes referred to as Fast Dormancy)
-  in the RadioSettings atom.  This property will enable or disable the use of
-  automatic connection release by the modem for power consumption reasons.
-  This is a major power-saving feature for phones, but can be ignored for USB
-  sticks or PCI devices.
+- Add a property for Fast Dormancy in the RadioSettings atom. This property
+  will enable or disable Fast Dormancy. Fast Dormancy refers to UE initiated
+  release of radio resources quickly after a burst of data transfer has ended.
+  Normally, radio resources are released by the network after a timeout
+  configured by the network operator. Fast Dormancy allows the modem to release
+  radio resources more quickly. Typically, fast dormancy would be enabled
+  if no data transfer is predicted to occur in the near future (e.g. end user
+  is not actively using the device). This is a major power-saving feature for
+  mobile devices, but can be ignored for USB sticks or PCI devices.
 
   If the modem does not support such a feature the property should never be
   exposed to the user.
@@ -531,6 +535,7 @@ Miscellaneous
 
   Priority: High
   Complexity: C1
+  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
 
 - TTY (hearing impaired) support.  Add a new oFono atom type that will enable
   the user to enable or disable the TTY support on the modem.  Support for
