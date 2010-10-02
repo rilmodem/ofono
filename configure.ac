@@ -170,7 +170,6 @@ if (test "$localstatedir" = '${prefix}/var'); then
 else
 	storagedir="${localstatedir}/lib/ofono"
 fi
-
 AC_DEFINE_UNQUOTED(STORAGEDIR, "${storagedir}",
 			[Directory for the storage files])
 
@@ -179,7 +178,6 @@ if (test "$sysconfdir" = '${prefix}/etc'); then
 else
 	configdir="${sysconfdir}/ofono"
 fi
-
 AC_DEFINE_UNQUOTED(CONFIGDIR, "${configdir}",
 			[Directory for the configuration files])
 
