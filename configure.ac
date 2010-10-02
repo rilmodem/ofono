@@ -102,6 +102,16 @@ else
 fi
 AC_SUBST(DBUS_CONFDIR)
 
+AC_ARG_WITH(dbusdatadir, AC_HELP_STRING([--with-dbusdatadir=PATH],
+	[path to D-Bus data directory]), [path_dbusdata=${withval}],
+		[path_dbusdata="`$PKG_CONFIG --variable=datadir dbus-1`"])
+if (test -z "${path_dbusdata}"); then
+	DBUS_DATADIR="${datadir}/dbus-1/system-services"
+else
+	DBUS_DATADIR="${path_dbusdata}/dbus-1/system-services"
+fi
+AC_SUBST(DBUS_DATADIR)
+
 AC_ARG_ENABLE(capng, AC_HELP_STRING([--enable-capng],
 		[enable capabilities support]), [enable_capng=${enableval}])
 if (test "${enable_capng}" = "yes"); then
@@ -173,4 +183,4 @@ fi
 AC_DEFINE_UNQUOTED(CONFIGDIR, "${configdir}",
 			[Directory for the configuration files])
 
-AC_OUTPUT(Makefile include/version.h)
+AC_OUTPUT(Makefile include/version.h src/ofono.service)

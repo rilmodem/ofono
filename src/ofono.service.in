@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.ofono
+Exec=@prefix@/sbin/ofonod
+User=root
