@@ -26,9 +26,11 @@ dbusconfdir = @DBUS_CONFDIR@
 
 dbusconf_DATA = src/ofono.conf
 
-dbusdatadir = @DBUS_DATADIR@
+if SYSTEMD
+systemdunitdir = @SYSTEMD_UNITDIR@
 
-dbusdata_DATA = src/ofono.service
+systemdunit_DATA = src/ofono.service
+endif
 
 confdir = $(sysconfdir)/ofono
 

@@ -1,4 +1,11 @@
-[D-BUS Service]
-Name=org.ofono
-Exec=@prefix@/sbin/ofonod
-User=root
+[Unit]
+Description=Telephony service
+After=syslog.target
+
+[Service]
+Type=dbus
+BusName=org.ofono
+ExecStart=@prefix@/sbin/ofonod -n
+
+[Install]
+WantedBy=multi-user.target
