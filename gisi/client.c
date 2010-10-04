@@ -354,6 +354,42 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *client, const struct iovec *iov,
 }
 
 /**
+ * Send an ISI request to a specific Phonet address and register a callback
+ * to process the response(s) to the resulting transaction.
+ *
+ * @param client ISI client (from g_isi_client_create())
+ * @param dst Phonet destination address
+ * @param buf pointer to request payload
+ * @param len request payload byte length
+ * @param timeout timeout in seconds
+ * @param cb callback to process response(s)
+ * @param opaque data for the callback
+ * @param notify finalizer function for the @a opaque data (may be NULL)
+ *
+ * @return
+ * A pointer to a newly created GIsiRequest.
+ *
+ * @errors
+ * If an error occurs, @a errno is set accordingly and a NULL pointer is
+ * returned.
+ */
+GIsiRequest *g_isi_sendto(GIsiClient *client,
+				struct sockaddr_pn *dst,
+				const void *__restrict buf, size_t len,
+				unsigned timeout,
+				GIsiResponseFunc cb, void *opaque,
+				GDestroyNotify notify)
+{
+	const struct iovec iov = {
+		.iov_base = (void *)buf,
+		.iov_len = len,
+	};
+
+	return g_isi_vsendto(client, dst, &iov, 1, timeout, cb, opaque, notify);
+}
+
+
+/**
  * Send an ISI request and register a callback to process the response(s) to
  * the resulting transaction.
  *
@@ -388,10 +424,11 @@ GIsiRequest *g_isi_send(GIsiClient *client,
 
 
 /**
- * Send an ISI request and register a callback to process the response(s) to
- * the resulting transaction.
+ * Send an ISI request to a specific Phonet address and register a callback
+ * to process the response(s) to the resulting transaction.
  *
- * @param cl ISI client (from g_isi_client_create())
+ * @param client ISI client (from g_isi_client_create())
+ * @param dst Phonet destination address
  * @param iov scatter-gather array to the request payload
  * @param iovlen number of vectors in the scatter-gather array
  * @param timeout timeout in seconds
@@ -406,19 +443,17 @@ GIsiRequest *g_isi_send(GIsiClient *client,
  * If an error occurs, @a errno is set accordingly and a NULL pointer is
  * returned.
  */
-GIsiRequest *g_isi_vsend(GIsiClient *client,
+GIsiRequest *g_isi_vsendto(GIsiClient *client,
+				struct sockaddr_pn *dst,
 				const struct iovec *__restrict iov,
 				size_t iovlen, unsigned timeout,
 				GIsiResponseFunc cb, void *opaque,
 				GDestroyNotify notify)
 {
 	struct iovec _iov[1 + iovlen];
-	struct sockaddr_pn dst = {
-		.spn_family = AF_PHONET,
-	};
 	struct msghdr msg = {
-		.msg_name = (void *)&dst,
-		.msg_namelen = sizeof(dst),
+		.msg_name = (void *)dst,
+		.msg_namelen = sizeof(*dst),
 		.msg_iov = _iov,
 		.msg_iovlen = 1 + iovlen,
 		.msg_control = NULL,
@@ -465,8 +500,6 @@ GIsiRequest *g_isi_vsend(GIsiClient *client,
 		goto error;
 	}
 
-	dst.spn_resource = client->resource,
-
 	id = req->id;
 	_iov[0].iov_base = &id;
 	_iov[0].iov_len = 1;
@@ -498,6 +531,46 @@ error:
 	g_free(req);
 
 	return NULL;
+}
+
+/**
+ * Send an ISI request and register a callback to process the response(s) to
+ * the resulting transaction.
+ *
+ * @param cl ISI client (from g_isi_client_create())
+ * @param iov scatter-gather array to the request payload
+ * @param iovlen number of vectors in the scatter-gather array
+ * @param timeout timeout in seconds
+ * @param cb callback to process response(s)
+ * @param opaque data for the callback
+ * @param notify finalizer function for the @a opaque data (may be NULL)
+ *
+ * @return
+ * A pointer to a newly created GIsiRequest.
+ *
+ * @errors
+ * If an error occurs, @a errno is set accordingly and a NULL pointer is
+ * returned.
+ */
+GIsiRequest *g_isi_vsend(GIsiClient *client,
+				const struct iovec *__restrict iov,
+				size_t iovlen, unsigned timeout,
+				GIsiResponseFunc cb, void *opaque,
+				GDestroyNotify notify)
+{
+	struct sockaddr_pn dst = {
+		.spn_family = AF_PHONET,
+	};
+
+	if (!client) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	dst.spn_resource = client->resource;
+
+	return g_isi_vsendto(client, &dst, iov, iovlen, timeout,
+				cb, opaque, notify);
 }
 
 /**

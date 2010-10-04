@@ -29,6 +29,7 @@ extern "C" {
 #include <stdint.h>
 #include <glib/gtypes.h>
 #include <gisi/modem.h>
+#include "phonet.h"
 
 struct _GIsiClient;
 typedef struct _GIsiClient GIsiClient;
@@ -73,10 +74,24 @@ GIsiRequest *g_isi_request_vmake(GIsiClient *client, const struct iovec *iov,
 					size_t iovlen, unsigned timeout,
 					GIsiResponseFunc func, void *opaque);
 
+GIsiRequest *g_isi_sendto(GIsiClient *client,
+				struct sockaddr_pn *dst,
+				const void *data, size_t len,
+				unsigned timeout,
+				GIsiResponseFunc func, void *opaque,
+				GDestroyNotify notify);
+
 GIsiRequest *g_isi_send(GIsiClient *client, const void *data, size_t len,
 			unsigned timeout,
 			GIsiResponseFunc func, void *opaque,
 			GDestroyNotify notify);
+
+GIsiRequest *g_isi_vsendto(GIsiClient *client,
+				struct sockaddr_pn *dst,
+				const struct iovec *iov, size_t iovlen,
+				unsigned timeout,
+				GIsiResponseFunc func, void *opaque,
+				GDestroyNotify notify);
 
 GIsiRequest *g_isi_vsend(GIsiClient *client,
 				const struct iovec *iov, size_t iovlen,
