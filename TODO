@@ -92,11 +92,12 @@ SIM / SIM File system
   Complexity: C2
   Owner: Petteri Tikander <petteri.tikander@ixonos.com>
 
-- Barred Numbers.  oFono should support Barred Numbers capability.  This
-  requires ability to read & write EFadn entries on the SIM.
+- Barred Dialing numbers support.  BDN will not be supported by oFono.
+  If BDN service enabled SIM is used, oFono will go into emergency mode.
 
   Priority: Low
-  Complexity: C4
+  Complexity: C2
+  Owner: Jeevaka Badrappan <jeevaka.badrappan@elektrobit.com>
 
 - Read / Write EFcfis.  Call forwarding settings can be bootstrapped on the
   SIM for faster notification of the user that call forwarding is active.
