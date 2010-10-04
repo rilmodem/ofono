@@ -423,18 +423,28 @@ static void add_nokia(struct ofono_modem *modem,
 static void add_isi(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
-	const char *ifname, *addr;
+	const char *ifname, *type, *addr;
 
 	DBG("modem %p", modem);
+
+	if (ofono_modem_get_string(modem, "Interface"))
+		return;
+
+	addr = get_property(udev_device, "OFONO_ISI_ADDRESS");
+	if (addr != NULL)
+		ofono_modem_set_integer(modem, "Address", atoi(addr));
+
+	if (g_strcmp0(udev_device_get_subsystem(udev_device), "net") != 0)
+		return;
+
+	type = udev_device_get_sysattr_value(udev_device, "type");
+	if (g_strcmp0(type, "820") != 0)
+		return;
 
 	ifname = udev_device_get_sysname(udev_device);
 	ofono_modem_set_string(modem, "Interface", ifname);
 
 	DBG("interface %s", ifname);
-
-	addr = get_property(udev_device, "OFONO_ISI_ADDRESS");
-	if (addr != NULL)
-		ofono_modem_set_integer(modem, "Address", atoi(addr));
 
 	ofono_modem_register(modem);
 }
