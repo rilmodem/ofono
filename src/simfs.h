@@ -35,4 +35,8 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 			enum ofono_sim_file_structure structure, int record,
 			const unsigned char *data, int length, void *userdata);
 
+char *sim_fs_get_cached_image(struct sim_fs *fs, int id);
+
+void sim_fs_cache_image(struct sim_fs *fs, const char *image, int id);
+
 void sim_fs_free(struct sim_fs *fs);

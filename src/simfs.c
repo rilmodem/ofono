@@ -47,6 +47,7 @@
 #define SIM_CACHE_PATH SIM_CACHE_BASEPATH "/%04x"
 #define SIM_CACHE_HEADER_SIZE 38
 #define SIM_FILE_INFO_SIZE 6
+#define SIM_IMAGE_CACHE_PATH STORAGEDIR "/%s-%i/images/%d.xpm"
 
 #define SIM_FS_VERSION 1
 
@@ -720,6 +721,67 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 		fs->op_source = g_idle_add(sim_fs_op_next, fs);
 
 	return 0;
+}
+
+void sim_fs_cache_image(struct sim_fs *fs, const char *image, int id)
+{
+	const char *imsi;
+	enum ofono_sim_phase phase;
+
+	if (fs == NULL || image == NULL)
+		return;
+
+	imsi = ofono_sim_get_imsi(fs->sim);
+	phase = ofono_sim_get_phase(fs->sim);
+
+	if (imsi)
+		write_file((const unsigned char *) image, strlen(image),
+				SIM_CACHE_MODE, SIM_IMAGE_CACHE_PATH, imsi,
+				phase, id);
+}
+
+char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
+{
+	const char *imsi;
+	enum ofono_sim_phase phase;
+	unsigned short image_length;
+	int fd;
+	char *buffer;
+	char *path;
+	int len;
+	struct stat st_buf;
+
+	if (fs == NULL)
+		return NULL;
+
+	imsi = ofono_sim_get_imsi(fs->sim);
+	phase = ofono_sim_get_phase(fs->sim);
+
+	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
+
+	TFR(stat(path, &st_buf));
+
+	fd = TFR(open(path, O_RDONLY));
+
+	g_free(path);
+
+	if (fd < 0)
+		return NULL;
+
+	image_length = st_buf.st_size;
+
+	buffer = g_try_malloc0(image_length + 1);
+
+	len = TFR(read(fd, buffer, image_length));
+
+	TFR(close(fd));
+
+	if (len != image_length) {
+		g_free(buffer);
+		return NULL;
+	}
+
+	return buffer;
 }
 
 static void remove_cachefile(const char *imsi, enum ofono_sim_phase phase,
