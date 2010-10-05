@@ -27,6 +27,7 @@ include/ofono
 include/version.h
 src/builtin.h
 src/ofonod
+src/ofono.service
 
 plugins/*-ofono.rules
 
