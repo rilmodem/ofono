@@ -353,6 +353,9 @@ static void add_huawei(struct ofono_modem *modem,
 
 			pcui = 1;
 			ofono_modem_set_integer(modem, "PcuiRegistered", pcui);
+		} else if (g_str_equal(type, "NDIS") == TRUE) {
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "NDIS", devnode);
 		}
 
 		break;

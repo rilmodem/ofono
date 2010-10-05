@@ -54,6 +54,7 @@ ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140b", ENV{OFONO_IFACE_NUM}=="00", E
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140b", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
 
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140c", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140c", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_HUAWEI_TYPE}="NDIS"
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140c", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_HUAWEI_TYPE}="Pcui"
 
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140d", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
