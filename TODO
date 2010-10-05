@@ -137,6 +137,7 @@ SIM / SIM File system
 
   Priority: High
   Complexity: C2
+  Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
 
 Modem Emulator
