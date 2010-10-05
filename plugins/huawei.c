@@ -77,6 +77,7 @@ struct huawei_data {
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 	gboolean voice;
+	gboolean ndis;
 	guint sim_poll_timeout;
 	guint sim_poll_count;
 };
@@ -482,9 +483,13 @@ static int huawei_enable(struct ofono_modem *modem)
 	if (ofono_modem_get_boolean(modem, "HasVoice") == TRUE)
 		data->voice = TRUE;
 
+	if (ofono_modem_get_string(modem, "NDIS") != NULL)
+		data->ndis = TRUE;
+
 	data->sim_state = 0;
 
-	g_at_chat_send(data->pcui, "ATE0", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(data->pcui, "ATE0 +CMEE=1", none_prefix,
+						NULL, NULL, NULL);
 
 	g_at_chat_send(data->pcui, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
@@ -625,8 +630,12 @@ static void huawei_post_online(struct ofono_modem *modem)
 	if (data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_CS) {
 		data->gprs = ofono_gprs_create(modem, 0, "atmodem", data->pcui);
-		data->gc = ofono_gprs_context_create(modem, 0, "atmodem",
-								data->modem);
+		if (data->ndis == TRUE)
+			data->gc = ofono_gprs_context_create(modem, 0,
+						"huaweimodem", data->modem);
+		else
+			data->gc = ofono_gprs_context_create(modem, 0,
+						"atmodem", data->modem);
 
 		if (data->gprs && data->gc)
 			ofono_gprs_add_context(data->gprs, data->gc);
