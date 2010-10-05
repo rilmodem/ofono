@@ -65,6 +65,7 @@ typedef struct _GIsiIndication GIsiIndication;
 
 struct _GIsiClient {
 	uint8_t resource;
+	uint16_t server_obj;
 	struct {
 		int major;
 		int minor;
@@ -200,6 +201,31 @@ int g_isi_version_major(GIsiClient *client)
 int g_isi_version_minor(GIsiClient *client)
 {
 	return client ? client->version.minor : -1;
+}
+
+/**
+ * Set the server object for the resource associated with @a
+ * client.
+ * @param client client for the resource
+ * @param server object
+ */
+void g_isi_server_object_set(GIsiClient *client, uint16_t obj)
+{
+	if (!client)
+		return;
+
+	client->server_obj = obj;
+}
+
+/**
+ * Returns the server object for the the resource associated with @a
+ * client.
+ * @param client client for the resource
+ * @return server object
+ */
+uint8_t g_isi_server_object(GIsiClient *client)
+{
+	return client ? client->server_obj : 0;
 }
 
 /**

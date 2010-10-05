@@ -59,6 +59,9 @@ void g_isi_version_set(GIsiClient *client, int major, int minor);
 int g_isi_version_major(GIsiClient *client);
 int g_isi_version_minor(GIsiClient *client);
 
+void g_isi_server_object_set(GIsiClient *client, uint16_t obj);
+uint8_t g_isi_server_object(GIsiClient *client);
+
 void g_isi_client_set_debug(GIsiClient *client, GIsiDebugFunc func,
 				void *opaque);
 

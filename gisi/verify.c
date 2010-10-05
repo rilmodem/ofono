@@ -84,6 +84,7 @@ static gboolean verify_cb(GIsiClient *client, const void *restrict data,
 
 	if (msg[1] == COMM_ISI_VERSION_GET_RESP && len >= 4) {
 		g_isi_version_set(client, msg[2], msg[3]);
+		g_isi_server_object_set(client, object);
 		alive = TRUE;
 		goto out;
 	}
