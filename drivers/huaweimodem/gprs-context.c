@@ -109,6 +109,8 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	char *dns1 = NULL;
 	char *dns2 = NULL;
 	const char *dns[3];
+	struct ofono_modem *modem;
+	const char *devnode;
 
 	DBG("");
 
@@ -137,6 +139,11 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 							gcd->active_context);
 	ofono_info("IP: %s, Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns1, dns2);
+
+	modem = ofono_gprs_context_get_modem(gc);
+	devnode = ofono_modem_get_string(modem, "NDIS");
+
+	ofono_info("NDIS: %s", devnode);
 
 	interface = "invalid";
 
