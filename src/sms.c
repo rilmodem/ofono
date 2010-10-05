@@ -69,7 +69,7 @@ struct ofono_sms {
 	struct sms_assembly *assembly;
 	guint ref;
 	GQueue *txq;
-	gint tx_source;
+	guint tx_source;
 	struct ofono_message_waiting *mw;
 	unsigned int mw_watch;
 	struct ofono_sim *sim;
