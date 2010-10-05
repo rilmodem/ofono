@@ -109,7 +109,9 @@ static void huawei_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
-	g_at_chat_unref(data->modem);
+	if (data->modem)
+		g_at_chat_unref(data->modem);
+
 	g_at_chat_unref(data->pcui);
 	g_free(data);
 }
@@ -466,12 +468,15 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	data->modem = open_device(modem, "Modem", "Modem: ");
-	if (data->modem == NULL)
-		return -EINVAL;
+	if (ofono_modem_get_string(modem, "NDIS") == NULL) {
+		data->modem = open_device(modem, "Modem", "Modem: ");
+		if (data->modem == NULL)
+			return -EINVAL;
 
-	g_at_chat_set_disconnect_function(data->modem,
+		g_at_chat_set_disconnect_function(data->modem,
 						huawei_disconnect, modem);
+	} else
+		data->ndis = TRUE;
 
 	data->pcui = open_device(modem, "Pcui", "PCUI: ");
 	if (data->pcui == NULL) {
@@ -482,9 +487,6 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	if (ofono_modem_get_boolean(modem, "HasVoice") == TRUE)
 		data->voice = TRUE;
-
-	if (ofono_modem_get_string(modem, "NDIS") != NULL)
-		data->ndis = TRUE;
 
 	data->sim_state = 0;
 
@@ -632,7 +634,7 @@ static void huawei_post_online(struct ofono_modem *modem)
 		data->gprs = ofono_gprs_create(modem, 0, "atmodem", data->pcui);
 		if (data->ndis == TRUE)
 			data->gc = ofono_gprs_context_create(modem, 0,
-						"huaweimodem", data->modem);
+						"huaweimodem", data->pcui);
 		else
 			data->gc = ofono_gprs_context_create(modem, 0,
 						"atmodem", data->modem);
