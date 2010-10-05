@@ -368,6 +368,7 @@ test_scripts = test/backtrace \
 		test/enter-pin \
 		test/hangup-all \
 		test/hangup-active \
+		test/set-roaming-allowed \
 		test/set-context \
 		test/list-contexts \
 		test/list-modems \
