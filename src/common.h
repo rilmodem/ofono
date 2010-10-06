@@ -130,7 +130,7 @@ void string_to_phone_number(const char *str, struct ofono_phone_number *ph);
 
 int mmi_service_code_to_bearer_class(int code);
 
-gboolean valid_ussd_string(const char *str);
+gboolean valid_ussd_string(const char *str, gboolean call_in_progress);
 
 gboolean parse_ss_control_string(char *str, int *ss_type,
 					char **sc, char **sia,
