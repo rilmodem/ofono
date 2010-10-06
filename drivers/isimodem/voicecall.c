@@ -988,11 +988,10 @@ static void isi_answer(struct ofono_voicecall *ovc,
 	isi_call_answer_req(ovc, CALL_ID_ALL, cb, data);
 }
 
-static void isi_hangup(struct ofono_voicecall *ovc,
+static void isi_hangup_active(struct ofono_voicecall *ovc,
 			ofono_voicecall_cb_t cb, void *data)
 {
-	/* AT+CHUP */
-	isi_call_release_req(ovc, CALL_ID_ALL, CALL_CAUSE_TYPE_CLIENT,
+	isi_call_release_req(ovc, CALL_ID_ACTIVE, CALL_CAUSE_TYPE_CLIENT,
 				CALL_CAUSE_RELEASE_BY_USER, cb, data);
 }
 
@@ -1318,7 +1317,7 @@ static struct ofono_voicecall_driver driver = {
 	.remove			= isi_voicecall_remove,
 	.dial			= isi_dial,
 	.answer			= isi_answer,
-	.hangup_active		= isi_hangup,
+	.hangup_active		= isi_hangup_active,
 	.hold_all_active	= isi_hold_all_active,
 	.release_all_held	= isi_release_all_held,
 	.set_udub		= isi_set_udub,
