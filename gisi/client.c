@@ -462,9 +462,10 @@ GIsiRequest *g_isi_vsendto(GIsiClient *client,
 	};
 	ssize_t ret;
 	size_t i, len;
+	unsigned int key;
 	uint8_t id;
 
-	GIsiRequest *req;
+	GIsiRequest *req = NULL;
 	GIsiRequest **old;
 
 	if (!client) {
@@ -472,25 +473,33 @@ GIsiRequest *g_isi_vsendto(GIsiClient *client,
 		return NULL;
 	}
 
-	req = g_try_new0(GIsiRequest, 1);
-	if (!req) {
-		errno = ENOMEM;
-		return NULL;
-	}
+	key = 1 + ((client->reqs.last + 1) % 255);
 
-	req->client = client;
-	req->id = (client->reqs.last + 1) % 255;
-	req->func = cb;
-	req->data = opaque;
-	req->notify = notify;
+	if (cb) {
+		req = g_try_new0(GIsiRequest, 1);
+		if (!req) {
+			errno = ENOMEM;
+			return NULL;
+		}
 
-	old = tsearch(req, &client->reqs.pending, g_isi_cmp);
-	if (!old) {
-		errno = ENOMEM;
-		goto error;
-	}
+		req->client = client;
+		req->id = key;
+		req->func = cb;
+		req->data = opaque;
+		req->notify = notify;
 
-	if (*old != req) {
+		old = tsearch(req, &client->reqs.pending, g_isi_cmp);
+		if (!old) {
+			errno = ENOMEM;
+			goto error;
+		}
+		if (*old == req)
+			old = NULL;
+
+	} else
+		old = tfind(&key, &client->reqs.pending, g_isi_cmp);
+
+	if (old) {
 		/* FIXME: perhaps retry with randomized access after
 		 * initial miss. Although if the rate at which
 		 * requests are sent is so high that the transaction
@@ -500,7 +509,7 @@ GIsiRequest *g_isi_vsendto(GIsiClient *client,
 		goto error;
 	}
 
-	id = req->id;
+	id = key;
 	_iov[0].iov_base = &id;
 	_iov[0].iov_len = 1;
 
@@ -522,8 +531,10 @@ GIsiRequest *g_isi_vsendto(GIsiClient *client,
 		goto error;
 	}
 
-	req->timeout = g_timeout_add_seconds(timeout, g_isi_timeout, req);
-	client->reqs.last = req->id;
+	if (req && timeout)
+		req->timeout = g_timeout_add_seconds(timeout, g_isi_timeout,
+							req);
+	client->reqs.last = key;
 	return req;
 
 error:
