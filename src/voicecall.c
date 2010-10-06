@@ -2281,6 +2281,9 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 	 */
 
 	req = g_try_new0(struct dial_request, 1);
+	if (req == NULL)
+		return -ENOMEM;
+
 	req->message = g_strdup(message);
 	req->icon_id = icon_id;
 	req->interaction = interaction;
