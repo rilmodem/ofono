@@ -213,11 +213,11 @@ static unsigned int voicecalls_num_connecting(struct ofono_voicecall *vc)
 	return r;
 }
 
-static void dial_request_finish(struct ofono_voicecall *vc, gboolean callback)
+static void dial_request_finish(struct ofono_voicecall *vc)
 {
 	struct dial_request *dial_req = vc->dial_req;
 
-	if (callback && dial_req->cb)
+	if (dial_req->cb)
 		dial_req->cb(dial_req->call ? dial_req->call->call : NULL,
 				dial_req->user_data);
 
@@ -338,7 +338,7 @@ static void dial_request_user_cancel(struct ofono_voicecall *vc,
 		return;
 
 	if (!call || call == vc->dial_req->call)
-		dial_request_finish(vc, TRUE);
+		dial_request_finish(vc);
 }
 
 static DBusMessage *voicecall_hangup(DBusConnection *conn,
@@ -577,12 +577,12 @@ static void voicecall_set_call_status(struct voicecall *call, int status)
 						&timestr);
 
 		if (call->vc->dial_req && call == call->vc->dial_req->call)
-			dial_request_finish(call->vc, TRUE);
+			dial_request_finish(call->vc);
 	}
 
 	if (status == CALL_STATUS_DISCONNECTED && call->vc->dial_req &&
 			call == call->vc->dial_req->call)
-		dial_request_finish(call->vc, TRUE);
+		dial_request_finish(call->vc);
 }
 
 static void voicecall_set_call_lineid(struct voicecall *v,
@@ -1970,7 +1970,7 @@ static void voicecall_unregister(struct ofono_atom *atom)
 	}
 
 	if (vc->dial_req)
-		dial_request_finish(vc, TRUE);
+		dial_request_finish(vc);
 
 	for (l = vc->call_list; l; l = l->next)
 		voicecall_dbus_unregister(vc, l->data);
@@ -2207,7 +2207,7 @@ static void dial_request_cb(const struct ofono_error *error, void *data)
 				&need_to_emit);
 
 	if (v == NULL) {
-		dial_request_finish(vc, TRUE);
+		dial_request_finish(vc);
 		return;
 	}
 
@@ -2225,7 +2225,7 @@ static void dial_request_cb(const struct ofono_error *error, void *data)
 	v->untracked = TRUE;
 
 	if (v->call->status == CALL_STATUS_ACTIVE)
-		dial_request_finish(vc, TRUE);
+		dial_request_finish(vc);
 
 	if (need_to_emit)
 		voicecalls_emit_call_added(vc, v);
@@ -2242,7 +2242,7 @@ static void dial_req_disconnect_cb(const struct ofono_error *error, void *data)
 	struct ofono_voicecall *vc = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		dial_request_finish(vc, TRUE);
+		dial_request_finish(vc);
 		return;
 	}
 
