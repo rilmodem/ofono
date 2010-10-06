@@ -40,19 +40,27 @@ struct verify_data {
 	GIsiVerifyFunc func;
 	void *data;
 	guint count;
+	uint8_t resource;
 };
 
 static GIsiRequest *send_version_query(GIsiClient *client, GIsiResponseFunc cb,
 					void *opaque)
 {
+	struct verify_data *vd = opaque;
+
+	struct sockaddr_pn dst = {
+		.spn_family = AF_PHONET,
+		.spn_resource = vd->resource,
+	};
+
 	uint8_t msg[] = {
 		COMMON_MESSAGE,
 		COMM_ISI_VERSION_GET_REQ,
 		0x00  /* Filler */
 	};
 
-	return g_isi_request_make(client, msg, sizeof(msg), VERSION_TIMEOUT,
-					cb, opaque);
+	return g_isi_sendto(client, &dst, msg, sizeof(msg), VERSION_TIMEOUT,
+			cb, opaque, NULL);
 }
 
 static gboolean verify_cb(GIsiClient *client, const void *restrict data,
@@ -83,8 +91,10 @@ static gboolean verify_cb(GIsiClient *client, const void *restrict data,
 		goto out;
 
 	if (msg[1] == COMM_ISI_VERSION_GET_RESP && len >= 4) {
-		g_isi_version_set(client, msg[2], msg[3]);
-		g_isi_server_object_set(client, object);
+		if (vd->resource == g_isi_client_resource(client)) {
+			g_isi_version_set(client, msg[2], msg[3]);
+			g_isi_server_object_set(client, object);
+		}
 		alive = TRUE;
 		goto out;
 	}
@@ -102,8 +112,10 @@ out:
 
 /**
  * Verifies reachability of @a client with its resource. As a side
- * effect of this liveliness check, the ISI version of the client
- * resource will be made available via g_isi_client_version().
+ * effect of this liveliness check, the ISI version of the interface
+ * and the server object implementing the resource will be made
+ * available via g_isi_client_version() and g_isi_server_object(),
+ * respectively.
  * @param client client to verify
  * @param func callback to process outcome
  * @param opaque user data
@@ -120,6 +132,31 @@ GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,
 
 	data->func = func;
 	data->data = opaque;
+	data->resource = g_isi_client_resource(client);
+
+	req = send_version_query(client, verify_cb, data);
+	if (!req)
+		g_free(data);
+
+	return req;
+}
+
+/**
+ * Verifies the reachability of an arbitrary resource.
+ * @param client client to verify
+ * @param func callback to process outcome
+ * @param opaque user data
+ * @return NULL on error (see errno), GIsiRequest pointer on success.
+ */
+GIsiRequest *g_isi_verify_resource(GIsiClient *client, uint8_t resource,
+				GIsiVerifyFunc func, void *opaque)
+{
+	struct verify_data *data = g_try_new0(struct verify_data, 1);
+	GIsiRequest *req = NULL;
+
+	data->func = func;
+	data->data = opaque;
+	data->resource = resource;
 
 	req = send_version_query(client, verify_cb, data);
 	if (!req)

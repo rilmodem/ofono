@@ -53,6 +53,9 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource);
 GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,
 				void *opaque);
 
+GIsiRequest *g_isi_verify_resource(GIsiClient *client, uint8_t resource,
+					GIsiVerifyFunc func, void *opaque);
+
 uint8_t g_isi_client_resource(GIsiClient *client);
 
 void g_isi_version_set(GIsiClient *client, int major, int minor);
