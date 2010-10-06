@@ -203,6 +203,46 @@ Methods		byte RequestSelection(string title, byte icon_id,
 
 			Possible Errors: [service].Error.SimToolkit.EndSession
 
+		void PlayTone(string tone, string text, byte icon_id)
+
+			Tells the agent to play an audio tone once.  The
+			method should return once the tone is finished
+			playing.  The text parameter contains an optional
+			text to be displayed to the user.  The following
+			tones are defined:
+				"dial-tone"
+				"busy"
+				"congestion"
+				"radio-path-acknowledge"
+				"radio-path-not-available"
+				"error"
+				"call-waiting"
+				"ringing-tone"
+				"general-beep"
+				"positive-acknowledgement"
+				"negative-acknowledgement"
+				"user-ringing-tone"
+				"user-sms-alert"
+				"critical" (high priority)
+				"vibrate"
+				"happy"
+				"sad"
+				"urgent-action"
+				"question"
+				"message-received"
+
+			Possible Errors: [service].Error.SimToolkit.EndSession
+
+		void LoopTone(string tone, string text, byte icon_id)
+
+			Tells the agent to reproduce an audio tone in a
+			loop until the method call is cancelled.  See
+			PlayTone() above for the list of possible tone names.
+			The text parameter contains an optional text to
+			be displayed to the user.
+
+			Possible Errors: [service].Error.SimToolkit.EndSession
+
 		void Cancel()
 
 			Asks the agent to cancel any ongoing operation in
