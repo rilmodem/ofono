@@ -101,9 +101,13 @@ GIsiRequest *g_isi_vsend(GIsiClient *client,
 
 void g_isi_request_cancel(GIsiRequest *req);
 
+int g_isi_commit_subscriptions(GIsiClient *client);
+int g_isi_add_subscription(GIsiClient *client, uint8_t res, uint8_t type,
+				GIsiIndicationFunc cb, void *data);
+void g_isi_remove_subscription(GIsiClient *client, uint8_t res, uint8_t type);
+
 int g_isi_subscribe(GIsiClient *client, uint8_t type,
 			GIsiIndicationFunc func, void *opaque);
-
 void g_isi_unsubscribe(GIsiClient *client, uint8_t type);
 
 #ifdef __cplusplus

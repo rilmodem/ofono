@@ -35,6 +35,7 @@
 #include "phonet.h"
 #include <glib.h>
 
+#include "log.h"
 #include "socket.h"
 #include "client.h"
 
@@ -260,43 +261,6 @@ static void g_isi_cleanup_ind(void *data)
 	g_free(ind);
 }
 
-static int g_isi_indication_init(GIsiClient *client)
-{
-	GIOChannel *channel;
-	uint8_t msg[] = {
-		0, PNS_SUBSCRIBED_RESOURCES_IND,
-		1, client->resource,
-	};
-
-	channel = phonet_new(client->modem, PN_COMMGR);
-	if (!channel)
-		return errno;
-
-	client->inds.fd = g_io_channel_unix_get_fd(channel);
-
-	/* Subscribe by sending an indication */
-	sendto(client->inds.fd, msg, 4, MSG_NOSIGNAL, (void *)&commgr,
-		sizeof(commgr));
-	client->inds.source = g_io_add_watch(channel,
-					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
-					g_isi_callback, client);
-
-	g_io_channel_unref(channel);
-	return 0;
-}
-
-static void g_isi_indication_deinit(GIsiClient *client)
-{
-	uint8_t msg[] = {
-		0, PNS_SUBSCRIBED_RESOURCES_IND,
-		0,
-	};
-
-	/* Unsubscribe by sending an empty subscribe indication */
-	sendto(client->inds.fd, msg, 3, MSG_NOSIGNAL, (void *)&commgr,
-		sizeof(commgr));
-}
-
 /**
  * Destroys an ISI client, cancels all pending transactions and subscriptions.
  * @param client client to destroy (may be NULL)
@@ -307,15 +271,16 @@ void g_isi_client_destroy(GIsiClient *client)
 		return;
 
 	tdestroy(client->reqs.pending, g_isi_cleanup_req);
-	tdestroy(client->inds.subs, g_isi_cleanup_ind);
-
 	if (client->reqs.source > 0)
 		g_source_remove(client->reqs.source);
 
+	tdestroy(client->inds.subs, g_isi_cleanup_ind);
+	client->inds.subs = NULL;
+	client->inds.count = 0;
+	g_isi_commit_subscriptions(client);
 	if (client->inds.source > 0)
 		g_source_remove(client->inds.source);
 
-	g_isi_indication_deinit(client);
 	g_free(client);
 }
 
@@ -605,31 +570,99 @@ void g_isi_request_cancel(GIsiRequest *req)
 	g_free(req);
 }
 
+static uint8_t *__msg;
+static void build_subscribe_msg(const void *nodep,
+				const VISIT which,
+				const int depth)
+{
+	GIsiIndication *ind = *(GIsiIndication **)nodep;
+	uint8_t res = ind->type >> 8;
+
+	switch (which) {
+	case postorder:
+	case leaf:
+		if (__msg[2] && res == __msg[2+__msg[2]])
+			break;
+		__msg[2]++;
+		__msg[2+__msg[2]] = res;
+		DBG("subscription: #%d res 0x%02x", __msg[2], res);
+		break;
+	default:
+		break;
+	}
+}
+
 /**
- * Subscribe to a given indication type for the resource that an ISI client
- * is associated with. If the same type was already subscribed, the old
- * subscription is overriden.
- * @param cl ISI client (from g_isi_client_create())
+ * Subscribe indications from the modem.
+ * @param client ISI client (from g_isi_client_create())
+ * @return 0 on success, a system error code otherwise.
+ */
+int g_isi_commit_subscriptions(GIsiClient *client)
+{
+	GIOChannel *channel;
+	uint8_t msg[3+256] = {
+		0, PNS_SUBSCRIBED_RESOURCES_IND,
+		0,
+	};
+
+	if (!client)
+		return -EINVAL;
+
+	if (!client->inds.source) {
+		if (client->inds.count == 0)
+			return 0;
+
+		channel = phonet_new(client->modem, PN_COMMGR);
+		if (!channel)
+			return -errno;
+
+		client->inds.fd = g_io_channel_unix_get_fd(channel);
+
+		client->inds.source = g_io_add_watch(channel,
+						G_IO_IN|G_IO_ERR|
+						G_IO_HUP|G_IO_NVAL,
+						g_isi_callback, client);
+
+		g_io_channel_unref(channel);
+	}
+
+	DBG("client %p [0x%02x] committing resource subscriptions",
+		client, client->resource);
+	__msg = msg;
+	twalk(client->inds.subs, build_subscribe_msg);
+
+	/* Subscribe by sending an indication */
+	sendto(client->inds.fd, msg, 3+msg[2], MSG_NOSIGNAL, (void *)&commgr,
+		sizeof(commgr));
+	return 0;
+}
+
+/**
+ * Add subscription for a given indication type from the given resource.
+ * If the same type was already subscribed, the old subscription
+ * is overriden. Subscriptions for newly added resources do not become
+ * effective until g_isi_commit_subscriptions() has been called.
+ * @param client ISI client (from g_isi_client_create())
+ * @param res resource id
  * @param type indication type
  * @param cb callback to process received indications
  * @param data data for the callback
  * @return 0 on success, a system error code otherwise.
  */
-int g_isi_subscribe(GIsiClient *client, uint8_t type,
-			GIsiIndicationFunc cb, void *data)
+int g_isi_add_subscription(GIsiClient *client, uint8_t res, uint8_t type,
+				GIsiIndicationFunc cb, void *data)
 {
 	GIsiIndication *ind;
 	GIsiIndication **old;
-	gboolean isnew = TRUE;
 
-	if (cb == NULL)
+	if (client == NULL || cb == NULL)
 		return -EINVAL;
 
 	ind = g_try_new0(GIsiIndication, 1);
 	if (!ind)
 		return -ENOMEM;
 
-	ind->type = type;
+	ind->type = (res << 8) | type;
 
 	old = tsearch(ind, &client->inds.subs, g_isi_cmp);
 	if (!old) {
@@ -643,36 +676,57 @@ int g_isi_subscribe(GIsiClient *client, uint8_t type,
 	if (*old != ind) {
 		g_free(ind);
 		ind = *old;
-		isnew = FALSE;
-	}
+	} else
+		client->inds.count++;
 
 	ind->func = cb;
 	ind->data = data;
 
-	if (client->inds.count == 0) {
-		int ret = g_isi_indication_init(client);
-		if (ret) {
-			tdelete(ind, &client->inds.subs, g_isi_cmp);
-			g_free(ind);
-			return ret;
-		}
-	}
-
-	if (isnew)
-		client->inds.count++;
+	DBG("client %p [0x%02x] subscribes res 0x%02x type 0x%02x",
+		client, client->resource, res, type);
 
 	return 0;
 }
 
 /**
- * Unsubscribe from a given indication type.
- * @param client ISI client (from g_isi_client_create())
- * @param type indication type.
+ * Subscribe to a given indication type for the resource that an ISI client
+ * is associated with. If the same type was already subscribed, the old
+ * subscription is overriden. For multiple subscriptions,
+ * g_isi_add_subcription() and g_isi_commit_subscriptions() should be used
+ * instead.
+ * @param cl ISI client (from g_isi_client_create())
+ * @param type indication type
+ * @param cb callback to process received indications
+ * @param data data for the callback
+ * @return 0 on success, a system error code otherwise.
  */
-void g_isi_unsubscribe(GIsiClient *client, uint8_t type)
+int g_isi_subscribe(GIsiClient *client, uint8_t type,
+			GIsiIndicationFunc cb, void *data)
+{
+	int ret;
+
+	if (!client)
+		return -EINVAL;
+
+	ret = g_isi_add_subscription(client, client->resource, type, cb, data);
+	if (ret)
+		return ret;
+
+	return g_isi_commit_subscriptions(client);
+}
+
+/**
+ * Remove subscription for a given indication type from the given resource.
+ * g_isi_commit_subcsriptions() should be called after modifications to
+ * cancel unnecessary resource subscriptions from the modem.
+ * @param client ISI client (from g_isi_client_create())
+ * @param res resource id
+ * @param type indication type
+ */
+void g_isi_remove_subscription(GIsiClient *client, uint8_t res, uint8_t type)
 {
 	GIsiIndication *ind;
-	unsigned int id = type;
+	unsigned int id = (res << 8) | type;
 
 	if (!client)
 		return;
@@ -681,18 +735,33 @@ void g_isi_unsubscribe(GIsiClient *client, uint8_t type)
 	if (!ind)
 		return;
 
-	if (--client->inds.count == 0)
-		g_isi_indication_deinit(client);
-
+	client->inds.count--;
 	g_free(ind);
 }
 
-static void g_isi_dispatch_indication(GIsiClient *client, uint16_t obj,
-					uint8_t *msg, size_t len)
+/**
+ * Unsubscribe from a given indication type. For removing multiple
+ * subscriptions, g_isi_remove_subcription() and
+ * g_isi_commit_subscriptions() should be used instead.
+ * @param client ISI client (from g_isi_client_create())
+ * @param type indication type.
+ */
+void g_isi_unsubscribe(GIsiClient *client, uint8_t type)
+{
+	if (!client)
+		return;
+
+	g_isi_remove_subscription(client, client->resource, type);
+	g_isi_commit_subscriptions(client);
+}
+
+static void g_isi_dispatch_indication(GIsiClient *client, uint8_t res,
+					uint16_t obj, uint8_t *msg,
+					size_t len)
 {
 	void *ret;
 	GIsiIndication *ind;
-	unsigned type = msg[0];
+	unsigned type = (res << 8) | msg[0];
 
 	ret = tfind(&type, &client->inds.subs, g_isi_cmp);
 	if (!ret)
@@ -704,8 +773,9 @@ static void g_isi_dispatch_indication(GIsiClient *client, uint16_t obj,
 		ind->func(client, msg, len, obj, ind->data);
 }
 
-static void g_isi_dispatch_response(GIsiClient *client, uint16_t obj,
-					uint8_t *msg, size_t len)
+static void g_isi_dispatch_response(GIsiClient *client, uint8_t res,
+					uint16_t obj, uint8_t *msg,
+					size_t len)
 {
 	void *ret;
 	GIsiRequest *req;
@@ -716,7 +786,7 @@ static void g_isi_dispatch_response(GIsiClient *client, uint16_t obj,
 		/* This could either be an unsolicited response, which
 		 * we will ignore, or an incoming request, which we
 		 * handle just like an incoming indication */
-		g_isi_dispatch_indication(client, obj, msg + 1, len - 1);
+		g_isi_dispatch_indication(client, res, obj, msg + 1, len - 1);
 		return;
 	}
 
@@ -748,7 +818,7 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 		uint8_t res;
 
 		len = phonet_read(channel, buf, len, &obj, &res);
-		if (len < 2 || res != client->resource)
+		if (len < 2)
 			return TRUE;
 
 		msg = (uint8_t *)buf;
@@ -758,11 +828,11 @@ static gboolean g_isi_callback(GIOChannel *channel, GIOCondition cond,
 						client->debug_data);
 
 		if (fd == client->reqs.fd)
-			g_isi_dispatch_response(client, obj, msg, len);
+			g_isi_dispatch_response(client, res, obj, msg, len);
 		else
 			/* Transaction field at first byte is
 			 * discarded with indications */
-			g_isi_dispatch_indication(client, obj, msg + 1,
+			g_isi_dispatch_indication(client, res, obj, msg + 1,
 							len - 1);
 	}
 	return TRUE;
