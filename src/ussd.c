@@ -888,6 +888,9 @@ int __ofono_ussd_initiate(struct ofono_ussd *ussd, int dcs,
 		return -EBUSY;
 
 	req = g_try_new0(struct ussd_request, 1);
+	if (req == NULL)
+		return -ENOMEM;
+
 	req->cb = cb;
 	req->user_data = user_data;
 
