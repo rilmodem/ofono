@@ -2171,7 +2171,7 @@ int ofono_voicecall_get_next_callid(struct ofono_voicecall *vc)
 ofono_bool_t __ofono_voicecall_is_busy(struct ofono_voicecall *vc,
 					enum ofono_voicecall_interaction type)
 {
-	if (vc->pending)
+	if (vc->pending || vc->dial_req)
 		return TRUE;
 
 	switch (type) {
@@ -2272,7 +2272,7 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 			vc->driver->release_all_active == NULL)
 		return -ENOSYS;
 
-	if (vc->dial_req || vc->pending)
+	if (__ofono_voicecall_is_busy(vc, interaction) == TRUE)
 		return -EBUSY;
 
 	/*
@@ -2292,11 +2292,6 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 	strncpy(req->ph.number, addr, 20);
 
 	vc->dial_req = req;
-
-	if (__ofono_voicecall_is_busy(vc, interaction) == TRUE) {
-		dial_request_finish(vc, FALSE);
-		return -EBUSY;
-	}
 
 	switch (interaction) {
 	case OFONO_VOICECALL_INTERACTION_NONE:
