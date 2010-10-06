@@ -116,6 +116,9 @@ GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,
 	struct verify_data *data = g_try_new0(struct verify_data, 1);
 	GIsiRequest *req = NULL;
 
+	if (data == NULL)
+		return NULL;
+
 	data->func = func;
 	data->data = opaque;
 
