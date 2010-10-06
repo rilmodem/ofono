@@ -545,6 +545,9 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 					void *data)
 {
 	struct ofono_ussd *ussd = data;
+	struct ofono_modem *modem = __ofono_atom_get_modem(ussd->atom);
+	struct ofono_atom *vca;
+	gboolean call_in_progress;
 	const char *str;
 	int dcs = 0x0f;
 	unsigned char buf[160];
@@ -564,8 +567,17 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 	if (recognized_control_string(ussd, str, msg))
 		return NULL;
 
+	vca = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_VOICECALL);
+
+	if (vca)
+		call_in_progress =
+			__ofono_voicecall_is_busy(__ofono_atom_get_data(vca),
+					OFONO_VOICECALL_INTERACTION_NONE);
+	else
+		call_in_progress = FALSE;
+
 	DBG("No.., checking if this is a USSD string");
-	if (!valid_ussd_string(str, FALSE))
+	if (!valid_ussd_string(str, call_in_progress))
 		return __ofono_error_invalid_format(msg);
 
 	if (!ussd_encode(str, &num_packed, buf))
