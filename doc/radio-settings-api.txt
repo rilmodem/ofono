@@ -41,3 +41,25 @@ Properties	string TechnologyPreference [read-write]
 				"gsm"	Only GSM used for radio access.
 				"umts"	Only UMTS used for radio access.
 				"lte"	Only LTE used for radio acccess.
+
+		boolean	FastDormancy [read-write, optional]
+
+			This property will enable or disable fast
+			dormancy. Fast dormancy refers to UE initiated
+			release of radio resources quickly after a
+			burst of data transfer has ended. Normally,
+			radio resources are released by the network
+			after a timeout configured by the network
+			operator. Fast dormancy allows the modem to
+			release radio resources more quickly.
+			Typically, fast dormancy would be enabled if
+			no data transfer is predicted to occur in the
+			near future, for instance, when the end user
+			is not actively using the device. This is a
+			major power-saving feature for mobile devices,
+			but can be ignored for USB sticks or PCI
+			devices.
+
+			If the modem does not support such a feature
+			the property should never be exposed to the
+			user.
