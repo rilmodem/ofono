@@ -551,7 +551,7 @@ static void clip_colp_colr_ss_query_cb(const struct ofono_error *error,
 	case CALL_SETTING_TYPE_COLR:
 		set_colr(cs, status);
 		value = colr_status_to_string(status);
-		context = "CallingLineRestriction";
+		context = "CalledLineRestriction";
 		break;
 
 	default:
