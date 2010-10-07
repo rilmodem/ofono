@@ -438,7 +438,7 @@ const char *ss_control_type_to_string(enum ss_control_type type)
 {
 	switch (type) {
 	case SS_CONTROL_TYPE_ACTIVATION:
-		return "acivation";
+		return "activation";
 	case SS_CONTROL_TYPE_REGISTRATION:
 		return "registration";
 	case SS_CONTROL_TYPE_QUERY:
