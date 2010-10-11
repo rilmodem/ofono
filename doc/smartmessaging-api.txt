@@ -5,23 +5,22 @@ Service		org.ofono
 Interface	org.ofono.SmartMessaging
 Object path	[variable prefix]/{modem0,modem1,...}
 
-Methods		object SendAppointment(array{bytes} appointment)
+Methods		object SendAppointment(string to, array{bytes} appointment)
 
-			Sends a vCalendar object via SMS.  The object is given
-			in the appointment argument.  It is not interpreted
+			Sends a vCalendar object in appointment to the number
+			in to.  The object in appointment is not interpreted
 			by oFono in any way.  If the object is too large to
-			fit into a single SMS, it is fragmented as
-			appropriate.  This method call returns the object
-			path of the queued SMS.
+			fit into a single SMS, it is fragmented as appropriate.
+			This method call returns the object path of the queued
+			SMS.
 
-		object SendBusinessCard(array{bytes} card)
+		object SendBusinessCard(string to, array{bytes} card)
 
-			Sends a vCard object via SMS.  The object is given
-			in the card argument.  It is not interpreted
-			by oFono in any way.  If the object is too large to
-			fit into a single SMS, it is fragmented as
-			appropriate.  This method call returns the object
-			path of the queued SMS.
+			Sends a vCard object in card to the number in to. The
+			object in card is not interpreted by oFono in any way.
+			If the object is too large to fit into a single SMS,
+			it is fragmented as appropriate.  This method call
+			returns the object path of the queued SMS.
 
 		void RegisterAgent(object path)
 
