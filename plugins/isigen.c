@@ -428,6 +428,16 @@ static void isigen_post_online(struct ofono_modem *modem)
 		DBG("Failed to add context");
 }
 
+static int isigen_enable(struct ofono_modem *modem)
+{
+	return 0;
+}
+
+static int isigen_disable(struct ofono_modem *modem)
+{
+	return 0;
+}
+
 static struct ofono_modem_driver driver = {
 	.name = "isigen",
 	.probe = isigen_probe,
@@ -436,6 +446,8 @@ static struct ofono_modem_driver driver = {
 	.pre_sim = isigen_pre_sim,
 	.post_sim = isigen_post_sim,
 	.post_online = isigen_post_online,
+	.enable = isigen_enable,
+	.disable = isigen_disable,
 };
 
 static int isigen_init(void)
