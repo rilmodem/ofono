@@ -70,11 +70,11 @@ static DBusMessage *smart_messaging_send_vcal(DBusConnection *conn,
 }
 
 static GDBusMethodTable smart_messaging_methods[] = {
-	{ "RegisterAgent",    "o",    "",  smart_messaging_register_agent },
-	{ "UnregisterAgent",  "o",    "",  smart_messaging_unregister_agent },
-	{ "SendBusinessCard", "ab",   "o", smart_messaging_send_vcard,
+	{ "RegisterAgent",    "o",     "",  smart_messaging_register_agent },
+	{ "UnregisterAgent",  "o",     "",  smart_messaging_unregister_agent },
+	{ "SendBusinessCard", "say",   "o", smart_messaging_send_vcard,
 						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SendAppointment",  "ab",   "o", smart_messaging_send_vcal,
+	{ "SendAppointment",  "say",   "o", smart_messaging_send_vcal,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
