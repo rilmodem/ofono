@@ -763,9 +763,7 @@ char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
 	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
 
 	TFR(stat(path, &st_buf));
-
 	fd = TFR(open(path, O_RDONLY));
-
 	g_free(path);
 
 	if (fd < 0)
@@ -780,7 +778,6 @@ char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
 	}
 
 	len = TFR(read(fd, buffer, image_length));
-
 	TFR(close(fd));
 
 	if (len != image_length) {
