@@ -756,8 +756,10 @@ char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
 		return NULL;
 
 	imsi = ofono_sim_get_imsi(fs->sim);
-	phase = ofono_sim_get_phase(fs->sim);
+	if (imsi == NULL)
+		return NULL;
 
+	phase = ofono_sim_get_phase(fs->sim);
 	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
 
 	TFR(stat(path, &st_buf));
