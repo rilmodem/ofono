@@ -57,6 +57,7 @@ static gboolean sim_fs_op_read_block(gpointer user_data);
 
 struct sim_fs_op {
 	int id;
+	unsigned char *buffer;
 	enum ofono_sim_file_structure structure;
 	unsigned short offset;
 	int num_bytes;
@@ -70,6 +71,7 @@ struct sim_fs_op {
 
 static void sim_fs_op_free(struct sim_fs_op *node)
 {
+	g_free(node->buffer);
 	g_free(node);
 }
 
@@ -78,7 +80,6 @@ struct sim_fs {
 	gint op_source;
 	unsigned char bitmap[32];
 	int fd;
-	unsigned char *buffer;
 	struct ofono_sim *sim;
 	const struct ofono_sim_driver *driver;
 };
@@ -129,9 +130,6 @@ static void sim_fs_end_current(struct sim_fs *fs)
 		TFR(close(fs->fd));
 		fs->fd = -1;
 	}
-
-	g_free(fs->buffer);
-	fs->buffer = NULL;
 
 	memset(fs->bitmap, 0, sizeof(fs->bitmap));
 
@@ -237,7 +235,7 @@ static void sim_fs_op_read_block_cb(const struct ofono_error *error,
 		tocopy = len;
 	}
 
-	memcpy(fs->buffer + bufoff, data + dataoff, tocopy);
+	memcpy(op->buffer + bufoff, data + dataoff, tocopy);
 	cache_block(fs, op->current, 256, data, len);
 
 	op->current++;
@@ -245,7 +243,7 @@ static void sim_fs_op_read_block_cb(const struct ofono_error *error,
 	if (op->current > end_block) {
 		ofono_sim_file_read_cb_t cb = op->cb;
 
-		cb(1, op->num_bytes, 0, fs->buffer,
+		cb(1, op->num_bytes, 0, op->buffer,
 				op->record_length, op->userdata);
 
 		sim_fs_end_current(fs);
@@ -266,9 +264,9 @@ static gboolean sim_fs_op_read_block(gpointer user_data)
 	end_block = (op->offset + (op->num_bytes - 1)) / 256;
 
 	if (op->current == start_block) {
-		fs->buffer = g_try_new0(unsigned char, op->num_bytes);
+		op->buffer = g_try_new0(unsigned char, op->num_bytes);
 
-		if (fs->buffer == NULL) {
+		if (op->buffer == NULL) {
 			sim_fs_op_error(fs);
 			return FALSE;
 		}
@@ -300,7 +298,7 @@ static gboolean sim_fs_op_read_block(gpointer user_data)
 		if (lseek(fs->fd, seekoff, SEEK_SET) == (off_t) -1)
 			break;
 
-		if (TFR(read(fs->fd, fs->buffer + bufoff, toread)) != toread)
+		if (TFR(read(fs->fd, op->buffer + bufoff, toread)) != toread)
 			break;
 
 		op->current += 1;
@@ -309,7 +307,7 @@ static gboolean sim_fs_op_read_block(gpointer user_data)
 	if (op->current > end_block) {
 		ofono_sim_file_read_cb_t cb = op->cb;
 
-		cb(1, op->num_bytes, 0, fs->buffer,
+		cb(1, op->num_bytes, 0, op->buffer,
 				op->record_length, op->userdata);
 
 		sim_fs_end_current(fs);
@@ -609,17 +607,17 @@ static gboolean sim_fs_op_next(gpointer user_data)
 		switch (op->structure) {
 		case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
 			driver->write_file_transparent(fs->sim, op->id, 0,
-					op->length, fs->buffer,
+					op->length, op->buffer,
 					sim_fs_op_write_cb, fs);
 			break;
 		case OFONO_SIM_FILE_STRUCTURE_FIXED:
 			driver->write_file_linear(fs->sim, op->id, op->current,
-					op->length, fs->buffer,
+					op->length, op->buffer,
 					sim_fs_op_write_cb, fs);
 			break;
 		case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
 			driver->write_file_cyclic(fs->sim, op->id,
-					op->length, fs->buffer,
+					op->length, op->buffer,
 					sim_fs_op_write_cb, fs);
 			break;
 		default:
@@ -627,8 +625,8 @@ static gboolean sim_fs_op_next(gpointer user_data)
 					"this can't happen");
 		}
 
-		g_free(fs->buffer);
-		fs->buffer = NULL;
+		g_free(op->buffer);
+		op->buffer = NULL;
 	}
 
 	return FALSE;
@@ -710,7 +708,7 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 	op->cb = cb;
 	op->userdata = userdata;
 	op->is_read = FALSE;
-	fs->buffer = g_memdup(data, length);
+	op->buffer = g_memdup(data, length);
 	op->structure = structure;
 	op->length = length;
 	op->current = record;
