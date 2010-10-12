@@ -827,16 +827,11 @@ static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 
 	image = sim_fs_get_cached_image(sim->simfs, id);
 
-	if (image == NULL)
-		goto read_image;
-
-	sim_get_image_cb(1, image, strlen(image), user_data);
-
-	g_free(image);
-
-	return;
-
-read_image:
+	if (image != NULL) {
+		sim_get_image_cb(1, image, strlen(image), user_data);
+		g_free(image);
+		return;
+	}
 
 	if (sim->efimg_length <= (id * 9)) {
 		sim_get_image_cb(0, NULL, 0, user_data);
