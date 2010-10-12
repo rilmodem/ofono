@@ -730,11 +730,10 @@ static void sim_get_image_cb(gboolean ok, const char *xpm, int xpm_len,
 
 	if (!ok)
 		reply = __ofono_error_failed(sim->pending);
-	else {
-		reply = dbus_message_new_method_return(sim->pending);
-		dbus_message_append_args(reply, DBUS_TYPE_STRING, &xpm,
-					DBUS_TYPE_INVALID);
-	}
+	else
+		reply = g_dbus_create_reply(sim->pending,
+						DBUS_TYPE_STRING, &xpm,
+						DBUS_TYPE_INVALID);
 
 	__ofono_dbus_pending_reply(&sim->pending, reply);
 }
