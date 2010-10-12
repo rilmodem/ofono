@@ -826,14 +826,6 @@ static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 	unsigned char *efimg;
 	char *image;
 
-	/* icon ids should start at 1, our array starts at zero */
-	if (id == 0) {
-		sim_get_image_cb(0, NULL, 0, user_data);
-		return;
-	}
-
-	id--;
-
 	image = sim_fs_get_cached_image(sim->simfs, id);
 
 	if (image == NULL)
@@ -901,7 +893,7 @@ static DBusMessage *sim_get_icon(DBusConnection *conn,
 
 	sim->pending = dbus_message_ref(msg);
 
-	sim_get_image(sim, id, sim);
+	sim_get_image(sim, id - 1, sim);
 
 	return NULL;
 }
