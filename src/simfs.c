@@ -732,12 +732,13 @@ void sim_fs_cache_image(struct sim_fs *fs, const char *image, int id)
 		return;
 
 	imsi = ofono_sim_get_imsi(fs->sim);
-	phase = ofono_sim_get_phase(fs->sim);
+	if (imsi == NULL)
+		return;
 
-	if (imsi)
-		write_file((const unsigned char *) image, strlen(image),
-				SIM_CACHE_MODE, SIM_IMAGE_CACHE_PATH, imsi,
-				phase, id);
+	phase = ofono_sim_get_phase(fs->sim);
+	write_file((const unsigned char *) image, strlen(image),
+			SIM_CACHE_MODE, SIM_IMAGE_CACHE_PATH, imsi,
+			phase, id);
 }
 
 char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
