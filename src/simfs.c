@@ -772,8 +772,12 @@ char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
 		return NULL;
 
 	image_length = st_buf.st_size;
+	buffer = g_try_new0(char, image_length + 1);
 
-	buffer = g_try_malloc0(image_length + 1);
+	if (buffer == NULL) {
+		TFR(close(fd));
+		return NULL;
+	}
 
 	len = TFR(read(fd, buffer, image_length));
 
