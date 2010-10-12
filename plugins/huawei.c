@@ -613,8 +613,8 @@ static void huawei_post_online(struct ofono_modem *modem)
 	struct ofono_message_waiting *mw;
 
 	if (data->sim_state != HUAWEI_SIM_STATE_VALID &&
-	    data->sim_state != HUAWEI_SIM_STATE_INVALID_CS &&
-	    data->sim_state != HUAWEI_SIM_STATE_INVALID_PS) {
+			data->sim_state != HUAWEI_SIM_STATE_INVALID_CS &&
+			data->sim_state != HUAWEI_SIM_STATE_INVALID_PS) {
 		ofono_info("huawei: invalid sim state in post online (%d)",
 				data->sim_state);
 		return;
