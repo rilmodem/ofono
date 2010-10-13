@@ -545,16 +545,15 @@ static void at_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	if (!cbd)
 		goto error;
 
-	/* strlen("+VTS=\"T\";") = 9 + initial AT + null */
+	/* strlen("+VTS=T;") = 7 + initial AT + null */
 	buf = g_try_new(char, len * 9 + 3);
-
 	if (!buf)
 		goto error;
 
-	s = sprintf(buf, "AT+VTS=\"%c\"", dtmf[0]);
+	s = sprintf(buf, "AT+VTS=%c", dtmf[0]);
 
 	for (i = 1; i < len; i++)
-		s += sprintf(buf + s, ";+VTS=\"%c\"", dtmf[i]);
+		s += sprintf(buf + s, ";+VTS=%c", dtmf[i]);
 
 	s = g_at_chat_send(vd->chat, buf, none_prefix,
 				vts_cb, cbd, g_free);
