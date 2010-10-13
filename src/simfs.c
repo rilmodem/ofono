@@ -235,6 +235,9 @@ static void sim_fs_op_read_block_cb(const struct ofono_error *error,
 		tocopy = len;
 	}
 
+	DBG("bufoff: %d, dataoff: %d, tocopy: %d",
+				bufoff, dataoff, tocopy);
+
 	memcpy(op->buffer + bufoff, data + dataoff, tocopy);
 	cache_block(fs, op->current, 256, data, len);
 
@@ -294,6 +297,9 @@ static gboolean sim_fs_op_read_block(gpointer user_data)
 			seekoff = SIM_CACHE_HEADER_SIZE + op->current * 256;
 			toread = MIN(256, op->length - op->current * 256);
 		}
+
+		DBG("bufoff: %d, seekoff: %d, toread: %d",
+				bufoff, seekoff, toread);
 
 		if (lseek(fs->fd, seekoff, SEEK_SET) == (off_t) -1)
 			break;
