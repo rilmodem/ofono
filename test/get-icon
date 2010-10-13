@@ -1,0 +1,27 @@
+#!/usr/bin/python
+
+import dbus
+import sys
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 2:
+	id = sys.argv[1]
+else:
+	print "%s <icon id>" % (sys.argv[0])
+	sys.exit(0)
+
+manager = dbus.Interface(bus.get_object("org.ofono", "/"),
+							"org.ofono.Manager")
+
+modems = manager.GetModems()
+
+for path, properties in modems:
+	if "org.ofono.SimManager" not in properties["Interfaces"]:
+		continue
+
+sim = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.SimManager')
+
+icon = sim.GetIcon(dbus.Byte(int(sys.argv[1])))
+print icon
