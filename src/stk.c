@@ -1139,8 +1139,8 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	}
 
 	/* We most likely got an out of memory error, tell SIM to retry */
-	if (stk_agent_display_text(stk->current_agent, dt->text, 0, priority,
-					display_text_cb, stk,
+	if (stk_agent_display_text(stk->current_agent, dt->text, &dt->icon_id,
+					priority, display_text_cb, stk,
 					display_text_destroy, timeout) < 0) {
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
@@ -1283,7 +1283,6 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 	 * Note: immediate response and help parameter values are not
 	 * provided by current api.
 	 */
-	uint8_t icon_id = 0;
 	int err;
 
 	if (gi->duration.interval) {
@@ -1302,16 +1301,17 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 
 	if (yesno)
 		err = stk_agent_request_confirmation(stk->current_agent,
-							gi->text, icon_id,
+							gi->text, &gi->icon_id,
 							request_confirmation_cb,
 							stk, NULL, timeout);
 	else if (alphabet)
 		err = stk_agent_request_key(stk->current_agent, gi->text,
-						icon_id, ucs2, request_key_cb,
-						stk, NULL, timeout);
+						&gi->icon_id, ucs2,
+						request_key_cb, stk, NULL,
+						timeout);
 	else
 		err = stk_agent_request_digit(stk->current_agent, gi->text,
-						icon_id, request_key_cb,
+						&gi->icon_id, request_key_cb,
 						stk, NULL, timeout);
 
 	if (err < 0) {
@@ -1377,19 +1377,18 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 	gboolean alphabet = (qualifier & (1 << 0)) != 0;
 	gboolean ucs2 = (qualifier & (1 << 1)) != 0;
 	gboolean hidden = (qualifier & (1 << 2)) != 0;
-	uint8_t icon_id = 0;
 	int err;
 
 	if (alphabet)
 		err = stk_agent_request_input(stk->current_agent, gi->text,
-						icon_id, gi->default_text, ucs2,
-						gi->resp_len.min,
+						&gi->icon_id, gi->default_text,
+						ucs2, gi->resp_len.min,
 						gi->resp_len.max, hidden,
 						request_string_cb,
 						stk, NULL, timeout);
 	else
 		err = stk_agent_request_digits(stk->current_agent, gi->text,
-						icon_id, gi->default_text,
+						&gi->icon_id, gi->default_text,
 						gi->resp_len.min,
 						gi->resp_len.max, hidden,
 						request_string_cb,
@@ -1496,7 +1495,8 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 	}
 
 	err = __ofono_voicecall_dial(vc, sc->addr.number, sc->addr.ton_npi,
-					sc->alpha_id_call_setup, 0,
+					sc->alpha_id_call_setup,
+					sc->icon_id_call_setup.id,
 					qualifier >> 1, call_setup_connected,
 					stk);
 	if (err >= 0) {
@@ -1577,8 +1577,8 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 	}
 
 	err = stk_agent_confirm_call(stk->current_agent, sc->alpha_id_usr_cfm,
-					0, confirm_call_cb, stk, NULL,
-					stk->timeout * 1000);
+					&sc->icon_id_usr_cfm, confirm_call_cb,
+					stk, NULL, stk->timeout * 1000);
 
 	if (err < 0) {
 		/*

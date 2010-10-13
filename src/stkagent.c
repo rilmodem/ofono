@@ -34,6 +34,8 @@
 #include "ofono.h"
 
 #include "common.h"
+#include "smsutil.h"
+#include "stkutil.h"
 #include "stkagent.h"
 
 enum allowed_error {
@@ -396,7 +398,8 @@ static void display_text_cb(DBusPendingCall *call, void *data)
 }
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, ofono_bool_t urgent,
+				const struct stk_icon_id *icon,
+				ofono_bool_t urgent,
 				stk_agent_display_text_cb cb,
 				void *user_data, ofono_destroy_func destroy,
 				int timeout)
@@ -412,7 +415,7 @@ int stk_agent_display_text(struct stk_agent *agent, const char *text,
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
-					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BYTE, &icon->id,
 					DBUS_TYPE_BOOLEAN, &priority,
 					DBUS_TYPE_INVALID);
 
@@ -465,8 +468,8 @@ static void get_confirmation_cb(DBusPendingCall *call, void *data)
 	CALLBACK_END();
 }
 
-int stk_agent_request_confirmation(struct stk_agent *agent,
-					const char *text, uint8_t icon_id,
+int stk_agent_request_confirmation(struct stk_agent *agent, const char *text,
+					const struct stk_icon_id *icon,
 					stk_agent_confirmation_cb cb,
 					void *user_data,
 					ofono_destroy_func destroy,
@@ -482,7 +485,7 @@ int stk_agent_request_confirmation(struct stk_agent *agent,
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
-					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BYTE, &icon->id,
 					DBUS_TYPE_INVALID);
 
 	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
@@ -536,8 +539,8 @@ static void get_digit_cb(DBusPendingCall *call, void *data)
 	CALLBACK_END();
 }
 
-int stk_agent_request_digit(struct stk_agent *agent,
-				const char *text, uint8_t icon_id,
+int stk_agent_request_digit(struct stk_agent *agent, const char *text,
+				const struct stk_icon_id *icon,
 				stk_agent_string_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout)
 {
@@ -551,7 +554,7 @@ int stk_agent_request_digit(struct stk_agent *agent,
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
-					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BYTE, &icon->id,
 					DBUS_TYPE_INVALID);
 
 	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
@@ -604,7 +607,8 @@ static void get_key_cb(DBusPendingCall *call, void *data)
 }
 
 int stk_agent_request_key(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, ofono_bool_t unicode_charset,
+				const struct stk_icon_id *icon,
+				ofono_bool_t unicode_charset,
 				stk_agent_string_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout)
 {
@@ -618,7 +622,7 @@ int stk_agent_request_key(struct stk_agent *agent, const char *text,
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
-					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BYTE, &icon->id,
 					DBUS_TYPE_INVALID);
 
 	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
@@ -670,7 +674,8 @@ static void get_digits_cb(DBusPendingCall *call, void *data)
 }
 
 int stk_agent_request_digits(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, const char *default_text,
+				const struct stk_icon_id *icon,
+				const char *default_text,
 				int min, int max, ofono_bool_t hidden,
 				stk_agent_string_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout)
@@ -691,7 +696,7 @@ int stk_agent_request_digits(struct stk_agent *agent, const char *text,
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
-					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BYTE, &icon->id,
 					DBUS_TYPE_STRING, &default_text,
 					DBUS_TYPE_BYTE, &min_val,
 					DBUS_TYPE_BYTE, &max_val,
@@ -747,7 +752,8 @@ static void get_input_cb(DBusPendingCall *call, void *data)
 }
 
 int stk_agent_request_input(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, const char *default_text,
+				const struct stk_icon_id *icon,
+				const char *default_text,
 				ofono_bool_t unicode_charset, int min, int max,
 				ofono_bool_t hidden, stk_agent_string_cb cb,
 				void *user_data, ofono_destroy_func destroy,
@@ -769,7 +775,7 @@ int stk_agent_request_input(struct stk_agent *agent, const char *text,
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
-					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BYTE, &icon->id,
 					DBUS_TYPE_STRING, &default_text,
 					DBUS_TYPE_BYTE, &min_val,
 					DBUS_TYPE_BYTE, &max_val,
@@ -824,7 +830,8 @@ static void confirm_call_cb(DBusPendingCall *call, void *data)
 }
 
 int stk_agent_confirm_call(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, stk_agent_confirmation_cb cb,
+				const struct stk_icon_id *icon,
+				stk_agent_confirmation_cb cb,
 				void *user_data, ofono_destroy_func destroy,
 				int timeout)
 {
@@ -838,7 +845,7 @@ int stk_agent_confirm_call(struct stk_agent *agent, const char *text,
 
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
-					DBUS_TYPE_BYTE, &icon_id,
+					DBUS_TYPE_BYTE, &icon->id,
 					DBUS_TYPE_INVALID);
 
 	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,

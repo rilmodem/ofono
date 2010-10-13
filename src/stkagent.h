@@ -77,45 +77,49 @@ int stk_agent_request_selection(struct stk_agent *agent,
 				int timeout);
 
 int stk_agent_display_text(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, ofono_bool_t urgent,
+				const struct stk_icon_id *icon,
+				ofono_bool_t urgent,
 				stk_agent_display_text_cb cb,
 				void *user_data, ofono_destroy_func destroy,
 				int timeout);
 
-int stk_agent_request_confirmation(struct stk_agent *agent,
-					const char *text, uint8_t icon_id,
+int stk_agent_request_confirmation(struct stk_agent *agent, const char *text,
+					const struct stk_icon_id *icon,
 					stk_agent_confirmation_cb cb,
 					void *user_data,
 					ofono_destroy_func destroy,
 					int timeout);
 
-int stk_agent_request_digit(struct stk_agent *agent,
-				const char *text, uint8_t icon_id,
+int stk_agent_request_digit(struct stk_agent *agent, const char *text,
+				const struct stk_icon_id *icon,
 				stk_agent_string_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout);
 
 int stk_agent_request_key(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, ofono_bool_t unicode_charset,
+				const struct stk_icon_id *icon,
+				ofono_bool_t unicode_charset,
 				stk_agent_string_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout);
 
 int stk_agent_request_digits(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, const char *default_text,
-				int min, int max, ofono_bool_t hidden,
-				stk_agent_string_cb cb, void *user_data,
-				ofono_destroy_func destroy, int timeout);
+				const struct stk_icon_id *icon,
+				const char *default_text, int min, int max,
+				ofono_bool_t hidden, stk_agent_string_cb cb,
+				void *user_data, ofono_destroy_func destroy,
+				int timeout);
 
 int stk_agent_request_input(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, const char *default_text,
+				const struct stk_icon_id *icon,
+				const char *default_text,
 				ofono_bool_t unicode_charset, int min, int max,
 				ofono_bool_t hidden, stk_agent_string_cb cb,
 				void *user_data, ofono_destroy_func destroy,
 				int timeout);
 
 int stk_agent_confirm_call(struct stk_agent *agent, const char *text,
-				uint8_t icon_id, stk_agent_confirmation_cb cb,
-				void *user_data, ofono_destroy_func destroy,
-				int timeout);
+				const struct stk_icon_id *icon,
+				stk_agent_confirmation_cb cb, void *user_data,
+				ofono_destroy_func destroy, int timeout);
 
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);
