@@ -389,7 +389,8 @@ static void emit_menu_changed(struct ofono_stk *stk)
 	g_dbus_send_message(conn, signal);
 }
 
-static void stk_alpha_id_set(struct ofono_stk *stk, const char *text)
+static void stk_alpha_id_set(struct ofono_stk *stk, const char *text,
+		const struct stk_icon_id *icon)
 {
 	/* TODO */
 }
@@ -686,10 +687,6 @@ static void send_sms_cancel(struct ofono_stk *stk)
 {
 	stk->extern_req->cancelled = TRUE;
 
-	if (!stk->pending_cmd->send_sms.alpha_id ||
-			!stk->pending_cmd->send_sms.alpha_id[0])
-		return;
-
 	stk_alpha_id_unset(stk);
 }
 
@@ -708,9 +705,7 @@ static void send_sms_submit_cb(gboolean ok, void *data)
 		return;
 	}
 
-	if (stk->pending_cmd->send_sms.alpha_id &&
-			stk->pending_cmd->send_sms.alpha_id[0])
-		stk_alpha_id_unset(stk);
+	stk_alpha_id_unset(stk);
 
 	memset(&rsp, 0, sizeof(rsp));
 
@@ -759,8 +754,7 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 
 	stk->cancel_cmd = send_sms_cancel;
 
-	if (cmd->send_sms.alpha_id && cmd->send_sms.alpha_id[0])
-		stk_alpha_id_set(stk, cmd->send_sms.alpha_id);
+	stk_alpha_id_set(stk, cmd->send_sms.alpha_id, &cmd->send_sms.icon_id);
 
 	return FALSE;
 }
@@ -1648,9 +1642,7 @@ static void send_ussd_cancel(struct ofono_stk *stk)
 	if (ussd)
 		__ofono_ussd_initiate_cancel(ussd);
 
-	if (stk->pending_cmd->send_ussd.alpha_id &&
-			stk->pending_cmd->send_ussd.alpha_id[0])
-		stk_alpha_id_unset(stk);
+	stk_alpha_id_unset(stk);
 }
 
 static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
@@ -1662,9 +1654,7 @@ static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
 	enum sms_charset charset;
 	unsigned char no_cause[] = { 0x00 };
 
-	if (stk->pending_cmd->send_ussd.alpha_id &&
-			stk->pending_cmd->send_ussd.alpha_id[0])
-		stk_alpha_id_unset(stk);
+	stk_alpha_id_unset(stk);
 
 	memset(&rsp, 0, sizeof(rsp));
 
@@ -1796,8 +1786,7 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	if (cmd->send_ussd.alpha_id && cmd->send_ussd.alpha_id[0])
-		stk_alpha_id_set(stk, cmd->send_ussd.alpha_id);
+	stk_alpha_id_set(stk, cmd->send_ussd.alpha_id, &cmd->send_ussd.icon_id);
 
 	return FALSE;
 }
