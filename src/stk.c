@@ -70,7 +70,7 @@ struct ofono_stk {
 	gboolean respond_on_exit;
 	ofono_bool_t immediate_response;
 	guint remove_agent_source;
-	struct sms_submit_req *sms_submit_req;
+	struct extern_req *extern_req;
 	char *idle_mode_text;
 	struct timeval get_inkey_start_ts;
 };
@@ -83,7 +83,7 @@ struct envelope_op {
 			const unsigned char *data, int length);
 };
 
-struct sms_submit_req {
+struct extern_req {
 	struct ofono_stk *stk;
 	gboolean cancelled;
 };
@@ -680,7 +680,7 @@ static gboolean handle_command_more_time(const struct stk_command *cmd,
 
 static void send_sms_cancel(struct ofono_stk *stk)
 {
-	stk->sms_submit_req->cancelled = TRUE;
+	stk->extern_req->cancelled = TRUE;
 
 	if (!stk->pending_cmd->send_sms.alpha_id ||
 			!stk->pending_cmd->send_sms.alpha_id[0])
@@ -691,7 +691,7 @@ static void send_sms_cancel(struct ofono_stk *stk)
 
 static void send_sms_submit_cb(gboolean ok, void *data)
 {
-	struct sms_submit_req *req = data;
+	struct extern_req *req = data;
 	struct ofono_stk *stk = req->stk;
 	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct stk_response rsp;
@@ -717,6 +717,12 @@ static void send_sms_submit_cb(gboolean ok, void *data)
 		stk_command_cb(&failure, stk);
 }
 
+static void extern_req_start(struct ofono_stk *stk)
+{
+	stk->extern_req = g_new0(struct extern_req, 1);
+	stk->extern_req->stk = stk;
+}
+
 static gboolean handle_command_send_sms(const struct stk_command *cmd,
 					struct stk_response *rsp,
 					struct ofono_stk *stk)
@@ -735,15 +741,14 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 
 	sms = __ofono_atom_get_data(sms_atom);
 
-	stk->sms_submit_req = g_new0(struct sms_submit_req, 1);
-	stk->sms_submit_req->stk = stk;
+	extern_req_start(stk);
 
 	msg_list.data = (void *) &cmd->send_sms.gsm_sms;
 	msg_list.next = NULL;
 
 	if (__ofono_sms_txq_submit(sms, &msg_list, 0, NULL, send_sms_submit_cb,
-				stk->sms_submit_req, g_free) < 0) {
-		g_free(stk->sms_submit_req);
+				stk->extern_req, g_free) < 0) {
+		g_free(stk->extern_req);
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
