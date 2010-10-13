@@ -36,7 +36,7 @@ struct stk_menu_item {
 
 struct stk_menu {
 	char *title;
-	uint8_t icon_id;
+	struct stk_icon_id icon;
 	struct stk_menu_item *items;
 	int default_item;
 	gboolean soft_key;

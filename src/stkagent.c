@@ -345,7 +345,7 @@ int stk_agent_request_selection(struct stk_agent *agent,
 	dbus_message_iter_init_append(agent->msg, &iter);
 
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &menu->title);
-	dbus_message_iter_append_basic(&iter, DBUS_TYPE_BYTE, &menu->icon_id);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_BYTE, &menu->icon.id);
 	append_menu_items(&iter, menu->items);
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_INT16, &default_item);
 

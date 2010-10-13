@@ -256,19 +256,28 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg)
 }
 
 static struct stk_menu *stk_menu_create(const char *title,
-		const struct stk_text_attribute *title_attr, GSList *items,
+		const struct stk_text_attribute *title_attr,
+		const struct stk_icon_id *icon, GSList *items,
 		const struct stk_item_text_attribute_list *item_attrs,
+		const struct stk_item_icon_id_list *item_icon_ids,
 		int default_id, gboolean soft_key, gboolean has_help)
 {
 	struct stk_menu *ret = g_new(struct stk_menu, 1);
+	unsigned int len = g_slist_length(items);
 	GSList *l;
 	int i;
 
 	DBG("");
 
+	if (item_attrs && item_attrs->len && item_attrs->len != len * 4)
+		goto error;
+
+	if (item_icon_ids && item_icon_ids->len && item_icon_ids->len != len)
+		goto error;
+
 	ret->title = g_strdup(title ? title : "");
-	ret->icon_id = 0;
-	ret->items = g_new0(struct stk_menu_item, g_slist_length(items) + 1);
+	memcpy(&ret->icon, icon, sizeof(ret->icon));
+	ret->items = g_new0(struct stk_menu_item, len + 1);
 	ret->default_item = -1;
 	ret->soft_key = soft_key;
 	ret->has_help = has_help;
@@ -278,12 +287,18 @@ static struct stk_menu *stk_menu_create(const char *title,
 
 		ret->items[i].text = g_strdup(item->text);
 		ret->items[i].item_id = item->id;
+		if (item_icon_ids && item_icon_ids->len)
+			ret->items[i].icon_id = item_icon_ids->list[i];
 
 		if (item->id == default_id)
 			ret->default_item = i;
 	}
 
 	return ret;
+
+error:
+	g_free(ret);
+	return NULL;
 }
 
 static struct stk_menu *stk_menu_create_from_set_up_menu(
@@ -294,8 +309,10 @@ static struct stk_menu *stk_menu_create_from_set_up_menu(
 
 	return stk_menu_create(cmd->setup_menu.alpha_id,
 				&cmd->setup_menu.text_attr,
+				&cmd->setup_menu.icon_id,
 				cmd->setup_menu.items,
 				&cmd->setup_menu.item_text_attr_list,
+				&cmd->setup_menu.item_icon_id_list,
 				0, soft_key, has_help);
 }
 
@@ -307,8 +324,10 @@ static struct stk_menu *stk_menu_create_from_select_item(
 
 	return stk_menu_create(cmd->select_item.alpha_id,
 				&cmd->select_item.text_attr,
+				&cmd->select_item.icon_id,
 				cmd->select_item.items,
 				&cmd->select_item.item_text_attr_list,
+				&cmd->select_item.item_icon_id_list,
 				cmd->select_item.item_id, soft_key, has_help);
 }
 
