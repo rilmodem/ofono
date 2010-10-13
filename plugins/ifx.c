@@ -264,6 +264,10 @@ static void xgendata_query(gboolean ok, GAtResult *result, gpointer user_data)
 		data->audio_context = 0;
 	}
 
+	/* disable UART for power saving */
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XPOW=0,0,0", none_prefix,
+							NULL, NULL, NULL);
+
 	if (data->audio_setting && data->audio_source && data->audio_dest) {
 		char buf[64];
 
