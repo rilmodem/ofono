@@ -2037,6 +2037,44 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		stk_command_cb(&error, stk);
 }
 
+void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
+						int length,
+						const unsigned char *pdu)
+{
+	struct stk_command *cmd;
+
+	stk_proactive_command_cancel(stk);
+
+	cmd = stk_command_new_from_pdu(pdu, length);
+
+	if (!cmd || cmd->status != STK_PARSE_RESULT_OK) {
+		ofono_error("Can't parse proactive command");
+
+		if (cmd)
+			stk_command_free(cmd);
+		return;
+	}
+
+	switch (cmd->type) {
+	case STK_COMMAND_TYPE_MORE_TIME:
+		break;
+
+	case STK_COMMAND_TYPE_SEND_SMS:
+		stk_alpha_id_set(stk, cmd->send_sms.alpha_id,
+					&cmd->send_sms.icon_id);
+		break;
+	}
+
+	stk_command_free(cmd);
+}
+
+void ofono_stk_terminal_response_sent_notify(struct ofono_stk *stk,
+						int length,
+						const unsigned char *pdu)
+{
+	stk_alpha_id_unset(stk);
+}
+
 int ofono_stk_driver_register(const struct ofono_stk_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
