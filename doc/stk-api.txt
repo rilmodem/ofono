@@ -55,10 +55,10 @@ Signals		PropertyChanged(string property, variant value)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
-Properties	string IdleText
+Properties	string IdleModeText
 
 			Contains the text to be used when the home screen is
-			idle.  This text is set by the SIM and can be changed
+			idle.  This text is set by the SIM and can change
 			at any time.
 
 		array{struct{string, byte}} MainMenu
