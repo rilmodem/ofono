@@ -40,6 +40,12 @@ Methods		dict GetProperties()
 			Deactivates the lock for the particular pin type.  The
 			current PIN is required for the operation to succeed.
 
+		array{byte} GetIcon(byte id)
+
+			Obtain the icon given by id.  Only ids greater than 1
+			are valid.  XPM format is currently used to return the
+			icon format.
+
 Signals		PropertyChanged(string name, variant value)
 
 			This signal indicates a changed value of the given
