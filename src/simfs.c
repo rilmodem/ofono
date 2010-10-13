@@ -47,7 +47,8 @@
 #define SIM_CACHE_PATH SIM_CACHE_BASEPATH "/%04x"
 #define SIM_CACHE_HEADER_SIZE 38
 #define SIM_FILE_INFO_SIZE 6
-#define SIM_IMAGE_CACHE_PATH STORAGEDIR "/%s-%i/images/%d.xpm"
+#define SIM_IMAGE_CACHE_BASEPATH STORAGEDIR "/%s-%i/images"
+#define SIM_IMAGE_CACHE_PATH SIM_IMAGE_CACHE_BASEPATH "/%d.xpm"
 
 #define SIM_FS_VERSION 1
 
@@ -810,6 +811,23 @@ static void remove_cachefile(const char *imsi, enum ofono_sim_phase phase,
 	g_free(path);
 }
 
+static void remove_imagefile(const char *imsi, enum ofono_sim_phase phase,
+				const struct dirent *file)
+{
+	int id;
+	char *path;
+
+	if (file->d_type != DT_REG)
+		return;
+
+	if (sscanf(file->d_name, "%d", &id) != 1)
+		return;
+
+	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
+	remove(path);
+	g_free(path);
+}
+
 void sim_fs_check_version(struct sim_fs *fs)
 {
 	const char *imsi = ofono_sim_get_imsi(fs->sim);
@@ -833,6 +851,20 @@ void sim_fs_check_version(struct sim_fs *fs)
 		/* Remove all file ids */
 		while (len--) {
 			remove_cachefile(imsi, phase, entries[len]);
+			g_free(entries[len]);
+		}
+
+		g_free(entries);
+	}
+
+	path = g_strdup_printf(SIM_IMAGE_CACHE_BASEPATH, imsi, phase);
+	len = scandir(path, &entries, NULL, alphasort);
+	g_free(path);
+
+	if (len > 0) {
+		/* Remove everything */
+		while (len--) {
+			remove_imagefile(imsi, phase, entries[len]);
 			g_free(entries[len]);
 		}
 
