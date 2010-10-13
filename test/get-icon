@@ -24,4 +24,8 @@ sim = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.SimManager')
 
 icon = sim.GetIcon(dbus.Byte(int(sys.argv[1])))
-print icon
+
+xpm = ""
+for byte in icon:
+	xpm += str(byte)
+print xpm
