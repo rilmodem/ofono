@@ -72,6 +72,7 @@ struct ofono_stk {
 	guint remove_agent_source;
 	struct extern_req *extern_req;
 	char *idle_mode_text;
+	struct stk_icon_id idle_mode_icon;
 	struct timeval get_inkey_start_ts;
 };
 
@@ -365,6 +366,11 @@ static void emit_menu_changed(struct ofono_stk *stk)
 						"MainMenuTitle",
 						DBUS_TYPE_STRING, &menu->title);
 
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_STK_INTERFACE,
+						"MainMenuIcon",
+						DBUS_TYPE_BYTE, &menu->icon.id);
+
 	signal = dbus_message_new_signal(path, OFONO_STK_INTERFACE,
 						"PropertyChanged");
 	if (!signal) {
@@ -390,6 +396,9 @@ static void dict_append_menu(DBusMessageIter *dict, struct stk_menu *menu)
 
 	ofono_dbus_dict_append(dict, "MainMenuTitle",
 				DBUS_TYPE_STRING, &menu->title);
+
+	ofono_dbus_dict_append(dict, "MainMenuIcon",
+				DBUS_TYPE_BYTE, &menu->icon.id);
 
 	dbus_message_iter_open_container(dict, DBUS_TYPE_DICT_ENTRY,
 						NULL, &entry);
@@ -433,6 +442,10 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 	idle_mode_text = stk->idle_mode_text ? stk->idle_mode_text : "";
 	ofono_dbus_dict_append(&dict, "IdleModeText",
 				DBUS_TYPE_STRING, &idle_mode_text);
+
+	if (stk->idle_mode_icon.id)
+		ofono_dbus_dict_append(&dict, "IdleModeIcon", DBUS_TYPE_BYTE,
+					&stk->idle_mode_icon.id);
 
 	if (stk->main_menu)
 		dict_append_menu(&dict, stk->main_menu);
@@ -782,6 +795,16 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 						"IdleModeText",
 						DBUS_TYPE_STRING,
 						&idle_mode_text);
+
+	if (stk->idle_mode_icon.id != cmd->setup_idle_mode_text.icon_id.id) {
+		memcpy(&stk->idle_mode_icon, &cmd->setup_idle_mode_text.icon_id,
+				sizeof(stk->idle_mode_icon));
+
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_STK_INTERFACE,
+						"IdleModeIcon", DBUS_TYPE_BYTE,
+						&stk->idle_mode_icon.id);
+	}
 
 	return TRUE;
 }
