@@ -862,3 +862,97 @@ int stk_agent_confirm_call(struct stk_agent *agent, const char *text,
 
 	return 0;
 }
+
+static void play_tone_cb(DBusPendingCall *call, void *data)
+{
+	struct stk_agent *agent = data;
+	stk_agent_tone_cb cb = agent->user_cb;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	enum stk_agent_result result;
+	gboolean remove_agent;
+
+	if (check_error(agent, reply,
+			ALLOWED_ERROR_TERMINATE, &result) == -EINVAL) {
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	if (dbus_message_get_args(reply, NULL, DBUS_TYPE_INVALID) == FALSE) {
+		ofono_error("Can't parse the reply to PlayTone()");
+		remove_agent = TRUE;
+		goto error;
+	}
+
+	cb(result, agent->user_data);
+	goto done;
+
+	CALLBACK_END();
+}
+
+int stk_agent_play_tone(struct stk_agent *agent, const char *text,
+			const struct stk_icon_id *icon, ofono_bool_t vibrate,
+			const char *tone, stk_agent_tone_cb cb, void *user_data,
+			ofono_destroy_func destroy, int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"PlayTone");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &tone,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon->id,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, play_tone_cb,
+					agent, NULL);
+
+	return 0;
+}
+
+int stk_agent_loop_tone(struct stk_agent *agent, const char *text,
+			const struct stk_icon_id *icon, ofono_bool_t vibrate,
+			const char *tone, stk_agent_tone_cb cb, void *user_data,
+			ofono_destroy_func destroy, int timeout)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	agent->msg = dbus_message_new_method_call(agent->bus, agent->path,
+							OFONO_SIM_APP_INTERFACE,
+							"LoopTone");
+	if (agent->msg == NULL)
+		return -ENOMEM;
+
+	dbus_message_append_args(agent->msg,
+					DBUS_TYPE_STRING, &tone,
+					DBUS_TYPE_STRING, &text,
+					DBUS_TYPE_BYTE, &icon->id,
+					DBUS_TYPE_INVALID);
+
+	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
+						timeout) == FALSE ||
+			agent->call == NULL)
+		return -EIO;
+
+	agent->user_cb = cb;
+	agent->user_data = user_data;
+	agent->user_destroy = destroy;
+
+	dbus_pending_call_set_notify(agent->call, play_tone_cb,
+					agent, NULL);
+
+	return 0;
+}

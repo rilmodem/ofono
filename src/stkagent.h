@@ -56,6 +56,9 @@ typedef void (*stk_agent_confirmation_cb)(enum stk_agent_result result,
 typedef void (*stk_agent_string_cb)(enum stk_agent_result result,
 					char *string, void *user_data);
 
+typedef void (*stk_agent_tone_cb)(enum stk_agent_result result,
+						void *user_data);
+
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
 					ofono_bool_t remove_on_terminate);
 
@@ -120,6 +123,16 @@ int stk_agent_confirm_call(struct stk_agent *agent, const char *text,
 				const struct stk_icon_id *icon,
 				stk_agent_confirmation_cb cb, void *user_data,
 				ofono_destroy_func destroy, int timeout);
+
+int stk_agent_play_tone(struct stk_agent *agent, const char *text,
+			const struct stk_icon_id *icon, ofono_bool_t vibrate,
+			const char *tone, stk_agent_tone_cb cb, void *user_data,
+			ofono_destroy_func destroy, int timeout);
+
+int stk_agent_loop_tone(struct stk_agent *agent, const char *text,
+			const struct stk_icon_id *icon, ofono_bool_t vibrate,
+			const char *tone, stk_agent_tone_cb cb, void *user_data,
+			ofono_destroy_func destroy, int timeout);
 
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);
