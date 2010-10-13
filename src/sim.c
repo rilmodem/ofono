@@ -727,13 +727,23 @@ static void sim_get_image_cb(gboolean ok, const char *xpm, int xpm_len,
 {
 	struct ofono_sim *sim = userdata;
 	DBusMessage *reply;
+	DBusMessageIter iter, array;
 
-	if (!ok)
+	if (ok == FALSE) {
 		reply = __ofono_error_failed(sim->pending);
-	else
-		reply = g_dbus_create_reply(sim->pending,
-						DBUS_TYPE_STRING, &xpm,
-						DBUS_TYPE_INVALID);
+		__ofono_dbus_pending_reply(&sim->pending, reply);
+		return;
+	}
+
+	reply = dbus_message_new_method_return(sim->pending);
+	dbus_message_iter_init_append(reply, &iter);
+
+	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
+					DBUS_TYPE_BYTE_AS_STRING, &array);
+
+	dbus_message_iter_append_fixed_array(&array, DBUS_TYPE_BYTE,
+						&xpm, xpm_len);
+	dbus_message_iter_close_container(&iter, &array);
 
 	__ofono_dbus_pending_reply(&sim->pending, reply);
 }
@@ -944,7 +954,7 @@ static GDBusMethodTable sim_methods[] = {
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "UnlockPin",		"ss",	"",		sim_unlock_pin,
 							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "GetIcon",		"y",	"s",		sim_get_icon,
+	{ "GetIcon",		"y",	"ay",		sim_get_icon,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
