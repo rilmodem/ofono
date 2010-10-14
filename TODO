@@ -396,22 +396,6 @@ Sim Toolkit
   Priority: High
   Complexity: C2
 
-- Support SIM icon files as defined in 3GPP 31.102.  The icons should be
-  automatically read from the SIM, converted to a usable format (such as XPM)
-  and cached inside the daemon.  This will require to read the contents of
-  EFimg and subsequently request the icon files.
-
-  Priority: High
-  Complexity: C8
-  Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
-
-- Provide access to SIM icons for UI applications.  This should be exposed via
-  the GetIcon method on the SimToolkit interface.
-
-  Priority: High
-  Complexity: C2
-  Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
-
 - Support Language Notification proactive command.
 
   Priority: Medium

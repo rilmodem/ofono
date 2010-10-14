@@ -71,6 +71,12 @@ Supported Proactive Commands:
   SimToolkit interface.  Indications that this property has changed are
   handled by the usual means.
 
+- Sim icon support.  oFono supports icons that are stored on the SIM.  If the
+  SIM notifies oFono that an icon is available for a particular proactive
+  command, oFono passes this information to the UI.  The UI is able to obtain
+  the icons by using GetIcon method on the SimManager interface.  The icons
+  are read from the SIM and converted into XPM format.
+
 Envelopes:
 
 - Timer Expiration envelope support.  Whenever a timer expires (as started by
