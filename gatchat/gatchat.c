@@ -1085,7 +1085,7 @@ static gboolean at_chat_unregister(struct at_chat *chat, guint group, guint id)
 		node = l->data;
 
 		if (node->gid != group)
-			continue;
+			return FALSE;
 
 		at_notify_node_destroy(node, NULL);
 		notify->nodes = g_slist_remove(notify->nodes, node);
