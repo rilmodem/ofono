@@ -240,7 +240,7 @@ static void append_menu_items(DBusMessageIter *iter,
 	dbus_message_iter_open_container(iter, DBUS_TYPE_ARRAY,
 						"(sy)", &array);
 
-	for (; item->text; item++) {
+	while (item && item->text) {
 		dbus_message_iter_open_container(&array, DBUS_TYPE_STRUCT,
 							NULL, &entry);
 
@@ -250,6 +250,7 @@ static void append_menu_items(DBusMessageIter *iter,
 						&item->icon_id);
 
 		dbus_message_iter_close_container(&array, &entry);
+		item++;
 	}
 
 	dbus_message_iter_close_container(iter, &array);
