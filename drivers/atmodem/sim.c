@@ -64,11 +64,12 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	int flen, rlen;
 	int str;
 	unsigned char access[3];
+	unsigned char file_status;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
-		cb(&error, -1, -1, -1, NULL, cbd->data);
+		cb(&error, -1, -1, -1, NULL, 0, cbd->data);
 		return;
 	}
 
@@ -88,27 +89,31 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		error.type = OFONO_ERROR_TYPE_SIM;
 		error.error = (sw1 << 8) | sw2;
 
-		cb(&error, -1, -1, -1, NULL, cbd->data);
+		cb(&error, -1, -1, -1, NULL, 0, cbd->data);
 		return;
 	}
 
 	DBG("crsm_info_cb: %02x, %02x, %i", sw1, sw2, len);
 
-	if (response[0] == 0x62)
+	if (response[0] == 0x62) {
 		ok = sim_parse_3g_get_response(response, len, &flen, &rlen,
 						&str, access, NULL);
+
+		file_status = SIM_FILE_STATUS_VALID;
+	}
 	else
 		ok = sim_parse_2g_get_response(response, len, &flen, &rlen,
-						&str, access);
+						&str, access, &file_status);
 
 	if (!ok)
 		goto error;
 
-	cb(&error, flen, str, rlen, access, cbd->data);
+	cb(&error, flen, str, rlen, access, file_status, cbd->data);
+
 	return;
 
 error:
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, cbd->data);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, 0, cbd->data);
 }
 
 static void at_sim_read_info(struct ofono_sim *sim, int fileid,
@@ -123,7 +128,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 		unsigned char access[3] = { 0x00, 0x00, 0x00 };
 
 		if (fileid == SIM_EFAD_FILEID) {
-			CALLBACK_WITH_SUCCESS(cb, 4, 0, 0, access, data);
+			CALLBACK_WITH_SUCCESS(cb, 4, 0, 0, access, 1, data);
 			return;
 		}
 	}
@@ -142,7 +147,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, 0, data);
 }
 
 static void at_crsm_read_cb(gboolean ok, GAtResult *result,
