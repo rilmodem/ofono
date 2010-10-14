@@ -262,18 +262,22 @@ static struct stk_menu *stk_menu_create(const char *title,
 		const struct stk_item_icon_id_list *item_icon_ids,
 		int default_id, gboolean soft_key, gboolean has_help)
 {
-	struct stk_menu *ret = g_new(struct stk_menu, 1);
 	unsigned int len = g_slist_length(items);
+	struct stk_menu *ret;
 	GSList *l;
 	int i;
 
 	DBG("");
 
 	if (item_attrs && item_attrs->len && item_attrs->len != len * 4)
-		goto error;
+		return NULL;
 
 	if (item_icon_ids && item_icon_ids->len && item_icon_ids->len != len)
-		goto error;
+		return NULL;
+
+	ret = g_try_new(struct stk_menu, 1);
+	if (ret == NULL)
+		return NULL;
 
 	ret->title = g_strdup(title ? title : "");
 	memcpy(&ret->icon, icon, sizeof(ret->icon));
@@ -287,6 +291,7 @@ static struct stk_menu *stk_menu_create(const char *title,
 
 		ret->items[i].text = g_strdup(item->text);
 		ret->items[i].item_id = item->id;
+
 		if (item_icon_ids && item_icon_ids->len)
 			ret->items[i].icon_id = item_icon_ids->list[i];
 
@@ -295,10 +300,6 @@ static struct stk_menu *stk_menu_create(const char *title,
 	}
 
 	return ret;
-
-error:
-	g_free(ret);
-	return NULL;
 }
 
 static struct stk_menu *stk_menu_create_from_set_up_menu(
