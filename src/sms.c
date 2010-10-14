@@ -909,7 +909,7 @@ static struct tx_queue_entry *tx_queue_entry_new(GSList *msg_list,
 	int i = 0;
 	GSList *l;
 
-	entry= g_try_new0(struct tx_queue_entry, 1);
+	entry = g_try_new0(struct tx_queue_entry, 1);
 	if (entry == NULL)
 		return NULL;
 
