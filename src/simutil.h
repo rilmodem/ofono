@@ -58,6 +58,13 @@ enum sim_file_access {
 	SIM_FILE_ACCESS_NEVER = 15,
 };
 
+/* 51.011 Section 9.3 */
+enum sim_file_status {
+	SIM_FILE_STATUS_INVALID			= 0x00,
+	SIM_FILE_STATUS_VALID			= 0x01,
+	SIM_FILE_STATUS_RW_WHEN_INVALID		= 0x04,
+};
+
 /* 131.102 Section 4.2.8 */
 enum sim_ust_service {
 	SIM_UST_SERVICE_LOCAL_PHONE_BOOK		= 0,
@@ -426,7 +433,8 @@ gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 
 gboolean sim_parse_2g_get_response(const unsigned char *response, int len,
 					int *file_len, int *record_len,
-					int *structure, unsigned char *access);
+					int *structure, unsigned char *access,
+					unsigned char *file_status);
 
 gboolean sim_ust_is_available(unsigned char *service_ust, unsigned char len,
 						enum sim_ust_service index);

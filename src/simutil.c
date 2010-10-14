@@ -1406,7 +1406,8 @@ gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 
 gboolean sim_parse_2g_get_response(const unsigned char *response, int len,
 					int *file_len, int *record_len,
-					int *structure, unsigned char *access)
+					int *structure, unsigned char *access,
+					unsigned char *file_status)
 {
 	if (len < 14 || response[6] != 0x04)
 		return FALSE;
@@ -1420,6 +1421,8 @@ gboolean sim_parse_2g_get_response(const unsigned char *response, int len,
 	access[0] = response[8];
 	access[1] = response[9];
 	access[2] = response[10];
+
+	*file_status = response[11];
 
 	if (response[13] == 0x01 || response[13] == 0x03)
 		*record_len = response[14];
