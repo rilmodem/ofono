@@ -82,11 +82,6 @@ Properties	string IdleModeText
 
 			Contains the identifier of the icon for the main menu.
 
-		array{byte} Icons
-
-			Contains the identifiers of all available icons for
-			this SIM.
-
 SimToolkitAgent Hierarchy [experimental]
 ===============
 
