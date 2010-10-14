@@ -2055,6 +2055,8 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 		return;
 	}
 
+	DBG("type: %d", cmd->type);
+
 	switch (cmd->type) {
 	case STK_COMMAND_TYPE_MORE_TIME:
 		break;
