@@ -55,18 +55,18 @@ Signals		PropertyChanged(string property, variant value)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
-Properties	string IdleModeText
+Properties	string IdleModeText [readonly]
 
 			Contains the text to be used when the home screen is
 			idle.  This text is set by the SIM and can change
 			at any time.
 
-		byte IdleModeIcon
+		byte IdleModeIcon [readonly]
 
 			Contains the identifier of the icon accompanying
 			the idle mode text.
 
-		array{struct{string, byte}} MainMenu
+		array{struct{string, byte}} MainMenu [readonly]
 
 			Contains the items that make up the main menu.  This
 			is populated by the SIM when it sends the Setup Menu
@@ -74,11 +74,11 @@ Properties	string IdleModeText
 			but its contents can be changed at any time.  Each
 			item contains the item label and icon identifier.
 
-		string MainMenuTitle
+		string MainMenuTitle [readonly]
 
 			Contains the title of the main menu.
 
-		string MainMenuIcon
+		string MainMenuIcon [readonly]
 
 			Contains the identifier of the icon for the main menu.
 
