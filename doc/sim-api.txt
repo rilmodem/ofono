@@ -131,3 +131,13 @@ Properties	boolean Present [readonly]
 
 			Contains the Intergrated Circuit Card Identifer (ICCID)
 			which is read directly from the SIM.
+
+		boolean FixedDialing [readonly]
+
+			True if a Fixed Dialing is enabled in SIM card.
+
+			Fixed Dialing is not supported, so status of FD is
+			checked during initialization after receiving PIN-code
+			(if PIN is required). If FD is enabled, initialization
+			procedure is halt. Then only emergency calls are
+			allowed.
