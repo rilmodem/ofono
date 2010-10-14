@@ -54,6 +54,7 @@ struct file_info {
 	int structure;
 	int record_length;
 	unsigned char access[3];
+	unsigned char file_status;
 };
 
 /* Returns file info */
@@ -66,7 +67,7 @@ static gboolean fake_file_info(gpointer user)
 	DBG("Returning static file_info for %04x", fi->fileid);
 	CALLBACK_WITH_SUCCESS(cb,
 				fi->length, fi->structure, fi->record_length,
-				fi->access, cbd->data);
+				fi->access, fi->file_status, cbd->data);
 	g_free(cbd);
 	return FALSE;
 }
@@ -76,8 +77,8 @@ static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 {
 	int i;
 	static struct file_info const info[] = {
-		{ SIM_EFSPN_FILEID, 17, 0, 0, { 0x0f, 0xff, 0xff } },
-		{ SIM_EF_ICCID_FILEID, 10, 0, 0, { 0x0f, 0xff, 0xff } },
+		{ SIM_EFSPN_FILEID, 17, 0, 0, { 0x0f, 0xff, 0xff }, 1 },
+		{ SIM_EF_ICCID_FILEID, 10, 0, 0, { 0x0f, 0xff, 0xff }, 1 },
 	};
 	int N = sizeof(info) / sizeof(info[0]);
 	struct isi_cb_data *cbd;
@@ -91,7 +92,7 @@ static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 	}
 
 	DBG("Not implemented (fileid = %04x)", fileid);
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, data);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, 0, data);
 }
 
 static gboolean spn_resp_cb(GIsiClient *client,
