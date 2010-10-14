@@ -389,27 +389,6 @@ static void emit_menu_changed(struct ofono_stk *stk)
 	g_dbus_send_message(conn, signal);
 }
 
-static void dict_append_menu(DBusMessageIter *dict, struct stk_menu *menu)
-{
-	DBusMessageIter entry;
-	const char *key = "MainMenu";
-
-	ofono_dbus_dict_append(dict, "MainMenuTitle",
-				DBUS_TYPE_STRING, &menu->title);
-
-	ofono_dbus_dict_append(dict, "MainMenuIcon",
-				DBUS_TYPE_BYTE, &menu->icon.id);
-
-	dbus_message_iter_open_container(dict, DBUS_TYPE_DICT_ENTRY,
-						NULL, &entry);
-
-	dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
-
-	append_menu_items_variant(&entry, menu->items);
-
-	dbus_message_iter_close_container(dict, &entry);
-}
-
 static void stk_alpha_id_set(struct ofono_stk *stk, const char *text)
 {
 	/* TODO */
@@ -427,7 +406,10 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-	const char *idle_mode_text;
+	DBusMessageIter entry;
+	const char *key = "MainMenu";
+	const char *str;
+	unsigned char icon;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -439,17 +421,26 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	idle_mode_text = stk->idle_mode_text ? stk->idle_mode_text : "";
-	ofono_dbus_dict_append(&dict, "IdleModeText",
-				DBUS_TYPE_STRING, &idle_mode_text);
+	str = stk->idle_mode_text ? stk->idle_mode_text : "";
+	ofono_dbus_dict_append(&dict, "IdleModeText", DBUS_TYPE_STRING, &str);
 
-	if (stk->idle_mode_icon.id)
-		ofono_dbus_dict_append(&dict, "IdleModeIcon", DBUS_TYPE_BYTE,
-					&stk->idle_mode_icon.id);
+	icon = stk->idle_mode_icon.id;
+	ofono_dbus_dict_append(&dict, "IdleModeIcon", DBUS_TYPE_BYTE, &icon);
 
-	if (stk->main_menu)
-		dict_append_menu(&dict, stk->main_menu);
+	str = stk->main_menu ? stk->main_menu->title : "";
+	ofono_dbus_dict_append(&dict, "MainMenuTitle", DBUS_TYPE_STRING, &str);
 
+	icon = stk->main_menu ? stk->main_menu->icon.id : 0;
+	ofono_dbus_dict_append(&dict, "MainMenuIcon", DBUS_TYPE_BYTE, &icon);
+
+	dbus_message_iter_open_container(&dict, DBUS_TYPE_DICT_ENTRY,
+						NULL, &entry);
+	dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
+
+	append_menu_items_variant(&entry,
+				stk->main_menu ? stk->main_menu->items : NULL);
+
+	dbus_message_iter_close_container(&dict, &entry);
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
