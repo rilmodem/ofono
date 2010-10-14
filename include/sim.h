@@ -82,6 +82,7 @@ typedef void (*ofono_sim_file_info_cb_t)(const struct ofono_error *error,
 					enum ofono_sim_file_structure structure,
 					int recordlength,
 					const unsigned char access[3],
+					unsigned char file_status,
 					void *data);
 
 typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,
