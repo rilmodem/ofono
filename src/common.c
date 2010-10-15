@@ -342,19 +342,19 @@ int mmi_service_code_to_bearer_class(int code)
 	case 20:
 		cls = BEARER_CLASS_DATA_ASYNC | BEARER_CLASS_DATA_SYNC;
 		break;
-	/* According to 22.030: All Async */
+	/* According to 22.030: All Async (7) */
 	case 21:
-	/* According to 22.030: All Data Async */
+	/* According to 22.030: All Data Async (7)*/
 	case 25:
 		cls = BEARER_CLASS_DATA_ASYNC;
 		break;
-	/* According to 22.030: All Sync */
+	/* According to 22.030: All Sync (8) */
 	case 22:
-	/* According to 22.030: All Data Sync */
+	/* According to 22.030: All Data Sync (8) */
 	case 24:
 		cls = BEARER_CLASS_DATA_SYNC;
 		break;
-	/* According to 22.030: Telephony & All Sync services */
+	/* According to 22.030: Telephony & All Sync services (1, 8) */
 	case 26:
 		cls = BEARER_CLASS_VOICE | BEARER_CLASS_DATA_SYNC;
 		break;
