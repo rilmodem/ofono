@@ -48,7 +48,6 @@ struct sim_data {
 	GAtChat *chat;
 	unsigned int vendor;
 	guint ready_id;
-	guint ready_source;
 };
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
@@ -533,18 +532,6 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
-static gboolean ready_notify_unregister(gpointer user_data)
-{
-	struct sim_data *sd = user_data;
-
-	sd->ready_source = 0;
-
-	g_at_chat_unregister(sd->chat, sd->ready_id);
-	sd->ready_id = 0;
-
-	return FALSE;
-}
-
 static void at_xsim_notify(GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -553,9 +540,6 @@ static void at_xsim_notify(GAtResult *result, gpointer user_data)
 	struct ofono_error error = { .type = OFONO_ERROR_TYPE_NO_ERROR };
 	GAtResultIter iter;
 	int state;
-
-	if (sd->ready_source > 0)
-		return;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -575,7 +559,8 @@ static void at_xsim_notify(GAtResult *result, gpointer user_data)
 
 	cb(&error, cbd->data);
 
-	sd->ready_source = g_timeout_add(0, ready_notify_unregister, sd);
+	g_at_chat_unregister(sd->chat, sd->ready_id);
+	sd->ready_id = 0;
 }
 
 static void at_epev_notify(GAtResult *result, gpointer user_data)
@@ -585,12 +570,10 @@ static void at_epev_notify(GAtResult *result, gpointer user_data)
 	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
 	struct ofono_error error = { .type = OFONO_ERROR_TYPE_NO_ERROR };
 
-	if (sd->ready_source > 0)
-		return;
-
 	cb(&error, cbd->data);
 
-	sd->ready_source = g_timeout_add(0, ready_notify_unregister, sd);
+	g_at_chat_unregister(sd->chat, sd->ready_id);
+	sd->ready_id = 0;
 }
 
 static void at_pin_send_cb(gboolean ok, GAtResult *result,
@@ -883,9 +866,6 @@ static void at_sim_remove(struct ofono_sim *sim)
 	struct sim_data *sd = ofono_sim_get_data(sim);
 
 	ofono_sim_set_data(sim, NULL);
-
-	if (sd->ready_source > 0)
-		g_source_remove(sd->ready_source);
 
 	g_at_chat_unref(sd->chat);
 	g_free(sd);
