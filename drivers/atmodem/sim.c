@@ -41,6 +41,9 @@
 
 #include "atmodem.h"
 
+#define EF_STATUS_INVALIDATED 0
+#define EF_STATUS_VALID 1
+
 struct sim_data {
 	GAtChat *chat;
 	unsigned int vendor;
@@ -69,7 +72,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
-		cb(&error, -1, -1, -1, NULL, 0, cbd->data);
+		cb(&error, -1, -1, -1, NULL, EF_STATUS_INVALIDATED, cbd->data);
 		return;
 	}
 
@@ -89,7 +92,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		error.type = OFONO_ERROR_TYPE_SIM;
 		error.error = (sw1 << 8) | sw2;
 
-		cb(&error, -1, -1, -1, NULL, 0, cbd->data);
+		cb(&error, -1, -1, -1, NULL, EF_STATUS_INVALIDATED, cbd->data);
 		return;
 	}
 
@@ -99,7 +102,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		ok = sim_parse_3g_get_response(response, len, &flen, &rlen,
 						&str, access, NULL);
 
-		file_status = SIM_FILE_STATUS_VALID;
+		file_status = EF_STATUS_VALID;
 	}
 	else
 		ok = sim_parse_2g_get_response(response, len, &flen, &rlen,
@@ -113,7 +116,8 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	return;
 
 error:
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, 0, cbd->data);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL,
+				EF_STATUS_INVALIDATED, cbd->data);
 }
 
 static void at_sim_read_info(struct ofono_sim *sim, int fileid,
@@ -128,7 +132,8 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 		unsigned char access[3] = { 0x00, 0x00, 0x00 };
 
 		if (fileid == SIM_EFAD_FILEID) {
-			CALLBACK_WITH_SUCCESS(cb, 4, 0, 0, access, 1, data);
+			CALLBACK_WITH_SUCCESS(cb, 4, 0, 0, access,
+						EF_STATUS_VALID, data);
 			return;
 		}
 	}
@@ -147,7 +152,8 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 		return;
 
 error:
-	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL, 0, data);
+	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL,
+				EF_STATUS_INVALIDATED, data);
 }
 
 static void at_crsm_read_cb(gboolean ok, GAtResult *result,
