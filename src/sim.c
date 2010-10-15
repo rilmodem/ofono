@@ -1781,11 +1781,6 @@ static void sim_inserted_update(struct ofono_sim *sim)
 
 static void sim_free_state(struct ofono_sim *sim)
 {
-	if (sim->simfs) {
-		sim_fs_free(sim->simfs);
-		sim->simfs = NULL;
-	}
-
 	if (sim->iccid) {
 		g_free(sim->iccid);
 		sim->iccid = NULL;
@@ -1985,6 +1980,11 @@ static void sim_remove(struct ofono_atom *atom)
 		sim->driver->remove(sim);
 
 	sim_free_state(sim);
+
+	if (sim->simfs) {
+		sim_fs_free(sim->simfs);
+		sim->simfs = NULL;
+	}
 
 	g_free(sim);
 }
