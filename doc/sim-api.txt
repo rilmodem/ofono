@@ -134,10 +134,7 @@ Properties	boolean Present [readonly]
 
 		boolean FixedDialing [readonly]
 
-			True if a Fixed Dialing is enabled in SIM card.
+			True if Fixed Dialing service is enabled in SIM card.
 
-			Fixed Dialing is not supported, so status of FD is
-			checked during initialization after receiving PIN-code
-			(if PIN is required). If FD is enabled, initialization
-			procedure is halt. Then only emergency calls are
-			allowed.
+			If FDN is enabled, oFono halts the SIM initialization
+			procedure and only emergency calls are allowed.
