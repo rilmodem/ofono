@@ -60,7 +60,6 @@ enum sim_file_access {
 
 /* 51.011 Section 9.3 */
 enum sim_file_status {
-	SIM_FILE_STATUS_INVALID			= 0x00,
 	SIM_FILE_STATUS_VALID			= 0x01,
 	SIM_FILE_STATUS_RW_WHEN_INVALID		= 0x04,
 };
