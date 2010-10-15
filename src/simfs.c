@@ -433,7 +433,9 @@ static gboolean sim_fs_op_read_record(gpointer user)
 static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 				enum ofono_sim_file_structure structure,
 				int record_length,
-				const unsigned char access[3], void *data)
+				const unsigned char access[3],
+				unsigned char file_status,
+				void *data)
 {
 	struct sim_fs *fs = data;
 	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
