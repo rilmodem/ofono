@@ -618,18 +618,6 @@ done:
 	g_free(cbd);
 }
 
-static void at_lock_unlock_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
-{
-	struct cb_data *cbd = user_data;
-	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
-	struct ofono_error error;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	cb(&error, cbd->data);
-}
-
 static void at_pin_send(struct ofono_sim *sim, const char *passwd,
 			ofono_sim_lock_unlock_cb_t cb, void *data)
 {
@@ -659,6 +647,38 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void at_pin_send_puk_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct sim_data *sd = cbd->user;
+	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok)
+		goto done;
+
+	switch (sd->vendor) {
+	case OFONO_VENDOR_IFX:
+		/*
+		 * On the IFX modem, AT+CPIN? can return READY too
+		 * early and so use +XSIM notification to detect
+		 * the ready state of the SIM.
+		 */
+		sd->ready_id = g_at_chat_register(sd->chat, "+XSIM",
+							at_xsim_notify,
+							FALSE, cbd, g_free);
+		return;
+	}
+
+done:
+	cb(&error, cbd->data);
+
+	g_free(cbd);
+}
+
 static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
 				const char *passwd,
 				ofono_sim_lock_unlock_cb_t cb, void *data)
@@ -671,10 +691,12 @@ static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
 	if (!cbd)
 		goto error;
 
+	cbd->user = sd;
+
 	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\",\"%s\"", puk, passwd);
 
 	ret = g_at_chat_send(sd->chat, buf, none_prefix,
-				at_lock_unlock_cb, cbd, g_free);
+				at_pin_send_puk_cb, cbd, NULL);
 
 	memset(buf, 0, sizeof(buf));
 
@@ -685,6 +707,18 @@ error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void at_lock_unlock_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	cb(&error, cbd->data);
 }
 
 static const char *const at_clck_cpwd_fac[] = {
