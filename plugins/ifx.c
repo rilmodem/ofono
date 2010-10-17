@@ -401,7 +401,7 @@ static void setup_internal_mux(struct ofono_modem *modem)
 	if (!data->mux)
 		goto error;
 
-	if (getenv("OFONO_AT_DEBUG"))
+	if (getenv("OFONO_MUX_DEBUG"))
 		g_at_mux_set_debug(data->mux, ifx_debug, "MUX: ");
 
 	g_at_mux_start(data->mux);
