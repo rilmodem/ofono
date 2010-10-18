@@ -1,3 +1,13 @@
+ver 0.32:
+	Fix issue with AT+VTS not using quotes.
+	Fix issue with entering PUK and Infineon modems.
+	Fix issue with SIM hotswap and Infineon modems.
+	Fix issue with hangup active and ISI modems.
+	Fix issue with logic to validate USSD strings.
+	Add support for call in progress logic to USSD handling.
+	Add support for detecting FDN enabled SIM cards.
+	Add support for accessing SIM icon storage.
+
 ver 0.31:
 	Fix issue with signal strength reporting for ISI modems.
 	Fix issue with GPRS detach reporting for ISI modems.
