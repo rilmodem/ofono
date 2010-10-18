@@ -5455,6 +5455,8 @@ const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 					&response->select_item.item_id,
 					NULL);
 		break;
+	case STK_COMMAND_TYPE_SEND_SS:
+		break;
 	case STK_COMMAND_TYPE_SETUP_CALL:
 		ok = build_setup_call(&builder, response);
 		break;
