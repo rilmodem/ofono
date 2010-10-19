@@ -807,16 +807,21 @@ static void mux_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		goto error;
 
 	/* Speed, pick highest */
-	if (!g_at_result_iter_open_list(&iter))
-		goto error;
+	if (g_at_result_iter_open_list(&iter)) {
+		if (!g_at_result_iter_next_range(&iter, &min, &max))
+			goto error;
 
-	if (!g_at_result_iter_next_range(&iter, &min, &max))
-		goto error;
+		if (!g_at_result_iter_close_list(&iter))
+			goto error;
 
-	if (!g_at_result_iter_close_list(&iter))
-		goto error;
+		speed = max;
+	} else {
+		if (!g_at_result_iter_skip_next(&iter))
+			goto error;
 
-	speed = max;
+		/* not available/used */
+		speed = -1;
+	}
 
 	/* Frame size, pick defaults */
 	if (!g_at_result_iter_open_list(&iter))
@@ -844,7 +849,11 @@ static void mux_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	nmsd = g_memdup(msd, sizeof(struct mux_setup_data));
 	g_at_chat_ref(nmsd->chat);
 
-	sprintf(buf, "AT+CMUX=%u,0,%u,%u", msd->mode, speed, msd->frame_size);
+	if (speed < 0)
+		sprintf(buf, "AT+CMUX=%u,0,,%u", msd->mode, msd->frame_size);
+	else
+		sprintf(buf, "AT+CMUX=%u,0,%u,%u", msd->mode, speed,
+							msd->frame_size);
 
 	if (g_at_chat_send(msd->chat, buf, none_prefix,
 				mux_setup_cb, nmsd, msd_free) > 0)
