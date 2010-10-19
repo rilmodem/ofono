@@ -1359,6 +1359,11 @@ static void sim_efphase_read_cb(int ok, int length, int record,
 
 	if (!ok || length != 1) {
 		sim->phase = OFONO_SIM_PHASE_3G;
+
+		ofono_sim_read(sim, SIM_EFUST_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				sim_efust_read_cb, sim);
+
 		return;
 	}
 
@@ -1374,8 +1379,12 @@ static void sim_efphase_read_cb(int ok, int length, int record,
 		break;
 	default:
 		ofono_error("Unknown phase");
-		break;
+		return;
 	}
+
+	ofono_sim_read(sim, SIM_EFSST_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efsst_read_cb, sim);
 }
 
 static void sim_initialize_after_pin(struct ofono_sim *sim)
@@ -1395,16 +1404,6 @@ static void sim_initialize_after_pin(struct ofono_sim *sim)
 	ofono_sim_read(sim, SIM_EF_CPHS_INFORMATION_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_cphs_information_read_cb, sim);
-
-	/* Also retrieve the GSM service table */
-	if (sim->phase >= OFONO_SIM_PHASE_3G)
-		ofono_sim_read(sim, SIM_EFUST_FILEID,
-				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-				sim_efust_read_cb, sim);
-	else
-		ofono_sim_read(sim, SIM_EFSST_FILEID,
-				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-				sim_efsst_read_cb, sim);
 }
 
 static void sim_pin_query_cb(const struct ofono_error *error,
