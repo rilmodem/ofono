@@ -111,7 +111,7 @@ static void isi_sca_query(struct ofono_sms *sms,
 		1,	/* Location, default is 1 */
 	};
 
-	if (!cbd)
+	if (!cbd || !sd)
 		goto error;
 
 	if (g_isi_request_make(sd->sim, msg, sizeof(msg), SIM_TIMEOUT,
@@ -177,7 +177,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 		{ filler, 38 },
 	};
 
-	if (!cbd)
+	if (!cbd || !sd)
 		goto error;
 
 	encode_bcd_number(sca->number, bcd + 2);
@@ -313,7 +313,7 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 		{ sca, sca_len },
 	};
 
-	if (!cbd)
+	if (!cbd || !sd)
 		goto error;
 
 	if (g_isi_request_vmake(sd->client, iov, use_default ? 2 : 4, SMS_TIMEOUT,
@@ -564,17 +564,16 @@ static void isi_sms_remove(struct ofono_sms *sms)
 	if (!data)
 		return;
 
-	if (data->client) {
-		/* Send a promiscuous routing release, so as not to
-		 * hog resources unnecessarily after being removed */
-		g_isi_request_make(data->client, msg, sizeof(msg),
-					SMS_TIMEOUT, NULL, NULL);
-		g_isi_client_destroy(data->client);
-	}
+	ofono_sms_set_data(sms, NULL);
 
-	if (data->sim)
-		g_isi_client_destroy(data->sim);
-
+	/*
+	 * Send a promiscuous routing release, so as not to
+	 * hog resources unnecessarily after being removed
+	 */
+	g_isi_request_make(data->client, msg, sizeof(msg),
+				SMS_TIMEOUT, NULL, NULL);
+	g_isi_client_destroy(data->client);
+	g_isi_client_destroy(data->sim);
 	g_free(data);
 }
 

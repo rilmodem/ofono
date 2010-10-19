@@ -515,7 +515,7 @@ static void isi_gprs_activate_primary(struct ofono_gprs_context *gc,
 	struct context_data *cd = g_try_new0(struct context_data, 1);
 	struct context_data *old = NULL;
 
-	if (!cd)
+	if (!gcd || !cd)
 		return;
 
 	cd->cid = ctx->cid;
@@ -598,6 +598,9 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 		GPDS_CONTEXT_DEACTIVATE_REQ,
 		0x00,	/* GPDS context ID, added later */
 	};
+
+	if (!gcd)
+		return;
 
 	cd = find_context_by_cid(gcd->contexts, cid);
 	if (!cd) {

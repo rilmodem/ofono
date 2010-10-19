@@ -177,7 +177,7 @@ static void isi_cw_query(struct ofono_call_settings *cs, int cls,
 
 	DBG("waiting class %d\n", cls);
 
-	if (!cbd)
+	if (!cbd || !sd)
 		goto error;
 
 	if (g_isi_request_make(sd->client, msg, sizeof(msg), SS_TIMEOUT,
@@ -268,7 +268,7 @@ static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 
 	DBG("waiting mode %d class %d\n", mode, cls);
 
-	if (!cbd)
+	if (!cbd || !sd)
 		goto error;
 
 	if (g_isi_request_make(sd->client, msg, sizeof(msg), SS_TIMEOUT,

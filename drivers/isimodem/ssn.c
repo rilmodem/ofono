@@ -67,10 +67,12 @@ static void isi_ssn_remove(struct ofono_ssn *ssn)
 {
 	struct ssn_data *data = ofono_ssn_get_data(ssn);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	if (!data)
+		return;
+
+	ofono_ssn_set_data(ssn, NULL);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_ssn_driver driver = {

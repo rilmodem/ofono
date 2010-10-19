@@ -34,7 +34,6 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 	struct isi_cb_data *ret;
 
 	ret = g_try_new0(struct isi_cb_data, 1);
-
 	if (ret) {
 		ret->cb = cb;
 		ret->data = data;

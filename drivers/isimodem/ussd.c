@@ -181,7 +181,7 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 		{ (uint8_t *)pdu, len }
 	};
 
-	if (!cbd)
+	if (!cbd || !ud)
 		goto error;
 
 	if (g_isi_vsend(ud->client, iov, 2, SS_TIMEOUT,
@@ -205,7 +205,7 @@ static void isi_cancel(struct ofono_ussd *ussd,
 		0x00		/* subblock count */
 	};
 
-	if (!cbd)
+	if (!cbd || !ud)
 		goto error;
 
 	if (g_isi_send(ud->client, msg, sizeof(msg), SS_TIMEOUT,

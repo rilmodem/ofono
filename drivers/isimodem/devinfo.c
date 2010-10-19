@@ -128,7 +128,7 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 		INFO_PRODUCT_MANUFACTURER
 	};
 
-	if (!cbd)
+	if (!cbd || !dev)
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg),
@@ -177,7 +177,7 @@ static void isi_query_revision(struct ofono_devinfo *info,
 		0x00, 0x00, 0x00, 0x00
 	};
 
-	if (!cbd)
+	if (!cbd || !dev)
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg),
@@ -201,7 +201,7 @@ static void isi_query_serial(struct ofono_devinfo *info,
 		INFO_SN_IMEI_PLAIN
 	};
 
-	if (!cbd)
+	if (!cbd || !dev)
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg),

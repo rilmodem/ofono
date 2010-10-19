@@ -128,10 +128,14 @@ static void isi_set(struct ofono_call_barring *barr, const char *lock,
 	DBG("lock code %s enable %d class %d password %s\n",
 		lock, enable, cls, passwd);
 
-	if (cbd && g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
-					set_resp_cb, cbd))
+	if (!cbd || !bd)
+		goto error;
+
+	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
+				set_resp_cb, cbd))
 		return;
 
+error:
 	CALLBACK_WITH_FAILURE(cb, data);
 	g_free(cbd);
 }
@@ -271,10 +275,14 @@ static void isi_query(struct ofono_call_barring *barr, const char *lock,
 
 	DBG("barring query lock code %s\n", lock);
 
-	if (cbd && g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
-					query_resp_cb, cbd))
+	if (!cbd || !bd)
+		goto error;
+
+	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
+				query_resp_cb, cbd))
 		return;
 
+error:
 	CALLBACK_WITH_FAILURE(cb, 0, data);
 	g_free(cbd);
 }
@@ -338,11 +346,14 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 	DBG("lock code %s (%u) old password %s new password %s\n",
 		lock, ss_code, old_passwd, new_passwd);
 
-	if (cbd &&
-		g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
+	if (!cbd || !bd)
+		goto error;
+
+	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
 				set_passwd_resp_cb, cbd))
 		return;
 
+error:
 	CALLBACK_WITH_FAILURE(cb, data);
 	g_free(cbd);
 }

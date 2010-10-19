@@ -229,7 +229,7 @@ static void isi_registration(struct ofono_call_forwarding *cf,
 
 	DBG("forwarding type %d class %d\n", type, cls);
 
-	if (!cbd || !number->number || strlen(number->number) > 28)
+	if (!cbd || !fd || !number->number || strlen(number->number) > 28)
 		goto error;
 
 	ss_code = forw_type_to_isi_code(type);
@@ -349,7 +349,7 @@ static void isi_erasure(struct ofono_call_forwarding *cf, int type, int cls,
 
 	DBG("forwarding type %d class %d\n", type, cls);
 
-	if (!cbd)
+	if (!cbd || !fd)
 		goto error;
 
 	ss_code = forw_type_to_isi_code(type);
@@ -481,7 +481,7 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 
 	DBG("forwarding type %d class %d\n", type, cls);
 
-	if (!cbd || cls != 7)
+	if (!cbd || !fd || cls != 7)
 		goto error;
 
 	ss_code = forw_type_to_isi_code(type);

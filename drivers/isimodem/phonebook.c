@@ -259,7 +259,7 @@ static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
 		0, 0				/* filler */
 	};
 
-	if (!cbd)
+	if (!cbd || !pbd)
 		goto error;
 
 	if (strcmp(storage, "SM"))
@@ -335,10 +335,12 @@ static void isi_phonebook_remove(struct ofono_phonebook *pb)
 {
 	struct pb_data *data = ofono_phonebook_get_data(pb);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	if (!data)
+		return;
+
+	ofono_phonebook_set_data(pb, NULL);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_phonebook_driver driver = {

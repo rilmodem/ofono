@@ -263,7 +263,7 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 		NET_REG_STATUS_GET_REQ
 	};
 
-	if (!cbd)
+	if (!cbd || !nd)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),
@@ -368,7 +368,7 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 		0x00  /* No sub-blocks */
 	};
 
-	if (!cbd)
+	if (!cbd || !nd)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),
@@ -490,7 +490,7 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 		0x00
 	};
 
-	if (!cbd)
+	if (!cbd || !net)
 		goto error;
 
 	if (g_isi_request_make(net->client, msg, sizeof(msg),
@@ -556,7 +556,7 @@ static void isi_register_auto(struct ofono_netreg *netreg,
 		0x00  /* Index not used */
 	};
 
-	if (!cbd)
+	if (!cbd || !net)
 		goto error;
 
 	if (g_isi_request_make(net->client, msg, sizeof(msg),
@@ -629,7 +629,7 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 		0x00, 0x00  /* Filler */
 	};
 
-	if (!cbd)
+	if (!cbd || !nd)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),
@@ -876,7 +876,7 @@ static void isi_strength(struct ofono_netreg *netreg,
 		NET_CURRENT_CELL_RSSI
 	};
 
-	if (!cbd)
+	if (!cbd || !nd)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),

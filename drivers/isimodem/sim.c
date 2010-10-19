@@ -156,6 +156,9 @@ static gboolean isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
 		0
 	};
 
+	if (!sd)
+		return FALSE;
+
 	return g_isi_request_make(sd->client, msg, sizeof(msg),
 					SIM_TIMEOUT, spn_resp_cb, cbd) != NULL;
 }
@@ -196,6 +199,9 @@ static gboolean isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	const unsigned char req[] = { SIM_READ_FIELD_REQ, ICC };
+
+	if (!sd)
+		return FALSE;
 
 	return g_isi_request_make(sd->client, req, sizeof(req), SIM_TIMEOUT,
 					read_iccid_resp_cb, cbd) != NULL;
@@ -337,11 +343,10 @@ static void isi_read_imsi(struct ofono_sim *sim,
 		READ_IMSI
 	};
 
-	if (!cbd)
+	if (!cbd || !sd)
 		goto error;
 
-	if (g_isi_request_make(sd->client, msg, sizeof(msg),
-				SIM_TIMEOUT,
+	if (g_isi_request_make(sd->client, msg, sizeof(msg), SIM_TIMEOUT,
 				imsi_resp_cb, cbd))
 		return;
 

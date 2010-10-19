@@ -154,7 +154,7 @@ static void isi_query_rat_mode(struct ofono_radio_settings *rs,
 		0x00 /* subblock count */
 	};
 
-	if (!cbd)
+	if (!cbd || !rd)
 		goto error;
 
 	if (g_isi_request_make(rd->client, msg, sizeof(msg), GSS_TIMEOUT,
@@ -221,7 +221,7 @@ static void isi_set_rat_mode(struct ofono_radio_settings *rs,
 		0x00 /* filler */
 	};
 
-	if (!cbd)
+	if (!cbd || !rd)
 		goto error;
 
 	if (isi_mode == -1)
@@ -297,9 +297,11 @@ static void isi_radio_settings_remove(struct ofono_radio_settings *rs)
 {
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 
-	if (rd->client)
-		g_isi_client_destroy(rd->client);
+	if (!rd)
+		return;
 
+	ofono_radio_settings_set_data(rs, NULL);
+	g_isi_client_destroy(rd->client);
 	g_free(rd);
 }
 

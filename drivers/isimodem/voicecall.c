@@ -1303,10 +1303,12 @@ static void isi_voicecall_remove(struct ofono_voicecall *call)
 {
 	struct isi_voicecall *data = ofono_voicecall_get_data(call);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	if (!data)
+		return;
+
+	ofono_voicecall_set_data(call, NULL);
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_voicecall_driver driver = {
