@@ -1357,10 +1357,25 @@ static void sim_efphase_read_cb(int ok, int length, int record,
 {
 	struct ofono_sim *sim = userdata;
 
-	if (!ok || length != 1)
+	if (!ok || length != 1) {
 		sim->phase = OFONO_SIM_PHASE_3G;
-	else
-		sim->phase = data[0];
+		return;
+	}
+
+	switch (data[0]) {
+	case 0:
+		sim->phase = OFONO_SIM_PHASE_1G;
+		break;
+	case 2:
+		sim->phase = OFONO_SIM_PHASE_2G;
+		break;
+	case 3:
+		sim->phase = OFONO_SIM_PHASE_2G_PLUS;
+		break;
+	default:
+		ofono_error("Unknown phase");
+		break;
+	}
 }
 
 static void sim_initialize_after_pin(struct ofono_sim *sim)
