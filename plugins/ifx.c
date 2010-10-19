@@ -83,6 +83,7 @@ struct ifx_data {
 	GAtChat *dlcs[NUM_DLC];
 	guint dlc_poll_count;
 	guint dlc_poll_source;
+	guint dlc_init_source;
 	guint frame_size;
 	int mux_ldisc;
 	int saved_ldisc;
@@ -198,9 +199,6 @@ static GAtChat *create_chat(GIOChannel *channel, char *debug)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, ifx_debug, debug);
 
-	g_at_chat_send(chat, "ATE0 +CMEE=1", NULL,
-					NULL, NULL, NULL);
-
 	return chat;
 }
 
@@ -209,6 +207,11 @@ static void shutdown_device(struct ifx_data *data)
 	int i, fd;
 
 	DBG("");
+
+	if (data->dlc_init_source > 0) {
+		g_source_remove(data->dlc_init_source);
+		data->dlc_init_source = 0;
+	}
 
 	for (i = 0; i < NUM_DLC; i++) {
 		if (!data->dlcs[i])
@@ -338,6 +341,26 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 					xgendata_query, modem, NULL);
 }
 
+static gboolean dlc_setup(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+	int i;
+
+	DBG("");
+
+	for (i = 0; i < NUM_DLC; i++)
+		g_at_chat_send(data->dlcs[i], "ATE0 +CMEE=1", NULL,
+						NULL, NULL, NULL);
+
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
+					cfun_enable, modem, NULL);
+
+	data->dlc_init_source = 0;
+
+	return FALSE;
+}
+
 static gboolean dlc_ready_check(gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -367,10 +390,10 @@ static gboolean dlc_ready_check(gpointer user_data)
 		}
 	}
 
-	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
-					cfun_enable, modem, NULL);
-
 	data->dlc_poll_source = 0;
+
+	/* iterate through mainloop */
+	data->dlc_init_source = g_timeout_add_seconds(0, dlc_setup, modem);
 
 	return FALSE;
 
@@ -416,8 +439,8 @@ static void setup_internal_mux(struct ofono_modem *modem)
 		}
         }
 
-	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
-					cfun_enable, modem, NULL);
+	/* wait for DLC creation to settle */
+	data->dlc_init_source = g_timeout_add(10, dlc_setup, modem);
 
 	return;
 
