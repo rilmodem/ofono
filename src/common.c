@@ -336,27 +336,39 @@ int mmi_service_code_to_bearer_class(int code)
 	case 19:
 		cls = BEARER_CLASS_VOICE | BEARER_CLASS_FAX;
 		break;
-
-	/* 22.030: 7-11 */
-	/* 22.004 only defines BS 7 (Data Sync) & BS 8 (Data Async) */
+	/*
+	 * 22.030: 7-11
+	 * 22.004 only defines BS 7 (Data Sync) & BS 8 (Data Async)
+	 * and PAD and Packet bearer services are deprecated.  Still,
+	 * AT modems rely on these to differentiate between sending
+	 * a 'All Sync' or 'All Data Sync' message types.  In theory
+	 * both message types cover the same bearer services, but we
+	 * must still send these for conformance reasons.
+	 */
 	case 20:
-		cls = BEARER_CLASS_DATA_ASYNC | BEARER_CLASS_DATA_SYNC;
+		cls = BEARER_CLASS_DATA_ASYNC | BEARER_CLASS_DATA_SYNC |
+			BEARER_CLASS_PAD | BEARER_CLASS_PACKET;
 		break;
 	/* According to 22.030: All Async (7) */
 	case 21:
+		cls = BEARER_CLASS_DATA_ASYNC | BEARER_CLASS_PAD;
+		break;
 	/* According to 22.030: All Data Async (7)*/
 	case 25:
 		cls = BEARER_CLASS_DATA_ASYNC;
 		break;
 	/* According to 22.030: All Sync (8) */
 	case 22:
+		cls = BEARER_CLASS_DATA_SYNC | BEARER_CLASS_PACKET;
+		break;
 	/* According to 22.030: All Data Sync (8) */
 	case 24:
 		cls = BEARER_CLASS_DATA_SYNC;
 		break;
 	/* According to 22.030: Telephony & All Sync services (1, 8) */
 	case 26:
-		cls = BEARER_CLASS_VOICE | BEARER_CLASS_DATA_SYNC;
+		cls = BEARER_CLASS_VOICE | BEARER_CLASS_DATA_SYNC |
+			BEARER_CLASS_PACKET;
 		break;
 	default:
 		break;
