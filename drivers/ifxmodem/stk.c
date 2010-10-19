@@ -46,7 +46,7 @@ struct stk_data {
 
 static const char *none_prefix[] = { NULL };
 static const char *sate_prefix[] = { "+SATE:", NULL };
-static const char *stkprof_prefix[] = { "+STKPROF:", NULL };
+static const char *cfun_prefix[] = { "+CFUN:", NULL };
 
 static void sate_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -241,7 +241,7 @@ static void satf_notify(GAtResult *result, gpointer user_data)
 	ofono_stk_proactive_session_end_notify(stk);
 }
 
-static void stkprof_support_cb(gboolean ok, GAtResult *result,
+static void cfun_support_cb(gboolean ok, GAtResult *result,
 						gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
@@ -256,11 +256,8 @@ static void stkprof_support_cb(gboolean ok, GAtResult *result,
 	g_at_chat_register(sd->chat, "+SATN:", satn_notify, FALSE, stk, NULL);
 	g_at_chat_register(sd->chat, "+SATF:", satf_notify, FALSE, stk, NULL);
 
-	g_at_chat_send(sd->chat, "AT+STKPROF?", stkprof_prefix,
-							NULL, NULL, NULL);
-
-	g_at_chat_send(sd->chat, "AT+STKPROF=4,\"1F7F\"", none_prefix,
-							NULL, NULL, NULL);
+	g_at_chat_send(sd->chat, "AT+CFUN=6", none_prefix,
+						NULL, NULL, NULL);
 
 	ofono_stk_register(stk);
 }
@@ -280,8 +277,8 @@ static int ifx_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 
 	ofono_stk_set_data(stk, sd);
 
-	g_at_chat_send(sd->chat, "AT+STKPROF=?", stkprof_prefix,
-					stkprof_support_cb, stk, NULL);
+	g_at_chat_send(sd->chat, "AT+CFUN=?", cfun_prefix,
+					cfun_support_cb, stk, NULL);
 
 	return 0;
 }
