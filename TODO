@@ -80,6 +80,32 @@ SMS
   Complexity: C1
   Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
 
+- Add CDMA support to the SMS stack. The idea is to support only the PDU
+  mode. To start with only Submit and Deliver message handling for WMT
+  teleservice will be added to bring the basic CDMA SMS send and receive
+  functionality.
+
+  Priority: Low
+  Complexity: C8
+  Owner: Rajesh Kadhiravan Nagaiah <Rajesh.Nagaiah@elektrobit.com>
+
+- Add CDMA Delivery(Status) Report handling to the SMS stack.
+
+  Priority: Low
+  Complexity: C4
+  Owner: Rajesh Kadhiravan Nagaiah <Rajesh.Nagaiah@elektrobit.com>
+
+- Add CDMA Voice Mail Notification handling to the SMS stack. In CDMA the
+  Message Waiting indication is notified through a specific teleservice ID
+  VMN. No update to corresponding elementary files required since they are
+  not present in the R-UIM. This will result in the message waiting
+  indication being initially processed within the SMS atom and then being
+  passed for delivery to the message waiting atom. Furthemore note that in
+  CDMA only voice mail type is supported.
+
+  Priority: Low
+  Complexity: C4
+  Owner: Rajesh Kadhiravan Nagaiah <Rajesh.Nagaiah@elektrobit.com>
 
 SIM / SIM File system
 =====================
