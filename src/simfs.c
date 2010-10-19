@@ -489,7 +489,7 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 		fs->op_source = g_idle_add(sim_fs_op_read_record, fs);
 	}
 
-	if (imsi == NULL || cache == FALSE)
+	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN || cache == FALSE)
 		return;
 
 	memset(fileinfo, 0, SIM_CACHE_HEADER_SIZE);
@@ -744,6 +744,9 @@ void sim_fs_cache_image(struct sim_fs *fs, const char *image, int id)
 		return;
 
 	phase = ofono_sim_get_phase(fs->sim);
+	if (phase == OFONO_SIM_PHASE_UNKNOWN)
+		return;
+
 	write_file((const unsigned char *) image, strlen(image),
 			SIM_CACHE_MODE, SIM_IMAGE_CACHE_PATH, imsi,
 			phase, id);
