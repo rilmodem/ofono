@@ -203,6 +203,8 @@ static void satn_notify(GAtResult *result, gpointer user_data)
 
 	DBG("");
 
+	g_at_result_iter_init(&iter, result);
+
 	if (g_at_result_iter_next(&iter, "+SATN:") == FALSE)
 		return;
 
