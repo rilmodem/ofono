@@ -182,7 +182,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 
 	encode_bcd_number(sca->number, bcd + 2);
 	bcd[0] = 1 + (strlen(sca->number) + 1) / 2;
-	bcd[1] = sca->type & 0x0f;
+	bcd[1] = sca->type & 0xFF;
 
 	if (g_isi_request_vmake(sd->sim, iov, 4, SIM_TIMEOUT,
 				sca_set_resp_cb, cbd))
