@@ -240,7 +240,8 @@ static void satf_notify(GAtResult *result, gpointer user_data)
 
 	DBG("sw1 %d sw2 %d", sw1, sw2);
 
-	ofono_stk_proactive_session_end_notify(stk);
+	if (sw1 == 0x90 && sw2 == 0x00)
+		ofono_stk_proactive_session_end_notify(stk);
 }
 
 static void cfun_support_cb(gboolean ok, GAtResult *result,
