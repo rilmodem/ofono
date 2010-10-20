@@ -676,6 +676,45 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 	ofono_netreg_strength_notify(netreg, strength);
 }
 
+static void ctzv_notify(GAtResult *result, gpointer user_data)
+{
+	//struct ofono_netreg *netreg = user_data;
+	//struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	const char *tz, *time;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CTZV:"))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &tz))
+		return;
+
+	if (!g_at_result_iter_next_string(&iter, &time))
+		return;
+
+	DBG("tz %s time %s", tz, time);
+}
+
+static void ctzdst_notify(GAtResult *result, gpointer user_data)
+{
+	//struct ofono_netreg *netreg = user_data;
+	//struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	int dst;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CTZDST:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &dst))
+		return;
+
+	DBG("dst %d", dst);
+}
+
 static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -1055,10 +1094,19 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_IFX:
-		g_at_chat_send(nd->chat, "AT+XMER=1", none_prefix,
-				NULL, NULL, NULL);
+		/* Register for specific signal strength reports */
 		g_at_chat_register(nd->chat, "+XCIEV:", ifx_xciev_notify,
-				FALSE, netreg, NULL);
+					FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT+XMER=1", none_prefix,
+						NULL, NULL, NULL);
+
+		/* Register for network time update reports */
+		g_at_chat_register(nd->chat, "+CTZV:", ctzv_notify,
+					FALSE, netreg, NULL);
+		g_at_chat_register(nd->chat, "+CTZDST:", ctzdst_notify,
+					FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT+CTZR=1", none_prefix,
+						NULL, NULL, NULL);
 		break;
 	case OFONO_VENDOR_ZTE:
 	case OFONO_VENDOR_NOKIA:
