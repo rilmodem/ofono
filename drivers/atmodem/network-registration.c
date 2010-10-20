@@ -56,6 +56,7 @@ struct netreg_data {
 	int signal_min; /* min strength reported via CIND */
 	int signal_max; /* max strength reported via CIND */
 	int tech;
+	struct ofono_network_time time;
 	unsigned int vendor;
 };
 
@@ -678,8 +679,9 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 
 static void ctzv_notify(GAtResult *result, gpointer user_data)
 {
-	//struct ofono_netreg *netreg = user_data;
-	//struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	int year, mon, mday, hour, min, sec;
 	const char *tz, *time;
 	GAtResultIter iter;
 
@@ -695,12 +697,23 @@ static void ctzv_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	DBG("tz %s time %s", tz, time);
+
+	if (sscanf(time, "%u/%u/%u,%u:%u:%u", &year, &mon, &mday,
+						&hour, &min, &sec) != 6)
+		return;
+
+	nd->time.sec = sec;
+	nd->time.min = min;
+	nd->time.hour = hour;
+	nd->time.mday = mday;
+	nd->time.mon = mon;
+	nd->time.year = 2000 + year;
 }
 
 static void ctzdst_notify(GAtResult *result, gpointer user_data)
 {
-	//struct ofono_netreg *netreg = user_data;
-	//struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	int dst;
 	GAtResultIter iter;
 
@@ -713,6 +726,10 @@ static void ctzdst_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	DBG("dst %d", dst);
+
+	nd->time.dst = dst;
+
+	ofono_netreg_time_notify(netreg, &nd->time);
 }
 
 static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -1180,6 +1197,14 @@ static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	nd->chat = g_at_chat_clone(chat);
 	nd->vendor = vendor;
 	nd->tech = -1;
+	nd->time.sec = -1;
+	nd->time.min = -1;
+	nd->time.hour = -1;
+	nd->time.mday = -1;
+	nd->time.mon = -1;
+	nd->time.year = -1;
+	nd->time.dst = 0;
+	nd->time.utcoff = 0;
 	ofono_netreg_set_data(netreg, nd);
 
 	g_at_chat_send(nd->chat, "AT+CREG=?", creg_prefix,
