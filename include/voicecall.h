@@ -65,31 +65,74 @@ struct ofono_voicecall_driver {
 			const struct ofono_phone_number *number,
 			enum ofono_clir_option clir, enum ofono_cug_option cug,
 			ofono_voicecall_cb_t cb, void *data);
+	/* Answers an incoming call, this usually corresponds to ATA */
 	void (*answer)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+
+	/* Hangs up active, dialing, alerting or incoming calls */
 	void (*hangup_active)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/* Hangs up all calls except waiting calls */
 	void (*hangup_all)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Holds all active and retrieves held or waiting calls, this usually
+	 * corresponds to +CHLD=2
+	 */
 	void (*hold_all_active)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/* Releases all held calls, this usually corresponds to +CHLD=0*/
 	void (*release_all_held)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Sets the UDUB condition on a waiting call.  This usually
+	 * corresponds to +CHLD=0
+	 */
 	void (*set_udub)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Releases all active calls and accepts a possible waiting call.
+	 * This usually corresponds to +CHLD=1
+	 */
 	void (*release_all_active)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Releases a specific call given by id.  This usually corresponds to
+	 * +CHLD=1X.  In 3GPP this command is only guaranteed to affect active
+	 * calls.  Plugins are encouraged to implement this using vendor
+	 * commands that can also affect held calls
+	 */
 	void (*release_specific)(struct ofono_voicecall *vc, int id,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Breaks out a party given by id from a multiparty call.  This
+	 * usually corresponds to +CHLD=2X
+	 */
 	void (*private_chat)(struct ofono_voicecall *vc, int id,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Joins held and active calls together into a multiparty call.  This
+	 * usually corresponds to +CHLD=3
+	 */
 	void (*create_multiparty)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Connects two calls together and disconnects from both calls.  This
+	 * usually corresponds to +CHLD=4
+	 */
 	void (*transfer)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * Deflects an incoming or waiting call to a given number.  This
+	 * usually corresponds to +CTFR
+	 */
 	void (*deflect)(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *ph,
 			ofono_voicecall_cb_t cb, void *data);
+	/*
+	 * This is equivalent to +CHLD=2 but does not affect a possible
+	 * waiting call.
+	 */
 	void (*swap_without_accept)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
 	void (*send_tones)(struct ofono_voicecall *vc, const char *tones,
