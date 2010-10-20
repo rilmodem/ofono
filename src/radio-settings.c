@@ -47,9 +47,9 @@ struct ofono_radio_settings {
 	struct ofono_atom *atom;
 };
 
-static const char *radio_access_mode_to_string(enum ofono_radio_access_mode mode)
+static const char *radio_access_mode_to_string(enum ofono_radio_access_mode m)
 {
-	switch (mode) {
+	switch (m) {
 	case OFONO_RADIO_ACCESS_MODE_ANY:
 		return "any";
 	case OFONO_RADIO_ACCESS_MODE_GSM:
@@ -74,6 +74,7 @@ static int string_to_radio_access_mode(const char *mode)
 		return OFONO_RADIO_ACCESS_MODE_UMTS;
 	if (g_strcmp0(mode, "lte") == 0)
 		return OFONO_RADIO_ACCESS_MODE_LTE;
+
 	return -1;
 }
 
@@ -96,8 +97,8 @@ static DBusMessage *radio_get_properties_reply(DBusMessage *msg,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	ofono_dbus_dict_append(&dict, "TechnologyPreference", DBUS_TYPE_STRING,
-				&mode);
+	ofono_dbus_dict_append(&dict, "TechnologyPreference",
+					DBUS_TYPE_STRING, &mode);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -121,9 +122,9 @@ static void radio_set_rat_mode(struct ofono_radio_settings *rs,
 	str_mode = radio_access_mode_to_string(rs->mode);
 
 	ofono_dbus_signal_property_changed(conn, path,
-					OFONO_RADIO_SETTINGS_INTERFACE,
-					"TechnologyPreference", DBUS_TYPE_STRING,
-					&str_mode);
+						OFONO_RADIO_SETTINGS_INTERFACE,
+						"TechnologyPreference",
+						DBUS_TYPE_STRING, &str_mode);
 }
 
 static void radio_mode_set_callback(const struct ofono_error *error, void *data)
@@ -165,8 +166,8 @@ static void radio_rat_mode_query_callback(const struct ofono_error *error,
 	__ofono_dbus_pending_reply(&rs->pending, reply);
 }
 
-static DBusMessage *radio_get_properties(DBusConnection *conn, DBusMessage *msg,
-					void *data)
+static DBusMessage *radio_get_properties(DBusConnection *conn,
+						DBusMessage *msg, void *data)
 {
 	struct ofono_radio_settings *rs = data;
 
@@ -241,10 +242,10 @@ static DBusMessage *radio_set_property(DBusConnection *conn, DBusMessage *msg,
 }
 
 static GDBusMethodTable radio_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	radio_get_properties,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SetProperty",	"sv",	"",		radio_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetProperties",  "",    "a{sv}",  radio_get_properties,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "SetProperty",    "sv",  "",       radio_set_property,
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
