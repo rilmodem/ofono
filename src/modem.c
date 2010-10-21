@@ -330,6 +330,8 @@ static void flush_atoms(struct ofono_modem *modem, enum modem_state new_state)
 	GSList *prev;
 	GSList *tmp;
 
+	DBG("");
+
 	prev = NULL;
 	cur = modem->atoms;
 
@@ -366,6 +368,8 @@ static void modem_change_state(struct ofono_modem *modem,
 	struct ofono_modem_driver const *driver = modem->driver;
 	enum modem_state old_state = modem->modem_state;
 	ofono_bool_t new_online = new_state == MODEM_STATE_ONLINE;
+
+	DBG("old state: %d, new state: %d", old_state, new_state);
 
 	if (old_state == new_state)
 		return;
