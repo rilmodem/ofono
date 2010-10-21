@@ -418,7 +418,7 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_init(&iter, result);
 
 	while (g_at_result_iter_next(&iter, "+COPS:")) {
-		int status, tech;
+		int status, tech, plmn;
 		const char *l, *s, *n;
 		gboolean have_long = FALSE;
 
@@ -458,6 +458,9 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				tech = 0;
 
 			list[num].tech = tech;
+
+			if (!g_at_result_iter_next_number(&iter, &plmn))
+				plmn = 0;
 
 			if (!g_at_result_iter_close_list(&iter))
 				break;
