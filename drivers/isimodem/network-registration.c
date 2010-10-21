@@ -48,7 +48,6 @@ struct netreg_data {
 	guint8 last_reg_mode;
 	guint8 rat;
 	guint8 gsm_compact;
-	guint8 strength;
 };
 
 static inline guint8 *mccmnc_to_bcd(const char *mcc, const char *mnc,
@@ -199,13 +198,6 @@ static void reg_status_ind_cb(GIsiClient *client,
 	if (decode_reg_status(nd, msg+3, len-3, &status, &lac, &ci, &tech)) {
 		status = isi_status_to_at_status(status);
 		ofono_netreg_status_notify(netreg, status, lac, ci, tech);
-
-		/*
-		 * Make sure the core is also informed of current
-		 * signal strength, as it can be received before
-		 * registration status.
-		 */
-		ofono_netreg_strength_notify(netreg, nd->strength);
 	}
 }
 
@@ -754,12 +746,10 @@ static void rssi_ind_cb(GIsiClient *client,
 {
 	const unsigned char *msg = data;
 	struct ofono_netreg *netreg = opaque;
-	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
 	if (!msg || len < 3 || msg[0] != NET_RSSI_IND)
 		return;
 
-	nd->strength = msg[1];
 	ofono_netreg_strength_notify(netreg, msg[1]);
 }
 
