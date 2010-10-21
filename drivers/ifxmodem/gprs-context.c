@@ -410,7 +410,7 @@ static int ifx_gprs_context_probe(struct ofono_gprs_context *gc,
 	if (!g_at_chat_get_slave(chat))
 		return -EINVAL;
 
-	gcd = g_new0(struct gprs_context_data, 1);
+	gcd = g_try_new0(struct gprs_context_data, 1);
 	if (!gcd)
 		return -ENOMEM;
 
