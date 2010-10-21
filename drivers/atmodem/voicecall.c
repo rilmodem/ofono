@@ -47,6 +47,9 @@
  /* Amount of time we give for CLIP to arrive before we commence CLCC poll */
 #define CLIP_INTERVAL 200
 
+ /* When +VTD returns 0, an unspecified manufacturer-specific delay is used */
+#define TONE_DURATION 1000
+
 static const char *clcc_prefix[] = { "+CLCC:", NULL };
 static const char *none_prefix[] = { NULL };
 
@@ -59,6 +62,9 @@ struct voicecall_data {
 	unsigned int clcc_source;
 	GAtChat *chat;
 	unsigned int vendor;
+	unsigned int tone_duration;
+	guint vts_source;
+	unsigned int vts_delay;
 };
 
 struct release_id_req {
@@ -522,14 +528,37 @@ static void at_deflect(struct ofono_voicecall *vc,
 	at_template(buf, vc, generic_cb, incoming_or_waiting, cb, data);
 }
 
+static gboolean vts_timeout_cb(gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct voicecall_data *vd = cbd->user;
+	ofono_voicecall_cb_t cb = cbd->cb;
+
+	vd->vts_source = 0;
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	g_free(cbd);
+
+	return FALSE;
+}
+
 static void vts_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
+	struct voicecall_data *vd = cbd->user;
 	ofono_voicecall_cb_t cb = cbd->cb;
 	struct ofono_error error;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, cbd->data);
+
+	if (!ok) {
+		cb(&error, cbd->data);
+
+		g_free(cbd);
+		return;
+	}
+
+	vd->vts_source = g_timeout_add(vd->vts_delay, vts_timeout_cb, cbd);
 }
 
 static void at_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
@@ -545,6 +574,8 @@ static void at_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	if (!cbd)
 		goto error;
 
+	cbd->user = vd;
+
 	/* strlen("+VTS=T;") = 7 + initial AT + null */
 	buf = g_try_new(char, len * 9 + 3);
 	if (!buf)
@@ -555,8 +586,10 @@ static void at_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	for (i = 1; i < len; i++)
 		s += sprintf(buf + s, ";+VTS=%c", dtmf[i]);
 
+	vd->vts_delay = vd->tone_duration * len;
+
 	s = g_at_chat_send(vd->chat, buf, none_prefix,
-				vts_cb, cbd, g_free);
+				vts_cb, cbd, NULL);
 
 	g_free(buf);
 
@@ -799,6 +832,26 @@ static void busy_notify(GAtResult *result, gpointer user_data)
 			clcc_poll_cb, vc, NULL);
 }
 
+static void vtd_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GAtResultIter iter;
+	int duration;
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+	g_at_result_iter_next(&iter, "+VTD:");
+
+	if (!g_at_result_iter_next_number(&iter, &duration))
+		return;
+
+	if (duration)
+		vd->tone_duration = duration * 100;
+}
+
 static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
@@ -839,12 +892,15 @@ static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	vd->chat = g_at_chat_clone(chat);
 	vd->vendor = vendor;
+	vd->tone_duration = TONE_DURATION;
 
 	ofono_voicecall_set_data(vc, vd);
 
 	g_at_chat_send(vd->chat, "AT+CRC=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+COLP=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+VTD?", NULL,
+				vtd_query_cb, vc, NULL);
 	g_at_chat_send(vd->chat, "AT+CCWA=1", NULL,
 				at_voicecall_initialized, vc, NULL);
 
@@ -857,6 +913,9 @@ static void at_voicecall_remove(struct ofono_voicecall *vc)
 
 	if (vd->clcc_source)
 		g_source_remove(vd->clcc_source);
+
+	if (vd->vts_source)
+		g_source_remove(vd->vts_source);
 
 	g_slist_foreach(vd->calls, (GFunc) g_free, NULL);
 	g_slist_free(vd->calls);
