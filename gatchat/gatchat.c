@@ -1314,7 +1314,7 @@ GAtChat *g_at_chat_clone(GAtChat *clone)
 GAtChat *g_at_chat_set_slave(GAtChat *chat, GAtChat *slave)
 {
 	if (chat == NULL)
-		return;
+		return NULL;
 
 	if (chat->slave != NULL)
 		g_at_chat_unref(chat->slave);
