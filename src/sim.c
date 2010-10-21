@@ -314,7 +314,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append(&dict, "FixedDialing", DBUS_TYPE_BOOLEAN,
 				&sim->fixed_dialing);
 
-	if (sim->mnc_length) {
+	if (sim->mnc_length && sim->imsi) {
 		char mcc[OFONO_MAX_MCC_LENGTH + 1];
 		char mnc[OFONO_MAX_MNC_LENGTH + 1];
 		const char *str;
