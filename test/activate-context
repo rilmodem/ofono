@@ -25,7 +25,10 @@ for path, properties in modems:
 
 	connman.SetProperty("Powered", dbus.Boolean(1))
 
-	path = contexts[0][0]
+	if len(sys.argv) > 1:
+		path = contexts[int(sys.argv[1])][0]
+	else:
+		path = contexts[0][0]
 
 	context = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.ConnectionContext')
