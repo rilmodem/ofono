@@ -50,6 +50,9 @@ void g_at_chat_unref(GAtChat *chat);
 
 GAtChat *g_at_chat_clone(GAtChat *chat);
 
+GAtChat *g_at_chat_set_slave(GAtChat *chat, GAtChat *slave);
+GAtChat *g_at_chat_get_slave(GAtChat *chat);
+
 void g_at_chat_suspend(GAtChat *chat);
 void g_at_chat_resume(GAtChat *chat);
 

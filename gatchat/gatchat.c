@@ -105,6 +105,7 @@ struct _GAtChat {
 	gint ref_count;
 	struct at_chat *parent;
 	guint group;
+	GAtChat *slave;
 };
 
 struct terminator_info {
@@ -1304,7 +1305,34 @@ GAtChat *g_at_chat_clone(GAtChat *clone)
 	chat->ref_count = 1;
 	g_atomic_int_inc(&chat->parent->ref_count);
 
+	if (clone->slave != NULL)
+		chat->slave = g_at_chat_clone(clone->slave);
+
 	return chat;
+}
+
+GAtChat *g_at_chat_set_slave(GAtChat *chat, GAtChat *slave)
+{
+	if (chat == NULL)
+		return;
+
+	if (chat->slave != NULL)
+		g_at_chat_unref(chat->slave);
+
+	if (slave != NULL)
+		chat->slave = g_at_chat_ref(slave);
+	else
+		chat->slave = NULL;
+
+	return chat->slave;
+}
+
+GAtChat *g_at_chat_get_slave(GAtChat *chat)
+{
+	if (chat == NULL)
+		return NULL;
+
+	return chat->slave;
 }
 
 GIOChannel *g_at_chat_get_channel(GAtChat *chat)
@@ -1360,6 +1388,9 @@ void g_at_chat_unref(GAtChat *chat)
 
 	if (is_zero == FALSE)
 		return;
+
+	if (chat->slave != NULL)
+		g_at_chat_unref(chat->slave);
 
 	at_chat_cancel_group(chat->parent, chat->group);
 	g_at_chat_unregister_all(chat);
