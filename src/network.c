@@ -1399,14 +1399,6 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 	if (netreg->signal_strength == strength)
 		return;
 
-	/*
-	 * Theoretically we can get signal strength even when not registered
-	 * to any network.  However, what do we do with it in that case?
-	 */
-	if (netreg->status != NETWORK_REGISTRATION_STATUS_REGISTERED &&
-		netreg->status != NETWORK_REGISTRATION_STATUS_ROAMING)
-		return;
-
 	netreg->signal_strength = strength;
 
 	if (strength != -1) {
