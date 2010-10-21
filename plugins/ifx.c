@@ -663,7 +663,7 @@ static void ifx_post_online(struct ofono_modem *modem)
 	struct ifx_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 	struct ofono_gprs *gprs;
-	struct ofono_gprs_context *gc;
+	struct ofono_gprs_context *gc1, *gc2;
 
 	DBG("%p", modem);
 
@@ -688,11 +688,18 @@ static void ifx_post_online(struct ofono_modem *modem)
 		ofono_message_waiting_register(mw);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->dlcs[NETREG_DLC]);
-	gc = ofono_gprs_context_create(modem, 0,
-					"ifxmodem", data->dlcs[GPRS1_DLC]);
+	if (!gprs)
+		return;
 
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
+	gc1 = ofono_gprs_context_create(modem, 0,
+					"ifxmodem", data->dlcs[GPRS1_DLC]);
+	if (gc1)
+		ofono_gprs_add_context(gprs, gc1);
+
+	gc2 = ofono_gprs_context_create(modem, 0,
+					"ifxmodem", data->dlcs[GPRS2_DLC]);
+	if (gc2)
+		ofono_gprs_add_context(gprs, gc2);
 }
 
 static struct ofono_modem_driver ifx_driver = {
