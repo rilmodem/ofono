@@ -21,6 +21,10 @@
 
 struct sim_fs;
 
+typedef void (*sim_fs_read_info_cb_t)(int ok, unsigned char file_status,
+					int total_length, int record_length,
+					void *userdata);
+
 struct sim_fs *sim_fs_new(struct ofono_sim *sim,
 				const struct ofono_sim_driver *driver);
 
@@ -28,6 +32,10 @@ int sim_fs_read(struct sim_fs *fs, int id,
 		enum ofono_sim_file_structure expected_type,
 		unsigned short offset, unsigned short num_bytes,
 		ofono_sim_file_read_cb_t cb, void *data);
+
+int sim_fs_read_info(struct sim_fs *fs, int id,
+		enum ofono_sim_file_structure expected_type,
+		sim_fs_read_info_cb_t cb, void *data);
 
 void sim_fs_check_version(struct sim_fs *fs);
 

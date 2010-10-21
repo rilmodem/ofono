@@ -61,6 +61,7 @@ struct sim_fs_op {
 	unsigned char *buffer;
 	enum ofono_sim_file_structure structure;
 	unsigned short offset;
+	gboolean info_only;
 	int num_bytes;
 	int length;
 	int record_length;
@@ -482,11 +483,30 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 
 		op->record_length = length;
 		op->current = op->offset / 256;
-		fs->op_source = g_idle_add(sim_fs_op_read_block, fs);
+
+		if (!op->info_only)
+			fs->op_source = g_idle_add(sim_fs_op_read_block, fs);
 	} else {
 		op->record_length = record_length;
 		op->current = 1;
-		fs->op_source = g_idle_add(sim_fs_op_read_record, fs);
+
+		if (!op->info_only)
+			fs->op_source = g_idle_add(sim_fs_op_read_record, fs);
+	}
+
+	if (op->info_only) {
+		/*
+		 * It's info-only request. So there is no need to request
+		 * actual contents of the EF-files. Just return the EF-info.
+		 */
+		sim_fs_read_info_cb_t cb = op->cb;
+
+		cb(1, file_status, op->length,
+			op->record_length, op->userdata);
+
+		sim_fs_end_current(fs);
+
+		return;
 	}
 
 	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN || cache == FALSE)
@@ -531,7 +551,7 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	enum ofono_sim_file_structure structure;
 	int record_length;
 
-	if (!imsi)
+	if (!imsi || !op->info_only)
 		return FALSE;
 
 	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
@@ -642,6 +662,43 @@ static gboolean sim_fs_op_next(gpointer user_data)
 	return FALSE;
 }
 
+int sim_fs_read_info(struct sim_fs *fs, int id,
+			enum ofono_sim_file_structure expected_type,
+			sim_fs_read_info_cb_t cb, void *data)
+{
+	struct sim_fs_op *op;
+
+	if (!cb)
+		return -1;
+
+	if (!fs->driver)
+		return -1;
+
+	if (!fs->driver->read_file_info)
+		return -1;
+
+	if (!fs->op_q)
+		fs->op_q = g_queue_new();
+
+	op = g_new0(struct sim_fs_op, 1);
+
+	op->id = id;
+	op->structure = expected_type;
+	op->cb = cb;
+	op->userdata = data;
+	op->is_read = TRUE;
+	op->offset = 0;
+	op->num_bytes = 0;
+	op->info_only = TRUE;
+
+	g_queue_push_tail(fs->op_q, op);
+
+	if (g_queue_get_length(fs->op_q) == 1)
+		fs->op_source = g_idle_add(sim_fs_op_next, fs);
+
+	return 0;
+}
+
 int sim_fs_read(struct sim_fs *fs, int id,
 		enum ofono_sim_file_structure expected_type,
 		unsigned short offset, unsigned short num_bytes,
@@ -670,6 +727,7 @@ int sim_fs_read(struct sim_fs *fs, int id,
 	op->is_read = TRUE;
 	op->offset = offset;
 	op->num_bytes = num_bytes;
+	op->info_only = FALSE;
 
 	g_queue_push_tail(fs->op_q, op);
 
