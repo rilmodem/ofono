@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -39,6 +40,7 @@
 #include "gatresult.h"
 
 #include "atmodem.h"
+#include "vendor.h"
 
 #define INDEX_INVALID -1
 
@@ -57,6 +59,8 @@ struct pb_data {
 	char *old_charset;
 	int supported;
 	GAtChat *chat;
+	unsigned int vendor;
+	guint ready_id;
 };
 
 static void warn_bad()
@@ -208,7 +212,7 @@ static void export_failed(struct cb_data *cbd)
 }
 
 static void at_read_entries_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_phonebook *pb = cbd->user;
@@ -253,7 +257,7 @@ static void at_read_entries(struct cb_data *cbd)
 }
 
 static void at_set_charset_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 
@@ -266,7 +270,7 @@ static void at_set_charset_cb(gboolean ok, GAtResult *result,
 }
 
 static void at_read_charset_cb(gboolean ok, GAtResult *result,
-					gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_phonebook *pb = cbd->user;
@@ -304,7 +308,7 @@ error:
 }
 
 static void at_list_indices_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_phonebook *pb = cbd->user;
@@ -321,7 +325,7 @@ static void at_list_indices_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_open_list(&iter))
 		goto error;
 
-	/* retrieve index_min and index_max from indices
+	/* Retrieve index_min and index_max from indices
 	 * which seems like "(1-150),32,16"
 	 */
 	if (!g_at_result_iter_next_range(&iter, &pbd->index_min,
@@ -340,7 +344,7 @@ error:
 }
 
 static void at_select_storage_cb(gboolean ok, GAtResult *result,
-					gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	struct ofono_phonebook *pb = cbd->user;
@@ -389,9 +393,28 @@ static void phonebook_not_supported(struct ofono_phonebook *pb)
 }
 
 static void at_list_storages_cb(gboolean ok, GAtResult *result,
-					gpointer user_data)
+						gpointer user_data);
+
+static void ifx_pbready_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_phonebook *pb = user_data;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
+
+	g_at_chat_unregister(pbd->chat, pbd->ready_id);
+	pbd->ready_id = 0;
+
+	if (g_at_chat_send(pbd->chat, "AT+CPBS=?", cpbs_prefix,
+				at_list_storages_cb, pb, NULL) > 0)
+		return;
+
+	phonebook_not_supported(pb);
+}
+
+static void at_list_storages_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct ofono_phonebook *pb = user_data;
+	struct pb_data *pbd = ofono_phonebook_get_data(pb);
 	gboolean sm_supported = FALSE;
 	gboolean me_supported = FALSE;
 	gboolean in_list = FALSE;
@@ -417,20 +440,28 @@ static void at_list_storages_cb(gboolean ok, GAtResult *result,
 	}
 
 	if (in_list && !g_at_result_iter_close_list(&iter))
-		goto error;
+		goto vendor;
 
 	if (!me_supported && !sm_supported)
-		goto error;
+		goto vendor;
 
 	ofono_phonebook_register(pb);
 	return;
+
+vendor:
+	switch (pbd->vendor) {
+	case OFONO_VENDOR_IFX:
+		pbd->ready_id = g_at_chat_register(pbd->chat, "+PBREADY",
+					ifx_pbready_notify, FALSE, pb, NULL);
+		return;
+	}
 
 error:
 	phonebook_not_supported(pb);
 }
 
 static void at_list_charsets_cb(gboolean ok, GAtResult *result,
-					gpointer user_data)
+						gpointer user_data)
 {
 	struct ofono_phonebook *pb = user_data;
 	struct pb_data *pbd = ofono_phonebook_get_data(pb);
@@ -504,8 +535,12 @@ static int at_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 	GAtChat *chat = data;
 	struct pb_data *pbd;
 
-	pbd = g_new0(struct pb_data, 1);
+	pbd = g_try_new0(struct pb_data, 1);
+	if (!pbd)
+		return -ENOMEM;
+
 	pbd->chat = g_at_chat_clone(chat);
+	pbd->vendor = vendor;
 
 	ofono_phonebook_set_data(pb, pbd);
 
@@ -528,10 +563,10 @@ static void at_phonebook_remove(struct ofono_phonebook *pb)
 }
 
 static struct ofono_phonebook_driver driver = {
-	.name			= "atmodem",
-	.probe			= at_phonebook_probe,
-	.remove			= at_phonebook_remove,
-	.export_entries		= at_export_entries
+	.name		= "atmodem",
+	.probe		= at_phonebook_probe,
+	.remove		= at_phonebook_remove,
+	.export_entries	= at_export_entries
 };
 
 void at_phonebook_init()
