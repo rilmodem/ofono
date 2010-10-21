@@ -44,7 +44,7 @@ struct ppp_net {
 	GAtPPP *ppp;
 	char *if_name;
 	GIOChannel *channel;
-	gint watch;
+	guint watch;
 	gint mtu;
 	struct ppp_header *ppp_packet;
 };
@@ -52,31 +52,33 @@ struct ppp_net {
 gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
 {
 	struct ifreq ifr;
-	int sock;
-	int rc;
+	int sk, err;
 
 	if (net == NULL || mtu > MAX_PACKET)
 		return FALSE;
 
 	net->mtu = mtu;
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0)
+	sk = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
 		return FALSE;
 
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, net->if_name, sizeof(ifr.ifr_name));
 	ifr.ifr_mtu = mtu;
 
-	rc = ioctl(sock, SIOCSIFMTU, (caddr_t) &ifr);
+	err = ioctl(sk, SIOCSIFMTU, (caddr_t) &ifr);
 
-	close(sock);
-	return (rc < 0) ? FALSE : TRUE;
+	close(sk);
+
+	if (err < 0)
+		return FALSE;
+
+	return TRUE;
 }
 
 void ppp_net_process_packet(struct ppp_net *net, const guint8 *packet)
 {
-	GError *error = NULL;
 	GIOStatus status;
 	gsize bytes_written;
 	guint16 len;
@@ -84,7 +86,7 @@ void ppp_net_process_packet(struct ppp_net *net, const guint8 *packet)
 	/* find the length of the packet to transmit */
 	len = get_host_short(&packet[2]);
 	status = g_io_channel_write_chars(net->channel, (gchar *) packet,
-						len, &bytes_written, &error);
+						len, &bytes_written, NULL);
 }
 
 /*
@@ -97,7 +99,6 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 	struct ppp_net *net = (struct ppp_net *) userdata;
 	GIOStatus status;
 	gsize bytes_read;
-	GError *error = NULL;
 	gchar *buf = (gchar *) net->ppp_packet->info;
 
 	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP))
@@ -106,7 +107,7 @@ static gboolean ppp_net_callback(GIOChannel *channel, GIOCondition cond,
 	if (cond & G_IO_IN) {
 		/* leave space to add PPP protocol field */
 		status = g_io_channel_read_chars(channel, buf, net->mtu,
-							&bytes_read, &error);
+							&bytes_read, NULL);
 		if (bytes_read > 0)
 			ppp_transmit(net->ppp, (guint8 *) net->ppp_packet,
 					bytes_read);
@@ -125,10 +126,9 @@ const char *ppp_net_get_interface(struct ppp_net *net)
 struct ppp_net *ppp_net_new(GAtPPP *ppp)
 {
 	struct ppp_net *net;
-	int fd;
-	struct ifreq ifr;
 	GIOChannel *channel = NULL;
-	int err;
+	struct ifreq ifr;
+	int fd, err;
 
 	net = g_try_new0(struct ppp_net, 1);
 	if (net == NULL)
@@ -149,7 +149,7 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp)
 	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 	strcpy(ifr.ifr_name, "ppp%d");
 
-	err = ioctl(fd, TUNSETIFF, (void *)&ifr);
+	err = ioctl(fd, TUNSETIFF, (void *) &ifr);
 	if (err < 0)
 		goto error;
 
