@@ -67,16 +67,16 @@ static gboolean radio_access_mode_from_string(const char *str,
 					enum ofono_radio_access_mode *mode)
 
 {
-	if (g_str_equal(mode, "any")) {
+	if (g_str_equal(str, "any")) {
 		*mode = OFONO_RADIO_ACCESS_MODE_ANY;
 		return TRUE;
-	} else if (g_str_equal(mode, "gsm")) {
+	} else if (g_str_equal(str, "gsm")) {
 		*mode = OFONO_RADIO_ACCESS_MODE_GSM;
 		return TRUE;
-	} else if (g_str_equal(mode, "umts")) {
+	} else if (g_str_equal(str, "umts")) {
 		*mode = OFONO_RADIO_ACCESS_MODE_UMTS;
 		return TRUE;
-	} else if (g_str_equal(mode, "lte")) {
+	} else if (g_str_equal(str, "lte")) {
 		*mode = OFONO_RADIO_ACCESS_MODE_LTE;
 		return TRUE;
 	}
