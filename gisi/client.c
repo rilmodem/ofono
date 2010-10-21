@@ -35,7 +35,6 @@
 #include "phonet.h"
 #include <glib.h>
 
-#include "log.h"
 #include "socket.h"
 #include "client.h"
 
@@ -611,7 +610,6 @@ static void build_subscribe_msg(const void *nodep,
 			break;
 		__msg[2]++;
 		__msg[2+__msg[2]] = res;
-		DBG("subscription: #%d res 0x%02x", __msg[2], res);
 		break;
 	default:
 		break;
@@ -652,8 +650,6 @@ int g_isi_commit_subscriptions(GIsiClient *client)
 		g_io_channel_unref(channel);
 	}
 
-	DBG("client %p [0x%02x] committing resource subscriptions",
-		client, client->resource);
 	__msg = msg;
 	twalk(client->inds.subs, build_subscribe_msg);
 
@@ -707,9 +703,6 @@ int g_isi_add_subscription(GIsiClient *client, uint8_t res, uint8_t type,
 
 	ind->func = cb;
 	ind->data = data;
-
-	DBG("client %p [0x%02x] subscribes res 0x%02x type 0x%02x",
-		client, client->resource, res, type);
 
 	return 0;
 }
