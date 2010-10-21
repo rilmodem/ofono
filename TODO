@@ -229,6 +229,12 @@ GPRS
   Priority: High
   Complexity: C2
 
+- IPv6 CP support.  To support IPv6 based GPRS contexts via PPP, GAtPPP
+  needs to be updated to support IPv6CP from RFC 2472.
+
+  Priority: Low
+  Complexity: C4
+
 - On-demand SOCKS5 proxy support for MMS contexts.  When an MMS context type
   is created, oFono should create a SOCKS5 proxy.  When a client connects to
   the proxy, oFono can activate the GPRS context on-demand.
