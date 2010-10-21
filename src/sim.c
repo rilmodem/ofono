@@ -72,6 +72,7 @@ struct ofono_sim {
 	unsigned char efest_length;
 	unsigned char *efsst;
 	unsigned char efsst_length;
+	gboolean fixed_dialing;
 
 	char *imsi;
 
@@ -309,6 +310,9 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	if (sim->imsi)
 		ofono_dbus_dict_append(&dict, "SubscriberIdentity",
 					DBUS_TYPE_STRING, &sim->imsi);
+
+	ofono_dbus_dict_append(&dict, "FixedDialing", DBUS_TYPE_BOOLEAN,
+				&sim->fixed_dialing);
 
 	if (sim->mnc_length) {
 		char mcc[OFONO_MAX_MCC_LENGTH + 1];
@@ -1241,6 +1245,33 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 }
 
+static void sim_efadn_info_read_cb(int ok, unsigned char file_status,
+					int total_length, int record_length,
+					void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (!ok)
+		goto out;
+
+	if (file_status != SIM_FILE_STATUS_VALID) {
+		DBusConnection *conn = ofono_dbus_get_connection();
+		const char *path = __ofono_atom_get_path(sim->atom);
+
+		sim->fixed_dialing = TRUE;
+
+		ofono_dbus_signal_property_changed(conn, path,
+					OFONO_SIM_MANAGER_INTERFACE,
+					"FixedDialing",
+					DBUS_TYPE_BOOLEAN,
+					&sim->fixed_dialing);
+		return;
+	}
+
+out:
+	sim_retrieve_imsi(sim);
+}
+
 static void sim_efsst_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -1257,6 +1288,21 @@ static void sim_efsst_read_cb(int ok, int length, int record,
 
 	sim->efsst = g_memdup(data, length);
 	sim->efsst_length = length;
+
+	/*
+	 * Check if Fixed Dialing is enabled in the SIM-card
+	 * (TS 11.11/TS 51.011, Section 11.5.1: FDN capability request).
+	 * If FDN is activated and ADN is invalidated,
+	 * don't continue initialization routine.
+	 */
+	if (sim_sst_is_active(sim->efsst, sim->efsst_length,
+				SIM_SST_SERVICE_FDN)) {
+
+		sim_fs_read_info(sim->simfs, SIM_EFADN_FILEID,
+					OFONO_SIM_FILE_STRUCTURE_FIXED,
+					sim_efadn_info_read_cb, sim);
+		return;
+	}
 
 out:
 	sim_retrieve_imsi(sim);
@@ -1278,6 +1324,26 @@ static void sim_efest_read_cb(int ok, int length, int record,
 
 	sim->efest = g_memdup(data, length);
 	sim->efest_length = length;
+
+	/*
+	 * Check if Fixed Dialing is enabled in the USIM-card
+	 * (TS 31.102, Section 5.3.2: FDN capability request).
+	 * If FDN is activated, don't continue initialization routine.
+	 */
+	if (sim_est_is_active(sim->efest, sim->efest_length,
+				SIM_EST_SERVICE_FDN)) {
+		DBusConnection *conn = ofono_dbus_get_connection();
+		const char *path = __ofono_atom_get_path(sim->atom);
+
+		sim->fixed_dialing = TRUE;
+
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"FixedDialing",
+						DBUS_TYPE_BOOLEAN,
+						&sim->fixed_dialing);
+		return;
+	}
 
 out:
 	sim_retrieve_imsi(sim);
@@ -1857,6 +1923,8 @@ static void sim_free_state(struct ofono_sim *sim)
 
 	g_free(sim->iidf_image);
 	sim->iidf_image = NULL;
+
+	sim->fixed_dialing = FALSE;
 }
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
