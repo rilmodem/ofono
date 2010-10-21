@@ -163,7 +163,7 @@ static void dns_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	char buf[64];
-	unsigned int cid;
+	int cid;
 	const char *address;
 	GAtResultIter iter;
 
@@ -181,7 +181,7 @@ static void dns_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &cid))
 		goto error;
 
-	if (cid != gcd->active_context)
+	if ((unsigned int) cid != gcd->active_context)
 		goto error;
 
 	if (!g_at_result_iter_next_string(&iter, &address))
@@ -210,8 +210,7 @@ static void address_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	char buf[64];
-	unsigned int cid;
+	int cid;
 	const char *address;
 	GAtResultIter iter;
 
@@ -229,7 +228,7 @@ static void address_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &cid))
 		goto error;
 
-	if (cid != gcd->active_context)
+	if ((unsigned int) cid != gcd->active_context)
 		goto error;
 
 	if (!g_at_result_iter_next_string(&iter, &address))
@@ -362,7 +361,7 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	const char *event;
-	unsigned int cid;
+	int cid;
 	GAtResultIter iter;
 
 	g_at_result_iter_init(&iter, result);
@@ -382,7 +381,7 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &cid))
 		return;
 
-	if (cid != gcd->active_context)
+	if ((unsigned int) cid != gcd->active_context)
 		return;
 
 	if (gcd->state != STATE_IDLE && gcd->rawip) {
