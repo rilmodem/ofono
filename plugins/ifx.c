@@ -689,7 +689,7 @@ static void ifx_post_online(struct ofono_modem *modem)
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->dlcs[NETREG_DLC]);
 	gc = ofono_gprs_context_create(modem, 0,
-					"atmodem", data->dlcs[GPRS1_DLC]);
+					"ifxmodem", data->dlcs[GPRS1_DLC]);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
