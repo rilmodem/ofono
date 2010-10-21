@@ -24,34 +24,21 @@
 #endif
 
 #include <glib.h>
-#include <gatchat.h>
 
-#define OFONO_API_SUBJECT_TO_CHANGE
-#include <ofono/plugin.h>
-#include <ofono/types.h>
+#include <ofono/log.h>
+#include <ofono/modem.h>
+#include <ofono/gprs-context.h>
+
+#include "gatchat.h"
+#include "gatresult.h"
+#include "gatrawip.h"
 
 #include "ifxmodem.h"
 
-static int ifxmodem_init(void)
+void ifx_gprs_context_init()
 {
-	ifx_voicecall_init();
-	ifx_audio_settings_init();
-	ifx_radio_settings_init();
-	ifx_gprs_context_init();
-	ifx_stk_init();
-
-	return 0;
 }
 
-static void ifxmodem_exit(void)
+void ifx_gprs_context_exit()
 {
-	ifx_stk_exit();
-	ifx_gprs_context_exit();
-	ifx_radio_settings_exit();
-	ifx_audio_settings_exit();
-	ifx_voicecall_exit();
 }
-
-OFONO_PLUGIN_DEFINE(ifxmodem, "Infineon modem driver", VERSION,
-			OFONO_PLUGIN_PRIORITY_DEFAULT,
-			ifxmodem_init, ifxmodem_exit)
