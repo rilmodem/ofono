@@ -56,6 +56,8 @@ struct ofono_voicecall {
 	void *driver_data;
 	struct ofono_atom *atom;
 	struct dial_request *dial_req;
+	GQueue *toneq;
+	guint tone_source;
 };
 
 struct voicecall {
@@ -79,12 +81,22 @@ struct dial_request {
 	struct ofono_phone_number ph;
 };
 
+struct tone_queue_entry {
+	char *tone_str;
+	char *left;
+	ofono_voicecall_tone_cb_t cb;
+	void *user_data;
+	ofono_destroy_func destroy;
+	int id;
+};
+
 static const char *default_en_list[] = { "911", "112", NULL };
 static const char *default_en_list_no_sim[] = { "119", "118", "999", "110",
 						"08", "000", NULL };
 
 static void generic_callback(const struct ofono_error *error, void *data);
 static void multirelease_callback(const struct ofono_error *err, void *data);
+static gboolean tone_request_run(gpointer user_data);
 
 static gint call_compare_by_id(gconstpointer a, gconstpointer b)
 {
@@ -224,6 +236,83 @@ static void dial_request_finish(struct ofono_voicecall *vc)
 	g_free(dial_req->message);
 	g_free(dial_req);
 	vc->dial_req = NULL;
+}
+
+static gboolean voicecalls_can_dtmf(struct ofono_voicecall *vc)
+{
+	GSList *l;
+	struct voicecall *v;
+
+	for (l = vc->call_list; l; l = l->next) {
+		v = l->data;
+
+		if (v->call->status == CALL_STATUS_ACTIVE)
+			return TRUE;
+
+		/* Connected for 2nd stage dialing */
+		if (v->call->status == CALL_STATUS_ALERTING)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static int tone_queue(struct ofono_voicecall *vc, const char *tone_str,
+			ofono_voicecall_tone_cb_t cb, void *data,
+			ofono_destroy_func destroy)
+{
+	struct tone_queue_entry *entry;
+	int id = 1;
+	int n = 0;
+	int i;
+
+	/*
+	 * Tones can be 0-9, *, #, A-D according to 27.007 C.2.11,
+	 * and p for Pause.
+	 */
+	for (i = 0; tone_str[i]; i++)
+		if (!g_ascii_isdigit(tone_str[i]) && tone_str[i] != 'p' &&
+				tone_str[i] != '*' && tone_str[i] != '#' &&
+				(tone_str[i] < 'A' || tone_str[i] > 'D'))
+			return -EINVAL;
+
+	while ((entry = g_queue_peek_nth(vc->toneq, n++)) != NULL)
+		if (entry->id >= id)
+			id = entry->id + 1;
+
+	entry = g_try_new0(struct tone_queue_entry, 1);
+	if (entry == NULL)
+		return -ENOMEM;
+
+	entry->tone_str = g_strdup(tone_str);
+	entry->left = entry->tone_str;
+	entry->cb = cb;
+	entry->user_data = data;
+	entry->destroy = destroy;
+	entry->id = id;
+
+	g_queue_push_tail(vc->toneq, entry);
+
+	if (g_queue_get_length(vc->toneq) == 1)
+		g_timeout_add(0, tone_request_run, vc);
+
+	return id;
+}
+
+static void tone_request_finish(struct ofono_voicecall *vc,
+				struct tone_queue_entry *entry,
+				int error, gboolean callback)
+{
+	g_queue_remove(vc->toneq, entry);
+
+	if (callback)
+		entry->cb(error, entry->user_data);
+
+	if (entry->destroy)
+		entry->destroy(entry->user_data);
+
+	g_free(entry->tone_str);
+	g_free(entry);
 }
 
 static void append_voicecall_properties(struct voicecall *v,
@@ -583,6 +672,13 @@ static void voicecall_set_call_status(struct voicecall *call, int status)
 	if (status == CALL_STATUS_DISCONNECTED && call->vc->dial_req &&
 			call == call->vc->dial_req->call)
 		dial_request_finish(call->vc);
+
+	if (!voicecalls_can_dtmf(call->vc)) {
+		struct tone_queue_entry *entry;
+
+		while ((entry = g_queue_peek_head(call->vc->toneq)))
+			tone_request_finish(call->vc, entry, ENOENT, TRUE);
+	}
 }
 
 static void voicecall_set_call_lineid(struct voicecall *v,
@@ -693,25 +789,6 @@ static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
 		if (v->call->status == CALL_STATUS_ACTIVE ||
 				v->call->status == CALL_STATUS_DIALING ||
 				v->call->status == CALL_STATUS_ALERTING)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-static gboolean voicecalls_can_dtmf(struct ofono_voicecall *vc)
-{
-	GSList *l;
-	struct voicecall *v;
-
-	for (l = vc->call_list; l; l = l->next) {
-		v = l->data;
-
-		if (v->call->status == CALL_STATUS_ACTIVE)
-			return TRUE;
-
-		/* Connected for 2nd stage dialing */
-		if (v->call->status == CALL_STATUS_ALERTING)
 			return TRUE;
 	}
 
@@ -1527,13 +1604,26 @@ out:
 	return NULL;
 }
 
+static void tone_callback(int error, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	DBusMessage *reply;
+
+	if (error)
+		reply = __ofono_error_failed(vc->pending);
+	else
+		reply = dbus_message_new_method_return(vc->pending);
+
+	__ofono_dbus_pending_reply(&vc->pending, reply);
+}
+
 static DBusMessage *manager_tone(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_voicecall *vc = data;
 	const char *in_tones;
 	char *tones;
-	int i, len;
+	int err, len;
 
 	if (vc->pending)
 		return __ofono_error_busy(msg);
@@ -1556,22 +1646,14 @@ static DBusMessage *manager_tone(DBusConnection *conn,
 
 	tones = g_ascii_strup(in_tones, len);
 
-	/* Tones can be 0-9, *, #, A-D according to 27.007 C.2.11 */
-	for (i = 0; i < len; i++) {
-		if (g_ascii_isdigit(tones[i]) ||
-			tones[i] == '*' || tones[i] == '#' ||
-				(tones[i] >= 'A' && tones[i] <= 'D'))
-			continue;
-
-		g_free(tones);
-		return __ofono_error_invalid_format(msg);
-	}
-
-	vc->pending = dbus_message_ref(msg);
-
-	vc->driver->send_tones(vc, tones, generic_callback, vc);
+	err = tone_queue(vc, tones, tone_callback, vc, NULL);
 
 	g_free(tones);
+
+	if (err < 0)
+		return __ofono_error_invalid_format(msg);
+
+	vc->pending = dbus_message_ref(msg);
 
 	return NULL;
 }
@@ -2012,6 +2094,20 @@ static void voicecall_remove(struct ofono_atom *atom)
 		vc->sim = NULL;
 	}
 
+	if (vc->tone_source) {
+		g_source_remove(vc->tone_source);
+		vc->tone_source = 0;
+	}
+
+	if (vc->toneq) {
+		struct tone_queue_entry *entry;
+
+		while ((entry = g_queue_peek_head(vc->toneq)))
+			tone_request_finish(vc, entry, ESHUTDOWN, TRUE);
+
+		g_queue_free(vc->toneq);
+	}
+
 	g_free(vc);
 }
 
@@ -2030,6 +2126,8 @@ struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
 
 	if (vc == NULL)
 		return NULL;
+
+	vc->toneq = g_queue_new();
 
 	vc->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_VOICECALL,
 						voicecall_remove, vc);
@@ -2325,4 +2423,111 @@ void __ofono_voicecall_dial_cancel(struct ofono_voicecall *vc)
 		return;
 
 	vc->dial_req->cb = NULL;
+}
+
+static void tone_request_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	struct tone_queue_entry *entry = g_queue_peek_head(vc->toneq);
+	int len = 0;
+
+	if (!entry)
+		return;
+
+	/*
+	 * Call back with error only if the error is related to the
+	 * current entry.  If the error corresponds to a cancelled
+	 * request, do nothing.
+	 */
+	if (error && error->type != OFONO_ERROR_TYPE_NO_ERROR &&
+			entry->left > entry->tone_str) {
+		DBG("command failed with error: %s",
+				telephony_error_to_str(error));
+
+		tone_request_finish(vc, entry, EIO, TRUE);
+
+		goto done;
+	}
+
+	if (*entry->left == '\0') {
+		tone_request_finish(vc, entry, 0, TRUE);
+
+		goto done;
+	}
+
+	len = strspn(entry->left, "pP");
+	entry->left += len;
+
+done:
+	/*
+	 * Wait 3 seconds per PAUSE, same as for DTMF separator characters
+	 * passed in a telephone number according to TS 22.101 A.21,
+	 * although 27.007 claims this delay can be set using S8 and
+	 * defaults to 2 seconds.
+	 */
+	vc->tone_source = g_timeout_add_seconds(len * 3, tone_request_run, vc);
+}
+
+static gboolean tone_request_run(gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct tone_queue_entry *entry = g_queue_peek_head(vc->toneq);
+	char buf[256];
+	unsigned len;
+
+	vc->tone_source = 0;
+
+	if (!entry)
+		return FALSE;
+
+	len = strcspn(entry->left, "pP");
+
+	if (len) {
+		if (len >= sizeof(buf))
+			len = sizeof(buf) - 1;
+
+		memcpy(buf, entry->left, len);
+		buf[len] = '\0';
+		entry->left += len;
+
+		vc->driver->send_tones(vc, buf, tone_request_cb, vc);
+	} else
+		tone_request_cb(NULL, vc);
+
+	return FALSE;
+}
+
+int __ofono_voicecall_tone_send(struct ofono_voicecall *vc,
+				const char *tone_str,
+				ofono_voicecall_tone_cb_t cb, void *user_data)
+{
+	if (!vc->driver->send_tones)
+		return -ENOSYS;
+
+	/* Send DTMFs only if we have at least one connected call */
+	if (!voicecalls_can_dtmf(vc))
+		return -ENOENT;
+
+	return tone_queue(vc, tone_str, cb, user_data, NULL);
+}
+
+void __ofono_voicecall_tone_cancel(struct ofono_voicecall *vc, int id)
+{
+	struct tone_queue_entry *entry;
+	int n = 0;
+
+	while ((entry = g_queue_peek_nth(vc->toneq, n++)) != NULL)
+		if (entry->id == id)
+			break;
+
+	tone_request_finish(vc, entry, 0, FALSE);
+
+	/*
+	 * If we were in the middle of a PAUSE, wake queue up
+	 * now, else wake up when current tone finishes.
+	 */
+	if (n == 1 && vc->tone_source) {
+		g_source_remove(vc->tone_source);
+		tone_request_run(vc);
+	}
 }

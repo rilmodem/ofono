@@ -207,6 +207,7 @@ enum ofono_voicecall_interaction {
 };
 
 typedef void (*ofono_voicecall_dial_cb_t)(struct ofono_call *call, void *data);
+typedef void (*ofono_voicecall_tone_cb_t)(int error, void *data);
 
 ofono_bool_t __ofono_voicecall_is_busy(struct ofono_voicecall *vc,
 					enum ofono_voicecall_interaction type);
@@ -217,6 +218,11 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 				enum ofono_voicecall_interaction interaction,
 				ofono_voicecall_dial_cb_t cb, void *user_data);
 void __ofono_voicecall_dial_cancel(struct ofono_voicecall *vc);
+
+int __ofono_voicecall_tone_send(struct ofono_voicecall *vc,
+				const char *tone_str,
+				ofono_voicecall_tone_cb_t cb, void *user_data);
+void __ofono_voicecall_tone_cancel(struct ofono_voicecall *vc, int id);
 
 #include <ofono/sms.h>
 
