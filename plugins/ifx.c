@@ -62,17 +62,19 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
-#define NUM_DLC  4
+#define NUM_DLC  5
 
 #define VOICE_DLC   0
 #define NETREG_DLC  1
-#define GPRS_DLC    2
-#define AUX_DLC     3
+#define GPRS1_DLC   2
+#define GPRS2_DLC   3
+#define AUX_DLC     4
 
-static char *dlc_prefixes[NUM_DLC] = { "Voice: ", "Net: ", "GPRS: ", "Aux: " };
+static char *dlc_prefixes[NUM_DLC] = { "Voice: ", "Net: ",
+					"GPRS1: ", "GPRS2: ", "Aux: " };
 
 static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
-					"/dev/ttyGSM7", "/dev/ttyGSM8" };
+			"/dev/ttyGSM3", "/dev/ttyGSM4", "/dev/ttyGSM6" };
 
 static const char *none_prefix[] = { NULL };
 static const char *xdrv_prefix[] = { "+XDRV:", NULL };
@@ -352,6 +354,9 @@ static gboolean dlc_setup(gpointer user_data)
 	for (i = 0; i < NUM_DLC; i++)
 		g_at_chat_send(data->dlcs[i], "ATE0 +CMEE=1", NULL,
 						NULL, NULL, NULL);
+
+	g_at_chat_set_slave(data->dlcs[GPRS1_DLC], data->dlcs[NETREG_DLC]);
+	g_at_chat_set_slave(data->dlcs[GPRS2_DLC], data->dlcs[NETREG_DLC]);
 
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
 					cfun_enable, modem, NULL);
@@ -683,7 +688,7 @@ static void ifx_post_online(struct ofono_modem *modem)
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->dlcs[NETREG_DLC]);
 	gc = ofono_gprs_context_create(modem, 0,
-					"atmodem", data->dlcs[GPRS_DLC]);
+					"atmodem", data->dlcs[GPRS1_DLC]);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
