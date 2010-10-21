@@ -654,7 +654,8 @@ static void ifx_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_stk_create(modem, 0, "ifxmodem", data->dlcs[AUX_DLC]);
-	ofono_phonebook_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+	ofono_phonebook_create(modem, OFONO_VENDOR_IFX,
+					"atmodem", data->dlcs[AUX_DLC]);
 }
 
 static void ifx_post_online(struct ofono_modem *modem)
