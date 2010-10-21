@@ -74,6 +74,7 @@ struct ofono_stk {
 	char *idle_mode_text;
 	struct stk_icon_id idle_mode_icon;
 	struct timeval get_inkey_start_ts;
+	int dtmf_id;
 };
 
 struct envelope_op {
@@ -460,8 +461,12 @@ static void default_agent_notify(gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
-	if (stk->current_agent == stk->default_agent && stk->respond_on_exit)
+	if (stk->current_agent == stk->default_agent && stk->respond_on_exit) {
+		if (stk->pending_cmd)
+			stk->cancel_cmd(stk);
+
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
+	}
 
 	stk->default_agent = NULL;
 	stk->current_agent = stk->session_agent;
@@ -475,6 +480,9 @@ static void session_agent_notify(gpointer user_data)
 	DBG("Session Agent removed");
 
 	if (stk->current_agent == stk->session_agent && stk->respond_on_exit) {
+		if (stk->pending_cmd)
+			stk->cancel_cmd(stk);
+
 		DBG("Sending Terminate response for session agent");
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 	}
@@ -1852,6 +1860,134 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 	return TRUE;
 }
 
+static void send_dtmf_cancel(struct ofono_stk *stk)
+{
+	struct ofono_voicecall *vc = NULL;
+	struct ofono_atom *vc_atom;
+
+	stk->respond_on_exit = FALSE;
+
+	vc_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
+						OFONO_ATOM_TYPE_VOICECALL);
+	if (vc_atom)
+		vc = __ofono_atom_get_data(vc_atom);
+
+	if (vc) /* Should be always true here */
+		__ofono_voicecall_tone_cancel(vc, stk->dtmf_id);
+
+	stk_alpha_id_unset(stk);
+}
+
+static void dtmf_sent_cb(int error, void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+
+	stk->respond_on_exit = FALSE;
+
+	stk_alpha_id_unset(stk);
+
+	if (error == ENOENT) {
+		struct stk_response rsp;
+		static unsigned char not_in_speech_call_result[] = { 0x07 };
+		static struct ofono_error failure =
+			{ .type = OFONO_ERROR_TYPE_FAILURE };
+
+		memset(&rsp, 0, sizeof(rsp));
+
+		rsp.result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		rsp.result.additional_len = sizeof(not_in_speech_call_result);
+		rsp.result.additional = not_in_speech_call_result;
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&failure, stk);
+
+		return;
+	}
+
+	if (error == EINVAL)
+		send_simple_response(stk, STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD);
+	else if (error)
+		send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
+	else
+		send_simple_response(stk, STK_RESULT_TYPE_SUCCESS);
+}
+
+static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	static unsigned char not_in_speech_call_result[] = { 0x07 };
+	struct ofono_voicecall *vc = NULL;
+	struct ofono_atom *vc_atom;
+	char dtmf[256], *digit;
+	char *dtmf_from = "01234567890abcABC";
+	char *dtmf_to = "01234567890*#p*#p";
+	int err, pos;
+
+	vc_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
+						OFONO_ATOM_TYPE_VOICECALL);
+	if (vc_atom)
+		vc = __ofono_atom_get_data(vc_atom);
+
+	if (!vc) {
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+
+	/* Convert the DTMF string to phone number format */
+	for (pos = 0; cmd->send_dtmf.dtmf[pos] != 0; pos++) {
+		digit = strchr(dtmf_from, cmd->send_dtmf.dtmf[pos]);
+		if (!digit) {
+			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+			return TRUE;
+		}
+
+		dtmf[pos] = dtmf_to[digit - dtmf_from];
+	}
+	dtmf[pos] = 0;
+
+	err = __ofono_voicecall_tone_send(vc, dtmf, dtmf_sent_cb, stk);
+
+	if (err == -EBUSY) {
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		return TRUE;
+	}
+
+	if (err == -ENOSYS) {
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+
+	if (err == -ENOENT) {
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		rsp->result.additional_len = sizeof(not_in_speech_call_result);
+		rsp->result.additional = not_in_speech_call_result;
+		return TRUE;
+	}
+
+	if (err < 0) {
+		/*
+		 * We most likely got an out of memory error, tell SIM
+		 * to retry
+		 */
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		return TRUE;
+	}
+
+	stk_alpha_id_set(stk, cmd->send_dtmf.alpha_id, &cmd->send_dtmf.icon_id);
+
+	/*
+	 * Note that we don't strictly require an agent to be connected,
+	 * but to comply with 6.4.24 we need to send a End Session when
+	 * the user decides so.
+	 */
+	stk->respond_on_exit = TRUE;
+	stk->cancel_cmd = send_dtmf_cancel;
+	stk->dtmf_id = err;
+
+	return FALSE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (stk->immediate_response)
@@ -2021,6 +2157,11 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 
 	case STK_COMMAND_TYPE_REFRESH:
 		respond = handle_command_refresh(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_SEND_DTMF:
+		respond = handle_command_send_dtmf(stk->pending_cmd,
 							&rsp, stk);
 		break;
 
