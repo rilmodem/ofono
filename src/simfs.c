@@ -484,17 +484,17 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 		op->record_length = length;
 		op->current = op->offset / 256;
 
-		if (!op->info_only)
+		if (op->info_only == FALSE)
 			fs->op_source = g_idle_add(sim_fs_op_read_block, fs);
 	} else {
 		op->record_length = record_length;
 		op->current = 1;
 
-		if (!op->info_only)
+		if (op->info_only == FALSE)
 			fs->op_source = g_idle_add(sim_fs_op_read_record, fs);
 	}
 
-	if (op->info_only) {
+	if (op->info_only == TRUE) {
 		/*
 		 * It's info-only request. So there is no need to request
 		 * actual contents of the EF-files. Just return the EF-info.
@@ -551,7 +551,7 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	enum ofono_sim_file_structure structure;
 	int record_length;
 
-	if (!imsi || !op->info_only)
+	if (imsi == NULL || op->info_only == TRUE)
 		return FALSE;
 
 	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
