@@ -287,6 +287,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	char **locked_pins;
 	const char *pin_name;
 	dbus_bool_t present = sim->state != OFONO_SIM_STATE_NOT_PRESENT;
+	dbus_bool_t fdn;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -311,8 +312,8 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 		ofono_dbus_dict_append(&dict, "SubscriberIdentity",
 					DBUS_TYPE_STRING, &sim->imsi);
 
-	ofono_dbus_dict_append(&dict, "FixedDialing", DBUS_TYPE_BOOLEAN,
-				&sim->fixed_dialing);
+	fdn = sim->fixed_dialing;
+	ofono_dbus_dict_append(&dict, "FixedDialing", DBUS_TYPE_BOOLEAN, &fdn);
 
 	if (sim->mnc_length && sim->imsi) {
 		char mcc[OFONO_MAX_MCC_LENGTH + 1];
