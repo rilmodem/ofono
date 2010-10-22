@@ -110,14 +110,6 @@ SMS
 SIM / SIM File system
 =====================
 
-- Fixed Dialing support.  oFono should support Fixed Dialing Numbers.  This
-  requires being able to edit the FD phonebook or assume that the FD phonebook
-  has been appropriately bootstrapped.
-
-  Priority: Low
-  Complexity: C2
-  Owner: Petteri Tikander <petteri.tikander@ixonos.com>
-
 - Barred Dialing numbers support.  BDN will not be supported by oFono.
   If BDN service enabled SIM is used, oFono will go into emergency mode.
 

@@ -116,3 +116,11 @@ GPRS
 - GPRS suspension event support.  The packet data service may be temporarily
   suspended while a circuit switched service such as voice call or SMS is
   active.
+
+SIM
+===
+
+- Fixed Dialing support.  oFono reads the necessary bits from the SIM to
+  check if FDN support is allocated and enabled in the SIM.  If enabled,
+  oFono halts the SIM initialization procedure and the modem remains in the
+  PRESIM state.  In this state oFono will only allow emergency calls.
