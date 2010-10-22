@@ -669,18 +669,20 @@ int sim_fs_read_info(struct sim_fs *fs, int id,
 	struct sim_fs_op *op;
 
 	if (!cb)
-		return -1;
+		return -EINVAL;
 
 	if (!fs->driver)
-		return -1;
+		return -EINVAL;
 
 	if (!fs->driver->read_file_info)
-		return -1;
+		return -ENOSYS;
 
 	if (!fs->op_q)
 		fs->op_q = g_queue_new();
 
-	op = g_new0(struct sim_fs_op, 1);
+	op = g_try_new0(struct sim_fs_op, 1);
+	if (op == NULL)
+		return -ENOMEM;
 
 	op->id = id;
 	op->structure = expected_type;
@@ -705,18 +707,20 @@ int sim_fs_read(struct sim_fs *fs, int id,
 	struct sim_fs_op *op;
 
 	if (!cb)
-		return -1;
+		return -EINVAL;
 
 	if (!fs->driver)
-		return -1;
+		return -EINVAL;
 
 	if (!fs->driver->read_file_info)
-		return -1;
+		return -ENOSYS;
 
 	if (!fs->op_q)
 		fs->op_q = g_queue_new();
 
-	op = g_new0(struct sim_fs_op, 1);
+	op = g_try_new0(struct sim_fs_op, 1);
+	if (op == NULL)
+		return -ENOMEM;
 
 	op->id = id;
 	op->structure = expected_type;
@@ -743,10 +747,10 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 	gconstpointer fn = NULL;
 
 	if (!cb)
-		return -1;
+		return -EINVAL;
 
 	if (!fs->driver)
-		return -1;
+		return -EINVAL;
 
 	switch (structure) {
 	case OFONO_SIM_FILE_STRUCTURE_TRANSPARENT:
@@ -763,12 +767,14 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 	}
 
 	if (fn == NULL)
-		return -1;
+		return -ENOSYS;
 
 	if (!fs->op_q)
 		fs->op_q = g_queue_new();
 
-	op = g_new0(struct sim_fs_op, 1);
+	op = g_try_new0(struct sim_fs_op, 1);
+	if (op == NULL)
+		return -ENOMEM;
 
 	op->id = id;
 	op->cb = cb;
