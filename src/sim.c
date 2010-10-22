@@ -1303,7 +1303,6 @@ static void sim_efsst_read_cb(int ok, int length, int record,
 	 */
 	if (sim_sst_is_active(sim->efsst, sim->efsst_length,
 				SIM_SST_SERVICE_FDN)) {
-
 		sim_fs_read_info(sim->simfs, SIM_EFADN_FILEID,
 					OFONO_SIM_FILE_STRUCTURE_FIXED,
 					sim_efadn_info_read_cb, sim);
