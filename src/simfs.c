@@ -687,8 +687,6 @@ int sim_fs_read_info(struct sim_fs *fs, int id,
 	op->cb = cb;
 	op->userdata = data;
 	op->is_read = TRUE;
-	op->offset = 0;
-	op->num_bytes = 0;
 	op->info_only = TRUE;
 
 	g_queue_push_tail(fs->op_q, op);
