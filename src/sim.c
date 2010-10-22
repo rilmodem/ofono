@@ -1245,6 +1245,21 @@ static void sim_retrieve_imsi(struct ofono_sim *sim)
 	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 }
 
+static void sim_fdn_enabled(struct ofono_sim *sim)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sim->atom);
+	dbus_bool_t val;
+
+	sim->fixed_dialing = TRUE;
+
+	val = sim->fixed_dialing;
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"FixedDialing",
+						DBUS_TYPE_BOOLEAN, &val);
+}
+
 static void sim_efadn_info_read_cb(int ok, unsigned char file_status,
 					int total_length, int record_length,
 					void *userdata)
@@ -1255,16 +1270,7 @@ static void sim_efadn_info_read_cb(int ok, unsigned char file_status,
 		goto out;
 
 	if (file_status != SIM_FILE_STATUS_VALID) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *path = __ofono_atom_get_path(sim->atom);
-
-		sim->fixed_dialing = TRUE;
-
-		ofono_dbus_signal_property_changed(conn, path,
-					OFONO_SIM_MANAGER_INTERFACE,
-					"FixedDialing",
-					DBUS_TYPE_BOOLEAN,
-					&sim->fixed_dialing);
+		sim_fdn_enabled(sim);
 		return;
 	}
 
@@ -1332,16 +1338,7 @@ static void sim_efest_read_cb(int ok, int length, int record,
 	 */
 	if (sim_est_is_active(sim->efest, sim->efest_length,
 				SIM_EST_SERVICE_FDN)) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *path = __ofono_atom_get_path(sim->atom);
-
-		sim->fixed_dialing = TRUE;
-
-		ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SIM_MANAGER_INTERFACE,
-						"FixedDialing",
-						DBUS_TYPE_BOOLEAN,
-						&sim->fixed_dialing);
+		sim_fdn_enabled(sim);
 		return;
 	}
 
