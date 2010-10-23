@@ -316,14 +316,17 @@ static struct stk_menu *stk_menu_create(const char *title,
 		ret->items[i].item_id = item->id;
 
 		text = NULL;
+
 		if (item_attrs && item_attrs->len) {
 			memcpy(attr.attributes, &item_attrs->list[i * 4], 4);
 			attr.len = 4;
 
 			text = dbus_apply_text_attributes(item->text, &attr);
 		}
+
 		if (!text)
 			text = strdup(item->text);
+
 		ret->items[i].text = text;
 
 		if (item_icon_ids && item_icon_ids->len)
@@ -816,7 +819,6 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 
 		if (!idle_mode_text) {
 			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-
 			return TRUE;
 		}
 	}
@@ -1214,7 +1216,6 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 
 	if (!text) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-
 		return TRUE;
 	}
 
@@ -1383,7 +1384,6 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 
 	if (!text) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-
 		return TRUE;
 	}
 
@@ -1415,6 +1415,7 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 		err = stk_agent_request_digit(stk->current_agent, text,
 						&gi->icon_id, request_key_cb,
 						stk, NULL, timeout);
+
 	g_free(text);
 
 	if (err < 0) {
@@ -1485,7 +1486,6 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 
 	if (!text) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-
 		return TRUE;
 	}
 
@@ -1503,6 +1503,7 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 						gi->resp_len.max, hidden,
 						request_string_cb,
 						stk, NULL, timeout);
+
 	g_free(text);
 
 	if (err < 0) {
