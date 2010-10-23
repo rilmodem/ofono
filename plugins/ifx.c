@@ -691,13 +691,20 @@ static void ifx_post_online(struct ofono_modem *modem)
 	if (!gprs)
 		return;
 
-	gc1 = ofono_gprs_context_create(modem, 0,
+	if (data->mux_ldisc < 0) {
+		gc1 = ofono_gprs_context_create(modem, 0,
+					"atmodem", data->dlcs[GPRS1_DLC]);
+		gc2 = ofono_gprs_context_create(modem, 0,
+					"atmodem", data->dlcs[GPRS2_DLC]);
+	} else {
+		gc1 = ofono_gprs_context_create(modem, 0,
 					"ifxmodem", data->dlcs[GPRS1_DLC]);
+		gc2 = ofono_gprs_context_create(modem, 0,
+					"ifxmodem", data->dlcs[GPRS2_DLC]);
+	}
+
 	if (gc1)
 		ofono_gprs_add_context(gprs, gc1);
-
-	gc2 = ofono_gprs_context_create(modem, 0,
-					"ifxmodem", data->dlcs[GPRS2_DLC]);
 	if (gc2)
 		ofono_gprs_add_context(gprs, gc2);
 }
