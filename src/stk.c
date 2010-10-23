@@ -1933,7 +1933,7 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	}
 
 	/* Convert the DTMF string to phone number format */
-	for (pos = 0; cmd->send_dtmf.dtmf[pos] != 0; pos++) {
+	for (pos = 0; cmd->send_dtmf.dtmf[pos] != '\0'; pos++) {
 		digit = strchr(dtmf_from, cmd->send_dtmf.dtmf[pos]);
 		if (!digit) {
 			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
@@ -1942,7 +1942,8 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 
 		dtmf[pos] = dtmf_to[digit - dtmf_from];
 	}
-	dtmf[pos] = 0;
+
+	dtmf[pos] = '\0';
 
 	err = __ofono_voicecall_tone_send(vc, dtmf, dtmf_sent_cb, stk);
 
