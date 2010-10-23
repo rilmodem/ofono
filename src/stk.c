@@ -1904,9 +1904,7 @@ static void dtmf_sent_cb(int error, void *user_data)
 		return;
 	}
 
-	if (error == EINVAL)
-		send_simple_response(stk, STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD);
-	else if (error)
+	if (error != 0)
 		send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
 	else
 		send_simple_response(stk, STK_RESULT_TYPE_SUCCESS);
@@ -1962,6 +1960,11 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		rsp->result.additional_len = sizeof(not_in_speech_call_result);
 		rsp->result.additional = not_in_speech_call_result;
+		return TRUE;
+	}
+
+	if (err == -EINVAL) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 		return TRUE;
 	}
 
