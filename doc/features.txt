@@ -83,6 +83,11 @@ Supported Proactive Commands:
   the icons by using GetIcon method on the SimManager interface.  The icons
   are read from the SIM and converted into XPM format.
 
+- Text attribute support.  Whenever oFono detects that text attributes have
+  been given to any text or alpha string, it applies them and converts the
+  resulting text to HTML.  The UI is expected to be able to display such
+  HTML formatted text.
+
 Envelopes:
 
 - Timer Expiration envelope support.  Whenever a timer expires (as started by

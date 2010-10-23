@@ -418,13 +418,6 @@ Sim Toolkit
   Complexity: C1
   Owner: Jeevaka Badrappan <jeevaka.badrappan@elektrobit.com>
 
-- Send HTML formatted text elements for all proactive commands, if the
-  proactive command supplies Text Attribute objects.  The stk_text_to_html
-  utility function can be used to convert raw text into HTML.
-
-  Priority: Low
-  Complexity: C2
-
 
 Emergency Calls
 ===============
