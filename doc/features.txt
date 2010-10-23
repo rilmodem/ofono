@@ -71,6 +71,12 @@ Supported Proactive Commands:
   SimToolkit interface.  Indications that this property has changed are
   handled by the usual means.
 
+- Send DTMF proactive command.  Whenever oFono receives the Send DTMF command,
+  it checks that there are calls in progress and DTMF is possible.  If so,
+  DTMF characters are passed to the voicecall atom to be transmitted to the
+  modem.  The appropriate terminal response is sent to the SIM once the DTMF
+  tones have been played or the call has been disconnected.
+
 - Sim icon support.  oFono supports icons that are stored on the SIM.  If the
   SIM notifies oFono that an icon is available for a particular proactive
   command, oFono passes this information to the UI.  The UI is able to obtain

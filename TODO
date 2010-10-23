@@ -403,13 +403,6 @@ Sim Toolkit
   Priority: High
   Complexity: C8
 
-- Support Send DTMF proactive command.  The DTMF characters are passed
-  directly to the voicecall atom and the SimToolkitAgent is notified if the
-  USIM has indicated it is acceptable to inform the user.
-
-  Priority: High
-  Complexity: C4
-
 - Support 'SMS-PP' Download Envelope.  Whenever a special type of SMS is
   received indicating that this is an SMS-PP Download message, this message
   will be sent to the SIM via an SMS-PP Download Envelope.  No user interaction
