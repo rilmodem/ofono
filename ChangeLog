@@ -1,3 +1,17 @@
+ver 0.33:
+	Fix wrong string to enum mapping of radio settings.
+	Fix issue with MMI code to bearer class mappings.
+	Fix issue with setting correct phase from EFphase.
+	Fix issue with phonebook handling and Infineon modems.
+	Fix issue with STK session end handling and Infineon modems.
+	Fix issue with SMS handling and ISI modems.
+	Fix issue with setting SCA type and ISI modems.
+	Add support for FastDormancy property.
+	Add support for FixedDialing property to indicate FDN.
+	Add support for Infineon specific M-RAW_IP GPRS context.
+	Add support for handling Send DTMF proactive command.
+	Add support for handling SIM Toolkit text attributes.
+
 ver 0.32:
 	Fix issue with AT+VTS not using quotes.
 	Fix issue with entering PUK and Infineon modems.
