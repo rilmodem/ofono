@@ -852,6 +852,55 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 }
 
+static void mbm_etzv_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	int year, mon, mday, hour, min, sec;
+	const char *tz, *time, *timestamp;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "*ETZV:") == FALSE)
+		return;
+
+	if (g_at_result_iter_next_string(&iter, &tz) == FALSE)
+		return;
+
+	if (g_at_result_iter_next_string(&iter, &time) == FALSE)
+		time = NULL;
+
+	if (g_at_result_iter_next_string(&iter, &timestamp) == FALSE)
+		timestamp = NULL;
+
+	DBG("tz %s time %s timestamp %s", tz, time, timestamp);
+
+	if (time == NULL) {
+		year = -1;
+		mon = -1;
+		mday = -1;
+		hour = -1;
+		min = -1;
+		sec = -1;
+	} else {
+		if (sscanf(time, "%u/%u/%u,%u:%u:%u", &year, &mon, &mday,
+						&hour, &min, &sec) != 6)
+		return;
+	}
+
+	nd->time.utcoff = atoi(tz) * 15 * 60;
+
+	nd->time.sec = sec;
+	nd->time.min = min;
+	nd->time.hour = hour;
+	nd->time.mday = mday;
+	nd->time.mon = mon;
+	nd->time.year = year;
+
+	ofono_netreg_time_notify(netreg, &nd->time);
+}
+
 static void mbm_erinfo_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1086,19 +1135,28 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				NULL, NULL, NULL);
 		break;
 	case OFONO_VENDOR_MBM:
+		/* Enable network registration updates */
 		g_at_chat_send(nd->chat, "AT*E2REG=1", none_prefix,
-					NULL, NULL, NULL);
+						NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT*EREG=2", none_prefix,
-					NULL, NULL, NULL);
+						NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT*EPSB=1", none_prefix,
-					NULL, NULL, NULL);
+						NULL, NULL, NULL);
 
+		/* Register for network technology updates */
 		g_at_chat_send(nd->chat, "AT*ERINFO=1", none_prefix,
-					NULL, NULL, NULL);
+						NULL, NULL, NULL);
 		g_at_chat_register(nd->chat, "*ERINFO:", mbm_erinfo_notify,
-					FALSE, netreg, NULL);
+						FALSE, netreg, NULL);
+
+		/* Register for network time update reports */
+		g_at_chat_register(nd->chat, "*ETZV:", mbm_etzv_notify,
+						FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT*ETZR=2", none_prefix,
+						NULL, NULL, NULL);
+
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
-				cind_support_cb, netreg, NULL);
+					cind_support_cb, netreg, NULL);
 		return;
 	case OFONO_VENDOR_NOVATEL:
 		/*
