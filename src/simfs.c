@@ -142,7 +142,10 @@ static void sim_fs_op_error(struct sim_fs *fs)
 {
 	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
 
-	if (op->is_read == TRUE)
+	if (op->info_only == TRUE)
+		((sim_fs_read_info_cb_t) op->cb)
+			(0, 0, 0, 0, op->userdata);
+	else if (op->is_read == TRUE)
 		((ofono_sim_file_read_cb_t) op->cb)
 			(0, 0, 0, 0, 0, op->userdata);
 	else
