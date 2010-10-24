@@ -86,6 +86,7 @@ struct ifx_data {
 	guint dlc_poll_count;
 	guint dlc_poll_source;
 	guint dlc_init_source;
+	guint mux_init_timeout;
 	guint frame_size;
 	int mux_ldisc;
 	int saved_ldisc;
@@ -462,6 +463,11 @@ static void mux_setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
+	if (data->mux_init_timeout > 0) {
+		g_source_remove(data->mux_init_timeout);
+		data->mux_init_timeout = 0;
+	}
+
 	g_at_chat_unref(data->dlcs[AUX_DLC]);
 	data->dlcs[AUX_DLC] = NULL;
 
@@ -499,6 +505,26 @@ error:
 	data->device = NULL;
 
 	ofono_modem_set_powered(modem, FALSE);
+}
+
+static gboolean mux_timeout_cb(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+
+	ofono_error("Timeout with multiplexer setup");
+
+	data->mux_init_timeout = 0;
+
+	g_at_chat_unref(data->dlcs[AUX_DLC]);
+	data->dlcs[AUX_DLC] = NULL;
+
+	g_io_channel_unref(data->device);
+	data->device = NULL;
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	return FALSE;
 }
 
 static int ifx_enable(struct ofono_modem *modem)
@@ -558,6 +584,9 @@ static int ifx_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(chat, "AT+CMUX=0,0,,1509,10,3,30,,", NULL,
 					mux_setup_cb, modem, NULL);
+
+	data->mux_init_timeout = g_timeout_add_seconds(5, mux_timeout_cb,
+								modem);
 
 	data->dlcs[AUX_DLC] = chat;
 
