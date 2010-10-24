@@ -183,28 +183,6 @@ static void xsim_notify(GAtResult *result, gpointer user_data)
 	}
 }
 
-static GAtChat *create_chat(GIOChannel *channel, char *debug)
-{
-	GAtSyntax *syntax;
-	GAtChat *chat;
-
-	if (!channel)
-		return NULL;
-
-	syntax = g_at_syntax_new_gsmv1();
-	chat = g_at_chat_new(channel, syntax);
-	g_at_syntax_unref(syntax);
-	g_io_channel_unref(channel);
-
-	if (!chat)
-		return NULL;
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(chat, ifx_debug, debug);
-
-	return chat;
-}
-
 static void shutdown_device(struct ifx_data *data)
 {
 	int i, fd;
@@ -239,6 +217,43 @@ static void shutdown_device(struct ifx_data *data)
 done:
 	g_io_channel_unref(data->device);
 	data->device = NULL;
+}
+
+static void dlc_disconnect(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	ofono_warn("Disconnect of modem channel");
+
+	shutdown_device(data);
+}
+
+static GAtChat *create_chat(GIOChannel *channel, struct ofono_modem *modem,
+								char *debug)
+{
+	GAtSyntax *syntax;
+	GAtChat *chat;
+
+	if (!channel)
+		return NULL;
+
+	syntax = g_at_syntax_new_gsmv1();
+	chat = g_at_chat_new(channel, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(channel);
+
+	if (!chat)
+		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, ifx_debug, debug);
+
+	g_at_chat_set_disconnect_function(chat, dlc_disconnect, modem);
+
+	return chat;
 }
 
 static void xgendata_query(gboolean ok, GAtResult *result, gpointer user_data)
@@ -389,7 +404,7 @@ static gboolean dlc_ready_check(gpointer user_data)
 	for (i = 0; i < NUM_DLC; i++) {
 		GIOChannel *channel = g_at_tty_open(dlc_nodes[i], NULL);
 
-		data->dlcs[i] = create_chat(channel, dlc_prefixes[i]);
+		data->dlcs[i] = create_chat(channel, modem, dlc_prefixes[i]);
 		if (!data->dlcs[i]) {
 			ofono_error("Failed to open %s", dlc_nodes[i]);
 			goto error;
@@ -438,7 +453,7 @@ static void setup_internal_mux(struct ofono_modem *modem)
 	for (i = 0; i < NUM_DLC; i++) {
 		GIOChannel *channel = g_at_mux_create_channel(data->mux);
 
-		data->dlcs[i] = create_chat(channel, dlc_prefixes[i]);
+		data->dlcs[i] = create_chat(channel, modem, dlc_prefixes[i]);
 		if (!data->dlcs[i]) {
 			ofono_error("Failed to create channel");
 			goto error;
