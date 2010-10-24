@@ -148,12 +148,16 @@ static void mbm_get_ip_details(struct ofono_gprs_context *gc)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_modem *modem;
 	const char *interface;
+	char buf[64];
 
 	if (gcd->have_e2ipcfg) {
 		g_at_chat_send(gcd->chat, "AT*E2IPCFG?", e2ipcfg_prefix,
 				mbm_e2ipcfg_cb, gc, NULL);
 		return;
 	}
+
+	snprintf(buf, sizeof(buf), "AT+CGPADDR=%u", gcd->active_context);
+	g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL);
 
 	modem = ofono_gprs_context_get_modem(gc);
 	interface = ofono_modem_get_string(modem, "NetworkInterface");
