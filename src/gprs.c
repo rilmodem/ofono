@@ -714,7 +714,8 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 	if (g_str_equal(property, "Active")) {
 		struct ofono_gprs_context *gc = ctx->gprs->context_driver;
 
-		if (gc == NULL || gc->driver->activate_primary == NULL ||
+		if (gc == NULL || gc->driver == NULL ||
+				gc->driver->activate_primary == NULL ||
 				gc->driver->deactivate_primary == NULL ||
 				ctx->gprs->cid_map == NULL)
 			return __ofono_error_not_implemented(msg);
