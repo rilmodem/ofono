@@ -65,7 +65,7 @@ static gboolean dhcp_poll(gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
-	if (gcd->dhcp_count > 10)
+	if (gcd->dhcp_count > 20)
 		CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL, NULL,
 						NULL, NULL, gcd->cb_data);
 	else
@@ -88,7 +88,7 @@ static gboolean get_next_addr(GAtResultIter *iter, char **addr)
 	val = strtol(str, NULL, 16);
 
 	if (addr)
-	        *addr = g_strdup_printf("%u.%u.%u.%u",
+		*addr = g_strdup_printf("%u.%u.%u.%u",
 					(val & 0x000000ff),
 					(val & 0x0000ff00) >> 8,
 					(val & 0x00ff0000) >> 16,
