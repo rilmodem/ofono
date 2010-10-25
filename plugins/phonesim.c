@@ -64,12 +64,138 @@
 #include <drivers/atmodem/atutil.h>
 
 static const char *none_prefix[] = { NULL };
+static int next_iface = 0;
 
 struct phonesim_data {
 	GAtMux *mux;
 	GAtChat *chat;
 	gboolean calypso;
 	gboolean use_mux;
+};
+
+struct gprs_context_data {
+	GAtChat *chat;
+	char *interface;
+};
+
+static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_gprs_context_up_cb_t cb = cbd->cb;
+	struct ofono_gprs_context *gc = cbd->user;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, ok ? gcd->interface : NULL, FALSE,
+			NULL, NULL, NULL, NULL, cbd->data);
+}
+
+static void at_cgact_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_gprs_context_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
+}
+
+static void phonesim_activate_primary(struct ofono_gprs_context *gc,
+				const struct ofono_gprs_primary_context *ctx,
+				ofono_gprs_context_up_cb_t cb, void *data)
+{
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[OFONO_GPRS_MAX_APN_LENGTH + 128];
+	int len;
+
+	cbd->user = gc;
+
+	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+
+	if (ctx->apn)
+		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
+				ctx->apn);
+
+	/* Assume always succeeds */
+	if (g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL) == 0)
+		goto error;
+
+	sprintf(buf, "AT+CGACT=1,%u", ctx->cid);
+	if (g_at_chat_send(gcd->chat, buf, none_prefix,
+				at_cgact_up_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, data);
+}
+
+static void phonesim_deactivate_primary(struct ofono_gprs_context *gc,
+					unsigned int id,
+					ofono_gprs_context_cb_t cb, void *data)
+{
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[128];
+
+	if (!cbd)
+		goto error;
+
+	cbd->user = gc;
+
+	snprintf(buf, sizeof(buf), "AT+CGACT=0,%u", id);
+
+	if (g_at_chat_send(gcd->chat, buf, none_prefix,
+				at_cgact_down_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static int phonesim_context_probe(struct ofono_gprs_context *gc,
+					unsigned int vendor, void *data)
+{
+	GAtChat *chat = data;
+	struct gprs_context_data *gcd;
+
+	gcd = g_try_new0(struct gprs_context_data, 1);
+	if (!gcd)
+		return -ENOMEM;
+
+	gcd->chat = g_at_chat_clone(chat);
+	gcd->interface = g_strdup_printf("dummy%d", next_iface++);
+
+	ofono_gprs_context_set_data(gc, gcd);
+
+	return 0;
+}
+
+static void phonesim_context_remove(struct ofono_gprs_context *gc)
+{
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	DBG("");
+
+	ofono_gprs_context_set_data(gc, NULL);
+
+	g_at_chat_unref(gcd->chat);
+	g_free(gcd->interface);
+
+	g_free(gcd);
+}
+
+static struct ofono_gprs_context_driver context_driver = {
+	.name			= "phonesim",
+	.probe			= phonesim_context_probe,
+	.remove			= phonesim_context_remove,
+	.activate_primary	= phonesim_activate_primary,
+	.deactivate_primary	= phonesim_deactivate_primary,
 };
 
 static int phonesim_probe(struct ofono_modem *modem)
@@ -377,7 +503,7 @@ static void phonesim_post_online(struct ofono_modem *modem)
 	}
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "phonesim", data->chat);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
@@ -492,6 +618,7 @@ static int phonesim_init(void)
 {
 	parse_config(CONFIGDIR "/phonesim.conf");
 
+	ofono_gprs_context_driver_register(&context_driver);
 	return ofono_modem_driver_register(&phonesim_driver);
 }
 
@@ -499,6 +626,7 @@ static void phonesim_exit(void)
 {
 	GSList *list;
 
+	ofono_gprs_context_driver_unregister(&context_driver);
 	ofono_modem_driver_unregister(&phonesim_driver);
 
 	for (list = modem_list; list; list = list->next) {
