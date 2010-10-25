@@ -2081,6 +2081,132 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	return FALSE;
 }
 
+static void play_tone_cb(enum stk_agent_result result, void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+
+	stk->respond_on_exit = FALSE;
+
+	switch (result) {
+	case STK_AGENT_RESULT_OK:
+	case STK_AGENT_RESULT_TIMEOUT:
+		send_simple_response(stk, STK_RESULT_TYPE_SUCCESS);
+		break;
+
+	default:
+		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
+		break;
+	}
+}
+
+static gboolean handle_command_play_tone(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	static int manufacturer_timeout = 10000; /* 10 seconds */
+	static const struct {
+		const char *name;
+		/* Continuous true/false according to 02.40 */
+		gboolean continuous;
+	} tone_infos[] = {
+		/* Default */
+		[0x00] = { "dial-tone", TRUE },
+
+		/* Standard */
+		[0x01] = { "dial-tone", TRUE },
+		[0x02] = { "busy", TRUE },
+		[0x03] = { "congestion", TRUE },
+		[0x04] = { "radio-path-acknowledge", FALSE },
+		[0x05] = { "radio-path-not-available", FALSE },
+		[0x06] = { "error", TRUE },
+		[0x07] = { "call-waiting", FALSE },
+		[0x08] = { "ringing-tone", TRUE },
+
+		/* Proprietary */
+		[0x10] = { "general-beep", FALSE },
+		[0x11] = { "positive-acknowledgement", FALSE },
+		[0x12] = { "negative-acknowledgement", FALSE },
+		[0x13] = { "user-ringing-tone", TRUE },
+		[0x14] = { "user-sms-alert", FALSE },
+		[0x15] = { "critical", FALSE },
+		[0x20] = { "vibrate", TRUE },
+
+		/* Themed */
+		[0x30] = { "happy", FALSE },
+		[0x31] = { "sad", FALSE },
+		[0x32] = { "urgent-action", FALSE },
+		[0x33] = { "question", FALSE },
+		[0x34] = { "message-received", FALSE },
+
+		/* Melody */
+		[0x40] = { "melody-1", FALSE },
+		[0x41] = { "melody-2", FALSE },
+		[0x42] = { "melody-3", FALSE },
+		[0x43] = { "melody-4", FALSE },
+		[0x44] = { "melody-5", FALSE },
+		[0x45] = { "melody-6", FALSE },
+		[0x46] = { "melody-7", FALSE },
+		[0x47] = { "melody-8", FALSE },
+	};
+
+	const struct stk_command_play_tone *pt = &cmd->play_tone;
+	uint8_t qualifier = stk->pending_cmd->qualifier;
+	gboolean vibrate = (qualifier & (1 << 0)) != 0;
+	char *text;
+	int timeout;
+	int err;
+
+	if (pt->tone > sizeof(tone_infos) / sizeof(*tone_infos) ||
+			!tone_infos[pt->tone].name) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+
+		return TRUE;
+	}
+
+	text = dbus_apply_text_attributes(pt->alpha_id ? pt->alpha_id : "",
+						&pt->text_attr);
+	if (!text) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+
+		return TRUE;
+	}
+
+	if (pt->duration.interval)
+		timeout = duration_to_msecs(&pt->duration);
+	else
+		timeout = manufacturer_timeout;
+
+	if (!tone_infos[pt->tone].continuous)
+		/* Duration ignored */
+		err = stk_agent_play_tone(stk->current_agent, text,
+						&pt->icon_id, vibrate,
+						tone_infos[pt->tone].name,
+						play_tone_cb, stk, NULL,
+						stk->timeout * 1000);
+	else
+		err = stk_agent_loop_tone(stk->current_agent, text,
+						&pt->icon_id, vibrate,
+						tone_infos[pt->tone].name,
+						play_tone_cb, stk, NULL,
+						timeout);
+
+	g_free(text);
+
+	if (err < 0) {
+		/*
+		 * We most likely got an out of memory error, tell SIM
+		 * to retry
+		 */
+		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		return TRUE;
+	}
+
+	stk->respond_on_exit = TRUE;
+	stk->cancel_cmd = stk_request_cancel;
+
+	return FALSE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (stk->immediate_response)
@@ -2255,6 +2381,11 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 
 	case STK_COMMAND_TYPE_SEND_DTMF:
 		respond = handle_command_send_dtmf(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_PLAY_TONE:
+		respond = handle_command_play_tone(stk->pending_cmd,
 							&rsp, stk);
 		break;
 
