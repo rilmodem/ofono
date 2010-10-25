@@ -720,6 +720,9 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		if (cidmap == NULL)
 			return __ofono_error_not_implemented(msg);
 
+		if (ctx->gprs->pending)
+			return __ofono_error_busy(msg);
+
 		if (ctx->pending)
 			return __ofono_error_busy(msg);
 
@@ -1375,6 +1378,9 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	const char *path;
 	const char *atompath;
 
+	if (gprs->pending)
+		return __ofono_error_busy(msg);
+
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
@@ -1388,6 +1394,10 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 
 	if (ctx->active) {
 		struct ofono_gprs_context *gc = ctx->context_driver;
+
+		/* This context is already being messed with */
+		if (ctx->pending)
+			return __ofono_error_busy(msg);
 
 		gprs->pending = dbus_message_ref(msg);
 		gc->driver->deactivate_primary(gc, ctx->context.cid,
@@ -1471,12 +1481,21 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_gprs *gprs = data;
+	GSList *l;
+	struct pri_context *ctx;
 
 	if (gprs->pending)
 		return __ofono_error_busy(msg);
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
+
+	for (l = gprs->contexts; l; l = l->next) {
+		ctx = l->data;
+
+		if (ctx->pending)
+			return __ofono_error_busy(msg);
+	}
 
 	gprs->pending = dbus_message_ref(msg);
 
