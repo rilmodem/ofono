@@ -79,7 +79,7 @@ struct ofono_gprs {
 	GKeyFile *settings;
 	char *imsi;
 	DBusMessage *pending;
-	struct ofono_gprs_context *context_driver;
+	GSList *context_drivers;
 	const struct ofono_gprs_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -87,7 +87,6 @@ struct ofono_gprs {
 
 struct ofono_gprs_context {
 	struct ofono_gprs *gprs;
-	DBusMessage *pending;
 	const struct ofono_gprs_context_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -110,7 +109,9 @@ struct pri_context {
 	char *path;
 	char *key;
 	struct context_settings *settings;
+	DBusMessage *pending;
 	struct ofono_gprs_primary_context context;
+	struct ofono_gprs_context *context_driver;
 	struct ofono_gprs *gprs;
 };
 
@@ -443,7 +444,6 @@ static void pri_activate_callback(const struct ofono_error *error,
 					void *data)
 {
 	struct pri_context *ctx = data;
-	struct ofono_gprs_context *gc = ctx->gprs->context_driver;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_bool_t value;
 
@@ -452,18 +452,19 @@ static void pri_activate_callback(const struct ofono_error *error,
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Activating context failed with error: %s",
 				telephony_error_to_str(error));
-		__ofono_dbus_pending_reply(&gc->pending,
-					__ofono_error_failed(gc->pending));
+		__ofono_dbus_pending_reply(&ctx->pending,
+					__ofono_error_failed(ctx->pending));
 
 		gprs_cid_release(ctx->gprs, ctx->context.cid);
 		ctx->context.cid = 0;
+		ctx->context_driver = NULL;
 
 		return;
 	}
 
 	ctx->active = TRUE;
-	__ofono_dbus_pending_reply(&gc->pending,
-				dbus_message_new_method_return(gc->pending));
+	__ofono_dbus_pending_reply(&ctx->pending,
+				dbus_message_new_method_return(ctx->pending));
 
 	/*
 	 * If we don't have the interface, don't bother emitting any settings,
@@ -482,24 +483,24 @@ static void pri_activate_callback(const struct ofono_error *error,
 static void pri_deactivate_callback(const struct ofono_error *error, void *data)
 {
 	struct pri_context *ctx = data;
-	struct ofono_gprs_context *gc = ctx->gprs->context_driver;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	dbus_bool_t value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Deactivating context failed with error: %s",
 				telephony_error_to_str(error));
-		__ofono_dbus_pending_reply(&gc->pending,
-					__ofono_error_failed(gc->pending));
+		__ofono_dbus_pending_reply(&ctx->pending,
+					__ofono_error_failed(ctx->pending));
 		return;
 	}
 
 	gprs_cid_release(ctx->gprs, ctx->context.cid);
 	ctx->context.cid = 0;
-
 	ctx->active = FALSE;
-	__ofono_dbus_pending_reply(&gc->pending,
-				dbus_message_new_method_return(gc->pending));
+	ctx->context_driver = NULL;
+
+	__ofono_dbus_pending_reply(&ctx->pending,
+				dbus_message_new_method_return(ctx->pending));
 
 	pri_reset_context_settings(ctx);
 
@@ -712,15 +713,13 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 	dbus_message_iter_recurse(&iter, &var);
 
 	if (g_str_equal(property, "Active")) {
-		struct ofono_gprs_context *gc = ctx->gprs->context_driver;
+		struct ofono_gprs_context *gc;
+		struct idmap *cidmap = ctx->gprs->cid_map;
 
-		if (gc == NULL || gc->driver == NULL ||
-				gc->driver->activate_primary == NULL ||
-				gc->driver->deactivate_primary == NULL ||
-				ctx->gprs->cid_map == NULL)
+		if (cidmap == NULL)
 			return __ofono_error_not_implemented(msg);
 
-		if (gc->pending)
+		if (ctx->pending)
 			return __ofono_error_busy(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
@@ -738,24 +737,24 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 			return __ofono_error_attach_in_progress(msg);
 
 		if (value) {
+			unsigned int cid_min = idmap_get_min(cidmap);
 			ctx->context.cid = gprs_cid_alloc(ctx->gprs);
 
 			if (ctx->context.cid == 0)
 				return __ofono_error_failed(msg);
 
-			if (ctx->context.cid !=
-					idmap_get_min(ctx->gprs->cid_map)) {
-				ofono_error("Multiple active contexts are"
-						" not yet supported");
-
-				gprs_cid_release(ctx->gprs, ctx->context.cid);
-				ctx->context.cid = 0;
-
-				return __ofono_error_failed(msg);
-			}
+			ctx->context_driver =
+				g_slist_nth_data(ctx->gprs->context_drivers,
+						ctx->context.cid - cid_min);
 		}
 
-		gc->pending = dbus_message_ref(msg);
+		gc = ctx->context_driver;
+		if (gc == NULL || gc->driver == NULL ||
+				gc->driver->activate_primary == NULL ||
+				gc->driver->deactivate_primary == NULL)
+			return __ofono_error_not_implemented(msg);
+
+		ctx->pending = dbus_message_ref(msg);
 
 		if (value)
 			gc->driver->activate_primary(gc, &ctx->context,
@@ -987,8 +986,9 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 
 			gprs_cid_release(gprs, ctx->context.cid);
 			ctx->context.cid = 0;
-
+			ctx->context_driver = NULL;
 			ctx->active = FALSE;
+
 			pri_reset_context_settings(ctx);
 
 			value = FALSE;
@@ -1386,7 +1386,7 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 		return __ofono_error_not_found(msg);
 
 	if (ctx->active) {
-		struct ofono_gprs_context *gc = gprs->context_driver;
+		struct ofono_gprs_context *gc = ctx->context_driver;
 
 		gprs->pending = dbus_message_ref(msg);
 		gc->driver->deactivate_primary(gc, ctx->context.cid,
@@ -1559,18 +1559,21 @@ static void gprs_context_unregister(struct ofono_atom *atom)
 {
 	struct ofono_gprs_context *gc = __ofono_atom_get_data(atom);
 
-	if (gc->gprs)
-		gc->gprs->context_driver = NULL;
+	if (gc->gprs == NULL)
+		return;
 
+	gc->gprs->context_drivers = g_slist_remove(gc->gprs->context_drivers,
+							gc);
 	gc->gprs = NULL;
 }
 
 void ofono_gprs_add_context(struct ofono_gprs *gprs,
 				struct ofono_gprs_context *gc)
 {
-	gprs->context_driver = gc;
-	gc->gprs = gprs;
+	if (gc->driver == NULL)
+		return;
 
+	gprs->context_drivers = g_slist_append(gprs->context_drivers, gc);
 	__ofono_atom_register(gc->atom, gprs_context_unregister);
 }
 
@@ -1593,8 +1596,9 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 
 		gprs_cid_release(ctx->gprs, ctx->context.cid);
 		ctx->context.cid = 0;
-
 		ctx->active = FALSE;
+		ctx->context_driver = NULL;
+
 		pri_reset_context_settings(ctx);
 
 		value = FALSE;
@@ -1776,10 +1780,7 @@ static void gprs_remove(struct ofono_atom *atom)
 		gprs->pid_map = NULL;
 	}
 
-	if (gprs->context_driver) {
-		gprs->context_driver->gprs = NULL;
-		gprs->context_driver = NULL;
-	}
+	g_slist_free(gprs->context_drivers);
 
 	if (gprs->driver && gprs->driver->remove)
 		gprs->driver->remove(gprs);
