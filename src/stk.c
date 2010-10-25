@@ -2110,7 +2110,7 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 		gboolean continuous;
 	} tone_infos[] = {
 		/* Default */
-		[0x00] = { "dial-tone", TRUE },
+		[0x00] = { "general-beep", FALSE },
 
 		/* Standard */
 		[0x01] = { "dial-tone", TRUE },
