@@ -1413,6 +1413,17 @@ static void emit_modem_added(struct ofono_modem *modem)
 	g_dbus_send_message(ofono_dbus_get_connection(), signal);
 }
 
+ofono_bool_t ofono_modem_is_registered(struct ofono_modem *modem)
+{
+	if (modem == NULL)
+		return FALSE;
+
+	if (modem->driver == NULL)
+		return FALSE;
+
+	return TRUE;
+}
+
 int ofono_modem_register(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
