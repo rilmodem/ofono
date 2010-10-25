@@ -437,6 +437,24 @@ static void stk_alpha_id_unset(struct ofono_stk *stk)
 	/* TODO */
 }
 
+static int duration_to_msecs(const struct stk_duration *duration)
+{
+	int msecs = duration->interval;
+
+	switch (duration->unit) {
+	case STK_DURATION_TYPE_MINUTES:
+		msecs *= 60;
+		/* Fall through.  */
+	case STK_DURATION_TYPE_SECONDS:
+		msecs *= 10;
+		/* Fall through.  */
+	case STK_DURATION_TYPE_SECOND_TENTHS:
+		msecs *= 100;
+	}
+
+	return msecs;
+}
+
 static DBusMessage *stk_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1000,22 +1018,13 @@ static gboolean handle_command_poll_interval(const struct stk_command *cmd,
 	struct ofono_modem *modem = __ofono_atom_get_modem(stk->atom);
 	int seconds;
 
-	switch (cmd->poll_interval.duration.unit) {
-	case STK_DURATION_TYPE_MINUTES:
-		seconds = cmd->poll_interval.duration.interval * 60;
-		break;
-	case STK_DURATION_TYPE_SECONDS:
-		seconds = cmd->poll_interval.duration.interval;
-		break;
-	case STK_DURATION_TYPE_SECOND_TENTHS:
-		seconds = (4 + cmd->poll_interval.duration.interval) / 10;
-		if (seconds < 1)
-			seconds = 1;
-		break;
-	default:
+	if (!cmd->poll_interval.duration.interval) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 		return TRUE;
 	}
+
+	seconds = MAX(duration_to_msecs(&cmd->poll_interval.duration) / 1000,
+			1);
 
 	ofono_modem_set_integer(modem, "status-poll-interval", seconds);
 
@@ -1219,17 +1228,8 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	if (dt->duration.interval) {
-		timeout = dt->duration.interval;
-		switch (dt->duration.unit) {
-		case STK_DURATION_TYPE_MINUTES:
-			timeout *= 60;
-		case STK_DURATION_TYPE_SECONDS:
-			timeout *= 10;
-		case STK_DURATION_TYPE_SECOND_TENTHS:
-			timeout *= 100;
-		}
-	}
+	if (dt->duration.interval)
+		timeout = duration_to_msecs(&dt->duration);
 
 	err = stk_agent_display_text(stk->current_agent, text, &dt->icon_id,
 					priority, display_text_cb, stk,
@@ -1387,17 +1387,8 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	if (gi->duration.interval) {
-		timeout = gi->duration.interval;
-		switch (gi->duration.unit) {
-		case STK_DURATION_TYPE_MINUTES:
-			timeout *= 60;
-		case STK_DURATION_TYPE_SECONDS:
-			timeout *= 10;
-		case STK_DURATION_TYPE_SECOND_TENTHS:
-			timeout *= 100;
-		}
-	}
+	if (gi->duration.interval)
+		timeout = duration_to_msecs(&gi->duration);
 
 	gettimeofday(&stk->get_inkey_start_ts, NULL);
 
