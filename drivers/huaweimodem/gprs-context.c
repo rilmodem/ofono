@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include <glib.h>
 
@@ -37,11 +38,11 @@
 
 #include "gatchat.h"
 #include "gatresult.h"
+#include "gattty.h"
 
 #include "huaweimodem.h"
 
-#define AUTH_BUF_LENGTH OFONO_GPRS_MAX_USERNAME_LENGTH + \
-			OFONO_GPRS_MAX_PASSWORD_LENGTH + 128
+#define TUN_SYSFS_DIR "/sys/devices/virtual/misc/tun"
 
 static const char *none_prefix[] = { NULL };
 static const char *dhcp_prefix[] = { "^DHCP:", NULL };
@@ -51,6 +52,7 @@ struct gprs_context_data {
 	unsigned int active_context;
 	unsigned int dhcp_source;
 	unsigned int dhcp_count;
+	guint ndis_watch;
 	union {
 		ofono_gprs_context_cb_t down_cb;	/* Down callback */
 		ofono_gprs_context_up_cb_t up_cb;	/* Up callback */
@@ -75,6 +77,40 @@ static gboolean dhcp_poll(gpointer user_data)
 	gcd->dhcp_source = 0;
 
 	return FALSE;
+}
+
+static gboolean ndis_receive_callback(GIOChannel *channel,
+					GIOCondition cond, gpointer user_data)
+{
+	struct ofono_gprs_context *gc = user_data;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	GIOStatus status;
+	gsize bytes_read;
+	char buf[1059];
+
+	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP)) {
+		gcd->ndis_watch = 0;
+		return FALSE;
+	}
+
+	status = g_io_channel_read_chars(channel, buf, sizeof(buf),
+							&bytes_read, NULL);
+
+	ofono_info("Received %zd bytes", bytes_read);
+
+	{
+		unsigned int i;
+		for (i = 0; i < bytes_read; i++)
+			printf("%02x ", buf[i]);
+		printf("\n");
+	}
+
+	if (status != G_IO_STATUS_NORMAL && status != G_IO_STATUS_AGAIN) {
+		gcd->ndis_watch = 0;
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 static gboolean get_next_addr(GAtResultIter *iter, char **addr)
@@ -111,6 +147,7 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *dns[3];
 	struct ofono_modem *modem;
 	const char *devnode;
+	GIOChannel *channel;
 
 	DBG("");
 
@@ -137,13 +174,21 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	ofono_info("Got the following parameters for context: %d",
 							gcd->active_context);
-	ofono_info("IP: %s, Gateway: %s", ip, gateway);
+	ofono_info("IP: %s  Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns1, dns2);
 
 	modem = ofono_gprs_context_get_modem(gc);
 	devnode = ofono_modem_get_string(modem, "NDIS");
 
 	ofono_info("NDIS: %s", devnode);
+
+	channel = g_at_tty_open(devnode, NULL);
+	if (channel) {
+		gcd->ndis_watch = g_io_add_watch(channel,
+				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				ndis_receive_callback, gc);
+	}
+	g_io_channel_unref(channel);
 
 	interface = "invalid";
 
@@ -181,6 +226,11 @@ static void at_ndisdup_down_cb(gboolean ok, GAtResult *result,
 	if (ok) {
 		gcd->down_cb = cb;
 		gcd->cb_data = cbd->data;
+
+		if (gcd->ndis_watch > 0) {
+			g_source_remove(gcd->ndis_watch);
+			gcd->ndis_watch = 0;
+		}
 	}
 
 	decode_at_error(&error, g_at_result_final_response(result));
@@ -256,7 +306,7 @@ static void huawei_gprs_activate_primary(struct ofono_gprs_context *gc,
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char buf[AUTH_BUF_LENGTH];
+	char buf[64];
 	int len;
 
 	DBG("");
@@ -316,6 +366,12 @@ static int huawei_gprs_context_probe(struct ofono_gprs_context *gc,
 {
 	GAtChat *chat = data;
 	struct gprs_context_data *gcd;
+	struct stat st;
+
+	if (stat(TUN_SYSFS_DIR, &st) < 0) {
+		ofono_error("Missing support for TUN/TAP devices");
+		return -ENODEV;
+	}
 
 	gcd = g_try_new0(struct gprs_context_data, 1);
 	if (!gcd)
