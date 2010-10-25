@@ -400,15 +400,116 @@ static struct ofono_modem_driver phonesim_driver = {
 	.post_online	= phonesim_post_online,
 };
 
+static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
+{
+	struct ofono_modem *modem;
+	char *value;
+
+	DBG("group %s", group);
+
+	modem = ofono_modem_create(group, "phonesim");
+	if (!modem)
+		return NULL;
+
+	value = g_key_file_get_string(keyfile, group, "Address", NULL);
+	if (!value)
+		goto error;
+
+	ofono_modem_set_string(modem, "Address", value);
+	g_free(value);
+
+	value = g_key_file_get_string(keyfile, group, "Port", NULL);
+	if (!value)
+		goto error;
+
+	ofono_modem_set_integer(modem, "Port", atoi(value));
+	g_free(value);
+
+	value = g_key_file_get_string(keyfile, group, "Modem", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Modem", value);
+		g_free(value);
+	}
+
+	value = g_key_file_get_string(keyfile, group, "Multiplexer", NULL);
+	if (value) {
+		ofono_modem_set_string(modem, "Multiplexer", value);
+		g_free(value);
+	}
+
+	return modem;
+
+error:
+	ofono_error("Missing address or port setting for %s", group);
+
+	ofono_modem_remove(modem);
+
+	return NULL;
+}
+
+static GSList *modem_list = NULL;
+
+static void parse_config(const char *filename)
+{
+	GKeyFile *keyfile;
+	GError *err = NULL;
+	char **modems;
+	int i;
+
+	DBG("filename %s", filename);
+
+	keyfile = g_key_file_new();
+
+	g_key_file_set_list_separator(keyfile, ',');
+
+	if (!g_key_file_load_from_file(keyfile, filename, 0, &err)) {
+		ofono_warn("Reading of %s failed: %s", filename, err->message);
+		g_error_free(err);
+		goto done;
+	}
+
+	modems = g_key_file_get_groups(keyfile, NULL);
+
+	for (i = 0; modems[i]; i++) {
+		struct ofono_modem *modem;
+
+		modem = create_modem(keyfile, modems[i]);
+		if (!modem)
+			continue;
+
+		modem_list = g_slist_prepend(modem_list, modem);
+
+		ofono_modem_register(modem);
+	}
+
+	g_strfreev(modems);
+
+done:
+	g_key_file_free(keyfile);
+}
+
 static int phonesim_init(void)
 {
+	parse_config(CONFIGDIR "/phonesim.conf");
+
 	return ofono_modem_driver_register(&phonesim_driver);
 }
 
 static void phonesim_exit(void)
 {
+	GSList *list;
+
 	ofono_modem_driver_unregister(&phonesim_driver);
+
+	for (list = modem_list; list; list = list->next) {
+		struct ofono_modem *modem = list->data;
+
+		ofono_modem_remove(modem);
+	}
+
+	g_slist_free(modem_list);
+	modem_list = NULL;
 }
 
-OFONO_PLUGIN_DEFINE(phonesim, "PhoneSIM driver", VERSION,
+OFONO_PLUGIN_DEFINE(phonesim, "Phone Simulator driver", VERSION,
 		OFONO_PLUGIN_PRIORITY_DEFAULT, phonesim_init, phonesim_exit)
