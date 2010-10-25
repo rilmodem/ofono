@@ -164,8 +164,9 @@ static void dns_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	char buf[64];
 	int cid;
-	const char *address;
+	const char *dns1, *dns2;
 	GAtResultIter iter;
+	gboolean found = FALSE;
 
 	if (!ok) {
 		ofono_error("Unable to get DNS details");
@@ -175,24 +176,25 @@ static void dns_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "+XDNS:"))
+	while (g_at_result_iter_next(&iter, "+XDNS:")) {
+		if (!g_at_result_iter_next_number(&iter, &cid))
+			goto error;
+
+		if (!g_at_result_iter_next_string(&iter, &dns1))
+			goto error;
+
+		if (!g_at_result_iter_next_string(&iter, &dns2))
+			goto error;
+
+		if ((unsigned int) cid == gcd->active_context) {
+			found = TRUE;
+			strncpy(gcd->dns1, dns1, sizeof(gcd->dns1));
+			strncpy(gcd->dns2, dns2, sizeof(gcd->dns2));
+		}
+	}
+
+	if (found == FALSE)
 		goto error;
-
-	if (!g_at_result_iter_next_number(&iter, &cid))
-		goto error;
-
-	if ((unsigned int) cid != gcd->active_context)
-		goto error;
-
-	if (!g_at_result_iter_next_string(&iter, &address))
-		goto error;
-
-	strncpy(gcd->dns1, address, sizeof(gcd->dns1));
-
-	if (!g_at_result_iter_next_string(&iter, &address))
-		goto error;
-
-	strncpy(gcd->dns2, address, sizeof(gcd->dns2));
 
 	ofono_info("IP: %s", gcd->address);
 	ofono_info("DNS: %s, %s", gcd->dns1, gcd->dns2);
