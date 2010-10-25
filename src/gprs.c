@@ -116,6 +116,7 @@ struct pri_context {
 };
 
 static void gprs_netreg_update(struct ofono_gprs *gprs);
+static void gprs_deactivate_next(struct ofono_gprs *gprs);
 
 static const char *gprs_context_type_to_string(int type)
 {
@@ -1413,6 +1414,59 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 	return NULL;
 }
 
+static void gprs_deactivate_for_all(const struct ofono_error *error,
+					void *data)
+{
+	struct pri_context *ctx = data;
+	struct ofono_gprs *gprs = ctx->gprs;
+	DBusConnection *conn;
+	dbus_bool_t value;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		__ofono_dbus_pending_reply(&gprs->pending,
+					__ofono_error_failed(gprs->pending));
+		return;
+	}
+
+	gprs_cid_release(gprs, ctx->context.cid);
+	ctx->active = FALSE;
+	ctx->context.cid = 0;
+	ctx->context_driver = NULL;
+
+	pri_reset_context_settings(ctx);
+
+	value = ctx->active;
+	conn = ofono_dbus_get_connection();
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					"Active", DBUS_TYPE_BOOLEAN, &value);
+
+	gprs_deactivate_next(gprs);
+}
+
+static void gprs_deactivate_next(struct ofono_gprs *gprs)
+{
+	GSList *l;
+	struct pri_context *ctx;
+	struct ofono_gprs_context *gc;
+
+	for (l = gprs->contexts; l; l = l->next) {
+		ctx = l->data;
+
+		if (ctx->active == FALSE)
+			continue;
+
+		gc = ctx->context_driver;
+		gc->driver->deactivate_primary(gc, ctx->context.cid,
+					gprs_deactivate_for_all, ctx);
+
+		return;
+	}
+
+	__ofono_dbus_pending_reply(&gprs->pending,
+				dbus_message_new_method_return(gprs->pending));
+}
+
 static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1424,7 +1478,11 @@ static DBusMessage *gprs_deactivate_all(DBusConnection *conn,
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
-	return __ofono_error_not_implemented(msg);
+	gprs->pending = dbus_message_ref(msg);
+
+	gprs_deactivate_next(gprs);
+
+	return NULL;
 }
 
 static DBusMessage *gprs_get_contexts(DBusConnection *conn,
