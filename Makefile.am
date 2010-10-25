@@ -233,6 +233,10 @@ builtin_sources += drivers/atmodem/atutil.h \
 if PHONESIM
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
+
+if DATAFILES
+conf_DATA += plugins/phonesim.conf
+endif
 endif
 
 builtin_modules += atgen
@@ -412,7 +416,7 @@ testdir = $(pkglibdir)/test
 test_SCRIPTS = $(test_scripts)
 endif
 
-conf_files = src/ofono.conf
+conf_files = src/ofono.conf plugins/phonesim.conf
 
 EXTRA_DIST = src/genbuiltin $(conf_files) $(udev_files) \
 					$(doc_files) $(test_scripts)
