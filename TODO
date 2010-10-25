@@ -326,14 +326,6 @@ Voicecall
 Sim Toolkit
 ===========
 
-- Support the Play Tone proactive command.  This should be implemented
-  by making the appropriate call into the SimToolkitAgent.  The sound
-  that will be played will be determined by the agent based on the sound
-  type.
-
-  Priority: High
-  Complexity: C2
-
 - Support Refresh proactive command.  The specification defines 7 types
   of Refresh types:
 	- NAA Initialization
