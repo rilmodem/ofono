@@ -477,7 +477,7 @@ static void phonesim_post_online(struct ofono_modem *modem)
 	struct phonesim_data *data = ofono_modem_get_data(modem);
 	struct ofono_message_waiting *mw;
 	struct ofono_gprs *gprs;
-	struct ofono_gprs_context *gc;
+	struct ofono_gprs_context *gc1, *gc2;
 
 	DBG("%p", modem);
 
@@ -503,10 +503,14 @@ static void phonesim_post_online(struct ofono_modem *modem)
 	}
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
-	gc = ofono_gprs_context_create(modem, 0, "phonesim", data->chat);
 
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
+	gc1 = ofono_gprs_context_create(modem, 0, "phonesim", data->chat);
+	if (gprs && gc1)
+		ofono_gprs_add_context(gprs, gc1);
+
+	gc2 = ofono_gprs_context_create(modem, 0, "phonesim", data->chat);
+	if (gprs && gc2)
+		ofono_gprs_add_context(gprs, gc2);
 
 	mw = ofono_message_waiting_create(modem);
 	if (mw)
