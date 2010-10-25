@@ -35,6 +35,9 @@ static void append_modem(struct ofono_modem *modem, void *userdata)
 	const char *path = ofono_modem_get_path(modem);
 	DBusMessageIter entry, dict;
 
+	if (ofono_modem_is_registered(modem) == FALSE)
+		return;
+
 	dbus_message_iter_open_container(array, DBUS_TYPE_STRUCT,
 						NULL, &entry);
 	dbus_message_iter_append_basic(&entry, DBUS_TYPE_OBJECT_PATH,
