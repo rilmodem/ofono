@@ -237,8 +237,10 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/caif_socket.h \
 			drivers/stemodem/if_caif.h
 
+if PHONESIM
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
+endif
 
 builtin_modules += atgen
 builtin_sources += plugins/atgen.c
