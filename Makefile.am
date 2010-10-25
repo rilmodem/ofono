@@ -94,13 +94,6 @@ rules_DATA = $(foreach file,$(udev_files), plugins/97-$(notdir $(file)))
 endif
 endif
 
-builtin_modules += modemconf
-builtin_sources += plugins/modemconf.c
-
-if DATAFILES
-conf_DATA += plugins/modem.conf
-endif
-
 if ISIMODEM
 builtin_modules += isimodem
 builtin_sources += $(gisi_sources) \
@@ -419,7 +412,7 @@ testdir = $(pkglibdir)/test
 test_SCRIPTS = $(test_scripts)
 endif
 
-conf_files = src/ofono.conf plugins/modem.conf
+conf_files = src/ofono.conf
 
 EXTRA_DIST = src/genbuiltin $(conf_files) $(udev_files) \
 					$(doc_files) $(test_scripts)
