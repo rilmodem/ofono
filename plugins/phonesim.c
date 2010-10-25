@@ -631,6 +631,8 @@ static int phonesim_init(void)
 	ofono_gprs_context_driver_register(&context_driver);
 
 	parse_config(CONFIGDIR "/phonesim.conf");
+
+	return 0;
 }
 
 static void phonesim_exit(void)
