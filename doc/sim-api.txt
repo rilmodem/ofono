@@ -138,3 +138,10 @@ Properties	boolean Present [readonly]
 
 			If FDN is enabled, oFono halts the SIM initialization
 			procedure and only emergency calls are allowed.
+
+		boolean BarredDialing [readonly]
+
+			True if Barred Dialing service is enabled in SIM card.
+
+			If BDN is enabled, oFono halts the SIM initialization
+			procedure and only emergency calls are allowed.
