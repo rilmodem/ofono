@@ -110,13 +110,6 @@ SMS
 SIM / SIM File system
 =====================
 
-- Barred Dialing numbers support.  BDN will not be supported by oFono.
-  If BDN service enabled SIM is used, oFono will go into emergency mode.
-
-  Priority: Low
-  Complexity: C2
-  Owner: Jeevaka Badrappan <jeevaka.badrappan@elektrobit.com>
-
 - Read / Write EFcfis.  Call forwarding settings can be bootstrapped on the
   SIM for faster notification of the user that call forwarding is active.
   These settings are stored in EFcfis.  oFono should read these settings and

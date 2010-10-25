@@ -135,3 +135,8 @@ SIM
   check if FDN support is allocated and enabled in the SIM.  If enabled,
   oFono halts the SIM initialization procedure and the modem remains in the
   PRESIM state.  In this state oFono will only allow emergency calls.
+
+- Barred Dialing support.  oFono reads the necessary bits from the SIM to
+  check if BDN support is allocated and enabled in the SIM.  If enabled,
+  oFono halts the SIM initialization procedure and the modem remains in the
+  PRESIM state.  In this state oFono will only allow emergency calls.
