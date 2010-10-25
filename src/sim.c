@@ -1314,6 +1314,7 @@ static gboolean check_bdn_status(struct ofono_sim *sim)
 				sim_efbdn_info_read_cb, sim);
 		return TRUE;
 	}
+
 	return FALSE;
 }
 
