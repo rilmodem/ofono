@@ -153,15 +153,21 @@ AC_SUBST(UDEV_CFLAGS)
 AC_SUBST(UDEV_LIBS)
 AM_CONDITIONAL(UDEV, test "${enable_udev}" = "yes")
 
-AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
-				[disable PhoNet/ISI modem support]),
-					[enable_isimodem=${enableval}])
-AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
-
 AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
 				[disable ETSI AT modem support]),
 					[enable_atmodem=${enableval}])
 AM_CONDITIONAL(ATMODEM, test "${enable_atmodem}" != "no")
+
+AC_ARG_ENABLE(phonesim, AC_HELP_STRING([--disable-phonesim],
+				[disable Phone simulator support]),
+					[enable_phonesim=${enableval}])
+AM_CONDITIONAL(PHONESIM, test "${enable_phonesim}" != "no" &&
+					test "${enable_atmodem}" != "no")
+
+AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
+				[disable PhoNet/ISI modem support]),
+					[enable_isimodem=${enableval}])
+AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
 
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 			[don't install configuration and data files]),
