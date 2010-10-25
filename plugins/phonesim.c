@@ -567,6 +567,8 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 		g_free(value);
 	}
 
+	DBG("%p", modem);
+
 	return modem;
 
 error:
@@ -620,18 +622,20 @@ done:
 
 static int phonesim_init(void)
 {
-	parse_config(CONFIGDIR "/phonesim.conf");
+	int err;
+
+	err = ofono_modem_driver_register(&phonesim_driver);
+	if (err < 0)
+		return err;
 
 	ofono_gprs_context_driver_register(&context_driver);
-	return ofono_modem_driver_register(&phonesim_driver);
+
+	parse_config(CONFIGDIR "/phonesim.conf");
 }
 
 static void phonesim_exit(void)
 {
 	GSList *list;
-
-	ofono_gprs_context_driver_unregister(&context_driver);
-	ofono_modem_driver_unregister(&phonesim_driver);
 
 	for (list = modem_list; list; list = list->next) {
 		struct ofono_modem *modem = list->data;
@@ -641,6 +645,10 @@ static void phonesim_exit(void)
 
 	g_slist_free(modem_list);
 	modem_list = NULL;
+
+	ofono_gprs_context_driver_unregister(&context_driver);
+
+	ofono_modem_driver_unregister(&phonesim_driver);
 }
 
 OFONO_PLUGIN_DEFINE(phonesim, "Phone Simulator driver", VERSION,
