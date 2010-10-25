@@ -73,6 +73,7 @@ struct ofono_sim {
 	unsigned char *efsst;
 	unsigned char efsst_length;
 	gboolean fixed_dialing;
+	gboolean barred_dialing;
 
 	char *imsi;
 
@@ -288,6 +289,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	const char *pin_name;
 	dbus_bool_t present = sim->state != OFONO_SIM_STATE_NOT_PRESENT;
 	dbus_bool_t fdn;
+	dbus_bool_t bdn;
 
 	reply = dbus_message_new_method_return(msg);
 	if (!reply)
@@ -314,6 +316,9 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 
 	fdn = sim->fixed_dialing;
 	ofono_dbus_dict_append(&dict, "FixedDialing", DBUS_TYPE_BOOLEAN, &fdn);
+
+	bdn = sim->barred_dialing;
+	ofono_dbus_dict_append(&dict, "BarredDialing", DBUS_TYPE_BOOLEAN, &bdn);
 
 	if (sim->mnc_length && sim->imsi) {
 		char mcc[OFONO_MAX_MCC_LENGTH + 1];
@@ -1261,6 +1266,57 @@ static void sim_fdn_enabled(struct ofono_sim *sim)
 						DBUS_TYPE_BOOLEAN, &val);
 }
 
+static void sim_bdn_enabled(struct ofono_sim *sim)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sim->atom);
+	dbus_bool_t val;
+
+	sim->barred_dialing = TRUE;
+
+	val = sim->barred_dialing;
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"BarredDialing",
+						DBUS_TYPE_BOOLEAN, &val);
+}
+
+static void sim_efbdn_info_read_cb(int ok, unsigned char file_status,
+					int total_length, int record_length,
+					void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (!ok)
+		goto out;
+
+	if (file_status == SIM_FILE_STATUS_VALID)
+		sim_bdn_enabled(sim);
+
+out:
+	if (sim->fixed_dialing != TRUE &&
+			sim->barred_dialing != TRUE)
+		sim_retrieve_imsi(sim);
+}
+
+static gboolean check_bdn_status(struct ofono_sim *sim)
+{
+	/*
+	 * Check the status of Barred Dialing in the SIM-card
+	 * (TS 11.11/TS 51.011, Section 11.5.1: BDN capability request).
+	 * If BDN is allocated, activated in EFsst and EFbdn is validated,
+	 * halt the SIM initialization.
+	 */
+	if (sim_sst_is_active(sim->efsst, sim->efsst_length,
+			SIM_SST_SERVICE_BDN)) {
+		sim_fs_read_info(sim->simfs, SIM_EFBDN_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_FIXED,
+				sim_efbdn_info_read_cb, sim);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static void sim_efadn_info_read_cb(int ok, unsigned char file_status,
 					int total_length, int record_length,
 					void *userdata)
@@ -1270,13 +1326,15 @@ static void sim_efadn_info_read_cb(int ok, unsigned char file_status,
 	if (!ok)
 		goto out;
 
-	if (file_status != SIM_FILE_STATUS_VALID) {
+	if (file_status != SIM_FILE_STATUS_VALID)
 		sim_fdn_enabled(sim);
-		return;
-	}
 
 out:
-	sim_retrieve_imsi(sim);
+	if (check_bdn_status(sim) != TRUE) {
+		if (sim->fixed_dialing != TRUE &&
+				sim->barred_dialing != TRUE)
+			sim_retrieve_imsi(sim);
+	}
 }
 
 static void sim_efsst_read_cb(int ok, int length, int record,
@@ -1310,6 +1368,9 @@ static void sim_efsst_read_cb(int ok, int length, int record,
 		return;
 	}
 
+	if (check_bdn_status(sim) == TRUE)
+		return;
+
 out:
 	sim_retrieve_imsi(sim);
 }
@@ -1337,13 +1398,22 @@ static void sim_efest_read_cb(int ok, int length, int record,
 	 * If FDN is activated, don't continue initialization routine.
 	 */
 	if (sim_est_is_active(sim->efest, sim->efest_length,
-				SIM_EST_SERVICE_FDN)) {
+				SIM_EST_SERVICE_FDN))
 		sim_fdn_enabled(sim);
-		return;
-	}
+
+	/*
+	 * Check the status of Barred Dialing in the USIM-card
+	 * (TS 31.102, Section 5.3.2: BDN capability request).
+	 * If BDN service is enabled, halt the USIM initialization.
+	 */
+	if (sim_est_is_active(sim->efest, sim->efest_length,
+				SIM_EST_SERVICE_BDN))
+		sim_bdn_enabled(sim);
 
 out:
-	sim_retrieve_imsi(sim);
+	if (sim->fixed_dialing != TRUE &&
+			sim->barred_dialing != TRUE)
+		sim_retrieve_imsi(sim);
 }
 
 static void sim_efust_read_cb(int ok, int length, int record,
@@ -1922,6 +1992,7 @@ static void sim_free_state(struct ofono_sim *sim)
 	sim->iidf_image = NULL;
 
 	sim->fixed_dialing = FALSE;
+	sim->barred_dialing = FALSE;
 }
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
