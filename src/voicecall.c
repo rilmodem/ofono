@@ -2472,7 +2472,7 @@ static gboolean tone_request_run(gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
 	struct tone_queue_entry *entry = g_queue_peek_head(vc->toneq);
-	char buf[256];
+	char final;
 	unsigned len;
 
 	vc->tone_source = 0;
@@ -2483,14 +2483,17 @@ static gboolean tone_request_run(gpointer user_data)
 	len = strcspn(entry->left, "pP");
 
 	if (len) {
-		if (len >= sizeof(buf))
-			len = sizeof(buf) - 1;
+		if (len > 8) /* Arbitrary length limit per request */
+			len = 8;
 
-		memcpy(buf, entry->left, len);
-		buf[len] = '\0';
+		/* Temporarily move the end of the string */
+		final = entry->left[len];
+		entry->left[len] = '\0';
+
+		vc->driver->send_tones(vc, entry->left, tone_request_cb, vc);
+
 		entry->left += len;
-
-		vc->driver->send_tones(vc, buf, tone_request_cb, vc);
+		entry->left[0] = final;
 	} else
 		tone_request_cb(NULL, vc);
 
