@@ -368,6 +368,8 @@ static int huawei_gprs_context_probe(struct ofono_gprs_context *gc,
 	struct gprs_context_data *gcd;
 	struct stat st;
 
+	DBG("");
+
 	if (stat(TUN_SYSFS_DIR, &st) < 0) {
 		ofono_error("Missing support for TUN/TAP devices");
 		return -ENODEV;
@@ -387,6 +389,8 @@ static int huawei_gprs_context_probe(struct ofono_gprs_context *gc,
 static void huawei_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	DBG("");
 
 	ofono_gprs_context_set_data(gc, NULL);
 
