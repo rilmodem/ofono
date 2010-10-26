@@ -41,11 +41,16 @@
 #include "isimodem.h"
 #include "isiutil.h"
 #include "debug.h"
+#include "gpds.h"
 #include "gss.h"
 #include "network.h"
 
+#define PN_WRAN 0xb4
+
 struct radio_data {
 	GIsiClient *client;
+	uint16_t wran_object;
+	uint16_t quick_release:1;
 };
 
 static enum ofono_radio_access_mode isi_mode_to_ofono_mode(guint8 mode)
@@ -236,6 +241,65 @@ error:
 	g_free(cbd);
 }
 
+static void update_fast_dormancy(struct radio_data *rd)
+{
+	struct sockaddr_pn dst = {
+		.spn_family = AF_PHONET,
+		.spn_resource = 0x3a,
+		.spn_dev = rd->wran_object >> 8,
+		.spn_obj = rd->wran_object & 0xff,
+	};
+
+	if (!rd->wran_object)
+		return;
+
+	if (rd->quick_release) {
+		const unsigned char msg[] = {
+			0x1f, 0x00, 0x01, 0x01, 0x01, 0x00
+		};
+
+		g_isi_sendto(rd->client, &dst, msg, sizeof(msg), 0,
+				NULL, NULL, NULL);
+	} else {
+		const unsigned char msg[] = {
+			0x1f, 0x00, 0x01, 0x01, 0x02, 0x0a
+		};
+
+		g_isi_sendto(rd->client, &dst, msg, sizeof(msg), 0,
+				NULL, NULL, NULL);
+	}
+
+	DBG("3G PS quick release %s",
+		rd->quick_release ? "enabled" : "disabled");
+}
+
+static void gpds_context_activating_ind_cb(GIsiClient *client,
+					const void *restrict data, size_t len,
+					uint16_t object, void *opaque)
+{
+	struct radio_data *rd = opaque;
+	update_fast_dormancy(rd);
+}
+
+static void isi_query_fast_dormancy(struct ofono_radio_settings *rs,
+			ofono_radio_settings_fast_dormancy_query_cb_t cb,
+			void *data)
+{
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	CALLBACK_WITH_SUCCESS(cb, rd->quick_release, data);
+}
+
+static void isi_set_fast_dormancy(struct ofono_radio_settings *rs,
+				int enable,
+				ofono_radio_settings_fast_dormancy_set_cb_t cb,
+				void *data)
+{
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	rd->quick_release = enable;
+	update_fast_dormancy(rd);
+	CALLBACK_WITH_SUCCESS(cb, data);
+}
+
 static gboolean isi_radio_settings_register(gpointer user)
 {
 	struct ofono_radio_settings *rs = user;
@@ -249,7 +313,29 @@ static gboolean isi_radio_settings_register(gpointer user)
 
 	ofono_radio_settings_register(rs);
 
+	g_isi_add_subscription(rd->client,
+				PN_GPDS, GPDS_CONTEXT_ACTIVATING_IND,
+				gpds_context_activating_ind_cb, rd);
+	g_isi_commit_subscriptions(rd->client);
+
 	return FALSE;
+}
+
+static void wran_reachable_cb(GIsiClient *client, gboolean alive,
+				uint16_t object, void *opaque)
+{
+	struct radio_data *rd = opaque;
+
+	if (!alive) {
+		DBG("fast dormancy support disabled");
+		return;
+	}
+
+	rd->wran_object = object;
+
+	DBG("PN_WRAN reachable, object=0x%04x", object);
+
+	update_fast_dormancy(rd);
 }
 
 static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
@@ -289,6 +375,7 @@ static int isi_radio_settings_probe(struct ofono_radio_settings *rs,
 	ofono_radio_settings_set_data(rs, rd);
 
 	g_isi_verify(rd->client, reachable_cb, rs);
+	g_isi_verify_resource(rd->client, PN_WRAN, wran_reachable_cb, rd);
 
 	return 0;
 }
@@ -310,7 +397,9 @@ static struct ofono_radio_settings_driver driver = {
 	.probe			= isi_radio_settings_probe,
 	.remove			= isi_radio_settings_remove,
 	.query_rat_mode		= isi_query_rat_mode,
-	.set_rat_mode		= isi_set_rat_mode
+	.set_rat_mode		= isi_set_rat_mode,
+	.query_fast_dormancy	= isi_query_fast_dormancy,
+	.set_fast_dormancy	= isi_set_fast_dormancy,
 };
 
 void isi_radio_settings_init()
