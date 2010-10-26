@@ -449,11 +449,12 @@ static void mbm_post_online(struct ofono_modem *modem)
 	ofono_sms_create(modem, 0, "atmodem", data->modem_port);
 
 	switch (data->variant) {
+	case MBM_GENERIC:
+		ofono_cbs_create(modem, 0, "atmodem", data->modem_port);
+		break;
 	case MBM_DELL_D5530:
 		/* DELL D5530 crashes when it processes CBSs */
 		break;
-	default:
-		ofono_cbs_create(modem, 0, "atmodem", data->modem_port);
 	}
 
 	ofono_ussd_create(modem, 0, "atmodem", data->modem_port);
