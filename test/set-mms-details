@@ -1,0 +1,43 @@
+#!/usr/bin/python
+
+import sys
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+modems = manager.GetModems()
+
+for path, properties in modems:
+	if "org.ofono.ConnectionManager" not in properties["Interfaces"]:
+		continue
+
+	connman = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.ConnectionManager')
+
+	contexts = connman.GetContexts()
+	path = "";
+
+	for i, properties in contexts:
+		if properties["Type"] == "mms":
+			path = i
+			break
+
+	if path == "":
+		print "No MMS context"
+		exit(1)
+
+	context = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.ConnectionContext')
+
+	if len(sys.argv) < 3:
+		print "Usage: %s <proxy> <center>" % (sys.argv[0])
+		exit(1)
+
+	context.SetProperty("MessageProxy", sys.argv[1])
+	print "Setting MMS Proxy to %s" % (sys.argv[1])
+
+	context.SetProperty("MessageCenter", sys.argv[2])
+	print "Setting MMSC to %s" % (sys.argv[2])
