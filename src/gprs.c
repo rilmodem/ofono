@@ -2046,6 +2046,8 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	char *username = NULL;
 	char *password = NULL;
 	char *apn = NULL;
+	char *msgproxy = NULL;
+	char *msgcenter = NULL;
 	gboolean ret = FALSE;
 	gboolean legacy = FALSE;
 	struct pri_context *context;
@@ -2063,20 +2065,21 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if (id < 1 || id > MAX_CONTEXTS)
 		goto error;
 
-	if ((name = g_key_file_get_string(gprs->settings, group,
-					"Name", NULL)) == NULL)
+	name = g_key_file_get_string(gprs->settings, group, "Name", NULL);
+	if (name == NULL)
 		goto error;
 
-	if ((typestr = g_key_file_get_string(gprs->settings, group,
-					"Type", NULL)) == NULL)
+	typestr = g_key_file_get_string(gprs->settings, group, "Type", NULL);
+	if (typestr == NULL)
 		goto error;
 
 	type = gprs_context_string_to_type(typestr);
 	if (type == GPRS_CONTEXT_TYPE_INVALID)
 		goto error;
 
-	if ((protostr = g_key_file_get_string(gprs->settings, group,
-						"Protocol", NULL)) == NULL)
+	protostr = g_key_file_get_string(gprs->settings, group,
+							"Protocol", NULL);
+	if (protostr == NULL)
 		protostr = g_strdup("ip");
 
 	if (gprs_proto_from_string(protostr, &proto) == FALSE)
@@ -2084,7 +2087,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 
 	username = g_key_file_get_string(gprs->settings, group,
 						"Username", NULL);
-	if (!username)
+	if (username == NULL)
 		goto error;
 
 	if (strlen(username) > OFONO_GPRS_MAX_USERNAME_LENGTH)
@@ -2092,8 +2095,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 
 	password = g_key_file_get_string(gprs->settings, group,
 						"Password", NULL);
-
-	if (!password)
+	if (password == NULL)
 		goto error;
 
 	if (strlen(password) > OFONO_GPRS_MAX_PASSWORD_LENGTH)
@@ -2101,12 +2103,19 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 
 	apn = g_key_file_get_string(gprs->settings, group,
 					"AccessPointName", NULL);
-
-	if (!apn)
+	if (apn == NULL)
 		goto error;
 
 	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
 		goto error;
+
+	if (type == GPRS_CONTEXT_TYPE_MMS) {
+		msgproxy = g_key_file_get_string(gprs->settings, group,
+						"MessageProxy", NULL);
+
+		msgcenter = g_key_file_get_string(gprs->settings, group,
+						"MessageCenter", NULL);
+	}
 
 	/*
 	 * Accept empty (just created) APNs, but don't allow other
@@ -2115,7 +2124,8 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if (apn[0] != '\0' && is_valid_apn(apn) == FALSE)
 		goto error;
 
-	if ((context = pri_context_create(gprs, name, type)) == NULL)
+	context = pri_context_create(gprs, name, type);
+	if (context == NULL)
 		goto error;
 
 	idmap_take(gprs->pid_map, id);
@@ -2124,6 +2134,12 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	strcpy(context->context.password, password);
 	strcpy(context->context.apn, apn);
 	context->context.proto = proto;
+
+	if (msgproxy != NULL)
+		strcpy(context->message_proxy, msgproxy);
+
+	if (msgcenter != NULL)
+		strcpy(context->message_center, msgcenter);
 
 	if (context_dbus_register(context) == FALSE)
 		goto error;
@@ -2145,6 +2161,8 @@ error:
 	g_free(username);
 	g_free(password);
 	g_free(apn);
+	g_free(msgproxy);
+	g_free(msgcenter);
 
 	return ret;
 }
