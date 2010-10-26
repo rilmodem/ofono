@@ -147,3 +147,11 @@ SIM
   check if BDN support is allocated and enabled in the SIM.  If enabled,
   oFono halts the SIM initialization procedure and the modem remains in the
   PRESIM state.  In this state oFono will only allow emergency calls.
+
+Radio settings
+==============
+
+- Fast dormancy support. A fast dormancy feature can be enabled in the
+  cellular modem to conserve power when the end user is not actively
+  using the device but some networking applications are online using
+  packet data.
