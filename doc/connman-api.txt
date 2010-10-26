@@ -211,3 +211,10 @@ Properties	boolean Active [readwrite]
 
 				Holds the gateway IP for this connection.
 
+		string MessageProxy [readwrite, MMS only]
+
+			Holds the MMS Proxy setting.
+
+		string MessageCenter [readwrite, MMS only]
+
+			Holds the MMSC setting.

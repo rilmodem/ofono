@@ -46,6 +46,8 @@
 #define SETTINGS_STORE "gprs"
 #define SETTINGS_GROUP "Settings"
 #define MAX_CONTEXT_NAME_LENGTH 127
+#define MAX_MESSAGE_PROXY_LENGTH 255
+#define MAX_MESSAGE_CENTER_LENGTH 255
 #define MAX_CONTEXTS 256
 #define SUSPEND_TIMEOUT 8
 
@@ -105,6 +107,8 @@ struct pri_context {
 	ofono_bool_t active;
 	enum gprs_context_type type;
 	char name[MAX_CONTEXT_NAME_LENGTH + 1];
+	char message_proxy[MAX_MESSAGE_PROXY_LENGTH + 1];
+	char message_center[MAX_MESSAGE_CENTER_LENGTH + 1];
 	unsigned int id;
 	char *path;
 	char *key;
@@ -411,6 +415,16 @@ static void append_context_properties(struct pri_context *ctx,
 	ofono_dbus_dict_append(dict, "Password", DBUS_TYPE_STRING,
 				&strvalue);
 
+	if (ctx->type == GPRS_CONTEXT_TYPE_MMS) {
+		strvalue = ctx->message_proxy;
+		ofono_dbus_dict_append(dict, "MessageProxy",
+					DBUS_TYPE_STRING, &strvalue);
+
+		strvalue = ctx->message_center;
+		ofono_dbus_dict_append(dict, "MessageCenter",
+					DBUS_TYPE_STRING, &strvalue);
+	}
+
 	context_settings_append_dict(ctx->settings, dict);
 }
 
@@ -689,6 +703,64 @@ static DBusMessage *pri_set_name(struct pri_context *ctx, DBusConnection *conn,
 	return NULL;
 }
 
+static DBusMessage *pri_set_message_proxy(struct pri_context *ctx,
+					DBusConnection *conn,
+					DBusMessage *msg, const char *proxy)
+{
+	GKeyFile *settings = ctx->gprs->settings;
+
+	if (strlen(proxy) > MAX_MESSAGE_PROXY_LENGTH)
+		return __ofono_error_invalid_format(msg);
+
+	if (ctx->message_proxy && g_str_equal(ctx->message_proxy, proxy))
+		return dbus_message_new_method_return(msg);
+
+	strcpy(ctx->message_proxy, proxy);
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key, "MessageProxy",
+							ctx->message_proxy);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+				OFONO_CONNECTION_CONTEXT_INTERFACE,
+				"MessageProxy", DBUS_TYPE_STRING, &proxy);
+
+	return NULL;
+}
+
+static DBusMessage *pri_set_message_center(struct pri_context *ctx,
+					DBusConnection *conn,
+					DBusMessage *msg, const char *center)
+{
+	GKeyFile *settings = ctx->gprs->settings;
+
+	if (strlen(center) > MAX_MESSAGE_CENTER_LENGTH)
+		return __ofono_error_invalid_format(msg);
+
+	if (ctx->message_center && g_str_equal(ctx->message_center, center))
+		return dbus_message_new_method_return(msg);
+
+	strcpy(ctx->message_center, center);
+
+	if (settings) {
+		g_key_file_set_string(settings, ctx->key, "MessageCenter",
+							ctx->message_center);
+		storage_sync(ctx->gprs->imsi, SETTINGS_STORE, settings);
+	}
+
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+				OFONO_CONNECTION_CONTEXT_INTERFACE,
+				"MessageCenter", DBUS_TYPE_STRING, &center);
+
+	return NULL;
+}
+
 static DBusMessage *pri_set_property(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -816,6 +888,25 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		dbus_message_iter_get_basic(&var, &str);
 
 		return pri_set_name(ctx, conn, msg, str);
+	}
+
+	if (ctx->type != GPRS_CONTEXT_TYPE_MMS)
+		return __ofono_error_invalid_args(msg);
+
+	if (!strcmp(property, "MessageProxy")) {
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &str);
+
+		return pri_set_message_proxy(ctx, conn, msg, str);
+	} else if (!strcmp(property, "MessageCenter")) {
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &str);
+
+		return pri_set_message_center(ctx, conn, msg, str);
 	}
 
 	return __ofono_error_invalid_args(msg);
