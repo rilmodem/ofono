@@ -311,7 +311,6 @@ static int mbm_enable(struct ofono_modem *modem)
 		return -EINVAL;
 
 	data->modem_port = create_port(modem_dev);
-
 	if (data->modem_port == NULL)
 		return -EIO;
 
@@ -319,7 +318,6 @@ static int mbm_enable(struct ofono_modem *modem)
 		g_at_chat_set_debug(data->modem_port, mbm_debug, "Modem: ");
 
 	data->data_port = create_port(data_dev);
-
 	if (data->data_port == NULL) {
 		g_at_chat_unref(data->modem_port);
 		data->modem_port = NULL;
@@ -335,6 +333,9 @@ static int mbm_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->modem_port, "AT&F E0 V1 X4 &C1 +CMEE=1", NULL,
 					NULL, NULL, NULL);
+	g_at_chat_send(data->data_port, "AT&F E0 V1 X4 &C1 +CMEE=1", NULL,
+					NULL, NULL, NULL);
+
 	g_at_chat_send(data->modem_port, "AT*E2CFUN=1", none_prefix,
 					NULL, NULL, NULL);
 	g_at_chat_send(data->modem_port, "AT*EMRDY?", none_prefix,
@@ -459,10 +460,17 @@ static void mbm_post_online(struct ofono_modem *modem)
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
 					"atmodem", data->modem_port);
+	if (!gprs)
+		return;
+
 	gc = ofono_gprs_context_create(modem, 0,
 					"mbmmodem", data->modem_port);
+	if (gc)
+		ofono_gprs_add_context(gprs, gc);
 
-	if (gprs && gc)
+	gc = ofono_gprs_context_create(modem, 0,
+					"atmodem", data->data_port);
+	if (gc)
 		ofono_gprs_add_context(gprs, gc);
 }
 
