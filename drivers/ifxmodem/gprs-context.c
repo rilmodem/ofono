@@ -387,14 +387,18 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	if (gcd->state != STATE_IDLE && gcd->rawip) {
+		g_at_rawip_shutdown(gcd->rawip);
+
 		g_at_rawip_unref(gcd->rawip);
 		gcd->rawip = NULL;
-
-		gcd->active_context = 0;
-		gcd->state = STATE_IDLE;
-
-		g_at_chat_resume(gcd->chat);
 	}
+
+	ofono_gprs_context_deactivated(gc, gcd->active_context);
+
+	gcd->active_context = 0;
+	gcd->state = STATE_IDLE;
+
+	g_at_chat_resume(gcd->chat);
 }
 
 static int ifx_gprs_context_probe(struct ofono_gprs_context *gc,
