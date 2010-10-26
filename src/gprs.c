@@ -1650,6 +1650,8 @@ void ofono_gprs_add_context(struct ofono_gprs *gprs,
 	if (gc->driver == NULL)
 		return;
 
+	gc->gprs = gprs;
+
 	gprs->context_drivers = g_slist_append(gprs->context_drivers, gc);
 	__ofono_atom_register(gc->atom, gprs_context_unregister);
 }
@@ -1661,6 +1663,9 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 	GSList *l;
 	struct pri_context *ctx;
 	dbus_bool_t value;
+
+	if (gc->gprs == NULL)
+		return;
 
 	for (l = gc->gprs->contexts; l; l = l->next) {
 		ctx = l->data;
