@@ -356,9 +356,11 @@ doc_files = doc/overview.txt doc/ofono-paper.txt \
 
 
 test_scripts = test/backtrace \
-		test/create-context \
+		test/create-internet-context \
+		test/create-mms-context \
 		test/activate-context \
 		test/deactivate-context \
+		test/deactivate-all \
 		test/dial-number \
 		test/list-calls \
 		test/answer-calls \
@@ -370,7 +372,6 @@ test_scripts = test/backtrace \
 		test/hangup-all \
 		test/hangup-active \
 		test/set-roaming-allowed \
-		test/set-context \
 		test/list-contexts \
 		test/list-modems \
 		test/list-operators \
@@ -409,8 +410,7 @@ test_scripts = test/backtrace \
 		test/unlock-pin \
 		test/enable-gprs \
 		test/disable-gprs \
-		test/get-icon \
-		test/deactivate-all
+		test/get-icon
 
 if TEST
 testdir = $(pkglibdir)/test
