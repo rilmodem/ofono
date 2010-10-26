@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -92,6 +93,8 @@ static void mbm_e2ipcfg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *interface;
 	gboolean success = FALSE;
 
+	DBG("ok %d", ok);
+
 	if (!ok)
 		goto out;
 
@@ -150,6 +153,8 @@ static void mbm_get_ip_details(struct ofono_gprs_context *gc)
 	const char *interface;
 	char buf[64];
 
+	DBG("");
+
 	if (gcd->have_e2ipcfg) {
 		g_at_chat_send(gcd->chat, "AT*E2IPCFG?", e2ipcfg_prefix,
 				mbm_e2ipcfg_cb, gc, NULL);
@@ -172,6 +177,8 @@ static void mbm_get_ip_details(struct ofono_gprs_context *gc)
 static void mbm_state_changed(struct ofono_gprs_context *gc, int state)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	DBG("state %d", state);
 
 	if (gcd->active_context == 0)
 		return;
@@ -223,6 +230,8 @@ static void mbm_enap_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int state;
 
+	DBG("ok %d", ok);
+
 	g_at_result_iter_init(&iter, result);
 
 	if (g_at_result_iter_next(&iter, "*ENAP:") == FALSE)
@@ -258,6 +267,8 @@ static void at_enap_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
 
+	DBG("ok %d", ok);
+
 	/* Now we have to wait for the unsolicited notification to arrive */
 	if (ok && gcd->enap != 0) {
 		gcd->mbm_state = MBM_DISABLING;
@@ -282,6 +293,8 @@ static void mbm_enap_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
+
+	DBG("ok %d", ok);
 
 	if (ok) {
 		gcd->mbm_state = MBM_ENABLING;
@@ -309,6 +322,8 @@ static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *ncbd;
 	char buf[64];
+
+	DBG("ok %d", ok);
 
 	if (!ok) {
 		struct ofono_error error;
@@ -343,6 +358,8 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[AUTH_BUF_LENGTH];
 	int len;
+
+	DBG("cid %u", ctx->cid);
 
 	if (!cbd)
 		goto error;
@@ -386,6 +403,8 @@ static void mbm_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
+	DBG("cid %u", cid);
+
 	if (!cbd)
 		goto error;
 
@@ -422,6 +441,8 @@ static void mbm_e2nap_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
+	DBG("ok %d", ok);
+
 	gcd->have_e2nap = ok;
 
 	if (ok)
@@ -444,7 +465,12 @@ static int mbm_gprs_context_probe(struct ofono_gprs_context *gc,
 	GAtChat *chat = data;
 	struct gprs_context_data *gcd;
 
-	gcd = g_new0(struct gprs_context_data, 1);
+	DBG("");
+
+	gcd = g_try_new0(struct gprs_context_data, 1);
+	if (!gcd)
+		return -ENOMEM;
+
 	gcd->chat = g_at_chat_clone(chat);
 
 	ofono_gprs_context_set_data(gc, gcd);
@@ -463,6 +489,8 @@ static int mbm_gprs_context_probe(struct ofono_gprs_context *gc,
 static void mbm_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	DBG("");
 
 	if (gcd->enap_source) {
 		g_source_remove(gcd->enap_source);
