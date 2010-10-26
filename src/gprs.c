@@ -122,6 +122,20 @@ struct pri_context {
 static void gprs_netreg_update(struct ofono_gprs *gprs);
 static void gprs_deactivate_next(struct ofono_gprs *gprs);
 
+static const char *gprs_context_type_to_default_name(int type)
+{
+	switch (type) {
+	case GPRS_CONTEXT_TYPE_INTERNET:
+		return "Internet";
+	case GPRS_CONTEXT_TYPE_MMS:
+		return "MMS";
+	case GPRS_CONTEXT_TYPE_WAP:
+		return "WAP";
+	}
+
+	return NULL;
+}
+
 static const char *gprs_context_type_to_string(int type)
 {
 	switch (type) {
@@ -1369,6 +1383,7 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	struct ofono_gprs *gprs = data;
 	struct pri_context *context;
 	const char *typestr;
+	const char *name;
 	const char *path;
 	enum gprs_context_type type;
 	DBusMessage *signal;
@@ -1379,10 +1394,14 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 
 	type = gprs_context_string_to_type(typestr);
 
+	name = gprs_context_type_to_default_name(type);
+	if (name == NULL)
+		name = typestr;
+
 	if (type == GPRS_CONTEXT_TYPE_INVALID)
 		return __ofono_error_invalid_format(msg);
 
-	context = add_context(gprs, typestr, type);
+	context = add_context(gprs, name, type);
 	if (context == NULL)
 		return __ofono_error_failed(msg);
 
