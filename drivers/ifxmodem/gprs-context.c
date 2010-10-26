@@ -270,7 +270,7 @@ static void setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	char buf[64];
+	char buf[128];
 
 	if (!ok) {
 		ofono_error("Failed to setup context");
@@ -278,14 +278,25 @@ static void setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
+	if (gcd->username[0] && gcd->password[0])
+		sprintf(buf, "AT+XGAUTH=%u,1,\"%s\",\"%s\"",
+			gcd->active_context, gcd->username, gcd->password);
+	else
+		sprintf(buf, "AT+XGAUTH=%u,0,\"\",\"\"", gcd->active_context);
+
+	if (g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL) == 0)
+		goto error;
+
 	sprintf(buf, "AT+XDNS=%u,1", gcd->active_context);
-	g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL);
+	if (g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL) == 0)
+		goto error;
 
 	sprintf(buf, "AT+CGACT=1,%u", gcd->active_context);
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				activate_cb, gc, NULL) > 0)
 		return;
 
+error:
 	failed_setup(gc, NULL, FALSE);
 }
 
