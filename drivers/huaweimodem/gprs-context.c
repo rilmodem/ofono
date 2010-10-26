@@ -149,7 +149,7 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *devnode;
 	GIOChannel *channel;
 
-	DBG("");
+	DBG("ok %d", ok);
 
 	if (!ok) {
 		gcd->dhcp_source = g_timeout_add_seconds(1, dhcp_poll, gc);
@@ -213,7 +213,7 @@ static void check_dhcp(struct ofono_gprs_context *gc)
 }
 
 static void at_ndisdup_down_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_gprs_context_cb_t cb = cbd->cb;
@@ -221,7 +221,7 @@ static void at_ndisdup_down_cb(gboolean ok, GAtResult *result,
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
 
-	DBG("");
+	DBG("ok %d", ok);
 
 	if (ok) {
 		gcd->down_cb = cb;
@@ -238,7 +238,7 @@ static void at_ndisdup_down_cb(gboolean ok, GAtResult *result,
 }
 
 static void at_ndisdup_up_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+						gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_gprs_context_up_cb_t cb = cbd->cb;
@@ -246,7 +246,7 @@ static void at_ndisdup_up_cb(gboolean ok, GAtResult *result,
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
 
-	DBG("");
+	DBG("ok %d", ok);
 
 	if (ok) {
 		gcd->up_cb = cb;
@@ -273,7 +273,7 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct cb_data *ncbd;
 	char buf[64];
 
-	DBG("");
+	DBG("ok %d", ok);
 
 	if (!ok) {
 		struct ofono_error error;
@@ -309,7 +309,7 @@ static void huawei_gprs_activate_primary(struct ofono_gprs_context *gc,
 	char buf[64];
 	int len;
 
-	DBG("");
+	DBG("cid %u", ctx->cid);
 
 	if (!cbd)
 		goto error;
