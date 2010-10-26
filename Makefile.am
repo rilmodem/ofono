@@ -411,7 +411,8 @@ test_scripts = test/backtrace \
 		test/unlock-pin \
 		test/enable-gprs \
 		test/disable-gprs \
-		test/get-icon
+		test/get-icon \
+		test/set-fast-dormancy
 
 if TEST
 testdir = $(pkglibdir)/test
