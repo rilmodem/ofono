@@ -51,7 +51,6 @@
 struct _GAtHDLC {
 	gint ref_count;
 	GAtIO *io;
-	guint write_watch;
 	struct ring_buffer *write_buffer;
 	unsigned char *decode_buffer;
 	guint decode_offset;
