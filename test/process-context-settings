@@ -37,6 +37,7 @@ for path, properties in modems:
 		if settings["Method"] == "dhcp":
 			print "    Run DHCP on interface %s" % (interface)
 		else:
+			print "    Interface is %s" % (interface)
 			print "    IP address is %s" % (address)
 			print "    Gateway is %s" % (gateway)
 
