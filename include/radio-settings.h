@@ -43,6 +43,12 @@ typedef void (*ofono_radio_settings_rat_mode_query_cb_t)(const struct ofono_erro
 						enum ofono_radio_access_mode mode,
 						void *data);
 
+typedef void (*ofono_radio_settings_fast_dormancy_set_cb_t)(const struct ofono_error *error,
+							void *data);
+typedef void (*ofono_radio_settings_fast_dormancy_query_cb_t)(const struct ofono_error *error,
+							ofono_bool_t enable,
+							void *data);
+
 struct ofono_radio_settings_driver {
 	const char *name;
 	int (*probe)(struct ofono_radio_settings *rs, unsigned int vendor,
@@ -54,6 +60,13 @@ struct ofono_radio_settings_driver {
 	void (*set_rat_mode)(struct ofono_radio_settings *rs,
 				enum ofono_radio_access_mode mode,
 				ofono_radio_settings_rat_mode_set_cb_t cb,
+				void *data);
+	void (*query_fast_dormancy)(struct ofono_radio_settings *rs,
+			ofono_radio_settings_fast_dormancy_query_cb_t cb,
+			void *data);
+	void (*set_fast_dormancy)(struct ofono_radio_settings *rs,
+				int enable,
+				ofono_radio_settings_fast_dormancy_set_cb_t,
 				void *data);
 };
 
