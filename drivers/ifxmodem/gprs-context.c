@@ -394,6 +394,8 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &cid))
 		return;
 
+	DBG("cid %d", cid);
+
 	if ((unsigned int) cid != gcd->active_context)
 		return;
 
@@ -418,6 +420,8 @@ static int ifx_gprs_context_probe(struct ofono_gprs_context *gc,
 	GAtChat *chat = data;
 	struct gprs_context_data *gcd;
 	struct stat st;
+
+	DBG("");
 
 	if (stat(TUN_SYSFS_DIR, &st) < 0) {
 		ofono_error("Missing support for TUN/TAP devices");
