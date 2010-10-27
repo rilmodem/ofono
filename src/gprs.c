@@ -136,6 +136,8 @@ static const char *gprs_context_type_to_default_name(enum ofono_gprs_context_typ
 		return "MMS";
 	case OFONO_GPRS_CONTEXT_TYPE_WAP:
 		return "WAP";
+	case OFONO_GPRS_CONTEXT_TYPE_IMS:
+		return "IMS";
 	}
 
 	return NULL;
@@ -152,6 +154,8 @@ static const char *gprs_context_type_to_string(enum ofono_gprs_context_type type
 		return "mms";
 	case OFONO_GPRS_CONTEXT_TYPE_WAP:
 		return "wap";
+	case OFONO_GPRS_CONTEXT_TYPE_IMS:
+		return "ims";
 	}
 
 	return NULL;
@@ -165,6 +169,8 @@ static enum ofono_gprs_context_type gprs_context_string_to_type(const char *str)
 		return OFONO_GPRS_CONTEXT_TYPE_WAP;
 	else if (g_str_equal(str, "mms"))
 		return OFONO_GPRS_CONTEXT_TYPE_MMS;
+	else if (g_str_equal(str, "ims"))
+		return OFONO_GPRS_CONTEXT_TYPE_IMS;
 
 	return OFONO_GPRS_CONTEXT_TYPE_INVALID;
 }
