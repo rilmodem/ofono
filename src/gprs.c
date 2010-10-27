@@ -1146,6 +1146,12 @@ static struct pri_context *pri_context_create(struct ofono_gprs *gprs,
 	if (!context)
 		return NULL;
 
+	if (!name) {
+		name = gprs_context_type_to_default_name(type);
+		if (!name)
+			return NULL;
+	}
+
 	context->gprs = gprs;
 	strcpy(context->name, name);
 	context->type = type;
@@ -2475,7 +2481,7 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 	}
 
 	if (gprs->contexts == NULL)
-		add_context(gprs, "Internet", OFONO_GPRS_CONTEXT_TYPE_INTERNET);
+		add_context(gprs, NULL, OFONO_GPRS_CONTEXT_TYPE_INTERNET);
 
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
