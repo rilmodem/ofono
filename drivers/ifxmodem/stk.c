@@ -197,12 +197,14 @@ static void sati_notify(GAtResult *result, gpointer user_data)
 
 static void satn_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_stk *stk = user_data;
 	GAtResultIter iter;
 	const guint8 *pdu;
 	gint len;
 
 	DBG("");
 
+	/* Proactive command has been handled by the modem. */
 	g_at_result_iter_init(&iter, result);
 
 	if (g_at_result_iter_next(&iter, "+SATN:") == FALSE)
@@ -211,12 +213,10 @@ static void satn_notify(GAtResult *result, gpointer user_data)
 	if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
 		return;
 
-	DBG("len %d", len);
+	if (len == 0)
+		return;
 
-	/* Proactive command has been handled by the modem.  If the
-	 * command was for Setup Call then a response with AT+SATD
-	 * is required.  This is not handled properly yet.
-	 */
+	ofono_stk_proactive_command_handled_notify(stk, len, pdu);
 }
 
 static void satf_notify(GAtResult *result, gpointer user_data)
