@@ -70,9 +70,6 @@ void ofono_stk_proactive_session_end_notify(struct ofono_stk *stk);
 void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 						int length,
 						const unsigned char *pdu);
-void ofono_stk_terminal_response_sent_notify(struct ofono_stk *stk,
-						int length,
-						const unsigned char *pdu);
 
 #ifdef __cplusplus
 }

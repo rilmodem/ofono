@@ -2411,6 +2411,17 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 	struct stk_command *cmd;
 	struct stk_response dummyrsp;
 
+	/*
+	 * Modems send us the proactive command details and terminal responses
+	 * sent by the modem as a response to the command.  Terminal responses
+	 * start with the Command Details CTLV tag (0x81).  We filter terminal
+	 * responses here
+	 */
+	if (length > 0 && pdu[0] == 0x81) {
+		stk_alpha_id_unset(stk);
+		return;
+	}
+
 	stk_proactive_command_cancel(stk);
 
 	cmd = stk_command_new_from_pdu(pdu, length);
@@ -2461,13 +2472,6 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 	}
 
 	stk_command_free(cmd);
-}
-
-void ofono_stk_terminal_response_sent_notify(struct ofono_stk *stk,
-						int length,
-						const unsigned char *pdu)
-{
-	stk_alpha_id_unset(stk);
 }
 
 int ofono_stk_driver_register(const struct ofono_stk_driver *d)
