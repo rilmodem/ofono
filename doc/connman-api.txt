@@ -155,6 +155,7 @@ Properties	boolean Active [readwrite]
 				"internet" - General internet connectivity
 				"mms" - Used by MMS related services
 				"wap" - Used by WAP related services
+				"ims" - Used by IMS related services
 
 		string Username [readwrite]
 
