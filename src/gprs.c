@@ -780,6 +780,7 @@ static gboolean assign_context(struct pri_context *ctx)
 {
 	struct idmap *cidmap = ctx->gprs->cid_map;
 	unsigned int cid_min;
+	GSList *l;
 
 	if (cidmap == NULL)
 		return FALSE;
@@ -790,12 +791,21 @@ static gboolean assign_context(struct pri_context *ctx)
 	if (ctx->context.cid == 0)
 		return FALSE;
 
-	ctx->context_driver = g_slist_nth_data(ctx->gprs->context_drivers,
-						ctx->context.cid - cid_min);
+	for (l = ctx->gprs->context_drivers; l; l = l->next) {
+		struct ofono_gprs_context *gc = l->data;
 
-	ctx->context_driver->inuse = TRUE;
+		if (gc->inuse == TRUE)
+			continue;
 
-	return TRUE;
+		if (gc->type == OFONO_GPRS_CONTEXT_TYPE_INVALID ||
+						gc->type == ctx->type) {
+			ctx->context_driver = gc;
+			ctx->context_driver->inuse = TRUE;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }
 
 static DBusMessage *pri_set_property(DBusConnection *conn,
