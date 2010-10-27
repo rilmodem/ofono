@@ -64,6 +64,9 @@ struct mbm_data {
 	guint cpin_poll_source;
 	guint cpin_poll_count;
 	gboolean have_sim;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
+	guint reopen_source;
 	enum mbm_variant variant;
 };
 
@@ -294,6 +297,55 @@ static GAtChat *create_port(const char *device)
 	return chat;
 }
 
+static void mbm_disconnect(gpointer user_data);
+
+static gboolean reopen_callback(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+	const char *data_dev;
+
+	data->reopen_source = 0;
+
+	data_dev = ofono_modem_get_string(modem, "DataDevice");
+
+	data->data_port = create_port(data_dev);
+	if (data->data_port == NULL)
+		return FALSE;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(data->data_port, mbm_debug, "Data: ");
+
+	g_at_chat_set_disconnect_function(data->data_port,
+						mbm_disconnect, modem);
+
+	ofono_info("Reopened GPRS context channel");
+
+	data->gc = ofono_gprs_context_create(modem, 0,
+					"atmodem", data->data_port);
+	if (data->gprs && data->gc)
+		ofono_gprs_add_context(data->gprs, data->gc);
+
+	return FALSE;
+}
+
+static void mbm_disconnect(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	if (data->gc)
+		ofono_gprs_context_remove(data->gc);
+
+	g_at_chat_unref(data->data_port);
+	data->data_port = NULL;
+
+	/* Waiting for the +CGEV: ME DEACT might also work */
+	data->reopen_source = g_timeout_add_seconds(1, reopen_callback, modem);
+}
+
 static int mbm_enable(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
@@ -327,6 +379,9 @@ static int mbm_enable(struct ofono_modem *modem)
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->data_port, mbm_debug, "Data: ");
+
+	g_at_chat_set_disconnect_function(data->data_port,
+						mbm_disconnect, modem);
 
 	g_at_chat_register(data->modem_port, "*EMRDY:", emrdy_notifier,
 					FALSE, modem, NULL);
@@ -366,6 +421,11 @@ static int mbm_disable(struct ofono_modem *modem)
 	struct mbm_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	if (data->reopen_source > 0) {
+		g_source_remove(data->reopen_source);
+		data->reopen_source = 0;
+	}
 
 	if (!data->modem_port)
 		return 0;
@@ -438,7 +498,6 @@ static void mbm_post_sim(struct ofono_modem *modem)
 static void mbm_post_online(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
-	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
@@ -459,20 +518,20 @@ static void mbm_post_online(struct ofono_modem *modem)
 
 	ofono_ussd_create(modem, 0, "atmodem", data->modem_port);
 
-	gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
+	data->gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
 					"atmodem", data->modem_port);
-	if (!gprs)
+	if (!data->gprs)
 		return;
 
 	gc = ofono_gprs_context_create(modem, 0,
 					"mbmmodem", data->modem_port);
 	if (gc)
-		ofono_gprs_add_context(gprs, gc);
+		ofono_gprs_add_context(data->gprs, gc);
 
-	gc = ofono_gprs_context_create(modem, 0,
+	data->gc = ofono_gprs_context_create(modem, 0,
 					"atmodem", data->data_port);
-	if (gc)
-		ofono_gprs_add_context(gprs, gc);
+	if (data->gc)
+		ofono_gprs_add_context(data->gprs, data->gc);
 }
 
 static struct ofono_modem_driver mbm_driver = {
