@@ -129,7 +129,7 @@ static void ifx_set_rat_mode(struct ofono_radio_settings *rs,
 	struct radio_settings_data *rsd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[20];
-	int value, preferred = 2;
+	int value = 1, preferred = 2;
 
 	switch (mode) {
 	case OFONO_RADIO_ACCESS_MODE_ANY:
@@ -141,19 +141,19 @@ static void ifx_set_rat_mode(struct ofono_radio_settings *rs,
 	case OFONO_RADIO_ACCESS_MODE_UMTS:
 		value = 2;
 		break;
-	default:
-		CALLBACK_WITH_FAILURE(cb, data);
-		g_free(cbd);
-		return;
+	case OFONO_RADIO_ACCESS_MODE_LTE:
+		goto error;
 	}
 
 	snprintf(buf, sizeof(buf), "AT+XRAT=%u,%u", value, preferred);
 
 	if (g_at_chat_send(rsd->chat, buf, none_prefix,
-					xrat_modify_cb, cbd, g_free) == 0) {
-		CALLBACK_WITH_FAILURE(cb, data);
-		g_free(cbd);
-	}
+					xrat_modify_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
 }
 
 static void xrat_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
