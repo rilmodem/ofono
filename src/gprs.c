@@ -83,6 +83,7 @@ struct ofono_gprs {
 struct ofono_gprs_context {
 	struct ofono_gprs *gprs;
 	enum ofono_gprs_context_type type;
+	ofono_bool_t inuse;
 	const struct ofono_gprs_context_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -484,6 +485,7 @@ static void pri_activate_callback(const struct ofono_error *error,
 
 		gprs_cid_release(ctx->gprs, ctx->context.cid);
 		ctx->context.cid = 0;
+		ctx->context_driver->inuse = FALSE;
 		ctx->context_driver = NULL;
 
 		return;
@@ -524,6 +526,7 @@ static void pri_deactivate_callback(const struct ofono_error *error, void *data)
 	gprs_cid_release(ctx->gprs, ctx->context.cid);
 	ctx->context.cid = 0;
 	ctx->active = FALSE;
+	ctx->context_driver->inuse = FALSE;
 	ctx->context_driver = NULL;
 
 	__ofono_dbus_pending_reply(&ctx->pending,
@@ -790,6 +793,8 @@ static gboolean assign_context(struct pri_context *ctx)
 	ctx->context_driver = g_slist_nth_data(ctx->gprs->context_drivers,
 						ctx->context.cid - cid_min);
 
+	ctx->context_driver->inuse = TRUE;
+
 	return TRUE;
 }
 
@@ -842,7 +847,7 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 
 		if (value) {
 			if (assign_context(ctx) == FALSE)
-				return __ofono_error_failed(msg);
+				return __ofono_error_not_implemented(msg);
 		}
 
 		gc = ctx->context_driver;
@@ -1102,8 +1107,9 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 
 			gprs_cid_release(gprs, ctx->context.cid);
 			ctx->context.cid = 0;
-			ctx->context_driver = NULL;
 			ctx->active = FALSE;
+			ctx->context_driver->inuse = FALSE;
+			ctx->context_driver = NULL;
 
 			pri_reset_context_settings(ctx);
 
@@ -1558,6 +1564,7 @@ static void gprs_deactivate_for_all(const struct ofono_error *error,
 	gprs_cid_release(gprs, ctx->context.cid);
 	ctx->active = FALSE;
 	ctx->context.cid = 0;
+	ctx->context_driver->inuse = FALSE;
 	ctx->context_driver = NULL;
 
 	pri_reset_context_settings(ctx);
@@ -1796,6 +1803,7 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 		gprs_cid_release(ctx->gprs, ctx->context.cid);
 		ctx->context.cid = 0;
 		ctx->active = FALSE;
+		ctx->context_driver->inuse = FALSE;
 		ctx->context_driver = NULL;
 
 		pri_reset_context_settings(ctx);
