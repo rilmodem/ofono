@@ -138,6 +138,9 @@ out:
 	modem = ofono_gprs_context_get_modem(gc);
 	interface = ofono_modem_get_string(modem, "NetworkInterface");
 
+	ofono_info("IP: %s  Gateway: %s", ip, gateway);
+	ofono_info("DNS: %s, %s", dns[0], dns[1]);
+
 	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, success, ip,
 					STATIC_IP_NETMASK, gateway,
 					success ? dns : NULL, gcd->cb_data);
