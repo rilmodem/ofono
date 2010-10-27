@@ -125,10 +125,10 @@ struct pri_context {
 static void gprs_netreg_update(struct ofono_gprs *gprs);
 static void gprs_deactivate_next(struct ofono_gprs *gprs);
 
-static const char *gprs_context_type_to_default_name(enum ofono_gprs_context_type type)
+static const char *gprs_context_default_name(enum ofono_gprs_context_type type)
 {
 	switch (type) {
-	case OFONO_GPRS_CONTEXT_TYPE_INVALID:
+	case OFONO_GPRS_CONTEXT_TYPE_ANY:
 		return NULL;
 	case OFONO_GPRS_CONTEXT_TYPE_INTERNET:
 		return "Internet";
@@ -146,7 +146,7 @@ static const char *gprs_context_type_to_default_name(enum ofono_gprs_context_typ
 static const char *gprs_context_type_to_string(enum ofono_gprs_context_type type)
 {
 	switch (type) {
-	case OFONO_GPRS_CONTEXT_TYPE_INVALID:
+	case OFONO_GPRS_CONTEXT_TYPE_ANY:
 		return NULL;
 	case OFONO_GPRS_CONTEXT_TYPE_INTERNET:
 		return "internet";
@@ -161,18 +161,24 @@ static const char *gprs_context_type_to_string(enum ofono_gprs_context_type type
 	return NULL;
 }
 
-static enum ofono_gprs_context_type gprs_context_string_to_type(const char *str)
+static gboolean gprs_context_string_to_type(const char *str,
+					enum ofono_gprs_context_type *out)
 {
-	if (g_str_equal(str, "internet"))
-		return OFONO_GPRS_CONTEXT_TYPE_INTERNET;
-	else if (g_str_equal(str, "wap"))
-		return OFONO_GPRS_CONTEXT_TYPE_WAP;
-	else if (g_str_equal(str, "mms"))
-		return OFONO_GPRS_CONTEXT_TYPE_MMS;
-	else if (g_str_equal(str, "ims"))
-		return OFONO_GPRS_CONTEXT_TYPE_IMS;
+	if (g_str_equal(str, "internet")) {
+		*out = OFONO_GPRS_CONTEXT_TYPE_INTERNET;
+		return TRUE;
+	} else if (g_str_equal(str, "wap")) {
+		*out = OFONO_GPRS_CONTEXT_TYPE_WAP;
+		return TRUE;
+	} else if (g_str_equal(str, "mms")) {
+		*out = OFONO_GPRS_CONTEXT_TYPE_MMS;
+		return TRUE;
+	} else if (g_str_equal(str, "ims")) {
+		*out = OFONO_GPRS_CONTEXT_TYPE_IMS;
+		return FALSE;
+	}
 
-	return OFONO_GPRS_CONTEXT_TYPE_INVALID;
+	return FALSE;
 }
 
 static const char *gprs_proto_to_string(enum ofono_gprs_proto proto)
@@ -815,9 +821,7 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 	GKeyFile *settings = ctx->gprs->settings;
 	enum ofono_gprs_context_type context_type;
 
-	context_type = gprs_context_string_to_type(type);
-
-	if (context_type == OFONO_GPRS_CONTEXT_TYPE_INVALID)
+	if (gprs_context_string_to_type(type, &context_type) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
 	if (ctx->type == context_type)
@@ -974,7 +978,7 @@ static gboolean assign_context(struct pri_context *ctx)
 		if (gc->inuse == TRUE)
 			continue;
 
-		if (gc->type == OFONO_GPRS_CONTEXT_TYPE_INVALID ||
+		if (gc->type == OFONO_GPRS_CONTEXT_TYPE_ANY ||
 						gc->type == ctx->type) {
 			ctx->context_driver = gc;
 			ctx->context_driver->inuse = TRUE;
@@ -1147,7 +1151,7 @@ static struct pri_context *pri_context_create(struct ofono_gprs *gprs,
 		return NULL;
 
 	if (!name) {
-		name = gprs_context_type_to_default_name(type);
+		name = gprs_context_default_name(type);
 		if (!name)
 			return NULL;
 	}
@@ -1600,14 +1604,12 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 					DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
-	type = gprs_context_string_to_type(typestr);
+	if (gprs_context_string_to_type(typestr, &type) == FALSE)
+		return __ofono_error_invalid_format(msg);
 
-	name = gprs_context_type_to_default_name(type);
+	name = gprs_context_default_name(type);
 	if (name == NULL)
 		name = typestr;
-
-	if (type == OFONO_GPRS_CONTEXT_TYPE_INVALID)
-		return __ofono_error_invalid_format(msg);
 
 	context = add_context(gprs, name, type);
 	if (context == NULL)
@@ -2058,7 +2060,7 @@ struct ofono_gprs_context *ofono_gprs_context_create(struct ofono_modem *modem,
 	if (gc == NULL)
 		return NULL;
 
-	gc->type = OFONO_GPRS_CONTEXT_TYPE_INVALID;
+	gc->type = OFONO_GPRS_CONTEXT_TYPE_ANY;
 
 	gc->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_GPRS_CONTEXT,
 						gprs_context_remove, gc);
@@ -2291,8 +2293,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if (typestr == NULL)
 		goto error;
 
-	type = gprs_context_string_to_type(typestr);
-	if (type == OFONO_GPRS_CONTEXT_TYPE_INVALID)
+	if (gprs_context_string_to_type(typestr, &type) == FALSE)
 		goto error;
 
 	protostr = g_key_file_get_string(gprs->settings, group,
