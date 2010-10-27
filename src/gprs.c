@@ -82,6 +82,7 @@ struct ofono_gprs {
 
 struct ofono_gprs_context {
 	struct ofono_gprs *gprs;
+	enum ofono_gprs_context_type type;
 	const struct ofono_gprs_context_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -1842,9 +1843,10 @@ struct ofono_gprs_context *ofono_gprs_context_create(struct ofono_modem *modem,
 		return NULL;
 
 	gc = g_try_new0(struct ofono_gprs_context, 1);
-
 	if (gc == NULL)
 		return NULL;
+
+	gc->type = OFONO_GPRS_CONTEXT_TYPE_INVALID;
 
 	gc->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_GPRS_CONTEXT,
 						gprs_context_remove, gc);
@@ -1883,6 +1885,14 @@ void *ofono_gprs_context_get_data(struct ofono_gprs_context *gc)
 struct ofono_modem *ofono_gprs_context_get_modem(struct ofono_gprs_context *gc)
 {
 	return __ofono_atom_get_modem(gc->atom);
+}
+
+void ofono_gprs_context_set_type(struct ofono_gprs_context *gc,
+                                        enum ofono_gprs_context_type type)
+{
+	DBG("type %d", type);
+
+	gc->type = type;
 }
 
 int ofono_gprs_driver_register(const struct ofono_gprs_driver *d)
@@ -1988,7 +1998,6 @@ struct ofono_gprs *ofono_gprs_create(struct ofono_modem *modem,
 		return NULL;
 
 	gprs = g_try_new0(struct ofono_gprs, 1);
-
 	if (gprs == NULL)
 		return NULL;
 
