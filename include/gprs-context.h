@@ -39,6 +39,13 @@ enum ofono_gprs_proto {
 	OFONO_GPRS_PROTO_IPV6,
 };
 
+enum ofono_gprs_context_type {
+	OFONO_GPRS_CONTEXT_TYPE_INVALID = 0,
+	OFONO_GPRS_CONTEXT_TYPE_INTERNET,
+	OFONO_GPRS_CONTEXT_TYPE_MMS,
+	OFONO_GPRS_CONTEXT_TYPE_WAP,
+};
+
 struct ofono_gprs_primary_context {
 	unsigned int cid;
 	int direction;

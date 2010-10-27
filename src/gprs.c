@@ -54,13 +54,6 @@
 static GSList *g_drivers = NULL;
 static GSList *g_context_drivers = NULL;
 
-enum gprs_context_type {
-	GPRS_CONTEXT_TYPE_INTERNET = 0,
-	GPRS_CONTEXT_TYPE_MMS,
-	GPRS_CONTEXT_TYPE_WAP,
-	GPRS_CONTEXT_TYPE_INVALID,
-};
-
 struct ofono_gprs {
 	GSList *contexts;
 	ofono_bool_t attached;
@@ -105,7 +98,7 @@ struct context_settings {
 
 struct pri_context {
 	ofono_bool_t active;
-	enum gprs_context_type type;
+	enum ofono_gprs_context_type type;
 	char name[MAX_CONTEXT_NAME_LENGTH + 1];
 	char message_proxy[MAX_MESSAGE_PROXY_LENGTH + 1];
 	char message_center[MAX_MESSAGE_CENTER_LENGTH + 1];
@@ -122,44 +115,48 @@ struct pri_context {
 static void gprs_netreg_update(struct ofono_gprs *gprs);
 static void gprs_deactivate_next(struct ofono_gprs *gprs);
 
-static const char *gprs_context_type_to_default_name(int type)
+static const char *gprs_context_type_to_default_name(enum ofono_gprs_context_type type)
 {
 	switch (type) {
-	case GPRS_CONTEXT_TYPE_INTERNET:
+	case OFONO_GPRS_CONTEXT_TYPE_INVALID:
+		return NULL;
+	case OFONO_GPRS_CONTEXT_TYPE_INTERNET:
 		return "Internet";
-	case GPRS_CONTEXT_TYPE_MMS:
+	case OFONO_GPRS_CONTEXT_TYPE_MMS:
 		return "MMS";
-	case GPRS_CONTEXT_TYPE_WAP:
+	case OFONO_GPRS_CONTEXT_TYPE_WAP:
 		return "WAP";
 	}
 
 	return NULL;
 }
 
-static const char *gprs_context_type_to_string(int type)
+static const char *gprs_context_type_to_string(enum ofono_gprs_context_type type)
 {
 	switch (type) {
-	case GPRS_CONTEXT_TYPE_INTERNET:
+	case OFONO_GPRS_CONTEXT_TYPE_INVALID:
+		return NULL;
+	case OFONO_GPRS_CONTEXT_TYPE_INTERNET:
 		return "internet";
-	case GPRS_CONTEXT_TYPE_MMS:
+	case OFONO_GPRS_CONTEXT_TYPE_MMS:
 		return "mms";
-	case GPRS_CONTEXT_TYPE_WAP:
+	case OFONO_GPRS_CONTEXT_TYPE_WAP:
 		return "wap";
 	}
 
 	return NULL;
 }
 
-static enum gprs_context_type gprs_context_string_to_type(const char *str)
+static enum ofono_gprs_context_type gprs_context_string_to_type(const char *str)
 {
 	if (g_str_equal(str, "internet"))
-		return GPRS_CONTEXT_TYPE_INTERNET;
+		return OFONO_GPRS_CONTEXT_TYPE_INTERNET;
 	else if (g_str_equal(str, "wap"))
-		return GPRS_CONTEXT_TYPE_WAP;
+		return OFONO_GPRS_CONTEXT_TYPE_WAP;
 	else if (g_str_equal(str, "mms"))
-		return GPRS_CONTEXT_TYPE_MMS;
+		return OFONO_GPRS_CONTEXT_TYPE_MMS;
 
-	return GPRS_CONTEXT_TYPE_INVALID;
+	return OFONO_GPRS_CONTEXT_TYPE_INVALID;
 }
 
 static const char *gprs_proto_to_string(enum ofono_gprs_proto proto)
@@ -429,7 +426,7 @@ static void append_context_properties(struct pri_context *ctx,
 	ofono_dbus_dict_append(dict, "Password", DBUS_TYPE_STRING,
 				&strvalue);
 
-	if (ctx->type == GPRS_CONTEXT_TYPE_MMS) {
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
 		strvalue = ctx->message_proxy;
 		ofono_dbus_dict_append(dict, "MessageProxy",
 					DBUS_TYPE_STRING, &strvalue);
@@ -635,11 +632,11 @@ static DBusMessage *pri_set_type(struct pri_context *ctx, DBusConnection *conn,
 					DBusMessage *msg, const char *type)
 {
 	GKeyFile *settings = ctx->gprs->settings;
-	enum gprs_context_type context_type;
+	enum ofono_gprs_context_type context_type;
 
 	context_type = gprs_context_string_to_type(type);
 
-	if (context_type == GPRS_CONTEXT_TYPE_INVALID)
+	if (context_type == OFONO_GPRS_CONTEXT_TYPE_INVALID)
 		return __ofono_error_invalid_format(msg);
 
 	if (ctx->type == context_type)
@@ -904,7 +901,7 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 		return pri_set_name(ctx, conn, msg, str);
 	}
 
-	if (ctx->type != GPRS_CONTEXT_TYPE_MMS)
+	if (ctx->type != OFONO_GPRS_CONTEXT_TYPE_MMS)
 		return __ofono_error_invalid_args(msg);
 
 	if (!strcmp(property, "MessageProxy")) {
@@ -939,8 +936,8 @@ static GDBusSignalTable context_signals[] = {
 };
 
 static struct pri_context *pri_context_create(struct ofono_gprs *gprs,
-						const char *name,
-						enum gprs_context_type type)
+					const char *name,
+					enum ofono_gprs_context_type type)
 {
 	struct pri_context *context = g_try_new0(struct pri_context, 1);
 
@@ -1337,7 +1334,7 @@ static void write_context_settings(struct ofono_gprs *gprs,
 
 static struct pri_context *add_context(struct ofono_gprs *gprs,
 					const char *name,
-					enum gprs_context_type type)
+					enum ofono_gprs_context_type type)
 {
 	unsigned int id;
 	struct pri_context *context;
@@ -1385,7 +1382,7 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	const char *typestr;
 	const char *name;
 	const char *path;
-	enum gprs_context_type type;
+	enum ofono_gprs_context_type type;
 	DBusMessage *signal;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &typestr,
@@ -1398,7 +1395,7 @@ static DBusMessage *gprs_add_context(DBusConnection *conn,
 	if (name == NULL)
 		name = typestr;
 
-	if (type == GPRS_CONTEXT_TYPE_INVALID)
+	if (type == OFONO_GPRS_CONTEXT_TYPE_INVALID)
 		return __ofono_error_invalid_format(msg);
 
 	context = add_context(gprs, name, type);
@@ -2051,7 +2048,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	gboolean ret = FALSE;
 	gboolean legacy = FALSE;
 	struct pri_context *context;
-	enum gprs_context_type type;
+	enum ofono_gprs_context_type type;
 	enum ofono_gprs_proto proto;
 	unsigned int id;
 
@@ -2074,7 +2071,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 		goto error;
 
 	type = gprs_context_string_to_type(typestr);
-	if (type == GPRS_CONTEXT_TYPE_INVALID)
+	if (type == OFONO_GPRS_CONTEXT_TYPE_INVALID)
 		goto error;
 
 	protostr = g_key_file_get_string(gprs->settings, group,
@@ -2109,7 +2106,7 @@ static gboolean load_context(struct ofono_gprs *gprs, const char *group)
 	if (strlen(apn) > OFONO_GPRS_MAX_APN_LENGTH)
 		goto error;
 
-	if (type == GPRS_CONTEXT_TYPE_MMS) {
+	if (type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
 		msgproxy = g_key_file_get_string(gprs->settings, group,
 						"MessageProxy", NULL);
 
@@ -2263,7 +2260,7 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 	}
 
 	if (gprs->contexts == NULL)
-		add_context(gprs, "Internet", GPRS_CONTEXT_TYPE_INTERNET);
+		add_context(gprs, "Internet", OFONO_GPRS_CONTEXT_TYPE_INTERNET);
 
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
