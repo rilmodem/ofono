@@ -323,8 +323,11 @@ static gboolean reopen_callback(gpointer user_data)
 
 	data->gc = ofono_gprs_context_create(modem, 0,
 					"atmodem", data->data_port);
-	if (data->gprs && data->gc)
+	if (data->gprs && data->gc) {
+		ofono_gprs_context_set_type(data->gc,
+					OFONO_GPRS_CONTEXT_TYPE_MMS);
 		ofono_gprs_add_context(data->gprs, data->gc);
+	}
 
 	return FALSE;
 }
@@ -525,13 +528,19 @@ static void mbm_post_online(struct ofono_modem *modem)
 
 	gc = ofono_gprs_context_create(modem, 0,
 					"mbmmodem", data->modem_port);
-	if (gc)
+	if (gc) {
+		ofono_gprs_context_set_type(data->gc,
+					OFONO_GPRS_CONTEXT_TYPE_INTERNET);
 		ofono_gprs_add_context(data->gprs, gc);
+	}
 
 	data->gc = ofono_gprs_context_create(modem, 0,
 					"atmodem", data->data_port);
-	if (data->gc)
+	if (data->gc) {
+		ofono_gprs_context_set_type(data->gc,
+					OFONO_GPRS_CONTEXT_TYPE_MMS);
 		ofono_gprs_add_context(data->gprs, data->gc);
+	}
 }
 
 static struct ofono_modem_driver mbm_driver = {
