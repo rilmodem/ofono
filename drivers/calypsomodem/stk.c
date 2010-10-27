@@ -209,13 +209,26 @@ static void sata_notify(GAtResult *result, gpointer user_data)
 
 static void satn_notify(GAtResult *result, gpointer user_data)
 {
+	struct ofono_stk *stk = user_data;
+	GAtResultIter iter;
+	const guint8 *pdu;
+	gint len;
+
 	DBG("");
 
-	/*
-	 * Proactive command has been handled by the modem.  Should
-	 * the core be notified?  For now we just ignore it because
-	 * we must not respond to the command.
-	 */
+	/* Proactive command has been handled by the modem. */
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "%SATN:") == FALSE)
+		return;
+
+	if (g_at_result_iter_next_hexstring(&iter, &pdu, &len) == FALSE)
+		return;
+
+	if (len == 0)
+		return;
+
+	ofono_stk_proactive_command_handled_notify(stk, len, pdu);
 }
 
 static void calypso_stk_register(gboolean ok, GAtResult *result,
