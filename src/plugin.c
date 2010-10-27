@@ -176,6 +176,9 @@ int __ofono_plugin_init(const char *pattern, const char *exclude)
 		plugin->active = TRUE;
 	}
 
+	g_strfreev(patterns);
+	g_strfreev(excludes);
+
 	return 0;
 }
 
