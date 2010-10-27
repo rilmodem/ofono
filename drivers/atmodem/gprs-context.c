@@ -89,6 +89,9 @@ static void ppp_connect(const char *interface, const char *local,
 	dns[1] = dns2;
 	dns[2] = 0;
 
+	ofono_info("IP: %s", local);
+	ofono_info("DNS: %s, %s", dns1, dns2);
+
 	gcd->state = STATE_ACTIVE;
 	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, local,
 					STATIC_IP_NETMASK, NULL,
