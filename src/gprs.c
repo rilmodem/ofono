@@ -773,6 +773,26 @@ static DBusMessage *pri_set_message_center(struct pri_context *ctx,
 	return NULL;
 }
 
+static gboolean assign_context(struct pri_context *ctx)
+{
+	struct idmap *cidmap = ctx->gprs->cid_map;
+	unsigned int cid_min;
+
+	if (cidmap == NULL)
+		return FALSE;
+
+	cid_min = idmap_get_min(cidmap);
+
+	ctx->context.cid = gprs_cid_alloc(ctx->gprs);
+	if (ctx->context.cid == 0)
+		return FALSE;
+
+	ctx->context_driver = g_slist_nth_data(ctx->gprs->context_drivers,
+						ctx->context.cid - cid_min);
+
+	return TRUE;
+}
+
 static DBusMessage *pri_set_property(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -799,10 +819,6 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 
 	if (g_str_equal(property, "Active")) {
 		struct ofono_gprs_context *gc;
-		struct idmap *cidmap = ctx->gprs->cid_map;
-
-		if (cidmap == NULL)
-			return __ofono_error_not_implemented(msg);
 
 		if (ctx->gprs->pending)
 			return __ofono_error_busy(msg);
@@ -825,15 +841,8 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 			return __ofono_error_attach_in_progress(msg);
 
 		if (value) {
-			unsigned int cid_min = idmap_get_min(cidmap);
-			ctx->context.cid = gprs_cid_alloc(ctx->gprs);
-
-			if (ctx->context.cid == 0)
+			if (assign_context(ctx) == FALSE)
 				return __ofono_error_failed(msg);
-
-			ctx->context_driver =
-				g_slist_nth_data(ctx->gprs->context_drivers,
-						ctx->context.cid - cid_min);
 		}
 
 		gc = ctx->context_driver;
