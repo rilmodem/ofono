@@ -30,6 +30,8 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -365,6 +367,47 @@ done:
 	close(sk);
 }
 
+static void pri_setaddr(const char *interface, const char *address)
+{
+	struct ifreq ifr;
+	struct sockaddr_in addr;
+	int sk;
+
+	if (!interface)
+		return;
+
+	sk = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
+		return;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, interface, IFNAMSIZ);
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = address ? inet_addr(address) : INADDR_ANY;
+	memcpy(&ifr.ifr_addr, &addr, sizeof(ifr.ifr_addr));
+
+	if (ioctl(sk, SIOCSIFADDR, &ifr) < 0) {
+		ofono_error("Failed to set interface address");
+		goto done;
+	}
+
+	if (!address)
+		goto done;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr("255.255.255.255");
+	memcpy(&ifr.ifr_netmask, &addr, sizeof(ifr.ifr_netmask));
+
+	if (ioctl(sk, SIOCSIFNETMASK, &ifr) < 0)
+		ofono_error("Failed to set interface netmask");
+
+done:
+	close(sk);
+}
+
 static void pri_reset_context_settings(struct pri_context *ctx)
 {
 	char *interface;
@@ -379,6 +422,9 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 	ctx->settings = NULL;
 
 	pri_context_signal_settings(ctx);
+
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+		pri_setaddr(interface, NULL);
 
 	pri_ifupdown(interface, FALSE);
 
@@ -411,6 +457,9 @@ static void pri_update_context_settings(struct pri_context *ctx,
 		ctx->settings->proxy = g_strdup(ctx->message_proxy);
 
 	pri_ifupdown(interface, TRUE);
+
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+		pri_setaddr(interface, ip);
 
 	pri_context_signal_settings(ctx);
 }
