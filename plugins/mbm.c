@@ -529,7 +529,7 @@ static void mbm_post_online(struct ofono_modem *modem)
 	gc = ofono_gprs_context_create(modem, 0,
 					"mbmmodem", data->modem_port);
 	if (gc) {
-		ofono_gprs_context_set_type(data->gc,
+		ofono_gprs_context_set_type(gc,
 					OFONO_GPRS_CONTEXT_TYPE_INTERNET);
 		ofono_gprs_add_context(data->gprs, gc);
 	}
