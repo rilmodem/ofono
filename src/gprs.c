@@ -27,9 +27,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <net/if.h>
+#include <net/route.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -112,6 +114,8 @@ struct pri_context {
 	char *path;
 	char *key;
 	struct context_settings *settings;
+	char *proxy_host;
+	uint16_t proxy_port;
 	DBusMessage *pending;
 	struct ofono_gprs_primary_context context;
 	struct ofono_gprs_context *context_driver;
@@ -332,6 +336,53 @@ static void pri_context_signal_settings(struct pri_context *ctx)
 	g_dbus_send_message(conn, signal);
 }
 
+static void pri_parse_proxy(struct pri_context *ctx, const char *proxy)
+{
+	char *scheme, *host, *port, *path;
+
+	scheme = g_strdup(proxy);
+	if (scheme == NULL)
+		return;
+
+	host = strstr(scheme, "://");
+	if (host != NULL) {
+		*host = '\0';
+		host += 3;
+
+		if (strcasecmp(scheme, "https") == 0)
+			ctx->proxy_port = 443;
+		else if (strcasecmp(scheme, "http") == 0)
+			ctx->proxy_port = 80;
+		else {
+			g_free(scheme);
+			return;
+		}
+	} else {
+		host = scheme;
+		ctx->proxy_port = 80;
+	}
+
+	path = strchr(host, '/');
+	if (path != NULL)
+		*(path++) = '\0';
+
+	port = strrchr(host, ':');
+	if (port != NULL) {
+		char *end;
+		int tmp = strtol(port + 1, &end, 10);
+
+		if (*end == '\0') {
+			*port = '\0';
+			ctx->proxy_port = tmp;
+		}
+	}
+
+	g_free(ctx->proxy_host);
+	ctx->proxy_host = g_strdup(host);
+
+	g_free(scheme);
+}
+
 static void pri_ifupdown(const char *interface, ofono_bool_t active)
 {
 	struct ifreq ifr;
@@ -383,6 +434,9 @@ static void pri_setaddr(const char *interface, const char *address)
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, interface, IFNAMSIZ);
 
+	if (ioctl(sk, SIOCGIFFLAGS, &ifr) < 0)
+		goto done;
+
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = address ? inet_addr(address) : INADDR_ANY;
@@ -408,6 +462,44 @@ done:
 	close(sk);
 }
 
+static void pri_setproxy(const char *interface, const char *proxy)
+{
+	struct rtentry rt;
+	struct sockaddr_in addr;
+	int sk;
+
+	if (!interface)
+		return;
+
+	sk = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sk < 0)
+		return;
+
+	memset(&rt, 0, sizeof(rt));
+	rt.rt_flags = RTF_UP | RTF_HOST;
+	rt.rt_dev = (char *) interface;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(proxy);
+	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	memcpy(&rt.rt_genmask, &addr, sizeof(rt.rt_genmask));
+
+	if (ioctl(sk, SIOCADDRT, &rt) < 0)
+		ofono_error("Failed to add proxy host route");
+
+	close(sk);
+}
+
 static void pri_reset_context_settings(struct pri_context *ctx)
 {
 	char *interface;
@@ -423,8 +515,13 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 
 	pri_context_signal_settings(ctx);
 
-	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
 		pri_setaddr(interface, NULL);
+
+		g_free(ctx->proxy_host);
+		ctx->proxy_host = NULL;
+		ctx->proxy_port = 0;
+	}
 
 	pri_ifupdown(interface, FALSE);
 
@@ -458,8 +555,16 @@ static void pri_update_context_settings(struct pri_context *ctx,
 
 	pri_ifupdown(interface, TRUE);
 
-	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+		pri_parse_proxy(ctx, ctx->message_proxy);
+
+		DBG("proxy %s port %u", ctx->proxy_host, ctx->proxy_port);
+
 		pri_setaddr(interface, ip);
+
+		if (ctx->proxy_host)
+			pri_setproxy(interface, ctx->proxy_host);
+	}
 
 	pri_context_signal_settings(ctx);
 }
@@ -1050,6 +1155,8 @@ static void pri_context_destroy(gpointer userdata)
 		context_settings_free(ctx->settings);
 		ctx->settings = NULL;
 	}
+
+	g_free(ctx->proxy_host);
 
 	g_free(ctx->path);
 
