@@ -220,13 +220,6 @@ GPRS
   Priority: Low
   Complexity: C4
 
-- On-demand SOCKS5 proxy support for MMS contexts.  When an MMS context type
-  is created, oFono should create a SOCKS5 proxy.  When a client connects to
-  the proxy, oFono can activate the GPRS context on-demand.
-
-  Priority: High
-  Complexity: C2
-
 - Add support for IPv6 GPRS contexts.
 
   Priority: Medium
