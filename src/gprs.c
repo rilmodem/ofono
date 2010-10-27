@@ -90,12 +90,14 @@ struct ofono_gprs_context {
 };
 
 struct context_settings {
+	enum ofono_gprs_context_type type;
 	char *interface;
 	gboolean static_ip;
 	char *ip;
 	char *netmask;
 	char *gateway;
 	char **dns;
+	char *proxy;
 };
 
 struct pri_context {
@@ -219,6 +221,7 @@ static void context_settings_free(struct context_settings *settings)
 	g_free(settings->netmask);
 	g_free(settings->gateway);
 	g_strfreev(settings->dns);
+	g_free(settings->proxy);
 
 	g_free(settings);
 }
@@ -245,10 +248,17 @@ static void context_settings_append_variant(struct context_settings *settings,
 	dbus_message_iter_open_container(&variant, DBUS_TYPE_ARRAY,
 						typesig, &array);
 	if (settings == NULL)
-		goto end;
+		goto done;
 
 	ofono_dbus_dict_append(&array, "Interface",
 				DBUS_TYPE_STRING, &settings->interface);
+
+	if (settings->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+		if (settings->proxy)
+			ofono_dbus_dict_append(&array, "Proxy",
+					DBUS_TYPE_STRING, &settings->proxy);
+		goto done;
+	}
 
 	if (settings->static_ip == TRUE)
 		method = "static";
@@ -274,7 +284,7 @@ static void context_settings_append_variant(struct context_settings *settings,
 						DBUS_TYPE_STRING,
 						&settings->dns);
 
-end:
+done:
 	dbus_message_iter_close_container(&variant, &array);
 
 	dbus_message_iter_close_container(iter, &variant);
@@ -384,7 +394,11 @@ static void pri_update_context_settings(struct pri_context *ctx,
 	if (ctx->settings)
 		context_settings_free(ctx->settings);
 
-	ctx->settings = g_new0(struct context_settings, 1);
+	ctx->settings = g_try_new0(struct context_settings, 1);
+	if (!ctx->settings)
+		return;
+
+	ctx->settings->type = ctx->type;
 
 	ctx->settings->interface = g_strdup(interface);
 	ctx->settings->static_ip = static_ip;
@@ -392,6 +406,9 @@ static void pri_update_context_settings(struct pri_context *ctx,
 	ctx->settings->netmask = g_strdup(netmask);
 	ctx->settings->gateway = g_strdup(gateway);
 	ctx->settings->dns = g_strdupv((char **)dns);
+
+	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS && ctx->message_proxy)
+		ctx->settings->proxy = g_strdup(ctx->message_proxy);
 
 	pri_ifupdown(interface, TRUE);
 

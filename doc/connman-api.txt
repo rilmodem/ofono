@@ -211,6 +211,26 @@ Properties	boolean Active [readwrite]
 
 				Holds the gateway IP for this connection.
 
+			string Proxy [readonly, MMS only]
+
+				Holds the current proxy information for
+				using this context.
+
+				In combination with the Interface value
+				this allows access to the services offered
+				by this context.
+
+				It is possible that this reflects just the
+				MessageProxy property if such a routing can
+				be set up.  However this can also be pointing
+				to a local proxy on 127.0.0.1 and then using
+				the loopback interace lo for it.
+
+				Users of this context should bind to the
+				provided interface and only attempt access
+				via this proxy.  All other values are left
+				out in this case.
+
 		string MessageProxy [readwrite, MMS only]
 
 			Holds the MMS Proxy setting.
