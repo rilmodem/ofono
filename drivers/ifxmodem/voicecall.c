@@ -707,6 +707,7 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	g_at_chat_send(vd->chat, "AT+CRC=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+COLP=1", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+CNAP=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CCWA=1", none_prefix,
 				ifx_voicecall_initialized, vc, NULL);
 
