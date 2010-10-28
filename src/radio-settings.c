@@ -126,8 +126,7 @@ static void radio_set_fast_dormancy(struct ofono_radio_settings *rs,
 	const char *path = __ofono_atom_get_path(rs->atom);
 	dbus_bool_t value = enable;
 
-	if ((rs->flags & RADIO_SETTINGS_FLAG_CACHED) &&
-		rs->fast_dormancy == enable)
+	if (rs->fast_dormancy == enable)
 		return;
 
 	ofono_dbus_signal_property_changed(conn, path,
