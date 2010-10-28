@@ -360,12 +360,6 @@ Sim Toolkit
   Complexity: C2
   Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
 
-- Support Send SS proactive command.
-
-  Priority: High
-  Complexity: C4
-  Owner: Yang Gu <yang.gu@intel.com>
-
 - Support Send USSD proactive command.
 
   Priority: High

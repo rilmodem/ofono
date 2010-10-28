@@ -111,6 +111,18 @@ Envelopes:
   CBS-PP Download envelope.  No user interaction is required or signaled
   whenever this occurs.
 
+The following commands are expected to be handled by the modem:
+
+- Send SS proactive command.  oFono does not explicitly support this proactive
+  command since AT modems do not provide the low level information necessary
+  for oFono to generate a valid response.  The modem (or driver) shall handle
+  this command.  Optionally the modem (or driver) can inform oFono that the
+  proactive command has been received and is being handled by the modem, as
+  well as when the terminal response has been sent by the modem.  oFono will
+  display the necessary user information for this time period if this
+  information is included in the proactive command.
+
+
 Short Messaging Service
 =======================
 
