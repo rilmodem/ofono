@@ -77,6 +77,8 @@ Supported Proactive Commands:
   modem.  The appropriate terminal response is sent to the SIM once the DTMF
   tones have been played or the call has been disconnected.
 
+  NOTE: This command can also be handled by the modem.
+
 - Play Tone proactive command.  Whenever oFono receives a Play Tone proactive
   command it checks whether the tone is to be continuous/looped or played once.
   It then calls the SimToolkitAgent PlayTone or LoopTone method as appropriate.
@@ -91,6 +93,7 @@ Supported Proactive Commands:
   is sent to the network, and the response is sent back to the SIM in the
   terminal response.
 
+  NOTE: This command can also be handled by the modem.
 
 - Sim icon support.  oFono supports icons that are stored on the SIM.  If the
   SIM notifies oFono that an icon is available for a particular proactive
