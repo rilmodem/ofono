@@ -631,6 +631,23 @@ static void option_osigq_notify(GAtResult *result, gpointer user_data)
 				at_util_convert_signal_strength(strength));
 }
 
+static void ifx_xhomezr_notify(GAtResult *result, gpointer user_data)
+{
+	//struct ofono_netreg *netreg = user_data;
+	const char *label;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XHOMEZR:"))
+		return;
+
+	if (!g_at_result_iter_next_string(&iter, &label))
+		return;
+
+	ofono_info("Home zone: %s", label);
+}
+
 static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1176,15 +1193,21 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_IFX:
 		/* Register for specific signal strength reports */
 		g_at_chat_register(nd->chat, "+XCIEV:", ifx_xciev_notify,
-					FALSE, netreg, NULL);
+						FALSE, netreg, NULL);
 		g_at_chat_send(nd->chat, "AT+XMER=1", none_prefix,
+						NULL, NULL, NULL);
+
+		/* Register for home zone reports */
+		g_at_chat_register(nd->chat, "+XHOMEZR:", ifx_xhomezr_notify,
+						FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT+XHOMEZR=1", none_prefix,
 						NULL, NULL, NULL);
 
 		/* Register for network time update reports */
 		g_at_chat_register(nd->chat, "+CTZV:", ctzv_notify,
-					FALSE, netreg, NULL);
+						FALSE, netreg, NULL);
 		g_at_chat_register(nd->chat, "+CTZDST:", ctzdst_notify,
-					FALSE, netreg, NULL);
+						FALSE, netreg, NULL);
 		g_at_chat_send(nd->chat, "AT+CTZR=1", none_prefix,
 						NULL, NULL, NULL);
 		break;
