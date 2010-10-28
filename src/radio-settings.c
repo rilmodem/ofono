@@ -145,9 +145,12 @@ static void radio_fast_dormancy_set_callback(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Error setting fast dormancy");
+
 		rs->fast_dormancy_pending = rs->fast_dormancy;
+
 		reply = __ofono_error_failed(rs->pending);
 		__ofono_dbus_pending_reply(&rs->pending, reply);
+
 		return;
 	}
 
@@ -185,9 +188,12 @@ static void radio_mode_set_callback(const struct ofono_error *error, void *data)
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Error setting radio access mode");
+
 		rs->pending_mode = rs->mode;
+
 		reply = __ofono_error_failed(rs->pending);
 		__ofono_dbus_pending_reply(&rs->pending, reply);
+
 		return;
 	}
 
@@ -202,6 +208,7 @@ static void radio_send_properties_reply(struct ofono_radio_settings *rs)
 	DBusMessage *reply;
 
 	rs->flags |= RADIO_SETTINGS_FLAG_CACHED;
+
 	reply = radio_get_properties_reply(rs->pending, rs);
 	__ofono_dbus_pending_reply(&rs->pending, reply);
 }
@@ -214,8 +221,10 @@ static void radio_fast_dormancy_query_callback(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Error during fast dormancy query");
+
 		reply = __ofono_error_failed(rs->pending);
 		__ofono_dbus_pending_reply(&rs->pending, reply);
+
 		return;
 	}
 
@@ -243,8 +252,10 @@ static void radio_rat_mode_query_callback(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Error during radio access mode query");
+
 		reply = __ofono_error_failed(rs->pending);
 		__ofono_dbus_pending_reply(&rs->pending, reply);
+
 		return;
 	}
 
