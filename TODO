@@ -360,12 +360,6 @@ Sim Toolkit
   Complexity: C2
   Owner: Andrzej Zaborowski <andrew.zaborowski@intel.com>
 
-- Support Send USSD proactive command.
-
-  Priority: High
-  Complexity: C4
-  Owner: Yang Gu <yang.gu@intel.com>
-
 - Support Set Up Call proactive command.  If the UICC has indicated that
   the user should be informed, then the SimToolkitAgent will be called
   in order to request user's confirmation of the call setup.  If the user

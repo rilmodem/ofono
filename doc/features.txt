@@ -84,6 +84,14 @@ Supported Proactive Commands:
   that is passed to the agent.  It is up to the system integrator to provide
   the appropriate sounds.
 
+- Send USSD proactive command.  Whenever oFono receives a Send USSD proactive
+  command it checks whether there are any USSD / SS operations in progress.
+  If an operation is in progress, the appropriate terminal response is sent
+  without performing the Send USSD operation.  Otherwise the USSD string
+  is sent to the network, and the response is sent back to the SIM in the
+  terminal response.
+
+
 - Sim icon support.  oFono supports icons that are stored on the SIM.  If the
   SIM notifies oFono that an icon is available for a particular proactive
   command, oFono passes this information to the UI.  The UI is able to obtain
