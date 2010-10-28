@@ -2464,6 +2464,11 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 				&cmd->send_ussd.icon_id);
 		break;
 
+	case STK_COMMAND_TYPE_SEND_SS:
+		stk_alpha_id_set(stk, cmd->send_ss.alpha_id,
+				&cmd->send_ss.text_attr,
+				&cmd->send_ss.icon_id);
+
 	case STK_COMMAND_TYPE_SEND_DTMF:
 		stk_alpha_id_set(stk, cmd->send_dtmf.alpha_id,
 				&cmd->send_dtmf.text_attr,
