@@ -697,7 +697,7 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 	ofono_netreg_strength_notify(netreg, strength);
 }
 
-static void ctzv_notify(GAtResult *result, gpointer user_data)
+static void ifx_ctzv_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -730,7 +730,7 @@ static void ctzv_notify(GAtResult *result, gpointer user_data)
 	nd->time.year = 2000 + year;
 }
 
-static void ctzdst_notify(GAtResult *result, gpointer user_data)
+static void ifx_ctzdst_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
@@ -1204,9 +1204,9 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 						NULL, NULL, NULL);
 
 		/* Register for network time update reports */
-		g_at_chat_register(nd->chat, "+CTZV:", ctzv_notify,
+		g_at_chat_register(nd->chat, "+CTZV:", ifx_ctzv_notify,
 						FALSE, netreg, NULL);
-		g_at_chat_register(nd->chat, "+CTZDST:", ctzdst_notify,
+		g_at_chat_register(nd->chat, "+CTZDST:", ifx_ctzdst_notify,
 						FALSE, netreg, NULL);
 		g_at_chat_send(nd->chat, "AT+CTZR=1", none_prefix,
 						NULL, NULL, NULL);
