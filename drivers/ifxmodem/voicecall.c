@@ -187,6 +187,33 @@ static void xcallstat_notify(GAtResult *result, gpointer user_data)
 		ofono_voicecall_notify(vc, call);
 }
 
+static void xem_notify(GAtResult *result, gpointer user_data)
+{
+	//struct ofono_voicecall *vc = user_data;
+	//struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GAtResultIter iter;
+	int state;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "+XEM:") == FALSE)
+		return;
+
+	if (g_at_result_iter_next_number(&iter, &state) == FALSE)
+		return;
+
+	DBG("state %d", state);
+
+	switch (state) {
+	case 0:
+		ofono_info("Emergency call is finished");
+		break;
+	case 1:
+		ofono_info("Emergency call is entered");
+		break;
+	}
+}
+
 static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct change_state_req *req = user_data;
@@ -682,8 +709,9 @@ static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(vd->chat, "+CRING:", cring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CLIP:", clip_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CCWA:", ccwa_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+XEM:", xem_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+XCALLSTAT:", xcallstat_notify,
-				FALSE, vc, NULL);
+							FALSE, vc, NULL);
 
 	ofono_voicecall_register(vc);
 }
@@ -703,6 +731,7 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	ofono_voicecall_set_data(vc, vd);
 
 	g_at_chat_send(chat, "AT+XCALLSTAT=1", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(chat, "AT+XEMC=1", none_prefix, NULL, NULL, NULL);
 
 	g_at_chat_send(vd->chat, "AT+CRC=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", none_prefix, NULL, NULL, NULL);
