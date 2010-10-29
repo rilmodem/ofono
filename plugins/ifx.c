@@ -734,7 +734,8 @@ static void ifx_post_online(struct ofono_modem *modem)
 	if (mw)
 		ofono_message_waiting_register(mw);
 
-	gprs = ofono_gprs_create(modem, 0, "atmodem", data->dlcs[NETREG_DLC]);
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_IFX,
+					"atmodem", data->dlcs[NETREG_DLC]);
 	if (!gprs)
 		return;
 
