@@ -299,6 +299,9 @@ endif
 builtin_modules += smart_messaging
 builtin_sources += plugins/smart-messaging.c
 
+builtin_modules += push_notification
+builtin_sources += plugins/push-notification.c
+
 sbin_PROGRAMS = src/ofonod
 
 src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
