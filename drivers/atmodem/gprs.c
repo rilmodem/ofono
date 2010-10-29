@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -174,6 +175,31 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 	}
 }
 
+static void xdatastat_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	GAtResultIter iter;
+	int stat;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XDATASTAT:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &stat))
+
+	DBG("stat %d", stat);
+
+	switch (stat) {
+	case 0:
+		ofono_gprs_suspend_notify(gprs, GPRS_SUSPENDED_UNKNOWN_CAUSE);
+		break;
+	case 1:
+		ofono_gprs_resume_notify(gprs);
+		break;
+	}
+}
+
 static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -181,7 +207,17 @@ static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_register(gd->chat, "+CGEV:", cgev_notify, FALSE, gprs, NULL);
 	g_at_chat_register(gd->chat, "+CGREG:", cgreg_notify,
-				FALSE, gprs, NULL);
+					FALSE, gprs, NULL);
+
+	switch (gd->vendor) {
+	case OFONO_VENDOR_IFX:
+		/* Register for GPRS suspend notifications */
+		g_at_chat_register(gd->chat, "+XDATASTAT:", xdatastat_notify,
+						FALSE, gprs, NULL);
+		g_at_chat_send(gd->chat, "AT+XDATASTAT=1", none_prefix,
+						NULL, NULL, NULL);
+		break;
+	}
 
 	ofono_gprs_register(gprs);
 }
@@ -313,7 +349,10 @@ static int at_gprs_probe(struct ofono_gprs *gprs,
 	GAtChat *chat = data;
 	struct gprs_data *gd;
 
-	gd = g_new0(struct gprs_data, 1);
+	gd = g_try_new0(struct gprs_data, 1);
+	if (!gd)
+		return -ENOMEM;
+
 	gd->chat = g_at_chat_clone(chat);
 	gd->vendor = vendor;
 
