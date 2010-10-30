@@ -99,7 +99,7 @@ static void start_element_handler(GMarkupParseContext *context,
 	else if (!strcmp(element_name, "default_gateway"))
 		rsp->current = rsp->default_gateway;
 	else if (!strcmp(element_name, "dns_server") &&
-		rsp->dns_server1[0] == '\0')
+					rsp->dns_server1[0] == '\0')
 		rsp->current = rsp->dns_server1;
 	else if (!strcmp(element_name, "dns_server"))
 		rsp->current = rsp->dns_server2;
