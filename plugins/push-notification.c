@@ -119,6 +119,12 @@ static void push_notification_cleanup(gpointer user)
 	struct push_notification *pn = user;
 
 	DBG("%p", pn);
+
+	pn->sms = NULL;
+
+	sms_agent_free(pn->agent);
+
+	ofono_modem_remove_interface(pn->modem, PUSH_NOTIFICATION_INTERFACE);
 }
 
 static void sms_watch(struct ofono_atom *atom,
@@ -129,15 +135,9 @@ static void sms_watch(struct ofono_atom *atom,
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		DBG("unregistered");
-		pn->sms = NULL;
-
 		g_dbus_unregister_interface(conn,
 					ofono_modem_get_path(pn->modem),
 					PUSH_NOTIFICATION_INTERFACE);
-
-		ofono_modem_remove_interface(pn->modem,
-						PUSH_NOTIFICATION_INTERFACE);
 		return;
 	}
 
