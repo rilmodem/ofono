@@ -70,6 +70,7 @@ SMS
 
   Priority: High
   Complexity: C2
+  Owner: Yang Gu <yang.gu@intel.com>
 
 - Persist outgoing SMS messages.  Currently oFono persists incoming messages
   that are fragmented.  However oFono does not persist queued outgoing
