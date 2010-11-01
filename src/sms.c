@@ -1388,9 +1388,9 @@ static void handle_deliver(struct ofono_sms *sms, const struct sms *incoming)
 			return;
 
 		sms_list = sms_assembly_add_fragment(sms->assembly,
-							incoming, time(NULL),
-							&incoming->deliver.oaddr,
-							ref, max, seq);
+						incoming, time(NULL),
+						&incoming->deliver.oaddr,
+						ref, max, seq);
 
 		if (!sms_list)
 			return;
