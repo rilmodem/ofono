@@ -40,6 +40,8 @@
 
 #define PUSH_NOTIFICATION_INTERFACE "org.ofono.PushNotification"
 #define AGENT_INTERFACE "org.ofono.PushNotificationAgent"
+#define WAP_PUSH_SRC_PORT 9200
+#define WAP_PUSH_DST_PORT 2948
 
 static unsigned int modemwatch_id;
 
@@ -47,13 +49,36 @@ struct push_notification {
 	struct ofono_modem *modem;
 	struct ofono_sms *sms;
 	struct sms_agent *agent;
+	unsigned int push_watch;
 };
 
 static void agent_exited(void *userdata)
 {
 	struct push_notification *pn = userdata;
 
+	if (pn->push_watch > 0) {
+		__ofono_sms_datagram_watch_remove(pn->sms, pn->push_watch);
+		pn->push_watch = 0;
+	}
+
 	pn->agent = NULL;
+}
+
+static void push_received(const char *from, const struct tm *remote,
+				const struct tm *local, int dst, int src,
+				const unsigned char *buffer,
+				unsigned int len, void *data)
+{
+	struct push_notification *pn = data;
+
+	DBG("Received push of size: %u", len);
+
+	if (pn->agent == NULL)
+		return;
+
+	sms_agent_dispatch_datagram(pn->agent, "ReceiveNotification",
+					from, remote, local, buffer, len,
+					NULL, NULL, NULL);
 }
 
 static DBusMessage *push_notification_register_agent(DBusConnection *conn,
@@ -81,6 +106,11 @@ static DBusMessage *push_notification_register_agent(DBusConnection *conn,
 		return __ofono_error_failed(msg);
 
 	sms_agent_set_removed_notify(pn->agent, agent_exited, pn);
+
+	pn->push_watch = __ofono_sms_datagram_watch_add(pn->sms, push_received,
+							WAP_PUSH_DST_PORT,
+							WAP_PUSH_SRC_PORT,
+							pn, NULL);
 
 	return dbus_message_new_method_return(msg);
 }
@@ -120,6 +150,8 @@ static void push_notification_cleanup(gpointer user)
 
 	DBG("%p", pn);
 
+	/* The push watch was already cleaned up */
+	pn->push_watch = 0;
 	pn->sms = NULL;
 
 	sms_agent_free(pn->agent);
