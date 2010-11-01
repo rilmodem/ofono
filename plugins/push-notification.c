@@ -88,7 +88,24 @@ static DBusMessage *push_notification_register_agent(DBusConnection *conn,
 static DBusMessage *push_notification_unregister_agent(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	return __ofono_error_not_implemented(msg);
+	struct push_notification *pn = data;
+	const char *agent_path;
+	const char *agent_bus = dbus_message_get_sender(msg);
+
+	if (dbus_message_get_args(msg, NULL,
+					DBUS_TYPE_OBJECT_PATH, &agent_path,
+					DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (pn->agent == NULL)
+		return __ofono_error_failed(msg);
+
+	if (sms_agent_matches(pn->agent, agent_bus, agent_path) == FALSE)
+		return __ofono_error_failed(msg);
+
+	sms_agent_free(pn->agent);
+
+	return dbus_message_new_method_return(msg);
 }
 
 static GDBusMethodTable push_notification_methods[] = {
