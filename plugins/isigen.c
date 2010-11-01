@@ -286,9 +286,10 @@ static int isigen_probe(struct ofono_modem *modem)
 	}
 
 	if (address) {
-		int error = g_pn_netlink_set_address(idx, PN_DEV_PC);
+		int error = g_pn_netlink_set_address(idx, address);
 		if (error && error != -EEXIST) {
 			DBG("g_pn_netlink_set_address: %s\n", strerror(-error));
+			g_pn_netlink_stop(link);
 			return -errno;
 		}
 	}
