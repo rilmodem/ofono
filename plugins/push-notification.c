@@ -36,19 +36,53 @@
 #include <ofono/modem.h>
 #include <ofono/dbus.h>
 
+#include "smsagent.h"
+
 #define PUSH_NOTIFICATION_INTERFACE "org.ofono.PushNotification"
+#define AGENT_INTERFACE "org.ofono.PushNotificationAgent"
 
 static unsigned int modemwatch_id;
 
 struct push_notification {
 	struct ofono_modem *modem;
 	struct ofono_sms *sms;
+	struct sms_agent *agent;
 };
+
+static void agent_exited(void *userdata)
+{
+	struct push_notification *pn = userdata;
+
+	pn->agent = NULL;
+}
 
 static DBusMessage *push_notification_register_agent(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
-	return __ofono_error_not_implemented(msg);
+	struct push_notification *pn = data;
+	const char *agent_path;
+
+	if (pn->agent)
+		return __ofono_error_busy(msg);
+
+	if (dbus_message_get_args(msg, NULL,
+					DBUS_TYPE_OBJECT_PATH, &agent_path,
+					DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (!__ofono_dbus_valid_object_path(agent_path))
+		return __ofono_error_invalid_format(msg);
+
+	pn->agent = sms_agent_new(AGENT_INTERFACE,
+					dbus_message_get_sender(msg),
+					agent_path);
+
+	if (pn->agent == NULL)
+		return __ofono_error_failed(msg);
+
+	sms_agent_set_removed_notify(pn->agent, agent_exited, pn);
+
+	return dbus_message_new_method_return(msg);
 }
 
 static DBusMessage *push_notification_unregister_agent(DBusConnection *conn,
