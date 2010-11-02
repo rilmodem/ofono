@@ -1,0 +1,47 @@
+#!/usr/bin/python
+
+import gobject
+
+import sys
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+class PushNotificationAgent(dbus.service.Object):
+	@dbus.service.method("org.ofono.PushNotificationAgent",
+					in_signature="", out_signature="")
+	def Release(self):
+		print "Release"
+		mainloop.quit()
+
+	@dbus.service.method("org.ofono.PushNotificationAgent",
+				in_signature="aya{sv}", out_signature="")
+	def ReceiveNotification(self, data, props):
+		for key in props.keys():
+			print "Key: %s, Value: %s" % (key, props[key])
+
+		print "Received notification of size: %d" % len(data)
+
+if __name__ == '__main__':
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+	manager = dbus.Interface(bus.get_object("org.ofono", "/"),
+							"org.ofono.Manager")
+
+	modems = manager.GetModems()
+
+	for path, properties in modems:
+		if "org.ofono.PushNotification" not in properties["Interfaces"]:
+			continue
+
+		pn = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.PushNotification')
+
+	path = "/test/agent"
+	agent = PushNotificationAgent(bus, path)
+	pn.RegisterAgent(path)
+	print "Agent registered"
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
