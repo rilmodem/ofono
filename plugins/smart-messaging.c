@@ -134,6 +134,12 @@ static void smart_messaging_cleanup(gpointer user)
 	struct smart_messaging *sm = user;
 
 	DBG("%p", sm);
+
+	sm->sms = NULL;
+
+	sms_agent_free(sm->agent);
+
+	ofono_modem_remove_interface(sm->modem, SMART_MESSAGING_INTERFACE);
 }
 
 static void sms_watch(struct ofono_atom *atom,
@@ -144,15 +150,10 @@ static void sms_watch(struct ofono_atom *atom,
 	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		DBG("unregistered");
-		sm->sms = NULL;
-
 		g_dbus_unregister_interface(conn,
 					ofono_modem_get_path(sm->modem),
 					SMART_MESSAGING_INTERFACE);
 
-		ofono_modem_remove_interface(sm->modem,
-						SMART_MESSAGING_INTERFACE);
 		return;
 	}
 
