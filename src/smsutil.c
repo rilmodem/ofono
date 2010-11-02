@@ -3139,9 +3139,7 @@ static inline GSList *sms_list_append(GSList *l, const struct sms *in)
 /*
  * Prepares a datagram for transmission.  Breaks up into fragments if
  * necessary using ref as the concatenated message reference number.
- * Returns a list of sms messages in order.  If ref_offset is given,
- * then the ref_offset contains the reference number offset or 0
- * if no concatenation took place.
+ * Returns a list of sms messages in order.
  *
  * @use_delivery_reports: value for the Status-Report-Request field
  *     (23.040 3.2.9, 9.2.2.2)
@@ -3268,9 +3266,7 @@ GSList *sms_datagram_prepare(const char *to,
 /*
  * Prepares the text for transmission.  Breaks up into fragments if
  * necessary using ref as the concatenated message reference number.
- * Returns a list of sms messages in order.  If ref_offset is given,
- * then the ref_offset contains the reference number offset or 0
- * if no concatenation took place.
+ * Returns a list of sms messages in order.
  *
  * @use_delivery_reports: value for the Status-Report-Request field
  *     (23.040 3.2.9, 9.2.2.2)
