@@ -3146,8 +3146,8 @@ static inline GSList *sms_list_append(GSList *l, const struct sms *in)
  * @use_delivery_reports: value for the Status-Report-Request field
  *     (23.040 3.2.9, 9.2.2.2)
  */
-GSList *sms_text_prepare(const char *utf8, guint16 ref,
-				gboolean use_16bit, int *ref_offset,
+GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
+				gboolean use_16bit,
 				gboolean use_delivery_reports)
 {
 	struct sms template;
@@ -3167,6 +3167,7 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 	template.submit.srr = use_delivery_reports;
 	template.submit.mr = 0;
 	template.submit.vp.relative = 0xA7; /* 24 Hours */
+	sms_address_from_string(&template.submit.daddr, to);
 
 	/* UDHI, UDL, UD and DCS actually depend on what we have in the text */
 	gsm_encoded = convert_utf8_to_gsm(utf8, -1, NULL, &written, 0);
@@ -3191,9 +3192,6 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 		template.submit.udhi = FALSE;
 
 	if (gsm_encoded && (written <= sms_text_capacity_gsm(160, offset))) {
-		if (ref_offset)
-			*ref_offset = 0;
-
 		template.submit.udl = written + (offset * 8 + 6) / 7;
 		pack_7bit_own_buf(gsm_encoded, written, offset, FALSE, NULL,
 					0, template.submit.ud + offset);
@@ -3203,9 +3201,6 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 	}
 
 	if (ucs2_encoded && (written <= (140 - offset))) {
-		if (ref_offset)
-			*ref_offset = 0;
-
 		template.submit.udl = written + offset;
 		memcpy(template.submit.ud + offset, ucs2_encoded, written);
 
@@ -3217,9 +3212,6 @@ GSList *sms_text_prepare(const char *utf8, guint16 ref,
 
 	if (!offset)
 		offset = 1;
-
-	if (ref_offset)
-		*ref_offset = offset + 2;
 
 	if (use_16bit) {
 		template.submit.ud[0] += 6;

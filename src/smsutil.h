@@ -516,8 +516,8 @@ void status_report_assembly_add_fragment(struct status_report_assembly
 void status_report_assembly_expire(struct status_report_assembly *assembly,
 					time_t before);
 
-GSList *sms_text_prepare(const char *utf8, guint16 ref,
-				gboolean use_16bit, int *ref_offset,
+GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
+				gboolean use_16bit,
 				gboolean use_delivery_reports);
 
 gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
