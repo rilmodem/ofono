@@ -167,7 +167,7 @@ enum animal_type {
 If the enum contents have values (e.g. from specification) the preferred
 formatting is as follows:
 
-enum animal type {
+enum animal_type {
 	ANIMAL_TYPE_FOUR_LEGS =		4,
 	ANIMAL_TYPE_EIGHT_LEGS =	8,
 	ANIMAL_TYPE_TWO_LEGS =		2,
