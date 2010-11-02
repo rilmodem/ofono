@@ -417,7 +417,8 @@ test_scripts = test/backtrace \
 		test/disable-gprs \
 		test/get-icon \
 		test/set-fast-dormancy \
-		test/test-push-notification
+		test/test-push-notification \
+		test/test-smart-messaging
 
 if TEST
 testdir = $(pkglibdir)/test
