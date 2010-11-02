@@ -835,29 +835,6 @@ static gboolean tx_next(gpointer user_data)
 	return FALSE;
 }
 
-static void set_ref_and_to(GSList *msg_list, guint16 ref, int offset,
-				gboolean use_16bit, const char *to)
-{
-	GSList *l;
-	struct sms *sms;
-
-	for (l = msg_list; l; l = l->next) {
-		sms = l->data;
-
-		sms_address_from_string(&sms->submit.daddr, to);
-
-		if (offset == 0)
-			continue;
-
-		if (use_16bit) {
-			sms->submit.ud[offset] = (ref & 0xf0) >> 8;
-			sms->submit.ud[offset+1] = ref & 0x0f;
-		} else {
-			sms->submit.ud[offset] = ref & 0x0f;
-		}
-	}
-}
-
 /**
  * Generate a UUID from an SMS PDU List
  *
@@ -987,16 +964,13 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	if (valid_phone_number_format(to) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
-	msg_list = sms_text_prepare(text, 0, use_16bit_ref, &ref_offset,
-					sms->use_delivery_reports);
+	msg_list = sms_text_prepare(to, text, sms->ref, use_16bit_ref,
+						sms->use_delivery_reports);
 
 	if (!msg_list)
 		return __ofono_error_invalid_format(msg);
 
-	set_ref_and_to(msg_list, sms->ref, ref_offset, use_16bit_ref, to);
-	DBG("ref: %d, offset: %d", sms->ref, ref_offset);
-
-	if (ref_offset != 0) {
+	if (msg_list->next != NULL) {
 		if (sms->ref == 65536)
 			sms->ref = 1;
 		else
