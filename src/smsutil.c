@@ -379,20 +379,38 @@ gboolean sms_decode_scts(const unsigned char *pdu, int len,
 	next_octet(pdu, len, offset, &oct);
 	out->year = sms_decode_semi_octet(oct);
 
+	if (out->year > 99)
+		return FALSE;
+
 	next_octet(pdu, len, offset, &oct);
 	out->month = sms_decode_semi_octet(oct);
+
+	if (out->month > 12)
+		return FALSE;
 
 	next_octet(pdu, len, offset, &oct);
 	out->day = sms_decode_semi_octet(oct);
 
+	if (out->day > 31)
+		return FALSE;
+
 	next_octet(pdu, len, offset, &oct);
 	out->hour = sms_decode_semi_octet(oct);
+
+	if (out->hour > 23)
+		return FALSE;
 
 	next_octet(pdu, len, offset, &oct);
 	out->minute = sms_decode_semi_octet(oct);
 
+	if (out->minute > 59)
+		return FALSE;
+
 	next_octet(pdu, len, offset, &oct);
 	out->second = sms_decode_semi_octet(oct);
+
+	if (out->second > 59)
+		return FALSE;
 
 	next_octet(pdu, len, offset, &oct);
 
@@ -407,6 +425,9 @@ gboolean sms_decode_scts(const unsigned char *pdu, int len,
 
 	if (oct & 0x08)
 		out->timezone = out->timezone * -1;
+
+	if ((out->timezone > 12*4-1) || (out->timezone < -(12*4-1)))
+		return FALSE;
 
 	return TRUE;
 }
