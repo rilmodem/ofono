@@ -87,7 +87,24 @@ static DBusMessage *smart_messaging_register_agent(DBusConnection *conn,
 static DBusMessage *smart_messaging_unregister_agent(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
-	return __ofono_error_not_implemented(msg);
+	struct smart_messaging *sm = data;
+	const char *agent_path;
+	const char *agent_bus = dbus_message_get_sender(msg);
+
+	if (dbus_message_get_args(msg, NULL,
+					DBUS_TYPE_OBJECT_PATH, &agent_path,
+					DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (sm->agent == NULL)
+		return __ofono_error_failed(msg);
+
+	if (sms_agent_matches(sm->agent, agent_bus, agent_path) == FALSE)
+		return __ofono_error_failed(msg);
+
+	sms_agent_free(sm->agent);
+
+	return dbus_message_new_method_return(msg);
 }
 
 static DBusMessage *smart_messaging_send_vcard(DBusConnection *conn,
