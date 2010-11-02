@@ -173,6 +173,38 @@ enum animal_type {
 	ANIMAL_TYPE_TWO_LEGS =		2,
 };
 
+M12: Enum as switch variable
+====================
+
+If the variable of a switch is an enum, you must not include a default in
+switch body. The reason for this is: If later on you modify the enum by adding
+a new type, and forget to change the switch accordingly, the compiler will
+complain the new added type hasn't been handled.
+
+Example:
+
+enum animal_type {
+	ANIMAL_TYPE_FOUR_LEGS =		4,
+	ANIMAL_TYPE_EIGHT_LEGS =	8,
+	ANIMAL_TYPE_TWO_LEGS =		2,
+};
+
+enum animal_type t;
+
+switch (t) {
+case ANIMAL_TYPE_FOUR_LEGS:
+	...
+	break;
+case ANIMAL_TYPE_EIGHT_LEGS:
+	...
+	break;
+case ANIMAL_TYPE_TWO_LEGS:
+	...
+	break;
+default:  // wrong
+	break;
+}
+
 O1: Shorten the name
 ====================
 Better to use abbreviation, rather than full name, to name a variable,
