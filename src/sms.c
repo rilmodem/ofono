@@ -948,7 +948,6 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	const char *to;
 	const char *text;
 	GSList *msg_list;
-	int ref_offset;
 	struct ofono_modem *modem;
 	unsigned int flags;
 	gboolean use_16bit_ref = FALSE;
