@@ -43,6 +43,9 @@
 #define VCARD_SRC_PORT -1
 #define VCARD_DST_PORT 9204
 
+#define VCAL_SRC_PORT -1
+#define VCAL_DST_PORT 9205
+
 static unsigned int modemwatch_id;
 
 struct smart_messaging {
@@ -50,6 +53,7 @@ struct smart_messaging {
 	struct ofono_sms *sms;
 	struct sms_agent *agent;
 	unsigned int vcard_watch;
+	unsigned int vcal_watch;
 };
 
 static void agent_exited(void *userdata)
@@ -59,6 +63,11 @@ static void agent_exited(void *userdata)
 	if (sm->vcard_watch > 0) {
 		__ofono_sms_datagram_watch_remove(sm->sms, sm->vcard_watch);
 		sm->vcard_watch = 0;
+	}
+
+	if (sm->vcal_watch > 0) {
+		__ofono_sms_datagram_watch_remove(sm->sms, sm->vcal_watch);
+		sm->vcal_watch = 0;
 	}
 
 	sm->agent = NULL;
@@ -75,6 +84,21 @@ static void vcard_received(const char *from, const struct tm *remote,
 		return;
 
 	sms_agent_dispatch_datagram(sm->agent, "ReceiveBusinessCard",
+					from, remote, local, buffer, len,
+					NULL, NULL, NULL);
+}
+
+static void vcal_received(const char *from, const struct tm *remote,
+				const struct tm *local, int dst, int src,
+				const unsigned char *buffer,
+				unsigned int len, void *data)
+{
+	struct smart_messaging *sm = data;
+
+	if (sm->agent == NULL)
+		return;
+
+	sms_agent_dispatch_datagram(sm->agent, "ReceiveAppointment",
 					from, remote, local, buffer, len,
 					NULL, NULL, NULL);
 }
@@ -109,6 +133,12 @@ static DBusMessage *smart_messaging_register_agent(DBusConnection *conn,
 							vcard_received,
 							VCARD_DST_PORT,
 							VCARD_SRC_PORT,
+							sm, NULL);
+
+	sm->vcal_watch = __ofono_sms_datagram_watch_add(sm->sms,
+							vcal_received,
+							VCAL_DST_PORT,
+							VCAL_SRC_PORT,
 							sm, NULL);
 
 	return dbus_message_new_method_return(msg);
@@ -166,6 +196,7 @@ static void smart_messaging_cleanup(gpointer user)
 	DBG("%p", sm);
 
 	sm->vcard_watch = 0;
+	sm->vcal_watch = 0;
 	sm->sms = NULL;
 
 	sms_agent_free(sm->agent);
