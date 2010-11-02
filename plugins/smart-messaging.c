@@ -40,19 +40,43 @@
 #define SMART_MESSAGING_INTERFACE "org.ofono.SmartMessaging"
 #define AGENT_INTERFACE "org.ofono.SmartMessagingAgent"
 
+#define VCARD_SRC_PORT -1
+#define VCARD_DST_PORT 9204
+
 static unsigned int modemwatch_id;
 
 struct smart_messaging {
 	struct ofono_modem *modem;
 	struct ofono_sms *sms;
 	struct sms_agent *agent;
+	unsigned int vcard_watch;
 };
 
 static void agent_exited(void *userdata)
 {
 	struct smart_messaging *sm = userdata;
 
+	if (sm->vcard_watch > 0) {
+		__ofono_sms_datagram_watch_remove(sm->sms, sm->vcard_watch);
+		sm->vcard_watch = 0;
+	}
+
 	sm->agent = NULL;
+}
+
+static void vcard_received(const char *from, const struct tm *remote,
+				const struct tm *local, int dst, int src,
+				const unsigned char *buffer,
+				unsigned int len, void *data)
+{
+	struct smart_messaging *sm = data;
+
+	if (sm->agent == NULL)
+		return;
+
+	sms_agent_dispatch_datagram(sm->agent, "ReceiveBusinessCard",
+					from, remote, local, buffer, len,
+					NULL, NULL, NULL);
 }
 
 static DBusMessage *smart_messaging_register_agent(DBusConnection *conn,
@@ -80,6 +104,12 @@ static DBusMessage *smart_messaging_register_agent(DBusConnection *conn,
 		return __ofono_error_failed(msg);
 
 	sms_agent_set_removed_notify(sm->agent, agent_exited, sm);
+
+	sm->vcard_watch = __ofono_sms_datagram_watch_add(sm->sms,
+							vcard_received,
+							VCARD_DST_PORT,
+							VCARD_SRC_PORT,
+							sm, NULL);
 
 	return dbus_message_new_method_return(msg);
 }
@@ -135,6 +165,7 @@ static void smart_messaging_cleanup(gpointer user)
 
 	DBG("%p", sm);
 
+	sm->vcard_watch = 0;
 	sm->sms = NULL;
 
 	sms_agent_free(sm->agent);
