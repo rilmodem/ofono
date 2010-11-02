@@ -1138,7 +1138,11 @@ static gboolean compute_incoming_msgid(GSList *sms_list,
 	for (l = sms_list; l; l = l->next) {
 		s = l->data;
 
-		sms_encode(s, &len, NULL, buf);
+		if (sms_encode(s, &len, NULL, buf) == FALSE) {
+			g_checksum_free(checksum);
+			return FALSE;
+		}
+
 		g_checksum_update(checksum, buf, len);
 	}
 
