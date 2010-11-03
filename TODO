@@ -1,4 +1,4 @@
-Background
+pBackground
 ==========
 
 - Priority scale: High, Medium and Low
@@ -114,7 +114,7 @@ SIM / SIM File system
 - Read / Write EFcfis.  Call forwarding settings can be bootstrapped on the
   SIM for faster notification of the user that call forwarding is active.
   These settings are stored in EFcfis.  oFono should read these settings and
-  update the call history atom appropriately.
+  update the call forwarding atom appropriately.
 
   Priority: Low
   Complexity: C2
