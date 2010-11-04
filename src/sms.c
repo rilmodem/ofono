@@ -1904,6 +1904,9 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 	if (uuid)
 		memcpy(uuid, &entry->uuid, sizeof(*uuid));
 
+	if (cb)
+		cb(sms, &entry->uuid, data);
+
 	if (m && (flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS))
 		emit_message_added(sms, m);
 
