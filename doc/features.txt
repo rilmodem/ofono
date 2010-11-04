@@ -173,6 +173,10 @@ Short Messaging Service
   vCalendars can be sent using the SendAppointment method and received using
   the SmartMessagingAgent framework.
 
+- WAP PUSH notification support.  oFono allows the reception of WAP PUSH
+  messages via SMS through the use of the PushNotification interface and the
+  PushNotificationAgent framework.
+
 
 GPRS
 ====

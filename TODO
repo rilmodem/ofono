@@ -31,13 +31,6 @@ SMS
   Priority: Low
   Complexity: C8
 
-- WAP PUSH notification support for MMS.  oFono should be able to receive
-  WAP PUSH messages over SMS, parse them and report them to the upper level
-  MMS stack.
-
-  Priority: Low
-  Complexity: C8
-
 - See / Cancel pending SMS messages over DBus.  When oFono sends SMS messages
   the method call is only returned when the message has been submitted to the
   network.  Instead we should return an object path and allow cancellation of
