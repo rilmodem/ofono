@@ -235,6 +235,9 @@ enum ofono_sms_submit_flag {
 };
 
 typedef void (*ofono_sms_txq_submit_cb_t)(gboolean ok, void *data);
+typedef void (*ofono_sms_txq_queued_cb_t)(struct ofono_sms *sms,
+						const struct ofono_uuid *uuid,
+						void *data);
 typedef void (*ofono_sms_text_notify_cb_t)(const char *from,
 						const struct tm *remote,
 						const struct tm *local,
@@ -250,8 +253,13 @@ typedef void (*ofono_sms_datagram_notify_cb_t)(const char *from,
 
 int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 				unsigned int flags, struct ofono_uuid *uuid,
-				ofono_sms_txq_submit_cb_t cb,
-				void *data, ofono_destroy_func destroy);
+				ofono_sms_txq_queued_cb_t, void *data);
+
+int __ofono_sms_txq_set_submit_notify(struct ofono_sms *sms,
+					struct ofono_uuid *uuid,
+					ofono_sms_txq_submit_cb_t cb,
+					void *data,
+					ofono_destroy_func destroy);
 
 const char *__ofono_sms_message_path_from_uuid(struct ofono_sms *sms,
 						const struct ofono_uuid *uuid);

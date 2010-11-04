@@ -792,6 +792,7 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 	struct ofono_atom *sms_atom;
 	struct ofono_sms *sms;
 	GSList msg_list;
+	struct ofono_uuid uuid;
 
 	sms_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SMS);
 
@@ -807,13 +808,13 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 	msg_list.data = (void *) &cmd->send_sms.gsm_sms;
 	msg_list.next = NULL;
 
-	if (__ofono_sms_txq_submit(sms, &msg_list, 0, NULL, send_sms_submit_cb,
-				stk->extern_req, g_free) < 0) {
-		g_free(stk->extern_req);
+	if (__ofono_sms_txq_submit(sms, &msg_list, 0, &uuid, NULL, NULL) < 0) {
 		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
 		return TRUE;
 	}
 
+	__ofono_sms_txq_set_submit_notify(sms, &uuid, send_sms_submit_cb,
+						stk->extern_req, g_free);
 	stk->cancel_cmd = send_sms_cancel;
 
 	stk_alpha_id_set(stk, cmd->send_sms.alpha_id, &cmd->send_sms.text_attr,
