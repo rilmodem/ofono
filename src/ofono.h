@@ -253,6 +253,9 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 				ofono_sms_txq_submit_cb_t cb,
 				void *data, ofono_destroy_func destroy);
 
+const char *__ofono_sms_message_path_from_uuid(struct ofono_sms *sms,
+						const struct ofono_uuid *uuid);
+
 unsigned int __ofono_sms_text_watch_add(struct ofono_sms *sms,
 					ofono_sms_text_notify_cb_t cb,
 					void *data, ofono_destroy_func destroy);

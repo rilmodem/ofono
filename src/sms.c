@@ -311,14 +311,14 @@ static void message_destroy(gpointer userdata)
 	g_free(m);
 }
 
-static const char *message_build_path(struct ofono_sms *sms,
-						struct message *m)
+const char *__ofono_sms_message_path_from_uuid(struct ofono_sms *sms,
+						const struct ofono_uuid *uuid)
 {
 	static char path[256];
 
 	snprintf(path, sizeof(path), "%s/message_%s",
 			__ofono_atom_get_path(sms->atom),
-			ofono_uuid_to_str(&m->uuid));
+			ofono_uuid_to_str(uuid));
 
 	return path;
 }
@@ -331,7 +331,7 @@ static gboolean message_dbus_register(struct ofono_sms *sms, struct message *m)
 	if (!m)
 		return FALSE;
 
-	path = message_build_path(sms, m);
+	path = __ofono_sms_message_path_from_uuid(sms, &m->uuid);
 
 	if (!g_dbus_register_interface(conn, path, OFONO_MESSAGE_INTERFACE,
 					message_methods, message_signals,
@@ -349,7 +349,7 @@ static gboolean message_dbus_unregister(struct ofono_sms *sms,
 						struct message *m)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = message_build_path(sms, m);
+	const char *path = __ofono_sms_message_path_from_uuid(sms, &m->uuid);
 
 	return g_dbus_unregister_interface(conn, path,
 						OFONO_MESSAGE_INTERFACE);
@@ -373,7 +373,7 @@ static void emit_message_added(struct ofono_sms *sms, struct message *m)
 
 	dbus_message_iter_init_append(signal, &iter);
 
-	path = message_build_path(sms, m);
+	path = __ofono_sms_message_path_from_uuid(sms, &m->uuid);
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_OBJECT_PATH, &path);
 
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
@@ -389,7 +389,7 @@ static void emit_message_removed(struct ofono_sms *sms, struct message *m)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *atompath = __ofono_atom_get_path(sms->atom);
-	const char *path = message_build_path(sms, m);
+	const char *path = __ofono_sms_message_path_from_uuid(sms, &m->uuid);
 
 	g_dbus_emit_signal(conn, atompath, OFONO_MESSAGE_MANAGER_INTERFACE,
 				"MessageRemoved", DBUS_TYPE_OBJECT_PATH, &path,
@@ -414,7 +414,7 @@ static void message_set_state(struct ofono_sms *sms,
 		return;
 
 	m->state = new_state;
-	path = message_build_path(sms, m);
+	path = __ofono_sms_message_path_from_uuid(sms, uuid);
 	state = message_state_to_string(m->state);
 
 	ofono_dbus_signal_property_changed(conn, path,
@@ -1003,7 +1003,7 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	if (g_queue_get_length(sms->txq) == 1)
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 
-	path = message_build_path(sms, m);
+	path = __ofono_sms_message_path_from_uuid(sms, &m->uuid);
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_OBJECT_PATH, &path,
 					DBUS_TYPE_INVALID);
 
@@ -1054,7 +1054,7 @@ static DBusMessage *sms_get_messages(DBusConnection *conn, DBusMessage *msg,
 	while (g_hash_table_iter_next(&hashiter, &key, &value)) {
 		m = value;
 
-		path = message_build_path(sms, m);
+		path = __ofono_sms_message_path_from_uuid(sms, &m->uuid);
 
 		dbus_message_iter_open_container(&array, DBUS_TYPE_STRUCT,
 							NULL, &entry);
