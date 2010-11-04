@@ -415,7 +415,8 @@ test_scripts = test/backtrace \
 		test/get-icon \
 		test/set-fast-dormancy \
 		test/test-push-notification \
-		test/test-smart-messaging
+		test/test-smart-messaging \
+		test/send-vcard
 
 if TEST
 testdir = $(pkglibdir)/test
