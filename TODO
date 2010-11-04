@@ -31,20 +31,6 @@ SMS
   Priority: Low
   Complexity: C8
 
-- Source / Destination port addressing scheme from 3GPP 23.040.  A special
-  header is used to indicate the source / destination port of the application
-  this SMS message belongs to.  Such messages which are encoded in 8-bit should
-  be decoded by oFono automatically.  The handler associated with this source /
-  destination port is called with the decoded stream.
-
-  Proposed solution involves a registration / callback framework in the SMS
-  atom for plugins to register handlers.  Default (wildcard) handler is also
-  desired.
-
-  Priority: High
-  Complexity: C2
-  Owner: Aki Niemi <aki.niemi@nokia.com>
-
 - Smart Messaging Service.  This is a separate standard from Nokia and uses
   the 3GPP 23.040 source / destination addressing scheme.  The main aim of
   this task is to support vCards and vCalendar objects over SMS.

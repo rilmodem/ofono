@@ -151,6 +151,18 @@ Short Messaging Service
   status reports are received, the UI is notified either via DBus or history
   plugin API.
 
+- Source / Destination port addressing scheme from 3GPP 23.040.  A special
+  header is used to indicate the source / destination port of the application
+  this SMS message belongs to.  oFono provides a handler registration
+  framework where plugins can handle the reception of such messages.  The
+  handler can be registered to receive messages which contain a specific
+  source and destination port, or a wildcard.  When such messages are received,
+  they are matched against the registered handlers and dispatched appropriately.
+
+  oFono takes care of de-fragmentation of such SMS messages, so the handler
+  is informed only once the entire message has been received, and the data
+  payload has been extracted.
+
 GPRS
 ====
 
