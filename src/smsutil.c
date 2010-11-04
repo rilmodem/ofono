@@ -3176,18 +3176,18 @@ GSList *sms_datagram_prepare(const char *to,
 		template.submit.ud[0] += 6;
 		template.submit.ud[offset] = SMS_IEI_APPLICATION_ADDRESS_16BIT;
 		template.submit.ud[offset + 1] = 4;
-		template.submit.ud[offset + 2] = (dst & 0xf0) >> 8;
-		template.submit.ud[offset + 3] = dst & 0xf;
-		template.submit.ud[offset + 4] = (src & 0xf0) >> 8;
-		template.submit.ud[offset + 5] = src & 0xf;
+		template.submit.ud[offset + 2] = (dst & 0xff00) >> 8;
+		template.submit.ud[offset + 3] = dst & 0xff;
+		template.submit.ud[offset + 4] = (src & 0xff00) >> 8;
+		template.submit.ud[offset + 5] = src & 0xff;
 
 		offset += 6;
 	} else {
 		template.submit.ud[0] += 4;
 		template.submit.ud[offset] = SMS_IEI_APPLICATION_ADDRESS_8BIT;
 		template.submit.ud[offset + 1] = 2;
-		template.submit.ud[offset + 2] = dst & 0xf;
-		template.submit.ud[offset + 3] = src & 0xf;
+		template.submit.ud[offset + 2] = dst & 0xff;
+		template.submit.ud[offset + 3] = src & 0xff;
 
 		offset += 4;
 	}
@@ -3203,15 +3203,15 @@ GSList *sms_datagram_prepare(const char *to,
 		template.submit.ud[0] += 6;
 		template.submit.ud[offset] = SMS_IEI_CONCATENATED_16BIT;
 		template.submit.ud[offset + 1] = 4;
-		template.submit.ud[offset + 2] = (ref & 0xf0) >> 8;
-		template.submit.ud[offset + 3] = ref & 0xf;
+		template.submit.ud[offset + 2] = (ref & 0xff00) >> 8;
+		template.submit.ud[offset + 3] = ref & 0xff;
 
 		offset += 6;
 	} else {
 		template.submit.ud[0] += 5;
 		template.submit.ud[offset] = SMS_IEI_CONCATENATED_8BIT;
 		template.submit.ud[offset + 1] = 3;
-		template.submit.ud[offset + 2] = ref & 0xf;
+		template.submit.ud[offset + 2] = ref & 0xff;
 
 		offset += 5;
 	}
@@ -3342,15 +3342,15 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 		template.submit.ud[0] += 6;
 		template.submit.ud[offset] = SMS_IEI_CONCATENATED_16BIT;
 		template.submit.ud[offset + 1] = 4;
-		template.submit.ud[offset + 2] = (ref & 0xf0) >> 8;
-		template.submit.ud[offset + 3] = ref & 0xf;
+		template.submit.ud[offset + 2] = (ref & 0xff00) >> 8;
+		template.submit.ud[offset + 3] = ref & 0xff;
 
 		offset += 6;
 	} else {
 		template.submit.ud[0] += 5;
 		template.submit.ud[offset] = SMS_IEI_CONCATENATED_8BIT;
 		template.submit.ud[offset + 1] = 3;
-		template.submit.ud[offset + 2] = ref & 0xf;
+		template.submit.ud[offset + 2] = ref & 0xff;
 
 		offset += 5;
 	}
