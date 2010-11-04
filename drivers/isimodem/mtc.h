@@ -28,6 +28,7 @@ extern "C" {
 
 #define PN_MTC			0x15
 #define MTC_TIMEOUT		5
+#define MTC_STATE_REQ_TIMEOUT   (6 + 5)
 
 enum mtc_isi_cause {
 	MTC_OK = 0x00,

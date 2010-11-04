@@ -373,7 +373,7 @@ static void isigen_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	isi->online = online;
 
-	if (g_isi_send(isi->client, req, sizeof(req), MTC_TIMEOUT,
+	if (g_isi_send(isi->client, req, sizeof(req), MTC_STATE_REQ_TIMEOUT,
 			mtc_state_cb, cbd, NULL))
 		return;
 
