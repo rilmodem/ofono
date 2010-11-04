@@ -227,7 +227,44 @@ static DBusMessage *smart_messaging_send_vcard(DBusConnection *conn,
 static DBusMessage *smart_messaging_send_vcal(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
-	return __ofono_error_not_implemented(msg);
+	struct smart_messaging *sm = data;
+	const char *to;
+	unsigned char *bytes;
+	int len;
+	GSList *msg_list;
+	unsigned int flags;
+	gboolean use_16bit_ref = FALSE;
+	int err;
+	struct ofono_uuid uuid;
+	unsigned short ref;
+
+	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &to,
+					DBUS_TYPE_ARRAY, DBUS_TYPE_BYTE,
+					&bytes, &len, DBUS_TYPE_INVALID))
+		return __ofono_error_invalid_args(msg);
+
+	if (valid_phone_number_format(to) == FALSE)
+		return __ofono_error_invalid_format(msg);
+
+	ref = __ofono_sms_get_next_ref(sm->sms);
+	msg_list = sms_datagram_prepare(to, bytes, len, ref, use_16bit_ref,
+						0, VCAL_DST_PORT, TRUE, FALSE);
+
+	if (!msg_list)
+		return __ofono_error_invalid_format(msg);
+
+	flags = OFONO_SMS_SUBMIT_FLAG_RETRY | OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS;
+
+	err = __ofono_sms_txq_submit(sm->sms, msg_list, flags, &uuid,
+					message_queued, msg);
+
+	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
+	g_slist_free(msg_list);
+
+	if (err < 0)
+		return __ofono_error_failed(msg);
+
+	return NULL;
 }
 
 static GDBusMethodTable smart_messaging_methods[] = {
