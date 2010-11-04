@@ -239,9 +239,6 @@ conf_DATA += plugins/phonesim.conf
 endif
 endif
 
-builtin_modules += atgen
-builtin_sources += plugins/atgen.c
-
 builtin_modules += g1
 builtin_sources += plugins/g1.c
 
