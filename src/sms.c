@@ -788,18 +788,24 @@ next_q:
 
 	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY) {
 		enum ofono_history_sms_status hs;
-		enum message_state ms;
 
-		if (ok) {
+		if (ok)
 			hs = OFONO_HISTORY_SMS_STATUS_SUBMITTED;
-			ms = MESSAGE_STATE_SENT;
-		} else {
+		else
 			hs = OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED;
-			ms = MESSAGE_STATE_FAILED;
-		}
 
 		__ofono_history_sms_send_status(modem, &entry->uuid,
 						time(NULL), hs);
+	}
+
+	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS) {
+		enum message_state ms;
+
+		if (ok)
+			ms = MESSAGE_STATE_SENT;
+		else
+			ms = MESSAGE_STATE_FAILED;
+
 		message_set_state(sms, &entry->uuid, ms);
 	}
 
@@ -989,6 +995,7 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 
 	flags = OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY;
 	flags |= OFONO_SMS_SUBMIT_FLAG_RETRY;
+	flags |= OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS;
 	if (sms->use_delivery_reports)
 		flags |= OFONO_SMS_SUBMIT_FLAG_REQUEST_SR;
 
@@ -1863,15 +1870,14 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 				struct ofono_uuid *uuid,
 				ofono_sms_txq_queued_cb_t cb, void *data)
 {
+	struct message *m = NULL;
 	struct tx_queue_entry *entry;
 
 	entry = tx_queue_entry_new(list, flags);
 	if (entry == NULL)
 		return -ENOMEM;
 
-	if (flags & OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY) {
-		struct message *m;
-
+	if (flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS) {
 		m = message_create(&entry->uuid);
 		if (m == NULL)
 			goto err;
@@ -1880,8 +1886,6 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 			goto err;
 
 		g_hash_table_insert(sms->messages, &m->uuid, m);
-		emit_message_added(sms, m);
-
 		m->entry = entry;
 	}
 
@@ -1899,6 +1903,9 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 
 	if (uuid)
 		memcpy(uuid, &entry->uuid, sizeof(*uuid));
+
+	if (m && (flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS))
+		emit_message_added(sms, m);
 
 	return 0;
 
