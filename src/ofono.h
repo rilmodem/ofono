@@ -266,6 +266,8 @@ unsigned int __ofono_sms_datagram_watch_add(struct ofono_sms *sms,
 gboolean __ofono_sms_datagram_watch_remove(struct ofono_sms *sms,
 					unsigned int id);
 
+unsigned short __ofono_sms_get_next_ref(struct ofono_sms *sms);
+
 #include <ofono/sim.h>
 #include <ofono/stk.h>
 

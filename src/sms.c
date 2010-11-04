@@ -1865,6 +1865,11 @@ void *ofono_sms_get_data(struct ofono_sms *sms)
 	return sms->driver_data;
 }
 
+unsigned short __ofono_sms_get_next_ref(struct ofono_sms *sms)
+{
+	return sms->ref;
+}
+
 int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 				unsigned int flags,
 				struct ofono_uuid *uuid,
