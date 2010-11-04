@@ -163,6 +163,17 @@ Short Messaging Service
   is informed only once the entire message has been received, and the data
   payload has been extracted.
 
+- Smart Messaging Service - vCard support.  oFono provides the ability to send
+  and receive vCard objects through the SmartMessaging interface.  vCards can
+  be sent using the SendBusinessCard method and received using the
+  SmartMessagingAgent framework.
+
+- Smart Messaging Service - vCalendar support.  oFono provides the ability to
+  send and receive vCalendar objects through the SmartMessaging interface.
+  vCalendars can be sent using the SendAppointment method and received using
+  the SmartMessagingAgent framework.
+
+
 GPRS
 ====
 

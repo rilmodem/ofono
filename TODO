@@ -31,17 +31,6 @@ SMS
   Priority: Low
   Complexity: C8
 
-- Smart Messaging Service.  This is a separate standard from Nokia and uses
-  the 3GPP 23.040 source / destination addressing scheme.  The main aim of
-  this task is to support vCards and vCalendar objects over SMS.
-
-  Proposed solution is to add a plugin with an extension API to send / receive
-  such messages.
-
-  Priority: Medium
-  Complexity: C2
-  Depends: Source / Destination port scheme
-
 - WAP PUSH notification support for MMS.  oFono should be able to receive
   WAP PUSH messages over SMS, parse them and report them to the upper level
   MMS stack.
