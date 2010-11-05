@@ -1290,7 +1290,7 @@ static void sim_efbdn_info_read_cb(int ok, unsigned char file_status,
 	if (!ok)
 		goto out;
 
-	if (file_status == SIM_FILE_STATUS_VALID)
+	if (file_status & SIM_FILE_STATUS_VALID)
 		sim_bdn_enabled(sim);
 
 out:
@@ -1327,7 +1327,7 @@ static void sim_efadn_info_read_cb(int ok, unsigned char file_status,
 	if (!ok)
 		goto out;
 
-	if (file_status != SIM_FILE_STATUS_VALID)
+	if (!(file_status & SIM_FILE_STATUS_VALID))
 		sim_fdn_enabled(sim);
 
 out:
