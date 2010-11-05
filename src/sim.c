@@ -1381,6 +1381,7 @@ static void sim_efest_read_cb(int ok, int length, int record,
 				int record_length, void *userdata)
 {
 	struct ofono_sim *sim = userdata;
+	gboolean available;
 
 	if (!ok)
 		goto out;
@@ -1398,8 +1399,10 @@ static void sim_efest_read_cb(int ok, int length, int record,
 	 * (TS 31.102, Section 5.3.2: FDN capability request).
 	 * If FDN is activated, don't continue initialization routine.
 	 */
-	if (sim_est_is_active(sim->efest, sim->efest_length,
-				SIM_EST_SERVICE_FDN))
+	available = sim_ust_is_available(sim->efust, sim->efust_length,
+						SIM_UST_SERVICE_FDN);
+	if (available && sim_est_is_active(sim->efest, sim->efest_length,
+						SIM_EST_SERVICE_FDN))
 		sim_fdn_enabled(sim);
 
 	/*
@@ -1407,8 +1410,10 @@ static void sim_efest_read_cb(int ok, int length, int record,
 	 * (TS 31.102, Section 5.3.2: BDN capability request).
 	 * If BDN service is enabled, halt the USIM initialization.
 	 */
-	if (sim_est_is_active(sim->efest, sim->efest_length,
-				SIM_EST_SERVICE_BDN))
+	available = sim_ust_is_available(sim->efust, sim->efust_length,
+						SIM_UST_SERVICE_BDN);
+	if (available && sim_est_is_active(sim->efest, sim->efest_length,
+						SIM_EST_SERVICE_BDN))
 		sim_bdn_enabled(sim);
 
 out:
