@@ -1,3 +1,11 @@
+ver 0.35:
+	Fix issue with FDN and BDN enabled checks.
+	Fix issue with capabilities and Phonet support.
+	Fix issue with timeout for ISI network deregistration.
+	Add support for Push Notification interface.
+	Add support for Smart Messaging interface.
+	Remove generic AT command modem plugin.
+
 ver 0.34:
 	Fix issue with sim_fs_op_error handling.
 	Fix issue with not handling GPRS context driver failures.
