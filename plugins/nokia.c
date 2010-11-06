@@ -130,7 +130,8 @@ static void nokia_disconnect(gpointer user_data)
 
 	DBG("");
 
-	ofono_gprs_context_remove(data->gc);
+	if (data->gc)
+		ofono_gprs_context_remove(data->gc);
 
 	g_at_chat_unref(data->modem);
 	data->modem = NULL;
