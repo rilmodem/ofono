@@ -1415,6 +1415,8 @@ static inline gboolean handle_mwi(struct ofono_sms *sms, struct sms *s)
 void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 				int len, int tpdu_len)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
+	struct ofono_atom *stk_atom;
 	struct sms s;
 	enum sms_class cls;
 
@@ -1479,13 +1481,22 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 		break;
 	case SMS_PID_TYPE_USIM_DOWNLOAD:
 	case SMS_PID_TYPE_ANSI136:
-		if (cls == SMS_CLASS_2) {
-			ofono_error("(U)SIM Download messages not supported");
-			return;
-		}
+		/* If not Class 2, handle in a "normal" way */
+		if (cls != SMS_CLASS_2)
+			break;
 
-		/* Otherwise handle in a "normal" way */
-		break;
+		stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
+
+		if (!stk_atom)
+			return;
+
+		__ofono_sms_sim_download(__ofono_atom_get_data(stk_atom),
+						&s, NULL, sms);
+
+		/* Passing the USIM response back to network is not
+		 * currently support */
+		/* TODO: store in EFsms if not handled */
+		return;
 	default:
 		break;
 	}
