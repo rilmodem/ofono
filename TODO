@@ -76,6 +76,19 @@ SMS
   Complexity: C4
   Owner: Rajesh Kadhiravan Nagaiah <Rajesh.Nagaiah@elektrobit.com>
 
+- Asynchronously acknowledge SMS DELIVER messages sent by the SMS driver
+  to core using ofono_sms_deliver_notify().  This may require the struct
+  ofono_sms_driver to be extended with one more function pointer like:
+    void (*deliver_ack)(unsigned char *pdu, int len, cb_t cb, void *data)
+  because currently messages are automatically acknowledged by either the
+  modem (this is the case of some AT modems) or the driver right after
+  ofono_sms_deliver_notify() and a failure to deliver at an upper level is
+  ignored.  The PDU can be an RP-ACK or RP-ERROR message with optional
+  TP-User-Content element, for example if returned from USIM Data Download.
+
+  Priority: Low
+  Complexity: C2
+
 SIM / SIM File system
 =====================
 
