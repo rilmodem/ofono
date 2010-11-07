@@ -283,8 +283,16 @@ unsigned short __ofono_sms_get_next_ref(struct ofono_sms *sms);
 #include <ofono/sim.h>
 #include <ofono/stk.h>
 
+typedef void (*__ofono_sms_sim_download_cb_t)(ofono_bool_t ok,
+						const unsigned char *tp_ud,
+						int len, void *data);
+
 struct cbs;
 void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg);
+
+struct sms;
+int __ofono_sms_sim_download(struct ofono_stk *stk, const struct sms *msg,
+				__ofono_sms_sim_download_cb_t cb, void *data);
 
 #include <ofono/ssn.h>
 

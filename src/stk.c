@@ -75,6 +75,9 @@ struct ofono_stk {
 	struct stk_icon_id idle_mode_icon;
 	struct timeval get_inkey_start_ts;
 	int dtmf_id;
+
+	__ofono_sms_sim_download_cb_t sms_pp_cb;
+	void *sms_pp_userdata;
 };
 
 struct envelope_op {
@@ -255,6 +258,42 @@ void __ofono_cbs_sim_download(struct ofono_stk *stk, const struct cbs *msg)
 				ENVELOPE_RETRIES_DEFAULT);
 	if (err)
 		stk_cbs_download_cb(stk, FALSE, NULL, -1);
+}
+
+static void stk_sms_download_cb(struct ofono_stk *stk, gboolean ok,
+				const unsigned char *data, int len)
+{
+	DBG("SMS-PP download to UICC reported %s", ok ? "success" : "error");
+
+	if (stk->sms_pp_cb)
+		stk->sms_pp_cb(ok, data, len, stk->sms_pp_userdata);
+}
+
+int __ofono_sms_sim_download(struct ofono_stk *stk, const struct sms *msg,
+				__ofono_sms_sim_download_cb_t cb, void *data)
+{
+	struct stk_envelope e;
+
+	if (msg->type != SMS_TYPE_DELIVER)
+		return -EINVAL;
+
+	DBG("");
+
+	memset(&e, 0, sizeof(e));
+
+	e.type = STK_ENVELOPE_TYPE_SMS_PP_DOWNLOAD;
+	e.src = STK_DEVICE_IDENTITY_TYPE_NETWORK;
+
+	e.sms_pp_download.address.number = (char *) msg->sc_addr.address;
+	e.sms_pp_download.address.ton_npi = msg->sc_addr.numbering_plan |
+		(msg->sc_addr.number_type << 4);
+	memcpy(&e.sms_pp_download.message, &msg->deliver, sizeof(msg->deliver));
+
+	stk->sms_pp_cb = cb;
+	stk->sms_pp_userdata = data;
+
+	return stk_send_envelope(stk, &e, stk_sms_download_cb,
+					ENVELOPE_RETRIES_DEFAULT);
 }
 
 static char *dbus_apply_text_attributes(const char *text,
