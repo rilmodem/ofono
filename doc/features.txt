@@ -122,6 +122,17 @@ Envelopes:
   CBS-PP Download envelope.  No user interaction is required or signaled
   whenever this occurs.
 
+- SMS-PP Download envelope support.  When oFono receives an sms message
+  addressed to the SIM, it is dispatched to the SIM using the SMS-PP Download
+  envelope.  No user interaction is required or signaled whenever this occurs.
+
+  Please note that many current modems do not support returning RP-ACK and
+  RP-ERROR acknowledgement PDUs back to the network.  This is required by the
+  CAT specification for SMS-PP Download.  E.g. the sim response to the SMS-PP
+  Download Envelope is to be stored in an RP-ACK / RP-ERROR PDU and returned to
+  the network.  It is thus anticipated that modems will transparently handle
+  this feature in the firmware.
+
 The following commands are expected to be handled by the modem:
 
 - Send SS proactive command.  oFono does not explicitly support this proactive

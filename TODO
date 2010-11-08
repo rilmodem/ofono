@@ -339,15 +339,6 @@ Sim Toolkit
   Priority: High
   Complexity: C8
 
-- Support 'SMS-PP' Download Envelope.  Whenever a special type of SMS is
-  received indicating that this is an SMS-PP Download message, this message
-  will be sent to the SIM via an SMS-PP Download Envelope.  No user interaction
-  will be required.  If the modem hardware supports this transparently, then
-  no indication to oFono will be necessary.
-
-  Priority: High
-  Complexity: C2
-
 - Support Language Notification proactive command.
 
   Priority: Medium
