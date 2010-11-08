@@ -184,7 +184,8 @@ static int zte_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->aux, "ATE0 +CMEE=1", none_prefix,
 						NULL, NULL, NULL);
 
-	g_at_chat_send(data->aux, "AT+CFUN=4", none_prefix,
+	/* Direct transition 0 -> 4 leaves SIM hosed */
+	g_at_chat_send(data->aux, "AT+CFUN=1;+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
