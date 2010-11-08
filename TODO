@@ -475,6 +475,7 @@ Miscellaneous
 
   Priority: High
   Complexity: C1
+  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 
 - Add support for GPS power control atom.  Many modem manufacturers provide
   a GPS unit with their modem hardware.  This unit can be turned on or off
