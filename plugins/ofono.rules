@@ -388,6 +388,9 @@ ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="1049", ENV{OFONO_DRIVER}="mbm"
 ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="190a", ENV{OFONO_DRIVER}="mbm"
 ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="1909", ENV{OFONO_DRIVER}="mbm"
 
+# Ericsson F5521gw
+ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="190d", ENV{OFONO_DRIVER}="mbm"
+
 # Sony-Ericsson MD300
 ATTRS{idVendor}=="0fce", ATTRS{idProduct}=="d0cf", ENV{OFONO_DRIVER}="mbm"
 
