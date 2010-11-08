@@ -363,6 +363,8 @@ ATTRS{idVendor}=="12d1", ENV{OFONO_DRIVER}="huawei"
 # ZTE Incorporated
 ATTRS{idVendor}=="19d2", ENV{OFONO_DRIVER}="zte"
 
+ATTRS{idVendor}=="19d2", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
+
 # Option Globetrotter
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="6911", ENV{OFONO_DRIVER}="hso"
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="6971", ENV{OFONO_DRIVER}="hso"
