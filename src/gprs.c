@@ -2083,6 +2083,9 @@ struct ofono_gprs_context *ofono_gprs_context_create(struct ofono_modem *modem,
 
 void ofono_gprs_context_remove(struct ofono_gprs_context *gc)
 {
+	if (gc == NULL)
+		return;
+
 	__ofono_atom_free(gc->atom);
 }
 
