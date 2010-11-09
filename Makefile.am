@@ -370,6 +370,7 @@ test_scripts = test/backtrace \
 		test/disable-modem \
 		test/enable-modem \
 		test/enter-pin \
+		test/reset-pin \
 		test/hangup-all \
 		test/hangup-active \
 		test/set-mms-details \
