@@ -1506,9 +1506,12 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 		__ofono_sms_sim_download(__ofono_atom_get_data(stk_atom),
 						&s, NULL, sms);
 
-		/* Passing the USIM response back to network is not
-		 * currently support */
-		/* TODO: store in EFsms if not handled */
+		/*
+		 * Passing the USIM response back to network is not
+		 * currently supported
+		 *
+		 * TODO: store in EFsms if not handled
+		 */
 		return;
 	default:
 		break;
