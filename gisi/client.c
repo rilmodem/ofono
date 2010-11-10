@@ -744,16 +744,19 @@ int g_isi_subscribe(GIsiClient *client, uint8_t type,
  */
 void g_isi_remove_subscription(GIsiClient *client, uint8_t res, uint8_t type)
 {
+	void *ret;
 	GIsiIndication *ind;
 	unsigned int id = (res << 8) | type;
 
 	if (!client)
 		return;
 
-	ind = tdelete(&id, &client->inds.subs, g_isi_cmp);
-	if (!ind)
+	ret = tfind(&id, &client->inds.subs, g_isi_cmp);
+	if (!ret)
 		return;
 
+	ind = *(GIsiIndication **)ret;
+	tdelete(ind, &client->inds.subs, g_isi_cmp);
 	client->inds.count--;
 	g_free(ind);
 }
