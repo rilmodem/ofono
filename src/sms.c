@@ -37,6 +37,7 @@
 #include "util.h"
 #include "smsutil.h"
 #include "storage.h"
+#include "simutil.h"
 
 #define uninitialized_var(x) x = x
 
@@ -1417,6 +1418,7 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	struct ofono_atom *stk_atom;
+	struct ofono_atom *sim_atom;
 	struct sms s;
 	enum sms_class cls;
 
@@ -1484,6 +1486,17 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 		/* If not Class 2, handle in a "normal" way */
 		if (cls != SMS_CLASS_2)
 			break;
+
+		sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+		if (!sim_atom)
+			return;
+
+		if (!__ofono_sim_service_available(
+					__ofono_atom_get_data(sim_atom),
+					SIM_UST_SERVICE_DATA_DOWNLOAD_SMS_PP,
+					SIM_SST_SERVICE_DATA_DOWNLOAD_SMS_PP))
+			return;
 
 		stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
 
