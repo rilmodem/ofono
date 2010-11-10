@@ -1928,6 +1928,21 @@ const unsigned char *ofono_sim_get_cphs_service_table(struct ofono_sim *sim)
 	return sim->cphs_service_table;
 }
 
+ofono_bool_t __ofono_sim_service_available(struct ofono_sim *sim,
+						int ust_service,
+						int sst_service)
+{
+	if (sim->efust)
+		return sim_ust_is_available(sim->efust, sim->efust_length,
+						ust_service);
+
+	if (sim->efsst)
+		return sim_sst_is_active(sim->efsst, sim->efsst_length,
+						sst_service);
+
+	return FALSE;
+}
+
 static void sim_inserted_update(struct ofono_sim *sim)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();

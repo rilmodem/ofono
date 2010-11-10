@@ -281,6 +281,11 @@ gboolean __ofono_sms_datagram_watch_remove(struct ofono_sms *sms,
 unsigned short __ofono_sms_get_next_ref(struct ofono_sms *sms);
 
 #include <ofono/sim.h>
+
+ofono_bool_t __ofono_sim_service_available(struct ofono_sim *sim,
+						int ust_service,
+						int sst_service);
+
 #include <ofono/stk.h>
 
 typedef void (*__ofono_sms_sim_download_cb_t)(ofono_bool_t ok,
