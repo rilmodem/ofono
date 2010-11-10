@@ -148,6 +148,8 @@ unsigned g_isi_pep_get_ifindex(const GIsiPEP *pep)
 
 char *g_isi_pep_get_ifname(const GIsiPEP *pep, char *ifname)
 {
-	unsigned ifi = g_isi_pep_get_ifindex(pep);
-	return if_indextoname(ifi, ifname);
+	if (pep->gprs_fd == -1)
+		return NULL;
+
+	return if_indextoname(g_isi_pep_get_ifindex(pep), ifname);
 }
