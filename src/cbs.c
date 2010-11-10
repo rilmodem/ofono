@@ -173,6 +173,7 @@ static void cbs_dispatch_text(struct ofono_cbs *cbs, enum sms_class cls,
 void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 				int pdu_len)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(cbs->atom);
 	struct cbs c;
 	enum sms_class cls;
 	gboolean udhi;
@@ -181,6 +182,7 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	enum sms_charset charset;
 	char *message;
 	char iso639_lang[3];
+	struct ofono_atom *sim_atom;
 
 	if (cbs->assembly == NULL)
 		return;
@@ -191,6 +193,17 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	}
 
 	if (cbs_topic_in_range(c.message_identifier, cbs->efcbmid_contents)) {
+		sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+		if (!sim_atom)
+			return;
+
+		if (!__ofono_sim_service_available(
+					__ofono_atom_get_data(sim_atom),
+					SIM_UST_SERVICE_DATA_DOWNLOAD_SMS_CB,
+					SIM_SST_SERVICE_DATA_DOWNLOAD_SMS_CB))
+			return;
+
 		if (cbs->stk)
 			__ofono_cbs_sim_download(cbs->stk, &c);
 		return;
