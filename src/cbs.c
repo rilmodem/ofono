@@ -182,7 +182,6 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	enum sms_charset charset;
 	char *message;
 	char iso639_lang[3];
-	struct ofono_atom *sim_atom;
 
 	if (cbs->assembly == NULL)
 		return;
@@ -193,8 +192,9 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 	}
 
 	if (cbs_topic_in_range(c.message_identifier, cbs->efcbmid_contents)) {
-		sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+		struct ofono_atom *sim_atom;
 
+		sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 		if (!sim_atom)
 			return;
 
@@ -206,6 +206,7 @@ void ofono_cbs_notify(struct ofono_cbs *cbs, const unsigned char *pdu,
 
 		if (cbs->stk)
 			__ofono_cbs_sim_download(cbs->stk, &c);
+
 		return;
 	}
 
