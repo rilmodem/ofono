@@ -75,6 +75,10 @@ def ussd(msg, member, path, interface):
 	iface = interface[interface.rfind(".") + 1:]
 	print "{%s} [%s] %s %s" % (iface, path, member, str(msg))
 
+def value(value, member, path, interface):
+	iface = interface[interface.rfind(".") + 1:]
+	print "{%s} [%s] %s %s" % (iface, path, member, str(value))
+
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -146,6 +150,13 @@ if __name__ == '__main__':
 	bus.add_signal_receiver(removed,
 				bus_name="org.ofono",
 					signal_name = "MessageRemoved",
+						member_keyword="member",
+						path_keyword="path",
+						interface_keyword="interface")
+
+	bus.add_signal_receiver(value,
+				bus_name="org.ofono",
+					signal_name = "DisconnectReason",
 						member_keyword="member",
 						path_keyword="path",
 						interface_keyword="interface")
