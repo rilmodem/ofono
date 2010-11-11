@@ -252,7 +252,7 @@ static void activate_ind_cb(GIsiClient *client,
 			break;
 
 		case GPDS_PDNS_ADDRESS_INFO:
-	
+
 			if (!g_isi_sb_iter_get_byte(&iter, &addr_len, 3))
 				break;
 
