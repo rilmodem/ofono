@@ -58,6 +58,8 @@
 #include "drivers/isimodem/mtc.h"
 #include "drivers/isimodem/debug.h"
 
+#define ISI_DEFAULT_PDPS 4	/* Number of supported PDP contexts */
+
 struct isi_data {
 	struct ofono_modem *modem;
 	char const *ifname;
@@ -407,6 +409,7 @@ static void isigen_post_online(struct ofono_modem *modem)
 	struct isi_data *isi = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
+	int i;
 
 	DBG("(%p) with %s", modem, isi->ifname);
 
@@ -420,13 +423,21 @@ static void isigen_post_online(struct ofono_modem *modem)
 	ofono_call_barring_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_meter_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_radio_settings_create(isi->modem, 0, "isimodem", isi->idx);
-	gprs = ofono_gprs_create(isi->modem, 0, "isimodem", isi->idx);
-	gc = ofono_gprs_context_create(isi->modem, 0, "isimodem", isi->idx);
 
-	if (gprs && gc)
+	gprs = ofono_gprs_create(isi->modem, 0, "isimodem", isi->idx);
+	if (!gprs)
+		return;
+
+	for (i = 0; i < ISI_DEFAULT_PDPS; i++) {
+		gc = ofono_gprs_context_create(isi->modem, 0,
+						"isimodem", isi->idx);
+		if (!gc) {
+			DBG("Failed to add context %d", i);
+			break;
+		}
+
 		ofono_gprs_add_context(gprs, gc);
-	else
-		DBG("Failed to add context");
+	}
 }
 
 static int isigen_enable(struct ofono_modem *modem)
