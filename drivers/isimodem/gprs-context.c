@@ -171,7 +171,7 @@ static gboolean check_resp(GIsiClient *client,
 	}
 
 	if ((cd->handle != INVALID_ID && msg[1] != cd->handle)
-		|| (msg[1] == INVALID_ID)) {
+			|| (msg[1] == INVALID_ID)) {
 		DBG("invalid context ID: 0x%02"PRIx8, msg[1]);
 		return FALSE;
 	}
@@ -197,7 +197,7 @@ static void deactivate_ind_cb(GIsiClient *client,
 	const unsigned char *msg = data;
 
 	if (!msg || len < 3 || msg[0] != GPDS_CONTEXT_DEACTIVATE_IND ||
-		msg[1] != cd->handle)
+			msg[1] != cd->handle)
 		return;
 
 	DBG("context deactivated: %s (0x%02"PRIx8")",
@@ -223,12 +223,12 @@ static void activate_ind_cb(GIsiClient *client,
 	const char *dns[3];
 
 	if (!msg || len < 3 || msg[0] != GPDS_CONTEXT_ACTIVATE_IND ||
-		msg[1] != cd->handle)
+			msg[1] != cd->handle)
 		return;
 
 	for (g_isi_sb_iter_init(&iter, msg, len, 3);
-		g_isi_sb_iter_is_valid(&iter);
-		g_isi_sb_iter_next(&iter)) {
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
 
 		uint8_t *addr_value = NULL;
 		uint8_t addr_len = 0;
@@ -238,9 +238,12 @@ static void activate_ind_cb(GIsiClient *client,
 		/* TODO: IPv6 address support */
 
 		case GPDS_PDP_ADDRESS_INFO:
-			if (!g_isi_sb_iter_get_byte(&iter, &addr_len, 3)
-				|| !g_isi_sb_iter_get_data(&iter,
-						(void *)&addr_value, 4))
+
+			if (!g_isi_sb_iter_get_byte(&iter, &addr_len, 3))
+				goto error;
+
+			if (!g_isi_sb_iter_get_data(&iter, (void *)&addr_value,
+							4))
 				goto error;
 
 			ip = alloca(INET_ADDRSTRLEN);
@@ -249,9 +252,12 @@ static void activate_ind_cb(GIsiClient *client,
 			break;
 
 		case GPDS_PDNS_ADDRESS_INFO:
-			if (!g_isi_sb_iter_get_byte(&iter, &addr_len, 3)
-				|| !g_isi_sb_iter_get_data(&iter,
-						(void *)&addr_value, 4))
+	
+			if (!g_isi_sb_iter_get_byte(&iter, &addr_len, 3))
+				break;
+
+			if (!g_isi_sb_iter_get_data(&iter, (void *)&addr_value,
+							4))
 				break;
 
 			pdns = alloca(INET_ADDRSTRLEN);
@@ -260,9 +266,12 @@ static void activate_ind_cb(GIsiClient *client,
 			break;
 
 		case GPDS_SDNS_ADDRESS_INFO:
-			if (!g_isi_sb_iter_get_byte(&iter, &addr_len, 3)
-				|| !g_isi_sb_iter_get_data(&iter,
-						(void *)&addr_value, 4))
+
+			if (!g_isi_sb_iter_get_byte(&iter, &addr_len, 3))
+				break;
+
+			if (!g_isi_sb_iter_get_data(&iter, (void *)&addr_value,
+							4))
 				break;
 
 			sdns = alloca(INET_ADDRSTRLEN);
@@ -333,11 +342,11 @@ static void send_context_activate(GIsiClient *client, void *opaque)
 
 
 	g_isi_add_subscription(client, PN_GPDS, GPDS_CONTEXT_ACTIVATE_IND,
-			activate_ind_cb, cd);
+				activate_ind_cb, cd);
 	g_isi_add_subscription(client, PN_GPDS, GPDS_CONTEXT_ACTIVATE_FAIL_IND,
-			activate_fail_ind_cb, cd);
+				activate_fail_ind_cb, cd);
 	g_isi_add_subscription(client, PN_GPDS, GPDS_CONTEXT_DEACTIVATE_IND,
-			deactivate_ind_cb, cd);
+				deactivate_ind_cb, cd);
 	g_isi_commit_subscriptions(client);
 
 	if (g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
@@ -513,8 +522,8 @@ static void isi_gprs_activate_primary(struct ofono_gprs_context *gc,
 	cd->type = GPDS_PDP_TYPE_IPV4;
 
 	if (strlen(ctx->apn) >= GPDS_MAX_APN_STRING_LENGTH
-		|| strlen(ctx->username) >= GPDS_MAX_USERNAME_LENGTH
-		|| strlen(ctx->password) >= GPDS_MAX_PASSWORD_LENGTH)
+			|| strlen(ctx->username) >= GPDS_MAX_USERNAME_LENGTH
+			|| strlen(ctx->password) >= GPDS_MAX_PASSWORD_LENGTH)
 		goto error;
 
 	strncpy(cd->apn, ctx->apn, GPDS_MAX_APN_STRING_LENGTH);
