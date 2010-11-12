@@ -752,6 +752,7 @@ static GDBusSignalTable modem_signals[] = {
 void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+	dbus_bool_t dbus_powered = powered;
 
 	if (modem->timeout > 0) {
 		g_source_remove(modem->timeout);
@@ -771,32 +772,34 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 
 	modem->powered_pending = powered;
 
-	if (modem->powered != powered) {
-		dbus_bool_t dbus_powered = powered;
-		modem->powered = powered;
+	if (modem->powered == powered)
+		goto out;
 
-		if (modem->driver == NULL) {
-			ofono_error("Calling ofono_modem_set_powered on a"
-					"modem with no driver is not valid, "
-					"please fix the modem driver.");
-			return;
-		}
+	modem->powered = powered;
 
-		ofono_dbus_signal_property_changed(conn, modem->path,
-						OFONO_MODEM_INTERFACE,
-						"Powered", DBUS_TYPE_BOOLEAN,
-						&dbus_powered);
-
-		if (powered) {
-			modem_change_state(modem, MODEM_STATE_PRE_SIM);
-
-			/* Force SIM Ready for devies with no sim atom */
-			if (__ofono_modem_find_atom(modem,
-						OFONO_ATOM_TYPE_SIM) == NULL)
-				sim_state_watch(OFONO_SIM_STATE_READY, modem);
-		} else
-			modem_change_state(modem, MODEM_STATE_POWER_OFF);
+	if (modem->driver == NULL) {
+		ofono_error("Calling ofono_modem_set_powered on a"
+				"modem with no driver is not valid, "
+				"please fix the modem driver.");
+		return;
 	}
+
+	ofono_dbus_signal_property_changed(conn, modem->path,
+					OFONO_MODEM_INTERFACE,
+					"Powered", DBUS_TYPE_BOOLEAN,
+					&dbus_powered);
+
+	if (powered) {
+		modem_change_state(modem, MODEM_STATE_PRE_SIM);
+
+		/* Force SIM Ready for devies with no sim atom */
+		if (__ofono_modem_find_atom(modem,
+					OFONO_ATOM_TYPE_SIM) == NULL)
+			sim_state_watch(OFONO_SIM_STATE_READY, modem);
+	} else
+		modem_change_state(modem, MODEM_STATE_POWER_OFF);
+
+out:
 
 	if (powering_down && powered == FALSE) {
 		modems_remaining -= 1;
