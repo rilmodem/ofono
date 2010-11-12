@@ -48,7 +48,9 @@
 #define PN_WRAN 0xb4
 
 struct radio_data {
-	GIsiClient *client;
+	GIsiClient *gss_client;
+	GIsiClient *gpds_client;
+	GIsiClient *wran_client;
 	uint16_t wran_object;
 	uint16_t quick_release:1;
 };
@@ -81,69 +83,57 @@ static int ofono_mode_to_isi_mode(enum ofono_radio_access_mode mode)
 	}
 }
 
-static gboolean rat_mode_read_resp_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object,
-					void *opaque)
+static void rat_mode_read_resp_cb(const GIsiMessage *msg, void *opaque)
 {
-	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_radio_settings_rat_mode_query_cb_t cb = cbd->cb;
 	int mode = -1;
+	GIsiSubBlockIter iter;
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("message error");
 		goto error;
 	}
 
-	if (len < 3) {
-		DBG("truncated message");
-		return FALSE;
-	}
-
-	if (msg[0] == GSS_CS_SERVICE_FAIL_RESP)
+	if (g_isi_msg_id(msg) == GSS_CS_SERVICE_FAIL_RESP)
 		goto error;
 
-	if (msg[0] == GSS_CS_SERVICE_RESP) {
-		GIsiSubBlockIter iter;
+	if (g_isi_msg_id(msg) != GSS_CS_SERVICE_RESP)
+		return;
 
-		for (g_isi_sb_iter_init(&iter, msg, len, 3);
-			g_isi_sb_iter_is_valid(&iter);
-			g_isi_sb_iter_next(&iter)) {
+	for (g_isi_sb_iter_init(&iter, msg, 2);
+		g_isi_sb_iter_is_valid(&iter);
+		g_isi_sb_iter_next(&iter)) {
 
-			switch (g_isi_sb_iter_get_id(&iter)) {
+		switch (g_isi_sb_iter_get_id(&iter)) {
 
-			case GSS_RAT_INFO: {
-				guint8 info;
+		case GSS_RAT_INFO: {
+			guint8 info;
 
-				if (!g_isi_sb_iter_get_byte(&iter, &info, 2))
-					goto error;
+			if (!g_isi_sb_iter_get_byte(&iter, &info, 2))
+				goto error;
 
-				mode = isi_mode_to_ofono_mode(info);
+			mode = isi_mode_to_ofono_mode(info);
 
-				break;
-			}
-			default:
-				DBG("Skipping sub-block: %s (%zu bytes)",
-					gss_subblock_name(
-						g_isi_sb_iter_get_id(&iter)),
-					g_isi_sb_iter_get_len(&iter));
-				break;
-			}
+			break;
 		}
-
-		CALLBACK_WITH_SUCCESS(cb, mode, cbd->data);
-		goto out;
+		default:
+			DBG("Skipping sub-block: %s (%zu bytes)",
+				gss_subblock_name(
+					g_isi_sb_iter_get_id(&iter)),
+				g_isi_sb_iter_get_len(&iter));
+			break;
+		}
 	}
 
-	return FALSE;
+	CALLBACK_WITH_SUCCESS(cb, mode, cbd->data);
+	g_free(cbd);
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-
-out:
 	g_free(cbd);
-	return TRUE;
+	return;
 }
 
 static void isi_query_rat_mode(struct ofono_radio_settings *rs,
@@ -162,8 +152,8 @@ static void isi_query_rat_mode(struct ofono_radio_settings *rs,
 	if (cbd == NULL || rd == NULL)
 		goto error;
 
-	if (g_isi_request_make(rd->client, msg, sizeof(msg), GSS_TIMEOUT,
-				rat_mode_read_resp_cb, cbd))
+	if (g_isi_client_send(rd->gss_client, msg, sizeof(msg), GSS_TIMEOUT,
+				rat_mode_read_resp_cb, cbd, NULL))
 		return;
 
 error:
@@ -171,40 +161,30 @@ error:
 	g_free(cbd);
 }
 
-static gboolean mode_write_resp_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void mode_write_resp_cb(const GIsiMessage *msg, void *opaque)
 {
-	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_radio_settings_rat_mode_set_cb_t cb = cbd->cb;
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("message error");
 		goto error;
 	}
 
-	if (len < 3) {
-		DBG("truncated message");
-		return FALSE;
-	}
-
-	if (msg[0] == GSS_CS_SERVICE_FAIL_RESP)
+	if (g_isi_msg_id(msg) == GSS_CS_SERVICE_FAIL_RESP)
 		goto error;
 
-	if (msg[0] == GSS_CS_SERVICE_RESP) {
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-		goto out;
-	}
+	if (g_isi_msg_id(msg) != GSS_CS_SERVICE_RESP)
+		return;
 
-	return FALSE;
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	g_free(cbd);
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
-
-out:
 	g_free(cbd);
-	return TRUE;
+	return;
 }
 
 static void isi_set_rat_mode(struct ofono_radio_settings *rs,
@@ -232,8 +212,8 @@ static void isi_set_rat_mode(struct ofono_radio_settings *rs,
 	if (isi_mode == -1)
 		goto error;
 
-	if (g_isi_request_make(rd->client, msg, sizeof(msg), GSS_TIMEOUT,
-				mode_write_resp_cb, cbd))
+	if (g_isi_client_send(rd->gss_client, msg, sizeof(msg), GSS_TIMEOUT,
+				mode_write_resp_cb, cbd, NULL))
 		return;
 
 error:
@@ -243,6 +223,8 @@ error:
 
 static void update_fast_dormancy(struct radio_data *rd)
 {
+	GIsiModem *modem;
+
 	struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
 		.spn_resource = 0x3a,
@@ -253,29 +235,29 @@ static void update_fast_dormancy(struct radio_data *rd)
 	if (!rd->wran_object)
 		return;
 
+	modem = g_isi_client_modem(rd->wran_client);
+
 	if (rd->quick_release) {
 		const unsigned char msg[] = {
-			0x1f, 0x00, 0x01, 0x01, 0x01, 0x00
+			0x00, 0x1f, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+			0x00, 0x00, 0x00, 0x00
 		};
 
-		g_isi_sendto(rd->client, &dst, msg, sizeof(msg), 0,
-				NULL, NULL, NULL);
+		g_isi_modem_sendto(modem, &dst, msg, sizeof(msg));
 	} else {
 		const unsigned char msg[] = {
-			0x1f, 0x00, 0x01, 0x01, 0x02, 0x0a
+			0x00, 0x1f, 0x00, 0x01, 0x00, 0x01, 0x00, 0x02,
+			0x00, 0x0a, 0x00, 0x00
 		};
 
-		g_isi_sendto(rd->client, &dst, msg, sizeof(msg), 0,
-				NULL, NULL, NULL);
+		g_isi_modem_sendto(modem, &dst, msg, sizeof(msg));
 	}
 
 	DBG("3G PS quick release %s",
 		rd->quick_release ? "enabled" : "disabled");
 }
 
-static void gpds_context_activating_ind_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void gpds_context_activating_ind_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct radio_data *rd = opaque;
 	update_fast_dormancy(rd);
@@ -300,95 +282,91 @@ static void isi_set_fast_dormancy(struct ofono_radio_settings *rs,
 	CALLBACK_WITH_SUCCESS(cb, data);
 }
 
-static gboolean isi_radio_settings_register(gpointer user)
-{
-	struct ofono_radio_settings *rs = user;
-	struct radio_data *rd = ofono_radio_settings_get_data(rs);
-
-	const char *debug = getenv("OFONO_ISI_DEBUG");
-
-	if (debug && (g_strcmp0(debug, "all") == 0
-		|| g_strcmp0(debug, "gss") == 0))
-		g_isi_client_set_debug(rd->client, gss_debug, NULL);
-
-	ofono_radio_settings_register(rs);
-
-	g_isi_add_subscription(rd->client,
-				PN_GPDS, GPDS_CONTEXT_ACTIVATING_IND,
-				gpds_context_activating_ind_cb, rd);
-	g_isi_commit_subscriptions(rd->client);
-
-	return FALSE;
-}
-
-static void wran_reachable_cb(GIsiClient *client, gboolean alive,
-				uint16_t object, void *opaque)
+static void wran_reachable_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct radio_data *rd = opaque;
 
-	if (!alive) {
-		DBG("fast dormancy support disabled");
+	if (g_isi_msg_error(msg) < 0)
 		return;
-	}
 
-	rd->wran_object = object;
+	ISI_VERSION_DBG(msg);
 
-	DBG("PN_WRAN reachable, object=0x%04x", object);
+	rd->wran_object = g_isi_msg_object(msg);
+
+	DBG("PN_WRAN object = 0x%04x", rd->wran_object);
 
 	update_fast_dormancy(rd);
+
+	g_isi_client_ind_subscribe(rd->gpds_client,
+					GPDS_CONTEXT_ACTIVATING_IND,
+					gpds_context_activating_ind_cb, rd);
 }
 
-static void reachable_cb(GIsiClient *client, gboolean alive, uint16_t object,
-				void *opaque)
+static void gss_reachable_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct ofono_radio_settings *rs = opaque;
+	struct radio_data *rd = ofono_radio_settings_get_data(rs);
+	const char *debug = getenv("OFONO_ISI_DEBUG");
 
-	if (!alive) {
-		DBG("radio access driver bootstrap failed");
+	if (g_isi_msg_error(msg) < 0)
 		return;
-	}
 
-	DBG("%s (v%03d.%03d) reachable",
-		pn_resource_name(g_isi_client_resource(client)),
-		g_isi_version_major(client),
-		g_isi_version_minor(client));
+	ISI_VERSION_DBG(msg);
 
-	g_idle_add(isi_radio_settings_register, rs);
+	ofono_radio_settings_register(rs);
 }
 
 static int isi_radio_settings_probe(struct ofono_radio_settings *rs,
 					unsigned int vendor,
 					void *user)
 {
-	GIsiModem *idx = user;
+	GIsiModem *modem = user;
 	struct radio_data *rd = g_try_new0(struct radio_data, 1);
 
 	if (rd == NULL)
 		return -ENOMEM;
 
-	rd->client = g_isi_client_create(idx, PN_GSS);
-	if (rd->client == NULL) {
-		g_free(rd);
-		return -ENOMEM;
-	}
+	rd->gss_client = g_isi_client_create(modem, PN_GSS);
+	if (rd->gss_client == NULL)
+		goto nomem;
+
+	rd->gpds_client = g_isi_client_create(modem, PN_GPDS);
+	if (rd->gpds_client == NULL)
+		goto nomem;
+
+	rd->wran_client = g_isi_client_create(modem, PN_WRAN);
+	if (rd->wran_client == NULL)
+		goto nomem;
 
 	ofono_radio_settings_set_data(rs, rd);
 
-	g_isi_verify(rd->client, reachable_cb, rs);
-	g_isi_verify_resource(rd->client, PN_WRAN, wran_reachable_cb, rd);
+	g_isi_client_verify(rd->gss_client, gss_reachable_cb, rs, NULL);
+	g_isi_client_verify(rd->wran_client, wran_reachable_cb, rd, NULL);
 
 	return 0;
+nomem:
+	if (rd->gss_client)
+		g_isi_client_destroy(rd->gss_client);
+	if (rd->wran_client)
+		g_isi_client_destroy(rd->wran_client);
+	if (rd->gpds_client)
+		g_isi_client_destroy(rd->gpds_client);
+	g_free(rd);
+	return -ENOMEM;
 }
 
 static void isi_radio_settings_remove(struct ofono_radio_settings *rs)
 {
 	struct radio_data *rd = ofono_radio_settings_get_data(rs);
 
+	ofono_radio_settings_set_data(rs, NULL);
+
 	if (rd == NULL)
 		return;
 
-	ofono_radio_settings_set_data(rs, NULL);
-	g_isi_client_destroy(rd->client);
+	g_isi_client_destroy(rd->gss_client);
+	g_isi_client_destroy(rd->wran_client);
+	g_isi_client_destroy(rd->gpds_client);
 	g_free(rd);
 }
 
