@@ -226,6 +226,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/stemodem/stemodem.c \
 			drivers/stemodem/voicecall.c \
 			drivers/stemodem/radio-settings.c \
+			drivers/stemodem/caif_rtnl.c \
+			drivers/stemodem/caif_rtnl.h \
 			drivers/stemodem/gprs-context.c \
 			drivers/stemodem/caif_socket.h \
 			drivers/stemodem/if_caif.h
