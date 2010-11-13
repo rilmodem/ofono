@@ -75,7 +75,7 @@ static struct iplink_req *find_request(guint32 seq)
 }
 
 static void parse_newlink_param(struct ifinfomsg *msg, int size,
-						int *ifindex, char *ifname)
+						int *index, char *ifname)
 {
 	struct rtattr *attr;
 
@@ -91,15 +91,15 @@ static void parse_newlink_param(struct ifinfomsg *msg, int size,
 		}
 	}
 
-	*ifindex = msg->ifi_index;
+	*index = msg->ifi_index;
 }
 
 static void parse_rtnl_message(const void *buf, size_t len)
 {
 	struct ifinfomsg *msg;
-	struct iplink_req *req = NULL;
+	struct iplink_req *req;
 	char ifname[IF_NAMESIZE];
-	int ifindex;
+	int index;
 
 	while (len > 0) {
 		const struct nlmsghdr *hdr = buf;
@@ -115,10 +115,10 @@ static void parse_rtnl_message(const void *buf, size_t len)
 
 			msg = (struct ifinfomsg *) NLMSG_DATA(hdr);
 			parse_newlink_param(msg, IFA_PAYLOAD(hdr),
-							&ifindex, ifname);
+							&index, ifname);
 
 			if (req->callback)
-				req->callback(ifindex, ifname, req->user_data);
+				req->callback(index, ifname, req->user_data);
 			break;
 
 		case NLMSG_ERROR:
@@ -127,10 +127,13 @@ static void parse_rtnl_message(const void *buf, size_t len)
 				break;
 
 			DBG("nlmsg error req");
+
 			if (req->callback)
 				req->callback(-1, ifname, req->user_data);
 			break;
+
 		default:
+			req = NULL;
 			break;
 		}
 
@@ -141,7 +144,6 @@ static void parse_rtnl_message(const void *buf, size_t len)
 			pending_requests = g_slist_remove(pending_requests,
 								req);
 			g_free(req);
-			req = NULL;
 		}
 	}
 }
@@ -167,7 +169,7 @@ static int add_attribute(struct nlmsghdr *n, unsigned int maxlen, int type,
 	return 0;
 }
 
-static void prep_rtnl_req(struct rtnl_msg *msg, int reqtype, guint seqnr)
+static inline void prep_rtnl_req(struct rtnl_msg *msg, int reqtype, guint seqnr)
 {
 	msg->n.nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
 	msg->n.nlmsg_flags = NLM_F_REQUEST|NLM_F_CREATE|NLM_F_EXCL;
@@ -180,19 +182,20 @@ static gboolean netlink_event(GIOChannel *chan,
 				GIOCondition cond, gpointer data)
 {
 	unsigned char buf[RTNL_MSG_SIZE];
-	int len;
-	int sk = g_io_channel_unix_get_fd(rtnl_channel);
+	int len, sk;
 
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		rtnl_watch = 0;
 		return FALSE;
 	}
 
-	memset(buf, 0, sizeof(buf));
-	len = recv(sk, (void *)&buf, sizeof(buf), MSG_DONTWAIT);
+	sk = g_io_channel_unix_get_fd(rtnl_channel);
+
+	len = recv(sk, buf, sizeof(buf), MSG_DONTWAIT);
 	if (len < 0) {
 		if (len == -EAGAIN)
 			return TRUE;
+
 		rtnl_watch = 0;
 		return FALSE;
 	}
@@ -254,10 +257,10 @@ int caif_rtnl_create_interface(int type, int connid, int loop,
 {
 	struct iplink_req *req;
 	struct sockaddr_nl addr;
-	int err, sk;
 	struct rtnl_msg msg;
 	struct rtattr *linkinfo;
 	struct rtattr *data_start;
+	int err, sk;
 
 	req = g_try_new0(struct iplink_req, 1);
 	if (req == NULL)
@@ -286,50 +289,53 @@ int caif_rtnl_create_interface(int type, int connid, int loop,
 				type, &connid,
 				sizeof(connid));
 		break;
-
-	case __IFLA_CAIF_UNSPEC:
-	case IFLA_CAIF_LOOPBACK:
-	case __IFLA_CAIF_MAX:
+	default:
 		DBG("unsupported linktype");
+		g_free(req);
 		return -EINVAL;
 	}
 
-	if (loop) {
+	if (loop)
 		add_attribute(&msg.n, sizeof(msg),
 				IFLA_CAIF_LOOPBACK, &loop, sizeof(loop));
-	}
 
 	data_start->rta_len = (void *)NLMSG_TAIL(&msg.n) - (void *)data_start;
 	linkinfo->rta_len = (void *)NLMSG_TAIL(&msg.n) - (void *)linkinfo;
 
 	memset(&addr, 0, sizeof(addr));
 	addr.nl_family = AF_NETLINK;
+
 	sk = g_io_channel_unix_get_fd(rtnl_channel);
+
 	err = sendto(sk, &msg, msg.n.nlmsg_len, 0,
 			(struct sockaddr *) &addr, sizeof(addr));
-	if (err < 0)
-		goto error;
+	if (err < 0) {
+		g_free(req);
+		return err;
+	}
 
 	pending_requests = g_slist_append(pending_requests, req);
-	return 0;
 
-error:
-	g_free(req);
-	return err;
+	return 0;
 }
 
-int caif_rtnl_delete_interface(int ifid)
+int caif_rtnl_delete_interface(int index)
 {
 	struct sockaddr_nl addr;
 	struct rtnl_msg msg;
-	int err;
-	int sk = g_io_channel_unix_get_fd(rtnl_channel);
+	int err, sk;
+
+	if (index < 0)
+		return -EINVAL;
+
+	sk = g_io_channel_unix_get_fd(rtnl_channel);
+
+	memset(&addr, 0, sizeof(addr));
+	addr.nl_family = AF_NETLINK;
 
 	memset(&msg, 0, sizeof(msg));
 	prep_rtnl_req(&msg, RTM_DELLINK, ++rtnl_seqnr);
-	msg.i.ifi_index = ifid;
-	memset(&addr, 0, sizeof(addr));
-	addr.nl_family = AF_NETLINK;
+	msg.i.ifi_index = index;
 
 	err = sendto(sk, &msg, msg.n.nlmsg_len, 0,
 			(struct sockaddr *) &addr, sizeof(addr));
