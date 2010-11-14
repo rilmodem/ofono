@@ -26,12 +26,13 @@
 #include <stdint.h>
 #include <errno.h>
 #include <glib.h>
+
 #include "client.h"
 #include "pipe.h"
 
 #define PN_PIPE	0xd9
 
-typedef struct {
+struct isi_pipe_create_req {
 	uint8_t cmd;
 	uint8_t state_after;
 	uint8_t priority;
@@ -45,37 +46,35 @@ typedef struct {
 	uint8_t object2;
 	uint8_t type2;
 	uint8_t n_sb;
-} isi_pipe_create_req_t;
+};
 
-typedef struct {
+struct isi_pipe_enable_req {
 	uint8_t cmd;
 	uint8_t pipe_handle;
 	uint8_t pad;
-} isi_pipe_enable_req_t;
+};
 
-typedef struct {
+struct isi_pipe_reset_req {
 	uint8_t cmd;
 	uint8_t pipe_handle;
 	uint8_t state_after;
-} isi_pipe_reset_req_t;
+};
 
-typedef struct {
+struct isi_pipe_remove_req {
 	uint8_t cmd;
 	uint8_t pipe_handle;
-} isi_pipe_remove_req_t;
+};
 
-typedef struct {
-	uint8_t cmd;
+struct isi_pipe_resp {
 	uint8_t pipe_handle;
 	uint8_t error_code;
-
 	uint8_t error1;
 	uint8_t error2;
-} isi_pipe_resp_t;
+};
 
 #define PN_PIPE_INVALID_HANDLE	0xff
 
-enum {
+enum isi_pipe_message_id {
 	PNS_PIPE_CREATE_REQ,
 	PNS_PIPE_CREATE_RESP,
 	PNS_PIPE_REMOVE_REQ,
@@ -90,8 +89,8 @@ enum {
 	PNS_PIPE_DISABLE_RESP,
 };
 
-enum {	/* error codes */
-	PN_PIPE_NO_ERROR,
+enum pn_pipe_error {	/* error codes */
+	PN_PIPE_ERR_NO_ERROR,
 	PN_PIPE_ERR_INVALID_PARAM,
 	PN_PIPE_ERR_INVALID_HANDLE,
 	PN_PIPE_ERR_INVALID_CTRL_ID,
@@ -105,20 +104,20 @@ enum {	/* error codes */
 	PN_PIPE_ERR_NOT_SUPPORTED,
 };
 
-enum {	/* initial pipe state */
+enum pn_pipe_state {	/* initial pipe state */
 	PN_PIPE_DISABLE,
 	PN_PIPE_ENABLE,
 };
 
-enum {
+enum pn_msg_priority {
 	PN_MSG_PRIORITY_LOW = 1,
 	PN_MSG_PRIORITY_HIGH,
 };
 
 struct _GIsiPipe {
 	GIsiClient *client;
-	void (*handler)(GIsiPipe *);
-	void (*error_handler)(GIsiPipe *);
+	GIsiPipeHandler handler;
+	GIsiPipeErrorHandler error_handler;
 	void *opaque;
 	int error;
 	uint8_t handle;
@@ -126,26 +125,34 @@ struct _GIsiPipe {
 	gboolean enabling;
 };
 
-static int g_isi_pipe_error(uint8_t code)
+static int g_isi_pipe_error(enum pn_pipe_error code)
 {
-	static const int codes[] = {
-		[PN_PIPE_NO_ERROR] = 0,
-		[PN_PIPE_ERR_INVALID_PARAM] = -EINVAL,
-		[PN_PIPE_ERR_INVALID_HANDLE] = -EBADF,
-		[PN_PIPE_ERR_INVALID_CTRL_ID] = -ENOTSUP,
-		[PN_PIPE_ERR_NOT_ALLOWED] = -EPERM,
-		[PN_PIPE_ERR_PEP_IN_USE] = -EBUSY,
-		[PN_PIPE_ERR_OVERLOAD] = -ENOBUFS,
-		[PN_PIPE_ERR_DEV_DISCONNECTED] = -ENETDOWN,
-		[PN_PIPE_ERR_TIMEOUT] = -ETIMEDOUT,
-		[PN_PIPE_ERR_ALL_PIPES_IN_USE] = -ENFILE,
-		[PN_PIPE_ERR_GENERAL] = -EAGAIN,
-		[PN_PIPE_ERR_NOT_SUPPORTED] = -ENOSYS,
-	};
-
-	if (code == PN_PIPE_NO_ERROR ||
-	    ((code < sizeof(codes) / sizeof(codes[0])) && codes[code]))
-		return codes[code];
+	switch (code) {
+	case PN_PIPE_ERR_NO_ERROR:
+		return 0;
+	case PN_PIPE_ERR_INVALID_PARAM:
+		return -EINVAL;
+	case PN_PIPE_ERR_INVALID_HANDLE:
+		return -EBADF;
+	case PN_PIPE_ERR_INVALID_CTRL_ID:
+		return -ENOTSUP;
+	case PN_PIPE_ERR_NOT_ALLOWED:
+		return -EPERM;
+	case PN_PIPE_ERR_PEP_IN_USE:
+		return -EBUSY;
+	case PN_PIPE_ERR_OVERLOAD:
+		return -ENOBUFS;
+	case PN_PIPE_ERR_DEV_DISCONNECTED:
+		return -ENETDOWN;
+	case PN_PIPE_ERR_TIMEOUT:
+		return -ETIMEDOUT;
+	case PN_PIPE_ERR_ALL_PIPES_IN_USE:
+		return -ENFILE;
+	case PN_PIPE_ERR_GENERAL:
+		return -EAGAIN;
+	case PN_PIPE_ERR_NOT_SUPPORTED:
+		return -ENOSYS;
+	}
 	return -EBADMSG;
 }
 
@@ -155,31 +162,41 @@ static void g_isi_pipe_handle_error(GIsiPipe *pipe, uint8_t code)
 
 	if (err == 0)
 		return;
+
 	pipe->error = err;
+
 	if (pipe->error_handler)
 		pipe->error_handler(pipe);
 }
 
-static gboolean g_isi_pipe_created(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void g_isi_pipe_created(const GIsiMessage *msg, void *data)
 {
-	GIsiPipe *pipe = opaque;
-	const isi_pipe_resp_t *resp = data;
+	const struct isi_pipe_resp *resp = g_isi_msg_data(msg);
+	GIsiPipe *pipe = data;
 
-	if (len < 5 ||
-	    resp->cmd != PNS_PIPE_CREATE_RESP)
-		return FALSE;
+	if (g_isi_msg_error(msg) < 0) {
+		g_isi_pipe_handle_error(pipe, PN_PIPE_ERR_TIMEOUT);
+		return;
+	}
 
-	if (resp->pipe_handle != PN_PIPE_INVALID_HANDLE) {
-		pipe->handle = resp->pipe_handle;
-		if (pipe->enabling)
-			g_isi_pipe_start(pipe);
-		if (pipe->handler)
-			pipe->handler(pipe);
-	} else
+	if (g_isi_msg_id(msg) != PNS_PIPE_CREATE_RESP)
+		 return;
+
+	if (!resp || g_isi_msg_data_len(msg) != sizeof(struct isi_pipe_resp))
+		return;
+
+	if (resp->pipe_handle == PN_PIPE_INVALID_HANDLE) {
 		g_isi_pipe_handle_error(pipe, resp->error_code);
-	return TRUE;
+		return;
+	}
+
+	pipe->handle = resp->pipe_handle;
+
+	if (pipe->enabling)
+		g_isi_pipe_start(pipe);
+
+	if (pipe->handler)
+		pipe->handler(pipe);
 }
 
 /**
@@ -192,11 +209,10 @@ static gboolean g_isi_pipe_created(GIsiClient *client,
  * @param type2 Type of the second end point
  * @return a pipe object on success, NULL on error.
  */
-GIsiPipe *g_isi_pipe_create(GIsiModem *modem, void (*created)(GIsiPipe *),
-				uint16_t obj1, uint16_t obj2,
-				uint8_t type1, uint8_t type2)
+GIsiPipe *g_isi_pipe_create(GIsiModem *modem, GIsiPipeHandler cb, uint16_t obj1,
+				uint16_t obj2, uint8_t type1, uint8_t type2)
 {
-	isi_pipe_create_req_t msg = {
+	struct isi_pipe_create_req msg = {
 		.cmd = PNS_PIPE_CREATE_REQ,
 		.state_after = PN_PIPE_DISABLE,
 		.priority = PN_MSG_PRIORITY_LOW,
@@ -208,73 +224,75 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem, void (*created)(GIsiPipe *),
 		.type2 = type2,
 		.n_sb = 0,
 	};
-	GIsiPipe *pipe = g_try_malloc(sizeof(GIsiPipe));
+	GIsiPipe *pipe;
 
-	if (pipe == NULL)
+	pipe = g_try_new0(GIsiPipe, 1);
+	if (pipe == NULL) {
+		errno = ENOMEM;
 		return NULL;
+	}
 
 	pipe->client = g_isi_client_create(modem, PN_PIPE);
-	pipe->handler = created;
+	if (pipe->client == NULL) {
+		errno = ENOMEM;
+		g_free(pipe);
+		return NULL;
+	}
+
+	pipe->handler = cb;
 	pipe->error_handler = NULL;
 	pipe->error = 0;
 	pipe->enabling = FALSE;
 	pipe->enabled = FALSE;
 	pipe->handle = PN_PIPE_INVALID_HANDLE;
 
-	if (pipe->client == NULL ||
-	    g_isi_request_make(pipe->client, &msg, sizeof(msg), 3,
-				g_isi_pipe_created, pipe) == NULL)
-		goto error;
+	if (g_isi_client_send(pipe->client, &msg, sizeof(msg), 3,
+				g_isi_pipe_created, pipe, NULL))
+		return pipe;
 
-	return pipe;
-
-error:
-	if (pipe->client)
-		g_isi_client_destroy(pipe->client);
+	g_isi_client_destroy(pipe->client);
 	g_free(pipe);
+
 	return NULL;
 }
 
-static const isi_pipe_resp_t *
-g_isi_pipe_check_resp(const GIsiPipe *pipe, uint8_t cmd,
-			const void *restrict data, size_t len)
+static void g_isi_pipe_enabled(const GIsiMessage *msg, void *data)
 {
-	const isi_pipe_resp_t *resp = data;
+	GIsiPipe *pipe = data;
+	const struct isi_pipe_resp *resp = g_isi_msg_data(msg);
 
-	if ((len < 5) || (resp->cmd != cmd) ||
-	    (resp->pipe_handle != pipe->handle))
-		return NULL;
-	return resp;
-}
+	if (g_isi_msg_error(msg) < 0) {
+		g_isi_pipe_handle_error(pipe, PN_PIPE_ERR_TIMEOUT);
+		return;
+	}
 
-static gboolean g_isi_pipe_enabled(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
-{
-	GIsiPipe *pipe = opaque;
-	const isi_pipe_resp_t *resp;
+	if (g_isi_msg_id(msg) != PNS_PIPE_ENABLE_RESP)
+		return;
 
-	resp = g_isi_pipe_check_resp(pipe, PNS_PIPE_ENABLE_RESP, data, len);
-	if (!resp)
-		return FALSE;
+	if (!resp || g_isi_msg_data_len(msg) != sizeof(struct isi_pipe_resp))
+		return;
+
+	if (pipe->handle != resp->pipe_handle)
+		return;
 
 	g_isi_pipe_handle_error(pipe, resp->error_code);
+
 	pipe->enabling = FALSE;
+
 	if (!pipe->error)
 		pipe->enabled = TRUE;
-	return TRUE;
 }
 
-static GIsiRequest *g_isi_pipe_enable(GIsiPipe *pipe)
+static GIsiPending *g_isi_pipe_enable(GIsiPipe *pipe)
 {
-	isi_pipe_enable_req_t msg = {
+	struct isi_pipe_enable_req msg = {
 		.cmd = PNS_PIPE_ENABLE_REQ,
 		.pipe_handle = pipe->handle,
 	};
-	const size_t len = 3;
+	size_t len = sizeof(struct isi_pipe_enable_req);
 
-	return g_isi_request_make(pipe->client, &msg, len, 5,
-					g_isi_pipe_enabled, pipe);
+	return g_isi_client_send(pipe->client, &msg, len, 5, g_isi_pipe_enabled,
+					pipe, NULL);
 }
 
 /**
@@ -286,6 +304,7 @@ int g_isi_pipe_start(GIsiPipe *pipe)
 {
 	if (pipe->error)
 		return pipe->error;
+
 	if (pipe->enabling || pipe->enabled)
 		return 0;
 
@@ -298,33 +317,37 @@ int g_isi_pipe_start(GIsiPipe *pipe)
 }
 
 /* Not very useful, it will never have time to trigger */
-static gboolean g_isi_pipe_removed(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void g_isi_pipe_removed(const GIsiMessage *msg, void *data)
 {
-	GIsiPipe *pipe = opaque;
-	const isi_pipe_resp_t *resp;
+	GIsiPipe *pipe = data;
+	const struct isi_pipe_resp *resp = g_isi_msg_data(msg);
 
-	resp = g_isi_pipe_check_resp(pipe, PNS_PIPE_REMOVE_RESP, data, len);
-	if (!resp)
-		return FALSE;
+	if (g_isi_msg_error(msg) < 0) {
+		g_isi_pipe_handle_error(pipe, PN_PIPE_ERR_TIMEOUT);
+		return;
+	}
+
+	if (g_isi_msg_id(msg) != PNS_PIPE_REMOVE_RESP)
+		return;
+
+	if (!resp || g_isi_msg_data_len(msg) != sizeof(struct isi_pipe_resp))
+		return;
 
 	pipe->handle = PN_PIPE_INVALID_HANDLE;
 	pipe->error = -EPIPE;
-	return TRUE;
 }
 
 
-static GIsiRequest *g_isi_pipe_remove(GIsiPipe *pipe)
+static GIsiPending *g_isi_pipe_remove(GIsiPipe *pipe)
 {
-	isi_pipe_remove_req_t msg = {
+	struct isi_pipe_remove_req msg = {
 		.cmd = PNS_PIPE_REMOVE_REQ,
 		.pipe_handle = pipe->handle,
 	};
-	const size_t len = 3;
+	size_t len = sizeof(struct isi_pipe_remove_req);
 
-	return g_isi_request_make(pipe->client, &msg, len, 5,
-					g_isi_pipe_removed, pipe);
+	return g_isi_client_send(pipe->client, &msg, len, 5, g_isi_pipe_removed,
+					pipe, NULL);
 }
 
 /**
@@ -335,11 +358,12 @@ void g_isi_pipe_destroy(GIsiPipe *pipe)
 {
 	if (!pipe->error)
 		g_isi_pipe_remove(pipe);
+
 	g_isi_client_destroy(pipe->client);
 	g_free(pipe);
 }
 
-void g_isi_pipe_set_error_handler(GIsiPipe *pipe, void (*cb)(GIsiPipe *))
+void g_isi_pipe_set_error_handler(GIsiPipe *pipe, GIsiPipeErrorHandler cb)
 {
 	pipe->error_handler = cb;
 }

@@ -19,17 +19,33 @@
  *
  */
 
+#ifndef __GISI_PIPE_H
+#define __GISI_PIPE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct _GIsiPipe;
 typedef struct _GIsiPipe GIsiPipe;
 
-GIsiPipe *g_isi_pipe_create(GIsiModem *, void (*cb)(GIsiPipe *),
-				uint16_t obj1, uint16_t obj2,
-				uint8_t type1, uint8_t type2);
+typedef void (*GIsiPipeHandler)(GIsiPipe *pipe);
+typedef void (*GIsiPipeErrorHandler)(GIsiPipe *pipe);
+
+GIsiPipe *g_isi_pipe_create(GIsiModem *modem, GIsiPipeHandler cb, uint16_t obj1,
+				uint16_t obj2, uint8_t type1, uint8_t type2);
 void g_isi_pipe_destroy(GIsiPipe *pipe);
 
-void g_isi_pipe_set_error_handler(GIsiPipe *pipe, void (*cb)(GIsiPipe *));
+void g_isi_pipe_set_error_handler(GIsiPipe *pipe, GIsiPipeErrorHandler cb);
 int g_isi_pipe_get_error(const GIsiPipe *pipe);
 void *g_isi_pipe_set_userdata(GIsiPipe *pipe, void *data);
 void *g_isi_pipe_get_userdata(GIsiPipe *pipe);
 uint8_t g_isi_pipe_get_handle(GIsiPipe *pipe);
 
 int g_isi_pipe_start(GIsiPipe *pipe);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __GISI_PIPE_H */
