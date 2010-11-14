@@ -28,22 +28,20 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "message.h"
+
 struct _GIsiSubBlockIter {
 	uint8_t *start;
 	uint8_t *end;
-	uint16_t longhdr;
+	gboolean longhdr;
 	uint16_t sub_blocks;
 };
-
 typedef struct _GIsiSubBlockIter GIsiSubBlockIter;
 
-void g_isi_sb_iter_init(GIsiSubBlockIter *iter,
-			const void *restrict data,
-			size_t len, size_t used);
-void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter,
-				const void *restrict data,
-				size_t len, size_t used,
-				gboolean longhdr,
+void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const GIsiMessage *msg,
+			size_t used);
+void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const GIsiMessage *msg,
+				size_t used, gboolean longhdr,
 				uint16_t sub_blocks);
 gboolean g_isi_sb_iter_is_valid(const GIsiSubBlockIter *iter);
 

@@ -45,10 +45,13 @@ static inline void bcd_to_mccmnc(const uint8_t *restrict bcd,
 	mnc[3] = '\0';
 }
 
-void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const void *restrict data,
-				size_t len, size_t used, gboolean longhdr,
+void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const GIsiMessage *msg,
+				size_t used, gboolean longhdr,
 				uint16_t sub_blocks)
 {
+	const uint8_t *data = g_isi_msg_data(msg);
+	size_t len = g_isi_msg_data_len(msg);
+
 	if (!data)
 		len = used = 0;
 
@@ -58,9 +61,12 @@ void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const void *restrict data,
 	iter->sub_blocks = len > used ? sub_blocks : 0;
 }
 
-void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const void *restrict data,
-			size_t len, size_t used)
+void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const GIsiMessage *msg,
+			size_t used)
 {
+	const uint8_t *data = g_isi_msg_data(msg);
+	size_t len = g_isi_msg_data_len(msg);
+
 	if (!data)
 		len = used = 0;
 
@@ -107,6 +113,7 @@ gboolean g_isi_sb_iter_get_data(const GIsiSubBlockIter *restrict iter,
 	if ((size_t)pos > g_isi_sb_iter_get_len(iter)
 		|| iter->start + pos > iter->end)
 		return FALSE;
+
 	*data = (void *)iter->start + pos;
 	return TRUE;
 }
@@ -117,6 +124,7 @@ gboolean g_isi_sb_iter_get_byte(const GIsiSubBlockIter *restrict iter,
 	if ((size_t)pos > g_isi_sb_iter_get_len(iter)
 		|| iter->start + pos > iter->end)
 		return FALSE;
+
 	*byte = iter->start[pos];
 	return TRUE;
 }
