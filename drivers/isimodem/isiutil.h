@@ -58,4 +58,11 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 		f(&e, ##args);				\
 	} while (0)
 
+#define ISI_VERSION_DBG(msg)					\
+	DBG("QSO: %s [0x%02X] v%03d.%03d",			\
+		pn_resource_name(g_isi_msg_resource((msg))),	\
+		g_isi_msg_resource((msg)),			\
+		g_isi_msg_version_major((msg)),			\
+		g_isi_msg_version_minor((msg)));
+
 #endif /* !__ISIMODEM_UTIL_H */
