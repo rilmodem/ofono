@@ -29,7 +29,9 @@
 #include <errno.h>
 
 #include <glib.h>
+#include <gisi/modem.h>
 #include <gisi/server.h>
+#include <gisi/message.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/log.h>
@@ -43,83 +45,101 @@ struct isi_infoserver {
 	unsigned sv;	/* Software version in 0..98 */
 };
 
-static gboolean serial_number_read_req(GIsiServer *server, void const *data,
-					size_t len, GIsiIncoming *irq,
-					void *opaque)
+static GIsiVersion isiversion = {
+	.major = 0,
+	.minor = 0,
+};
+
+static void send_error(GIsiServer *server, const GIsiMessage *req, uint8_t code)
 {
-	struct isi_infoserver *self = opaque;
-	struct {
-		uint8_t mid;
-		uint8_t target;
-	} const *req = data;
+	const uint8_t error[] = {
+		INFO_SERIAL_NUMBER_READ_RESP,
+		code,
+		0
+	};
 
-	/* IMEISV defined in 3GPP TS 23.003 section 6.2.2 */
+	g_isi_server_send(server, req, error, sizeof(error));
+}
 
-	if (req->target == INFO_SB_SN_IMEI_SV_TO_NET) {
-		const uint8_t response[] = {
-			INFO_SERIAL_NUMBER_READ_RESP, INFO_OK, 1,
-			INFO_SB_SN_IMEI_SV_TO_NET, 16,
-			/* Mobile Identity IE, TS 24.008 section 10.5.1.4 */
-			0, 9,
-			/* F in place of IMEI digits and filler */
-			0xf3, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			0x0f | ((self->sv / 10) << 4),
-			0xf0 | ((self->sv % 10) & 0x0f),
+static void send_response(GIsiServer *server, const GIsiMessage *req,
+				unsigned sv)
+{
+	const uint8_t resp[] = {
+		INFO_SERIAL_NUMBER_READ_RESP, INFO_OK, 1,
+		INFO_SB_SN_IMEI_SV_TO_NET, 16,
+		/* Mobile Identity IE, TS 24.008 section 10.5.1.4 */
+		0, 9,
+		/* F in place of IMEI digits and filler */
+		0xf3, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		0x0f | ((sv / 10) << 4),
+		0xf0 | ((sv % 10) & 0x0f),
+		/* Subblock filler */
+		0, 0, 0,
+	};
 
-			/* Subblock filler */
-			0, 0, 0
-		};
+	g_isi_server_send(server, req, resp, sizeof(resp));
+}
 
-		DBG("Sending IMEI SV code %02u to modem", self->sv);
-		g_isi_respond(server, response, sizeof response, irq);
+static void serial_number_read_req(const GIsiMessage *msg, void *data)
+{
+	struct isi_infoserver *self = data;
+	uint8_t target;
 
-	} else {
-		const uint8_t error[] = {
-			INFO_SERIAL_NUMBER_READ_RESP,
-			INFO_NOT_SUPPORTED,
-			0
-		};
+	if (g_isi_msg_id(msg) != INFO_SERIAL_NUMBER_READ_REQ)
+		return;
 
-		DBG("Unknown target 0x%02X", req->target);
-		g_isi_respond(server, error, sizeof error, irq);
+	if (!g_isi_msg_data_get_byte(msg, 0, &target)) {
+		send_error(self->server, msg, INFO_FAIL);
+		return;
 	}
 
-	return TRUE;
+	if (target == INFO_SB_SN_IMEI_SV_TO_NET) {
+		/* IMEISV defined in 3GPP TS 23.003 section 6.2.2 */
+		send_response(self->server, msg, self->sv);
+		return;
+	}
+
+	DBG("Unknown query target 0x%02X", target);
+	send_error(self->server, msg, INFO_NOT_SUPPORTED);
 }
 
 struct isi_infoserver *isi_infoserver_create(struct ofono_modem *modem,
 						void *data)
 {
 	struct isi_infoserver *self;
+	GIsiModem *isimodem = data;
 
-	self = g_new0(struct isi_infoserver, 1);
-	if (self == NULL)
-		return NULL;
-
-	self->server = g_isi_server_create(data, PN_EPOC_INFO, 0, 0);
-	if (self->server == NULL) {
-		g_free(self);
+	if (!isimodem) {
+		errno = EINVAL;
 		return NULL;
 	}
 
-	g_isi_server_add_name(self->server);
+	self = g_try_new0(struct isi_infoserver, 1);
+	if (!self) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	self->server = g_isi_server_create(isimodem, PN_EPOC_INFO, &isiversion);
+	if (!self->server) {
+		g_free(self);
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	g_isi_server_handle(self->server,
 				INFO_SERIAL_NUMBER_READ_REQ,
 				serial_number_read_req,
 				self);
 
-	DBG("created %p", self);
-
 	return self;
 }
 
 void isi_infoserver_destroy(struct isi_infoserver *self)
 {
-	DBG("destroy %p", self);
+	if (!self)
+		return;
 
-	if (self) {
-		g_isi_server_destroy(self->server);
-		g_free(self);
-	}
+	g_isi_server_destroy(self->server);
+	g_free(self);
 }
