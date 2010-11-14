@@ -71,34 +71,14 @@
 
 #define SIZE_NLMSG (16384)
 
-struct _GPhonetNetlink {
-	GPhonetNetlinkFunc callback;
+struct _GIsiPhonetNetlink {
+	GIsiModem *modem;
+	GIsiPhonetNetlinkFunc callback;
 	void *opaque;
 	guint watch;
-	unsigned interface;
 };
 
-static inline GIsiModem *make_modem(unsigned idx)
-{
-	return (void *)(uintptr_t)idx;
-}
-
 static GSList *netlink_list;
-
-GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx)
-{
-	GSList *m;
-	unsigned index = g_isi_modem_index(idx);
-
-	for (m = netlink_list; m; m = m->next) {
-		GPhonetNetlink *self = m->data;
-
-		if (index == self->interface)
-			return self;
-	}
-
-	return NULL;
-}
 
 static void bring_up(unsigned ifindex)
 {
@@ -115,7 +95,7 @@ error:
 	close(fd);
 }
 
-static int netlink_socket(void)
+static int pn_netlink_socket(void)
 {
 	int fd;
 	int bufsize = SIZE_NLMSG;
@@ -133,7 +113,7 @@ static int netlink_socket(void)
 	return fd;
 }
 
-static void g_pn_nl_addr(GPhonetNetlink *self, struct nlmsghdr *nlh)
+static void pn_netlink_addr(GIsiPhonetNetlink *self, struct nlmsghdr *nlh)
 {
 	int len;
 	uint8_t local = 0xff;
@@ -149,7 +129,7 @@ static void g_pn_nl_addr(GPhonetNetlink *self, struct nlmsghdr *nlh)
 	if (ifa->ifa_family != AF_PHONET)
 		return;
 
-	if (ifa->ifa_index != self->interface)
+	if (ifa->ifa_index != g_isi_modem_index(self->modem))
 		return;
 
 	for (rta = IFA_RTA(ifa); RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
@@ -161,14 +141,14 @@ static void g_pn_nl_addr(GPhonetNetlink *self, struct nlmsghdr *nlh)
 	}
 }
 
-static void g_pn_nl_link(GPhonetNetlink *self, struct nlmsghdr *nlh)
+static void pn_netlink_link(GIsiPhonetNetlink *self, struct nlmsghdr *nlh)
 {
 	const struct ifinfomsg *ifi;
 	const struct rtattr *rta;
 	int len;
 	const char *ifname = NULL;
-	GIsiModem *idx = NULL;
-	GPhonetLinkState st;
+	GIsiPhonetLinkState st;
+	unsigned interface;
 
 	ifi = NLMSG_DATA(nlh);
 	len = IFA_PAYLOAD(nlh);
@@ -176,10 +156,9 @@ static void g_pn_nl_link(GPhonetNetlink *self, struct nlmsghdr *nlh)
 	if (ifi->ifi_type != ARPHRD_PHONET)
 		return;
 
-	if (self->interface != 0 && self->interface != (unsigned)ifi->ifi_index)
+	interface = g_isi_modem_index(self->modem);
+	if (interface != 0 && interface != (unsigned)ifi->ifi_index)
 		return;
-
-	idx = make_modem(ifi->ifi_index);
 
 #define UP (IFF_UP | IFF_LOWER_UP | IFF_RUNNING)
 
@@ -197,15 +176,15 @@ static void g_pn_nl_link(GPhonetNetlink *self, struct nlmsghdr *nlh)
 			ifname = RTA_DATA(rta);
 	}
 
-	if (ifname && idx)
-		self->callback(idx, st, ifname, self->opaque);
+	if (ifname && self->modem)
+		self->callback(self->modem, st, ifname, self->opaque);
 
 #undef UP
 }
 
 /* Parser Netlink messages */
-static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
-				gpointer data)
+static gboolean pn_netlink_process(GIOChannel *channel, GIOCondition cond,
+					gpointer data)
 {
 	struct {
 		struct nlmsghdr nlh;
@@ -216,7 +195,7 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 	ssize_t ret;
 	struct nlmsghdr *nlh;
 	int fd = g_io_channel_unix_get_fd(channel);
-	GPhonetNetlink *self = data;
+	GIsiPhonetNetlink *self = data;
 
 	if (cond & (G_IO_NVAL|G_IO_HUP))
 		return FALSE;
@@ -232,7 +211,8 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 	}
 
 	for (nlh = &resp.nlh; NLMSG_OK(nlh, (size_t)ret);
-						nlh = NLMSG_NEXT(nlh, ret)) {
+			nlh = NLMSG_NEXT(nlh, ret)) {
+
 		if (nlh->nlmsg_type == NLMSG_DONE)
 			break;
 
@@ -246,11 +226,11 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 		}
 		case RTM_NEWADDR:
 		case RTM_DELADDR:
-			g_pn_nl_addr(self, nlh);
+			pn_netlink_addr(self, nlh);
 			break;
 		case RTM_NEWLINK:
 		case RTM_DELLINK:
-			g_pn_nl_link(self, nlh);
+			pn_netlink_link(self, nlh);
 			break;
 		default:
 			continue;
@@ -260,7 +240,7 @@ static gboolean g_pn_nl_process(GIOChannel *channel, GIOCondition cond,
 }
 
 /* Dump current links */
-static int g_pn_netlink_getlink(int fd)
+static int pn_netlink_getlink(int fd)
 {
 	struct {
 		struct nlmsghdr nlh;
@@ -285,21 +265,35 @@ static int g_pn_netlink_getlink(int fd)
 		      (struct sockaddr *)&addr, sizeof(addr));
 }
 
-GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,
-				   GPhonetNetlinkFunc callback,
-				   void *data)
+GIsiPhonetNetlink *g_isi_pn_netlink_by_modem(GIsiModem *modem)
+{
+	GSList *m;
+
+	for (m = netlink_list; m; m = m->next) {
+		GIsiPhonetNetlink *self = m->data;
+
+		if (g_isi_modem_index(modem) == g_isi_modem_index(self->modem))
+			return self;
+	}
+
+	return NULL;
+}
+
+GIsiPhonetNetlink *g_isi_pn_netlink_start(GIsiModem *modem,
+						GIsiPhonetNetlinkFunc cb,
+						void *data)
 {
 	GIOChannel *chan;
-	GPhonetNetlink *self;
+	GIsiPhonetNetlink *self;
 	int fd;
 	unsigned group = RTNLGRP_LINK;
-	unsigned interface = g_isi_modem_index(idx);
+	unsigned interface;
 
-	fd = netlink_socket();
+	fd = pn_netlink_socket();
 	if (fd == -1)
 		return NULL;
 
-	self = calloc(1, sizeof(*self));
+	self = g_try_new0(GIsiPhonetNetlink, 1);
 	if (self == NULL)
 		goto error;
 
@@ -309,23 +303,25 @@ GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,
 		       &group, sizeof(group)))
 		goto error;
 
+	interface = g_isi_modem_index(modem);
 	if (interface)
 		bring_up(interface);
 
-	g_pn_netlink_getlink(fd);
+	pn_netlink_getlink(fd);
 
 	chan = g_io_channel_unix_new(fd);
 	if (chan == NULL)
 		goto error;
+
 	g_io_channel_set_close_on_unref(chan, TRUE);
 	g_io_channel_set_encoding(chan, NULL, NULL);
 	g_io_channel_set_buffered(chan, FALSE);
 
-	self->callback = callback;
+	self->callback = cb;
 	self->opaque = data;
-	self->interface = interface;
+	self->modem = modem;
 	self->watch = g_io_add_watch(chan, G_IO_IN|G_IO_ERR|G_IO_HUP,
-					g_pn_nl_process, self);
+					pn_netlink_process, self);
 	g_io_channel_unref(chan);
 
 	netlink_list = g_slist_prepend(netlink_list, self);
@@ -338,16 +334,16 @@ error:
 	return NULL;
 }
 
-void g_pn_netlink_stop(GPhonetNetlink *self)
+void g_isi_pn_netlink_stop(GIsiPhonetNetlink *self)
 {
 	if (self) {
 		netlink_list = g_slist_remove(netlink_list, self);
 		g_source_remove(self->watch);
-		free(self);
+		g_free(self);
 	}
 }
 
-static int netlink_getack(int fd)
+static int pn_netlink_getack(int fd)
 {
 	struct {
 		struct nlmsghdr nlh;
@@ -380,7 +376,7 @@ static int netlink_getack(int fd)
 }
 
 /* Set local address */
-static int netlink_setaddr(uint32_t ifa_index, uint8_t ifa_local)
+static int pn_netlink_setaddr(uint32_t ifa_index, uint8_t ifa_local)
 {
 	struct ifaddrmsg *ifa;
 	struct rtattr *rta;
@@ -411,23 +407,23 @@ static int netlink_setaddr(uint32_t ifa_index, uint8_t ifa_local)
 	rta->rta_len = RTA_LENGTH(1);
 	*(uint8_t *)RTA_DATA(rta) = ifa_local;
 
-	fd = netlink_socket();
+	fd = pn_netlink_socket();
 	if (fd == -1)
 		return -errno;
 
 	if (sendto(fd, &req, reqlen, 0, (void *)&addr, sizeof(addr)) == -1)
 		error = -errno;
 	else
-		error = netlink_getack(fd);
+		error = pn_netlink_getack(fd);
 
 	close(fd);
 
 	return error;
 }
 
-int g_pn_netlink_set_address(GIsiModem *idx, uint8_t local)
+int g_isi_pn_netlink_set_address(GIsiModem *modem, uint8_t local)
 {
-	uint32_t ifindex = g_isi_modem_index(idx);
+	uint32_t ifindex = g_isi_modem_index(modem);
 
 	if (ifindex == 0)
 		return -ENODEV;
@@ -435,5 +431,5 @@ int g_pn_netlink_set_address(GIsiModem *idx, uint8_t local)
 	if (local != PN_DEV_PC && local != PN_DEV_SOS)
 		return -EINVAL;
 
-	return netlink_setaddr(ifindex, local);
+	return pn_netlink_setaddr(ifindex, local);
 }

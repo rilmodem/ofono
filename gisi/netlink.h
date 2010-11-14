@@ -22,45 +22,42 @@
 #include <stdint.h>
 #include <gisi/modem.h>
 
-#ifndef __GPHONET_NETLINK_H
-#define __GPHONET_NETLINK_H
+#ifndef __GISI_PN_NETLINK_H
+#define __GISI_PN_NETLINK_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct _GPhonetNetlink;
-typedef struct _GPhonetNetlink GPhonetNetlink;
+struct _GIsiPhonetNetlink;
+typedef struct _GIsiPhonetNetlink GIsiPhonetNetlink;
 
 typedef enum {
 	PN_LINK_REMOVED,
 	PN_LINK_DOWN,
 	PN_LINK_UP
-} GPhonetLinkState;
+} GIsiPhonetLinkState;
 
-enum {
+typedef enum {
 	PN_DEV_PC = 0x10,	/* PC Suite */
 	PN_DEV_HOST = 0x00,	/* Modem */
 	PN_DEV_SOS = 0x6C,	/* Symbian or Linux */
-};
+} GIsiPhonetDevice;
 
-typedef void (*GPhonetNetlinkFunc)(GIsiModem *idx,
-			GPhonetLinkState st,
-			char const *iface,
-			void *data);
+typedef void (*GIsiPhonetNetlinkFunc)(GIsiModem *modem, GIsiPhonetLinkState st,
+					char const *iface, void *data);
 
-GPhonetNetlink *g_pn_netlink_by_modem(GIsiModem *idx);
+GIsiPhonetNetlink *g_isi_pn_netlink_by_modem(GIsiModem *modem);
 
-GPhonetNetlink *g_pn_netlink_start(GIsiModem *idx,
-			GPhonetNetlinkFunc callback,
-			void *data);
+GIsiPhonetNetlink *g_isi_pn_netlink_start(GIsiModem *idx,
+						GIsiPhonetNetlinkFunc cb,
+						void *data);
 
-void g_pn_netlink_stop(GPhonetNetlink *self);
-
-int g_pn_netlink_set_address(GIsiModem *, uint8_t local);
+void g_isi_pn_netlink_stop(GIsiPhonetNetlink *self);
+int g_isi_pn_netlink_set_address(GIsiModem *modem, uint8_t local);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __GPHONET_NETLINK_H */
+#endif /* __GISI_PN_NETLINK_H */
