@@ -35,8 +35,11 @@
 #include <ofono/modem.h>
 #include <ofono/audio-settings.h>
 
+#include <gisi/modem.h>
 #include <gisi/client.h>
+#include <gisi/message.h>
 
+#include "isiutil.h"
 #include "isimodem.h"
 #include "call.h"
 #include "debug.h"
@@ -45,72 +48,48 @@ struct audio_settings_data {
 	GIsiClient *client;
 };
 
-static void isi_call_server_status_ind_cb(GIsiClient *client,
-			void const *restrict data,
-			size_t len,
-			uint16_t object,
-			void *_oas)
+static void isi_call_server_status_ind_cb(const GIsiMessage *msg, void *data)
 {
-	struct ofono_audio_settings *oas = _oas;
-	struct {
-		uint8_t message_id, server_status, sub_blocks;
-	} const *m = data;
-	gboolean call_server_status;
+	struct ofono_audio_settings *oas = data;
+	uint8_t status;
 
-	DBG("Call server status changed");
-
-	if (len < 3)
+	if (g_isi_msg_id(msg) != CALL_SERVER_STATUS_IND)
 		return;
 
-	call_server_status = m->server_status & 0xf ? TRUE : FALSE;
-	ofono_audio_settings_active_notify(oas, call_server_status);
-}
-
-static gboolean isi_call_register(gpointer _oas)
-{
-	struct ofono_audio_settings *oas = _oas;
-	struct audio_settings_data *asd = ofono_audio_settings_get_data(oas);
-	const char *debug = getenv("OFONO_ISI_DEBUG");
-
-	if (debug && (strcmp(debug, "all") == 0) == 0)
-		g_isi_client_set_debug(asd->client, call_debug, NULL);
-
-	g_isi_subscribe(asd->client,
-			CALL_SERVER_STATUS_IND, isi_call_server_status_ind_cb,
-			oas);
-
-	ofono_audio_settings_register(oas);
-
-	return FALSE;
-}
-
-static void isi_call_verify_cb(GIsiClient *client,
-				gboolean alive, uint16_t object, void *ovc)
-{
-	if (!alive) {
-		DBG("Unable to bootstrap audio settings driver");
+	if (!g_isi_msg_data_get_byte(msg, 0, &status))
 		return;
-	}
 
-	DBG("%s (v%03d.%03d) reachable",
-		pn_resource_name(g_isi_client_resource(client)),
-		g_isi_version_major(client),
-		g_isi_version_minor(client));
+	ofono_audio_settings_active_notify(oas, status ? TRUE : FALSE);
+}
 
-	g_idle_add(isi_call_register, ovc);
+static void isi_call_verify_cb(const GIsiMessage *msg, void *data)
+{
+	struct ofono_audio_settings *as = data;
+	struct audio_settings_data *asd = ofono_audio_settings_get_data(as);
+
+	if (g_isi_msg_error(msg) < 0)
+		return;
+
+	ISI_VERSION_DBG(msg);
+
+	g_isi_client_ind_subscribe(asd->client, CALL_SERVER_STATUS_IND,
+					isi_call_server_status_ind_cb,
+					as);
+
+	ofono_audio_settings_register(as);
 }
 
 static int isi_audio_settings_probe(struct ofono_audio_settings *as,
 					unsigned int vendor, void *data)
 {
-	GIsiModem *idx = data;
-	struct audio_settings_data *asd =
-		g_try_new0(struct audio_settings_data, 1);
+	GIsiModem *modem = data;
+	struct audio_settings_data *asd;
 
+	asd = g_try_new0(struct audio_settings_data, 1);
 	if (asd == NULL)
 		return -ENOMEM;
 
-	asd->client = g_isi_client_create(idx, PN_CALL);
+	asd->client = g_isi_client_create(modem, PN_CALL);
 	if (asd->client == NULL) {
 		g_free(asd);
 		return -ENOMEM;
@@ -118,8 +97,7 @@ static int isi_audio_settings_probe(struct ofono_audio_settings *as,
 
 	ofono_audio_settings_set_data(as, asd);
 
-	if (!g_isi_verify(asd->client, isi_call_verify_cb, as))
-		DBG("Unable to verify reachability");
+	g_isi_client_verify(asd->client, isi_call_verify_cb, as, NULL);
 
 	return 0;
 }
@@ -128,10 +106,11 @@ static void isi_audio_settings_remove(struct ofono_audio_settings *as)
 {
 	struct audio_settings_data *asd = ofono_audio_settings_get_data(as);
 
+	ofono_audio_settings_set_data(as, NULL);
+
 	if (asd == NULL)
 		return;
 
-	ofono_audio_settings_set_data(as, NULL);
 	g_isi_client_destroy(asd->client);
 	g_free(asd);
 }
