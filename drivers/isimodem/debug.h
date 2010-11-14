@@ -22,6 +22,8 @@
 #ifndef __ISIMODEM_DEBUG_H
 #define __ISIMODEM_DEBUG_H
 
+#include <gisi/message.h>
+
 #include "ss.h"
 #include "mtc.h"
 #include "sms.h"
@@ -74,15 +76,7 @@ const char *gpds_isi_cause_name(enum gpds_isi_cause value);
 const char *gpds_transfer_status_name(enum gpds_transfer_status value);
 const char *gpds_transfer_cause_name(enum gpds_transfer_cause value);
 
-void ss_debug(const void *restrict buf, size_t len, void *data);
-void mtc_debug(const void *restrict buf, size_t len, void *data);
-void sms_debug(const void *restrict buf, size_t len, void *data);
-void sim_debug(const void *restrict buf, size_t len, void *data);
-void info_debug(const void *restrict buf, size_t len, void *data);
-void call_debug(const void *restrict buf, size_t len, void *data);
-void net_debug(const void *restrict buf, size_t len, void *data);
-void gss_debug(const void *restrict buf, size_t len, void *data);
-void gpds_debug(const void *restrict buf, size_t len, void *data);
+void isi_debug(const GIsiMessage *msg, void *data);
 
 const char *pn_resource_name(int value);
 
