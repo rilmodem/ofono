@@ -19,11 +19,26 @@
  *
  */
 
+#ifndef __GISI_PEP_H
+#define __GISI_PEP_H
+
+#include "modem.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _GIsiPEP GIsiPEP;
 typedef void (*GIsiPEPCallback)(GIsiPEP *pep, void *opaque);
 
-GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback, void *);
+GIsiPEP *g_isi_pep_create(GIsiModem *modem, GIsiPEPCallback cb, void *data);
 void g_isi_pep_destroy(GIsiPEP *pep);
 uint16_t g_isi_pep_get_object(const GIsiPEP *pep);
 unsigned g_isi_pep_get_ifindex(const GIsiPEP *pep);
 char *g_isi_pep_get_ifname(const GIsiPEP *pep, char *ifname);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __GISI_PEP_H */
