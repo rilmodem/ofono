@@ -30,33 +30,32 @@
 #include <unistd.h>
 #include <net/if.h>
 #include <fcntl.h>
-#include "modem.h"
-#include "phonet.h"
 #include <glib.h>
 
+#include "phonet.h"
 #include "socket.h"
 
-GIOChannel *phonet_new(GIsiModem *modem, uint8_t resource)
+GIOChannel *g_isi_phonet_new(unsigned ifindex)
 {
 	GIOChannel *channel;
 	struct sockaddr_pn addr = {
 		.spn_family = AF_PHONET,
-		.spn_resource = resource,
 	};
-	unsigned ifi = g_isi_modem_index(modem);
 	char buf[IF_NAMESIZE];
 
 	int fd = socket(PF_PHONET, SOCK_DGRAM, 0);
 	if (fd == -1)
 		return NULL;
+
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 	/* Use blocking mode on purpose. */
 
-	if (ifi == 0)
-		g_warning("Unspecified GIsiModem!");
-	else if (if_indextoname(ifi, buf) == NULL ||
+	if (ifindex == 0)
+		g_warning("Unspecified modem interface index");
+	else if (if_indextoname(ifindex, buf) == NULL ||
 		setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, buf, IF_NAMESIZE))
 		goto error;
+
 	if (bind(fd, (void *)&addr, sizeof(addr)))
 		goto error;
 
@@ -65,33 +64,30 @@ GIOChannel *phonet_new(GIsiModem *modem, uint8_t resource)
 	g_io_channel_set_encoding(channel, NULL, NULL);
 	g_io_channel_set_buffered(channel, FALSE);
 	return channel;
+
 error:
 	close(fd);
 	return NULL;
 }
 
-size_t phonet_peek_length(GIOChannel *channel)
+size_t g_isi_phonet_peek_length(GIOChannel *channel)
 {
 	int len;
 	int fd = g_io_channel_unix_get_fd(channel);
+
 	return ioctl(fd, FIONREAD, &len) ? 0 : len;
 }
 
-ssize_t phonet_read(GIOChannel *channel, void *restrict buf, size_t len,
-			uint16_t *restrict obj, uint8_t *restrict res)
+ssize_t g_isi_phonet_read(GIOChannel *channel, void *restrict buf, size_t len,
+				struct sockaddr_pn *addr)
 {
-	struct sockaddr_pn addr;
-	socklen_t addrlen = sizeof(addr);
+	socklen_t addrlen = sizeof(struct sockaddr_pn);
 	ssize_t ret;
 
 	ret = recvfrom(g_io_channel_unix_get_fd(channel), buf, len,
-			MSG_DONTWAIT, (void *)&addr, &addrlen);
+			MSG_DONTWAIT, (void *)addr, &addrlen);
 	if (ret == -1)
 		return -1;
 
-	if (obj != NULL)
-		*obj = (addr.spn_dev << 8) | addr.spn_obj;
-	if (res != NULL)
-		*res = addr.spn_resource;
 	return ret;
 }
