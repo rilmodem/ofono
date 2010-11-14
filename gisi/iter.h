@@ -64,6 +64,8 @@ gboolean g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
 					char **utf8, size_t len, unsigned pos);
 gboolean g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
 					char **ascii, size_t len, unsigned pos);
+gboolean g_isi_sb_iter_get_struct(const GIsiSubBlockIter *restrict iter,
+					void **ptr, size_t len, unsigned pos);
 
 #ifdef __cplusplus
 }

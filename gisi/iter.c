@@ -223,3 +223,12 @@ gboolean g_isi_sb_iter_next(GIsiSubBlockIter *iter)
 
 	return TRUE;
 }
+
+gboolean g_isi_sb_iter_get_struct(const GIsiSubBlockIter *restrict iter,
+					void **type, size_t len, unsigned pos)
+{
+	if (iter->start + pos + len > iter->end)
+		return FALSE;
+
+	return g_isi_sb_iter_get_data(iter, type, pos);
+}
