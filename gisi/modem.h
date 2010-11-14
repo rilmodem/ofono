@@ -23,22 +23,87 @@
 #define __GISI_MODEM_H
 
 #include <stdint.h>
+#include <glib/gtypes.h>
+
+#include "phonet.h"
+#include "message.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void (*GIsiDebugFunc) (const void *restrict data, size_t len,
-		void *opaque);
-
+struct _GIsiModem;
 typedef struct _GIsiModem GIsiModem;
 
-static inline unsigned g_isi_modem_index(GIsiModem *m)
-{
-	return (uintptr_t)m;
-}
+struct _GIsiPending;
+typedef struct _GIsiPending GIsiPending;
 
-GIsiModem *g_isi_modem_by_name(const char *name);
+typedef void (*GIsiNotifyFunc)(const GIsiMessage *msg, void *opaque);
+
+GIsiModem *g_isi_modem_create(unsigned index);
+GIsiModem *g_isi_modem_create_by_name(const char *name);
+void g_isi_modem_destroy(GIsiModem *modem);
+unsigned g_isi_modem_index(GIsiModem *modem);
+void g_isi_modem_set_debug(GIsiModem *modem, GIsiNotifyFunc notify,
+				void *opaque);
+
+GIsiPending *g_isi_request_send(GIsiModem *modem, uint8_t resource,
+					const void *__restrict buf, size_t len,
+					unsigned timeout, GIsiNotifyFunc notify,
+					void *data, GDestroyNotify destroy);
+
+GIsiPending *g_isi_request_vsend(GIsiModem *modem, uint8_t resource,
+					const struct iovec *__restrict iov,
+					size_t iovlen, unsigned timeout,
+					GIsiNotifyFunc notify, void *data,
+					GDestroyNotify destroy);
+
+GIsiPending *g_isi_request_sendto(GIsiModem *modem, struct sockaddr_pn *dst,
+					const void *__restrict buf, size_t len,
+					unsigned timeout, GIsiNotifyFunc notify,
+					void *data, GDestroyNotify destroy);
+
+GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
+					const struct iovec *__restrict iov,
+					size_t iovlen, unsigned timeout,
+					GIsiNotifyFunc notify, void *data,
+					GDestroyNotify destroy);
+
+int g_isi_modem_sendto(GIsiModem *modem, struct sockaddr_pn *dst,
+			const void *__restrict buf, size_t len);
+
+int g_isi_modem_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
+				const struct iovec *__restrict iov,
+				size_t iovlen);
+
+uint8_t g_isi_request_utid(GIsiPending *resp);
+
+GIsiPending *g_isi_ind_subscribe(GIsiModem *modem, uint8_t resource,
+					uint8_t type, GIsiNotifyFunc notify,
+					void *data, GDestroyNotify destroy);
+
+GIsiPending *g_isi_ntf_subscribe(GIsiModem *modem, uint8_t resource,
+					uint8_t type, GIsiNotifyFunc notify,
+					void *data, GDestroyNotify destroy);
+
+GIsiPending *g_isi_service_bind(GIsiModem *modem, uint8_t resource,
+				uint8_t type, GIsiNotifyFunc notify,
+				void *data, GDestroyNotify destroy);
+
+int g_isi_response_send(GIsiModem *modem, const GIsiMessage *req,
+			const void *__restrict buf, size_t len);
+
+int g_isi_response_vsend(GIsiModem *modem, const GIsiMessage *req,
+				const struct iovec *__restrict iov,
+				size_t iovlen);
+
+GIsiPending *g_isi_pending_from_msg(const GIsiMessage *msg);
+
+void g_isi_pending_remove(GIsiPending *operation);
+
+GIsiPending *g_isi_resource_ping(GIsiModem *modem, uint8_t resource,
+					GIsiNotifyFunc notify, void *data,
+					GDestroyNotify destroy);
 
 #ifdef __cplusplus
 }
