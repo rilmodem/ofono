@@ -27,42 +27,28 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <gisi/modem.h>
+#include <sys/uio.h>
+
+#include "message.h"
+#include "modem.h"
 
 struct _GIsiServer;
 typedef struct _GIsiServer GIsiServer;
 
-struct _GIsiIncoming;
-typedef struct _GIsiIncoming GIsiIncoming;
-
-typedef gboolean (*GIsiRequestFunc)(GIsiServer *server,
-					const void *restrict data, size_t len,
-					GIsiIncoming *, void *opaque);
-
 GIsiServer *g_isi_server_create(GIsiModem *modem, uint8_t resource,
-				uint8_t major, uint8_t minor);
-
+				GIsiVersion *version);
 uint8_t g_isi_server_resource(GIsiServer *server);
-
-void g_isi_server_set_debug(GIsiServer *server, GIsiDebugFunc func,
-				void *opaque);
-
+GIsiModem *g_isi_server_modem(GIsiServer *server);
 void g_isi_server_destroy(GIsiServer *server);
 
-void g_isi_server_add_name(GIsiServer *self);
+int g_isi_server_send(GIsiServer *server, const GIsiMessage *req,
+			const void *__restrict data, size_t len);
 
-int g_isi_respond(GIsiServer *server, const void *data, size_t len,
-			GIsiIncoming *irq);
+int g_isi_server_vsend(GIsiServer *server, const GIsiMessage *req,
+			const struct iovec *iov, size_t iovlen);
 
-struct iovec;
-
-int g_isi_vrespond(GIsiServer *server, const struct iovec *iov,
-			size_t iovlen, GIsiIncoming *irq);
-
-int g_isi_server_handle(GIsiServer *server, uint8_t type,
-			GIsiRequestFunc func, void *opaque);
-
-void g_isi_server_unhandle(GIsiServer *server, uint8_t type);
+GIsiPending *g_isi_server_handle(GIsiServer *server, uint8_t type,
+					GIsiNotifyFunc notify, void *data);
 
 #ifdef __cplusplus
 }
