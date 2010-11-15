@@ -280,6 +280,7 @@ const char *sms_subblock_name(enum sms_subblock value)
 		_(SMS_GSM_DELIVER_REPORT);
 		_(SMS_GSM_REPORT);
 		_(SMS_GSM_ROUTING);
+		_(SMS_GSM_CB_MESSAGE);
 		_(SMS_GSM_TPDU);
 		_(SMS_COMMON_DATA);
 		_(SMS_ADDRESS);
