@@ -40,10 +40,10 @@
 #include "socket.h"
 
 struct _GIsiServiceMux {
-	uint8_t resource;
-	GIsiVersion version;
 	GIsiModem *modem;
 	GSList *pending;
+	GIsiVersion version;
+	uint8_t resource;
 	uint8_t last_utid;
 	unsigned subscriptions;
 	unsigned registrations;
@@ -55,7 +55,7 @@ typedef struct _GIsiServiceMux GIsiServiceMux;
 struct _GIsiModem {
 	unsigned index;
 	GHashTable *services;
-	gboolean subs_pending;
+	gboolean subs_source;
 	int req_fd;
 	int ind_fd;
 	guint req_watch;
@@ -85,22 +85,14 @@ static const struct sockaddr_pn commgr = {
 	.spn_resource = PN_COMMGR,
 };
 
-static unsigned *g_keydup(unsigned key)
-{
-	unsigned *tmp = g_try_new0(unsigned, 1);
-	if (!tmp)
-		return NULL;
-
-	*tmp = key;
-	return tmp;
-}
+static void service_finalize(gpointer value);
 
 static GIsiServiceMux *service_get(GIsiModem *modem, uint8_t resource)
 {
 	GIsiServiceMux *mux;
-	unsigned key = resource;
+	int key = resource;
 
-	mux = g_hash_table_lookup(modem->services, &key);
+	mux = g_hash_table_lookup(modem->services, GINT_TO_POINTER(key));
 	if (mux)
 		return mux;
 
@@ -108,7 +100,7 @@ static GIsiServiceMux *service_get(GIsiModem *modem, uint8_t resource)
 	if (!mux)
 		return NULL;
 
-	g_hash_table_insert(modem->services, g_keydup(key), mux);
+	g_hash_table_insert(modem->services, GINT_TO_POINTER(key), mux);
 
 	mux->modem = modem;
 	mux->resource = resource;
@@ -159,7 +151,7 @@ static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg,
 		 * ignoring the msgid.  A RESP also completes a transaction,
 		 * so it needs to be removed after being notified of.
 		 *
-		 * Version query responses aredispatched in a similar fashion
+		 * Version query responses are dispatched in a similar fashion
 		 * as RESPs, but based on the pending type and the message ID.
 		 * Some of these may be synthesized, but nevertheless need to
 		 * be removed.
@@ -265,7 +257,7 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 			modem->debug(&msg, modem->ddata);
 
 		key = addr.spn_resource;
-		mux = g_hash_table_lookup(modem->services, &key);
+		mux = g_hash_table_lookup(modem->services, GINT_TO_POINTER(key));
 		if (!mux)
 			return TRUE;
 
@@ -321,8 +313,8 @@ GIsiModem *g_isi_modem_create(unsigned index)
 	g_io_channel_unref(inds);
 
 	modem->index = index;
-	modem->services = g_hash_table_new_full(g_int_hash, g_int_equal,
-						g_free, NULL);
+	modem->services = g_hash_table_new_full(g_direct_hash, NULL,
+						NULL, service_finalize);
 
 	return modem;
 }
@@ -378,6 +370,8 @@ static gboolean modem_subs_update(gpointer data)
 	};
 	uint8_t count = 0;
 
+	modem->subs_source = 0;
+
 	g_hash_table_iter_init(&iter, modem->services);
 
 	while (g_hash_table_iter_next(&iter, &keyptr, &value)) {
@@ -393,9 +387,16 @@ static gboolean modem_subs_update(gpointer data)
 	sendto(modem->ind_fd, msg, 3 + msg[2], MSG_NOSIGNAL, (void *)&commgr,
 		sizeof(commgr));
 
-	modem->subs_pending = FALSE;
-
 	return FALSE;
+}
+
+
+static void modem_subs_update_when_idle(GIsiModem *modem)
+{
+	if (modem->subs_source > 0)
+		return;
+
+	modem->subs_source = g_idle_add(modem_subs_update, modem);
 }
 
 static uint8_t service_next_utid(GIsiServiceMux *mux)
@@ -412,10 +413,8 @@ static void service_subs_incr(GIsiServiceMux *mux)
 
 	mux->subscriptions++;
 
-	if (mux->subscriptions == 1 && !modem->subs_pending) {
-		g_idle_add(modem_subs_update, modem);
-		modem->subs_pending = TRUE;
-	}
+	if (mux->subscriptions == 1)
+		modem_subs_update_when_idle(modem);
 }
 
 static void service_subs_decr(GIsiServiceMux *mux)
@@ -427,10 +426,8 @@ static void service_subs_decr(GIsiServiceMux *mux)
 
 	mux->subscriptions--;
 
-	if (mux->subscriptions == 0 && !modem->subs_pending) {
-		g_idle_add(modem_subs_update, modem);
-		modem->subs_pending = TRUE;
-	}
+	if (mux->subscriptions == 0)
+		modem_subs_update_when_idle(modem);
 }
 
 static void service_regs_incr(GIsiServiceMux *mux)
@@ -468,19 +465,13 @@ static void pending_destroy(gpointer value, gpointer user)
 	g_free(op);
 }
 
-static gboolean service_finalize(gpointer key, gpointer value, gpointer user)
+static void service_finalize(gpointer value)
 {
 	GIsiServiceMux *mux = value;
-	GIsiModem *modem = user;
+	GIsiModem *modem = mux->modem;
 
-	if (mux->subscriptions > 0) {
-		mux->subscriptions = 0;
-
-		if (!modem->subs_pending) {
-			g_idle_add(modem_subs_update, modem);
-			modem->subs_pending = TRUE;
-		}
-	}
+	if (mux->subscriptions > 0)
+		modem_subs_update_when_idle(modem);
 
 	if (mux->registrations > 0)
 		service_name_deregister(mux);
@@ -488,8 +479,6 @@ static gboolean service_finalize(gpointer key, gpointer value, gpointer user)
 	g_slist_foreach(mux->pending, pending_destroy, NULL);
 	g_slist_free(mux->pending);
 	g_free(mux);
-
-	return TRUE;
 }
 
 void g_isi_modem_destroy(GIsiModem *modem)
@@ -497,7 +486,13 @@ void g_isi_modem_destroy(GIsiModem *modem)
 	if (!modem)
 		return;
 
-	g_hash_table_foreach_remove(modem->services, service_finalize, modem);
+	g_hash_table_remove_all(modem->services);
+
+	if (modem->subs_source > 0) {
+		g_source_remove(modem->subs_source);
+		modem_subs_update(modem);
+	}
+
 	g_hash_table_unref(modem->services);
 
 	if (modem->ind_watch)
