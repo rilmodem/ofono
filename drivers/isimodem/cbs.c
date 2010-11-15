@@ -33,6 +33,8 @@
 #include <glib.h>
 
 #include <gisi/client.h>
+#include <gisi/message.h>
+#include <gisi/iter.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
@@ -46,6 +48,46 @@
 struct cbs_data {
 	GIsiClient *client;
 };
+
+struct cbs_info {
+	uint8_t pdu[88];
+};
+
+static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid)
+{
+	uint8_t cause;
+	uint8_t reason;
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
+		return FALSE;
+	}
+
+	if (g_isi_msg_id(msg) != msgid) {
+		DBG("Unexpected msg: %s",
+			sms_message_id_name(g_isi_msg_id(msg)));
+		return FALSE;
+	}
+
+	if (!g_isi_msg_data_get_byte(msg, 0, &cause))
+		return FALSE;
+
+	if (cause == SMS_OK)
+		return TRUE;
+
+	if (!g_isi_msg_data_get_byte(msg, 1, &reason))
+		return FALSE;
+
+	if (reason == SMS_ERR_PP_RESERVED) {
+		DBG("Request failed: 0x%02"PRIx8" (%s).\n\n  Unable to "
+			"bootstrap CBS routing.\n  It appears some other "
+			"component is already\n  registered as the CBS "
+			"routing endpoint.\n  As a consequence, "
+			"receiving CBSs is not going to work.\n\n",
+			reason, sms_isi_cause_name(reason));
+	}
+	return FALSE;
+}
 
 static void isi_set_topics(struct ofono_cbs *cbs, const char *topics,
 				ofono_cbs_set_cb_t cb, void *data)
@@ -61,69 +103,52 @@ static void isi_clear_topics(struct ofono_cbs *cbs,
 	CALLBACK_WITH_SUCCESS(cb, data);
 }
 
-static void routing_ntf_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void routing_ntf_cb(const GIsiMessage *msg, void *data)
 {
-	const unsigned char *msg = data;
-	struct ofono_cbs *cbs = opaque;
+	struct ofono_cbs *cbs = data;
+	struct cbs_info *info;
+	size_t len = sizeof(struct cbs_info);
+	GIsiSubBlockIter iter;
 
-	if (!msg || len < 3 || msg[0] != SMS_GSM_CB_ROUTING_NTF)
+	if (!check_response_status(msg, SMS_GSM_CB_ROUTING_NTF))
 		return;
 
-	/* Skipping header(s) */
-	msg += 5;
-	len -= 5;
+	for (g_isi_sb_iter_init(&iter, msg, 2);
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
 
-	/*
-	 * The next 88 bytes of the sub-block are the actual CBS PDU,
-	 * followed by an informational data length field, and filler.
-	 */
-	ofono_cbs_notify(cbs, msg, len - 2);
+		if (g_isi_sb_iter_get_id(&iter) != SMS_GSM_CB_MESSAGE)
+			continue;
+
+		if (!g_isi_sb_iter_get_struct(&iter, (void *)&info, len, 2))
+			return;
+
+		ofono_cbs_notify(cbs, info->pdu, len);
+		return;
+	}
 }
 
-static gboolean routing_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void routing_resp_cb(const GIsiMessage *msg, void *data)
 {
-	const unsigned char *msg = data;
-	struct ofono_cbs *cbs = opaque;
+	struct ofono_cbs *cbs = data;
+	struct cbs_data *cd = ofono_cbs_get_data(cbs);
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		return TRUE;
-	}
+	if (cd == NULL || !check_response_status(msg, SMS_GSM_CB_ROUTING_RESP))
+		return;
 
-	if (len < 3 || msg[0] != SMS_GSM_CB_ROUTING_RESP)
-		return FALSE;
-
-	if (msg[1] != SMS_OK) {
-		if (msg[1] == SMS_ERR_PP_RESERVED)
-			DBG("Request failed: 0x%02"PRIx8" (%s).\n\n  "
-				"Unable to bootstrap CBS routing.\n  "
-				"It appears some other component is "
-				"already\n  registered as the CBS "
-				"routing endpoint.\n  As a consequence, "
-				"receiving CBSs is NOT going to work.\n",
-				msg[1], sms_isi_cause_name(msg[1]));
-		return TRUE;
-	}
-
-	g_isi_subscribe(client, SMS_GSM_CB_ROUTING_NTF, routing_ntf_cb,
-			cbs);
+	g_isi_client_ntf_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF,
+					routing_ntf_cb, cbs);
 
 	ofono_cbs_register(cbs);
-	return TRUE;
 }
 
 static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 				void *user)
 {
-	GIsiModem *idx = user;
-	struct cbs_data *cd = g_try_new0(struct cbs_data, 1);
-	const char *debug = NULL;
+	GIsiModem *modem = user;
+	struct cbs_data *cd;
 
-	unsigned char msg[] = {
+	const uint8_t msg[] = {
 		SMS_GSM_CB_ROUTING_REQ,
 		SMS_ROUTING_SET,
 		SMS_GSM_ROUTING_MODE_ALL,
@@ -136,31 +161,30 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 		0x00   /* Languages */
 	};
 
+	cd = g_try_new0(struct cbs_data, 1);
 	if (cd == NULL)
 		return -ENOMEM;
 
-	cd->client = g_isi_client_create(idx, PN_SMS);
-	if (cd->client == NULL)
+	cd->client = g_isi_client_create(modem, PN_SMS);
+	if (cd->client == NULL) {
+		g_free(cd);
 		return -ENOMEM;
+	}
 
 	ofono_cbs_set_data(cbs, cd);
 
-	debug = getenv("OFONO_ISI_DEBUG");
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "cbs") == 0))
-		g_isi_client_set_debug(cd->client, sms_debug, NULL);
-
-	if (g_isi_request_make(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
-				routing_resp_cb, cbs) == NULL)
-		DBG("Failed to set CBS routing.");
+	if (g_isi_client_send(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
+				routing_resp_cb, cbs, NULL) == NULL)
+		return -errno;
 
 	return 0;
 }
 
 static void isi_cbs_remove(struct ofono_cbs *cbs)
 {
-	struct cbs_data *data = ofono_cbs_get_data(cbs);
+	struct cbs_data *cd = ofono_cbs_get_data(cbs);
 
-	uint8_t msg[] = {
+	const uint8_t msg[] = {
 		SMS_GSM_CB_ROUTING_REQ,
 		SMS_ROUTING_RELEASE,
 		SMS_GSM_ROUTING_MODE_ALL,
@@ -173,18 +197,20 @@ static void isi_cbs_remove(struct ofono_cbs *cbs)
 		0x00   /* Languages */
 	};
 
-	if (data == NULL)
+	ofono_cbs_set_data(cbs, NULL);
+
+	if (cd == NULL)
 		return;
 
-	if (data->client) {
-		/* Send a promiscuous routing release, so as not to
-		 * hog resources unnecessarily after being removed */
-		g_isi_request_make(data->client, msg, sizeof(msg),
-					CBS_TIMEOUT, NULL, NULL);
-		g_isi_client_destroy(data->client);
-	}
+	/*
+	 * Send a promiscuous routing release, so as not to hog
+	 * resources unnecessarily after being removed.
+	 */
+	g_isi_client_send(cd->client, msg, sizeof(msg), CBS_TIMEOUT, NULL,
+				NULL, NULL);
 
-	g_free(data);
+	g_isi_client_destroy(cd->client);
+	g_free(cd);
 }
 
 static struct ofono_cbs_driver driver = {
