@@ -44,6 +44,8 @@
 #include "sim.h"
 #include "debug.h"
 
+#define SIM_MAX_SPN_LENGTH	16
+
 struct sim_data {
 	GIsiClient *client;
 	gboolean registered;
@@ -59,9 +61,9 @@ struct sim_iccid {
 };
 
 struct sim_spn {
-	uint8_t name[34];
-	uint8_t disp_cond;
-	uint8_t disp_cond_not_home;
+	uint16_t name[SIM_MAX_SPN_LENGTH + 1];
+	uint8_t disp_home;
+	uint8_t disp_roam;
 };
 
 struct file_info {
@@ -69,8 +71,8 @@ struct file_info {
 	int length;
 	int structure;
 	int record_length;
-	unsigned char access[3];
-	unsigned char file_status;
+	uint8_t access[3];
+	uint8_t file_status;
 };
 
 /* Returns file info */
@@ -81,8 +83,7 @@ static gboolean fake_file_info(gpointer user)
 	struct file_info const *fi = cbd->user;
 
 	DBG("Returning static file info for %04X", fi->fileid);
-	CALLBACK_WITH_SUCCESS(cb,
-				fi->length, fi->structure, fi->record_length,
+	CALLBACK_WITH_SUCCESS(cb, fi->length, fi->structure, fi->record_length,
 				fi->access, fi->file_status, cbd->data);
 	g_free(cbd);
 	return FALSE;
@@ -148,8 +149,7 @@ static void spn_resp_cb(const GIsiMessage *msg, void *data)
 	const struct sim_spn *resp = NULL;
 	size_t len = sizeof(struct sim_spn);
 
-	unsigned char buffer[17];
-	unsigned char *spn = buffer;
+	uint8_t spn[SIM_MAX_SPN_LENGTH + 1];
 	int i;
 
 	if (!check_response_status(msg, SIM_SERV_PROV_NAME_RESP,
@@ -160,20 +160,15 @@ static void spn_resp_cb(const GIsiMessage *msg, void *data)
 	}
 
 	/* Set display condition bits */
-	spn[0] = ((resp->disp_cond_not_home & 1) << 1) + (resp->disp_cond & 0x1);
+	spn[0] = (resp->disp_home & 0x01) | ((resp->disp_roam & 0x01) << 1);
 
-	/* Dirty conversion from 16bit unicode to ascii */
-	for (i = 0; i < 16; i++) {
-		unsigned char c = resp->name[i * 2 + 1];
-
-		if (c == 0)
-			c = 0xff;
-		else if (!g_ascii_isprint(c))
-			c = '?';
-		spn[i + 1] = c;
+	/* Convert from a NULL-terminated UCS-2 string to ASCII */
+	for (i = 0; i < SIM_MAX_SPN_LENGTH; i++) {
+		uint8_t c = resp->name[i];
+		spn[i + 1] = c == 0 ? 0xFF : (!g_ascii_isprint(c) ? '?' : c);
 	}
 
-	CALLBACK_WITH_SUCCESS(cb, spn, 17, cbd->data);
+	CALLBACK_WITH_SUCCESS(cb, spn, sizeof(spn), cbd->data);
 }
 
 static gboolean isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
@@ -217,7 +212,7 @@ static gboolean isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
 
 	const uint8_t req[] = {
 		SIM_READ_FIELD_REQ,
-		ICC
+		ICC,
 	};
 
 	if (sd == NULL)
@@ -232,8 +227,9 @@ static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 					int start, int length,
 					ofono_sim_read_cb_t cb, void *data)
 {
-	struct isi_cb_data *cbd = isi_cb_data_new(sim, cb, data);
+	struct isi_cb_data *cbd;
 
+	cbd = isi_cb_data_new(sim, cb, data);
 	if (!cbd)
 		goto error;
 
@@ -309,8 +305,6 @@ static void imsi_resp_cb(const GIsiMessage *msg, void *data)
 	char imsi[SIM_MAX_IMSI_LENGTH + 1];
 	size_t i, j;
 
-	DBG("");
-
 	if (!check_response_status(msg, SIM_IMSI_RESP_READ_IMSI, READ_IMSI) ||
 			!g_isi_msg_data_get_struct(msg, 2, (void *)&resp, len)) {
 		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
@@ -321,10 +315,9 @@ static void imsi_resp_cb(const GIsiMessage *msg, void *data)
 	imsi[0] = ((resp->imsi[0] & 0xF0) >> 4) + '0';
 
 	for (i = 1, j = 1; i < resp->length && j < SIM_MAX_IMSI_LENGTH; i++) {
-
 		char nibble;
-		imsi[j++] = (resp->imsi[i] & 0x0F) + '0';
 
+		imsi[j++] = (resp->imsi[i] & 0x0F) + '0';
 		nibble = (resp->imsi[i] & 0xF0) >> 4;
 		if (nibble != 0x0F)
 			imsi[j++] = nibble + '0';
@@ -339,7 +332,8 @@ static void isi_read_imsi(struct ofono_sim *sim,
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct isi_cb_data *cbd = isi_cb_data_new(sim, cb, data);
-	const unsigned char msg[] = {
+
+	const uint8_t msg[] = {
 		SIM_IMSI_REQ_READ_IMSI,
 		READ_IMSI
 	};
@@ -382,7 +376,8 @@ static void read_hplmn_resp_cb(const GIsiMessage *msg, void *data)
 static void isi_read_hplmn(struct ofono_sim *sim)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	const unsigned char req[] = {
+
+	const uint8_t req[] = {
 		SIM_NETWORK_INFO_REQ,
 		READ_HPLMN, 0
 	};
