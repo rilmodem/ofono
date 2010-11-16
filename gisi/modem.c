@@ -56,8 +56,10 @@ struct _GIsiModem {
 	unsigned index;
 	GHashTable *services;
 	gboolean subs_pending;
-	int fd;
-	guint source;
+	int req_fd;
+	int ind_fd;
+	guint req_watch;
+	guint ind_watch;
 	GIsiNotifyFunc debug;
 	void *ddata;
 };
@@ -134,7 +136,8 @@ static void pending_dispatch(GIsiPending *pend, GIsiMessage *msg)
 	pend->notify(msg, pend->data);
 }
 
-static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg)
+static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg,
+				gboolean is_indication)
 {
 	uint8_t msgid = g_isi_msg_id(msg);
 	uint8_t utid = g_isi_msg_utid(msg);
@@ -166,7 +169,7 @@ static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg)
 			pending_dispatch(pend, msg);
 
 		} else if (pend->type == GISI_MESSAGE_TYPE_RESP &&
-				pend->utid == utid) {
+				!is_indication && pend->utid == utid) {
 
 			pending_dispatch(pend, msg);
 			pend->notify = NULL;
@@ -230,12 +233,14 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 {
 	GIsiModem *modem = data;
 	int len;
+	int fd;
 
 	if (cond & (G_IO_NVAL|G_IO_HUP)) {
 		g_warning("Unexpected event on PhoNet channel %p", channel);
 		return FALSE;
 	}
 
+	fd = g_io_channel_unix_get_fd(channel);
 	len = g_isi_phonet_peek_length(channel);
 
 	if (len > 0) {
@@ -273,7 +278,7 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 		if (g_isi_msg_id(&msg) == COMMON_MESSAGE)
 			common_message_decode(mux, &msg);
 
-		service_dispatch(mux, &msg);
+		service_dispatch(mux, &msg, fd == modem->ind_fd);
 	}
 	return TRUE;
 }
@@ -281,7 +286,8 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 GIsiModem *g_isi_modem_create(unsigned index)
 {
 	GIsiModem *modem;
-	GIOChannel *channel;
+	GIOChannel *inds;
+	GIOChannel *reqs;
 
 	if (index == 0) {
 		errno = ENODEV;
@@ -294,17 +300,25 @@ GIsiModem *g_isi_modem_create(unsigned index)
 		return NULL;
 	}
 
-	channel = g_isi_phonet_new(index);
-	if (!channel) {
+	inds = g_isi_phonet_new(index);
+	reqs = g_isi_phonet_new(index);
+
+	if (!inds || !reqs) {
 		g_free(modem);
 		return NULL;
 	}
 
-	modem->fd = g_io_channel_unix_get_fd(channel);
-	modem->source = g_io_add_watch(channel,
+	modem->req_fd = g_io_channel_unix_get_fd(reqs);
+	modem->req_watch = g_io_add_watch(reqs,
 					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
 					isi_callback, modem);
-	g_io_channel_unref(channel);
+	modem->ind_fd = g_io_channel_unix_get_fd(inds);
+	modem->ind_watch = g_io_add_watch(inds,
+					G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_NVAL,
+					isi_callback, modem);
+
+	g_io_channel_unref(reqs);
+	g_io_channel_unref(inds);
 
 	modem->index = index;
 	modem->services = g_hash_table_new_full(g_int_hash, g_int_equal,
@@ -328,7 +342,7 @@ static void service_name_register(GIsiServiceMux *mux)
 	};
 	uint16_t object = 0;
 
-	if (ioctl(mux->modem->fd, SIOCPNGETOBJECT, &object) < 0) {
+	if (ioctl(mux->modem->req_fd, SIOCPNGETOBJECT, &object) < 0) {
 		g_warning("ioctl(SIOCPNGETOBJECT): %s", strerror(errno));
 		return;
 	}
@@ -337,8 +351,8 @@ static void service_name_register(GIsiServiceMux *mux)
 	msg[8] = object >> 8;
 	msg[9] = object & 0xFF;
 
-	sendto(mux->modem->fd, msg, sizeof(msg), MSG_NOSIGNAL, (void *)&namesrv,
-		sizeof(namesrv));
+	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
+		(void *)&namesrv, sizeof(namesrv));
 }
 
 static void service_name_deregister(GIsiServiceMux *mux)
@@ -348,8 +362,8 @@ static void service_name_deregister(GIsiServiceMux *mux)
 		0, 0, 0, mux->resource,
 	};
 
-	sendto(mux->modem->fd, msg, sizeof(msg), MSG_NOSIGNAL, (void *)&namesrv,
-		sizeof(namesrv));
+	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
+		(void *)&namesrv, sizeof(namesrv));
 }
 
 static gboolean modem_subs_update(gpointer data)
@@ -376,7 +390,7 @@ static gboolean modem_subs_update(gpointer data)
 	}
 	msg[2] = count;
 
-	sendto(modem->fd, msg, 3 + msg[2], MSG_NOSIGNAL, (void *)&commgr,
+	sendto(modem->ind_fd, msg, 3 + msg[2], MSG_NOSIGNAL, (void *)&commgr,
 		sizeof(commgr));
 
 	modem->subs_pending = FALSE;
@@ -485,6 +499,13 @@ void g_isi_modem_destroy(GIsiModem *modem)
 
 	g_hash_table_foreach_remove(modem->services, service_finalize, modem);
 	g_hash_table_unref(modem->services);
+
+	if (modem->ind_watch)
+		g_source_remove(modem->ind_watch);
+
+	if (modem->req_watch)
+		g_source_remove(modem->req_watch);
+
 	g_free(modem);
 }
 
@@ -641,7 +662,7 @@ GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 	if (modem->debug)
 		vdebug(dst, _iov, 1 + iovlen, len, modem->debug, modem->ddata);
 
-	ret = sendmsg(modem->fd, &msg, MSG_NOSIGNAL);
+	ret = sendmsg(modem->req_fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
 		goto error;
 
@@ -866,7 +887,7 @@ int g_isi_modem_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 	if (modem->debug)
 		vdebug(dst, iov, iovlen, len, modem->debug, modem->ddata);
 
-	ret = sendmsg(modem->fd, &msg, MSG_NOSIGNAL);
+	ret = sendmsg(modem->req_fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
 		return -errno;
 
@@ -903,8 +924,8 @@ static int version_get_send(GIsiModem *modem, GIsiPending *ping)
 	if (g_slist_find_custom(mux->pending, ping, utid_equal))
 		return -EBUSY;
 
-	ret = sendto(modem->fd, msg, sizeof(msg), MSG_NOSIGNAL, (void *)&dst,
-			sizeof(dst));
+	ret = sendto(modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
+			(void *)&dst, sizeof(dst));
 
 	if (ret == -1)
 		return -errno;
