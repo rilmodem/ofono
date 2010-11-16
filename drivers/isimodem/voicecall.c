@@ -1149,6 +1149,7 @@ static void isi_release_specific(struct ofono_voicecall *ovc, int id,
 		uint8_t cause = CALL_CAUSE_RELEASE_BY_USER;
 
 		switch (status->status) {
+		case CALL_STATUS_COMING:
 		case CALL_STATUS_MT_ALERTING:
 		case CALL_STATUS_WAITING:
 			cause = CALL_CAUSE_BUSY_USER_REQUEST;
