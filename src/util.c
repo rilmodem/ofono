@@ -956,7 +956,7 @@ unsigned char *unpack_7bit_own_buf(const unsigned char *in, long len,
 	 * character.
 	 */
 	if (ussd && (((out - buf) % 8) == 0) && (*(out - 1) == '\r'))
-			out = out - 1;
+		out = out - 1;
 
 	if (terminator)
 		*out = terminator;
