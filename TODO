@@ -496,3 +496,11 @@ Miscellaneous
 
   Priority: Low
   Complexity: C4
+
+- Add Location Service API for providing basic E911 suport.
+  This will be based on the 27.007 defined AT commands using
+  XML for transport of positioning request and responses.
+
+  Priority: Medium
+  Complexity: C2
+  Owner: Sjur Brændeland <sjur.brandeland@stericsson.com>
