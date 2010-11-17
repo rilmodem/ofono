@@ -792,7 +792,7 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 	if (powered) {
 		modem_change_state(modem, MODEM_STATE_PRE_SIM);
 
-		/* Force SIM Ready for devies with no sim atom */
+		/* Force SIM Ready for devices with no sim atom */
 		if (__ofono_modem_find_atom(modem,
 					OFONO_ATOM_TYPE_SIM) == NULL)
 			sim_state_watch(OFONO_SIM_STATE_READY, modem);
@@ -800,7 +800,6 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		modem_change_state(modem, MODEM_STATE_POWER_OFF);
 
 out:
-
 	if (powering_down && powered == FALSE) {
 		modems_remaining -= 1;
 
