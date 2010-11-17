@@ -205,6 +205,10 @@ default:  // wrong
 	break;
 }
 
+However if the enum comes from an external header file outside ofono
+we cannot make any assumption of how the enum is defined and this
+rule might not apply.
+
 O1: Shorten the name
 ====================
 Better to use abbreviation, rather than full name, to name a variable,
