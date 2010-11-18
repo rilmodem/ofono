@@ -73,7 +73,7 @@ enum power_event {
 };
 
 struct gpio_data {
-	GPhonetNetlink *link;
+	GIsiPhonetNetlink *link;
 	gpio_finished_cb_t callback;
 	void *data;
 
@@ -600,7 +600,7 @@ static void gpio_power_set_state(enum power_state new_state)
 	self.callback(new_state, self.data);
 }
 
-static void phonet_status_cb(GIsiModem *idx, GPhonetLinkState state,
+static void phonet_status_cb(GIsiModem *idx, GIsiPhonetLinkState state,
 				char const *ifname, void *dummy)
 {
 	DBG("Link %s (%u) is %s",
@@ -719,7 +719,7 @@ int gpio_probe(GIsiModem *idx, unsigned addr, gpio_finished_cb_t cb, void *data)
 		return -(errno = EBUSY);
 	}
 
-	if (g_pn_netlink_by_modem(idx)) {
+	if (g_isi_pn_netlink_by_modem(idx)) {
 		DBG("Phonet link %p: %s", idx, strerror(EBUSY));
 		return -(errno = EBUSY);
 	}
@@ -753,7 +753,7 @@ int gpio_probe(GIsiModem *idx, unsigned addr, gpio_finished_cb_t cb, void *data)
 	else
 		self.rapu = RAPU_TYPE_2;
 
-	self.link = g_pn_netlink_start(idx, phonet_status_cb, NULL);
+	self.link = g_isi_pn_netlink_start(idx, phonet_status_cb, NULL);
 	if (self.link == NULL) {
 		memset(&self, 0, sizeof self);
 		return -errno;
@@ -763,9 +763,9 @@ int gpio_probe(GIsiModem *idx, unsigned addr, gpio_finished_cb_t cb, void *data)
 	self.data = data;
 
 	if (addr) {
-		error = g_pn_netlink_set_address(idx, addr);
+		error = g_isi_pn_netlink_set_address(idx, addr);
 		if (error && error != -EEXIST)
-			DBG("g_pn_netlink_set_address: %s", strerror(-error));
+			DBG("g_isi_netlink_set_address: %s", strerror(-error));
 	}
 
 	return 0;
@@ -777,7 +777,7 @@ int gpio_remove(void *data)
 		return -EINVAL;
 
 	if (self.link)
-		g_pn_netlink_stop(self.link);
+		g_isi_pn_netlink_stop(self.link);
 
 	if (self.timeout_source) {
 		g_source_remove(self.timeout_source);
