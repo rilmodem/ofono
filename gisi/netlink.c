@@ -336,11 +336,12 @@ error:
 
 void g_isi_pn_netlink_stop(GIsiPhonetNetlink *self)
 {
-	if (self) {
-		netlink_list = g_slist_remove(netlink_list, self);
-		g_source_remove(self->watch);
-		g_free(self);
-	}
+	if (!self)
+		return;
+
+	netlink_list = g_slist_remove(netlink_list, self);
+	g_source_remove(self->watch);
+	g_free(self);
 }
 
 static int pn_netlink_getack(int fd)
