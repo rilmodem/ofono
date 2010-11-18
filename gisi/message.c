@@ -85,7 +85,7 @@ size_t g_isi_msg_data_len(const GIsiMessage *msg)
 
 const void *g_isi_msg_data(const GIsiMessage *msg)
 {
-	return msg && msg->data ? msg->data + 2 : NULL;
+	return msg && msg->data ? (void *)msg->data + 2 : NULL;
 }
 
 gboolean g_isi_msg_data_get_byte(const GIsiMessage *msg, unsigned offset,
