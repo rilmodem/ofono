@@ -33,6 +33,7 @@
 #include <glib.h>
 
 #include <gisi/client.h>
+#include <gisi/message.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
@@ -46,45 +47,64 @@
 #include "ss.h"
 #include "debug.h"
 
+struct ussd_info {
+	uint8_t dcs;
+	uint8_t type;
+	uint8_t len;
+};
+
 struct ussd_data {
 	GIsiClient *client;
 	int mt_session;
 };
 
-static void ussd_notify_ack(struct ussd_data *ud)
+static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid)
 {
-	const unsigned char msg[] = {
-		SS_GSM_USSD_SEND_REQ,
-		SS_GSM_USSD_NOTIFY,
-		0x00		/* subblock count */
-	};
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
+		return FALSE;
+	}
 
-	g_isi_send(ud->client, msg, sizeof(msg), SS_TIMEOUT, NULL, NULL, NULL);
+	if (g_isi_msg_id(msg) != msgid) {
+		DBG("Unexpected msg: %s",
+			ss_message_id_name(g_isi_msg_id(msg)));
+		return FALSE;
+	}
+	return TRUE;
 }
 
-static void ussd_ind_cb(GIsiClient *client,
-			const void *restrict data, size_t len,
-			uint16_t object, void *opaque)
+static void ussd_notify_ack(struct ussd_data *ud)
 {
-	const unsigned char *msg = data;
-	struct ofono_ussd *ussd = opaque;
+	const uint8_t msg[] = {
+		SS_GSM_USSD_SEND_REQ,
+		SS_GSM_USSD_NOTIFY,
+		0,		/* subblock count */
+	};
+
+	g_isi_client_send(ud->client, msg, sizeof(msg), SS_TIMEOUT, NULL, NULL,
+				NULL);
+}
+
+static void ussd_ind_cb(const GIsiMessage *msg, void *data)
+{
+	struct ofono_ussd *ussd = data;
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
-	int dcs;
-	int type;
-	size_t ussdlen;
+	struct ussd_info *info;
+	size_t len = sizeof(struct ussd_info);
+	uint8_t *string;
 	int status;
 
-	if (!msg || len < 4 || msg[0] != SS_GSM_USSD_RECEIVE_IND)
+	if (g_isi_msg_id(msg) != SS_GSM_USSD_RECEIVE_IND)
 		return;
 
-	dcs = msg[1];
-	type = msg[2];
-	ussdlen = msg[3];
+	if (!g_isi_msg_data_get_struct(msg, 0, (const void **)&info, len))
+		return;
 
-	if (len < 4 + ussdlen)
-		ussdlen = len - 4;
+	if (!g_isi_msg_data_get_struct(msg, len, (const void **)&string,
+					info->len))
+		return;
 
-	switch (type) {
+	switch (info->type) {
 	case 0:
 		/* Nothing - this is response to NOTIFY_ACK REQ */
 		return;
@@ -95,6 +115,7 @@ static void ussd_ind_cb(GIsiClient *client,
 		break;
 
 	case SS_GSM_USSD_COMMAND:
+
 		if (ud->mt_session)
 			/* Ignore, we get SS_GSM_USSD_REQUEST, too */
 			return;
@@ -120,42 +141,24 @@ static void ussd_ind_cb(GIsiClient *client,
 		status = OFONO_USSD_STATUS_NOT_SUPPORTED;
 	}
 
-	DBG("type: %u %s, dcs: 0x%02x, len: %zu",
-		type, ss_ussd_type_name(type), dcs, ussdlen);
+	DBG("type: %u %s, dcs: 0x%02x, len: %u",
+		info->type, ss_ussd_type_name(info->type), info->dcs,
+		info->len);
 
-	ofono_ussd_notify(ussd, status, dcs, msg + 4, ussdlen);
+	ofono_ussd_notify(ussd, status, info->dcs, string, info->len);
 }
 
-static gboolean ussd_send_resp_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void ussd_send_resp_cb(const GIsiMessage *msg, void *data)
 {
-	const unsigned char *msg = data;
-	struct isi_cb_data *cbd = opaque;
+	struct isi_cb_data *cbd = data;
 	ofono_ussd_cb_t cb = cbd->cb;
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
+	if (!check_response_status(msg, SS_GSM_USSD_SEND_RESP)) {
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		return;
 	}
 
-	if (len < 3)
-		return FALSE;
-
-	if (msg[0] == SS_SERVICE_FAILED_RESP)
-		goto error;
-
-	if (msg[0] != SS_GSM_USSD_SEND_RESP)
-		return FALSE;
-
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
-
-	return TRUE;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, cbd->data);
-	return TRUE;
-
 }
 
 static void isi_request(struct ofono_ussd *ussd, int dcs,
@@ -184,8 +187,8 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 	if (cbd == NULL || ud == NULL)
 		goto error;
 
-	if (g_isi_vsend(ud->client, iov, 2, SS_TIMEOUT,
-			ussd_send_resp_cb, cbd, g_free))
+	if (g_isi_client_vsend(ud->client, iov, 2, SS_TIMEOUT,
+				ussd_send_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -198,7 +201,6 @@ static void isi_cancel(struct ofono_ussd *ussd,
 {
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct isi_cb_data *cbd = isi_cb_data_new(ussd, cb, data);
-
 	const unsigned char msg[] = {
 		SS_GSM_USSD_SEND_REQ,
 		SS_GSM_USSD_END,
@@ -208,8 +210,8 @@ static void isi_cancel(struct ofono_ussd *ussd,
 	if (cbd == NULL || ud == NULL)
 		goto error;
 
-	if (g_isi_send(ud->client, msg, sizeof(msg), SS_TIMEOUT,
-			ussd_send_resp_cb, cbd, g_free))
+	if (g_isi_client_send(ud->client, msg, sizeof(msg), SS_TIMEOUT,
+				ussd_send_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -217,56 +219,41 @@ error:
 	g_free(cbd);
 }
 
-static gboolean isi_ussd_register(gpointer user)
+static void ussd_reachable_cb(const GIsiMessage *msg, void *data)
 {
-	struct ofono_ussd *ussd = user;
+	struct ofono_ussd *ussd = data;
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 
-	const char *debug = getenv("OFONO_ISI_DEBUG");
-
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "ussd") == 0))
-		g_isi_client_set_debug(ud->client, ss_debug, NULL);
-
-	g_isi_subscribe(ud->client, SS_GSM_USSD_RECEIVE_IND, ussd_ind_cb, ussd);
-	ofono_ussd_register(ussd);
-
-	return FALSE;
-}
-
-static void ussd_reachable_cb(GIsiClient *client,
-				gboolean alive, uint16_t object,
-				void *opaque)
-{
-	struct ofono_ussd *ussd = opaque;
-
-	if (!alive) {
-		DBG("Unable to bootstrap ussd driver");
+	if (g_isi_msg_error(msg) < 0)
 		return;
-	}
 
-	DBG("%s (v%03d.%03d) reachable",
-		pn_resource_name(g_isi_client_resource(client)),
-		g_isi_version_major(client),
-		g_isi_version_minor(client));
+	ISI_VERSION_DBG(msg);
 
-	g_idle_add(isi_ussd_register, ussd);
+	g_isi_client_ind_subscribe(ud->client, SS_GSM_USSD_RECEIVE_IND,
+					ussd_ind_cb, ussd);
+
+	ofono_ussd_register(ussd);
 }
 
 static int isi_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 				void *user)
 {
-	GIsiModem *idx = user;
-	struct ussd_data *ud = g_try_new0(struct ussd_data, 1);
+	GIsiModem *modem = user;
+	struct ussd_data *ud;
 
+	ud = g_try_new0(struct ussd_data, 1);
 	if (ud == NULL)
 		return -ENOMEM;
 
-	ud->client = g_isi_client_create(idx, PN_SS);
-	if (ud->client == NULL)
+	ud->client = g_isi_client_create(modem, PN_SS);
+	if (ud->client == NULL) {
+		g_free(ud);
 		return -ENOMEM;
+	}
 
 	ofono_ussd_set_data(ussd, ud);
-	g_isi_verify(ud->client, ussd_reachable_cb, ussd);
+
+	g_isi_client_verify(ud->client, ussd_reachable_cb, ussd, NULL);
 
 	return 0;
 }
@@ -275,10 +262,11 @@ static void isi_ussd_remove(struct ofono_ussd *ussd)
 {
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 
+	ofono_ussd_set_data(ussd, NULL);
+
 	if (data == NULL)
 		return;
 
-	ofono_ussd_set_data(ussd, NULL);
 	g_isi_client_destroy(data->client);
 	g_free(data);
 }
