@@ -87,17 +87,20 @@ static void isi_puct_set(struct ofono_call_meter *cm, const char *currency,
 static int isi_call_meter_probe(struct ofono_call_meter *cm,
 				unsigned int vendor, void *user)
 {
-	GIsiModem *idx = user;
-	struct call_meter_data *data = g_try_new0(struct call_meter_data, 1);
+	GIsiModem *modem = user;
+	struct call_meter_data *cmd;
 
-	if (data == NULL)
+	cmd = g_try_new0(struct call_meter_data, 1);
+	if (cmd == NULL)
 		return -ENOMEM;
 
-	data->client = g_isi_client_create(idx, PN_SS);
-	if (data->client == NULL)
+	cmd->client = g_isi_client_create(modem, PN_SS);
+	if (cmd->client == NULL) {
+		g_free(cmd);
 		return -ENOMEM;
+	}
 
-	ofono_call_meter_set_data(cm, data);
+	ofono_call_meter_set_data(cm, cmd);
 
 	return 0;
 }
@@ -106,10 +109,13 @@ static void isi_call_meter_remove(struct ofono_call_meter *cm)
 {
 	struct call_meter_data *data = ofono_call_meter_get_data(cm);
 
-	if (data) {
-		g_isi_client_destroy(data->client);
-		g_free(data);
-	}
+	ofono_call_meter_set_data(cm, NULL);
+
+	if (data == NULL)
+		return;
+
+	g_isi_client_destroy(data->client);
+	g_free(data);
 }
 
 static struct ofono_call_meter_driver driver = {
