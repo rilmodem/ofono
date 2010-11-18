@@ -18,10 +18,10 @@ Methods		array{object,dict} GetCalls()
 		object Dial(string number, string hide_callerid)
 
 			Initiates a new outgoing call. Returns the object path
-			to the newly created call. The clir variable holds
-			the CLIR override for this call.
+			to the newly created call. The hide_callerid variable
+			holds the CLIR override for this call.
 			The defines values are:
-				"" or "default" - Default (Netowrk) CLIR mode
+				"" or "default" - Default (Network) CLIR mode
 							is used
 				"enabled" - Hides callerid, CLIR Invocation
 						is used
