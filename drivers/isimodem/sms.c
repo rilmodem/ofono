@@ -33,6 +33,7 @@
 
 #include <glib.h>
 
+#include <gisi/message.h>
 #include <gisi/client.h>
 #include <gisi/iter.h>
 
@@ -46,102 +47,193 @@
 #include "sms.h"
 #include "debug.h"
 
+/* This is a straightforward copy of the EF_smsp structure */
+struct sim_efsmsp{
+	uint8_t absent;
+	uint8_t tp_pid;
+	uint8_t tp_dcs;
+	uint8_t tp_vp;
+	uint8_t dst[12];
+	uint8_t sca[12];
+	uint8_t alphalen;
+	uint8_t filler[3];
+	uint16_t alpha[17];
+};
+
+/* Sub-block used by PN_SMS */
+struct sms_params {
+	uint8_t absent;
+	uint8_t tp_pid;
+	uint8_t tp_dcs;
+	uint8_t dst[12];
+	uint8_t sca[12];
+	uint8_t tp_vp;
+	uint8_t alphalen;
+	uint8_t filler[2];
+	uint16_t alpha[17];
+};
+
+struct sms_report {
+	uint8_t type;
+	uint8_t cause;
+	uint8_t ref;
+};
+
+struct sms_status {
+	uint8_t status;
+	uint8_t ref;
+	uint8_t route;
+	uint8_t cseg;	/* Current segment */
+	uint8_t tseg;	/* Total segments */
+};
+
+struct sms_addr {
+	uint8_t type;
+	uint8_t len;
+	uint8_t *data;
+};
+
+struct sms_common {
+	uint8_t len;
+	uint8_t filler;
+	uint8_t *data;
+};
+
 struct sms_data {
 	GIsiClient *client;
 	GIsiClient *sim;
-	/* This is a straightforward copy of the EF_smsp structure */
-	struct sim_parameters {
-		uint8_t      absent;
-		uint8_t      tp_pid;
-		uint8_t      tp_dcs;
-		uint8_t      tp_vp;
-		uint8_t      dst[12];
-		uint8_t      sca[12];
-		uint8_t      alphalen;
-		uint8_t      filler[3];
-		uint16_t     alpha[17];
-	} params;
+	struct sim_efsmsp params;
 };
 
-static gboolean sca_query_resp_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static gboolean check_sim_status(const GIsiMessage *msg, uint8_t msgid,
+					uint8_t service)
 {
-	const uint8_t *msg = data;
-	struct isi_cb_data *cbd = opaque;
+	uint8_t type;
+	uint8_t cause;
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
+		return FALSE;
+	}
+
+	if (g_isi_msg_id(msg) != msgid) {
+		DBG("Unexpected msg: %s",
+			sms_message_id_name(g_isi_msg_id(msg)));
+		return FALSE;
+	}
+
+	if (!g_isi_msg_data_get_byte(msg, 0, &type))
+		return FALSE;
+
+	if (type != service) {
+		DBG("Unexpected service type: 0x%02X", type);
+		return FALSE;
+	}
+
+	if (!g_isi_msg_data_get_byte(msg, 1, &cause))
+		return FALSE;
+
+	if (cause != SIM_SERV_OK) {
+		DBG("Request failed: %s", sim_isi_cause_name(cause));
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean check_sms_status(const GIsiMessage *msg, uint8_t msgid)
+{
+	uint8_t cause;
+	uint8_t reason;
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
+		return FALSE;
+	}
+
+	if (g_isi_msg_id(msg) != msgid) {
+		DBG("Unexpected msg: %s",
+			sms_message_id_name(g_isi_msg_id(msg)));
+		return FALSE;
+	}
+
+	if (!g_isi_msg_data_get_byte(msg, 0, &cause))
+		return FALSE;
+
+	if (cause == SMS_OK)
+		return TRUE;
+
+	if (!g_isi_msg_data_get_byte(msg, 1, &reason))
+		return FALSE;
+
+	if (reason == SMS_ERR_PP_RESERVED) {
+		DBG("Request failed: 0x%02"PRIx8" (%s).\n\n  Unable to "
+			"bootstrap SMS routing.\n  It appears some other "
+			"component is already\n  registered as the SMS "
+			"routing endpoint.\n  As a consequence, "
+			"only sending SMSs is going to work.\n\n",
+			reason, sms_isi_cause_name(reason));
+		return TRUE;
+	}
+
+	DBG("Request failed: %s", sms_isi_cause_name(reason));
+	return FALSE;
+}
+
+static void sca_query_resp_cb(const GIsiMessage *msg, void *data)
+{
+	struct isi_cb_data *cbd = data;
 	struct ofono_sms *sms = cbd->user;
 	struct sms_data *sd = ofono_sms_get_data(sms);
 	ofono_sms_sca_query_cb_t cb = cbd->cb;
 
 	struct ofono_phone_number sca;
+	struct sms_params *info;
+	size_t len = sizeof(struct sms_params);
 	uint8_t bcd_len;
 
-	/* Nicely aligned. */
-	struct {
-		uint8_t      status;
-		uint8_t      absent;
-		uint8_t      tp_pid;
-		uint8_t      tp_dcs;
-		uint8_t      dst[12];
-		uint8_t      sca[12];
-		uint8_t      tp_vp;
-		uint8_t      alphalen;
-		uint8_t      filler[2];
-		uint16_t     alpha[17];
-	} params;
-
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
-	}
-
-	if (len < 31 || msg[0] != SIM_SMS_RESP || msg[1] != READ_PARAMETER)
-		return FALSE;
-
-	if (msg[3] != SIM_SERV_OK)
+	if (!check_sim_status(msg, SIM_SMS_RESP, READ_PARAMETER))
 		goto error;
 
-	memset(&params, 0, sizeof(params));
-	if (len  > 3 + sizeof(params))
-		len = 3 + sizeof(params);
-	memcpy(&params, msg + 3, len - 3);
+	if (!g_isi_msg_data_get_struct(msg, 0, (void *)&info, len))
+		goto error;
 
-	if (params.alphalen > 17)
-		params.alphalen = 17;
-	else if (params.alphalen < 1)
-		params.alphalen = 1;
-	params.alpha[params.alphalen - 1] = '\0';
+	if (info->alphalen > 17)
+		info->alphalen = 17;
+	else if (info->alphalen < 1)
+		info->alphalen = 1;
 
-	sd->params.absent = params.absent;
-	sd->params.tp_pid = params.tp_pid;
-	sd->params.tp_dcs = params.tp_dcs;
-	sd->params.tp_vp = params.tp_vp;
-	memcpy(sd->params.dst, params.dst, sizeof(sd->params.dst));
-	memcpy(sd->params.sca, params.sca, sizeof(sd->params.sca));
-	sd->params.alphalen = params.alphalen;
-	memcpy(sd->params.alpha, params.alpha, sizeof(sd->params.alpha));
+	info->alpha[info->alphalen - 1] = '\0';
+
+	sd->params.absent = info->absent;
+	sd->params.tp_pid = info->tp_pid;
+	sd->params.tp_dcs = info->tp_dcs;
+	sd->params.tp_vp = info->tp_vp;
+
+	memcpy(sd->params.dst, info->dst, sizeof(sd->params.dst));
+	memcpy(sd->params.sca, info->sca, sizeof(sd->params.sca));
+
+	sd->params.alphalen = info->alphalen;
+	memcpy(sd->params.alpha, info->alpha, sizeof(sd->params.alpha));
 
 	/*
 	 * Bitmask indicating absense of parameters --
 	 * If second bit is set it indicates that the SCA is absent
 	 */
-	if (params.absent & 0x2)
+	if (info->absent & 0x02)
 		goto error;
 
-	bcd_len = params.sca[0];
-
+	bcd_len = info->sca[0];
 	if (bcd_len <= 1 || bcd_len > 12)
 		goto error;
 
-	extract_bcd_number(params.sca + 2, bcd_len - 1, sca.number);
-	sca.type = 0x80 | params.sca[1];
+	extract_bcd_number(info->sca + 2, bcd_len - 1, sca.number);
+	sca.type = 0x80 | info->sca[1];
 
 	CALLBACK_WITH_SUCCESS(cb, &sca, cbd->data);
-	return TRUE;
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
-	return TRUE;
 }
 
 static void isi_sca_query(struct ofono_sms *sms,
@@ -150,7 +242,7 @@ static void isi_sca_query(struct ofono_sms *sms,
 	struct sms_data *sd = ofono_sms_get_data(sms);
 	struct isi_cb_data *cbd = isi_cb_data_new(sms, cb, data);
 
-	uint8_t msg[] = {
+	const uint8_t msg[] = {
 		SIM_SMS_REQ,
 		READ_PARAMETER,
 		1,	/* Location, default is 1 */
@@ -159,8 +251,8 @@ static void isi_sca_query(struct ofono_sms *sms,
 	if (cbd == NULL || sd == NULL)
 		goto error;
 
-	if (g_isi_send(sd->sim, msg, sizeof(msg), SIM_TIMEOUT,
-			sca_query_resp_cb, cbd, g_free))
+	if (g_isi_client_send(sd->sim, msg, sizeof(msg), SIM_TIMEOUT,
+				sca_query_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -168,31 +260,17 @@ error:
 	g_free(cbd);
 }
 
-static gboolean sca_set_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void sca_set_resp_cb(const GIsiMessage *msg, void *data)
 {
-	const uint8_t *msg = data;
-	struct isi_cb_data *cbd = opaque;
+	struct isi_cb_data *cbd = data;
 	ofono_sms_sca_set_cb_t cb = cbd->cb;
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
+	if (!check_sim_status(msg, SIM_SMS_RESP, UPDATE_PARAMETER)) {
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		return;
 	}
 
-	if (len < 3 || msg[0] != SIM_SMS_RESP || msg[1] != UPDATE_PARAMETER)
-		return FALSE;
-
-	if (msg[2] != SIM_SERV_OK)
-		goto error;
-
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	return TRUE;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, cbd->data);
-	return TRUE;
 }
 
 static void isi_sca_set(struct ofono_sms *sms,
@@ -209,7 +287,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 		1,	/* Location, default is 1 */
 	};
 
-	struct iovec iov[] = {
+	struct iovec iov[2] = {
 		{ msg, sizeof(msg) },
 		{ &sd->params, sizeof(sd->params) },
 	};
@@ -224,8 +302,8 @@ static void isi_sca_set(struct ofono_sms *sms,
 	bcd[0] = 1 + (strlen(sca->number) + 1) / 2;
 	bcd[1] = sca->type & 0xFF;
 
-	if (g_isi_vsend(sd->sim, iov, G_N_ELEMENTS(iov), SIM_TIMEOUT,
-			sca_set_resp_cb, cbd, g_free))
+	if (g_isi_client_vsend(sd->sim, iov, 2, SIM_TIMEOUT, sca_set_resp_cb,
+				cbd, g_free))
 		return;
 
 error:
@@ -233,71 +311,36 @@ error:
 	g_free(cbd);
 }
 
-static gboolean submit_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void submit_resp_cb(const GIsiMessage *msg, void *data)
 {
-	const uint8_t *msg = data;
-	struct isi_cb_data *cbd = opaque;
+	struct isi_cb_data *cbd = data;
 	ofono_sms_submit_cb_t cb = cbd->cb;
-
-	int mr = -1;
+	struct sms_report *report;
+	size_t len = sizeof(struct sms_report);
 	GIsiSubBlockIter iter;
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
-	}
-
-	if (len < 3 || msg[0] != SMS_MESSAGE_SEND_RESP)
-		return FALSE;
-
-	for (g_isi_sb_iter_init(&iter, msg, len, 3);
-		g_isi_sb_iter_is_valid(&iter);
-		g_isi_sb_iter_next(&iter)) {
-
-		uint8_t type;
-		uint8_t cause;
-		uint8_t ref;
-
-		switch (g_isi_sb_iter_get_id(&iter)) {
-
-		case SMS_GSM_REPORT:
-
-			if (!g_isi_sb_iter_get_byte(&iter, &type, 2)
-				|| !g_isi_sb_iter_get_byte(&iter, &cause, 3)
-				|| !g_isi_sb_iter_get_byte(&iter, &ref, 4))
-				goto error;
-
-			if (cause != 0) {
-				DBG("Submit error: 0x%"PRIx8" (type 0x%"PRIx8")",
-					cause, type);
-				goto error;
-			}
-
-			DBG("cause=0x%"PRIx8", type 0x%"PRIx8", mr=0x%"PRIx8,
-					cause, type, ref);
-
-			mr = (int)ref;
-			break;
-
-		default:
-			DBG("skipped sub-block: %s (%zu bytes)",
-				sms_subblock_name(g_isi_sb_iter_get_id(&iter)),
-				g_isi_sb_iter_get_len(&iter));
-
-		}
-	}
-
-	if (mr == -1)
+	if (!check_sms_status(msg, SMS_MESSAGE_SEND_RESP))
 		goto error;
 
-	CALLBACK_WITH_SUCCESS(cb, mr, cbd->data);
-	return TRUE;
+	for (g_isi_sb_iter_init(&iter, msg, 2);
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
+
+		if (g_isi_sb_iter_get_id(&iter) != SMS_GSM_REPORT)
+			continue;
+
+		if (!g_isi_sb_iter_get_struct(&iter, (void **)&report, len, 2))
+			goto error;
+
+		if (report->cause != SMS_OK)
+			goto error;
+
+		CALLBACK_WITH_SUCCESS(cb, report->ref, cbd->data);
+		return;
+	}
 
 error:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-	return TRUE;
 }
 
 static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
@@ -358,10 +401,12 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 		memcpy(sca_sb + 4, pdu, sca_sb[3]);
 	}
 
-	/* Modem seems to time out SMS_MESSAGE_SEND_REQ in 5 seconds */
-	/* Wait normal timeout plus the modem timeout */
-	if (g_isi_vsend(sd->client, iov, G_N_ELEMENTS(iov), SMS_TIMEOUT + 5,
-			submit_resp_cb, cbd, g_free))
+	/*
+	 * Modem seems to time out SMS_MESSAGE_SEND_REQ in 5 seconds.
+	 * Wait normal timeout plus the modem timeout.
+	 */
+	if (g_isi_client_vsend(sd->client, iov, 4, SMS_TIMEOUT + 5,
+				submit_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -369,39 +414,55 @@ error:
 	g_free(cbd);
 }
 
-static void send_status_ind_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void isi_bearer_query(struct ofono_sms *sms,
+				ofono_sms_bearer_query_cb_t cb, void *data)
 {
-	const uint8_t *msg = data;
+	DBG("Not implemented");
+	CALLBACK_WITH_FAILURE(cb, -1, data);
+}
 
-	if (!msg || len < 6 || msg[0] != SMS_MESSAGE_SEND_STATUS_IND)
+static void isi_bearer_set(struct ofono_sms *sms, int bearer,
+				ofono_sms_bearer_set_cb_t cb, void *data)
+{
+	DBG("Not implemented");
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void send_status_ind_cb(const GIsiMessage *msg, void *data)
+{
+	struct sms_status *info;
+	size_t len = sizeof(struct sms_status);
+
+	DBG("");
+
+	if (g_isi_msg_id(msg) != SMS_MESSAGE_SEND_STATUS_IND)
 		return;
 
-	DBG("status=0x%"PRIx8", mr=0x%"PRIx8", route=0x%"PRIx8
+	if (!g_isi_msg_data_get_struct(msg, 0, (const void **)&info, len))
+		return;
+
+	DBG("status=0x%"PRIx8", ref=0x%"PRIx8", route=0x%"PRIx8
 		", cseg=0x%"PRIx8", tseg=0x%"PRIx8,
-		msg[1], msg[2], msg[3], msg[4], msg[5]);
+		info->status, info->ref, info->route, info->cseg,
+		info->tseg);
 
 	DBG("TODO: Status notification");
 }
 
-static gboolean report_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void report_resp_cb(const GIsiMessage *msg, void *data)
 {
-	const uint8_t *msg = data;
+	uint8_t cause;
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		return TRUE;
-	}
+	if (g_isi_msg_error(msg) < 0)
+		return;
 
-	if (len < 3 || msg[0] != SMS_GSM_RECEIVED_PP_REPORT_RESP)
-		return FALSE;
+	if (g_isi_msg_id(msg) != SMS_GSM_RECEIVED_PP_REPORT_RESP)
+		return;
 
-	DBG("Report resp cause=0x%"PRIx8, msg[1]);
+	if (!g_isi_msg_data_get_byte(msg, 0, &cause))
+		return;
 
-	return TRUE;
+	DBG("Report resp cause=0x%"PRIx8, cause);
 }
 
 static gboolean send_deliver_report(GIsiClient *client, gboolean success)
@@ -423,132 +484,103 @@ static gboolean send_deliver_report(GIsiClient *client, gboolean success)
 		0,		/* Sub blocks */
 	};
 
-	return g_isi_send(client, msg, sizeof(msg), SMS_TIMEOUT,
-				report_resp_cb, NULL, NULL) != NULL;
+	return g_isi_client_send(client, msg, sizeof(msg), SMS_TIMEOUT,
+					report_resp_cb, NULL, NULL) != NULL;
 }
 
-static void routing_ntf_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static gboolean parse_sms_address(GIsiSubBlockIter *iter,
+					struct sms_addr **addr)
 {
-	const uint8_t *msg = data;
-	struct ofono_sms *sms = opaque;
+	size_t len = sizeof(struct sms_addr);
+
+	*addr = NULL;
+	return g_isi_sb_iter_get_struct(iter, (void **)addr, len, 2);
+}
+
+static gboolean parse_sms_tpdu(GIsiSubBlockIter *iter,
+				struct sms_common **tpdu)
+{
+	size_t len = sizeof(struct sms_common);
+
+	*tpdu = NULL;
+	return g_isi_sb_iter_get_struct(iter, (void **)tpdu, len, 2);
+}
+
+static void routing_ntf_cb(const GIsiMessage *msg, void *data)
+{
+	struct ofono_sms *sms = data;
+	struct sms_data *sd = ofono_sms_get_data(sms);
+	struct sms_common *tpdu;
+	struct sms_addr *addr;
 	GIsiSubBlockIter iter;
 
-	uint8_t *sca = NULL;
-	uint8_t sca_len = 0;
-	uint8_t *tpdu = NULL;
-	uint8_t tpdu_len = 0;
+	uint8_t pdu[176];
+	uint8_t type;
 
-	unsigned char pdu[176];
-
-	if (!msg || len < 7 || msg[0] != SMS_PP_ROUTING_NTF
-		|| msg[3] != SMS_GSM_TPDU)
+	if (g_isi_msg_id(msg) != SMS_PP_ROUTING_NTF)
 		return;
 
-	for (g_isi_sb_iter_init(&iter, msg, len, 7);
-		g_isi_sb_iter_is_valid(&iter);
-		g_isi_sb_iter_next(&iter)) {
+	if (!g_isi_msg_data_get_byte(msg, 2, &type) ||
+			type != SMS_GSM_TPDU)
+		return;
+
+	for (g_isi_sb_iter_init(&iter, msg, 6);
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
 
 		switch (g_isi_sb_iter_get_id(&iter)) {
-
-		uint8_t type;
-		void *data;
-		uint8_t data_len;
-
 		case SMS_ADDRESS:
 
-			if (!g_isi_sb_iter_get_byte(&iter, &type, 2)
-				|| !g_isi_sb_iter_get_byte(&iter, &data_len, 3)
-				|| !g_isi_sb_iter_get_data(&iter, &data, 4)
-				|| type != SMS_GSM_0411_ADDRESS)
-				break;
-
-			sca = data;
-			sca_len = data_len;
+			if (!parse_sms_address(&iter, &addr) ||
+					addr->type != SMS_GSM_0411_ADDRESS)
+				return;
 			break;
 
 		case SMS_COMMON_DATA:
 
-			if (!g_isi_sb_iter_get_byte(&iter, &data_len, 2)
-				|| !g_isi_sb_iter_get_data(&iter, &data, 4))
-				break;
-
-			tpdu = data;
-			tpdu_len = data_len;
+			if (!parse_sms_tpdu(&iter, &tpdu))
+				return;
 			break;
-
-		default:
-			DBG("skipped sub-block: %s (%zu bytes)",
-				sms_subblock_name(g_isi_sb_iter_get_id(&iter)),
-				g_isi_sb_iter_get_len(&iter));
 		}
 	}
 
-	if (!tpdu || !sca || tpdu_len + sca_len > sizeof(pdu))
+	if (!tpdu || !addr || tpdu->len + addr->len > sizeof(pdu))
 		return;
 
-	memcpy(pdu, sca, sca_len);
-	memcpy(pdu + sca_len, tpdu, tpdu_len);
+	memcpy(pdu, addr->data, addr->len);
+	memcpy(pdu + addr->len, tpdu->data, tpdu->len);
 
-	ofono_sms_deliver_notify(sms, pdu, tpdu_len + sca_len, tpdu_len);
+	ofono_sms_deliver_notify(sms, pdu, tpdu->len + addr->len, tpdu->len);
 
-	/* FIXME: We should not ack the DELIVER unless it has been
+	/*
+	 * FIXME: We should not ack the DELIVER unless it has been
 	 * reliably stored, i.e., written to disk. Currently, there is
 	 * no such indication from core, so we just blindly trust that
-	 * it did The Right Thing here. */
-	send_deliver_report(client, TRUE);
+	 * it did The Right Thing here.
+	 */
+	send_deliver_report(sd->client, TRUE);
 }
 
-static gboolean routing_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void routing_resp_cb(const GIsiMessage *msg, void *data)
 {
-	const unsigned char *msg = data;
-	struct ofono_sms *sms = opaque;
+	struct ofono_sms *sms = data;
+	struct sms_data *sd = ofono_sms_get_data(sms);
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
-		goto error;
-	}
+	if (!check_sms_status(msg, SMS_PP_ROUTING_RESP))
+		return;
 
-	if (len < 3 || msg[0] != SMS_PP_ROUTING_RESP)
-		goto error;
-
-	if (msg[1] != SMS_OK) {
-
-		if (msg[1] == SMS_ERR_PP_RESERVED) {
-			DBG("Request failed: 0x%02"PRIx8" (%s).\n\n  "
-				"Unable to bootstrap SMS routing.\n  "
-				"It appears some other component is "
-				"already\n  registered as the SMS "
-				"routing endpoint.\n  As a consequence, "
-				"receiving SMSs is NOT going to work.\n  "
-				"On the other hand, sending might work.\n",
-				msg[1], sms_isi_cause_name(msg[1]));
-			ofono_sms_register(sms);
-		}
-		return TRUE;
-	}
-
-	g_isi_subscribe(client, SMS_PP_ROUTING_NTF, routing_ntf_cb, sms);
+	g_isi_client_ntf_subscribe(sd->client, SMS_PP_ROUTING_NTF,
+					routing_ntf_cb, sms);
 
 	ofono_sms_register(sms);
-	return TRUE;
-
-error:
-	DBG("Unable to bootstrap SMS routing.");
-	return TRUE;
 }
 
 static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 				void *user)
 {
-	GIsiModem *idx = user;
-	struct sms_data *data = g_try_new0(struct sms_data, 1);
-	const char *debug;
-
-	const unsigned char msg[] = {
+	GIsiModem *modem = user;
+	struct sms_data *sd = g_try_new0(struct sms_data, 1);
+	const uint8_t msg[] = {
 		SMS_PP_ROUTING_REQ,
 		SMS_ROUTING_SET,
 		0x01,  /* Sub-block count */
@@ -560,44 +592,37 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 		0x00  /* Sub-sub-block count */
 	};
 
-	if (data == NULL)
+	if (sd == NULL)
 		return -ENOMEM;
 
-	data->params.absent = 0xff;
-	data->params.alphalen = 1; /* Includes final UCS2-coded NUL */
+	sd->params.absent = 0xFF;
+	sd->params.alphalen = 1; /* Includes final UCS2-coded NUL */
 
-	data->client = g_isi_client_create(idx, PN_SMS);
-	if (data->client == NULL)
+	sd->client = g_isi_client_create(modem, PN_SMS);
+	if (sd->client == NULL)
 		return -ENOMEM;
 
-	data->sim = g_isi_client_create(idx, PN_SIM);
-	if (data->sim == NULL) {
-		g_isi_client_destroy(data->client);
+	sd->sim = g_isi_client_create(modem, PN_SIM);
+	if (sd->sim == NULL) {
+		g_isi_client_destroy(sd->client);
 		return -ENOMEM;
 	}
 
-	ofono_sms_set_data(sms, data);
+	ofono_sms_set_data(sms, sd);
 
-	debug = getenv("OFONO_ISI_DEBUG");
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "sms") == 0)) {
-		g_isi_client_set_debug(data->client, sms_debug, NULL);
-		g_isi_client_set_debug(data->sim, sim_debug, NULL);
-	}
-
-	g_isi_subscribe(data->client, SMS_MESSAGE_SEND_STATUS_IND,
-			send_status_ind_cb, sms);
-	if (g_isi_send(data->client, msg, sizeof(msg), SMS_TIMEOUT,
-					routing_resp_cb, sms, NULL) == NULL)
-		DBG("Failed to set SMS routing.");
+	g_isi_client_ind_subscribe(sd->client, SMS_MESSAGE_SEND_STATUS_IND,
+					send_status_ind_cb, sms);
+	g_isi_client_send(sd->client, msg, sizeof(msg), SMS_TIMEOUT,
+				routing_resp_cb, sms, NULL);
 
 	return 0;
 }
 
 static void isi_sms_remove(struct ofono_sms *sms)
 {
-	struct sms_data *data = ofono_sms_get_data(sms);
+	struct sms_data *sd = ofono_sms_get_data(sms);
 
-	const unsigned char msg[] = {
+	const uint8_t msg[] = {
 		SMS_PP_ROUTING_REQ,
 		SMS_ROUTING_RELEASE,
 		0x01,  /* Sub-block count */
@@ -609,20 +634,20 @@ static void isi_sms_remove(struct ofono_sms *sms)
 		0x00  /* Sub-sub-block count */
 	};
 
-	if (data == NULL)
-		return;
-
 	ofono_sms_set_data(sms, NULL);
+
+	if (sd == NULL)
+		return;
 
 	/*
 	 * Send a promiscuous routing release, so as not to
 	 * hog resources unnecessarily after being removed
 	 */
-	g_isi_send(data->client, msg, sizeof(msg),
-			SMS_TIMEOUT, NULL, NULL, NULL);
-	g_isi_client_destroy(data->client);
-	g_isi_client_destroy(data->sim);
-	g_free(data);
+	g_isi_client_send(sd->client, msg, sizeof(msg), SMS_TIMEOUT,
+				NULL, NULL, NULL);
+	g_isi_client_destroy(sd->client);
+	g_isi_client_destroy(sd->sim);
+	g_free(sd);
 }
 
 static struct ofono_sms_driver driver = {
@@ -631,7 +656,9 @@ static struct ofono_sms_driver driver = {
 	.remove			= isi_sms_remove,
 	.sca_query		= isi_sca_query,
 	.sca_set		= isi_sca_set,
-	.submit			= isi_submit
+	.submit			= isi_submit,
+	.bearer_query		= isi_bearer_query,
+	.bearer_set		= isi_bearer_set,
 };
 
 void isi_sms_init()
