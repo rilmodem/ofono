@@ -476,6 +476,7 @@ Miscellaneous
 
   Priority: Medium
   Complexity: C2
+  Owner: Gustavo F Padovan <padovan@profusion.mobi>
 
 - TTY (hearing impaired) support.  Add a new oFono atom type that will enable
   the user to enable or disable the TTY support on the modem.  Support for
