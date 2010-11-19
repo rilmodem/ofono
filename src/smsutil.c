@@ -158,7 +158,7 @@ gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
 		comp = (dcs & 0x20) ? TRUE : FALSE;
 
 		if (dcs & 0x10)
-			cl = (enum sms_class)(dcs & 0x03);
+			cl = (enum sms_class) (dcs & 0x03);
 		else
 			cl = SMS_CLASS_UNSPECIFIED;
 
@@ -177,7 +177,7 @@ gboolean sms_dcs_decode(guint8 dcs, enum sms_class *cls,
 		else
 			ch = SMS_CHARSET_7BIT;
 
-		cl = (enum sms_class)(dcs & 0x03);
+		cl = (enum sms_class) (dcs & 0x03);
 
 		break;
 	default:
@@ -2260,7 +2260,7 @@ char *sms_decode_text(GSList *sms_list)
 								locking_shift,
 								single_shift);
 		} else {
-			const gchar *from = (const gchar *)(ud + taken);
+			const gchar *from = (const gchar *) (ud + taken);
 			/*
 			 * According to the spec: A UCS2 character shall not be
 			 * split in the middle; if the length of the User Data
@@ -2502,7 +2502,7 @@ void sms_assembly_free(struct sms_assembly *assembly)
 	for (l = assembly->assembly_list; l; l = l->next) {
 		struct sms_assembly_node *node = l->data;
 
-		g_slist_foreach(node->fragment_list, (GFunc)g_free, 0);
+		g_slist_foreach(node->fragment_list, (GFunc) g_free, 0);
 		g_slist_free(node->fragment_list);
 		g_free(node);
 	}
@@ -2653,7 +2653,7 @@ void sms_assembly_expire(struct sms_assembly *assembly, time_t before)
 
 		sms_assembly_backup_free(assembly, node);
 
-		g_slist_foreach(node->fragment_list, (GFunc)g_free, 0);
+		g_slist_foreach(node->fragment_list, (GFunc) g_free, 0);
 		g_slist_free(node->fragment_list);
 		g_free(node);
 
@@ -2760,7 +2760,7 @@ struct status_report_assembly *status_report_assembly_new(const char *imsi)
 				g_new0(struct status_report_assembly, 1);
 
 	ret->assembly_table = g_hash_table_new_full(g_str_hash, g_str_equal,
-				g_free, (GDestroyNotify)g_hash_table_destroy);
+				g_free, (GDestroyNotify) g_hash_table_destroy);
 
 	if (imsi) {
 		ret->imsi = imsi;
@@ -3244,7 +3244,7 @@ GSList *sms_datagram_prepare(const char *to,
 	}
 
 	if (left > 0) {
-		g_slist_foreach(r, (GFunc)g_free, NULL);
+		g_slist_foreach(r, (GFunc) g_free, NULL);
 		g_slist_free(r);
 
 		return NULL;
@@ -3407,7 +3407,7 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 		g_free(ucs2_encoded);
 
 	if (left > 0) {
-		g_slist_foreach(r, (GFunc)g_free, NULL);
+		g_slist_foreach(r, (GFunc) g_free, NULL);
 		g_slist_free(r);
 
 		return NULL;
@@ -3446,7 +3446,7 @@ gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 	case 0:
 		ch = SMS_CHARSET_7BIT;
 		cl = SMS_CLASS_UNSPECIFIED;
-		lang = (enum cbs_language)lower;
+		lang = (enum cbs_language) lower;
 		break;
 	case 1:
 		if (lower > 1)
@@ -3467,7 +3467,7 @@ gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 
 		ch = SMS_CHARSET_7BIT;
 		cl = SMS_CLASS_UNSPECIFIED;
-		lang = (enum cbs_language)dcs;
+		lang = (enum cbs_language) dcs;
 		break;
 	case 4:
 	case 5:
@@ -3476,21 +3476,21 @@ gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 		comp = (dcs & 0x20) ? TRUE : FALSE;
 
 		if (dcs & 0x10)
-			cl = (enum sms_class)(dcs & 0x03);
+			cl = (enum sms_class) (dcs & 0x03);
 		else
 			cl = SMS_CLASS_UNSPECIFIED;
 
 		if (((dcs & 0x0c) >> 2) < 3)
-			ch = (enum sms_charset)((dcs & 0x0c) >> 2);
+			ch = (enum sms_charset) ((dcs & 0x0c) >> 2);
 		else
 			return FALSE;
 
 		break;
 	case 9:
 		udh = TRUE;
-		cl = (enum sms_class)(dcs & 0x03);
+		cl = (enum sms_class) (dcs & 0x03);
 		if (((dcs & 0x0c) >> 2) < 3)
-			ch = (enum sms_charset)((dcs & 0x0c) >> 2);
+			ch = (enum sms_charset) ((dcs & 0x0c) >> 2);
 		else
 			return FALSE;
 
@@ -3505,7 +3505,7 @@ gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,
 			ch = SMS_CHARSET_7BIT;
 
 		if (lower & 0x3)
-			cl = (enum sms_class)(lower & 0x3);
+			cl = (enum sms_class) (lower & 0x3);
 		else
 			cl = SMS_CLASS_UNSPECIFIED;
 
@@ -3858,7 +3858,7 @@ char *cbs_decode_text(GSList *cbs_list, char *iso639_lang)
 	if (charset == SMS_CHARSET_7BIT)
 		utf8 = convert_gsm_to_utf8(buf, bufsize, NULL, NULL, 0);
 	else
-		utf8 = g_convert((char *)buf, bufsize, "UTF-8//TRANSLIT",
+		utf8 = g_convert((char *) buf, bufsize, "UTF-8//TRANSLIT",
 					"UCS-2BE", NULL, NULL, NULL);
 
 	g_free(buf);
@@ -3897,7 +3897,7 @@ void cbs_assembly_free(struct cbs_assembly *assembly)
 	for (l = assembly->assembly_list; l; l = l->next) {
 		struct cbs_assembly_node *node = l->data;
 
-		g_slist_foreach(node->pages, (GFunc)g_free, 0);
+		g_slist_foreach(node->pages, (GFunc) g_free, 0);
 		g_slist_free(node->pages);
 		g_free(node);
 	}
@@ -3977,7 +3977,7 @@ static void cbs_assembly_expire(struct cbs_assembly *assembly,
 		else
 			assembly->assembly_list = l->next;
 
-		g_slist_foreach(node->pages, (GFunc)g_free, NULL);
+		g_slist_foreach(node->pages, (GFunc) g_free, NULL);
 		g_slist_free(node->pages);
 		g_free(node->pages);
 		tmp = l;
@@ -4287,7 +4287,7 @@ GSList *cbs_extract_topic_ranges(const char *ranges)
 	}
 
 	tmp = cbs_optimize_ranges(ret);
-	g_slist_foreach(ret, (GFunc)g_free, NULL);
+	g_slist_foreach(ret, (GFunc) g_free, NULL);
 	g_slist_free(ret);
 
 	return tmp;
