@@ -437,6 +437,7 @@ Miscellaneous
 
 - Frequency Band Selection.  Add frequency band selection capability to the
   RadioSettings atom.
+  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 
   This feature is not discussed in 27.007, thus manufacturer specific commands
   are required.
