@@ -75,7 +75,7 @@ static void append_array_variant(DBusMessageIter *iter, int type, void *val)
 	DBusMessageIter variant, array;
 	char typesig[2];
 	char arraysig[3];
-	const char **str_array = *(const char ***)val;
+	const char **str_array = *(const char ***) val;
 	int i;
 
 	arraysig[0] = DBUS_TYPE_ARRAY;
@@ -117,7 +117,7 @@ static void append_dict_variant(DBusMessageIter *iter, int type, void *val)
 	DBusMessageIter variant, array, entry;
 	char typesig[5];
 	char arraysig[6];
-	const void **val_array = *(const void ***)val;
+	const void **val_array = *(const void ***) val;
 	int i;
 
 	arraysig[0] = DBUS_TYPE_ARRAY;

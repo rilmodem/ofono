@@ -759,7 +759,7 @@ int ofono_ussd_driver_register(const struct ofono_ussd_driver *d)
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+	g_drivers = g_slist_prepend(g_drivers, (void *) d);
 
 	return 0;
 }
@@ -768,7 +768,7 @@ void ofono_ussd_driver_unregister(const struct ofono_ussd_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_drivers = g_slist_remove(g_drivers, (void *)d);
+	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
 static void ussd_unregister(struct ofono_atom *atom)
@@ -778,11 +778,11 @@ static void ussd_unregister(struct ofono_atom *atom)
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 
-	g_slist_foreach(ussd->ss_control_list, (GFunc)ssc_entry_destroy, NULL);
+	g_slist_foreach(ussd->ss_control_list, (GFunc) ssc_entry_destroy, NULL);
 	g_slist_free(ussd->ss_control_list);
 	ussd->ss_control_list = NULL;
 
-	g_slist_foreach(ussd->ss_passwd_list, (GFunc)ssc_entry_destroy, NULL);
+	g_slist_foreach(ussd->ss_passwd_list, (GFunc) ssc_entry_destroy, NULL);
 	g_slist_free(ussd->ss_passwd_list);
 	ussd->ss_passwd_list = NULL;
 

@@ -135,7 +135,7 @@ int ofono_audio_settings_driver_register(const struct ofono_audio_settings_drive
 	if (!d || !d->probe)
 		return -EINVAL;
 
-	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+	g_drivers = g_slist_prepend(g_drivers, (void *) d);
 
 	return 0;
 }
@@ -147,7 +147,7 @@ void ofono_audio_settings_driver_unregister(const struct ofono_audio_settings_dr
 	if (!d)
 		return;
 
-	g_drivers = g_slist_remove(g_drivers, (void *)d);
+	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
 static void audio_settings_unregister(struct ofono_atom *atom)

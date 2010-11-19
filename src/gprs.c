@@ -2019,7 +2019,7 @@ int ofono_gprs_context_driver_register(const struct ofono_gprs_context_driver *d
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_context_drivers = g_slist_prepend(g_context_drivers, (void *)d);
+	g_context_drivers = g_slist_prepend(g_context_drivers, (void *) d);
 
 	return 0;
 }
@@ -2028,7 +2028,7 @@ void ofono_gprs_context_driver_unregister(const struct ofono_gprs_context_driver
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_context_drivers = g_slist_remove(g_context_drivers, (void *)d);
+	g_context_drivers = g_slist_remove(g_context_drivers, (void *) d);
 }
 
 static void gprs_context_remove(struct ofono_atom *atom)

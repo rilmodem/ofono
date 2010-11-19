@@ -1112,7 +1112,7 @@ int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_dri
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+	g_drivers = g_slist_prepend(g_drivers, (void *) d);
 
 	return 0;
 }
@@ -1121,7 +1121,7 @@ void ofono_call_forwarding_driver_unregister(const struct ofono_call_forwarding_
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_drivers = g_slist_remove(g_drivers, (void *)d);
+	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
 static void call_forwarding_unregister(struct ofono_atom *atom)

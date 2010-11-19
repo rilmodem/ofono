@@ -205,7 +205,7 @@ static unsigned int add_sms_handler(struct ofono_watchlist *watchlist,
 	handler->item.destroy = destroy;
 
 	return __ofono_watchlist_add_item(watchlist,
-				(struct ofono_watchlist_item *)handler);
+				(struct ofono_watchlist_item *) handler);
 }
 
 unsigned int __ofono_sms_text_watch_add(struct ofono_sms *sms,
@@ -1003,7 +1003,7 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	err = __ofono_sms_txq_submit(sms, msg_list, flags, &uuid,
 					message_queued, msg);
 
-	g_slist_foreach(msg_list, (GFunc)g_free, NULL);
+	g_slist_foreach(msg_list, (GFunc) g_free, NULL);
 	g_slist_free(msg_list);
 
 	if (err < 0)
@@ -1369,13 +1369,13 @@ static void handle_deliver(struct ofono_sms *sms, const struct sms *incoming)
 			return;
 
 		sms_dispatch(sms, sms_list);
-		g_slist_foreach(sms_list, (GFunc)g_free, NULL);
+		g_slist_foreach(sms_list, (GFunc) g_free, NULL);
 		g_slist_free(sms_list);
 
 		return;
 	}
 
-	l = g_slist_append(NULL, (void *)incoming);
+	l = g_slist_append(NULL, (void *) incoming);
 	sms_dispatch(sms, l);
 	g_slist_free(l);
 }
@@ -1602,7 +1602,7 @@ int ofono_sms_driver_register(const struct ofono_sms_driver *d)
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+	g_drivers = g_slist_prepend(g_drivers, (void *) d);
 
 	return 0;
 }
@@ -1611,7 +1611,7 @@ void ofono_sms_driver_unregister(const struct ofono_sms_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_drivers = g_slist_remove(g_drivers, (void *)d);
+	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
 static void sms_unregister(struct ofono_atom *atom)

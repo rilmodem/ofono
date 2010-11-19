@@ -108,7 +108,7 @@ int ofono_nettime_driver_register(const struct ofono_nettime_driver *driver)
 {
 	DBG("driver: %p name: %s", driver, driver->name);
 
-	nettime_drivers = g_slist_prepend(nettime_drivers, (void *)driver);
+	nettime_drivers = g_slist_prepend(nettime_drivers, (void *) driver);
 
 	return 0;
 }

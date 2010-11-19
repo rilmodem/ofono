@@ -1059,7 +1059,7 @@ int ofono_devinfo_driver_register(const struct ofono_devinfo_driver *d)
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_devinfo_drivers = g_slist_prepend(g_devinfo_drivers, (void *)d);
+	g_devinfo_drivers = g_slist_prepend(g_devinfo_drivers, (void *) d);
 
 	return 0;
 }
@@ -1068,7 +1068,7 @@ void ofono_devinfo_driver_unregister(const struct ofono_devinfo_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_devinfo_drivers = g_slist_remove(g_devinfo_drivers, (void *)d);
+	g_devinfo_drivers = g_slist_remove(g_devinfo_drivers, (void *) d);
 }
 
 static void devinfo_remove(struct ofono_atom *atom)
@@ -1572,7 +1572,7 @@ int ofono_modem_driver_register(const struct ofono_modem_driver *d)
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_driver_list = g_slist_prepend(g_driver_list, (void *)d);
+	g_driver_list = g_slist_prepend(g_driver_list, (void *) d);
 
 	return 0;
 }
@@ -1584,7 +1584,7 @@ void ofono_modem_driver_unregister(const struct ofono_modem_driver *d)
 
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_driver_list = g_slist_remove(g_driver_list, (void *)d);
+	g_driver_list = g_slist_remove(g_driver_list, (void *) d);
 
 	for (l = g_modem_list; l; l = l->next) {
 		modem = l->data;

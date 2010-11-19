@@ -249,7 +249,7 @@ static void print_merged_entry(struct phonebook_person *person, GString *vcards)
 	vcard_printf_begin(vcards);
 	vcard_printf_text(vcards, person->text);
 
-	g_slist_foreach(person->number_list, (GFunc)print_number, vcards);
+	g_slist_foreach(person->number_list, (GFunc) print_number, vcards);
 
 	vcard_printf_group(vcards, person->group);
 	vcard_printf_email(vcards, person->email);
@@ -264,7 +264,7 @@ static void destroy_merged_entry(struct phonebook_person *person)
 	g_free(person->email);
 	g_free(person->sip_uri);
 
-	g_slist_foreach(person->number_list, (GFunc)destroy_number, NULL);
+	g_slist_foreach(person->number_list, (GFunc) destroy_number, NULL);
 	g_slist_free(person->number_list);
 
 	g_free(person);
@@ -420,9 +420,9 @@ static void export_phonebook_cb(const struct ofono_error *error, void *data)
 
 	/* convert the collected entries that are already merged to vcard */
 	phonebook->merge_list = g_slist_reverse(phonebook->merge_list);
-	g_slist_foreach(phonebook->merge_list, (GFunc)print_merged_entry,
+	g_slist_foreach(phonebook->merge_list, (GFunc) print_merged_entry,
 				phonebook->vcards);
-	g_slist_foreach(phonebook->merge_list, (GFunc)destroy_merged_entry,
+	g_slist_foreach(phonebook->merge_list, (GFunc) destroy_merged_entry,
 				NULL);
 	g_slist_free(phonebook->merge_list);
 	phonebook->merge_list = NULL;
@@ -498,7 +498,7 @@ int ofono_phonebook_driver_register(const struct ofono_phonebook_driver *d)
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+	g_drivers = g_slist_prepend(g_drivers, (void *) d);
 
 	return 0;
 }
@@ -507,7 +507,7 @@ void ofono_phonebook_driver_unregister(const struct ofono_phonebook_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_drivers = g_slist_remove(g_drivers, (void *)d);
+	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
 static void phonebook_unregister(struct ofono_atom *atom)

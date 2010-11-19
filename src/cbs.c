@@ -565,7 +565,7 @@ int ofono_cbs_driver_register(const struct ofono_cbs_driver *d)
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+	g_drivers = g_slist_prepend(g_drivers, (void *) d);
 
 	return 0;
 }
@@ -574,7 +574,7 @@ void ofono_cbs_driver_unregister(const struct ofono_cbs_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_drivers = g_slist_remove(g_drivers, (void *)d);
+	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
 static void cbs_unregister(struct ofono_atom *atom)
@@ -588,20 +588,20 @@ static void cbs_unregister(struct ofono_atom *atom)
 	ofono_modem_remove_interface(modem, OFONO_CELL_BROADCAST_INTERFACE);
 
 	if (cbs->topics) {
-		g_slist_foreach(cbs->topics, (GFunc)g_free, NULL);
+		g_slist_foreach(cbs->topics, (GFunc) g_free, NULL);
 		g_slist_free(cbs->topics);
 		cbs->topics = NULL;
 	}
 
 	if (cbs->new_topics) {
-		g_slist_foreach(cbs->new_topics, (GFunc)g_free, NULL);
+		g_slist_foreach(cbs->new_topics, (GFunc) g_free, NULL);
 		g_slist_free(cbs->new_topics);
 		cbs->new_topics = NULL;
 	}
 
 	if (cbs->efcbmid_length) {
 		cbs->efcbmid_length = 0;
-		g_slist_foreach(cbs->efcbmid_contents, (GFunc)g_free, NULL);
+		g_slist_foreach(cbs->efcbmid_contents, (GFunc) g_free, NULL);
 		g_slist_free(cbs->efcbmid_contents);
 		cbs->efcbmid_contents = NULL;
 	}

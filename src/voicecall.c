@@ -1926,7 +1926,7 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 {
 	int i = 0;
 
-	g_slist_foreach(vc->en_list, (GFunc)g_free, NULL);
+	g_slist_foreach(vc->en_list, (GFunc) g_free, NULL);
 	g_slist_free(vc->en_list);
 	vc->en_list = NULL;
 
@@ -2026,7 +2026,7 @@ int ofono_voicecall_driver_register(const struct ofono_voicecall_driver *d)
 	if (d->probe == NULL)
 		return -EINVAL;
 
-	g_drivers = g_slist_prepend(g_drivers, (void *)d);
+	g_drivers = g_slist_prepend(g_drivers, (void *) d);
 
 	return 0;
 }
@@ -2035,7 +2035,7 @@ void ofono_voicecall_driver_unregister(const struct ofono_voicecall_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	g_drivers = g_slist_remove(g_drivers, (void *)d);
+	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
 static void voicecall_unregister(struct ofono_atom *atom)
@@ -2077,13 +2077,13 @@ static void voicecall_remove(struct ofono_atom *atom)
 		vc->driver->remove(vc);
 
 	if (vc->en_list) {
-		g_slist_foreach(vc->en_list, (GFunc)g_free, NULL);
+		g_slist_foreach(vc->en_list, (GFunc) g_free, NULL);
 		g_slist_free(vc->en_list);
 		vc->en_list = NULL;
 	}
 
 	if (vc->new_en_list) {
-		g_slist_foreach(vc->new_en_list, (GFunc)g_free, NULL);
+		g_slist_foreach(vc->new_en_list, (GFunc) g_free, NULL);
 		g_slist_free(vc->new_en_list);
 		vc->new_en_list = NULL;
 	}

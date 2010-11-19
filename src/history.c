@@ -255,7 +255,7 @@ int ofono_history_driver_register(const struct ofono_history_driver *driver)
 {
 	DBG("driver: %p name: %s", driver, driver->name);
 
-	history_drivers = g_slist_prepend(history_drivers, (void *)driver);
+	history_drivers = g_slist_prepend(history_drivers, (void *) driver);
 
 	return 0;
 }
