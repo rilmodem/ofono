@@ -462,8 +462,8 @@ static const struct alphabet_conversion_table alphabet_lookup[] = {
 
 static int compare_codepoints(const void *a, const void *b)
 {
-	const struct codepoint *ca = (const struct codepoint *)a;
-	const struct codepoint *cb = (const struct codepoint *)b;
+	const struct codepoint *ca = (const struct codepoint *) a;
+	const struct codepoint *cb = (const struct codepoint *) b;
 
 	return (ca->from > cb->from) - (ca->from < cb->from);
 }
@@ -1126,7 +1126,7 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 			if (buffer[i] == 0xff && buffer[i + 1] == 0xff)
 				break;
 
-		return g_convert((char *)buffer + 1, i - 1,
+		return g_convert((char *) buffer + 1, i - 1,
 					"UTF-8//TRANSLIT", "UCS-2BE",
 					NULL, NULL, NULL);
 	case 0x81:
