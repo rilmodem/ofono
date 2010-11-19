@@ -813,7 +813,7 @@ static char *sim_network_name_parse(const unsigned char *buffer, int length,
 			if (buffer[i] == 0xff && buffer[i + 1] == 0xff)
 				break;
 
-		ret = g_convert((const char *)buffer, length,
+		ret = g_convert((const char *) buffer, length,
 					"UTF-8//TRANSLIT", "UCS-2BE",
 					NULL, NULL, NULL);
 		break;
