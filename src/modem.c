@@ -468,7 +468,7 @@ static void offline_cb(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&modem->pending, reply);
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
-		modem->modem_state == MODEM_STATE_ONLINE)
+				modem->modem_state == MODEM_STATE_ONLINE)
 		modem_change_state(modem, MODEM_STATE_OFFLINE);
 }
 
