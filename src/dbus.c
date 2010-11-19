@@ -342,6 +342,12 @@ DBusMessage *__ofono_error_canceled(DBusMessage *msg)
 					"Operation has been canceled");
 }
 
+DBusMessage *__ofono_error_access_denied(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, OFONO_ERROR_INTERFACE ".AccessDenied",
+					"Operation not permitted");
+}
+
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
