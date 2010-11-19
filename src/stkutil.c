@@ -640,7 +640,7 @@ static gboolean parse_dataobj_file_list(struct comprehension_tlv_iter *iter,
 	return TRUE;
 
 error:
-	g_slist_foreach(*fl, (GFunc)g_free, NULL);
+	g_slist_foreach(*fl, (GFunc) g_free, NULL);
 	g_slist_free(*fl);
 	return FALSE;
 }
@@ -2237,7 +2237,7 @@ static gboolean parse_item_list(struct comprehension_tlv_iter *iter,
 	if (count == 1)
 		return TRUE;
 
-	g_slist_foreach(list, (GFunc)destroy_stk_item, NULL);
+	g_slist_foreach(list, (GFunc) destroy_stk_item, NULL);
 	g_slist_free(list);
 	return FALSE;
 
@@ -2358,7 +2358,7 @@ static enum stk_command_parse_result parse_dataobj(
 			minimum_set = FALSE;
 	}
 
-	g_slist_foreach(entries, (GFunc)g_free, NULL);
+	g_slist_foreach(entries, (GFunc) g_free, NULL);
 	g_slist_free(entries);
 
 	if (minimum_set == FALSE)
@@ -2543,7 +2543,7 @@ static void destroy_setup_menu(struct stk_command *command)
 {
 	g_free(command->setup_menu.alpha_id);
 	g_slist_foreach(command->setup_menu.items,
-				(GFunc)destroy_stk_item, NULL);
+				(GFunc) destroy_stk_item, NULL);
 	g_slist_free(command->setup_menu.items);
 }
 
@@ -2585,7 +2585,7 @@ static void destroy_select_item(struct stk_command *command)
 {
 	g_free(command->select_item.alpha_id);
 	g_slist_foreach(command->select_item.items,
-				(GFunc)destroy_stk_item, NULL);
+				(GFunc) destroy_stk_item, NULL);
 	g_slist_free(command->select_item.items);
 }
 
@@ -2847,7 +2847,7 @@ static enum stk_command_parse_result parse_setup_call(
 
 static void destroy_refresh(struct stk_command *command)
 {
-	g_slist_foreach(command->refresh.file_list, (GFunc)g_free, NULL);
+	g_slist_foreach(command->refresh.file_list, (GFunc) g_free, NULL);
 	g_slist_free(command->refresh.file_list);
 	g_free(command->refresh.alpha_id);
 }
@@ -3144,7 +3144,7 @@ static void destroy_launch_browser(struct stk_command *command)
 	g_free(command->launch_browser.url);
 	g_free(command->launch_browser.bearer.array);
 	g_slist_foreach(command->launch_browser.prov_file_refs,
-				(GFunc)g_free, NULL);
+				(GFunc) g_free, NULL);
 	g_slist_free(command->launch_browser.prov_file_refs);
 	g_free(command->launch_browser.text_gateway_proxy_id);
 	g_free(command->launch_browser.alpha_id);
@@ -3448,7 +3448,7 @@ static void destroy_retrieve_mms(struct stk_command *command)
 {
 	g_free(command->retrieve_mms.alpha_id);
 	g_slist_foreach(command->retrieve_mms.mms_rec_files,
-						(GFunc)g_free, NULL);
+						(GFunc) g_free, NULL);
 	g_slist_free(command->retrieve_mms.mms_rec_files);
 }
 
@@ -3492,7 +3492,7 @@ static void destroy_submit_mms(struct stk_command *command)
 {
 	g_free(command->submit_mms.alpha_id);
 	g_slist_foreach(command->submit_mms.mms_subm_files,
-						(GFunc)g_free, NULL);
+						(GFunc) g_free, NULL);
 	g_slist_free(command->submit_mms.mms_subm_files);
 }
 
@@ -3529,7 +3529,7 @@ static enum stk_command_parse_result parse_submit_mms(
 static void destroy_display_mms(struct stk_command *command)
 {
 	g_slist_foreach(command->display_mms.mms_subm_files,
-						(GFunc)g_free, NULL);
+						(GFunc) g_free, NULL);
 	g_slist_free(command->display_mms.mms_subm_files);
 }
 
