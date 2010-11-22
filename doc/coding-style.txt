@@ -164,8 +164,8 @@ enum animal_type {
 	ANIMAL_TYPE_TWO_LEGS,
 };
 
-If the enum contents have values (e.g. from specification) the preferred
-formatting is as follows:
+If the enum contents have values (e.g. from specification) the formatting
+should be as follows:
 
 enum animal_type {
 	ANIMAL_TYPE_FOUR_LEGS =		4,
