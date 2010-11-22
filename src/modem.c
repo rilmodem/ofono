@@ -420,9 +420,9 @@ static void modem_change_state(struct ofono_modem *modem,
 				driver->post_sim(modem);
 			__ofono_history_probe_drivers(modem);
 			__ofono_nettime_probe_drivers(modem);
-		}
+		} else
+			notify_online_watches(modem);
 
-		notify_online_watches(modem);
 		break;
 
 	case MODEM_STATE_ONLINE:
