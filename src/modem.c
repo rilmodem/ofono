@@ -421,12 +421,14 @@ static void modem_change_state(struct ofono_modem *modem,
 			__ofono_history_probe_drivers(modem);
 			__ofono_nettime_probe_drivers(modem);
 		}
+
 		notify_online_watches(modem);
 		break;
 
 	case MODEM_STATE_ONLINE:
 		if (driver->post_online)
 			driver->post_online(modem);
+
 		notify_online_watches(modem);
 		break;
 	}
@@ -456,9 +458,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 	}
 }
 
-unsigned __ofono_modem_add_online_watch(struct ofono_modem *modem,
-		ofono_modem_online_notify_func notify,
-		void *data, ofono_destroy_func destroy)
+unsigned int __ofono_modem_add_online_watch(struct ofono_modem *modem,
+					ofono_modem_online_notify_func notify,
+					void *data, ofono_destroy_func destroy)
 {
 	struct ofono_watchlist_item *item;
 
@@ -474,7 +476,8 @@ unsigned __ofono_modem_add_online_watch(struct ofono_modem *modem,
 	return __ofono_watchlist_add_item(modem->online_watches, item);
 }
 
-void __ofono_modem_remove_online_watch(struct ofono_modem *modem, unsigned id)
+void __ofono_modem_remove_online_watch(struct ofono_modem *modem,
+					unsigned int id)
 {
 	__ofono_watchlist_remove_item(modem->online_watches, id);
 }
