@@ -303,6 +303,9 @@ static char *dbus_apply_text_attributes(const char *text,
 	const uint8_t *j = attr->attributes;
 	const uint8_t *end = j + attr->len;
 
+	if (!text)
+		return NULL;
+
 	if (attr->len & 3)
 		return NULL;
 
