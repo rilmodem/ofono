@@ -15,7 +15,7 @@ Methods		dict GetProperties()
 		void SetProperty(string name, variant value)
 
 			Changes the value of the specified property. Only
-			properties that are listed as read-write are
+			properties that are listed as readwrite are
 			changeable. On success a PropertyChanged signal
 			will be emitted.
 
@@ -28,7 +28,7 @@ Signals		PropertyChanged(string property, variant value)
 			This signal indicates a changed value of the given
 			property.
 
-Properties	string TechnologyPreference [read-write]
+Properties	string TechnologyPreference [readwrite]
 
 			The current radio access selection mode, also known
 			as network preference.
@@ -42,7 +42,7 @@ Properties	string TechnologyPreference [read-write]
 				"umts"	Only UMTS used for radio access.
 				"lte"	Only LTE used for radio acccess.
 
-		boolean	FastDormancy [read-write, optional]
+		boolean	FastDormancy [readwrite, optional]
 
 			This property will enable or disable the fast
 			dormancy feature in the modem. Fast dormancy

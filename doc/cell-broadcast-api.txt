@@ -15,7 +15,7 @@ Methods		dict GetProperties()
 		void SetProperty(string property, variant value)
 
 			Changes the value of the specified property. Only
-			properties that are listed as read-write are
+			properties that are listed as readwrite are
 			changeable. On success a PropertyChanged signal
 			will be emitted.
 
