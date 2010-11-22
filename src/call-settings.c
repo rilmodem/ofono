@@ -734,7 +734,7 @@ static gboolean clir_ss_control(int type,
 	case SS_CONTROL_TYPE_REGISTRATION:
 	case SS_CONTROL_TYPE_ACTIVATION:
 		cs->ss_req_type = SS_CONTROL_TYPE_ACTIVATION;
-		cs->driver->clir_set(cs, OFONO_CLIR_OPTION_INVOCATION,
+		cs->driver->clir_set(cs, OFONO_CLIR_OPTION_SUPPRESSION,
 					clir_ss_set_callback, cs);
 		break;
 
@@ -746,7 +746,7 @@ static gboolean clir_ss_control(int type,
 	case SS_CONTROL_TYPE_DEACTIVATION:
 	case SS_CONTROL_TYPE_ERASURE:
 		cs->ss_req_type = SS_CONTROL_TYPE_DEACTIVATION;
-		cs->driver->clir_set(cs, OFONO_CLIR_OPTION_SUPPRESSION,
+		cs->driver->clir_set(cs, OFONO_CLIR_OPTION_INVOCATION,
 					clir_ss_set_callback, cs);
 		break;
 	};
