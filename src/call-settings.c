@@ -709,7 +709,7 @@ static gboolean clir_ss_control(int type,
 
 	/* This is the temporary form of CLIR, handled in voicecalls */
 	if (!strlen(sia) && !strlen(sib) & !strlen(sic) &&
-		strlen(dn) && type != SS_CONTROL_TYPE_QUERY)
+			strlen(dn) && type != SS_CONTROL_TYPE_QUERY)
 		return FALSE;
 
 	if (strlen(sia) || strlen(sib) || strlen(sic) || strlen(dn)) {
@@ -719,8 +719,14 @@ static gboolean clir_ss_control(int type,
 		return TRUE;
 	}
 
-	if ((type == SS_CONTROL_TYPE_QUERY && !cs->driver->clir_query) ||
-		(type != SS_CONTROL_TYPE_QUERY && !cs->driver->clir_set)) {
+	if (type == SS_CONTROL_TYPE_QUERY && cs->driver->clir_query == NULL) {
+		DBusMessage *reply = __ofono_error_not_implemented(msg);
+		g_dbus_send_message(conn, reply);
+
+		return TRUE;
+	}
+
+	if (type != SS_CONTROL_TYPE_QUERY && !cs->driver->clir_set) {
 		DBusMessage *reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
