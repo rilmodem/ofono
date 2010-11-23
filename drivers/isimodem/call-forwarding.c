@@ -119,35 +119,50 @@ static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid,
 	return TRUE;
 }
 
-static gboolean decode_gsm_forwarding_info(GIsiSubBlockIter *iter,
+static gboolean decode_gsm_forwarding_info(GIsiSubBlockIter *parent,
 						uint8_t *status, uint8_t *ton,
 						uint8_t *noreply, char **number)
 {
+	GIsiSubBlockIter iter;
 	struct forw_info *info;
 	size_t len = sizeof(struct forw_info);
 	char *tag = NULL;
 
-	if (!g_isi_sb_iter_get_struct(iter, (void *)&info, len, 2))
-		return FALSE;
+	for (g_isi_sb_subiter_init(parent, &iter, 4);
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
 
-	if (!g_isi_sb_iter_get_alpha_tag(iter, &tag, info->numlen * 2, len))
-		return FALSE;
+		if (g_isi_sb_iter_get_id(&iter) != SS_GSM_FORWARDING_FEATURE)
+			continue;
 
-	if (status)
-		*status = info->status;
+		if (!g_isi_sb_iter_get_struct(&iter, (void *)&info, len, 2))
+			return FALSE;
 
-	if (ton)
-		*ton = info->ton;
+		if (info->numlen != 0) {
 
-	if (noreply)
-		*noreply = info->noreply;
+			 if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag,
+							info->numlen * 2,
+							2 + len))
+				return FALSE;
+		}
 
-	if (number)
-		*number = tag;
-	else
-		g_free(tag);
+		if (status)
+			*status = info->status;
 
-	return TRUE;
+		if (ton)
+			*ton = info->ton;
+
+		if (noreply)
+			*noreply = info->noreply;
+
+		if (number)
+			*number = tag;
+		else
+			g_free(tag);
+
+		return TRUE;
+	}
+	return FALSE;
 }
 
 static void registration_resp_cb(const GIsiMessage *msg, void *data)
@@ -161,16 +176,15 @@ static void registration_resp_cb(const GIsiMessage *msg, void *data)
 					SS_REGISTRATION))
 		goto error;
 
-	for (g_isi_sb_iter_init(&iter, msg, 2);
+	for (g_isi_sb_iter_init(&iter, msg, 6);
 			g_isi_sb_iter_is_valid(&iter);
 			g_isi_sb_iter_next(&iter)) {
-
 
 		if (g_isi_sb_iter_get_id(&iter) != SS_GSM_FORWARDING_INFO)
 			continue;
 
-		if (!decode_gsm_forwarding_info(&iter, &status,	NULL,
-						NULL, NULL))
+		if (!decode_gsm_forwarding_info(&iter, &status, NULL, NULL,
+						NULL))
 			goto error;
 
 		if ((status & SS_GSM_ACTIVE) == 0 ||
@@ -193,57 +207,60 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 {
 	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
 	struct isi_cb_data *cbd = isi_cb_data_new(cf, cb, data);
+	int ss_code;
+	int num_filler;
+	char *ucs2 = NULL;
 
-	int ss_code = forw_type_to_isi_code(type);
-	size_t numlen = strlen(number->number);
-	size_t sb_len = (numlen * 2 + 6 + 0) & ~3;
-
-	uint8_t msg[] = {
+	unsigned char msg[100] = {
 		SS_SERVICE_REQ,
 		SS_REGISTRATION,
 		SS_GSM_TELEPHONY,
-		ss_code >> 8,	/* Supplementary services code */
-		ss_code & 0xFF,
+		0, 0,  /* Supplementary services code */
 		SS_SEND_ADDITIONAL_INFO,
 		1,  /* Subblock count */
 		SS_FORWARDING,
-		sb_len,
+		0,  /* Variable subblock length, because of phone number */
 		number->type,
 		time,
-		numlen,
-		0,  /* Sub address length */
-		/*
-		 * Followed by number in UCS-2, zero sub address
-		 * bytes, and 0 to 3 bytes of filler
-		 */
+		strlen(number->number),
+		0  /* Sub address length */
 	};
-	char *ucs2 = NULL;
-
-	const struct iovec iov[2] = {
-		{ msg, sizeof(msg) },
-		{ ucs2, numlen },
-	};
+	/* Followed by number in UCS-2, zero sub address bytes, and 0
+	 * to 3 bytes of filler */
 
 	DBG("forwarding type %d class %d\n", type, cls);
 
-	if (cbd == NULL || fd == NULL || numlen > 28 || ss_code < 0)
+	if (cbd == NULL || fd == NULL || strlen(number->number) > 28)
 		goto error;
+
+	ss_code = forw_type_to_isi_code(type);
+	if (ss_code < 0)
+		goto error;
+
+	msg[3] = ss_code >> 8;
+	msg[4] = ss_code & 0xFF;
+
+	num_filler = (6 + 2 * strlen(number->number)) % 4;
+	if (num_filler != 0)
+		num_filler = 4 - num_filler;
+
+	msg[8]  = 6 + 2 * strlen(number->number) + num_filler;
 
 	ucs2 = g_convert(number->number, strlen(number->number), "UCS-2BE",
 				"UTF-8//TRANSLIT", NULL, NULL, NULL);
 	if (ucs2 == NULL)
 		goto error;
 
-	if (g_isi_client_vsend(fd->client, iov, 2, SS_TIMEOUT,
+	memcpy((char *)msg + 13, ucs2, strlen(number->number) * 2);
+	g_free(ucs2);
+
+	if (g_isi_client_send(fd->client, msg, 7 + msg[8], SS_TIMEOUT,
 				registration_resp_cb, cbd, g_free))
-		goto out;
+		return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, data);
 	g_free(cbd);
-
-out:
-	g_free(ucs2);
 }
 
 static void erasure_resp_cb(const GIsiMessage *msg, void *data)
@@ -270,9 +287,9 @@ static void erasure_resp_cb(const GIsiMessage *msg, void *data)
 		if (status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED))
 			goto error;
 
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-		return;
 	}
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
@@ -338,6 +355,8 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 			g_isi_sb_iter_is_valid(&iter);
 			g_isi_sb_iter_next(&iter)) {
 
+		DBG("Got %s", ss_subblock_name(g_isi_sb_iter_get_id(&iter)));
+
 		if (g_isi_sb_iter_get_id(&iter) != SS_GSM_FORWARDING_INFO)
 			continue;
 
@@ -350,6 +369,8 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 		list.time = noreply;
 		list.phone_number.type = ton | 0x80;
 
+		DBG("Number <%s>", number);
+
 		strncpy(list.phone_number.number, number,
 			OFONO_MAX_PHONE_NUMBER_LENGTH);
 		list.phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
@@ -359,10 +380,9 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 			list.status, list.cls,
 			list.phone_number.number,
 			list.phone_number.type, list.time);
-
-		CALLBACK_WITH_SUCCESS(cb, 1, &list, cbd->data);
-		return;
 	}
+	CALLBACK_WITH_SUCCESS(cb, 1, &list, cbd->data);
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
