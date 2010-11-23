@@ -315,6 +315,9 @@ static gboolean io_shutdown(GAtIO *io)
 	if (io->read_watch > 0)
 		g_source_remove(io->read_watch);
 
+	if (io->write_watch > 0)
+		g_source_remove(io->write_watch);
+
 	return TRUE;
 }
 
