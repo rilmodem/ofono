@@ -305,8 +305,6 @@ static void wran_reachable_cb(const GIsiMessage *msg, void *opaque)
 static void gss_reachable_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct ofono_radio_settings *rs = opaque;
-	struct radio_data *rd = ofono_radio_settings_get_data(rs);
-	const char *debug = getenv("OFONO_ISI_DEBUG");
 
 	if (g_isi_msg_error(msg) < 0)
 		return;
