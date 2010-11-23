@@ -396,7 +396,7 @@ const char *phone_number_to_string(const struct ofono_phone_number *ph)
 
 void string_to_phone_number(const char *str, struct ofono_phone_number *ph)
 {
-	if (strlen(str) && str[0] == '+') {
+	if (str[0] == '+') {
 		strcpy(ph->number, str+1);
 		ph->type = 145;	/* International */
 	} else {
