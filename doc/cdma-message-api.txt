@@ -1,0 +1,112 @@
+CDMA Message Manager hierarchy [experimental]
+==============================
+
+Service		org.ofono
+Interface	org.ofono.cdma.MessageManager
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the manager object. See
+			the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		array{object,dict} GetMessages()
+
+			Get an array of message object paths and properties
+			that represents the currently pending messages.
+
+			This method call should only be used once when an
+			application starts up.  Further message additions
+			and removal shall be monitored via MessageAdded and
+			MessageRemoved signals.
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as readwrite are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
+		object SendMessage(dict message_info)
+
+			The dictionary can contain the following keys:
+
+			string "To" - Address of the receiver
+
+			string "Text" - The text to send
+
+			string "Priority" - The value can be one of:
+				"normal",
+				"interactive",
+				"urgent",
+				"emergency",
+
+			TODO: Figure out where this is really needed
+
+			string "Privacy" - The value can be one of:
+				"not restricted",
+				"restricted",
+				"confidential",
+				"secret"
+
+			TODO: Figure out where this is really needed
+
+			If the message could be queued successfully, this
+			method returns an object path to the created Message
+			object.
+
+Signals		PropertyChanged(string name, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+		ImmediateMessage(string message, dict info)
+
+			New immediate SMS received. Info has Sender,
+			LocalSentTime, SentTime, Priority, Privacy and
+			CallbackNumber information.  Sender address is given
+			in string format.  LocalSentTime and SentTime are
+			given in string form using ISO8601 format.
+
+		IncomingMessage(string message, dict info)
+
+			New incoming text SMS received. Info has Sender,
+			LocalSentTime, SentTime, Priority, Privacy, and
+			CallbackNumber.
+
+		MessageAdded(object path, dict properties)
+
+			This signal is emitted whenever a new Message object
+			has been created.
+
+		MessageRemoved(object path)
+
+			This signal is emitted whenever a Message object
+			has been removed, e.g. when it reaches a final state.
+
+Properties	boolean UseDeliveryAcknowledgement
+
+			Request to be notified when the SMSC has delivered
+			the message to the receiving user.  In effect this
+			is the same as the GSM Status Report.
+
+		boolean UseUserAcknowledgement
+
+			Request to be notified when the receiving user has
+			acknowledged the message.
+
+		boolean UseReadAcknowledgement
+
+			Request to be notified when the receiving User has
+			read the message.
+
+		string CallbackNumber
+
+			The call back number for the user.  If the number is
+			empty, then the optional field is not included
+			in the encoded PDU.

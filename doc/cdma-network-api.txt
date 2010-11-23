@@ -1,0 +1,70 @@
+CDMA Network registration hierarchy [experimental]
+===================================
+
+Service		org.ofono
+Interface	org.ofono.cdma.NetworkRegistration
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all network registration properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as readwrite are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	string Status [readonly]
+
+			The current registration status of a modem.
+
+			The possible values are:
+				"unregistered"	Not registered
+				"registered"	Registered to home network
+				"roaming"	Roaming
+
+		byte Strength [readonly]
+
+			Contains the current signal strength as a percentage
+			between 0-100 percent.
+
+		byte DataStrength [readonly]
+
+			Contains the current signal strength of the High Data
+			Rate network.  This is a percentage value between
+			0-100 percent.
+
+		uint16 SystemIdentifier [readonly, optional]
+
+			Contains the system identifier of the currently
+			selected network.
+
+		uint16 NetworkIdentifier [readonly, optional]
+
+			Contains the network identifier of the currently
+			selected network.
+
+		uint16 MobileCountryCode [readonly, optional]
+
+			Contains the Mobile Country Code (MCC).
+
+		uint16 MobileNetworkCode [readonly, optional]
+
+			Contains the Mobile Network Code (MNC).
+
+		string Name [readonly, optional]
+
+			Contains the name of the current network.

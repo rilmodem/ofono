@@ -1,0 +1,78 @@
+CDMA VoiceCallManager hierarchy [experimental]
+===============================
+
+Service		org.ofono
+Interface	org.ofono.cdma.VoiceCallManager
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		void Dial(string number)
+
+			Initiates a new outgoing call.  This is usually
+			implemented using the ATD AT command.
+
+		void Hangup()
+
+			Hangup all active calls.
+
+		void Answer()
+
+			Answer the incoming call.  This only affects the
+			incoming call.
+
+		void SendFlash(string flash_string)
+
+			Sends the flash string to the network.
+
+		void SendTones(string tones)
+
+			Sends the DTMF tones to the network.  The tones have
+			a fixed duration.  Tones can be one of: '0' - '9',
+			'*', '#', 'A', 'B', 'C', 'D'.  The last four are
+			typically not used in normal circumstances.
+
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
+
+Properties	string State [readonly]
+
+			Contains the state of the current call.  The state
+			can be one of:
+				- "active" - The call is active
+				- "dialing" - The call is being dialed
+				- "alerting" - The remote party is being alerted
+				- "incoming" - Incoming call in progress
+				- "disconnected" - No call is connected
+
+		boolean CallWaiting [readonly]
+
+			Contains whether a call is waiting.
+
+		string CallWaitingNumber [readonly, optional]
+
+			Contains the call waiting number.
+
+		DisconnectReason(string reason)
+
+			This signal is emitted when the modem manager can
+			provide extra information about why the call was
+			released. The possible reason values are:
+				"local" - The call was release due to local
+						user action
+				"remote" - Remote party released the call
+				"network" - Network released the call, most
+						likely due to low signal or
+						other network failure
+
+			Not all implementations are able to provide this
+			information, so applications should treat the emission
+			of this signal as optional. This signal will be
+			emitted before the PropertyChanged signal.
+
+		string ToneDuration [readwrite]
+
+			Contains the length of the DTMF tone duration.  The
+			currently supported values are:
+				"short",
+				"long"

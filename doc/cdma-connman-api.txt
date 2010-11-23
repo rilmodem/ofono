@@ -1,0 +1,68 @@
+CDMA Connection Manager hierarchy [experimental]
+=================================
+
+Service		org.ofono
+Interface	org.ofono.cdma.ConnectionManager
+Object path	[variable]
+
+Methods		dict GetProperties()
+
+			Returns all global system properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		void SetProperty(string property, variant value)
+
+			Sets the property to a desired value
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	boolean Powered [readwrite]
+
+			Controls whether the CDMA data connection is
+			enabled.
+
+		boolean Dormant [readonly]
+
+			Contains whether the connection is dormant.  Will
+			always be false if the connection is not powered.
+
+		dict Settings [readonly, optional]
+
+			Holds all the IP network settings
+
+			string Interface [readonly, optional]
+
+				Holds the interface of the network interface
+				used by this context (e.g. "ppp0" "usb0")
+
+			string Method [readonly, optional]
+
+				Holds the IP network config method
+					"static"- Set IP network statically
+					"dhcp"  - Set IP network through DHCP
+
+			string Address [readonly, optional]
+
+				Holds the IP address for this context.
+
+			string Netmask [readonly, optional]
+
+				Holds the Netmask for this context.
+
+			array{string} DomainNameServers [readonly, optional]
+
+				Holds the list of domain name servers for this
+				context.
+
+			string Gateway [readonly, optional]
+
+				Holds the gateway IP for this connection.
