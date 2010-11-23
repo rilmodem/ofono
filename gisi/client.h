@@ -37,6 +37,7 @@ typedef struct _GIsiClient GIsiClient;
 GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource);
 GIsiModem *g_isi_client_modem(GIsiClient *client);
 uint8_t g_isi_client_resource(GIsiClient *client);
+void g_isi_client_reset(GIsiClient *client);
 void g_isi_client_destroy(GIsiClient *client);
 
 GIsiPending *g_isi_client_send(GIsiClient *client, const void *__restrict msg,

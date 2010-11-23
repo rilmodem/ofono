@@ -127,13 +127,25 @@ static void foreach_destroy(gpointer value, gpointer user)
 	g_isi_pending_remove(op);
 }
 
-void g_isi_client_destroy(GIsiClient *client)
+void g_isi_client_reset(GIsiClient *client)
 {
 	if (client == NULL)
 		return;
 
+	if (!client->pending)
+		return;
+
 	g_slist_foreach(client->pending, foreach_destroy, client);
 	g_slist_free(client->pending);
+	client->pending = NULL;
+};
+
+void g_isi_client_destroy(GIsiClient *client)
+{
+	if (!client)
+		return;
+
+	g_isi_client_reset(client);
 	g_free(client);
 }
 
