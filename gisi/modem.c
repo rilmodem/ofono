@@ -275,6 +275,112 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 	return TRUE;
 }
 
+static gboolean modem_subs_update(gpointer data)
+{
+	GHashTableIter iter;
+	gpointer keyptr, value;
+
+	GIsiModem *modem = data;
+	uint8_t msg[3 + 256] = {
+		0, PNS_SUBSCRIBED_RESOURCES_IND,
+		0,
+	};
+	uint8_t count = 0;
+
+	modem->subs_source = 0;
+
+	g_hash_table_iter_init(&iter, modem->services);
+
+	while (g_hash_table_iter_next(&iter, &keyptr, &value)) {
+		GIsiServiceMux *mux = value;
+
+		if (mux->subscriptions > 0) {
+			msg[3 + count] = mux->resource;
+			count++;
+		}
+	}
+	msg[2] = count;
+
+	sendto(modem->ind_fd, msg, 3 + msg[2], MSG_NOSIGNAL, (void *)&commgr,
+		sizeof(commgr));
+
+	return FALSE;
+}
+
+static void modem_subs_update_when_idle(GIsiModem *modem)
+{
+	if (modem->subs_source > 0)
+		return;
+
+	modem->subs_source = g_idle_add(modem_subs_update, modem);
+}
+
+static void service_name_register(GIsiServiceMux *mux)
+{
+	uint8_t msg[] = {
+		0, PNS_NAME_ADD_REQ, 0, 0,
+		0, 0, 0, mux->resource,	/* 32-bit Big-Endian name */
+		0, 0,			/* device/object */
+		0, 0,			/* filler */
+	};
+	uint16_t object = 0;
+
+	if (ioctl(mux->modem->req_fd, SIOCPNGETOBJECT, &object) < 0) {
+		g_warning("ioctl(SIOCPNGETOBJECT): %s", strerror(errno));
+		return;
+	}
+
+	/* Fill in the object ID */
+	msg[8] = object >> 8;
+	msg[9] = object & 0xFF;
+
+	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
+		(void *)&namesrv, sizeof(namesrv));
+}
+
+static void service_name_deregister(GIsiServiceMux *mux)
+{
+	const uint8_t msg[] = {
+		0, PNS_NAME_REMOVE_REQ, 0, 0,
+		0, 0, 0, mux->resource,
+	};
+
+	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
+		(void *)&namesrv, sizeof(namesrv));
+}
+
+static void pending_destroy(gpointer value, gpointer user)
+{
+	GIsiPending *op = value;
+
+	if (!op)
+		return;
+
+	if (op->timeout > 0)
+		g_source_remove(op->timeout);
+
+	if (op->destroy)
+		op->destroy(op->data);
+
+	g_free(op);
+}
+
+static void service_finalize(gpointer value)
+{
+	GIsiServiceMux *mux = value;
+	GIsiModem *modem = mux->modem;
+
+	if (mux->subscriptions > 0)
+		modem_subs_update_when_idle(modem);
+
+	if (mux->registrations > 0)
+		service_name_deregister(mux);
+
+	g_slist_foreach(mux->pending, pending_destroy, NULL);
+	g_slist_free(mux->pending);
+	g_free(mux);
+}
+
 GIsiModem *g_isi_modem_create(unsigned index)
 {
 	GIsiModem *modem;
@@ -322,81 +428,6 @@ GIsiModem *g_isi_modem_create(unsigned index)
 GIsiModem *g_isi_modem_create_by_name(const char *name)
 {
 	return g_isi_modem_create(if_nametoindex(name));
-}
-
-static void service_name_register(GIsiServiceMux *mux)
-{
-	uint8_t msg[] = {
-		0, PNS_NAME_ADD_REQ, 0, 0,
-		0, 0, 0, mux->resource,	/* 32-bit Big-Endian name */
-		0, 0,			/* device/object */
-		0, 0,			/* filler */
-	};
-	uint16_t object = 0;
-
-	if (ioctl(mux->modem->req_fd, SIOCPNGETOBJECT, &object) < 0) {
-		g_warning("ioctl(SIOCPNGETOBJECT): %s", strerror(errno));
-		return;
-	}
-
-	/* Fill in the object ID */
-	msg[8] = object >> 8;
-	msg[9] = object & 0xFF;
-
-	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
-		(void *)&namesrv, sizeof(namesrv));
-}
-
-static void service_name_deregister(GIsiServiceMux *mux)
-{
-	const uint8_t msg[] = {
-		0, PNS_NAME_REMOVE_REQ, 0, 0,
-		0, 0, 0, mux->resource,
-	};
-
-	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
-		(void *)&namesrv, sizeof(namesrv));
-}
-
-static gboolean modem_subs_update(gpointer data)
-{
-	GHashTableIter iter;
-	gpointer keyptr, value;
-
-	GIsiModem *modem = data;
-	uint8_t msg[3 + 256] = {
-		0, PNS_SUBSCRIBED_RESOURCES_IND,
-		0,
-	};
-	uint8_t count = 0;
-
-	modem->subs_source = 0;
-
-	g_hash_table_iter_init(&iter, modem->services);
-
-	while (g_hash_table_iter_next(&iter, &keyptr, &value)) {
-		GIsiServiceMux *mux = value;
-
-		if (mux->subscriptions > 0) {
-			msg[3 + count] = mux->resource;
-			count++;
-		}
-	}
-	msg[2] = count;
-
-	sendto(modem->ind_fd, msg, 3 + msg[2], MSG_NOSIGNAL, (void *)&commgr,
-		sizeof(commgr));
-
-	return FALSE;
-}
-
-
-static void modem_subs_update_when_idle(GIsiModem *modem)
-{
-	if (modem->subs_source > 0)
-		return;
-
-	modem->subs_source = g_idle_add(modem_subs_update, modem);
 }
 
 static uint8_t service_next_utid(GIsiServiceMux *mux)
@@ -447,38 +478,6 @@ static void service_regs_decr(GIsiServiceMux *mux)
 
 	if (mux->registrations == 0)
 		service_name_deregister(mux);
-}
-
-static void pending_destroy(gpointer value, gpointer user)
-{
-	GIsiPending *op = value;
-
-	if (!op)
-		return;
-
-	if (op->timeout > 0)
-		g_source_remove(op->timeout);
-
-	if (op->destroy)
-		op->destroy(op->data);
-
-	g_free(op);
-}
-
-static void service_finalize(gpointer value)
-{
-	GIsiServiceMux *mux = value;
-	GIsiModem *modem = mux->modem;
-
-	if (mux->subscriptions > 0)
-		modem_subs_update_when_idle(modem);
-
-	if (mux->registrations > 0)
-		service_name_deregister(mux);
-
-	g_slist_foreach(mux->pending, pending_destroy, NULL);
-	g_slist_free(mux->pending);
-	g_free(mux);
 }
 
 void g_isi_modem_destroy(GIsiModem *modem)
