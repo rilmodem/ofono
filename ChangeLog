@@ -1,3 +1,15 @@
+ver 0.36:
+	Fix issue with CLIR Invocation and Suppression.
+	Fix issue with power/online transition with ZTE devices.
+	Fix segmentation fault when removing Nokia Datacard.
+	Add support for Nokia CS-17 dongles.
+	Add support for Ericsson F5521gw devices.
+	Add support for CAIF network interface management.
+	Add support for COLR in generic AT modem driver.
+	Add support for SMS Point-to-Point download to UICC.
+	Add support for checking specific service availability.
+	Add support for handling null text field for STK.
+
 ver 0.35:
 	Fix issue with FDN and BDN enabled checks.
 	Fix issue with capabilities and Phonet support.
