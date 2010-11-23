@@ -1273,6 +1273,9 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 		return TRUE;
 	}
 
+	if (qualifier & (1 << 7))
+		timeout = stk->timeout * 1000;
+
 	if (dt->duration.interval)
 		timeout = duration_to_msecs(&dt->duration);
 
