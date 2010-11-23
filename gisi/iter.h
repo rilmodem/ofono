@@ -43,6 +43,11 @@ void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 				size_t used, gboolean longhdr,
 				uint16_t sub_blocks);
+void g_isi_sb_subiter_init(GIsiSubBlockIter *outer, GIsiSubBlockIter *inner,
+				size_t used);
+void g_isi_sb_subiter_init_full(GIsiSubBlockIter *outer, GIsiSubBlockIter *inner,
+				size_t used, gboolean longhdr,
+				uint16_t sub_blocks);
 gboolean g_isi_sb_iter_is_valid(const GIsiSubBlockIter *iter);
 
 gboolean g_isi_sb_iter_next(GIsiSubBlockIter *iter);

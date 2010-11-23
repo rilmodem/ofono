@@ -76,6 +76,37 @@ void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 	iter->sub_blocks = len > used ? iter->start[-1] : 0;
 }
 
+void g_isi_sb_subiter_init(GIsiSubBlockIter *outer, GIsiSubBlockIter *inner,
+				size_t used)
+{
+	size_t len = g_isi_sb_iter_get_len(outer);
+
+	if (outer->start + len > outer->end ||
+			outer->start + used > outer->end)
+		len = used = 0;
+
+	inner->start = outer->start + used;
+	inner->end = inner->start + len;
+	inner->longhdr = FALSE;
+	inner->sub_blocks = len > used ? inner->start[-1] : 0;
+}
+
+void g_isi_sb_subiter_init_full(GIsiSubBlockIter *outer, GIsiSubBlockIter *inner,
+				size_t used, gboolean longhdr,
+				uint16_t sub_blocks)
+{
+	size_t len = g_isi_sb_iter_get_len(outer);
+
+	if (outer->start + len > outer->end ||
+			outer->start + used > outer->end)
+		len = used = 0;
+
+	inner->start = outer->start + used;
+	inner->end = inner->start + len;
+	inner->longhdr = longhdr;
+	inner->sub_blocks = len > used ? sub_blocks : 0;
+}
+
 gboolean g_isi_sb_iter_is_valid(const GIsiSubBlockIter *iter)
 {
 	if (iter == NULL)
