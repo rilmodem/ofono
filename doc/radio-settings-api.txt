@@ -11,6 +11,9 @@ Methods		dict GetProperties()
 			properties section for available properties.
 
 			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.NotImplemented
+					 [service].Error.InProgress
+					 [service].Error.Failed
 
 		void SetProperty(string name, variant value)
 
@@ -22,6 +25,7 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InvalidArguments
 					 [service].Error.DoesNotExist
 					 [service].Error.InProgress
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 
