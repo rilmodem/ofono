@@ -285,6 +285,13 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 	for (o = old; o; o = o->next) {
 		oc = o->data;
 
+		/*
+		 * For now we only support Voice, although Fax & all Data
+		 * basic services are applicable as well.
+		 */
+		if (oc->cls > BEARER_CLASS_VOICE)
+			continue;
+
 		snprintf(attr, sizeof(attr), "%s%s",
 			bearer_class_to_string(oc->cls), cf_type_lut[type]);
 
