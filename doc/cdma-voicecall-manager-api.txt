@@ -5,7 +5,12 @@ Service		org.ofono
 Interface	org.ofono.cdma.VoiceCallManager
 Object path	[variable prefix]/{modem0,modem1,...}
 
-Methods		void Dial(string number)
+Methods		dict GetProperties()
+
+			Returns properties for the VoiceCallManager Interface.
+			See the properties section for available properties.
+
+		void Dial(string number)
 
 			Initiates a new outgoing call.  This is usually
 			implemented using the ATD AT command.
