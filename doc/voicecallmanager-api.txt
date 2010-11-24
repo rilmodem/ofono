@@ -5,7 +5,14 @@ Service		org.ofono
 Interface	org.ofono.VoiceCallManager
 Object path	[variable prefix]/{modem0,modem1,...}
 
-Methods		array{object,dict} GetCalls()
+Methods		dict GetProperties()
+
+			Returns properties for the VoiceCallManager Interface.
+			See the properties section for available properties.
+
+			Possible Errors: [service].Error.InvalidArguments
+
+		array{object,dict} GetCalls()
 
 			Get an array of call object paths and properties
 			that represents the currently present calls.
