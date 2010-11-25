@@ -13,7 +13,8 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/cbs.h include/call-volume.h \
 			include/gprs.h include/gprs-context.h \
 			include/radio-settings.h include/stk.h \
-			include/audio-settings.h include/nettime.h
+			include/audio-settings.h include/nettime.h \
+			include/ctm.h
 
 nodist_include_HEADERS = include/version.h
 
