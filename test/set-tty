@@ -1,0 +1,25 @@
+#!/usr/bin/python
+
+import dbus
+import sys
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 3:
+	path = sys.argv[1]
+	enable = int(sys.argv[2])
+elif len(sys.argv) == 2:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
+	enable = int(sys.argv[1])
+else:
+	print "%s [PATH] {0|1}" % (sys.argv[0])
+	exit(1)
+
+print "Setting TTY for modem %s..." % path
+texttelephony = dbus.Interface(bus.get_object('org.ofono', path),
+						'org.ofono.TextTelephony')
+
+texttelephony.SetProperty("Enabled", dbus.Boolean(enable));
