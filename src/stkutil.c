@@ -79,7 +79,7 @@ static char *decode_text(unsigned char dcs, int len, const unsigned char *data)
 	char *utf8;
 	enum sms_charset charset;
 
-	if (!sms_dcs_decode(dcs, NULL, &charset, NULL, NULL))
+	if (sms_dcs_decode(dcs, NULL, &charset, NULL, NULL) == FALSE)
 		return NULL;
 
 	switch (charset) {
@@ -91,7 +91,7 @@ static char *decode_text(unsigned char dcs, int len, const unsigned char *data)
 							max_to_unpack,
 							&written, 0);
 		if (unpacked == NULL)
-			return FALSE;
+			return NULL;
 
 		utf8 = convert_gsm_to_utf8(unpacked, written,
 						NULL, NULL, 0);
