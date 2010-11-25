@@ -84,7 +84,7 @@ static void update_status_mask(unsigned int *mask, int bsc)
 		break;
 
 	default:
-		DBG("Unknown BSC value %d, please report\n", bsc);
+		DBG("Unknown BSC value %d, please report", bsc);
 		break;
 	}
 }
@@ -146,7 +146,7 @@ static gboolean query_resp_cb(GIsiClient *client,
 		}
 	}
 
-	DBG("status_mask %d\n", mask);
+	DBG("status_mask %d", mask);
 	CALLBACK_WITH_SUCCESS(cb, mask, cbd->data);
 	goto out;
 
@@ -175,7 +175,7 @@ static void isi_cw_query(struct ofono_call_settings *cs, int cls,
 		0 /* Subblock count */
 	};
 
-	DBG("waiting class %d\n", cls);
+	DBG("waiting class %d", cls);
 
 	if (!cbd || !sd)
 		goto error;
@@ -266,7 +266,7 @@ static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 		0  /* Subblock count */
 	};
 
-	DBG("waiting mode %d class %d\n", mode, cls);
+	DBG("waiting mode %d class %d", mode, cls);
 
 	if (!cbd || !sd)
 		goto error;

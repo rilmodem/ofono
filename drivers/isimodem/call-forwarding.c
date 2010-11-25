@@ -70,7 +70,7 @@ static int forw_type_to_isi_code(int type)
 		ss_code = SS_GSM_ALL_COND_FORWARDINGS;
 		break;
 	default:
-		DBG("Unknown forwarding type %d\n", type);
+		DBG("Unknown forwarding type %d", type);
 		ss_code = -1;
 		break;
 	}
@@ -227,7 +227,7 @@ static void isi_registration(struct ofono_call_forwarding *cf,
 	/* Followed by number in UCS-2, zero sub address bytes, and 0
 	 * to 3 bytes of filler */
 
-	DBG("forwarding type %d class %d\n", type, cls);
+	DBG("forwarding type %d class %d", type, cls);
 
 	if (!cbd || !fd || !number->number || strlen(number->number) > 28)
 		goto error;
@@ -347,7 +347,7 @@ static void isi_erasure(struct ofono_call_forwarding *cf, int type, int cls,
 		0  /* Subblock count */
 	};
 
-	DBG("forwarding type %d class %d\n", type, cls);
+	DBG("forwarding type %d class %d", type, cls);
 
 	if (!cbd || !fd)
 		goto error;
@@ -479,7 +479,7 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 		0  /* Subblock count */
 	};
 
-	DBG("forwarding type %d class %d\n", type, cls);
+	DBG("forwarding type %d class %d", type, cls);
 
 	if (!cbd || !fd || cls != 7)
 		goto error;

@@ -125,7 +125,7 @@ static void isi_set(struct ofono_call_barring *barr, const char *lock,
 		0, 0			/* Filler */
 	};
 
-	DBG("lock code %s enable %d class %d password %s\n",
+	DBG("lock code %s enable %d class %d password %s",
 		lock, enable, cls, passwd);
 
 	if (!cbd || !bd)
@@ -177,7 +177,7 @@ static void update_status_mask(unsigned int *mask, int bsc)
 		break;
 
 	default:
-		DBG("Unknown BSC: 0x%04X\n", bsc);
+		DBG("Unknown BSC: 0x%04X", bsc);
 		break;
 	}
 }
@@ -244,7 +244,7 @@ static gboolean query_resp_cb(GIsiClient *client,
 		}
 	}
 
-	DBG("mask=0x%04X\n", mask);
+	DBG("mask=0x%04X", mask);
 	CALLBACK_WITH_SUCCESS(cb, mask, cbd->data);
 	goto out;
 
@@ -273,7 +273,7 @@ static void isi_query(struct ofono_call_barring *barr, const char *lock,
 		0				/* Subblock count */
 	};
 
-	DBG("barring query lock code %s\n", lock);
+	DBG("barring query lock code %s", lock);
 
 	if (!cbd || !bd)
 		goto error;
@@ -343,7 +343,7 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 		0, 0				/* Filler */
 	};
 
-	DBG("lock code %s (%u) old password %s new password %s\n",
+	DBG("lock code %s (%u) old password %s new password %s",
 		lock, ss_code, old_passwd, new_passwd);
 
 	if (!cbd || !bd)

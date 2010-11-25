@@ -104,7 +104,7 @@ static gboolean routing_resp_cb(GIsiClient *client,
 				"It appears some other component is "
 				"already\n  registered as the CBS "
 				"routing endpoint.\n  As a consequence, "
-				"receiving CBSs is NOT going to work.\n\n",
+				"receiving CBSs is NOT going to work.\n",
 				msg[1], sms_isi_cause_name(msg[1]));
 		return TRUE;
 	}
