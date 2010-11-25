@@ -62,6 +62,7 @@ struct _GIsiModem {
 	guint ind_watch;
 	GIsiNotifyFunc debug;
 	void *ddata;
+	void *opaque;
 };
 
 struct _GIsiPending {
@@ -428,6 +429,19 @@ GIsiModem *g_isi_modem_create(unsigned index)
 GIsiModem *g_isi_modem_create_by_name(const char *name)
 {
 	return g_isi_modem_create(if_nametoindex(name));
+}
+
+void *g_isi_modem_set_userdata(GIsiModem *modem, void *data)
+{
+	void *old = modem->opaque;
+
+	modem->opaque = data;
+	return old;
+}
+
+void *g_isi_modem_get_userdata(GIsiModem *modem)
+{
+	return modem->opaque;
 }
 
 static uint8_t service_next_utid(GIsiServiceMux *mux)

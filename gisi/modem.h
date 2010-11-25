@@ -46,6 +46,8 @@ void g_isi_modem_destroy(GIsiModem *modem);
 unsigned g_isi_modem_index(GIsiModem *modem);
 void g_isi_modem_set_debug(GIsiModem *modem, GIsiNotifyFunc notify,
 				void *opaque);
+void *g_isi_modem_set_userdata(GIsiModem *modem, void *data);
+void *g_isi_modem_get_userdata(GIsiModem *modem);
 
 GIsiPending *g_isi_request_send(GIsiModem *modem, uint8_t resource,
 					const void *__restrict buf, size_t len,
