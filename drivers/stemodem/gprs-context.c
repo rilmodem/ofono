@@ -130,7 +130,7 @@ static void text_handler(GMarkupParseContext *context,
 static void error_handler(GMarkupParseContext *context,
 				GError *error, gpointer user_data)
 {
-	DBG("Error parsing xml response from eppsd: %s\n",
+	DBG("Error parsing xml response from eppsd: %s",
 		error->message);
 }
 

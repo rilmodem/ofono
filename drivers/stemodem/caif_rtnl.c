@@ -155,7 +155,7 @@ static int add_attribute(struct nlmsghdr *n, unsigned int maxlen, int type,
 	struct rtattr *rta;
 
 	if ((NLMSG_ALIGN(n->nlmsg_len) + RTA_ALIGN(len)) > maxlen) {
-		DBG("attribute to large for message %d %d %d\n",
+		DBG("attribute to large for message %d %d %d",
 				n->nlmsg_len, len, maxlen);
 		return -1;
 	}
