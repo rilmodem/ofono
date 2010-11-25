@@ -125,6 +125,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_AUDIO_SETTINGS = 19,
 	OFONO_ATOM_TYPE_STK = 20,
 	OFONO_ATOM_TYPE_NETTIME = 21,
+	OFONO_ATOM_TYPE_CTM = 22,
 };
 
 enum ofono_atom_watch_condition {
@@ -205,6 +206,7 @@ gboolean __ofono_call_settings_is_busy(struct ofono_call_settings *cs);
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
 #include <ofono/audio-settings.h>
+#include <ofono/ctm.h>
 
 #include <ofono/voicecall.h>
 
