@@ -77,9 +77,13 @@ struct gsm_sms_tpdu {
 static char *decode_text(unsigned char dcs, int len, const unsigned char *data)
 {
 	char *utf8;
+	enum sms_charset charset;
 
-	switch (dcs) {
-	case 0x00:
+	if (!sms_dcs_decode(dcs, NULL, &charset, NULL, NULL))
+		return NULL;
+
+	switch (charset) {
+	case SMS_CHARSET_7BIT:
 	{
 		long written;
 		unsigned long max_to_unpack = len * 8 / 7;
@@ -94,10 +98,10 @@ static char *decode_text(unsigned char dcs, int len, const unsigned char *data)
 		g_free(unpacked);
 		break;
 	}
-	case 0x04:
+	case SMS_CHARSET_8BIT:
 		utf8 = convert_gsm_to_utf8(data, len, NULL, NULL, 0);
 		break;
-	case 0x08:
+	case SMS_CHARSET_UCS2:
 		utf8 = g_convert((const gchar *) data, len,
 					"UTF-8//TRANSLIT", "UCS-2BE",
 					NULL, NULL, NULL);
