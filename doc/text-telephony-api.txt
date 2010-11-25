@@ -1,0 +1,39 @@
+Text Telephony hierarchy
+========================
+
+Service		org.ofono
+Interface	org.ofono.TextTelephony
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all Text Telephony properties. See the
+			properties section for available properties.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.Failed
+
+		void SetProperty(string name, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as read-write are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InProgress
+					 [service].Error.Failed
+
+Signals		PropertyChanged(string property, variant value)
+
+			This signal indicates a changed value of the given
+			property.
+
+Properties	boolean	Powered [readwrite]
+
+			This property will enable or disable the text
+			telephony feature in the modem.
+
+			Text telephony (TTY), also known as Cellular Text Modem
+			(CTM), is a feature present in some modems that allow
+			them to be used by hearing impaired people.
