@@ -1825,7 +1825,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 				call_compare_by_id);
 
 	if (l) {
-		DBG("Found call with id: %d\n", call->id);
+		DBG("Found call with id: %d", call->id);
 		voicecall_set_call_status(l->data, call->status);
 		voicecall_set_call_lineid(l->data, &call->phone_number,
 						call->clip_validity);
@@ -1833,7 +1833,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 		return;
 	}
 
-	DBG("Did not find a call with id: %d\n", call->id);
+	DBG("Did not find a call with id: %d", call->id);
 
 	__ofono_modem_callid_hold(modem, call->id);
 

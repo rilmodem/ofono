@@ -1097,7 +1097,7 @@ static void sim_sdn_read_cb(int ok, int length, int record,
 	if (sim->service_numbers &&
 			g_slist_find_custom(sim->service_numbers,
 				alpha, service_number_compare)) {
-		ofono_error("Duplicate EFsdn entries for `%s'\n",
+		ofono_error("Duplicate EFsdn entries for `%s'",
 				alpha);
 		g_free(alpha);
 

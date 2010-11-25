@@ -1730,7 +1730,7 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 		storage_sync(gprs->imsi, SETTINGS_STORE, gprs->settings);
 	}
 
-	DBG("Unregistering context: %s\n", ctx->path);
+	DBG("Unregistering context: %s", ctx->path);
 	context_dbus_unregister(ctx);
 	gprs->contexts = g_slist_remove(gprs->contexts, ctx);
 
