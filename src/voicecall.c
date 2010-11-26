@@ -68,6 +68,7 @@ struct voicecall {
 	char *message;
 	uint8_t icon_id;
 	gboolean untracked;
+	gboolean dial_result_handled;
 };
 
 struct dial_request {
@@ -1092,9 +1093,18 @@ static struct voicecall *dial_handle_result(struct ofono_voicecall *vc,
 		v = l->data;
 
 		if (v->call->status == CALL_STATUS_DIALING ||
-				v->call->status == CALL_STATUS_ALERTING ||
-				v->call->status == CALL_STATUS_ACTIVE)
-			return v;
+				v->call->status == CALL_STATUS_ALERTING)
+			goto handled;
+
+		/*
+		 * Dial request may return before existing active call
+		 * is put on hold or after dialed call has got active
+		 */
+		if (v->call->status == CALL_STATUS_ACTIVE &&
+				v->call->direction ==
+				CALL_DIRECTION_MOBILE_ORIGINATED &&
+				!v->dial_result_handled)
+			goto handled;
 	}
 
 	call = synthesize_outgoing_call(vc, number);
@@ -1114,6 +1124,9 @@ static struct voicecall *dial_handle_result(struct ofono_voicecall *vc,
 				call_compare);
 
 	*need_to_emit = TRUE;
+
+handled:
+	v->dial_result_handled = TRUE;
 
 	return v;
 }
