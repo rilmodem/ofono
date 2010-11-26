@@ -114,8 +114,7 @@ static DBusMessage *cv_get_properties(DBusConnection *conn,
 	dbus_bool_t muted;
 
 	reply = dbus_message_new_method_return(msg);
-
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
