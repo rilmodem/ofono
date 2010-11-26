@@ -132,7 +132,7 @@ static void ctm_query_enabled_callback(const struct ofono_error *error,
 	reply = ctm_get_properties_reply(ctm->pending, ctm);
 	__ofono_dbus_pending_reply(&ctm->pending, reply);
 
-	if (ctm->enabled ^ enabled_old)
+	if (ctm->enabled != enabled_old)
 		ctm_signal_enabled(ctm);
 }
 
@@ -264,9 +264,8 @@ static void text_telephony_remove(struct ofono_atom *atom)
 }
 
 struct ofono_ctm *ofono_ctm_create(struct ofono_modem *modem,
-							unsigned int vendor,
-							const char *driver,
-							void *data)
+					unsigned int vendor,
+					const char *driver, void *data)
 {
 	struct ofono_ctm *ctm;
 	GSList *l;
@@ -322,8 +321,7 @@ void ofono_ctm_remove(struct ofono_ctm *ctm)
 	__ofono_atom_free(ctm->atom);
 }
 
-void ofono_ctm_set_data(struct ofono_ctm *ctm,
-					void *data)
+void ofono_ctm_set_data(struct ofono_ctm *ctm, void *data)
 {
 	ctm->driver_data = data;
 }
