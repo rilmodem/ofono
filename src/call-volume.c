@@ -430,4 +430,3 @@ void *ofono_call_volume_get_data(struct ofono_call_volume *cv)
 {
 	return cv->driver_data;
 }
-
