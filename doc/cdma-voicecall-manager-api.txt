@@ -35,6 +35,16 @@ Methods		dict GetProperties()
 			'*', '#', 'A', 'B', 'C', 'D'.  The last four are
 			typically not used in normal circumstances.
 
+		void SetProperty(string property, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as readwrite are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.DoesNotExist
+
 Signals		PropertyChanged(string property, variant value)
 
 			Signal is emitted whenever a property has changed.
@@ -81,3 +91,23 @@ Properties	string State [readonly]
 			currently supported values are:
 				"short",
 				"long"
+
+		string LineIdentification [readonly]
+
+			Contains the Line Identification information returned
+			by the network, if present. For incoming calls this is
+			effectively the CLIP. For outgoing calls this attribute
+			will hold the dialed number.
+
+			Please note that after sending flash this property
+			will be empty.
+
+		string StartTime [readonly, optional]
+
+			Contains the starting time of the call.  The time is
+			stamped when the call enters the "active" state.
+			Client applications can use this to infer somewhat
+			reliable call duration information.
+
+			Please note that after sending Flash, there will not be
+			any StartTime property change for the Flash string/number.
