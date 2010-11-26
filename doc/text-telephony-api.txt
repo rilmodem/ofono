@@ -29,7 +29,7 @@ Signals		PropertyChanged(string property, variant value)
 			This signal indicates a changed value of the given
 			property.
 
-Properties	boolean	Powered [readwrite]
+Properties	boolean	Enabled [readwrite]
 
 			This property will enable or disable the text
 			telephony feature in the modem.
