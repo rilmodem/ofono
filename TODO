@@ -479,17 +479,6 @@ Miscellaneous
   Complexity: C2
   Owner: Gustavo F Padovan <padovan@profusion.mobi>
 
-- TTY (hearing impaired) support.  Add a new oFono atom type that will enable
-  the user to enable or disable the TTY support on the modem.  Support for
-  automatic detection of TTY (signaled by the driver) is also desired.
-
-  This feature is not discussed in 27.007, thus manufacturer specific commands
-  are required.
-
-  Priority: High
-  Complexity: C1
-  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-
 - Add support for GPS power control atom.  Many modem manufacturers provide
   a GPS unit with their modem hardware.  This unit can be turned on or off
   and frequently takes over one of the tty ports that the modem provides.

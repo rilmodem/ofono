@@ -216,3 +216,10 @@ Radio settings
   cellular modem to conserve power when the end user is not actively
   using the device but some networking applications are online using
   packet data.
+
+Text Telephony
+==============
+
+- TTY (hearing impaired) support, also known as Cellular Text Modem (CTM).
+  In case it's supported by the modem, oFono allows the user to enabled
+  or disable it through the TextTelephony interface.
