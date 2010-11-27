@@ -113,7 +113,7 @@ static int cf_find_timeout(GSList *cf_list, int cls)
 	l = g_slist_find_custom(cf_list, GINT_TO_POINTER(cls),
 		cf_condition_find_with_cls);
 
-	if (!l)
+	if (l == NULL)
 		return DEFAULT_NO_REPLY_TIMEOUT;
 
 	c = l->data;
@@ -158,7 +158,7 @@ static GSList *cf_cond_list_create(int total,
 				continue;
 
 			cond = g_try_new0(struct ofono_call_forwarding_condition, 1);
-			if (!cond)
+			if (cond == NULL)
 				continue;
 
 			memcpy(cond, &list[i],
@@ -352,7 +352,7 @@ static void property_append_cf_conditions(DBusMessageIter *dict,
 		while (l && (cf = l->data) && (cf->cls < i))
 				l = l->next;
 
-		if (!l || cf->cls != i) {
+		if (l == NULL || cf->cls != i) {
 			property_append_cf_condition(dict, i, postfix, "",
 						DEFAULT_NO_REPLY_TIMEOUT);
 			continue;
@@ -374,8 +374,7 @@ static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
 	int i;
 
 	reply = dbus_message_new_method_return(msg);
-
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -436,7 +435,7 @@ static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
 	if (cf->flags & CALL_FORWARDING_FLAG_CACHED)
 		return cf_get_properties_reply(msg, cf);
 
-	if (!cf->driver->query)
+	if (cf->driver->query == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (__ofono_call_forwarding_is_busy(cf) ||
@@ -634,7 +633,7 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 				GINT_TO_POINTER(cls),
 				cf_condition_find_with_cls);
 
-		if (!l)
+		if (l == NULL)
 			return __ofono_error_failed(msg);
 
 		c = l->data;
@@ -713,7 +712,7 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 	const char *strtype;
 	int type;
 
-	if (!cf->driver->erasure)
+	if (cf->driver->erasure == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (__ofono_call_forwarding_is_busy(cf) ||
@@ -905,7 +904,7 @@ static gboolean cf_ss_control(int type, const char *sc,
 	void *operation = NULL;
 
 	/* Before we do anything, make sure we're actually initialized */
-	if (!cf)
+	if (cf == NULL)
 		return FALSE;
 
 	if (__ofono_call_forwarding_is_busy(cf)) {
@@ -1007,7 +1006,7 @@ static gboolean cf_ss_control(int type, const char *sc,
 		break;
 	}
 
-	if (!operation) {
+	if (operation == NULL) {
 		reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
@@ -1016,7 +1015,7 @@ static gboolean cf_ss_control(int type, const char *sc,
 
 	cf->ss_req = g_try_new0(struct cf_ss_request, 1);
 
-	if (!cf->ss_req) {
+	if (cf->ss_req == NULL) {
 		reply = __ofono_error_failed(msg);
 		g_dbus_send_message(conn, reply);
 

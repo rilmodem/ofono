@@ -516,7 +516,7 @@ gboolean parse_ss_control_string(char *str, int *ss_type,
 	/* Must have at least one other '#' */
 	c = strrchr(str+cur, '#');
 
-	if (!c)
+	if (c == NULL)
 		goto out;
 
 	*dn = c+1;

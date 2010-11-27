@@ -116,7 +116,7 @@ static int stk_respond(struct ofono_stk *stk, struct stk_response *rsp,
 	rsp->qualifier = stk->pending_cmd->qualifier;
 
 	tlv = stk_pdu_from_response(rsp, &tlv_len);
-	if (!tlv)
+	if (tlv == NULL)
 		return -EINVAL;
 
 	stk_command_free(stk->pending_cmd);
@@ -208,7 +208,7 @@ static int stk_send_envelope(struct ofono_stk *stk, struct stk_envelope *e,
 
 	e->dst = STK_DEVICE_IDENTITY_TYPE_UICC;
 	tlv = stk_pdu_from_envelope(e, &tlv_len);
-	if (!tlv)
+	if (tlv == NULL)
 		return -EINVAL;
 
 	op = g_new0(struct envelope_op, 1);
@@ -342,7 +342,7 @@ static struct stk_menu *stk_menu_create(const char *title,
 
 	ret->title = dbus_apply_text_attributes(title ? title : "",
 						title_attr);
-	if (!ret->title)
+	if (ret->title == NULL)
 		ret->title = g_strdup(title ? title : "");
 
 	memcpy(&ret->icon, icon, sizeof(ret->icon));
@@ -366,7 +366,7 @@ static struct stk_menu *stk_menu_create(const char *title,
 			text = dbus_apply_text_attributes(item->text, &attr);
 		}
 
-		if (!text)
+		if (text == NULL)
 			text = strdup(item->text);
 
 		ret->items[i].text = text;
@@ -451,7 +451,7 @@ static void emit_menu_changed(struct ofono_stk *stk)
 
 	signal = dbus_message_new_signal(path, OFONO_STK_INTERFACE,
 						"PropertyChanged");
-	if (!signal) {
+	if (signal == NULL) {
 		ofono_error("Unable to allocate new %s.PropertyChanged signal",
 				OFONO_SIM_APP_INTERFACE);
 
@@ -510,7 +510,7 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 	unsigned char icon;
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -632,13 +632,13 @@ static DBusMessage *stk_register_agent(DBusConnection *conn,
 	stk->default_agent = stk_agent_new(agent_path,
 						dbus_message_get_sender(msg),
 						FALSE);
-	if (!stk->default_agent)
+	if (stk->default_agent == NULL)
 		return __ofono_error_failed(msg);
 
 	stk_agent_set_removed_notify(stk->default_agent,
 					default_agent_notify, stk);
 
-	if (!stk->session_agent)
+	if (stk->session_agent == NULL)
 		stk->current_agent = stk->default_agent;
 
 	return dbus_message_new_method_return(msg);
@@ -656,7 +656,7 @@ static DBusMessage *stk_unregister_agent(DBusConnection *conn,
 					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (!stk->default_agent)
+	if (stk->default_agent == NULL)
 		return __ofono_error_failed(msg);
 
 	if (!stk_agent_matches(stk->default_agent, agent_path, agent_bus))
@@ -698,7 +698,7 @@ static void menu_selection_envelope_cb(struct ofono_stk *stk, gboolean ok,
 	stk->session_agent = stk_agent_new(agent_path,
 					dbus_message_get_sender(stk->pending),
 					TRUE);
-	if (!stk->session_agent) {
+	if (stk->session_agent == NULL) {
 		reply = __ofono_error_failed(stk->pending);
 
 		goto out;
@@ -729,7 +729,7 @@ static DBusMessage *stk_select_item(DBusConnection *conn,
 	if (stk->pending || stk->session_agent)
 		return __ofono_error_busy(msg);
 
-	if (!menu)
+	if (menu == NULL)
 		return __ofono_error_not_supported(msg);
 
 	if (dbus_message_get_args(msg, NULL,
@@ -838,7 +838,7 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 
 	sms_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SMS);
 
-	if (!sms_atom || !__ofono_atom_get_registered(sms_atom)) {
+	if (sms_atom == NULL || !__ofono_atom_get_registered(sms_atom)) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 		return TRUE;
 	}
@@ -879,7 +879,7 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 					cmd->setup_idle_mode_text.text,
 					&cmd->setup_idle_mode_text.text_attr);
 
-		if (!idle_mode_text) {
+		if (idle_mode_text == NULL) {
 			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 			return TRUE;
 		}
@@ -1168,7 +1168,7 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 {
 	stk->select_item_menu = stk_menu_create_from_select_item(cmd);
 
-	if (!stk->select_item_menu) {
+	if (stk->select_item_menu == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 
 		return TRUE;
@@ -1268,7 +1268,7 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 	char *text = dbus_apply_text_attributes(dt->text, &dt->text_attr);
 	int err;
 
-	if (!text) {
+	if (text == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 		return TRUE;
 	}
@@ -1430,7 +1430,7 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 	 */
 	int err;
 
-	if (!text) {
+	if (text == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 		return TRUE;
 	}
@@ -1523,7 +1523,7 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 	gboolean hidden = (qualifier & (1 << 2)) != 0;
 	int err;
 
-	if (!text) {
+	if (text == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 		return TRUE;
 	}
@@ -1567,7 +1567,7 @@ static void call_setup_connected(struct ofono_call *call, void *data)
 	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 	static unsigned char facility_rejected_result[] = { 0x9d };
 
-	if (!call || call->status == CALL_STATUS_DISCONNECTED) {
+	if (call == NULL || call->status == CALL_STATUS_DISCONNECTED) {
 		memset(&rsp, 0, sizeof(rsp));
 
 		rsp.result.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE;
@@ -1593,7 +1593,7 @@ static void call_setup_cancel(struct ofono_stk *stk)
 
 	vc_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
 						OFONO_ATOM_TYPE_VOICECALL);
-	if (!vc_atom)
+	if (vc_atom == NULL)
 		return;
 
 	vc = __ofono_atom_get_data(vc_atom);
@@ -1641,7 +1641,7 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 	if (vc_atom)
 		vc = __ofono_atom_get_data(vc_atom);
 
-	if (!vc) {
+	if (vc == NULL) {
 		send_simple_response(stk, STK_RESULT_TYPE_NOT_CAPABLE);
 		return;
 	}
@@ -1649,7 +1649,7 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 	if (sc->alpha_id_call_setup) {
 		alpha_id = dbus_apply_text_attributes(sc->alpha_id_call_setup,
 						&sc->text_attr_call_setup);
-		if (!alpha_id) {
+		if (alpha_id == NULL) {
 			send_simple_response(stk,
 					STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD);
 			return;
@@ -1728,7 +1728,7 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 	if (vc_atom)
 		vc = __ofono_atom_get_data(vc_atom);
 
-	if (!vc) {
+	if (vc == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 		return TRUE;
 	}
@@ -1743,7 +1743,7 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 	if (sc->alpha_id_usr_cfm) {
 		alpha_id = dbus_apply_text_attributes(sc->alpha_id_usr_cfm,
 							&sc->text_attr_usr_cfm);
-		if (!alpha_id) {
+		if (alpha_id == NULL) {
 			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 			return TRUE;
 		}
@@ -1776,7 +1776,7 @@ static void send_ussd_cancel(struct ofono_stk *stk)
 
 	atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
 						OFONO_ATOM_TYPE_USSD);
-	if (!atom)
+	if (atom == NULL)
 		return;
 
 	ussd = __ofono_atom_get_data(atom);
@@ -1891,7 +1891,7 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 	}
 
 	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
-	if (!atom || !__ofono_atom_get_registered(atom)) {
+	if (atom == NULL || !__ofono_atom_get_registered(atom)) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 		return TRUE;
 	}
@@ -2062,7 +2062,7 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	if (vc_atom)
 		vc = __ofono_atom_get_data(vc_atom);
 
-	if (!vc) {
+	if (vc == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 		return TRUE;
 	}
@@ -2070,7 +2070,7 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	/* Convert the DTMF string to phone number format */
 	for (pos = 0; cmd->send_dtmf.dtmf[pos] != '\0'; pos++) {
 		digit = strchr(dtmf_from, cmd->send_dtmf.dtmf[pos]);
-		if (!digit) {
+		if (digit == NULL) {
 			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 			return TRUE;
 		}
@@ -2205,7 +2205,7 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 	int err;
 
 	if (pt->tone > sizeof(tone_infos) / sizeof(*tone_infos) ||
-			!tone_infos[pt->tone].name) {
+			tone_infos[pt->tone].name == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 
 		return TRUE;
@@ -2213,7 +2213,7 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 
 	text = dbus_apply_text_attributes(pt->alpha_id ? pt->alpha_id : "",
 						&pt->text_attr);
-	if (!text) {
+	if (text == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
 
 		return TRUE;
@@ -2299,7 +2299,7 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 	stk_proactive_command_cancel(stk);
 
 	stk->pending_cmd = stk_command_new_from_pdu(pdu, length);
-	if (!stk->pending_cmd) {
+	if (stk->pending_cmd == NULL) {
 		ofono_error("Can't parse proactive command");
 
 		/*
@@ -2472,7 +2472,7 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 
 	cmd = stk_command_new_from_pdu(pdu, length);
 
-	if (!cmd || cmd->status != STK_PARSE_RESULT_OK) {
+	if (cmd == NULL || cmd->status != STK_PARSE_RESULT_OK) {
 		ofono_error("Can't parse proactive command");
 
 		if (cmd)

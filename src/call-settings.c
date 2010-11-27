@@ -412,7 +412,7 @@ static gboolean cw_ss_control(int type,
 	int cls = BEARER_CLASS_SS_DEFAULT;
 	DBusMessage *reply;
 
-	if (!cs)
+	if (cs == NULL)
 		return FALSE;
 
 	if (strcmp(sc, "43"))
@@ -426,8 +426,8 @@ static gboolean cw_ss_control(int type,
 	if (strlen(sib) || strlen(sib) || strlen(dn))
 		goto bad_format;
 
-	if ((type == SS_CONTROL_TYPE_QUERY && !cs->driver->cw_query) ||
-		(type != SS_CONTROL_TYPE_QUERY && !cs->driver->cw_set)) {
+	if ((type == SS_CONTROL_TYPE_QUERY && cs->driver->cw_query == NULL) ||
+		(type != SS_CONTROL_TYPE_QUERY && cs->driver->cw_set == NULL)) {
 		reply = __ofono_error_not_implemented(msg);
 		goto error;
 	}
@@ -574,7 +574,7 @@ static gboolean clip_colp_colr_ss(int type,
 	void (*query_op)(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data);
 
-	if (!cs)
+	if (cs == NULL)
 		return FALSE;
 
 	if (__ofono_call_settings_is_busy(cs)) {
@@ -605,7 +605,7 @@ static gboolean clip_colp_colr_ss(int type,
 		return TRUE;
 	}
 
-	if (!query_op) {
+	if (query_op == NULL) {
 		DBusMessage *reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
@@ -694,7 +694,7 @@ static gboolean clir_ss_control(int type,
 	struct ofono_call_settings *cs = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!cs)
+	if (cs == NULL)
 		return FALSE;
 
 	if (strcmp(sc, "31"))
@@ -726,7 +726,7 @@ static gboolean clir_ss_control(int type,
 		return TRUE;
 	}
 
-	if (type != SS_CONTROL_TYPE_QUERY && !cs->driver->clir_set) {
+	if (type != SS_CONTROL_TYPE_QUERY && cs->driver->clir_set == NULL) {
 		DBusMessage *reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
@@ -799,8 +799,7 @@ static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs
 	const char *str;
 
 	reply = dbus_message_new_method_return(msg);
-
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -859,7 +858,7 @@ out:
 
 static void query_clir(struct ofono_call_settings *cs)
 {
-	if (!cs->driver->clir_query) {
+	if (cs->driver->clir_query == NULL) {
 		if (cs->pending) {
 			DBusMessage *reply =
 				generate_get_properties_reply(cs,
@@ -886,7 +885,7 @@ static void cs_clip_callback(const struct ofono_error *error,
 
 static void query_clip(struct ofono_call_settings *cs)
 {
-	if (!cs->driver->clip_query) {
+	if (cs->driver->clip_query == NULL) {
 		query_clir(cs);
 		return;
 	}
@@ -907,7 +906,7 @@ static void cs_colp_callback(const struct ofono_error *error,
 
 static void query_colp(struct ofono_call_settings *cs)
 {
-	if (!cs->driver->colp_query) {
+	if (cs->driver->colp_query == NULL) {
 		query_clip(cs);
 		return;
 	}
@@ -928,7 +927,7 @@ static void cs_colr_callback(const struct ofono_error *error,
 
 static void query_colr(struct ofono_call_settings *cs)
 {
-	if (!cs->driver->colr_query) {
+	if (cs->driver->colr_query == NULL) {
 		query_colp(cs);
 		return;
 	}
@@ -949,7 +948,7 @@ static void cs_cw_callback(const struct ofono_error *error, int status,
 
 static void query_cw(struct ofono_call_settings *cs)
 {
-	if (!cs->driver->cw_query) {
+	if (cs->driver->cw_query == NULL) {
 		query_colr(cs);
 		return;
 	}

@@ -119,7 +119,7 @@ static DBusMessage *mw_get_properties(DBusConnection *conn,
 	const char *number;
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -395,7 +395,7 @@ static void update_indicator_and_emit(struct ofono_message_waiting *mw,
 	indication = info->indication;
 	count = info->message_count;
 
-	if (!mw_message_waiting_property_name[mailbox])
+	if (mw_message_waiting_property_name[mailbox] == NULL)
 		return;
 
 	ofono_dbus_signal_property_changed(conn, path,

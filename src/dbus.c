@@ -175,8 +175,7 @@ int ofono_dbus_signal_property_changed(DBusConnection *conn,
 	DBusMessageIter iter;
 
 	signal = dbus_message_new_signal(path, interface, "PropertyChanged");
-
-	if (!signal) {
+	if (signal == NULL) {
 		ofono_error("Unable to allocate new %s.PropertyChanged signal",
 				interface);
 		return -1;
@@ -202,8 +201,7 @@ int ofono_dbus_signal_array_property_changed(DBusConnection *conn,
 	DBusMessageIter iter;
 
 	signal = dbus_message_new_signal(path, interface, "PropertyChanged");
-
-	if (!signal) {
+	if (signal == NULL) {
 		ofono_error("Unable to allocate new %s.PropertyChanged signal",
 				interface);
 		return -1;
@@ -229,8 +227,7 @@ int ofono_dbus_signal_dict_property_changed(DBusConnection *conn,
 	DBusMessageIter iter;
 
 	signal = dbus_message_new_signal(path, interface, "PropertyChanged");
-
-	if (!signal) {
+	if (signal == NULL) {
 		ofono_error("Unable to allocate new %s.PropertyChanged signal",
 				interface);
 		return -1;
@@ -426,7 +423,7 @@ void __ofono_dbus_cleanup(void)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!conn || !dbus_connection_get_is_connected(conn))
+	if (conn == NULL || !dbus_connection_get_is_connected(conn))
 		return;
 
 	dbus_gsm_set_connection(NULL);

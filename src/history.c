@@ -105,8 +105,7 @@ void __ofono_history_probe_drivers(struct ofono_modem *modem)
 		driver = l->data;
 
 		context = history_context_create(modem, driver);
-
-		if (!context)
+		if (context == NULL)
 			continue;
 
 		__ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_HISTORY,

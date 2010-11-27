@@ -292,7 +292,7 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	dbus_bool_t bdn;
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -582,7 +582,7 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 	const char *typestr;
 	const char *pin;
 
-	if (!sim->driver->lock)
+	if (sim->driver->lock == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (sim->pending)
@@ -653,7 +653,7 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	const char *old;
 	const char *new;
 
-	if (!sim->driver->change_passwd)
+	if (sim->driver->change_passwd == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (sim->pending)
@@ -709,7 +709,7 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	enum ofono_sim_password_type type;
 	const char *pin;
 
-	if (!sim->driver->send_passwd)
+	if (sim->driver->send_passwd == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (sim->pending)
@@ -918,7 +918,7 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	const char *puk;
 	const char *pin;
 
-	if (!sim->driver->reset_passwd)
+	if (sim->driver->reset_passwd == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (sim->pending)
@@ -976,7 +976,7 @@ static gboolean numbers_list_equal(GSList *a, GSList *b)
 	struct ofono_phone_number *num_a, *num_b;
 
 	while (a || b) {
-		if (!a || !b)
+		if (a == NULL || b == NULL)
 			return FALSE;
 
 		num_a = a->data;
@@ -1242,7 +1242,7 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 
 static void sim_retrieve_imsi(struct ofono_sim *sim)
 {
-	if (!sim->driver->read_imsi) {
+	if (sim->driver->read_imsi == NULL) {
 		ofono_error("IMSI retrieval not implemented,"
 				" only emergency calls will be available");
 		return;
@@ -1592,7 +1592,7 @@ checkdone:
 
 static void sim_pin_check(struct ofono_sim *sim)
 {
-	if (!sim->driver->query_passwd_state) {
+	if (sim->driver->query_passwd_state == NULL) {
 		sim_initialize_after_pin(sim);
 		return;
 	}

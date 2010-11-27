@@ -236,7 +236,7 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 	if (g_str_equal(property, "SpeakerVolume") == TRUE) {
 		unsigned char percent;
 
-		if (!cv->driver->speaker_volume)
+		if (cv->driver->speaker_volume == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BYTE)
@@ -258,7 +258,7 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 	} else if (g_str_equal(property, "MicrophoneVolume") == TRUE) {
 		unsigned char percent;
 
-		if (!cv->driver->microphone_volume)
+		if (cv->driver->microphone_volume == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BYTE)
@@ -280,7 +280,7 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 	} else if (g_str_equal(property, "Muted") == TRUE) {
 		dbus_bool_t muted;
 
-		if (!cv->driver->mute)
+		if (cv->driver->mute == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)

@@ -385,7 +385,7 @@ static gboolean cb_ss_control(int type, const char *sc,
 		type, sc, sia, sib, sic, dn);
 
 	fac = cb_ss_service_to_fac(sc);
-	if (!fac)
+	if (fac == NULL)
 		return FALSE;
 
 	cb_set_query_bounds(cb, fac, type == SS_CONTROL_TYPE_QUERY);
@@ -419,7 +419,7 @@ static gboolean cb_ss_control(int type, const char *sc,
 		break;
 	}
 
-	if (!operation) {
+	if (operation == NULL) {
 		reply = __ofono_error_not_implemented(msg);
 		g_dbus_send_message(conn, reply);
 
@@ -521,7 +521,7 @@ static gboolean cb_ss_passwd(const char *sc,
 	else
 		fac = cb_ss_service_to_fac(sc);
 
-	if (!fac)
+	if (fac == NULL)
 		return FALSE;
 
 	if (!is_valid_pin(old, PIN_TYPE_NET) || !is_valid_pin(new, PIN_TYPE_NET))
@@ -618,7 +618,7 @@ static void cb_get_properties_reply(struct ofono_call_barring *cb, int mask)
 		ofono_error("Generating a get_properties reply with no cache");
 
 	reply = dbus_message_new_method_return(cb->pending);
-	if (!reply)
+	if (reply == NULL)
 		return;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -678,7 +678,7 @@ static DBusMessage *cb_get_properties(DBusConnection *conn, DBusMessage *msg,
 	if (__ofono_call_barring_is_busy(cb) || __ofono_ussd_is_busy(cb->ussd))
 		return __ofono_error_busy(msg);
 
-	if (!cb->driver->query)
+	if (cb->driver->query == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	cb->pending = dbus_message_ref(msg);
@@ -866,7 +866,7 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 			return __ofono_error_invalid_format(msg);
 	}
 
-	if (!cb->driver->set)
+	if (cb->driver->set == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	cb_set_query_bounds(cb, cb_locks[lock].fac, FALSE);
@@ -899,7 +899,7 @@ static DBusMessage *cb_disable_all(DBusConnection *conn, DBusMessage *msg,
 	struct ofono_call_barring *cb = data;
 	const char *passwd;
 
-	if (!cb->driver->set)
+	if (cb->driver->set == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (__ofono_call_barring_is_busy(cb) || __ofono_ussd_is_busy(cb->ussd))
@@ -946,7 +946,7 @@ static DBusMessage *cb_set_passwd(DBusConnection *conn, DBusMessage *msg,
 	const char *old_passwd;
 	const char *new_passwd;
 
-	if (!cb->driver->set_passwd)
+	if (cb->driver->set_passwd == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (__ofono_call_barring_is_busy(cb) || __ofono_ussd_is_busy(cb->ussd))
@@ -1013,7 +1013,7 @@ static void call_barring_outgoing_enabled_notify(int idx, void *userdata)
 	signal = dbus_message_new_signal(path, OFONO_CALL_BARRING_INTERFACE,
 						"OutgoingBarringInEffect");
 
-	if (!signal) {
+	if (signal == NULL) {
 		ofono_error("Unable to allocate new %s.OutgoingBarringInEffect"
 				" signal", OFONO_CALL_BARRING_INTERFACE);
 		return;

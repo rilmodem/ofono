@@ -218,7 +218,7 @@ struct stk_agent *stk_agent_new(const char *path, const char *sender,
 	struct stk_agent *agent = g_try_new0(struct stk_agent, 1);
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!agent)
+	if (agent == NULL)
 		return NULL;
 
 	agent->path = g_strdup(path);

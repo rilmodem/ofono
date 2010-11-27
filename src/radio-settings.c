@@ -96,7 +96,7 @@ static DBusMessage *radio_get_properties_reply(DBusMessage *msg,
 	const char *mode = radio_access_mode_to_string(rs->mode);
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -233,7 +233,7 @@ static void radio_fast_dormancy_query_callback(const struct ofono_error *error,
 
 static void radio_query_fast_dormancy(struct ofono_radio_settings *rs)
 {
-	if (!rs->driver->query_fast_dormancy) {
+	if (rs->driver->query_fast_dormancy == NULL) {
 		radio_send_properties_reply(rs);
 		return;
 	}
@@ -270,7 +270,7 @@ static DBusMessage *radio_get_properties(DBusConnection *conn,
 	if (rs->flags & RADIO_SETTINGS_FLAG_CACHED)
 		return radio_get_properties_reply(msg, rs);
 
-	if (!rs->driver->query_rat_mode)
+	if (rs->driver->query_rat_mode == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (rs->pending)
@@ -311,7 +311,7 @@ static DBusMessage *radio_set_property(DBusConnection *conn, DBusMessage *msg,
 		const char *value;
 		enum ofono_radio_access_mode mode;
 
-		if (!rs->driver->set_rat_mode)
+		if (rs->driver->set_rat_mode == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
@@ -334,7 +334,7 @@ static DBusMessage *radio_set_property(DBusConnection *conn, DBusMessage *msg,
 		dbus_bool_t value;
 		int target;
 
-		if (!rs->driver->set_fast_dormancy)
+		if (rs->driver->set_fast_dormancy == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
@@ -374,7 +374,7 @@ int ofono_radio_settings_driver_register(const struct ofono_radio_settings_drive
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	if (!d || !d->probe)
+	if (d == NULL || d->probe == NULL)
 		return -EINVAL;
 
 	g_drivers = g_slist_prepend(g_drivers, (void *) d);
@@ -386,7 +386,7 @@ void ofono_radio_settings_driver_unregister(const struct ofono_radio_settings_dr
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	if (!d)
+	if (d == NULL)
 		return;
 
 	g_drivers = g_slist_remove(g_drivers, (void *) d);
@@ -409,7 +409,7 @@ static void radio_settings_remove(struct ofono_atom *atom)
 
 	DBG("atom: %p", atom);
 
-	if (!rs)
+	if (rs == NULL)
 		return;
 
 	if (rs->driver && rs->driver->remove)
@@ -426,11 +426,11 @@ struct ofono_radio_settings *ofono_radio_settings_create(struct ofono_modem *mod
 	struct ofono_radio_settings *rs;
 	GSList *l;
 
-	if (!driver)
+	if (driver == NULL)
 		return NULL;
 
 	rs = g_try_new0(struct ofono_radio_settings, 1);
-	if (!rs)
+	if (rs == NULL)
 		return NULL;
 
 	rs->mode = -1;

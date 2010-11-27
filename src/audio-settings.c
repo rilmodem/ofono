@@ -73,7 +73,7 @@ void ofono_audio_settings_mode_notify(struct ofono_audio_settings *as,
 	g_free(as->mode);
 	as->mode = g_strdup(mode);
 
-	if (!as->mode)
+	if (as->mode == NULL)
 		return;
 
 	ofono_dbus_signal_property_changed(conn, path,
@@ -89,7 +89,7 @@ static DBusMessage *audio_get_properties_reply(DBusMessage *msg,
 	DBusMessageIter dict;
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -132,7 +132,7 @@ int ofono_audio_settings_driver_register(const struct ofono_audio_settings_drive
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
-	if (!d->probe)
+	if (d->probe == NULL)
 		return -EINVAL;
 
 	g_drivers = g_slist_prepend(g_drivers, (void *) d);
@@ -164,7 +164,7 @@ static void audio_settings_remove(struct ofono_atom *atom)
 
 	DBG("atom: %p", atom);
 
-	if (!as)
+	if (as == NULL)
 		return;
 
 	if (as->driver && as->driver->remove)
@@ -182,11 +182,11 @@ struct ofono_audio_settings *ofono_audio_settings_create(struct ofono_modem *mod
 	struct ofono_audio_settings *as;
 	GSList *l;
 
-	if (!driver)
+	if (driver == NULL)
 		return NULL;
 
 	as = g_try_new0(struct ofono_audio_settings, 1);
-	if (!as)
+	if (as == NULL)
 		return NULL;
 
 	as->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_AUDIO_SETTINGS,

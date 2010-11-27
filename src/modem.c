@@ -532,7 +532,7 @@ static DBusMessage *set_property_online(struct ofono_modem *modem,
 	if (modem->pending != NULL)
 		return __ofono_error_busy(msg);
 
-	if (!driver->set_online)
+	if (driver->set_online == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (modem->modem_state < MODEM_STATE_OFFLINE)
@@ -628,7 +628,7 @@ static DBusMessage *modem_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -947,7 +947,7 @@ void ofono_modem_remove_interface(struct ofono_modem *modem,
 
 	found = g_slist_find_custom(modem->interface_list, interface,
 						(GCompareFunc) strcmp);
-	if (!found) {
+	if (found == NULL) {
 		ofono_error("Interface %s not found on the interface_list",
 				interface);
 		return;
@@ -994,7 +994,7 @@ static void query_serial_cb(const struct ofono_error *error,
 
 static void query_serial(struct ofono_devinfo *info)
 {
-	if (!info->driver->query_serial)
+	if (info->driver->query_serial == NULL)
 		return;
 
 	info->driver->query_serial(info, query_serial_cb, info);
@@ -1023,7 +1023,7 @@ out:
 
 static void query_revision(struct ofono_devinfo *info)
 {
-	if (!info->driver->query_revision) {
+	if (info->driver->query_revision == NULL) {
 		query_serial(info);
 		return;
 	}
@@ -1054,7 +1054,7 @@ out:
 
 static void query_model(struct ofono_devinfo *info)
 {
-	if (!info->driver->query_model) {
+	if (info->driver->query_model == NULL) {
 		/* If model is not supported, don't bother querying revision */
 		query_serial(info);
 	}
@@ -1088,7 +1088,7 @@ static gboolean query_manufacturer(gpointer user)
 {
 	struct ofono_devinfo *info = user;
 
-	if (!info->driver->query_manufacturer) {
+	if (info->driver->query_manufacturer == NULL) {
 		query_model(info);
 		return FALSE;
 	}

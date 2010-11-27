@@ -194,7 +194,7 @@ static void register_callback(const struct ofono_error *error, void *data)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
-	if (!netreg->pending)
+	if (netreg->pending == NULL)
 		goto out;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
@@ -352,7 +352,7 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	 * together there are four cases to consider.
 	 */
 
-	if (!opd) {
+	if (opd == NULL) {
 		g_strlcpy(name, "", len);
 		return name;
 	}
@@ -371,7 +371,7 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	if (opd->eons_info && opd->eons_info->longname)
 		plmn = opd->eons_info->longname;
 
-	if (!netreg->spname || strlen(netreg->spname) == 0) {
+	if (netreg->spname == NULL || strlen(netreg->spname) == 0) {
 		g_strlcpy(name, plmn, len);
 		return name;
 	}
@@ -458,7 +458,7 @@ static void set_network_operator_eons_info(struct network_operator_data *opd,
 	const char *oldinfo;
 	const char *newinfo;
 
-	if (!old_eons_info && !eons_info)
+	if (old_eons_info == NULL && eons_info == NULL)
 		return;
 
 	path = network_operator_build_path(netreg, opd->mcc, opd->mnc);
@@ -566,7 +566,7 @@ static DBusMessage *network_operator_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -671,7 +671,7 @@ static GSList *compress_operator_list(const struct ofono_network_operator *list,
 			o = g_slist_find_custom(oplist, &list[i],
 						network_operator_compare);
 
-		if (!o) {
+		if (o == NULL) {
 			opd = network_operator_create(&list[i]);
 			oplist = g_slist_prepend(oplist, opd);
 		} else if (o && list[i].tech != -1) {
@@ -760,7 +760,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 	const char *mode = registration_mode_to_string(netreg->mode);
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -1217,7 +1217,7 @@ static void current_operator_callback(const struct ofono_error *error,
 		return;
 	}
 
-	if (!netreg->current_operator && !current)
+	if (netreg->current_operator == NULL && current == NULL)
 		return;
 
 	/* We got a new network operator, reset the previous one's status */
@@ -1299,7 +1299,7 @@ emit:
 void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 			int lac, int ci, int tech)
 {
-	if (!netreg)
+	if (netreg == NULL)
 		return;
 
 	if (netreg->status != status)
@@ -1339,7 +1339,7 @@ void ofono_netreg_time_notify(struct ofono_netreg *netreg,
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(netreg->atom);
 
-	if (!info)
+	if (info == NULL)
 		return;
 
 	__ofono_nettime_info_received(modem, info);
@@ -1465,7 +1465,7 @@ static void sim_pnn_read_cb(int ok, int length, int record,
 
 	total = length / record_length;
 
-	if (!netreg->eons)
+	if (netreg->eons == NULL)
 		netreg->eons = sim_eons_new(total);
 
 	sim_eons_add_pnn_record(netreg->eons, record, data, record_length);
@@ -1498,7 +1498,7 @@ static void sim_spdi_read_cb(int ok, int length, int record,
 
 	netreg->spdi = sim_spdi_new(data, length);
 
-	if (!current)
+	if (current == NULL)
 		return;
 
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
@@ -1549,8 +1549,7 @@ static void sim_spn_read_cb(int ok, int length, int record,
 	 * paragraph as 51.101 and has an Annex B which we implement.
 	 */
 	spn = sim_string_to_utf8(data + 1, length - 1);
-
-	if (!spn) {
+	if (spn == NULL) {
 		ofono_error("EFspn read successfully, but couldn't parse");
 		return;
 	}
@@ -1772,8 +1771,7 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 	int mode;
 
 	imsi = ofono_sim_get_imsi(netreg->sim);
-
-	if (!imsi)
+	if (imsi == NULL)
 		return;
 
 	netreg->settings = storage_open(imsi, SETTINGS_STORE);

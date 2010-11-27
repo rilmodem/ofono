@@ -88,7 +88,7 @@ static gboolean check_plugin(struct ofono_plugin_desc *desc,
 		for (; *patterns; patterns++)
 			if (g_pattern_match_simple(*patterns, desc->name))
 				break;
-		if (!*patterns) {
+		if (*patterns == NULL) {
 			ofono_info("Ignoring %s", desc->description);
 			return FALSE;
 		}

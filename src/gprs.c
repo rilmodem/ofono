@@ -336,7 +336,7 @@ static void pri_context_signal_settings(struct pri_context *ctx)
 					OFONO_CONNECTION_CONTEXT_INTERFACE,
 					"PropertyChanged");
 
-	if (!signal)
+	if (signal == NULL)
 		return;
 
 	dbus_message_iter_init_append(signal, &iter);
@@ -400,7 +400,7 @@ static void pri_ifupdown(const char *interface, ofono_bool_t active)
 	struct ifreq ifr;
 	int sk;
 
-	if (!interface)
+	if (interface == NULL)
 		return;
 
 	sk = socket(PF_INET, SOCK_DGRAM, 0);
@@ -436,7 +436,7 @@ static void pri_setaddr(const char *interface, const char *address)
 	struct sockaddr_in addr;
 	int sk;
 
-	if (!interface)
+	if (interface == NULL)
 		return;
 
 	sk = socket(PF_INET, SOCK_DGRAM, 0);
@@ -459,7 +459,7 @@ static void pri_setaddr(const char *interface, const char *address)
 		goto done;
 	}
 
-	if (!address)
+	if (address == NULL)
 		goto done;
 
 	memset(&addr, 0, sizeof(addr));
@@ -480,7 +480,7 @@ static void pri_setproxy(const char *interface, const char *proxy)
 	struct sockaddr_in addr;
 	int sk;
 
-	if (!interface)
+	if (interface == NULL)
 		return;
 
 	sk = socket(PF_INET, SOCK_DGRAM, 0);
@@ -550,7 +550,7 @@ static void pri_update_context_settings(struct pri_context *ctx,
 		context_settings_free(ctx->settings);
 
 	ctx->settings = g_try_new0(struct context_settings, 1);
-	if (!ctx->settings)
+	if (ctx->settings == NULL)
 		return;
 
 	ctx->settings->type = ctx->type;
@@ -633,7 +633,7 @@ static DBusMessage *pri_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -1147,12 +1147,12 @@ static struct pri_context *pri_context_create(struct ofono_gprs *gprs,
 {
 	struct pri_context *context = g_try_new0(struct pri_context, 1);
 
-	if (!context)
+	if (context == NULL)
 		return NULL;
 
-	if (!name) {
+	if (name == NULL) {
 		name = gprs_context_default_name(type);
-		if (!name)
+		if (name == NULL)
 			return NULL;
 	}
 
@@ -1419,7 +1419,7 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 	dbus_bool_t value;
 
 	reply = dbus_message_new_method_return(msg);
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -1497,7 +1497,7 @@ static DBusMessage *gprs_set_property(DBusConnection *conn,
 
 		gprs_netreg_update(gprs);
 	} else if (!strcmp(property, "Powered")) {
-		if (!gprs->driver->set_attached)
+		if (gprs->driver->set_attached == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
@@ -1563,7 +1563,7 @@ static struct pri_context *add_context(struct ofono_gprs *gprs,
 		return NULL;
 
 	context = pri_context_create(gprs, name, type);
-	if (!context) {
+	if (context == NULL) {
 		ofono_error("Unable to allocate context struct");
 		return NULL;
 	}
@@ -1709,7 +1709,7 @@ static DBusMessage *gprs_remove_context(DBusConnection *conn,
 		return __ofono_error_invalid_format(msg);
 
 	ctx = gprs_context_by_path(gprs, path);
-	if (!ctx)
+	if (ctx == NULL)
 		return __ofono_error_not_found(msg);
 
 	if (ctx->active) {

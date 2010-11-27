@@ -191,11 +191,11 @@ static unsigned int add_sms_handler(struct ofono_watchlist *watchlist,
 {
 	struct sms_handler *handler;
 
-	if (!notify)
+	if (notify == NULL)
 		return 0;
 
 	handler = g_try_new0(struct sms_handler, 1);
-	if (!handler)
+	if (handler == NULL)
 		return 0;
 
 	handler->dst = dst;
@@ -212,7 +212,7 @@ unsigned int __ofono_sms_text_watch_add(struct ofono_sms *sms,
 					ofono_sms_text_notify_cb_t cb,
 					void *data, ofono_destroy_func destroy)
 {
-	if (!sms)
+	if (sms == NULL)
 		return 0;
 
 	DBG("%p", sms);
@@ -223,7 +223,7 @@ unsigned int __ofono_sms_text_watch_add(struct ofono_sms *sms,
 gboolean __ofono_sms_text_watch_remove(struct ofono_sms *sms,
 					unsigned int id)
 {
-	if (!sms)
+	if (sms == NULL)
 		return FALSE;
 
 	DBG("%p", sms);
@@ -236,7 +236,7 @@ unsigned int __ofono_sms_datagram_watch_add(struct ofono_sms *sms,
 					int dst, int src, void *data,
 					ofono_destroy_func destroy)
 {
-	if (!sms)
+	if (sms == NULL)
 		return 0;
 
 	DBG("%p: dst %d, src %d", sms, dst, src);
@@ -248,7 +248,7 @@ unsigned int __ofono_sms_datagram_watch_add(struct ofono_sms *sms,
 gboolean __ofono_sms_datagram_watch_remove(struct ofono_sms *sms,
 					unsigned int id)
 {
-	if (!sms)
+	if (sms == NULL)
 		return FALSE;
 
 	DBG("%p", sms);
@@ -265,8 +265,7 @@ static DBusMessage *message_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 
 	reply = dbus_message_new_method_return(msg);
-
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -330,7 +329,7 @@ static gboolean message_dbus_register(struct ofono_sms *sms, struct message *m)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 
-	if (!m)
+	if (m == NULL)
 		return FALSE;
 
 	path = __ofono_sms_message_path_from_uuid(sms, &m->uuid);
@@ -486,8 +485,7 @@ static DBusMessage *generate_get_properties_reply(struct ofono_sms *sms,
 	const char *bearer;
 
 	reply = dbus_message_new_method_return(msg);
-
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -541,7 +539,7 @@ static DBusMessage *sms_get_properties(DBusConnection *conn,
 	if (sms->pending)
 		return __ofono_error_busy(msg);
 
-	if (!sms->driver->sca_query)
+	if (sms->driver->sca_query == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (sms->flags & MESSAGE_MANAGER_FLAG_CACHED)
@@ -832,7 +830,7 @@ static gboolean tx_next(gpointer user_data)
 
 	sms->tx_source = 0;
 
-	if (!entry)
+	if (entry == NULL)
 		return FALSE;
 
 	if (g_queue_get_length(sms->txq) > 1
@@ -991,7 +989,7 @@ static DBusMessage *sms_send_message(DBusConnection *conn, DBusMessage *msg,
 	msg_list = sms_text_prepare(to, text, sms->ref, use_16bit_ref,
 						sms->use_delivery_reports);
 
-	if (!msg_list)
+	if (msg_list == NULL)
 		return __ofono_error_invalid_format(msg);
 
 	flags = OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY;
@@ -1175,7 +1173,7 @@ static void dispatch_text_message(struct ofono_sms *sms,
 	struct sms_handler *h;
 	GSList *l;
 
-	if (!message)
+	if (message == NULL)
 		return;
 
 	if (cls == SMS_CLASS_0)
@@ -1186,7 +1184,7 @@ static void dispatch_text_message(struct ofono_sms *sms,
 	signal = dbus_message_new_signal(path, OFONO_MESSAGE_MANAGER_INTERFACE,
 						signal_name);
 
-	if (!signal)
+	if (signal == NULL)
 		return;
 
 	dbus_message_iter_init_append(signal, &iter);
@@ -1324,8 +1322,7 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 		}
 
 		buf = sms_decode_datagram(sms_list, &len);
-
-		if (!buf)
+		if (buf == NULL)
 			return;
 
 		dispatch_app_datagram(sms, &uuid, dstport, srcport, buf, len,
@@ -1335,7 +1332,7 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 	} else {
 		char *message = sms_decode_text(sms_list);
 
-		if (!message)
+		if (message == NULL)
 			return;
 
 		dispatch_text_message(sms, &uuid, message, cls,
@@ -1357,7 +1354,7 @@ static void handle_deliver(struct ofono_sms *sms, const struct sms *incoming)
 	if (sms_extract_concatenation(incoming, &ref, &max, &seq)) {
 		GSList *sms_list;
 
-		if (!sms->assembly)
+		if (sms->assembly == NULL)
 			return;
 
 		sms_list = sms_assembly_add_fragment(sms->assembly,
@@ -1365,7 +1362,7 @@ static void handle_deliver(struct ofono_sms *sms, const struct sms *incoming)
 						&incoming->deliver.oaddr,
 						ref, max, seq);
 
-		if (!sms_list)
+		if (sms_list == NULL)
 			return;
 
 		sms_dispatch(sms, sms_list);
@@ -1489,7 +1486,7 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 
 		sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
-		if (!sim_atom)
+		if (sim_atom == NULL)
 			return;
 
 		if (!__ofono_sim_service_available(
@@ -1500,7 +1497,7 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 
 		stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
 
-		if (!stk_atom)
+		if (stk_atom == NULL)
 			return;
 
 		__ofono_sms_sim_download(__ofono_atom_get_data(stk_atom),

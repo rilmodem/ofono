@@ -155,7 +155,7 @@ static void vcard_printf_number(GString *vcards, const char *number, int type,
 	char *pref = "", *intl = "", *category_string = "";
 	char buf[128];
 
-	if (!number || !strlen(number) || !type)
+	if (number == NULL || !strlen(number) || !type)
 		return;
 
 	switch (category) {
@@ -277,8 +277,7 @@ static DBusMessage *generate_export_entries_reply(struct ofono_phonebook *pb,
 	DBusMessageIter iter;
 
 	reply = dbus_message_new_method_return(msg);
-
-	if (!reply)
+	if (reply == NULL)
 		return NULL;
 
 	dbus_message_iter_init_append(reply, &iter);
@@ -292,7 +291,7 @@ static gboolean need_merge(const char *text)
 	int len;
 	char c;
 
-	if (!text)
+	if (text == NULL)
 		return FALSE;
 
 	len = strlen(text);
@@ -375,7 +374,7 @@ void ofono_phonebook_entry(struct ofono_phonebook *phonebook, int index,
 				break;
 		}
 
-		if (!l) {
+		if (l == NULL) {
 			person = g_new0(struct phonebook_person, 1);
 			phonebook->merge_list =
 				g_slist_prepend(phonebook->merge_list, person);
@@ -444,8 +443,7 @@ static void export_phonebook(struct ofono_phonebook *phonebook)
 	}
 
 	reply = generate_export_entries_reply(phonebook, phonebook->pending);
-
-	if (!reply) {
+	if (reply == NULL) {
 		dbus_message_unref(phonebook->pending);
 		return;
 	}

@@ -63,7 +63,7 @@ static struct sms_agent_request *sms_agent_request_new(struct sms_agent *agent,
 	struct sms_agent_request *req;
 
 	req = g_try_new0(struct sms_agent_request, 1);
-	if (!req)
+	if (req == NULL)
 		return NULL;
 
 	req->agent = agent;
@@ -99,7 +99,7 @@ static void sms_agent_send_noreply(struct sms_agent *agent, const char *method)
 
 	message = dbus_message_new_method_call(agent->service, agent->path,
 						agent->interface, method);
-	if (!message)
+	if (message == NULL)
 		return;
 
 	dbus_message_set_no_reply(message, TRUE);
@@ -130,7 +130,7 @@ struct sms_agent *sms_agent_new(const char *interface,
 	struct sms_agent *agent = g_try_new0(struct sms_agent, 1);
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!agent)
+	if (agent == NULL)
 		return NULL;
 
 	agent->interface = g_strdup(interface);
@@ -164,7 +164,7 @@ void sms_agent_free(struct sms_agent *agent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 
-	if (!agent)
+	if (agent == NULL)
 		return;
 
 	if (agent->disconnect_watch) {
@@ -266,12 +266,12 @@ int sms_agent_dispatch_datagram(struct sms_agent *agent, const char *method,
 	const char *str = buf;
 
 	req = sms_agent_request_new(agent, cb, user_data, destroy);
-	if (!req)
+	if (req == NULL)
 		return -ENOMEM;
 
 	req->msg = dbus_message_new_method_call(agent->service, agent->path,
 						agent->interface, method);
-	if (!req->msg) {
+	if (req->msg == NULL) {
 		sms_agent_request_free(req);
 		return -ENOMEM;
 	}
