@@ -589,8 +589,7 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 	}
 
 	res = g_try_malloc(res_length + 1);
-
-	if (!res)
+	if (res == NULL)
 		goto error;
 
 	out = res;
@@ -693,8 +692,7 @@ unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len,
 	}
 
 	res = g_try_malloc(res_len + (terminator ? 1 : 0));
-
-	if (!res)
+	if (res == NULL)
 		goto err_out;
 
 	in = text;
@@ -1060,7 +1058,7 @@ unsigned char *pack_7bit(const unsigned char *in, long len, int byte_offset,
 	long total_bits;
 	unsigned char *buf;
 
-	if (len == 0 || !items_written)
+	if (len == 0 || items_written == NULL)
 		return NULL;
 
 	if (len < 0) {
@@ -1197,8 +1195,7 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 			return NULL;
 
 	utf8 = g_try_malloc(res_len + 1);
-
-	if (!utf8)
+	if (utf8 == NULL)
 		return NULL;
 
 	i = offset;
@@ -1247,15 +1244,14 @@ unsigned char *utf8_to_sim_string(const char *utf,
 
 	ucs2 = (guint8 *) g_convert(utf, -1, "UCS-2BE//TRANSLIT", "UTF-8",
 					NULL, &converted, NULL);
-
-	if (!ucs2)
+	if (ucs2 == NULL)
 		return NULL;
 
 	if (max_length != -1 && (int) converted + 1 > max_length)
 		converted = (max_length - 1) & ~1;
 
 	result = g_try_malloc(converted + 1);
-	if (!result) {
+	if (result == NULL) {
 		g_free(ucs2);
 		return NULL;
 	}
@@ -1329,7 +1325,7 @@ unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text,
 	}
 
 	res = g_try_malloc(res_len + (terminator ? 1 : 0));
-	if (!res)
+	if (res == NULL)
 		goto err_out;
 
 	in = text;
