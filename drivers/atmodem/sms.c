@@ -1242,6 +1242,8 @@ static void at_sms_remove(struct ofono_sms *sms)
 
 	g_at_chat_unref(data->chat);
 	g_free(data);
+
+	ofono_sms_set_data(sms, NULL);
 }
 
 static struct ofono_sms_driver driver = {
