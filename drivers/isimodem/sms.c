@@ -156,7 +156,7 @@ static void isi_sca_query(struct ofono_sms *sms,
 		1,	/* Location, default is 1 */
 	};
 
-	if (!cbd || !sd)
+	if (cbd == NULL || sd == NULL)
 		goto error;
 
 	if (g_isi_send(sd->sim, msg, sizeof(msg), SIM_TIMEOUT,
@@ -214,7 +214,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 		{ &sd->params, sizeof(sd->params) },
 	};
 
-	if (!cbd || !sd)
+	if (cbd == NULL || sd == NULL)
 		goto error;
 
 	bcd = sd->params.sca;
@@ -350,7 +350,7 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 		{ sca_sb, sca_sb_len },
 	};
 
-	if (!cbd || !sd)
+	if (cbd == NULL || sd == NULL)
 		goto error;
 
 	if (use_sca) {
@@ -560,18 +560,18 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 		0x00  /* Sub-sub-block count */
 	};
 
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->params.absent = 0xff;
 	data->params.alphalen = 1; /* Includes final UCS2-coded NUL */
 
 	data->client = g_isi_client_create(idx, PN_SMS);
-	if (!data->client)
+	if (data->client == NULL)
 		return -ENOMEM;
 
 	data->sim = g_isi_client_create(idx, PN_SIM);
-	if (!data->sim) {
+	if (data->sim == NULL) {
 		g_isi_client_destroy(data->client);
 		return -ENOMEM;
 	}
@@ -586,8 +586,8 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 
 	g_isi_subscribe(data->client, SMS_MESSAGE_SEND_STATUS_IND,
 			send_status_ind_cb, sms);
-	if (!g_isi_send(data->client, msg, sizeof(msg), SMS_TIMEOUT,
-			routing_resp_cb, sms, NULL))
+	if (g_isi_send(data->client, msg, sizeof(msg), SMS_TIMEOUT,
+					routing_resp_cb, sms, NULL) == NULL)
 		DBG("Failed to set SMS routing.");
 
 	return 0;
@@ -609,7 +609,7 @@ static void isi_sms_remove(struct ofono_sms *sms)
 		0x00  /* Sub-sub-block count */
 	};
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_sms_set_data(sms, NULL);

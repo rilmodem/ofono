@@ -84,7 +84,7 @@ static void at_ccwa_query(struct ofono_call_settings *cs, int cls,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = GINT_TO_POINTER(cls);
@@ -122,7 +122,7 @@ static void at_ccwa_set(struct ofono_call_settings *cs, int mode, int cls,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CCWA=1,%d,%d", mode, cls);
@@ -175,7 +175,7 @@ static void at_clip_query(struct ofono_call_settings *cs,
 	GAtChat *chat = ofono_call_settings_get_data(cs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, "AT+CLIP?", clip_prefix,
@@ -225,7 +225,7 @@ static void at_colp_query(struct ofono_call_settings *cs,
 	GAtChat *chat = ofono_call_settings_get_data(cs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, "AT+COLP?", colp_prefix,
@@ -274,7 +274,7 @@ static void at_clir_query(struct ofono_call_settings *cs,
 	GAtChat *chat = ofono_call_settings_get_data(cs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, "AT+CLIR?", clir_prefix,
@@ -305,7 +305,7 @@ static void at_clir_set(struct ofono_call_settings *cs, int mode,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CLIR=%d", mode);
@@ -358,7 +358,7 @@ static void at_colr_query(struct ofono_call_settings *cs,
 	GAtChat *chat = ofono_call_settings_get_data(cs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, "AT+COLR", colr_prefix,

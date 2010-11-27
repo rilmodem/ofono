@@ -93,11 +93,11 @@ struct isi_infoserver *isi_infoserver_create(struct ofono_modem *modem,
 	struct isi_infoserver *self;
 
 	self = g_new0(struct isi_infoserver, 1);
-	if (!self)
+	if (self == NULL)
 		return NULL;
 
 	self->server = g_isi_server_create(data, PN_EPOC_INFO, 0, 0);
-	if (!self->server) {
+	if (self->server == NULL) {
 		g_free(self);
 		return NULL;
 	}

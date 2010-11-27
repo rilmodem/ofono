@@ -69,7 +69,7 @@ static void at_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CGATT=%i", attached ? 1 : 0);
@@ -115,7 +115,7 @@ static void at_gprs_registration_status(struct ofono_gprs *gprs,
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = gd;
@@ -350,7 +350,7 @@ static int at_gprs_probe(struct ofono_gprs *gprs,
 	struct gprs_data *gd;
 
 	gd = g_try_new0(struct gprs_data, 1);
-	if (!gd)
+	if (gd == NULL)
 		return -ENOMEM;
 
 	gd->chat = g_at_chat_clone(chat);

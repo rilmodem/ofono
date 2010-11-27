@@ -138,7 +138,7 @@ static void at_call_volume_speaker_volume(struct ofono_call_volume *cv,
 	char buf[64];
 	int level;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	level = ((cvd->clvl_max - cvd->clvl_min) *
@@ -163,7 +163,7 @@ static void at_call_volume_mute(struct ofono_call_volume *cv, int muted,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CMUT=%d", muted);

@@ -229,7 +229,7 @@ static void isi_registration(struct ofono_call_forwarding *cf,
 
 	DBG("forwarding type %d class %d", type, cls);
 
-	if (!cbd || !fd || !number->number || strlen(number->number) > 28)
+	if (cbd == NULL || fd == NULL || !number->number || strlen(number->number) > 28)
 		goto error;
 
 	ss_code = forw_type_to_isi_code(type);
@@ -349,7 +349,7 @@ static void isi_erasure(struct ofono_call_forwarding *cf, int type, int cls,
 
 	DBG("forwarding type %d class %d", type, cls);
 
-	if (!cbd || !fd)
+	if (cbd == NULL || fd == NULL)
 		goto error;
 
 	ss_code = forw_type_to_isi_code(type);
@@ -481,7 +481,7 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 
 	DBG("forwarding type %d class %d", type, cls);
 
-	if (!cbd || !fd || cls != 7)
+	if (cbd == NULL || fd == NULL || cls != 7)
 		goto error;
 
 	ss_code = forw_type_to_isi_code(type);
@@ -540,12 +540,11 @@ static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
 	struct forw_data *data;
 
 	data = g_try_new0(struct forw_data, 1);
-
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_SS);
-	if (!data->client)
+	if (data->client == NULL)
 		return -ENOMEM;
 
 	ofono_call_forwarding_set_data(cf, data);
@@ -560,7 +559,7 @@ static void isi_call_forwarding_remove(struct ofono_call_forwarding *cf)
 {
 	struct forw_data *data = ofono_call_forwarding_get_data(cf);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_call_forwarding_set_data(cf, NULL);

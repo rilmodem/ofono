@@ -101,7 +101,7 @@ static void calypso_stk_envelope(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (!cbd || !buf)
+	if (cbd == NULL || buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT%%SATE=\"");
@@ -148,7 +148,7 @@ static void calypso_stk_terminal_response(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (!cbd || !buf)
+	if (cbd == NULL || buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT%%SATR=\"");
@@ -258,7 +258,7 @@ static int calypso_stk_probe(struct ofono_stk *stk,
 	DBG("");
 
 	sd = g_try_new0(struct stk_data, 1);
-	if (!sd)
+	if (sd == NULL)
 		return -ENOMEM;
 
 	sd->chat = g_at_chat_clone(chat);

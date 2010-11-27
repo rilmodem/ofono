@@ -246,7 +246,7 @@ void atmodem_poll_enable(struct ofono_modem *modem, GAtChat *chat)
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 	stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
 
-	if (!sim_atom)
+	if (sim_atom == NULL)
 		return;
 
 	spd = g_new0(struct sim_poll_data, 1);

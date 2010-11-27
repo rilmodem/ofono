@@ -158,7 +158,7 @@ static struct conn_info *conn_info_create(unsigned int device,
 {
 	struct conn_info *connection = g_try_new0(struct conn_info, 1);
 
-	if (!connection)
+	if (connection == NULL)
 		return NULL;
 
 	connection->cid = 0;
@@ -206,7 +206,7 @@ static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
 				GUINT_TO_POINTER(gcd->active_context),
 				conn_compare_by_cid);
 
-	if (!l) {
+	if (l == NULL) {
 		DBG("Did not find data (used caif device) for"
 					"connection with cid; %d",
 					gcd->active_context);
@@ -247,7 +247,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				GUINT_TO_POINTER(gcd->active_context),
 				conn_compare_by_cid);
 
-	if (!l) {
+	if (l == NULL) {
 		DBG("Did not find data (device and channel id)"
 					"for connection with cid; %d",
 					gcd->active_context);
@@ -344,7 +344,7 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	l = g_slist_find_custom(g_caif_devices, GUINT_TO_POINTER(0),
 				conn_compare_by_cid);
 
-	if (!l) {
+	if (l == NULL) {
 		DBG("at_cgdcont_cb, no more available devices");
 		goto error;
 	}
@@ -376,7 +376,7 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 	char buf[AUTH_BUF_LENGTH];
 	int len;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	gcd->active_context = ctx->cid;
@@ -421,7 +421,7 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 	char buf[64];
 	GSList *l;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	gcd->active_context = id;
@@ -430,7 +430,7 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 	l = g_slist_find_custom(g_caif_devices, GUINT_TO_POINTER(id),
 				conn_compare_by_cid);
 
-	if (!l) {
+	if (l == NULL) {
 		DBG("at_gprs_deactivate_primary, did not find"
 			"data (channel id) for connection with cid; %d", id);
 		goto error;

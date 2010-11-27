@@ -51,11 +51,11 @@ static int isi_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 	GIsiModem *idx = user;
 	struct ssn_data *data = g_try_new0(struct ssn_data, 1);
 
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_SS);
-	if (!data->client)
+	if (data->client == NULL)
 		return -ENOMEM;
 
 	ofono_ssn_set_data(ssn, data);
@@ -67,7 +67,7 @@ static void isi_ssn_remove(struct ofono_ssn *ssn)
 {
 	struct ssn_data *data = ofono_ssn_get_data(ssn);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_ssn_set_data(ssn, NULL);

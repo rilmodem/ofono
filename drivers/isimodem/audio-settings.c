@@ -107,11 +107,11 @@ static int isi_audio_settings_probe(struct ofono_audio_settings *as,
 	struct audio_settings_data *asd =
 		g_try_new0(struct audio_settings_data, 1);
 
-	if (!asd)
+	if (asd == NULL)
 		return -ENOMEM;
 
 	asd->client = g_isi_client_create(idx, PN_CALL);
-	if (!asd->client) {
+	if (asd->client == NULL) {
 		g_free(asd);
 		return -ENOMEM;
 	}
@@ -128,7 +128,7 @@ static void isi_audio_settings_remove(struct ofono_audio_settings *as)
 {
 	struct audio_settings_data *asd = ofono_audio_settings_get_data(as);
 
-	if (!asd)
+	if (asd == NULL)
 		return;
 
 	ofono_audio_settings_set_data(as, NULL);

@@ -128,7 +128,7 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 		INFO_PRODUCT_MANUFACTURER
 	};
 
-	if (!cbd || !dev)
+	if (cbd == NULL || dev == NULL)
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg),
@@ -152,7 +152,7 @@ static void isi_query_model(struct ofono_devinfo *info,
 		INFO_PRODUCT_NAME
 	};
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg),
@@ -177,7 +177,7 @@ static void isi_query_revision(struct ofono_devinfo *info,
 		0x00, 0x00, 0x00, 0x00
 	};
 
-	if (!cbd || !dev)
+	if (cbd == NULL || dev == NULL)
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg),
@@ -201,7 +201,7 @@ static void isi_query_serial(struct ofono_devinfo *info,
 		INFO_SN_IMEI_PLAIN
 	};
 
-	if (!cbd || !dev)
+	if (cbd == NULL || dev == NULL)
 		goto error;
 
 	if (g_isi_request_make(dev->client, msg, sizeof(msg),
@@ -252,11 +252,11 @@ static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 	GIsiModem *idx = user;
 	struct devinfo_data *data = g_try_new0(struct devinfo_data, 1);
 
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_PHONE_INFO);
-	if (!data->client) {
+	if (data->client == NULL) {
 		g_free(data);
 		return -ENOMEM;
 	}

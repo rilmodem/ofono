@@ -128,7 +128,7 @@ static void at_ccfc_query(struct ofono_call_forwarding *cf, int type, int cls,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = GINT_TO_POINTER(cls);
@@ -165,7 +165,7 @@ static void at_ccfc_set(struct ofono_call_forwarding *cf, const char *buf,
 	GAtChat *chat = ofono_call_forwarding_get_data(cf);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, buf, none_prefix,

@@ -116,7 +116,7 @@ static void at_caoc_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CAOC:";
@@ -137,7 +137,7 @@ static void at_cacm_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CACM:";
@@ -169,7 +169,7 @@ static void at_cacm_set(struct ofono_call_meter *cm, const char *passwd,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CACM=\"%s\"", passwd);
@@ -191,7 +191,7 @@ static void at_camm_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CAMM:";
@@ -213,7 +213,7 @@ static void at_camm_set(struct ofono_call_meter *cm,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CAMM=\"%06X\",\"%s\"", accmax, passwd);
@@ -274,7 +274,7 @@ static void at_cpuc_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CPUC:";
@@ -296,7 +296,7 @@ static void at_cpuc_set(struct ofono_call_meter *cm, const char *currency,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CPUC=\"%s\",\"%f\",\"%s\"",

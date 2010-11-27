@@ -90,11 +90,11 @@ static int isi_call_meter_probe(struct ofono_call_meter *cm,
 	GIsiModem *idx = user;
 	struct call_meter_data *data = g_try_new0(struct call_meter_data, 1);
 
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_SS);
-	if (!data->client)
+	if (data->client == NULL)
 		return -ENOMEM;
 
 	ofono_call_meter_set_data(cm, data);

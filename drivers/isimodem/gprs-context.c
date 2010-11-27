@@ -85,7 +85,7 @@ struct context_data {
 
 static void reset_context(struct context_data *cd)
 {
-	if (!cd)
+	if (cd == NULL)
 		return;
 
 	g_isi_remove_subscription(cd->client, PN_GPDS,
@@ -399,8 +399,8 @@ static void send_context_authenticate(GIsiClient *client, void *opaque)
 		{ cd->password, password_len },
 	};
 
-	if (!g_isi_request_vmake(client, iov, 4, GPDS_TIMEOUT,
-					context_auth_cb, cd))
+	if (g_isi_request_vmake(client, iov, 4, GPDS_TIMEOUT,
+					context_auth_cb, cd) == NULL)
 		gprs_up_fail(cd);
 }
 
@@ -478,8 +478,8 @@ static gboolean create_context_cb(GIsiClient *client,
 
 	cd->handle = msg[1] = resp[1];
 
-	if (!g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
-				link_conf_cb, cd))
+	if (g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
+						link_conf_cb, cd) == NULL)
 		return gprs_up_fail(cd);
 
 	/* TODO: send context configuration at the same time? */
@@ -495,8 +495,8 @@ static void create_pipe_cb(GIsiPipe *pipe)
 		GPDS_CONTEXT_ID_CREATE_REQ,
 	};
 
-	if (!g_isi_request_make(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-				create_context_cb, cd))
+	if (g_isi_request_make(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+					create_context_cb, cd) == NULL)
 		gprs_up_fail(cd);
 }
 
@@ -582,7 +582,7 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 		0x00,	/* GPDS context ID, added later */
 	};
 
-	if (!cd)
+	if (cd == NULL)
 		return;
 
 	cd->down_cb = cb;
@@ -590,8 +590,8 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	msg[1] = cd->handle;
 
-	if (!g_isi_request_make(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-					context_deactivate_cb, cd)) {
+	if (g_isi_request_make(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+					context_deactivate_cb, cd) == NULL) {
 		gprs_down_fail(cd);
 		return;
 	}
@@ -630,11 +630,11 @@ static int isi_gprs_context_probe(struct ofono_gprs_context *gc,
 	GIsiModem *idx = user;
 	struct context_data *cd = g_try_new0(struct context_data, 1);
 
-	if (!cd)
+	if (cd == NULL)
 		return -ENOMEM;
 
 	cd->client = g_isi_client_create(idx, PN_GPDS);
-	if (!cd->client) {
+	if (cd->client == NULL) {
 		g_free(cd);
 		return -ENOMEM;
 	}
@@ -652,7 +652,7 @@ static void isi_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct context_data *cd = ofono_gprs_context_get_data(gc);
 
-	if (!cd)
+	if (cd == NULL)
 		return;
 
 	ofono_gprs_context_set_data(gc, NULL);

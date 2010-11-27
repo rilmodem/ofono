@@ -138,7 +138,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 	}
 
 	cbd = cb_data_new(cb, data);
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i", fileid);
@@ -211,7 +211,7 @@ static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,%i,%i,%i", fileid,
@@ -235,7 +235,7 @@ static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=178,%i,%i,4,%i", fileid,
@@ -300,7 +300,7 @@ static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
-	if (!cbd || !buf)
+	if (cbd == NULL || buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=214,%i,%i,%i,%i,", fileid,
@@ -333,7 +333,7 @@ static void at_sim_update_record(struct ofono_sim *sim, int fileid,
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
-	if (!cbd || !buf)
+	if (cbd == NULL || buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=220,%i,%i,4,%i,", fileid,
@@ -365,7 +365,7 @@ static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
-	if (!cbd || !buf)
+	if (cbd == NULL || buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=220,%i,0,3,%i,", fileid, length);
@@ -421,7 +421,7 @@ static void at_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(sd->chat, "AT+CIMI", NULL,
@@ -517,7 +517,7 @@ static void at_pin_query(struct ofono_sim *sim, ofono_sim_passwd_cb_t cb,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = sim;
@@ -626,7 +626,7 @@ static void at_pin_send(struct ofono_sim *sim, const char *passwd,
 	char buf[64];
 	int ret;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = sd;
@@ -656,7 +656,7 @@ static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
 	char buf[64];
 	int ret;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = sd;
@@ -711,10 +711,10 @@ static void at_pin_enable(struct ofono_sim *sim,
 	int ret;
 	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
-	if (passwd_type >= len || !at_clck_cpwd_fac[passwd_type])
+	if (passwd_type >= len || at_clck_cpwd_fac[passwd_type] == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",%i,\"%s\"",
@@ -745,11 +745,11 @@ static void at_change_passwd(struct ofono_sim *sim,
 	int ret;
 	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (passwd_type >= len ||
-			!at_clck_cpwd_fac[passwd_type])
+			at_clck_cpwd_fac[passwd_type] == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CPWD=\"%s\",\"%s\",\"%s\"",
@@ -808,10 +808,10 @@ static void at_pin_query_enabled(struct ofono_sim *sim,
 	char buf[64];
 	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
-	if (passwd_type >= len || !at_clck_cpwd_fac[passwd_type])
+	if (passwd_type >= len || at_clck_cpwd_fac[passwd_type] == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",2",

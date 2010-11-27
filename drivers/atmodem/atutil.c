@@ -133,8 +133,7 @@ GSList *at_util_parse_clcc(GAtResult *result)
 			g_at_result_iter_next_number(&iter, &number_type);
 
 		call = g_try_new0(struct ofono_call, 1);
-
-		if (!call)
+		if (call == NULL)
 			break;
 
 		call->id = id;

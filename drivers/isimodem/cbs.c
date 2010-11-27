@@ -136,11 +136,11 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 		0x00   /* Languages */
 	};
 
-	if (!cd)
+	if (cd == NULL)
 		return -ENOMEM;
 
 	cd->client = g_isi_client_create(idx, PN_SMS);
-	if (!cd->client)
+	if (cd->client == NULL)
 		return -ENOMEM;
 
 	ofono_cbs_set_data(cbs, cd);
@@ -149,8 +149,8 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "cbs") == 0))
 		g_isi_client_set_debug(cd->client, sms_debug, NULL);
 
-	if (!g_isi_request_make(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
-				routing_resp_cb, cbs))
+	if (g_isi_request_make(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
+				routing_resp_cb, cbs) == NULL)
 		DBG("Failed to set CBS routing.");
 
 	return 0;
@@ -173,7 +173,7 @@ static void isi_cbs_remove(struct ofono_cbs *cbs)
 		0x00   /* Languages */
 	};
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	if (data->client) {

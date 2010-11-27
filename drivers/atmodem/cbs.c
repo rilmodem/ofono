@@ -74,8 +74,7 @@ static void at_cbm_notify(GAtResult *result, gpointer user_data)
 	}
 
 	hexpdu = g_at_result_pdu(result);
-
-	if (!hexpdu) {
+	if (hexpdu == NULL) {
 		ofono_error("Got a CBM, but no PDU.  Are we in text mode?");
 		return;
 	}
@@ -116,7 +115,7 @@ static void at_cbs_set_topics(struct ofono_cbs *cbs, const char *topics,
 
 	DBG("");
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	/* For the Qualcomm based devices it is required to clear
@@ -155,7 +154,7 @@ static void at_cbs_clear_topics(struct ofono_cbs *cbs,
 
 	DBG("");
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (data->cscb_mode_1)

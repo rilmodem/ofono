@@ -182,7 +182,7 @@ static void at_registration_status(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = nd;
@@ -349,7 +349,7 @@ static void at_current_operator(struct ofono_netreg *netreg,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	gboolean ok;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = netreg;
@@ -408,8 +408,7 @@ static void cops_list_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	DBG("Got %d elements", num);
 
 	list = g_try_new0(struct ofono_network_operator, num);
-
-	if (!list) {
+	if (list == NULL) {
 		CALLBACK_WITH_FAILURE(cb, 0, NULL, cbd->data);
 		return;
 	}
@@ -492,7 +491,7 @@ static void at_list_operators(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(nd->chat, "AT+COPS=?", cops_prefix,
@@ -522,7 +521,7 @@ static void at_register_auto(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(nd->chat, "AT+COPS=0", none_prefix,
@@ -543,7 +542,7 @@ static void at_register_manual(struct ofono_netreg *netreg,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[128];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+COPS=1,2,\"%s%s\"", mcc, mnc);
@@ -564,7 +563,7 @@ static void at_deregister(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(nd->chat, "AT+COPS=2", none_prefix,
@@ -862,7 +861,7 @@ static void at_signal_strength(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = nd;
@@ -1045,7 +1044,7 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	switch (nd->vendor) {
 	case OFONO_VENDOR_OPTION_HSO:
 		tq = g_new0(struct tech_query, 1);
-		if (!tq)
+		if (tq == NULL)
 			break;
 
 		tq->status = status;

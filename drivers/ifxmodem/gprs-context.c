@@ -122,7 +122,7 @@ static void failed_setup(struct ofono_gprs_context *gc,
 	gcd->active_context = 0;
 	gcd->state = STATE_IDLE;
 
-	if (!result) {
+	if (result == NULL) {
 		CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL, NULL,
 						NULL, NULL, gcd->cb_data);
 		return;
@@ -154,7 +154,7 @@ static void session_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	dns[2] = 0;
 
 	interface = setup_rawip(gc);
-	if (!interface)
+	if (interface == NULL)
 		interface = "invalid";
 
 	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, TRUE, gcd->address,
@@ -446,11 +446,11 @@ static int ifx_gprs_context_probe(struct ofono_gprs_context *gc,
 		return -ENODEV;
 	}
 
-	if (!g_at_chat_get_slave(chat))
+	if (g_at_chat_get_slave(chat) == NULL)
 		return -EINVAL;
 
 	gcd = g_try_new0(struct gprs_context_data, 1);
-	if (!gcd)
+	if (gcd == NULL)
 		return -ENOMEM;
 
 	gcd->chat = g_at_chat_clone(chat);

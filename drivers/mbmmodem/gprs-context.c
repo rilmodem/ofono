@@ -364,7 +364,7 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", ctx->cid);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	gcd->active_context = ctx->cid;
@@ -408,7 +408,7 @@ static void mbm_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", cid);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = gc;
@@ -471,7 +471,7 @@ static int mbm_gprs_context_probe(struct ofono_gprs_context *gc,
 	DBG("");
 
 	gcd = g_try_new0(struct gprs_context_data, 1);
-	if (!gcd)
+	if (gcd == NULL)
 		return -ENOMEM;
 
 	gcd->chat = g_at_chat_clone(chat);

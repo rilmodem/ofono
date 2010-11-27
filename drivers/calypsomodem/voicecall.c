@@ -64,7 +64,7 @@ static void calypso_template(struct ofono_voicecall *vc, const char *cmd,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(vd->chat, cmd, none_prefix,
@@ -210,7 +210,7 @@ static void calypso_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	/* strlen("+VTS=\"T\";") = 9 + initial AT + null */
 	buf = g_try_new(char, len * 9 + 3);
 
-	if (!buf) {
+	if (buf == NULL) {
 		CALLBACK_WITH_FAILURE(cb, data);
 		return;
 	}
@@ -390,7 +390,7 @@ static int calypso_voicecall_probe(struct ofono_voicecall *vc,
 	struct voicecall_data *vd;
 
 	vd = g_try_new0(struct voicecall_data, 1);
-	if (!vd)
+	if (vd == NULL)
 		return -ENOMEM;
 
 	vd->chat = g_at_chat_clone(chat);

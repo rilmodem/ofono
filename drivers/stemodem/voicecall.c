@@ -109,7 +109,7 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 
 	/* Generate a call structure for the waiting call */
 	call = g_try_new0(struct ofono_call, 1);
-	if (!call)
+	if (call == NULL)
 		return NULL;
 
 	call->type = type;
@@ -187,7 +187,7 @@ static void ste_dial(struct ofono_voicecall *vc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[256];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = vc;
@@ -235,7 +235,7 @@ static void ste_template(const char *cmd, struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
 
-	if (!req)
+	if (req == NULL)
 		goto error;
 
 	req->vc = vc;
@@ -299,7 +299,7 @@ static void ste_release_specific(struct ofono_voicecall *vc, int id,
 	struct release_id_req *req = g_try_new0(struct release_id_req, 1);
 	char buf[32];
 
-	if (!req)
+	if (req == NULL)
 		goto error;
 
 	req->vc = vc;
@@ -379,13 +379,13 @@ static void ste_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	int s;
 	char *buf;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	/* strlen("AT+VTS=) = 7 */
 	buf = g_try_new(char, len + 7);
 
-	if (!buf)
+	if (buf == NULL)
 		goto error;
 
 	sprintf(buf, "AT+VTS=%s", dtmf);
@@ -506,7 +506,7 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 
 		new_call = create_call(vc, call_type, direction, status,
 					num, num_type, clip_validity);
-		if (!new_call) {
+		if (new_call == NULL) {
 			ofono_error("Unable to malloc. "
 					"Call management is fubar");
 			return;
@@ -546,7 +546,7 @@ static int ste_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	struct voicecall_data *vd;
 
 	vd = g_try_new0(struct voicecall_data, 1);
-	if (!vd)
+	if (vd == NULL)
 		return -ENOMEM;
 
 	vd->chat = g_at_chat_clone(chat);

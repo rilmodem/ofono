@@ -57,7 +57,7 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 
 	/* Generate a call structure for the waiting call */
 	call = g_try_new0(struct ofono_call, 1);
-	if (!call)
+	if (call == NULL)
 		return NULL;
 
 	call->id = id;
@@ -99,7 +99,7 @@ static void huawei_template(struct ofono_voicecall *vc, const char *cmd,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(vd->chat, cmd, none_prefix,
@@ -319,7 +319,7 @@ static void orig_notify(GAtResult *result, gpointer user_data)
 	ofono_info("Call origin: id %d type %d", call_id, call_type);
 
 	call = create_call(vc, call_type, 0, 2, NULL, 128, 2, call_id);
-	if (!call) {
+	if (call == NULL) {
 		ofono_error("Unable to malloc, call tracking will fail!");
 		return;
 	}
@@ -472,7 +472,7 @@ static int huawei_voicecall_probe(struct ofono_voicecall *vc,
 	struct voicecall_data *vd;
 
 	vd = g_try_new0(struct voicecall_data, 1);
-	if (!vd)
+	if (vd == NULL)
 		return -ENOMEM;
 
 	vd->chat = g_at_chat_clone(chat);

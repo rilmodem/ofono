@@ -176,7 +176,7 @@ static gboolean isi_ctx_return(struct isi_call_req_context *irc,
 				enum ofono_error_type type,
 				int error)
 {
-	if (!irc)
+	if (irc == NULL)
 		return TRUE;
 
 	if (irc->cb) {
@@ -1252,14 +1252,14 @@ static int isi_voicecall_probe(struct ofono_voicecall *ovc,
 	struct isi_voicecall *ivc = g_try_new0(struct isi_voicecall, 1);
 	int id;
 
-	if (!ivc)
+	if (ivc == NULL)
 		return -ENOMEM;
 
 	for (id = 0; id <= 7; id++)
 		ivc->calls[id].id = id;
 
 	ivc->client = g_isi_client_create(idx, PN_CALL);
-	if (!ivc->client) {
+	if (ivc->client == NULL) {
 		g_free(ivc);
 		return -ENOMEM;
 	}
@@ -1302,9 +1302,9 @@ static gboolean isi_call_register(gpointer _ovc)
 			CALL_STATUS_IND, isi_call_status_ind_cb,
 			ovc);
 
-	if (!isi_call_status_req(ovc, CALL_ID_ALL,
-					CALL_STATUS_MODE_ADDR_AND_ORIGIN,
-					NULL, NULL))
+	if (isi_call_status_req(ovc, CALL_ID_ALL,
+				CALL_STATUS_MODE_ADDR_AND_ORIGIN,
+				NULL, NULL) == NULL)
 		DBG("Failed to request call status");
 
 	ofono_voicecall_register(ovc);
@@ -1316,7 +1316,7 @@ static void isi_voicecall_remove(struct ofono_voicecall *call)
 {
 	struct isi_voicecall *data = ofono_voicecall_get_data(call);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_voicecall_set_data(call, NULL);

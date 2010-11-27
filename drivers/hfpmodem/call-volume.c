@@ -73,7 +73,7 @@ static void hfp_speaker_volume(struct ofono_call_volume *cv,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	vd->sp_volume = percent;
@@ -100,7 +100,7 @@ static void hfp_microphone_volume(struct ofono_call_volume *cv,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	vd->mic_volume = percent;

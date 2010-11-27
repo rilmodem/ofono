@@ -165,11 +165,11 @@ static int isi_gprs_probe(struct ofono_gprs *gprs,
 	GIsiModem *idx = user;
 	struct gprs_data *gd = g_try_new0(struct gprs_data, 1);
 
-	if (!gd)
+	if (gd == NULL)
 		return -ENOMEM;
 
 	gd->client = g_isi_client_create(idx, PN_GPDS);
-	if (!gd->client) {
+	if (gd->client == NULL) {
 		g_free(gd);
 		return -ENOMEM;
 	}
@@ -187,7 +187,7 @@ static void isi_gprs_remove(struct ofono_gprs *gprs)
 {
 	struct gprs_data *data = ofono_gprs_get_data(gprs);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_gprs_set_data(gprs, NULL);
@@ -286,7 +286,7 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 
 	GIsiRequest *req;
 
-	if (!cbd || !gd)
+	if (cbd == NULL || gd == NULL)
 		goto error;
 
 	if (attached)
@@ -356,7 +356,7 @@ static void isi_gprs_attached_status(struct ofono_gprs *gprs,
 		GPDS_STATUS_REQ,
 	};
 
-	if (!cbd || !gd)
+	if (cbd == NULL || gd == NULL)
 		goto error;
 
 	if (g_isi_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,

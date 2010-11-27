@@ -255,7 +255,7 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 		NET_REG_STATUS_GET_REQ
 	};
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),
@@ -360,7 +360,7 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 		0x00  /* No sub-blocks */
 	};
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),
@@ -482,7 +482,7 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 		0x00
 	};
 
-	if (!cbd || !net)
+	if (cbd == NULL || net == NULL)
 		goto error;
 
 	if (g_isi_request_make(net->client, msg, sizeof(msg),
@@ -548,7 +548,7 @@ static void isi_register_auto(struct ofono_netreg *netreg,
 		0x00  /* Index not used */
 	};
 
-	if (!cbd || !net)
+	if (cbd == NULL || net == NULL)
 		goto error;
 
 	if (g_isi_request_make(net->client, msg, sizeof(msg),
@@ -621,7 +621,7 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 		0x00, 0x00  /* Filler */
 	};
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),
@@ -866,7 +866,7 @@ static void isi_strength(struct ofono_netreg *netreg,
 		NET_CURRENT_CELL_RSSI
 	};
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (g_isi_request_make(nd->client, msg, sizeof(msg),
@@ -901,9 +901,8 @@ static gboolean isi_netreg_register(gpointer user)
 	g_isi_subscribe(nd->client, NET_TIME_IND, time_ind_cb, netreg);
 
 	/* Bootstrap current RAT setting */
-	if (!g_isi_request_make(nd->client, rat, sizeof(rat),
-				NETWORK_TIMEOUT,
-				rat_resp_cb, netreg))
+	if (g_isi_request_make(nd->client, rat, sizeof(rat),
+				NETWORK_TIMEOUT, rat_resp_cb, netreg) == NULL)
 		DBG("Failed to bootstrap RAT");
 
 	ofono_netreg_register(netreg);
@@ -935,11 +934,11 @@ static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	GIsiModem *idx = user;
 	struct netreg_data *nd = g_try_new0(struct netreg_data, 1);
 
-	if (!nd)
+	if (nd == NULL)
 		return -ENOMEM;
 
 	nd->client = g_isi_client_create(idx, PN_NETWORK);
-	if (!nd->client) {
+	if (nd->client == NULL) {
 		g_free(nd);
 		return -ENOMEM;
 	}
@@ -954,7 +953,7 @@ static void isi_netreg_remove(struct ofono_netreg *net)
 {
 	struct netreg_data *data = ofono_netreg_get_data(net);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_netreg_set_data(net, NULL);

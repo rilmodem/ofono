@@ -177,7 +177,7 @@ static void isi_cw_query(struct ofono_call_settings *cs, int cls,
 
 	DBG("waiting class %d", cls);
 
-	if (!cbd || !sd)
+	if (cbd == NULL || sd == NULL)
 		goto error;
 
 	if (g_isi_request_make(sd->client, msg, sizeof(msg), SS_TIMEOUT,
@@ -268,7 +268,7 @@ static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 
 	DBG("waiting mode %d class %d", mode, cls);
 
-	if (!cbd || !sd)
+	if (cbd == NULL || sd == NULL)
 		goto error;
 
 	if (g_isi_request_make(sd->client, msg, sizeof(msg), SS_TIMEOUT,
@@ -320,13 +320,11 @@ static int isi_call_settings_probe(struct ofono_call_settings *cs,
 	struct settings_data *data;
 
 	data = g_try_new0(struct settings_data, 1);
-
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_SS);
-
-	if (!data->client)
+	if (data->client == NULL)
 		return -ENOMEM;
 
 	ofono_call_settings_set_data(cs, data);
@@ -341,7 +339,7 @@ static void isi_call_settings_remove(struct ofono_call_settings *cs)
 {
 	struct settings_data *data = ofono_call_settings_get_data(cs);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_call_settings_set_data(cs, NULL);

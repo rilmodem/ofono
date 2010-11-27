@@ -128,7 +128,7 @@ static void isi_set(struct ofono_call_barring *barr, const char *lock,
 	DBG("lock code %s enable %d class %d password %s",
 		lock, enable, cls, passwd);
 
-	if (!cbd || !bd)
+	if (cbd == NULL || bd == NULL)
 		goto error;
 
 	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
@@ -275,7 +275,7 @@ static void isi_query(struct ofono_call_barring *barr, const char *lock,
 
 	DBG("barring query lock code %s", lock);
 
-	if (!cbd || !bd)
+	if (cbd == NULL || bd == NULL)
 		goto error;
 
 	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
@@ -346,7 +346,7 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 	DBG("lock code %s (%u) old password %s new password %s",
 		lock, ss_code, old_passwd, new_passwd);
 
-	if (!cbd || !bd)
+	if (cbd == NULL || bd == NULL)
 		goto error;
 
 	if (g_isi_request_make(bd->client, msg, sizeof(msg), SS_TIMEOUT,
@@ -397,11 +397,11 @@ static int isi_call_barring_probe(struct ofono_call_barring *barr,
 	GIsiModem *idx = user;
 	struct barr_data *data = g_try_new0(struct barr_data, 1);
 
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_SS);
-	if (!data->client)
+	if (data->client == NULL)
 		return -ENOMEM;
 
 	ofono_call_barring_set_data(barr, data);
@@ -415,7 +415,7 @@ static void isi_call_barring_remove(struct ofono_call_barring *barr)
 {
 	struct barr_data *data = ofono_call_barring_get_data(barr);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_call_barring_set_data(barr, NULL);

@@ -94,7 +94,7 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 
 	/* Generate a call structure for the waiting call */
 	call = g_try_new0(struct ofono_call, 1);
-	if (!call)
+	if (call == NULL)
 		return NULL;
 
 	call->id = ofono_voicecall_get_next_callid(vc);
@@ -287,7 +287,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* Generate a voice call that was just dialed, we guess the ID */
 	call = create_call(vc, 0, 0, 2, num, type, validity);
-	if (!call) {
+	if (call == NULL) {
 		ofono_error("Unable to malloc, call tracking will fail!");
 		return;
 	}
@@ -311,7 +311,7 @@ static void ifx_dial(struct ofono_voicecall *vc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[256];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = vc;
@@ -359,7 +359,7 @@ static void ifx_template(const char *cmd, struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
 
-	if (!req)
+	if (req == NULL)
 		goto error;
 
 	req->vc = vc;
@@ -431,7 +431,7 @@ static void ifx_release_specific(struct ofono_voicecall *vc, int id,
 	struct release_id_req *req = g_try_new0(struct release_id_req, 1);
 	char buf[32];
 
-	if (!req)
+	if (req == NULL)
 		goto error;
 
 	req->vc = vc;
@@ -518,12 +518,12 @@ static void ifx_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	int i;
 	char *buf;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	/* strlen("+VTS=T\;") = 7 + initial AT + null */
 	buf = g_try_new(char, len * 7 + 3);
-	if (!buf)
+	if (buf == NULL)
 		goto error;
 
 	s = sprintf(buf, "AT+VTS=%c", dtmf[0]);
@@ -689,7 +689,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	call = create_call(vc, class_to_call_type(cls), 1, 5,
 				num, num_type, validity);
-	if (!call) {
+	if (call == NULL) {
 		ofono_error("Unable to malloc. Call management is fubar");
 		return;
 	}
@@ -723,7 +723,7 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	struct voicecall_data *vd;
 
 	vd = g_try_new0(struct voicecall_data, 1);
-	if (!vd)
+	if (vd == NULL)
 		return -ENOMEM;
 
 	vd->chat = g_at_chat_clone(chat);

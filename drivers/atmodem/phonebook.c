@@ -368,7 +368,7 @@ static void at_export_entries(struct ofono_phonebook *pb, const char *storage,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[32];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = pb;
@@ -536,7 +536,7 @@ static int at_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 	struct pb_data *pbd;
 
 	pbd = g_try_new0(struct pb_data, 1);
-	if (!pbd)
+	if (pbd == NULL)
 		return -ENOMEM;
 
 	pbd->chat = g_at_chat_clone(chat);

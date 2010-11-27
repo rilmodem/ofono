@@ -106,7 +106,7 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 
 	/* Generate a call structure for the waiting call */
 	call = g_try_new0(struct ofono_call, 1);
-	if (!call)
+	if (call == NULL)
 		return NULL;
 
 	call->id = ofono_voicecall_get_next_callid(vc);
@@ -154,7 +154,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (nc && nc->status >= 2 && nc->status <= 5)
 			poll_again = TRUE;
 
-		if (oc && (!nc || (nc->id > oc->id))) {
+		if (oc && (nc == NULL || (nc->id > oc->id))) {
 			enum ofono_disconnect_reason reason;
 
 			if (vd->local_release & (0x1 << oc->id))
@@ -167,7 +167,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 								reason, NULL);
 
 			o = o->next;
-		} else if (nc && (!oc || (nc->id < oc->id))) {
+		} else if (nc && (oc == NULL || (nc->id < oc->id))) {
 			/* new call, signal it */
 			if (nc->type == 0)
 				ofono_voicecall_notify(vc, nc);
@@ -309,7 +309,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* Generate a voice call that was just dialed, we guess the ID */
 	call = create_call(vc, 0, 0, 2, num, type, validity);
-	if (!call) {
+	if (call == NULL) {
 		ofono_error("Unable to malloc, call tracking will fail!");
 		return;
 	}
@@ -339,7 +339,7 @@ static void at_dial(struct ofono_voicecall *vc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[256];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = vc;
@@ -387,7 +387,7 @@ static void at_template(const char *cmd, struct ofono_voicecall *vc,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct change_state_req *req = g_try_new0(struct change_state_req, 1);
 
-	if (!req)
+	if (req == NULL)
 		goto error;
 
 	req->vc = vc;
@@ -467,7 +467,7 @@ static void at_release_specific(struct ofono_voicecall *vc, int id,
 	struct release_id_req *req = g_try_new0(struct release_id_req, 1);
 	char buf[32];
 
-	if (!req)
+	if (req == NULL)
 		goto error;
 
 	req->vc = vc;
@@ -571,14 +571,14 @@ static void at_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	int i;
 	char *buf;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = vd;
 
 	/* strlen("+VTS=T;") = 7 + initial AT + null */
 	buf = g_try_new(char, len * 9 + 3);
-	if (!buf)
+	if (buf == NULL)
 		goto error;
 
 	s = sprintf(buf, "AT+VTS=%c", dtmf[0]);
@@ -620,8 +620,7 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 
 	/* Generate an incoming call of unknown type */
 	call = create_call(vc, 9, 1, 4, NULL, 128, 2);
-
-	if (!call) {
+	if (call == NULL) {
 		ofono_error("Couldn't create call, call management is fubar!");
 		return;
 	}
@@ -788,7 +787,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	call = create_call(vc, class_to_call_type(cls), 1, 5,
 				num, num_type, validity);
-	if (!call) {
+	if (call == NULL) {
 		ofono_error("Unable to malloc. Call management is fubar");
 		return;
 	}
@@ -887,7 +886,7 @@ static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	struct voicecall_data *vd;
 
 	vd = g_try_new0(struct voicecall_data, 1);
-	if (!vd)
+	if (vd == NULL)
 		return -ENOMEM;
 
 	vd->chat = g_at_chat_clone(chat);

@@ -92,7 +92,7 @@ static void at_query_manufacturer(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CGMI:";
@@ -113,7 +113,7 @@ static void at_query_model(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CGMM:";
@@ -134,7 +134,7 @@ static void at_query_revision(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CGMR:";
@@ -155,7 +155,7 @@ static void at_query_serial(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = "+CGSN:";

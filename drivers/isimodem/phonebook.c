@@ -192,7 +192,7 @@ static void read_next_entry(GIsiClient *client, int location,
 	if (location < 0)
 		goto error;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_isi_request_make(client, msg, sizeof(msg), SIM_TIMEOUT,
@@ -259,7 +259,7 @@ static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
 		0, 0				/* filler */
 	};
 
-	if (!cbd || !pbd)
+	if (cbd == NULL || pbd == NULL)
 		goto error;
 
 	if (strcmp(storage, "SM"))
@@ -314,11 +314,11 @@ static int isi_phonebook_probe(struct ofono_phonebook *pb, unsigned int vendor,
 	GIsiModem *idx = user;
 	struct pb_data *data = g_try_new0(struct pb_data, 1);
 
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->client = g_isi_client_create(idx, PN_SIM);
-	if (!data->client) {
+	if (data->client == NULL) {
 		g_free(data);
 		return -ENOMEM;
 	}
@@ -335,7 +335,7 @@ static void isi_phonebook_remove(struct ofono_phonebook *pb)
 {
 	struct pb_data *data = ofono_phonebook_get_data(pb);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_phonebook_set_data(pb, NULL);

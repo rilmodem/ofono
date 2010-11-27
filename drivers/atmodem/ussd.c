@@ -187,7 +187,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
 	char buf[512];
 	enum sms_charset charset;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = ussd;
@@ -212,7 +212,7 @@ static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
 		char coded_buf[321];
 		char *converted = encode_hex_own_buf(pdu, len, 0, coded_buf);
 
-		if (!converted)
+		if (converted == NULL)
 			goto error;
 
 		snprintf(buf, sizeof(buf), "AT+CUSD=1,\"%s\",%d",
@@ -264,7 +264,7 @@ static void at_ussd_cancel(struct ofono_ussd *ussd,
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = data;

@@ -181,7 +181,7 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 		{ (uint8_t *)pdu, len }
 	};
 
-	if (!cbd || !ud)
+	if (cbd == NULL || ud == NULL)
 		goto error;
 
 	if (g_isi_vsend(ud->client, iov, 2, SS_TIMEOUT,
@@ -205,7 +205,7 @@ static void isi_cancel(struct ofono_ussd *ussd,
 		0x00		/* subblock count */
 	};
 
-	if (!cbd || !ud)
+	if (cbd == NULL || ud == NULL)
 		goto error;
 
 	if (g_isi_send(ud->client, msg, sizeof(msg), SS_TIMEOUT,
@@ -258,11 +258,11 @@ static int isi_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 	GIsiModem *idx = user;
 	struct ussd_data *ud = g_try_new0(struct ussd_data, 1);
 
-	if (!ud)
+	if (ud == NULL)
 		return -ENOMEM;
 
 	ud->client = g_isi_client_create(idx, PN_SS);
-	if (!ud->client)
+	if (ud->client == NULL)
 		return -ENOMEM;
 
 	ofono_ussd_set_data(ussd, ud);
@@ -275,7 +275,7 @@ static void isi_ussd_remove(struct ofono_ussd *ussd)
 {
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	ofono_ussd_set_data(ussd, NULL);

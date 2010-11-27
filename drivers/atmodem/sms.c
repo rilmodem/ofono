@@ -106,7 +106,7 @@ static void at_csca_set(struct ofono_sms *sms,
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CSCA=\"%s\",%d", sca->number, sca->type);
@@ -173,7 +173,7 @@ static void at_csca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
 	struct sms_data *data = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(data->chat, "AT+CSCA?", csca_prefix,
@@ -227,7 +227,7 @@ static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
 	char buf[512];
 	int len;
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (mms) {
@@ -267,7 +267,7 @@ static void at_cgsms_set(struct ofono_sms *sms, int bearer,
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 	char buf[64];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CGSMS=%d", bearer);
@@ -319,7 +319,7 @@ static void at_cgsms_query(struct ofono_sms *sms,
 	struct sms_data *data = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(data->chat, "AT+CGSMS?", cgsms_prefix,
@@ -866,8 +866,7 @@ static void construct_ack_pdu(struct sms_data *d)
 		goto err;
 
 	d->cnma_ack_pdu = encode_hex(pdu, tpdu_len, 0);
-
-	if (!d->cnma_ack_pdu)
+	if (d->cnma_ack_pdu == NULL)
 		goto err;
 
 	d->cnma_ack_pdu_len = tpdu_len;

@@ -88,7 +88,7 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (!cbd || !buf)
+	if (cbd == NULL || buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT*STKE=\"");
@@ -134,7 +134,7 @@ static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (!cbd || !buf)
+	if (cbd == NULL || buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT*STKR=\"");
@@ -236,7 +236,7 @@ static int mbm_stk_probe(struct ofono_stk *stk, unsigned int vendor, void *data)
 	DBG("");
 
 	sd = g_try_new0(struct stk_data, 1);
-	if (!sd)
+	if (sd == NULL)
 		return -ENOMEM;
 
 	sd->chat = g_at_chat_clone(chat);

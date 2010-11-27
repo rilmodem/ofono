@@ -172,7 +172,7 @@ static int hso_radio_settings_probe(struct ofono_radio_settings *rs,
 	struct radio_settings_data *rsd;
 
 	rsd = g_try_new0(struct radio_settings_data, 1);
-	if (!rsd)
+	if (rsd == NULL)
 		return -ENOMEM;
 
 	rsd->chat = g_at_chat_clone(chat);

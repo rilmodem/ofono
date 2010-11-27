@@ -311,7 +311,7 @@ static void huawei_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", ctx->cid);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	gcd->active_context = ctx->cid;
@@ -344,7 +344,7 @@ static void huawei_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", cid);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = gc;
@@ -376,7 +376,7 @@ static int huawei_gprs_context_probe(struct ofono_gprs_context *gc,
 	}
 
 	gcd = g_try_new0(struct gprs_context_data, 1);
-	if (!gcd)
+	if (gcd == NULL)
 		return -ENOMEM;
 
 	gcd->chat = g_at_chat_clone(chat);
