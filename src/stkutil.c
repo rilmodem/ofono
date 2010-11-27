@@ -2337,7 +2337,7 @@ static enum stk_command_parse_result parse_dataobj(
 			}
 		}
 
-		if (!l2) {
+		if (l2 == NULL) {
 			if (comprehension_tlv_get_cr(iter) == TRUE)
 				parse_error = TRUE;
 
@@ -4145,7 +4145,7 @@ static gboolean build_dataobj_text(struct stk_tlv_builder *tlv,
 	unsigned char tag = STK_DATA_OBJECT_TYPE_TEXT;
 	gboolean ret;
 
-	if (!text->text && !text->yesno)
+	if (text->text == NULL && !text->yesno)
 		return TRUE;
 
 	if (stk_tlv_builder_open_container(tlv, cr, tag, TRUE) != TRUE)
