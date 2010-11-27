@@ -372,7 +372,7 @@ static void test_eons()
 	sim_eons_optimize(eons_info);
 
 	op_info = sim_eons_lookup(eons_info, "246", "82");
-	g_assert(!op_info);
+	g_assert(op_info == NULL);
 	op_info = sim_eons_lookup(eons_info, "246", "81");
 	g_assert(op_info);
 
@@ -391,7 +391,7 @@ static void test_ef_db()
 	g_assert(info);
 
 	info = sim_ef_db_lookup(0x6FB1);
-	g_assert(!info);
+	g_assert(info == NULL);
 
 	info = sim_ef_db_lookup(0x2F05);
 	g_assert(info);

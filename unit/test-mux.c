@@ -201,7 +201,7 @@ static void test_mux(void)
 
 	g_io_channel_unref(io);
 
-	if (!chat) {
+	if (chat == NULL) {
 		g_printerr("Chat creation failed\n");
 		return;
 	}
