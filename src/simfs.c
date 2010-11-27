@@ -408,7 +408,7 @@ static gboolean sim_fs_op_read_record(gpointer user)
 
 	switch (op->structure) {
 	case OFONO_SIM_FILE_STRUCTURE_FIXED:
-		if (!driver->read_file_linear) {
+		if (driver->read_file_linear == NULL) {
 			sim_fs_op_error(fs);
 			return FALSE;
 		}
@@ -418,7 +418,7 @@ static gboolean sim_fs_op_read_record(gpointer user)
 						sim_fs_op_retrieve_cb, fs);
 		break;
 	case OFONO_SIM_FILE_STRUCTURE_CYCLIC:
-		if (!driver->read_file_cyclic) {
+		if (driver->read_file_cyclic == NULL) {
 			sim_fs_op_error(fs);
 			return FALSE;
 		}
@@ -626,7 +626,7 @@ static gboolean sim_fs_op_next(gpointer user_data)
 
 	fs->op_source = 0;
 
-	if (!fs->op_q)
+	if (fs->op_q == NULL)
 		return FALSE;
 
 	op = g_queue_peek_head(fs->op_q);
@@ -671,16 +671,16 @@ int sim_fs_read_info(struct sim_fs *fs, int id,
 {
 	struct sim_fs_op *op;
 
-	if (!cb)
+	if (cb == NULL)
 		return -EINVAL;
 
-	if (!fs->driver)
+	if (fs->driver == NULL)
 		return -EINVAL;
 
-	if (!fs->driver->read_file_info)
+	if (fs->driver->read_file_info == NULL)
 		return -ENOSYS;
 
-	if (!fs->op_q)
+	if (fs->op_q == NULL)
 		fs->op_q = g_queue_new();
 
 	op = g_try_new0(struct sim_fs_op, 1);
@@ -709,16 +709,16 @@ int sim_fs_read(struct sim_fs *fs, int id,
 {
 	struct sim_fs_op *op;
 
-	if (!cb)
+	if (cb == NULL)
 		return -EINVAL;
 
-	if (!fs->driver)
+	if (fs->driver == NULL)
 		return -EINVAL;
 
-	if (!fs->driver->read_file_info)
+	if (fs->driver->read_file_info == NULL)
 		return -ENOSYS;
 
-	if (!fs->op_q)
+	if (fs->op_q == NULL)
 		fs->op_q = g_queue_new();
 
 	op = g_try_new0(struct sim_fs_op, 1);
@@ -749,10 +749,10 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 	struct sim_fs_op *op;
 	gconstpointer fn = NULL;
 
-	if (!cb)
+	if (cb == NULL)
 		return -EINVAL;
 
-	if (!fs->driver)
+	if (fs->driver == NULL)
 		return -EINVAL;
 
 	switch (structure) {
@@ -772,7 +772,7 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 	if (fn == NULL)
 		return -ENOSYS;
 
-	if (!fs->op_q)
+	if (fs->op_q == NULL)
 		fs->op_q = g_queue_new();
 
 	op = g_try_new0(struct sim_fs_op, 1);
