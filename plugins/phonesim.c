@@ -46,6 +46,7 @@
 #include <ofono/call-settings.h>
 #include <ofono/call-volume.h>
 #include <ofono/cbs.h>
+#include <ofono/ctm.h>
 #include <ofono/devinfo.h>
 #include <ofono/message-waiting.h>
 #include <ofono/netreg.h>
@@ -64,6 +65,7 @@
 #include <drivers/atmodem/atutil.h>
 
 static const char *none_prefix[] = { NULL };
+static const char *ptty_prefix[] = { "+PTTY:", NULL };
 static int next_iface = 0;
 
 struct phonesim_data {
@@ -190,12 +192,147 @@ static void phonesim_context_remove(struct ofono_gprs_context *gc)
 	g_free(gcd);
 }
 
+static void phonesim_ctm_support_cb(gboolean ok, GAtResult *result,
+					gpointer user_data)
+{
+	struct ofono_ctm *ctm = user_data;
+
+	if (!ok) {
+		ofono_ctm_remove(ctm);
+		return;
+	}
+
+	ofono_ctm_register(ctm);
+}
+
+static int phonesim_ctm_probe(struct ofono_ctm *ctm,
+				unsigned int vendor, void *data)
+{
+	GAtChat *chat;
+
+	DBG("");
+
+	chat = g_at_chat_clone(data);
+
+	ofono_ctm_set_data(ctm, chat);
+
+	g_at_chat_send(chat, "AT+PTTY=?", ptty_prefix, phonesim_ctm_support_cb,
+			ctm, NULL);
+
+	return 0;
+}
+
+static void phonesim_ctm_remove(struct ofono_ctm *ctm)
+{
+	GAtChat *chat = ofono_ctm_get_data(ctm);
+
+	DBG("");
+
+	ofono_ctm_set_data(ctm, NULL);
+
+	g_at_chat_unref(chat);
+}
+
+static void ctm_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct ofono_error error;
+	GAtResultIter iter;
+	ofono_ctm_query_cb_t cb = cbd->cb;
+	int value;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "+PTTY:") == FALSE)
+		goto error;
+
+	if (g_at_result_iter_next_number(&iter, &value) == FALSE)
+		goto error;
+
+	cb(&error, value, cbd->data);
+
+	return;
+
+error:
+
+	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+}
+
+static void phonesim_ctm_query(struct ofono_ctm *ctm,
+				ofono_ctm_query_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_ctm_get_data(ctm);
+	struct cb_data *cbd = cb_data_new(cb, data);
+
+	DBG("");
+
+	if (!cbd)
+		goto error;
+
+	if (g_at_chat_send(chat, "AT+PTTY?", ptty_prefix,
+				ctm_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, 0, data);
+}
+
+static void ctm_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_ctm_set_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
+}
+
+static void phonesim_ctm_set(struct ofono_ctm *ctm, ofono_bool_t enable,
+				ofono_ctm_set_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_ctm_get_data(ctm);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[20];
+
+	DBG("");
+
+	if (!cbd)
+		goto error;
+
+	snprintf(buf, sizeof(buf), "AT+PTTY=%d", enable);
+
+	if (g_at_chat_send(chat, buf, none_prefix,
+				ctm_set_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, data);
+	g_free(cbd);
+}
+
 static struct ofono_gprs_context_driver context_driver = {
+	.name                   = "phonesim",
+	.probe                  = phonesim_context_probe,
+	.remove                 = phonesim_context_remove,
+	.activate_primary       = phonesim_activate_primary,
+	.deactivate_primary     = phonesim_deactivate_primary,
+};
+
+static struct ofono_ctm_driver ctm_driver = {
 	.name			= "phonesim",
-	.probe			= phonesim_context_probe,
-	.remove			= phonesim_context_remove,
-	.activate_primary	= phonesim_activate_primary,
-	.deactivate_primary	= phonesim_deactivate_primary,
+	.probe			= phonesim_ctm_probe,
+	.remove			= phonesim_ctm_remove,
+	.query_tty		= phonesim_ctm_query,
+	.set_tty		= phonesim_ctm_set,
 };
 
 static int phonesim_probe(struct ofono_modem *modem)
@@ -465,6 +602,7 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	ofono_ctm_create(modem, 0, "phonesim", data->chat);
 	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 
 	if (!data->calypso)
@@ -630,6 +768,8 @@ static int phonesim_init(void)
 
 	ofono_gprs_context_driver_register(&context_driver);
 
+	ofono_ctm_driver_register(&ctm_driver);
+
 	parse_config(CONFIGDIR "/phonesim.conf");
 
 	return 0;
@@ -647,6 +787,8 @@ static void phonesim_exit(void)
 
 	g_slist_free(modem_list);
 	modem_list = NULL;
+
+	ofono_ctm_driver_unregister(&ctm_driver);
 
 	ofono_gprs_context_driver_unregister(&context_driver);
 
