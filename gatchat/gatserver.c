@@ -128,7 +128,7 @@ static struct ring_buffer *allocate_next(GAtServer *server)
 {
 	struct ring_buffer *buf = ring_buffer_new(BUF_SIZE);
 
-	if (!buf)
+	if (buf == NULL)
 		return NULL;
 
 	g_queue_push_tail(server->write_queue, buf);
@@ -812,7 +812,7 @@ static char *extract_line(GAtServer *p, struct ring_buffer *rbuf)
 	line_length -= 3;
 
 	line = g_try_new(char, line_length + 1);
-	if (!line) {
+	if (line == NULL) {
 		ring_buffer_drain(rbuf, p->read_so_far);
 		return NULL;
 	}
@@ -1066,11 +1066,11 @@ GAtServer *g_at_server_new(GIOChannel *io)
 {
 	GAtServer *server;
 
-	if (!io)
+	if (io == NULL)
 		return NULL;
 
 	server = g_try_new0(GAtServer, 1);
-	if (!server)
+	if (server == NULL)
 		return NULL;
 
 	server->ref_count = 1;
@@ -1089,7 +1089,7 @@ GAtServer *g_at_server_new(GIOChannel *io)
 	if (!server->write_queue)
 		goto error;
 
-	if (!allocate_next(server))
+	if (allocate_next(server) == NULL)
 		goto error;
 
 	server->max_read_attempts = 3;
@@ -1207,7 +1207,7 @@ void g_at_server_unref(GAtServer *server)
 
 gboolean g_at_server_shutdown(GAtServer *server)
 {
-	if (!server)
+	if (server == NULL)
 		return FALSE;
 
 	/* Don't trigger user disconnect on shutdown */
@@ -1259,7 +1259,7 @@ gboolean g_at_server_register(GAtServer *server, char *prefix,
 		return FALSE;
 
 	node = g_try_new0(struct at_command, 1);
-	if (!node)
+	if (node == NULL)
 		return FALSE;
 
 	node->notify = notify;
@@ -1282,7 +1282,7 @@ gboolean g_at_server_unregister(GAtServer *server, const char *prefix)
 		return FALSE;
 
 	node = g_hash_table_lookup(server->command_list, prefix);
-	if (!node)
+	if (node == NULL)
 		return FALSE;
 
 	g_hash_table_remove(server->command_list, prefix);

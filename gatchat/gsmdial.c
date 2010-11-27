@@ -303,7 +303,7 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* open ppp */
 	ppp = g_at_ppp_new_from_io(io);
-	if (!ppp) {
+	if (ppp == NULL) {
 		g_print("Unable to create PPP object\n");
 		exit(1);
 	}

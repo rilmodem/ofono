@@ -414,7 +414,7 @@ static gboolean watch_dispatch(GSource *source, GSourceFunc callback,
 	GAtMuxWatch *watch = (GAtMuxWatch *) source;
 	GAtMuxChannel *channel = (GAtMuxChannel *) watch->channel;
 
-	if (!func)
+	if (func == NULL)
 		return FALSE;
 
 	return func(watch->channel, channel->condition & watch->condition,
@@ -554,11 +554,11 @@ GAtMux *g_at_mux_new(GIOChannel *channel, const GAtMuxDriver *driver)
 {
 	GAtMux *mux;
 
-	if (!channel)
+	if (channel == NULL)
 		return NULL;
 
 	mux = g_try_new0(GAtMux, 1);
-	if (!mux)
+	if (mux == NULL)
 		return NULL;
 
 	mux->ref_count = 1;

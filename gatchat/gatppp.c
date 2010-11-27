@@ -78,7 +78,7 @@ struct _GAtPPP {
 
 void ppp_debug(GAtPPP *ppp, const char *str)
 {
-	if (!ppp || !ppp->debugf)
+	if (ppp == NULL || ppp->debugf == NULL)
 		return;
 
 	ppp->debugf(str, ppp->debug_data);
@@ -490,7 +490,7 @@ static GAtPPP *ppp_init_common(GAtHDLC *hdlc, gboolean is_server, guint32 ip)
 	GAtPPP *ppp;
 
 	ppp = g_try_malloc0(sizeof(GAtPPP));
-	if (!ppp)
+	if (ppp == NULL)
 		return NULL;
 
 	ppp->hdlc = g_at_hdlc_ref(hdlc);

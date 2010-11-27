@@ -51,11 +51,11 @@ struct ring_buffer *ring_buffer_new(unsigned int size)
 		return NULL;
 
 	buffer = g_try_new(struct ring_buffer, 1);
-	if (!buffer)
+	if (buffer == NULL)
 		return NULL;
 
 	buffer->buffer = g_try_new(unsigned char, real_size);
-	if (!buffer->buffer) {
+	if (buffer->buffer == NULL) {
 		g_free(buffer);
 		return NULL;
 	}
@@ -164,7 +164,7 @@ unsigned char *ring_buffer_read_ptr(struct ring_buffer *buf,
 
 int ring_buffer_len(struct ring_buffer *buf)
 {
-	if (!buf)
+	if (buf == NULL)
 		return -1;
 
 	return buf->in - buf->out;
@@ -172,7 +172,7 @@ int ring_buffer_len(struct ring_buffer *buf)
 
 void ring_buffer_reset(struct ring_buffer *buf)
 {
-	if (!buf)
+	if (buf == NULL)
 		return;
 
 	buf->in = 0;
@@ -181,7 +181,7 @@ void ring_buffer_reset(struct ring_buffer *buf)
 
 int ring_buffer_avail(struct ring_buffer *buf)
 {
-	if (!buf)
+	if (buf == NULL)
 		return -1;
 
 	return buf->size - buf->in + buf->out;
@@ -189,7 +189,7 @@ int ring_buffer_avail(struct ring_buffer *buf)
 
 int ring_buffer_capacity(struct ring_buffer *buf)
 {
-	if (!buf)
+	if (buf == NULL)
 		return -1;
 
 	return buf->size;
@@ -197,7 +197,7 @@ int ring_buffer_capacity(struct ring_buffer *buf)
 
 void ring_buffer_free(struct ring_buffer *buf)
 {
-	if (!buf)
+	if (buf == NULL)
 		return;
 
 	g_free(buf->buffer);

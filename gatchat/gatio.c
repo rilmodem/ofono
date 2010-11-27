@@ -177,11 +177,11 @@ static GAtIO *create_io(GIOChannel *channel, GIOFlags flags)
 {
 	GAtIO *io;
 
-	if (!channel)
+	if (channel == NULL)
 		return NULL;
 
 	io = g_try_new0(GAtIO, 1);
-	if (!io)
+	if (io == NULL)
 		return io;
 
 	io->ref_count = 1;

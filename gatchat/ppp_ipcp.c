@@ -471,7 +471,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip)
 	struct pppcp_data *pppcp;
 
 	ipcp = g_try_new0(struct ipcp_data, 1);
-	if (!ipcp)
+	if (ipcp == NULL)
 		return NULL;
 
 	/*
@@ -481,7 +481,7 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip)
 	 * as rejects.
 	 */
 	pppcp = pppcp_new(ppp, &ipcp_proto, FALSE, MAX_IPCP_FAILURE);
-	if (!pppcp) {
+	if (pppcp == NULL) {
 		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(ipcp);
 		return NULL;

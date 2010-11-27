@@ -205,7 +205,7 @@ static struct pppcp_packet *pppcp_packet_new(struct pppcp_data *data,
 	guint16 packet_length = bufferlen + sizeof(*packet);
 
 	ppp_packet = ppp_packet_new(packet_length, data->driver->proto);
-	if (!ppp_packet)
+	if (ppp_packet == NULL)
 		return NULL;
 
 	/* advance past protocol to add CP header information */
@@ -1002,7 +1002,7 @@ struct pppcp_data *pppcp_new(GAtPPP *ppp, const struct pppcp_proto *proto,
 	struct pppcp_data *data;
 
 	data = g_try_malloc0(sizeof(struct pppcp_data));
-	if (!data)
+	if (data == NULL)
 		return NULL;
 
 	if (dormant)

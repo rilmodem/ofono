@@ -256,7 +256,7 @@ GAtHDLC *g_at_hdlc_new(GIOChannel *channel)
 
 GAtHDLC *g_at_hdlc_ref(GAtHDLC *hdlc)
 {
-	if (!hdlc)
+	if (hdlc == NULL)
 		return NULL;
 
 	g_atomic_int_inc(&hdlc->ref_count);
@@ -266,7 +266,7 @@ GAtHDLC *g_at_hdlc_ref(GAtHDLC *hdlc)
 
 void g_at_hdlc_unref(GAtHDLC *hdlc)
 {
-	if (!hdlc)
+	if (hdlc == NULL)
 		return;
 
 	if (g_atomic_int_dec_and_test(&hdlc->ref_count) == FALSE)
@@ -291,7 +291,7 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 
 void g_at_hdlc_set_debug(GAtHDLC *hdlc, GAtDebugFunc func, gpointer user_data)
 {
-	if (!hdlc)
+	if (hdlc == NULL)
 		return;
 
 	hdlc->debugf = func;
@@ -301,7 +301,7 @@ void g_at_hdlc_set_debug(GAtHDLC *hdlc, GAtDebugFunc func, gpointer user_data)
 void g_at_hdlc_set_receive(GAtHDLC *hdlc, GAtReceiveFunc func,
 							gpointer user_data)
 {
-	if (!hdlc)
+	if (hdlc == NULL)
 		return;
 
 	hdlc->receive_func = func;

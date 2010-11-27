@@ -161,13 +161,13 @@ int main(int argc, char **argv)
 
 	g_option_context_free(context);
 
-	if (!option_device)
+	if (option_device == NULL)
 		option_device = g_strdup("/dev/ttyUSB1");
 
 	g_print("Device: %s\n", option_device);
 
 	channel = g_at_tty_open(option_device, NULL);
-	if (!channel) {
+	if (channel == NULL) {
 		g_printerr("Failed to open QCDM device\n");
 		return 1;
 	}
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 
 	g_io_channel_unref(channel);
 
-	if (!hdlc)
+	if (hdlc == NULL)
 		return 1;
 
 	if (option_debug == TRUE)

@@ -793,7 +793,7 @@ static void dial_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		goto error;
 
 	dial_str = g_at_result_iter_raw_line(&iter);
-	if (!dial_str)
+	if (dial_str == NULL)
 		goto error;
 
 	g_print("dial call %s\n", dial_str);
@@ -861,7 +861,7 @@ static gboolean create_tty(const char *modem_path)
 	char pty_name[256];
 	GIOChannel *server_io;
 
-	if (!modem_path)
+	if (modem_path == NULL)
 		return FALSE;
 
 	if (openpty(&master, &slave, pty_name, NULL, NULL) < 0)
@@ -874,7 +874,7 @@ static gboolean create_tty(const char *modem_path)
 	server_io = g_io_channel_unix_new(master);
 
 	server = g_at_server_new(server_io);
-	if (!server) {
+	if (server == NULL) {
 		g_io_channel_shutdown(server_io, FALSE, NULL);
 		g_io_channel_unref(server_io);
 
@@ -907,7 +907,7 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	server = g_at_server_new(client_io);
 	g_io_channel_unref(client_io);
 
-	if (!server)
+	if (server == NULL)
 		goto error;
 
 	add_handler(server);
@@ -946,7 +946,7 @@ static struct sock_server *socket_common(int sk, struct sockaddr *addr,
 	}
 
 	sock = g_try_new0(struct sock_server, 1);
-	if (!sock)
+	if (sock == NULL)
 		return FALSE;
 
 	sock->server_sock = sk;
@@ -961,7 +961,7 @@ static gboolean create_tcp(const char *modem_path, int port)
 	struct sock_server *server;
 	GIOChannel *server_io;
 
-	if (!modem_path)
+	if (modem_path == NULL)
 		return FALSE;
 
 	sk = socket(PF_INET, SOCK_STREAM, 0);
@@ -978,7 +978,7 @@ static gboolean create_tcp(const char *modem_path, int port)
 	addr.sin_port = htons(port);
 
 	server = socket_common(sk, (struct sockaddr *) &addr, modem_path);
-	if (!server)
+	if (server == NULL)
 		return FALSE;
 
 	g_print("new tcp is created at tcp port %d\n", port);
@@ -1004,7 +1004,7 @@ static gboolean create_unix(const char *modem_path, const char *sock_path)
 	struct sock_server *server;
 	GIOChannel *server_io;
 
-	if (!modem_path)
+	if (modem_path == NULL)
 		return FALSE;
 
 	sk = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -1024,7 +1024,7 @@ static gboolean create_unix(const char *modem_path, const char *sock_path)
 	unlink(addr.sun_path);
 
 	server = socket_common(sk, (struct sockaddr *) &addr, modem_path);
-	if (!server)
+	if (server == NULL)
 		return FALSE;
 
 	g_print("new unix socket is created at %s\n", sock_path);

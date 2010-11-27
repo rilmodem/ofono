@@ -225,7 +225,7 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 			 */
 
 			option = g_try_malloc0(5);
-			if (!option)
+			if (option == NULL)
 				return RCR_REJECT;
 
 			option[0] = AUTH_PROTO;
@@ -310,11 +310,11 @@ struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean is_server)
 	struct lcp_data *lcp;
 
 	lcp = g_try_new0(struct lcp_data, 1);
-	if (!lcp)
+	if (lcp == NULL)
 		return NULL;
 
 	pppcp = pppcp_new(ppp, &lcp_proto, is_server, 0);
-	if (!pppcp) {
+	if (pppcp == NULL) {
 		g_free(lcp);
 		return NULL;
 	}

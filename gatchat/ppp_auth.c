@@ -66,7 +66,7 @@ static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 
 	/* create a checksum over id, secret, and challenge */
 	checksum = g_checksum_new(chap->method);
-	if (!checksum)
+	if (checksum == NULL)
 		return;
 
 	g_checksum_update(checksum, &header->identifier, 1);
@@ -84,7 +84,7 @@ static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 	digest_len = g_checksum_type_get_length(chap->method);
 	response_length = digest_len + sizeof(*header) + 1;
 	ppp_packet = ppp_packet_new(response_length, CHAP_PROTOCOL);
-	if (!ppp_packet)
+	if (ppp_packet == NULL)
 		goto challenge_out;
 
 	response = (struct chap_header *) &ppp_packet->info;
@@ -144,7 +144,7 @@ struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method)
 		return NULL;
 
 	chap = g_try_new0(struct ppp_chap, 1);
-	if (!chap)
+	if (chap == NULL)
 		return NULL;
 
 	chap->ppp = ppp;

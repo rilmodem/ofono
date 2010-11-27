@@ -42,7 +42,7 @@ void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
 	gsize ctrlz_size = strlen(ctrlz);
 	gsize i;
 
-	if (!debugf || !len)
+	if (debugf == NULL || !len)
 		return;
 
 	for (i = 0; i < len; i++) {
@@ -116,11 +116,11 @@ void g_at_util_debug_dump(gboolean in, const unsigned char *buf, gsize len,
 	GString *str;
 	gsize i;
 
-	if (!debugf || !len)
+	if (debugf == NULL || !len)
 		return;
 
 	str = g_string_sized_new(1 + (len * 2));
-	if (!str)
+	if (str == NULL)
 		return;
 
 	g_string_append_c(str, type);
