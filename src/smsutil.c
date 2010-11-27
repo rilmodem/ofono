@@ -525,8 +525,7 @@ gboolean sms_encode_address_field(const struct sms_address *in, gboolean sc,
 			return FALSE;
 
 		gsm = convert_utf8_to_gsm(in->address, len, NULL, &written, 0);
-
-		if (!gsm)
+		if (gsm == NULL)
 			return FALSE;
 
 		r = pack_7bit_own_buf(gsm, written, 0, FALSE, &packed, 0, p);
@@ -641,14 +640,14 @@ gboolean sms_decode_address_field(const unsigned char *pdu, int len,
 
 		*offset = *offset + (addr_len + 1) / 2;
 
-		if (!res)
+		if (res == NULL)
 			return FALSE;
 
 		utf8 = convert_gsm_to_utf8(res, written, NULL, NULL, 0);
 
 		g_free(res);
 
-		if (!utf8)
+		if (utf8 == NULL)
 			return FALSE;
 
 		if (strlen(utf8) > 20) {
@@ -1504,7 +1503,7 @@ gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 	unsigned char type;
 	int offset = 0;
 
-	if (!out)
+	if (out == NULL)
 		return FALSE;
 
 	if (len == 0)
@@ -1617,7 +1616,7 @@ const guint8 *sms_extract_common(const struct sms *sms, gboolean *out_udhi,
 		break;
 	};
 
-	if (!ud)
+	if (ud == NULL)
 		return NULL;
 
 	if (out_udhi)
@@ -1682,8 +1681,7 @@ gboolean sms_udh_iter_init(const struct sms *sms, struct sms_udh_iter *iter)
 	guint8 max_ud_len;
 
 	hdr = sms_extract_common(sms, &udhi, &dcs, &udl, &max_ud_len);
-
-	if (!hdr)
+	if (hdr == NULL)
 		return FALSE;
 
 	if (!udhi)
@@ -2122,8 +2120,7 @@ unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
 		sms = l->data;
 
 		ud = sms_extract_common(sms, NULL, NULL, &udl, NULL);
-
-		if (!ud)
+		if (ud == NULL)
 			return NULL;
 
 		/*
@@ -2141,8 +2138,7 @@ unsigned char *sms_decode_datagram(GSList *sms_list, long *out_len)
 		return NULL;
 
 	buf = g_try_new(unsigned char, len);
-
-	if (!buf)
+	if (buf == NULL)
 		return NULL;
 
 	len = 0;
@@ -2417,7 +2413,7 @@ static gboolean sms_assembly_store(struct sms_assembly *assembly,
 	int len;
 	DECLARE_SMS_ADDR_STR(straddr);
 
-	if (!assembly->imsi)
+	if (assembly->imsi == NULL)
 		return FALSE;
 
 	if (sms_address_to_hex_string(&node->addr, straddr) == FALSE)
@@ -2440,7 +2436,7 @@ static void sms_assembly_backup_free(struct sms_assembly *assembly,
 	int seq;
 	DECLARE_SMS_ADDR_STR(straddr);
 
-	if (!assembly->imsi)
+	if (assembly->imsi == NULL)
 		return;
 
 	if (sms_address_to_hex_string(&node->addr, straddr) == FALSE)
@@ -2800,7 +2796,7 @@ static gboolean sr_assembly_add_fragment_backup(const char *imsi,
 	DECLARE_SMS_ADDR_STR(straddr);
 	char msgid_str[SMS_MSGID_LEN * 2 + 1];
 
-	if (!imsi)
+	if (imsi == NULL)
 		return FALSE;
 
 	if (sms_address_to_hex_string(addr, straddr) == FALSE)
@@ -2826,7 +2822,7 @@ static gboolean sr_assembly_remove_fragment_backup(const char *imsi,
 	DECLARE_SMS_ADDR_STR(straddr);
 	char msgid_str[SMS_MSGID_LEN * 2 + 1];
 
-	if (!imsi)
+	if (imsi == NULL)
 		return FALSE;
 
 	if (sms_address_to_hex_string(addr, straddr) == FALSE)
@@ -3296,8 +3292,7 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 
 	/* UDHI, UDL, UD and DCS actually depend on what we have in the text */
 	gsm_encoded = convert_utf8_to_gsm(utf8, -1, NULL, &written, 0);
-
-	if (!gsm_encoded) {
+	if (gsm_encoded == NULL) {
 		gsize converted;
 
 		ucs2_encoded = g_convert(utf8, -1, "UCS-2BE//TRANSLIT", "UTF-8",
@@ -3305,7 +3300,7 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 		written = converted;
 	}
 
-	if (!gsm_encoded && !ucs2_encoded)
+	if (gsm_encoded == NULL && ucs2_encoded == NULL)
 		return NULL;
 
 	if (gsm_encoded)
@@ -4370,7 +4365,7 @@ static gint cbs_topic_compare(gconstpointer a, gconstpointer b)
 
 gboolean cbs_topic_in_range(unsigned int topic, GSList *ranges)
 {
-	if (!ranges)
+	if (ranges == NULL)
 		return FALSE;
 
 	return g_slist_find_custom(ranges, GUINT_TO_POINTER(topic),
@@ -4427,11 +4422,11 @@ gboolean ussd_encode(const char *str, long *items_written, unsigned char *pdu)
 	long written;
 	long num_packed;
 
-	if (!pdu)
+	if (pdu == NULL)
 		return FALSE;
 
 	converted = convert_utf8_to_gsm(str, -1, NULL, &written, 0);
-	if (!converted || written > 182) {
+	if (converted == NULL || written > 182) {
 		g_free(converted);
 		return FALSE;
 	}
