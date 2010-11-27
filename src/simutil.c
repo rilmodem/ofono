@@ -939,7 +939,7 @@ struct sim_spdi *sim_spdi_new(const guint8 *tlv, int length)
 	plmn_list = ber_tlv_find_by_tag(plmn_list_tlv, 0x80, tlv_length,
 						&list_length);
 
-	if (!plmn_list)
+	if (plmn_list == NULL)
 		return NULL;
 
 	spdi = g_new0(struct sim_spdi, 1);
@@ -963,7 +963,7 @@ gboolean sim_spdi_lookup(struct sim_spdi *spdi,
 {
 	struct spdi_operator spdi_op;
 
-	if (!spdi)
+	if (spdi == NULL)
 		return FALSE;
 
 	g_strlcpy(spdi_op.mcc, mcc, sizeof(spdi_op.mcc));
@@ -1011,7 +1011,7 @@ void sim_eons_add_pnn_record(struct sim_eons *eons, int record,
 
 	name = ber_tlv_find_by_tag(tlv, 0x43, length, &namelength);
 
-	if (!name || !namelength)
+	if (name == NULL || !namelength)
 		return;
 
 	oper->longname = sim_network_name_parse(name, namelength,
@@ -1119,7 +1119,7 @@ static const struct sim_eons_operator_info *
 			break;
 	}
 
-	if (!l)
+	if (l == NULL)
 		return NULL;
 
 	opl = l->data;
@@ -1316,7 +1316,7 @@ gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 	 */
 	tlv = ber_tlv_find_by_tag(fcp, 0x80, fcp_length, &tlv_length);
 
-	if (!tlv || tlv_length < 2)
+	if (tlv == NULL || tlv_length < 2)
 		return FALSE;
 
 	flen = tlv[0];
@@ -1325,14 +1325,14 @@ gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 
 	tlv = ber_tlv_find_by_tag(fcp, 0x83, fcp_length, &tlv_length);
 
-	if (!tlv || tlv_length != 2)
+	if (tlv == NULL || tlv_length != 2)
 		return FALSE;
 
 	id = (tlv[0] << 8) | tlv[1];
 
 	tlv = ber_tlv_find_by_tag(fcp, 0x82, fcp_length, &tlv_length);
 
-	if (!tlv || (tlv_length != 2 && tlv_length != 5))
+	if (tlv == NULL || (tlv_length != 2 && tlv_length != 5))
 		return FALSE;
 
 	if (tlv[1] != 0x21)
@@ -1381,7 +1381,7 @@ gboolean sim_parse_3g_get_response(const unsigned char *data, int len,
 
 	acc[2] = 0x44;
 
-	if (!info)
+	if (info == NULL)
 		acc[0] = 0x11;
 	else
 		acc[0] = (info->perm_read << 4) | info->perm_update;
