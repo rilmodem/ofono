@@ -115,7 +115,7 @@ static int ifx_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct ifx_data, 1);
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	data->mux_ldisc = -1;
@@ -145,7 +145,7 @@ static void xsim_notify(GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int state;
 
-	if (!data->sim)
+	if (data->sim == NULL)
 		return;
 
 	g_at_result_iter_init(&iter, result);
@@ -197,7 +197,7 @@ static void shutdown_device(struct ifx_data *data)
 	}
 
 	for (i = 0; i < NUM_DLC; i++) {
-		if (!data->dlcs[i])
+		if (data->dlcs[i] == NULL)
 			continue;
 
 		g_at_chat_unref(data->dlcs[i]);
@@ -239,7 +239,7 @@ static GAtChat *create_chat(GIOChannel *channel, struct ofono_modem *modem,
 	GAtSyntax *syntax;
 	GAtChat *chat;
 
-	if (!channel)
+	if (channel == NULL)
 		return NULL;
 
 	syntax = g_at_syntax_new_gsmv1();
@@ -247,7 +247,7 @@ static GAtChat *create_chat(GIOChannel *channel, struct ofono_modem *modem,
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
-	if (!chat)
+	if (chat == NULL)
 		return NULL;
 
 	if (getenv("OFONO_AT_DEBUG"))
@@ -408,7 +408,7 @@ static gboolean dlc_ready_check(gpointer user_data)
 		GIOChannel *channel = g_at_tty_open(dlc_nodes[i], NULL);
 
 		data->dlcs[i] = create_chat(channel, modem, dlc_prefixes[i]);
-		if (!data->dlcs[i]) {
+		if (data->dlcs[i] == NULL) {
 			ofono_error("Failed to open %s", dlc_nodes[i]);
 			goto error;
 		}
@@ -445,7 +445,7 @@ static void setup_internal_mux(struct ofono_modem *modem)
 	g_io_channel_set_buffered(data->device, FALSE);
 
 	data->mux = g_at_mux_new_gsm0710_basic(data->device, data->frame_size);
-	if (!data->mux)
+	if (data->mux == NULL)
 		goto error;
 
 	if (getenv("OFONO_MUX_DEBUG"))
@@ -457,7 +457,7 @@ static void setup_internal_mux(struct ofono_modem *modem)
 		GIOChannel *channel = g_at_mux_create_channel(data->mux);
 
 		data->dlcs[i] = create_chat(channel, modem, dlc_prefixes[i]);
-		if (!data->dlcs[i]) {
+		if (data->dlcs[i] == NULL) {
 			ofono_error("Failed to create channel");
 			goto error;
 		}
@@ -580,14 +580,14 @@ static int ifx_enable(struct ofono_modem *modem)
 	}
 
 	data->device = g_at_tty_open(device, NULL);
-	if (!data->device)
+	if (data->device == NULL)
                 return -EIO;
 
 	syntax = g_at_syntax_new_gsmv1();
 	chat = g_at_chat_new(data->device, syntax);
 	g_at_syntax_unref(syntax);
 
-	if (!chat) {
+	if (chat == NULL) {
 		g_io_channel_unref(data->device);
                 return -EIO;
 	}
@@ -667,7 +667,7 @@ static void ifx_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("%p %s", modem, online ? "online" : "offline");
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(data->dlcs[AUX_DLC], command, NULL,
@@ -736,7 +736,7 @@ static void ifx_post_online(struct ofono_modem *modem)
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_IFX,
 					"atmodem", data->dlcs[NETREG_DLC]);
-	if (!gprs)
+	if (gprs == NULL)
 		return;
 
 	if (data->mux_ldisc < 0) {

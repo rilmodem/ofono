@@ -143,7 +143,7 @@ static void phonesim_deactivate_primary(struct ofono_gprs_context *gc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[128];
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	cbd->user = gc;
@@ -167,7 +167,7 @@ static int phonesim_context_probe(struct ofono_gprs_context *gc,
 	struct gprs_context_data *gcd;
 
 	gcd = g_try_new0(struct gprs_context_data, 1);
-	if (!gcd)
+	if (gcd == NULL)
 		return -ENOMEM;
 
 	gcd->chat = g_at_chat_clone(chat);
@@ -342,7 +342,7 @@ static int phonesim_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct phonesim_data, 1);
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
@@ -402,7 +402,7 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 
 	DBG("%p", mux);
 
-	if (!mux) {
+	if (mux == NULL) {
 		ofono_modem_set_powered(modem, FALSE);
 		return;
 	}
@@ -448,7 +448,7 @@ static int phonesim_enable(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	address = ofono_modem_get_string(modem, "Address");
-	if (!address)
+	if (address == NULL)
 		return -EINVAL;
 
 	port = ofono_modem_get_integer(modem, "Port");
@@ -479,7 +479,7 @@ static int phonesim_enable(struct ofono_modem *modem)
 	}
 
 	io = g_io_channel_unix_new(sk);
-	if (!io) {
+	if (io == NULL) {
 		close(sk);
 		return -ENOMEM;
 	}
@@ -494,7 +494,7 @@ static int phonesim_enable(struct ofono_modem *modem)
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(io);
 
-	if (!data->chat)
+	if (data->chat == NULL)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
@@ -676,18 +676,18 @@ static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 	DBG("group %s", group);
 
 	modem = ofono_modem_create(group, "phonesim");
-	if (!modem)
+	if (modem == NULL)
 		return NULL;
 
 	value = g_key_file_get_string(keyfile, group, "Address", NULL);
-	if (!value)
+	if (value == NULL)
 		goto error;
 
 	ofono_modem_set_string(modem, "Address", value);
 	g_free(value);
 
 	value = g_key_file_get_string(keyfile, group, "Port", NULL);
-	if (!value)
+	if (value == NULL)
 		goto error;
 
 	ofono_modem_set_integer(modem, "Port", atoi(value));
@@ -744,7 +744,7 @@ static void parse_config(const char *filename)
 		struct ofono_modem *modem;
 
 		modem = create_modem(keyfile, modems[i]);
-		if (!modem)
+		if (modem == NULL)
 			continue;
 
 		modem_list = g_slist_prepend(modem_list, modem);

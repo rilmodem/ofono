@@ -398,7 +398,7 @@ static int n900_probe(struct ofono_modem *modem)
 	DBG("(%p) with %s", modem, ifname);
 
 	idx = g_isi_modem_by_name(ifname);
-	if (!idx) {
+	if (idx == NULL) {
 		DBG("Interface=%s: %s", ifname, strerror(errno));
 		return -errno;
 	}
@@ -409,7 +409,7 @@ static int n900_probe(struct ofono_modem *modem)
 	}
 
 	isi = g_new0(struct isi_data, 1);
-	if (!isi) {
+	if (isi == NULL) {
 		gpio_remove(modem);
 		return -ENOMEM;
 	}
@@ -451,7 +451,7 @@ static void n900_set_online(struct ofono_modem *modem,
 
 	DBG("(%p) with %s", modem, isi->ifname);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (isi->power_state != POWER_STATE_ON)

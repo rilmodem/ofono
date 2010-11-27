@@ -76,7 +76,7 @@ static void clear_data(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
-	if (!data->chat)
+	if (data->chat == NULL)
 		return;
 
 	g_at_chat_unref(data->chat);
@@ -323,7 +323,7 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 	char buf[64];
 
 	io = g_io_channel_unix_new(fd);
-	if (!io) {
+	if (io == NULL) {
 		ofono_error("Service level connection failed: %s (%d)",
 			strerror(errno), errno);
 		return -EIO;
@@ -334,7 +334,7 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(io);
 
-	if (!chat)
+	if (chat == NULL)
 		return -ENOMEM;
 
 	g_at_chat_set_disconnect_function(chat, hfp_disconnected_cb, modem);
@@ -415,7 +415,7 @@ static int hfp_create_modem(const char *device, const char *dev_addr,
 		return -ENOMEM;
 
 	data = g_try_new0(struct hfp_data, 1);
-	if (!data)
+	if (data == NULL)
 		goto free;
 
 	data->hf_features |= HF_FEATURE_3WAY;
@@ -465,11 +465,11 @@ static void hfp_set_alias(const char *device, const char *alias)
 {
 	struct ofono_modem *modem;
 
-	if (!device || !alias)
+	if (device == NULL || alias == NULL)
 		return;
 
 	modem =	g_hash_table_lookup(modem_hash, device);
-	if (!modem)
+	if (modem == NULL)
 		return;
 
 	ofono_modem_set_name(modem, alias);
@@ -485,7 +485,7 @@ static int hfp_register_ofono_handsfree(struct ofono_modem *modem)
 
 	msg = dbus_message_new_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "RegisterAgent");
-	if (!msg)
+	if (msg == NULL)
 		return -ENOMEM;
 
 	dbus_message_append_args(msg, DBUS_TYPE_OBJECT_PATH, &obj_path,
@@ -505,7 +505,7 @@ static int hfp_unregister_ofono_handsfree(struct ofono_modem *modem)
 
 	msg = dbus_message_new_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "UnregisterAgent");
-	if (!msg)
+	if (msg == NULL)
 		return -ENOMEM;
 
 	dbus_message_append_args(msg, DBUS_TYPE_OBJECT_PATH, &obj_path,
@@ -520,7 +520,7 @@ static int hfp_probe(struct ofono_modem *modem)
 	const char *obj_path = ofono_modem_get_path(modem);
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
-	if (!data)
+	if (data == NULL)
 		return -EINVAL;
 
 	g_dbus_register_interface(connection, obj_path, HFP_AGENT_INTERFACE,
@@ -573,7 +573,7 @@ static void hfp_connect_reply(DBusPendingCall *call, gpointer user_data)
 		msg = dbus_message_new_method_call(BLUEZ_SERVICE,
 				data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Disconnect");
-		if (!msg)
+		if (msg == NULL)
 			ofono_error("Disconnect failed");
 		else
 			g_dbus_send_message(connection, msg);

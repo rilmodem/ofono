@@ -80,7 +80,7 @@ static int ste_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct ste_data, 1);
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
@@ -173,7 +173,7 @@ static int ste_enable(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	device = ofono_modem_get_string(modem, "Device");
-	if (!device) {
+	if (device == NULL) {
 		struct sockaddr_caif addr;
 		int err;
 		const char *interface;
@@ -221,7 +221,7 @@ static int ste_enable(struct ofono_modem *modem)
 	}
 
 	channel = g_io_channel_unix_new(fd);
-	if (!channel)  {
+	if (channel == NULL)  {
 		close(fd);
 		return -EIO;
 	}
@@ -233,7 +233,7 @@ static int ste_enable(struct ofono_modem *modem)
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
-	if (!data->chat)
+	if (data->chat == NULL)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
@@ -266,7 +266,7 @@ static int ste_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (!data->chat)
+	if (data->chat == NULL)
 		return 0;
 
 	g_at_chat_cancel_all(data->chat);
@@ -298,7 +298,7 @@ static void ste_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))

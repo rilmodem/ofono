@@ -207,7 +207,7 @@ static DBusMessage *smart_messaging_send_vcard(DBusConnection *conn,
 	msg_list = sms_datagram_prepare(to, bytes, len, ref, use_16bit_ref,
 						0, VCARD_DST_PORT, TRUE, FALSE);
 
-	if (!msg_list)
+	if (msg_list == NULL)
 		return __ofono_error_invalid_format(msg);
 
 	flags = OFONO_SMS_SUBMIT_FLAG_RETRY | OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS;
@@ -250,7 +250,7 @@ static DBusMessage *smart_messaging_send_vcal(DBusConnection *conn,
 	msg_list = sms_datagram_prepare(to, bytes, len, ref, use_16bit_ref,
 						0, VCAL_DST_PORT, TRUE, FALSE);
 
-	if (!msg_list)
+	if (msg_list == NULL)
 		return __ofono_error_invalid_format(msg);
 
 	flags = OFONO_SMS_SUBMIT_FLAG_RETRY | OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS;

@@ -57,7 +57,7 @@ static int palmpre_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct palmpre_data, 1);
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
@@ -104,11 +104,11 @@ static int palmpre_enable(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	device = ofono_modem_get_string(modem, "Device");
-	if (!device)
+	if (device == NULL)
 		device = "/dev/modem0";
 
 	options = g_hash_table_new(g_str_hash, g_str_equal);
-	if (!options)
+	if (options == NULL)
 		return -ENOMEM;
 
 	g_hash_table_insert(options, "Baud", "115200");
@@ -116,7 +116,7 @@ static int palmpre_enable(struct ofono_modem *modem)
 	io = g_at_tty_open(device, options);
 	g_hash_table_destroy(options);
 
-	if (!io)
+	if (io == NULL)
 		return -EIO;
 
 	syntax = g_at_syntax_new_gsm_permissive();
@@ -124,7 +124,7 @@ static int palmpre_enable(struct ofono_modem *modem)
 	g_io_channel_unref(io);
 	g_at_syntax_unref(syntax);
 
-	if (!data->chat)
+	if (data->chat == NULL)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))

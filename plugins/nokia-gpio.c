@@ -155,7 +155,7 @@ static int file_write(char const *filename, char const *output)
 	FILE *f;
 
 	f = fopen(filename, "r+");
-	if (!f) {
+	if (f == NULL) {
 		DBG("%s: %s (%d)", filename, strerror(errno), errno);
 		return -1;
 	}
@@ -709,7 +709,7 @@ int gpio_probe(GIsiModem *idx, unsigned addr, gpio_finished_cb_t cb, void *data)
 {
 	int error;
 
-	if (!cb) {
+	if (cb == NULL) {
 		DBG("gpio: No callback given");
 		return -(errno = EFAULT);
 	}
@@ -754,7 +754,7 @@ int gpio_probe(GIsiModem *idx, unsigned addr, gpio_finished_cb_t cb, void *data)
 		self.rapu = RAPU_TYPE_2;
 
 	self.link = g_pn_netlink_start(idx, phonet_status_cb, NULL);
-	if (!self.link) {
+	if (self.link == NULL) {
 		memset(&self, 0, sizeof self);
 		return -errno;
 	}

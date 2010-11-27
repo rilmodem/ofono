@@ -555,7 +555,7 @@ static void remove_modem(struct udev_device *udev_device)
 	DBG("%s", curpath);
 
 	devpath = g_hash_table_lookup(devpath_list, curpath);
-	if (!devpath)
+	if (devpath == NULL)
 		return;
 
 	modem = find_modem(devpath);
@@ -681,7 +681,7 @@ static int udev_init(void)
 {
 	devpath_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, g_free);
-	if (!devpath_list) {
+	if (devpath_list == NULL) {
 		ofono_error("Failed to create udev path list");
 		return -ENOMEM;
 	}

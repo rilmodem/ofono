@@ -66,7 +66,7 @@ static int novatel_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct novatel_data, 1);
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
@@ -102,11 +102,11 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	const char *device;
 
 	device = ofono_modem_get_string(modem, key);
-	if (!device)
+	if (device == NULL)
 		return NULL;
 
 	channel = g_at_tty_open(device, NULL);
-	if (!channel)
+	if (channel == NULL)
 		return NULL;
 
 	syntax = g_at_syntax_new_gsm_permissive();
@@ -114,7 +114,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
-	if (!chat)
+	if (chat == NULL)
 		return NULL;
 
 	if (getenv("OFONO_AT_DEBUG"))
@@ -146,7 +146,7 @@ static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
 	data->dmat_mode = 1;
 
 	data->secondary = open_device(modem, "SecondaryDevice", "Control: ");
-	if (!data->secondary)
+	if (data->secondary == NULL)
 		goto done;
 
 	g_at_chat_send(data->secondary, "ATE0 +CMEE=1", none_prefix,
@@ -208,7 +208,7 @@ static void novatel_disconnect(gpointer user_data)
 	data->primary = NULL;
 
 	data->primary = open_device(modem, "PrimaryDevice", "Modem: ");
-	if (!data->primary)
+	if (data->primary == NULL)
 		return;
 
 	g_at_chat_set_disconnect_function(data->primary,
@@ -230,7 +230,7 @@ static int novatel_enable(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data->primary = open_device(modem, "PrimaryDevice", "Modem: ");
-	if (!data->primary)
+	if (data->primary == NULL)
 		return -EIO;
 
 	g_at_chat_set_disconnect_function(data->primary,
@@ -266,7 +266,7 @@ static int novatel_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (!data->primary)
+	if (data->primary == NULL)
 		return 0;
 
 	if (data->secondary) {
@@ -310,7 +310,7 @@ static void novatel_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
-	if (!cbd || !chat)
+	if (cbd == NULL || chat == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
@@ -329,7 +329,7 @@ static void novatel_pre_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (!data->secondary) {
+	if (data->secondary == NULL) {
 		ofono_devinfo_create(modem, 0, "atmodem", data->primary);
 		sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->primary);
@@ -349,7 +349,7 @@ static void novatel_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (!data->secondary) {
+	if (data->secondary == NULL) {
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
 							data->primary);
 

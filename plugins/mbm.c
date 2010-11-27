@@ -77,7 +77,7 @@ static int mbm_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct mbm_data, 1);
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
@@ -283,7 +283,7 @@ static GAtChat *create_port(const char *device)
 	GAtChat *chat;
 
 	channel = g_at_tty_open(device, NULL);
-	if (!channel)
+	if (channel == NULL)
 		return NULL;
 
 	syntax = g_at_syntax_new_gsm_permissive();
@@ -291,7 +291,7 @@ static GAtChat *create_port(const char *device)
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
-	if (!chat)
+	if (chat == NULL)
 		return NULL;
 
 	return chat;
@@ -430,7 +430,7 @@ static int mbm_disable(struct ofono_modem *modem)
 		data->reopen_source = 0;
 	}
 
-	if (!data->modem_port)
+	if (data->modem_port == NULL)
 		return 0;
 
 	g_at_chat_cancel_all(data->modem_port);
@@ -462,7 +462,7 @@ static void mbm_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
@@ -523,7 +523,7 @@ static void mbm_post_online(struct ofono_modem *modem)
 
 	data->gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
 					"atmodem", data->modem_port);
-	if (!data->gprs)
+	if (data->gprs == NULL)
 		return;
 
 	gc = ofono_gprs_context_create(modem, 0,

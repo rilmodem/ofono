@@ -64,7 +64,7 @@ static int zte_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct zte_data, 1);
-	if (!data)
+	if (data == NULL)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
@@ -108,7 +108,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	DBG("%s %s", key, device);
 
 	channel = g_at_tty_open(device, NULL);
-	if (!channel)
+	if (channel == NULL)
 		return NULL;
 
 	syntax = g_at_syntax_new_gsm_permissive();
@@ -116,7 +116,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(channel);
 
-	if (!chat)
+	if (chat == NULL)
 		return NULL;
 
 	if (getenv("OFONO_AT_DEBUG"))
@@ -138,7 +138,7 @@ static void zte_disconnect(gpointer user_data)
 	data->modem = NULL;
 
 	data->modem = open_device(modem, "Modem", "Modem: ");
-	if (!data->modem)
+	if (data->modem == NULL)
 		return;
 
 	g_at_chat_set_disconnect_function(data->modem,
@@ -218,7 +218,7 @@ static int zte_disable(struct ofono_modem *modem)
 		data->modem = NULL;
 	}
 
-	if (!data->aux)
+	if (data->aux == NULL)
 		return 0;
 
 	g_at_chat_cancel_all(data->aux);
@@ -250,7 +250,7 @@ static void zte_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
-	if (!cbd || !chat)
+	if (cbd == NULL || chat == NULL)
 		goto error;
 
 	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))

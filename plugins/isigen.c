@@ -282,7 +282,7 @@ static int isigen_probe(struct ofono_modem *modem)
 	}
 
 	link = g_pn_netlink_start(idx, phonet_status_cb, modem);
-	if (!link) {
+	if (link == NULL) {
 		DBG("%s: %s", ifname, strerror(errno));
 		return -errno;
 	}
@@ -315,7 +315,7 @@ static void isigen_remove(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
-	if (!isi)
+	if (isi == NULL)
 		return;
 
 	ofono_modem_set_data(modem, NULL);
@@ -370,7 +370,7 @@ static void isigen_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("(%p) with %s", modem, isi->ifname);
 
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	isi->online = online;
@@ -425,13 +425,13 @@ static void isigen_post_online(struct ofono_modem *modem)
 	ofono_radio_settings_create(isi->modem, 0, "isimodem", isi->idx);
 
 	gprs = ofono_gprs_create(isi->modem, 0, "isimodem", isi->idx);
-	if (!gprs)
+	if (gprs == NULL)
 		return;
 
 	for (i = 0; i < ISI_DEFAULT_PDPS; i++) {
 		gc = ofono_gprs_context_create(isi->modem, 0,
 						"isimodem", isi->idx);
-		if (!gc) {
+		if (gc == NULL) {
 			DBG("Failed to add context %d", i);
 			break;
 		}

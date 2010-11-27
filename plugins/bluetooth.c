@@ -77,7 +77,7 @@ int bluetooth_send_with_reply(const char *path, const char *interface,
 
 	msg = dbus_message_new_method_call(BLUEZ_SERVICE, path,
 						interface, method);
-	if (!msg) {
+	if (msg == NULL) {
 		ofono_error("Unable to allocate new D-Bus %s message", method);
 		err = -ENOMEM;
 		goto fail;
@@ -271,7 +271,7 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 
 	if ((have_uuid & HFP_AG) && device_addr && adapter_addr) {
 		profile = g_hash_table_lookup(uuid_hash, HFP_AG_UUID);
-		if (!profile || !profile->create)
+		if (profile == NULL || profile->create == NULL)
 			goto done;
 
 		profile->create(path, device_addr, adapter_addr, alias);
@@ -493,7 +493,7 @@ static void bluetooth_remove_all_modem(gpointer key, gpointer value,
 
 static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
 {
-	if (!uuid_hash)
+	if (uuid_hash == NULL)
 		return;
 
 	g_hash_table_foreach(uuid_hash, bluetooth_remove_all_modem, NULL);
