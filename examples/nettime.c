@@ -50,7 +50,7 @@ static void example_nettime_remove(struct ofono_nettime_context *context)
 static void example_nettime_info_received(struct ofono_nettime_context *context,
 						struct ofono_network_time *info)
 {
-	if (!info)
+	if (info == NULL)
 		return;
 
 	ofono_debug("Received a network time notification on modem: %p",
