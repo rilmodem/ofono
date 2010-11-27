@@ -125,7 +125,7 @@ uint8_t g_isi_server_resource(GIsiServer *server)
 void g_isi_server_set_debug(GIsiServer *server, GIsiDebugFunc func,
 				void *opaque)
 {
-	if (!server)
+	if (server == NULL)
 		return;
 
 	server->debug_func = func;
@@ -138,7 +138,7 @@ void g_isi_server_set_debug(GIsiServer *server, GIsiDebugFunc func,
  */
 void g_isi_server_destroy(GIsiServer *server)
 {
-	if (!server)
+	if (server == NULL)
 		return;
 
 	g_source_remove(server->source);
@@ -153,7 +153,7 @@ g_isi_server_add_name(GIsiServer *self)
 {
 	uint16_t object = 0;
 
-	if (!self)
+	if (self == NULL)
 		return;
 
 	if (ioctl(self->fd, SIOCPNGETOBJECT, &object) < 0) {

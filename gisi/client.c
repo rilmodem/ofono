@@ -133,7 +133,7 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 	GIOChannel *channel;
 
 	client  = g_try_new0(GIsiClient, 1);
-	if (!client) {
+	if (client == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -152,7 +152,7 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 	client->inds.subs = NULL;
 
 	channel = phonet_new(modem, resource);
-	if (!channel) {
+	if (channel == NULL) {
 		g_free(client);
 		return NULL;
 	}
@@ -173,7 +173,7 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
  */
 void g_isi_version_set(GIsiClient *client, int major, int minor)
 {
-	if (!client)
+	if (client == NULL)
 		return;
 
 	client->version.major = major;
@@ -210,7 +210,7 @@ int g_isi_version_minor(GIsiClient *client)
  */
 void g_isi_server_object_set(GIsiClient *client, uint16_t obj)
 {
-	if (!client)
+	if (client == NULL)
 		return;
 
 	client->server_obj = obj;
@@ -247,7 +247,7 @@ uint8_t g_isi_client_resource(GIsiClient *client)
 void g_isi_client_set_debug(GIsiClient *client, GIsiDebugFunc func,
 				void *opaque)
 {
-	if (!client)
+	if (client == NULL)
 		return;
 
 	client->debug_func = func;
@@ -258,7 +258,7 @@ static void g_isi_cleanup_req(void *data)
 {
 	GIsiRequest *req = data;
 
-	if (!req)
+	if (req == NULL)
 		return;
 
 	/* Finalize any pending requests */
@@ -280,7 +280,7 @@ static void g_isi_cleanup_ind(void *data)
 {
 	GIsiIndication *ind = data;
 
-	if (!ind)
+	if (ind == NULL)
 		return;
 
 	g_free(ind);
@@ -292,7 +292,7 @@ static void g_isi_cleanup_ind(void *data)
  */
 void g_isi_client_destroy(GIsiClient *client)
 {
-	if (!client)
+	if (client == NULL)
 		return;
 
 	tdestroy(client->reqs.pending, g_isi_cleanup_req);
@@ -458,7 +458,7 @@ GIsiRequest *g_isi_vsendto(GIsiClient *client,
 	GIsiRequest *req = NULL;
 	GIsiRequest **old;
 
-	if (!client) {
+	if (client == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -467,7 +467,7 @@ GIsiRequest *g_isi_vsendto(GIsiClient *client,
 
 	if (cb) {
 		req = g_try_new0(GIsiRequest, 1);
-		if (!req) {
+		if (req == NULL) {
 			errno = ENOMEM;
 			return NULL;
 		}
@@ -479,7 +479,7 @@ GIsiRequest *g_isi_vsendto(GIsiClient *client,
 		req->notify = notify;
 
 		old = tsearch(req, &client->reqs.pending, g_isi_cmp);
-		if (!old) {
+		if (old == NULL) {
 			errno = ENOMEM;
 			goto error;
 		}
@@ -563,7 +563,7 @@ GIsiRequest *g_isi_vsend(GIsiClient *client,
 		.spn_family = AF_PHONET,
 	};
 
-	if (!client) {
+	if (client == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -581,7 +581,7 @@ GIsiRequest *g_isi_vsend(GIsiClient *client,
  */
 void g_isi_request_cancel(GIsiRequest *req)
 {
-	if (!req)
+	if (req == NULL)
 		return;
 
 	if (req->timeout > 0)
@@ -629,7 +629,7 @@ int g_isi_commit_subscriptions(GIsiClient *client)
 		0,
 	};
 
-	if (!client)
+	if (client == NULL)
 		return -EINVAL;
 
 	if (!client->inds.source) {
@@ -637,7 +637,7 @@ int g_isi_commit_subscriptions(GIsiClient *client)
 			return 0;
 
 		channel = phonet_new(client->modem, PN_COMMGR);
-		if (!channel)
+		if (channel == NULL)
 			return -errno;
 
 		client->inds.fd = g_io_channel_unix_get_fd(channel);
@@ -681,13 +681,13 @@ int g_isi_add_subscription(GIsiClient *client, uint8_t res, uint8_t type,
 		return -EINVAL;
 
 	ind = g_try_new0(GIsiIndication, 1);
-	if (!ind)
+	if (ind == NULL)
 		return -ENOMEM;
 
 	ind->type = (res << 8) | type;
 
 	old = tsearch(ind, &client->inds.subs, g_isi_cmp);
-	if (!old) {
+	if (old == NULL) {
 		g_free(ind);
 		return -ENOMEM;
 	}
@@ -724,7 +724,7 @@ int g_isi_subscribe(GIsiClient *client, uint8_t type,
 {
 	int ret;
 
-	if (!client)
+	if (client == NULL)
 		return -EINVAL;
 
 	ret = g_isi_add_subscription(client, client->resource, type, cb, data);
@@ -748,11 +748,11 @@ void g_isi_remove_subscription(GIsiClient *client, uint8_t res, uint8_t type)
 	GIsiIndication *ind;
 	unsigned int id = (res << 8) | type;
 
-	if (!client)
+	if (client == NULL)
 		return;
 
 	ret = tfind(&id, &client->inds.subs, g_isi_cmp);
-	if (!ret)
+	if (ret == NULL)
 		return;
 
 	ind = *(GIsiIndication **)ret;
@@ -770,7 +770,7 @@ void g_isi_remove_subscription(GIsiClient *client, uint8_t res, uint8_t type)
  */
 void g_isi_unsubscribe(GIsiClient *client, uint8_t type)
 {
-	if (!client)
+	if (client == NULL)
 		return;
 
 	g_isi_remove_subscription(client, client->resource, type);
@@ -786,7 +786,7 @@ static void g_isi_dispatch_indication(GIsiClient *client, uint8_t res,
 	unsigned type = (res << 8) | msg[0];
 
 	ret = tfind(&type, &client->inds.subs, g_isi_cmp);
-	if (!ret)
+	if (ret == NULL)
 		return;
 
 	ind = *(GIsiIndication **)ret;
@@ -804,7 +804,7 @@ static void g_isi_dispatch_response(GIsiClient *client, uint8_t res,
 	unsigned id = msg[0];
 
 	ret = tfind(&id, &client->reqs.pending, g_isi_cmp);
-	if (!ret) {
+	if (ret == NULL) {
 		/* This could either be an unsolicited response, which
 		 * we will ignore, or an incoming request, which we
 		 * handle just like an incoming indication */

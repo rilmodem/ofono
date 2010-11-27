@@ -135,7 +135,7 @@ GIsiRequest *g_isi_verify(GIsiClient *client, GIsiVerifyFunc func,
 	data->resource = g_isi_client_resource(client);
 
 	req = send_version_query(client, verify_cb, data);
-	if (!req)
+	if (req == NULL)
 		g_free(data);
 
 	return req;
@@ -159,7 +159,7 @@ GIsiRequest *g_isi_verify_resource(GIsiClient *client, uint8_t resource,
 	data->resource = resource;
 
 	req = send_version_query(client, verify_cb, data);
-	if (!req)
+	if (req == NULL)
 		g_free(data);
 
 	return req;

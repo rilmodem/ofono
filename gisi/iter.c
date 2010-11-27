@@ -72,7 +72,7 @@ void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const void *restrict data,
 
 gboolean g_isi_sb_iter_is_valid(const GIsiSubBlockIter *iter)
 {
-	if (!iter)
+	if (iter == NULL)
 		return FALSE;
 
 	if (iter->sub_blocks == 0)
