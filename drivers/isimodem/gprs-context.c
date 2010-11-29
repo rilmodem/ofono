@@ -50,8 +50,6 @@
 #include "debug.h"
 
 #define STATIC_IP_NETMASK "255.255.255.255"
-#define ACTIVATE_TIMEOUT	(6 * 30)	/* 6 * T3380 */
-#define DEACTIVATE_TIMEOUT	(6 * 8)		/* 6 * T3390 */
 
 #define INVALID_ID (0xff)
 # if (INVALID_ID < GPDS_MAX_CONTEXT_COUNT)
@@ -72,8 +70,6 @@ struct context_data {
 
 	GIsiPEP *pep;
 	GIsiPipe *pipe;
-	guint activate_timeout;
-	guint deactivate_timeout;
 	guint reset;
 
 	char apn[GPDS_MAX_APN_STRING_LENGTH + 1];
@@ -99,20 +95,12 @@ static void reset_context(struct context_data *cd)
 	if (cd == NULL)
 		return;
 
-	if (cd->activate_timeout)
-		g_source_remove(cd->activate_timeout);
-
-	if (cd->deactivate_timeout)
-		g_source_remove(cd->deactivate_timeout);
-
 	if (cd->pipe)
 		g_isi_pipe_destroy(cd->pipe);
 
 	if (cd->pep)
 		g_isi_pep_destroy(cd->pep);
 
-	cd->activate_timeout = 0;
-	cd->deactivate_timeout = 0;
 	cd->pep = NULL;
 	cd->pipe = NULL;
 	cd->handle = INVALID_ID;
@@ -133,24 +121,6 @@ static void gprs_down_fail(struct context_data *cd)
 {
 	CALLBACK_WITH_FAILURE(cd->down_cb, cd->data);
 	reset_context(cd);
-}
-
-static gboolean gprs_up_timeout(gpointer data)
-{
-	struct context_data *cd = data;
-
-	cd->activate_timeout = 0;
-	gprs_up_fail(cd);
-	return FALSE;
-}
-
-static gboolean gprs_down_timeout(gpointer data)
-{
-	struct context_data *cd = data;
-
-	cd->deactivate_timeout = 0;
-	gprs_down_fail(cd);
-	return FALSE;
 }
 
 static gboolean check_resp(const GIsiMessage *msg, uint8_t id, size_t minlen,
@@ -316,9 +286,6 @@ static void activate_ind_cb(const GIsiMessage *msg, void *opaque)
 	CALLBACK_WITH_SUCCESS(cd->up_cb, ifname, TRUE, (const char *)ip,
 					STATIC_IP_NETMASK, NULL,
 					dns, cd->data);
-
-	g_source_remove(cd->activate_timeout);
-	cd->activate_timeout = 0;
 	return;
 
 error:
@@ -357,7 +324,8 @@ static void send_context_activate(GIsiClient *client, void *opaque)
 	g_isi_client_ind_subscribe(client, GPDS_CONTEXT_DEACTIVATE_IND,
 				deactivate_ind_cb, cd);
 
-	if (g_isi_client_send(client, msg, sizeof(msg), GPDS_TIMEOUT,
+	if (g_isi_client_send(client, msg, sizeof(msg),
+				GPDS_CTX_ACTIVATE_TIMEOUT,
 				context_activate_cb, cd, NULL))
 		g_isi_pipe_start(cd->pipe);
 	else
@@ -546,8 +514,6 @@ static void isi_gprs_activate_primary(struct ofono_gprs_context *gc,
 		goto error;
 
 	g_isi_pipe_set_userdata(cd->pipe, cd);
-	cd->activate_timeout = g_timeout_add_seconds(ACTIVATE_TIMEOUT,
-							gprs_up_timeout, cd);
 	return;
 
 error:
@@ -585,14 +551,12 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	msg[1] = cd->handle;
 
-	if (g_isi_client_send(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+	if (g_isi_client_send(cd->client, msg, sizeof(msg),
+				GPDS_CTX_DEACTIVATE_TIMEOUT,
 				context_deactivate_cb, cd, NULL) == NULL) {
 		gprs_down_fail(cd);
 		return;
 	}
-
-	cd->deactivate_timeout = g_timeout_add_seconds(DEACTIVATE_TIMEOUT,
-							gprs_down_timeout, cd);
 }
 
 static void gpds_ctx_reachable_cb(const GIsiMessage *msg, void *opaque)

@@ -27,7 +27,11 @@ extern "C" {
 #endif
 
 #define GPDS_MAX_CONTEXT_COUNT			11
-#define GPDS_TIMEOUT				60
+#define GPDS_TIMEOUT				3
+#define GPDS_CTX_ACTIVATE_TIMEOUT		(6 * 30)	/* 6 * T3380 */
+#define GPDS_CTX_DEACTIVATE_TIMEOUT		(6 * 8)		/* 6 * T3390 */
+#define GPDS_ATTACH_TIMEOUT			(6 * 15)	/* 6 * T3310 */
+#define GPDS_DETACH_TIMEOUT			(6 * 15)	/* 6 * T3321 */
 
 #define GPDS_MAX_APN_STRING_LENGTH		100
 #define GPDS_MAX_USERNAME_LENGTH		53

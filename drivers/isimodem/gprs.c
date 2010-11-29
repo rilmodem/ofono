@@ -357,7 +357,7 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 		};
 
 		if (g_isi_client_send(gd->client, msg, sizeof(msg),
-					GPDS_TIMEOUT, attach_resp_cb,
+					GPDS_ATTACH_TIMEOUT, attach_resp_cb,
 					cbd, g_free))
 			return;
 	} else {
@@ -368,7 +368,7 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 		};
 
 		if (g_isi_client_send(gd->client, msg, sizeof(msg),
-					GPDS_TIMEOUT, detach_resp_cb,
+					GPDS_DETACH_TIMEOUT, detach_resp_cb,
 					cbd, g_free))
 			return;
 	}
