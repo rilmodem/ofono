@@ -290,7 +290,7 @@ static void isi_query_fast_dormancy(struct ofono_radio_settings *rs,
 }
 
 static void isi_set_fast_dormancy(struct ofono_radio_settings *rs,
-				int enable,
+				ofono_bool_t enable,
 				ofono_radio_settings_fast_dormancy_set_cb_t cb,
 				void *data)
 {
