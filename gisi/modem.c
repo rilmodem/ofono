@@ -45,6 +45,7 @@ struct _GIsiServiceMux {
 	GIsiVersion version;
 	uint8_t resource;
 	uint8_t last_utid;
+	uint16_t object;
 	unsigned subscriptions;
 	unsigned registrations;
 	gboolean reachable;
@@ -194,6 +195,11 @@ static void common_message_decode(GIsiServiceMux *mux, GIsiMessage *msg)
 		return;
 
 	switch (code) {
+	case COMM_ISA_ENTITY_NOT_REACHABLE_RESP:
+		mux->reachable = FALSE;
+		msg->error = ENOENT;
+		break;
+
 	case COMM_ISI_VERSION_GET_RESP:
 
 		if (g_isi_msg_data_get_byte(msg, 1, &major) &&
@@ -201,13 +207,7 @@ static void common_message_decode(GIsiServiceMux *mux, GIsiMessage *msg)
 			mux->version.major = major;
 			mux->version.minor = minor;
 		}
-		mux->version_pending = FALSE;
-		break;
-
-	case COMM_ISA_ENTITY_NOT_REACHABLE_RESP:
-		mux->reachable = FALSE;
-		msg->error = ENOENT;
-		break;
+		/* fall through */
 
 	case 0x00:
 		/*
@@ -215,7 +215,9 @@ static void common_message_decode(GIsiServiceMux *mux, GIsiMessage *msg)
 		 * 0x00 message as a response.  Work around this modem
 		 * wart.
 		 */
+		mux->object = g_isi_msg_object(msg);
 		mux->version_pending = FALSE;
+		mux->reachable = TRUE;
 		break;
 	}
 	msg->version = &mux->version;
@@ -261,12 +263,6 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 		mux = g_hash_table_lookup(modem->services, GINT_TO_POINTER(key));
 		if (!mux)
 			return TRUE;
-
-		/*
-		 * For now, assume any message received means that the
-		 * resource is reachable
-		 */
-		mux->reachable = TRUE;
 
 		if (g_isi_msg_id(&msg) == COMMON_MESSAGE)
 			common_message_decode(mux, &msg);
@@ -953,6 +949,8 @@ static gboolean reachable_notify(gpointer data)
 
 	struct sockaddr_pn addr = {
 		.spn_resource = mux->resource,
+		.spn_dev = mux->object >> 8,
+		.spn_obj = mux->object & 0xff,
 	};
 	GIsiMessage msg = {
 		.version = &mux->version,
