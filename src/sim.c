@@ -1441,11 +1441,18 @@ static void sim_efust_read_cb(int ok, int length, int record,
 
 	/*
 	 * Check whether the SIM provides EFest file
-	 * According to 31.102, section 4.2.24 and 4.2.44 the EFest file
-	 * must be present if EFfdn or EFbdn are present
+	 * According to 3GPP TS 31.102 section 4.2.47, EFest file
+	 * shall be present if FDN or BDN or EST is available
+	 * Lets be paranoid and check for the special cases as well
+	 * where EST is not available(FDN or BDN available), but EFest
+	 * is present
 	 */
 	if (sim_ust_is_available(sim->efust, sim->efust_length,
-				SIM_UST_SERVICE_ENABLED_SERVICE_TABLE)) {
+				SIM_UST_SERVICE_ENABLED_SERVICE_TABLE) ||
+			sim_ust_is_available(sim->efust, sim->efust_length,
+				SIM_UST_SERVICE_FDN) ||
+			sim_ust_is_available(sim->efust, sim->efust_length,
+				SIM_UST_SERVICE_BDN)) {
 		ofono_sim_read(sim, SIM_EFEST_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_efest_read_cb, sim);
