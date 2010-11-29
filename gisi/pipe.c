@@ -333,6 +333,9 @@ static void g_isi_pipe_removed(const GIsiMessage *msg, void *data)
 	if (!resp || g_isi_msg_data_len(msg) != sizeof(struct isi_pipe_resp))
 		return;
 
+	if (pipe->handle != resp->pipe_handle)
+		return;
+
 	pipe->handle = PN_PIPE_INVALID_HANDLE;
 	pipe->error = -EPIPE;
 }
