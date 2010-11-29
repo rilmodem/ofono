@@ -74,6 +74,7 @@ struct context_data {
 	GIsiPipe *pipe;
 	guint activate_timeout;
 	guint deactivate_timeout;
+	guint reset;
 
 	char apn[GPDS_MAX_APN_STRING_LENGTH + 1];
 	char username[GPDS_MAX_USERNAME_LENGTH + 1];
@@ -83,18 +84,20 @@ struct context_data {
 	uint8_t type;
 };
 
+static gboolean client_reset(gpointer data)
+{
+	struct context_data *cd = data;
+
+	g_isi_client_reset(cd->client);
+	cd->reset = 0;
+
+	return FALSE;
+}
+
 static void reset_context(struct context_data *cd)
 {
 	if (cd == NULL)
 		return;
-
-	g_isi_remove_subscription(cd->client, PN_GPDS,
-				GPDS_CONTEXT_ACTIVATE_IND);
-	g_isi_remove_subscription(cd->client,
-				PN_GPDS, GPDS_CONTEXT_ACTIVATE_FAIL_IND);
-	g_isi_remove_subscription(cd->client,
-				PN_GPDS, GPDS_CONTEXT_DEACTIVATE_IND);
-	g_isi_commit_subscriptions(cd->client);
 
 	if (cd->activate_timeout)
 		g_source_remove(cd->activate_timeout);
@@ -113,23 +116,23 @@ static void reset_context(struct context_data *cd)
 	cd->pep = NULL;
 	cd->pipe = NULL;
 	cd->handle = INVALID_ID;
+
+	cd->reset = g_idle_add(client_reset, cd);
 }
 
-static gboolean gprs_up_fail(struct context_data *cd)
+typedef void (*ContextFailFunc)(struct context_data *cd);
+
+static void gprs_up_fail(struct context_data *cd)
 {
 	CALLBACK_WITH_FAILURE(cd->up_cb, NULL, 0, NULL, NULL, NULL, NULL,
 				cd->data);
-
 	reset_context(cd);
-	return TRUE;
 }
 
-static gboolean gprs_down_fail(struct context_data *cd)
+static void gprs_down_fail(struct context_data *cd)
 {
 	CALLBACK_WITH_FAILURE(cd->down_cb, cd->data);
-
 	reset_context(cd);
-	return TRUE;
 }
 
 static gboolean gprs_up_timeout(gpointer data)
@@ -150,70 +153,88 @@ static gboolean gprs_down_timeout(gpointer data)
 	return FALSE;
 }
 
-static gboolean check_resp(GIsiClient *client,
-				const uint8_t *restrict msg, size_t len,
-				uint_fast8_t cmd, struct context_data *cd)
+static gboolean check_resp(const GIsiMessage *msg, uint8_t id, size_t minlen,
+				struct context_data *cd,
+				ContextFailFunc fail_cb)
 {
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
+	const uint8_t *data = g_isi_msg_data(msg);
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("ISI message error: %d", g_isi_msg_error(msg));
+		goto error;
+	}
+
+	if (g_isi_msg_id(msg) != id)
+		return FALSE;
+
+	if (g_isi_msg_data_len(msg) < minlen) {
+		DBG("truncated message");
+		goto error;
+	}
+
+	if (cd->handle != INVALID_ID && data[0] != cd->handle)
+		return FALSE;
+
+	if (data[1] != GPDS_OK) {
+		DBG("context error: %s (0x%02"PRIx8")",
+			gpds_status_name(data[1]), data[1]);
+
+		if (minlen > 2)
+			DBG("  fail cause: %s (0x%02"PRIx8")",
+				gpds_isi_cause_name(data[2]), data[2]);
+
+		goto error;
+	}
+
+	return TRUE;
+
+error:
+	if (fail_cb)
+		fail_cb(cd);
+
+	return FALSE;
+}
+
+static gboolean check_ind(const GIsiMessage *msg, size_t minlen,
+				struct context_data *cd)
+
+{
+	const uint8_t *data = g_isi_msg_data(msg);
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("ISI message error: %d", g_isi_msg_error(msg));
 		return FALSE;
 	}
 
-	if (len < 3) {
+	if (g_isi_msg_data_len(msg) < minlen) {
 		DBG("truncated message");
 		return FALSE;
 	}
 
-	if (msg[0] != cmd) {
-		DBG("unexpected message ID: %s (0x%02"PRIx8")",
-			gpds_message_id_name(msg[0]), msg[0]);
+	if (cd->handle != INVALID_ID && data[0] != cd->handle)
 		return FALSE;
-	}
 
-	if ((cd->handle != INVALID_ID && msg[1] != cd->handle)
-			|| (msg[1] == INVALID_ID)) {
-		DBG("invalid context ID: 0x%02"PRIx8, msg[1]);
-		return FALSE;
-	}
-
-	if (msg[2] != GPDS_OK) {
-		DBG("context creation error: %s (0x%02"PRIx8")",
-			gpds_status_name(msg[2]), msg[2]);
-
-		if (len > 3)
-			DBG("  fail cause: %s (0x%02"PRIx8")",
-				gpds_isi_cause_name(msg[3]), msg[3]);
-
-		return FALSE;
-	}
 	return TRUE;
 }
 
-static void deactivate_ind_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void deactivate_ind_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
-	const unsigned char *msg = data;
+	const uint8_t *data = g_isi_msg_data(msg);
 
-	if (!msg || len < 3 || msg[0] != GPDS_CONTEXT_DEACTIVATE_IND ||
-			msg[1] != cd->handle)
+	if (!check_ind(msg, 2, cd))
 		return;
 
 	DBG("context deactivated: %s (0x%02"PRIx8")",
-		gpds_isi_cause_name(msg[3]), msg[3]);
+		gpds_isi_cause_name(data[2]), data[2]);
 
 	ofono_gprs_context_deactivated(cd->context, cd->cid);
 	reset_context(cd);
 }
 
-static void activate_ind_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void activate_ind_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
-
-	const unsigned char *msg = data;
 	GIsiSubBlockIter iter;
 
 	char ifname[IF_NAMESIZE];
@@ -222,11 +243,10 @@ static void activate_ind_cb(GIsiClient *client,
 	char *sdns = NULL;
 	const char *dns[3];
 
-	if (!msg || len < 3 || msg[0] != GPDS_CONTEXT_ACTIVATE_IND ||
-			msg[1] != cd->handle)
+	if (!check_ind(msg, 2, cd))
 		return;
 
-	for (g_isi_sb_iter_init(&iter, msg, len, 3);
+	for (g_isi_sb_iter_init(&iter, msg, 2);
 			g_isi_sb_iter_is_valid(&iter);
 			g_isi_sb_iter_next(&iter)) {
 
@@ -305,29 +325,19 @@ error:
 	gprs_up_fail(cd);
 }
 
-static void activate_fail_ind_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void activate_fail_ind_cb(const GIsiMessage *msg, void *opaque)
 {
-	const unsigned char *msg = data;
 	struct context_data *cd = opaque;
 
-	if (!msg || len < 3 || msg[0] != GPDS_CONTEXT_ACTIVATE_FAIL_IND)
+	if (!check_ind(msg, 2, cd))
 		return;
 
 	gprs_up_fail(cd);
 }
 
-static gboolean context_activate_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void context_activate_cb(const GIsiMessage *msg, void *cd)
 {
-	struct context_data *cd = opaque;
-
-	if (!check_resp(client, data, len, GPDS_CONTEXT_ACTIVATE_RESP, cd))
-		return gprs_up_fail(cd);
-
-	return TRUE;
+	check_resp(msg, GPDS_CONTEXT_ACTIVATE_RESP, 6, cd, gprs_up_fail);
 }
 
 static void send_context_activate(GIsiClient *client, void *opaque)
@@ -340,33 +350,28 @@ static void send_context_activate(GIsiClient *client, void *opaque)
 		0,		/* sub blocks */
 	};
 
-
-	g_isi_add_subscription(client, PN_GPDS, GPDS_CONTEXT_ACTIVATE_IND,
+	g_isi_client_ind_subscribe(client, GPDS_CONTEXT_ACTIVATE_IND,
 				activate_ind_cb, cd);
-	g_isi_add_subscription(client, PN_GPDS, GPDS_CONTEXT_ACTIVATE_FAIL_IND,
+	g_isi_client_ind_subscribe(client, GPDS_CONTEXT_ACTIVATE_FAIL_IND,
 				activate_fail_ind_cb, cd);
-	g_isi_add_subscription(client, PN_GPDS, GPDS_CONTEXT_DEACTIVATE_IND,
+	g_isi_client_ind_subscribe(client, GPDS_CONTEXT_DEACTIVATE_IND,
 				deactivate_ind_cb, cd);
-	g_isi_commit_subscriptions(client);
 
-	if (g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
-				context_activate_cb, cd))
+	if (g_isi_client_send(client, msg, sizeof(msg), GPDS_TIMEOUT,
+				context_activate_cb, cd, NULL))
 		g_isi_pipe_start(cd->pipe);
 	else
 		gprs_up_fail(cd);
 }
 
-static gboolean context_auth_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void context_auth_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
 
-	if (!check_resp(client, data, len, GPDS_CONTEXT_AUTH_RESP, cd))
-		return gprs_up_fail(cd);
+	if (!check_resp(msg, GPDS_CONTEXT_AUTH_RESP, 2, cd, gprs_up_fail))
+		return;
 
-	send_context_activate(client, cd);
-	return TRUE;
+	send_context_activate(cd->client, cd);
 }
 
 static void send_context_authenticate(GIsiClient *client, void *opaque)
@@ -399,36 +404,30 @@ static void send_context_authenticate(GIsiClient *client, void *opaque)
 		{ cd->password, password_len },
 	};
 
-	if (g_isi_request_vmake(client, iov, 4, GPDS_TIMEOUT,
-					context_auth_cb, cd) == NULL)
+	if (g_isi_client_vsend(client, iov, 4, GPDS_TIMEOUT,
+				context_auth_cb, cd, NULL) == NULL)
 		gprs_up_fail(cd);
 }
 
-static gboolean context_conf_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void context_conf_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
 
-	if (!check_resp(client, data, len, GPDS_CONTEXT_CONFIGURE_RESP, cd))
-		return gprs_up_fail(cd);
+	if (!check_resp(msg, GPDS_CONTEXT_CONFIGURE_RESP, 2, cd, gprs_up_fail))
+		return;
 
 	if (cd->username[0] != '\0')
-		send_context_authenticate(client, cd);
+		send_context_authenticate(cd->client, cd);
 	else
-		send_context_activate(client, cd);
-
-	return TRUE;
+		send_context_activate(cd->client, cd);
 }
 
-static gboolean link_conf_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void link_conf_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
 	size_t apn_len = strlen(cd->apn);
 
-	const unsigned char msg[] = {
+	const unsigned char req[] = {
 		GPDS_CONTEXT_CONFIGURE_REQ,
 		cd->handle,	/* context ID */
 		cd->type,	/* PDP type */
@@ -445,46 +444,38 @@ static gboolean link_conf_cb(GIsiClient *client,
 	};
 
 	const struct iovec iov[2] = {
-		{ (uint8_t *)msg, sizeof(msg) },
+		{ (uint8_t *)req, sizeof(req) },
 		{ cd->apn, apn_len },
 	};
 
-	if (!check_resp(client, data, len, GPDS_LL_CONFIGURE_RESP, cd))
-		return gprs_up_fail(cd);
+	if (!check_resp(msg, GPDS_LL_CONFIGURE_RESP, 2, cd, gprs_up_fail))
+		return;
 
-	if (!g_isi_request_vmake(client, iov, 2, GPDS_TIMEOUT,
-					context_conf_cb, cd))
-		return gprs_up_fail(cd);
-
-	return TRUE;
+	if (!g_isi_client_vsend(cd->client, iov, 2, GPDS_TIMEOUT,
+				context_conf_cb, cd, NULL))
+		gprs_up_fail(cd);
 }
 
-static gboolean create_context_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void create_context_cb(const GIsiMessage *msg, void *opaque)
 {
-	const unsigned char *resp = data;
 	struct context_data *cd = opaque;
+	const uint8_t *data = g_isi_msg_data(msg);
 
-	unsigned char msg[] = {
+	unsigned char req[] = {
 		GPDS_LL_CONFIGURE_REQ,
 		0x00,		/* GPDS context ID, added later */
 		g_isi_pipe_get_handle(cd->pipe),
 		GPDS_LL_PLAIN,	/* link type */
 	};
 
-	if (!check_resp(client, data, len, GPDS_CONTEXT_ID_CREATE_RESP, cd))
-		return gprs_up_fail(cd);
+	if (!check_resp(msg, GPDS_CONTEXT_ID_CREATE_RESP, 2, cd, gprs_up_fail))
+		return;
 
-	cd->handle = msg[1] = resp[1];
+	cd->handle = req[1] = data[0];
 
-	if (g_isi_request_make(client, msg, sizeof(msg), GPDS_TIMEOUT,
-						link_conf_cb, cd) == NULL)
-		return gprs_up_fail(cd);
-
-	/* TODO: send context configuration at the same time? */
-
-	return TRUE;
+	if (!g_isi_client_send(cd->client, req, sizeof(req), GPDS_TIMEOUT,
+				link_conf_cb, cd, NULL))
+		gprs_up_fail(cd);
 }
 
 static void create_pipe_cb(GIsiPipe *pipe)
@@ -495,8 +486,8 @@ static void create_pipe_cb(GIsiPipe *pipe)
 		GPDS_CONTEXT_ID_CREATE_REQ,
 	};
 
-	if (g_isi_request_make(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-					create_context_cb, cd) == NULL)
+	if (g_isi_client_send(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+				create_context_cb, cd, NULL) == NULL)
 		gprs_up_fail(cd);
 }
 
@@ -506,11 +497,19 @@ static void isi_gprs_activate_primary(struct ofono_gprs_context *gc,
 {
 	struct context_data *cd = ofono_gprs_context_get_data(gc);
 
+	DBG("activate: gpds = 0x%04x", cd->gpds);
+
 	if (!cd->gpds) {
 		/* GPDS is not reachable */
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL,
 					NULL, data);
 		return;
+	}
+
+	if (cd->reset) {
+		g_isi_client_reset(cd->client);
+		g_source_remove(cd->reset);
+		cd->reset = 0;
 	}
 
 	cd->cid = ctx->cid;
@@ -555,20 +554,16 @@ error:
 	gprs_up_fail(cd);
 }
 
-static gboolean context_deactivate_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object,
-					void *opaque)
+static void context_deactivate_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
 
-	if (!check_resp(client, data, len, GPDS_CONTEXT_DEACTIVATE_RESP, cd))
-		return gprs_down_fail(cd);
+	if (!check_resp(msg, GPDS_CONTEXT_DEACTIVATE_RESP, 2, cd,
+			gprs_down_fail))
+		return;
 
 	CALLBACK_WITH_SUCCESS(cd->down_cb, cd->data);
 	reset_context(cd);
-
-	return TRUE;
 }
 
 static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
@@ -590,8 +585,8 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	msg[1] = cd->handle;
 
-	if (g_isi_request_make(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-					context_deactivate_cb, cd) == NULL) {
+	if (g_isi_client_send(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+				context_deactivate_cb, cd, NULL) == NULL) {
 		gprs_down_fail(cd);
 		return;
 	}
@@ -600,28 +595,16 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 							gprs_down_timeout, cd);
 }
 
-static void gpds_ctx_reachable_cb(GIsiClient *client, gboolean alive,
-					uint16_t object,
-					void *opaque)
+static void gpds_ctx_reachable_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
-	const char *debug;
 
-	if (!alive) {
+	if (g_isi_msg_error(msg) < 0) {
 		DBG("unable to bootstrap gprs context driver");
 		return;
 	}
 
-	DBG("%s (v%03d.%03d) for PDP contexts",
-		pn_resource_name(g_isi_client_resource(client)),
-		g_isi_version_major(client),
-		g_isi_version_minor(client));
-
-	cd->gpds = object;
-
-	debug = getenv("OFONO_ISI_DEBUG");
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "gpds") == 0))
-		g_isi_client_set_debug(cd->client, gpds_debug, NULL);
+	cd->gpds = g_isi_msg_object(msg);
 }
 
 static int isi_gprs_context_probe(struct ofono_gprs_context *gc,
@@ -643,7 +626,7 @@ static int isi_gprs_context_probe(struct ofono_gprs_context *gc,
 	cd->context = gc;
 	ofono_gprs_context_set_data(gc, cd);
 
-	g_isi_verify(cd->client, gpds_ctx_reachable_cb, cd);
+	g_isi_client_verify(cd->client, gpds_ctx_reachable_cb, cd, NULL);
 
 	return 0;
 }

@@ -35,11 +35,14 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 #include <gisi/client.h>
+#include <gisi/iter.h>
 
 #include "isimodem.h"
 #include "isiutil.h"
 #include "gpds.h"
+#include "info.h"
 #include "debug.h"
 
 /* 27.007 Section 10.1.20 <stat> */
@@ -54,20 +57,25 @@ enum network_registration_status {
 
 struct gprs_data {
 	GIsiClient *client;
+	GIsiClient *info_client;
 };
 
-static void detach_ind_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void detach_ind_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct ofono_gprs *gprs = opaque;
-	const unsigned char *msg = data;
+	const uint8_t *data = g_isi_msg_data(msg);
 
-	if (!msg || len < 3 || msg[0] != GPDS_DETACH_IND)
+	if (g_isi_msg_error(msg) < 0)
+		return;
+
+	if (g_isi_msg_id(msg) != GPDS_DETACH_IND)
+		return;
+
+	if (g_isi_msg_data_len(msg) < 2)
 		return;
 
 	DBG("detached: %s (0x%02"PRIx8")",
-		gpds_isi_cause_name(msg[1]), msg[1]);
+		gpds_isi_cause_name(data[0]), data[0]);
 
 	ofono_gprs_detached_notify(gprs);
 }
@@ -108,67 +116,147 @@ static void suspend_notify(struct ofono_gprs *gprs, uint8_t suspend_status,
 	ofono_gprs_suspend_notify(gprs, cause);
 }
 
-static void transfer_status_ind_cb(GIsiClient *client,
-					const void *restrict data, size_t len,
-					uint16_t object, void *opaque)
+static void transfer_status_ind_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct ofono_gprs *gprs = opaque;
-	const unsigned char *msg = data;
+	const uint8_t *data = g_isi_msg_data(msg);
 
-	if (!msg || len < 3 || msg[0] != GPDS_TRANSFER_STATUS_IND)
+	if (g_isi_msg_error(msg) < 0)
 		return;
 
-	suspend_notify(gprs, msg[1], msg[2]);
+	if (g_isi_msg_id(msg) != GPDS_TRANSFER_STATUS_IND)
+		return;
+
+	if (g_isi_msg_data_len(msg) < 2)
+		return;
+
+	suspend_notify(gprs, data[0], data[1]);
 }
 
-static gboolean isi_gprs_register(gpointer user)
+static void create_contexts(struct ofono_gprs *gprs, int count)
 {
-	struct ofono_gprs *gprs = user;
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
+	GIsiModem *modem = g_isi_client_modem(gd->client);
+	struct ofono_modem *omodem = g_isi_modem_get_userdata(modem);
+	struct ofono_gprs_context *gc;
+	int i;
 
-	const char *debug = getenv("OFONO_ISI_DEBUG");
+	for (i = 0; i < count; i++) {
+		gc = ofono_gprs_context_create(omodem, 0, "isimodem", modem);
+		if (!gc)
+			break;
 
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "gpds") == 0))
-		g_isi_client_set_debug(gd->client, gpds_debug, NULL);
+		ofono_gprs_add_context(gprs, gc);
+	}
 
-	g_isi_subscribe(gd->client, GPDS_DETACH_IND, detach_ind_cb, gprs);
-	g_isi_subscribe(gd->client, GPDS_TRANSFER_STATUS_IND,
-			transfer_status_ind_cb, gprs);
+	ofono_gprs_set_cid_range(gprs, 1, i);
 
-	ofono_gprs_register(user);
-
-	return FALSE;
+	DBG("%d GPRS contexts created", count);
 }
 
-static void gpds_reachable_cb(GIsiClient *client,
-				gboolean alive, uint16_t object,
-				void *opaque)
+static void info_pp_read_resp_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct ofono_gprs *gprs = opaque;
+	uint8_t count = GPDS_MAX_CONTEXT_COUNT;
+	GIsiSubBlockIter iter;
 
-	if (!alive) {
-		DBG("unable to bootsrap gprs driver");
+	if (g_isi_msg_error(msg) < 0)
+		goto out;
+
+	if (g_isi_msg_id(msg) != INFO_PP_READ_RESP)
+		goto out;
+
+	for (g_isi_sb_iter_init(&iter, msg, 2); g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
+		case INFO_SB_PP: {
+			guint16 fea;
+			guint8 n;
+			unsigned pp;
+
+			if (!g_isi_sb_iter_get_byte(&iter, &n, 1))
+				goto out;
+
+			for (pp = 4; n--; pp += 2) {
+
+				if (!g_isi_sb_iter_get_word(&iter, &fea, pp))
+					goto out;
+
+				if ((fea >> 8) != INFO_PP_MAX_PDP_CONTEXTS)
+					goto out;
+
+				count = fea & 0xff;
+				break;
+			}
+			break;
+		}
+
+		default:
+			break;
+		}
+	}
+
+out:
+	create_contexts(gprs, count);
+}
+
+static void gpds_reachable_cb(const GIsiMessage *msg, void *opaque)
+{
+	struct ofono_gprs *gprs = opaque;
+	struct gprs_data *gd = ofono_gprs_get_data(gprs);
+	GIsiModem *modem = g_isi_client_modem(gd->client);
+
+	const unsigned char req[] = {
+		INFO_PP_READ_REQ,
+		0,				/* filler */
+		1,				/* subblocks */
+		INFO_SB_PP,
+		8,				/* subblock length */
+		0,
+		1,				/* N */
+		INFO_PP_MAX_PDP_CONTEXTS,	/* PP feature */
+		0,				/* PP value */
+		0,				/* filler */
+		0				/* filler */
+	};
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("unable to bootstrap gprs driver");
 		return;
 	}
 
-	DBG("%s (v%03d.%03d)",
-		pn_resource_name(g_isi_client_resource(client)),
-		g_isi_version_major(client),
-		g_isi_version_minor(client));
+	ISI_VERSION_DBG(msg);
 
-	g_idle_add(isi_gprs_register, gprs);
+	g_isi_client_ind_subscribe(gd->client, GPDS_DETACH_IND,
+					detach_ind_cb, gprs);
+	g_isi_client_ind_subscribe(gd->client, GPDS_TRANSFER_STATUS_IND,
+					transfer_status_ind_cb, gprs);
+
+	ofono_gprs_register(gprs);
+
+	gd->info_client = g_isi_client_create(modem, PN_PHONE_INFO);
+	if (!gd->info_client) {
+		create_contexts(gprs, GPDS_MAX_CONTEXT_COUNT);
+		return;
+	}
+
+	if (g_isi_client_send(gd->info_client, req, sizeof(req),
+				GPDS_TIMEOUT, info_pp_read_resp_cb,
+				gprs, NULL))
+		return;
 }
 
 static int isi_gprs_probe(struct ofono_gprs *gprs,
 				unsigned int vendor, void *user)
 {
-	GIsiModem *idx = user;
+	GIsiModem *modem = user;
 	struct gprs_data *gd = g_try_new0(struct gprs_data, 1);
 
 	if (gd == NULL)
 		return -ENOMEM;
 
-	gd->client = g_isi_client_create(idx, PN_GPDS);
+	gd->client = g_isi_client_create(modem, PN_GPDS);
 	if (gd->client == NULL) {
 		g_free(gd);
 		return -ENOMEM;
@@ -176,106 +264,81 @@ static int isi_gprs_probe(struct ofono_gprs *gprs,
 
 	ofono_gprs_set_data(gprs, gd);
 
-	ofono_gprs_set_cid_range(gprs, 1, GPDS_MAX_CONTEXT_COUNT + 1);
-
-	g_isi_verify(gd->client, gpds_reachable_cb, gprs);
+	g_isi_client_verify(gd->client, gpds_reachable_cb, gprs, NULL);
 
 	return 0;
 }
 
 static void isi_gprs_remove(struct ofono_gprs *gprs)
 {
-	struct gprs_data *data = ofono_gprs_get_data(gprs);
-
-	if (data == NULL)
-		return;
+	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 
 	ofono_gprs_set_data(gprs, NULL);
-	g_isi_client_destroy(data->client);
-	g_free(data);
+
+	if (gd == NULL)
+		return;
+
+	g_isi_client_destroy(gd->client);
+	g_isi_client_destroy(gd->info_client);
+	g_free(gd);
 }
 
-static gboolean attach_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void attach_resp_cb(const GIsiMessage *msg, void *opaque)
 {
-	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_gprs_cb_t cb = cbd->cb;
+	const uint8_t *data = g_isi_msg_data(msg);
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("ISI message error: %d", g_isi_msg_error(msg));
 		goto error;
 	}
 
-	if (len != 4 || msg[0] != GPDS_ATTACH_RESP)
-		return FALSE;
+	if (g_isi_msg_id(msg) != GPDS_ATTACH_RESP)
+		return;
 
-	if (msg[1] == GPDS_OK) {
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	if (g_isi_msg_data_len(msg) < 2)
+		goto error;
 
-		return TRUE;
-	}
-
-	DBG("attach failed: %s", gpds_status_name(msg[1]));
-
-error:
-	CALLBACK_WITH_FAILURE(cb, cbd->data);
-
-	return TRUE;
-}
-
-static gboolean detach_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
-{
-	const unsigned char *msg = data;
-	struct isi_cb_data *cbd = opaque;
-	ofono_gprs_cb_t cb = cbd->cb;
-
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
+	if (data[0] != GPDS_OK) {
+		DBG("attach failed: %s", gpds_status_name(data[0]));
 		goto error;
 	}
 
-	if (len != 3 || msg[0] != GPDS_DETACH_RESP)
-		return FALSE;
-
-	if (msg[1] == GPDS_OK) {
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-
-		return TRUE;
-	}
-
-	DBG("detach failed: %s", gpds_status_name(msg[1]));
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
-
-	return TRUE;
 }
 
-static GIsiRequest *attach_request_send(GIsiClient *client, void *data)
+static void detach_resp_cb(const GIsiMessage *msg, void *opaque)
 {
-	const unsigned char msg[] = {
-		GPDS_ATTACH_REQ,
-		GPDS_FOLLOW_OFF
-	};
+	struct isi_cb_data *cbd = opaque;
+	ofono_gprs_cb_t cb = cbd->cb;
+	const uint8_t *data = g_isi_msg_data(msg);
 
-	return g_isi_send(client, msg, sizeof(msg), GPDS_TIMEOUT,
-				attach_resp_cb, data, g_free);
-}
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("ISI client error: %d", g_isi_msg_error(msg));
+		goto error;
+	}
 
-static GIsiRequest *detach_request_send(GIsiClient *client, void *data)
-{
-	const unsigned char msg[] = {
-		GPDS_DETACH_REQ,
-		0x00, /* filler */
-		0x00  /* sub-blocks */
-	};
+	if (g_isi_msg_id(msg) != GPDS_DETACH_RESP)
+		return;
 
-	return g_isi_send(client, msg, sizeof(msg), GPDS_TIMEOUT,
-				detach_resp_cb, data, g_free);
+	if (g_isi_msg_data_len(msg) < 2)
+		goto error;
+
+	if (data[0] != GPDS_OK) {
+		DBG("detach failed: %s", gpds_status_name(data[0]));
+		goto error;
+	}
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
 static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
@@ -284,45 +347,59 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
 
-	GIsiRequest *req;
-
 	if (cbd == NULL || gd == NULL)
 		goto error;
 
-	if (attached)
-		req = attach_request_send(gd->client, cbd);
-	else
-		req = detach_request_send(gd->client, cbd);
+	if (attached) {
+		const unsigned char msg[] = {
+			GPDS_ATTACH_REQ,
+			GPDS_FOLLOW_OFF
+		};
 
-	if (req)
-		return;
+		if (g_isi_client_send(gd->client, msg, sizeof(msg),
+					GPDS_TIMEOUT, attach_resp_cb,
+					cbd, g_free))
+			return;
+	} else {
+		const unsigned char msg[] = {
+			GPDS_DETACH_REQ,
+			0x00, /* filler */
+			0x00  /* sub-blocks */
+		};
+
+		if (g_isi_client_send(gd->client, msg, sizeof(msg),
+					GPDS_TIMEOUT, detach_resp_cb,
+					cbd, g_free))
+			return;
+	}
 
 error:
 	CALLBACK_WITH_FAILURE(cb, data);
 	g_free(cbd);
 }
 
-static gboolean status_resp_cb(GIsiClient *client,
-				const void *restrict data, size_t len,
-				uint16_t object, void *opaque)
+static void status_resp_cb(const GIsiMessage *msg, void *opaque)
 {
-	const unsigned char *msg = data;
 	struct isi_cb_data *cbd = opaque;
 	ofono_gprs_status_cb_t cb = cbd->cb;
 	struct ofono_gprs *gprs = cbd->data;
 	int status;
+	const uint8_t *data = g_isi_msg_data(msg);
 
-	if (!msg) {
-		DBG("ISI client error: %d", g_isi_client_error(client));
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("ISI message error: %d", g_isi_msg_error(msg));
 		goto error;
 	}
 
-	if (len < 13 || msg[0] != GPDS_STATUS_RESP)
-		return FALSE;
+	if (g_isi_msg_id(msg) != GPDS_STATUS_RESP)
+		return;
+
+	if (g_isi_msg_data_len(msg) < 12)
+		goto error;
 
 	/* FIXME: the core still expects reg status, and not a boolean
 	 * attached status here.*/
-	switch (msg[1]) {
+	switch (data[0]) {
 	case GPDS_ATTACHED:
 		status = GPRS_STAT_REGISTERED;
 		break;
@@ -333,16 +410,13 @@ static gboolean status_resp_cb(GIsiClient *client,
 		status = GPRS_STAT_UNKNOWN;
 	}
 
-	suspend_notify(gprs, msg[11], msg[12]);
+	suspend_notify(gprs, data[10], data[11]);
 
 	CALLBACK_WITH_SUCCESS(cb, status, cbd->data);
-
-	return TRUE;
+	return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-
-	return TRUE;
 }
 
 static void isi_gprs_attached_status(struct ofono_gprs *gprs,
@@ -359,14 +433,13 @@ static void isi_gprs_attached_status(struct ofono_gprs *gprs,
 	if (cbd == NULL || gd == NULL)
 		goto error;
 
-	if (g_isi_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-			status_resp_cb, cbd, g_free))
+	if (g_isi_client_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+				status_resp_cb, cbd, g_free))
 		return;
 
 error:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 	g_free(cbd);
-
 }
 
 static struct ofono_gprs_driver driver = {
