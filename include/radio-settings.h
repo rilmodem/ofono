@@ -65,7 +65,7 @@ struct ofono_radio_settings_driver {
 			ofono_radio_settings_fast_dormancy_query_cb_t cb,
 			void *data);
 	void (*set_fast_dormancy)(struct ofono_radio_settings *rs,
-				int enable,
+				ofono_bool_t enable,
 				ofono_radio_settings_fast_dormancy_set_cb_t,
 				void *data);
 };
