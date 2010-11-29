@@ -60,6 +60,45 @@ struct gprs_data {
 	GIsiClient *info_client;
 };
 
+static void configure_resp_cb(const GIsiMessage *msg, void *opaque)
+{
+	const uint8_t *data = g_isi_msg_data(msg);
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("ISI message error: %d", g_isi_msg_error(msg));
+		return;
+	}
+
+	if (g_isi_msg_id(msg) != GPDS_CONFIGURE_RESP)
+		return;
+
+	if (g_isi_msg_data_len(msg) < 1)
+		return;
+
+	if (data[0] != GPDS_OK)
+		DBG("GPDS configure failed: %s", gpds_status_name(data[0]));
+}
+
+static void set_attach_mode(struct ofono_gprs *gprs, int attached)
+{
+	struct gprs_data *gd = ofono_gprs_get_data(gprs);
+
+	const unsigned char msg[] = {
+		GPDS_CONFIGURE_REQ,
+		attached ? GPDS_ATTACH_MODE_AUTOMATIC : GPDS_ATTACH_MODE_MANUAL,
+		GPDS_MT_ACT_MODE_REJECT,
+		GPDS_CLASSC_MODE_DEFAULT,
+		GPDS_AOL_CTX_DEFAULT,
+		0x00,
+		0x00
+	};
+
+	if (g_isi_client_send(gd->client, msg, sizeof(msg),
+				GPDS_TIMEOUT, configure_resp_cb,
+				gprs, NULL))
+			return;
+}
+
 static void detach_ind_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct ofono_gprs *gprs = opaque;
@@ -76,6 +115,8 @@ static void detach_ind_cb(const GIsiMessage *msg, void *opaque)
 
 	DBG("detached: %s (0x%02"PRIx8")",
 		gpds_isi_cause_name(data[0]), data[0]);
+
+	set_attach_mode(gprs, FALSE);
 
 	ofono_gprs_detached_notify(gprs);
 }
@@ -305,6 +346,8 @@ static void attach_resp_cb(const GIsiMessage *msg, void *opaque)
 		goto error;
 	}
 
+	set_attach_mode(cbd->user, TRUE);
+
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	return;
 
@@ -334,6 +377,8 @@ static void detach_resp_cb(const GIsiMessage *msg, void *opaque)
 		goto error;
 	}
 
+	set_attach_mode(cbd->user, FALSE);
+
 	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	return;
 
@@ -345,7 +390,7 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 					ofono_gprs_cb_t cb, void *data)
 {
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-	struct isi_cb_data *cbd = isi_cb_data_new(NULL, cb, data);
+	struct isi_cb_data *cbd = isi_cb_data_new(gprs, cb, data);
 
 	if (cbd == NULL || gd == NULL)
 		goto error;

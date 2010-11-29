@@ -253,6 +253,32 @@ enum gpds_attach_status {
 	GPDS_ATTACHED =				0x01
 };
 
+enum gpds_attach_mode {
+	GPDS_ATTACH_MODE_MANUAL =		0x00,
+	GPDS_ATTACH_MODE_AUTOMATIC =		0x01,
+	GPDS_ATTACH_MODE_DEFAULT =		0xFF
+};
+
+enum gpds_mt_act_mode {
+	GPDS_MT_ACT_MODE_REJECT =		0x00,
+	GPDS_MT_ACT_MODE_ACCEPT =		0x01,
+	GPDS_MT_ACT_MODE_DEFAULT =		0xFF
+};
+
+enum gpds_classc_mode {
+	GPDS_CLASSC_MODE_GPRS =			0x00,
+	GPDS_CLASSC_MODE_GSM =			0x01,
+	GPDS_CLASSC_MODE_DEFAULT =		0xFF
+};
+
+enum gpds_aol_context {
+	GPDS_AOL_CTX_NOT_ACTIVE =		0x00,
+	GPDS_AOL_CTX_HPLMN_ACTIVE =		0x01,
+	GPDS_AOL_CTX_VPLMN_ACTIVE =		0x02,
+	GPDS_AOL_CTX_ACTIVE =			0x03,
+	GPDS_AOL_CTX_DEFAULT =			0xFF
+};
+
 #ifdef __cplusplus
 };
 #endif
