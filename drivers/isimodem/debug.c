@@ -417,6 +417,8 @@ const char *info_message_id_name(enum info_message_id value)
 	switch (value) {
 		_(INFO_SERIAL_NUMBER_READ_REQ);
 		_(INFO_SERIAL_NUMBER_READ_RESP);
+		_(INFO_PP_READ_REQ);
+		_(INFO_PP_READ_RESP);
 		_(INFO_VERSION_READ_REQ);
 		_(INFO_VERSION_READ_RESP);
 		_(INFO_PRODUCT_INFO_READ_REQ);
@@ -433,6 +435,7 @@ const char *info_subblock_name(enum info_subblock value)
 		_(INFO_SB_PRODUCT_INFO_MANUFACTURER);
 		_(INFO_SB_SN_IMEI_PLAIN);
 		_(INFO_SB_SN_IMEI_SV_TO_NET);
+		_(INFO_SB_PP);
 		_(INFO_SB_MCUSW_VERSION);
 	}
 	return "INFO_<UNKNOWN>";

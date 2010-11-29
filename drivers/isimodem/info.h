@@ -40,6 +40,8 @@ enum info_isi_cause {
 enum info_message_id {
 	INFO_SERIAL_NUMBER_READ_REQ = 0x00,
 	INFO_SERIAL_NUMBER_READ_RESP = 0x01,
+	INFO_PP_READ_REQ = 0x02,
+	INFO_PP_READ_RESP = 0x03,
 	INFO_VERSION_READ_REQ = 0x07,
 	INFO_VERSION_READ_RESP = 0x08,
 	INFO_PRODUCT_INFO_READ_REQ = 0x15,
@@ -52,6 +54,7 @@ enum info_subblock {
 	INFO_SB_PRODUCT_INFO_MANUFACTURER = 0x07,
 	INFO_SB_SN_IMEI_PLAIN = 0x41,
 	INFO_SB_SN_IMEI_SV_TO_NET = 0x43,
+	INFO_SB_PP = 0x47,
 	INFO_SB_MCUSW_VERSION = 0x48
 };
 
@@ -66,6 +69,10 @@ enum info_serial_number_type {
 
 enum info_version_type {
 	INFO_MCUSW = 0x01
+};
+
+enum info_pp_feature {
+	INFO_PP_MAX_PDP_CONTEXTS = 0xCA
 };
 
 #ifdef __cplusplus
