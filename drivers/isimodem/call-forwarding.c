@@ -229,7 +229,7 @@ static void isi_registration(struct ofono_call_forwarding *cf,
 
 	DBG("forwarding type %d class %d", type, cls);
 
-	if (cbd == NULL || fd == NULL || !number->number || strlen(number->number) > 28)
+	if (cbd == NULL || fd == NULL || strlen(number->number) > 28)
 		goto error;
 
 	ss_code = forw_type_to_isi_code(type);
