@@ -24,6 +24,7 @@
 #endif
 
 #include <stdint.h>
+#include <string.h>
 #include <errno.h>
 #include <arpa/inet.h>
 #include <glib.h>
@@ -43,6 +44,11 @@ int g_isi_msg_version_minor(const GIsiMessage *msg)
 int g_isi_msg_error(const GIsiMessage *msg)
 {
 	return msg ? -msg->error : -EINVAL;
+}
+
+const char *g_isi_msg_strerror(const GIsiMessage *msg)
+{
+	return strerror(-g_isi_msg_error(msg));
 }
 
 uint8_t g_isi_msg_resource(const GIsiMessage *msg)

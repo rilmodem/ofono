@@ -50,6 +50,7 @@ typedef struct _GIsiMessage GIsiMessage;
 int g_isi_msg_version_major(const GIsiMessage *msg);
 int g_isi_msg_version_minor(const GIsiMessage *msg);
 int g_isi_msg_error(const GIsiMessage *msg);
+const char *g_isi_msg_strerror(const GIsiMessage *msg);
 uint8_t g_isi_msg_resource(const GIsiMessage *msg);
 uint16_t g_isi_msg_object(const GIsiMessage *msg);
 
