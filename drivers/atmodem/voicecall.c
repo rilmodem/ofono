@@ -678,7 +678,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	 */
 	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
 
-	DBG("cring_notify");
+	DBG("");
 }
 
 static void clip_notify(GAtResult *result, gpointer user_data)
@@ -722,7 +722,7 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	/* If we have CLI validity field, override our guessed value */
 	g_at_result_iter_next_number(&iter, &validity);
 
-	DBG("clip_notify: %s %d %d", num, type, validity);
+	DBG("%s %d %d", num, type, validity);
 
 	call = l->data;
 
@@ -783,7 +783,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	/* If we have CLI validity field, override our guessed value */
 	g_at_result_iter_next_number(&iter, &validity);
 
-	DBG("ccwa_notify: %s %d %d %d", num, num_type, cls, validity);
+	DBG("%s %d %d %d", num, num_type, cls, validity);
 
 	call = create_call(vc, class_to_call_type(cls), 1, 5,
 				num, num_type, validity);
