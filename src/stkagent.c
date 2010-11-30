@@ -41,6 +41,7 @@
 enum allowed_error {
 	ALLOWED_ERROR_GO_BACK	= 0x1,
 	ALLOWED_ERROR_TERMINATE	= 0x2,
+	ALLOWED_ERROR_BUSY		= 0x4,
 };
 
 struct stk_agent {
@@ -62,6 +63,7 @@ struct stk_agent {
 #define ERROR_PREFIX OFONO_SERVICE ".Error"
 #define GOBACK_ERROR ERROR_PREFIX ".GoBack"
 #define TERMINATE_ERROR ERROR_PREFIX ".EndSession"
+#define BUSY_ERROR ERROR_PREFIX ".Busy"
 
 static void stk_agent_send_noreply(struct stk_agent *agent, const char *method)
 {
@@ -191,6 +193,12 @@ static int check_error(struct stk_agent *agent, DBusMessage *reply,
 	if ((allowed_errors & ALLOWED_ERROR_TERMINATE) &&
 			g_str_equal(err.name, TERMINATE_ERROR)) {
 		*out_result = STK_AGENT_RESULT_TERMINATE;
+		goto out;
+	}
+
+	if ((allowed_errors & ALLOWED_ERROR_BUSY) &&
+			g_str_equal(err.name, BUSY_ERROR)) {
+		*out_result = STK_AGENT_RESULT_BUSY;
 		goto out;
 	}
 
@@ -376,8 +384,8 @@ static void display_text_cb(DBusPendingCall *call, void *data)
 	gboolean remove_agent;
 
 	if (check_error(agent, reply,
-			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE,
-			&result) == -EINVAL) {
+			ALLOWED_ERROR_GO_BACK | ALLOWED_ERROR_TERMINATE |
+			ALLOWED_ERROR_BUSY, &result) == -EINVAL) {
 		remove_agent = TRUE;
 		goto error;
 	}

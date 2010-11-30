@@ -26,6 +26,7 @@ enum stk_agent_result {
 	STK_AGENT_RESULT_BACK,
 	STK_AGENT_RESULT_TERMINATE,
 	STK_AGENT_RESULT_TIMEOUT,
+	STK_AGENT_RESULT_BUSY,
 };
 
 struct stk_menu_item {

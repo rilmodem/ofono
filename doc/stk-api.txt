@@ -116,6 +116,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			cleared prior to the display of this text.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.Busy
 
 			Implementation notes:
 

@@ -1203,6 +1203,9 @@ static void display_text_cb(enum stk_agent_result result, void *user_data)
 {
 	struct ofono_stk *stk = user_data;
 	gboolean confirm;
+	struct stk_response rsp;
+	static unsigned char screen_busy_result[] = { 0x01 };
+	static struct ofono_error error = { .type = OFONO_ERROR_TYPE_FAILURE };
 
 	stk->respond_on_exit = FALSE;
 
@@ -1248,6 +1251,15 @@ static void display_text_cb(enum stk_agent_result result, void *user_data)
 		confirm = (stk->pending_cmd->qualifier & (1 << 7)) != 0;
 		send_simple_response(stk, confirm ?
 			STK_RESULT_TYPE_NO_RESPONSE : STK_RESULT_TYPE_SUCCESS);
+		break;
+
+	case STK_AGENT_RESULT_BUSY:
+		memset(&rsp, 0, sizeof(rsp));
+		rsp.result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		rsp.result.additional_len = sizeof(screen_busy_result);
+		rsp.result.additional = screen_busy_result;
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&error, stk);
 		break;
 
 	case STK_AGENT_RESULT_TERMINATE:
@@ -1366,6 +1378,7 @@ static void request_confirmation_cb(enum stk_agent_result result,
 		break;
 
 	case STK_AGENT_RESULT_TERMINATE:
+	default:
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
@@ -1408,6 +1421,7 @@ static void request_key_cb(enum stk_agent_result result, char *string,
 		break;
 
 	case STK_AGENT_RESULT_TERMINATE:
+	default:
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
@@ -1505,6 +1519,7 @@ static void request_string_cb(enum stk_agent_result result, char *string,
 		break;
 
 	case STK_AGENT_RESULT_TERMINATE:
+	default:
 		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 		break;
 	}
