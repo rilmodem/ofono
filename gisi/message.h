@@ -60,6 +60,8 @@ const void *g_isi_msg_data(const GIsiMessage *msg);
 
 gboolean g_isi_msg_data_get_byte(const GIsiMessage *msg, unsigned offset,
 					uint8_t *byte);
+gboolean g_isi_msg_data_get_word(const GIsiMessage *msg, unsigned offset,
+					uint16_t *word);
 gboolean g_isi_msg_data_get_struct(const GIsiMessage *msg, unsigned offset,
 					const void **type, size_t len);
 

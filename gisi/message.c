@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <errno.h>
+#include <arpa/inet.h>
 #include <glib.h>
 
 #include "message.h"
@@ -98,6 +99,22 @@ gboolean g_isi_msg_data_get_byte(const GIsiMessage *msg, unsigned offset,
 
 	if (byte)
 		*byte = buf[offset];
+
+	return TRUE;
+}
+
+gboolean g_isi_msg_data_get_word(const GIsiMessage *msg, unsigned offset,
+					uint16_t *word)
+{
+	const uint8_t *buf = g_isi_msg_data(msg);
+	uint16_t val;
+
+	if (!buf || g_isi_msg_data_len(msg) < offset + 1)
+		return FALSE;
+
+	memcpy(&val, buf + offset, sizeof(uint16_t));
+	if (word)
+		*word = ntohs(val);
 
 	return TRUE;
 }
