@@ -26,6 +26,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 
 #include <glib.h>
@@ -2010,6 +2011,77 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 	return TRUE;
 }
 
+static void get_time(struct stk_response *rsp)
+{
+	time_t now;
+	struct tm *t;
+
+	time(&now);
+	t = localtime(&now);
+
+	rsp->result.type = STK_RESULT_TYPE_SUCCESS;
+
+	if (t->tm_year > 100)
+		rsp->provide_local_info.datetime.year = t->tm_year - 100;
+	else
+		rsp->provide_local_info.datetime.year = t->tm_year;
+
+	rsp->provide_local_info.datetime.month = t->tm_mon + 1;
+	rsp->provide_local_info.datetime.day = t->tm_mday;
+	rsp->provide_local_info.datetime.hour = t->tm_hour;
+	rsp->provide_local_info.datetime.minute = t->tm_min;
+	rsp->provide_local_info.datetime.second = t->tm_sec;
+	rsp->provide_local_info.datetime.timezone = t->tm_gmtoff / 900;
+	rsp->provide_local_info.datetime.has_timezone = TRUE;
+
+	return;
+}
+
+static void get_lang(struct stk_response *rsp, struct ofono_stk *stk)
+{
+	char *l;
+	char lang[3];
+	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
+
+	l = getenv("LANG");
+	if (l == NULL) {
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		goto out;
+	}
+
+	memcpy(lang, l, 2);
+	lang[2] = '\0';
+
+	rsp->result.type = STK_RESULT_TYPE_SUCCESS;
+	rsp->provide_local_info.language = lang;
+
+out:
+	if (stk_respond(stk, rsp, stk_command_cb))
+		stk_command_cb(&failure, stk);
+}
+
+static gboolean handle_command_provide_local_info(const struct stk_command *cmd,
+				struct stk_response *rsp, struct ofono_stk *stk)
+{
+	switch (cmd->qualifier) {
+	case 3:
+		DBG("Date, time and time zone");
+		get_time(rsp);
+		return TRUE;
+
+	case 4:
+		DBG("Language setting");
+		get_lang(rsp, stk);
+		return FALSE;
+
+	default:
+		ofono_info("Unsupported Provide Local Info qualifier: %d",
+				cmd->qualifier);
+		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		return TRUE;
+	}
+}
+
 static void send_dtmf_cancel(struct ofono_stk *stk)
 {
 	struct ofono_voicecall *vc = NULL;
@@ -2440,6 +2512,11 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 	case STK_COMMAND_TYPE_REFRESH:
 		respond = handle_command_refresh(stk->pending_cmd,
 							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_PROVIDE_LOCAL_INFO:
+		respond = handle_command_provide_local_info(stk->pending_cmd,
+								&rsp, stk);
 		break;
 
 	case STK_COMMAND_TYPE_SEND_DTMF:
