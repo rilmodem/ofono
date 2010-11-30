@@ -76,6 +76,9 @@ use the plugins directly from within the repository. This removes the need
 to use "make install" when testing "ofonod". The "bootstrap-configure"
 automatically includes this option.
 
+  Copy configuration file which specifies the required security policies
+    # sudo cp ./src/ofono.conf /etc/dbus-1/system.d/
+
   Run daemon in foreground with debugging
     # sudo ./src/ofonod -n -d 'plugins/*'
 
