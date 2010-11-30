@@ -351,7 +351,8 @@ gboolean sms_encode_scts(const struct sms_scts *in, unsigned char *pdu,
 	if (in->second > 59)
 		return FALSE;
 
-	if ((in->timezone > MAX_TIMEZONE) || (in->timezone < MIN_TIMEZONE))
+	if ((in->timezone > MAX_TIMEZONE || in->timezone < MIN_TIMEZONE) &&
+			in->has_timezone == TRUE)
 		return FALSE;
 
 	pdu = pdu + *offset;
@@ -363,6 +364,11 @@ gboolean sms_encode_scts(const struct sms_scts *in, unsigned char *pdu,
 	pdu[4] = ((in->minute / 10) & 0x0f) | (((in->minute % 10) & 0x0f) << 4);
 	pdu[5] = ((in->second / 10) & 0x0f) | (((in->second % 10) & 0x0f) << 4);
 
+	if (in->has_timezone == FALSE) {
+		pdu[6] = 0xff;
+		goto out;
+	}
+
 	timezone = abs(in->timezone);
 
 	pdu[6] = ((timezone / 10) & 0x07) | (((timezone % 10) & 0x0f) << 4);
@@ -370,6 +376,7 @@ gboolean sms_encode_scts(const struct sms_scts *in, unsigned char *pdu,
 	if (in->timezone < 0)
 		pdu[6] |= 0x8;
 
+out:
 	*offset += 7;
 
 	return TRUE;
@@ -440,6 +447,8 @@ gboolean sms_decode_scts(const unsigned char *pdu, int len,
 
 	if ((out->timezone > MAX_TIMEZONE) || (out->timezone < MIN_TIMEZONE))
 		return FALSE;
+
+	out->has_timezone = TRUE;
 
 	return TRUE;
 }

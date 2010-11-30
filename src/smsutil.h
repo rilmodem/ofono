@@ -223,6 +223,7 @@ struct sms_scts {
 	guint8 hour;
 	guint8 minute;
 	guint8 second;
+	gboolean has_timezone;
 	gint8 timezone;
 };
 

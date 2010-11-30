@@ -4548,7 +4548,6 @@ static gboolean build_dataobj_datetime_timezone(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
 {
 	const struct sms_scts *scts = data;
-	struct sms_scts timestamp;
 	unsigned char value[7];
 	int offset = 0;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_DATETIME_TIMEZONE;
@@ -4556,16 +4555,8 @@ static gboolean build_dataobj_datetime_timezone(struct stk_tlv_builder *tlv,
 	if (scts->month == 0 && scts->day == 0)
 		return TRUE;
 
-	/* Time zone information is optional */
-	if (scts->timezone == (gint8) 0xff) {
-		memcpy(&timestamp, scts, sizeof(timestamp));
-		timestamp.timezone = 0;
-		if (sms_encode_scts(&timestamp, value, &offset) != TRUE)
-			return FALSE;
-		value[6] = 0xff;
-	} else
-		if (sms_encode_scts(scts, value, &offset) != TRUE)
-			return FALSE;
+	if (sms_encode_scts(scts, value, &offset) != TRUE)
+		return FALSE;
 
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_bytes(tlv, value, 7) &&
