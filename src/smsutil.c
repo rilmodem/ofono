@@ -51,6 +51,13 @@
 #define SMS_ADDR_FMT "%24[0-9A-F]"
 #define SMS_MSGID_FMT "%40[0-9A-F]"
 
+/*
+ * Time zone accounts for daylight saving time, and the two extreme time
+ * zones on earth are UTC-12 and UTC+14.
+ */
+#define MAX_TIMEZONE 56
+#define MIN_TIMEZONE -48
+
 static GSList *sms_assembly_add_fragment_backup(struct sms_assembly *assembly,
 					const struct sms *sms, time_t ts,
 					const struct sms_address *addr,
@@ -344,7 +351,7 @@ gboolean sms_encode_scts(const struct sms_scts *in, unsigned char *pdu,
 	if (in->second > 59)
 		return FALSE;
 
-	if ((in->timezone > 12*4-1) || (in->timezone < -(12*4-1)))
+	if ((in->timezone > MAX_TIMEZONE) || (in->timezone < MIN_TIMEZONE))
 		return FALSE;
 
 	pdu = pdu + *offset;
@@ -431,7 +438,7 @@ gboolean sms_decode_scts(const unsigned char *pdu, int len,
 	if (oct & 0x08)
 		out->timezone = out->timezone * -1;
 
-	if ((out->timezone > 12*4-1) || (out->timezone < -(12*4-1)))
+	if ((out->timezone > MAX_TIMEZONE) || (out->timezone < MIN_TIMEZONE))
 		return FALSE;
 
 	return TRUE;
