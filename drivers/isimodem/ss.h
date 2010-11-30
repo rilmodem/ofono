@@ -22,9 +22,9 @@
 #ifndef __ISIMODEM_SS_H
 #define __ISIMODEM_SS_H
 
-#define PN_SS				0x06
-#define SS_TIMEOUT			15
-#define SS_MAX_USSD_LENGTH		160
+#define PN_SS					0x06
+#define SS_TIMEOUT				15
+#define SS_MAX_USSD_LENGTH			160
 
 enum ss_message_id {
 	SS_SERVICE_REQ = 			0x00,
@@ -97,7 +97,7 @@ enum ss_codes {
 };
 
 enum ss_response_data {
-	SS_SEND_ADDITIONAL_INFO =		0x01
+	SS_SEND_ADDITIONAL_INFO =		0x01,
 };
 
 enum ss_subblock {
@@ -119,7 +119,7 @@ enum ss_isi_cause {
 	SS_GSM_ACTIVE =				0x01,
 	SS_GSM_REGISTERED =			0x02,
 	SS_GSM_PROVISIONED =			0x04,
-	SS_GSM_QUIESCENT =			0x08
+	SS_GSM_QUIESCENT =			0x08,
 };
 
 #endif /* __ISIMODEM_SS_H */
