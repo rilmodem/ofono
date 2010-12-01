@@ -188,7 +188,7 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 		goto error;
 
 	if (g_isi_client_vsend(ud->client, iov, 2, SS_TIMEOUT,
-				ussd_send_resp_cb, cbd, g_free))
+				ussd_send_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -211,7 +211,7 @@ static void isi_cancel(struct ofono_ussd *ussd,
 		goto error;
 
 	if (g_isi_client_send(ud->client, msg, sizeof(msg), SS_TIMEOUT,
-				ussd_send_resp_cb, cbd, g_free))
+				ussd_send_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:

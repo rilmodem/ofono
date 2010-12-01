@@ -252,7 +252,7 @@ static void isi_sca_query(struct ofono_sms *sms,
 		goto error;
 
 	if (g_isi_client_send(sd->sim, msg, sizeof(msg), SIM_TIMEOUT,
-				sca_query_resp_cb, cbd, g_free))
+				sca_query_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -303,7 +303,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 	bcd[1] = sca->type & 0xFF;
 
 	if (g_isi_client_vsend(sd->sim, iov, 2, SIM_TIMEOUT, sca_set_resp_cb,
-				cbd, g_free))
+				cbd, g_free) != NULL)
 		return;
 
 error:
@@ -406,7 +406,7 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 	 * Wait normal timeout plus the modem timeout.
 	 */
 	if (g_isi_client_vsend(sd->client, iov, 4, SMS_TIMEOUT + 5,
-				submit_resp_cb, cbd, g_free))
+				submit_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -544,7 +544,7 @@ static void routing_ntf_cb(const GIsiMessage *msg, void *data)
 		}
 	}
 
-	if (!tpdu || !addr || tpdu->len + addr->len > sizeof(pdu))
+	if (tpdu == NULL || addr == NULL || tpdu->len + addr->len > sizeof(pdu))
 		return;
 
 	memcpy(pdu, addr->data, addr->len);

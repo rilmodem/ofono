@@ -184,9 +184,11 @@ static gboolean isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
 	if (sd == NULL)
 		return FALSE;
 
-	return g_isi_client_send(sd->client, msg, sizeof(msg),
-					SIM_TIMEOUT, spn_resp_cb, cbd,
-					g_free) != NULL;
+	if (g_isi_client_send(sd->client, msg, sizeof(msg), SIM_TIMEOUT,
+				spn_resp_cb, cbd, g_free) == NULL)
+		return FALSE;
+
+	return TRUE;
 }
 
 static void read_iccid_resp_cb(const GIsiMessage *msg, void *data)
@@ -218,9 +220,11 @@ static gboolean isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
 	if (sd == NULL)
 		return FALSE;
 
-	return g_isi_client_send(sd->client, req, sizeof(req),
-					SIM_TIMEOUT, read_iccid_resp_cb,
-					cbd, g_free) != NULL;
+	if (g_isi_client_send(sd->client, req, sizeof(req), SIM_TIMEOUT,
+				read_iccid_resp_cb, cbd, g_free) == NULL)
+		return FALSE;
+
+	return TRUE;
 }
 
 static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
@@ -230,7 +234,7 @@ static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 	struct isi_cb_data *cbd;
 
 	cbd = isi_cb_data_new(sim, cb, data);
-	if (!cbd)
+	if (cbd == NULL)
 		goto error;
 
 	switch (fileid) {
@@ -341,9 +345,8 @@ static void isi_read_imsi(struct ofono_sim *sim,
 	if (cbd == NULL || sd == NULL)
 		goto error;
 
-	if (g_isi_client_send(sd->client, msg, sizeof(msg),
-				SIM_TIMEOUT, imsi_resp_cb,
-				cbd, g_free) != NULL)
+	if (g_isi_client_send(sd->client, msg, sizeof(msg), SIM_TIMEOUT,
+				imsi_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -382,7 +385,7 @@ static void isi_read_hplmn(struct ofono_sim *sim)
 		READ_HPLMN, 0
 	};
 
-	if (!sd)
+	if (sd == NULL)
 		return;
 
 	g_isi_client_send(sd->client, req, sizeof(req), SIM_TIMEOUT,
@@ -395,7 +398,7 @@ static void sim_ind_cb(const GIsiMessage *msg, void *data)
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	uint8_t status;
 
-	if (!sd || g_isi_msg_id(msg) != SIM_IND || sd->registered)
+	if (sd == NULL || g_isi_msg_id(msg) != SIM_IND || sd->registered)
 		return;
 
 	if (!g_isi_msg_data_get_byte(msg, 0, &status))

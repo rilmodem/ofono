@@ -173,7 +173,7 @@ static void isi_cw_query(struct ofono_call_settings *cs, int cls,
 		goto error;
 
 	if (g_isi_client_send(sd->client, msg, sizeof(msg), SS_TIMEOUT,
-				query_resp_cb, cbd, g_free))
+				query_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -242,7 +242,7 @@ static void isi_cw_set(struct ofono_call_settings *cs, int mode, int cls,
 		goto error;
 
 	if (g_isi_client_send(sd->client, msg, sizeof(msg), SS_TIMEOUT,
-				set_resp_cb, cbd, g_free))
+				set_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:

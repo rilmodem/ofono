@@ -93,10 +93,8 @@ static void set_attach_mode(struct ofono_gprs *gprs, int attached)
 		0x00
 	};
 
-	if (g_isi_client_send(gd->client, msg, sizeof(msg),
-				GPDS_TIMEOUT, configure_resp_cb,
-				gprs, NULL))
-			return;
+	g_isi_client_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+				configure_resp_cb, gprs, NULL);
 }
 
 static void detach_ind_cb(const GIsiMessage *msg, void *opaque)
@@ -184,7 +182,7 @@ static void create_contexts(struct ofono_gprs *gprs, int count)
 
 	for (i = 0; i < count; i++) {
 		gc = ofono_gprs_context_create(omodem, 0, "isimodem", modem);
-		if (!gc)
+		if (gc == NULL)
 			break;
 
 		ofono_gprs_add_context(gprs, gc);
@@ -277,15 +275,13 @@ static void gpds_reachable_cb(const GIsiMessage *msg, void *opaque)
 	ofono_gprs_register(gprs);
 
 	gd->info_client = g_isi_client_create(modem, PN_PHONE_INFO);
-	if (!gd->info_client) {
+	if (gd->info_client == NULL) {
 		create_contexts(gprs, GPDS_MAX_CONTEXT_COUNT);
 		return;
 	}
 
-	if (g_isi_client_send(gd->info_client, req, sizeof(req),
-				GPDS_TIMEOUT, info_pp_read_resp_cb,
-				gprs, NULL))
-		return;
+	g_isi_client_send(gd->info_client, req, sizeof(req), GPDS_TIMEOUT,
+				info_pp_read_resp_cb, gprs, NULL);
 }
 
 static int isi_gprs_probe(struct ofono_gprs *gprs,
@@ -403,7 +399,7 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 
 		if (g_isi_client_send(gd->client, msg, sizeof(msg),
 					GPDS_ATTACH_TIMEOUT, attach_resp_cb,
-					cbd, g_free))
+					cbd, g_free) != NULL)
 			return;
 	} else {
 		const unsigned char msg[] = {
@@ -414,7 +410,7 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 
 		if (g_isi_client_send(gd->client, msg, sizeof(msg),
 					GPDS_DETACH_TIMEOUT, detach_resp_cb,
-					cbd, g_free))
+					cbd, g_free) != NULL)
 			return;
 	}
 
@@ -479,7 +475,7 @@ static void isi_gprs_attached_status(struct ofono_gprs *gprs,
 		goto error;
 
 	if (g_isi_client_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-				status_resp_cb, cbd, g_free))
+				status_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:

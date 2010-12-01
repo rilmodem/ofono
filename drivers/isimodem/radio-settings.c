@@ -343,12 +343,9 @@ static int isi_radio_settings_probe(struct ofono_radio_settings *rs,
 
 	return 0;
 nomem:
-	if (rd->gss_client)
-		g_isi_client_destroy(rd->gss_client);
-	if (rd->wran_client)
-		g_isi_client_destroy(rd->wran_client);
-	if (rd->gpds_client)
-		g_isi_client_destroy(rd->gpds_client);
+	g_isi_client_destroy(rd->gss_client);
+	g_isi_client_destroy(rd->wran_client);
+	g_isi_client_destroy(rd->gpds_client);
 	g_free(rd);
 	return -ENOMEM;
 }

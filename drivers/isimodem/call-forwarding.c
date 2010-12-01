@@ -255,7 +255,7 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 	g_free(ucs2);
 
 	if (g_isi_client_send(fd->client, msg, 7 + msg[8], SS_TIMEOUT,
-				registration_resp_cb, cbd, g_free))
+				registration_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -318,7 +318,7 @@ static void isi_erasure(struct ofono_call_forwarding *cf, int type, int cls,
 		goto error;
 
 	if (g_isi_client_send(fd->client, msg, sizeof(msg), SS_TIMEOUT,
-				erasure_resp_cb, cbd, g_free))
+				erasure_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -413,7 +413,7 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 		goto error;
 
 	if (g_isi_client_send(fd->client, msg, sizeof(msg), SS_TIMEOUT,
-				query_resp_cb, cbd, g_free))
+				query_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:

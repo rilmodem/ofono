@@ -121,7 +121,7 @@ static inline int isi_tech_to_at_tech(struct rat_info *rat, struct gsm_info *gsm
 {
 	int tech = -1;
 
-	if (!rat || !gsm)
+	if (rat == NULL || gsm == NULL)
 		return -1;
 
 	if (rat->rat == NET_GSM_RAT)
@@ -194,7 +194,7 @@ static void reg_status_ind_cb(const GIsiMessage *msg, void *data)
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	GIsiSubBlockIter iter;
 
-	if (!netreg || !nd)
+	if (netreg == NULL || nd == NULL)
 		return;
 
 	if (g_isi_msg_id(msg) != NET_REG_STATUS_IND)
@@ -247,7 +247,7 @@ static void rat_ind_cb(const GIsiMessage *msg, void *data)
 
 	GIsiSubBlockIter iter;
 
-	if (!nd || g_isi_msg_id(msg) != NET_RAT_IND)
+	if (nd == NULL || g_isi_msg_id(msg) != NET_RAT_IND)
 		return;
 
 	for (g_isi_sb_iter_init(&iter, msg, 2);
@@ -321,7 +321,7 @@ static void rat_resp_cb(const GIsiMessage *msg, void *data)
 	};
 	GIsiSubBlockIter iter;
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (!check_response_status(msg, NET_RAT_RESP))
@@ -339,7 +339,7 @@ static void rat_resp_cb(const GIsiMessage *msg, void *data)
 	}
 
 	if (g_isi_client_send(nd->client, req, sizeof(req), NETWORK_TIMEOUT,
-				reg_status_resp_cb, cbd, NULL))
+				reg_status_resp_cb, cbd, NULL) != NULL)
 		return;
 
 error:
@@ -365,11 +365,11 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 		NET_CURRENT_RAT
 	};
 
-	if (!nd || !cbd)
+	if (nd == NULL || cbd == NULL)
 		goto error;
 
 	if (g_isi_client_send(nd->client, rat, sizeof(rat), NETWORK_TIMEOUT,
-				rat_resp_cb, cbd, NULL))
+				rat_resp_cb, cbd, NULL) != NULL)
 		return;
 
 error:
@@ -443,11 +443,11 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 		0x00  /* No sub-blocks */
 	};
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (g_isi_client_send(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
-				name_get_resp_cb, cbd, g_free))
+				name_get_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -546,12 +546,12 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 		0x00
 	};
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (g_isi_client_send(nd->client, msg, sizeof(msg),
 				NETWORK_SCAN_TIMEOUT, available_resp_cb, cbd,
-				g_free))
+				g_free) != NULL)
 		return;
 
 error:
@@ -593,12 +593,12 @@ static void isi_register_auto(struct ofono_netreg *netreg,
 		0x00  /* Index not used */
 	};
 
-	if (!nd || !cbd)
+	if (nd == NULL || cbd == NULL)
 		goto error;
 
 	if (g_isi_client_send(nd->client, msg, sizeof(msg),
 				NETWORK_SET_TIMEOUT, set_auto_resp_cb, cbd,
-				g_free))
+				g_free) != NULL)
 		return;
 
 error:
@@ -647,11 +647,11 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 		0x00, 0x00  /* Filler */
 	};
 
-	if (!cbd || !nd)
+	if (cbd == NULL || nd == NULL)
 		goto error;
 
 	if (g_isi_client_send(nd->client, msg, sizeof(msg), NETWORK_SET_TIMEOUT,
-				set_manual_resp_cb, cbd, g_free))
+				set_manual_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -777,11 +777,11 @@ static void isi_strength(struct ofono_netreg *netreg,
 		NET_CURRENT_CELL_RSSI,
 	};
 
-	if (!nd || !cbd)
+	if (nd == NULL || cbd == NULL)
 		goto error;
 
 	if (g_isi_client_send(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
-				rssi_resp_cb, cbd, g_free))
+				rssi_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -817,11 +817,11 @@ static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	struct netreg_data *nd;
 
 	nd = g_try_new0(struct netreg_data, 1);
-	if (!nd)
+	if (nd == NULL)
 		return -ENOMEM;
 
 	nd->client = g_isi_client_create(modem, PN_NETWORK);
-	if (!nd->client) {
+	if (nd->client == NULL) {
 		g_free(nd);
 		return -ENOMEM;
 	}
@@ -839,7 +839,7 @@ static void isi_netreg_remove(struct ofono_netreg *netreg)
 
 	ofono_netreg_set_data(netreg, NULL);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	g_isi_client_destroy(data->client);

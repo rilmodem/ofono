@@ -120,7 +120,7 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free))
+				info_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -144,7 +144,7 @@ static void isi_query_model(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free))
+				info_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -169,7 +169,7 @@ static void isi_query_revision(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free))
+				info_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:
@@ -193,7 +193,7 @@ static void isi_query_serial(struct ofono_devinfo *info,
 		goto error;
 
 	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free))
+				info_resp_cb, cbd, g_free) != NULL)
 		return;
 
 error:

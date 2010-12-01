@@ -326,7 +326,7 @@ static void send_context_activate(GIsiClient *client, void *opaque)
 
 	if (g_isi_client_send(client, msg, sizeof(msg),
 				GPDS_CTX_ACTIVATE_TIMEOUT,
-				context_activate_cb, cd, NULL))
+				context_activate_cb, cd, NULL) != NULL)
 		g_isi_pipe_start(cd->pipe);
 	else
 		gprs_up_fail(cd);
@@ -419,8 +419,8 @@ static void link_conf_cb(const GIsiMessage *msg, void *opaque)
 	if (!check_resp(msg, GPDS_LL_CONFIGURE_RESP, 2, cd, gprs_up_fail))
 		return;
 
-	if (!g_isi_client_vsend(cd->client, iov, 2, GPDS_TIMEOUT,
-				context_conf_cb, cd, NULL))
+	if (g_isi_client_vsend(cd->client, iov, 2, GPDS_TIMEOUT,
+				context_conf_cb, cd, NULL) == NULL)
 		gprs_up_fail(cd);
 }
 
@@ -441,8 +441,8 @@ static void create_context_cb(const GIsiMessage *msg, void *opaque)
 
 	cd->handle = req[1] = data[0];
 
-	if (!g_isi_client_send(cd->client, req, sizeof(req), GPDS_TIMEOUT,
-				link_conf_cb, cd, NULL))
+	if (g_isi_client_send(cd->client, req, sizeof(req), GPDS_TIMEOUT,
+				link_conf_cb, cd, NULL) == NULL)
 		gprs_up_fail(cd);
 }
 
@@ -467,7 +467,7 @@ static void isi_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	DBG("activate: gpds = 0x%04x", cd->gpds);
 
-	if (!cd->gpds) {
+	if (cd == NULL || !cd->gpds) {
 		/* GPDS is not reachable */
 		CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL,
 					NULL, data);
@@ -599,15 +599,13 @@ static void isi_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct context_data *cd = ofono_gprs_context_get_data(gc);
 
+	ofono_gprs_context_set_data(gc, NULL);
+
 	if (cd == NULL)
 		return;
 
-	ofono_gprs_context_set_data(gc, NULL);
 	reset_context(cd);
-
-	if (cd->client)
-		g_isi_client_destroy(cd->client);
-
+	g_isi_client_destroy(cd->client);
 	g_free(cd);
 }
 

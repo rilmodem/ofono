@@ -183,7 +183,6 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 static void isi_cbs_remove(struct ofono_cbs *cbs)
 {
 	struct cbs_data *cd = ofono_cbs_get_data(cbs);
-
 	const uint8_t msg[] = {
 		SMS_GSM_CB_ROUTING_REQ,
 		SMS_ROUTING_RELEASE,

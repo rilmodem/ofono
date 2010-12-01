@@ -226,7 +226,7 @@ static void read_next_entry(GIsiClient *client, uint16_t location,
 		goto error;
 
 	if (g_isi_client_send(client, msg, sizeof(msg), SIM_TIMEOUT,
-				notify, cbd, NULL))
+				notify, cbd, NULL) != NULL)
 		return;
 
 error:
@@ -286,7 +286,7 @@ static void isi_export_entries(struct ofono_phonebook *pb, const char *storage,
 		goto error;
 
 	if (g_isi_client_send(pbd->client, msg, sizeof(msg), SIM_TIMEOUT,
-				read_resp_cb, cbd, NULL))
+				read_resp_cb, cbd, NULL) != NULL)
 		return;
 
 error:

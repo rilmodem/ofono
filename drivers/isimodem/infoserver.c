@@ -109,19 +109,19 @@ struct isi_infoserver *isi_infoserver_create(struct ofono_modem *modem,
 	struct isi_infoserver *self;
 	GIsiModem *isimodem = data;
 
-	if (!isimodem) {
+	if (isimodem == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
 
 	self = g_try_new0(struct isi_infoserver, 1);
-	if (!self) {
+	if (self == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	self->server = g_isi_server_create(isimodem, PN_EPOC_INFO, &isiversion);
-	if (!self->server) {
+	if (self->server == NULL) {
 		g_free(self);
 		errno = ENOMEM;
 		return NULL;
@@ -137,7 +137,7 @@ struct isi_infoserver *isi_infoserver_create(struct ofono_modem *modem,
 
 void isi_infoserver_destroy(struct isi_infoserver *self)
 {
-	if (!self)
+	if (self == NULL)
 		return;
 
 	g_isi_server_destroy(self->server);

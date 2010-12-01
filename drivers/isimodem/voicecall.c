@@ -110,7 +110,7 @@ static struct isi_call_req_ctx *isi_call_req(struct ofono_voicecall *ovc,
 	struct isi_call_req_ctx *irc;
 
 	irc = g_try_new0(struct isi_call_req_ctx, 1);
-	if (!irc) {
+	if (irc == NULL) {
 		CALLBACK_WITH_FAILURE(cb, data);
 		return NULL;
 	}
@@ -119,8 +119,8 @@ static struct isi_call_req_ctx *isi_call_req(struct ofono_voicecall *ovc,
 	irc->cb = cb;
 	irc->data = data;
 
-	if (!g_isi_client_send(ivc->client, req, len, ISI_CALL_TIMEOUT,
-				handler, irc, NULL)) {
+	if (g_isi_client_send(ivc->client, req, len, ISI_CALL_TIMEOUT,
+				handler, irc, NULL) == NULL) {
 		g_free(irc);
 		return NULL;
 	}
@@ -149,7 +149,7 @@ static void isi_ctx_queue(struct isi_call_req_ctx *irc, isi_call_req_step *next)
 
 static void isi_ctx_remove(struct isi_call_req_ctx *irc)
 {
-	if (!irc->prev)
+	if (irc->prev == NULL)
 		return;
 
 	*irc->prev = irc->next;
@@ -163,7 +163,7 @@ static void isi_ctx_remove(struct isi_call_req_ctx *irc)
 
 static void isi_ctx_free(struct isi_call_req_ctx *irc)
 {
-	if (!irc)
+	if (irc == NULL)
 		return;
 
 	isi_ctx_remove(irc);
@@ -173,7 +173,7 @@ static void isi_ctx_free(struct isi_call_req_ctx *irc)
 static gboolean isi_ctx_return(struct isi_call_req_ctx *irc,
 				enum ofono_error_type type, int error)
 {
-	if (!irc)
+	if (irc == NULL)
 		return TRUE;
 
 	if (irc->cb) {
@@ -195,7 +195,7 @@ static gboolean isi_ctx_return_failure(struct isi_call_req_ctx *irc)
 
 static gboolean isi_ctx_return_success(struct isi_call_req_ctx *irc)
 {
-	if (!irc || !irc->step)
+	if (irc == NULL || irc->step == NULL)
 		return isi_ctx_return(irc, OFONO_ERROR_TYPE_NO_ERROR, 0);
 
 	irc->step(irc, 0);
@@ -425,7 +425,7 @@ static struct isi_call *isi_call_set_idle(struct isi_call *call)
 {
 	uint8_t id;
 
-	if (!call)
+	if (call == NULL)
 		return NULL;
 
 	id = call->id;
@@ -573,7 +573,7 @@ static void isi_call_status_ind_cb(const GIsiMessage *msg, void *data)
 	uint8_t call_id;
 	uint8_t old_status;
 
-	if (!ivc || g_isi_msg_id(msg) != CALL_STATUS_IND ||
+	if (ivc == NULL || g_isi_msg_id(msg) != CALL_STATUS_IND ||
 			!g_isi_msg_data_get_byte(msg, 0, &call_id) ||
 			(call_id & 7) == 0)
 		return;
@@ -1075,7 +1075,7 @@ static void isi_release_all_active(struct ofono_voicecall *ovc,
 					CALL_CAUSE_TYPE_CLIENT,
 					CALL_CAUSE_RELEASE_BY_USER,
 					cb, data);
-	if (!irc)
+	if (irc == NULL)
 		return;
 
 	if (waiting)
@@ -1278,14 +1278,14 @@ static int isi_voicecall_probe(struct ofono_voicecall *ovc,
 	int id;
 
 	ivc = g_try_new0(struct isi_voicecall, 1);
-	if (!ivc)
+	if (ivc == NULL)
 		return -ENOMEM;
 
 	for (id = 0; id <= 7; id++)
 		ivc->calls[id].id = id;
 
 	ivc->client = g_isi_client_create(modem, PN_CALL);
-	if (!ivc->client) {
+	if (ivc->client == NULL) {
 		g_free(ivc);
 		return -ENOMEM;
 	}
@@ -1303,7 +1303,7 @@ static void isi_voicecall_remove(struct ofono_voicecall *call)
 
 	ofono_voicecall_set_data(call, NULL);
 
-	if (!data)
+	if (data == NULL)
 		return;
 
 	g_isi_client_destroy(data->client);
