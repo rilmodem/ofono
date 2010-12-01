@@ -95,6 +95,10 @@ Supported Proactive Commands:
 
   NOTE: This command can also be handled by the modem.
 
+- Language Notification proactive command. Whenever oFono receives a Language
+  Notification proactive command, it prints the language code and sends
+  terminal response to the SIM immediately.
+
 - Sim icon support.  oFono supports icons that are stored on the SIM.  If the
   SIM notifies oFono that an icon is available for a particular proactive
   command, oFono passes this information to the UI.  The UI is able to obtain
