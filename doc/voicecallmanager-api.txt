@@ -144,7 +144,7 @@ Signals		CallAdded(object path, dict properties)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
-Properties	array{string} EmergencyNumbers
+Properties	array{string} EmergencyNumbers [readonly]
 
 			Contains the list of emergency numbers recognized
 			by oFono.  This list is based on the default set
