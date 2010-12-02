@@ -1060,7 +1060,7 @@ static gboolean at_chat_cancel(struct at_chat *chat, guint group, guint id)
 	if (c->gid != group)
 		return FALSE;
 
-	if (l == g_queue_peek_head(chat->command_queue) &&
+	if (c == g_queue_peek_head(chat->command_queue) &&
 			chat->cmd_bytes_written > 0) {
 		/* We can't actually remove it since it is most likely
 		 * already in progress, just null out the callback
