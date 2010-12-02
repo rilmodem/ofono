@@ -46,6 +46,49 @@ Properties	string TechnologyPreference [readwrite]
 				"umts"	Only UMTS used for radio access.
 				"lte"	Only LTE used for radio acccess.
 
+		string GsmBand [readwrite, optional]
+
+			Frequency band in which the modem is allowed to
+			operate when using "gsm" mode. Setting this property
+			has an imediate effect on modem only if
+			TechnologyPreference is set to "gsm".  Otherwise the
+			value is kept and applied whenever modem uses
+			this mode.
+
+			The possible values are:
+				"any"	Frequency band is selected
+					automatically by modem.
+				"850"	Operate only on 850 MHz.
+				"900P"	Operate only on 900 MHz, known as
+					Primary GSM-900 Band
+				"900E"	Operate only on 900 MHz, known as
+					Extended GSM-900 Band.
+				"1800"	Operate only on 1800 MHz, known as DCS.
+				"1900"	Operate only on 1900 MHz, known as PCS.
+
+		string UmtsBand [readwrite, optional]
+
+			Frequency band in which the modem is allowed to
+			operate when using "umts" mode. Setting this property
+			has an imediate effect on modem only if
+			TechnologyPreference is set to "umts".  Otherwise the
+			value is kept and applied whenever modem uses
+			this mode.
+
+			The possible values are:
+				"any"		Frequency band is selected
+						automatically by modem.
+				"850"		Operate only on 850 MHz, known
+						as CLR (class V).
+				"900"		Operate only on 900 MHz, known
+						as GSM (class VII).
+				"1700AWS"	Operate only on 1700 MHz, known
+						as AWS (class IV).
+				"1900"		Operate only on 1900 MHz, known
+						as PCS (class II).
+				"2100"		Operate only on 2100 MHz, known
+						as IMT (class I).
+
 		boolean	FastDormancy [readwrite, optional]
 
 			This property will enable or disable the fast
