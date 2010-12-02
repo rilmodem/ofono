@@ -138,6 +138,16 @@ class StkAgent(dbus.service.Object):
 	def Cancel(self):
 		print "Cancel"
 
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+					in_signature="ssy", out_signature="")
+	def PlayTone(self, tone, text, icon):
+		print "playtone is %s" % (tone)
+
+        @dbus.service.method("org.ofono.SimToolkitAgent",
+                                in_signature="ssy", out_signature="")
+        def LoopTone(self, tone, text, icon):
+                print "the loop tone is %s" % (tone)
+
 if __name__ == '__main__':
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
