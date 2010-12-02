@@ -35,12 +35,37 @@ enum ofono_radio_access_mode {
 	OFONO_RADIO_ACCESS_MODE_LTE	= 3,
 };
 
+enum ofono_radio_band_gsm {
+	OFONO_RADIO_BAND_GSM_ANY,
+	OFONO_RADIO_BAND_GSM_850,
+	OFONO_RADIO_BAND_GSM_900P,
+	OFONO_RADIO_BAND_GSM_900E,
+	OFONO_RADIO_BAND_GSM_1800,
+	OFONO_RADIO_BAND_GSM_1900,
+};
+
+enum ofono_radio_band_umts {
+	OFONO_RADIO_BAND_UMTS_ANY,
+	OFONO_RADIO_BAND_UMTS_850,
+	OFONO_RADIO_BAND_UMTS_900,
+	OFONO_RADIO_BAND_UMTS_1700AWS,
+	OFONO_RADIO_BAND_UMTS_1900,
+	OFONO_RADIO_BAND_UMTS_2100,
+};
+
 struct ofono_radio_settings;
 
 typedef void (*ofono_radio_settings_rat_mode_set_cb_t)(const struct ofono_error *error,
 							void *data);
 typedef void (*ofono_radio_settings_rat_mode_query_cb_t)(const struct ofono_error *error,
 						enum ofono_radio_access_mode mode,
+						void *data);
+
+typedef void (*ofono_radio_settings_band_set_cb_t)(const struct ofono_error *error,
+							void *data);
+typedef void (*ofono_radio_settings_band_query_cb_t)(const struct ofono_error *error,
+						enum ofono_radio_band_gsm band_gsm,
+						enum ofono_radio_band_umts band_umts,
 						void *data);
 
 typedef void (*ofono_radio_settings_fast_dormancy_set_cb_t)(const struct ofono_error *error,
@@ -60,6 +85,14 @@ struct ofono_radio_settings_driver {
 	void (*set_rat_mode)(struct ofono_radio_settings *rs,
 				enum ofono_radio_access_mode mode,
 				ofono_radio_settings_rat_mode_set_cb_t cb,
+				void *data);
+	void (*query_band)(struct ofono_radio_settings *rs,
+				ofono_radio_settings_band_query_cb_t cb,
+				void *data);
+	void (*set_band)(struct ofono_radio_settings *rs,
+				enum ofono_radio_band_gsm band_gsm,
+				enum ofono_radio_band_umts band_umts,
+				ofono_radio_settings_band_set_cb_t cb,
 				void *data);
 	void (*query_fast_dormancy)(struct ofono_radio_settings *rs,
 			ofono_radio_settings_fast_dormancy_query_cb_t cb,
