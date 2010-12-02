@@ -1024,8 +1024,6 @@ static gboolean decode_status_report(const unsigned char *pdu, int len,
 	if (out->status_report.pi & 0x02) {
 		if (!next_octet(pdu, len, &offset, &out->status_report.dcs))
 			return FALSE;
-	} else {
-		out->status_report.dcs = 0;
 	}
 
 	if (out->status_report.pi & 0x04) {
@@ -1508,6 +1506,8 @@ gboolean sms_decode(const unsigned char *pdu, int len, gboolean outgoing,
 
 	if (len == 0)
 		return FALSE;
+
+	memset(out, 0, sizeof(*out));
 
 	if (tpdu_len < len) {
 		if (!sms_decode_address_field(pdu, len, &offset,
