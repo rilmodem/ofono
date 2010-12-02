@@ -249,6 +249,7 @@ Supplementary Services
 
   Priority: Low
   Complexity: C2
+  Owner: Gustavo F Padovan <padovan@profusion.mobi>
 
 - User to User Signaling (UUS) support
 
