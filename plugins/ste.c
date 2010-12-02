@@ -64,7 +64,11 @@
 #include <drivers/stemodem/caif_socket.h>
 #include <drivers/stemodem/if_caif.h>
 
+#define NUM_CHAT	1
+
 static const char *cpin_prefix[] = { "+CPIN:", NULL };
+
+static char *chat_prefixes[NUM_CHAT] = { "Default: " };
 
 struct ste_data {
 	GAtChat *chat;
@@ -162,11 +166,9 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	init_simpin_check(modem);
 }
 
-static int ste_enable(struct ofono_modem *modem)
+static GIOChannel *ste_create_channel(struct ofono_modem *modem)
 {
-	struct ste_data *data = ofono_modem_get_data(modem);
 	GIOChannel *channel;
-	GAtSyntax *syntax;
 	const char *device;
 	int fd;
 
@@ -182,7 +184,7 @@ static int ste_enable(struct ofono_modem *modem)
 		fd = socket(AF_CAIF, SOCK_STREAM, CAIFPROTO_AT);
 		if (fd < 0) {
 			ofono_error("Failed to create CAIF socket for AT");
-			return -EIO;
+			return NULL;
 		}
 
 		/* Bind CAIF socket to specified interface */
@@ -197,7 +199,7 @@ static int ste_enable(struct ofono_modem *modem)
 				ofono_error("Failed to bind caif socket "
 					"to interface");
 				close(fd);
-				return err;
+				return NULL;
 			}
 		}
 
@@ -210,37 +212,51 @@ static int ste_enable(struct ofono_modem *modem)
 		if (err < 0) {
 			ofono_error("Failed to connect CAIF socket for AT");
 			close(fd);
-			return err;
+			return NULL;
 		}
 	} else {
 		fd = open(device, O_RDWR);
 		if (fd < 0) {
 			ofono_error("Failed to open device %s", device);
-			return -EIO;
+			return NULL;
 		}
 	}
 
 	channel = g_io_channel_unix_new(fd);
 	if (channel == NULL)  {
 		close(fd);
-		return -EIO;
+		return NULL;
 	}
 	g_io_channel_set_close_on_unref(channel, TRUE);
 
+	return channel;
+}
+
+static int ste_enable(struct ofono_modem *modem)
+{
+	struct ste_data *data = ofono_modem_get_data(modem);
+	GIOChannel *channel;
+	GAtSyntax *syntax;
+
 	syntax = g_at_syntax_new_gsm_permissive();
 
+	channel = ste_create_channel(modem);
+	if (!channel)
+		return -EIO;
+
 	data->chat = g_at_chat_new_blocking(channel, syntax);
-	g_at_syntax_unref(syntax);
+	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1",
+		NULL, NULL, NULL, NULL);
+
 	g_io_channel_unref(channel);
+	g_at_syntax_unref(syntax);
 
 	if (data->chat == NULL)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, ste_debug, "");
+		g_at_chat_set_debug(data->chat, ste_debug, chat_prefixes[0]);
 
-	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1",
-			NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->chat, "AT+CFUN=4", NULL, cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
