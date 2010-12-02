@@ -219,7 +219,12 @@ gboolean sms_mwi_dcs_decode(guint8 dcs, enum sms_mwi_type *type,
 	else
 		dis = FALSE;
 
-	if (upper == 3)
+	/*
+	 * As per 3GPP TS 23.038 specification, if bits 7..4 set to 1110,
+	 * text included in the user data is coded in the uncompresssed
+	 * UCS2 character set.
+	 */
+	if (upper == 2)
 		ch = SMS_CHARSET_UCS2;
 	else
 		ch = SMS_CHARSET_7BIT;
