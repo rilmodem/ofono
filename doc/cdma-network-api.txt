@@ -68,3 +68,14 @@ Properties	string Status [readonly]
 		string Name [readonly, optional]
 
 			Contains the name of the current network.
+
+		string RoamingPreference [readwrite]
+
+			Contains the roaming preference used in the network
+			selection.
+
+			The possible values are:
+				"home"        Home networks only
+				"roamonly"    Roaming networks only
+				"affiliated"  Affiliated networks only
+				"any"         Any network
