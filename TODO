@@ -114,6 +114,7 @@ SIM / SIM File system
 
   Priority: Low
   Complexity: C2
+  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 
 - Add support for SIM 'ready' notifications from the driver to the core.  Most
   modem manufacturers initialize the SIM (e.g. cache SIM file system, STK
