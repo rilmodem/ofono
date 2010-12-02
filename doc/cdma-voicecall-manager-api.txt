@@ -110,4 +110,5 @@ Properties	string State [readonly]
 			reliable call duration information.
 
 			Please note that after sending Flash, there will not be
-			any StartTime property change for the Flash string/number.
+			any StartTime property change for the Flash
+			string/number.
