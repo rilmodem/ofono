@@ -175,7 +175,7 @@ static gboolean gprs_context_string_to_type(const char *str,
 		return TRUE;
 	} else if (g_str_equal(str, "ims")) {
 		*out = OFONO_GPRS_CONTEXT_TYPE_IMS;
-		return FALSE;
+		return TRUE;
 	}
 
 	return FALSE;
