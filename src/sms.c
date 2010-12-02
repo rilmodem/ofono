@@ -1584,7 +1584,7 @@ void ofono_sms_status_notify(struct ofono_sms *sms, unsigned char *pdu,
 		return;
 	}
 
-	if (!sms_dcs_decode(s.deliver.dcs, &cls, NULL, NULL, NULL)) {
+	if (!sms_dcs_decode(s.status_report.dcs, &cls, NULL, NULL, NULL)) {
 		ofono_error("Unknown / Reserved DCS.  Ignoring");
 		return;
 	}
