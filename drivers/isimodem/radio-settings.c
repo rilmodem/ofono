@@ -45,8 +45,6 @@
 #include "gss.h"
 #include "network.h"
 
-#define PN_WRAN 0xb4
-
 struct radio_data {
 	GIsiClient *gss_client;
 	GIsiClient *gpds_client;

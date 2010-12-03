@@ -51,6 +51,7 @@ const char *pn_resource_name(int value)
 		_(PN_MTC);
 		_(PN_GSS);
 		_(PN_GPDS);
+		_(PN_WRAN);
 	}
 	return "PN_<UNKNOWN>";
 }

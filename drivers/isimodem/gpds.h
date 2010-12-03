@@ -39,6 +39,7 @@ extern "C" {
 
 #define PN_GPDS					0x31
 #define PN_PEP_TYPE_GPRS			0x04
+#define PN_WRAN					0xB4
 
 enum gpds_message_id {
 	GPDS_LL_CONFIGURE_REQ =			0x00,
