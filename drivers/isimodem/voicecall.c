@@ -62,13 +62,6 @@ struct isi_voicecall {
 
 /* ------------------------------------------------------------------------- */
 
-static void isi_call_notify(struct ofono_voicecall *ovc,
-				struct isi_call *call);
-static void isi_call_release(struct ofono_voicecall *, struct isi_call *);
-static struct ofono_call isi_call_as_ofono_call(struct isi_call const *);
-static int isi_call_status_to_clcc(struct isi_call const *call);
-static struct isi_call *isi_call_set_idle(struct isi_call *call);
-
 typedef void GIsiIndication(GIsiClient *client,
 		const void *restrict data, size_t len,
 		uint16_t object, void *opaque);
@@ -79,9 +72,6 @@ typedef void GIsiVerify(GIsiClient *client, gboolean alive, uint16_t object,
 typedef gboolean GIsiResponse(GIsiClient *client,
 				void const *restrict data, size_t len,
 				uint16_t object, void *opaque);
-
-static GIsiVerify isi_call_verify_cb;
-static gboolean isi_call_register(gpointer);
 
 enum {
 	ISI_CALL_TIMEOUT = 1000,
@@ -202,6 +192,159 @@ static gboolean isi_ctx_return_success(struct isi_call_req_context *irc)
 	}
 
 	return isi_ctx_return(irc, OFONO_ERROR_TYPE_NO_ERROR, 0);
+}
+
+/* ------------------------------------------------------------------------- */
+/* Notify */
+
+enum clcc_status {
+	CLCC_STATUS_EARLY		= -1,
+	CLCC_STATUS_ACTIVE		= 0,
+	CLCC_STATUS_HOLD		= 1,
+	CLCC_STATUS_DIALING		= 2,
+	CLCC_STATUS_ALERTING		= 3,
+	CLCC_STATUS_INCOMING		= 4,
+	CLCC_STATUS_WAITING		= 5,
+	CLCC_STATUS_DISCONNECTED	= 6,
+};
+
+/** Get +CLCC status */
+static int isi_call_status_to_clcc(struct isi_voicecall const *ivc,
+					struct isi_call const *call)
+{
+	switch (call->status) {
+	case CALL_STATUS_CREATE:
+		return CLCC_STATUS_DIALING;
+
+	case CALL_STATUS_COMING:
+		return CLCC_STATUS_EARLY;
+
+	case CALL_STATUS_PROCEEDING:
+		if ((call->mode_info & CALL_MODE_ORIGINATOR))
+			return CLCC_STATUS_EARLY; /* MT */
+		else
+			return CLCC_STATUS_DIALING; /* MO */
+
+	case CALL_STATUS_MO_ALERTING:
+		return CLCC_STATUS_ALERTING;
+
+	case CALL_STATUS_MT_ALERTING:
+		return CLCC_STATUS_INCOMING;
+
+	case CALL_STATUS_WAITING:
+		return CLCC_STATUS_WAITING;
+
+	case CALL_STATUS_ANSWERED:
+	case CALL_STATUS_ACTIVE:
+	case CALL_STATUS_HOLD_INITIATED:
+	case CALL_STATUS_RECONNECT_PENDING:
+	case CALL_STATUS_SWAP_INITIATED:
+		return CLCC_STATUS_ACTIVE;
+
+	case CALL_STATUS_HOLD:
+	case CALL_STATUS_RETRIEVE_INITIATED:
+		return CLCC_STATUS_HOLD;
+
+	case CALL_STATUS_MO_RELEASE:
+	case CALL_STATUS_MT_RELEASE:
+	case CALL_STATUS_TERMINATED:
+	case CALL_STATUS_IDLE:
+		return CLCC_STATUS_DISCONNECTED;
+	}
+
+	return CLCC_STATUS_ACTIVE;
+}
+
+static struct ofono_call isi_call_as_ofono_call(struct isi_voicecall const *ivc,
+						struct isi_call const *call)
+{
+	struct ofono_call ocall = { call->id };
+	struct ofono_phone_number *number = &ocall.phone_number;
+
+	ocall.type = 0;	/* Voice call */
+	ocall.direction = call->mode_info & CALL_MODE_ORIGINATOR;
+	ocall.status = isi_call_status_to_clcc(ivc, call);
+	memcpy(number->number, call->address, sizeof(number->number));
+	number->type = 0x80 | call->addr_type;
+	ocall.clip_validity = call->presentation & 3;
+
+	if (ocall.clip_validity == 0 && strlen(number->number) == 0)
+		ocall.clip_validity = 2;
+
+	return ocall;
+}
+
+static struct isi_call *isi_call_set_idle(struct isi_call *call)
+{
+	uint8_t id;
+
+	id = call->id;
+	memset(call, 0, sizeof(*call));
+	call->id = id;
+
+	return call;
+}
+
+static void isi_call_disconnected(struct ofono_voicecall *ovc,
+					struct isi_call *call)
+{
+	struct ofono_error error = { OFONO_ERROR_TYPE_NO_ERROR, 0 };
+	enum ofono_disconnect_reason reason = call->reason;
+
+	if (!reason)
+		reason = OFONO_DISCONNECT_REASON_ERROR;
+
+	DBG("disconnected id=%u reason=%u", call->id, reason);
+	ofono_voicecall_disconnected(ovc, call->id, reason, &error);
+	isi_call_set_idle(call);
+}
+
+static void isi_call_notify(struct ofono_voicecall *ovc,
+				struct isi_call *call)
+{
+	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
+	struct isi_call_req_context *irc, **queue;
+	struct ofono_call ocall;
+
+	DBG("called with status=%s (0x%02X)",
+		call_status_name(call->status), call->status);
+
+	for (queue = &ivc->queue; (irc = *queue);) {
+		irc->step(irc, call->status);
+
+		if (*queue == irc)
+			queue = &irc->next;
+	}
+
+	ocall = isi_call_as_ofono_call(ivc, call);
+
+	DBG("id=%u,\"%s\",%u,\"%s\",%u,%u",
+		ocall.id,
+		ocall.direction ? "mt" : "mo",
+		ocall.status,
+		ocall.phone_number.number,
+		ocall.phone_number.type,
+		ocall.clip_validity);
+
+	if (ocall.status == CLCC_STATUS_EARLY)
+		return;
+
+	ofono_voicecall_notify(ovc, &ocall);
+
+	switch (call->status) {
+	case CALL_STATUS_MO_RELEASE:
+		call->reason = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
+		break;
+
+	case CALL_STATUS_MT_RELEASE:
+		call->reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
+		break;
+
+	case CALL_STATUS_IDLE:
+	case CALL_STATUS_TERMINATED:
+		isi_call_disconnected(ovc, call);
+		break;
+	}
 }
 
 /* ------------------------------------------------------------------------- */
@@ -491,16 +634,8 @@ static void isi_call_status_ind_cb(GIsiClient *client,
 		}
 	}
 
-	if (old != call->status) {
-		if (call->status == CALL_STATUS_IDLE) {
-			call->status = CALL_STATUS_TERMINATED;
-			isi_call_notify(ovc, call);
-			isi_call_set_idle(call);
-			return;
-		}
-	}
-
-	isi_call_notify(ovc, call);
+	if (old != call->status)
+		isi_call_notify(ovc, call);
 }
 
 static struct isi_call_req_context *
@@ -799,150 +934,6 @@ static gboolean isi_call_dtmf_send_resp(GIsiClient *client,
 		return isi_ctx_return_success(irc);
 	else
 		return isi_ctx_return_failure(irc);
-}
-
-
-/* ------------------------------------------------------------------------- */
-/* Notify */
-
-static void isi_call_notify(struct ofono_voicecall *ovc,
-				struct isi_call *call)
-{
-	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
-	struct isi_call_req_context *irc, **queue;
-	struct ofono_call ocall;
-
-	DBG("called with status=%s (0x%02X)",
-		call_status_name(call->status), call->status);
-
-	for (queue = &ivc->queue; (irc = *queue);) {
-		irc->step(irc, call->status);
-		if (*queue == irc)
-			queue = &irc->next;
-	}
-
-	switch (call->status) {
-	case CALL_STATUS_IDLE:
-	case CALL_STATUS_MO_RELEASE:
-	case CALL_STATUS_MT_RELEASE:
-	case CALL_STATUS_TERMINATED:
-		isi_call_release(ovc, call);
-		return;
-	}
-
-	ocall = isi_call_as_ofono_call(call);
-
-	DBG("id=%u,%s,%u,\"%s\",%u,%u",
-		ocall.id,
-		ocall.direction ? "terminated" : "originated",
-		ocall.status,
-		ocall.phone_number.number,
-		ocall.phone_number.type,
-		ocall.clip_validity);
-
-	ofono_voicecall_notify(ovc, &ocall);
-}
-
-static void isi_call_release(struct ofono_voicecall *ovc,
-				struct isi_call *call)
-{
-	struct ofono_error error = { OFONO_ERROR_TYPE_NO_ERROR, 0 };
-	enum ofono_disconnect_reason reason;
-
-	switch (call->status) {
-	case CALL_STATUS_IDLE:
-		reason = OFONO_DISCONNECT_REASON_UNKNOWN;
-		break;
-	case CALL_STATUS_MO_RELEASE:
-		reason = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
-		break;
-	case CALL_STATUS_MT_RELEASE:
-		reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
-		break;
-	case CALL_STATUS_TERMINATED:
-	default:
-		reason = OFONO_DISCONNECT_REASON_ERROR;
-		break;
-	}
-
-	if (!call->reason) {
-		call->reason = reason;
-		DBG("disconnected id=%u reason=%u", call->id, reason);
-		ofono_voicecall_disconnected(ovc, call->id, reason, &error);
-	}
-
-	if (!reason)
-		isi_call_set_idle(call);
-}
-
-static struct ofono_call isi_call_as_ofono_call(struct isi_call const *call)
-{
-	struct ofono_call ocall = { call->id };
-	struct ofono_phone_number *number = &ocall.phone_number;
-
-	ocall.type = 0;	/* Voice call */
-	ocall.direction = call->mode_info & CALL_MODE_ORIGINATOR;
-	ocall.status = isi_call_status_to_clcc(call);
-	memcpy(number->number, call->address, sizeof number->number);
-	number->type = 0x80 | call->addr_type;
-	ocall.clip_validity = call->presentation & 3;
-	if (ocall.clip_validity == 0 && strlen(number->number) == 0)
-		ocall.clip_validity = 2;
-
-	return ocall;
-}
-
-/** Get +CLCC status */
-static int isi_call_status_to_clcc(struct isi_call const *call)
-{
-	switch (call->status) {
-	case CALL_STATUS_CREATE:
-		return 2;
-	case CALL_STATUS_COMING:
-		return 4;
-	case CALL_STATUS_PROCEEDING:
-		if ((call->mode_info & CALL_MODE_ORIGINATOR))
-			return 4; /* MT */
-		else
-			return 2; /* MO */
-	case CALL_STATUS_MO_ALERTING:
-		return 3;
-	case CALL_STATUS_MT_ALERTING:
-		return 4;
-	case CALL_STATUS_WAITING:
-		return 5;
-
-	case CALL_STATUS_ANSWERED:
-	case CALL_STATUS_ACTIVE:
-	case CALL_STATUS_MO_RELEASE:
-	case CALL_STATUS_MT_RELEASE:
-	case CALL_STATUS_HOLD_INITIATED:
-		return 0;
-
-	case CALL_STATUS_HOLD:
-	case CALL_STATUS_RETRIEVE_INITIATED:
-		return 1;
-
-	case CALL_STATUS_RECONNECT_PENDING:
-	case CALL_STATUS_TERMINATED:
-	case CALL_STATUS_SWAP_INITIATED:
-		return 0;
-	}
-
-	return 0;
-}
-
-static struct isi_call *isi_call_set_idle(struct isi_call *call)
-{
-	uint8_t id;
-
-	if (call) {
-		id = call->id;
-		memset(call, 0, sizeof *call);
-		call->id = id;
-	}
-
-	return call;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1245,31 +1236,27 @@ static void isi_send_tones(struct ofono_voicecall *ovc, const char *tones,
 	isi_call_dtmf_send_req(ovc, CALL_ID_ALL, tones, cb, data);;
 }
 
-static int isi_voicecall_probe(struct ofono_voicecall *ovc,
-				unsigned int vendor, void *user)
+static gboolean isi_call_register(gpointer _ovc)
 {
-	GIsiModem *idx = user;
-	struct isi_voicecall *ivc = g_try_new0(struct isi_voicecall, 1);
-	int id;
+	struct ofono_voicecall *ovc = _ovc;
+	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
+	const char *debug = getenv("OFONO_ISI_DEBUG");
 
-	if (ivc == NULL)
-		return -ENOMEM;
+	if (debug != NULL && (!strcmp(debug, "all") || !strcmp(debug, "call")))
+		g_isi_client_set_debug(ivc->client, call_debug, NULL);
 
-	for (id = 0; id <= 7; id++)
-		ivc->calls[id].id = id;
+	g_isi_subscribe(ivc->client,
+			CALL_STATUS_IND, isi_call_status_ind_cb,
+			ovc);
 
-	ivc->client = g_isi_client_create(idx, PN_CALL);
-	if (ivc->client == NULL) {
-		g_free(ivc);
-		return -ENOMEM;
-	}
+	if (isi_call_status_req(ovc, CALL_ID_ALL,
+					CALL_STATUS_MODE_ADDR_AND_ORIGIN,
+					NULL, NULL) == NULL)
+		DBG("Failed to request call status");
 
-	ofono_voicecall_set_data(ovc, ivc);
+	ofono_voicecall_register(ovc);
 
-	if (!g_isi_verify(ivc->client, isi_call_verify_cb, ovc))
-		DBG("Unable to verify reachability");
-
-	return 0;
+	return FALSE;
 }
 
 static void isi_call_verify_cb(GIsiClient *client,
@@ -1288,28 +1275,32 @@ static void isi_call_verify_cb(GIsiClient *client,
 	g_idle_add(isi_call_register, ovc);
 }
 
-static gboolean isi_call_register(gpointer _ovc)
+static int isi_voicecall_probe(struct ofono_voicecall *ovc,
+				unsigned int vendor, void *user)
 {
-	struct ofono_voicecall *ovc = _ovc;
-	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
+	GIsiModem *idx = user;
+	struct isi_voicecall *ivc;
+	int id;
 
-	const char *debug = getenv("OFONO_ISI_DEBUG");
+	ivc = g_try_new0(struct isi_voicecall, 1);
+	if (ivc == NULL)
+		return -ENOMEM;
 
-	if (debug && (strcmp(debug, "all") == 0 || strcmp(debug, "call") == 0))
-		g_isi_client_set_debug(ivc->client, call_debug, NULL);
+	for (id = 1; id <= 7; id++)
+		ivc->calls[id].id = id;
 
-	g_isi_subscribe(ivc->client,
-			CALL_STATUS_IND, isi_call_status_ind_cb,
-			ovc);
+	ivc->client = g_isi_client_create(idx, PN_CALL);
+	if (ivc->client == NULL) {
+		g_free(ivc);
+		return -ENOMEM;
+	}
 
-	if (isi_call_status_req(ovc, CALL_ID_ALL,
-				CALL_STATUS_MODE_ADDR_AND_ORIGIN,
-				NULL, NULL) == NULL)
-		DBG("Failed to request call status");
+	ofono_voicecall_set_data(ovc, ivc);
 
-	ofono_voicecall_register(ovc);
+	if (g_isi_verify(ivc->client, isi_call_verify_cb, ovc) == NULL)
+		DBG("Unable to verify reachability");
 
-	return FALSE;
+	return 0;
 }
 
 static void isi_voicecall_remove(struct ofono_voicecall *call)
