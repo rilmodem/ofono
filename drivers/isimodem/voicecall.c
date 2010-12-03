@@ -80,41 +80,62 @@ enum {
 /* ------------------------------------------------------------------------- */
 /* Request context for voicecall cb */
 
-struct isi_call_req_context;
-
-typedef void isi_call_req_step(struct isi_call_req_context *, int reason);
+typedef void isi_call_req_step(struct isi_call_req_context *,
+				int id, int status);
 
 struct isi_call_req_context {
-	struct isi_call_req_context *next, **prev;
+	struct isi_call_req_context *next;
+	struct isi_call_req_context **prev;
 	isi_call_req_step *step;
+	int id;
 	struct ofono_voicecall *ovc;
 	ofono_voicecall_cb_t cb;
 	void *data;
 };
 
-static struct isi_call_req_context *
-isi_call_req(struct ofono_voicecall *ovc,
-		void const *restrict req,
-		size_t len,
-		GIsiResponse *handler,
-		ofono_voicecall_cb_t cb, void *data)
+static struct isi_call_req_context *isi_call_req_new(
+					struct ofono_voicecall *ovc,
+					ofono_voicecall_cb_t cb,
+					void *data)
+{
+	struct isi_call_req_context *irc;
+
+	irc = g_try_new0(struct isi_call_req_context, 1);
+	if (irc == NULL)
+		goto failed;
+
+	irc->ovc = ovc;
+	irc->cb = cb;
+	irc->data = data;
+
+	return irc;
+
+failed:
+	if (cb)
+		CALLBACK_WITH_FAILURE(cb, data);
+
+	return NULL;
+}
+
+static struct isi_call_req_context *isi_call_req(struct ofono_voicecall *ovc,
+						void const *restrict req,
+						size_t len,
+						GIsiResponse *handler,
+						ofono_voicecall_cb_t cb,
+						void *data)
 {
 	struct isi_voicecall *ivc;
 	struct isi_call_req_context *irc;
 
+	irc = isi_call_req_new(ovc, cb, data);
+	if (irc == NULL)
+		return NULL;
+
 	ivc = ofono_voicecall_get_data(ovc);
 
-	irc = g_try_new0(struct isi_call_req_context, 1);
-
-	if (irc) {
-		irc->ovc = ovc;
-		irc->cb = cb;
-		irc->data = data;
-
-		if (g_isi_request_make(ivc->client, req, len,
-					ISI_CALL_TIMEOUT, handler, irc))
-			return irc;
-	}
+	if (g_isi_send(ivc->client, req, len,
+			ISI_CALL_TIMEOUT, handler, irc, NULL))
+		return irc;
 
 	g_free(irc);
 
@@ -125,7 +146,8 @@ isi_call_req(struct ofono_voicecall *ovc,
 }
 
 static void isi_ctx_queue(struct isi_call_req_context *irc,
-				isi_call_req_step *next)
+				isi_call_req_step *next,
+				int id)
 {
 	if (irc->prev == NULL) {
 		struct isi_voicecall *ivc = ofono_voicecall_get_data(irc->ovc);
@@ -139,6 +161,7 @@ static void isi_ctx_queue(struct isi_call_req_context *irc,
 	}
 
 	irc->step = next;
+	irc->id = id;
 }
 
 static void isi_ctx_remove(struct isi_call_req_context *irc)
@@ -187,7 +210,7 @@ static gboolean isi_ctx_return_failure(struct isi_call_req_context *irc)
 static gboolean isi_ctx_return_success(struct isi_call_req_context *irc)
 {
 	if (irc && irc->step) {
-		irc->step(irc, 0);
+		irc->step(irc, 0, 0);
 		return TRUE;
 	}
 
@@ -310,7 +333,7 @@ static void isi_call_notify(struct ofono_voicecall *ovc,
 		call_status_name(call->status), call->status);
 
 	for (queue = &ivc->queue; (irc = *queue);) {
-		irc->step(irc, call->status);
+		irc->step(irc, call->id, call->status);
 
 		if (*queue == irc)
 			queue = &irc->next;
@@ -1063,18 +1086,19 @@ static void isi_release_all_active(struct ofono_voicecall *ovc,
 		if (irc == NULL)
 			;
 		else if (waiting)
-			isi_ctx_queue(irc, isi_wait_and_answer);
+			isi_ctx_queue(irc, isi_wait_and_answer, 0);
 		else if (hold)
-			isi_ctx_queue(irc, isi_wait_and_retrieve);
+			isi_ctx_queue(irc, isi_wait_and_retrieve, 0);
 	} else
 		CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void isi_wait_and_answer(struct isi_call_req_context *irc,
-				int event)
+				int id, int status)
 {
-	DBG("irc=%p event=%u", (void *)irc, event);
-	switch (event) {
+	DBG("irc=%p id=%d status=%d", (void *)irc, id, status);
+
+	switch (status) {
 	case CALL_STATUS_TERMINATED:
 		isi_answer(irc->ovc, irc->cb, irc->data);
 		isi_ctx_free(irc);
@@ -1083,10 +1107,11 @@ static void isi_wait_and_answer(struct isi_call_req_context *irc,
 }
 
 static void isi_wait_and_retrieve(struct isi_call_req_context *irc,
-					int event)
+					int id, int status)
 {
-	DBG("irc=%p event=%u", (void *)irc, event);
-	switch (event) {
+	DBG("irc=%p id=%u status=%u", (void *)irc, id, status);
+
+	switch (status) {
 	case CALL_STATUS_TERMINATED:
 		isi_retrieve(irc->ovc, irc->cb, irc->data);
 		isi_ctx_free(irc);
