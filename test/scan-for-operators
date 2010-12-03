@@ -13,7 +13,7 @@ else:
 	modems = manager.GetModems()
 	path = modems[0][0]
 
-print "Propose scanning for modem %s..." % path
+print "Scanning operators on modem %s..." % path
 netreg = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.NetworkRegistration')
 
