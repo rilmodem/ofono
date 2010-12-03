@@ -1075,7 +1075,7 @@ static const char *res_to_name(uint8_t res, uint8_t id)
 	return "UNKNOWN";
 }
 
-void isi_debug(const GIsiMessage *msg, void *data)
+void isi_trace(const GIsiMessage *msg, void *data)
 {
 	uint8_t id = g_isi_msg_id(msg);
 	uint8_t res = g_isi_msg_resource(msg);

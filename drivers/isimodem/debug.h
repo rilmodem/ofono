@@ -76,7 +76,7 @@ const char *gpds_isi_cause_name(enum gpds_isi_cause value);
 const char *gpds_transfer_status_name(enum gpds_transfer_status value);
 const char *gpds_transfer_cause_name(enum gpds_transfer_cause value);
 
-void isi_debug(const GIsiMessage *msg, void *data);
+void isi_trace(const GIsiMessage *msg, void *data);
 
 const char *pn_resource_name(int value);
 
