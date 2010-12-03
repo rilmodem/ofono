@@ -39,6 +39,10 @@
 #include "modem.h"
 #include "socket.h"
 
+#define ISIDBG(m, fmt, ...)				\
+	if ((m) != NULL && (m)->debug != NULL)		\
+		m->debug("gisi: "fmt, ##__VA_ARGS__);
+
 struct _GIsiServiceMux {
 	GIsiModem *modem;
 	GSList *pending;
@@ -61,8 +65,8 @@ struct _GIsiModem {
 	int ind_fd;
 	guint req_watch;
 	guint ind_watch;
-	GIsiNotifyFunc debug;
-	void *ddata;
+	GIsiDebugFunc debug;
+	GIsiNotifyFunc trace;
 	void *opaque;
 };
 
@@ -120,10 +124,35 @@ static gint utid_equal(gconstpointer a, gconstpointer b)
 	return pa->utid - pb->utid;
 }
 
+static const char *pend_type_to_str(enum GIsiMessageType type)
+{
+	switch (type) {
+	case GISI_MESSAGE_TYPE_REQ:
+		return "REQ";
+	case GISI_MESSAGE_TYPE_IND:
+		return "IND";
+	case GISI_MESSAGE_TYPE_NTF:
+		return "NTF";
+	case GISI_MESSAGE_TYPE_RESP:
+		return "RESP";
+	case GISI_MESSAGE_TYPE_COMMON:
+		return "COMMON";
+	}
+	return "UNKNOWN";
+}
+
 static void pending_dispatch(GIsiPending *pend, GIsiMessage *msg)
 {
-	if (!pend->notify)
+	GIsiModem *modem;
+
+	if (pend->notify == NULL)
 		return;
+
+	modem = pend->service->modem;
+
+	ISIDBG(modem, "%s %s to %p [res=0x%02X, id=0x%02X, utid=0x%02X]",
+		g_isi_msg_strerror(msg), pend_type_to_str(pend->type), pend,
+		g_isi_msg_resource(msg), g_isi_msg_id(msg), g_isi_msg_utid(msg));
 
 	pend->notify(msg, pend->data);
 }
@@ -221,6 +250,16 @@ static void common_message_decode(GIsiServiceMux *mux, GIsiMessage *msg)
 	msg->version = &mux->version;
 }
 
+static void firewall_notify_handle(GIsiModem *modem, GIsiMessage *msg)
+{
+	uint8_t id;
+
+	if (!g_isi_msg_data_get_byte(msg, 0, &id))
+		return;
+
+	ISIDBG(modem, "firewall blocked message 0x%02X", id);
+}
+
 static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 				gpointer data)
 {
@@ -229,7 +268,7 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 	int fd;
 
 	if (cond & (G_IO_NVAL|G_IO_HUP)) {
-		g_warning("Unexpected event on PhoNet channel %p", channel);
+		ISIDBG(modem, "Unexpected event on PhoNet channel %p", channel);
 		return FALSE;
 	}
 
@@ -254,13 +293,21 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 		msg.len = len;
 		msg.version = &mux->version;
 
-		if (modem->debug)
-			modem->debug(&msg, modem->ddata);
+		if (modem->trace != NULL)
+			modem->trace(&msg, NULL);
 
 		key = addr.spn_resource;
 		mux = g_hash_table_lookup(modem->services, GINT_TO_POINTER(key));
-		if (!mux)
+		if (mux == NULL) {
+			/*
+			 * Unfortunately, the FW report has the wrong
+			 * resource ID in the N900 modem.
+			 */
+			if (key == PN_FIREWALL)
+				firewall_notify_handle(modem, &msg);
+
 			return TRUE;
+		}
 
 		if (g_isi_msg_id(&msg) == COMMON_MESSAGE)
 			common_message_decode(mux, &msg);
@@ -321,7 +368,8 @@ static void service_name_register(GIsiServiceMux *mux)
 	uint16_t object = 0;
 
 	if (ioctl(mux->modem->req_fd, SIOCPNGETOBJECT, &object) < 0) {
-		g_warning("ioctl(SIOCPNGETOBJECT): %s", strerror(errno));
+		ISIDBG(mux->modem, "ioctl(SIOCPNGETOBJECT): %s",
+			strerror(errno));
 		return;
 	}
 
@@ -559,9 +607,9 @@ GIsiPending *g_isi_request_sendto(GIsiModem *modem, struct sockaddr_pn *dst,
 					destroy);
 }
 
-static void vdebug(struct sockaddr_pn *dst,
+static void vtrace(struct sockaddr_pn *dst,
 			const struct iovec *__restrict iov, size_t iovlen,
-			size_t total_len, GIsiNotifyFunc debug, void *data)
+			size_t total_len, GIsiNotifyFunc trace)
 {
 	uint8_t buffer[total_len];
 	uint8_t *ptr = buffer;
@@ -577,7 +625,7 @@ static void vdebug(struct sockaddr_pn *dst,
 		ptr += iov[i].iov_len;
 	}
 
-	debug(&msg, data);
+	trace(&msg, NULL);
 }
 
 static gboolean resp_timeout(gpointer data)
@@ -649,6 +697,7 @@ GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 		 * transaction ID wraps, it's likely there is
 		 * something wrong and we might as well fail here.
 		 */
+		ISIDBG(modem, "ERROR: UTID wrapped, modem busy");
 		errno = EBUSY;
 		goto error;
 	}
@@ -661,8 +710,8 @@ GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 		len += iov[i].iov_len;
 	}
 
-	if (modem->debug)
-		vdebug(dst, _iov, 1 + iovlen, len, modem->debug, modem->ddata);
+	if (modem->trace != NULL)
+		vtrace(dst, _iov, 1 + iovlen, len, modem->trace);
 
 	ret = sendmsg(modem->req_fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
@@ -749,6 +798,9 @@ GIsiPending *g_isi_ntf_subscribe(GIsiModem *modem, uint8_t resource,
 
 	mux->pending = g_slist_append(mux->pending, ntf);
 
+	ISIDBG(modem, "Subscribed to %s (%p) [res=0x%02X, id=0x%02X]",
+		pend_type_to_str(ntf->type), ntf, resource, msgid);
+
 	return ntf;
 }
 
@@ -779,6 +831,9 @@ GIsiPending *g_isi_service_bind(GIsiModem *modem, uint8_t resource,
 	srv->msgid = msgid;
 
 	mux->pending = g_slist_append(mux->pending, srv);
+
+	ISIDBG(modem, "Bound service for %s (%p) [res=0x%02X, id=0x%02X]",
+		pend_type_to_str(srv->type), srv, resource, msgid);
 
 	service_regs_incr(mux);
 
@@ -812,6 +867,9 @@ GIsiPending *g_isi_ind_subscribe(GIsiModem *modem, uint8_t resource,
 	ind->msgid = msgid;
 
 	mux->pending = g_slist_append(mux->pending, ind);
+
+	ISIDBG(modem, "Subscribed for %s (%p) [res=0x%02X, id=0x%02X]",
+		pend_type_to_str(ind->type), ind, resource, msgid);
 
 	service_subs_incr(mux);
 
@@ -886,8 +944,8 @@ int g_isi_modem_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 	for (i = 0, len = 0; i < iovlen; i++)
 		len += iov[i].iov_len;
 
-	if (modem->debug)
-		vdebug(dst, iov, iovlen, len, modem->debug, modem->ddata);
+	if (modem->trace != NULL)
+		vtrace(dst, iov, iovlen, len, modem->trace);
 
 	ret = sendmsg(modem->req_fd, &msg, MSG_NOSIGNAL);
 	if (ret == -1)
@@ -899,13 +957,20 @@ int g_isi_modem_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 	return 0;
 }
 
-void g_isi_modem_set_debug(GIsiModem *modem, GIsiNotifyFunc debug, void *data)
+void g_isi_modem_set_trace(GIsiModem *modem, GIsiNotifyFunc trace)
 {
-	if (!modem)
+	if (modem == NULL)
+		return;
+
+	modem->trace = trace;
+}
+
+void g_isi_modem_set_debug(GIsiModem *modem, GIsiDebugFunc debug)
+{
+	if (modem == NULL)
 		return;
 
 	modem->debug = debug;
-	modem->ddata = data;
 }
 
 static int version_get_send(GIsiModem *modem, GIsiPending *ping)
@@ -1010,6 +1075,9 @@ GIsiPending *g_isi_resource_ping(GIsiModem *modem, uint8_t resource,
 						ping);
 	mux->pending = g_slist_prepend(mux->pending, ping);
 	mux->version_pending = TRUE;
+
+	ISIDBG(modem, "Ping sent %s (%p) [res=0x%02X]",
+		pend_type_to_str(ping->type), ping, resource);
 
 	return ping;
 }

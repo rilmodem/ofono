@@ -39,13 +39,14 @@ struct _GIsiPending;
 typedef struct _GIsiPending GIsiPending;
 
 typedef void (*GIsiNotifyFunc)(const GIsiMessage *msg, void *opaque);
+typedef void (*GIsiDebugFunc)(const char *fmt, ...);
 
 GIsiModem *g_isi_modem_create(unsigned index);
 GIsiModem *g_isi_modem_create_by_name(const char *name);
 void g_isi_modem_destroy(GIsiModem *modem);
 unsigned g_isi_modem_index(GIsiModem *modem);
-void g_isi_modem_set_debug(GIsiModem *modem, GIsiNotifyFunc notify,
-				void *opaque);
+void g_isi_modem_set_trace(GIsiModem *modem, GIsiNotifyFunc notify);
+void g_isi_modem_set_debug(GIsiModem *modem, GIsiDebugFunc debug);
 void *g_isi_modem_set_userdata(GIsiModem *modem, void *data);
 void *g_isi_modem_get_userdata(GIsiModem *modem);
 
