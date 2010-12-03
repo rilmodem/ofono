@@ -804,7 +804,8 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		modem->timeout = 0;
 	}
 
-	if (modem->pending != NULL) {
+	if (modem->powered_pending != modem->powered &&
+						modem->pending != NULL) {
 		DBusMessage *reply;
 
 		if (powered == modem->powered_pending)
