@@ -459,6 +459,7 @@ Miscellaneous
 
   Priority: Medium
   Complexity: C8
+  Owner: Jukka Saunamäki <jukka.saunamaki@nokia.com>
 
 - Support for modem 'silent' reset notifications.  oFono will remove all atoms
   and re-initialize.
