@@ -230,6 +230,20 @@ array = g_try_new0(int, 20);
 if (array == NULL)	// Correct
 	return;
 
+
+M14: Always use parenthesis with sizeof
+=======================================
+The expression argument to the sizeof operator should always be in
+parenthesis, too.
+
+Example:
+1)
+memset(stuff, 0, sizeof(*stuff));
+
+2)
+memset(stuff, 0, sizeof *stuff); // Wrong
+
+
 O1: Shorten the name
 ====================
 Better to use abbreviation, rather than full name, to name a variable,
