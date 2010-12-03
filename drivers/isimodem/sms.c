@@ -143,7 +143,6 @@ static gboolean check_sim_status(const GIsiMessage *msg, uint8_t msgid,
 static gboolean check_sms_status(const GIsiMessage *msg, uint8_t msgid)
 {
 	uint8_t cause;
-	uint8_t reason;
 
 	if (g_isi_msg_error(msg) < 0) {
 		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
@@ -156,26 +155,25 @@ static gboolean check_sms_status(const GIsiMessage *msg, uint8_t msgid)
 		return FALSE;
 	}
 
-	if (!g_isi_msg_data_get_byte(msg, 0, &cause))
+	if (!g_isi_msg_data_get_byte(msg, 0, &cause)) {
+		DBG("Unable to parse cause");
 		return FALSE;
+	}
 
 	if (cause == SMS_OK)
 		return TRUE;
 
-	if (!g_isi_msg_data_get_byte(msg, 1, &reason))
-		return FALSE;
-
-	if (reason == SMS_ERR_PP_RESERVED) {
+	if (cause == SMS_ERR_PP_RESERVED) {
 		DBG("Request failed: 0x%02"PRIx8" (%s).\n\n  Unable to "
 			"bootstrap SMS routing.\n  It appears some other "
 			"component is already\n  registered as the SMS "
 			"routing endpoint.\n  As a consequence, "
 			"only sending SMSs is going to work.\n\n",
-			reason, sms_isi_cause_name(reason));
+			cause, sms_isi_cause_name(cause));
 		return TRUE;
 	}
 
-	DBG("Request failed: %s", sms_isi_cause_name(reason));
+	DBG("Request failed: %s", sms_isi_cause_name(cause));
 	return FALSE;
 }
 
