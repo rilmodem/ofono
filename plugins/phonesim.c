@@ -374,6 +374,30 @@ static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_modem_set_powered(modem, ok);
 }
 
+static gboolean phonesim_reset(void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
+
+	if (data->mux) {
+		g_at_mux_shutdown(data->mux);
+		g_at_mux_unref(data->mux);
+		data->mux = NULL;
+	}
+
+	ofono_modem_reset(modem);
+
+	return FALSE;
+}
+
+static void crst_notify(GAtResult *result, gpointer user_data)
+{
+	g_idle_add(phonesim_reset, user_data);
+}
+
 static void phonesim_disconnected(gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -525,6 +549,9 @@ static int phonesim_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->chat, "AT+CSCS=\"GSM\"", none_prefix,
 			NULL, NULL, NULL);
+
+	g_at_chat_register(data->chat, "+CRST:",
+				crst_notify, FALSE, modem, NULL);
 
 	return 0;
 }
