@@ -699,12 +699,13 @@ static gboolean isi_call_answer_resp(GIsiClient *client,
 
 static struct isi_call_req_context *
 isi_call_release_req(struct ofono_voicecall *ovc,
-			uint8_t call_id, enum call_cause_type cause_type,
-			uint8_t cause, ofono_voicecall_cb_t cb, void *data)
+			uint8_t call_id, uint8_t cause,
+			ofono_voicecall_cb_t cb, void *data)
 {
 	uint8_t const req[] = {
-		CALL_RELEASE_REQ, call_id, 1,
-		CALL_CAUSE, 4, cause_type, cause,
+		CALL_RELEASE_REQ, call_id, 2,
+		CALL_CAUSE, 4, CALL_CAUSE_TYPE_CLIENT, cause,
+		CALL_STATE_AUTO_CHANGE, 4, 0, 0
 	};
 	size_t rlen = sizeof req;
 
@@ -1008,7 +1009,8 @@ static void isi_hangup_current(struct ofono_voicecall *ovc,
 	 * active calls or calls in progress.
 	 */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
-	int id = 0;
+	int id;
+	uint8_t cause = CALL_CAUSE_RELEASE_BY_USER;
 
 	for (id = 1; id <= 7; id++) {
 		if (ivc->calls[id].call_id & CALL_ID_WAITING)
@@ -1018,11 +1020,14 @@ static void isi_hangup_current(struct ofono_voicecall *ovc,
 
 		switch (ivc->calls[id].status) {
 		case CALL_STATUS_CREATE:
+		case CALL_STATUS_MT_ALERTING:
+		case CALL_STATUS_ANSWERED:
+			goto release_by_id;
+
 		case CALL_STATUS_COMING:
 		case CALL_STATUS_PROCEEDING:
 		case CALL_STATUS_MO_ALERTING:
-		case CALL_STATUS_MT_ALERTING:
-		case CALL_STATUS_ANSWERED:
+			cause = CALL_CAUSE_BUSY_USER_REQUEST;
 			goto release_by_id;
 		}
 	}
@@ -1030,15 +1035,14 @@ static void isi_hangup_current(struct ofono_voicecall *ovc,
 	id = CALL_ID_ACTIVE;
 
 release_by_id:
-	isi_call_release_req(ovc, id, CALL_CAUSE_TYPE_CLIENT,
-				CALL_CAUSE_RELEASE_BY_USER, cb, data);
+	isi_call_release_req(ovc, id, cause, cb, data);
 }
 
 static void isi_release_all_held(struct ofono_voicecall *ovc,
 				ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=0 (w/out incoming calls) */
-	isi_call_release_req(ovc, CALL_ID_HOLD, CALL_CAUSE_TYPE_CLIENT,
+	isi_call_release_req(ovc, CALL_ID_HOLD,
 				CALL_CAUSE_RELEASE_BY_USER, cb, data);
 }
 
@@ -1047,8 +1051,7 @@ static void isi_set_udub(struct ofono_voicecall *ovc,
 {
 	/* Release waiting calls */
 	isi_call_release_req(ovc, CALL_ID_WAITING,
-		CALL_CAUSE_TYPE_CLIENT, CALL_CAUSE_BUSY_USER_REQUEST,
-		cb, data);
+				CALL_CAUSE_BUSY_USER_REQUEST, cb, data);
 }
 
 static void isi_retrieve(struct ofono_voicecall *ovc,
@@ -1079,7 +1082,6 @@ static void isi_release_all_active(struct ofono_voicecall *ovc,
 		struct isi_call_req_context *irc;
 
 		irc = isi_call_release_req(ovc, CALL_ID_ACTIVE,
-						CALL_CAUSE_TYPE_CLIENT,
 						CALL_CAUSE_RELEASE_BY_USER,
 						cb, data);
 
@@ -1176,9 +1178,7 @@ static void isi_release_specific(struct ofono_voicecall *ovc, int id,
 			break;
 		}
 
-		isi_call_release_req(ovc, id,
-					CALL_CAUSE_TYPE_CLIENT, cause,
-					cb, data);
+		isi_call_release_req(ovc, id, cause, cb, data);
 	} else
 		CALLBACK_WITH_FAILURE(cb, data);
 }
