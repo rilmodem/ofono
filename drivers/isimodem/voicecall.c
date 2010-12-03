@@ -1060,65 +1060,59 @@ static void isi_retrieve(struct ofono_voicecall *ovc,
 	isi_call_control_req(ovc, CALL_ID_HOLD, CALL_OP_RETRIEVE, 0, cb, data);
 }
 
-static isi_call_req_step isi_wait_and_answer, isi_wait_and_retrieve;
+static void isi_wait_and_answer(struct isi_call_req_context *irc,
+				int id, int status)
+{
+	DBG("irc=%p id=%d status=%d", (void *)irc, id, status);
+
+	if (id != irc->id)
+		return;
+
+	switch (status) {
+	case CALL_STATUS_MT_ALERTING:
+		isi_call_answer_req(irc->ovc, irc->id, irc->cb, irc->data);
+		isi_ctx_free(irc);
+		break;
+
+	default:
+		isi_ctx_return_failure(irc);
+		break;
+	}
+}
 
 static void isi_release_all_active(struct ofono_voicecall *ovc,
 					ofono_voicecall_cb_t cb, void *data)
 {
 	/* AT+CHLD=1 */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
-	int id = 0, waiting = 0, active = 0, hold = 0;
+	struct isi_call_req_context *irc;
+	int id;
+	int waiting_id = 0;
+	int active = 0;
 
 	for (id = 1; id <= 7; id++) {
 		if (ivc->calls[id].call_id & CALL_ID_WAITING)
-			waiting++;
-		if (ivc->calls[id].call_id & CALL_ID_HOLD)
-			hold++;
+			waiting_id = id;
+
 		if (ivc->calls[id].call_id & CALL_ID_ACTIVE)
 			active++;
 	}
 
-	if (active) {
-		struct isi_call_req_context *irc;
-
-		irc = isi_call_release_req(ovc, CALL_ID_ACTIVE,
-						CALL_CAUSE_RELEASE_BY_USER,
-						cb, data);
-
-		if (irc == NULL)
-			;
-		else if (waiting)
-			isi_ctx_queue(irc, isi_wait_and_answer, 0);
-		else if (hold)
-			isi_ctx_queue(irc, isi_wait_and_retrieve, 0);
-	} else
+	if (!active) {
 		CALLBACK_WITH_FAILURE(cb, data);
-}
-
-static void isi_wait_and_answer(struct isi_call_req_context *irc,
-				int id, int status)
-{
-	DBG("irc=%p id=%d status=%d", (void *)irc, id, status);
-
-	switch (status) {
-	case CALL_STATUS_TERMINATED:
-		isi_answer(irc->ovc, irc->cb, irc->data);
-		isi_ctx_free(irc);
-		break;
+		return;
 	}
-}
 
-static void isi_wait_and_retrieve(struct isi_call_req_context *irc,
-					int id, int status)
-{
-	DBG("irc=%p id=%u status=%u", (void *)irc, id, status);
+	irc = isi_call_release_req(ovc, CALL_ID_ACTIVE,
+					CALL_CAUSE_RELEASE_BY_USER,
+					cb, data);
+	if (irc == NULL)
+		return;
 
-	switch (status) {
-	case CALL_STATUS_TERMINATED:
-		isi_retrieve(irc->ovc, irc->cb, irc->data);
-		isi_ctx_free(irc);
-		break;
-	}
+	if (waiting_id)
+		isi_ctx_queue(irc, isi_wait_and_answer, waiting_id);
+
+	/* Retrieving held calls is currently a unwanted side-effect */
 }
 
 static void isi_hold_all_active(struct ofono_voicecall *ovc,
@@ -1126,34 +1120,38 @@ static void isi_hold_all_active(struct ofono_voicecall *ovc,
 {
 	/* AT+CHLD=2 */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
-	int id = 0, op = 0, waiting = 0, active = 0, hold = 0;
+	int id;
+	int waiting = 0;
+	int active = 0;
+	int hold = 0;
+	int op;
 
 	for (id = 1; id <= 7; id++) {
 		if (ivc->calls[id].call_id & CALL_ID_WAITING)
 			waiting++;
-		if (ivc->calls[id].call_id & CALL_ID_HOLD)
+		else if (ivc->calls[id].call_id & CALL_ID_HOLD)
 			hold++;
-		if (ivc->calls[id].call_id & CALL_ID_ACTIVE)
+		else if (ivc->calls[id].call_id & CALL_ID_ACTIVE)
 			active++;
 	}
 
 	if (waiting) {
 		isi_call_answer_req(ovc, CALL_ID_WAITING, cb, data);
-	} else if (hold) {
-		if (active) {
-			op = CALL_OP_SWAP;
-			id = CALL_ID_ACTIVE;
-		} else {
-			op = CALL_OP_RETRIEVE;
-			id = CALL_ID_HOLD;
-		}
-		isi_call_control_req(ovc, id, op, 0, cb, data);
-	} else if (active) {
-		id = CALL_ID_ACTIVE, op = CALL_OP_HOLD;
-		isi_call_control_req(ovc, id, op, 0, cb, data);
-	} else {
-		CALLBACK_WITH_FAILURE(cb, data);
+		return;
 	}
+
+	if (active) {
+		if (hold)
+			op = CALL_OP_SWAP;
+		else
+			op = CALL_OP_HOLD;
+
+		isi_call_control_req(ovc, CALL_ID_ACTIVE, op, 0, cb, data);
+
+	} else if (hold)
+		isi_retrieve(ovc, cb, data);
+	else
+		CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void isi_release_specific(struct ofono_voicecall *ovc, int id,
