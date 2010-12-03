@@ -1616,6 +1616,26 @@ void ofono_modem_remove(struct ofono_modem *modem)
 	g_free(modem);
 }
 
+void ofono_modem_reset(struct ofono_modem *modem)
+{
+	int err;
+
+	DBG("%p", modem);
+
+	if (modem->pending) {
+		DBusMessage *reply = __ofono_error_failed(modem->pending);
+		__ofono_dbus_pending_reply(&modem->pending, reply);
+	}
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	err = set_powered(modem, TRUE);
+	if (err == -EINPROGRESS)
+		return;
+
+	modem_change_state(modem, MODEM_STATE_PRE_SIM);
+}
+
 int ofono_modem_driver_register(const struct ofono_modem_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
