@@ -87,8 +87,6 @@ static const struct sockaddr_pn commgr = {
 	.spn_resource = PN_COMMGR,
 };
 
-static void service_finalize(gpointer value);
-
 static GIsiServiceMux *service_get(GIsiModem *modem, uint8_t resource)
 {
 	GIsiServiceMux *mux;
