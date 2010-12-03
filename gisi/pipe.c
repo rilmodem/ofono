@@ -171,7 +171,8 @@ static void g_isi_pipe_handle_error(GIsiPipe *pipe, uint8_t code)
 
 static void g_isi_pipe_created(const GIsiMessage *msg, void *data)
 {
-	const struct isi_pipe_resp *resp = g_isi_msg_data(msg);
+	struct isi_pipe_resp *resp;
+	size_t len = sizeof(struct isi_pipe_resp);
 	GIsiPipe *pipe = data;
 
 	if (g_isi_msg_error(msg) < 0) {
@@ -182,7 +183,7 @@ static void g_isi_pipe_created(const GIsiMessage *msg, void *data)
 	if (g_isi_msg_id(msg) != PNS_PIPE_CREATE_RESP)
 		 return;
 
-	if (!resp || g_isi_msg_data_len(msg) != sizeof(struct isi_pipe_resp))
+	if (!g_isi_msg_data_get_struct(msg, 0, (const void **) &resp, len))
 		return;
 
 	if (resp->pipe_handle == PN_PIPE_INVALID_HANDLE) {
@@ -259,7 +260,8 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem, GIsiPipeHandler cb, uint16_t obj1,
 static void g_isi_pipe_enabled(const GIsiMessage *msg, void *data)
 {
 	GIsiPipe *pipe = data;
-	const struct isi_pipe_resp *resp = g_isi_msg_data(msg);
+	const struct isi_pipe_resp *resp;
+	size_t len = sizeof(struct isi_pipe_resp);
 
 	if (g_isi_msg_error(msg) < 0) {
 		g_isi_pipe_handle_error(pipe, PN_PIPE_ERR_TIMEOUT);
@@ -269,7 +271,7 @@ static void g_isi_pipe_enabled(const GIsiMessage *msg, void *data)
 	if (g_isi_msg_id(msg) != PNS_PIPE_ENABLE_RESP)
 		return;
 
-	if (!resp || g_isi_msg_data_len(msg) != sizeof(struct isi_pipe_resp))
+	if (!g_isi_msg_data_get_struct(msg, 0, (const void **) &resp, len))
 		return;
 
 	if (pipe->handle != resp->pipe_handle)
@@ -320,7 +322,8 @@ int g_isi_pipe_start(GIsiPipe *pipe)
 static void g_isi_pipe_removed(const GIsiMessage *msg, void *data)
 {
 	GIsiPipe *pipe = data;
-	const struct isi_pipe_resp *resp = g_isi_msg_data(msg);
+	struct isi_pipe_resp *resp;
+	size_t len = sizeof(struct isi_pipe_resp);
 
 	if (g_isi_msg_error(msg) < 0) {
 		g_isi_pipe_handle_error(pipe, PN_PIPE_ERR_TIMEOUT);
@@ -330,7 +333,7 @@ static void g_isi_pipe_removed(const GIsiMessage *msg, void *data)
 	if (g_isi_msg_id(msg) != PNS_PIPE_REMOVE_RESP)
 		return;
 
-	if (!resp || g_isi_msg_data_len(msg) != sizeof(struct isi_pipe_resp))
+	if (!g_isi_msg_data_get_struct(msg, 0, (const void **) &resp, len))
 		return;
 
 	if (pipe->handle != resp->pipe_handle)

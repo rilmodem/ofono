@@ -93,11 +93,11 @@ static GIsiServiceMux *service_get(GIsiModem *modem, uint8_t resource)
 	int key = resource;
 
 	mux = g_hash_table_lookup(modem->services, GINT_TO_POINTER(key));
-	if (mux)
+	if (mux != NULL)
 		return mux;
 
 	mux = g_try_new0(GIsiServiceMux, 1);
-	if (!mux)
+	if (mux == NULL)
 		return NULL;
 
 	g_hash_table_insert(modem->services, GINT_TO_POINTER(key), mux);
@@ -136,7 +136,7 @@ static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg,
 
 	GSList *l = mux->pending;
 
-	while (l) {
+	while (l != NULL) {
 		GSList *next = l->next;
 		GIsiPending *pend = l->data;
 		msg->private = pend;
@@ -348,13 +348,13 @@ static void pending_destroy(gpointer value, gpointer user)
 {
 	GIsiPending *op = value;
 
-	if (!op)
+	if (op == NULL)
 		return;
 
 	if (op->timeout > 0)
 		g_source_remove(op->timeout);
 
-	if (op->destroy)
+	if (op->destroy != NULL)
 		op->destroy(op->data);
 
 	g_free(op);
@@ -388,7 +388,7 @@ GIsiModem *g_isi_modem_create(unsigned index)
 	}
 
 	modem = g_try_new0(GIsiModem, 1);
-	if (!modem) {
+	if (modem == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -396,7 +396,7 @@ GIsiModem *g_isi_modem_create(unsigned index)
 	inds = g_isi_phonet_new(index);
 	reqs = g_isi_phonet_new(index);
 
-	if (!inds || !reqs) {
+	if (inds == NULL || reqs == NULL) {
 		g_free(modem);
 		return NULL;
 	}
@@ -490,7 +490,7 @@ static void service_regs_decr(GIsiServiceMux *mux)
 
 void g_isi_modem_destroy(GIsiModem *modem)
 {
-	if (!modem)
+	if (modem == NULL)
 		return;
 
 	g_hash_table_remove_all(modem->services);
@@ -502,10 +502,10 @@ void g_isi_modem_destroy(GIsiModem *modem)
 
 	g_hash_table_unref(modem->services);
 
-	if (modem->ind_watch)
+	if (modem->ind_watch > 0)
 		g_source_remove(modem->ind_watch);
 
-	if (modem->req_watch)
+	if (modem->req_watch > 0)
 		g_source_remove(modem->req_watch);
 
 	g_free(modem);
@@ -513,7 +513,7 @@ void g_isi_modem_destroy(GIsiModem *modem)
 
 unsigned g_isi_modem_index(GIsiModem *modem)
 {
-	return modem ? modem->index : 0;
+	return modem != NULL ? modem->index : 0;
 }
 
 GIsiPending *g_isi_request_send(GIsiModem *modem, uint8_t resource,
@@ -617,19 +617,19 @@ GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 	GIsiServiceMux *mux;
 	GIsiPending *resp;
 
-	if (!modem) {
+	if (modem == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
 
 	mux = service_get(modem, dst->spn_resource);
-	if (!mux) {
+	if (mux == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	resp = g_try_new0(GIsiPending, 1);
-	if (!resp) {
+	if (resp == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -675,7 +675,7 @@ GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 
 	mux->pending = g_slist_prepend(mux->pending, resp);
 
-	if (timeout)
+	if (timeout > 0)
 		resp->timeout = g_timeout_add_seconds(timeout, resp_timeout, resp);
 
 	mux->last_utid = resp->utid;
@@ -688,17 +688,17 @@ error:
 
 uint8_t g_isi_request_utid(GIsiPending *resp)
 {
-	return resp ? resp->utid : 0;
+	return resp != NULL ? resp->utid : 0;
 }
 
 GIsiPending *g_isi_pending_from_msg(const GIsiMessage *msg)
 {
-	return msg ? msg->private : NULL;
+	return msg != NULL ? msg->private : NULL;
 }
 
 void g_isi_pending_remove(GIsiPending *op)
 {
-	if (!op)
+	if (op == NULL)
 		return;
 
 	op->service->pending = g_slist_remove(op->service->pending, op);
@@ -709,7 +709,7 @@ void g_isi_pending_remove(GIsiPending *op)
 	if (op->type == GISI_MESSAGE_TYPE_REQ)
 		service_regs_decr(op->service);
 
-	if (op->type == GISI_MESSAGE_TYPE_RESP && op->notify) {
+	if (op->type == GISI_MESSAGE_TYPE_RESP && op->notify != NULL) {
 		GIsiMessage msg = {
 			.error = ESHUTDOWN,
 			.private = op,
@@ -729,13 +729,13 @@ GIsiPending *g_isi_ntf_subscribe(GIsiModem *modem, uint8_t resource,
 	GIsiPending *ntf;
 
 	mux = service_get(modem, resource);
-	if (!mux) {
+	if (mux == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	ntf = g_try_new0(GIsiPending, 1);
-	if (!ntf) {
+	if (ntf == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -760,13 +760,13 @@ GIsiPending *g_isi_service_bind(GIsiModem *modem, uint8_t resource,
 	GIsiPending *srv;
 
 	mux = service_get(modem, resource);
-	if (!mux) {
+	if (mux == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	srv = g_try_new0(GIsiPending, 1);
-	if (!srv) {
+	if (srv == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -793,13 +793,13 @@ GIsiPending *g_isi_ind_subscribe(GIsiModem *modem, uint8_t resource,
 	GIsiPending *ind;
 
 	mux = service_get(modem, resource);
-	if (!mux) {
+	if (mux == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	ind = g_try_new0(GIsiPending, 1);
-	if (!ind) {
+	if (ind == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -876,11 +876,11 @@ int g_isi_modem_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 	size_t i, len;
 	GIsiServiceMux *mux;
 
-	if (!modem)
+	if (modem == NULL)
 		return -EINVAL;
 
 	mux = service_get(modem, dst->spn_resource);
-	if (!mux)
+	if (mux == NULL)
 		return -ENOMEM;
 
 	for (i = 0, len = 0; i < iovlen; i++)
@@ -972,13 +972,13 @@ GIsiPending *g_isi_resource_ping(GIsiModem *modem, uint8_t resource,
 	int ret;
 
 	mux = service_get(modem, resource);
-	if (!mux) {
+	if (mux == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	ping = g_try_new0(GIsiPending, 1);
-	if (!ping) {
+	if (ping == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}

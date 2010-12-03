@@ -52,7 +52,7 @@ void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 	const uint8_t *data = g_isi_msg_data(msg);
 	size_t len = g_isi_msg_data_len(msg);
 
-	if (!data)
+	if (data == NULL)
 		len = used = 0;
 
 	iter->start = (uint8_t *)data + used;
@@ -67,7 +67,7 @@ void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 	const uint8_t *data = g_isi_msg_data(msg);
 	size_t len = g_isi_msg_data_len(msg);
 
-	if (!data)
+	if (data == NULL)
 		len = used = 0;
 
 	iter->start = (uint8_t *)data + used;
@@ -204,7 +204,7 @@ gboolean g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
 	if (pos > g_isi_sb_iter_get_len(iter))
 		return FALSE;
 
-	if (!utf8 || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
+	if (utf8 == NULL || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
 		return FALSE;
 
 	ucs2 = iter->start + pos;
@@ -224,7 +224,7 @@ gboolean g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
 	if (pos > g_isi_sb_iter_get_len(iter))
 		return FALSE;
 
-	if (!latin || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
+	if (latin == NULL || len == 0 || pos + len > g_isi_sb_iter_get_len(iter))
 		return FALSE;
 
 	str = iter->start + pos;

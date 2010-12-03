@@ -336,7 +336,7 @@ error:
 
 void g_isi_pn_netlink_stop(GIsiPhonetNetlink *self)
 {
-	if (!self)
+	if (self == NULL)
 		return;
 
 	netlink_list = g_slist_remove(netlink_list, self);

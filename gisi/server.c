@@ -49,21 +49,21 @@ static void pending_notify(const GIsiMessage *msg, void *data)
 {
 	struct pending_data *pd = data;
 
-	if (!pd)
+	if (pd == NULL)
 		return;
 
-	if (pd->notify)
+	if (pd->notify != NULL)
 		pd->notify(msg, pd->data);
 }
 
 uint8_t g_isi_server_resource(GIsiServer *server)
 {
-	return server ? server->resource : 0;
+	return server != NULL ? server->resource : 0;
 }
 
 GIsiModem *g_isi_server_modem(GIsiServer *server)
 {
-	return server ? server->modem : 0;
+	return server != NULL ? server->modem : 0;
 }
 
 GIsiServer *g_isi_server_create(GIsiModem *modem, uint8_t resource,
@@ -71,18 +71,18 @@ GIsiServer *g_isi_server_create(GIsiModem *modem, uint8_t resource,
 {
 	GIsiServer *server;
 
-	if (!modem) {
+	if (modem == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
 
 	server  = g_try_new0(GIsiServer, 1);
-	if (!server) {
+	if (server == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	if (version)
+	if (version != NULL)
 		memcpy(&server->version, version, sizeof(GIsiVersion));
 
 	server->resource = resource;
@@ -97,7 +97,7 @@ static void foreach_destroy(gpointer value, gpointer user)
 	GIsiPending *op = value;
 	GIsiServer *server = user;
 
-	if (!op || !server)
+	if (op == NULL || server == NULL)
 		return;
 
 	server->pending = g_slist_remove(server->pending, op);
@@ -106,7 +106,7 @@ static void foreach_destroy(gpointer value, gpointer user)
 
 void g_isi_server_destroy(GIsiServer *server)
 {
-	if (!server)
+	if (server == NULL)
 		return;
 
 	g_slist_foreach(server->pending, foreach_destroy, server);
@@ -117,7 +117,7 @@ void g_isi_server_destroy(GIsiServer *server)
 int g_isi_server_send(GIsiServer *server, const GIsiMessage *req,
 			const void *__restrict buf, size_t len)
 {
-	if (!server)
+	if (server == NULL)
 		return -EINVAL;
 
 	return g_isi_response_send(server->modem, req, buf, len);
@@ -126,7 +126,7 @@ int g_isi_server_send(GIsiServer *server, const GIsiMessage *req,
 int g_isi_server_vsend(GIsiServer *server, const GIsiMessage *req,
 			const struct iovec *iov, size_t iovlen)
 {
-	if (!server)
+	if (server == NULL)
 		return -EINVAL;
 
 	return g_isi_response_vsend(server->modem, req, iov, iovlen);
@@ -138,13 +138,13 @@ static struct pending_data *pending_data_create(GIsiServer *server,
 {
 	struct pending_data *pd;
 
-	if (!server) {
+	if (server == NULL) {
 		errno = EINVAL;
 		return NULL;
 	}
 
 	pd = g_try_new0(struct pending_data, 1);
-	if (!pd) {
+	if (pd == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -163,12 +163,12 @@ GIsiPending *g_isi_server_handle(GIsiServer *server, uint8_t type,
 	GIsiPending *op;
 
 	pd = pending_data_create(server, notify, data);
-	if (!pd)
+	if (pd == NULL)
 		return NULL;
 
 	op = g_isi_service_bind(server->modem, server->resource, type,
 				pending_notify, pd, g_free);
-	if (!op) {
+	if (op == NULL) {
 		g_free(pd);
 		return NULL;
 	}

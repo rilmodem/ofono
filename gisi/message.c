@@ -33,17 +33,23 @@
 
 int g_isi_msg_version_major(const GIsiMessage *msg)
 {
-	return msg && msg->version ? msg->version->major : -1;
+	if (msg == NULL || msg->version == NULL)
+		return -1;
+
+	return msg->version->major;
 }
 
 int g_isi_msg_version_minor(const GIsiMessage *msg)
 {
-	return msg && msg->version ? msg->version->minor : -1;
+	if (msg == NULL || msg->version == NULL)
+		return -1;
+
+	return msg->version->minor;
 }
 
 int g_isi_msg_error(const GIsiMessage *msg)
 {
-	return msg ? -msg->error : -EINVAL;
+	return msg != NULL ? -msg->error : -EINVAL;
 }
 
 const char *g_isi_msg_strerror(const GIsiMessage *msg)
@@ -53,19 +59,25 @@ const char *g_isi_msg_strerror(const GIsiMessage *msg)
 
 uint8_t g_isi_msg_resource(const GIsiMessage *msg)
 {
-	return msg && msg->addr ? msg->addr->spn_resource : 0;
+	if (msg == NULL || msg->addr == NULL)
+		return 0;
+
+	return msg->addr->spn_resource;
 }
 
 uint16_t g_isi_msg_object(const GIsiMessage *msg)
 {
-	return msg && msg->addr ? (msg->addr->spn_dev << 8) | msg->addr->spn_obj : 0;
+	if (msg == NULL || msg->addr == NULL)
+		return 0;
+
+	return (msg->addr->spn_dev << 8) | msg->addr->spn_obj;
 }
 
 uint8_t g_isi_msg_id(const GIsiMessage *msg)
 {
 	const uint8_t *buf;
 
-	if (!msg || !msg->data || msg->len < 2)
+	if (msg == NULL || msg->data == NULL || msg->len < 2)
 		return 0;
 
 	buf = msg->data;
@@ -77,7 +89,7 @@ uint8_t g_isi_msg_utid(const GIsiMessage *msg)
 {
 	const uint8_t *buf;
 
-	if (!msg || !msg->data || msg->len < 2)
+	if (msg == NULL || msg->data == NULL || msg->len < 2)
 		return 0;
 
 	buf = msg->data;
@@ -87,12 +99,18 @@ uint8_t g_isi_msg_utid(const GIsiMessage *msg)
 
 size_t g_isi_msg_data_len(const GIsiMessage *msg)
 {
-	return msg && msg->data ? msg->len - 2 : 0;
+	if (msg == NULL || msg->data == NULL)
+		return 0;
+
+	return msg->len - 2;
 }
 
 const void *g_isi_msg_data(const GIsiMessage *msg)
 {
-	return msg && msg->data ? (void *)msg->data + 2 : NULL;
+	if (msg == NULL || msg->data == NULL)
+		return NULL;
+
+	return (void *)msg->data + 2;
 }
 
 gboolean g_isi_msg_data_get_byte(const GIsiMessage *msg, unsigned offset,
@@ -100,10 +118,10 @@ gboolean g_isi_msg_data_get_byte(const GIsiMessage *msg, unsigned offset,
 {
 	const uint8_t *buf = g_isi_msg_data(msg);
 
-	if (!buf || g_isi_msg_data_len(msg) < offset)
+	if (buf == NULL || g_isi_msg_data_len(msg) < offset)
 		return FALSE;
 
-	if (byte)
+	if (byte != NULL)
 		*byte = buf[offset];
 
 	return TRUE;
@@ -115,11 +133,12 @@ gboolean g_isi_msg_data_get_word(const GIsiMessage *msg, unsigned offset,
 	const uint8_t *buf = g_isi_msg_data(msg);
 	uint16_t val;
 
-	if (!buf || g_isi_msg_data_len(msg) < offset + 1)
+	if (buf == NULL || g_isi_msg_data_len(msg) < offset + 1)
 		return FALSE;
 
 	memcpy(&val, buf + offset, sizeof(uint16_t));
-	if (word)
+
+	if (word != NULL)
 		*word = ntohs(val);
 
 	return TRUE;
@@ -131,7 +150,7 @@ gboolean g_isi_msg_data_get_struct(const GIsiMessage *msg, unsigned offset,
 	if (g_isi_msg_data_len(msg) < offset + len)
 		return FALSE;
 
-	if (type)
+	if (type != NULL)
 		*type = g_isi_msg_data(msg) + offset;
 
 	return TRUE;
