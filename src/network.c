@@ -810,8 +810,9 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING, &operator);
 
 	if (netreg->signal_strength != -1) {
-		dbus_uint16_t strength = netreg->signal_strength;
-		ofono_dbus_dict_append(&dict, "Strength", DBUS_TYPE_UINT16,
+		unsigned char strength = netreg->signal_strength;
+
+		ofono_dbus_dict_append(&dict, "Strength", DBUS_TYPE_BYTE,
 					&strength);
 	}
 
@@ -1403,11 +1404,11 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 
 	if (strength != -1) {
 		const char *path = __ofono_atom_get_path(netreg->atom);
-		dbus_uint16_t strength = netreg->signal_strength;
+		unsigned char strength = netreg->signal_strength;
 
 		ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Strength", DBUS_TYPE_UINT16,
+					"Strength", DBUS_TYPE_BYTE,
 					&strength);
 	}
 }
