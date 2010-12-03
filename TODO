@@ -307,6 +307,14 @@ Voicecall
   Complexity: C2
   Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
+- Blacklisting. According to 3GPP TS 22.001 annex E, the TE must provide
+  automatic calling repeat call attempt restrictions.
+
+  There should be a method to manually reset blacklisting.
+
+  Priority: Medium
+  Complexity: C1
+
 
 Sim Toolkit
 ===========
