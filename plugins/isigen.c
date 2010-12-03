@@ -264,7 +264,10 @@ static int isigen_probe(struct ofono_modem *modem)
 	g_isi_modem_set_userdata(isimodem, modem);
 
 	if (getenv("OFONO_ISI_DEBUG"))
-		g_isi_modem_set_debug(isimodem, isi_debug, NULL);
+		g_isi_modem_set_debug(isimodem, ofono_debug);
+
+	if (getenv("OFONO_ISI_TRACE"))
+		g_isi_modem_set_trace(isimodem, isi_trace);
 
 	if (g_isi_pn_netlink_by_modem(isimodem)) {
 		DBG("%s: %s", ifname, strerror(EBUSY));
