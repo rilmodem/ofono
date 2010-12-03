@@ -354,7 +354,10 @@ static int n900_probe(struct ofono_modem *modem)
 	g_isi_modem_set_userdata(isimodem, modem);
 
 	if (getenv("OFONO_ISI_DEBUG"))
-		g_isi_modem_set_debug(isimodem, isi_debug, NULL);
+		g_isi_modem_set_debug(isimodem, ofono_debug);
+
+	if (getenv("OFONO_ISI_TRACE"))
+		g_isi_modem_set_trace(isimodem, isi_trace);
 
 	if (gpio_probe(isimodem, address, n900_power_cb, modem) != 0) {
 		DBG("gpio for %s: %s", ifname, strerror(errno));
