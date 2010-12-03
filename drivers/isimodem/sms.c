@@ -95,7 +95,6 @@ struct sms_addr {
 
 struct sms_common {
 	uint8_t len;
-	uint8_t filler;
 	uint8_t *data;
 };
 
@@ -486,69 +485,102 @@ static gboolean send_deliver_report(GIsiClient *client, gboolean success)
 					report_resp_cb, NULL, NULL) != NULL;
 }
 
-static gboolean parse_sms_address(GIsiSubBlockIter *iter,
-					struct sms_addr **addr)
+static gboolean parse_sms_address(GIsiSubBlockIter *iter, struct sms_addr *add)
 {
-	size_t len = sizeof(struct sms_addr);
+	add->data = NULL;
 
-	*addr = NULL;
-	return g_isi_sb_iter_get_struct(iter, (void **)addr, len, 2);
+	if (!g_isi_sb_iter_get_byte(iter, &add->type, 2))
+		return FALSE;
+
+	if (!g_isi_sb_iter_get_byte(iter, &add->len, 3))
+		return FALSE;
+
+	if (add->len == 0)
+		return FALSE;
+
+	if (!g_isi_sb_iter_get_struct(iter, (void **) &add->data, add->len, 4))
+		return FALSE;
+
+	return TRUE;
 }
 
-static gboolean parse_sms_tpdu(GIsiSubBlockIter *iter,
-				struct sms_common **tpdu)
+static gboolean parse_sms_tpdu(GIsiSubBlockIter *iter, struct sms_common *com)
 {
-	size_t len = sizeof(struct sms_common);
+	com->data = NULL;
 
-	*tpdu = NULL;
-	return g_isi_sb_iter_get_struct(iter, (void **)tpdu, len, 2);
+	if (!g_isi_sb_iter_get_byte(iter, &com->len, 2))
+		return FALSE;
+
+	if (com->len == 0)
+		return FALSE;
+
+	if (!g_isi_sb_iter_get_struct(iter, (void **) &com->data, com->len, 4))
+		return FALSE;
+
+	return TRUE;
 }
 
-static void routing_ntf_cb(const GIsiMessage *msg, void *data)
+static gboolean parse_gsm_tpdu(GIsiSubBlockIter *parent, struct sms_addr *add,
+				struct sms_common *com)
 {
-	struct ofono_sms *sms = data;
-	struct sms_data *sd = ofono_sms_get_data(sms);
-	struct sms_common *tpdu;
-	struct sms_addr *addr;
 	GIsiSubBlockIter iter;
 
-	uint8_t pdu[176];
-	uint8_t type;
-
-	if (g_isi_msg_id(msg) != SMS_PP_ROUTING_NTF)
-		return;
-
-	if (!g_isi_msg_data_get_byte(msg, 2, &type) ||
-			type != SMS_GSM_TPDU)
-		return;
-
-	for (g_isi_sb_iter_init(&iter, msg, 6);
+	for (g_isi_sb_subiter_init(parent, &iter, 2);
 			g_isi_sb_iter_is_valid(&iter);
 			g_isi_sb_iter_next(&iter)) {
 
 		switch (g_isi_sb_iter_get_id(&iter)) {
 		case SMS_ADDRESS:
 
-			if (!parse_sms_address(&iter, &addr) ||
-					addr->type != SMS_GSM_0411_ADDRESS)
-				return;
+			if (!parse_sms_address(&iter, add))
+				 return FALSE;
+
+			if (add->type != SMS_GSM_0411_ADDRESS)
+				return FALSE;
 			break;
 
 		case SMS_COMMON_DATA:
 
-			if (!parse_sms_tpdu(&iter, &tpdu))
-				return;
+			if (!parse_sms_tpdu(&iter, com))
+				return FALSE;
 			break;
 		}
 	}
+	return TRUE;
+}
 
-	if (tpdu == NULL || addr == NULL || tpdu->len + addr->len > sizeof(pdu))
+static void routing_ntf_cb(const GIsiMessage *msg, void *data)
+{
+	struct ofono_sms *sms = data;
+	struct sms_data *sd = ofono_sms_get_data(sms);
+	struct sms_common tpdu;
+	struct sms_addr addr;
+	GIsiSubBlockIter iter;
+
+	uint8_t pdu[176];
+
+	if (g_isi_msg_id(msg) != SMS_PP_ROUTING_NTF)
 		return;
 
-	memcpy(pdu, addr->data, addr->len);
-	memcpy(pdu + addr->len, tpdu->data, tpdu->len);
+	for (g_isi_sb_iter_init(&iter, msg, 2);
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
 
-	ofono_sms_deliver_notify(sms, pdu, tpdu->len + addr->len, tpdu->len);
+		if (g_isi_sb_iter_get_id(&iter) != SMS_GSM_TPDU)
+			continue;
+
+		if (!parse_gsm_tpdu(&iter, &addr, &tpdu))
+			return;
+	}
+
+	if (tpdu.data == NULL || addr.data == NULL ||
+			tpdu.len + addr.len > sizeof(pdu))
+		return;
+
+	memcpy(pdu, addr.data, addr.len);
+	memcpy(pdu + addr.len, tpdu.data, tpdu.len);
+
+	ofono_sms_deliver_notify(sms, pdu, tpdu.len + addr.len, tpdu.len);
 
 	/*
 	 * FIXME: We should not ack the DELIVER unless it has been
