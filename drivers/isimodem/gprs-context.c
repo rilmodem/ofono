@@ -604,7 +604,15 @@ static void isi_gprs_context_remove(struct ofono_gprs_context *gc)
 	if (cd == NULL)
 		return;
 
-	reset_context(cd);
+	if (cd->reset)
+		g_source_remove(cd->reset);
+
+	if (cd->pipe != NULL)
+		g_isi_pipe_destroy(cd->pipe);
+
+	if (cd->pep != NULL)
+		g_isi_pep_destroy(cd->pep);
+
 	g_isi_client_destroy(cd->client);
 	g_free(cd);
 }
