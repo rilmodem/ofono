@@ -44,4 +44,9 @@ if __name__ == '__main__':
 	print "Agent registered"
 
 	mainloop = gobject.MainLoop()
-	mainloop.run()
+
+	try:
+		mainloop.run()
+	except KeyboardInterrupt:
+		pn.UnregisterAgent(path)
+		mainloop.run()
