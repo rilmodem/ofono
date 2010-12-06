@@ -39,6 +39,8 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
+#include  "common.h"
+
 #include "atmodem.h"
 
 /* Amount of ms we wait between CLCC calls */
@@ -710,9 +712,9 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	if (strlen(num) > 0)
-		validity = 0;
+		validity = CLIP_VALIDITY_VALID;
 	else
-		validity = 2;
+		validity = CLIP_VALIDITY_NOT_AVAILABLE;
 
 	/* Skip subaddr, satype and alpha */
 	g_at_result_iter_skip_next(&iter);
