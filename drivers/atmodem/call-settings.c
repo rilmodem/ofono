@@ -45,6 +45,7 @@ static const char *colp_prefix[] = { "+COLP:", NULL };
 static const char *clip_prefix[] = { "+CLIP:", NULL };
 static const char *ccwa_prefix[] = { "+CCWA:", NULL };
 static const char *colr_prefix[] = { "+COLR:", NULL };
+static const char *cnap_prefix[] = { "+CNAP:", NULL };
 
 static void ccwa_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -180,6 +181,57 @@ static void at_clip_query(struct ofono_call_settings *cs,
 
 	if (g_at_chat_send(chat, "AT+CLIP?", clip_prefix,
 				clip_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, -1, data);
+}
+
+static void cnap_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_call_settings_status_cb_t cb = cbd->cb;
+	struct ofono_error error;
+	GAtResultIter iter;
+	int status;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, -1, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "+CNAP:") == FALSE)
+		goto error;
+
+	if (g_at_result_iter_next_number(&iter, &status) == FALSE)
+		goto error;
+
+	DBG("network: %d", status);
+
+	cb(&error, status, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+}
+
+static void at_cnap_query(struct ofono_call_settings *cs,
+				ofono_call_settings_status_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(cb, data);
+
+	if (cbd == NULL)
+		goto error;
+
+	if (g_at_chat_send(chat, "AT+CNAP?", cnap_prefix,
+				cnap_query_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -404,6 +456,7 @@ static struct ofono_call_settings_driver driver = {
 	.probe = at_call_settings_probe,
 	.remove = at_call_settings_remove,
 	.clip_query = at_clip_query,
+	.cnap_query = at_cnap_query,
 	.colp_query = at_colp_query,
 	.clir_query = at_clir_query,
 	.clir_set = at_clir_set,
