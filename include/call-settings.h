@@ -46,6 +46,8 @@ struct ofono_call_settings_driver {
 	void (*remove)(struct ofono_call_settings *cs);
 	void (*clip_query)(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data);
+	void (*cnap_query)(struct ofono_call_settings *cs,
+				ofono_call_settings_status_cb_t cb, void *data);
 	void (*colp_query)(struct ofono_call_settings *cs,
 				ofono_call_settings_status_cb_t cb, void *data);
 	void (*clir_query)(struct ofono_call_settings *cs,
