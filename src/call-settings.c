@@ -103,9 +103,9 @@ static const char *clip_status_to_string(int status)
 		return "disabled";
 	case CLIP_STATUS_PROVISIONED:
 		return "enabled";
-	default:
-		return "unknown";
 	}
+
+	return "unknown";
 }
 
 static const char *colp_status_to_string(int status)
@@ -115,9 +115,9 @@ static const char *colp_status_to_string(int status)
 		return "disabled";
 	case COLP_STATUS_PROVISIONED:
 		return "enabled";
-	default:
-		return "unknown";
 	}
+
+	return "unknown";
 }
 
 static const char *colr_status_to_string(int status)
@@ -127,9 +127,9 @@ static const char *colr_status_to_string(int status)
 		return "disabled";
 	case COLR_STATUS_PROVISIONED:
 		return "enabled";
-	default:
-		return "unknown";
 	}
+
+	return "unknown";
 }
 
 static const char *hide_callerid_to_string(int status)
@@ -141,9 +141,9 @@ static const char *hide_callerid_to_string(int status)
 		return "enabled";
 	case OFONO_CLIR_OPTION_SUPPRESSION:
 		return "disabled";
-	default:
-		return "default";
 	}
+
+	return "default";
 }
 
 static const char *clir_status_to_string(int status)
@@ -157,9 +157,9 @@ static const char *clir_status_to_string(int status)
 		return "on";
 	case CLIR_STATUS_TEMPORARY_ALLOWED:
 		return "off";
-	default:
-		return "unknown";
 	}
+
+	return "unknown";
 }
 
 static void set_clir_network(struct ofono_call_settings *cs, int clir)
