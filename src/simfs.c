@@ -554,7 +554,8 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	enum ofono_sim_file_structure structure;
 	int record_length;
 
-	if (imsi == NULL || op->info_only == TRUE)
+	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN ||
+			op->info_only == TRUE)
 		return FALSE;
 
 	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
@@ -836,6 +837,9 @@ char *sim_fs_get_cached_image(struct sim_fs *fs, int id)
 		return NULL;
 
 	phase = ofono_sim_get_phase(fs->sim);
+	if (phase == OFONO_SIM_PHASE_UNKNOWN)
+		return NULL;
+
 	path = g_strdup_printf(SIM_IMAGE_CACHE_PATH, imsi, phase, id);
 
 	TFR(stat(path, &st_buf));
@@ -906,6 +910,9 @@ void sim_fs_check_version(struct sim_fs *fs)
 	struct dirent **entries;
 	int len;
 	char *path;
+
+	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN)
+		return;
 
 	if (read_file(&version, 1, SIM_CACHE_VERSION, imsi, phase) == 1)
 		if (version == SIM_FS_VERSION)
