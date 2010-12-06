@@ -326,7 +326,9 @@ src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 src_ofonod_LDFLAGS = -Wl,--export-dynamic \
 				-Wl,--version-script=$(srcdir)/src/ofono.ver
 
-CLEANFILES = src/builtin.h $(local_headers) $(rules_DATA)
+BUILT_SOURCES = $(local_headers)
+
+CLEANFILES = src/builtin.h $(BUILT_SOURCES) $(rules_DATA)
 
 plugindir = $(libdir)/ofono/plugins
 
@@ -511,8 +513,6 @@ src/builtin.h: src/genbuiltin $(builtin_sources)
 
 plugins/%.rules:
 	$(AM_V_GEN)cp $(srcdir)/$(subst 97-,,$@) $@
-
-$(src_ofonod_OBJECTS) $(unit_objects): $(local_headers)
 
 include/ofono/version.h: include/version.h
 	$(AM_V_at)$(MKDIR_P) include/ofono
