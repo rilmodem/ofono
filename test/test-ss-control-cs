@@ -55,6 +55,9 @@ if __name__ == "__main__":
 	print "Query CLIP"
 	print ss.Initiate("*#30#")
 
+	print "Query CNAP"
+	print ss.Initiate("*#300#")
+
 	print "Query COLP"
 	print ss.Initiate("*#76#")
 
