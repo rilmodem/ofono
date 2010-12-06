@@ -48,6 +48,13 @@ enum clip_validity {
 	CLIP_VALIDITY_NOT_AVAILABLE = 2
 };
 
+/* 27.007 Section 7.30 */
+enum cnap_validity {
+	CNAP_VALIDITY_VALID = 0,
+	CNAP_VALIDITY_WITHHELD = 1,
+	CNAP_VALIDITY_NOT_AVAILABLE = 2
+};
+
 /* 27.007 Section 7.18 */
 enum call_status {
 	CALL_STATUS_ACTIVE = 0,
