@@ -87,6 +87,11 @@ Properties	string LineIdentification [readonly]
 			"override category" option was not provisioned for
 			the current subscriber.
 
+		string Name [readonly]
+
+			Contains the Name Identification information returned
+			by the network, if present.
+
 		boolean Multiparty [readonly]
 
 			Contains the indication if the voice call is part
