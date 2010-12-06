@@ -77,6 +77,7 @@ struct ofono_error {
 };
 
 #define OFONO_MAX_PHONE_NUMBER_LENGTH 20
+#define OFONO_MAX_CALLER_NAME_LENGTH 80
 
 struct ofono_phone_number {
 	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
@@ -90,7 +91,9 @@ struct ofono_call {
 	int status;
 	ofono_bool_t mpty;
 	struct ofono_phone_number phone_number;
+	char name[OFONO_MAX_CALLER_NAME_LENGTH + 1];
 	int clip_validity;
+	int cnap_validity;
 };
 
 struct ofono_network_time {
