@@ -1914,7 +1914,7 @@ const char *ofono_sim_get_imsi(struct ofono_sim *sim)
 enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim)
 {
 	if (sim == NULL)
-		return 0;
+		return OFONO_SIM_PHASE_UNKNOWN;
 
 	return sim->phase;
 }
