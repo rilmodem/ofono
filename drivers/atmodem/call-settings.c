@@ -164,7 +164,7 @@ static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_skip_next(&iter);
 	g_at_result_iter_next_number(&iter, &status);
 
-	DBG("clip_query_cb: network: %d", status);
+	DBG("network: %d", status);
 
 	cb(&error, status, cbd->data);
 }
@@ -214,7 +214,7 @@ static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_skip_next(&iter);
 	g_at_result_iter_next_number(&iter, &status);
 
-	DBG("colp_query_cb: network: %d", status);
+	DBG("network: %d", status);
 
 	cb(&error, status, cbd->data);
 }
@@ -263,7 +263,7 @@ static void clir_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_result_iter_next_number(&iter, &override);
 	g_at_result_iter_next_number(&iter, &network);
 
-	DBG("clir_query_cb: override: %d, network: %d", override, network);
+	DBG("override: %d, network: %d", override, network);
 
 	cb(&error, override, network, cbd->data);
 }
@@ -343,7 +343,7 @@ static void colr_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (g_at_result_iter_next_number(&iter, &status) == FALSE)
 		goto error;
 
-	DBG("colr_query_cb: network: %d", status);
+	DBG("network: %d", status);
 
 	cb(&error, status, cbd->data);
 	return;
