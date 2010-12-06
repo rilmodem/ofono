@@ -30,6 +30,18 @@ Properties	string CallingLinePresentation [readonly]
 				"enabled",
 				"unknown"
 
+		string CallingNamePresentation [readonly]
+
+			Contains the value of the calling name identification
+			presentation property.  The value indicates
+			the state of the CNAP supplementary service in the
+			network.  If enabled, the network will provide
+			the name of the calling party for incoming calls.
+			Possible values are:
+				"disabled",
+				"enabled",
+				"unknown"
+
 		string CalledLinePresentation [readonly]
 
 			Contains the value of the connected line identification
