@@ -178,6 +178,17 @@ static const char *phone_and_clip_to_string(const struct ofono_phone_number *n,
 	return phone_number_to_string(n);
 }
 
+static const char *cnap_to_string(const char *name, int cnap_validity)
+{
+	if (cnap_validity == CNAP_VALIDITY_WITHHELD && !strlen(name))
+		return "withheld";
+
+	if (cnap_validity == CNAP_VALIDITY_NOT_AVAILABLE)
+		return "";
+
+	return name;
+}
+
 static const char *time_to_str(const time_t *t)
 {
 	static char buf[128];
@@ -323,15 +334,23 @@ static void append_voicecall_properties(struct voicecall *v,
 	const char *status;
 	const char *callerid;
 	const char *timestr;
+	char buf[OFONO_MAX_CALLER_NAME_LENGTH + 1];
+	char *name;
 	ofono_bool_t mpty;
 
 	status = call_status_to_string(call->status);
 	callerid = phone_number_to_string(&call->phone_number);
 
+	strncpy(buf, call->name, OFONO_MAX_CALLER_NAME_LENGTH);
+	buf[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
+	name = buf;
+
 	ofono_dbus_dict_append(dict, "State", DBUS_TYPE_STRING, &status);
 
 	ofono_dbus_dict_append(dict, "LineIdentification",
 				DBUS_TYPE_STRING, &callerid);
+
+	ofono_dbus_dict_append(dict, "Name", DBUS_TYPE_STRING, &name);
 
 	if (call->status == CALL_STATUS_ACTIVE ||
 			call->status == CALL_STATUS_HELD ||
@@ -721,6 +740,38 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 						OFONO_VOICECALL_INTERFACE,
 						"LineIdentification",
 						DBUS_TYPE_STRING, &lineid_str);
+}
+
+static void voicecall_set_call_name(struct voicecall *v,
+					const char *name,
+					int cnap_validity)
+{
+	struct ofono_call *call = v->call;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path;
+	const char *name_str;
+
+	if (!strcmp(call->name, name) &&
+		call->cnap_validity == cnap_validity)
+		return;
+
+	/* For plugins that don't keep state, ignore */
+	if (call->cnap_validity == CNAP_VALIDITY_VALID &&
+		cnap_validity == CNAP_VALIDITY_NOT_AVAILABLE)
+		return;
+
+	strncpy(call->name, name, OFONO_MAX_CALLER_NAME_LENGTH);
+	call->name[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
+	call->cnap_validity = cnap_validity;
+
+	path = voicecall_build_path(v->vc, call);
+
+	name_str = cnap_to_string(name, cnap_validity);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_VOICECALL_INTERFACE,
+						"Name",
+						DBUS_TYPE_STRING, &name_str);
 }
 
 static gboolean voicecall_dbus_register(struct voicecall *v)
@@ -1838,6 +1889,8 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 		voicecall_set_call_status(l->data, call->status);
 		voicecall_set_call_lineid(l->data, &call->phone_number,
 						call->clip_validity);
+		voicecall_set_call_name(l->data, call->name,
+						call->cnap_validity);
 
 		return;
 	}
