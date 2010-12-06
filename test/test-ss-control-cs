@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
         cs.connect_to_signal("PropertyChanged", property_changed)
 
-	ss = dbus.Interface(bus.get_object('org.ofono', modems[0]),
+	ss = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
 							'org.ofono.SupplementaryServices')
 
 	print_properties(cs)
