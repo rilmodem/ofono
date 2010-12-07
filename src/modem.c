@@ -70,6 +70,7 @@ struct ofono_modem {
 	guint			interface_update;
 	ofono_bool_t		powered;
 	ofono_bool_t		powered_pending;
+	ofono_bool_t		get_online;
 	guint			timeout;
 	ofono_bool_t		online;
 	struct ofono_watchlist	*online_watches;
@@ -434,30 +435,6 @@ static void modem_change_state(struct ofono_modem *modem,
 	}
 }
 
-static void sim_state_watch(enum ofono_sim_state new_state, void *user)
-{
-	struct ofono_modem *modem = user;
-
-	switch (new_state) {
-	case OFONO_SIM_STATE_NOT_PRESENT:
-		modem_change_state(modem, MODEM_STATE_PRE_SIM);
-		break;
-	case OFONO_SIM_STATE_INSERTED:
-		break;
-	case OFONO_SIM_STATE_READY:
-		modem_change_state(modem, MODEM_STATE_OFFLINE);
-
-		/*
-		 * If we don't have the set_online method, also proceed
-		 * straight to the online state
-		 */
-		if (modem->driver->set_online == NULL)
-			modem_change_state(modem, MODEM_STATE_ONLINE);
-
-		break;
-	}
-}
-
 unsigned int __ofono_modem_add_online_watch(struct ofono_modem *modem,
 					ofono_modem_online_notify_func notify,
 					void *data, ofono_destroy_func destroy)
@@ -487,6 +464,9 @@ static void online_cb(const struct ofono_error *error, void *data)
 	struct ofono_modem *modem = data;
 	DBusMessage *reply;
 
+	if (!modem->pending)
+		goto out;
+
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
 			modem->modem_state == MODEM_STATE_OFFLINE)
 		reply = dbus_message_new_method_return(modem->pending);
@@ -495,6 +475,7 @@ static void online_cb(const struct ofono_error *error, void *data)
 
 	__ofono_dbus_pending_reply(&modem->pending, reply);
 
+out:
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
 			modem->modem_state == MODEM_STATE_OFFLINE)
 		modem_change_state(modem, MODEM_STATE_ONLINE);
@@ -515,6 +496,34 @@ static void offline_cb(const struct ofono_error *error, void *data)
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
 				modem->modem_state == MODEM_STATE_ONLINE)
 		modem_change_state(modem, MODEM_STATE_OFFLINE);
+}
+
+static void sim_state_watch(enum ofono_sim_state new_state, void *user)
+{
+	struct ofono_modem *modem = user;
+
+	switch (new_state) {
+	case OFONO_SIM_STATE_NOT_PRESENT:
+		modem_change_state(modem, MODEM_STATE_PRE_SIM);
+		break;
+	case OFONO_SIM_STATE_INSERTED:
+		break;
+	case OFONO_SIM_STATE_READY:
+		modem_change_state(modem, MODEM_STATE_OFFLINE);
+
+		/*
+		 * If we don't have the set_online method, also proceed
+		 * straight to the online state
+		 */
+		if (modem->driver->set_online == NULL)
+			modem_change_state(modem, MODEM_STATE_ONLINE);
+		else if (modem->get_online)
+			modem->driver->set_online(modem, 1, online_cb, modem);
+
+		modem->get_online = FALSE;
+
+		break;
+	}
 }
 
 static DBusMessage *set_property_online(struct ofono_modem *modem,
@@ -1626,6 +1635,9 @@ void ofono_modem_reset(struct ofono_modem *modem)
 		DBusMessage *reply = __ofono_error_failed(modem->pending);
 		__ofono_dbus_pending_reply(&modem->pending, reply);
 	}
+
+	if (modem->modem_state == MODEM_STATE_ONLINE)
+		modem->get_online = TRUE;
 
 	ofono_modem_set_powered(modem, FALSE);
 
