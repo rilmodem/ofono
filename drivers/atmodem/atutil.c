@@ -240,8 +240,23 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 		g_at_result_iter_next_number(&iter, &m);
 
 		/* Sometimes we get an unsolicited CREG/CGREG here, skip it */
-		if (g_at_result_iter_next_number(&iter, &s) == FALSE)
-			continue;
+		switch (vendor) {
+		case OFONO_VENDOR_HUAWEI:
+		case OFONO_VENDOR_NOVATEL:
+			r = g_at_result_iter_next_unquoted_string(&iter, &str);
+
+			if (r == FALSE || strlen(str) != 1)
+				continue;
+
+			s = strtol(str, NULL, 10);
+
+			break;
+		default:
+			if (g_at_result_iter_next_number(&iter, &s) == FALSE)
+				continue;
+
+			break;
+		}
 
 		/* Some firmware will report bogus lac/ci when unregistered */
 		if (s != 1 && s != 5)
