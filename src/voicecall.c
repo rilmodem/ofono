@@ -327,6 +327,23 @@ static void tone_request_finish(struct ofono_voicecall *vc,
 	g_free(entry);
 }
 
+static gint number_compare(gconstpointer a, gconstpointer b)
+{
+	const char *s1 = a, *s2 = b;
+	return strcmp(s1, s2);
+}
+
+static gboolean voicecall_is_emergency(struct voicecall *v)
+{
+	struct ofono_call *call = v->call;
+	const char *lineid_str;
+
+	lineid_str = phone_number_to_string(&call->phone_number);
+
+	return (g_slist_find_custom(v->vc->en_list, lineid_str,
+						number_compare)) ? TRUE : FALSE;
+}
+
 static void append_voicecall_properties(struct voicecall *v,
 					DBusMessageIter *dict)
 {
@@ -336,6 +353,7 @@ static void append_voicecall_properties(struct voicecall *v,
 	const char *timestr;
 	const char *name;
 	ofono_bool_t mpty;
+	dbus_bool_t emergency_call;
 
 	status = call_status_to_string(call->status);
 
@@ -380,6 +398,15 @@ static void append_voicecall_properties(struct voicecall *v,
 	if (v->icon_id)
 		ofono_dbus_dict_append(dict, "Icon", DBUS_TYPE_BYTE,
 					&v->icon_id);
+
+	if (voicecall_is_emergency(v) == TRUE)
+		emergency_call = TRUE;
+	else
+		emergency_call = FALSE;
+
+	ofono_dbus_dict_append(dict, "Emergency", DBUS_TYPE_BOOLEAN,
+					&emergency_call);
+
 }
 
 static DBusMessage *voicecall_get_properties(DBusConnection *conn,
@@ -742,6 +769,16 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 						OFONO_VOICECALL_INTERFACE,
 						"LineIdentification",
 						DBUS_TYPE_STRING, &lineid_str);
+
+	if (voicecall_is_emergency(v)) {
+		dbus_bool_t emergency_call = TRUE;
+
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_VOICECALL_INTERFACE,
+						"Emergency",
+						DBUS_TYPE_BOOLEAN,
+						&emergency_call);
+	}
 }
 
 static void voicecall_set_call_name(struct voicecall *v,
