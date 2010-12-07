@@ -562,7 +562,7 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 {
 	char **text = user;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
-	const unsigned char *data = comprehension_tlv_iter_get_data(iter);
+	const unsigned char *data;
 	char *utf8;
 
 	/* DCS followed by some text, cannot be 1 */
@@ -570,9 +570,11 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 		return FALSE;
 
 	if (len == 0) {
-		*text = NULL;
+		*text = g_try_malloc0(1);
 		return TRUE;
 	}
+
+	data = comprehension_tlv_iter_get_data(iter);
 
 	utf8 = decode_text(data[0], len - 1, data + 1);
 
