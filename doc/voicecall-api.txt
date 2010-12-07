@@ -130,3 +130,8 @@ Properties	string LineIdentification [readonly]
 
 			Icon identifier to be used instead of or together
 			with the text information.
+
+		boolean Emergency [readonly]
+
+			Contains the indication if the voice call is an
+			emergency call or not.
