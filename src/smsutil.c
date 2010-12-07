@@ -2244,7 +2244,8 @@ char *sms_decode_text(GSList *sms_list)
 			if (buf[written-1] == 0x1b)
 				written = written - 1;
 
-			sms_extract_language_variant(sms, &locking_shift, &single_shift);
+			sms_extract_language_variant(sms, &locking_shift,
+								&single_shift);
 
 			/*
 			 * If language is not defined in 3GPP TS 23.038,
