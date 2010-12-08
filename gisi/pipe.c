@@ -30,7 +30,8 @@
 #include "client.h"
 #include "pipe.h"
 
-#define PN_PIPE	0xd9
+#define PN_PIPE			0xD9
+#define PN_PIPE_INVALID_HANDLE	0xFF
 
 struct isi_pipe_create_req {
 	uint8_t cmd;
@@ -71,8 +72,6 @@ struct isi_pipe_resp {
 	uint8_t error1;
 	uint8_t error2;
 };
-
-#define PN_PIPE_INVALID_HANDLE	0xff
 
 enum isi_pipe_message_id {
 	PNS_PIPE_CREATE_REQ,
