@@ -18,6 +18,7 @@ elif len(sys.argv) == 3:
 	pin = sys.argv[2]
 else:
 	print "%s [PATH] pin_type pin" % (sys.argv[0])
+	sys.exit(0)
 
 print "Enter Pin for modem %s..." % path
 simmanager = dbus.Interface(bus.get_object('org.ofono', path),
