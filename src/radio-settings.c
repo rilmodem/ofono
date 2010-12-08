@@ -430,7 +430,7 @@ static void radio_band_query_callback(const struct ofono_error *error,
 
 static void radio_query_band(struct ofono_radio_settings *rs)
 {
-	if (!rs->driver->query_band) {
+	if (rs->driver->query_band == NULL) {
 		radio_query_fast_dormancy(rs);
 		return;
 	}
@@ -530,7 +530,7 @@ static DBusMessage *radio_set_property(DBusConnection *conn, DBusMessage *msg,
 		const char *value;
 		enum ofono_radio_band_gsm band;
 
-		if (!rs->driver->set_band)
+		if (rs->driver->set_band == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
@@ -554,7 +554,7 @@ static DBusMessage *radio_set_property(DBusConnection *conn, DBusMessage *msg,
 		const char *value;
 		enum ofono_radio_band_umts band;
 
-		if (!rs->driver->set_band)
+		if (rs->driver->set_band == NULL)
 			return __ofono_error_not_implemented(msg);
 
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
