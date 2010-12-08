@@ -481,12 +481,12 @@ struct sms_charset_data {
 
 static struct sms_charset_data sms_charset_default = {
 	.pdu =
-	"0001000B91" "5310101010" "1000008080" "8060402818" "0E888462C1"
-	"68381E9088" "6442A9582E" "988C06C4E9" "783EA09068" "442A994EA8"
-	"946AC56AB9" "5EB0986C46" "ABD96EB89C" "6EC7EBF97E" "C0A070482C"
-	"1A8FC8A472" "C96C3A9FD0" "A8744AAD5A" "AFD8AC76CB" "ED7ABFE0B0"
-	"784C2E9BCF" "E8B47ACD6E" "BBDFF0B87C" "4EAFDBEFF8" "BC7ECFEFFB"
-	"FF",
+		"0001000B91" "5310101010" "1000008080" "8060402818" "0E888462C1"
+		"68381E9088" "6442A9582E" "988C06C4E9" "783EA09068" "442A994EA8"
+		"946AC56AB9" "5EB0986C46" "ABD96EB89C" "6EC7EBF97E" "C0A070482C"
+		"1A8FC8A472" "C96C3A9FD0" "A8744AAD5A" "AFD8AC76CB" "ED7ABFE0B0"
+		"784C2E9BCF" "E8B47ACD6E" "BBDFF0B87C" "4EAFDBEFF8" "BC7ECFEFFB"
+		"FF",
 	.data_len = 112,
 	.expected_text = {
 		0x40, 0xc2, 0xa3, 0x24, 0xc2, 0xa5, 0xc3, 0xa8, 0xc3, 0xa9,
@@ -511,8 +511,8 @@ static struct sms_charset_data sms_charset_default = {
 
 static struct sms_charset_data sms_charset_default_ext = {
 	.pdu =
-	"0001000B91" "5310101010" "100000151B" "C58602DAA0" "36A9CD6BC3"
-	"DBF436BE0D" "705306",
+		"0001000B91" "5310101010" "100000151B" "C58602DAA0" "36A9CD6BC3"
+		"DBF436BE0D" "705306",
 	.data_len = 19,
 	.expected_text = {
 		0x0c, 0x5e, 0x20, 0x7b,	0x7d, 0x5c, 0x5b, 0x7e,	0x5d, 0x7c,
@@ -522,12 +522,12 @@ static struct sms_charset_data sms_charset_default_ext = {
 
 static struct sms_charset_data sms_charset_turkey = {
 	.pdu =
-	"0001000B91" "5310101010" "1000008080" "8060402818" "0E888462C1"
-	"68381E9088" "6442A9582E" "988C06C4E9" "783EA09068" "442A994EA8"
-	"946AC56AB9" "5EB0986C46" "ABD96EB89C" "6EC7EBF97E" "C0A070482C"
-	"1A8FC8A472" "C96C3A9FD0" "A8744AAD5A" "AFD8AC76CB" "ED7ABFE0B0"
-	"784C2E9BCF" "E8B47ACD6E" "BBDFF0B87C" "4EAFDBEFF8" "BC7ECFEFFB"
-	"FF",
+		"0001000B91" "5310101010" "1000008080" "8060402818" "0E888462C1"
+		"68381E9088" "6442A9582E" "988C06C4E9" "783EA09068" "442A994EA8"
+		"946AC56AB9" "5EB0986C46" "ABD96EB89C" "6EC7EBF97E" "C0A070482C"
+		"1A8FC8A472" "C96C3A9FD0" "A8744AAD5A" "AFD8AC76CB" "ED7ABFE0B0"
+		"784C2E9BCF" "E8B47ACD6E" "BBDFF0B87C" "4EAFDBEFF8" "BC7ECFEFFB"
+		"FF",
 	.data_len = 112,
 	.locking_lang = GSM_DIALECT_TURKISH,
 	.expected_text = {
@@ -553,8 +553,8 @@ static struct sms_charset_data sms_charset_turkey = {
 
 static struct sms_charset_data sms_charset_turkey_ext = {
 	.pdu =
-	"0001000B91" "5310101010" "1000001A1B" "C586B2416D" "529BD786B7"
-	"E96D7C1BE0" "02C8011318" "870E",
+		"0001000B91" "5310101010" "1000001A1B" "C586B2416D" "529BD786B7"
+		"E96D7C1BE0" "02C8011318" "870E",
 	.data_len = 23,
 	.locking_lang = GSM_DIALECT_TURKISH,
 	.single_lang = GSM_DIALECT_TURKISH,
@@ -567,12 +567,12 @@ static struct sms_charset_data sms_charset_turkey_ext = {
 
 static struct sms_charset_data sms_charset_portugal = {
 	.pdu =
-	"0001000B91" "5310101010" "1000008080" "8060402818" "0E888462C1"
-	"68381E9088" "6442A9582E" "988C06C4E9" "783EA09068" "442A994EA8"
-	"946AC56AB9" "5EB0986C46" "ABD96EB89C" "6EC7EBF97E" "C0A070482C"
-	"1A8FC8A472" "C96C3A9FD0" "A8744AAD5A" "AFD8AC76CB" "ED7ABFE0B0"
-	"784C2E9BCF" "E8B47ACD6E" "BBDFF0B87C" "4EAFDBEFF8" "BC7ECFEFFB"
-	"FF",
+		"0001000B91" "5310101010" "1000008080" "8060402818" "0E888462C1"
+		"68381E9088" "6442A9582E" "988C06C4E9" "783EA09068" "442A994EA8"
+		"946AC56AB9" "5EB0986C46" "ABD96EB89C" "6EC7EBF97E" "C0A070482C"
+		"1A8FC8A472" "C96C3A9FD0" "A8744AAD5A" "AFD8AC76CB" "ED7ABFE0B0"
+		"784C2E9BCF" "E8B47ACD6E" "BBDFF0B87C" "4EAFDBEFF8" "BC7ECFEFFB"
+		"FF",
 	.data_len = 112,
 	.locking_lang = GSM_DIALECT_PORTUGUESE,
 	.expected_text = {
@@ -598,9 +598,9 @@ static struct sms_charset_data sms_charset_portugal = {
 
 static struct sms_charset_data sms_charset_portugal_ext = {
 	.pdu =
-	"0001000B91" "5310101010" "1000003184" "C446B16038" "1E1BC96662"
-	"D9543696CD" "6583D9643C" "1BD42675D9" "F0C01B9F86" "02CC74B75C"
-	"0EE68030EC" "F91D",
+		"0001000B91" "5310101010" "1000003184" "C446B16038" "1E1BC96662"
+		"D9543696CD" "6583D9643C" "1BD42675D9" "F0C01B9F86" "02CC74B75C"
+		"0EE68030EC" "F91D",
 	.data_len = 43,
 	.locking_lang = GSM_DIALECT_PORTUGUESE,
 	.single_lang = GSM_DIALECT_PORTUGUESE,
@@ -617,8 +617,8 @@ static struct sms_charset_data sms_charset_portugal_ext = {
 
 static struct sms_charset_data sms_charset_spain = {
 	.pdu =
-	"0001000B91" "5310101010" "100000269B" "C446B1A16C" "509BD4E6B5"
-	"E16D7A1BDF" "06B8096E92" "9BE7A6BA09" "6FCA9BF4E6" "BDA903",
+		"0001000B91" "5310101010" "100000269B" "C446B1A16C" "509BD4E6B5"
+		"E16D7A1BDF" "06B8096E92" "9BE7A6BA09" "6FCA9BF4E6" "BDA903",
 	.data_len = 34,
 	.locking_lang = GSM_DIALECT_SPANISH,
 	.single_lang = GSM_DIALECT_SPANISH,
@@ -646,7 +646,6 @@ static void test_sms_charset(gconstpointer param)
 	pdu = decode_hex(data->pdu, -1, &pdu_len, 0);
 
 	g_assert(pdu);
-
 	g_assert(pdu_len == (gint64)strlen(data->pdu) / 2);
 
 	ret = sms_decode(pdu, pdu_len, FALSE, pdu_len, &sms);
@@ -661,9 +660,7 @@ static void test_sms_charset(gconstpointer param)
 				&sms_compressed, NULL);
 
 	g_assert(ret);
-
 	g_assert(sms_charset == SMS_CHARSET_7BIT);
-
 	g_assert(sms_compressed == FALSE);
 
 	data_len = sms_udl_in_bytes(sms.deliver.udl, sms.deliver.dcs);
