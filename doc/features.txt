@@ -99,6 +99,15 @@ Supported Proactive Commands:
   Notification proactive command, it prints the language code and sends
   terminal response to the SIM immediately.
 
+- Provide Local Information proactive command.  Whenever oFono receives a
+  Provide Local Information proactive command, it checks the type of the
+  information requested.  If the information is about the time/date or the
+  language of the terminal, it responds to the command with the appropriate
+  terminal response. The time/date information is obtained using localtime().
+  The language information is obtained by checking the LANG environment
+  variable.  All other information requests are expected to be handled by
+  the modem.
+
 - Sim icon support.  oFono supports icons that are stored on the SIM.  If the
   SIM notifies oFono that an icon is available for a particular proactive
   command, oFono passes this information to the UI.  The UI is able to obtain

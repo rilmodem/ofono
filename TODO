@@ -361,16 +361,6 @@ Sim Toolkit
   Priority: High
   Complexity: C8
 
-- Support Provide Local Information.  Whenever oFono receives a Provide Local
-  Information proactive command, it should check the type of the information
-  requested.  If the information is about the time/date or the language of the
-  terminal, it should respond to the command with the appropriate terminal
-  response.  Otherwise, it will respond with an error.
-
-  Priority: High
-  Complexity: C2
-  Owner: Yang Gu <yang.gu@intel.com>
-
 
 Emergency Calls
 ===============
