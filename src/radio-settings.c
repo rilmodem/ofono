@@ -111,8 +111,7 @@ static const char *radio_band_gsm_to_string(enum ofono_radio_band_gsm band)
 }
 
 static gboolean radio_band_gsm_from_string(const char *str,
-						enum ofono_radio_band_gsm *band)
-
+					enum ofono_radio_band_gsm *band)
 {
 	if (g_str_equal(str, "any")) {
 		*band = OFONO_RADIO_BAND_GSM_ANY;
@@ -158,8 +157,7 @@ static const char *radio_band_umts_to_string(enum ofono_radio_band_umts band)
 }
 
 static gboolean radio_band_umts_from_string(const char *str,
-						enum ofono_radio_band_umts *band)
-
+					enum ofono_radio_band_umts *band)
 {
 	if (g_str_equal(str, "any")) {
 		*band = OFONO_RADIO_BAND_GSM_ANY;
