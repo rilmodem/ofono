@@ -1753,13 +1753,12 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	if (sc->alpha_id_usr_cfm) {
-		alpha_id = dbus_apply_text_attributes(sc->alpha_id_usr_cfm,
-							&sc->text_attr_usr_cfm);
-		if (alpha_id == NULL) {
-			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-			return TRUE;
-		}
+	alpha_id = dbus_apply_text_attributes(sc->alpha_id_usr_cfm ?
+						sc->alpha_id_usr_cfm : "",
+						&sc->text_attr_usr_cfm);
+	if (alpha_id == NULL) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+		return TRUE;
 	}
 
 	err = stk_agent_confirm_call(stk->current_agent, alpha_id,
