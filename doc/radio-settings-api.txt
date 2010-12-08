@@ -51,9 +51,9 @@ Properties	string TechnologyPreference [readwrite]
 			Frequency band in which the modem is allowed to
 			operate when using "gsm" mode. Setting this property
 			has an imediate effect on modem only if
-			TechnologyPreference is set to "gsm".  Otherwise the
-			value is kept and applied whenever modem uses
-			this mode.
+			TechnologyPreference is set to "gsm" or "any".
+			Otherwise the value is kept and applied whenever modem
+			uses this mode.
 
 			The possible values are:
 				"any"	Frequency band is selected
@@ -71,9 +71,9 @@ Properties	string TechnologyPreference [readwrite]
 			Frequency band in which the modem is allowed to
 			operate when using "umts" mode. Setting this property
 			has an imediate effect on modem only if
-			TechnologyPreference is set to "umts".  Otherwise the
-			value is kept and applied whenever modem uses
-			this mode.
+			TechnologyPreference is set to "umts" or "any".
+			Otherwise the value is kept and applied whenever modem
+			uses this mode.
 
 			The possible values are:
 				"any"		Frequency band is selected
