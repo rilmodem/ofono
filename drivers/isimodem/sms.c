@@ -62,6 +62,7 @@ struct sim_efsmsp{
 
 /* Sub-block used by PN_SMS */
 struct sms_params {
+	uint8_t location;
 	uint8_t absent;
 	uint8_t tp_pid;
 	uint8_t tp_dcs;
@@ -191,7 +192,7 @@ static void sca_query_resp_cb(const GIsiMessage *msg, void *data)
 	if (!check_sim_status(msg, SIM_SMS_RESP, READ_PARAMETER))
 		goto error;
 
-	if (!g_isi_msg_data_get_struct(msg, 0, (void *)&info, len))
+	if (!g_isi_msg_data_get_struct(msg, 2, (const void **) &info, len))
 		goto error;
 
 	if (info->alphalen > 17)
@@ -216,11 +217,11 @@ static void sca_query_resp_cb(const GIsiMessage *msg, void *data)
 	 * Bitmask indicating absense of parameters --
 	 * If second bit is set it indicates that the SCA is absent
 	 */
-	if (info->absent & 0x02)
+	if (info->absent & 0x2)
 		goto error;
 
 	bcd_len = info->sca[0];
-	if (bcd_len <= 1 || bcd_len > 12)
+	if (bcd_len == 0 || bcd_len > 12)
 		goto error;
 
 	extract_bcd_number(info->sca + 2, bcd_len - 1, sca.number);
