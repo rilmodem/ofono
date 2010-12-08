@@ -43,8 +43,8 @@ struct ofono_call_barring_driver {
 	void (*set)(struct ofono_call_barring *barr, const char *lock,
 			int enable, const char *passwd, int cls,
 			ofono_call_barring_set_cb_t cb, void *data);
-	void (*query)(struct ofono_call_barring *barr, const char *lock, int cls,
-			ofono_call_barring_query_cb_t cb, void *data);
+	void (*query)(struct ofono_call_barring *barr, const char *lock,
+			int cls, ofono_call_barring_query_cb_t cb, void *data);
 	void (*set_passwd)(struct ofono_call_barring *barr, const char *lock,
 			const char *old_passwd, const char *new_passwd,
 			ofono_call_barring_set_cb_t cb, void *data);

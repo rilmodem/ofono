@@ -58,15 +58,15 @@ struct ofono_radio_settings;
 typedef void (*ofono_radio_settings_rat_mode_set_cb_t)(const struct ofono_error *error,
 							void *data);
 typedef void (*ofono_radio_settings_rat_mode_query_cb_t)(const struct ofono_error *error,
-						enum ofono_radio_access_mode mode,
-						void *data);
+					enum ofono_radio_access_mode mode,
+					void *data);
 
 typedef void (*ofono_radio_settings_band_set_cb_t)(const struct ofono_error *error,
 							void *data);
 typedef void (*ofono_radio_settings_band_query_cb_t)(const struct ofono_error *error,
-						enum ofono_radio_band_gsm band_gsm,
-						enum ofono_radio_band_umts band_umts,
-						void *data);
+					enum ofono_radio_band_gsm band_gsm,
+					enum ofono_radio_band_umts band_umts,
+					void *data);
 
 typedef void (*ofono_radio_settings_fast_dormancy_set_cb_t)(const struct ofono_error *error,
 							void *data);
@@ -107,9 +107,9 @@ int ofono_radio_settings_driver_register(const struct ofono_radio_settings_drive
 void ofono_radio_settings_driver_unregister(const struct ofono_radio_settings_driver *d);
 
 struct ofono_radio_settings *ofono_radio_settings_create(struct ofono_modem *modem,
-								unsigned int vendor,
-								const char *driver,
-								void *data);
+							unsigned int vendor,
+							const char *driver,
+							void *data);
 
 void ofono_radio_settings_register(struct ofono_radio_settings *rs);
 void ofono_radio_settings_remove(struct ofono_radio_settings *rs);
