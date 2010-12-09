@@ -423,7 +423,9 @@ test_scripts = test/backtrace \
 		test/test-push-notification \
 		test/test-smart-messaging \
 		test/send-vcard \
-		test/set-tty
+		test/set-tty \
+		test/set-gsm-band \
+		test/set-umts-band
 
 if TEST
 testdir = $(pkglibdir)/test

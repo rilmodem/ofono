@@ -1,0 +1,25 @@
+#!/usr/bin/python
+
+import dbus
+import sys
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 3:
+	path = sys.argv[1]
+	band = sys.argv[2]
+elif len(sys.argv) == 2:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
+	band = sys.argv[1]
+else:
+	print "%s [PATH] band" % (sys.argv[0])
+	exit(1)
+
+print "Setting umts band for modem %s..." % path
+radiosettings = dbus.Interface(bus.get_object('org.ofono', path),
+						'org.ofono.RadioSettings')
+
+radiosettings.SetProperty("UmtsBand", band);
