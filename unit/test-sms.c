@@ -472,11 +472,11 @@ static void test_submit_encode()
 }
 
 struct sms_charset_data {
-	gchar *pdu;
-	gint data_len;
+	char *pdu;
+	int data_len;
 	enum gsm_dialect locking_lang;
 	enum gsm_dialect single_lang;
-	gchar expected_text[];
+	char expected_text[];
 };
 
 static struct sms_charset_data sms_charset_default = {
@@ -634,13 +634,13 @@ static void test_sms_charset(gconstpointer param)
 {
 	gboolean ret;
 	struct sms sms;
-	guint8 *pdu;
-	guint8 *unpacked;
-	gint64 pdu_len;
-	gint data_len;
+	unsigned char *pdu;
+	unsigned char *unpacked;
+	long pdu_len;
+	int data_len;
 	enum sms_charset sms_charset;
 	gboolean sms_compressed;
-	gchar *text;
+	char *text;
 	struct sms_charset_data *data = (struct sms_charset_data *)param;
 
 	pdu = decode_hex(data->pdu, -1, &pdu_len, 0);
