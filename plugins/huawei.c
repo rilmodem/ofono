@@ -43,6 +43,7 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/audio-settings.h>
+#include <ofono/radio-settings.h>
 #include <ofono/voicecall.h>
 #include <ofono/call-forwarding.h>
 #include <ofono/call-settings.h>
@@ -656,6 +657,9 @@ static void huawei_post_online(struct ofono_modem *modem)
 						"atmodem", data->pcui);
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
+
+	ofono_radio_settings_create(modem, OFONO_VENDOR_HUAWEI, "huaweimodem",
+								data->pcui);
 
 	if (data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_CS) {
