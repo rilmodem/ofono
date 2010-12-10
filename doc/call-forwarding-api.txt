@@ -57,3 +57,8 @@ Properties	string VoiceUnconditional [readwrite]
 
 			Contains the value of the voice "Not Reachable" call
 			forwarding rule.
+
+		boolean ForwardingFlagOnSim [readonly]
+
+			Boolean representing the voice unconditional call
+			forwarding rule status.
