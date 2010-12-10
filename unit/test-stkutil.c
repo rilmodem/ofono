@@ -2626,7 +2626,7 @@ static struct get_input_test get_input_data_1101 = {
 	.pdu = get_input_1101,
 	.pdu_len = sizeof(get_input_1101),
 	.qualifier = 0x00,
-	.text = NULL,
+	.text = "",
 	.resp_len = {
 		.min = 1,
 		.max = 5
@@ -14355,7 +14355,8 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_121 = {
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_131 = {
 	.pdu = setup_idle_mode_text_131,
 	.pdu_len = sizeof(setup_idle_mode_text_131),
-	.qualifier = 0x00
+	.qualifier = 0x00,
+	.text = ""
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_171 = {
@@ -14406,6 +14407,7 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_241 = {
 	.pdu = setup_idle_mode_text_241,
 	.pdu_len = sizeof(setup_idle_mode_text_241),
 	.qualifier = 0x00,
+	.text = "",
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
 		.id = 0x01
