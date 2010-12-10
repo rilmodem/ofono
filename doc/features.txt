@@ -222,6 +222,11 @@ SIM
   oFono halts the SIM initialization procedure and the modem remains in the
   PRESIM state.  In this state oFono will only allow emergency calls.
 
+- Read / Write EFcfis / EFcphs-cff.  oFono reads EFcfis/EFcphs-cff SIM files
+  to check if VoiceUnconditional call forwarding rule is enabled.  If enabled,
+  ForwardingFlagOnSim will be set and VoiceUnconditional may contain the
+  "forwarded to" number if the number is available.
+
 Radio settings
 ==============
 
