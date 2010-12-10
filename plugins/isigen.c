@@ -402,6 +402,7 @@ static void isigen_post_sim(struct ofono_modem *modem)
 	DBG("(%p) with %s", modem, isi->ifname);
 
 	ofono_phonebook_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_call_forwarding_create(isi->modem, 0, "isimodem", isi->idx);
 }
 
 static void isigen_post_online(struct ofono_modem *modem)
@@ -418,7 +419,6 @@ static void isigen_post_online(struct ofono_modem *modem)
 	ofono_cbs_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_ssn_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_ussd_create(isi->modem, 0, "isimodem", isi->idx);
-	ofono_call_forwarding_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_settings_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_barring_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_meter_create(isi->modem, 0, "isimodem", isi->idx);
