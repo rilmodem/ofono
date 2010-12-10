@@ -520,7 +520,7 @@ static DBusMessage *stk_get_properties(DBusConnection *conn,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
 
-	str = stk->idle_mode_text ? stk->idle_mode_text : "";
+	str = stk->idle_mode_text;
 	ofono_dbus_dict_append(&dict, "IdleModeText", DBUS_TYPE_STRING, &str);
 
 	icon = stk->idle_mode_icon.id;
@@ -873,17 +873,15 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(stk->atom);
-	char *idle_mode_text = NULL;
+	char *idle_mode_text;
 
-	if (cmd->setup_idle_mode_text.text) {
-		idle_mode_text = dbus_apply_text_attributes(
+	idle_mode_text = dbus_apply_text_attributes(
 					cmd->setup_idle_mode_text.text,
 					&cmd->setup_idle_mode_text.text_attr);
 
-		if (idle_mode_text == NULL) {
-			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-			return TRUE;
-		}
+	if (idle_mode_text == NULL) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+		return TRUE;
 	}
 
 	if (stk->idle_mode_text)
@@ -891,7 +889,6 @@ static gboolean handle_command_set_idle_text(const struct stk_command *cmd,
 
 	stk->idle_mode_text = idle_mode_text;
 
-	idle_mode_text = idle_mode_text ? idle_mode_text : "";
 	ofono_dbus_signal_property_changed(conn, path, OFONO_STK_INTERFACE,
 						"IdleModeText",
 						DBUS_TYPE_STRING,
@@ -2655,10 +2652,8 @@ static void stk_unregister(struct ofono_atom *atom)
 		stk->cancel_cmd = NULL;
 	}
 
-	if (stk->idle_mode_text) {
-		g_free(stk->idle_mode_text);
-		stk->idle_mode_text = NULL;
-	}
+	g_free(stk->idle_mode_text);
+	stk->idle_mode_text = NULL;
 
 	if (stk->timers_source) {
 		g_source_remove(stk->timers_source);
