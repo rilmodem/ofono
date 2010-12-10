@@ -635,6 +635,8 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 	if (!data->calypso)
 		ofono_stk_create(modem, OFONO_VENDOR_PHONESIM,
 					"atmodem", data->chat);
+
+	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 }
 
 static void phonesim_post_online(struct ofono_modem *modem)
@@ -647,7 +649,6 @@ static void phonesim_post_online(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
-	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
 
 	if (data->calypso)
