@@ -703,6 +703,7 @@ static void ifx_post_sim(struct ofono_modem *modem)
 	ofono_stk_create(modem, 0, "ifxmodem", data->dlcs[AUX_DLC]);
 	ofono_phonebook_create(modem, OFONO_VENDOR_IFX,
 					"atmodem", data->dlcs[AUX_DLC]);
+	ofono_call_forwarding_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 }
 
 static void ifx_post_online(struct ofono_modem *modem)
@@ -724,7 +725,6 @@ static void ifx_post_online(struct ofono_modem *modem)
 	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 
 	ofono_ssn_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
-	ofono_call_forwarding_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_settings_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_barring_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
