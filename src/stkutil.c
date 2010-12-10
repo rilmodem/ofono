@@ -565,10 +565,6 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	char *utf8;
 
-	/* DCS followed by some text, cannot be 1 */
-	if (len == 1)
-		return FALSE;
-
 	if (len == 0) {
 		*text = g_try_malloc0(1);
 		return TRUE;
