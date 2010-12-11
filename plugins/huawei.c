@@ -631,7 +631,9 @@ static void huawei_post_online(struct ofono_modem *modem)
 
 	if (data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_CS) {
-		data->gprs = ofono_gprs_create(modem, 0, "atmodem", data->pcui);
+		data->gprs = ofono_gprs_create(modem, OFONO_VENDOR_HUAWEI,
+						"atmodem", data->pcui);
+
 		if (data->ndis == TRUE)
 			data->gc = ofono_gprs_context_create(modem, 0,
 						"huaweimodem", data->pcui);
