@@ -709,8 +709,8 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 	const char *lineid_str;
 
 	if (!strcmp(call->phone_number.number, ph->number) &&
-		call->phone_number.type == ph->type &&
-		call->clip_validity == clip_validity)
+			call->phone_number.type == ph->type &&
+			call->clip_validity == clip_validity)
 		return;
 
 	/*
@@ -722,7 +722,7 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 
 	/* For plugins that don't keep state, ignore */
 	if (call->clip_validity == CLIP_VALIDITY_VALID &&
-		clip_validity == CLIP_VALIDITY_NOT_AVAILABLE)
+			clip_validity == CLIP_VALIDITY_NOT_AVAILABLE)
 		return;
 
 	strcpy(call->phone_number.number, ph->number);
@@ -751,13 +751,12 @@ static void voicecall_set_call_name(struct voicecall *v,
 	const char *path;
 	const char *name_str;
 
-	if (!strcmp(call->name, name) &&
-		call->cnap_validity == cnap_validity)
+	if (!strcmp(call->name, name) && call->cnap_validity == cnap_validity)
 		return;
 
 	/* For plugins that don't keep state, ignore */
 	if (call->cnap_validity == CNAP_VALIDITY_VALID &&
-		cnap_validity == CNAP_VALIDITY_NOT_AVAILABLE)
+			cnap_validity == CNAP_VALIDITY_NOT_AVAILABLE)
 		return;
 
 	strncpy(call->name, name, OFONO_MAX_CALLER_NAME_LENGTH);
