@@ -339,7 +339,12 @@ static void append_voicecall_properties(struct voicecall *v,
 	ofono_bool_t mpty;
 
 	status = call_status_to_string(call->status);
-	callerid = phone_number_to_string(&call->phone_number);
+
+	if (call->direction == CALL_DIRECTION_MOBILE_TERMINATED)
+		callerid = phone_and_clip_to_string(&call->phone_number,
+							call->clip_validity);
+	else
+		callerid = phone_number_to_string(&call->phone_number);
 
 	strncpy(buf, call->name, OFONO_MAX_CALLER_NAME_LENGTH);
 	buf[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
