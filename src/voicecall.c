@@ -334,8 +334,7 @@ static void append_voicecall_properties(struct voicecall *v,
 	const char *status;
 	const char *callerid;
 	const char *timestr;
-	char buf[OFONO_MAX_CALLER_NAME_LENGTH + 1];
-	char *name;
+	const char *name;
 	ofono_bool_t mpty;
 
 	status = call_status_to_string(call->status);
@@ -346,9 +345,7 @@ static void append_voicecall_properties(struct voicecall *v,
 	else
 		callerid = phone_number_to_string(&call->phone_number);
 
-	strncpy(buf, call->name, OFONO_MAX_CALLER_NAME_LENGTH);
-	buf[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
-	name = buf;
+	name = cnap_to_string(call->name, call->cnap_validity);
 
 	ofono_dbus_dict_append(dict, "State", DBUS_TYPE_STRING, &status);
 
