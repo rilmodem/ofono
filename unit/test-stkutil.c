@@ -245,7 +245,11 @@ static void check_gsm_sms(const struct sms *command,
 			g_assert(ca->hour == ta->hour);
 			g_assert(ca->minute == ta->minute);
 			g_assert(ca->second == ta->second);
-			g_assert(ca->timezone == ta->timezone);
+			g_assert(ca->has_timezone == ta->has_timezone);
+
+			if (ta->has_timezone)
+				g_assert(ca->timezone == ta->timezone);
+
 			break;
 		}
 		case SMS_VALIDITY_PERIOD_FORMAT_ENHANCED:
