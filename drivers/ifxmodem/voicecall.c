@@ -40,12 +40,6 @@
 
 #include "ifxmodem.h"
 
-/* Amount of ms we wait between CLCC calls */
-#define POLL_CLCC_INTERVAL 500
-
- /* Amount of time we give for CLIP to arrive before we commence CLCC poll */
-#define CLIP_INTERVAL 200
-
 static const char *none_prefix[] = { NULL };
 
 /* According to 27.007 COLP is an intermediate status for ATD */
