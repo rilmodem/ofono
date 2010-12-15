@@ -449,6 +449,20 @@ static void add_isi(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
+static void add_calypso(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	struct udev_list_entry *entry;
+	const char *devnode;
+
+	DBG("modem %p", modem);
+
+	devnode = udev_device_get_devnode(udev_device);
+	ofono_modem_set_string(modem, "Device", devnode);
+
+	ofono_modem_register(modem);
+}
+
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -533,6 +547,8 @@ done:
 		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "n900") == 0)
 		add_isi(modem, udev_device);
+	else if (g_strcmp0(driver, "calypso") == 0)
+		add_calypso(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
