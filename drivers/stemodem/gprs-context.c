@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -65,10 +66,18 @@ struct gprs_context_data {
 };
 
 struct conn_info {
+	/*
+	 * cid is allocated in oFono Core and is identifying
+	 * the Account. cid = 0 indicates that it is currently unused.
+	 */
 	unsigned int cid;
-	unsigned int device;
+	/* Id used by CAIF and EPPSD to identify the CAIF channel*/
 	unsigned int channel_id;
-	char interface[10];
+	/* Linux Interface Id */
+	unsigned int ifindex;
+	/* Linux Interface name */
+	char interface[IF_NAMESIZE];
+	gboolean created;
 };
 
 struct eppsd_response {
@@ -76,7 +85,6 @@ struct eppsd_response {
 	char ip_address[IP_ADDR_LEN];
 	char subnet_mask[IP_ADDR_LEN];
 	char mtu[IP_ADDR_LEN];
-	char default_gateway[IP_ADDR_LEN];
 	char dns_server1[IP_ADDR_LEN];
 	char dns_server2[IP_ADDR_LEN];
 	char p_cscf_server[IP_ADDR_LEN];
@@ -96,8 +104,6 @@ static void start_element_handler(GMarkupParseContext *context,
 		rsp->current = rsp->subnet_mask;
 	else if (!strcmp(element_name, "mtu"))
 		rsp->current = rsp->mtu;
-	else if (!strcmp(element_name, "default_gateway"))
-		rsp->current = rsp->default_gateway;
 	else if (!strcmp(element_name, "dns_server") &&
 					rsp->dns_server1[0] == '\0')
 		rsp->current = rsp->dns_server1;
@@ -123,7 +129,7 @@ static void text_handler(GMarkupParseContext *context,
 
 	if (rsp->current) {
 		strncpy(rsp->current, text, IP_ADDR_LEN);
-		rsp->current[IP_ADDR_LEN] = 0;
+		rsp->current[IP_ADDR_LEN] = '\0';
 	}
 }
 
@@ -153,8 +159,7 @@ static gint conn_compare_by_cid(gconstpointer a, gconstpointer b)
 	return 0;
 }
 
-static struct conn_info *conn_info_create(unsigned int device,
-						unsigned int channel_id)
+static struct conn_info *conn_info_create(unsigned int channel_id)
 {
 	struct conn_info *connection = g_try_new0(struct conn_info, 1);
 
@@ -162,7 +167,6 @@ static struct conn_info *conn_info_create(unsigned int device,
 		return NULL;
 
 	connection->cid = 0;
-	connection->device = device;
 	connection->channel_id = channel_id;
 
 	return connection;
@@ -171,7 +175,7 @@ static struct conn_info *conn_info_create(unsigned int device,
 /*
  * Creates a new IP interface for CAIF.
  */
-static gboolean caif_if_create(const char *interface, unsigned int connid)
+static gboolean caif_if_create(struct conn_info *conn)
 {
 	return FALSE;
 }
@@ -179,9 +183,8 @@ static gboolean caif_if_create(const char *interface, unsigned int connid)
 /*
  * Removes IP interface for CAIF.
  */
-static gboolean caif_if_remove(const char *interface, unsigned int connid)
+static void caif_if_remove(struct conn_info *conn)
 {
-	return FALSE;
 }
 
 static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
@@ -210,21 +213,13 @@ static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
 		DBG("Did not find data (used caif device) for"
 					"connection with cid; %d",
 					gcd->active_context);
-		goto error;
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+		return;
 	}
 
 	conn = l->data;
-
-	if (!caif_if_remove(conn->interface, conn->channel_id)) {
-		DBG("Failed to remove caif interface %s.",
-				conn->interface);
-	}
-
 	conn->cid = 0;
-	return;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, cbd->data);
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 }
 
 static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -233,7 +228,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_gprs_context_up_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	struct conn_info *conn = NULL;
+	struct conn_info *conn;
 	GAtResultIter iter;
 	GSList *l;
 	int i;
@@ -241,17 +236,15 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	const char *res_string;
 	const char *dns[MAX_DNS + 1];
 	struct eppsd_response rsp;
-	GMarkupParseContext *context = NULL;
+	GMarkupParseContext *context;
 
 	l = g_slist_find_custom(g_caif_devices,
 				GUINT_TO_POINTER(gcd->active_context),
 				conn_compare_by_cid);
 
 	if (l == NULL) {
-		DBG("Did not find data (device and channel id)"
-					"for connection with cid; %d",
-					gcd->active_context);
-		goto error;
+		DBG("CAIF Device gone missing (cid:%d)", gcd->active_context);
+		goto error_no_device;
 	}
 
 	conn = l->data;
@@ -291,31 +284,21 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	dns[1] = rsp.dns_server2;
 	dns[2] = NULL;
 
-	sprintf(conn->interface, "caif%u", conn->device);
-
-	if (!caif_if_create(conn->interface, conn->channel_id)) {
-		ofono_error("Failed to create caif interface %s.",
-				conn->interface);
-		CALLBACK_WITH_SUCCESS(cb, NULL, FALSE, rsp.ip_address,
-				rsp.subnet_mask, rsp.default_gateway,
+	CALLBACK_WITH_SUCCESS(cb, conn->interface, TRUE, rsp.ip_address,
+				rsp.subnet_mask, NULL,
 				dns, cbd->data);
-	} else {
-		CALLBACK_WITH_SUCCESS(cb, conn->interface,
-				FALSE, rsp.ip_address, rsp.subnet_mask,
-				rsp.default_gateway, dns, cbd->data);
-	}
-
 	return;
 
 error:
-	DBG("ste_eppsd_up_cb error");
-
 	if (context)
 		g_markup_parse_context_free(context);
 
 	if (conn)
 		conn->cid = 0;
 
+error_no_device:
+	DBG("ste_eppsd_up_cb error");
+	gcd->active_context = 0;
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
 }
 
@@ -325,44 +308,45 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_gprs_context_up_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	struct cb_data *ncbd = NULL;
+	struct cb_data *ncbd;
 	char buf[128];
 	struct conn_info *conn;
 	GSList *l;
 
+	l = g_slist_find_custom(g_caif_devices,
+				GUINT_TO_POINTER(gcd->active_context),
+				conn_compare_by_cid);
+
+	if (!l) {
+		DBG("CAIF Device gone missing (cid:%d)", gcd->active_context);
+		goto error_no_device;
+	}
+
+	conn = l->data;
+
 	if (!ok) {
 		struct ofono_error error;
 
+		conn->cid = 0;
 		gcd->active_context = 0;
 		decode_at_error(&error, g_at_result_final_response(result));
 		cb(&error, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
 		return;
 	}
 
-	ncbd = g_memdup(cbd, sizeof(struct cb_data));
-
-	l = g_slist_find_custom(g_caif_devices, GUINT_TO_POINTER(0),
-				conn_compare_by_cid);
-
-	if (l == NULL) {
-		DBG("at_cgdcont_cb, no more available devices");
-		goto error;
-	}
-
-	conn = l->data;
-	conn->cid = gcd->active_context;
 	snprintf(buf, sizeof(buf), "AT*EPPSD=1,%u,%u",
 			conn->channel_id, conn->cid);
+	ncbd = g_memdup(cbd, sizeof(struct cb_data));
 
 	if (g_at_chat_send(gcd->chat, buf, NULL,
 				ste_eppsd_up_cb, ncbd, g_free) > 0)
 		return;
 
-error:
 	g_free(ncbd);
+	conn->cid = 0;
 
+error_no_device:
 	gcd->active_context = 0;
-
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL,
 				NULL, NULL, cbd->data);
 }
@@ -375,12 +359,31 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[AUTH_BUF_LENGTH];
 	int len;
+	GSList *l;
+	struct conn_info *conn;
 
 	if (cbd == NULL)
-		goto error;
+		goto error_no_device;
 
 	gcd->active_context = ctx->cid;
 	cbd->user = gc;
+
+	/* Find free connection with cid zero */
+	l = g_slist_find_custom(g_caif_devices, GUINT_TO_POINTER(0),
+				conn_compare_by_cid);
+
+	if (!l) {
+		DBG("No more available CAIF devices");
+		goto error_no_device;
+	}
+
+	conn = l->data;
+	conn->cid = ctx->cid;
+
+	if (!conn->created) {
+		DBG("CAIF interface not created (rtnl error?)");
+		goto error;
+	}
 
 	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
@@ -405,6 +408,9 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 	return;
 
 error:
+	conn->cid = 0;
+
+error_no_device:
 	gcd->active_context = 0;
 	g_free(cbd);
 
@@ -431,8 +437,8 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 				conn_compare_by_cid);
 
 	if (l == NULL) {
-		DBG("at_gprs_deactivate_primary, did not find"
-			"data (channel id) for connection with cid; %d", id);
+		DBG("did not find data (channel id) "
+				"for connection with cid; %d", id);
 		goto error;
 	}
 
@@ -446,7 +452,6 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 error:
 	g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
@@ -457,6 +462,7 @@ static void ste_cgact_read_cb(gboolean ok, GAtResult *result,
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	gint cid, state;
 	GAtResultIter iter;
+	GSList *l;
 
 	if (!ok)
 		return;
@@ -480,7 +486,13 @@ static void ste_cgact_read_cb(gboolean ok, GAtResult *result,
 		ofono_gprs_context_deactivated(gc, gcd->active_context);
 		gcd->active_context = 0;
 
-		break;
+		/* Mark interface as unused */
+		l = g_slist_find_custom(g_caif_devices, GUINT_TO_POINTER(cid),
+				conn_compare_by_cid);
+		if (l != NULL) {
+			struct conn_info *conn = l->data;
+			conn->cid = 0;
+		}
 	}
 }
 
@@ -524,9 +536,11 @@ static int ste_gprs_context_probe(struct ofono_gprs_context *gc,
 	ofono_gprs_context_set_data(gc, gcd);
 
 	for (i = 0; i < MAX_CAIF_DEVICES; i++) {
-		ci = conn_info_create(i, i+1);
-		if (ci)
-			g_caif_devices = g_slist_append(g_caif_devices, ci);
+		ci = conn_info_create(i+1);
+		if (!ci)
+			return -ENOMEM;
+		caif_if_create(ci);
+		g_caif_devices = g_slist_append(g_caif_devices, ci);
 	}
 
 	return 0;
@@ -536,6 +550,7 @@ static void ste_gprs_context_remove(struct ofono_gprs_context *gc)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 
+	g_slist_foreach(g_caif_devices, (GFunc) caif_if_remove, NULL);
 	g_slist_foreach(g_caif_devices, (GFunc) g_free, NULL);
 	g_slist_free(g_caif_devices);
 	g_caif_devices = NULL;
