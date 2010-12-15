@@ -345,7 +345,7 @@ AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @CAPNG_CFLAGS@ $(builtin_cflags) \
 INCLUDES = -I$(builddir)/include -I$(builddir)/src -I$(srcdir)/src \
 			-I$(srcdir)/gdbus -I$(srcdir)/gisi -I$(srcdir)/gatchat
 
-doc_files = doc/overview.txt doc/ofono-paper.txt \
+doc_files = doc/overview.txt doc/ofono-paper.txt doc/release-faq.txt \
 		doc/manager-api.txt doc/modem-api.txt doc/network-api.txt \
 			doc/voicecallmanager-api.txt doc/voicecall-api.txt \
 			doc/call-forwarding-api.txt doc/call-settings-api.txt \

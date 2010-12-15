@@ -1,0 +1,42 @@
+oFono release FAQ
+*****************
+
+What is the release cycle?
+==========================
+
+There is no clear specified release cycle.  The project follows the general
+open source paradigm of release early and release often.  Historically the
+release cadence has been about two to three weeks.
+
+The two weeks release cycle is a general rule of thumb.  It will never be
+precise down to an exact day.  The decision to release is driven by the
+code flow and changes made during that cycle.  When a closed set of features
+has been merged, then a new release is considered.  When a lot changes are
+merged, then the release cycle can be decreased down to weekly releases.
+And in case not many changes have been made and no new features are merged,
+it can happen that the release cycle becomes as long as one month.
+
+In addition to the normal releases during a cycle, there could be also
+so called brown-paper-bag type of releases.  The releases are fixing
+critical issues with the previous release.  Normally they happen in case a
+serious bug or regression slipped into the source and where it makes sense
+to fix it right away.  The goal is to keep this type of releases to a bare
+minimum, but they do happen every now and then.  From past releases they
+are to be expected around three times per year.
+
+
+What does the release number mean?
+==================================
+
+Every release contains a major and a minor version.  The major version only
+indicates an API version and it should not change until the D-Bus API is
+backwards incompatible.  The same major version can contain new version of
+the API as long as it is backward compatible.  This allows for extensions
+of the D-Bus API within the same major version.
+
+The minor version number is just an increasing number and has itself no
+special meaning.  The minor version will increase until a new backwards
+incompatible API is required and a new major number is used.
+
+There is no stable API guarantee for the internal plugin API.  The release
+numbers are not covering this.
