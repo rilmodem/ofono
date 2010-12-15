@@ -138,8 +138,8 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-
-static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void query_template(const char *prefix, gboolean ok,
+				GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_call_settings_status_cb_t cb = cbd->cb;
@@ -156,18 +156,28 @@ static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "+CLIP:")) {
-		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-		return;
-	}
+	if (g_at_result_iter_next(&iter, prefix) == FALSE)
+		goto error;
 
 	/* Skip the local presentation setting */
-	g_at_result_iter_skip_next(&iter);
-	g_at_result_iter_next_number(&iter, &status);
+	if (g_at_result_iter_skip_next(&iter) == FALSE)
+		goto error;
 
-	DBG("network: %d", status);
+	if (g_at_result_iter_next_number(&iter, &status) == FALSE)
+		goto error;
+
+	DBG("prefix: %s, network: %d", prefix, status);
 
 	cb(&error, status, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+}
+
+static void clip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	query_template("+CLIP:", ok, result, user_data);
 }
 
 static void at_clip_query(struct ofono_call_settings *cs,
@@ -191,35 +201,7 @@ error:
 
 static void cnap_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct cb_data *cbd = user_data;
-	ofono_call_settings_status_cb_t cb = cbd->cb;
-	struct ofono_error error;
-	GAtResultIter iter;
-	int status;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (!ok) {
-		cb(&error, -1, cbd->data);
-		return;
-	}
-
-	g_at_result_iter_init(&iter, result);
-
-	if (g_at_result_iter_next(&iter, "+CNAP:") == FALSE)
-		goto error;
-
-	/* Skip the local presentation setting */
-	g_at_result_iter_skip_next(&iter);
-	g_at_result_iter_next_number(&iter, &status);
-
-	DBG("network: %d", status);
-
-	cb(&error, status, cbd->data);
-	return;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+	query_template("+CNAP:", ok, result, user_data);
 }
 
 static void at_cnap_query(struct ofono_call_settings *cs,
@@ -243,33 +225,7 @@ error:
 
 static void colp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct cb_data *cbd = user_data;
-	ofono_call_settings_status_cb_t cb = cbd->cb;
-	struct ofono_error error;
-	GAtResultIter iter;
-	int status;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (!ok) {
-		cb(&error, -1, cbd->data);
-		return;
-	}
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+COLP:")) {
-		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
-		return;
-	}
-
-	/* Skip the local presentation setting */
-	g_at_result_iter_skip_next(&iter);
-	g_at_result_iter_next_number(&iter, &status);
-
-	DBG("network: %d", status);
-
-	cb(&error, status, cbd->data);
+	query_template("+COLP:", ok, result, user_data);
 }
 
 static void at_colp_query(struct ofono_call_settings *cs,
@@ -375,34 +331,7 @@ error:
 
 static void colr_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
-	struct cb_data *cbd = user_data;
-	ofono_call_settings_status_cb_t cb = cbd->cb;
-	struct ofono_error error;
-	GAtResultIter iter;
-	int status;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (!ok) {
-		cb(&error, -1, cbd->data);
-		return;
-	}
-
-	g_at_result_iter_init(&iter, result);
-
-	if (g_at_result_iter_next(&iter, "+COLR:") == FALSE)
-		goto error;
-
-	if (g_at_result_iter_next_number(&iter, &status) == FALSE)
-		goto error;
-
-	DBG("network: %d", status);
-
-	cb(&error, status, cbd->data);
-	return;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+	query_template("+COLR:", ok, result, user_data);
 }
 
 static void at_colr_query(struct ofono_call_settings *cs,
