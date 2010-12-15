@@ -209,8 +209,9 @@ static void cnap_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (g_at_result_iter_next(&iter, "+CNAP:") == FALSE)
 		goto error;
 
-	if (g_at_result_iter_next_number(&iter, &status) == FALSE)
-		goto error;
+	/* Skip the local presentation setting */
+	g_at_result_iter_skip_next(&iter);
+	g_at_result_iter_next_number(&iter, &status);
 
 	DBG("network: %d", status);
 
