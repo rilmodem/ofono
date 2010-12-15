@@ -153,22 +153,32 @@ static void spn_resp_cb(const GIsiMessage *msg, void *data)
 	int i;
 
 	if (!check_response_status(msg, SIM_SERV_PROV_NAME_RESP,
-					SIM_ST_READ_SERV_PROV_NAME) ||
-			!g_isi_msg_data_get_struct(msg, 2, (void *)&resp, len)) {
-		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
-		return;
-	}
+					SIM_ST_READ_SERV_PROV_NAME))
+		goto error;
+
+	if (!g_isi_msg_data_get_struct(msg, 2, (const void **) &resp, len))
+		goto error;
 
 	/* Set display condition bits */
 	spn[0] = (resp->disp_home & 0x01) | ((resp->disp_roam & 0x01) << 1);
 
 	/* Convert from a NULL-terminated UCS-2 string to ASCII */
 	for (i = 0; i < SIM_MAX_SPN_LENGTH; i++) {
-		uint8_t c = resp->name[i];
-		spn[i + 1] = c == 0 ? 0xFF : (!g_ascii_isprint(c) ? '?' : c);
+		uint16_t c = resp->name[i] >> 8 | resp->name[i] << 8;
+
+		if (c == 0)
+			c = 0xFF;
+		else if (!g_ascii_isprint(c))
+			c = '?';
+
+		spn[i + 1] = c;
 	}
 
 	CALLBACK_WITH_SUCCESS(cb, spn, sizeof(spn), cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 }
 
 static gboolean isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
@@ -198,14 +208,17 @@ static void read_iccid_resp_cb(const GIsiMessage *msg, void *data)
 	struct sim_iccid *icc;
 	size_t len = sizeof(struct sim_iccid);
 
-	if (!check_response_status(msg, SIM_READ_FIELD_RESP, ICC) ||
-			!g_isi_msg_data_get_struct(msg, 2, (void *)&icc, len)) {
+	if (!check_response_status(msg, SIM_READ_FIELD_RESP, ICC))
+		goto error;
 
-		CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
-		return;
-	}
+	if (!g_isi_msg_data_get_struct(msg, 2, (const void **) &icc, len))
+		goto error;
 
 	CALLBACK_WITH_SUCCESS(cb, icc->id, 10, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
 }
 
 static gboolean isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
@@ -309,11 +322,11 @@ static void imsi_resp_cb(const GIsiMessage *msg, void *data)
 	char imsi[SIM_MAX_IMSI_LENGTH + 1];
 	size_t i, j;
 
-	if (!check_response_status(msg, SIM_IMSI_RESP_READ_IMSI, READ_IMSI) ||
-			!g_isi_msg_data_get_struct(msg, 2, (void *)&resp, len)) {
-		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
-		return;
-	}
+	if (!check_response_status(msg, SIM_IMSI_RESP_READ_IMSI, READ_IMSI))
+		goto error;
+
+	if (!g_isi_msg_data_get_struct(msg, 2, (const void **) &resp, len))
+		goto error;
 
 	/* Ignore the low-order semi-octet of the first byte */
 	imsi[0] = ((resp->imsi[0] & 0xF0) >> 4) + '0';
@@ -329,6 +342,10 @@ static void imsi_resp_cb(const GIsiMessage *msg, void *data)
 
 	imsi[j] = '\0';
 	CALLBACK_WITH_SUCCESS(cb, imsi, cbd->data);
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
 static void isi_read_imsi(struct ofono_sim *sim,
