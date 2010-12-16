@@ -58,6 +58,9 @@ static const char *none_prefix[] = { NULL };
 /* According to 27.007 COLP is an intermediate status for ATD */
 static const char *atd_prefix[] = { "+COLP:", NULL };
 
+#define FLAG_NEED_CLIP 1
+#define FLAG_NEED_CNAP 2
+
 struct voicecall_data {
 	GSList *calls;
 	unsigned int local_release;
@@ -67,6 +70,7 @@ struct voicecall_data {
 	unsigned int tone_duration;
 	guint vts_source;
 	unsigned int vts_delay;
+	unsigned char flags;
 };
 
 struct release_id_req {
@@ -177,7 +181,8 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 			n = n->next;
 		} else {
-			/* Always use the clip_validity from old call
+			/*
+			 * Always use the clip_validity from old call
 			 * the only place this is truly told to us is
 			 * in the CLIP notify, the rest are fudged
 			 * anyway.  Useful when RING, CLIP is used,
@@ -186,8 +191,26 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			 */
 			nc->clip_validity = oc->clip_validity;
 
-			if (memcmp(nc, oc, sizeof(struct ofono_call)) &&
-					!nc->type)
+			/*
+			 * CNAP doesn't arrive as part of CLCC, always
+			 * re-use from the old call
+			 */
+			strncpy(nc->name, oc->name,
+					OFONO_MAX_CALLER_NAME_LENGTH);
+			nc->name[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
+			nc->cnap_validity = oc->cnap_validity;
+
+			/*
+			 * If the CLIP is not provided and the CLIP never
+			 * arrives, or RING is used, then signal the call
+			 * here
+			 */
+			if (nc->status == 4 && (vd->flags & FLAG_NEED_CLIP)) {
+				if (nc->type == 0)
+					ofono_voicecall_notify(vc, nc);
+
+				vd->flags &= ~FLAG_NEED_CLIP;
+			} else if (memcmp(nc, oc, sizeof(*nc)) && nc->type == 0)
 				ofono_voicecall_notify(vc, nc);
 
 			n = n->next;
@@ -630,6 +653,7 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 
 	/* We don't know the call type, we must run clcc */
 	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
+	vd->flags = FLAG_NEED_CLIP | FLAG_NEED_CNAP;
 }
 
 static void cring_notify(GAtResult *result, gpointer user_data)
@@ -680,6 +704,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	 * earlier, we announce the call there
 	 */
 	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
+	vd->flags = FLAG_NEED_CLIP | FLAG_NEED_CNAP;
 
 	DBG("");
 }
@@ -700,6 +725,10 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 		ofono_error("CLIP for unknown call");
 		return;
 	}
+
+	/* We have already saw a CLIP for this call, no need to parse again */
+	if ((vd->flags & FLAG_NEED_CLIP) == 0)
+		return;
 
 	g_at_result_iter_init(&iter, result);
 
@@ -738,6 +767,8 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	if (call->type == 0)
 		ofono_voicecall_notify(vc, call);
 
+	vd->flags &= ~FLAG_NEED_CLIP;
+
 	/* We started a CLCC, but the CLIP arrived and the call type
 	 * is known.  If we don't need to poll, cancel the GSource
 	 */
@@ -764,6 +795,10 @@ static void cnap_notify(GAtResult *result, gpointer user_data)
 		return;
 	}
 
+	/* We have already saw a CLIP for this call, no need to parse again */
+	if ((vd->flags & FLAG_NEED_CNAP) == 0)
+		return;
+
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "+CNAP:"))
@@ -789,7 +824,11 @@ static void cnap_notify(GAtResult *result, gpointer user_data)
 	call->name[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
 	call->cnap_validity = validity;
 
-	ofono_voicecall_notify(vc, call);
+	/* Only signal the call here if we already signaled it to the core */
+	if (call->type == 0 && (vd->flags & FLAG_NEED_CLIP) == 0)
+		ofono_voicecall_notify(vc, call);
+
+	vd->flags &= ~FLAG_NEED_CNAP;
 }
 
 static void ccwa_notify(GAtResult *result, gpointer user_data)
