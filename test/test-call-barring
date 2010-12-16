@@ -14,6 +14,7 @@ def property_changed(name, value):
 def print_useage(s):
 	print "Usage: %s <property> <newvalue> <password>" % (s)
 	print "Usage: %s disableall <password>" % (s)
+	print "Usage: %s passwd <old_password> <new_password>" % (s)
 	sys.exit(1);
 
 if __name__ == "__main__":
@@ -22,6 +23,9 @@ if __name__ == "__main__":
 
 	if (sys.argv[1] == 'disableall'):
 		pin = sys.argv[2]
+	elif (sys.argv[1] == 'passwd'):
+		old_password = sys.argv[2]
+		new_password = sys.argv[3]
 	else:
 		if (len(sys.argv) != 4):
 			print_useage(sys.argv[0])
@@ -59,6 +63,14 @@ if __name__ == "__main__":
 		except dbus.DBusException, e:
 			print "Unable to Disable All barrings: ", e
 			sys.exit(1)
+	elif (sys.argv[1] == 'passwd'):
+		try:
+			cb.ChangePassword(old_password, new_password)
+		except dbus.DBusException, e:
+			print "Unable to change password: ", e
+			sys.exit(1)
+		print "Password changed"
+		sys.exit(0)
 	else:
 		try:
 			cb.SetProperty(property, newvalue, pin)
