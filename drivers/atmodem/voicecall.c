@@ -189,7 +189,8 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			 * and we're forced to use CLCC and clip_validity
 			 * is 1
 			 */
-			nc->clip_validity = oc->clip_validity;
+			if (oc->clip_validity == 1)
+				nc->clip_validity = oc->clip_validity;
 
 			/*
 			 * CNAP doesn't arrive as part of CLCC, always
