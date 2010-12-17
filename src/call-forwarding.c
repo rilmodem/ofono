@@ -309,6 +309,14 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 	char attr[64];
 	char tattr[64];
 	gboolean update_sim = FALSE;
+	gboolean old_cfu;
+	gboolean new_cfu;
+
+	if ((cf->flags & CALL_FORWARDING_FLAG_CPHS_CFF) ||
+			cf->cfis_record_id > 0)
+		old_cfu = is_cfu_enabled(cf, NULL);
+	else
+		old_cfu = FALSE;
 
 	for (l = list; l; l = l->next) {
 		lc = l->data;
@@ -418,6 +426,21 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 
 	if (update_sim == TRUE)
 		sim_set_cf_indicator(cf);
+
+	if ((cf->flags & CALL_FORWARDING_FLAG_CPHS_CFF) ||
+			cf->cfis_record_id > 0)
+		new_cfu = is_cfu_enabled(cf, NULL);
+	else
+		new_cfu = FALSE;
+
+	if (new_cfu != old_cfu) {
+		ofono_bool_t status = new_cfu;
+
+		ofono_dbus_signal_property_changed(conn, path,
+					OFONO_CALL_FORWARDING_INTERFACE,
+					"ForwardingFlagOnSim",
+					DBUS_TYPE_BOOLEAN, &status);
+	}
 }
 
 static inline void property_append_cf_condition(DBusMessageIter *dict, int cls,
