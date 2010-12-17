@@ -236,3 +236,27 @@ Text Telephony
 - TTY (hearing impaired) support, also known as Cellular Text Modem (CTM).
   In case it's supported by the modem, oFono allows the user to enabled
   or disable it through the TextTelephony interface.
+
+Emergency Calls
+===============
+
+- EFecc support.  During SIM initialization phase oFono reads EFecc in order
+  to bootstrap the emergency calling codes provides by the SIM.  If the SIM is
+  not present or EFecc has not been read yet, the default set of emergency
+  calling codes is used.
+
+- Emergency number reporting.  The current known list of emergency calling
+  codes is reported by oFono in the EmergencyNumbers property on the
+  VoicecallManager interface.  When a voicecall is made to a number present
+  on the EmergencyNumbers list it is automatically flagged as an emergency
+  call.  This is done by setting the Emergency property on the Voicecall
+  interface to TRUE.
+
+Supplementary Services
+======================
+
+- CNAP support.  The Calling Name Presentation supplementary service is
+  supported by oFono.  One can query whether the service is provisioned in the
+  network by using the CallSettings property.  If the network reports the
+  calling name, it is presented on the Voicecall interface using the Name
+  property.  If no calling name is given, the Name is empty.
