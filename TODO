@@ -246,12 +246,6 @@ Supplementary Services
   Priority: Low
   Complexity: C8
 
-- Calling Name Presentation (CNAP) support
-
-  Priority: Low
-  Complexity: C2
-  Owner: Gustavo F Padovan <padovan@profusion.mobi>
-
 - User to User Signaling (UUS) support
 
   Priority: Low
