@@ -61,7 +61,6 @@ struct ofono_call_forwarding {
 	struct cf_ss_request *ss_req;
 	struct ofono_sim *sim;
 	unsigned char cfis_record_id;
-	unsigned char cfis_indicator;
 	ofono_bool_t cphs_cff_present;
 	ofono_bool_t status_on_sim;
 	struct ofono_ussd *ussd;
@@ -257,15 +256,18 @@ static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
 			number_len = strlen(cond->phone_number.number);
 
 			/* CFU indicator Status - Voice */
-			data[1] = (cf->cfis_indicator |= 0x01);
+			data[1] = 0x01;
 			number_len = (number_len + 1) / 2;
 			data[2] = number_len + 1;
 			data[3] = cond->phone_number.type;
 
 			sim_encode_bcd_number(cond->phone_number.number,
 						data + 4);
-		} else
-			data[1] = (cf->cfis_indicator &= 0xFE);
+		} else {
+			data[1] = 0x00;
+			data[2] = 1;
+			data[3] = 128;
+		}
 
 		ofono_sim_write(cf->sim, SIM_EFCFIS_FILEID,
 					sim_cfis_update_cb,
@@ -1228,7 +1230,6 @@ static void sim_cfis_read_cb(int ok, int total_length, int record,
 	const char *path = __ofono_atom_get_path(cf->atom);
 
 	if (!ok || record_length < 16 || total_length < record_length) {
-		cf->cfis_indicator = 0;
 		cf->cfis_record_id = 0;
 		return;
 	}
@@ -1242,14 +1243,11 @@ static void sim_cfis_read_cb(int ok, int total_length, int record,
 
 	cf->cfis_record_id = record;
 
-	/* CFU indicator status */
-	cf->cfis_indicator = data[1];
-
 	/*
 	 * For now we only support Voice, although Fax & all Data
 	 * basic services are applicable as well.
 	 */
-	if (cf->cfis_indicator & 0x01) {
+	if (data[1] & 0x01) {
 		int ton_npi;
 		int number_len;
 		const char *number;
