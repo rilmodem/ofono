@@ -51,7 +51,8 @@ for path, properties in modems:
 			elif key in ["MobileNetworkCodeLength",
 						"VoicemailMessageCount",
 						"MicrophoneVolume",
-						"SpeakerVolume"]:
+						"SpeakerVolume",
+						"Strength"]:
 				val = int(properties[key])
 			elif key in ["MainMenu"]:
 				val = ", ".join([ text + " (" + str(int(icon)) +
