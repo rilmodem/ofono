@@ -62,7 +62,6 @@ struct ofono_call_forwarding {
 	struct cf_ss_request *ss_req;
 	struct ofono_sim *sim;
 	unsigned char cfis_record_id;
-	ofono_bool_t status_on_sim;
 	struct ofono_ussd *ussd;
 	unsigned int ussd_watch;
 	const struct ofono_call_forwarding_driver *driver;
@@ -496,7 +495,12 @@ static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
 						BEARER_CLASS_VOICE,
 						cf_type_lut[i]);
 
-	status = cf->status_on_sim;
+	if ((cf->flags & CALL_FORWARDING_FLAG_CPHS_CFF) ||
+			cf->cfis_record_id > 0)
+		status = is_cfu_enabled(cf, NULL);
+	else
+		status = FALSE;
+
 	ofono_dbus_dict_append(&dict, "ForwardingFlagOnSim", DBUS_TYPE_BOOLEAN,
 					&status);
 
@@ -1273,8 +1277,8 @@ static void sim_cfis_read_cb(int ok, int total_length, int record,
 		if (cond == NULL)
 			return;
 
-		status = cf->status_on_sim = TRUE;
-		cond->status = status;
+		status = TRUE;
+		cond->status = TRUE;
 		cond->cls = BEARER_CLASS_VOICE;
 		cond->time = 0;
 		cond->phone_number.type = ton_npi;
@@ -1320,7 +1324,10 @@ static void sim_cphs_cff_read_cb(int ok, int total_length, int record,
 	 * For now we only support Voice, although Fax & all Data
 	 * basic services are applicable as well.
 	 */
-	cfu_voice = cf->status_on_sim = ((data[0] & 0xf) == 0xa);
+	if ((data[0] & 0xf) != 0xA)
+		return;
+
+	cfu_voice = TRUE;
 
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE,
