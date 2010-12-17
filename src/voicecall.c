@@ -340,8 +340,8 @@ static gboolean voicecall_is_emergency(struct voicecall *v)
 
 	lineid_str = phone_number_to_string(&call->phone_number);
 
-	return (g_slist_find_custom(v->vc->en_list, lineid_str,
-						number_compare)) ? TRUE : FALSE;
+	return g_slist_find_custom(v->vc->en_list, lineid_str,
+						number_compare) ? TRUE : FALSE;
 }
 
 static void append_voicecall_properties(struct voicecall *v,
