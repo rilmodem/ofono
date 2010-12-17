@@ -219,29 +219,37 @@ static void sim_cphs_cff_update_cb(int ok, void *data)
 		ofono_info("Failed to update EFcphs-cff");
 }
 
-static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
+static gboolean is_cfu_enabled(struct ofono_call_forwarding *cf,
+				struct ofono_call_forwarding_condition **out)
 {
-	gboolean cfu_voice = FALSE;
-	struct ofono_call_forwarding_condition *cond = NULL;
-	GSList *l;
-	const char *number = NULL;
+	GSList *l = cf->cf_conditions[CALL_FORWARDING_TYPE_UNCONDITIONAL];
+	struct ofono_call_forwarding_condition *cond;
 
 	/*
 	 * For now we only support Voice, although Fax & all Data
 	 * basic services are applicable as well.
 	 */
-	for (l = cf->cf_conditions[0]; l; l = l->next) {
+	for (; l; l = l->next) {
 		cond = l->data;
 
-		if ((cond->cls & BEARER_CLASS_VOICE) &&
-				strlen(cond->phone_number.number) > 0) {
-			number = phone_number_to_string(&cond->phone_number);
-			cfu_voice = TRUE;
-			break;
-		}
+		if (cond->cls > BEARER_CLASS_VOICE)
+			continue;
+
+		if (out)
+			*out = cond;
+
+		return TRUE;
 	}
 
-	cf->status_on_sim = cfu_voice;
+	return FALSE;
+}
+
+static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
+{
+	gboolean cfu_voice;
+	struct ofono_call_forwarding_condition *cond;
+
+	cfu_voice = is_cfu_enabled(cf, &cond);
 
 	if (cf->cfis_record_id) {
 		unsigned char data[16];
