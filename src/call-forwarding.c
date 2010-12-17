@@ -235,7 +235,7 @@ static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
 		cond = l->data;
 
 		if ((cond->cls & BEARER_CLASS_VOICE) &&
-				(strlen(cond->phone_number.number) > 0)) {
+				strlen(cond->phone_number.number) > 0) {
 			number = phone_number_to_string(&cond->phone_number);
 			cfu_voice = TRUE;
 			break;
@@ -1285,15 +1285,13 @@ static void sim_cfis_read_cb(int ok, int total_length, int record,
 						g_slist_append(NULL, cond);
 
 		ofono_dbus_signal_property_changed(conn, path,
-				OFONO_CALL_FORWARDING_INTERFACE,
-				attr, DBUS_TYPE_STRING,
-				&number);
+					OFONO_CALL_FORWARDING_INTERFACE,
+					attr, DBUS_TYPE_STRING, &number);
 
 		ofono_dbus_signal_property_changed(conn, path,
-				OFONO_CALL_FORWARDING_INTERFACE,
-				"ForwardingFlagOnSim",
-				DBUS_TYPE_BOOLEAN,
-				&status);
+					OFONO_CALL_FORWARDING_INTERFACE,
+					"ForwardingFlagOnSim",
+					DBUS_TYPE_BOOLEAN, &status);
 	}
 }
 
@@ -1322,8 +1320,7 @@ static void sim_cphs_cff_read_cb(int ok, int total_length, int record,
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE,
 					"ForwardingFlagOnSim",
-					DBUS_TYPE_BOOLEAN,
-					&cfu_voice);
+					DBUS_TYPE_BOOLEAN, &cfu_voice);
 }
 
 static void sim_read_cf_indicator(struct ofono_call_forwarding *cf)
