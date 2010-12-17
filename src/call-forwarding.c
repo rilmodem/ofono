@@ -1255,7 +1255,6 @@ static void sim_cfis_read_cb(int ok, int total_length, int record,
 		const char *number;
 		char attr[64];
 		struct ofono_call_forwarding_condition *cond;
-		GSList *l = NULL;
 		dbus_bool_t status;
 
 		number_len = data[2];
@@ -1283,7 +1282,7 @@ static void sim_cfis_read_cb(int ok, int total_length, int record,
 			cf_type_lut[CALL_FORWARDING_TYPE_UNCONDITIONAL]);
 
 		cf->cf_conditions[CALL_FORWARDING_TYPE_UNCONDITIONAL] =
-							g_slist_append(l, cond);
+						g_slist_append(NULL, cond);
 
 		ofono_dbus_signal_property_changed(conn, path,
 				OFONO_CALL_FORWARDING_INTERFACE,
