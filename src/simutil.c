@@ -1257,8 +1257,6 @@ void sim_adn_build(unsigned char *data, int length,
 
 	number_len = (number_len + 1) / 2;
 	*data++ = number_len + 1;
-
-	/* Use given number type and 'Unknown' for Numbering Plan */
 	*data++ = ph->type;
 
 	sim_encode_bcd_number(ph->number, data);
