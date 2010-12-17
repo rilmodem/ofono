@@ -769,14 +769,6 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 		ofono_voicecall_notify(vc, call);
 
 	vd->flags &= ~FLAG_NEED_CLIP;
-
-	/* We started a CLCC, but the CLIP arrived and the call type
-	 * is known.  If we don't need to poll, cancel the GSource
-	 */
-	if (call->type != 9 && vd->clcc_source) {
-		g_source_remove(vd->clcc_source);
-		vd->clcc_source = 0;
-	}
 }
 
 static void cnap_notify(GAtResult *result, gpointer user_data)
