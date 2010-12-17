@@ -84,6 +84,14 @@ struct ofono_phone_number {
 	int type;
 };
 
+/* Length of NUM_FIELDS in 3GPP2 C.S0005-E v2.0 */
+#define OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH 256
+
+struct ofono_cdma_phone_number {
+	/* char maps to max size of CHARi (8 bit) in 3GPP2 C.S0005-E v2.0 */
+	char number[OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH];
+};
+
 struct ofono_call {
 	unsigned int id;
 	int type;
