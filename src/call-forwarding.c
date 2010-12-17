@@ -37,6 +37,7 @@
 #include "simutil.h"
 
 #define CALL_FORWARDING_FLAG_CACHED 0x1
+#define CALL_FORWARDING_FLAG_CPHS_CFF 0x2
 
 /* According to 27.007 Spec */
 #define DEFAULT_NO_REPLY_TIMEOUT 20
@@ -61,7 +62,6 @@ struct ofono_call_forwarding {
 	struct cf_ss_request *ss_req;
 	struct ofono_sim *sim;
 	unsigned char cfis_record_id;
-	ofono_bool_t cphs_cff_present;
 	ofono_bool_t status_on_sim;
 	struct ofono_ussd *ussd;
 	unsigned int ussd_watch;
@@ -277,7 +277,7 @@ static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
 		return;
 	}
 
-	if (cf->cphs_cff_present) {
+	if (cf->flags & CALL_FORWARDING_FLAG_CPHS_CFF) {
 		unsigned char cff_voice = cfu_voice ? 0x0A : 0x05;
 
 		ofono_sim_write(cf->sim, SIM_EF_CPHS_CFF_FILEID,
@@ -1303,11 +1303,10 @@ static void sim_cphs_cff_read_cb(int ok, int total_length, int record,
 	dbus_bool_t cfu_voice;
 
 	if (!ok || total_length < 1) {
-		cf->cphs_cff_present = FALSE;
 		return;
 	}
 
-	cf->cphs_cff_present = TRUE;
+	cf->flags |= CALL_FORWARDING_FLAG_CPHS_CFF;
 
 	/*
 	 * For now we only support Voice, although Fax & all Data
