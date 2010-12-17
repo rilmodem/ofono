@@ -410,6 +410,7 @@ Emergency Calls
 
   Priority: High
   Complexity: C2
+  Owner: Petteri Tikander <petteri.tikander@ixonos.com>
 
 - Extend the voicecall interface with a property indicating whether this call
   is an emergency call (essentially the CLI matches one of the numbers on the
