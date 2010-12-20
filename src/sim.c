@@ -429,6 +429,8 @@ static gboolean set_own_numbers(struct ofono_sim *sim,
 			new_numbers = new_numbers->next;
 		} else {
 			memset(efmsisdn, 0xff, sim->efmsisdn_length);
+			/* Set number length */
+			efmsisdn[sim->efmsisdn_length - 14] = 1;
 		}
 
 		if (ofono_sim_write(req->sim, SIM_EFMSISDN_FILEID,
