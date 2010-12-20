@@ -50,16 +50,6 @@ builtin_cflags =
 gdbus_sources = gdbus/gdbus.h gdbus/mainloop.c gdbus/watch.c \
 					gdbus/object.c gdbus/polkit.c
 
-gisi_sources = gisi/modem.h gisi/modem.c \
-			gisi/netlink.h gisi/netlink.c \
-			gisi/socket.h gisi/socket.c \
-			gisi/client.h gisi/client.c \
-			gisi/server.h gisi/server.c \
-			gisi/pep.h gisi/pep.c \
-			gisi/pipe.h gisi/pipe.c \
-			gisi/iter.h gisi/iter.c \
-			gisi/verify.c gisi/phonet.h
-
 gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/gatresult.h gatchat/gatresult.c \
 				gatchat/gatsyntax.h gatchat/gatsyntax.c \
