@@ -206,6 +206,11 @@ static gboolean notify_sim_state(struct ofono_modem *modem,
 	case HUAWEI_SIM_STATE_INVALID_CS:
 	case HUAWEI_SIM_STATE_INVALID_PS:
 	case HUAWEI_SIM_STATE_INVALID_PS_AND_CS:
+		if (data->sim_poll_timeout) {
+			g_source_remove(data->sim_poll_timeout);
+			data->sim_poll_timeout = 0;
+		}
+
 		/*
 		 * In the "warm start" case the modem skips
 		 * HUAWEI_SIM_STATE_INVALID_OR_LOCKED altogether, so need
