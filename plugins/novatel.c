@@ -343,6 +343,17 @@ static void novatel_pre_sim(struct ofono_modem *modem)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
+static void novatel_post_sim(struct ofono_modem *modem)
+{
+	struct novatel_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	if (data->secondary != NULL)
+		ofono_radio_settings_create(modem, 0, "nwmodem",
+						data->secondary);
+}
+
 static void novatel_post_online(struct ofono_modem *modem)
 {
 	struct novatel_data *data = ofono_modem_get_data(modem);
@@ -357,9 +368,6 @@ static void novatel_post_online(struct ofono_modem *modem)
 						"atmodem", data->primary);
 	} else {
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
-							data->secondary);
-
-		ofono_radio_settings_create(modem, 0, "nwmodem",
 							data->secondary);
 
 		ofono_sms_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
@@ -387,6 +395,7 @@ static struct ofono_modem_driver novatel_driver = {
 	.disable	= novatel_disable,
 	.set_online     = novatel_set_online,
 	.pre_sim	= novatel_pre_sim,
+	.post_sim	= novatel_post_sim,
 	.post_online	= novatel_post_online,
 };
 
