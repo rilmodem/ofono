@@ -219,9 +219,6 @@ static void read_next_entry(GIsiClient *client, uint16_t location,
 		0, 0				/* filler */
 	};
 
-	if (location < 0)
-		goto error;
-
 	if (cbd == NULL)
 		goto error;
 
