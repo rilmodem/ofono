@@ -244,6 +244,12 @@ conf_DATA += plugins/phonesim.conf
 endif
 endif
 
+if CDMA_ATMODEM
+builtin_modules += cdma_atmodem
+builtin_sources += drivers/cdmamodem/cdmamodem.h \
+			drivers/cdmamodem/cdmamodem.c
+endif
+
 builtin_modules += g1
 builtin_sources += plugins/g1.c
 
