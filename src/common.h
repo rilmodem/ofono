@@ -135,6 +135,12 @@ gboolean valid_phone_number_format(const char *number);
 const char *phone_number_to_string(const struct ofono_phone_number *ph);
 void string_to_phone_number(const char *str, struct ofono_phone_number *ph);
 
+gboolean valid_cdma_phone_number_format(const char *number);
+const char *cdma_phone_number_to_string(
+				const struct ofono_cdma_phone_number *ph);
+void string_to_cdma_phone_number(const char *str,
+				struct ofono_cdma_phone_number *ph);
+
 int mmi_service_code_to_bearer_class(int code);
 
 gboolean valid_ussd_string(const char *str, gboolean call_in_progress);

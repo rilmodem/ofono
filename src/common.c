@@ -262,6 +262,30 @@ gboolean valid_phone_number_format(const char *number)
 	return TRUE;
 }
 
+gboolean valid_cdma_phone_number_format(const char *number)
+{
+	int len = strlen(number);
+	int i;
+
+	if (!len)
+		return FALSE;
+
+	if (len > OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH)
+		return FALSE;
+
+	for (i = 0; i < len; i++) {
+		if (number[i] >= '0' && number[i] <= '9')
+			continue;
+
+		if (number[i] == '*' || number[i] == '#')
+			continue;
+
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 const char *telephony_error_to_str(const struct ofono_error *error)
 {
 	struct error_entry *e;
@@ -403,6 +427,23 @@ void string_to_phone_number(const char *str, struct ofono_phone_number *ph)
 		strcpy(ph->number, str);
 		ph->type = 129;	/* Local */
 	}
+}
+
+const char *cdma_phone_number_to_string(
+			const struct ofono_cdma_phone_number *ph)
+{
+	static char buffer[OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH + 1];
+
+	strncpy(buffer, ph->number, OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH);
+	buffer[OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH] = '\0';
+
+	return buffer;
+}
+
+void string_to_cdma_phone_number(const char *str,
+			struct ofono_cdma_phone_number *ph)
+{
+	strcpy(ph->number, str);
 }
 
 gboolean valid_ussd_string(const char *str, gboolean call_in_progress)

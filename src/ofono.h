@@ -126,6 +126,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_STK = 20,
 	OFONO_ATOM_TYPE_NETTIME = 21,
 	OFONO_ATOM_TYPE_CTM = 22,
+	OFONO_ATOM_TYPE_CDMA_VOICECALL_MANAGER = 23,
 };
 
 enum ofono_atom_watch_condition {
@@ -415,3 +416,5 @@ void __ofono_nettime_probe_drivers(struct ofono_modem *modem);
 
 void __ofono_nettime_info_received(struct ofono_modem *modem,
 					struct ofono_network_time *info);
+
+#include <ofono/cdma-voicecall.h>
