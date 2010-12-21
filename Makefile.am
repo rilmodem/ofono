@@ -70,6 +70,17 @@ gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/ppp_auth.c gatchat/ppp_net.c \
 				gatchat/ppp_ipcp.c
 
+gisi_sources = gisi/client.c gisi/client.h gisi/common.h \
+				gisi/iter.c gisi/iter.h \
+				gisi/message.c gisi/message.h \
+				gisi/modem.c gisi/modem.h \
+				gisi/netlink.c gisi/netlink.h \
+				gisi/pep.c gisi/pep.h \
+				gisi/phonet.h \
+				gisi/pipe.c gisi/pipe.h \
+				gisi/server.c gisi/server.h \
+				gisi/socket.c gisi/socket.h
+
 udev_files = plugins/ofono.rules
 
 if UDEV
@@ -83,6 +94,50 @@ rulesdir = @UDEV_DATADIR@
 
 rules_DATA = $(foreach file,$(udev_files), plugins/97-$(notdir $(file)))
 endif
+endif
+
+if ISIMODEM
+builtin_modules += isimodem
+builtin_sources += $(gisi_sources) \
+				drivers/isimodem/isimodem.h \
+				drivers/isimodem/isimodem.c \
+				drivers/isimodem/mtc.h \
+				drivers/isimodem/debug.h \
+				drivers/isimodem/isiutil.h \
+				drivers/isimodem/debug.c \
+				drivers/isimodem/phonebook.c \
+				drivers/isimodem/devinfo.c \
+				drivers/isimodem/info.h \
+				drivers/isimodem/network-registration.c \
+				drivers/isimodem/network.h \
+				drivers/isimodem/infoserver.h \
+				drivers/isimodem/infoserver.c \
+				drivers/isimodem/voicecall.c \
+				drivers/isimodem/call.h \
+				drivers/isimodem/sms.c \
+				drivers/isimodem/sms.h \
+				drivers/isimodem/cbs.c \
+				drivers/isimodem/sim.c \
+				drivers/isimodem/sim.h \
+				drivers/isimodem/ssn.c \
+				drivers/isimodem/ussd.c \
+				drivers/isimodem/call-forwarding.c \
+				drivers/isimodem/call-settings.c \
+				drivers/isimodem/call-barring.c \
+				drivers/isimodem/call-meter.c \
+				drivers/isimodem/ss.h \
+				drivers/isimodem/radio-settings.c \
+				drivers/isimodem/gss.h \
+				drivers/isimodem/gprs.c \
+				drivers/isimodem/gprs-context.c \
+				drivers/isimodem/gpds.h \
+				drivers/isimodem/audio-settings.c
+
+builtin_modules += isigen
+builtin_sources += plugins/isigen.c
+
+builtin_modules += n900
+builtin_sources += plugins/n900.c plugins/nokia-gpio.h plugins/nokia-gpio.c
 endif
 
 if ATMODEM
