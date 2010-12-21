@@ -633,6 +633,7 @@ static void huawei_post_sim(struct ofono_modem *modem)
 	}
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
+	ofono_radio_settings_create(modem, 0, "huaweimodem", data->pcui);
 }
 
 static void huawei_post_online(struct ofono_modem *modem)
@@ -657,9 +658,6 @@ static void huawei_post_online(struct ofono_modem *modem)
 						"atmodem", data->pcui);
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
-
-	ofono_radio_settings_create(modem, OFONO_VENDOR_HUAWEI, "huaweimodem",
-								data->pcui);
 
 	if (data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_CS) {
