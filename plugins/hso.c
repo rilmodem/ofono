@@ -271,6 +271,7 @@ static void hso_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->app);
+	ofono_radio_settings_create(modem, 0, "hsomodem", data->app);
 }
 
 static void hso_post_online(struct ofono_modem *modem)
@@ -283,8 +284,6 @@ static void hso_post_online(struct ofono_modem *modem)
 
 	ofono_netreg_create(modem, OFONO_VENDOR_OPTION_HSO,
 				"atmodem", data->app);
-
-	ofono_radio_settings_create(modem, 0, "hsomodem", data->app);
 
 	ofono_sms_create(modem, OFONO_VENDOR_OPTION_HSO, "atmodem", data->app);
 	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
