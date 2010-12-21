@@ -351,6 +351,7 @@ static void ste_post_sim(struct ofono_modem *modem)
 
 	ofono_stk_create(modem, 0, "mbmmodem", data->chat);
 	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
+	ofono_radio_settings_create(modem, 0, "stemodem", data->chat);
 }
 
 static void ste_post_online(struct ofono_modem *modem)
@@ -362,7 +363,6 @@ static void ste_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_radio_settings_create(modem, 0, "stemodem", data->chat);
 	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
 	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
