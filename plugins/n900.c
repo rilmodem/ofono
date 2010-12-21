@@ -492,6 +492,7 @@ static void n900_post_sim(struct ofono_modem *modem)
 
 	ofono_phonebook_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_forwarding_create(isi->modem, 0, "isimodem", isi->idx);
+	ofono_radio_settings_create(isi->modem, 0, "isimodem", isi->idx);
 }
 
 static void n900_post_online(struct ofono_modem *modem)
@@ -510,7 +511,6 @@ static void n900_post_online(struct ofono_modem *modem)
 	ofono_call_settings_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_barring_create(isi->modem, 0, "isimodem", isi->idx);
 	ofono_call_meter_create(isi->modem, 0, "isimodem", isi->idx);
-	ofono_radio_settings_create(isi->modem, 0, "isimodem", isi->idx);
 	gprs = ofono_gprs_create(isi->modem, 0, "isimodem", isi->idx);
 	gc = ofono_gprs_context_create(isi->modem, 0, "isimodem", isi->idx);
 
