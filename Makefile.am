@@ -14,7 +14,7 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/gprs.h include/gprs-context.h \
 			include/radio-settings.h include/stk.h \
 			include/audio-settings.h include/nettime.h \
-			include/ctm.h
+			include/ctm.h include/cdma-voicecall.h
 
 nodist_include_HEADERS = include/version.h
 
