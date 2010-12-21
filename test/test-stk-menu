@@ -56,7 +56,7 @@ class StkAgent(dbus.service.Object):
 		print "Icon: (%d)" % (icon)
 		print "Urgent: (%d)" % (urgent)
 		key = raw_input("Press return to clear ('t' terminates, "
-								"'b' goest back, 'n' busy):")
+				"'b' goes back, 'n' busy):")
 
 		if key == 'b':
 			raise GoBack("User wishes to go back")
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
 		stk.RegisterAgent(path)
 
-		print "Agent registered for session - Wait SIM ToolKit command..."
+		print "Default Agent registered - Waiting for STK command..."
 	else:
 		print "%s [menu|agent]" % (sys.argv[0])
 		exit(0)
