@@ -452,7 +452,6 @@ static void add_isi(struct ofono_modem *modem,
 static void add_calypso(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
-	struct udev_list_entry *entry;
 	const char *devnode;
 
 	DBG("modem %p", modem);
