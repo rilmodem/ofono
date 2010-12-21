@@ -221,6 +221,30 @@ static gboolean notify_sim_state(struct ofono_modem *modem,
 	return FALSE;
 }
 
+static void cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+
+	if (!ok)
+		return;
+
+	/* Force notification of SIM ready because it's in a locked state */
+	notify_sim_state(modem, HUAWEI_SIM_STATE_VALID);
+}
+
+static gboolean query_sim_locked(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huawei_data *data = ofono_modem_get_data(modem);
+
+	data->sim_poll_timeout = 0;
+
+	g_at_chat_send(data->pcui, "AT+CPIN?", NULL,
+			cpin_cb, modem, NULL);
+
+	return FALSE;
+}
+
 static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -258,6 +282,10 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		data->sim_poll_count++;
 		data->sim_poll_timeout = g_timeout_add_seconds(2,
 								query_sim_state,
+								modem);
+	} else if (sim_state ==	HUAWEI_SIM_STATE_INVALID_OR_LOCKED) {
+		data->sim_poll_timeout = g_timeout_add_seconds(2,
+								query_sim_locked,
 								modem);
 	}
 }
