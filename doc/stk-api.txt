@@ -249,12 +249,20 @@ Methods		byte RequestSelection(string title, byte icon_id,
 
 			Possible Errors: [service].Error.SimToolkit.EndSession
 
+		void DisplayActionInformation(string text, byte icon_id)
+
+			Supplies a text string and/or icon concerning the
+			current activity in the terminal and UICC.  The
+			text should be displayed to the user on screen
+			until the call is canceled using Cancel().  This
+			method should not return.
+
 		void Cancel()
 
 			Asks the agent to cancel any ongoing operation in
 			progress.  This is usually either because the agent
-			is taking too long to respond or the Sim Application
-			has terminated the session.
+			is taking too long to respond, the Sim Application
+			has terminated the session or a task has finished.
 
 		void Release()
 
