@@ -241,7 +241,7 @@ static void phonet_status_cb(GIsiModem *modem, GIsiPhonetLinkState st,
 		set_power_by_mtc_state(om, isi, MTC_STATE_NONE);
 }
 
-static int isigen_probe(struct ofono_modem *modem)
+static int isiusb_probe(struct ofono_modem *modem)
 {
 	const char *ifname = ofono_modem_get_string(modem, "Interface");
 	unsigned address = ofono_modem_get_integer(modem, "Address");
@@ -319,7 +319,7 @@ error:
 	return -errno;
 }
 
-static void isigen_remove(struct ofono_modem *modem)
+static void isiusb_remove(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
@@ -367,7 +367,7 @@ error:
 	g_free(cbd);
 }
 
-static void isigen_online(struct ofono_modem *modem, ofono_bool_t online,
+static void isiusb_online(struct ofono_modem *modem, ofono_bool_t online,
 				ofono_modem_online_cb_t cb, void *data)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
@@ -394,7 +394,7 @@ error:
 	g_free(cbd);
 }
 
-static void isigen_pre_sim(struct ofono_modem *modem)
+static void isiusb_pre_sim(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
@@ -405,7 +405,7 @@ static void isigen_pre_sim(struct ofono_modem *modem)
 	ofono_voicecall_create(modem, 0, "isimodem", isi->modem);
 }
 
-static void isigen_post_sim(struct ofono_modem *modem)
+static void isiusb_post_sim(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
@@ -416,7 +416,7 @@ static void isigen_post_sim(struct ofono_modem *modem)
 	ofono_radio_settings_create(modem, 0, "isimodem", isi->modem);
 }
 
-static void isigen_post_online(struct ofono_modem *modem)
+static void isiusb_post_online(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
 
@@ -433,38 +433,38 @@ static void isigen_post_online(struct ofono_modem *modem)
 	ofono_gprs_create(modem, 0, "isimodem", isi->modem);
 }
 
-static int isigen_enable(struct ofono_modem *modem)
+static int isiusb_enable(struct ofono_modem *modem)
 {
 	return 0;
 }
 
-static int isigen_disable(struct ofono_modem *modem)
+static int isiusb_disable(struct ofono_modem *modem)
 {
 	return 0;
 }
 
 static struct ofono_modem_driver driver = {
-	.name = "isigen",
-	.probe = isigen_probe,
-	.remove = isigen_remove,
-	.set_online = isigen_online,
-	.pre_sim = isigen_pre_sim,
-	.post_sim = isigen_post_sim,
-	.post_online = isigen_post_online,
-	.enable = isigen_enable,
-	.disable = isigen_disable,
+	.name = "isiusb",
+	.probe = isiusb_probe,
+	.remove = isiusb_remove,
+	.set_online = isiusb_online,
+	.pre_sim = isiusb_pre_sim,
+	.post_sim = isiusb_post_sim,
+	.post_online = isiusb_post_online,
+	.enable = isiusb_enable,
+	.disable = isiusb_disable,
 };
 
-static int isigen_init(void)
+static int isiusb_init(void)
 {
 	return ofono_modem_driver_register(&driver);
 }
 
-static void isigen_exit(void)
+static void isiusb_exit(void)
 {
 	ofono_modem_driver_unregister(&driver);
 }
 
-OFONO_PLUGIN_DEFINE(isigen, "Generic modem driver for isi",
+OFONO_PLUGIN_DEFINE(isiusb, "Generic modem driver for isi",
 			VERSION, OFONO_PLUGIN_PRIORITY_DEFAULT,
-			isigen_init, isigen_exit)
+			isiusb_init, isiusb_exit)

@@ -542,7 +542,7 @@ done:
 		add_novatel(modem, udev_device);
 	else if (g_strcmp0(driver, "nokia") == 0)
 		add_nokia(modem, udev_device);
-	else if (g_strcmp0(driver, "isigen") == 0)
+	else if (g_strcmp0(driver, "isiusb") == 0)
 		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "n900") == 0)
 		add_isi(modem, udev_device);
