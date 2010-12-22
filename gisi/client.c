@@ -184,8 +184,9 @@ GIsiPending *g_isi_client_send(GIsiClient *client, const void *__restrict buf,
 	if (pd == NULL)
 		return NULL;
 
-	op = g_isi_request_send(client->modem, client->resource, buf, len, timeout,
-				pending_resp_notify, pd, pending_destroy);
+	op = g_isi_request_send(client->modem, client->resource, buf, len,
+				timeout, pending_resp_notify, pd,
+				pending_destroy);
 	if (op == NULL) {
 		g_free(pd);
 		return NULL;

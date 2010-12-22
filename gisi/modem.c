@@ -152,7 +152,8 @@ static void pending_dispatch(GIsiPending *pend, GIsiMessage *msg)
 
 	ISIDBG(modem, "%s %s to %p [res=0x%02X, id=0x%02X, utid=0x%02X]",
 		g_isi_msg_strerror(msg), pend_type_to_str(pend->type), pend,
-		g_isi_msg_resource(msg), g_isi_msg_id(msg), g_isi_msg_utid(msg));
+		g_isi_msg_resource(msg), g_isi_msg_id(msg),
+		g_isi_msg_utid(msg));
 
 	pend->notify(msg, pend->data);
 }
@@ -185,7 +186,8 @@ static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg,
 		 * Some of these may be synthesized, but nevertheless need to
 		 * be removed.
 		 */
-		if (pend->type < GISI_MESSAGE_TYPE_RESP && pend->msgid == msgid) {
+		if (pend->type < GISI_MESSAGE_TYPE_RESP
+				&& pend->msgid == msgid) {
 
 			pending_dispatch(pend, msg);
 
@@ -725,7 +727,8 @@ GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 	mux->pending = g_slist_prepend(mux->pending, resp);
 
 	if (timeout > 0)
-		resp->timeout = g_timeout_add_seconds(timeout, resp_timeout, resp);
+		resp->timeout = g_timeout_add_seconds(timeout, resp_timeout,
+							resp);
 
 	mux->last_utid = resp->utid;
 	return resp;

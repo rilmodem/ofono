@@ -180,7 +180,7 @@ static void g_isi_pipe_created(const GIsiMessage *msg, void *data)
 	}
 
 	if (g_isi_msg_id(msg) != PNS_PIPE_CREATE_RESP)
-		 return;
+		return;
 
 	if (!g_isi_msg_data_get_struct(msg, 0, (const void **) &resp, len))
 		return;
