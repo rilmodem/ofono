@@ -117,7 +117,7 @@ static inline int isi_status_to_at_status(struct reg_info *reg)
 	return 4;
 }
 
-static inline int isi_tech_to_at_tech(struct rat_info *rat, struct gsm_info *gsm)
+static inline int isi_to_at_tech(struct rat_info *rat, struct gsm_info *gsm)
 {
 	int tech = -1;
 
@@ -221,7 +221,7 @@ static void reg_status_ind_cb(const GIsiMessage *msg, void *data)
 
 	ofono_netreg_status_notify(netreg, isi_status_to_at_status(&nd->reg),
 					nd->gsm.lac, nd->gsm.ci,
-					isi_tech_to_at_tech(&nd->rat, &nd->gsm));
+					isi_to_at_tech(&nd->rat, &nd->gsm));
 }
 
 static gboolean parse_rat_info(GIsiSubBlockIter *iter, struct rat_info *rat)
@@ -263,7 +263,7 @@ static void rat_ind_cb(const GIsiMessage *msg, void *data)
 
 	ofono_netreg_status_notify(netreg, isi_status_to_at_status(&nd->reg),
 					nd->gsm.lac, nd->gsm.ci,
-					isi_tech_to_at_tech(&nd->rat, &nd->gsm));
+					isi_to_at_tech(&nd->rat, &nd->gsm));
 }
 
 static void reg_status_resp_cb(const GIsiMessage *msg, void *data)
@@ -299,7 +299,7 @@ static void reg_status_resp_cb(const GIsiMessage *msg, void *data)
 
 	CALLBACK_WITH_SUCCESS(cb, isi_status_to_at_status(&nd->reg),
 				nd->gsm.lac, nd->gsm.ci,
-				isi_tech_to_at_tech(&nd->rat, &nd->gsm),
+				isi_to_at_tech(&nd->rat, &nd->gsm),
 				cbd->data);
 	g_free(cbd);
 	return;
@@ -409,7 +409,10 @@ static void name_get_resp_cb(const GIsiMessage *msg, void *data)
 			if (!g_isi_sb_iter_get_byte(&iter, &len, 3))
 				goto error;
 
-			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag, len * 2, 4))
+			/* Name is UCS-2 encoded */
+			len *= 2;
+
+			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag, len, 4))
 				goto error;
 
 			strncpy(op.name, tag, OFONO_MAX_OPERATOR_NAME_LENGTH);

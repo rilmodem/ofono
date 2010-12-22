@@ -80,7 +80,7 @@ static gboolean parse_sne(GIsiSubBlockIter *iter, char **sne)
 	uint8_t len;
 
 	if (!g_isi_sb_iter_get_byte(iter, &len, 6))
-		 return FALSE;
+		return FALSE;
 
 	if (!g_isi_sb_iter_get_alpha_tag(iter, sne, len * 2, 8))
 		return FALSE;

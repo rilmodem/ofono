@@ -534,7 +534,7 @@ static gboolean parse_gsm_tpdu(GIsiSubBlockIter *parent, struct sms_addr *add,
 		case SMS_ADDRESS:
 
 			if (!parse_sms_address(&iter, add))
-				 return FALSE;
+				return FALSE;
 
 			if (add->type != SMS_GSM_0411_ADDRESS)
 				return FALSE;

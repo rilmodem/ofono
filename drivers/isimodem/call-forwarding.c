@@ -139,8 +139,7 @@ static gboolean decode_gsm_forwarding_info(GIsiSubBlockIter *parent,
 			return FALSE;
 
 		if (info->numlen != 0) {
-
-			 if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag,
+			if (!g_isi_sb_iter_get_alpha_tag(&iter, &tag,
 							info->numlen * 2,
 							2 + len))
 				return FALSE;

@@ -1083,6 +1083,6 @@ void isi_trace(const GIsiMessage *msg, void *data)
 	const char *resname = pn_resource_name(res);
 	const char *name = res_to_name(res, id);
 
-	hex_dump(resname, res, name, id, g_isi_msg_utid(msg), g_isi_msg_data(msg),
-			g_isi_msg_data_len(msg));
+	hex_dump(resname, res, name, id, g_isi_msg_utid(msg),
+			g_isi_msg_data(msg), g_isi_msg_data_len(msg));
 }
