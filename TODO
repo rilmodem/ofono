@@ -132,10 +132,11 @@ Modem Emulator
   Complexity: C1
 
 - Support DUN emulator. Implement the Bluetooth DUN profile with only mandatory
-  AT command support.
+  AT command support. Implement USB DUN as well.
 
   Complexity: C4
   Priority: Medium
+  Owner: Gustavo F Padovan <padovan@profusion.mobi>
 
   Depends: PPP Server mode
 
