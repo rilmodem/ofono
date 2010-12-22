@@ -133,8 +133,8 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/gpds.h \
 				drivers/isimodem/audio-settings.c
 
-builtin_modules += isigen
-builtin_sources += plugins/isigen.c
+builtin_modules += isiusb
+builtin_sources += plugins/isiusb.c
 
 builtin_modules += n900
 builtin_sources += plugins/n900.c plugins/nokia-gpio.h plugins/nokia-gpio.c
