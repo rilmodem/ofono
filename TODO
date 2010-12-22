@@ -408,18 +408,6 @@ Miscellaneous
   Complexity: C8
   Owner: Jukka Saunamäki <jukka.saunamaki@nokia.com>
 
-- Add support for Modem 'power down & lock' and 'unlock & power up'.  When the
-  'power down & lock' is given, the calling application is noted and all
-  other applications are blocked from powering up the modem.  Only the calling
-  application can lift the lock.  Alternatively, if the calling application
-  exits prematurely the lock is lifted as well.
-
-  The proposed property name is "Lockdown" as part of the Modem interface.
-
-  Priority: Medium
-  Complexity: C2
-  Owner: Gustavo F Padovan <padovan@profusion.mobi>
-
 - Add support for GPS power control atom.  Many modem manufacturers provide
   a GPS unit with their modem hardware.  This unit can be turned on or off
   and frequently takes over one of the tty ports that the modem provides.

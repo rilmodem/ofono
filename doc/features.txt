@@ -165,6 +165,10 @@ Modem
   itself. Now oFono can be notified when a reset happens and do proper work to
   put the modem back to work restoring the state before the reset.
 
+- Lockdown support. Through the Lockdown property on the Modem D-Bus API, one
+  can power down the modem and lock it disallowing any other application to
+  use that modem. Useful for firmware update and similar stuff.
+
 Short Messaging Service
 =======================
 
