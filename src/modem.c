@@ -462,6 +462,42 @@ void __ofono_modem_remove_online_watch(struct ofono_modem *modem,
 	__ofono_watchlist_remove_item(modem->online_watches, id);
 }
 
+static void common_online_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_modem *modem = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		return;
+
+	/*
+	 * If we need to get online after a silent reset this callback
+	 * is called.  The callback should not consider the pending dbus
+	 * message.
+	 *
+	 * Additionally, this process can be interrupted by the following
+	 * events:
+	 *	- Sim being removed
+	 *	- SetProperty(Powered, False) being called
+	 *	- SetProperty(Lockdown, True) being called
+	 *
+	 * We should not set the modem to the online state in these cases.
+	 */
+	switch (modem->modem_state) {
+	case MODEM_STATE_OFFLINE:
+		modem_change_state(modem, MODEM_STATE_ONLINE);
+		break;
+	case MODEM_STATE_POWER_OFF:
+		/* The powered operation is pending */
+		break;
+	case MODEM_STATE_PRE_SIM:
+		modem->driver->set_online(modem, 1, NULL, NULL);
+		break;
+	case MODEM_STATE_ONLINE:
+		ofono_error("Online called when the modem is already online!");
+		break;
+	};
+}
+
 static void online_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
@@ -479,9 +515,7 @@ static void online_cb(const struct ofono_error *error, void *data)
 	__ofono_dbus_pending_reply(&modem->pending, reply);
 
 out:
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR &&
-			modem->modem_state == MODEM_STATE_OFFLINE)
-		modem_change_state(modem, MODEM_STATE_ONLINE);
+	common_online_cb(error, data);
 }
 
 static void offline_cb(const struct ofono_error *error, void *data)
@@ -521,7 +555,8 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 		if (modem->driver->set_online == NULL)
 			modem_change_state(modem, MODEM_STATE_ONLINE);
 		else if (modem->get_online)
-			modem->driver->set_online(modem, 1, online_cb, modem);
+			modem->driver->set_online(modem, 1, common_online_cb,
+							modem);
 
 		modem->get_online = FALSE;
 
