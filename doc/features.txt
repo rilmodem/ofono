@@ -158,6 +158,13 @@ The following commands are expected to be handled by the modem:
   information is included in the proactive command.
 
 
+Modem
+=====
+
+- 'silent' modem reset. Sometimes modems get in a bad state and have to reset
+  itself. Now oFono can be notified when a reset happens and do proper work to
+  put the modem back to work restoring the state before the reset.
+
 Short Messaging Service
 =======================
 
