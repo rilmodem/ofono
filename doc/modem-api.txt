@@ -37,6 +37,15 @@ Properties	boolean Powered [readwrite]
 			Boolean representing the rf state of the modem.
 			Online is false in flight mode.
 
+		boolean Lockdown [readwrite]
+
+			Boolean representing the lock state of the modem.
+			Setting it to true, makes the calling application hold
+			the modem lock and power it down. Setting to false
+			makes the it release the modem lock. Only the
+			application that holds the lock can power up the modem.
+			If the the application exits Lockdown is set to false.
+
 		boolean Emergency [readonly, optional, experimental]
 
 			Boolean representing the emergency mode of the
