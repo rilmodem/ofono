@@ -469,7 +469,6 @@ CDMA Voicecall
 
   Priority: High
   Complexity: C2
-  Owner: Dara Spieker-Doyle <dara.spieker-doyle@nokia.com>
 
 - Add support for Call Waiting over a CDMA network. Call Waiting (CW) provides
   notification of an incoming call to an originating subscriber, while the
@@ -489,13 +488,23 @@ CDMA Voicecall
 
   Priority: High
   Complexity: C2
-  Owner: Dara Spieker-Doyle <dara.spieker-doyle@nokia.com>
 
 - Support sending DTMF tones over CDMA network.
 
   Priority: High
   Complexity: C2
-  Owner: Dara Spieker-Doyle <dara.spieker-doyle@nokia.com>
+
+- Support optional network-based Plus Code Dialing for international calls over
+  a CDMA network. An input key, e.g. the "+" key, or a functional equivalent
+  can be used to replace the international access prefix when dialing. When
+  received, transmitted or stored, an international indicator can be included
+  with the address digits although it is the responsibility of the network to
+  ignore the international indicator when attached to a national number. This
+  is described in Section 2.7.1.3.2.4 of 3GPP2 C.S0005-E v2.0 and Section 1.2
+  of 3GPP2 N.S0027 v1.0.
+
+  Priority: High
+  Complexity: C2
 
 CDMA SMS
 ==============
@@ -585,3 +594,54 @@ CDMA CMAS
 
   Priority: Medium
   Complexity: C4
+
+CDMA NETWORK ACQUISITION
+========================
+
+- Support reporting of the received signal strength indicator (RSSI)
+  measurement and of the pilot energy ratio (Ec/Io) measurement, for the
+  currently acquired CDMA network.
+
+  Priority: Medium
+  Complexity: C1
+  Owner: Dara Spieker-Doyle <dara.spieker-doyle@nokia.com>
+
+- Support reporting of the received signal strength indicator (RSSI)
+  measurement and of the signal to interference-plus-noise ratio (SINR)
+  measurement, for the currently acquired 1xEV-DO data network.
+
+  Priority: Medium
+  Complexity: C1
+
+- Support reporting of the Enhanced Roaming Indicators (ERI) to indicate the
+  current roaming condition of the CDMA mobile device. Each indicator maps to
+  a unique display number within the Standard and Non-Standard service ranges,
+  as described in Section 8 of 3GPP2 C.R1001-C v1.0.
+  These numbers are stored on the device in the (Enhanced) Preferred Roaming
+  List (PRL) and it is the responsibility of the modem to broadcast the
+  relevant indicator for a currently acquired system. Further details of the
+  system acquisition process are described in 3GPP2 C.S0016-B v1.0.
+
+  Priority: Medium
+  Complexity: C2
+
+- Support reporting of identifiers of the currently acquired CDMA network,
+  including the System Identifier (SID) and the Network Identifier (NID),
+  It is the responsibility of the modem to broadcast the relevant identifiers
+  for a currently acquired system, and these identifiers are provided by the
+  network. This is described in 3GPP2 C.S0005-E v2.0.
+
+  Priority: Medium
+  Complexity: C2
+
+- Support International Roaming, including support for reporting the Mobile
+  Country Code (MCC) and the Mobile Network Code (MNC) for the currently
+  acquired network. International Roaming is provided via enhancements to the
+  PRL by encoding the MCC and the (two digit only) MNC in existing SID/NID
+  fields, as described in the CDMA Development Group standards Document "IPRL
+  Enhancements for International Roaming - CDG Doc #86". It is the
+  responsibility of the modem to broadcast the values for the currently
+  acquired system.
+
+  Priority: Medium
+  Complexity: C2
