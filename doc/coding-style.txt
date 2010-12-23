@@ -75,10 +75,11 @@ Example:
 a + b;  // correct
 
 
-M4: Long condition
-==================
-If your condition in if, while, for statement is too long to fit in one line,
-the new line needs to be indented not aligned with the body.
+M4: Wrap long lines
+===================
+If your condition in if, while, for statement or a function declaration is too
+long to fit in one line, the new line needs to be indented not aligned with the
+body.
 
 Example:
 1)
@@ -90,6 +91,40 @@ if (call->status == CALL_STATUS_ACTIVE ||
 if (call->status == CALL_STATUS_ACTIVE ||
 		call->status == CALL_STATUS_HELD) {  // correct
 	ofono_dbus_dict_append();
+
+3)
+gboolean sim_ust_is_available(unsigned char *service_ust, unsigned char len,
+	num sim_ust_service index) // wrong
+{
+	int a;
+	...
+}
+
+4)
+gboolean sim_ust_is_available(unsigned char *service_ust, unsigned char len,
+					enum sim_ust_service index) // correct
+{
+	int a;
+	...
+}
+
+If the line being wrapped is a function call or function declaration, the
+preferred style is to indent at least past the opening parenthesis. Indenting
+further is acceptable as well (as long as you don't hit the 80 character
+limit).
+
+If this is not possible due to hitting the 80 character limit, then indenting
+as far as possible to the right without hitting the limit is preferred.
+
+Example:
+
+1)
+gboolean sim_ust_is_available(unsigned char *service_ust, unsigned char len,
+		enum sim_ust_service index); // worse
+
+2)
+gboolean sim_ust_is_available(unsigned char *service_ust, unsigned char len,
+						enum sim_ust_service index); // better
 
 
 M5: Git commit message 50/72 formatting
