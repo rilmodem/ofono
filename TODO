@@ -385,16 +385,6 @@ Miscellaneous
   Complexity: C4
   Priority: Low
 
-- Frequency Band Selection.  Add frequency band selection capability to the
-  RadioSettings atom.
-  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-
-  This feature is not discussed in 27.007, thus manufacturer specific commands
-  are required.
-
-  Complexity: C2
-  Priority: Low
-
 - PolicyKit support.  Add support for PolicyKit checking of all oFono D-Bus
   interfaces.
 

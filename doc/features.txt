@@ -246,6 +246,9 @@ Radio settings
   using the device but some networking applications are online using
   packet data.
 
+- Frequency Band Selection support. This feature allows the user to limit the
+  frequency bands in which the cellular modem can operate.
+
 Text Telephony
 ==============
 
