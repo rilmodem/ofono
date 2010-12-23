@@ -39,7 +39,7 @@ enum cdma_call_status {
 };
 
 typedef void (*ofono_cdma_voicecall_cb_t)(const struct ofono_error *error,
-					void *data);
+						void *data);
 
 /* Voice call related functionality, including AT+CDV, AT+CHV */
 struct ofono_cdma_voicecall_driver {
@@ -57,10 +57,9 @@ struct ofono_cdma_voicecall_driver {
 			ofono_cdma_voicecall_cb_t cb, void *data);
 };
 
-void ofono_cdma_voicecall_disconnected(
-			struct ofono_cdma_voicecall *vc,
-			enum ofono_disconnect_reason reason,
-			const struct ofono_error *error);
+void ofono_cdma_voicecall_disconnected(struct ofono_cdma_voicecall *vc,
+					enum ofono_disconnect_reason reason,
+					const struct ofono_error *error);
 
 int ofono_cdma_voicecall_driver_register(
 			const struct ofono_cdma_voicecall_driver *d);
@@ -72,15 +71,12 @@ struct ofono_cdma_voicecall *ofono_cdma_voicecall_create(
 					unsigned int vendor,
 					const char *driver, void *data);
 
-void ofono_cdma_voicecall_register(
-			struct ofono_cdma_voicecall *vc);
-void ofono_cdma_voicecall_remove(
-			struct ofono_cdma_voicecall *vc);
+void ofono_cdma_voicecall_register(struct ofono_cdma_voicecall *vc);
+void ofono_cdma_voicecall_remove(struct ofono_cdma_voicecall *vc);
 
-void ofono_cdma_voicecall_set_data(
-			struct ofono_cdma_voicecall *vc, void *data);
-void *ofono_cdma_voicecall_get_data(
-			struct ofono_cdma_voicecall *vc);
+void ofono_cdma_voicecall_set_data(struct ofono_cdma_voicecall *vc,
+					void *data);
+void *ofono_cdma_voicecall_get_data(struct ofono_cdma_voicecall *vc);
 
 #ifdef __cplusplus
 }
