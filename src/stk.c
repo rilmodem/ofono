@@ -472,12 +472,17 @@ static void stk_alpha_id_set(struct ofono_stk *stk,
 		const char *text, const struct stk_text_attribute *attr,
 		const struct stk_icon_id *icon)
 {
-	/* TODO */
+	char *alpha = dbus_apply_text_attributes(text, attr);
+
+	if (alpha || icon)
+		stk_agent_display_action_info(stk->current_agent, alpha, icon);
+
+	g_free(alpha);
 }
 
 static void stk_alpha_id_unset(struct ofono_stk *stk)
 {
-	/* TODO */
+	stk_agent_request_cancel(stk->current_agent);
 }
 
 static int duration_to_msecs(const struct stk_duration *duration)

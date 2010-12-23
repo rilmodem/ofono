@@ -137,3 +137,6 @@ int stk_agent_loop_tone(struct stk_agent *agent, const char *text,
 
 void append_menu_items_variant(DBusMessageIter *iter,
 				const struct stk_menu_item *items);
+
+int stk_agent_display_action_info(struct stk_agent *agent, const char *text,
+					const struct stk_icon_id *icon);
