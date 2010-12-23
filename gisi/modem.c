@@ -293,7 +293,6 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 		msg.error = 0;
 		msg.data = buf;
 		msg.len = len;
-		msg.version = &mux->version;
 
 		if (modem->trace != NULL)
 			modem->trace(&msg, NULL);
@@ -310,6 +309,8 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 
 			return TRUE;
 		}
+
+		msg.version = &mux->version;
 
 		if (g_isi_msg_id(&msg) == COMMON_MESSAGE)
 			common_message_decode(mux, &msg);
