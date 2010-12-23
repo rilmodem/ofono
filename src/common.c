@@ -430,7 +430,7 @@ void string_to_phone_number(const char *str, struct ofono_phone_number *ph)
 }
 
 const char *cdma_phone_number_to_string(
-			const struct ofono_cdma_phone_number *ph)
+				const struct ofono_cdma_phone_number *ph)
 {
 	static char buffer[OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH + 1];
 
@@ -441,7 +441,7 @@ const char *cdma_phone_number_to_string(
 }
 
 void string_to_cdma_phone_number(const char *str,
-			struct ofono_cdma_phone_number *ph)
+					struct ofono_cdma_phone_number *ph)
 {
 	strcpy(ph->number, str);
 }

@@ -108,7 +108,6 @@ static void append_voicecall_properties(struct ofono_cdma_voicecall *vc,
 {
 	const char *status;
 	const char *lineid;
-	const char *timestr;
 
 	status = cdma_call_status_to_string(vc->status);
 	lineid = cdma_phone_number_to_string(&vc->phone_number);
@@ -119,7 +118,7 @@ static void append_voicecall_properties(struct ofono_cdma_voicecall *vc,
 				DBUS_TYPE_STRING, &lineid);
 
 	if (vc->status == CDMA_CALL_STATUS_ACTIVE) {
-		timestr = time_to_str(&vc->start_time);
+		const char *timestr = time_to_str(&vc->start_time);
 
 		ofono_dbus_dict_append(dict, "StartTime", DBUS_TYPE_STRING,
 					&timestr);
@@ -150,9 +149,8 @@ static DBusMessage *voicecall_manager_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static void voicecall_emit_disconnect_reason(
-		struct ofono_cdma_voicecall *vc,
-		enum ofono_disconnect_reason reason)
+static void voicecall_emit_disconnect_reason(struct ofono_cdma_voicecall *vc,
+					enum ofono_disconnect_reason reason)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(vc->atom);
@@ -167,7 +165,7 @@ static void voicecall_emit_disconnect_reason(
 }
 
 static void voicecall_set_call_status(struct ofono_cdma_voicecall *vc,
-		enum cdma_call_status status)
+						enum cdma_call_status status)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(vc->atom);
@@ -304,8 +302,7 @@ static GDBusSignalTable manager_signals[] = {
 	{ }
 };
 
-void ofono_cdma_voicecall_disconnected(
-					struct ofono_cdma_voicecall *vc,
+void ofono_cdma_voicecall_disconnected(struct ofono_cdma_voicecall *vc,
 					enum ofono_disconnect_reason reason,
 					const struct ofono_error *error)
 {
@@ -318,7 +315,7 @@ void ofono_cdma_voicecall_disconnected(
 }
 
 int ofono_cdma_voicecall_driver_register(
-		const struct ofono_cdma_voicecall_driver *d)
+				const struct ofono_cdma_voicecall_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
@@ -331,7 +328,7 @@ int ofono_cdma_voicecall_driver_register(
 }
 
 void ofono_cdma_voicecall_driver_unregister(
-		const struct ofono_cdma_voicecall_driver *d)
+				const struct ofono_cdma_voicecall_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
@@ -372,8 +369,8 @@ struct ofono_cdma_voicecall *ofono_cdma_voicecall_create(
 	vc->status = CDMA_CALL_STATUS_DISCONNECTED;
 
 	vc->atom = __ofono_modem_add_atom(modem,
-			OFONO_ATOM_TYPE_CDMA_VOICECALL_MANAGER,
-			voicecall_manager_remove, vc);
+					OFONO_ATOM_TYPE_CDMA_VOICECALL_MANAGER,
+					voicecall_manager_remove, vc);
 
 	for (l = g_drivers; l; l = l->next) {
 		const struct ofono_cdma_voicecall_driver *drv = l->data;
@@ -391,8 +388,7 @@ struct ofono_cdma_voicecall *ofono_cdma_voicecall_create(
 	return vc;
 }
 
-void ofono_cdma_voicecall_register(
-				struct ofono_cdma_voicecall *vc)
+void ofono_cdma_voicecall_register(struct ofono_cdma_voicecall *vc)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
@@ -408,23 +404,20 @@ void ofono_cdma_voicecall_register(
 	}
 
 	ofono_modem_add_interface(modem,
-			OFONO_CDMA_VOICECALL_MANAGER_INTERFACE);
+				OFONO_CDMA_VOICECALL_MANAGER_INTERFACE);
 }
 
-void ofono_cdma_voicecall_remove(
-			struct ofono_cdma_voicecall *vc)
+void ofono_cdma_voicecall_remove(struct ofono_cdma_voicecall *vc)
 {
 	__ofono_atom_free(vc->atom);
 }
 
-void ofono_cdma_voicecall_set_data(
-			struct ofono_cdma_voicecall *vc, void *data)
+void ofono_cdma_voicecall_set_data(struct ofono_cdma_voicecall *vc, void *data)
 {
 	vc->driver_data = data;
 }
 
-void *ofono_cdma_voicecall_get_data(
-			struct ofono_cdma_voicecall *vc)
+void *ofono_cdma_voicecall_get_data(struct ofono_cdma_voicecall *vc)
 {
 	return vc->driver_data;
 }
