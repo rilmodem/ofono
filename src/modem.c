@@ -490,7 +490,8 @@ static void common_online_cb(const struct ofono_error *error, void *data)
 		/* The powered operation is pending */
 		break;
 	case MODEM_STATE_PRE_SIM:
-		modem->driver->set_online(modem, 1, NULL, NULL);
+		/* Go back offline if the sim was removed */
+		modem->driver->set_online(modem, 0, NULL, NULL);
 		break;
 	case MODEM_STATE_ONLINE:
 		ofono_error("Online called when the modem is already online!");
