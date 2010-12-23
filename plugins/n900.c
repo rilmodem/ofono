@@ -382,7 +382,6 @@ static int n900_probe(struct ofono_modem *modem)
 	return 0;
 
 error:
-	g_isi_client_destroy(client);
 	g_isi_modem_destroy(isimodem);
 	gpio_remove(modem);
 	g_free(isi);
