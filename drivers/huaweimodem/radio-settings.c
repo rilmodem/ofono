@@ -251,9 +251,10 @@ static void syscfg_modify_band_cb(gboolean ok, GAtResult *result,
 }
 
 static void huawei_set_band(struct ofono_radio_settings *rs,
-			enum ofono_radio_band_gsm band_gsm,
-			enum ofono_radio_band_umts band_umts,
-			ofono_radio_settings_band_set_cb_t cb, void *data)
+					enum ofono_radio_band_gsm band_gsm,
+					enum ofono_radio_band_umts band_umts,
+					ofono_radio_settings_band_set_cb_t cb,
+					void *data)
 {
 	struct radio_settings_data *rsd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -291,7 +292,8 @@ error:
 	g_free(cbd);
 }
 
-static void syscfg_query_band_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void syscfg_query_band_cb(gboolean ok, GAtResult *result,
+					gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_radio_settings_band_query_cb_t cb = cbd->cb;
@@ -301,6 +303,7 @@ static void syscfg_query_band_cb(gboolean ok, GAtResult *result, gpointer user_d
 	GAtResultIter iter;
 	unsigned int band;
 	const char *band_str;
+
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
