@@ -298,7 +298,8 @@ static gboolean isi_callback(GIOChannel *channel, GIOCondition cond,
 			modem->trace(&msg, NULL);
 
 		key = addr.spn_resource;
-		mux = g_hash_table_lookup(modem->services, GINT_TO_POINTER(key));
+		mux = g_hash_table_lookup(modem->services,
+						GINT_TO_POINTER(key));
 		if (mux == NULL) {
 			/*
 			 * Unfortunately, the FW report has the wrong
