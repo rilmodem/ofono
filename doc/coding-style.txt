@@ -124,8 +124,8 @@ gboolean sim_ust_is_available(unsigned char *service_ust, unsigned char len,
 
 2)
 gboolean sim_ust_is_available(unsigned char *service_ust, unsigned char len,
-						enum sim_ust_service index); // better
-
+						enum sim_ust_service index);
+						// better
 
 M5: Git commit message 50/72 formatting
 =======================================
