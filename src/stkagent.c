@@ -983,8 +983,6 @@ static void action_info_cb(DBusPendingCall *call, void *data)
 		goto error;
 	}
 
-	goto done;
-
 	CALLBACK_END();
 }
 
