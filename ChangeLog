@@ -1,3 +1,22 @@
+ver 0.37:
+	Fix issue with parsing of un-quoted CREG / CGREG.
+	Fix issue with call forwarding for data and fax.
+	Fix issue with too short timeout for DisplayText.
+	Fix issue with handling zero length text strings.
+	Fix issue with decoding of optional SMS elements.
+	Fix issue with charset and MWI DCS decoding.
+	Fix issue with WAP push notification handling.
+	Fix issue with calling handling and ISI modem.
+	Fix issue with network interfaces and STE modem.
+	Fix issue with SIM state notification of Huawei modem.
+	Add support for radio settings handling and Huawei modem.
+	Add support for provide local info proactive command.
+	Add support for calling name presentation properties.
+	Add support for modem lockdown handling and property.
+	Add support for handling silent modem reset trigger.
+	Add support for frequency band selection interface.
+	Add support for text telephony interface.
+
 ver 0.36:
 	Fix issue with CLIR Invocation and Suppression.
 	Fix issue with power/online transition with ZTE devices.
