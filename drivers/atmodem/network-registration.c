@@ -698,8 +698,8 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 
 static void ctzv_notify(GAtResult *result, gpointer user_data)
 {
-	//struct ofono_netreg *netreg = user_data;
-	//struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	const char *tz;
 	GAtResultIter iter;
 
@@ -712,6 +712,10 @@ static void ctzv_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	DBG("tz %s", tz);
+
+	nd->time.utcoff = atoi(tz) * 15 * 60;
+
+	ofono_netreg_time_notify(netreg, &nd->time);
 }
 
 static void ifx_ctzv_notify(GAtResult *result, gpointer user_data)
