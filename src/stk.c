@@ -1107,10 +1107,8 @@ static gboolean handle_command_set_up_menu(const struct stk_command *cmd,
 	if (menu == NULL && stk->main_menu == NULL)
 		return TRUE;
 
-	if (stk->main_menu) {
+	if (stk->main_menu)
 		stk_menu_free(stk->main_menu);
-		stk->main_menu = NULL;
-	}
 
 	stk->main_menu = menu;
 
