@@ -108,6 +108,13 @@ Supported Proactive Commands:
   variable.  All other information requests are expected to be handled by
   the modem.
 
+- Send Short Message proactive command.  Whenever oFono receives a Send SMS
+  proactive command, it parses the PDU and submits it to the outgoing SMS
+  queue.  A terminal response is sent to the SIM When the raw PDU has been
+  sent, or failed to be sent.
+
+  NOTE: This command can also be handled by the modem.
+
 - Sim icon support.  oFono supports icons that are stored on the SIM.  If the
   SIM notifies oFono that an icon is available for a particular proactive
   command, oFono passes this information to the UI.  The UI is able to obtain
