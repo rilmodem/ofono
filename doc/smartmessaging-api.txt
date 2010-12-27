@@ -56,7 +56,7 @@ Methods		void ReceiveAppointment(array{byte} appointment, dict info)
 
 			Possible Errors: None
 
-		void Release()
+		void Release() [noreply]
 
 			Agent is being released, possibly because of oFono
 			terminating, SMS interface is being torn down or modem
