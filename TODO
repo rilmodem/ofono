@@ -315,15 +315,6 @@ Sim Toolkit
   Priority: High
   Complexity: C8
 
-- Support Set Up Call proactive command.  If the UICC has indicated that
-  the user should be informed, then the SimToolkitAgent will be called
-  in order to request user's confirmation of the call setup.  If the user
-  has confirmed, or if user's confirmation was not requested, oFono will
-  setup the call and optionally inform the user.
-
-  Priority: High
-  Complexity: C8
-
 
 Emergency Calls
 ===============

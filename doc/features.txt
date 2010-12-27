@@ -115,6 +115,17 @@ Supported Proactive Commands:
 
   NOTE: This command can also be handled by the modem.
 
+- Set Up Call proactive command.  When oFono receives a Set Up Call proactive
+  command, it checks whether the UICC has indicated that the user should be
+  informed.  In this case the SimToolkitAgent is called with the
+  ConfirmCallSetup method.  If the user has authorized the operation, or if
+  the user's confirmation was not indicated oFono will setup the call and
+  optionally inform the user.  The information sent by the SIM will be
+  available on the resulting voice call object.  The relevant properties are
+  Information and Icon.
+
+  NOTE: This command can also be handled by the modem.
+
 - Sim icon support.  oFono supports icons that are stored on the SIM.  If the
   SIM notifies oFono that an icon is available for a particular proactive
   command, oFono passes this information to the UI.  The UI is able to obtain
