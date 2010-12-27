@@ -1093,26 +1093,28 @@ static gboolean handle_command_set_up_menu(const struct stk_command *cmd,
 						struct stk_response *rsp,
 						struct ofono_stk *stk)
 {
-	gboolean modified = FALSE;
+	struct stk_menu *menu = NULL;
+
+	if (cmd->setup_menu.items) {
+		menu = stk_menu_create_from_set_up_menu(cmd);
+
+		if (menu == NULL) {
+			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+			return TRUE;
+		}
+	}
+
+	if (menu == NULL && stk->main_menu == NULL)
+		return TRUE;
 
 	if (stk->main_menu) {
 		stk_menu_free(stk->main_menu);
 		stk->main_menu = NULL;
-
-		modified = TRUE;
 	}
 
-	if (cmd->setup_menu.items) {
-		stk->main_menu = stk_menu_create_from_set_up_menu(cmd);
+	stk->main_menu = menu;
 
-		if (stk->main_menu)
-			modified = TRUE;
-		else
-			rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
-	}
-
-	if (modified)
-		emit_menu_changed(stk);
+	emit_menu_changed(stk);
 
 	return TRUE;
 }
