@@ -44,7 +44,7 @@ Methods		dict GetProperties()
 
 			Obtain the icon given by id.  Only ids greater than 1
 			are valid.  XPM format is currently used to return the
-			icon format.
+			icon data.
 
 Signals		PropertyChanged(string name, variant value)
 
