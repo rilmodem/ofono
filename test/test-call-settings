@@ -42,14 +42,14 @@ if __name__ == "__main__":
 	print "Current Property values:"
 	print "Network Status of Call Waiting - Voice: %s" %\
 		(properties['VoiceCallWaiting'])
-	print "Network Status of Called Line Restriction: %s" %\
-		(properties['CalledLineRestriction'])
+	print "Network Status of Connected Line Restriction: %s" %\
+		(properties['ConnectedLineRestriction'])
 	print "Network Status of Calling Line Restriction: %s" %\
 		(properties['CallingLineRestriction'])
 	print "Network Status of Calling Line Presentation: %s" %\
 		(properties['CallingLinePresentation'])
-	print "Network Status of Called Line Presentation: %s" %\
-		(properties['CalledLinePresentation'])
+	print "Network Status of Connected Line Presentation: %s" %\
+		(properties['ConnectedLinePresentation'])
 	print "Hide my Caller Id: %s" % (properties['HideCallerId'])
 
 	try:
