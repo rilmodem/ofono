@@ -289,7 +289,7 @@ static void set_colp(struct ofono_call_settings *cs, int colp)
 
 	ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_SETTINGS_INTERFACE,
-						"CalledLinePresentation",
+						"ConnectedLinePresentation",
 						DBUS_TYPE_STRING, &str);
 }
 
@@ -311,7 +311,7 @@ static void set_colr(struct ofono_call_settings *cs, int colr)
 
 	ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_SETTINGS_INTERFACE,
-						"CalledLineRestriction",
+						"ConnectedLineRestriction",
 						DBUS_TYPE_STRING, &str);
 }
 
@@ -595,13 +595,13 @@ static void clip_cnap_colp_colr_ss_query_cb(const struct ofono_error *error,
 	case CALL_SETTING_TYPE_COLP:
 		set_colp(cs, status);
 		value = colp_status_to_string(status);
-		context = "CalledLinePresentation";
+		context = "ConnectedLinePresentation";
 		break;
 
 	case CALL_SETTING_TYPE_COLR:
 		set_colr(cs, status);
 		value = colr_status_to_string(status);
-		context = "CalledLineRestriction";
+		context = "ConnectedLineRestriction";
 		break;
 
 	default:
@@ -875,11 +875,11 @@ static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs
 				DBUS_TYPE_STRING, &str);
 
 	str = colp_status_to_string(cs->colp);
-	ofono_dbus_dict_append(&dict, "CalledLinePresentation",
+	ofono_dbus_dict_append(&dict, "ConnectedLinePresentation",
 				DBUS_TYPE_STRING, &str);
 
 	str = colr_status_to_string(cs->colr);
-	ofono_dbus_dict_append(&dict, "CalledLineRestriction",
+	ofono_dbus_dict_append(&dict, "ConnectedLineRestriction",
 				DBUS_TYPE_STRING, &str);
 
 	str = clir_status_to_string(cs->clir);
