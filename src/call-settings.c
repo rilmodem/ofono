@@ -870,7 +870,7 @@ static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs
 	ofono_dbus_dict_append(&dict, "CallingLinePresentation",
 				DBUS_TYPE_STRING, &str);
 
-	str = cnap_status_to_string(cs->clip);
+	str = cnap_status_to_string(cs->cnap);
 	ofono_dbus_dict_append(&dict, "CallingNamePresentation",
 				DBUS_TYPE_STRING, &str);
 
