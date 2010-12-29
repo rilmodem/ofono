@@ -42,7 +42,7 @@ Properties	string CallingLinePresentation [readonly]
 				"enabled",
 				"unknown"
 
-		string CalledLinePresentation [readonly]
+		string ConnectedLinePresentation [readonly]
 
 			Contains the value of the connected line identification
 			presentation property.  The value indicates the state
@@ -54,7 +54,7 @@ Properties	string CallingLinePresentation [readonly]
 				"enabled",
 				"unknown"
 
-		string CalledLineRestriction [readonly]
+		string ConnectedLineRestriction [readonly]
 
 			Contains the value of the connected line identification
 			restriction property. The value indicates the state of

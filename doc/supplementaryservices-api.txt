@@ -89,9 +89,9 @@ The first return argument and the corresponding second return argument are:
 					dict cf_dict)
 	"CallWaiting"			(string ss_op, dict cw_dict)
 	"CallingLinePresentation"	(string ss_op, string status)
-	"CalledLinePresentation"	(string ss_op, string status)
+	"ConnectedLinePresentation"	(string ss_op, string status)
 	"CallingLineRestriction"	(string ss_op, string clir_status)
-	"CalledLineRestriction"		(string ss_op, string status)
+	"ConnectedLineRestriction"	(string ss_op, string status)
 
 ss_op contains the supplementary service operation:
 
