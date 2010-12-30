@@ -2314,6 +2314,8 @@ static enum stk_command_parse_result parse_dataobj(
 		entries = g_slist_prepend(entries, entry);
 	}
 
+	va_end(args);
+
 	entries = g_slist_reverse(entries);
 
 	l = entries;
