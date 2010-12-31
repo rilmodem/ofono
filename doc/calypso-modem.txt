@@ -1,0 +1,22 @@
+Calypso modem usage
+===================
+
+On the Openmoko Freerunner phone, the Calypso modem is presented by
+the kernel as serial device /dev/ttySAC0.  To allow oFono to
+autodetect and use this, a simple udev rule is needed:
+
+KERNEL=="ttySAC0", ENV{OFONO_DRIVER}="calypso"
+
+You can put this in any file in /lib/udev/rules.d.  A logical choice
+is the "55-openmoko-gta01-gta02.rules" file, if it exists in your
+Freerunner distribution.
+
+With this rule in place:
+
+- oFono will detect the Calypso modem when it starts up, and the
+  `list-modems' test script will show this, but will not power it up
+
+- the `enable-modem' test script can be used to power it up
+
+- a subsequent `list-modems' will show lots of information, including
+  network registration.
