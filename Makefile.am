@@ -367,7 +367,8 @@ doc_files = doc/overview.txt doc/ofono-paper.txt doc/release-faq.txt \
 			doc/message-api.txt doc/message-waiting-api.txt \
 			doc/phonebook-api.txt doc/radio-settings-api.txt \
 			doc/sim-api.txt doc/stk-api.txt \
-			doc/audio-settings-api.txt doc/text-telephony-api.txt
+			doc/audio-settings-api.txt doc/text-telephony-api.txt \
+			doc/calypso-modem.txt
 
 
 test_scripts = test/backtrace \
