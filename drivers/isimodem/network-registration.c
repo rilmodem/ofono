@@ -690,7 +690,7 @@ static gboolean parse_nettime(GIsiSubBlockIter *iter,
 	struct network_time *time;
 	size_t len = sizeof(struct network_time);
 
-	if (!g_isi_sb_iter_get_struct(iter, (void **)&time, len, 0))
+	if (!g_isi_sb_iter_get_struct(iter, (void **) &time, len, 2))
 		return FALSE;
 
 	/* Value is years since last turn of century */
