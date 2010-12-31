@@ -911,6 +911,29 @@ int g_isi_response_vsend(GIsiModem *modem, const GIsiMessage *req,
 	return g_isi_modem_vsendto(modem, req->addr, _iov, 1 + iovlen);
 }
 
+int g_isi_modem_send(GIsiModem *modem, uint8_t resource,
+			const void *__restrict buf, size_t len)
+{
+	struct sockaddr_pn dst = {
+		.spn_family = AF_PHONET,
+		.spn_resource = resource,
+	};
+
+	return g_isi_modem_sendto(modem, &dst, buf, len);
+}
+
+int g_isi_modem_vsend(GIsiModem *modem, uint8_t resource,
+				const struct iovec *__restrict iov,
+				size_t iovlen)
+{
+	struct sockaddr_pn dst = {
+		.spn_family = AF_PHONET,
+		.spn_resource = resource,
+	};
+
+	return g_isi_modem_vsendto(modem, &dst, iov, iovlen);
+}
+
 int g_isi_modem_sendto(GIsiModem *modem, struct sockaddr_pn *dst,
 			const void *__restrict buf, size_t len)
 {

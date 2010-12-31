@@ -72,6 +72,13 @@ GIsiPending *g_isi_request_vsendto(GIsiModem *modem, struct sockaddr_pn *dst,
 					GIsiNotifyFunc notify, void *data,
 					GDestroyNotify destroy);
 
+int g_isi_modem_send(GIsiModem *modem, uint8_t resource,
+			const void *__restrict buf, size_t len);
+
+int g_isi_modem_vsend(GIsiModem *modem, uint8_t resource,
+				const struct iovec *__restrict iov,
+				size_t iovlen);
+
 int g_isi_modem_sendto(GIsiModem *modem, struct sockaddr_pn *dst,
 			const void *__restrict buf, size_t len);
 
