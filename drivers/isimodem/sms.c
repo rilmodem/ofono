@@ -611,12 +611,12 @@ static void routing_resp_cb(const GIsiMessage *msg, void *data)
 	ofono_sms_register(sms);
 }
 
-static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
-				void *user)
+static void sim_reachable_cb(const GIsiMessage *msg, void *data)
 {
-	GIsiModem *modem = user;
-	struct sms_data *sd = g_try_new0(struct sms_data, 1);
-	const uint8_t msg[] = {
+	struct ofono_sms *sms = data;
+	struct sms_data *sd = ofono_sms_get_data(sms);
+
+	const uint8_t req[] = {
 		SMS_PP_ROUTING_REQ,
 		SMS_ROUTING_SET,
 		0x01,  /* Sub-block count */
@@ -628,6 +628,39 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 		0x00  /* Sub-sub-block count */
 	};
 
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("unable to find SIM resource");
+		g_isi_client_destroy(sd->sim);
+		sd->sim = NULL;
+	}
+
+	g_isi_client_ind_subscribe(sd->client, SMS_MESSAGE_SEND_STATUS_IND,
+					send_status_ind_cb, sms);
+	g_isi_client_send(sd->client, msg, sizeof(msg), SMS_TIMEOUT,
+				routing_resp_cb, sms, NULL);
+}
+
+static void sms_reachable_cb(const GIsiMessage *msg, void *data)
+{
+	struct ofono_sms *sms = data;
+	struct sms_data *sd = ofono_sms_get_data(sms);
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("unable to find SMS resource");
+		return;
+	}
+
+	ISI_VERSION_DBG(msg);
+
+	g_isi_client_verify(sd->sim, sim_reachable_cb, sms, NULL);
+}
+
+static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
+				void *user)
+{
+	GIsiModem *modem = user;
+	struct sms_data *sd = g_try_new0(struct sms_data, 1);
+
 	if (sd == NULL)
 		return -ENOMEM;
 
@@ -636,22 +669,22 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 
 	sd->client = g_isi_client_create(modem, PN_SMS);
 	if (sd->client == NULL)
-		return -ENOMEM;
+		goto nomem;
 
 	sd->sim = g_isi_client_create(modem, PN_SIM);
-	if (sd->sim == NULL) {
-		g_isi_client_destroy(sd->client);
-		return -ENOMEM;
-	}
+	if (sd->sim == NULL)
+		goto nomem;
 
 	ofono_sms_set_data(sms, sd);
 
-	g_isi_client_ind_subscribe(sd->client, SMS_MESSAGE_SEND_STATUS_IND,
-					send_status_ind_cb, sms);
-	g_isi_client_send(sd->client, msg, sizeof(msg), SMS_TIMEOUT,
-				routing_resp_cb, sms, NULL);
+	g_isi_client_verify(sd->client, sms_reachable_cb, sms, NULL);
 
 	return 0;
+
+nomem:
+	g_isi_client_destroy(sd->client);
+	g_free(sd);
+	return -ENOMEM;
 }
 
 static void isi_sms_remove(struct ofono_sms *sms)
