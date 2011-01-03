@@ -27,8 +27,8 @@ extern "C" {
 #endif
 
 #define PN_PHONE_INFO				0x1B
-#define PN_EPOC_INFO    			98
-#define INFO_TIMEOUT 				5
+#define PN_EPOC_INFO				98
+#define INFO_TIMEOUT				5
 
 enum info_isi_cause {
 	INFO_OK =				0x00,
@@ -72,7 +72,7 @@ enum info_version_type {
 };
 
 enum info_pp_feature {
-	INFO_PP_MAX_PDP_CONTEXTS = 0xCA
+	INFO_PP_MAX_PDP_CONTEXTS =		0xCA
 };
 
 #ifdef __cplusplus

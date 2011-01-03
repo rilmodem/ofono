@@ -133,7 +133,7 @@ enum sim_message_id {
 	SIM_SERV_PROV_NAME_RESP =				0x22,
 	SIM_READ_FIELD_REQ =					0xBA,
 	SIM_READ_FIELD_RESP =					0xBB,
-	SIM_SMS_REQ = 						0xBC,
+	SIM_SMS_REQ =						0xBC,
 	SIM_SMS_RESP =						0xBD,
 	SIM_PB_REQ_SIM_PB_READ =				0xDC,
 	SIM_PB_RESP_SIM_PB_READ =				0xDD,
