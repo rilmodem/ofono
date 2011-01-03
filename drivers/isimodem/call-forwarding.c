@@ -135,7 +135,7 @@ static gboolean decode_gsm_forwarding_info(GIsiSubBlockIter *parent,
 		if (g_isi_sb_iter_get_id(&iter) != SS_GSM_FORWARDING_FEATURE)
 			continue;
 
-		if (!g_isi_sb_iter_get_struct(&iter, (void *)&info, len, 2))
+		if (!g_isi_sb_iter_get_struct(&iter, (void *) &info, len, 2))
 			return FALSE;
 
 		if (info->numlen != 0) {
@@ -250,7 +250,7 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 	if (ucs2 == NULL)
 		goto error;
 
-	memcpy((char *)msg + 13, ucs2, strlen(number->number) * 2);
+	memcpy((char *) &msg[13], ucs2, strlen(number->number) * 2);
 	g_free(ucs2);
 
 	if (g_isi_client_send(fd->client, msg, 7 + msg[8], SS_TIMEOUT,

@@ -111,7 +111,7 @@ static gboolean decode_gsm_bsc_info(GIsiSubBlockIter *iter, uint32_t *mask)
 	uint8_t i;
 
 	if (!g_isi_sb_iter_get_byte(iter, &num, 2) ||
-			!g_isi_sb_iter_get_struct(iter, (void **)&bsc, num, 3))
+			!g_isi_sb_iter_get_struct(iter, (void **) &bsc, num, 3))
 		return FALSE;
 
 	for (i = 0; i < num; i++)

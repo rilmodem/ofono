@@ -1042,13 +1042,13 @@ static void hex_dump(const char *resname, uint8_t res, const char *name,
 		ascii[k++] = g_ascii_isgraph(m[i]) ? m[i] : '.';
 
 		if ((j & 48) == 48) {
-			ofono_debug("    *%-48s : %.*s", hex, (int)k, ascii);
+			ofono_debug("    *%-48s : %.*s", hex, (int) k, ascii);
 			j = 0, k = 0;
 		}
 	}
 
 	if (j)
-		ofono_debug("    *%-48s : %.*s", hex, (int)k, ascii);
+		ofono_debug("    *%-48s : %.*s", hex, (int) k, ascii);
 }
 
 static const char *res_to_name(uint8_t res, uint8_t id)

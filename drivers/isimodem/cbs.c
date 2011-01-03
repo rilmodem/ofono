@@ -120,7 +120,7 @@ static void routing_ntf_cb(const GIsiMessage *msg, void *data)
 		if (g_isi_sb_iter_get_id(&iter) != SMS_GSM_CB_MESSAGE)
 			continue;
 
-		if (!g_isi_sb_iter_get_struct(&iter, (void *)&info, len, 2))
+		if (!g_isi_sb_iter_get_struct(&iter, (void *) &info, len, 2))
 			return;
 
 		ofono_cbs_notify(cbs, info->pdu, len);

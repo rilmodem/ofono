@@ -137,6 +137,7 @@ static gboolean check_sim_status(const GIsiMessage *msg, uint8_t msgid,
 		DBG("Request failed: %s", sim_isi_cause_name(cause));
 		return FALSE;
 	}
+
 	return TRUE;
 }
 
@@ -221,6 +222,7 @@ static void sca_query_resp_cb(const GIsiMessage *msg, void *data)
 		goto error;
 
 	bcd_len = info->sca[0];
+
 	if (bcd_len == 0 || bcd_len > 12)
 		goto error;
 
@@ -327,7 +329,7 @@ static void submit_resp_cb(const GIsiMessage *msg, void *data)
 		if (g_isi_sb_iter_get_id(&iter) != SMS_GSM_REPORT)
 			continue;
 
-		if (!g_isi_sb_iter_get_struct(&iter, (void **)&report, len, 2))
+		if (!g_isi_sb_iter_get_struct(&iter, (void **) &report, len, 2))
 			goto error;
 
 		if (report->cause != SMS_OK)
@@ -436,7 +438,7 @@ static void send_status_ind_cb(const GIsiMessage *msg, void *data)
 	if (g_isi_msg_id(msg) != SMS_MESSAGE_SEND_STATUS_IND)
 		return;
 
-	if (!g_isi_msg_data_get_struct(msg, 0, (const void **)&info, len))
+	if (!g_isi_msg_data_get_struct(msg, 0, (const void **) &info, len))
 		return;
 
 	DBG("status=0x%"PRIx8", ref=0x%"PRIx8", route=0x%"PRIx8
@@ -538,15 +540,18 @@ static gboolean parse_gsm_tpdu(GIsiSubBlockIter *parent, struct sms_addr *add,
 
 			if (add->type != SMS_GSM_0411_ADDRESS)
 				return FALSE;
+
 			break;
 
 		case SMS_COMMON_DATA:
 
 			if (!parse_sms_tpdu(&iter, com))
 				return FALSE;
+
 			break;
 		}
 	}
+
 	return TRUE;
 }
 

@@ -291,7 +291,7 @@ static struct isi_call *isi_call_status_info_sb_proc(struct isi_voicecall *ivc,
 	struct call_info *ci;
 	size_t len = sizeof(struct call_info);
 
-	if (!g_isi_sb_iter_get_struct(sb, (void *)&ci, len, 2))
+	if (!g_isi_sb_iter_get_struct(sb, (void *) &ci, len, 2))
 		return NULL;
 
 	i = ci->call_id & 7;
@@ -317,7 +317,7 @@ static struct isi_call *isi_call_addr_and_status_info_sb_proc(
 	size_t len = sizeof(struct call_addr_info);
 	char *addr;
 
-	if (!g_isi_sb_iter_get_struct(sb, (void *)&ci, len, 2))
+	if (!g_isi_sb_iter_get_struct(sb, (void *) &ci, len, 2))
 		return NULL;
 
 	if (!g_isi_sb_iter_get_alpha_tag(sb, &addr, 2 * ci->addr_len, 12))
@@ -1024,7 +1024,7 @@ static void isi_retrieve(struct ofono_voicecall *ovc,
 
 static void isi_wait_and_answer(struct isi_call_req_ctx *irc, int event)
 {
-	DBG("irc=%p event=%u", (void *)irc, event);
+	DBG("irc=%p event=%u", (void *) irc, event);
 
 	if (event != CALL_STATUS_TERMINATED)
 		return;
@@ -1035,7 +1035,7 @@ static void isi_wait_and_answer(struct isi_call_req_ctx *irc, int event)
 
 static void isi_wait_and_retrieve(struct isi_call_req_ctx *irc, int event)
 {
-	DBG("irc=%p event=%u", (void *)irc, event);
+	DBG("irc=%p event=%u", (void *) irc, event);
 
 	if (event != CALL_STATUS_TERMINATED)
 		return;

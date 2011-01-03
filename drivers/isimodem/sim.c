@@ -102,7 +102,7 @@ static void isi_read_file_info(struct ofono_sim *sim, int fileid,
 
 	for (i = 0; i < N; i++) {
 		if (fileid == info[i].fileid) {
-			cbd = isi_cb_data_new((void *)&info[i], cb, data);
+			cbd = isi_cb_data_new((void *) &info[i], cb, data);
 			g_idle_add(fake_file_info, cbd);
 			return;
 		}

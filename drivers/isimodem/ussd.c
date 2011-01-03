@@ -97,10 +97,10 @@ static void ussd_ind_cb(const GIsiMessage *msg, void *data)
 	if (g_isi_msg_id(msg) != SS_GSM_USSD_RECEIVE_IND)
 		return;
 
-	if (!g_isi_msg_data_get_struct(msg, 0, (const void **)&info, len))
+	if (!g_isi_msg_data_get_struct(msg, 0, (const void **) &info, len))
 		return;
 
-	if (!g_isi_msg_data_get_struct(msg, len, (const void **)&string,
+	if (!g_isi_msg_data_get_struct(msg, len, (const void **) &string,
 					info->len))
 		return;
 
@@ -180,8 +180,8 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 		/* USSD string goes here */
 	};
 	const struct iovec iov[2] = {
-		{ (uint8_t *)msg, sizeof(msg) },
-		{ (uint8_t *)pdu, len }
+		{ (uint8_t *) msg, sizeof(msg) },
+		{ (uint8_t *) pdu, len }
 	};
 
 	if (cbd == NULL || ud == NULL)

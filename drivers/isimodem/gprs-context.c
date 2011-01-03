@@ -366,9 +366,9 @@ static void send_context_authenticate(GIsiClient *client, void *opaque)
 	};
 
 	const struct iovec iov[4] = {
-		{ (uint8_t *)top, sizeof(top) },
+		{ (uint8_t *) top, sizeof(top) },
 		{ cd->username, username_len },
-		{ (uint8_t *)bottom, sizeof(bottom) },
+		{ (uint8_t *) bottom, sizeof(bottom) },
 		{ cd->password, password_len },
 	};
 
@@ -412,7 +412,7 @@ static void link_conf_cb(const GIsiMessage *msg, void *opaque)
 	};
 
 	const struct iovec iov[2] = {
-		{ (uint8_t *)req, sizeof(req) },
+		{ (uint8_t *) req, sizeof(req) },
 		{ cd->apn, apn_len },
 	};
 
