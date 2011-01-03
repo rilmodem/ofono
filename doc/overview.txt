@@ -123,6 +123,13 @@ Current implemented features:
 		this support is currently limited to just one active GPRS
 		context (network interface).
 
+	Radio Access Settings
+
+		The radio settings interface contains support for selecting
+		the access selection mode and used frequency bands, and allows
+		enabling and disabling fast dormancy on hardware that support
+		this feature.
+
 Work in progress features:
 
 	USSD
