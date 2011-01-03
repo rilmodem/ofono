@@ -41,6 +41,7 @@ struct pending_data {
 
 struct _GIsiClient {
 	GIsiModem *modem;
+	unsigned timeout;
 	uint8_t resource;
 	GSList *pending;
 };
@@ -108,6 +109,7 @@ GIsiClient *g_isi_client_create(GIsiModem *modem, uint8_t resource)
 		return NULL;
 	}
 
+	client->timeout = G_ISI_CLIENT_DEFAULT_TIMEOUT;
 	client->resource = resource;
 	client->modem = modem;
 	client->pending = NULL;
@@ -146,6 +148,14 @@ void g_isi_client_destroy(GIsiClient *client)
 	g_free(client);
 }
 
+void g_isi_client_set_timeout(GIsiClient *client, unsigned timeout)
+{
+	if (client == NULL)
+		return;
+
+	client->timeout = timeout;
+}
+
 static struct pending_data *pending_data_create(GIsiClient *client,
 						GIsiNotifyFunc notify,
 						void *data,
@@ -172,8 +182,22 @@ static struct pending_data *pending_data_create(GIsiClient *client,
 	return pd;
 }
 
-GIsiPending *g_isi_client_send(GIsiClient *client, const void *__restrict buf,
-				size_t len, unsigned timeout,
+gboolean g_isi_client_send(GIsiClient *client,
+			const void *__restrict msg, size_t len,
+			GIsiNotifyFunc notify, void *data,
+			GDestroyNotify destroy)
+{
+	if (client == NULL)
+		return FALSE;
+
+	return g_isi_client_send_with_timeout(client, msg, len,
+						client->timeout,
+						notify, data, destroy);
+}
+
+gboolean g_isi_client_send_with_timeout(GIsiClient *client,
+				const void *__restrict buf, size_t len,
+				unsigned timeout,
 				GIsiNotifyFunc notify, void *data,
 				GDestroyNotify destroy)
 {
@@ -182,21 +206,34 @@ GIsiPending *g_isi_client_send(GIsiClient *client, const void *__restrict buf,
 
 	pd = pending_data_create(client, notify, data, destroy);
 	if (pd == NULL)
-		return NULL;
+		return FALSE;
 
 	op = g_isi_request_send(client->modem, client->resource, buf, len,
 				timeout, pending_resp_notify, pd,
 				pending_destroy);
 	if (op == NULL) {
 		g_free(pd);
-		return NULL;
+		return FALSE;
 	}
 
 	client->pending = g_slist_append(client->pending, op);
-	return op;
+	return TRUE;
 }
 
-GIsiPending *g_isi_client_vsend(GIsiClient *client,
+gboolean g_isi_client_vsend(GIsiClient *client,
+			const struct iovec *iov, size_t iovlen,
+			GIsiNotifyFunc notify, void *data,
+			GDestroyNotify destroy)
+{
+	if (client == NULL)
+		return FALSE;
+
+	return g_isi_client_vsend_with_timeout(client, iov, iovlen,
+						client->timeout,
+						notify, data, destroy);
+}
+
+gboolean g_isi_client_vsend_with_timeout(GIsiClient *client,
 				const struct iovec *__restrict iov,
 				size_t iovlen, unsigned timeout,
 				GIsiNotifyFunc notify, void *data,
@@ -207,21 +244,21 @@ GIsiPending *g_isi_client_vsend(GIsiClient *client,
 
 	pd = pending_data_create(client, notify, data, destroy);
 	if (pd == NULL)
-		return NULL;
+		return FALSE;
 
 	op = g_isi_request_vsend(client->modem, client->resource, iov, iovlen,
 					timeout, pending_resp_notify, pd,
 					pending_destroy);
 	if (op == NULL) {
 		g_free(pd);
-		return NULL;
+		return FALSE;
 	}
 
 	client->pending = g_slist_append(client->pending, op);
-	return op;
+	return TRUE;
 }
 
-GIsiPending *g_isi_client_ind_subscribe(GIsiClient *client, uint8_t type,
+gboolean g_isi_client_ind_subscribe(GIsiClient *client, uint8_t type,
 					GIsiNotifyFunc notify, void *data)
 {
 	struct pending_data *pd;
@@ -229,20 +266,20 @@ GIsiPending *g_isi_client_ind_subscribe(GIsiClient *client, uint8_t type,
 
 	pd = pending_data_create(client, notify, data, NULL);
 	if (pd == NULL)
-		return NULL;
+		return FALSE;
 
 	op = g_isi_ind_subscribe(client->modem, client->resource, type,
 					pending_notify, pd, pending_destroy);
 	if (op == NULL) {
 		g_free(pd);
-		return NULL;
+		return FALSE;
 	}
 
 	client->pending = g_slist_append(client->pending, op);
-	return op;
+	return TRUE;
 }
 
-GIsiPending *g_isi_client_ntf_subscribe(GIsiClient *client, uint8_t type,
+gboolean g_isi_client_ntf_subscribe(GIsiClient *client, uint8_t type,
 					GIsiNotifyFunc notify, void *data)
 {
 	struct pending_data *pd;
@@ -250,20 +287,20 @@ GIsiPending *g_isi_client_ntf_subscribe(GIsiClient *client, uint8_t type,
 
 	pd = pending_data_create(client, notify, data, NULL);
 	if (pd == NULL)
-		return NULL;
+		return FALSE;
 
 	op = g_isi_ntf_subscribe(client->modem, client->resource, type,
 					pending_notify, pd, pending_destroy);
 	if (op == NULL) {
 		g_free(pd);
-		return NULL;
+		return FALSE;
 	}
 
 	client->pending = g_slist_append(client->pending, op);
-	return op;
+	return TRUE;
 }
 
-GIsiPending *g_isi_client_verify(GIsiClient *client, GIsiNotifyFunc notify,
+gboolean g_isi_client_verify(GIsiClient *client, GIsiNotifyFunc notify,
 					void *data, GDestroyNotify destroy)
 {
 	struct pending_data *pd;
@@ -271,16 +308,16 @@ GIsiPending *g_isi_client_verify(GIsiClient *client, GIsiNotifyFunc notify,
 
 	pd = pending_data_create(client, notify, data, destroy);
 	if (pd == NULL)
-		return NULL;
+		return FALSE;
 
 	op = g_isi_resource_ping(client->modem, client->resource,
 					pending_resp_notify, pd,
 					pending_destroy);
 	if (op == NULL) {
 		g_free(pd);
-		return NULL;
+		return FALSE;
 	}
 
 	client->pending = g_slist_append(client->pending, op);
-	return op;
+	return TRUE;
 }

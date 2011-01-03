@@ -224,6 +224,7 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem, GIsiPipeHandler cb, uint16_t obj1,
 		.type2 = type2,
 		.n_sb = 0,
 	};
+	size_t len = sizeof(msg);
 	GIsiPipe *pipe;
 
 	pipe = g_try_new0(GIsiPipe, 1);
@@ -246,8 +247,8 @@ GIsiPipe *g_isi_pipe_create(GIsiModem *modem, GIsiPipeHandler cb, uint16_t obj1,
 	pipe->enabled = FALSE;
 	pipe->handle = PN_PIPE_INVALID_HANDLE;
 
-	if (g_isi_client_send(pipe->client, &msg, sizeof(msg), 3,
-				g_isi_pipe_created, pipe, NULL))
+	if (g_isi_client_send(pipe->client, &msg, len,
+					g_isi_pipe_created, pipe, NULL))
 		return pipe;
 
 	g_isi_client_destroy(pipe->client);
@@ -284,16 +285,16 @@ static void g_isi_pipe_enabled(const GIsiMessage *msg, void *data)
 		pipe->enabled = TRUE;
 }
 
-static GIsiPending *g_isi_pipe_enable(GIsiPipe *pipe)
+static void g_isi_pipe_enable(GIsiPipe *pipe)
 {
 	struct isi_pipe_enable_req msg = {
 		.cmd = PNS_PIPE_ENABLE_REQ,
 		.pipe_handle = pipe->handle,
 	};
-	size_t len = sizeof(struct isi_pipe_enable_req);
+	size_t len = sizeof(msg);
 
-	return g_isi_client_send(pipe->client, &msg, len, 5, g_isi_pipe_enabled,
-					pipe, NULL);
+	g_isi_client_send(pipe->client, &msg, len,
+				g_isi_pipe_enabled, pipe, NULL);
 }
 
 /**
@@ -343,16 +344,16 @@ static void g_isi_pipe_removed(const GIsiMessage *msg, void *data)
 }
 
 
-static GIsiPending *g_isi_pipe_remove(GIsiPipe *pipe)
+static void g_isi_pipe_remove(GIsiPipe *pipe)
 {
 	struct isi_pipe_remove_req msg = {
 		.cmd = PNS_PIPE_REMOVE_REQ,
 		.pipe_handle = pipe->handle,
 	};
-	size_t len = sizeof(struct isi_pipe_remove_req);
+	size_t len = sizeof(msg);
 
-	return g_isi_client_send(pipe->client, &msg, len, 5, g_isi_pipe_removed,
-					pipe, NULL);
+	g_isi_client_send(pipe->client, &msg, len,
+				g_isi_pipe_removed, pipe, NULL);
 }
 
 /**
