@@ -253,8 +253,8 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 	memcpy((char *) &msg[13], ucs2, strlen(number->number) * 2);
 	g_free(ucs2);
 
-	if (g_isi_client_send(fd->client, msg, 7 + msg[8], SS_TIMEOUT,
-				registration_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(fd->client, msg, 7 + msg[8],
+				registration_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -316,8 +316,8 @@ static void isi_erasure(struct ofono_call_forwarding *cf, int type, int cls,
 	if (cbd == NULL || fd == NULL || ss_code < 0)
 		goto error;
 
-	if (g_isi_client_send(fd->client, msg, sizeof(msg), SS_TIMEOUT,
-				erasure_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(fd->client, msg, sizeof(msg),
+				erasure_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -411,8 +411,8 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 	if (cbd == NULL || fd == NULL || cls != 7 || ss_code < 0)
 		goto error;
 
-	if (g_isi_client_send(fd->client, msg, sizeof(msg), SS_TIMEOUT,
-				query_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(fd->client, msg, sizeof(msg),
+				query_resp_cb, cbd, g_free))
 		return;
 
 error:

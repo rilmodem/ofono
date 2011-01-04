@@ -251,8 +251,8 @@ static void isi_sca_query(struct ofono_sms *sms,
 	if (cbd == NULL || sd == NULL)
 		goto error;
 
-	if (g_isi_client_send(sd->sim, msg, sizeof(msg), SIM_TIMEOUT,
-				sca_query_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(sd->sim, msg, sizeof(msg),
+				sca_query_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -302,8 +302,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 	bcd[0] = 1 + (strlen(sca->number) + 1) / 2;
 	bcd[1] = sca->type & 0xFF;
 
-	if (g_isi_client_vsend(sd->sim, iov, 2, SIM_TIMEOUT, sca_set_resp_cb,
-				cbd, g_free) != NULL)
+	if (g_isi_client_vsend(sd->sim, iov, 2, sca_set_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -405,8 +404,9 @@ static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
 	 * Modem seems to time out SMS_MESSAGE_SEND_REQ in 5 seconds.
 	 * Wait normal timeout plus the modem timeout.
 	 */
-	if (g_isi_client_vsend(sd->client, iov, 4, SMS_TIMEOUT + 5,
-				submit_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_vsend_with_timeout(sd->client, iov, 4,
+				SMS_TIMEOUT + 5,
+				submit_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -483,9 +483,9 @@ static gboolean send_deliver_report(GIsiClient *client, gboolean success)
 		0, 0, 0,	/* Filler */
 		0,		/* Sub blocks */
 	};
+	size_t len = sizeof(msg);
 
-	return g_isi_client_send(client, msg, sizeof(msg), SMS_TIMEOUT,
-					report_resp_cb, NULL, NULL) != NULL;
+	return g_isi_client_send(client, msg, len, report_resp_cb, NULL, NULL);
 }
 
 static gboolean parse_sms_address(GIsiSubBlockIter *iter, struct sms_addr *add)
@@ -627,6 +627,7 @@ static void sim_reachable_cb(const GIsiMessage *msg, void *data)
 		0x00, 0x00, 0x00,  /* Filler */
 		0x00  /* Sub-sub-block count */
 	};
+	size_t len = sizeof(req);
 
 	if (g_isi_msg_error(msg) < 0) {
 		DBG("unable to find SIM resource");
@@ -636,8 +637,7 @@ static void sim_reachable_cb(const GIsiMessage *msg, void *data)
 
 	g_isi_client_ind_subscribe(sd->client, SMS_MESSAGE_SEND_STATUS_IND,
 					send_status_ind_cb, sms);
-	g_isi_client_send(sd->client, msg, sizeof(msg), SMS_TIMEOUT,
-				routing_resp_cb, sms, NULL);
+	g_isi_client_send(sd->client, req, len, routing_resp_cb, sms, NULL);
 }
 
 static void sms_reachable_cb(const GIsiMessage *msg, void *data)
@@ -674,6 +674,9 @@ static int isi_sms_probe(struct ofono_sms *sms, unsigned int vendor,
 	sd->sim = g_isi_client_create(modem, PN_SIM);
 	if (sd->sim == NULL)
 		goto nomem;
+
+	g_isi_client_set_timeout(sd->client, SMS_TIMEOUT);
+	g_isi_client_set_timeout(sd->sim, SIM_TIMEOUT);
 
 	ofono_sms_set_data(sms, sd);
 
@@ -712,8 +715,7 @@ static void isi_sms_remove(struct ofono_sms *sms)
 	 * Send a promiscuous routing release, so as not to
 	 * hog resources unnecessarily after being removed
 	 */
-	g_isi_client_send(sd->client, msg, sizeof(msg), SMS_TIMEOUT,
-				NULL, NULL, NULL);
+	g_isi_client_send(sd->client, msg, sizeof(msg), NULL, NULL, NULL);
 	g_isi_client_destroy(sd->client);
 	g_isi_client_destroy(sd->sim);
 	g_free(sd);

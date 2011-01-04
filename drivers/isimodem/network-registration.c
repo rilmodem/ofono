@@ -338,8 +338,8 @@ static void rat_resp_cb(const GIsiMessage *msg, void *data)
 			goto error;
 	}
 
-	if (g_isi_client_send(nd->client, req, sizeof(req), NETWORK_TIMEOUT,
-				reg_status_resp_cb, cbd, NULL) != NULL)
+	if (g_isi_client_send(nd->client, req, sizeof(req),
+				reg_status_resp_cb, cbd, NULL))
 		return;
 
 error:
@@ -368,8 +368,8 @@ static void isi_registration_status(struct ofono_netreg *netreg,
 	if (nd == NULL || cbd == NULL)
 		goto error;
 
-	if (g_isi_client_send(nd->client, rat, sizeof(rat), NETWORK_TIMEOUT,
-				rat_resp_cb, cbd, NULL) != NULL)
+	if (g_isi_client_send(nd->client, rat, sizeof(rat),
+				rat_resp_cb, cbd, NULL))
 		return;
 
 error:
@@ -449,8 +449,8 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 	if (cbd == NULL || nd == NULL)
 		goto error;
 
-	if (g_isi_client_send(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
-				name_get_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(nd->client, msg, sizeof(msg),
+				name_get_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -552,9 +552,9 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 	if (cbd == NULL || nd == NULL)
 		goto error;
 
-	if (g_isi_client_send(nd->client, msg, sizeof(msg),
+	if (g_isi_client_send_with_timeout(nd->client, msg, sizeof(msg),
 				NETWORK_SCAN_TIMEOUT, available_resp_cb, cbd,
-				g_free) != NULL)
+				g_free))
 		return;
 
 error:
@@ -599,9 +599,9 @@ static void isi_register_auto(struct ofono_netreg *netreg,
 	if (nd == NULL || cbd == NULL)
 		goto error;
 
-	if (g_isi_client_send(nd->client, msg, sizeof(msg),
-				NETWORK_SET_TIMEOUT, set_auto_resp_cb, cbd,
-				g_free) != NULL)
+	if (g_isi_client_send_with_timeout(nd->client, msg, sizeof(msg),
+				NETWORK_SET_TIMEOUT,
+				set_auto_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -653,8 +653,9 @@ static void isi_register_manual(struct ofono_netreg *netreg,
 	if (cbd == NULL || nd == NULL)
 		goto error;
 
-	if (g_isi_client_send(nd->client, msg, sizeof(msg), NETWORK_SET_TIMEOUT,
-				set_manual_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send_with_timeout(nd->client, msg, sizeof(msg),
+				NETWORK_SET_TIMEOUT,
+				set_manual_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -783,8 +784,8 @@ static void isi_strength(struct ofono_netreg *netreg,
 	if (nd == NULL || cbd == NULL)
 		goto error;
 
-	if (g_isi_client_send(nd->client, msg, sizeof(msg), NETWORK_TIMEOUT,
-				rssi_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(nd->client, msg, sizeof(msg),
+				rssi_resp_cb, cbd, g_free))
 		return;
 
 error:

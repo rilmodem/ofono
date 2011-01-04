@@ -194,11 +194,8 @@ static gboolean isi_read_spn(struct ofono_sim *sim, struct isi_cb_data *cbd)
 	if (sd == NULL)
 		return FALSE;
 
-	if (g_isi_client_send(sd->client, msg, sizeof(msg), SIM_TIMEOUT,
-				spn_resp_cb, cbd, g_free) == NULL)
-		return FALSE;
-
-	return TRUE;
+	return g_isi_client_send(sd->client, msg, sizeof(msg),
+					spn_resp_cb, cbd, g_free);
 }
 
 static void read_iccid_resp_cb(const GIsiMessage *msg, void *data)
@@ -233,11 +230,8 @@ static gboolean isi_read_iccid(struct ofono_sim *sim, struct isi_cb_data *cbd)
 	if (sd == NULL)
 		return FALSE;
 
-	if (g_isi_client_send(sd->client, req, sizeof(req), SIM_TIMEOUT,
-				read_iccid_resp_cb, cbd, g_free) == NULL)
-		return FALSE;
-
-	return TRUE;
+	return g_isi_client_send(sd->client, req, sizeof(req),
+					read_iccid_resp_cb, cbd, g_free);
 }
 
 static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
@@ -245,6 +239,7 @@ static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 					ofono_sim_read_cb_t cb, void *data)
 {
 	struct isi_cb_data *cbd;
+	gboolean done;
 
 	cbd = isi_cb_data_new(sim, cb, data);
 	if (cbd == NULL)
@@ -252,15 +247,19 @@ static void isi_read_file_transparent(struct ofono_sim *sim, int fileid,
 
 	switch (fileid) {
 	case SIM_EFSPN_FILEID:
-
-		if (isi_read_spn(sim, cbd))
-			return;
+		done = isi_read_spn(sim, cbd);
+		break;
 
 	case SIM_EF_ICCID_FILEID:
+		done = isi_read_iccid(sim, cbd);
+		break;
 
-		if (isi_read_iccid(sim, cbd))
-			return;
+	default:
+		done = FALSE;
 	}
+
+	if (done)
+		return;
 
 	DBG("Fileid %04X not implemented", fileid);
 
@@ -358,12 +357,12 @@ static void isi_read_imsi(struct ofono_sim *sim,
 		SIM_IMSI_REQ_READ_IMSI,
 		READ_IMSI
 	};
+	size_t len = sizeof(msg);
 
 	if (cbd == NULL || sd == NULL)
 		goto error;
 
-	if (g_isi_client_send(sd->client, msg, sizeof(msg), SIM_TIMEOUT,
-				imsi_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(sd->client, msg, len, imsi_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -401,12 +400,12 @@ static void isi_read_hplmn(struct ofono_sim *sim)
 		SIM_NETWORK_INFO_REQ,
 		READ_HPLMN, 0
 	};
+	size_t len = sizeof(req);
 
 	if (sd == NULL)
 		return;
 
-	g_isi_client_send(sd->client, req, sizeof(req), SIM_TIMEOUT,
-				read_hplmn_resp_cb, sim, NULL);
+	g_isi_client_send(sd->client, req, len, read_hplmn_resp_cb, sim, NULL);
 }
 
 static void sim_ind_cb(const GIsiMessage *msg, void *data)

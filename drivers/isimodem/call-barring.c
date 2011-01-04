@@ -139,8 +139,8 @@ static void isi_set(struct ofono_call_barring *barr, const char *lock,
 	if (cbd == NULL || bd == NULL)
 		goto error;
 
-	if (g_isi_client_send(bd->client, msg, sizeof(msg), SS_TIMEOUT,
-				set_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(bd->client, msg, sizeof(msg),
+				set_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -258,8 +258,8 @@ static void isi_query(struct ofono_call_barring *barr, const char *lock,
 	if (cbd == NULL || bd == NULL)
 		goto error;
 
-	if (g_isi_client_send(bd->client, msg, sizeof(msg), SS_TIMEOUT,
-				query_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(bd->client, msg, sizeof(msg),
+				query_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -321,8 +321,8 @@ static void isi_set_passwd(struct ofono_call_barring *barr, const char *lock,
 	if (cbd == NULL || bd == NULL)
 		goto error;
 
-	if (g_isi_client_send(bd->client, msg, sizeof(msg), SS_TIMEOUT,
-				set_passwd_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(bd->client, msg, sizeof(msg),
+				set_passwd_resp_cb, cbd, g_free))
 		return;
 
 error:

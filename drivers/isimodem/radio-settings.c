@@ -150,7 +150,7 @@ static void isi_query_rat_mode(struct ofono_radio_settings *rs,
 	if (cbd == NULL || rd == NULL)
 		goto error;
 
-	if (g_isi_client_send(rd->gss_client, msg, sizeof(msg), GSS_TIMEOUT,
+	if (g_isi_client_send(rd->gss_client, msg, sizeof(msg),
 				rat_mode_read_resp_cb, cbd, NULL))
 		return;
 
@@ -210,7 +210,7 @@ static void isi_set_rat_mode(struct ofono_radio_settings *rs,
 	if (isi_mode == -1)
 		goto error;
 
-	if (g_isi_client_send(rd->gss_client, msg, sizeof(msg), GSS_TIMEOUT,
+	if (g_isi_client_send(rd->gss_client, msg, sizeof(msg),
 				mode_write_resp_cb, cbd, NULL))
 		return;
 

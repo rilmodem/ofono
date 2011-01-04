@@ -115,12 +115,12 @@ static void isi_query_manufacturer(struct ofono_devinfo *info,
 		INFO_PRODUCT_INFO_READ_REQ,
 		INFO_PRODUCT_MANUFACTURER
 	};
+	size_t len = sizeof(msg);
 
 	if (cbd == NULL || dev == NULL)
 		goto error;
 
-	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(dev->client, msg, len, info_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -139,12 +139,12 @@ static void isi_query_model(struct ofono_devinfo *info,
 		INFO_PRODUCT_INFO_READ_REQ,
 		INFO_PRODUCT_NAME
 	};
+	size_t len = sizeof(msg);
 
 	if (cbd == NULL || dev == NULL)
 		goto error;
 
-	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(dev->client, msg, len, info_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -164,12 +164,12 @@ static void isi_query_revision(struct ofono_devinfo *info,
 		0x00, INFO_MCUSW,
 		0x00, 0x00, 0x00, 0x00
 	};
+	size_t len = sizeof(msg);
 
 	if (cbd == NULL || dev == NULL)
 		goto error;
 
-	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(dev->client, msg, len, info_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -188,12 +188,12 @@ static void isi_query_serial(struct ofono_devinfo *info,
 		INFO_SERIAL_NUMBER_READ_REQ,
 		INFO_SN_IMEI_PLAIN
 	};
+	size_t len = sizeof(msg);
 
 	if (cbd == NULL || dev == NULL)
 		goto error;
 
-	if (g_isi_client_send(dev->client, msg, sizeof(msg), INFO_TIMEOUT,
-				info_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(dev->client, msg, len, info_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -228,8 +228,10 @@ static int isi_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 		return -ENOMEM;
 	}
 
+
 	ofono_devinfo_set_data(info, data);
 
+	g_isi_client_set_timeout(data->client, INFO_TIMEOUT);
 	g_isi_client_verify(data->client, reachable_cb, info, NULL);
 
 	return 0;

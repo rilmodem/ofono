@@ -119,13 +119,11 @@ static struct isi_call_req_ctx *isi_call_req(struct ofono_voicecall *ovc,
 	irc->cb = cb;
 	irc->data = data;
 
-	if (g_isi_client_send(ivc->client, req, len, ISI_CALL_TIMEOUT,
-				handler, irc, NULL) == NULL) {
-		g_free(irc);
-		return NULL;
-	}
+	if (g_isi_client_send(ivc->client, req, len, handler, irc, NULL))
+		return irc;
 
-	return irc;
+	g_free(irc);
+	return NULL;
 }
 
 static void isi_ctx_queue(struct isi_call_req_ctx *irc, isi_call_req_step *next)

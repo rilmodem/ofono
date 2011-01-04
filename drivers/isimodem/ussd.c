@@ -81,8 +81,7 @@ static void ussd_notify_ack(struct ussd_data *ud)
 		0,		/* subblock count */
 	};
 
-	g_isi_client_send(ud->client, msg, sizeof(msg), SS_TIMEOUT, NULL, NULL,
-				NULL);
+	g_isi_client_send(ud->client, msg, sizeof(msg), NULL, NULL, NULL);
 }
 
 static void ussd_ind_cb(const GIsiMessage *msg, void *data)
@@ -187,8 +186,8 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 	if (cbd == NULL || ud == NULL)
 		goto error;
 
-	if (g_isi_client_vsend(ud->client, iov, 2, SS_TIMEOUT,
-				ussd_send_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_vsend(ud->client, iov, 2,
+				ussd_send_resp_cb, cbd, g_free))
 		return;
 
 error:
@@ -210,8 +209,8 @@ static void isi_cancel(struct ofono_ussd *ussd,
 	if (cbd == NULL || ud == NULL)
 		goto error;
 
-	if (g_isi_client_send(ud->client, msg, sizeof(msg), SS_TIMEOUT,
-				ussd_send_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(ud->client, msg, sizeof(msg),
+				ussd_send_resp_cb, cbd, g_free))
 		return;
 
 error:

@@ -324,9 +324,9 @@ static void send_context_activate(GIsiClient *client, void *opaque)
 	g_isi_client_ind_subscribe(client, GPDS_CONTEXT_DEACTIVATE_IND,
 				deactivate_ind_cb, cd);
 
-	if (g_isi_client_send(client, msg, sizeof(msg),
+	if (g_isi_client_send_with_timeout(client, msg, sizeof(msg),
 				GPDS_CTX_ACTIVATE_TIMEOUT,
-				context_activate_cb, cd, NULL) != NULL)
+				context_activate_cb, cd, NULL))
 		g_isi_pipe_start(cd->pipe);
 	else
 		gprs_up_fail(cd);
@@ -372,8 +372,7 @@ static void send_context_authenticate(GIsiClient *client, void *opaque)
 		{ cd->password, password_len },
 	};
 
-	if (g_isi_client_vsend(client, iov, 4, GPDS_TIMEOUT,
-				context_auth_cb, cd, NULL) == NULL)
+	if (!g_isi_client_vsend(client, iov, 4, context_auth_cb, cd, NULL))
 		gprs_up_fail(cd);
 }
 
@@ -419,8 +418,8 @@ static void link_conf_cb(const GIsiMessage *msg, void *opaque)
 	if (!check_resp(msg, GPDS_LL_CONFIGURE_RESP, 2, cd, gprs_up_fail))
 		return;
 
-	if (g_isi_client_vsend(cd->client, iov, 2, GPDS_TIMEOUT,
-				context_conf_cb, cd, NULL) == NULL)
+	if (!g_isi_client_vsend(cd->client, iov, 2,
+				context_conf_cb, cd, NULL))
 		gprs_up_fail(cd);
 }
 
@@ -441,8 +440,8 @@ static void create_context_cb(const GIsiMessage *msg, void *opaque)
 
 	cd->handle = req[1] = data[0];
 
-	if (g_isi_client_send(cd->client, req, sizeof(req), GPDS_TIMEOUT,
-				link_conf_cb, cd, NULL) == NULL)
+	if (!g_isi_client_send(cd->client, req, sizeof(req),
+				link_conf_cb, cd, NULL))
 		gprs_up_fail(cd);
 }
 
@@ -454,8 +453,8 @@ static void create_pipe_cb(GIsiPipe *pipe)
 		GPDS_CONTEXT_ID_CREATE_REQ,
 	};
 
-	if (g_isi_client_send(cd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-				create_context_cb, cd, NULL) == NULL)
+	if (!g_isi_client_send(cd->client, msg, sizeof(msg),
+				create_context_cb, cd, NULL))
 		gprs_up_fail(cd);
 }
 
@@ -551,12 +550,10 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	msg[1] = cd->handle;
 
-	if (g_isi_client_send(cd->client, msg, sizeof(msg),
+	if (!g_isi_client_send_with_timeout(cd->client, msg, sizeof(msg),
 				GPDS_CTX_DEACTIVATE_TIMEOUT,
-				context_deactivate_cb, cd, NULL) == NULL) {
+				context_deactivate_cb, cd, NULL))
 		gprs_down_fail(cd);
-		return;
-	}
 }
 
 static void gpds_ctx_reachable_cb(const GIsiMessage *msg, void *opaque)

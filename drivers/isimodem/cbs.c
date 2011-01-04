@@ -173,11 +173,11 @@ static int isi_cbs_probe(struct ofono_cbs *cbs, unsigned int vendor,
 
 	ofono_cbs_set_data(cbs, cd);
 
-	if (g_isi_client_send(cd->client, msg, sizeof(msg), CBS_TIMEOUT,
-				routing_resp_cb, cbs, NULL) == NULL)
-		return -errno;
+	if (g_isi_client_send(cd->client, msg, sizeof(msg),
+				routing_resp_cb, cbs, NULL))
+		return 0;
 
-	return 0;
+	return -errno;
 }
 
 static void isi_cbs_remove(struct ofono_cbs *cbs)
@@ -205,8 +205,7 @@ static void isi_cbs_remove(struct ofono_cbs *cbs)
 	 * Send a promiscuous routing release, so as not to hog
 	 * resources unnecessarily after being removed.
 	 */
-	g_isi_client_send(cd->client, msg, sizeof(msg), CBS_TIMEOUT, NULL,
-				NULL, NULL);
+	g_isi_client_send(cd->client, msg, sizeof(msg), NULL, NULL, NULL);
 
 	g_isi_client_destroy(cd->client);
 	g_free(cd);

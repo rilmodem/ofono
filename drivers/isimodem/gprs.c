@@ -93,7 +93,7 @@ static void set_attach_mode(struct ofono_gprs *gprs, int attached)
 		0x00
 	};
 
-	g_isi_client_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
+	g_isi_client_send(gd->client, msg, sizeof(msg),
 				configure_resp_cb, gprs, NULL);
 }
 
@@ -280,7 +280,7 @@ static void gpds_reachable_cb(const GIsiMessage *msg, void *opaque)
 		return;
 	}
 
-	g_isi_client_send(gd->info_client, req, sizeof(req), GPDS_TIMEOUT,
+	g_isi_client_send(gd->info_client, req, sizeof(req),
 				info_pp_read_resp_cb, gprs, NULL);
 }
 
@@ -301,6 +301,7 @@ static int isi_gprs_probe(struct ofono_gprs *gprs,
 
 	ofono_gprs_set_data(gprs, gd);
 
+	g_isi_client_set_timeout(gd->client, GPDS_TIMEOUT);
 	g_isi_client_verify(gd->client, gpds_reachable_cb, gprs, NULL);
 
 	return 0;
@@ -397,9 +398,10 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 			GPDS_FOLLOW_OFF
 		};
 
-		if (g_isi_client_send(gd->client, msg, sizeof(msg),
-					GPDS_ATTACH_TIMEOUT, attach_resp_cb,
-					cbd, g_free) != NULL)
+		if (g_isi_client_send_with_timeout(gd->client,
+				msg, sizeof(msg),
+				GPDS_ATTACH_TIMEOUT, attach_resp_cb,
+				cbd, g_free))
 			return;
 	} else {
 		const unsigned char msg[] = {
@@ -408,9 +410,10 @@ static void isi_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 			0x00  /* sub-blocks */
 		};
 
-		if (g_isi_client_send(gd->client, msg, sizeof(msg),
-					GPDS_DETACH_TIMEOUT, detach_resp_cb,
-					cbd, g_free) != NULL)
+		if (g_isi_client_send_with_timeout(gd->client,
+				msg, sizeof(msg),
+				GPDS_DETACH_TIMEOUT, detach_resp_cb,
+				cbd, g_free))
 			return;
 	}
 
@@ -474,8 +477,8 @@ static void isi_gprs_attached_status(struct ofono_gprs *gprs,
 	if (cbd == NULL || gd == NULL)
 		goto error;
 
-	if (g_isi_client_send(gd->client, msg, sizeof(msg), GPDS_TIMEOUT,
-				status_resp_cb, cbd, g_free) != NULL)
+	if (g_isi_client_send(gd->client, msg, sizeof(msg),
+				status_resp_cb, cbd, g_free))
 		return;
 
 error:
