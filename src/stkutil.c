@@ -565,7 +565,7 @@ static gboolean parse_dataobj_text(struct comprehension_tlv_iter *iter,
 	const unsigned char *data;
 	char *utf8;
 
-	if (len == 0) {
+	if (len <= 1) {
 		*text = g_try_malloc0(1);
 		return TRUE;
 	}
