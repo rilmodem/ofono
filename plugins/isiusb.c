@@ -192,9 +192,9 @@ static gboolean bootstrap_current_state(gpointer user)
 		MTC_STATE_QUERY_REQ,
 		0x00, 0x00 /* Filler */
 	};
+	size_t len = sizeof(req);
 
-	g_isi_client_send(isi->client, req, sizeof(req), MTC_TIMEOUT,
-				mtc_query_cb, om, NULL);
+	g_isi_client_send(isi->client, req, len, mtc_query_cb, om, NULL);
 
 	return FALSE;
 }
@@ -383,7 +383,8 @@ static void isiusb_online(struct ofono_modem *modem, ofono_bool_t online,
 	if (cbd == NULL || isi == NULL)
 		goto error;
 
-	if (g_isi_client_send(isi->client, req, sizeof(req), MTC_STATE_REQ_TIMEOUT,
+	if (g_isi_client_send_with_timeout(isi->client, req, sizeof(req),
+				MTC_STATE_REQ_TIMEOUT,
 				mtc_state_cb, cbd, NULL)) {
 		isi->online = online;
 		return;
