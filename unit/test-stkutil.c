@@ -13999,6 +13999,7 @@ struct setup_idle_mode_text_test {
 	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
 	char *html;
+	enum stk_command_parse_result status;
 };
 
 static unsigned char setup_idle_mode_text_111[] = { 0xD0, 0x1A, 0x81, 0x03,
@@ -14415,7 +14416,8 @@ static struct setup_idle_mode_text_test setup_idle_mode_text_data_241 = {
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
 		.id = 0x01
-	}
+	},
+	.status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD
 };
 
 static struct setup_idle_mode_text_test setup_idle_mode_text_data_311 = {
@@ -14742,7 +14744,7 @@ static void test_setup_idle_mode_text(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
-	g_assert(command->status == STK_PARSE_RESULT_OK);
+	g_assert(command->status == test->status);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT);
@@ -14772,6 +14774,7 @@ struct run_at_command_test {
 	struct stk_icon_id icon_id;
 	struct stk_text_attribute text_attr;
 	struct stk_frame_id frame_id;
+	enum stk_command_parse_result status;
 };
 
 static unsigned char run_at_command_111[] = { 0xD0, 0x12, 0x81, 0x03, 0x01,
@@ -15193,7 +15196,8 @@ static struct run_at_command_test run_at_command_data_251 = {
 	.icon_id = {
 		.qualifier = STK_ICON_QUALIFIER_TYPE_NON_SELF_EXPLANATORY,
 		.id = 0x01
-	}
+	},
+	.status = STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD
 };
 
 static struct run_at_command_test run_at_command_data_311 = {
@@ -15500,7 +15504,7 @@ static void test_run_at_command(gconstpointer data)
 	command = stk_command_new_from_pdu(test->pdu, test->pdu_len);
 
 	g_assert(command);
-	g_assert(command->status == STK_PARSE_RESULT_OK);
+	g_assert(command->status == test->status);
 
 	g_assert(command->number == 1);
 	g_assert(command->type == STK_COMMAND_TYPE_RUN_AT_COMMAND);
