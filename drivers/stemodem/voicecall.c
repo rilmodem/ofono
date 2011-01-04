@@ -442,10 +442,15 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 	if (status == CALL_STATUS_DIALING ||
 			status == CALL_STATUS_WAITING ||
 			status == CALL_STATUS_INCOMING) {
-		if (!g_at_result_iter_next_string(&iter, &num))
-			return;
-
-		if (!g_at_result_iter_next_number(&iter, &num_type))
+		/*
+		 * If caller uses hidden id, the number and
+		 * number type might not be present. Don't
+		 * look for type if number is not present.
+		 */
+		if (!g_at_result_iter_next_string(&iter, &num)) {
+			num = "";
+			num_type = 128;
+		} else if (!g_at_result_iter_next_number(&iter, &num_type))
 			return;
 	}
 
