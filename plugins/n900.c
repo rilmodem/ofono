@@ -192,7 +192,7 @@ static void mtc_startup_synq(struct isi_data *isi)
 		0, 0,
 	};
 
-	g_isi_client_send(isi->client, msg, sizeof(msg), MTC_TIMEOUT,
+	g_isi_client_send(isi->client, msg, sizeof(msg),
 				mtc_startup_synq_cb, NULL, NULL);
 }
 
@@ -230,7 +230,7 @@ static void mtc_state_query(struct ofono_modem *modem)
 	if (!isi)
 		return;
 
-	g_isi_client_send(isi->client, msg, sizeof(msg), MTC_TIMEOUT,
+	g_isi_client_send(isi->client, msg, sizeof(msg),
 				mtc_query_cb, modem, NULL);
 }
 
@@ -257,8 +257,7 @@ static void mtc_shutdown_sync(struct isi_data *isi)
 		0, 0,
 	};
 
-	g_isi_client_send(isi->client, msg, sizeof(msg), MTC_TIMEOUT,
-				NULL, NULL, NULL);
+	g_isi_client_send(isi->client, msg, sizeof(msg), NULL, NULL, NULL);
 }
 
 
@@ -301,7 +300,7 @@ static void mtc_power_off(struct isi_data *isi)
 		0, 0,
 	};
 
-	g_isi_client_send(isi->client, msg, sizeof(msg), MTC_TIMEOUT,
+	g_isi_client_send(isi->client, msg, sizeof(msg),
 				mtc_power_off_cb, isi, NULL);
 }
 
@@ -463,7 +462,8 @@ static void n900_set_online(struct ofono_modem *modem,
 	if (isi->mtc_state == MTC_SELFTEST_FAIL)
 		goto error;
 
-	if (g_isi_client_send(isi->client, req, sizeof(req), MTC_TIMEOUT,
+	if (g_isi_client_send_with_timeout(isi->client, req, sizeof(req),
+				MTC_STATE_REQ_TIMEOUT,
 				mtc_state_cb, cbd, NULL)) {
 		isi->online = online;
 		return;
