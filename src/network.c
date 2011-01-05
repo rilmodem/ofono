@@ -1297,6 +1297,19 @@ emit:
 	notify_status_watches(netreg);
 }
 
+static void signal_strength_callback(const struct ofono_error *error,
+					int strength, void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBG("Error during signal strength query");
+		return;
+	}
+
+	ofono_netreg_strength_notify(netreg, strength);
+}
+
 void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 			int lac, int ci, int tech)
 {
@@ -1320,6 +1333,10 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 		if (netreg->driver->current_operator)
 			netreg->driver->current_operator(netreg,
 					current_operator_callback, netreg);
+
+		if (netreg->driver->strength)
+			netreg->driver->strength(netreg,
+					signal_strength_callback, netreg);
 	} else {
 		struct ofono_error error;
 
@@ -1346,18 +1363,6 @@ void ofono_netreg_time_notify(struct ofono_netreg *netreg,
 	__ofono_nettime_info_received(modem, info);
 }
 
-static void signal_strength_callback(const struct ofono_error *error,
-					int strength, void *data)
-{
-	struct ofono_netreg *netreg = data;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Error during signal strength query");
-		return;
-	}
-
-	ofono_netreg_strength_notify(netreg, strength);
-}
 
 static void init_registration_status(const struct ofono_error *error,
 					int status, int lac, int ci, int tech,
