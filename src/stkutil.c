@@ -2889,7 +2889,8 @@ static enum stk_command_parse_result parse_setup_call(
 				STK_DATA_OBJECT_TYPE_INVALID);
 
 	CHECK_TEXT_AND_ICON(obj->alpha_id_usr_cfm, obj->icon_id_usr_cfm.id);
-	CHECK_TEXT_AND_ICON(obj->alpha_id_call_setup, obj->icon_id_call_setup.id);
+	CHECK_TEXT_AND_ICON(obj->alpha_id_call_setup,
+						obj->icon_id_call_setup.id);
 
 	return status;
 }
