@@ -139,8 +139,24 @@ static void append_dict_variant(DBusMessageIter *iter, int type, void *val)
 
 		dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING,
 						&(val_array[i + 0]));
-		dbus_message_iter_append_basic(&entry, type,
-						&(val_array[i + 1]));
+
+		/*
+		 * D-Bus expects a char** or uint8* depending on the type
+		 * given. Since we are dealing with an array through a void**
+		 * (and thus val_array[i] is a pointer) we need to
+		 * differentiate DBUS_TYPE_STRING from the others. The other
+		 * option would be the user to pass the exact type to this
+		 * function, instead of a pointer to it. However in this case
+		 * a cast from type to void* would be needed, which is not
+		 * good.
+		 */
+		if (type == DBUS_TYPE_STRING) {
+			dbus_message_iter_append_basic(&entry, type,
+							&(val_array[i + 1]));
+		} else {
+			dbus_message_iter_append_basic(&entry, type,
+							val_array[i + 1]);
+		}
 
 		dbus_message_iter_close_container(&array, &entry);
 	}
