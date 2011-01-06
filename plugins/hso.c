@@ -90,17 +90,28 @@ static void hso_debug(const char *str, void *user_data)
 	ofono_info("%s%s", prefix, str);
 }
 
-static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+static void check_model(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct hso_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	char const *model;
 
 	DBG("");
 
-	ofono_modem_set_powered(modem, ok);
-
 	if (!ok)
-		return;
+		goto done;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OPMN:"))
+		goto done;
+
+	if (g_at_result_iter_next_unquoted_string(&iter, &model))
+		ofono_info("Model is %s", model);
+
+done:
+	ofono_modem_set_powered(modem, TRUE);
 
 	/*
 	 * Option has the concept of Speech Service versus
@@ -115,6 +126,23 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	 */
 	g_at_chat_send(data->app, "AT_ODO?", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(data->app, "AT_ODO=0", none_prefix, NULL, NULL, NULL);
+}
+
+static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct hso_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+
+	if (!ok) {
+		ofono_modem_set_powered(modem, ok);
+		return;
+	}
+
+	g_at_chat_send(data->control, "AT_OPMN", NULL,
+					check_model, modem, NULL);
 }
 
 static GAtChat *create_port(const char *device)
