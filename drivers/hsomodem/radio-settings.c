@@ -179,6 +179,8 @@ static int hso_radio_settings_probe(struct ofono_radio_settings *rs,
 
 	ofono_radio_settings_set_data(rs, rsd);
 
+	g_at_chat_send(rsd->chat, "AT_OPBM?", none_prefix, NULL, NULL, NULL);
+
 	g_at_chat_send(rsd->chat, "AT_OPSYS=?", opsys_prefix,
 					opsys_support_cb, rs, NULL);
 
