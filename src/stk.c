@@ -99,6 +99,11 @@ struct extern_req {
 static void envelope_queue_run(struct ofono_stk *stk);
 static void timers_update(struct ofono_stk *stk);
 
+#define ADD_ERROR_RESULT(result, error, addn_info)		\
+		result.type = error;				\
+		result.additional_len = sizeof(addn_info);	\
+		result.additional = addn_info;			\
+
 static int stk_respond(struct ofono_stk *stk, struct stk_response *rsp,
 			ofono_stk_generic_cb_t cb)
 {
@@ -857,7 +862,10 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 	msg_list.next = NULL;
 
 	if (__ofono_sms_txq_submit(sms, &msg_list, 0, &uuid, NULL, NULL) < 0) {
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		unsigned char no_cause_result[] = { 0x00 };
+
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
@@ -1183,9 +1191,12 @@ static gboolean handle_command_select_item(const struct stk_command *cmd,
 					request_selection_cb, stk,
 					request_selection_destroy,
 					stk->timeout * 1000) < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
 		request_selection_destroy(stk);
 
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
@@ -1301,7 +1312,10 @@ static gboolean handle_command_display_text(const struct stk_command *cmd,
 
 	/* We most likely got an out of memory error, tell SIM to retry */
 	if (err < 0) {
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		unsigned char no_cause_result[] = { 0x00 };
+
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
@@ -1475,11 +1489,14 @@ static gboolean handle_command_get_inkey(const struct stk_command *cmd,
 	g_free(text);
 
 	if (err < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
 		/*
 		 * We most likely got an out of memory error, tell SIM
 		 * to retry
 		 */
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
@@ -1564,11 +1581,14 @@ static gboolean handle_command_get_input(const struct stk_command *cmd,
 	g_free(text);
 
 	if (err < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
 		/*
 		 * We most likely got an out of memory error, tell SIM
 		 * to retry
 		 */
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
@@ -1772,11 +1792,14 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 	g_free(alpha_id);
 
 	if (err < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
 		/*
 		 * We most likely got an out of memory error, tell SIM
 		 * to retry
 		 */
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
@@ -2188,11 +2211,14 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	}
 
 	if (err < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
 		/*
 		 * We most likely got an out of memory error, tell SIM
 		 * to retry
 		 */
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
@@ -2324,11 +2350,14 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 	g_free(text);
 
 	if (err < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
 		/*
 		 * We most likely got an out of memory error, tell SIM
 		 * to retry
 		 */
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
 		return TRUE;
 	}
 
