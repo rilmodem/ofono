@@ -1,3 +1,14 @@
+ver 0.38:
+	Change CalledLine* to ConnectedLine* properties.
+	Fix issue with calling presentation property.
+	Fix issue with network time and ISI modems.
+	Fix issue with timezone reporting and HSO modems.
+	Fix issue with SIM ready status and HSO modems.
+	Fix issue with hidden caller ID and STE modems.
+	Fix issue with handling of STK Setup Menu.
+	Fix issue with missing STK text and icon checks.
+	Fix issue with missing signal strength query.
+
 ver 0.37:
 	Fix issue with parsing of un-quoted CREG / CGREG.
 	Fix issue with call forwarding for data and fax.
