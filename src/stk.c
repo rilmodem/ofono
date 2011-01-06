@@ -1269,9 +1269,8 @@ static void display_text_cb(enum stk_agent_result result, void *user_data)
 
 	case STK_AGENT_RESULT_BUSY:
 		memset(&rsp, 0, sizeof(rsp));
-		rsp.result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		rsp.result.additional_len = sizeof(screen_busy_result);
-		rsp.result.additional = screen_busy_result;
+		ADD_ERROR_RESULT(rsp.result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					screen_busy_result);
 		if (stk_respond(stk, &rsp, stk_command_cb))
 			stk_command_cb(&error, stk);
 		break;
@@ -1608,9 +1607,9 @@ static void call_setup_connected(struct ofono_call *call, void *data)
 	if (call == NULL || call->status == CALL_STATUS_DISCONNECTED) {
 		memset(&rsp, 0, sizeof(rsp));
 
-		rsp.result.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE;
-		rsp.result.additional_len = sizeof(facility_rejected_result);
-		rsp.result.additional = facility_rejected_result;
+		ADD_ERROR_RESULT(rsp.result,
+					STK_RESULT_TYPE_NETWORK_UNAVAILABLE,
+					facility_rejected_result);
 
 		if (stk_respond(stk, &rsp, stk_command_cb))
 			stk_command_cb(&error, stk);
@@ -1709,9 +1708,8 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 	if (err == -EBUSY) {
 		memset(&rsp, 0, sizeof(rsp));
 
-		rsp.result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		rsp.result.additional_len = sizeof(busy_on_call_result);
-		rsp.result.additional = busy_on_call_result;
+		ADD_ERROR_RESULT(rsp.result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					busy_on_call_result);
 
 		if (stk_respond(stk, &rsp, stk_command_cb))
 			stk_command_cb(&error, stk);
@@ -1727,9 +1725,8 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 
 	memset(&rsp, 0, sizeof(rsp));
 
-	rsp.result.type = STK_RESULT_TYPE_NETWORK_UNAVAILABLE;
-	rsp.result.additional_len = sizeof(no_cause_result);
-	rsp.result.additional = no_cause_result;
+	ADD_ERROR_RESULT(rsp.result, STK_RESULT_TYPE_NETWORK_UNAVAILABLE,
+				no_cause_result);
 
 	if (stk_respond(stk, &rsp, stk_command_cb))
 		stk_command_cb(&error, stk);
@@ -1772,9 +1769,8 @@ static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 	}
 
 	if (__ofono_voicecall_is_busy(vc, qualifier >> 1)) {
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		rsp->result.additional_len = sizeof(busy_on_call_result);
-		rsp->result.additional = busy_on_call_result;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					busy_on_call_result);
 		return TRUE;
 	}
 
@@ -1872,9 +1868,8 @@ static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
 		break;
 
 	default:
-		rsp.result.type = STK_RESULT_TYPE_USSD_RETURN_ERROR;
-		rsp.result.additional_len = sizeof(no_cause);
-		rsp.result.additional = no_cause;
+		ADD_ERROR_RESULT(rsp.result, STK_RESULT_TYPE_USSD_RETURN_ERROR,
+					no_cause);
 
 		if (stk_respond(stk, &rsp, stk_command_cb))
 			stk_command_cb(&failure, stk);
@@ -1899,9 +1894,9 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 		struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
 
 		if (__ofono_call_forwarding_is_busy(cf)) {
-			rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-			rsp->result.additional_len = sizeof(busy_on_ss_result);
-			rsp->result.additional = busy_on_ss_result;
+			ADD_ERROR_RESULT(rsp->result,
+						STK_RESULT_TYPE_TERMINAL_BUSY,
+						busy_on_ss_result);
 			return TRUE;
 		}
 	}
@@ -1911,9 +1906,9 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 		struct ofono_call_barring *cb = __ofono_atom_get_data(atom);
 
 		if (__ofono_call_barring_is_busy(cb)) {
-			rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-			rsp->result.additional_len = sizeof(busy_on_ss_result);
-			rsp->result.additional = busy_on_ss_result;
+			ADD_ERROR_RESULT(rsp->result,
+						STK_RESULT_TYPE_TERMINAL_BUSY,
+						busy_on_ss_result);
 			return TRUE;
 		}
 	}
@@ -1923,9 +1918,9 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 		struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
 
 		if (__ofono_call_settings_is_busy(cs)) {
-			rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-			rsp->result.additional_len = sizeof(busy_on_ss_result);
-			rsp->result.additional = busy_on_ss_result;
+			ADD_ERROR_RESULT(rsp->result,
+						STK_RESULT_TYPE_TERMINAL_BUSY,
+						busy_on_ss_result);
 			return TRUE;
 		}
 	}
@@ -1938,9 +1933,8 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 
 	ussd = __ofono_atom_get_data(atom);
 	if (__ofono_ussd_is_busy(ussd)) {
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		rsp->result.additional_len = sizeof(busy_on_ussd_result);
-		rsp->result.additional = busy_on_ussd_result;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					busy_on_ussd_result);
 		return TRUE;
 	}
 
@@ -1961,9 +1955,8 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 	}
 
 	if (err == -EBUSY) {
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		rsp->result.additional_len = sizeof(busy_on_ussd_result);
-		rsp->result.additional = busy_on_ussd_result;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					busy_on_ussd_result);
 		return TRUE;
 	}
 
@@ -2140,9 +2133,8 @@ static void dtmf_sent_cb(int error, void *user_data)
 
 		memset(&rsp, 0, sizeof(rsp));
 
-		rsp.result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		rsp.result.additional_len = sizeof(not_in_speech_call_result);
-		rsp.result.additional = not_in_speech_call_result;
+		ADD_ERROR_RESULT(rsp.result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					not_in_speech_call_result);
 
 		if (stk_respond(stk, &rsp, stk_command_cb))
 			stk_command_cb(&failure, stk);
@@ -2199,9 +2191,8 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	}
 
 	if (err == -ENOENT) {
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		rsp->result.additional_len = sizeof(not_in_speech_call_result);
-		rsp->result.additional = not_in_speech_call_result;
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					not_in_speech_call_result);
 		return TRUE;
 	}
 
