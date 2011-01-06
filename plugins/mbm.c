@@ -165,11 +165,11 @@ static void mbm_quirk_d5530(struct ofono_modem *modem)
 				FALSE, NULL, NULL);
 }
 
-static void mbm_check_model(gboolean ok, GAtResult *result, gpointer user_data)
+static void check_model(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	GAtResultIter iter;
-	char const *model = "";
+	char const *model;
 
 	DBG("");
 
@@ -203,7 +203,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	g_at_chat_send(data->modem_port, "AT+CGMM", NULL,
-			mbm_check_model, modem, NULL);
+					check_model, modem, NULL);
 }
 
 static void cfun_query(gboolean ok, GAtResult *result, gpointer user_data)
