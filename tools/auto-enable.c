@@ -37,15 +37,19 @@
 
 #define OFONO_MANAGER_INTERFACE		OFONO_SERVICE ".Manager"
 #define OFONO_MODEM_INTERFACE		OFONO_SERVICE ".Modem"
+#define OFONO_SIM_INTERFACE		OFONO_SERVICE ".SimManager"
 
 struct modem_data {
 	char *path;
 	DBusConnection *conn;
 	dbus_bool_t has_powered;
 	dbus_bool_t has_online;
+	dbus_bool_t has_sim;
 };
 
 static GHashTable *modem_list;
+
+static gboolean option_online = FALSE;
 
 static void set_property_reply(DBusPendingCall *call, void *user_data)
 {
@@ -113,9 +117,43 @@ static int set_property(struct modem_data *modem, const char *key,
 	return 0;
 }
 
+static void check_interfaces(struct modem_data *modem, DBusMessageIter *iter)
+{
+	DBusMessageIter entry;
+	dbus_bool_t has_sim = FALSE;
+
+	dbus_message_iter_recurse(iter, &entry);
+
+	while (dbus_message_iter_get_arg_type(&entry) == DBUS_TYPE_STRING) {
+		const char *interface;
+
+		dbus_message_iter_get_basic(&entry, &interface);
+
+		if (g_str_equal(interface, OFONO_SIM_INTERFACE) == TRUE)
+			has_sim = TRUE;
+
+		dbus_message_iter_next(&entry);
+	}
+
+	if (modem->has_sim == has_sim)
+		return;
+
+	modem->has_sim = has_sim;
+
+	if (modem->has_online == FALSE && option_online == TRUE) {
+		dbus_bool_t online = TRUE;
+		set_property(modem, "Online", DBUS_TYPE_BOOLEAN, &online);
+	}
+}
+
 static void check_property(struct modem_data *modem, const char *key,
 						DBusMessageIter *value)
 {
+	if (g_str_equal(key, "Interfaces") == TRUE) {
+		check_interfaces(modem, value);
+		return;
+	}
+
 	if (g_str_equal(key, "Powered") == TRUE) {
 		dbus_bool_t powered;
 
@@ -412,6 +450,8 @@ static gboolean option_version = FALSE;
 static GOptionEntry options[] = {
 	{ "version", 'v', 0, G_OPTION_ARG_NONE, &option_version,
 				"Show version information and exit" },
+	{ "online", 'o', 0, G_OPTION_ARG_NONE, &option_online,
+				"Bring device online if possible" },
 	{ NULL },
 };
 
