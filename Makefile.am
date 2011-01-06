@@ -492,14 +492,17 @@ unit_objects += $(unit_test_mux_OBJECTS)
 
 unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
 					drivers/stemodem/caif_socket.h \
-					drivers/stemodem/if_caif.h 
+					drivers/stemodem/if_caif.h
 unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
 
-noinst_PROGRAMS += tools/huawei-audio
+noinst_PROGRAMS += tools/huawei-audio tools/auto-enable
 
 tools_huawei_audio_SOURCES = $(gdbus_sources) tools/huawei-audio.c
 tools_huawei_audio_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+
+tools_auto_enable_SOURCES = $(gdbus_sources) tools/auto-enable.c
+tools_auto_enable_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm
 
