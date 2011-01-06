@@ -42,6 +42,7 @@
 struct modem_data {
 	char *path;
 	DBusConnection *conn;
+	guint sim_changed_watch;
 	dbus_bool_t has_powered;
 	dbus_bool_t has_online;
 	dbus_bool_t has_sim;
@@ -117,6 +118,32 @@ static int set_property(struct modem_data *modem, const char *key,
 	return 0;
 }
 
+static gboolean sim_changed(DBusConnection *conn,
+				DBusMessage *msg, void *user_data)
+{
+	struct modem_data *modem = user_data;
+	DBusMessageIter iter, value;
+	const char *key;
+
+	if (dbus_message_iter_init(msg, &iter) == FALSE)
+		return TRUE;
+
+	dbus_message_iter_get_basic(&iter, &key);
+
+	dbus_message_iter_next(&iter);
+	dbus_message_iter_recurse(&iter, &value);
+
+	if (g_str_equal(key, "SubscriberIdentity") == FALSE)
+		return TRUE;
+
+	if (modem->has_online == FALSE) {
+		dbus_bool_t online = TRUE;
+		set_property(modem, "Online", DBUS_TYPE_BOOLEAN, &online);
+	}
+
+	return TRUE;
+}
+
 static void check_interfaces(struct modem_data *modem, DBusMessageIter *iter)
 {
 	DBusMessageIter entry;
@@ -139,11 +166,6 @@ static void check_interfaces(struct modem_data *modem, DBusMessageIter *iter)
 		return;
 
 	modem->has_sim = has_sim;
-
-	if (modem->has_online == FALSE && option_online == TRUE) {
-		dbus_bool_t online = TRUE;
-		set_property(modem, "Online", DBUS_TYPE_BOOLEAN, &online);
-	}
 }
 
 static void check_property(struct modem_data *modem, const char *key,
@@ -202,6 +224,8 @@ static void destroy_modem(gpointer data)
 
 	g_print("modem removed (%s)\n", modem->path);
 
+	g_dbus_remove_watch(modem->conn, modem->sim_changed_watch);
+
 	dbus_connection_unref(modem->conn);
 
 	g_free(modem->path);
@@ -220,6 +244,10 @@ static void create_modem(DBusConnection *conn,
 
 	modem->path = g_strdup(path);
 	modem->conn = dbus_connection_ref(conn);
+
+	modem->sim_changed_watch = g_dbus_add_signal_watch(conn,
+				NULL, NULL, OFONO_SIM_INTERFACE,
+				"PropertyChanged", sim_changed, modem, NULL);
 
 	g_hash_table_replace(modem_list, modem->path, modem);
 
