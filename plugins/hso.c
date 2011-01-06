@@ -50,10 +50,15 @@
 #include <drivers/atmodem/vendor.h>
 
 static const char *none_prefix[] = { NULL };
+static const char *opmn_prefix[] = { "_OPMN:", NULL };
+static const char *obls_prefix[] = { "_OBLS:", NULL };
 
 struct hso_data {
 	GAtChat *app;
 	GAtChat *control;
+	guint sim_poll_source;
+	guint sim_poll_count;
+	gboolean have_sim;
 };
 
 static int hso_probe(struct ofono_modem *modem)
@@ -80,6 +85,10 @@ static void hso_remove(struct ofono_modem *modem)
 	ofono_modem_set_data(modem, NULL);
 
 	g_at_chat_unref(data->control);
+
+	if (data->sim_poll_source > 0)
+		g_source_remove(data->sim_poll_source);
+
 	g_free(data);
 }
 
@@ -90,27 +99,64 @@ static void hso_debug(const char *str, void *user_data)
 	ofono_info("%s%s", prefix, str);
 }
 
-static void check_model(gboolean ok, GAtResult *result, gpointer user_data)
+static gboolean init_sim_check(gpointer user_data);
+
+static void sim_status(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct hso_data *data = ofono_modem_get_data(modem);
 	GAtResultIter iter;
-	char const *model;
+	int sim, pb, sms;
 
 	DBG("");
 
-	if (!ok)
-		goto done;
+	if (data->sim_poll_source > 0) {
+		g_source_remove(data->sim_poll_source);
+		data->sim_poll_source = 0;
+	}
+
+	if (!ok) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "_OPMN:"))
-		goto done;
+	if (!g_at_result_iter_next(&iter, "_OBLS:")) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
 
-	if (g_at_result_iter_next_unquoted_string(&iter, &model))
-		ofono_info("Model is %s", model);
+	if (!g_at_result_iter_next_number(&iter, &sim)) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
 
-done:
+	if (!g_at_result_iter_next_number(&iter, &pb)) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	if (!g_at_result_iter_next_number(&iter, &sms)) {
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	DBG("status sim %d pb %d sms %d", sim, pb, sms);
+
+	if (sim == 0) {
+		data->have_sim = FALSE;
+
+		if (data->sim_poll_count++ < 5) {
+			data->sim_poll_source = g_timeout_add_seconds(1,
+							init_sim_check, modem);
+			return;
+		}
+	} else
+		data->have_sim = TRUE;
+
+	data->sim_poll_count = 0;
+
 	ofono_modem_set_powered(modem, TRUE);
 
 	/*
@@ -128,6 +174,42 @@ done:
 	g_at_chat_send(data->app, "AT_ODO=0", none_prefix, NULL, NULL, NULL);
 }
 
+static gboolean init_sim_check(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct hso_data *data = ofono_modem_get_data(modem);
+
+	data->sim_poll_source = 0;
+
+	g_at_chat_send(data->control, "AT_OBLS", obls_prefix,
+					sim_status, modem, NULL);
+
+	return FALSE;
+}
+
+static void check_model(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	GAtResultIter iter;
+	char const *model;
+
+	DBG("");
+
+	if (!ok)
+		goto done;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OPMN:"))
+		goto done;
+
+	if (g_at_result_iter_next_unquoted_string(&iter, &model))
+		ofono_info("Model is %s", model);
+
+done:
+	init_sim_check(modem);
+}
+
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -135,13 +217,12 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-
 	if (!ok) {
-		ofono_modem_set_powered(modem, ok);
+		ofono_modem_set_powered(modem, FALSE);
 		return;
 	}
 
-	g_at_chat_send(data->control, "AT_OPMN", NULL,
+	g_at_chat_send(data->control, "AT_OPMN", opmn_prefix,
 					check_model, modem, NULL);
 }
 
@@ -288,7 +369,7 @@ static void hso_pre_sim(struct ofono_modem *modem)
 	sim = ofono_sim_create(modem, OFONO_VENDOR_OPTION_HSO,
 				"atmodem", data->control);
 
-	if (sim)
+	if (sim && data->have_sim == TRUE)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
