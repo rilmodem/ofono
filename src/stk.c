@@ -2170,11 +2170,6 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 
 	err = __ofono_voicecall_tone_send(vc, dtmf, dtmf_sent_cb, stk);
 
-	if (err == -EBUSY) {
-		rsp->result.type = STK_RESULT_TYPE_TERMINAL_BUSY;
-		return TRUE;
-	}
-
 	if (err == -ENOSYS) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 		return TRUE;
