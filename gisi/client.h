@@ -54,12 +54,14 @@ gboolean g_isi_client_vsend(GIsiClient *client,
 			GIsiNotifyFunc notify, void *data,
 			GDestroyNotify destroy);
 
-gboolean g_isi_client_send_with_timeout(GIsiClient *client, const void *__restrict msg,
+gboolean g_isi_client_send_with_timeout(GIsiClient *client,
+				const void *__restrict msg,
 				size_t len, unsigned timeout,
 				GIsiNotifyFunc notify, void *data,
 				GDestroyNotify destroy);
 
-gboolean g_isi_client_vsend_with_timeout(GIsiClient *client, const struct iovec *iov,
+gboolean g_isi_client_vsend_with_timeout(GIsiClient *client,
+				const struct iovec *iov,
 				size_t iovlen, unsigned timeout,
 				GIsiNotifyFunc notify, void *data,
 				GDestroyNotify destroy);
