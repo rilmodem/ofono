@@ -436,7 +436,7 @@ test_scripts = test/backtrace \
 		test/send-vcard \
 		test/set-tty \
 		test/set-gsm-band \
-		test/set-umts-band
+		test/set-umts-band \
 		test/lockdown-modem
 
 if TEST
