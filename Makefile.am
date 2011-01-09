@@ -254,6 +254,9 @@ endif
 builtin_modules += g1
 builtin_sources += plugins/g1.c
 
+builtin_modules += gobi
+builtin_sources += plugins/gobi.c
+
 builtin_modules += wavecom
 builtin_sources += plugins/wavecom.c
 
