@@ -297,6 +297,9 @@ builtin_sources += plugins/ste.c
 
 builtin_modules += caif
 builtin_sources += plugins/caif.c
+
+builtin_modules += tc65
+builtin_sources += plugins/tc65.c
 endif
 
 if MAINTAINER_MODE
