@@ -158,10 +158,10 @@ AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
 					[enable_atmodem=${enableval}])
 AM_CONDITIONAL(ATMODEM, test "${enable_atmodem}" != "no")
 
-AC_ARG_ENABLE(cdmaatmodem, AC_HELP_STRING([--disable-cdmamodem],
+AC_ARG_ENABLE(cdmamodem, AC_HELP_STRING([--disable-cdmamodem],
 				[disable CDMA AT modem support]),
-					[enable_cdma_atmodem=${enableval}])
-AM_CONDITIONAL(CDMA_ATMODEM, test "${enable_cdma_atmodem}" != "no")
+					[enable_cdmamodem=${enableval}])
+AM_CONDITIONAL(CDMAMODEM, test "${enable_cdmamodem}" != "no")
 
 AC_ARG_ENABLE(phonesim, AC_HELP_STRING([--disable-phonesim],
 				[disable Phone simulator support]),
