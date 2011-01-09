@@ -32,14 +32,14 @@
 
 #include "cdmamodem.h"
 
-static int cdma_atmodem_init(void)
+static int cdmamodem_init(void)
 {
 	return 0;
 }
 
-static void cdma_atmodem_exit(void)
+static void cdmamodem_exit(void)
 {
 }
 
-OFONO_PLUGIN_DEFINE(cdma_atmodem, "CDMA AT modem driver", VERSION,
-	OFONO_PLUGIN_PRIORITY_DEFAULT, cdma_atmodem_init, cdma_atmodem_exit)
+OFONO_PLUGIN_DEFINE(cdmamodem, "CDMA AT modem driver", VERSION,
+	OFONO_PLUGIN_PRIORITY_DEFAULT, cdmamodem_init, cdmamodem_exit)
