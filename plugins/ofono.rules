@@ -7,6 +7,9 @@ KERNEL!="ttyUSB[0-9]*", GOTO="ofono_tty_end"
 
 SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ATTRS{bInterfaceClass}=="ff", ENV{OFONO_IFACE_NUM}="$attr{bInterfaceNumber}"
 
+# Qualcomm Gobi 2000 (Lenovo)
+ATTRS{idVendor}=="05c6", ATTRS{idProduct}=="9205", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_GOBI_TYPE}="modem"
+
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0031", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0031", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
@@ -359,6 +362,9 @@ ATTRS{idVendor}=="1410", ENV{OFONO_DRIVER}="novatel"
 
 # HUAWEI Technology
 ATTRS{idVendor}=="12d1", ENV{OFONO_DRIVER}="huawei"
+
+# Qualcomm Incorporated
+ATTRS{idVendor}=="05c6", ENV{OFONO_DRIVER}="gobi"
 
 # ZTE Incorporated
 ATTRS{idVendor}=="19d2", ENV{OFONO_DRIVER}="zte"

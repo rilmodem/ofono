@@ -449,6 +449,38 @@ static void add_isi(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
+static void add_gobi(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	struct udev_list_entry *entry;
+	const char *devnode;
+	gboolean found = FALSE;
+
+	DBG("modem %p", modem);
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+		const char *value = udev_list_entry_get_value(entry);
+
+		if (g_str_equal(name, "OFONO_GOBI_TYPE") == TRUE &&
+					g_str_equal(value, "modem") == TRUE) {
+			found = TRUE;
+			break;
+		}
+
+		entry = udev_list_entry_get_next(entry);
+	}
+
+	if (found == FALSE)
+		return;
+
+	devnode = udev_device_get_devnode(udev_device);
+	ofono_modem_set_string(modem, "Device", devnode);
+
+	ofono_modem_register(modem);
+}
+
 static void add_calypso(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
@@ -546,6 +578,8 @@ done:
 		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "n900") == 0)
 		add_isi(modem, udev_device);
+	else if (g_strcmp0(driver, "gobi") == 0)
+		add_gobi(modem, udev_device);
 	else if (g_strcmp0(driver, "calypso") == 0)
 		add_calypso(modem, udev_device);
 }
