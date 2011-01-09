@@ -13,4 +13,5 @@ fi
 		--sysconfdir=/etc \
 		--localstatedir=/var \
 		--enable-capng \
+		--enable-tools \
 		--disable-datafiles $*

@@ -153,6 +153,16 @@ AC_SUBST(UDEV_CFLAGS)
 AC_SUBST(UDEV_LIBS)
 AM_CONDITIONAL(UDEV, test "${enable_udev}" = "yes")
 
+AC_ARG_ENABLE(tools, AC_HELP_STRING([--enable-tools],
+		[enable testing tools]), [enable_tools=${enableval}])
+if (test "${enable_tools}" = "yes"); then
+	PKG_CHECK_MODULES(USB, libusb-1.0, dummy=yes,
+				AC_MSG_ERROR(USB library is required))
+	AC_SUBST(USB_CFLAGS)
+	AC_SUBST(USB_LIBS)
+fi
+AM_CONDITIONAL(TOOLS, test "${enable_tools}" = "yes")
+
 AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
 				[disable ETSI AT modem support]),
 					[enable_atmodem=${enableval}])

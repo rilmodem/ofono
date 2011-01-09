@@ -350,7 +350,8 @@ else
 build_plugindir = $(plugindir)
 endif
 
-AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @CAPNG_CFLAGS@ $(builtin_cflags) \
+AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @CAPNG_CFLAGS@ @USB_CFLAGS@ \
+					$(builtin_cflags) \
 					-DOFONO_PLUGIN_BUILTIN \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
 
@@ -498,6 +499,7 @@ unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
 unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
 
+if TOOLS
 noinst_PROGRAMS += tools/huawei-audio tools/auto-enable
 
 tools_huawei_audio_SOURCES = $(gdbus_sources) tools/huawei-audio.c
@@ -505,6 +507,7 @@ tools_huawei_audio_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 
 tools_auto_enable_SOURCES = $(gdbus_sources) tools/auto-enable.c
 tools_auto_enable_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+endif
 
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm
 
