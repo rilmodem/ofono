@@ -1993,11 +1993,11 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 	for (l = gc->gprs->contexts; l; l = l->next) {
 		ctx = l->data;
 
-		if (ctx->active == FALSE)
-			continue;
-
 		if (ctx->context.cid != cid)
 			continue;
+
+		if (ctx->active == FALSE)
+			break;
 
 		gprs_cid_release(ctx->gprs, ctx->context.cid);
 		ctx->context.cid = 0;
