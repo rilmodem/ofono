@@ -618,7 +618,7 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->pcui);
-	data->sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+	data->sim = ofono_sim_create(modem, OFONO_VENDOR_HUAWEI,
 					"atmodem", data->pcui);
 
 	data->sim_poll_count = 0;
