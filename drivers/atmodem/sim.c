@@ -146,9 +146,11 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i", fileid);
 
-	if (sd->vendor == OFONO_VENDOR_QUALCOMM_MSM ||
-					sd->vendor == OFONO_VENDOR_HUAWEI) {
+	switch (sd->vendor) {
+	case OFONO_VENDOR_HUAWEI:
+	case OFONO_VENDOR_QUALCOMM_MSM:
 		strcat(buf, ",0,0,255"); /* Maximum possible length */
+		break;
 	}
 
 	if (g_at_chat_send(sd->chat, buf, crsm_prefix,
