@@ -1152,8 +1152,10 @@ static struct pri_context *pri_context_create(struct ofono_gprs *gprs,
 
 	if (name == NULL) {
 		name = gprs_context_default_name(type);
-		if (name == NULL)
+		if (name == NULL) {
+			g_free(context);
 			return NULL;
+		}
 	}
 
 	context->gprs = gprs;
