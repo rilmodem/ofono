@@ -495,7 +495,7 @@ static void add_calypso(struct ofono_modem *modem,
 }
 
 static void add_tc65(struct ofono_modem *modem,
-		struct udev_device *udev_device)
+			struct udev_device *udev_device)
 {
 	const char *devnode;
 
