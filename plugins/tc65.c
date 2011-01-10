@@ -79,8 +79,7 @@ static int tc65_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
-					g_free);
+	options = g_hash_table_new(g_str_hash, g_str_equal);
 	if (options == NULL)
 		return -ENOMEM;
 
@@ -88,25 +87,16 @@ static int tc65_enable(struct ofono_modem *modem)
 	if (device == NULL)
 		return -EINVAL;
 
-	g_hash_table_insert(options, g_strdup("Baud"),
-			g_strdup("115200"));
-	g_hash_table_insert(options, g_strdup("StopBits"),
-			g_strdup("1"));
-	g_hash_table_insert(options, g_strdup("DataBits"),
-			g_strdup("8"));
-	g_hash_table_insert(options, g_strdup("Parity"),
-			g_strdup("none"));
-	g_hash_table_insert(options, g_strdup("XonXoff"),
-			g_strdup("off"));
-	g_hash_table_insert(options, g_strdup("RtsCts"),
-			g_strdup("on"));
-	g_hash_table_insert(options, g_strdup("Local"),
-			g_strdup("on"));
-	g_hash_table_insert(options, g_strdup("Read"),
-			g_strdup("on"));
+	g_hash_table_insert(options, "Baud", "115200");
+	g_hash_table_insert(options, "StopBits", "1");
+	g_hash_table_insert(options, "DataBits", "8");
+	g_hash_table_insert(options, "Parity", "none");
+	g_hash_table_insert(options, "XonXoff", "off");
+	g_hash_table_insert(options, "RtsCts", "on");
+	g_hash_table_insert(options, "Local", "on");
+	g_hash_table_insert(options, "Read", "on");
 
 	channel = g_at_tty_open(device, options);
-
 	g_hash_table_destroy(options);
 
 	if (channel == NULL)
