@@ -256,6 +256,11 @@ SIM
   ForwardingFlagOnSim will be set and VoiceUnconditional may contain the
   "forwarded to" number if the number is available.
 
+- Support SIM retry counters. oFono exports all the retry counters available on
+  SIM, e.g., PIN, PIN2, PUK and PUK2. Whenever an action changes them, a signal
+  is sent with the updated values, so user can keep track of how many times
+  he/she can still give a wrong pin before the SIM locking down.
+
 Radio settings
 ==============
 

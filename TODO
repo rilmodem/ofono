@@ -72,14 +72,6 @@ SIM / SIM File system
   Priority: Low
   Complexity: C2
 
-- Support proprietary extensions for SIM PIN retry counter.  Most vendors
-  provide an extension commands to obtain such a retry counter for PINs and
-  PUKs.  Need to enable this as a property in oFono.
-
-  Priority: Low
-  Complexity: C2
-  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-
 - Add support for SIM 'ready' notifications from the driver to the core.  Most
   modem manufacturers initialize the SIM (e.g. cache SIM file system, STK
   initialization, etc) internally before allowing the telephony stack to
