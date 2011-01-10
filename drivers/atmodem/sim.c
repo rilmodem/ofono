@@ -44,6 +44,8 @@
 #define EF_STATUS_INVALIDATED 0
 #define EF_STATUS_VALID 1
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 struct sim_data {
 	GAtChat *chat;
 	unsigned int vendor;
@@ -53,6 +55,7 @@ struct sim_data {
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
 static const char *cpin_prefix[] = { "+CPIN:", NULL };
 static const char *clck_prefix[] = { "+CLCK:", NULL };
+static const char *huawei_cpin_prefix[] = { "^CPIN:", NULL };
 static const char *none_prefix[] = { NULL };
 
 static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -457,6 +460,98 @@ static struct {
 	{ OFONO_SIM_PASSWORD_PHCORP_PIN,	"PH-CORP PIN"	},
 	{ OFONO_SIM_PASSWORD_PHCORP_PUK,	"PH-CORP PUK"	},
 };
+
+static void huawei_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_pin_retries_cb_t cb = cbd->cb;
+	const char *final = g_at_result_final_response(result);
+	GAtResultIter iter;
+	struct ofono_error error;
+	int retries[OFONO_SIM_PASSWORD_INVALID];
+	size_t i;
+	static enum ofono_sim_password_type _password_types[] = {
+		OFONO_SIM_PASSWORD_SIM_PUK,
+		OFONO_SIM_PASSWORD_SIM_PIN,
+		OFONO_SIM_PASSWORD_SIM_PUK2,
+		OFONO_SIM_PASSWORD_SIM_PIN2,
+	};
+
+	decode_at_error(&error, final);
+
+	if (!ok) {
+		cb(&error, NULL, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^CPIN:"))
+		goto error;
+
+	/* Skip status since we are not interested in this */
+	if (!g_at_result_iter_skip_next(&iter))
+		goto error;
+
+	/* Skip "overall counter" since we'll grab each one individually */
+	if (!g_at_result_iter_skip_next(&iter))
+		goto error;
+
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
+		retries[i] = -1;
+
+	for (i = 0; i < ARRAY_SIZE(_password_types); i++) {
+		int val;
+
+		if (!g_at_result_iter_next_number(&iter, &val))
+			goto error;
+
+		retries[_password_types[i]]= val;
+
+		DBG("retry counter id=%d, val=%d", _password_types[i],
+						retries[_password_types[i]]);
+	}
+
+	cb(&error, retries, cbd->data);
+
+	return;
+
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+}
+
+static void at_pin_retries_query(struct ofono_sim *sim,
+				ofono_sim_pin_retries_cb_t cb, void *data)
+{
+	struct sim_data *sd = ofono_sim_get_data(sim);
+	int retries[OFONO_SIM_PASSWORD_INVALID];
+	int i;
+
+	DBG("");
+
+	if (sd->vendor == OFONO_VENDOR_HUAWEI) {
+		struct cb_data *cbd = cb_data_new(cb, data);
+
+		if (cbd == NULL) {
+			CALLBACK_WITH_FAILURE(cb, NULL, data);
+
+			return;
+		}
+
+		if (g_at_chat_send(sd->chat, "AT^CPIN?", huawei_cpin_prefix,
+					huawei_cpin_cb, cbd, g_free) > 0)
+			return;
+
+		g_free(cbd);
+
+		CALLBACK_WITH_FAILURE(cb, NULL, data);
+	}
+
+	for(i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
+		retries[i] = -1;
+
+	CALLBACK_WITH_SUCCESS(cb, retries, data);
+}
 
 static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -888,6 +983,7 @@ static struct ofono_sim_driver driver = {
 	.write_file_cyclic	= at_sim_update_cyclic,
 	.read_imsi		= at_read_imsi,
 	.query_passwd_state	= at_pin_query,
+	.query_pin_retries	= at_pin_retries_query,
 	.send_passwd		= at_pin_send,
 	.reset_passwd		= at_pin_send_puk,
 	.lock			= at_pin_enable,
