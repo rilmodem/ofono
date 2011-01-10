@@ -212,8 +212,10 @@ static void tc65_post_online(struct ofono_modem *modem)
 	ofono_call_barring_create(modem, 0, "atmodem", chat);
 	ofono_ssn_create(modem, 0, "atmodem", chat);
 	ofono_sms_create(modem, 0, "atmodem", chat);
+
 	gprs = ofono_gprs_create(modem, 0, "atmodem", chat);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", chat);
+
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
 
