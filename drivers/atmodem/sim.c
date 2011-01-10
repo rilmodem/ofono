@@ -470,7 +470,7 @@ static void huawei_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_error error;
 	int retries[OFONO_SIM_PASSWORD_INVALID];
 	size_t i;
-	static enum ofono_sim_password_type _password_types[] = {
+	static enum ofono_sim_password_type password_types[] = {
 		OFONO_SIM_PASSWORD_SIM_PUK,
 		OFONO_SIM_PASSWORD_SIM_PIN,
 		OFONO_SIM_PASSWORD_SIM_PUK2,
@@ -500,16 +500,16 @@ static void huawei_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
 		retries[i] = -1;
 
-	for (i = 0; i < ARRAY_SIZE(_password_types); i++) {
+	for (i = 0; i < ARRAY_SIZE(password_types); i++) {
 		int val;
 
 		if (!g_at_result_iter_next_number(&iter, &val))
 			goto error;
 
-		retries[_password_types[i]]= val;
+		retries[password_types[i]]= val;
 
-		DBG("retry counter id=%d, val=%d", _password_types[i],
-						retries[_password_types[i]]);
+		DBG("retry counter id=%d, val=%d", password_types[i],
+						retries[password_types[i]]);
 	}
 
 	cb(&error, retries, cbd->data);
