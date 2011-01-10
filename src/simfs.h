@@ -47,4 +47,9 @@ char *sim_fs_get_cached_image(struct sim_fs *fs, int id);
 
 void sim_fs_cache_image(struct sim_fs *fs, const char *image, int id);
 
+void sim_fs_cache_flush(struct sim_fs *fs);
+void sim_fs_cache_flush_file(struct sim_fs *fs, int id);
+void sim_fs_image_cache_flush(struct sim_fs *fs);
+void sim_fs_image_cache_flush_file(struct sim_fs *fs, int id);
+
 void sim_fs_free(struct sim_fs *fs);
