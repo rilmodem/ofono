@@ -524,17 +524,18 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 				ofono_sim_pin_retries_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
+	struct cb_data *cbd;
 	int retries[OFONO_SIM_PASSWORD_INVALID];
 	int i;
 
 	DBG("");
 
-	if (sd->vendor == OFONO_VENDOR_HUAWEI) {
-		struct cb_data *cbd = cb_data_new(cb, data);
+	switch (sd->vendor) {
+	case OFONO_VENDOR_HUAWEI:
+		cbd = cb_data_new(cb, data);
 
 		if (cbd == NULL) {
 			CALLBACK_WITH_FAILURE(cb, NULL, data);
-
 			return;
 		}
 
@@ -545,12 +546,14 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 		g_free(cbd);
 
 		CALLBACK_WITH_FAILURE(cb, NULL, data);
+		break;
+
+	default:
+		for(i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
+			retries[i] = -1;
+
+		CALLBACK_WITH_SUCCESS(cb, retries, data);
 	}
-
-	for(i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
-		retries[i] = -1;
-
-	CALLBACK_WITH_SUCCESS(cb, retries, data);
 }
 
 static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
