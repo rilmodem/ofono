@@ -259,14 +259,12 @@ static void **get_pin_retries(struct ofono_sim *sim)
 		if (sim->pin_retries[i] == -1)
 			continue;
 
-		nelem+=1;
+		nelem += 1;
 	}
 
 	ret = g_new0(void *, nelem * 2 + 1);
 
-	nelem = 0;
-
-	for (i = 1; i < OFONO_SIM_PASSWORD_INVALID; i++) {
+	for (i = 1, nelem = 0; i < OFONO_SIM_PASSWORD_INVALID; i++) {
 		if (sim->pin_retries[i] == -1)
 			continue;
 
