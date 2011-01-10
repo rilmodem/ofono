@@ -236,14 +236,7 @@ static struct ofono_modem_driver tc65_driver = {
 
 static int tc65_init(void)
 {
-	int rc;
-
-	rc = ofono_modem_driver_register(&tc65_driver);
-
-	if (rc != 0)
-		return rc;
-
-	return 0;
+	return ofono_modem_driver_register(&tc65_driver);
 }
 
 static void tc65_exit(void)
