@@ -274,6 +274,9 @@ builtin_sources += plugins/zte.c
 builtin_modules += huawei
 builtin_sources += plugins/huawei.c
 
+builtin_modules += sierra
+builtin_sources += plugins/sierra.c
+
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
 
