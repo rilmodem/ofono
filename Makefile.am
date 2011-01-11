@@ -298,6 +298,9 @@ builtin_sources += plugins/ifx.c
 builtin_modules += ste
 builtin_sources += plugins/ste.c
 
+builtin_modules += stemgr
+builtin_sources += plugins/stemgr.c
+
 builtin_modules += caif
 builtin_sources += plugins/caif.c
 
