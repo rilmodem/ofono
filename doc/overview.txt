@@ -100,8 +100,8 @@ Current implemented features:
 
 		The SMS support for text messages is available.  oFono
 		supports concatenated messages of up to 255 segments, UCS2 and
-		GSM alphabets as well as extended alphabets.  SMS status
-		report features are not yet available.
+		GSM alphabets as well as extended alphabets.  Delivery
+		confirmations (Status Reports) are also supported.
 
 		Selection of SMS bearer settings is supported through the
 		'Bearer' property on the SmsManager interface.
