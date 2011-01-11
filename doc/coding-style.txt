@@ -279,6 +279,21 @@ memset(stuff, 0, sizeof(*stuff));
 memset(stuff, 0, sizeof *stuff); // Wrong
 
 
+M15: Use void if function has no parameters
+===========================================================
+A function with no parameters must use void in the parameter list.
+
+Example:
+1)
+void foo(void)
+{
+}
+
+2)
+void foo()	// Wrong
+{
+}
+
 O1: Shorten the name
 ====================
 Better to use abbreviation, rather than full name, to name a variable,
