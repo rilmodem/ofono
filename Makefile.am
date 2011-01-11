@@ -308,6 +308,9 @@ builtin_sources += plugins/caif.c
 
 builtin_modules += tc65
 builtin_sources += plugins/tc65.c
+
+builtin_modules += nokiacdma
+builtin_sources += plugins/nokiacdma.c
 endif
 
 if MAINTAINER_MODE
