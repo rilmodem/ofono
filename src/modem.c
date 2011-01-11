@@ -1077,6 +1077,7 @@ static const struct {
 	{ OFONO_STK_INTERFACE,				"stk"	},
 	{ OFONO_CONNECTION_MANAGER_INTERFACE,		"gprs"	},
 	{ OFONO_TEXT_TELEPHONY_INTERFACE,		"tty"	},
+	{ OFONO_LOCATION_REPORTING_INTERFACE,		"gps"	},
 	{ },
 };
 
