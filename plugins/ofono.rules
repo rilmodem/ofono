@@ -447,4 +447,8 @@ ATTRS{idVendor}=="0421", ATTRS{idProduct}=="060e", ENV{OFONO_DRIVER}="nokia"
 # Nokia Internet Stick CS-17
 ATTRS{idVendor}=="0421", ATTRS{idProduct}=="0623", ENV{OFONO_DRIVER}="nokia"
 
+# Nokia CDMA Device
+ATTRS{idVendor}=="0421", ATTRS{idProduct}=="023e", ENV{OFONO_DRIVER}="nokiacdma"
+ATTRS{idVendor}=="0421", ATTRS{idProduct}=="00b6", ENV{OFONO_DRIVER}="nokiacdma"
+
 LABEL="ofono_end"
