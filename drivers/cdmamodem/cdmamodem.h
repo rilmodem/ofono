@@ -20,3 +20,6 @@
  */
 
 #include <drivers/atmodem/atutil.h>
+
+extern void cdma_at_voicecall_init();
+extern void cdma_at_voicecall_exit();
