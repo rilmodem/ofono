@@ -539,6 +539,19 @@ static void add_tc65(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
+static void add_nokiacdma(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	const char *devnode;
+
+	DBG("modem %p", modem);
+
+	devnode = udev_device_get_devnode(udev_device);
+	ofono_modem_set_string(modem, "Device", devnode);
+
+	ofono_modem_register(modem);
+}
+
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -631,6 +644,8 @@ done:
 		add_calypso(modem, udev_device);
 	else if (g_strcmp0(driver, "tc65") == 0)
 		add_tc65(modem, udev_device);
+	else if (g_strcmp0(driver, "nokiacdma") == 0)
+		add_nokiacdma(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
