@@ -10,6 +10,9 @@ SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ATTRS{bInterfaceClass}=="ff", 
 # Qualcomm Gobi 2000 (Lenovo)
 ATTRS{idVendor}=="05c6", ATTRS{idProduct}=="9205", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_GOBI_TYPE}="modem"
 
+# Sierra Wireless HSPA Modem
+ATTRS{idVendor}=="1199", ATTRS{idProduct}=="6880", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_SIERRA_TYPE}="modem"
+
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0031", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0031", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
@@ -359,6 +362,11 @@ ENV{DEVTYPE}!="usb_device", GOTO="ofono_end"
 
 # Novatel Wireless
 ATTRS{idVendor}=="1410", ENV{OFONO_DRIVER}="novatel"
+
+# Sierra Wireless
+ATTRS{idVendor}=="1199", ENV{OFONO_DRIVER}="sierra"
+
+ATTRS{idVendor}=="1199", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
 # HUAWEI Technology
 ATTRS{idVendor}=="12d1", ENV{OFONO_DRIVER}="huawei"

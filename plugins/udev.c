@@ -359,6 +359,38 @@ static void add_huawei(struct ofono_modem *modem,
 		ofono_modem_register(modem);
 }
 
+static void add_sierra(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	struct udev_list_entry *entry;
+	const char *devnode;
+	gboolean found = FALSE;
+
+	DBG("modem %p", modem);
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+		const char *value = udev_list_entry_get_value(entry);
+
+		if (g_str_equal(name, "OFONO_SIERRA_TYPE") == TRUE &&
+					g_str_equal(value, "modem") == TRUE) {
+			found = TRUE;
+			break;
+		}
+
+		entry = udev_list_entry_get_next(entry);
+	}
+
+	if (found == FALSE)
+		return;
+
+	devnode = udev_device_get_devnode(udev_device);
+	ofono_modem_set_string(modem, "Device", devnode);
+
+	ofono_modem_register(modem);
+}
+
 static void add_novatel(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
@@ -583,6 +615,8 @@ done:
 		add_zte(modem, udev_device);
 	else if (g_strcmp0(driver, "huawei") == 0)
 		add_huawei(modem, udev_device);
+	else if (g_strcmp0(driver, "sierra") == 0)
+		add_sierra(modem, udev_device);
 	else if (g_strcmp0(driver, "novatel") == 0)
 		add_novatel(modem, udev_device);
 	else if (g_strcmp0(driver, "nokia") == 0)
