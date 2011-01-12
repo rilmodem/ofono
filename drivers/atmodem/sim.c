@@ -996,12 +996,12 @@ static struct ofono_sim_driver driver = {
 	.query_locked		= at_pin_query_enabled,
 };
 
-void at_sim_init()
+void at_sim_init(void)
 {
 	ofono_sim_driver_register(&driver);
 }
 
-void at_sim_exit()
+void at_sim_exit(void)
 {
 	ofono_sim_driver_unregister(&driver);
 }

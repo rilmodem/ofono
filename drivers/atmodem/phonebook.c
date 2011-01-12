@@ -63,7 +63,7 @@ struct pb_data {
 	guint ready_id;
 };
 
-static void warn_bad()
+static void warn_bad(void)
 {
 	ofono_warn("Name field conversion to UTF8 failed, this can indicate a"
 			" problem with modem integration, as this field"
@@ -569,12 +569,12 @@ static struct ofono_phonebook_driver driver = {
 	.export_entries	= at_export_entries
 };
 
-void at_phonebook_init()
+void at_phonebook_init(void)
 {
 	ofono_phonebook_driver_register(&driver);
 }
 
-void at_phonebook_exit()
+void at_phonebook_exit(void)
 {
 	ofono_phonebook_driver_unregister(&driver);
 }

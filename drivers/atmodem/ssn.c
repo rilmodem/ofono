@@ -136,12 +136,12 @@ static struct ofono_ssn_driver driver = {
 	.remove = at_ssn_remove,
 };
 
-void at_ssn_init()
+void at_ssn_init(void)
 {
 	ofono_ssn_driver_register(&driver);
 }
 
-void at_ssn_exit()
+void at_ssn_exit(void)
 {
 	ofono_ssn_driver_unregister(&driver);
 }

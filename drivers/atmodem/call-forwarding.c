@@ -282,12 +282,12 @@ static struct ofono_call_forwarding_driver driver = {
 	.erasure	= at_ccfc_erasure
 };
 
-void at_call_forwarding_init()
+void at_call_forwarding_init(void)
 {
 	ofono_call_forwarding_driver_register(&driver);
 }
 
-void at_call_forwarding_exit()
+void at_call_forwarding_exit(void)
 {
 	ofono_call_forwarding_driver_unregister(&driver);
 }

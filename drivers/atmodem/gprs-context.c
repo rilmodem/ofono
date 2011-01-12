@@ -317,12 +317,12 @@ static struct ofono_gprs_context_driver driver = {
 	.deactivate_primary	= at_gprs_deactivate_primary,
 };
 
-void at_gprs_context_init()
+void at_gprs_context_init(void)
 {
 	ofono_gprs_context_driver_register(&driver);
 }
 
-void at_gprs_context_exit()
+void at_gprs_context_exit(void)
 {
 	ofono_gprs_context_driver_unregister(&driver);
 }

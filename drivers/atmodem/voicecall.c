@@ -1027,12 +1027,12 @@ static struct ofono_voicecall_driver driver = {
 	.send_tones		= at_send_dtmf
 };
 
-void at_voicecall_init()
+void at_voicecall_init(void)
 {
 	ofono_voicecall_driver_register(&driver);
 }
 
-void at_voicecall_exit()
+void at_voicecall_exit(void)
 {
 	ofono_voicecall_driver_unregister(&driver);
 }

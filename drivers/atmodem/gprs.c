@@ -382,12 +382,12 @@ static struct ofono_gprs_driver driver = {
 	.attached_status	= at_gprs_registration_status,
 };
 
-void at_gprs_init()
+void at_gprs_init(void)
 {
 	ofono_gprs_driver_register(&driver);
 }
 
-void at_gprs_exit()
+void at_gprs_exit(void)
 {
 	ofono_gprs_driver_unregister(&driver);
 }

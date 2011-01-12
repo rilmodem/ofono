@@ -217,12 +217,12 @@ static struct ofono_call_barring_driver driver = {
 	.set_passwd	= at_call_barring_set_passwd,
 };
 
-void at_call_barring_init()
+void at_call_barring_init(void)
 {
 	ofono_call_barring_driver_register(&driver);
 }
 
-void at_call_barring_exit()
+void at_call_barring_exit(void)
 {
 	ofono_call_barring_driver_unregister(&driver);
 }

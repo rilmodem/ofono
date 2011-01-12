@@ -372,12 +372,12 @@ static struct ofono_call_meter_driver driver = {
 	.puct_set = at_cpuc_set,
 };
 
-void at_call_meter_init()
+void at_call_meter_init(void)
 {
 	ofono_call_meter_driver_register(&driver);
 }
 
-void at_call_meter_exit()
+void at_call_meter_exit(void)
 {
 	ofono_call_meter_driver_unregister(&driver);
 }

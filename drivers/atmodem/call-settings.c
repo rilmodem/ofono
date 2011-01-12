@@ -395,12 +395,12 @@ static struct ofono_call_settings_driver driver = {
 	.cw_set = at_ccwa_set,
 };
 
-void at_call_settings_init()
+void at_call_settings_init(void)
 {
 	ofono_call_settings_driver_register(&driver);
 }
 
-void at_call_settings_exit()
+void at_call_settings_exit(void)
 {
 	ofono_call_settings_driver_unregister(&driver);
 }

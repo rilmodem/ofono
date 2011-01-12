@@ -1256,12 +1256,12 @@ static struct ofono_sms_driver driver = {
 	.bearer_set	= at_cgsms_set,
 };
 
-void at_sms_init()
+void at_sms_init(void)
 {
 	ofono_sms_driver_register(&driver);
 }
 
-void at_sms_exit()
+void at_sms_exit(void)
 {
 	ofono_sms_driver_unregister(&driver);
 }

@@ -340,12 +340,12 @@ static struct ofono_ussd_driver driver = {
 	.cancel		= at_ussd_cancel
 };
 
-void at_ussd_init()
+void at_ussd_init(void)
 {
 	ofono_ussd_driver_register(&driver);
 }
 
-void at_ussd_exit()
+void at_ussd_exit(void)
 {
 	ofono_ussd_driver_unregister(&driver);
 }

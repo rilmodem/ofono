@@ -1346,12 +1346,12 @@ static struct ofono_netreg_driver driver = {
 	.strength			= at_signal_strength,
 };
 
-void at_netreg_init()
+void at_netreg_init(void)
 {
 	ofono_netreg_driver_register(&driver);
 }
 
-void at_netreg_exit()
+void at_netreg_exit(void)
 {
 	ofono_netreg_driver_unregister(&driver);
 }

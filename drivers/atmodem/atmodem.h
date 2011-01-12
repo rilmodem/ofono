@@ -21,53 +21,53 @@
 
 #include "atutil.h"
 
-extern void at_netreg_init();
-extern void at_netreg_exit();
+extern void at_netreg_init(void);
+extern void at_netreg_exit(void);
 
-extern void at_call_forwarding_init();
-extern void at_call_forwarding_exit();
+extern void at_call_forwarding_init(void);
+extern void at_call_forwarding_exit(void);
 
-extern void at_call_settings_init();
-extern void at_call_settings_exit();
+extern void at_call_settings_init(void);
+extern void at_call_settings_exit(void);
 
-extern void at_ussd_init();
-extern void at_ussd_exit();
+extern void at_ussd_init(void);
+extern void at_ussd_exit(void);
 
-extern void at_voicecall_init();
-extern void at_voicecall_exit();
+extern void at_voicecall_init(void);
+extern void at_voicecall_exit(void);
 
-extern void at_call_meter_init();
-extern void at_call_meter_exit();
+extern void at_call_meter_init(void);
+extern void at_call_meter_exit(void);
 
-extern void at_call_barring_init();
-extern void at_call_barring_exit();
+extern void at_call_barring_init(void);
+extern void at_call_barring_exit(void);
 
-extern void at_sim_init();
-extern void at_sim_exit();
+extern void at_sim_init(void);
+extern void at_sim_exit(void);
 
-extern void at_stk_init();
-extern void at_stk_exit();
+extern void at_stk_init(void);
+extern void at_stk_exit(void);
 
-extern void at_sms_init();
-extern void at_sms_exit();
+extern void at_sms_init(void);
+extern void at_sms_exit(void);
 
-extern void at_phonebook_init();
-extern void at_phonebook_exit();
+extern void at_phonebook_init(void);
+extern void at_phonebook_exit(void);
 
-extern void at_ssn_init();
-extern void at_ssn_exit();
+extern void at_ssn_init(void);
+extern void at_ssn_exit(void);
 
-extern void at_devinfo_init();
-extern void at_devinfo_exit();
+extern void at_devinfo_init(void);
+extern void at_devinfo_exit(void);
 
-extern void at_cbs_init();
-extern void at_cbs_exit();
+extern void at_cbs_init(void);
+extern void at_cbs_exit(void);
 
-extern void at_call_volume_init();
-extern void at_call_volume_exit();
+extern void at_call_volume_init(void);
+extern void at_call_volume_exit(void);
 
-extern void at_gprs_init();
-extern void at_gprs_exit();
+extern void at_gprs_init(void);
+extern void at_gprs_exit(void);
 
-extern void at_gprs_context_init();
-extern void at_gprs_context_exit();
+extern void at_gprs_context_init(void);
+extern void at_gprs_context_exit(void);

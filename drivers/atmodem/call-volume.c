@@ -222,12 +222,12 @@ static struct ofono_call_volume_driver driver = {
 	.mute = at_call_volume_mute,
 };
 
-void at_call_volume_init()
+void at_call_volume_init(void)
 {
 	ofono_call_volume_driver_register(&driver);
 }
 
-void at_call_volume_exit()
+void at_call_volume_exit(void)
 {
 	ofono_call_volume_driver_unregister(&driver);
 }
