@@ -143,7 +143,7 @@ static void dump_details(struct sms *sms)
 	}
 }
 
-static void test_simple_deliver()
+static void test_simple_deliver(void)
 {
 	struct sms sms;
 	unsigned char *decoded_pdu;
@@ -214,7 +214,7 @@ static void test_simple_deliver()
 	g_free(utf8);
 }
 
-static void test_alnum_sender()
+static void test_alnum_sender(void)
 {
 	struct sms sms;
 	unsigned char *decoded_pdu;
@@ -285,7 +285,7 @@ static void test_alnum_sender()
 	g_free(utf8);
 }
 
-static void test_deliver_encode()
+static void test_deliver_encode(void)
 {
 	struct sms sms;
 	unsigned char *decoded_pdu;
@@ -361,7 +361,7 @@ static void test_deliver_encode()
 	g_free(encoded_pdu);
 }
 
-static void test_simple_submit()
+static void test_simple_submit(void)
 {
 	struct sms sms;
 	unsigned char *decoded_pdu;
@@ -427,7 +427,7 @@ static void test_simple_submit()
 	g_free(utf8);
 }
 
-static void test_submit_encode()
+static void test_submit_encode(void)
 {
 	struct sms sms;
 	unsigned char *decoded_pdu;
@@ -931,7 +931,7 @@ static const char *assembly_pdu3 = "038121F340048155550119906041001222044A0500"
 					"00431044B043B0020043D04300433002E";
 static int assembly_pdu_len3 = 89;
 
-static void test_assembly()
+static void test_assembly(void)
 {
 	unsigned char pdu[176];
 	long pdu_len;
@@ -1018,7 +1018,7 @@ static const char *expected_no_fragmentation_7bit = "079153485002020911000C915"
 			"348870420140000A71154747A0E4ACF41F4F29C9E769F4121";
 static const char *sc_addr = "+358405202090";
 static const char *da_addr = "+358478400241";
-static void test_prepare_7bit()
+static void test_prepare_7bit(void)
 {
 	GSList *r;
 	struct sms *sms;
@@ -1205,7 +1205,7 @@ static void test_limit(gunichar uni, int target_size, gboolean use_16bit)
 	g_free(utf8);
 }
 
-static void test_prepare_limits()
+static void test_prepare_limits(void)
 {
 	gunichar ascii = 0x41;
 	gunichar ucs2 = 0x416;
@@ -1236,7 +1236,7 @@ static const char *cbs2 = "0110003201114679785E96371A8D46A3D168341A8D46A3D1683"
 	"41A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D168"
 	"341A8D46A3D168341A8D46A3D168341A8D46A3D168341A8D46A3D100";
 
-static void test_cbs_encode_decode()
+static void test_cbs_encode_decode(void)
 {
 	unsigned char *decoded_pdu;
 	long pdu_len;
@@ -1301,7 +1301,7 @@ static void test_cbs_encode_decode()
 	g_free(encoded_pdu);
 }
 
-static void test_cbs_assembly()
+static void test_cbs_assembly(void)
 {
 	unsigned char *decoded_pdu;
 	long pdu_len;
@@ -1389,7 +1389,7 @@ static void test_cbs_assembly()
 	cbs_assembly_free(assembly);
 }
 
-static void test_serialize_assembly()
+static void test_serialize_assembly(void)
 {
 	unsigned char pdu[176];
 	long pdu_len;
@@ -1447,7 +1447,7 @@ static const char *ranges[] = { "1-5, 2, 3, 600, 569-900, 999",
 static const char *inv_ranges[] = { "1-5, 3333", "1-5, afbcd", "1-5, 3-5,,",
 					"1-5, 3-5, c", NULL };
 
-static void test_range_minimizer()
+static void test_range_minimizer(void)
 {
 	int i = 0;
 
@@ -1480,7 +1480,7 @@ static void test_range_minimizer()
 	}
 }
 
-static void test_sr_assembly()
+static void test_sr_assembly(void)
 {
 	const char *sr_pdu1 = "06040D91945152991136F00160124130340A0160124130"
 				"940A00";

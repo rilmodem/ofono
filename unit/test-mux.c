@@ -280,7 +280,7 @@ static const guint8 basic_long_frame_result[] =
 	0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x88, 0xF9
 };
 
-static void test_fill_basic()
+static void test_fill_basic(void)
 {
 	guint8 control_frame[6];
 	guint8 data_frame[128];
@@ -327,7 +327,7 @@ static const guint8 advanced_quoted_data_result[] =
 	{ 0x7E, 0x07, 0xEF, 0x12, 0x34, 0x56, 0x7D, 0x5E, 0x78,
 		0x7D, 0x5D, 0x05, 0x7E };
 
-static void test_fill_advanced()
+static void test_fill_advanced(void)
 {
 	guint8 control_frame[8];
 	guint8 data_frame[128];
@@ -368,7 +368,7 @@ static int basic_frame_size = 7;
 
 static const guint8 basic_output[] = { 0x12, 0x34, 0x56 };
 
-static void test_extract_basic()
+static void test_extract_basic(void)
 {
 	int total = 0;
 	int nread;
@@ -467,7 +467,7 @@ static int advanced_frame_size = 6;
 
 static const guint8 advanced_output[] = { 0x12, 0x34, 0x56 };
 
-static void test_extract_advanced()
+static void test_extract_advanced(void)
 {
 	int total = 0;
 	int nread;

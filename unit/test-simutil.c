@@ -80,12 +80,12 @@ static void test_buffer(const unsigned char *buf, size_t size)
 	g_assert(ber_tlv_iter_next(&iter) == FALSE);
 }
 
-static void test_ber_tlv_iter()
+static void test_ber_tlv_iter(void)
 {
 	test_buffer(valid_mms_params, sizeof(valid_mms_params));
 }
 
-static void test_ber_tlv_builder_mms()
+static void test_ber_tlv_builder_mms(void)
 {
 	struct ber_tlv_iter top_iter, nested_iter;
 	struct ber_tlv_builder top_builder, nested_builder;
@@ -128,7 +128,7 @@ static void test_ber_tlv_builder_mms()
 	test_buffer(pdu, pdulen);
 }
 
-static void test_ber_tlv_builder_efpnn()
+static void test_ber_tlv_builder_efpnn(void)
 {
 	struct sim_eons *eons_info;
 	unsigned char efpnn0[64], efpnn1[64];
@@ -188,7 +188,7 @@ static void test_ber_tlv_builder_efpnn()
 	sim_eons_free(eons_info);
 }
 
-static void test_ber_tlv_builder_3g_status()
+static void test_ber_tlv_builder_3g_status(void)
 {
 	unsigned char buf[512];
 	struct ber_tlv_builder top_builder, nested_builder;
@@ -351,7 +351,7 @@ const unsigned char valid_efpnn[][28] = {
 	  0x53, 0x68, 0x6F, 0x72, 0x74, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, }
 };
 
-static void test_eons()
+static void test_eons(void)
 {
 	const struct sim_eons_operator_info *op_info;
 	struct sim_eons *eons_info;
@@ -383,7 +383,7 @@ static void test_eons()
 	sim_eons_free(eons_info);
 }
 
-static void test_ef_db()
+static void test_ef_db(void)
 {
 	struct sim_ef_info *info;
 
@@ -405,7 +405,7 @@ static const char *binary_ef = "62178202412183022F058A01058B032F060F8002000A"
 static const char *record_ef = "62198205422100200483026F408A01058B036F0607"
 				"800200808800";
 
-static void test_3g_status_data()
+static void test_3g_status_data(void)
 {
 	unsigned char *response;
 	long len;

@@ -56,7 +56,7 @@ static const char *invalid_strings[] = {
 	NULL
 };
 
-static void test_invalid()
+static void test_invalid(void)
 {
 	char *sc;
 	char *sia;
@@ -107,7 +107,7 @@ static const char *valid_strings[] = {
 	NULL
 };
 
-static void test_valid()
+static void test_valid(void)
 {
 	char *sc;
 	char *sia;
@@ -158,7 +158,7 @@ static const char *invalid_apns[] = {
 	NULL
 };
 
-static void test_apn()
+static void test_apn(void)
 {
 	int i;
 	gboolean res;

@@ -341,7 +341,7 @@ unsigned short gsm_turkish_to_unicode_map[] =
 	((c) < 0x80 ? 1 : \
 	 ((c) < 0x800 ? 2 : 3))
 
-static void test_invalid()
+static void test_invalid(void)
 {
 	long nwritten;
 	long nread;
@@ -382,7 +382,7 @@ static void test_invalid()
 	g_assert(nread == 0);
 }
 
-static void test_valid()
+static void test_valid(void)
 {
 	long nwritten;
 	long nread;
@@ -444,7 +444,7 @@ static void test_valid()
 	}
 }
 
-static void test_valid_turkish()
+static void test_valid_turkish(void)
 {
 	long nwritten;
 	long nread;
@@ -515,7 +515,7 @@ static const char expected[] = "It is easy to read text messages via AT "
 				"commands.";
 static int reported_text_size = 49;
 
-static void test_decode_encode()
+static void test_decode_encode(void)
 {
 	const char *sms = hex_packed;
 	unsigned char *decoded, *packed;
@@ -614,7 +614,7 @@ static void test_decode_encode()
 	g_free(hex_packed);
 }
 
-static void test_pack_size()
+static void test_pack_size(void)
 {
 	unsigned char c1[] = { 'a' };
 	unsigned char c2[] = { 'a', 'b' };
@@ -676,7 +676,7 @@ static void test_pack_size()
 	g_free(packed);
 }
 
-static void test_cr_handling()
+static void test_cr_handling(void)
 {
 	unsigned char c7[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g' };
 	unsigned char c7_expected[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g',
@@ -739,7 +739,7 @@ static void test_cr_handling()
 	g_free(packed);
 }
 
-static void test_sms_handling()
+static void test_sms_handling(void)
 {
 	unsigned char c7[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g' };
 
@@ -780,7 +780,7 @@ static void test_sms_handling()
 	g_free(packed);
 }
 
-static void test_offset_handling()
+static void test_offset_handling(void)
 {
 	unsigned char c7[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g' };
 	unsigned char c8[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
@@ -880,7 +880,7 @@ static unsigned char sim_82_1[] = { 0x82, 0x05, 0x04, 0x00, 0x2D, 0xB3, 0xB4,
 static unsigned char sim_82_2[] = { 0x82, 0x05, 0xD8, 0x00, 0x2D, 0xB3, 0xB4,
 					0x2D, 0x31 };
 
-static void test_sim()
+static void test_sim(void)
 {
 	char *utf8;
 
@@ -930,7 +930,7 @@ static void test_sim()
 	g_assert(utf8 == NULL);
 }
 
-static void test_unicode_to_gsm()
+static void test_unicode_to_gsm(void)
 {
 	long nwritten;
 	long nread;

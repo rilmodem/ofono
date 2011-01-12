@@ -27,7 +27,7 @@
 
 #include "idmap.h"
 
-static void test_alloc()
+static void test_alloc(void)
 {
 	struct idmap *idmap;
 	unsigned int bit;
@@ -65,7 +65,7 @@ static void test_alloc()
 	idmap_free(idmap);
 }
 
-static void test_alloc_next()
+static void test_alloc_next(void)
 {
 	struct idmap *idmap;
 	unsigned int bit;
