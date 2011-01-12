@@ -300,12 +300,12 @@ static struct ofono_stk_driver driver = {
 	.terminal_response	= calypso_stk_terminal_response,
 };
 
-void calypso_stk_init()
+void calypso_stk_init(void)
 {
 	ofono_stk_driver_register(&driver);
 }
 
-void calypso_stk_exit()
+void calypso_stk_exit(void)
 {
 	ofono_stk_driver_unregister(&driver);
 }

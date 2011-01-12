@@ -434,12 +434,12 @@ static struct ofono_voicecall_driver driver = {
 	.send_tones		= calypso_send_dtmf
 };
 
-void calypso_voicecall_init()
+void calypso_voicecall_init(void)
 {
 	ofono_voicecall_driver_register(&driver);
 }
 
-void calypso_voicecall_exit()
+void calypso_voicecall_exit(void)
 {
 	ofono_voicecall_driver_unregister(&driver);
 }

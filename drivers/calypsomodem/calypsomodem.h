@@ -21,8 +21,8 @@
 
 #include <drivers/atmodem/atutil.h>
 
-extern void calypso_voicecall_init();
-extern void calypso_voicecall_exit();
+extern void calypso_voicecall_init(void);
+extern void calypso_voicecall_exit(void);
 
-extern void calypso_stk_init();
-extern void calypso_stk_exit();
+extern void calypso_stk_init(void);
+extern void calypso_stk_exit(void);
