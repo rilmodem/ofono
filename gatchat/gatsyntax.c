@@ -332,12 +332,12 @@ GAtSyntax *g_at_syntax_new_full(GAtSyntaxFeedFunc feed,
 }
 
 
-GAtSyntax *g_at_syntax_new_gsmv1()
+GAtSyntax *g_at_syntax_new_gsmv1(void)
 {
 	return g_at_syntax_new_full(gsmv1_feed, gsmv1_hint, GSMV1_STATE_IDLE);
 }
 
-GAtSyntax *g_at_syntax_new_gsm_permissive()
+GAtSyntax *g_at_syntax_new_gsm_permissive(void)
 {
 	return g_at_syntax_new_full(gsm_permissive_feed, gsm_permissive_hint,
 					GSM_PERMISSIVE_STATE_IDLE);

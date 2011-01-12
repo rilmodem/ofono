@@ -509,7 +509,7 @@ static void check_mode(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(control, "AT+CFUN=1", NULL, check_pin, NULL, NULL);
 }
 
-static int open_serial()
+static int open_serial(void)
 {
 	GAtSyntax *syntax;
 	GIOChannel *channel;
@@ -551,7 +551,7 @@ static int open_serial()
 	return 0;
 }
 
-static int open_ip()
+static int open_ip(void)
 {
 	int sk, err;
 	struct sockaddr_in addr;

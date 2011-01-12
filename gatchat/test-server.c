@@ -67,7 +67,7 @@ static GAtServer *server;
 static GAtPPP *ppp;
 unsigned int server_watch;
 
-static gboolean server_cleanup()
+static gboolean server_cleanup(void)
 {
 	if (server_watch)
 		g_source_remove(server_watch);
@@ -1090,7 +1090,7 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	return TRUE;
 }
 
-static int create_signal_io()
+static int create_signal_io(void)
 {
 	sigset_t mask;
 	GIOChannel *signal_io;

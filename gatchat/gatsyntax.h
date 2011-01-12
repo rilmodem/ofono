@@ -69,13 +69,13 @@ GAtSyntax *g_at_syntax_new_full(GAtSyntaxFeedFunc feed,
  * properly and can be used to detect a modem's deviations from the relevant
  * standards.
  */
-GAtSyntax *g_at_syntax_new_gsmv1();
+GAtSyntax *g_at_syntax_new_gsmv1(void);
 
 /* This syntax implements an extremely lax parser that can handle a variety
  * of modems.  Unfortunately it does not deal with echo at all, so echo must
  * be explicitly turned off before using the parser
  */
-GAtSyntax *g_at_syntax_new_gsm_permissive();
+GAtSyntax *g_at_syntax_new_gsm_permissive(void);
 
 GAtSyntax *g_at_syntax_ref(GAtSyntax *syntax);
 void g_at_syntax_unref(GAtSyntax *syntax);
