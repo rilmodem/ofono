@@ -201,12 +201,12 @@ static struct ofono_radio_settings_driver driver = {
 	.set_rat_mode		= nw_set_rat_mode
 };
 
-void nw_radio_settings_init()
+void nw_radio_settings_init(void)
 {
 	ofono_radio_settings_driver_register(&driver);
 }
 
-void nw_radio_settings_exit()
+void nw_radio_settings_exit(void)
 {
 	ofono_radio_settings_driver_unregister(&driver);
 }

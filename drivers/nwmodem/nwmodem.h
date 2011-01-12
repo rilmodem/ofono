@@ -21,5 +21,5 @@
 
 #include <drivers/atmodem/atutil.h>
 
-extern void nw_radio_settings_init();
-extern void nw_radio_settings_exit();
+extern void nw_radio_settings_init(void);
+extern void nw_radio_settings_exit(void);
