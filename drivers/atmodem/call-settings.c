@@ -46,6 +46,7 @@ static const char *clip_prefix[] = { "+CLIP:", NULL };
 static const char *ccwa_prefix[] = { "+CCWA:", NULL };
 static const char *colr_prefix[] = { "+COLR:", NULL };
 static const char *cnap_prefix[] = { "+CNAP:", NULL };
+static const char *cdip_prefix[] = { "+CDIP:", NULL };
 
 static void ccwa_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
@@ -191,6 +192,30 @@ static void at_clip_query(struct ofono_call_settings *cs,
 
 	if (g_at_chat_send(chat, "AT+CLIP?", clip_prefix,
 				clip_query_cb, cbd, g_free) > 0)
+		return;
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, -1, data);
+}
+
+static void cdip_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	query_template("+CDIP:", ok, result, user_data);
+}
+
+static void at_cdip_query(struct ofono_call_settings *cs,
+				ofono_call_settings_status_cb_t cb, void *data)
+{
+	GAtChat *chat = ofono_call_settings_get_data(cs);
+	struct cb_data *cbd = cb_data_new(cb, data);
+
+	if (cbd == NULL)
+		goto error;
+
+	if (g_at_chat_send(chat, "AT+CDIP?", cdip_prefix,
+				cdip_query_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -414,6 +439,7 @@ static struct ofono_call_settings_driver driver = {
 	.remove = at_call_settings_remove,
 	.clip_query = at_clip_query,
 	.cnap_query = at_cnap_query,
+	.cdip_query = at_cdip_query,
 	.colp_query = at_colp_query,
 	.clir_query = at_clir_query,
 	.clir_set = at_clir_set,
