@@ -449,7 +449,8 @@ test_scripts = test/backtrace \
 		test/set-tty \
 		test/set-gsm-band \
 		test/set-umts-band \
-		test/lockdown-modem
+		test/lockdown-modem \
+		test/set-call-forwarding
 
 if TEST
 testdir = $(pkglibdir)/test
