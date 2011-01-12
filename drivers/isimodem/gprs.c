@@ -199,6 +199,9 @@ static void info_pp_read_resp_cb(const GIsiMessage *msg, void *opaque)
 	uint8_t count = GPDS_MAX_CONTEXT_COUNT;
 	GIsiSubBlockIter iter;
 
+	if (g_isi_msg_error(msg) == -ESHUTDOWN)
+		return;
+
 	if (g_isi_msg_error(msg) < 0)
 		goto out;
 
