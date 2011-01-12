@@ -69,6 +69,13 @@ enum colp_status {
 	COLP_STATUS_UNKNOWN = 2
 };
 
+/* 27.007 Section 7.9 */
+enum cdip_status {
+	CDIP_STATUS_NOT_PROVISIONED =		0,
+	CDIP_STATUS_PROVISIONED =		1,
+	CDIP_STATUS_UNKNOWN =			2
+};
+
 /* This is not defined in 27.007, but presumably the same as CLIP/COLP */
 enum colr_status {
 	COLR_STATUS_NOT_PROVISIONED = 0,
@@ -79,6 +86,7 @@ enum colr_status {
 enum call_setting_type {
 	CALL_SETTING_TYPE_CLIP = 0,
 	CALL_SETTING_TYPE_CNAP,
+	CALL_SETTING_TYPE_CDIP,
 	CALL_SETTING_TYPE_COLP,
 	CALL_SETTING_TYPE_COLR,
 	CALL_SETTING_TYPE_CLIR,
@@ -90,6 +98,7 @@ struct ofono_call_settings {
 	int colr;
 	int clip;
 	int cnap;
+	int cdip;
 	int colp;
 	int clir_setting;
 	int cw;
@@ -111,6 +120,18 @@ static const char *clip_status_to_string(int status)
 	case CLIP_STATUS_NOT_PROVISIONED:
 		return "disabled";
 	case CLIP_STATUS_PROVISIONED:
+		return "enabled";
+	}
+
+	return "unknown";
+}
+
+static const char *cdip_status_to_string(int status)
+{
+	switch (status) {
+	case CDIP_STATUS_NOT_PROVISIONED:
+		return "disabled";
+	case CDIP_STATUS_PROVISIONED:
 		return "enabled";
 	}
 
@@ -224,6 +245,28 @@ static void set_clir_override(struct ofono_call_settings *cs, int override)
 	ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_SETTINGS_INTERFACE,
 						"HideCallerId",
+						DBUS_TYPE_STRING, &str);
+}
+
+static void set_cdip(struct ofono_call_settings *cs, int cdip)
+{
+	DBusConnection *conn;
+	const char *path;
+	const char *str;
+
+	if (cs->cdip == cdip)
+		return;
+
+	cs->cdip = cdip;
+
+	conn = ofono_dbus_get_connection();
+	path = __ofono_atom_get_path(cs->atom);
+
+	str = cdip_status_to_string(cdip);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_SETTINGS_INTERFACE,
+						"CalledLinePresentation",
 						DBUS_TYPE_STRING, &str);
 }
 
@@ -882,6 +925,10 @@ static DBusMessage *generate_get_properties_reply(struct ofono_call_settings *cs
 	ofono_dbus_dict_append(&dict, "ConnectedLineRestriction",
 				DBUS_TYPE_STRING, &str);
 
+	str = cdip_status_to_string(cs->cdip);
+	ofono_dbus_dict_append(&dict, "CalledLinePresentation",
+				DBUS_TYPE_STRING, &str);
+
 	str = clir_status_to_string(cs->clir);
 	ofono_dbus_dict_append(&dict, "CallingLineRestriction",
 				DBUS_TYPE_STRING, &str);
@@ -934,6 +981,28 @@ static void query_clir(struct ofono_call_settings *cs)
 	cs->driver->clir_query(cs, cs_clir_callback, cs);
 }
 
+static void cs_cdip_callback(const struct ofono_error *error,
+				int state, void *data)
+{
+	struct ofono_call_settings *cs = data;
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		set_cdip(cs, state);
+
+	query_clir(cs);
+}
+
+static void query_cdip(struct ofono_call_settings *cs)
+{
+	if (cs->driver->cdip_query == NULL) {
+		query_clir(cs);
+		return;
+	}
+
+	cs->driver->cdip_query(cs, cs_cdip_callback, cs);
+}
+
+
 static void cs_cnap_callback(const struct ofono_error *error,
 				int state, void *data)
 {
@@ -942,13 +1011,13 @@ static void cs_cnap_callback(const struct ofono_error *error,
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		set_cnap(cs, state);
 
-	query_clir(cs);
+	query_cdip(cs);
 }
 
 static void query_cnap(struct ofono_call_settings *cs)
 {
 	if (cs->driver->cnap_query == NULL) {
-		query_clir(cs);
+		query_cdip(cs);
 		return;
 	}
 
