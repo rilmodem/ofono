@@ -388,7 +388,7 @@ Miscellaneous
   Complexity: C4
   Owner: Rafael Ignacio Zurita <rafael.zurita@profusion.mobi>
 
-- Add Location Service API for providing basic E911 suport.
+- Add Location Service API for providing basic E911 support.
   This will be based on the 27.007 defined AT commands using
   XML for transport of positioning request and responses.
 
@@ -474,7 +474,7 @@ CDMA SMS
   Complexity: C4
 
 - Support sending Wireless Messaging Teleservice (WMT) Submit Message and
-  receiving WMT Deliver Messsage as defined 3GPP2 C.S0015-B version 2.0.
+  receiving WMT Deliver Message as defined 3GPP2 C.S0015-B version 2.0.
 
   Priority: High
   Complexity: C4
