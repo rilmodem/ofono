@@ -98,6 +98,7 @@ struct ofono_call {
 	int direction;
 	int status;
 	struct ofono_phone_number phone_number;
+	struct ofono_phone_number called_number;
 	char name[OFONO_MAX_CALLER_NAME_LENGTH + 1];
 	int clip_validity;
 	int cnap_validity;
