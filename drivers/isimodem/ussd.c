@@ -278,12 +278,12 @@ static struct ofono_ussd_driver driver = {
 	.cancel			= isi_cancel
 };
 
-void isi_ussd_init()
+void isi_ussd_init(void)
 {
 	ofono_ussd_driver_register(&driver);
 }
 
-void isi_ussd_exit()
+void isi_ussd_exit(void)
 {
 	ofono_ussd_driver_unregister(&driver);
 }

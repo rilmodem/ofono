@@ -732,12 +732,12 @@ static struct ofono_sms_driver driver = {
 	.bearer_set		= isi_bearer_set,
 };
 
-void isi_sms_init()
+void isi_sms_init(void)
 {
 	ofono_sms_driver_register(&driver);
 }
 
-void isi_sms_exit()
+void isi_sms_exit(void)
 {
 	ofono_sms_driver_unregister(&driver);
 }

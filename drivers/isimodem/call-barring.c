@@ -388,12 +388,12 @@ static struct ofono_call_barring_driver driver = {
 	.set_passwd		= isi_set_passwd
 };
 
-void isi_call_barring_init()
+void isi_call_barring_init(void)
 {
 	ofono_call_barring_driver_register(&driver);
 }
 
-void isi_call_barring_exit()
+void isi_call_barring_exit(void)
 {
 	ofono_call_barring_driver_unregister(&driver);
 }

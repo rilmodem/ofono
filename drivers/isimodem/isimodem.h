@@ -21,53 +21,53 @@
 
 extern struct ofono_modem *isi_modem_by_interface(char const *ifname);
 
-extern void isi_phonebook_init();
-extern void isi_phonebook_exit();
+extern void isi_phonebook_init(void);
+extern void isi_phonebook_exit(void);
 
-extern void isi_devinfo_init();
-extern void isi_devinfo_exit();
+extern void isi_devinfo_init(void);
+extern void isi_devinfo_exit(void);
 
-extern void isi_netreg_init();
-extern void isi_netreg_exit();
+extern void isi_netreg_init(void);
+extern void isi_netreg_exit(void);
 
-extern void isi_voicecall_init();
-extern void isi_voicecall_exit();
+extern void isi_voicecall_init(void);
+extern void isi_voicecall_exit(void);
 
-extern void isi_sms_init();
-extern void isi_sms_exit();
+extern void isi_sms_init(void);
+extern void isi_sms_exit(void);
 
-extern void isi_cbs_init();
-extern void isi_cbs_exit();
+extern void isi_cbs_init(void);
+extern void isi_cbs_exit(void);
 
-extern void isi_sim_init();
-extern void isi_sim_exit();
+extern void isi_sim_init(void);
+extern void isi_sim_exit(void);
 
-extern void isi_ussd_init();
-extern void isi_ussd_exit();
+extern void isi_ussd_init(void);
+extern void isi_ussd_exit(void);
 
-extern void isi_ssn_init();
-extern void isi_ssn_exit();
+extern void isi_ssn_init(void);
+extern void isi_ssn_exit(void);
 
-extern void isi_call_forwarding_init();
-extern void isi_call_forwarding_exit();
+extern void isi_call_forwarding_init(void);
+extern void isi_call_forwarding_exit(void);
 
-extern void isi_call_settings_init();
-extern void isi_call_settings_exit();
+extern void isi_call_settings_init(void);
+extern void isi_call_settings_exit(void);
 
-extern void isi_call_barring_init();
-extern void isi_call_barring_exit();
+extern void isi_call_barring_init(void);
+extern void isi_call_barring_exit(void);
 
-extern void isi_call_meter_init();
-extern void isi_call_meter_exit();
+extern void isi_call_meter_init(void);
+extern void isi_call_meter_exit(void);
 
-extern void isi_radio_settings_init();
-extern void isi_radio_settings_exit();
+extern void isi_radio_settings_init(void);
+extern void isi_radio_settings_exit(void);
 
-extern void isi_gprs_init();
-extern void isi_gprs_exit();
+extern void isi_gprs_init(void);
+extern void isi_gprs_exit(void);
 
-extern void isi_gprs_context_init();
-extern void isi_gprs_context_exit();
+extern void isi_gprs_context_init(void);
+extern void isi_gprs_context_exit(void);
 
-extern void isi_audio_settings_init();
-extern void isi_audio_settings_exit();
+extern void isi_audio_settings_init(void);
+extern void isi_audio_settings_exit(void);

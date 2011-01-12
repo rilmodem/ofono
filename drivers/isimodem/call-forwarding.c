@@ -480,12 +480,12 @@ static struct ofono_call_forwarding_driver driver = {
 	.query			= isi_query
 };
 
-void isi_call_forwarding_init()
+void isi_call_forwarding_init(void)
 {
 	ofono_call_forwarding_driver_register(&driver);
 }
 
-void isi_call_forwarding_exit()
+void isi_call_forwarding_exit(void)
 {
 	ofono_call_forwarding_driver_unregister(&driver);
 }

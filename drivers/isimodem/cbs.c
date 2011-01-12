@@ -219,12 +219,12 @@ static struct ofono_cbs_driver driver = {
 	.clear_topics		= isi_clear_topics
 };
 
-void isi_cbs_init()
+void isi_cbs_init(void)
 {
 	ofono_cbs_driver_register(&driver);
 }
 
-void isi_cbs_exit()
+void isi_cbs_exit(void)
 {
 	ofono_cbs_driver_unregister(&driver);
 }

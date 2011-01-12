@@ -863,12 +863,12 @@ static struct ofono_netreg_driver driver = {
 	.strength		= isi_strength,
 };
 
-void isi_netreg_init()
+void isi_netreg_init(void)
 {
 	ofono_netreg_driver_register(&driver);
 }
 
-void isi_netreg_exit()
+void isi_netreg_exit(void)
 {
 	ofono_netreg_driver_unregister(&driver);
 }

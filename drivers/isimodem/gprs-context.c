@@ -622,12 +622,12 @@ static struct ofono_gprs_context_driver driver = {
 	.deactivate_primary	= isi_gprs_deactivate_primary,
 };
 
-void isi_gprs_context_init()
+void isi_gprs_context_init(void)
 {
 	ofono_gprs_context_driver_register(&driver);
 }
 
-void isi_gprs_context_exit()
+void isi_gprs_context_exit(void)
 {
 	ofono_gprs_context_driver_unregister(&driver);
 }

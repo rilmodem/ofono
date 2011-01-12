@@ -497,12 +497,12 @@ static struct ofono_sim_driver driver = {
 	.read_imsi		= isi_read_imsi,
 };
 
-void isi_sim_init()
+void isi_sim_init(void)
 {
 	ofono_sim_driver_register(&driver);
 }
 
-void isi_sim_exit()
+void isi_sim_exit(void)
 {
 	ofono_sim_driver_unregister(&driver);
 }

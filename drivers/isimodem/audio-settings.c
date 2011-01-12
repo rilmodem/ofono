@@ -121,12 +121,12 @@ static struct ofono_audio_settings_driver driver = {
 	.remove		= isi_audio_settings_remove,
 };
 
-void isi_audio_settings_init()
+void isi_audio_settings_init(void)
 {
 	ofono_audio_settings_driver_register(&driver);
 }
 
-void isi_audio_settings_exit()
+void isi_audio_settings_exit(void)
 {
 	ofono_audio_settings_driver_unregister(&driver);
 }

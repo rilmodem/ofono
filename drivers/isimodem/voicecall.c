@@ -1328,12 +1328,12 @@ static struct ofono_voicecall_driver driver = {
 	.send_tones		= isi_send_tones,
 };
 
-void isi_voicecall_init()
+void isi_voicecall_init(void)
 {
 	ofono_voicecall_driver_register(&driver);
 }
 
-void isi_voicecall_exit()
+void isi_voicecall_exit(void)
 {
 	ofono_voicecall_driver_unregister(&driver);
 }

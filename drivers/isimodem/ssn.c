@@ -84,12 +84,12 @@ static struct ofono_ssn_driver driver = {
 	.remove			= isi_ssn_remove
 };
 
-void isi_ssn_init()
+void isi_ssn_init(void)
 {
 	ofono_ssn_driver_register(&driver);
 }
 
-void isi_ssn_exit()
+void isi_ssn_exit(void)
 {
 	ofono_ssn_driver_unregister(&driver);
 }

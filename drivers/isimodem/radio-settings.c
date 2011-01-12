@@ -373,12 +373,12 @@ static struct ofono_radio_settings_driver driver = {
 	.set_fast_dormancy	= isi_set_fast_dormancy,
 };
 
-void isi_radio_settings_init()
+void isi_radio_settings_init(void)
 {
 	ofono_radio_settings_driver_register(&driver);
 }
 
-void isi_radio_settings_exit()
+void isi_radio_settings_exit(void)
 {
 	ofono_radio_settings_driver_unregister(&driver);
 }

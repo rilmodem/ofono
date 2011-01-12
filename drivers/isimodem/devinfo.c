@@ -260,12 +260,12 @@ static struct ofono_devinfo_driver driver = {
 	.query_serial		= isi_query_serial
 };
 
-void isi_devinfo_init()
+void isi_devinfo_init(void)
 {
 	ofono_devinfo_driver_register(&driver);
 }
 
-void isi_devinfo_exit()
+void isi_devinfo_exit(void)
 {
 	ofono_devinfo_driver_unregister(&driver);
 }

@@ -131,12 +131,12 @@ static struct ofono_call_meter_driver driver = {
 	.puct_set		= isi_puct_set
 };
 
-void isi_call_meter_init()
+void isi_call_meter_init(void)
 {
 	ofono_call_meter_driver_register(&driver);
 }
 
-void isi_call_meter_exit()
+void isi_call_meter_exit(void)
 {
 	ofono_call_meter_driver_unregister(&driver);
 }

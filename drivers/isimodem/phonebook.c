@@ -345,12 +345,12 @@ static struct ofono_phonebook_driver driver = {
 	.export_entries		= isi_export_entries
 };
 
-void isi_phonebook_init()
+void isi_phonebook_init(void)
 {
 	ofono_phonebook_driver_register(&driver);
 }
 
-void isi_phonebook_exit()
+void isi_phonebook_exit(void)
 {
 	ofono_phonebook_driver_unregister(&driver);
 }
