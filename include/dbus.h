@@ -65,7 +65,7 @@ extern "C" {
 					DBUS_TYPE_VARIANT_AS_STRING \
 					DBUS_DICT_ENTRY_END_CHAR_AS_STRING
 
-DBusConnection *ofono_dbus_get_connection();
+DBusConnection *ofono_dbus_get_connection(void);
 
 void ofono_dbus_dict_append(DBusMessageIter *dict, const char *key, int type,
 				void *value);
