@@ -597,12 +597,12 @@ static struct ofono_voicecall_driver driver = {
 	.send_tones		= ste_send_dtmf
 };
 
-void ste_voicecall_init()
+void ste_voicecall_init(void)
 {
 	ofono_voicecall_driver_register(&driver);
 }
 
-void ste_voicecall_exit()
+void ste_voicecall_exit(void)
 {
 	ofono_voicecall_driver_unregister(&driver);
 }

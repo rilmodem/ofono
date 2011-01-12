@@ -596,13 +596,13 @@ static struct ofono_gprs_context_driver driver = {
 	.deactivate_primary	= ste_gprs_deactivate_primary,
 };
 
-void ste_gprs_context_init()
+void ste_gprs_context_init(void)
 {
 	caif_rtnl_init();
 	ofono_gprs_context_driver_register(&driver);
 }
 
-void ste_gprs_context_exit()
+void ste_gprs_context_exit(void)
 {
 	ofono_gprs_context_driver_unregister(&driver);
 	caif_rtnl_exit();

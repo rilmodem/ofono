@@ -22,11 +22,11 @@
 
 #include <drivers/atmodem/atutil.h>
 
-extern void ste_gprs_context_init();
-extern void ste_gprs_context_exit();
+extern void ste_gprs_context_init(void);
+extern void ste_gprs_context_exit(void);
 
-extern void ste_voicecall_init();
-extern void ste_voicecall_exit();
+extern void ste_voicecall_init(void);
+extern void ste_voicecall_exit(void);
 
-extern void ste_radio_settings_init();
-extern void ste_radio_settings_exit();
+extern void ste_radio_settings_init(void);
+extern void ste_radio_settings_exit(void);
