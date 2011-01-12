@@ -106,6 +106,7 @@ Modem Emulator
 
   Complexity: C4
   Priority: Medium
+  Owner: Frédéric Danis <frederic.danis@linux.intel.com>
 
 - Support extensions to HFP AG emulator.  Some carkits support additional
   AT command extensions to the Bluetooth HFP AG standard.  Refer to CE4A
@@ -116,6 +117,7 @@ Modem Emulator
   Complexity: C4
   Priority: Medium
   Depends: HFP AG emulator
+  Owner: Frédéric Dalleau <frederic.dalleau@linux.intel.com>
 
 - Support HSP AG.  Similar to HFP AG emulator but implements the much reduced
   Bluetooth HSP AG profile.
