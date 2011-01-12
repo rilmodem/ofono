@@ -25,12 +25,12 @@
 
 #include <ofono/types.h>
 
-void __ofono_exit();
+void __ofono_exit(void);
 
-int __ofono_manager_init();
-void __ofono_manager_cleanup();
+int __ofono_manager_init(void);
+void __ofono_manager_cleanup(void);
 
-void __ofono_modem_shutdown();
+void __ofono_modem_shutdown(void);
 
 #include <ofono/log.h>
 
@@ -174,8 +174,8 @@ void __ofono_atom_free(struct ofono_atom *atom);
 
 typedef void (*ofono_modemwatch_cb_t)(struct ofono_modem *modem,
 					gboolean added, void *data);
-void __ofono_modemwatch_init();
-void __ofono_modemwatch_cleanup();
+void __ofono_modemwatch_init(void);
+void __ofono_modemwatch_cleanup(void);
 unsigned int __ofono_modemwatch_add(ofono_modemwatch_cb_t cb, void *user,
 					ofono_destroy_func destroy);
 gboolean __ofono_modemwatch_remove(unsigned int id);

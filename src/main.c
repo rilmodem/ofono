@@ -42,7 +42,7 @@
 
 static GMainLoop *event_loop;
 
-void __ofono_exit()
+void __ofono_exit(void)
 {
 	g_main_loop_quit(event_loop);
 }

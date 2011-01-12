@@ -415,7 +415,7 @@ gboolean __ofono_dbus_valid_object_path(const char *path)
 	return TRUE;
 }
 
-DBusConnection *ofono_dbus_get_connection()
+DBusConnection *ofono_dbus_get_connection(void)
 {
 	return g_connection;
 }

@@ -1560,12 +1560,12 @@ static void sim_watch(struct ofono_atom *atom,
 							modem, NULL);
 }
 
-void __ofono_modemwatch_init()
+void __ofono_modemwatch_init(void)
 {
 	g_modemwatches = __ofono_watchlist_new(g_free);
 }
 
-void __ofono_modemwatch_cleanup()
+void __ofono_modemwatch_cleanup(void)
 {
 	__ofono_watchlist_free(g_modemwatches);
 }
@@ -1850,7 +1850,7 @@ void ofono_modem_driver_unregister(const struct ofono_modem_driver *d)
 	}
 }
 
-void __ofono_modem_shutdown()
+void __ofono_modem_shutdown(void)
 {
 	struct ofono_modem *modem;
 	GSList *l;
