@@ -55,6 +55,19 @@ Describes 3GPP specific aspects of Card Application Toolkit (CAT) / STK.
 Describes the testing parameters and test cases for 31.111.
 
 
+Security Specifications
+=======================
+
+- 33.220  Generic bootstrapping architecture (GBA)
+
+Describes the generic bootstrapping architecture used to leverage
+SIM-based authentication.
+
+- 24.109  Bootstrapping interface (Ub) and NAF interface (Ua)
+
+Describes how the GBA authentication is used with, e.g., HTTP.
+
+
 3GPP Specific Services
 ======================
 
