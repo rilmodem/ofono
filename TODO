@@ -398,6 +398,14 @@ Miscellaneous
   Complexity: C2
   Owner: Sjur Brændeland <sjur.brandeland@stericsson.com>
 
+- Add support for main.conf.  This task will add support for general
+  as well as per-atom configuration options that are read and parsed
+  at startup from a configuration file under /etc/ofono.
+
+  Priority: Medium
+  Complexity: C1
+  Owner: Aki Niemi <aki.niemi@nokia.com>
+
 CDMA Voicecall
 ==============
 
