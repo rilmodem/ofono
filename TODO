@@ -97,6 +97,19 @@ SIM / SIM File system
   Complexity: C1
   Owner: Marit Henriksen <marit.henriksen@stericsson.com>
 
+- Add support for CPHS Customer Service Profile (CSP).  This task adds support
+  for reading the EFcsp file and in particular, interpreting the PLMN mode bit
+  within the 'Value Added Services' service group.
+
+  Based on the PLMN mode value, manual network selection needs to either be
+  enabled or disabled in the netreg atom.  Also to accommodate this, there
+  probably needs to be a new 'forced' mode to indicate that manual network
+  selection is disabled.
+
+  Priority: Medium
+  Complexity: C1
+  Owner: Aki Niemi <aki.niemi@nokia.com>
+
 Modem Emulator
 ==============
 
