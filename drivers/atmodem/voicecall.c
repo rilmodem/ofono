@@ -60,6 +60,7 @@ static const char *atd_prefix[] = { "+COLP:", NULL };
 
 #define FLAG_NEED_CLIP 1
 #define FLAG_NEED_CNAP 2
+#define FLAG_NEED_CDIP 4
 
 struct voicecall_data {
 	GSList *calls;
@@ -200,6 +201,12 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					OFONO_MAX_CALLER_NAME_LENGTH);
 			nc->name[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
 			nc->cnap_validity = oc->cnap_validity;
+
+			/*
+			 * CDIP doesn't arrive as part of CLCC, always
+			 * re-use from the old call
+			 */
+			nc->called_number = oc->called_number;
 
 			/*
 			 * If the CLIP is not provided and the CLIP never
@@ -654,7 +661,7 @@ static void ring_notify(GAtResult *result, gpointer user_data)
 
 	/* We don't know the call type, we must run clcc */
 	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
-	vd->flags = FLAG_NEED_CLIP | FLAG_NEED_CNAP;
+	vd->flags = FLAG_NEED_CLIP | FLAG_NEED_CNAP | FLAG_NEED_CDIP;
 }
 
 static void cring_notify(GAtResult *result, gpointer user_data)
@@ -705,7 +712,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	 * earlier, we announce the call there
 	 */
 	vd->clcc_source = g_timeout_add(CLIP_INTERVAL, poll_clcc, vc);
-	vd->flags = FLAG_NEED_CLIP | FLAG_NEED_CNAP;
+	vd->flags = FLAG_NEED_CLIP | FLAG_NEED_CNAP | FLAG_NEED_CDIP;
 
 	DBG("");
 }
@@ -769,6 +776,54 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 		ofono_voicecall_notify(vc, call);
 
 	vd->flags &= ~FLAG_NEED_CLIP;
+}
+
+static void cdip_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GAtResultIter iter;
+	const char *num;
+	int type;
+	GSList *l;
+	struct ofono_call *call;
+
+	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
+				at_util_call_compare_by_status);
+	if (l == NULL) {
+		ofono_error("CDIP for unknown call");
+		return;
+	}
+
+	/* We have already saw a CDIP for this call, no need to parse again */
+	if ((vd->flags & FLAG_NEED_CDIP) == 0)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CDIP:"))
+		return;
+
+	if (!g_at_result_iter_next_string(&iter, &num))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &type))
+		return;
+
+	DBG("%s %d", num, type);
+
+	call = l->data;
+
+	strncpy(call->called_number.number, num,
+		OFONO_MAX_PHONE_NUMBER_LENGTH);
+	call->called_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+	call->called_number.type = type;
+
+	/* Only signal the call here if we already signaled it to the core */
+	if (call->type == 0 && (vd->flags & FLAG_NEED_CLIP) == 0)
+		ofono_voicecall_notify(vc, call);
+
+	vd->flags &= ~FLAG_NEED_CDIP;
 }
 
 static void cnap_notify(GAtResult *result, gpointer user_data)
@@ -942,6 +997,7 @@ static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(vd->chat, "RING", ring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CRING:", cring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CLIP:", clip_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+CDIP:", cdip_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CNAP:", cnap_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CCWA:", ccwa_notify, FALSE, vc, NULL);
 
@@ -978,6 +1034,7 @@ static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	g_at_chat_send(vd->chat, "AT+CRC=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+CDIP=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CNAP=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+COLP=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+VTD?", NULL,
