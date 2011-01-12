@@ -348,12 +348,12 @@ static struct ofono_netreg_driver driver = {
 	.strength			= hfp_signal_strength,
 };
 
-void hfp_netreg_init()
+void hfp_netreg_init(void)
 {
 	ofono_netreg_driver_register(&driver);
 }
 
-void hfp_netreg_exit()
+void hfp_netreg_exit(void)
 {
 	ofono_netreg_driver_unregister(&driver);
 }

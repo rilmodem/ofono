@@ -1174,12 +1174,12 @@ static struct ofono_voicecall_driver driver = {
 	.send_tones		= hfp_send_dtmf
 };
 
-void hfp_voicecall_init()
+void hfp_voicecall_init(void)
 {
 	ofono_voicecall_driver_register(&driver);
 }
 
-void hfp_voicecall_exit()
+void hfp_voicecall_exit(void)
 {
 	ofono_voicecall_driver_unregister(&driver);
 }

@@ -72,11 +72,11 @@ struct hfp_data {
 	gboolean agent_registered;
 };
 
-extern void hfp_netreg_init();
-extern void hfp_netreg_exit();
+extern void hfp_netreg_init(void);
+extern void hfp_netreg_exit(void);
 
-extern void hfp_call_volume_init();
-extern void hfp_call_volume_exit();
+extern void hfp_call_volume_init(void);
+extern void hfp_call_volume_exit(void);
 
-extern void hfp_voicecall_init();
-extern void hfp_voicecall_exit();
+extern void hfp_voicecall_init(void);
+extern void hfp_voicecall_exit(void);
