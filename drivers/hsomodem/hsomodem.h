@@ -21,8 +21,8 @@
 
 #include <drivers/atmodem/atutil.h>
 
-extern void hso_gprs_context_init();
-extern void hso_gprs_context_exit();
+extern void hso_gprs_context_init(void);
+extern void hso_gprs_context_exit(void);
 
-extern void hso_radio_settings_init();
-extern void hso_radio_settings_exit();
+extern void hso_radio_settings_init(void);
+extern void hso_radio_settings_exit(void);

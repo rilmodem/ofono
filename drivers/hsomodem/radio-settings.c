@@ -205,12 +205,12 @@ static struct ofono_radio_settings_driver driver = {
 	.set_rat_mode		= hso_set_rat_mode
 };
 
-void hso_radio_settings_init()
+void hso_radio_settings_init(void)
 {
 	ofono_radio_settings_driver_register(&driver);
 }
 
-void hso_radio_settings_exit()
+void hso_radio_settings_exit(void)
 {
 	ofono_radio_settings_driver_unregister(&driver);
 }
