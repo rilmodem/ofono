@@ -102,6 +102,11 @@ else
 fi
 AC_SUBST(DBUS_CONFDIR)
 
+PKG_CHECK_MODULES(BLUEZ, bluez, dummy=yes,
+				AC_MSG_ERROR(libbluetooth is required))
+AC_SUBST(BLUEZ_CFLAGS)
+AC_SUBST(BLUEZ_LIBS)
+
 AC_ARG_WITH(dbusdatadir, AC_HELP_STRING([--with-dbusdatadir=PATH],
 	[path to D-Bus data directory]), [path_dbusdata=${withval}],
 		[path_dbusdata="`$PKG_CONFIG --variable=datadir dbus-1`"])
