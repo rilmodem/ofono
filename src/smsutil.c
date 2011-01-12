@@ -3902,7 +3902,7 @@ static inline gboolean cbs_is_update_newer(unsigned int n, unsigned int o)
 	return FALSE;
 }
 
-struct cbs_assembly *cbs_assembly_new()
+struct cbs_assembly *cbs_assembly_new(void)
 {
 	return g_new0(struct cbs_assembly, 1);
 }

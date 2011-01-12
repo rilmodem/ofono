@@ -540,7 +540,7 @@ gboolean cbs_extract_app_port(const struct cbs *cbs, int *dst, int *src,
 
 char *cbs_decode_text(GSList *cbs_list, char *iso639_lang);
 
-struct cbs_assembly *cbs_assembly_new();
+struct cbs_assembly *cbs_assembly_new(void);
 void cbs_assembly_free(struct cbs_assembly *assembly);
 GSList *cbs_assembly_add_page(struct cbs_assembly *assembly,
 				const struct cbs *cbs);
