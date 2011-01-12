@@ -87,6 +87,15 @@ Properties	string LineIdentification [readonly]
 			"override category" option was not provisioned for
 			the current subscriber.
 
+		string CalledLineIdentification [readonly]
+
+			Contains the Called Line Identification information
+			returned by the network. This is only available for
+			incoming calls, in which it indicates the dialed number
+			to make this call. This is useful for subscribers
+			associated to multiple identifications to differentiate
+			the calls received by each one.
+
 		string Name [readonly]
 
 			Contains the Name Identification information returned
