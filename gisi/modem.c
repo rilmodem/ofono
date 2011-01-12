@@ -155,7 +155,39 @@ static void pending_dispatch(GIsiPending *pend, GIsiMessage *msg)
 		g_isi_msg_resource(msg), g_isi_msg_id(msg),
 		g_isi_msg_utid(msg));
 
+	msg->private = pend;
+
 	pend->notify(msg, pend->data);
+}
+
+static void pending_remove_and_dispatch(GIsiPending *op, GIsiMessage *msg)
+{
+	GIsiModem *modem;
+
+	op->service->pending = g_slist_remove(op->service->pending, op);
+
+	if (op->notify == NULL || msg == NULL)
+		goto destroy;
+
+	modem = op->service->modem;
+
+	ISIDBG(modem, "%s %s to %p [res=0x%02X, id=0x%02X, utid=0x%02X]",
+		g_isi_msg_strerror(msg), pend_type_to_str(op->type), op,
+		g_isi_msg_resource(msg), g_isi_msg_id(msg),
+		g_isi_msg_utid(msg));
+
+	msg->private = op;
+
+	op->notify(msg, op->data);
+
+destroy:
+	if (op->timeout > 0)
+		g_source_remove(op->timeout);
+
+	if (op->destroy != NULL)
+		op->destroy(op->data);
+
+	g_free(op);
 }
 
 static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg,
@@ -169,7 +201,6 @@ static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg,
 	while (l != NULL) {
 		GSList *next = l->next;
 		GIsiPending *pend = l->data;
-		msg->private = pend;
 
 		/*
 		 * REQs, NTFs and INDs are dispatched on message ID.  While
@@ -194,22 +225,16 @@ static void service_dispatch(GIsiServiceMux *mux, GIsiMessage *msg,
 		} else if (pend->type == GISI_MESSAGE_TYPE_RESP &&
 				!is_indication && pend->utid == utid) {
 
-			pending_dispatch(pend, msg);
-			pend->notify = NULL;
-
-			g_isi_pending_remove(pend);
+			pending_remove_and_dispatch(pend, msg);
 			break;
 
 		} else if (pend->type == GISI_MESSAGE_TYPE_COMMON &&
 				msgid == COMMON_MESSAGE &&
 				pend->msgid == COMM_ISI_VERSION_GET_REQ) {
 
-			pending_dispatch(pend, msg);
-			pend->notify = NULL;
-
-			g_isi_pending_remove(pend);
-
+			pending_remove_and_dispatch(pend, msg);
 		}
+
 		l = next;
 	}
 }
@@ -634,16 +659,15 @@ static void vtrace(struct sockaddr_pn *dst,
 
 static gboolean resp_timeout(gpointer data)
 {
-	GIsiPending *resp = data;
+	GIsiPending *op = data;
 	GIsiMessage msg = {
 		.error = ETIMEDOUT,
-		.private = resp,
 	};
 
-	pending_dispatch(resp, &msg);
-	resp->notify = NULL;
+	op->timeout = 0;
 
-	g_isi_pending_remove(resp);
+	pending_remove_and_dispatch(op, &msg);
+
 	return FALSE;
 }
 
@@ -755,8 +779,6 @@ void g_isi_pending_remove(GIsiPending *op)
 	if (op == NULL)
 		return;
 
-	op->service->pending = g_slist_remove(op->service->pending, op);
-
 	if (op->type == GISI_MESSAGE_TYPE_IND)
 		service_subs_decr(op->service);
 
@@ -766,11 +788,13 @@ void g_isi_pending_remove(GIsiPending *op)
 	if (op->type == GISI_MESSAGE_TYPE_RESP && op->notify != NULL) {
 		GIsiMessage msg = {
 			.error = ESHUTDOWN,
-			.private = op,
 		};
-		op->notify(&msg, op->data);
-		op->notify = NULL;
+
+		pending_remove_and_dispatch(op, &msg);
+		return;
 	}
+
+	op->service->pending = g_slist_remove(op->service->pending, op);
 
 	pending_destroy(op, NULL);
 }
@@ -1045,14 +1069,11 @@ static gboolean reachable_notify(gpointer data)
 	};
 	GIsiMessage msg = {
 		.version = &mux->version,
-		.private = pong,
 		.addr = &addr,
 	};
 
-	pending_dispatch(pong, &msg);
-	pong->notify = NULL;
+	pending_remove_and_dispatch(pong, &msg);
 
-	g_isi_pending_remove(pong);
 	return FALSE;
 }
 

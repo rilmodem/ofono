@@ -66,11 +66,11 @@ static void pending_resp_notify(const GIsiMessage *msg, void *data)
 	if (pd == NULL)
 		return;
 
-	if (pd->notify != NULL)
-		pd->notify(msg, pd->data);
-
 	pd->client->pending = g_slist_remove(pd->client->pending,
 						g_isi_pending_from_msg(msg));
+
+	if (pd->notify != NULL)
+		pd->notify(msg, pd->data);
 }
 
 static void pending_notify(const GIsiMessage *msg, void *data)
