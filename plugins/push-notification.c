@@ -224,7 +224,7 @@ static void call_modemwatch(struct ofono_modem *modem, void *user)
 	modem_watch(modem, TRUE, user);
 }
 
-static int push_notification_init()
+static int push_notification_init(void)
 {
 	DBG("");
 
@@ -235,7 +235,7 @@ static int push_notification_init()
 	return 0;
 }
 
-static void push_notification_exit()
+static void push_notification_exit(void)
 {
 	DBG("");
 

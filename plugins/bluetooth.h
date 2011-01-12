@@ -35,7 +35,7 @@ struct bluetooth_profile {
 	const char *name;
 	int (*create)(const char *device, const char *dev_addr,
 			const char *adapter_addr, const char *alias);
-	void (*remove_all)();
+	void (*remove_all)(void);
 	void (*set_alias)(const char *device, const char *);
 };
 

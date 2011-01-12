@@ -453,7 +453,7 @@ static gboolean hfp_remove_each_modem(gpointer key, gpointer value,
 	return TRUE;
 }
 
-static void hfp_remove_all_modem()
+static void hfp_remove_all_modem(void)
 {
 	if (modem_hash == NULL)
 		return;
@@ -682,7 +682,7 @@ static struct bluetooth_profile hfp_profile = {
 	.set_alias	= hfp_set_alias,
 };
 
-static int hfp_init()
+static int hfp_init(void)
 {
 	int err;
 
@@ -707,7 +707,7 @@ static int hfp_init()
 	return 0;
 }
 
-static void hfp_exit()
+static void hfp_exit(void)
 {
 	bluetooth_unregister_uuid(HFP_AG_UUID);
 	ofono_modem_driver_unregister(&hfp_driver);

@@ -345,7 +345,7 @@ static void call_modemwatch(struct ofono_modem *modem, void *user)
 	modem_watch(modem, TRUE, user);
 }
 
-static int smart_messaging_init()
+static int smart_messaging_init(void)
 {
 	DBG("");
 
@@ -356,7 +356,7 @@ static int smart_messaging_init()
 	return 0;
 }
 
-static void smart_messaging_exit()
+static void smart_messaging_exit(void)
 {
 	DBG("");
 
