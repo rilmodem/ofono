@@ -771,12 +771,12 @@ static struct ofono_voicecall_driver driver = {
 	.send_tones		= ifx_send_dtmf
 };
 
-void ifx_voicecall_init()
+void ifx_voicecall_init(void)
 {
 	ofono_voicecall_driver_register(&driver);
 }
 
-void ifx_voicecall_exit()
+void ifx_voicecall_exit(void)
 {
 	ofono_voicecall_driver_unregister(&driver);
 }

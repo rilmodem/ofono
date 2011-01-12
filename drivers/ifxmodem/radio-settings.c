@@ -204,12 +204,12 @@ static struct ofono_radio_settings_driver driver = {
 	.set_rat_mode		= ifx_set_rat_mode
 };
 
-void ifx_radio_settings_init()
+void ifx_radio_settings_init(void)
 {
 	ofono_radio_settings_driver_register(&driver);
 }
 
-void ifx_radio_settings_exit()
+void ifx_radio_settings_exit(void)
 {
 	ofono_radio_settings_driver_unregister(&driver);
 }

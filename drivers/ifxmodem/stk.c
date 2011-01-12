@@ -306,12 +306,12 @@ static struct ofono_stk_driver driver = {
 	.terminal_response	= ifx_stk_terminal_response,
 };
 
-void ifx_stk_init()
+void ifx_stk_init(void)
 {
 	ofono_stk_driver_register(&driver);
 }
 
-void ifx_stk_exit()
+void ifx_stk_exit(void)
 {
 	ofono_stk_driver_unregister(&driver);
 }
