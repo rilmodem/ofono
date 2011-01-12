@@ -119,12 +119,12 @@ static struct ofono_audio_settings_driver driver = {
 	.remove		= huawei_audio_settings_remove,
 };
 
-void huawei_audio_settings_init()
+void huawei_audio_settings_init(void)
 {
 	ofono_audio_settings_driver_register(&driver);
 }
 
-void huawei_audio_settings_exit()
+void huawei_audio_settings_exit(void)
 {
 	ofono_audio_settings_driver_unregister(&driver);
 }

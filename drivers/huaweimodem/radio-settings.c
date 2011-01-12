@@ -404,12 +404,12 @@ static struct ofono_radio_settings_driver driver = {
 	.set_band               = huawei_set_band,
 };
 
-void huawei_radio_settings_init()
+void huawei_radio_settings_init(void)
 {
 	ofono_radio_settings_driver_register(&driver);
 }
 
-void huawei_radio_settings_exit()
+void huawei_radio_settings_exit(void)
 {
 	ofono_radio_settings_driver_unregister(&driver);
 }

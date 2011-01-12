@@ -508,12 +508,12 @@ static struct ofono_voicecall_driver driver = {
 	.release_specific	= huawei_release_specific,
 };
 
-void huawei_voicecall_init()
+void huawei_voicecall_init(void)
 {
 	ofono_voicecall_driver_register(&driver);
 }
 
-void huawei_voicecall_exit()
+void huawei_voicecall_exit(void)
 {
 	ofono_voicecall_driver_unregister(&driver);
 }

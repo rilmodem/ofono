@@ -21,14 +21,14 @@
 
 #include <drivers/atmodem/atutil.h>
 
-extern void huawei_voicecall_init();
-extern void huawei_voicecall_exit();
+extern void huawei_voicecall_init(void);
+extern void huawei_voicecall_exit(void);
 
-extern void huawei_audio_settings_init();
-extern void huawei_audio_settings_exit();
+extern void huawei_audio_settings_init(void);
+extern void huawei_audio_settings_exit(void);
 
-extern void huawei_radio_settings_init();
-extern void huawei_radio_settings_exit();
+extern void huawei_radio_settings_init(void);
+extern void huawei_radio_settings_exit(void);
 
-extern void huawei_gprs_context_init();
-extern void huawei_gprs_context_exit();
+extern void huawei_gprs_context_init(void);
+extern void huawei_gprs_context_exit(void);

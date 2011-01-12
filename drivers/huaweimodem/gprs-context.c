@@ -406,12 +406,12 @@ static struct ofono_gprs_context_driver driver = {
 	.deactivate_primary	= huawei_gprs_deactivate_primary,
 };
 
-void huawei_gprs_context_init()
+void huawei_gprs_context_init(void)
 {
 	ofono_gprs_context_driver_register(&driver);
 }
 
-void huawei_gprs_context_exit()
+void huawei_gprs_context_exit(void)
 {
 	ofono_gprs_context_driver_unregister(&driver);
 }
