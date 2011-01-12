@@ -795,7 +795,7 @@ static void isi_call_control_resp(const GIsiMessage *msg, void *data)
 	}
 
 	if (cause == CALL_CAUSE_NO_CAUSE) {
-		isi_ctx_return_failure(irc);
+		isi_ctx_return_success(irc);
 		return;
 	}
 
