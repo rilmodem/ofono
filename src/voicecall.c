@@ -370,6 +370,14 @@ static void append_voicecall_properties(struct voicecall *v,
 	ofono_dbus_dict_append(dict, "LineIdentification",
 				DBUS_TYPE_STRING, &callerid);
 
+	if (call->called_number.number[0] != '\0') {
+		const char *calledid;
+
+		calledid = phone_number_to_string(&call->called_number);
+		ofono_dbus_dict_append(dict, "CalledLineIdentification",
+						DBUS_TYPE_STRING, &calledid);
+	}
+
 	ofono_dbus_dict_append(dict, "Name", DBUS_TYPE_STRING, &name);
 
 	if (call->status == CALL_STATUS_ACTIVE ||
@@ -780,6 +788,30 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 						&emergency_call);
 	}
 }
+
+static void voicecall_set_call_calledid(struct voicecall *v,
+					const struct ofono_phone_number *ph)
+{
+	struct ofono_call *call = v->call;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path;
+	const char *calledid_str;
+
+	if (!strcmp(call->called_number.number, ph->number) &&
+					call->called_number.type == ph->type)
+		return;
+
+	strcpy(call->called_number.number, ph->number);
+	call->called_number.type = ph->type;
+
+	path = voicecall_build_path(v->vc, call);
+	calledid_str = phone_number_to_string(ph);
+
+	ofono_dbus_signal_property_changed(conn, path,
+			OFONO_VOICECALL_INTERFACE, "CalledLineIdentification",
+			DBUS_TYPE_STRING, &calledid_str);
+}
+
 
 static void voicecall_set_call_name(struct voicecall *v,
 					const char *name,
@@ -1916,8 +1948,9 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 	struct voicecall *v = NULL;
 	struct ofono_call *newcall;
 
-	DBG("Got a voicecall event, status: %d, id: %u, number: %s",
-			call->status, call->id, call->phone_number.number);
+	DBG("Got a voicecall event, status: %d, id: %u, number: %s"
+			" called_number: %s", call->status, call->id,
+			call->phone_number.number, call->called_number.number);
 
 	l = g_slist_find_custom(vc->call_list, GUINT_TO_POINTER(call->id),
 				call_compare_by_id);
@@ -1927,6 +1960,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 		voicecall_set_call_status(l->data, call->status);
 		voicecall_set_call_lineid(l->data, &call->phone_number,
 						call->clip_validity);
+		voicecall_set_call_calledid(l->data, &call->called_number);
 		voicecall_set_call_name(l->data, call->name,
 						call->cnap_validity);
 
