@@ -21,8 +21,8 @@
 
 #include <drivers/atmodem/atutil.h>
 
-extern void mbm_gprs_context_init();
-extern void mbm_gprs_context_exit();
+extern void mbm_gprs_context_init(void);
+extern void mbm_gprs_context_exit(void);
 
-extern void mbm_stk_init();
-extern void mbm_stk_exit();
+extern void mbm_stk_init(void);
+extern void mbm_stk_exit(void);

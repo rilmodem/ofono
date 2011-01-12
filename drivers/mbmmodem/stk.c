@@ -270,12 +270,12 @@ static struct ofono_stk_driver driver = {
 	.terminal_response	= mbm_stk_terminal_response,
 };
 
-void mbm_stk_init()
+void mbm_stk_init(void)
 {
 	ofono_stk_driver_register(&driver);
 }
 
-void mbm_stk_exit()
+void mbm_stk_exit(void)
 {
 	ofono_stk_driver_unregister(&driver);
 }

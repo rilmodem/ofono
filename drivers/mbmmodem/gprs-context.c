@@ -514,12 +514,12 @@ static struct ofono_gprs_context_driver driver = {
 	.deactivate_primary	= mbm_gprs_deactivate_primary,
 };
 
-void mbm_gprs_context_init()
+void mbm_gprs_context_init(void)
 {
 	ofono_gprs_context_driver_register(&driver);
 }
 
-void mbm_gprs_context_exit()
+void mbm_gprs_context_exit(void)
 {
 	ofono_gprs_context_driver_unregister(&driver);
 }
