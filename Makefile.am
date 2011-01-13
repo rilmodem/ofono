@@ -455,7 +455,10 @@ test_scripts = test/backtrace \
 		test/set-gsm-band \
 		test/set-umts-band \
 		test/lockdown-modem \
-		test/set-call-forwarding
+		test/set-call-forwarding \
+		test/cdma-list-call \
+		test/cdma-dial-number \
+		test/cdma-hangup
 
 if TEST
 testdir = $(pkglibdir)/test

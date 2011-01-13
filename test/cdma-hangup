@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import sys
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+if len(sys.argv) > 2:
+	path = sys.argv[1]
+else:
+	modems = manager.GetModems()
+	path, properties = modems[0]
+
+manager = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.cdma.VoiceCallManager')
+
+manager.Hangup()
