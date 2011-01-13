@@ -438,3 +438,46 @@ gboolean at_util_parse_cscs_query(GAtResult *result,
 
 	return FALSE;
 }
+
+static const char *at_util_fixup_return(const char *line, const char *prefix)
+{
+	if (g_str_has_prefix(line, prefix) == FALSE)
+		return line;
+
+	line += strlen(prefix);
+
+	while (line[0] == ' ')
+		line++;
+
+	return line;
+}
+
+gboolean at_util_parse_attr(GAtResult *result, const char *prefix,
+				const char **out_attr)
+{
+	int numlines = g_at_result_num_response_lines(result);
+	GAtResultIter iter;
+	const char *line;
+	int i;
+
+	if (numlines == 0)
+		return FALSE;
+
+	g_at_result_iter_init(&iter, result);
+
+	/*
+	 * We have to be careful here, sometimes a stray unsolicited
+	 * notification will appear as part of the response and we
+	 * cannot rely on having a prefix to recognize the actual
+	 * response line.  So use the last line only as the response
+	 */
+	for (i = 0; i < numlines; i++)
+		g_at_result_iter_next(&iter, NULL);
+
+	line = g_at_result_iter_raw_line(&iter);
+
+	if (out_attr)
+		*out_attr = at_util_fixup_return(line, prefix);
+
+	return TRUE;
+}

@@ -35,29 +35,13 @@
 
 #include "atmodem.h"
 
-static const char *fixup_return(const char *line, const char *prefix)
-{
-	if (g_str_has_prefix(line, prefix) == FALSE)
-		return line;
-
-	line = line + strlen(prefix);
-
-	while (line[0] == ' ')
-		line++;
-
-	return line;
-}
-
 static void attr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_devinfo_query_cb_t cb = cbd->cb;
 	const char *prefix = cbd->user;
 	struct ofono_error error;
-	int numlines = g_at_result_num_response_lines(result);
-	GAtResultIter iter;
-	const char *line;
-	int i;
+	const char *attr;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
@@ -66,24 +50,12 @@ static void attr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	if (numlines == 0) {
+	if (at_util_parse_attr(result, prefix, &attr) == FALSE) {
 		CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 		return;
 	}
 
-	g_at_result_iter_init(&iter, result);
-
-	/* We have to be careful here, sometimes a stray unsolicited
-	 * notification will appear as part of the response and we
-	 * cannot rely on having a prefix to recognize the actual
-	 * response line.  So use the last line only as the response
-	 */
-	for (i = 0; i < numlines; i++)
-		g_at_result_iter_next(&iter, NULL);
-
-	line = g_at_result_iter_raw_line(&iter);
-
-	cb(&error, fixup_return(line, prefix), cbd->data);
+	cb(&error, attr, cbd->data);
 }
 
 static void at_query_manufacturer(struct ofono_devinfo *info,
@@ -97,8 +69,7 @@ static void at_query_manufacturer(struct ofono_devinfo *info,
 
 	cbd->user = "+CGMI:";
 
-	if (g_at_chat_send(chat, "AT+CGMI", NULL,
-				attr_cb, cbd, g_free) > 0)
+	if (g_at_chat_send(chat, "AT+CGMI", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -118,8 +89,7 @@ static void at_query_model(struct ofono_devinfo *info,
 
 	cbd->user = "+CGMM:";
 
-	if (g_at_chat_send(chat, "AT+CGMM", NULL,
-				attr_cb, cbd, g_free) > 0)
+	if (g_at_chat_send(chat, "AT+CGMM", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -139,8 +109,7 @@ static void at_query_revision(struct ofono_devinfo *info,
 
 	cbd->user = "+CGMR:";
 
-	if (g_at_chat_send(chat, "AT+CGMR", NULL,
-				attr_cb, cbd, g_free) > 0)
+	if (g_at_chat_send(chat, "AT+CGMR", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
 error:
@@ -160,8 +129,7 @@ static void at_query_serial(struct ofono_devinfo *info,
 
 	cbd->user = "+CGSN:";
 
-	if (g_at_chat_send(chat, "AT+CGSN", NULL,
-				attr_cb, cbd, g_free) > 0)
+	if (g_at_chat_send(chat, "AT+CGSN", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
 error:
