@@ -42,16 +42,16 @@
 
 static const char *none_prefix[] = { NULL };
 
-struct voicecall_driver {
+struct voicecall_data {
 	GAtChat *chat;
 	unsigned int vendor;
 };
 
-static void at_template(const char *cmd, struct ofono_cdma_voicecall *vc,
-			GAtResultFunc result_cb, ofono_cdma_voicecall_cb_t cb,
-			void *data)
+static void cdma_template(const char *cmd, struct ofono_cdma_voicecall *vc,
+				GAtResultFunc result_cb,
+				ofono_cdma_voicecall_cb_t cb, void *data)
 {
-	struct voicecall_driver *vd = ofono_cdma_voicecall_get_data(vc);
+	struct voicecall_data *vd = ofono_cdma_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
 	if (cbd == NULL)
@@ -71,7 +71,7 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void cdma_generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_cdma_voicecall_cb_t cb = cbd->cb;
@@ -82,21 +82,21 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, cbd->data);
 }
 
-static void at_dial(struct ofono_cdma_voicecall *vc,
+static void cdma_dial(struct ofono_cdma_voicecall *vc,
 			const struct ofono_cdma_phone_number *ph,
 			ofono_cdma_voicecall_cb_t cb, void *data)
 {
 	char buf[OFONO_CDMA_MAX_PHONE_NUMBER_LENGTH + 8];
 
 	snprintf(buf, sizeof(buf), "AT+CDV=%s", ph->number);
-	at_template(buf, vc, generic_cb, cb, data);
+	cdma_template(buf, vc, cdma_generic_cb, cb, data);
 }
 
-static void at_hangup_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void cdma_hangup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 
-	generic_cb(ok, result, user_data);
+	cdma_generic_cb(ok, result, user_data);
 
 	/* TODO: this should come from a modem solicited notification */
 	ofono_cdma_voicecall_disconnected(cbd->user,
@@ -104,20 +104,20 @@ static void at_hangup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					NULL);
 }
 
-static void at_hangup(struct ofono_cdma_voicecall *vc,
-			ofono_cdma_voicecall_cb_t cb, void *data)
+static void cdma_hangup(struct ofono_cdma_voicecall *vc,
+				ofono_cdma_voicecall_cb_t cb, void *data)
 {
 	/* Hangup active call */
-	at_template("AT+CHV", vc, at_hangup_cb, cb, data);
+	cdma_template("AT+CHV", vc, cdma_hangup_cb, cb, data);
 }
 
-static int at_voicecall_probe(struct ofono_cdma_voicecall *vc,
-		unsigned int vendor, void *data)
+static int cdma_voicecall_probe(struct ofono_cdma_voicecall *vc,
+					unsigned int vendor, void *data)
 {
 	GAtChat *chat = data;
-	struct voicecall_driver *vd;
+	struct voicecall_data *vd;
 
-	vd = g_try_new0(struct voicecall_driver, 1);
+	vd = g_try_new0(struct voicecall_data, 1);
 	if (vd == NULL)
 		return -ENOMEM;
 
@@ -131,9 +131,9 @@ static int at_voicecall_probe(struct ofono_cdma_voicecall *vc,
 	return 0;
 }
 
-static void at_voicecall_remove(struct ofono_cdma_voicecall *vc)
+static void cdma_voicecall_remove(struct ofono_cdma_voicecall *vc)
 {
-	struct voicecall_driver *vd = ofono_cdma_voicecall_get_data(vc);
+	struct voicecall_data *vd = ofono_cdma_voicecall_get_data(vc);
 
 	ofono_cdma_voicecall_set_data(vc, NULL);
 
@@ -143,18 +143,18 @@ static void at_voicecall_remove(struct ofono_cdma_voicecall *vc)
 
 static struct ofono_cdma_voicecall_driver driver = {
 	.name			= "cdmamodem",
-	.probe			= at_voicecall_probe,
-	.remove			= at_voicecall_remove,
-	.dial			= at_dial,
-	.hangup			= at_hangup,
+	.probe			= cdma_voicecall_probe,
+	.remove			= cdma_voicecall_remove,
+	.dial			= cdma_dial,
+	.hangup			= cdma_hangup,
 };
 
-void cdma_at_voicecall_init()
+void cdma_voicecall_init()
 {
 	ofono_cdma_voicecall_driver_register(&driver);
 }
 
-void cdma_at_voicecall_exit()
+void cdma_voicecall_exit()
 {
 	ofono_cdma_voicecall_driver_unregister(&driver);
 }

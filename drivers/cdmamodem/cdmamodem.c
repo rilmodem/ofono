@@ -34,14 +34,14 @@
 
 static int cdmamodem_init(void)
 {
-	cdma_at_voicecall_init();
+	cdma_voicecall_init();
 
 	return 0;
 }
 
 static void cdmamodem_exit(void)
 {
-	cdma_at_voicecall_exit();
+	cdma_voicecall_exit();
 }
 
 OFONO_PLUGIN_DEFINE(cdmamodem, "CDMA AT modem driver", VERSION,
