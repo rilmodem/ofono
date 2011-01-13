@@ -100,7 +100,10 @@ static int nokiacdma_enable(struct ofono_modem *modem)
 	if (channel == NULL)
 		return -EIO;
 
-	/* TODO: Will need a CDMA AT syntax parser later. Using GSM V1 for now. */
+	/*
+	 * TODO: Will need a CDMA AT syntax parser later.
+	 * Using GSM V1 for now.
+	 */
 	syntax = g_at_syntax_new_gsmv1();
 
 	data->chat = g_at_chat_new(channel, syntax);
@@ -166,6 +169,6 @@ static void nokiacdma_exit(void)
 	ofono_modem_driver_unregister(&nokiacdma_driver);
 }
 
-OFONO_PLUGIN_DEFINE(nokiacdma, "Generic CDMA AT Modem", VERSION,
+OFONO_PLUGIN_DEFINE(nokiacdma, "Nokia CDMA AT Modem", VERSION,
 			OFONO_PLUGIN_PRIORITY_DEFAULT,
 			nokiacdma_init, nokiacdma_exit)
