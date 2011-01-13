@@ -241,9 +241,9 @@ static struct network_operator_data *
 	return opd;
 }
 
-static void network_operator_destroy(gpointer userdata)
+static void network_operator_destroy(gpointer user_data)
 {
-	struct network_operator_data *op = userdata;
+	struct network_operator_data *op = user_data;
 
 	g_free(op);
 }
@@ -1428,9 +1428,9 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 
 static void sim_opl_read_cb(int ok, int length, int record,
 				const unsigned char *data,
-				int record_length, void *userdata)
+				int record_length, void *user_data)
 {
-	struct ofono_netreg *netreg = userdata;
+	struct ofono_netreg *netreg = user_data;
 	int total;
 	GSList *l;
 
@@ -1466,9 +1466,9 @@ optimize:
 
 static void sim_pnn_read_cb(int ok, int length, int record,
 				const unsigned char *data,
-				int record_length, void *userdata)
+				int record_length, void *user_data)
 {
-	struct ofono_netreg *netreg = userdata;
+	struct ofono_netreg *netreg = user_data;
 	int total;
 
 	if (!ok)
@@ -1502,9 +1502,9 @@ check:
 
 static void sim_spdi_read_cb(int ok, int length, int record,
 				const unsigned char *data,
-				int record_length, void *userdata)
+				int record_length, void *user_data)
 {
-	struct ofono_netreg *netreg = userdata;
+	struct ofono_netreg *netreg = user_data;
 	struct network_operator_data *current = netreg->current_operator;
 
 	if (!ok)
@@ -1535,9 +1535,9 @@ static void sim_spdi_read_cb(int ok, int length, int record,
 
 static void sim_spn_read_cb(int ok, int length, int record,
 				const unsigned char *data,
-				int record_length, void *userdata)
+				int record_length, void *user_data)
 {
-	struct ofono_netreg *netreg = userdata;
+	struct ofono_netreg *netreg = user_data;
 	unsigned char dcbyte;
 	char *spn;
 
