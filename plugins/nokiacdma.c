@@ -43,6 +43,7 @@
 
 #include <drivers/atmodem/atutil.h>
 #include <ofono/cdma-voicecall.h>
+#include <ofono/devinfo.h>
 
 #include "common.h"
 
@@ -137,6 +138,7 @@ static void nokiacdma_pre_sim(struct ofono_modem *modem)
 	struct nokiacdma_data *data = ofono_modem_get_data(modem);
 
 	ofono_cdma_voicecall_create(modem, 0, "cdmamodem", data->chat);
+	ofono_devinfo_create(modem, 0, "cdmamodem", data->chat);
 }
 
 static void nokiacdma_post_sim(struct ofono_modem *modem)
