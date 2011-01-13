@@ -249,7 +249,8 @@ if CDMAMODEM
 builtin_modules += cdmamodem
 builtin_sources += drivers/cdmamodem/cdmamodem.h \
 			drivers/cdmamodem/cdmamodem.c \
-			drivers/cdmamodem/voicecall.c
+			drivers/cdmamodem/voicecall.c \
+			drivers/cdmamodem/devinfo.c
 endif
 
 builtin_modules += g1

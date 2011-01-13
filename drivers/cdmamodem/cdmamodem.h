@@ -23,3 +23,5 @@
 
 extern void cdma_voicecall_init(void);
 extern void cdma_voicecall_exit(void);
+extern void cdma_devinfo_init(void);
+extern void cdma_devinfo_exit(void);
