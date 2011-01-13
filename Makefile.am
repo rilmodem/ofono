@@ -224,7 +224,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/ifxmodem/audio-settings.c \
 			drivers/ifxmodem/radio-settings.c \
 			drivers/ifxmodem/gprs-context.c \
-			drivers/ifxmodem/stk.c
+			drivers/ifxmodem/stk.c \
+			drivers/ifxmodem/ctm.c
 
 builtin_modules += stemodem
 builtin_sources += drivers/atmodem/atutil.h \

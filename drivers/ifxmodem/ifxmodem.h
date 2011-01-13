@@ -35,3 +35,6 @@ extern void ifx_gprs_context_exit(void);
 
 extern void ifx_stk_init(void);
 extern void ifx_stk_exit(void);
+
+extern void ifx_ctm_init(void);
+extern void ifx_ctm_exit(void);

@@ -39,6 +39,7 @@ static int ifxmodem_init(void)
 	ifx_radio_settings_init();
 	ifx_gprs_context_init();
 	ifx_stk_init();
+	ifx_ctm_init();
 
 	return 0;
 }
@@ -50,6 +51,7 @@ static void ifxmodem_exit(void)
 	ifx_radio_settings_exit();
 	ifx_audio_settings_exit();
 	ifx_voicecall_exit();
+	ifx_ctm_exit();
 }
 
 OFONO_PLUGIN_DEFINE(ifxmodem, "Infineon modem driver", VERSION,
