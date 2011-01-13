@@ -97,7 +97,6 @@ struct ofono_call {
 	int type;
 	int direction;
 	int status;
-	ofono_bool_t mpty;
 	struct ofono_phone_number phone_number;
 	char name[OFONO_MAX_CALLER_NAME_LENGTH + 1];
 	int clip_validity;
