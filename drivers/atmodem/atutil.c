@@ -140,7 +140,6 @@ GSList *at_util_parse_clcc(GAtResult *result)
 		call->direction = dir;
 		call->status = status;
 		call->type = type;
-		call->mpty = mpty;
 		strncpy(call->phone_number.number, str,
 				OFONO_MAX_PHONE_NUMBER_LENGTH);
 		call->phone_number.type = number_type;
