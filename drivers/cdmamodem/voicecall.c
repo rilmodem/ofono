@@ -58,8 +58,6 @@ static void cdma_template(const char *cmd, struct ofono_cdma_voicecall *vc,
 		goto error;
 
 	cbd->user = vc;
-	cbd->cb = cb;
-	cbd->data = data;
 
 	if (g_at_chat_send(vd->chat, cmd, none_prefix,
 				result_cb, cbd, g_free) > 0)
