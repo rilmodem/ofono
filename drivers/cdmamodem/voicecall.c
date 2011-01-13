@@ -147,12 +147,12 @@ static struct ofono_cdma_voicecall_driver driver = {
 	.hangup			= cdma_hangup,
 };
 
-void cdma_voicecall_init()
+void cdma_voicecall_init(void)
 {
 	ofono_cdma_voicecall_driver_register(&driver);
 }
 
-void cdma_voicecall_exit()
+void cdma_voicecall_exit(void)
 {
 	ofono_cdma_voicecall_driver_unregister(&driver);
 }
