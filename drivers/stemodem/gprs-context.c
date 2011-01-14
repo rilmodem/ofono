@@ -532,13 +532,9 @@ static void cgev_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_unquoted_string(&iter, &event))
 		return;
 
-	if (g_str_has_prefix(event, "NW REACT ") ||
-			g_str_has_prefix(event, "NW DEACT ") ||
-			g_str_has_prefix(event, "ME DEACT ")) {
-		/* Ask what primary contexts are active now */
-		g_at_chat_send(gcd->chat, "AT+CGACT?", cgact_prefix,
-				ste_cgact_read_cb, gc, NULL);
-	}
+	/* Ask what primary contexts are active now */
+	g_at_chat_send(gcd->chat, "AT+CGACT?", cgact_prefix,
+			ste_cgact_read_cb, gc, NULL);
 }
 
 static int ste_gprs_context_probe(struct ofono_gprs_context *gc,
