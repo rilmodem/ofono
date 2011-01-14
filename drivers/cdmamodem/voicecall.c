@@ -109,6 +109,15 @@ static void cdma_hangup(struct ofono_cdma_voicecall *vc,
 	cdma_template("AT+CHV", vc, cdma_hangup_cb, cb, data);
 }
 
+static gboolean cdma_voicecall_initialized(gpointer user_data)
+{
+	struct ofono_cdma_voicecall *vc = user_data;
+
+	ofono_cdma_voicecall_register(vc);
+
+	return FALSE;
+}
+
 static int cdma_voicecall_probe(struct ofono_cdma_voicecall *vc,
 					unsigned int vendor, void *data)
 {
@@ -123,8 +132,7 @@ static int cdma_voicecall_probe(struct ofono_cdma_voicecall *vc,
 	vd->vendor = vendor;
 
 	ofono_cdma_voicecall_set_data(vc, vd);
-
-	ofono_cdma_voicecall_register(vc);
+	g_idle_add(cdma_voicecall_initialized, vc);
 
 	return 0;
 }
