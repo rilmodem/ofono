@@ -351,6 +351,9 @@ static void mbm_disconnect(gpointer user_data)
 	data->data_port = NULL;
 
 	/* Waiting for the +CGEV: ME DEACT might also work */
+	if (data->reopen_source > 0)
+		g_source_remove(data->reopen_source);
+
 	data->reopen_source = g_timeout_add_seconds(1, reopen_callback, modem);
 }
 
