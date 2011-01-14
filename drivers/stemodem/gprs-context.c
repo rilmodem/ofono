@@ -48,6 +48,7 @@
 #include "caif_socket.h"
 #include "if_caif.h"
 #include "caif_rtnl.h"
+#include "common.h"
 
 #define MAX_CAIF_DEVICES 4
 #define MAX_DNS 2
@@ -500,7 +501,7 @@ static void ste_cgact_read_cb(gboolean ok, GAtResult *result,
 		if (!g_at_result_iter_next_number(&iter, &state))
 			continue;
 
-		if (state == 1)
+		if (state == CONTEXT_STATUS_ACTIVATED)
 			continue;
 
 		ofono_gprs_context_deactivated(gc, gcd->active_context);
