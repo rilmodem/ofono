@@ -76,7 +76,7 @@ struct change_state_req {
 };
 
 /* Translate from the ECAV-based STE-status to CLCC based status */
-static int call_status_ste_to_ofono(int status)
+static int call_status_ste_to_ofono(enum call_status_ste status)
 {
 	switch (status) {
 	case STE_CALL_STATUS_IDLE:
@@ -95,9 +95,9 @@ static int call_status_ste_to_ofono(int status)
 		return CALL_STATUS_INCOMING;
 	case STE_CALL_STATUS_BUSY:
 		return CALL_STATUS_DISCONNECTED;
-	default:
-		return CALL_STATUS_DISCONNECTED;
 	}
+
+	return CALL_STATUS_DISCONNECTED;
 }
 
 static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
@@ -198,21 +198,21 @@ static void ste_dial(struct ofono_voicecall *vc,
 		snprintf(buf, sizeof(buf), "ATD%s", ph->number);
 
 	switch (clir) {
+	case OFONO_CLIR_OPTION_DEFAULT:
+		break;
 	case OFONO_CLIR_OPTION_INVOCATION:
 		strcat(buf, "I");
 		break;
 	case OFONO_CLIR_OPTION_SUPPRESSION:
 		strcat(buf, "i");
 		break;
-	default:
-		break;
 	}
 
 	switch (cug) {
+	case OFONO_CUG_OPTION_DEFAULT:
+		break;
 	case OFONO_CUG_OPTION_INVOCATION:
 		strcat(buf, "G");
-		break;
-	default:
 		break;
 	}
 
@@ -525,9 +525,6 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 	case CALL_STATUS_HELD:
 		existing_call->status = status;
 		ofono_voicecall_notify(vc, existing_call);
-		break;
-
-	default:
 		break;
 	}
 }
