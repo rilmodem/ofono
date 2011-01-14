@@ -590,9 +590,8 @@ static void hfp_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	req->data = data;
 	req->affected_types = 0;
 
-	/* strlen("AT+VTS=") = 7 */
-	buf = g_try_new(char, strlen(dtmf) + 7);
-
+	/* strlen("AT+VTS=) = 7 + NULL */
+	buf = g_try_new(char, strlen(dtmf) + 8);
 	if (buf == NULL)
 		goto error;
 
