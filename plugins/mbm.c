@@ -91,6 +91,11 @@ static void mbm_remove(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	if (data->reopen_source > 0) {
+		g_source_remove(data->reopen_source);
+		data->reopen_source = 0;
+	}
+
 	ofono_modem_set_data(modem, NULL);
 
 	g_at_chat_unref(data->data_port);
