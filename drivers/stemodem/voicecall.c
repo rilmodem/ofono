@@ -470,7 +470,7 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 	if (l == NULL && status != CALL_STATUS_DIALING &&
 				status != CALL_STATUS_WAITING &&
 				status != CALL_STATUS_INCOMING) {
-		ofono_error("ECAV notification for unknow call."
+		ofono_error("ECAV notification for unknown call."
 				" id: %d, status: %d", id, status);
 		return;
 	}
