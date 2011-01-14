@@ -157,6 +157,19 @@ class StkAgent(dbus.service.Object):
 			return False
 
 	@dbus.service.method("org.ofono.SimToolkitAgent",
+				in_signature="sys", out_signature="b")
+	def ConfirmLaunchBrowser(self, info, icon, url):
+		print "Information: (%s)" % (info)
+		print "Icon: (%d)" % (icon)
+		print "URL (%s)" % (url)
+		key = raw_input("Enter Confirmation (y, n):")
+
+		if key == 'y':
+			return True
+		else:
+			return False
+
+	@dbus.service.method("org.ofono.SimToolkitAgent",
 					in_signature="", out_signature="")
 	def Cancel(self):
 		print "Cancel"
