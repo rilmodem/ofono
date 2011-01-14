@@ -57,6 +57,7 @@
 #include <ofono/radio-settings.h>
 #include <ofono/audio-settings.h>
 #include <ofono/stk.h>
+#include <ofono/ctm.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -692,6 +693,7 @@ static void ifx_pre_sim(struct ofono_modem *modem)
 	ofono_voicecall_create(modem, 0, "ifxmodem", data->dlcs[VOICE_DLC]);
 	ofono_audio_settings_create(modem, 0,
 					"ifxmodem", data->dlcs[VOICE_DLC]);
+	ofono_ctm_create(modem, 0, "ifxmodem", data->dlcs[AUX_DLC]);
 }
 
 static void ifx_post_sim(struct ofono_modem *modem)
