@@ -76,7 +76,8 @@ struct ofono_voicecall_driver {
 	void (*hangup_all)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);
 	/*
-	 * Holds all active and retrieves held or waiting calls, this usually
+	 * Holds all active calls and answers waiting call.  If there is
+	 * no waiting calls, retrieves held call.  This usually
 	 * corresponds to +CHLD=2
 	 */
 	void (*hold_all_active)(struct ofono_voicecall *vc,
