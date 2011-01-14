@@ -129,6 +129,12 @@ enum pin_type {
 	PIN_TYPE_NET,
 };
 
+/* 27.007 Section 10.1.10 */
+enum context_status {
+	CONTEXT_STATUS_DEACTIVATED = 0,
+	CONTEXT_STATUS_ACTIVATED = 1,
+};
+
 const char *telephony_error_to_str(const struct ofono_error *error);
 
 gboolean valid_phone_number_format(const char *number);
