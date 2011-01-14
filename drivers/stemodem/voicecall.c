@@ -431,6 +431,9 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &call_type))
 		return;
 
+	if (call_type != BEARER_CLASS_VOICE)
+		return;
+
 	/* Skip process id and exit cause */
 	g_at_result_iter_skip_next(&iter);
 	g_at_result_iter_skip_next(&iter);
@@ -451,9 +454,6 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 		} else if (!g_at_result_iter_next_number(&iter, &num_type))
 			return;
 	}
-
-	if (call_type != BEARER_CLASS_VOICE)
-		return;
 
 	/*
 	 * Handle the call according to the status.
