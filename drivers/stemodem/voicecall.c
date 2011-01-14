@@ -116,7 +116,7 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 	call->direction = direction;
 	call->status = status;
 
-	if (clip != 2) {
+	if (clip != CLIP_VALIDITY_NOT_AVAILABLE) {
 		strncpy(call->phone_number.number, num,
 			OFONO_MAX_PHONE_NUMBER_LENGTH);
 		call->phone_number.type = num_type;
