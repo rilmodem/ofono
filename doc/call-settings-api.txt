@@ -30,6 +30,21 @@ Properties	string CallingLinePresentation [readonly]
 				"enabled",
 				"unknown"
 
+		string CalledLinePresentation [readonly]
+
+			Contains the value of the called line identification
+			presentation property.  The value indicates the state
+			of the CDIP supplementary service in the network.  If
+			enabled, when receiving a call the network will provide
+			the identification dialed to makee this call.  This is
+			useful when subscriber can be registered with more than
+			one identification.
+
+			Possible values are:
+				"disabled",
+				"enabled",
+				"unknown"
+
 		string CallingNamePresentation [readonly]
 
 			Contains the value of the calling name identification
