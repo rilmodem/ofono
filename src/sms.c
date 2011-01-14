@@ -80,6 +80,10 @@ struct ofono_sms {
 	guint tx_source;
 	struct ofono_message_waiting *mw;
 	unsigned int mw_watch;
+	ofono_bool_t registered;
+	struct ofono_netreg *netreg;
+	unsigned int netreg_watch;
+	unsigned int status_watch;
 	struct ofono_sim *sim;
 	GKeyFile *settings;
 	char *imsi;
@@ -747,6 +751,11 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 	DBG("tx_finished");
 
 	if (ok == FALSE) {
+		/* Retry again when back in online mode */
+		/* Note this does not increment retry count */
+		if (sms->registered == FALSE)
+			return;
+
 		if (!(entry->flags & OFONO_SMS_SUBMIT_FLAG_RETRY))
 			goto next_q;
 
@@ -810,6 +819,9 @@ next_q:
 
 	tx_queue_entry_destroy(entry);
 
+	if (sms->registered == FALSE)
+		return;
+
 	if (g_queue_peek_head(sms->txq)) {
 		DBG("Scheduling next");
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
@@ -833,6 +845,9 @@ static gboolean tx_next(gpointer user_data)
 	if (entry == NULL)
 		return FALSE;
 
+	if (sms->registered == FALSE)
+		return FALSE;
+
 	if (g_queue_get_length(sms->txq) > 1
 			|| (entry->num_pdus - entry->cur_pdu) > 1)
 		send_mms = 1;
@@ -842,6 +857,55 @@ static gboolean tx_next(gpointer user_data)
 
 	return FALSE;
 }
+
+static void netreg_status_watch(int status, int lac, int ci, int tech,
+					const char *mcc, const char *mnc,
+					void *data)
+{
+	struct ofono_sms *sms = data;
+
+	switch (status) {
+	case NETWORK_REGISTRATION_STATUS_REGISTERED:
+	case NETWORK_REGISTRATION_STATUS_ROAMING:
+		sms->registered = TRUE;
+		break;
+	default:
+		sms->registered = FALSE;
+		break;
+	}
+
+	if (sms->registered == FALSE)
+		return;
+
+	if (sms->tx_source > 0)
+		return;
+
+	if (g_queue_get_length(sms->txq))
+		sms->tx_source = g_timeout_add(0, tx_next, sms);
+}
+
+static void netreg_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct ofono_sms *sms = data;
+	int status;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		sms->registered = FALSE;
+		sms->status_watch = 0;
+		sms->netreg = NULL;
+		return;
+	}
+
+	sms->netreg = __ofono_atom_get_data(atom);
+	sms->status_watch = __ofono_netreg_add_status_watch(sms->netreg,
+					netreg_status_watch, sms, NULL);
+
+	status = ofono_netreg_get_status(sms->netreg);
+	netreg_status_watch(status, 0, 0, 0, NULL, NULL, sms);
+}
+
 
 /**
  * Generate a UUID from an SMS PDU List
@@ -1630,6 +1694,19 @@ static void sms_unregister(struct ofono_atom *atom)
 		sms->mw = NULL;
 	}
 
+	if (sms->status_watch) {
+		__ofono_netreg_remove_status_watch(sms->netreg,
+							sms->status_watch);
+		sms->status_watch = 0;
+	}
+
+	if (sms->netreg_watch) {
+		__ofono_modem_remove_atom_watch(modem, sms->netreg_watch);
+		sms->netreg_watch = 0;
+	}
+
+	sms->netreg = NULL;
+
 	if (sms->messages) {
 		GHashTableIter iter;
 		struct message *m;
@@ -1813,7 +1890,7 @@ void ofono_sms_register(struct ofono_sms *sms)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	const char *path = __ofono_atom_get_path(sms->atom);
-	struct ofono_atom *mw_atom;
+	struct ofono_atom *atom;
 	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
@@ -1832,11 +1909,19 @@ void ofono_sms_register(struct ofono_sms *sms)
 					OFONO_ATOM_TYPE_MESSAGE_WAITING,
 					mw_watch, sms, NULL);
 
-	mw_atom = __ofono_modem_find_atom(modem,
-					OFONO_ATOM_TYPE_MESSAGE_WAITING);
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_MESSAGE_WAITING);
 
-	if (mw_atom && __ofono_atom_get_registered(mw_atom))
-		mw_watch(mw_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
+	if (atom && __ofono_atom_get_registered(atom))
+		mw_watch(atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
+
+	sms->netreg_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_NETREG,
+					netreg_watch, sms, NULL);
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_NETREG);
+
+	if (atom && __ofono_atom_get_registered(atom))
+		netreg_watch(atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
@@ -1924,7 +2009,7 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 
 	g_queue_push_tail(sms->txq, entry);
 
-	if (g_queue_get_length(sms->txq) == 1)
+	if (sms->registered && g_queue_get_length(sms->txq) == 1)
 		sms->tx_source = g_timeout_add(0, tx_next, sms);
 
 	if (uuid)
