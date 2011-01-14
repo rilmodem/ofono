@@ -1,0 +1,53 @@
+#!/usr/bin/python
+
+import sys
+import gobject
+
+import dbus
+import dbus.mainloop.glib
+
+def property_changed(property, value):
+	if len(value.__str__()) > 0:
+		print "CF property %s changed to %s" % (property, value)
+	else:
+		print "CF property %s changed to disabled" % (property)
+
+	if canexit:
+		mainloop.quit();
+
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		print "Usage: %s <type>" % (sys.argv[0])
+		print "Type can be: all, conditional"
+		sys.exit(1)
+
+	canexit = False
+
+	type = sys.argv[1]
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	modems = manager.GetModems()
+
+	cf = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
+				'org.ofono.CallForwarding')
+
+	cf.connect_to_signal("PropertyChanged", property_changed)
+
+	try:
+		cf.DisableAll(type, timeout = 100)
+	except dbus.DBusException, e:
+		print "Unable to DisableAll", e
+		sys.exit(1);
+
+	print "DisableAll successful"
+
+	canexit = True
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()

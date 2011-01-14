@@ -464,7 +464,8 @@ test_scripts = test/backtrace \
 		test/set-call-forwarding \
 		test/cdma-list-call \
 		test/cdma-dial-number \
-		test/cdma-hangup
+		test/cdma-hangup \
+		test/disable-call-forwarding
 
 if TEST
 testdir = $(pkglibdir)/test
