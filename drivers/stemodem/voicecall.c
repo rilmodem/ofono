@@ -375,16 +375,14 @@ static void ste_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	int len = strlen(dtmf);
 	int s;
 	char *buf;
 
 	if (cbd == NULL)
 		goto error;
 
-	/* strlen("AT+VTS=) = 7 */
-	buf = g_try_new(char, len + 7);
-
+	/* strlen("AT+VTS=) = 7 + NULL */
+	buf = g_try_new(char, strlen(dtmf) + 8);
 	if (buf == NULL)
 		goto error;
 
