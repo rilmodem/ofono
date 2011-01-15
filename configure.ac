@@ -102,11 +102,6 @@ else
 fi
 AC_SUBST(DBUS_CONFDIR)
 
-PKG_CHECK_MODULES(BLUEZ, bluez, dummy=yes,
-				AC_MSG_ERROR(libbluetooth is required))
-AC_SUBST(BLUEZ_CFLAGS)
-AC_SUBST(BLUEZ_LIBS)
-
 AC_ARG_WITH(dbusdatadir, AC_HELP_STRING([--with-dbusdatadir=PATH],
 	[path to D-Bus data directory]), [path_dbusdata=${withval}],
 		[path_dbusdata="`$PKG_CONFIG --variable=datadir dbus-1`"])
@@ -188,6 +183,17 @@ AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
 				[disable PhoNet/ISI modem support]),
 					[enable_isimodem=${enableval}])
 AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
+
+AC_ARG_ENABLE(bluetooth, AC_HELP_STRING([--disable-bluetooth],
+				[disable Bluetooth modem support]),
+					[enable_bluetooth=${enableval}])
+if (test "${enable_bluetooth}" != "no"); then
+	PKG_CHECK_MODULES(BLUEZ, bluez, dummy=yes,
+				AC_MSG_ERROR(Bluetooth library is required))
+fi
+AC_SUBST(BLUEZ_CFLAGS)
+AC_SUBST(BLUEZ_LIBS)
+AM_CONDITIONAL(BLUETOOTH, test "${enable_bluetooth}" != "no")
 
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 			[don't install configuration and data files]),

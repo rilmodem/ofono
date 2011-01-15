@@ -286,15 +286,6 @@ builtin_sources += plugins/sierra.c
 builtin_modules += novatel
 builtin_sources += plugins/novatel.c
 
-builtin_modules += nokia
-builtin_sources += plugins/nokia.c
-
-builtin_modules += bluetooth
-builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
-
-builtin_modules += hfp
-builtin_sources += plugins/hfp.c plugins/bluetooth.h
-
 builtin_modules += palmpre
 builtin_sources += plugins/palmpre.c
 
@@ -313,8 +304,22 @@ builtin_sources += plugins/caif.c
 builtin_modules += tc65
 builtin_sources += plugins/tc65.c
 
+builtin_modules += nokia
+builtin_sources += plugins/nokia.c
+
 builtin_modules += nokiacdma
 builtin_sources += plugins/nokiacdma.c
+
+if BLUETOOTH
+builtin_modules += bluetooth
+builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
+
+builtin_modules += hfp
+builtin_sources += plugins/hfp.c plugins/bluetooth.h
+
+builtin_cflags += @BLUEZ_CFLAGS@
+builtin_libadd += @BLUEZ_LIBS@
+endif
 endif
 
 if MAINTAINER_MODE
@@ -351,8 +356,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/smsagent.c src/smsagent.h src/ctm.c \
 			src/cdma-voicecall.c
 
-src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ \
-			@BLUEZ_LIBS@ -ldl
+src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 
 src_ofonod_LDFLAGS = -Wl,--export-dynamic \
 				-Wl,--version-script=$(srcdir)/src/ofono.ver
