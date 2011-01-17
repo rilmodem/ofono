@@ -57,6 +57,11 @@ for path, properties in modems:
 			elif key in ["MainMenu"]:
 				val = ", ".join([ text + " (" + str(int(icon)) +
 					")" for text, icon in properties[key] ])
+			elif key in ["Retries"]:
+				val = ""
+				for i in properties[key]:
+					val +=  "[" + i + " = "
+					val += str(int(properties[key][i])) + "] "
 			else:
 				val = str(properties[key])
 			print "        %s = %s" % (key, val)
