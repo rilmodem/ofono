@@ -41,7 +41,7 @@ Methods		dict GetProperties()
 			Retrieve array of operator object and properties.
 
 			This method can be used to retrieve the current
-			operator list.  This is eithe an empty list (when
+			operator list.  This is either an empty list (when
 			not registered to any network) or a list with one
 			or more operators (when registered).
 
