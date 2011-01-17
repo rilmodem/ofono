@@ -143,6 +143,14 @@ static gboolean decode_gsm_forwarding_info(GIsiSubBlockIter *parent,
 							info->numlen * 2,
 							2 + len))
 				return FALSE;
+
+			if (number)
+				*number = tag;
+			else
+				g_free(tag);
+		} else {
+			if (number)
+				*number = g_strdup("");
 		}
 
 		if (status)
@@ -153,11 +161,6 @@ static gboolean decode_gsm_forwarding_info(GIsiSubBlockIter *parent,
 
 		if (noreply)
 			*noreply = info->noreply;
-
-		if (number)
-			*number = tag;
-		else
-			g_free(tag);
 
 		return TRUE;
 	}
