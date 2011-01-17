@@ -83,6 +83,7 @@ struct v250_settings {
 	char s3;			/* set by S3=<val> */
 	char s4;			/* set by S4=<val> */
 	char s5;			/* set by S5=<val> */
+	int s6;				/* set by S6=<val> */
 	gboolean echo;			/* set by E<val> */
 	gboolean quiet;			/* set by Q<val> */
 	gboolean is_v1;			/* set by V<val>, v0 or v1 */
@@ -410,6 +411,13 @@ static void at_x_cb(GAtServerRequestType type, GAtResult *result,
 	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.res_format,
 			"X", 0, 4, 4);
+}
+
+static void at_s6_cb(GAtServerRequestType type, GAtResult *result,
+			gpointer user_data)
+{
+	GAtServer *server = user_data;
+	at_template_cb(type, result, server, &server->v250.s6, "S6", 0, 1, 1);
 }
 
 static void at_c109_cb(GAtServerRequestType type, GAtResult *result,
@@ -1031,6 +1039,7 @@ static void v250_settings_create(struct v250_settings *v250)
 	v250->s3 = '\r';
 	v250->s4 = '\n';
 	v250->s5 = '\b';
+	v250->s6 = 2;
 	v250->echo = TRUE;
 	v250->quiet = FALSE;
 	v250->is_v1 = TRUE;
@@ -1058,6 +1067,7 @@ static void basic_command_register(GAtServer *server)
 	g_at_server_register(server, "Q", at_q_cb, server, NULL);
 	g_at_server_register(server, "V", at_v_cb, server, NULL);
 	g_at_server_register(server, "X", at_x_cb, server, NULL);
+	g_at_server_register(server, "S6", at_s6_cb, server, NULL);
 	g_at_server_register(server, "&C", at_c109_cb, server, NULL);
 	g_at_server_register(server, "&D", at_c108_cb, server, NULL);
 }
