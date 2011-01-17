@@ -80,7 +80,7 @@ Properties	string Mode [readonly]
 				"manual"   Network operator is selected
 				           manually. If the operator is
 				           currently not selected, registration
-				           is notattempted
+				           is not attempted
 				"off"      Unregisters from currently selected
 				           network, if any, and does not
 				           attempt to register again.
