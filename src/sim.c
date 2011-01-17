@@ -423,7 +423,7 @@ static void sim_pin_retries_query_cb(const struct ofono_error *error,
 		return;
 	}
 
-	if (!memcmp(retries, sim->pin_retries, sizeof(retries)))
+	if (!memcmp(retries, sim->pin_retries, sizeof(sim->pin_retries)))
 		return;
 
 	memcpy(sim->pin_retries, retries, sizeof(sim->pin_retries));
