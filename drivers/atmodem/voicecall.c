@@ -206,7 +206,8 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			 * CDIP doesn't arrive as part of CLCC, always
 			 * re-use from the old call
 			 */
-			nc->called_number = oc->called_number;
+			memcpy(&nc->called_number, &oc->called_number,
+					sizeof(oc->called_number));
 
 			/*
 			 * If the CLIP is not provided and the CLIP never
