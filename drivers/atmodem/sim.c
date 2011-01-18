@@ -508,7 +508,7 @@ static void huawei_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (!g_at_result_iter_next_number(&iter, &val))
 			goto error;
 
-		retries[password_types[i]]= val;
+		retries[password_types[i]] = val;
 
 		DBG("retry counter id=%d, val=%d", password_types[i],
 						retries[password_types[i]]);
