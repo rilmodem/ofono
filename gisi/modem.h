@@ -107,8 +107,6 @@ int g_isi_response_vsend(GIsiModem *modem, const GIsiMessage *req,
 				const struct iovec *__restrict iov,
 				size_t iovlen);
 
-GIsiPending *g_isi_pending_from_msg(const GIsiMessage *msg);
-
 void g_isi_pending_remove(GIsiPending *op);
 void g_isi_pending_set_owner(GIsiPending *op, gpointer owner);
 void g_isi_remove_pending_by_owner(GIsiModem *modem, uint8_t resource,

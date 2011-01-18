@@ -156,8 +156,6 @@ static void pending_dispatch(GIsiPending *pend, GIsiMessage *msg)
 		g_isi_msg_resource(msg), g_isi_msg_id(msg),
 		g_isi_msg_utid(msg));
 
-	msg->private = pend;
-
 	pend->notify(msg, pend->data);
 }
 
@@ -176,8 +174,6 @@ static void pending_remove_and_dispatch(GIsiPending *op, GIsiMessage *msg)
 		g_isi_msg_strerror(msg), pend_type_to_str(op->type), op,
 		g_isi_msg_resource(msg), g_isi_msg_id(msg),
 		g_isi_msg_utid(msg));
-
-	msg->private = op;
 
 	op->notify(msg, op->data);
 
@@ -768,11 +764,6 @@ error:
 uint8_t g_isi_request_utid(GIsiPending *resp)
 {
 	return resp != NULL ? resp->utid : 0;
-}
-
-GIsiPending *g_isi_pending_from_msg(const GIsiMessage *msg)
-{
-	return msg != NULL ? msg->private : NULL;
 }
 
 void g_isi_pending_remove(GIsiPending *op)
