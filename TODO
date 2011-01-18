@@ -185,7 +185,8 @@ GPRS
 - Add support for IPv6 GPRS contexts.
 
   Priority: Medium
-  Complexity: C1
+  Complexity: C2
+  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
 
 
 Location Services
