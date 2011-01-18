@@ -388,7 +388,8 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/emulator.c src/location-reporting.c \
 			src/cdma-connman.c src/gnss.c \
 			src/gnssagent.c src/gnssagent.h \
-			src/cdma-smsutil.h src/cdma-smsutil.c
+			src/cdma-smsutil.h src/cdma-smsutil.c \
+			src/cdma-sms.c
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 
