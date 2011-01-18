@@ -662,13 +662,13 @@ static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 		return;
 
 	if (ind == 0)
-		strength = 0;
+		strength = -1;
 	else if (ind == 7)
 		strength = 100;
 	else
 		strength = (ind * 15);
 
-	ofono_netreg_strength_notify(netreg, ind);
+	ofono_netreg_strength_notify(netreg, strength);
 }
 
 static void ciev_notify(GAtResult *result, gpointer user_data)
