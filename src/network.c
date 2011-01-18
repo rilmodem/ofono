@@ -104,9 +104,9 @@ static const char *registration_mode_to_string(int mode)
 		return "manual";
 	case NETWORK_REGISTRATION_MODE_OFF:
 		return "off";
-	default:
-		return "unknown";
 	}
+
+	return "unknown";
 }
 
 static inline const char *network_operator_status_to_string(int status)
