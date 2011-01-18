@@ -250,6 +250,10 @@ static int ste_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->chat, "AT&F E0 V1 X4 &C1 +CMEE=1",
 			NULL, NULL, NULL, NULL);
 
+	/* All STE modems support UTF-8 */
+	g_at_chat_send(data->chat, "AT+CSCS=\"UTF-8\"",
+			NULL, NULL, NULL, NULL);
+
 	g_io_channel_unref(channel);
 	g_at_syntax_unref(syntax);
 
