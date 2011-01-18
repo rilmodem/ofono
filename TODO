@@ -229,13 +229,6 @@ Supplementary Services
   Priority: Low
   Complexity: C2
 
-- Called Line Identification.  This affects both call_settings and voicecall
-  atoms.  3GPP service is accessed by the +CDIP command.
-
-  Priority: Low
-  Complexity: C4
-  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-
 - CPHS Support.  This includes ALS and CPHS specific elementary files.
 
   Priority: Low
