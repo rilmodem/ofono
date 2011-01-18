@@ -87,14 +87,15 @@ Properties	string LineIdentification [readonly]
 			"override category" option was not provisioned for
 			the current subscriber.
 
-		string CalledLineIdentification [readonly]
+		string IncomingLine [readonly, optional]
 
 			Contains the Called Line Identification information
 			returned by the network. This is only available for
-			incoming calls, in which it indicates the dialed number
-			to make this call. This is useful for subscribers
-			associated to multiple identifications to differentiate
-			the calls received by each one.
+			incoming calls and indicates the local subscriber
+			number which was dialed by the remote party. This is
+			useful for subscribers which have a multiple line
+			service with their network provider and would like
+			to know what line the call is coming in on.
 
 		string Name [readonly]
 
