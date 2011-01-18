@@ -69,7 +69,7 @@ Signals		PropertyChanged(string property, variant value)
 
 Properties	string Mode [readonly]
 
-			The current registration mode. The deault of this
+			The current registration mode. The default of this
 			is "auto", but can be changed during operation. This
 			property will change to "manual" if the Register()
 			method of an operator is called.
