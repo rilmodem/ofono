@@ -374,7 +374,7 @@ static void append_voicecall_properties(struct voicecall *v,
 		const char *calledid;
 
 		calledid = phone_number_to_string(&call->called_number);
-		ofono_dbus_dict_append(dict, "CalledLineIdentification",
+		ofono_dbus_dict_append(dict, "IncomingLine",
 						DBUS_TYPE_STRING, &calledid);
 	}
 
@@ -808,8 +808,10 @@ static void voicecall_set_call_calledid(struct voicecall *v,
 	calledid_str = phone_number_to_string(ph);
 
 	ofono_dbus_signal_property_changed(conn, path,
-			OFONO_VOICECALL_INTERFACE, "CalledLineIdentification",
-			DBUS_TYPE_STRING, &calledid_str);
+						OFONO_VOICECALL_INTERFACE,
+						"IncomingLine",
+						DBUS_TYPE_STRING,
+						&calledid_str);
 }
 
 
