@@ -32,29 +32,11 @@
 
 #include "server.h"
 
-struct pending_data {
-	GIsiServer *server;
-	GIsiNotifyFunc notify;
-	void *data;
-};
-
 struct _GIsiServer {
 	GIsiModem *modem;
 	GIsiVersion version;
 	uint8_t resource;
-	GSList *pending;
 };
-
-static void pending_notify(const GIsiMessage *msg, void *data)
-{
-	struct pending_data *pd = data;
-
-	if (pd == NULL)
-		return;
-
-	if (pd->notify != NULL)
-		pd->notify(msg, pd->data);
-}
 
 uint8_t g_isi_server_resource(GIsiServer *server)
 {
@@ -87,21 +69,8 @@ GIsiServer *g_isi_server_create(GIsiModem *modem, uint8_t resource,
 
 	server->resource = resource;
 	server->modem = modem;
-	server->pending = NULL;
 
 	return server;
-}
-
-static void foreach_destroy(gpointer value, gpointer user)
-{
-	GIsiPending *op = value;
-	GIsiServer *server = user;
-
-	if (op == NULL || server == NULL)
-		return;
-
-	server->pending = g_slist_remove(server->pending, op);
-	g_isi_pending_remove(op);
 }
 
 void g_isi_server_destroy(GIsiServer *server)
@@ -109,8 +78,8 @@ void g_isi_server_destroy(GIsiServer *server)
 	if (server == NULL)
 		return;
 
-	g_slist_foreach(server->pending, foreach_destroy, server);
-	g_slist_free(server->pending);
+	g_isi_remove_pending_by_owner(server->modem, server->resource, server);
+
 	g_free(server);
 }
 
@@ -132,47 +101,15 @@ int g_isi_server_vsend(GIsiServer *server, const GIsiMessage *req,
 	return g_isi_response_vsend(server->modem, req, iov, iovlen);
 }
 
-static struct pending_data *pending_data_create(GIsiServer *server,
-						GIsiNotifyFunc notify,
-						void *data)
-{
-	struct pending_data *pd;
-
-	if (server == NULL) {
-		errno = EINVAL;
-		return NULL;
-	}
-
-	pd = g_try_new0(struct pending_data, 1);
-	if (pd == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	pd->server = server;
-	pd->notify = notify;
-	pd->data = data;
-
-	return pd;
-}
-
 GIsiPending *g_isi_server_handle(GIsiServer *server, uint8_t type,
 					GIsiNotifyFunc notify, void *data)
 {
-	struct pending_data *pd;
 	GIsiPending *op;
 
-	pd = pending_data_create(server, notify, data);
-	if (pd == NULL)
-		return NULL;
-
 	op = g_isi_service_bind(server->modem, server->resource, type,
-				pending_notify, pd, g_free);
-	if (op == NULL) {
-		g_free(pd);
-		return NULL;
-	}
+				notify, data, NULL);
 
-	server->pending = g_slist_append(server->pending, op);
+	g_isi_pending_set_owner(op, server);
+
 	return op;
 }

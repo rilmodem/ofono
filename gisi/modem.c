@@ -73,6 +73,7 @@ struct _GIsiModem {
 struct _GIsiPending {
 	enum GIsiMessageType type;
 	GIsiServiceMux *service;
+	gpointer owner;
 	guint timeout;
 	GIsiNotifyFunc notify;
 	GDestroyNotify destroy;
@@ -797,6 +798,68 @@ void g_isi_pending_remove(GIsiPending *op)
 	op->service->pending = g_slist_remove(op->service->pending, op);
 
 	pending_destroy(op, NULL);
+}
+
+static void foreach_destroy(GIsiPending *op)
+{
+	if (op->type == GISI_MESSAGE_TYPE_IND)
+		service_subs_decr(op->service);
+
+	if (op->type == GISI_MESSAGE_TYPE_REQ)
+		service_regs_decr(op->service);
+
+	if (op->type == GISI_MESSAGE_TYPE_RESP && op->notify != NULL) {
+		GIsiMessage msg = {
+			.error = ESHUTDOWN,
+		};
+
+		pending_dispatch(op, &msg);
+	}
+
+	pending_destroy(op, NULL);
+}
+
+void g_isi_pending_set_owner(GIsiPending *op, gpointer owner)
+{
+	if (op == NULL)
+		return;
+
+	op->owner = owner;
+}
+
+void g_isi_remove_pending_by_owner(GIsiModem *modem, uint8_t resource,
+					gpointer owner)
+{
+	GIsiServiceMux *mux;
+	GSList *l;
+	GSList *next;
+	GIsiPending *op;
+	GSList *owned = NULL;
+
+	mux = service_get(modem, resource);
+	if (mux == NULL)
+		return;
+
+	for (l = mux->pending; l != NULL; l = next) {
+		next = l->next;
+		op = l->data;
+
+		if (op->owner != owner)
+			continue;
+
+		mux->pending = g_slist_remove_link(mux->pending, l);
+
+		l->next = owned;
+		owned = l;
+	}
+
+	for (l = owned; l != NULL; l = l->next) {
+		op = l->data;
+
+		foreach_destroy(op);
+	}
+
+	g_slist_free(owned);
 }
 
 GIsiPending *g_isi_ntf_subscribe(GIsiModem *modem, uint8_t resource,

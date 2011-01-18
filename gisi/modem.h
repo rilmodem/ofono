@@ -109,7 +109,10 @@ int g_isi_response_vsend(GIsiModem *modem, const GIsiMessage *req,
 
 GIsiPending *g_isi_pending_from_msg(const GIsiMessage *msg);
 
-void g_isi_pending_remove(GIsiPending *operation);
+void g_isi_pending_remove(GIsiPending *op);
+void g_isi_pending_set_owner(GIsiPending *op, gpointer owner);
+void g_isi_remove_pending_by_owner(GIsiModem *modem, uint8_t resource,
+					gpointer owner);
 
 GIsiPending *g_isi_resource_ping(GIsiModem *modem, uint8_t resource,
 					GIsiNotifyFunc notify, void *data,
