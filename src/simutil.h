@@ -19,6 +19,9 @@
  *
  */
 
+#define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
+#define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
+
 enum sim_fileid {
 	SIM_EFPL_FILEID =			0x2F05,
 	SIM_EF_ICCID_FILEID =			0x2FE2,
@@ -223,9 +226,6 @@ enum sim_sst_service {
 	SIM_SST_SERVICE_PROVIDER_DISPLAY_INFO =		55
 };
 
-#define SIM_EFSPN_DC_HOME_PLMN_BIT 0x1
-#define SIM_EFSPN_DC_ROAMING_SPN_BIT 0x2
-
 enum ber_tlv_data_type {
 	BER_TLV_DATA_TYPE_UNIVERSAL =		0,
 	BER_TLV_DATA_TYPE_APPLICATION =		1,
@@ -347,8 +347,8 @@ void ber_tlv_iter_init(struct ber_tlv_iter *iter, const unsigned char *pdu,
 unsigned int ber_tlv_iter_get_tag(struct ber_tlv_iter *iter);
 
 enum ber_tlv_data_type ber_tlv_iter_get_class(struct ber_tlv_iter *iter);
-enum ber_tlv_data_encoding_type
-	ber_tlv_iter_get_encoding(struct ber_tlv_iter *iter);
+enum ber_tlv_data_encoding_type ber_tlv_iter_get_encoding(
+						struct ber_tlv_iter *iter);
 
 /*
  * This will return the short tag along with class and encoding information.
