@@ -140,6 +140,8 @@ gboolean g_at_util_setup_io(GIOChannel *io, GIOFlags flags)
 			G_IO_STATUS_NORMAL)
 		return FALSE;
 
+	g_io_channel_set_buffered(io, FALSE);
+
 	if (flags & G_IO_FLAG_SET_MASK) {
 		io_flags = g_io_channel_get_flags(io);
 
