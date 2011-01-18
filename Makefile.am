@@ -530,7 +530,7 @@ dist_man_MANS = doc/ofonod.8
 noinst_PROGRAMS = unit/test-common unit/test-util unit/test-idmap \
 					unit/test-sms unit/test-simutil \
 					unit/test-mux unit/test-caif \
-					unit/test-stkutil
+					unit/test-stkutil unit/test-cdmasms
 
 unit_objects =
 
@@ -549,6 +549,10 @@ unit_objects += $(unit_test_idmap_OBJECTS)
 unit_test_sms_SOURCES = unit/test-sms.c src/util.c src/smsutil.c src/storage.c
 unit_test_sms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_sms_OBJECTS)
+
+unit_test_cdmasms_SOURCES = unit/test-cdmasms.c src/cdma-smsutil.c
+unit_test_cdmasms_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_cdmasms_OBJECTS)
 
 unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
 				src/simutil.c src/smsutil.c src/storage.c
