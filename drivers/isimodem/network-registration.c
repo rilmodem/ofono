@@ -663,14 +663,6 @@ error:
 	g_free(cbd);
 }
 
-static void isi_deregister(struct ofono_netreg *netreg,
-				ofono_netreg_register_cb_t cb,
-				void *data)
-{
-	DBG("Not implemented.");
-	CALLBACK_WITH_FAILURE(cb, data);
-}
-
 static void rssi_ind_cb(const GIsiMessage *msg, void *data)
 {
 	struct ofono_netreg *netreg = data;
@@ -859,7 +851,6 @@ static struct ofono_netreg_driver driver = {
 	.list_operators		= isi_list_operators,
 	.register_auto		= isi_register_auto,
 	.register_manual	= isi_register_manual,
-	.deregister		= isi_deregister,
 	.strength		= isi_strength,
 };
 
