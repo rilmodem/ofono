@@ -78,6 +78,8 @@ struct ofono_sim {
 	gboolean barred_dialing;
 
 	char *imsi;
+	char mcc[OFONO_MAX_MCC_LENGTH + 1];
+	char mnc[OFONO_MAX_MNC_LENGTH + 1];
 
 	GSList *own_numbers;
 	GSList *new_numbers;
@@ -348,21 +350,13 @@ static DBusMessage *sim_get_properties(DBusConnection *conn,
 	bdn = sim->barred_dialing;
 	ofono_dbus_dict_append(&dict, "BarredDialing", DBUS_TYPE_BOOLEAN, &bdn);
 
-	if (sim->mnc_length && sim->imsi) {
-		char mcc[OFONO_MAX_MCC_LENGTH + 1];
-		char mnc[OFONO_MAX_MNC_LENGTH + 1];
+	if (sim->mcc[0] != '\0' && sim->mnc[0] != '\0') {
 		const char *str;
-
-		strncpy(mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
-		mcc[OFONO_MAX_MCC_LENGTH] = '\0';
-		strncpy(mnc, sim->imsi + OFONO_MAX_MCC_LENGTH, sim->mnc_length);
-		mnc[sim->mnc_length] = '\0';
-
-		str = mcc;
+		str = sim->mcc;
 		ofono_dbus_dict_append(&dict, "MobileCountryCode",
 					DBUS_TYPE_STRING, &str);
 
-		str = mnc;
+		str = sim->mnc;
 		ofono_dbus_dict_append(&dict, "MobileNetworkCode",
 					DBUS_TYPE_STRING, &str);
 	}
@@ -1299,22 +1293,21 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 						DBUS_TYPE_STRING, &sim->imsi);
 
 	if (sim->mnc_length) {
-		char mcc[OFONO_MAX_MCC_LENGTH + 1];
-		char mnc[OFONO_MAX_MNC_LENGTH + 1];
 		const char *str;
 
-		strncpy(mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
-		mcc[OFONO_MAX_MCC_LENGTH] = '\0';
-		strncpy(mnc, sim->imsi + OFONO_MAX_MCC_LENGTH, sim->mnc_length);
-		mnc[sim->mnc_length] = '\0';
+		strncpy(sim->mcc, sim->imsi, OFONO_MAX_MCC_LENGTH);
+		sim->mcc[OFONO_MAX_MCC_LENGTH] = '\0';
+		strncpy(sim->mnc, sim->imsi + OFONO_MAX_MCC_LENGTH,
+			sim->mnc_length);
+		sim->mnc[sim->mnc_length] = '\0';
 
-		str = mcc;
+		str = sim->mcc;
 		ofono_dbus_signal_property_changed(conn, path,
 						OFONO_SIM_MANAGER_INTERFACE,
 						"MobileCountryCode",
 						DBUS_TYPE_STRING, &str);
 
-		str = mnc;
+		str = sim->mnc;
 		ofono_dbus_signal_property_changed(conn, path,
 						OFONO_SIM_MANAGER_INTERFACE,
 						"MobileNetworkCode",
@@ -2059,6 +2052,9 @@ static void sim_free_state(struct ofono_sim *sim)
 		g_free(sim->imsi);
 		sim->imsi = NULL;
 	}
+
+	sim->mcc[0] = '\0';
+	sim->mnc[0] = '\0';
 
 	if (sim->own_numbers) {
 		g_slist_foreach(sim->own_numbers, (GFunc)g_free, NULL);
