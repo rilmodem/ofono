@@ -121,6 +121,15 @@ SIM / SIM File system
   Priority: Low
   Complexity: C4
 
+- ISIM support
+
+  ISIM is the SIM application for IP Multimedia Subsystem, specified in
+  3GPP TS 31.103. The UICCs can support multiple ISIMs for different IMS
+  identities.
+
+  Priority: Low
+  Complexity: C4
+
 
 Modem Emulator
 ==============
