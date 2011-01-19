@@ -116,6 +116,11 @@ SIM / SIM File system
   Complexity: C4
   Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
+- Support SIM authentication: GBA_U suite.
+
+  Priority: Low
+  Complexity: C4
+
 
 Modem Emulator
 ==============
