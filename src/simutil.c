@@ -1465,3 +1465,60 @@ gboolean sim_sst_is_active(unsigned char *efsst, unsigned char len,
 
 	return (efsst[index / 4] >> (((index % 4) * 2) + 1)) & 1;
 }
+
+GSList *sim_parse_app_template_entries(const unsigned char *buffer, int len)
+{
+	GSList *ret = NULL;
+	const unsigned char *dataobj;
+	int dataobj_len;
+
+	/* Find all the application entries */
+	while ((dataobj = ber_tlv_find_by_tag(buffer, 0x61, len,
+						&dataobj_len)) != NULL) {
+		struct sim_app_record app;
+		const unsigned char *aid, *label;
+		int label_len;
+
+		/* Find the aid (mandatory) */
+		aid = ber_tlv_find_by_tag(dataobj, 0x4f, dataobj_len,
+						&app.aid_len);
+		if (!aid || app.aid_len < 0x01 || app.aid_len > 0x10)
+			goto error;
+
+		memcpy(app.aid, aid, app.aid_len);
+
+		/* Find the label (optional) */
+		label = ber_tlv_find_by_tag(dataobj, 0x50, dataobj_len,
+						&label_len);
+		if (label) {
+			/*
+			 * Label field uses the extra complicated
+			 * encoding in 102.221 Annex A
+			 */
+			app.label = sim_string_to_utf8(label, label_len);
+
+			if (app.label == NULL)
+				goto error;
+		} else
+			app.label = NULL;
+
+		ret = g_slist_prepend(ret, g_memdup(&app, sizeof(app)));
+
+		len -= (dataobj - buffer) + dataobj_len;
+		buffer = dataobj + dataobj_len;
+	}
+
+	return ret;
+
+error:
+	while (ret) {
+		GSList *t = ret;
+
+		g_free(((struct sim_app_record *) ret->data)->label);
+
+		ret = ret->next;
+		g_slist_free_1(t);
+	}
+
+	return NULL;
+}

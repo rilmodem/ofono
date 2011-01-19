@@ -255,6 +255,12 @@ struct sim_ef_info {
 	enum sim_file_access perm_update;
 };
 
+struct sim_app_record {
+	unsigned char aid[16];
+	int aid_len;
+	char *label;
+};
+
 struct simple_tlv_iter {
 	unsigned int max;
 	unsigned int pos;
@@ -446,3 +452,5 @@ gboolean sim_sst_is_available(unsigned char *service_sst, unsigned char len,
 						enum sim_sst_service index);
 gboolean sim_sst_is_active(unsigned char *service_sst, unsigned char len,
 						enum sim_sst_service index);
+
+GSList *sim_parse_app_template_entries(const unsigned char *buffer, int len);
