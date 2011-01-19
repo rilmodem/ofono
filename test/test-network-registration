@@ -18,8 +18,6 @@ if __name__ == "__main__":
 			(sys.argv[0])
 		print "Usage: %s default - Register to default PLMN" %\
 			(sys.argv[0])
-		print "Usage: %s unregister - Unregister from all PLMNs" %\
-			(sys.argv[0])
 		sys.exit(1)
 
 	canexit = False
@@ -53,14 +51,12 @@ if __name__ == "__main__":
 	try:
 		if sys.argv[1] == 'default':
 			netreg.Register()
-		elif sys.argv[1] == 'unregister':
-			netreg.Deregister()
 		else:
 			obj = bus.get_object('org.ofono', sys.argv[1]);
 			op = dbus.Interface(obj, 'org.ofono.NetworkOperator')
 			op.Register()
 	except dbus.DBusException, e:
-		print "Unable to register/deregister: ", e
+		print "Unable to register: ", e
 		sys.exit(1)
 
 	canexit = True
