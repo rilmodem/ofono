@@ -30,12 +30,6 @@ Methods		dict GetProperties()
 
 			Possible Errors: [service].Error.InvalidArguments
 
-		void Deregister()
-
-			Completely unregisters from the network
-
-			Possible Errors: [service].Error.InvalidArguments
-
 		array{object,dict} GetOperators()
 
 			Retrieve array of operator object and properties.
@@ -81,9 +75,6 @@ Properties	string Mode [readonly]
 				           manually. If the operator is
 				           currently not selected, registration
 				           is not attempted
-				"off"      Unregisters from currently selected
-				           network, if any, and does not
-				           attempt to register again.
 
 		string Status [readonly]
 
