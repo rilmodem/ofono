@@ -205,6 +205,7 @@ static void create_tun(GAtRawIP *rawip)
 
 	rawip->tun_io = g_at_io_new(channel);
 
+	g_io_channel_set_encoding(channel, NULL, NULL);
 	g_io_channel_set_buffered(channel, FALSE);
 
 	g_io_channel_unref(channel);
