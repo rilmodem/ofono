@@ -43,8 +43,6 @@
 enum network_registration_mode {
 	NETWORK_REGISTRATION_MODE_AUTO =	0,
 	NETWORK_REGISTRATION_MODE_MANUAL =	1,
-	NETWORK_REGISTRATION_MODE_OFF =		2,
-	NETWORK_REGISTRATION_MODE_MANUAL_AUTO =	4,
 };
 
 #define SETTINGS_STORE "netreg"
@@ -102,8 +100,6 @@ static const char *registration_mode_to_string(int mode)
 		return "auto";
 	case NETWORK_REGISTRATION_MODE_MANUAL:
 		return "manual";
-	case NETWORK_REGISTRATION_MODE_OFF:
-		return "off";
 	}
 
 	return "unknown";
@@ -845,26 +841,6 @@ static DBusMessage *network_register(DBusConnection *conn,
 	return NULL;
 }
 
-static DBusMessage *network_deregister(DBusConnection *conn,
-					DBusMessage *msg, void *data)
-{
-	struct ofono_netreg *netreg = data;
-
-	if (netreg->pending)
-		return __ofono_error_busy(msg);
-
-	if (netreg->driver->deregister == NULL)
-		return __ofono_error_not_implemented(msg);
-
-	netreg->pending = dbus_message_ref(msg);
-
-	netreg->driver->deregister(netreg, register_callback, netreg);
-
-	set_registration_mode(netreg, NETWORK_REGISTRATION_MODE_OFF);
-
-	return NULL;
-}
-
 static void append_operator_struct(struct ofono_netreg *netreg,
 					struct network_operator_data *opd,
 					DBusMessageIter *iter)
@@ -1015,8 +991,6 @@ static DBusMessage *network_get_operators(DBusConnection *conn,
 static GDBusMethodTable network_registration_methods[] = {
 	{ "GetProperties",  "",  "a{sv}",	network_get_properties },
 	{ "Register",       "",  "",		network_register,
-						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "Deregister",     "",  "",		network_deregister,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "GetOperators",   "",  "a(oa{sv})",	network_get_operators },
 	{ "Scan",           "",  "a(oa{sv})",	network_scan,
@@ -1798,7 +1772,7 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 	mode = g_key_file_get_integer(netreg->settings, SETTINGS_GROUP,
 					"Mode", NULL);
 
-	if (mode >= 0 && mode <= 2)
+	if (mode >= 0 && mode <= 1)
 		netreg->mode = mode;
 
 	g_key_file_set_integer(netreg->settings, SETTINGS_GROUP,
