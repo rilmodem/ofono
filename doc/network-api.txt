@@ -136,11 +136,6 @@ Properties	string Mode [readonly]
 			display on the idle screen or an empty string if
 			not registered to a network.
 
-			This value is idential to the Name property from
-			the network operator object. It is provided here
-			for simplicity of application that don't allow
-			manual registration.
-
 		byte Strength [readonly, optional]
 
 			Contains the current signal strength as a percentage
@@ -188,7 +183,11 @@ Signals		PropertyChanged(string property, variant value)
 
 Properties	string Name [readonly]
 
-			Contains the name of the operator
+			Contains the name of the operator, suitable for using
+			as a string handle in a UI widget used for manual
+			network selection. For a proper display name of the
+			current operator, use the Name property of the
+			NetworkRegistration interface instead.
 
 		string Status [readonly]
 
