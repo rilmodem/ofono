@@ -2112,9 +2112,6 @@ static void ecc_g2_read_cb(int ok, int total_length, int record,
 								g_strdup(en));
 	}
 
-	if (vc->new_en_list == NULL)
-		return;
-
 	set_new_ecc(vc);
 }
 
@@ -2147,7 +2144,7 @@ static void ecc_g3_read_cb(int ok, int total_length, int record,
 		return;
 
 check:
-	if (vc->new_en_list == NULL)
+	if (!ok && vc->new_en_list == NULL)
 		return;
 
 	set_new_ecc(vc);
