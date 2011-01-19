@@ -51,12 +51,14 @@ static int atmodem_init(void)
 	at_call_volume_init();
 	at_gprs_init();
 	at_gprs_context_init();
+	at_sim_auth_init();
 
 	return 0;
 }
 
 static void atmodem_exit(void)
 {
+	at_sim_auth_exit();
 	at_stk_exit();
 	at_sim_exit();
 	at_sms_exit();
