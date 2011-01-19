@@ -289,7 +289,8 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		data->sim_poll_timeout = g_timeout_add_seconds(2,
 								query_sim_state,
 								modem);
-	} else if (sim_state ==	HUAWEI_SIM_STATE_INVALID_OR_LOCKED) {
+	} else if (sim_state ==	HUAWEI_SIM_STATE_INVALID_OR_LOCKED &&
+						!data->sim_poll_timeout) {
 		data->sim_poll_timeout = g_timeout_add_seconds(2,
 								query_sim_locked,
 								modem);
