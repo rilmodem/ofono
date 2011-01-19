@@ -557,25 +557,6 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void at_deregister(struct ofono_netreg *netreg,
-				ofono_netreg_register_cb_t cb, void *data)
-{
-	struct netreg_data *nd = ofono_netreg_get_data(netreg);
-	struct cb_data *cbd = cb_data_new(cb, data);
-
-	if (cbd == NULL)
-		goto error;
-
-	if (g_at_chat_send(nd->chat, "AT+COPS=2", none_prefix,
-				register_cb, cbd, g_free) > 0)
-		return;
-
-error:
-	g_free(cbd);
-
-	CALLBACK_WITH_FAILURE(cb, data);
-}
-
 static void csq_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1342,7 +1323,6 @@ static struct ofono_netreg_driver driver = {
 	.list_operators			= at_list_operators,
 	.register_auto			= at_register_auto,
 	.register_manual		= at_register_manual,
-	.deregister			= at_deregister,
 	.strength			= at_signal_strength,
 };
 
