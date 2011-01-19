@@ -299,7 +299,7 @@ Supplementary Services
 
 - CNAP support.  The Calling Name Presentation supplementary service is
   supported by oFono.  One can query whether the service is provisioned in the
-  network by using the CallSettings property.  If the network reports the
+  network by using the CallSettings interface.  If the network reports the
   calling name, it is presented on the Voicecall interface using the Name
   property.  If no calling name is given, the Name is empty.
 
