@@ -434,16 +434,9 @@ error:
 static void setup_internal_mux(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	GIOFlags flags;
 	int i;
 
 	DBG("");
-
-	flags = g_io_channel_get_flags(data->device) | G_IO_FLAG_NONBLOCK;
-	g_io_channel_set_flags(data->device, flags, NULL);
-
-	g_io_channel_set_encoding(data->device, NULL, NULL);
-	g_io_channel_set_buffered(data->device, FALSE);
 
 	data->mux = g_at_mux_new_gsm0710_basic(data->device, data->frame_size);
 	if (data->mux == NULL)
