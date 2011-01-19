@@ -699,6 +699,10 @@ GIOChannel *g_at_mux_create_channel(GAtMux *mux)
 	channel->funcs = &channel_funcs;
 
 	channel->is_seekable = FALSE;
+	channel->is_readable = TRUE;
+	channel->is_writeable = TRUE;
+
+	channel->do_encode = FALSE;
 
 	mux_channel->mux = mux;
 	mux_channel->dlc = i+1;
