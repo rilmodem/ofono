@@ -590,6 +590,7 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 					huawei_cpin_cb, cbd, g_free) > 0)
 			return;
 
+		break;
 	default:
 		break;
 	}
