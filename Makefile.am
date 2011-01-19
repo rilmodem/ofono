@@ -1,9 +1,7 @@
 
 AM_MAKEFLAGS = --no-print-directory
 
-includedir = @includedir@/ofono
-
-include_HEADERS = include/log.h include/plugin.h include/history.h \
+pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/dbus.h include/modem.h include/types.h \
 			include/call-barring.h include/call-forwarding.h \
 			include/call-meter.h include/call-settings.h \
@@ -17,9 +15,10 @@ include_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/ctm.h include/cdma-voicecall.h \
 			include/cdma-sms.h
 
-nodist_include_HEADERS = include/version.h
+nodist_pkginclude_HEADERS = include/version.h
 
-local_headers = $(foreach file,$(include_HEADERS) $(nodist_include_HEADERS), \
+local_headers = $(foreach file,$(pkginclude_HEADERS) \
+				$(nodist_pkginclude_HEADERS), \
 					include/ofono/$(notdir $(file)))
 
 
