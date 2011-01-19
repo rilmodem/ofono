@@ -444,6 +444,36 @@ static void test_3g_status_data(void)
 	g_free(response);
 }
 
+static char *at_cuad_response = "611B4F10A0000000871002FFFFFFFF8905080000"
+	"FFFFFFFFFFFFFFFFFFFFFFFFFF611F4F0CA000000063504B43532D"
+	"313550094D49445066696C657351043F007F80";
+
+static void test_application_entry_decode(void) {
+	unsigned char *ef_dir;
+	long len;
+	GSList *entries;
+	struct sim_app_record *app[2];
+
+	ef_dir = decode_hex(at_cuad_response, -1, &len, 0);
+	entries = sim_parse_app_template_entries(ef_dir, len);
+
+	g_assert(g_slist_length(entries) == 2);
+
+	app[0] = entries->next->data;
+	app[1] = entries->data;
+
+	g_assert(app[0]->aid_len == 0x10);
+	g_assert(!memcmp(app[0]->aid, &ef_dir[4], 0x10));
+	g_assert(app[0]->label == NULL);
+
+	g_assert(app[1]->aid_len == 0x0c);
+	g_assert(!memcmp(app[1]->aid, &ef_dir[37], 0x0c));
+	g_assert(app[1]->label != NULL);
+	g_assert(!strcmp(app[1]->label, "MIDPfiles"));
+
+	g_free(ef_dir);
+}
+
 int main(int argc, char **argv)
 {
 	g_test_init(&argc, &argv, NULL);
@@ -458,6 +488,8 @@ int main(int argc, char **argv)
 	g_test_add_func("/testsimutil/EONS Handling", test_eons);
 	g_test_add_func("/testsimutil/Elementary File DB", test_ef_db);
 	g_test_add_func("/testsimutil/3G Status response", test_3g_status_data);
+	g_test_add_func("/testsimutil/Application entries decoding",
+			test_application_entry_decode);
 
 	return g_test_run();
 }
