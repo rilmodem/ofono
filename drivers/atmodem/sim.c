@@ -56,6 +56,7 @@ static const char *crsm_prefix[] = { "+CRSM:", NULL };
 static const char *cpin_prefix[] = { "+CPIN:", NULL };
 static const char *clck_prefix[] = { "+CLCK:", NULL };
 static const char *huawei_cpin_prefix[] = { "^CPIN:", NULL };
+static const char *xpincnt_prefix[] = { "+XPINCNT:", NULL };
 static const char *none_prefix[] = { NULL };
 
 static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -463,6 +464,22 @@ static struct {
 	{ OFONO_SIM_PASSWORD_PHCORP_PUK,	"PH-CORP PUK"	},
 };
 
+#define BUILD_PIN_RETRIES_ARRAY(passwd_types, passwd_types_cnt, retry)	\
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)		\
+		retry[i] = -1;						\
+									\
+	for (i = 0; i < passwd_types_cnt; i++) {			\
+		int val;						\
+									\
+		if (!g_at_result_iter_next_number(&iter, &val))		\
+			goto error;					\
+									\
+		retry[passwd_types[i]] = val;				\
+									\
+		DBG("retry counter id=%d, val=%d", passwd_types[i],	\
+					retry[passwd_types[i]]);	\
+	}								\
+
 static void huawei_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -499,20 +516,47 @@ static void huawei_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_skip_next(&iter))
 		goto error;
 
-	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
-		retries[i] = -1;
+	BUILD_PIN_RETRIES_ARRAY(password_types, ARRAY_SIZE(password_types),
+				retries);
 
-	for (i = 0; i < ARRAY_SIZE(password_types); i++) {
-		int val;
+	cb(&error, retries, cbd->data);
 
-		if (!g_at_result_iter_next_number(&iter, &val))
-			goto error;
+	return;
 
-		retries[password_types[i]] = val;
+error:
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
+}
 
-		DBG("retry counter id=%d, val=%d", password_types[i],
-						retries[password_types[i]]);
+static void xpincnt_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_pin_retries_cb_t cb = cbd->cb;
+	const char *final = g_at_result_final_response(result);
+	GAtResultIter iter;
+	struct ofono_error error;
+	int retries[OFONO_SIM_PASSWORD_INVALID];
+	size_t i;
+	static enum ofono_sim_password_type password_types[] = {
+		OFONO_SIM_PASSWORD_SIM_PIN,
+		OFONO_SIM_PASSWORD_SIM_PIN2,
+		OFONO_SIM_PASSWORD_SIM_PUK,
+		OFONO_SIM_PASSWORD_SIM_PUK2,
+	};
+
+	decode_at_error(&error, final);
+
+	if (!ok) {
+		cb(&error, NULL, cbd->data);
+		return;
 	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XPINCNT:"))
+		goto error;
+
+	BUILD_PIN_RETRIES_ARRAY(password_types, ARRAY_SIZE(password_types),
+				retries);
 
 	cb(&error, retries, cbd->data);
 
@@ -523,39 +567,37 @@ error:
 }
 
 static void at_pin_retries_query(struct ofono_sim *sim,
-				ofono_sim_pin_retries_cb_t cb, void *data)
+					ofono_sim_pin_retries_cb_t cb,
+					void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd;
-	int retries[OFONO_SIM_PASSWORD_INVALID];
-	int i;
+	struct cb_data *cbd = cb_data_new(cb, data);
 
 	DBG("");
 
+	if (cbd == NULL)
+		goto error;
+
 	switch (sd->vendor) {
-	case OFONO_VENDOR_HUAWEI:
-		cbd = cb_data_new(cb, data);
-
-		if (cbd == NULL) {
-			CALLBACK_WITH_FAILURE(cb, NULL, data);
+	case OFONO_VENDOR_IFX:
+		if (g_at_chat_send(sd->chat, "AT+XPINCNT", xpincnt_prefix,
+					xpincnt_cb, cbd, g_free) > 0)
 			return;
-		}
 
+		break;
+	case OFONO_VENDOR_HUAWEI:
 		if (g_at_chat_send(sd->chat, "AT^CPIN?", huawei_cpin_prefix,
 					huawei_cpin_cb, cbd, g_free) > 0)
 			return;
 
-		g_free(cbd);
-
-		CALLBACK_WITH_FAILURE(cb, NULL, data);
-		break;
-
 	default:
-		for(i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
-			retries[i] = -1;
-
-		CALLBACK_WITH_SUCCESS(cb, retries, data);
+		break;
 	}
+
+error:
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
 static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
