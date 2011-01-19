@@ -84,8 +84,6 @@ struct ofono_netreg_driver {
 	void (*register_manual)(struct ofono_netreg *netreg,
 				const char *mcc, const char *mnc,
 				ofono_netreg_register_cb_t cb, void *data);
-	void (*deregister)(struct ofono_netreg *netreg,
-			ofono_netreg_register_cb_t cb, void *data);
 	void (*strength)(struct ofono_netreg *netreg,
 			ofono_netreg_strength_cb_t, void *data);
 };
