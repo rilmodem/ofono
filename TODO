@@ -110,6 +110,13 @@ SIM / SIM File system
   Complexity: C1
   Owner: Aki Niemi <aki.niemi@nokia.com>
 
+- Support SIM authentication: SIM and AKA suites.
+
+  Priority: Medium
+  Complexity: C4
+  Owner: Pekka Pessi <pekka.pessi@nokia.com>
+
+
 Modem Emulator
 ==============
 
