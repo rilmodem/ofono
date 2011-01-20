@@ -2358,6 +2358,80 @@ static gboolean handle_command_play_tone(const struct stk_command *cmd,
 	return FALSE;
 }
 
+static void confirm_launch_browser_cb(enum stk_agent_result result,
+					gboolean confirm,
+					void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+	unsigned char no_cause[] = { 0x00 };
+	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
+	struct stk_response rsp;
+
+	stk->respond_on_exit = FALSE;
+
+	switch (result) {
+	case STK_AGENT_RESULT_TIMEOUT:
+		confirm = FALSE;
+		/* Fall through */
+
+	case STK_AGENT_RESULT_OK:
+		if (confirm)
+			break;
+		/* Fall through */
+
+	default:
+		memset(&rsp, 0, sizeof(rsp));
+		ADD_ERROR_RESULT(rsp.result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause);
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&failure, stk);
+
+		return;
+	}
+
+	send_simple_response(stk, STK_RESULT_TYPE_SUCCESS);
+}
+
+static gboolean handle_command_launch_browser(const struct stk_command *cmd,
+						struct stk_response *rsp,
+						struct ofono_stk *stk)
+{
+	const struct stk_command_launch_browser *lb = &cmd->launch_browser;
+	char *alpha_id;
+	int err;
+
+	alpha_id = dbus_apply_text_attributes(lb->alpha_id ? lb->alpha_id : "",
+							&lb->text_attr);
+	if (alpha_id == NULL) {
+		rsp->result.type = STK_RESULT_TYPE_DATA_NOT_UNDERSTOOD;
+		return TRUE;
+	}
+
+	err = stk_agent_confirm_launch_browser(stk->current_agent, alpha_id,
+						lb->icon_id.id, lb->url,
+						confirm_launch_browser_cb,
+						stk, NULL, stk->timeout * 1000);
+	g_free(alpha_id);
+
+	if (err < 0) {
+		unsigned char no_cause_result[] = { 0x00 };
+
+		/*
+		 * We most likely got an out of memory error, tell SIM
+		 * to retry
+		 */
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					no_cause_result);
+		return TRUE;
+	}
+
+	stk->respond_on_exit = TRUE;
+	stk->cancel_cmd = stk_request_cancel;
+
+	return FALSE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (stk->immediate_response)
@@ -2542,6 +2616,11 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 
 	case STK_COMMAND_TYPE_PLAY_TONE:
 		respond = handle_command_play_tone(stk->pending_cmd,
+							&rsp, stk);
+		break;
+
+	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
+		respond = handle_command_launch_browser(stk->pending_cmd,
 							&rsp, stk);
 		break;
 
