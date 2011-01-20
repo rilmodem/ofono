@@ -1187,7 +1187,11 @@ static gboolean parse_dataobj_browser_id(struct comprehension_tlv_iter *iter,
 						void *user)
 {
 	unsigned char *byte = user;
-	return parse_dataobj_common_byte(iter, byte);
+
+	if (parse_dataobj_common_byte(iter, byte) == FALSE || *byte > 4)
+		return FALSE;
+
+	return TRUE;
 }
 
 /* Defined in TS 102.223 Section 8.48 */
@@ -3228,6 +3232,9 @@ static enum stk_command_parse_result parse_launch_browser(
 					struct comprehension_tlv_iter *iter)
 {
 	struct stk_command_launch_browser *obj = &command->launch_browser;
+
+	if (command->qualifier > 3 || command->qualifier == 1)
+		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
