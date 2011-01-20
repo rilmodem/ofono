@@ -77,6 +77,16 @@ Properties	boolean Attached [readonly]
 			be available, e.g. receiving SMS over packet radio
 			or network initiated PDP activation.
 
+		string Bearer [readonly, optional]
+
+			Contains the data bearer technology as reported by the
+			GPRS service registration (if known).
+
+			Possible values are:
+			"none", "gsm", "edge", "umts", "hsdpa", "hsupa",
+			"hspa" (HSDPA and HSUPA at the same time) and
+			"lte"
+
 		boolean Suspended [readonly, optional]
 
 			Contains whether the GPRS service is suspended.
