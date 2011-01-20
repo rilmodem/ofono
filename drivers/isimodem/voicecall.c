@@ -865,7 +865,7 @@ static void isi_call_dtmf_send_resp(const GIsiMessage *msg, void *data)
 	struct isi_call_req_ctx *irc = data;
 	GIsiSubBlockIter iter;
 	uint8_t cause_type;
-	uint8_t cause;
+	uint8_t cause = CALL_CAUSE_NO_CAUSE;
 
 	if (!check_response_status(msg, CALL_DTMF_SEND_RESP))
 		goto error;
