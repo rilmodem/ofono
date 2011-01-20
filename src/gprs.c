@@ -1679,6 +1679,8 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 
 	gprs_cid_release(gprs, ctx->context.cid);
 	ctx->context.cid = 0;
+	ctx->context_driver->inuse = FALSE;
+	ctx->context_driver = NULL;
 
 	if (gprs->settings) {
 		g_key_file_remove_group(gprs->settings, ctx->key, NULL);
