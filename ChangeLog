@@ -1,3 +1,16 @@
+ver 0.39:
+	Fix issue with not handling empty EFecc properly.
+	Fix issue with string length and DTMF handling.
+	Fix issue with missing info for terminal busy result.
+	Fix issue with signal strength handling and IFX modem.
+	Fix handling of SIM Toolkit enabling and IFX modem.
+	Add support for packet switched bearer notifications.
+	Add support for handling called line identification.
+	Add support for PIN retry counter interface.
+	Add support for ST-Ericsson modem init daemon.
+	Add support for Cinterion TC65 modem.
+	Add support for simple ISI client interface.
+
 ver 0.38:
 	Change CalledLine* to ConnectedLine* properties.
 	Fix issue with calling presentation property.
