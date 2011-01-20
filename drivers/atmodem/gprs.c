@@ -220,17 +220,6 @@ static void cpsb_notify(GAtResult *result, gpointer user_data)
 	ofono_gprs_bearer_notify(gprs, bearer);
 }
 
-static void cpsb_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_gprs *gprs = user_data;
-	struct gprs_data *gd = ofono_gprs_get_data(gprs);
-
-	if (!ok)
-		return;
-
-	g_at_chat_register(gd->chat, "+CPSB:", cpsb_notify, FALSE, gprs, NULL);
-}
-
 static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -238,9 +227,10 @@ static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_register(gd->chat, "+CGEV:", cgev_notify, FALSE, gprs, NULL);
 	g_at_chat_register(gd->chat, "+CGREG:", cgreg_notify,
-					FALSE, gprs, NULL);
-	g_at_chat_send(gd->chat, "AT+CPSB=1", none_prefix,
-		cpsb_set_cb, gprs, NULL);
+						FALSE, gprs, NULL);
+	g_at_chat_register(gd->chat, "+CPSB:", cpsb_notify, FALSE, gprs, NULL);
+
+	g_at_chat_send(gd->chat, "AT+CPSB=1", none_prefix, NULL, NULL, NULL);
 
 	switch (gd->vendor) {
 	case OFONO_VENDOR_IFX:
