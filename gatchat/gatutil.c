@@ -136,8 +136,7 @@ gboolean g_at_util_setup_io(GIOChannel *io, GIOFlags flags)
 {
 	GIOFlags io_flags;
 
-	if (g_io_channel_set_encoding(io, NULL, NULL) !=
-			G_IO_STATUS_NORMAL)
+	if (g_io_channel_set_encoding(io, NULL, NULL) != G_IO_STATUS_NORMAL)
 		return FALSE;
 
 	g_io_channel_set_buffered(io, FALSE);
@@ -148,7 +147,7 @@ gboolean g_at_util_setup_io(GIOChannel *io, GIOFlags flags)
 		io_flags |= (flags & G_IO_FLAG_SET_MASK);
 
 		if (g_io_channel_set_flags(io, io_flags, NULL) !=
-				G_IO_STATUS_NORMAL)
+							G_IO_STATUS_NORMAL)
 			return FALSE;
 	}
 
