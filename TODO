@@ -640,3 +640,18 @@ CDMA NETWORK ACQUISITION
 
   Priority: Medium
   Complexity: C2
+
+CDMA Connection Manager
+=======================
+
+- Support Packet Data Service over CDMA (1xRTT and 1xEV-DO) systems. This
+  includes Mobile Originated connection and disconnection features.
+
+  Priority: Medium
+  Complexity: C4
+
+- Support Network Initiated disconnection of Packet Data Service over CDMA
+  (1xRTT and 1xEV-DO) systems.
+
+  Priority: Medium
+  Complexity: C2
