@@ -197,7 +197,7 @@ static GAtIO *create_io(GIOChannel *channel, GIOFlags flags)
 		io->use_write_watch = FALSE;
 	}
 
-	io->buf = ring_buffer_new(4096);
+	io->buf = ring_buffer_new(8192);
 
 	if (!io->buf)
 		goto error;
@@ -288,7 +288,7 @@ gboolean g_at_io_set_write_handler(GAtIO *io, GAtIOWriteFunc write_handler,
 
 	if (io->use_write_watch == TRUE)
 		io->write_watch = g_io_add_watch_full(io->channel,
-				G_PRIORITY_DEFAULT,
+				G_PRIORITY_HIGH,
 				G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 				can_write_data, io,
 				write_watcher_destroy_notify);
