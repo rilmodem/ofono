@@ -67,6 +67,7 @@ struct ofono_gprs {
 	ofono_bool_t suspended;
 	int status;
 	int flags;
+	int bearer;
 	guint suspend_timeout;
 	struct idmap *pid_map;
 	unsigned int last_context_id;
@@ -1319,6 +1320,8 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 					OFONO_CONNECTION_CONTEXT_INTERFACE,
 					"Active", DBUS_TYPE_BOOLEAN, &value);
 		}
+
+		gprs->bearer = -1;
 	}
 
 	path = __ofono_atom_get_path(gprs->atom);
@@ -1432,6 +1435,13 @@ static DBusMessage *gprs_get_properties(DBusConnection *conn,
 
 	value = gprs->attached;
 	ofono_dbus_dict_append(&dict, "Attached", DBUS_TYPE_BOOLEAN, &value);
+
+	if (gprs->bearer != -1) {
+		const char *bearer = packet_bearer_to_string(gprs->bearer);
+
+		ofono_dbus_dict_append(&dict, "Bearer",
+					DBUS_TYPE_STRING, &bearer);
+	}
 
 	value = gprs->roaming_allowed;
 	ofono_dbus_dict_append(&dict, "RoamingAllowed",
@@ -1977,6 +1987,23 @@ void ofono_gprs_add_context(struct ofono_gprs *gprs,
 
 	gprs->context_drivers = g_slist_append(gprs->context_drivers, gc);
 	__ofono_atom_register(gc->atom, gprs_context_unregister);
+}
+
+void ofono_gprs_bearer_notify(struct ofono_gprs *gprs, int bearer)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path;
+	const char *value;
+
+	if (gprs->bearer == bearer)
+		return;
+
+	gprs->bearer = bearer;
+	path = __ofono_atom_get_path(gprs->atom);
+	value = packet_bearer_to_string(bearer);
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					"Bearer", DBUS_TYPE_STRING, &value);
 }
 
 void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
