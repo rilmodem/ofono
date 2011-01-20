@@ -1408,6 +1408,18 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 	}
 }
 
+static void gprs_netreg_removed(struct ofono_gprs *gprs)
+{
+	gprs->netreg = NULL;
+
+	gprs->flags &= ~(GPRS_FLAG_RECHECK | GPRS_FLAG_ATTACHING);
+	gprs->status_watch = 0;
+	gprs->netreg_status = NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
+	gprs->driver_attached = FALSE;
+
+	gprs_attached_update(gprs);
+}
+
 static void gprs_netreg_update(struct ofono_gprs *gprs)
 {
 	ofono_bool_t attach;
@@ -2314,8 +2326,7 @@ static void netreg_watch(struct ofono_atom *atom,
 	struct ofono_gprs *gprs = data;
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
-		gprs->status_watch = 0;
-		gprs->netreg = NULL;
+		gprs_netreg_removed(gprs);
 		return;
 	}
 
