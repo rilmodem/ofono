@@ -20,3 +20,10 @@ Configure automatically searches for all required components and packages.
 
 To compile and install run:
 	make && make install
+
+
+Kernel Dependencies
+===================
+
+In order to have the PPP stack working in oFono you need to enable CONFIG_TUN
+(Universal TUN/TAP device driver support) in your kernel .config.
