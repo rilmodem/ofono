@@ -1513,8 +1513,10 @@ GSList *sim_parse_app_template_entries(const unsigned char *buffer, int len)
 error:
 	while (ret) {
 		GSList *t = ret;
+		struct sim_app_record *app = ret->data;
 
-		g_free(((struct sim_app_record *) ret->data)->label);
+		g_free(app->label);
+		g_free(app);
 
 		ret = ret->next;
 		g_slist_free_1(t);
