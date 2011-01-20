@@ -87,18 +87,6 @@ enum bearer_class {
 	BEARER_CLASS_PAD =		128,
 };
 
-/* 27.007 Section 7.29 */
-enum packet_bearer {
-	PACKET_BEARER_NONE =		0,
-	PACKET_BEARER_GPRS =		1,
-	PACKET_BEARER_EGPRS =		2,
-	PACKET_BEARER_UMTS =		3,
-	PACKET_BEARER_HSUPA =		4,
-	PACKET_BEARER_HSDPA =		5,
-	PACKET_BEARER_HSUPA_HSDPA =	6,
-	PACKET_BEARER_EPS =		7,
-};
-
 /* 22.030 Section 6.5.2 */
 enum ss_control_type {
 	SS_CONTROL_TYPE_ACTIVATION,

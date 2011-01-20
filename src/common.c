@@ -714,29 +714,6 @@ const char *registration_tech_to_string(int tech)
 	}
 }
 
-const char *packet_bearer_to_string(int bearer)
-{
-	switch (bearer) {
-	case PACKET_BEARER_NONE:
-		return "none";
-	case PACKET_BEARER_GPRS:
-		return "gprs";
-	case PACKET_BEARER_EGPRS:
-		return "edge";
-	case PACKET_BEARER_UMTS:
-		return "umts";
-	case PACKET_BEARER_HSUPA:
-		return "hsupa";
-	case PACKET_BEARER_HSDPA:
-		return "hsdpa";
-	case PACKET_BEARER_HSUPA_HSDPA:
-		return "hspa";
-	case PACKET_BEARER_EPS:
-		return "lte";
-	}
-	return "";
-}
-
 gboolean is_valid_apn(const char *apn)
 {
 	int i;
