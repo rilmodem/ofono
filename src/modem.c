@@ -580,14 +580,14 @@ static DBusMessage *set_property_online(struct ofono_modem *modem,
 	if (modem->pending != NULL)
 		return __ofono_error_busy(msg);
 
+	if (modem->online == online)
+		return dbus_message_new_method_return(msg);
+
 	if (driver->set_online == NULL)
 		return __ofono_error_not_implemented(msg);
 
 	if (modem->modem_state < MODEM_STATE_OFFLINE)
 		return __ofono_error_not_available(msg);
-
-	if (modem->online == online)
-		return dbus_message_new_method_return(msg);
 
 	modem->pending = dbus_message_ref(msg);
 
