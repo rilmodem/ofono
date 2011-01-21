@@ -127,6 +127,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_NETTIME,
 	OFONO_ATOM_TYPE_CTM,
 	OFONO_ATOM_TYPE_CDMA_VOICECALL_MANAGER,
+	OFONO_ATOM_TYPE_CDMA_CONNMAN,
 	OFONO_ATOM_TYPE_SIM_AUTH,
 	OFONO_ATOM_TYPE_EMULATOR_DUN,
 	OFONO_ATOM_TYPE_EMULATOR_HFP,
@@ -437,6 +438,7 @@ void __ofono_nettime_info_received(struct ofono_modem *modem,
 					struct ofono_network_time *info);
 
 #include <ofono/cdma-voicecall.h>
+#include <ofono/cdma-connman.h>
 #include <ofono/sim-auth.h>
 
 #include <ofono/gprs-provision.h>
