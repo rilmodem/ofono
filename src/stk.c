@@ -2839,7 +2839,7 @@ void ofono_stk_register(struct ofono_stk *stk)
 
 	__ofono_atom_register(stk->atom, stk_unregister);
 
-	stk->timeout = 600; /* 10 minutes */
+	stk->timeout = 180; /* 3 minutes */
 	stk->short_timeout = 20; /* 20 seconds */
 	stk->envelope_q = g_queue_new();
 }
