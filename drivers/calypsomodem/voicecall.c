@@ -327,6 +327,8 @@ static void cpi_notify(GAtResult *result, gpointer user_data)
 		g_at_chat_send(vd->chat, "AT%N0187", none_prefix,
 				NULL, NULL, NULL);
 
+	memset(&call, 0, sizeof(call));
+
 	switch (msgtype) {
 	case 0:
 		/* Set call status to incoming */
