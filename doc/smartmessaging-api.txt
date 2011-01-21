@@ -50,7 +50,7 @@ Methods		void ReceiveAppointment(array{byte} appointment, dict info)
 		void ReceiveBusinessCard(array{byte} card, dict info)
 
 			Requests the agent to process a new SMS that has
-			arrived containing a vCalendar object.  The info
+			arrived containing a vCard object.  The info
 			dictionary contains 'Sender', 'LocalSentTime' and
 			'SentTime' properties.
 
