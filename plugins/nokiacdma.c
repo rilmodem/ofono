@@ -44,6 +44,7 @@
 #include <drivers/atmodem/atutil.h>
 #include <ofono/cdma-voicecall.h>
 #include <ofono/devinfo.h>
+#include <ofono/cdma-connman.h>
 
 #include "common.h"
 
@@ -147,7 +148,10 @@ static void nokiacdma_post_sim(struct ofono_modem *modem)
 
 static void nokiacdma_post_online(struct ofono_modem *modem)
 {
+	struct nokiacdma_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
+	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->chat);
 }
 
 static struct ofono_modem_driver nokiacdma_driver = {
