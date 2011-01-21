@@ -357,26 +357,27 @@ static void append_voicecall_properties(struct voicecall *v,
 
 	status = call_status_to_string(call->status);
 
+	ofono_dbus_dict_append(dict, "State", DBUS_TYPE_STRING, &status);
+
 	if (call->direction == CALL_DIRECTION_MOBILE_TERMINATED)
 		callerid = phone_and_clip_to_string(&call->phone_number,
 							call->clip_validity);
 	else
 		callerid = phone_number_to_string(&call->phone_number);
 
-	name = cnap_to_string(call->name, call->cnap_validity);
-
-	ofono_dbus_dict_append(dict, "State", DBUS_TYPE_STRING, &status);
-
 	ofono_dbus_dict_append(dict, "LineIdentification",
-				DBUS_TYPE_STRING, &callerid);
+					DBUS_TYPE_STRING, &callerid);
 
 	if (call->called_number.number[0] != '\0') {
 		const char *calledid;
 
 		calledid = phone_number_to_string(&call->called_number);
+
 		ofono_dbus_dict_append(dict, "IncomingLine",
 						DBUS_TYPE_STRING, &calledid);
 	}
+
+	name = cnap_to_string(call->name, call->cnap_validity);
 
 	ofono_dbus_dict_append(dict, "Name", DBUS_TYPE_STRING, &name);
 
@@ -391,8 +392,7 @@ static void append_voicecall_properties(struct voicecall *v,
 	}
 
 	if (g_slist_find_custom(v->vc->multiparty_list,
-				GINT_TO_POINTER(call->id),
-				call_compare_by_id))
+				GINT_TO_POINTER(call->id), call_compare_by_id))
 		mpty = TRUE;
 	else
 		mpty = FALSE;
@@ -400,20 +400,20 @@ static void append_voicecall_properties(struct voicecall *v,
 	ofono_dbus_dict_append(dict, "Multiparty", DBUS_TYPE_BOOLEAN, &mpty);
 
 	if (v->message)
-		ofono_dbus_dict_append(dict, "Information", DBUS_TYPE_STRING,
-					&v->message);
+		ofono_dbus_dict_append(dict, "Information",
+						DBUS_TYPE_STRING, &v->message);
 
 	if (v->icon_id)
-		ofono_dbus_dict_append(dict, "Icon", DBUS_TYPE_BYTE,
-					&v->icon_id);
+		ofono_dbus_dict_append(dict, "Icon",
+						DBUS_TYPE_BYTE, &v->icon_id);
 
 	if (voicecall_is_emergency(v) == TRUE)
 		emergency_call = TRUE;
 	else
 		emergency_call = FALSE;
 
-	ofono_dbus_dict_append(dict, "Emergency", DBUS_TYPE_BOOLEAN,
-					&emergency_call);
+	ofono_dbus_dict_append(dict, "Emergency",
+					DBUS_TYPE_BOOLEAN, &emergency_call);
 
 }
 
