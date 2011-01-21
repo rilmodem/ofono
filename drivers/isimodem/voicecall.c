@@ -973,6 +973,7 @@ static void isi_hangup_current(struct ofono_voicecall *ovc,
 	 */
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
 	int id = 0;
+	uint8_t cause = CALL_CAUSE_RELEASE_BY_USER;
 
 	for (id = 1; id <= 7; id++) {
 		if (ivc->calls[id].call_id & CALL_ID_WAITING)
@@ -983,10 +984,15 @@ static void isi_hangup_current(struct ofono_voicecall *ovc,
 		switch (ivc->calls[id].status) {
 		case CALL_STATUS_CREATE:
 		case CALL_STATUS_COMING:
-		case CALL_STATUS_PROCEEDING:
 		case CALL_STATUS_MO_ALERTING:
-		case CALL_STATUS_MT_ALERTING:
 		case CALL_STATUS_ANSWERED:
+			goto release_by_id;
+		case CALL_STATUS_MT_ALERTING:
+			cause = CALL_CAUSE_BUSY_USER_REQUEST;
+			goto release_by_id;
+		case CALL_STATUS_PROCEEDING:
+			if (ivc->calls[id].mode_info & CALL_MODE_ORIGINATOR)
+				cause = CALL_CAUSE_BUSY_USER_REQUEST;
 			goto release_by_id;
 		}
 	}
@@ -994,8 +1000,7 @@ static void isi_hangup_current(struct ofono_voicecall *ovc,
 	id = CALL_ID_ACTIVE;
 
 release_by_id:
-	isi_call_release_req(ovc, id, CALL_CAUSE_TYPE_CLIENT,
-				CALL_CAUSE_RELEASE_BY_USER, cb, data);
+	isi_call_release_req(ovc, id, CALL_CAUSE_TYPE_CLIENT, cause, cb, data);
 }
 
 static void isi_release_all_held(struct ofono_voicecall *ovc,
