@@ -2,7 +2,7 @@
  *
  *  oFono - Open Source Telephony
  *
- *  Copyright (C) 2010 Nokia Corporation. All rights reserved.
+ *  Copyright (C) 2010-2011 Nokia Corporation. All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -25,3 +25,5 @@ extern void cdma_voicecall_init(void);
 extern void cdma_voicecall_exit(void);
 extern void cdma_devinfo_init(void);
 extern void cdma_devinfo_exit(void);
+extern void cdma_connman_init(void);
+extern void cdma_connman_exit(void);

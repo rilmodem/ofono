@@ -263,7 +263,8 @@ builtin_modules += cdmamodem
 builtin_sources += drivers/cdmamodem/cdmamodem.h \
 			drivers/cdmamodem/cdmamodem.c \
 			drivers/cdmamodem/voicecall.c \
-			drivers/cdmamodem/devinfo.c
+			drivers/cdmamodem/devinfo.c \
+			drivers/cdmamodem/connman.c
 endif
 
 builtin_modules += g1
