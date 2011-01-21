@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import dbus
+import sys
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 2:
+	path = sys.argv[1]
+else:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+			'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
+
+print "Disconnecting CDMA Packet Data Service on modem %s..." % path
+cm = dbus.Interface(bus.get_object('org.ofono', path),
+		'org.ofono.cdma.ConnectionManager')
+
+cm.SetProperty("Powered", dbus.Boolean(0))
