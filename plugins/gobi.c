@@ -50,6 +50,8 @@ static const char *none_prefix[] = { NULL };
 
 struct gobi_data {
 	GAtChat *chat;
+	struct ofono_sim *sim;
+	gboolean have_sim;
 };
 
 static void gobi_debug(const char *str, void *user_data)
@@ -117,13 +119,57 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
+static void simstat_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct gobi_data *data = ofono_modem_get_data(modem);
+
+	GAtResultIter iter;
+	const char *state;
+
+	if (data->sim == NULL)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "$QCSIMSTAT:"))
+		return;
+
+	if (!g_at_result_iter_skip_next(&iter))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &state))
+		return;
+
+	DBG("state %s", state);
+
+	if (g_str_equal(state, "SIM INIT COMPLETED") == TRUE) {
+		if (data->have_sim == FALSE) {
+			ofono_sim_inserted_notify(data->sim, TRUE);
+			data->have_sim = TRUE;
+		}
+	}
+}
+
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct gobi_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
+	data->have_sim = FALSE;
+
 	ofono_modem_set_powered(modem, ok);
+
+	g_at_chat_register(data->chat, "$QCSIMSTAT:", simstat_notify,
+						FALSE, modem, NULL);
+
+	g_at_chat_send(data->chat, "AT$QCSIMSTAT=1", none_prefix,
+						NULL, NULL, NULL);
+
+	g_at_chat_send(data->chat, "AT$QCSIMSTAT?", none_prefix,
+						NULL, NULL, NULL);
 }
 
 static int gobi_enable(struct ofono_modem *modem)
@@ -213,15 +259,11 @@ error:
 static void gobi_pre_sim(struct ofono_modem *modem)
 {
 	struct gobi_data *data = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
-
-	if (sim)
-		ofono_sim_inserted_notify(sim, TRUE);
+	data->sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
 }
 
 static void gobi_post_sim(struct ofono_modem *modem)
