@@ -798,15 +798,19 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 
 	DBG("");
 
-	if (data->vendor == OFONO_VENDOR_QUALCOMM_MSM ||
-			data->vendor == OFONO_VENDOR_HUAWEI ||
-			data->vendor == OFONO_VENDOR_NOVATEL)
+	switch (data->vendor) {
+	case OFONO_VENDOR_QUALCOMM_MSM:
+	case OFONO_VENDOR_NOVATEL:
+	case OFONO_VENDOR_HUAWEI:
 		/* MSM devices advertise support for mode 2, but return an
 		 * error if we attempt to actually use it. */
 		mode = "1";
-	else
+		break;
+	default:
 		/* Sounds like 2 is the sanest mode */
 		mode = "2310";
+		break;
+	}
 
 	if (!append_cnmi_element(buf, &len, cnmi_opts[0], mode, FALSE))
 		return FALSE;
@@ -826,10 +830,14 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	 * ack it with error "CNMA not expected."  However, not acking it
 	 * sends the device into la-la land.
 	 */
-	if (data->vendor == OFONO_VENDOR_NOVATEL)
+	switch (data->vendor) {
+	case OFONO_VENDOR_NOVATEL:
 		mode = "20";
-	else
+		break;
+	default:
 		mode = "120";
+		break;
+	}
 
 	/*
 	 * Try to deliver Status-Reports via +CDS, then CDSI or don't
@@ -916,11 +924,15 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		supported = TRUE;
 
 	/* support for ack pdu is not working */
-	if (data->vendor == OFONO_VENDOR_IFX ||
-			data->vendor == OFONO_VENDOR_HUAWEI ||
-			data->vendor == OFONO_VENDOR_NOVATEL ||
-			data->vendor == OFONO_VENDOR_OPTION_HSO)
+	switch (data->vendor) {
+	case OFONO_VENDOR_IFX:
+	case OFONO_VENDOR_HUAWEI:
+	case OFONO_VENDOR_NOVATEL:
+	case OFONO_VENDOR_OPTION_HSO:
 		goto out;
+	default:
+		break;
+	}
 
 	if (data->cnma_enabled)
 		construct_ack_pdu(data);
@@ -1138,13 +1150,16 @@ static void at_csms_status_cb(gboolean ok, GAtResult *result,
 			goto out;
 
 
-		if (data->vendor == OFONO_VENDOR_HUAWEI ||
-				data->vendor == OFONO_VENDOR_NOVATEL) {
+		switch (data->vendor) {
+		case OFONO_VENDOR_HUAWEI:
+		case OFONO_VENDOR_NOVATEL:
 			g_at_result_iter_skip_next(&iter);
 			service = 0;
-		} else {
+			break;
+		default:
 			if (!g_at_result_iter_next_number(&iter, &service))
 				goto out;
+			break;
 		}
 
 		if (!g_at_result_iter_next_number(&iter, &mt))
