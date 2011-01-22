@@ -196,6 +196,14 @@ static void at_registration_status(struct ofono_netreg *netreg,
 		g_at_chat_send(nd->chat, "AT*ERINFO?", none_prefix,
 				NULL, NULL, NULL);
 		break;
+	case OFONO_VENDOR_GOBI:
+		/*
+		 * Send *CNTI=0 to find out the current tech, it will be
+		 * intercepted in gobi_cnti_notify
+		 */
+		g_at_chat_send(nd->chat, "AT*CNTI=0", none_prefix,
+				NULL, NULL, NULL);
+		break;
 	case OFONO_VENDOR_NOVATEL:
 		/*
 		 * Send $CNTI=0 to find out the current tech, it will be
@@ -974,6 +982,31 @@ static void mbm_erinfo_notify(GAtResult *result, gpointer user_data)
 	}
 }
 
+static void gobi_cnti_notify(GAtResult *result, gpointer user_data)
+{
+	//struct ofono_netreg *netreg = user_data;
+	//struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	GAtResultIter iter;
+	const char *tech;
+	int option;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "*CNTI:") == FALSE)
+		return;
+
+	if (g_at_result_iter_next_number(&iter, &option) == FALSE)
+		return;
+
+	if (option != 0)
+		return;
+
+	if (g_at_result_iter_next_unquoted_string(&iter, &tech) == FALSE)
+		return;
+
+	ofono_info("CNTI: %s", tech);
+}
+
 static void nw_cnti_notify(GAtResult *result, gpointer user_data)
 {
 	//struct ofono_netreg *netreg = user_data;
@@ -1182,6 +1215,15 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_send(nd->chat, "AT+CIND=?", cind_prefix,
 					cind_support_cb, netreg, NULL);
 		return;
+	case OFONO_VENDOR_GOBI:
+		/*
+		 * Gobi devices don't support unsolicited notifications
+		 * of technology changes, but register a handle for
+		 * CNTI so we get notified by any query.
+		 */
+		g_at_chat_register(nd->chat, "*CNTI:", gobi_cnti_notify,
+					FALSE, netreg, NULL);
+		break;
 	case OFONO_VENDOR_NOVATEL:
 		/*
 		 * Novatel doesn't support unsolicited notifications
