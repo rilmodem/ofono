@@ -81,7 +81,7 @@ Properties	string TechnologyPreference [readwrite]
 				"850"		Operate only on 850 MHz, known
 						as CLR (class V).
 				"900"		Operate only on 900 MHz, known
-						as GSM (class VII).
+						as GSM (class VIII).
 				"1700AWS"	Operate only on 1700 MHz, known
 						as AWS (class IV).
 				"1900"		Operate only on 1900 MHz, known
