@@ -41,6 +41,7 @@
 #include <ofono/cbs.h>
 #include <ofono/sms.h>
 #include <ofono/ussd.h>
+#include <ofono/gprs.h>
 #include <ofono/phonebook.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -278,6 +279,7 @@ static void gobi_post_sim(struct ofono_modem *modem)
 static void gobi_post_online(struct ofono_modem *modem)
 {
 	struct gobi_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
 
 	DBG("%p", modem);
 
@@ -286,6 +288,9 @@ static void gobi_post_online(struct ofono_modem *modem)
 	ofono_sms_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
 	ofono_cbs_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
 	ofono_ussd_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
+
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_GOBI,
+						"atmodem", data->chat);
 }
 
 static struct ofono_modem_driver gobi_driver = {
