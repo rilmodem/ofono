@@ -239,7 +239,7 @@ static void gobi_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+	ofono_netreg_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
 
 	ofono_sms_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
 	ofono_cbs_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
