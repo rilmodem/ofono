@@ -437,7 +437,6 @@ static void sim_pin_retries_check(struct ofono_sim *sim)
 	sim->driver->query_pin_retries(sim, sim_pin_retries_query_cb, sim);
 }
 
-
 static void msisdn_set_done(struct msisdn_set_request *req)
 {
 	DBusMessage *reply;
