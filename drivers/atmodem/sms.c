@@ -799,6 +799,7 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	DBG("");
 
 	switch (data->vendor) {
+	case OFONO_VENDOR_GOBI:
 	case OFONO_VENDOR_QUALCOMM_MSM:
 	case OFONO_VENDOR_NOVATEL:
 	case OFONO_VENDOR_HUAWEI:

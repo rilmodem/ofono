@@ -126,6 +126,7 @@ static void at_cbs_set_topics(struct ofono_cbs *cbs, const char *topics,
 	 * a topic range for clearing makes AT+CSBC=0,... fail.
 	 */
 	switch (data->vendor) {
+	case OFONO_VENDOR_GOBI:
 	case OFONO_VENDOR_QUALCOMM_MSM:
 		g_at_chat_send(data->chat, "AT+CSCB=1", none_prefix,
 				NULL, NULL, NULL);

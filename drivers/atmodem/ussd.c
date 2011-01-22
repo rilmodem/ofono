@@ -252,6 +252,7 @@ static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	switch (data->vendor) {
+	case OFONO_VENDOR_GOBI:
 	case OFONO_VENDOR_QUALCOMM_MSM:
 		/* All errors and notifications arrive unexpected and
 		 * thus just reset the state here. This is safer than
