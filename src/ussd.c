@@ -37,7 +37,6 @@
 #include "smsutil.h"
 #include "util.h"
 
-#define SUPPLEMENTARY_SERVICES_INTERFACE "org.ofono.SupplementaryServices"
 #define MAX_USSD_LENGTH 160
 
 static GSList *g_drivers = NULL;
@@ -322,7 +321,7 @@ static void ussd_change_state(struct ofono_ussd *ussd, int state)
 
 	value = ussd_get_state_string(ussd);
 	ofono_dbus_signal_property_changed(conn, path,
-			SUPPLEMENTARY_SERVICES_INTERFACE,
+			OFONO_SUPPLEMENTARY_SERVICES_INTERFACE,
 			"State", DBUS_TYPE_STRING, &value);
 }
 
@@ -496,7 +495,7 @@ void ofono_ussd_notify(struct ofono_ussd *ussd, int status, int dcs,
 			str = "";
 
 		g_dbus_emit_signal(conn, path,
-				SUPPLEMENTARY_SERVICES_INTERFACE, signal_name,
+			OFONO_SUPPLEMENTARY_SERVICES_INTERFACE, signal_name,
 				DBUS_TYPE_STRING, &str, DBUS_TYPE_INVALID);
 
 		ussd_change_state(ussd, new_state);
@@ -784,9 +783,10 @@ static void ussd_unregister(struct ofono_atom *atom)
 	g_slist_free(ussd->ss_passwd_list);
 	ussd->ss_passwd_list = NULL;
 
-	ofono_modem_remove_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
+	ofono_modem_remove_interface(modem,
+					OFONO_SUPPLEMENTARY_SERVICES_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
-					SUPPLEMENTARY_SERVICES_INTERFACE);
+					OFONO_SUPPLEMENTARY_SERVICES_INTERFACE);
 }
 
 static void ussd_remove(struct ofono_atom *atom)
@@ -846,16 +846,17 @@ void ofono_ussd_register(struct ofono_ussd *ussd)
 	const char *path = __ofono_atom_get_path(ussd->atom);
 
 	if (!g_dbus_register_interface(conn, path,
-					SUPPLEMENTARY_SERVICES_INTERFACE,
+					OFONO_SUPPLEMENTARY_SERVICES_INTERFACE,
 					ussd_methods, ussd_signals, NULL,
 					ussd, NULL)) {
 		ofono_error("Could not create %s interface",
-				SUPPLEMENTARY_SERVICES_INTERFACE);
+				OFONO_SUPPLEMENTARY_SERVICES_INTERFACE);
 
 		return;
 	}
 
-	ofono_modem_add_interface(modem, SUPPLEMENTARY_SERVICES_INTERFACE);
+	ofono_modem_add_interface(modem,
+				OFONO_SUPPLEMENTARY_SERVICES_INTERFACE);
 
 	__ofono_atom_register(ussd->atom, ussd_unregister);
 }
