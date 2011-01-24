@@ -257,7 +257,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			until the call is canceled using Cancel().  This
 			method should not return.
 
-		boolean ConfirmLaunchBrowser() (string information,
+		boolean ConfirmLaunchBrowser(string information,
 						byte icon_id, string url)
 
 			Asks the agent to request user to confirm launch
