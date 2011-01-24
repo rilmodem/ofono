@@ -126,7 +126,7 @@ static void simstat_notify(GAtResult *result, gpointer user_data)
 	struct gobi_data *data = ofono_modem_get_data(modem);
 
 	GAtResultIter iter;
-	const char *state;
+	const char *state, *tmp;
 
 	if (data->sim == NULL)
 		return;
@@ -136,10 +136,17 @@ static void simstat_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next(&iter, "$QCSIMSTAT:"))
 		return;
 
-	if (!g_at_result_iter_skip_next(&iter))
+	if (!g_at_result_iter_next_unquoted_string(&iter, &tmp))
 		return;
 
-	if (!g_at_result_iter_next_unquoted_string(&iter, &state))
+	/*
+	 * When receiving an unsolicited notification, the comma
+	 * is missing ($QCSIMSTAT: 1 SIM INIT COMPLETED). Handle
+	 * this gracefully.
+	 */
+	if (g_str_has_prefix(tmp, "1 ") == TRUE)
+		state = tmp + 2;
+	else if (!g_at_result_iter_next_unquoted_string(&iter, &state))
 		return;
 
 	DBG("state %s", state);
