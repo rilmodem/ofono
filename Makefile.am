@@ -366,7 +366,7 @@ BUILT_SOURCES = $(local_headers)
 
 CLEANFILES = src/builtin.h $(BUILT_SOURCES) $(rules_DATA)
 
-plugindir = $(libdir)/ofono/plugins
+plugindir = $(pkglibdir)/plugins
 
 if MAINTAINER_MODE
 build_plugindir = $(abs_top_srcdir)/plugins/.libs
