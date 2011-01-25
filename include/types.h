@@ -76,7 +76,7 @@ struct ofono_error {
 	int error;
 };
 
-#define OFONO_MAX_PHONE_NUMBER_LENGTH 20
+#define OFONO_MAX_PHONE_NUMBER_LENGTH 80
 #define OFONO_MAX_CALLER_NAME_LENGTH 80
 
 struct ofono_phone_number {
