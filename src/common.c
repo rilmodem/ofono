@@ -234,7 +234,7 @@ struct error_entry ceer_errors[] = {
 	{ 127,	"Interworking, unspecified" },
 };
 
-gboolean valid_phone_number_format(const char *number)
+gboolean valid_number_format(const char *number, int length)
 {
 	int len = strlen(number);
 	int begin = 0;
@@ -246,7 +246,7 @@ gboolean valid_phone_number_format(const char *number)
 	if (number[0] == '+')
 		begin = 1;
 
-	if ((len - begin) > OFONO_MAX_PHONE_NUMBER_LENGTH)
+	if ((len - begin) > length)
 		return FALSE;
 
 	for (i = begin; i < len; i++) {
@@ -260,6 +260,22 @@ gboolean valid_phone_number_format(const char *number)
 	}
 
 	return TRUE;
+}
+
+/*
+ * According to 3GPP TS 24.011 or 3GPP TS 31.102, some
+ * addresses (or numbers), like Service Centre address,
+ * Destination address, or EFADN (Abbreviated dialling numbers),
+ * are up 20 digits.
+ */
+gboolean valid_phone_number_format(const char *number)
+{
+	return valid_number_format(number, 20);
+}
+
+gboolean valid_long_phone_number_format(const char *number)
+{
+	return valid_number_format(number, OFONO_MAX_PHONE_NUMBER_LENGTH);
 }
 
 gboolean valid_cdma_phone_number_format(const char *number)

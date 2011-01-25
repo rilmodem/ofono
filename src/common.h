@@ -137,7 +137,9 @@ enum context_status {
 
 const char *telephony_error_to_str(const struct ofono_error *error);
 
+gboolean valid_number_format(const char *number, int length);
 gboolean valid_phone_number_format(const char *number);
+gboolean valid_long_phone_number_format(const char *number);
 const char *phone_number_to_string(const struct ofono_phone_number *ph);
 void string_to_phone_number(const char *str, struct ofono_phone_number *ph);
 

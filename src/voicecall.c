@@ -1304,7 +1304,7 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (!valid_phone_number_format(number))
+	if (!valid_long_phone_number_format(number))
 		return __ofono_error_invalid_format(msg);
 
 	if (clir_string_to_clir(clirstr, &clir) == FALSE)
