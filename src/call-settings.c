@@ -1179,11 +1179,11 @@ static DBusMessage *set_clir(DBusMessage *msg, struct ofono_call_settings *cs,
 		return __ofono_error_not_implemented(msg);
 
 	if (!strcmp(setting, "default"))
-		clir = 0;
+		clir = CLIR_STATUS_NOT_PROVISIONED;
 	else if (!strcmp(setting, "enabled"))
-		clir = 1;
+		clir = CLIR_STATUS_PROVISIONED_PERMANENT;
 	else if (!strcmp(setting, "disabled"))
-		clir = 2;
+		clir = CLIR_STATUS_UNKNOWN;
 
 	if (clir == -1)
 		return __ofono_error_invalid_format(msg);
@@ -1411,11 +1411,11 @@ struct ofono_call_settings *ofono_call_settings_create(struct ofono_modem *modem
 		return NULL;
 
 	/* Set all the settings to unknown state */
-	cs->clip = 2;
-	cs->cnap = 2;
-	cs->clir = 2;
-	cs->colp = 2;
-	cs->colr = 2;
+	cs->clip = CLIP_STATUS_UNKNOWN;
+	cs->cnap = CNAP_STATUS_UNKNOWN;
+	cs->clir = CLIR_STATUS_UNKNOWN;
+	cs->colp = COLP_STATUS_UNKNOWN;
+	cs->colr = COLR_STATUS_UNKNOWN;
 	cs->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS,
 						call_settings_remove, cs);
 
