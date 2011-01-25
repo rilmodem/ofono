@@ -67,10 +67,10 @@ Methods		dict GetProperties()
 
 		void ReleaseAndAnswer()
 
-			Releases currently active call and answers the currently
-			waiting call. Please note that if the current call is
-			a multiparty call, then all parties in the multi-party
-			call will be released.
+			Releases currently active call (0 or more) and
+			answers the currently waiting call. Please note that
+			if the current call is a multiparty call, then all
+			parties in the multi-party call will be released.
 
 		void HoldAndAnswer()
 
