@@ -420,3 +420,11 @@ void __ofono_nettime_info_received(struct ofono_modem *modem,
 
 #include <ofono/cdma-voicecall.h>
 #include <ofono/sim-auth.h>
+
+#include <ofono/gprs-provision.h>
+void __ofono_gprs_provision_get_settings(const char *mcc, const char *mnc,
+			struct ofono_gprs_provision_data **settings,
+			int *count);
+void __ofono_gprs_provision_free_settings(
+				struct ofono_gprs_provision_data *settings,
+				int count);
