@@ -25,7 +25,7 @@ local_headers = $(foreach file,$(pkginclude_HEADERS) \
 if DATAFILES
 dbusconfdir = @DBUS_CONFDIR@
 
-dbusconf_DATA = src/ofono.conf
+dist_dbusconf_DATA = src/ofono.conf
 
 if SYSTEMD
 systemdunitdir = @SYSTEMD_UNITDIR@
@@ -35,7 +35,7 @@ endif
 
 confdir = $(sysconfdir)/ofono
 
-conf_DATA =
+dist_conf_DATA =
 
 statedir = $(localstatedir)/lib/ofono
 
@@ -244,7 +244,7 @@ builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
 
 if DATAFILES
-conf_DATA += plugins/phonesim.conf
+dist_conf_DATA += plugins/phonesim.conf
 endif
 endif
 
@@ -477,10 +477,7 @@ testdir = $(pkglibdir)/test
 test_SCRIPTS = $(test_scripts)
 endif
 
-conf_files = src/ofono.conf plugins/phonesim.conf
-
-EXTRA_DIST = src/genbuiltin $(conf_files) $(udev_files) \
-					$(doc_files) $(test_scripts)
+EXTRA_DIST = src/genbuiltin $(udev_files) $(doc_files) $(test_scripts)
 
 dist_man_MANS = doc/ofonod.8
 
