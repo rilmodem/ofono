@@ -1,0 +1,104 @@
+/*
+ *
+ *  oFono - Open Source Telephony
+ *
+ *  Copyright (C) 2011  Nokia Corporation and/or its subsidiary(-ies).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <string.h>
+#include <glib.h>
+#include "ofono.h"
+
+static GSList *g_drivers = NULL;
+
+void  __ofono_gprs_provision_free_settings(
+				struct ofono_gprs_provision_data *settings,
+				int count)
+{
+	int i;
+
+	for (i = 0; i < count; i++) {
+		g_free(settings[i].name);
+		g_free(settings[i].apn);
+		g_free(settings[i].username);
+		g_free(settings[i].password);
+		g_free(settings[i].message_proxy);
+		g_free(settings[i].message_center);
+	}
+
+	g_free(settings);
+}
+
+void __ofono_gprs_provision_get_settings(const char *mcc, const char *mnc,
+			struct ofono_gprs_provision_data **settings,
+			int *count)
+{
+	GSList *d;
+
+	*settings = NULL;
+	*count = 0;
+
+	if (mcc == NULL || strlen(mcc) == 0 || mnc == NULL || strlen(mnc) == 0)
+		return;
+
+	for (d = g_drivers; d != NULL; d = d->next) {
+		const struct ofono_gprs_provision_driver *driver = d->data;
+
+		DBG("Calling provisioning plugin '%s'", driver->name);
+
+		driver->get_settings(mcc, mnc, settings, count);
+
+		if (*count > 0) {
+			DBG("Plugin '%s' returned %d context settings",
+				driver->name, *count);
+			return;
+		}
+
+		ofono_warn("Provisioning plugin '%s' returned no settings",
+			driver->name);
+	}
+}
+
+static gint compare_priority(gconstpointer a, gconstpointer b)
+{
+	const struct ofono_gprs_provision_driver *plugin1 = a;
+	const struct ofono_gprs_provision_driver *plugin2 = b;
+
+	return plugin2->priority - plugin1->priority;
+}
+
+int ofono_gprs_provision_driver_register(
+			const struct ofono_gprs_provision_driver *driver)
+{
+	DBG("driver: %p name: %s", driver, driver->name);
+
+	g_drivers = g_slist_insert_sorted(g_drivers, (void *) driver,
+						compare_priority);
+	return 0;
+}
+
+void ofono_gprs_provision_driver_unregister(
+			const struct ofono_gprs_provision_driver *driver)
+{
+	DBG("driver: %p name: %s", driver, driver->name);
+
+	g_drivers = g_slist_remove(g_drivers, driver);
+}
