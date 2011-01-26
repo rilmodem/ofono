@@ -192,6 +192,12 @@ class StkAgent(dbus.service.Object):
 		if key == 't':
 			raise EndSession("User wishes to terminate session");
 
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+					in_signature="sy", out_signature="")
+	def DisplayActionInformation(self, text, icon):
+		print "Text: %s" % (text)
+		print "Icon: %d" % (icon)
+
 def property_changed(name, value):
 	print "SimToolKit property: %s changed to '%s'" % (name, value)
 
