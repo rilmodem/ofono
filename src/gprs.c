@@ -1634,6 +1634,7 @@ static struct pri_context *add_context(struct ofono_gprs *gprs,
 
 	context = pri_context_create(gprs, name, type);
 	if (context == NULL) {
+		idmap_put(gprs->pid_map, id);
 		ofono_error("Unable to allocate context struct");
 		return NULL;
 	}
