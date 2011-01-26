@@ -49,12 +49,6 @@ enum ofono_clir_option {
 	OFONO_CLIR_OPTION_SUPPRESSION
 };
 
-/* 27.007 Section 6.2 */
-enum ofono_cug_option {
-	OFONO_CUG_OPTION_DEFAULT = 0,
-	OFONO_CUG_OPTION_INVOCATION = 1,
-};
-
 enum ofono_error_type {
 	OFONO_ERROR_TYPE_NO_ERROR = 0,
 	OFONO_ERROR_TYPE_CME,

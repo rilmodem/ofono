@@ -367,8 +367,8 @@ out:
 
 static void at_dial(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *ph,
-			enum ofono_clir_option clir, enum ofono_cug_option cug,
-			ofono_voicecall_cb_t cb, void *data)
+			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
+			void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -390,14 +390,6 @@ static void at_dial(struct ofono_voicecall *vc,
 		break;
 	case OFONO_CLIR_OPTION_SUPPRESSION:
 		strcat(buf, "i");
-		break;
-	default:
-		break;
-	}
-
-	switch (cug) {
-	case OFONO_CUG_OPTION_INVOCATION:
-		strcat(buf, "G");
 		break;
 	default:
 		break;

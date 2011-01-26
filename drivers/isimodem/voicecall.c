@@ -927,9 +927,8 @@ static struct isi_call_req_ctx *isi_call_dtmf_send_req(struct ofono_voicecall *o
 
 static void isi_dial(struct ofono_voicecall *ovc,
 			const struct ofono_phone_number *restrict number,
-			enum ofono_clir_option clir,
-			enum ofono_cug_option cug,
-			ofono_voicecall_cb_t cb, void *data)
+			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
+			void *data)
 {
 	unsigned char presentation = CALL_GSM_PRESENTATION_DEFAULT;
 
@@ -943,15 +942,6 @@ static void isi_dial(struct ofono_voicecall *ovc,
 	case OFONO_CLIR_OPTION_SUPPRESSION:
 		presentation = CALL_PRESENTATION_ALLOWED;
 		break;
-	}
-
-	switch (cug) {
-	case OFONO_CUG_OPTION_DEFAULT:
-		break;
-	case OFONO_CUG_OPTION_INVOCATION:
-		/* Not implemented */
-		CALLBACK_WITH_FAILURE(cb, data);
-		return;
 	}
 
 	isi_call_create_req(ovc, presentation, number->type, number->number,

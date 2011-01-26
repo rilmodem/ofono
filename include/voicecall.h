@@ -63,8 +63,8 @@ struct ofono_voicecall_driver {
 	 */
 	void (*dial)(struct ofono_voicecall *vc,
 			const struct ofono_phone_number *number,
-			enum ofono_clir_option clir, enum ofono_cug_option cug,
-			ofono_voicecall_cb_t cb, void *data);
+			enum ofono_clir_option clir, ofono_voicecall_cb_t cb,
+			void *data);
 	/* Answers an incoming call, this usually corresponds to ATA */
 	void (*answer)(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data);

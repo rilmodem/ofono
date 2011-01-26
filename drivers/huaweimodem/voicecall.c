@@ -115,7 +115,6 @@ error:
 static void huawei_dial(struct ofono_voicecall *vc,
 				const struct ofono_phone_number *ph,
 				enum ofono_clir_option clir,
-				enum ofono_cug_option cug,
 				ofono_voicecall_cb_t cb, void *data)
 {
 	char buf[256];
@@ -131,14 +130,6 @@ static void huawei_dial(struct ofono_voicecall *vc,
 		break;
 	case OFONO_CLIR_OPTION_SUPPRESSION:
 		strcat(buf, "i");
-		break;
-	default:
-		break;
-	}
-
-	switch (cug) {
-	case OFONO_CUG_OPTION_INVOCATION:
-		strcat(buf, "G");
 		break;
 	default:
 		break;

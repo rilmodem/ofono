@@ -1327,8 +1327,7 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 
 	string_to_phone_number(number, &ph);
 
-	vc->driver->dial(vc, &ph, clir, OFONO_CUG_OPTION_DEFAULT,
-				manager_dial_callback, vc);
+	vc->driver->dial(vc, &ph, clir, manager_dial_callback, vc);
 
 	return NULL;
 }
@@ -2463,7 +2462,7 @@ static void dial_request_cb(const struct ofono_error *error, void *data)
 static void dial_request(struct ofono_voicecall *vc)
 {
 	vc->driver->dial(vc, &vc->dial_req->ph, OFONO_CLIR_OPTION_DEFAULT,
-				OFONO_CUG_OPTION_DEFAULT, dial_request_cb, vc);
+				dial_request_cb, vc);
 }
 
 static void dial_req_disconnect_cb(const struct ofono_error *error, void *data)
