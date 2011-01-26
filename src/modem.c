@@ -796,6 +796,7 @@ static DBusMessage *set_property_lockdown(struct ofono_modem *modem,
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	ofono_bool_t lockdown;
+	dbus_bool_t powered;
 	const char *caller;
 	int err;
 
@@ -815,47 +816,47 @@ static DBusMessage *set_property_lockdown(struct ofono_modem *modem,
 	if (modem->lockdown == lockdown)
 		return dbus_message_new_method_return(msg);
 
-	if (lockdown) {
-		dbus_bool_t powered;
+	if (lockdown == FALSE) {
+		lockdown_remove(modem);
+		goto done;
+	}
 
-		modem->lock_owner = g_strdup(caller);
+	modem->lock_owner = g_strdup(caller);
 
-		modem->lock_watch = g_dbus_add_disconnect_watch(conn,
+	modem->lock_watch = g_dbus_add_disconnect_watch(conn,
 				modem->lock_owner, lockdown_disconnect,
 				modem, NULL);
 
-		if (modem->lock_watch == 0) {
-			g_free(modem->lock_owner);
-			modem->lock_owner = NULL;
+	if (modem->lock_watch == 0) {
+		g_free(modem->lock_owner);
+		modem->lock_owner = NULL;
 
+		return __ofono_error_failed(msg);
+	}
+
+	modem->lockdown = lockdown;
+
+	if (modem->powered == FALSE)
+		goto done;
+
+	err = set_powered(modem, FALSE);
+	if (err < 0) {
+		if (err != -EINPROGRESS) {
+			lockdown_remove(modem);
 			return __ofono_error_failed(msg);
 		}
 
-		modem->lockdown = lockdown;
-
-		if (!modem->powered)
-			goto done;
-
-		err = set_powered(modem, FALSE);
-		if (err < 0) {
-			if (err != -EINPROGRESS) {
-				lockdown_remove(modem);
-				return __ofono_error_failed(msg);
-			}
-
-			modem->pending = dbus_message_ref(msg);
-			modem->timeout = g_timeout_add_seconds(20,
+		modem->pending = dbus_message_ref(msg);
+		modem->timeout = g_timeout_add_seconds(20,
 						set_powered_timeout, modem);
-			return NULL;
-		}
+		return NULL;
+	}
 
-		powered = FALSE;
-		ofono_dbus_signal_property_changed(conn, modem->path,
+	powered = FALSE;
+	ofono_dbus_signal_property_changed(conn, modem->path,
 					OFONO_MODEM_INTERFACE,
 					"Powered", DBUS_TYPE_BOOLEAN,
 					&powered);
-	} else
-		lockdown_remove(modem);
 
 done:
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
