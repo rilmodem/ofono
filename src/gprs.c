@@ -1606,6 +1606,15 @@ static void write_context_settings(struct ofono_gprs *gprs,
 				gprs_context_type_to_string(context->type));
 	g_key_file_set_string(gprs->settings, context->key, "Protocol",
 				gprs_proto_to_string(context->context.proto));
+
+	if (context->type == OFONO_GPRS_CONTEXT_TYPE_MMS) {
+		g_key_file_set_string(gprs->settings, context->key,
+					"MessageProxy",
+					context->message_proxy);
+		g_key_file_set_string(gprs->settings, context->key,
+					"MessageCenter",
+					context->message_center);
+	}
 }
 
 static struct pri_context *add_context(struct ofono_gprs *gprs,
