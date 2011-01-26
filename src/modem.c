@@ -805,10 +805,13 @@ static DBusMessage *set_property_lockdown(struct ofono_modem *modem,
 	if (modem->pending != NULL)
 		return __ofono_error_busy(msg);
 
+	caller = dbus_message_get_sender(msg);
+
+	if (modem->lockdown && g_strcmp0(caller, modem->lock_owner))
+		return __ofono_error_access_denied(msg);
+
 	if (modem->lockdown == lockdown)
 		return dbus_message_new_method_return(msg);
-
-	caller = dbus_message_get_sender(msg);
 
 	if (lockdown) {
 		dbus_bool_t powered;
@@ -847,12 +850,8 @@ static DBusMessage *set_property_lockdown(struct ofono_modem *modem,
 					OFONO_MODEM_INTERFACE,
 					"Powered", DBUS_TYPE_BOOLEAN,
 					&powered);
-	} else {
-		if (g_strcmp0(caller, modem->lock_owner))
-			return __ofono_error_access_denied(msg);
-
+	} else
 		lockdown_remove(modem);
-	}
 
 done:
 	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
