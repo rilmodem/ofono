@@ -881,7 +881,7 @@ error:
 
 static void at_change_passwd(struct ofono_sim *sim,
 			enum ofono_sim_password_type passwd_type,
-			const char *old, const char *new,
+			const char *old_passwd, const char *new_passwd,
 			ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
@@ -898,7 +898,7 @@ static void at_change_passwd(struct ofono_sim *sim,
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CPWD=\"%s\",\"%s\",\"%s\"",
-			at_clck_cpwd_fac[passwd_type], old, new);
+			at_clck_cpwd_fac[passwd_type], old_passwd, new_passwd);
 
 	ret = g_at_chat_send(sd->chat, buf, none_prefix,
 				at_lock_unlock_cb, cbd, g_free);
