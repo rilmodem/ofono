@@ -479,7 +479,12 @@ static void stk_alpha_id_set(struct ofono_stk *stk,
 {
 	char *alpha = dbus_apply_text_attributes(text, attr);
 
-	if (alpha || icon)
+	/*
+	 * Currently, we are treating null data object(len = 0, no value part)
+	 * and no alpha identifier cases equally. This may be changed once
+	 * better idea is found out.
+	 */
+	if (alpha != NULL)
 		stk_agent_display_action_info(stk->current_agent, alpha, icon);
 
 	g_free(alpha);
