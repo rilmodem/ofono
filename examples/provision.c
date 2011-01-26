@@ -26,6 +26,8 @@
 #include <string.h>
 #include <glib.h>
 
+#include <errno.h>
+
 #define OFONO_API_SUBJECT_TO_CHANGE
 
 #include <ofono/modem.h>
@@ -34,7 +36,7 @@
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 
-static void example_provision_get_settings(const char *mcc, const char *mnc,
+static int example_provision_get_settings(const char *mcc, const char *mnc,
 				struct ofono_gprs_provision_data **settings,
 				int *count)
 {
@@ -46,13 +48,13 @@ static void example_provision_get_settings(const char *mcc, const char *mnc,
 			mcc, mnc);
 
 	if (strcmp(mcc, "246") != 0 || strcmp(mnc, "81") != 0)
-		return;
+		return -ENOENT;
 
 	ofono_debug("Creating example settings for phonesim");
 
 	*settings = g_try_new0(struct ofono_gprs_provision_data, 2);
 	if (*settings == NULL)
-		return;
+		return -ENOMEM;
 
 	*count = 2;
 
@@ -71,6 +73,8 @@ static void example_provision_get_settings(const char *mcc, const char *mnc,
 	(*settings)[1].password = g_strdup("mmspass");
 	(*settings)[1].message_proxy = g_strdup("10.11.12.13:8080");
 	(*settings)[1].message_center = g_strdup("http://mms.example.com:8000");
+
+	return 0;
 }
 
 static struct ofono_gprs_provision_driver example_driver = {
