@@ -47,34 +47,31 @@ void  __ofono_gprs_provision_free_settings(
 	g_free(settings);
 }
 
-void __ofono_gprs_provision_get_settings(const char *mcc, const char *mnc,
-			struct ofono_gprs_provision_data **settings,
-			int *count)
+ofono_bool_t __ofono_gprs_provision_get_settings(const char *mcc,
+				const char *mnc,
+				struct ofono_gprs_provision_data **settings,
+				int *count)
 {
 	GSList *d;
 
-	*settings = NULL;
-	*count = 0;
-
 	if (mcc == NULL || strlen(mcc) == 0 || mnc == NULL || strlen(mnc) == 0)
-		return;
+		return FALSE;
 
 	for (d = g_drivers; d != NULL; d = d->next) {
 		const struct ofono_gprs_provision_driver *driver = d->data;
 
+		if (driver->get_settings == NULL)
+			continue;
+
 		DBG("Calling provisioning plugin '%s'", driver->name);
 
-		driver->get_settings(mcc, mnc, settings, count);
+		if (driver->get_settings(mcc, mnc, settings, count) < 0)
+			continue;
 
-		if (*count > 0) {
-			DBG("Plugin '%s' returned %d context settings",
-				driver->name, *count);
-			return;
-		}
-
-		ofono_warn("Provisioning plugin '%s' returned no settings",
-			driver->name);
+		return TRUE;
 	}
+
+	return FALSE;
 }
 
 static gint compare_priority(gconstpointer a, gconstpointer b)
