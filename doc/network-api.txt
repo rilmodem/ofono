@@ -72,7 +72,7 @@ Properties	string Mode [readonly]
 				"auto"       Network registration is performed
 				             automatically.
 				"auto-only"  Network registration is performed
-					     automatically, and manual
+				             automatically, and manual
 				             selection is disabled.
 				"manual"     Network operator is selected
 				             manually. If the operator is
