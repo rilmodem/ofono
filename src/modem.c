@@ -736,6 +736,8 @@ static void lockdown_remove(struct ofono_modem *modem)
 	}
 
 	g_free(modem->lock_owner);
+	modem->lock_owner = NULL;
+
 	modem->lockdown = FALSE;
 }
 
@@ -824,6 +826,8 @@ static DBusMessage *set_property_lockdown(struct ofono_modem *modem,
 
 		if (modem->lock_watch == 0) {
 			g_free(modem->lock_owner);
+			modem->lock_owner = NULL;
+
 			return __ofono_error_failed(msg);
 		}
 
