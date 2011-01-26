@@ -69,18 +69,21 @@ Properties	string Mode [readonly]
 			method of an operator is called.
 
 			The possible values are:
-				"auto"     Network registration is performed
-				           automatically.
-				"manual"   Network operator is selected
-				           manually. If the operator is
-				           currently not selected, registration
-				           is not attempted
+				"auto"       Network registration is performed
+				             automatically.
+				"auto-only"  Network registration is performed
+					     automatically, and manual
+				             selection is disabled.
+				"manual"     Network operator is selected
+				             manually. If the operator is
+				             currently not selected,
+				             registration is not attempted.
 
 		string Status [readonly]
 
 			The current registration status of a modem.
 
-			The possible values are: 
+			The possible values are:
 				"unregistered"  Not registered to any network
 				"registered"    Registered to home network
 				"searching"     Not registered, but searching
