@@ -154,7 +154,7 @@ struct ofono_sim_driver {
 			ofono_sim_lock_unlock_cb_t cb, void *data);
 	void (*change_passwd)(struct ofono_sim *sim,
 			enum ofono_sim_password_type type,
-			const char *old, const char *new,
+			const char *old_passwd, const char *new_passwd,
 			ofono_sim_lock_unlock_cb_t cb, void *data);
 	void (*lock)(struct ofono_sim *sim, enum ofono_sim_password_type type,
 			int enable, const char *passwd,
