@@ -434,14 +434,11 @@ static void sim_ind_cb(const GIsiMessage *msg, void *data)
 static void sim_reachable_cb(const GIsiMessage *msg, void *data)
 {
 	struct ofono_sim *sim = data;
-	struct sim_data *sd = ofono_sim_get_data(sim);
 
 	if (g_isi_msg_error(msg) < 0)
 		return;
 
 	ISI_VERSION_DBG(msg);
-
-	g_isi_client_ind_subscribe(sd->client, SIM_IND, sim_ind_cb, sim);
 
 	/* Check if SIM is ready by reading HPLMN */
 	isi_read_hplmn(sim);
@@ -465,6 +462,7 @@ static int isi_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 
 	ofono_sim_set_data(sim, sd);
 
+	g_isi_client_ind_subscribe(sd->client, SIM_IND, sim_ind_cb, sim);
 	g_isi_client_verify(sd->client, sim_reachable_cb, sim, NULL);
 
 	return 0;
