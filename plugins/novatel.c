@@ -129,8 +129,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	if (ok)
-		ofono_modem_set_powered(modem, TRUE);
+	ofono_modem_set_powered(modem, ok);
 }
 
 static void nwdmat_action(gboolean ok, GAtResult *result, gpointer user_data)
