@@ -38,6 +38,7 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
+#include <ofono/gprs.h>
 #include <ofono/phonebook.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -233,10 +234,13 @@ static void sierra_post_sim(struct ofono_modem *modem)
 static void sierra_post_online(struct ofono_modem *modem)
 {
 	struct sierra_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
 
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, 0, "atmodem", data->chat);
+
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
 }
 
 static struct ofono_modem_driver sierra_driver = {
