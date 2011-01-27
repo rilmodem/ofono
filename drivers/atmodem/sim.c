@@ -149,6 +149,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 
 	switch (sd->vendor) {
 	case OFONO_VENDOR_HUAWEI:
+	case OFONO_VENDOR_SIERRA:
 	case OFONO_VENDOR_QUALCOMM_MSM:
 		strcat(buf, ",0,0,255"); /* Maximum possible length */
 		break;
