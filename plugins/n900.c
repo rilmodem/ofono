@@ -448,7 +448,7 @@ static void n900_set_online(struct ofono_modem *modem,
 	struct isi_cb_data *cbd = isi_cb_data_new(modem, cb, data);
 	const uint8_t req[] = {
 		MTC_STATE_REQ,
-		online ? MTC_NORMAL : MTC_RF_INACTIVE,
+		online ? MTC_NORMAL : MTC_RF_INACTIVE, 0
 	};
 
 	DBG("(%p) with %s", modem, isi->ifname);
