@@ -112,18 +112,14 @@ else
 fi
 AC_SUBST(DBUS_DATADIR)
 
-AC_ARG_ENABLE(systemd, AC_HELP_STRING([--enable-systemd],
-		[enable systemd support]), [enable_systemd=${enableval}])
-if (test "${enable_systemd}" = "yes"); then
-	PKG_CHECK_MODULES(SYSTEMD, systemd, dummy=yes,
-				AC_MSG_ERROR(systemd is required))
-	SYSTEMD_UNITDIR="`$PKG_CONFIG --variable=systemdsystemunitdir systemd`"
-	if (test -z "${SYSTEM_UNITDIR}"); then
-		SYSTEMD_UNITDIR="/lib/systemd/system"
-	fi
+AC_ARG_WITH([systemdunitdir], AC_HELP_STRING([--with-systemdunitdir=DIR],
+	[path to systemd service directory]), [path_systemdunit=${withval}],
+		[path_systemdunit="`$PKG_CONFIG --variable=systemdsystemunitdir systemd`"])
+if (test -n "${path_systemdunit}"); then
+	SYSTEMD_UNITDIR="${path_systemdunit}"
 	AC_SUBST(SYSTEMD_UNITDIR)
 fi
-AM_CONDITIONAL(SYSTEMD, test "${enable_systemd}" = "yes")
+AM_CONDITIONAL(SYSTEMD, test -n "${path_systemdunit}")
 
 AC_ARG_ENABLE(capng, AC_HELP_STRING([--enable-capng],
 		[enable capabilities support]), [enable_capng=${enableval}])
