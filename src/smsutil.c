@@ -48,6 +48,10 @@
 #define SMS_SR_BACKUP_PATH STORAGEDIR "/%s/sms_sr"
 #define SMS_SR_BACKUP_PATH_FILE SMS_SR_BACKUP_PATH "/%s-%s"
 
+#define SMS_TX_BACKUP_PATH STORAGEDIR "/%s/tx_queue"
+#define SMS_TX_BACKUP_PATH_DIR SMS_TX_BACKUP_PATH "/%lu-%lu-%s"
+#define SMS_TX_BACKUP_PATH_FILE SMS_TX_BACKUP_PATH_DIR "/%03i"
+
 #define SMS_ADDR_FMT "%24[0-9A-F]"
 #define SMS_MSGID_FMT "%40[0-9A-F]"
 
@@ -3141,6 +3145,31 @@ void status_report_assembly_expire(struct status_report_assembly *assembly,
 		if (g_hash_table_size(id_table) == 0)
 			g_hash_table_iter_remove(&iter_addr);
 	}
+}
+
+gboolean sms_tx_backup_store(const char *imsi, unsigned long id,
+				unsigned long flags, const char *uuid,
+				guint8 seq, const unsigned char *pdu,
+				int pdu_len, int tpdu_len)
+{
+	unsigned char buf[177];
+	int len;
+
+	if (!imsi)
+		return FALSE;
+
+	memcpy(buf + 1, pdu, pdu_len);
+	buf[0] = tpdu_len;
+	len = pdu_len + 1;
+
+	/*
+	 * file name is: imsi/tx_queue/order-flags-uuid/pdu
+	 */
+	if (write_file(buf, len, SMS_BACKUP_MODE, SMS_TX_BACKUP_PATH_FILE,
+					imsi, id, flags, uuid, seq) != len)
+		return FALSE;
+
+	return TRUE;
 }
 
 static inline GSList *sms_list_append(GSList *l, const struct sms *in)

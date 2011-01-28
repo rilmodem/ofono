@@ -65,6 +65,7 @@ struct ofono_sms {
 	struct sms_assembly *assembly;
 	guint ref;
 	GQueue *txq;
+	unsigned long tx_counter;
 	guint tx_source;
 	struct ofono_message_waiting *mw;
 	unsigned int mw_watch;
@@ -103,6 +104,7 @@ struct tx_queue_entry {
 	ofono_sms_txq_submit_cb_t cb;
 	void *data;
 	ofono_destroy_func destroy;
+	unsigned long id;
 };
 
 static gboolean uuid_equal(gconstpointer v1, gconstpointer v2)
@@ -1814,6 +1816,8 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 			sms->ref = sms->ref + 1;
 	}
 
+	entry->id = sms->tx_counter++;
+
 	g_queue_push_tail(sms->txq, entry);
 
 	if (sms->registered && g_queue_get_length(sms->txq) == 1)
@@ -1821,6 +1825,23 @@ int __ofono_sms_txq_submit(struct ofono_sms *sms, GSList *list,
 
 	if (uuid)
 		memcpy(uuid, &entry->uuid, sizeof(*uuid));
+
+	if (flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS) {
+		const char *uuid_str;
+		unsigned char i;
+
+		uuid_str = ofono_uuid_to_str(&entry->uuid);
+
+		for (i = 0; i < entry->num_pdus; i++) {
+			struct pending_pdu *pdu;
+
+			pdu = &entry->pdus[i];
+
+			sms_tx_backup_store(sms->imsi, entry->id, entry->flags,
+						uuid_str, i, pdu->pdu,
+						pdu->pdu_len, pdu->tpdu_len);
+		}
+	}
 
 	if (cb)
 		cb(sms, &entry->uuid, data);

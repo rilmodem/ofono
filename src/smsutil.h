@@ -517,6 +517,10 @@ void status_report_assembly_add_fragment(struct status_report_assembly
 void status_report_assembly_expire(struct status_report_assembly *assembly,
 					time_t before);
 
+gboolean sms_tx_backup_store(const char *imsi, unsigned long id,
+				unsigned long flags, const char *uuid,
+				guint8 seq, const unsigned char *pdu,
+				int pdu_len, int tpdu_len);
 GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 				gboolean use_16bit,
 				gboolean use_delivery_reports);
