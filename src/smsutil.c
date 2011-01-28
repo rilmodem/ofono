@@ -3172,6 +3172,53 @@ gboolean sms_tx_backup_store(const char *imsi, unsigned long id,
 	return TRUE;
 }
 
+void sms_tx_backup_free(const char *imsi, unsigned long id,
+				unsigned long flags, const char *uuid)
+{
+	char *path;
+	struct dirent **entries;
+	int len;
+
+	path = g_strdup_printf(SMS_TX_BACKUP_PATH_DIR,
+					imsi, id, flags, uuid);
+
+	len = scandir(path, &entries, NULL, versionsort);
+
+	if (len < 0)
+		return;
+
+	/* skip '..' and '.' entries */
+	while (len-- > 2) {
+		struct dirent *dir = entries[len];
+		char *file = g_strdup_printf("%s/%s", path, dir->d_name);
+
+		unlink(file);
+		g_free(file);
+
+		g_free(entries[len]);
+	}
+
+	g_free(entries[1]);
+	g_free(entries[0]);
+	g_free(entries);
+
+	rmdir(path);
+	g_free(path);
+}
+
+void sms_tx_backup_remove(const char *imsi, unsigned long id,
+				unsigned long flags, const char *uuid,
+				guint8 seq)
+{
+	char *path;
+
+	path = g_strdup_printf(SMS_TX_BACKUP_PATH_FILE,
+					imsi, id, flags, uuid, seq);
+	unlink(path);
+
+	g_free(path);
+}
+
 static inline GSList *sms_list_append(GSList *l, const struct sms *in)
 {
 	struct sms *sms;

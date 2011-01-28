@@ -571,6 +571,11 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		goto next_q;
 	}
 
+	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS)
+		sms_tx_backup_remove(sms->imsi, entry->id, entry->flags,
+						ofono_uuid_to_str(&entry->uuid),
+						entry->cur_pdu);
+
 	entry->cur_pdu += 1;
 	entry->retry = 0;
 
@@ -606,6 +611,9 @@ next_q:
 
 	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS) {
 		enum message_state ms;
+
+		sms_tx_backup_free(sms->imsi, entry->id, entry->flags,
+						ofono_uuid_to_str(&entry->uuid));
 
 		if (ok)
 			ms = MESSAGE_STATE_SENT;

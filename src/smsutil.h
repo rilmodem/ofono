@@ -521,6 +521,12 @@ gboolean sms_tx_backup_store(const char *imsi, unsigned long id,
 				unsigned long flags, const char *uuid,
 				guint8 seq, const unsigned char *pdu,
 				int pdu_len, int tpdu_len);
+void sms_tx_backup_remove(const char *imsi, unsigned long id,
+				unsigned long flags, const char *uuid,
+				guint8 seq);
+void sms_tx_backup_free(const char *imsi, unsigned long id,
+				unsigned long flags, const char *uuid);
+
 GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 				gboolean use_16bit,
 				gboolean use_delivery_reports);
