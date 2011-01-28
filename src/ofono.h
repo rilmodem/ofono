@@ -245,6 +245,7 @@ enum ofono_sms_submit_flag {
 	OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY =	0x2,
 	OFONO_SMS_SUBMIT_FLAG_RETRY =		0x4,
 	OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS =	0x8,
+	OFONO_SMS_SUBMIT_FLAG_REUSE_UUID =	0x10,
 };
 
 typedef void (*ofono_sms_txq_submit_cb_t)(gboolean ok, void *data);

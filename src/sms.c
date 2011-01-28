@@ -798,6 +798,9 @@ static struct tx_queue_entry *tx_queue_entry_new(GSList *msg_list,
 				pdu->pdu_len, pdu->tpdu_len);
 	}
 
+	if (flags & OFONO_SMS_SUBMIT_FLAG_REUSE_UUID)
+		return entry;
+
 	if (sms_uuid_from_pdus(entry->pdus, entry->num_pdus, &entry->uuid))
 		return entry;
 
@@ -1694,6 +1697,63 @@ static void bearer_init_callback(const struct ofono_error *error, void *data)
 		ofono_error("Error bootstrapping SMS Bearer Preference");
 }
 
+static void sms_restore_tx_queue(struct ofono_sms *sms)
+{
+	GQueue *backupq;
+	struct txq_backup_entry *backup_entry;
+
+	DBG("");
+
+	backupq = sms_tx_queue_load(sms->imsi);
+
+	if (backupq == NULL)
+		return;
+
+	while ((backup_entry = g_queue_pop_head(backupq))) {
+		struct message *m;
+		struct tx_queue_entry *txq_entry;
+
+		backup_entry->flags |= OFONO_SMS_SUBMIT_FLAG_REUSE_UUID;
+		txq_entry = tx_queue_entry_new(backup_entry->msg_list,
+							backup_entry->flags);
+		if (txq_entry == NULL)
+			goto loop_out;
+
+		txq_entry->flags &= ~OFONO_SMS_SUBMIT_FLAG_REUSE_UUID;
+		memcpy(&txq_entry->uuid.uuid, &backup_entry->uuid,
+								SMS_MSGID_LEN);
+
+		m = message_create(&txq_entry->uuid, sms->atom);
+		if (m == NULL) {
+			tx_queue_entry_destroy(txq_entry);
+
+			goto loop_out;
+		}
+
+		if (message_dbus_register(m) == FALSE) {
+			tx_queue_entry_destroy(txq_entry);
+
+			goto loop_out;
+		}
+
+		message_set_data(m, txq_entry);
+		g_hash_table_insert(sms->messages, &txq_entry->uuid, m);
+
+		txq_entry->id = sms->tx_counter++;
+		g_queue_push_tail(sms->txq, txq_entry);
+
+loop_out:
+		g_slist_foreach(backup_entry->msg_list, (GFunc)g_free, NULL);
+		g_slist_free(backup_entry->msg_list);
+		g_free(backup_entry);
+	}
+
+	if (g_queue_get_length(sms->txq) > 0)
+		sms->tx_source = g_timeout_add(0, tx_next, sms);
+
+	g_queue_free(backupq);
+}
+
 /*
  * Indicate oFono that a SMS driver is ready for operation
  *
@@ -1765,6 +1825,8 @@ void ofono_sms_register(struct ofono_sms *sms)
 	if (sms->driver->bearer_set)
 		sms->driver->bearer_set(sms, sms->bearer,
 						bearer_init_callback, sms);
+
+	sms_restore_tx_queue(sms);
 
 	sms->text_handlers = __ofono_watchlist_new(g_free);
 	sms->datagram_handlers = __ofono_watchlist_new(g_free);

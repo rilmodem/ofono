@@ -2327,6 +2327,15 @@ static gboolean sms_deserialize(const unsigned char *buf,
 	return sms_decode(buf + 1, len - 1, FALSE, buf[0], sms);
 }
 
+static gboolean sms_deserialize_outgoing(const unsigned char *buf,
+		struct sms *sms, int len)
+{
+	if (len < 1)
+		return FALSE;
+
+	return sms_decode(buf + 1, len - 1, TRUE, buf[0], sms);
+}
+
 static gboolean sms_assembly_extract_address(const char *straddr,
 						struct sms_address *out)
 {
@@ -3145,6 +3154,178 @@ void status_report_assembly_expire(struct status_report_assembly *assembly,
 		if (g_hash_table_size(id_table) == 0)
 			g_hash_table_iter_remove(&iter_addr);
 	}
+}
+
+static int sms_tx_load_filter(const struct dirent *dent)
+{
+	char *endp;
+	guint8 seq;
+
+	if (dent->d_type != DT_REG)
+		return 0;
+
+	seq = strtol(dent->d_name, &endp, 10);
+
+	if (*endp != '\0')
+		return 0;
+
+	return 1;
+}
+
+/*
+ * Each directory contains a file per pdu.
+ */
+static GSList *sms_tx_load(const char *imsi, const struct dirent *dir)
+{
+	GSList *list = NULL;
+	struct dirent **pdus;
+	char *path;
+	int len, r;
+	unsigned char buf[177];
+	struct sms s;
+
+	if (dir->d_type != DT_DIR)
+		return NULL;
+
+	path = g_strdup_printf(SMS_TX_BACKUP_PATH "/%s", imsi, dir->d_name);
+	len = scandir(path, &pdus, sms_tx_load_filter, versionsort);
+	g_free(path);
+
+	if (len < 0)
+		return NULL;
+
+	while (len--) {
+		r = read_file(buf, sizeof(buf), SMS_TX_BACKUP_PATH "/%s/%s",
+					imsi, dir->d_name, pdus[len]->d_name);
+
+		if (r < 0)
+			goto free_pdu;
+
+		if (sms_deserialize_outgoing(buf, &s, r) == FALSE)
+			goto free_pdu;
+
+		list = g_slist_prepend(list, g_memdup(&s, sizeof(s)));
+
+free_pdu:
+		g_free(pdus[len]);
+	}
+
+	g_free(pdus);
+
+	return list;
+}
+
+static int sms_tx_queue_filter(const struct dirent *dirent)
+{
+	if (dirent->d_type != DT_DIR)
+		return 0;
+
+	if (!strcmp(dirent->d_name, ".") || !strcmp(dirent->d_name, ".."))
+		return 0;
+
+	return 1;
+}
+
+/*
+ * populate the queue with tx_backup_entry from stored backup
+ * data.
+ */
+GQueue *sms_tx_queue_load(const char *imsi)
+{
+	char *path;
+	GQueue *retq;
+	struct dirent **entries;
+	int len;
+
+	if (imsi == NULL)
+		return NULL;
+
+	path = g_strdup_printf(SMS_TX_BACKUP_PATH, imsi);
+	if (path == NULL)
+		goto nomem_path;
+
+	retq = g_queue_new();
+	if (retq == NULL)
+		goto nomem_retq;
+
+	len = scandir(path, &entries, sms_tx_queue_filter, versionsort);
+
+	if (len < 0)
+		goto nodir_exit;
+
+	while (len--) {
+		char uuid[SMS_MSGID_LEN * 2 + 1];
+		GSList *msg_list;
+		unsigned long flags;
+		char *oldpath, *newpath;
+		struct txq_backup_entry *entry;
+		struct dirent *dir = entries[len];
+		char endc;
+		unsigned long i;
+
+		if (sscanf(dir->d_name, "%*u-%lu-" SMS_MSGID_FMT "%c",
+						&flags, uuid, &endc) != 2)
+			goto err_free_dir;
+
+		if (strlen(uuid) !=  2 * SMS_MSGID_LEN)
+			goto err_free_dir;
+
+		entry = g_try_new0(struct txq_backup_entry, 1);
+		if (entry == NULL)
+			goto err_free_dir;
+
+		oldpath = g_strdup_printf("%s/%s", path, dir->d_name);
+		if (oldpath == NULL)
+			goto err_free_entry;
+
+		i = len;
+		newpath = g_strdup_printf(SMS_TX_BACKUP_PATH_DIR,
+						imsi, i, flags, uuid);
+		if (newpath == NULL)
+			goto err_free_oldpath;
+
+		msg_list = sms_tx_load(imsi, dir);
+		if (msg_list == NULL)
+			goto err_free_newpath;
+
+		entry->msg_list = msg_list;
+		entry->flags = flags;
+		decode_hex_own_buf(uuid, -1, NULL, 0, entry->uuid);
+
+		g_queue_push_head(retq, entry);
+
+		/* rename directory to reflect new position in queue */
+		rename(oldpath, newpath);
+
+		g_free(dir);
+		g_free(newpath);
+		g_free(oldpath);
+
+		continue;
+
+err_free_newpath:
+		g_free(newpath);
+err_free_oldpath:
+		g_free(oldpath);
+err_free_entry:
+		g_free(entry);
+err_free_dir:
+		g_free(dir);
+	}
+
+	g_free(entries);
+	g_free(path);
+
+	return retq;
+
+nodir_exit:
+	g_queue_free(retq);
+
+nomem_retq:
+	g_free(path);
+
+nomem_path:
+	return NULL;
 }
 
 gboolean sms_tx_backup_store(const char *imsi, unsigned long id,

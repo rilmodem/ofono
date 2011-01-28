@@ -408,6 +408,12 @@ struct cbs_topic_range {
 	unsigned short max;
 };
 
+struct txq_backup_entry {
+	GSList *msg_list;
+	unsigned char uuid[SMS_MSGID_LEN];
+	unsigned long flags;
+};
+
 static inline gboolean is_bit_set(unsigned char oct, int bit)
 {
 	int mask = 0x1 << bit;
@@ -526,6 +532,7 @@ void sms_tx_backup_remove(const char *imsi, unsigned long id,
 				guint8 seq);
 void sms_tx_backup_free(const char *imsi, unsigned long id,
 				unsigned long flags, const char *uuid);
+GQueue *sms_tx_queue_load(const char *imsi);
 
 GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 				gboolean use_16bit,
