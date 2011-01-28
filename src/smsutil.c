@@ -2726,6 +2726,7 @@ static void sr_assembly_load_backup(GHashTable *assembly_table,
 	unsigned int *id_table_key;
 	char msgid_str[SMS_MSGID_LEN * 2 + 1];
 	unsigned char msgid[SMS_MSGID_LEN];
+	char endc;
 
 	if (addr_dir->d_type != DT_REG)
 		return;
@@ -2737,8 +2738,8 @@ static void sr_assembly_load_backup(GHashTable *assembly_table,
 	 * Max of SMS address size is 12 bytes, hex encoded
 	 * Max of SMS SHA1 hash is 20 bytes, hex encoded
 	 */
-	if (sscanf(addr_dir->d_name, SMS_ADDR_FMT "-" SMS_MSGID_FMT,
-				straddr, msgid_str) < 2)
+	if (sscanf(addr_dir->d_name, SMS_ADDR_FMT "-" SMS_MSGID_FMT "%c",
+				straddr, msgid_str, &endc) != 2)
 		return;
 
 	if (sms_assembly_extract_address(straddr, &addr) == FALSE)
