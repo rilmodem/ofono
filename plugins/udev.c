@@ -135,7 +135,7 @@ static void add_mbm(struct ofono_modem *modem,
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, DATA_DEVICE, devnode);
 	} else if (g_str_has_suffix(desc, "Minicard GPS Port") ||
-			g_str_has_suffix(desc, "Mini-Card GPRS Port") ||
+			g_str_has_suffix(desc, "Mini-Card GPS Port") ||
 			g_str_has_suffix(desc, "Broadband GPS Port")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, GPS_DEVICE, devnode);
