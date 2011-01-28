@@ -255,6 +255,22 @@ Supplementary Services
   Priority: Low
   Complexity: C8
 
+- Call forwarding state handling change
+
+  At the moment call forwarding states are not always correct. Any active
+  conditional call forwarding should become quiescent while unconditional call
+  forwarding is activate. If call forwarding unconditional is subsequently
+  deactivated, all the quiescent forwardings should become operative again.
+  I.e. No conditional call forwardin string should be returned while
+  unconditional call forwarding is active even if they exist.
+
+  If there is an successfull attempt to activate/deactivate conditional call
+  forwarding while unconditional call forwarding is active the conditional cache
+  flag should cleared.
+
+  Priority: Low
+  Complexity: C1
+
 
 Voicecall
 =========
