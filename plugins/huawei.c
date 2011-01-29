@@ -637,6 +637,8 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
 	ofono_radio_settings_create(modem, 0, "huaweimodem", data->pcui);
+
+	ofono_sms_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->pcui);
 }
 
 static void huawei_post_online(struct ofono_modem *modem)
@@ -656,7 +658,6 @@ static void huawei_post_online(struct ofono_modem *modem)
 	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
 								data->pcui);
 
-	ofono_sms_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->pcui);
 	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
