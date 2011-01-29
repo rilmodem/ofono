@@ -311,9 +311,6 @@ static void huawei_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", ctx->cid);
 
-	if (cbd == NULL)
-		goto error;
-
 	gcd->active_context = ctx->cid;
 
 	cbd->user = gc;
@@ -328,7 +325,6 @@ static void huawei_gprs_activate_primary(struct ofono_gprs_context *gc,
 				at_cgdcont_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, data);
@@ -344,9 +340,6 @@ static void huawei_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", cid);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = gc;
 
 	snprintf(buf, sizeof(buf), "AT^NDISDUP=%u,0", cid);
@@ -355,7 +348,6 @@ static void huawei_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 				at_ndisdup_down_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);

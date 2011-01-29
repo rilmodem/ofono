@@ -99,14 +99,10 @@ static void huawei_template(struct ofono_voicecall *vc, const char *cmd,
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(vd->chat, cmd, none_prefix,
 				huawei_generic_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
