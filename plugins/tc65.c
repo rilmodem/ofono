@@ -193,6 +193,8 @@ static void tc65_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_phonebook_create(modem, 0, "atmodem", chat);
+
+	ofono_sms_create(modem, 0, "atmodem", chat);
 }
 
 static void tc65_post_online(struct ofono_modem *modem)
@@ -211,7 +213,6 @@ static void tc65_post_online(struct ofono_modem *modem)
 	ofono_call_meter_create(modem, 0, "atmodem", chat);
 	ofono_call_barring_create(modem, 0, "atmodem", chat);
 	ofono_ssn_create(modem, 0, "atmodem", chat);
-	ofono_sms_create(modem, 0, "atmodem", chat);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", chat);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", chat);
