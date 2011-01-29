@@ -1,0 +1,56 @@
+Assisted Satellite Navigation hierarchy [experimental]
+==========================================================
+
+Service		org.ofono
+Interface	org.ofono.AssistedSatelliteNavigation
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		void SendPositioningElement(string xml_element)
+
+			Send an XML element conforming to the XML DTD for <pos>
+			as defined in 3GPP 27.007 Table 8.55-2. This xml is
+			used for transferring data associated with positioning
+			requests received via control plane from the network.
+			This includes assistance data requests and the results
+			of positioning procedures. This method maps directly to
+			the 3GPP 27.007 AT+CPOS command.
+
+		void RegisterPositioningRequestAgent(object path)
+
+			Registers an agent which will be called whenever a
+			CPOSR AT response is received. The Agent must respond
+			to requests using SendPositioningElement.
+
+		void UnregisterPositioningRequestAgent(object path)
+
+			Un-registers the agent.
+
+PositioningRequestAgent hierarchy
+==================================
+
+Service		unique name
+Interface	org.ofono.PositioningRequestAgent
+Object path	freely definable
+
+Methods		void Request(string xml_element)
+
+			Receive an XML element conforming to the XML DTD for
+			<pos> in 3GPP 27.007. This xml is used for transferring
+			data associated with positioning requests received, via
+			control plane, from the network. This includes
+			measurement requests and assistance data. This method
+			maps directly to the 3GPP defined +CPOSR unsolicited
+			result code.
+
+		void ResetAssistanceData()
+
+			A request has been received from the network that all
+			assistance data should be reset.  This is used for 3gpp
+			performance tests.
+
+		void Release()
+
+			Agent is being released, possibly because of oFono
+			terminating, AssistedSatelliteNavigation interface
+			is being torn down or modem off.
+			No UnregisterPositioningRequestAgent call is needed.
