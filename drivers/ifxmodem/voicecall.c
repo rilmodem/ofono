@@ -305,9 +305,6 @@ static void ifx_dial(struct ofono_voicecall *vc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[256];
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = vc;
 
 	if (ph->type == 145)
@@ -332,7 +329,6 @@ static void ifx_dial(struct ofono_voicecall *vc,
 				atd_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -503,9 +499,6 @@ static void ifx_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	int s;
 	int i;
 	char *buf;
-
-	if (cbd == NULL)
-		goto error;
 
 	/* strlen("+VTS=T\;") = 7 + initial AT + null */
 	buf = g_try_new(char, len * 7 + 3);

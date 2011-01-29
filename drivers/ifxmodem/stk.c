@@ -104,7 +104,7 @@ static void ifx_stk_envelope(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (cbd == NULL || buf == NULL)
+	if (buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+SATE=\"");
@@ -150,7 +150,7 @@ static void ifx_stk_terminal_response(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (cbd == NULL || buf == NULL)
+	if (buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+SATR=\"");

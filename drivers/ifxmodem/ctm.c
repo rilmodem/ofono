@@ -88,14 +88,10 @@ static void ifx_query_tty(struct ofono_ctm *ctm, ofono_ctm_query_cb_t cb,
 	struct ctm_data *ctmd = ofono_ctm_get_data(ctm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(ctmd->chat, "AT+XCTMS?", xctms_prefix,
 				xctms_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
@@ -121,9 +117,6 @@ static void ifx_set_tty(struct ofono_ctm *ctm, ofono_bool_t enable,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[20];
 
-	if (cbd == NULL)
-		goto error;
-
 	/* Only FULL TTY mode enabled/disabled */
 	snprintf(buf, sizeof(buf), "AT+XCTMS=%i", enable ? 1 : 0);
 
@@ -131,7 +124,6 @@ static void ifx_set_tty(struct ofono_ctm *ctm, ofono_bool_t enable,
 				xctms_modify_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
