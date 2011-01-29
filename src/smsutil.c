@@ -3236,6 +3236,8 @@ GQueue *sms_tx_queue_load(const char *imsi)
 	char *path;
 	struct dirent **entries;
 	int len;
+	int i;
+	unsigned long k;
 
 	if (imsi == NULL)
 		return NULL;
@@ -3248,48 +3250,46 @@ GQueue *sms_tx_queue_load(const char *imsi)
 
 	retq = g_queue_new();
 
-	while (len--) {
+	for (i = 0, k = 0; i < len; i++) {
 		char uuid[SMS_MSGID_LEN * 2 + 1];
 		GSList *msg_list;
 		unsigned long flags;
 		char *oldpath, *newpath;
 		struct txq_backup_entry *entry;
-		struct dirent *dir = entries[len];
+		struct dirent *dir = entries[i];
 		char endc;
-		unsigned long i;
 
 		if (sscanf(dir->d_name, "%*u-%lu-" SMS_MSGID_FMT "%c",
 						&flags, uuid, &endc) != 2)
-			goto err_free_dir;
+			continue;
 
 		if (strlen(uuid) !=  2 * SMS_MSGID_LEN)
-			goto err_free_dir;
+			continue;
 
 		msg_list = sms_tx_load(imsi, dir);
 		if (msg_list == NULL)
-			goto err_free_dir;
+			continue;
 
 		entry = g_new0(struct txq_backup_entry, 1);
 		entry->msg_list = msg_list;
 		entry->flags = flags;
 		decode_hex_own_buf(uuid, -1, NULL, 0, entry->uuid);
 
-		g_queue_push_head(retq, entry);
+		g_queue_push_tail(retq, entry);
 
-		i = len;
 		oldpath = g_strdup_printf("%s/%s", path, dir->d_name);
 		newpath = g_strdup_printf(SMS_TX_BACKUP_PATH_DIR,
-						imsi, i, flags, uuid);
+						imsi, k++, flags, uuid);
 
 		/* rename directory to reflect new position in queue */
 		rename(oldpath, newpath);
 
 		g_free(newpath);
 		g_free(oldpath);
-
-err_free_dir:
-		g_free(dir);
 	}
+
+	for (i = 0; i < len; i++)
+		g_free(entries[i]);
 
 	g_free(entries);
 
