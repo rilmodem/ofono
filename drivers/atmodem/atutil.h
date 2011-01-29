@@ -84,10 +84,7 @@ static inline struct cb_data *cb_data_new(void *cb, void *data)
 {
 	struct cb_data *ret;
 
-	ret = g_try_new0(struct cb_data, 1);
-	if (ret == NULL)
-		return ret;
-
+	ret = g_new0(struct cb_data, 1);
 	ret->cb = cb;
 	ret->data = data;
 
