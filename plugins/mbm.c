@@ -504,6 +504,8 @@ static void mbm_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_stk_create(modem, 0, "mbmmodem", data->modem_port);
+
+	ofono_sms_create(modem, 0, "atmodem", data->modem_port);
 }
 
 static void mbm_post_online(struct ofono_modem *modem)
@@ -515,8 +517,6 @@ static void mbm_post_online(struct ofono_modem *modem)
 
 	ofono_netreg_create(modem, OFONO_VENDOR_MBM,
 					"atmodem", data->modem_port);
-
-	ofono_sms_create(modem, 0, "atmodem", data->modem_port);
 
 	switch (data->variant) {
 	case MBM_GENERIC:
