@@ -3232,8 +3232,8 @@ static int sms_tx_queue_filter(const struct dirent *dirent)
  */
 GQueue *sms_tx_queue_load(const char *imsi)
 {
+	GQueue *retq = 0;
 	char *path;
-	GQueue *retq;
 	struct dirent **entries;
 	int len;
 
@@ -3241,17 +3241,12 @@ GQueue *sms_tx_queue_load(const char *imsi)
 		return NULL;
 
 	path = g_strdup_printf(SMS_TX_BACKUP_PATH, imsi);
-	if (path == NULL)
-		goto nomem_path;
-
-	retq = g_queue_new();
-	if (retq == NULL)
-		goto nomem_retq;
 
 	len = scandir(path, &entries, sms_tx_queue_filter, versionsort);
-
 	if (len < 0)
 		goto nodir_exit;
+
+	retq = g_queue_new();
 
 	while (len--) {
 		char uuid[SMS_MSGID_LEN * 2 + 1];
@@ -3270,62 +3265,37 @@ GQueue *sms_tx_queue_load(const char *imsi)
 		if (strlen(uuid) !=  2 * SMS_MSGID_LEN)
 			goto err_free_dir;
 
-		entry = g_try_new0(struct txq_backup_entry, 1);
-		if (entry == NULL)
-			goto err_free_dir;
-
-		oldpath = g_strdup_printf("%s/%s", path, dir->d_name);
-		if (oldpath == NULL)
-			goto err_free_entry;
-
-		i = len;
-		newpath = g_strdup_printf(SMS_TX_BACKUP_PATH_DIR,
-						imsi, i, flags, uuid);
-		if (newpath == NULL)
-			goto err_free_oldpath;
-
 		msg_list = sms_tx_load(imsi, dir);
 		if (msg_list == NULL)
-			goto err_free_newpath;
+			goto err_free_dir;
 
+		entry = g_new0(struct txq_backup_entry, 1);
 		entry->msg_list = msg_list;
 		entry->flags = flags;
 		decode_hex_own_buf(uuid, -1, NULL, 0, entry->uuid);
 
 		g_queue_push_head(retq, entry);
 
+		i = len;
+		oldpath = g_strdup_printf("%s/%s", path, dir->d_name);
+		newpath = g_strdup_printf(SMS_TX_BACKUP_PATH_DIR,
+						imsi, i, flags, uuid);
+
 		/* rename directory to reflect new position in queue */
 		rename(oldpath, newpath);
 
-		g_free(dir);
 		g_free(newpath);
 		g_free(oldpath);
 
-		continue;
-
-err_free_newpath:
-		g_free(newpath);
-err_free_oldpath:
-		g_free(oldpath);
-err_free_entry:
-		g_free(entry);
 err_free_dir:
 		g_free(dir);
 	}
 
 	g_free(entries);
-	g_free(path);
-
-	return retq;
 
 nodir_exit:
-	g_queue_free(retq);
-
-nomem_retq:
 	g_free(path);
-
-nomem_path:
-	return NULL;
+	return retq;
 }
 
 gboolean sms_tx_backup_store(const char *imsi, unsigned long id,
