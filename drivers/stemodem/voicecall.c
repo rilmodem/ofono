@@ -187,9 +187,6 @@ static void ste_dial(struct ofono_voicecall *vc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[256];
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = vc;
 
 	if (ph->type == 145)
@@ -214,7 +211,6 @@ static void ste_dial(struct ofono_voicecall *vc,
 				atd_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -369,9 +365,6 @@ static void ste_send_dtmf(struct ofono_voicecall *vc, const char *dtmf,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	int s;
 	char *buf;
-
-	if (cbd == NULL)
-		goto error;
 
 	/* strlen("AT+VTS=) = 7 + NULL */
 	buf = g_try_new(char, strlen(dtmf) + 8);

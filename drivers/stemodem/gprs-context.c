@@ -383,9 +383,6 @@ static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 	GSList *l;
 	struct conn_info *conn;
 
-	if (cbd == NULL)
-		goto error_no_device;
-
 	gcd->active_context = ctx->cid;
 	cbd->user = gc;
 
@@ -447,9 +444,6 @@ static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 	struct conn_info *conn;
 	char buf[64];
 	GSList *l;
-
-	if (cbd == NULL)
-		goto error;
 
 	gcd->active_context = id;
 	cbd->user = gc;
