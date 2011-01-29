@@ -637,6 +637,9 @@ static void phonesim_post_sim(struct ofono_modem *modem)
 					"atmodem", data->chat);
 
 	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
+
+	if (!data->calypso)
+		ofono_sms_create(modem, 0, "atmodem", data->chat);
 }
 
 static void phonesim_post_online(struct ofono_modem *modem)
@@ -663,10 +666,8 @@ static void phonesim_post_online(struct ofono_modem *modem)
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
-	if (!data->calypso) {
-		ofono_sms_create(modem, 0, "atmodem", data->chat);
+	if (!data->calypso)
 		ofono_cbs_create(modem, 0, "atmodem", data->chat);
-	}
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
 
