@@ -600,8 +600,10 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	fs->fd = fd;
 
 	if (error_type != OFONO_ERROR_TYPE_NO_ERROR ||
-			structure != op->structure)
+			structure != op->structure) {
 		sim_fs_op_error(fs);
+		return TRUE;
+	}
 
 	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT) {
 		if (op->num_bytes == 0)
