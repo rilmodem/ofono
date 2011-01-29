@@ -269,6 +269,8 @@ static gboolean sim_fs_op_read_block(gpointer user_data)
 	int end_block;
 	unsigned short read_bytes;
 
+	fs->op_source = 0;
+
 	start_block = op->offset / 256;
 	end_block = (op->offset + (op->num_bytes - 1)) / 256;
 
