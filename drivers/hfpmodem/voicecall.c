@@ -362,9 +362,6 @@ static void hfp_dial(struct ofono_voicecall *vc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[256];
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = vc;
 	if (ph->type == 145)
 		snprintf(buf, sizeof(buf), "ATD+%s", ph->number);
@@ -377,7 +374,6 @@ static void hfp_dial(struct ofono_voicecall *vc,
 				atd_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);

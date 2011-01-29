@@ -73,9 +73,6 @@ static void hfp_speaker_volume(struct ofono_call_volume *cv,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	vd->sp_volume = percent;
 
 	snprintf(buf, sizeof(buf), "AT+VGS=%d",
@@ -85,7 +82,6 @@ static void hfp_speaker_volume(struct ofono_call_volume *cv,
 				cv_generic_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -100,9 +96,6 @@ static void hfp_microphone_volume(struct ofono_call_volume *cv,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	vd->mic_volume = percent;
 
 	snprintf(buf, sizeof(buf), "AT+VGM=%d",
@@ -112,7 +105,6 @@ static void hfp_microphone_volume(struct ofono_call_volume *cv,
 				cv_generic_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
