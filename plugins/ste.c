@@ -356,6 +356,8 @@ static void ste_post_sim(struct ofono_modem *modem)
 	ofono_stk_create(modem, 0, "mbmmodem", data->chat);
 	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
 	ofono_radio_settings_create(modem, 0, "stemodem", data->chat);
+
+	ofono_sms_create(modem, 0, "atmodem", data->chat);
 }
 
 static void ste_post_online(struct ofono_modem *modem)
@@ -374,7 +376,6 @@ static void ste_post_online(struct ofono_modem *modem)
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
 	ofono_ssn_create(modem, 0, "atmodem", data->chat);
-	ofono_sms_create(modem, 0, "atmodem", data->chat);
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
