@@ -907,6 +907,7 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	/* support for ack pdu is not working */
 	switch (data->vendor) {
 	case OFONO_VENDOR_IFX:
+	case OFONO_VENDOR_GOBI:
 	case OFONO_VENDOR_HUAWEI:
 	case OFONO_VENDOR_NOVATEL:
 	case OFONO_VENDOR_OPTION_HSO:
