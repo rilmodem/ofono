@@ -348,9 +348,13 @@ static void novatel_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (data->secondary != NULL)
+	if (data->secondary != NULL) {
 		ofono_radio_settings_create(modem, 0, "nwmodem",
 						data->secondary);
+
+		ofono_sms_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
+							data->secondary);
+	}
 }
 
 static void novatel_post_online(struct ofono_modem *modem)
@@ -369,8 +373,6 @@ static void novatel_post_online(struct ofono_modem *modem)
 		ofono_netreg_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
 							data->secondary);
 
-		ofono_sms_create(modem, OFONO_VENDOR_NOVATEL, "atmodem",
-							data->secondary);
 		ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM, "atmodem",
 							data->secondary);
 		ofono_ussd_create(modem, 0, "atmodem", data->secondary);
