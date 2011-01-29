@@ -45,12 +45,12 @@
 #define SIM_CACHE_BASEPATH STORAGEDIR "/%s-%i"
 #define SIM_CACHE_VERSION SIM_CACHE_BASEPATH "/version"
 #define SIM_CACHE_PATH SIM_CACHE_BASEPATH "/%04x"
-#define SIM_CACHE_HEADER_SIZE 38
-#define SIM_FILE_INFO_SIZE 6
+#define SIM_CACHE_HEADER_SIZE 39
+#define SIM_FILE_INFO_SIZE 7
 #define SIM_IMAGE_CACHE_BASEPATH STORAGEDIR "/%s-%i/images"
 #define SIM_IMAGE_CACHE_PATH SIM_IMAGE_CACHE_BASEPATH "/%d.xpm"
 
-#define SIM_FS_VERSION 1
+#define SIM_FS_VERSION 2
 
 static gboolean sim_fs_op_next(gpointer user_data);
 static gboolean sim_fs_op_read_record(gpointer user);
@@ -439,14 +439,14 @@ static gboolean sim_fs_op_read_record(gpointer user)
 	return FALSE;
 }
 
-static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
-				enum ofono_sim_file_structure structure,
-				int record_length,
-				const unsigned char access[3],
-				unsigned char file_status,
-				void *data)
+static void sim_fs_op_cache_fileinfo(struct sim_fs *fs,
+					const struct ofono_error *error,
+					int length,
+					enum ofono_sim_file_structure structure,
+					int record_length,
+					const unsigned char access[3],
+					unsigned char file_status)
 {
-	struct sim_fs *fs = data;
 	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
 	const char *imsi = ofono_sim_get_imsi(fs->sim);
 	enum ofono_sim_phase phase = ofono_sim_get_phase(fs->sim);
@@ -457,25 +457,10 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 	gboolean cache;
 	char *path;
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		sim_fs_op_error(fs);
-		return;
-	}
-
-	if (structure != op->structure) {
-		ofono_error("Requested file structure differs from SIM: %x",
-				op->id);
-		sim_fs_op_error(fs);
-		return;
-	}
-
 	/* TS 11.11, Section 9.3 */
 	update = file_access_condition_decode(access[0] & 0xf);
 	rehabilitate = file_access_condition_decode((access[2] >> 4) & 0xf);
 	invalidate = file_access_condition_decode(access[2] & 0xf);
-
-	op->structure = structure;
-	op->length = length;
 
 	/* Never cache card holder writable files */
 	cache = (update == SIM_FILE_ACCESS_ADM ||
@@ -484,6 +469,62 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 				invalidate == SIM_FILE_ACCESS_NEVER) &&
 			(rehabilitate == SIM_FILE_ACCESS_ADM ||
 				rehabilitate == SIM_FILE_ACCESS_NEVER);
+
+	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN || cache == FALSE)
+		return;
+
+	memset(fileinfo, 0, SIM_CACHE_HEADER_SIZE);
+
+	fileinfo[0] = error->type;
+	fileinfo[1] = length >> 8;
+	fileinfo[2] = length & 0xff;
+	fileinfo[3] = structure;
+	fileinfo[4] = record_length >> 8;
+	fileinfo[5] = record_length & 0xff;
+	fileinfo[6] = file_status;
+
+	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
+	fs->fd = TFR(open(path, O_WRONLY | O_CREAT | O_TRUNC, SIM_CACHE_MODE));
+	g_free(path);
+
+	if (fs->fd == -1)
+		return;
+
+	if (TFR(write(fs->fd, fileinfo, SIM_CACHE_HEADER_SIZE)) ==
+			SIM_CACHE_HEADER_SIZE)
+		return;
+
+	TFR(close(fs->fd));
+	fs->fd = -1;
+}
+
+static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
+				enum ofono_sim_file_structure structure,
+				int record_length,
+				const unsigned char access[3],
+				unsigned char file_status,
+				void *data)
+{
+	struct sim_fs *fs = data;
+	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		sim_fs_op_error(fs);
+		return;
+	}
+
+	sim_fs_op_cache_fileinfo(fs, error, length, structure, record_length,
+					access, file_status);
+
+	if (structure != op->structure) {
+		ofono_error("Requested file structure differs from SIM: %x",
+				op->id);
+		sim_fs_op_error(fs);
+		return;
+	}
+
+	op->structure = structure;
+	op->length = length;
 
 	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT) {
 		if (op->num_bytes == 0)
@@ -504,8 +545,8 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 
 	if (op->info_only == TRUE) {
 		/*
-		 * It's info-only request. So there is no need to request
-		 * actual contents of the EF-files. Just return the EF-info.
+		 * It's an info-only request, so there is no need to request
+		 * actual contents of the EF. Just return the EF-info.
 		 */
 		sim_fs_read_info_cb_t cb = op->cb;
 
@@ -513,35 +554,7 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 			op->record_length, op->userdata);
 
 		sim_fs_end_current(fs);
-
-		return;
 	}
-
-	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN || cache == FALSE)
-		return;
-
-	memset(fileinfo, 0, SIM_CACHE_HEADER_SIZE);
-
-	fileinfo[0] = error->type;
-	fileinfo[1] = length >> 8;
-	fileinfo[2] = length & 0xff;
-	fileinfo[3] = structure;
-	fileinfo[4] = record_length >> 8;
-	fileinfo[5] = record_length & 0xff;
-
-	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
-	fs->fd = TFR(open(path, O_RDWR | O_CREAT | O_TRUNC, SIM_CACHE_MODE));
-	g_free(path);
-
-	if (fs->fd == -1)
-		return;
-
-	if (TFR(write(fs->fd, fileinfo, SIM_CACHE_HEADER_SIZE)) ==
-			SIM_CACHE_HEADER_SIZE)
-		return;
-
-	TFR(close(fs->fd));
-	fs->fd = -1;
 }
 
 static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
@@ -549,7 +562,6 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	const char *imsi = ofono_sim_get_imsi(fs->sim);
 	enum ofono_sim_phase phase = ofono_sim_get_phase(fs->sim);
 	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
-	gboolean ret = FALSE;
 	char *path;
 	int fd;
 	ssize_t len;
@@ -558,9 +570,9 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	int file_length;
 	enum ofono_sim_file_structure structure;
 	int record_length;
+	unsigned char file_status;
 
-	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN ||
-			op->info_only == TRUE)
+	if (imsi == NULL || phase == OFONO_SIM_PHASE_UNKNOWN)
 		return FALSE;
 
 	path = g_strdup_printf(SIM_CACHE_PATH, imsi, phase, op->id);
@@ -589,6 +601,7 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 	file_length = (fileinfo[1] << 8) | fileinfo[2];
 	structure = fileinfo[3];
 	record_length = (fileinfo[4] << 8) | fileinfo[5];
+	file_status = fileinfo[6];
 
 	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT)
 		record_length = file_length;
@@ -608,7 +621,18 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 		return TRUE;
 	}
 
-	if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT) {
+	if (op->info_only == TRUE) {
+		/*
+		 * It's an info-only request, so there is no need to request
+		 * actual contents of the EF. Just return the EF-info.
+		 */
+		sim_fs_read_info_cb_t cb = op->cb;
+
+		cb(1, file_status, op->length,
+			op->record_length, op->userdata);
+
+		sim_fs_end_current(fs);
+	} else if (structure == OFONO_SIM_FILE_STRUCTURE_TRANSPARENT) {
 		if (op->num_bytes == 0)
 			op->num_bytes = op->length;
 
@@ -623,7 +647,7 @@ static gboolean sim_fs_op_check_cached(struct sim_fs *fs)
 
 error:
 	TFR(close(fd));
-	return ret;
+	return FALSE;
 }
 
 static gboolean sim_fs_op_next(gpointer user_data)
