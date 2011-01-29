@@ -157,6 +157,8 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 				at_crsm_info_cb, cbd, g_free) > 0)
 		return;
 
+	g_free(cbd);
+
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL,
 				EF_STATUS_INVALIDATED, data);
 }
