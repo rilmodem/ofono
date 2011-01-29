@@ -143,9 +143,6 @@ static void phonesim_deactivate_primary(struct ofono_gprs_context *gc,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[128];
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = gc;
 
 	snprintf(buf, sizeof(buf), "AT+CGACT=0,%u", id);
@@ -154,7 +151,6 @@ static void phonesim_deactivate_primary(struct ofono_gprs_context *gc,
 				at_cgact_down_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -273,14 +269,10 @@ static void phonesim_ctm_query(struct ofono_ctm *ctm,
 
 	DBG("");
 
-	if (!cbd)
-		goto error;
-
 	if (g_at_chat_send(chat, "AT+PTTY?", ptty_prefix,
 				ctm_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, 0, data);
@@ -305,16 +297,12 @@ static void phonesim_ctm_set(struct ofono_ctm *ctm, ofono_bool_t enable,
 
 	DBG("");
 
-	if (!cbd)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+PTTY=%d", enable);
 
 	if (g_at_chat_send(chat, buf, none_prefix,
 				ctm_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	CALLBACK_WITH_FAILURE(cb, data);
 	g_free(cbd);
 }

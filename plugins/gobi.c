@@ -251,7 +251,7 @@ static void gobi_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
-	if (cbd == NULL || data->chat == NULL)
+	if (data->chat == NULL)
 		goto error;
 
 	if (g_at_chat_send(data->chat, command, NULL,

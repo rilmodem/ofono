@@ -661,14 +661,10 @@ static void ifx_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("%p %s", modem, online ? "online" : "offline");
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(data->dlcs[AUX_DLC], command, NULL,
 					set_online_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
