@@ -88,7 +88,7 @@ static void mbm_stk_envelope(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (cbd == NULL || buf == NULL)
+	if (buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT*STKE=\"");
@@ -134,7 +134,7 @@ static void mbm_stk_terminal_response(struct ofono_stk *stk, int length,
 
 	DBG("");
 
-	if (cbd == NULL || buf == NULL)
+	if (buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT*STKR=\"");

@@ -364,9 +364,6 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", ctx->cid);
 
-	if (cbd == NULL)
-		goto error;
-
 	gcd->active_context = ctx->cid;
 
 	cbd->user = gc;
@@ -408,16 +405,12 @@ static void mbm_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	DBG("cid %u", cid);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = gc;
 
 	if (g_at_chat_send(gcd->chat, "AT*ENAP=0", none_prefix,
 				at_enap_down_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
