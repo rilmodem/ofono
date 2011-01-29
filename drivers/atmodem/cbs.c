@@ -115,9 +115,6 @@ static void at_cbs_set_topics(struct ofono_cbs *cbs, const char *topics,
 
 	DBG("");
 
-	if (cbd == NULL)
-		goto error;
-
 	/* For the Qualcomm based devices it is required to clear
 	 * the list of topics first.  Otherwise setting the new
 	 * topic ranges will fail.
@@ -145,7 +142,6 @@ static void at_cbs_set_topics(struct ofono_cbs *cbs, const char *topics,
 	if (id > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
@@ -160,9 +156,6 @@ static void at_cbs_clear_topics(struct ofono_cbs *cbs,
 
 	DBG("");
 
-	if (cbd == NULL)
-		goto error;
-
 	if (data->cscb_mode_1)
 		snprintf(buf, sizeof(buf), "AT+CSCB=1,\"0-65535\"");
 	else
@@ -172,7 +165,6 @@ static void at_cbs_clear_topics(struct ofono_cbs *cbs,
 				at_cscb_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);

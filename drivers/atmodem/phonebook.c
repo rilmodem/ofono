@@ -368,9 +368,6 @@ static void at_export_entries(struct ofono_phonebook *pb, const char *storage,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[32];
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = pb;
 
 	snprintf(buf, sizeof(buf), "AT+CPBS=\"%s\"", storage);
@@ -378,7 +375,6 @@ static void at_export_entries(struct ofono_phonebook *pb, const char *storage,
 				at_select_storage_cb, cbd, NULL) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);

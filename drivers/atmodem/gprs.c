@@ -69,16 +69,12 @@ static void at_gprs_set_attached(struct ofono_gprs *gprs, int attached,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CGATT=%i", attached ? 1 : 0);
 
 	if (g_at_chat_send(gd->chat, buf, none_prefix,
 				at_cgatt_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -115,9 +111,6 @@ static void at_gprs_registration_status(struct ofono_gprs *gprs,
 	struct gprs_data *gd = ofono_gprs_get_data(gprs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = gd;
 
 	switch (gd->vendor) {
@@ -143,7 +136,6 @@ static void at_gprs_registration_status(struct ofono_gprs *gprs,
 				at_cgreg_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);

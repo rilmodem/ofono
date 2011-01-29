@@ -187,9 +187,6 @@ static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
 	char buf[512];
 	enum sms_charset charset;
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = ussd;
 
 	if (!cbs_dcs_decode(dcs, NULL, NULL, &charset,
@@ -273,16 +270,12 @@ static void at_ussd_cancel(struct ofono_ussd *ussd,
 	struct ussd_data *data = ofono_ussd_get_data(ussd);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = data;
 
 	if (g_at_chat_send(data->chat, "AT+CUSD=2", none_prefix,
 				cusd_cancel_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);

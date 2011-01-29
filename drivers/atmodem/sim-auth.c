@@ -101,7 +101,7 @@ static void at_discover_apps(struct ofono_sim_auth *sa,
 	struct sim_auth_data *sad = ofono_sim_auth_get_data(sa);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd && g_at_chat_send(sad->chat, "AT+CUAD", cuad_prefix,
+	if (g_at_chat_send(sad->chat, "AT+CUAD", cuad_prefix,
 					at_discover_apps_cb, cbd, g_free) > 0)
 		return;
 

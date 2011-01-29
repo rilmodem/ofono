@@ -106,16 +106,12 @@ static void at_csca_set(struct ofono_sms *sms,
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CSCA=\"%s\",%d", sca->number, sca->type);
 
 	if (g_at_chat_send(data->chat, buf, csca_prefix,
 				at_csca_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
@@ -173,14 +169,10 @@ static void at_csca_query(struct ofono_sms *sms, ofono_sms_sca_query_cb_t cb,
 	struct sms_data *data = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(data->chat, "AT+CSCA?", csca_prefix,
 				at_csca_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, user_data);
@@ -227,9 +219,6 @@ static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
 	char buf[512];
 	int len;
 
-	if (cbd == NULL)
-		goto error;
-
 	if (mms) {
 		snprintf(buf, sizeof(buf), "AT+CMMS=%d", mms);
 		g_at_chat_send(data->chat, buf, none_prefix,
@@ -243,7 +232,6 @@ static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
 				at_cmgs_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, user_data);
@@ -267,16 +255,12 @@ static void at_cgsms_set(struct ofono_sms *sms, int bearer,
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CGSMS=%d", bearer);
 
 	if (g_at_chat_send(data->chat, buf, none_prefix,
 				at_cgsms_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, user_data);
@@ -319,14 +303,10 @@ static void at_cgsms_query(struct ofono_sms *sms,
 	struct sms_data *data = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(data->chat, "AT+CGSMS?", cgsms_prefix,
 				at_cgsms_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, user_data);

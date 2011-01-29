@@ -86,7 +86,7 @@ static void at_call_barring_query(struct ofono_call_barring *cb,
 	struct cb_data *cbd = cb_data_new(callback, data);
 	char buf[64];
 
-	if (cbd == NULL || strlen(lock) != 2)
+	if (strlen(lock) != 2)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",2", lock);
@@ -121,7 +121,7 @@ static void at_call_barring_set(struct ofono_call_barring *cb, const char *lock,
 	char buf[64];
 	int len;
 
-	if (cbd == NULL || strlen(lock) != 2 || (cls && passwd == NULL))
+	if (strlen(lock) != 2 || (cls && passwd == NULL))
 		goto error;
 
 	len = snprintf(buf, sizeof(buf), "AT+CLCK=\"%s\",%i", lock, enable);
@@ -164,7 +164,7 @@ static void at_call_barring_set_passwd(struct ofono_call_barring *cb,
 	struct cb_data *cbd = cb_data_new(callback, data);
 	char buf[64];
 
-	if (cbd == NULL || strlen(lock) != 2)
+	if (strlen(lock) != 2)
 		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CPWD=\"%s\",\"%s\",\"%s\"",

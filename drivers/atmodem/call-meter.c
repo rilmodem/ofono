@@ -116,15 +116,11 @@ static void at_caoc_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "+CAOC:";
 	if (g_at_chat_send(chat, "AT+CAOC=0", caoc_prefix,
 				caoc_cacm_camm_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
@@ -137,15 +133,11 @@ static void at_cacm_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "+CACM:";
 	if (g_at_chat_send(chat, "AT+CACM?", cacm_prefix,
 				caoc_cacm_camm_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
@@ -169,16 +161,12 @@ static void at_cacm_set(struct ofono_call_meter *cm, const char *passwd,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CACM=\"%s\"", passwd);
 
 	if (g_at_chat_send(chat, buf, none_prefix,
 				generic_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -191,15 +179,11 @@ static void at_camm_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "+CAMM:";
 	if (g_at_chat_send(chat, "AT+CAMM?", camm_prefix,
 				caoc_cacm_camm_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
@@ -213,16 +197,12 @@ static void at_camm_set(struct ofono_call_meter *cm,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CAMM=\"%06X\",\"%s\"", accmax, passwd);
 
 	if (g_at_chat_send(chat, buf, none_prefix,
 				generic_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -274,15 +254,11 @@ static void at_cpuc_query(struct ofono_call_meter *cm,
 	GAtChat *chat = ofono_call_meter_get_data(cm);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "+CPUC:";
 	if (g_at_chat_send(chat, "AT+CPUC?", cpuc_prefix,
 				cpuc_query_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, 0, 0, data);
@@ -296,9 +272,6 @@ static void at_cpuc_set(struct ofono_call_meter *cm, const char *currency,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CPUC=\"%s\",\"%f\",\"%s\"",
 			currency, ppu, passwd);
 
@@ -306,7 +279,6 @@ static void at_cpuc_set(struct ofono_call_meter *cm, const char *currency,
 				generic_set_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);

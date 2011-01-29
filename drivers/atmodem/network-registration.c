@@ -186,9 +186,6 @@ static void at_registration_status(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = nd;
 
 	switch (nd->vendor) {
@@ -232,7 +229,6 @@ static void at_registration_status(struct ofono_netreg *netreg,
 				at_creg_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, -1, data);
@@ -361,9 +357,6 @@ static void at_current_operator(struct ofono_netreg *netreg,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	gboolean ok;
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = netreg;
 
 	/* Nokia modems have a broken return value for the string
@@ -388,7 +381,6 @@ static void at_current_operator(struct ofono_netreg *netreg,
 	if (ok)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
@@ -503,14 +495,10 @@ static void at_list_operators(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(nd->chat, "AT+COPS=?", cops_prefix,
 				cops_list_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, 0, NULL, data);
@@ -533,14 +521,10 @@ static void at_register_auto(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(nd->chat, "AT+COPS=0", none_prefix,
 				register_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -554,16 +538,12 @@ static void at_register_manual(struct ofono_netreg *netreg,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[128];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+COPS=1,2,\"%s%s\"", mcc, mnc);
 
 	if (g_at_chat_send(nd->chat, buf, none_prefix,
 				register_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -858,9 +838,6 @@ static void at_signal_strength(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = nd;
 
 	/*
@@ -877,7 +854,6 @@ static void at_signal_strength(struct ofono_netreg *netreg,
 			return;
 	}
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);

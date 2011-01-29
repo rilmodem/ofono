@@ -142,8 +142,6 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 	}
 
 	cbd = cb_data_new(cb, data);
-	if (cbd == NULL)
-		goto error;
 
 	snprintf(buf, sizeof(buf), "AT+CRSM=192,%i", fileid);
 
@@ -159,7 +157,6 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 				at_crsm_info_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	CALLBACK_WITH_FAILURE(cb, -1, -1, -1, NULL,
 				EF_STATUS_INVALIDATED, data);
 }
@@ -220,9 +217,6 @@ static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CRSM=176,%i,%i,%i,%i", fileid,
 			start >> 8, start & 0xff, length);
 
@@ -230,7 +224,6 @@ static void at_sim_read_binary(struct ofono_sim *sim, int fileid,
 				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
@@ -244,9 +237,6 @@ static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 
-	if (cbd == NULL)
-		goto error;
-
 	snprintf(buf, sizeof(buf), "AT+CRSM=178,%i,%i,4,%i", fileid,
 			record, length);
 
@@ -254,7 +244,6 @@ static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 				at_crsm_read_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
@@ -309,7 +298,7 @@ static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
-	if (cbd == NULL || buf == NULL)
+	if (buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=214,%i,%i,%i,%i,", fileid,
@@ -342,7 +331,7 @@ static void at_sim_update_record(struct ofono_sim *sim, int fileid,
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
-	if (cbd == NULL || buf == NULL)
+	if (buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=220,%i,%i,4,%i,", fileid,
@@ -374,7 +363,7 @@ static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
 	char *buf = g_try_new(char, 36 + length * 2);
 	int len, ret;
 
-	if (cbd == NULL || buf == NULL)
+	if (buf == NULL)
 		goto error;
 
 	len = sprintf(buf, "AT+CRSM=220,%i,0,3,%i,", fileid, length);
@@ -430,14 +419,10 @@ static void at_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (g_at_chat_send(sd->chat, "AT+CIMI", NULL,
 				at_cimi_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
@@ -576,9 +561,6 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 
 	DBG("");
 
-	if (cbd == NULL)
-		goto error;
-
 	switch (sd->vendor) {
 	case OFONO_VENDOR_IFX:
 		if (g_at_chat_send(sd->chat, "AT+XPINCNT", xpincnt_prefix,
@@ -596,7 +578,6 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 		break;
 	}
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
@@ -663,16 +644,12 @@ static void at_pin_query(struct ofono_sim *sim, ofono_sim_passwd_cb_t cb,
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = sim;
 
 	if (g_at_chat_send(sd->chat, "AT+CPIN?", cpin_prefix,
 				at_cpin_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, -1, data);
@@ -772,9 +749,6 @@ static void at_pin_send(struct ofono_sim *sim, const char *passwd,
 	char buf[64];
 	int ret;
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = sd;
 
 	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\"", passwd);
@@ -787,7 +761,6 @@ static void at_pin_send(struct ofono_sim *sim, const char *passwd,
 	if (ret > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -802,9 +775,6 @@ static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
 	char buf[64];
 	int ret;
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = sd;
 
 	snprintf(buf, sizeof(buf), "AT+CPIN=\"%s\",\"%s\"", puk, passwd);
@@ -817,7 +787,6 @@ static void at_pin_send_puk(struct ofono_sim *sim, const char *puk,
 	if (ret > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
@@ -857,9 +826,6 @@ static void at_pin_enable(struct ofono_sim *sim,
 	int ret;
 	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
 
-	if (cbd == NULL)
-		goto error;
-
 	if (passwd_type >= len || at_clck_cpwd_fac[passwd_type] == NULL)
 		goto error;
 
@@ -890,9 +856,6 @@ static void at_change_passwd(struct ofono_sim *sim,
 	char buf[64];
 	int ret;
 	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
-
-	if (cbd == NULL)
-		goto error;
 
 	if (passwd_type >= len ||
 			at_clck_cpwd_fac[passwd_type] == NULL)
@@ -953,9 +916,6 @@ static void at_pin_query_enabled(struct ofono_sim *sim,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[64];
 	unsigned int len = sizeof(at_clck_cpwd_fac) / sizeof(*at_clck_cpwd_fac);
-
-	if (cbd == NULL)
-		goto error;
 
 	if (passwd_type >= len || at_clck_cpwd_fac[passwd_type] == NULL)
 		goto error;
