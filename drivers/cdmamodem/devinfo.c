@@ -65,15 +65,11 @@ static void cdma_query_manufacturer(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "AT+GMI";
 
 	if (g_at_chat_send(chat, "AT+GMI", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
@@ -85,15 +81,11 @@ static void cdma_query_model(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "AT+GMM";
 
 	if (g_at_chat_send(chat, "AT+GMM", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
@@ -105,15 +97,11 @@ static void cdma_query_revision(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "AT+GMR";
 
 	if (g_at_chat_send(chat, "AT+GMR", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
@@ -125,15 +113,11 @@ static void cdma_query_serial(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = "AT+GSN";
 
 	if (g_at_chat_send(chat, "AT+GSN", NULL, attr_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, NULL, data);

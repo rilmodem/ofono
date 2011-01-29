@@ -54,16 +54,12 @@ static void cdma_template(const char *cmd, struct ofono_cdma_voicecall *vc,
 	struct voicecall_data *vd = ofono_cdma_voicecall_get_data(vc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 
-	if (cbd == NULL)
-		goto error;
-
 	cbd->user = vc;
 
 	if (g_at_chat_send(vd->chat, cmd, none_prefix,
 				result_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
