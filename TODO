@@ -40,15 +40,6 @@ SMS
   Complexity: C2
   Owner: Yang Gu <yang.gu@intel.com>
 
-- Persist outgoing SMS messages.  Currently oFono persists incoming messages
-  that are fragmented.  However oFono does not persist queued outgoing
-  messages.  oFono should persist such messages and restore / requeue them
-  on the next oFono startup.
-
-  Priority: High
-  Complexity: C1
-  Owner: Kristen Carlson Accardi <kristen@linux.intel.com>
-
 - Asynchronously acknowledge SMS DELIVER messages sent by the SMS driver
   to core using ofono_sms_deliver_notify().  This may require the struct
   ofono_sms_driver to be extended with one more function pointer like:

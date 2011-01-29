@@ -230,6 +230,11 @@ Short Messaging Service
   messages via SMS through the use of the PushNotification interface and the
   PushNotificationAgent framework.
 
+- Persisting of outgoing SMS messages.  Whenever oFono is asked to send an SMS
+  message, it adds it to an internal queue and persists it on disk.  The queue
+  is persistent across reboots of oFono and allows to queue SMS messages even
+  while the modem is offline.
+
 
 GPRS
 ====
