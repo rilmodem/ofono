@@ -1,3 +1,15 @@
+ver 0.40:
+	Fix issue with MessageCenter and MessageProxy settings.
+	Fix issue with voice call support and Calypso modem.
+	Fix issue with user busy release and ISI modem.
+	Fix issue with DTMF sending and ISI modem.
+	Add support for handling long phone numbers.
+	Add support for persisting outgoing messages.
+	Add support for GPRS provision infrastructure.
+	Add support for proper GPRS handling in offline mode.
+	Add support for handling Launch Browser proactive command.
+	Remove support for deprecated deregister method.
+
 ver 0.39:
 	Fix issue with not handling empty EFecc properly.
 	Fix issue with string length and DTMF handling.
