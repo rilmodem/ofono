@@ -187,6 +187,15 @@ static void ste_set_rat_mode(struct ofono_radio_settings *rs,
 	}
 }
 
+static gboolean ste_radio_settings_register(gpointer user)
+{
+	struct ofono_radio_settings *rs = user;
+
+	ofono_radio_settings_register(rs);
+
+	return FALSE;
+}
+
 static int ste_radio_settings_probe(struct ofono_radio_settings *rs,
 					unsigned int vendor, void *data)
 {
@@ -197,10 +206,10 @@ static int ste_radio_settings_probe(struct ofono_radio_settings *rs,
 	if (rsd == NULL)
 		return -ENOMEM;
 
-	rsd->chat = chat;
+	rsd->chat = g_at_chat_clone(chat);
 
 	ofono_radio_settings_set_data(rs, rsd);
-	ofono_radio_settings_register(rs);
+	g_idle_add(ste_radio_settings_register, rs);
 
 	return 0;
 }
@@ -209,6 +218,8 @@ static void ste_radio_settings_remove(struct ofono_radio_settings *rs)
 {
 	struct radio_settings_data *rsd = ofono_radio_settings_get_data(rs);
 	ofono_radio_settings_set_data(rs, NULL);
+
+	g_at_chat_unref(rsd->chat);
 	g_free(rsd);
 }
 
