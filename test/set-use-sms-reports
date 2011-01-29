@@ -8,12 +8,16 @@ bus = dbus.SystemBus()
 if len(sys.argv) == 3:
 	path = sys.argv[1]
 	enabled = sys.argv[2]
+	if sys.argv[2] == "off":
+		enabled = 0
 elif len(sys.argv) == 2:
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 						'org.ofono.Manager')
 	modems = manager.GetModems()
 	path = modems[0][0]
 	enabled = sys.argv[1]
+	if sys.argv[1] == "off":
+		enabled = 0
 else:
 	print "%s [PATH] on/off" % (sys.argv[0])
 	sys.exit(1)
