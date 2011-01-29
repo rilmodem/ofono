@@ -267,6 +267,8 @@ static void hfp_current_operator(struct ofono_netreg *netreg,
 	if (ok)
 		return;
 
+	g_free(cbd);
+
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
