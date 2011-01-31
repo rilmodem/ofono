@@ -22,6 +22,9 @@ local_headers = $(foreach file,$(pkginclude_HEADERS) \
 				$(nodist_pkginclude_HEADERS), \
 					include/ofono/$(notdir $(file)))
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = ofono.pc
+
 
 if DATAFILES
 dbusconfdir = @DBUS_CONFDIR@

@@ -222,4 +222,4 @@ fi
 AC_DEFINE_UNQUOTED(CONFIGDIR, "${configdir}",
 			[Directory for the configuration files])
 
-AC_OUTPUT(Makefile include/version.h src/ofono.service)
+AC_OUTPUT(Makefile include/version.h src/ofono.service ofono.pc)

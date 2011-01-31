@@ -23,6 +23,7 @@ missing
 stamp-h1
 autom4te.cache
 
+ofono.pc
 include/ofono
 include/version.h
 src/builtin.h
