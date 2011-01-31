@@ -2,17 +2,23 @@ oFono - Open Source Telephony
 *****************************
 
 Copyright (C) 2008-2010  Intel Corporation. All rights reserved.
+Copyright (C) 2009-2011 Nokia Corporation and/or its subsidiary(-ies).
 
 
 Mission statement
 =================
 
-The overall goal of the oFono project is to create a telephony host stack
+The overall goal of the oFono project is to create an open telephony stack
 for embedded/mobile and desktop systems based on Linux.
 
-It currently targets GSM/UMTS User Equipment (UE) based on 3GPP standards,
-but is of course not limited to that. Extensions for other telephony systems
-like CDMA/EVDO are more than welcome.
+It currently targets supporting User Equipment (UE) supporting GSM/UMTS and LTE
+based on 3GPP specifications as well as CDMA/EVDO based on 3GPP2 specifications.
+
+The oFono stack delegates implementation of the actual cellular protocol stack
+(L1-L3) to a modem firmware. Communication with the modem typically uses
+standard AT commands (3GPP TS 27.007) via a serial interface. Proprietary
+control protocols such as the Intelligent Serial Interface (ISI) can also be
+supported.
 
 Within oFono there is clear abstraction between the application interfaces
 based on D-Bus, the hardware level (via drivers) and the integration with
@@ -23,14 +29,11 @@ flexible.
 Telephony features
 ==================
 
-The oFono stack will support the majority of the features from the 3GPP
-specification, but not all of them. The whole standard is pretty complex
-and some features are not used in any mobile network so far, some of them
-are outdated and have no relevance anymore. This paragraph tries to give
-some insights on what has been implemented so far, what is coming in the
-future and especially what will not be part of oFono.
+This paragraph lists features that have been implemented so far, features that
+are going to be supported in the future, and especially features that will not
+be part of oFono.
 
-Current implemented features:
+Implemented features:
 
 	Modem abstraction
 
@@ -39,7 +42,8 @@ Current implemented features:
 		The "atmodem" driver handles hardware based on the 3GPP
 		TS 27.007 standard.
 
-		The "isimodem" driver handles Nokia based PhoNet modems.
+		The "isimodem" driver handles hardware based on the ISI
+		protocol.
 
 	Network registration
 
@@ -73,7 +77,7 @@ Current implemented features:
 	Advanced voice call control
 
 		Features like COLR/CLIR/CLIP/COLP are supported by the
-		voice call handling interface. 
+		voice call handling interface.
 
 		The support for call forwarding and call waiting is also
 		present.
@@ -90,11 +94,11 @@ Current implemented features:
 	Phonebook support
 
 		The storage of the SIM card is not used. The only supported
-		feature is to export the contacts stored on the SIM card to
-		some third-part entity.
+		features are to allow simple import and export of the contacts
+		stored on the SIM card to some third-part entity.
 
 		SIM card storage is limited, slow and not flexible enough
-		for modem telephony applications.
+		for modern telephony applications.
 
 	Short message service
 
@@ -130,41 +134,34 @@ Current implemented features:
 		enabling and disabling fast dormancy on hardware that support
 		this feature.
 
-Work in progress features:
+	Smart Messaging
+
+		Support for sending and receiving business cards (vCard) and
+		appointments (vCalendar) is available using the SmartMessaging
+		interface.
+
+	Push Notification
+
+		Support for receiving push notifications (OMA Push over SMS) is
+		available using the PushNotification interface.
 
 	USSD
 
 		User initiated USSD support is available, but not
 		network-initiated USSD support.
 
-Not implemented features:
+Work in progress:
 
-	SIM card storage
+	SIM application toolkit
 
-		The SIM card storage will not be used by oFono. It is slow,
-		limited in size and flexibility. It is an outdated interface
-		that makes no sense in a modern telephony system.
+		Basic support for SIM toolkit exists.
 
-		Export of stored contacts from the SIM card is supported for
-		legacy reasons and to allow a smooth transition.
+Out-of-scope features:
 
 	WAP support
 
 		The WAP feature is outdated and using full Internet access
 		with an embedded browser is the future.
-
-	MMS support
-
-		The MMS support should not be part of oFono itself. The best
-		idea is to implement a MMS service that runs in the user
-		session and uses oFono's SMS interface to listen for
-		notifications.
-
-		Similar to the split between BlueZ and OBEX daemon.
-
-		Especially when it comes to image conversion and other tasks
-		that MMS support requires it is important to NOT do this as
-		a system daemon.
 
 	EMS support
 
@@ -173,11 +170,12 @@ Not implemented features:
 
 	Video telephony
 
-		Currently there are no plans to support this. The support
-		from the networks and available handsets are still limited.
+		The support from mobile networks and available handsets is
+		still limited, and the feature is considered legacy.
 
-		This needs re-evaluation once such a service becomes more
-		prominent.
+	IP Multimedia Subsystem
 
-		A similar split like with MMS might be a good idea.
-
+		Implementing full IMS client support is not in scope for the
+		oFono project. However, oFono will provide some mandatory
+		supporting features for IMS, such as an interface for running
+		IMS AKA authentication on the ISIM/USIM.
