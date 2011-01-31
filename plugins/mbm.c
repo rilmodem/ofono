@@ -44,6 +44,7 @@
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/radio-settings.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -500,6 +501,7 @@ static void mbm_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_stk_create(modem, 0, "mbmmodem", data->modem_port);
+	ofono_radio_settings_create(modem, 0, "stemodem", data->modem_port);
 
 	ofono_sms_create(modem, 0, "atmodem", data->modem_port);
 }
