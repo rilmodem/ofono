@@ -77,6 +77,7 @@ struct ofono_modem {
 	guint			timeout;
 	ofono_bool_t		online;
 	struct ofono_watchlist	*online_watches;
+	struct ofono_watchlist	*powered_watches;
 	GHashTable		*properties;
 	struct ofono_sim	*sim;
 	unsigned int		sim_watch;
@@ -383,6 +384,22 @@ static void notify_online_watches(struct ofono_modem *modem)
 	}
 }
 
+static void notify_powered_watches(struct ofono_modem *modem)
+{
+	struct ofono_watchlist_item *item;
+	GSList *l;
+	ofono_modem_powered_notify_func notify;
+
+	if (modem->powered_watches == NULL)
+		return;
+
+	for (l = modem->powered_watches->items; l; l = l->next) {
+		item = l->data;
+		notify = item->notify;
+		notify(modem->powered, item->notify_data);
+	}
+}
+
 static void modem_change_state(struct ofono_modem *modem,
 				enum modem_state new_state)
 {
@@ -460,6 +477,30 @@ void __ofono_modem_remove_online_watch(struct ofono_modem *modem,
 					unsigned int id)
 {
 	__ofono_watchlist_remove_item(modem->online_watches, id);
+}
+
+unsigned int __ofono_modem_add_powered_watch(struct ofono_modem *modem,
+					ofono_modem_powered_notify_func notify,
+					void *data, ofono_destroy_func destroy)
+{
+	struct ofono_watchlist_item *item;
+
+	if (modem == NULL || notify == NULL)
+		return 0;
+
+	item = g_new0(struct ofono_watchlist_item, 1);
+
+	item->notify = notify;
+	item->destroy = destroy;
+	item->notify_data = data;
+
+	return __ofono_watchlist_add_item(modem->powered_watches, item);
+}
+
+void __ofono_modem_remove_powered_watch(struct ofono_modem *modem,
+					unsigned int id)
+{
+	__ofono_watchlist_remove_item(modem->powered_watches, id);
 }
 
 static void common_online_cb(const struct ofono_error *error, void *data)
@@ -722,6 +763,8 @@ static int set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		modem->powered = powered;
 	else if (err != -EINPROGRESS)
 		modem->powered_pending = modem->powered;
+
+	notify_powered_watches(modem);
 
 	return err;
 }
@@ -1699,6 +1742,7 @@ int ofono_modem_register(struct ofono_modem *modem)
 
 	modem->atom_watches = __ofono_watchlist_new(g_free);
 	modem->online_watches = __ofono_watchlist_new(g_free);
+	modem->powered_watches = __ofono_watchlist_new(g_free);
 
 	emit_modem_added(modem);
 	call_modemwatches(modem, TRUE);
@@ -1732,6 +1776,9 @@ static void modem_unregister(struct ofono_modem *modem)
 
 	__ofono_watchlist_free(modem->online_watches);
 	modem->online_watches = NULL;
+
+	__ofono_watchlist_free(modem->powered_watches);
+	modem->powered_watches = NULL;
 
 	modem->sim_watch = 0;
 	modem->sim_ready_watch = 0;

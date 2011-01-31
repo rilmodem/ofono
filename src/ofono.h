@@ -188,6 +188,13 @@ unsigned int __ofono_modem_add_online_watch(struct ofono_modem *modem,
 void __ofono_modem_remove_online_watch(struct ofono_modem *modem,
 					unsigned int id);
 
+typedef void (*ofono_modem_powered_notify_func)(ofono_bool_t powered, void *data);
+unsigned int __ofono_modem_add_powered_watch(struct ofono_modem *modem,
+					ofono_modem_online_notify_func notify,
+					void *data, ofono_destroy_func destroy);
+void __ofono_modem_remove_powered_watch(struct ofono_modem *modem,
+					unsigned int id);
+
 #include <ofono/call-barring.h>
 
 gboolean __ofono_call_barring_is_busy(struct ofono_call_barring *cb);
