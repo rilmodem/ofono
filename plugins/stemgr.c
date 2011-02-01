@@ -37,7 +37,7 @@
 #include <ofono/dbus.h>
 
 /*
- * ST-Ericsson's Modem Init Daemon is used for controling the modem power
+ * ST-Ericsson's Modem Init Daemon is used for controlling the modem power
  * cycles and provides a dbus API for modem state and properties.
  */
 #define MGR_SERVICE		"com.stericsson.modeminit"
