@@ -384,11 +384,11 @@ static int isi_call_status_to_clcc(const struct isi_call *call)
 
 static struct ofono_call isi_call_as_ofono_call(const struct isi_call *call)
 {
-	struct ofono_call ocall = {
-		call->id
-	};
+	struct ofono_call ocall;
 	struct ofono_phone_number *number = &ocall.phone_number;
 
+	ofono_call_init(&ocall);
+	ocall.id = call->id;
 	ocall.type = 0;	/* Voice call */
 	ocall.direction = call->mode_info & CALL_MODE_ORIGINATOR;
 	ocall.status = isi_call_status_to_clcc(call);
