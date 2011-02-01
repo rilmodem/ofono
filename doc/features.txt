@@ -313,3 +313,9 @@ Supplementary Services
   CallSettings interface.  If the network supports this service, the number
   dialed by the remote party is presented through the Voicecall interface using
   the IncomingLine property.
+
+Voice Calls
+===========
+
+- Long phone number support. oFono supports dialing of phone numbers up to
+  80 digits long.

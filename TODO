@@ -275,13 +275,6 @@ Voicecall
   Complexity: C1
   Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
-- Long phone numbers. According to 3GPP TS 24.008, the callee address
-  can be up to 80 digits long.
-
-  Priority: Medium
-  Complexity: C2
-  Owner: Rafael Ignacio Zurita <rafael.zurita@profusion.mobi>
-
 - Dial strings. Include CLIR prefixes and 2nd stage dial strings in the
   DialString call property. Add dialstring accessor method to C API.
 
