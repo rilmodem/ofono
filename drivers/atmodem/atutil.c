@@ -132,9 +132,11 @@ GSList *at_util_parse_clcc(GAtResult *result)
 		if (g_at_result_iter_next_string(&iter, &str))
 			g_at_result_iter_next_number(&iter, &number_type);
 
-		call = g_try_new0(struct ofono_call, 1);
+		call = g_try_new(struct ofono_call, 1);
 		if (call == NULL)
 			break;
+
+		ofono_call_init(call);
 
 		call->id = id;
 		call->direction = dir;
