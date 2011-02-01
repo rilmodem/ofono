@@ -762,3 +762,10 @@ const char *ofono_uuid_to_str(const struct ofono_uuid *uuid)
 
 	return encode_hex_own_buf(uuid->uuid, OFONO_SHA1_UUID_LEN, 0, buf);
 }
+
+void ofono_call_init(struct ofono_call *call)
+{
+	memset(call, 0, sizeof(struct ofono_call));
+	call->cnap_validity = CNAP_VALIDITY_NOT_AVAILABLE;
+	call->clip_validity = CLIP_VALIDITY_NOT_AVAILABLE;
+}
