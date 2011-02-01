@@ -129,7 +129,7 @@ Properties	boolean Present [readonly]
 
 		string CardIdentifier [readonly]
 
-			Contains the Intergrated Circuit Card Identifer (ICCID)
+			Contains the Integrated Circuit Card Identifer (ICCID)
 			which is read directly from the SIM.
 
 		boolean FixedDialing [readonly]
