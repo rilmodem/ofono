@@ -116,6 +116,7 @@ struct ofono_uuid {
 };
 
 const char *ofono_uuid_to_str(const struct ofono_uuid *uuid);
+void ofono_call_init(struct ofono_call *call);
 
 #ifdef __cplusplus
 }
