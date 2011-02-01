@@ -56,7 +56,7 @@ if __name__ == "__main__":
 			print "Unable SetProperty", e
 			sys.exit(1);
 
-	print "Set Property successfull"
+	print "Set Property successful"
 
 	canexit = True
 
