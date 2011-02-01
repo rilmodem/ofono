@@ -255,7 +255,7 @@ Supplementary Services
   I.e. No conditional call forwardin string should be returned while
   unconditional call forwarding is active even if they exist.
 
-  If there is an successfull attempt to activate/deactivate conditional call
+  If there is an successful attempt to activate/deactivate conditional call
   forwarding while unconditional call forwarding is active the conditional cache
   flag should cleared.
 
