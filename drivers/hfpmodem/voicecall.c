@@ -96,9 +96,11 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 	struct ofono_call *call;
 
 	/* Generate a call structure for the waiting call */
-	call = g_try_new0(struct ofono_call, 1);
+	call = g_try_new(struct ofono_call, 1);
 	if (call == NULL)
 		return NULL;
+
+	ofono_call_init(call);
 
 	call->id = ofono_voicecall_get_next_callid(vc);
 	call->type = type;
