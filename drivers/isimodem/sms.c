@@ -215,7 +215,7 @@ static void sca_query_resp_cb(const GIsiMessage *msg, void *data)
 	memcpy(sd->params.alpha, info->alpha, sizeof(sd->params.alpha));
 
 	/*
-	 * Bitmask indicating absense of parameters --
+	 * Bitmask indicating absence of parameters --
 	 * If second bit is set it indicates that the SCA is absent
 	 */
 	if (info->absent & 0x2)

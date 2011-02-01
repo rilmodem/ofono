@@ -842,7 +842,7 @@ static struct isi_call_req_ctx *isi_call_deflect_req(struct ofono_voicecall *ovc
 		4,		/* Sub-block length */
 		CALL_GSM_OP_DEFLECT, 0,
 		CALL_GSM_DEFLECTION_ADDRESS,
-		sub_len,	/* Sub-block lenght */
+		sub_len,	/* Sub-block length */
 		address_type & 0x7F,
 		0x7,		/* Default presentation */
 		0,		/* Filler */
