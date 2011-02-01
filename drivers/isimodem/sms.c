@@ -248,7 +248,7 @@ static void isi_sca_query(struct ofono_sms *sms,
 		1,	/* Location, default is 1 */
 	};
 
-	if (cbd == NULL || sd == NULL)
+	if (cbd == NULL || sd == NULL || sd->sim == NULL)
 		goto error;
 
 	if (g_isi_client_send(sd->sim, msg, sizeof(msg),
