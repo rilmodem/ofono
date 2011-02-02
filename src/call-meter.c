@@ -181,7 +181,8 @@ static void cm_get_properties_reply(struct ofono_call_meter *cm)
 	ofono_dbus_dict_append(&dict, "AccumulatedCallMeterMaximum",
 				DBUS_TYPE_UINT32, &cm->acm_max);
 
-	ofono_dbus_dict_append(&dict, "PricePerUnit", DBUS_TYPE_DOUBLE, &cm->ppu);
+	ofono_dbus_dict_append(&dict, "PricePerUnit", DBUS_TYPE_DOUBLE,
+				&cm->ppu);
 
 	ofono_dbus_dict_append(&dict, "Currency", DBUS_TYPE_STRING, &currency);
 
@@ -190,8 +191,8 @@ static void cm_get_properties_reply(struct ofono_call_meter *cm)
 	__ofono_dbus_pending_reply(&cm->pending, reply);
 }
 
-static void query_call_meter_callback(const struct ofono_error *error, int value,
-					void *data)
+static void query_call_meter_callback(const struct ofono_error *error,
+					int value, void *data)
 {
 	struct ofono_call_meter *cm = data;
 
@@ -306,8 +307,8 @@ static DBusMessage *cm_get_properties(DBusConnection *conn, DBusMessage *msg,
 	return NULL;
 }
 
-static void set_acm_max_query_callback(const struct ofono_error *error, int value,
-					void *data)
+static void set_acm_max_query_callback(const struct ofono_error *error,
+					int value, void *data)
 {
 	struct ofono_call_meter *cm = data;
 	DBusMessage *reply;
