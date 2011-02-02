@@ -460,7 +460,7 @@ static void mw_mwis_read_cb(int ok, int total_length, int record,
 
 	if (!ok || record_length < 5) {
 		ofono_error("Unable to read waiting messages numbers "
-			"from SIM");
+				"from SIM");
 
 		mw->efmwis_length = 0;
 
@@ -543,7 +543,7 @@ static void mw_mbdn_read_cb(int ok, int total_length, int record,
 
 	if (!ok || record_length < 14 || total_length < record_length) {
 		ofono_error("Unable to read mailbox dialling numbers "
-			"from SIM");
+				"from SIM");
 
 		mw->efmbdn_length = 0;
 		mw->mbdn_not_provided = TRUE;
@@ -585,7 +585,7 @@ static void mw_mbi_read_cb(int ok, int total_length, int record,
 
 	if (!ok || record_length < 4) {
 		ofono_error("Unable to read mailbox identifies "
-			"from SIM");
+				"from SIM");
 
 		mw->efmbdn_length = 0;
 		mw->mbdn_not_provided = TRUE;
