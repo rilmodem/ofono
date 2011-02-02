@@ -868,7 +868,7 @@ static void cs_register_ss_controls(struct ofono_call_settings *cs)
 
 	__ofono_ussd_ssc_register(cs->ussd, "43", cw_ss_control, cs, NULL);
 
-	if (cs->driver->colr_query)
+	if (cs->driver->colr_query != NULL)
 		__ofono_ussd_ssc_register(cs->ussd, "77",
 					clip_cnap_colp_colr_ss, cs, NULL);
 }
@@ -882,7 +882,7 @@ static void cs_unregister_ss_controls(struct ofono_call_settings *cs)
 
 	__ofono_ussd_ssc_unregister(cs->ussd, "43");
 
-	if (cs->driver->colr_query)
+	if (cs->driver->colr_query != NULL)
 		__ofono_ussd_ssc_unregister(cs->ussd, "77");
 }
 
@@ -1388,7 +1388,7 @@ static void call_settings_remove(struct ofono_atom *atom)
 	if (cs == NULL)
 		return;
 
-	if (cs->driver && cs->driver->remove)
+	if (cs->driver != NULL && cs->driver->remove != NULL)
 		cs->driver->remove(cs);
 
 	g_free(cs);
