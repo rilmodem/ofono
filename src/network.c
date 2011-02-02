@@ -204,8 +204,10 @@ static void register_callback(const struct ofono_error *error, void *data)
 	netreg->pending = NULL;
 
 out:
-	if (netreg->driver->registration_status)
-		netreg->driver->registration_status(netreg,
+	if (netreg->driver->registration_status == NULL)
+		return;
+
+	netreg->driver->registration_status(netreg,
 					registration_status_callback, netreg);
 }
 
@@ -1304,11 +1306,11 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
 		netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
-		if (netreg->driver->current_operator)
+		if (netreg->driver->current_operator != NULL)
 			netreg->driver->current_operator(netreg,
 					current_operator_callback, netreg);
 
-		if (netreg->driver->strength)
+		if (netreg->driver->strength != NULL)
 			netreg->driver->strength(netreg,
 					signal_strength_callback, netreg);
 	} else {
@@ -1357,7 +1359,7 @@ static void init_registration_status(const struct ofono_error *error,
 	 */
 	if (netreg->status == NETWORK_REGISTRATION_STATUS_REGISTERED ||
 		netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
-		if (netreg->driver->strength)
+		if (netreg->driver->strength != NULL)
 			netreg->driver->strength(netreg,
 					signal_strength_callback, netreg);
 	}
@@ -1366,7 +1368,7 @@ static void init_registration_status(const struct ofono_error *error,
 		(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED ||
 			status == NETWORK_REGISTRATION_STATUS_DENIED ||
 			status == NETWORK_REGISTRATION_STATUS_UNKNOWN)) {
-		if (netreg->driver->register_auto)
+		if (netreg->driver->register_auto != NULL)
 			netreg->driver->register_auto(netreg, init_register,
 							netreg);
 	}
@@ -1697,18 +1699,13 @@ static void netreg_remove(struct ofono_atom *atom)
 	if (netreg == NULL)
 		return;
 
-	if (netreg->driver && netreg->driver->remove)
+	if (netreg->driver != NULL && netreg->driver->remove != NULL)
 		netreg->driver->remove(netreg);
 
-	if (netreg->eons)
-		sim_eons_free(netreg->eons);
+	sim_eons_free(netreg->eons);
+	sim_spdi_free(netreg->spdi);
 
-	if (netreg->spdi)
-		sim_spdi_free(netreg->spdi);
-
-	if (netreg->spname)
-		g_free(netreg->spname);
-
+	g_free(netreg->spname);
 	g_free(netreg);
 }
 
@@ -1801,13 +1798,13 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 
 	ofono_modem_add_interface(modem, OFONO_NETWORK_REGISTRATION_INTERFACE);
 
-	if (netreg->driver->registration_status)
+	if (netreg->driver->registration_status != NULL)
 		netreg->driver->registration_status(netreg,
 					init_registration_status, netreg);
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
-	if (sim_atom) {
+	if (sim_atom != NULL) {
 		/* Assume that if sim atom exists, it is ready */
 		netreg->sim = __ofono_atom_get_data(sim_atom);
 
