@@ -232,7 +232,7 @@ gboolean comprehension_tlv_iter_next(struct comprehension_tlv_iter *iter)
 
 	/*
 	 * ETSI TS 101.220, Section 7.1.1.2
-	 * 
+	 *
 	 * If byte 1 of the tag is equal to 0x7F, then the tag is encoded
 	 * on the following two bytes, with bit 8 of the 2nd byte of the tag
 	 * being the CR flag.
