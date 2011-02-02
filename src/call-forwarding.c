@@ -1337,9 +1337,8 @@ static void sim_cphs_cff_read_cb(int ok, int total_length, int record,
 	const char *path = __ofono_atom_get_path(cf->atom);
 	dbus_bool_t cfu_voice;
 
-	if (!ok || total_length < 1) {
+	if (!ok || total_length < 1)
 		return;
-	}
 
 	cf->flags |= CALL_FORWARDING_FLAG_CPHS_CFF;
 
