@@ -21,7 +21,7 @@
 
 /*
  * TS 101.220, Section 7.2, Card Application Toolkit assigned templates,
- * These are the same as 3GPP 11.14 Sections 13.1 and 13.2 
+ * These are the same as 3GPP 11.14 Sections 13.1 and 13.2
  */
 enum stk_envelope_type {
 	STK_ENVELOPE_TYPE_SMS_PP_DOWNLOAD =	0xD1,
