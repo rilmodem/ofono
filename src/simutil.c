@@ -975,6 +975,9 @@ gboolean sim_spdi_lookup(struct sim_spdi *spdi,
 
 void sim_spdi_free(struct sim_spdi *spdi)
 {
+	if (spdi == NULL)
+		return;
+
 	g_slist_foreach(spdi->operators, (GFunc)g_free, NULL);
 	g_slist_free(spdi->operators);
 	g_free(spdi);
@@ -982,6 +985,9 @@ void sim_spdi_free(struct sim_spdi *spdi)
 
 static void pnn_operator_free(struct sim_eons_operator_info *oper)
 {
+	if (oper == NULL)
+		return;
+
 	g_free(oper->info);
 	g_free(oper->shortname);
 	g_free(oper->longname);
@@ -1071,6 +1077,9 @@ void sim_eons_optimize(struct sim_eons *eons)
 void sim_eons_free(struct sim_eons *eons)
 {
 	int i;
+
+	if (eons == NULL)
+		return;
 
 	for (i = 0; i < eons->pnn_max; i++)
 		pnn_operator_free(eons->pnn_list + i);
