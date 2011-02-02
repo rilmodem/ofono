@@ -1075,7 +1075,7 @@ static void call_barring_remove(struct ofono_atom *atom)
 	if (cb == NULL)
 		return;
 
-	if (cb->driver && cb->driver->remove)
+	if (cb->driver != NULL && cb->driver->remove != NULL)
 		cb->driver->remove(cb);
 
 	g_free(cb);
