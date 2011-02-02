@@ -322,7 +322,7 @@ static void call_volume_remove(struct ofono_atom *atom)
 	if (cv == NULL)
 		return;
 
-	if (cv->driver && cv->driver->remove)
+	if (cv->driver != NULL && cv->driver->remove != NULL)
 		cv->driver->remove(cv);
 
 	g_free(cv);
