@@ -165,6 +165,7 @@ static DBusMessage *smart_messaging_unregister_agent(DBusConnection *conn,
 		return __ofono_error_failed(msg);
 
 	sms_agent_free(sm->agent);
+	sm->agent = NULL;
 
 	return dbus_message_new_method_return(msg);
 }
