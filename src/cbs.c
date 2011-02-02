@@ -44,11 +44,11 @@
 static GSList *g_drivers = NULL;
 
 enum etws_topic_type {
-	ETWS_TOPIC_TYPE_EARTHQUAKE = 4352,
-	ETWS_TOPIC_TYPE_TSUNAMI = 4353,
-	ETWS_TOPIC_TYPE_EARTHQUAKE_TSUNAMI = 4354,
-	ETWS_TOPIC_TYPE_TEST = 4355,
-	ETWS_TOPIC_TYPE_EMERGENCY = 4356,
+	ETWS_TOPIC_TYPE_EARTHQUAKE =		4352,
+	ETWS_TOPIC_TYPE_TSUNAMI =		4353,
+	ETWS_TOPIC_TYPE_EARTHQUAKE_TSUNAMI =	4354,
+	ETWS_TOPIC_TYPE_TEST =			4355,
+	ETWS_TOPIC_TYPE_EMERGENCY =		4356,
 };
 
 struct ofono_cbs {
@@ -648,7 +648,7 @@ static void cbs_remove(struct ofono_atom *atom)
 	if (cbs == NULL)
 		return;
 
-	if (cbs->driver && cbs->driver->remove)
+	if (cbs->driver != NULL && cbs->driver->remove != NULL)
 		cbs->driver->remove(cbs);
 
 	cbs_assembly_free(cbs->assembly);
