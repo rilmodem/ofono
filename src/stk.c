@@ -1148,8 +1148,9 @@ static void request_selection_cb(enum stk_agent_result result, uint8_t id,
 	switch (result) {
 	case STK_AGENT_RESULT_OK:
 	{
-		static struct ofono_error error =
-			{ .type = OFONO_ERROR_TYPE_FAILURE };
+		static struct ofono_error error = {
+			.type = OFONO_ERROR_TYPE_FAILURE
+		};
 		struct stk_response rsp;
 
 		memset(&rsp, 0, sizeof(rsp));
@@ -2133,8 +2134,9 @@ static void dtmf_sent_cb(int error, void *user_data)
 	if (error == ENOENT) {
 		struct stk_response rsp;
 		static unsigned char not_in_speech_call_result[] = { 0x07 };
-		static struct ofono_error failure =
-			{ .type = OFONO_ERROR_TYPE_FAILURE };
+		static struct ofono_error failure = {
+			.type = OFONO_ERROR_TYPE_FAILURE
+		};
 
 		memset(&rsp, 0, sizeof(rsp));
 
