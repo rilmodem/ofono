@@ -613,7 +613,7 @@ next_q:
 		enum message_state ms;
 
 		sms_tx_backup_free(sms->imsi, entry->id, entry->flags,
-						ofono_uuid_to_str(&entry->uuid));
+					ofono_uuid_to_str(&entry->uuid));
 
 		if (ok)
 			ms = MESSAGE_STATE_SENT;
