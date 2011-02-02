@@ -2259,15 +2259,13 @@ static void sim_remove(struct ofono_atom *atom)
 	if (sim == NULL)
 		return;
 
-	if (sim->driver && sim->driver->remove)
+	if (sim->driver != NULL && sim->driver->remove != NULL)
 		sim->driver->remove(sim);
 
 	sim_free_state(sim);
 
-	if (sim->simfs) {
-		sim_fs_free(sim->simfs);
-		sim->simfs = NULL;
-	}
+	sim_fs_free(sim->simfs);
+	sim->simfs = NULL;
 
 	g_free(sim);
 }
