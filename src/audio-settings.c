@@ -44,7 +44,7 @@ struct ofono_audio_settings {
 };
 
 void ofono_audio_settings_active_notify(struct ofono_audio_settings *as,
-                                                ofono_bool_t active)
+					ofono_bool_t active)
 {
 	const char *path = __ofono_atom_get_path(as->atom);
 	DBusConnection *conn = ofono_dbus_get_connection();
