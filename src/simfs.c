@@ -88,6 +88,9 @@ struct sim_fs {
 
 void sim_fs_free(struct sim_fs *fs)
 {
+	if (fs == NULL)
+		return;
+
 	if (fs->op_source) {
 		g_source_remove(fs->op_source);
 		fs->op_source = 0;
