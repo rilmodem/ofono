@@ -1,0 +1,213 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import gobject
+import sys
+
+import dbus
+import dbus.mainloop.glib
+
+SCA = ""
+
+def clear_screen(numlines=100):
+	import os
+	if os.name == "posix":
+		os.system('clear')
+
+	elif os.name in ("nt", "dos", "ce"):
+		os.system('CLS')
+
+	else:
+		print '\n' * numlines
+
+def print_menu():
+	print "Select test case"
+	print "-----------------------------------------------------------"
+	print "[0] Send SMS"
+	print "[1] Enable delivery reports"
+	print "[2] Disable delivery reports"
+	print "[3] Set Service Center Address"
+	print "[4] Set PS-only Bearer"
+	print "[5] Set CS-only Bearer"
+	print "[6] Set PS-preferred Bearer"
+	print "[7] Set CS-preferred Bearer"
+	print "[x] Exit"
+	print "-----------------------------------------------------------"
+
+def print_send_sms_menu():
+	print "Select SMS type"
+	print "-----------------------------------------------------------"
+	print "[1] Default SMS"
+	print "[2] Long SMS > 160 characters"
+	print "[3] SMS with national characters"
+	print "-----------------------------------------------------------"
+
+def message_delivery_report(sms, value):
+	try:
+		sms.SetProperty("UseDeliveryReports", dbus.Boolean(value))
+
+	except dbus.DBusException, e:
+		if value == 1:
+		      print "Unable to activate Delivery Reports - FAIL"
+
+		if value == 0:
+		      print "Unable to deactivate Delivery Reports - FAIL"
+
+def message_service_center_address(sms, value):
+	try:
+		sms.SetProperty("ServiceCenterAddress",dbus.String(value))
+	except dbus.DBusException, e:
+		print "Unable to set correct Service Center Address - FAIL"
+
+def message_bearer(sms, value):
+	try:
+		sms.SetProperty("Bearer", dbus.String(value))
+	except dbus.DBusException, e:
+		print "Unable to set Bearer[%s] - FAIL" % (value)
+
+
+def message_send(sms, number, value):
+	sms.SendMessage(dbus.String(number), value)
+
+def property_changed(property, value):
+	print "[1]:Message Manager property %s changed to %s" % (property, value)
+
+def immediate_message(property, value):
+	print "[2]:Message Manager immediate message"
+	print "[2]:Text::%s" % (property)
+	for key in value.keys():
+		val = str(value[key])
+		print "[2]:%s = %s" % (key, val)
+
+def incoming_message(property, value):
+	print "[3]:Message Manager incoming message"
+	print "[3]:Text::%s" % (property)
+	for key in value.keys():
+		val = str(value[key])
+		print "[3]:%s = %s" % (key, val)
+
+def message_added(property, value):
+	print "[4]:Message Manager[Added]"
+	print "[4]:%s"% (property)
+
+	for key in value.keys():
+		val = str(value[key])
+		print "[4]:%s = %s" % (key, val)
+
+def message_removed(property):
+	print "[5]:Message Manager [removed]"
+	print "[5]: %s" % (property)
+
+def print_sms_properties(sms):
+	global SCA
+	properties = sms.GetProperties()
+	print "---------------------PROPERTIES----------------------------"
+	for p in properties:
+		if len(properties[p].__str__()) > 0:
+			print "%s Message Manager rule is: %s" % (p, properties[p])
+			print "-----------------------------------------------------------"
+			if p == "ServiceCenterAddress":
+			    SCA = properties[p]
+		else:
+			print "%s Message Manager rule disabled" % (p)
+
+
+
+if __name__ == "__main__":
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+	bus = dbus.SystemBus()
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	modems = manager.GetModems()
+	path = modems[0][0]
+	sms = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.MessageManager')
+
+	sms.connect_to_signal("PropertyChanged", property_changed)
+	sms.connect_to_signal("ImmediateMessage", immediate_message)
+	sms.connect_to_signal("IncomingMessage", incoming_message)
+	sms.connect_to_signal("MessageAdded", message_added)
+	sms.connect_to_signal("MessageRemoved", message_removed)
+
+	if (len(sys.argv) < 3):
+		print "Usage: %s <phone_number> <test_message>" % (sys.argv[0])
+		sys.exit(1)
+
+	number = sys.argv[1]
+	value  = sys.argv[2]
+
+	clear_screen()
+	print_sms_properties(sms)
+	print_menu()
+	in_key = 'ok'
+
+	while in_key != 'x':
+		in_key = raw_input('Select any option: ')
+
+		if in_key == '0':
+			print_send_sms_menu()
+			sms_type = raw_input('Select SMS type: ')
+
+			if sms_type == '1':
+				message_send(sms, number, value)
+
+			if sms_type == '2':
+				val = "abcde12345"
+				for i in range(30):
+					value = value + val
+
+				message_send(sms, number, value)
+
+			if sms_type == '3':
+				value = "ÖÄÅöäåµʒ×cvcvbŋ"
+				message_send(sms, number, value)
+
+		if in_key == '1':
+			message_delivery_report(sms, 1)
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(1)"+value+": UseDeliveryReports[TRUE]"))
+
+		if in_key == '2':
+			message_delivery_report(sms, 0)
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(2) "+value+": UseDeliveryReports[FALSE]"))
+
+		if in_key == '3':
+			message_service_center_address(sms, SCA)
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(3) "+value+": ServiceCenterAddress"))
+
+		if in_key == '4':
+			message_bearer(sms, "ps-only")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(4) "+value+": Bearer[ps-only]"))
+
+		if in_key == '5':
+			message_bearer(sms, "cs-only")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(5) "+value+": Bearer[cs-only]"))
+
+		if in_key == '6':
+			message_bearer(sms, "ps-preferred")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(6) "+value+": Bearer[ps-preferred]"))
+
+		if in_key == '7':
+			message_bearer(sms, "cs-preferred")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms,number, ("(7) "+value+": Bearer[cs-preferred]"))
+
+		clear_screen()
+		print_sms_properties(sms)
+		print_menu()
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
