@@ -43,14 +43,15 @@
 #include "stemodem.h"
 
 enum call_status_ste {
-	STE_CALL_STATUS_IDLE = 0,
-	STE_CALL_STATUS_CALLING = 1,
-	STE_CALL_STATUS_CONNECTING = 2,
-	STE_CALL_STATUS_ACTIVE = 3,
-	STE_CALL_STATUS_HOLD = 4,
-	STE_CALL_STATUS_WAITING = 5,
-	STE_CALL_STATUS_ALERTING = 6,
-	STE_CALL_STATUS_BUSY = 7
+	STE_CALL_STATUS_IDLE =		0,
+	STE_CALL_STATUS_CALLING =	1,
+	STE_CALL_STATUS_CONNECTING =	2,
+	STE_CALL_STATUS_ACTIVE =	3,
+	STE_CALL_STATUS_HOLD =		4,
+	STE_CALL_STATUS_WAITING =	5,
+	STE_CALL_STATUS_ALERTING =	6,
+	STE_CALL_STATUS_BUSY =		7,
+	STE_CALL_STATUS_RELEASED =	8,
 };
 
 static const char *none_prefix[] = { NULL };
@@ -80,6 +81,7 @@ static int call_status_ste_to_ofono(enum call_status_ste status)
 {
 	switch (status) {
 	case STE_CALL_STATUS_IDLE:
+	case STE_CALL_STATUS_RELEASED:
 		return CALL_STATUS_DISCONNECTED;
 	case STE_CALL_STATUS_CALLING:
 		return CALL_STATUS_DIALING;
@@ -540,7 +542,7 @@ static int ste_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	ofono_voicecall_set_data(vc, vd);
 
-	g_at_chat_send(vd->chat, "AT*ECAM=1", none_prefix,
+	g_at_chat_send(vd->chat, "AT*ECAM=2", none_prefix,
 			ste_voicecall_initialized, vc, NULL);
 
 	return 0;
