@@ -73,7 +73,7 @@ Current implemented features:
 	Advanced voice call control
 
 		Features like COLR/CLIR/CLIP/COLP are supported by the
-		voice call handling interface. 
+		voice call handling interface.
 
 		The support for call forwarding and call waiting is also
 		present.
