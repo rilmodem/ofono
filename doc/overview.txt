@@ -130,6 +130,14 @@ Current implemented features:
 		enabling and disabling fast dormancy on hardware that support
 		this feature.
 
+	Sim Toolkit
+
+		The Sim Toolkit interface handles the SAT commands. Sim Toolkit
+		relies on the SimToolkit agent not only to get confirmation
+		from the user but also to inform user of the SAT initiated
+		operation status. Information on the Sim Toolkit feature
+		list can be found in features.txt.
+
 Work in progress features:
 
 	USSD
