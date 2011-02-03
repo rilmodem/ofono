@@ -2271,10 +2271,10 @@ char *sms_decode_text(GSList *sms_list)
 			 * If language is not defined in 3GPP TS 23.038,
 			 * implementations are instructed to ignore it
 			 */
-			if (locking_shift >= GSM_DIALECT_INVALID)
+			if (locking_shift > SMS_ALPHABET_PORTUGUESE)
 				locking_shift = GSM_DIALECT_DEFAULT;
 
-			if (single_shift >= GSM_DIALECT_INVALID)
+			if (single_shift > SMS_ALPHABET_PORTUGUESE)
 				single_shift = GSM_DIALECT_DEFAULT;
 
 			converted = convert_gsm_to_utf8_with_lang(buf, written,
