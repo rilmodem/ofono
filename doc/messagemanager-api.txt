@@ -86,3 +86,17 @@ Properties	string ServiceCenterAddress
 				"ps-preferred" - Use CS if PS is unavailable
 
 			By default oFono uses "cs-preferred" setting.
+
+		string Alphabet
+
+			Contains the alphabet setting for outgoing SMSs.
+			Possible values are:
+
+				"default" - Default GSM alphabet
+				"turkish" - Turkish alphabet
+				"spanish" - Spanish alphabet
+				"portuguese" - Portuguese alphabet
+
+			The standard, language-specific alphabets are defined
+			in 3GPP TS23.038, Annex A.  By default, oFono uses
+			the "default" setting.
