@@ -3524,9 +3524,10 @@ GSList *sms_datagram_prepare(const char *to,
  * @use_delivery_reports: value for the Status-Report-Request field
  *     (23.040 3.2.9, 9.2.2.2)
  */
-GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
-				gboolean use_16bit,
-				gboolean use_delivery_reports)
+GSList *sms_text_prepare_with_alphabet(const char *to, const char *utf8,
+					guint16 ref, gboolean use_16bit,
+					gboolean use_delivery_reports,
+					enum sms_alphabet alphabet)
 {
 	struct sms template;
 	int offset = 0;
@@ -3536,6 +3537,8 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 	long left;
 	guint8 seq;
 	GSList *r = NULL;
+	enum gsm_dialect used_locking;
+	enum gsm_dialect used_single;
 
 	memset(&template, 0, sizeof(struct sms));
 	template.type = SMS_TYPE_SUBMIT;
@@ -3547,8 +3550,13 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 	template.submit.vp.relative = 0xA7; /* 24 Hours */
 	sms_address_from_string(&template.submit.daddr, to);
 
-	/* UDHI, UDL, UD and DCS actually depend on what we have in the text */
-	gsm_encoded = convert_utf8_to_gsm(utf8, -1, NULL, &written, 0);
+	/*
+	 * UDHI, UDL, UD and DCS actually depend on the contents of
+	 * the text, and also on the GSM dialect we use to encode it.
+	 */
+	gsm_encoded = convert_utf8_to_gsm_best_lang(utf8, -1, NULL, &written, 0,
+							alphabet, &used_locking,
+							&used_single);
 	if (gsm_encoded == NULL) {
 		gsize converted;
 
@@ -3560,13 +3568,35 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 	if (gsm_encoded == NULL && ucs2_encoded == NULL)
 		return NULL;
 
-	if (gsm_encoded)
+	if (gsm_encoded != NULL)
 		template.submit.dcs = 0x00; /* Class Unspecified, 7 Bit */
 	else
 		template.submit.dcs = 0x08; /* Class Unspecified, UCS2 */
 
+	if (gsm_encoded != NULL && used_single != GSM_DIALECT_DEFAULT) {
+		if (!offset)
+			offset = 1;
+
+		template.submit.ud[0] += 3;
+		template.submit.ud[offset] = SMS_IEI_NATIONAL_LANGUAGE_SINGLE_SHIFT;
+		template.submit.ud[offset + 1] = 1;
+		template.submit.ud[offset + 2] = used_single;
+		offset += 3;
+	}
+
+	if (gsm_encoded != NULL && used_locking != GSM_DIALECT_DEFAULT) {
+		if (!offset)
+			offset = 1;
+
+		template.submit.ud[0] += 3;
+		template.submit.ud[offset] = SMS_IEI_NATIONAL_LANGUAGE_LOCKING_SHIFT;
+		template.submit.ud[offset + 1] = 1;
+		template.submit.ud[offset + 2] = used_locking;
+		offset += 3;
+	}
+
 	if (offset != 0)
-		template.submit.udhi = FALSE;
+		template.submit.udhi = TRUE;
 
 	if (gsm_encoded && (written <= sms_text_capacity_gsm(160, offset))) {
 		template.submit.udl = written + (offset * 8 + 6) / 7;
@@ -3676,6 +3706,15 @@ GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 	r = g_slist_reverse(r);
 
 	return r;
+}
+
+GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
+				gboolean use_16bit,
+				gboolean use_delivery_reports)
+{
+	return sms_text_prepare_with_alphabet(to, utf8, ref, use_16bit,
+						use_delivery_reports,
+						SMS_ALPHABET_DEFAULT);
 }
 
 gboolean cbs_dcs_decode(guint8 dcs, gboolean *udhi, enum sms_class *cls,

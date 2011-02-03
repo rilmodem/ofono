@@ -154,6 +154,13 @@ enum sms_charset {
 	SMS_CHARSET_UCS2 = 2,
 };
 
+enum sms_alphabet {
+	SMS_ALPHABET_DEFAULT = 0,
+	SMS_ALPHABET_TURKISH,
+	SMS_ALPHABET_SPANISH,
+	SMS_ALPHABET_PORTUGUESE,
+};
+
 enum sms_mwi_type {
 	SMS_MWI_TYPE_VOICE = 0,
 	SMS_MWI_TYPE_FAX = 1,
@@ -537,6 +544,11 @@ GQueue *sms_tx_queue_load(const char *imsi);
 GSList *sms_text_prepare(const char *to, const char *utf8, guint16 ref,
 				gboolean use_16bit,
 				gboolean use_delivery_reports);
+
+GSList *sms_text_prepare_with_alphabet(const char *to, const char *utf8,
+				guint16 ref, gboolean use_16bit,
+				gboolean use_delivery_reports,
+				enum sms_alphabet alphabet);
 
 GSList *sms_datagram_prepare(const char *to,
 				const unsigned char *data, unsigned int len,
