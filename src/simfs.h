@@ -27,19 +27,21 @@ typedef void (*sim_fs_read_info_cb_t)(int ok, unsigned char file_status,
 
 struct sim_fs *sim_fs_new(struct ofono_sim *sim,
 				const struct ofono_sim_driver *driver);
+struct ofono_sim_context *sim_fs_context_new(struct sim_fs *fs);
 
-int sim_fs_read(struct sim_fs *fs, int id,
+int sim_fs_read(struct ofono_sim_context *context, int id,
 		enum ofono_sim_file_structure expected_type,
 		unsigned short offset, unsigned short num_bytes,
 		ofono_sim_file_read_cb_t cb, void *data);
 
-int sim_fs_read_info(struct sim_fs *fs, int id,
+int sim_fs_read_info(struct ofono_sim_context *context, int id,
 		enum ofono_sim_file_structure expected_type,
 		sim_fs_read_info_cb_t cb, void *data);
 
 void sim_fs_check_version(struct sim_fs *fs);
 
-int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
+int sim_fs_write(struct ofono_sim_context *context, int id,
+			ofono_sim_file_write_cb_t cb,
 			enum ofono_sim_file_structure structure, int record,
 			const unsigned char *data, int length, void *userdata);
 
@@ -53,3 +55,4 @@ void sim_fs_image_cache_flush(struct sim_fs *fs);
 void sim_fs_image_cache_flush_file(struct sim_fs *fs, int id);
 
 void sim_fs_free(struct sim_fs *fs);
+void sim_fs_context_free(struct ofono_sim_context *context);

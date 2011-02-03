@@ -75,6 +75,7 @@ struct ofono_netreg {
 	struct sim_spdi *spdi;
 	struct sim_eons *eons;
 	struct ofono_sim *sim;
+	struct ofono_sim_context *sim_context;
 	GKeyFile *settings;
 	char *imsi;
 	struct ofono_watchlist *status_watches;
@@ -1471,7 +1472,7 @@ check:
 	 * is present.
 	 */
 	if (netreg->eons && !sim_eons_pnn_is_empty(netreg->eons))
-		ofono_sim_read(netreg->sim, SIM_EFOPL_FILEID,
+		ofono_sim_read(netreg->sim_context, SIM_EFOPL_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				sim_opl_read_cb, netreg);
 }
@@ -1550,7 +1551,7 @@ static void sim_spn_read_cb(int ok, int length, int record,
 	}
 
 	netreg->spname = spn;
-	ofono_sim_read(netreg->sim, SIM_EFSPDI_FILEID,
+	ofono_sim_read(netreg->sim_context, SIM_EFSPDI_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_spdi_read_cb, netreg);
 
@@ -1684,6 +1685,13 @@ static void netreg_unregister(struct ofono_atom *atom)
 		netreg->settings = NULL;
 	}
 
+	if (netreg->sim_context) {
+		ofono_sim_context_free(netreg->sim_context);
+		netreg->sim_context = NULL;
+	}
+
+	netreg->sim = NULL;
+
 	g_dbus_unregister_interface(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE);
 	ofono_modem_remove_interface(modem,
@@ -1808,12 +1816,14 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 		/* Assume that if sim atom exists, it is ready */
 		netreg->sim = __ofono_atom_get_data(sim_atom);
 
+		netreg->sim_context = ofono_sim_context_create(netreg->sim);
+
 		netreg_load_settings(netreg);
 
-		ofono_sim_read(netreg->sim, SIM_EFPNN_FILEID,
+		ofono_sim_read(netreg->sim_context, SIM_EFPNN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				sim_pnn_read_cb, netreg);
-		ofono_sim_read(netreg->sim, SIM_EFSPN_FILEID,
+		ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_spn_read_cb, netreg);
 	}

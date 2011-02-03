@@ -50,6 +50,7 @@ struct ofono_voicecall {
 	GSList *new_en_list; /* Emergency numbers being read from SIM */
 	DBusMessage *pending;
 	struct ofono_sim *sim;
+	struct ofono_sim_context *sim_context;
 	unsigned int sim_watch;
 	unsigned int sim_state_watch;
 	const struct ofono_voicecall_driver *driver;
@@ -2284,16 +2285,24 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 
 	switch (new_state) {
 	case OFONO_SIM_STATE_INSERTED:
+		if (vc->sim_context == NULL)
+			vc->sim_context = ofono_sim_context_create(vc->sim);
+
 		/* Try both formats, only one or none will work */
-		ofono_sim_read(vc->sim, SIM_EFECC_FILEID,
+		ofono_sim_read(vc->sim_context, SIM_EFECC_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				ecc_g2_read_cb, vc);
-		ofono_sim_read(vc->sim, SIM_EFECC_FILEID,
+		ofono_sim_read(vc->sim_context, SIM_EFECC_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				ecc_g3_read_cb, vc);
 		break;
 	case OFONO_SIM_STATE_NOT_PRESENT:
 		/* TODO: Must release all non-emergency calls */
+
+		if (vc->sim_context) {
+			ofono_sim_context_free(vc->sim_context);
+			vc->sim_context = NULL;
+		}
 
 		/*
 		 * Free the currently being read EN list, just in case the

@@ -69,6 +69,7 @@ struct sim_fs_op {
 	gconstpointer cb;
 	gboolean is_read;
 	void *userdata;
+	struct ofono_sim_context *context;
 };
 
 static void sim_fs_op_free(struct sim_fs_op *node)
@@ -108,6 +109,10 @@ void sim_fs_free(struct sim_fs *fs)
 	g_free(fs);
 }
 
+struct ofono_sim_context {
+	struct sim_fs *fs;
+};
+
 struct sim_fs *sim_fs_new(struct ofono_sim *sim,
 				const struct ofono_sim_driver *driver)
 {
@@ -122,6 +127,44 @@ struct sim_fs *sim_fs_new(struct ofono_sim *sim,
 	fs->fd = -1;
 
 	return fs;
+}
+
+struct ofono_sim_context *sim_fs_context_new(struct sim_fs *fs)
+{
+	struct ofono_sim_context *context =
+		g_try_new0(struct ofono_sim_context, 1);
+
+	if (context == NULL)
+		return NULL;
+
+	context->fs = fs;
+
+	return context;
+}
+
+void sim_fs_context_free(struct ofono_sim_context *context)
+{
+	int n = 0;
+	struct sim_fs_op *op;
+
+	while ((op = g_queue_peek_nth(context->fs->op_q, n)) != NULL) {
+		if (op->context != context) {
+			n += 1;
+			continue;
+		}
+
+		if (n == 0) {
+			op->cb = NULL;
+
+			n += 1;
+			continue;
+		}
+
+		sim_fs_op_free(op);
+		g_queue_remove(context->fs->op_q, op);
+	}
+
+	g_free(context);
 }
 
 static void sim_fs_end_current(struct sim_fs *fs)
@@ -144,6 +187,11 @@ static void sim_fs_end_current(struct sim_fs *fs)
 static void sim_fs_op_error(struct sim_fs *fs)
 {
 	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
+
+	if (op->cb == NULL) {
+		sim_fs_end_current(fs);
+		return;
+	}
 
 	if (op->info_only == TRUE)
 		((sim_fs_read_info_cb_t) op->cb)
@@ -204,6 +252,11 @@ static void sim_fs_op_write_cb(const struct ofono_error *error, void *data)
 	struct sim_fs_op *op = g_queue_peek_head(fs->op_q);
 	ofono_sim_file_write_cb_t cb = op->cb;
 
+	if (cb == NULL) {
+		sim_fs_end_current(fs);
+		return;
+	}
+
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		cb(1, op->userdata);
 	else
@@ -250,6 +303,11 @@ static void sim_fs_op_read_block_cb(const struct ofono_error *error,
 	memcpy(op->buffer + bufoff, data + dataoff, tocopy);
 	cache_block(fs, op->current, 256, data, len);
 
+	if (op->cb == NULL) {
+		sim_fs_end_current(fs);
+		return;
+	}
+
 	op->current++;
 
 	if (op->current > end_block) {
@@ -273,6 +331,11 @@ static gboolean sim_fs_op_read_block(gpointer user_data)
 	unsigned short read_bytes;
 
 	fs->op_source = 0;
+
+	if (op->cb == NULL) {
+		sim_fs_end_current(fs);
+		return FALSE;
+	}
 
 	start_block = op->offset / 256;
 	end_block = (op->offset + (op->num_bytes - 1)) / 256;
@@ -360,10 +423,15 @@ static void sim_fs_op_retrieve_cb(const struct ofono_error *error,
 		return;
 	}
 
-	cb(1, op->length, op->current, data, op->record_length, op->userdata);
-
 	cache_block(fs, op->current - 1, op->record_length,
 			data, op->record_length);
+
+	if (cb == NULL) {
+		sim_fs_end_current(fs);
+		return;
+	}
+
+	cb(1, op->length, op->current, data, op->record_length, op->userdata);
 
 	if (op->current < total) {
 		op->current += 1;
@@ -382,6 +450,11 @@ static gboolean sim_fs_op_read_record(gpointer user)
 	unsigned char buf[256];
 
 	fs->op_source = 0;
+
+	if (op->cb == NULL) {
+		sim_fs_end_current(fs);
+		return FALSE;
+	}
 
 	while (fs->fd != -1 && op->current <= total) {
 		int offset = (op->current - 1) / 8;
@@ -520,6 +593,11 @@ static void sim_fs_op_info_cb(const struct ofono_error *error, int length,
 		ofono_error("Requested file structure differs from SIM: %x",
 				op->id);
 		sim_fs_op_error(fs);
+		return;
+	}
+
+	if (op->cb == NULL) {
+		sim_fs_end_current(fs);
 		return;
 	}
 
@@ -663,6 +741,11 @@ static gboolean sim_fs_op_next(gpointer user_data)
 
 	op = g_queue_peek_head(fs->op_q);
 
+	if (op->cb == NULL) {
+		sim_fs_end_current(fs);
+		return FALSE;
+	}
+
 	if (op->is_read == TRUE) {
 		if (sim_fs_op_check_cached(fs))
 			return FALSE;
@@ -697,10 +780,11 @@ static gboolean sim_fs_op_next(gpointer user_data)
 	return FALSE;
 }
 
-int sim_fs_read_info(struct sim_fs *fs, int id,
+int sim_fs_read_info(struct ofono_sim_context *context, int id,
 			enum ofono_sim_file_structure expected_type,
 			sim_fs_read_info_cb_t cb, void *data)
 {
+	struct sim_fs *fs = context->fs;
 	struct sim_fs_op *op;
 
 	if (cb == NULL)
@@ -725,6 +809,7 @@ int sim_fs_read_info(struct sim_fs *fs, int id,
 	op->userdata = data;
 	op->is_read = TRUE;
 	op->info_only = TRUE;
+	op->context = context;
 
 	g_queue_push_tail(fs->op_q, op);
 
@@ -734,11 +819,12 @@ int sim_fs_read_info(struct sim_fs *fs, int id,
 	return 0;
 }
 
-int sim_fs_read(struct sim_fs *fs, int id,
+int sim_fs_read(struct ofono_sim_context *context, int id,
 		enum ofono_sim_file_structure expected_type,
 		unsigned short offset, unsigned short num_bytes,
 		ofono_sim_file_read_cb_t cb, void *data)
 {
+	struct sim_fs *fs = context->fs;
 	struct sim_fs_op *op;
 
 	if (cb == NULL)
@@ -765,6 +851,7 @@ int sim_fs_read(struct sim_fs *fs, int id,
 	op->offset = offset;
 	op->num_bytes = num_bytes;
 	op->info_only = FALSE;
+	op->context = context;
 
 	g_queue_push_tail(fs->op_q, op);
 
@@ -774,10 +861,12 @@ int sim_fs_read(struct sim_fs *fs, int id,
 	return 0;
 }
 
-int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
+int sim_fs_write(struct ofono_sim_context *context, int id,
+			ofono_sim_file_write_cb_t cb,
 			enum ofono_sim_file_structure structure, int record,
 			const unsigned char *data, int length, void *userdata)
 {
+	struct sim_fs *fs = context->fs;
 	struct sim_fs_op *op;
 	gconstpointer fn = NULL;
 
@@ -819,6 +908,7 @@ int sim_fs_write(struct sim_fs *fs, int id, ofono_sim_file_write_cb_t cb,
 	op->structure = structure;
 	op->length = length;
 	op->current = record;
+	op->context = context;
 
 	g_queue_push_tail(fs->op_q, op);
 

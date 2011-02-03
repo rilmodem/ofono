@@ -57,6 +57,7 @@ struct ofono_cbs {
 	GSList *topics;
 	GSList *new_topics;
 	struct ofono_sim *sim;
+	struct ofono_sim_context *sim_context;
 	struct ofono_stk *stk;
 	struct ofono_netreg *netreg;
 	unsigned int netreg_watch;
@@ -605,6 +606,11 @@ static void cbs_unregister(struct ofono_atom *atom)
 		cbs->efcbmid_contents = NULL;
 	}
 
+	if (cbs->sim_context) {
+		ofono_sim_context_free(cbs->sim_context);
+		cbs->sim_context = NULL;
+	}
+
 	cbs->sim = NULL;
 	cbs->stk = NULL;
 
@@ -908,10 +914,10 @@ static void cbs_got_imsi(struct ofono_cbs *cbs)
 	 */
 	if (topics_str == NULL ||
 			(cbs->topics == NULL && topics_str[0] != '\0')) {
-		ofono_sim_read(cbs->sim, SIM_EFCBMI_FILEID,
+		ofono_sim_read(cbs->sim_context, SIM_EFCBMI_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_cbmi_read_cb, cbs);
-		ofono_sim_read(cbs->sim, SIM_EFCBMIR_FILEID,
+		ofono_sim_read(cbs->sim_context, SIM_EFCBMIR_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_cbmir_read_cb, cbs);
 	}
@@ -919,7 +925,7 @@ static void cbs_got_imsi(struct ofono_cbs *cbs)
 	if (topics_str)
 		g_free(topics_str);
 
-	ofono_sim_read(cbs->sim, SIM_EFCBMID_FILEID,
+	ofono_sim_read(cbs->sim_context, SIM_EFCBMID_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_cbmid_read_cb, cbs);
 }
@@ -1066,6 +1072,8 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 
 	if (sim_atom) {
 		cbs->sim = __ofono_atom_get_data(sim_atom);
+
+		cbs->sim_context = ofono_sim_context_create(cbs->sim);
 
 		if (ofono_sim_get_state(cbs->sim) == OFONO_SIM_STATE_READY)
 			cbs_got_imsi(cbs);

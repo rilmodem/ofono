@@ -61,6 +61,7 @@ struct ofono_call_forwarding {
 	int query_end;
 	struct cf_ss_request *ss_req;
 	struct ofono_sim *sim;
+	struct ofono_sim_context *sim_context;
 	unsigned char cfis_record_id;
 	struct ofono_ussd *ussd;
 	unsigned int ussd_watch;
@@ -276,7 +277,7 @@ static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
 			data[3] = 128;
 		}
 
-		ofono_sim_write(cf->sim, SIM_EFCFIS_FILEID,
+		ofono_sim_write(cf->sim_context, SIM_EFCFIS_FILEID,
 					sim_cfis_update_cb,
 					OFONO_SIM_FILE_STRUCTURE_FIXED,
 					cf->cfis_record_id, data,
@@ -287,7 +288,7 @@ static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
 	if (cf->flags & CALL_FORWARDING_FLAG_CPHS_CFF) {
 		unsigned char cff_voice = cfu_voice ? 0x0A : 0x05;
 
-		ofono_sim_write(cf->sim, SIM_EF_CPHS_CFF_FILEID,
+		ofono_sim_write(cf->sim_context, SIM_EF_CPHS_CFF_FILEID,
 					sim_cphs_cff_update_cb,
 					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 					0, &cff_voice, sizeof(cff_voice), cf);
@@ -1362,11 +1363,11 @@ static void sim_read_cf_indicator(struct ofono_call_forwarding *cf)
 	if (__ofono_sim_service_available(cf->sim,
 			SIM_UST_SERVICE_CFIS,
 			SIM_SST_SERVICE_CFIS) == TRUE)
-		ofono_sim_read(cf->sim, SIM_EFCFIS_FILEID,
+		ofono_sim_read(cf->sim_context, SIM_EFCFIS_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				sim_cfis_read_cb, cf);
 	else
-		ofono_sim_read(cf->sim, SIM_EF_CPHS_CFF_FILEID,
+		ofono_sim_read(cf->sim_context, SIM_EF_CPHS_CFF_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_cphs_cff_read_cb, cf);
 }
@@ -1400,6 +1401,11 @@ static void call_forwarding_unregister(struct ofono_atom *atom)
 	ofono_modem_remove_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE);
+
+	if (cf->sim_context) {
+		ofono_sim_context_free(cf->sim_context);
+		cf->sim_context = NULL;
+	}
 
 	if (cf->ussd)
 		cf_unregister_ss_controls(cf);
@@ -1498,6 +1504,8 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 
 	if (sim_atom) {
 		cf->sim = __ofono_atom_get_data(sim_atom);
+
+		cf->sim_context = ofono_sim_context_create(cf->sim);
 
 		sim_read_cf_indicator(cf);
 	}
