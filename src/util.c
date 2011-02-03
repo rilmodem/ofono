@@ -501,7 +501,7 @@ static unsigned short unicode_single_shift_lookup(struct conversion_table *t,
 	return codepoint_lookup(&key, t->single_u, t->single_len_u);
 }
 
-static int populate_locking_shift(struct conversion_table *t,
+static gboolean populate_locking_shift(struct conversion_table *t,
 					enum gsm_dialect lang)
 {
 	switch (lang) {
@@ -510,24 +510,25 @@ static int populate_locking_shift(struct conversion_table *t,
 		t->locking_g = def_gsm;
 		t->locking_u = def_unicode;
 		t->locking_len_u = TABLE_SIZE(def_unicode);
-		return 1;
+		return TRUE;
 
 	case GSM_DIALECT_TURKISH:
 		t->locking_g = tur_gsm;
 		t->locking_u = tur_unicode;
 		t->locking_len_u = TABLE_SIZE(tur_unicode);
-		return 1;
+		return TRUE;
 
 	case GSM_DIALECT_PORTUGUESE:
 		t->locking_g = por_gsm;
 		t->locking_u = por_unicode;
 		t->locking_len_u = TABLE_SIZE(por_unicode);
-		return 1;
+		return TRUE;
 	}
-	return 0;
+
+	return FALSE;
 }
 
-static int populate_single_shift(struct conversion_table *t,
+static gboolean populate_single_shift(struct conversion_table *t,
 					enum gsm_dialect lang)
 {
 	switch (lang) {
@@ -536,33 +537,34 @@ static int populate_single_shift(struct conversion_table *t,
 		t->single_len_g = TABLE_SIZE(def_ext_gsm);
 		t->single_u = def_ext_unicode;
 		t->single_len_u = TABLE_SIZE(def_ext_unicode);
-		return 1;
+		return TRUE;
 
 	case GSM_DIALECT_TURKISH:
 		t->single_g = tur_ext_gsm;
 		t->single_len_g = TABLE_SIZE(tur_ext_gsm);
 		t->single_u = tur_ext_unicode;
 		t->single_len_u = TABLE_SIZE(tur_ext_unicode);
-		return 1;
+		return TRUE;
 
 	case GSM_DIALECT_SPANISH:
 		t->single_g = spa_ext_gsm;
 		t->single_len_g = TABLE_SIZE(spa_ext_gsm);
 		t->single_u = spa_ext_unicode;
 		t->single_len_u = TABLE_SIZE(spa_ext_unicode);
-		return 1;
+		return TRUE;
 
 	case GSM_DIALECT_PORTUGUESE:
 		t->single_g = por_ext_gsm;
 		t->single_len_g = TABLE_SIZE(por_ext_gsm);
 		t->single_u = por_ext_unicode;
 		t->single_len_u = TABLE_SIZE(por_ext_unicode);
-		return 1;
+		return TRUE;
 	}
-	return 0;
+
+	return FALSE;
 }
 
-static int conversion_table_init(struct conversion_table *t,
+static gboolean conversion_table_init(struct conversion_table *t,
 					enum gsm_dialect locking,
 					enum gsm_dialect single)
 {
@@ -598,7 +600,7 @@ char *convert_gsm_to_utf8_with_lang(const unsigned char *text, long len,
 
 	struct conversion_table t;
 
-	if (!conversion_table_init(&t, locking_lang, single_lang))
+	if (conversion_table_init(&t, locking_lang, single_lang) == FALSE)
 		return NULL;
 
 	if (len < 0 && !terminator)
@@ -702,7 +704,7 @@ unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len,
 	long res_len;
 	long i;
 
-	if (!conversion_table_init(&t, locking_lang, single_lang))
+	if (conversion_table_init(&t, locking_lang, single_lang) == FALSE)
 		return NULL;
 
 	in = text;
@@ -1142,7 +1144,8 @@ char *sim_string_to_utf8(const unsigned char *buffer, int length)
 	char *utf8 = NULL;
 	char *out;
 
-	if (!conversion_table_init(&t, GSM_DIALECT_DEFAULT, GSM_DIALECT_DEFAULT))
+	if (conversion_table_init(&t, GSM_DIALECT_DEFAULT,
+					GSM_DIALECT_DEFAULT) == FALSE)
 		return NULL;
 
 	if (length < 1)
@@ -1339,7 +1342,7 @@ unsigned char *convert_ucs2_to_gsm_with_lang(const unsigned char *text,
 	long res_len;
 	long i;
 
-	if (!conversion_table_init(&t, locking_lang, single_lang))
+	if (conversion_table_init(&t, locking_lang, single_lang) == FALSE)
 		return NULL;
 
 	if (len < 1 || len % 2)
