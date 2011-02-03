@@ -966,7 +966,6 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 	if (sim_atom) {
 		/* Assume that if sim atom exists, it is ready */
 		mw->sim = __ofono_atom_get_data(sim_atom);
-
 		mw->sim_context = ofono_sim_context_create(mw->sim);
 
 		/* Loads MWI states and MBDN from SIM */

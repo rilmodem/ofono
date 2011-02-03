@@ -1504,7 +1504,6 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 
 	if (sim_atom) {
 		cf->sim = __ofono_atom_get_data(sim_atom);
-
 		cf->sim_context = ofono_sim_context_create(cf->sim);
 
 		sim_read_cf_indicator(cf);

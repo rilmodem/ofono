@@ -1815,7 +1815,6 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 	if (sim_atom != NULL) {
 		/* Assume that if sim atom exists, it is ready */
 		netreg->sim = __ofono_atom_get_data(sim_atom);
-
 		netreg->sim_context = ofono_sim_context_create(netreg->sim);
 
 		netreg_load_settings(netreg);
