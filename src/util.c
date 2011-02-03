@@ -820,7 +820,7 @@ unsigned char *convert_utf8_to_gsm_best_lang(const char *utf8, long len,
 						items_written, terminator,
 						locking, single);
 	if (encoded != NULL)
-		return encoded;
+		goto out;
 
 	if (hint == GSM_DIALECT_DEFAULT)
 		return NULL;
@@ -830,7 +830,7 @@ unsigned char *convert_utf8_to_gsm_best_lang(const char *utf8, long len,
 						items_written, terminator,
 						locking, single);
 	if (encoded != NULL)
-		return encoded;
+		goto out;
 
 	/* Spanish dialect uses the default locking shift table */
 	if (hint == GSM_DIALECT_SPANISH)
@@ -844,6 +844,7 @@ unsigned char *convert_utf8_to_gsm_best_lang(const char *utf8, long len,
 	if (encoded == NULL)
 		return NULL;
 
+out:
 	if (used_locking != NULL)
 		*used_locking = locking;
 
