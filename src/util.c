@@ -790,6 +790,70 @@ unsigned char *convert_utf8_to_gsm(const char *text, long len,
 }
 
 /*!
+ * Converts UTF-8 encoded text to GSM alphabet. It finds an encoding
+ * that uses the minimum set of GSM dialects based on the hint given.
+ *
+ * It first attempts to use the default dialect's single shift and
+ * locking shift tables. It then tries with only the single shift
+ * table of the hinted dialect, and finally with both the single shift
+ * and locking shift tables of the hinted dialect.
+ *
+ * Returns the encoded data or NULL if no suitable encoding could be
+ * found. The data must be freed by the caller. If items_read is not
+ * NULL, it contains the actual number of bytes read. If items_written
+ * is not NULL, it contains the number of bytes written. If
+ * used_locking and used_single are not NULL, they will contain the
+ * dialects used for the locking shift and single shift tables.
+ */
+unsigned char *convert_utf8_to_gsm_best_lang(const char *utf8, long len,
+					long *items_read, long *items_written,
+					unsigned char terminator,
+					enum gsm_dialect hint,
+					enum gsm_dialect *used_locking,
+					enum gsm_dialect *used_single)
+{
+	enum gsm_dialect locking = GSM_DIALECT_DEFAULT;
+	enum gsm_dialect single = GSM_DIALECT_DEFAULT;
+	unsigned char *encoded;
+
+	encoded = convert_utf8_to_gsm_with_lang(utf8, len, items_read,
+						items_written, terminator,
+						locking, single);
+	if (encoded != NULL)
+		return encoded;
+
+	if (hint == GSM_DIALECT_DEFAULT)
+		return NULL;
+
+	single = hint;
+	encoded = convert_utf8_to_gsm_with_lang(utf8, len, items_read,
+						items_written, terminator,
+						locking, single);
+	if (encoded != NULL)
+		return encoded;
+
+	/* Spanish dialect uses the default locking shift table */
+	if (hint == GSM_DIALECT_SPANISH)
+		return NULL;
+
+	locking = hint;
+	encoded = convert_utf8_to_gsm_with_lang(utf8, len, items_read,
+						items_written, terminator,
+						locking, single);
+
+	if (encoded == NULL)
+		return NULL;
+
+	if (used_locking != NULL)
+		*used_locking = locking;
+
+	if (used_single != NULL)
+		*used_single = single;
+
+	return encoded;
+}
+
+/*!
  * Decodes the hex encoded data and converts to a byte array.  If terminator
  * is not 0, the terminator character is appended to the end of the result.
  * This might be useful for converting GSM encoded data if the CSCS is set

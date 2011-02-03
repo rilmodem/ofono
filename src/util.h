@@ -44,6 +44,13 @@ unsigned char *convert_utf8_to_gsm_with_lang(const char *text, long len,
 					enum gsm_dialect locking_shift_lang,
 					enum gsm_dialect single_shift_lang);
 
+unsigned char *convert_utf8_to_gsm_best_lang(const char *utf8, long len,
+					long *items_read, long *items_written,
+					unsigned char terminator,
+					enum gsm_dialect hint,
+					enum gsm_dialect *used_locking,
+					enum gsm_dialect *used_single);
+
 unsigned char *decode_hex_own_buf(const char *in, long len, long *items_written,
 					unsigned char terminator,
 					unsigned char *buf);
