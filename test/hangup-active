@@ -15,9 +15,15 @@ manager = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.VoiceCallManager')
 
 calls = manager.GetCalls()
-path = calls[0][0]
 
-call = dbus.Interface(bus.get_object('org.ofono', path),
+for path, properties in calls:
+		state = properties["State"]
+		print "[ %s ] %s" % (path, state)
+
+		if state != "active":
+			continue
+
+		call = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.VoiceCall')
 
-call.Hangup()
+		call.Hangup()
