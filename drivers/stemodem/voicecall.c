@@ -535,6 +535,13 @@ static void ste_voicecall_initialized(gboolean ok, GAtResult *result,
 	struct ofono_voicecall *vc = user_data;
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 
+	if (!ok) {
+		ofono_error("*ECAV not enabled. "
+				"Do not have proper call handling");
+		ofono_voicecall_remove(vc);
+		return;
+	}
+
 	g_at_chat_register(vd->chat, "*ECAV:", ecav_notify, FALSE, vc, NULL);
 	ofono_voicecall_register(vc);
 }
