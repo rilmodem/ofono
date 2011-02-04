@@ -172,6 +172,11 @@ static void example_history_sms_send_status(
 		ofono_debug("Sending SMS %s failed", ofono_uuid_to_str(uuid));
 		ofono_debug("Failure Time: %s", buf);
 		break;
+	case OFONO_HISTORY_SMS_STATUS_SUBMIT_CANCELLED:
+		ofono_debug("Submission of SMS %s was canceled",
+					ofono_uuid_to_str(uuid));
+		ofono_debug("Cancel time: %s", buf);
+		break;
 	case OFONO_HISTORY_SMS_STATUS_DELIVERED:
 		ofono_debug("SMS delivered, msg_id: %s, time: %s",
 					ofono_uuid_to_str(uuid), buf);
