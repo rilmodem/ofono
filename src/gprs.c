@@ -2480,7 +2480,7 @@ error:
 
 static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 {
-	GError *error = NULL;
+	GError *error;
 	gboolean legacy = FALSE;
 	char **groups;
 	int i;
@@ -2492,6 +2492,7 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 
 	gprs->imsi = g_strdup(imsi);
 
+	error = NULL;
 	gprs->powered = g_key_file_get_boolean(gprs->settings, SETTINGS_GROUP,
 						"Powered", &error);
 
@@ -2506,9 +2507,11 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 					"Powered", gprs->powered);
 	}
 
+	error = NULL;
 	gprs->roaming_allowed = g_key_file_get_boolean(gprs->settings,
 							SETTINGS_GROUP,
-							"RoamingAllowed", NULL);
+							"RoamingAllowed",
+							&error);
 
 	if (error) {
 		gprs->roaming_allowed = FALSE;
