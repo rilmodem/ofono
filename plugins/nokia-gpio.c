@@ -600,7 +600,7 @@ static void gpio_power_set_state(enum power_state new_state)
 	self.callback(new_state, self.data);
 }
 
-static void phonet_status_cb(GIsiModem *idx, GIsiPhonetLinkState state,
+static void phonet_status_cb(GIsiModem *idx, enum GIsiPhonetLinkState state,
 				char const *ifname, void *dummy)
 {
 	DBG("Link %s (%u) is %s",

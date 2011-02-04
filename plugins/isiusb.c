@@ -65,7 +65,7 @@ struct isi_data {
 	GIsiModem *modem;
 	GIsiClient *client;
 	GIsiPhonetNetlink *link;
-	GIsiPhonetLinkState linkstate;
+	enum GIsiPhonetLinkState linkstate;
 	unsigned interval;
 	int reported;
 	ofono_bool_t online;
@@ -223,7 +223,7 @@ static void reachable_cb(const GIsiMessage *msg, void *data)
 	g_idle_add(bootstrap_current_state, om);
 }
 
-static void phonet_status_cb(GIsiModem *modem, GIsiPhonetLinkState st,
+static void phonet_status_cb(GIsiModem *modem, enum GIsiPhonetLinkState st,
 				char const *ifname, void *data)
 {
 	struct ofono_modem *om = data;
