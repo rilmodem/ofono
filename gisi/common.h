@@ -42,6 +42,12 @@ enum message_id {
 	COMMON_MESSAGE =			0xF0,
 };
 
+enum GIsiPhonetDevice {
+	PN_DEV_PC =	0x10,	/* PC Suite */
+	PN_DEV_HOST =	0x00,	/* Host modem */
+	PN_DEV_SOS =	0x6C,	/* Symbian or Linux */
+};
+
 enum GIsiMessageType {
 	GISI_MESSAGE_TYPE_REQ,
 	GISI_MESSAGE_TYPE_IND,

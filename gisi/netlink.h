@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include <gisi/modem.h>
+#include <gisi/common.h>
 
 #ifndef __GISI_PN_NETLINK_H
 #define __GISI_PN_NETLINK_H
@@ -32,20 +33,15 @@ extern "C" {
 struct _GIsiPhonetNetlink;
 typedef struct _GIsiPhonetNetlink GIsiPhonetNetlink;
 
-typedef enum {
+enum GIsiPhonetLinkState {
 	PN_LINK_REMOVED,
 	PN_LINK_DOWN,
-	PN_LINK_UP
-} GIsiPhonetLinkState;
+	PN_LINK_UP,
+};
 
-typedef enum {
-	PN_DEV_PC = 0x10,	/* PC Suite */
-	PN_DEV_HOST = 0x00,	/* Modem */
-	PN_DEV_SOS = 0x6C,	/* Symbian or Linux */
-} GIsiPhonetDevice;
-
-typedef void (*GIsiPhonetNetlinkFunc)(GIsiModem *modem, GIsiPhonetLinkState st,
-					char const *iface, void *data);
+typedef void (*GIsiPhonetNetlinkFunc)(GIsiModem *modem,
+					enum GIsiPhonetLinkState st,
+					const char *iface, void *data);
 
 GIsiPhonetNetlink *g_isi_pn_netlink_by_modem(GIsiModem *modem);
 
