@@ -41,7 +41,7 @@
 #include "ifxmodem.h"
 
 static const char *none_prefix[] = { NULL };
-static const char *xctms_prefix[] = { "XCTMS:", NULL };
+static const char *xctms_prefix[] = { "+XCTMS:", NULL };
 
 struct ctm_data {
 	GAtChat *chat;
@@ -65,7 +65,7 @@ static void xctms_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
-	if (g_at_result_iter_next(&iter, "XCTMS:") == FALSE)
+	if (g_at_result_iter_next(&iter, "+XCTMS:") == FALSE)
 		goto error;
 
 	if (g_at_result_iter_next_number(&iter, &value) == FALSE)
