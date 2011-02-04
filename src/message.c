@@ -46,6 +46,8 @@ static const char *message_state_to_string(enum message_state s)
 		return "sent";
 	case MESSAGE_STATE_FAILED:
 		return "failed";
+	case MESSAGE_STATE_CANCELLED:
+		return "cancelled";
 	}
 
 	return NULL;
