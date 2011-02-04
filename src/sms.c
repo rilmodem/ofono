@@ -66,6 +66,7 @@ struct ofono_sms {
 	struct sms_assembly *assembly;
 	guint ref;
 	GQueue *txq;
+	enum message_state tx_state;
 	unsigned long tx_counter;
 	guint tx_source;
 	struct ofono_message_waiting *mw;
@@ -615,21 +616,76 @@ static void tx_queue_entry_destroy_foreach(gpointer _entry, gpointer unused)
 	tx_queue_entry_destroy(_entry);
 }
 
+static void sms_tx_queue_remove_entry(struct ofono_sms *sms, GList *entry_list)
+{
+	struct tx_queue_entry *entry = entry_list->data;
+	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
+
+	g_queue_delete_link(sms->txq, entry_list);
+
+	DBG("%p", entry);
+
+	if (entry->cb)
+		entry->cb(sms->tx_state == MESSAGE_STATE_SENT, entry->data);
+
+	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY) {
+		enum ofono_history_sms_status hs;
+
+		switch(sms->tx_state) {
+		case MESSAGE_STATE_SENT:
+			hs = OFONO_HISTORY_SMS_STATUS_SUBMITTED;
+			break;
+		case MESSAGE_STATE_FAILED:
+			hs = OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED;
+			break;
+		case MESSAGE_STATE_CANCELLED:
+			hs = OFONO_HISTORY_SMS_STATUS_SUBMIT_CANCELLED;
+			break;
+		default:
+			ofono_error("Unexpected sms state %d", sms->tx_state);
+
+			return;
+		}
+
+		__ofono_history_sms_send_status(modem, &entry->uuid,
+								time(NULL), hs);
+	}
+
+	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS) {
+		struct message *m;
+
+		sms_tx_backup_free(sms->imsi, entry->id, entry->flags,
+					ofono_uuid_to_str(&entry->uuid));
+
+		m = g_hash_table_lookup(sms->messages, &entry->uuid);
+
+		if (m != NULL) {
+			message_set_state(m, sms->tx_state);
+			g_hash_table_remove(sms->messages, &entry->uuid);
+			message_emit_removed(m,
+					OFONO_MESSAGE_MANAGER_INTERFACE);
+			message_dbus_unregister(m);
+		}
+	}
+
+	tx_queue_entry_destroy(entry);
+}
+
 static void tx_finished(const struct ofono_error *error, int mr, void *data)
 {
 	struct ofono_sms *sms = data;
-	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	struct tx_queue_entry *entry = g_queue_peek_head(sms->txq);
 	gboolean ok = error->type == OFONO_ERROR_TYPE_NO_ERROR;
-	struct message *m = NULL;
 
-	DBG("tx_finished");
+	DBG("tx_finished %p", entry);
 
 	if (ok == FALSE) {
 		/* Retry again when back in online mode */
 		/* Note this does not increment retry count */
 		if (sms->registered == FALSE)
 			return;
+
+		sms->tx_state = MESSAGE_STATE_FAILED;
 
 		/* Retry done only for Network Timeout failure */
 		if (error->type == OFONO_ERROR_TYPE_CMS &&
@@ -673,47 +729,10 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		return;
 	}
 
+	sms->tx_state = MESSAGE_STATE_SENT;
+
 next_q:
-	entry = g_queue_pop_head(sms->txq);
-
-	if (entry->cb)
-		entry->cb(ok, entry->data);
-
-	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_RECORD_HISTORY) {
-		enum ofono_history_sms_status hs;
-
-		if (ok)
-			hs = OFONO_HISTORY_SMS_STATUS_SUBMITTED;
-		else
-			hs = OFONO_HISTORY_SMS_STATUS_SUBMIT_FAILED;
-
-		__ofono_history_sms_send_status(modem, &entry->uuid,
-						time(NULL), hs);
-	}
-
-	if (entry->flags & OFONO_SMS_SUBMIT_FLAG_EXPOSE_DBUS) {
-		enum message_state ms;
-
-		sms_tx_backup_free(sms->imsi, entry->id, entry->flags,
-					ofono_uuid_to_str(&entry->uuid));
-
-		if (ok)
-			ms = MESSAGE_STATE_SENT;
-		else
-			ms = MESSAGE_STATE_FAILED;
-
-		m = g_hash_table_lookup(sms->messages, &entry->uuid);
-
-		if (m != NULL) {
-			message_set_state(m, ms);
-			g_hash_table_remove(sms->messages, &entry->uuid);
-			message_emit_removed(m,
-					OFONO_MESSAGE_MANAGER_INTERFACE);
-			message_dbus_unregister(m);
-		}
-	}
-
-	tx_queue_entry_destroy(entry);
+	sms_tx_queue_remove_entry(sms, g_queue_peek_head_link(sms->txq));
 
 	if (sms->registered == FALSE)
 		return;
