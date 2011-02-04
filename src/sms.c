@@ -172,6 +172,7 @@ static const char *sms_alphabet_to_string(enum sms_alphabet alphabet)
 	case SMS_ALPHABET_DEFAULT:
 		return "default";
 	}
+
 	return NULL;
 }
 
