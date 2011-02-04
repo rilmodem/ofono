@@ -31,15 +31,6 @@ SMS
   Priority: Low
   Complexity: C8
 
-- See / Cancel pending SMS messages over DBus.  When oFono sends SMS messages
-  the method call is only returned when the message has been submitted to the
-  network.  Instead we should return an object path and allow cancellation of
-  pending messages.
-
-  Priority: High
-  Complexity: C2
-  Owner: Yang Gu <yang.gu@intel.com>
-
 - Asynchronously acknowledge SMS DELIVER messages sent by the SMS driver
   to core using ofono_sms_deliver_notify().  This may require the struct
   ofono_sms_driver to be extended with one more function pointer like:
