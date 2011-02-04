@@ -84,16 +84,6 @@ struct _GIsiPending {
 	uint8_t msgid;
 };
 
-static const struct sockaddr_pn namesrv = {
-	.spn_family = AF_PHONET,
-	.spn_resource = PN_NAMESERVICE,
-};
-
-static const struct sockaddr_pn commgr = {
-	.spn_family = AF_PHONET,
-	.spn_resource = PN_COMMGR,
-};
-
 static GIsiServiceMux *service_get(GIsiModem *modem, uint8_t resource)
 {
 	GIsiServiceMux *mux;
@@ -351,6 +341,11 @@ static gboolean modem_subs_update(gpointer data)
 	gpointer keyptr, value;
 
 	GIsiModem *modem = data;
+	struct sockaddr_pn commgr = {
+		.spn_family = AF_PHONET,
+		.spn_resource = PN_COMMGR,
+		.spn_dev = modem->device,
+	};
 	uint8_t msg[3 + 256] = {
 		0, PNS_SUBSCRIBED_RESOURCES_IND,
 		0,
@@ -387,6 +382,11 @@ static void modem_subs_update_when_idle(GIsiModem *modem)
 
 static void service_name_register(GIsiServiceMux *mux)
 {
+	struct sockaddr_pn namesrv = {
+		.spn_family = AF_PHONET,
+		.spn_resource = PN_NAMESERVICE,
+		.spn_dev = mux->modem->device,
+	};
 	uint8_t msg[] = {
 		0, PNS_NAME_ADD_REQ, 0, 0,
 		0, 0, 0, mux->resource,	/* 32-bit Big-Endian name */
@@ -411,6 +411,11 @@ static void service_name_register(GIsiServiceMux *mux)
 
 static void service_name_deregister(GIsiServiceMux *mux)
 {
+	struct sockaddr_pn namesrv = {
+		.spn_family = AF_PHONET,
+		.spn_resource = PN_NAMESERVICE,
+		.spn_dev = mux->modem->device,
+	};
 	const uint8_t msg[] = {
 		0, PNS_NAME_REMOVE_REQ, 0, 0,
 		0, 0, 0, mux->resource,
@@ -645,6 +650,7 @@ GIsiPending *g_isi_request_send(GIsiModem *modem, uint8_t resource,
 	struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
 		.spn_resource = resource,
+		.spn_dev = modem->device,
 	};
 
 	return g_isi_request_sendto(modem, &dst, buf, len, timeout, notify,
@@ -660,6 +666,7 @@ GIsiPending *g_isi_request_vsend(GIsiModem *modem, uint8_t resource,
 	struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
 		.spn_resource = resource,
+		.spn_dev = modem->device,
 	};
 
 	return g_isi_request_vsendto(modem, &dst, iov, iovlen, timeout, notify,
@@ -1042,6 +1049,7 @@ int g_isi_modem_send(GIsiModem *modem, uint8_t resource,
 	struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
 		.spn_resource = resource,
+		.spn_dev = modem->device,
 	};
 
 	return g_isi_modem_sendto(modem, &dst, buf, len);
@@ -1054,6 +1062,7 @@ int g_isi_modem_vsend(GIsiModem *modem, uint8_t resource,
 	struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
 		.spn_resource = resource,
+		.spn_dev = modem->device,
 	};
 
 	return g_isi_modem_vsendto(modem, &dst, iov, iovlen);
@@ -1129,9 +1138,10 @@ void g_isi_modem_set_debug(GIsiModem *modem, GIsiDebugFunc debug)
 static int version_get_send(GIsiModem *modem, GIsiPending *ping)
 {
 	GIsiServiceMux *mux = ping->service;
-	const struct sockaddr_pn dst = {
+	struct sockaddr_pn dst = {
 		.spn_family = AF_PHONET,
 		.spn_resource = mux->resource,
+		.spn_dev = modem->device,
 	};
 	uint8_t msg[] = {
 		ping->utid,	/* UTID */
