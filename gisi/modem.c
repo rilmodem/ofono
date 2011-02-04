@@ -406,7 +406,7 @@ static void service_name_register(GIsiServiceMux *mux)
 	msg[9] = object & 0xFF;
 
 	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
-		(void *)&namesrv, sizeof(namesrv));
+		(void *) &namesrv, sizeof(namesrv));
 }
 
 static void service_name_deregister(GIsiServiceMux *mux)
@@ -422,7 +422,7 @@ static void service_name_deregister(GIsiServiceMux *mux)
 	};
 
 	sendto(mux->modem->req_fd, msg, sizeof(msg), MSG_NOSIGNAL,
-		(void *)&namesrv, sizeof(namesrv));
+		(void *) &namesrv, sizeof(namesrv));
 }
 
 static void pending_destroy(gpointer value, gpointer user)
