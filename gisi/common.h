@@ -45,6 +45,7 @@ enum message_id {
 enum GIsiPhonetDevice {
 	PN_DEV_PC =	0x10,	/* PC Suite */
 	PN_DEV_HOST =	0x00,	/* Host modem */
+	PN_DEV_MODEM =	0x60,	/* Modem */
 	PN_DEV_SOS =	0x6C,	/* Symbian or Linux */
 };
 
