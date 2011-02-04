@@ -409,6 +409,14 @@ done:
 	dbus_message_unref(reply);
 }
 
+static void get_adapter_properties(const char *path, const char *handle,
+						gpointer user_data)
+{
+	bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
+			"GetProperties", adapter_properties_cb,
+			g_strdup(path), g_free, -1, DBUS_TYPE_INVALID);
+}
+
 static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 				void *user_data)
 {
@@ -541,6 +549,10 @@ static void bluetooth_ref(void)
 	adapter_address_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, g_free);
 
+	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
+				manager_properties_cb, NULL, NULL, -1,
+				DBUS_TYPE_INVALID);
+
 increment:
 	g_atomic_int_inc(&bluetooth_refcount);
 
@@ -576,9 +588,8 @@ int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 
 	g_hash_table_insert(uuid_hash, g_strdup(uuid), profile);
 
-	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
-				manager_properties_cb, NULL, NULL, -1,
-				DBUS_TYPE_INVALID);
+	g_hash_table_foreach(adapter_address_hash,
+				(GHFunc) get_adapter_properties, NULL);
 
 	return 0;
 }
