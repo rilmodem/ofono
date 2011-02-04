@@ -3,11 +3,13 @@
 
 import gobject
 import sys
+import os
 
 import dbus
 import dbus.mainloop.glib
 
 SCA = ""
+lock = "off"
 
 def clear_screen(numlines=100):
 	import os
@@ -71,6 +73,7 @@ def message_send(sms, number, value):
 
 def property_changed(property, value):
 	print "[1]:Message Manager property %s changed to %s" % (property, value)
+	print "[1]:press ENTER"
 
 def immediate_message(property, value):
 	print "[2]:Message Manager immediate message"
@@ -79,12 +82,16 @@ def immediate_message(property, value):
 		val = str(value[key])
 		print "[2]:%s = %s" % (key, val)
 
+	print "[2]:press ENTER"
+
 def incoming_message(property, value):
 	print "[3]:Message Manager incoming message"
 	print "[3]:Text::%s" % (property)
 	for key in value.keys():
 		val = str(value[key])
 		print "[3]:%s = %s" % (key, val)
+
+	print "[3]:press ENTER"
 
 def message_added(property, value):
 	print "[4]:Message Manager[Added]"
@@ -94,9 +101,12 @@ def message_added(property, value):
 		val = str(value[key])
 		print "[4]:%s = %s" % (key, val)
 
+	print "[4]:press ENTER"
+
 def message_removed(property):
 	print "[5]:Message Manager [removed]"
 	print "[5]: %s" % (property)
+	print "[5]:press ENTER"
 
 def print_sms_properties(sms):
 	global SCA
@@ -111,9 +121,88 @@ def print_sms_properties(sms):
 		else:
 			print "%s Message Manager rule disabled" % (p)
 
+def stdin_handler(fd, condition, sms, value, number):
+	global lock
+	in_key = os.read(fd.fileno(), 160).rstrip()
 
+	if lock == "off":
+		lock = "on"
+		if in_key == '0':
+			print_send_sms_menu()
+			sms_type = raw_input('Select SMS type: ')
+
+			if sms_type == '1':
+				message_send(sms, number, value)
+
+			elif sms_type == '2':
+				val = "abcde12345"
+				for i in range(30):
+					value = value + val
+
+				message_send(sms, number, value)
+
+			elif sms_type == '3':
+				value = "ÖÄÅöäåµʒ×cvcvbŋ"
+				message_send(sms, number, value)
+
+		elif in_key == '1':
+			message_delivery_report(sms, 1)
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(1)"+value+": UseDeliveryReports[TRUE]"))
+
+		elif in_key == '2':
+			message_delivery_report(sms, 0)
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(2) "+value+": UseDeliveryReports[FALSE]"))
+
+		elif in_key == '3':
+			message_service_center_address(sms, SCA)
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(3) "+value+": ServiceCenterAddress"))
+
+		elif in_key == '4':
+			message_bearer(sms, "ps-only")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(4) "+value+": Bearer[ps-only]"))
+
+		elif in_key == '5':
+			message_bearer(sms, "cs-only")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(5) "+value+": Bearer[cs-only]"))
+
+		elif in_key == '6':
+			message_bearer(sms, "ps-preferred")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms, number, ("(6) "+value+": Bearer[ps-preferred]"))
+
+		elif in_key == '7':
+			message_bearer(sms, "cs-preferred")
+			send_msg = raw_input('Send test message[y/n]?: ')
+			if send_msg == 'y':
+				message_send(sms,number, ("(7) "+value+": Bearer[cs-preferred]"))
+
+		elif in_key == 'x':
+			sys.exit(1)
+
+		clear_screen()
+		print_sms_properties(sms)
+		print_menu()
+		lock = "off"
+
+	return True
 
 if __name__ == "__main__":
+
+	if (len(sys.argv) < 3):
+		print "Usage: %s <phone_number> <test_message>" % (sys.argv[0])
+		sys.exit(1)
+
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 	bus = dbus.SystemBus()
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
@@ -130,84 +219,13 @@ if __name__ == "__main__":
 	sms.connect_to_signal("MessageAdded", message_added)
 	sms.connect_to_signal("MessageRemoved", message_removed)
 
-	if (len(sys.argv) < 3):
-		print "Usage: %s <phone_number> <test_message>" % (sys.argv[0])
-		sys.exit(1)
-
 	number = sys.argv[1]
 	value  = sys.argv[2]
 
 	clear_screen()
 	print_sms_properties(sms)
 	print_menu()
-	in_key = 'ok'
 
-	while in_key != 'x':
-		in_key = raw_input('Select any option: ')
-
-		if in_key == '0':
-			print_send_sms_menu()
-			sms_type = raw_input('Select SMS type: ')
-
-			if sms_type == '1':
-				message_send(sms, number, value)
-
-			if sms_type == '2':
-				val = "abcde12345"
-				for i in range(30):
-					value = value + val
-
-				message_send(sms, number, value)
-
-			if sms_type == '3':
-				value = "ÖÄÅöäåµʒ×cvcvbŋ"
-				message_send(sms, number, value)
-
-		if in_key == '1':
-			message_delivery_report(sms, 1)
-			send_msg = raw_input('Send test message[y/n]?: ')
-			if send_msg == 'y':
-				message_send(sms, number, ("(1)"+value+": UseDeliveryReports[TRUE]"))
-
-		if in_key == '2':
-			message_delivery_report(sms, 0)
-			send_msg = raw_input('Send test message[y/n]?: ')
-			if send_msg == 'y':
-				message_send(sms, number, ("(2) "+value+": UseDeliveryReports[FALSE]"))
-
-		if in_key == '3':
-			message_service_center_address(sms, SCA)
-			send_msg = raw_input('Send test message[y/n]?: ')
-			if send_msg == 'y':
-				message_send(sms, number, ("(3) "+value+": ServiceCenterAddress"))
-
-		if in_key == '4':
-			message_bearer(sms, "ps-only")
-			send_msg = raw_input('Send test message[y/n]?: ')
-			if send_msg == 'y':
-				message_send(sms, number, ("(4) "+value+": Bearer[ps-only]"))
-
-		if in_key == '5':
-			message_bearer(sms, "cs-only")
-			send_msg = raw_input('Send test message[y/n]?: ')
-			if send_msg == 'y':
-				message_send(sms, number, ("(5) "+value+": Bearer[cs-only]"))
-
-		if in_key == '6':
-			message_bearer(sms, "ps-preferred")
-			send_msg = raw_input('Send test message[y/n]?: ')
-			if send_msg == 'y':
-				message_send(sms, number, ("(6) "+value+": Bearer[ps-preferred]"))
-
-		if in_key == '7':
-			message_bearer(sms, "cs-preferred")
-			send_msg = raw_input('Send test message[y/n]?: ')
-			if send_msg == 'y':
-				message_send(sms,number, ("(7) "+value+": Bearer[cs-preferred]"))
-
-		clear_screen()
-		print_sms_properties(sms)
-		print_menu()
-
+	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler, sms, value, number)
 	mainloop = gobject.MainLoop()
 	mainloop.run()
