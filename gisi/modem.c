@@ -68,6 +68,7 @@ struct _GIsiModem {
 	GIsiDebugFunc debug;
 	GIsiNotifyFunc trace;
 	void *opaque;
+	unsigned long flags;
 };
 
 struct _GIsiPending {
@@ -510,6 +511,22 @@ void *g_isi_modem_set_userdata(GIsiModem *modem, void *data)
 void *g_isi_modem_get_userdata(GIsiModem *modem)
 {
 	return modem->opaque;
+}
+
+unsigned long g_isi_modem_flags(GIsiModem *modem)
+{
+	if (modem == NULL)
+		return 0;
+
+	return modem->flags;
+}
+
+void g_isi_modem_set_flags(GIsiModem *modem, unsigned long flags)
+{
+	if (modem == NULL)
+		return;
+
+	modem->flags = flags;
 }
 
 static uint8_t service_next_utid(GIsiServiceMux *mux)
