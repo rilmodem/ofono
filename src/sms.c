@@ -757,9 +757,6 @@ static gboolean tx_next(gpointer user_data)
 
 	sms->tx_source = 0;
 
-	if (entry == NULL)
-		return FALSE;
-
 	if (sms->registered == FALSE)
 		return FALSE;
 
