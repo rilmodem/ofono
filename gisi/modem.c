@@ -341,16 +341,21 @@ static gboolean modem_subs_update(gpointer data)
 	gpointer keyptr, value;
 
 	GIsiModem *modem = data;
+	gboolean legacy = modem->flags & GISI_MODEM_FLAG_USE_LEGACY_SUBSCRIBE;
 	struct sockaddr_pn commgr = {
 		.spn_family = AF_PHONET,
 		.spn_resource = PN_COMMGR,
 		.spn_dev = modem->device,
 	};
-	uint8_t msg[3 + 256] = {
-		0, PNS_SUBSCRIBED_RESOURCES_IND,
-		0,
+	uint8_t msg[4 + 1024] = {
+		0,	/* UTID */
+		legacy ? PNS_SUBSCRIBED_RESOURCES_IND :
+			PNS_SUBSCRIBED_RESOURCES_EXTEND_IND,
+		0,	/* Count */
+		0,	/* Filler */
 	};
 	uint8_t count = 0;
+	size_t len;
 
 	modem->subs_source = 0;
 
@@ -359,14 +364,22 @@ static gboolean modem_subs_update(gpointer data)
 	while (g_hash_table_iter_next(&iter, &keyptr, &value)) {
 		GIsiServiceMux *mux = value;
 
-		if (mux->subscriptions > 0) {
+		if (mux->subscriptions == 0)
+			continue;
+
+		if (legacy)
 			msg[3 + count] = mux->resource;
-			count++;
-		}
+		else
+			/* Resource field is 32bit and Little-endian */
+			msg[4 + count * 4 + 3] = mux->resource;
+
+		count++;
 	}
+
+	len = legacy ? 3 + count : 4 + count * 4;
 	msg[2] = count;
 
-	sendto(modem->ind_fd, msg, 3 + msg[2], MSG_NOSIGNAL, (void *)&commgr,
+	sendto(modem->ind_fd, msg, len, MSG_NOSIGNAL, (void *) &commgr,
 		sizeof(commgr));
 
 	return FALSE;
