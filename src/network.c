@@ -42,7 +42,8 @@
 
 enum network_registration_mode {
 	NETWORK_REGISTRATION_MODE_AUTO =	0,
-	NETWORK_REGISTRATION_MODE_MANUAL =	1,
+	NETWORK_REGISTRATION_MODE_AUTO_ONLY =	1,
+	NETWORK_REGISTRATION_MODE_MANUAL =	2,
 };
 
 #define SETTINGS_STORE "netreg"
@@ -100,6 +101,8 @@ static const char *registration_mode_to_string(int mode)
 	switch (mode) {
 	case NETWORK_REGISTRATION_MODE_AUTO:
 		return "auto";
+	case NETWORK_REGISTRATION_MODE_AUTO_ONLY:
+		return "auto-only";
 	case NETWORK_REGISTRATION_MODE_MANUAL:
 		return "manual";
 	}
@@ -145,6 +148,42 @@ static char **network_operator_technologies(struct network_operator_data *opd)
 	return techs;
 }
 
+static void registration_status_callback(const struct ofono_error *error,
+					int status, int lac, int ci, int tech,
+					void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBG("Error during registration status query");
+		return;
+	}
+
+	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
+}
+
+static void init_register(const struct ofono_error *error, void *data)
+{
+	struct ofono_netreg *netreg = data;
+
+	if (netreg->driver->registration_status == NULL)
+		return;
+
+	netreg->driver->registration_status(netreg,
+					registration_status_callback, netreg);
+}
+
+static void enforce_auto_only(struct ofono_netreg *netreg)
+{
+	if (netreg->mode != NETWORK_REGISTRATION_MODE_MANUAL)
+		return;
+
+	if (netreg->driver->register_auto == NULL)
+		return;
+
+	netreg->driver->register_auto(netreg, init_register, netreg);
+}
+
 static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 {
 	DBusConnection *conn;
@@ -153,6 +192,9 @@ static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 
 	if (netreg->mode == mode)
 		return;
+
+	if (mode == NETWORK_REGISTRATION_MODE_AUTO_ONLY)
+		enforce_auto_only(netreg);
 
 	netreg->mode = mode;
 
@@ -170,20 +212,6 @@ static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
 					"Mode", DBUS_TYPE_STRING, &strmode);
-}
-
-static void registration_status_callback(const struct ofono_error *error,
-					int status, int lac, int ci, int tech,
-					void *data)
-{
-	struct ofono_netreg *netreg = data;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Error during registration status query");
-		return;
-	}
-
-	ofono_netreg_status_notify(netreg, status, lac, ci, tech);
 }
 
 static void register_callback(const struct ofono_error *error, void *data)
@@ -210,15 +238,6 @@ out:
 		return;
 
 	netreg->driver->registration_status(netreg,
-					registration_status_callback, netreg);
-}
-
-static void init_register(const struct ofono_error *error, void *data)
-{
-	struct ofono_netreg *netreg = data;
-
-	if (netreg->driver->registration_status)
-		netreg->driver->registration_status(netreg,
 					registration_status_callback, netreg);
 }
 
@@ -588,6 +607,9 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 	struct network_operator_data *opd = data;
 	struct ofono_netreg *netreg = opd->netreg;
 
+	if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO_ONLY)
+		return __ofono_error_access_denied(msg);
+
 	if (netreg->pending)
 		return __ofono_error_busy(msg);
 
@@ -830,6 +852,9 @@ static DBusMessage *network_register(DBusConnection *conn,
 {
 	struct ofono_netreg *netreg = data;
 
+	if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO_ONLY)
+		return __ofono_error_access_denied(msg);
+
 	if (netreg->pending)
 		return __ofono_error_busy(msg);
 
@@ -948,6 +973,9 @@ static DBusMessage *network_scan(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_netreg *netreg = data;
+
+	if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO_ONLY)
+		return __ofono_error_access_denied(msg);
 
 	if (netreg->pending)
 		return __ofono_error_busy(msg);
@@ -1394,7 +1422,7 @@ static void init_registration_status(const struct ofono_error *error,
 					signal_strength_callback, netreg);
 	}
 
-	if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO &&
+	if (netreg->mode != NETWORK_REGISTRATION_MODE_MANUAL &&
 		(status == NETWORK_REGISTRATION_STATUS_NOT_REGISTERED ||
 			status == NETWORK_REGISTRATION_STATUS_DENIED ||
 			status == NETWORK_REGISTRATION_STATUS_UNKNOWN)) {
@@ -1619,6 +1647,44 @@ static void sim_spn_read_cb(int ok, int length, int record,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
 					"Name", DBUS_TYPE_STRING,
 					&operator);
+	}
+}
+
+static void sim_csp_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	int i;
+
+	if (!ok)
+		return;
+
+	if (length < 18 || record_length < 18 || length < record_length)
+		return;
+
+	/*
+	 * According to CPHS 4.2, EFcsp is an array of two-byte service
+	 * entries, each consisting of a one byte service group
+	 * identifier followed by 8 bits; each bit is indicating
+	 * availability of a specific service or feature.
+	 *
+	 * The PLMN mode bit, if present, indicates whether manual
+	 * operator selection should be disabled or enabled. When
+	 * unset, the device is forced to automatic mode; when set,
+	 * manual selection is to be enabled. The latter is also the
+	 * default.
+	 */
+	for (i = 0; i < record_length / 2; i++) {
+
+		if (data[i * 2] != SIM_CSP_ENTRY_VALUE_ADDED_SERVICES)
+			continue;
+
+		if ((data[i * 2 + 1] & 0x80) != 0)
+			return;
+
+		set_registration_mode(netreg,
+					NETWORK_REGISTRATION_MODE_AUTO_ONLY);
 	}
 }
 
@@ -1847,7 +1913,8 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 	mode = g_key_file_get_integer(netreg->settings, SETTINGS_GROUP,
 					"Mode", NULL);
 
-	if (mode >= 0 && mode <= 1)
+	if (mode == NETWORK_REGISTRATION_MODE_AUTO ||
+			mode == NETWORK_REGISTRATION_MODE_MANUAL)
 		netreg->mode = mode;
 
 	g_key_file_set_integer(netreg->settings, SETTINGS_GROUP,
@@ -2022,6 +2089,10 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFSPDI_FILEID,
 						sim_spn_spdi_changed, netreg,
 						NULL);
+
+		ofono_sim_read(netreg->sim_context, SIM_EF_CPHS_CSP_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				sim_csp_read_cb, netreg);
 	}
 
 	__ofono_atom_register(netreg->atom, netreg_unregister);
