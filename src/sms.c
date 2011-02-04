@@ -767,6 +767,8 @@ static gboolean tx_next(gpointer user_data)
 			|| (entry->num_pdus - entry->cur_pdu) > 1)
 		send_mms = 1;
 
+	sms->tx_state = MESSAGE_STATE_PENDING;
+
 	sms->driver->submit(sms, pdu->pdu, pdu->pdu_len, pdu->tpdu_len,
 				send_mms, tx_finished, sms);
 
@@ -1054,6 +1056,91 @@ static DBusMessage *sms_get_messages(DBusConnection *conn, DBusMessage *msg,
 	return reply;
 }
 
+static gboolean uuid_from_message_path(const char *path,
+						struct ofono_uuid *uuid)
+{
+	const char *uuidstr;
+	size_t len;
+
+	len = strlen(path);
+
+	if (len < OFONO_SHA1_UUID_LEN * 2)
+		return FALSE;
+
+	uuidstr = path + len - OFONO_SHA1_UUID_LEN * 2;
+
+	if (decode_hex_own_buf(uuidstr, -1, NULL, 0, uuid->uuid) == NULL)
+		return FALSE;
+
+	return TRUE;
+}
+
+static gint entry_compare_by_uuid(gconstpointer a, gconstpointer b)
+{
+	const struct tx_queue_entry *entry = a;
+	const char *uuid = b;
+
+	return memcmp(&entry->uuid, uuid, sizeof(entry->uuid));
+}
+
+static DBusMessage *sms_cancel_message(DBusConnection *conn, DBusMessage *msg,
+								void *data)
+{
+	struct ofono_sms *sms = data;
+	char *path;
+	struct ofono_uuid uuid;
+	GList *l;
+	struct tx_queue_entry *entry;
+
+	if (sms->pending)
+		return __ofono_error_busy(msg);
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &path,
+					DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (path[0] == '\0')
+		return __ofono_error_invalid_args(msg);
+
+	if (uuid_from_message_path(path, &uuid) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	l = g_queue_find_custom(sms->txq, uuid.uuid, entry_compare_by_uuid);
+
+	if (l == NULL)
+		return __ofono_error_not_found(msg);
+
+	entry = l->data;
+
+	if (entry == g_queue_peek_head(sms->txq)) {
+		/*
+		 * Fail if any pdu was already transmitted or if we are
+		 * waiting the answer from driver.
+		 */
+		if (entry->cur_pdu > 0 ||
+					sms->tx_state == MESSAGE_STATE_PENDING)
+			return __ofono_error_failed(msg);
+
+		/*
+		 * Make sure we don't call tx_next() if there are no entries
+		 * and that next entry doesn't have to wait a 'retry time'
+		 * from this one.
+		 */
+		if (sms->tx_source) {
+			g_source_remove(sms->tx_source);
+			sms->tx_source = 0;
+
+			if (g_queue_get_length(sms->txq) > 1)
+				sms->tx_source = g_timeout_add(0, tx_next, sms);
+		}
+	}
+
+	sms->tx_state = MESSAGE_STATE_CANCELLED;
+	sms_tx_queue_remove_entry(sms, l);
+
+	return dbus_message_new_method_return(msg);
+}
+
 static GDBusMethodTable sms_manager_methods[] = {
 	{ "GetProperties",    "",    "a{sv}",        sms_get_properties,
 						G_DBUS_METHOD_FLAG_ASYNC },
@@ -1061,6 +1148,7 @@ static GDBusMethodTable sms_manager_methods[] = {
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SendMessage",      "ss",  "o",             sms_send_message,
 						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "CancelMessage",    "o",   "",              sms_cancel_message },
 	{ "GetMessages",       "",    "a(oa{sv})",    sms_get_messages },
 	{ }
 };
