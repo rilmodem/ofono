@@ -144,18 +144,20 @@ static const char *sms_bearer_to_string(int bearer)
 	return "unknown";
 }
 
-static int sms_bearer_from_string(const char *str)
+static gboolean sms_bearer_from_string(const char *str, int *bearer)
 {
 	if (g_str_equal(str, "ps-only"))
-		return 0;
+		*bearer = 0;
 	else if (g_str_equal(str, "cs-only"))
-		return 1;
+		*bearer = 1;
 	else if (g_str_equal(str, "ps-preferred"))
-		return 2;
+		*bearer = 2;
 	else if (g_str_equal(str, "cs-preferred"))
-		return 3;
+		*bearer = 3;
+	else
+		return FALSE;
 
-	return -1;
+	return TRUE;
 }
 
 static const char *sms_alphabet_to_string(enum sms_alphabet alphabet)
@@ -535,8 +537,7 @@ static DBusMessage *sms_set_property(DBusConnection *conn, DBusMessage *msg,
 
 		dbus_message_iter_get_basic(&var, &value);
 
-		bearer = sms_bearer_from_string(value);
-		if (bearer < 0)
+		if (sms_bearer_from_string(value, &bearer) != TRUE)
 			return __ofono_error_invalid_format(msg);
 
 		if (sms->driver->bearer_set == NULL ||
