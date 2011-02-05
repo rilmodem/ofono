@@ -168,7 +168,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (oc && (nc == NULL || (nc->id > oc->id))) {
 			enum ofono_disconnect_reason reason;
 
-			if (vd->local_release & (0x1 << oc->id))
+			if (vd->local_release & (1 << oc->id))
 				reason = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
 			else
 				reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
@@ -271,8 +271,8 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		for (l = vd->calls; l; l = l->next) {
 			call = l->data;
 
-			if (req->affected_types & (0x1 << call->status))
-				vd->local_release |= (0x1 << call->id);
+			if (req->affected_types & (1 << call->status))
+				vd->local_release |= (1 << call->id);
 		}
 	}
 
@@ -293,7 +293,7 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
-		vd->local_release = 0x1 << req->id;
+		vd->local_release = 1 << req->id;
 
 	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
 			clcc_poll_cb, req->vc, NULL);
