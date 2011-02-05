@@ -33,7 +33,7 @@
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/voicecall.h>
-#include <common.h>
+#include "common.h"
 #include "gatchat.h"
 #include "gatresult.h"
 
@@ -337,7 +337,7 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	for (l = vd->calls; l; l = l->next) {
 		call = l->data;
 
-		if (call->status != 0)
+		if (call->status != CALL_STATUS_ACTIVE)
 			continue;
 
 		call->status = CALL_STATUS_HELD;
@@ -436,7 +436,7 @@ static void hfp_release_all_held(struct ofono_voicecall *vc,
 				ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	unsigned int held_status = 0x1 << 1;
+	unsigned int held_status = 1 << CALL_STATUS_HELD;
 
 	if (vd->ag_mpty_features & AG_CHLD_0) {
 		hfp_template("AT+CHLD=0", vc, generic_cb, held_status,
@@ -451,7 +451,8 @@ static void hfp_set_udub(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	unsigned int incoming_or_waiting = (0x1 << 4) | (0x1 << 5);
+	unsigned int incoming_or_waiting =
+		(1 << CALL_STATUS_INCOMING) | (1 << CALL_STATUS_WAITING);
 
 	if (vd->ag_mpty_features & AG_CHLD_0) {
 		hfp_template("AT+CHLD=0", vc, generic_cb, incoming_or_waiting,
@@ -647,7 +648,8 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 
 	DBG("ccwa_notify: %s %d %d", num, num_type, validity);
 
-	call = create_call(vc, 0, 1, 5, num, num_type, validity);
+	call = create_call(vc, 0, 1, CALL_STATUS_WAITING, num, num_type,
+			    validity);
 
 	if (call == NULL) {
 		ofono_error("malloc call struct failed.  "
