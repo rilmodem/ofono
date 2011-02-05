@@ -294,6 +294,18 @@ void foo()	// Wrong
 {
 }
 
+M16: Don't use hex value with shift operators
+==============================================
+The expression argument to the shift operators should not be in hex.
+
+Example:
+
+1)
+1 << y
+
+2)
+0x1 << y	// Wrong
+
 O1: Shorten the name
 ====================
 Better to use abbreviation, rather than full name, to name a variable,
