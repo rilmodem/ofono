@@ -38,6 +38,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
+#include "common.h"
 #include "huaweimodem.h"
 
 static const char *none_prefix[] = { NULL };
@@ -170,8 +171,9 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	int id;
 
 	/* CRING can repeat, ignore if we already have an incoming call */
-	if (g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
-					at_util_call_compare_by_status))
+	if (g_slist_find_custom(vd->calls,
+				GINT_TO_POINTER(CALL_STATUS_INCOMING),
+				at_util_call_compare_by_status))
 		return;
 
 	g_at_result_iter_init(&iter, result);
@@ -192,7 +194,7 @@ static void cring_notify(GAtResult *result, gpointer user_data)
 	id = ofono_voicecall_get_next_callid(vc);
 
 	/* Generate an incoming call */
-	create_call(vc, type, 1, 4, NULL, 128, 2, id);
+	create_call(vc, type, 1, CALL_STATUS_INCOMING, NULL, 128, 2, id);
 
 	/* Assume the CLIP always arrives, and we signal the call there */
 	DBG("%d", type);
@@ -208,8 +210,9 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 	GSList *l;
 	struct ofono_call *call;
 
-	l = g_slist_find_custom(vd->calls, GINT_TO_POINTER(4),
-					at_util_call_compare_by_status);
+	l = g_slist_find_custom(vd->calls,
+				GINT_TO_POINTER(CALL_STATUS_INCOMING),
+				at_util_call_compare_by_status);
 	if (l == NULL) {
 		ofono_error("CLIP for unknown call");
 		return;
@@ -307,7 +310,8 @@ static void orig_notify(GAtResult *result, gpointer user_data)
 
 	ofono_info("Call origin: id %d type %d", call_id, call_type);
 
-	call = create_call(vc, call_type, 0, 2, NULL, 128, 2, call_id);
+	call = create_call(vc, call_type, 0, CALL_STATUS_DIALING, NULL, 128, 2,
+			    call_id);
 	if (call == NULL) {
 		ofono_error("Unable to malloc, call tracking will fail!");
 		return;
@@ -345,7 +349,7 @@ static void conf_notify(GAtResult *result, gpointer user_data)
 
 	/* Set call to alerting */
 	call = l->data;
-	call->status = 3;
+	call->status = CALL_STATUS_ALERTING;
 
 	if (call->type == 0)
 		ofono_voicecall_notify(vc, call);
@@ -382,7 +386,7 @@ static void conn_notify(GAtResult *result, gpointer user_data)
 
 	/* Set call to active */
 	call = l->data;
-	call->status = 0;
+	call->status = CALL_STATUS_ACTIVE;
 
 	if (call->type == 0)
 		ofono_voicecall_notify(vc, call);
