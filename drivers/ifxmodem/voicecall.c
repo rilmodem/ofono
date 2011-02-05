@@ -160,7 +160,7 @@ static void xcallstat_notify(GAtResult *result, gpointer user_data)
 	if (status == CALL_STATUS_DISCONNECTED) {
 		enum ofono_disconnect_reason r;
 
-		if (vd->local_release & (0x1 << call->id))
+		if (vd->local_release & (1 << call->id))
 			r = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
 		else
 			r = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
@@ -168,7 +168,7 @@ static void xcallstat_notify(GAtResult *result, gpointer user_data)
 		if (call->type == 0)
 			ofono_voicecall_disconnected(vc, call->id, r, NULL);
 
-		vd->local_release &= ~(0x1 << call->id);
+		vd->local_release &= ~(1 << call->id);
 		vd->calls = g_slist_remove(vd->calls, call);
 		g_free(call);
 
@@ -227,8 +227,8 @@ static void generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		for (l = vd->calls; l; l = l->next) {
 			call = l->data;
 
-			if (req->affected_types & (0x1 << call->status))
-				vd->local_release |= (0x1 << call->id);
+			if (req->affected_types & (1 << call->status))
+				vd->local_release |= (1 << call->id);
 		}
 	}
 
@@ -245,7 +245,7 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
-		vd->local_release |= 0x1 << req->id;
+		vd->local_release |= 1 << req->id;
 
 	req->cb(&error, req->data);
 }
