@@ -121,7 +121,7 @@ unsigned int __ofono_modem_callid_next(struct ofono_modem *modem)
 	unsigned int i;
 
 	for (i = 1; i < sizeof(modem->call_ids) * 8; i++) {
-		if (modem->call_ids & (0x1 << i))
+		if (modem->call_ids & (1 << i))
 			continue;
 
 		return i;
@@ -132,12 +132,12 @@ unsigned int __ofono_modem_callid_next(struct ofono_modem *modem)
 
 void __ofono_modem_callid_hold(struct ofono_modem *modem, int id)
 {
-	modem->call_ids |= (0x1 << id);
+	modem->call_ids |= (1 << id);
 }
 
 void __ofono_modem_callid_release(struct ofono_modem *modem, int id)
 {
-	modem->call_ids &= ~(0x1 << id);
+	modem->call_ids &= ~(1 << id);
 }
 
 void ofono_modem_set_data(struct ofono_modem *modem, void *data)
