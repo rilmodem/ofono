@@ -423,13 +423,13 @@ struct txq_backup_entry {
 
 static inline gboolean is_bit_set(unsigned char oct, int bit)
 {
-	int mask = 0x1 << bit;
+	int mask = 1 << bit;
 	return oct & mask ? TRUE : FALSE;
 }
 
 static inline unsigned char bit_field(unsigned char oct, int start, int num)
 {
-	unsigned char mask = (0x1 << num) - 1;
+	unsigned char mask = (1 << num) - 1;
 
 	return (oct >> start) & mask;
 }
