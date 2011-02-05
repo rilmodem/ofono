@@ -148,8 +148,8 @@ static void ste_generic_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		for (l = vd->calls; l; l = l->next) {
 			call = l->data;
 
-			if (req->affected_types & (0x1 << call->status))
-				vd->local_release |= (0x1 << call->id);
+			if (req->affected_types & (1 << call->status))
+				vd->local_release |= (1 << call->id);
 		}
 	}
 
@@ -166,7 +166,7 @@ static void release_id_cb(gboolean ok, GAtResult *result,
 	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (ok)
-		vd->local_release = 0x1 << req->id;
+		vd->local_release = 1 << req->id;
 
 	req->cb(&error, req->data);
 }
@@ -481,7 +481,7 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 
 		existing_call->status = status;
 
-		if (vd->local_release & (0x1 << existing_call->id))
+		if (vd->local_release & (1 << existing_call->id))
 			reason = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
 		else
 			reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
