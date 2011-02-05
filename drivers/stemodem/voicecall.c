@@ -255,8 +255,10 @@ static void ste_hangup(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	unsigned int active_dial_alert_or_incoming =
-			(0x1 << CALL_STATUS_ACTIVE) | (0x1 << CALL_STATUS_DIALING) |
-			(0x1 << CALL_STATUS_ALERTING) | (0x1 << CALL_STATUS_INCOMING);
+			(1 << CALL_STATUS_ACTIVE) |
+			(1 << CALL_STATUS_DIALING) |
+			(1 << CALL_STATUS_ALERTING) |
+			(1 << CALL_STATUS_INCOMING);
 
 	ste_template("AT+CHUP", vc, ste_generic_cb,
 			active_dial_alert_or_incoming, cb, data);
@@ -271,7 +273,7 @@ static void ste_hold_all_active(struct ofono_voicecall *vc,
 static void ste_release_all_held(struct ofono_voicecall *vc,
 				ofono_voicecall_cb_t cb, void *data)
 {
-	unsigned int held = 0x1 << CALL_STATUS_HELD;
+	unsigned int held = 1 << CALL_STATUS_HELD;
 
 	ste_template("AT+CHLD=0", vc, ste_generic_cb, held, cb, data);
 }
@@ -280,7 +282,7 @@ static void ste_set_udub(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	unsigned int incoming_or_waiting =
-			(0x1 << CALL_STATUS_INCOMING) | (0x1 << CALL_STATUS_WAITING);
+			(1 << CALL_STATUS_INCOMING) | (1 << CALL_STATUS_WAITING);
 
 	ste_template("AT+CHLD=0", vc, ste_generic_cb, incoming_or_waiting,
 			cb, data);
@@ -289,7 +291,7 @@ static void ste_set_udub(struct ofono_voicecall *vc,
 static void ste_release_all_active(struct ofono_voicecall *vc,
 					ofono_voicecall_cb_t cb, void *data)
 {
-	unsigned int active = 0x1 << CALL_STATUS_ACTIVE;
+	unsigned int active = 1 << CALL_STATUS_ACTIVE;
 
 	ste_template("AT+CHLD=1", vc, ste_generic_cb, active, cb, data);
 }
@@ -356,7 +358,8 @@ static void ste_deflect(struct ofono_voicecall *vc,
 			ofono_voicecall_cb_t cb, void *data)
 {
 	char buf[128];
-	unsigned int incoming_or_waiting = (0x1 << 4) | (0x1 << 5);
+	unsigned int incoming_or_waiting =
+		(1 << CALL_STATUS_INCOMING) | (1 << CALL_STATUS_WAITING);
 
 	snprintf(buf, sizeof(buf), "AT+CTFR=\"%s\",%d", ph->number, ph->type);
 	ste_template(buf, vc, ste_generic_cb, incoming_or_waiting, cb, data);
