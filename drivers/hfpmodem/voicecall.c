@@ -229,7 +229,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (oc && (nc == NULL || (nc->id > oc->id))) {
 			enum ofono_disconnect_reason reason;
 
-			if (vd->local_release & (0x1 << oc->id))
+			if (vd->local_release & (1 << oc->id))
 				reason = OFONO_DISCONNECT_REASON_LOCAL_HANGUP;
 			else
 				reason = OFONO_DISCONNECT_REASON_REMOTE_HANGUP;
