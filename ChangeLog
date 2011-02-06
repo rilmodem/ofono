@@ -1,3 +1,13 @@
+ver 0.41:
+	Fix issue with SIM callback handling.
+	Fix issue with XTMS handling and IFX modem.
+	Add support for alphabets and SMS encoding.
+	Add support for generic PIN retries handling.
+	Add support for PIN retries and MBM modem.
+	Add support for radio settings and MBM modem.
+	Add support for cell broadcast and STE modem.
+	Add support for handling ECAV status Released.
+
 ver 0.40:
 	Fix issue with MessageCenter and MessageProxy settings.
 	Fix issue with voice call support and Calypso modem.
