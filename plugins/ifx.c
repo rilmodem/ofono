@@ -524,7 +524,7 @@ static gboolean mux_timeout_cb(gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct ifx_data *data = ofono_modem_get_data(modem);
 
-	ofono_error("Timeout with multiplexer setup");
+	ofono_error("Timeout with modem or multiplexer setup");
 
 	data->mux_init_timeout = 0;
 
@@ -537,6 +537,56 @@ static gboolean mux_timeout_cb(gpointer user_data)
 	ofono_modem_set_powered(modem, FALSE);
 
 	return FALSE;
+}
+
+static void dev_ver_selftest_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+
+	if (ok)
+		return;
+
+	ofono_error("at@vers:device_version_id()-FAILED");
+
+	if (data->mux_init_timeout > 0) {
+		g_source_remove(data->mux_init_timeout);
+		data->mux_init_timeout = 0;
+	}
+
+	g_at_chat_unref(data->dlcs[AUX_DLC]);
+	data->dlcs[AUX_DLC] = NULL;
+
+	g_io_channel_unref(data->device);
+	data->device = NULL;
+
+	ofono_modem_set_powered(modem, FALSE);
+}
+
+static void rtc_gti_selftest_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+
+	if (ok)
+		return;
+
+	ofono_error("at@rtc:rtc_gti_test_verify_32khz()-FAILED");
+
+	if (data->mux_init_timeout > 0) {
+		g_source_remove(data->mux_init_timeout);
+		data->mux_init_timeout = 0;
+	}
+
+	g_at_chat_unref(data->dlcs[AUX_DLC]);
+	data->dlcs[AUX_DLC] = NULL;
+
+	g_io_channel_unref(data->device);
+	data->device = NULL;
+
+	ofono_modem_set_powered(modem, FALSE);
 }
 
 static int ifx_enable(struct ofono_modem *modem)
@@ -592,12 +642,24 @@ static int ifx_enable(struct ofono_modem *modem)
 	g_at_chat_send(chat, "ATE0 +CMEE=1", NULL,
 					NULL, NULL, NULL);
 
+	/* Execute modem self tests */
+	g_at_chat_send(chat, "at@rtc:rtc_gti_test_verify_32khz()", NULL,
+					rtc_gti_selftest_cb, modem, NULL);
+
+	g_at_chat_send(chat, "at@vers:device_version_id()", NULL,
+					dev_ver_selftest_cb, modem, NULL);
+
+	/* Enable multiplexer */
 	data->frame_size = 1509;
 
 	g_at_chat_send(chat, "AT+CMUX=0,0,,1509,10,3,30,,", NULL,
 					mux_setup_cb, modem, NULL);
 
-	data->mux_init_timeout = g_timeout_add_seconds(5, mux_timeout_cb,
+	/*
+	 * Total self test execution time is around 2 seconds. Use
+	 * 10 seconds timeout to cover self tests and multiplexer setup.
+	 */
+	data->mux_init_timeout = g_timeout_add_seconds(10, mux_timeout_cb,
 								modem);
 
 	data->dlcs[AUX_DLC] = chat;
