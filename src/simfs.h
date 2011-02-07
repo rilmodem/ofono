@@ -29,6 +29,13 @@ struct sim_fs *sim_fs_new(struct ofono_sim *sim,
 				const struct ofono_sim_driver *driver);
 struct ofono_sim_context *sim_fs_context_new(struct sim_fs *fs);
 
+unsigned int sim_fs_file_watch_add(struct ofono_sim_context *context,
+					int id, ofono_sim_file_changed_cb_t cb,
+					void *userdata,
+					ofono_destroy_func destroy);
+void sim_fs_file_watch_remove(struct ofono_sim_context *context,
+					unsigned int id);
+
 int sim_fs_read(struct ofono_sim_context *context, int id,
 		enum ofono_sim_file_structure expected_type,
 		unsigned short offset, unsigned short num_bytes,

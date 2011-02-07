@@ -109,8 +109,14 @@ void sim_fs_free(struct sim_fs *fs)
 	g_free(fs);
 }
 
+struct file_watch {
+	struct ofono_watchlist_item item;
+	int ef;
+};
+
 struct ofono_sim_context {
 	struct sim_fs *fs;
+	struct ofono_watchlist *file_watches;
 };
 
 struct sim_fs *sim_fs_new(struct ofono_sim *sim,
@@ -164,7 +170,40 @@ void sim_fs_context_free(struct ofono_sim_context *context)
 		g_queue_remove(context->fs->op_q, op);
 	}
 
+	if (context->file_watches)
+		__ofono_watchlist_free(context->file_watches);
+
 	g_free(context);
+}
+
+unsigned int sim_fs_file_watch_add(struct ofono_sim_context *context, int id,
+					ofono_sim_file_changed_cb_t cb,
+					void *userdata,
+					ofono_destroy_func destroy)
+{
+	struct file_watch *watch;
+
+	if (cb == NULL)
+		return 0;
+
+	if (context->file_watches == NULL)
+		context->file_watches = __ofono_watchlist_new(g_free);
+
+	watch = g_new0(struct file_watch, 1);
+
+	watch->ef = id;
+	watch->item.notify = cb;
+	watch->item.notify_data = userdata;
+	watch->item.destroy = destroy;
+
+	return __ofono_watchlist_add_item(context->file_watches,
+					(struct ofono_watchlist_item *) watch);
+}
+
+void sim_fs_file_watch_remove(struct ofono_sim_context *context,
+				unsigned int id)
+{
+	__ofono_watchlist_remove_item(context->file_watches, id);
 }
 
 static void sim_fs_end_current(struct sim_fs *fs)
