@@ -502,14 +502,22 @@ GIsiModem *g_isi_modem_create_by_name(const char *name)
 
 void *g_isi_modem_set_userdata(GIsiModem *modem, void *data)
 {
-	void *old = modem->opaque;
+	void *old;
 
+	if (modem == NULL)
+		return NULL;
+
+	old = modem->opaque;
 	modem->opaque = data;
+
 	return old;
 }
 
 void *g_isi_modem_get_userdata(GIsiModem *modem)
 {
+	if (modem == NULL)
+		return NULL;
+
 	return modem->opaque;
 }
 
