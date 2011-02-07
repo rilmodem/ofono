@@ -85,6 +85,7 @@ struct sim_fs {
 	int fd;
 	struct ofono_sim *sim;
 	const struct ofono_sim_driver *driver;
+	GSList *contexts;
 };
 
 void sim_fs_free(struct sim_fs *fs)
@@ -105,6 +106,9 @@ void sim_fs_free(struct sim_fs *fs)
 		g_queue_foreach(fs->op_q, (GFunc) sim_fs_op_free, NULL);
 		g_queue_free(fs->op_q);
 	}
+
+	if (fs->contexts != NULL)
+		ofono_error("Freeing simfs, but contexs is not NULL");
 
 	g_free(fs);
 }
@@ -144,16 +148,18 @@ struct ofono_sim_context *sim_fs_context_new(struct sim_fs *fs)
 		return NULL;
 
 	context->fs = fs;
+	fs->contexts = g_slist_prepend(fs->contexts, context);
 
 	return context;
 }
 
 void sim_fs_context_free(struct ofono_sim_context *context)
 {
+	struct sim_fs *fs = context->fs;
 	int n = 0;
 	struct sim_fs_op *op;
 
-	while ((op = g_queue_peek_nth(context->fs->op_q, n)) != NULL) {
+	while ((op = g_queue_peek_nth(fs->op_q, n)) != NULL) {
 		if (op->context != context) {
 			n += 1;
 			continue;
@@ -167,12 +173,13 @@ void sim_fs_context_free(struct ofono_sim_context *context)
 		}
 
 		sim_fs_op_free(op);
-		g_queue_remove(context->fs->op_q, op);
+		g_queue_remove(fs->op_q, op);
 	}
 
 	if (context->file_watches)
 		__ofono_watchlist_free(context->file_watches);
 
+	fs->contexts = g_slist_remove(fs->contexts, context);
 	g_free(context);
 }
 
@@ -204,6 +211,25 @@ void sim_fs_file_watch_remove(struct ofono_sim_context *context,
 				unsigned int id)
 {
 	__ofono_watchlist_remove_item(context->file_watches, id);
+}
+
+void sim_fs_notify_file_watches(struct sim_fs *fs, int id)
+{
+	GSList *l;
+
+	for (l = fs->contexts; l; l = l->next) {
+		struct ofono_sim_context *context = l->data;
+		GSList *k;
+
+		for (k = context->file_watches->items; k; k = k->next) {
+			struct file_watch *w = k->data;
+			ofono_sim_file_changed_cb_t notify = w->item.notify;
+
+			if (id == -1 || w->ef == id)
+				notify(w->ef, w->item.notify_data);
+		}
+	}
+
 }
 
 static void sim_fs_end_current(struct sim_fs *fs)

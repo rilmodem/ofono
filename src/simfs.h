@@ -36,6 +36,9 @@ unsigned int sim_fs_file_watch_add(struct ofono_sim_context *context,
 void sim_fs_file_watch_remove(struct ofono_sim_context *context,
 					unsigned int id);
 
+/* Id of -1 notifies all watches, serving as a wildcard */
+void sim_fs_notify_file_watches(struct sim_fs *fs, int id);
+
 int sim_fs_read(struct ofono_sim_context *context, int id,
 		enum ofono_sim_file_structure expected_type,
 		unsigned short offset, unsigned short num_bytes,
