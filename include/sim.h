@@ -102,6 +102,7 @@ typedef void (*ofono_sim_state_event_cb_t)(enum ofono_sim_state new_state,
 typedef void (*ofono_sim_file_read_cb_t)(int ok, int total_length, int record,
 					const unsigned char *data,
 					int record_length, void *userdata);
+typedef void (*ofono_sim_file_changed_cb_t)(int id, void *userdata);
 
 typedef void (*ofono_sim_file_write_cb_t)(int ok, void *userdata);
 
@@ -218,6 +219,14 @@ int ofono_sim_write(struct ofono_sim_context *context, int id,
 int ofono_sim_read_bytes(struct ofono_sim_context *context, int id,
 			unsigned short offset, unsigned short num_bytes,
 			ofono_sim_file_read_cb_t cb, void *data);
+
+unsigned int ofono_sim_add_file_watch(struct ofono_sim_context *context,
+					int id, ofono_sim_file_changed_cb_t cb,
+					void *userdata,
+					ofono_destroy_func destroy);
+void ofono_sim_remove_file_watch(struct ofono_sim_context *context,
+					unsigned int id);
+
 #ifdef __cplusplus
 }
 #endif
