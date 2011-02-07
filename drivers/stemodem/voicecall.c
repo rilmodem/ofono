@@ -491,6 +491,7 @@ static void ecav_notify(GAtResult *result, gpointer user_data)
 
 		vd->local_release &= ~(1 << existing_call->id);
 		vd->calls = g_slist_remove(vd->calls, l->data);
+		g_free(existing_call);
 		break;
 	}
 
