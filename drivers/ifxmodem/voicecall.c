@@ -43,9 +43,6 @@
 
 static const char *none_prefix[] = { NULL };
 
-/* According to 27.007 COLP is an intermediate status for ATD */
-static const char *atd_prefix[] = { "+COLP:", NULL };
-
 struct voicecall_data {
 	GSList *calls;
 	unsigned int local_release;
@@ -255,10 +252,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct cb_data *cbd = user_data;
 	struct ofono_voicecall *vc = cbd->user;
 	ofono_voicecall_cb_t cb = cbd->cb;
-	GAtResultIter iter;
-	const char *num;
-	int type = 128;
-	int validity = 2;
 	struct ofono_error error;
 	struct ofono_call *call;
 
@@ -269,22 +262,8 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	g_at_result_iter_init(&iter, result);
-
-	if (g_at_result_iter_next(&iter, "+COLP:")) {
-		g_at_result_iter_next_string(&iter, &num);
-		g_at_result_iter_next_number(&iter, &type);
-
-		if (strlen(num) > 0)
-			validity = 0;
-		else
-			validity = 2;
-
-		DBG("colp_notify: %s %d %d", num, type, validity);
-	}
-
 	/* Generate a voice call that was just dialed, we guess the ID */
-	call = create_call(vc, 0, 0, CALL_STATUS_DIALING, num, type, validity);
+	call = create_call(vc, 0, 0, CALL_STATUS_DIALING, NULL, 128, 2);
 	if (call == NULL) {
 		ofono_error("Unable to malloc, call tracking will fail!");
 		return;
@@ -294,10 +273,6 @@ static void atd_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * inside its dial callback.
 	 */
 	cb(&error, cbd->data);
-
-	/* If we got COLP information, then notify the core */
-	if (validity != 2)
-		ofono_voicecall_notify(vc, call);
 }
 
 static void ifx_dial(struct ofono_voicecall *vc,
@@ -329,7 +304,7 @@ static void ifx_dial(struct ofono_voicecall *vc,
 
 	strcat(buf, ";");
 
-	if (g_at_chat_send(vd->chat, buf, atd_prefix,
+	if (g_at_chat_send(vd->chat, buf, none_prefix,
 				atd_cb, cbd, g_free) > 0)
 		return;
 
@@ -776,7 +751,6 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	g_at_chat_send(vd->chat, "AT+CRC=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", none_prefix, NULL, NULL, NULL);
-	g_at_chat_send(vd->chat, "AT+COLP=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CNAP=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CCWA=1", none_prefix,
 				ifx_voicecall_initialized, vc, NULL);
