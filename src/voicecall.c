@@ -1354,7 +1354,7 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 
 	numheld = voicecalls_num_held(vc);
 
-	if ((numactive != 1) && (numheld != 1))
+	if (numactive != 1 || numheld != 1)
 		return __ofono_error_failed(msg);
 
 	if (vc->driver->transfer == NULL)
