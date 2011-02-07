@@ -59,6 +59,7 @@ typedef struct _GIsiServiceMux GIsiServiceMux;
 
 struct _GIsiModem {
 	unsigned index;
+	uint8_t device;
 	GHashTable *services;
 	gboolean subs_source;
 	int req_fd;
@@ -535,6 +536,27 @@ void g_isi_modem_set_flags(GIsiModem *modem, unsigned long flags)
 		return;
 
 	modem->flags = flags;
+}
+
+uint8_t g_isi_modem_device(GIsiModem *modem)
+{
+	if (modem == NULL)
+		return 0;
+
+	return modem->device;
+}
+
+int g_isi_modem_set_device(GIsiModem *modem, uint8_t remote)
+{
+	if (modem == NULL)
+		return -EINVAL;
+
+	if (remote != PN_DEV_HOST && remote != PN_DEV_MODEM)
+		return -EINVAL;
+
+	modem->device = remote;
+
+	return 0;
 }
 
 static uint8_t service_next_utid(GIsiServiceMux *mux)
