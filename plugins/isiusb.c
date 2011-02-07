@@ -262,6 +262,7 @@ static int isiusb_probe(struct ofono_modem *modem)
 	}
 
 	g_isi_modem_set_userdata(isimodem, modem);
+	g_isi_modem_set_flags(isimodem, GISI_MODEM_FLAG_USE_LEGACY_SUBSCRIBE);
 
 	if (getenv("OFONO_ISI_DEBUG"))
 		g_isi_modem_set_debug(isimodem, ofono_debug);
