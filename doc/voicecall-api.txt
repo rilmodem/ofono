@@ -145,3 +145,13 @@ Properties	string LineIdentification [readonly]
 
 			Contains the indication if the voice call is an
 			emergency call or not.
+
+		boolean RemoteHeld
+
+			Contains the indication whether the voice call is put on
+			hold by the remote party or not.
+
+		boolean RemoteMultiparty
+
+			Contains the indication whether the voice call is joined
+			in a multiparty call by the remote party or not.

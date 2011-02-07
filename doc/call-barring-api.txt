@@ -37,16 +37,6 @@ Signals		PropertyChanged(string property, variant value)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
-		IncomingBarringInEffect()
-
-			Signal is emitted when a call is made and an
-			incoming call barring supplementary service is in use.
-
-		OutgoingBarringInEffect()
-
-			Signal is emitted when a call is made and an
-			outgoing call barring supplementary service is in use.
-
 Properties	string VoiceIncoming [readwrite]
 
 			Contains the value of the barrings for the incoming

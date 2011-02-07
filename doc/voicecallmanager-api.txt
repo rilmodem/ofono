@@ -144,6 +144,31 @@ Signals		CallAdded(object path, dict properties)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
+		BarringActive(string type)
+
+			Signal emitted when an outgoing voice call is made and
+			the call has been barred by the network due to the
+			remote party's "Call Barring" Supplementary Services
+			settings for incoming calls. In this case the type
+			parameter in the signal set to "remote".
+			The signal is also emitted when an outgoing voice call
+			is made and the call has been barred by the network due
+			to the local "Call Barring" Supplementary Services
+			settings for outgoing calls. In this case the type
+			parameter in the signal is set to "local".
+
+		CallForwarded(string type)
+
+			Signal emitted when an outgoing voice call is made and
+			the call has been redirected to another number due to
+			the remote party's "Call Forwarding" Supplementary
+			Services settings. In this case the type parameter in
+			the signal is set to "outgoing".
+			The signal is also emitted when the incoming voice call
+			is a redirected call due to a call forwarding operation.
+			In this case the type parameter in the signal is set to
+			"incoming".
+
 Properties	array{string} EmergencyNumbers [readonly]
 
 			Contains the list of emergency numbers recognized
