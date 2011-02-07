@@ -1987,6 +1987,20 @@ int ofono_sim_write(struct ofono_sim_context *context, int id,
 				userdata);
 }
 
+unsigned int ofono_sim_add_file_watch(struct ofono_sim_context *context,
+					int id, ofono_sim_file_changed_cb_t cb,
+					void *userdata,
+					ofono_destroy_func destroy)
+{
+	return sim_fs_file_watch_add(context, id, cb, userdata, destroy);
+}
+
+void ofono_sim_remove_file_watch(struct ofono_sim_context *context,
+					unsigned int id)
+{
+	sim_fs_file_watch_remove(context, id);
+}
+
 const char *ofono_sim_get_imsi(struct ofono_sim *sim)
 {
 	if (sim == NULL)
