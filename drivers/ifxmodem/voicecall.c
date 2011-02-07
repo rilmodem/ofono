@@ -688,6 +688,55 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 		ofono_voicecall_notify(vc, call);
 }
 
+static void xcolp_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GAtResultIter iter;
+	const char *num;
+	int type, call_id;
+	GSList *l;
+	struct ofono_call *call;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XCOLP:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &call_id))
+		return;
+
+	if (!g_at_result_iter_next_string(&iter, &num))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &type))
+		return;
+
+	if (strlen(num) == 0) {
+		ofono_error("XCOLP received with invalid number!!!");
+		return;
+	}
+
+	DBG("xcolp_notify: %d %s %d", call_id, num, type);
+
+	l = g_slist_find_custom(vd->calls,
+				GINT_TO_POINTER(call_id),
+				at_util_call_compare_by_id);
+	if (l == NULL) {
+		ofono_error("XCOLP for unknown call");
+		return;
+	}
+
+	call = l->data;
+
+	strncpy(call->phone_number.number, num,	OFONO_MAX_PHONE_NUMBER_LENGTH);
+	call->phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+	call->phone_number.type = type;
+	call->clip_validity = CLIP_VALIDITY_VALID;
+
+	ofono_voicecall_notify(vc, call);
+}
+
 static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
@@ -702,6 +751,7 @@ static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 	g_at_chat_register(vd->chat, "+XEM:", xem_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+XCALLSTAT:", xcallstat_notify,
 							FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+XCOLP:", xcolp_notify, FALSE, vc, NULL);
 
 	ofono_voicecall_register(vc);
 }
@@ -722,6 +772,7 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 
 	g_at_chat_send(vd->chat, "AT+XCALLSTAT=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+XEMC=1", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+XCOLP=1", none_prefix, NULL, NULL, NULL);
 
 	g_at_chat_send(vd->chat, "AT+CRC=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", none_prefix, NULL, NULL, NULL);
