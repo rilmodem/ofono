@@ -144,7 +144,7 @@ Signals		CallAdded(object path, dict properties)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
-		BarringActive(string type)
+		BarringActive(string type) [experimental]
 
 			Signal emitted when an outgoing voice call is made and
 			the call has been barred by the network due to the
@@ -157,7 +157,7 @@ Signals		CallAdded(object path, dict properties)
 			settings for outgoing calls. In this case the type
 			parameter in the signal is set to "local".
 
-		CallForwarded(string type)
+		CallForwarded(string type) [experimental]
 
 			Signal emitted when an outgoing voice call is made and
 			the call has been redirected to another number due to
