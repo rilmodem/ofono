@@ -156,7 +156,7 @@ static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid)
 	uint8_t cause;
 
 	if (g_isi_msg_error(msg) < 0) {
-		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
+		DBG("Error: %s", g_isi_msg_strerror(msg));
 		return FALSE;
 	}
 
