@@ -2502,6 +2502,7 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 	 * and RoamingAllowed = False
 	 */
 	if (error) {
+		g_error_free(error);
 		gprs->powered = TRUE;
 		g_key_file_set_boolean(gprs->settings, SETTINGS_GROUP,
 					"Powered", gprs->powered);
@@ -2514,6 +2515,7 @@ static void gprs_load_settings(struct ofono_gprs *gprs, const char *imsi)
 							&error);
 
 	if (error) {
+		g_error_free(error);
 		gprs->roaming_allowed = FALSE;
 		g_key_file_set_boolean(gprs->settings, SETTINGS_GROUP,
 					"RoamingAllowed",

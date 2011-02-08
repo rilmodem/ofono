@@ -1761,6 +1761,7 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 						"NextReference", &error);
 
 	if (error || sms->ref > 65536) {
+		g_error_free(error);
 		sms->ref = 1;
 		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
 					"NextReference", sms->ref);
@@ -1771,16 +1772,19 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 		g_key_file_get_boolean(sms->settings, SETTINGS_GROUP,
 					"UseDeliveryReports", &error);
 
-	if (error)
+	if (error) {
+		g_error_free(error);
 		g_key_file_set_boolean(sms->settings, SETTINGS_GROUP,
 					"UseDeliveryReports",
 					sms->use_delivery_reports);
+	}
 
 	error = NULL;
 	sms->bearer = g_key_file_get_integer(sms->settings, SETTINGS_GROUP,
 							"Bearer", &error);
 
 	if (error || sms_bearer_to_string(sms->bearer) == NULL) {
+		g_error_free(error);
 		sms->bearer = 3; /* Default to CS then PS */
 		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
 					"Bearer", sms->bearer);
@@ -1791,6 +1795,7 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 						"Alphabet", &error);
 
 	if (error || sms_alphabet_to_string(sms->alphabet) == NULL) {
+		g_error_free(error);
 		sms->alphabet = SMS_ALPHABET_DEFAULT;
 		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
 					"Aphabet", sms->alphabet);
