@@ -37,6 +37,7 @@
 #include <ofono/log.h>
 
 static int example_provision_get_settings(const char *mcc, const char *mnc,
+				const char *spn,
 				struct ofono_gprs_provision_data **settings,
 				int *count)
 {
@@ -44,10 +45,11 @@ static int example_provision_get_settings(const char *mcc, const char *mnc,
 	*count = 0;
 	*settings = NULL;
 
-	ofono_debug("Finding settings for MCC %s, MNC %s",
-			mcc, mnc);
+	ofono_debug("Finding settings for MCC %s, MNC %s, SPN '%s'",
+			mcc, mnc, spn);
 
-	if (strcmp(mcc, "246") != 0 || strcmp(mnc, "81") != 0)
+	if (strcmp(mcc, "246") != 0 || strcmp(mnc, "81") != 0 ||
+						strcmp(spn, "oFono") != 0)
 		return -ENOENT;
 
 	ofono_debug("Creating example settings for phonesim");
