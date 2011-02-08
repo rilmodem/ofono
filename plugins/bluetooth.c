@@ -44,6 +44,8 @@ static GHashTable *adapter_address_hash = NULL;
 static gint bluetooth_refcount;
 static GSList *server_list = NULL;
 
+#define TIMEOUT 60 /* Timeout for user response (seconds) */
+
 struct server {
 	guint8 channel;
 	char *sdp_record;
@@ -58,6 +60,8 @@ struct cb_data {
 	struct server *server;
 	char *path;
 	guint source;
+	GIOChannel *io;
+	gboolean pending_auth;
 };
 
 void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
@@ -483,26 +487,104 @@ static void cb_data_destroy(gpointer data)
 	g_free(cb_data);
 }
 
+static void cancel_authorization(struct cb_data *user_data)
+{
+	DBusMessage *msg;
+
+	if (user_data->path == NULL)
+		return;
+
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, user_data->path,
+						BLUEZ_SERVICE_INTERFACE,
+						"CancelAuthorization");
+
+	if (msg == NULL) {
+		ofono_error("Unable to allocate D-Bus CancelAuthorization"
+				" message");
+		return;
+	}
+
+	g_dbus_send_message(connection, msg);
+}
+
 static gboolean client_event(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
 	struct cb_data *cb_data = data;
 	struct server *server = cb_data->server;
 
+	if (cb_data->pending_auth == TRUE) {
+		cancel_authorization(cb_data);
+
+		cb_data->pending_auth = FALSE;
+	} else {
+
+		server->client_list = g_slist_remove(server->client_list,
+					GUINT_TO_POINTER(cb_data->source));
+		cb_data_destroy(cb_data);
+	}
+
+	return FALSE;
+}
+
+static void auth_cb(DBusPendingCall *call, gpointer user_data)
+{
+	struct cb_data *cb_data = user_data;
+	struct server *server = cb_data->server;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	DBusError derr;
+	GError *err = NULL;
+
+	dbus_error_init(&derr);
+
+	cb_data->pending_auth = FALSE;
+
+	if (dbus_set_error_from_message(&derr, reply)) {
+		ofono_error("RequestAuthorization error: %s, %s",
+				derr.name, derr.message);
+
+		if (dbus_error_has_name(&derr, DBUS_ERROR_NO_REPLY))
+			cancel_authorization(cb_data);
+
+		dbus_error_free(&derr);
+
+		dbus_message_unref(reply);
+
+		goto failed;
+	}
+
+	dbus_message_unref(reply);
+
+	ofono_info("RequestAuthorization succeeded");
+
+	if (!bt_io_accept(cb_data->io, server->connect_cb, server->user_data,
+						NULL, &err)) {
+		ofono_error("%s", err->message);
+		g_error_free(err);
+		goto failed;
+	}
+
+	return;
+
+failed:
+	g_source_remove(cb_data->source);
 	server->client_list = g_slist_remove(server->client_list,
 					GUINT_TO_POINTER(cb_data->source));
 
 	cb_data_destroy(cb_data);
-
-	return FALSE;
 }
 
 static void new_connection(GIOChannel *io, gpointer user_data)
 {
 	struct server *server = user_data;
 	struct cb_data *client_data;
+	guint handle;
+	const char *addr;
+	int ret;
 	GError *err = NULL;
 	char laddress[18], raddress[18];
 	guint8 channel;
+	GHashTableIter iter;
+	gpointer key, value;
 
 	bt_io_get(io, BT_IO_RFCOMM, &err, BT_IO_OPT_SOURCE, laddress,
 					BT_IO_OPT_DEST, raddress,
@@ -517,14 +599,6 @@ static void new_connection(GIOChannel *io, gpointer user_data)
 	ofono_info("New connection for %s on channel %u from: %s,", laddress,
 							channel, raddress);
 
-	if (!bt_io_accept(io, server->connect_cb, server->user_data,
-						NULL, &err)) {
-		ofono_error("%s", err->message);
-		g_error_free(err);
-		g_io_channel_unref(io);
-		return;
-	}
-
 	client_data = g_try_new0(struct cb_data, 1);
 	if (client_data == NULL) {
 		ofono_error("Unable to allocate client cb_data structure");
@@ -532,11 +606,42 @@ static void new_connection(GIOChannel *io, gpointer user_data)
 	}
 
 	client_data->server = server;
+
+	g_hash_table_iter_init(&iter, adapter_address_hash);
+
+	while (g_hash_table_iter_next(&iter, &key, &value)) {
+		if (g_strcmp0(laddress, value) == 0) {
+			client_data->path = g_strdup(key);
+			DBG("adapter path : %s", client_data->path);
+			break;
+		}
+	}
+
+	client_data->io = io;
+
+	handle = GPOINTER_TO_UINT(g_hash_table_lookup(server->adapter_hash,
+						client_data->path));
+	addr = raddress;
+	ret = bluetooth_send_with_reply(client_data->path,
+					BLUEZ_SERVICE_INTERFACE,
+					"RequestAuthorization",
+					auth_cb, client_data, NULL, TIMEOUT,
+					DBUS_TYPE_STRING, &addr,
+					DBUS_TYPE_UINT32, &handle,
+					DBUS_TYPE_INVALID);
+	if (ret < 0) {
+		ofono_error("Request Bluetooth authorization failed");
+		return;
+	}
+
+	ofono_info("RequestAuthorization(%s, 0x%x)", raddress, handle);
+
 	client_data->source = g_io_add_watch(io,
 					G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 					client_event, client_data);
 	server->client_list = g_slist_prepend(server->client_list,
 					GUINT_TO_POINTER(client_data->source));
+	client_data->pending_auth = TRUE;
 }
 
 static void add_record_cb(DBusPendingCall *call, gpointer user_data)
