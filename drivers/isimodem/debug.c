@@ -43,6 +43,7 @@ const char *pn_resource_name(int value)
 {
 	switch (value) {
 		_(PN_NETWORK);
+		_(PN_MODEM_NETWORK);
 		_(PN_PHONE_INFO);
 		_(PN_SS);
 		_(PN_CALL);
@@ -757,6 +758,11 @@ const char *net_status_name(enum net_reg_status value)
 const char *net_message_id_name(enum net_message_id value)
 {
 	switch (value) {
+		_(NET_MODEM_REG_STATUS_GET_REQ);
+		_(NET_MODEM_REG_STATUS_GET_RESP);
+		_(NET_MODEM_REG_STATUS_IND);
+		_(NET_MODEM_AVAILABLE_GET_REQ);
+		_(NET_MODEM_AVAILABLE_GET_RESP);
 		_(NET_SET_REQ);
 		_(NET_SET_RESP);
 		_(NET_RSSI_GET_REQ);
@@ -766,6 +772,10 @@ const char *net_message_id_name(enum net_message_id value)
 		_(NET_RAT_IND);
 		_(NET_RAT_REQ);
 		_(NET_RAT_RESP);
+		_(NET_CELL_INFO_GET_REQ);
+		_(NET_CELL_INFO_GET_RESP);
+		_(NET_CELL_INFO_IND);
+		_(NET_NITZ_NAME_IND);
 		_(NET_REG_STATUS_GET_REQ);
 		_(NET_REG_STATUS_GET_RESP);
 		_(NET_REG_STATUS_IND);
@@ -782,6 +792,7 @@ const char *net_subblock_name(enum net_subblock value)
 {
 	switch (value) {
 		_(NET_REG_INFO_COMMON);
+		_(NET_MODEM_AVAIL_NETWORK_INFO_COMMON);
 		_(NET_OPERATOR_INFO_COMMON);
 		_(NET_RSSI_CURRENT);
 		_(NET_GSM_REG_INFO);
@@ -790,6 +801,10 @@ const char *net_subblock_name(enum net_subblock value)
 		_(NET_TIME_INFO);
 		_(NET_GSM_BAND_INFO);
 		_(NET_RAT_INFO);
+		_(NET_GSM_CELL_INFO);
+		_(NET_WCDMA_CELL_INFO);
+		_(NET_FULL_NITZ_NAME);
+		_(NET_SHORT_NITZ_NAME);
 		_(NET_AVAIL_NETWORK_INFO_COMMON);
 		_(NET_OPER_NAME_INFO);
 	}
