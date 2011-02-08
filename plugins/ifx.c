@@ -573,7 +573,7 @@ static void rtc_gti_selftest_cb(gboolean ok, GAtResult *result,
 	if (ok)
 		return;
 
-	ofono_error("at@rtc:rtc_gti_test_verify_32khz()-FAILED");
+	ofono_error("at@rtc_drv:rtc_gti_test_verify_32khz()-FAILED");
 
 	if (data->mux_init_timeout > 0) {
 		g_source_remove(data->mux_init_timeout);
@@ -643,7 +643,7 @@ static int ifx_enable(struct ofono_modem *modem)
 					NULL, NULL, NULL);
 
 	/* Execute modem self tests */
-	g_at_chat_send(chat, "at@rtc:rtc_gti_test_verify_32khz()", NULL,
+	g_at_chat_send(chat, "at@rtc_drv:rtc_gti_test_verify_32khz()", NULL,
 					rtc_gti_selftest_cb, modem, NULL);
 
 	g_at_chat_send(chat, "at@vers:device_version_id()", NULL,
