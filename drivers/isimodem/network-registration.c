@@ -160,11 +160,8 @@ static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid)
 		return FALSE;
 	}
 
-	if (g_isi_msg_id(msg) != msgid) {
-		DBG("Unexpected msg: %s",
-			net_message_id_name(g_isi_msg_id(msg)));
+	if (g_isi_msg_id(msg) != msgid)
 		return FALSE;
-	}
 
 	if (!g_isi_msg_data_get_byte(msg, 0, &cause))
 		return FALSE;
