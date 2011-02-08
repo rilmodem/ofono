@@ -97,6 +97,7 @@ struct ofono_gprs {
 	const struct ofono_gprs_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
+	struct ofono_sim_context *sim_context;
 };
 
 struct ofono_gprs_context {
@@ -2291,6 +2292,9 @@ static void gprs_remove(struct ofono_atom *atom)
 	if (gprs->driver && gprs->driver->remove)
 		gprs->driver->remove(gprs);
 
+	if (gprs->sim_context)
+		ofono_sim_context_free(gprs->sim_context);
+
 	g_free(gprs);
 }
 
@@ -2629,14 +2633,14 @@ static void provision_context(const struct ofono_gprs_provision_data *ap,
 	gprs->contexts = g_slist_append(gprs->contexts, context);
 }
 
-static void provision_contexts(struct ofono_gprs *gprs, struct ofono_sim *sim)
+static void provision_contexts(struct ofono_gprs *gprs, const char *mcc,
+				const char *mnc, const char *spn)
 {
 	struct ofono_gprs_provision_data *settings;
 	int count;
 	int i;
 
-	if (__ofono_gprs_provision_get_settings(ofono_sim_get_mcc(sim),
-						ofono_sim_get_mnc(sim),
+	if (__ofono_gprs_provision_get_settings(mcc, mnc, spn,
 						&settings, &count) == FALSE) {
 		ofono_warn("Provisioning failed");
 		return;
@@ -2648,13 +2652,15 @@ static void provision_contexts(struct ofono_gprs *gprs, struct ofono_sim *sim)
 	__ofono_gprs_provision_free_settings(settings, count);
 }
 
-void ofono_gprs_register(struct ofono_gprs *gprs)
+static void ofono_gprs_finish_register(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
 	const char *path = __ofono_atom_get_path(gprs->atom);
 	struct ofono_atom *netreg_atom;
-	struct ofono_atom *sim_atom;
+
+	if (gprs->contexts == NULL) /* Automatic provisioning failed */
+		add_context(gprs, NULL, OFONO_GPRS_CONTEXT_TYPE_INTERNET);
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CONNECTION_MANAGER_INTERFACE,
@@ -2663,28 +2669,12 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 		ofono_error("Could not create %s interface",
 				OFONO_CONNECTION_MANAGER_INTERFACE);
 
+		gprs_unregister(gprs->atom);
 		return;
 	}
 
 	ofono_modem_add_interface(modem,
 				OFONO_CONNECTION_MANAGER_INTERFACE);
-
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-	if (sim_atom) {
-		const char *imsi;
-		struct ofono_sim *sim = __ofono_atom_get_data(sim_atom);
-
-		imsi = ofono_sim_get_imsi(sim);
-		gprs_load_settings(gprs, imsi);
-
-		if (gprs->contexts == NULL)
-			provision_contexts(gprs, sim);
-
-	}
-
-	if (gprs->contexts == NULL)
-		add_context(gprs, NULL, OFONO_GPRS_CONTEXT_TYPE_INTERNET);
 
 	gprs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
@@ -2697,6 +2687,59 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 				OFONO_ATOM_WATCH_CONDITION_REGISTERED, gprs);
 
 	__ofono_atom_register(gprs->atom, gprs_unregister);
+}
+
+static void sim_spn_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
+{
+	struct ofono_gprs *gprs	= userdata;
+	char *spn = NULL;
+	struct ofono_atom *sim_atom;
+	struct ofono_sim *sim = NULL;
+
+	if (ok)
+		spn = sim_string_to_utf8(data + 1, length - 1);
+
+	sim_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(gprs->atom),
+						OFONO_ATOM_TYPE_SIM);
+	if (sim_atom) {
+		sim = __ofono_atom_get_data(sim_atom);
+		provision_contexts(gprs, ofono_sim_get_mcc(sim),
+					ofono_sim_get_mnc(sim), spn);
+	}
+
+	g_free(spn);
+	ofono_gprs_finish_register(gprs);
+}
+
+void ofono_gprs_register(struct ofono_gprs *gprs)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
+	struct ofono_atom *sim_atom;
+	struct ofono_sim *sim = NULL;
+
+	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+
+	if (sim_atom) {
+		const char *imsi;
+		sim = __ofono_atom_get_data(sim_atom);
+
+		imsi = ofono_sim_get_imsi(sim);
+		gprs_load_settings(gprs, imsi);
+	}
+
+	if (gprs->contexts == NULL && sim != NULL) {
+		/* Get Service Provider Name from SIM for provisioning */
+		gprs->sim_context = ofono_sim_context_create(sim);
+
+		if (ofono_sim_read(gprs->sim_context, SIM_EFSPN_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+					sim_spn_read_cb, gprs) >= 0)
+			return;
+	}
+
+	ofono_gprs_finish_register(gprs);
 }
 
 void ofono_gprs_remove(struct ofono_gprs *gprs)
