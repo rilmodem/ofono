@@ -183,7 +183,6 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 {
 	GAtMux *mux = data;
 	int i;
-	GError *error = NULL;
 	GIOStatus status;
 	gsize bytes_read;
 
@@ -195,7 +194,7 @@ static gboolean received_data(GIOChannel *channel, GIOCondition cond,
 	bytes_read = 0;
 	status = g_io_channel_read_chars(mux->channel, mux->buf + mux->buf_used,
 					sizeof(mux->buf) - mux->buf_used,
-					&bytes_read, &error);
+					&bytes_read, NULL);
 
 	mux->buf_used += bytes_read;
 
@@ -308,12 +307,11 @@ static void wakeup_writer(GAtMux *mux)
 
 int g_at_mux_raw_write(GAtMux *mux, const void *data, int towrite)
 {
-	GError *error = NULL;
 	gssize count = towrite;
 	gsize bytes_written;
 
 	g_io_channel_write_chars(mux->channel, (gchar *) data,
-					count, &bytes_written, &error);
+					count, &bytes_written, NULL);
 
 	return bytes_written;
 }
