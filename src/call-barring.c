@@ -402,7 +402,7 @@ static gboolean cb_ss_control(int type, const char *sc,
 	if (strlen(dn) > 0)
 		goto bad_format;
 
-	if (type != SS_CONTROL_TYPE_QUERY && !is_valid_pin(sia, PIN_TYPE_NET))
+	if (type != SS_CONTROL_TYPE_QUERY && !__ofono_is_valid_net_pin(sia))
 		goto bad_format;
 
 	switch (type) {
@@ -524,7 +524,7 @@ static gboolean cb_ss_passwd(const char *sc,
 	if (fac == NULL)
 		return FALSE;
 
-	if (!is_valid_pin(old, PIN_TYPE_NET) || !is_valid_pin(new, PIN_TYPE_NET))
+	if (!__ofono_is_valid_net_pin(old) || !__ofono_is_valid_net_pin(new))
 		goto bad_format;
 
 	cb->pending = dbus_message_ref(msg);
@@ -862,7 +862,7 @@ static DBusMessage *cb_set_property(DBusConnection *conn, DBusMessage *msg,
 			return __ofono_error_invalid_args(msg);
 
 		dbus_message_iter_get_basic(&iter, &passwd);
-		if (!is_valid_pin(passwd, PIN_TYPE_NET))
+		if (!__ofono_is_valid_net_pin(passwd))
 			return __ofono_error_invalid_format(msg);
 	}
 
@@ -909,7 +909,7 @@ static DBusMessage *cb_disable_all(DBusConnection *conn, DBusMessage *msg,
 					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (!is_valid_pin(passwd, PIN_TYPE_NET))
+	if (!__ofono_is_valid_net_pin(passwd))
 		return __ofono_error_invalid_format(msg);
 
 	cb_set_query_bounds(cb, fac, FALSE);
@@ -957,10 +957,10 @@ static DBusMessage *cb_set_passwd(DBusConnection *conn, DBusMessage *msg,
 					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (!is_valid_pin(old_passwd, PIN_TYPE_NET))
+	if (!__ofono_is_valid_net_pin(old_passwd))
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(new_passwd, PIN_TYPE_NET))
+	if (!__ofono_is_valid_net_pin(new_passwd))
 		return __ofono_error_invalid_format(msg);
 
 	cb->pending = dbus_message_ref(msg);

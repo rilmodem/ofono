@@ -676,7 +676,7 @@ static DBusMessage *sim_lock_or_unlock(struct ofono_sim *sim, int lock,
 			type == OFONO_SIM_PASSWORD_SIM_PIN2)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(pin, PIN_TYPE_PIN))
+	if (!__ofono_is_valid_sim_pin(pin, type))
 		return __ofono_error_invalid_format(msg);
 
 	sim->pending = dbus_message_ref(msg);
@@ -748,10 +748,10 @@ static DBusMessage *sim_change_pin(DBusConnection *conn, DBusMessage *msg,
 	if (password_is_pin(type) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(old, PIN_TYPE_PIN))
+	if (!__ofono_is_valid_sim_pin(old, type))
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(new, PIN_TYPE_PIN))
+	if (!__ofono_is_valid_sim_pin(new, type))
 		return __ofono_error_invalid_format(msg);
 
 	if (!strcmp(new, old))
@@ -803,7 +803,7 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(pin, PIN_TYPE_PIN))
+	if (!__ofono_is_valid_sim_pin(pin, type))
 		return __ofono_error_invalid_format(msg);
 
 	sim->pending = dbus_message_ref(msg);
@@ -1013,10 +1013,12 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(puk, PIN_TYPE_PUK))
+	if (!__ofono_is_valid_sim_pin(puk, type))
 		return __ofono_error_invalid_format(msg);
 
-	if (!is_valid_pin(pin, PIN_TYPE_PIN))
+	type = puk2pin(type);
+
+	if (!__ofono_is_valid_sim_pin(pin, type))
 		return __ofono_error_invalid_format(msg);
 
 	sim->pending = dbus_message_ref(msg);
@@ -2377,4 +2379,65 @@ void ofono_sim_set_data(struct ofono_sim *sim, void *data)
 void *ofono_sim_get_data(struct ofono_sim *sim)
 {
 	return sim->driver_data;
+}
+
+ofono_bool_t is_valid_pin(const char *pin, int min, int max)
+{
+	unsigned int i;
+
+	/* Pin must not be empty */
+	if (pin == NULL || pin[0] == '\0')
+		return FALSE;
+
+	i = strlen(pin);
+	if (i != strspn(pin, "0123456789"))
+		return FALSE;
+
+	if (min <= i && i <= max)
+		return TRUE;
+
+	return FALSE;
+}
+
+ofono_bool_t __ofono_is_valid_sim_pin(const char *pin,
+					enum ofono_sim_password_type type)
+{
+	switch (type) {
+	case OFONO_SIM_PASSWORD_SIM_PIN:
+	case OFONO_SIM_PASSWORD_SIM_PIN2:
+		/* 11.11 Section 9.3 ("CHV"): 4..8 IA-5 digits */
+		return is_valid_pin(pin, 4, 8);
+		break;
+	case OFONO_SIM_PASSWORD_PHSIM_PIN:
+	case OFONO_SIM_PASSWORD_PHFSIM_PIN:
+	case OFONO_SIM_PASSWORD_PHNET_PIN:
+	case OFONO_SIM_PASSWORD_PHNETSUB_PIN:
+	case OFONO_SIM_PASSWORD_PHSP_PIN:
+	case OFONO_SIM_PASSWORD_PHCORP_PIN:
+		/* 22.022 Section 14 4..16 IA-5 digits */
+		return is_valid_pin(pin, 4, 16);
+		break;
+	case OFONO_SIM_PASSWORD_SIM_PUK:
+	case OFONO_SIM_PASSWORD_SIM_PUK2:
+	case OFONO_SIM_PASSWORD_PHFSIM_PUK:
+	case OFONO_SIM_PASSWORD_PHNET_PUK:
+	case OFONO_SIM_PASSWORD_PHNETSUB_PUK:
+	case OFONO_SIM_PASSWORD_PHSP_PUK:
+	case OFONO_SIM_PASSWORD_PHCORP_PUK:
+		/* 11.11 Section 9.3 ("UNBLOCK CHV"), 8 IA-5 digits */
+		return is_valid_pin(pin, 8, 8);
+		break;
+	case OFONO_SIM_PASSWORD_NONE:
+		return is_valid_pin(pin, 0, 8);
+		break;
+	case OFONO_SIM_PASSWORD_INVALID:
+		break;
+	}
+
+	return FALSE;
+}
+
+ofono_bool_t __ofono_is_valid_net_pin(const char *pin)
+{
+	return is_valid_pin(pin, 4, 4);
 }
