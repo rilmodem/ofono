@@ -114,6 +114,7 @@ static void clvl_range_query(gboolean ok, GAtResult *result, gpointer user_data)
 	/* Try opening the list, but don't fail */
 	g_at_result_iter_open_list(&iter);
 	g_at_result_iter_next_range(&iter, &cvd->clvl_min, &cvd->clvl_max);
+	g_at_result_iter_close_list(&iter);
 }
 
 static void cv_generic_set_cb(gboolean ok, GAtResult *result,
