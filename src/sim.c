@@ -2381,7 +2381,8 @@ void *ofono_sim_get_data(struct ofono_sim *sim)
 	return sim->driver_data;
 }
 
-ofono_bool_t is_valid_pin(const char *pin, int min, int max)
+static ofono_bool_t is_valid_pin(const char *pin, unsigned int min,
+					unsigned int max)
 {
 	unsigned int i;
 
