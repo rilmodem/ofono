@@ -590,7 +590,7 @@ CDMA CMAS
   Priority: Medium
   Complexity: C4
 
-CDMA NETWORK ACQUISITION
+CDMA Network Acquisition
 ========================
 
 - Support reporting of the received signal strength indicator (RSSI)
