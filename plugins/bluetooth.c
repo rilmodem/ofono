@@ -680,7 +680,7 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 			"GetProperties", adapter_properties_cb, g_strdup(path),
 			g_free, -1, DBUS_TYPE_INVALID);
 
-	g_slist_foreach(server_list, add_record,(gpointer) path);
+	g_slist_foreach(server_list, add_record, (gpointer) path);
 
 	return TRUE;
 }
@@ -872,8 +872,8 @@ struct server *bluetooth_register_server(guint8 channel, const char *sdp_record,
 	if (!server)
 		return NULL;
 
-
 	server->channel = channel;
+
 	server->io = bt_io_listen(BT_IO_RFCOMM, NULL, new_connection,
 					server, NULL, &err,
 					BT_IO_OPT_CHANNEL, server->channel,
@@ -889,12 +889,14 @@ struct server *bluetooth_register_server(guint8 channel, const char *sdp_record,
 
 	if (sdp_record != NULL)
 		server->sdp_record = g_strdup(sdp_record);
+
 	server->connect_cb = cb;
 	server->user_data = user_data;
 	server->adapter_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
-						g_free, NULL);
+							g_free, NULL);
 
 	g_hash_table_iter_init(&iter, adapter_address_hash);
+
 	while (g_hash_table_iter_next(&iter, &key, &value))
 		add_record(server, key);
 
