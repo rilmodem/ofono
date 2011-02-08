@@ -321,6 +321,7 @@ builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
 builtin_modules += hfp
 builtin_sources += plugins/hfp.c plugins/bluetooth.h
 
+builtin_sources += $(btio_sources)
 builtin_cflags += @BLUEZ_CFLAGS@
 builtin_libadd += @BLUEZ_LIBS@
 endif

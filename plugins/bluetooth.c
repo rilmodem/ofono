@@ -35,12 +35,30 @@
 
 #include <ofono/dbus.h>
 
+#include <btio.h>
 #include "bluetooth.h"
 
 static DBusConnection *connection;
 static GHashTable *uuid_hash = NULL;
 static GHashTable *adapter_address_hash = NULL;
 static gint bluetooth_refcount;
+static GSList *server_list = NULL;
+
+struct server {
+	guint8 channel;
+	char *sdp_record;
+	GIOChannel *io;
+	GHashTable *adapter_hash;
+	ConnectFunc connect_cb;
+	gpointer user_data;
+	GSList *client_list;
+};
+
+struct cb_data {
+	struct server *server;
+	char *path;
+	guint source;
+};
 
 void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
 				char *buf, int size)
@@ -417,6 +435,166 @@ static void get_adapter_properties(const char *path, const char *handle,
 			g_strdup(path), g_free, -1, DBUS_TYPE_INVALID);
 }
 
+static void remove_record(char *path, guint handle, struct server *server)
+{
+	DBusMessage *msg;
+
+	msg = dbus_message_new_method_call(BLUEZ_SERVICE, path,
+					BLUEZ_SERVICE_INTERFACE,
+					"RemoveRecord");
+	if (msg == NULL) {
+		ofono_error("Unable to allocate D-Bus RemoveRecord message");
+		return;
+	}
+
+	dbus_message_append_args(msg, DBUS_TYPE_UINT32, &handle,
+					DBUS_TYPE_INVALID);
+	g_dbus_send_message(connection, msg);
+
+	ofono_info("Unregistered handle for %s, channel %d: 0x%x", path,
+			server->channel, handle);
+}
+
+static void server_stop(struct server *server)
+{
+	/* Remove all client sources related to server */
+	while (server->client_list) {
+		g_source_remove(GPOINTER_TO_UINT(server->client_list->data));
+		server->client_list = g_slist_remove(server->client_list,
+						server->client_list->data);
+	}
+
+	g_hash_table_foreach_remove(server->adapter_hash,
+					(GHRFunc) remove_record, server);
+
+	if (server->io != NULL) {
+		g_io_channel_shutdown(server->io, TRUE, NULL);
+		g_io_channel_unref(server->io);
+		server->io = NULL;
+	}
+}
+
+static void cb_data_destroy(gpointer data)
+{
+	struct cb_data *cb_data = data;
+
+	if (cb_data->path != NULL)
+		g_free(cb_data->path);
+	g_free(cb_data);
+}
+
+static gboolean client_event(GIOChannel *chan, GIOCondition cond, gpointer data)
+{
+	struct cb_data *cb_data = data;
+	struct server *server = cb_data->server;
+
+	server->client_list = g_slist_remove(server->client_list,
+					GUINT_TO_POINTER(cb_data->source));
+
+	cb_data_destroy(cb_data);
+
+	return FALSE;
+}
+
+static void new_connection(GIOChannel *io, gpointer user_data)
+{
+	struct server *server = user_data;
+	struct cb_data *client_data;
+	GError *err = NULL;
+	char laddress[18], raddress[18];
+	guint8 channel;
+
+	bt_io_get(io, BT_IO_RFCOMM, &err, BT_IO_OPT_SOURCE, laddress,
+					BT_IO_OPT_DEST, raddress,
+					BT_IO_OPT_CHANNEL, &channel,
+					BT_IO_OPT_INVALID);
+	if (err) {
+		ofono_error("%s", err->message);
+		g_error_free(err);
+		return;
+	}
+
+	ofono_info("New connection for %s on channel %u from: %s,", laddress,
+							channel, raddress);
+
+	if (!bt_io_accept(io, server->connect_cb, server->user_data,
+						NULL, &err)) {
+		ofono_error("%s", err->message);
+		g_error_free(err);
+		g_io_channel_unref(io);
+		return;
+	}
+
+	client_data = g_try_new0(struct cb_data, 1);
+	if (client_data == NULL) {
+		ofono_error("Unable to allocate client cb_data structure");
+		return;
+	}
+
+	client_data->server = server;
+	client_data->source = g_io_add_watch(io,
+					G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+					client_event, client_data);
+	server->client_list = g_slist_prepend(server->client_list,
+					GUINT_TO_POINTER(client_data->source));
+}
+
+static void add_record_cb(DBusPendingCall *call, gpointer user_data)
+{
+	struct cb_data *cb_data = user_data;
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	DBusError derr;
+	guint32 handle;
+
+	dbus_error_init(&derr);
+
+	if (dbus_set_error_from_message(&derr, reply)) {
+		ofono_error("Replied with an error: %s, %s",
+					derr.name, derr.message);
+		dbus_error_free(&derr);
+		g_free(cb_data->path);
+		goto done;
+	}
+
+	dbus_message_get_args(reply, NULL, DBUS_TYPE_UINT32, &handle,
+					DBUS_TYPE_INVALID);
+
+	g_hash_table_insert(cb_data->server->adapter_hash, cb_data->path,
+				GUINT_TO_POINTER(handle));
+
+	ofono_info("Registered handle for %s, channel %d: 0x%x", cb_data->path,
+			cb_data->server->channel, handle);
+
+done:
+	/* Do not free cb_data->path, it is used in adapter_hash */
+	g_free(cb_data);
+	dbus_message_unref(reply);
+}
+
+static void add_record(gpointer data, gpointer user_data)
+{
+	struct server *server = data;
+	const char *path = user_data;
+	struct cb_data *cb_data;
+
+	if (server->sdp_record == NULL)
+		return;
+
+	cb_data = g_try_new0(struct cb_data, 1);
+	if (cb_data == NULL) {
+		ofono_error("Unable to allocate cb_data structure");
+		return;
+	}
+
+	cb_data->server = server;
+	cb_data->path = g_strdup(path);
+
+	bluetooth_send_with_reply(path, BLUEZ_SERVICE_INTERFACE, "AddRecord",
+				add_record_cb, cb_data, NULL, -1,
+				DBUS_TYPE_STRING, &server->sdp_record,
+				DBUS_TYPE_INVALID);
+}
+
 static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 				void *user_data)
 {
@@ -430,6 +608,8 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 			"GetProperties", adapter_properties_cb, g_strdup(path),
 			g_free, -1, DBUS_TYPE_INVALID);
 
+	g_slist_foreach(server_list, add_record,(gpointer) path);
+
 	return TRUE;
 }
 
@@ -437,10 +617,18 @@ static gboolean adapter_removed(DBusConnection *connection,
 				DBusMessage *message, void *user_data)
 {
 	const char *path;
+	GSList *l;
 
 	if (dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
 				DBUS_TYPE_INVALID) == TRUE)
 		g_hash_table_remove(adapter_address_hash, path);
+
+	for (l = server_list; l; l = l->next) {
+		struct server *server = l->data;
+
+		/* Handle have already been removed, so removing related path */
+		g_hash_table_remove(server->adapter_hash, path);
+	}
 
 	return TRUE;
 }
@@ -467,6 +655,8 @@ static void parse_adapters(DBusMessageIter *array, gpointer user_data)
 		bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
 				"GetProperties", adapter_properties_cb,
 				g_strdup(path), g_free, -1, DBUS_TYPE_INVALID);
+
+		g_slist_foreach(server_list, add_record, (gpointer) path);
 
 		dbus_message_iter_next(&value);
 	}
@@ -583,9 +773,6 @@ int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 {
 	bluetooth_ref();
 
-	if (bluetooth_refcount == 0)
-		return -EIO;
-
 	g_hash_table_insert(uuid_hash, g_strdup(uuid), profile);
 
 	g_hash_table_foreach(adapter_address_hash,
@@ -597,6 +784,60 @@ int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 void bluetooth_unregister_uuid(const char *uuid)
 {
 	g_hash_table_remove(uuid_hash, uuid);
+
+	bluetooth_unref();
+}
+
+struct server *bluetooth_register_server(guint8 channel, const char *sdp_record,
+					ConnectFunc cb, gpointer user_data)
+{
+	struct server *server;
+	GError *err;
+	GHashTableIter iter;
+	gpointer key, value;
+
+	server = g_try_new0(struct server, 1);
+	if (!server)
+		return NULL;
+
+
+	server->channel = channel;
+	server->io = bt_io_listen(BT_IO_RFCOMM, NULL, new_connection,
+					server, NULL, &err,
+					BT_IO_OPT_CHANNEL, server->channel,
+					BT_IO_OPT_SEC_LEVEL, BT_IO_SEC_MEDIUM,
+					BT_IO_OPT_INVALID);
+	if (server->io == NULL) {
+		g_error_free(err);
+		g_free(server);
+		return NULL;
+	}
+
+	bluetooth_ref();
+
+	if (sdp_record != NULL)
+		server->sdp_record = g_strdup(sdp_record);
+	server->connect_cb = cb;
+	server->user_data = user_data;
+	server->adapter_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
+						g_free, NULL);
+
+	g_hash_table_iter_init(&iter, adapter_address_hash);
+	while (g_hash_table_iter_next(&iter, &key, &value))
+		add_record(server, key);
+
+	server_list = g_slist_prepend(server_list, server);
+
+	return server;
+}
+
+void bluetooth_unregister_server(struct server *server)
+{
+	server_list = g_slist_remove(server_list, server);
+	server_stop(server);
+	g_hash_table_destroy(server->adapter_hash);
+	g_free(server->sdp_record);
+	g_free(server);
 
 	bluetooth_unref();
 }

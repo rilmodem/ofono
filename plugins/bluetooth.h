@@ -23,6 +23,7 @@
 #define	BLUEZ_MANAGER_INTERFACE		BLUEZ_SERVICE ".Manager"
 #define	BLUEZ_ADAPTER_INTERFACE		BLUEZ_SERVICE ".Adapter"
 #define	BLUEZ_DEVICE_INTERFACE		BLUEZ_SERVICE ".Device"
+#define	BLUEZ_SERVICE_INTERFACE		BLUEZ_SERVICE ".Service"
 
 #define DBUS_TIMEOUT 15
 
@@ -39,9 +40,17 @@ struct bluetooth_profile {
 	void (*set_alias)(const char *device, const char *);
 };
 
+struct server;
+
+typedef void (*ConnectFunc)(GIOChannel *io, GError *err, gpointer user_data);
+
 int bluetooth_register_uuid(const char *uuid,
 				struct bluetooth_profile *profile);
 void bluetooth_unregister_uuid(const char *uuid);
+
+struct server *bluetooth_register_server(guint8 channel, const char *sdp_record,
+					ConnectFunc cb, gpointer user_data);
+void bluetooth_unregister_server(struct server *server);
 
 void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
 							char *buf, int size);
