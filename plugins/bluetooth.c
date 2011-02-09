@@ -53,7 +53,6 @@ struct server {
 	GHashTable *adapter_hash;
 	ConnectFunc connect_cb;
 	gpointer user_data;
-	GSList *client_list;
 };
 
 struct cb_data {
@@ -61,7 +60,6 @@ struct cb_data {
 	char *path;
 	guint source;
 	GIOChannel *io;
-	gboolean pending_auth;
 };
 
 void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
@@ -461,13 +459,6 @@ static void remove_record(char *path, guint handle, struct server *server)
 
 static void server_stop(struct server *server)
 {
-	/* Remove all client sources related to server */
-	while (server->client_list) {
-		g_source_remove(GPOINTER_TO_UINT(server->client_list->data));
-		server->client_list = g_slist_remove(server->client_list,
-						server->client_list->data);
-	}
-
 	g_hash_table_foreach_remove(server->adapter_hash,
 					(GHRFunc) remove_record, server);
 
@@ -482,17 +473,16 @@ static void cb_data_destroy(gpointer data)
 {
 	struct cb_data *cb_data = data;
 
-	if (cb_data->path != NULL)
-		g_free(cb_data->path);
+	if (cb_data->source != 0)
+		g_source_remove(cb_data->source);
+
+	g_free(cb_data->path);
 	g_free(cb_data);
 }
 
 static void cancel_authorization(struct cb_data *user_data)
 {
 	DBusMessage *msg;
-
-	if (user_data->path == NULL)
-		return;
 
 	msg = dbus_message_new_method_call(BLUEZ_SERVICE, user_data->path,
 						BLUEZ_SERVICE_INTERFACE,
@@ -510,18 +500,9 @@ static void cancel_authorization(struct cb_data *user_data)
 static gboolean client_event(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
 	struct cb_data *cb_data = data;
-	struct server *server = cb_data->server;
 
-	if (cb_data->pending_auth == TRUE) {
-		cancel_authorization(cb_data);
-
-		cb_data->pending_auth = FALSE;
-	} else {
-
-		server->client_list = g_slist_remove(server->client_list,
-					GUINT_TO_POINTER(cb_data->source));
-		cb_data_destroy(cb_data);
-	}
+	cancel_authorization(cb_data);
+	cb_data->source = 0;
 
 	return FALSE;
 }
@@ -536,8 +517,6 @@ static void auth_cb(DBusPendingCall *call, gpointer user_data)
 
 	dbus_error_init(&derr);
 
-	cb_data->pending_auth = FALSE;
-
 	if (dbus_set_error_from_message(&derr, reply)) {
 		ofono_error("RequestAuthorization error: %s, %s",
 				derr.name, derr.message);
@@ -546,31 +525,17 @@ static void auth_cb(DBusPendingCall *call, gpointer user_data)
 			cancel_authorization(cb_data);
 
 		dbus_error_free(&derr);
+	} else {
+		ofono_info("RequestAuthorization succeeded");
 
-		dbus_message_unref(reply);
-
-		goto failed;
+		if (!bt_io_accept(cb_data->io, server->connect_cb,
+					server->user_data, NULL, &err)) {
+			ofono_error("%s", err->message);
+			g_error_free(err);
+		}
 	}
 
 	dbus_message_unref(reply);
-
-	ofono_info("RequestAuthorization succeeded");
-
-	if (!bt_io_accept(cb_data->io, server->connect_cb, server->user_data,
-						NULL, &err)) {
-		ofono_error("%s", err->message);
-		g_error_free(err);
-		goto failed;
-	}
-
-	return;
-
-failed:
-	g_source_remove(cb_data->source);
-	server->client_list = g_slist_remove(server->client_list,
-					GUINT_TO_POINTER(cb_data->source));
-
-	cb_data_destroy(cb_data);
 }
 
 static void new_connection(GIOChannel *io, gpointer user_data)
@@ -625,8 +590,8 @@ static void new_connection(GIOChannel *io, gpointer user_data)
 	ret = bluetooth_send_with_reply(client_data->path,
 					BLUEZ_SERVICE_INTERFACE,
 					"RequestAuthorization",
-					auth_cb, client_data, NULL, TIMEOUT,
-					DBUS_TYPE_STRING, &addr,
+					auth_cb, client_data, cb_data_destroy,
+					TIMEOUT, DBUS_TYPE_STRING, &addr,
 					DBUS_TYPE_UINT32, &handle,
 					DBUS_TYPE_INVALID);
 	if (ret < 0) {
@@ -639,9 +604,6 @@ static void new_connection(GIOChannel *io, gpointer user_data)
 	client_data->source = g_io_add_watch(io,
 					G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 					client_event, client_data);
-	server->client_list = g_slist_prepend(server->client_list,
-					GUINT_TO_POINTER(client_data->source));
-	client_data->pending_auth = TRUE;
 }
 
 static void add_record_cb(DBusPendingCall *call, gpointer user_data)
