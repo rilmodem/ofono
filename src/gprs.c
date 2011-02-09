@@ -2222,12 +2222,8 @@ void ofono_gprs_driver_unregister(const struct ofono_gprs_driver *d)
 	g_drivers = g_slist_remove(g_drivers, (void *)d);
 }
 
-static void gprs_unregister(struct ofono_atom *atom)
+static void free_contexts(struct ofono_gprs *gprs)
 {
-	DBusConnection *conn = ofono_dbus_get_connection();
-	struct ofono_gprs *gprs = __ofono_atom_get_data(atom);
-	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
-	const char *path = __ofono_atom_get_path(atom);
 	GSList *l;
 
 	if (gprs->settings) {
@@ -2246,6 +2242,16 @@ static void gprs_unregister(struct ofono_atom *atom)
 	}
 
 	g_slist_free(gprs->contexts);
+}
+
+static void gprs_unregister(struct ofono_atom *atom)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_gprs *gprs = __ofono_atom_get_data(atom);
+	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
+	const char *path = __ofono_atom_get_path(atom);
+
+	free_contexts(gprs);
 
 	if (gprs->cid_map) {
 		idmap_free(gprs->cid_map);
@@ -2669,7 +2675,7 @@ static void ofono_gprs_finish_register(struct ofono_gprs *gprs)
 		ofono_error("Could not create %s interface",
 				OFONO_CONNECTION_MANAGER_INTERFACE);
 
-		gprs_unregister(gprs->atom);
+		free_contexts(gprs);
 		return;
 	}
 
