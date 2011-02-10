@@ -307,10 +307,10 @@ static struct ofono_modem_driver gobi_driver = {
 	.remove		= gobi_remove,
 	.enable		= gobi_enable,
 	.disable	= gobi_disable,
-	.set_online     = gobi_set_online,
+	.set_online	= gobi_set_online,
 	.pre_sim	= gobi_pre_sim,
 	.post_sim	= gobi_post_sim,
-	.post_online    = gobi_post_online,
+	.post_online	= gobi_post_online,
 };
 
 static int gobi_init(void)
