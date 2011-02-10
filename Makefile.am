@@ -314,6 +314,9 @@ builtin_sources += plugins/nokia.c
 builtin_modules += nokiacdma
 builtin_sources += plugins/nokiacdma.c
 
+builtin_modules += linktop
+builtin_sources += plugins/linktop.c
+
 if BLUETOOTH
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
