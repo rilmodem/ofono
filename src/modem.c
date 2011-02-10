@@ -759,12 +759,11 @@ static int set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 			err = driver->disable(modem);
 	}
 
-	if (err == 0)
+	if (err == 0) {
 		modem->powered = powered;
-	else if (err != -EINPROGRESS)
+		notify_powered_watches(modem);
+	} else if (err != -EINPROGRESS)
 		modem->powered_pending = modem->powered;
-
-	notify_powered_watches(modem);
 
 	return err;
 }
@@ -797,6 +796,8 @@ static gboolean set_powered_timeout(gpointer user)
 		dbus_bool_t powered = FALSE;
 
 		modem->powered = FALSE;
+		notify_powered_watches(modem);
+
 		ofono_dbus_signal_property_changed(conn, modem->path,
 						OFONO_MODEM_INTERFACE,
 						"Powered", DBUS_TYPE_BOOLEAN,
@@ -1034,6 +1035,7 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		goto out;
 
 	modem->powered = powered;
+	notify_powered_watches(modem);
 
 	if (modem->lockdown)
 		ofono_dbus_signal_property_changed(conn, modem->path,
