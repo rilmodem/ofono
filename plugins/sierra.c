@@ -250,10 +250,10 @@ static struct ofono_modem_driver sierra_driver = {
 	.remove		= sierra_remove,
 	.enable		= sierra_enable,
 	.disable	= sierra_disable,
-	.set_online     = sierra_set_online,
+	.set_online	= sierra_set_online,
 	.pre_sim	= sierra_pre_sim,
 	.post_sim	= sierra_post_sim,
-	.post_online    = sierra_post_online,
+	.post_online	= sierra_post_online,
 };
 
 static int sierra_init(void)
