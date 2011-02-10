@@ -107,8 +107,15 @@ void sim_fs_free(struct sim_fs *fs)
 		g_queue_free(fs->op_q);
 	}
 
-	if (fs->contexts != NULL)
-		ofono_error("Freeing simfs, but contexs is not NULL");
+	if (fs->contexts != NULL) {
+		GSList *l;
+
+		for (l = fs->contexts; l; l = l->next) {
+			struct ofono_sim_context *context = l->data;
+
+			sim_fs_context_free(context);
+		}
+	}
 
 	g_free(fs);
 }
