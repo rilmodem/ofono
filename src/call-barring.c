@@ -56,7 +56,6 @@ struct ofono_call_barring {
 	int ss_req_type;
 	int ss_req_cls;
 	int ss_req_lock;
-	struct ofono_ssn *ssn;
 	struct ofono_ussd *ussd;
 	unsigned int ussd_watch;
 	const struct ofono_call_barring_driver *driver;
