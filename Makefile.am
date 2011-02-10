@@ -336,6 +336,9 @@ builtin_sources += examples/nettime.c
 
 builtin_modules += example_provision
 builtin_sources += examples/provision.c
+
+builtin_modules += example_emulator
+builtin_sources += examples/emulator.c
 endif
 
 builtin_modules += smart_messaging
