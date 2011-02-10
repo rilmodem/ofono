@@ -396,14 +396,14 @@ static DBusMessage *sms_get_properties(DBusConnection *conn,
 {
 	struct ofono_sms *sms = data;
 
+	if (sms->flags & MESSAGE_MANAGER_FLAG_CACHED)
+		return generate_get_properties_reply(sms, msg);
+
 	if (sms->pending)
 		return __ofono_error_busy(msg);
 
 	if (sms->driver->sca_query == NULL)
 		return __ofono_error_not_implemented(msg);
-
-	if (sms->flags & MESSAGE_MANAGER_FLAG_CACHED)
-		return generate_get_properties_reply(sms, msg);
 
 	sms->pending = dbus_message_ref(msg);
 
