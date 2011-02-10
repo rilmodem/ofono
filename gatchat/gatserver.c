@@ -796,6 +796,7 @@ static char *extract_line(GAtServer *p, struct ring_buffer *rbuf)
 	int line_length = 0;
 	gboolean in_string = FALSE;
 	char s3 = p->v250.s3;
+	char s5 = p->v250.s5;
 	char *line;
 	int i;
 
@@ -837,7 +838,10 @@ static char *extract_line(GAtServer *p, struct ring_buffer *rbuf)
 		if (*buf == '"')
 			in_string = !in_string;
 
-		if ((*buf == ' ' || *buf == '\t') && in_string == FALSE)
+		if (*buf == s5) {
+			if (i != 0)
+				i -= 1;
+		} else if ((*buf == ' ' || *buf == '\t') && in_string == FALSE)
 			; /* Skip */
 		else if (*buf != s3)
 			line[i++] = *buf;
