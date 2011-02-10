@@ -380,7 +380,7 @@ static void notify_online_watches(struct ofono_modem *modem)
 	for (l = modem->online_watches->items; l; l = l->next) {
 		item = l->data;
 		notify = item->notify;
-		notify(modem->online, item->notify_data);
+		notify(modem, modem->online, item->notify_data);
 	}
 }
 
@@ -396,7 +396,7 @@ static void notify_powered_watches(struct ofono_modem *modem)
 	for (l = modem->powered_watches->items; l; l = l->next) {
 		item = l->data;
 		notify = item->notify;
-		notify(modem->powered, item->notify_data);
+		notify(modem, modem->powered, item->notify_data);
 	}
 }
 
