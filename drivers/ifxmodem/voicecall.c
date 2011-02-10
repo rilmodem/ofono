@@ -630,6 +630,56 @@ static void clip_notify(GAtResult *result, gpointer user_data)
 		ofono_voicecall_notify(vc, call);
 }
 
+static void cnap_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+	GAtResultIter iter;
+	const char *name;
+	int validity;
+	GSList *l;
+	struct ofono_call *call;
+
+	/*
+	 * Currently, its not clear which URC will contain the
+	 * calling party name for the waiting call.
+	 */
+	l = g_slist_find_custom(vd->calls,
+				GINT_TO_POINTER(CALL_STATUS_INCOMING),
+				at_util_call_compare_by_status);
+	if (l == NULL) {
+		ofono_error("CNAP for unknown call");
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CNAP:"))
+		return;
+
+	if (!g_at_result_iter_next_string(&iter, &name))
+		return;
+
+	if (strlen(name) > 0)
+		validity = CNAP_VALIDITY_VALID;
+	else
+		validity = CNAP_VALIDITY_NOT_AVAILABLE;
+
+	/* If we have CNI validity field, override our guessed value */
+	g_at_result_iter_next_number(&iter, &validity);
+
+	DBG("%s %d", name, validity);
+
+	call = l->data;
+
+	strncpy(call->name, name, OFONO_MAX_CALLER_NAME_LENGTH);
+	call->name[OFONO_MAX_CALLER_NAME_LENGTH] = '\0';
+	call->cnap_validity = validity;
+
+	if (call->type == 0)
+		ofono_voicecall_notify(vc, call);
+}
+
 static void ccwa_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_voicecall *vc = user_data;
@@ -746,6 +796,7 @@ static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 
 	g_at_chat_register(vd->chat, "+CRING:", cring_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CLIP:", clip_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+CNAP:", cnap_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+CCWA:", ccwa_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+XEM:", xem_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+XCALLSTAT:", xcallstat_notify,
