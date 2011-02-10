@@ -451,4 +451,7 @@ ATTRS{idVendor}=="0421", ATTRS{idProduct}=="0623", ENV{OFONO_DRIVER}="nokia"
 ATTRS{idVendor}=="0421", ATTRS{idProduct}=="023e", ENV{OFONO_DRIVER}="nokiacdma"
 ATTRS{idVendor}=="0421", ATTRS{idProduct}=="00b6", ENV{OFONO_DRIVER}="nokiacdma"
 
++# Teracom (Linktop/LW27x) 3G Data Card
++ATTRS{idVendor}=="230d", ATTRS{idProduct}=="0001", ENV{OFONO_DRIVER}="linktop"
+
 LABEL="ofono_end"
