@@ -10,14 +10,6 @@ Methods		dict GetProperties()
 			Returns properties for the SimToolkit object.  See the
 			properties section for available properties.
 
-		array{byte} GetIcon(byte id)
-
-			Returns the icon data for icon identified by id.
-
-			Possible Errors: [service].Error.InvalidArguments
-					 [service].Error.InvalidFormat
-					 [service].Error.NotFound
-
 		void SelectItem(byte item, object agent)
 
 			Selects an item from the main menu, thus triggering
