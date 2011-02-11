@@ -10,11 +10,15 @@ Methods		dict GetProperties()
 			Returns SIM properties for the modem object.  See
 			the properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 		void ChangePin(string type, string oldpin, string newpin)
 
 			Changes the pin given by string type.
+
+			Possible Errors: [service].Error.NotImplemented
+					 [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		void EnterPin(string type, string pin)
 
@@ -22,10 +26,22 @@ Methods		dict GetProperties()
 			match the pin type being asked in the PinRequired
 			property.
 
+			Possible Errors: [service].Error.NotImplemented
+					 [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void ResetPin(string type, string puk, string newpin)
 
 			Provides the unblock key to the modem and if correct
 			resets the pin to the new value of newpin.
+
+			Possible Errors: [service].Error.NotImplemented
+					 [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		void LockPin(string type, string pin)
 
@@ -35,16 +51,33 @@ Methods		dict GetProperties()
 			re-inserted.  The current PIN is required for the
 			operation to succeed.
 
+			Possible Errors: [service].Error.NotImplemented
+					 [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void UnlockPin(string type, string pin)
 
 			Deactivates the lock for the particular pin type.  The
 			current PIN is required for the operation to succeed.
+
+			Possible Errors: [service].Error.NotImplemented
+					 [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		array{byte} GetIcon(byte id)
 
 			Obtain the icon given by id.  Only ids greater than 1
 			are valid.  XPM format is currently used to return the
 			icon data.
+
+			Possible Errors: [service].Error.NotImplemented
+					 [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string name, variant value)
 

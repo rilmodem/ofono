@@ -8,6 +8,8 @@ Methods		dict GetProperties()
 
 			Contains the properties for this object.
 
+			Possible Errors: [service].Error.InProgress
+
 		void SetProperty(string property, variant value,
 				 string password)
 
@@ -16,11 +18,23 @@ Methods		dict GetProperties()
 			to pass the SIM PIN2 code which may be
 			required by the SIM.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void Reset(string password)
 
 			Attempts to reset the Accumulated Call Meter.
 			Reseting this value requires SIM PIN2, provided
 			by the password parameter.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 

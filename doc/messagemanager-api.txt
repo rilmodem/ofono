@@ -10,7 +10,8 @@ Methods		dict GetProperties()
 			Returns properties for the manager object. See
 			the properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
 
 		array{object,dict} GetMessages()
 
@@ -29,14 +30,21 @@ Methods		dict GetProperties()
 			changeable. On success a PropertyChanged signal
 			will be emitted.
 
-			Possible Errors: [service].Error.InvalidArguments
-					 [service].Error.DoesNotExist
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		object SendMessage(string to, string text)
 
 			Send the message in text to the number in to.  If the
 			message could be queued successfully, this method
 			returns an object path to the created Message object.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string name, variant value)
 

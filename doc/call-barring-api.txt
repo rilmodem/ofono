@@ -9,28 +9,59 @@ Methods		dict GetProperties()
 
 			Contains the properties for this object.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+
 		void ChangePassword(string old_password, string new_password)
 
 			Register new network password for the barring
 			services.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void DisableAll(string password)
 
 			Disables all call barrings.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		void DisableAllIncoming(string password)
 
 			Disables barrings for incoming calls.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void DisableAllOutgoing(string password)
 
 			Disables barrings for outgoing calls.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		void SetProperty(string property, variant value, string pin2)
 
 			Sets the given property value to that specified in
 			call parameter.  For all properties, the password
 			(typically PIN2) must be provided.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 

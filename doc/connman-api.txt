@@ -10,19 +10,22 @@ Methods		dict GetProperties()
 			Returns all global system properties. See the
 			properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 		void SetProperty(string property, variant value)
 
 			Sets the property to a desired value
 
-			Possible Errors: [service].Error.InvalidArguments
-					 [service].Error.InvalidFormat
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
 					 [service].Error.Failed
 
 		void DeactivateAll()
 
 			Deactivates all active contexts.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.Failed
 
 		array{object,dict} GetContexts()
 
@@ -41,11 +44,21 @@ Methods		dict GetProperties()
 			Type documentation of ConnectionContext interface.
 			Returns the object path of the created context.
 
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void RemoveContext(object context)
 
 			Removes a primary context.  All secondary contexts, if
 			any, associated with the primary context are also
 			removed.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.NotFound
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 
@@ -130,8 +143,6 @@ Object path	[variable]
 Methods		dict GetProperties()
 			Returns all properties for the context object.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 		void SetProperty(string property, variant value)
 
 			Sets the property to a desired value
@@ -139,8 +150,10 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InvalidArguments
 					 [service].Error.InvalidFormat
 					 [service].Error.Failed
+					 [service].Error.InProgress
 					 [service].Error.NotAttached
 					 [service].Error.AttachInProgress
+					 [service].Error.NotImplemented
 
 Signals		PropertyChanged(string property, variant value)
 

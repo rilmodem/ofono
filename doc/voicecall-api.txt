@@ -10,8 +10,6 @@ Methods		dict GetProperties()
 			Returns all properties for this object. See the
 			properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 		void Deflect(string number)
 
 			Deflects the incoming or waiting call to number given
@@ -24,6 +22,12 @@ Methods		dict GetProperties()
 
 			This method should not be confused with the Transfer()
 			method.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		void Hangup()
 
@@ -43,6 +47,10 @@ Methods		dict GetProperties()
 			of a held multiparty call might not be possible on some
 			implementations.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.Failed
+					 [service].Error.NotImplemented
+
 		void Answer()
 
 			Answers the incoming call.  Only valid if the state
@@ -50,6 +58,11 @@ Methods		dict GetProperties()
 
 			This functionality is generally implemented by ATA
 			AT command.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.Failed
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 

@@ -10,9 +10,8 @@ Methods		dict GetProperties()
 			Returns all radio access properties. See the
 			properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
+			Possible Errors: [service].Error.InProgress
 					 [service].Error.NotImplemented
-					 [service].Error.InProgress
 					 [service].Error.Failed
 
 		void SetProperty(string name, variant value)
@@ -22,9 +21,9 @@ Methods		dict GetProperties()
 			changeable. On success a PropertyChanged signal
 			will be emitted.
 
-			Possible Errors: [service].Error.InvalidArguments
-					 [service].Error.DoesNotExist
-					 [service].Error.InProgress
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
 					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)

@@ -10,8 +10,6 @@ Methods		dict GetProperties()
 			Returns all audio settings properties. See the
 			properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 Signals		PropertyChanged(string property, variant value)
 
 			This signal indicates a changed value of the given

@@ -15,4 +15,4 @@ Methods		string Import()
 			The phonebook is returned as a single UTF8 encoded
 			string with zero or more VCard entries.
 
-			Possible Errors: [service].Error.Failed
+			Possible Errors: [service].Error.InProgress

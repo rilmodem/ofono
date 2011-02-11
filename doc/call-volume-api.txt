@@ -10,8 +10,6 @@ Methods		dict GetProperties()
 			Returns properties for the CallVolume object. See
 			the properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 		void SetProperty(string property, variant value)
 
 			Changes the value of the specified property. Only
@@ -19,8 +17,11 @@ Methods		dict GetProperties()
 			changeable. On success a PropertyChanged signal
 			will be emitted.
 
-			Possible Errors: [service].Error.InvalidArguments
-					 [service].Error.DoesNotExist
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string name, variant value)
 

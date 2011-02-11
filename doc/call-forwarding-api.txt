@@ -8,6 +8,9 @@ Methods		dict GetProperties()
 
 			Contains the properties for this object.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+
 		void DisableAll(string type)
 
 			Disables all call forwarding rules for type.
@@ -16,10 +19,23 @@ Methods		dict GetProperties()
 				"conditional" - Disables all conditional rules,
 					e.g. busy, no reply and not reachable.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void SetProperty(string property, variant value)
 
 			Sets the given property value to that specified in
 			call parameter.
+
+			Possible Errors: [service].Error.NotAvailable
+					 [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 

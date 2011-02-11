@@ -15,8 +15,6 @@ Methods		array{object,dict} GetModems()
 			and removal shall be monitored via ModemAdded and
 			ModemRemoved signals.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 Signals		ModemAdded(object path, dict properties)
 
 			Signal that is sent when a new modem is added.  It

@@ -10,8 +10,6 @@ Methods		dict GetProperties()
 			Returns properties for the VoiceCallManager Interface.
 			See the properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 		array{object,dict} GetCalls()
 
 			Get an array of call object paths and properties
@@ -37,6 +35,12 @@ Methods		dict GetProperties()
 
 			This is usually implemented using the ATD AT command.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
 		void Transfer()
 
 			Joins the currently Active (or Outgoing, depending
@@ -48,6 +52,10 @@ Methods		dict GetProperties()
 
 			This functionality is generally implemented by using
 			the +CHLD=4 AT command.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 		void SwapCalls()
 
@@ -65,12 +73,20 @@ Methods		dict GetProperties()
 			This functionality is generally implemented by using
 			the +CHLD=2 AT command.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
 		void ReleaseAndAnswer()
 
 			Releases currently active call (0 or more) and
 			answers the currently waiting call. Please note that
 			if the current call is a multiparty call, then all
 			parties in the multi-party call will be released.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 		void HoldAndAnswer()
 
@@ -80,9 +96,17 @@ Methods		dict GetProperties()
 			Held calls is invalid, since in GSM a user can have
 			only a single Held call at a time.
 
+                        Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
 		void HangupAll()
 
 			Releases all calls.
+
+                        Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 		array{object} PrivateChat(object call)
 
@@ -96,6 +120,13 @@ Methods		dict GetProperties()
 			participating in the multiparty call.
 
 			This is usually implemented using the +CHLD=2X command.
+
+                        Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.NotFound
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 		array{object} CreateMultiparty()
 
@@ -111,10 +142,18 @@ Methods		dict GetProperties()
 			This is usually implemented using the +CHLD=3 AT
 			command.
 
+                        Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
 		void HangupMultiparty()
 
 			Hangs up the multi-party call.  All participating
 			calls are released.
+
+                        Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 		void SendTones(string tones)
 
@@ -122,6 +161,12 @@ Methods		dict GetProperties()
 			a fixed duration.  Tones can be one of: '0' - '9',
 			'*', '#', 'A', 'B', 'C', 'D'.  The last four are
 			typically not used in normal circumstances.
+
+                        Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 Signals		CallAdded(object path, dict properties)
 

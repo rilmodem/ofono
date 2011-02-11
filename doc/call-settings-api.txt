@@ -8,10 +8,18 @@ Methods		dict GetProperties()
 
 			Contains the properties for this object.
 
+			Possible Errors: [service].Error.InProgress
+
 		void SetProperty(string property, variant value)
 
 			Sets the given property value to that specified in
 			call parameter.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 

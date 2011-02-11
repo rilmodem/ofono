@@ -23,8 +23,11 @@ Methods		string, variant Initiate(string command)
 			The output arguments are described in section
 			"Initiate method outptut arguments" below.
 
-			Possible Errors: [service].Error.Timedout
-			Possible Errors: [service].Error.Canceled
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		string Respond(string reply)
 
@@ -32,13 +35,22 @@ Methods		string, variant Initiate(string command)
 			it is awaiting further input after Initiate()
 			was called or after a network-initiated request.
 
-			Possible Errors: [service].Error.Timedout
-			Possible Errors: [service].Error.Canceled
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotActive
+					 [service].Error.NotImplemented
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
 
 		void Cancel()
 
 			Cancel an ongoing USSD session, mobile- or
 			network-initiated.
+
+			Possible Errors: [service].Error.NotActive
+					 [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 		dict GetProperties()
 

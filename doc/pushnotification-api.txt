@@ -10,9 +10,17 @@ Methods		void RegisterAgent(object path)
 			Registers an agent which will be called whenever a
 			new Smart Messaging based SMS arrives.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void UnregisterAgent(object path)
 
 			Unregisters an agent.
+
+			Possible Errors: [service].Error.InvalidArguments
+					 [service].Error.Failed
 
 PushNotificationAgent Hierarchy [experimental]
 ===============

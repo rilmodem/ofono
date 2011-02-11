@@ -15,9 +15,19 @@ Methods		dict GetProperties()
 			Initiates a new outgoing call.  This is usually
 			implemented using the ATD AT command.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
+
 		void Hangup()
 
 			Hangup all active calls.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotImplemented
+					 [service].Error.Failed
 
 		void Answer()
 

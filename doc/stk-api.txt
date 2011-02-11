@@ -10,8 +10,6 @@ Methods		dict GetProperties()
 			Returns properties for the SimToolkit object.  See the
 			properties section for available properties.
 
-			Possible Errors: [service].Error.InvalidArguments
-
 		array{byte} GetIcon(byte id)
 
 			Returns the icon data for icon identified by id.
@@ -27,6 +25,12 @@ Methods		dict GetProperties()
 			a new agent to be used for the duration of the
 			user session.
 
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotSupported
+					 [service].Error.InvalidArguments
+					 [service].Error.InvalidFormat
+					 [service].Error.Failed
+
 		void RegisterAgent(object path)
 
 			Registers a default agent to be used for SIM initiated
@@ -35,9 +39,10 @@ Methods		dict GetProperties()
 			received and might not involve interaction from the
 			user.
 
-			Possible Errors: [service].Error.InvalidArguments
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
 					 [service].Error.InvalidFormat
-					 [service].Error.InUse
+					 [service].Error.Failed
 
 		void UnregisterAgent(object path)
 
@@ -46,9 +51,7 @@ Methods		dict GetProperties()
 			are rejected.
 
 			Possible Errors: [service].Error.InvalidArguments
-					 [service].Error.InvalidFormat
-					 [service].Error.NotFound
-					 [service].Error.NotAuthorized
+					 [service].Error.Failed
 
 Signals		PropertyChanged(string property, variant value)
 
