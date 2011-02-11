@@ -145,7 +145,10 @@ static void ifx_set_rat_mode(struct ofono_radio_settings *rs,
 		goto error;
 	}
 
-	snprintf(buf, sizeof(buf), "AT+XRAT=%u,%u", value, preferred);
+	if (value == 1)
+		snprintf(buf, sizeof(buf), "AT+XRAT=%u,%u", value, preferred);
+	else
+		snprintf(buf, sizeof(buf), "AT+XRAT=%u", value);
 
 	if (g_at_chat_send(rsd->chat, buf, none_prefix,
 					xrat_modify_cb, cbd, g_free) > 0)
