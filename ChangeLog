@@ -1,3 +1,12 @@
+ver 0.42:
+	Fix issue with ECT pre-conditions check.
+	Add support for watching SIM file changes.
+	Add support for using SIM codes longer than 8 digits.
+	Add support for SPN handling with GPRS provisioning.
+	Add support for better handling COLP with IFX modem.
+	Add support for CNAP handling with IFX modem.
+	Remove support for +CSSI type SS notifications.
+
 ver 0.41:
 	Fix issue with SIM callback handling.
 	Fix issue with XTMS handling and IFX modem.
