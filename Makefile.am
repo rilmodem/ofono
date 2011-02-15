@@ -574,7 +574,7 @@ MAINTAINERCLEANFILES = Makefile.in \
 
 src/plugin.$(OBJEXT): src/builtin.h
 
-src/builtin.h: src/genbuiltin $(builtin_sources)
+src/builtin.h: src/genbuiltin config.status
 	$(AM_V_GEN)$(srcdir)/src/genbuiltin $(builtin_modules) > $@
 
 plugins/%.rules:
