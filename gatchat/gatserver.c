@@ -618,6 +618,9 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 		while (buf[i] != '\0' && buf[i] != ';')
 			i += 1;
 
+		if (buf[i] == ';')
+			i += 1;
+
 		goto done;
 	}
 
@@ -661,10 +664,13 @@ done:
 	} else /* Handle S-parameter with 100+ */
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 
-	/* Commands like ATA, ATZ cause the remainder line
-	 * to be ignored.
+	/*
+	 * Commands like ATA, ATZ cause the remainder linevto be ignored.
+	 * In GSM/UMTS the ATD uses the separator ';' character as a voicecall
+	 * modifier, so we ignore everything coming after that character
+	 * as well.
 	 */
-	if (prefix[0] == 'A' || prefix[0] == 'Z')
+	if (prefix[0] == 'A' || prefix[0] == 'Z' || prefix[0] == 'D')
 		return strlen(buf);
 
 	/* Consume the seperator ';' */
