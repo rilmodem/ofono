@@ -1784,6 +1784,59 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 				"Mode", netreg->mode);
 }
 
+static void sim_pnn_opl_changed(int id, void *userdata)
+{
+	struct ofono_netreg *netreg = userdata;
+	GSList *l;
+
+	/*
+	 * Free references to structures on the netreg->eons list and
+	 * update the operator info on D-bus.  If EFpnn/EFopl read succeeds,
+	 * operator info will be updated again, otherwise it won't be
+	 * updated again.
+	 */
+	for (l = netreg->operator_list; l; l = l->next)
+		set_network_operator_eons_info(l->data, NULL);
+
+	sim_eons_free(netreg->eons);
+	netreg->eons = NULL;
+
+	ofono_sim_read(netreg->sim_context, SIM_EFPNN_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_FIXED,
+			sim_pnn_read_cb, netreg);
+}
+
+static void sim_spn_spdi_changed(int id, void *userdata)
+{
+	struct ofono_netreg *netreg = userdata;
+
+	netreg->flags &= ~(NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN |
+			NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN);
+
+	g_free(netreg->spname);
+	netreg->spname = NULL;
+
+	sim_spdi_free(netreg->spdi);
+	netreg->spdi = NULL;
+
+	if (netreg->current_operator) {
+		DBusConnection *conn = ofono_dbus_get_connection();
+		const char *path = __ofono_atom_get_path(netreg->atom);
+		const char *operator;
+
+		operator = get_operator_display_name(netreg);
+
+		ofono_dbus_signal_property_changed(conn, path,
+					OFONO_NETWORK_REGISTRATION_INTERFACE,
+					"Name", DBUS_TYPE_STRING,
+					&operator);
+	}
+
+	ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_spn_read_cb, netreg);
+}
+
 void ofono_netreg_register(struct ofono_netreg *netreg)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1822,9 +1875,22 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 		ofono_sim_read(netreg->sim_context, SIM_EFPNN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				sim_pnn_read_cb, netreg);
+		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFPNN_FILEID,
+						sim_pnn_opl_changed, netreg,
+						NULL);
+		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFOPL_FILEID,
+						sim_pnn_opl_changed, netreg,
+						NULL);
+
 		ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_spn_read_cb, netreg);
+		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFSPN_FILEID,
+						sim_spn_spdi_changed, netreg,
+						NULL);
+		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFSPDI_FILEID,
+						sim_spn_spdi_changed, netreg,
+						NULL);
 	}
 
 	__ofono_atom_register(netreg->atom, netreg_unregister);
