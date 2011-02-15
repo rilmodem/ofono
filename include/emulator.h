@@ -33,6 +33,7 @@ struct ofono_emulator_request;
 
 enum ofono_emulator_type {
 	OFONO_EMULATOR_TYPE_DUN,
+	OFONO_EMULATOR_TYPE_HFP,
 };
 
 enum ofono_emulator_request_type {
