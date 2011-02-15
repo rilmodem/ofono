@@ -479,6 +479,7 @@ static unsigned int parse_extended_command(GAtServer *server, char *buf)
 	char prefix[18]; /* According to V250, 5.4.1 */
 	GAtServerRequestType type;
 	char tmp;
+	unsigned int cmd_start;
 
 	prefix_len = strcspn(buf, separators);
 
@@ -505,6 +506,7 @@ static unsigned int parse_extended_command(GAtServer *server, char *buf)
 		return 0;
 
 	type = G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY;
+	cmd_start = prefix_len;
 
 	/* Continue until we hit eol or ';' */
 	while (buf[i] && !(buf[i] == ';' && in_string == FALSE)) {
@@ -524,6 +526,7 @@ static unsigned int parse_extended_command(GAtServer *server, char *buf)
 				return 0;
 
 			type = G_AT_SERVER_REQUEST_TYPE_QUERY;
+			cmd_start += 1;
 
 			if (seen_equals)
 				type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
@@ -533,6 +536,7 @@ static unsigned int parse_extended_command(GAtServer *server, char *buf)
 
 			seen_equals = TRUE;
 			type = G_AT_SERVER_REQUEST_TYPE_SET;
+			cmd_start += 1;
 		}
 
 next:
@@ -542,7 +546,7 @@ next:
 	/* We can scratch in this buffer, so mark ';' as null */
 	tmp = buf[i];
 	buf[i] = '\0';
-	at_command_notify(server, buf, prefix, type);
+	at_command_notify(server, buf + cmd_start, prefix, type);
 	buf[i] = tmp;
 
 	/* Also consume the terminating null */
@@ -594,6 +598,7 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 	char prefix[4], tmp;
 	unsigned int i, prefix_size;
 	GAtServerRequestType type;
+	unsigned int cmd_start;
 
 	prefix_size = get_basic_prefix_size(buf);
 	if (prefix_size == 0)
@@ -601,6 +606,7 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 
 	i = prefix_size;
 	prefix[0] = g_ascii_toupper(buf[0]);
+	cmd_start = prefix_size;
 
 	if (prefix[0] == 'D') {
 		type = G_AT_SERVER_REQUEST_TYPE_SET;
@@ -621,10 +627,12 @@ static unsigned int parse_basic_command(GAtServer *server, char *buf)
 	if (buf[i] == '=') {
 		seen_equals = TRUE;
 		i += 1;
+		cmd_start += 1;
 	}
 
 	if (buf[i] == '?') {
 		i += 1;
+		cmd_start += 1;
 
 		if (seen_equals)
 			type = G_AT_SERVER_REQUEST_TYPE_SUPPORT;
@@ -648,7 +656,7 @@ done:
 
 		tmp = buf[i];
 		buf[i] = '\0';
-		at_command_notify(server, buf, prefix, type);
+		at_command_notify(server, buf + cmd_start, prefix, type);
 		buf[i] = tmp;
 	} else /* Handle S-parameter with 100+ */
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
