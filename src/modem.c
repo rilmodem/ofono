@@ -532,7 +532,7 @@ static void common_online_cb(const struct ofono_error *error, void *data)
 	 *
 	 * Additionally, this process can be interrupted by the following
 	 * events:
-	 *	- Sim being removed
+	 *	- Sim being removed or reset
 	 *	- SetProperty(Powered, False) being called
 	 *	- SetProperty(Lockdown, True) being called
 	 *
@@ -546,7 +546,7 @@ static void common_online_cb(const struct ofono_error *error, void *data)
 		/* The powered operation is pending */
 		break;
 	case MODEM_STATE_PRE_SIM:
-		/* Go back offline if the sim was removed */
+		/* Go back offline if the sim was removed or reset */
 		modem->driver->set_online(modem, 0, NULL, NULL);
 		break;
 	case MODEM_STATE_ONLINE:
@@ -598,9 +598,13 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 
 	switch (new_state) {
 	case OFONO_SIM_STATE_NOT_PRESENT:
-		modem_change_state(modem, MODEM_STATE_PRE_SIM);
-		break;
 	case OFONO_SIM_STATE_INSERTED:
+		if (modem->modem_state != MODEM_STATE_PRE_SIM) {
+			if (modem->modem_state == MODEM_STATE_ONLINE)
+				modem->get_online = TRUE;
+
+			modem_change_state(modem, MODEM_STATE_PRE_SIM);
+		}
 		break;
 	case OFONO_SIM_STATE_READY:
 		modem_change_state(modem, MODEM_STATE_OFFLINE);
