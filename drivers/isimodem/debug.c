@@ -166,6 +166,54 @@ const char *mtc_modem_state_name(enum mtc_modem_state value)
 	return "MTC_<UNKNOWN>";
 }
 
+const char *mce_message_id_name(enum mce_message_id value)
+{
+	switch (value) {
+		_(MCE_MODEM_STATE_IND);
+		_(MCE_MODEM_STATE_QUERY_REQ);
+		_(MCE_MODEM_STATE_QUERY_RESP);
+		_(MCE_RF_STATE_REQ);
+		_(MCE_RF_STATE_RESP);
+		_(MCE_RF_STATE_IND);
+		_(MCE_RF_STATE_QUERY_REQ);
+		_(MCE_RF_STATE_QUERY_RESP);
+		_(MCE_POWER_OFF_REQ);
+		_(MCE_POWER_OFF_RESP);
+	}
+	return "MCE_<UNKNOWN>";
+}
+
+const char *mce_modem_state_name(enum mce_modem_state value)
+{
+	switch (value) {
+		_(MCE_NORMAL);
+		_(MCE_LOCAL);
+		_(MCE_SW_RESET);
+		_(MCE_POWER_OFF);
+	}
+	return "MCE_<UNKNOWN>";
+}
+
+const char *mce_status_info(enum mce_status_info value)
+{
+	switch (value) {
+		_(MCE_OK);
+		_(MCE_FAIL);
+		_(MCE_ALREADY_ACTIVE);
+		_(MCE_TRANSITION_ONGOING);
+	}
+	return "MCE_<UNKNOWN>";
+}
+
+const char *mce_rf_state_name(enum mce_rf_state value)
+{
+	switch (value) {
+		_(MCE_RF_OFF);
+		_(MCE_RF_ON);
+	}
+	return "MCE_RF<UNKNOWN>";
+}
+
 const char *sms_isi_cause_name(enum sms_isi_cause value)
 {
 	switch (value) {

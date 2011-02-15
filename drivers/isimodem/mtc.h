@@ -27,8 +27,46 @@ extern "C" {
 #endif
 
 #define PN_MTC				0x15
+#define PN_MODEM_MCE			0xC2
 #define MTC_TIMEOUT			5
 #define MTC_STATE_REQ_TIMEOUT		(6 + 5)
+
+enum mce_message_id {
+	MCE_MODEM_STATE_IND =		0x00,
+	MCE_MODEM_STATE_QUERY_REQ =     0x01,
+	MCE_MODEM_STATE_QUERY_RESP =    0x02,
+	MCE_RF_STATE_REQ =		0x03,
+	MCE_RF_STATE_RESP =		0x04,
+	MCE_RF_STATE_IND =		0x05,
+	MCE_RF_STATE_QUERY_REQ =	0x06,
+	MCE_RF_STATE_QUERY_RESP =       0x07,
+	MCE_POWER_OFF_REQ =		0x08,
+	MCE_POWER_OFF_RESP =		0x09
+};
+
+enum mce_rf_state {
+	MCE_RF_OFF =			0x00,
+	MCE_RF_ON =			0x01
+};
+
+enum mce_status_info {
+	MCE_OK =			0x00,
+	MCE_FAIL =			0x01,
+	MCE_ALREADY_ACTIVE =		0x06,
+	MCE_TRANSITION_ONGOING =	0x16
+};
+
+enum mce_modem_state {
+	MCE_NORMAL =			0x00,
+	MCE_LOCAL =			0x01,
+	MCE_SW_RESET =			0x80,
+	MCE_POWER_OFF =			0x81
+};
+
+enum mce_isi_action {
+	MCE_START =			0x03,
+	MCE_READY =			0x04
+};
 
 enum mtc_isi_cause {
 	MTC_OK =			0x00,

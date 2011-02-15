@@ -41,6 +41,14 @@ const char *ss_ussd_type_name(enum ss_ussd_type value);
 const char *mtc_isi_cause_name(enum mtc_isi_cause value);
 const char *mtc_message_id_name(enum mtc_message_id value);
 const char *mtc_modem_state_name(enum mtc_modem_state value);
+const char *mce_rf_state_name(enum mce_rf_state value);
+
+const char *mce_message_id_name(enum mce_message_id value);
+const char *mce_modem_state_name(enum mce_modem_state value);
+const char *mce_status_info(enum mce_status_info value);
+
+const char *uicc_subblock_name(uint8_t value);
+const char *uicc_status_name(uint8_t value);
 
 const char *sms_gsm_cause_name(enum sms_gsm_cause value);
 const char *sms_isi_cause_name(enum sms_isi_cause value);
