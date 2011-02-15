@@ -220,7 +220,7 @@ void bluetooth_parse_properties(DBusMessage *reply, const char *property, ...)
 	}
 
 done:
-	g_slist_foreach(prop_handlers, (GFunc)g_free, NULL);
+	g_slist_foreach(prop_handlers, (GFunc) g_free, NULL);
 	g_slist_free(prop_handlers);
 }
 
@@ -744,7 +744,7 @@ static void find_adapter_cb(DBusPendingCall *call, gpointer user_data)
 
 	adapter_any_path = g_strdup(path);
 
-	g_slist_foreach(server_list, (GFunc)add_record, NULL);
+	g_slist_foreach(server_list, (GFunc) add_record, NULL);
 
 done:
 	dbus_message_unref(reply);
@@ -880,7 +880,7 @@ struct server *bluetooth_register_server(guint8 channel, const char *sdp_record,
 
 	server_list = g_slist_prepend(server_list, server);
 
-	if(adapter_any_path != NULL)
+	if (adapter_any_path != NULL)
 		add_record(server, NULL);
 
 	return server;
