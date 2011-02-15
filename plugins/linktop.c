@@ -200,7 +200,7 @@ static int linktop_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->modem, "AT &F", none_prefix,
 						NULL, NULL, NULL);
 
-	g_at_chat_send(data->control, "AT+CFUN=1", none_prefix,
+	g_at_chat_send(data->control, "AT+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
