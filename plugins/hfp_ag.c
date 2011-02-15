@@ -94,12 +94,29 @@ static gboolean hfp_ag_disconnect_cb(GIOChannel *io, GIOCondition cond,
 
 static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 {
+	struct ofono_modem *modem;
+	struct ofono_emulator *em;
+	int fd;
+
 	DBG("");
 
 	if (err) {
 		DBG("%s", err->message);
 		goto failed;
 	}
+
+	/* Pick the first voicecall capable modem */
+	modem = modems->data;
+	if (modem == NULL)
+		goto failed;
+	DBG("Picked modem %p for emulator", modem);
+
+	em = ofono_emulator_create(modem, OFONO_EMULATOR_TYPE_HFP);
+	if (em == NULL)
+		goto failed;
+
+	fd = g_io_channel_unix_get_fd(io);
+	ofono_emulator_register(em, fd);
 
 	channel_watch = g_io_add_watch(io, G_IO_NVAL | G_IO_HUP | G_IO_ERR,
 					hfp_ag_disconnect_cb, NULL);
