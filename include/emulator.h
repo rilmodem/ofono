@@ -29,10 +29,22 @@ extern "C" {
 #include <ofono/types.h>
 
 struct ofono_emulator;
+struct ofono_emulator_request;
 
 enum ofono_emulator_type {
 	OFONO_EMULATOR_TYPE_DUN,
 };
+
+enum ofono_emulator_request_type {
+	OFONO_EMULATOR_REQUEST_TYPE_COMMAND_ONLY,
+	OFONO_EMULATOR_REQUEST_TYPE_QUERY,
+	OFONO_EMULATOR_REQUEST_TYPE_SUPPORT,
+	OFONO_EMULATOR_REQUEST_TYPE_SET,
+};
+
+typedef void (*ofono_emulator_request_cb_t)(struct ofono_emulator *em,
+					struct ofono_emulator_request *req,
+					void *data);
 
 struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 						enum ofono_emulator_type type);
@@ -40,6 +52,27 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 void ofono_emulator_register(struct ofono_emulator *em, int fd);
 
 void ofono_emulator_remove(struct ofono_emulator *em);
+
+void ofono_emulator_send_final(struct ofono_emulator *em,
+				const struct ofono_error *final);
+void ofono_emulator_send_unsolicited(struct ofono_emulator *em,
+					const char *result);
+void ofono_emulator_send_intermediate(struct ofono_emulator *em,
+					const char *result);
+void ofono_emulator_send_info(struct ofono_emulator *em, const char *line,
+				ofono_bool_t last);
+
+ofono_bool_t ofono_emulator_request_next_string(
+					struct ofono_emulator_request *req,
+					const char **str);
+ofono_bool_t ofono_emulator_request_next_number(
+					struct ofono_emulator_request *req,
+					int *number);
+
+const char *ofono_emulator_request_get_raw(struct ofono_emulator_request *req);
+
+enum ofono_emulator_request_type ofono_emulator_request_get_type(
+					struct ofono_emulator_request *req);
 
 #ifdef __cplusplus
 }
