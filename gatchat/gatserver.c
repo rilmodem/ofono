@@ -319,24 +319,21 @@ static void s_template_cb(GAtServerRequestType type, GAtResult *result,
 	}
 }
 
-static void at_s3_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_s3_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	s_template_cb(type, result, server, &server->v250.s3, "S3", 0, 127);
 }
 
-static void at_s4_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_s4_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	s_template_cb(type, result, server, &server->v250.s4, "S4", 0, 127);
 }
 
-static void at_s5_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_s5_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	s_template_cb(type, result, server, &server->v250.s5, "S5", 0, 127);
 }
 
@@ -384,53 +381,46 @@ static void at_template_cb(GAtServerRequestType type, GAtResult *result,
 	}
 }
 
-static void at_e_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_e_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.echo, "E", 0, 1, 1);
 }
 
-static void at_q_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_q_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.quiet, "Q", 0, 1, 0);
 }
 
-static void at_v_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_v_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.is_v1, "V", 0, 1, 1);
 }
 
-static void at_x_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_x_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.res_format,
 			"X", 0, 4, 4);
 }
 
-static void at_s6_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_s6_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.s6, "S6", 0, 1, 1);
 }
 
-static void at_c109_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_c109_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.c109, "&C", 0, 1, 1);
 }
 
-static void at_c108_cb(GAtServerRequestType type, GAtResult *result,
-			gpointer user_data)
+static void at_c108_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
 {
-	GAtServer *server = user_data;
 	at_template_cb(type, result, server, &server->v250.c108, "&D", 0, 2, 2);
 }
 
@@ -463,7 +453,7 @@ static void at_command_notify(GAtServer *server, char *command,
 	result.lines = g_slist_prepend(NULL, command);
 	result.final_or_pdu = 0;
 
-	node->notify(type, &result, node->user_data);
+	node->notify(server, type, &result, node->user_data);
 
 	g_slist_free(result.lines);
 }
@@ -1078,16 +1068,16 @@ static void at_notify_node_destroy(gpointer data)
 
 static void basic_command_register(GAtServer *server)
 {
-	g_at_server_register(server, "S3", at_s3_cb, server, NULL);
-	g_at_server_register(server, "S4", at_s4_cb, server, NULL);
-	g_at_server_register(server, "S5", at_s5_cb, server, NULL);
-	g_at_server_register(server, "E", at_e_cb, server, NULL);
-	g_at_server_register(server, "Q", at_q_cb, server, NULL);
-	g_at_server_register(server, "V", at_v_cb, server, NULL);
-	g_at_server_register(server, "X", at_x_cb, server, NULL);
-	g_at_server_register(server, "S6", at_s6_cb, server, NULL);
-	g_at_server_register(server, "&C", at_c109_cb, server, NULL);
-	g_at_server_register(server, "&D", at_c108_cb, server, NULL);
+	g_at_server_register(server, "S3", at_s3_cb, NULL, NULL);
+	g_at_server_register(server, "S4", at_s4_cb, NULL, NULL);
+	g_at_server_register(server, "S5", at_s5_cb, NULL, NULL);
+	g_at_server_register(server, "E", at_e_cb, NULL, NULL);
+	g_at_server_register(server, "Q", at_q_cb, NULL, NULL);
+	g_at_server_register(server, "V", at_v_cb, NULL, NULL);
+	g_at_server_register(server, "X", at_x_cb, NULL, NULL);
+	g_at_server_register(server, "S6", at_s6_cb, NULL, NULL);
+	g_at_server_register(server, "&C", at_c109_cb, NULL, NULL);
+	g_at_server_register(server, "&D", at_c108_cb, NULL, NULL);
 }
 
 GAtServer *g_at_server_new(GIOChannel *io)

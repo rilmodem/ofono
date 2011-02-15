@@ -65,7 +65,8 @@ enum _GAtServerRequestType {
 
 typedef enum _GAtServerRequestType GAtServerRequestType;
 
-typedef void (*GAtServerNotifyFunc)(GAtServerRequestType type,
+typedef void (*GAtServerNotifyFunc)(GAtServer *server,
+					GAtServerRequestType type,
 					GAtResult *result, gpointer user_data);
 
 GAtServer *g_at_server_new(GIOChannel *io);

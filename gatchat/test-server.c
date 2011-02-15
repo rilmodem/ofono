@@ -187,10 +187,9 @@ static gboolean setup_ppp(gpointer user)
 	return FALSE;
 }
 
-static void cgmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgmi_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
 		g_at_server_send_info(server, "oFono", TRUE);
@@ -204,10 +203,9 @@ static void cgmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	};
 }
 
-static void cgmm_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgmm_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
 		g_at_server_send_info(server, "oFono pre-1.0", TRUE);
@@ -221,9 +219,9 @@ static void cgmm_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	};
 }
 
-static void cgmr_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgmr_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[256];
 
 	switch (type) {
@@ -240,10 +238,9 @@ static void cgmr_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	};
 }
 
-static void cgsn_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgsn_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
 		g_at_server_send_info(server, "123456789", TRUE);
@@ -266,9 +263,9 @@ static gboolean send_ok(gpointer user)
 	return FALSE;
 }
 
-static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cfun_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[12];
 
 	switch (type) {
@@ -314,10 +311,9 @@ error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static void cpin_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cpin_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	if (modem_mode == 0) {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		return;
@@ -359,10 +355,9 @@ static gboolean do_netreg(gpointer user)
 	return FALSE;
 }
 
-static void cops_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cops_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	if (modem_mode == 0) {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		return;
@@ -403,9 +398,9 @@ static void cops_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void creg_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void creg_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[20];
 
 	if (modem_mode == 0) {
@@ -452,9 +447,9 @@ error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static void cgreg_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgreg_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[20];
 
 	if (modem_mode == 0) {
@@ -501,9 +496,9 @@ error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static void cgatt_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgatt_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[12];
 
 	if (modem_mode == 0) {
@@ -554,10 +549,9 @@ error:
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
-static void cgdata_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgdata_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	if (modem_mode == 0) {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		return;
@@ -580,10 +574,9 @@ static void cgdata_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void cgdcont_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cgdcont_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	if (modem_mode == 0) {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		return;
@@ -605,10 +598,9 @@ static void cgdcont_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void cimi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cimi_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
 		g_at_server_send_info(server, "246813579", TRUE);
@@ -623,10 +615,9 @@ static void cimi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void csms_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void csms_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
@@ -645,10 +636,9 @@ static void csms_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void cmgf_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cmgf_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
@@ -667,9 +657,9 @@ static void cmgf_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void cpms_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cpms_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[2048];
 
 	switch (type) {
@@ -812,27 +802,27 @@ static void add_handler(GAtServer *server)
 {
 	g_at_server_set_debug(server, server_debug, "Server");
 
-	g_at_server_register(server, "+CGMI",    cgmi_cb,    server, NULL);
-	g_at_server_register(server, "+CGMM",    cgmm_cb,    server, NULL);
-	g_at_server_register(server, "+CGMR",    cgmr_cb,    server, NULL);
-	g_at_server_register(server, "+CGSN",    cgsn_cb,    server, NULL);
-	g_at_server_register(server, "+CFUN",    cfun_cb,    server, NULL);
-	g_at_server_register(server, "+CPIN",    cpin_cb,    server, NULL);
-	g_at_server_register(server, "+COPS",    cops_cb,    server, NULL);
-	g_at_server_register(server, "+CREG",    creg_cb,    server, NULL);
-	g_at_server_register(server, "+CGREG",   cgreg_cb,   server, NULL);
-	g_at_server_register(server, "+CGATT",   cgatt_cb,   server, NULL);
-	g_at_server_register(server, "+CGDATA",  cgdata_cb,  server, NULL);
-	g_at_server_register(server, "+CGDCONT", cgdcont_cb, server, NULL);
-	g_at_server_register(server, "+CIMI",    cimi_cb,    server, NULL);
-	g_at_server_register(server, "+CSMS",    csms_cb,    server, NULL);
-	g_at_server_register(server, "+CMGF",    cmgf_cb,    server, NULL);
-	g_at_server_register(server, "+CPMS",    cpms_cb,    server, NULL);
-	g_at_server_register(server, "+CNMI",    cnmi_cb,    server, NULL);
-	g_at_server_register(server, "+CSCS",    cscs_cb,    server, NULL);
-	g_at_server_register(server, "+CMGL",    cmgl_cb,    server, NULL);
-	g_at_server_register(server, "+CPBS",    cpbs_cb,    server, NULL);
-	g_at_server_register(server, "D",        dial_cb,    server, NULL);
+	g_at_server_register(server, "+CGMI",    cgmi_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGMM",    cgmm_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGMR",    cgmr_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGSN",    cgsn_cb,    NULL, NULL);
+	g_at_server_register(server, "+CFUN",    cfun_cb,    NULL, NULL);
+	g_at_server_register(server, "+CPIN",    cpin_cb,    NULL, NULL);
+	g_at_server_register(server, "+COPS",    cops_cb,    NULL, NULL);
+	g_at_server_register(server, "+CREG",    creg_cb,    NULL, NULL);
+	g_at_server_register(server, "+CGREG",   cgreg_cb,   NULL, NULL);
+	g_at_server_register(server, "+CGATT",   cgatt_cb,   NULL, NULL);
+	g_at_server_register(server, "+CGDATA",  cgdata_cb,  NULL, NULL);
+	g_at_server_register(server, "+CGDCONT", cgdcont_cb, NULL, NULL);
+	g_at_server_register(server, "+CIMI",    cimi_cb,    NULL, NULL);
+	g_at_server_register(server, "+CSMS",    csms_cb,    NULL, NULL);
+	g_at_server_register(server, "+CMGF",    cmgf_cb,    NULL, NULL);
+	g_at_server_register(server, "+CPMS",    cpms_cb,    NULL, NULL);
+	g_at_server_register(server, "+CNMI",    cnmi_cb,    NULL, NULL);
+	g_at_server_register(server, "+CSCS",    cscs_cb,    NULL, NULL);
+	g_at_server_register(server, "+CMGL",    cmgl_cb,    NULL, NULL);
+	g_at_server_register(server, "+CPBS",    cpbs_cb,    NULL, NULL);
+	g_at_server_register(server, "D",        dial_cb,    NULL, NULL);
 }
 
 static void server_destroy(gpointer user)
