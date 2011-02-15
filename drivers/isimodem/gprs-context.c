@@ -347,32 +347,52 @@ static void send_context_authenticate(GIsiClient *client, void *opaque)
 	struct context_data *cd = opaque;
 	size_t username_len = strlen(cd->username);
 	size_t password_len = strlen(cd->password);
+	size_t sb_user_info_len = (3 + username_len + 3) & ~3;
+	size_t fill_sb_user_info_count =
+			sb_user_info_len - (3 + username_len);
+	uint8_t *fill_sb_user_info_data =
+			g_try_malloc0(fill_sb_user_info_count);
+	size_t sb_password_info_len = (3 + password_len + 3) & ~3;
+	size_t fill_sb_password_info_count =
+			sb_user_info_len - (3 + password_len);
+	uint8_t *fill_sb_password_info_data =
+			g_try_malloc0(fill_sb_password_info_count);
 
 	const unsigned char top[] = {
 		GPDS_CONTEXT_AUTH_REQ,
 		cd->handle,
 		2,	/* sub blocks */
 		GPDS_USER_NAME_INFO,
-		3 + username_len + 3,
+		sb_user_info_len,
 		username_len,
 		/* Username goes here */
 	};
 
 	const unsigned char bottom[] = {
 		GPDS_PASSWORD_INFO,
-		3 + password_len + 3,
+		sb_password_info_len,
 		password_len,
 		/* Password goes here */
 	};
 
-	const struct iovec iov[4] = {
-		{ (uint8_t *) top, sizeof(top) },
+	const struct iovec iov[6] = {
+		{ (uint8_t *)top, sizeof(top) },
 		{ cd->username, username_len },
-		{ (uint8_t *) bottom, sizeof(bottom) },
+		{ fill_sb_user_info_data, fill_sb_user_info_count },
+		{ (uint8_t *)bottom, sizeof(bottom) },
 		{ cd->password, password_len },
+		{ fill_sb_password_info_data, fill_sb_password_info_count},
 	};
 
-	if (!g_isi_client_vsend(client, iov, 4, context_auth_cb, cd, NULL))
+	if (fill_sb_user_info_data == NULL
+			&& fill_sb_user_info_count > 0)
+		gprs_up_fail(cd);
+
+	if (fill_sb_password_info_data == NULL
+			&& fill_sb_password_info_count > 0)
+		gprs_up_fail(cd);
+
+	if (!g_isi_client_vsend(client, iov, 6, context_auth_cb, cd, NULL))
 		gprs_up_fail(cd);
 }
 
@@ -393,34 +413,43 @@ static void link_conf_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
 	size_t apn_len = strlen(cd->apn);
+	size_t sb_apn_info_len = (3 + apn_len + 3) & ~3;
+	size_t fill_count = sb_apn_info_len - (3 + apn_len);
+	uint8_t *fill_data = g_try_malloc0(fill_count);
 
-	const unsigned char req[] = {
-		GPDS_CONTEXT_CONFIGURE_REQ,
-		cd->handle,	/* context ID */
-		cd->type,	/* PDP type */
-		GPDS_CONT_TYPE_NORMAL,
-		cd->handle,	/* primary context ID */
-		0x00,		/* filler */
-		2,		/* sub blocks */
-		GPDS_DNS_ADDRESS_REQ_INFO,
-		4,		/* subblock length */
-		0, 0,		/* padding */
-		GPDS_APN_INFO,
-		3 + apn_len + 3,
-		apn_len,
-	};
+	if (fill_data == NULL && fill_count > 0)
+		return gprs_up_fail(cd);
 
-	const struct iovec iov[2] = {
-		{ (uint8_t *) req, sizeof(req) },
-		{ cd->apn, apn_len },
-	};
+	if (check_resp(msg, GPDS_LL_CONFIGURE_RESP, 2, cd, gprs_up_fail)) {
 
-	if (!check_resp(msg, GPDS_LL_CONFIGURE_RESP, 2, cd, gprs_up_fail))
-		return;
+		const unsigned char msg[] = {
+			GPDS_CONTEXT_CONFIGURE_REQ,
+			cd->handle,	/* context ID */
+			cd->type,	/* PDP type */
+			GPDS_CONT_TYPE_NORMAL,
+			cd->handle,	/* primary context ID */
+			0x00,		/* filler */
+			2,		/* sub blocks */
+			GPDS_DNS_ADDRESS_REQ_INFO,
+			4,		/* subblock length */
+			0, 0,		/* padding */
+			GPDS_APN_INFO,
+			sb_apn_info_len,
+			apn_len,
+		};
 
-	if (!g_isi_client_vsend(cd->client, iov, 2,
-				context_conf_cb, cd, NULL))
-		gprs_up_fail(cd);
+		const struct iovec iov[3] = {
+			{ (uint8_t *)msg, sizeof(msg) },
+			{ cd->apn, apn_len },
+			{ fill_data, fill_count}
+		};
+
+		if (!g_isi_client_vsend_with_timeout(cd->client, iov, 3,
+				GPDS_TIMEOUT, context_conf_cb, cd, NULL))
+			return gprs_up_fail(cd);
+	} else
+		return gprs_up_fail(cd);
+
 }
 
 static void create_context_cb(const GIsiMessage *msg, void *opaque)
