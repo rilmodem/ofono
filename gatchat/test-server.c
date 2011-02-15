@@ -680,9 +680,9 @@ static void cpms_cb(GAtServer *server, GAtServerRequestType type,
 	}
 }
 
-static void cnmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cnmi_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[2048];
 
 	switch (type) {
@@ -703,9 +703,9 @@ static void cnmi_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void cscs_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cscs_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[2048];
 
 	switch (type) {
@@ -726,10 +726,9 @@ static void cscs_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void cmgl_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cmgl_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
@@ -743,9 +742,9 @@ static void cmgl_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void cpbs_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void cpbs_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	char buf[2048];
 
 	switch (type) {
@@ -766,9 +765,9 @@ static void cpbs_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 	}
 }
 
-static void dial_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
+static void dial_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *cmd, gpointer user)
 {
-	GAtServer *server = user;
 	GAtServerResult res = G_AT_SERVER_RESULT_ERROR;
 	GAtResultIter iter;
 	const char *dial_str;
