@@ -105,8 +105,7 @@ static void lcp_generate_config_options(struct lcp_data *lcp)
 
 static void lcp_reset_config_options(struct lcp_data *lcp)
 {
-	lcp->req_options = REQ_OPTION_ACCM;
-	lcp->accm = 0;
+	/* Using the default ACCM */
 
 	lcp_generate_config_options(lcp);
 }
@@ -147,6 +146,7 @@ static void lcp_rca(struct pppcp_data *pppcp, const struct pppcp_packet *packet)
 	ppp_option_iter_init(&iter, packet);
 
 	while (ppp_option_iter_next(&iter) == TRUE) {
+		const guint8 *data = ppp_option_iter_get_data(&iter);
 		switch (ppp_option_iter_get_type(&iter)) {
 		case ACCM:
 			/*
@@ -155,7 +155,9 @@ static void lcp_rca(struct pppcp_data *pppcp, const struct pppcp_packet *packet)
 			 * which control characters MUST remain mapped when
 			 * the peer sends them.
 			 */
-			ppp_set_recv_accm(pppcp_get_ppp(pppcp), 0);
+
+			ppp_set_recv_accm(pppcp_get_ppp(pppcp),
+					get_host_long(data));
 			break;
 		default:
 			break;
