@@ -68,6 +68,7 @@ struct ofono_cbs {
 	GSList *efcbmir_contents;
 	unsigned short efcbmid_length;
 	GSList *efcbmid_contents;
+	gboolean efcbmid_update;
 	guint reset_source;
 	int lac;
 	int ci;
@@ -852,6 +853,7 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	int i;
 	char *str;
 	GSList *contents = NULL;
+	char *topic_str;
 
 	if (!ok)
 		goto done;
@@ -886,7 +888,33 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	g_free(str);
 
 done:
-	cbs_got_file_contents(cbs);
+	if (cbs->efcbmid_update) {
+		topic_str = cbs_topics_to_str(cbs, cbs->topics);
+		cbs->driver->set_topics(cbs, topic_str,
+					cbs_set_powered_cb, cbs);
+		g_free(topic_str);
+
+		cbs->efcbmid_update = FALSE;
+	} else
+		cbs_got_file_contents(cbs);
+}
+
+static void cbs_efcbmid_changed(int id, void *userdata)
+{
+	struct ofono_cbs *cbs = userdata;
+
+	if (cbs->efcbmid_length) {
+		cbs->efcbmid_length = 0;
+		g_slist_foreach(cbs->efcbmid_contents, (GFunc) g_free, NULL);
+		g_slist_free(cbs->efcbmid_contents);
+		cbs->efcbmid_contents = NULL;
+	}
+
+	cbs->efcbmid_update = TRUE;
+
+	ofono_sim_read(cbs->sim_context, SIM_EFCBMID_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_cbmid_read_cb, cbs);
 }
 
 static void cbs_got_imsi(struct ofono_cbs *cbs)
@@ -929,6 +957,8 @@ static void cbs_got_imsi(struct ofono_cbs *cbs)
 	ofono_sim_read(cbs->sim_context, SIM_EFCBMID_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_cbmid_read_cb, cbs);
+	ofono_sim_add_file_watch(cbs->sim_context, SIM_EFCBMID_FILEID,
+					cbs_efcbmid_changed, cbs, NULL);
 }
 
 static gboolean reset_base_station_name(gpointer user)
