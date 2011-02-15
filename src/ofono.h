@@ -129,6 +129,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_CDMA_VOICECALL_MANAGER,
 	OFONO_ATOM_TYPE_SIM_AUTH,
 	OFONO_ATOM_TYPE_EMULATOR_DUN,
+	OFONO_ATOM_TYPE_EMULATOR_HFP,
 };
 
 enum ofono_atom_watch_condition {

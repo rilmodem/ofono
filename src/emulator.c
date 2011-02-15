@@ -32,6 +32,7 @@
 
 struct ofono_emulator {
 	struct ofono_atom *atom;
+	enum ofono_emulator_type type;
 	GAtServer *server;
 };
 
@@ -94,16 +95,25 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 						enum ofono_emulator_type type)
 {
 	struct ofono_emulator *em;
+	enum ofono_atom_type atom_t;
 
 	DBG("modem: %p, type: %d", modem, type);
+
+	if (type == OFONO_EMULATOR_TYPE_DUN)
+		atom_t = OFONO_ATOM_TYPE_EMULATOR_DUN;
+	else if (type == OFONO_EMULATOR_TYPE_HFP)
+		atom_t = OFONO_ATOM_TYPE_EMULATOR_HFP;
+	else
+		return NULL;
 
 	em = g_try_new0(struct ofono_emulator, 1);
 
 	if (em == NULL)
 		return NULL;
 
-	em->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_EMULATOR_DUN,
-						emulator_remove, em);
+	em->type = type;
+
+	em->atom = __ofono_modem_add_atom(modem, atom_t, emulator_remove, em);
 
 	return em;
 }
