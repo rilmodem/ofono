@@ -287,7 +287,7 @@ static void cfun_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		int mode;
 
 		g_at_result_iter_init(&iter, cmd);
-		g_at_result_iter_next(&iter, "+CFUN=");
+		g_at_result_iter_next(&iter, "");
 
 		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
 			goto error;
@@ -383,7 +383,7 @@ static void cops_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		int mode;
 
 		g_at_result_iter_init(&iter, cmd);
-		g_at_result_iter_next(&iter, "+COPS=");
+		g_at_result_iter_next(&iter, "");
 
 		if (g_at_result_iter_next_number(&iter, &mode) == TRUE) {
 			if (mode == 0) {
@@ -430,7 +430,7 @@ static void creg_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		int mode;
 
 		g_at_result_iter_init(&iter, cmd);
-		g_at_result_iter_next(&iter, "+CREG=");
+		g_at_result_iter_next(&iter, "");
 
 		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
 			goto error;
@@ -479,7 +479,7 @@ static void cgreg_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		int mode;
 
 		g_at_result_iter_init(&iter, cmd);
-		g_at_result_iter_next(&iter, "+CGREG=");
+		g_at_result_iter_next(&iter, "");
 
 		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
 			goto error;
@@ -527,7 +527,7 @@ static void cgatt_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		int mode;
 
 		g_at_result_iter_init(&iter, cmd);
-		g_at_result_iter_next(&iter, "+CGATT=");
+		g_at_result_iter_next(&iter, "");
 
 		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
 			goto error;
@@ -788,9 +788,7 @@ static void dial_cb(GAtServerRequestType type, GAtResult *cmd, gpointer user)
 		goto error;
 
 	g_at_result_iter_init(&iter, cmd);
-
-	if (!g_at_result_iter_next(&iter, "D"))
-		goto error;
+	g_at_result_iter_next(&iter, "");
 
 	dial_str = g_at_result_iter_raw_line(&iter);
 	if (dial_str == NULL)
