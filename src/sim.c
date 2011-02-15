@@ -26,6 +26,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <glib.h>
 #include <gdbus.h>
@@ -2078,13 +2079,27 @@ static void sim_inserted_update(struct ofono_sim *sim)
 						DBUS_TYPE_BOOLEAN, &present);
 }
 
-static void sim_free_state(struct ofono_sim *sim)
+static void sim_free_early_state(struct ofono_sim *sim)
 {
 	if (sim->iccid) {
 		g_free(sim->iccid);
 		sim->iccid = NULL;
 	}
 
+	if (sim->efli) {
+		g_free(sim->efli);
+		sim->efli = NULL;
+		sim->efli_length = 0;
+	}
+
+	if (sim->language_prefs) {
+		g_strfreev(sim->language_prefs);
+		sim->language_prefs = NULL;
+	}
+}
+
+static void sim_free_main_state(struct ofono_sim *sim)
+{
 	if (sim->imsi) {
 		g_free(sim->imsi);
 		sim->imsi = NULL;
@@ -2104,17 +2119,6 @@ static void sim_free_state(struct ofono_sim *sim)
 				(GFunc)service_number_free, NULL);
 		g_slist_free(sim->service_numbers);
 		sim->service_numbers = NULL;
-	}
-
-	if (sim->efli) {
-		g_free(sim->efli);
-		sim->efli = NULL;
-		sim->efli_length = 0;
-	}
-
-	if (sim->language_prefs) {
-		g_strfreev(sim->language_prefs);
-		sim->language_prefs = NULL;
 	}
 
 	if (sim->efust) {
@@ -2148,6 +2152,12 @@ static void sim_free_state(struct ofono_sim *sim)
 
 	sim->fixed_dialing = FALSE;
 	sim->barred_dialing = FALSE;
+}
+
+static void sim_free_state(struct ofono_sim *sim)
+{
+	sim_free_early_state(sim);
+	sim_free_main_state(sim);
 }
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
@@ -2441,4 +2451,133 @@ ofono_bool_t __ofono_is_valid_sim_pin(const char *pin,
 ofono_bool_t __ofono_is_valid_net_pin(const char *pin)
 {
 	return is_valid_pin(pin, 4, 4);
+}
+
+static void sim_file_changed_flush(struct ofono_sim *sim, int id)
+{
+	int i, imgid;
+
+	if (id == SIM_EFIMG_FILEID)
+		/* All cached images become invalid */
+		sim_fs_image_cache_flush(sim->simfs);
+	else if (sim->efimg) {
+		/*
+		 * Data and CLUT for image instances stored in the changed
+		 * file need to be re-read.
+		 */
+		for (i = sim->efimg_length / 9 - 1; i >= 0; i--) {
+			imgid = (sim->efimg[i * 9 + 3] << 8) |
+				sim->efimg[i * 9 + 4];
+
+			if (imgid == id)
+				sim_fs_image_cache_flush_file(sim->simfs, i);
+		}
+	}
+
+	sim_fs_cache_flush_file(sim->simfs, id);
+}
+
+void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
+			ofono_bool_t full_file_change, ofono_bool_t naa_init)
+{
+	GSList *l;
+	ofono_sim_state_event_cb_t notify;
+	gboolean reinit_naa = naa_init || full_file_change;
+
+	/*
+	 * Check if any files used in SIM initialisation procedure
+	 * are affected, except EFiccid, EFpl, EFli.
+	 */
+	for (l = file_list; l; l = l->next) {
+		struct stk_file *file = l->data;
+		uint32_t mf, df, ef;
+
+		if (file->len != 6)
+			continue;
+
+		mf = (file->file[0] << 8) | (file->file[1] << 0);
+		df = (file->file[2] << 8) | (file->file[3] << 0);
+		ef = (file->file[4] << 8) | (file->file[5] << 0);
+
+		if (mf != 0x3f00)
+			continue;
+
+		/*
+		 * 8.18: "the path '3F007FFF' indicates the relevant
+		 * NAA Application dedicated file;".
+		 */
+		if (df == 0x7fff)
+			df = 0x7f20;
+
+#define DFGSM (0x7f20 << 16)
+#define DFTEL (0x7f10 << 16)
+
+		switch ((df << 16) | ef) {
+		case DFGSM | SIM_EFEST_FILEID:
+		case DFGSM | SIM_EFUST_FILEID: /* aka. EFSST */
+		case DFGSM | SIM_EFPHASE_FILEID:
+		case DFGSM | SIM_EFAD_FILEID:
+		case DFTEL | SIM_EFBDN_FILEID:
+		case DFTEL | SIM_EFADN_FILEID:
+		case DFGSM | SIM_EF_CPHS_INFORMATION_FILEID:
+			reinit_naa = TRUE;
+			break;
+		}
+	}
+
+	/* Flush cached content for affected files */
+	if (full_file_change)
+		sim_fs_cache_flush(sim->simfs);
+	else {
+		for (l = file_list; l; l = l->next) {
+			struct stk_file *file = l->data;
+			int id = (file->file[file->len - 2] << 8) |
+				(file->file[file->len - 1] << 0);
+
+			sim_file_changed_flush(sim, id);
+		}
+	}
+
+	if (reinit_naa) {
+		/* Force the sim state out of READY */
+
+		sim_free_main_state(sim);
+
+		sim->state = OFONO_SIM_STATE_INSERTED;
+		for (l = sim->state_watches->items; l; l = l->next) {
+			struct ofono_watchlist_item *item = l->data;
+			notify = item->notify;
+
+			notify(sim->state, item->notify_data);
+		}
+	}
+
+	/*
+	 * Notify the subscribers of files that have changed and who
+	 * haven't unsubsribed during the SIM state change.
+	 */
+	if (full_file_change)
+		sim_fs_notify_file_watches(sim->simfs, -1);
+	else {
+		for (l = file_list; l; l = l->next) {
+			struct stk_file *file = l->data;
+			int id = (file->file[file->len - 2] << 8) |
+				(file->file[file->len - 1] << 0);
+
+			sim_fs_notify_file_watches(sim->simfs, id);
+		}
+	}
+
+	if (reinit_naa) {
+		/*
+		 * REVISIT: There's some concern that on re-insertion the
+		 * atoms will start to talk to the SIM before it becomes
+		 * ready, on certain SIMs.
+		 */
+		/*
+		 * Start initialization procedure from after EFiccid,
+		 * EFli and EFpl are retrieved.
+		 */
+		sim_pin_check(sim);
+	}
 }

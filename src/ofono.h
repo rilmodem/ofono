@@ -323,6 +323,10 @@ ofono_bool_t __ofono_is_valid_sim_pin(const char *pin,
 
 ofono_bool_t __ofono_is_valid_net_pin(const char *pin);
 
+void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
+				ofono_bool_t full_file_change,
+				ofono_bool_t naa_init);
+
 #include <ofono/stk.h>
 
 typedef void (*__ofono_sms_sim_download_cb_t)(ofono_bool_t ok,
