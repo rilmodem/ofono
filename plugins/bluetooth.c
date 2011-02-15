@@ -818,6 +818,7 @@ static void bluetooth_unref(void)
 		return;
 
 	g_free(adapter_any_path);
+	adapter_any_path = NULL;
 
 	g_dbus_remove_watch(connection, bluetooth_watch);
 	g_dbus_remove_watch(connection, adapter_added_watch);
