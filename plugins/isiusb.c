@@ -425,6 +425,7 @@ static void isiusb_post_online(struct ofono_modem *modem)
 	DBG("(%p) with %s", modem, isi->ifname);
 
 	ofono_netreg_create(modem, 0, "isimodem", isi->modem);
+	ofono_netreg_create(modem, 0, "wgmodem2.5", isi->modem);
 	ofono_sms_create(modem, 0, "isimodem", isi->modem);
 	ofono_cbs_create(modem, 0, "isimodem", isi->modem);
 	ofono_ssn_create(modem, 0, "isimodem", isi->modem);
