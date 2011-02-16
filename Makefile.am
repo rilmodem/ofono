@@ -322,7 +322,7 @@ builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
 
 builtin_modules += hfp
-builtin_sources += plugins/hfp.c plugins/bluetooth.h
+builtin_sources += plugins/hfp_hf.c plugins/bluetooth.h
 
 builtin_modules += hfp_ag
 builtin_sources += plugins/hfp_ag.c plugins/bluetooth.h
