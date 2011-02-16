@@ -93,6 +93,7 @@ struct ofono_devinfo {
 	char *model;
 	char *revision;
 	char *serial;
+	unsigned int dun_watch;
 	const struct ofono_devinfo_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -1321,6 +1322,70 @@ static gboolean query_manufacturer(gpointer user)
 	return FALSE;
 }
 
+static void attr_template(struct ofono_emulator *em,
+				struct ofono_emulator_request *req,
+				const char *attr)
+{
+	struct ofono_error result;
+
+	if (attr == NULL)
+		attr = "Unknown";
+
+	result.error = 0;
+
+	switch (ofono_emulator_request_get_type(req)) {
+	case OFONO_EMULATOR_REQUEST_TYPE_COMMAND_ONLY:
+		ofono_emulator_send_info(em, attr, TRUE);
+		result.type = OFONO_ERROR_TYPE_NO_ERROR;
+		ofono_emulator_send_final(em, &result);
+		break;
+	case OFONO_EMULATOR_REQUEST_TYPE_SUPPORT:
+		result.type = OFONO_ERROR_TYPE_NO_ERROR;
+		ofono_emulator_send_final(em, &result);
+		break;
+	default:
+		result.type = OFONO_ERROR_TYPE_FAILURE;
+		ofono_emulator_send_final(em, &result);
+	};
+}
+
+static void gmi_cb(struct ofono_emulator *em,
+			struct ofono_emulator_request *req, void *userdata)
+{
+	struct ofono_devinfo *info = userdata;
+
+	attr_template(em, req, info->manufacturer);
+}
+
+static void gmm_cb(struct ofono_emulator *em,
+			struct ofono_emulator_request *req, void *userdata)
+{
+	struct ofono_devinfo *info = userdata;
+
+	attr_template(em, req, info->model);
+}
+
+static void gmr_cb(struct ofono_emulator *em,
+			struct ofono_emulator_request *req, void *userdata)
+{
+	struct ofono_devinfo *info = userdata;
+
+	attr_template(em, req, info->revision);
+}
+
+static void dun_watch(struct ofono_atom *atom,
+			enum ofono_atom_watch_condition cond, void *data)
+{
+	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED)
+		return;
+
+	ofono_emulator_add_handler(em, "+GMI", gmi_cb, data, NULL);
+	ofono_emulator_add_handler(em, "+GMM", gmm_cb, data, NULL);
+	ofono_emulator_add_handler(em, "+GMR", gmr_cb, data, NULL);
+}
+
 int ofono_devinfo_driver_register(const struct ofono_devinfo_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
@@ -1393,6 +1458,19 @@ struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
 
 void ofono_devinfo_register(struct ofono_devinfo *info)
 {
+	struct ofono_modem *modem = __ofono_atom_get_modem(info->atom);
+	struct ofono_atom *dun_atom;
+
+	info->dun_watch = __ofono_modem_add_atom_watch(modem,
+						OFONO_ATOM_TYPE_EMULATOR_DUN,
+						dun_watch, info, NULL);
+
+	dun_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_EMULATOR_DUN);
+
+	if (dun_atom && __ofono_atom_get_registered(dun_atom))
+		dun_watch(dun_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
+				info);
+
 	query_manufacturer(info);
 }
 
