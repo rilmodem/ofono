@@ -62,6 +62,13 @@ void ofono_emulator_send_intermediate(struct ofono_emulator *em,
 void ofono_emulator_send_info(struct ofono_emulator *em, const char *line,
 				ofono_bool_t last);
 
+ofono_bool_t ofono_emulator_add_handler(struct ofono_emulator *em,
+					const char *prefix,
+					ofono_emulator_request_cb_t cb,
+					void *data, ofono_destroy_func destroy);
+ofono_bool_t ofono_emulator_remove_handler(struct ofono_emulator *em,
+						const char *prefix);
+
 ofono_bool_t ofono_emulator_request_next_string(
 					struct ofono_emulator_request *req,
 					const char **str);
