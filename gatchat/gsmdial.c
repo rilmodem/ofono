@@ -56,6 +56,7 @@ static gboolean option_legacy = FALSE;
 static gchar *option_username = NULL;
 static gchar *option_password = NULL;
 static gchar *option_pppdump = NULL;
+static gboolean option_bluetooth = 0;
 
 static GAtPPP *ppp;
 static GAtChat *control;
@@ -265,6 +266,11 @@ static void ppp_connect(const char *iface, const char *local, const char *peer,
 static void no_carrier_notify(GAtResult *result, gpointer user_data)
 {
 	char buf[64];
+
+	if (option_bluetooth) {
+		g_main_loop_quit(event_loop);
+		return;
+	}
 
 	sprintf(buf, "AT+CFUN=%u", option_offmode);
 	g_at_chat_send(control, buf, none_prefix, power_down, NULL, NULL);
@@ -612,6 +618,8 @@ static GOptionEntry options[] = {
 				"Specify CFUN offmode" },
 	{ "legacy", 'l', 0, G_OPTION_ARG_NONE, &option_legacy,
 				"Use ATD*99***<cid>#" },
+	{ "bluetooth", 'b', 0, G_OPTION_ARG_NONE, &option_bluetooth,
+				"Use only ATD*99" },
 	{ "username", 'u', 0, G_OPTION_ARG_STRING, &option_username,
 				"Specify PPP username" },
 	{ "password", 'w', 0, G_OPTION_ARG_STRING, &option_password,
@@ -700,9 +708,14 @@ int main(int argc, char **argv)
 
 	event_loop = g_main_loop_new(NULL, FALSE);
 
-	g_at_chat_send(control, "ATE0Q0V1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(control, "AT+CFUN?", cfun_prefix,
-						check_mode, NULL, NULL);
+	if (option_bluetooth) {
+		g_at_chat_send(control, "ATD*99", none_prefix, connect_cb,
+				NULL, NULL);
+	} else {
+		g_at_chat_send(control, "ATE0Q0V1", NULL, NULL, NULL, NULL);
+		g_at_chat_send(control, "AT+CFUN?", cfun_prefix,
+							check_mode, NULL, NULL);
+	}
 
 	g_main_loop_run(event_loop);
 	g_source_remove(signal_source);
