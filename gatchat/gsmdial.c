@@ -56,7 +56,7 @@ static gboolean option_legacy = FALSE;
 static gchar *option_username = NULL;
 static gchar *option_password = NULL;
 static gchar *option_pppdump = NULL;
-static gboolean option_bluetooth = 0;
+static gboolean option_bluetooth = FALSE;
 
 static GAtPPP *ppp;
 static GAtChat *control;
