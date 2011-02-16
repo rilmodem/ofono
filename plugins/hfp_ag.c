@@ -43,48 +43,48 @@ static GList *modems;
 static guint channel_watch;
 
 static const gchar *hfp_ag_record =
-"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>				\
-<record>								\
-  <attribute id=\"0x0001\">						\
-    <sequence>								\
-      <uuid value=\"0x111F\"/>						\
-      <uuid value=\"0x1203\"/>						\
-    </sequence>								\
-  </attribute>								\
-									\
-  <attribute id=\"0x0004\">						\
-    <sequence>								\
-      <sequence>							\
-        <uuid value=\"0x0100\"/>					\
-      </sequence>							\
-      <sequence>							\
-        <uuid value=\"0x0003\"/>					\
-        <uint8 value=\"13\" name=\"channel\"/>				\
-      </sequence>							\
-    </sequence>								\
-  </attribute>								\
-									\
-  <attribute id=\"0x0009\">						\
-    <sequence>								\
-      <sequence>							\
-        <uuid value=\"0x111E\"/>					\
-        <uint16 value=\"0x0105\" name=\"version\"/>			\
-      </sequence>							\
-    </sequence>								\
-  </attribute>								\
-									\
-  <attribute id=\"0x0100\">						\
-    <text value=\"Hands-Free Audio Gateway\" name=\"name\"/>		\
-  </attribute>								\
-									\
-  <attribute id=\"0x0301\">						\
-    <uint8 value=\"0x01\" />						\
-  </attribute>								\
-									\
-  <attribute id=\"0x0311\">						\
-    <uint16 value=\"0x0000\" />						\
-  </attribute>								\
-</record>";
+"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+"<record>\n"
+"  <attribute id=\"0x0001\">\n"
+"    <sequence>\n"
+"      <uuid value=\"0x111F\"/>\n"
+"      <uuid value=\"0x1203\"/>\n"
+"    </sequence>\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0004\">\n"
+"    <sequence>\n"
+"      <sequence>\n"
+"        <uuid value=\"0x0100\"/>\n"
+"      </sequence>\n"
+"      <sequence>\n"
+"        <uuid value=\"0x0003\"/>\n"
+"        <uint8 value=\"13\" name=\"channel\"/>\n"
+"      </sequence>\n"
+"    </sequence>\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0009\">\n"
+"    <sequence>\n"
+"      <sequence>\n"
+"        <uuid value=\"0x111E\"/>\n"
+"        <uint16 value=\"0x0105\" name=\"version\"/>\n"
+"      </sequence>\n"
+"    </sequence>\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0100\">\n"
+"    <text value=\"Hands-Free Audio Gateway\" name=\"name\"/>\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0301\">\n"
+"    <uint8 value=\"0x01\" />\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0311\">\n"
+"    <uint16 value=\"0x0000\" />\n"
+"  </attribute>\n"
+"</record>\n";
 
 static gboolean hfp_ag_disconnect_cb(GIOChannel *io, GIOCondition cond,
 							gpointer user_data)
