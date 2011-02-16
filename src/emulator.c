@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
+
 #include <glib.h>
 
 #include "ofono.h"
@@ -109,4 +111,155 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 void ofono_emulator_remove(struct ofono_emulator *em)
 {
 	__ofono_atom_free(em->atom);
+}
+
+void ofono_emulator_send_final(struct ofono_emulator *em,
+				const struct ofono_error *final)
+{
+	char buf[256];
+
+	/*
+	 * TODO: Handle various CMEE modes and report error strings from
+	 * common.c
+	 */
+	switch (final->type) {
+	case OFONO_ERROR_TYPE_CMS:
+		sprintf(buf, "+CMS ERROR: %d", final->error);
+		g_at_server_send_ext_final(em->server, buf);
+		break;
+
+	case OFONO_ERROR_TYPE_CME:
+		sprintf(buf, "+CME ERROR: %d", final->error);
+		g_at_server_send_ext_final(em->server, buf);
+		break;
+
+	case OFONO_ERROR_TYPE_NO_ERROR:
+		g_at_server_send_final(em->server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case OFONO_ERROR_TYPE_CEER:
+	case OFONO_ERROR_TYPE_SIM:
+	case OFONO_ERROR_TYPE_FAILURE:
+		g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	};
+}
+
+void ofono_emulator_send_unsolicited(struct ofono_emulator *em,
+					const char *result)
+{
+	g_at_server_send_unsolicited(em->server, result);
+}
+
+void ofono_emulator_send_intermediate(struct ofono_emulator *em,
+					const char *result)
+{
+	g_at_server_send_intermediate(em->server, result);
+}
+
+void ofono_emulator_send_info(struct ofono_emulator *em, const char *line,
+				ofono_bool_t last)
+{
+	g_at_server_send_info(em->server, line, last);
+}
+
+struct handler {
+	ofono_emulator_request_cb_t cb;
+	void *data;
+	ofono_destroy_func destroy;
+	struct ofono_emulator *em;
+};
+
+struct ofono_emulator_request {
+	GAtResultIter iter;
+	enum ofono_emulator_request_type type;
+};
+
+static void handler_proxy(GAtServer *server, GAtServerRequestType type,
+				GAtResult *result, gpointer userdata)
+{
+	struct handler *h = userdata;
+	struct ofono_emulator_request req;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		req.type = OFONO_EMULATOR_REQUEST_TYPE_COMMAND_ONLY;
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		req.type = OFONO_EMULATOR_REQUEST_TYPE_SET;
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		req.type = OFONO_EMULATOR_REQUEST_TYPE_QUERY;
+		break;
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		req.type = OFONO_EMULATOR_REQUEST_TYPE_SUPPORT;
+	}
+
+	g_at_result_iter_init(&req.iter, result);
+	g_at_result_iter_next(&req.iter, "");
+
+	h->cb(h->em, &req, h->data);
+}
+
+static void handler_destroy(gpointer userdata)
+{
+	struct handler *h = userdata;
+
+	if (h->destroy)
+		h->destroy(h->data);
+
+	g_free(h);
+}
+
+ofono_bool_t ofono_emulator_add_handler(struct ofono_emulator *em,
+					const char *prefix,
+					ofono_emulator_request_cb_t cb,
+					void *data, ofono_destroy_func destroy)
+{
+	struct handler *h;
+
+	h = g_new0(struct handler, 1);
+	h->cb = cb;
+	h->data = data;
+	h->destroy = destroy;
+	h->em = em;
+
+	if (g_at_server_register(em->server, prefix, handler_proxy, h,
+					handler_destroy) == TRUE)
+		return TRUE;
+
+	g_free(h);
+
+	return FALSE;
+}
+
+ofono_bool_t ofono_emulator_remove_handler(struct ofono_emulator *em,
+						const char *prefix)
+{
+	return g_at_server_unregister(em->server, prefix);
+}
+
+ofono_bool_t ofono_emulator_request_next_string(
+					struct ofono_emulator_request *req,
+					const char **str)
+{
+	return g_at_result_iter_next_string(&req->iter, str);
+}
+
+ofono_bool_t ofono_emulator_request_next_number(
+					struct ofono_emulator_request *req,
+					int *number)
+{
+	return g_at_result_iter_next_number(&req->iter, number);
+}
+
+const char *ofono_emulator_request_get_raw(struct ofono_emulator_request *req)
+{
+	return g_at_result_iter_raw_line(&req->iter);
+}
+
+enum ofono_emulator_request_type ofono_emulator_request_get_type(
+					struct ofono_emulator_request *req)
+{
+	return req->type;
 }
