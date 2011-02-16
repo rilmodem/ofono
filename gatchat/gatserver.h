@@ -87,7 +87,7 @@ gboolean g_at_server_set_debug(GAtServer *server,
 					GAtDebugFunc func,
 					gpointer user_data);
 
-gboolean g_at_server_register(GAtServer *server, char *prefix,
+gboolean g_at_server_register(GAtServer *server, const char *prefix,
 					GAtServerNotifyFunc notify,
 					gpointer user_data,
 					GDestroyNotify destroy_notify);
