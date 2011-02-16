@@ -337,6 +337,36 @@ Sim Toolkit
   Priority: High
   Complexity: C8
 
+- Support of the BIP (Bearer Independent Protocol) proactive commands.
+  The specification defines several bearer types. For now, only the packet data
+  service bearer is considered.
+
+	- OPEN CHANNEL: requests the terminal to open a data channel with
+	parameters indicated in the command. A user confirmation may be
+	requested by the SimToolkitAgent.
+	- CLOSE CHANNEL:requests the terminal to close the specified data
+	channel.
+	- RECEIVE DATA:requests the terminal to return to the UICC data
+	received on the specified channel.
+	- SEND DATA:requests the terminal to send on the specified channel data
+	provided by the UICC.
+	- GET CHANNEL STATUS: requests the terminal to return the current
+	status of all available data channels.
+
+  Priority: Medium
+  Complexity: C4
+  Owner: Philippe Nunes <philippe.nunes@linux.intel.com>
+
+- Support Setup Event List proactive command.
+  To fully support the class 'e', the following events
+	-Data Available event
+	-Channel status event
+  shall be monitored by oFono if part of the current event list.
+  This list is supplied by the last SETUP EVENT LIST command.
+
+  Priority: Medium
+  Complexity: C2
+  Owner: Philippe Nunes <philippe.nunes@linux.intel.com>
 
 Emergency Calls
 ===============
