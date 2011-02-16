@@ -41,39 +41,40 @@ static struct server *server;
 static guint modemwatch_id;
 static GList *modems;
 
-static const gchar *dun_record = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>  \
-<record>                                                                       \
-  <attribute id=\"0x0001\">                                                    \
-    <sequence>                                                                 \
-      <uuid value=\"0x1103\"/>                                                 \
-    </sequence>                                                                \
-  </attribute>                                                                 \
-                                                                               \
-  <attribute id=\"0x0004\">                                                    \
-    <sequence>                                                                 \
-      <sequence>                                                               \
-        <uuid value=\"0x0100\"/>                                               \
-      </sequence>                                                              \
-      <sequence>                                                               \
-        <uuid value=\"0x0003\"/>                                               \
-        <uint8 value=\"1\" name=\"channel\"/>                                 \
-      </sequence>                                                              \
-    </sequence>                                                                \
-  </attribute>                                                                 \
-                                                                               \
-  <attribute id=\"0x0009\">                                                    \
-    <sequence>                                                                 \
-      <sequence>                                                               \
-        <uuid value=\"0x1103\"/>                                               \
-        <uint16 value=\"0x0100\" name=\"version\"/>                            \
-      </sequence>                                                              \
-    </sequence>                                                                \
-  </attribute>                                                                 \
-                                                                               \
-  <attribute id=\"0x0100\">                                                    \
-    <text value=\"Dial-up Networking\" name=\"name\"/>                         \
-  </attribute>                                                                 \
-</record>";
+static const gchar *dun_record =
+"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+"<record>\n"
+"  <attribute id=\"0x0001\">\n"
+"    <sequence>\n"
+"      <uuid value=\"0x1103\"/>\n"
+"    </sequence>\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0004\">\n"
+"    <sequence>\n"
+"      <sequence>\n"
+"        <uuid value=\"0x0100\"/>\n"
+"      </sequence>\n"
+"      <sequence>\n"
+"        <uuid value=\"0x0003\"/>\n"
+"        <uint8 value=\"1\" name=\"channel\"/>\n"
+"      </sequence>\n"
+"    </sequence>\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0009\">\n"
+"    <sequence>\n"
+"      <sequence>\n"
+"        <uuid value=\"0x1103\"/>\n"
+"        <uint16 value=\"0x0100\" name=\"version\"/>\n"
+"      </sequence>\n"
+"    </sequence>\n"
+"  </attribute>\n"
+"\n"
+"  <attribute id=\"0x0100\">\n"
+"    <text value=\"Dial-up Networking\" name=\"name\"/>\n"
+"  </attribute>\n"
+"</record>\n";
 
 static void dun_gw_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 {
