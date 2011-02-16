@@ -73,7 +73,7 @@ if __name__ == "__main__":
 	else:
 		try:
 			if property == 'AccumulatedCallMeterMaximum':
-				newvalue = int(newvalue)
+				newvalue = dbus.UInt32(newvalue)
 			elif property == 'PricePerUnit':
 				newvalue = float(newvalue)
 			cm.SetProperty(property, newvalue, pin)
