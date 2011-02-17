@@ -137,6 +137,12 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
 	g_at_ppp_unref(ppp);
 	ppp = NULL;
 
+	if (reason == G_AT_PPP_REASON_LINK_DEAD) {
+		g_at_server_unref(server);
+		server = NULL;
+		return;
+	}
+
 	g_at_server_resume(server);
 	g_at_server_set_debug(server, server_debug, "Server");
 
