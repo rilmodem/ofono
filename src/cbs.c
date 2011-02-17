@@ -853,7 +853,6 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 	int i;
 	char *str;
 	GSList *contents = NULL;
-	char *topic_str;
 
 	if (!ok)
 		goto done;
@@ -889,10 +888,12 @@ static void sim_cbmid_read_cb(int ok, int length, int record,
 
 done:
 	if (cbs->efcbmid_update) {
-		topic_str = cbs_topics_to_str(cbs, cbs->topics);
-		cbs->driver->set_topics(cbs, topic_str,
-					cbs_set_powered_cb, cbs);
-		g_free(topic_str);
+		if (cbs->powered == TRUE) {
+			char *topic_str = cbs_topics_to_str(cbs, cbs->topics);
+			cbs->driver->set_topics(cbs, topic_str,
+						cbs_set_powered_cb, cbs);
+			g_free(topic_str);
+		}
 
 		cbs->efcbmid_update = FALSE;
 	} else
