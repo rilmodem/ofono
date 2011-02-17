@@ -598,13 +598,8 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 
 	switch (new_state) {
 	case OFONO_SIM_STATE_NOT_PRESENT:
+		modem_change_state(modem, MODEM_STATE_PRE_SIM);
 	case OFONO_SIM_STATE_INSERTED:
-		if (modem->modem_state != MODEM_STATE_PRE_SIM) {
-			if (modem->modem_state == MODEM_STATE_ONLINE)
-				modem->get_online = TRUE;
-
-			modem_change_state(modem, MODEM_STATE_PRE_SIM);
-		}
 		break;
 	case OFONO_SIM_STATE_READY:
 		modem_change_state(modem, MODEM_STATE_OFFLINE);
@@ -1966,6 +1961,16 @@ void ofono_modem_reset(struct ofono_modem *modem)
 	err = set_powered(modem, TRUE);
 	if (err == -EINPROGRESS)
 		return;
+
+	modem_change_state(modem, MODEM_STATE_PRE_SIM);
+}
+
+void __ofono_modem_sim_reset(struct ofono_modem *modem)
+{
+	DBG("%p", modem);
+
+	if (modem->modem_state == MODEM_STATE_ONLINE)
+		modem->get_online = TRUE;
 
 	modem_change_state(modem, MODEM_STATE_PRE_SIM);
 }

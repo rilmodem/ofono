@@ -2481,7 +2481,6 @@ void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
 			ofono_bool_t full_file_change, ofono_bool_t naa_init)
 {
 	GSList *l;
-	ofono_sim_state_event_cb_t notify;
 	gboolean reinit_naa = naa_init || full_file_change;
 
 	/*
@@ -2540,16 +2539,10 @@ void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
 
 	if (reinit_naa) {
 		/* Force the sim state out of READY */
-
 		sim_free_main_state(sim);
 
 		sim->state = OFONO_SIM_STATE_INSERTED;
-		for (l = sim->state_watches->items; l; l = l->next) {
-			struct ofono_watchlist_item *item = l->data;
-			notify = item->notify;
-
-			notify(sim->state, item->notify_data);
-		}
+		__ofono_modem_sim_reset(__ofono_atom_get_modem(sim->atom));
 	}
 
 	/*
