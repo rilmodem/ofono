@@ -633,6 +633,32 @@ static void add_record(gpointer data, gpointer user_data)
 					DBUS_TYPE_INVALID);
 }
 
+static void find_adapter_cb(DBusPendingCall *call, gpointer user_data)
+{
+	DBusMessage *reply = dbus_pending_call_steal_reply(call);
+	DBusError derr;
+	const char *path;
+
+	dbus_error_init(&derr);
+
+	if (dbus_set_error_from_message(&derr, reply)) {
+		ofono_error("Replied with an error: %s, %s",
+					derr.name, derr.message);
+		dbus_error_free(&derr);
+		goto done;
+	}
+
+	dbus_message_get_args(reply, NULL, DBUS_TYPE_OBJECT_PATH, &path,
+					DBUS_TYPE_INVALID);
+
+	adapter_any_path = g_strdup(path);
+
+	g_slist_foreach(server_list, (GFunc) add_record, NULL);
+
+done:
+	dbus_message_unref(reply);
+}
+
 static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 				void *user_data)
 {
@@ -722,32 +748,6 @@ static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
 		return;
 
 	g_hash_table_foreach(uuid_hash, bluetooth_remove_all_modem, NULL);
-}
-
-static void find_adapter_cb(DBusPendingCall *call, gpointer user_data)
-{
-	DBusMessage *reply = dbus_pending_call_steal_reply(call);
-	DBusError derr;
-	const char *path;
-
-	dbus_error_init(&derr);
-
-	if (dbus_set_error_from_message(&derr, reply)) {
-		ofono_error("Replied with an error: %s, %s",
-					derr.name, derr.message);
-		dbus_error_free(&derr);
-		goto done;
-	}
-
-	dbus_message_get_args(reply, NULL, DBUS_TYPE_OBJECT_PATH, &path,
-					DBUS_TYPE_INVALID);
-
-	adapter_any_path = g_strdup(path);
-
-	g_slist_foreach(server_list, (GFunc) add_record, NULL);
-
-done:
-	dbus_message_unref(reply);
 }
 
 static guint bluetooth_watch;
