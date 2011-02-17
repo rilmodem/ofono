@@ -280,6 +280,8 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 		goto done;
 	}
 
+	DBG("");
+
 	bluetooth_parse_properties(reply, "UUIDs", has_uuid, &have_uuid,
 				"Adapter", parse_string, &adapter,
 				"Address", parse_string, &device_addr,
@@ -409,6 +411,8 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 		dbus_error_free(&derr);
 		goto done;
 	}
+
+	DBG("");
 
 	bluetooth_parse_properties(reply,
 					"Devices", parse_devices, &device_list,
