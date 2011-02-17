@@ -189,6 +189,20 @@ struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
 	return atom;
 }
 
+struct ofono_atom *__ofono_modem_add_atom_offline(struct ofono_modem *modem,
+					enum ofono_atom_type type,
+					void (*destruct)(struct ofono_atom *),
+					void *data)
+{
+	struct ofono_atom *atom;
+
+	atom = __ofono_modem_add_atom(modem, type, destruct, data);
+
+	atom->modem_state = MODEM_STATE_OFFLINE;
+
+	return atom;
+}
+
 void *__ofono_atom_get_data(struct ofono_atom *atom)
 {
 	return atom->data;

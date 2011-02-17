@@ -115,7 +115,8 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 
 	em->type = type;
 
-	em->atom = __ofono_modem_add_atom(modem, atom_t, emulator_remove, em);
+	em->atom = __ofono_modem_add_atom_offline(modem, atom_t,
+							emulator_remove, em);
 
 	return em;
 }

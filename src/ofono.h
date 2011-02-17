@@ -148,6 +148,11 @@ struct ofono_atom *__ofono_modem_add_atom(struct ofono_modem *modem,
 					void (*destruct)(struct ofono_atom *),
 					void *data);
 
+struct ofono_atom *__ofono_modem_add_atom_offline(struct ofono_modem *modem,
+					enum ofono_atom_type type,
+					void (*destruct)(struct ofono_atom *),
+					void *data);
+
 struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 						enum ofono_atom_type type);
 
