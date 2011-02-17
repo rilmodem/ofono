@@ -75,6 +75,8 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 	if (em->server == NULL)
 		return;
 
+	g_io_channel_unref(io);
+
 	g_at_server_set_debug(em->server, emulator_debug, "Server");
 	g_at_server_set_disconnect_function(em->server,
 						emulator_disconnect, em);
