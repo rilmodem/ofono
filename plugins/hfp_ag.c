@@ -40,7 +40,6 @@
 static struct server *server;
 static guint modemwatch_id;
 static GList *modems;
-static guint channel_watch;
 
 static const gchar *hfp_ag_record =
 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
@@ -86,12 +85,6 @@ static const gchar *hfp_ag_record =
 "  </attribute>\n"
 "</record>\n";
 
-static gboolean hfp_ag_disconnect_cb(GIOChannel *io, GIOCondition cond,
-							gpointer user_data)
-{
-	return FALSE;
-}
-
 static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 {
 	struct ofono_modem *modem;
@@ -118,8 +111,7 @@ static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 	fd = g_io_channel_unix_get_fd(io);
 	ofono_emulator_register(em, fd);
 
-	channel_watch = g_io_add_watch(io, G_IO_NVAL | G_IO_HUP | G_IO_ERR,
-					hfp_ag_disconnect_cb, NULL);
+	g_io_channel_set_close_on_unref(io, FALSE);
 
 	return;
 
