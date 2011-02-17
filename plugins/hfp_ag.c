@@ -102,6 +102,7 @@ static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 	modem = modems->data;
 	if (modem == NULL)
 		goto failed;
+
 	DBG("Picked modem %p for emulator", modem);
 
 	em = ofono_emulator_create(modem, OFONO_EMULATOR_TYPE_HFP);
