@@ -95,19 +95,19 @@ static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 
 	if (err) {
 		DBG("%s", err->message);
-		goto failed;
+		return;
 	}
 
 	/* Pick the first voicecall capable modem */
 	modem = modems->data;
 	if (modem == NULL)
-		goto failed;
+		return;
 
 	DBG("Picked modem %p for emulator", modem);
 
 	em = ofono_emulator_create(modem, OFONO_EMULATOR_TYPE_HFP);
 	if (em == NULL)
-		goto failed;
+		return;
 
 	fd = g_io_channel_unix_get_fd(io);
 	ofono_emulator_register(em, fd);
@@ -115,9 +115,6 @@ static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 	g_io_channel_set_close_on_unref(io, FALSE);
 
 	return;
-
-failed:
-	g_io_channel_shutdown(io, TRUE, NULL);
 }
 
 static void voicecall_watch(struct ofono_atom *atom,
