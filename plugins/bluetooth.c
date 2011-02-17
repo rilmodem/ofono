@@ -445,6 +445,9 @@ static void remove_record(struct server *server)
 {
 	DBusMessage *msg;
 
+	if (server->handle == 0)
+		return;
+
 	msg = dbus_message_new_method_call(BLUEZ_SERVICE, adapter_any_path,
 					BLUEZ_SERVICE_INTERFACE,
 					"RemoveRecord");
@@ -594,6 +597,13 @@ static void new_connection(GIOChannel *io, gpointer user_data)
 
 	cbd->source = g_io_add_watch(io, G_IO_HUP | G_IO_ERR | G_IO_NVAL,
 					client_event, cbd);
+}
+
+static void remove_service_handle(gpointer data, gpointer user_data)
+{
+	struct server *server = data;
+
+	server->handle = 0;
 }
 
 static void add_record_cb(DBusPendingCall *call, gpointer user_data)
@@ -767,6 +777,8 @@ static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
 		return;
 
 	g_hash_table_foreach(uuid_hash, bluetooth_remove_all_modem, NULL);
+
+	g_slist_foreach(server_list, (GFunc) remove_service_handle, NULL);
 }
 
 static guint bluetooth_watch;
