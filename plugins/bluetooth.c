@@ -742,6 +742,18 @@ static void bluetooth_remove_all_modem(gpointer key, gpointer value,
 	profile->remove_all();
 }
 
+static void bluetooth_connect(DBusConnection *connection, void *user_data)
+{
+	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
+				manager_properties_cb, NULL, NULL, -1,
+				DBUS_TYPE_INVALID);
+
+	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "FindAdapter",
+				find_adapter_cb, NULL, NULL, -1,
+				DBUS_TYPE_STRING, &adapter_any_name,
+				DBUS_TYPE_INVALID);
+}
+
 static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
 {
 	if (uuid_hash == NULL)
@@ -763,7 +775,8 @@ static void bluetooth_ref(void)
 	connection = ofono_dbus_get_connection();
 
 	bluetooth_watch = g_dbus_add_service_watch(connection, BLUEZ_SERVICE,
-					NULL, bluetooth_disconnect, NULL, NULL);
+					bluetooth_connect,
+					bluetooth_disconnect, NULL, NULL);
 
 	adapter_added_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
 						BLUEZ_MANAGER_INTERFACE,
@@ -790,15 +803,6 @@ static void bluetooth_ref(void)
 
 	adapter_address_hash = g_hash_table_new_full(g_str_hash, g_str_equal,
 						g_free, g_free);
-
-	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
-				manager_properties_cb, NULL, NULL, -1,
-				DBUS_TYPE_INVALID);
-
-	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "FindAdapter",
-				find_adapter_cb, NULL, NULL, -1,
-				DBUS_TYPE_STRING, &adapter_any_name,
-				DBUS_TYPE_INVALID);
 
 increment:
 	g_atomic_int_inc(&bluetooth_refcount);
