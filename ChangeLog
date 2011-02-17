@@ -1,3 +1,11 @@
+ver 0.43:
+	Fix issue with PPP transmit ACCM and receive ACCM mixup.
+	Fix issue with PPP not using default ACCM in transmit.
+	Fix issue with PPP interface and EM770W modem.
+	Add support for basic modem emulator interfaces.
+	Add support for handling ATS5 command feature.
+	Add support for Linktop LW27x data cards.
+
 ver 0.42:
 	Fix issue with ECT pre-conditions check.
 	Add support for watching SIM file changes.
