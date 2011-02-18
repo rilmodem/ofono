@@ -624,7 +624,7 @@ static void sim_unlock_cb(const struct ofono_error *error, void *data)
 		DBusMessage *reply = __ofono_error_failed(sim->pending);
 
 		__ofono_dbus_pending_reply(&sim->pending, reply);
-		sim_pin_retries_check(sim);
+		sim_pin_check(sim);
 
 		return;
 	}
@@ -640,7 +640,7 @@ static void sim_lock_cb(const struct ofono_error *error, void *data)
 		DBusMessage *reply = __ofono_error_failed(sim->pending);
 
 		__ofono_dbus_pending_reply(&sim->pending, reply);
-		sim_pin_retries_check(sim);
+		sim_pin_check(sim);
 
 		return;
 	}
@@ -711,7 +711,7 @@ static void sim_change_pin_cb(const struct ofono_error *error, void *data)
 		__ofono_dbus_pending_reply(&sim->pending,
 				__ofono_error_failed(sim->pending));
 
-		sim_pin_retries_check(sim);
+		sim_pin_check(sim);
 
 		return;
 	}
@@ -2229,6 +2229,15 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 						OFONO_SIM_MANAGER_INTERFACE,
 						"PinRequired", DBUS_TYPE_STRING,
 						&pin_name);
+	}
+
+	if (pin_type != OFONO_SIM_PASSWORD_NONE &&
+			sim->state == OFONO_SIM_STATE_READY) {
+		/* Force the sim state out of READY */
+		sim_free_main_state(sim);
+
+		sim->state = OFONO_SIM_STATE_INSERTED;
+		__ofono_modem_sim_reset(__ofono_atom_get_modem(sim->atom));
 	}
 
 	sim_pin_retries_check(sim);
