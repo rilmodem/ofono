@@ -29,11 +29,19 @@
 
 #include "ofono.h"
 #include "gatserver.h"
+#include "gatppp.h"
+
+#define DUN_SERVER_ADDRESS     "192.168.1.1"
+#define DUN_PEER_ADDRESS       "192.168.1.2"
+#define DUN_DNS_SERVER_1       "10.10.10.10"
+#define DUN_DNS_SERVER_2       "10.10.10.11"
 
 struct ofono_emulator {
 	struct ofono_atom *atom;
 	enum ofono_emulator_type type;
 	GAtServer *server;
+	GAtPPP *ppp;
+	guint source;
 };
 
 static void emulator_debug(const char *str, void *data)
@@ -50,11 +58,121 @@ static void emulator_disconnect(gpointer user_data)
 	ofono_emulator_remove(em);
 }
 
+static void ppp_connect(const char *iface, const char *local,
+                       const char *remote,
+                       const char *dns1, const char *dns2,
+                       gpointer user_data)
+{
+       DBG("Network Device: %s\n", iface);
+       DBG("IP Address: %s\n", local);
+       DBG("Remote IP Address: %s\n", remote);
+       DBG("Primary DNS Server: %s\n", dns1);
+       DBG("Secondary DNS Server: %s\n", dns2);
+}
+
+static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
+{
+       struct ofono_emulator *em = user_data;
+
+       DBG("");
+
+       g_at_ppp_unref(em->ppp);
+       em->ppp = NULL;
+
+       if (em->server == NULL)
+               return;
+
+       g_at_server_resume(em->server);
+}
+
+static gboolean setup_ppp(gpointer user_data)
+{
+       struct ofono_emulator *em = user_data;
+       GAtIO *io;
+
+       DBG("");
+
+       em->source = 0;
+
+       io = g_at_server_get_io(em->server);
+
+       g_at_server_suspend(em->server);
+
+       em->ppp = g_at_ppp_server_new_from_io(io, DUN_SERVER_ADDRESS);
+       if (em->ppp == NULL) {
+               g_at_server_resume(em->server);
+               return FALSE;
+       }
+
+       g_at_ppp_set_server_info(em->ppp, DUN_PEER_ADDRESS,
+                                       DUN_DNS_SERVER_1, DUN_DNS_SERVER_2);
+
+       g_at_ppp_set_credentials(em->ppp, "", "");
+       g_at_ppp_set_debug(em->ppp, emulator_debug, "PPP");
+
+       g_at_ppp_set_connect_function(em->ppp, ppp_connect, em);
+       g_at_ppp_set_disconnect_function(em->ppp, ppp_disconnect, em);
+
+       return FALSE;
+}
+
+static gboolean dial_call(struct ofono_emulator *em, const char *dial_str)
+{
+       char c = *dial_str;
+
+       DBG("dial call %s", dial_str);
+
+       if (c == '*' || c == '#' || c == 'T' || c == 't') {
+               g_at_server_send_intermediate(em->server, "CONNECT");
+               em->source = g_idle_add(setup_ppp, em);
+       }
+
+       return TRUE;
+}
+
+static void dial_cb(GAtServer *server, GAtServerRequestType type,
+				 GAtResult *result, gpointer user_data)
+{
+       struct ofono_emulator *em = user_data;
+       GAtResultIter iter;
+       const char *dial_str;
+
+       DBG("");
+
+       if (type != G_AT_SERVER_REQUEST_TYPE_SET)
+               goto error;
+
+       g_at_result_iter_init(&iter, result);
+
+       if (!g_at_result_iter_next(&iter, ""))
+               goto error;
+
+       dial_str = g_at_result_iter_raw_line(&iter);
+       if (!dial_str)
+               goto error;
+
+       if (em->ppp)
+               goto error;
+
+       if (!dial_call(em, dial_str))
+               goto error;
+
+       return;
+
+error:
+       g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
+}
+
 static void emulator_unregister(struct ofono_atom *atom)
 {
 	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 
 	DBG("%p", em);
+
+	if (em->source) {
+		g_source_remove(em->source);
+		em->source = 0;
+	}
 
 	g_at_server_unref(em->server);
 	em->server = NULL;
@@ -82,6 +200,9 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 						emulator_disconnect, em);
 
 	__ofono_atom_register(em->atom, emulator_unregister);
+
+	if (em->type == OFONO_EMULATOR_TYPE_DUN)
+		g_at_server_register(em->server, "D", dial_cb, em, NULL);
 }
 
 static void emulator_remove(struct ofono_atom *atom)
