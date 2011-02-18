@@ -50,7 +50,6 @@ static GSList *g_drivers = NULL;
 
 static void sim_own_numbers_update(struct ofono_sim *sim);
 static void sim_pin_check(struct ofono_sim *sim);
-static void sim_set_ready(struct ofono_sim *sim);
 
 struct ofono_sim {
 	/* Contents of the SIM file system, in rough initialization order */
@@ -1277,6 +1276,29 @@ static void sim_ready(enum ofono_sim_state new_state, void *user)
 			OFONO_SIM_FILE_STRUCTURE_FIXED, sim_efimg_read_cb, sim);
 }
 
+static void sim_set_ready(struct ofono_sim *sim)
+{
+	GSList *l;
+	ofono_sim_state_event_cb_t notify;
+
+	if (sim == NULL)
+		return;
+
+	if (sim->state != OFONO_SIM_STATE_INSERTED)
+		return;
+
+	sim->state = OFONO_SIM_STATE_READY;
+
+	sim_fs_check_version(sim->simfs);
+
+	for (l = sim->state_watches->items; l; l = l->next) {
+		struct ofono_watchlist_item *item = l->data;
+		notify = item->notify;
+
+		notify(sim->state, item->notify_data);
+	}
+}
+
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 		void *data)
 {
@@ -2175,29 +2197,6 @@ enum ofono_sim_state ofono_sim_get_state(struct ofono_sim *sim)
 		return OFONO_SIM_STATE_NOT_PRESENT;
 
 	return sim->state;
-}
-
-static void sim_set_ready(struct ofono_sim *sim)
-{
-	GSList *l;
-	ofono_sim_state_event_cb_t notify;
-
-	if (sim == NULL)
-		return;
-
-	if (sim->state != OFONO_SIM_STATE_INSERTED)
-		return;
-
-	sim->state = OFONO_SIM_STATE_READY;
-
-	sim_fs_check_version(sim->simfs);
-
-	for (l = sim->state_watches->items; l; l = l->next) {
-		struct ofono_watchlist_item *item = l->data;
-		notify = item->notify;
-
-		notify(sim->state, item->notify_data);
-	}
 }
 
 static void sim_pin_query_cb(const struct ofono_error *error,
