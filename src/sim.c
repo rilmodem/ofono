@@ -1641,55 +1641,6 @@ static void sim_initialize_after_pin(struct ofono_sim *sim)
 			sim_cphs_information_read_cb, sim);
 }
 
-static void sim_pin_query_cb(const struct ofono_error *error,
-				enum ofono_sim_password_type pin_type,
-				void *data)
-{
-	struct ofono_sim *sim = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
-	const char *path = __ofono_atom_get_path(sim->atom);
-	const char *pin_name;
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("Querying PIN authentication state failed");
-
-		goto checkdone;
-	}
-
-	if (sim->pin_type != pin_type) {
-		sim->pin_type = pin_type;
-		pin_name = sim_passwd_name(pin_type);
-
-		if (pin_type != OFONO_SIM_PASSWORD_NONE &&
-				password_is_pin(pin_type) == FALSE)
-			pin_type = puk2pin(pin_type);
-
-		if (pin_type != OFONO_SIM_PASSWORD_INVALID)
-			sim->locked_pins[pin_type] = TRUE;
-
-		ofono_dbus_signal_property_changed(conn, path,
-						OFONO_SIM_MANAGER_INTERFACE,
-						"PinRequired", DBUS_TYPE_STRING,
-						&pin_name);
-	}
-
-	sim_pin_retries_check(sim);
-
-checkdone:
-	if (pin_type == OFONO_SIM_PASSWORD_NONE)
-		sim_initialize_after_pin(sim);
-}
-
-static void sim_pin_check(struct ofono_sim *sim)
-{
-	if (sim->driver->query_passwd_state == NULL) {
-		sim_initialize_after_pin(sim);
-		return;
-	}
-
-	sim->driver->query_passwd_state(sim, sim_pin_query_cb, sim);
-}
-
 static void sim_efli_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -2247,6 +2198,55 @@ static void sim_set_ready(struct ofono_sim *sim)
 
 		notify(sim->state, item->notify_data);
 	}
+}
+
+static void sim_pin_query_cb(const struct ofono_error *error,
+				enum ofono_sim_password_type pin_type,
+				void *data)
+{
+	struct ofono_sim *sim = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(sim->atom);
+	const char *pin_name;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("Querying PIN authentication state failed");
+
+		goto checkdone;
+	}
+
+	if (sim->pin_type != pin_type) {
+		sim->pin_type = pin_type;
+		pin_name = sim_passwd_name(pin_type);
+
+		if (pin_type != OFONO_SIM_PASSWORD_NONE &&
+				password_is_pin(pin_type) == FALSE)
+			pin_type = puk2pin(pin_type);
+
+		if (pin_type != OFONO_SIM_PASSWORD_INVALID)
+			sim->locked_pins[pin_type] = TRUE;
+
+		ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"PinRequired", DBUS_TYPE_STRING,
+						&pin_name);
+	}
+
+	sim_pin_retries_check(sim);
+
+checkdone:
+	if (pin_type == OFONO_SIM_PASSWORD_NONE)
+		sim_initialize_after_pin(sim);
+}
+
+static void sim_pin_check(struct ofono_sim *sim)
+{
+	if (sim->driver->query_passwd_state == NULL) {
+		sim_initialize_after_pin(sim);
+		return;
+	}
+
+	sim->driver->query_passwd_state(sim, sim_pin_query_cb, sim);
 }
 
 int ofono_sim_driver_register(const struct ofono_sim_driver *d)
