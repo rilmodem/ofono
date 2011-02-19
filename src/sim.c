@@ -100,6 +100,7 @@ struct ofono_sim {
 	struct ofono_sim_context *early_context;
 
 	unsigned char *iidf_image;
+	unsigned int *iidf_watch_ids;
 
 	DBusMessage *pending;
 	const struct ofono_sim_driver *driver;
@@ -929,6 +930,11 @@ static void sim_iidf_read_cb(int ok, int length, int record,
 					sim_iidf_read_clut_cb, sim);
 }
 
+static void sim_image_data_changed(int id, void *userdata)
+{
+	/* TODO: notify D-bus clients */
+}
+
 static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 				gpointer user_data)
 {
@@ -942,7 +948,7 @@ static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 
 	if (image != NULL) {
 		sim_get_image_cb(sim, id, image, FALSE);
-		return;
+		goto watch;
 	}
 
 	if (sim->efimg_length <= (id * 9)) {
@@ -959,6 +965,17 @@ static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 	/* read the image data */
 	ofono_sim_read_bytes(sim->context, iidf_id, iidf_offset, iidf_len,
 				sim_iidf_read_cb, sim);
+
+watch:
+	if (sim->efimg_length <= id * 9)
+		return;
+
+	if (sim->iidf_watch_ids[id] > 0)
+		return;
+
+	sim->iidf_watch_ids[id] = ofono_sim_add_file_watch(sim->context,
+					iidf_id, sim_image_data_changed,
+					sim, NULL);
 }
 
 static DBusMessage *sim_get_icon(DBusConnection *conn,
@@ -1272,6 +1289,11 @@ static void sim_efimg_read_cb(int ok, int length, int record,
 		if (sim->efimg == NULL)
 			return;
 
+		sim->iidf_watch_ids = g_try_new0(unsigned int, num_records);
+
+		if (sim->iidf_watch_ids == NULL)
+			return;
+
 		sim->efimg_length = num_records * 9;
 	}
 
@@ -1284,6 +1306,33 @@ static void sim_efimg_read_cb(int ok, int length, int record,
 	efimg = &sim->efimg[(record - 1) * 9];
 
 	memcpy(efimg, &data[1], 9);
+}
+
+static void sim_efimg_changed(int id, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	int i, watch;
+
+	if (sim->efimg != NULL) {
+		for (i = sim->efimg_length / 9 - 1; i >= 0; i--) {
+			watch = sim->iidf_watch_ids[i];
+			if (watch == 0)
+				continue;
+
+			ofono_sim_remove_file_watch(sim->context, watch);
+		}
+
+		g_free(sim->efimg);
+		sim->efimg = NULL;
+		sim->efimg_length = 0;
+		g_free(sim->iidf_watch_ids);
+		sim->iidf_watch_ids = NULL;
+	}
+
+	ofono_sim_read(sim->context, SIM_EFIMG_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_FIXED, sim_efimg_read_cb, sim);
+
+	/* TODO: notify D-bus clients */
 }
 
 static void sim_ready(enum ofono_sim_state new_state, void *user)
@@ -1304,6 +1353,8 @@ static void sim_ready(enum ofono_sim_state new_state, void *user)
 
 	ofono_sim_read(sim->context, SIM_EFIMG_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_FIXED, sim_efimg_read_cb, sim);
+	ofono_sim_add_file_watch(sim->context, SIM_EFIMG_FILEID,
+					sim_efimg_changed, sim, NULL);
 }
 
 static void sim_set_ready(struct ofono_sim *sim)
@@ -2209,6 +2260,8 @@ static void sim_free_main_state(struct ofono_sim *sim)
 		g_free(sim->efimg);
 		sim->efimg = NULL;
 		sim->efimg_length = 0;
+		g_free(sim->iidf_watch_ids);
+		sim->iidf_watch_ids = NULL;
 	}
 
 	g_free(sim->iidf_image);
