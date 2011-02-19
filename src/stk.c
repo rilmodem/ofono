@@ -1981,6 +1981,7 @@ static void free_idle_mode_text(struct ofono_stk *stk)
 	memset(&stk->idle_mode_icon, 0, sizeof(stk->idle_mode_icon));
 }
 
+/* Note: may be called from ofono_stk_proactive_command_handled_notify */
 static gboolean handle_command_refresh(const struct stk_command *cmd,
 					struct stk_response *rsp,
 					struct ofono_stk *stk)
@@ -2025,7 +2026,10 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 
 	default:
 		ofono_info("Undefined Refresh qualifier: %d", cmd->qualifier);
-		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+
+		if (rsp != NULL)
+			rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+
 		return TRUE;
 	}
 
@@ -2048,11 +2052,19 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 		sim = __ofono_atom_get_data(sim_atom);
 
 	if (sim == NULL) {
-		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+		if (rsp != NULL)
+			rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
+
 		return TRUE;
 	}
 
-	if (cmd->qualifier < 4) {
+	/*
+	 * For now we can handle the Refresh types that don't require
+	 * a SIM reset except if that part of the task has been already
+	 * handled by modem firmware (indicated by rsp == NULL) in which
+	 * case we just restart our SIM initialisation.
+	 */
+	if (cmd->qualifier < 4 || rsp == NULL) {
 		int qualifier = stk->pending_cmd->qualifier;
 		GSList *file_list = stk->pending_cmd->refresh.file_list;
 
@@ -2062,10 +2074,15 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 		/*
 		 * Queue the TERMINAL RESPONSE before triggering potential
 		 * file accesses.
+		 *
+		 * TODO: Find out if we need to send the "Refresh performed
+		 * with additional EFs read" response.
 		 */
-		err = stk_respond(stk, rsp, stk_command_cb);
-		if (err)
-			stk_command_cb(&failure, stk);
+		if (rsp != NULL) {
+			err = stk_respond(stk, rsp, stk_command_cb);
+			if (err)
+				stk_command_cb(&failure, stk);
+		}
 
 		/* TODO: use the alphaId / icon */
 		/* TODO: if AID is supplied, check its value */
@@ -2084,6 +2101,9 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 			break;
 		case 2:
 		case 3:
+		case 4:
+		case 5:
+		case 6:
 			free_idle_mode_text(stk);
 			__ofono_sim_refresh(sim, file_list, FALSE, TRUE);
 			break;
@@ -2779,6 +2799,10 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 		stk_alpha_id_set(stk, cmd->send_dtmf.alpha_id,
 				&cmd->send_dtmf.text_attr,
 				&cmd->send_dtmf.icon_id);
+		break;
+
+	case STK_COMMAND_TYPE_REFRESH:
+		handle_command_refresh(stk->pending_cmd, NULL, stk);
 		break;
 	}
 
