@@ -57,6 +57,7 @@ struct ofono_sim {
 	char **language_prefs;
 	unsigned char *efli;
 	unsigned char efli_length;
+	gboolean language_prefs_update;
 
 	enum ofono_sim_password_type pin_type;
 	gboolean locked_pins[OFONO_SIM_PASSWORD_SIM_PUK]; /* Number of PINs */
@@ -96,6 +97,7 @@ struct ofono_sim {
 
 	struct sim_fs *simfs;
 	struct ofono_sim_context *context;
+	struct ofono_sim_context *early_context;
 
 	unsigned char *iidf_image;
 
@@ -1845,7 +1847,15 @@ skip_efpl:
 						DBUS_TYPE_STRING,
 						&sim->language_prefs);
 
-	__ofono_sim_recheck_pin(sim);
+	/* Proceed with sim initialization if we're not merely updating */
+	if (!sim->language_prefs_update) {
+		if (sim->context == NULL)
+			sim->context = ofono_sim_context_create(sim);
+
+		__ofono_sim_recheck_pin(sim);
+	}
+
+	sim->language_prefs_update = FALSE;
 }
 
 static void sim_iccid_read_cb(int ok, int length, int record,
@@ -1869,6 +1879,43 @@ static void sim_iccid_read_cb(int ok, int length, int record,
 						"CardIdentifier",
 						DBUS_TYPE_STRING,
 						&sim->iccid);
+}
+
+static void sim_iccid_changed(int id, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (sim->iccid) {
+		g_free(sim->iccid);
+		sim->iccid = NULL;
+	}
+
+	ofono_sim_read(sim->early_context, SIM_EF_ICCID_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_iccid_read_cb, sim);
+}
+
+static void sim_efli_efpl_changed(int id, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (sim->efli != NULL) /* This shouldn't happen */
+		return;
+
+	if (sim->language_prefs) {
+		g_strfreev(sim->language_prefs);
+		sim->language_prefs = NULL;
+	}
+
+	sim->language_prefs_update = TRUE;
+
+	ofono_sim_read(sim->early_context, SIM_EFLI_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efli_read_cb, sim);
+
+	ofono_sim_read(sim->early_context, SIM_EFPL_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_efpl_read_cb, sim);
 }
 
 static void sim_initialize(struct ofono_sim *sim)
@@ -1899,10 +1946,15 @@ static void sim_initialize(struct ofono_sim *sim)
 	 * in the EFust
 	 */
 
+	if (sim->early_context == NULL)
+		sim->early_context = ofono_sim_context_create(sim);
+
 	/* Grab the EFiccid which is always available */
-	ofono_sim_read(sim->context, SIM_EF_ICCID_FILEID,
+	ofono_sim_read(sim->early_context, SIM_EF_ICCID_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_iccid_read_cb, sim);
+	ofono_sim_add_file_watch(sim->early_context, SIM_EF_ICCID_FILEID,
+					sim_iccid_changed, sim, NULL);
 
 	/* EFecc is read by the voicecall atom */
 
@@ -1914,12 +1966,17 @@ static void sim_initialize(struct ofono_sim *sim)
 	 * However we don't depend on the user interface and so
 	 * need to read both files now.
 	 */
-	ofono_sim_read(sim->context, SIM_EFLI_FILEID,
+	ofono_sim_read(sim->early_context, SIM_EFLI_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_efli_read_cb, sim);
-	ofono_sim_read(sim->context, SIM_EFPL_FILEID,
+	ofono_sim_add_file_watch(sim->early_context, SIM_EFLI_FILEID,
+					sim_efli_efpl_changed, sim, NULL);
+
+	ofono_sim_read(sim->early_context, SIM_EFPL_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_efpl_read_cb, sim);
+	ofono_sim_add_file_watch(sim->early_context, SIM_EFPL_FILEID,
+					sim_efli_efpl_changed, sim, NULL);
 }
 
 struct ofono_sim_context *ofono_sim_context_create(struct ofono_sim *sim)
@@ -2068,6 +2125,11 @@ static void sim_free_early_state(struct ofono_sim *sim)
 		g_strfreev(sim->language_prefs);
 		sim->language_prefs = NULL;
 	}
+
+	if (sim->early_context) {
+		ofono_sim_context_free(sim->early_context);
+		sim->early_context = NULL;
+	}
 }
 
 static void sim_free_main_state(struct ofono_sim *sim)
@@ -2124,6 +2186,11 @@ static void sim_free_main_state(struct ofono_sim *sim)
 
 	sim->fixed_dialing = FALSE;
 	sim->barred_dialing = FALSE;
+
+	if (sim->context) {
+		ofono_sim_context_free(sim->context);
+		sim->context = NULL;
+	}
 }
 
 static void sim_free_state(struct ofono_sim *sim)
@@ -2322,11 +2389,6 @@ static void sim_remove(struct ofono_atom *atom)
 
 	sim_free_state(sim);
 
-	if (sim->context) {
-		ofono_sim_context_free(sim->context);
-		sim->context = NULL;
-	}
-
 	sim_fs_free(sim->simfs);
 	sim->simfs = NULL;
 
@@ -2392,7 +2454,6 @@ void ofono_sim_register(struct ofono_sim *sim)
 	ofono_modem_add_interface(modem, OFONO_SIM_MANAGER_INTERFACE);
 	sim->state_watches = __ofono_watchlist_new(g_free);
 	sim->simfs = sim_fs_new(sim, sim->driver);
-	sim->context = ofono_sim_context_create(sim);
 
 	__ofono_atom_register(sim->atom, sim_unregister);
 
