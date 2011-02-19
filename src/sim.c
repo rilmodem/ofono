@@ -1198,10 +1198,12 @@ out:
 check:
 	/* All records retrieved */
 	if (sim->service_numbers) {
-		char **service_numbers;
-
 		sim->service_numbers = g_slist_reverse(sim->service_numbers);
 		sim->sdn_ready = TRUE;
+	}
+
+	if (sim->sdn_ready) {
+		char **service_numbers;
 
 		service_numbers = get_service_numbers(sim->service_numbers);
 
@@ -1214,11 +1216,33 @@ check:
 	}
 }
 
+static void sim_service_numbers_changed(int id, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (sim->service_numbers) {
+		g_slist_foreach(sim->service_numbers,
+				(GFunc)service_number_free, NULL);
+		g_slist_free(sim->service_numbers);
+		sim->service_numbers = NULL;
+	}
+
+	ofono_sim_read(sim->context, SIM_EFSDN_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_FIXED, sim_sdn_read_cb, sim);
+}
+
 static void sim_own_numbers_update(struct ofono_sim *sim)
 {
 	ofono_sim_read(sim->context, SIM_EFMSISDN_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_FIXED, sim_msisdn_read_cb,
 			sim);
+}
+
+static void sim_own_numbers_changed(int id, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	sim_own_numbers_update(sim);
 }
 
 static void sim_efimg_read_cb(int ok, int length, int record,
@@ -1270,9 +1294,14 @@ static void sim_ready(enum ofono_sim_state new_state, void *user)
 		return;
 
 	sim_own_numbers_update(sim);
+	ofono_sim_add_file_watch(sim->context, SIM_EFMSISDN_FILEID,
+					sim_own_numbers_changed, sim, NULL);
 
 	ofono_sim_read(sim->context, SIM_EFSDN_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_FIXED, sim_sdn_read_cb, sim);
+	ofono_sim_add_file_watch(sim->context, SIM_EFSDN_FILEID,
+					sim_service_numbers_changed, sim, NULL);
+
 	ofono_sim_read(sim->context, SIM_EFIMG_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_FIXED, sim_efimg_read_cb, sim);
 }
@@ -2153,6 +2182,7 @@ static void sim_free_main_state(struct ofono_sim *sim)
 				(GFunc)service_number_free, NULL);
 		g_slist_free(sim->service_numbers);
 		sim->service_numbers = NULL;
+		sim->sdn_ready = FALSE;
 	}
 
 	if (sim->efust) {
