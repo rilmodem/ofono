@@ -131,7 +131,7 @@ static gboolean dial_call(struct ofono_emulator *em, const char *dial_str)
 }
 
 static void dial_cb(GAtServer *server, GAtServerRequestType type,
-				 GAtResult *result, gpointer user_data)
+				GAtResult *result, gpointer user_data)
 {
        struct ofono_emulator *em = user_data;
        GAtResultIter iter;
