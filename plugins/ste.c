@@ -66,6 +66,7 @@
 #include <drivers/stemodem/if_caif.h>
 
 #define NUM_CHAT	1
+#define MAX_PDP_CONTEXTS	4
 
 static const char *cpin_prefix[] = { "+CPIN:", NULL };
 
@@ -363,6 +364,7 @@ static void ste_post_online(struct ofono_modem *modem)
 	struct ofono_message_waiting *mw;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
+	int i;
 
 	DBG("%p", modem);
 
@@ -378,13 +380,18 @@ static void ste_post_online(struct ofono_modem *modem)
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_MBM,
 					"atmodem", data->chat);
-	gc = ofono_gprs_context_create(modem, 0, "stemodem", data->chat);
+	if (gprs) {
+		for (i = 0; i < MAX_PDP_CONTEXTS; i++) {
+			gc = ofono_gprs_context_create(
+					modem, 0, "stemodem", data->chat);
+			if (gc == NULL)
+				break;
 
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
+			ofono_gprs_add_context(gprs, gc);
+		}
+	}
 
 	mw = ofono_message_waiting_create(modem);
-
 	if (mw)
 		ofono_message_waiting_register(mw);
 }
