@@ -1,0 +1,39 @@
+Location Reporting Hierarchy [experimental]
+=================
+
+Service		org.ofono
+Interface	org.ofono.LocationReporting
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns all LocationReporting properties. See the
+			properties section for available properties.
+
+		byte Request()
+
+			Asks to turn ON the NMEA stream and supplies the
+			gps device file descriptor. The external cliend should
+			use the file descriptor to receive the NMEA data.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InUse
+					 [service].Error.Failed
+
+		void Release()
+
+			Releases the gps device file descriptor and turns
+			OFF the NMEA stream.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.NotAvailable
+					 [service].Error.Failed
+
+Properties	boolean Enabled [readonly]
+
+                        Boolean representing the state of the NMEA stream.
+
+		string Type [readonly]
+
+			Holds the type of the device. Currently only NMEA is
+			supported.
