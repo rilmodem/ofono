@@ -130,6 +130,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_SIM_AUTH,
 	OFONO_ATOM_TYPE_EMULATOR_DUN,
 	OFONO_ATOM_TYPE_EMULATOR_HFP,
+	OFONO_ATOM_TYPE_LOCATION_REPORTING,
 };
 
 enum ofono_atom_watch_condition {
@@ -230,6 +231,7 @@ gboolean __ofono_call_settings_is_busy(struct ofono_call_settings *cs);
 #include <ofono/radio-settings.h>
 #include <ofono/audio-settings.h>
 #include <ofono/ctm.h>
+#include <ofono/location-reporting.h>
 
 #include <ofono/voicecall.h>
 
