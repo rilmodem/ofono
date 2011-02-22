@@ -138,6 +138,7 @@ static void handle_sim_status(int status, struct ofono_modem *modem)
 		if (data->have_sim == FALSE) {
 			if (data->sim)
 				ofono_sim_inserted_notify(data->sim, TRUE);
+
 			data->have_sim = TRUE;
 		}
 		break;
@@ -145,6 +146,7 @@ static void handle_sim_status(int status, struct ofono_modem *modem)
 		if (data->have_sim == TRUE) {
 			if (data->sim)
 				ofono_sim_inserted_notify(data->sim, FALSE);
+
 			data->have_sim = FALSE;
 		}
 		break;
@@ -280,6 +282,7 @@ static void esimsr_notify(GAtResult *result, gpointer user_data)
 	DBG("");
 
 	g_at_result_iter_init(&iter, result);
+
 	if (!g_at_result_iter_next(&iter, "*ESIMSR:"))
 		return;
 
@@ -321,7 +324,7 @@ static int ste_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->chat, "AT+CFUN=4", NULL, cfun_enable, modem, NULL);
 
 	g_at_chat_register(data->chat, "*ESIMSR:", esimsr_notify,
-			FALSE, modem, NULL);
+				FALSE, modem, NULL);
 
 	return -EINPROGRESS;
 }
@@ -394,7 +397,7 @@ static void ste_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
 	data->sim = ofono_sim_create(modem, OFONO_VENDOR_MBM, "atmodem",
-			data->chat);
+					data->chat);
 	ofono_voicecall_create(modem, 0, "stemodem", data->chat);
 }
 
