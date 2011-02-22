@@ -46,6 +46,7 @@
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
 #include <ofono/log.h>
+#include <ofono/location-reporting.h>
 
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
@@ -67,6 +68,7 @@ struct mbm_data {
 	gboolean have_sim;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
+	struct ofono_location_reporting *lr;
 	guint reopen_source;
 	enum mbm_variant variant;
 };
@@ -510,8 +512,14 @@ static void mbm_post_online(struct ofono_modem *modem)
 {
 	struct mbm_data *data = ofono_modem_get_data(modem);
 	struct ofono_gprs_context *gc;
+	const char *gps_dev;
 
 	DBG("%p", modem);
+
+	gps_dev = ofono_modem_get_string(modem, "GPSDevice");
+	if (gps_dev)
+		data->lr = ofono_location_reporting_create(modem, 0,
+					"mbmmodem", data->modem_port);
 
 	ofono_netreg_create(modem, OFONO_VENDOR_MBM,
 					"atmodem", data->modem_port);
