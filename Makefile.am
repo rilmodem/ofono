@@ -215,7 +215,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/mbmmodem/mbmmodem.h \
 			drivers/mbmmodem/mbmmodem.c \
 			drivers/mbmmodem/gprs-context.c \
-			drivers/mbmmodem/stk.c
+			drivers/mbmmodem/stk.c \
+			drivers/mbmmodem/location-reporting.c
 
 builtin_modules += hsomodem
 builtin_sources += drivers/atmodem/atutil.h \
