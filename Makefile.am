@@ -14,7 +14,8 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/audio-settings.h include/nettime.h \
 			include/ctm.h include/cdma-voicecall.h \
 			include/cdma-sms.h include/sim-auth.h \
-			include/gprs-provision.h include/emulator.h
+			include/gprs-provision.h include/emulator.h \
+			include/location-reporting.h
 
 nodist_pkginclude_HEADERS = include/version.h
 
