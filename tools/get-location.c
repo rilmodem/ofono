@@ -37,6 +37,10 @@
 #include <dbus/dbus.h>
 #include <glib.h>
 
+#ifndef DBUS_TYPE_UNIX_FD
+#define DBUS_TYPE_UNIX_FD -1
+#endif
+
 static GMainLoop *event_loop;
 
 static char *get_first_modem_path(DBusConnection *conn)
@@ -212,6 +216,11 @@ int main(int argc, char *argv[])
 	int signal_source;
 	int data_source;
 	int ret;
+
+	if (DBUS_TYPE_UNIX_FD < 0) {
+		fprintf(stderr, "File-descriptor passing not supported\n");
+		exit(1);
+	}
 
 	conn = dbus_bus_get(DBUS_BUS_SYSTEM, NULL);
 	if (!conn) {
