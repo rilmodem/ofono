@@ -43,6 +43,8 @@ struct ofono_emulator {
 	GAtServer *server;
 	GAtPPP *ppp;
 	guint source;
+	int events_mode;
+	gboolean events_ind;
 	GSList *indicators;
 };
 
@@ -251,6 +253,103 @@ fail:
 	}
 }
 
+static void cmer_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	char buf[32];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		sprintf(buf, "+CMER: %d,0,0,%d,0", em->events_mode,
+						em->events_ind);
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		sprintf(buf, "+CMER: (0,3),(0),(0),(0,1),(0)");
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		int mode;
+		int ind = em->events_ind;
+		int val;
+
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		/* mode */
+		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
+			goto fail;
+
+		if ((mode != 0) && (mode != 3))
+			goto fail;
+
+		/* keyp */
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE) {
+			if (g_at_result_iter_skip_next(&iter) == FALSE)
+				goto done;
+			goto fail;
+		}
+
+		if (val != 0)
+			goto fail;
+
+		/* disp */
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE) {
+			if (g_at_result_iter_skip_next(&iter) == FALSE)
+				goto done;
+			goto fail;
+		}
+
+		if (val != 0)
+			goto fail;
+
+		/* ind */
+		if (g_at_result_iter_next_number(&iter, &ind) == FALSE) {
+			if (g_at_result_iter_skip_next(&iter) == FALSE)
+				goto done;
+			goto fail;
+		}
+
+		if ((ind != 0) && (ind != 1))
+			goto fail;
+
+		/* bfr */
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE) {
+			if (g_at_result_iter_skip_next(&iter) == FALSE)
+				goto done;
+			goto fail;
+		}
+
+		if (val != 0)
+			goto fail;
+
+		/* check that bfr is last parameter */
+		if (g_at_result_iter_skip_next(&iter) == TRUE)
+			goto fail;
+
+done:
+		em->events_mode = mode;
+		em->events_ind = ind;
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+
+		break;
+	}
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 					int min, int max, int dflt)
 {
@@ -324,6 +423,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_BATTERY, 0, 5, 5);
 
 		g_at_server_register(em->server, "+CIND", cind_cb, em, NULL);
+		g_at_server_register(em->server, "+CMER", cmer_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
@@ -364,6 +464,7 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 		return NULL;
 
 	em->type = type;
+	em->events_mode = 3;	/* default mode is forwarding events */
 
 	em->atom = __ofono_modem_add_atom_offline(modem, atom_t,
 							emulator_remove, em);
@@ -546,8 +647,10 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 
 		ind->value = value;
 
-		sprintf(buf, "+CIEV: %d,%d", i, ind->value);
-		g_at_server_send_info(em->server, buf, TRUE);
+		if (em->events_mode == 3 && em->events_ind) {
+			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
+			g_at_server_send_info(em->server, buf, TRUE);
+		}
 
 		return;
 	}
