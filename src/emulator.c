@@ -585,8 +585,10 @@ static void handler_proxy(GAtServer *server, GAtServerRequestType type,
 	struct handler *h = userdata;
 	struct ofono_emulator_request req;
 
-	if ((h->em->type == OFONO_EMULATOR_TYPE_HFP) && !h->em->slc)
+	if (h->em->type == OFONO_EMULATOR_TYPE_HFP && h->em->slc == FALSE) {
 		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
+		return;
+	}
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
