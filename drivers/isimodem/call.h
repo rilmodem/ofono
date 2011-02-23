@@ -27,6 +27,8 @@ extern "C" {
 #endif
 
 #define PN_CALL					0x01
+#define PN_MODEM_CALL				0xC9
+#define CALL_MODEM_PROP_PRESENT_DEFAULT		0x00
 
 enum call_message_id {
 	CALL_CREATE_REQ =			0x01,
@@ -333,6 +335,7 @@ enum call_subblock {
 	CALL_MODE_CHANGE_INFO =			0x36,
 	CALL_ADDITIONAL_PARAMS =		0x37,
 	CALL_DSAC_INFO =			0x38,
+	CALL_LINE_ID =				0x47,
 };
 
 enum call_id {
@@ -351,6 +354,10 @@ enum call_id {
 	CALL_ID_ALL =				0xF0,
 };
 
+enum call_dtmf_pause_values {
+	CALL_DTMF_PAUSE_1S = 0x01
+};
+
 enum call_mode {
 	CALL_MODE_EMERGENCY =			0x00,
 	CALL_MODE_SPEECH =			0x01,
@@ -367,6 +374,12 @@ enum {
 	CALL_PRESENTATION_ALLOWED =		0x00,
 	CALL_PRESENTATION_RESTRICTED =		0x01,
 	CALL_GSM_PRESENTATION_DEFAULT =		0x07,
+};
+
+enum call_modem_line_id {
+	CALL_MODEM_PRESENT_DEFAULT =		0x00,
+	CALL_MODEM_PRESENT_ALLOWED =		0x01,
+	CALL_MODEM_PRESENT_RESTRICTED =		0x02
 };
 
 enum call_operation {
@@ -400,6 +413,82 @@ enum call_status_mode {
 enum {
 	CALL_DTMF_ENABLE_TONE_IND_SEND =	0x01,
 	CALL_DTMF_DISABLE_TONE_IND_SEND =	0x02,
+};
+
+enum call_notification_indicator {
+	CALL_NOTIFY_USER_SUSPENDED =		0x00,
+	CALL_NOTIFY_USER_RESUMED =		0x01,
+	CALL_NOTIFY_BEARER_CHANGE =		0x02
+};
+
+enum call_mmi_ss_codes {
+	CALL_SSC_ALL_FWDS =			0x0002,
+	CALL_SSC_ALL_COND_FWD =			0x0004,
+	CALL_SSC_CFU =				0x0015,
+	CALL_SSC_CFB =				0x0043,
+	CALL_SSC_CFNRY =			0x003D,
+	CALL_SSC_CFGNC =			0x003E,
+	CALL_SSC_OUTGOING_BARR_SERV =		0x014D,
+	CALL_SSC_INCOMING_BARR_SERV =		0x0161,
+	CALL_SSC_CALL_WAITING =			0x002B,
+	CALL_SSC_CLIR =				0x001F,
+	CALL_SSC_ETC =				0x0060,
+	CALL_SSC_MPTY =				0xFFFE,
+	CALL_SSC_CALL_HOLD =			0xFFFF
+};
+
+enum call_ss_status {
+	CALL_SS_STATUS_ACTIVE =			0x01,
+	CALL_SS_STATUS_REGISTERED =		0x02,
+	CALL_SS_STATUS_PROVISIONED =		0x04,
+	CALL_SS_STATUS_QUIESCENT =		0x08
+};
+
+enum call_ss_notification {
+	CALL_SSN_INCOMING_IS_FWD =		0x01,
+	CALL_SSN_INCOMING_FWD =			0x02,
+	CALL_SSN_OUTGOING_FWD =			0x04
+};
+
+enum call_ss_indicator {
+	CALL_SSI_CALL_IS_WAITING =		0x01,
+	CALL_SSI_MPTY =				0x02,
+	CALL_SSI_CLIR_SUPPR_REJ =		0x04
+};
+
+enum call_ss_hold_indicator {
+	CALL_HOLD_IND_RETRIEVED =		0x00,
+	CALL_HOLD_IND_ON_HOLD =			0x01
+};
+
+enum call_ss_ect_indicator {
+	CALL_ECT_CALL_STATE_ALERT =		0x00,
+	CALL_ECT_CALL_STATE_ACTIVE =		0x01
+};
+
+enum call_notification_sb_values {
+	CALL_SB_NOTIFY =			0xB1,
+	CALL_SB_SS_NOTIFY =			0xB2,
+	CALL_SB_SS_CODE =			0xB3,
+	CALL_SB_SS_STATUS =			0xB4,
+	CALL_SB_SS_NOTIFY_INDICATOR =		0xB5,
+	CALL_SB_SS_HOLD_INDICATOR =		0xB6,
+	CALL_SB_SS_ECT_INDICATOR =		0xB7,
+	CALL_SB_REMOTE_ADDRESS =		0xA6,
+	CALL_SB_REMOTE_SUBADDRESS =		0xA7,
+	CALL_SB_CUG_INFO =			0xA0,
+	CALL_SB_ORIGIN_INFO =			0x0E,
+	CALL_SB_ALERTING_PATTERN =		0xA1,
+	CALL_SB_ALERTING_INFO =			0x0C
+};
+
+/* 27.007 Section 7.7 */
+enum clir_status {
+	CLIR_STATUS_NOT_PROVISIONED = 0,
+	CLIR_STATUS_PROVISIONED_PERMANENT,
+	CLIR_STATUS_UNKNOWN,
+	CLIR_STATUS_TEMPORARY_RESTRICTED,
+	CLIR_STATUS_TEMPORARY_ALLOWED
 };
 
 #ifdef __cplusplus
