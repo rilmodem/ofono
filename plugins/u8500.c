@@ -703,6 +703,6 @@ static void u8500_exit(void)
 	ofono_modem_driver_unregister(&driver);
 }
 
-OFONO_PLUGIN_DEFINE(u8500, "Generic modem driver for isi",
+OFONO_PLUGIN_DEFINE(u8500, "ST-Ericsson U8500 modem driver",
 			VERSION, OFONO_PLUGIN_PRIORITY_DEFAULT,
 			u8500_init, u8500_exit)
