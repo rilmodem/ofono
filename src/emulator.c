@@ -273,7 +273,6 @@ static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 static void emulator_unregister(struct ofono_atom *atom)
 {
 	struct ofono_emulator *em = __ofono_atom_get_data(atom);
-	struct indicator *ind;
 	GSList *l;
 
 	DBG("%p", em);
@@ -284,11 +283,12 @@ static void emulator_unregister(struct ofono_atom *atom)
 	}
 
 	for (l = em->indicators; l; l = l->next) {
-		ind = l->data;
+		struct indicator *ind = l->data;
 
 		g_free(ind->name);
 		g_free(ind);
 	}
+
 	g_slist_free(em->indicators);
 	em->indicators = NULL;
 
@@ -534,23 +534,21 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	int i;
 	char buf[20];
 
-	i = 1;
-	for (l = em->indicators; l; l = l->next) {
+	for (i = 1, l = em->indicators; l; l = l->next, i++) {
 		struct indicator *ind = l->data;
 
-		if (g_str_equal(ind->name, name)) {
-			if (ind->value == value || value < ind->min
+		if (g_str_equal(ind->name, name) == FALSE)
+			continue;
+
+		if (ind->value == value || value < ind->min
 					|| value > ind->max)
-				return;
+			return;
 
-			ind->value = value;
+		ind->value = value;
 
-			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
-			g_at_server_send_info(em->server, buf, TRUE);
+		sprintf(buf, "+CIEV: %d,%d", i, ind->value);
+		g_at_server_send_info(em->server, buf, TRUE);
 
-			break;
-		}
-
-		i++;
+		return;
 	}
 }
