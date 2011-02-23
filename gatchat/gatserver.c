@@ -1271,6 +1271,16 @@ gboolean g_at_server_shutdown(GAtServer *server)
 	return TRUE;
 }
 
+gboolean g_at_server_set_echo(GAtServer *server, gboolean echo)
+{
+	if (server == NULL)
+		return FALSE;
+
+	server->v250.echo = echo;
+
+	return TRUE;
+}
+
 gboolean g_at_server_set_disconnect_function(GAtServer *server,
 						GAtDisconnectFunc disconnect,
 						gpointer user_data)

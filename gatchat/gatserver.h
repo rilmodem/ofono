@@ -80,6 +80,7 @@ void g_at_server_unref(GAtServer *server);
 
 gboolean g_at_server_shutdown(GAtServer *server);
 
+gboolean g_at_server_set_echo(GAtServer *server, gboolean echo);
 gboolean g_at_server_set_disconnect_function(GAtServer *server,
 					GAtDisconnectFunc disconnect,
 					gpointer user_data);
