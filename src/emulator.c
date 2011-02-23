@@ -24,6 +24,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 
 #include <glib.h>
 
@@ -42,6 +43,14 @@ struct ofono_emulator {
 	GAtServer *server;
 	GAtPPP *ppp;
 	guint source;
+	GSList *indicators;
+};
+
+struct indicator {
+	char *name;
+	int value;
+	int min;
+	int max;
 };
 
 static void emulator_debug(const char *str, void *data)
@@ -163,9 +172,30 @@ error:
        g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
 }
 
+static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
+					int min, int max, int dflt)
+{
+	struct indicator *ind;
+
+	ind = g_try_new0(struct indicator, 1);
+	if (ind == NULL) {
+		ofono_error("Unable to allocate indicator structure");
+		return;
+	}
+
+	ind->name = g_strdup(name);
+	ind->min = min;
+	ind->max = max;
+	ind->value = dflt;
+
+	em->indicators = g_slist_append(em->indicators, ind);
+}
+
 static void emulator_unregister(struct ofono_atom *atom)
 {
 	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+	struct indicator *ind;
+	GSList *l;
 
 	DBG("%p", em);
 
@@ -173,6 +203,15 @@ static void emulator_unregister(struct ofono_atom *atom)
 		g_source_remove(em->source);
 		em->source = 0;
 	}
+
+	for (l = em->indicators; l; l = l->next) {
+		ind = l->data;
+
+		g_free(ind->name);
+		g_free(ind);
+	}
+	g_slist_free(em->indicators);
+	em->indicators = NULL;
 
 	g_at_server_unref(em->server);
 	em->server = NULL;
@@ -198,6 +237,13 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 	g_at_server_set_debug(em->server, emulator_debug, "Server");
 	g_at_server_set_disconnect_function(em->server,
 						emulator_disconnect, em);
+
+	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0, 1, 0);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_SIGNAL, 0, 5, 0);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0, 1, 0);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_BATTERY, 0, 5, 5);
+	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
 
@@ -398,4 +444,32 @@ enum ofono_emulator_request_type ofono_emulator_request_get_type(
 					struct ofono_emulator_request *req)
 {
 	return req->type;
+}
+
+void ofono_emulator_set_indicator(struct ofono_emulator *em,
+					const char *name, int value)
+{
+	GSList *l;
+	int i;
+	char buf[20];
+
+	i = 1;
+	for (l = em->indicators; l; l = l->next) {
+		struct indicator *ind = l->data;
+
+		if (g_str_equal(ind->name, name)) {
+			if (ind->value == value || value < ind->min
+					|| value > ind->max)
+				return;
+
+			ind->value = value;
+
+			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
+			g_at_server_send_info(em->server, buf, TRUE);
+
+			break;
+		}
+
+		i++;
+	}
 }
