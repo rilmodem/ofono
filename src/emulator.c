@@ -43,6 +43,9 @@ struct ofono_emulator {
 	GAtServer *server;
 	GAtPPP *ppp;
 	guint source;
+	gboolean slc;
+	int l_features;
+	int r_features;
 	int events_mode;
 	gboolean events_ind;
 	GSList *indicators;
@@ -172,6 +175,39 @@ static void dial_cb(GAtServer *server, GAtServerRequestType type,
 
 error:
        g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
+}
+
+static void brsf_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	GAtResultIter iter;
+	int val;
+	char buf[16];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
+			goto fail;
+
+		if ((val < 0) && (val > 127))
+			goto fail;
+
+		em->r_features = val;
+
+		sprintf(buf, "+BRSF: %d", em->l_features);
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
 }
 
 static void cind_cb(GAtServer *server, GAtServerRequestType type,
@@ -340,6 +376,7 @@ done:
 
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 
+		em->slc = TRUE;
 		break;
 	}
 
@@ -422,6 +459,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0, 1, 0);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_BATTERY, 0, 5, 5);
 
+		g_at_server_register(em->server, "+BRSF", brsf_cb, em, NULL);
 		g_at_server_register(em->server, "+CIND", cind_cb, em, NULL);
 		g_at_server_register(em->server, "+CMER", cmer_cb, em, NULL);
 	}
@@ -464,6 +502,8 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 		return NULL;
 
 	em->type = type;
+	/* TODO: Check real local features */
+	em->l_features = 32;
 	em->events_mode = 3;	/* default mode is forwarding events */
 
 	em->atom = __ofono_modem_add_atom_offline(modem, atom_t,
@@ -544,6 +584,9 @@ static void handler_proxy(GAtServer *server, GAtServerRequestType type,
 {
 	struct handler *h = userdata;
 	struct ofono_emulator_request req;
+
+	if ((h->em->type == OFONO_EMULATOR_TYPE_HFP) && !h->em->slc)
+		g_at_server_send_final(h->em->server, G_AT_SERVER_RESULT_ERROR);
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
@@ -647,7 +690,7 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 
 		ind->value = value;
 
-		if (em->events_mode == 3 && em->events_ind) {
+		if (em->events_mode == 3 && em->events_ind && em->slc) {
 			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
 			g_at_server_send_info(em->server, buf, TRUE);
 		}
