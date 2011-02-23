@@ -481,6 +481,7 @@ const char *info_message_id_name(enum info_message_id value)
 const char *info_subblock_name(enum info_subblock value)
 {
 	switch (value) {
+		_(INFO_SB_MODEMSW_VERSION);
 		_(INFO_SB_PRODUCT_INFO_NAME);
 		_(INFO_SB_PRODUCT_INFO_MANUFACTURER);
 		_(INFO_SB_SN_IMEI_PLAIN);
