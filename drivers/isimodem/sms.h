@@ -55,6 +55,7 @@ enum sms_isi_cause {
 };
 
 enum sms_isi_cause_type {
+	SMS_CAUSE_TYPE_COMMON = 0x00,
 	SMS_CAUSE_TYPE_GSM = 0x01,
 };
 
@@ -125,6 +126,15 @@ enum sms_message_id {
 	SMS_GSM_CB_ROUTING_RESP = 0x0C,
 	SMS_GSM_CB_ROUTING_NTF = 0x0D,
 	SMS_MESSAGE_SEND_STATUS_IND = 0x22,
+	SMS_SETTINGS_UPDATE_REQ = 0x30,
+	SMS_SETTINGS_UPDATE_RESP = 0x31,
+	SMS_SETTINGS_READ_REQ =  0x32,
+	SMS_SETTINGS_READ_RESP = 0x33,
+	SMS_RECEIVED_MSG_REPORT_REQ = 0x3B,
+	SMS_RECEIVED_MSG_REPORT_RESP = 0x3C,
+	SMS_RECEIVE_MESSAGE_REQ = 0x41,
+	SMS_RECEIVE_MESSAGE_RESP = 0x42,
+	SMS_RECEIVED_MSG_IND = 0x43,
 	SMS_COMMON_MESSAGE = 0xF0
 };
 
@@ -138,6 +148,9 @@ enum sms_subblock {
 	SMS_GSM_ROUTING = 0x0D,
 	SMS_GSM_CB_MESSAGE = 0x0E,
 	SMS_GSM_TPDU = 0x11,
+	SMS_GSM_TPDU_25 = 0x001C,
+	SMS_GSM_ROUTE_INFO = 0x0023,
+	SMS_GSM_PARAMETERS = 0x0031,
 	SMS_COMMON_DATA = 0x80,
 	SMS_ADDRESS = 0x82,
 };
@@ -175,6 +188,7 @@ enum sms_address_type {
 	SMS_UNICODE_ADDRESS = 0x00,
 	SMS_GSM_0340_ADDRESS = 0x01,
 	SMS_GSM_0411_ADDRESS = 0x02,
+	SMS_SMSC_ADDRESS = 0x02
 };
 
 enum sms_sender_type {
@@ -190,6 +204,26 @@ enum sms_content_type {
 enum sms_subject_list_type {
 	SMS_CB_ALLOWED_IDS_LIST = 0x00,
 	SMS_CB_NOT_ALLOWED_IDS_LIST = 0x01
+};
+
+enum sms_reception_command {
+	SMS_RECEPTION_ACTIVATE = 0x01,
+	SMS_RECEPTION_DEACTIVATE = 0x02
+};
+
+enum sms_reception_status {
+	SMS_RECEPTION_ACTIVE = 0x01,
+	SMS_RECEPTION_INACTIVE = 0x02
+};
+
+enum sms_setting_type {
+	SMS_SETTING_TYPE_ROUTE = 0x02
+};
+
+enum sms_route_priority {
+	SMS_ROUTE_NOT_AVAILABLE = 0x00,
+	SMS_ROUTE_PRIORITY_1 = 0x01,
+	SMS_ROUTE_PRIORITY_2 = 0x02
 };
 
 #ifdef __cplusplus
