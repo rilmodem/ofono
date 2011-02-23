@@ -203,6 +203,8 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 
 	if (em->type == OFONO_EMULATOR_TYPE_DUN)
 		g_at_server_register(em->server, "D", dial_cb, em, NULL);
+	else if (em->type == OFONO_EMULATOR_TYPE_HFP)
+		g_at_server_set_echo(em->server, FALSE);
 }
 
 static void emulator_remove(struct ofono_atom *atom)
