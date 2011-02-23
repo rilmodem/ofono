@@ -55,6 +55,7 @@ struct ussd_info {
 
 struct ussd_data {
 	GIsiClient *client;
+	GIsiVersion version;
 	int mt_session;
 };
 
@@ -166,7 +167,10 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 {
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct isi_cb_data *cbd = isi_cb_data_new(ussd, cb, data);
-	const uint8_t msg[] = {
+	const uint8_t padding_bytes[] = {0, 0, 0, 0, 0, 0, 0, 0};
+	uint8_t iov_size = 2;
+
+	uint8_t msg[] = {
 		SS_GSM_USSD_SEND_REQ,
 		ud->mt_session
 		? SS_GSM_USSD_MT_REPLY
@@ -178,15 +182,31 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 		len,		/* string length */
 		/* USSD string goes here */
 	};
-	const struct iovec iov[2] = {
-		{ (uint8_t *) msg, sizeof(msg) },
-		{ (uint8_t *) pdu, len }
-	};
+	struct iovec iov[3] = { { 0, 0 }, { 0, 0 }, { 0, 0 } };
 
 	if (cbd == NULL || ud == NULL)
 		goto error;
 
-	if (g_isi_client_vsend(ud->client, iov, 2,
+	if (ud->version.major == 14 && ud->version.minor >= 1) {
+		uint8_t filled_len = (4 + len + 3) & ~3;
+		struct iovec t_iov[3] = {
+			{ (uint8_t *) msg, sizeof(msg) },
+			{ (uint8_t *)pdu, len },
+			{ (uint8_t *) padding_bytes, (filled_len - len - 4) }
+		};
+		iov_size = 3;
+		memmove(iov, t_iov, sizeof(struct iovec) * iov_size);
+
+		msg[4] = filled_len;
+	} else {
+		struct iovec t_iov[2] = {
+			{ (uint8_t *) msg, sizeof(msg) },
+			{ (uint8_t *) pdu, len }
+		};
+		memmove(iov, t_iov, sizeof(struct iovec) * iov_size);
+	}
+
+	if (g_isi_client_vsend(ud->client, iov, iov_size,
 				ussd_send_resp_cb, cbd, g_free))
 		return;
 
@@ -228,6 +248,9 @@ static void ussd_reachable_cb(const GIsiMessage *msg, void *data)
 
 	ISI_VERSION_DBG(msg);
 
+	ud->version.major = g_isi_msg_version_major(msg);
+	ud->version.minor = g_isi_msg_version_minor(msg);
+
 	g_isi_client_ind_subscribe(ud->client, SS_GSM_USSD_RECEIVE_IND,
 					ussd_ind_cb, ussd);
 
@@ -241,6 +264,7 @@ static int isi_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 	struct ussd_data *ud;
 
 	ud = g_try_new0(struct ussd_data, 1);
+
 	if (ud == NULL)
 		return -ENOMEM;
 
