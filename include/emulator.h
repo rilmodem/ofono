@@ -28,6 +28,14 @@ extern "C" {
 
 #include <ofono/types.h>
 
+#define OFONO_EMULATOR_IND_BATTERY "battchg"
+#define OFONO_EMULATOR_IND_CALL "call"
+#define OFONO_EMULATOR_IND_CALLHELD "callheld"
+#define OFONO_EMULATOR_IND_CALLSETUP "callsetup"
+#define OFONO_EMULATOR_IND_ROAMING "roam"
+#define OFONO_EMULATOR_IND_SERVICE "service"
+#define OFONO_EMULATOR_IND_SIGNAL "signal"
+
 struct ofono_emulator;
 struct ofono_emulator_request;
 
@@ -81,6 +89,9 @@ const char *ofono_emulator_request_get_raw(struct ofono_emulator_request *req);
 
 enum ofono_emulator_request_type ofono_emulator_request_get_type(
 					struct ofono_emulator_request *req);
+
+void ofono_emulator_set_indicator(struct ofono_emulator *em,
+					const char *name, int value);
 
 #ifdef __cplusplus
 }
