@@ -46,6 +46,7 @@
 
 struct forw_data {
 	GIsiClient *client;
+	GIsiVersion version;
 };
 
 struct forw_info {
@@ -230,10 +231,14 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 	/* Followed by number in UCS-2, zero sub address bytes, and 0
 	 * to 3 bytes of filler */
 
-	DBG("forwarding type %d class %d\n", type, cls);
 
 	if (cbd == NULL || fd == NULL || strlen(number->number) > 28)
 		goto error;
+
+	DBG("forwarding type %d class %d\n", type, cls);
+
+	if (fd->version.major == 14 && fd->version.minor >= 1)
+		msg[10] = SS_UNDEFINED_TIME;
 
 	ss_code = forw_type_to_isi_code(type);
 	if (ss_code < 0)
@@ -247,6 +252,10 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 		num_filler = 4 - num_filler;
 
 	msg[8]  = 6 + 2 * strlen(number->number) + num_filler;
+
+	/* Time must not be set for any other than NoReply for ISI2.5 */
+	if (ss_code == SS_GSM_FORW_NO_REPLY)
+		msg[10] = time;
 
 	ucs2 = g_convert(number->number, strlen(number->number), "UCS-2BE",
 				"UTF-8//TRANSLIT", NULL, NULL, NULL);
@@ -330,9 +339,10 @@ error:
 
 static void query_resp_cb(const GIsiMessage *msg, void *data)
 {
-
 	struct isi_cb_data *cbd = data;
 	ofono_call_forwarding_query_cb_t cb = cbd->cb;
+	struct ofono_call_forwarding *cf = cbd->user;
+	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
 	GIsiSubBlockIter iter;
 
 	struct ofono_call_forwarding_condition list = {
@@ -366,8 +376,14 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 						&number))
 			goto error;
 
-		/* As in 27.007 section 7.11 */
-		list.status = status & SS_GSM_ACTIVE;
+		if (fd->version.major == 14 && fd->version.minor >= 1) {
+			list.status = status & (SS_GSM_ACTIVE |
+						SS_GSM_REGISTERED |
+						SS_GSM_PROVISIONED);
+		} else {
+			/* As in 27.007 section 7.11 */
+			list.status = status & SS_GSM_ACTIVE;
+		}
 		list.time = noreply;
 		list.phone_number.type = ton | 0x80;
 
@@ -426,11 +442,15 @@ error:
 static void reachable_cb(const GIsiMessage *msg, void *data)
 {
 	struct ofono_call_forwarding *cf = data;
+	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
 
 	if (g_isi_msg_error(msg) < 0)
 		return;
 
 	ISI_VERSION_DBG(msg);
+
+	fd->version.major = g_isi_msg_version_major(msg);
+	fd->version.minor = g_isi_msg_version_minor(msg);
 
 	ofono_call_forwarding_register(cf);
 }
@@ -447,6 +467,7 @@ static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
 		return -ENOMEM;
 
 	fd->client = g_isi_client_create(modem, PN_SS);
+
 	if (fd->client == NULL) {
 		g_free(fd);
 		return -ENOMEM;
