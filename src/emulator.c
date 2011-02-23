@@ -172,6 +172,85 @@ error:
        g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
 }
 
+static void cind_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	GSList *l;
+	struct indicator *ind;
+	gsize size;
+	int len;
+	char *buf;
+	char *tmp;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		/*
+		 * "+CIND: " + terminating null + number of indicators *
+		 * (max of 3 digits in the value + separator)
+		 */
+		size = 7 + 1 + (g_slist_length(em->indicators) * 4);
+		buf = g_try_malloc0(size);
+		if (buf == NULL)
+			goto fail;
+
+		len = sprintf(buf, "+CIND: ");
+		tmp = buf + len;
+
+		for (l = em->indicators; l; l = l->next) {
+			ind = l->data;
+			len = sprintf(tmp, "%s%d",
+					l == em->indicators ? "" : ",",
+					ind->value);
+			tmp = tmp + len;
+		}
+
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_free(buf);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		/*
+		 * '+CIND: ' + terminating null + number of indicators *
+		 * ( indicator name + '("",(000,000))' + separator)
+		 */
+		size = 8;
+
+		for (l = em->indicators; l; l = l->next) {
+			ind = l->data;
+			size += strlen(ind->name) + 15;
+		}
+
+		buf = g_try_malloc0(size);
+		if (buf == NULL)
+			goto fail;
+
+		len = sprintf(buf, "+CIND: ");
+		tmp = buf + len;
+
+		for (l = em->indicators; l; l = l->next) {
+			ind = l->data;
+			len = sprintf(tmp, "%s(\"%s\",(%d%c%d))",
+					l == em->indicators ? "" : ",",
+					ind->name, ind->min,
+					(ind->max - ind->min) == 1 ? ',' : '-',
+					ind->max);
+			tmp = tmp + len;
+		}
+
+		g_at_server_send_info(server, buf, TRUE);
+		g_free(buf);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 					int min, int max, int dflt)
 {
@@ -243,6 +322,8 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_SIGNAL, 0, 5, 0);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0, 1, 0);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_BATTERY, 0, 5, 5);
+
+		g_at_server_register(em->server, "+CIND", cind_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
