@@ -431,7 +431,6 @@ static int isi_call_forwarding_probe(struct ofono_call_forwarding *cf,
 		return -ENOMEM;
 
 	fd->client = g_isi_client_create(modem, PN_SS);
-
 	if (fd->client == NULL) {
 		g_free(fd);
 		return -ENOMEM;
