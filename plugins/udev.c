@@ -667,6 +667,8 @@ done:
 		add_nokia(modem, udev_device);
 	else if (g_strcmp0(driver, "isiusb") == 0)
 		add_isi(modem, udev_device);
+	else if (g_strcmp0(driver, "u8500") == 0)
+		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "n900") == 0)
 		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "gobi") == 0)

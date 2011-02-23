@@ -357,6 +357,9 @@ SUBSYSTEMS=="usb", ENV{OFONO_DRIVER}="isiusb", ENV{OFONO_ISI_ADDRESS}="16"
 # Nokia N900 modem
 SUBSYSTEMS=="hsi", ENV{OFONO_DRIVER}="n900", ENV{OFONO_ISI_ADDRESS}="108"
 
+# STE u8500
+KERNEL=="shrm0", ENV{OFONO_DRIVER}="u8500"
+
 LABEL="ofono_isi_end"
 
 SUBSYSTEM!="usb", GOTO="ofono_end"
