@@ -27,6 +27,7 @@
 #include "ss.h"
 #include "mtc.h"
 #include "sms.h"
+#include "uicc.h"
 #include "sim.h"
 #include "info.h"
 #include "call.h"
