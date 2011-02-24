@@ -908,7 +908,6 @@ static void at_chat_suspend(struct at_chat *chat)
 	g_at_io_set_write_handler(chat->io, NULL, NULL);
 	g_at_io_set_read_handler(chat->io, NULL, NULL);
 	g_at_io_set_debug(chat->io, NULL, NULL);
-
 }
 
 static void at_chat_resume(struct at_chat *chat)
@@ -952,7 +951,8 @@ static void at_chat_unref(struct at_chat *chat)
 }
 
 static gboolean at_chat_set_disconnect_function(struct at_chat *chat,
-			GAtDisconnectFunc disconnect, gpointer user_data)
+						GAtDisconnectFunc disconnect,
+						gpointer user_data)
 {
 	chat->user_disconnect = disconnect;
 	chat->user_disconnect_data = user_data;
@@ -961,7 +961,7 @@ static gboolean at_chat_set_disconnect_function(struct at_chat *chat,
 }
 
 static gboolean at_chat_set_debug(struct at_chat *chat,
-				GAtDebugFunc func, gpointer user_data)
+					GAtDebugFunc func, gpointer user_data)
 {
 
 	chat->debugf = func;
