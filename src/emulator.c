@@ -312,7 +312,7 @@ static void cmer_cb(GAtServer *server, GAtServerRequestType type,
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 	{
 		GAtResultIter iter;
-		int mode;
+		int mode = em->events_mode;
 		int ind = em->events_ind;
 		int val;
 
@@ -320,15 +320,15 @@ static void cmer_cb(GAtServer *server, GAtServerRequestType type,
 		g_at_result_iter_next(&iter, "");
 
 		/* mode */
-		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
+		if (!g_at_result_iter_next_number_default(&iter, mode, &mode))
 			goto fail;
 
 		if (mode != 0 && mode != 3)
 			goto fail;
 
 		/* keyp */
-		if (g_at_result_iter_next_number(&iter, &val) == FALSE) {
-			if (g_at_result_iter_skip_next(&iter) == FALSE)
+		if (!g_at_result_iter_next_number_default(&iter, 0, &val)) {
+			if (!g_at_result_iter_skip_next(&iter))
 				goto done;
 			goto fail;
 		}
@@ -337,8 +337,8 @@ static void cmer_cb(GAtServer *server, GAtServerRequestType type,
 			goto fail;
 
 		/* disp */
-		if (g_at_result_iter_next_number(&iter, &val) == FALSE) {
-			if (g_at_result_iter_skip_next(&iter) == FALSE)
+		if (!g_at_result_iter_next_number_default(&iter, 0, &val)) {
+			if (!g_at_result_iter_skip_next(&iter))
 				goto done;
 			goto fail;
 		}
@@ -347,18 +347,18 @@ static void cmer_cb(GAtServer *server, GAtServerRequestType type,
 			goto fail;
 
 		/* ind */
-		if (g_at_result_iter_next_number(&iter, &ind) == FALSE) {
-			if (g_at_result_iter_skip_next(&iter) == FALSE)
+		if (!g_at_result_iter_next_number_default(&iter, ind, &ind)) {
+			if (!g_at_result_iter_skip_next(&iter))
 				goto done;
 			goto fail;
 		}
 
-		if ((ind != 0) && (ind != 1))
+		if (ind != 0 && ind != 1)
 			goto fail;
 
 		/* bfr */
-		if (g_at_result_iter_next_number(&iter, &val) == FALSE) {
-			if (g_at_result_iter_skip_next(&iter) == FALSE)
+		if (!g_at_result_iter_next_number_default(&iter, 0, &val)) {
+			if (!g_at_result_iter_skip_next(&iter))
 				goto done;
 			goto fail;
 		}
@@ -367,7 +367,7 @@ static void cmer_cb(GAtServer *server, GAtServerRequestType type,
 			goto fail;
 
 		/* check that bfr is last parameter */
-		if (g_at_result_iter_skip_next(&iter) == TRUE)
+		if (g_at_result_iter_skip_next(&iter))
 			goto fail;
 
 done:
