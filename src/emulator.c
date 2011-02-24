@@ -323,7 +323,7 @@ static void cmer_cb(GAtServer *server, GAtServerRequestType type,
 		if (g_at_result_iter_next_number(&iter, &mode) == FALSE)
 			goto fail;
 
-		if ((mode != 0) && (mode != 3))
+		if (mode != 0 && mode != 3)
 			goto fail;
 
 		/* keyp */
