@@ -253,11 +253,6 @@ enum uicc_apdu_status_words {
 	UICC_PIN_STATUS_AUTH_FAILED =		0x9840
 };
 
-int get_app_id(GIsiModem *modem);
-int get_app_type(GIsiModem *modem);
-int get_client_id(GIsiModem *modem);
-struct ofono_sim_driver *get_sim_driver_func(void);
-
 #ifdef __cplusplus
 };
 #endif
