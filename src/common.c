@@ -246,6 +246,9 @@ gboolean valid_number_format(const char *number, int length)
 	if (number[0] == '+')
 		begin = 1;
 
+	if (begin == len)
+		return FALSE;
+
 	if ((len - begin) > length)
 		return FALSE;
 
