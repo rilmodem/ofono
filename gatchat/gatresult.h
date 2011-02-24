@@ -58,6 +58,8 @@ gboolean g_at_result_iter_next_string(GAtResultIter *iter, const char **str);
 gboolean g_at_result_iter_next_unquoted_string(GAtResultIter *iter,
 						const char **str);
 gboolean g_at_result_iter_next_number(GAtResultIter *iter, gint *number);
+gboolean g_at_result_iter_next_number_default(GAtResultIter *iter, gint dflt,
+						gint *number);
 gboolean g_at_result_iter_next_hexstring(GAtResultIter *iter,
 		const guint8 **str, gint *length);
 

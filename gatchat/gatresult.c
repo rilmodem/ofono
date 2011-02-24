@@ -292,6 +292,36 @@ gboolean g_at_result_iter_next_number(GAtResultIter *iter, gint *number)
 	return TRUE;
 }
 
+gboolean g_at_result_iter_next_number_default(GAtResultIter *iter, gint dflt,
+						gint *number)
+{
+	unsigned int pos;
+	int len;
+	char *line;
+
+	if (iter == NULL)
+		return FALSE;
+
+	if (iter->l == NULL)
+		return FALSE;
+
+	line = iter->l->data;
+	len = strlen(line);
+
+	pos = skip_to_next_field(line, iter->line_pos, len);
+
+	if (pos != iter->line_pos) {
+		iter->line_pos = pos;
+
+		if (number)
+			*number = dflt;
+
+		return TRUE;
+	}
+
+	return g_at_result_iter_next_number(iter, number);
+}
+
 gboolean g_at_result_iter_next_range(GAtResultIter *iter, gint *min, gint *max)
 {
 	int pos;
