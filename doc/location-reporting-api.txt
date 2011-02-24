@@ -10,7 +10,7 @@ Methods		dict GetProperties()
 			Returns all LocationReporting properties. See the
 			properties section for available properties.
 
-		byte Request()
+		filedescriptor Request()
 
 			Asks to turn ON the NMEA stream and supplies the
 			gps device file descriptor. The external cliend should
