@@ -331,6 +331,8 @@ void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
 				ofono_bool_t full_file_change,
 				ofono_bool_t naa_init);
 
+void __ofono_sim_recheck_pin(struct ofono_sim *sim);
+
 #include <ofono/stk.h>
 
 typedef void (*__ofono_sms_sim_download_cb_t)(ofono_bool_t ok,

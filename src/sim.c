@@ -49,7 +49,6 @@
 static GSList *g_drivers = NULL;
 
 static void sim_own_numbers_update(struct ofono_sim *sim);
-static void sim_pin_check(struct ofono_sim *sim);
 
 struct ofono_sim {
 	/* Contents of the SIM file system, in rough initialization order */
@@ -624,7 +623,7 @@ static void sim_unlock_cb(const struct ofono_error *error, void *data)
 		DBusMessage *reply = __ofono_error_failed(sim->pending);
 
 		__ofono_dbus_pending_reply(&sim->pending, reply);
-		sim_pin_check(sim);
+		__ofono_sim_recheck_pin(sim);
 
 		return;
 	}
@@ -640,7 +639,7 @@ static void sim_lock_cb(const struct ofono_error *error, void *data)
 		DBusMessage *reply = __ofono_error_failed(sim->pending);
 
 		__ofono_dbus_pending_reply(&sim->pending, reply);
-		sim_pin_check(sim);
+		__ofono_sim_recheck_pin(sim);
 
 		return;
 	}
@@ -711,7 +710,7 @@ static void sim_change_pin_cb(const struct ofono_error *error, void *data)
 		__ofono_dbus_pending_reply(&sim->pending,
 				__ofono_error_failed(sim->pending));
 
-		sim_pin_check(sim);
+		__ofono_sim_recheck_pin(sim);
 
 		return;
 	}
@@ -776,7 +775,7 @@ static void sim_enter_pin_cb(const struct ofono_error *error, void *data)
 
 	__ofono_dbus_pending_reply(&sim->pending, reply);
 
-	sim_pin_check(sim);
+	__ofono_sim_recheck_pin(sim);
 }
 
 static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
@@ -1846,7 +1845,7 @@ skip_efpl:
 						DBUS_TYPE_STRING,
 						&sim->language_prefs);
 
-	sim_pin_check(sim);
+	__ofono_sim_recheck_pin(sim);
 }
 
 static void sim_iccid_read_cb(int ok, int length, int record,
@@ -2264,7 +2263,7 @@ checkdone:
 	}
 }
 
-static void sim_pin_check(struct ofono_sim *sim)
+void __ofono_sim_recheck_pin(struct ofono_sim *sim)
 {
 	if (sim->driver->query_passwd_state == NULL) {
 		sim_initialize_after_pin(sim);
@@ -2596,6 +2595,6 @@ void __ofono_sim_refresh(struct ofono_sim *sim, GSList *file_list,
 		 * Start initialization procedure from after EFiccid,
 		 * EFli and EFpl are retrieved.
 		 */
-		sim_pin_check(sim);
+		__ofono_sim_recheck_pin(sim);
 	}
 }
