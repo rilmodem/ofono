@@ -332,6 +332,18 @@ static void set_acm_max_query_callback(const struct ofono_error *error,
 	set_acm_max(cm, value);
 }
 
+static void check_pin2_state(struct ofono_call_meter *cm)
+{
+	struct ofono_atom *sim_atom;
+
+	sim_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(cm->atom),
+						OFONO_ATOM_TYPE_SIM);
+	if (sim_atom == NULL)
+		return;
+
+	__ofono_sim_recheck_pin(__ofono_atom_get_data(sim_atom));
+}
+
 static void set_acm_max_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_call_meter *cm = data;
@@ -340,6 +352,7 @@ static void set_acm_max_callback(const struct ofono_error *error, void *data)
 		DBG("Setting acm_max failed");
 		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
+		check_pin2_state(cm);
 		return;
 	}
 
@@ -401,6 +414,7 @@ static void set_puct_callback(const struct ofono_error *error, void *data)
 		DBG("setting puct failed");
 		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
+		check_pin2_state(cm);
 		return;
 	}
 
@@ -598,6 +612,7 @@ static void acm_reset_callback(const struct ofono_error *error, void *data)
 		DBG("reseting acm failed");
 		__ofono_dbus_pending_reply(&cm->pending,
 					__ofono_error_failed(cm->pending));
+		check_pin2_state(cm);
 		return;
 	}
 
