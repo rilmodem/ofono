@@ -454,7 +454,7 @@ Miscellaneous
 
   Priority: Medium
   Complexity: C2
-  Owner: Sjur Brændeland <sjur.brandeland@stericsson.com>
+  Owner: Jarko Poutiainen <jarko.poutiainen@tieto.com>
 
 - Add support for main.conf.  This task will add support for general
   as well as per-atom configuration options that are read and parsed
