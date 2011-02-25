@@ -2231,20 +2231,37 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 						&pin_name);
 	}
 
-	if (pin_type != OFONO_SIM_PASSWORD_NONE &&
-			sim->state == OFONO_SIM_STATE_READY) {
-		/* Force the sim state out of READY */
-		sim_free_main_state(sim);
+	switch (pin_type) {
+	case OFONO_SIM_PASSWORD_NONE:
+	case OFONO_SIM_PASSWORD_SIM_PIN2:
+	case OFONO_SIM_PASSWORD_SIM_PUK2:
+		break;
+	default:
+		if (sim->state == OFONO_SIM_STATE_READY) {
+			/* Force the sim state out of READY */
+			sim_free_main_state(sim);
 
-		sim->state = OFONO_SIM_STATE_INSERTED;
-		__ofono_modem_sim_reset(__ofono_atom_get_modem(sim->atom));
+			sim->state = OFONO_SIM_STATE_INSERTED;
+			__ofono_modem_sim_reset(
+					__ofono_atom_get_modem(sim->atom));
+		}
+		break;
 	}
 
 	sim_pin_retries_check(sim);
 
 checkdone:
-	if (pin_type == OFONO_SIM_PASSWORD_NONE)
+	switch (pin_type) {
+	case OFONO_SIM_PASSWORD_SIM_PIN2:
+	case OFONO_SIM_PASSWORD_SIM_PUK2:
+		if (sim->state == OFONO_SIM_STATE_READY)
+			break;
+	case OFONO_SIM_PASSWORD_NONE:
 		sim_initialize_after_pin(sim);
+		break;
+	default:
+		break;
+	}
 }
 
 static void sim_pin_check(struct ofono_sim *sim)
