@@ -210,10 +210,16 @@ static void isi_call_any_address_sb_proc(struct isi_voicecall *ivc,
 	uint8_t len;
 	char *addr;
 
-	if (!g_isi_sb_iter_get_byte(sb, &type, 2) ||
-			!g_isi_sb_iter_get_byte(sb, &pres, 3) ||
-			!g_isi_sb_iter_get_byte(sb, &len, 5) ||
-			!g_isi_sb_iter_get_alpha_tag(sb, &addr, 2 * len, 6))
+	if (!g_isi_sb_iter_get_byte(sb, &type, 2))
+		return;
+
+	if (!g_isi_sb_iter_get_byte(sb, &pres, 3))
+		return;
+
+	if (!g_isi_sb_iter_get_byte(sb, &len, 5))
+		return;
+
+	if (!g_isi_sb_iter_get_alpha_tag(sb, &addr, 2 * len, 6))
 		return;
 
 	call->addr_type = type | 0x80;
