@@ -27,6 +27,13 @@
 #define PPP_IP_PROTO	0x0021
 #define MD5		5
 
+#define DBG(p, fmt, arg...) do {				\
+	char *str = g_strdup_printf("%s:%s() " fmt, __FILE__,	\
+					__FUNCTION__ , ## arg); \
+	ppp_debug(p, str);					\
+	g_free(str);						\
+} while (0)
+
 struct ppp_chap;
 struct ppp_net;
 
