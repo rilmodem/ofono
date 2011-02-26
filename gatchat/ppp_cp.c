@@ -310,9 +310,9 @@ static gboolean is_first_request(struct pppcp_timer_data *timer_data)
 
 /* actions */
 /* log an illegal event, but otherwise do nothing */
-static void pppcp_illegal_event(guint8 state, guint8 type)
+static void pppcp_illegal_event(GAtPPP *ppp, guint8 state, guint8 type)
 {
-	g_printerr("Illegal event %d while in state %d\n", type, state);
+	DBG(ppp, "Illegal event %d while in state %d", type, state);
 }
 
 static void pppcp_this_layer_up(struct pppcp_data *data)
@@ -690,7 +690,7 @@ static void pppcp_generate_event(struct pppcp_data *data,
 	return;
 
 error:
-	pppcp_illegal_event(data->state, event_type);
+	pppcp_illegal_event(data->ppp, data->state, event_type);
 }
 
 void pppcp_signal_open(struct pppcp_data *data)
