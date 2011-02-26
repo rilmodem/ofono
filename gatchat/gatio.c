@@ -52,6 +52,8 @@ struct _GAtIO {
 	gpointer write_data;			/* Write callback userdata */
 	GAtDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
+	GAtDisconnectFunc write_done_func;
+	gpointer write_done_data;
 	gboolean destroyed;			/* Re-entrancy guard */
 };
 
@@ -158,6 +160,12 @@ static void write_watcher_destroy_notify(gpointer user_data)
 	io->write_watch = 0;
 	io->write_handler = NULL;
 	io->write_data = NULL;
+
+	if (io->write_done_func) {
+		io->write_done_func(io->write_done_data);
+		io->write_done_func = NULL;
+		io->write_done_data = NULL;
+	}
 }
 
 static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
@@ -369,4 +377,14 @@ gboolean g_at_io_set_debug(GAtIO *io, GAtDebugFunc func, gpointer user_data)
 	io->debug_data = user_data;
 
 	return TRUE;
+}
+
+void g_at_io_set_write_done(GAtIO *io, GAtDisconnectFunc func,
+				gpointer user_data)
+{
+	if (io == NULL)
+		return;
+
+	io->write_done_func = func;
+	io->write_done_data = user_data;
 }

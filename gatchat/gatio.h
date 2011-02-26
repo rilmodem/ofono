@@ -49,6 +49,9 @@ gboolean g_at_io_set_read_handler(GAtIO *io, GAtIOReadFunc read_handler,
 					gpointer user_data);
 gboolean g_at_io_set_write_handler(GAtIO *io, GAtIOWriteFunc write_handler,
 					gpointer user_data);
+void g_at_io_set_write_done(GAtIO *io, GAtDisconnectFunc func,
+				gpointer user_data);
+
 gsize g_at_io_write(GAtIO *io, const gchar *data, gsize count);
 
 gboolean g_at_io_set_disconnect_function(GAtIO *io,
