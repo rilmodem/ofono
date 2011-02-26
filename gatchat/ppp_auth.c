@@ -118,7 +118,6 @@ void ppp_chap_process_packet(struct ppp_chap *chap, const guint8 *new_packet)
 		chap_process_challenge(chap, new_packet);
 		break;
 	case RESPONSE:
-		g_print("chap: response (not implemented)\n");
 		break;
 	case SUCCESS:
 		ppp_auth_notify(chap->ppp, TRUE);

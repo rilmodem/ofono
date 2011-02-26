@@ -182,8 +182,6 @@ static void lcp_rcn_nak(struct pppcp_data *pppcp,
 			guint16 mru = get_host_short(data);
 
 			if (mru < 2048) {
-				g_print("Setting peer's suggested mru: %hd\n",
-						mru);
 				lcp->mru = get_host_short(data);
 				lcp->req_options |= REQ_OPTION_MRU;
 			}

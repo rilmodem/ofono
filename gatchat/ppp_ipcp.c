@@ -235,8 +235,6 @@ static void ipcp_rcn_nak(struct pppcp_data *pppcp,
 	if (ipcp->is_server)
 		return;
 
-	g_print("Received IPCP NAK\n");
-
 	ppp_option_iter_init(&iter, packet);
 
 	while (ppp_option_iter_next(&iter) == TRUE) {
@@ -244,27 +242,22 @@ static void ipcp_rcn_nak(struct pppcp_data *pppcp,
 
 		switch (ppp_option_iter_get_type(&iter)) {
 		case IP_ADDRESS:
-			g_print("Setting suggested ip addr\n");
 			ipcp->req_options |= REQ_OPTION_IPADDR;
 			memcpy(&ipcp->local_addr, data, 4);
 			break;
 		case PRIMARY_DNS_SERVER:
-			g_print("Setting suggested dns1\n");
 			ipcp->req_options |= REQ_OPTION_DNS1;
 			memcpy(&ipcp->dns1, data, 4);
 			break;
 		case PRIMARY_NBNS_SERVER:
-			g_print("Setting suggested nbns1\n");
 			ipcp->req_options |= REQ_OPTION_NBNS1;
 			memcpy(&ipcp->nbns1, data, 4);
 			break;
 		case SECONDARY_DNS_SERVER:
-			g_print("Setting suggested dns2\n");
 			ipcp->req_options |= REQ_OPTION_DNS2;
 			memcpy(&ipcp->dns2, data, 4);
 			break;
 		case SECONDARY_NBNS_SERVER:
-			g_print("Setting suggested nbns2\n");
 			ipcp->req_options |= REQ_OPTION_NBNS2;
 			memcpy(&ipcp->nbns2, data, 4);
 			break;
@@ -482,7 +475,6 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip)
 	 */
 	pppcp = pppcp_new(ppp, &ipcp_proto, FALSE, MAX_IPCP_FAILURE);
 	if (pppcp == NULL) {
-		g_printerr("Failed to allocate PPPCP struct\n");
 		g_free(ipcp);
 		return NULL;
 	}
