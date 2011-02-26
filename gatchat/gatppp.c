@@ -231,7 +231,7 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 			g_at_io_set_write_done(io, sta_sent, ppp);
 		}
 	} else
-		g_print("Failed to send a frame\n");
+		DBG(ppp, "Failed to send a frame\n");
 
 	if (lcp)
 		g_at_hdlc_set_xmit_accm(ppp->hdlc, xmit_accm);
@@ -239,7 +239,7 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 
 static inline void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 {
-	g_print("Entering new phase: %d\n", phase);
+	DBG(ppp, "%d", phase);
 	ppp->phase = phase;
 
 	if (phase == PPP_PHASE_DEAD && ppp->sta_pending == FALSE)
@@ -258,7 +258,7 @@ void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
 		ppp->chap = ppp_chap_new(ppp, auth_data[2]);
 		break;
 	default:
-		g_printerr("unknown authentication proto\n");
+		DBG(ppp, "unknown authentication proto");
 		break;
 	}
 }
@@ -290,7 +290,7 @@ void ppp_ipcp_up_notify(GAtPPP *ppp, const char *local, const char *peer,
 	}
 
 	if (ppp_net_set_mtu(ppp->net, ppp->mtu) == FALSE)
-		g_printerr("Unable to set MTU\n");
+		DBG(ppp, "Unable to set MTU");
 
 	ppp_enter_phase(ppp, PPP_PHASE_LINK_UP);
 
