@@ -257,21 +257,14 @@ void g_at_server_send_info(GAtServer *server, const char *line, gboolean last)
 }
 
 static gboolean get_result_value(GAtServer *server, GAtResult *result,
-						const char *command,
 						int min, int max, int *value)
 {
 	GAtResultIter iter;
 	int val;
-	char prefix[10];
-
-	if (command[0] == 'S')
-		sprintf(prefix, "%s=", command);
-	else
-		strcpy(prefix, command);
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, prefix))
+	if (!g_at_result_iter_next(&iter, ""))
 		return FALSE;
 
 	if (!g_at_result_iter_next_number(&iter, &val))
@@ -294,7 +287,7 @@ static void s_template_cb(GAtServerRequestType type, GAtResult *result,
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
-		if (!get_result_value(server, result, prefix, min, max, &tmp)) {
+		if (!get_result_value(server, result, min, max, &tmp)) {
 			g_at_server_send_final(server,
 						G_AT_SERVER_RESULT_ERROR);
 			return;
@@ -357,7 +350,7 @@ static void at_template_cb(GAtServerRequestType type, GAtResult *result,
 
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
-		if (!get_result_value(server, result, prefix, min, max, &tmp)) {
+		if (!get_result_value(server, result, min, max, &tmp)) {
 			g_at_server_send_final(server,
 						G_AT_SERVER_RESULT_ERROR);
 			return;
