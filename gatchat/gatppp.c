@@ -74,6 +74,7 @@ struct _GAtPPP {
 	GAtPPPDisconnectReason disconnect_reason;
 	GAtDebugFunc debugf;
 	gpointer debug_data;
+	gboolean sta_pending;
 };
 
 void ppp_debug(GAtPPP *ppp, const char *str)
@@ -82,6 +83,28 @@ void ppp_debug(GAtPPP *ppp, const char *str)
 		return;
 
 	ppp->debugf(str, ppp->debug_data);
+}
+
+static void ppp_dead(GAtPPP *ppp)
+{
+	DBG(ppp, "");
+
+	/* notify interested parties */
+	if (ppp->disconnect_cb)
+		ppp->disconnect_cb(ppp->disconnect_reason,
+					ppp->disconnect_data);
+}
+
+static void sta_sent(gpointer userdata)
+{
+	GAtPPP *ppp = userdata;
+
+	DBG(ppp, "");
+
+	ppp->sta_pending = FALSE;
+
+	if (ppp->phase == PPP_PHASE_DEAD)
+		ppp_dead(ppp);
 }
 
 struct ppp_header *ppp_packet_new(gsize infolen, guint16 protocol)
@@ -171,6 +194,7 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 	guint8 code;
 	gboolean lcp = (proto == LCP_PROTOCOL);
 	guint32 xmit_accm = 0;
+	gboolean sta = FALSE;
 
 	/*
 	 * all LCP Link Configuration, Link Termination, and Code-Reject
@@ -179,6 +203,15 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 	if (lcp) {
 		code = pppcp_get_code(packet);
 		lcp = code > 0 && code < 8;
+
+		/*
+		 * If we're going down, we try to make sure to send the final
+		 * ack before informing the upper layers via the ppp_disconnect
+		 * function.  Once we enter PPP_DEAD phase, no further packets
+		 * will be sent
+		 */
+		if (code == PPPCP_CODE_TYPE_TERMINATE_ACK)
+			sta = TRUE;
 	}
 
 	if (lcp) {
@@ -190,19 +223,18 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 	header->control = PPP_CTRL;
 
 	if (g_at_hdlc_send(ppp->hdlc, packet,
-			infolen + sizeof(*header)) == FALSE)
+			infolen + sizeof(*header)) == TRUE) {
+		if (sta) {
+			GAtIO *io = g_at_hdlc_get_io(ppp->hdlc);
+
+			ppp->sta_pending = TRUE;
+			g_at_io_set_write_done(io, sta_sent, ppp);
+		}
+	} else
 		g_print("Failed to send a frame\n");
 
 	if (lcp)
 		g_at_hdlc_set_xmit_accm(ppp->hdlc, xmit_accm);
-}
-
-static void ppp_dead(GAtPPP *ppp)
-{
-	/* notify interested parties */
-	if (ppp->disconnect_cb)
-		ppp->disconnect_cb(ppp->disconnect_reason,
-					ppp->disconnect_data);
 }
 
 static inline void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
@@ -210,7 +242,7 @@ static inline void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 	g_print("Entering new phase: %d\n", phase);
 	ppp->phase = phase;
 
-	if (phase == PPP_PHASE_DEAD)
+	if (phase == PPP_PHASE_DEAD && ppp->sta_pending == FALSE)
 		ppp_dead(ppp);
 }
 
