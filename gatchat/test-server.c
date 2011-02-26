@@ -164,11 +164,6 @@ static gboolean setup_ppp(gpointer user)
 	GAtServer *server = user;
 	GAtIO *io;
 
-	if (getuid() != 0) {
-		g_print("Need root privilege for PPP connection\n");
-		return FALSE;
-	}
-
 	io = g_at_server_get_io(server);
 
 	g_at_server_suspend(server);
