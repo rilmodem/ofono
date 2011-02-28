@@ -180,7 +180,6 @@ static gboolean can_write_data(GIOChannel *channel, GIOCondition cond,
 		return FALSE;
 
 	return io->write_handler(io->write_data);
-
 }
 
 static GAtIO *create_io(GIOChannel *channel, GIOFlags flags)
