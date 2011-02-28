@@ -170,12 +170,11 @@ static void location_reporting_enable_cb(const struct ofono_error *error,
 							int fd,	void *data)
 {
 	struct ofono_location_reporting *lr = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Enabling location-reporting failed");
-
-		client_remove(lr);
 
 		reply = __ofono_error_failed(lr->pending);
 		__ofono_dbus_pending_reply(&lr->pending, reply);
@@ -184,6 +183,9 @@ static void location_reporting_enable_cb(const struct ofono_error *error,
 	}
 
 	lr->enabled = TRUE;
+	lr->client_owner = g_strdup(dbus_message_get_sender(lr->pending));
+	lr->disconnect_watch = g_dbus_add_disconnect_watch(conn,
+				lr->client_owner, client_exited, lr, NULL);
 
 	reply = dbus_message_new_method_return(lr->pending);
 	dbus_message_append_args(reply, DBUS_TYPE_UNIX_FD, &fd,
@@ -198,7 +200,6 @@ static DBusMessage *location_reporting_request(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct ofono_location_reporting *lr = data;
-	const char *caller = dbus_message_get_sender(msg);
 
 	if (lr->pending != NULL)
 		return __ofono_error_busy(msg);
@@ -206,9 +207,6 @@ static DBusMessage *location_reporting_request(DBusConnection *conn,
 	if (lr->enabled)
 		return __ofono_error_in_use(msg);
 
-	lr->client_owner = g_strdup(caller);
-	lr->disconnect_watch = g_dbus_add_disconnect_watch(conn,
-				lr->client_owner, client_exited, lr, NULL);
 	lr->pending = dbus_message_ref(msg);
 
 	lr->driver->enable(lr, location_reporting_enable_cb, lr);
