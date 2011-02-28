@@ -551,6 +551,7 @@ static GAtPPP *ppp_init_common(GAtHDLC *hdlc, gboolean is_server, guint32 ip)
 	/* initialize IPCP state */
 	ppp->ipcp = ipcp_new(ppp, is_server, ip);
 
+	g_at_hdlc_set_no_carrier_detect(ppp->hdlc, TRUE);
 	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
 	g_at_io_set_disconnect_function(g_at_hdlc_get_io(ppp->hdlc),
 						io_disconnect, ppp);
