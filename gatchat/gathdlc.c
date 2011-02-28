@@ -177,9 +177,9 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 		}
 	}
 
+out:
 	ring_buffer_drain(rbuf, pos);
 
-out:
 	hdlc->in_read_handler = FALSE;
 
 	if (hdlc->destroyed)
