@@ -159,7 +159,7 @@ static gboolean update_ppp(gpointer user)
 	return FALSE;
 }
 
-static gboolean setup_ppp(gpointer user)
+static void setup_ppp(gpointer user)
 {
 	GAtServer *server = user;
 	GAtIO *io;
@@ -172,7 +172,7 @@ static gboolean setup_ppp(gpointer user)
 	ppp = g_at_ppp_server_new_from_io(io, "192.168.1.1");
 	if (ppp == NULL) {
 		g_at_server_resume(server);
-		return FALSE;
+		return;
 	}
 
 	g_at_ppp_set_debug(ppp, server_debug, "PPP");
@@ -184,8 +184,6 @@ static gboolean setup_ppp(gpointer user)
 	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, server);
 
 	g_idle_add(update_ppp, ppp);
-
-	return FALSE;
 }
 
 static void cgmi_cb(GAtServer *server, GAtServerRequestType type,
@@ -553,6 +551,7 @@ error:
 static void cgdata_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *cmd, gpointer user)
 {
+	GAtIO *io;
 	if (modem_mode == 0) {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		return;
@@ -567,7 +566,9 @@ static void cgdata_cb(GAtServer *server, GAtServerRequestType type,
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_server_send_intermediate(server, "CONNECT");
-		g_idle_add(setup_ppp, server);
+
+		io = g_at_server_get_io(server);
+		g_at_io_set_write_done(io, setup_ppp, server);
 		break;
 	default:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
@@ -788,8 +789,10 @@ static void dial_cb(GAtServer *server, GAtServerRequestType type,
 
 	c = *dial_str;
 	if (c == '*' || c == '#' || c == 'T' || c == 't') {
+		GAtIO *io = g_at_server_get_io(server);
+
 		g_at_server_send_intermediate(server, "CONNECT");
-		g_idle_add(setup_ppp, server);
+		g_at_io_set_write_done(io, setup_ppp, server);
 	}
 
 	return;
