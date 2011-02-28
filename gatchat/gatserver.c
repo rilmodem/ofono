@@ -128,6 +128,7 @@ struct _GAtServer {
 
 static void server_wakeup_writer(GAtServer *server);
 static void server_parse_line(GAtServer *server);
+static void server_resume(GAtServer *server);
 
 static struct ring_buffer *allocate_next(GAtServer *server)
 {
@@ -209,23 +210,23 @@ void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 		return;
 	}
 
-	g_at_server_resume(server);
-
 	if (server->v250.is_v1)
 		sprintf(buf, "%s", server_result_to_string(result));
 	else
 		sprintf(buf, "%u", (unsigned int)result);
 
 	send_result_common(server, buf);
+
+	server_resume(server);
 }
 
 void g_at_server_send_ext_final(GAtServer *server, const char *result)
 {
 	server->final_sent = TRUE;
 	server->last_result = G_AT_SERVER_RESULT_EXT_ERROR;
-	g_at_server_resume(server);
-
 	send_result_common(server, result);
+
+	server_resume(server);
 }
 
 void g_at_server_send_intermediate(GAtServer *server, const char *result)
@@ -699,8 +700,10 @@ static void server_parse_line(GAtServer *server)
 
 	server->final_async = FALSE;
 
-	if (pos == 0)
-		g_at_server_suspend(server);
+	if (pos == 0) {
+		server->suspended = TRUE;
+		g_at_io_set_read_handler(server->io, NULL, NULL);
+	}
 
 	while (pos < len) {
 		unsigned int consumed;
@@ -734,7 +737,7 @@ static void server_parse_line(GAtServer *server)
 			return;
 	}
 
-	g_at_server_resume(server);
+	server_resume(server);
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 }
 
@@ -1064,6 +1067,12 @@ static void server_wakeup_writer(GAtServer *server)
 	g_at_io_set_write_handler(server->io, can_write_data, server);
 }
 
+static void server_resume(GAtServer *server)
+{
+	server->suspended = FALSE;
+	g_at_io_set_read_handler(server->io, new_bytes, server);
+}
+
 static void v250_settings_create(struct v250_settings *v250)
 {
 	v250->s0 = 0;
@@ -1194,8 +1203,6 @@ void g_at_server_suspend(GAtServer *server)
 	if (server == NULL)
 		return;
 
-	server->suspended = TRUE;
-
 	g_at_io_set_write_handler(server->io, NULL, NULL);
 	g_at_io_set_read_handler(server->io, NULL, NULL);
 
@@ -1206,8 +1213,6 @@ void g_at_server_resume(GAtServer *server)
 {
 	if (server == NULL)
 		return;
-
-	server->suspended = FALSE;
 
 	if (g_at_io_get_channel(server->io) == NULL) {
 		io_disconnect(server);
@@ -1296,6 +1301,8 @@ gboolean g_at_server_set_debug(GAtServer *server, GAtDebugFunc func,
 
 	server->debugf = func;
 	server->debug_data = user_data;
+
+	g_at_io_set_debug(server->io, server->debugf, server->debug_data);
 
 	return TRUE;
 }
