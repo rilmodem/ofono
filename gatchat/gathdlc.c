@@ -277,6 +277,9 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 		hdlc->record_fd = -1;
 	}
 
+	g_at_io_set_write_handler(hdlc->io, NULL, NULL);
+	g_at_io_set_read_handler(hdlc->io, NULL, NULL);
+
 	g_at_io_unref(hdlc->io);
 	hdlc->io = NULL;
 
