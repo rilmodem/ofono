@@ -2514,6 +2514,7 @@ static void stk_proactive_command_cancel(struct ofono_stk *stk)
 		stk_command_free(stk->pending_cmd);
 		stk->pending_cmd = NULL;
 		stk->cancel_cmd = NULL;
+		stk->respond_on_exit = FALSE;
 	}
 }
 
