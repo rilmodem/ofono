@@ -283,10 +283,14 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 	g_at_ppp_unref(ppp);
 	ppp = NULL;
 
-	g_at_chat_resume(modem);
+	if (option_modem == NULL)
+		g_at_chat_set_debug(modem, gsmdial_debug, "");
+	else
+		g_at_chat_set_debug(modem, gsmdial_debug, "Modem");
 
 	g_at_chat_register(modem, "NO CARRIER", no_carrier_notify,
 					FALSE, NULL, NULL);
+	g_at_chat_resume(modem);
 }
 
 static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
