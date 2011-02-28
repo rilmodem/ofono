@@ -75,6 +75,7 @@ struct _GAtPPP {
 	GAtDebugFunc debugf;
 	gpointer debug_data;
 	gboolean sta_pending;
+	guint ppp_dead_source;
 };
 
 void ppp_debug(GAtPPP *ppp, const char *str)
@@ -85,14 +86,20 @@ void ppp_debug(GAtPPP *ppp, const char *str)
 	ppp->debugf(str, ppp->debug_data);
 }
 
-static void ppp_dead(GAtPPP *ppp)
+static gboolean ppp_dead(gpointer userdata)
 {
+	GAtPPP *ppp = userdata;
+
 	DBG(ppp, "");
+
+	ppp->ppp_dead_source = 0;
 
 	/* notify interested parties */
 	if (ppp->disconnect_cb)
 		ppp->disconnect_cb(ppp->disconnect_reason,
 					ppp->disconnect_data);
+
+	return FALSE;
 }
 
 static void sta_sent(gpointer userdata)
@@ -243,7 +250,7 @@ static inline void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
 	ppp->phase = phase;
 
 	if (phase == PPP_PHASE_DEAD && ppp->sta_pending == FALSE)
-		ppp_dead(ppp);
+		ppp->ppp_dead_source = g_idle_add(ppp_dead, ppp);
 }
 
 void ppp_set_auth(GAtPPP *ppp, const guint8* auth_data)
@@ -497,6 +504,11 @@ void g_at_ppp_unref(GAtPPP *ppp)
 
 	lcp_free(ppp->lcp);
 	ipcp_free(ppp->ipcp);
+
+	if (ppp->ppp_dead_source) {
+		g_source_remove(ppp->ppp_dead_source);
+		ppp->ppp_dead_source = 0;
+	}
 
 	g_at_hdlc_unref(ppp->hdlc);
 
