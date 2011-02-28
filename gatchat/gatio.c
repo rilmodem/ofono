@@ -52,8 +52,8 @@ struct _GAtIO {
 	gpointer write_data;			/* Write callback userdata */
 	GAtDebugFunc debugf;			/* debugging output function */
 	gpointer debug_data;			/* Data to pass to debug func */
-	GAtDisconnectFunc write_done_func;
-	gpointer write_done_data;
+	GAtDisconnectFunc write_done_func;	/* tx empty notifier */
+	gpointer write_done_data;		/* tx empty data */
 	gboolean destroyed;			/* Re-entrancy guard */
 };
 
