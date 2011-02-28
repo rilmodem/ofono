@@ -182,6 +182,16 @@ Flight Mode
 GPRS
 ====
 
+- Add support for IPv6 GPRS contexts.
+
+  Priority: Medium
+  Complexity: C2
+  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
+
+
+PPP
+===
+
 - PPP Server support.  Extend GAtPPP to support PPP Server role, similarly to
   how existing GSM modems support PPP GPRS contexts.
 
@@ -194,11 +204,14 @@ GPRS
   Priority: Low
   Complexity: C4
 
-- Add support for IPv6 GPRS contexts.
+- ACFC support.  Extend GAtPPP to support packets with Address & Control Field
+  Compression enabled.  Refer to RFC 1662 for details.
 
   Priority: Medium
-  Complexity: C2
-  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
+  Complexity: C1
+
+- PFC support.  Extend GAtPPP to support packets with Protocol field
+  compression enabled.  Refer to RFC 1661 for details.
 
 
 Location Services
