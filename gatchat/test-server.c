@@ -52,6 +52,7 @@
 #define DEFAULT_SOCK_PATH "./server_sock"
 #define IFCONFIG_PATH "/sbin/ifconfig"
 
+static gboolean data_mode = FALSE;
 static int modem_mode = 0;
 static int modem_creg = 0;
 static int modem_cgreg = 0;
@@ -147,6 +148,7 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
 	g_at_server_set_debug(server, server_debug, "Server");
 
 	g_at_server_send_final(server, G_AT_SERVER_RESULT_NO_CARRIER);
+	data_mode = FALSE;
 }
 
 static gboolean update_ppp(gpointer user)
@@ -340,6 +342,9 @@ static gboolean do_netreg(gpointer user)
 {
 	GAtServer *server = user;
 	char buf[32];
+
+	if (data_mode)
+		return FALSE;
 
 	network_status = 1;
 
@@ -566,6 +571,7 @@ static void cgdata_cb(GAtServer *server, GAtServerRequestType type,
 		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_server_send_intermediate(server, "CONNECT");
+		data_mode = TRUE;
 
 		io = g_at_server_get_io(server);
 		g_at_io_set_write_done(io, setup_ppp, server);
@@ -792,6 +798,7 @@ static void dial_cb(GAtServer *server, GAtServerRequestType type,
 		GAtIO *io = g_at_server_get_io(server);
 
 		g_at_server_send_intermediate(server, "CONNECT");
+		data_mode = TRUE;
 		g_at_io_set_write_done(io, setup_ppp, server);
 	}
 
