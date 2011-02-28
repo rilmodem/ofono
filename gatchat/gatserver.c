@@ -792,7 +792,8 @@ static enum ParserResult server_feed(GAtServer *server,
 			break;
 
 		case PARSER_STATE_GARBAGE:
-			if (byte == s3) {
+			/* Detect CR or HDLC frame marker flag */
+			if (byte == s3 || byte == '~') {
 				server->parser_state = PARSER_STATE_IDLE;
 				i += 1;
 				res = PARSER_RESULT_GARBAGE;
