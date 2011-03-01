@@ -154,7 +154,7 @@ static void add_mbm(struct ofono_modem *modem,
 	network = ofono_modem_get_string(modem, NETWORK_INTERFACE);
 	gps = ofono_modem_get_string(modem, GPS_DEVICE);
 
-	if (device != NULL && data != NULL && network != NULL && gps != NULL) {
+	if (device != NULL && data != NULL && network != NULL) {
 		ofono_modem_set_integer(modem, "Registered", 1);
 		ofono_modem_register(modem);
 	}
