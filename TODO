@@ -293,6 +293,7 @@ Voicecall
 
   Priority: Medium
   Complexity: C4
+  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 
 - Provide feedback of sent DTMF tones. Emit SendingTones signal if modem can
   provide approximate starting and stopping times for DTMF tones. Signal
