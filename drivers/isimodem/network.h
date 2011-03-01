@@ -28,7 +28,6 @@ extern "C" {
 
 #define PN_NETWORK					0x0A
 #define PN_MODEM_NETWORK				0xC8
-#define NETWORK_TIMEOUT					5
 #define NETWORK_SCAN_TIMEOUT				180
 #define NETWORK_SET_TIMEOUT				240
 #define NET_INVALID_TIME				0x64
