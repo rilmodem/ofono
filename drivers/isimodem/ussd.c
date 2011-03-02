@@ -2,7 +2,7 @@
  *
  *  oFono - Open Source Telephony
  *
- *  Copyright (C) 2009-2010 Nokia Corporation and/or its subsidiary(-ies).
+ *  Copyright (C) 2009-2011 Nokia Corporation and/or its subsidiary(-ies).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -62,7 +62,7 @@ struct ussd_data {
 static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid)
 {
 	if (g_isi_msg_error(msg) < 0) {
-		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
+		DBG("Error: %s", g_isi_msg_strerror(msg));
 		return FALSE;
 	}
 
@@ -79,7 +79,7 @@ static void ussd_notify_ack(struct ussd_data *ud)
 	const uint8_t msg[] = {
 		SS_GSM_USSD_SEND_REQ,
 		SS_GSM_USSD_NOTIFY,
-		0,		/* subblock count */
+		0,	/* subblock count */
 	};
 
 	g_isi_client_send(ud->client, msg, sizeof(msg), NULL, NULL, NULL);
@@ -116,9 +116,10 @@ static void ussd_ind_cb(const GIsiMessage *msg, void *data)
 
 	case SS_GSM_USSD_COMMAND:
 
+		/* Ignore, we get SS_GSM_USSD_REQUEST, too */
 		if (ud->mt_session)
-			/* Ignore, we get SS_GSM_USSD_REQUEST, too */
 			return;
+
 		status = OFONO_USSD_STATUS_ACTION_REQUIRED;
 		break;
 
@@ -153,61 +154,44 @@ static void ussd_send_resp_cb(const GIsiMessage *msg, void *data)
 	struct isi_cb_data *cbd = data;
 	ofono_ussd_cb_t cb = cbd->cb;
 
-	if (!check_response_status(msg, SS_GSM_USSD_SEND_RESP)) {
+	if (check_response_status(msg, SS_GSM_USSD_SEND_RESP))
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	else
 		CALLBACK_WITH_FAILURE(cb, cbd->data);
-		return;
-	}
-
-	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 }
 
 static void isi_request(struct ofono_ussd *ussd, int dcs,
-			const unsigned char *pdu, int len,
-			ofono_ussd_cb_t cb, void *data)
+			const unsigned char *pdu, int len, ofono_ussd_cb_t cb,
+			void *data)
 {
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct isi_cb_data *cbd = isi_cb_data_new(ussd, cb, data);
-	const uint8_t padding_bytes[] = {0, 0, 0, 0, 0, 0, 0, 0};
-	uint8_t iov_size = 2;
 
-	uint8_t msg[] = {
+	size_t sb_len = (4 + len + 3) & ~3;
+	size_t pad_len = sb_len - (4 + len);
+
+	const uint8_t padding[4] = { 0 };
+	const uint8_t msg[] = {
 		SS_GSM_USSD_SEND_REQ,
-		ud->mt_session
-		? SS_GSM_USSD_MT_REPLY
-		: SS_GSM_USSD_COMMAND,
-		0x01,		/* subblock count */
+		ud->mt_session ? SS_GSM_USSD_MT_REPLY : SS_GSM_USSD_COMMAND,
+		1,		/* subblock count */
 		SS_GSM_USSD_STRING,
-		4 + len + 3,	/* subblock length */
+		sb_len,
 		dcs,		/* DCS */
 		len,		/* string length */
 		/* USSD string goes here */
 	};
-	struct iovec iov[3] = { { 0, 0 }, { 0, 0 }, { 0, 0 } };
+	struct iovec iov[3] = {
+		{ (uint8_t *) msg, sizeof(msg) },
+		{ (uint8_t *) pdu, len },
+		{ (uint8_t *) padding, pad_len },
+	};
 
 	if (cbd == NULL || ud == NULL)
 		goto error;
 
-	if (ud->version.major == 14 && ud->version.minor >= 1) {
-		uint8_t filled_len = (4 + len + 3) & ~3;
-		struct iovec t_iov[3] = {
-			{ (uint8_t *) msg, sizeof(msg) },
-			{ (uint8_t *)pdu, len },
-			{ (uint8_t *) padding_bytes, (filled_len - len - 4) }
-		};
-		iov_size = 3;
-		memmove(iov, t_iov, sizeof(struct iovec) * iov_size);
-
-		msg[4] = filled_len;
-	} else {
-		struct iovec t_iov[2] = {
-			{ (uint8_t *) msg, sizeof(msg) },
-			{ (uint8_t *) pdu, len }
-		};
-		memmove(iov, t_iov, sizeof(struct iovec) * iov_size);
-	}
-
-	if (g_isi_client_vsend(ud->client, iov, iov_size,
-				ussd_send_resp_cb, cbd, g_free))
+	if (g_isi_client_vsend(ud->client, iov, 3, ussd_send_resp_cb, cbd,
+				g_free))
 		return;
 
 error:
@@ -215,22 +199,21 @@ error:
 	g_free(cbd);
 }
 
-static void isi_cancel(struct ofono_ussd *ussd,
-				ofono_ussd_cb_t cb, void *data)
+static void isi_cancel(struct ofono_ussd *ussd, ofono_ussd_cb_t cb, void *data)
 {
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct isi_cb_data *cbd = isi_cb_data_new(ussd, cb, data);
-	const unsigned char msg[] = {
+	const uint8_t msg[] = {
 		SS_GSM_USSD_SEND_REQ,
 		SS_GSM_USSD_END,
-		0x00		/* subblock count */
+		0, /* subblock count */
 	};
 
 	if (cbd == NULL || ud == NULL)
 		goto error;
 
-	if (g_isi_client_send(ud->client, msg, sizeof(msg),
-				ussd_send_resp_cb, cbd, g_free))
+	if (g_isi_client_send(ud->client, msg, sizeof(msg), ussd_send_resp_cb,
+				cbd, g_free))
 		return;
 
 error:
@@ -247,9 +230,6 @@ static void ussd_reachable_cb(const GIsiMessage *msg, void *data)
 		return;
 
 	ISI_VERSION_DBG(msg);
-
-	ud->version.major = g_isi_msg_version_major(msg);
-	ud->version.minor = g_isi_msg_version_minor(msg);
 
 	g_isi_client_ind_subscribe(ud->client, SS_GSM_USSD_RECEIVE_IND,
 					ussd_ind_cb, ussd);
