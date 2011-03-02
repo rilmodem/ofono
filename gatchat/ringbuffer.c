@@ -34,6 +34,7 @@
 struct ring_buffer {
 	unsigned char *buffer;
 	unsigned int size;
+	unsigned int mask;
 	unsigned int in;
 	unsigned int out;
 };
@@ -61,6 +62,7 @@ struct ring_buffer *ring_buffer_new(unsigned int size)
 	}
 
 	buffer->size = real_size;
+	buffer->mask = real_size - 1;
 	buffer->in = 0;
 	buffer->out = 0;
 
@@ -78,7 +80,7 @@ int ring_buffer_write(struct ring_buffer *buf, const void *data,
 	len = MIN(len, buf->size - buf->in + buf->out);
 
 	/* Determine how much to write before wrapping */
-	offset = buf->in % buf->size;
+	offset = buf->in & buf->mask;
 	end = MIN(len, buf->size - offset);
 	memcpy(buf->buffer+offset, d, end);
 
@@ -93,12 +95,12 @@ int ring_buffer_write(struct ring_buffer *buf, const void *data,
 unsigned char *ring_buffer_write_ptr(struct ring_buffer *buf,
 					unsigned int offset)
 {
-	return buf->buffer + (buf->in + offset) % buf->size;
+	return buf->buffer + ((buf->in + offset) & buf->mask);
 }
 
 int ring_buffer_avail_no_wrap(struct ring_buffer *buf)
 {
-	unsigned int offset = buf->in % buf->size;
+	unsigned int offset = buf->in & buf->mask;
 	unsigned int len = buf->size - buf->in + buf->out;
 
 	return MIN(len, buf->size - offset);
@@ -121,7 +123,7 @@ int ring_buffer_read(struct ring_buffer *buf, void *data, unsigned int len)
 	len = MIN(len, buf->in - buf->out);
 
 	/* Grab data from buffer starting at offset until the end */
-	offset = buf->out % buf->size;
+	offset = buf->out & buf->mask;
 	end = MIN(len, buf->size - offset);
 	memcpy(d, buf->buffer + offset, end);
 
@@ -150,7 +152,7 @@ int ring_buffer_drain(struct ring_buffer *buf, unsigned int len)
 
 int ring_buffer_len_no_wrap(struct ring_buffer *buf)
 {
-	unsigned int offset = buf->out % buf->size;
+	unsigned int offset = buf->out & buf->mask;
 	unsigned int len = buf->in - buf->out;
 
 	return MIN(len, buf->size - offset);
@@ -159,7 +161,7 @@ int ring_buffer_len_no_wrap(struct ring_buffer *buf)
 unsigned char *ring_buffer_read_ptr(struct ring_buffer *buf,
 					unsigned int offset)
 {
-	return buf->buffer + (buf->out + offset) % buf->size;
+	return buf->buffer + ((buf->out + offset) & buf->mask);
 }
 
 int ring_buffer_len(struct ring_buffer *buf)
