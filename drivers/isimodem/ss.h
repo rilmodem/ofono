@@ -94,6 +94,12 @@ enum ss_codes {
 	SS_GSM_BARR_OUT_INTER =			331,
 	SS_GSM_BARR_OUT_INTER_EXC_HOME =	332,
 	SS_GSM_BARR_ALL_IN_ROAM =		351,
+	SS_GSM_CLIP =                           0x001E,
+	SS_GSM_CLIR =                           0x001F,
+	SS_GSM_COLP =                           0x004C,
+	SS_GSM_COLR =                           0x004D,
+	SS_GSM_CNAP =                           0x012C,
+	SS_GSM_ECT =                            0x0060
 };
 
 enum ss_response_data {
@@ -106,9 +112,13 @@ enum ss_subblock {
 	SS_GSM_PASSWORD =			0x03,
 	SS_GSM_FORWARDING_INFO =		0x04,
 	SS_GSM_FORWARDING_FEATURE =		0x05,
+	SS_GSM_BARRING_INFO =			0x06,
+	SS_GSM_BARRING_FEATURE =		0x07,
 	SS_GSM_DATA =				0x08,
 	SS_GSM_BSC_INFO =			0x09,
+	SS_GSM_GENERIC_SERVICE_INFO =		0x0A,
 	SS_GSM_PASSWORD_INFO =			0x0B,
+	SS_GSM_CLIR_INFO =			0x0C,
 	SS_GSM_INDICATE_PASSWORD_ERROR =	0x0D,
 	SS_GSM_INDICATE_ERROR =			0x0E,
 	SS_GSM_ADDITIONAL_INFO =		0x2F,
@@ -120,6 +130,18 @@ enum ss_isi_cause {
 	SS_GSM_REGISTERED =			0x02,
 	SS_GSM_PROVISIONED =			0x04,
 	SS_GSM_QUIESCENT =			0x08,
+};
+
+enum ss_gsm_cli_restriction_option {
+	SS_GSM_CLI_PERMANENT =			0x00,
+	SS_GSM_DEFAULT_RESTRICTED =		0x01,
+	SS_GSM_CLI_DEFAULT_ALLOWED =		0x02,
+	SS_GSM_OVERRIDE_ENABLED =		0x03,
+	SS_GSM_OVERRIDE_DISABLED =		0x04
+};
+
+enum ss_constants {
+	SS_UNDEFINED_TIME =			0x00,
 };
 
 #endif /* __ISIMODEM_SS_H */
