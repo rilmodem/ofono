@@ -81,13 +81,6 @@ SIM / SIM File system
   Complexity: C2
   Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
-- Check SIM pin status if sim_change_pin fails. If it is anything other than
-  READY, we must tear the state back to pre_sim state and set the modem offline.
-
-  Priority: Medium
-  Complexity: C1
-  Owner: Marit Henriksen <marit.henriksen@stericsson.com>
-
 - Add support for CPHS Customer Service Profile (CSP).  This task adds support
   for reading the EFcsp file and in particular, interpreting the PLMN mode bit
   within the 'Value Added Services' service group.
