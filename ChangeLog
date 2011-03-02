@@ -1,3 +1,15 @@
+ver 0.44:
+	Fix issue with presence detection of Bluetooth daemon.
+	Fix issue with HDLC processing and PPP server.
+	Fix issue with SIM state and PIN2/PUK2 handling.
+	Fix issue with potential SIM lockout condition.
+	Add support for basic handling of SIM Toolkit Refresh.
+	Add support for location reporting interface.
+	Add support for GPS engine and MBM modems.
+	Add support for CNAP handling and ISI modems.
+	Add support for multiple contexts and STE modems.
+	Add support for ST-Ericsson U8500 modem.
+
 ver 0.43:
 	Fix issue with PPP transmit ACCM and receive ACCM mixup.
 	Fix issue with PPP not using default ACCM in transmit.
