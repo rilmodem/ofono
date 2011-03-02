@@ -349,11 +349,13 @@ static void send_context_authenticate(GIsiClient *client, void *opaque)
 	size_t password_len = strlen(cd->password);
 
 	/* Pad the fields to the next 32bit boundary */
-	size_t sb_userinfo_len = (3 + username_len + 3) & ~3;
-	uint8_t userinfo_pad[sb_userinfo_len - (3 + username_len)];
+	size_t sb_userinfo_len = ALIGN4(3 + username_len);
+	size_t userinfo_pad_len = sb_userinfo_len - (3 + username_len);
 
-	size_t sb_password_info_len = (3 + password_len + 3) & ~3;
-	uint8_t password_pad[sb_password_info_len - (3 + password_len)];
+	size_t sb_password_info_len = ALIGN4(3 + password_len);
+	size_t password_pad_len = sb_password_info_len - (3 + password_len);
+
+	const uint8_t padding[4] = { 0 };
 
 	const uint8_t top[] = {
 		GPDS_CONTEXT_AUTH_REQ,
@@ -375,16 +377,13 @@ static void send_context_authenticate(GIsiClient *client, void *opaque)
 	};
 
 	const struct iovec iov[6] = {
-		{ (uint8_t *)top, sizeof(top) },
+		{ (uint8_t *) top, sizeof(top) },
 		{ cd->username, username_len },
-		{ userinfo_pad, sizeof(userinfo_pad) },
-		{ (uint8_t *)bottom, sizeof(bottom) },
+		{ (uint8_t *) padding, userinfo_pad_len },
+		{ (uint8_t *) bottom, sizeof(bottom) },
 		{ cd->password, password_len },
-		{ password_pad, sizeof(password_pad) },
+		{ (uint8_t *) padding, password_pad_len },
 	};
-
-	memset(userinfo_pad, 0, sizeof(userinfo_pad));
-	memset(password_pad, 0, sizeof(password_pad));
 
 	if (!g_isi_client_vsend(client, iov, 6, context_auth_cb, cd, NULL))
 		gprs_up_fail(cd);
@@ -407,8 +406,10 @@ static void link_conf_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct context_data *cd = opaque;
 	size_t apn_len = strlen(cd->apn);
-	size_t sb_apn_info_len = (3 + apn_len + 3) & ~3;
-	size_t apn_pad[sb_apn_info_len - (3 + apn_len)];
+	size_t sb_apn_info_len = ALIGN4(3 + apn_len);
+	size_t apn_pad_len = sb_apn_info_len - (3 + apn_len);
+
+	const uint8_t padding[4] = { 0 };
 
 	const uint8_t req[] = {
 		GPDS_CONTEXT_CONFIGURE_REQ,
@@ -428,12 +429,10 @@ static void link_conf_cb(const GIsiMessage *msg, void *opaque)
 	};
 
 	const struct iovec iov[3] = {
-		{ (uint8_t *)req, sizeof(req) },
+		{ (uint8_t *) req, sizeof(req) },
 		{ cd->apn, apn_len },
-		{ apn_pad, sizeof(apn_pad) },
+		{ (uint8_t *) padding, apn_pad_len },
 	};
-
-	memset(apn_pad, 0, sizeof(apn_pad));
 
 	if (!check_resp(msg, GPDS_LL_CONFIGURE_RESP, 2, cd, gprs_up_fail))
 		return;
@@ -447,7 +446,7 @@ static void create_context_cb(const GIsiMessage *msg, void *opaque)
 	struct context_data *cd = opaque;
 	const uint8_t *data = g_isi_msg_data(msg);
 
-	unsigned char req[] = {
+	uint8_t req[] = {
 		GPDS_LL_CONFIGURE_REQ,
 		0x00,		/* GPDS context ID, added later */
 		g_isi_pipe_get_handle(cd->pipe),
@@ -459,8 +458,8 @@ static void create_context_cb(const GIsiMessage *msg, void *opaque)
 
 	cd->handle = req[1] = data[0];
 
-	if (!g_isi_client_send(cd->client, req, sizeof(req),
-				link_conf_cb, cd, NULL))
+	if (!g_isi_client_send(cd->client, req, sizeof(req), link_conf_cb,
+				cd, NULL))
 		gprs_up_fail(cd);
 }
 
@@ -468,12 +467,12 @@ static void create_pipe_cb(GIsiPipe *pipe)
 {
 	struct context_data *cd = g_isi_pipe_get_userdata(pipe);
 
-	const unsigned char msg[] = {
+	const uint8_t msg[] = {
 		GPDS_CONTEXT_ID_CREATE_REQ,
 	};
 
-	if (!g_isi_client_send(cd->client, msg, sizeof(msg),
-				create_context_cb, cd, NULL))
+	if (!g_isi_client_send(cd->client, msg, sizeof(msg), create_context_cb,
+				cd, NULL))
 		gprs_up_fail(cd);
 }
 
