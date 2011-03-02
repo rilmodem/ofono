@@ -65,4 +65,6 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 		g_isi_msg_version_major((msg)),			\
 		g_isi_msg_version_minor((msg)));
 
+#define ALIGN4(val) (((val) + 3) & ~3)
+
 #endif /* !__ISIMODEM_UTIL_H */
