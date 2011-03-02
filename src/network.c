@@ -36,7 +36,6 @@
 #include "simutil.h"
 #include "util.h"
 #include "storage.h"
-#include "emulator.h"
 
 #define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN 0x1
 #define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN 0x2
