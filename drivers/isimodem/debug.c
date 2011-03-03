@@ -64,10 +64,12 @@ const char *ss_message_id_name(enum ss_message_id value)
 		_(SS_SERVICE_REQ);
 		_(SS_SERVICE_COMPLETED_RESP);
 		_(SS_SERVICE_FAILED_RESP);
+		_(SS_SERVICE_NOT_SUPPORTED_RESP);
 		_(SS_GSM_USSD_SEND_REQ);
 		_(SS_GSM_USSD_SEND_RESP);
 		_(SS_GSM_USSD_RECEIVE_IND);
 		_(SS_STATUS_IND);
+		_(SS_SERVICE_COMPLETED_IND);
 		_(SS_COMMON_MESSAGE);
 	}
 	return "SS_<UNKNOWN>";
@@ -959,7 +961,9 @@ const char *net_message_id_name(enum net_message_id value)
 		_(NET_RSSI_GET_REQ);
 		_(NET_RSSI_GET_RESP);
 		_(NET_RSSI_IND);
+		_(NET_CIPHERING_IND);
 		_(NET_TIME_IND);
+		_(NET_CHANNEL_INFO_IND);
 		_(NET_RAT_IND);
 		_(NET_RAT_REQ);
 		_(NET_RAT_RESP);
