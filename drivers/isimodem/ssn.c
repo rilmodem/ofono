@@ -336,40 +336,40 @@ static void isi_callmodem_notif_ind_cb(const GIsiMessage *msg, void *data)
 			g_isi_sb_iter_is_valid(sb);
 			g_isi_sb_iter_next(sb)) {
 		switch (g_isi_sb_iter_get_id(sb)) {
-		case CALL_SB_NOTIFY:
+		case CALL_GSM_NOTIFY:
 			isi_ssn_call_modem_sb_notify(sb);
 			break;
-		case CALL_SB_SS_CODE:
+		case CALL_GSM_SS_CODE:
 			isi_ssn_call_modem_sb_ss_code(sb, &cssi, &cssu);
 			break;
-		case CALL_SB_SS_STATUS:
+		case CALL_GSM_SS_STATUS:
 			isi_ssn_call_modem_sb_ss_status(sb);
 			break;
-		case CALL_SB_SS_NOTIFY:
+		case CALL_GSM_SS_NOTIFY:
 			isi_ssn_call_modem_sb_ss_notify(sb, &cssi, &cssu);
 			break;
-		case CALL_SB_SS_NOTIFY_INDICATOR:
+		case CALL_GSM_SS_NOTIFY_INDICATOR:
 			isi_ssn_call_modem_sb_ss_notify_ind(sb, &cssi);
 			break;
-		case CALL_SB_SS_HOLD_INDICATOR:
+		case CALL_GSM_SS_HOLD_INDICATOR:
 			isi_ssn_call_modem_sb_ss_hold(sb, &cssu);
 			break;
-		case CALL_SB_SS_ECT_INDICATOR:
+		case CALL_GSM_SS_ECT_INDICATOR:
 			isi_ssn_call_modem_sb_ss_ect_ind(sb, &cssu);
 			break;
-		case CALL_SB_REMOTE_ADDRESS:
+		case CALL_GSM_REMOTE_ADDRESS:
 			isi_cm_sb_rem_address_sb_proc(ssn_prop, sb);
 			break;
-		case CALL_SB_REMOTE_SUBADDRESS:
+		case CALL_GSM_REMOTE_SUBADDRESS:
 			break;
-		case CALL_SB_CUG_INFO:
+		case CALL_GSM_CUG_INFO:
 			cssu = isi_ssn_call_modem_sb_cug_info(sb, ssn_prop);
 			break;
-		case CALL_SB_ORIGIN_INFO:
+		case CALL_ORIGIN_INFO:
 			break;
-		case CALL_SB_ALERTING_PATTERN:
+		case CALL_ALERTING_PATTERN:
 			break;
-		case CALL_SB_ALERTING_INFO:
+		case CALL_ALERTING_INFO:
 			break;
 		}
 	}
