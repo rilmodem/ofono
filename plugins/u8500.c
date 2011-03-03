@@ -437,7 +437,7 @@ static void u8500_pre_sim(struct ofono_modem *modem)
 
 	ofono_sim_create(modem, 0, "isimodem", isi->modem);
 	ofono_devinfo_create(modem, 0, "u8500", isi->modem);
-	ofono_voicecall_create(modem, 0, "isimodem", isi->modem);
+	ofono_voicecall_create(modem, 0, "wgmodem2.5", isi->modem);
 }
 
 static void u8500_post_sim(struct ofono_modem *modem)
@@ -460,7 +460,7 @@ static void u8500_post_online(struct ofono_modem *modem)
 	ofono_netreg_create(modem, 0, "wgmodem2.5", isi->modem);
 	ofono_sms_create(modem, 0, "isimodem", isi->modem);
 	ofono_cbs_create(modem, 0, "isimodem", isi->modem);
-	ofono_ssn_create(modem, 0, "isimodem", isi->modem);
+	ofono_ssn_create(modem, 0, "wgmodem2.5", isi->modem);
 	ofono_ussd_create(modem, 0, "isimodem", isi->modem);
 	ofono_call_settings_create(modem, 0, "isimodem", isi->modem);
 	ofono_call_barring_create(modem, 0, "isimodem", isi->modem);
