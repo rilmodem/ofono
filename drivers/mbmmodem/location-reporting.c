@@ -94,13 +94,13 @@ static void mbm_location_reporting_disable(struct ofono_location_reporting *lr,
 	g_free(cbd);
 }
 
-static int mbm_create_data_chat(struct ofono_location_reporting *lr)
+static int enable_data_stream(struct ofono_location_reporting *lr)
 {
-	struct gps_data *gd = ofono_location_reporting_get_data(lr);
 	struct ofono_modem *modem;
 	const char *gps_dev;
-	GAtSyntax *syntax;
 	GIOChannel *channel;
+	GIOStatus status;
+	gsize written;
 	int fd;
 
 	modem = ofono_location_reporting_get_modem(lr);
@@ -110,15 +110,18 @@ static int mbm_create_data_chat(struct ofono_location_reporting *lr)
 	if (channel == NULL)
 		return -1;
 
-	syntax = g_at_syntax_new_gsm_permissive();
-	gd->data_chat = g_at_chat_new(channel, syntax);
 	fd = g_io_channel_unix_get_fd(channel);
+	status = g_io_channel_write_chars(channel, "AT*E2GPSNPD\r\n", -1,
+								&written, NULL);
 
-	g_at_syntax_unref(syntax);
+	g_io_channel_set_close_on_unref(channel, FALSE);
 	g_io_channel_unref(channel);
 
-	if (gd->data_chat == NULL)
+	if (status != G_IO_STATUS_NORMAL || written != 13) {
+		close(fd);
+
 		return -1;
+	}
 
 	return fd;
 }
@@ -129,7 +132,6 @@ static void mbm_e2gpsctl_enable_cb(gboolean ok, GAtResult *result,
 	struct cb_data *cbd = user_data;
 	ofono_location_reporting_enable_cb_t cb = cbd->cb;
 	struct ofono_location_reporting *lr = cbd->user;
-	struct gps_data *gd = ofono_location_reporting_get_data(lr);
 	struct ofono_error error;
 	int fd;
 
@@ -143,20 +145,16 @@ static void mbm_e2gpsctl_enable_cb(gboolean ok, GAtResult *result,
 		return;
 	}
 
-	fd = mbm_create_data_chat(lr);
+	fd = enable_data_stream(lr);
 
-	if (fd < 0)
-		goto out;
-
-	if (g_at_chat_send(gd->data_chat, "AT*E2GPSNPD", NULL, NULL, NULL,
-								NULL) > 0) {
-		cb(&error, fd, cbd->data);
+	if (fd < 0) {
+		CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 
 		return;
 	}
 
-out:
-	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
+	cb(&error, fd, cbd->data);
+	close(fd);
 }
 
 static void mbm_location_reporting_enable(struct ofono_location_reporting *lr,
