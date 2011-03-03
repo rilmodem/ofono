@@ -31,10 +31,10 @@ extern "C" {
 #include "message.h"
 
 struct _GIsiSubBlockIter {
-	uint8_t cursor;
 	uint8_t *start;
 	uint8_t *end;
 	gboolean longhdr;
+	uint16_t cursor;
 	uint16_t sub_blocks;
 };
 typedef struct _GIsiSubBlockIter GIsiSubBlockIter;
