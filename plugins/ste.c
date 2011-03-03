@@ -184,11 +184,11 @@ static gboolean init_sim_reporting(gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct ste_data *data = ofono_modem_get_data(modem);
+
 	data->have_sim = FALSE;
 
 	g_at_chat_send(data->chat, "AT*ESIMSR=1;*ESIMSR?", NULL,
-			handle_sim_state,
-			modem, NULL);
+			handle_sim_state, modem, NULL);
 
 	return FALSE;
 }
