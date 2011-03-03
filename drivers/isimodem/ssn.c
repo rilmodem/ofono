@@ -49,360 +49,389 @@
 
 struct ssn_data {
 	GIsiClient *client;
-	GIsiClient *primary;
-	GIsiClient *secondary;
 };
 
-struct isi_ssn_prop {
-	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
-	int type;
-	uint16_t cug_index;
-};
-
-struct isi_ssn {
-	GIsiClient *client;
-	struct isi_call_req_context *queue;
-};
-
-static void isi_cm_sb_rem_address_sb_proc(struct isi_ssn_prop *ssn_prop,
-		GIsiSubBlockIter const *sb)
+static gboolean decode_notify(GIsiSubBlockIter *iter)
 {
-	uint8_t addr_type, addr_len;
-	char *address;
-	DBG("CALL_SB_REMOTE_ADDRESS");
+	uint8_t byte;
 
-	if (!g_isi_sb_iter_get_byte(sb, &addr_type, 2) ||
-			/* address type */
-			/* presentation indicator */
-			/* fillerbyte */
-			!g_isi_sb_iter_get_byte(sb, &addr_len, 5) ||
-			!g_isi_sb_iter_get_alpha_tag(sb, &address, 2 *
-					addr_len, 6))
-		return;
+	if (!g_isi_sb_iter_get_byte(iter, &byte, 2))
+		return FALSE;
 
-	strncpy(ssn_prop->number, address, addr_len);
-
-	g_free(address);
-}
-
-static void isi_ssn_notify_ofono(void *_ssn, int cssi, int cssu,
-		struct isi_ssn_prop *ssn_prop)
-{
-	struct ofono_phone_number *phone_nr =
-			(struct ofono_phone_number *) ssn_prop;
-
-	if (cssi != NOT_3GGP_NOTIFICATION)
-		ofono_ssn_cssi_notify(_ssn, cssi, ssn_prop->cug_index);
-
-	if (cssu != NOT_3GGP_NOTIFICATION)
-		ofono_ssn_cssu_notify(_ssn, cssi, ssn_prop->cug_index,
-				phone_nr);
-}
-
-static void isi_ssn_call_modem_sb_notify(GIsiSubBlockIter const *sb)
-{
-	uint8_t sb_property;
-	g_isi_sb_iter_get_byte(sb, &sb_property, 2);
-
-	if (sb_property == CALL_NOTIFY_USER_SUSPENDED)
+	switch (byte) {
+	case CALL_NOTIFY_USER_SUSPENDED:
 		DBG("CALL_NOTIFY_USER_SUSPENDED");
+		break;
 
-	if (sb_property == CALL_NOTIFY_USER_RESUMED)
+	case CALL_NOTIFY_USER_RESUMED:
 		DBG("CALL_NOTIFY_USER_RESUMED");
+		break;
 
-	if (sb_property == CALL_NOTIFY_BEARER_CHANGE)
+	case CALL_NOTIFY_BEARER_CHANGE:
 		DBG("CALL_NOTIFY_BEARER_CHANGE");
+		break;
+
+	default:
+		DBG("Unknown notification: 0x%02X", byte);
+	}
+
+	return TRUE;
 }
 
-static void isi_ssn_call_modem_sb_ss_code(GIsiSubBlockIter const *sb,
-		int *cssi_p, int *cssu_p)
+static gboolean decode_ss_code(GIsiSubBlockIter *iter, int *cssi, int *cssu)
 {
-	uint16_t sb_property;
-	g_isi_sb_iter_get_word(sb, &sb_property, 2);
+	uint16_t word;
 
-	switch (sb_property) {
-	case(CALL_SSC_ALL_FWDS):
+	if (!g_isi_sb_iter_get_word(iter, &word, 2))
+		return FALSE;
+
+	switch (word) {
+	case CALL_SSC_ALL_FWDS:
 		DBG("Call forwarding is active");
-	break;
-	case(CALL_SSC_ALL_COND_FWD): {
-		*(cssi_p) = SS_MO_CONDITIONAL_FORWARDING;
+		break;
+
+	case CALL_SSC_ALL_COND_FWD:
+		*cssi = SS_MO_CONDITIONAL_FORWARDING;
 		DBG("Some of conditional call forwardings active");
-	}
-	break;
-	case(CALL_SSC_CFU): {
-		*(cssi_p) = SS_MO_UNCONDITIONAL_FORWARDING;
+		break;
+
+	case CALL_SSC_CFU:
+		*cssi = SS_MO_UNCONDITIONAL_FORWARDING;
 		DBG("Unconditional call forwarding is active");
-	}
-	break;
-	case(CALL_SSC_CFB):
-		DBG("Unknown notification #1");
-	break;
-	case(CALL_SSC_CFNRY):
-		DBG("Unknown notification #2");
-	break;
-	case(CALL_SSC_CFGNC):
-		DBG("Unknown notification #3");
-	break;
-	case(CALL_SSC_OUTGOING_BARR_SERV): {
-		*(cssi_p) = SS_MO_OUTGOING_BARRING;
+		break;
+
+	case CALL_SSC_OUTGOING_BARR_SERV:
+		*cssi = SS_MO_OUTGOING_BARRING;
 		DBG("Outgoing calls are barred");
-	}
-	break;
-	case(CALL_SSC_INCOMING_BARR_SERV): {
-		*(cssi_p) = SS_MO_INCOMING_BARRING;
+		break;
+
+	case CALL_SSC_INCOMING_BARR_SERV:
+		*cssi = SS_MO_INCOMING_BARRING;
 		DBG("Incoming calls are barred");
-	}
-	break;
-	case(CALL_SSC_CALL_WAITING):
+		break;
+
+	case CALL_SSC_CALL_WAITING:
 		DBG("Incoming calls are barred");
-	break;
-	case(CALL_SSC_CLIR):
+		break;
+
+	case CALL_SSC_CLIR:
 		DBG("CLIR connected unknown indication.");
-	break;
-	case(CALL_SSC_ETC):
-		DBG("Unknown notification #4");
-	break;
-	case(CALL_SSC_MPTY): {
-		*(cssu_p) = SS_MT_MULTIPARTY_VOICECALL;
+		break;
+
+	case CALL_SSC_MPTY:
+		*cssu = SS_MT_MULTIPARTY_VOICECALL;
 		DBG("Multiparty call entered.");
-	}
-	break;
-	case(CALL_SSC_CALL_HOLD): {
-		*(cssu_p) = SS_MT_VOICECALL_HOLD_RELEASED;
+		break;
+
+	case CALL_SSC_CALL_HOLD:
+		*cssu = SS_MT_VOICECALL_HOLD_RELEASED;
 		DBG("Call on hold has been released.");
-	}
-	break;
+		break;
+
 	default:
+		DBG("Unknown/unhandled notification: 0x%02X", word);
 		break;
 	}
+
+	return TRUE;
 }
 
-static void isi_ssn_call_modem_sb_ss_status(GIsiSubBlockIter const *sb)
+static gboolean decode_ss_status(GIsiSubBlockIter *iter)
 {
-	uint8_t sb_property;
-	g_isi_sb_iter_get_byte(sb, &sb_property, 2);
+	uint8_t byte;
 
-	if (sb_property & CALL_SS_STATUS_ACTIVE)
+	if (!g_isi_sb_iter_get_byte(iter, &byte, 2))
+		return FALSE;
+
+	if (byte & CALL_SS_STATUS_ACTIVE)
 		DBG("CALL_SS_STATUS_ACTIVE");
 
-	if (sb_property & CALL_SS_STATUS_REGISTERED)
+	if (byte & CALL_SS_STATUS_REGISTERED)
 		DBG("CALL_SS_STATUS_REGISTERED");
 
-	if (sb_property & CALL_SS_STATUS_PROVISIONED)
+	if (byte & CALL_SS_STATUS_PROVISIONED)
 		DBG("CALL_SS_STATUS_PROVISIONED");
 
-	if (sb_property & CALL_SS_STATUS_QUIESCENT)
+	if (byte & CALL_SS_STATUS_QUIESCENT)
 		DBG("CALL_SS_STATUS_QUIESCENT");
+
+	return TRUE;
 }
 
-static void isi_ssn_call_modem_sb_ss_notify(GIsiSubBlockIter const *sb,
-		int *cssi_p, int *cssu_p)
+static gboolean decode_ss_notify(GIsiSubBlockIter *iter, int *cssi, int *cssu)
 {
-	uint8_t sb_property;
-	g_isi_sb_iter_get_byte(sb, &sb_property, 2);
+	uint8_t byte;
 
-	if (sb_property & CALL_SSN_INCOMING_IS_FWD) {
-		*(cssu_p) = SS_MT_CALL_FORWARDED;
+	if (!g_isi_sb_iter_get_byte(iter, &byte, 2))
+		return FALSE;
+
+	if (byte & CALL_SSN_INCOMING_IS_FWD) {
+		*cssu = SS_MT_CALL_FORWARDED;
 		DBG("This is a forwarded call #1.");
 	}
 
-	if (sb_property & CALL_SSN_INCOMING_FWD)
+	if (byte & CALL_SSN_INCOMING_FWD)
 		DBG("This is a forwarded call #2.");
 
-	if (sb_property & CALL_SSN_OUTGOING_FWD) {
-		*(cssi_p) = SS_MO_CALL_FORWARDED;
+	if (byte & CALL_SSN_OUTGOING_FWD) {
+		*cssi = SS_MO_CALL_FORWARDED;
 		DBG("Call has been forwarded.");
 	}
+
+	return TRUE;
 }
 
-static void isi_ssn_call_modem_sb_ss_notify_ind(GIsiSubBlockIter const *sb,
-		int *cssi_p)
+static gboolean decode_ss_notify_indicator(GIsiSubBlockIter *iter, int *cssi)
 {
-	uint8_t sb_property;
-	g_isi_sb_iter_get_byte(sb, &sb_property, 2);
+	uint8_t byte;
 
-	if (sb_property & CALL_SSI_CALL_IS_WAITING) {
-		*(cssi_p) = SS_MO_CALL_WAITING;
+	if (!g_isi_sb_iter_get_byte(iter, &byte, 2))
+		return FALSE;
+
+	if (byte & CALL_SSI_CALL_IS_WAITING) {
+		*cssi = SS_MO_CALL_WAITING;
 		DBG("Call is waiting.");
 	}
 
-	if (sb_property & CALL_SSI_MPTY)
-		DBG("Multiparty call.");
+	if (byte & CALL_SSI_MPTY)
+		DBG("Multiparty call");
 
-	if (sb_property & CALL_SSI_CLIR_SUPPR_REJ) {
-		*(cssi_p) = SS_MO_CLIR_SUPPRESSION_REJECTED;
-		DBG("CLIR suppression rejected.");
+	if (byte & CALL_SSI_CLIR_SUPPR_REJ) {
+		*cssi = SS_MO_CLIR_SUPPRESSION_REJECTED;
+		DBG("CLIR suppression rejected");
 	}
+
+	return TRUE;
 }
 
-static void isi_ssn_call_modem_sb_ss_hold(GIsiSubBlockIter const *sb,
-		int *cssu_p)
+static gboolean decode_ss_hold_indicator(GIsiSubBlockIter *iter, int *cssu)
 {
-	uint8_t sb_property;
-	g_isi_sb_iter_get_byte(sb, &sb_property, 2);
+	uint8_t byte;
 
-	if (sb_property & CALL_HOLD_IND_RETRIEVED) {
-		*(cssu_p) = SS_MT_VOICECALL_RETRIEVED;
-		DBG("Call has been retrieved.");
+	if (!g_isi_sb_iter_get_byte(iter, &byte, 2))
+		return FALSE;
+
+	if (byte & CALL_HOLD_IND_RETRIEVED) {
+		*cssu = SS_MT_VOICECALL_RETRIEVED;
+		DBG("Call has been retrieved");
 	}
 
-	if (sb_property & CALL_HOLD_IND_ON_HOLD) {
-		*(cssu_p) = SS_MT_VOICECALL_ON_HOLD;
-		DBG("Call has been put on hold.");
+	if (byte & CALL_HOLD_IND_ON_HOLD) {
+		*cssu = SS_MT_VOICECALL_ON_HOLD;
+		DBG("Call has been put on hold");
 	}
+
+	return TRUE;
 }
 
-static void isi_ssn_call_modem_sb_ss_ect_ind(GIsiSubBlockIter const *sb,
-		int *cssu_p)
+static gboolean decode_ss_ect_indicator(GIsiSubBlockIter *iter, int *cssu)
 {
-	uint8_t sb_property;
-	g_isi_sb_iter_get_byte(sb, &sb_property, 2);
+	uint8_t byte;
 
-	if (sb_property & CALL_ECT_CALL_STATE_ALERT) {
-		*(cssu_p) = SS_MT_VOICECALL_IN_TRANSFER;
-		DBG("Call is being connected with the remote party");
-		DBG("in alerting state.");
+	if (!g_isi_sb_iter_get_byte(iter, &byte, 2))
+		return FALSE;
+
+	if (byte & CALL_ECT_CALL_STATE_ALERT) {
+		*cssu = SS_MT_VOICECALL_IN_TRANSFER;
+		DBG("Call is being connected with the remote party in "
+			"alerting state");
 	}
 
-	if (sb_property & CALL_ECT_CALL_STATE_ACTIVE) {
-		*(cssu_p) = SS_MT_VOICECALL_TRANSFERRED;
-		DBG("Call has been connected with the other remote");
-		DBG("party in explicit call transfer operation.");
+	if (byte & CALL_ECT_CALL_STATE_ACTIVE) {
+		*cssu = SS_MT_VOICECALL_TRANSFERRED;
+		DBG("Call has been connected with the other remote "
+			"party in explicit call transfer operation.");
 	}
+
+	return TRUE;
 }
 
-static int isi_ssn_call_modem_sb_cug_info(GIsiSubBlockIter const *sb,
-		struct isi_ssn_prop *ssn_prop)
+static gboolean decode_remote_address(GIsiSubBlockIter *iter,
+					struct ofono_phone_number *number,
+					int *index)
 {
-	uint8_t sb_property;
-	g_isi_sb_iter_get_byte(sb, &sb_property, 2);
-	DBG("CALL_SB_CUG_INFO: This is a CUG Call.");
-	DBG("Preferential CUG: 0x%x,", sb_property);
-	g_isi_sb_iter_get_byte(sb, &sb_property, 3);
-	DBG("Cug Output Access: 0x%x,", sb_property);
-	g_isi_sb_iter_get_word(sb, &ssn_prop->cug_index, 4);
-	DBG("Cug Call Index: 0x%x,", ssn_prop->cug_index);
-	return SS_MO_CUG_CALL;
+	uint8_t type, len;
+	char *addr;
+
+	if (!g_isi_sb_iter_get_byte(iter, &type, 2))
+		return FALSE;
+
+	if (!g_isi_sb_iter_get_byte(iter, &len, 5))
+		return FALSE;
+
+	if (len > OFONO_MAX_PHONE_NUMBER_LENGTH)
+		return FALSE;
+
+	if (!g_isi_sb_iter_get_alpha_tag(iter, &addr, 2 * len, 6))
+		return FALSE;
+
+	strncpy(number->number, addr, len);
+	number->number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+	number->type = type;
+
+	g_free(addr);
+
+	return TRUE;
 }
 
+static gboolean decode_cug_info(GIsiSubBlockIter *iter, int *index, int *cssu)
+{
+	uint8_t pref;
+	uint8_t access;
+	uint16_t word;
 
-static void isi_callmodem_notif_ind_cb(const GIsiMessage *msg, void *data)
+	if (!g_isi_sb_iter_get_byte(iter, &pref, 2))
+		return FALSE;
+
+	if (!g_isi_sb_iter_get_byte(iter, &access, 3))
+		return FALSE;
+
+	if (!g_isi_sb_iter_get_word(iter, &word, 4))
+		return FALSE;
+
+	DBG("Preferential CUG: 0x%02X", pref);
+	DBG("CUG output access: 0x%02X", access);
+
+	*index = word;
+	*cssu = SS_MO_CUG_CALL;
+
+	return TRUE;
+}
+
+static void notification_ind_cb(const GIsiMessage *msg, void *data)
 {
 	struct ofono_ssn *ssn = data;
-	struct isi_ssn *issn = ofono_ssn_get_data(ssn);
-	struct isi_ssn_prop *ssn_prop = g_try_new0(struct isi_ssn_prop, 1);
-	struct {
-		uint8_t message_id, call_id, sub_blocks;
-	} const *m = data;
-	int cssi = NOT_3GGP_NOTIFICATION;
-	int cssu = NOT_3GGP_NOTIFICATION;
-	GIsiSubBlockIter sb[1];
-	DBG("Received CallServer notification.");
+	struct ssn_data *sd = ofono_ssn_get_data(ssn);
+	GIsiSubBlockIter iter;
 
-	if (g_isi_msg_data_len(msg) < 3)
-		goto out;
+	struct ofono_phone_number number;
+	int index = 0;
+	int cssi = -1;
+	int cssu = -1;
+	uint8_t byte;
 
-	if (issn->client == NULL)
-		goto out;
+	if (ssn == NULL || sd == NULL)
+		return;
 
-	for (g_isi_sb_iter_init(sb, data, (sizeof *m));
-			g_isi_sb_iter_is_valid(sb);
-			g_isi_sb_iter_next(sb)) {
-		switch (g_isi_sb_iter_get_id(sb)) {
+	if (g_isi_msg_id(msg) != CALL_GSM_NOTIFICATION_IND)
+		return;
+
+	if (!g_isi_msg_data_get_byte(msg, 0, &byte))
+		return;
+
+	DBG("Received CallServer notification for call: 0x%02X", byte);
+
+	for (g_isi_sb_iter_init(&iter, msg, 2);
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
+
+		switch (g_isi_sb_iter_get_id(&iter)) {
 		case CALL_GSM_NOTIFY:
-			isi_ssn_call_modem_sb_notify(sb);
+
+			if (!decode_notify(&iter))
+				return;
+
 			break;
+
 		case CALL_GSM_SS_CODE:
-			isi_ssn_call_modem_sb_ss_code(sb, &cssi, &cssu);
+
+			if (!decode_ss_code(&iter, &cssi, &cssu))
+				return;
+
 			break;
+
 		case CALL_GSM_SS_STATUS:
-			isi_ssn_call_modem_sb_ss_status(sb);
+
+			if (!decode_ss_status(&iter))
+				return;
+
 			break;
+
 		case CALL_GSM_SS_NOTIFY:
-			isi_ssn_call_modem_sb_ss_notify(sb, &cssi, &cssu);
+
+			if (!decode_ss_notify(&iter, &cssi, &cssu))
+				return;
+
 			break;
+
 		case CALL_GSM_SS_NOTIFY_INDICATOR:
-			isi_ssn_call_modem_sb_ss_notify_ind(sb, &cssi);
+
+			if (!decode_ss_notify_indicator(&iter, &cssi))
+				return;
+
 			break;
+
 		case CALL_GSM_SS_HOLD_INDICATOR:
-			isi_ssn_call_modem_sb_ss_hold(sb, &cssu);
+
+
+			if (!decode_ss_hold_indicator(&iter, &cssu))
+				return;
+
 			break;
+
 		case CALL_GSM_SS_ECT_INDICATOR:
-			isi_ssn_call_modem_sb_ss_ect_ind(sb, &cssu);
+
+			if (!decode_ss_ect_indicator(&iter, &cssu))
+				return;
+
 			break;
+
 		case CALL_GSM_REMOTE_ADDRESS:
-			isi_cm_sb_rem_address_sb_proc(ssn_prop, sb);
+
+			if (!decode_remote_address(&iter, &number, &index))
+				return;
+
 			break;
+
 		case CALL_GSM_REMOTE_SUBADDRESS:
 			break;
+
 		case CALL_GSM_CUG_INFO:
-			cssu = isi_ssn_call_modem_sb_cug_info(sb, ssn_prop);
+
+			if (!decode_cug_info(&iter, &index, &cssu))
+				return;
+
 			break;
+
 		case CALL_ORIGIN_INFO:
 			break;
-		case CALL_ALERTING_PATTERN:
+
+		case CALL_GSM_ALERTING_PATTERN:
 			break;
+
 		case CALL_ALERTING_INFO:
 			break;
 		}
 	}
 
-	isi_ssn_notify_ofono(ssn, cssi, cssu, ssn_prop);
-out:
-	g_free(ssn_prop);
+	if (cssi != -1)
+		ofono_ssn_cssi_notify(ssn, cssi, index);
+
+	if (cssu != -1)
+		ofono_ssn_cssu_notify(ssn, cssu, index, &number);
 }
 
-static gboolean isi_ssn_register(gpointer user)
+static void reachable_cb(const GIsiMessage *msg, void *data)
 {
-	struct ofono_ssn *ssn = user;
+	struct ofono_ssn *ssn = data;
 	struct ssn_data *sd = ofono_ssn_get_data(ssn);
-	DBG("");
+
+	if (g_isi_msg_error(msg) < 0)
+		return;
+
+	if (sd == NULL)
+		return;
+
+	ISI_VERSION_DBG(msg);
 
 	g_isi_client_ind_subscribe(sd->client, CALL_GSM_NOTIFICATION_IND,
-			isi_callmodem_notif_ind_cb, ssn);
+					notification_ind_cb, ssn);
 
-	ofono_ssn_register(user);
-
-	return FALSE;
+	ofono_ssn_register(ssn);
 }
 
-static void ssn_primary_reachable_cb(const GIsiMessage *msg, void *data)
-{
-	struct ofono_ssn *ssn = data;
-	struct ssn_data *sd = ofono_ssn_get_data(ssn);
-
-	if (g_isi_msg_error(msg) < 0)
-		return;
-
-	if (sd == NULL)
-		return;
-	sd->client = sd->primary;
-	g_isi_client_destroy(sd->secondary);
-
-	ISI_VERSION_DBG(msg);
-
-	g_idle_add(isi_ssn_register, ssn);
-}
-
-static void ssn_secondary_reachable_cb(const GIsiMessage *msg, void *data)
-{
-	struct ofono_ssn *ssn = data;
-	struct ssn_data *sd = ofono_ssn_get_data(ssn);
-
-	if (g_isi_msg_error(msg) < 0)
-		return;
-
-	if (sd == NULL)
-		return;
-
-	sd->client = sd->secondary;
-	g_isi_client_destroy(sd->primary);
-
-	ISI_VERSION_DBG(msg);
-}
-
-static int isi_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
-		void *user)
+static int probe_by_resource(struct ofono_ssn *ssn, uint8_t resource,
+				void *user)
 {
 	GIsiModem *modem = user;
 	struct ssn_data *sd;
@@ -411,27 +440,29 @@ static int isi_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
 	if (sd == NULL)
 		return -ENOMEM;
 
-	sd->primary = g_isi_client_create(modem, PN_MODEM_CALL);
-
-	if (sd->primary == NULL) {
-		g_free(sd);
-		return -ENOMEM;
-	}
-
-	sd->secondary = g_isi_client_create(modem, PN_SS);
-
+	sd->client = g_isi_client_create(modem, resource);
 	if (sd->client == NULL) {
 		g_free(sd);
 		return -ENOMEM;
 	}
 
-	g_isi_client_verify(sd->primary, ssn_primary_reachable_cb, ssn, NULL);
-	g_isi_client_verify(sd->secondary, ssn_secondary_reachable_cb, ssn,
-				NULL);
+	g_isi_client_verify(sd->client, reachable_cb, ssn, NULL);
 
 	ofono_ssn_set_data(ssn, sd);
 
 	return 0;
+}
+
+static int isi_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
+				void *user)
+{
+	return probe_by_resource(ssn, PN_CALL, user);
+}
+
+static int wg_ssn_probe(struct ofono_ssn *ssn, unsigned int vendor,
+				void *user)
+{
+	return probe_by_resource(ssn, PN_MODEM_CALL, user);
 }
 
 static void isi_ssn_remove(struct ofono_ssn *ssn)
@@ -453,12 +484,20 @@ static struct ofono_ssn_driver driver = {
 		.remove			= isi_ssn_remove
 };
 
+static struct ofono_ssn_driver wgdriver = {
+		.name			= "wgmodem2.5",
+		.probe			= wg_ssn_probe,
+		.remove			= isi_ssn_remove
+};
+
 void isi_ssn_init(void)
 {
 	ofono_ssn_driver_register(&driver);
+	ofono_ssn_driver_register(&wgdriver);
 }
 
 void isi_ssn_exit(void)
 {
 	ofono_ssn_driver_unregister(&driver);
+	ofono_ssn_driver_unregister(&wgdriver);
 }
