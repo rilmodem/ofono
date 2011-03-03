@@ -226,22 +226,22 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 		 * zero sub address bytes, and 0 to 3 bytes of filler
 		 */
 	};
-	size_t msg_len = 7 + 6 + numlen * 2 * pad_len;
+	size_t msg_len = 7 + 6 + numlen * 2 + pad_len;
 
-	if (cbd == NULL || fd == NULL || strlen(number->number) > 28)
+	if (cbd == NULL || fd == NULL || numlen > 28)
 		goto error;
 
-	DBG("forwarding type %d class %d\n", type, cls);
+	DBG("forwarding type %d class %d number %s", type, cls, number->number);
 
 	if (ss_code < 0)
 		goto error;
 
-	ucs2 = g_convert(number->number, strlen(number->number), "UCS-2BE",
-				"UTF-8//TRANSLIT", NULL, NULL, NULL);
+	ucs2 = g_convert(number->number, numlen, "UCS-2BE", "UTF-8//TRANSLIT",
+				NULL, NULL, NULL);
 	if (ucs2 == NULL)
 		goto error;
 
-	memcpy((char *) &msg[13], ucs2, strlen(number->number) * 2);
+	memcpy(msg + 13, ucs2, numlen * 2);
 	g_free(ucs2);
 
 	if (g_isi_client_send(fd->client, msg, msg_len, registration_resp_cb,
@@ -296,10 +296,9 @@ static void isi_erasure(struct ofono_call_forwarding *cf, int type, int cls,
 		SS_SERVICE_REQ,
 		SS_ERASURE,
 		SS_GSM_TELEPHONY,
-		ss_code >> 8,	/* Supplementary services code */
-		ss_code & 0xFF,
+		ss_code >> 8, ss_code & 0xFF,
 		SS_SEND_ADDITIONAL_INFO,
-		0		/* Subblock count */
+		0,		/* Subblock count */
 	};
 
 	DBG("forwarding type %d class %d", type, cls);
