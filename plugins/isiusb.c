@@ -405,6 +405,7 @@ static void isiusb_pre_sim(struct ofono_modem *modem)
 	ofono_sim_create(modem, 0, "isimodem", isi->modem);
 	ofono_devinfo_create(modem, 0, "isimodem", isi->modem);
 	ofono_voicecall_create(modem, 0, "isimodem", isi->modem);
+	ofono_voicecall_create(modem, 0, "wgmodem2.5", isi->modem);
 }
 
 static void isiusb_post_sim(struct ofono_modem *modem)
