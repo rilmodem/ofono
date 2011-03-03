@@ -54,6 +54,7 @@
 #include <ofono/radio-settings.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/message-waiting.h>
 
 #include "drivers/isimodem/isimodem.h"
 #include "drivers/isimodem/isiutil.h"
@@ -422,6 +423,7 @@ static void isiusb_post_sim(struct ofono_modem *modem)
 static void isiusb_post_online(struct ofono_modem *modem)
 {
 	struct isi_data *isi = ofono_modem_get_data(modem);
+	struct ofono_message_waiting *mw;
 
 	DBG("(%p) with %s", modem, isi->ifname);
 
@@ -435,6 +437,10 @@ static void isiusb_post_online(struct ofono_modem *modem)
 	ofono_call_barring_create(modem, 0, "isimodem", isi->modem);
 	ofono_call_meter_create(modem, 0, "isimodem", isi->modem);
 	ofono_gprs_create(modem, 0, "isimodem", isi->modem);
+
+	mw = ofono_message_waiting_create(modem);
+	if (mw)
+		ofono_message_waiting_register(mw);
 }
 
 static int isiusb_enable(struct ofono_modem *modem)
