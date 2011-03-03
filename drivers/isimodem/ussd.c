@@ -167,7 +167,7 @@ static void isi_request(struct ofono_ussd *ussd, int dcs,
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 	struct isi_cb_data *cbd = isi_cb_data_new(ussd, cb, data);
 
-	size_t sb_len = (4 + len + 3) & ~3;
+	size_t sb_len = ALIGN4(4 + len);
 	size_t pad_len = sb_len - (4 + len);
 
 	const uint8_t padding[4] = { 0 };
