@@ -46,7 +46,6 @@
 
 struct forw_data {
 	GIsiClient *client;
-	GIsiVersion version;
 };
 
 struct forw_info {
@@ -59,7 +58,6 @@ struct forw_info {
 	uint8_t sublen;		/* Sub-address length */
 	uint8_t filler;
 };
-
 
 static int forw_type_to_isi_code(int type)
 {
@@ -92,13 +90,12 @@ static int forw_type_to_isi_code(int type)
 	return ss_code;
 }
 
-static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid,
-					uint8_t service)
+static gboolean check_resp(const GIsiMessage *msg, uint8_t msgid, uint8_t type)
 {
-	uint8_t type;
+	uint8_t service;
 
 	if (g_isi_msg_error(msg) < 0) {
-		DBG("Error: %s", strerror(-g_isi_msg_error(msg)));
+		DBG("Error: %s", g_isi_msg_strerror(msg));
 		return FALSE;
 	}
 
@@ -108,15 +105,11 @@ static gboolean check_response_status(const GIsiMessage *msg, uint8_t msgid,
 		return FALSE;
 	}
 
-	if (!g_isi_msg_data_get_byte(msg, 0, &type)) {
-		DBG("Truncated message");
+	if (!g_isi_msg_data_get_byte(msg, 0, &service) || service != type) {
+		DBG("Unexpected service type: 0x%02X", service);
 		return FALSE;
 	}
 
-	if (type != service) {
-		DBG("Unexpected service type: 0x%02X", type);
-		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -175,8 +168,7 @@ static void registration_resp_cb(const GIsiMessage *msg, void *data)
 	GIsiSubBlockIter iter;
 	uint8_t status;
 
-	if (!check_response_status(msg, SS_SERVICE_COMPLETED_RESP,
-					SS_REGISTRATION))
+	if (!check_resp(msg, SS_SERVICE_COMPLETED_RESP, SS_REGISTRATION))
 		goto error;
 
 	for (g_isi_sb_iter_init(&iter, msg, 6);
@@ -190,12 +182,10 @@ static void registration_resp_cb(const GIsiMessage *msg, void *data)
 						NULL))
 			goto error;
 
-		if ((status & SS_GSM_ACTIVE) == 0 ||
-				(status & SS_GSM_REGISTERED) == 0)
-			goto error;
-
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-		return;
+		if (status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED)) {
+			CALLBACK_WITH_SUCCESS(cb, cbd->data);
+			return;
+		}
 	}
 
 error:
@@ -210,52 +200,41 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 {
 	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
 	struct isi_cb_data *cbd = isi_cb_data_new(cf, cb, data);
-	int ss_code;
-	int num_filler;
+	int ss_code = forw_type_to_isi_code(type);
+
 	char *ucs2 = NULL;
 
-	unsigned char msg[100] = {
+	size_t numlen = strlen(number->number);
+	size_t sb_len = ALIGN4(6 + 2 * numlen);
+	size_t pad_len = sb_len - (6 + 2 * numlen);
+
+	uint8_t msg[7 + 6 + 28 * 2 + 3] = {
 		SS_SERVICE_REQ,
 		SS_REGISTRATION,
 		SS_GSM_TELEPHONY,
-		0, 0,  /* Supplementary services code */
+		ss_code >> 8, ss_code & 0xFF,
 		SS_SEND_ADDITIONAL_INFO,
-		1,  /* Subblock count */
+		1,	/* Subblock count */
 		SS_FORWARDING,
-		0,  /* Variable subblock length, because of phone number */
+		sb_len,
 		number->type,
-		time,
-		strlen(number->number),
-		0  /* Sub address length */
+		ss_code == SS_GSM_FORW_NO_REPLY ? time : SS_UNDEFINED_TIME,
+		numlen,
+		0,	/* Sub address length */
+		/*
+		 * Followed by number in UCS-2 (no NULL termination),
+		 * zero sub address bytes, and 0 to 3 bytes of filler
+		 */
 	};
-	/* Followed by number in UCS-2, zero sub address bytes, and 0
-	 * to 3 bytes of filler */
-
+	size_t msg_len = 7 + 6 + numlen * 2 * pad_len;
 
 	if (cbd == NULL || fd == NULL || strlen(number->number) > 28)
 		goto error;
 
 	DBG("forwarding type %d class %d\n", type, cls);
 
-	if (fd->version.major == 14 && fd->version.minor >= 1)
-		msg[10] = SS_UNDEFINED_TIME;
-
-	ss_code = forw_type_to_isi_code(type);
 	if (ss_code < 0)
 		goto error;
-
-	msg[3] = ss_code >> 8;
-	msg[4] = ss_code & 0xFF;
-
-	num_filler = (6 + 2 * strlen(number->number)) % 4;
-	if (num_filler != 0)
-		num_filler = 4 - num_filler;
-
-	msg[8]  = 6 + 2 * strlen(number->number) + num_filler;
-
-	/* Time must not be set for any other than NoReply for ISI2.5 */
-	if (ss_code == SS_GSM_FORW_NO_REPLY)
-		msg[10] = time;
 
 	ucs2 = g_convert(number->number, strlen(number->number), "UCS-2BE",
 				"UTF-8//TRANSLIT", NULL, NULL, NULL);
@@ -265,8 +244,8 @@ static void isi_registration(struct ofono_call_forwarding *cf, int type,
 	memcpy((char *) &msg[13], ucs2, strlen(number->number) * 2);
 	g_free(ucs2);
 
-	if (g_isi_client_send(fd->client, msg, 7 + msg[8],
-				registration_resp_cb, cbd, g_free))
+	if (g_isi_client_send(fd->client, msg, msg_len, registration_resp_cb,
+				cbd, g_free))
 		return;
 
 error:
@@ -281,7 +260,7 @@ static void erasure_resp_cb(const GIsiMessage *msg, void *data)
 	GIsiSubBlockIter iter;
 	uint8_t status;
 
-	if (!check_response_status(msg, SS_SERVICE_COMPLETED_RESP, SS_ERASURE))
+	if (!check_resp(msg, SS_SERVICE_COMPLETED_RESP, SS_ERASURE))
 		goto error;
 
 	for (g_isi_sb_iter_init(&iter, msg, 6);
@@ -341,8 +320,6 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 {
 	struct isi_cb_data *cbd = data;
 	ofono_call_forwarding_query_cb_t cb = cbd->cb;
-	struct ofono_call_forwarding *cf = cbd->user;
-	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
 	GIsiSubBlockIter iter;
 
 	struct ofono_call_forwarding_condition list = {
@@ -359,8 +336,7 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 	uint8_t noreply;
 	char *number = NULL;
 
-	if (!check_response_status(msg, SS_SERVICE_COMPLETED_RESP,
-					SS_INTERROGATION))
+	if (!check_resp(msg, SS_SERVICE_COMPLETED_RESP, SS_INTERROGATION))
 		goto error;
 
 	for (g_isi_sb_iter_init(&iter, msg, 6);
@@ -376,14 +352,8 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 						&number))
 			goto error;
 
-		if (fd->version.major == 14 && fd->version.minor >= 1) {
-			list.status = status & (SS_GSM_ACTIVE |
-						SS_GSM_REGISTERED |
-						SS_GSM_PROVISIONED);
-		} else {
-			/* As in 27.007 section 7.11 */
-			list.status = status & SS_GSM_ACTIVE;
-		}
+		list.status = status & (SS_GSM_ACTIVE | SS_GSM_REGISTERED |
+					SS_GSM_PROVISIONED);
 		list.time = noreply;
 		list.phone_number.type = ton | 0x80;
 
@@ -395,8 +365,7 @@ static void query_resp_cb(const GIsiMessage *msg, void *data)
 		g_free(number);
 
 		DBG("forwarding query: %d, %d, %s(%d) - %d sec",
-			list.status, list.cls,
-			list.phone_number.number,
+			list.status, list.cls, list.phone_number.number,
 			list.phone_number.type, list.time);
 	}
 	CALLBACK_WITH_SUCCESS(cb, 1, &list, cbd->data);
@@ -419,10 +388,9 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 		SS_SERVICE_REQ,
 		SS_INTERROGATION,
 		SS_GSM_TELEPHONY,
-		ss_code >> 8,	/* Supplementary services code */
-		ss_code & 0xFF,
+		ss_code >> 8, ss_code & 0xFF,
 		SS_SEND_ADDITIONAL_INFO,
-		0		/* Subblock count */
+		0, /* Subblock count */
 	};
 
 	DBG("forwarding type %d class %d", type, cls);
@@ -430,8 +398,8 @@ static void isi_query(struct ofono_call_forwarding *cf, int type, int cls,
 	if (cbd == NULL || fd == NULL || cls != 7 || ss_code < 0)
 		goto error;
 
-	if (g_isi_client_send(fd->client, msg, sizeof(msg),
-				query_resp_cb, cbd, g_free))
+	if (g_isi_client_send(fd->client, msg, sizeof(msg), query_resp_cb,
+				cbd, g_free))
 		return;
 
 error:
@@ -442,15 +410,11 @@ error:
 static void reachable_cb(const GIsiMessage *msg, void *data)
 {
 	struct ofono_call_forwarding *cf = data;
-	struct forw_data *fd = ofono_call_forwarding_get_data(cf);
 
 	if (g_isi_msg_error(msg) < 0)
 		return;
 
 	ISI_VERSION_DBG(msg);
-
-	fd->version.major = g_isi_msg_version_major(msg);
-	fd->version.minor = g_isi_msg_version_minor(msg);
 
 	ofono_call_forwarding_register(cf);
 }
