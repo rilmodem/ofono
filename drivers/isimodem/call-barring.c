@@ -49,7 +49,7 @@ struct barr_data {
 	GIsiClient *client;
 };
 
-static int lock_code_to_mmi(char const *lock)
+static int lock_code_to_mmi(const char *lock)
 {
 	if (strcmp(lock, "AO") == 0)
 		return SS_GSM_BARR_ALL_OUT;
