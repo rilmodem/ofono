@@ -1,0 +1,101 @@
+Hardware support
+****************
+
+Voice and data modems
+=====================
+
+ - Infineon (IFX)
+
+	Fully supported modem with voice calls, text messaging,
+	supplementary services, data connections, SIM Toolkit  etc.
+
+	Supports multiple GPRS connections with RawIP interface.
+
+ - ST-Ericsson (STE)
+
+	Fully supported modem with voice calls, text messaging,
+	supplementary service, data connections, SIM Toolkit etc.
+
+	Supports multiple GPRS connections via CAIF subsystem.
+
+ - Nokia Phonet/ISI
+
+	Supports majority of phone features used on the N900
+	phone from Nokia.
+
+	Supports multiple GPRS connections via Phonet pipes.
+
+  - Calypso / Openmoko Freerunner
+
+	Fully supported modem with voice calls, text messaging,
+	supplementary services, data connections, SIM Toolkit  etc.
+
+	GPRS connection support is limited due to hardware design.
+
+
+Data only modems
+================
+
+ - Ericsson MBM
+
+	Fully supported data only modem with extra support for
+	text messaging, USSD and SIM Toolkit.
+
+	Support for one high-speed CDC Ethernet GPRS connection
+	and one PPP connection.
+
+	Sony-Ericsson	MD-300
+	Toshiba		F3607gw
+	Lenovo		F3507g and F3607gw
+	Dell		5530, F3607gw and F3307
+
+ - Option HSO
+
+	Fully supported data only modem with extra support for
+	text messaging and USSD.
+
+	Support for one high-speed point-to-point GRPS connection.
+
+ - Huawei
+
+	Support for one PPP based GPRS connection.
+
+	Limited support for text messaging and USSD.
+
+	Modems based on EM770 have voice call support.
+
+ - Novatel
+
+	Support for one PPP based GPRS connection.
+
+	Limited support for text messaging and USSD.
+
+ - ZTE
+
+	Support for one PPP based GPRS connection.
+
+	Limited support for text messaging and USSD.
+
+ - Sierra
+
+	Support for PPP based GPRS connection still work in progress.
+
+	Limited support for text messaging and USSD.
+
+ - Qualcomm Gobi
+
+	No support for GPRS connections.
+
+	Limited support for text messaging and USSD.
+
+
+Other modems
+============
+
+ - Phonesim
+
+	Fully supported emulator for testing.
+
+ - Bluetooth Handsfree
+
+	Special Bluetooth Handsfree client support.
