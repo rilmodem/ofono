@@ -89,7 +89,6 @@ struct isi_voicecall {
 	struct isi_call_req_ctx *queue;
 	struct isi_call calls[8];
 	void *control_req_irc;
-
 };
 
 typedef void isi_call_req_step(struct isi_call_req_ctx *ctx, int reason);
