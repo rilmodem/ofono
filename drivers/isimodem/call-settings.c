@@ -47,7 +47,7 @@ struct settings_data {
 	GIsiClient *client;
 };
 
-static void update_status_mask(uint32_t *mask, int bsc)
+static void update_status_mask(uint32_t *mask, uint8_t bsc)
 {
 	switch (bsc) {
 	case SS_GSM_TELEPHONY:
