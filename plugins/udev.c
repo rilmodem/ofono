@@ -116,22 +116,23 @@ static void add_mbm(struct ofono_modem *modem,
 	DBG("desc: %s", desc);
 
 	registered = ofono_modem_get_integer(modem, "Registered");
-	if (registered != 0)
-		return;
 
-	if (g_str_has_suffix(desc, "Minicard Modem") ||
+	if (registered == 0 &&
+			(g_str_has_suffix(desc, "Minicard Modem") ||
 			g_str_has_suffix(desc, "Minicard Modem 2") ||
 			g_str_has_suffix(desc, "Mini-Card Modem") ||
 			g_str_has_suffix(desc, "Broadband Modem") ||
-			g_str_has_suffix(desc, "Broadband USB Modem")) {
+			g_str_has_suffix(desc, "Broadband USB Modem"))) {
 		devnode = udev_device_get_devnode(udev_device);
+
 		if (ofono_modem_get_string(modem, MODEM_DEVICE) == NULL)
 			ofono_modem_set_string(modem, MODEM_DEVICE, devnode);
 		else
 			ofono_modem_set_string(modem, DATA_DEVICE, devnode);
-	} else if (g_str_has_suffix(desc, "Minicard Data Modem") ||
+	} else if (registered == 0 &&
+			(g_str_has_suffix(desc, "Minicard Data Modem") ||
 			g_str_has_suffix(desc, "Mini-Card Data Modem") ||
-			g_str_has_suffix(desc, "Broadband Data Modem")) {
+			g_str_has_suffix(desc, "Broadband Data Modem"))) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, DATA_DEVICE, devnode);
 	} else if (g_str_has_suffix(desc, "Minicard GPS Port") ||
@@ -139,15 +140,19 @@ static void add_mbm(struct ofono_modem *modem,
 			g_str_has_suffix(desc, "Broadband GPS Port")) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, GPS_DEVICE, devnode);
-	} else if (g_str_has_suffix(desc, "Minicard Network Adapter") ||
+	} else if (registered == 0 &&
+			(g_str_has_suffix(desc, "Minicard Network Adapter") ||
 			g_str_has_suffix(desc, "Mini-Card Network Adapter") ||
 			g_str_has_suffix(desc, "Broadband Network Adapter") ||
-			g_str_has_suffix(desc, "Minicard NetworkAdapter")) {
+			g_str_has_suffix(desc, "Minicard NetworkAdapter"))) {
 		devnode = get_property(udev_device, "INTERFACE");
 		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
 	} else {
 		return;
 	}
+
+	if (registered == 1)
+		return;
 
 	device  = ofono_modem_get_string(modem, MODEM_DEVICE);
 	data = ofono_modem_get_string(modem, DATA_DEVICE);
