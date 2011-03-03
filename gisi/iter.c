@@ -55,6 +55,7 @@ void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 	if (data == NULL)
 		len = used = 0;
 
+	iter->cursor = longhdr ? 4 : 2;
 	iter->start = (uint8_t *)data + used;
 	iter->end = iter->start + len;
 	iter->longhdr = longhdr;
@@ -70,6 +71,7 @@ void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 	if (data == NULL)
 		len = used = 0;
 
+	iter->cursor = 2;
 	iter->start = (uint8_t *)data + used;
 	iter->end = iter->start + len;
 	iter->longhdr = FALSE;
@@ -85,6 +87,7 @@ void g_isi_sb_subiter_init(GIsiSubBlockIter *outer, GIsiSubBlockIter *inner,
 			outer->start + used > outer->end)
 		len = used = 0;
 
+	inner->cursor = 2;
 	inner->start = outer->start + used;
 	inner->end = inner->start + len;
 	inner->longhdr = FALSE;
@@ -101,6 +104,7 @@ void g_isi_sb_subiter_init_full(GIsiSubBlockIter *outer,
 			outer->start + used > outer->end)
 		len = used = 0;
 
+	inner->cursor = longhdr ? 4 : 2;
 	inner->start = outer->start + used;
 	inner->end = inner->start + len;
 	inner->longhdr = longhdr;
@@ -188,6 +192,35 @@ gboolean g_isi_sb_iter_get_dword(const GIsiSubBlockIter *restrict iter,
 	return TRUE;
 }
 
+gboolean g_isi_sb_iter_eat_byte(GIsiSubBlockIter *restrict iter,
+				uint8_t *byte)
+{
+	if (!g_isi_sb_iter_get_byte(iter, byte, iter->cursor))
+		return FALSE;
+
+	iter->cursor += 1;
+	return TRUE;
+}
+gboolean g_isi_sb_iter_eat_word(GIsiSubBlockIter *restrict iter,
+				uint16_t *word)
+{
+	if (!g_isi_sb_iter_get_word(iter, word, iter->cursor))
+		return FALSE;
+
+	iter->cursor += 2;
+	return TRUE;
+}
+
+gboolean g_isi_sb_iter_eat_dword(GIsiSubBlockIter *restrict iter,
+				uint32_t *dword)
+{
+	if (!g_isi_sb_iter_get_dword(iter, dword, iter->cursor))
+		return FALSE;
+
+	iter->cursor += 4;
+	return TRUE;
+}
+
 gboolean g_isi_sb_iter_get_oper_code(const GIsiSubBlockIter *restrict iter,
 					char *mcc, char *mnc, unsigned pos)
 {
@@ -195,6 +228,16 @@ gboolean g_isi_sb_iter_get_oper_code(const GIsiSubBlockIter *restrict iter,
 		return FALSE;
 
 	bcd_to_mccmnc(iter->start + pos, mcc, mnc);
+	return TRUE;
+}
+
+gboolean g_isi_sb_iter_eat_oper_code(GIsiSubBlockIter *restrict iter,
+					char *mcc, char *mnc)
+{
+	if (!g_isi_sb_iter_get_oper_code(iter, mcc, mnc, iter->cursor))
+		return FALSE;
+
+	iter->cursor += 3;
 	return TRUE;
 }
 
@@ -219,6 +262,15 @@ gboolean g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
 	return *utf8 != NULL;
 }
 
+gboolean g_isi_sb_iter_eat_alpha_tag(GIsiSubBlockIter *restrict iter,
+					char **utf8, size_t len)
+{
+	if (!g_isi_sb_iter_get_alpha_tag(iter, utf8, len, iter->cursor))
+		return FALSE;
+
+	iter->cursor += len;
+	return TRUE;
+}
 gboolean g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
 					char **latin, size_t len, unsigned pos)
 {
@@ -243,6 +295,15 @@ gboolean g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
 	return *latin != NULL;
 }
 
+gboolean g_isi_sb_iter_eat_latin_tag(GIsiSubBlockIter *restrict iter,
+					char **latin, size_t len)
+{
+	if (!g_isi_sb_iter_get_latin_tag(iter, latin, len, iter->cursor))
+		return FALSE;
+
+	iter->cursor += len;
+	return TRUE;
+}
 gboolean g_isi_sb_iter_next(GIsiSubBlockIter *iter)
 {
 	uint8_t len = g_isi_sb_iter_get_len(iter);
@@ -256,6 +317,8 @@ gboolean g_isi_sb_iter_next(GIsiSubBlockIter *iter)
 	if (iter->start + len > iter->end)
 		return FALSE;
 
+
+	iter->cursor = iter->longhdr ? 4 : 2;
 	iter->start += len;
 	iter->sub_blocks--;
 

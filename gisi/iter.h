@@ -31,6 +31,7 @@ extern "C" {
 #include "message.h"
 
 struct _GIsiSubBlockIter {
+	uint8_t cursor;
 	uint8_t *start;
 	uint8_t *end;
 	gboolean longhdr;
@@ -63,12 +64,24 @@ gboolean g_isi_sb_iter_get_word(const GIsiSubBlockIter *restrict iter,
 				uint16_t *word, unsigned pos);
 gboolean g_isi_sb_iter_get_dword(const GIsiSubBlockIter *restrict iter,
 					uint32_t *dword, unsigned pos);
+gboolean g_isi_sb_iter_eat_byte(GIsiSubBlockIter *restrict iter,
+				uint8_t *byte);
+gboolean g_isi_sb_iter_eat_word(GIsiSubBlockIter *restrict iter,
+				uint16_t *word);
+gboolean g_isi_sb_iter_eat_dword(GIsiSubBlockIter *restrict iter,
+				uint32_t *dword);
 gboolean g_isi_sb_iter_get_oper_code(const GIsiSubBlockIter *restrict iter,
 					char *mcc, char *mnc, unsigned pos);
+gboolean g_isi_sb_iter_eat_oper_code(GIsiSubBlockIter *restrict iter,
+					char *mcc, char *mnc);
 gboolean g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
 					char **utf8, size_t len, unsigned pos);
+gboolean g_isi_sb_iter_eat_alpha_tag(GIsiSubBlockIter *restrict iter,
+					char **utf8, size_t len);
 gboolean g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
 					char **ascii, size_t len, unsigned pos);
+gboolean g_isi_sb_iter_eat_latin_tag(GIsiSubBlockIter *restrict iter,
+					char **ascii, size_t len);
 gboolean g_isi_sb_iter_get_struct(const GIsiSubBlockIter *restrict iter,
 					void **ptr, size_t len, unsigned pos);
 
