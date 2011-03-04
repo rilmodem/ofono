@@ -15,7 +15,10 @@ def property_changed(name, value):
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
 		print "Usage: %s [modem] <property> <newvalue>" % (sys.argv[0])
-		print "Properties can be: VoiceCallWaiting, HideCallerId"
+		print "Properties can be: VoiceCallWaiting,"
+		print "	ConnectedLineRestriction, CallingLineRestriction,"
+		print "	CallingLinePresentation, CalledLinePresentation,"
+		print "	ConnectedLinePresentation, HideCallerId"
 		sys.exit(1)
 
 	canexit = False
