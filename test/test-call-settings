@@ -14,14 +14,11 @@ def property_changed(name, value):
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		print "Usage: %s <property> <newvalue>" % (sys.argv[0])
+		print "Usage: %s [modem] <property> <newvalue>" % (sys.argv[0])
 		print "Properties can be: VoiceCallWaiting, HideCallerId"
 		sys.exit(1)
 
 	canexit = False
-
-	property = sys.argv[1]
-	newvalue = sys.argv[2]
 
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -31,8 +28,19 @@ if __name__ == "__main__":
 							'org.ofono.Manager')
 
 	modems = manager.GetModems()
+	modem = modems[0][0]
 
-	cs = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
+	if (len(sys.argv) == 4):
+		modem = sys.argv[1]
+		property = sys.argv[2]
+		newvalue = sys.argv[3]
+	else:
+		property = sys.argv[1]
+		newvalue = sys.argv[2]
+
+	print "Using modem %s" % modem
+
+	cs = dbus.Interface(bus.get_object('org.ofono', modem),
 						'org.ofono.CallSettings')
 
 	cs.connect_to_signal("PropertyChanged", property_changed)
