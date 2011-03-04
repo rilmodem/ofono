@@ -166,16 +166,12 @@ static void mbm_location_reporting_enable(struct ofono_location_reporting *lr,
 
 	DBG("lr=%p", lr);
 
-	if (cbd == NULL)
-		goto out;
-
 	cbd->user = lr;
 
 	if (g_at_chat_send(gd->chat, "AT*E2GPSCTL=1,5,1", none_prefix,
 				mbm_e2gpsctl_enable_cb, cbd, g_free) > 0)
 		return;
 
-out:
 	CALLBACK_WITH_FAILURE(cb, -1, data);
 	g_free(cbd);
 }
