@@ -70,6 +70,8 @@ struct voicecall {
 	uint8_t icon_id;
 	gboolean untracked;
 	gboolean dial_result_handled;
+	ofono_bool_t remote_held;
+	ofono_bool_t remote_multiparty;
 };
 
 struct dial_request {
@@ -399,6 +401,12 @@ static void append_voicecall_properties(struct voicecall *v,
 		mpty = FALSE;
 
 	ofono_dbus_dict_append(dict, "Multiparty", DBUS_TYPE_BOOLEAN, &mpty);
+
+	ofono_dbus_dict_append(dict, "RemoteHeld", DBUS_TYPE_BOOLEAN,
+				&v->remote_held);
+
+	ofono_dbus_dict_append(dict, "RemoteMultiparty", DBUS_TYPE_BOOLEAN,
+				&v->remote_multiparty);
 
 	if (v->message)
 		ofono_dbus_dict_append(dict, "Information",
@@ -1869,6 +1877,8 @@ static GDBusMethodTable manager_methods[] = {
 };
 
 static GDBusSignalTable manager_signals[] = {
+	{ "Forwarded",	 	 "s" },
+	{ "BarringActive",	 "s" },
 	{ "PropertyChanged",	"sv" },
 	{ "CallAdded",		"oa{sv}" },
 	{ "CallRemoved",	"o" },
@@ -2682,5 +2692,169 @@ void __ofono_voicecall_tone_cancel(struct ofono_voicecall *vc, int id)
 	if (n == 1 && vc->tone_source) {
 		g_source_remove(vc->tone_source);
 		tone_request_run(vc);
+	}
+}
+
+static void ssn_mt_forwarded_notify(struct ofono_voicecall *vc,
+					unsigned int id, int code,
+					const struct ofono_phone_number *ph)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(vc->atom);
+	char *info = "incoming";
+
+	g_dbus_emit_signal(conn, path, OFONO_VOICECALL_MANAGER_INTERFACE,
+				"Forwarded",
+				DBUS_TYPE_STRING, &info,
+				DBUS_TYPE_INVALID);
+}
+
+static struct voicecall *voicecall_select(struct ofono_voicecall *vc,
+						unsigned int id, int code)
+{
+	struct voicecall *v = NULL;
+	GSList *l;
+
+	if (id != 0) {
+		l = g_slist_find_custom(vc->call_list, GUINT_TO_POINTER(id),
+				call_compare_by_id);
+
+		if (l == NULL)
+			return NULL;
+
+		v = l->data;
+	} else if (g_slist_length(vc->call_list) == 1) {
+		v = vc->call_list->data;
+
+		switch (code) {
+		case SS_MT_VOICECALL_RETRIEVED:
+			if (v->remote_held != TRUE)
+				return NULL;
+			break;
+		case SS_MT_VOICECALL_ON_HOLD:
+			if (v->remote_held == TRUE)
+				return NULL;
+			break;
+		case SS_MT_MULTIPARTY_VOICECALL:
+			if (v->remote_multiparty == TRUE)
+				return NULL;
+			break;
+		default:
+			return NULL;
+		}
+	}
+
+	return v;
+}
+
+static void ssn_mt_remote_held_notify(struct ofono_voicecall *vc,
+					unsigned int id, int code,
+					const struct ofono_phone_number *ph)
+{
+	struct voicecall *v = voicecall_select(vc, id, code);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path;
+
+	if (v == NULL)
+		return;
+
+	if (code == SS_MT_VOICECALL_ON_HOLD)
+		v->remote_held = TRUE;
+	else
+		v->remote_held = FALSE;
+
+	path = voicecall_build_path(vc, v->call);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_VOICECALL_INTERFACE,
+						"RemoteHeld", DBUS_TYPE_BOOLEAN,
+						&v->remote_held);
+}
+
+static void ssn_mt_remote_multiparty_notify(struct ofono_voicecall *vc,
+					unsigned int id, int code,
+					const struct ofono_phone_number *ph)
+{
+	struct voicecall *v = voicecall_select(vc, id, code);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path;
+
+	if (v == NULL)
+		return;
+
+	v->remote_multiparty = TRUE;
+
+	path = voicecall_build_path(vc, v->call);
+
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_VOICECALL_INTERFACE,
+					"RemoteMultiparty", DBUS_TYPE_BOOLEAN,
+					&v->remote_multiparty);
+}
+
+void ofono_voicecall_ssn_mt_notify(struct ofono_voicecall *vc,
+					unsigned int id, int code, int index,
+					const struct ofono_phone_number *ph)
+{
+	switch (code) {
+	case SS_MT_CALL_FORWARDED:
+		ssn_mt_forwarded_notify(vc, id, code, ph);
+		break;
+	case SS_MT_VOICECALL_ON_HOLD:
+		ssn_mt_remote_held_notify(vc, id, code, ph);
+		break;
+	case SS_MT_VOICECALL_RETRIEVED:
+		ssn_mt_remote_held_notify(vc, id, code, ph);
+		break;
+	case SS_MT_MULTIPARTY_VOICECALL:
+		ssn_mt_remote_multiparty_notify(vc, id, code, ph);
+		break;
+	}
+}
+
+static void ssn_mo_call_barred_notify(struct ofono_voicecall *vc,
+					unsigned int id, int code)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(vc->atom);
+	const char *info;
+
+	if (code == SS_MO_INCOMING_BARRING)
+		info = "remote";
+	else
+		info = "local";
+
+	g_dbus_emit_signal(conn, path, OFONO_VOICECALL_MANAGER_INTERFACE,
+				"BarringActive",
+				DBUS_TYPE_STRING, &info,
+				DBUS_TYPE_INVALID);
+}
+
+static void ssn_mo_forwarded_notify(struct ofono_voicecall *vc,
+					unsigned int id, int code)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(vc->atom);
+	char *info = "outgoing";
+
+	g_dbus_emit_signal(conn, path, OFONO_VOICECALL_MANAGER_INTERFACE,
+				"Forwarded",
+				DBUS_TYPE_STRING, &info,
+				DBUS_TYPE_INVALID);
+}
+
+void ofono_voicecall_ssn_mo_notify(struct ofono_voicecall *vc,
+					unsigned int id, int code, int index)
+{
+	switch (code) {
+	case SS_MO_OUTGOING_BARRING:
+		ssn_mo_call_barred_notify(vc, id, code);
+		break;
+	case SS_MO_INCOMING_BARRING:
+		ssn_mo_call_barred_notify(vc, id, code);
+		break;
+	case SS_MO_CALL_FORWARDED:
+		ssn_mo_forwarded_notify(vc, id, code);
+		break;
 	}
 }
