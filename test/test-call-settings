@@ -62,6 +62,10 @@ if __name__ == "__main__":
 
 	print "Setting successful"
 
+	if (properties[property] == newvalue):
+		print "Setting was already set to this value"
+		sys.exit(1);
+
 	canexit = True
 
 	mainloop = gobject.MainLoop()
