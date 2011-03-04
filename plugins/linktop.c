@@ -44,7 +44,6 @@
 #include <ofono/sim.h>
 #include <ofono/cbs.h>
 #include <ofono/sms.h>
-#include <ofono/ssn.h>
 #include <ofono/ussd.h>
 #include <ofono/call-volume.h>
 #include <ofono/voicecall.h>
@@ -313,7 +312,6 @@ static void linktop_post_online(struct ofono_modem *modem)
 	ofono_netreg_create(modem, OFONO_VENDOR_MBM, "atmodem", data->control);
 	ofono_call_meter_create(modem, 0, "atmodem", data->control);
 	ofono_call_barring_create(modem, 0, "atmodem", data->control);
-	ofono_ssn_create(modem, 0, "atmodem", data->control);
 	ofono_call_volume_create(modem, 0, "atmodem", data->control);
 	ofono_cbs_create(modem, 0, "atmodem", data->control);
 

@@ -44,7 +44,6 @@ static int isimodem_init(void)
 	isi_sms_init();
 	isi_cbs_init();
 	isi_sim_init();
-	isi_ssn_init();
 	isi_ussd_init();
 	isi_call_forwarding_init();
 	isi_call_settings_init();
@@ -67,7 +66,6 @@ static void isimodem_exit(void)
 	isi_sms_exit();
 	isi_cbs_exit();
 	isi_sim_exit();
-	isi_ssn_exit();
 	isi_ussd_exit();
 	isi_call_forwarding_exit();
 	isi_call_settings_exit();

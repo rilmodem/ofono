@@ -54,7 +54,6 @@
 #include <ofono/sim.h>
 #include <ofono/stk.h>
 #include <ofono/sms.h>
-#include <ofono/ssn.h>
 #include <ofono/ussd.h>
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
@@ -651,7 +650,6 @@ static void phonesim_post_online(struct ofono_modem *modem)
 
 	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
 	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
-	ofono_ssn_create(modem, 0, "atmodem", data->chat);
 	ofono_call_volume_create(modem, 0, "atmodem", data->chat);
 
 	if (!data->calypso)

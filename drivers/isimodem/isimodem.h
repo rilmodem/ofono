@@ -43,9 +43,6 @@ extern void isi_sim_exit(void);
 extern void isi_ussd_init(void);
 extern void isi_ussd_exit(void);
 
-extern void isi_ssn_init(void);
-extern void isi_ssn_exit(void);
-
 extern void isi_call_forwarding_init(void);
 extern void isi_call_forwarding_exit(void);
 

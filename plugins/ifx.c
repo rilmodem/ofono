@@ -47,7 +47,6 @@
 #include <ofono/call-settings.h>
 #include <ofono/call-volume.h>
 #include <ofono/message-waiting.h>
-#include <ofono/ssn.h>
 #include <ofono/sim.h>
 #include <ofono/cbs.h>
 #include <ofono/sms.h>
@@ -717,7 +716,6 @@ static void ifx_post_online(struct ofono_modem *modem)
 	ofono_cbs_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 
-	ofono_ssn_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_settings_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_barring_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);

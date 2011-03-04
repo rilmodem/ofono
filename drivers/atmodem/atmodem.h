@@ -54,9 +54,6 @@ extern void at_sms_exit(void);
 extern void at_phonebook_init(void);
 extern void at_phonebook_exit(void);
 
-extern void at_ssn_init(void);
-extern void at_ssn_exit(void);
-
 extern void at_devinfo_init(void);
 extern void at_devinfo_exit(void);
 

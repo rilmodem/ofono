@@ -5,7 +5,7 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/dbus.h include/modem.h include/types.h \
 			include/call-barring.h include/call-forwarding.h \
 			include/call-meter.h include/call-settings.h \
-			include/phonebook.h include/ssn.h include/ussd.h \
+			include/phonebook.h include/ussd.h \
 			include/sms.h include/sim.h include/message-waiting.h \
 			include/netreg.h include/voicecall.h include/devinfo.h \
 			include/cbs.h include/call-volume.h \
@@ -126,7 +126,6 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/cbs.c \
 				drivers/isimodem/sim.c \
 				drivers/isimodem/sim.h \
-				drivers/isimodem/ssn.c \
 				drivers/isimodem/ussd.c \
 				drivers/isimodem/call-forwarding.c \
 				drivers/isimodem/call-settings.c \
@@ -172,7 +171,6 @@ builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/voicecall.c \
 				drivers/atmodem/call-barring.c \
 				drivers/atmodem/phonebook.c \
-				drivers/atmodem/ssn.c \
 				drivers/atmodem/devinfo.c \
 				drivers/atmodem/call-volume.c \
 				drivers/atmodem/vendor.h \
@@ -372,7 +370,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/network.c src/voicecall.c src/ussd.c src/sms.c \
 			src/call-settings.c src/call-forwarding.c \
 			src/call-meter.c src/smsutil.h src/smsutil.c \
-			src/ssn.c src/call-barring.c src/sim.c src/stk.c \
+			src/call-barring.c src/sim.c src/stk.c \
 			src/phonebook.c src/history.c src/message-waiting.c \
 			src/simutil.h src/simutil.c src/storage.h \
 			src/storage.c src/cbs.c src/watch.c src/call-volume.c \

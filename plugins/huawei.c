@@ -48,7 +48,6 @@
 #include <ofono/call-forwarding.h>
 #include <ofono/call-settings.h>
 #include <ofono/call-barring.h>
-#include <ofono/ssn.h>
 #include <ofono/phonebook.h>
 #include <ofono/message-waiting.h>
 #include <ofono/log.h>
@@ -681,7 +680,6 @@ static void huawei_post_online(struct ofono_modem *modem)
 		ofono_call_forwarding_create(modem, 0, "atmodem", data->pcui);
 		ofono_call_settings_create(modem, 0, "atmodem", data->pcui);
 		ofono_call_barring_create(modem, 0, "atmodem", data->pcui);
-		ofono_ssn_create(modem, 0, "atmodem", data->pcui);
 
 		mw = ofono_message_waiting_create(modem);
 		if (mw)
