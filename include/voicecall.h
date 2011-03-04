@@ -160,6 +160,12 @@ void ofono_voicecall_set_data(struct ofono_voicecall *vc, void *data);
 void *ofono_voicecall_get_data(struct ofono_voicecall *vc);
 int ofono_voicecall_get_next_callid(struct ofono_voicecall *vc);
 
+void ofono_voicecall_ssn_mo_notify(struct ofono_voicecall *vc, unsigned int id,
+					int code, int index);
+void ofono_voicecall_ssn_mt_notify(struct ofono_voicecall *vc, unsigned int id,
+					int code, int index,
+					const struct ofono_phone_number *ph);
+
 #ifdef __cplusplus
 }
 #endif
