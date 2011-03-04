@@ -56,7 +56,7 @@ void g_isi_sb_iter_init_full(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 		len = used = 0;
 
 	iter->cursor = longhdr ? 4 : 2;
-	iter->start = (uint8_t *)data + used;
+	iter->start = (uint8_t *) data + used;
 	iter->end = iter->start + len;
 	iter->longhdr = longhdr;
 	iter->sub_blocks = len > used ? sub_blocks : 0;
@@ -72,7 +72,7 @@ void g_isi_sb_iter_init(GIsiSubBlockIter *iter, const GIsiMessage *msg,
 		len = used = 0;
 
 	iter->cursor = 2;
-	iter->start = (uint8_t *)data + used;
+	iter->start = (uint8_t *) data + used;
 	iter->end = iter->start + len;
 	iter->longhdr = FALSE;
 	iter->sub_blocks = len > used ? iter->start[-1] : 0;
@@ -147,18 +147,18 @@ size_t g_isi_sb_iter_get_len(const GIsiSubBlockIter *iter)
 gboolean g_isi_sb_iter_get_data(const GIsiSubBlockIter *restrict iter,
 				void **data, unsigned pos)
 {
-	if ((size_t)pos > g_isi_sb_iter_get_len(iter)
+	if ((size_t) pos > g_isi_sb_iter_get_len(iter)
 			|| iter->start + pos > iter->end)
 		return FALSE;
 
-	*data = (void *)iter->start + pos;
+	*data = (void *) iter->start + pos;
 	return TRUE;
 }
 
 gboolean g_isi_sb_iter_get_byte(const GIsiSubBlockIter *restrict iter,
 				uint8_t *byte, unsigned pos)
 {
-	if ((size_t)pos > g_isi_sb_iter_get_len(iter)
+	if ((size_t) pos > g_isi_sb_iter_get_len(iter)
 			|| iter->start + pos > iter->end)
 		return FALSE;
 
@@ -257,8 +257,8 @@ gboolean g_isi_sb_iter_get_alpha_tag(const GIsiSubBlockIter *restrict iter,
 	if (ucs2 + len > iter->end)
 		return FALSE;
 
-	*utf8 = g_convert((const char *)ucs2, len, "UTF-8//TRANSLIT", "UCS-2BE",
-				NULL, NULL, NULL);
+	*utf8 = g_convert((const char *) ucs2, len, "UTF-8//TRANSLIT",
+				"UCS-2BE", NULL, NULL, NULL);
 	return *utf8 != NULL;
 }
 
@@ -290,7 +290,7 @@ gboolean g_isi_sb_iter_get_latin_tag(const GIsiSubBlockIter *restrict iter,
 	if (str + len > iter->end)
 		return FALSE;
 
-	*latin = g_strndup((char *)str, len);
+	*latin = g_strndup((char *) str, len);
 
 	return *latin != NULL;
 }
