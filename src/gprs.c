@@ -256,6 +256,49 @@ static void gprs_cid_release(struct ofono_gprs *gprs, unsigned int id)
 	idmap_put(gprs->cid_map, id);
 }
 
+static gboolean assign_context(struct pri_context *ctx)
+{
+	struct idmap *cidmap = ctx->gprs->cid_map;
+	unsigned int cid_min;
+	GSList *l;
+
+	if (cidmap == NULL)
+		return FALSE;
+
+	cid_min = idmap_get_min(cidmap);
+
+	ctx->context.cid = gprs_cid_alloc(ctx->gprs);
+	if (ctx->context.cid == 0)
+		return FALSE;
+
+	for (l = ctx->gprs->context_drivers; l; l = l->next) {
+		struct ofono_gprs_context *gc = l->data;
+
+		if (gc->inuse == TRUE)
+			continue;
+
+		if (gc->type == OFONO_GPRS_CONTEXT_TYPE_ANY ||
+						gc->type == ctx->type) {
+			ctx->context_driver = gc;
+			ctx->context_driver->inuse = TRUE;
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+static void release_context(struct pri_context *ctx)
+{
+	if (ctx == NULL || ctx->gprs == NULL || ctx->context_driver == NULL)
+		return;
+
+	gprs_cid_release(ctx->gprs, ctx->context.cid);
+	ctx->context.cid = 0;
+	ctx->context_driver->inuse = FALSE;
+	ctx->context_driver = NULL;
+}
+
 static struct pri_context *gprs_context_by_path(struct ofono_gprs *gprs,
 						const char *ctx_path)
 {
@@ -704,12 +747,7 @@ static void pri_activate_callback(const struct ofono_error *error,
 				telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&ctx->pending,
 					__ofono_error_failed(ctx->pending));
-
-		gprs_cid_release(ctx->gprs, ctx->context.cid);
-		ctx->context.cid = 0;
-		ctx->context_driver->inuse = FALSE;
-		ctx->context_driver = NULL;
-
+		release_context(ctx);
 		return;
 	}
 
@@ -745,11 +783,8 @@ static void pri_deactivate_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	gprs_cid_release(ctx->gprs, ctx->context.cid);
-	ctx->context.cid = 0;
+	release_context(ctx);
 	ctx->active = FALSE;
-	ctx->context_driver->inuse = FALSE;
-	ctx->context_driver = NULL;
 
 	__ofono_dbus_pending_reply(&ctx->pending,
 				dbus_message_new_method_return(ctx->pending));
@@ -994,38 +1029,6 @@ static DBusMessage *pri_set_message_center(struct pri_context *ctx,
 				"MessageCenter", DBUS_TYPE_STRING, &center);
 
 	return NULL;
-}
-
-static gboolean assign_context(struct pri_context *ctx)
-{
-	struct idmap *cidmap = ctx->gprs->cid_map;
-	unsigned int cid_min;
-	GSList *l;
-
-	if (cidmap == NULL)
-		return FALSE;
-
-	cid_min = idmap_get_min(cidmap);
-
-	ctx->context.cid = gprs_cid_alloc(ctx->gprs);
-	if (ctx->context.cid == 0)
-		return FALSE;
-
-	for (l = ctx->gprs->context_drivers; l; l = l->next) {
-		struct ofono_gprs_context *gc = l->data;
-
-		if (gc->inuse == TRUE)
-			continue;
-
-		if (gc->type == OFONO_GPRS_CONTEXT_TYPE_ANY ||
-						gc->type == ctx->type) {
-			ctx->context_driver = gc;
-			ctx->context_driver->inuse = TRUE;
-			return TRUE;
-		}
-	}
-
-	return FALSE;
 }
 
 static DBusMessage *pri_set_property(DBusConnection *conn,
@@ -1345,14 +1348,9 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 			if (ctx->active == FALSE)
 				continue;
 
-			gprs_cid_release(gprs, ctx->context.cid);
-			ctx->context.cid = 0;
+			release_context(ctx);
 			ctx->active = FALSE;
-			ctx->context_driver->inuse = FALSE;
-			ctx->context_driver = NULL;
-
 			pri_reset_context_settings(ctx);
-
 			value = FALSE;
 			ofono_dbus_signal_property_changed(conn, ctx->path,
 					OFONO_CONNECTION_CONTEXT_INTERFACE,
@@ -1737,10 +1735,7 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 		return;
 	}
 
-	gprs_cid_release(gprs, ctx->context.cid);
-	ctx->context.cid = 0;
-	ctx->context_driver->inuse = FALSE;
-	ctx->context_driver = NULL;
+	release_context(ctx);
 
 	if (gprs->settings) {
 		g_key_file_remove_group(gprs->settings, ctx->key, NULL);
@@ -1832,12 +1827,9 @@ static void gprs_deactivate_for_all(const struct ofono_error *error,
 		return;
 	}
 
-	gprs_cid_release(gprs, ctx->context.cid);
-	ctx->active = FALSE;
-	ctx->context.cid = 0;
-	ctx->context_driver->inuse = FALSE;
-	ctx->context_driver = NULL;
+	release_context(ctx);
 
+	ctx->active = FALSE;
 	pri_reset_context_settings(ctx);
 
 	value = ctx->active;
@@ -2088,11 +2080,8 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 		if (ctx->active == FALSE)
 			break;
 
-		gprs_cid_release(ctx->gprs, ctx->context.cid);
-		ctx->context.cid = 0;
+		release_context(ctx);
 		ctx->active = FALSE;
-		ctx->context_driver->inuse = FALSE;
-		ctx->context_driver = NULL;
 
 		pri_reset_context_settings(ctx);
 
