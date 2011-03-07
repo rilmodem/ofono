@@ -70,10 +70,7 @@ struct gprs_context_data {
 	gboolean have_e2ipcfg;
 	unsigned int enap_source;
 	enum mbm_state mbm_state;
-	union {
-		ofono_gprs_context_cb_t down_cb;        /* Down callback */
-		ofono_gprs_context_up_cb_t up_cb;       /* Up callback */
-	};
+	ofono_gprs_context_cb_t cb;
 	void *cb_data;                                  /* Callback data */
 	int enap;                                   /* State of the call */
 };
@@ -141,11 +138,19 @@ out:
 	ofono_info("IP: %s  Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns[0], dns[1]);
 
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, success, ip,
-					STATIC_IP_NETMASK, gateway,
-					success ? dns : NULL, gcd->cb_data);
+	ofono_gprs_context_set_interface(gc, interface);
+
+	if (success) {
+		ofono_gprs_context_set_ipv4_address(gc, ip, TRUE);
+		ofono_gprs_context_set_ipv4_netmask(gc, STATIC_IP_NETMASK);
+		ofono_gprs_context_set_ipv4_dns_servers(gc, dns);
+	} else
+		ofono_gprs_context_set_ipv4_address(gc, NULL, FALSE);
+
+	CALLBACK_WITH_SUCCESS(gcd->cb, gcd->cb_data);
+
 	gcd->mbm_state = MBM_NONE;
-	gcd->up_cb = NULL;
+	gcd->cb = NULL;
 	gcd->cb_data = NULL;
 }
 
@@ -169,11 +174,14 @@ static void mbm_get_ip_details(struct ofono_gprs_context *gc)
 
 	modem = ofono_gprs_context_get_modem(gc);
 	interface = ofono_modem_get_string(modem, "NetworkInterface");
-	CALLBACK_WITH_SUCCESS(gcd->up_cb, interface, FALSE, NULL, NULL,
-			NULL, NULL, gcd->cb_data);
+
+	ofono_gprs_context_set_interface(gc, interface);
+	ofono_gprs_context_set_ipv4_address(gc, NULL, FALSE);
+
+	CALLBACK_WITH_SUCCESS(gcd->cb, gcd->cb_data);
 
 	gcd->mbm_state = MBM_NONE;
-	gcd->up_cb = NULL;
+	gcd->cb = NULL;
 	gcd->cb_data = NULL;
 }
 
@@ -191,12 +199,11 @@ static void mbm_state_changed(struct ofono_gprs_context *gc, int state)
 		DBG("disconnected");
 
 		if (gcd->mbm_state == MBM_DISABLING) {
-			CALLBACK_WITH_SUCCESS(gcd->down_cb, gcd->cb_data);
-			gcd->down_cb = NULL;
+			CALLBACK_WITH_SUCCESS(gcd->cb, gcd->cb_data);
+			gcd->cb = NULL;
 		} else if (gcd->mbm_state == MBM_ENABLING) {
-			CALLBACK_WITH_FAILURE(gcd->up_cb, NULL, 0, NULL, NULL,
-						NULL, NULL, gcd->cb_data);
-			gcd->up_cb = NULL;
+			CALLBACK_WITH_FAILURE(gcd->cb, gcd->cb_data);
+			gcd->cb = NULL;
 		} else {
 			ofono_gprs_context_deactivated(gc, gcd->active_context);
 		}
@@ -275,7 +282,7 @@ static void at_enap_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	/* Now we have to wait for the unsolicited notification to arrive */
 	if (ok && gcd->enap != 0) {
 		gcd->mbm_state = MBM_DISABLING;
-		gcd->down_cb = cb;
+		gcd->cb = cb;
 		gcd->cb_data = cbd->data;
 
 		if (gcd->have_e2nap == FALSE)
@@ -292,7 +299,7 @@ static void at_enap_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 static void mbm_enap_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_gprs_context_up_cb_t cb = cbd->cb;
+	ofono_gprs_context_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
@@ -301,7 +308,7 @@ static void mbm_enap_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (ok) {
 		gcd->mbm_state = MBM_ENABLING;
-		gcd->up_cb = cb;
+		gcd->cb = cb;
 		gcd->cb_data = cbd->data;
 
 		if (gcd->have_e2nap == FALSE)
@@ -314,13 +321,13 @@ static void mbm_enap_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	gcd->active_context = 0;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, NULL, FALSE, NULL, NULL, NULL, NULL, cbd->data);
+	cb(&error, cbd->data);
 }
 
 static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_gprs_context_up_cb_t cb = cbd->cb;
+	ofono_gprs_context_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *ncbd;
@@ -334,7 +341,7 @@ static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		gcd->active_context = 0;
 
 		decode_at_error(&error, g_at_result_final_response(result));
-		cb(&error, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
+		cb(&error, cbd->data);
 		return;
 	}
 
@@ -350,17 +357,21 @@ static void mbm_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	gcd->active_context = 0;
 
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
 static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 				const struct ofono_gprs_primary_context *ctx,
-				ofono_gprs_context_up_cb_t cb, void *data)
+				ofono_gprs_context_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[AUTH_BUF_LENGTH];
 	int len;
+
+	/* IPv6 support not implemented */
+	if (ctx->proto != OFONO_GPRS_PROTO_IP)
+		goto error;
 
 	DBG("cid %u", ctx->cid);
 
@@ -393,7 +404,7 @@ static void mbm_gprs_activate_primary(struct ofono_gprs_context *gc,
 error:
 	g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, data);
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void mbm_gprs_deactivate_primary(struct ofono_gprs_context *gc,
