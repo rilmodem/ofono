@@ -176,7 +176,7 @@ static void ste_eppsd_down_cb(gboolean ok, GAtResult *result,
 static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_gprs_context_up_cb_t cb = cbd->cb;
+	ofono_gprs_context_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	GAtResultIter iter;
@@ -192,7 +192,7 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		gcd->active_context = 0;
 		decode_at_error(&error, g_at_result_final_response(result));
-		cb(&error, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
+		cb(&error, cbd->data);
 		return;
 	}
 
@@ -221,9 +221,12 @@ static void ste_eppsd_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	dns[1] = rsp.dns_server2;
 	dns[2] = NULL;
 
-	CALLBACK_WITH_SUCCESS(cb, gcd->interface, TRUE, rsp.ip_address,
-				rsp.subnet_mask, NULL,
-				dns, cbd->data);
+	ofono_gprs_context_set_interface(gc, gcd->interface);
+	ofono_gprs_context_set_ipv4_address(gc, rsp.ip_address, TRUE);
+	ofono_gprs_context_set_ipv4_netmask(gc, rsp.subnet_mask);
+	ofono_gprs_context_set_ipv4_dns_servers(gc, dns);
+
+	CALLBACK_WITH_SUCCESS(cb, cbd->data);
 	return;
 
 error:
@@ -233,13 +236,13 @@ error:
 		g_markup_parse_context_free(context);
 
 	gcd->active_context = 0;
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
 static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_gprs_context_up_cb_t cb = cbd->cb;
+	ofono_gprs_context_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *ncbd;
@@ -250,7 +253,7 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 		gcd->active_context = 0;
 		decode_at_error(&error, g_at_result_final_response(result));
-		cb(&error, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
+		cb(&error, cbd->data);
 		return;
 	}
 
@@ -265,17 +268,21 @@ static void ste_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_free(ncbd);
 	gcd->active_context = 0;
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, cbd->data);
+	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
 static void ste_gprs_activate_primary(struct ofono_gprs_context *gc,
 				const struct ofono_gprs_primary_context *ctx,
-				ofono_gprs_context_up_cb_t cb, void *data)
+				ofono_gprs_context_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[AUTH_BUF_LENGTH];
 	int len;
+
+	/* IPv6 support not implemented */
+	if (ctx->proto != OFONO_GPRS_PROTO_IP)
+		goto error;
 
 	gcd->active_context = ctx->cid;
 	cbd->user = gc;
@@ -311,7 +318,7 @@ error:
 	gcd->active_context = 0;
 	g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, data);
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void ste_gprs_deactivate_primary(struct ofono_gprs_context *gc,
