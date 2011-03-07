@@ -82,14 +82,17 @@ struct gprs_context_data {
 static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	ofono_gprs_context_up_cb_t cb = cbd->cb;
+	ofono_gprs_context_cb_t cb = cbd->cb;
 	struct ofono_gprs_context *gc = cbd->user;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct ofono_error error;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, ok ? gcd->interface : NULL, FALSE,
-			NULL, NULL, NULL, NULL, cbd->data);
+
+	if (ok)
+		ofono_gprs_context_set_interface(gc, gcd->interface);
+
+	cb(&error, cbd->data);
 }
 
 static void at_cgact_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -104,16 +107,31 @@ static void at_cgact_down_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 static void phonesim_activate_primary(struct ofono_gprs_context *gc,
 				const struct ofono_gprs_primary_context *ctx,
-				ofono_gprs_context_up_cb_t cb, void *data)
+				ofono_gprs_context_cb_t cb, void *data)
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[OFONO_GPRS_MAX_APN_LENGTH + 128];
-	int len;
+	int len = 0;
 
 	cbd->user = gc;
 
-	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+	switch (ctx->proto) {
+	case OFONO_GPRS_PROTO_IP:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"",
+				ctx->cid);
+		break;
+
+	case OFONO_GPRS_PROTO_IPV6:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IPV6\"",
+				ctx->cid);
+		break;
+
+	case OFONO_GPRS_PROTO_IPV4V6:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IPV4V6\"",
+				ctx->cid);
+		break;
+	}
 
 	if (ctx->apn)
 		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
@@ -131,7 +149,7 @@ static void phonesim_activate_primary(struct ofono_gprs_context *gc,
 error:
 	g_free(cbd);
 
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, NULL, NULL, NULL, NULL, data);
+	CALLBACK_WITH_FAILURE(cb, data);
 }
 
 static void phonesim_deactivate_primary(struct ofono_gprs_context *gc,
