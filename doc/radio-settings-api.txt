@@ -43,7 +43,7 @@ Properties	string TechnologyPreference [readwrite]
 					availability.
 				"gsm"	Only GSM used for radio access.
 				"umts"	Only UMTS used for radio access.
-				"lte"	Only LTE used for radio acccess.
+				"lte"	Only LTE used for radio access.
 
 		string GsmBand [readwrite, optional]
 
