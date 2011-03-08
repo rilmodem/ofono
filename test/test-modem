@@ -24,6 +24,9 @@ if __name__ == "__main__":
 
 	properties = modem.GetProperties()
 
+	if properties.has_key('Name'):
+		print "Name: %s" % (properties['Name'])
+
 	if properties.has_key('Manufacturer'):
 		print "Manufacturer: %s" % (properties['Manufacturer'])
 
@@ -35,6 +38,28 @@ if __name__ == "__main__":
 
 	if properties.has_key('Serial'):
 		print "Serial: %s" % (properties['Serial'])
+
+	if properties.has_key('Powered'):
+		print "Powered: %s" % (properties['Powered'])
+
+	if properties.has_key('Online'):
+		print "Online: %s" % (properties['Online'])
+
+	if properties.has_key('Lockdown'):
+		print "Lockdown: %s" % (properties['Lockdown'])
+
+	if properties.has_key('Emergency'):
+		print "Emergency: %s" % (properties['Emergency'])
+
+	if properties.has_key('Features'):
+		print "Features:"
+		for feature in properties["Features"]:
+			print "    [ %s ]" % (feature)
+
+	if properties.has_key('Interfaces'):
+		print "Interfaces:"
+		for interface in properties["Interfaces"]:
+			print "    [ %s ]" % (interface)
 
 	mainloop = gobject.MainLoop()
 	mainloop.run()
