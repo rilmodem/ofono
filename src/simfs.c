@@ -166,21 +166,23 @@ void sim_fs_context_free(struct ofono_sim_context *context)
 	int n = 0;
 	struct sim_fs_op *op;
 
-	while ((op = g_queue_peek_nth(fs->op_q, n)) != NULL) {
-		if (op->context != context) {
-			n += 1;
-			continue;
+	if (fs->op_q) {
+		while ((op = g_queue_peek_nth(fs->op_q, n)) != NULL) {
+			if (op->context != context) {
+				n += 1;
+				continue;
+			}
+
+			if (n == 0) {
+				op->cb = NULL;
+
+				n += 1;
+				continue;
+			}
+
+			sim_fs_op_free(op);
+			g_queue_remove(fs->op_q, op);
 		}
-
-		if (n == 0) {
-			op->cb = NULL;
-
-			n += 1;
-			continue;
-		}
-
-		sim_fs_op_free(op);
-		g_queue_remove(fs->op_q, op);
 	}
 
 	if (context->file_watches)
