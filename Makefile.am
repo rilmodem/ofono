@@ -499,7 +499,8 @@ test_scripts = test/backtrace \
 		test/cdma-hangup \
 		test/disable-call-forwarding \
 		test/list-messages \
-		test/test-sms
+		test/test-sms \
+		test/test-message-waiting
 
 if TEST
 testdir = $(pkglibdir)/test

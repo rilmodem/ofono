@@ -1,0 +1,40 @@
+#!/usr/bin/python
+
+import gobject
+import sys
+import dbus
+import dbus.mainloop.glib
+
+def mw_property_changed(name, value):
+	if name == 'VoicemailMessageCount':
+		print "MessageWaiting property: '%s' changed to '%d'" %\
+			(name,value)
+	else:
+		print "MessageWaiting property: '%s' changed to '%s'" %\
+			(name,value)
+
+if __name__ == "__main__":
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+	bus = dbus.SystemBus()
+
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+			'org.ofono.Manager')
+
+	modems = manager.GetModems()
+
+	mw = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
+			'org.ofono.MessageWaiting')
+
+	mw.connect_to_signal("PropertyChanged", mw_property_changed)
+
+	properties = mw.GetProperties()
+
+	print "Voicemail waiting: %s" % (properties['VoicemailWaiting'])
+	print "Voicemail message count: %d" %\
+		(properties['VoicemailMessageCount'])
+	print "Voicemail mailbox number: %s" %\
+		(properties['VoicemailMailboxNumber'])
+
+	mainloop = gobject.MainLoop()
+	mainloop.run()
