@@ -469,10 +469,7 @@ static void huawei_disconnect(gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
-	DBG("");
-
-	if (data->gc)
-		ofono_gprs_context_remove(data->gc);
+	DBG("data->gc %p", data->gc);
 
 	g_at_chat_unref(data->modem);
 	data->modem = NULL;
@@ -483,6 +480,12 @@ static void huawei_disconnect(gpointer user_data)
 
 	g_at_chat_set_disconnect_function(data->modem,
 						huawei_disconnect, modem);
+
+	/* gprs_context has been destructed and needs not reopen */
+	if (data->gc == NULL)
+		return;
+
+	ofono_gprs_context_remove(data->gc);
 
 	if (data->sim_state == HUAWEI_SIM_STATE_VALID ||
 			data->sim_state == HUAWEI_SIM_STATE_INVALID_CS) {
@@ -582,11 +585,27 @@ static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_error error;
 
-	if (ok)
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	else
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
+}
+
+static void set_offline_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	if (ok) {
+		struct huawei_data *data = cbd->user;
+
+		data->gc = NULL;
+		data->gprs = NULL;
+	}
+
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
 }
 
 static void huawei_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -599,7 +618,11 @@ static void huawei_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
-	if (g_at_chat_send(chat, command, NULL, set_online_cb, cbd, g_free))
+	cbd->user = data;
+
+	if (g_at_chat_send(chat, command, NULL,
+				online ? set_online_cb : set_offline_cb,
+				cbd, g_free))
 		return;
 
 	g_free(cbd);
