@@ -195,7 +195,7 @@ Properties	boolean Active [readwrite]
 		string Protocol [readwrite]
 
 			Holds the protocol for this context.  Valid values
-			are: "ip" and "ipv6".
+			are: "ip", "ipv6" and "dual".
 
 		string Name [readwrite]
 
