@@ -37,6 +37,7 @@ struct ofono_gprs_context;
 enum ofono_gprs_proto {
 	OFONO_GPRS_PROTO_IP = 0,
 	OFONO_GPRS_PROTO_IPV6,
+	OFONO_GPRS_PROTO_IPV4V6,
 };
 
 enum ofono_gprs_context_type {
