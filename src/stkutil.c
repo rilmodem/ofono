@@ -309,7 +309,7 @@ static gboolean parse_dataobj_alpha_id(struct comprehension_tlv_iter *iter,
 
 	len = comprehension_tlv_iter_get_length(iter);
 	if (len == 0) {
-		*alpha_id = g_try_malloc0(1);
+		*alpha_id = NULL;
 		return TRUE;
 	}
 
