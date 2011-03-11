@@ -492,6 +492,14 @@ GPRS
   suspended while a circuit switched service such as voice call or SMS is
   active.
 
+Location Reporting
+==================
+
+- GPS support. Many modem manufacturers provide a GPS unit with their modem
+  hardware.  Upon client request oFono can turn this unit on or off and pass a
+  file descriptor in which client may receive the desired location reporting
+  data.
+
 SIM
 ===
 
