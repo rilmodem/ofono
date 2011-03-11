@@ -24,13 +24,16 @@ for path, properties in modems:
 		print "    [ %s ]" % (path)
 
 		for key in properties.keys():
-			if key in ["Settings"]:
+			if key in ["Settings"] or key in ["IPv6.Settings"]:
 				val = "{"
 				for i in properties[key].keys():
 					val += " " + i + "="
 					if i in ["DomainNameServers"]:
 						for n in properties[key][i]:
 							val += n + ","
+					elif i in ["PrefixLength"]:
+						p = int(properties[key][i])
+						val += str(p)
 					else:
 						val += properties[key][i]
 				val += " }"
