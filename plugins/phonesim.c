@@ -77,6 +77,7 @@ struct phonesim_data {
 struct gprs_context_data {
 	GAtChat *chat;
 	char *interface;
+	enum ofono_gprs_proto proto;
 };
 
 static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -89,9 +90,22 @@ static void at_cgact_up_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (ok)
-		ofono_gprs_context_set_interface(gc, gcd->interface);
+	if (ok == FALSE)
+		goto done;
 
+	ofono_gprs_context_set_interface(gc, gcd->interface);
+
+	if (gcd->proto == OFONO_GPRS_PROTO_IP ||
+			gcd->proto == OFONO_GPRS_PROTO_IPV4V6)
+		ofono_gprs_context_set_ipv4_address(gc, NULL, FALSE);
+
+	if (gcd->proto == OFONO_GPRS_PROTO_IPV6 ||
+			gcd->proto == OFONO_GPRS_PROTO_IPV4V6) {
+		ofono_gprs_context_set_ipv6_address(gc, "fe80::1");
+		ofono_gprs_context_set_ipv6_prefix_length(gc, 10);
+	}
+
+done:
 	cb(&error, cbd->data);
 }
 
@@ -115,6 +129,7 @@ static void phonesim_activate_primary(struct ofono_gprs_context *gc,
 	int len = 0;
 
 	cbd->user = gc;
+	gcd->proto = ctx->proto;
 
 	switch (ctx->proto) {
 	case OFONO_GPRS_PROTO_IP:
