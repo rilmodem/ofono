@@ -172,10 +172,10 @@ static void at_cpbr_notify(GAtResult *result, gpointer user_data)
 			continue;
 		}
 
-		g_at_result_iter_next_number(&iter, &hidden);
+		g_at_result_iter_next_number_default(&iter, 0, &hidden);
 		parse_text(&iter, &group, current);
 		g_at_result_iter_next_string(&iter, &adnumber);
-		g_at_result_iter_next_number(&iter, &adtype);
+		g_at_result_iter_next_number_default(&iter, 0, &adtype);
 		parse_text(&iter, &secondtext, current);
 		parse_text(&iter, &email, current);
 		parse_text(&iter, &sip_uri, current);
