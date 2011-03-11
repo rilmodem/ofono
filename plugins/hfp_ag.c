@@ -110,11 +110,9 @@ static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 		return;
 
 	fd = g_io_channel_unix_get_fd(io);
-	ofono_emulator_register(em, fd);
-
 	g_io_channel_set_close_on_unref(io, FALSE);
 
-	return;
+	ofono_emulator_register(em, fd);
 }
 
 static void voicecall_watch(struct ofono_atom *atom,
