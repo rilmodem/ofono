@@ -255,6 +255,32 @@ Properties	boolean Active [readwrite]
 				via this proxy.  All other values are left
 				out in this case.
 
+		dict IPv6.Settings [readonly, optional]
+
+			Holds all the IPv6 network settings
+
+			string Interface [readonly, optional]
+
+				Holds the interface of the network interface
+				used by this context (e.g. "ppp0" "usb0")
+
+			string Address [readonly, optional]
+
+				Holds the IP address for this context.
+
+			byte PrefixLength [readonly, optional]
+
+				Holds the prefix length.
+
+			array{string} DomainNameServers [readonly, optional]
+
+				Holds the list of domain name servers for this
+				context.
+
+			string Gateway [readonly, optional]
+
+				Holds the gateway IP for this connection.
+
 		string MessageProxy [readwrite, MMS only]
 
 			Holds the MMS Proxy setting.
