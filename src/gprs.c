@@ -100,15 +100,6 @@ struct ofono_gprs {
 	struct ofono_sim_context *sim_context;
 };
 
-struct ofono_gprs_context {
-	struct ofono_gprs *gprs;
-	enum ofono_gprs_context_type type;
-	ofono_bool_t inuse;
-	const struct ofono_gprs_context_driver *driver;
-	void *driver_data;
-	struct ofono_atom *atom;
-};
-
 struct context_settings {
 	enum ofono_gprs_context_type type;
 	char *interface;
@@ -120,6 +111,16 @@ struct context_settings {
 	char *proxy;
 };
 
+struct ofono_gprs_context {
+	struct ofono_gprs *gprs;
+	enum ofono_gprs_context_type type;
+	ofono_bool_t inuse;
+	const struct ofono_gprs_context_driver *driver;
+	void *driver_data;
+	struct context_settings *settings;
+	struct ofono_atom *atom;
+};
+
 struct pri_context {
 	ofono_bool_t active;
 	enum ofono_gprs_context_type type;
@@ -129,7 +130,6 @@ struct pri_context {
 	unsigned int id;
 	char *path;
 	char *key;
-	struct context_settings *settings;
 	char *proxy_host;
 	uint16_t proxy_port;
 	DBusMessage *pending;
@@ -419,6 +419,7 @@ static void pri_context_signal_settings(struct pri_context *ctx)
 	DBusMessage *signal;
 	DBusMessageIter iter;
 	const char *prop = "Settings";
+	struct context_settings *settings;
 
 	signal = dbus_message_new_signal(path,
 					OFONO_CONNECTION_CONTEXT_INTERFACE,
@@ -431,7 +432,12 @@ static void pri_context_signal_settings(struct pri_context *ctx)
 
 	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &prop);
 
-	context_settings_append_variant(ctx->settings, &iter);
+	if (ctx->context_driver)
+		settings = ctx->context_driver->settings;
+	else
+		settings = NULL;
+
+	context_settings_append_variant(settings, &iter);
 
 	g_dbus_send_message(conn, signal);
 }
@@ -604,14 +610,14 @@ static void pri_reset_context_settings(struct pri_context *ctx)
 {
 	char *interface;
 
-	if (ctx->settings == NULL)
+	if (ctx->context_driver == NULL)
 		return;
 
-	interface = ctx->settings->interface;
-	ctx->settings->interface = NULL;
+	interface = ctx->context_driver->settings->interface;
+	ctx->context_driver->settings->interface = NULL;
 
-	context_settings_free(ctx->settings);
-	ctx->settings = NULL;
+	context_settings_free(ctx->context_driver->settings);
+	ctx->context_driver->settings = NULL;
 
 	pri_context_signal_settings(ctx);
 
@@ -634,24 +640,26 @@ static void pri_update_context_settings(struct pri_context *ctx,
 					const char *ip, const char *netmask,
 					const char *gateway, const char **dns)
 {
-	if (ctx->settings)
-		context_settings_free(ctx->settings);
+	struct ofono_gprs_context *gc = ctx->context_driver;
 
-	ctx->settings = g_try_new0(struct context_settings, 1);
-	if (ctx->settings == NULL)
+	if (gc->settings != NULL)
+		context_settings_free(gc->settings);
+
+	gc->settings = g_try_new0(struct context_settings, 1);
+	if (gc->settings == NULL)
 		return;
 
-	ctx->settings->type = ctx->type;
+	gc->settings->type = ctx->type;
 
-	ctx->settings->interface = g_strdup(interface);
-	ctx->settings->static_ip = static_ip;
-	ctx->settings->ip = g_strdup(ip);
-	ctx->settings->netmask = g_strdup(netmask);
-	ctx->settings->gateway = g_strdup(gateway);
-	ctx->settings->dns = g_strdupv((char **)dns);
+	gc->settings->interface = g_strdup(interface);
+	gc->settings->static_ip = static_ip;
+	gc->settings->ip = g_strdup(ip);
+	gc->settings->netmask = g_strdup(netmask);
+	gc->settings->gateway = g_strdup(gateway);
+	gc->settings->dns = g_strdupv((char **)dns);
 
 	if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS && ctx->message_proxy)
-		ctx->settings->proxy = g_strdup(ctx->message_proxy);
+		gc->settings->proxy = g_strdup(ctx->message_proxy);
 
 	pri_ifupdown(interface, TRUE);
 
@@ -677,6 +685,7 @@ static void append_context_properties(struct pri_context *ctx,
 	const char *name = ctx->name;
 	dbus_bool_t value;
 	const char *strvalue;
+	struct context_settings *settings;
 
 	ofono_dbus_dict_append(dict, "Name", DBUS_TYPE_STRING, &name);
 
@@ -709,7 +718,12 @@ static void append_context_properties(struct pri_context *ctx,
 					DBUS_TYPE_STRING, &strvalue);
 	}
 
-	context_settings_append_dict(ctx->settings, dict);
+	if (ctx->context_driver)
+		settings = ctx->context_driver->settings;
+	else
+		settings = NULL;
+
+	context_settings_append_dict(settings, dict);
 }
 
 static DBusMessage *pri_get_properties(DBusConnection *conn,
@@ -1216,15 +1230,8 @@ static void pri_context_destroy(gpointer userdata)
 {
 	struct pri_context *ctx = userdata;
 
-	if (ctx->settings) {
-		context_settings_free(ctx->settings);
-		ctx->settings = NULL;
-	}
-
 	g_free(ctx->proxy_host);
-
 	g_free(ctx->path);
-
 	g_free(ctx);
 }
 
@@ -2028,6 +2035,11 @@ static void gprs_context_unregister(struct ofono_atom *atom)
 
 	if (gc->gprs == NULL)
 		return;
+
+	if (gc->settings) {
+		context_settings_free(gc->settings);
+		gc->settings = NULL;
+	}
 
 	gc->gprs->context_drivers = g_slist_remove(gc->gprs->context_drivers,
 							gc);
