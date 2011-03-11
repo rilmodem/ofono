@@ -1776,15 +1776,15 @@ static void call_verify_cb(const GIsiMessage *msg, void *data)
 	g_isi_client_ind_subscribe(ivc->client, CALL_TERMINATED_IND,
 					isi_call_terminated_ind_cb, ovc);
 
+	g_isi_client_ind_subscribe(ivc->client, CALL_GSM_NOTIFICATION_IND,
+					notification_ind_cb, ovc);
+
 	if (!isi_call_status_req(ovc, CALL_ID_ALL,
 					CALL_STATUS_MODE_ADDR_AND_ORIGIN,
 					NULL, NULL))
 		DBG("Failed to request call status");
 
 	ofono_voicecall_register(ovc);
-
-	g_isi_client_ind_subscribe(ivc->client, CALL_GSM_NOTIFICATION_IND,
-					notification_ind_cb, ovc);
 }
 
 static int probe_by_resource(struct ofono_voicecall *ovc, uint8_t resource,
