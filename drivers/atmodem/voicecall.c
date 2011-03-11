@@ -992,7 +992,7 @@ static void cssu_notify(GAtResult *result, gpointer user_data)
 	struct ofono_voicecall *vc = user_data;
 	GAtResultIter iter;
 	int code;
-	int index = -1;
+	int index;
 	const char *num;
 	struct ofono_phone_number ph;
 
@@ -1007,9 +1007,7 @@ static void cssu_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &code))
 		return;
 
-	/* This field is optional, if we can't read it, try to skip it */
-	if (!g_at_result_iter_next_number(&iter, &index) &&
-			!g_at_result_iter_skip_next(&iter))
+	if (!g_at_result_iter_next_number_default(&iter, -1, &index))
 		goto out;
 
 	if (!g_at_result_iter_next_string(&iter, &num))
@@ -1068,13 +1066,13 @@ static void at_voicecall_initialized(gboolean ok, GAtResult *result,
 				no_answer_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "BUSY", busy_notify, FALSE, vc, NULL);
 
+	g_at_chat_register(vd->chat, "+CSSI:", cssi_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+CSSU:", cssu_notify, FALSE, vc, NULL);
+
 	ofono_voicecall_register(vc);
 
 	/* Populate the call list */
 	g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix, clcc_cb, vc, NULL);
-
-	g_at_chat_register(vd->chat, "+CSSI:", cssi_notify, FALSE, vc, NULL);
-	g_at_chat_register(vd->chat, "+CSSU:", cssu_notify, FALSE, vc, NULL);
 }
 
 static int at_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
