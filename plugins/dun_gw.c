@@ -101,7 +101,7 @@ static void dun_gw_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 	}
 
 	fd = g_io_channel_unix_get_fd(io);
-	g_io_channel_set_close_on_unref(io, TRUE);
+	g_io_channel_set_close_on_unref(io, FALSE);
 
 	ofono_emulator_register(em, fd);
 }
