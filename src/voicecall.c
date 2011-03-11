@@ -2710,59 +2710,40 @@ static void ssn_mt_forwarded_notify(struct ofono_voicecall *vc,
 }
 
 static struct voicecall *voicecall_select(struct ofono_voicecall *vc,
-						unsigned int id, int code)
+						unsigned int id)
 {
-	struct voicecall *v = NULL;
-	GSList *l;
-
 	if (id != 0) {
-		l = g_slist_find_custom(vc->call_list, GUINT_TO_POINTER(id),
-				call_compare_by_id);
+		GSList *l = g_slist_find_custom(vc->call_list,
+						GUINT_TO_POINTER(id),
+						call_compare_by_id);
 
 		if (l == NULL)
 			return NULL;
 
-		v = l->data;
-	} else if (g_slist_length(vc->call_list) == 1) {
-		v = vc->call_list->data;
-
-		switch (code) {
-		case SS_MT_VOICECALL_RETRIEVED:
-			if (v->remote_held != TRUE)
-				return NULL;
-			break;
-		case SS_MT_VOICECALL_ON_HOLD:
-			if (v->remote_held == TRUE)
-				return NULL;
-			break;
-		case SS_MT_MULTIPARTY_VOICECALL:
-			if (v->remote_multiparty == TRUE)
-				return NULL;
-			break;
-		default:
-			return NULL;
-		}
+		return l->data;
 	}
 
-	return v;
+	if (g_slist_length(vc->call_list) == 1)
+		return vc->call_list->data;
+
+	return NULL;
 }
 
 static void ssn_mt_remote_held_notify(struct ofono_voicecall *vc,
-					unsigned int id, int code,
+					unsigned int id, gboolean held,
 					const struct ofono_phone_number *ph)
 {
-	struct voicecall *v = voicecall_select(vc, id, code);
+	struct voicecall *v = voicecall_select(vc, id);
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 
 	if (v == NULL)
 		return;
 
-	if (code == SS_MT_VOICECALL_ON_HOLD)
-		v->remote_held = TRUE;
-	else
-		v->remote_held = FALSE;
+	if (v->remote_held == held)
+		return;
 
+	v->remote_held = held;
 	path = voicecall_build_path(vc, v->call);
 
 	ofono_dbus_signal_property_changed(conn, path,
@@ -2772,14 +2753,17 @@ static void ssn_mt_remote_held_notify(struct ofono_voicecall *vc,
 }
 
 static void ssn_mt_remote_multiparty_notify(struct ofono_voicecall *vc,
-					unsigned int id, int code,
+					unsigned int id,
 					const struct ofono_phone_number *ph)
 {
-	struct voicecall *v = voicecall_select(vc, id, code);
+	struct voicecall *v = voicecall_select(vc, id);
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path;
 
 	if (v == NULL)
+		return;
+
+	if (v->remote_multiparty == TRUE)
 		return;
 
 	v->remote_multiparty = TRUE;
@@ -2801,13 +2785,13 @@ void ofono_voicecall_ssn_mt_notify(struct ofono_voicecall *vc,
 		ssn_mt_forwarded_notify(vc, id, code, ph);
 		break;
 	case SS_MT_VOICECALL_ON_HOLD:
-		ssn_mt_remote_held_notify(vc, id, code, ph);
+		ssn_mt_remote_held_notify(vc, id, TRUE, ph);
 		break;
 	case SS_MT_VOICECALL_RETRIEVED:
-		ssn_mt_remote_held_notify(vc, id, code, ph);
+		ssn_mt_remote_held_notify(vc, id, FALSE, ph);
 		break;
 	case SS_MT_MULTIPARTY_VOICECALL:
-		ssn_mt_remote_multiparty_notify(vc, id, code, ph);
+		ssn_mt_remote_multiparty_notify(vc, id, ph);
 		break;
 	}
 }
@@ -2848,8 +2832,6 @@ void ofono_voicecall_ssn_mo_notify(struct ofono_voicecall *vc,
 {
 	switch (code) {
 	case SS_MO_OUTGOING_BARRING:
-		ssn_mo_call_barred_notify(vc, id, code);
-		break;
 	case SS_MO_INCOMING_BARRING:
 		ssn_mo_call_barred_notify(vc, id, code);
 		break;
