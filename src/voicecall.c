@@ -1877,8 +1877,8 @@ static GDBusMethodTable manager_methods[] = {
 };
 
 static GDBusSignalTable manager_signals[] = {
-	{ "Forwarded",	 	 "s" },
-	{ "BarringActive",	 "s" },
+	{ "Forwarded",		"s" },
+	{ "BarringActive",	"s" },
 	{ "PropertyChanged",	"sv" },
 	{ "CallAdded",		"oa{sv}" },
 	{ "CallRemoved",	"o" },
