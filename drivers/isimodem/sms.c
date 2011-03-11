@@ -292,7 +292,7 @@ static void isi_sca_set(struct ofono_sms *sms,
 		{ &sd->params, sizeof(sd->params) },
 	};
 
-	if (cbd == NULL || sd == NULL)
+	if (cbd == NULL || sd == NULL || sd->sim == NULL)
 		goto error;
 
 	bcd = sd->params.sca;
