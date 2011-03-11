@@ -59,10 +59,6 @@ struct ofono_gprs_primary_context {
 
 typedef void (*ofono_gprs_context_cb_t)(const struct ofono_error *error,
 					void *data);
-typedef void (*ofono_gprs_context_up_cb_t)(const struct ofono_error *error,
-				const char *interface, ofono_bool_t static_ip,
-				const char *address, const char *netmask,
-				const char *gw, const char **dns, void *data);
 
 struct ofono_gprs_context_driver {
 	const char *name;
@@ -71,7 +67,7 @@ struct ofono_gprs_context_driver {
 	void (*remove)(struct ofono_gprs_context *gc);
 	void (*activate_primary)(struct ofono_gprs_context *gc,
 				const struct ofono_gprs_primary_context *ctx,
-				ofono_gprs_context_up_cb_t cb, void *data);
+				ofono_gprs_context_cb_t cb, void *data);
 	void (*deactivate_primary)(struct ofono_gprs_context *gc,
 					unsigned int id,
 					ofono_gprs_context_cb_t cb, void *data);
@@ -96,6 +92,27 @@ struct ofono_modem *ofono_gprs_context_get_modem(struct ofono_gprs_context *gc);
 void ofono_gprs_context_set_type(struct ofono_gprs_context *gc,
 					enum ofono_gprs_context_type type);
 
+void ofono_gprs_context_set_interface(struct ofono_gprs_context *gc,
+					const char *interface);
+
+void ofono_gprs_context_set_ipv4_address(struct ofono_gprs_context *gc,
+						const char *address,
+						gboolean static_ip);
+void ofono_gprs_context_set_ipv4_netmask(struct ofono_gprs_context *gc,
+						const char *netmask);
+void ofono_gprs_context_set_ipv4_gateway(struct ofono_gprs_context *gc,
+						const char *gateway);
+void ofono_gprs_context_set_ipv4_dns_servers(struct ofono_gprs_context *gc,
+						const char **dns);
+
+void ofono_gprs_context_set_ipv6_address(struct ofono_gprs_context *gc,
+						const char *address);
+void ofono_gprs_context_set_ipv6_prefix_length(struct ofono_gprs_context *gc,
+						unsigned char length);
+void ofono_gprs_context_set_ipv6_gateway(struct ofono_gprs_context *gc,
+						const char *gateway);
+void ofono_gprs_context_set_ipv6_dns_servers(struct ofono_gprs_context *gc,
+						const char **dns);
 #ifdef __cplusplus
 }
 #endif
