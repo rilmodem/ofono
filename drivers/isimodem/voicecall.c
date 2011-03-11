@@ -1010,57 +1010,48 @@ static void notification_ind_cb(const GIsiMessage *msg, void *data)
 
 		switch (g_isi_sb_iter_get_id(&iter)) {
 		case CALL_GSM_NOTIFY:
-
 			if (!decode_notify(&iter))
 				return;
 
 			break;
 
 		case CALL_GSM_SS_CODE:
-
 			if (!decode_ss_code(&iter, &cssi, &cssu))
 				return;
 
 			break;
 
 		case CALL_GSM_SS_STATUS:
-
 			if (!decode_ss_status(&iter))
 				return;
 
 			break;
 
 		case CALL_GSM_SS_NOTIFY:
-
 			if (!decode_ss_notify(&iter, &cssi, &cssu))
 				return;
 
 			break;
 
 		case CALL_GSM_SS_NOTIFY_INDICATOR:
-
 			if (!decode_ss_notify_indicator(&iter, &cssi))
 				return;
 
 			break;
 
 		case CALL_GSM_SS_HOLD_INDICATOR:
-
-
 			if (!decode_ss_hold_indicator(&iter, &cssu))
 				return;
 
 			break;
 
 		case CALL_GSM_SS_ECT_INDICATOR:
-
 			if (!decode_ss_ect_indicator(&iter, &cssu))
 				return;
 
 			break;
 
 		case CALL_GSM_REMOTE_ADDRESS:
-
 			if (!decode_remote_address(&iter, &number, &index))
 				return;
 
@@ -1070,7 +1061,6 @@ static void notification_ind_cb(const GIsiMessage *msg, void *data)
 			break;
 
 		case CALL_GSM_CUG_INFO:
-
 			if (!decode_cug_info(&iter, &index, &cssu))
 				return;
 
