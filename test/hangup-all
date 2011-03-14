@@ -9,9 +9,12 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 						'org.ofono.Manager')
 
 modems = manager.GetModems()
-path = modems[0][0]
+modem = modems[0][0]
 
-manager = dbus.Interface(bus.get_object('org.ofono', path),
+if (len(sys.argv) == 2):
+	modem = sys.argv[1]
+
+manager = dbus.Interface(bus.get_object('org.ofono', modem),
 						'org.ofono.VoiceCallManager')
 
 manager.HangupAll()
