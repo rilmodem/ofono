@@ -50,10 +50,10 @@ def message_delivery_report(sms, value):
 
 	except dbus.DBusException, e:
 		if value == 1:
-		      print "Unable to activate Delivery Reports - FAIL"
+			print "Unable to activate Delivery Reports - FAIL"
 
 		if value == 0:
-		      print "Unable to deactivate Delivery Reports - FAIL"
+			print "Unable to deactivate Delivery Reports - FAIL"
 
 def message_service_center_address(sms, value):
 	try:
@@ -72,7 +72,8 @@ def message_send(sms, number, value):
 	sms.SendMessage(dbus.String(number), value)
 
 def property_changed(property, value):
-	print "[1]:Message Manager property %s changed to %s" % (property, value)
+	print "[1]:Message Manager property %s changed to %s" %\
+			(property, value)
 	print "[1]:press ENTER"
 
 def immediate_message(property, value):
@@ -114,10 +115,12 @@ def print_sms_properties(sms):
 	print "---------------------PROPERTIES----------------------------"
 	for p in properties:
 		if len(properties[p].__str__()) > 0:
-			print "%s Message Manager rule is: %s" % (p, properties[p])
-			print "-----------------------------------------------------------"
+			print "%s Message Manager rule is: %s" %\
+					(p, properties[p])
+			print "------------------------------------------" \
+				"-----------------"
 			if p == "ServiceCenterAddress":
-			    SCA = properties[p]
+				SCA = properties[p]
 		else:
 			print "%s Message Manager rule disabled" % (p)
 
@@ -149,43 +152,50 @@ def stdin_handler(fd, condition, sms, value, number):
 			message_delivery_report(sms, 1)
 			send_msg = raw_input('Send test message[y/n]?: ')
 			if send_msg == 'y':
-				message_send(sms, number, ("(1)"+value+": UseDeliveryReports[TRUE]"))
+				message_send(sms, number, ("(1)" + value +
+						": UseDeliveryReports[TRUE]"))
 
 		elif in_key == '2':
 			message_delivery_report(sms, 0)
 			send_msg = raw_input('Send test message[y/n]?: ')
 			if send_msg == 'y':
-				message_send(sms, number, ("(2) "+value+": UseDeliveryReports[FALSE]"))
+				message_send(sms, number, ("(2) " + value +
+						": UseDeliveryReports[FALSE]"))
 
 		elif in_key == '3':
 			message_service_center_address(sms, SCA)
 			send_msg = raw_input('Send test message[y/n]?: ')
 			if send_msg == 'y':
-				message_send(sms, number, ("(3) "+value+": ServiceCenterAddress"))
+				message_send(sms, number, ("(3) " + value +
+						": ServiceCenterAddress"))
 
 		elif in_key == '4':
 			message_bearer(sms, "ps-only")
 			send_msg = raw_input('Send test message[y/n]?: ')
 			if send_msg == 'y':
-				message_send(sms, number, ("(4) "+value+": Bearer[ps-only]"))
+				message_send(sms, number, ("(4) " + value +
+						": Bearer[ps-only]"))
 
 		elif in_key == '5':
 			message_bearer(sms, "cs-only")
 			send_msg = raw_input('Send test message[y/n]?: ')
 			if send_msg == 'y':
-				message_send(sms, number, ("(5) "+value+": Bearer[cs-only]"))
+				message_send(sms, number, ("(5) " + value +
+						": Bearer[cs-only]"))
 
 		elif in_key == '6':
 			message_bearer(sms, "ps-preferred")
 			send_msg = raw_input('Send test message[y/n]?: ')
 			if send_msg == 'y':
-				message_send(sms, number, ("(6) "+value+": Bearer[ps-preferred]"))
+				message_send(sms, number, ("(6) " + value +
+						": Bearer[ps-preferred]"))
 
 		elif in_key == '7':
 			message_bearer(sms, "cs-preferred")
 			send_msg = raw_input('Send test message[y/n]?: ')
 			if send_msg == 'y':
-				message_send(sms,number, ("(7) "+value+": Bearer[cs-preferred]"))
+				message_send(sms,number, ("(7) " + value +
+						": Bearer[cs-preferred]"))
 
 		elif in_key == 'x':
 			sys.exit(1)
@@ -226,6 +236,7 @@ if __name__ == "__main__":
 	print_sms_properties(sms)
 	print_menu()
 
-	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler, sms, value, number)
+	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler,
+				sms, value, number)
 	mainloop = gobject.MainLoop()
 	mainloop.run()
