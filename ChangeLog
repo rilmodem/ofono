@@ -1,3 +1,14 @@
+ver 0.45:
+	Fix issue with SIM Toolkit null data object.
+	Fix issue with SIM filesystem and modem release.
+	Fix issue with disconnect handling and Huawei modems.
+	Add support for improved SSN and voicecall handling.
+	Add support for SIM Toolkit Refresh handled by the modem.
+	Add support for multiple AT channels and STE modems.
+	Add support for ISI drivers and wgmodem2.5 handling.
+	Add support for optimized ringbuffer operations.
+	Add support for optimized PPP buffer management.
+
 ver 0.44:
 	Fix issue with presence detection of Bluetooth daemon.
 	Fix issue with HDLC processing and PPP server.
