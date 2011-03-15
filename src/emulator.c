@@ -73,108 +73,108 @@ static void emulator_disconnect(gpointer user_data)
 }
 
 static void ppp_connect(const char *iface, const char *local,
-                       const char *remote,
-                       const char *dns1, const char *dns2,
-                       gpointer user_data)
+			const char *remote,
+			const char *dns1, const char *dns2,
+			gpointer user_data)
 {
-       DBG("Network Device: %s\n", iface);
-       DBG("IP Address: %s\n", local);
-       DBG("Remote IP Address: %s\n", remote);
-       DBG("Primary DNS Server: %s\n", dns1);
-       DBG("Secondary DNS Server: %s\n", dns2);
+	DBG("Network Device: %s\n", iface);
+	DBG("IP Address: %s\n", local);
+	DBG("Remote IP Address: %s\n", remote);
+	DBG("Primary DNS Server: %s\n", dns1);
+	DBG("Secondary DNS Server: %s\n", dns2);
 }
 
 static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 {
-       struct ofono_emulator *em = user_data;
+	struct ofono_emulator *em = user_data;
 
-       DBG("");
+	DBG("");
 
-       g_at_ppp_unref(em->ppp);
-       em->ppp = NULL;
+	g_at_ppp_unref(em->ppp);
+	em->ppp = NULL;
 
-       if (em->server == NULL)
-               return;
+	if (em->server == NULL)
+		return;
 
-       g_at_server_resume(em->server);
+	g_at_server_resume(em->server);
 }
 
 static gboolean setup_ppp(gpointer user_data)
 {
-       struct ofono_emulator *em = user_data;
-       GAtIO *io;
+	struct ofono_emulator *em = user_data;
+	GAtIO *io;
 
-       DBG("");
+	DBG("");
 
-       em->source = 0;
+	em->source = 0;
 
-       io = g_at_server_get_io(em->server);
+	io = g_at_server_get_io(em->server);
 
-       g_at_server_suspend(em->server);
+	g_at_server_suspend(em->server);
 
-       em->ppp = g_at_ppp_server_new_from_io(io, DUN_SERVER_ADDRESS);
-       if (em->ppp == NULL) {
-               g_at_server_resume(em->server);
-               return FALSE;
-       }
+	em->ppp = g_at_ppp_server_new_from_io(io, DUN_SERVER_ADDRESS);
+	if (em->ppp == NULL) {
+		g_at_server_resume(em->server);
+		return FALSE;
+	}
 
-       g_at_ppp_set_server_info(em->ppp, DUN_PEER_ADDRESS,
-                                       DUN_DNS_SERVER_1, DUN_DNS_SERVER_2);
+	g_at_ppp_set_server_info(em->ppp, DUN_PEER_ADDRESS,
+					DUN_DNS_SERVER_1, DUN_DNS_SERVER_2);
 
-       g_at_ppp_set_credentials(em->ppp, "", "");
-       g_at_ppp_set_debug(em->ppp, emulator_debug, "PPP");
+	g_at_ppp_set_credentials(em->ppp, "", "");
+	g_at_ppp_set_debug(em->ppp, emulator_debug, "PPP");
 
-       g_at_ppp_set_connect_function(em->ppp, ppp_connect, em);
-       g_at_ppp_set_disconnect_function(em->ppp, ppp_disconnect, em);
+	g_at_ppp_set_connect_function(em->ppp, ppp_connect, em);
+	g_at_ppp_set_disconnect_function(em->ppp, ppp_disconnect, em);
 
-       return FALSE;
+	return FALSE;
 }
 
 static gboolean dial_call(struct ofono_emulator *em, const char *dial_str)
 {
-       char c = *dial_str;
+	char c = *dial_str;
 
-       DBG("dial call %s", dial_str);
+	DBG("dial call %s", dial_str);
 
-       if (c == '*' || c == '#' || c == 'T' || c == 't') {
-               g_at_server_send_intermediate(em->server, "CONNECT");
-               em->source = g_idle_add(setup_ppp, em);
-       }
+	if (c == '*' || c == '#' || c == 'T' || c == 't') {
+		g_at_server_send_intermediate(em->server, "CONNECT");
+		em->source = g_idle_add(setup_ppp, em);
+	}
 
-       return TRUE;
+	return TRUE;
 }
 
 static void dial_cb(GAtServer *server, GAtServerRequestType type,
 				GAtResult *result, gpointer user_data)
 {
-       struct ofono_emulator *em = user_data;
-       GAtResultIter iter;
-       const char *dial_str;
+	struct ofono_emulator *em = user_data;
+	GAtResultIter iter;
+	const char *dial_str;
 
-       DBG("");
+	DBG("");
 
-       if (type != G_AT_SERVER_REQUEST_TYPE_SET)
-               goto error;
+	if (type != G_AT_SERVER_REQUEST_TYPE_SET)
+		goto error;
 
-       g_at_result_iter_init(&iter, result);
+	g_at_result_iter_init(&iter, result);
 
-       if (!g_at_result_iter_next(&iter, ""))
-               goto error;
+	if (!g_at_result_iter_next(&iter, ""))
+		goto error;
 
-       dial_str = g_at_result_iter_raw_line(&iter);
-       if (!dial_str)
-               goto error;
+	dial_str = g_at_result_iter_raw_line(&iter);
+	if (!dial_str)
+		goto error;
 
-       if (em->ppp)
-               goto error;
+	if (em->ppp)
+		goto error;
 
-       if (!dial_call(em, dial_str))
-               goto error;
+	if (!dial_call(em, dial_str))
+		goto error;
 
-       return;
+	return;
 
 error:
-       g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
+	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
 }
 
 static void brsf_cb(GAtServer *server, GAtServerRequestType type,
