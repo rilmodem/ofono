@@ -1285,14 +1285,15 @@ static void sim_efimg_read_cb(int ok, int length, int record,
 
 	if (sim->efimg == NULL) {
 		sim->efimg = g_try_malloc0(num_records * 9);
-
 		if (sim->efimg == NULL)
 			return;
 
 		sim->iidf_watch_ids = g_try_new0(unsigned int, num_records);
-
-		if (sim->iidf_watch_ids == NULL)
+		if (sim->iidf_watch_ids == NULL) {
+			g_free(sim->efimg);
+			sim->efimg = NULL;
 			return;
+		}
 
 		sim->efimg_length = num_records * 9;
 	}
