@@ -1396,7 +1396,19 @@ static void request_confirmation_cb(enum stk_agent_result result,
 		break;
 
 	case STK_AGENT_RESULT_TIMEOUT:
-		send_simple_response(stk, STK_RESULT_TYPE_NO_RESPONSE);
+		memset(&rsp, 0, sizeof(rsp));
+
+		rsp.result.type = STK_RESULT_TYPE_NO_RESPONSE;
+
+		if (cmd->duration.interval) {
+			rsp.get_inkey.duration.unit = cmd->duration.unit;
+			set_get_inkey_duration(&rsp.get_inkey.duration,
+						&stk->get_inkey_start_ts);
+		}
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&error, stk);
+
 		break;
 
 	case STK_AGENT_RESULT_TERMINATE:
@@ -1439,7 +1451,19 @@ static void request_key_cb(enum stk_agent_result result, char *string,
 		break;
 
 	case STK_AGENT_RESULT_TIMEOUT:
-		send_simple_response(stk, STK_RESULT_TYPE_NO_RESPONSE);
+		memset(&rsp, 0, sizeof(rsp));
+
+		rsp.result.type = STK_RESULT_TYPE_NO_RESPONSE;
+
+		if (cmd->duration.interval) {
+			rsp.get_inkey.duration.unit = cmd->duration.unit;
+			set_get_inkey_duration(&rsp.get_inkey.duration,
+						&stk->get_inkey_start_ts);
+		}
+
+		if (stk_respond(stk, &rsp, stk_command_cb))
+			stk_command_cb(&error, stk);
+
 		break;
 
 	case STK_AGENT_RESULT_TERMINATE:
