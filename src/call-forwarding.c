@@ -1279,6 +1279,9 @@ static void sim_cfis_read_cb(int ok, int total_length, int record,
 
 	cf->cfis_record_id = record;
 
+	if (cf->flags & CALL_FORWARDING_FLAG_CACHED)
+		return;
+
 	/*
 	 * For now we only support Voice, although Fax & all Data
 	 * basic services are applicable as well.
@@ -1343,6 +1346,9 @@ static void sim_cphs_cff_read_cb(int ok, int total_length, int record,
 
 	cf->flags |= CALL_FORWARDING_FLAG_CPHS_CFF;
 
+	if (cf->flags & CALL_FORWARDING_FLAG_CACHED)
+		return;
+
 	/*
 	 * For now we only support Voice, although Fax & all Data
 	 * basic services are applicable as well.
@@ -1362,6 +1368,9 @@ static void sim_cfis_changed(int id, void *userdata)
 {
 	struct ofono_call_forwarding *cf = userdata;
 
+	if (cf->flags & CALL_FORWARDING_FLAG_CACHED)
+		goto done;
+
 	if (((cf->flags & CALL_FORWARDING_FLAG_CPHS_CFF) ||
 			cf->cfis_record_id > 0) && is_cfu_enabled(cf, NULL)) {
 		DBusConnection *conn = ofono_dbus_get_connection();
@@ -1374,6 +1383,7 @@ static void sim_cfis_changed(int id, void *userdata)
 					DBUS_TYPE_BOOLEAN, &status);
 	}
 
+done:
 	cf->cfis_record_id = 0;
 	cf->flags &= ~CALL_FORWARDING_FLAG_CPHS_CFF;
 
