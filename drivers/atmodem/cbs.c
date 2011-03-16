@@ -68,8 +68,8 @@ static void at_cbm_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &pdulen))
 		return;
 
-	if (pdulen > 88) {
-		ofono_error("Got a CBM message bigger than maximum size!");
+	if (pdulen != 88) {
+		ofono_error("Got a CBM message with invalid PDU size!");
 		return;
 	}
 
