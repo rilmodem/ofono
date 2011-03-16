@@ -51,11 +51,11 @@ struct ring_buffer *ring_buffer_new(unsigned int size)
 	if (real_size > MAX_SIZE)
 		return NULL;
 
-	buffer = g_try_new(struct ring_buffer, 1);
+	buffer = g_slice_new(struct ring_buffer);
 	if (buffer == NULL)
 		return NULL;
 
-	buffer->buffer = g_try_new(unsigned char, real_size);
+	buffer->buffer = g_slice_alloc(real_size);
 	if (buffer->buffer == NULL) {
 		g_free(buffer);
 		return NULL;
@@ -202,6 +202,6 @@ void ring_buffer_free(struct ring_buffer *buf)
 	if (buf == NULL)
 		return;
 
-	g_free(buf->buffer);
-	g_free(buf);
+	g_slice_free1(buf->size, buf->buffer);
+	g_slice_free1(sizeof(struct ring_buffer), buf);
 }
