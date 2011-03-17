@@ -504,7 +504,9 @@ test_scripts = test/backtrace \
 		test/disable-call-forwarding \
 		test/list-messages \
 		test/test-sms \
-		test/test-message-waiting
+		test/test-message-waiting \
+		test/cdma-connman-disable \
+		test/cdma-connman-enable
 
 if TEST
 testdir = $(pkglibdir)/test
