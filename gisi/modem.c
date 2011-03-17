@@ -252,11 +252,11 @@ static void common_message_decode(GIsiServiceMux *mux, GIsiMessage *msg)
 		}
 		/* fall through */
 
-	case 0x00:
+	default:
 		/*
 		 * PN_SIM doesn't support ISI version, but sends a
-		 * 0x00 message as a response.  Work around this modem
-		 * wart.
+		 * garbage message as a response. Work around this
+		 * modem wart.
 		 */
 		mux->object = g_isi_msg_object(msg);
 		mux->version_pending = FALSE;
