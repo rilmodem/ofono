@@ -47,6 +47,7 @@
 #define SETTINGS_GROUP "Settings"
 
 #define TXQ_MAX_RETRIES 4
+#define NETWORK_TIMEOUT 332
 
 static gboolean tx_next(gpointer user_data);
 
@@ -629,6 +630,11 @@ static void tx_finished(const struct ofono_error *error, int mr, void *data)
 		/* Note this does not increment retry count */
 		if (sms->registered == FALSE)
 			return;
+
+		/* Retry done only for Network Timeout failure */
+		if (error->type == OFONO_ERROR_TYPE_CMS &&
+				error->error != NETWORK_TIMEOUT)
+			goto next_q;
 
 		if (!(entry->flags & OFONO_SMS_SUBMIT_FLAG_RETRY))
 			goto next_q;
