@@ -649,7 +649,7 @@ static void ccwa_notify(GAtResult *result, gpointer user_data)
 	DBG("ccwa_notify: %s %d %d", num, num_type, validity);
 
 	call = create_call(vc, 0, 1, CALL_STATUS_WAITING, num, num_type,
-			    validity);
+				validity);
 
 	if (call == NULL) {
 		ofono_error("malloc call struct failed.  "
@@ -941,7 +941,7 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 		if (waiting == NULL && dialing == NULL)
 			goto out;
 
-		 /*
+		/*
 		 * If call=1, in the waiting case we have to poll, since we
 		 * have no idea whether a waiting call gave up or we accepted
 		 * using release+accept or hold+accept
