@@ -643,8 +643,7 @@ static void sms_tx_queue_remove_entry(struct ofono_sms *sms, GList *entry_list)
 			break;
 		default:
 			ofono_error("Unexpected sms state %d", sms->tx_state);
-
-			return;
+			goto done;
 		}
 
 		__ofono_history_sms_send_status(modem, &entry->uuid,
@@ -668,6 +667,7 @@ static void sms_tx_queue_remove_entry(struct ofono_sms *sms, GList *entry_list)
 		}
 	}
 
+done:
 	tx_queue_entry_destroy(entry);
 }
 
