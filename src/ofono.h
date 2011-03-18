@@ -299,6 +299,9 @@ int __ofono_sms_txq_set_submit_notify(struct ofono_sms *sms,
 					void *data,
 					ofono_destroy_func destroy);
 
+int __ofono_sms_txq_cancel(struct ofono_sms *sms,
+				const struct ofono_uuid *uuid);
+
 const char *__ofono_sms_message_path_from_uuid(struct ofono_sms *sms,
 						const struct ofono_uuid *uuid);
 

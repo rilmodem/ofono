@@ -26,6 +26,7 @@
 #include <string.h>
 #include <gdbus.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "ofono.h"
 #include "message.h"
@@ -76,8 +77,35 @@ static DBusMessage *message_get_properties(DBusConnection *conn,
 	return reply;
 }
 
+static DBusMessage *message_cancel(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct message *m = data;
+	int res;
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (m->state != MESSAGE_STATE_PENDING)
+		return __ofono_error_not_available(msg);
+
+	res = __ofono_sms_txq_cancel(__ofono_atom_get_data(m->atom), &m->uuid);
+
+	switch (res) {
+	case -ENOENT:
+		return __ofono_error_not_found(msg);
+	case -EPERM:
+		return __ofono_error_access_denied(msg);
+	case 0:
+		return dbus_message_new_method_return(msg);
+	default:
+		return __ofono_error_failed(msg);
+	}
+}
+
 static GDBusMethodTable message_methods[] = {
 	{ "GetProperties",  "",    "a{sv}",   message_get_properties },
+	{ "Cancel",         "",    "",        message_cancel },
 	{ }
 };
 
