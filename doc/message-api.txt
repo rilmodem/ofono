@@ -10,6 +10,15 @@ Methods		dict GetProperties()
 			Returns properties for the message object. See
 			the properties section for available properties.
 
+		void Cancel()
+
+			Cancel a message that was previously sent. Only
+			messages that are waiting on queue can be cancelled and
+			it's not possible to cancel messages that already had
+			some parts sent.
+
+			Possible Errors: [service].Error.AccessDenied
+
 Signals		PropertyChanged(string name, variant value)
 
 			This signal indicates a changed value of the given
