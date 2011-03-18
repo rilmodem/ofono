@@ -58,6 +58,7 @@ struct netreg_data {
 	int signal_max; /* max strength reported via CIND */
 	int tech;
 	struct ofono_network_time time;
+	guint nitz_timeout;
 	unsigned int vendor;
 };
 
@@ -691,6 +692,18 @@ static void ctzv_notify(GAtResult *result, gpointer user_data)
 	ofono_netreg_time_notify(netreg, &nd->time);
 }
 
+static gboolean notify_time(gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	nd->nitz_timeout = 0;
+
+	ofono_netreg_time_notify(netreg, &nd->time);
+
+	return FALSE;
+}
+
 static void ifx_ctzv_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -722,6 +735,11 @@ static void ifx_ctzv_notify(GAtResult *result, gpointer user_data)
 	nd->time.mday = mday;
 	nd->time.mon = mon;
 	nd->time.year = 2000 + year;
+
+	if (nd->nitz_timeout > 0)
+		g_source_remove(nd->nitz_timeout);
+
+	nd->nitz_timeout = g_timeout_add_seconds(1, notify_time, user_data);
 }
 
 static void ifx_ctzdst_notify(GAtResult *result, gpointer user_data)
@@ -742,6 +760,11 @@ static void ifx_ctzdst_notify(GAtResult *result, gpointer user_data)
 	DBG("dst %d", dst);
 
 	nd->time.dst = dst;
+
+	if (nd->nitz_timeout > 0) {
+		g_source_remove(nd->nitz_timeout);
+		nd->nitz_timeout = 0;
+	}
 
 	ofono_netreg_time_notify(netreg, &nd->time);
 }
@@ -1366,6 +1389,9 @@ static int at_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 static void at_netreg_remove(struct ofono_netreg *netreg)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	if (nd->nitz_timeout)
+		g_source_remove(nd->nitz_timeout);
 
 	ofono_netreg_set_data(netreg, NULL);
 
