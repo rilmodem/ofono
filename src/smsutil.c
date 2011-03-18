@@ -3344,7 +3344,7 @@ void sms_tx_backup_free(const char *imsi, unsigned long id,
 	len = scandir(path, &entries, NULL, versionsort);
 
 	if (len < 0)
-		return;
+		goto nodir_exit;
 
 	/* skip '..' and '.' entries */
 	while (len-- > 2) {
@@ -3362,6 +3362,8 @@ void sms_tx_backup_free(const char *imsi, unsigned long id,
 	g_free(entries);
 
 	rmdir(path);
+
+nodir_exit:
 	g_free(path);
 }
 
