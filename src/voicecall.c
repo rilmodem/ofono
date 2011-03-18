@@ -287,8 +287,9 @@ static int tone_queue(struct ofono_voicecall *vc, const char *tone_str,
 	 */
 	for (i = 0; tone_str[i]; i++)
 		if (!g_ascii_isdigit(tone_str[i]) && tone_str[i] != 'p' &&
-				tone_str[i] != '*' && tone_str[i] != '#' &&
-				(tone_str[i] < 'A' || tone_str[i] > 'D'))
+				tone_str[i] != 'P' && tone_str[i] != '*' &&
+				tone_str[i] != '#' && (tone_str[i] < 'A' ||
+				tone_str[i] > 'D'))
 			return -EINVAL;
 
 	while ((entry = g_queue_peek_nth(vc->toneq, n++)) != NULL)
