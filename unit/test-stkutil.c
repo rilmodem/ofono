@@ -129,7 +129,10 @@ static inline void check_address(const struct stk_address *command,
 /* Defined in TS 102.223 Section 8.2 */
 static inline void check_alpha_id(const char *command, const char *test)
 {
-	check_common_text(command, test);
+	if (test != NULL && strlen(test) > 0)
+		check_common_text(command, test);
+	else
+		g_assert(command == NULL);
 }
 
 /* Defined in TS 102.223 Section 8.3 */
@@ -5937,8 +5940,6 @@ static void test_setup_menu(gconstpointer data)
 	g_assert(command->src == STK_DEVICE_IDENTITY_TYPE_UICC);
 	g_assert(command->dst == STK_DEVICE_IDENTITY_TYPE_TERMINAL);
 
-	if (test->alpha_id)
-		g_assert(command->setup_menu.alpha_id);
 	check_alpha_id(command->setup_menu.alpha_id, test->alpha_id);
 	check_items(command->setup_menu.items, test->items);
 	check_items_next_action_indicator(&command->setup_menu.next_act,
