@@ -422,16 +422,16 @@ int mmi_service_code_to_bearer_class(int code)
 
 const char *phone_number_to_string(const struct ofono_phone_number *ph)
 {
-	static char buffer[64];
+	static char buffer[OFONO_MAX_PHONE_NUMBER_LENGTH + 2];
 
 	if (ph->type == 145 && (strlen(ph->number) > 0) &&
 			ph->number[0] != '+') {
 		buffer[0] = '+';
-		strncpy(buffer + 1, ph->number, 62);
-		buffer[63] = '\0';
+		strncpy(buffer + 1, ph->number, OFONO_MAX_PHONE_NUMBER_LENGTH);
+		buffer[OFONO_MAX_PHONE_NUMBER_LENGTH + 1] = '\0';
 	} else {
-		strncpy(buffer, ph->number, 63);
-		buffer[63] = '\0';
+		strncpy(buffer, ph->number, OFONO_MAX_PHONE_NUMBER_LENGTH + 1);
+		buffer[OFONO_MAX_PHONE_NUMBER_LENGTH + 1] = '\0';
 	}
 
 	return buffer;
