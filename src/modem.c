@@ -1386,6 +1386,12 @@ static void gmr_cb(struct ofono_emulator *em,
 	attr_template(em, req, info->revision);
 }
 
+static void gcap_cb(struct ofono_emulator *em,
+			struct ofono_emulator_request *req, void *userdata)
+{
+	attr_template(em, req, "+GCAP: +CGSM");
+}
+
 static void dun_watch(struct ofono_atom *atom,
 			enum ofono_atom_watch_condition cond, void *data)
 {
@@ -1397,6 +1403,7 @@ static void dun_watch(struct ofono_atom *atom,
 	ofono_emulator_add_handler(em, "+GMI", gmi_cb, data, NULL);
 	ofono_emulator_add_handler(em, "+GMM", gmm_cb, data, NULL);
 	ofono_emulator_add_handler(em, "+GMR", gmr_cb, data, NULL);
+	ofono_emulator_add_handler(em, "+GCAP", gcap_cb, data, NULL);
 }
 
 int ofono_devinfo_driver_register(const struct ofono_devinfo_driver *d)
