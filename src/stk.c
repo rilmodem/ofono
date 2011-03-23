@@ -2177,8 +2177,9 @@ static void get_lang(struct stk_response *rsp, struct ofono_stk *stk)
 
 	l = getenv("LANG");
 	if (l == NULL) {
-		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
-		goto out;
+		l = "en";
+		ofono_warn("LANG environment variable not set"
+				" - defaulting to en");
 	}
 
 	memcpy(lang, l, 2);
@@ -2187,7 +2188,6 @@ static void get_lang(struct stk_response *rsp, struct ofono_stk *stk)
 	rsp->result.type = STK_RESULT_TYPE_SUCCESS;
 	rsp->provide_local_info.language = lang;
 
-out:
 	if (stk_respond(stk, rsp, stk_command_cb))
 		stk_command_cb(&failure, stk);
 }
