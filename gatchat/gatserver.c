@@ -279,6 +279,24 @@ static gboolean get_result_value(GAtServer *server, GAtResult *result,
 	return TRUE;
 }
 
+static void v250_settings_create(struct v250_settings *v250)
+{
+	v250->s0 = 0;
+	v250->s3 = '\r';
+	v250->s4 = '\n';
+	v250->s5 = '\b';
+	v250->s6 = 2;
+	v250->s7 = 50;
+	v250->s8 = 2;
+	v250->s10 = 2;
+	v250->echo = TRUE;
+	v250->quiet = FALSE;
+	v250->is_v1 = TRUE;
+	v250->res_format = 0;
+	v250->c109 = 1;
+	v250->c108 = 0;
+}
+
 static void s_template_cb(GAtServerRequestType type, GAtResult *result,
 					GAtServer *server, char *sreg,
 					const char *prefix, int min, int max)
@@ -444,6 +462,22 @@ static void at_c108_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *result, gpointer user_data)
 {
 	at_template_cb(type, result, server, &server->v250.c108, "&D", 0, 2, 2);
+}
+
+static void at_z_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		v250_settings_create(&server->v250);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
 }
 
 static inline gboolean is_extended_command_prefix(const char c)
@@ -1073,24 +1107,6 @@ static void server_resume(GAtServer *server)
 	g_at_io_set_read_handler(server->io, new_bytes, server);
 }
 
-static void v250_settings_create(struct v250_settings *v250)
-{
-	v250->s0 = 0;
-	v250->s3 = '\r';
-	v250->s4 = '\n';
-	v250->s5 = '\b';
-	v250->s6 = 2;
-	v250->s7 = 50;
-	v250->s8 = 2;
-	v250->s10 = 2;
-	v250->echo = TRUE;
-	v250->quiet = FALSE;
-	v250->is_v1 = TRUE;
-	v250->res_format = 0;
-	v250->c109 = 1;
-	v250->c108 = 0;
-}
-
 static void at_notify_node_destroy(gpointer data)
 {
 	struct at_command *node = data;
@@ -1117,6 +1133,7 @@ static void basic_command_register(GAtServer *server)
 	g_at_server_register(server, "S10", at_s10_cb, NULL, NULL);
 	g_at_server_register(server, "&C", at_c109_cb, NULL, NULL);
 	g_at_server_register(server, "&D", at_c108_cb, NULL, NULL);
+	g_at_server_register(server, "Z", at_z_cb, NULL, NULL);
 }
 
 GAtServer *g_at_server_new(GIOChannel *io)
