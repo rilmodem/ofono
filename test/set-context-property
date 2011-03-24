@@ -34,5 +34,6 @@ for path, properties in modems:
 	try:
 		context.SetProperty(sys.argv[2], sys.argv[3])
 	except dbus.DBusException, e:
-		print "Error setting context %s property %s: %s" % (path, sys.argv[2], str(e))
+		print "Error setting context %s property %s: %s" %\
+				(path, sys.argv[2], str(e))
 		exit(2)
