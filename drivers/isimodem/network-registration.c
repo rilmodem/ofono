@@ -78,6 +78,7 @@ struct netreg_data {
 	struct reg_info reg;
 	struct gsm_info gsm;
 	struct rat_info rat;
+	GIsiVersion version;
 	char nitz_name[OFONO_MAX_OPERATOR_NAME_LENGTH + 1];
 };
 
@@ -338,7 +339,8 @@ static void rat_resp_cb(const GIsiMessage *msg, void *data)
 			goto error;
 	}
 
-	if (g_isi_client_resource(nd->client) == PN_MODEM_NETWORK)
+	if (g_isi_client_resource(nd->client) == PN_MODEM_NETWORK ||
+			nd->version.major < 14)
 		req[0] = NET_MODEM_REG_STATUS_GET_REQ;
 
 	if (g_isi_client_send(nd->client, req, sizeof(req),
@@ -649,7 +651,8 @@ static void isi_list_operators(struct ofono_netreg *netreg,
 	if (cbd == NULL || nd == NULL)
 		goto error;
 
-	if (g_isi_client_resource(nd->client) == PN_MODEM_NETWORK)
+	if (g_isi_client_resource(nd->client) == PN_MODEM_NETWORK ||
+			nd->version.major < 14)
 		msg[0] = NET_MODEM_AVAILABLE_GET_REQ;
 
 	if (g_isi_client_send_with_timeout(nd->client, msg, sizeof(msg),
@@ -937,6 +940,9 @@ static void reachable_cb(const GIsiMessage *msg, void *data)
 
 	if (nd == NULL)
 		return;
+
+	nd->version.major = g_isi_msg_version_major(msg);
+	nd->version.minor = g_isi_msg_version_minor(msg);
 
 	g_isi_client_ind_subscribe(nd->client, NET_RSSI_IND, rssi_ind_cb,
 					netreg);
