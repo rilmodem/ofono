@@ -1070,7 +1070,7 @@ static void voicecalls_emit_call_added(struct ofono_voicecall *vc,
 static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls)
 {
 	GSList *l;
-	struct ofono_call *call;
+	struct voicecall *call;
 
 	g_slist_free(vc->release_list);
 	vc->release_list = NULL;
@@ -1078,7 +1078,7 @@ static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls)
 	for (l = calls; l; l = l->next) {
 		call = l->data;
 
-		if (call->status == CALL_STATUS_WAITING)
+		if (call->call->status == CALL_STATUS_WAITING)
 			continue;
 
 		vc->release_list = g_slist_prepend(vc->release_list, l->data);
