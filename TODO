@@ -70,7 +70,6 @@ SIM / SIM File system
 
   Priority: High
   Complexity: C2
-  Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
 - Add support for CPHS Customer Service Profile (CSP).  This task adds support
   for reading the EFcsp file and in particular, interpreting the PLMN mode bit
