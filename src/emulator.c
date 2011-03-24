@@ -177,6 +177,59 @@ error:
 	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
 }
 
+static gboolean get_result_value(GAtServer *server, GAtResult *result,
+						int min, int max, int *value)
+{
+	GAtResultIter iter;
+	int val;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, ""))
+		return FALSE;
+
+	if (!g_at_result_iter_next_number(&iter, &val))
+		return FALSE;
+
+	if (val < min || val > max)
+		return FALSE;
+
+	if (value != NULL)
+		*value = val;
+
+	return TRUE;
+}
+
+static void at_x_cb(GAtServer *server, GAtServerRequestType type,
+				GAtResult *result, gpointer user_data)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		if (!get_result_value(server, result, 0, 0, NULL)) {
+			g_at_server_send_final(server,
+						G_AT_SERVER_RESULT_ERROR);
+			return;
+		}
+		/* the value is not stored, as there's only one choice */
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		g_at_server_send_info(server, "000", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		g_at_server_send_info(server, "X: (0-0)", TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void brsf_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *result, gpointer user_data)
 {
@@ -466,8 +519,10 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 
 	__ofono_atom_register(em->atom, emulator_unregister);
 
-	if (em->type == OFONO_EMULATOR_TYPE_DUN)
+	if (em->type == OFONO_EMULATOR_TYPE_DUN) {
 		g_at_server_register(em->server, "D", dial_cb, em, NULL);
+		g_at_server_register(em->server, "X", at_x_cb, em, NULL);
+	}
 	else if (em->type == OFONO_EMULATOR_TYPE_HFP)
 		g_at_server_set_echo(em->server, FALSE);
 }
