@@ -274,7 +274,8 @@ static gboolean get_result_value(GAtServer *server, GAtResult *result,
 	if (val < min || val > max)
 		return FALSE;
 
-	*value = val;
+	if (value)
+		*value = val;
 
 	return TRUE;
 }
@@ -464,10 +465,33 @@ static void at_c108_cb(GAtServer *server, GAtServerRequestType type,
 	at_template_cb(type, result, server, &server->v250.c108, "&D", 0, 2, 2);
 }
 
+static void at_f_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		if (!get_result_value(server, result, 0, 0, NULL)) {
+			g_at_server_send_final(server,
+						G_AT_SERVER_RESULT_ERROR);
+			return;
+		}
+		/* intentional fallback here */
+
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		/* default behavior on AT&F same as ATZ */
+		v250_settings_create(&server->v250);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void at_z_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *result, gpointer user_data)
 {
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
 		v250_settings_create(&server->v250);
@@ -1134,6 +1158,7 @@ static void basic_command_register(GAtServer *server)
 	g_at_server_register(server, "&C", at_c109_cb, NULL, NULL);
 	g_at_server_register(server, "&D", at_c108_cb, NULL, NULL);
 	g_at_server_register(server, "Z", at_z_cb, NULL, NULL);
+	g_at_server_register(server, "&F", at_f_cb, NULL, NULL);
 }
 
 GAtServer *g_at_server_new(GIOChannel *io)
