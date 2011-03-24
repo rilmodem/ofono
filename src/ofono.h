@@ -132,6 +132,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_EMULATOR_DUN,
 	OFONO_ATOM_TYPE_EMULATOR_HFP,
 	OFONO_ATOM_TYPE_LOCATION_REPORTING,
+	OFONO_ATOM_TYPE_GNSS,
 };
 
 enum ofono_atom_watch_condition {
@@ -454,3 +455,4 @@ void __ofono_gprs_provision_free_settings(
 				int count);
 
 #include <ofono/emulator.h>
+#include <ofono/gnss.h>
