@@ -865,6 +865,7 @@ static void pri_activate_callback(const struct ofono_error *error, void *data)
 				telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&ctx->pending,
 					__ofono_error_failed(ctx->pending));
+		context_settings_free(ctx->context_driver->settings);
 		release_context(ctx);
 		return;
 	}
@@ -1841,6 +1842,7 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 		return;
 	}
 
+	pri_reset_context_settings(ctx);
 	release_context(ctx);
 
 	if (gprs->settings) {
