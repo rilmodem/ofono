@@ -56,6 +56,8 @@ extern "C" {
 #define OFONO_STK_INTERFACE OFONO_SERVICE ".SimToolkit"
 #define OFONO_SIM_APP_INTERFACE OFONO_SERVICE ".SimToolkitAgent"
 #define OFONO_LOCATION_REPORTING_INTERFACE OFONO_SERVICE ".LocationReporting"
+#define OFONO_GNSS_INTERFACE "org.ofono.AssistedSatelliteNavigation"
+#define OFONO_GNSS_POSR_AGENT_INTERFACE "org.ofono.PositioningRequestAgent"
 
 /* CDMA Interfaces */
 #define OFONO_CDMA_VOICECALL_MANAGER_INTERFACE "org.ofono.cdma.VoiceCallManager"
