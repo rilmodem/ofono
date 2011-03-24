@@ -96,6 +96,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			an error given below.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
 
 			Implementation notes:
 
@@ -111,6 +112,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			cleared prior to the display of this text.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
 					 [service].Error.SimToolkit.Busy
 
 			Implementation notes:
@@ -154,6 +156,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			should be opaque.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
 
 			Implementation notes:
 
@@ -171,6 +174,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			are expected.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
 
 		string RequestKey(string alpha, byte icon_id)
 
@@ -179,6 +183,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			for the request.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
 
 		string RequestDigit(string alpha, byte icon_id)
 
@@ -186,12 +191,14 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			expected.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
 
 		boolean RequestConfirmation(string alpha, byte icon_id)
 
 			Asks the agent to get confirmation from the user.
 
 			Possible Errors: [service].Error.SimToolkit.GoBack
+					 [service].Error.SimToolkit.EndSession
 
 		boolean ConfirmCallSetup(string information, byte icon_id)
 
