@@ -469,8 +469,8 @@ failure:
 
 static void sec_code_verify_resp(const GIsiMessage *msg, void *opaque)
 {
-	check_sec_response(msg, opaque,
-			SEC_CODE_VERIFY_OK_RESP, SEC_CODE_VERIFY_FAIL_RESP);
+	check_sec_response(msg, opaque, SEC_CODE_VERIFY_OK_RESP,
+				SEC_CODE_VERIFY_FAIL_RESP);
 }
 
 static void isi_send_passwd(struct ofono_sim *sim, const char *passwd,
@@ -632,8 +632,8 @@ error:
 /* ISI callback: PIN state (enabled/disabled) query */
 static void sec_code_state_resp_cb(const GIsiMessage *msg, void *opaque)
 {
-	check_sec_response(msg, opaque,
-			SEC_CODE_STATE_OK_RESP, SEC_CODE_STATE_FAIL_RESP);
+	check_sec_response(msg, opaque, SEC_CODE_STATE_OK_RESP,
+				SEC_CODE_STATE_FAIL_RESP);
 }
 
 static void isi_query_locked(struct ofono_sim *sim,
