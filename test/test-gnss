@@ -1,0 +1,91 @@
+#!/usr/bin/python
+
+import gobject
+import sys
+import os
+
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+class PositioningAgent(dbus.service.Object):
+	@dbus.service.method("org.ofono.PositioningRequestAgent",
+					in_signature="", out_signature="")
+	def Release(self):
+		print "Release"
+		mainloop.quit()
+
+	@dbus.service.method("org.ofono.PositioningRequestAgent",
+					in_signature="s", out_signature="")
+	def Request(self, xml):
+		print "positioning data: %s" % (xml)
+
+	@dbus.service.method("org.ofono.PositioningRequestAgent",
+					in_signature="", out_signature="")
+	def ResetAssistanceData(self):
+		print "Reset Assistance Data request received"
+
+def print_menu():
+	print "Select test case"
+	print "-----------------------------------------------------------"
+	print "[0] SendPositioningElement"
+	print "[1] RegisterPositioningRequestAgent"
+	print "[2] UnregisterPositioningRequestAgent"
+	print "[x] Exit"
+	print "-----------------------------------------------------------"
+
+def stdin_handler(fd, condition, positioning, path):
+
+	in_key = os.read(fd.fileno(), 8).rstrip()
+	if in_key == '0':
+		xml = raw_input('type the element and press enter: ')
+		try:
+			positioning.SendPositioningElement(dbus.String(xml))
+			print "ok"
+		except dbus.DBusException, e:
+			print "Unable to send positioning element"
+
+	elif in_key == '1':
+		try:
+			positioning.RegisterPositioningRequestAgent("/test/posagent")
+			print "ok"
+		except dbus.DBusException, e:
+			print "Unable to register positioning agent"
+
+	elif in_key == '2':
+		try:
+			positioning.UnregisterPositioningRequestAgent(path)
+			print "ok"
+		except dbus.DBusException, e:
+			print "Unable to unregister positioning agent"
+	elif in_key == 'x':
+		sys.exit(1)
+
+	return True
+
+if __name__ == "__main__":
+
+	if len(sys.argv) < 1:
+		sys.exit(1)
+
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+	bus = dbus.SystemBus()
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+							'org.ofono.Manager')
+
+	modems = manager.GetModems()
+	for path, properties in modems:
+		if "org.ofono.AssistedSatelliteNavigation" not in properties["Interfaces"]:
+			continue
+
+		positioning = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.AssistedSatelliteNavigation')
+
+	path = "/test/posagent"
+	agent = PositioningAgent(bus, path)
+
+	print_menu()
+
+	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler, positioning, path)
+	mainloop = gobject.MainLoop()
+	mainloop.run()

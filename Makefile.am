@@ -510,7 +510,8 @@ test_scripts = test/backtrace \
 		test/test-message-waiting \
 		test/cdma-connman-disable \
 		test/cdma-connman-enable \
-		test/set-context-property
+		test/set-context-property \
+		test/test-gnss
 
 if TEST
 testdir = $(pkglibdir)/test
