@@ -29,7 +29,8 @@ extern "C" {
 enum _GAtSyntaxExpectHint {
 	G_AT_SYNTAX_EXPECT_PDU,
 	G_AT_SYNTAX_EXPECT_MULTILINE,
-	G_AT_SYNTAX_EXPECT_PROMPT
+	G_AT_SYNTAX_EXPECT_PROMPT,
+	G_AT_SYNTAX_EXPECT_SHORT_PROMPT
 };
 
 typedef enum _GAtSyntaxExpectHint GAtSyntaxExpectHint;
