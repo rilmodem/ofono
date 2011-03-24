@@ -124,6 +124,14 @@ guint g_at_chat_send_pdu_listing(GAtChat *chat, const char *cmd,
 				GAtNotifyFunc listing, GAtResultFunc func,
 				gpointer user_data, GDestroyNotify notify);
 
+/*!
+ * Same as g_at_chat_send except parser will know to expect short prompt syntax
+ * used with +CPOS.
+ */
+guint g_at_chat_send_and_expect_short_prompt(GAtChat *chat, const char *cmd,
+				const char **valid_resp, GAtResultFunc func,
+				gpointer user_data, GDestroyNotify notify);
+
 gboolean g_at_chat_cancel(GAtChat *chat, guint id);
 gboolean g_at_chat_cancel_all(GAtChat *chat);
 
