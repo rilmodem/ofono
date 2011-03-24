@@ -61,6 +61,12 @@ const char *sim_isi_cause_name(enum sim_isi_cause value);
 const char *sim_message_id_name(enum sim_message_id value);
 const char *sim_subblock_name(enum sim_subblock value);
 
+enum ofono_sim_password_type;
+
+const char *sim_password_name(enum ofono_sim_password_type value);
+
+const char *sec_message_id_name(enum sec_message_id value);
+
 const char *info_isi_cause_name(enum info_isi_cause value);
 const char *info_message_id_name(enum info_message_id value);
 const char *info_subblock_name(enum info_subblock value);

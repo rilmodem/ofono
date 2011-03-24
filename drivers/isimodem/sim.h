@@ -28,6 +28,7 @@ extern "C" {
 
 #define PN_SIM							0x09
 #define SIM_TIMEOUT						5
+#define PN_SECURITY						0x08
 #define SIM_MAX_IMSI_LENGTH					15
 
 enum sim_isi_cause {
@@ -131,29 +132,76 @@ enum sim_message_id {
 	SIM_IMSI_RESP_READ_IMSI =				0x1E,
 	SIM_SERV_PROV_NAME_REQ =				0x21,
 	SIM_SERV_PROV_NAME_RESP =				0x22,
+	SIM_DYNAMIC_FLAGS_REQ =					0x29,
+	SIM_DYNAMIC_FLAGS_RESP =				0x2A,
 	SIM_READ_FIELD_REQ =					0xBA,
 	SIM_READ_FIELD_RESP =					0xBB,
 	SIM_SMS_REQ =						0xBC,
 	SIM_SMS_RESP =						0xBD,
+	SIM_STATUS_REQ =					0xC0,
+	SIM_STATUS_RESP =					0xC1,
 	SIM_PB_REQ_SIM_PB_READ =				0xDC,
 	SIM_PB_RESP_SIM_PB_READ =				0xDD,
+	SIM_SERVER_READY_IND =					0xED,
 	SIM_IND =						0xEF,
 	SIM_COMMON_MESSAGE =					0xF0,
 };
 
 enum sim_service_type {
+	SIM_ST_CARD_STATUS =					0x00,
 	SIM_ST_PIN =						0x01,
 	SIM_ST_ALL_SERVICES =					0x05,
 	SIM_ST_INFO =						0x0D,
+	SIM_PB_READ =						0x0F,
 	SIM_ST_CAT_SUPPORT_ENABLE =				0x15,
 	SIM_ST_CAT_SUPPORT_DISABLE =				0x16,
 	SIM_ST_READ_SERV_PROV_NAME =				0x2C,
-	SIM_PB_READ =						0x0F,
 	READ_IMSI =						0x2D,
 	READ_HPLMN =						0x2F,
+	READ_DYN_FLAGS =					0x35,
 	READ_PARAMETER =					0x52,
 	UPDATE_PARAMETER =					0x53,
 	ICC =							0x66,
+};
+
+#define SEC_CODE_MAX_LENGTH		0x0A
+
+enum sec_message_id {
+	SEC_CODE_STATE_REQ =		0x01,
+	SEC_CODE_STATE_OK_RESP =	0x02,
+	SEC_CODE_STATE_FAIL_RESP =	0x03,
+	SEC_CODE_CHANGE_REQ =		0x04,
+	SEC_CODE_CHANGE_OK_RESP =	0x05,
+	SEC_CODE_CHANGE_FAIL_RESP =	0x06,
+	SEC_CODE_VERIFY_REQ =		0x07,
+	SEC_CODE_VERIFY_OK_RESP =	0x08,
+	SEC_CODE_VERIFY_FAIL_RESP =	0x09,
+	SEC_STATE_REQ =			0x11,
+	SEC_STATE_RESP =		0x12,
+};
+
+enum sec_code_id_info {
+	SEC_CODE_PIN =			0x02,
+	SEC_CODE_PUK =			0x03,
+	SEC_CODE_PIN2 =			0x04,
+	SEC_CODE_PUK2 =			0x05,
+};
+
+enum sec_code_state_info {
+	SEC_CODE_DISABLE =		0x00,
+	SEC_CODE_ENABLE =		0x01,
+	SEC_CODE_STATE_QUERY =		0x04,
+};
+
+enum sec_state_cause_info {
+	SEC_CAUSE_PIN_REQUIRED =	0x02,
+	SEC_CAUSE_PUK_REQUIRED =	0x03,
+	SEC_STARTUP_OK =		0x05,
+	SEC_STARTUP_ONGOING =		0x07,
+	SEC_CAUSE_CODE_BLOCKED =	0x08,
+	SEC_CAUSE_NO_SIM =		0x16,
+	SEC_CAUSE_SIM_REJECTED =	0x1A,
+	SEC_CAUSE_INVALID_SIM =		0x1E,
 };
 
 #ifdef __cplusplus

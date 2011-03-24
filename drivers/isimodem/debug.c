@@ -34,6 +34,8 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/log.h>
+#include <ofono/modem.h>
+#include <ofono/sim.h>
 
 #include "debug.h"
 
@@ -49,6 +51,7 @@ const char *pn_resource_name(int value)
 		_(PN_CALL);
 		_(PN_SMS);
 		_(PN_SIM);
+		_(PN_SECURITY);
 		_(PN_MTC);
 		_(PN_GSS);
 		_(PN_GPDS);
@@ -572,16 +575,70 @@ const char *sim_message_id_name(enum sim_message_id value)
 		_(SIM_IMSI_RESP_READ_IMSI);
 		_(SIM_SERV_PROV_NAME_REQ);
 		_(SIM_SERV_PROV_NAME_RESP);
+		_(SIM_DYNAMIC_FLAGS_REQ);
+		_(SIM_DYNAMIC_FLAGS_RESP);
 		_(SIM_READ_FIELD_REQ);
 		_(SIM_READ_FIELD_RESP);
 		_(SIM_SMS_REQ);
 		_(SIM_SMS_RESP);
+		_(SIM_STATUS_REQ);
+		_(SIM_STATUS_RESP);
 		_(SIM_PB_REQ_SIM_PB_READ);
 		_(SIM_PB_RESP_SIM_PB_READ);
+		_(SIM_SERVER_READY_IND);
 		_(SIM_IND);
 		_(SIM_COMMON_MESSAGE);
 	}
+
 	return "SIM_<UNKNOWN>";
+}
+
+const char *sim_password_name(enum ofono_sim_password_type type)
+{
+	static const char *const passwd_name[] = {
+		[OFONO_SIM_PASSWORD_NONE] = "none",
+		[OFONO_SIM_PASSWORD_SIM_PIN] = "pin",
+		[OFONO_SIM_PASSWORD_SIM_PUK] = "puk",
+		[OFONO_SIM_PASSWORD_PHSIM_PIN] = "phone",
+		[OFONO_SIM_PASSWORD_PHFSIM_PIN] = "firstphone",
+		[OFONO_SIM_PASSWORD_PHFSIM_PUK] = "firstphonepuk",
+		[OFONO_SIM_PASSWORD_SIM_PIN2] = "pin2",
+		[OFONO_SIM_PASSWORD_SIM_PUK2] = "puk2",
+		[OFONO_SIM_PASSWORD_PHNET_PIN] = "network",
+		[OFONO_SIM_PASSWORD_PHNET_PUK] = "networkpuk",
+		[OFONO_SIM_PASSWORD_PHNETSUB_PIN] = "netsub",
+		[OFONO_SIM_PASSWORD_PHNETSUB_PUK] = "netsubpuk",
+		[OFONO_SIM_PASSWORD_PHSP_PIN] = "service",
+		[OFONO_SIM_PASSWORD_PHSP_PUK] = "servicepuk",
+		[OFONO_SIM_PASSWORD_PHCORP_PIN] = "corp",
+		[OFONO_SIM_PASSWORD_PHCORP_PUK] = "corppuk",
+		[OFONO_SIM_PASSWORD_INVALID] = "invalid",
+	};
+
+	if (OFONO_SIM_PASSWORD_NONE <= (int)type &&
+			type <= OFONO_SIM_PASSWORD_PHCORP_PUK)
+		return passwd_name[type];
+	else
+		return "UNKNOWN";
+}
+
+const char *sec_message_id_name(enum sec_message_id value)
+{
+	switch (value) {
+		_(SEC_CODE_STATE_REQ);
+		_(SEC_CODE_STATE_OK_RESP);
+		_(SEC_CODE_STATE_FAIL_RESP);
+		_(SEC_CODE_CHANGE_REQ);
+		_(SEC_CODE_CHANGE_OK_RESP);
+		_(SEC_CODE_CHANGE_FAIL_RESP);
+		_(SEC_CODE_VERIFY_REQ);
+		_(SEC_CODE_VERIFY_OK_RESP);
+		_(SEC_CODE_VERIFY_FAIL_RESP);
+		_(SEC_STATE_REQ);
+		_(SEC_STATE_RESP);
+	}
+
+	return "SEC_<UNKNOWN>";
 }
 
 const char *sim_subblock_name(enum sim_subblock value)
@@ -1272,6 +1329,8 @@ static const char *res_to_name(uint8_t res, uint8_t id)
 		return ss_message_id_name(id);
 	case PN_CALL:
 		return call_message_id_name(id);
+	case PN_SECURITY:
+		return sec_message_id_name(id);
 	case PN_SMS:
 		return sms_message_id_name(id);
 	case PN_SIM:
