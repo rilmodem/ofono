@@ -43,32 +43,20 @@ struct gnss_agent {
 	void *removed_data;
 };
 
-void gnss_agent_receive_request(struct gnss_agent *agent, const char *xml)
-{
-	DBusConnection *conn = ofono_dbus_get_connection();
-	DBusMessage *message;
-
-	message = dbus_message_new_method_call(agent->bus, agent->path,
-					OFONO_GNSS_POSR_AGENT_INTERFACE,
-					"Request");
-
-	dbus_message_append_args(message, DBUS_TYPE_STRING, &xml,
-					DBUS_TYPE_INVALID);
-
-	dbus_message_set_no_reply(message, TRUE);
-
-	g_dbus_send_message(conn, message);
-}
-
 static void gnss_agent_send_noreply(struct gnss_agent *agent,
-					const char *method)
+					const char *method, int type, ...)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *message;
+	va_list args;
 
 	message = dbus_message_new_method_call(agent->bus, agent->path,
 					OFONO_GNSS_POSR_AGENT_INTERFACE,
 					method);
+
+	va_start(args, type);
+	dbus_message_append_args_valist(message, type, args);
+	va_end(args);
 
 	dbus_message_set_no_reply(message, TRUE);
 
@@ -77,12 +65,19 @@ static void gnss_agent_send_noreply(struct gnss_agent *agent,
 
 static inline void gnss_agent_send_release(struct gnss_agent *agent)
 {
-	gnss_agent_send_noreply(agent, "Release");
+	gnss_agent_send_noreply(agent, "Release", DBUS_TYPE_INVALID);
+}
+
+void gnss_agent_receive_request(struct gnss_agent *agent, const char *xml)
+{
+	gnss_agent_send_noreply(agent, "Request", DBUS_TYPE_STRING, &xml,
+				DBUS_TYPE_INVALID);
 }
 
 void gnss_agent_receive_reset(struct gnss_agent *agent)
 {
-	gnss_agent_send_noreply(agent, "ResetAssistanceData");
+	gnss_agent_send_noreply(agent, "ResetAssistanceData",
+				DBUS_TYPE_INVALID);
 }
 
 ofono_bool_t gnss_agent_matches(struct gnss_agent *agent,
