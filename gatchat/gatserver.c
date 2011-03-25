@@ -94,6 +94,8 @@ struct v250_settings {
 	int res_format;			/* set by X<val> */
 	int c109;			/* set by &C<val> */
 	int c108;			/* set by &D<val> */
+	char l;				/* set by L<val> */
+	char m;				/* set by M<val> */
 };
 
 /* AT command set that server supported */
@@ -296,6 +298,8 @@ static void v250_settings_create(struct v250_settings *v250)
 	v250->res_format = 0;
 	v250->c109 = 1;
 	v250->c108 = 0;
+	v250->l = 0;
+	v250->m = 1;
 }
 
 static void s_template_cb(GAtServerRequestType type, GAtResult *result,
@@ -358,6 +362,18 @@ static void at_s5_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *result, gpointer user_data)
 {
 	s_template_cb(type, result, server, &server->v250.s5, "S5", 0, 127);
+}
+
+static void at_l_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	s_template_cb(type, result, server, &server->v250.l, "L", 0, 3);
+}
+
+static void at_m_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	s_template_cb(type, result, server, &server->v250.m, "M", 0, 2);
 }
 
 static void at_template_cb(GAtServerRequestType type, GAtResult *result,
@@ -1159,6 +1175,8 @@ static void basic_command_register(GAtServer *server)
 	g_at_server_register(server, "&D", at_c108_cb, NULL, NULL);
 	g_at_server_register(server, "Z", at_z_cb, NULL, NULL);
 	g_at_server_register(server, "&F", at_f_cb, NULL, NULL);
+	g_at_server_register(server, "L", at_l_cb, NULL, NULL);
+	g_at_server_register(server, "M", at_m_cb, NULL, NULL);
 }
 
 GAtServer *g_at_server_new(GIOChannel *io)
