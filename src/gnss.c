@@ -202,15 +202,10 @@ static void gnss_send_element_cb(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Sending Positioning Element failed");
-
 		reply = __ofono_error_failed(gnss->pending);
+	} else
+		reply = dbus_message_new_method_return(gnss->pending);
 
-		goto out;
-	}
-
-	reply = dbus_message_new_method_return(gnss->pending);
-
-out:
 	__ofono_dbus_pending_reply(&gnss->pending, reply);
 }
 
