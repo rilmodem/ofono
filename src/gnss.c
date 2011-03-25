@@ -338,7 +338,6 @@ struct ofono_gnss *ofono_gnss_create(struct ofono_modem *modem,
 	if (gnss == NULL)
 		return NULL;
 
-	gnss->enabled = FALSE;
 	gnss->atom = __ofono_modem_add_atom(modem, OFONO_ATOM_TYPE_GNSS,
 						gnss_remove, gnss);
 
