@@ -50,10 +50,9 @@ void gnss_agent_receive_request(struct gnss_agent *agent, const char *xml)
 
 	message = dbus_message_new_method_call(agent->bus, agent->path,
 					OFONO_GNSS_POSR_AGENT_INTERFACE,
-						"Request");
+					"Request");
 
-	dbus_message_append_args(message,
-					DBUS_TYPE_STRING, &xml,
+	dbus_message_append_args(message, DBUS_TYPE_STRING, &xml,
 					DBUS_TYPE_INVALID);
 
 	dbus_message_set_no_reply(message, TRUE);
@@ -69,7 +68,7 @@ static void gnss_agent_send_noreply(struct gnss_agent *agent,
 
 	message = dbus_message_new_method_call(agent->bus, agent->path,
 					OFONO_GNSS_POSR_AGENT_INTERFACE,
-						method);
+					method);
 
 	dbus_message_set_no_reply(message, TRUE);
 
@@ -89,13 +88,14 @@ void gnss_agent_receive_reset(struct gnss_agent *agent)
 ofono_bool_t gnss_agent_matches(struct gnss_agent *agent,
 				const char *path, const char *sender)
 {
-	return !g_strcmp0(agent->path, path) && !g_strcmp0(agent->bus, sender);
+	return g_str_equal(agent->path, path) &&
+			g_str_equal(agent->bus, sender);
 }
 
 ofono_bool_t gnss_agent_sender_matches(struct gnss_agent *agent,
 					const char *sender)
 {
-	return !g_strcmp0(agent->bus, sender);
+	return g_str_equal(agent->bus, sender);
 }
 
 void gnss_agent_set_removed_notify(struct gnss_agent *agent,
@@ -109,7 +109,6 @@ void gnss_agent_set_removed_notify(struct gnss_agent *agent,
 void gnss_agent_free(struct gnss_agent *agent)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
-
 
 	if (agent->disconnect_watch) {
 		gnss_agent_send_release(agent);
@@ -128,8 +127,6 @@ void gnss_agent_free(struct gnss_agent *agent)
 static void gnss_agent_disconnect_cb(DBusConnection *conn, void *user_data)
 {
 	struct gnss_agent *agent = user_data;
-
-	ofono_debug("Agent exited without calling Unregister");
 
 	agent->disconnect_watch = 0;
 
