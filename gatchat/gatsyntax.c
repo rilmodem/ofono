@@ -91,7 +91,10 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 		case GSMV1_STATE_INITIAL_CR:
 			if (byte == '\n')
 				syntax->state = GSMV1_STATE_INITIAL_LF;
-			else
+			else if (byte == '\r') {
+				syntax->state = GSMV1_STATE_IDLE;
+				return G_AT_SYNTAX_RESULT_UNRECOGNIZED;
+			} else
 				syntax->state = GSMV1_STATE_ECHO;
 			break;
 
