@@ -230,6 +230,9 @@ static DBusMessage *gnss_send_element(DBusConnection *conn,
 					DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
 
+	if (gnss->posr_agent == NULL)
+		return __ofono_error_not_available(msg);
+
 	if (!gnss_agent_sender_matches(gnss->posr_agent, caller))
 		return __ofono_error_access_denied(msg);
 
