@@ -44,6 +44,8 @@ enum GSMV1_STATE {
 	GSMV1_STATE_PROMPT,
 	GSMV1_STATE_ECHO,
 	GSMV1_STATE_PPP_DATA,
+	GSMV1_STATE_SHORT_PROMPT,
+	GSMV1_STATE_SHORT_PROMPT_CR,
 };
 
 enum GSM_PERMISSIVE_STATE {
@@ -65,6 +67,9 @@ static void gsmv1_hint(GAtSyntax *syntax, GAtSyntaxExpectHint hint)
 		break;
 	case G_AT_SYNTAX_EXPECT_MULTILINE:
 		syntax->state = GSMV1_STATE_GUESS_MULTILINE_RESPONSE;
+		break;
+	case G_AT_SYNTAX_EXPECT_SHORT_PROMPT:
+		syntax->state = GSMV1_STATE_SHORT_PROMPT;
 		break;
 	default:
 		break;
@@ -227,6 +232,25 @@ static GAtSyntaxResult gsmv1_feed(GAtSyntax *syntax,
 			}
 
 			break;
+
+		case GSMV1_STATE_SHORT_PROMPT:
+			if (byte == '\r')
+				syntax->state = GSMV1_STATE_SHORT_PROMPT_CR;
+			else
+				syntax->state = GSMV1_STATE_ECHO;
+
+			break;
+
+		case GSMV1_STATE_SHORT_PROMPT_CR:
+			if (byte == '\n') {
+				syntax->state = GSMV1_STATE_IDLE;
+				i += 1;
+				res = G_AT_SYNTAX_RESULT_PROMPT;
+				goto out;
+			}
+
+			syntax->state = GSMV1_STATE_RESPONSE;
+			return G_AT_SYNTAX_RESULT_UNSURE;
 
 		default:
 			break;
