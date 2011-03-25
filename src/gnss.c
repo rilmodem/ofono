@@ -58,29 +58,23 @@ static void gnss_unregister_agent_cb(const struct ofono_error *error,
 
 	DBG("");
 
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
 		ofono_error("Disabling Location Reporting Failed");
-		reply = __ofono_error_failed(gnss->pending);
-		__ofono_dbus_pending_reply(&gnss->pending, reply);
-		return;
-	}
 
 	gnss->enabled = FALSE;
 
 	if (gnss->posr_agent)
 		gnss_agent_free(gnss->posr_agent);
 
-	if (gnss->posr_agent) {
-		ofono_error("Releasing agent failed");
-		reply = __ofono_error_failed(gnss->pending);
-		__ofono_dbus_pending_reply(&gnss->pending, reply);
-		return;
-	}
+	reply = dbus_message_new_method_return(gnss->pending);
+	__ofono_dbus_pending_reply(&gnss->pending, reply);
+}
 
-	if (gnss->pending) {
-		reply = dbus_message_new_method_return(gnss->pending);
-		__ofono_dbus_pending_reply(&gnss->pending, reply);
-	}
+static void gnss_disable_posr_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_gnss *gnss = data;
+
+	gnss->enabled = FALSE;
 }
 
 static void gnss_register_agent_cb(const struct ofono_error *error,
@@ -102,26 +96,27 @@ static void gnss_register_agent_cb(const struct ofono_error *error,
 		return;
 	}
 
-	if (gnss->posr_agent) {
-		gnss->enabled = TRUE;
-		reply = dbus_message_new_method_return(gnss->pending);
-		__ofono_dbus_pending_reply(&gnss->pending, reply);
-	} else
+	reply = dbus_message_new_method_return(gnss->pending);
+	__ofono_dbus_pending_reply(&gnss->pending, reply);
+
+	gnss->enabled = TRUE;
+
+	if (gnss->posr_agent == NULL)
 		gnss->driver->set_position_reporting(gnss, FALSE,
-						gnss_unregister_agent_cb,
-						gnss);
+							gnss_disable_posr_cb,
+							gnss);
 }
 
 static void gnss_agent_notify(gpointer user_data)
 {
 	struct ofono_gnss *gnss = user_data;
 
-	if (gnss->enabled)
-		gnss->driver->set_position_reporting(gnss, FALSE,
-						gnss_unregister_agent_cb,
-						gnss);
-
 	gnss->posr_agent = NULL;
+
+	if (gnss->enabled == TRUE)
+		gnss->driver->set_position_reporting(gnss, FALSE,
+							gnss_disable_posr_cb,
+							gnss);
 }
 
 static DBusMessage *gnss_register_agent(DBusConnection *conn,
@@ -148,8 +143,6 @@ static DBusMessage *gnss_register_agent(DBusConnection *conn,
 
 	if (gnss->posr_agent == NULL)
 		return __ofono_error_failed(msg);
-
-	gnss->enabled = FALSE;
 
 	gnss_agent_set_removed_notify(gnss->posr_agent,
 					gnss_agent_notify, gnss);
@@ -185,6 +178,7 @@ static DBusMessage *gnss_unregister_agent(DBusConnection *conn,
 
 	gnss->pending = dbus_message_ref(msg);
 
+	gnss->enabled = FALSE;
 	gnss->driver->set_position_reporting(gnss, FALSE,
 						gnss_unregister_agent_cb,
 						gnss);
