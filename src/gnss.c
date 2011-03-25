@@ -181,7 +181,7 @@ static DBusMessage *gnss_unregister_agent(DBusConnection *conn,
 		return __ofono_error_failed(msg);
 
 	if (!gnss_agent_matches(gnss->posr_agent, agent_path, agent_bus))
-		return __ofono_error_failed(msg);
+		return __ofono_error_access_denied(msg);
 
 	gnss->pending = dbus_message_ref(msg);
 
