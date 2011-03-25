@@ -245,13 +245,11 @@ static DBusMessage *gnss_send_element(DBusConnection *conn,
 
 static GDBusMethodTable gnss_methods[] = {
 	{ "SendPositioningElement",		"s",	"",
-				gnss_send_element, G_DBUS_METHOD_FLAG_ASYNC },
+			gnss_send_element, G_DBUS_METHOD_FLAG_ASYNC },
 	{ "RegisterPositioningRequestAgent",	"o",	"",
-				gnss_register_agent,
-				G_DBUS_METHOD_FLAG_ASYNC },
+			gnss_register_agent, G_DBUS_METHOD_FLAG_ASYNC },
 	{ "UnregisterPositioningRequestAgent",	"o",	"",
-				gnss_unregister_agent,
-				G_DBUS_METHOD_FLAG_ASYNC },
+			gnss_unregister_agent, G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
