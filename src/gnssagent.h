@@ -22,9 +22,7 @@
 
 struct gnss_agent;
 
-
-struct gnss_agent *gnss_agent_new(const char *path, const char *sender,
-					ofono_bool_t remove_on_terminate);
+struct gnss_agent *gnss_agent_new(const char *path, const char *sender);
 
 void gnss_agent_free(struct gnss_agent *agent);
 

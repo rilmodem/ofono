@@ -144,8 +144,7 @@ static DBusMessage *gnss_register_agent(DBusConnection *conn,
 		return __ofono_error_invalid_format(msg);
 
 	gnss->posr_agent = gnss_agent_new(agent_path,
-					dbus_message_get_sender(msg),
-					FALSE);
+						dbus_message_get_sender(msg));
 
 	if (gnss->posr_agent == NULL)
 		return __ofono_error_failed(msg);

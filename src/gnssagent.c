@@ -39,7 +39,6 @@ struct gnss_agent {
 	char *path;
 	char *bus;
 	guint disconnect_watch;
-	ofono_bool_t remove_on_terminate;
 	ofono_destroy_func removed_cb;
 	void *removed_data;
 };
@@ -137,8 +136,7 @@ static void gnss_agent_disconnect_cb(DBusConnection *conn, void *user_data)
 	gnss_agent_free(agent);
 }
 
-struct gnss_agent *gnss_agent_new(const char *path, const char *sender,
-				ofono_bool_t remove_on_terminate)
+struct gnss_agent *gnss_agent_new(const char *path, const char *sender)
 {
 	struct gnss_agent *agent = g_try_new0(struct gnss_agent, 1);
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -148,7 +146,6 @@ struct gnss_agent *gnss_agent_new(const char *path, const char *sender,
 
 	agent->path = g_strdup(path);
 	agent->bus = g_strdup(sender);
-	agent->remove_on_terminate = remove_on_terminate;
 
 	agent->disconnect_watch = g_dbus_add_disconnect_watch(conn, sender,
 						gnss_agent_disconnect_cb,
