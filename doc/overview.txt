@@ -109,7 +109,8 @@ Current implemented features:
 	SIM PIN handling
 
 		SIM PIN locks, network and service provider locks are
-		supported.
+		supported. The SIM Manager also handles retry counter for PIN,
+		PIN2, PUK and PUK2.
 
 	Cell Broadcast
 
