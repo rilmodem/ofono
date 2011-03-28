@@ -702,6 +702,7 @@ static void phonesim_post_online(struct ofono_modem *modem)
 	if (mw)
 		ofono_message_waiting_register(mw);
 
+	ofono_gnss_create(modem, 0, "atmodem", data->chat);
 }
 
 static struct ofono_modem_driver phonesim_driver = {
