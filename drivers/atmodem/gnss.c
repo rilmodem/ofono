@@ -170,7 +170,7 @@ static void gnss_report(GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	ofono_gnss_notify_posr_request(gnss, xml);
+	DBG("%s", xml);
 }
 
 static void at_gnss_reset_notify(GAtResult *result, gpointer user_data)
