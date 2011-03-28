@@ -138,12 +138,15 @@ Current implemented features:
 		operation status. Information on the Sim Toolkit feature
 		list can be found in features.txt.
 
+	Supplementary Services
+
+		The Supplementary Services interface handles both recognized
+		supplementary service control string and user/network initiated
+		unstructured supplementary service data (USSD).
+
 Work in progress features:
 
-	USSD
 
-		User initiated USSD support is available, but not
-		network-initiated USSD support.
 
 Not implemented features:
 
