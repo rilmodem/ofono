@@ -145,6 +145,14 @@ Current implemented features:
 		supplementary service control string and user/network initiated
 		unstructured supplementary service data (USSD).
 
+	GPS/Location Services
+
+		oFono provides a Location Reporting interface that enables
+		taking advantage of on-board GPS capabilities of modern modems.
+		oFono also provides an Assisted Satellite Navigation interface
+		that allows feeding assistance data to the GPS unit from the
+		network as well as E911 services.
+
 Work in progress features:
 
 	GPRS
