@@ -96,6 +96,7 @@ struct v250_settings {
 	int c108;			/* set by &D<val> */
 	char l;				/* set by L<val> */
 	char m;				/* set by M<val> */
+	char dial_mode;			/* set by P or T */
 };
 
 /* AT command set that server supported */
@@ -300,6 +301,7 @@ static void v250_settings_create(struct v250_settings *v250)
 	v250->c108 = 0;
 	v250->l = 0;
 	v250->m = 1;
+	v250->dial_mode = 'T';
 }
 
 static void s_template_cb(GAtServerRequestType type, GAtResult *result,
@@ -479,6 +481,40 @@ static void at_c108_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *result, gpointer user_data)
 {
 	at_template_cb(type, result, server, &server->v250.c108, "&D", 0, 2, 2);
+}
+
+/* According to ITU V.250 6.3.2 and 6.3.3: "Implementation of this command
+ * is mandatory; however, if DTMF or pulse dialling is not implemented,
+ * this command will have no effect"
+ */
+static void at_t_cb(GAtServer *server, GAtServerRequestType type,
+					GAtResult *result, gpointer user_data)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		server->v250.dial_mode = 'T';
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
+static void at_p_cb(GAtServer *server, GAtServerRequestType type,
+					GAtResult *result, gpointer user_data)
+{
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		server->v250.dial_mode = 'P';
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
 }
 
 static void at_f_cb(GAtServer *server, GAtServerRequestType type,
@@ -1177,6 +1213,8 @@ static void basic_command_register(GAtServer *server)
 	g_at_server_register(server, "&F", at_f_cb, NULL, NULL);
 	g_at_server_register(server, "L", at_l_cb, NULL, NULL);
 	g_at_server_register(server, "M", at_m_cb, NULL, NULL);
+	g_at_server_register(server, "T", at_t_cb, NULL, NULL);
+	g_at_server_register(server, "P", at_p_cb, NULL, NULL);
 }
 
 GAtServer *g_at_server_new(GIOChannel *io)
