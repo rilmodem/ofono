@@ -120,8 +120,8 @@ Current implemented features:
 	GPRS
 
 		GPRS data connections are fully supported by oFono.  Multiple
-		active GPRS contexts are supported, but IPv6 context support is
-		currently missing.
+		active GPRS contexts are supported. IPv6 context support is
+		in progress.
 
 	Radio Access Settings
 
@@ -146,6 +146,8 @@ Current implemented features:
 
 Work in progress features:
 
+	GPRS
+		IPv6 PS context support is under development.
 
 
 Not implemented features:
