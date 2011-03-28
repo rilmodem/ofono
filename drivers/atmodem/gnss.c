@@ -159,6 +159,7 @@ static void gnss_report(GAtResult *result, gpointer user_data)
 	DBG("");
 
 	xml = NULL;
+
 	if (!gnss_parse_report(result, "+CPOSR:", &xml)) {
 		ofono_error("Unable to parse CPOSR notification");
 		return;
