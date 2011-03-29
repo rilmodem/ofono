@@ -153,7 +153,6 @@ static gboolean gnss_parse_report(GAtResult *result, const char *prefix,
 
 static void gnss_report(GAtResult *result, gpointer user_data)
 {
-	struct ofono_gnss *gnss = user_data;
 	const char *xml;
 
 	DBG("");
