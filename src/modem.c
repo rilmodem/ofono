@@ -271,6 +271,9 @@ unsigned int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 					void *data, ofono_destroy_func destroy)
 {
 	struct atom_watch *watch;
+	unsigned int id;
+	GSList *l;
+	struct ofono_atom *atom;
 
 	if (notify == NULL)
 		return 0;
@@ -282,8 +285,19 @@ unsigned int __ofono_modem_add_atom_watch(struct ofono_modem *modem,
 	watch->item.destroy = destroy;
 	watch->item.notify_data = data;
 
-	return __ofono_watchlist_add_item(modem->atom_watches,
+	id = __ofono_watchlist_add_item(modem->atom_watches,
 					(struct ofono_watchlist_item *)watch);
+
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		if (atom->type != type || atom->unregister == NULL)
+			continue;
+
+		notify(atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, data);
+	}
+
+	return id;
 }
 
 gboolean __ofono_modem_remove_atom_watch(struct ofono_modem *modem,
