@@ -156,8 +156,15 @@ Current implemented features:
 Work in progress features:
 
 	GPRS
+
 		IPv6 PS context support is under development.
 
+	Modem Emulator
+
+		To enable DialUp Networking (over Bluetooth or USB), and to
+		allow Bluetooth HandsFree / Headset support, oFono will expose
+		some 'fake' modem to enable the communication with car kits, or
+		other devices.
 
 Not implemented features:
 
@@ -202,4 +209,3 @@ Not implemented features:
 		prominent.
 
 		A similar split like with MMS might be a good idea.
-
