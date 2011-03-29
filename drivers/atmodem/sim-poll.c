@@ -239,14 +239,9 @@ static void stk_watch(struct ofono_atom *atom,
 
 void atmodem_poll_enable(struct ofono_modem *modem, GAtChat *chat)
 {
-	struct ofono_atom *sim_atom;
-	struct ofono_atom *stk_atom;
 	struct sim_poll_data *spd;
 
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-	stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
-
-	if (sim_atom == NULL)
+	if (__ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM) == NULL)
 		return;
 
 	spd = g_new0(struct sim_poll_data, 1);
@@ -256,13 +251,7 @@ void atmodem_poll_enable(struct ofono_modem *modem, GAtChat *chat)
 
 	spd->stk_watch = __ofono_modem_add_atom_watch(spd->modem,
 			OFONO_ATOM_TYPE_STK, stk_watch, spd, NULL);
-	if (stk_atom && __ofono_atom_get_registered(stk_atom))
-		stk_watch(stk_atom,
-				OFONO_ATOM_WATCH_CONDITION_REGISTERED, spd);
 
 	spd->sim_watch = __ofono_modem_add_atom_watch(spd->modem,
 			OFONO_ATOM_TYPE_SIM, sim_watch, spd, NULL);
-	if (__ofono_atom_get_registered(sim_atom))
-		sim_watch(sim_atom,
-				OFONO_ATOM_WATCH_CONDITION_REGISTERED, spd);
 }
