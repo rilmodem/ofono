@@ -389,6 +389,7 @@ Emergency Calls
 
   Priority: High
   Complexity: C2
+  Owner: Jeevaka Badrappan <jeevaka.badrappan@elektrobit.com>
 
 - Country / Operator specific emergency numbers.  Figure out how to support
   countries / operators with specific mandated emergency numbers which are
