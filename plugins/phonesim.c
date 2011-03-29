@@ -58,6 +58,7 @@
 #include <ofono/voicecall.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/gnss.h>
 
 #include <drivers/atmodem/vendor.h>
 #include <drivers/atmodem/sim-poll.h>
