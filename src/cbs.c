@@ -1087,7 +1087,6 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 	const char *path = __ofono_atom_get_path(cbs->atom);
 	struct ofono_atom *sim_atom;
 	struct ofono_atom *stk_atom;
-	struct ofono_atom *netreg_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CELL_BROADCAST_INTERFACE,
@@ -1118,12 +1117,6 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 	cbs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
 					netreg_watch, cbs, NULL);
-
-	netreg_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_NETREG);
-
-	if (netreg_atom && __ofono_atom_get_registered(netreg_atom))
-		netreg_watch(netreg_atom,
-				OFONO_ATOM_WATCH_CONDITION_REGISTERED, cbs);
 
 	__ofono_atom_register(cbs->atom, cbs_unregister);
 }

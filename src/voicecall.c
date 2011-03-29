@@ -2368,7 +2368,6 @@ void ofono_voicecall_register(struct ofono_voicecall *vc)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	const char *path = __ofono_atom_get_path(vc->atom);
-	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_VOICECALL_MANAGER_INTERFACE,
@@ -2392,11 +2391,6 @@ void ofono_voicecall_register(struct ofono_voicecall *vc)
 	vc->sim_watch = __ofono_modem_add_atom_watch(modem,
 						OFONO_ATOM_TYPE_SIM,
 						sim_watch, vc, NULL);
-
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-	if (sim_atom && __ofono_atom_get_registered(sim_atom))
-		sim_watch(sim_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, vc);
 
 	__ofono_atom_register(vc->atom, voicecall_unregister);
 }

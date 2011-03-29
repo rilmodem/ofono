@@ -1955,7 +1955,6 @@ void ofono_sms_register(struct ofono_sms *sms)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	const char *path = __ofono_atom_get_path(sms->atom);
-	struct ofono_atom *atom;
 	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
@@ -1974,19 +1973,9 @@ void ofono_sms_register(struct ofono_sms *sms)
 					OFONO_ATOM_TYPE_MESSAGE_WAITING,
 					mw_watch, sms, NULL);
 
-	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_MESSAGE_WAITING);
-
-	if (atom && __ofono_atom_get_registered(atom))
-		mw_watch(atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
-
 	sms->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
 					netreg_watch, sms, NULL);
-
-	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_NETREG);
-
-	if (atom && __ofono_atom_get_registered(atom))
-		netreg_watch(atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED, sms);
 
 	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
 
