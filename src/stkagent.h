@@ -60,7 +60,7 @@ typedef void (*stk_agent_string_cb)(enum stk_agent_result result,
 typedef void (*stk_agent_tone_cb)(enum stk_agent_result result,
 						void *user_data);
 
-typedef void (*stk_agent_user_termination_cb)(enum stk_agent_result result,
+typedef void (*stk_agent_display_action_cb)(enum stk_agent_result result,
 						void *user_data);
 
 struct stk_agent *stk_agent_new(const char *path, const char *sender,
@@ -153,6 +153,6 @@ int stk_agent_confirm_launch_browser(struct stk_agent *agent, const char *text,
 
 int stk_agent_display_action(struct stk_agent *agent, const char *text,
 					const struct stk_icon_id *icon,
-					stk_agent_user_termination_cb cb,
+					stk_agent_display_action_cb cb,
 					void *user_data,
 					ofono_destroy_func destroy);

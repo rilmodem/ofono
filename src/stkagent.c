@@ -1085,7 +1085,7 @@ int stk_agent_confirm_launch_browser(struct stk_agent *agent, const char *text,
 static void display_action_cb(DBusPendingCall *call, void *data)
 {
 	struct stk_agent *agent = data;
-	stk_agent_user_termination_cb cb = agent->user_cb;
+	stk_agent_display_action_cb cb = agent->user_cb;
 	DBusMessage *reply = dbus_pending_call_steal_reply(call);
 	enum stk_agent_result result;
 	gboolean remove_agent;
@@ -1111,7 +1111,7 @@ static void display_action_cb(DBusPendingCall *call, void *data)
 int stk_agent_display_action(struct stk_agent *agent,
 					const char *text,
 					const struct stk_icon_id *icon,
-					stk_agent_user_termination_cb cb,
+					stk_agent_display_action_cb cb,
 					void *user_data,
 					ofono_destroy_func destroy)
 {
