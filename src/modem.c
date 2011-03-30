@@ -1477,11 +1477,6 @@ static void devinfo_remove(struct ofono_atom *atom)
 	if (info->driver->remove)
 		info->driver->remove(info);
 
-	g_free(info->manufacturer);
-	g_free(info->model);
-	g_free(info->revision);
-	g_free(info->serial);
-
 	g_free(info);
 }
 
@@ -1514,9 +1509,28 @@ struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
 	return info;
 }
 
+static void devinfo_unregister(struct ofono_atom *atom)
+{
+	struct ofono_devinfo *info = __ofono_atom_get_data(atom);
+
+	g_free(info->manufacturer);
+	info->manufacturer = NULL;
+
+	g_free(info->model);
+	info->model = NULL;
+
+	g_free(info->revision);
+	info->revision = NULL;
+
+	g_free(info->serial);
+	info->serial = NULL;
+}
+
 void ofono_devinfo_register(struct ofono_devinfo *info)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(info->atom);
+
+	__ofono_atom_register(info->atom, devinfo_unregister);
 
 	info->dun_watch = __ofono_modem_add_atom_watch(modem,
 						OFONO_ATOM_TYPE_EMULATOR_DUN,
