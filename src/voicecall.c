@@ -2201,6 +2201,7 @@ static void voicecall_unregister(struct ofono_atom *atom)
 		voicecall_dbus_unregister(vc, l->data);
 
 	g_slist_free(vc->call_list);
+	vc->call_list = NULL;
 
 	ofono_modem_remove_interface(modem, OFONO_VOICECALL_MANAGER_INTERFACE);
 	g_dbus_unregister_interface(conn, path,
