@@ -5493,7 +5493,7 @@ const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 	 * Min = N.
 	 *
 	 * However comprehension required is set for many of the TLVs in
-	 * TS 102 384 conformace tests so we set it per command and per
+	 * TS 102 384 conformance tests so we set it per command and per
 	 * data object type.
 	 */
 	tag = STK_DATA_OBJECT_TYPE_DEVICE_IDENTITIES;
@@ -6269,7 +6269,7 @@ char *stk_image_to_xpm(const unsigned char *img, unsigned int len,
 
 	/*
 	 * space needed:
-	 * 	header line
+	 *	header line
 	 *	declaration and beginning of assignment line
 	 *	values - max length of 19
 	 *	colors - ncolors * (cpp + whitespace + deliminators + color)
