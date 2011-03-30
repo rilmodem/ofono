@@ -473,6 +473,16 @@ static void emit_menu_changed(struct ofono_stk *stk)
 	g_dbus_send_message(conn, signal);
 }
 
+static void user_termination_cb(enum stk_agent_result result, void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+
+	if (result == STK_AGENT_RESULT_TERMINATE) {
+		stk->respond_on_exit = FALSE;
+		send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
+	}
+}
+
 static void stk_alpha_id_set(struct ofono_stk *stk,
 		const char *text, const struct stk_text_attribute *attr,
 		const struct stk_icon_id *icon)
@@ -484,7 +494,13 @@ static void stk_alpha_id_set(struct ofono_stk *stk,
 	 * and no alpha identifier cases equally. This may be changed once
 	 * better idea is found out.
 	 */
-	if (alpha != NULL)
+	if (alpha == NULL)
+		return;
+
+	if (stk->respond_on_exit)
+		stk_agent_display_action(stk->current_agent, alpha, icon,
+						user_termination_cb, stk, NULL);
+	else
 		stk_agent_display_action_info(stk->current_agent, alpha, icon);
 
 	g_free(alpha);
@@ -2329,10 +2345,6 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 		return TRUE;
 	}
 
-	stk_alpha_id_set(stk, cmd->send_dtmf.alpha_id,
-				&cmd->send_dtmf.text_attr,
-				&cmd->send_dtmf.icon_id);
-
 	/*
 	 * Note that we don't strictly require an agent to be connected,
 	 * but to comply with 6.4.24 we need to send a End Session when
@@ -2341,6 +2353,10 @@ static gboolean handle_command_send_dtmf(const struct stk_command *cmd,
 	stk->respond_on_exit = TRUE;
 	stk->cancel_cmd = send_dtmf_cancel;
 	stk->dtmf_id = err;
+
+	stk_alpha_id_set(stk, cmd->send_dtmf.alpha_id,
+				&cmd->send_dtmf.text_attr,
+				&cmd->send_dtmf.icon_id);
 
 	return FALSE;
 }
