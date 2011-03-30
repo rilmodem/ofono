@@ -252,6 +252,7 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			Possible Errors: [service].Error.SimToolkit.EndSession
 
 		void DisplayActionInformation(string text, byte icon_id)
+						[noreply]
 
 			Supplies a text string and/or icon concerning the
 			current activity in the terminal and UICC.  The
@@ -266,6 +267,16 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			browser. If confirmed, then the agent should send
 			confirmation message to oFono and then should open
 			the launch browser with the given url.
+
+		void DisplayAction(string text, byte icon_id)
+
+			Supplies a text string and/or icon concerning the
+			current activity in the terminal and UICC. The
+			text should be displayed to the user on screen
+			until the call is canceled using Cancel() or until the
+			user decides to end the session.
+
+			Possible Errors: [service].Error.SimToolkit.EndSession
 
 		void Cancel() [noreply]
 
