@@ -318,7 +318,7 @@ struct ofono_atom *__ofono_modem_find_atom(struct ofono_modem *modem,
 	for (l = modem->atoms; l; l = l->next) {
 		atom = l->data;
 
-		if (atom->type == type)
+		if (atom->type == type && atom->unregister != NULL)
 			return atom;
 	}
 
