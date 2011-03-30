@@ -1493,17 +1493,10 @@ struct ofono_devinfo *ofono_devinfo_create(struct ofono_modem *modem,
 void ofono_devinfo_register(struct ofono_devinfo *info)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(info->atom);
-	struct ofono_atom *dun_atom;
 
 	info->dun_watch = __ofono_modem_add_atom_watch(modem,
 						OFONO_ATOM_TYPE_EMULATOR_DUN,
 						dun_watch, info, NULL);
-
-	dun_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_EMULATOR_DUN);
-
-	if (dun_atom && __ofono_atom_get_registered(dun_atom))
-		dun_watch(dun_atom, OFONO_ATOM_WATCH_CONDITION_REGISTERED,
-				info);
 
 	query_manufacturer(info);
 }
