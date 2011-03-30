@@ -1,15 +1,17 @@
 DialUp Networking diagram
 =========================
 
-This diagram explains how oFono and ConnMan are interacting to
-handle a data call from a DUN client.
+This diagram explains how oFono and ConnMan are interacting to handle a data
+call from a DUN client.
+
 1) GAtServer receive ATD*99#.
 2) The GAtPPP server is setup.
 3) oFono through GAtPPP notify ConnMan that he needs a TUN/TAP interface.
 4) oFono is notified that TUN/TAP interface is created and can start exchanging
-PPP packets with DUN client. Those PPP packets are converted into IP stream
-and transmitted to/received from TUN/TAP interface.
-5) ConnMan is selecting which interface to send IP packets (WiFi, 3G, ethX, ...).
+   PPP packets with DUN client. Those PPP packets are converted into IP stream
+   and transmitted to/received from TUN/TAP interface.
+5) ConnMan is selecting which interface to send IP packets (WiFi, 3G, ...).
+
 
 *----------------*            *----------------*
 |                |  ATD*99#   |                |
@@ -44,4 +46,3 @@ and transmitted to/received from TUN/TAP interface.
             |  WiFi       |       |   Modem     |      |    EthX     |
             |             |       |             |      |             |
             *-------------*       *-------------*      *-------------*
-
