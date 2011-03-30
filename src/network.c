@@ -2022,9 +2022,6 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 	netreg->hfp_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_EMULATOR_HFP,
 					emulator_hfp_watch, netreg, NULL);
-
-	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_EMULATOR_HFP,
-					emulator_hfp_init, netreg);
 }
 
 void ofono_netreg_remove(struct ofono_netreg *netreg)
