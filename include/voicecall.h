@@ -33,11 +33,6 @@ struct ofono_voicecall;
 typedef void (*ofono_voicecall_cb_t)(const struct ofono_error *error,
 					void *data);
 
-typedef void (*ofono_call_list_cb_t)(const struct ofono_error *error,
-					int numcalls,
-					const struct ofono_call *call_list,
-					void *data);
-
 /* Voice call related functionality, including ATD, ATA, +CHLD, CTFR, CLCC
  * and VTS.
  *
