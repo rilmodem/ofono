@@ -163,6 +163,11 @@ void __ofono_modem_foreach_atom(struct ofono_modem *modem,
 				enum ofono_atom_type type,
 				ofono_atom_func callback, void *data);
 
+void __ofono_modem_foreach_registered_atom(struct ofono_modem *modem,
+						enum ofono_atom_type type,
+						ofono_atom_func callback,
+						void *data);
+
 void *__ofono_atom_get_data(struct ofono_atom *atom);
 const char *__ofono_atom_get_path(struct ofono_atom *atom);
 struct ofono_modem *__ofono_atom_get_modem(struct ofono_atom *atom);
