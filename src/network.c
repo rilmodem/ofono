@@ -1319,7 +1319,8 @@ void ofono_netreg_status_notify(struct ofono_netreg *netreg, int status,
 		set_registration_status(netreg, status);
 
 		modem = __ofono_atom_get_modem(netreg->atom);
-		__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_EMULATOR_HFP,
+		__ofono_modem_foreach_registered_atom(modem,
+					OFONO_ATOM_TYPE_EMULATOR_HFP,
 					notify_emulator_status,
 					GINT_TO_POINTER(netreg->status));
 	}
@@ -1443,7 +1444,8 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 	}
 
 	modem = __ofono_atom_get_modem(netreg->atom);
-	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_EMULATOR_HFP,
+	__ofono_modem_foreach_registered_atom(modem,
+				OFONO_ATOM_TYPE_EMULATOR_HFP,
 				notify_emulator_strength,
 				GINT_TO_POINTER(netreg->signal_strength));
 }
@@ -1708,14 +1710,19 @@ static void netreg_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 	GSList *l;
 
-	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_EMULATOR_HFP,
-				notify_emulator_status,
-				GINT_TO_POINTER(0));
-	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_EMULATOR_HFP,
-				notify_emulator_strength, GINT_TO_POINTER(0));
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						notify_emulator_status,
+						GINT_TO_POINTER(0));
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						notify_emulator_strength,
+						GINT_TO_POINTER(0));
 
-	__ofono_modem_foreach_atom(modem, OFONO_ATOM_TYPE_EMULATOR_HFP,
-				emulator_remove_handler, "+COPS");
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_remove_handler,
+						"+COPS");
 
 	__ofono_modem_remove_atom_watch(modem, netreg->hfp_watch);
 
