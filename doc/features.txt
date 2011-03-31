@@ -491,6 +491,12 @@ GPRS
   suspended while a circuit switched service such as voice call or SMS is
   active.
 
+- GPRS context protocol support.  oFono supports the followig types of GPRS
+  contexts:
+	- IPv4
+	- IPv6
+	- Dual Stack (IPv4 + IPv6)
+
 Location Reporting
 ==================
 

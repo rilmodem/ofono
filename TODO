@@ -149,16 +149,6 @@ Modem Emulator
   Priority: Medium
 
 
-GPRS
-====
-
-- Add support for IPv6 GPRS contexts.
-
-  Priority: Medium
-  Complexity: C2
-  Owner: Mika Liljeberg <mika.liljeberg@nokia.com>
-
-
 PPP
 ===
 
