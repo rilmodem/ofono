@@ -261,41 +261,6 @@ Voicecall
 Sim Toolkit
 ===========
 
-- Support Refresh proactive command.  The specification defines 7 types
-  of Refresh types:
-	- NAA Initialization
-	- NAA File Change Notification
-	- NAA Initialization and File Change Notification
-	- NAA Initialization and Full File Change Notification
-	- UICC Reset
-	- NAA Application Reset (2G only)
-	- NAA Session Reset (3G only)
-
-  The 'NAA Initialization' type will be ignored by oFono, it is assumed
-  this is handled by the modem.
-
-  For 'UICC Reset', 'NAA Application Reset' and 'NAA Session Reset' oFono
-  will first check whether there are any calls or ussd operations active.
-  If there are, the appropriate response will be sent (e.g. busy on call
-  or screen busy terminal response.)  Otherwise a positive response will be
-  sent to the driver.  In the case of a 'UICC Reset' the driver / modem
-  can interpret this that it is safe to reset the UICC.
-
-  Alternatively, the driver / modem can notify the core of the SIM removal
-  / SIM insertion events without using the Refresh proactive command.  It
-  is up to the driver / modem to perform a warm reset.  In particular, 3GPP
-  31.111 mandates that any change to EFimsi is done by using 'UICC Reset',
-  'NAA Application Reset' or 'NAA Session Reset'.  Please see 3GPP 31.111
-  Section 6.4.7.1.
-
-  Other types will be handled by oFono flushing the EF cache of the files
-  affected (or the entire SIM cache in case of Full File Change Notifications)
-  and re-reading the affected files.  Any properties derived from these
-  Elementary Files will be updated and signaled using PropertyChanged.
-
-  Priority: High
-  Complexity: C8
-
 - Support of the BIP (Bearer Independent Protocol) proactive commands.
   The specification defines several bearer types. For now, only the packet data
   service bearer is considered.
