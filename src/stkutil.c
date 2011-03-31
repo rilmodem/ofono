@@ -1646,7 +1646,7 @@ static gboolean parse_dataobj_network_access_name(
 	while (len) {
 		label_size = *data;
 
-		if (label_size > (len - 1))
+		if (label_size == 0 || label_size > (len - 1))
 			return FALSE;
 
 		memcpy(decoded_apn + offset, data + 1, label_size);
