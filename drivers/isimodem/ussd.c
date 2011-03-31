@@ -226,8 +226,10 @@ static void ussd_reachable_cb(const GIsiMessage *msg, void *data)
 	struct ofono_ussd *ussd = data;
 	struct ussd_data *ud = ofono_ussd_get_data(ussd);
 
-	if (g_isi_msg_error(msg) < 0)
+	if (g_isi_msg_error(msg) < 0) {
+		ofono_ussd_remove(ussd);
 		return;
+	}
 
 	ISI_VERSION_DBG(msg);
 

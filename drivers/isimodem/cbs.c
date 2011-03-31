@@ -133,8 +133,11 @@ static void routing_resp_cb(const GIsiMessage *msg, void *data)
 	struct ofono_cbs *cbs = data;
 	struct cbs_data *cd = ofono_cbs_get_data(cbs);
 
-	if (cd == NULL || !check_response_status(msg, SMS_GSM_CB_ROUTING_RESP))
+	if (cd == NULL ||
+			!check_response_status(msg, SMS_GSM_CB_ROUTING_RESP)) {
+		ofono_cbs_remove(cbs);
 		return;
+	}
 
 	g_isi_client_ntf_subscribe(cd->client, SMS_GSM_CB_ROUTING_NTF,
 					routing_ntf_cb, cbs);

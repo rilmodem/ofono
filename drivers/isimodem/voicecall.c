@@ -1764,8 +1764,10 @@ static void call_verify_cb(const GIsiMessage *msg, void *data)
 	struct ofono_voicecall *ovc = data;
 	struct isi_voicecall *ivc = ofono_voicecall_get_data(ovc);
 
-	if (g_isi_msg_error(msg) < 0)
+	if (g_isi_msg_error(msg) < 0) {
+		ofono_voicecall_remove(ovc);
 		return;
+	}
 
 	ISI_VERSION_DBG(msg);
 

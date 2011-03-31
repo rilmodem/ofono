@@ -602,8 +602,10 @@ static void routing_resp_cb(const GIsiMessage *msg, void *data)
 	struct ofono_sms *sms = data;
 	struct sms_data *sd = ofono_sms_get_data(sms);
 
-	if (!check_sms_status(msg, SMS_PP_ROUTING_RESP))
+	if (!check_sms_status(msg, SMS_PP_ROUTING_RESP)) {
+		ofono_sms_remove(sms);
 		return;
+	}
 
 	g_isi_client_ntf_subscribe(sd->client, SMS_PP_ROUTING_NTF,
 					routing_ntf_cb, sms);
@@ -647,6 +649,7 @@ static void sms_reachable_cb(const GIsiMessage *msg, void *data)
 
 	if (g_isi_msg_error(msg) < 0) {
 		DBG("unable to find SMS resource");
+		ofono_sms_remove(sms);
 		return;
 	}
 

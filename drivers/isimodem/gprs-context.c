@@ -601,10 +601,12 @@ static void isi_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 static void gpds_ctx_reachable_cb(const GIsiMessage *msg, void *opaque)
 {
-	struct context_data *cd = opaque;
+	struct ofono_gprs_context *gc = opaque;
+	struct context_data *cd = ofono_gprs_context_get_data(gc);
 
 	if (g_isi_msg_error(msg) < 0) {
 		DBG("unable to bootstrap gprs context driver");
+		ofono_gprs_context_remove(gc);
 		return;
 	}
 
@@ -630,7 +632,7 @@ static int isi_gprs_context_probe(struct ofono_gprs_context *gc,
 	cd->context = gc;
 	ofono_gprs_context_set_data(gc, cd);
 
-	g_isi_client_verify(cd->client, gpds_ctx_reachable_cb, cd, NULL);
+	g_isi_client_verify(cd->client, gpds_ctx_reachable_cb, gc, NULL);
 
 	return 0;
 }

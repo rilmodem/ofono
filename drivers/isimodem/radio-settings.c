@@ -304,8 +304,10 @@ static void gss_reachable_cb(const GIsiMessage *msg, void *opaque)
 {
 	struct ofono_radio_settings *rs = opaque;
 
-	if (g_isi_msg_error(msg) < 0)
+	if (g_isi_msg_error(msg) < 0) {
+		ofono_radio_settings_remove(rs);
 		return;
+	}
 
 	ISI_VERSION_DBG(msg);
 

@@ -872,6 +872,7 @@ static void sim_reachable_cb(const GIsiMessage *msg, void *data)
 
 	if (g_isi_msg_error(msg) < 0) {
 		DBG("PN_SIM: %s", strerror(-g_isi_msg_error(msg)));
+		ofono_sim_remove(sim);
 		return;
 	}
 

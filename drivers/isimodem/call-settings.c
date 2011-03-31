@@ -358,8 +358,10 @@ static void reachable_cb(const GIsiMessage *msg, void *data)
 {
 	struct ofono_call_settings *cs = data;
 
-	if (g_isi_msg_error(msg) < 0)
+	if (g_isi_msg_error(msg) < 0) {
+		ofono_call_settings_remove(cs);
 		return;
+	}
 
 	ISI_VERSION_DBG(msg);
 
