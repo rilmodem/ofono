@@ -1264,8 +1264,20 @@ static gboolean parse_dataobj_bearer_description(
 
 	data = comprehension_tlv_iter_get_data(iter);
 	bd->type = data[0];
-	bd->len = len - 1;
-	memcpy(bd->pars, data + 1, bd->len);
+
+	/* Parse only the packet data service bearer parameters */
+	if (bd->type != STK_BEARER_TYPE_GPRS_UTRAN)
+		return FALSE;
+
+	if (len < 7)
+		return FALSE;
+
+	bd->gprs.precedence = data[1];
+	bd->gprs.delay = data[2];
+	bd->gprs.reliability = data[3];
+	bd->gprs.peak = data[4];
+	bd->gprs.mean = data[5];
+	bd->gprs.pdp_type = data[6];
 
 	return TRUE;
 }
@@ -1355,8 +1367,16 @@ static gboolean parse_dataobj_other_address(
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
+
+	if (data[0] != STK_ADDRESS_IPV4 && data[0] != STK_ADDRESS_IPV6)
+		return FALSE;
+
 	oa->type = data[0];
-	memcpy(&oa->addr, data + 1, len - 1);
+
+	if (oa->type == STK_ADDRESS_IPV4)
+		memcpy(&oa->addr.ipv4, data + 1, 4);
+	else
+		memcpy(&oa->addr.ipv6, data + 1, 16);
 
 	return TRUE;
 }
@@ -1604,16 +1624,42 @@ static gboolean parse_dataobj_esn(struct comprehension_tlv_iter *iter,
 static gboolean parse_dataobj_network_access_name(
 		struct comprehension_tlv_iter *iter, void *user)
 {
-	struct stk_network_access_name *nan = user;
+	char **apn = user;
 	const unsigned char *data;
 	unsigned int len = comprehension_tlv_iter_get_length(iter);
+	unsigned char label_size;
+	unsigned char offset = 0;
+	char decoded_apn[100];
 
-	if (len == 0)
+	if (len == 0 || len > 100)
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
-	nan->len = len;
-	memcpy(nan->name, data, len);
+	/*
+	 * As specified in TS 23 003 Section 9
+	 * The APN consists of one or more labels. Each label is coded as
+	 * a one octet length field followed by that number of octets coded
+	 * as 8 bit ASCII characters
+	 */
+
+	while (len) {
+		label_size = *data;
+
+		if (label_size > (len-1))
+			return FALSE;
+
+		memcpy(decoded_apn + offset, data + 1, label_size);
+
+		data += label_size + 1;
+		offset += label_size;
+		len -= label_size + 1;
+
+		if (len)
+			decoded_apn[offset++] = '.';
+	}
+
+	decoded_apn[offset] = '\0';
+	*apn = g_strdup(decoded_apn);
 
 	return TRUE;
 }
@@ -3274,7 +3320,69 @@ static enum stk_command_parse_result parse_launch_browser(
 				STK_DATA_OBJECT_TYPE_INVALID);
 }
 
-/* TODO: parse_open_channel */
+static void destroy_open_channel(struct stk_command *command)
+{
+	g_free(command->open_channel.alpha_id);
+	g_free(command->open_channel.apn);
+	g_free(command->open_channel.text_usr);
+	g_free(command->open_channel.text_passwd);
+}
+
+static enum stk_command_parse_result parse_open_channel(
+					struct stk_command *command,
+					struct comprehension_tlv_iter *iter)
+{
+	struct stk_command_open_channel *obj = &command->open_channel;
+	enum stk_command_parse_result status;
+
+	if (command->qualifier >= 0x08)
+		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+
+	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
+		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+
+	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
+
+	command->destructor = destroy_open_channel;
+
+	/*
+	 * parse the Open Channel data objects related to packet data service
+	 * bearer
+	 */
+	status = parse_dataobj(iter,
+				STK_DATA_OBJECT_TYPE_ALPHA_ID, 0,
+				&obj->alpha_id,
+				STK_DATA_OBJECT_TYPE_ICON_ID, 0,
+				&obj->icon_id,
+				STK_DATA_OBJECT_TYPE_BEARER_DESCRIPTION,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->bearer_desc,
+				STK_DATA_OBJECT_TYPE_BUFFER_SIZE,
+				DATAOBJ_FLAG_MANDATORY | DATAOBJ_FLAG_MINIMUM,
+				&obj->buf_size,
+				STK_DATA_OBJECT_TYPE_NETWORK_ACCESS_NAME, 0,
+				&obj->apn,
+				STK_DATA_OBJECT_TYPE_OTHER_ADDRESS, 0,
+				&obj->local_addr,
+				STK_DATA_OBJECT_TYPE_TEXT, 0,
+				&obj->text_usr,
+				STK_DATA_OBJECT_TYPE_TEXT, 0,
+				&obj->text_passwd,
+				STK_DATA_OBJECT_TYPE_UICC_TE_INTERFACE, 0,
+				&obj->uti,
+				STK_DATA_OBJECT_TYPE_OTHER_ADDRESS, 0,
+				&obj->data_dest_addr,
+				STK_DATA_OBJECT_TYPE_TEXT_ATTRIBUTE, 0,
+				&obj->text_attr,
+				STK_DATA_OBJECT_TYPE_FRAME_ID, 0,
+				&obj->frame_id,
+				STK_DATA_OBJECT_TYPE_INVALID);
+
+	CHECK_TEXT_AND_ICON(obj->alpha_id, obj->icon_id.id);
+
+	return status;
+}
 
 static void destroy_close_channel(struct stk_command *command)
 {
@@ -3291,7 +3399,8 @@ static enum stk_command_parse_result parse_close_channel(
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
 
-	if (command->dst != STK_DEVICE_IDENTITY_TYPE_TERMINAL)
+	if ((command->dst < STK_DEVICE_IDENTITY_TYPE_CHANNEL_1) ||
+			(command->dst > STK_DEVICE_IDENTITY_TYPE_CHANNEL_7))
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
 
 	command->destructor = destroy_close_channel;
@@ -3362,6 +3471,9 @@ static enum stk_command_parse_result parse_send_data(
 {
 	struct stk_command_send_data *obj = &command->send_data;
 	enum stk_command_parse_result status;
+
+	if (command->qualifier > STK_SEND_DATA_IMMEDIATELY)
+		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
 
 	if (command->src != STK_DEVICE_IDENTITY_TYPE_UICC)
 		return STK_PARSE_RESULT_DATA_NOT_UNDERSTOOD;
@@ -3737,6 +3849,8 @@ static enum stk_command_parse_result parse_command_body(
 		return parse_language_notification(command, iter);
 	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
 		return parse_launch_browser(command, iter);
+	case STK_COMMAND_TYPE_OPEN_CHANNEL:
+		return parse_open_channel(command, iter);
 	case STK_COMMAND_TYPE_CLOSE_CHANNEL:
 		return parse_close_channel(command, iter);
 	case STK_COMMAND_TYPE_RECEIVE_DATA:
@@ -4752,12 +4866,35 @@ static gboolean build_dataobj_bearer_description(struct stk_tlv_builder *tlv,
 	const struct stk_bearer_description *bd = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_BEARER_DESCRIPTION;
 
-	if (bd->type == 0x00)
+	if (bd->type != STK_BEARER_TYPE_GPRS_UTRAN)
 		return TRUE;
 
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
 		stk_tlv_builder_append_byte(tlv, bd->type) &&
-		stk_tlv_builder_append_bytes(tlv, bd->pars, bd->len) &&
+		stk_tlv_builder_append_byte(tlv,
+			bd->gprs.precedence) &&
+		stk_tlv_builder_append_byte(tlv,
+			bd->gprs.delay) &&
+		stk_tlv_builder_append_byte(tlv,
+			bd->gprs.reliability) &&
+		stk_tlv_builder_append_byte(tlv,
+			bd->gprs.peak) &&
+		stk_tlv_builder_append_byte(tlv,
+			bd->gprs.mean) &&
+		stk_tlv_builder_append_byte(tlv,
+			bd->gprs.pdp_type) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
+/* Described in TS 102.223 Section 8.53 */
+static gboolean build_dataobj_channel_data(struct stk_tlv_builder *tlv,
+						const void *data, gboolean cr)
+{
+	const struct stk_common_byte_array *cd = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_CHANNEL_DATA;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, TRUE) &&
+		stk_tlv_builder_append_bytes(tlv, cd->array, cd->len) &&
 		stk_tlv_builder_close_container(tlv);
 }
 
@@ -4766,7 +4903,7 @@ static gboolean build_dataobj_channel_data_length(
 						struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
 {
-	const unsigned int *length = data;
+	const unsigned short *length = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_CHANNEL_DATA_LENGTH;
 
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
@@ -4774,15 +4911,50 @@ static gboolean build_dataobj_channel_data_length(
 		stk_tlv_builder_close_container(tlv);
 }
 
+/* Described in TS 102.223 Section 8.55 */
+static gboolean build_dataobj_buffer_size(struct stk_tlv_builder *tlv,
+					const void *data, gboolean cr)
+{
+	const unsigned short *buf_size = data;
+	unsigned char tag = STK_DATA_OBJECT_TYPE_BUFFER_SIZE;
+
+	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
+		stk_tlv_builder_append_short(tlv, *buf_size) &&
+		stk_tlv_builder_close_container(tlv);
+}
+
 /* Described in TS 102.223 Section 8.56 */
 static gboolean build_dataobj_channel_status(struct stk_tlv_builder *tlv,
 						const void *data, gboolean cr)
 {
+	const struct stk_channel *channel = data;
 	unsigned char tag = STK_DATA_OBJECT_TYPE_CHANNEL_STATUS;
+	unsigned char byte[2];
+
+	switch (channel->status) {
+	case STK_CHANNEL_PACKET_DATA_SERVICE_NOT_ACTIVATED:
+	case STK_CHANNEL_TCP_IN_CLOSED_STATE:
+		byte[0] = channel->id;
+		byte[1] = 0x00;
+		break;
+	case STK_CHANNEL_PACKET_DATA_SERVICE_ACTIVATED:
+	case STK_CHANNEL_TCP_IN_ESTABLISHED_STATE:
+		byte[0] = channel->id | 0x80;
+		byte[1] = 0x00;
+		break;
+	case STK_CHANNEL_TCP_IN_LISTEN_STATE:
+		byte[0] = channel->id | 0x40;
+		byte[1] = 0x00;
+		break;
+	case STK_CHANNEL_LINK_DROPPED:
+		byte[0] = channel->id;
+		byte[1] = 0x05;
+		break;
+	}
 
 	return stk_tlv_builder_open_container(tlv, cr, tag, FALSE) &&
-		stk_tlv_builder_append_bytes(tlv, data, 2) &&
-		stk_tlv_builder_close_container(tlv);
+			stk_tlv_builder_append_bytes(tlv, byte, 2) &&
+			stk_tlv_builder_close_container(tlv);
 }
 
 /* Described in TS 102.223 Section 8.58 */
@@ -5454,6 +5626,63 @@ static gboolean build_local_info(struct stk_tlv_builder *builder,
 	return FALSE;
 }
 
+static gboolean build_open_channel(struct stk_tlv_builder *builder,
+					const struct stk_response *response)
+{
+	const struct stk_response_open_channel *open_channel =
+		&response->open_channel;
+
+	/* insert channel identifier only in case of success */
+	if (response->result.type == STK_RESULT_TYPE_SUCCESS) {
+		if (build_dataobj(builder, build_dataobj_channel_status,
+						0, &open_channel->channel,
+						NULL) != TRUE)
+			return FALSE;
+	}
+
+	return build_dataobj(builder,
+				build_dataobj_bearer_description,
+				0, &open_channel->bearer_desc,
+				build_dataobj_buffer_size,
+				0, &open_channel->buf_size,
+				NULL);
+}
+
+static gboolean build_receive_data(struct stk_tlv_builder *builder,
+					const struct stk_response *response)
+{
+	const struct stk_response_receive_data *receive_data =
+		&response->receive_data;
+
+	if (response->result.type != STK_RESULT_TYPE_SUCCESS)
+		return TRUE;
+
+	if (receive_data->rx_data.len) {
+		if (build_dataobj(builder, build_dataobj_channel_data,
+					DATAOBJ_FLAG_CR,
+					&response->receive_data.rx_data,
+					NULL) != TRUE)
+		return FALSE;
+	}
+
+	return build_dataobj(builder, build_dataobj_channel_data_length,
+				DATAOBJ_FLAG_CR,
+				&response->receive_data.rx_remaining,
+				NULL);
+}
+
+static gboolean build_send_data(struct stk_tlv_builder *builder,
+					const struct stk_response *response)
+{
+	if (response->result.type != STK_RESULT_TYPE_SUCCESS)
+		return TRUE;
+
+	return build_dataobj(builder, build_dataobj_channel_data_length,
+				DATAOBJ_FLAG_CR,
+				&response->send_data.tx_avail,
+				NULL);
+}
+
 const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 						unsigned int *out_length)
 {
@@ -5582,12 +5811,29 @@ const unsigned char *stk_pdu_from_response(const struct stk_response *response,
 	case STK_COMMAND_TYPE_SEND_DTMF:
 	case STK_COMMAND_TYPE_LANGUAGE_NOTIFICATION:
 	case STK_COMMAND_TYPE_LAUNCH_BROWSER:
+	case STK_COMMAND_TYPE_CLOSE_CHANNEL:
 		break;
 	case STK_COMMAND_TYPE_SEND_USSD:
 		ok = build_dataobj(&builder,
 					build_dataobj_ussd_text,
 					DATAOBJ_FLAG_CR,
 					&response->send_ussd.text,
+					NULL);
+		break;
+	case STK_COMMAND_TYPE_OPEN_CHANNEL:
+		ok = build_open_channel(&builder, response);
+		break;
+	case STK_COMMAND_TYPE_RECEIVE_DATA:
+		ok = build_receive_data(&builder, response);
+		break;
+	case STK_COMMAND_TYPE_SEND_DATA:
+		ok = build_send_data(&builder, response);
+		break;
+	case STK_COMMAND_TYPE_GET_CHANNEL_STATUS:
+		ok = build_dataobj(&builder,
+					build_dataobj_channel_status,
+					DATAOBJ_FLAG_CR,
+					&response->channel_status.channel,
 					NULL);
 		break;
 	default:
@@ -5738,7 +5984,7 @@ static gboolean build_envelope_event_download(struct stk_tlv_builder *builder,
 		return build_dataobj(builder,
 					build_dataobj_channel_status,
 					DATAOBJ_FLAG_CR,
-					&evt->data_available.channel_status,
+					&evt->data_available.channel,
 					build_dataobj_channel_data_length,
 					DATAOBJ_FLAG_CR,
 					&evt->data_available.channel_data_len,
@@ -5747,7 +5993,7 @@ static gboolean build_envelope_event_download(struct stk_tlv_builder *builder,
 		return build_dataobj(builder,
 					build_dataobj_channel_status,
 					DATAOBJ_FLAG_CR,
-					&evt->channel_status.status,
+					&evt->channel_status.channel,
 					build_dataobj_bearer_description,
 					DATAOBJ_FLAG_CR,
 					&evt->channel_status.bearer_desc,

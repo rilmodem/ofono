@@ -425,14 +425,19 @@ enum stk_browser_termination_cause {
 	STK_BROWSER_ERROR_TERMINATION =		0x01
 };
 
+/* Defined in TS 31.111 Section 8.52 */
 enum stk_bearer_type {
+	STK_BEARER_TYPE_CS =			0x01,
+	STK_BEARER_TYPE_GPRS_UTRAN =		0x02,
 	STK_BEARER_TYPE_DEFAULT =		0x03,
 	STK_BEARER_TYPE_INDEPENDENT =		0x04,
 	STK_BEARER_TYPE_BLUETOOTH =		0x05,
 	STK_BEARER_TYPE_IRDA =			0x06,
 	STK_BEARER_TYPE_RS232 =			0x07,
-	STK_BEARER_TYPE_PACKET_DATA_SERVICE =	0x08,
-	STK_BEARER_TYPE_I_WLAN =		0x0a,
+	STK_BEARER_TYPE_TIA_EIA_IS_820 =	0x08,
+	STK_BEARER_TYPE_UTRAN_WITH_EXT_PARAMS = 0x09,
+	STK_BEARER_TYPE_I_WLAN =		0x0A,
+	STK_BEARER_TYPE_EUTRAN_MAPPED_UTRAN =	0x0B,
 	STK_BEARER_TYPE_USB =			0x10
 };
 
@@ -585,6 +590,39 @@ enum stk_img_scheme {
 	STK_IMG_SCHEME_BASIC =		0x11,
 	STK_IMG_SCHEME_COLOR =		0x21,
 	STK_IMG_SCHEME_TRANSPARENCY =	0x22,
+};
+
+/* Defined in TS 102.223 Section 8.6 */
+enum stk_qualifier_open_channel {
+	STK_OPEN_CHANNEL_FLAG_IMMEDIATE =		0x01,
+	STK_OPEN_CHANNEL_FLAG_AUTO_RECONNECT =		0x02,
+	STK_OPEN_CHANNEL_FLAG_BACKGROUND =		0x04,
+};
+
+/* Defined in TS 102.223 Section 8.6 */
+enum stk_qualifier_send_data {
+	STK_SEND_DATA_STORE_DATA =	0x00,
+	STK_SEND_DATA_IMMEDIATELY =	0x01,
+};
+
+/* Defined in TS 102.223 Section 8.56 */
+enum stk_channel_status {
+	STK_CHANNEL_PACKET_DATA_SERVICE_NOT_ACTIVATED = 0x00,
+	STK_CHANNEL_PACKET_DATA_SERVICE_ACTIVATED =	0x01,
+	STK_CHANNEL_TCP_IN_CLOSED_STATE =		0x02,
+	STK_CHANNEL_TCP_IN_LISTEN_STATE =		0x03,
+	STK_CHANNEL_TCP_IN_ESTABLISHED_STATE =		0x04,
+	STK_CHANNEL_LINK_DROPPED =			0x05,
+};
+
+/* Defined in TS 102.223 Section 8.59 */
+enum stk_transport_protocol_type {
+	STK_TRANSPORT_PROTOCOL_UDP_CLIENT_REMOTE =	0x01,
+	STK_TRANSPORT_PROTOCOL_TCP_CLIENT_REMOTE =	0x02,
+	STK_TRANSPORT_PROTOCOL_TCP_SERVER =		0x03,
+	STK_TRANSPORT_PROTOCOL_UDP_CLIENT_LOCAL =	0x04,
+	STK_TRANSPORT_PROTOCOL_TCP_CLIENT_LOCAL =	0x05,
+	STK_TRANSPORT_PROTOCOL_DIRECT =			0x06,
 };
 
 /* For data object that only has a byte array with undetermined length */
@@ -849,16 +887,20 @@ struct stk_timing_advance {
 	unsigned char advance;
 };
 
-/*
- * According to 102.223 Section 8.52 the length of CTLV is 1 byte. This means
- * that the maximum size is 127 according to the rules of CTLVs. This size also
- * includes bearer type for 1 byte, so the maxmimum size of bearer parameters
- * is 126.
- */
+/* Bearer parameters for GPRS/UTRAN Packet Service/E-UTRAN */
+struct stk_gprs_bearer_parameters {
+	unsigned char precedence;
+	unsigned char delay;
+	unsigned char reliability;
+	unsigned char peak;
+	unsigned char mean;
+	unsigned char pdp_type;
+};
+
+/* Defined in TS 31.111 Section 8.52 */
 struct stk_bearer_description {
-	unsigned char type;
-	unsigned char pars[126];
-	unsigned int len;
+	enum stk_bearer_type type;
+	struct stk_gprs_bearer_parameters gprs;
 };
 
 /*
@@ -885,7 +927,7 @@ struct stk_other_address {
 
 /* Defined in TS 102.223 Section 8.59 */
 struct stk_uicc_te_interface {
-	unsigned char protocol;
+	enum stk_transport_protocol_type protocol;
 	unsigned short port;
 };
 
@@ -947,15 +989,6 @@ struct stk_remote_entity_address {
 		unsigned char ieee802[6];
 		unsigned char irda[4];
 	} addr;
-};
-
-/*
- * According to 102.223 Section 8.70 the length of CTLV is 1 byte. This means
- * that the maximum size is 127 according to the rules of CTLVs.
- */
-struct stk_network_access_name {
-	unsigned char name[127];
-	unsigned char len;
 };
 
 /*
@@ -1250,6 +1283,21 @@ struct stk_command_launch_browser {
 	char *text_passwd;
 };
 
+struct stk_command_open_channel {
+	char *alpha_id;
+	struct stk_icon_id icon_id;
+	struct stk_bearer_description bearer_desc;
+	unsigned short buf_size;
+	char *apn;
+	struct stk_other_address local_addr;
+	char *text_usr;
+	char *text_passwd;
+	struct stk_uicc_te_interface uti;
+	struct stk_other_address data_dest_addr;
+	struct stk_text_attribute text_attr;
+	struct stk_frame_id frame_id;
+};
+
 struct stk_command_close_channel {
 	char *alpha_id;
 	struct stk_icon_id icon_id;
@@ -1368,6 +1416,7 @@ struct stk_command {
 		struct stk_command_send_dtmf send_dtmf;
 		struct stk_command_language_notification language_notification;
 		struct stk_command_launch_browser launch_browser;
+		struct stk_command_open_channel open_channel;
 		struct stk_command_close_channel close_channel;
 		struct stk_command_receive_data receive_data;
 		struct stk_command_send_data send_data;
@@ -1404,6 +1453,19 @@ struct stk_ussd_text {
 	const unsigned char *text;
 	int dcs;
 	int len;
+};
+
+struct stk_channel {
+	unsigned char id;
+	enum stk_channel_status status;
+};
+
+struct stk_channel_data {
+	struct stk_common_byte_array data;
+	union {
+		unsigned short rx_remaining;
+		unsigned short tx_avail;
+	};
 };
 
 struct stk_response_get_inkey {
@@ -1481,6 +1543,25 @@ struct stk_response_send_ussd {
 	struct stk_ussd_text text;
 };
 
+struct stk_response_open_channel {
+	struct stk_channel channel;
+	struct stk_bearer_description bearer_desc;
+	unsigned short buf_size;
+};
+
+struct stk_response_receive_data {
+	struct stk_common_byte_array rx_data;
+	unsigned short rx_remaining;
+};
+
+struct stk_response_send_data {
+	unsigned short tx_avail;
+};
+
+struct stk_response_channel_status {
+	struct stk_channel channel;
+};
+
 struct stk_response {
 	unsigned char number;
 	unsigned char type;
@@ -1511,6 +1592,10 @@ struct stk_response {
 		struct stk_response_generic language_notification;
 		struct stk_response_generic launch_browser;
 		struct stk_response_send_ussd send_ussd;
+		struct stk_response_open_channel open_channel;
+		struct stk_response_receive_data receive_data;
+		struct stk_response_send_data send_data;
+		struct stk_response_channel_status channel_status;
 	};
 
 	void (*destructor)(struct stk_response *response);
@@ -1596,11 +1681,11 @@ struct stk_envelope_event_download {
 			enum stk_browser_termination_cause cause;
 		} browser_termination;
 		struct {
-			unsigned char channel_status[2];
+			struct stk_channel channel;
 			unsigned int channel_data_len;
 		} data_available;
 		struct {
-			unsigned char status[2];
+			struct stk_channel channel;
 			struct stk_bearer_description bearer_desc;
 			struct stk_other_address address;
 		} channel_status;
