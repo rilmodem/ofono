@@ -707,6 +707,7 @@ void __ofono_modem_append_properties(struct ofono_modem *modem,
 	int i;
 	GSList *l;
 	struct ofono_atom *devinfo_atom;
+	dbus_bool_t emergency = ofono_modem_get_emergency_mode(modem);
 
 	ofono_dbus_dict_append(dict, "Online", DBUS_TYPE_BOOLEAN,
 				&modem->online);
@@ -716,6 +717,9 @@ void __ofono_modem_append_properties(struct ofono_modem *modem,
 
 	ofono_dbus_dict_append(dict, "Lockdown", DBUS_TYPE_BOOLEAN,
 				&modem->lockdown);
+
+	ofono_dbus_dict_append(dict, "Emergency", DBUS_TYPE_BOOLEAN,
+				&emergency);
 
 	devinfo_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_DEVINFO);
 
