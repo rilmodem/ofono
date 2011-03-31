@@ -217,6 +217,9 @@ void __ofono_modem_remove_powered_watch(struct ofono_modem *modem,
 
 void __ofono_modem_sim_reset(struct ofono_modem *modem);
 
+void __ofono_modem_inc_emergency_mode(struct ofono_modem *modem);
+void __ofono_modem_dec_emergency_mode(struct ofono_modem *modem);
+
 #include <ofono/call-barring.h>
 
 gboolean __ofono_call_barring_is_busy(struct ofono_call_barring *cb);

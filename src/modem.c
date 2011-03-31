@@ -2102,3 +2102,39 @@ ofono_bool_t ofono_modem_get_emergency_mode(struct ofono_modem *modem)
 {
 	return modem->emergency != 0;
 }
+
+void __ofono_modem_inc_emergency_mode(struct ofono_modem *modem)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	dbus_bool_t emergency = TRUE;
+
+	if (++modem->emergency > 1)
+		return;
+
+	ofono_dbus_signal_property_changed(conn, modem->path,
+						OFONO_MODEM_INTERFACE,
+						"Emergency", DBUS_TYPE_BOOLEAN,
+						&emergency);
+}
+
+void __ofono_modem_dec_emergency_mode(struct ofono_modem *modem)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	dbus_bool_t emergency = FALSE;
+
+	if (modem->emergency == 0) {
+		ofono_error("emergency mode is already deactivated!!!");
+		return;
+	}
+
+	if (modem->emergency > 1)
+		goto out;
+
+	ofono_dbus_signal_property_changed(conn, modem->path,
+						OFONO_MODEM_INTERFACE,
+						"Emergency", DBUS_TYPE_BOOLEAN,
+						&emergency);
+
+out:
+	modem->emergency--;
+}
