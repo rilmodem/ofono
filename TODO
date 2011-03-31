@@ -149,20 +149,6 @@ Modem Emulator
   Priority: Medium
 
 
-Flight Mode
-===========
-
-- Flight Mode support.  Add an 'Online' property to the Modem interface that
-  will control the online state of the modem.  When Online state is True all
-  atoms are available.  When Online state is False, all network related items
-  are removed (e.g. CallSettings) or enter into reduced functionality set
-  where only the SIM is available (e.g. DataConnectionManager, SimManager, etc)
-
-  Complexity: C4
-  Priority: High
-  Owner: Pekka Pessi <pekka.pessi@nokia.com>
-
-
 GPRS
 ====
 

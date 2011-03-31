@@ -588,3 +588,13 @@ Voice Calls
 	- call has been put on hold by the remote party (+CSSU: 2)
 	- call has been retrieved by the remote party (+CSSU: 3)
 	- call has been added to a mpty call by the remote party (+CSSU: 4)
+
+Flight Mode
+===========
+
+- Flight Mode support.  oFono uses the 'Online' property on the Modem interface
+  that controls the state of the radio.  When Online state is False, all
+  interfaces that depend on the radio being on are removed.  Other interfaces
+  enter reduced functionality mode where only certain actions are available
+  that do not depend on the radio.  E.g. setting various settings on the local
+  store or the SIM.
