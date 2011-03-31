@@ -53,6 +53,8 @@ ofono_bool_t ofono_modem_get_powered(struct ofono_modem *modem);
 
 ofono_bool_t ofono_modem_get_online(struct ofono_modem *modem);
 
+ofono_bool_t ofono_modem_get_emergency_mode(struct ofono_modem *modem);
+
 void ofono_modem_set_name(struct ofono_modem *modem, const char *name);
 
 int ofono_modem_set_string(struct ofono_modem *modem,
