@@ -576,3 +576,15 @@ Voice Calls
 
 - Long phone number support. oFono supports dialing of phone numbers up to
   80 digits long.
+
+- Supplementary service notifications related to mobile originated (MO) and
+  mobile terminated (MT) calls.  oFono supports certain supplementary service
+  notifications, typically reported by CSSU and CSSI, that are related to
+  MT/MO calls:
+	- outgoing call has been forwarded (+CSSI: 2)
+	- outgoing calls are barred (+CSSI: 5)
+	- outgoing call barred due to call barring on remote party (+CSSI: 6)
+	- incoming call is a forwarded call (+CSSU: 0)
+	- call has been put on hold by the remote party (+CSSU: 2)
+	- call has been retrieved by the remote party (+CSSU: 3)
+	- call has been added to a mpty call by the remote party (+CSSU: 4)
