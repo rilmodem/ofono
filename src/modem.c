@@ -78,6 +78,7 @@ struct ofono_modem {
 	ofono_bool_t		online;
 	struct ofono_watchlist	*online_watches;
 	struct ofono_watchlist	*powered_watches;
+	guint			emergency;
 	GHashTable		*properties;
 	struct ofono_sim	*sim;
 	unsigned int		sim_watch;
@@ -2091,4 +2092,9 @@ void __ofono_modem_foreach(ofono_modem_foreach_func func, void *userdata)
 		modem = l->data;
 		func(modem, userdata);
 	}
+}
+
+ofono_bool_t ofono_modem_get_emergency_mode(struct ofono_modem *modem)
+{
+	return modem->emergency != 0;
 }
