@@ -1281,8 +1281,14 @@ static void manager_dial_callback(const struct ofono_error *error, void *data)
 
 		dbus_message_append_args(reply, DBUS_TYPE_OBJECT_PATH, &path,
 						DBUS_TYPE_INVALID);
-	} else
+	} else {
+		struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
+
+		if (is_emergency_number(vc, number) == TRUE)
+			__ofono_modem_dec_emergency_mode(modem);
+
 		reply = __ofono_error_failed(vc->pending);
+	}
 
 	__ofono_dbus_pending_reply(&vc->pending, reply);
 
@@ -1294,6 +1300,7 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_voicecall *vc = data;
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	const char *number;
 	struct ofono_phone_number ph;
 	const char *clirstr;
@@ -1316,6 +1323,9 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 	if (clir_string_to_clir(clirstr, &clir) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
+	if (ofono_modem_get_online(modem) == FALSE)
+		return __ofono_error_not_available(msg);
+
 	if (vc->driver->dial == NULL)
 		return __ofono_error_not_implemented(msg);
 
@@ -1328,6 +1338,9 @@ static DBusMessage *manager_dial(DBusConnection *conn,
 
 	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
 		return __ofono_error_failed(msg);
+
+	if (is_emergency_number(vc, number) == TRUE)
+		__ofono_modem_inc_emergency_mode(modem);
 
 	vc->pending = dbus_message_ref(msg);
 
@@ -1891,6 +1904,7 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 	struct voicecall *call;
 	time_t ts;
 	enum call_status prev_status;
+	const char *number;
 
 	DBG("Got disconnection event for id: %d, reason: %d", id, reason);
 
@@ -1930,6 +1944,10 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 
 	if (reason != OFONO_DISCONNECT_REASON_UNKNOWN)
 		voicecall_emit_disconnect_reason(call, reason);
+
+	number = phone_number_to_string(&call->call->phone_number);
+	if (is_emergency_number(vc, number) == TRUE)
+		__ofono_modem_dec_emergency_mode(modem);
 
 	voicecall_set_call_status(call, CALL_STATUS_DISCONNECTED);
 
