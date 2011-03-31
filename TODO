@@ -162,12 +162,6 @@ GPRS
 PPP
 ===
 
-- PPP Server support.  Extend GAtPPP to support PPP Server role, similarly to
-  how existing GSM modems support PPP GPRS contexts.
-
-  Priority: High
-  Complexity: C2
-
 - IPv6 CP support.  To support IPv6 based GPRS contexts via PPP, GAtPPP
   needs to be updated to support IPv6CP from RFC 2472.
 
