@@ -477,7 +477,6 @@ static void check_bearer_desc(const struct stk_bearer_description *command,
 	g_assert(command->type == test->type);
 
 	if (test->type == STK_BEARER_TYPE_GPRS_UTRAN) {
-
 		check_common_byte(command->gprs.precedence,
 				test->gprs.precedence);
 		check_common_byte(command->gprs.delay,
@@ -490,6 +489,7 @@ static void check_bearer_desc(const struct stk_bearer_description *command,
 				test->gprs.mean);
 		check_common_byte(command->gprs.pdp_type,
 				test->gprs.pdp_type);
+
 		return;
 	}
 }
