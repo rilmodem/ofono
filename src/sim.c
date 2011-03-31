@@ -106,6 +106,7 @@ struct ofono_sim {
 	const struct ofono_sim_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
+	unsigned int hfp_watch;
 };
 
 struct msisdn_set_request {
@@ -2445,12 +2446,26 @@ void ofono_sim_driver_unregister(const struct ofono_sim_driver *d)
 	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
+static void emulator_remove_handler(struct ofono_atom *atom, void *data)
+{
+	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+
+	ofono_emulator_remove_handler(em, data);
+}
+
 static void sim_unregister(struct ofono_atom *atom)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(atom);
 	const char *path = __ofono_atom_get_path(atom);
 	struct ofono_sim *sim = __ofono_atom_get_data(atom);
+
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_remove_handler,
+						"+CNUM");
+
+	__ofono_modem_remove_atom_watch(modem, sim->hfp_watch);
 
 	__ofono_watchlist_free(sim->state_watches);
 	sim->state_watches = NULL;
@@ -2519,6 +2534,53 @@ struct ofono_sim *ofono_sim_create(struct ofono_modem *modem,
 	return sim;
 }
 
+static void emulator_cnum_cb(struct ofono_emulator *em,
+			struct ofono_emulator_request *req, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	struct ofono_error result;
+	GSList *l;
+	const char *phone;
+	/*
+	 * '+CNUM: ,"+",,,4' + phone number + phone type on 3 digits max
+	 * + terminating null
+	 */
+	char buf[OFONO_MAX_PHONE_NUMBER_LENGTH + 18 + 1];
+
+	result.error = 0;
+
+	switch (ofono_emulator_request_get_type(req)) {
+	case OFONO_EMULATOR_REQUEST_TYPE_COMMAND_ONLY:
+		for (l = sim->own_numbers; l; l = l->next) {
+			struct ofono_phone_number *ph = l->data;
+
+			phone = phone_number_to_string(ph);
+			sprintf(buf, "+CNUM: ,\"%s\",%d,,4", phone, ph->type);
+			ofono_emulator_send_info(em, buf, l->next == NULL ?
+							TRUE : FALSE);
+		}
+
+		result.type = OFONO_ERROR_TYPE_NO_ERROR;
+		ofono_emulator_send_final(em, &result);
+		break;
+
+	default:
+		result.type = OFONO_ERROR_TYPE_FAILURE;
+		ofono_emulator_send_final(em, &result);
+	};
+}
+
+static void emulator_hfp_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_REGISTERED)
+		ofono_emulator_add_handler(em, "+CNUM", emulator_cnum_cb, data,
+						NULL);
+}
+
 void ofono_sim_register(struct ofono_sim *sim)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -2545,6 +2607,10 @@ void ofono_sim_register(struct ofono_sim *sim)
 
 	if (sim->state > OFONO_SIM_STATE_NOT_PRESENT)
 		sim_initialize(sim);
+
+	sim->hfp_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_EMULATOR_HFP,
+					emulator_hfp_watch, sim, NULL);
 }
 
 void ofono_sim_remove(struct ofono_sim *sim)
