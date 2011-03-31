@@ -1622,7 +1622,8 @@ static gboolean parse_dataobj_esn(struct comprehension_tlv_iter *iter,
 
 /* Defined in TS 102.223 Section 8.70 */
 static gboolean parse_dataobj_network_access_name(
-		struct comprehension_tlv_iter *iter, void *user)
+					struct comprehension_tlv_iter *iter,
+					void *user)
 {
 	char **apn = user;
 	const unsigned char *data;
@@ -1635,17 +1636,17 @@ static gboolean parse_dataobj_network_access_name(
 		return FALSE;
 
 	data = comprehension_tlv_iter_get_data(iter);
+
 	/*
 	 * As specified in TS 23 003 Section 9
 	 * The APN consists of one or more labels. Each label is coded as
 	 * a one octet length field followed by that number of octets coded
 	 * as 8 bit ASCII characters
 	 */
-
 	while (len) {
 		label_size = *data;
 
-		if (label_size > (len-1))
+		if (label_size > (len - 1))
 			return FALSE;
 
 		memcpy(decoded_apn + offset, data + 1, label_size);
