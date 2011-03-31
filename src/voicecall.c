@@ -337,14 +337,10 @@ static gint number_compare(gconstpointer a, gconstpointer b)
 	return strcmp(s1, s2);
 }
 
-static gboolean voicecall_is_emergency(struct voicecall *v)
+static gboolean is_emergency_number(struct ofono_voicecall *vc,
+					const char *number)
 {
-	struct ofono_call *call = v->call;
-	const char *lineid_str;
-
-	lineid_str = phone_number_to_string(&call->phone_number);
-
-	return g_slist_find_custom(v->vc->en_list, lineid_str,
+	return g_slist_find_custom(vc->en_list, number,
 						number_compare) ? TRUE : FALSE;
 }
 
@@ -417,7 +413,7 @@ static void append_voicecall_properties(struct voicecall *v,
 		ofono_dbus_dict_append(dict, "Icon",
 						DBUS_TYPE_BYTE, &v->icon_id);
 
-	if (voicecall_is_emergency(v) == TRUE)
+	if (is_emergency_number(v->vc, callerid) == TRUE)
 		emergency_call = TRUE;
 	else
 		emergency_call = FALSE;
@@ -788,7 +784,7 @@ static void voicecall_set_call_lineid(struct voicecall *v,
 						"LineIdentification",
 						DBUS_TYPE_STRING, &lineid_str);
 
-	if (voicecall_is_emergency(v)) {
+	if (is_emergency_number(v->vc, lineid_str)) {
 		dbus_bool_t emergency_call = TRUE;
 
 		ofono_dbus_signal_property_changed(conn, path,
