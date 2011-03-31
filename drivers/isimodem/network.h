@@ -45,6 +45,8 @@ enum net_message_id {
 	NET_RSSI_IND =					0x1E,
 	NET_CIPHERING_IND =				0x20,
 	NET_TIME_IND =					0x27,
+	NET_OLD_OPER_NAME_READ_REQ =			0x28,
+	NET_OLD_OPER_NAME_READ_RESP =			0x29,
 	NET_CHANNEL_INFO_IND =				0x2C,
 	NET_RAT_IND =					0x35,
 	NET_RAT_REQ =					0x36,

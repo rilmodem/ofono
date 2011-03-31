@@ -466,7 +466,8 @@ static void name_get_resp_cb(const GIsiMessage *msg, void *data)
 
 	memset(&op, 0, sizeof(struct ofono_network_operator));
 
-	if (!check_response_status(msg, NET_OPER_NAME_READ_RESP))
+	if (!check_response_status(msg, NET_OLD_OPER_NAME_READ_RESP) &&
+			!check_response_status(msg, NET_OPER_NAME_READ_RESP))
 		goto error;
 
 	for (g_isi_sb_iter_init(&iter, msg, 6);
@@ -513,7 +514,7 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	struct isi_cb_data *cbd = isi_cb_data_new(netreg, cb, data);
 
-	const uint8_t msg[] = {
+	uint8_t msg[] = {
 		NET_OPER_NAME_READ_REQ,
 		NET_HARDCODED_LATIN_OPER_NAME,
 		OFONO_MAX_OPERATOR_NAME_LENGTH,
@@ -524,6 +525,9 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 
 	if (cbd == NULL || nd == NULL)
 		goto error;
+
+	if (nd->version.major < 14)
+		msg[0] = NET_OLD_OPER_NAME_READ_REQ;
 
 	if (g_isi_client_send(nd->client, msg, sizeof(msg), name_get_resp_cb,
 				cbd, g_free))

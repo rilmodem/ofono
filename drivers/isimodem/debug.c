@@ -1035,6 +1035,8 @@ const char *net_message_id_name(enum net_message_id value)
 		_(NET_AVAILABLE_GET_RESP);
 		_(NET_OPER_NAME_READ_REQ);
 		_(NET_OPER_NAME_READ_RESP);
+		_(NET_OLD_OPER_NAME_READ_REQ);
+		_(NET_OLD_OPER_NAME_READ_RESP);
 		_(NET_COMMON_MESSAGE);
 	}
 	return "NET_<UNKNOWN>";
