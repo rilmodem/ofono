@@ -361,6 +361,13 @@ DBusMessage *__ofono_error_access_denied(DBusMessage *msg)
 					"Operation not permitted");
 }
 
+DBusMessage *__ofono_error_emergency_active(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg,
+				OFONO_ERROR_INTERFACE ".EmergencyActive",
+				"Emergency mode active");
+}
+
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
