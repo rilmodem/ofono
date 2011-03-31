@@ -677,6 +677,9 @@ static DBusMessage *set_property_online(struct ofono_modem *modem,
 	if (modem->online == online)
 		return dbus_message_new_method_return(msg);
 
+	if (ofono_modem_get_emergency_mode(modem) == TRUE)
+		return __ofono_error_emergency_active(msg);
+
 	if (driver->set_online == NULL)
 		return __ofono_error_not_implemented(msg);
 
@@ -922,6 +925,9 @@ static DBusMessage *set_property_lockdown(struct ofono_modem *modem,
 		goto done;
 	}
 
+	if (ofono_modem_get_emergency_mode(modem) == TRUE)
+		return __ofono_error_emergency_active(msg);
+
 	modem->lock_owner = g_strdup(caller);
 
 	modem->lock_watch = g_dbus_add_disconnect_watch(conn,
@@ -1011,6 +1017,9 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 
 		if (modem->powered == powered)
 			return dbus_message_new_method_return(msg);
+
+		if (ofono_modem_get_emergency_mode(modem) == TRUE)
+			return __ofono_error_emergency_active(msg);
 
 		if (modem->lockdown)
 			return __ofono_error_access_denied(msg);
