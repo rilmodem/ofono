@@ -484,7 +484,6 @@ Short Messaging Service
   is persistent across reboots of oFono and allows to queue SMS messages even
   while the modem is offline.
 
-
 GPRS
 ====
 
