@@ -1924,6 +1924,37 @@ static void send_ussd_callback(int error, int dcs, const unsigned char *msg,
 	}
 }
 
+static gboolean ss_is_busy(struct ofono_modem *modem)
+{
+	struct ofono_atom *atom;
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_FORWARDING);
+	if (atom && __ofono_atom_get_registered(atom)) {
+		struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
+
+		if (__ofono_call_forwarding_is_busy(cf))
+			return TRUE;
+	}
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_BARRING);
+	if (atom && __ofono_atom_get_registered(atom)) {
+		struct ofono_call_barring *cb = __ofono_atom_get_data(atom);
+
+		if (__ofono_call_barring_is_busy(cb))
+			return TRUE;
+	}
+
+	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS);
+	if (atom && __ofono_atom_get_registered(atom)) {
+		struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
+
+		if (__ofono_call_settings_is_busy(cs))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 					struct stk_response *rsp,
 					struct ofono_stk *stk)
@@ -1935,40 +1966,10 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 	struct ofono_ussd *ussd;
 	int err;
 
-	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_FORWARDING);
-	if (atom && __ofono_atom_get_registered(atom)) {
-		struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
-
-		if (__ofono_call_forwarding_is_busy(cf)) {
-			ADD_ERROR_RESULT(rsp->result,
-						STK_RESULT_TYPE_TERMINAL_BUSY,
-						busy_on_ss_result);
-			return TRUE;
-		}
-	}
-
-	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_BARRING);
-	if (atom && __ofono_atom_get_registered(atom)) {
-		struct ofono_call_barring *cb = __ofono_atom_get_data(atom);
-
-		if (__ofono_call_barring_is_busy(cb)) {
-			ADD_ERROR_RESULT(rsp->result,
-						STK_RESULT_TYPE_TERMINAL_BUSY,
-						busy_on_ss_result);
-			return TRUE;
-		}
-	}
-
-	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS);
-	if (atom && __ofono_atom_get_registered(atom)) {
-		struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
-
-		if (__ofono_call_settings_is_busy(cs)) {
-			ADD_ERROR_RESULT(rsp->result,
-						STK_RESULT_TYPE_TERMINAL_BUSY,
-						busy_on_ss_result);
-			return TRUE;
-		}
+	if (ss_is_busy(modem)) {
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					busy_on_ss_result);
+		return TRUE;
 	}
 
 	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
@@ -2029,6 +2030,11 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 	struct ofono_error failure = { .type = OFONO_ERROR_TYPE_FAILURE };
 	struct ofono_sim *sim = NULL;
 	struct ofono_atom *sim_atom;
+	struct ofono_ussd *ussd = NULL;
+	struct ofono_atom *ussd_atom;
+	struct ofono_voicecall *vc = NULL;
+	struct ofono_atom *vc_atom;
+	uint8_t addnl_info[1];
 	int err;
 	GSList *l;
 
@@ -2096,6 +2102,48 @@ static gboolean handle_command_refresh(const struct stk_command *cmd,
 			rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 
 		return TRUE;
+	}
+
+	if (rsp != NULL) {
+		ussd_atom = __ofono_modem_find_atom(
+					__ofono_atom_get_modem(stk->atom),
+					OFONO_ATOM_TYPE_USSD);
+		if (ussd_atom)
+			ussd = __ofono_atom_get_data(ussd_atom);
+
+		if (ussd && __ofono_ussd_is_busy(ussd)) {
+			addnl_info[0] = STK_RESULT_ADDNL_ME_PB_USSD_BUSY;
+
+			ADD_ERROR_RESULT(rsp->result,
+					STK_RESULT_TYPE_TERMINAL_BUSY,
+					addnl_info);
+			return TRUE;
+		}
+
+		vc_atom = __ofono_modem_find_atom(
+					__ofono_atom_get_modem(stk->atom),
+					OFONO_ATOM_TYPE_VOICECALL);
+		if (vc_atom)
+			vc = __ofono_atom_get_data(vc_atom);
+
+		if (vc && __ofono_voicecall_is_busy(vc,
+					OFONO_VOICECALL_INTERACTION_NONE)) {
+			addnl_info[0] = STK_RESULT_ADDNL_ME_PB_BUSY_ON_CALL;
+
+			ADD_ERROR_RESULT(rsp->result,
+					STK_RESULT_TYPE_TERMINAL_BUSY,
+					addnl_info);
+			return TRUE;
+		}
+
+		if (ss_is_busy(__ofono_atom_get_modem(stk->atom))) {
+			addnl_info[0] = STK_RESULT_ADDNL_ME_PB_SS_BUSY;
+
+			ADD_ERROR_RESULT(rsp->result,
+					STK_RESULT_TYPE_TERMINAL_BUSY,
+					addnl_info);
+			return TRUE;
+		}
 	}
 
 	/*
