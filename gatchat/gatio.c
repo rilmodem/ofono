@@ -387,3 +387,8 @@ void g_at_io_set_write_done(GAtIO *io, GAtDisconnectFunc func,
 	io->write_done_func = func;
 	io->write_done_data = user_data;
 }
+
+void g_at_io_drain_ring_buffer(GAtIO *io, guint len)
+{
+	ring_buffer_drain(io->buf, len);
+}
