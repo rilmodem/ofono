@@ -2467,14 +2467,20 @@ ofono_bool_t __ofono_voicecall_is_busy(struct ofono_voicecall *vc,
 static void dial_request_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
+	const char *number = phone_number_to_string(&vc->dial_req->ph);
 	gboolean need_to_emit;
 	struct voicecall *v;
 
-	v = dial_handle_result(vc, error,
-				phone_number_to_string(&vc->dial_req->ph),
-				&need_to_emit);
+	v = dial_handle_result(vc, error, number, &need_to_emit);
 
 	if (v == NULL) {
+		if (is_emergency_number(vc, number) == TRUE) {
+			struct ofono_modem *modem =
+				__ofono_atom_get_modem(vc->atom);
+
+			__ofono_modem_dec_emergency_mode(modem);
+		}
+
 		dial_request_finish(vc);
 		return;
 	}
@@ -2501,6 +2507,14 @@ static void dial_request_cb(const struct ofono_error *error, void *data)
 
 static void dial_request(struct ofono_voicecall *vc)
 {
+	const char *number = phone_number_to_string(&vc->dial_req->ph);
+
+	if (is_emergency_number(vc, number) == TRUE) {
+		struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
+
+		__ofono_modem_inc_emergency_mode(modem);
+	}
+
 	vc->driver->dial(vc, &vc->dial_req->ph, OFONO_CLIR_OPTION_DEFAULT,
 				dial_request_cb, vc);
 }
