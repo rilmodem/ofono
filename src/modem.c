@@ -501,6 +501,7 @@ static void modem_change_state(struct ofono_modem *modem,
 		if (old_state < MODEM_STATE_OFFLINE) {
 			if (driver->post_sim)
 				driver->post_sim(modem);
+
 			__ofono_history_probe_drivers(modem);
 			__ofono_nettime_probe_drivers(modem);
 		}
@@ -1075,7 +1076,6 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 				sim_state_watch(OFONO_SIM_STATE_READY, modem);
 		} else {
 			set_online(modem, FALSE);
-
 			modem_change_state(modem, MODEM_STATE_POWER_OFF);
 		}
 
@@ -1282,8 +1282,9 @@ void ofono_modem_remove_interface(struct ofono_modem *modem,
 						(GCompareFunc) strcmp);
 		if (found) {
 			g_free(found->data);
-			modem->feature_list = g_slist_remove(modem->feature_list,
-								found->data);
+			modem->feature_list =
+				g_slist_remove(modem->feature_list,
+						found->data);
 		}
 	}
 
