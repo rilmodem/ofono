@@ -1496,6 +1496,7 @@ static void isi_hangup_current(struct ofono_voicecall *ovc,
 		case CALL_STATUS_COMING:
 		case CALL_STATUS_MO_ALERTING:
 		case CALL_STATUS_ANSWERED:
+		case CALL_STATUS_HOLD_INITIATED:
 			goto release_by_id;
 		case CALL_STATUS_MT_ALERTING:
 			cause = CALL_CAUSE_BUSY_USER_REQUEST;
