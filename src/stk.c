@@ -1929,7 +1929,7 @@ static gboolean ss_is_busy(struct ofono_modem *modem)
 	struct ofono_atom *atom;
 
 	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_FORWARDING);
-	if (atom && __ofono_atom_get_registered(atom)) {
+	if (atom != NULL) {
 		struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
 
 		if (__ofono_call_forwarding_is_busy(cf))
@@ -1937,7 +1937,7 @@ static gboolean ss_is_busy(struct ofono_modem *modem)
 	}
 
 	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_BARRING);
-	if (atom && __ofono_atom_get_registered(atom)) {
+	if (atom != NULL) {
 		struct ofono_call_barring *cb = __ofono_atom_get_data(atom);
 
 		if (__ofono_call_barring_is_busy(cb))
@@ -1945,7 +1945,7 @@ static gboolean ss_is_busy(struct ofono_modem *modem)
 	}
 
 	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_CALL_SETTINGS);
-	if (atom && __ofono_atom_get_registered(atom)) {
+	if (atom != NULL) {
 		struct ofono_call_settings *cs = __ofono_atom_get_data(atom);
 
 		if (__ofono_call_settings_is_busy(cs))
