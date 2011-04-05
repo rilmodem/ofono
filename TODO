@@ -295,22 +295,12 @@ Sim Toolkit
 Emergency Calls
 ===============
 
-- Country / Operator specific emergency numbers.  Figure out how to support
-  countries / operators with specific mandated emergency numbers which are
-  not part of the standard emergency number list. This needs to be queried
-  by the voicecall atom every time a new SIM is inserted.  The list is
-  assumed to be managed by the modem.  If no such functionality is available,
-  then the 3GPP mandated behavior is used.
+- Network / Modem updating of the emergency number list. Support the list of
+  emergency numbers dynamically updated by the network or by the modem (e.g.
+  additional numbers burned into modem ROM).
 
   Priority: High
   Complexity: C2
-
-- Network updating the emergency number list. Support the list of emergency
-  numbers dynamically updated by the network.
-
-  Priority: High
-  Complexity: C2
-  Owner: Petteri Tikander <petteri.tikander@ixonos.com>
 
 
 Miscellaneous
