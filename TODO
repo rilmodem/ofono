@@ -82,13 +82,11 @@ SIM / SIM File system
 
   Priority: Medium
   Complexity: C1
-  Owner: Aki Niemi <aki.niemi@nokia.com>
 
 - Support SIM authentication: SIM and AKA suites.
 
   Priority: Medium
   Complexity: C4
-  Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
 - Support SIM authentication: GBA_U suite.
 
@@ -139,7 +137,6 @@ Modem Emulator
 
   Complexity: C4
   Priority: Medium
-  Owner: Gustavo F Padovan <padovan@profusion.mobi>
 
   Depends: PPP Server mode
 
@@ -179,7 +176,6 @@ Location Services
 
   Complexity: C4
   Priority: Medium
-  Owner: Antti Paila <antti.paila@nokia.com>
 
 
 Supplementary Services
@@ -238,7 +234,6 @@ Voicecall
 
   Priority: Medium
   Complexity: C4
-  Owner: Lucas De Marchi <lucas.demarchi@profusion.mobi>
 
 - Provide feedback of sent DTMF tones. Emit SendingTones signal if modem can
   provide approximate starting and stopping times for DTMF tones. Signal
@@ -247,7 +242,6 @@ Voicecall
 
   Priority: Medium
   Complexity: C2
-  Owner: Pekka Pessi <pekka.pessi@nokia.com>
 
 - Blacklisting. According to 3GPP TS 22.001 annex E, the TE must provide
   automatic calling repeat call attempt restrictions.
@@ -327,7 +321,6 @@ Miscellaneous
 
   Priority: Medium
   Complexity: C8
-  Owner: Jukka Saunamäki <jukka.saunamaki@nokia.com>
 
 - Add Location Service API for providing basic E911 support.
   This will be based on the 27.007 defined AT commands using
@@ -342,7 +335,6 @@ Miscellaneous
 
   Priority: Medium
   Complexity: C1
-  Owner: Aki Niemi <aki.niemi@nokia.com>
 
 CDMA Voicecall
 ==============
@@ -353,7 +345,6 @@ CDMA Voicecall
 
   Priority: High
   Complexity: C2
-  Owner: Dara Spieker-Doyle <dara.spieker-doyle@nokia.com>
 
 - Add support for Three-Way Calling over a CDMA network. Three-Way Calling
   provides the subscriber with the capability to add a third party to an
@@ -509,7 +500,6 @@ CDMA Network Acquisition
 
   Priority: Medium
   Complexity: C1
-  Owner: Dara Spieker-Doyle <dara.spieker-doyle@nokia.com>
 
 - Support reporting of the received signal strength indicator (RSSI)
   measurement and of the signal to interference-plus-noise ratio (SINR)
