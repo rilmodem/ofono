@@ -73,7 +73,6 @@ struct ofono_call_forwarding {
 static void get_query_next_cf_cond(struct ofono_call_forwarding *cf);
 static void set_query_next_cf_cond(struct ofono_call_forwarding *cf);
 static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf);
-static void cf_unregister_ss_controls(struct ofono_call_forwarding *cf);
 static void call_forwarding_unregister(struct ofono_atom *atom);
 
 struct cf_ss_request {
