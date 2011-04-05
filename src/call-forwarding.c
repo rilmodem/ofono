@@ -1378,7 +1378,7 @@ static void sim_cfis_changed(int id, void *userdata)
 	 * change.  However the authoritative source of current
 	 * Call-Forwarding settings is the network operator and the
 	 * query can take a noticeable amount of time.  Instead of
-	 * sedning PropertyChanged, we reregister the Call Forwarding
+	 * sending PropertyChanged, we reregister the Call Forwarding
 	 * atom.  The client will invoke GetProperties only if it
 	 * is still interested.
 	 */
