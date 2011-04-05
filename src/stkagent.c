@@ -1061,6 +1061,9 @@ int stk_agent_confirm_launch_browser(struct stk_agent *agent, const char *text,
 	if (agent->msg == NULL)
 		return -ENOMEM;
 
+	if (url == NULL)
+		url = "";
+
 	dbus_message_append_args(agent->msg,
 					DBUS_TYPE_STRING, &text,
 					DBUS_TYPE_BYTE, &icon_id,
