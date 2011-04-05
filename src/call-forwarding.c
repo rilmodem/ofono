@@ -73,7 +73,6 @@ struct ofono_call_forwarding {
 static void get_query_next_cf_cond(struct ofono_call_forwarding *cf);
 static void set_query_next_cf_cond(struct ofono_call_forwarding *cf);
 static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf);
-static void call_forwarding_unregister(struct ofono_atom *atom);
 
 struct cf_ss_request {
 	int ss_type;
@@ -1364,6 +1363,31 @@ static void sim_cphs_cff_read_cb(int ok, int total_length, int record,
 					DBUS_TYPE_BOOLEAN, &cfu_voice);
 }
 
+static void call_forwarding_unregister(struct ofono_atom *atom)
+{
+	struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
+	const char *path = __ofono_atom_get_path(cf->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
+
+	ofono_modem_remove_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
+	g_dbus_unregister_interface(conn, path,
+					OFONO_CALL_FORWARDING_INTERFACE);
+
+	if (cf->sim_context) {
+		ofono_sim_context_free(cf->sim_context);
+		cf->sim_context = NULL;
+	}
+
+	if (cf->ussd)
+		cf_unregister_ss_controls(cf);
+
+	if (cf->ussd_watch)
+		__ofono_modem_remove_atom_watch(modem, cf->ussd_watch);
+
+	cf->flags = 0;
+}
+
 static void sim_cfis_changed(int id, void *userdata)
 {
 	struct ofono_call_forwarding *cf = userdata;
@@ -1422,31 +1446,6 @@ void ofono_call_forwarding_driver_unregister(const struct ofono_call_forwarding_
 	DBG("driver: %p, name: %s", d, d->name);
 
 	g_drivers = g_slist_remove(g_drivers, (void *) d);
-}
-
-static void call_forwarding_unregister(struct ofono_atom *atom)
-{
-	struct ofono_call_forwarding *cf = __ofono_atom_get_data(atom);
-	const char *path = __ofono_atom_get_path(cf->atom);
-	DBusConnection *conn = ofono_dbus_get_connection();
-	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
-
-	ofono_modem_remove_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
-	g_dbus_unregister_interface(conn, path,
-					OFONO_CALL_FORWARDING_INTERFACE);
-
-	if (cf->sim_context) {
-		ofono_sim_context_free(cf->sim_context);
-		cf->sim_context = NULL;
-	}
-
-	if (cf->ussd)
-		cf_unregister_ss_controls(cf);
-
-	if (cf->ussd_watch)
-		__ofono_modem_remove_atom_watch(modem, cf->ussd_watch);
-
-	cf->flags = 0;
 }
 
 static void call_forwarding_remove(struct ofono_atom *atom)
