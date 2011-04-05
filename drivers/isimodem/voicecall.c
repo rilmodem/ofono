@@ -405,7 +405,6 @@ static int isi_call_status_to_clcc(const struct isi_call *call)
 	case CALL_STATUS_TERMINATED:
 		return 6;
 
-	case CALL_STATUS_ANSWERED:
 	case CALL_STATUS_ACTIVE:
 	case CALL_STATUS_HOLD_INITIATED:
 		return 0;
@@ -551,6 +550,10 @@ static void isi_call_notify(struct ofono_voicecall *ovc, struct isi_call *call)
 	case CALL_STATUS_MT_RELEASE:
 	case CALL_STATUS_TERMINATED:
 		isi_call_set_disconnect_reason(call);
+		break;
+	case CALL_STATUS_ANSWERED:
+		DBG("State need not be reported to Core");
+		return;
 	}
 
 	ocall = isi_call_as_ofono_call(call);
