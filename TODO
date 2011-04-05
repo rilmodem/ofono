@@ -164,6 +164,9 @@ PPP
 - PFC support.  Extend GAtPPP to support packets with Protocol field
   compression enabled.  Refer to RFC 1661 for details.
 
+  Priority: Medium
+  Complexity: C1
+
 
 Location Services
 =================
@@ -215,14 +218,14 @@ Supplementary Services
   conditional call forwarding should become quiescent while unconditional call
   forwarding is activate. If call forwarding unconditional is subsequently
   deactivated, all the quiescent forwardings should become operative again.
-  I.e. No conditional call forwardin string should be returned while
+  I.e. No conditional call forwarding string should be returned while
   unconditional call forwarding is active even if they exist.
 
   If there is an successful attempt to activate/deactivate conditional call
   forwarding while unconditional call forwarding is active the conditional cache
   flag should cleared.
 
-  Priority: Low
+  Priority: High
   Complexity: C1
 
 
