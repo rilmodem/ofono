@@ -1966,12 +1966,6 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 	struct ofono_ussd *ussd;
 	int err;
 
-	if (ss_is_busy(modem)) {
-		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
-					busy_on_ss_result);
-		return TRUE;
-	}
-
 	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
 	if (atom == NULL || !__ofono_atom_get_registered(atom)) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
@@ -1982,6 +1976,12 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 	if (__ofono_ussd_is_busy(ussd)) {
 		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
 					busy_on_ussd_result);
+		return TRUE;
+	}
+
+	if (ss_is_busy(modem)) {
+		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
+					busy_on_ss_result);
 		return TRUE;
 	}
 
