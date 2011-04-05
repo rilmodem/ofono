@@ -671,7 +671,10 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 		 * If we don't have the set_online method, also proceed
 		 * straight to the online state
 		 */
-		if (modem->driver->set_online == NULL || modem->online == TRUE)
+		if (modem->driver->set_online == NULL)
+			set_online(modem, TRUE);
+
+		if (modem->online == TRUE)
 			modem_change_state(modem, MODEM_STATE_ONLINE);
 		else if (modem->get_online)
 			modem->driver->set_online(modem, 1, common_online_cb,
