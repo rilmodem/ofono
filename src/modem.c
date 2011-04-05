@@ -2066,9 +2066,6 @@ void __ofono_modem_sim_reset(struct ofono_modem *modem)
 {
 	DBG("%p", modem);
 
-	if (modem->modem_state == MODEM_STATE_ONLINE)
-		modem->get_online = TRUE;
-
 	modem_change_state(modem, MODEM_STATE_PRE_SIM);
 }
 
