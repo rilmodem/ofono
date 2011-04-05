@@ -561,6 +561,15 @@ Emergency Calls
   call.  This is done by setting the Emergency property on the Voicecall
   interface to TRUE.
 
+- Emergency Mode.  oFono supports a concept of an 'Emergency Mode'.  This mode
+  is activated when any emergency procedure is ongoing and restricts certain
+  actions (e.g. setting the modem offline).  Emergency procedures are e.g.
+  ongoing emergency calls, or network initiated location requests related to
+  the emergency call.  The state of the emergency mode is exposed via the
+  Emergency property on the org.ofono.Modem interface.  This property is
+  intended to be used by power management daemons and other entities which
+  need to be aware of the ongoing emergency operation.
+
 Supplementary Services
 ======================
 

@@ -330,29 +330,6 @@ Sim Toolkit
 Emergency Calls
 ===============
 
-- Modem Emergency mode.  Support network registration and online/offline
-  mode during the emergency calls and related network activity (e.g.,
-  network-initiated location request via supplementary service channel).
-
-  Proposed solution is to introduce a new Emergency boolean property to the
-  Modem D-Bus interface and new functions to modem interface:
-
-  - ofono_modem_emergency_mode_inc()
-  - ofono_modem_emergency_mode_dec()
-  - ofono_modem_emergency_mode_get()
-  - ofono_modem_add_emergency_mode_watch()
-  - ofono_modem_remove_emergency_mode_watch()
-
-  When emergency mode is requested, modem is set to online (if needed) and
-  the watchers are notified. There can be multiple parties requesting
-  emergency mode.  When all of them have completed the emergency-related
-  operation and called ofono_modem_emergency_mode_dec(), modem is set to
-  offline (if needed) and the watchers are again notified.
-
-  Priority: High
-  Complexity: C2
-  Owner: Jeevaka Badrappan <jeevaka.badrappan@elektrobit.com>
-
 - Country / Operator specific emergency numbers.  Figure out how to support
   countries / operators with specific mandated emergency numbers which are
   not part of the standard emergency number list. This needs to be queried
