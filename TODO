@@ -289,17 +289,6 @@ Sim Toolkit
   Complexity: C2
   Owner: Philippe Nunes <philippe.nunes@linux.intel.com>
 
-Emergency Calls
-===============
-
-- Network / Modem updating of the emergency number list. Support the list of
-  emergency numbers dynamically updated by the network or by the modem (e.g.
-  additional numbers burned into modem ROM).
-
-  Priority: High
-  Complexity: C2
-
-
 Miscellaneous
 =============
 

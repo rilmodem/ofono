@@ -583,14 +583,16 @@ Text Telephony
 Emergency Calls
 ===============
 
-- EFecc support.  During SIM initialization phase oFono reads EFecc in order
-  to bootstrap the emergency calling codes provides by the SIM.  If the SIM is
-  not present or EFecc has not been read yet, the default set of emergency
-  calling codes is used.
+- Emergency number reporting.  During SIM initialization phase oFono reads
+  EFecc in order to bootstrap the emergency calling codes provided by the SIM.
+  Emergency number list is exposed via the EmergencyNumbers property on the
+  VoicecallManager interface.  If SIM is present, list is the union of default
+  emergency numbers(112, 911), numbers in EFecc and Network / Modem reported
+  emergency numbers.  If SIM is not present or EFecc has not been read yet,
+  list is the union of default emergency numbers(112, 911) and emergency
+  numbers without SIM(119, 118, 999, 110, 08 and 000).
 
-- Emergency number reporting.  The current known list of emergency calling
-  codes is reported by oFono in the EmergencyNumbers property on the
-  VoicecallManager interface.  When a voicecall is made to a number present
+- Emergency call reporting.  When a voicecall is made to a number present
   on the EmergencyNumbers list it is automatically flagged as an emergency
   call.  This is done by setting the Emergency property on the Voicecall
   interface to TRUE.
