@@ -49,6 +49,7 @@ struct ofono_voicecall {
 	GHashTable *en_list; /* emergency number list */
 	GSList *sim_en_list; /* Emergency numbers being read from SIM */
 	ofono_bool_t sim_en_list_ready;
+	char **nw_en_list; /* Emergency numbers from modem/network */
 	DBusMessage *pending;
 	struct ofono_sim *sim;
 	struct ofono_sim_context *sim_context;
@@ -2093,6 +2094,10 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 	vc->en_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 							g_free, NULL);
 
+	/* Emergency numbers from modem/network */
+	if (vc->nw_en_list)
+		add_to_en_list(vc, vc->nw_en_list);
+
 	/* Emergency numbers read from SIM */
 	if (vc->sim_en_list_ready == TRUE && vc->sim_en_list) {
 		for (l = vc->sim_en_list; l; l = l->next)
@@ -2175,6 +2180,15 @@ check:
 	set_new_ecc(vc);
 }
 
+void ofono_voicecall_en_list_notify(struct ofono_voicecall *vc,
+						char **nw_en_list)
+{
+	g_strfreev(vc->nw_en_list);
+
+	vc->nw_en_list = g_strdupv(nw_en_list);
+	set_new_ecc(vc);
+}
+
 int ofono_voicecall_driver_register(const struct ofono_voicecall_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
@@ -2218,6 +2232,11 @@ static void voicecall_unregister(struct ofono_atom *atom)
 		g_slist_foreach(vc->sim_en_list, (GFunc) g_free, NULL);
 		g_slist_free(vc->sim_en_list);
 		vc->sim_en_list = NULL;
+	}
+
+	if (vc->nw_en_list) {
+		g_strfreev(vc->nw_en_list);
+		vc->nw_en_list = NULL;
 	}
 
 	g_hash_table_destroy(vc->en_list);
