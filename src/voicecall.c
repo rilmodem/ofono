@@ -2203,10 +2203,17 @@ static void voicecall_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 	GSList *l;
 
+	if (vc->sim_state_watch) {
+		ofono_sim_remove_state_watch(vc->sim, vc->sim_state_watch);
+		vc->sim_state_watch = 0;
+	}
+
 	if (vc->sim_watch) {
 		__ofono_modem_remove_atom_watch(modem, vc->sim_watch);
 		vc->sim_watch = 0;
 	}
+
+	vc->sim = NULL;
 
 	if (vc->dial_req)
 		dial_request_finish(vc);
@@ -2244,12 +2251,6 @@ static void voicecall_remove(struct ofono_atom *atom)
 		g_slist_foreach(vc->new_en_list, (GFunc) g_free, NULL);
 		g_slist_free(vc->new_en_list);
 		vc->new_en_list = NULL;
-	}
-
-	if (vc->sim_state_watch) {
-		ofono_sim_remove_state_watch(vc->sim, vc->sim_state_watch);
-		vc->sim_state_watch = 0;
-		vc->sim = NULL;
 	}
 
 	if (vc->tone_source) {
