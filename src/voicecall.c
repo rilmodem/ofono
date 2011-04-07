@@ -1116,7 +1116,7 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
-	int i = 0;
+	int i;
 	char **list;
 	GHashTableIter ht_iter;
 	gpointer key, value;
@@ -1133,11 +1133,10 @@ static DBusMessage *manager_get_properties(DBusConnection *conn,
 
 	/* property EmergencyNumbers */
 	list = g_new0(char *, g_hash_table_size(vc->en_list) + 1);
-
 	g_hash_table_iter_init(&ht_iter, vc->en_list);
 
-	while (g_hash_table_iter_next(&ht_iter, &key, &value))
-		list[i++] = key;
+	for (i = 0; g_hash_table_iter_next(&ht_iter, &key, &value); i++)
+		list[i] = key;
 
 	ofono_dbus_dict_append_array(&dict, "EmergencyNumbers",
 					DBUS_TYPE_STRING, &list);
@@ -2067,16 +2066,15 @@ static void emit_en_list_changed(struct ofono_voicecall *vc)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(vc->atom);
 	char **list;
-	int i = 0;
+	int i;
 	GHashTableIter iter;
 	gpointer key, value;
 
 	list = g_new0(char *, g_hash_table_size(vc->en_list) + 1);
-
 	g_hash_table_iter_init(&iter, vc->en_list);
 
-	while (g_hash_table_iter_next(&iter, &key, &value))
-		list[i++] = key;
+	for (i = 0; g_hash_table_iter_next(&iter, &key, &value); i++)
+		list[i] = key;
 
 	ofono_dbus_signal_array_property_changed(conn, path,
 				OFONO_VOICECALL_MANAGER_INTERFACE,
