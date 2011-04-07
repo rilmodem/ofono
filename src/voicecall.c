@@ -2137,7 +2137,6 @@ static void ecc_g2_read_cb(int ok, int total_length, int record,
 								g_strdup(en));
 	}
 
-	vc->sim_en_list = g_slist_reverse(vc->sim_en_list);
 	vc->sim_en_list_ready = TRUE;
 	set_new_ecc(vc);
 }
@@ -2174,7 +2173,6 @@ check:
 	if (!ok && vc->sim_en_list == NULL)
 		return;
 
-	vc->sim_en_list = g_slist_reverse(vc->sim_en_list);
 	vc->sim_en_list_ready = TRUE;
 	set_new_ecc(vc);
 }
