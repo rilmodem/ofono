@@ -61,6 +61,7 @@ struct ofono_voicecall {
 	struct dial_request *dial_req;
 	GQueue *toneq;
 	guint tone_source;
+	unsigned int hfp_watch;
 };
 
 struct voicecall {
@@ -685,6 +686,107 @@ static void voicecall_emit_multiparty(struct voicecall *call, gboolean mpty)
 						&val);
 }
 
+static void emulator_call_status_cb(struct ofono_atom *atom, void *data)
+{
+	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+
+	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALL,
+						GPOINTER_TO_INT(data));
+}
+
+static void emulator_callsetup_status_cb(struct ofono_atom *atom, void *data)
+{
+	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+
+	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALLSETUP,
+						GPOINTER_TO_INT(data));
+}
+
+static void emulator_callheld_status_cb(struct ofono_atom *atom, void *data)
+{
+	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+
+	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALLHELD,
+						GPOINTER_TO_INT(data));
+}
+
+static void notify_emulator_call_status(struct ofono_voicecall *vc)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
+	int status;
+	gboolean call = FALSE;
+	gboolean held = FALSE;
+	gboolean incoming = FALSE;
+	gboolean dialing = FALSE;
+	gboolean alerting = FALSE;
+	gboolean waiting = FALSE;
+	GSList *l;
+	struct voicecall *v;
+
+	for (l = vc->call_list; l; l = l->next) {
+		v = l->data;
+
+		switch (v->call->status) {
+		case CALL_STATUS_ACTIVE:
+			call = TRUE;
+			break;
+
+		case CALL_STATUS_HELD:
+			held = TRUE;
+			break;
+
+		case CALL_STATUS_DIALING:
+			dialing = TRUE;
+			break;
+
+		case CALL_STATUS_ALERTING:
+			alerting = TRUE;
+			break;
+
+		case CALL_STATUS_INCOMING:
+			incoming = TRUE;
+			break;
+
+		case CALL_STATUS_WAITING:
+			waiting = TRUE;
+			break;
+		}
+	}
+
+	status = call || held ? OFONO_EMULATOR_CALL_ACTIVE :
+					OFONO_EMULATOR_CALL_INACTIVE;
+
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_call_status_cb,
+						GINT_TO_POINTER(status));
+
+	if (incoming || waiting)
+		status = OFONO_EMULATOR_CALLSETUP_INCOMING;
+	else if (dialing)
+		status = OFONO_EMULATOR_CALLSETUP_OUTGOING;
+	else if (alerting)
+		status = OFONO_EMULATOR_CALLSETUP_ALERTING;
+	else
+		status = OFONO_EMULATOR_CALLSETUP_INACTIVE;
+
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_callsetup_status_cb,
+						GINT_TO_POINTER(status));
+
+	if (held)
+		status = call ? OFONO_EMULATOR_CALLHELD_MULTIPLE :
+					OFONO_EMULATOR_CALLHELD_ON_HOLD;
+	else
+		status = OFONO_EMULATOR_CALLHELD_NONE;
+
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_callheld_status_cb,
+						GINT_TO_POINTER(status));
+}
+
 static void voicecall_set_call_status(struct voicecall *call, int status)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -706,6 +808,8 @@ static void voicecall_set_call_status(struct voicecall *call, int status)
 						OFONO_VOICECALL_INTERFACE,
 						"State", DBUS_TYPE_STRING,
 						&status_str);
+
+	notify_emulator_call_status(call->vc);
 
 	if (status == CALL_STATUS_ACTIVE &&
 		(old_status == CALL_STATUS_INCOMING ||
@@ -1035,6 +1139,8 @@ static void voicecalls_emit_call_added(struct ofono_voicecall *vc,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	const char *path;
+
+	notify_emulator_call_status(vc);
 
 	path = __ofono_atom_get_path(vc->atom);
 
@@ -2236,6 +2342,19 @@ static void voicecall_unregister(struct ofono_atom *atom)
 	const char *path = __ofono_atom_get_path(atom);
 	GSList *l;
 
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_call_status_cb, 0);
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_callsetup_status_cb,
+						0);
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_callheld_status_cb, 0);
+
+	__ofono_modem_remove_atom_watch(modem, vc->hfp_watch);
+
 	if (vc->sim_state_watch) {
 		ofono_sim_remove_state_watch(vc->sim, vc->sim_state_watch);
 		vc->sim_state_watch = 0;
@@ -2400,6 +2519,14 @@ static void sim_watch(struct ofono_atom *atom,
 	sim_state_watch(ofono_sim_get_state(sim), vc);
 }
 
+static void emulator_hfp_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	if (cond == OFONO_ATOM_WATCH_CONDITION_REGISTERED)
+		notify_emulator_call_status(data);
+}
+
 void ofono_voicecall_register(struct ofono_voicecall *vc)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -2433,6 +2560,10 @@ void ofono_voicecall_register(struct ofono_voicecall *vc)
 						sim_watch, vc, NULL);
 
 	__ofono_atom_register(vc->atom, voicecall_unregister);
+
+	vc->hfp_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_EMULATOR_HFP,
+					emulator_hfp_watch, vc, NULL);
 }
 
 void ofono_voicecall_remove(struct ofono_voicecall *vc)
