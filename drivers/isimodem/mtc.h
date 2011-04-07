@@ -103,7 +103,6 @@ enum mtc_message_id {
 	MTC_STARTUP_SYNQ_RESP =		0x6E,
 	MTC_SHUTDOWN_SYNC_RESP =	0x75,
 	MTC_STATE_INFO_IND =		0xC0,
-	MTC_COMMON_MESSAGE =		0xF0,
 };
 
 enum mtc_modem_state {

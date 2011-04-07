@@ -135,7 +135,6 @@ enum sms_message_id {
 	SMS_RECEIVE_MESSAGE_REQ = 0x41,
 	SMS_RECEIVE_MESSAGE_RESP = 0x42,
 	SMS_RECEIVED_MSG_IND = 0x43,
-	SMS_COMMON_MESSAGE = 0xF0
 };
 
 enum sms_subblock {

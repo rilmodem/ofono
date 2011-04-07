@@ -62,7 +62,6 @@ enum net_message_id {
 	NET_AVAILABLE_GET_RESP =			0xE4,
 	NET_OPER_NAME_READ_REQ =			0xE5,
 	NET_OPER_NAME_READ_RESP =			0xE6,
-	NET_COMMON_MESSAGE =				0xF0,
 };
 
 enum net_subblock {

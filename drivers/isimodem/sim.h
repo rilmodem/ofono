@@ -144,7 +144,6 @@ enum sim_message_id {
 	SIM_PB_RESP_SIM_PB_READ =				0xDD,
 	SIM_SERVER_READY_IND =					0xED,
 	SIM_IND =						0xEF,
-	SIM_COMMON_MESSAGE =					0xF0,
 };
 
 enum sim_service_type {

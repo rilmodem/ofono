@@ -48,7 +48,6 @@ enum info_message_id {
 	INFO_VERSION_READ_RESP =		0x08,
 	INFO_PRODUCT_INFO_READ_REQ =		0x15,
 	INFO_PRODUCT_INFO_READ_RESP =		0x16,
-	INFO_COMMON_MESSAGE =			0xF0,
 };
 
 enum info_subblock {

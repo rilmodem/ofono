@@ -39,6 +39,8 @@
 
 #include "debug.h"
 
+#define COMMON_MESSAGE	0xF0
+
 #define _(X) case X: return #X
 
 const char *pn_resource_name(int value)
@@ -75,7 +77,6 @@ const char *ss_message_id_name(enum ss_message_id value)
 		_(SS_GSM_USSD_RECEIVE_IND);
 		_(SS_STATUS_IND);
 		_(SS_SERVICE_COMPLETED_IND);
-		_(SS_COMMON_MESSAGE);
 	}
 	return "SS_<UNKNOWN>";
 }
@@ -149,7 +150,6 @@ const char *mtc_message_id_name(enum mtc_message_id value)
 		_(MTC_STARTUP_SYNQ_RESP);
 		_(MTC_SHUTDOWN_SYNC_RESP);
 		_(MTC_STATE_INFO_IND);
-		_(MTC_COMMON_MESSAGE);
 	}
 	return "MTC_<UNKNOWN>";
 }
@@ -461,7 +461,6 @@ const char *sms_message_id_name(enum sms_message_id value)
 		_(SMS_RECEIVE_MESSAGE_REQ);
 		_(SMS_RECEIVE_MESSAGE_RESP);
 		_(SMS_RECEIVED_MSG_IND);
-		_(SMS_COMMON_MESSAGE);
 	}
 	return "SMS_<UNKNOWN>";
 }
@@ -589,7 +588,6 @@ const char *sim_message_id_name(enum sim_message_id value)
 		_(SIM_PB_RESP_SIM_PB_READ);
 		_(SIM_SERVER_READY_IND);
 		_(SIM_IND);
-		_(SIM_COMMON_MESSAGE);
 	}
 
 	return "SIM_<UNKNOWN>";
@@ -676,7 +674,6 @@ const char *info_message_id_name(enum info_message_id value)
 		_(INFO_VERSION_READ_RESP);
 		_(INFO_PRODUCT_INFO_READ_REQ);
 		_(INFO_PRODUCT_INFO_READ_RESP);
-		_(INFO_COMMON_MESSAGE);
 	}
 	return "INFO_<UNKNOWN>";
 }
@@ -803,7 +800,6 @@ char const *call_message_id_name(enum call_message_id value)
 		_(CALL_SECURITY_IND);
 		_(CALL_MEDIA_HANDLE_REQ);
 		_(CALL_MEDIA_HANDLE_RESP);
-		_(CALL_COMMON_MESSAGE);
 	}
 	return "CALL_<UNKNOWN>";
 }
@@ -1039,7 +1035,6 @@ const char *net_message_id_name(enum net_message_id value)
 		_(NET_OPER_NAME_READ_RESP);
 		_(NET_OLD_OPER_NAME_READ_REQ);
 		_(NET_OLD_OPER_NAME_READ_RESP);
-		_(NET_COMMON_MESSAGE);
 	}
 	return "NET_<UNKNOWN>";
 }
@@ -1181,7 +1176,6 @@ const char *gpds_subblock_name(enum gpds_subblock value)
 		_(GPDS_SDNS_ADDRESS_INFO);
 		_(GPDS_CHALLENGE_INFO);
 		_(GPDS_DNS_ADDRESS_REQ_INFO);
-		_(GPDS_COMMON_MESSAGE);
 	}
 	return "GPDS_<UNKNOWN>";
 }
@@ -1324,6 +1318,9 @@ static void hex_dump(const char *resname, uint8_t res, const char *name,
 
 static const char *res_to_name(uint8_t res, uint8_t id)
 {
+	if (id == COMMON_MESSAGE)
+		return "COMMON_MESSAGE";
+
 	switch (res) {
 	case PN_NETWORK:
 		return net_message_id_name(id);

@@ -131,7 +131,6 @@ enum gpds_subblock {
 	GPDS_SDNS_ADDRESS_INFO =		0x0E,
 	GPDS_CHALLENGE_INFO =			0x0F,
 	GPDS_DNS_ADDRESS_REQ_INFO =		0x90,
-	GPDS_COMMON_MESSAGE =			0xF0
 };
 
 enum gpds_status {

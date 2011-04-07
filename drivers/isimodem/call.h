@@ -112,7 +112,6 @@ enum call_message_id {
 	CALL_SECURITY_IND =			0x41,
 	CALL_MEDIA_HANDLE_REQ =			0x42,
 	CALL_MEDIA_HANDLE_RESP =		0x43,
-	CALL_COMMON_MESSAGE =			0xF0,
 };
 
 enum call_status {

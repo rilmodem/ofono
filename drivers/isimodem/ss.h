@@ -36,7 +36,6 @@ enum ss_message_id {
 	SS_GSM_USSD_RECEIVE_IND =		0x06,
 	SS_STATUS_IND =				0x09,
 	SS_SERVICE_COMPLETED_IND =		0x10,
-	SS_COMMON_MESSAGE =			0xF0
 };
 
 enum ss_ussd_type {
