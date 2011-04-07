@@ -47,6 +47,8 @@ const char *pn_resource_name(int value)
 		_(PN_NETWORK);
 		_(PN_MODEM_NETWORK);
 		_(PN_PHONE_INFO);
+		_(PN_MODEM_INFO);
+		_(PN_EPOC_INFO);
 		_(PN_SS);
 		_(PN_CALL);
 		_(PN_SMS);
@@ -1326,6 +1328,8 @@ static const char *res_to_name(uint8_t res, uint8_t id)
 	case PN_NETWORK:
 		return net_message_id_name(id);
 	case PN_PHONE_INFO:
+	case PN_MODEM_INFO:
+	case PN_EPOC_INFO:
 		return info_message_id_name(id);
 	case PN_SS:
 		return ss_message_id_name(id);

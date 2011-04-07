@@ -29,7 +29,7 @@ extern "C" {
 #define PN_PHONE_INFO				0x1B
 #define PN_MODEM_INFO				0xC5
 
-#define PN_EPOC_INFO				98
+#define PN_EPOC_INFO				0x62
 #define INFO_TIMEOUT				5
 
 enum info_isi_cause {
