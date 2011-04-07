@@ -75,6 +75,8 @@ struct network_time {
 
 struct netreg_data {
 	GIsiClient *client;
+	GIsiClient *pn_network;
+	GIsiClient *pn_modem_network;
 	struct reg_info reg;
 	struct gsm_info gsm;
 	struct rat_info rat;
@@ -431,7 +433,7 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
-static void wg_current_operator(struct ofono_netreg *netreg,
+static void create_cell_info_get_req(struct ofono_netreg *netreg,
 					ofono_netreg_operator_cb_t cb,
 					void *data)
 {
@@ -507,7 +509,7 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
-static void isi_current_operator(struct ofono_netreg *netreg,
+static void create_name_get_req(struct ofono_netreg *netreg,
 					ofono_netreg_operator_cb_t cb,
 					void *data)
 {
@@ -536,6 +538,18 @@ static void isi_current_operator(struct ofono_netreg *netreg,
 error:
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 	g_free(cbd);
+}
+
+static void isi_current_operator(struct ofono_netreg *netreg,
+					ofono_netreg_operator_cb_t cb,
+					void *data)
+{
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	if (g_isi_client_resource(nd->client) == PN_MODEM_NETWORK)
+		create_cell_info_get_req(netreg, cb, data);
+	else
+		create_name_get_req(netreg, cb, data);
 }
 
 static void available_resp_cb(const GIsiMessage *msg, void *data)
@@ -932,39 +946,81 @@ error:
 	g_free(cbd);
 }
 
-static void reachable_cb(const GIsiMessage *msg, void *data)
+static void subscribe_indications(GIsiClient *cl, void *data)
+{
+	g_isi_client_ind_subscribe(cl, NET_RSSI_IND, rssi_ind_cb, data);
+	g_isi_client_ind_subscribe(cl, NET_NITZ_NAME_IND, name_ind_cb, data);
+	g_isi_client_ind_subscribe(cl, NET_RAT_IND, rat_ind_cb, data);
+	g_isi_client_ind_subscribe(cl, NET_TIME_IND, time_ind_cb, data);
+	g_isi_client_ind_subscribe(cl, NET_REG_STATUS_IND, reg_status_ind_cb,
+					data);
+	g_isi_client_ind_subscribe(cl, NET_MODEM_REG_STATUS_IND,reg_status_ind_cb,
+					data);
+}
+
+static void pn_network_reachable_cb(const GIsiMessage *msg, void *data)
 {
 	struct ofono_netreg *netreg = data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
 	if (g_isi_msg_error(msg) < 0) {
-		ofono_netreg_remove(netreg);
+		DBG("PN_NETWORK not reachable, removing client");
+		g_isi_client_destroy(nd->pn_network);
+		nd->pn_network = NULL;
+
+		if (nd->pn_modem_network == NULL)
+			ofono_netreg_remove(netreg);
+
 		return;
 	}
 
 	ISI_VERSION_DBG(msg);
 
+	if (nd == NULL || nd->client != NULL)
+		return;
+
+	nd->client = nd->pn_network;
+
 	nd->version.major = g_isi_msg_version_major(msg);
 	nd->version.minor = g_isi_msg_version_minor(msg);
 
-	g_isi_client_ind_subscribe(nd->client, NET_RSSI_IND, rssi_ind_cb,
-					netreg);
-	g_isi_client_ind_subscribe(nd->client, NET_NITZ_NAME_IND, name_ind_cb,
-					netreg);
-	g_isi_client_ind_subscribe(nd->client, NET_RAT_IND, rat_ind_cb, netreg);
-	g_isi_client_ind_subscribe(nd->client, NET_TIME_IND, time_ind_cb,
-					netreg);
-
-	g_isi_client_ind_subscribe(nd->client, NET_MODEM_REG_STATUS_IND,
-					reg_status_ind_cb, netreg);
-	g_isi_client_ind_subscribe(nd->client, NET_REG_STATUS_IND,
-					reg_status_ind_cb, netreg);
+	subscribe_indications(nd->client, netreg);
 
 	ofono_netreg_register(netreg);
 }
 
-static int netreg_probe(struct ofono_netreg *netreg, uint8_t resource,
-			void *user)
+static void pn_modem_network_reachable_cb(const GIsiMessage *msg, void *data)
+{
+	struct ofono_netreg *netreg = data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	if (g_isi_msg_error(msg) < 0) {
+		DBG("PN_MODEM_NETWORK not reachable, removing client");
+		g_isi_client_destroy(nd->pn_modem_network);
+		nd->pn_modem_network = NULL;
+
+		if (nd->pn_network == NULL)
+			ofono_netreg_remove(netreg);
+		return;
+	}
+
+	ISI_VERSION_DBG(msg);
+
+	if (nd == NULL || nd->client != NULL)
+		return;
+
+	nd->client = nd->pn_modem_network;
+
+	nd->version.major = g_isi_msg_version_major(msg);
+	nd->version.minor = g_isi_msg_version_minor(msg);
+
+	subscribe_indications(nd->client, netreg);
+
+	ofono_netreg_register(netreg);
+}
+
+static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
+				void *user)
 {
 	GIsiModem *modem = user;
 	struct netreg_data *nd;
@@ -973,29 +1029,27 @@ static int netreg_probe(struct ofono_netreg *netreg, uint8_t resource,
 	if (nd == NULL)
 		return -ENOMEM;
 
-	nd->client = g_isi_client_create(modem, resource);
-	if (nd->client == NULL) {
+	nd->pn_network = g_isi_client_create(modem, PN_NETWORK);
+	if (nd->pn_network == NULL) {
+		g_free(nd);
+		return -ENOMEM;
+	}
+
+	nd->pn_modem_network = g_isi_client_create(modem, PN_MODEM_NETWORK);
+	if (nd->pn_modem_network == NULL) {
+		g_isi_client_destroy(nd->pn_network);
 		g_free(nd);
 		return -ENOMEM;
 	}
 
 	ofono_netreg_set_data(netreg, nd);
 
-	g_isi_client_verify(nd->client, reachable_cb, netreg, NULL);
+	g_isi_client_verify(nd->pn_network, pn_network_reachable_cb,
+				netreg, NULL);
+	g_isi_client_verify(nd->pn_modem_network, pn_modem_network_reachable_cb,
+				netreg, NULL);
 
 	return 0;
-}
-
-static int wg_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
-				void *user)
-{
-	return netreg_probe(netreg, PN_MODEM_NETWORK, user);
-}
-
-static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
-				void *user)
-{
-	return netreg_probe(netreg, PN_NETWORK, user);
 }
 
 static void isi_netreg_remove(struct ofono_netreg *netreg)
@@ -1007,7 +1061,8 @@ static void isi_netreg_remove(struct ofono_netreg *netreg)
 	if (data == NULL)
 		return;
 
-	g_isi_client_destroy(data->client);
+	g_isi_client_destroy(data->pn_modem_network);
+	g_isi_client_destroy(data->pn_network);
 	g_free(data);
 }
 
@@ -1023,26 +1078,12 @@ static struct ofono_netreg_driver isimodem = {
 	.strength		= isi_strength,
 };
 
-static struct ofono_netreg_driver wgmodem = {
-	.name			= "wgmodem2.5",
-	.probe			= wg_netreg_probe,
-	.remove			= isi_netreg_remove,
-	.registration_status	= isi_registration_status,
-	.current_operator	= wg_current_operator,
-	.list_operators		= isi_list_operators,
-	.register_auto		= isi_register_auto,
-	.register_manual	= isi_register_manual,
-	.strength		= isi_strength,
-};
-
 void isi_netreg_init(void)
 {
 	ofono_netreg_driver_register(&isimodem);
-	ofono_netreg_driver_register(&wgmodem);
 }
 
 void isi_netreg_exit(void)
 {
 	ofono_netreg_driver_unregister(&isimodem);
-	ofono_netreg_driver_unregister(&wgmodem);
 }
