@@ -455,6 +455,11 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 
 	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0, 1, 0);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALL, 0, 1, 0);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALLSETUP, 0, 3,
+									0);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALLHELD, 0, 2,
+									0);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_SIGNAL, 0, 5, 0);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0, 1, 0);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_BATTERY, 0, 5, 5);
