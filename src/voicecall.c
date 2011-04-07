@@ -2085,8 +2085,6 @@ static void emit_en_list_changed(struct ofono_voicecall *vc)
 
 static void set_new_ecc(struct ofono_voicecall *vc)
 {
-	GSList *l;
-
 	g_hash_table_destroy(vc->en_list);
 
 	vc->en_list = g_hash_table_new_full(g_str_hash, g_str_equal,
@@ -2097,11 +2095,14 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 		add_to_en_list(vc, vc->nw_en_list);
 
 	/* Emergency numbers read from SIM */
-	if (vc->sim_en_list_ready == TRUE && vc->sim_en_list) {
+	if (vc->sim_en_list_ready == TRUE) {
+		GSList *l;
+
 		for (l = vc->sim_en_list; l; l = l->next)
 			g_hash_table_insert(vc->en_list, g_strdup(l->data),
 							NULL);
-	}
+	} else
+		add_to_en_list(vc, (char **) default_en_list_no_sim);
 
 	/* Default emergency numbers */
 	add_to_en_list(vc, (char **) default_en_list);
@@ -2367,7 +2368,6 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 
 		vc->sim_en_list_ready = FALSE;
 		set_new_ecc(vc);
-		add_to_en_list(vc, (char **) default_en_list_no_sim);
 	default:
 		break;
 	}
