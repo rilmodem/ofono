@@ -208,6 +208,20 @@ class StkAgent(dbus.service.Object):
 		if key == 't':
 			raise EndSession("User wishes to terminate session")
 
+	@dbus.service.method("org.ofono.SimToolkitAgent",
+					in_signature="sy", out_signature="b")
+	def ConfirmOpenChannel(self, info, icon):
+		print "Open channel confirmation: (%s)" % (info)
+		print "Icon: (%d)" % (icon)
+		key = raw_input("Enter Confirmation (t, y, n):")
+
+		if key == 't':
+			raise EndSession("User wishes to terminate session");
+		elif key == 'y':
+			return True
+		else:
+			return False
+
 def property_changed(name, value):
 	print "SimToolKit property: %s changed to '%s'" % (name, value)
 
