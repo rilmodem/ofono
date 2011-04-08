@@ -156,3 +156,10 @@ int stk_agent_display_action(struct stk_agent *agent, const char *text,
 					stk_agent_display_action_cb cb,
 					void *user_data,
 					ofono_destroy_func destroy);
+
+int stk_agent_confirm_open_channel(struct stk_agent *agent, const char *text,
+					const struct stk_icon_id *icon,
+					stk_agent_confirmation_cb cb,
+					void *user_data,
+					ofono_destroy_func destroy,
+					int timeout);
