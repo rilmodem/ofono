@@ -47,8 +47,8 @@ struct ofono_voicecall {
 	GSList *release_list;
 	GSList *multiparty_list;
 	GHashTable *en_list; /* emergency number list */
-	GSList *sim_en_list; /* Emergency numbers being read from SIM */
-	ofono_bool_t sim_en_list_ready;
+	GSList *sim_en_list; /* Emergency numbers already read from SIM */
+	GSList *new_sim_en_list; /* Emergency numbers being read from SIM */
 	char **nw_en_list; /* Emergency numbers from modem/network */
 	DBusMessage *pending;
 	struct ofono_sim *sim;
@@ -2095,7 +2095,7 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 		add_to_en_list(vc, vc->nw_en_list);
 
 	/* Emergency numbers read from SIM */
-	if (vc->sim_en_list_ready == TRUE) {
+	if (vc->sim_en_list != NULL) {
 		GSList *l;
 
 		for (l = vc->sim_en_list; l; l = l->next)
@@ -2108,6 +2108,25 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 	add_to_en_list(vc, (char **) default_en_list);
 
 	emit_en_list_changed(vc);
+}
+
+static void free_sim_ecc_numbers(struct ofono_voicecall *vc, gboolean old_only)
+{
+	/*
+	 * Free the currently being read EN list, just in case the
+	 * we're still reading them
+	 */
+	if (old_only == FALSE && vc->new_sim_en_list) {
+		g_slist_foreach(vc->sim_en_list, (GFunc) g_free, NULL);
+		g_slist_free(vc->sim_en_list);
+		vc->sim_en_list = NULL;
+	}
+
+	if (vc->sim_en_list) {
+		g_slist_foreach(vc->sim_en_list, (GFunc) g_free, NULL);
+		g_slist_free(vc->sim_en_list);
+		vc->sim_en_list = NULL;
+	}
 }
 
 static void ecc_g2_read_cb(int ok, int total_length, int record,
@@ -2127,6 +2146,8 @@ static void ecc_g2_read_cb(int ok, int total_length, int record,
 		return;
 	}
 
+	free_sim_ecc_numbers(vc, TRUE);
+
 	total_length /= 3;
 	while (total_length--) {
 		extract_bcd_number(data, 3, en);
@@ -2137,7 +2158,6 @@ static void ecc_g2_read_cb(int ok, int total_length, int record,
 								g_strdup(en));
 	}
 
-	vc->sim_en_list_ready = TRUE;
 	set_new_ecc(vc);
 }
 
@@ -2163,17 +2183,20 @@ static void ecc_g3_read_cb(int ok, int total_length, int record,
 	extract_bcd_number(data, 3, en);
 
 	if (en[0] != '\0')
-		vc->sim_en_list = g_slist_prepend(vc->sim_en_list,
+		vc->new_sim_en_list = g_slist_prepend(vc->new_sim_en_list,
 							g_strdup(en));
 
 	if (record != total)
 		return;
 
 check:
-	if (!ok && vc->sim_en_list == NULL)
+	if (!ok && vc->new_sim_en_list == NULL)
 		return;
 
-	vc->sim_en_list_ready = TRUE;
+	free_sim_ecc_numbers(vc, TRUE);
+	vc->sim_en_list = vc->new_sim_en_list;
+	vc->new_sim_en_list = NULL;
+
 	set_new_ecc(vc);
 }
 
@@ -2225,11 +2248,7 @@ static void voicecall_unregister(struct ofono_atom *atom)
 
 	vc->sim = NULL;
 
-	if (vc->sim_en_list) {
-		g_slist_foreach(vc->sim_en_list, (GFunc) g_free, NULL);
-		g_slist_free(vc->sim_en_list);
-		vc->sim_en_list = NULL;
-	}
+	free_sim_ecc_numbers(vc, FALSE);
 
 	if (vc->nw_en_list) {
 		g_strfreev(vc->nw_en_list);
@@ -2319,7 +2338,7 @@ struct ofono_voicecall *ofono_voicecall_create(struct ofono_modem *modem,
 	return vc;
 }
 
-static void read_ecc_numbers(int id, void *userdata)
+static void read_sim_ecc_numbers(int id, void *userdata)
 {
 	struct ofono_voicecall *vc = userdata;
 
@@ -2341,10 +2360,10 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 		if (vc->sim_context == NULL)
 			vc->sim_context = ofono_sim_context_create(vc->sim);
 
-		read_ecc_numbers(SIM_EFECC_FILEID, vc);
+		read_sim_ecc_numbers(SIM_EFECC_FILEID, vc);
 
 		ofono_sim_add_file_watch(vc->sim_context, SIM_EFECC_FILEID,
-						read_ecc_numbers, vc, NULL);
+						read_sim_ecc_numbers, vc, NULL);
 		break;
 	case OFONO_SIM_STATE_NOT_PRESENT:
 		/* TODO: Must release all non-emergency calls */
@@ -2354,17 +2373,7 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 			vc->sim_context = NULL;
 		}
 
-		/*
-		 * Free the currently being read EN list, just in case the
-		 * SIM is removed when we're still reading them
-		 */
-		if (vc->sim_en_list) {
-			g_slist_foreach(vc->sim_en_list, (GFunc) g_free, NULL);
-			g_slist_free(vc->sim_en_list);
-			vc->sim_en_list = NULL;
-		}
-
-		vc->sim_en_list_ready = FALSE;
+		free_sim_ecc_numbers(vc, FALSE);
 		set_new_ecc(vc);
 	default:
 		break;
