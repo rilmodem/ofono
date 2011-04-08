@@ -278,6 +278,13 @@ Methods		byte RequestSelection(string title, byte icon_id,
 
 			Possible Errors: [service].Error.SimToolkit.EndSession
 
+		boolean ConfirmOpenChannel(string information, byte icon_id)
+
+			Asks the agent to request user to confirm the channel
+			set-up.
+
+			Possible Errors: [service].Error.SimToolkit.EndSession
+
 		void Cancel() [noreply]
 
 			Asks the agent to cancel any ongoing operation in
