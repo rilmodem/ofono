@@ -2225,10 +2225,13 @@ static void free_sim_ecc_numbers(struct ofono_voicecall *vc, gboolean old_only)
 	 * Free the currently being read EN list, just in case the
 	 * we're still reading them
 	 */
-	if (old_only == FALSE && vc->new_sim_en_list) {
-		g_slist_foreach(vc->sim_en_list, (GFunc) g_free, NULL);
-		g_slist_free(vc->sim_en_list);
-		vc->sim_en_list = NULL;
+	if (old_only == FALSE) {
+		if (vc->new_sim_en_list) {
+			g_slist_foreach(vc->new_sim_en_list, (GFunc) g_free,
+					NULL);
+			g_slist_free(vc->new_sim_en_list);
+			vc->new_sim_en_list = NULL;
+		}
 
 		vc->flags &= ~VOICECALL_FLAG_SIM_ECC_READY;
 	}
