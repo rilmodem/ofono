@@ -974,7 +974,7 @@ static void pn_network_reachable_cb(const GIsiMessage *msg, void *data)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	if (nd == NULL || nd->client != NULL)
 		return;
@@ -1004,7 +1004,7 @@ static void pn_modem_network_reachable_cb(const GIsiMessage *msg, void *data)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	if (nd == NULL || nd->client != NULL)
 		return;

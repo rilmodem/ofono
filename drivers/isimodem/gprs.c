@@ -269,7 +269,7 @@ static void gpds_reachable_cb(const GIsiMessage *msg, void *opaque)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	g_isi_client_ind_subscribe(gd->client, GPDS_DETACH_IND,
 					detach_ind_cb, gprs);

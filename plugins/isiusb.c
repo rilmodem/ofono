@@ -207,7 +207,7 @@ static void reachable_cb(const GIsiMessage *msg, void *data)
 	if (!g_isi_msg_error(msg) < 0)
 		return;
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	g_isi_client_ind_subscribe(isi->client, MTC_STATE_INFO_IND,
 					mtc_state_ind_cb, om);

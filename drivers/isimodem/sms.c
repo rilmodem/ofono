@@ -653,7 +653,7 @@ static void sms_reachable_cb(const GIsiMessage *msg, void *data)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	g_isi_client_verify(sd->sim, sim_reachable_cb, sms, NULL);
 }

@@ -231,7 +231,7 @@ static void ussd_reachable_cb(const GIsiMessage *msg, void *data)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	g_isi_client_ind_subscribe(ud->client, SS_GSM_USSD_RECEIVE_IND,
 					ussd_ind_cb, ussd);

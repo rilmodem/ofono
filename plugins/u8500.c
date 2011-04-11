@@ -235,7 +235,7 @@ static void reachable_cb(const GIsiMessage *msg, void *data)
 	if (!g_isi_msg_error(msg) < 0)
 		return;
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	g_isi_client_ind_subscribe(isi->client, MCE_MODEM_STATE_IND,
 					mce_state_ind_cb, om);
@@ -538,7 +538,7 @@ static void u8500_devinfo_reachable_cb(const GIsiMessage *msg, void *data)
 	if (g_isi_msg_error(msg) < 0)
 		return;
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	ofono_devinfo_register(info);
 }

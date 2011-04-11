@@ -1773,7 +1773,7 @@ static void call_verify_cb(const GIsiMessage *msg, void *data)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	g_isi_client_ind_subscribe(ivc->client, CALL_STATUS_IND,
 					isi_call_status_ind_cb, ovc);

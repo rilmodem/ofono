@@ -287,7 +287,7 @@ static void wran_reachable_cb(const GIsiMessage *msg, void *opaque)
 	if (g_isi_msg_error(msg) < 0)
 		return;
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	rd->wran_object = g_isi_msg_object(msg);
 
@@ -309,7 +309,7 @@ static void gss_reachable_cb(const GIsiMessage *msg, void *opaque)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	ofono_radio_settings_register(rs);
 }

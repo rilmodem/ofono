@@ -415,7 +415,7 @@ static void reachable_cb(const GIsiMessage *msg, void *data)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	ofono_call_forwarding_register(cf);
 }

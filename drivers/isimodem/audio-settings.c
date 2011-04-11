@@ -72,7 +72,7 @@ static void isi_call_verify_cb(const GIsiMessage *msg, void *data)
 		return;
 	}
 
-	ISI_VERSION_DBG(msg);
+	ISI_RESOURCE_DBG(msg);
 
 	g_isi_client_ind_subscribe(asd->client, CALL_SERVER_STATUS_IND,
 					isi_call_server_status_ind_cb,
