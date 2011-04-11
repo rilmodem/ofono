@@ -40,6 +40,8 @@
 
 #define MAX_VOICE_CALLS 16
 
+#define VOICECALL_FLAG_SIM_ECC_READY 0x1
+
 GSList *g_drivers = NULL;
 
 struct ofono_voicecall {
@@ -51,6 +53,7 @@ struct ofono_voicecall {
 	GSList *new_sim_en_list; /* Emergency numbers being read from SIM */
 	char **nw_en_list; /* Emergency numbers from modem/network */
 	DBusMessage *pending;
+	uint32_t flags;
 	struct ofono_sim *sim;
 	struct ofono_sim_context *sim_context;
 	unsigned int sim_watch;
@@ -2201,7 +2204,7 @@ static void set_new_ecc(struct ofono_voicecall *vc)
 		add_to_en_list(vc, vc->nw_en_list);
 
 	/* Emergency numbers read from SIM */
-	if (vc->sim_en_list != NULL) {
+	if (vc->flags & VOICECALL_FLAG_SIM_ECC_READY) {
 		GSList *l;
 
 		for (l = vc->sim_en_list; l; l = l->next)
@@ -2226,6 +2229,8 @@ static void free_sim_ecc_numbers(struct ofono_voicecall *vc, gboolean old_only)
 		g_slist_foreach(vc->sim_en_list, (GFunc) g_free, NULL);
 		g_slist_free(vc->sim_en_list);
 		vc->sim_en_list = NULL;
+
+		vc->flags &= ~VOICECALL_FLAG_SIM_ECC_READY;
 	}
 
 	if (vc->sim_en_list) {
@@ -2263,6 +2268,8 @@ static void ecc_g2_read_cb(int ok, int total_length, int record,
 			vc->sim_en_list = g_slist_prepend(vc->sim_en_list,
 								g_strdup(en));
 	}
+
+	vc->flags |= VOICECALL_FLAG_SIM_ECC_READY;
 
 	set_new_ecc(vc);
 }
@@ -2302,6 +2309,8 @@ check:
 	free_sim_ecc_numbers(vc, TRUE);
 	vc->sim_en_list = vc->new_sim_en_list;
 	vc->new_sim_en_list = NULL;
+
+	vc->flags |= VOICECALL_FLAG_SIM_ECC_READY;
 
 	set_new_ecc(vc);
 }
