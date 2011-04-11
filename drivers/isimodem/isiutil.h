@@ -67,4 +67,8 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 
 #define ALIGN4(val) (((val) + 3) & ~3)
 
+#define ISI_VERSION_AT_LEAST(ver,maj,min)				\
+	((ver) != NULL && ((ver)->major > (maj) ||			\
+		((ver)->major == (maj) && (ver)->minor >= (min))))
+
 #endif /* !__ISIMODEM_UTIL_H */
