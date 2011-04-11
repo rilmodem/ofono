@@ -478,9 +478,9 @@ const char *sms_subblock_name(enum sms_subblock value)
 		_(SMS_GSM_ROUTING);
 		_(SMS_GSM_CB_MESSAGE);
 		_(SMS_GSM_TPDU);
-		_(SMS_GSM_TPDU_25);
-		_(SMS_GSM_ROUTE_INFO);
-		_(SMS_GSM_PARAMETERS);
+		_(SMS_SB_TPDU);
+		_(SMS_SB_ROUTE_INFO);
+		_(SMS_SB_SMS_PARAMETERS);
 		_(SMS_COMMON_DATA);
 		_(SMS_ADDRESS);
 	}
