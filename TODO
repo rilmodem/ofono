@@ -125,6 +125,7 @@ Modem Emulator
 
   Complexity: C4
   Priority: Medium
+  Owner: Guillaume Zajac <guillaume.zajac@linux.intel.com>
 
   Depends: PPP Server mode
 
