@@ -1,4 +1,4 @@
-SimToolkit Hierarchy [experimental]
+SimToolkit Hierarchy
 ===============
 
 Service		org.ofono
@@ -77,7 +77,7 @@ Properties	string IdleModeText [readonly]
 
 			Contains the identifier of the icon for the main menu.
 
-SimToolkitAgent Hierarchy [experimental]
+SimToolkitAgent Hierarchy
 ===============
 
 Service		unique name
