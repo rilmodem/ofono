@@ -251,8 +251,8 @@ Methods		byte RequestSelection(string title, byte icon_id,
 
 			Possible Errors: [service].Error.SimToolkit.EndSession
 
-		void DisplayActionInformation(string text, byte icon_id)
-						[noreply]
+		void DisplayActionInformation(string text,
+						byte icon_id) [noreply]
 
 			Supplies a text string and/or icon concerning the
 			current activity in the terminal and UICC.  The
@@ -278,7 +278,8 @@ Methods		byte RequestSelection(string title, byte icon_id,
 
 			Possible Errors: [service].Error.SimToolkit.EndSession
 
-		boolean ConfirmOpenChannel(string information, byte icon_id)
+		boolean ConfirmOpenChannel(string information,
+						byte icon_id) [experimental]
 
 			Asks the agent to request user to confirm the channel
 			set-up.
