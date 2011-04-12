@@ -574,15 +574,42 @@ static void isi_call_create_resp(const GIsiMessage *msg, void *data)
 {
 	struct isi_call_req_ctx *irc = data;
 	uint8_t call_id;
+	uint8_t subblocks;
 
-	if (!check_response_status(msg, CALL_CREATE_RESP) ||
-			!g_isi_msg_data_get_byte(msg, 0, &call_id) ||
-			call_id == CALL_ID_NONE) {
-		isi_ctx_return_failure(irc);
-		return;
+	if (!check_response_status(msg, CALL_CREATE_RESP))
+		goto failure;
+
+	if (!g_isi_msg_data_get_byte(msg, 0, &call_id) ||
+			call_id == CALL_ID_NONE)
+		goto failure;
+
+	if (!g_isi_msg_data_get_byte(msg, 1, &subblocks))
+		goto failure;
+
+	if (subblocks != 0) {
+		GIsiSubBlockIter iter;
+		struct isi_call call = { 0 };
+
+		for (g_isi_sb_iter_init(&iter, msg, 2);
+				g_isi_sb_iter_is_valid(&iter);
+				g_isi_sb_iter_next(&iter)) {
+
+			switch (g_isi_sb_iter_get_id(&iter)) {
+			case CALL_CAUSE:
+				isi_call_cause_sb_proc(NULL, &call, &iter);
+				DBG("CALL_CREATE_RESP "
+					"cause_type=0x%02x cause=0x%02x",
+					call.cause_type, call.cause);
+				goto failure;
+			}
+		}
 	}
 
 	isi_ctx_return_success(irc);
+	return;
+
+failure:
+	isi_ctx_return_failure(irc);
 }
 
 static struct isi_call_req_ctx *isi_modem_call_create_req(
