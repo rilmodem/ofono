@@ -270,6 +270,9 @@ int __ofono_voicecall_tone_send(struct ofono_voicecall *vc,
 				ofono_voicecall_tone_cb_t cb, void *user_data);
 void __ofono_voicecall_tone_cancel(struct ofono_voicecall *vc, int id);
 
+struct ofono_call *__ofono_voicecall_find_call_with_status(
+				struct ofono_voicecall *vc, int status);
+
 #include <ofono/sms.h>
 
 struct sms;

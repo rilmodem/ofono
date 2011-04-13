@@ -1098,6 +1098,22 @@ static gboolean voicecalls_have_incoming(struct ofono_voicecall *vc)
 	return voicecalls_have_with_status(vc, CALL_STATUS_INCOMING);
 }
 
+struct ofono_call *__ofono_voicecall_find_call_with_status(
+				struct ofono_voicecall *vc, int status)
+{
+	GSList *l;
+	struct voicecall *v;
+
+	for (l = vc->call_list; l; l = l->next) {
+		v = l->data;
+
+		if (v->call->status == status)
+			return v->call;
+	}
+
+	return NULL;
+}
+
 static void voicecalls_multiparty_changed(GSList *old, GSList *new)
 {
 	GSList *o, *n;
