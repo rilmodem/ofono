@@ -37,6 +37,8 @@
 #define DUN_DNS_SERVER_1       "10.10.10.10"
 #define DUN_DNS_SERVER_2       "10.10.10.11"
 
+#define RING_TIMEOUT 3
+
 struct ofono_emulator {
 	struct ofono_atom *atom;
 	enum ofono_emulator_type type;
@@ -49,6 +51,7 @@ struct ofono_emulator {
 	int events_mode;
 	gboolean events_ind;
 	GSList *indicators;
+	guint callsetup_source;
 };
 
 struct indicator {
@@ -175,6 +178,43 @@ static void dial_cb(GAtServer *server, GAtServerRequestType type,
 
 error:
 	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
+}
+
+static struct indicator *find_indicator(struct ofono_emulator *em,
+						const char *name, int *index)
+{
+	GSList *l;
+	int i;
+
+	for (i = 1, l = em->indicators; l; l = l->next, i++) {
+		struct indicator *ind = l->data;
+
+		if (g_str_equal(ind->name, name) == FALSE)
+			continue;
+
+		if (index)
+			*index = i;
+
+		return ind;
+	}
+
+	return NULL;
+}
+
+static gboolean send_callsetup_notification(gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	struct indicator *call_ind;
+
+	if (em->type == OFONO_EMULATOR_TYPE_HFP && em->slc == FALSE)
+		return TRUE;
+
+	call_ind = find_indicator(em, OFONO_EMULATOR_IND_CALL, NULL);
+
+	if (call_ind->value == OFONO_EMULATOR_CALL_INACTIVE)
+		g_at_server_send_unsolicited(em->server, "RING");
+
+	return TRUE;
 }
 
 static void brsf_cb(GAtServer *server, GAtServerRequestType type,
@@ -416,6 +456,11 @@ static void emulator_unregister(struct ofono_atom *atom)
 	if (em->source) {
 		g_source_remove(em->source);
 		em->source = 0;
+	}
+
+	if (em->callsetup_source) {
+		g_source_remove(em->callsetup_source);
+		em->callsetup_source = 0;
 	}
 
 	for (l = em->indicators; l; l = l->next) {
@@ -681,27 +726,45 @@ enum ofono_emulator_request_type ofono_emulator_request_get_type(
 void ofono_emulator_set_indicator(struct ofono_emulator *em,
 					const char *name, int value)
 {
-	GSList *l;
 	int i;
 	char buf[20];
+	struct indicator *ind;
+	struct indicator *call_ind;
 
-	for (i = 1, l = em->indicators; l; l = l->next, i++) {
-		struct indicator *ind = l->data;
+	ind = find_indicator(em, name, &i);
 
-		if (g_str_equal(ind->name, name) == FALSE)
-			continue;
-
-		if (ind->value == value || value < ind->min
-					|| value > ind->max)
-			return;
-
-		ind->value = value;
-
-		if (em->events_mode == 3 && em->events_ind && em->slc) {
-			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
-			g_at_server_send_info(em->server, buf, TRUE);
-		}
-
+	if (ind == NULL || ind->value == value || value < ind->min
+			|| value > ind->max)
 		return;
+
+	ind->value = value;
+
+	call_ind = find_indicator(em, OFONO_EMULATOR_IND_CALL, NULL);
+
+	if (em->events_mode == 3 && em->events_ind && em->slc) {
+		sprintf(buf, "+CIEV: %d,%d", i, ind->value);
+		g_at_server_send_unsolicited(em->server, buf);
+	}
+
+	/*
+	 * Ring timer should be started when callsetup indicator is set to
+	 *   Incoming
+	 * If there is no active call, a first RING should be sent just after
+	 *   the +CIEV
+	 * It should be stopped for all other values of callsetup
+	 */
+	if (g_str_equal(name, OFONO_EMULATOR_IND_CALLSETUP) == FALSE)
+		return;
+
+	if (value == OFONO_EMULATOR_CALLSETUP_INCOMING) {
+		if (call_ind->value == OFONO_EMULATOR_CALL_INACTIVE)
+			send_callsetup_notification(em);
+
+		em->callsetup_source = g_timeout_add_seconds(RING_TIMEOUT,
+					send_callsetup_notification, em);
+	} else if (value != OFONO_EMULATOR_CALLSETUP_INCOMING &&
+						em->callsetup_source) {
+		g_source_remove(em->callsetup_source);
+		em->callsetup_source = 0;
 	}
 }
