@@ -54,6 +54,7 @@ struct ofono_emulator {
 	GSList *indicators;
 	guint callsetup_source;
 	gboolean clip;
+	gboolean ccwa;
 };
 
 struct indicator {
@@ -219,6 +220,30 @@ static struct ofono_call *find_call_with_status(struct ofono_emulator *em,
 	return __ofono_voicecall_find_call_with_status(vc, status);
 }
 
+static void notify_ccwa(struct ofono_emulator *em)
+{
+	struct ofono_call *c;
+	const char *phone;
+	/*
+	 * '+CCWA: "+",' + phone number + phone type on 3 digits max
+	 * + terminating null
+	 */
+	char str[OFONO_MAX_PHONE_NUMBER_LENGTH + 14 + 1];
+
+	if (!em->ccwa)
+		return;
+
+	c = find_call_with_status(em, CALL_STATUS_WAITING);
+
+	if (c && c->clip_validity == CLIP_VALIDITY_VALID) {
+		phone = phone_number_to_string(&c->phone_number);
+		sprintf(str, "+CCWA: \"%s\",%d", phone, c->phone_number.type);
+
+		g_at_server_send_unsolicited(em->server, str);
+	} else
+		g_at_server_send_unsolicited(em->server, "+CCWA: \"\",128");
+}
+
 static void notify_ring(struct ofono_emulator *em)
 {
 	struct ofono_call *c;
@@ -256,6 +281,8 @@ static gboolean send_callsetup_notification(gpointer user_data)
 
 	if (call_ind->value == OFONO_EMULATOR_CALL_INACTIVE)
 		notify_ring(em);
+	else
+		notify_ccwa(em);
 
 	return TRUE;
 }
@@ -506,6 +533,42 @@ fail:
 	};
 }
 
+static void ccwa_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	GAtResultIter iter;
+	int val;
+
+	if (em->slc == FALSE)
+		goto fail;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		if (!g_at_result_iter_next_number(&iter, &val))
+			goto fail;
+
+		if (val != 0 && val != 1)
+			goto fail;
+
+		/* check this is last parameter */
+		if (g_at_result_iter_skip_next(&iter))
+			goto fail;
+
+		em->ccwa = val;
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+	};
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 					int min, int max, int dflt)
 {
@@ -592,6 +655,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		g_at_server_register(em->server, "+CIND", cind_cb, em, NULL);
 		g_at_server_register(em->server, "+CMER", cmer_cb, em, NULL);
 		g_at_server_register(em->server, "+CLIP", clip_cb, em, NULL);
+		g_at_server_register(em->server, "+CCWA", ccwa_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
@@ -810,6 +874,7 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	char buf[20];
 	struct indicator *ind;
 	struct indicator *call_ind;
+	gboolean callsetup;
 
 	ind = find_indicator(em, name, &i);
 
@@ -820,6 +885,16 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	ind->value = value;
 
 	call_ind = find_indicator(em, OFONO_EMULATOR_IND_CALL, NULL);
+
+	callsetup = g_str_equal(name, OFONO_EMULATOR_IND_CALLSETUP);
+
+	/*
+	 * When callsetup indicator goes to Incoming and there is an active call
+	 * a +CCWA should be sent before +CIEV
+	 */
+	if (callsetup && value == OFONO_EMULATOR_CALLSETUP_INCOMING &&
+			call_ind->value == OFONO_EMULATOR_CALL_ACTIVE)
+		send_callsetup_notification(em);
 
 	if (em->events_mode == 3 && em->events_ind && em->slc) {
 		sprintf(buf, "+CIEV: %d,%d", i, ind->value);
@@ -833,7 +908,7 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	 *   the +CIEV
 	 * It should be stopped for all other values of callsetup
 	 */
-	if (g_str_equal(name, OFONO_EMULATOR_IND_CALLSETUP) == FALSE)
+	if (!callsetup)
 		return;
 
 	if (value == OFONO_EMULATOR_CALLSETUP_INCOMING) {
