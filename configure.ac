@@ -1,5 +1,5 @@
 AC_PREREQ(2.60)
-AC_INIT(ofono, 0.45)
+AC_INIT(ofono, 0.46)
 
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_CONFIG_HEADER(config.h)

@@ -1,3 +1,27 @@
+ver 0.46:
+	Fix issue with operator name reading and older ISI modems.
+	Fix issue with networking registration and older ISI modems.
+	Fix issue with missing handling of PIN/SIM states and ISI modems.
+	Fix issue with voice call state reporting and ISI modems.
+	Fix issue with STK handling of environment variables.
+	Fix issue with STK and empty URL for launch browser.
+	Fix issue with voice call pause character validation.
+	Fix issue with buffer length and long phone numbers.
+	Fix issue with SMS sending retries and network timeout.
+	Fix issue with missing SMS submit canceled history status.
+	Add support for cancellation of SMS submission.
+	Add support for handling SIM Toolkit display action commands.
+	Add support for handling call forwarding and SIM refresh.
+	Add support for handling EFimg and EFiidf changes.
+	Add support for handling EFmsisdn and EFsdn changes.
+	Add support for handling emergency calls without SIM.
+	Add support for handling emergency calls without PIN.
+	Add support for handling emergency number updates.
+	Add support for assisted satellite navigation interface.
+	Add support for IPv6 contexts and ISI modems.
+	Add support for dual-stack GPRS contexts.
+	Add limited support for CDMA connection manager interface.
+
 ver 0.45:
 	Fix issue with SIM Toolkit null data object.
 	Fix issue with SIM filesystem and modem release.
