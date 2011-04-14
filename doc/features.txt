@@ -648,3 +648,12 @@ Flight Mode
   enter reduced functionality mode where only certain actions are available
   that do not depend on the radio.  E.g. setting various settings on the local
   store or the SIM.
+
+Network Registration
+====================
+
+- Support for PLMN_MODE bit from CPHS Customer Service Profile (CSP) within
+  the 'Value Added Services' service group.  oFono reads this file when the
+  network registration atom has been initialized.  If EFcsp indicates that
+  manual network registration is not allowed, oFono enters into 'auto-only'
+  registration mode.  Updates to this file via STK Refresh is also supported.
