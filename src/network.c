@@ -199,8 +199,15 @@ static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 	netreg->mode = mode;
 
 	if (netreg->settings) {
-		g_key_file_set_integer(netreg->settings, SETTINGS_GROUP,
-					"Mode", netreg->mode);
+		const char *mode;
+
+		if (netreg->mode == NETWORK_REGISTRATION_MODE_MANUAL)
+			mode = "manual";
+		else
+			mode = "auto";
+
+		g_key_file_set_string(netreg->settings, SETTINGS_GROUP,
+					"Mode", mode);
 		storage_sync(netreg->imsi, SETTINGS_STORE, netreg->settings);
 	}
 
@@ -1894,7 +1901,9 @@ struct ofono_netreg *ofono_netreg_create(struct ofono_modem *modem,
 static void netreg_load_settings(struct ofono_netreg *netreg)
 {
 	const char *imsi;
-	int mode;
+	char *strmode;
+	gboolean upgrade = FALSE;
+	GError *error = NULL;
 
 	imsi = ofono_sim_get_imsi(netreg->sim);
 	if (imsi == NULL)
@@ -1907,15 +1916,47 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 
 	netreg->imsi = g_strdup(imsi);
 
-	mode = g_key_file_get_integer(netreg->settings, SETTINGS_GROUP,
-					"Mode", NULL);
+	/*
+	 * Try legacy (integer) value first.  We do this because g_key_file
+	 * does not really distinguish between integers and strings
+	 */
+	strmode = g_key_file_get_string(netreg->settings, SETTINGS_GROUP,
+					"Mode", &error);
 
-	if (mode == NETWORK_REGISTRATION_MODE_AUTO ||
-			mode == NETWORK_REGISTRATION_MODE_MANUAL)
-		netreg->mode = mode;
+	if (strmode == NULL)
+		upgrade = TRUE;
+	else if (g_str_equal(strmode, "auto"))
+		netreg->mode = NETWORK_REGISTRATION_MODE_AUTO;
+	else if (g_str_equal(strmode, "manual"))
+		netreg->mode = NETWORK_REGISTRATION_MODE_MANUAL;
+	else {
+		int mode;
 
-	g_key_file_set_integer(netreg->settings, SETTINGS_GROUP,
-				"Mode", netreg->mode);
+		mode = g_key_file_get_integer(netreg->settings, SETTINGS_GROUP,
+						"Mode", NULL);
+
+		switch (mode) {
+		case NETWORK_REGISTRATION_MODE_AUTO:
+		case NETWORK_REGISTRATION_MODE_MANUAL:
+			netreg->mode = mode;
+			break;
+		}
+
+		upgrade = TRUE;
+	}
+
+	g_free(strmode);
+
+	if (upgrade == FALSE)
+		return;
+
+	if (netreg->mode == NETWORK_REGISTRATION_MODE_MANUAL)
+		strmode = "manual";
+	else
+		strmode = "auto";
+
+	g_key_file_set_string(netreg->settings, SETTINGS_GROUP,
+				"Mode", strmode);
 }
 
 static void sim_pnn_opl_changed(int id, void *userdata)
