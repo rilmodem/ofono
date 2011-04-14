@@ -1876,7 +1876,7 @@ static void sms_load_settings(struct ofono_sms *sms, const char *imsi)
 		g_error_free(error);
 		sms->alphabet = SMS_ALPHABET_DEFAULT;
 		g_key_file_set_integer(sms->settings, SETTINGS_GROUP,
-					"Aphabet", sms->alphabet);
+					"Alphabet", sms->alphabet);
 	}
 }
 
