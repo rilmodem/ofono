@@ -358,7 +358,7 @@ static gboolean sca_sim_set(GIsiClient *client, struct sim_efsmsp *params,
 	uint8_t *bcd;
 
 	bcd = params->sca;
-	params->absent &= ~0x02;
+	params->absent &= ~SMS_PI_SERVICE_CENTER_ADDRESS;
 
 	encode_bcd_number(sca->number, bcd + 2);
 	bcd[0] = 1 + (strlen(sca->number) + 1) / 2;
