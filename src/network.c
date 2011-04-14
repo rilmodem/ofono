@@ -1422,11 +1422,11 @@ static void sim_csp_read_cb(int ok, int total_length, int record,
 	 * manual selection is to be enabled. The latter is also the
 	 * default.
 	 */
-	while (i < record_length &&
+	while (i < total_length &&
 			data[i] != SIM_CSP_ENTRY_VALUE_ADDED_SERVICES)
 		i += 2;
 
-	if (i == record_length)
+	if (i == total_length)
 		return;
 
 	if ((data[i + 1] & 0x80) != 0) {
