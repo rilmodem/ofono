@@ -73,7 +73,7 @@ static inline struct isi_cb_data *isi_cb_data_new(void *user, void *cb,
 #define ALIGN4(val) (((val) + 3) & ~3)
 
 #define ISI_16BIT(val)						\
-	(((val) >> 8) & 0xFF), ((val & 0xFF))
+	(((val) >> 8) & 0xFF), ((val) & 0xFF)
 
 #define ISI_32BIT(val)						\
 	(((val) >> 24) & 0xFF), (((val) >> 16) & 0xFF),		\
