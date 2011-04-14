@@ -473,30 +473,27 @@ static gboolean submit_tpdu(GIsiClient *client, unsigned char *pdu, int pdu_len,
 		0,		/* Repeated message */
 		0, 0,		/* Filler */
 		2,		/* Subblock count */
+		ISI_16BIT(SMS_SB_SMS_PARAMETERS),
+		ISI_16BIT(8),	/* Subblock length */
+		SMS_PARAMETER_LOCATION_DEFAULT,
+		SMS_PI_SERVICE_CENTER_ADDRESS,
+		0, 0,		/* Filler */
 		ISI_16BIT(SMS_SB_TPDU),
 		ISI_16BIT(tpdu_sb_len),
 		tpdu_len,
 		0,		/* Filler */
 		/* Databytes aligned to next 32bit boundary */
 	};
-	uint8_t params[] = {
-		ISI_16BIT(SMS_SB_SMS_PARAMETERS),
-		ISI_16BIT(8),	/* Subblock length */
-		1,		/* Location number */
-		SMS_PI_SERVICE_CENTER_ADDRESS,
-		0, 0,		/* Filler */
-	};
 	uint8_t padding[4] = { 0 };
-	struct iovec iov[4] = {
+	struct iovec iov[3] = {
 		{ hdr, sizeof(hdr) },
 		{ pdu + pdu_len - tpdu_len, tpdu_len },
 		{ padding, tpdu_pad_len },
-		{ params, sizeof(params) },
 	};
 
 	/* FIXME: Missing SB for SCA if provided */
 
-	return g_isi_client_vsend_with_timeout(client, iov, 4, SMS_TIMEOUT,
+	return g_isi_client_vsend_with_timeout(client, iov, 3, SMS_TIMEOUT,
 						submit_tpdu_resp_cb, data,
 						notify);
 }

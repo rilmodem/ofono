@@ -234,6 +234,10 @@ enum sms_parameter_indicator {
 	SMS_PI_VALIDITY_PERIOD =	0x10,
 };
 
+enum sms_parameter_location {
+	SMS_PARAMETER_LOCATION_DEFAULT =	0x00,
+};
+
 #ifdef __cplusplus
 };
 #endif
