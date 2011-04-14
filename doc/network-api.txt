@@ -19,6 +19,7 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.NotImplemented
 					 [service].Error.Failed
+					 [service].Error.AccessDenied
 
 		array{object,dict} GetOperators()
 
@@ -49,6 +50,7 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.NotImplemented
 					 [service].Error.Failed
+					 [service].Error.AccessDenied
 
 Signals		PropertyChanged(string property, variant value)
 
@@ -163,6 +165,7 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.NotImplemented
 					 [service].Error.Failed
+					 [service].Error.AccessDenied
 
 Signals		PropertyChanged(string property, variant value)
 
