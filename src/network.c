@@ -1397,17 +1397,17 @@ void ofono_netreg_time_notify(struct ofono_netreg *netreg,
 	__ofono_nettime_info_received(modem, info);
 }
 
-static void sim_csp_read_cb(int ok, int length, int record,
+static void sim_csp_read_cb(int ok, int total_length, int record,
 				const unsigned char *data,
 				int record_length, void *user_data)
 {
 	struct ofono_netreg *netreg = user_data;
-	int i;
+	int i = 0;
 
 	if (!ok)
 		return;
 
-	if (length < 18 || record_length < 18 || length < record_length)
+	if (total_length < 18)
 		return;
 
 	/*
@@ -1422,17 +1422,31 @@ static void sim_csp_read_cb(int ok, int length, int record,
 	 * manual selection is to be enabled. The latter is also the
 	 * default.
 	 */
-	for (i = 0; i < record_length / 2; i++) {
+	while (i < record_length &&
+			data[i] != SIM_CSP_ENTRY_VALUE_ADDED_SERVICES)
+		i += 2;
 
-		if (data[i * 2] != SIM_CSP_ENTRY_VALUE_ADDED_SERVICES)
-			continue;
+	if (i == record_length)
+		return;
 
-		if ((data[i * 2 + 1] & 0x80) != 0)
-			return;
+	if ((data[i + 1] & 0x80) != 0) {
+		if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO_ONLY)
+			set_registration_mode(netreg,
+						NETWORK_REGISTRATION_MODE_AUTO);
 
-		set_registration_mode(netreg,
-					NETWORK_REGISTRATION_MODE_AUTO_ONLY);
+		return;
 	}
+
+	set_registration_mode(netreg, NETWORK_REGISTRATION_MODE_AUTO_ONLY);
+}
+
+static void sim_csp_changed(int id, void *userdata)
+{
+	struct ofono_netreg *netreg = userdata;
+
+	ofono_sim_read(netreg->sim_context, SIM_EF_CPHS_CSP_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_csp_read_cb, netreg);
 }
 
 static void init_registration_status(const struct ofono_error *error,
@@ -1468,10 +1482,15 @@ static void init_registration_status(const struct ofono_error *error,
 							netreg);
 	}
 
-	if (netreg->sim_context)
+	if (netreg->sim_context) {
 		ofono_sim_read(netreg->sim_context, SIM_EF_CPHS_CSP_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_csp_read_cb, netreg);
+
+		ofono_sim_add_file_watch(netreg->sim_context,
+						SIM_EF_CPHS_CSP_FILEID,
+						sim_csp_changed, netreg, NULL);
+	}
 }
 
 static void notify_emulator_strength(struct ofono_atom *atom, void *data)
