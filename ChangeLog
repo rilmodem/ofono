@@ -1,3 +1,7 @@
+ver 0.47:
+	Fix issue with entering offline mode prematurely.
+	Add support for CPHS CSP network registration handling.
+
 ver 0.46:
 	Fix issue with operator name reading and older ISI modems.
 	Fix issue with networking registration and older ISI modems.
