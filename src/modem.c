@@ -564,6 +564,20 @@ void __ofono_modem_remove_powered_watch(struct ofono_modem *modem,
 	__ofono_watchlist_remove_item(modem->powered_watches, id);
 }
 
+static gboolean modem_has_sim(struct ofono_modem *modem)
+{
+	GSList *l;
+	struct ofono_atom *atom;
+
+	for (l = modem->atoms; l; l = l->next) {
+		atom = l->data;
+
+		if (atom->type == OFONO_ATOM_TYPE_SIM)
+			return TRUE;
+	}
+
+	return FALSE;
+}
 static void common_online_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
@@ -1074,8 +1088,7 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 			modem_change_state(modem, MODEM_STATE_PRE_SIM);
 
 			/* Force SIM Ready for devies with no sim atom */
-			if (__ofono_modem_find_atom(modem,
-						OFONO_ATOM_TYPE_SIM) == NULL)
+			if (modem_has_sim(modem) == FALSE)
 				sim_state_watch(OFONO_SIM_STATE_READY, modem);
 		} else {
 			set_online(modem, FALSE);
@@ -1155,8 +1168,7 @@ void ofono_modem_set_powered(struct ofono_modem *modem, ofono_bool_t powered)
 		modem_change_state(modem, MODEM_STATE_PRE_SIM);
 
 		/* Force SIM Ready for devices with no sim atom */
-		if (__ofono_modem_find_atom(modem,
-					OFONO_ATOM_TYPE_SIM) == NULL)
+		if (modem_has_sim(modem) == FALSE)
 			sim_state_watch(OFONO_SIM_STATE_READY, modem);
 	} else {
 		set_online(modem, FALSE);
