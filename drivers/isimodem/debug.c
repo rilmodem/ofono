@@ -483,6 +483,7 @@ const char *sms_subblock_name(enum sms_subblock value)
 		_(SMS_SB_SMS_PARAMETERS);
 		_(SMS_COMMON_DATA);
 		_(SMS_ADDRESS);
+		/* _(SMS_SB_ADDRESS); */
 	}
 	return "SMS_<UNKNOWN>";
 }

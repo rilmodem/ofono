@@ -463,37 +463,49 @@ static gboolean submit_tpdu(GIsiClient *client, unsigned char *pdu, int pdu_len,
 				int tpdu_len, int mms, void *data,
 				GDestroyNotify notify)
 {
+	uint8_t use_sca = (pdu_len - tpdu_len) > 1;
+	size_t sca_sb_len = use_sca ? 18 : 0;
 	size_t tpdu_sb_len = ALIGN4(6 + tpdu_len);
 	size_t tpdu_pad_len = tpdu_sb_len - (6 + tpdu_len);
 
-	uint8_t hdr[] = {
+	uint8_t msg[] = {
 		SMS_MESSAGE_SEND_REQ,
-		mms,		/* More messages to send */
-		SMS_ROUTE_ANY,	/* Use any (default) route */
-		0,		/* Repeated message */
-		0, 0,		/* Filler */
-		2,		/* Subblock count */
+		mms,			/* More messages to send */
+		SMS_ROUTE_ANY,		/* Use any (default) route */
+		0,			/* Repeated message */
+		0, 0,			/* Filler */
+		use_sca ? 3 : 2,	/* Subblock count */
 		ISI_16BIT(SMS_SB_SMS_PARAMETERS),
-		ISI_16BIT(8),	/* Subblock length */
+		ISI_16BIT(8),		/* Subblock length */
 		SMS_PARAMETER_LOCATION_DEFAULT,
 		SMS_PI_SERVICE_CENTER_ADDRESS,
-		0, 0,		/* Filler */
+		0, 0,			/* Filler */
 		ISI_16BIT(SMS_SB_TPDU),
 		ISI_16BIT(tpdu_sb_len),
 		tpdu_len,
-		0,		/* Filler */
+		0,			/* Filler */
 		/* Databytes aligned to next 32bit boundary */
 	};
+	uint8_t sca_sb[18] = {
+		ISI_16BIT(SMS_SB_ADDRESS),
+		ISI_16BIT(18),
+		SMS_SMSC_ADDRESS,
+		0,			/* Filled in later */
+	};
 	uint8_t padding[4] = { 0 };
-	struct iovec iov[3] = {
-		{ hdr, sizeof(hdr) },
+	struct iovec iov[4] = {
+		{ msg, sizeof(msg) },
 		{ pdu + pdu_len - tpdu_len, tpdu_len },
 		{ padding, tpdu_pad_len },
+		{ sca_sb, sca_sb_len },
 	};
 
-	/* FIXME: Missing SB for SCA if provided */
+	if (use_sca) {
+		sca_sb[5] = pdu_len - tpdu_len;
+		memcpy(sca_sb + 6, pdu, pdu_len - tpdu_len);
+	}
 
-	return g_isi_client_vsend_with_timeout(client, iov, 3, SMS_TIMEOUT,
+	return g_isi_client_vsend_with_timeout(client, iov, 4, SMS_TIMEOUT,
 						submit_tpdu_resp_cb, data,
 						notify);
 }

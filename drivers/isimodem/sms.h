@@ -152,6 +152,7 @@ enum sms_subblock {
 	SMS_SB_SMS_PARAMETERS =		0x0031,
 	SMS_COMMON_DATA =		0x80,
 	SMS_ADDRESS =			0x82,
+	SMS_SB_ADDRESS =		0x0082,
 };
 
 enum sms_routing_command {
