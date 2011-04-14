@@ -217,28 +217,21 @@ static void set_registration_mode(struct ofono_netreg *netreg, int mode)
 static void register_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_netreg *netreg = data;
-	DBusConnection *conn = ofono_dbus_get_connection();
 	DBusMessage *reply;
-
-	if (netreg->pending == NULL)
-		goto out;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		reply = dbus_message_new_method_return(netreg->pending);
 	else
 		reply = __ofono_error_failed(netreg->pending);
 
-	g_dbus_send_message(conn, reply);
+	__ofono_dbus_pending_reply(&netreg->pending, reply);
 
-	dbus_message_unref(netreg->pending);
-	netreg->pending = NULL;
-
-out:
 	if (netreg->driver->registration_status == NULL)
 		return;
 
 	netreg->driver->registration_status(netreg,
-					registration_status_callback, netreg);
+						registration_status_callback,
+						netreg);
 }
 
 static struct network_operator_data *
