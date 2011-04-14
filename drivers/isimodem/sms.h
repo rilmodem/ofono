@@ -163,6 +163,7 @@ enum sms_routing_command {
 };
 
 enum sms_route_preference {
+	SMS_ROUTE_ANY =			0x00,
 	SMS_ROUTE_GPRS_PREF =		0x00,
 	SMS_ROUTE_CS =			0x01,
 	SMS_ROUTE_GPRS =		0x02,

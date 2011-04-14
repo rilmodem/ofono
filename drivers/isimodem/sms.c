@@ -469,7 +469,7 @@ static gboolean submit_tpdu(GIsiClient *client, unsigned char *pdu, int pdu_len,
 	uint8_t hdr[] = {
 		SMS_MESSAGE_SEND_REQ,
 		mms,		/* More messages to send */
-		SMS_ROUTE_DEFAULT,
+		SMS_ROUTE_ANY,	/* Use any (default) route */
 		0,		/* Repeated message */
 		0, 0,		/* Filler */
 		2,		/* Subblock count */
