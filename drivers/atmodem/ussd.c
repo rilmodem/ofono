@@ -316,10 +316,11 @@ static int at_ussd_probe(struct ofono_ussd *ussd, unsigned int vendor,
 
 	ofono_ussd_set_data(ussd, data);
 
-	g_at_chat_send(chat, "AT+CSCS?", cscs_prefix, read_charset_cb, data,
-			NULL);
+	g_at_chat_send(data->chat, "AT+CSCS?", cscs_prefix,
+			read_charset_cb, data, NULL);
 
-	g_at_chat_send(chat, "AT+CUSD=1", NULL, at_ussd_register, ussd, NULL);
+	g_at_chat_send(data->chat, "AT+CUSD=1", NULL,
+			at_ussd_register, ussd, NULL);
 
 	return 0;
 }
