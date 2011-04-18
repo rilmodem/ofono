@@ -352,7 +352,7 @@ static void mtc_state_cb(const GIsiMessage *msg, void *data)
 
 	DBG("MTC cause: %s (0x%02X)", mtc_isi_cause_name(cause), cause);
 
-	if (cause == MTC_OK) {
+	if (cause == MTC_OK || cause == MTC_STATE_TRANSITION_GOING_ON) {
 		isi->online_cbd = cbd;
 		return;
 	}
