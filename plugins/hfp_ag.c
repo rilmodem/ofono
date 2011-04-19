@@ -165,6 +165,7 @@ static int hfp_ag_init()
 static void hfp_ag_exit()
 {
 	__ofono_modemwatch_remove(modemwatch_id);
+	g_list_free(modems);
 
 	if (server) {
 		bluetooth_unregister_server(server);
