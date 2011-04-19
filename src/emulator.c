@@ -910,15 +910,20 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	if (!callsetup)
 		return;
 
-	if (value == OFONO_EMULATOR_CALLSETUP_INCOMING) {
+	switch (value) {
+	case OFONO_EMULATOR_CALLSETUP_INCOMING:
 		if (call_ind->value == OFONO_EMULATOR_CALL_INACTIVE)
 			send_callsetup_notification(em);
 
 		em->callsetup_source = g_timeout_add_seconds(RING_TIMEOUT,
 					send_callsetup_notification, em);
-	} else if (value != OFONO_EMULATOR_CALLSETUP_INCOMING &&
-						em->callsetup_source) {
-		g_source_remove(em->callsetup_source);
-		em->callsetup_source = 0;
+		break;
+	default:
+		if (em->callsetup_source > 0) {
+			g_source_remove(em->callsetup_source);
+			em->callsetup_source = 0;
+		}
+
+		break;
 	}
 }
