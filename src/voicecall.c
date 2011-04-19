@@ -44,15 +44,15 @@
 
 GSList *g_drivers = NULL;
 
-struct multirelease {
-	ofono_voicecall_cb_t release_done;
-	struct ofono_emulator *em;
+struct multi_release {
+	ofono_voicecall_cb_t cb;
+	void *data;
 };
 
 struct ofono_voicecall {
 	GSList *call_list;
 	GSList *release_list;
-	struct multirelease multirelease;
+	struct multi_release multi_release;
 	GSList *multiparty_list;
 	GHashTable *en_list; /* emergency number list */
 	GSList *sim_en_list; /* Emergency numbers already read from SIM */
@@ -1635,7 +1635,8 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 
 	if (vc->driver->hangup_all == NULL) {
 		voicecalls_release_queue(vc, vc->call_list);
-		vc->multirelease.release_done = voicecalls_release_done;
+		vc->multi_release.cb = voicecalls_release_done;
+		vc->multi_release.data = vc;
 		voicecalls_release_next(vc);
 	} else
 		vc->driver->hangup_all(vc, generic_callback, vc);
@@ -1888,7 +1889,8 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 
 	/* Fall back to the old-fashioned way */
 	voicecalls_release_queue(vc, vc->multiparty_list);
-	vc->multirelease.release_done = voicecalls_release_done;
+	vc->multi_release.cb = voicecalls_release_done;
+	vc->multi_release.data = vc;
 	voicecalls_release_next(vc);
 
 out:
@@ -2199,7 +2201,7 @@ static void multirelease_callback(const struct ofono_error *error, void *data)
 		return;
 	}
 
-	vc->multirelease.release_done(error, vc);
+	vc->multi_release.cb(error, vc->multi_release.data);
 }
 
 static void emit_en_list_changed(struct ofono_voicecall *vc)
@@ -2623,14 +2625,6 @@ fail:
 	};
 }
 
-static void emulator_release_done(const struct ofono_error *error,
-					void *data)
-{
-	struct ofono_voicecall *vc = data;
-
-	emulator_generic_cb(error, vc->multirelease.em);
-}
-
 static void emulator_chup_cb(struct ofono_emulator *em,
 			struct ofono_emulator_request *req, void *userdata)
 {
@@ -2669,8 +2663,8 @@ static void emulator_chup_cb(struct ofono_emulator *em,
 		if (vc->release_list == NULL)
 			goto fail;
 
-		vc->multirelease.release_done = emulator_release_done;
-		vc->multirelease.em = em;
+		vc->multi_release.cb = emulator_generic_cb;
+		vc->multi_release.data = em;
 		voicecalls_release_next(vc);
 
 done:
