@@ -131,7 +131,7 @@ static void voicecall_watch(struct ofono_atom *atom,
 							NULL);
 	} else {
 		modems = g_list_remove(modems, modem);
-		if (modems == NULL &&  server != NULL) {
+		if (modems == NULL && server != NULL) {
 			bluetooth_unregister_server(server);
 			server = NULL;
 		}
