@@ -889,8 +889,8 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	callsetup = g_str_equal(name, OFONO_EMULATOR_IND_CALLSETUP);
 
 	/*
-	 * When callsetup indicator goes to Incoming and there is an active call
-	 * a +CCWA should be sent before +CIEV
+	 * When callsetup indicator goes to Incoming and there is an active
+	 * call a +CCWA should be sent before +CIEV
 	 */
 	if (callsetup && value == OFONO_EMULATOR_CALLSETUP_INCOMING &&
 			call_ind->value == OFONO_EMULATOR_CALL_ACTIVE)
@@ -903,10 +903,9 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 
 	/*
 	 * Ring timer should be started when callsetup indicator is set to
-	 *   Incoming
-	 * If there is no active call, a first RING should be sent just after
-	 *   the +CIEV
-	 * It should be stopped for all other values of callsetup
+	 * Incoming.  If there is no active call, a first RING should be
+	 * sent just after the +CIEV and should be stopped for all other
+	 * values of callsetup
 	 */
 	if (!callsetup)
 		return;
