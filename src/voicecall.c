@@ -1026,7 +1026,8 @@ static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
 	return FALSE;
 }
 
-static gboolean voicecalls_have_with_status(struct ofono_voicecall *vc, int status)
+static gboolean voicecalls_have_with_status(struct ofono_voicecall *vc,
+						int status)
 {
 	GSList *l;
 	struct voicecall *v;
