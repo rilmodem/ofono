@@ -159,6 +159,12 @@ static int dun_gw_init(void)
 static void dun_gw_exit(void)
 {
 	__ofono_modemwatch_remove(modemwatch_id);
+	g_list_free(modems);
+
+	if (server) {
+		bluetooth_unregister_server(server);
+		server = NULL;
+	}
 }
 
 OFONO_PLUGIN_DEFINE(dun_gw, "Dial-up Networking Profile Plugins", VERSION,
