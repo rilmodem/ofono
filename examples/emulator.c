@@ -40,7 +40,8 @@
 
 #include "ofono.h"
 
-#define TCP_PORT 12346
+#define DUN_PORT 12346
+#define HFP_PORT 12347
 
 static unsigned int modemwatch_id;
 guint server_watch;
@@ -66,7 +67,7 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	modem = modems->data;
 	DBG("Picked modem %p for emulator", modem);
 
-	em = ofono_emulator_create(modem, OFONO_EMULATOR_TYPE_DUN);
+	em = ofono_emulator_create(modem, GPOINTER_TO_INT(user));
 	if (em == NULL)
 		close(fd);
 	else
@@ -75,7 +76,7 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 	return TRUE;
 }
 
-static gboolean create_tcp(void)
+static gboolean create_tcp(short port, enum ofono_emulator_type type)
 {
 	struct sockaddr_in addr;
 	int sk;
@@ -90,7 +91,7 @@ static gboolean create_tcp(void)
 
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = htons(TCP_PORT);
+	addr.sin_port = htons(port);
 
 	setsockopt(sk, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr));
 
@@ -105,7 +106,8 @@ static gboolean create_tcp(void)
 
 	server_watch = g_io_add_watch_full(server, G_PRIORITY_DEFAULT,
 				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-				on_socket_connected, NULL, NULL);
+				on_socket_connected, GINT_TO_POINTER(type),
+				NULL);
 
 	g_io_channel_unref(server);
 
@@ -134,8 +136,10 @@ static void powered_watch(struct ofono_modem *modem, gboolean powered,
 		DBG("Adding modem %p to the list", modem);
 		modems = g_list_append(modems, modem);
 
-		if (modems->next == NULL)
-			create_tcp();
+		if (modems->next == NULL) {
+			create_tcp(DUN_PORT, OFONO_EMULATOR_TYPE_DUN);
+			create_tcp(HFP_PORT, OFONO_EMULATOR_TYPE_HFP);
+		}
 	}
 }
 
@@ -153,8 +157,10 @@ static void modem_watch(struct ofono_modem *modem, gboolean added, void *user)
 		DBG("Adding modem %p to the list", modem);
 		modems = g_list_append(modems, modem);
 
-		if (modems->next == NULL)
-			create_tcp();
+		if (modems->next == NULL) {
+			create_tcp(DUN_PORT, OFONO_EMULATOR_TYPE_DUN);
+			create_tcp(HFP_PORT, OFONO_EMULATOR_TYPE_HFP);
+		}
 	}
 
 	__ofono_modem_add_powered_watch(modem, powered_watch, NULL, NULL);
