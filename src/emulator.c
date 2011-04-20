@@ -261,11 +261,19 @@ static void notify_ring(struct ofono_emulator *em)
 
 	c = find_call_with_status(em, CALL_STATUS_INCOMING);
 
-	if (c && c->clip_validity == CLIP_VALIDITY_VALID) {
+	if (c == NULL)
+		return;
+
+	switch (c->clip_validity) {
+	case CLIP_VALIDITY_VALID:
 		phone = phone_number_to_string(&c->phone_number);
 		sprintf(str, "+CLIP: \"%s\",%d", phone, c->phone_number.type);
-
 		g_at_server_send_unsolicited(em->server, str);
+		break;
+
+	case CLIP_VALIDITY_WITHHELD:
+		g_at_server_send_unsolicited(em->server, "+CLIP: \"\",128");
+		break;
 	}
 }
 
