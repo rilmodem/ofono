@@ -770,12 +770,14 @@ static void notify_emulator_call_status(struct ofono_voicecall *vc)
 						emulator_call_status_cb,
 						GINT_TO_POINTER(status));
 
-	if (incoming || waiting)
+	if (incoming)
 		status = OFONO_EMULATOR_CALLSETUP_INCOMING;
 	else if (dialing)
 		status = OFONO_EMULATOR_CALLSETUP_OUTGOING;
 	else if (alerting)
 		status = OFONO_EMULATOR_CALLSETUP_ALERTING;
+	else if (waiting)
+		status = OFONO_EMULATOR_CALLSETUP_INCOMING;
 	else
 		status = OFONO_EMULATOR_CALLSETUP_INACTIVE;
 
