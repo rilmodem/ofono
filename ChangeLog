@@ -1,3 +1,9 @@
+ver 0.48:
+	Fix issue with crash due to not stopped PPP timers.
+	Fix issue with offline mode handling and Huawei modem.
+	Fix issue with missing check for Huawei modem device open.
+	Fix issue with USSD and use of non-cloned GAtChat object.
+
 ver 0.47:
 	Fix issue with entering offline mode prematurely.
 	Add support for CPHS CSP network registration handling.
