@@ -970,6 +970,8 @@ void pppcp_process_packet(gpointer priv, const guint8 *new_packet)
 
 void pppcp_free(struct pppcp_data *pppcp)
 {
+	pppcp_stop_timer(&pppcp->config_timer_data);
+	pppcp_stop_timer(&pppcp->terminate_timer_data);
 	g_free(pppcp->peer_options);
 	g_free(pppcp);
 }
