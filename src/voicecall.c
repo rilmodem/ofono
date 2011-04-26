@@ -2688,8 +2688,6 @@ static void emulator_clcc_cb(struct ofono_emulator *em,
 	struct ofono_voicecall *vc = userdata;
 	struct ofono_error result;
 	GSList *l;
-	struct voicecall *v;
-	gboolean mpty;
 	/*
 	 * '+CLCC: 123,1,1,0,1,"+",' + phone number + phone type on 3 digits
 	 * + terminating null
@@ -2701,7 +2699,10 @@ static void emulator_clcc_cb(struct ofono_emulator *em,
 	switch (ofono_emulator_request_get_type(req)) {
 	case OFONO_EMULATOR_REQUEST_TYPE_COMMAND_ONLY:
 		for (l = vc->call_list; l; l = l->next) {
-			v = l->data;
+			struct voicecall *v = l->data;
+			const char *number = "";
+			int type = 128;
+			gboolean mpty;
 
 			if (g_slist_find_custom(vc->multiparty_list,
 						GINT_TO_POINTER(v->call->id),
@@ -2710,17 +2711,14 @@ static void emulator_clcc_cb(struct ofono_emulator *em,
 			else
 				mpty = FALSE;
 
-			if (v->call->clip_validity == CLIP_VALIDITY_VALID)
-				sprintf(buf, "+CLCC: %d,%d,%d,0,%d,\"%s\",%d",
-					v->call->id, v->call->direction,
-					v->call->status, mpty,
-					v->call->phone_number.number,
-					v->call->phone_number.type);
-			else
-				sprintf(buf, "+CLCC: %d,%d,%d,0,%d,\"\",128",
-					v->call->id, v->call->direction,
-					v->call->status, mpty);
+			if (v->call->clip_validity == CLIP_VALIDITY_VALID) {
+				number = v->call->phone_number.number;
+				type = v->call->phone_number.type;
+			}
 
+			sprintf(buf, "+CLCC: %d,%d,%d,0,%d,\"%s\",%d",
+					v->call->id, v->call->direction,
+					v->call->status, mpty, number, type);
 			ofono_emulator_send_info(em, buf, l->next == NULL ?
 							TRUE : FALSE);
 		}
