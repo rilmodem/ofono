@@ -217,7 +217,8 @@ static gboolean notify_sim_state(struct ofono_modem *modem,
 		 */
 		ofono_modem_set_powered(modem, TRUE);
 
-		g_at_chat_send(data->pcui, "AT+CFUN=5", none_prefix,
+		if (ofono_modem_get_online(modem) == FALSE)
+			g_at_chat_send(data->pcui, "AT+CFUN=5", none_prefix,
 				cfun_offline, modem, NULL);
 
 		return FALSE;
