@@ -2689,10 +2689,11 @@ static void emulator_clcc_cb(struct ofono_emulator *em,
 	struct ofono_error result;
 	GSList *l;
 	/*
-	 * '+CLCC: 123,1,1,0,1,"+",' + phone number + phone type on 3 digits
-	 * + terminating null
+	 *          idx   dir  stat  mode  mpty
+	 * '+CLCC: <0-7>,<0-1>,<0-5>,<0-9>,<0-1>,"",' +
+	 * phone number + phone type on 3 digits + terminating null
 	 */
-	char buf[OFONO_MAX_PHONE_NUMBER_LENGTH + 26 + 1];
+	char buf[20 + OFONO_MAX_PHONE_NUMBER_LENGTH + 3 + 1];
 
 	result.error = 0;
 
