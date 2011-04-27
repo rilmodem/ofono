@@ -163,7 +163,8 @@ static void pending_remove_and_dispatch(GIsiPending *op, GIsiMessage *msg)
 	modem = op->service->modem;
 
 	ISIDBG(modem, "%s %s to %p [res=0x%02X, id=0x%02X, utid=0x%02X]",
-		g_isi_msg_strerror(msg), pend_type_to_str(op->type), op,
+		g_isi_msg_error(msg) ? g_isi_msg_strerror(msg) : "normal",
+		pend_type_to_str(op->type), op,
 		g_isi_msg_resource(msg), g_isi_msg_id(msg),
 		g_isi_msg_utid(msg));
 
