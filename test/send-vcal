@@ -1,0 +1,32 @@
+#!/usr/bin/python
+
+import sys
+import dbus
+
+if len(sys.argv) < 3:
+	print "Usage: %s [modem] <to> <vcal file>" % (sys.argv[0])
+	sys.exit(1)
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 4:
+	path = sys.argv[1]
+else:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+					'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
+
+print "Send vcal using modem %s ..." % path
+
+sm = dbus.Interface(bus.get_object('org.ofono', path),
+					'org.ofono.SmartMessaging')
+
+if len(sys.argv) == 4:
+	vcal = file(sys.argv[3]).read()
+	path = sm.SendAppointment(sys.argv[2], vcal)
+else:
+	vcal = file(sys.argv[2]).read()
+	path = sm.SendAppointment(sys.argv[1], vcal)
+
+print path
