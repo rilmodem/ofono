@@ -3,18 +3,30 @@
 import sys
 import dbus
 
+if len(sys.argv) < 3:
+	print "Usage: %s [modem] <to> <vcard file>" % (sys.argv[0])
+	sys.exit(1)
+
 bus = dbus.SystemBus()
 
-manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-						'org.ofono.Manager')
+if len(sys.argv) == 4:
+	path = sys.argv[1]
+else:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+					'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
 
-modems = manager.GetModems()
-path = modems[0][0]
+print "Send vcard using modem %s ..." % path
 
-manager = dbus.Interface(bus.get_object('org.ofono', path),
+sm = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.SmartMessaging')
 
-vcard = file(sys.argv[2]).read()
-path = manager.SendBusinessCard(sys.argv[1], vcard)
+if len(sys.argv) == 4:
+	vcard = file(sys.argv[3]).read()
+	path = sm.SendBusinessCard(sys.argv[2], vcard)
+else:
+	vcard = file(sys.argv[2]).read()
+	path = sm.SendBusinessCard(sys.argv[1], vcard)
 
 print path
