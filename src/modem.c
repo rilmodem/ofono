@@ -707,6 +707,9 @@ static DBusMessage *set_property_online(struct ofono_modem *modem,
 	ofono_bool_t online;
 	const struct ofono_modem_driver *driver = modem->driver;
 
+	if (modem->powered == FALSE)
+		return __ofono_error_not_available(msg);
+
 	if (dbus_message_iter_get_arg_type(var) != DBUS_TYPE_BOOLEAN)
 		return __ofono_error_invalid_args(msg);
 
