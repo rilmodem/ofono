@@ -3,22 +3,32 @@
 import sys
 import dbus
 
+if len(sys.argv) < 4:
+	print "Usage: %s [modem] <to> <message> <delivery report>" %\
+					(sys.argv[0])
+	sys.exit(1)
+
 bus = dbus.SystemBus()
 
-manager = dbus.Interface(bus.get_object('org.ofono', '/'),
-						'org.ofono.Manager')
+if len(sys.argv) == 5:
+	path = sys.argv[1]
+else:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+					'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
 
-modems = manager.GetModems()
-path = modems[0][0]
+print "Send message using modem %s ..." % path
 
-manager = dbus.Interface(bus.get_object('org.ofono', path),
+
+mm = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.MessageManager')
 
-if len(sys.argv) == 4:
-	manager.SetProperty("UseDeliveryReports",
-					dbus.Boolean(int(sys.argv[1])))
-	path = manager.SendMessage(sys.argv[1], sys.argv[2])
+if len(sys.argv) == 5:
+	mm.SetProperty("UseDeliveryReports",
+					dbus.Boolean(int(sys.argv[4])))
+	path = mm.SendMessage(sys.argv[2], sys.argv[3])
 else:
-	path = manager.SendMessage(sys.argv[1], sys.argv[2])
+	path = mm.SendMessage(sys.argv[1], sys.argv[2])
 
 print path
