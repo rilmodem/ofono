@@ -1336,7 +1336,7 @@ static void sms_dispatch(struct ofono_sms *sms, GSList *sms_list)
 			}
 		}
 
-		DBG("dst %d src %d 8bit %u", cdst, csrc, is_8bit);
+		DBG("dst %d src %d", cdst, csrc);
 
 		if (srcport != csrc || dstport != cdst) {
 			ofono_error("Source / Destination ports across "
