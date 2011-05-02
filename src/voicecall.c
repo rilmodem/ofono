@@ -2815,6 +2815,15 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			return;
 		}
 
+		if (chld >= 20 && chld <= 27) {
+			if (vc->driver->private_chat == NULL)
+				goto fail;
+
+			vc->driver->private_chat(vc, chld - 20,
+					emulator_generic_cb, em);
+			return;
+		}
+
 		goto fail;
 
 	case OFONO_EMULATOR_REQUEST_TYPE_SUPPORT:
@@ -2857,6 +2866,14 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 				*info++ = ',';
 
 			*info++ = '1';
+			*info++ = 'X';
+		}
+
+		if (vc->driver->private_chat) {
+			if (info - buf > 6)
+				*info++ = ',';
+
+			*info++ = '2';
 			*info++ = 'X';
 		}
 
