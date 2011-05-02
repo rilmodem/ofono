@@ -2758,6 +2758,22 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			goto fail;
 
 		switch (chld) {
+		case 0:
+			if (vc->driver->set_udub == NULL)
+				goto fail;
+
+			if (vc->driver->release_all_held == NULL)
+				goto fail;
+
+			if (voicecalls_have_waiting(vc)) {
+				vc->driver->set_udub(vc,
+						emulator_generic_cb, em);
+				return;
+			}
+
+			vc->driver->release_all_held(vc,
+					emulator_generic_cb, em);
+			return;
 		case 1:
 			if (vc->driver->release_all_active == NULL)
 				goto fail;
@@ -2781,8 +2797,15 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 		memcpy(buf, "+CHLD=", 6);
 		info = buf + 6;
 
-		if (vc->driver->release_all_active)
+		if (vc->driver->release_all_held && vc->driver->set_udub)
+			*info++ = '0';
+
+		if (vc->driver->release_all_active) {
+			if (info - buf > 6)
+				*info++ = ',';
+
 			*info++ = '1';
+		}
 
 		if (vc->driver->hold_all_active) {
 			if (info - buf > 6)
