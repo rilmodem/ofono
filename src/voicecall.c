@@ -2795,6 +2795,13 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			vc->driver->create_multiparty(vc,
 					emulator_generic_cb, em);
 			return;
+		case 4:
+			if (vc->driver->transfer == NULL)
+				goto fail;
+
+			vc->driver->transfer(vc,
+					emulator_generic_cb, em);
+			return;
 		default:
 			goto fail;
 		}
@@ -2826,6 +2833,13 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 				*info++ = ',';
 
 			*info++ = '3';
+		}
+
+		if (vc->driver->transfer) {
+			if (info - buf > 6)
+				*info++ = ',';
+
+			*info++ = '4';
 		}
 
 		*info++ = '\0';
