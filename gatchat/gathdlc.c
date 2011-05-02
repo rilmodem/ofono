@@ -225,10 +225,6 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 	unsigned char *buf = ring_buffer_read_ptr(rbuf, 0);
 	unsigned int pos = 0;
 
-	hdlc_record(hdlc->record_fd, TRUE, buf, wrap);
-
-	hdlc->in_read_handler = TRUE;
-
 	/*
 	 * We delete the the paused_timeout_cb or hdlc_suspend as soons as
 	 * we read a data.
@@ -245,6 +241,10 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 		if (escaping)
 			return;
 	}
+
+	hdlc_record(hdlc->record_fd, TRUE, buf, wrap);
+
+	hdlc->in_read_handler = TRUE;
 
 	while (pos < len) {
 		/*
