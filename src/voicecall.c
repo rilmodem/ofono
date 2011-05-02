@@ -2803,9 +2803,19 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 					emulator_generic_cb, em);
 			return;
 		default:
-			goto fail;
+			break;
 		}
-		break;
+
+		if (chld >= 10 && chld <= 17) {
+			if (vc->driver->release_specific == NULL)
+				goto fail;
+
+			vc->driver->release_specific(vc, chld - 10,
+					emulator_generic_cb, em);
+			return;
+		}
+
+		goto fail;
 
 	case OFONO_EMULATOR_REQUEST_TYPE_SUPPORT:
 		memcpy(buf, "+CHLD=", 6);
@@ -2840,6 +2850,14 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 				*info++ = ',';
 
 			*info++ = '4';
+		}
+
+		if (vc->driver->release_specific) {
+			if (info - buf > 6)
+				*info++ = ',';
+
+			*info++ = '1';
+			*info++ = 'X';
 		}
 
 		*info++ = '\0';
