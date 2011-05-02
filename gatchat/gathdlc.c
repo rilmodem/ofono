@@ -50,6 +50,8 @@
 
 #define HDLC_FCS(fcs, c) crc_ccitt_byte(fcs, c)
 
+#define GUARD_TIMEOUT	1000	/* Pause time before and after '+++' sequence */
+
 struct _GAtHDLC {
 	gint ref_count;
 	GAtIO *io;
@@ -68,6 +70,11 @@ struct _GAtHDLC {
 	gboolean in_read_handler;
 	gboolean destroyed;
 	gboolean no_carrier_detect;
+	GAtSuspendFunc suspend_func;
+	gpointer suspend_data;
+	guint suspend_source;
+	GTimer *timer;
+	guint num_plus;
 };
 
 static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
@@ -130,6 +137,86 @@ guint32 g_at_hdlc_get_recv_accm(GAtHDLC *hdlc)
 	return hdlc->recv_accm;
 }
 
+void g_at_hdlc_set_suspend_function(GAtHDLC *hdlc, GAtSuspendFunc func,
+							gpointer user_data)
+{
+	if (hdlc == NULL)
+		return;
+
+	if (func == NULL) {
+		if (hdlc->timer) {
+			g_timer_destroy(hdlc->timer);
+			hdlc->timer = NULL;
+		}
+
+		if (hdlc->suspend_source > 0) {
+			g_source_remove(hdlc->suspend_source);
+			hdlc->suspend_source = 0;
+		}
+	} else
+		hdlc->timer = g_timer_new();
+
+	hdlc->suspend_func = func;
+	hdlc->suspend_data = user_data;
+}
+
+static gboolean hdlc_suspend(gpointer user_data)
+{
+	GAtHDLC *hdlc = user_data;
+
+	g_at_io_drain_ring_buffer(hdlc->io, 3);
+
+	if (hdlc->suspend_func)
+		hdlc->suspend_func(hdlc->suspend_data);
+
+	hdlc->suspend_source = 0;
+
+	return FALSE;
+}
+
+static gboolean check_escape(GAtHDLC *hdlc, struct ring_buffer *rbuf)
+{
+	unsigned int len = ring_buffer_len(rbuf);
+	unsigned int wrap = ring_buffer_len_no_wrap(rbuf);
+	unsigned char *buf = ring_buffer_read_ptr(rbuf, 0);
+	unsigned int pos = 0;
+	unsigned int elapsed = g_timer_elapsed(hdlc->timer, NULL) * 1000;
+	unsigned int num_plus = 0;
+	gboolean guard_timeout = FALSE;
+
+	if (elapsed >= GUARD_TIMEOUT)
+		guard_timeout = TRUE;
+
+	while (pos < len && pos < 3) {
+		if (*buf != '+')
+			break;
+
+		num_plus++;
+		buf++;
+		pos++;
+
+		if (pos == wrap)
+			buf = ring_buffer_read_ptr(rbuf, pos);
+	}
+
+	if (num_plus != len)
+		return FALSE;
+
+	/* We got some escape chars, but no guard timeout first */
+	if (guard_timeout == FALSE && hdlc->num_plus == 0)
+		return FALSE;
+
+	if (num_plus != 3) {
+		hdlc->num_plus = num_plus;
+		return TRUE;
+	}
+
+	hdlc->num_plus = 0;
+	hdlc->suspend_source = g_timeout_add(GUARD_TIMEOUT, hdlc_suspend, hdlc);
+
+	return TRUE;
+}
+
 static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 {
 	GAtHDLC *hdlc = user_data;
@@ -141,6 +228,23 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 	hdlc_record(hdlc->record_fd, TRUE, buf, wrap);
 
 	hdlc->in_read_handler = TRUE;
+
+	/*
+	 * We delete the the paused_timeout_cb or hdlc_suspend as soons as
+	 * we read a data.
+	 */
+	if (hdlc->suspend_source > 0) {
+		g_source_remove(hdlc->suspend_source);
+		hdlc->suspend_source = 0;
+		g_timer_start(hdlc->timer);
+	} else if (hdlc->timer) {
+		gboolean escaping = check_escape(hdlc, rbuf);
+
+		g_timer_start(hdlc->timer);
+
+		if (escaping)
+			return;
+	}
 
 	while (pos < len) {
 		/*
@@ -304,6 +408,9 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 
 	g_at_io_set_write_handler(hdlc->io, NULL, NULL);
 	g_at_io_set_read_handler(hdlc->io, NULL, NULL);
+
+	if (hdlc->suspend_source > 0)
+		g_source_remove(hdlc->suspend_source);
 
 	g_at_io_unref(hdlc->io);
 	hdlc->io = NULL;
