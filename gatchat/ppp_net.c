@@ -196,3 +196,12 @@ void ppp_net_free(struct ppp_net *net)
 	g_free(net->if_name);
 	g_free(net);
 }
+
+void ppp_net_suspend_interface(struct ppp_net *net)
+{
+	if (net == NULL || net->channel == NULL)
+		return;
+
+	if (net->watch)
+		g_source_remove(net->watch);
+}
