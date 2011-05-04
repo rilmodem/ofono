@@ -105,6 +105,15 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 	g_at_server_resume(em->server);
 }
 
+static void ppp_suspend(gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+
+	DBG("");
+
+	g_at_server_resume(em->server);
+}
+
 static gboolean setup_ppp(gpointer user_data)
 {
 	struct ofono_emulator *em = user_data;
@@ -132,6 +141,7 @@ static gboolean setup_ppp(gpointer user_data)
 
 	g_at_ppp_set_connect_function(em->ppp, ppp_connect, em);
 	g_at_ppp_set_disconnect_function(em->ppp, ppp_disconnect, em);
+	g_at_ppp_set_suspend_function(em->ppp, ppp_suspend, em);
 
 	return FALSE;
 }
