@@ -610,3 +610,12 @@ void g_at_hdlc_set_no_carrier_detect(GAtHDLC *hdlc, gboolean detect)
 
 	hdlc->no_carrier_detect = detect;
 }
+
+void g_at_hdlc_suspend(GAtHDLC *hdlc)
+{
+	if (hdlc == NULL)
+		return;
+
+	g_at_io_set_write_handler(hdlc->io, NULL, NULL);
+	g_at_io_set_read_handler(hdlc->io, NULL, NULL);
+}
