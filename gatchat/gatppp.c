@@ -76,6 +76,8 @@ struct _GAtPPP {
 	gpointer debug_data;
 	gboolean sta_pending;
 	guint ppp_dead_source;
+	GAtSuspendFunc suspend_func;
+	gpointer suspend_data;
 };
 
 void ppp_debug(GAtPPP *ppp, const char *str)
@@ -465,6 +467,28 @@ void g_at_ppp_set_debug(GAtPPP *ppp, GAtDebugFunc func, gpointer user_data)
 
 	ppp->debugf = func;
 	ppp->debug_data = user_data;
+}
+
+static void ppp_proxy_suspend_net_interface(gpointer user_data)
+{
+	GAtPPP *ppp = user_data;
+
+	ppp_net_suspend_interface(ppp->net);
+
+	if (ppp->suspend_func)
+		ppp->suspend_func(ppp->suspend_data);
+}
+
+void g_at_ppp_set_suspend_function(GAtPPP *ppp, GAtSuspendFunc func,
+					gpointer user_data)
+{
+	if (ppp == NULL)
+		return;
+
+	ppp->suspend_func = func;
+	ppp->suspend_data = user_data;
+	g_at_hdlc_set_suspend_function(ppp->hdlc,
+					ppp_proxy_suspend_net_interface, ppp);
 }
 
 void g_at_ppp_shutdown(GAtPPP *ppp)
