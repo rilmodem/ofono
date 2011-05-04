@@ -166,6 +166,9 @@ static gboolean hdlc_suspend(gpointer user_data)
 
 	g_at_io_drain_ring_buffer(hdlc->io, 3);
 
+	g_at_io_set_write_handler(hdlc->io, NULL, NULL);
+	g_at_io_set_read_handler(hdlc->io, NULL, NULL);
+
 	if (hdlc->suspend_func)
 		hdlc->suspend_func(hdlc->suspend_data);
 
