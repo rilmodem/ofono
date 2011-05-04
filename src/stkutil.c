@@ -5655,7 +5655,8 @@ static gboolean build_receive_data(struct stk_tlv_builder *builder,
 	const struct stk_response_receive_data *receive_data =
 		&response->receive_data;
 
-	if (response->result.type != STK_RESULT_TYPE_SUCCESS)
+	if (response->result.type != STK_RESULT_TYPE_SUCCESS &&
+			response->result.type != STK_RESULT_TYPE_MISSING_INFO)
 		return TRUE;
 
 	if (receive_data->rx_data.len) {
