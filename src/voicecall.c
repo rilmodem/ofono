@@ -2806,7 +2806,7 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			break;
 		}
 
-		if (chld >= 10 && chld <= 17) {
+		if (chld >= 11 && chld <= 17) {
 			if (vc->driver->release_specific == NULL)
 				goto fail;
 
@@ -2815,7 +2815,7 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			return;
 		}
 
-		if (chld >= 20 && chld <= 27) {
+		if (chld >= 21 && chld <= 27) {
 			if (vc->driver->private_chat == NULL)
 				goto fail;
 
