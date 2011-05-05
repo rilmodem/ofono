@@ -2743,7 +2743,7 @@ static void emulator_clcc_cb(struct ofono_emulator *em,
 
 #define ADD_CHLD_SUPPORT(cond, x)			\
 	if (cond) {					\
-		if (info[-1] != '=')			\
+		if (info[-1] != '(')			\
 			*info++ = ',';			\
 							\
 		*info++ = x[0];				\
@@ -2757,7 +2757,7 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 {
 	struct ofono_voicecall *vc = userdata;
 	struct ofono_error result;
-	char buf[22];
+	char buf[64];
 	char *info;
 	int chld;
 
@@ -2838,8 +2838,8 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 		goto fail;
 
 	case OFONO_EMULATOR_REQUEST_TYPE_SUPPORT:
-		memcpy(buf, "+CHLD=", 6);
-		info = buf + 6;
+		memcpy(buf, "+CHLD=(", 7);
+		info = buf + 7;
 
 		ADD_CHLD_SUPPORT(vc->driver->release_all_held &&
 					vc->driver->set_udub, "0")
@@ -2850,6 +2850,7 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 		ADD_CHLD_SUPPORT(vc->driver->create_multiparty, "3")
 		ADD_CHLD_SUPPORT(vc->driver->transfer, "4")
 
+		*info++ = ')';
 		*info++ = '\0';
 
 		ofono_emulator_send_info(em, buf, TRUE);
