@@ -2741,6 +2741,17 @@ static void emulator_clcc_cb(struct ofono_emulator *em,
 	ofono_emulator_send_final(em, &result);
 }
 
+#define ADD_CHLD_SUPPORT(cond, x)			\
+	if (cond) {					\
+		if (info[-1] != '=')			\
+			*info++ = ',';			\
+							\
+		*info++ = x[0];				\
+							\
+		if (x[1])				\
+			*info++ = x[1];			\
+	}						\
+
 static void emulator_chld_cb(struct ofono_emulator *em,
 			struct ofono_emulator_request *req, void *userdata)
 {
@@ -2830,52 +2841,14 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 		memcpy(buf, "+CHLD=", 6);
 		info = buf + 6;
 
-		if (vc->driver->release_all_held && vc->driver->set_udub)
-			*info++ = '0';
-
-		if (vc->driver->release_all_active) {
-			if (info - buf > 6)
-				*info++ = ',';
-
-			*info++ = '1';
-		}
-
-		if (vc->driver->hold_all_active) {
-			if (info - buf > 6)
-				*info++ = ',';
-
-			*info++ = '2';
-		}
-
-		if (vc->driver->create_multiparty) {
-			if (info - buf > 6)
-				*info++ = ',';
-
-			*info++ = '3';
-		}
-
-		if (vc->driver->transfer) {
-			if (info - buf > 6)
-				*info++ = ',';
-
-			*info++ = '4';
-		}
-
-		if (vc->driver->release_specific) {
-			if (info - buf > 6)
-				*info++ = ',';
-
-			*info++ = '1';
-			*info++ = 'X';
-		}
-
-		if (vc->driver->private_chat) {
-			if (info - buf > 6)
-				*info++ = ',';
-
-			*info++ = '2';
-			*info++ = 'X';
-		}
+		ADD_CHLD_SUPPORT(vc->driver->release_all_held &&
+					vc->driver->set_udub, "0")
+		ADD_CHLD_SUPPORT(vc->driver->release_all_active, "1")
+		ADD_CHLD_SUPPORT(vc->driver->release_specific, "1x")
+		ADD_CHLD_SUPPORT(vc->driver->hold_all_active, "2")
+		ADD_CHLD_SUPPORT(vc->driver->private_chat, "2x")
+		ADD_CHLD_SUPPORT(vc->driver->create_multiparty, "3")
+		ADD_CHLD_SUPPORT(vc->driver->transfer, "4")
 
 		*info++ = '\0';
 
