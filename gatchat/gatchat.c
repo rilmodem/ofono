@@ -151,6 +151,7 @@ static void at_notify_destroy(gpointer user_data)
 	struct at_notify *notify = user_data;
 
 	g_slist_foreach(notify->nodes, at_notify_node_destroy, NULL);
+	g_slist_free(notify->nodes);
 	g_free(notify);
 }
 
