@@ -36,6 +36,8 @@
 #include "common.h"
 #include "simutil.h"
 
+#define uninitialized_var(x) x = x
+
 #define CALL_FORWARDING_FLAG_CACHED 0x1
 #define CALL_FORWARDING_FLAG_CPHS_CFF 0x2
 
@@ -246,7 +248,7 @@ static gboolean is_cfu_enabled(struct ofono_call_forwarding *cf,
 static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
 {
 	gboolean cfu_voice;
-	struct ofono_call_forwarding_condition *cond;
+	struct ofono_call_forwarding_condition *uninitialized_var(cond);
 
 	cfu_voice = is_cfu_enabled(cf, &cond);
 
