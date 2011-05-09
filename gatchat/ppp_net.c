@@ -189,7 +189,11 @@ error:
 
 void ppp_net_free(struct ppp_net *net)
 {
-	g_source_remove(net->watch);
+	if (net->watch) {
+		g_source_remove(net->watch);
+		net->watch = 0;
+	}
+
 	g_io_channel_unref(net->channel);
 
 	g_free(net->ppp_packet);
@@ -202,6 +206,9 @@ void ppp_net_suspend_interface(struct ppp_net *net)
 	if (net == NULL || net->channel == NULL)
 		return;
 
-	if (net->watch)
-		g_source_remove(net->watch);
+	if (net->watch == 0)
+		return;
+
+	g_source_remove(net->watch);
+	net->watch = 0;
 }
