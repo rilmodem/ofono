@@ -945,17 +945,14 @@ static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 	unsigned short iidf_offset;
 	unsigned short iidf_len;
 
-	image = sim_fs_get_cached_image(sim->simfs, id);
-
-	if (image != NULL) {
-		sim_get_image_cb(sim, id, image, FALSE);
-		goto watch;
-	}
-
-	if (sim->efimg_length <= (id * 9)) {
+	if (sim->efimg_length <= id * 9) {
 		sim_get_image_cb(sim, id, NULL, FALSE);
 		return;
 	}
+
+	image = sim_fs_get_cached_image(sim->simfs, id);
+	if (image != NULL)
+		sim_get_image_cb(sim, id, image, FALSE);
 
 	efimg = &sim->efimg[id * 9];
 
@@ -964,12 +961,9 @@ static void sim_get_image(struct ofono_sim *sim, unsigned char id,
 	iidf_len = efimg[7] << 8 | efimg[8];
 
 	/* read the image data */
-	ofono_sim_read_bytes(sim->context, iidf_id, iidf_offset, iidf_len,
-				sim_iidf_read_cb, sim);
-
-watch:
-	if (sim->efimg_length <= id * 9)
-		return;
+	if (image == NULL)
+		ofono_sim_read_bytes(sim->context, iidf_id, iidf_offset,
+					iidf_len, sim_iidf_read_cb, sim);
 
 	if (sim->iidf_watch_ids[id] > 0)
 		return;
