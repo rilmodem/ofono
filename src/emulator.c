@@ -51,6 +51,7 @@ struct ofono_emulator {
 	int r_features;
 	int events_mode;
 	gboolean events_ind;
+	unsigned char cmee_mode;
 	GSList *indicators;
 	guint callsetup_source;
 	gboolean clip;
@@ -634,6 +635,50 @@ fail:
 	};
 }
 
+static void cmee_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	GAtResultIter iter;
+	int val;
+	char buf[16];
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
+			goto fail;
+
+		if (val < 0 && val > 1)
+			goto fail;
+
+		em->cmee_mode = val;
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_QUERY:
+		sprintf(buf, "+CMEE: %d", em->cmee_mode);
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
+		/* HFP only support 0 and 1 */
+		sprintf(buf, "+CMEE: (0,1)");
+		g_at_server_send_info(em->server, buf, TRUE);
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 					int min, int max, int dflt)
 {
@@ -721,6 +766,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		g_at_server_register(em->server, "+CMER", cmer_cb, em, NULL);
 		g_at_server_register(em->server, "+CLIP", clip_cb, em, NULL);
 		g_at_server_register(em->server, "+CCWA", ccwa_cb, em, NULL);
+		g_at_server_register(em->server, "+CMEE", cmee_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
@@ -771,6 +817,7 @@ struct ofono_emulator *ofono_emulator_create(struct ofono_modem *modem,
 	/* TODO: Check real local features */
 	em->l_features = 32;
 	em->events_mode = 3;	/* default mode is forwarding events */
+	em->cmee_mode = 0;	/* CME ERROR disabled by default */
 
 	em->atom = __ofono_modem_add_atom_offline(modem, atom_t,
 							emulator_remove, em);
@@ -799,7 +846,20 @@ void ofono_emulator_send_final(struct ofono_emulator *em,
 		break;
 
 	case OFONO_ERROR_TYPE_CME:
-		sprintf(buf, "+CME ERROR: %d", final->error);
+		switch (em->cmee_mode) {
+		case 1:
+			sprintf(buf, "+CME ERROR: %d", final->error);
+			break;
+
+		case 2:
+			sprintf(buf, "+CME ERROR: %s",
+						telephony_error_to_str(final));
+			break;
+
+		default:
+			goto failure;
+		}
+
 		g_at_server_send_ext_final(em->server, buf);
 		break;
 
@@ -810,6 +870,7 @@ void ofono_emulator_send_final(struct ofono_emulator *em,
 	case OFONO_ERROR_TYPE_CEER:
 	case OFONO_ERROR_TYPE_SIM:
 	case OFONO_ERROR_TYPE_FAILURE:
+failure:
 		g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
 		break;
 	};
