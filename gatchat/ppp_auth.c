@@ -60,6 +60,7 @@ static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 	struct chap_header *response;
 	GChecksum *checksum;
 	const char *secret = g_at_ppp_get_password(chap->ppp);
+	const char *username = g_at_ppp_get_username(chap->ppp);
 	guint16 response_length;
 	struct ppp_header *ppp_packet;
 	gsize digest_len;
@@ -83,6 +84,10 @@ static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 	 */
 	digest_len = g_checksum_type_get_length(chap->method);
 	response_length = digest_len + sizeof(*header) + 1;
+
+	if (username != NULL)
+		response_length += strlen(username);
+
 	ppp_packet = ppp_packet_new(response_length, CHAP_PROTOCOL);
 	if (ppp_packet == NULL)
 		goto challenge_out;
@@ -97,6 +102,10 @@ static void chap_process_challenge(struct ppp_chap *chap, const guint8 *packet)
 		response->data[0] = digest_len;
 		/* leave the name empty? */
 	}
+
+	if (username != NULL)
+		memcpy(response->data + digest_len + 1, username,
+				strlen(username));
 
 	/* transmit the packet */
 	ppp_transmit(chap->ppp, (guint8 *) ppp_packet, response_length);
