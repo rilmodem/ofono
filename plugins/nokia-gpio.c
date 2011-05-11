@@ -645,7 +645,6 @@ static int gpio_probe_links(void)
 	DBG("Using %s: trying to make links to %s", gpiodir, cmtdir);
 
 	if (!dir_exists(cmtdir)) {
-
 		if (mkdir(cmtdir, 0755) == -1) {
 			DBG("%s: %s", cmtdir, strerror(errno));
 			return -(errno = ENODEV);
