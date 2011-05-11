@@ -662,8 +662,10 @@ static int gpio_probe_links(void)
 		FILE *nf;
 		size_t len;
 
-		if (d == NULL)
+		if (d == NULL) {
+			(void) closedir(gpio);
 			return 0;
+		}
 
 		snprintf(nn, sizeof nn, "%s/%s/name", gpiodir, d->d_name);
 
@@ -699,6 +701,8 @@ static int gpio_probe_links(void)
 	}
 
 	DBG("%s: %s", "/sys/class/gpio", strerror(errno));
+
+	(void) closedir(gpio);
 
 	return -(errno = ENODEV);
 }
