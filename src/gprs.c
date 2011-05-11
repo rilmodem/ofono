@@ -2137,17 +2137,18 @@ static void gprs_context_unregister(struct ofono_atom *atom)
 	DBG("%p, %p", gc, gc->gprs);
 
 	if (gc->gprs == NULL)
-		return;
+		goto done;
 
+	gc->gprs->context_drivers = g_slist_remove(gc->gprs->context_drivers,
+							gc);
+	gc->gprs = NULL;
+
+done:
 	if (gc->settings) {
 		context_settings_free(gc->settings);
 		g_free(gc->settings);
 		gc->settings = NULL;
 	}
-
-	gc->gprs->context_drivers = g_slist_remove(gc->gprs->context_drivers,
-							gc);
-	gc->gprs = NULL;
 }
 
 void ofono_gprs_add_context(struct ofono_gprs *gprs,
@@ -2494,6 +2495,7 @@ static void gprs_unregister(struct ofono_atom *atom)
 static void gprs_remove(struct ofono_atom *atom)
 {
 	struct ofono_gprs *gprs = __ofono_atom_get_data(atom);
+	GSList *l;
 
 	DBG("atom: %p", atom);
 
@@ -2506,6 +2508,12 @@ static void gprs_remove(struct ofono_atom *atom)
 	if (gprs->pid_map) {
 		idmap_free(gprs->pid_map);
 		gprs->pid_map = NULL;
+	}
+
+	for (l = gprs->context_drivers; l; l = l->next) {
+		struct ofono_gprs_context *gc = l->data;
+
+		gc->gprs = NULL;
 	}
 
 	g_slist_free(gprs->context_drivers);
