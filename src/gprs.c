@@ -2133,11 +2133,37 @@ void ofono_gprs_set_cid_range(struct ofono_gprs *gprs,
 static void gprs_context_unregister(struct ofono_atom *atom)
 {
 	struct ofono_gprs_context *gc = __ofono_atom_get_data(atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+	GSList *l;
+	struct pri_context *ctx;
+	dbus_bool_t value;
 
 	DBG("%p, %p", gc, gc->gprs);
 
 	if (gc->gprs == NULL)
 		goto done;
+
+	for (l = gc->gprs->contexts; l; l = l->next) {
+		ctx = l->data;
+
+		if (ctx->context_driver != gc)
+			continue;
+
+		if (ctx->pending != NULL)
+			__ofono_dbus_pending_reply(&ctx->pending,
+					__ofono_error_failed(ctx->pending));
+
+		if (ctx->active == FALSE)
+			break;
+
+		pri_reset_context_settings(ctx);
+		release_context(ctx);
+
+		value = FALSE;
+		ofono_dbus_signal_property_changed(conn, ctx->path,
+					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					"Active", DBUS_TYPE_BOOLEAN, &value);
+	}
 
 	gc->gprs->context_drivers = g_slist_remove(gc->gprs->context_drivers,
 							gc);
