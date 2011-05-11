@@ -689,13 +689,13 @@ static void phonesim_post_online(struct ofono_modem *modem)
 	if (!data->calypso)
 		ofono_cbs_create(modem, 0, "atmodem", data->chat);
 
-	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
-
 	gc1 = ofono_gprs_context_create(modem, 0, "phonesim", data->chat);
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
+	gc2 = ofono_gprs_context_create(modem, 0, "phonesim", data->chat);
+
 	if (gprs && gc1)
 		ofono_gprs_add_context(gprs, gc1);
 
-	gc2 = ofono_gprs_context_create(modem, 0, "phonesim", data->chat);
 	if (gprs && gc2)
 		ofono_gprs_add_context(gprs, gc2);
 
