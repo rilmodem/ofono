@@ -1362,6 +1362,16 @@ static gboolean context_dbus_unregister(struct pri_context *ctx)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	char path[256];
 
+	if (ctx->active == TRUE) {
+		const char *interface =
+			ctx->context_driver->settings->interface;
+
+		if (ctx->type == OFONO_GPRS_CONTEXT_TYPE_MMS)
+			pri_set_ipv4_addr(interface, NULL);
+
+		pri_ifupdown(interface, FALSE);
+	}
+
 	strcpy(path, ctx->path);
 	idmap_put(ctx->gprs->pid_map, ctx->id);
 
