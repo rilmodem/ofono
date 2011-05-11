@@ -922,7 +922,8 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 	 * info should contain the old packet info, plus the 16bit
 	 * protocol number we are rejecting.
 	 */
-	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_PROTOCOL_REJECT, len);
+	packet = pppcp_packet_new(data, PPPCP_CODE_TYPE_PROTOCOL_REJECT,
+					len - 2);
 
 	/*
 	 * Identifier must be changed for each Protocol-Reject sent
@@ -933,8 +934,7 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 	 * rejected packet should be copied in, but it should be
 	 * truncated if it needs to be to comply with mtu requirement
 	 */
-	memcpy(packet->data, rejected_packet,
-			(ntohs(packet->length) - CP_HEADER_SZ));
+	memcpy(packet->data, rejected_packet + 2, len - 2);
 
 	ppp_transmit(data->ppp, pppcp_to_ppp_packet(packet),
 			ntohs(packet->length));
