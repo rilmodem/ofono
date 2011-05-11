@@ -1829,9 +1829,10 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 {
 	struct pri_context *ctx = data;
 	struct ofono_gprs *gprs = ctx->gprs;
-	DBusConnection *conn;
+	DBusConnection *conn = ofono_dbus_get_connection();
 	char *path;
 	const char *atompath;
+	dbus_bool_t value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		DBG("Removing context failed with error: %s",
@@ -1844,6 +1845,11 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 
 	pri_reset_context_settings(ctx);
 	release_context(ctx);
+
+	value = FALSE;
+	ofono_dbus_signal_property_changed(conn, ctx->path,
+					OFONO_CONNECTION_CONTEXT_INTERFACE,
+					"Active", DBUS_TYPE_BOOLEAN, &value);
 
 	if (gprs->settings) {
 		g_key_file_remove_group(gprs->settings, ctx->key, NULL);
@@ -1860,7 +1866,6 @@ static void gprs_deactivate_for_remove(const struct ofono_error *error,
 				dbus_message_new_method_return(gprs->pending));
 
 	atompath = __ofono_atom_get_path(gprs->atom);
-	conn = ofono_dbus_get_connection();
 	g_dbus_emit_signal(conn, atompath, OFONO_CONNECTION_MANAGER_INTERFACE,
 				"ContextRemoved", DBUS_TYPE_OBJECT_PATH, &path,
 				DBUS_TYPE_INVALID);
