@@ -2838,8 +2838,8 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 		goto fail;
 
 	case OFONO_EMULATOR_REQUEST_TYPE_SUPPORT:
-		memcpy(buf, "+CHLD=(", 7);
-		info = buf + 7;
+		memcpy(buf, "+CHLD: (", 8);
+		info = buf + 8;
 
 		ADD_CHLD_SUPPORT(vc->driver->release_all_held &&
 					vc->driver->set_udub, "0")
