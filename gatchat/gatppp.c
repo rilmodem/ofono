@@ -78,6 +78,7 @@ struct _GAtPPP {
 	guint ppp_dead_source;
 	GAtSuspendFunc suspend_func;
 	gpointer suspend_data;
+	int fd;
 };
 
 void ppp_debug(GAtPPP *ppp, const char *str)
@@ -290,7 +291,7 @@ void ppp_auth_notify(GAtPPP *ppp, gboolean success)
 void ppp_ipcp_up_notify(GAtPPP *ppp, const char *local, const char *peer,
 					const char *dns1, const char *dns2)
 {
-	ppp->net = ppp_net_new(ppp);
+	ppp->net = ppp_net_new(ppp, ppp->fd);
 
 	if (ppp->net == NULL) {
 		ppp->disconnect_reason = G_AT_PPP_REASON_NET_FAIL;
@@ -316,6 +317,7 @@ void ppp_ipcp_down_notify(GAtPPP *ppp)
 		return;
 
 	ppp_net_free(ppp->net);
+	ppp->fd = -1;
 	ppp->net = NULL;
 }
 
@@ -522,6 +524,8 @@ void g_at_ppp_unref(GAtPPP *ppp)
 
 	if (ppp->net)
 		ppp_net_free(ppp->net);
+	else if (ppp->fd >= 0)
+		close(ppp->fd);
 
 	if (ppp->chap)
 		ppp_chap_free(ppp->chap);
@@ -564,6 +568,8 @@ static GAtPPP *ppp_init_common(GAtHDLC *hdlc, gboolean is_server, guint32 ip)
 	ppp->hdlc = g_at_hdlc_ref(hdlc);
 
 	ppp->ref_count = 1;
+
+	ppp->fd = -1;
 
 	/* set options to defaults */
 	ppp->mru = DEFAULT_MRU;
@@ -653,6 +659,31 @@ GAtPPP *g_at_ppp_server_new_from_io(GAtIO *io, const char *local)
 		return NULL;
 
 	ppp = ppp_init_common(hdlc, TRUE, ip);
+	g_at_hdlc_unref(hdlc);
+
+	return ppp;
+}
+
+GAtPPP *g_at_ppp_server_new_full(GAtIO *io, const char *local, int fd)
+{
+	GAtHDLC *hdlc;
+	GAtPPP *ppp;
+	guint32 ip;
+
+	if (local == NULL)
+		ip = 0;
+	else if (inet_pton(AF_INET, local, &ip) != 1)
+		return NULL;
+
+	hdlc = g_at_hdlc_new_from_io(io);
+	if (hdlc == NULL)
+		return NULL;
+
+	ppp = ppp_init_common(hdlc, TRUE, ip);
+
+	/* Set the fd value returned by ConnMan */
+	ppp->fd = fd;
+
 	g_at_hdlc_unref(hdlc);
 
 	return ppp;

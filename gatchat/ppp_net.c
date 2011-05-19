@@ -123,35 +123,52 @@ const char *ppp_net_get_interface(struct ppp_net *net)
 	return net->if_name;
 }
 
-struct ppp_net *ppp_net_new(GAtPPP *ppp)
+struct ppp_net *ppp_net_new(GAtPPP *ppp, int fd)
 {
 	struct ppp_net *net;
 	GIOChannel *channel = NULL;
 	struct ifreq ifr;
-	int fd, err;
+	int err;
 
 	net = g_try_new0(struct ppp_net, 1);
-	if (net == NULL)
+	if (net == NULL) {
+		if (fd >= 0)
+			close(fd);
+
 		return NULL;
+	}
 
 	net->ppp_packet = ppp_packet_new(MAX_PACKET, PPP_IP_PROTO);
 	if (net->ppp_packet == NULL) {
+		if (fd >= 0)
+			close(fd);
+
 		g_free(net);
 		return NULL;
 	}
 
-	/* open a tun interface */
-	fd = open("/dev/net/tun", O_RDWR);
-	if (fd < 0)
-		goto error;
+	/*
+	 * If the fd value is still the default one,
+	 * open the tun interface and configure it.
+	 */
+	if (fd < 0) {
+		/* open a tun interface */
+		fd = open("/dev/net/tun", O_RDWR);
+		if (fd < 0)
+			goto error;
 
-	memset(&ifr, 0, sizeof(ifr));
-	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
-	strcpy(ifr.ifr_name, "ppp%d");
+		memset(&ifr, 0, sizeof(ifr));
+		ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+		strcpy(ifr.ifr_name, "ppp%d");
 
-	err = ioctl(fd, TUNSETIFF, (void *) &ifr);
-	if (err < 0)
-		goto error;
+		err = ioctl(fd, TUNSETIFF, (void *) &ifr);
+		if (err < 0)
+			goto error;
+	} else {
+		err = ioctl(fd, TUNGETIFF, (void *) &ifr);
+		if (err < 0)
+			goto error;
+	}
 
 	net->if_name = strdup(ifr.ifr_name);
 
