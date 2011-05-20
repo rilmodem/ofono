@@ -622,3 +622,19 @@ void g_at_hdlc_suspend(GAtHDLC *hdlc)
 	g_at_io_set_write_handler(hdlc->io, NULL, NULL);
 	g_at_io_set_read_handler(hdlc->io, NULL, NULL);
 }
+
+static void hdlc_wakeup_writer(GAtHDLC *hdlc)
+{
+	g_at_io_set_write_handler(hdlc->io, can_write_data, hdlc);
+}
+
+void g_at_hdlc_resume(GAtHDLC *hdlc)
+{
+	if (hdlc == NULL)
+		return;
+
+	g_at_io_set_read_handler(hdlc->io, new_bytes, hdlc);
+
+	if (g_queue_get_length(hdlc->write_queue) > 0)
+		hdlc_wakeup_writer(hdlc);
+}

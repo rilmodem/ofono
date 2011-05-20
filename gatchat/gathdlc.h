@@ -61,6 +61,7 @@ void g_at_hdlc_set_suspend_function(GAtHDLC *hdlc, GAtSuspendFunc func,
 							gpointer user_data);
 
 void g_at_hdlc_suspend(GAtHDLC *hdlc);
+void g_at_hdlc_resume(GAtHDLC *hdlc);
 
 #ifdef __cplusplus
 }
