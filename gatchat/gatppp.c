@@ -79,6 +79,7 @@ struct _GAtPPP {
 	GAtSuspendFunc suspend_func;
 	gpointer suspend_data;
 	int fd;
+	gboolean suspended;
 };
 
 void ppp_debug(GAtPPP *ppp, const char *str)
@@ -480,6 +481,7 @@ static void ppp_proxy_suspend_net_interface(gpointer user_data)
 {
 	GAtPPP *ppp = user_data;
 
+	ppp->suspended = TRUE;
 	ppp_net_suspend_interface(ppp->net);
 
 	if (ppp->suspend_func)
@@ -505,6 +507,23 @@ void g_at_ppp_shutdown(GAtPPP *ppp)
 
 	ppp->disconnect_reason = G_AT_PPP_REASON_LOCAL_CLOSE;
 	pppcp_signal_close(ppp->lcp);
+}
+
+void g_at_ppp_resume(GAtPPP *ppp)
+{
+	if (ppp == NULL)
+		return;
+
+	if (g_at_hdlc_get_io(ppp->hdlc) == NULL) {
+		io_disconnect(ppp);
+		return;
+	}
+
+	ppp->suspended = FALSE;
+	g_at_io_set_disconnect_function(g_at_hdlc_get_io(ppp->hdlc),
+							io_disconnect, ppp);
+	ppp_net_resume_interface(ppp->net);
+	g_at_hdlc_resume(ppp->hdlc);
 }
 
 void g_at_ppp_ref(GAtPPP *ppp)
