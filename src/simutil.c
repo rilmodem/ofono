@@ -724,11 +724,10 @@ gboolean comprehension_tlv_builder_set_length(
 	unsigned char *tlv = builder->pdu + builder->pos;
 	unsigned int tag_size = CTLV_TAG_FIELD_SIZE(tlv[0]);
 	unsigned int len_size, new_len_size;
-	unsigned int ctlv_len, new_ctlv_len;
+	unsigned int new_ctlv_len;
 	unsigned int len;
 
 	len_size = CTLV_LEN_FIELD_SIZE(tlv[tag_size]);
-	ctlv_len = tag_size + len_size + builder->len;
 	new_len_size = BTLV_LEN_FIELD_SIZE_NEEDED(new_len);
 	new_ctlv_len = tag_size + new_len_size + new_len;
 
