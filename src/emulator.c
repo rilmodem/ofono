@@ -259,6 +259,58 @@ error:
 	}
 }
 
+static void resume_ppp(gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+
+	g_at_server_suspend(em->server);
+	g_at_ppp_resume(em->ppp);
+}
+
+static void dun_ato_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+	GAtIO *io = g_at_server_get_io(em->server);
+	GAtResultIter iter;
+	int val;
+
+	DBG("");
+
+	if (em->ppp == NULL) {
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_NO_CARRIER);
+		return;
+	}
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
+			goto error;
+
+		if (val != 0)
+			goto error;
+
+		g_at_server_send_intermediate(em->server, "CONNECT");
+		g_at_io_set_write_done(io, resume_ppp, em);
+		break;
+
+	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		g_at_server_send_intermediate(em->server, "CONNECT");
+		g_at_io_set_write_done(io, resume_ppp, em);
+		break;
+
+	default:
+error:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+
+	return;
+}
+
 static struct indicator *find_indicator(struct ofono_emulator *em,
 						const char *name, int *index)
 {
@@ -796,6 +848,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 	case OFONO_EMULATOR_TYPE_DUN:
 		g_at_server_register(em->server, "D", dial_cb, em, NULL);
 		g_at_server_register(em->server, "H", dun_ath_cb, em, NULL);
+		g_at_server_register(em->server, "O", dun_ato_cb, em, NULL);
 		break;
 	case OFONO_EMULATOR_TYPE_HFP:
 		g_at_server_set_echo(em->server, FALSE);
