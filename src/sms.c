@@ -754,9 +754,6 @@ static gboolean tx_next(gpointer user_data)
 	int send_mms = 0;
 	struct tx_queue_entry *entry = g_queue_peek_head(sms->txq);
 	struct pending_pdu *pdu = &entry->pdus[entry->cur_pdu];
-	struct ofono_error error;
-
-	error.type = OFONO_ERROR_TYPE_NO_ERROR;
 
 	DBG("tx_next: %p", entry);
 
