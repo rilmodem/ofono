@@ -222,3 +222,13 @@ void ppp_net_suspend_interface(struct ppp_net *net)
 	g_source_remove(net->watch);
 	net->watch = 0;
 }
+
+void ppp_net_resume_interface(struct ppp_net *net)
+{
+	if (net == NULL || net->channel == NULL)
+		return;
+
+	net->watch = g_io_add_watch(net->channel,
+			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+			ppp_net_callback, net);
+}
