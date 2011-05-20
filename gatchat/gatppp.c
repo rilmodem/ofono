@@ -46,6 +46,8 @@
 #define PPP_ADDR_FIELD	0xff
 #define PPP_CTRL	0x03
 
+#define GUARD_TIMEOUTS 1500
+
 enum ppp_phase {
 	PPP_PHASE_DEAD = 0,		/* Link dead */
 	PPP_PHASE_ESTABLISHMENT,	/* LCP started */
@@ -79,6 +81,7 @@ struct _GAtPPP {
 	GAtSuspendFunc suspend_func;
 	gpointer suspend_data;
 	int fd;
+	guint guard_timeout_src;
 	gboolean suspended;
 };
 
@@ -507,6 +510,43 @@ void g_at_ppp_shutdown(GAtPPP *ppp)
 
 	ppp->disconnect_reason = G_AT_PPP_REASON_LOCAL_CLOSE;
 	pppcp_signal_close(ppp->lcp);
+}
+
+static gboolean call_suspend_cb(gpointer user_data)
+{
+	GAtPPP *ppp = user_data;
+
+	ppp->guard_timeout_src = 0;
+
+	if (ppp->suspend_func)
+		ppp->suspend_func(ppp->suspend_data);
+
+	return FALSE;
+}
+
+static gboolean send_escape_sequence(gpointer user_data)
+{
+	GAtPPP *ppp = user_data;
+	GAtIO *io = g_at_hdlc_get_io(ppp->hdlc);
+
+	ppp->guard_timeout_src = 0;
+	g_at_io_write(io, "+++", 3);
+	ppp->guard_timeout_src  = g_timeout_add(GUARD_TIMEOUTS,
+						call_suspend_cb, ppp);
+
+	return FALSE;
+}
+
+void g_at_ppp_suspend(GAtPPP *ppp)
+{
+	if (ppp == NULL)
+		return;
+
+	ppp->suspended = TRUE;
+	ppp_net_suspend_interface(ppp->net);
+	g_at_hdlc_suspend(ppp->hdlc);
+	ppp->guard_timeout_src = g_timeout_add(GUARD_TIMEOUTS,
+						send_escape_sequence, ppp);
 }
 
 void g_at_ppp_resume(GAtPPP *ppp)
