@@ -105,7 +105,7 @@ static void add_mbm(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	const char *desc, *devnode;
-	const char *device, *data, *network, *gps;
+	const char *device, *data, *network;
 	int registered;
 
 	desc = udev_device_get_sysattr_value(udev_device, "device/interface");
@@ -157,7 +157,6 @@ static void add_mbm(struct ofono_modem *modem,
 	device  = ofono_modem_get_string(modem, MODEM_DEVICE);
 	data = ofono_modem_get_string(modem, DATA_DEVICE);
 	network = ofono_modem_get_string(modem, NETWORK_INTERFACE);
-	gps = ofono_modem_get_string(modem, GPS_DEVICE);
 
 	if (device != NULL && data != NULL && network != NULL) {
 		ofono_modem_set_integer(modem, "Registered", 1);
