@@ -570,7 +570,8 @@ unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
 
 if TOOLS
-noinst_PROGRAMS += tools/huawei-audio tools/auto-enable tools/get-location
+noinst_PROGRAMS += tools/huawei-audio tools/auto-enable \
+			tools/get-location tools/lookup-apn
 
 tools_huawei_audio_SOURCES = $(gdbus_sources) tools/huawei-audio.c
 tools_huawei_audio_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
@@ -580,6 +581,9 @@ tools_auto_enable_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 
 tools_get_location_SOURCES = tools/get-location.c
 tools_get_location_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
+
+tools_lookup_apn_SOURCES = tools/lookup-apn.c
+tools_lookup_apn_LDADD = @GLIB_LIBS@
 endif
 
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm
