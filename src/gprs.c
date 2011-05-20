@@ -276,13 +276,10 @@ static void gprs_cid_release(struct ofono_gprs *gprs, unsigned int id)
 static gboolean assign_context(struct pri_context *ctx)
 {
 	struct idmap *cidmap = ctx->gprs->cid_map;
-	unsigned int cid_min;
 	GSList *l;
 
 	if (cidmap == NULL)
 		return FALSE;
-
-	cid_min = idmap_get_min(cidmap);
 
 	ctx->context.cid = gprs_cid_alloc(ctx->gprs);
 	if (ctx->context.cid == 0)
