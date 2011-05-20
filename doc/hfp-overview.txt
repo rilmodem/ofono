@@ -1,0 +1,49 @@
+HandsFree Profile Audio Gateway diagram
+=======================================
+
+This diagram explains how oFono manages HFP AG.
+
+AT commands and unsolicited results are managed in their related atom (eg. ATA
+is managed in voicecall atom).
+The emulator atom is managing AT commands or unsolicited results that are not
+falling into a specific atom.
+
+1) HFP AG plugin registers a HFP AG server as soon as a voicecall atom exist.
+2) When a connection occurs on this server, HFP AG plugin creates and registers
+   an emulator atom.
+3) Emulator atom will start a GAtServer and registers non-atom-specific
+   AT commands to it.
+4) On emulator atom registration, voice call related atoms (voicecall, network
+   and sim) register AT callbacks they managed through emulator atom.
+
+
+*===========*                *-----------------*
+|           |   Register     |                 |
+|   BlueZ   |<---------------|  HFP AG plugin  |
+|           |   SDP record   |                 |
+*===========*                *-----------------*
+                                      |
+                                      | Start emulator on connection
+                                      |
+                                      V
+                             *-----------------*
+                             |                 |
+                   *-------->|  Emulator Atom  |
+                   |         |                 |
+                   |         *-----------------*
+                   |                  |
+         Register  |                  | Register AT commands
+            AT     |                  V
+         callbacks |         *-----------------*
+                   |         |                 |
+                   |         |    GAtServer    |
+                   |         |                 |
+                   |         *-----------------*
+                   |
+                   *---------------------*-------------------*
+                   |                     |                   |
+          *----------------*     *--------------*     *-------------*
+          |                |     |              |     |             |
+          | Voicecall atom |     | Network atom |     |  SIM atom   |
+          |                |     |              |     |             |
+          *----------------*     *--------------*     *-------------*
