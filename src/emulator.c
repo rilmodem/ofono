@@ -174,20 +174,13 @@ static void request_private_network_cb(
 {
 	struct ofono_emulator *em = data;
 
-	if (pns == NULL) {
-		__ofono_private_network_release(em->pns_id);
-		em->pns_id = 0;
-		g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
-		return;
-	}
+	if (pns == NULL)
+		goto error;
 
 	em->local_pns = g_try_new0(struct ofono_private_network_settings, 1);
 	if (em->local_pns == NULL) {
 		close(pns->fd);
-		__ofono_private_network_release(em->pns_id);
-		em->pns_id = 0;
-		g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
-		return;
+		goto error;
 	}
 
 	em->local_pns->fd = pns->fd;
@@ -200,6 +193,11 @@ static void request_private_network_cb(
 	em->source = g_idle_add(setup_ppp, em);
 
 	return;
+
+error:
+	__ofono_private_network_release(em->pns_id);
+	em->pns_id = 0;
+	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
 }
 
 static gboolean dial_call(struct ofono_emulator *em, const char *dial_str)
