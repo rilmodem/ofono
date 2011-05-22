@@ -602,6 +602,11 @@ void g_at_ppp_unref(GAtPPP *ppp)
 		ppp->ppp_dead_source = 0;
 	}
 
+	if (ppp->guard_timeout_source) {
+		g_source_remove(ppp->guard_timeout_source);
+		ppp->guard_timeout_source = 0;
+	}
+
 	g_at_hdlc_unref(ppp->hdlc);
 
 	g_free(ppp);
