@@ -42,7 +42,6 @@ struct ofono_emulator {
 	enum ofono_emulator_type type;
 	GAtServer *server;
 	GAtPPP *ppp;
-	guint source;
 	gboolean slc;
 	int l_features;
 	int r_features;
@@ -54,7 +53,6 @@ struct ofono_emulator {
 	gboolean clip;
 	gboolean ccwa;
 	int pns_id;
-	struct ofono_private_network_settings *local_pns;
 };
 
 struct indicator {
@@ -90,35 +88,28 @@ static void ppp_connect(const char *iface, const char *local,
 	DBG("Secondary DNS Server: %s\n", dns2);
 }
 
-static void release_pns(struct ofono_emulator *em)
+static void cleanup_ppp(struct ofono_emulator *em)
 {
-	g_free(em->local_pns->server_ip);
-	g_free(em->local_pns->peer_ip);
-	g_free(em->local_pns->primary_dns);
-	g_free(em->local_pns->secondary_dns);
-	g_free(em->local_pns);
-
-	__ofono_private_network_release(em->pns_id);
-	em->pns_id = 0;
-}
-
-static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
-{
-	struct ofono_emulator *em = user_data;
-
 	DBG("");
 
 	g_at_ppp_unref(em->ppp);
 	em->ppp = NULL;
 
-	if (em->pns_id > 0)
-		release_pns(em);
+	__ofono_private_network_release(em->pns_id);
+	em->pns_id = 0;
 
 	if (em->server == NULL)
 		return;
 
 	g_at_server_resume(em->server);
 	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_NO_CARRIER);
+}
+
+static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+
+	cleanup_ppp(em);
 }
 
 static void ppp_suspend(gpointer user_data)
@@ -130,36 +121,35 @@ static void ppp_suspend(gpointer user_data)
 	g_at_server_resume(em->server);
 }
 
-static gboolean setup_ppp(gpointer user_data)
+static void suspend_server(gpointer user_data)
 {
 	struct ofono_emulator *em = user_data;
-	GAtIO *io;
-
-	DBG("");
-
-	em->source = 0;
-
-	io = g_at_server_get_io(em->server);
+	GAtIO *io = g_at_server_get_io(em->server);
 
 	g_at_server_suspend(em->server);
 
-	em->ppp = g_at_ppp_server_new_full(io, em->local_pns->server_ip,
-						em->local_pns->fd);
-	if (em->ppp == NULL) {
-		/* PPP stack hasn't closed fd */
-		close(em->local_pns->fd);
-		if (em->pns_id > 0)
-			release_pns(em);
+	if (g_at_ppp_listen(em->ppp, io) == FALSE)
+		cleanup_ppp(em);
+}
 
-		g_at_server_resume(em->server);
-		g_at_server_send_final(em->server,
-					G_AT_SERVER_RESULT_NO_CARRIER);
-		return FALSE;
+static void request_private_network_cb(
+			const struct ofono_private_network_settings *pns,
+			void *data)
+{
+	struct ofono_emulator *em = data;
+	GAtIO *io = g_at_server_get_io(em->server);
+
+	if (pns == NULL)
+		goto error;
+
+	em->ppp = g_at_ppp_server_new_full(pns->server_ip, pns->fd);
+	if (em->ppp == NULL) {
+		close(pns->fd);
+		goto error;
 	}
 
-	g_at_ppp_set_server_info(em->ppp, em->local_pns->peer_ip,
-					em->local_pns->primary_dns,
-					em->local_pns->secondary_dns);
+	g_at_ppp_set_server_info(em->ppp, pns->peer_ip,
+					pns->primary_dns, pns->secondary_dns);
 
 	g_at_ppp_set_credentials(em->ppp, "", "");
 	g_at_ppp_set_debug(em->ppp, emulator_debug, "PPP");
@@ -168,32 +158,8 @@ static gboolean setup_ppp(gpointer user_data)
 	g_at_ppp_set_disconnect_function(em->ppp, ppp_disconnect, em);
 	g_at_ppp_set_suspend_function(em->ppp, ppp_suspend, em);
 
-	return FALSE;
-}
-
-static void request_private_network_cb(
-			const struct ofono_private_network_settings *pns,
-			void *data)
-{
-	struct ofono_emulator *em = data;
-
-	if (pns == NULL)
-		goto error;
-
-	em->local_pns = g_try_new0(struct ofono_private_network_settings, 1);
-	if (em->local_pns == NULL) {
-		close(pns->fd);
-		goto error;
-	}
-
-	em->local_pns->fd = pns->fd;
-	em->local_pns->server_ip = g_strdup(pns->server_ip);
-	em->local_pns->peer_ip = g_strdup(pns->peer_ip);
-	em->local_pns->primary_dns = g_strdup(pns->primary_dns);
-	em->local_pns->secondary_dns = g_strdup(pns->secondary_dns);
-
 	g_at_server_send_intermediate(em->server, "CONNECT");
-	em->source = g_idle_add(setup_ppp, em);
+	g_at_io_set_write_done(io, suspend_server, em);
 
 	return;
 
@@ -759,11 +725,6 @@ static void emulator_unregister(struct ofono_atom *atom)
 	GSList *l;
 
 	DBG("%p", em);
-
-	if (em->source) {
-		g_source_remove(em->source);
-		em->source = 0;
-	}
 
 	if (em->callsetup_source) {
 		g_source_remove(em->callsetup_source);
