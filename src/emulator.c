@@ -118,6 +118,7 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 		return;
 
 	g_at_server_resume(em->server);
+	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_NO_CARRIER);
 }
 
 static void ppp_suspend(gpointer user_data)
@@ -151,6 +152,8 @@ static gboolean setup_ppp(gpointer user_data)
 			release_pns(em);
 
 		g_at_server_resume(em->server);
+		g_at_server_send_final(em->server,
+					G_AT_SERVER_RESULT_NO_CARRIER);
 		return FALSE;
 	}
 
