@@ -81,7 +81,7 @@ struct _GAtPPP {
 	GAtSuspendFunc suspend_func;
 	gpointer suspend_data;
 	int fd;
-	guint guard_timeout_src;
+	guint guard_timeout_source;
 	gboolean suspended;
 };
 
@@ -516,7 +516,7 @@ static gboolean call_suspend_cb(gpointer user_data)
 {
 	GAtPPP *ppp = user_data;
 
-	ppp->guard_timeout_src = 0;
+	ppp->guard_timeout_source = 0;
 
 	if (ppp->suspend_func)
 		ppp->suspend_func(ppp->suspend_data);
@@ -529,9 +529,8 @@ static gboolean send_escape_sequence(gpointer user_data)
 	GAtPPP *ppp = user_data;
 	GAtIO *io = g_at_hdlc_get_io(ppp->hdlc);
 
-	ppp->guard_timeout_src = 0;
 	g_at_io_write(io, "+++", 3);
-	ppp->guard_timeout_src  = g_timeout_add(GUARD_TIMEOUTS,
+	ppp->guard_timeout_source  = g_timeout_add(GUARD_TIMEOUTS,
 						call_suspend_cb, ppp);
 
 	return FALSE;
@@ -545,7 +544,7 @@ void g_at_ppp_suspend(GAtPPP *ppp)
 	ppp->suspended = TRUE;
 	ppp_net_suspend_interface(ppp->net);
 	g_at_hdlc_suspend(ppp->hdlc);
-	ppp->guard_timeout_src = g_timeout_add(GUARD_TIMEOUTS,
+	ppp->guard_timeout_source = g_timeout_add(GUARD_TIMEOUTS,
 						send_escape_sequence, ppp);
 }
 
