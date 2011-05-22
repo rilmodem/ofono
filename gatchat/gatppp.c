@@ -293,6 +293,12 @@ void ppp_ipcp_up_notify(GAtPPP *ppp, const char *local, const char *peer,
 {
 	ppp->net = ppp_net_new(ppp, ppp->fd);
 
+	/*
+	 * ppp_net_new took control over the fd, whatever happens is out of
+	 * our hands now
+	 */
+	ppp->fd = -1;
+
 	if (ppp->net == NULL) {
 		ppp->disconnect_reason = G_AT_PPP_REASON_NET_FAIL;
 		pppcp_signal_close(ppp->lcp);
@@ -317,7 +323,6 @@ void ppp_ipcp_down_notify(GAtPPP *ppp)
 		return;
 
 	ppp_net_free(ppp->net);
-	ppp->fd = -1;
 	ppp->net = NULL;
 }
 
