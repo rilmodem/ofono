@@ -131,21 +131,12 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp, int fd)
 	int err;
 
 	net = g_try_new0(struct ppp_net, 1);
-	if (net == NULL) {
-		if (fd >= 0)
-			close(fd);
-
-		return NULL;
-	}
+	if (net == NULL)
+		goto badalloc;
 
 	net->ppp_packet = ppp_packet_new(MAX_PACKET, PPP_IP_PROTO);
-	if (net->ppp_packet == NULL) {
-		if (fd >= 0)
-			close(fd);
-
-		g_free(net);
-		return NULL;
-	}
+	if (net->ppp_packet == NULL)
+		goto error;
 
 	/*
 	 * If the fd value is still the default one,
@@ -195,12 +186,14 @@ error:
 	if (channel)
 		g_io_channel_unref(channel);
 
-	if (fd >= 0)
-		close(fd);
-
 	g_free(net->if_name);
 	g_free(net->ppp_packet);
 	g_free(net);
+
+badalloc:
+	if (fd >= 0)
+		close(fd);
+
 	return NULL;
 }
 
