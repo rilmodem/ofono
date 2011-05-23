@@ -50,6 +50,7 @@ struct isi_call {
 	uint8_t id;
 	uint8_t call_id;
 	uint8_t status;
+	uint8_t prev_status;
 	uint8_t mode;
 	uint8_t mode_info;
 	uint8_t cause_type;
@@ -314,7 +315,7 @@ static void isi_call_status_sb_proc(struct isi_voicecall *ivc,
 
 	if (!g_isi_sb_iter_get_byte(sb, &status, 2))
 		return;
-
+	call->prev_status = call->status;
 	call->status = status;
 }
 
@@ -401,9 +402,15 @@ static int isi_call_status_to_clcc(const struct isi_call *call)
 		return 5;
 
 	case CALL_STATUS_MO_RELEASE:
-	case CALL_STATUS_MT_RELEASE:
-	case CALL_STATUS_TERMINATED:
 		return 6;
+
+	case CALL_STATUS_MT_RELEASE:
+		if ((call->prev_status == CALL_STATUS_MT_ALERTING) ||
+				(call->prev_status == CALL_STATUS_COMING) ||
+				(call->prev_status == CALL_STATUS_WAITING))
+			return 4;
+		else
+			return 6;
 
 	case CALL_STATUS_ACTIVE:
 	case CALL_STATUS_HOLD_INITIATED:
@@ -548,9 +555,26 @@ static void isi_call_notify(struct ofono_voicecall *ovc, struct isi_call *call)
 
 	case CALL_STATUS_MO_RELEASE:
 	case CALL_STATUS_MT_RELEASE:
-	case CALL_STATUS_TERMINATED:
+		/*
+		* Core requires the call status to be either incoming
+		* or waiting to identify the disconnected call as missed.
+		* The MT RELEASE is not mapped to any state in +CLCC, but
+		* we need the disconnect reason.
+		*/
 		isi_call_set_disconnect_reason(call);
 		break;
+	case CALL_STATUS_TERMINATED:
+		DBG("State( CALL_STATUS_TERMINATED ) need not be reported to Core");
+		/*
+		* The call terminated is not reported to core as
+		* these intermediate states are not processed in
+		* the core. We report the call status when it becomes
+		* idle and TERMINATED is not mapped to +CLCC. The disconnect
+		* reason is set, so that the call termination cause
+		* in case of error is available to the core.
+		*/
+		isi_call_set_disconnect_reason(call);
+		return;
 	case CALL_STATUS_ANSWERED:
 		DBG("State need not be reported to Core");
 		return;
