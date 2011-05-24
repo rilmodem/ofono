@@ -682,7 +682,8 @@ GAtPPP *g_at_ppp_server_new_full(GAtIO *io, const char *local, int fd)
 	ppp = ppp_init_common(hdlc, TRUE, ip);
 
 	/* Set the fd value returned by ConnMan */
-	ppp->fd = fd;
+	if (ppp != NULL)
+		ppp->fd = fd;
 
 	g_at_hdlc_unref(hdlc);
 
