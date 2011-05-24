@@ -291,8 +291,6 @@ error:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		break;
 	}
-
-	return;
 }
 
 static struct indicator *find_indicator(struct ofono_emulator *em,
