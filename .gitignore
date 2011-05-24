@@ -44,6 +44,7 @@ unit/test-stkutil
 tools/huawei-audio
 tools/auto-enable
 tools/get-location
+tools/lookup-apn
 
 gatchat/gsmdial
 gatchat/test-server
