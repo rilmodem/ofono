@@ -118,7 +118,6 @@ Modem Emulator
 
   Priority: Low
   Complexity: C1
-  Owner: Frédéric Dalleau <frederic.dalleau@linux.intel.com>
 
 - Support DUN emulator. Implement the Bluetooth DUN profile with only mandatory
   AT command support. Implement USB DUN as well.
