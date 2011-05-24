@@ -142,7 +142,7 @@ static gboolean setup_ppp(struct ofono_gprs_context *gc)
 	g_at_chat_suspend(gcd->chat);
 
 	/* open ppp */
-	gcd->ppp = g_at_ppp_new_from_io(io);
+	gcd->ppp = g_at_ppp_new();
 
 	if (gcd->ppp == NULL) {
 		g_at_chat_resume(gcd->chat);
@@ -159,7 +159,7 @@ static gboolean setup_ppp(struct ofono_gprs_context *gc)
 	g_at_ppp_set_disconnect_function(gcd->ppp, ppp_disconnect, gc);
 
 	/* open the ppp connection */
-	g_at_ppp_open(gcd->ppp);
+	g_at_ppp_open(gcd->ppp, io);
 
 	return TRUE;
 }
