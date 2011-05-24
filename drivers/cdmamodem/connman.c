@@ -131,7 +131,7 @@ static gboolean setup_ppp(struct ofono_cdma_connman *cm)
 	g_at_chat_suspend(cd->chat);
 
 	/* open ppp */
-	cd->ppp = g_at_ppp_new_from_io(io);
+	cd->ppp = g_at_ppp_new();
 
 	if (cd->ppp == NULL) {
 		g_at_chat_resume(cd->chat);
@@ -146,7 +146,7 @@ static gboolean setup_ppp(struct ofono_cdma_connman *cm)
 	g_at_ppp_set_disconnect_function(cd->ppp, ppp_disconnect, cm);
 
 	/* open the ppp connection */
-	g_at_ppp_open(cd->ppp);
+	g_at_ppp_open(cd->ppp, io);
 
 	return TRUE;
 }
