@@ -151,16 +151,6 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
 	data_mode = FALSE;
 }
 
-static gboolean update_ppp(gpointer user)
-{
-	GAtPPP *ppp = user;
-
-	g_at_ppp_set_server_info(ppp, "192.168.1.2",
-					"10.10.10.10", "10.10.10.11");
-
-	return FALSE;
-}
-
 static void setup_ppp(gpointer user)
 {
 	GAtServer *server = user;
@@ -184,8 +174,8 @@ static void setup_ppp(gpointer user)
 	/* set connect and disconnect callbacks */
 	g_at_ppp_set_connect_function(ppp, ppp_connect, server);
 	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, server);
-
-	g_idle_add(update_ppp, ppp);
+	g_at_ppp_set_server_info(ppp, "192.168.1.2",
+					"10.10.10.10", "10.10.10.11");
 }
 
 static void cgmi_cb(GAtServer *server, GAtServerRequestType type,
