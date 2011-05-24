@@ -2606,12 +2606,8 @@ static void sim_watch(struct ofono_atom *atom,
 static void emulator_generic_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_emulator *em = data;
-	struct ofono_error result;
 
-	result.error = error->error;
-	result.type = error->type;
-
-	ofono_emulator_send_final(em, &result);
+	ofono_emulator_send_final(em, error);
 }
 
 static void emulator_ata_cb(struct ofono_emulator *em,
