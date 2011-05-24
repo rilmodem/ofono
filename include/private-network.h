@@ -34,7 +34,7 @@ struct ofono_private_network_settings {
 	char *secondary_dns;
 };
 
-typedef void (ofono_private_network_cb_t)(
+typedef void (*ofono_private_network_cb_t)(
 			const struct ofono_private_network_settings *settings,
 			void *data);
 
