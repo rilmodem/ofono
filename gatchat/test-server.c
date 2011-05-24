@@ -151,21 +151,20 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
 	data_mode = FALSE;
 }
 
-static void setup_ppp(gpointer user)
+static void open_ppp(gpointer user)
 {
-	GAtServer *server = user;
-	GAtIO *io;
-
-	io = g_at_server_get_io(server);
+	GAtIO *io = g_at_server_get_io(server);
 
 	g_at_server_suspend(server);
+	g_at_ppp_listen(ppp, io);
+}
 
+static gboolean setup_ppp(GAtServer *server)
+{
 	/* open ppp */
-	ppp = g_at_ppp_server_new_from_io(io, "192.168.1.1");
-	if (ppp == NULL) {
-		g_at_server_resume(server);
-		return;
-	}
+	ppp = g_at_ppp_server_new("192.168.1.1");
+	if (ppp == NULL)
+		return FALSE;
 
 	g_at_ppp_set_debug(ppp, server_debug, "PPP");
 
@@ -176,6 +175,8 @@ static void setup_ppp(gpointer user)
 	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, server);
 	g_at_ppp_set_server_info(ppp, "192.168.1.2",
 					"10.10.10.10", "10.10.10.11");
+
+	return TRUE;
 }
 
 static void cgmi_cb(GAtServer *server, GAtServerRequestType type,
@@ -547,26 +548,25 @@ static void cgdata_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *cmd, gpointer user)
 {
 	GAtIO *io;
+
 	if (modem_mode == 0) {
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		return;
 	}
 
 	switch (type) {
-	case G_AT_SERVER_REQUEST_TYPE_SUPPORT:
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
-		break;
-	case G_AT_SERVER_REQUEST_TYPE_QUERY:
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
-		break;
 	case G_AT_SERVER_REQUEST_TYPE_SET:
+		if (setup_ppp(server) == FALSE)
+			goto error;
+
 		g_at_server_send_intermediate(server, "CONNECT");
 		data_mode = TRUE;
 
 		io = g_at_server_get_io(server);
-		g_at_io_set_write_done(io, setup_ppp, server);
+		g_at_io_set_write_done(io, open_ppp, server);
 		break;
 	default:
+error:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		break;
 	}
@@ -766,7 +766,6 @@ static void cpbs_cb(GAtServer *server, GAtServerRequestType type,
 static void dial_cb(GAtServer *server, GAtServerRequestType type,
 			GAtResult *cmd, gpointer user)
 {
-	GAtServerResult res = G_AT_SERVER_RESULT_ERROR;
 	GAtResultIter iter;
 	const char *dial_str;
 	char c;
@@ -787,15 +786,18 @@ static void dial_cb(GAtServer *server, GAtServerRequestType type,
 	if (c == '*' || c == '#' || c == 'T' || c == 't') {
 		GAtIO *io = g_at_server_get_io(server);
 
+		if (setup_ppp(server) == FALSE)
+			goto error;
+
 		g_at_server_send_intermediate(server, "CONNECT");
 		data_mode = TRUE;
-		g_at_io_set_write_done(io, setup_ppp, server);
+		g_at_io_set_write_done(io, open_ppp, server);
 	}
 
 	return;
 
 error:
-	g_at_server_send_final(server, res);
+	g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 }
 
 static void add_handler(GAtServer *server)
