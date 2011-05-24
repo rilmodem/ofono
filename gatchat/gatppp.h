@@ -50,13 +50,12 @@ typedef void (*GAtPPPConnectFunc)(const char *iface, const char *local,
 typedef void (*GAtPPPDisconnectFunc)(GAtPPPDisconnectReason reason,
 					gpointer user_data);
 
-GAtPPP *g_at_ppp_new(GIOChannel *modem);
-GAtPPP *g_at_ppp_new_from_io(GAtIO *io);
-GAtPPP *g_at_ppp_server_new(GIOChannel *modem, const char *local);
-GAtPPP *g_at_ppp_server_new_from_io(GAtIO *io, const char *local);
-GAtPPP *g_at_ppp_server_new_full(GAtIO *io, const char *local, int fd);
+GAtPPP *g_at_ppp_new(void);
+GAtPPP *g_at_ppp_server_new(const char *local);
+GAtPPP *g_at_ppp_server_new_full(const char *local, int fd);
 
-void g_at_ppp_open(GAtPPP *ppp);
+gboolean g_at_ppp_open(GAtPPP *ppp, GAtIO *io);
+gboolean g_at_ppp_listen(GAtPPP *ppp, GAtIO *io);
 void g_at_ppp_set_connect_function(GAtPPP *ppp, GAtPPPConnectFunc callback,
 					gpointer user_data);
 void g_at_ppp_set_disconnect_function(GAtPPP *ppp, GAtPPPDisconnectFunc func,

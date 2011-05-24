@@ -402,14 +402,40 @@ static void io_disconnect(gpointer user_data)
 	pppcp_signal_close(ppp->lcp);
 }
 
-/* Administrative Open */
-void g_at_ppp_open(GAtPPP *ppp)
+gboolean g_at_ppp_listen(GAtPPP *ppp, GAtIO *io)
 {
+	ppp->hdlc = g_at_hdlc_new_from_io(io);
+	if (ppp->hdlc == NULL)
+		return FALSE;
+
+	ppp->suspended = FALSE;
+	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
+	g_at_io_set_disconnect_function(io, io_disconnect, ppp);
+
 	ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
+
+	return TRUE;
+}
+
+/* Administrative Open */
+gboolean g_at_ppp_open(GAtPPP *ppp, GAtIO *io)
+{
+	ppp->hdlc = g_at_hdlc_new_from_io(io);
+	if (ppp->hdlc == NULL)
+		return FALSE;
+
+	ppp->suspended = FALSE;
+	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
+	g_at_hdlc_set_no_carrier_detect(ppp->hdlc, TRUE);
+	g_at_io_set_disconnect_function(io, io_disconnect, ppp);
 
 	/* send an UP & OPEN events to the lcp layer */
 	pppcp_signal_up(ppp->lcp);
 	pppcp_signal_open(ppp->lcp);
+
+	ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
+
+	return TRUE;
 }
 
 gboolean g_at_ppp_set_credentials(GAtPPP *ppp, const char *username,
@@ -626,7 +652,7 @@ void g_at_ppp_set_server_info(GAtPPP *ppp, const char *remote,
 	ipcp_set_server_info(ppp->ipcp, r, d1, d2);
 }
 
-static GAtPPP *ppp_init_common(GAtHDLC *hdlc, gboolean is_server, guint32 ip)
+static GAtPPP *ppp_init_common(gboolean is_server, guint32 ip)
 {
 	GAtPPP *ppp;
 
@@ -634,10 +660,8 @@ static GAtPPP *ppp_init_common(GAtHDLC *hdlc, gboolean is_server, guint32 ip)
 	if (ppp == NULL)
 		return NULL;
 
-	ppp->hdlc = g_at_hdlc_ref(hdlc);
-
 	ppp->ref_count = 1;
-
+	ppp->suspended = TRUE;
 	ppp->fd = -1;
 
 	/* set options to defaults */
@@ -650,50 +674,16 @@ static GAtPPP *ppp_init_common(GAtHDLC *hdlc, gboolean is_server, guint32 ip)
 	/* initialize IPCP state */
 	ppp->ipcp = ipcp_new(ppp, is_server, ip);
 
-	g_at_hdlc_set_no_carrier_detect(ppp->hdlc, TRUE);
-	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
-	g_at_io_set_disconnect_function(g_at_hdlc_get_io(ppp->hdlc),
-						io_disconnect, ppp);
-
-	if (is_server)
-		ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
-
 	return ppp;
 }
 
-GAtPPP *g_at_ppp_new(GIOChannel *modem)
+GAtPPP *g_at_ppp_new(void)
 {
-	GAtHDLC *hdlc;
-	GAtPPP *ppp;
-
-	hdlc = g_at_hdlc_new(modem);
-	if (hdlc == NULL)
-		return NULL;
-
-	ppp = ppp_init_common(hdlc, FALSE, 0);
-	g_at_hdlc_unref(hdlc);
-
-	return ppp;
+	return ppp_init_common(FALSE, 0);
 }
 
-GAtPPP *g_at_ppp_new_from_io(GAtIO *io)
+GAtPPP *g_at_ppp_server_new_full(const char *local, int fd)
 {
-	GAtHDLC *hdlc;
-	GAtPPP *ppp;
-
-	hdlc = g_at_hdlc_new_from_io(io);
-	if (hdlc == NULL)
-		return NULL;
-
-	ppp = ppp_init_common(hdlc, FALSE, 0);
-	g_at_hdlc_unref(hdlc);
-
-	return ppp;
-}
-
-GAtPPP *g_at_ppp_server_new(GIOChannel *modem, const char *local)
-{
-	GAtHDLC *hdlc;
 	GAtPPP *ppp;
 	guint32 ip;
 
@@ -702,59 +692,15 @@ GAtPPP *g_at_ppp_server_new(GIOChannel *modem, const char *local)
 	else if (inet_pton(AF_INET, local, &ip) != 1)
 		return NULL;
 
-	hdlc = g_at_hdlc_new(modem);
-	if (hdlc == NULL)
-		return NULL;
+	ppp = ppp_init_common(TRUE, ip);
 
-	ppp = ppp_init_common(hdlc, TRUE, ip);
-	g_at_hdlc_unref(hdlc);
-
-	return ppp;
-}
-
-GAtPPP *g_at_ppp_server_new_from_io(GAtIO *io, const char *local)
-{
-	GAtHDLC *hdlc;
-	GAtPPP *ppp;
-	guint32 ip;
-
-	if (local == NULL)
-		ip = 0;
-	else if (inet_pton(AF_INET, local, &ip) != 1)
-		return NULL;
-
-	hdlc = g_at_hdlc_new_from_io(io);
-	if (hdlc == NULL)
-		return NULL;
-
-	ppp = ppp_init_common(hdlc, TRUE, ip);
-	g_at_hdlc_unref(hdlc);
-
-	return ppp;
-}
-
-GAtPPP *g_at_ppp_server_new_full(GAtIO *io, const char *local, int fd)
-{
-	GAtHDLC *hdlc;
-	GAtPPP *ppp;
-	guint32 ip;
-
-	if (local == NULL)
-		ip = 0;
-	else if (inet_pton(AF_INET, local, &ip) != 1)
-		return NULL;
-
-	hdlc = g_at_hdlc_new_from_io(io);
-	if (hdlc == NULL)
-		return NULL;
-
-	ppp = ppp_init_common(hdlc, TRUE, ip);
-
-	/* Set the fd value returned by ConnMan */
 	if (ppp != NULL)
 		ppp->fd = fd;
 
-	g_at_hdlc_unref(hdlc);
-
 	return ppp;
+}
+
+GAtPPP *g_at_ppp_server_new(const char *local)
+{
+	return g_at_ppp_server_new_full(local, -1);
 }
