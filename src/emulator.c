@@ -226,11 +226,6 @@ static void dun_ath_cb(GAtServer *server, GAtServerRequestType type,
 
 	DBG("");
 
-	if (em->ppp == NULL) {
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
-		return;
-	}
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_result_iter_init(&iter, result);
@@ -242,15 +237,17 @@ static void dun_ath_cb(GAtServer *server, GAtServerRequestType type,
 		if (val != 0)
 			goto error;
 
-		g_at_ppp_unref(em->ppp);
-		em->ppp = NULL;
-
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
-		break;
+		/* Fall through */
 
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		if (em->ppp == NULL)
+			goto error;
+
 		g_at_ppp_unref(em->ppp);
 		em->ppp = NULL;
+
+		__ofono_private_network_release(em->pns_id);
+		em->pns_id = 0;
 
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
 		break;
