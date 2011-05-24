@@ -357,6 +357,9 @@ builtin_sources += examples/provision.c
 
 builtin_modules += example_emulator
 builtin_sources += examples/emulator.c
+
+builtin_modules += example_private_network
+builtin_sources += examples/private-network.c
 endif
 
 builtin_modules += smart_messaging
