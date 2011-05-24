@@ -738,6 +738,14 @@ static void emulator_unregister(struct ofono_atom *atom)
 	g_slist_free(em->indicators);
 	em->indicators = NULL;
 
+	g_at_ppp_unref(em->ppp);
+	em->ppp = NULL;
+
+	if (em->pns_id > 0) {
+		__ofono_private_network_release(em->pns_id);
+		em->pns_id = 0;
+	}
+
 	g_at_server_unref(em->server);
 	em->server = NULL;
 }
