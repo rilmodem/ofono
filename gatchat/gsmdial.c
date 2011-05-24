@@ -312,7 +312,7 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_suspend(modem);
 
 	/* open ppp */
-	ppp = g_at_ppp_new_from_io(io);
+	ppp = g_at_ppp_new();
 	if (ppp == NULL) {
 		g_print("Unable to create PPP object\n");
 		exit(1);
@@ -329,7 +329,7 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, NULL);
 
 	/* open the ppp connection */
-	g_at_ppp_open(ppp);
+	g_at_ppp_open(ppp, io);
 }
 
 static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
