@@ -33,7 +33,6 @@
 #include "common.h"
 #include "gatserver.h"
 #include "gatppp.h"
-#include "private-network.h"
 
 #define RING_TIMEOUT 3
 
