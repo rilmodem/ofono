@@ -402,6 +402,17 @@ static void io_disconnect(gpointer user_data)
 	pppcp_signal_close(ppp->lcp);
 }
 
+static void ppp_proxy_suspend_net_interface(gpointer user_data)
+{
+	GAtPPP *ppp = user_data;
+
+	ppp->suspended = TRUE;
+	ppp_net_suspend_interface(ppp->net);
+
+	if (ppp->suspend_func)
+		ppp->suspend_func(ppp->suspend_data);
+}
+
 gboolean g_at_ppp_listen(GAtPPP *ppp, GAtIO *io)
 {
 	ppp->hdlc = g_at_hdlc_new_from_io(io);
@@ -410,6 +421,8 @@ gboolean g_at_ppp_listen(GAtPPP *ppp, GAtIO *io)
 
 	ppp->suspended = FALSE;
 	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
+	g_at_hdlc_set_suspend_function(ppp->hdlc,
+					ppp_proxy_suspend_net_interface, ppp);
 	g_at_io_set_disconnect_function(io, io_disconnect, ppp);
 
 	ppp_enter_phase(ppp, PPP_PHASE_ESTABLISHMENT);
@@ -426,6 +439,8 @@ gboolean g_at_ppp_open(GAtPPP *ppp, GAtIO *io)
 
 	ppp->suspended = FALSE;
 	g_at_hdlc_set_receive(ppp->hdlc, ppp_receive, ppp);
+	g_at_hdlc_set_suspend_function(ppp->hdlc,
+					ppp_proxy_suspend_net_interface, ppp);
 	g_at_hdlc_set_no_carrier_detect(ppp->hdlc, TRUE);
 	g_at_io_set_disconnect_function(io, io_disconnect, ppp);
 
@@ -506,17 +521,6 @@ void g_at_ppp_set_debug(GAtPPP *ppp, GAtDebugFunc func, gpointer user_data)
 	ppp->debug_data = user_data;
 }
 
-static void ppp_proxy_suspend_net_interface(gpointer user_data)
-{
-	GAtPPP *ppp = user_data;
-
-	ppp->suspended = TRUE;
-	ppp_net_suspend_interface(ppp->net);
-
-	if (ppp->suspend_func)
-		ppp->suspend_func(ppp->suspend_data);
-}
-
 void g_at_ppp_set_suspend_function(GAtPPP *ppp, GAtSuspendFunc func,
 					gpointer user_data)
 {
@@ -525,7 +529,9 @@ void g_at_ppp_set_suspend_function(GAtPPP *ppp, GAtSuspendFunc func,
 
 	ppp->suspend_func = func;
 	ppp->suspend_data = user_data;
-	g_at_hdlc_set_suspend_function(ppp->hdlc,
+
+	if (ppp->hdlc != NULL)
+		g_at_hdlc_set_suspend_function(ppp->hdlc,
 					ppp_proxy_suspend_net_interface, ppp);
 }
 
