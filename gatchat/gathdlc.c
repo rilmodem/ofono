@@ -425,6 +425,8 @@ void g_at_hdlc_unref(GAtHDLC *hdlc)
 
 	g_free(hdlc->decode_buffer);
 
+	g_timer_destroy(hdlc->timer);
+
 	if (hdlc->in_read_handler)
 		hdlc->destroyed = TRUE;
 	else
