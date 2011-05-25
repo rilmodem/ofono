@@ -89,6 +89,40 @@ static void power_down(gboolean ok, GAtResult *result, gpointer user_data)
 	g_main_loop_quit(event_loop);
 }
 
+static void kill_ppp(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	g_print("kill_ppp: %d\n", ok);
+
+	if (ok == FALSE)
+		return;
+
+	g_at_ppp_unref(ppp);
+	ppp = NULL;
+}
+
+static void ppp_suspend_ath0(gpointer user_data)
+{
+	g_at_chat_resume(modem);
+	g_at_chat_send(modem, "ATH0", none_prefix, kill_ppp, NULL, NULL);
+}
+
+static void resume_ppp(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	g_print("resume_ppp: %d\n", ok);
+
+	if (ok == FALSE)
+		return;
+
+	g_at_chat_suspend(modem);
+	g_at_ppp_resume(ppp);
+}
+
+static void ppp_suspend_ato0(gpointer user_data)
+{
+	g_at_chat_resume(modem);
+	g_at_chat_send(modem, "ATO0", none_prefix, resume_ppp, NULL, NULL);
+}
+
 static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 {
 	static int terminated = 0;
@@ -119,6 +153,20 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 		}
 
 		terminated++;
+		break;
+	case SIGUSR1:
+		if (ppp == NULL)
+			break;
+
+		g_at_ppp_set_suspend_function(ppp, ppp_suspend_ato0, NULL);
+		g_at_ppp_suspend(ppp);
+		break;
+	case SIGUSR2:
+		if (ppp == NULL)
+			break;
+
+		g_at_ppp_set_suspend_function(ppp, ppp_suspend_ath0, NULL);
+		g_at_ppp_suspend(ppp);
 		break;
 	default:
 		break;
@@ -689,6 +737,7 @@ int main(int argc, char **argv)
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGTERM);
 	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGUSR1);
 	sigaddset(&mask, SIGUSR2);
 	sigaddset(&mask, SIGPIPE);
 
