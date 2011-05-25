@@ -142,13 +142,14 @@ struct ppp_net *ppp_net_new(GAtPPP *ppp, int fd)
 	 * If the fd value is still the default one,
 	 * open the tun interface and configure it.
 	 */
+	memset(&ifr, 0, sizeof(ifr));
+
 	if (fd < 0) {
 		/* open a tun interface */
 		fd = open("/dev/net/tun", O_RDWR);
 		if (fd < 0)
 			goto error;
 
-		memset(&ifr, 0, sizeof(ifr));
 		ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 		strcpy(ifr.ifr_name, "ppp%d");
 
