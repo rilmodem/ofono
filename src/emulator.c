@@ -277,11 +277,6 @@ static void dun_ato_cb(GAtServer *server, GAtServerRequestType type,
 
 	DBG("");
 
-	if (em->ppp == NULL) {
-		g_at_server_send_final(server, G_AT_SERVER_RESULT_NO_CARRIER);
-		return;
-	}
-
 	switch (type) {
 	case G_AT_SERVER_REQUEST_TYPE_SET:
 		g_at_result_iter_init(&iter, result);
@@ -293,11 +288,11 @@ static void dun_ato_cb(GAtServer *server, GAtServerRequestType type,
 		if (val != 0)
 			goto error;
 
-		g_at_server_send_intermediate(em->server, "CONNECT");
-		g_at_io_set_write_done(io, resume_ppp, em);
-		break;
-
+		/* Fall through */
 	case G_AT_SERVER_REQUEST_TYPE_COMMAND_ONLY:
+		if (em->ppp == NULL)
+			goto error;
+
 		g_at_server_send_intermediate(em->server, "CONNECT");
 		g_at_io_set_write_done(io, resume_ppp, em);
 		break;
@@ -307,8 +302,6 @@ error:
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
 		break;
 	}
-
-	return;
 }
 
 static struct indicator *find_indicator(struct ofono_emulator *em,
