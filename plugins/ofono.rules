@@ -391,6 +391,7 @@ ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="7401", ENV{OFONO_DRIVER}="hso"
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="7601", ENV{OFONO_DRIVER}="hso"
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="7701", ENV{OFONO_DRIVER}="hso"
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="7901", ENV{OFONO_DRIVER}="hso"
+ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="9000", ENV{OFONO_DRIVER}="hso"
 
 # Ericsson F3507g
 ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="1900", ENV{OFONO_DRIVER}="mbm"
