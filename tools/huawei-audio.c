@@ -55,6 +55,7 @@ struct modem_data {
 	guint audio_changed_watch;
 
 	gboolean has_callmanager;
+	gboolean has_audiosettings;
 	gboolean is_huawei;
 	gint audio_users;
 	guint audio_watch;
@@ -92,6 +93,10 @@ static gboolean audio_receive(GIOChannel *channel,
 		return TRUE;
 
 	wlen = write(modem->dsp_out, buf, rlen);
+	if (wlen < 0) {
+		modem->audio_watch = 0;
+		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -447,6 +452,8 @@ static void check_interfaces(struct modem_data *modem, DBusMessageIter *iter)
 
 		dbus_message_iter_next(&entry);
 	}
+
+	modem->has_audiosettings = has_audiosettings;
 
 	if (modem->has_callmanager == has_callmanager)
 		return;
