@@ -95,13 +95,28 @@ static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
 	ts = htonl(now.tv_sec & 0xffffffff);
 
 	id = 0x07;
+
 	err = write(fd, &id, 1);
+	if (err < 0)
+		return;
+
 	err = write(fd, &ts, 4);
+	if (err < 0)
+		return;
 
 	id = in ? 0x02 : 0x01;
+
 	err = write(fd, &id, 1);
+	if (err < 0)
+		return;
+
 	err = write(fd, &len, 2);
+	if (err < 0)
+		return;
+
 	err = write(fd, data, length);
+	if (err < 0)
+		return;
 }
 
 void g_at_hdlc_set_recording(GAtHDLC *hdlc, const char *filename)

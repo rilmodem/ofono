@@ -87,6 +87,8 @@ void ppp_net_process_packet(struct ppp_net *net, const guint8 *packet)
 	len = get_host_short(&packet[2]);
 	status = g_io_channel_write_chars(net->channel, (gchar *) packet,
 						len, &bytes_written, NULL);
+	if (status != G_IO_STATUS_NORMAL)
+		return;
 }
 
 /*
