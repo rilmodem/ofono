@@ -171,6 +171,9 @@ static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
 	ssize_t len;
 
 	len = read(signal_fd, &si, sizeof(si));
+	if (len < 0)
+		return TRUE;
+
 	g_main_loop_quit(event_loop);
 
 	return TRUE;
