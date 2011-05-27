@@ -679,12 +679,11 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 				void *user_data)
 {
 	const char *path;
-	int ret;
 
 	dbus_message_get_args(message, NULL, DBUS_TYPE_OBJECT_PATH, &path,
 				DBUS_TYPE_INVALID);
 
-	ret = bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
+	bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
 			"GetProperties", adapter_properties_cb, g_strdup(path),
 			g_free, -1, DBUS_TYPE_INVALID);
 
