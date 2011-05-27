@@ -3160,12 +3160,14 @@ void status_report_assembly_expire(struct status_report_assembly *assembly,
 static int sms_tx_load_filter(const struct dirent *dent)
 {
 	char *endp;
-	guint8 seq;
+	long seq;
 
 	if (dent->d_type != DT_REG)
 		return 0;
 
 	seq = strtol(dent->d_name, &endp, 10);
+	if (seq == LONG_MIN || seq == LONG_MAX)
+		return 0;
 
 	if (*endp != '\0')
 		return 0;
