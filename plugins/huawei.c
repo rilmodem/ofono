@@ -663,7 +663,6 @@ static void huawei_post_sim(struct ofono_modem *modem)
 static void huawei_post_online(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
-	struct ofono_netreg *netreg;
 	struct ofono_message_waiting *mw;
 
 	if (data->sim_state != HUAWEI_SIM_STATE_VALID &&
@@ -674,8 +673,7 @@ static void huawei_post_online(struct ofono_modem *modem)
 		return;
 	}
 
-	netreg = ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem",
-								data->pcui);
+	ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->pcui);
 
 	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
