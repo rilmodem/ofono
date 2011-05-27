@@ -112,34 +112,6 @@ static int pn_netlink_socket(void)
 	return fd;
 }
 
-static void pn_netlink_addr(GIsiPhonetNetlink *self, struct nlmsghdr *nlh)
-{
-	int len;
-	uint8_t local = 0xff;
-	uint8_t remote = 0xff;
-
-	const struct ifaddrmsg *ifa;
-	const struct rtattr *rta;
-
-	ifa = NLMSG_DATA(nlh);
-	len = IFA_PAYLOAD(nlh);
-
-	/* If Phonet is absent, kernel transmits other families... */
-	if (ifa->ifa_family != AF_PHONET)
-		return;
-
-	if (ifa->ifa_index != g_isi_modem_index(self->modem))
-		return;
-
-	for (rta = IFA_RTA(ifa); RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
-
-		if (rta->rta_type == IFA_LOCAL)
-			local = *(uint8_t *)RTA_DATA(rta);
-		else if (rta->rta_type == IFA_ADDRESS)
-			remote = *(uint8_t *)RTA_DATA(rta);
-	}
-}
-
 static void pn_netlink_link(GIsiPhonetNetlink *self, struct nlmsghdr *nlh)
 {
 	const struct ifinfomsg *ifi;
@@ -223,16 +195,10 @@ static gboolean pn_netlink_process(GIOChannel *channel, GIOCondition cond,
 						strerror(-err->error));
 			return TRUE;
 		}
-		case RTM_NEWADDR:
-		case RTM_DELADDR:
-			pn_netlink_addr(self, nlh);
-			break;
 		case RTM_NEWLINK:
 		case RTM_DELLINK:
 			pn_netlink_link(self, nlh);
 			break;
-		default:
-			continue;
 		}
 	}
 	return TRUE;
