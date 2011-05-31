@@ -1922,7 +1922,6 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 	const char *imsi;
 	char *strmode;
 	gboolean upgrade = FALSE;
-	GError *error = NULL;
 
 	imsi = ofono_sim_get_imsi(netreg->sim);
 	if (imsi == NULL)
@@ -1935,12 +1934,8 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 
 	netreg->imsi = g_strdup(imsi);
 
-	/*
-	 * Try legacy (integer) value first.  We do this because g_key_file
-	 * does not really distinguish between integers and strings
-	 */
 	strmode = g_key_file_get_string(netreg->settings, SETTINGS_GROUP,
-					"Mode", &error);
+					"Mode", NULL);
 
 	if (strmode == NULL)
 		upgrade = TRUE;
