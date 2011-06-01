@@ -37,10 +37,14 @@
 #include "common.h"
 #include "simutil.h"
 #include "smsutil.h"
+#include "storage.h"
 
 #define MAX_VOICE_CALLS 16
 
 #define VOICECALL_FLAG_SIM_ECC_READY 0x1
+
+#define SETTINGS_STORE "voicecall"
+#define SETTINGS_GROUP "Settings"
 
 GSList *g_drivers = NULL;
 
@@ -71,6 +75,8 @@ struct ofono_voicecall {
 	GQueue *toneq;
 	guint tone_source;
 	unsigned int hfp_watch;
+	GKeyFile *settings;
+	char *imsi;
 };
 
 struct voicecall {
@@ -1473,6 +1479,12 @@ static int voicecall_dial(struct ofono_voicecall *vc, const char *number,
 
 	vc->driver->dial(vc, &ph, clir, cb, vc);
 
+	if (vc->settings) {
+		g_key_file_set_string(vc->settings, SETTINGS_GROUP,
+					"Number", number);
+		storage_sync(vc->imsi, SETTINGS_STORE, vc->settings);
+	}
+
 	return 0;
 }
 
@@ -2457,6 +2469,33 @@ static void emulator_hfp_unregister(struct ofono_atom *atom)
 	__ofono_modem_remove_atom_watch(modem, vc->hfp_watch);
 }
 
+static void voicecall_load_settings(struct ofono_voicecall *vc)
+{
+	const char *imsi;
+
+	imsi = ofono_sim_get_imsi(vc->sim);
+	if (imsi == NULL)
+		return;
+
+	vc->settings = storage_open(imsi, SETTINGS_STORE);
+
+	if (vc->settings == NULL)
+		return;
+
+	vc->imsi = g_strdup(imsi);
+}
+
+static void voicecall_close_settings(struct ofono_voicecall *vc)
+{
+	if (vc->settings) {
+		storage_close(vc->imsi, SETTINGS_STORE, vc->settings, TRUE);
+
+		g_free(vc->imsi);
+		vc->imsi = NULL;
+		vc->settings = NULL;
+	}
+}
+
 static void voicecall_unregister(struct ofono_atom *atom)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -2466,6 +2505,8 @@ static void voicecall_unregister(struct ofono_atom *atom)
 	GSList *l;
 
 	emulator_hfp_unregister(atom);
+
+	voicecall_close_settings(vc);
 
 	if (vc->sim_state_watch) {
 		ofono_sim_remove_state_watch(vc->sim, vc->sim_state_watch);
@@ -2606,6 +2647,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 
 		free_sim_ecc_numbers(vc, FALSE);
 		set_new_ecc(vc);
+	case OFONO_SIM_STATE_READY:
+		voicecall_load_settings(vc);
+		break;
 	default:
 		break;
 	}
@@ -2618,6 +2662,7 @@ static void sim_watch(struct ofono_atom *atom,
 	struct ofono_sim *sim = __ofono_atom_get_data(atom);
 
 	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		voicecall_close_settings(vc);
 		vc->sim_state_watch = 0;
 		vc->sim = NULL;
 		return;
