@@ -1437,59 +1437,87 @@ static void manager_dial_callback(const struct ofono_error *error, void *data)
 		voicecalls_emit_call_added(vc, v);
 }
 
+static int voicecall_dial(struct ofono_voicecall *vc, const char *number,
+					enum ofono_clir_option clir,
+					ofono_voicecall_cb_t cb, void *data)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
+	struct ofono_phone_number ph;
+
+	if (g_slist_length(vc->call_list) >= MAX_VOICE_CALLS)
+		return -EPERM;
+
+	if (!valid_long_phone_number_format(number))
+		return -EINVAL;
+
+	if (ofono_modem_get_online(modem) == FALSE)
+		return -ENETDOWN;
+
+	if (vc->driver->dial == NULL)
+		return -ENOTSUP;
+
+	if (voicecalls_have_incoming(vc))
+		return -EBUSY;
+
+	/* We can't have two dialing/alerting calls, reject outright */
+	if (voicecalls_num_connecting(vc) > 0)
+		return -EBUSY;
+
+	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
+		return -EBUSY;
+
+	if (is_emergency_number(vc, number) == TRUE)
+		__ofono_modem_inc_emergency_mode(modem);
+
+	string_to_phone_number(number, &ph);
+
+	vc->driver->dial(vc, &ph, clir, cb, vc);
+
+	return 0;
+}
+
 static DBusMessage *manager_dial(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_voicecall *vc = data;
-	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	const char *number;
-	struct ofono_phone_number ph;
 	const char *clirstr;
 	enum ofono_clir_option clir;
+	int err;
 
 	if (vc->pending)
 		return __ofono_error_busy(msg);
-
-	if (g_slist_length(vc->call_list) >= MAX_VOICE_CALLS)
-		return __ofono_error_failed(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
 					DBUS_TYPE_STRING, &clirstr,
 					DBUS_TYPE_INVALID) == FALSE)
 		return __ofono_error_invalid_args(msg);
 
-	if (!valid_long_phone_number_format(number))
-		return __ofono_error_invalid_format(msg);
-
 	if (clir_string_to_clir(clirstr, &clir) == FALSE)
 		return __ofono_error_invalid_format(msg);
 
-	if (ofono_modem_get_online(modem) == FALSE)
-		return __ofono_error_not_available(msg);
-
-	if (vc->driver->dial == NULL)
-		return __ofono_error_not_implemented(msg);
-
-	if (voicecalls_have_incoming(vc))
-		return __ofono_error_failed(msg);
-
-	/* We can't have two dialing/alerting calls, reject outright */
-	if (voicecalls_num_connecting(vc) > 0)
-		return __ofono_error_failed(msg);
-
-	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
-		return __ofono_error_failed(msg);
-
-	if (is_emergency_number(vc, number) == TRUE)
-		__ofono_modem_inc_emergency_mode(modem);
-
 	vc->pending = dbus_message_ref(msg);
 
-	string_to_phone_number(number, &ph);
+	err = voicecall_dial(vc, number, clir, manager_dial_callback, vc);
 
-	vc->driver->dial(vc, &ph, clir, manager_dial_callback, vc);
+	if (err >= 0)
+		return NULL;
 
-	return NULL;
+	vc->pending = NULL;
+	dbus_message_unref(msg);
+
+	switch (err) {
+	case -EINVAL:
+		return __ofono_error_invalid_format(msg);
+
+	case -ENETDOWN:
+		return __ofono_error_not_available(msg);
+
+	case -ENOTSUP:
+		return __ofono_error_not_implemented(msg);
+	}
+
+	return __ofono_error_failed(msg);
 }
 
 static DBusMessage *manager_transfer(DBusConnection *conn,
