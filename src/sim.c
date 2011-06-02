@@ -806,6 +806,9 @@ static DBusMessage *sim_enter_pin(DBusConnection *conn, DBusMessage *msg,
 	if (type == OFONO_SIM_PASSWORD_NONE || type != sim->pin_type)
 		return __ofono_error_invalid_format(msg);
 
+	if (password_is_pin(type) == FALSE)
+		return __ofono_error_invalid_format(msg);
+
 	if (!__ofono_is_valid_sim_pin(pin, type))
 		return __ofono_error_invalid_format(msg);
 
