@@ -478,6 +478,8 @@ static gboolean reopen_callback(gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
+	DBG("%p", modem);
+
 	huawei_disconnect(user_data);
 
 	data->reopen_timeout = 0;
@@ -490,7 +492,7 @@ static void huawei_disconnect(gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
-	DBG("data->gc %p", data->gc);
+	DBG("%p, data->gc %p", modem, data->gc);
 
 	g_at_chat_unref(data->modem);
 	data->modem = NULL;
@@ -504,7 +506,7 @@ static void huawei_disconnect(gpointer user_data)
 		data->reopen_timeout = g_timeout_add_seconds(1,
 				reopen_callback, modem);
 
-		ofono_debug("open device failed, try to reopen it.");
+		ofono_debug("opening modem port failed, retrying...");
 		return;
 	}
 
