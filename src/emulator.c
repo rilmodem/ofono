@@ -144,7 +144,7 @@ static void request_private_network_cb(
 	em->ppp = g_at_ppp_server_new_full(pns->server_ip, pns->fd);
 	if (em->ppp == NULL) {
 		close(pns->fd);
-		goto error;
+		goto badalloc;
 	}
 
 	g_at_ppp_set_server_info(em->ppp, pns->peer_ip,
@@ -162,8 +162,10 @@ static void request_private_network_cb(
 
 	return;
 
-error:
+badalloc:
 	__ofono_private_network_release(em->pns_id);
+
+error:
 	em->pns_id = 0;
 	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_ERROR);
 }
