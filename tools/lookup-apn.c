@@ -33,8 +33,10 @@
 
 #include <glib.h>
 
-#define PROVIDER_DB  "/usr/share/" \
-			"mobile-broadband-provider-info/serviceproviders.xml"
+#ifndef PROVIDER_DATABASE
+#define PROVIDER_DATABASE  "/usr/share/mobile-broadband-provider-info" \
+							"serviceproviders.xml"
+#endif
 
 static gboolean match_found;
 static const char *current_element;
@@ -151,7 +153,7 @@ static int lookup_apn(const char *mcc, const char *mnc, const char *spn)
 	if (mcc == NULL || mnc == NULL)
 		return -1;
 
-	fd = open(PROVIDER_DB, O_RDONLY);
+	fd = open(PROVIDER_DATABASE, O_RDONLY);
 	if (fd < 0)
 		return -1;
 
