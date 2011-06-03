@@ -80,6 +80,7 @@ struct huawei_data {
 	gboolean ndis;
 	guint sim_poll_timeout;
 	guint sim_poll_count;
+	guint reopen_timeout;
 };
 
 #define MAX_SIM_POLL_COUNT 5
@@ -106,6 +107,11 @@ static void huawei_remove(struct ofono_modem *modem)
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	if (data->reopen_timeout > 0) {
+		g_source_remove(data->reopen_timeout);
+		data->reopen_timeout = 0;
+	}
 
 	ofono_modem_set_data(modem, NULL);
 
@@ -465,6 +471,20 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
+static void huawei_disconnect(gpointer user_data);
+
+static gboolean reopen_callback(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huawei_data *data = ofono_modem_get_data(modem);
+
+	huawei_disconnect(user_data);
+
+	data->reopen_timeout = 0;
+
+	return FALSE;
+}
+
 static void huawei_disconnect(gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -476,8 +496,17 @@ static void huawei_disconnect(gpointer user_data)
 	data->modem = NULL;
 
 	data->modem = open_device(modem, "Modem", "Modem: ");
-	if (data->modem == NULL)
+	/* retry once if failed */
+	if (data->modem == NULL) {
+		if (data->reopen_timeout > 0)
+			return;
+
+		data->reopen_timeout = g_timeout_add_seconds(1,
+				reopen_callback, modem);
+
+		ofono_debug("open device failed, try to reopen it.");
 		return;
+	}
 
 	g_at_chat_set_disconnect_function(data->modem,
 						huawei_disconnect, modem);
@@ -558,6 +587,11 @@ static int huawei_disable(struct ofono_modem *modem)
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	if (data->reopen_timeout > 0) {
+		g_source_remove(data->reopen_timeout);
+		data->reopen_timeout = 0;
+	}
 
 	if (data->sim_poll_timeout > 0) {
 		g_source_remove(data->sim_poll_timeout);
