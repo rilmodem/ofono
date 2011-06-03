@@ -197,10 +197,18 @@ AC_SUBST(BLUEZ_CFLAGS)
 AC_SUBST(BLUEZ_LIBS)
 AM_CONDITIONAL(BLUETOOTH, test "${enable_bluetooth}" != "no")
 
+AC_MSG_CHECKING([for mobile-broadband-provider-info])
+PKG_CHECK_EXISTS(mobile-broadband-provider-info,
+	_PKG_CONFIG(PROVIDER_DATABASE, [variable=database],
+					[mobile-broadband-provider-info])
+	AC_DEFINE_UNQUOTED(PROVIDER_DATABASE, "$pkg_cv_PROVIDER_DATABASE",
+					[Mobile provider database])
+	AC_MSG_RESULT([yes]),
+	AC_MSG_RESULT([no]))
+
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
 			[don't install configuration and data files]),
 					[enable_datafiles=${enableval}])
-
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
 
 if (test "${prefix}" = "NONE"); then
