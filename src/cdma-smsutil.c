@@ -686,7 +686,7 @@ static gboolean cdma_sms_p2p_decode(const guint8 *pdu, guint8 len,
 		enum cdma_sms_param_id rec_id;
 		guint8 rec_len;
 		const guint8 *rec_buf;
-		void *dataobj;
+		void *uninitialized_var(dataobj);
 
 		rec_id = simple_iter_get_id(&iter);
 		if (rec_id == CDMA_SMS_PARAM_ID_TELESERVICE_IDENTIFIER)
