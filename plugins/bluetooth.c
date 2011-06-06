@@ -31,9 +31,11 @@
 #include <unistd.h>
 #include <glib.h>
 #include <gdbus.h>
-#include <ofono.h>
 
+#define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/dbus.h>
+#include <ofono/plugin.h>
+#include <ofono/log.h>
 
 #include <btio.h>
 #include "bluetooth.h"
