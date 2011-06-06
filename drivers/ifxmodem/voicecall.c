@@ -811,8 +811,6 @@ static void xlema_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_string(&iter, &number))
 		return;
 
-	/* Skip the category, valid in simpresent and mcc fields */
-
 	if (vd->en_list == NULL)
 		vd->en_list = g_new0(char *, total_cnt + 1);
 
@@ -860,11 +858,6 @@ static void xlema_read(gboolean ok, GAtResult *result, gpointer user_data)
 
 		if (!g_at_result_iter_next_string(&iter, &number))
 			continue;
-
-		/* Skip the category, valid in simpresent and mcc fields */
-		g_at_result_iter_skip_next(&iter);
-		g_at_result_iter_skip_next(&iter);
-		g_at_result_iter_skip_next(&iter);
 
 		vd->en_list[num++] = g_strdup(number);
 	}
