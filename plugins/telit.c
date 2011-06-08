@@ -60,6 +60,7 @@ static const char *qss_prefix[] = { "#QSS:", NULL };
 struct telit_data {
 	GAtChat *chat;
 	struct ofono_sim *sim;
+	guint sim_inserted_source;
 };
 
 static void telit_debug(const char *str, void *user_data)
@@ -92,6 +93,9 @@ static void telit_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
+	if (data->sim_inserted_source > 0)
+		g_source_remove(data->sim_inserted_source);
+
 	g_free(data);
 }
 
@@ -101,6 +105,8 @@ static gboolean sim_inserted_timeout_cb(gpointer user_data)
 	struct telit_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	data->sim_inserted_source = 0;
 
 	ofono_sim_inserted_notify(data->sim, TRUE);
 
@@ -121,7 +127,9 @@ static void switch_sim_state_status(struct ofono_modem *modem, int status)
 	case 1:
 		DBG("SIM inserted");
 		/* We need to sleep a bit */
-		g_timeout_add_seconds(1, sim_inserted_timeout_cb, modem);
+		data->sim_inserted_source = g_timeout_add_seconds(1,
+							sim_inserted_timeout_cb,
+							modem);
 		break;
 	case 2:
 		DBG("SIM inserted and PIN unlocked");
@@ -206,6 +214,9 @@ static void cfun_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
+
+	if (data->sim_inserted_source > 0)
+		g_source_remove(data->sim_inserted_source);
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
