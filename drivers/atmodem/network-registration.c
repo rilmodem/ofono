@@ -56,6 +56,7 @@ struct netreg_data {
 	int signal_index; /* If strength is reported via CIND */
 	int signal_min; /* min strength reported via CIND */
 	int signal_max; /* max strength reported via CIND */
+	int signal_invalid; /* invalid strength reported via CIND */
 	int tech;
 	struct ofono_network_time time;
 	guint nitz_timeout;
@@ -666,7 +667,11 @@ static void ciev_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &strength))
 		return;
 
-	strength = (strength * 100) / (nd->signal_max - nd->signal_min);
+	if (strength == nd->signal_invalid)
+		strength = -1;
+	else
+		strength = (strength * 100) / (nd->signal_max - nd->signal_min);
+
 	ofono_netreg_strength_notify(netreg, strength);
 }
 
@@ -798,7 +803,10 @@ static void cind_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_next_number(&iter, &strength);
 
-	strength = (strength * 100) / (nd->signal_max - nd->signal_min);
+	if (strength == nd->signal_invalid)
+		strength = -1;
+	else
+		strength = (strength * 100) / (nd->signal_max - nd->signal_min);
 
 	cb(&error, strength, cbd->data);
 }
@@ -1133,7 +1141,9 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	const char *str;
 	int index;
-	int min, max;
+	int min = 0;
+	int max = 0;
+	int tmp_min, tmp_max, invalid;
 
 	if (!ok)
 		goto error;
@@ -1144,15 +1154,30 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	index = 1;
 
+	/*
+	 * Telit encapsulates the CIND=? tokens with braces
+	 * so we need to skip them
+	 */
+	if (nd->vendor == OFONO_VENDOR_TELIT)
+		g_at_result_iter_open_list(&iter);
+
 	while (g_at_result_iter_open_list(&iter)) {
+		/* Reset invalid default value for every token */
+		invalid = 99;
+
 		if (!g_at_result_iter_next_string(&iter, &str))
 			goto error;
 
 		if (!g_at_result_iter_open_list(&iter))
 			goto error;
 
-		while (g_at_result_iter_next_range(&iter, &min, &max))
-			;
+		while (g_at_result_iter_next_range(&iter, &tmp_min, &tmp_max)) {
+			if (tmp_min != tmp_max) {
+				min = tmp_min;
+				max = tmp_max;
+			} else
+				invalid = tmp_min;
+		}
 
 		if (!g_at_result_iter_close_list(&iter))
 			goto error;
@@ -1164,10 +1189,14 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 			nd->signal_index = index;
 			nd->signal_min = min;
 			nd->signal_max = max;
+			nd->signal_invalid = invalid;
 		}
 
 		index += 1;
 	}
+
+	if (nd->vendor == OFONO_VENDOR_TELIT)
+		g_at_result_iter_close_list(&iter);
 
 	if (nd->signal_index == 0)
 		goto error;
