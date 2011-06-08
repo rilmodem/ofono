@@ -326,6 +326,9 @@ builtin_sources += plugins/nokiacdma.c
 builtin_modules += linktop
 builtin_sources += plugins/linktop.c
 
+builtin_modules += telit
+builtin_sources += plugins/telit.c
+
 if BLUETOOTH
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
