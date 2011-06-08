@@ -37,7 +37,7 @@ def stdin_handler(fd, condition):
 
 if __name__ == "__main__":
 	if (len(sys.argv) < 2):
-		print "Usage: %s <ussd-string>" % (sys.argv[0])
+		print "Usage: %s [modem] <ussd-string>" % (sys.argv[0])
 		sys.exit(1)
 
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -48,8 +48,16 @@ if __name__ == "__main__":
 							'org.ofono.Manager')
 
 	modems = manager.GetModems()
-	ss = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
-							'org.ofono.SupplementaryServices')
+	modem = modems[0][0]
+
+	if (len(sys.argv) == 2):
+		ussd = sys.argv[1]
+	else:
+		modem = sys.argv[1]
+		ussd = sys.argv[2]
+
+	ss = dbus.Interface(bus.get_object('org.ofono', modem),
+					'org.ofono.SupplementaryServices')
 
 	props = ss.GetProperties()
 	for p in props:
@@ -59,7 +67,7 @@ if __name__ == "__main__":
 	ss.connect_to_signal("RequestReceived", ussd_request_received)
 	ss.connect_to_signal("PropertyChanged", ussd_property_changed)
 
-	print ss.Initiate(sys.argv[1], timeout=100)
+	print ss.Initiate(ussd, timeout=100)
 
 	gobject.io_add_watch(sys.stdin, gobject.IO_IN, stdin_handler)
 
