@@ -4,7 +4,7 @@ import sys
 import dbus
 
 if (len(sys.argv) < 2):
-	print "Usage: %s <ussd-string>" % (sys.argv[0])
+	print "Usage: %s [modem] <ussd-string>" % (sys.argv[0])
 	sys.exit(1)
 
 bus = dbus.SystemBus()
@@ -13,7 +13,13 @@ manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 						'org.ofono.Manager')
 
 modems = manager.GetModems()
-path = modems[0][0]
+
+if (len(sys.argv) == 2):
+	path = modems[0][0]
+	ussdstring = sys.argv[1]
+else:
+	path = sys.argv[1]
+	ussdstring = sys.argv[2]
 
 ussd = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.SupplementaryServices')
@@ -26,7 +32,7 @@ print "State: %s" % (state)
 if state != "idle":
 	sys.exit(1);
 
-result = ussd.Initiate(sys.argv[1], timeout=100)
+result = ussd.Initiate(ussdstring, timeout=100)
 
 properties = ussd.GetProperties()
 state = properties["State"]
