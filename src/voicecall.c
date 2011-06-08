@@ -2488,6 +2488,10 @@ static void emulator_hfp_unregister(struct ofono_atom *atom)
 						OFONO_ATOM_TYPE_EMULATOR_HFP,
 						emulator_remove_handler,
 						"D");
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_remove_handler,
+						"+BLDN");
 
 	__ofono_modem_remove_atom_watch(modem, vc->hfp_watch);
 }
@@ -3112,6 +3116,35 @@ fail:
 	};
 }
 
+static void emulator_bldn_cb(struct ofono_emulator *em,
+			struct ofono_emulator_request *req, void *userdata)
+{
+	struct ofono_voicecall *vc = userdata;
+	const char *number;
+	struct ofono_error result;
+	GError *error = NULL;
+
+	switch (ofono_emulator_request_get_type(req)) {
+	case OFONO_EMULATOR_REQUEST_TYPE_COMMAND_ONLY:
+		if (vc->settings == NULL)
+			goto fail;
+
+		number = g_key_file_get_string(vc->settings, SETTINGS_GROUP,
+						"Number", &error);
+		if (number == NULL || number[0] == '\0')
+			goto fail;
+
+		emulator_dial(em, vc, number);
+		break;
+
+	default:
+fail:
+		result.error = 0;
+		result.type = OFONO_ERROR_TYPE_FAILURE;
+		ofono_emulator_send_final(em, &result);
+	};
+}
+
 static void emulator_hfp_watch(struct ofono_atom *atom,
 				enum ofono_atom_watch_condition cond,
 				void *data)
@@ -3129,6 +3162,7 @@ static void emulator_hfp_watch(struct ofono_atom *atom,
 	ofono_emulator_add_handler(em, "+CHLD", emulator_chld_cb, data, NULL);
 	ofono_emulator_add_handler(em, "+VTS", emulator_vts_cb, data, NULL);
 	ofono_emulator_add_handler(em, "D", emulator_atd_cb, data, NULL);
+	ofono_emulator_add_handler(em, "+BLDN", emulator_bldn_cb, data, NULL);
 }
 
 void ofono_voicecall_register(struct ofono_voicecall *vc)
