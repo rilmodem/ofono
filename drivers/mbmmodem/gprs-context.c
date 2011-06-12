@@ -144,6 +144,7 @@ out:
 		ofono_gprs_context_set_ipv4_address(gc, ip, TRUE);
 		ofono_gprs_context_set_ipv4_netmask(gc, STATIC_IP_NETMASK);
 		ofono_gprs_context_set_ipv4_dns_servers(gc, dns);
+		ofono_gprs_context_set_ipv4_gateway(gc, gateway);
 	} else
 		ofono_gprs_context_set_ipv4_address(gc, NULL, FALSE);
 
