@@ -587,6 +587,53 @@ static void add_linktop(struct ofono_modem *modem,
 	}
 }
 
+static void add_telit(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	struct udev_list_entry *entry;
+	const char *devnode, *type;
+	int registered;
+
+	DBG("modem %p", modem);
+
+	registered = ofono_modem_get_integer(modem, "Registered");
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+		type = udev_list_entry_get_value(entry);
+
+		if (g_str_equal(name, "OFONO_TELIT_TYPE") != TRUE) {
+			entry = udev_list_entry_get_next(entry);
+			continue;
+		}
+
+		if (registered == 0 && g_str_equal(type, "Modem") == TRUE) {
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Modem", devnode);
+		} else if (g_str_equal(type, "GPS") == TRUE) {
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "GPS", devnode);
+		} else if (registered == 0 &&
+				g_str_equal(type, "Data") == TRUE) {
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Data", devnode);
+		}
+
+		break;
+	}
+
+	if (registered == 1)
+		return;
+
+	if (ofono_modem_get_string(modem, "Modem") != NULL &&
+			ofono_modem_get_string(modem, "Data") != NULL) {
+		ofono_modem_set_integer(modem, "Registered", 1);
+		ofono_modem_register(modem);
+	}
+}
+
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -681,6 +728,8 @@ done:
 		add_calypso(modem, udev_device);
 	else if (g_strcmp0(driver, "tc65") == 0)
 		add_tc65(modem, udev_device);
+	else if (g_strcmp0(driver, "telit") == 0)
+		add_telit(modem, udev_device);
 	else if (g_strcmp0(driver, "nokiacdma") == 0)
 		add_nokiacdma(modem, udev_device);
         else if (g_strcmp0(driver, "linktop") == 0)
