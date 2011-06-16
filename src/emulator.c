@@ -433,7 +433,7 @@ static void brsf_cb(GAtServer *server, GAtServerRequestType type,
 		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
 			goto fail;
 
-		if ((val < 0) && (val > 127))
+		if (val < 0 || val > 127)
 			goto fail;
 
 		em->r_features = val;
@@ -715,7 +715,7 @@ static void cmee_cb(GAtServer *server, GAtServerRequestType type,
 		if (g_at_result_iter_next_number(&iter, &val) == FALSE)
 			goto fail;
 
-		if (val < 0 && val > 1)
+		if (val != 0 && val != 1)
 			goto fail;
 
 		em->cmee_mode = val;
