@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef __ISIMODEM25_UICC_H
-#define __ISIMODEM25_UICC_H
+#ifndef __ISIMODEM_UICC_H
+#define __ISIMODEM_UICC_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +49,7 @@ enum uicc_status {
 	UICC_STATUS_APPL_ACTIVE =		0x30,
 	UICC_STATUS_APPL_NOT_ACTIVE =		0x31,
 	UICC_STATUS_PIN_ENABLED =		0x40,
-	UICC_STATUS_PIN_DISABLED =		0x41
+	UICC_STATUS_PIN_DISABLED =		0x41,
 };
 
 enum uicc_subblock {
@@ -92,8 +92,7 @@ enum uicc_subblock {
 	UICC_SB_APDU_SAP_INFO =			0x0022,
 	UICC_SB_ACCESS_MODE =			0x0027,
 	UICC_SB_RESP_INFO =			0x0028,
-	UICC_SB_APDU_SAP_CONFIG =		0x0029
-
+	UICC_SB_APDU_SAP_CONFIG =		0x0029,
 };
 
 enum uicc_message_id {
@@ -130,7 +129,7 @@ enum uicc_message_id {
 	UICC_APDU_SAP_IND =			0x20,
 	UICC_PWR_CTRL_REQ =			0x21,
 	UICC_PWR_CTRL_RESP =			0x22,
-	UICC_PWR_CTRL_IND =			0x23
+	UICC_PWR_CTRL_IND =			0x23,
 };
 
 enum uicc_service_type {
@@ -217,44 +216,49 @@ enum uicc_service_type {
 	UICC_PWR_CTRL_DISABLE =			0xF2,
 	UICC_PWR_CTRL_WAIT =			0xF3,
 	UICC_PWR_CTRL_PROCEED =			0xF4,
-	UICC_PWR_CTRL_PERMISSION =		0xFA
+	UICC_PWR_CTRL_PERMISSION =		0xFA,
 };
 
 enum uicc_appl_type_table {
 	UICC_APPL_TYPE_UNKNOWN =		0x00,
 	UICC_APPL_TYPE_ICC_SIM =		0x01,
-	UICC_APPL_TYPE_UICC_USIM =		0x02
+	UICC_APPL_TYPE_UICC_USIM =		0x02,
 };
+
 enum uicc_pin_qualifier {
 	UICC_PIN_NEW =				0x01,
-	UICC_PIN_OLD =				0x02
+	UICC_PIN_OLD =				0x02,
 };
+
 enum uicc_appl_start_up_type {
 	UICC_APPL_START_UP_NO_INIT_PROC =	0x00,
-	UICC_APPL_START_UP_INIT_PROC =		0x01
+	UICC_APPL_START_UP_INIT_PROC =		0x01,
 };
+
 enum uicc_card_type {
 	UICC_CARD_TYPE_ICC =			0x01,
-	UICC_CARD_TYPE_UICC =			0x02
+	UICC_CARD_TYPE_UICC =			0x02,
 };
+
 enum uicc_details {
 	UICC_NO_DETAILS =			0x00,
 	UICC_INVALID_PARAMETERS =		0x01,
-	UICC_FILE_NOT_FOUND =			0x02
-};
-enum uicc_simlock_status {
-	UICC_SIMLOCK_STATUS_ACTIVE =		0x01,
-	UICC_SIMLOCK_STATUS_INACTIVE =		0x02
+	UICC_FILE_NOT_FOUND =			0x02,
 };
 
-enum uicc_apdu_status_words {
+enum uicc_simlock_status {
+	UICC_SIMLOCK_STATUS_ACTIVE =		0x01,
+	UICC_SIMLOCK_STATUS_INACTIVE =		0x02,
+};
+
+enum uicc_apdu_status_word {
 	UICC_PIN_STATUS_AUTH_RETRIES =		0x63c0,
 	UICC_PIN_STATUS_AUTH_BLOCKED =		0x6983,
-	UICC_PIN_STATUS_AUTH_FAILED =		0x9840
+	UICC_PIN_STATUS_AUTH_FAILED =		0x9840,
 };
 
 #ifdef __cplusplus
 };
 #endif
 
-#endif /* __ISIMODEM25_UICC_H */
+#endif /* __ISIMODEM_UICC_H */
