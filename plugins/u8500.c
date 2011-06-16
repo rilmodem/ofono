@@ -434,7 +434,7 @@ static void u8500_pre_sim(struct ofono_modem *modem)
 
 	DBG("(%p) with %s", modem, isi->ifname);
 
-	ofono_sim_create(modem, 0, "isimodem", isi->modem);
+	ofono_sim_create(modem, 0, "wgmodem2.5", isi->modem);
 	ofono_devinfo_create(modem, 0, "u8500", isi->modem);
 	ofono_voicecall_create(modem, 0, "isimodem", isi->modem);
 }
