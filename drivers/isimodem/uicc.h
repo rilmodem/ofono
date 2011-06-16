@@ -26,7 +26,10 @@
 extern "C" {
 #endif
 
+#include <glib/gtypes.h>
+
 #include <gisi/client.h>
+#include <gisi/modem.h>
 
 #define PN_UICC 0x8C
 
@@ -286,6 +289,9 @@ enum uicc_app_param {
 	UICC_APP_PARAM_DISC_TEMPLATE =		0x73,
 	UICC_APP_PARAM_URL =			0x5F50,
 };
+
+gboolean isi_uicc_properties(GIsiModem *modem, int *app_id, int *app_type,
+				int *client_id);
 
 #ifdef __cplusplus
 };

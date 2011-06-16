@@ -66,3 +66,6 @@ extern void isi_gprs_context_exit(void);
 
 extern void isi_audio_settings_init(void);
 extern void isi_audio_settings_exit(void);
+
+extern void isi_uicc_init(void);
+extern void isi_uicc_exit(void);
