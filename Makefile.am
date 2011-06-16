@@ -140,7 +140,8 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/gprs-context.c \
 				drivers/isimodem/gpds.h \
 				drivers/isimodem/audio-settings.c \
-				drivers/isimodem/uicc.h
+				drivers/isimodem/uicc.h \
+				drivers/isimodem/uicc.c
 
 
 builtin_modules += isiusb
