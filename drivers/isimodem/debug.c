@@ -58,6 +58,7 @@ const char *pn_resource_name(int value)
 		_(PN_SIM);
 		_(PN_SECURITY);
 		_(PN_MTC);
+		_(PN_MODEM_MCE);
 		_(PN_GSS);
 		_(PN_GPDS);
 		_(PN_WRAN);
@@ -264,6 +265,7 @@ const char *uicc_message_id_name(enum uicc_message_id value)
 		_(UICC_PWR_CTRL_REQ);
 		_(UICC_PWR_CTRL_RESP);
 		_(UICC_PWR_CTRL_IND);
+		_(UICC_CARD_READER_IND);
 	}
 	return "UICC_<UNKNOWN>";
 }
