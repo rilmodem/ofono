@@ -733,7 +733,7 @@ static void clir_ss_query_callback(const struct ofono_error *error,
 
 	switch (network) {
 	case CLIR_STATUS_UNKNOWN:
-		value = "uknown";
+		value = "unknown";
 		break;
 
 	case CLIR_STATUS_PROVISIONED_PERMANENT:
