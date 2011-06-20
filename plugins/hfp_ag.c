@@ -81,7 +81,7 @@ static const gchar *hfp_ag_record =
 "  </attribute>\n"
 "\n"
 "  <attribute id=\"0x0311\">\n"
-"    <uint16 value=\"0x0000\" />\n"
+"    <uint16 value=\"0x0001\" />\n"
 "  </attribute>\n"
 "</record>\n";
 
