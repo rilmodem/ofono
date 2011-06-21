@@ -22,25 +22,6 @@
 #include <drivers/atmodem/atutil.h>
 #include <ofono/dbus.h>
 
-/* AG supported features bitmap. Bluetooth HFP 1.5 spec page 77 */
-#define AG_FEATURE_3WAY 0x1
-#define AG_FEATURE_ECNR 0x2
-#define AG_FEATURE_VOICE_RECOG 0x4
-#define AG_FEATURE_IN_BAND_RING_TONE 0x8
-#define AG_FEATURE_ATTACH_VOICE_TAG 0x10
-#define AG_FEATURE_REJECT_CALL 0x20
-#define AG_FEATURE_ENHANCED_CALL_STATUS 0x40
-#define AG_FEATURE_ENHANCED_CALL_CONTROL 0x80
-#define AG_FEATURE_EXTENDED_RES_CODE 0x100
-
-#define HF_FEATURE_ECNR 0x1
-#define HF_FEATURE_3WAY 0x2
-#define HF_FEATURE_CLIP 0x4
-#define HF_FEATURE_VOICE_RECOGNITION 0x8
-#define HF_FEATURE_REMOTE_VOLUME_CONTROL 0x10
-#define HF_FEATURE_ENHANCED_CALL_STATUS 0x20
-#define HF_FEATURE_ENHANCED_CALL_CONTROL 0x40
-
 #define AG_CHLD_0 0x01
 #define AG_CHLD_1 0x02
 #define AG_CHLD_1x 0x04
