@@ -447,6 +447,10 @@ struct sms;
 void __ofono_message_waiting_mwi(struct ofono_message_waiting *mw,
 				struct sms *sms, gboolean *out_discard);
 
+const struct ofono_phone_number *__ofono_message_waiting_get_mbdn(
+					struct ofono_message_waiting *mw,
+					unsigned int index);
+
 #include <ofono/nettime.h>
 
 void __ofono_nettime_probe_drivers(struct ofono_modem *modem);

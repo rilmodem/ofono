@@ -605,6 +605,13 @@ static void mw_cphs_mbdn_changed(int id, void *userdata)
 			mw_cphs_mbdn_read_cb, mw);
 }
 
+const struct ofono_phone_number *__ofono_message_waiting_get_mbdn(
+					struct ofono_message_waiting *mw,
+					unsigned int index)
+{
+	return &mw->mailbox_number[index];
+}
+
 static void mw_mbi_read_cb(int ok, int total_length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
