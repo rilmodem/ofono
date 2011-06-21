@@ -174,7 +174,7 @@ static void cmer_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	if (data->ag_features & AG_FEATURE_3WAY)
+	if (data->ag_features & HFP_AG_FEATURE_3WAY)
 		g_at_chat_send(data->chat, "AT+CHLD=?", chld_prefix,
 			chld_cb, modem, NULL);
 	else
@@ -418,11 +418,11 @@ static int hfp_create_modem(const char *device, const char *dev_addr,
 	if (data == NULL)
 		goto free;
 
-	data->hf_features |= HF_FEATURE_3WAY;
-	data->hf_features |= HF_FEATURE_CLIP;
-	data->hf_features |= HF_FEATURE_REMOTE_VOLUME_CONTROL;
-	data->hf_features |= HF_FEATURE_ENHANCED_CALL_STATUS;
-	data->hf_features |= HF_FEATURE_ENHANCED_CALL_CONTROL;
+	data->hf_features |= HFP_HF_FEATURE_3WAY;
+	data->hf_features |= HFP_HF_FEATURE_CLIP;
+	data->hf_features |= HFP_HF_FEATURE_REMOTE_VOLUME_CONTROL;
+	data->hf_features |= HFP_HF_FEATURE_ENHANCED_CALL_STATUS;
+	data->hf_features |= HFP_HF_FEATURE_ENHANCED_CALL_CONTROL;
 
 	data->handsfree_path = g_strdup(device);
 	if (data->handsfree_path == NULL)
