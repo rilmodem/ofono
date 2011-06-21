@@ -3084,6 +3084,7 @@ static void emulator_atd_cb(struct ofono_emulator *em,
 			struct ofono_emulator_request *req, void *userdata)
 {
 	struct ofono_voicecall *vc = userdata;
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 	const char *str;
 	size_t len;
 	char number[OFONO_MAX_PHONE_NUMBER_LENGTH + 1];
@@ -3102,10 +3103,34 @@ static void emulator_atd_cb(struct ofono_emulator *em,
 				str[len - 1] != ';')
 			goto fail;
 
-		strncpy(number, str, len - 1);
-		number[len - 1] = '\0';
+		if (len == 3 && str[0] == '>' && str[1] == '1') {
+			struct ofono_atom *mw_atom;
+			struct ofono_message_waiting *mw;
+			const struct ofono_phone_number *ph;
+			const char *num;
 
-		emulator_dial(em, vc, number);
+			mw_atom = __ofono_modem_find_atom(modem,
+					OFONO_ATOM_TYPE_MESSAGE_WAITING);
+
+			if (mw_atom == NULL)
+				goto fail;
+
+			mw = __ofono_atom_get_data(mw_atom);
+			ph = __ofono_message_waiting_get_mbdn(mw, 0);
+
+			if (ph == NULL)
+				goto fail;
+
+			num = phone_number_to_string(ph);
+
+			emulator_dial(em, vc, num);
+		} else {
+			strncpy(number, str, len - 1);
+			number[len - 1] = '\0';
+
+			emulator_dial(em, vc, number);
+		}
+
 		break;
 
 	default:
