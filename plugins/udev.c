@@ -577,10 +577,10 @@ static void add_linktop(struct ofono_modem *modem,
 
 	if (g_strcmp0(intfnum, "01") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Modem", devnode);
+		ofono_modem_set_string(modem, "Aux", devnode);
 	} else if (g_strcmp0(intfnum, "03") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Control", devnode);
+		ofono_modem_set_string(modem, "Modem", devnode);
 
 		ofono_modem_set_integer(modem, "Registered", 1);
 		ofono_modem_register(modem);
