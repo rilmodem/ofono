@@ -150,6 +150,9 @@ static void request_private_network_cb(
 	g_at_ppp_set_server_info(em->ppp, pns->peer_ip,
 					pns->primary_dns, pns->secondary_dns);
 
+	g_at_ppp_set_acfc_enabled(em->ppp, TRUE);
+	g_at_ppp_set_pfc_enabled(em->ppp, TRUE);
+
 	g_at_ppp_set_credentials(em->ppp, "", "");
 	g_at_ppp_set_debug(em->ppp, emulator_debug, "PPP");
 
