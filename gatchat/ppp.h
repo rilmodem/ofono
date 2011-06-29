@@ -27,8 +27,6 @@
 #define PPP_IP_PROTO	0x0021
 #define MD5		5
 
-#define PPP_IP_COMPRESSED_PROTO 0x21
-
 #define DBG(p, fmt, arg...) do {				\
 	char *str = g_strdup_printf("%s:%s() " fmt, __FILE__,	\
 					__FUNCTION__ , ## arg); \
@@ -81,17 +79,8 @@ static inline void __put_unaligned_short(void *p, guint16 val)
 #define put_network_short(p, val) \
 	(__put_unaligned_short(p, htons(val)))
 
-#define ppp_info(packet) \
-	(packet + 4)
-
 #define ppp_proto(packet) \
 	(get_host_short(packet + 2))
-
-#define ppp_acfc_info(packet) \
-	(packet + 2)
-
-#define ppp_acfc_proto(packet) \
-	(get_host_short(packet))
 
 /* LCP related functions */
 struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean dormant);

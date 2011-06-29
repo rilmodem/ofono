@@ -170,37 +170,47 @@ static inline gboolean ppp_drop_packet(GAtPPP *ppp, guint16 protocol)
 static void ppp_receive(const unsigned char *buf, gsize len, void *data)
 {
 	GAtPPP *ppp = data;
-	struct ppp_header *header = (struct ppp_header *) buf;
-	gboolean acfc_frame = (header->address != PPP_ADDR_FIELD
-			|| header->control != PPP_CTRL);
-	gboolean pfc_frame = FALSE;
+	unsigned int offset = 0;
 	guint16 protocol;
 	const guint8 *packet;
 
-	if (acfc_frame) {
-		protocol = ppp_acfc_proto(buf);
-		packet = ppp_acfc_info(buf);
+	if (len == 0)
+		return;
+
+	if (buf[0] == PPP_ADDR_FIELD && len >= 2 && buf[1] == PPP_CTRL)
+		offset = 2;
+
+	if (len < offset + 1)
+		return;
+
+	/* From RFC 1661:
+	 * the Protocol field uses an extension mechanism consistent with the
+	 * ISO 3309 extension mechanism for the Address field; the Least
+	 * Significant Bit (LSB) of each octet is used to indicate extension
+	 * of the Protocol field.  A binary "0" as the LSB indicates that the
+	 * Protocol field continues with the following octet.  The presence
+	 * of a binary "1" as the LSB marks the last octet of the Protocol
+	 * field.
+	 *
+	 * To check for compression we simply check the LSB of the first
+	 * protocol byte.
+	 */
+
+	if (buf[offset] & 0x1) {
+		protocol = buf[offset];
+		offset += 1;
 	} else {
-		protocol = ppp_proto(buf);
-		packet = ppp_info(buf);
-	}
+		if (len < offset + 2)
+			return;
 
-	pfc_frame = (protocol != LCP_PROTOCOL && protocol != CHAP_PROTOCOL &&
-			protocol != IPCP_PROTO && protocol != PPP_IP_PROTO);
-
-	if (pfc_frame) {
-		guint8 proto = (protocol >> 8) & 0xFF ;
-		packet = packet - 1;
-		/*
-		 * The only protocol that can be compressed is PPP_IP_PROTO
-		 * because first byte is 0x00.
-		 */
-		if (proto == PPP_IP_COMPRESSED_PROTO)
-			protocol = PPP_IP_PROTO;
+		protocol = get_host_short(buf + offset);
+		offset += 2;
 	}
 
 	if (ppp_drop_packet(ppp, protocol))
 		return;
+
+	packet = buf + offset;
 
 	switch (protocol) {
 	case PPP_IP_PROTO:
