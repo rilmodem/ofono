@@ -329,23 +329,19 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 {
 	guint16 proto = ppp_proto(packet);
 
-	switch (proto) {
-	case LCP_PROTOCOL:
+	if (proto == LCP_PROTOCOL) {
 		ppp_send_lcp_frame(ppp, packet, infolen);
-		break;
-	case CHAP_PROTOCOL:
-	case IPCP_PROTO:
-		/*
-		 * We can't use PFC option because first byte of CHAP_PROTOCOL
-		 * and IPCP_PROTO is not equal to 0x00
-		 */
-		ppp_send_acfc_frame(ppp, packet, infolen);
-		break;
-	case PPP_IP_PROTO:
-		/* We can use both ACFC & PFC if they are negotiated */
-		ppp_send_acfc_pfc_frame(ppp, packet, infolen);
-		break;
+		return;
 	}
+
+	/*
+	 * If the upper 8 bits of the protocol are 0, then send
+	 * with PFC if enabled
+	 */
+	if ((proto & 0xff00) == 0)
+		ppp_send_acfc_pfc_frame(ppp, packet, infolen);
+	else
+		ppp_send_acfc_frame(ppp, packet, infolen);
 }
 
 static inline void ppp_enter_phase(GAtPPP *ppp, enum ppp_phase phase)
