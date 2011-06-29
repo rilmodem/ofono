@@ -657,3 +657,11 @@ Network Registration
   network registration atom has been initialized.  If EFcsp indicates that
   manual network registration is not allowed, oFono enters into 'auto-only'
   registration mode.  Updates to this file via STK Refresh is also supported.
+
+PPP Stack
+=========
+
+- Support for Protocol Field Compression (PFC) packets.  The oFono PPP stack
+  supports both receiving and sending of packets with PFC enabled.  The user
+  can also control whether PFC capability is advertised to the peer, and used
+  during transmission.

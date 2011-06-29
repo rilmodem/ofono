@@ -149,13 +149,6 @@ PPP
   Complexity: C1
   Owner: Guillaume Zajac <guillaume.zajac@linux.intel.com>
 
-- PFC support.  Extend GAtPPP to support packets with Protocol field
-  compression enabled.  Refer to RFC 1661 for details.
-
-  Priority: Medium
-  Complexity: C1
-  Owner: Guillaume Zajac <guillaume.zajac@linux.intel.com>
-
 
 Location Services
 =================
