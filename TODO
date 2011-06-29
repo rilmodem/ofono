@@ -142,13 +142,6 @@ PPP
   Priority: Low
   Complexity: C4
 
-- ACFC support.  Extend GAtPPP to support packets with Address & Control Field
-  Compression enabled.  Refer to RFC 1662 for details.
-
-  Priority: Medium
-  Complexity: C1
-  Owner: Guillaume Zajac <guillaume.zajac@linux.intel.com>
-
 
 Location Services
 =================

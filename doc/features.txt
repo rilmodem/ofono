@@ -665,3 +665,8 @@ PPP Stack
   supports both receiving and sending of packets with PFC enabled.  The user
   can also control whether PFC capability is advertised to the peer, and used
   during transmission.
+
+- Support for Address & Control Field Compression (ACFC) packets.  The oFono
+  PPP stack supports both receiving and sending of packets with ACFC enabled.
+  The user can also control whether ACFC capability is advertised to the peer,
+  and used during transmission.
