@@ -372,6 +372,9 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_ppp_set_credentials(ppp, option_username, option_password);
 
+	g_at_ppp_set_acfc_enabled(ppp, TRUE);
+	g_at_ppp_set_pfc_enabled(ppp, TRUE);
+
 	/* set connect and disconnect callbacks */
 	g_at_ppp_set_connect_function(ppp, ppp_connect, NULL);
 	g_at_ppp_set_disconnect_function(ppp, ppp_disconnect, NULL);
