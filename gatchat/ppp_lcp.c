@@ -374,11 +374,15 @@ struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean is_server)
 void lcp_set_acfc_enabled(struct pppcp_data *pppcp, gboolean enabled)
 {
 	struct lcp_data *lcp = pppcp_get_data(pppcp);
+	guint8 old = lcp->req_options;
 
 	if (enabled == TRUE)
 		lcp->req_options |= REQ_OPTION_ACFC;
 	else
 		lcp->req_options &= ~REQ_OPTION_ACFC;
+
+	if (lcp->req_options == old)
+		return;
 
 	lcp_generate_config_options(lcp);
 	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
@@ -387,11 +391,15 @@ void lcp_set_acfc_enabled(struct pppcp_data *pppcp, gboolean enabled)
 void lcp_set_pfc_enabled(struct pppcp_data *pppcp, gboolean enabled)
 {
 	struct lcp_data *lcp = pppcp_get_data(pppcp);
+	guint8 old = lcp->req_options;
 
 	if (enabled == TRUE)
 		lcp->req_options |= REQ_OPTION_PFC;
 	else
 		lcp->req_options &= ~REQ_OPTION_PFC;
+
+	if (lcp->req_options == old)
+		return;
 
 	lcp_generate_config_options(lcp);
 	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
