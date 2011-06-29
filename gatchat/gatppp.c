@@ -298,9 +298,7 @@ static void ppp_send_acfc_pfc_frame(GAtPPP *ppp, guint8 *packet,
 	else if (ppp->xmit_acfc)
 		offset = 2;
 	else if (ppp->xmit_pfc) {
-		/*
-		 * We remove only the 1st byte that is 0x00 of protocol field.
-		 */
+		/* Shuffle AC bytes in place of the first protocol byte */
 		packet[2] = packet[1];
 		packet[1] = packet[0];
 		offset = 1;
@@ -334,9 +332,7 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 		ppp_send_acfc_frame(ppp, packet, infolen);
 		break;
 	case PPP_IP_PROTO:
-		/*
-		 * We can't use both compression options if they are negotiated
-		 */
+		/* We can use both ACFC & PFC if they are negotiated */
 		ppp_send_acfc_pfc_frame(ppp, packet, infolen);
 		break;
 	}
