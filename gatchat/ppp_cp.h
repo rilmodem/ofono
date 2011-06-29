@@ -117,7 +117,7 @@ void pppcp_set_local_options(struct pppcp_data *data,
 				const guint8 *options,
 				guint16 len);
 
-void pppcp_process_packet(gpointer priv, const guint8 *new_packet);
+void pppcp_process_packet(gpointer priv, const guint8 *new_packet, gsize len);
 void pppcp_send_protocol_reject(struct pppcp_data *data,
 				const guint8 *rejected_packet, gsize len);
 void pppcp_signal_open(struct pppcp_data *data);

@@ -945,7 +945,7 @@ void pppcp_send_protocol_reject(struct pppcp_data *data,
 /*
  * parse the packet and determine which event this packet caused
  */
-void pppcp_process_packet(gpointer priv, const guint8 *new_packet)
+void pppcp_process_packet(gpointer priv, const guint8 *new_packet, gsize len)
 {
 	struct pppcp_data *data = priv;
 	const struct pppcp_packet *packet =
@@ -953,7 +953,7 @@ void pppcp_process_packet(gpointer priv, const guint8 *new_packet)
 	guint8 event_type;
 	guint data_len = 0;
 
-	if (data == NULL)
+	if (len < sizeof(struct pppcp_packet))
 		return;
 
 	/* check flags to see if we support this code */

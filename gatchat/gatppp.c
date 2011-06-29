@@ -214,17 +214,18 @@ static void ppp_receive(const unsigned char *buf, gsize len, void *data)
 
 	switch (protocol) {
 	case PPP_IP_PROTO:
-		ppp_net_process_packet(ppp->net, packet);
+		ppp_net_process_packet(ppp->net, packet, len - offset);
 		break;
 	case LCP_PROTOCOL:
-		pppcp_process_packet(ppp->lcp, packet);
+		pppcp_process_packet(ppp->lcp, packet, len - offset);
 		break;
 	case IPCP_PROTO:
-		pppcp_process_packet(ppp->ipcp, packet);
+		pppcp_process_packet(ppp->ipcp, packet, len - offset);
 		break;
 	case CHAP_PROTOCOL:
 		if (ppp->chap) {
-			ppp_chap_process_packet(ppp->chap, packet);
+			ppp_chap_process_packet(ppp->chap, packet,
+							len - offset);
 			break;
 		}
 		/* fall through */

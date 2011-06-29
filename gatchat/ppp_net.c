@@ -77,16 +77,22 @@ gboolean ppp_net_set_mtu(struct ppp_net *net, guint16 mtu)
 	return TRUE;
 }
 
-void ppp_net_process_packet(struct ppp_net *net, const guint8 *packet)
+void ppp_net_process_packet(struct ppp_net *net, const guint8 *packet,
+				gsize plen)
 {
 	GIOStatus status;
 	gsize bytes_written;
 	guint16 len;
 
+	if (plen < 4)
+		return;
+
 	/* find the length of the packet to transmit */
 	len = get_host_short(&packet[2]);
 	status = g_io_channel_write_chars(net->channel, (gchar *) packet,
-						len, &bytes_written, NULL);
+						MIN(len, plen),
+						&bytes_written, NULL);
+
 	if (status != G_IO_STATUS_NORMAL)
 		return;
 }

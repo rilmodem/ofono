@@ -118,9 +118,15 @@ challenge_out:
 /*
  * parse the packet
  */
-void ppp_chap_process_packet(struct ppp_chap *chap, const guint8 *new_packet)
+void ppp_chap_process_packet(struct ppp_chap *chap, const guint8 *new_packet,
+				gsize len)
 {
-	guint8 code = new_packet[0];
+	guint8 code;
+
+	if (len < sizeof(struct chap_header))
+		return;
+
+	code = new_packet[0];
 
 	switch (code) {
 	case CHALLENGE:
