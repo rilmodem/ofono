@@ -27,6 +27,8 @@
 #define PPP_IP_PROTO	0x0021
 #define MD5		5
 
+#define PPP_IP_COMPRESSED_PROTO 0x21
+
 #define DBG(p, fmt, arg...) do {				\
 	char *str = g_strdup_printf("%s:%s() " fmt, __FILE__,	\
 					__FUNCTION__ , ## arg); \
@@ -96,6 +98,7 @@ struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean dormant);
 void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
 void lcp_set_acfc_enabled(struct pppcp_data *pppcp, gboolean enabled);
+void lcp_set_pfc_enabled(struct pppcp_data *pppcp, gboolean enabled);
 
 /* IPCP related functions */
 struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip);
@@ -133,4 +136,5 @@ void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_mtu(GAtPPP *ppp, const guint8 *data);
 void ppp_set_xmit_acfc(GAtPPP *ppp, gboolean acfc);
+void ppp_set_xmit_pfc(GAtPPP *ppp, gboolean pfc);
 struct ppp_header *ppp_packet_new(gsize infolen, guint16 protocol);

@@ -58,12 +58,13 @@ enum lcp_options {
 	ACFC			= 8,
 };
 
-/* Maximum size of all options, we only ever request ACCM, MRU and ACFC */
-#define MAX_CONFIG_OPTION_SIZE 12
+/* Maximum size of all options, we only ever request ACCM, MRU, ACFC and PFC */
+#define MAX_CONFIG_OPTION_SIZE 14
 
 #define REQ_OPTION_ACCM	0x1
 #define REQ_OPTION_MRU	0x2
 #define REQ_OPTION_ACFC	0x4
+#define REQ_OPTION_PFC	0x8
 
 struct lcp_data {
 	guint8 options[MAX_CONFIG_OPTION_SIZE];
@@ -103,6 +104,13 @@ static void lcp_generate_config_options(struct lcp_data *lcp)
 
 	if (lcp->req_options & REQ_OPTION_ACFC) {
 		lcp->options[len] = ACFC;
+		lcp->options[len + 1] = 2;
+
+		len += 2;
+	}
+
+	if (lcp->req_options & REQ_OPTION_PFC) {
+		lcp->options[len] = PFC;
 		lcp->options[len + 1] = 2;
 
 		len += 2;
@@ -293,9 +301,17 @@ static enum rcr_result lcp_rcr(struct pppcp_data *pppcp,
 			ppp_set_mtu(ppp, ppp_option_iter_get_data(&iter));
 			break;
 		case MAGIC_NUMBER:
-		case PFC:
 			/* don't care */
 			break;
+		case PFC:
+		{
+			struct lcp_data *lcp = pppcp_get_data(pppcp);
+
+			if (lcp->req_options & REQ_OPTION_PFC)
+				ppp_set_xmit_pfc(ppp, TRUE);
+
+			break;
+		}
 		case ACFC:
 		{
 			struct lcp_data *lcp = pppcp_get_data(pppcp);
@@ -363,6 +379,19 @@ void lcp_set_acfc_enabled(struct pppcp_data *pppcp, gboolean enabled)
 		lcp->req_options |= REQ_OPTION_ACFC;
 	else
 		lcp->req_options &= ~REQ_OPTION_ACFC;
+
+	lcp_generate_config_options(lcp);
+	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);
+}
+
+void lcp_set_pfc_enabled(struct pppcp_data *pppcp, gboolean enabled)
+{
+	struct lcp_data *lcp = pppcp_get_data(pppcp);
+
+	if (enabled == TRUE)
+		lcp->req_options |= REQ_OPTION_PFC;
+	else
+		lcp->req_options &= ~REQ_OPTION_PFC;
 
 	lcp_generate_config_options(lcp);
 	pppcp_set_local_options(pppcp, lcp->options, lcp->options_len);

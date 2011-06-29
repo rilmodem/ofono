@@ -84,6 +84,7 @@ struct _GAtPPP {
 	guint guard_timeout_source;
 	gboolean suspended;
 	gboolean xmit_acfc;
+	gboolean xmit_pfc;
 };
 
 void ppp_debug(GAtPPP *ppp, const char *str)
@@ -172,6 +173,7 @@ static void ppp_receive(const unsigned char *buf, gsize len, void *data)
 	struct ppp_header *header = (struct ppp_header *) buf;
 	gboolean acfc_frame = (header->address != PPP_ADDR_FIELD
 			|| header->control != PPP_CTRL);
+	gboolean pfc_frame = FALSE;
 	guint16 protocol;
 	const guint8 *packet;
 
@@ -181,6 +183,20 @@ static void ppp_receive(const unsigned char *buf, gsize len, void *data)
 	} else {
 		protocol = ppp_proto(buf);
 		packet = ppp_info(buf);
+	}
+
+	pfc_frame = (protocol != LCP_PROTOCOL && protocol != CHAP_PROTOCOL &&
+			protocol != IPCP_PROTO && protocol != PPP_IP_PROTO);
+
+	if (pfc_frame) {
+		guint8 proto = (protocol >> 8) & 0xFF ;
+		packet = packet - 1;
+		/*
+		 * The only protocol that can be compressed is PPP_IP_PROTO
+		 * because first byte is 0x00.
+		 */
+		if (proto == PPP_IP_COMPRESSED_PROTO)
+			protocol = PPP_IP_PROTO;
 	}
 
 	if (ppp_drop_packet(ppp, protocol))
@@ -264,6 +280,32 @@ static void ppp_send_acfc_frame(GAtPPP *ppp, guint8 *packet,
 	if (ppp->xmit_acfc)
 		offset = 2;
 
+	/* We remove the only address and control field */
+	if (g_at_hdlc_send(ppp->hdlc, packet + offset,
+				infolen + sizeof(*header) - offset)
+			== FALSE)
+		DBG(ppp, "Failed to send a frame\n");
+}
+
+static void ppp_send_acfc_pfc_frame(GAtPPP *ppp, guint8 *packet,
+					guint infolen)
+{
+	struct ppp_header *header = (struct ppp_header *) packet;
+	guint offset = 0;
+
+	if (ppp->xmit_acfc && ppp->xmit_pfc)
+		offset = 3;
+	else if (ppp->xmit_acfc)
+		offset = 2;
+	else if (ppp->xmit_pfc) {
+		/*
+		 * We remove only the 1st byte that is 0x00 of protocol field.
+		 */
+		packet[2] = packet[1];
+		packet[1] = packet[0];
+		offset = 1;
+	}
+
 	if (g_at_hdlc_send(ppp->hdlc, packet + offset,
 				infolen + sizeof(*header) - offset)
 			== FALSE)
@@ -285,8 +327,17 @@ void ppp_transmit(GAtPPP *ppp, guint8 *packet, guint infolen)
 		break;
 	case CHAP_PROTOCOL:
 	case IPCP_PROTO:
-	case PPP_IP_PROTO:
+		/*
+		 * We can't use PFC option because first byte of CHAP_PROTOCOL
+		 * and IPCP_PROTO is not equal to 0x00
+		 */
 		ppp_send_acfc_frame(ppp, packet, infolen);
+		break;
+	case PPP_IP_PROTO:
+		/*
+		 * We can't use both compression options if they are negotiated
+		 */
+		ppp_send_acfc_pfc_frame(ppp, packet, infolen);
 		break;
 	}
 }
@@ -433,6 +484,11 @@ void ppp_set_mtu(GAtPPP *ppp, const guint8 *data)
 void ppp_set_xmit_acfc(GAtPPP *ppp, gboolean acfc)
 {
 	ppp->xmit_acfc = acfc;
+}
+
+void ppp_set_xmit_pfc(GAtPPP *ppp, gboolean pfc)
+{
+	ppp->xmit_pfc = pfc;
 }
 
 static void io_disconnect(gpointer user_data)
@@ -706,6 +762,11 @@ void g_at_ppp_set_server_info(GAtPPP *ppp, const char *remote,
 void g_at_ppp_set_acfc_enabled(GAtPPP *ppp, gboolean enabled)
 {
 	lcp_set_acfc_enabled(ppp->lcp, enabled);
+}
+
+void g_at_ppp_set_pfc_enabled(GAtPPP *ppp, gboolean enabled)
+{
+	lcp_set_pfc_enabled(ppp->lcp, enabled);
 }
 
 static GAtPPP *ppp_init_common(gboolean is_server, guint32 ip)
