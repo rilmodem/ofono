@@ -57,6 +57,8 @@ static gchar *option_username = NULL;
 static gchar *option_password = NULL;
 static gchar *option_pppdump = NULL;
 static gboolean option_bluetooth = FALSE;
+static gboolean option_acfc = FALSE;
+static gboolean option_pfc = FALSE;
 
 static GAtPPP *ppp;
 static GAtChat *control;
@@ -372,8 +374,8 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_ppp_set_credentials(ppp, option_username, option_password);
 
-	g_at_ppp_set_acfc_enabled(ppp, TRUE);
-	g_at_ppp_set_pfc_enabled(ppp, TRUE);
+	g_at_ppp_set_acfc_enabled(ppp, option_acfc);
+	g_at_ppp_set_pfc_enabled(ppp, option_pfc);
 
 	/* set connect and disconnect callbacks */
 	g_at_ppp_set_connect_function(ppp, ppp_connect, NULL);
@@ -681,6 +683,10 @@ static GOptionEntry options[] = {
 				"Specify PPP password" },
 	{ "pppdump", 'D', 0, G_OPTION_ARG_STRING, &option_pppdump,
 				"Specify pppdump filename" },
+	{ "pfc", 0, 0, G_OPTION_ARG_NONE, &option_pfc,
+				"Use Protocol Field Compression" },
+	{ "acfc", 0, 0, G_OPTION_ARG_NONE, &option_acfc,
+				"Use Address & Control Field Compression" },
 	{ NULL },
 };
 
