@@ -85,10 +85,17 @@ static inline void __put_unaligned_short(void *p, guint16 val)
 #define ppp_proto(packet) \
 	(get_host_short(packet + 2))
 
+#define ppp_acfc_info(packet) \
+	(packet + 2)
+
+#define ppp_acfc_proto(packet) \
+	(get_host_short(packet))
+
 /* LCP related functions */
 struct pppcp_data *lcp_new(GAtPPP *ppp, gboolean dormant);
 void lcp_free(struct pppcp_data *lcp);
 void lcp_protocol_reject(struct pppcp_data *lcp, guint8 *packet, gsize len);
+void lcp_set_acfc_enabled(struct pppcp_data *pppcp, gboolean enabled);
 
 /* IPCP related functions */
 struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip);
@@ -125,4 +132,5 @@ void ppp_lcp_finished_notify(GAtPPP *ppp);
 void ppp_set_recv_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_xmit_accm(GAtPPP *ppp, guint32 accm);
 void ppp_set_mtu(GAtPPP *ppp, const guint8 *data);
+void ppp_set_xmit_acfc(GAtPPP *ppp, gboolean acfc);
 struct ppp_header *ppp_packet_new(gsize infolen, guint16 protocol);

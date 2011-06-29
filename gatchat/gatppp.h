@@ -79,6 +79,8 @@ void g_at_ppp_set_recording(GAtPPP *ppp, const char *filename);
 void g_at_ppp_set_server_info(GAtPPP *ppp, const char *remote_ip,
 				const char *dns1, const char *dns2);
 
+void g_at_ppp_set_acfc_enabled(GAtPPP *ppp, gboolean enabled);
+
 #ifdef __cplusplus
 }
 #endif
