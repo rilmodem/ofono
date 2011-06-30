@@ -134,6 +134,7 @@ static void add_mbm(struct ofono_modem *modem,
 			(g_str_has_suffix(desc, "Minicard Data Modem") ||
 			g_str_has_suffix(desc, "Mini-Card Data Modem") ||
 			g_str_has_suffix(desc, "Module Data Modem") ||
+			g_str_has_suffix(desc, "Module\xc2\xa0""Data Modem") ||
 			g_str_has_suffix(desc, "Broadband Data Modem"))) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, DATA_DEVICE, devnode);
