@@ -534,12 +534,11 @@ EXTRA_DIST = src/genbuiltin $(udev_files) $(doc_files) $(test_scripts)
 dist_man_MANS = doc/ofonod.8
 
 
-noinst_PROGRAMS = unit/test-common unit/test-util unit/test-idmap \
-					unit/test-sms unit/test-simutil \
-					unit/test-mux unit/test-caif \
-					unit/test-stkutil unit/test-cdmasms
-
 unit_objects =
+
+check_PROGRAMS = unit/test-common unit/test-util unit/test-idmap \
+				unit/test-simutil unit/test-stkutil \
+				unit/test-sms unit/test-cdmasms
 
 unit_test_common_SOURCES = unit/test-common.c src/common.c src/util.c
 unit_test_common_LDADD = @GLIB_LIBS@
@@ -553,6 +552,17 @@ unit_test_idmap_SOURCES = unit/test-idmap.c src/idmap.c
 unit_test_idmap_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_idmap_OBJECTS)
 
+unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
+                                src/simutil.c src/smsutil.c src/storage.c
+unit_test_simutil_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_simutil_OBJECTS)
+
+unit_test_stkutil_SOURCES = unit/test-stkutil.c src/util.c \
+                                src/storage.c src/smsutil.c \
+                                src/simutil.c src/stkutil.c
+unit_test_stkutil_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_stkutil_OBJECTS)
+
 unit_test_sms_SOURCES = unit/test-sms.c src/util.c src/smsutil.c src/storage.c
 unit_test_sms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_sms_OBJECTS)
@@ -561,16 +571,7 @@ unit_test_cdmasms_SOURCES = unit/test-cdmasms.c src/cdma-smsutil.c
 unit_test_cdmasms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_cdmasms_OBJECTS)
 
-unit_test_simutil_SOURCES = unit/test-simutil.c src/util.c \
-				src/simutil.c src/smsutil.c src/storage.c
-unit_test_simutil_LDADD = @GLIB_LIBS@
-unit_objects += $(unit_test_simutil_OBJECTS)
-
-unit_test_stkutil_SOURCES = unit/test-stkutil.c src/util.c \
-				src/storage.c src/smsutil.c \
-				src/simutil.c src/stkutil.c
-unit_test_stkutil_LDADD = @GLIB_LIBS@
-unit_objects += $(unit_test_stkutil_OBJECTS)
+noinst_PROGRAMS = unit/test-mux unit/test-caif
 
 unit_test_mux_SOURCES = unit/test-mux.c $(gatchat_sources)
 unit_test_mux_LDADD = @GLIB_LIBS@
@@ -581,6 +582,8 @@ unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
 					drivers/stemodem/if_caif.h
 unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
+
+TESTS = $(check_PROGRAMS)
 
 if TOOLS
 noinst_PROGRAMS += tools/huawei-audio tools/auto-enable \
