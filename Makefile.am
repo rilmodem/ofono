@@ -571,7 +571,11 @@ unit_test_cdmasms_SOURCES = unit/test-cdmasms.c src/cdma-smsutil.c
 unit_test_cdmasms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_cdmasms_OBJECTS)
 
-noinst_PROGRAMS = unit/test-mux unit/test-caif
+noinst_PROGRAMS = unit/test-sms-root unit/test-mux unit/test-caif
+
+unit_test_sms_root_SOURCES = unit/test-sms.c src/util.c src/smsutil.c src/storage.c
+unit_test_sms_root_LDADD = @GLIB_LIBS@
+unit_objects += $(unit_test_sms_root_OBJECTS)
 
 unit_test_mux_SOURCES = unit/test-mux.c $(gatchat_sources)
 unit_test_mux_LDADD = @GLIB_LIBS@

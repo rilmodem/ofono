@@ -36,6 +36,7 @@ unit/test-common
 unit/test-util
 unit/test-idmap
 unit/test-sms
+unit/test-sms-root
 unit/test-simutil
 unit/test-mux
 unit/test-caif
