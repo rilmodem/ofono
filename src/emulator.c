@@ -345,8 +345,9 @@ static struct ofono_call *find_call_with_status(struct ofono_emulator *em,
 	return __ofono_voicecall_find_call_with_status(vc, status);
 }
 
-static void notify_ccwa(struct ofono_emulator *em)
+static gboolean notify_ccwa(void *user_data)
 {
+	struct ofono_emulator *em = user_data;
 	struct ofono_call *c;
 	const char *phone;
 	/*
@@ -355,8 +356,9 @@ static void notify_ccwa(struct ofono_emulator *em)
 	 */
 	char str[OFONO_MAX_PHONE_NUMBER_LENGTH + 14 + 1];
 
-	if (!em->ccwa)
-		return;
+	if ((em->type == OFONO_EMULATOR_TYPE_HFP && em->slc == FALSE) ||
+			!em->ccwa)
+		goto end;
 
 	c = find_call_with_status(em, CALL_STATUS_WAITING);
 
@@ -367,10 +369,16 @@ static void notify_ccwa(struct ofono_emulator *em)
 		g_at_server_send_unsolicited(em->server, str);
 	} else
 		g_at_server_send_unsolicited(em->server, "+CCWA: \"\",128");
+
+end:
+	em->callsetup_source = 0;
+
+	return FALSE;
 }
 
-static void notify_ring(struct ofono_emulator *em)
+static gboolean notify_ring(void *user_data)
 {
+	struct ofono_emulator *em = user_data;
 	struct ofono_call *c;
 	const char *phone;
 	/*
@@ -379,15 +387,25 @@ static void notify_ring(struct ofono_emulator *em)
 	 */
 	char str[OFONO_MAX_PHONE_NUMBER_LENGTH + 14 + 1];
 
+	if (em->type == OFONO_EMULATOR_TYPE_HFP && em->slc == FALSE)
+		return TRUE;
+
 	g_at_server_send_unsolicited(em->server, "RING");
 
 	if (!em->clip)
-		return;
+		return TRUE;
 
 	c = find_call_with_status(em, CALL_STATUS_INCOMING);
 
+	/*
+	 * In case of waiting call becoming an incoming call, call status
+	 * change may not have been done yet, so try to find waiting call too
+	 */
 	if (c == NULL)
-		return;
+		c = find_call_with_status(em, CALL_STATUS_WAITING);
+
+	if (c == NULL)
+		return TRUE;
 
 	switch (c->clip_validity) {
 	case CLIP_VALIDITY_VALID:
@@ -400,22 +418,6 @@ static void notify_ring(struct ofono_emulator *em)
 		g_at_server_send_unsolicited(em->server, "+CLIP: \"\",128");
 		break;
 	}
-}
-
-static gboolean send_callsetup_notification(gpointer user_data)
-{
-	struct ofono_emulator *em = user_data;
-	struct indicator *call_ind;
-
-	if (em->type == OFONO_EMULATOR_TYPE_HFP && em->slc == FALSE)
-		return TRUE;
-
-	call_ind = find_indicator(em, OFONO_EMULATOR_IND_CALL, NULL);
-
-	if (call_ind->value == OFONO_EMULATOR_CALL_INACTIVE)
-		notify_ring(em);
-	else
-		notify_ccwa(em);
 
 	return TRUE;
 }
@@ -672,6 +674,8 @@ static void ccwa_cb(GAtServer *server, GAtServerRequestType type,
 	struct ofono_emulator *em = user_data;
 	GAtResultIter iter;
 	int val;
+	struct indicator *call_ind;
+	struct indicator *cs_ind;
 
 	if (em->slc == FALSE)
 		goto fail;
@@ -690,6 +694,15 @@ static void ccwa_cb(GAtServer *server, GAtServerRequestType type,
 		/* check this is last parameter */
 		if (g_at_result_iter_skip_next(&iter))
 			goto fail;
+
+		call_ind = find_indicator(em, OFONO_EMULATOR_IND_CALL, NULL);
+		cs_ind = find_indicator(em, OFONO_EMULATOR_IND_CALLSETUP, NULL);
+
+		if (cs_ind->value == OFONO_EMULATOR_CALLSETUP_INCOMING &&
+				call_ind->value == OFONO_EMULATOR_CALL_ACTIVE &&
+				em->ccwa == FALSE && val == 1)
+			em->callsetup_source = g_timeout_add_seconds(0,
+							notify_ccwa, em);
 
 		em->ccwa = val;
 
@@ -1081,7 +1094,10 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	char buf[20];
 	struct indicator *ind;
 	struct indicator *call_ind;
+	struct indicator *cs_ind;
+	gboolean call;
 	gboolean callsetup;
+	gboolean waiting;
 
 	ind = find_indicator(em, name, &i);
 
@@ -1092,16 +1108,20 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	ind->value = value;
 
 	call_ind = find_indicator(em, OFONO_EMULATOR_IND_CALL, NULL);
+	cs_ind = find_indicator(em, OFONO_EMULATOR_IND_CALLSETUP, NULL);
 
-	callsetup = g_str_equal(name, OFONO_EMULATOR_IND_CALLSETUP);
+	call = (ind == call_ind);
+	callsetup = (ind == cs_ind);
 
 	/*
 	 * When callsetup indicator goes to Incoming and there is an active
 	 * call a +CCWA should be sent before +CIEV
 	 */
-	if (callsetup && value == OFONO_EMULATOR_CALLSETUP_INCOMING &&
-			call_ind->value == OFONO_EMULATOR_CALL_ACTIVE)
-		send_callsetup_notification(em);
+	waiting = (callsetup && value == OFONO_EMULATOR_CALLSETUP_INCOMING &&
+			call_ind->value == OFONO_EMULATOR_CALL_ACTIVE);
+
+	if (waiting)
+		notify_ccwa(em);
 
 	if (em->events_mode == 3 && em->events_ind && em->slc) {
 		sprintf(buf, "+CIEV: %d,%d", i, ind->value);
@@ -1109,21 +1129,24 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	}
 
 	/*
-	 * Ring timer should be started when callsetup indicator is set to
-	 * Incoming.  If there is no active call, a first RING should be
-	 * sent just after the +CIEV and should be stopped for all other
-	 * values of callsetup
+	 * Ring timer should be started when:
+	 * - callsetup indicator is set to Incoming and there is no active call
+	 *   (not a waiting call)
+	 * - or call indicator is set to inactive while callsetup is already
+	 *   set to Incoming.
+	 * In those cases, a first RING should be sent just after the +CIEV
+	 * Ring timer should be stopped for all other values of callsetup
 	 */
-	if (!callsetup)
+	if (!((callsetup && !waiting) ||
+			(call && value == OFONO_EMULATOR_CALL_INACTIVE &&
+			cs_ind->value == OFONO_EMULATOR_CALLSETUP_INCOMING)))
 		return;
 
-	switch (value) {
+	switch (cs_ind->value) {
 	case OFONO_EMULATOR_CALLSETUP_INCOMING:
-		if (call_ind->value == OFONO_EMULATOR_CALL_INACTIVE)
-			send_callsetup_notification(em);
-
+		notify_ring(em);
 		em->callsetup_source = g_timeout_add_seconds(RING_TIMEOUT,
-					send_callsetup_notification, em);
+							notify_ring, em);
 		break;
 	default:
 		if (em->callsetup_source > 0) {
