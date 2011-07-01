@@ -1,3 +1,11 @@
+ver 0.51:
+	Fix issue with alignment and STK event lists.
+	Fix issue with alignment and STK channel data length.
+	Fix issue with Linktop device handling functionality.
+	Fix issue with detection of HP HS2330 devices.
+	Add support for UICC SIM driver for ISI modems.
+	Add support for ACFC and PFC options for PPP.
+
 ver 0.50:
 	Fix issue with STK respond on exit flag handling.
 	Fix issue with STK and canceling pending DTMF tones.
