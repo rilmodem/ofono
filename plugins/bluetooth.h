@@ -27,7 +27,7 @@
 
 #define DBUS_TIMEOUT 15
 
-#define HFP_AG_UUID	"0000111F-0000-1000-8000-00805F9B34FB"
+#define HFP_AG_UUID	"0000111f-0000-1000-8000-00805f9b34fb"
 
 /* Profiles bitfield */
 #define HFP_AG 0x01
