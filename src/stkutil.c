@@ -5462,6 +5462,8 @@ static gboolean build_dataobj(struct stk_tlv_builder *tlv,
 		builder_func = va_arg(args, dataobj_writer);
 	}
 
+	va_end(args);
+
 	return TRUE;
 }
 
