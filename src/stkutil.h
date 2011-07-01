@@ -1691,7 +1691,7 @@ struct stk_envelope_event_download {
 		} browser_termination;
 		struct {
 			struct stk_channel channel;
-			unsigned int channel_data_len;
+			unsigned short channel_data_len;
 		} data_available;
 		struct {
 			struct stk_channel channel;
