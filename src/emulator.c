@@ -1110,8 +1110,8 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	call_ind = find_indicator(em, OFONO_EMULATOR_IND_CALL, NULL);
 	cs_ind = find_indicator(em, OFONO_EMULATOR_IND_CALLSETUP, NULL);
 
-	call = (ind == call_ind);
-	callsetup = (ind == cs_ind);
+	call = ind == call_ind;
+	callsetup = ind == cs_ind;
 
 	/*
 	 * When callsetup indicator goes to Incoming and there is an active
@@ -1137,23 +1137,28 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	 * In those cases, a first RING should be sent just after the +CIEV
 	 * Ring timer should be stopped for all other values of callsetup
 	 */
-	if (!((callsetup && !waiting) ||
-			(call && value == OFONO_EMULATOR_CALL_INACTIVE &&
-			cs_ind->value == OFONO_EMULATOR_CALLSETUP_INCOMING)))
+	if (waiting)
 		return;
 
-	switch (cs_ind->value) {
-	case OFONO_EMULATOR_CALLSETUP_INCOMING:
-		notify_ring(em);
-		em->callsetup_source = g_timeout_add_seconds(RING_TIMEOUT,
-							notify_ring, em);
-		break;
-	default:
+	/* Call state went from active/held + waiting -> incoming */
+	if (call && value == OFONO_EMULATOR_CALL_INACTIVE &&
+			cs_ind->value == OFONO_EMULATOR_CALLSETUP_INCOMING)
+		goto start_ring;
+
+	if (!callsetup)
+		return;
+
+	if (value != OFONO_EMULATOR_CALLSETUP_INCOMING) {
 		if (em->callsetup_source > 0) {
 			g_source_remove(em->callsetup_source);
 			em->callsetup_source = 0;
 		}
 
-		break;
+		return;
 	}
+
+start_ring:
+	notify_ring(em);
+	em->callsetup_source = g_timeout_add_seconds(RING_TIMEOUT,
+							notify_ring, em);
 }
