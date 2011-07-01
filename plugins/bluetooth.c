@@ -226,9 +226,9 @@ done:
 	g_slist_free(prop_handlers);
 }
 
-static void has_uuid(DBusMessageIter *array, gpointer user_data)
+static void parse_uuids(DBusMessageIter *array, gpointer user_data)
 {
-	gboolean *profiles = user_data;
+	GSList **uuids = user_data;
 	DBusMessageIter value;
 
 	if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
@@ -241,8 +241,7 @@ static void has_uuid(DBusMessageIter *array, gpointer user_data)
 
 		dbus_message_iter_get_basic(&value, &uuid);
 
-		if (!strcasecmp(uuid, HFP_AG_UUID))
-			*profiles |= HFP_AG;
+		*uuids = g_slist_prepend(*uuids, (char *) uuid);
 
 		dbus_message_iter_next(&value);
 	}
@@ -262,14 +261,13 @@ static void parse_string(DBusMessageIter *iter, gpointer user_data)
 static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 {
 	DBusMessage *reply;
-	int have_uuid = 0;
 	const char *path = user_data;
 	const char *adapter = NULL;
 	const char *adapter_addr = NULL;
 	const char *device_addr = NULL;
 	const char *alias = NULL;
-	struct bluetooth_profile *profile;
 	struct DBusError derr;
+	GSList *uuids = NULL;
 
 	reply = dbus_pending_call_steal_reply(call);
 
@@ -284,7 +282,7 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 
 	DBG("");
 
-	bluetooth_parse_properties(reply, "UUIDs", has_uuid, &have_uuid,
+	bluetooth_parse_properties(reply, "UUIDs", parse_uuids, &uuids,
 				"Adapter", parse_string, &adapter,
 				"Address", parse_string, &device_addr,
 				"Alias", parse_string, &alias, NULL);
@@ -293,15 +291,22 @@ static void device_properties_cb(DBusPendingCall *call, gpointer user_data)
 		adapter_addr = g_hash_table_lookup(adapter_address_hash,
 							adapter);
 
-	if ((have_uuid & HFP_AG) && device_addr && adapter_addr) {
-		profile = g_hash_table_lookup(uuid_hash, HFP_AG_UUID);
+	if (!device_addr && !adapter_addr)
+		goto done;
+
+	for (; uuids; uuids = uuids->next) {
+		struct bluetooth_profile *profile;
+		const char *uuid = uuids->data;
+
+		profile = g_hash_table_lookup(uuid_hash, uuid);
 		if (profile == NULL || profile->create == NULL)
-			goto done;
+			continue;
 
 		profile->create(path, device_addr, adapter_addr, alias);
 	}
 
 done:
+	g_slist_free(uuids);
 	dbus_message_unref(reply);
 }
 
@@ -342,7 +347,7 @@ static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
 
 	dbus_message_iter_get_basic(&iter, &property);
 	if (g_str_equal(property, "UUIDs") == TRUE) {
-		int profiles = 0;
+		GSList *uuids = NULL;
 		const char *path = dbus_message_get_path(msg);
 		DBusMessageIter variant;
 
@@ -354,13 +359,13 @@ static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
 
 		dbus_message_iter_recurse(&iter, &variant);
 
-		has_uuid(&variant, &profiles);
+		parse_uuids(&variant, &uuids);
 
 		/* We need the full set of properties to be able to create
 		 * the modem properly, including Adapter and Alias, so
 		 * refetch everything again
 		 */
-		if (profiles)
+		if (uuids)
 			bluetooth_send_with_reply(path, BLUEZ_DEVICE_INTERFACE,
 					"GetProperties", device_properties_cb,
 					g_strdup(path), g_free, -1,

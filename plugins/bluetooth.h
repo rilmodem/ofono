@@ -28,9 +28,7 @@
 #define DBUS_TIMEOUT 15
 
 #define HFP_AG_UUID	"0000111f-0000-1000-8000-00805f9b34fb"
-
-/* Profiles bitfield */
-#define HFP_AG 0x01
+#define HFP_HS_UUID	"0000111e-0000-1000-8000-00805f9b34fb"
 
 struct bluetooth_profile {
 	const char *name;
