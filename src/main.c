@@ -53,36 +53,75 @@ static gboolean quit_eventloop(gpointer user_data)
 	return FALSE;
 }
 
-static gboolean signal_cb(GIOChannel *channel, GIOCondition cond, gpointer data)
-{
-	static int terminated = 0;
-	int signal_fd = GPOINTER_TO_INT(data);
-	struct signalfd_siginfo si;
-	ssize_t res;
+static unsigned int __terminated = 0;
 
-	if (cond & (G_IO_NVAL | G_IO_ERR))
+static gboolean signal_handler(GIOChannel *channel, GIOCondition cond,
+							gpointer user_data)
+{
+	struct signalfd_siginfo si;
+	ssize_t result;
+	int fd;
+
+	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP))
 		return FALSE;
 
-	res = read(signal_fd, &si, sizeof(si));
-	if (res != sizeof(si))
+	fd = g_io_channel_unix_get_fd(channel);
+
+	result = read(fd, &si, sizeof(si));
+	if (result != sizeof(si))
 		return FALSE;
 
 	switch (si.ssi_signo) {
 	case SIGINT:
 	case SIGTERM:
-		if (terminated == 0) {
+		if (__terminated == 0) {
 			g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
 						quit_eventloop, NULL);
 			__ofono_modem_shutdown();
 		}
 
-		terminated++;
-		break;
-	default:
+		__terminated = 1;
 		break;
 	}
 
 	return TRUE;
+}
+
+static guint setup_signalfd(void)
+{
+	GIOChannel *channel;
+	guint source;
+	sigset_t mask;
+	int fd;
+
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGTERM);
+
+	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
+		perror("Failed to set signal mask");
+		return 0;
+	}
+
+	fd = signalfd(-1, &mask, 0);
+	if (fd < 0) {
+		perror("Failed to create signal descriptor");
+		return 0;
+	}
+
+	channel = g_io_channel_unix_new(fd);
+
+	g_io_channel_set_close_on_unref(channel, TRUE);
+	g_io_channel_set_encoding(channel, NULL, NULL);
+	g_io_channel_set_buffered(channel, FALSE);
+
+	source = g_io_add_watch(channel,
+				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
+				signal_handler, NULL);
+
+	g_io_channel_unref(channel);
+
+	return source;
 }
 
 static void system_bus_disconnected(DBusConnection *conn, void *user_data)
@@ -129,12 +168,9 @@ int main(int argc, char **argv)
 {
 	GOptionContext *context;
 	GError *err = NULL;
-	sigset_t mask;
 	DBusConnection *conn;
 	DBusError error;
-	int signal_fd;
-	GIOChannel *signal_io;
-	int signal_source;
+	guint signal;
 
 #ifdef HAVE_CAPNG
 	/* Drop capabilities */
@@ -144,28 +180,6 @@ int main(int argc, char **argv)
 				CAP_NET_RAW, CAP_SYS_ADMIN, -1);
 	capng_apply(CAPNG_SELECT_BOTH);
 #endif
-
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGTERM);
-	sigaddset(&mask, SIGINT);
-
-	if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
-		perror("Can't set signal mask");
-		return 1;
-	}
-
-	signal_fd = signalfd(-1, &mask, 0);
-	if (signal_fd < 0) {
-		perror("Can't create signal filedescriptor");
-		return 1;
-	}
-
-	signal_io = g_io_channel_unix_new(signal_fd);
-	g_io_channel_set_close_on_unref(signal_io, TRUE);
-	signal_source = g_io_add_watch(signal_io,
-			G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-			signal_cb, GINT_TO_POINTER(signal_fd));
-	g_io_channel_unref(signal_io);
 
 #ifdef NEED_THREADS
 	if (g_thread_supported() == FALSE)
@@ -208,6 +222,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 #endif
+
+	signal = setup_signalfd();
 
 	__ofono_log_init(option_debug, option_detach);
 
@@ -252,7 +268,8 @@ int main(int argc, char **argv)
 	dbus_connection_unref(conn);
 
 cleanup:
-	g_source_remove(signal_source);
+	g_source_remove(signal);
+
 	g_main_loop_unref(event_loop);
 
 	__ofono_log_cleanup();
