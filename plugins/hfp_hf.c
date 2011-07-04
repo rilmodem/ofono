@@ -393,7 +393,7 @@ static GDBusMethodTable agent_methods[] = {
 	{ NULL, NULL, NULL, NULL }
 };
 
-static int hfp_create_modem(const char *device, const char *dev_addr,
+static int hfp_hf_probe(const char *device, const char *dev_addr,
 				const char *adapter_addr, const char *alias)
 {
 	struct ofono_modem *modem;
@@ -443,25 +443,33 @@ free:
 	return -ENOMEM;
 }
 
-static gboolean hfp_remove_each_modem(gpointer key, gpointer value,
+static gboolean hfp_remove_modem(gpointer key, gpointer value,
 					gpointer user_data)
 {
 	struct ofono_modem *modem = value;
+	const char *device = key;
+	const char *prefix = user_data;
+
+	if (prefix && g_str_has_prefix(device, prefix) == FALSE)
+		return FALSE;
 
 	ofono_modem_remove(modem);
 
 	return TRUE;
 }
 
-static void hfp_remove_all_modem(void)
+static void hfp_hf_remove(const char *prefix)
 {
+	DBG("%s", prefix);
+
 	if (modem_hash == NULL)
 		return;
 
-	g_hash_table_foreach_remove(modem_hash, hfp_remove_each_modem, NULL);
+	g_hash_table_foreach_remove(modem_hash, hfp_remove_modem,
+							(gpointer) prefix);
 }
 
-static void hfp_set_alias(const char *device, const char *alias)
+static void hfp_hf_set_alias(const char *device, const char *alias)
 {
 	struct ofono_modem *modem;
 
@@ -675,11 +683,11 @@ static struct ofono_modem_driver hfp_driver = {
 	.post_sim	= hfp_post_sim,
 };
 
-static struct bluetooth_profile hfp_profile = {
-	.name		= "hfp",
-	.create		= hfp_create_modem,
-	.remove_all	= hfp_remove_all_modem,
-	.set_alias	= hfp_set_alias,
+static struct bluetooth_profile hfp_hf = {
+	.name		= "hfp_hf",
+	.probe		= hfp_hf_probe,
+	.remove		= hfp_hf_remove,
+	.set_alias	= hfp_hf_set_alias,
 };
 
 static int hfp_init(void)
@@ -695,7 +703,7 @@ static int hfp_init(void)
 	if (err < 0)
 		return err;
 
-	err = bluetooth_register_uuid(HFP_AG_UUID, &hfp_profile);
+	err = bluetooth_register_uuid(HFP_AG_UUID, &hfp_hf);
 	if (err < 0) {
 		ofono_modem_driver_unregister(&hfp_driver);
 		return err;
