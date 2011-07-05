@@ -1788,7 +1788,7 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	unsigned int id;
 	GSList *l;
 
-	if (vc->pending)
+	if (vc->pending || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &callpath,
@@ -1886,7 +1886,7 @@ static DBusMessage *multiparty_create(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending)
+	if (vc->pending || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (!voicecalls_have_held(vc) || !voicecalls_have_active(vc))
@@ -1907,7 +1907,7 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending || vc->release_list)
+	if (vc->pending || vc->pending_em || vc->release_list)
 		return __ofono_error_busy(msg);
 
 	if (vc->driver->release_specific == NULL)
@@ -2710,6 +2710,44 @@ static void emulator_generic_cb(const struct ofono_error *error, void *data)
 	ofono_emulator_send_final(em, error);
 }
 
+static void emulator_mpty_join_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_voicecall *vc = data;
+	GSList *old;
+
+	ofono_emulator_send_final(vc->pending_em, error);
+	vc->pending_em = NULL;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		return;
+
+	/*
+	 * We just created a multiparty call, gather all held
+	 * active calls and add them to the multiparty list
+	 */
+	old = vc->multiparty_list;
+	vc->multiparty_list = 0;
+
+	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
+						voicecalls_held_list(vc));
+
+	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
+						voicecalls_active_list(vc));
+
+	vc->multiparty_list = g_slist_sort(vc->multiparty_list,
+						call_compare);
+
+	if (g_slist_length(vc->multiparty_list) < 2) {
+		ofono_error("Created multiparty call, but size is less than 2"
+				" panic!");
+		g_slist_free(old);
+		return;
+	}
+
+	voicecalls_multiparty_changed(old, vc->multiparty_list);
+	g_slist_free(old);
+}
+
 static void emulator_ata_cb(struct ofono_emulator *em,
 			struct ofono_emulator_request *req, void *userdata)
 {
@@ -2903,8 +2941,17 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			if (vc->driver->create_multiparty == NULL)
 				goto fail;
 
+			if (vc->pending_em || vc->pending || vc->dial_req)
+				goto fail;
+
+			if (!voicecalls_have_held(vc)
+					|| !voicecalls_have_active(vc))
+				goto fail;
+
+			vc->pending_em = em;
+
 			vc->driver->create_multiparty(vc,
-					emulator_generic_cb, em);
+					emulator_mpty_join_cb, vc);
 			return;
 		case 4:
 			if (vc->driver->transfer == NULL)
