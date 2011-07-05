@@ -78,6 +78,7 @@ struct ofono_voicecall {
 	GKeyFile *settings;
 	char *imsi;
 	struct ofono_emulator *pending_em;
+	unsigned int pending_id;
 	char *em_atd_number;
 };
 
@@ -2748,6 +2749,38 @@ static void emulator_mpty_join_cb(const struct ofono_error *error, void *data)
 	g_slist_free(old);
 }
 
+static void emulator_mpty_private_chat_cb(const struct ofono_error *error,
+							void *data)
+{
+	struct ofono_voicecall *vc = data;
+	GSList *old;
+	GSList *l;
+
+	ofono_emulator_send_final(vc->pending_em, error);
+	vc->pending_em = NULL;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		return;
+
+	old = g_slist_copy(vc->multiparty_list);
+
+	l = g_slist_find_custom(vc->multiparty_list,
+			GINT_TO_POINTER(vc->pending_id), call_compare_by_id);
+
+	if (l) {
+		vc->multiparty_list =
+			g_slist_remove(vc->multiparty_list, l->data);
+
+		if (vc->multiparty_list->next == NULL) {
+			g_slist_free(vc->multiparty_list);
+			vc->multiparty_list = 0;
+		}
+	}
+
+	voicecalls_multiparty_changed(old, vc->multiparty_list);
+	g_slist_free(old);
+}
+
 static void emulator_ata_cb(struct ofono_emulator *em,
 			struct ofono_emulator_request *req, void *userdata)
 {
@@ -2974,11 +3007,32 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 		}
 
 		if (chld >= 21 && chld <= 27) {
+			GSList *l;
+			unsigned int id = chld - 20;
+
 			if (vc->driver->private_chat == NULL)
 				goto fail;
 
-			vc->driver->private_chat(vc, chld - 20,
-					emulator_generic_cb, em);
+			if (vc->pending_em || vc->pending || vc->dial_req)
+				goto fail;
+
+			for (l = vc->multiparty_list; l; l = l->next) {
+				struct voicecall *v = l->data;
+				if (v->call->id == id)
+					break;
+			}
+
+			if (l == NULL)
+				goto fail;
+
+			if (voicecalls_have_held(vc))
+				goto fail;
+
+			vc->pending_em = em;
+			vc->pending_id = id;
+
+			vc->driver->private_chat(vc, id,
+					emulator_mpty_private_chat_cb, vc);
 			return;
 		}
 
