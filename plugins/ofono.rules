@@ -350,6 +350,9 @@ ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1485", ENV{OFONO_IFACE_NUM}=="02", E
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1486", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1486", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
 
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1c05", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1c05", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
 #Telit UC864-G
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_TELIT_TYPE}="Modem"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_TELIT_TYPE}="GPS"
