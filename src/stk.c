@@ -2879,7 +2879,7 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 		break;
 
 	case STK_COMMAND_TYPE_REFRESH:
-		handle_command_refresh(stk->pending_cmd, NULL, stk);
+		handle_command_refresh(cmd, NULL, stk);
 		break;
 	}
 
