@@ -330,6 +330,9 @@ builtin_sources += plugins/linktop.c
 builtin_modules += telit
 builtin_sources += plugins/telit.c
 
+builtin_modules += speedup
+builtin_sources += plugins/speedup.c
+
 if BLUETOOTH
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
