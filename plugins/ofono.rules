@@ -358,6 +358,10 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="00", E
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_TELIT_TYPE}="GPS"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_TELIT_TYPE}="Data"
 
+# SpeedUp 9800
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_SPEEDUP_TYPE}="modem"
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_SPEEDUP_TYPE}="aux"
+
 LABEL="ofono_tty_end"
 
 # ISI/Phonet drivers
@@ -397,6 +401,11 @@ ATTRS{idVendor}=="05c6", ENV{OFONO_DRIVER}="gobi"
 ATTRS{idVendor}=="19d2", ENV{OFONO_DRIVER}="zte"
 
 ATTRS{idVendor}=="19d2", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
+
+# SpeedUp
+ATTRS{idVendor}=="1c9e", ENV{OFONO_DRIVER}="speedup"
+
+ATTRS{idVendor}=="1c9e", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
 # Option Globetrotter
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="6911", ENV{OFONO_DRIVER}="hso"

@@ -639,6 +639,58 @@ static void add_telit(struct ofono_modem *modem,
 	}
 }
 
+static void add_speedup(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	struct udev_list_entry *entry;
+	const char *devnode, *type;
+
+	int ppp, aux;
+
+	DBG("modem %p", modem);
+
+	ppp = ofono_modem_get_integer(modem, "ModemRegistered");
+	aux = ofono_modem_get_integer(modem, "AuxRegistered");
+
+	if (ppp && aux)
+		return;
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+		type = udev_list_entry_get_value(entry);
+
+		if (g_str_equal(name, "OFONO_SPEEDUP_TYPE") != TRUE) {
+			entry = udev_list_entry_get_next(entry);
+			continue;
+		}
+
+		if (g_str_equal(type, "modem") == TRUE) {
+			if (ppp != 0)
+				return;
+
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Modem", devnode);
+			ppp = 1;
+			ofono_modem_set_integer(modem, "ModemRegistered", ppp);
+		} else if (g_str_equal(type, "aux") == TRUE) {
+			if (aux != 0)
+				return;
+
+			devnode = udev_device_get_devnode(udev_device);
+			ofono_modem_set_string(modem, "Aux", devnode);
+
+			aux = 1;
+			ofono_modem_set_integer(modem, "AuxRegistered", aux);
+		}
+
+		break;
+	}
+
+	if (ppp && aux)
+		ofono_modem_register(modem);
+}
+
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -739,6 +791,8 @@ done:
 		add_nokiacdma(modem, udev_device);
         else if (g_strcmp0(driver, "linktop") == 0)
 		add_linktop(modem, udev_device);
+        else if (g_strcmp0(driver, "speedup") == 0)
+		add_speedup(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
