@@ -286,6 +286,13 @@ static void zte_post_sim(struct ofono_modem *modem)
 
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->aux);
+
+	data->gprs = ofono_gprs_create(modem, 0, "atmodem", data->aux);
+
+	data->gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
+
+	if (data->gprs && data->gc)
+		ofono_gprs_add_context(data->gprs, data->gc);
 }
 
 static void zte_post_online(struct ofono_modem *modem)
@@ -300,12 +307,6 @@ static void zte_post_online(struct ofono_modem *modem)
 					"atmodem", data->aux);
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->aux);
-	data->gprs = ofono_gprs_create(modem, 0, "atmodem", data->aux);
-
-	data->gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
-
-	if (data->gprs && data->gc)
-		ofono_gprs_add_context(data->gprs, data->gc);
 }
 
 static struct ofono_modem_driver zte_driver = {
