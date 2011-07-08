@@ -64,6 +64,8 @@
 #include <drivers/atmodem/sim-poll.h>
 #include <drivers/atmodem/atutil.h>
 
+#include "ofono.h"
+
 static const char *none_prefix[] = { NULL };
 static const char *ptty_prefix[] = { "+PTTY:", NULL };
 static int next_iface = 0;
@@ -73,6 +75,8 @@ struct phonesim_data {
 	GAtChat *chat;
 	gboolean calypso;
 	gboolean use_mux;
+	unsigned int hfp_watch;
+	int batt_level;
 };
 
 struct gprs_context_data {
@@ -419,6 +423,43 @@ static void crst_notify(GAtResult *result, gpointer user_data)
 	g_idle_add(phonesim_reset, user_data);
 }
 
+static void emulator_battery_cb(struct ofono_atom *atom, void *data)
+{
+	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+	int val = 0;
+
+	if (GPOINTER_TO_INT(data) > 0)
+		val = (GPOINTER_TO_INT(data) - 1) / 20 + 1;
+
+	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_BATTERY, val);
+}
+
+static void cbc_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct phonesim_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int status;
+	int level;
+
+	g_at_result_iter_init(&iter, result);
+	if (!g_at_result_iter_next(&iter, "+CBC:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &status))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &level))
+		return;
+
+	data->batt_level = level;
+
+	__ofono_modem_foreach_registered_atom(modem,
+						OFONO_ATOM_TYPE_EMULATOR_HFP,
+						emulator_battery_cb,
+						GUINT_TO_POINTER(level));
+}
+
 static void phonesim_disconnected(gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -479,6 +520,18 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 
 	g_at_chat_send(data->chat, "AT+CFUN=1", none_prefix,
 					cfun_set_on_cb, modem, NULL);
+}
+
+static void emulator_hfp_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *user_data)
+{
+	struct phonesim_data *data = user_data;
+
+	if (cond != OFONO_ATOM_WATCH_CONDITION_REGISTERED)
+		return;
+
+	emulator_battery_cb(atom, GUINT_TO_POINTER(data->batt_level));
 }
 
 static int phonesim_enable(struct ofono_modem *modem)
@@ -574,6 +627,15 @@ static int phonesim_enable(struct ofono_modem *modem)
 	g_at_chat_register(data->chat, "+CRST:",
 				crst_notify, FALSE, modem, NULL);
 
+	g_at_chat_register(data->chat, "+CBC:",
+				cbc_notify, FALSE, modem, NULL);
+
+	g_at_chat_send(data->chat, "AT+CBC", none_prefix, NULL, NULL, NULL);
+
+	data->hfp_watch = __ofono_modem_add_atom_watch(modem,
+					OFONO_ATOM_TYPE_EMULATOR_HFP,
+					emulator_hfp_watch, data, NULL);
+
 	return 0;
 }
 
@@ -611,6 +673,8 @@ static int phonesim_disable(struct ofono_modem *modem)
 	struct phonesim_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	__ofono_modem_remove_atom_watch(modem, data->hfp_watch);
 
 	g_at_chat_unref(data->chat);
 	data->chat = NULL;
