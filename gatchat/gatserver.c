@@ -1055,13 +1055,13 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 
 		case PARSER_RESULT_REPEAT_LAST:
 			p->cur_pos = 0;
+			ring_buffer_drain(rbuf, p->read_so_far);
 
 			if (p->last_line)
 				server_parse_line(p);
 			else
 				g_at_server_send_final(p,
 						G_AT_SERVER_RESULT_OK);
-			ring_buffer_drain(rbuf, p->read_so_far);
 			break;
 
 		default:
@@ -1179,6 +1179,9 @@ static void server_wakeup_writer(GAtServer *server)
 
 static void server_resume(GAtServer *server)
 {
+	if (server->suspended == FALSE)
+		return;
+
 	server->suspended = FALSE;
 	g_at_io_set_read_handler(server->io, new_bytes, server);
 }
