@@ -35,6 +35,8 @@
 
 #include "atmodem.h"
 
+static const char *gcap_prefix[] = { "+GCAP:", NULL };
+
 static void attr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -122,22 +124,22 @@ static void at_query_serial(struct ofono_devinfo *info,
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
-static gboolean at_devinfo_register(gpointer user_data)
+static void capability_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_devinfo *info = user_data;
 
 	ofono_devinfo_register(info);
-
-	return FALSE;
 }
 
 static int at_devinfo_probe(struct ofono_devinfo *info, unsigned int vendor,
 				void *data)
 {
-	GAtChat *chat = data;
+	GAtChat *chat = g_at_chat_clone(data);
 
-	ofono_devinfo_set_data(info, g_at_chat_clone(chat));
-	g_idle_add(at_devinfo_register, info);
+	ofono_devinfo_set_data(info, chat);
+
+	g_at_chat_send(chat, "AT+GCAP", gcap_prefix,
+				capability_cb, info, NULL);
 
 	return 0;
 }
@@ -146,18 +148,19 @@ static void at_devinfo_remove(struct ofono_devinfo *info)
 {
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	g_at_chat_unref(chat);
 	ofono_devinfo_set_data(info, NULL);
+
+	g_at_chat_unref(chat);
 }
 
 static struct ofono_devinfo_driver driver = {
-	.name = "atmodem",
-	.probe = at_devinfo_probe,
-	.remove = at_devinfo_remove,
-	.query_manufacturer = at_query_manufacturer,
-	.query_model = at_query_model,
-	.query_revision = at_query_revision,
-	.query_serial = at_query_serial
+	.name			= "atmodem",
+	.probe			= at_devinfo_probe,
+	.remove			= at_devinfo_remove,
+	.query_manufacturer	= at_query_manufacturer,
+	.query_model		= at_query_model,
+	.query_revision		= at_query_revision,
+	.query_serial		= at_query_serial,
 };
 
 void at_devinfo_init(void)
