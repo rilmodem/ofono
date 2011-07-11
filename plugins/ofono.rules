@@ -365,6 +365,10 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{OFONO_IFACE_NUM}=="03", E
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_SPEEDUP_TYPE}="modem"
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_SPEEDUP_TYPE}="aux"
 
+# SpeedUp 7300
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_SPEEDUP_TYPE}="modem"
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_SPEEDUP_TYPE}="aux"
+
 LABEL="ofono_tty_end"
 
 # ISI/Phonet drivers
