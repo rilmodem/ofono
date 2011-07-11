@@ -224,7 +224,7 @@ static gboolean notify_sim_state(struct ofono_modem *modem,
 		ofono_modem_set_powered(modem, TRUE);
 
 		if (ofono_modem_get_online(modem) == FALSE)
-			g_at_chat_send(data->pcui, "AT+CFUN=5", none_prefix,
+			g_at_chat_send(data->pcui, "AT+CFUN=7", none_prefix,
 				cfun_offline, modem, NULL);
 
 		return FALSE;
@@ -651,7 +651,7 @@ static void huawei_set_online(struct ofono_modem *modem, ofono_bool_t online,
 	struct huawei_data *data = ofono_modem_get_data(modem);
 	GAtChat *chat = data->pcui;
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=5";
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=7";
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
