@@ -46,7 +46,7 @@ static DBusConnection *connection;
 static GHashTable *requests;
 static unsigned int id;
 
-struct pns_req {
+struct connman_req {
 	int uid;
 	DBusPendingCall *pending;
 	ofono_private_network_cb_t cb;
@@ -73,9 +73,9 @@ static void send_release(const char *path)
 	dbus_message_unref(message);
 }
 
-static void pns_release(int uid)
+static void connman_release(int uid)
 {
-	struct pns_req *req;
+	struct connman_req *req;
 
 	DBG("");
 
@@ -100,7 +100,7 @@ static void pns_release(int uid)
 
 static void request_reply(DBusPendingCall *call, void *user_data)
 {
-	struct pns_req *req = user_data;
+	struct connman_req *req = user_data;
 	struct ofono_private_network_settings pns;
 	DBusMessageIter array, dict, entry;
 	DBusMessage *reply;
@@ -197,7 +197,7 @@ static void request_reply(DBusPendingCall *call, void *user_data)
 	return;
 
 release:
-	pns_release(req->uid);
+	connman_release(req->uid);
 error:
 	if (pns.fd >= 0)
 		close(pns.fd);
@@ -211,15 +211,15 @@ error:
 	dbus_pending_call_unref(call);
 }
 
-static int pns_request(ofono_private_network_cb_t cb, void *data)
+static int connman_request(ofono_private_network_cb_t cb, void *data)
 {
 	DBusMessage *message;
 	DBusPendingCall *call;
-	struct pns_req *req;
+	struct connman_req *req;
 
 	DBG("");
 
-	req = g_try_new(struct pns_req, 1);
+	req = g_try_new(struct connman_req, 1);
 
 	if (req == NULL)
 		return -ENOMEM;
@@ -257,13 +257,13 @@ static int pns_request(ofono_private_network_cb_t cb, void *data)
 
 static struct ofono_private_network_driver pn_driver = {
 	.name		= "ConnMan Private Network",
-	.request	= pns_request,
-	.release	= pns_release,
+	.request	= connman_request,
+	.release	= connman_release,
 };
 
 static void request_free(gpointer user_data)
 {
-	struct pns_req *req = user_data;
+	struct connman_req *req = user_data;
 
 	g_free(req->path);
 	g_free(req);
