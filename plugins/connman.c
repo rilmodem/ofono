@@ -98,45 +98,28 @@ static void connman_release(int uid)
 	g_hash_table_remove(requests, &req->uid);
 }
 
-static void request_reply(DBusPendingCall *call, void *user_data)
+static gboolean parse_reply(DBusMessage *reply, const char **path,
+				struct ofono_private_network_settings *pns)
 {
-	struct connman_req *req = user_data;
-	struct ofono_private_network_settings pns;
 	DBusMessageIter array, dict, entry;
-	DBusMessage *reply;
-	const char *path;
 
-	DBG("");
-
-	pns.fd = -1;
-	pns.server_ip = NULL;
-	pns.peer_ip = NULL;
-	pns.primary_dns = NULL;
-	pns.secondary_dns = NULL;
-
-	req->pending = NULL;
-
-	reply = dbus_pending_call_steal_reply(call);
 	if (!reply)
-		goto error;
+		return FALSE;
 
 	if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR)
-		goto error;
+		return FALSE;
 
 	if (dbus_message_iter_init(reply, &array) == FALSE)
-		goto error;
+		return FALSE;
 
 	if (dbus_message_iter_get_arg_type(&array) != DBUS_TYPE_OBJECT_PATH)
-		goto error;
+		return FALSE;
 
 	dbus_message_iter_get_basic(&array, &path);
 
 	dbus_message_iter_next(&array);
 	if (dbus_message_iter_get_arg_type(&array) != DBUS_TYPE_ARRAY)
-		goto error;
-
-	if (req->redundant == TRUE)
-		goto release;
+		return FALSE;
 
 	dbus_message_iter_recurse(&array, &dict);
 
@@ -158,56 +141,85 @@ static void request_reply(DBusPendingCall *call, void *user_data)
 
 		if (g_str_equal(key, "ServerIPv4") &&
 				type == DBUS_TYPE_STRING)
-			dbus_message_iter_get_basic(&iter, &pns.server_ip);
+			dbus_message_iter_get_basic(&iter, &pns->server_ip);
 		else if (g_str_equal(key, "PeerIPv4") &&
 				type == DBUS_TYPE_STRING)
-			dbus_message_iter_get_basic(&iter, &pns.peer_ip);
+			dbus_message_iter_get_basic(&iter, &pns->peer_ip);
 		else if (g_str_equal(key, "PrimaryDNS") &&
 				type == DBUS_TYPE_STRING)
-			dbus_message_iter_get_basic(&iter, &pns.primary_dns);
+			dbus_message_iter_get_basic(&iter, &pns->primary_dns);
 		else if (g_str_equal(key, "SecondaryDNS") &&
 				type == DBUS_TYPE_STRING)
-			dbus_message_iter_get_basic(&iter, &pns.secondary_dns);
+			dbus_message_iter_get_basic(&iter, &pns->secondary_dns);
 
 		dbus_message_iter_next(&dict);
 	}
 
 	dbus_message_iter_next(&array);
 	if (dbus_message_iter_get_arg_type(&array) != DBUS_TYPE_UNIX_FD)
+		return FALSE;
+
+	dbus_message_iter_get_basic(&array, &pns->fd);
+
+	return TRUE;
+}
+
+static void request_reply(DBusPendingCall *call, void *user_data)
+{
+	struct connman_req *req = user_data;
+	DBusMessage *reply;
+	const char *path = NULL;
+	struct ofono_private_network_settings pns;
+
+	DBG("");
+
+	req->pending = NULL;
+
+	memset(&pns, 0, sizeof(pns));
+	pns.fd = -1;
+
+	reply = dbus_pending_call_steal_reply(call);
+	if (reply == NULL)
+		goto badreply;
+
+	if (parse_reply(dbus_pending_call_steal_reply(call),
+			&path, &pns) == FALSE)
 		goto error;
 
-	dbus_message_iter_get_basic(&array, &pns.fd);
-	DBG("Fildescriptor = %d\n", pns.fd);
+	DBG("fd: %d, path: %s", pns.fd, path);
 
-	req->path = g_strdup(path);
-	DBG("Object path = %s\n", req->path);
+	if (req->redundant == TRUE)
+		goto redundant;
 
 	if (pns.server_ip == NULL || pns.peer_ip == NULL ||
 			pns.primary_dns == NULL || pns.secondary_dns == NULL ||
 			pns.fd < 0) {
-		ofono_error("Error while reading dictionnary...\n");
-		goto release;
+		ofono_error("Error while reading dictionary...\n");
+		goto error;
 	}
 
+	req->path = g_strdup(path);
 	req->cb(&pns, req->data);
 
 	dbus_message_unref(reply);
 	dbus_pending_call_unref(call);
-
 	return;
 
-release:
-	connman_release(req->uid);
 error:
-	if (pns.fd >= 0)
+redundant:
+	if (pns.fd != -1)
 		close(pns.fd);
 
+	if (path != NULL)
+		send_release(path);
+
+	dbus_message_unref(reply);
+
+badreply:
 	if (req->redundant == FALSE)
 		req->cb(NULL, req->data);
 
-	if (reply)
-		dbus_message_unref(reply);
-
+	g_hash_table_remove(requests, &req->uid);
 	dbus_pending_call_unref(call);
 }
 
