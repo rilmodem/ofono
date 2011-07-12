@@ -15,6 +15,10 @@ ATTRS{idVendor}=="1199", ATTRS{idProduct}=="683c", ENV{OFONO_IFACE_NUM}=="03", E
 ATTRS{idVendor}=="1199", ATTRS{idProduct}=="6880", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_SIERRA_TYPE}="modem"
 ATTRS{idVendor}=="1199", ATTRS{idProduct}=="6890", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_SIERRA_TYPE}="modem"
 
+# ZTE
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0017", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0017", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
+
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0031", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0031", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
@@ -24,11 +28,11 @@ ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0063", ENV{OFONO_IFACE_NUM}=="01", E
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0117", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0117", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0121", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_ZTE_TYPE}="modem"
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0121", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
+
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0124", ENV{OFONO_IFACE_NUM}=="04", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0124", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
-
-ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0017", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
-ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0017", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
 # Generic 0x1001
 ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="1001", ENV{OFONO_IFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
