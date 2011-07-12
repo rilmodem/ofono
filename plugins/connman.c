@@ -55,15 +55,32 @@ struct pns_req {
 	char *path;
 };
 
+static void send_release(const char *path)
+{
+	DBusMessage *message;
+
+	message = dbus_message_new_method_call(CONNMAN_SERVICE,
+						CONNMAN_MANAGER_PATH,
+						CONNMAN_MANAGER_INTERFACE,
+						"ReleasePrivateNetwork");
+	if (message == NULL)
+		return;
+
+	dbus_message_append_args(message, DBUS_TYPE_OBJECT_PATH, &path,
+					DBUS_TYPE_INVALID);
+	dbus_message_set_no_reply(message, TRUE);
+	dbus_connection_send(connection, message, NULL);
+	dbus_message_unref(message);
+}
+
 static void pns_release(int uid)
 {
-	DBusMessage *message = NULL;
 	struct pns_req *req;
 
 	DBG("");
 
 	req = g_hash_table_lookup(requests, &uid);
-	if (!req)
+	if (req == NULL)
 		return;
 
 	if (req->pending) {
@@ -77,21 +94,7 @@ static void pns_release(int uid)
 		return;
 	}
 
-	message = dbus_message_new_method_call(CONNMAN_SERVICE,
-						CONNMAN_MANAGER_PATH,
-						CONNMAN_MANAGER_INTERFACE,
-						"ReleasePrivateNetwork");
-
-	if (message == NULL)
-		goto error;
-
-	dbus_message_append_args(message, DBUS_TYPE_OBJECT_PATH, &req->path,
-							DBUS_TYPE_INVALID);
-	dbus_message_set_no_reply(message, TRUE);
-	dbus_connection_send(connection, message, NULL);
-	dbus_message_unref(message);
-
-error:
+	send_release(req->path);
 	g_hash_table_remove(requests, &req->uid);
 }
 
