@@ -258,7 +258,7 @@ static struct ofono_private_network_driver pn_driver = {
 	.release	= pns_release,
 };
 
-static void remove_requests(gpointer user_data)
+static void request_free(gpointer user_data)
 {
 	struct pns_req *req = user_data;
 
@@ -272,7 +272,7 @@ static int connman_init(void)
 
 	connection = ofono_dbus_get_connection();
 	requests = g_hash_table_new_full(g_int_hash, g_int_equal, NULL,
-						remove_requests);
+						request_free);
 
 	return ofono_private_network_driver_register(&pn_driver);
 }
