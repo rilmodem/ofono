@@ -349,6 +349,9 @@ builtin_sources += plugins/hfp_ag.c plugins/bluetooth.h
 builtin_modules += dun_gw
 builtin_sources += plugins/dun_gw.c plugins/bluetooth.h
 
+builtin_modules += connman
+builtin_sources += plugins/connman.c
+
 builtin_sources += $(btio_sources)
 builtin_cflags += @BLUEZ_CFLAGS@
 builtin_libadd += @BLUEZ_LIBS@
