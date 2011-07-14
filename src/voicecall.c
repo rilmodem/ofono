@@ -476,7 +476,7 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	const char *number;
 
 	if (call->status != CALL_STATUS_INCOMING &&
-		call->status != CALL_STATUS_WAITING)
+			call->status != CALL_STATUS_WAITING)
 		return __ofono_error_failed(msg);
 
 	if (vc->driver->deflect == NULL)
