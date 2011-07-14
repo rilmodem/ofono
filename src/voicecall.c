@@ -2977,8 +2977,8 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			if (vc->pending_em || vc->pending || vc->dial_req)
 				goto fail;
 
-			if (!voicecalls_have_held(vc)
-					|| !voicecalls_have_active(vc))
+			if (!voicecalls_have_held(vc) ||
+					!voicecalls_have_active(vc))
 				goto fail;
 
 			vc->pending_em = em;
@@ -3092,8 +3092,8 @@ static void emulator_vts_cb(struct ofono_emulator *em,
 		if (str == NULL)
 			break;
 
-		if (!g_ascii_isdigit(str[0]) && str[0] != '*' && str[0] != '#'
-				&& (str[0] < 'A' || str[0] > 'D'))
+		if (!g_ascii_isdigit(str[0]) && str[0] != '*' &&
+				str[0] != '#' && (str[0] < 'A' || str[0] > 'D'))
 			break;
 
 		if (str[1] != '\0')
