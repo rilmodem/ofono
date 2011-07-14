@@ -478,7 +478,7 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	if (vc->driver->deflect == NULL)
 		return __ofono_error_not_implemented(msg);
 
-	if (vc->pending)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &number,
@@ -515,7 +515,7 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	struct ofono_call *call = v->call;
 	gboolean single_call = vc->call_list->next == 0;
 
-	if (vc->pending)
+	if (vc->pending || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	dial_request_user_cancel(vc, v);
@@ -613,7 +613,7 @@ static DBusMessage *voicecall_answer(DBusConnection *conn,
 	if (vc->driver->answer == NULL)
 		return __ofono_error_not_implemented(msg);
 
-	if (vc->pending)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	vc->pending = dbus_message_ref(msg);
@@ -1557,7 +1557,7 @@ static DBusMessage *manager_transfer(DBusConnection *conn,
 	int numactive;
 	int numheld;
 
-	if (vc->pending)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	numactive = voicecalls_num_active(vc);
@@ -1589,7 +1589,7 @@ static DBusMessage *manager_swap_without_accept(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	vc->pending = dbus_message_ref(msg);
@@ -1608,7 +1608,7 @@ static DBusMessage *manager_swap_calls(DBusConnection *conn,
 	if (vc->driver->swap_without_accept)
 		return manager_swap_without_accept(conn, msg, data);
 
-	if (vc->pending)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (voicecalls_have_waiting(vc))
@@ -1629,7 +1629,7 @@ static DBusMessage *manager_release_and_answer(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (!voicecalls_have_waiting(vc))
@@ -1650,7 +1650,7 @@ static DBusMessage *manager_hold_and_answer(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (voicecalls_have_waiting(vc) == FALSE)
@@ -1678,7 +1678,7 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending || vc->release_list)
+	if (vc->pending || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (vc->driver->hangup_all == NULL &&
@@ -1786,7 +1786,7 @@ static DBusMessage *multiparty_private_chat(DBusConnection *conn,
 	unsigned int id;
 	GSList *l;
 
-	if (vc->pending || vc->pending_em)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_OBJECT_PATH, &callpath,
@@ -1884,7 +1884,7 @@ static DBusMessage *multiparty_create(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending || vc->pending_em)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (!voicecalls_have_held(vc) || !voicecalls_have_active(vc))
@@ -1905,7 +1905,7 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 {
 	struct ofono_voicecall *vc = data;
 
-	if (vc->pending || vc->pending_em || vc->release_list)
+	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	if (vc->driver->release_specific == NULL)
