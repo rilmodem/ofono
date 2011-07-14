@@ -2704,6 +2704,9 @@ static void emulator_generic_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
 
+	if (vc->pending_em == NULL)
+		return;
+
 	ofono_emulator_send_final(vc->pending_em, error);
 	vc->pending_em = NULL;
 }
@@ -2713,7 +2716,9 @@ static void emulator_mpty_join_cb(const struct ofono_error *error, void *data)
 	struct ofono_voicecall *vc = data;
 	GSList *old;
 
-	ofono_emulator_send_final(vc->pending_em, error);
+	if (vc->pending_em != NULL)
+		ofono_emulator_send_final(vc->pending_em, error);
+
 	vc->pending_em = NULL;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
@@ -2753,7 +2758,9 @@ static void emulator_mpty_private_chat_cb(const struct ofono_error *error,
 	GSList *old;
 	GSList *l;
 
-	ofono_emulator_send_final(vc->pending_em, error);
+	if (vc->pending_em != NULL)
+		ofono_emulator_send_final(vc->pending_em, error);
+
 	vc->pending_em = NULL;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
@@ -3139,7 +3146,8 @@ static void emulator_dial_callback(const struct ofono_error *error, void *data)
 			__ofono_modem_dec_emergency_mode(modem);
 	}
 
-	ofono_emulator_send_final(vc->pending_em, error);
+	if (vc->pending_em)
+		ofono_emulator_send_final(vc->pending_em, error);
 
 	vc->pending_em = NULL;
 	g_free(vc->em_atd_number);
@@ -3286,19 +3294,27 @@ static void emulator_hfp_watch(struct ofono_atom *atom,
 				void *data)
 {
 	struct ofono_emulator *em = __ofono_atom_get_data(atom);
+	struct ofono_voicecall *vc = data;
 
-	if (cond != OFONO_ATOM_WATCH_CONDITION_REGISTERED)
+	switch (cond) {
+	case OFONO_ATOM_WATCH_CONDITION_UNREGISTERED:
+		if (vc->pending_em == em)
+			vc->pending_em = NULL;
+
 		return;
+	case OFONO_ATOM_WATCH_CONDITION_REGISTERED:
+		break;
+	}
 
-	notify_emulator_call_status(data);
+	notify_emulator_call_status(vc);
 
-	ofono_emulator_add_handler(em, "A", emulator_ata_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+CHUP", emulator_chup_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+CLCC", emulator_clcc_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+CHLD", emulator_chld_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+VTS", emulator_vts_cb, data, NULL);
-	ofono_emulator_add_handler(em, "D", emulator_atd_cb, data, NULL);
-	ofono_emulator_add_handler(em, "+BLDN", emulator_bldn_cb, data, NULL);
+	ofono_emulator_add_handler(em, "A", emulator_ata_cb, vc, NULL);
+	ofono_emulator_add_handler(em, "+CHUP", emulator_chup_cb, vc, NULL);
+	ofono_emulator_add_handler(em, "+CLCC", emulator_clcc_cb, vc, NULL);
+	ofono_emulator_add_handler(em, "+CHLD", emulator_chld_cb, vc, NULL);
+	ofono_emulator_add_handler(em, "+VTS", emulator_vts_cb, vc, NULL);
+	ofono_emulator_add_handler(em, "D", emulator_atd_cb, vc, NULL);
+	ofono_emulator_add_handler(em, "+BLDN", emulator_bldn_cb, vc, NULL);
 }
 
 void ofono_voicecall_register(struct ofono_voicecall *vc)
