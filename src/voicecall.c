@@ -497,16 +497,6 @@ static DBusMessage *voicecall_deflect(DBusConnection *conn,
 	return NULL;
 }
 
-static void dial_request_user_cancel(struct ofono_voicecall *vc,
-					struct voicecall *call)
-{
-	if (vc->dial_req == NULL)
-		return;
-
-	if (call == NULL || call == vc->dial_req->call)
-		dial_request_finish(vc);
-}
-
 static DBusMessage *voicecall_hangup(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -518,7 +508,8 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 	if (vc->pending || vc->pending_em)
 		return __ofono_error_busy(msg);
 
-	dial_request_user_cancel(vc, v);
+	if (vc->dial_req && vc->dial_req->call != v)
+		return __ofono_error_busy(msg);
 
 	switch (call->status) {
 	case CALL_STATUS_DISCONNECTED:
@@ -1681,6 +1672,9 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 	if (vc->pending || vc->pending_em)
 		return __ofono_error_busy(msg);
 
+	if (vc->dial_req && vc->dial_req->call == NULL)
+		return __ofono_error_busy(msg);
+
 	if (vc->driver->hangup_all == NULL &&
 		(vc->driver->release_specific == NULL ||
 			vc->driver->hangup_active == NULL))
@@ -1699,8 +1693,6 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 		voicecalls_release_next(vc);
 	} else
 		vc->driver->hangup_all(vc, generic_callback, vc);
-
-	dial_request_user_cancel(vc, NULL);
 
 	return NULL;
 }
@@ -2837,6 +2829,9 @@ static void emulator_chup_cb(struct ofono_emulator *em,
 		if (vc->pending || vc->pending_em)
 			goto fail;
 
+		if (vc->dial_req && vc->dial_req->call == NULL)
+			goto fail;
+
 		if (vc->driver->release_specific == NULL &&
 				vc->driver->hangup_active == NULL)
 			goto fail;
@@ -2866,7 +2861,6 @@ static void emulator_chup_cb(struct ofono_emulator *em,
 		voicecalls_release_next(vc);
 
 done:
-		dial_request_user_cancel(vc, NULL);
 		break;
 
 	default:
