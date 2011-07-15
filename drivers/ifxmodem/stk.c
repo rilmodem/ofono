@@ -173,6 +173,16 @@ error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
+static void ifx_stk_user_confirmation(struct ofono_stk *stk, gboolean confirm)
+{
+	struct stk_data *sd = ofono_stk_get_data(stk);
+	char buf[20];
+
+	snprintf(buf, sizeof(buf), "AT+SATD=%i", confirm ? 1 : 0);
+
+	g_at_chat_send(sd->chat, buf, none_prefix, NULL, NULL, NULL);
+}
+
 static void sati_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
@@ -303,6 +313,7 @@ static struct ofono_stk_driver driver = {
 	.remove			= ifx_stk_remove,
 	.envelope		= ifx_stk_envelope,
 	.terminal_response	= ifx_stk_terminal_response,
+	.user_confirmation	= ifx_stk_user_confirmation,
 };
 
 void ifx_stk_init(void)
