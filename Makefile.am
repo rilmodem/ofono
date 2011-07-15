@@ -545,9 +545,12 @@ dist_man_MANS = doc/ofonod.8
 
 unit_objects =
 
-check_PROGRAMS = unit/test-common unit/test-util unit/test-idmap \
+unit_tests = unit/test-common unit/test-util unit/test-idmap \
 				unit/test-simutil unit/test-stkutil \
 				unit/test-sms unit/test-cdmasms
+
+noinst_PROGRAMS = $(unit_tests) \
+			unit/test-sms-root unit/test-mux unit/test-caif
 
 unit_test_common_SOURCES = unit/test-common.c src/common.c src/util.c
 unit_test_common_LDADD = @GLIB_LIBS@
@@ -580,8 +583,6 @@ unit_test_cdmasms_SOURCES = unit/test-cdmasms.c src/cdma-smsutil.c
 unit_test_cdmasms_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_cdmasms_OBJECTS)
 
-noinst_PROGRAMS = unit/test-sms-root unit/test-mux unit/test-caif
-
 unit_test_sms_root_SOURCES = unit/test-sms.c src/util.c src/smsutil.c src/storage.c
 unit_test_sms_root_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_sms_root_OBJECTS)
@@ -596,7 +597,7 @@ unit_test_caif_SOURCES = unit/test-caif.c $(gatchat_sources) \
 unit_test_caif_LDADD = @GLIB_LIBS@
 unit_objects += $(unit_test_caif_OBJECTS)
 
-TESTS = $(check_PROGRAMS)
+TESTS = $(unit_tests)
 
 if TOOLS
 noinst_PROGRAMS += tools/huawei-audio tools/auto-enable \
