@@ -47,6 +47,7 @@ struct ofono_stk_driver {
 	void (*terminal_response)(struct ofono_stk *stk,
 					int length, const unsigned char *resp,
 					ofono_stk_generic_cb_t cb, void *data);
+	void (*user_confirmation)(struct ofono_stk *stk, ofono_bool_t confirm);
 };
 
 int ofono_stk_driver_register(const struct ofono_stk_driver *d);
