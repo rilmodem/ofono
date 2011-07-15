@@ -1756,7 +1756,7 @@ static void private_chat_callback(const struct ofono_error *error, void *data)
 
 		if (vc->multiparty_list->next == NULL) {
 			g_slist_free(vc->multiparty_list);
-			vc->multiparty_list = 0;
+			vc->multiparty_list = NULL;
 		}
 	}
 
@@ -1843,7 +1843,7 @@ static void multiparty_create_callback(const struct ofono_error *error,
 	 * active calls and add them to the multiparty list
 	 */
 	old = vc->multiparty_list;
-	vc->multiparty_list = 0;
+	vc->multiparty_list = NULL;
 
 	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
 						voicecalls_held_list(vc));
@@ -2129,7 +2129,7 @@ void ofono_voicecall_disconnected(struct ofono_voicecall *vc, int id,
 
 			voicecall_emit_multiparty(v, FALSE);
 			g_slist_free(vc->multiparty_list);
-			vc->multiparty_list = 0;
+			vc->multiparty_list = NULL;
 		}
 	}
 
@@ -2721,7 +2721,7 @@ static void emulator_mpty_join_cb(const struct ofono_error *error, void *data)
 	 * active calls and add them to the multiparty list
 	 */
 	old = vc->multiparty_list;
-	vc->multiparty_list = 0;
+	vc->multiparty_list = NULL;
 
 	vc->multiparty_list = g_slist_concat(vc->multiparty_list,
 						voicecalls_held_list(vc));
@@ -2769,7 +2769,7 @@ static void emulator_mpty_private_chat_cb(const struct ofono_error *error,
 
 		if (vc->multiparty_list->next == NULL) {
 			g_slist_free(vc->multiparty_list);
-			vc->multiparty_list = 0;
+			vc->multiparty_list = NULL;
 		}
 	}
 
