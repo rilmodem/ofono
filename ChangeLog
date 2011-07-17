@@ -1,3 +1,9 @@
+ver 0.52:
+	Add support for SIM Toolkit user confirmation handling.
+	Add support for ZTE MF180, MF190, MF637 and MF668 modems.
+	Add support for Huawei E173 modems.
+	Add support for various SpeedUp modems.
+
 ver 0.51:
 	Fix issue with alignment and STK event lists.
 	Fix issue with alignment and STK channel data length.
