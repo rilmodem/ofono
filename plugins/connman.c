@@ -36,6 +36,10 @@
 #include <ofono/plugin.h>
 #include <ofono/private-network.h>
 
+#ifndef DBUS_TYPE_UNIX_FD
+#define DBUS_TYPE_UNIX_FD -1
+#endif
+
 #define CONNMAN_SERVICE			"net.connman"
 #define CONNMAN_PATH			"/net/connman"
 
@@ -231,8 +235,10 @@ static int connman_request(ofono_private_network_cb_t cb, void *data)
 
 	DBG("");
 
-	req = g_try_new(struct connman_req, 1);
+	if (DBUS_TYPE_UNIX_FD < 0)
+		return -EBADF;
 
+	req = g_try_new(struct connman_req, 1);
 	if (req == NULL)
 		return -ENOMEM;
 
