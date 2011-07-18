@@ -16,6 +16,9 @@ ATTRS{idVendor}=="1199", ATTRS{idProduct}=="6880", ENV{OFONO_IFACE_NUM}=="03", E
 ATTRS{idVendor}=="1199", ATTRS{idProduct}=="6890", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_SIERRA_TYPE}="modem"
 
 # ZTE
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0016", ENV{OFONO_IFACE_NUM}=="02", ENV{OFONO_ZTE_TYPE}="modem"
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0016", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
+
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0017", ENV{OFONO_IFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0017", ENV{OFONO_IFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
