@@ -309,6 +309,19 @@ static void service_number_free(struct service_number *num)
 	g_free(num);
 }
 
+static void call_state_watches(struct ofono_sim *sim)
+{
+	GSList *l;
+	ofono_sim_state_event_cb_t notify;
+
+	for (l = sim->state_watches->items; l; l = l->next) {
+		struct ofono_watchlist_item *item = l->data;
+		notify = item->notify;
+
+		notify(sim->state, item->notify_data);
+	}
+}
+
 static DBusMessage *sim_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -1358,9 +1371,6 @@ static void sim_ready(enum ofono_sim_state new_state, void *user)
 
 static void sim_set_ready(struct ofono_sim *sim)
 {
-	GSList *l;
-	ofono_sim_state_event_cb_t notify;
-
 	if (sim == NULL)
 		return;
 
@@ -1371,12 +1381,7 @@ static void sim_set_ready(struct ofono_sim *sim)
 
 	sim_fs_check_version(sim->simfs);
 
-	for (l = sim->state_watches->items; l; l = l->next) {
-		struct ofono_watchlist_item *item = l->data;
-		notify = item->notify;
-
-		notify(sim->state, item->notify_data);
-	}
+	call_state_watches(sim);
 }
 
 static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
@@ -2283,9 +2288,6 @@ static void sim_free_state(struct ofono_sim *sim)
 
 void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 {
-	ofono_sim_state_event_cb_t notify;
-	GSList *l;
-
 	if (inserted == TRUE && sim->state == OFONO_SIM_STATE_NOT_PRESENT)
 		sim->state = OFONO_SIM_STATE_INSERTED;
 	else if (inserted == FALSE && sim->state != OFONO_SIM_STATE_NOT_PRESENT)
@@ -2297,13 +2299,7 @@ void ofono_sim_inserted_notify(struct ofono_sim *sim, ofono_bool_t inserted)
 		return;
 
 	sim_inserted_update(sim);
-
-	for (l = sim->state_watches->items; l; l = l->next) {
-		struct ofono_watchlist_item *item = l->data;
-		notify = item->notify;
-
-		notify(sim->state, item->notify_data);
-	}
+	call_state_watches(sim);
 
 	if (inserted)
 		sim_initialize(sim);
