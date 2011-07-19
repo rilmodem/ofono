@@ -2683,6 +2683,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 
 		free_sim_ecc_numbers(vc, FALSE);
 		set_new_ecc(vc);
+
+		voicecall_close_settings(vc);
+		break;
 	case OFONO_SIM_STATE_READY:
 		voicecall_load_settings(vc);
 		break;
