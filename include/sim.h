@@ -75,6 +75,7 @@ enum ofono_sim_cphs_phase {
 enum ofono_sim_state {
 	OFONO_SIM_STATE_NOT_PRESENT,
 	OFONO_SIM_STATE_INSERTED,
+	OFONO_SIM_STATE_LOCKED_OUT,
 	OFONO_SIM_STATE_READY,
 };
 
