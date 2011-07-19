@@ -2689,7 +2689,8 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 	case OFONO_SIM_STATE_READY:
 		voicecall_load_settings(vc);
 		break;
-	default:
+	case OFONO_SIM_STATE_LOCKED_OUT:
+		voicecall_close_settings(vc);
 		break;
 	}
 }
