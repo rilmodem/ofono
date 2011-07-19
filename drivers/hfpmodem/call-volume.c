@@ -214,7 +214,7 @@ static struct ofono_call_volume_driver driver = {
 	.probe			= hfp_call_volume_probe,
 	.remove			= hfp_call_volume_remove,
 	.speaker_volume		= hfp_speaker_volume,
-	.microphone_volume 	= hfp_microphone_volume,
+	.microphone_volume	= hfp_microphone_volume,
 	.mute			= NULL,
 };
 
