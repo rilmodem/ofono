@@ -1374,7 +1374,8 @@ static void sim_set_ready(struct ofono_sim *sim)
 	if (sim == NULL)
 		return;
 
-	if (sim->state != OFONO_SIM_STATE_INSERTED)
+	if (sim->state != OFONO_SIM_STATE_INSERTED &&
+			sim->state != OFONO_SIM_STATE_LOCKED_OUT)
 		return;
 
 	sim->state = OFONO_SIM_STATE_READY;
@@ -2385,9 +2386,8 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 			/* Force the sim state out of READY */
 			sim_free_main_state(sim);
 
-			sim->state = OFONO_SIM_STATE_INSERTED;
-			__ofono_modem_sim_reset(
-					__ofono_atom_get_modem(sim->atom));
+			sim->state = OFONO_SIM_STATE_LOCKED_OUT;
+			call_state_watches(sim);
 		}
 		break;
 	}

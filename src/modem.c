@@ -678,6 +678,9 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *user)
 		modem_change_state(modem, MODEM_STATE_PRE_SIM);
 	case OFONO_SIM_STATE_INSERTED:
 		break;
+	case OFONO_SIM_STATE_LOCKED_OUT:
+		modem_change_state(modem, MODEM_STATE_PRE_SIM);
+		break;
 	case OFONO_SIM_STATE_READY:
 		modem_change_state(modem, MODEM_STATE_OFFLINE);
 
