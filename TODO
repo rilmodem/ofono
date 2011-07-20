@@ -132,6 +132,20 @@ Modem Emulator
   Complexity: C4
   Priority: Medium
 
+- Support new HFP 1.6 AG command related to indicators (AT+BIA).
+
+  Complexity: C1
+  Priority: Low
+  Owner: Frédéric Danis <frederic.danis@linux.intel.com>
+  Depends: HFP AG emulator
+
+- Support new HFP 1.6 AG commands allowing to publish, select and connect audio
+  codecs (AT+BAC, AT+BCS, +BCS, AT+BCC). This will need to interact with audio
+  framework.
+
+  Complexity: C4
+  Priority: Low
+  Depends: HFP AG emulator
 
 PPP
 ===
