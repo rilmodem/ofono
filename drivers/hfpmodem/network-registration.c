@@ -30,16 +30,17 @@
 #include <stdio.h>
 
 #include <glib.h>
+#include <gatchat.h>
+#include <gatresult.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/netreg.h>
 
-#include "gatchat.h"
-#include "gatresult.h"
 #include "common.h"
 
 #include "hfpmodem.h"
+#include "slc.h"
 
 #define HFP_MAX_OPERATOR_NAME_LENGTH 16
 
@@ -301,14 +302,14 @@ static gboolean hfp_netreg_register(gpointer user_data)
 static int hfp_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 				void *user_data)
 {
-	struct hfp_data *data = user_data;
+	struct hfp_slc_info *info = user_data;
 	struct netreg_data *nd;
 
 	nd = g_new0(struct netreg_data, 1);
 
-	nd->chat = data->chat;
-	memcpy(nd->cind_pos, data->cind_pos, HFP_INDICATOR_LAST);
-	memcpy(nd->cind_val, data->cind_val, HFP_INDICATOR_LAST);
+	nd->chat = g_at_chat_clone(info->chat);
+	memcpy(nd->cind_pos, info->cind_pos, HFP_INDICATOR_LAST);
+	memcpy(nd->cind_val, info->cind_val, HFP_INDICATOR_LAST);
 
 	ofono_netreg_set_data(netreg, nd);
 

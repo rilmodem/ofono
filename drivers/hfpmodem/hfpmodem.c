@@ -23,19 +23,12 @@
 #include <config.h>
 #endif
 
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <glib.h>
-
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
-#include <ofono/log.h>
 #include <ofono/modem.h>
 
+#include <glib.h>
 #include <gatchat.h>
-#include <gatresult.h>
 
 #include "hfpmodem.h"
 

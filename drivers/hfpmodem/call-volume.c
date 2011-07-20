@@ -31,15 +31,15 @@
 #include <unistd.h>
 
 #include <glib.h>
+#include <gatchat.h>
+#include <gatresult.h>
 
 #include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/call-volume.h>
 
-#include "gatchat.h"
-#include "gatresult.h"
-
 #include "hfpmodem.h"
+#include "slc.h"
 
 #define HFP_CALL_VOLUME_MAX 15
 
@@ -186,12 +186,12 @@ static void hfp_call_volume_initialized(gpointer user_data)
 static int hfp_call_volume_probe(struct ofono_call_volume *cv,
 					unsigned int vendor, void *data)
 {
-	struct hfp_data *d = data;
+	struct hfp_slc_info *info = data;
 	struct cv_data *vd;
 
 	DBG("");
 	vd = g_new0(struct cv_data, 1);
-	vd->chat = d->chat;
+	vd->chat = g_at_chat_clone(info->chat);
 
 	ofono_call_volume_set_data(cv, vd);
 
