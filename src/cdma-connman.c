@@ -377,6 +377,8 @@ static DBusMessage *cdma_connman_set_username(struct ofono_cdma_connman *cm,
 					DBusConnection *conn, DBusMessage *msg,
 					const char *username)
 {
+	const char *path;
+
 	if (strlen(username) > OFONO_CDMA_CONNMAN_MAX_USERNAME_LENGTH)
 		return __ofono_error_invalid_format(msg);
 
@@ -385,13 +387,22 @@ static DBusMessage *cdma_connman_set_username(struct ofono_cdma_connman *cm,
 
 	strcpy(cm->username, username);
 
-	return dbus_message_new_method_return(msg);
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	path = __ofono_atom_get_path(cm->atom);
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_CONNECTION_MANAGER_INTERFACE,
+				"Username", DBUS_TYPE_STRING, &username);
+
+	return NULL;
 }
 
 static DBusMessage *cdma_connman_set_password(struct ofono_cdma_connman *cm,
 					DBusConnection *conn, DBusMessage *msg,
 					const char *password)
 {
+	const char *path;
+
 	if (strlen(password) > OFONO_CDMA_CONNMAN_MAX_PASSWORD_LENGTH)
 		return __ofono_error_invalid_format(msg);
 
@@ -400,7 +411,14 @@ static DBusMessage *cdma_connman_set_password(struct ofono_cdma_connman *cm,
 
 	strcpy(cm->password, password);
 
-	return dbus_message_new_method_return(msg);
+	g_dbus_send_reply(conn, msg, DBUS_TYPE_INVALID);
+
+	path = __ofono_atom_get_path(cm->atom);
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_CONNECTION_MANAGER_INTERFACE,
+				"Password", DBUS_TYPE_STRING, &password);
+
+	return NULL;
 }
 
 static DBusMessage *cdma_connman_set_property(DBusConnection *conn,
