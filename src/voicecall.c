@@ -74,7 +74,6 @@ struct ofono_voicecall {
 	ofono_voicecall_cb_t release_queue_done_cb;
 	struct ofono_emulator *pending_em;
 	unsigned int pending_id;
-	char *em_atd_number;
 };
 
 struct voicecall {
@@ -1506,13 +1505,13 @@ static int voicecall_dial(struct ofono_voicecall *vc, const char *number,
 
 	string_to_phone_number(number, &ph);
 
-	vc->driver->dial(vc, &ph, clir, cb, vc);
-
 	if (vc->settings) {
 		g_key_file_set_string(vc->settings, SETTINGS_GROUP,
 					"Number", number);
 		storage_sync(vc->imsi, SETTINGS_STORE, vc->settings);
 	}
+
+	vc->driver->dial(vc, &ph, clir, cb, vc);
 
 	return 0;
 }
@@ -3154,13 +3153,18 @@ static void emulator_dial_callback(const struct ofono_error *error, void *data)
 	struct ofono_voicecall *vc = data;
 	gboolean need_to_emit;
 	struct voicecall *v;
+	const char *number;
+	GError *err = NULL;
 
-	v = dial_handle_result(vc, error, vc->em_atd_number, &need_to_emit);
+	number = g_key_file_get_string(vc->settings, SETTINGS_GROUP,
+					"Number", &err);
+
+	v = dial_handle_result(vc, error, number, &need_to_emit);
 
 	if (v == NULL) {
 		struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
 
-		if (is_emergency_number(vc, vc->em_atd_number) == TRUE)
+		if (is_emergency_number(vc, number) == TRUE)
 			__ofono_modem_dec_emergency_mode(modem);
 	}
 
@@ -3168,8 +3172,6 @@ static void emulator_dial_callback(const struct ofono_error *error, void *data)
 		ofono_emulator_send_final(vc->pending_em, error);
 
 	vc->pending_em = NULL;
-	g_free(vc->em_atd_number);
-	vc->em_atd_number = NULL;
 
 	notify_emulator_call_status(vc);
 
@@ -3191,7 +3193,6 @@ static void emulator_dial(struct ofono_emulator *em, struct ofono_voicecall *vc,
 	}
 
 	vc->pending_em = em;
-	vc->em_atd_number = g_strdup(number);
 
 	err = voicecall_dial(vc, number, OFONO_CLIR_OPTION_DEFAULT,
 					emulator_dial_callback, vc);
@@ -3200,8 +3201,6 @@ static void emulator_dial(struct ofono_emulator *em, struct ofono_voicecall *vc,
 		return;
 
 	vc->pending_em = NULL;
-	g_free(vc->em_atd_number);
-	vc->em_atd_number = NULL;
 
 	switch (err) {
 	case -ENETDOWN:
