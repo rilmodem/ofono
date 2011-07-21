@@ -336,6 +336,9 @@ builtin_sources += plugins/telit.c
 builtin_modules += speedup
 builtin_sources += plugins/speedup.c
 
+builtin_modules += speedupcdma
+builtin_sources += plugins/speedupcdma.c
+
 if BLUETOOTH
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
