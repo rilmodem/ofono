@@ -40,6 +40,7 @@
 static struct server *server;
 static guint modemwatch_id;
 static GList *modems;
+static GHashTable *sim_hash = NULL;
 
 static const gchar *hfp_ag_record =
 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
@@ -115,27 +116,63 @@ static void hfp_ag_connect_cb(GIOChannel *io, GError *err, gpointer user_data)
 	ofono_emulator_register(em, fd);
 }
 
-static void voicecall_watch(struct ofono_atom *atom,
-				enum ofono_atom_watch_condition cond,
-				void *data)
+static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 {
 	struct ofono_modem *modem = data;
 
-	if (cond == OFONO_ATOM_WATCH_CONDITION_REGISTERED) {
-		modems = g_list_append(modems, modem);
-
-		if (modems->next == NULL)
-			server = bluetooth_register_server(HFP_AG_CHANNEL,
-							hfp_ag_record,
-							hfp_ag_connect_cb,
-							NULL);
-	} else {
+	if (new_state != OFONO_SIM_STATE_READY) {
 		modems = g_list_remove(modems, modem);
 		if (modems == NULL && server != NULL) {
 			bluetooth_unregister_server(server);
 			server = NULL;
 		}
+
+		return;
 	}
+
+	if (__ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_VOICECALL)
+			== NULL)
+		return;
+
+	modems = g_list_append(modems, modem);
+
+	if (modems->next == NULL)
+		server = bluetooth_register_server(HFP_AG_CHANNEL,
+							hfp_ag_record,
+							hfp_ag_connect_cb,
+							NULL);
+}
+
+static gboolean sim_watch_remove(gpointer key, gpointer value,
+				gpointer user_data)
+{
+	struct ofono_sim *sim = key;
+
+	ofono_sim_remove_state_watch(sim, GPOINTER_TO_UINT(value));
+
+	return TRUE;
+}
+
+static void sim_watch(struct ofono_atom *atom,
+				enum ofono_atom_watch_condition cond,
+				void *data)
+{
+	struct ofono_sim *sim = __ofono_atom_get_data(atom);
+	struct ofono_modem *modem = data;
+	int watch;
+
+	if (cond == OFONO_ATOM_WATCH_CONDITION_UNREGISTERED) {
+		sim_state_watch(OFONO_SIM_STATE_NOT_PRESENT, modem);
+
+		sim_watch_remove(sim, g_hash_table_lookup(sim_hash, sim), NULL);
+		g_hash_table_remove(sim_hash, sim);
+
+		return;
+	}
+
+	watch = ofono_sim_add_state_watch(sim, sim_state_watch, modem, NULL);
+	g_hash_table_insert(sim_hash, sim, GUINT_TO_POINTER(watch));
+	sim_state_watch(ofono_sim_get_state(sim), modem);
 }
 
 static void modem_watch(struct ofono_modem *modem, gboolean added, void *user)
@@ -145,8 +182,8 @@ static void modem_watch(struct ofono_modem *modem, gboolean added, void *user)
 	if (added == FALSE)
 		return;
 
-	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_VOICECALL,
-					voicecall_watch, modem, NULL);
+	__ofono_modem_add_atom_watch(modem, OFONO_ATOM_TYPE_SIM,
+					sim_watch, modem, NULL);
 }
 
 static void call_modemwatch(struct ofono_modem *modem, void *user)
@@ -156,6 +193,8 @@ static void call_modemwatch(struct ofono_modem *modem, void *user)
 
 static int hfp_ag_init()
 {
+	sim_hash = g_hash_table_new(g_direct_hash, g_direct_equal);
+
 	modemwatch_id = __ofono_modemwatch_add(modem_watch, NULL, NULL);
 	__ofono_modem_foreach(call_modemwatch, NULL);
 
@@ -166,6 +205,8 @@ static void hfp_ag_exit()
 {
 	__ofono_modemwatch_remove(modemwatch_id);
 	g_list_free(modems);
+	g_hash_table_foreach_remove(sim_hash, sim_watch_remove, NULL);
+	g_hash_table_destroy(sim_hash);
 
 	if (server) {
 		bluetooth_unregister_server(server);
