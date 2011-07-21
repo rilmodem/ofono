@@ -63,6 +63,7 @@
 #include <drivers/atmodem/vendor.h>
 #include <drivers/atmodem/sim-poll.h>
 #include <drivers/atmodem/atutil.h>
+#include <drivers/hfpmodem/slc.h>
 
 #include "ofono.h"
 
@@ -75,6 +76,8 @@ struct phonesim_data {
 	GAtChat *chat;
 	gboolean calypso;
 	gboolean use_mux;
+	gboolean hfp;
+	struct hfp_slc_info hfp_info;
 	unsigned int hfp_watch;
 	int batt_level;
 };
@@ -385,9 +388,9 @@ static void phonesim_remove(struct ofono_modem *modem)
 	ofono_modem_set_data(modem, NULL);
 }
 
-static void phonesim_debug(const char *str, void *user_data)
+static void phonesim_debug(const char *str, void *prefix)
 {
-	ofono_info("%s", str);
+	ofono_info("%s%s", (const char *) prefix, str);
 }
 
 static void cfun_set_on_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -496,7 +499,7 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 	data->mux = mux;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_mux_set_debug(data->mux, phonesim_debug, NULL);
+		g_at_mux_set_debug(data->mux, phonesim_debug, "");
 
 	g_at_mux_start(mux);
 	io = g_at_mux_create_channel(mux);
@@ -511,7 +514,7 @@ static void mux_setup(GAtMux *mux, gpointer user_data)
 	g_io_channel_unref(io);
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, phonesim_debug, NULL);
+		g_at_chat_set_debug(data->chat, phonesim_debug, "");
 
 	if (data->calypso)
 		g_at_chat_set_wakeup_command(data->chat, "AT\r", 500, 5000);
@@ -534,14 +537,37 @@ static void emulator_hfp_watch(struct ofono_atom *atom,
 	emulator_battery_cb(atom, GUINT_TO_POINTER(data->batt_level));
 }
 
+static int connect_socket(const char *address, int port)
+{
+	struct sockaddr_in addr;
+	int sk;
+	int err;
+
+	sk = socket(PF_INET, SOCK_STREAM, 0);
+	if (sk < 0)
+		return -EINVAL;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(address);
+	addr.sin_port = htons(port);
+
+	err = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
+	if (err < 0) {
+		close(sk);
+		return -errno;
+	}
+
+	return sk;
+}
+
 static int phonesim_enable(struct ofono_modem *modem)
 {
 	struct phonesim_data *data = ofono_modem_get_data(modem);
 	GIOChannel *io;
 	GAtSyntax *syntax;
-	struct sockaddr_in addr;
 	const char *address, *value;
-	int sk, err, port;
+	int sk, port;
 
 	DBG("%p", modem);
 
@@ -561,20 +587,9 @@ static int phonesim_enable(struct ofono_modem *modem)
 	if (!g_strcmp0(value, "internal"))
 		data->use_mux = TRUE;
 
-	sk = socket(PF_INET, SOCK_STREAM, 0);
+	sk = connect_socket(address, port);
 	if (sk < 0)
-		return -EINVAL;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(address);
-	addr.sin_port = htons(port);
-
-	err = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
-	if (err < 0) {
-		close(sk);
-		return err;
-	}
+		return sk;
 
 	io = g_io_channel_unix_new(sk);
 	if (io == NULL) {
@@ -596,7 +611,7 @@ static int phonesim_enable(struct ofono_modem *modem)
 		return -ENOMEM;
 
 	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, phonesim_debug, NULL);
+		g_at_chat_set_debug(data->chat, phonesim_debug, "");
 
 	g_at_chat_set_disconnect_function(data->chat,
 						phonesim_disconnected, modem);
@@ -782,14 +797,142 @@ static struct ofono_modem_driver phonesim_driver = {
 	.post_online	= phonesim_post_online,
 };
 
+static int localhfp_probe(struct ofono_modem *modem)
+{
+	struct hfp_slc_info *info;
+
+	DBG("%p", modem);
+
+	info = g_try_new(struct hfp_slc_info, 1);
+	if (info == NULL)
+		return -ENOMEM;
+
+	ofono_modem_set_data(modem, info);
+
+	return 0;
+}
+
+static void localhfp_remove(struct ofono_modem *modem)
+{
+	struct hfp_slc_info *info = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	g_free(info);
+	ofono_modem_set_data(modem, NULL);
+}
+
+static void slc_established(gpointer userdata)
+{
+	struct ofono_modem *modem = userdata;
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
+static void slc_failed(gpointer userdata)
+{
+	struct ofono_modem *modem = userdata;
+	struct hfp_slc_info *info = ofono_modem_get_data(modem);
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	g_at_chat_unref(info->chat);
+	info->chat = NULL;
+}
+
+static int localhfp_enable(struct ofono_modem *modem)
+{
+	struct hfp_slc_info *info = ofono_modem_get_data(modem);
+	GIOChannel *io;
+	GAtSyntax *syntax;
+	GAtChat *chat;
+	const char *address;
+	int sk, port;
+
+	address = ofono_modem_get_string(modem, "Address");
+	if (address == NULL)
+		return -EINVAL;
+
+	port = ofono_modem_get_integer(modem, "Port");
+	if (port < 0)
+		return -EINVAL;
+
+	sk = connect_socket(address, port);
+	if (sk < 0)
+		return sk;
+
+	io = g_io_channel_unix_new(sk);
+	if (io == NULL) {
+		close(sk);
+		return -ENOMEM;
+	}
+
+	syntax = g_at_syntax_new_gsmv1();
+	chat = g_at_chat_new(io, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(io);
+
+	if (chat == NULL)
+		return -ENOMEM;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, phonesim_debug, "LocalHfp: ");
+
+	g_at_chat_set_disconnect_function(chat, slc_failed, modem);
+
+	hfp_slc_info_init(info);
+	info->chat = chat;
+	hfp_slc_establish(info, slc_established, slc_failed, modem);
+
+	return -EINPROGRESS;
+}
+
+static int localhfp_disable(struct ofono_modem *modem)
+{
+	struct hfp_slc_info *info = ofono_modem_get_data(modem);
+
+	g_at_chat_unref(info->chat);
+	info->chat = NULL;
+
+	return 0;
+}
+
+static void localhfp_pre_sim(struct ofono_modem *modem)
+{
+	struct hfp_slc_info *info = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	ofono_voicecall_create(modem, 0, "hfpmodem", info);
+	ofono_netreg_create(modem, 0, "hfpmodem", info);
+	ofono_call_volume_create(modem, 0, "hfpmodem", info);
+}
+
+static struct ofono_modem_driver localhfp_driver = {
+	.name		= "localhfp",
+	.probe		= localhfp_probe,
+	.remove		= localhfp_remove,
+	.enable		= localhfp_enable,
+	.disable	= localhfp_disable,
+	.pre_sim	= localhfp_pre_sim,
+};
+
 static struct ofono_modem *create_modem(GKeyFile *keyfile, const char *group)
 {
+	const char *driver = "phonesim";
 	struct ofono_modem *modem;
 	char *value;
 
 	DBG("group %s", group);
 
-	modem = ofono_modem_create(group, "phonesim");
+	value = g_key_file_get_string(keyfile, group, "Modem", NULL);
+
+	if (value && g_str_equal(value, "hfp"))
+		driver = "localhfp";
+
+	g_free(value);
+
+	modem = ofono_modem_create(group, driver);
 	if (modem == NULL)
 		return NULL;
 
@@ -880,8 +1023,9 @@ static int phonesim_init(void)
 	if (err < 0)
 		return err;
 
-	ofono_gprs_context_driver_register(&context_driver);
+	ofono_modem_driver_register(&localhfp_driver);
 
+	ofono_gprs_context_driver_register(&context_driver);
 	ofono_ctm_driver_register(&ctm_driver);
 
 	parse_config(CONFIGDIR "/phonesim.conf");
