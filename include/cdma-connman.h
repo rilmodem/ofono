@@ -30,6 +30,9 @@ extern "C" {
 
 struct ofono_cdma_connman;
 
+#define OFONO_CDMA_CONNMAN_MAX_USERNAME_LENGTH 63
+#define OFONO_CDMA_CONNMAN_MAX_PASSWORD_LENGTH 255
+
 typedef void (*ofono_cdma_connman_cb_t)(const struct ofono_error *error,
 						void *data);
 typedef void (*ofono_cdma_connman_up_cb_t)(const struct ofono_error *error,
@@ -47,6 +50,8 @@ struct ofono_cdma_connman_driver {
 						void *data);
 	void (*remove)(struct ofono_cdma_connman *cm);
 	void (*activate)(struct ofono_cdma_connman *cm,
+						const char *username,
+						const char *password,
 						ofono_cdma_connman_up_cb_t cb,
 						void *data);
 	void (*deactivate)(struct ofono_cdma_connman *cm,
