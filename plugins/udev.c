@@ -793,6 +793,8 @@ done:
 		add_linktop(modem, udev_device);
         else if (g_strcmp0(driver, "speedup") == 0)
 		add_speedup(modem, udev_device);
+	else if (g_strcmp0(driver, "speedupcdma") == 0)
+		add_speedup(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
