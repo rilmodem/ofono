@@ -52,7 +52,6 @@
 #include <drivers/atmodem/vendor.h>
 
 static const char *cfun_prefix[] = { "+CFUN:", NULL };
-static const char *cpin_prefix[] = { "+CPIN:", NULL };
 static const char *none_prefix[] = { NULL };
 
 enum mbm_variant {
@@ -63,14 +62,13 @@ enum mbm_variant {
 struct mbm_data {
 	GAtChat *modem_port;
 	GAtChat *data_port;
-	guint cpin_poll_source;
-	guint cpin_poll_count;
 	gboolean have_sim;
 	struct ofono_gprs *gprs;
 	struct ofono_gprs_context *gc;
 	struct ofono_location_reporting *lr;
 	guint reopen_source;
 	enum mbm_variant variant;
+	struct at_util_sim_state_query *sim_state_query;
 };
 
 static int mbm_probe(struct ofono_modem *modem)
@@ -104,8 +102,8 @@ static void mbm_remove(struct ofono_modem *modem)
 	g_at_chat_unref(data->data_port);
 	g_at_chat_unref(data->modem_port);
 
-	if (data->cpin_poll_source > 0)
-		g_source_remove(data->cpin_poll_source);
+	if (data->sim_state_query)
+		at_util_sim_state_query_free(data->sim_state_query);
 
 	g_free(data);
 }
@@ -115,43 +113,6 @@ static void mbm_debug(const char *str, void *user_data)
 	const char *prefix = user_data;
 
 	ofono_info("%s%s", prefix, str);
-}
-
-static gboolean init_simpin_check(gpointer user_data);
-
-static void simpin_check(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct mbm_data *data = ofono_modem_get_data(modem);
-
-	DBG("");
-
-	/* Modem returns an error if SIM is not ready. */
-	if (!ok && data->cpin_poll_count++ < 5) {
-		data->cpin_poll_source =
-			g_timeout_add_seconds(1, init_simpin_check, modem);
-		return;
-	}
-
-	data->cpin_poll_count = 0;
-
-	/* There is probably no SIM if SIM is not ready after 5 seconds. */
-	data->have_sim = ok;
-
-	ofono_modem_set_powered(modem, TRUE);
-}
-
-static gboolean init_simpin_check(gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct mbm_data *data = ofono_modem_get_data(modem);
-
-	data->cpin_poll_source = 0;
-
-	g_at_chat_send(data->modem_port, "AT+CPIN?", cpin_prefix,
-			simpin_check, modem, NULL);
-
-	return FALSE;
 }
 
 static void d5530_notify(GAtResult *result, gpointer user_data)
@@ -173,9 +134,22 @@ static void mbm_quirk_d5530(struct ofono_modem *modem)
 				FALSE, NULL, NULL);
 }
 
+static void sim_state_cb(gboolean present, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
+
+	at_util_sim_state_query_free(data->sim_state_query);
+	data->sim_state_query = NULL;
+
+	data->have_sim = present;
+	ofono_modem_set_powered(modem, TRUE);
+}
+
 static void check_model(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct mbm_data *data = ofono_modem_get_data(modem);
 	GAtResultIter iter;
 	char const *model;
 
@@ -195,7 +169,10 @@ static void check_model(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 done:
-	init_simpin_check(modem);
+	data->sim_state_query = at_util_sim_state_query_new(data->modem_port,
+								1, 5,
+								sim_state_cb,
+								modem);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
