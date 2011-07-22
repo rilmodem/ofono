@@ -1263,7 +1263,8 @@ static void current_operator_callback(const struct ofono_error *error,
 				!network_operator_dbus_register(netreg, opd)) {
 			g_free(opd);
 			return;
-		}
+		} else
+			opd->netreg = netreg;
 
 		netreg->current_operator = opd;
 		netreg->operator_list = g_slist_append(netreg->operator_list,
