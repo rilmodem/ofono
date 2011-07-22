@@ -36,6 +36,8 @@
 
 #include "cdmamodem.h"
 
+static const char *gcap_prefix[] = { "+GCAP:", NULL };
+
 static void attr_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
          struct cb_data *cbd = user_data;
@@ -123,13 +125,11 @@ static void cdma_query_serial(struct ofono_devinfo *info,
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
-static gboolean cdma_devinfo_register(gpointer user_data)
+static void capability_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_devinfo *info = user_data;
 
 	ofono_devinfo_register(info);
-
-	return FALSE;
 }
 
 static int cdma_devinfo_probe(struct ofono_devinfo *info,
@@ -138,7 +138,9 @@ static int cdma_devinfo_probe(struct ofono_devinfo *info,
 	GAtChat *chat = data;
 
 	ofono_devinfo_set_data(info, g_at_chat_clone(chat));
-	g_idle_add(cdma_devinfo_register, info);
+
+	g_at_chat_send(chat, "AT+GCAP", gcap_prefix,
+				capability_cb, info, NULL);
 
 	return 0;
 }
