@@ -48,6 +48,8 @@ enum at_util_charset {
 	AT_UTIL_CHARSET_8859_H =	0x10000,
 };
 
+typedef void (*at_util_sim_inserted_cb_t)(gboolean present, void *userdata);
+
 void decode_at_error(struct ofono_error *error, const char *final);
 gint at_util_call_compare_by_status(gconstpointer a, gconstpointer b);
 gint at_util_call_compare_by_phone_number(gconstpointer a, gconstpointer b);
@@ -73,6 +75,12 @@ gboolean at_util_parse_cscs_query(GAtResult *result,
 
 gboolean at_util_parse_attr(GAtResult *result, const char *prefix,
 				const char **out_attr);
+
+struct at_util_sim_state_query *at_util_sim_state_query_new(GAtChat *chat,
+						guint interval, guint num_times,
+						at_util_sim_inserted_cb_t cb,
+						void *userdata);
+void at_util_sim_state_query_free(struct at_util_sim_state_query *req);
 
 struct cb_data {
 	void *cb;

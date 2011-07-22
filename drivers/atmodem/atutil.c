@@ -35,6 +35,20 @@
 #include "atutil.h"
 #include "vendor.h"
 
+static const char *cpin_prefix[] = { "+CPIN:", NULL };
+
+struct at_util_sim_state_query {
+	GAtChat *chat;
+	guint cpin_poll_source;
+	guint cpin_poll_count;
+	guint interval;
+	guint num_times;
+	at_util_sim_inserted_cb_t cb;
+	void *userdata;
+};
+
+static gboolean cpin_check(gpointer userdata);
+
 void decode_at_error(struct ofono_error *error, const char *final)
 {
 	if (!strcmp(final, "OK")) {
@@ -483,4 +497,92 @@ gboolean at_util_parse_attr(GAtResult *result, const char *prefix,
 		*out_attr = at_util_fixup_return(line, prefix);
 
 	return TRUE;
+}
+
+static void cpin_check_cb(gboolean ok, GAtResult *result, gpointer userdata)
+{
+	struct at_util_sim_state_query *req = userdata;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (error.type == OFONO_ERROR_TYPE_NO_ERROR)
+		goto done;
+
+	/*
+	 * If we got a generic error the AT port might not be ready,
+	 * try again
+	 */
+	if (error.type == OFONO_ERROR_TYPE_FAILURE)
+		goto tryagain;
+
+	/* If we got any other error besides CME, fail */
+	if (error.type != OFONO_ERROR_TYPE_CME)
+		goto done;
+
+	switch (error.error) {
+	case 10:
+	case 13:
+		goto done;
+
+	case 14:
+		goto tryagain;
+
+	default:
+		/* Assume SIM is present */
+		ok = TRUE;
+		goto done;
+	}
+
+tryagain:
+	if (req->cpin_poll_count++ < req->num_times) {
+		req->cpin_poll_source = g_timeout_add_seconds(req->interval,
+								cpin_check,
+								req);
+		return;
+	}
+
+done:
+	if (req->cb)
+		req->cb(ok, req->userdata);
+}
+
+static gboolean cpin_check(gpointer userdata)
+{
+	struct at_util_sim_state_query *req = userdata;
+
+	req->cpin_poll_source = 0;
+
+	g_at_chat_send(req->chat, "AT+CPIN?", cpin_prefix,
+			cpin_check_cb, req, NULL);
+
+	return FALSE;
+}
+
+struct at_util_sim_state_query *at_util_sim_state_query_new(GAtChat *chat,
+						guint interval, guint num_times,
+						at_util_sim_inserted_cb_t cb,
+						void *userdata)
+{
+	struct at_util_sim_state_query *req;
+
+	req = g_new0(struct at_util_sim_state_query, 1);
+
+	req->chat = chat;
+	req->interval = interval;
+	req->num_times = num_times;
+	req->cb = cb;
+	req->userdata = userdata;
+
+	cpin_check(req);
+
+	return req;
+}
+
+void at_util_sim_state_query_free(struct at_util_sim_state_query *req)
+{
+	if (req->cpin_poll_source > 0)
+		g_source_remove(req->cpin_poll_source);
+
+	g_free(req);
 }
