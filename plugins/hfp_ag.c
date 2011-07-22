@@ -130,17 +130,16 @@ static void sim_state_watch(enum ofono_sim_state new_state, void *data)
 		return;
 	}
 
-	if (__ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_VOICECALL)
-			== NULL)
+	if (__ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_VOICECALL) == NULL)
 		return;
 
 	modems = g_list_append(modems, modem);
 
-	if (modems->next == NULL)
-		server = bluetooth_register_server(HFP_AG_CHANNEL,
-							hfp_ag_record,
-							hfp_ag_connect_cb,
-							NULL);
+	if (modems->next != NULL)
+		return;
+
+	server = bluetooth_register_server(HFP_AG_CHANNEL, hfp_ag_record,
+						hfp_ag_connect_cb, NULL);
 }
 
 static gboolean sim_watch_remove(gpointer key, gpointer value,
