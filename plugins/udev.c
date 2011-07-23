@@ -691,6 +691,41 @@ static void add_speedup(struct ofono_modem *modem,
 		ofono_modem_register(modem);
 }
 
+static void add_samsung(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	const char *subsystem;
+
+	DBG("modem %p", modem);
+
+	subsystem = udev_device_get_subsystem(udev_device);
+	if (subsystem == NULL)
+		return;
+
+	if (g_str_equal(subsystem, "net") == TRUE) {
+		const char *interface;
+
+		interface = get_property(udev_device, "INTERFACE");
+		if (interface == NULL)
+			return;
+
+		DBG("network %s", interface);
+
+		ofono_modem_set_string(modem, "Network", interface);
+	} else if (g_str_equal(subsystem, "tty") == TRUE) {
+		const char *devnode;
+
+		devnode = udev_device_get_devnode(udev_device);
+		if (devnode == NULL)
+			return;
+
+		DBG("device %s", devnode);
+
+		ofono_modem_set_string(modem, "Device", devnode);
+		ofono_modem_register(modem);
+	}
+}
+
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -797,6 +832,8 @@ done:
 		add_speedup(modem, udev_device);
 	else if (g_strcmp0(driver, "speedupcdma") == 0)
 		add_speedup(modem, udev_device);
+	else if (g_strcmp0(driver, "samsung") == 0)
+		add_samsung(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
