@@ -767,6 +767,8 @@ done:
 		add_zte(modem, udev_device);
 	else if (g_strcmp0(driver, "huawei") == 0)
 		add_huawei(modem, udev_device);
+	else if (g_strcmp0(driver, "huaweicdma") == 0)
+		add_huawei(modem, udev_device);
 	else if (g_strcmp0(driver, "sierra") == 0)
 		add_sierra(modem, udev_device);
 	else if (g_strcmp0(driver, "novatel") == 0)
