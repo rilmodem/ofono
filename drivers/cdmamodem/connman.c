@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include <glib.h>
 
@@ -40,6 +41,8 @@
 #include "gatppp.h"
 
 #include "cdmamodem.h"
+
+#define TUN_SYSFS_DIR "/sys/devices/virtual/misc/tun"
 
 #define STATIC_IP_NETMASK "255.255.255.255"
 
@@ -240,8 +243,14 @@ static int cdma_connman_probe(struct ofono_cdma_connman *cm,
 {
 	GAtChat *chat = data;
 	struct connman_data *cd;
+	struct stat st;
 
 	DBG("");
+
+	if (stat(TUN_SYSFS_DIR, &st) < 0) {
+		ofono_error("Missing support for TUN/TAP devices");
+		return -ENODEV;
+	}
 
 	cd = g_try_new0(struct connman_data, 1);
 	if (cd == NULL)
