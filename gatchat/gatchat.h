@@ -39,6 +39,21 @@ typedef void (*GAtResultFunc)(gboolean success, GAtResult *result,
 				gpointer user_data);
 typedef void (*GAtNotifyFunc)(GAtResult *result, gpointer user_data);
 
+enum _GAtChatTerminator {
+	G_AT_CHAT_TERMINATOR_OK,
+	G_AT_CHAT_TERMINATOR_ERROR,
+	G_AT_CHAT_TERMINATOR_NO_DIALTONE,
+	G_AT_CHAT_TERMINATOR_BUSY,
+	G_AT_CHAT_TERMINATOR_NO_CARRIER,
+	G_AT_CHAT_TERMINATOR_CONNECT,
+	G_AT_CHAT_TERMINATOR_NO_ANSWER,
+	G_AT_CHAT_TERMINATOR_CMS_ERROR,
+	G_AT_CHAT_TERMINATOR_CME_ERROR,
+	G_AT_CHAT_TERMINATOR_EXT_ERROR,
+};
+
+typedef enum _GAtChatTerminator GAtChatTerminator;
+
 GAtChat *g_at_chat_new(GIOChannel *channel, GAtSyntax *syntax);
 GAtChat *g_at_chat_new_blocking(GIOChannel *channel, GAtSyntax *syntax);
 
@@ -147,6 +162,8 @@ gboolean g_at_chat_set_wakeup_command(GAtChat *chat, const char *cmd,
 
 void g_at_chat_add_terminator(GAtChat *chat, char *terminator,
 				int len, gboolean success);
+void g_at_chat_blacklist_terminator(GAtChat *chat,
+						GAtChatTerminator terminator);
 
 #ifdef __cplusplus
 }

@@ -102,6 +102,7 @@ struct at_chat {
 	gboolean in_read_handler;		/* Re-entrancy guard */
 	gboolean in_notify;
 	GSList *terminator_list;		/* Non-standard terminator */
+	guint16 terminator_blacklist;		/* Blacklisted terinators */
 };
 
 struct _GAtChat {
@@ -490,6 +491,12 @@ static void at_chat_add_terminator(struct at_chat *chat, char *terminator,
 	chat->terminator_list = g_slist_prepend(chat->terminator_list, info);
 }
 
+static void at_chat_blacklist_terminator(struct at_chat *chat,
+						GAtChatTerminator terminator)
+{
+	chat->terminator_blacklist |= 1 << terminator;
+}
+
 static gboolean check_terminator(struct terminator_info *info, char *line)
 {
 	if (info->len == -1 && !strcmp(line, info->terminator))
@@ -512,7 +519,8 @@ static gboolean at_chat_handle_command_response(struct at_chat *p,
 
 	for (i = 0; i < size; i++) {
 		struct terminator_info *info = &terminator_table[i];
-		if (check_terminator(info, line)) {
+		if (check_terminator(info, line) &&
+				(p->terminator_blacklist & 1 << i) == 0) {
 			at_chat_finish_command(p, info->success, line);
 			return TRUE;
 		}
@@ -1437,6 +1445,15 @@ void g_at_chat_add_terminator(GAtChat *chat, char *terminator,
 		return;
 
 	at_chat_add_terminator(chat->parent, terminator, len, success);
+}
+
+void g_at_chat_blacklist_terminator(GAtChat *chat,
+						GAtChatTerminator terminator)
+{
+	if (chat == NULL || chat->group != 0)
+		return;
+
+	at_chat_blacklist_terminator(chat->parent, terminator);
 }
 
 gboolean g_at_chat_set_wakeup_command(GAtChat *chat, const char *cmd,
