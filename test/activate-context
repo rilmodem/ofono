@@ -34,7 +34,7 @@ for path, properties in modems:
 					'org.ofono.ConnectionContext')
 
 	try:
-		context.SetProperty("Active", dbus.Boolean(1))
+		context.SetProperty("Active", dbus.Boolean(1), timeout = 100)
 	except dbus.DBusException, e:
 		print "Error activating %s: %s" % (path, str(e))
 		exit(2)
