@@ -268,6 +268,40 @@ static void at_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 	g_at_ppp_shutdown(gcd->ppp);
 }
 
+static void cgev_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs_context *gc = user_data;
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+	const char *event;
+	int cid;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CGEV:"))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &event))
+		return;
+
+	if (g_str_has_prefix(event, "NW DEACT") == FALSE)
+		return;
+
+	if (!g_at_result_iter_skip_next(&iter))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &cid))
+		return;
+
+	DBG("cid %d", cid);
+
+	if ((unsigned int) cid != gcd->active_context)
+		return;
+
+	if (gcd->state != STATE_IDLE && gcd->ppp)
+		g_at_ppp_shutdown(gcd->ppp);
+}
+
 static int at_gprs_context_probe(struct ofono_gprs_context *gc,
 					unsigned int vendor, void *data)
 {
@@ -289,6 +323,12 @@ static int at_gprs_context_probe(struct ofono_gprs_context *gc,
 	gcd->chat = g_at_chat_clone(chat);
 
 	ofono_gprs_context_set_data(gc, gcd);
+
+	chat = g_at_chat_get_slave(gcd->chat);
+	if (chat == NULL)
+		return 0;
+
+	g_at_chat_register(chat, "+CGEV:", cgev_notify, FALSE, gc, NULL);
 
 	return 0;
 }
