@@ -472,7 +472,7 @@ static DBusMessage *cdma_connman_set_property(DBusConnection *conn,
 		else
 			cm->driver->deactivate(cm, deactivate_callback, cm);
 
-		return dbus_message_new_method_return(msg);
+		return NULL;
 	} else if (!strcmp(property, "Username")) {
 		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_STRING)
 			return __ofono_error_invalid_args(msg);
