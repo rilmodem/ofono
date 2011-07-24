@@ -258,8 +258,18 @@ static GAtChat *create_port(const char *device)
 	GAtSyntax *syntax;
 	GIOChannel *channel;
 	GAtChat *chat;
+	GHashTable *options;
 
-	channel = g_at_tty_open(device, NULL);
+	options = g_hash_table_new(g_str_hash, g_str_equal);
+	if (options == NULL)
+		return NULL;
+
+	g_hash_table_insert(options, "Baud", "115200");
+
+	channel = g_at_tty_open(device, options);
+
+	g_hash_table_destroy(options);
+
 	if (channel == NULL)
 		return NULL;
 
