@@ -74,6 +74,7 @@ struct huawei_data {
 	GAtChat *pcui;
 	struct ofono_sim *sim;
 	enum huawei_sim_state sim_state;
+	const char *cfun_offline_mode;
 	gboolean voice;
 	gboolean ndis;
 	guint sim_poll_timeout;
@@ -107,10 +108,6 @@ static void huawei_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
-	if (data->modem)
-		g_at_chat_unref(data->modem);
-
-	g_at_chat_unref(data->pcui);
 	g_free(data);
 }
 
@@ -216,8 +213,8 @@ static gboolean notify_sim_state(struct ofono_modem *modem,
 		ofono_modem_set_powered(modem, TRUE);
 
 		if (ofono_modem_get_online(modem) == FALSE)
-			g_at_chat_send(data->pcui, "AT+CFUN=7", none_prefix,
-						cfun_offline, modem, NULL);
+			g_at_chat_send(data->pcui, data->cfun_offline_mode,
+					none_prefix, cfun_offline, modem, NULL);
 
 		return FALSE;
 	}
@@ -385,6 +382,23 @@ static void cvoice_support_cb(gboolean ok, GAtResult *result,
 					cvoice_query_cb, modem, NULL);
 }
 
+static void shutdown_device(struct huawei_data *data)
+{
+	if (data->modem) {
+		g_at_chat_cancel_all(data->modem);
+		g_at_chat_unregister_all(data->modem);
+
+		g_at_chat_unref(data->modem);
+		data->modem = NULL;
+	}
+
+	g_at_chat_cancel_all(data->pcui);
+	g_at_chat_unregister_all(data->pcui);
+
+	g_at_chat_unref(data->pcui);
+	data->pcui = NULL;
+}
+
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -393,13 +407,54 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	DBG("");
 
 	if (!ok) {
+		shutdown_device(data);
 		ofono_modem_set_powered(modem, FALSE);
 		return;
 	}
 
-	/* follow sim state */
-	g_at_chat_register(data->pcui, "^SIMST:", simst_notify,
-						FALSE, modem, NULL);
+	query_sim_state(modem);
+}
+
+static void set_offline_mode(GAtResult *result, struct huawei_data *data)
+{
+	GAtResultIter iter;
+	int min, max;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CFUN:"))
+		goto fallback;
+
+	if (!g_at_result_iter_open_list(&iter))
+		goto fallback;
+
+	while (!g_at_result_iter_close_list(&iter)) {
+		if (!g_at_result_iter_next_range(&iter, &min, &max))
+			break;
+
+		if (min <= 7 && max >= 7)
+			data->cfun_offline_mode = "AT+CFUN=7";
+	}
+
+	if (data->cfun_offline_mode != NULL)
+		return;
+
+fallback:
+	data->cfun_offline_mode = "AT+CFUN=5";
+}
+
+static void cfun_support(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huawei_data *data = ofono_modem_get_data(modem);
+
+	if (!ok) {
+		shutdown_device(data);
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	set_offline_mode(result, data);
 
 	/* query current device settings */
 	g_at_chat_send(data->pcui, "AT^U2DIAG?", none_prefix,
@@ -416,6 +471,13 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	/* check for voice support */
 	g_at_chat_send(data->pcui, "AT^CVOICE=?", cvoice_prefix,
 					cvoice_support_cb, modem, NULL);
+
+	/* follow sim state */
+	g_at_chat_register(data->pcui, "^SIMST:", simst_notify,
+						FALSE, modem, NULL);
+
+	g_at_chat_send(data->pcui, "AT+CFUN=1", NULL,
+					cfun_enable, modem, NULL);
 }
 
 static GAtChat *create_port(const char *device)
@@ -494,12 +556,10 @@ static int huawei_enable(struct ofono_modem *modem)
 	data->sim_state = 0;
 
 	g_at_chat_send(data->pcui, "ATE0 &C0 +CMEE=1", NULL,
-					NULL, NULL, NULL);
+						NULL, NULL, NULL);
 
-	g_at_chat_send(data->pcui, "AT+CFUN=1", NULL,
-					cfun_enable, modem, NULL);
-
-	query_sim_state(modem);
+	g_at_chat_send(data->pcui, "AT+CFUN=?", NULL,
+					cfun_support, modem, NULL);
 
 	return -EINPROGRESS;
 }
@@ -511,8 +571,7 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	g_at_chat_unref(data->pcui);
-	data->pcui = NULL;
+	shutdown_device(data);
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
@@ -532,13 +591,7 @@ static int huawei_disable(struct ofono_modem *modem)
 	if (data->modem) {
 		g_at_chat_cancel_all(data->modem);
 		g_at_chat_unregister_all(data->modem);
-
-		g_at_chat_unref(data->modem);
-		data->modem = NULL;
 	}
-
-	if (data->pcui == NULL)
-		return 0;
 
 	g_at_chat_cancel_all(data->pcui);
 	g_at_chat_unregister_all(data->pcui);
@@ -564,7 +617,7 @@ static void huawei_set_online(struct ofono_modem *modem, ofono_bool_t online,
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=7";
+	char const *command = online ? "AT+CFUN=1" : data->cfun_offline_mode;
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
