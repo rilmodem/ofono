@@ -645,11 +645,10 @@ static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_error error;
 
-	if (ok)
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	else
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
 }
 
 static void ifx_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -661,13 +660,13 @@ static void ifx_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("%p %s", modem, online ? "online" : "offline");
 
-	if (g_at_chat_send(data->dlcs[AUX_DLC], command, NULL,
+	if (g_at_chat_send(data->dlcs[AUX_DLC], command, none_prefix,
 					set_online_cb, cbd, g_free) > 0)
 		return;
 
-	g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+	g_free(cbd);
 }
 
 static void ifx_pre_sim(struct ofono_modem *modem)
