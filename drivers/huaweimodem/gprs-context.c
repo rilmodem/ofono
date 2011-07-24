@@ -75,40 +75,6 @@ static gboolean dhcp_poll(gpointer user_data)
 	return FALSE;
 }
 
-static gboolean ndis_receive_callback(GIOChannel *channel,
-					GIOCondition cond, gpointer user_data)
-{
-	struct ofono_gprs_context *gc = user_data;
-	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
-	GIOStatus status;
-	gsize bytes_read;
-	char buf[1059];
-
-	if (cond & (G_IO_NVAL | G_IO_ERR | G_IO_HUP)) {
-		gcd->ndis_watch = 0;
-		return FALSE;
-	}
-
-	status = g_io_channel_read_chars(channel, buf, sizeof(buf),
-							&bytes_read, NULL);
-
-	ofono_info("Received %zd bytes", bytes_read);
-
-	{
-		unsigned int i;
-		for (i = 0; i < bytes_read; i++)
-			printf("%02x ", buf[i]);
-		printf("\n");
-	}
-
-	if (status != G_IO_STATUS_NORMAL && status != G_IO_STATUS_AGAIN) {
-		gcd->ndis_watch = 0;
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 static gboolean get_next_addr(GAtResultIter *iter, char **addr)
 {
 	const char *str;
@@ -141,9 +107,6 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	char *dns1 = NULL;
 	char *dns2 = NULL;
 	const char *dns[3];
-	struct ofono_modem *modem;
-	const char *devnode;
-	GIOChannel *channel;
 
 	DBG("ok %d", ok);
 
@@ -172,19 +135,6 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 							gcd->active_context);
 	ofono_info("IP: %s  Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns1, dns2);
-
-	modem = ofono_gprs_context_get_modem(gc);
-	devnode = ofono_modem_get_string(modem, "NDIS");
-
-	ofono_info("NDIS: %s", devnode);
-
-	channel = g_at_tty_open(devnode, NULL);
-	if (channel) {
-		gcd->ndis_watch = g_io_add_watch(channel,
-				G_IO_IN | G_IO_HUP | G_IO_ERR | G_IO_NVAL,
-				ndis_receive_callback, gc);
-	}
-	g_io_channel_unref(channel);
 
 	interface = "invalid";
 
