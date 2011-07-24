@@ -300,7 +300,7 @@ static void add_huawei(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	struct udev_list_entry *entry;
-	const char *devnode, *type;
+	const char *devnode;
 	int ppp, pcui;
 
 	DBG("modem %p", modem);
@@ -325,15 +325,7 @@ static void add_huawei(struct ofono_modem *modem,
 	entry = udev_device_get_properties_list_entry(udev_device);
 	while (entry) {
 		const char *name = udev_list_entry_get_name(entry);
-		type = udev_list_entry_get_value(entry);
-
-		if (g_str_equal(name, "OFONO_HUAWEI_VOICE") == TRUE) {
-			gboolean value = g_str_equal(type, "1");
-
-			ofono_modem_set_boolean(modem, "HasVoice", value);
-			entry = udev_list_entry_get_next(entry);
-			continue;
-		}
+		const char *type = udev_list_entry_get_value(entry);
 
 		if (g_str_equal(name, "OFONO_HUAWEI_TYPE") != TRUE) {
 			entry = udev_list_entry_get_next(entry);
