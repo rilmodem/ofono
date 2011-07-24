@@ -486,6 +486,8 @@ static int huawei_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
+	g_at_chat_set_slave(data->modem, data->pcui);
+
 	if (ofono_modem_get_boolean(modem, "HasVoice") == TRUE)
 		data->voice = TRUE;
 
