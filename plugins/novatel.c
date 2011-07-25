@@ -212,6 +212,9 @@ static int novatel_enable(struct ofono_modem *modem)
 	if (data->primary == NULL)
 		return -EIO;
 
+	g_at_chat_blacklist_terminator(data->primary,
+					G_AT_CHAT_TERMINATOR_NO_CARRIER);
+
 	g_at_chat_send(data->primary, "ATE0 &C0 +CMEE=1", NULL,
 							NULL, NULL, NULL);
 
