@@ -434,10 +434,10 @@ static void add_nokia(struct ofono_modem *modem,
 
 	DBG("intfnum %s", intfnum);
 
-	if (g_strcmp0(intfnum, "01") == 0) {
+	if (g_strcmp0(intfnum, "02") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, "Modem", devnode);
-	} else if (g_strcmp0(intfnum, "03") == 0) {
+	} else if (g_strcmp0(intfnum, "04") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, "Control", devnode);
 
