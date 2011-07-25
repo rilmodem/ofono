@@ -42,6 +42,7 @@
 #define MAX_VOICE_CALLS 16
 
 #define VOICECALL_FLAG_SIM_ECC_READY 0x1
+#define VOICECALL_FLAG_STK_MODEM_CALLSETUP 0x2
 
 #define SETTINGS_STORE "voicecall"
 #define SETTINGS_GROUP "Settings"
@@ -2223,6 +2224,39 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 		goto error;
 	}
 
+	if (vc->flags & VOICECALL_FLAG_STK_MODEM_CALLSETUP) {
+		struct dial_request *req = vc->dial_req;
+		const char *number = phone_number_to_string(&req->ph);
+
+		if (!strcmp(number, "112")) {
+			struct ofono_modem *modem =
+					__ofono_atom_get_modem(vc->atom);
+
+			__ofono_modem_inc_emergency_mode(modem);
+		}
+
+		if (v->call->clip_validity == CLIP_VALIDITY_NOT_AVAILABLE) {
+			v->call->phone_number.type = req->ph.type;
+			strncpy(v->call->phone_number.number, req->ph.number,
+									20);
+			v->call->clip_validity = CLIP_VALIDITY_VALID;
+		}
+
+		v->message = req->message;
+		v->icon_id = req->icon_id;
+
+		req->message = NULL;
+		req->call = v;
+
+		/*
+		 * TS 102 223 Section 6.4.13: The terminal shall not store
+		 * in the UICC the call set-up details (called party number
+		 * and associated parameters)
+		 */
+		v->untracked = TRUE;
+		vc->flags &= ~VOICECALL_FLAG_STK_MODEM_CALLSETUP;
+	}
+
 	v->detect_time = time(NULL);
 
 	if (!voicecall_dbus_register(v)) {
@@ -3680,6 +3714,37 @@ void __ofono_voicecall_tone_cancel(struct ofono_voicecall *vc, int id)
 		g_source_remove(vc->tone_source);
 		tone_request_run(vc);
 	}
+}
+
+void __ofono_voicecall_set_alpha_and_icon_id(struct ofono_voicecall *vc,
+						const char *addr, int addr_type,
+						const char *message,
+						unsigned char icon_id)
+{
+	struct dial_request *req;
+
+	req = g_new0(struct dial_request, 1);
+
+	req->message = g_strdup(message);
+	req->icon_id = icon_id;
+
+	req->ph.type = addr_type;
+	strncpy(req->ph.number, addr, 20);
+
+	vc->dial_req = req;
+
+	vc->flags |= VOICECALL_FLAG_STK_MODEM_CALLSETUP;
+}
+
+void __ofono_voicecall_clear_alpha_and_icon_id(struct ofono_voicecall *vc)
+{
+	g_free(vc->dial_req->message);
+	vc->dial_req->message = NULL;
+
+	g_free(vc->dial_req);
+	vc->dial_req = NULL;
+
+	vc->flags &= ~VOICECALL_FLAG_STK_MODEM_CALLSETUP;
 }
 
 static void ssn_mt_forwarded_notify(struct ofono_voicecall *vc,

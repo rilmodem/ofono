@@ -266,6 +266,12 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 				ofono_voicecall_dial_cb_t cb, void *user_data);
 void __ofono_voicecall_dial_cancel(struct ofono_voicecall *vc);
 
+void __ofono_voicecall_set_alpha_and_icon_id(struct ofono_voicecall *vc,
+						const char *addr, int addr_type,
+						const char *message,
+						unsigned char icon_id);
+void __ofono_voicecall_clear_alpha_and_icon_id(struct ofono_voicecall *vc);
+
 int __ofono_voicecall_tone_send(struct ofono_voicecall *vc,
 				const char *tone_str,
 				ofono_voicecall_tone_cb_t cb, void *user_data);
