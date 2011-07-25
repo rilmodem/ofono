@@ -1790,6 +1790,45 @@ static void confirm_call_cb(enum stk_agent_result result, gboolean confirm,
 		stk_command_cb(&error, stk);
 }
 
+static void confirm_handled_call_cb(enum stk_agent_result result,
+					gboolean confirm, void *user_data)
+{
+	struct ofono_stk *stk = user_data;
+	const struct stk_command_setup_call *sc =
+					&stk->pending_cmd->setup_call;
+	struct ofono_voicecall *vc = NULL;
+	struct ofono_atom *vc_atom;
+
+	if (stk->driver->user_confirmation == NULL)
+		goto out;
+
+	if (result != STK_AGENT_RESULT_OK) {
+		stk->driver->user_confirmation(stk, FALSE);
+		goto out;
+	}
+
+	stk->driver->user_confirmation(stk, confirm);
+
+	vc_atom = __ofono_modem_find_atom(__ofono_atom_get_modem(stk->atom),
+						OFONO_ATOM_TYPE_VOICECALL);
+	if (vc_atom)
+		vc = __ofono_atom_get_data(vc_atom);
+
+	if (vc == NULL)
+		goto out;
+
+	__ofono_voicecall_set_alpha_and_icon_id(vc, sc->addr.number,
+						sc->addr.ton_npi,
+						sc->alpha_id_call_setup,
+						sc->icon_id_call_setup.id);
+
+	return;
+
+out:
+	stk_command_free(stk->pending_cmd);
+	stk->pending_cmd = NULL;
+}
+
 static gboolean handle_command_set_up_call(const struct stk_command *cmd,
 						struct stk_response *rsp,
 						struct ofono_stk *stk)
@@ -2606,6 +2645,77 @@ static gboolean handle_command_launch_browser(const struct stk_command *cmd,
 	return FALSE;
 }
 
+static void proactive_command_handled_end(struct ofono_stk *stk)
+{
+	if (stk->pending_cmd == NULL)
+		return;
+
+	switch(stk->pending_cmd->type) {
+	case STK_COMMAND_TYPE_SETUP_CALL:
+	{
+		struct ofono_voicecall *vc = NULL;
+		struct ofono_atom *vc_atom;
+
+		vc_atom = __ofono_modem_find_atom(
+					__ofono_atom_get_modem(stk->atom),
+					OFONO_ATOM_TYPE_VOICECALL);
+		if (vc_atom)
+			vc = __ofono_atom_get_data(vc_atom);
+
+		if (vc != NULL)
+			__ofono_voicecall_clear_alpha_and_icon_id(vc);
+
+		break;
+	}
+	case STK_COMMAND_TYPE_SEND_SMS:
+	case STK_COMMAND_TYPE_SEND_USSD:
+	case STK_COMMAND_TYPE_SEND_SS:
+	case STK_COMMAND_TYPE_SEND_DTMF:
+		stk_alpha_id_unset(stk);
+		break;
+
+	default:
+		break;
+	}
+
+	stk_command_free(stk->pending_cmd);
+	stk->pending_cmd = NULL;
+	stk->cancel_cmd = NULL;
+}
+
+static gboolean handle_setup_call_confirmation_req(struct stk_command *cmd,
+						struct ofono_stk *stk)
+{
+	const struct stk_command_setup_call *sc = &cmd->setup_call;
+	int err;
+	char *alpha_id = dbus_apply_text_attributes(
+					sc->alpha_id_usr_cfm ?
+					sc->alpha_id_usr_cfm : "",
+					&sc->text_attr_usr_cfm);
+	if (alpha_id == NULL)
+		goto out;
+
+	err = stk_agent_confirm_call(stk->current_agent, alpha_id,
+					&sc->icon_id_usr_cfm,
+					confirm_handled_call_cb,
+					stk, NULL,
+					stk->timeout * 1000);
+	g_free(alpha_id);
+
+	if (err < 0)
+		goto out;
+
+	stk->cancel_cmd = proactive_command_handled_end;
+
+	return TRUE;
+
+out:
+	if (stk->driver->user_confirmation)
+		stk->driver->user_confirmation(stk, FALSE);
+
+	return FALSE;
+}
+
 static void stk_proactive_command_cancel(struct ofono_stk *stk)
 {
 	if (stk->immediate_response)
@@ -2816,8 +2926,8 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 						int length,
 						const unsigned char *pdu)
 {
-	struct stk_command *cmd;
 	struct stk_response dummyrsp;
+	gboolean ok = TRUE;
 
 	/*
 	 * Modems send us the proactive command details and terminal responses
@@ -2826,69 +2936,73 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 	 * responses here
 	 */
 	if (length > 0 && pdu[0] == 0x81) {
-		stk_alpha_id_unset(stk);
+		proactive_command_handled_end(stk);
 		return;
 	}
 
 	stk_proactive_command_cancel(stk);
 
-	cmd = stk_command_new_from_pdu(pdu, length);
+	stk->pending_cmd = stk_command_new_from_pdu(pdu, length);
 
-	if (cmd == NULL || cmd->status != STK_PARSE_RESULT_OK) {
+	if (stk->pending_cmd == NULL ||
+			stk->pending_cmd->status != STK_PARSE_RESULT_OK) {
 		ofono_error("Can't parse proactive command");
 
-		if (cmd)
-			stk_command_free(cmd);
-		return;
+		ok = FALSE;
+		goto out;
 	}
 
-	DBG("type: %d", cmd->type);
+	DBG("type: %d", stk->pending_cmd->type);
 
-	switch (cmd->type) {
+	switch (stk->pending_cmd->type) {
 	case STK_COMMAND_TYPE_MORE_TIME:
 		break;
 
 	case STK_COMMAND_TYPE_SEND_SMS:
-		stk_alpha_id_set(stk, cmd->send_sms.alpha_id,
-				&cmd->send_sms.text_attr,
-				&cmd->send_sms.icon_id);
+		stk_alpha_id_set(stk, stk->pending_cmd->send_sms.alpha_id,
+				&stk->pending_cmd->send_sms.text_attr,
+				&stk->pending_cmd->send_sms.icon_id);
 		break;
 
 	case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
-		handle_command_set_idle_text(cmd, &dummyrsp, stk);
+		handle_command_set_idle_text(stk->pending_cmd, &dummyrsp, stk);
 		break;
 
 	case STK_COMMAND_TYPE_SETUP_MENU:
-		handle_command_set_up_menu(cmd, &dummyrsp, stk);
+		handle_command_set_up_menu(stk->pending_cmd, &dummyrsp, stk);
 		break;
 
 	case STK_COMMAND_TYPE_SETUP_CALL:
-		/* TODO */
+		ok = handle_setup_call_confirmation_req(stk->pending_cmd, stk);
 		break;
 
 	case STK_COMMAND_TYPE_SEND_USSD:
-		stk_alpha_id_set(stk, cmd->send_ussd.alpha_id,
-				&cmd->send_ussd.text_attr,
-				&cmd->send_ussd.icon_id);
+		stk_alpha_id_set(stk, stk->pending_cmd->send_ussd.alpha_id,
+				&stk->pending_cmd->send_ussd.text_attr,
+				&stk->pending_cmd->send_ussd.icon_id);
 		break;
 
 	case STK_COMMAND_TYPE_SEND_SS:
-		stk_alpha_id_set(stk, cmd->send_ss.alpha_id,
-				&cmd->send_ss.text_attr,
-				&cmd->send_ss.icon_id);
+		stk_alpha_id_set(stk, stk->pending_cmd->send_ss.alpha_id,
+				&stk->pending_cmd->send_ss.text_attr,
+				&stk->pending_cmd->send_ss.icon_id);
 
 	case STK_COMMAND_TYPE_SEND_DTMF:
-		stk_alpha_id_set(stk, cmd->send_dtmf.alpha_id,
-				&cmd->send_dtmf.text_attr,
-				&cmd->send_dtmf.icon_id);
+		stk_alpha_id_set(stk, stk->pending_cmd->send_dtmf.alpha_id,
+				&stk->pending_cmd->send_dtmf.text_attr,
+				&stk->pending_cmd->send_dtmf.icon_id);
 		break;
 
 	case STK_COMMAND_TYPE_REFRESH:
-		handle_command_refresh(cmd, NULL, stk);
+		handle_command_refresh(stk->pending_cmd, NULL, stk);
 		break;
 	}
 
-	stk_command_free(cmd);
+out:
+	if (ok == FALSE) {
+		stk_command_free(stk->pending_cmd);
+		stk->pending_cmd = NULL;
+	}
 }
 
 int ofono_stk_driver_register(const struct ofono_stk_driver *d)
