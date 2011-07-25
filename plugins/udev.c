@@ -399,8 +399,9 @@ static void add_novatel(struct ofono_modem *modem,
 	DBG("modem %p", modem);
 
 	registered = ofono_modem_get_integer(modem, "Registered");
-	if (registered != 0)
-		return;
+
+        if (registered > 1)
+                return;
 
 	intfnum = get_property(udev_device, "ID_USB_INTERFACE_NUM");
 
@@ -409,13 +410,17 @@ static void add_novatel(struct ofono_modem *modem,
 	if (g_strcmp0(intfnum, "00") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, "PrimaryDevice", devnode);
+
+		ofono_modem_set_integer(modem, "Registered", ++registered);
 	} else if (g_strcmp0(intfnum, "01") == 0) {
 		devnode = udev_device_get_devnode(udev_device);
 		ofono_modem_set_string(modem, "SecondaryDevice", devnode);
 
-		ofono_modem_set_integer(modem, "Registered", 1);
-		ofono_modem_register(modem);
+		ofono_modem_set_integer(modem, "Registered", ++registered);
 	}
+
+	if (registered > 1)
+		ofono_modem_register(modem);
 }
 
 static void add_nokia(struct ofono_modem *modem,
