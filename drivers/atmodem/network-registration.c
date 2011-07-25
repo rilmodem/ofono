@@ -829,6 +829,50 @@ static void huawei_rssi_notify(GAtResult *result, gpointer user_data)
 				at_util_convert_signal_strength(strength));
 }
 
+static void huawei_nwtime_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	int year, mon, mday, hour, min, sec;
+	char tz[4];
+	const char *date, *time, *dst;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^NWTIME:"))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &date))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &time))
+		return;
+
+	if (!g_at_result_iter_next_unquoted_string(&iter, &dst))
+		return;
+
+	DBG("date %s time %s dst %s", date, time, dst);
+
+	if (sscanf(date, "%u/%u/%u", &year, &mon, &mday) != 3)
+		return;
+
+	if (sscanf(time, "%u:%u:%u%s", &hour, &min, &sec, tz) != 4)
+		return;
+
+	nd->time.utcoff = atoi(tz) * 15 * 60;
+	nd->time.dst = atoi(dst);
+
+	nd->time.sec = sec;
+	nd->time.min = min;
+	nd->time.hour = hour;
+	nd->time.mday = mday;
+	nd->time.mon = mon;
+	nd->time.year = 2000 + year;
+
+	ofono_netreg_time_notify(netreg, &nd->time);
+}
+
 static void csq_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -1303,8 +1347,13 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 					FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_HUAWEI:
+		/* Register for RSSI reports */
 		g_at_chat_register(nd->chat, "^RSSI:", huawei_rssi_notify,
-					FALSE, netreg, NULL);
+						FALSE, netreg, NULL);
+
+		/* Register for network time reports */
+		g_at_chat_register(nd->chat, "^NWTIME:", huawei_nwtime_notify,
+						FALSE, netreg, NULL);
 		break;
 	case OFONO_VENDOR_IFX:
 		/* Register for specific signal strength reports */
