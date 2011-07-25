@@ -147,6 +147,23 @@ Modem Emulator
   Priority: Low
   Depends: HFP AG emulator
 
+- Integrate HFP AG emulator as a BlueZ service.
+  Replace direct access to Bluetooth library by usage of the BlueZ service
+  architecture.
+
+  Complexity: C2
+  Priority: Medium
+  Depends: HFP AG emulator
+
+- Add audio management to HFP AG emulator.
+  Integrate HFP AG emulator to BlueZ and Pulse Audio.
+  Add audio related AT commands support: remote audio volume control and in-band
+  ring tone management.
+
+  Complexity: C4
+  Priority: Medium
+  Depends: HFP AG emulator as BlueZ service
+
 PPP
 ===
 
