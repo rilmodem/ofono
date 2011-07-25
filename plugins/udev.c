@@ -394,7 +394,6 @@ static void add_novatel(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	const char *devnode, *intfnum;
-	struct udev_device *parent;
 	int registered;
 
 	DBG("modem %p", modem);
@@ -403,9 +402,7 @@ static void add_novatel(struct ofono_modem *modem,
 	if (registered != 0)
 		return;
 
-	parent = udev_device_get_parent(udev_device);
-	parent = udev_device_get_parent(parent);
-	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
+	intfnum = get_property(udev_device, "ID_USB_INTERFACE_NUM");
 
 	DBG("intfnum %s", intfnum);
 
@@ -425,7 +422,6 @@ static void add_nokia(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	const char *devnode, *intfnum;
-	struct udev_device *parent;
 	int registered;
 
 	DBG("modem %p", modem);
@@ -434,8 +430,7 @@ static void add_nokia(struct ofono_modem *modem,
 	if (registered != 0)
 		return;
 
-	parent = udev_device_get_parent(udev_device);
-	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
+	intfnum = get_property(udev_device, "ID_USB_INTERFACE_NUM");
 
 	DBG("intfnum %s", intfnum);
 
@@ -555,7 +550,6 @@ static void add_linktop(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
 	const char *devnode, *intfnum;
-	struct udev_device *parent;
 	int registered;
 
 	DBG("modem %p", modem);
@@ -564,8 +558,7 @@ static void add_linktop(struct ofono_modem *modem,
 	if (registered != 0)
 		return;
 
-	parent = udev_device_get_parent(udev_device);
-	intfnum = udev_device_get_sysattr_value(parent, "bInterfaceNumber");
+	intfnum = get_property(udev_device, "ID_USB_INTERFACE_NUM");
 
 	DBG("intfnum %s", intfnum);
 
