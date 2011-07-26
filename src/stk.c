@@ -2999,6 +2999,7 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 					stk->pending_cmd->send_ss.alpha_id,
 					&stk->pending_cmd->send_ss.text_attr,
 					&stk->pending_cmd->send_ss.icon_id);
+		break;
 
 	case STK_COMMAND_TYPE_SEND_DTMF:
 		ok = handled_alpha_id_set(stk,
