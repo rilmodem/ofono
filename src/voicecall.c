@@ -2236,10 +2236,13 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 		}
 
 		if (v->call->clip_validity == CLIP_VALIDITY_NOT_AVAILABLE) {
+			char *number = v->call->phone_number.number;
+
 			v->call->phone_number.type = req->ph.type;
-			strncpy(v->call->phone_number.number, req->ph.number,
+			strncpy(number, req->ph.number,
 					OFONO_MAX_PHONE_NUMBER_LENGTH);
 			v->call->clip_validity = CLIP_VALIDITY_VALID;
+			number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
 		}
 
 		v->message = req->message;
