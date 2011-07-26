@@ -2108,6 +2108,14 @@ void ofono_gprs_status_notify(struct ofono_gprs *gprs, int status)
 		return;
 	}
 
+	/*
+	 * If we're already taking action, e.g. attaching or detaching, then
+	 * ignore this notification for now, we will take appropriate action
+	 * after the set_attach operation has completed
+	 */
+	if (gprs->flags & GPRS_FLAG_ATTACHING)
+		return;
+
 	/* We registered without being powered */
 	if (gprs->powered == FALSE)
 		goto detach;
