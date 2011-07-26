@@ -2955,9 +2955,6 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 	DBG("type: %d", stk->pending_cmd->type);
 
 	switch (stk->pending_cmd->type) {
-	case STK_COMMAND_TYPE_MORE_TIME:
-		break;
-
 	case STK_COMMAND_TYPE_SEND_SMS:
 		stk_alpha_id_set(stk, stk->pending_cmd->send_sms.alpha_id,
 				&stk->pending_cmd->send_sms.text_attr,
