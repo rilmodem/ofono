@@ -2238,7 +2238,7 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 		if (v->call->clip_validity == CLIP_VALIDITY_NOT_AVAILABLE) {
 			v->call->phone_number.type = req->ph.type;
 			strncpy(v->call->phone_number.number, req->ph.number,
-									20);
+					OFONO_MAX_PHONE_NUMBER_LENGTH);
 			v->call->clip_validity = CLIP_VALIDITY_VALID;
 		}
 
@@ -3571,7 +3571,7 @@ int __ofono_voicecall_dial(struct ofono_voicecall *vc,
 
 	/* TODO: parse the tones to dial after call connected */
 	req->ph.type = addr_type;
-	strncpy(req->ph.number, addr, 20);
+	strncpy(req->ph.number, addr, OFONO_MAX_PHONE_NUMBER_LENGTH);
 
 	vc->dial_req = req;
 
@@ -3729,7 +3729,7 @@ void __ofono_voicecall_set_alpha_and_icon_id(struct ofono_voicecall *vc,
 	req->icon_id = icon_id;
 
 	req->ph.type = addr_type;
-	strncpy(req->ph.number, addr, 20);
+	strncpy(req->ph.number, addr, OFONO_MAX_PHONE_NUMBER_LENGTH);
 
 	vc->dial_req = req;
 
