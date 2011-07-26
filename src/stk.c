@@ -504,9 +504,9 @@ static void user_termination_cb(enum stk_agent_result result, void *user_data)
 	send_simple_response(stk, STK_RESULT_TYPE_USER_TERMINATED);
 }
 
-static void stk_alpha_id_set(struct ofono_stk *stk,
-		const char *text, const struct stk_text_attribute *attr,
-		const struct stk_icon_id *icon)
+static gboolean stk_alpha_id_set(struct ofono_stk *stk,
+			const char *text, const struct stk_text_attribute *attr,
+			const struct stk_icon_id *icon)
 {
 	char *alpha = dbus_apply_text_attributes(text, attr);
 
@@ -516,7 +516,7 @@ static void stk_alpha_id_set(struct ofono_stk *stk,
 	 * better idea is found out.
 	 */
 	if (alpha == NULL)
-		return;
+		return FALSE;
 
 	if (stk->respond_on_exit)
 		stk_agent_display_action(stk->current_agent, alpha, icon,
@@ -525,6 +525,8 @@ static void stk_alpha_id_set(struct ofono_stk *stk,
 		stk_agent_display_action_info(stk->current_agent, alpha, icon);
 
 	g_free(alpha);
+
+	return TRUE;
 }
 
 static void stk_alpha_id_unset(struct ofono_stk *stk)
@@ -2922,12 +2924,23 @@ void ofono_stk_proactive_command_notify(struct ofono_stk *stk,
 		stk_command_cb(&error, stk);
 }
 
+static gboolean handled_alpha_id_set(struct ofono_stk *stk,
+			const char *text, const struct stk_text_attribute *attr,
+			const struct stk_icon_id *icon)
+{
+	if (stk_alpha_id_set(stk, text, attr, icon) == FALSE)
+		return FALSE;
+
+	stk->cancel_cmd = proactive_command_handled_end;
+	return TRUE;
+}
+
 void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 						int length,
 						const unsigned char *pdu)
 {
 	struct stk_response dummyrsp;
-	gboolean ok = TRUE;
+	gboolean ok = FALSE;
 
 	/*
 	 * Modems send us the proactive command details and terminal responses
@@ -2956,9 +2969,10 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 
 	switch (stk->pending_cmd->type) {
 	case STK_COMMAND_TYPE_SEND_SMS:
-		stk_alpha_id_set(stk, stk->pending_cmd->send_sms.alpha_id,
-				&stk->pending_cmd->send_sms.text_attr,
-				&stk->pending_cmd->send_sms.icon_id);
+		ok = handled_alpha_id_set(stk,
+					stk->pending_cmd->send_sms.alpha_id,
+					&stk->pending_cmd->send_sms.text_attr,
+					&stk->pending_cmd->send_sms.icon_id);
 		break;
 
 	case STK_COMMAND_TYPE_SETUP_IDLE_MODE_TEXT:
@@ -2974,20 +2988,23 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 		break;
 
 	case STK_COMMAND_TYPE_SEND_USSD:
-		stk_alpha_id_set(stk, stk->pending_cmd->send_ussd.alpha_id,
-				&stk->pending_cmd->send_ussd.text_attr,
-				&stk->pending_cmd->send_ussd.icon_id);
+		ok = handled_alpha_id_set(stk,
+					stk->pending_cmd->send_ussd.alpha_id,
+					&stk->pending_cmd->send_ussd.text_attr,
+					&stk->pending_cmd->send_ussd.icon_id);
 		break;
 
 	case STK_COMMAND_TYPE_SEND_SS:
-		stk_alpha_id_set(stk, stk->pending_cmd->send_ss.alpha_id,
-				&stk->pending_cmd->send_ss.text_attr,
-				&stk->pending_cmd->send_ss.icon_id);
+		ok = handled_alpha_id_set(stk,
+					stk->pending_cmd->send_ss.alpha_id,
+					&stk->pending_cmd->send_ss.text_attr,
+					&stk->pending_cmd->send_ss.icon_id);
 
 	case STK_COMMAND_TYPE_SEND_DTMF:
-		stk_alpha_id_set(stk, stk->pending_cmd->send_dtmf.alpha_id,
-				&stk->pending_cmd->send_dtmf.text_attr,
-				&stk->pending_cmd->send_dtmf.icon_id);
+		ok = handled_alpha_id_set(stk,
+					stk->pending_cmd->send_dtmf.alpha_id,
+					&stk->pending_cmd->send_dtmf.text_attr,
+					&stk->pending_cmd->send_dtmf.icon_id);
 		break;
 
 	case STK_COMMAND_TYPE_REFRESH:
