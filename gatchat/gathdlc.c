@@ -35,6 +35,7 @@
 #include "crc-ccitt.h"
 #include "ringbuffer.h"
 #include "gatio.h"
+#include "gatutil.h"
 #include "gathdlc.h"
 
 #define BUFFER_SIZE	(2 * 2048)
@@ -77,7 +78,8 @@ struct _GAtHDLC {
 	guint num_plus;
 };
 
-static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
+static inline void hdlc_record(GAtHDLC *hdlc, gboolean in,
+					guint8 *data, guint16 length)
 {
 	guint16 len = htons(length);
 	guint32 ts;
@@ -85,7 +87,9 @@ static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
 	unsigned char id;
 	int err;
 
-	if (fd < 0)
+	g_at_util_debug_dump(in, data, length, hdlc->debugf, hdlc->debug_data);
+
+	if (hdlc->record_fd < 0)
 		return;
 
 	if (len == 0)
@@ -96,25 +100,25 @@ static void hdlc_record(int fd, gboolean in, guint8 *data, guint16 length)
 
 	id = 0x07;
 
-	err = write(fd, &id, 1);
+	err = write(hdlc->record_fd, &id, 1);
 	if (err < 0)
 		return;
 
-	err = write(fd, &ts, 4);
+	err = write(hdlc->record_fd, &ts, 4);
 	if (err < 0)
 		return;
 
 	id = in ? 0x02 : 0x01;
 
-	err = write(fd, &id, 1);
+	err = write(hdlc->record_fd, &id, 1);
 	if (err < 0)
 		return;
 
-	err = write(fd, &len, 2);
+	err = write(hdlc->record_fd, &len, 2);
 	if (err < 0)
 		return;
 
-	err = write(fd, data, length);
+	err = write(hdlc->record_fd, data, length);
 	if (err < 0)
 		return;
 }
@@ -260,7 +264,7 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 			return;
 	}
 
-	hdlc_record(hdlc->record_fd, TRUE, buf, wrap);
+	hdlc_record(hdlc, TRUE, buf, wrap);
 
 	hdlc->in_read_handler = TRUE;
 
@@ -308,7 +312,7 @@ static void new_bytes(struct ring_buffer *rbuf, gpointer user_data)
 
 		if (pos == wrap) {
 			buf = ring_buffer_read_ptr(rbuf, pos);
-			hdlc_record(hdlc->record_fd, TRUE, buf, len - wrap);
+			hdlc_record(hdlc, TRUE, buf, len - wrap);
 		}
 	}
 
@@ -376,8 +380,7 @@ error:
 	if (write_buffer)
 		ring_buffer_free(write_buffer);
 
-	if (hdlc->decode_buffer)
-		g_free(hdlc->decode_buffer);
+	g_free(hdlc->decode_buffer);
 
 	g_free(hdlc);
 
@@ -482,7 +485,7 @@ static gboolean can_write_data(gpointer data)
 	buf = ring_buffer_read_ptr(write_buffer, 0);
 
 	bytes_written = g_at_io_write(hdlc->io, (gchar *) buf, len);
-	hdlc_record(hdlc->record_fd, FALSE, buf, bytes_written);
+	hdlc_record(hdlc, FALSE, buf, bytes_written);
 	ring_buffer_drain(write_buffer, bytes_written);
 
 	if (ring_buffer_len(write_buffer) > 0)
