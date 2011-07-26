@@ -250,7 +250,40 @@ GIOChannel *g_at_tty_open(const char *tty, GHashTable *options)
 		return NULL;
 
 	channel = g_io_channel_unix_new(fd);
+	if (channel == NULL) {
+		close(fd);
+		return NULL;
+	}
 
+	g_io_channel_set_close_on_unref(channel, TRUE);
+
+	return channel;
+}
+
+GIOChannel *g_at_tty_open_qcdm(const char *tty)
+{
+	GIOChannel *channel;
+	struct termios ti;
+	int fd;
+
+        fd = open(tty, O_RDWR | O_NOCTTY | O_NONBLOCK);
+        if (fd < 0)
+                return NULL;
+
+	/* Switch TTY to raw mode */
+	memset(&ti, 0, sizeof(ti));
+	cfmakeraw(&ti);
+
+	/* No parity, 1 stop bit */
+	ti.c_cflag &= ~(CSIZE | CSTOPB | PARENB);
+	ti.c_cflag |= (B115200 | CS8);
+
+	if (tcsetattr (fd, TCSANOW, &ti) < 0) {
+		close(fd);
+		return NULL;
+	}
+
+	channel = g_io_channel_unix_new(fd);
 	if (channel == NULL) {
 		close(fd);
 		return NULL;

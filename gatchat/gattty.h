@@ -43,6 +43,8 @@ extern "C" {
  */
 GIOChannel *g_at_tty_open(const char *tty, GHashTable *options);
 
+GIOChannel *g_at_tty_open_qcdm(const char *tty);
+
 #ifdef __cplusplus
 }
 #endif
