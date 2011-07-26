@@ -2943,11 +2943,11 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 	stk_proactive_command_cancel(stk);
 
 	stk->pending_cmd = stk_command_new_from_pdu(pdu, length);
+	if (stk->pending_cmd == NULL)
+		return;
 
-	if (stk->pending_cmd == NULL ||
-			stk->pending_cmd->status != STK_PARSE_RESULT_OK) {
-		ofono_error("Can't parse proactive command");
-
+	if (stk->pending_cmd->status != STK_PARSE_RESULT_OK) {
+		ofono_error("Can't parse modem-handled proactive command");
 		ok = FALSE;
 		goto out;
 	}
