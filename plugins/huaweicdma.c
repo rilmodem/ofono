@@ -23,7 +23,6 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -37,8 +36,6 @@
 #include <ofono/devinfo.h>
 #include <ofono/cdma-connman.h>
 #include <ofono/log.h>
-
-#include <drivers/atmodem/atutil.h>
 
 struct huaweicdma_data {
 	GAtChat *chat;
