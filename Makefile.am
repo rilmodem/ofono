@@ -528,6 +528,7 @@ test_scripts = test/backtrace \
 		test/cdma-list-call \
 		test/cdma-dial-number \
 		test/cdma-hangup \
+		test/cdma-set-credentials \
 		test/disable-call-forwarding \
 		test/list-messages \
 		test/test-sms \
