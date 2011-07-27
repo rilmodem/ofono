@@ -23,7 +23,6 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -107,6 +106,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	syntax = g_at_syntax_new_gsm_permissive();
 	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
+
 	g_io_channel_unref(channel);
 
 	if (chat == NULL)
@@ -172,9 +172,6 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	g_at_chat_unref(data->modem);
-	data->modem = NULL;
-
 	g_at_chat_unref(data->control);
 	data->control = NULL;
 
@@ -188,18 +185,15 @@ static int nokia_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (data->modem) {
-		g_at_chat_cancel_all(data->modem);
-		g_at_chat_unregister_all(data->modem);
-		g_at_chat_unref(data->modem);
-		data->modem = NULL;
-	}
+	g_at_chat_cancel_all(data->modem);
+	g_at_chat_unregister_all(data->modem);
 
-	if (data->control == NULL)
-		return 0;
+	g_at_chat_unref(data->modem);
+	data->modem = NULL;
 
 	g_at_chat_cancel_all(data->control);
 	g_at_chat_unregister_all(data->control);
+
 	g_at_chat_send(data->control, "AT+CFUN=4", none_prefix,
 					cfun_disable, modem, NULL);
 
