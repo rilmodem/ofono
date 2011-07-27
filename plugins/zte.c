@@ -133,9 +133,16 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 		g_at_chat_unref(data->aux);
 		data->aux = NULL;
+
+		ofono_modem_set_powered(modem, FALSE);
+		return;
 	}
 
-	ofono_modem_set_powered(modem, ok);
+	/* AT&C0 needs to be send separate and on both channel */
+	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "AT&C0", NULL, NULL, NULL, NULL);
+
+	ofono_modem_set_powered(modem, TRUE);
 }
 
 static int zte_enable(struct ofono_modem *modem)
@@ -155,8 +162,8 @@ static int zte_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
-	g_at_chat_send(data->modem, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->aux, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->modem, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 
 	/* Direct transition 0 -> 4 leaves SIM hosed */
 	g_at_chat_send(data->aux, "AT+CFUN=1;+CFUN=4", NULL,
