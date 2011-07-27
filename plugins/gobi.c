@@ -23,7 +23,6 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -92,8 +91,8 @@ static GAtChat *open_device(struct ofono_modem *modem,
 				const char *key, char *debug)
 {
 	const char *device;
-	GAtSyntax *syntax;
 	GIOChannel *channel;
+	GAtSyntax *syntax;
 	GAtChat *chat;
 
 	device = ofono_modem_get_string(modem, key);
@@ -109,6 +108,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	syntax = g_at_syntax_new_gsm_permissive();
 	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
+
 	g_io_channel_unref(channel);
 
 	if (chat == NULL)
@@ -124,7 +124,6 @@ static void simstat_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct gobi_data *data = ofono_modem_get_data(modem);
-
 	GAtResultIter iter;
 	const char *state, *tmp;
 
@@ -166,9 +165,15 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	data->have_sim = FALSE;
+	if (!ok) {
+		g_at_chat_unref(data->chat);
+		data->chat = NULL;
 
-	ofono_modem_set_powered(modem, ok);
+		ofono_modem_set_powered(modem, ok);
+		return;
+	}
+
+	data->have_sim = FALSE;
 
 	g_at_chat_register(data->chat, "$QCSIMSTAT:", simstat_notify,
 						FALSE, modem, NULL);
@@ -178,6 +183,8 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_send(data->chat, "AT$QCSIMSTAT?", none_prefix,
 						NULL, NULL, NULL);
+
+	ofono_modem_set_powered(modem, ok);
 }
 
 static int gobi_enable(struct ofono_modem *modem)
@@ -190,7 +197,7 @@ static int gobi_enable(struct ofono_modem *modem)
 	if (data->chat == NULL)
 		return -EINVAL;
 
-	g_at_chat_send(data->chat, "ATE0 +CMEE=1", none_prefix,
+	g_at_chat_send(data->chat, "ATE0 +CMEE=1", NULL,
 						NULL, NULL, NULL);
 
 	g_at_chat_send(data->chat, "AT+CFUN=4", none_prefix,
@@ -219,9 +226,6 @@ static int gobi_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (data->chat == NULL)
-		return 0;
-
 	g_at_chat_cancel_all(data->chat);
 	g_at_chat_unregister_all(data->chat);
 
@@ -235,11 +239,10 @@ static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_error error;
 
-	if (ok)
-		CALLBACK_WITH_SUCCESS(cb, cbd->data);
-	else
-		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
 }
 
 static void gobi_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -251,17 +254,13 @@ static void gobi_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
-	if (data->chat == NULL)
-		goto error;
-
-	if (g_at_chat_send(data->chat, command, NULL,
-					set_online_cb, cbd, g_free))
+	if (g_at_chat_send(data->chat, command, none_prefix,
+					set_online_cb, cbd, g_free) > 0)
 		return;
 
-error:
-	g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
+
+	g_free(cbd);
 }
 
 static void gobi_pre_sim(struct ofono_modem *modem)
