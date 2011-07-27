@@ -52,6 +52,8 @@ static const char *none_prefix[] = { NULL };
 struct speedup_data {
 	GAtChat *modem;
 	GAtChat *aux;
+	gboolean have_sim;
+	struct at_util_sim_state_query *sim_state_query;
 };
 
 static int speedup_probe(struct ofono_modem *modem)
@@ -120,6 +122,19 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
+static void sim_state_cb(gboolean present, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct speedup_data *data = ofono_modem_get_data(modem);
+
+	at_util_sim_state_query_free(data->sim_state_query);
+	data->sim_state_query = NULL;
+
+	data->have_sim = present;
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -133,9 +148,13 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 		g_at_chat_unref(data->aux);
 		data->aux = NULL;
+
+		ofono_modem_set_powered(modem, FALSE);
+		return;
 	}
 
-	ofono_modem_set_powered(modem, ok);
+	data->sim_state_query = at_util_sim_state_query_new(data->aux,
+						2, 20, sim_state_cb, modem);
 }
 
 static int speedup_enable(struct ofono_modem *modem)
@@ -238,7 +257,7 @@ static void speedup_pre_sim(struct ofono_modem *modem)
 	sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->aux);
 
-	if (sim)
+	if (sim && data->have_sim == TRUE)
 		ofono_sim_inserted_notify(sim, TRUE);
 }
 
