@@ -652,6 +652,8 @@ static void huawei_post_online(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
+	DBG("%p", modem);
+
 	if (data->sim_state != HUAWEI_SIM_STATE_VALID &&
 			data->sim_state != HUAWEI_SIM_STATE_INVALID_CS &&
 			data->sim_state != HUAWEI_SIM_STATE_INVALID_PS) {
