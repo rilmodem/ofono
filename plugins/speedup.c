@@ -177,7 +177,7 @@ static int speedup_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->modem, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->aux, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 
-	g_at_chat_send(data->aux, "AT+CFUN=1", NULL,
+	g_at_chat_send(data->aux, "AT+CFUN=4", NULL,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
