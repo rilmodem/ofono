@@ -52,6 +52,7 @@ struct gobi_data {
 	GAtChat *chat;
 	struct ofono_sim *sim;
 	gboolean have_sim;
+	guint cfun_timeout;
 };
 
 static void gobi_debug(const char *str, void *user_data)
@@ -165,11 +166,16 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
+	if (data->cfun_timeout > 0) {
+		g_source_remove(data->cfun_timeout);
+		data->cfun_timeout = 0;
+	}
+
 	if (!ok) {
 		g_at_chat_unref(data->chat);
 		data->chat = NULL;
 
-		ofono_modem_set_powered(modem, ok);
+		ofono_modem_set_powered(modem, FALSE);
 		return;
 	}
 
@@ -184,7 +190,24 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->chat, "AT$QCSIMSTAT?", none_prefix,
 						NULL, NULL, NULL);
 
-	ofono_modem_set_powered(modem, ok);
+	ofono_modem_set_powered(modem, TRUE);
+}
+
+static gboolean cfun_timeout(gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct gobi_data *data = ofono_modem_get_data(modem);
+
+	ofono_error("Modem enabling timeout, RFKILL enabled?");
+
+	data->cfun_timeout = 0;
+
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	return FALSE;
 }
 
 static int gobi_enable(struct ofono_modem *modem)
@@ -202,6 +225,8 @@ static int gobi_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->chat, "AT+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
+
+	data->cfun_timeout = g_timeout_add_seconds(5, cfun_timeout, modem);
 
 	return -EINPROGRESS;
 }
