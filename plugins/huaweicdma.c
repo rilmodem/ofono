@@ -38,7 +38,8 @@
 #include <ofono/log.h>
 
 struct huaweicdma_data {
-	GAtChat *chat;
+	GAtChat *modem;
+	GAtChat *pcui;
 };
 
 static void huaweicdma_debug(const char *str, void *data)
@@ -71,39 +72,98 @@ static void huaweicdma_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
-	g_at_chat_unref(data->chat);
-
 	g_free(data);
+}
+
+static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huaweicdma_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	if (!ok) {
+		g_at_chat_unref(data->modem);
+		data->modem = NULL;
+
+		g_at_chat_unref(data->pcui);
+		data->pcui = NULL;
+	}
+
+	ofono_modem_set_powered(modem, ok);
+}
+
+static GAtChat *open_device(struct ofono_modem *modem,
+				const char *key, char *debug)
+{
+	const char *device;
+	GIOChannel *channel;
+	GAtSyntax *syntax;
+	GAtChat *chat;
+
+	device = ofono_modem_get_string(modem, key);
+	if (device == NULL)
+		return NULL;
+
+	DBG("%s %s", key, device);
+
+	channel = g_at_tty_open(device, NULL);
+	if (channel == NULL)
+		return NULL;
+
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(channel, syntax);
+	g_at_syntax_unref(syntax);
+
+	g_io_channel_unref(channel);
+
+	if (chat == NULL)
+		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, huaweicdma_debug, debug);
+
+	return chat;
 }
 
 static int huaweicdma_enable(struct ofono_modem *modem)
 {
 	struct huaweicdma_data *data = ofono_modem_get_data(modem);
-	GAtSyntax *syntax;
-	GIOChannel *channel;
-	const char *device;
 
-	device = ofono_modem_get_string(modem, "Device");
-	if (device == NULL)
+	DBG("");
+
+	data->modem = open_device(modem, "Modem", "Modem: ");
+	if (data->modem == NULL)
 		return -EINVAL;
 
-	channel = g_at_tty_open(device, NULL);
-	if (channel == NULL)
+	data->pcui = open_device(modem, "Pcui", "PCUI: ");
+	if (data->pcui == NULL) {
+		g_at_chat_unref(data->modem);
+		data->modem = NULL;
 		return -EIO;
+	}
 
-	syntax = g_at_syntax_new_gsm_permissive();
-	data->chat = g_at_chat_new(channel, syntax);
-	g_at_syntax_unref(syntax);
+	g_at_chat_send(data->modem, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->pcui, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 
-	g_io_channel_unref(channel);
+	g_at_chat_send(data->pcui, "AT+CFUN=1", NULL,
+					cfun_enable, modem, NULL);
 
-	if (data->chat == NULL)
-		return -ENOMEM;
+	return -EINPROGRESS;
+}
 
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, huaweicdma_debug, "Device: ");
+static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huaweicdma_data *data = ofono_modem_get_data(modem);
 
-	return 0;
+	DBG("");
+
+	g_at_chat_unref(data->pcui);
+	data->pcui = NULL;
+
+	if (ok)
+		ofono_modem_set_powered(modem, FALSE);
 }
 
 static int huaweicdma_disable(struct ofono_modem *modem)
@@ -112,10 +172,19 @@ static int huaweicdma_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
+	g_at_chat_cancel_all(data->modem);
+	g_at_chat_unregister_all(data->modem);
 
-	return 0;
+	g_at_chat_unref(data->modem);
+	data->modem = NULL;
+
+	g_at_chat_cancel_all(data->pcui);
+	g_at_chat_unregister_all(data->pcui);
+
+	g_at_chat_send(data->pcui, "AT+CFUN=0", NULL,
+					cfun_disable, modem, NULL);
+
+	return -EINPROGRESS;
 }
 
 static void huaweicdma_pre_sim(struct ofono_modem *modem)
@@ -124,7 +193,7 @@ static void huaweicdma_pre_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_devinfo_create(modem, 0, "cdmamodem", data->chat);
+	ofono_devinfo_create(modem, 0, "cdmamodem", data->pcui);
 }
 
 static void huaweicdma_post_sim(struct ofono_modem *modem)
@@ -138,7 +207,7 @@ static void huaweicdma_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->chat);
+	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->modem);
 }
 
 static struct ofono_modem_driver huaweicdma_driver = {
