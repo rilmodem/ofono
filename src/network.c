@@ -1483,6 +1483,12 @@ static void init_registration_status(const struct ofono_error *error,
 							netreg);
 	}
 
+	if (netreg->driver->register_manual == NULL) {
+		set_registration_mode(netreg,
+					NETWORK_REGISTRATION_MODE_AUTO_ONLY);
+		return;
+	}
+
 	if (netreg->sim_context) {
 		ofono_sim_read(netreg->sim_context, SIM_EF_CPHS_CSP_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
@@ -1923,6 +1929,9 @@ static void netreg_load_settings(struct ofono_netreg *netreg)
 	const char *imsi;
 	char *strmode;
 	gboolean upgrade = FALSE;
+
+	if (netreg->mode == NETWORK_REGISTRATION_MODE_AUTO_ONLY)
+		return;
 
 	imsi = ofono_sim_get_imsi(netreg->sim);
 	if (imsi == NULL)
