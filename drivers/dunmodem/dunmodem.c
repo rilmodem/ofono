@@ -34,11 +34,14 @@
 
 static int dunmodem_init(void)
 {
+	dun_netreg_init();
+
 	return 0;
 }
 
 static void dunmodem_exit(void)
 {
+	dun_netreg_exit();
 }
 
 OFONO_PLUGIN_DEFINE(dunmodem, "Dialup modem driver", VERSION,

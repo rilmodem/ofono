@@ -20,3 +20,6 @@
  */
 
 #include <drivers/atmodem/atutil.h>
+
+extern void dun_netreg_init(void);
+extern void dun_netreg_exit(void);
