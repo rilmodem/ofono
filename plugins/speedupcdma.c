@@ -37,10 +37,9 @@
 #include <ofono/cdma-connman.h>
 #include <ofono/log.h>
 
-static const char *none_prefix[] = { NULL };
-
 struct speedupcdma_data {
-	GAtChat *chat;
+	GAtChat *modem;
+	GAtChat *aux;
 };
 
 static void speedupcdma_debug(const char *str, void *data)
@@ -84,49 +83,70 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	DBG("");
 
 	if (!ok) {
-		g_at_chat_unref(data->chat);
-		data->chat = NULL;
+		g_at_chat_unref(data->modem);
+		data->modem = NULL;
 
-		ofono_modem_set_powered(modem, FALSE);
-		return;
+		g_at_chat_unref(data->aux);
+		data->aux = NULL;
 	}
 
-	ofono_modem_set_powered(modem, TRUE);
+	ofono_modem_set_powered(modem, ok);
+}
+
+static GAtChat *open_device(struct ofono_modem *modem,
+				const char *key, char *debug)
+{
+	const char *device;
+	GIOChannel *channel;
+	GAtSyntax *syntax;
+	GAtChat *chat;
+
+	device = ofono_modem_get_string(modem, key);
+	if (device == NULL)
+		return NULL;
+
+	DBG("%s %s", key, device);
+
+	channel = g_at_tty_open(device, NULL);
+	if (channel == NULL)
+		return NULL;
+
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(channel, syntax);
+	g_at_syntax_unref(syntax);
+
+	g_io_channel_unref(channel);
+
+	if (chat == NULL)
+		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, speedupcdma_debug, debug);
+
+	return chat;
 }
 
 static int speedupcdma_enable(struct ofono_modem *modem)
 {
 	struct speedupcdma_data *data = ofono_modem_get_data(modem);
-	GAtSyntax *syntax;
-	GIOChannel *channel;
-	const char *modem_path;
 
-	modem_path = ofono_modem_get_string(modem, "Modem");
-	if (modem_path == NULL)
+	DBG("");
+
+	data->modem = open_device(modem, "Modem", "Modem: ");
+	if (data->modem == NULL)
 		return -EINVAL;
 
-	DBG("path is: %s", modem_path);
-
-	channel = g_at_tty_open(modem_path, NULL);
-	if (channel == NULL)
+	data->aux = open_device(modem, "Aux", "Aux: ");
+	if (data->aux == NULL) {
+		g_at_chat_unref(data->modem);
+		data->modem = NULL;
 		return -EIO;
+	}
 
-	syntax = g_at_syntax_new_gsm_permissive();
-	data->chat = g_at_chat_new(channel, syntax);
-	g_at_syntax_unref(syntax);
+	g_at_chat_send(data->modem, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 
-	g_io_channel_unref(channel);
-
-	if (data->chat == NULL)
-		return -ENOMEM;
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->chat, speedupcdma_debug, "Modem: ");
-
-	g_at_chat_send(data->chat, "ATE0 +CMEE=1", none_prefix,
-						NULL, NULL, NULL);
-
-	g_at_chat_send(data->chat, "AT+CFUN=1", none_prefix,
+	g_at_chat_send(data->aux, "AT+CFUN=1", NULL,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -139,8 +159,8 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
+	g_at_chat_unref(data->aux);
+	data->aux = NULL;
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
@@ -152,7 +172,16 @@ static int speedupcdma_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	g_at_chat_send(data->chat, "AT+CFUN=0", none_prefix,
+	g_at_chat_cancel_all(data->modem);
+	g_at_chat_unregister_all(data->modem);
+
+	g_at_chat_unref(data->modem);
+	data->modem = NULL;
+
+	g_at_chat_cancel_all(data->aux);
+	g_at_chat_unregister_all(data->aux);
+
+	g_at_chat_send(data->aux, "AT+CFUN=0", NULL,
 					cfun_disable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -164,7 +193,7 @@ static void speedupcdma_pre_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_devinfo_create(modem, 0, "cdmamodem", data->chat);
+	ofono_devinfo_create(modem, 0, "cdmamodem", data->aux);
 }
 
 static void speedupcdma_post_sim(struct ofono_modem *modem)
@@ -178,7 +207,7 @@ static void speedupcdma_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->chat);
+	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->modem);
 }
 
 static struct ofono_modem_driver speedupcdma_driver = {
