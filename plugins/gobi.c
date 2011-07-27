@@ -37,11 +37,8 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
-#include <ofono/cbs.h>
-#include <ofono/sms.h>
-#include <ofono/ussd.h>
 #include <ofono/gprs.h>
-#include <ofono/phonebook.h>
+#include <ofono/gprs-context.h>
 
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
@@ -220,8 +217,7 @@ static int gobi_enable(struct ofono_modem *modem)
 	if (data->chat == NULL)
 		return -EINVAL;
 
-	g_at_chat_send(data->chat, "ATE0 +CMEE=1", NULL,
-						NULL, NULL, NULL);
+	g_at_chat_send(data->chat, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 
 	g_at_chat_send(data->chat, "AT+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
@@ -301,12 +297,17 @@ static void gobi_pre_sim(struct ofono_modem *modem)
 static void gobi_post_sim(struct ofono_modem *modem)
 {
 	struct gobi_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
-	ofono_phonebook_create(modem, 0, "atmodem", data->chat);
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_GOBI,
+						"atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
 
-	ofono_sms_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 }
 
 static void gobi_post_online(struct ofono_modem *modem)
@@ -315,12 +316,7 @@ static void gobi_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
-
-	ofono_cbs_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
-	ofono_ussd_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
-
-	ofono_gprs_create(modem, OFONO_VENDOR_GOBI, "atmodem", data->chat);
+	ofono_netreg_create(modem, 0, "dunmodem", data->chat);
 }
 
 static struct ofono_modem_driver gobi_driver = {
