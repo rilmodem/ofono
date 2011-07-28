@@ -414,6 +414,8 @@ ATTRS{idVendor}=="1199", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}
 # HUAWEI Technology
 ATTRS{idVendor}=="12d1", ENV{OFONO_DRIVER}="huawei"
 
+ATTRS{idVendor}=="12d1", ATTRS{idProduct}=="140b", ENV{OFONO_DRIVER}="huaweicdma"
+
 # Qualcomm Incorporated
 ATTRS{idVendor}=="05c6", ENV{OFONO_DRIVER}="gobi"
 
