@@ -1,3 +1,11 @@
+ver 0.53:
+	Add support for disabling data carrier detect.
+	Add support for username/password settings for CDMA.
+	Add support for Huawei network time reports.
+	Add support for Huawei CDMA modems.
+	Add support for SpeedUp CDMA modems.
+	Add support for ZTE MF631 and MF688 modems.
+
 ver 0.52:
 	Add support for SIM Toolkit user confirmation handling.
 	Add support for ZTE MF180, MF190, MF637 and MF668 modems.
