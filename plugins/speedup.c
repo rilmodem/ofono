@@ -47,8 +47,6 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
-static const char *none_prefix[] = { NULL };
-
 struct speedup_data {
 	GAtChat *modem;
 	GAtChat *aux;
@@ -177,7 +175,7 @@ static int speedup_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->modem, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->aux, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 
-	g_at_chat_send(data->aux, "AT+CFUN=4", NULL,
+	g_at_chat_send(data->aux, "AT+CFUN=1", NULL,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -218,34 +216,6 @@ static int speedup_disable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
-static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct cb_data *cbd = user_data;
-	ofono_modem_online_cb_t cb = cbd->cb;
-	struct ofono_error error;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, cbd->data);
-}
-
-static void speedup_set_online(struct ofono_modem *modem, ofono_bool_t online,
-				ofono_modem_online_cb_t cb, void *user_data)
-{
-	struct speedup_data *data = ofono_modem_get_data(modem);
-	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
-
-	DBG("modem %p %s", modem, online ? "online" : "offline");
-
-	if (g_at_chat_send(data->aux, command, none_prefix,
-					set_online_cb, cbd, g_free) > 0)
-		return;
-
-	CALLBACK_WITH_FAILURE(cb, cbd->data);
-
-	g_free(cbd);
-}
-
 static void speedup_pre_sim(struct ofono_modem *modem)
 {
 	struct speedup_data *data = ofono_modem_get_data(modem);
@@ -269,6 +239,13 @@ static void speedup_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	ofono_netreg_create(modem, 0, "atmodem", data->aux);
+
+	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+					"atmodem", data->aux);
+	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+					"atmodem", data->aux);
+
 	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
 
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
@@ -281,30 +258,14 @@ static void speedup_post_sim(struct ofono_modem *modem)
 		ofono_gprs_add_context(gprs, gc);
 }
 
-static void speedup_post_online(struct ofono_modem *modem)
-{
-	struct speedup_data *data = ofono_modem_get_data(modem);
-
-	DBG("%p", modem);
-
-	ofono_netreg_create(modem, 0, "atmodem", data->aux);
-
-	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-					"atmodem", data->aux);
-	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-					"atmodem", data->aux);
-}
-
 static struct ofono_modem_driver speedup_driver = {
 	.name		= "speedup",
 	.probe		= speedup_probe,
 	.remove		= speedup_remove,
 	.enable		= speedup_enable,
 	.disable	= speedup_disable,
-	.set_online     = speedup_set_online,
 	.pre_sim	= speedup_pre_sim,
 	.post_sim	= speedup_post_sim,
-	.post_online    = speedup_post_online,
 };
 
 static int speedup_init(void)
