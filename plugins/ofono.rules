@@ -422,12 +422,16 @@ ATTRS{idVendor}=="19d2", ENV{OFONO_DRIVER}="zte"
 
 ATTRS{idVendor}=="19d2", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
-# SpeedUp
-ATTRS{idVendor}=="1c9e", ENV{OFONO_DRIVER}="speedup"
+# SpeedUp 7300
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{OFONO_DRIVER}="speedupcdma"
+
+# SpeedUp 9800
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{OFONO_DRIVER}="speedup"
 
 ATTRS{idVendor}=="1c9e", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
-ATTRS{idVendor}=="2020", ENV{OFONO_DRIVER}="speedup"
+# SpeedUp 8000
+ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{OFONO_DRIVER}="speedup"
 
 ATTRS{idVendor}=="2020", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
