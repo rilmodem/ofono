@@ -136,6 +136,10 @@ static void sim_state_cb(gboolean present, gpointer user_data)
 	data->have_sim = present;
 
 	ofono_modem_set_powered(modem, TRUE);
+
+	/* AT&C0 needs to be send separate and on both channel */
+	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "AT&C0", NULL, NULL, NULL, NULL);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -155,10 +159,6 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_modem_set_powered(modem, FALSE);
 		return;
 	}
-
-	/* AT&C0 needs to be send separate and on both channel */
-	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->aux, "AT&C0", NULL, NULL, NULL, NULL);
 
 	data->sim_state_query = at_util_sim_state_query_new(data->aux,
 						2, 20, sim_state_cb, modem);
