@@ -98,6 +98,7 @@ static int enable_data_stream(struct ofono_location_reporting *lr)
 {
 	struct ofono_modem *modem;
 	const char *gps_dev;
+	GHashTable *options;
 	GIOChannel *channel;
 	GIOStatus status;
 	gsize written;
@@ -106,7 +107,16 @@ static int enable_data_stream(struct ofono_location_reporting *lr)
 	modem = ofono_location_reporting_get_modem(lr);
 	gps_dev = ofono_modem_get_string(modem, "GPSDevice");
 
-	channel = g_at_tty_open(gps_dev, NULL);
+	options = g_hash_table_new(g_str_hash, g_str_equal);
+	if (options == NULL)
+		return -1;
+
+	g_hash_table_insert(options, "Baud", "115200");
+
+	channel = g_at_tty_open(gps_dev, options);
+
+	g_hash_table_destroy(options);
+
 	if (channel == NULL)
 		return -1;
 
