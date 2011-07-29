@@ -35,6 +35,9 @@ ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0121", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0124", ENV{ID_USB_INTERFACE_NUM}=="04", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="0124", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_ZTE_TYPE}="modem"
+ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
+
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="2003", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_ZTE_TYPE}="modem"
 ATTRS{idVendor}=="19d2", ATTRS{idProduct}=="2003", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_ZTE_TYPE}="aux"
 
