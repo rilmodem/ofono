@@ -72,6 +72,9 @@ static void speedupcdma_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
+	/* Cleanup after hot-unplug */
+	g_at_chat_unref(data->aux);
+
 	g_free(data);
 }
 
