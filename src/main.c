@@ -75,6 +75,7 @@ static gboolean signal_handler(GIOChannel *channel, GIOCondition cond,
 	case SIGINT:
 	case SIGTERM:
 		if (__terminated == 0) {
+			ofono_info("Terminating");
 			g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
 						quit_eventloop, NULL);
 			__ofono_modem_shutdown();
