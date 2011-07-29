@@ -385,6 +385,10 @@ ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_SPEEDUP_TYPE}="modem"
 ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_SPEEDUP_TYPE}="aux"
 
+# Olive
+ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
+ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
+
 LABEL="ofono_tty_end"
 
 # ISI/Phonet drivers
@@ -439,6 +443,9 @@ ATTRS{idVendor}=="1c9e", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}
 ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{OFONO_DRIVER}="speedup"
 
 ATTRS{idVendor}=="2020", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
+
+# Olive
+ATTRS{idVendor}=="201e", ENV{OFONO_DRIVER}="huaweicdma"
 
 # Option Globetrotter
 ATTRS{idVendor}=="0af0", ATTRS{idProduct}=="6911", ENV{OFONO_DRIVER}="hso"
