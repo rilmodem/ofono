@@ -200,6 +200,53 @@ static void xdatastat_notify(GAtResult *result, gpointer user_data)
 	}
 }
 
+static void huawei_mode_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_gprs *gprs = user_data;
+	GAtResultIter iter;
+	int mode, submode;
+	gint bearer;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^MODE:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &mode))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &submode))
+		return;
+
+	switch (submode) {
+	case 1:
+	case 2:
+		bearer = 1;	/* GPRS */
+		break;
+	case 3:
+		bearer = 2;	/* EDGE */
+		break;
+	case 4:
+		bearer = 3;	/* UMTS */
+		break;
+	case 5:
+		bearer = 5;	/* HSDPA */
+		break;
+	case 6:
+		bearer = 4;	/* HSUPA */
+		break;
+	case 7:
+	case 9:
+		bearer = 6;	/* HSUPA + HSDPA */
+		break;
+	default:
+		bearer = 0;
+		break;
+	}
+
+	ofono_gprs_bearer_notify(gprs, bearer);
+}
+
 static void cpsb_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs *gprs = user_data;
@@ -228,9 +275,19 @@ static void gprs_initialized(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_register(gd->chat, "+CGEV:", cgev_notify, FALSE, gprs, NULL);
 	g_at_chat_register(gd->chat, "+CGREG:", cgreg_notify,
 						FALSE, gprs, NULL);
-	g_at_chat_register(gd->chat, "+CPSB:", cpsb_notify, FALSE, gprs, NULL);
 
-	g_at_chat_send(gd->chat, "AT+CPSB=1", none_prefix, NULL, NULL, NULL);
+	switch (gd->vendor) {
+	case OFONO_VENDOR_HUAWEI:
+		g_at_chat_register(gd->chat, "^MODE:", huawei_mode_notify,
+						FALSE, gprs, NULL);
+		break;
+	default:
+		g_at_chat_register(gd->chat, "+CPSB:", cpsb_notify,
+						FALSE, gprs, NULL);
+		g_at_chat_send(gd->chat, "AT+CPSB=1", none_prefix,
+						NULL, NULL, NULL);
+		break;
+	}
 
 	switch (gd->vendor) {
 	case OFONO_VENDOR_IFX:
