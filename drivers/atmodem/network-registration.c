@@ -829,6 +829,34 @@ static void huawei_rssi_notify(GAtResult *result, gpointer user_data)
 				at_util_convert_signal_strength(strength));
 }
 
+static void huawei_mode_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	GAtResultIter iter;
+	int mode, submode;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^MODE:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &mode))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &submode))
+		return;
+
+	switch (mode) {
+	case 3:
+		nd->tech = ACCESS_TECHNOLOGY_GSM;
+		break;
+	case 5:
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN;
+		break;
+	}
+}
+
 static void huawei_nwtime_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1349,6 +1377,10 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_HUAWEI:
 		/* Register for RSSI reports */
 		g_at_chat_register(nd->chat, "^RSSI:", huawei_rssi_notify,
+						FALSE, netreg, NULL);
+
+		/* Register for system mode reports */
+		g_at_chat_register(nd->chat, "^MODE:", huawei_mode_notify,
 						FALSE, netreg, NULL);
 
 		/* Register for network time reports */
