@@ -509,7 +509,8 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("");
 
-	shutdown_device(data);
+	g_at_chat_unref(data->pcui);
+	data->pcui = NULL;
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
@@ -523,6 +524,9 @@ static int huawei_disable(struct ofono_modem *modem)
 
 	g_at_chat_cancel_all(data->modem);
 	g_at_chat_unregister_all(data->modem);
+
+	g_at_chat_unref(data->modem);
+	data->modem = NULL;
 
 	g_at_chat_cancel_all(data->pcui);
 	g_at_chat_unregister_all(data->pcui);
