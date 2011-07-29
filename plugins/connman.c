@@ -264,6 +264,7 @@ static int connman_request(ofono_private_network_cb_t cb, void *data)
 	req->data = data;
 	req->uid = id;
 	req->redundant = FALSE;
+	req->path = NULL;
 
 	dbus_pending_call_set_notify(call, request_reply, req, NULL);
 	g_hash_table_insert(requests, &req->uid, req);
