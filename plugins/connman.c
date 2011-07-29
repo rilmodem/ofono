@@ -186,8 +186,7 @@ static void request_reply(DBusPendingCall *call, void *user_data)
 	if (reply == NULL)
 		goto badreply;
 
-	if (parse_reply(dbus_pending_call_steal_reply(call),
-			&path, &pns) == FALSE)
+	if (parse_reply(reply, &path, &pns) == FALSE)
 		goto error;
 
 	DBG("fd: %d, path: %s", pns.fd, path);
