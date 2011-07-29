@@ -135,7 +135,7 @@ static void ussdmode_query_cb(gboolean ok, GAtResult *result,
 	if (ussdmode == 0)
 		return;
 
-	/* set USSD mode to text mode */
+	/* Set USSD mode to text mode */
 	g_at_chat_send(data->pcui, "AT^USSDMODE=0", none_prefix,
 						NULL, NULL, NULL);
 }
@@ -154,7 +154,7 @@ static void ussdmode_support_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next(&iter, "^USSDMODE:"))
 		return;
 
-	/* query current USSD mode */
+	/* Query current USSD mode */
 	g_at_chat_send(data->pcui, "AT^USSDMODE?", ussdmode_prefix,
 					ussdmode_query_cb, data, NULL);
 }
@@ -192,7 +192,7 @@ static void cvoice_query_cb(gboolean ok, GAtResult *result,
 	ofono_info("Voice channel: %d Hz, %d bits, %dms period",
 						rate, bits, period);
 
-	/* check available voice ports */
+	/* Check available voice ports */
 	g_at_chat_send(data->pcui, "AT^DDSETEX=?", none_prefix,
 						NULL, NULL, NULL);
 }
@@ -212,7 +212,7 @@ static void cvoice_support_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next(&iter, "^CVOICE:"))
 		return;
 
-	/* query current voice setting */
+	/* Query current voice setting */
 	g_at_chat_send(data->pcui, "AT^CVOICE?", cvoice_prefix,
 					cvoice_query_cb, modem, NULL);
 }
@@ -329,23 +329,23 @@ static void sysinfo_enable_cb(gboolean ok, GAtResult *result,
 
 	data->have_sim = TRUE;
 
-	/* switch data carrier detect signal off */
+	/* Switch data carrier detect signal off */
 	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->pcui, "AT&C0", NULL, NULL, NULL, NULL);
 
-	/* query current device settings */
+	/* Query current device settings */
 	g_at_chat_send(data->pcui, "AT^U2DIAG?", none_prefix,
 						NULL, NULL, NULL);
 
-	/* query current port settings */
+	/* Query current port settings */
 	g_at_chat_send(data->pcui, "AT^GETPORTMODE", none_prefix,
 						NULL, NULL, NULL);
 
-	/* check USSD mode support */
+	/* Check USSD mode support */
 	g_at_chat_send(data->pcui, "AT^USSDMODE=?", ussdmode_prefix,
 					ussdmode_support_cb, data, NULL);
 
-	/* check for voice support */
+	/* Check for voice support */
 	g_at_chat_send(data->pcui, "AT^CVOICE=?", cvoice_prefix,
 					cvoice_support_cb, modem, NULL);
 
@@ -384,7 +384,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	/* follow sim state changes */
+	/* Follow sim state changes */
 	g_at_chat_register(data->pcui, "^SIMST:", simst_notify,
 						FALSE, modem, NULL);
 
