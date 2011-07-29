@@ -901,14 +901,23 @@ static void enumerate_devices(struct udev *context)
 	udev_enumerate_unref(enumerate);
 }
 
-static gboolean udev_event(GIOChannel *channel,
-				GIOCondition condition, gpointer user_data)
+static struct udev *udev_ctx;
+static struct udev_monitor *udev_mon;
+static guint udev_watch = 0;
+
+static gboolean udev_event(GIOChannel *channel, GIOCondition cond,
+							gpointer user_data)
 {
-	struct udev_monitor *monitor = user_data;
 	struct udev_device *device;
 	const char *subsystem, *action;
 
-	device = udev_monitor_receive_device(monitor);
+	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL)) {
+		ofono_warn("Error with udev monitor channel");
+		udev_watch = 0;
+		return FALSE;
+	}
+
+	device = udev_monitor_receive_device(udev_mon);
 	if (device == NULL)
 		return TRUE;
 
@@ -938,10 +947,6 @@ done:
 	return TRUE;
 }
 
-static struct udev *udev_ctx;
-static struct udev_monitor *udev_mon;
-static guint udev_watch = 0;
-
 static void udev_start(void)
 {
 	GIOChannel *channel;
@@ -960,7 +965,9 @@ static void udev_start(void)
 	if (channel == NULL)
 		return;
 
-	udev_watch = g_io_add_watch(channel, G_IO_IN, udev_event, udev_mon);
+	udev_watch = g_io_add_watch(channel,
+				G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
+							udev_event, NULL);
 
 	g_io_channel_unref(channel);
 }
