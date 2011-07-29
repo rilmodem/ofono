@@ -828,6 +828,8 @@ static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
 	const char *path = value;
 	const char *devpath = user_data;
 
+	DBG("%s -> %s", path, devpath);
+
 	return g_str_equal(path, devpath);
 }
 
@@ -853,6 +855,8 @@ static void remove_modem(struct udev_device *udev_device)
 	modem_list = g_slist_remove(modem_list, modem);
 
 	ofono_modem_remove(modem);
+
+	DBG("%s", devpath);
 
 	remove = g_strdup(devpath);
 
@@ -929,6 +933,8 @@ static gboolean udev_event(GIOChannel *channel, GIOCondition cond,
 	if (action == NULL)
 		goto done;
 
+	DBG("subsystem %s %s", subsystem, action);
+
 	if (g_str_equal(action, "add") == TRUE) {
 		if (g_strcmp0(subsystem, "tty") == 0 ||
 				g_strcmp0(subsystem, "net") == 0 ||
@@ -940,6 +946,8 @@ static gboolean udev_event(GIOChannel *channel, GIOCondition cond,
 					g_strcmp0(subsystem, "hsi") == 0)
 			remove_modem(device);
 	}
+
+	DBG("subsystem %s finished", subsystem);
 
 done:
 	udev_device_unref(device);
