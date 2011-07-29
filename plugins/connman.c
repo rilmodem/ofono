@@ -119,7 +119,7 @@ static gboolean parse_reply(DBusMessage *reply, const char **path,
 	if (dbus_message_iter_get_arg_type(&array) != DBUS_TYPE_OBJECT_PATH)
 		return FALSE;
 
-	dbus_message_iter_get_basic(&array, &path);
+	dbus_message_iter_get_basic(&array, path);
 
 	dbus_message_iter_next(&array);
 	if (dbus_message_iter_get_arg_type(&array) != DBUS_TYPE_ARRAY)
