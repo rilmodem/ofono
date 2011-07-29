@@ -1858,6 +1858,8 @@ static void call_modemwatches(struct ofono_modem *modem, gboolean added)
 	struct ofono_watchlist_item *watch;
 	ofono_modemwatch_cb_t notify;
 
+	DBG("%p added:%d", modem, added);
+
 	for (l = g_modemwatches->items; l; l = l->next) {
 		watch = l->data;
 
@@ -1872,6 +1874,8 @@ static void emit_modem_added(struct ofono_modem *modem)
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	const char *path;
+
+	DBG("%p", modem);
 
 	signal = dbus_message_new_signal(OFONO_MANAGER_PATH,
 						OFONO_MANAGER_INTERFACE,
@@ -1908,6 +1912,8 @@ int ofono_modem_register(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	GSList *l;
+
+	DBG("%p", modem);
 
 	if (modem == NULL)
 		return -EINVAL;
@@ -1970,6 +1976,8 @@ static void emit_modem_removed(struct ofono_modem *modem)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = modem->path;
 
+	DBG("%p", modem);
+
 	g_dbus_emit_signal(conn, OFONO_MANAGER_PATH, OFONO_MANAGER_INTERFACE,
 				"ModemRemoved", DBUS_TYPE_OBJECT_PATH, &path,
 				DBUS_TYPE_INVALID);
@@ -1978,6 +1986,8 @@ static void emit_modem_removed(struct ofono_modem *modem)
 static void modem_unregister(struct ofono_modem *modem)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
+
+	DBG("%p", modem);
 
 	if (modem->powered == TRUE)
 		set_powered(modem, FALSE);
@@ -2052,9 +2062,7 @@ void ofono_modem_remove(struct ofono_modem *modem)
 
 	g_modem_list = g_slist_remove(g_modem_list, modem);
 
-	if (modem->driver_type)
-		g_free(modem->driver_type);
-
+	g_free(modem->driver_type);
 	g_free(modem->name);
 	g_free(modem->path);
 	g_free(modem);
