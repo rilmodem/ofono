@@ -1409,6 +1409,12 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 						NULL, NULL, NULL);
 		break;
 	case OFONO_VENDOR_ZTE:
+		/* Register for network time update reports */
+		g_at_chat_register(nd->chat, "+CTZV:", ctzv_notify,
+						FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT+CTZR=1", none_prefix,
+						NULL, NULL, NULL);
+		break;
 	case OFONO_VENDOR_NOKIA:
 		/* Signal strength reporting via CIND is not supported */
 		break;
