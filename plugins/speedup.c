@@ -249,7 +249,7 @@ static void speedup_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, 0, "atmodem", data->aux);
+	ofono_netreg_create(modem, OFONO_VENDOR_SPEEDUP, "atmodem", data->aux);
 
 	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->aux);
@@ -261,7 +261,8 @@ static void speedup_post_sim(struct ofono_modem *modem)
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 					"atmodem", data->aux);
 
-	gprs = ofono_gprs_create(modem, 0, "atmodem", data->aux);
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_SPEEDUP,
+					"atmodem", data->aux);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
 
 	if (gprs && gc)
