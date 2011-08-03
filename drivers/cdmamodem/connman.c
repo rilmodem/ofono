@@ -188,7 +188,6 @@ static void cdma_connman_activate(struct ofono_cdma_connman *cm,
 					void *data)
 {
 	struct connman_data *cd = ofono_cdma_connman_get_data(cm);
-	char buf[64];
 
 	DBG("");
 
@@ -199,9 +198,7 @@ static void cdma_connman_activate(struct ofono_cdma_connman *cm,
 
 	cd->state = STATE_ENABLING;
 
-	sprintf(buf, "ATD#777");
-
-	if (g_at_chat_send(cd->chat, buf, none_prefix,
+	if (g_at_chat_send(cd->chat, "ATD#777", none_prefix,
 				atd_cb, cm, NULL) > 0)
 		return;
 
