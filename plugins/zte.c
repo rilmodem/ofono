@@ -79,6 +79,9 @@ static void zte_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
+	/* Cleanup potential SIM state polling */
+	at_util_sim_state_query_free(data->sim_state_query);
+
 	/* Cleanup after hot-unplug */
 	g_at_chat_unref(data->aux);
 
