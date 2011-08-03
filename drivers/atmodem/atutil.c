@@ -195,6 +195,7 @@ gboolean at_util_parse_reg_unsolicited(GAtResult *result, const char *prefix,
 
 	switch (vendor) {
 	case OFONO_VENDOR_GOBI:
+	case OFONO_VENDOR_ZTE:
 	case OFONO_VENDOR_HUAWEI:
 	case OFONO_VENDOR_NOVATEL:
 	case OFONO_VENDOR_SPEEDUP:
@@ -258,6 +259,7 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 
 		/* Sometimes we get an unsolicited CREG/CGREG here, skip it */
 		switch (vendor) {
+		case OFONO_VENDOR_ZTE:
 		case OFONO_VENDOR_HUAWEI:
 		case OFONO_VENDOR_NOVATEL:
 		case OFONO_VENDOR_SPEEDUP:
@@ -282,6 +284,7 @@ gboolean at_util_parse_reg(GAtResult *result, const char *prefix,
 
 		switch (vendor) {
 		case OFONO_VENDOR_GOBI:
+		case OFONO_VENDOR_ZTE:
 		case OFONO_VENDOR_HUAWEI:
 		case OFONO_VENDOR_NOVATEL:
 		case OFONO_VENDOR_SPEEDUP:
