@@ -67,7 +67,7 @@ static void cdma_query_manufacturer(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	cbd->user = "AT+GMI";
+	cbd->user = "+GMI:";
 
 	if (g_at_chat_send(chat, "AT+GMI", NULL, attr_cb, cbd, g_free) > 0)
 		return;
@@ -83,7 +83,7 @@ static void cdma_query_model(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	cbd->user = "AT+GMM";
+	cbd->user = "+GMM:";
 
 	if (g_at_chat_send(chat, "AT+GMM", NULL, attr_cb, cbd, g_free) > 0)
 		return;
@@ -99,7 +99,7 @@ static void cdma_query_revision(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	cbd->user = "AT+GMR";
+	cbd->user = "+GMR:";
 
 	if (g_at_chat_send(chat, "AT+GMR", NULL, attr_cb, cbd, g_free) > 0)
 		return;
@@ -115,7 +115,7 @@ static void cdma_query_serial(struct ofono_devinfo *info,
 	struct cb_data *cbd = cb_data_new(cb, data);
 	GAtChat *chat = ofono_devinfo_get_data(info);
 
-	cbd->user = "AT+GSN";
+	cbd->user = "+GSN:";
 
 	if (g_at_chat_send(chat, "AT+GSN", NULL, attr_cb, cbd, g_free) > 0)
 		return;
