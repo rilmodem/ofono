@@ -47,6 +47,7 @@ static const char *creg_prefix[] = { "+CREG:", NULL };
 static const char *cops_prefix[] = { "+COPS:", NULL };
 static const char *csq_prefix[] = { "+CSQ:", NULL };
 static const char *cind_prefix[] = { "+CIND:", NULL };
+static const char *zpas_prefix[] = { "+ZPAS:", NULL };
 static const char *option_tech_prefix[] = { "_OCTI:", "_OUWCTI:", NULL };
 
 struct netreg_data {
@@ -79,6 +80,40 @@ static void extract_mcc_mnc(const char *str, char *mcc, char *mnc)
 	/* Usually a 2 but sometimes 3 digit network code */
 	strncpy(mnc, str + OFONO_MAX_MCC_LENGTH, OFONO_MAX_MNC_LENGTH);
 	mnc[OFONO_MAX_MNC_LENGTH] = '\0';
+}
+
+static int zte_parse_tech(GAtResult *result)
+{
+	GAtResultIter iter;
+	const char *network, *domain;
+	int tech;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+ZPAS:"))
+		return -1;
+
+	if (!g_at_result_iter_next_string(&iter, &network))
+		return -1;
+
+	if (!g_at_result_iter_next_string(&iter, &domain))
+		return -1;
+
+	if (g_str_equal(network, "GSM") == TRUE ||
+			g_str_equal(network, "GPRS") == TRUE)
+		tech = ACCESS_TECHNOLOGY_GSM;
+	else if (g_str_equal(network, "EDGE") == TRUE)
+		tech = ACCESS_TECHNOLOGY_GSM_EGPRS;
+	else if (g_str_equal(network, "UMTS") == TRUE)
+		tech = ACCESS_TECHNOLOGY_UTRAN;
+	else if (g_str_equal(network, "HSDPA") == TRUE)
+		tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA;
+	else
+		tech = -1;
+
+	DBG("network %s domain %s tech %d", network, domain, tech);
+
+	return tech;
 }
 
 static int option_parse_tech(GAtResult *result)
@@ -169,6 +204,18 @@ static void at_creg_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	cb(&error, status, lac, ci, tech, cbd->data);
 }
 
+static void zte_tech_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct ofono_netreg *netreg = cbd->data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	if (ok)
+		nd->tech = zte_parse_tech(result);
+	else
+		nd->tech = -1;
+}
+
 static void option_tech_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -215,10 +262,19 @@ static void at_registration_status(struct ofono_netreg *netreg,
 		g_at_chat_send(nd->chat, "AT$CNTI=0", none_prefix,
 				NULL, NULL, NULL);
 		break;
+	case OFONO_VENDOR_ZTE:
+		/*
+		 * Send +ZPAS? to find out the current tech, zte_tech_cb
+		 * will call, fire CREG? to do the rest.
+		 */
+		if (g_at_chat_send(nd->chat, "AT+ZPAS?", zpas_prefix,
+					zte_tech_cb, cbd, NULL) == 0)
+			nd->tech = -1;
+		break;
 	case OFONO_VENDOR_OPTION_HSO:
 		/*
 		 * Send AT_OCTI?;_OUWCTI? to find out the current tech,
-		 * option_tech_cb will call fire CREG? to do the rest.
+		 * option_tech_cb will call, fire CREG? to do the rest.
 		 */
 		if (g_at_chat_send(nd->chat, "AT_OCTI?;_OUWCTI?",
 					option_tech_prefix,
@@ -1140,6 +1196,21 @@ static void cnti_query_tech_cb(gboolean ok, GAtResult *result,
 			tq->status, tq->lac, tq->ci, nd->tech);
 }
 
+static void zte_query_tech_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct tech_query *tq = user_data;
+	int tech;
+
+	if (ok)
+		tech = zte_parse_tech(result);
+	else
+		tech = -1;
+
+	ofono_netreg_status_notify(tq->netreg,
+			tq->status, tq->lac, tq->ci, tech);
+}
+
 static void option_query_tech_cb(gboolean ok, GAtResult *result,
 						gpointer user_data)
 {
@@ -1187,6 +1258,11 @@ static void creg_notify(GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_NOVATEL:
 		if (g_at_chat_send(nd->chat, "AT$CNTI=0", none_prefix,
 					cnti_query_tech_cb, tq, g_free) > 0)
+			return;
+		break;
+	case OFONO_VENDOR_ZTE:
+		if (g_at_chat_send(nd->chat, "AT+ZPAS?", zpas_prefix,
+					zte_query_tech_cb, tq, g_free) > 0)
 			return;
 		break;
 	case OFONO_VENDOR_OPTION_HSO:
