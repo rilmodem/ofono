@@ -670,3 +670,10 @@ PPP Stack
   PPP stack supports both receiving and sending of packets with ACFC enabled.
   The user can also control whether ACFC capability is advertised to the peer,
   and used during transmission.
+
+Modem Emulator
+==============
+
+- Support HandsFree Profile Audio Gateway (HFP AG) emulator.
+  Supported feature are: 3-way calling, ability to reject a call, enhanced call
+  status, enhanced call control and report of extended error results code.
