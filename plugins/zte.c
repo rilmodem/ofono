@@ -143,6 +143,9 @@ static void sim_state_cb(gboolean present, gpointer user_data)
 	/* AT&C0 needs to be send separate and on both channel */
 	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->aux, "AT&C0", NULL, NULL, NULL, NULL);
+
+	/* Read PCB information */
+	g_at_chat_send(data->aux, "AT+ZPCB?", none_prefix, NULL, NULL, NULL);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
