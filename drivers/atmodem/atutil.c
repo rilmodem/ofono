@@ -581,6 +581,9 @@ struct at_util_sim_state_query *at_util_sim_state_query_new(GAtChat *chat,
 
 void at_util_sim_state_query_free(struct at_util_sim_state_query *req)
 {
+	if (req == NULL)
+		return;
+
 	if (req->cpin_poll_source > 0)
 		g_source_remove(req->cpin_poll_source);
 
