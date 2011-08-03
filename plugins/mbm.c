@@ -91,11 +91,11 @@ static void mbm_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
+	/* Cleanup potential SIM state polling */
+	at_util_sim_state_query_free(data->sim_state_query);
+
 	g_at_chat_unref(data->data_port);
 	g_at_chat_unref(data->modem_port);
-
-	if (data->sim_state_query)
-		at_util_sim_state_query_free(data->sim_state_query);
 
 	g_free(data);
 }
