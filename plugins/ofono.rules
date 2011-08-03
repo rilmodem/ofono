@@ -373,6 +373,10 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_TELIT_TYPE}="GPS"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_TELIT_TYPE}="Data"
 
+# 4G Systems W14
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9603", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_SPEEDUP_TYPE}="modem"
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9603", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_SPEEDUP_TYPE}="aux"
+
 # SpeedUp 9800
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_SPEEDUP_TYPE}="modem"
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_SPEEDUP_TYPE}="aux"
@@ -430,6 +434,9 @@ ATTRS{idVendor}=="05c6", ENV{OFONO_DRIVER}="gobi"
 ATTRS{idVendor}=="19d2", ENV{OFONO_DRIVER}="zte"
 
 ATTRS{idVendor}=="19d2", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
+
+# 4G Systems W14
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9603", ENV{OFONO_DRIVER}="speedup"
 
 # SpeedUp 7300
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{OFONO_DRIVER}="speedupcdma"
