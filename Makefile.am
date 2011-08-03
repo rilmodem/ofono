@@ -248,7 +248,8 @@ builtin_modules += dunmodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/dunmodem/dunmodem.h \
 			drivers/dunmodem/dunmodem.c \
-			drivers/dunmodem/network-registration.c
+			drivers/dunmodem/network-registration.c \
+			drivers/dunmodem/gprs.c
 
 builtin_modules += hfpmodem
 builtin_sources += drivers/atmodem/atutil.h \

@@ -35,6 +35,7 @@
 static int dunmodem_init(void)
 {
 	dun_netreg_init();
+	dun_gprs_init();
 
 	return 0;
 }
@@ -42,6 +43,7 @@ static int dunmodem_init(void)
 static void dunmodem_exit(void)
 {
 	dun_netreg_exit();
+	dun_gprs_exit();
 }
 
 OFONO_PLUGIN_DEFINE(dunmodem, "Dialup modem driver", VERSION,
