@@ -534,6 +534,15 @@ static int huawei_disable(struct ofono_modem *modem)
 	g_at_chat_cancel_all(data->pcui);
 	g_at_chat_unregister_all(data->pcui);
 
+	/* Cleanup potential online enable polling */
+	if (data->sysinfo_poll_source > 0) {
+		g_source_remove(data->sysinfo_poll_source);
+		data->sysinfo_poll_source = 0;
+
+		g_free(data->online_cbd);
+		data->online_cbd = NULL;
+	}
+
 	g_at_chat_send(data->pcui, "AT+CFUN=0", none_prefix,
 					cfun_disable, modem, NULL);
 
