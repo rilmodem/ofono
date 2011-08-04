@@ -152,6 +152,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 	case OFONO_VENDOR_ZTE:
 	case OFONO_VENDOR_HUAWEI:
 	case OFONO_VENDOR_SIERRA:
+	case OFONO_VENDOR_SPEEDUP:
 	case OFONO_VENDOR_QUALCOMM_MSM:
 		strcat(buf, ",0,0,255"); /* Maximum possible length */
 		break;
