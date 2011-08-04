@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <glib.h>
 
@@ -619,6 +620,65 @@ error:
 	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
+static void cpnnum_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_sim_pin_retries_cb_t cb = cbd->cb;
+	const char *final = g_at_result_final_response(result);
+	GAtResultIter iter;
+	struct ofono_error error;
+	const char *line;
+	int num;
+	char **entries;
+	int retries[OFONO_SIM_PASSWORD_INVALID];
+	size_t i;
+
+	decode_at_error(&error, final);
+
+	if (!ok) {
+		cb(&error, NULL, cbd->data);
+		return;
+	}
+
+	g_at_result_iter_init(&iter, result);
+
+	for (num = 0; num < g_at_result_num_response_lines(result); num++)
+		g_at_result_iter_next(&iter, NULL);
+
+	line = g_at_result_iter_raw_line(&iter);
+
+	DBG("%s", line);
+
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
+		retries[i] = -1;
+
+	entries = g_strsplit(line, "; ", -1);
+
+	for (num = 0; entries[num]; num++) {
+		int retry;
+
+		if (strlen(entries[num]) < 5)
+			continue;
+
+		retry = strtol(entries[num] + 5, NULL, 10);
+		if (retry == 0 && errno == EINVAL)
+			continue;
+
+		if (g_str_has_prefix(entries[num], "PIN1=") == TRUE)
+			retries[OFONO_SIM_PASSWORD_SIM_PIN] = retry;
+		else if (g_str_has_prefix(entries[num], "PUK1=") == TRUE)
+			retries[OFONO_SIM_PASSWORD_SIM_PUK] = retry;
+		else if (g_str_has_prefix(entries[num], "PIN2=") == TRUE)
+			retries[OFONO_SIM_PASSWORD_SIM_PIN2] = retry;
+		else if (g_str_has_prefix(entries[num], "PUK2=") == TRUE)
+			retries[OFONO_SIM_PASSWORD_SIM_PUK2] = retry;
+	}
+
+	g_strfreev(entries);
+
+	cb(&error, retries, cbd->data);
+}
+
 static void at_epin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
@@ -715,6 +775,11 @@ static void at_pin_retries_query(struct ofono_sim *sim,
 	case OFONO_VENDOR_IFX:
 		if (g_at_chat_send(sd->chat, "AT+XPINCNT", xpincnt_prefix,
 					xpincnt_cb, cbd, g_free) > 0)
+			return;
+		break;
+	case OFONO_VENDOR_SPEEDUP:
+		if (g_at_chat_send(sd->chat, "AT+CPNNUM", NULL,
+					cpnnum_cb, cbd, g_free) > 0)
 			return;
 		break;
 	case OFONO_VENDOR_HUAWEI:
