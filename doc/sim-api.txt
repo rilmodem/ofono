@@ -114,6 +114,11 @@ Properties	boolean Present [readonly]
 			Contains the list of subscriber numbers.  This is
 			usually stored in the EFmsisdn sim file.
 
+		array{string} PreferredLanguages [readonly, optional]
+
+			Contains the list of preferred languages from the SIM,
+			if available.
+
 		dict{string,string} ServiceNumbers [readonly, optional]
 
 			Contains a dictionary of service dialing numbers from
