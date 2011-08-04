@@ -234,7 +234,7 @@ static void speedup_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->aux);
-	sim = ofono_sim_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+	sim = ofono_sim_create(modem, OFONO_VENDOR_SPEEDUP,
 						"atmodem", data->aux);
 
 	if (sim && data->have_sim == TRUE)
