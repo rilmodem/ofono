@@ -700,9 +700,6 @@ static void emulator_call_status_cb(struct ofono_atom *atom, void *data)
 	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	struct emulator_status *s = data;
 
-	if (em == s->vc->pending_em)
-		return;
-
 	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALL, s->status);
 }
 
@@ -710,9 +707,6 @@ static void emulator_callsetup_status_cb(struct ofono_atom *atom, void *data)
 {
 	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	struct emulator_status *s = data;
-
-	if (em == s->vc->pending_em)
-		return;
 
 	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALLSETUP,
 					s->status);
@@ -722,9 +716,6 @@ static void emulator_callheld_status_cb(struct ofono_atom *atom, void *data)
 {
 	struct ofono_emulator *em = __ofono_atom_get_data(atom);
 	struct emulator_status *s = data;
-
-	if (em == s->vc->pending_em)
-		return;
 
 	ofono_emulator_set_indicator(em, OFONO_EMULATOR_IND_CALLHELD,
 					s->status);
@@ -3209,8 +3200,6 @@ static void emulator_dial_callback(const struct ofono_error *error, void *data)
 		ofono_emulator_send_final(vc->pending_em, error);
 
 	vc->pending_em = NULL;
-
-	notify_emulator_call_status(vc);
 
 	if (need_to_emit)
 		voicecalls_emit_call_added(vc, v);

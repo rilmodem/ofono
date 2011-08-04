@@ -59,6 +59,7 @@ struct indicator {
 	int value;
 	int min;
 	int max;
+	gboolean deferred;
 };
 
 static void emulator_debug(const char *str, void *data)
@@ -343,6 +344,29 @@ static struct ofono_call *find_call_with_status(struct ofono_emulator *em,
 	vc = __ofono_atom_get_data(vc_atom);
 
 	return __ofono_voicecall_find_call_with_status(vc, status);
+}
+
+static void notify_deferred_indicators(GAtServer *server, void *user_data)
+{
+	struct ofono_emulator *em = user_data;
+	int i;
+	char buf[20];
+	GSList *l;
+	struct indicator *ind;
+
+	for (i = 1, l = em->indicators; l; l = l->next, i++) {
+		ind = l->data;
+
+		if (!ind->deferred)
+			continue;
+
+		if (em->events_mode == 3 && em->events_ind && em->slc) {
+			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
+			g_at_server_send_unsolicited(em->server, buf);
+		}
+
+		ind->deferred = FALSE;
+	}
 }
 
 static gboolean notify_ccwa(void *user_data)
@@ -832,6 +856,8 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 	g_at_server_set_debug(em->server, emulator_debug, "Server");
 	g_at_server_set_disconnect_function(em->server,
 						emulator_disconnect, em);
+	g_at_server_set_finish_callback(em->server, notify_deferred_indicators,
+						em);
 
 	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0, 1, 0);
@@ -1124,8 +1150,11 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 		notify_ccwa(em);
 
 	if (em->events_mode == 3 && em->events_ind && em->slc) {
-		sprintf(buf, "+CIEV: %d,%d", i, ind->value);
-		g_at_server_send_unsolicited(em->server, buf);
+		if (!g_at_server_command_pending(em->server)) {
+			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
+			g_at_server_send_unsolicited(em->server, buf);
+		} else
+			ind->deferred = TRUE;
 	}
 
 	/*
