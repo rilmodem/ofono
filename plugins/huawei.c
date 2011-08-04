@@ -472,6 +472,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 		return NULL;
 
 	g_at_chat_add_terminator(chat, "COMMAND NOT SUPPORT", -1, FALSE);
+	g_at_chat_add_terminator(chat, "TOO MANY PARAMETERS", -1, FALSE);
 
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(chat, huawei_debug, debug);
