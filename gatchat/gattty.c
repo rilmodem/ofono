@@ -278,7 +278,7 @@ GIOChannel *g_at_tty_open_qcdm(const char *tty)
 	ti.c_cflag &= ~(CSIZE | CSTOPB | PARENB);
 	ti.c_cflag |= (B115200 | CS8);
 
-	if (tcsetattr (fd, TCSANOW, &ti) < 0) {
+	if (tcsetattr(fd, TCSANOW, &ti) < 0) {
 		close(fd);
 		return NULL;
 	}
