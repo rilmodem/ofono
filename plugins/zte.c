@@ -187,6 +187,9 @@ static int zte_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
+	g_at_chat_blacklist_terminator(data->aux,
+					G_AT_CHAT_TERMINATOR_NO_CARRIER);
+
 	g_at_chat_send(data->modem, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->aux, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 
