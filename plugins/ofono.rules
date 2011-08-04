@@ -385,7 +385,10 @@ ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{OFONO_SPEEDUP_TYPE}="modem"
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_SPEEDUP_TYPE}="aux"
 
-# SpeedUp 8000
+# SpeedUp
+ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1005", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_SPEEDUP_TYPE}="modem"
+ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1005", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_SPEEDUP_TYPE}="aux"
+
 ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_SPEEDUP_TYPE}="modem"
 ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_SPEEDUP_TYPE}="aux"
 
@@ -446,8 +449,8 @@ ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{OFONO_DRIVER}="speedup"
 
 ATTRS{idVendor}=="1c9e", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
-# SpeedUp 8000
-ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{OFONO_DRIVER}="speedup"
+# SpeedUp
+ATTRS{idVendor}=="2020", ENV{OFONO_DRIVER}="speedup"
 
 ATTRS{idVendor}=="2020", ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
