@@ -55,7 +55,7 @@
 #include <drivers/atmodem/vendor.h>
 
 static const char *none_prefix[] = { NULL };
-static const char *cfun_prefix[] = { "+CFUN:", NULL };
+static const char *rfswitch_prefix[] = { "^RFSWITCH:", NULL };
 static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
 static const char *ussdmode_prefix[] = { "^USSDMODE:", NULL };
 static const char *cvoice_prefix[] = { "^CVOICE:", NULL };
@@ -400,45 +400,15 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	sysinfo_enable_check(modem);
 }
 
-static void parse_cfun_support(GAtResult *result, struct huawei_data *data)
-{
-	GAtResultIter iter;
-	int min, max;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CFUN:"))
-		goto fallback;
-
-	if (!g_at_result_iter_open_list(&iter))
-		goto fallback;
-
-	while (!g_at_result_iter_close_list(&iter)) {
-		if (!g_at_result_iter_next_range(&iter, &min, &max))
-			break;
-
-		if (min <= 7 && max >= 7) {
-			data->offline_command = "AT+CFUN=7";
-			return;
-		}
-	}
-
-fallback:
-	data->offline_command = "AT+CFUN=5";
-}
-
-static void cfun_support(gboolean ok, GAtResult *result, gpointer user_data)
+static void rfswitch_support(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
-	if (!ok) {
-		shutdown_device(data);
-		ofono_modem_set_powered(modem, FALSE);
-		return;
-	}
-
-	parse_cfun_support(result, data);
+	if (!ok)
+		data->offline_command = "AT+CFUN=5";
+	else
+		data->offline_command = "AT+CFUN=7";
 
 	g_at_chat_send(data->pcui, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
@@ -504,8 +474,8 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	data->sim_state = SIM_STATE_NOT_EXISTENT;
 
-	g_at_chat_send(data->pcui, "AT+CFUN=?", cfun_prefix,
-					cfun_support, modem, NULL);
+	g_at_chat_send(data->pcui, "AT^RFSWITCH=?", rfswitch_prefix,
+					rfswitch_support, modem, NULL);
 
 	return -EINPROGRESS;
 }
