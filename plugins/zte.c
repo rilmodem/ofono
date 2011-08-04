@@ -229,7 +229,8 @@ static int zte_disable(struct ofono_modem *modem)
 	g_at_chat_cancel_all(data->aux);
 	g_at_chat_unregister_all(data->aux);
 
-	g_at_chat_send(data->aux, "AT+CFUN=0", NULL,
+	/* Go offline first to disconnect data connections */
+	g_at_chat_send(data->aux, "AT+CFUN=4;+CFUN=0", NULL,
 					cfun_disable, modem, NULL);
 
 	return -EINPROGRESS;
