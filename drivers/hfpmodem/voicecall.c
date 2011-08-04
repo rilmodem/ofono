@@ -1166,6 +1166,7 @@ static void hfp_voicecall_remove(struct ofono_voicecall *vc)
 
 	ofono_voicecall_set_data(vc, NULL);
 
+	g_at_chat_unref(vd->chat);
 	g_free(vd);
 }
 

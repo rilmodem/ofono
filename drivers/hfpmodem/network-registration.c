@@ -331,6 +331,7 @@ static void hfp_netreg_remove(struct ofono_netreg *netreg)
 
 	ofono_netreg_set_data(netreg, NULL);
 
+	g_at_chat_unref(nd->chat);
 	g_free(nd);
 }
 

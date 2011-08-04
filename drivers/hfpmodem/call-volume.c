@@ -206,6 +206,7 @@ static void hfp_call_volume_remove(struct ofono_call_volume *cv)
 
 	ofono_call_volume_set_data(cv, NULL);
 
+	g_at_chat_unref(vd->chat);
 	g_free(vd);
 }
 
