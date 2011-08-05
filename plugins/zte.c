@@ -227,6 +227,8 @@ static int zte_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
+	g_at_chat_set_slave(data->modem, data->aux);
+
 	g_at_chat_blacklist_terminator(data->aux,
 					G_AT_CHAT_TERMINATOR_NO_CARRIER);
 
@@ -343,7 +345,8 @@ static void zte_post_sim(struct ofono_modem *modem)
 					"atmodem", data->aux);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_ZTE, "atmodem", data->aux);
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
+	gc = ofono_gprs_context_create(modem, OFONO_VENDOR_ZTE,
+						"atmodem", data->modem);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
