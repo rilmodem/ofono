@@ -32,17 +32,35 @@
 static GSList *g_drivers;
 
 struct ofono_cdma_netreg {
+	enum cdma_netreg_status status;
 	const struct ofono_cdma_netreg_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
 };
 
+static const char *cdma_netreg_status_to_string(enum cdma_netreg_status status)
+{
+	switch (status) {
+	case CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED:
+		return "unregistered";
+	case CDMA_NETWORK_REGISTRATION_STATUS_REGISTERED:
+		return "registered";
+	case CDMA_NETWORK_REGISTRATION_STATUS_ROAMING:
+		return "roaming";
+	}
+
+	return "";
+}
+
 static DBusMessage *network_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
+	struct ofono_cdma_netreg *cdma_netreg = data;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
+
+	const char *status = cdma_netreg_status_to_string(cdma_netreg->status);
 
 	reply = dbus_message_new_method_return(msg);
 	if (reply == NULL)
@@ -53,6 +71,8 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
+
+	ofono_dbus_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
@@ -67,6 +87,31 @@ static GDBusMethodTable cdma_netreg_manager_methods[] = {
 static GDBusSignalTable cdma_netreg_manager_signals[] = {
 	{ }
 };
+
+static void set_registration_status(struct ofono_cdma_netreg *cdma_netreg,
+						enum cdma_netreg_status status)
+{
+	const char *str_status = cdma_netreg_status_to_string(status);
+	const char *path = __ofono_atom_get_path(cdma_netreg->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	cdma_netreg->status = status;
+
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_NETWORK_REGISTRATION_INTERFACE,
+				"Status", DBUS_TYPE_STRING,
+				&str_status);
+}
+
+void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *cdma_netreg,
+					enum cdma_netreg_status status)
+{
+	if (cdma_netreg == NULL)
+		return;
+
+	if (cdma_netreg->status != status)
+		set_registration_status(cdma_netreg, status);
+}
 
 int ofono_cdma_netreg_driver_register(const struct ofono_cdma_netreg_driver *d)
 {
@@ -130,6 +175,8 @@ struct ofono_cdma_netreg *ofono_cdma_netreg_create(struct ofono_modem *modem,
 	cdma_netreg = g_try_new0(struct ofono_cdma_netreg, 1);
 	if (cdma_netreg == NULL)
 		return NULL;
+
+	cdma_netreg->status = CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
 
 	cdma_netreg->atom = __ofono_modem_add_atom(modem,
 					OFONO_ATOM_TYPE_CDMA_NETREG,
