@@ -145,6 +145,34 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
+static void zoprt_enable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct zte_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	if (!ok) {
+		g_at_chat_unref(data->modem);
+		data->modem = NULL;
+
+		g_at_chat_unref(data->aux);
+		data->aux = NULL;
+
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	/* AT&C0 needs to be send separate and on both channel */
+	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "AT&C0", NULL, NULL, NULL, NULL);
+
+	/* Read PCB information */
+	g_at_chat_send(data->aux, "AT+ZPCB?", none_prefix, NULL, NULL, NULL);
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
 static void sim_state_cb(gboolean present, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -155,14 +183,9 @@ static void sim_state_cb(gboolean present, gpointer user_data)
 
 	data->have_sim = present;
 
-	ofono_modem_set_powered(modem, TRUE);
-
-	/* AT&C0 needs to be send separate and on both channel */
-	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
-	g_at_chat_send(data->aux, "AT&C0", NULL, NULL, NULL, NULL);
-
-	/* Read PCB information */
-	g_at_chat_send(data->aux, "AT+ZPCB?", none_prefix, NULL, NULL, NULL);
+	/* Switch device into offline mode now */
+	g_at_chat_send(data->aux, "AT+ZOPRT=6", none_prefix,
+					zoprt_enable, modem, NULL);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -207,11 +230,11 @@ static int zte_enable(struct ofono_modem *modem)
 	g_at_chat_blacklist_terminator(data->aux,
 					G_AT_CHAT_TERMINATOR_NO_CARRIER);
 
-	g_at_chat_send(data->modem, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->modem, "ATZ E0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->aux, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 
-	/* Direct transition 0 -> 4 leaves SIM hosed */
-	g_at_chat_send(data->aux, "AT+CFUN=1;+CFUN=4", NULL,
+	/* Switch device on first */
+	g_at_chat_send(data->aux, "AT+CFUN=1", NULL,
 					cfun_enable, modem, NULL);
 
 	return -EINPROGRESS;
@@ -231,6 +254,17 @@ static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_modem_set_powered(modem, FALSE);
 }
 
+static void zoprt_disable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct zte_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	g_at_chat_send(data->aux, "AT+CFUN=0", NULL,
+					cfun_disable, modem, NULL);
+}
+
 static int zte_disable(struct ofono_modem *modem)
 {
 	struct zte_data *data = ofono_modem_get_data(modem);
@@ -246,9 +280,9 @@ static int zte_disable(struct ofono_modem *modem)
 	g_at_chat_cancel_all(data->aux);
 	g_at_chat_unregister_all(data->aux);
 
-	/* Go offline first to disconnect data connections */
-	g_at_chat_send(data->aux, "AT+CFUN=4;+CFUN=0", NULL,
-					cfun_disable, modem, NULL);
+	/* Switch to offline mode first */
+	g_at_chat_send(data->aux, "AT+ZOPRT=6", none_prefix,
+					zoprt_disable, modem, NULL);
 
 	return -EINPROGRESS;
 }
@@ -268,7 +302,7 @@ static void zte_set_online(struct ofono_modem *modem, ofono_bool_t online,
 {
 	struct zte_data *data = ofono_modem_get_data(modem);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+	char const *command = online ? "AT+ZOPRT=5" : "AT+ZOPRT=6";
 
 	DBG("modem %p %s", modem, online ? "online" : "offline");
 
