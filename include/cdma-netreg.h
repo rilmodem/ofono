@@ -28,6 +28,12 @@ extern "C" {
 
 #include <ofono/types.h>
 
+enum cdma_netreg_status {
+	CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED =	0,
+	CDMA_NETWORK_REGISTRATION_STATUS_REGISTERED =		1,
+	CDMA_NETWORK_REGISTRATION_STATUS_ROAMING =		2,
+};
+
 struct ofono_cdma_netreg;
 
 struct ofono_cdma_netreg_driver {
@@ -37,6 +43,9 @@ struct ofono_cdma_netreg_driver {
 				void *data);
 	void (*remove)(struct ofono_cdma_netreg *cdma_netreg);
 };
+
+void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *netreg,
+				enum cdma_netreg_status status);
 
 int ofono_cdma_netreg_driver_register(
 				const struct ofono_cdma_netreg_driver *d);
