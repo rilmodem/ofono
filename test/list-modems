@@ -52,7 +52,8 @@ for path, properties in modems:
 						"VoicemailMessageCount",
 						"MicrophoneVolume",
 						"SpeakerVolume",
-						"Strength"]:
+						"Strength",
+						"DataStrength"]:
 				val = int(properties[key])
 			elif key in ["MainMenu"]:
 				val = ", ".join([ text + " (" + str(int(icon)) +
