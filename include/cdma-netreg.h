@@ -46,6 +46,8 @@ struct ofono_cdma_netreg_driver {
 
 void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *netreg,
 				enum cdma_netreg_status status);
+void ofono_cdma_netreg_strength_notify(struct ofono_cdma_netreg *netreg,
+				int strength);
 
 int ofono_cdma_netreg_driver_register(
 				const struct ofono_cdma_netreg_driver *d);
