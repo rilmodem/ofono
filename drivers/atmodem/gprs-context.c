@@ -41,6 +41,7 @@
 #include "gatppp.h"
 
 #include "atmodem.h"
+#include "vendor.h"
 
 #define TUN_SYSFS_DIR "/sys/devices/virtual/misc/tun"
 
@@ -64,6 +65,7 @@ struct gprs_context_data {
 	enum state state;
 	ofono_gprs_context_cb_t cb;
 	void *cb_data;                                  /* Callback data */
+	unsigned int vendor;
 };
 
 static void ppp_debug(const char *str, void *data)
@@ -321,6 +323,7 @@ static int at_gprs_context_probe(struct ofono_gprs_context *gc,
 		return -ENOMEM;
 
 	gcd->chat = g_at_chat_clone(chat);
+	gcd->vendor = vendor;
 
 	ofono_gprs_context_set_data(gc, gcd);
 
