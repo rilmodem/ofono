@@ -241,6 +241,27 @@ static void at_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	gcd->state = STATE_ENABLING;
 
+	if (gcd->vendor == OFONO_VENDOR_ZTE) {
+		GAtChat *chat = g_at_chat_get_slave(gcd->chat);
+
+		/*
+		 * The modem port of ZTE devices with certain firmware
+		 * versions ends up getting suspended. It will no longer
+		 * signal POLLOUT and becomes pretty unresponsive.
+		 *
+		 * To wake up the modem port, the only reliable method
+		 * found so far is AT+ZOPRT power mode command. It is
+		 * enough to ask for the current mode and the modem
+		 * port wakes up and accepts commands again.
+		 *
+		 * And since the modem port is suspended, this command
+		 * needs to be send on the control port of course.
+		 *
+		 */
+		g_at_chat_send(chat, "AT+ZOPRT?", none_prefix,
+						NULL, NULL, NULL);
+	}
+
 	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
 
 	if (ctx->apn)
