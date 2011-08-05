@@ -102,6 +102,7 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	GIOChannel *channel;
 	GAtSyntax *syntax;
 	GAtChat *chat;
+	GHashTable *options;
 
 	device = ofono_modem_get_string(modem, key);
 	if (device == NULL)
@@ -109,7 +110,23 @@ static GAtChat *open_device(struct ofono_modem *modem,
 
 	DBG("%s %s", key, device);
 
-	channel = g_at_tty_open(device, NULL);
+	options = g_hash_table_new(g_str_hash, g_str_equal);
+	if (options == NULL)
+		return NULL;
+
+	g_hash_table_insert(options, "Baud", "115200");
+	g_hash_table_insert(options, "Parity", "none");
+	g_hash_table_insert(options, "StopBits", "1");
+	g_hash_table_insert(options, "DataBits", "8");
+	g_hash_table_insert(options, "XonXoff", "off");
+	g_hash_table_insert(options, "RtsCts", "on");
+	g_hash_table_insert(options, "Local", "on");
+	g_hash_table_insert(options, "Read", "on");
+
+	channel = g_at_tty_open(device, options);
+
+	g_hash_table_destroy(options);
+
 	if (channel == NULL)
 		return NULL;
 
