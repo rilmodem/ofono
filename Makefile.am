@@ -277,6 +277,11 @@ builtin_sources += drivers/cdmamodem/cdmamodem.h \
 			drivers/cdmamodem/voicecall.c \
 			drivers/cdmamodem/devinfo.c \
 			drivers/cdmamodem/connman.c
+
+builtin_modules += huaweicdmamodem
+builtin_sources += drivers/huaweicdmamodem/huaweicdmamodem.h \
+			drivers/huaweicdmamodem/huaweicdmamodem.c
+
 endif
 
 builtin_modules += g1
