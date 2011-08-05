@@ -33,6 +33,7 @@ static GSList *g_drivers;
 
 struct ofono_cdma_netreg {
 	enum cdma_netreg_status status;
+	int strength;
 	const struct ofono_cdma_netreg_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -74,6 +75,13 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 
 	ofono_dbus_dict_append(&dict, "Status", DBUS_TYPE_STRING, &status);
 
+	if (cdma_netreg->strength != -1) {
+		unsigned char strength = cdma_netreg->strength;
+
+		ofono_dbus_dict_append(&dict, "Strength", DBUS_TYPE_BYTE,
+					&strength);
+	}
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
@@ -111,6 +119,36 @@ void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *cdma_netreg,
 
 	if (cdma_netreg->status != status)
 		set_registration_status(cdma_netreg, status);
+}
+
+void ofono_cdma_netreg_strength_notify(struct ofono_cdma_netreg *netreg,
+					int strength)
+{
+	if (netreg == NULL)
+		return;
+
+	if (netreg->strength == strength)
+		return;
+
+	/*
+	 * Theoretically we can get signal strength even when not registered
+	 * to any network.  However, what do we do with it in that case?
+	 */
+	if (netreg->status == CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED)
+		return;
+
+	netreg->strength = strength;
+
+	if (strength != -1) {
+		DBusConnection *conn = ofono_dbus_get_connection();
+		const char *path = __ofono_atom_get_path(netreg->atom);
+		unsigned char strength = netreg->strength;
+
+		ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_NETWORK_REGISTRATION_INTERFACE,
+				"Strength", DBUS_TYPE_BYTE,
+				&strength);
+	}
 }
 
 int ofono_cdma_netreg_driver_register(const struct ofono_cdma_netreg_driver *d)
@@ -177,6 +215,7 @@ struct ofono_cdma_netreg *ofono_cdma_netreg_create(struct ofono_modem *modem,
 		return NULL;
 
 	cdma_netreg->status = CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
+	cdma_netreg->strength = -1;
 
 	cdma_netreg->atom = __ofono_modem_add_atom(modem,
 					OFONO_ATOM_TYPE_CDMA_NETREG,
