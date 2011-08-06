@@ -98,6 +98,9 @@ builtin_sources += plugins/udev.c
 builtin_cflags += @UDEV_CFLAGS@
 builtin_libadd += @UDEV_LIBS@
 
+builtin_modules += udevng
+builtin_sources += plugins/udevng.c
+
 if DATAFILES
 rulesdir = @UDEV_DATADIR@
 
