@@ -276,8 +276,8 @@ static void destroy_modem(gpointer data)
 
 static gboolean check_remove(gpointer key, gpointer value, gpointer user_data)
 {
-        struct modem_info *modem = value;
-        const char *devpath = user_data;
+	struct modem_info *modem = value;
+	const char *devpath = user_data;
 	GSList *list;
 
 	for (list = modem->devices; list; list = list->next) {
