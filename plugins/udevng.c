@@ -341,8 +341,11 @@ static void add_device(const char *syspath, const char *devname,
 		return;
 
 	devnode = udev_device_get_devnode(device);
-	if (devnode == NULL)
-		return;
+	if (devnode == NULL) {
+		devnode = udev_device_get_property_value(device, "INTERFACE");
+		if (devnode == NULL)
+			return;
+	}
 
 	intf = udev_device_get_parent_with_subsystem_devtype(device,
 						"usb", "usb_interface");
@@ -393,6 +396,7 @@ static struct {
 } vendor_list[] = {
 	{ "gobi",	"qcserial"			},
 	{ "sierra",	"sierra"			},
+	{ "huawei",	"cdc_ether",	"12d1"		},
 	{ "huawei",	"option",	"12d1"		},
 	{ "huaweicdma",	"option",	"12d1", "140b"	},
 	{ "huaweicdma", "option",	"201e"		},
