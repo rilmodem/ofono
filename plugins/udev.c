@@ -244,185 +244,6 @@ static void add_ifx(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
-static void add_zte(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	struct udev_list_entry *entry;
-	const char *devnode, *type;
-
-	int ppp, aux;
-
-	DBG("modem %p", modem);
-
-	ppp = ofono_modem_get_integer(modem, "ModemRegistered");
-	aux = ofono_modem_get_integer(modem, "AuxRegistered");
-
-	if (ppp && aux)
-		return;
-
-	entry = udev_device_get_properties_list_entry(udev_device);
-	while (entry) {
-		const char *name = udev_list_entry_get_name(entry);
-		type = udev_list_entry_get_value(entry);
-
-		if (g_str_equal(name, "OFONO_ZTE_TYPE") != TRUE) {
-			entry = udev_list_entry_get_next(entry);
-			continue;
-		}
-
-		if (g_str_equal(type, "modem") == TRUE) {
-			if (ppp != 0)
-				return;
-
-			devnode = udev_device_get_devnode(udev_device);
-			ofono_modem_set_string(modem, "Modem", devnode);
-			ppp = 1;
-			ofono_modem_set_integer(modem, "ModemRegistered", ppp);
-		} else if (g_str_equal(type, "aux") == TRUE) {
-			if (aux != 0)
-				return;
-
-			devnode = udev_device_get_devnode(udev_device);
-			ofono_modem_set_string(modem, "Aux", devnode);
-
-			aux = 1;
-			ofono_modem_set_integer(modem, "AuxRegistered", aux);
-		}
-
-		break;
-	}
-
-	if (ppp && aux)
-		ofono_modem_register(modem);
-}
-
-static void add_huawei(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	struct udev_list_entry *entry;
-	const char *devnode;
-	int ppp, pcui;
-
-	DBG("modem %p", modem);
-
-	/*
-	 * Huawei dongles tend to break up their ports into:
-	 * - Modem - Used for PPP
-	 * - Diag - Used for diagnostics, not usually AT command enabled
-	 * - PCUI - auxiliary channel where unsolicited events are sent
-	 *
-	 * The unsolicited events are controlled with ^PORTSEL command,
-	 * and defaults to 0 (the PCUI port)
-	 *
-	 * Surprising the PCUI port is usually last on the usb interface list
-	 */
-	ppp = ofono_modem_get_integer(modem, "ModemRegistered");
-	pcui = ofono_modem_get_integer(modem, "PcuiRegistered");
-
-	if (ppp && pcui)
-		return;
-
-	entry = udev_device_get_properties_list_entry(udev_device);
-	while (entry) {
-		const char *name = udev_list_entry_get_name(entry);
-		const char *type = udev_list_entry_get_value(entry);
-
-		if (g_str_equal(name, "OFONO_HUAWEI_TYPE") != TRUE) {
-			entry = udev_list_entry_get_next(entry);
-			continue;
-		}
-
-		if (g_str_equal(type, "Modem") == TRUE) {
-			if (ppp != 0)
-				return;
-
-			devnode = udev_device_get_devnode(udev_device);
-			ofono_modem_set_string(modem, "Modem", devnode);
-			ppp = 1;
-			ofono_modem_set_integer(modem, "ModemRegistered", ppp);
-		} else if (g_str_equal(type, "Pcui") == TRUE) {
-			if (pcui != 0)
-				return;
-
-			devnode = udev_device_get_devnode(udev_device);
-			ofono_modem_set_string(modem, "Pcui", devnode);
-
-			pcui = 1;
-			ofono_modem_set_integer(modem, "PcuiRegistered", pcui);
-		}
-
-		break;
-	}
-
-	if (ppp && pcui)
-		ofono_modem_register(modem);
-}
-
-static void add_sierra(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	struct udev_list_entry *entry;
-	const char *devnode;
-	gboolean found = FALSE;
-
-	DBG("modem %p", modem);
-
-	entry = udev_device_get_properties_list_entry(udev_device);
-	while (entry) {
-		const char *name = udev_list_entry_get_name(entry);
-		const char *value = udev_list_entry_get_value(entry);
-
-		if (g_str_equal(name, "OFONO_SIERRA_TYPE") == TRUE &&
-					g_str_equal(value, "modem") == TRUE) {
-			found = TRUE;
-			break;
-		}
-
-		entry = udev_list_entry_get_next(entry);
-	}
-
-	if (found == FALSE)
-		return;
-
-	devnode = udev_device_get_devnode(udev_device);
-	ofono_modem_set_string(modem, "Device", devnode);
-
-	ofono_modem_register(modem);
-}
-
-static void add_novatel(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	const char *devnode, *intfnum;
-	int registered;
-
-	DBG("modem %p", modem);
-
-	registered = ofono_modem_get_integer(modem, "Registered");
-
-        if (registered > 1)
-                return;
-
-	intfnum = get_property(udev_device, "ID_USB_INTERFACE_NUM");
-
-	DBG("intfnum %s", intfnum);
-
-	if (g_strcmp0(intfnum, "00") == 0) {
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "PrimaryDevice", devnode);
-
-		ofono_modem_set_integer(modem, "Registered", ++registered);
-	} else if (g_strcmp0(intfnum, "01") == 0) {
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "SecondaryDevice", devnode);
-
-		ofono_modem_set_integer(modem, "Registered", ++registered);
-	}
-
-	if (registered > 1)
-		ofono_modem_register(modem);
-}
-
 static void add_nokia(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
@@ -476,38 +297,6 @@ static void add_isi(struct ofono_modem *modem,
 	ofono_modem_set_string(modem, "Interface", ifname);
 
 	DBG("interface %s", ifname);
-
-	ofono_modem_register(modem);
-}
-
-static void add_gobi(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	struct udev_list_entry *entry;
-	const char *devnode;
-	gboolean found = FALSE;
-
-	DBG("modem %p", modem);
-
-	entry = udev_device_get_properties_list_entry(udev_device);
-	while (entry) {
-		const char *name = udev_list_entry_get_name(entry);
-		const char *value = udev_list_entry_get_value(entry);
-
-		if (g_str_equal(name, "OFONO_GOBI_TYPE") == TRUE &&
-					g_str_equal(value, "modem") == TRUE) {
-			found = TRUE;
-			break;
-		}
-
-		entry = udev_list_entry_get_next(entry);
-	}
-
-	if (found == FALSE)
-		return;
-
-	devnode = udev_device_get_devnode(udev_device);
-	ofono_modem_set_string(modem, "Device", devnode);
 
 	ofono_modem_register(modem);
 }
@@ -785,16 +574,6 @@ done:
 		add_hso(modem, udev_device);
 	else if (g_strcmp0(driver, "ifx") == 0)
 		add_ifx(modem, udev_device);
-	else if (g_strcmp0(driver, "zte") == 0)
-		add_zte(modem, udev_device);
-	else if (g_strcmp0(driver, "huawei") == 0)
-		add_huawei(modem, udev_device);
-	else if (g_strcmp0(driver, "huaweicdma") == 0)
-		add_huawei(modem, udev_device);
-	else if (g_strcmp0(driver, "sierra") == 0)
-		add_sierra(modem, udev_device);
-	else if (g_strcmp0(driver, "novatel") == 0)
-		add_novatel(modem, udev_device);
 	else if (g_strcmp0(driver, "nokia") == 0)
 		add_nokia(modem, udev_device);
 	else if (g_strcmp0(driver, "isiusb") == 0)
@@ -803,8 +582,6 @@ done:
 		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "n900") == 0)
 		add_isi(modem, udev_device);
-	else if (g_strcmp0(driver, "gobi") == 0)
-		add_gobi(modem, udev_device);
 	else if (g_strcmp0(driver, "calypso") == 0)
 		add_calypso(modem, udev_device);
 	else if (g_strcmp0(driver, "tc65") == 0)
