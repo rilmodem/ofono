@@ -350,7 +350,7 @@ static void add_device(const char *syspath, const char *devname,
 		return;
 
 	interface = udev_device_get_property_value(intf, "INTERFACE");
-	number = udev_device_get_sysattr_value(intf, "bInterfaceNumber");
+	number = udev_device_get_property_value(device, "ID_USB_INTERFACE_NUM");
 
 	label = udev_device_get_property_value(device, "OFONO_LABEL");
 
