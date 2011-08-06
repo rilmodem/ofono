@@ -385,6 +385,22 @@ static void add_device(const char *syspath, const char *devname,
 							compare_device);
 }
 
+static struct {
+	const char *driver;
+	const char *drv;
+	const char *vid;
+	const char *pid;
+} vendor_list[] = {
+	{ "gobi",	"qcserial"			},
+	{ "sierra",	"sierra"			},
+	{ "huawei",	"option",	"12d1"		},
+	{ "huaweicdma",	"option",	"12d1", "140b"	},
+	{ "huaweicdma", "option",	"201e"		},
+	{ "novatel",	"option",	"1410"		},
+	{ "zte",	"option",	"19d2"		},
+	{ }
+};
+
 static void check_device(struct udev_device *device)
 {
 	struct udev_device *usb_device;
@@ -411,8 +427,50 @@ static void check_device(struct udev_device *device)
 		return;
 
 	driver = udev_device_get_property_value(usb_device, "OFONO_DRIVER");
-	if (driver == NULL)
-		return;
+	if (driver == NULL) {
+		const char *drv, *vid, *pid;
+		unsigned int i;
+
+		drv = udev_device_get_property_value(device, "ID_USB_DRIVER");
+		if (drv == NULL)
+			return;
+
+		vid = udev_device_get_property_value(device, "ID_VENDOR_ID");
+		if (vid == NULL)
+			return;
+
+		pid = udev_device_get_property_value(device, "ID_MODEL_ID");
+		if (pid == NULL)
+			return;
+
+		DBG("%s [%s:%s]", drv, vid, pid);
+
+		for (i = 0; vendor_list[i].driver; i++) {
+			if (g_str_equal(vendor_list[i].drv, drv) == FALSE)
+				continue;
+
+			if (vendor_list[i].vid == NULL) {
+				driver = vendor_list[i].driver;
+				break;
+			}
+
+			if (g_str_equal(vendor_list[i].vid, vid) == TRUE) {
+				if (vendor_list[i].pid == NULL) {
+					if (driver == NULL)
+						driver = vendor_list[i].driver;
+					continue;
+				}
+
+				if (g_strcmp0(vendor_list[i].pid, pid) == 0) {
+					driver = vendor_list[i].driver;
+					break;
+				}
+			}
+		}
+
+		if (driver == NULL)
+			return;
+	}
 
 	add_device(syspath, devname, driver, device);
 }
@@ -430,6 +488,7 @@ static void create_modem(gpointer key, gpointer value, gpointer user_data)
 		return;
 
 	DBG("%s", syspath);
+	DBG("driver=%s", modem->driver);
 
 	modem->modem = ofono_modem_create(NULL, modem->driver);
 	if (modem->modem == NULL)
