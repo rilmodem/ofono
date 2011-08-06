@@ -325,7 +325,7 @@ static gint compare_device(gconstpointer a, gconstpointer b)
 	const struct device_info *info1 = a;
 	const struct device_info *info2 = b;
 
-	return g_strcmp0(info1->devnode, info2->devnode);
+	return g_strcmp0(info1->number, info2->number);
 }
 
 static void add_device(const char *syspath, const char *devname,
