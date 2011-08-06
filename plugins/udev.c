@@ -169,52 +169,6 @@ static void add_mbm(struct ofono_modem *modem,
 	}
 }
 
-#define APPLICATION_PORT "ApplicationPort"
-#define CONTROL_PORT "ControlPort"
-
-static void add_hso(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	const char *subsystem, *type, *devnode;
-	const char *app, *control, *network;
-	int registered;
-
-	DBG("modem %p", modem);
-
-	subsystem = udev_device_get_subsystem(udev_device);
-	if (subsystem == NULL)
-		return;
-
-	registered = ofono_modem_get_integer(modem, "Registered");
-	if (registered != 0)
-		return;
-
-	type = udev_device_get_sysattr_value(udev_device, "hsotype");
-
-	if (type != NULL) {
-		devnode = udev_device_get_devnode(udev_device);
-
-		if (g_str_has_suffix(type, "Application") == TRUE)
-			ofono_modem_set_string(modem, APPLICATION_PORT, devnode);
-		else if (g_str_has_suffix(type, "Control") == TRUE)
-			ofono_modem_set_string(modem, CONTROL_PORT, devnode);
-	} else if (g_str_equal(subsystem, "net") == TRUE) {
-		devnode = get_property(udev_device, "INTERFACE");
-		ofono_modem_set_string(modem, NETWORK_INTERFACE, devnode);
-	} else {
-		return;
-	}
-
-	app = ofono_modem_get_string(modem, APPLICATION_PORT);
-	control = ofono_modem_get_string(modem, CONTROL_PORT);
-	network = ofono_modem_get_string(modem, NETWORK_INTERFACE);
-
-	if (app != NULL && control != NULL && network != NULL) {
-		ofono_modem_set_integer(modem, "Registered", 1);
-		ofono_modem_register(modem);
-	}
-}
-
 static void add_ifx(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
@@ -570,8 +524,6 @@ done:
 
 	if (g_strcmp0(driver, "mbm") == 0)
 		add_mbm(modem, udev_device);
-	else if (g_strcmp0(driver, "hso") == 0)
-		add_hso(modem, udev_device);
 	else if (g_strcmp0(driver, "ifx") == 0)
 		add_ifx(modem, udev_device);
 	else if (g_strcmp0(driver, "nokia") == 0)

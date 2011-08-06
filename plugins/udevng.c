@@ -43,6 +43,7 @@ struct modem_info {
 	char *driver;
 	GSList *devices;
 	struct ofono_modem *modem;
+	const char *sysattr;
 };
 
 struct device_info {
@@ -51,7 +52,40 @@ struct device_info {
 	char *interface;
 	char *number;
 	char *label;
+	char *sysattr;
 };
+
+static gboolean setup_hso(struct modem_info *modem)
+{
+	const char *control = NULL, *application = NULL, *network = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s %s", info->devnode, info->interface,
+				info->number, info->label, info->sysattr);
+
+		if (g_strcmp0(info->sysattr, "Control") == 0)
+			control = info->devnode;
+		else if (g_strcmp0(info->sysattr, "Application") == 0)
+			application = info->devnode;
+		else if (g_strcmp0(info->sysattr, "") == 0 &&
+				g_str_has_prefix(info->devnode, "hso") == TRUE)
+			network = info->devnode;
+	}
+
+	if (control == NULL && application == NULL)
+		return FALSE;
+
+	ofono_modem_set_string(modem->modem, "ControlPort", control);
+	ofono_modem_set_string(modem->modem, "ApplicationPort", application);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", network);
+
+	return TRUE;
+}
 
 static gboolean setup_gobi(struct modem_info *modem)
 {
@@ -246,7 +280,9 @@ static gboolean setup_zte(struct modem_info *modem)
 static struct {
 	const char *name;
 	gboolean (*setup)(struct modem_info *modem);
+	const char *sysattr;
 } driver_list[] = {
+	{ "hso",	setup_hso,	"hsotype" },
 	{ "gobi",	setup_gobi	},
 	{ "sierra",	setup_sierra	},
 	{ "huawei",	setup_huawei	},
@@ -257,6 +293,18 @@ static struct {
 };
 
 static GHashTable *modem_list;
+
+static const char *get_sysattr(const char *driver)
+{
+	unsigned int i;
+
+	for (i = 0; driver_list[i].name; i++) {
+		if (g_str_equal(driver_list[i].name, driver) == TRUE)
+			return driver_list[i].sysattr;
+	}
+
+	return NULL;
+}
 
 static void destroy_modem(gpointer data)
 {
@@ -277,6 +325,7 @@ static void destroy_modem(gpointer data)
 		g_free(info->interface);
 		g_free(info->number);
 		g_free(info->label);
+		g_free(info->sysattr);
 		g_free(info);
 
 		list->data = NULL;
@@ -371,6 +420,8 @@ static void add_device(const char *syspath, const char *devname,
 		modem->devname = g_strdup(devname);
 		modem->driver = g_strdup(driver);
 
+		modem->sysattr = get_sysattr(driver);
+
 		g_hash_table_replace(modem_list, modem->syspath, modem);
 	}
 
@@ -384,6 +435,11 @@ static void add_device(const char *syspath, const char *devname,
 	info->number = g_strdup(number);
 	info->label = g_strdup(label);
 
+	if (modem->sysattr != NULL) {
+		info->sysattr = g_strdup(udev_device_get_sysattr_value(device,
+							modem->sysattr));
+	}
+
 	modem->devices = g_slist_insert_sorted(modem->devices, info,
 							compare_device);
 }
@@ -394,6 +450,7 @@ static struct {
 	const char *vid;
 	const char *pid;
 } vendor_list[] = {
+	{ "hso",	"hso"				},
 	{ "gobi",	"qcserial"			},
 	{ "sierra",	"sierra"			},
 	{ "huawei",	"cdc_ether",	"12d1"		},
