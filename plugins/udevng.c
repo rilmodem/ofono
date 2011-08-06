@@ -72,13 +72,16 @@ static gboolean setup_hso(struct modem_info *modem)
 			control = info->devnode;
 		else if (g_strcmp0(info->sysattr, "Application") == 0)
 			application = info->devnode;
-		else if (g_strcmp0(info->sysattr, "") == 0 &&
+		else if (info->sysattr == NULL &&
 				g_str_has_prefix(info->devnode, "hso") == TRUE)
 			network = info->devnode;
 	}
 
 	if (control == NULL && application == NULL)
 		return FALSE;
+
+	DBG("control=%s application=%s network=%s",
+				control, application, network);
 
 	ofono_modem_set_string(modem->modem, "ControlPort", control);
 	ofono_modem_set_string(modem->modem, "ApplicationPort", application);
