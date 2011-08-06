@@ -467,6 +467,9 @@ static void enumerate_devices(struct udev *context)
 	g_hash_table_foreach(modem_list, create_modem, NULL);
 }
 
+static struct udev *udev_ctx;
+static struct udev_monitor *udev_mon;
+static guint udev_watch = 0;
 static guint udev_delay = 0;
 
 static gboolean check_modem_list(gpointer user_data)
@@ -480,14 +483,19 @@ static gboolean check_modem_list(gpointer user_data)
 	return FALSE;
 }
 
-static gboolean udev_event(GIOChannel *channel,
-				GIOCondition condition, gpointer user_data)
+static gboolean udev_event(GIOChannel *channel, GIOCondition cond,
+							gpointer user_data)
 {
-	struct udev_monitor *monitor = user_data;
 	struct udev_device *device;
 	const char *action;
 
-	device = udev_monitor_receive_device(monitor);
+	if (cond & (G_IO_ERR | G_IO_HUP | G_IO_NVAL)) {
+		ofono_warn("Error with udev monitor channel");
+		udev_watch = 0;
+		return FALSE;
+	}
+
+	device = udev_monitor_receive_device(udev_mon);
 	if (device == NULL)
 		return TRUE;
 
@@ -510,10 +518,6 @@ static gboolean udev_event(GIOChannel *channel,
 	return TRUE;
 }
 
-static struct udev *udev_ctx;
-static struct udev_monitor *udev_mon;
-static guint udev_watch = 0;
-
 static void udev_start(void)
 {
 	GIOChannel *channel;
@@ -534,7 +538,9 @@ static void udev_start(void)
 	if (channel == NULL)
 		return;
 
-	udev_watch = g_io_add_watch(channel, G_IO_IN, udev_event, udev_mon);
+	udev_watch = g_io_add_watch(channel,
+				G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_NVAL,
+							udev_event, NULL);
 
 	g_io_channel_unref(channel);
 }
