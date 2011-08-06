@@ -67,8 +67,10 @@ static gboolean setup_gobi(struct modem_info *modem)
 						info->number, info->label);
 
 		if (g_strcmp0(info->interface, "255/255/255") == 0 &&
-					g_strcmp0(info->number, "02") == 0)
+					g_strcmp0(info->number, "02") == 0) {
 			device = info->devnode;
+			break;
+		}
 	}
 
 	if (device == NULL)
@@ -95,8 +97,10 @@ static gboolean setup_sierra(struct modem_info *modem)
 						info->number, info->label);
 
 		if (g_strcmp0(info->interface, "255/255/255") == 0 &&
-					g_strcmp0(info->number, "03") == 0)
+					g_strcmp0(info->number, "03") == 0) {
 			device = info->devnode;
+			break;
+		}
 	}
 
 	if (device == NULL)
@@ -124,13 +128,17 @@ static gboolean setup_huawei(struct modem_info *modem)
 
 		if (g_strcmp0(info->label, "modem") == 0 ||
 				g_strcmp0(info->interface, "255/1/1") == 0 ||
-				g_strcmp0(info->interface, "255/2/1") == 0)
+				g_strcmp0(info->interface, "255/2/1") == 0) {
 			mdm = info->devnode;
-		else if (g_strcmp0(info->label, "pcui") == 0 ||
+			if (pcui != NULL)
+				break;
+		} else if (g_strcmp0(info->label, "pcui") == 0 ||
 				g_strcmp0(info->interface, "255/1/2") == 0 ||
-				g_strcmp0(info->interface, "255/2/2") == 0)
+				g_strcmp0(info->interface, "255/2/2") == 0) {
 			pcui = info->devnode;
-		else if (g_strcmp0(info->interface, "255/255/255") == 0) {
+			if (mdm != NULL)
+				break;
+		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "00") == 0)
 				mdm = info->devnode;
 			else if (g_strcmp0(info->number, "02") == 0)
@@ -166,11 +174,15 @@ static gboolean setup_novatel(struct modem_info *modem)
 		DBG("%s %s %s %s", info->devnode, info->interface,
 						info->number, info->label);
 
-		if (g_strcmp0(info->label, "aux") == 0)
+		if (g_strcmp0(info->label, "aux") == 0) {
 			aux = info->devnode;
-		else if (g_strcmp0(info->label, "modem") == 0)
+			if (mdm != NULL)
+				break;
+		} else if (g_strcmp0(info->label, "modem") == 0) {
 			mdm = info->devnode;
-		else if (g_strcmp0(info->interface, "255/255/255") == 0) {
+			if (aux != NULL)
+				break;
+		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "00") == 0)
 				aux = info->devnode;
 			else if (g_strcmp0(info->number, "01") == 0)
@@ -202,11 +214,15 @@ static gboolean setup_zte(struct modem_info *modem)
 		DBG("%s %s %s %s", info->devnode, info->interface,
 						info->number, info->label);
 
-		if (g_strcmp0(info->label, "aux") == 0)
+		if (g_strcmp0(info->label, "aux") == 0) {
 			aux = info->devnode;
-		else if (g_strcmp0(info->label, "modem") == 0)
+			if (mdm != NULL)
+				break;
+		} else if (g_strcmp0(info->label, "modem") == 0) {
 			mdm = info->devnode;
-		else if (g_strcmp0(info->interface, "255/255/255") == 0) {
+			if (aux != NULL)
+				break;
+		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "01") == 0)
 				aux = info->devnode;
 			else if (g_strcmp0(info->number, "02") == 0)
@@ -300,7 +316,8 @@ static void remove_device(struct udev_device *device)
 
 	DBG("%s", syspath);
 
-	g_hash_table_foreach_remove(modem_list, check_remove, (char *) syspath);
+	g_hash_table_foreach_remove(modem_list, check_remove,
+						(char *) syspath);
 }
 
 static gint compare_device(gconstpointer a, gconstpointer b)
