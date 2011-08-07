@@ -17,4 +17,4 @@ print "Connecting modem %s..." % path
 modem = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.Modem')
 
-modem.SetProperty("Powered", dbus.Boolean(1))
+modem.SetProperty("Powered", dbus.Boolean(1), timeout = 120)

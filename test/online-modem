@@ -14,4 +14,4 @@ else:
 
 print "Setting modem %s online..." % path
 modem = dbus.Interface(bus.get_object('org.ofono', path), 'org.ofono.Modem')
-modem.SetProperty("Online", dbus.Boolean(1))
+modem.SetProperty("Online", dbus.Boolean(1), timeout = 120)

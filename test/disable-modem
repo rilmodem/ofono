@@ -17,4 +17,4 @@ print "Disconnecting modem %s..." % path
 modem = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.Modem')
 
-modem.SetProperty("Powered", dbus.Boolean(0))
+modem.SetProperty("Powered", dbus.Boolean(0), timeout = 120)
