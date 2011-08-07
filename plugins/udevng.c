@@ -280,6 +280,36 @@ static gboolean setup_zte(struct modem_info *modem)
 	return TRUE;
 }
 
+static gboolean setup_samsung(struct modem_info *modem)
+{
+	const char *control = NULL, *network = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s", info->devnode, info->interface,
+						info->number, info->label);
+
+		if (g_strcmp0(info->interface, "10/0/0") == 0)
+			control = info->devnode;
+		else if (g_strcmp0(info->interface, "255/0/0") == 0)
+			network = info->devnode;
+	}
+
+	if (control == NULL && network == NULL)
+		return FALSE;
+
+	DBG("control=%s network=%s", control, network);
+
+	ofono_modem_set_string(modem->modem, "ControlPort", control);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", network);
+
+	return TRUE;
+}
+
 static struct {
 	const char *name;
 	gboolean (*setup)(struct modem_info *modem);
@@ -292,6 +322,7 @@ static struct {
 	{ "huaweicdma",	setup_huawei	},
 	{ "novatel",	setup_novatel	},
 	{ "zte",	setup_zte	},
+	{ "samsung",	setup_samsung	},
 	{ }
 };
 
@@ -462,6 +493,8 @@ static struct {
 	{ "huaweicdma", "option",	"201e"		},
 	{ "novatel",	"option",	"1410"		},
 	{ "zte",	"option",	"19d2"		},
+	{ "samsung",    "option",       "04e8", "6889"  },
+	{ "samsung",    "kalmia"			},
 	{ }
 };
 
