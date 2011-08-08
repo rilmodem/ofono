@@ -34,6 +34,7 @@
 #include <ofono/plugin.h>
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
+#include <ofono/cdma-netreg.h>
 #include <ofono/cdma-connman.h>
 #include <ofono/log.h>
 
@@ -209,6 +210,8 @@ static void huaweicdma_post_online(struct ofono_modem *modem)
 	struct huaweicdma_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	ofono_cdma_netreg_create(modem, 0, "huaweicdmamodem", data->modem);
 
 	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->modem);
 }
