@@ -161,10 +161,13 @@ static DBusMessage *hfp_agent_new_connection(DBusConnection *conn,
 	int fd, err;
 	struct ofono_modem *modem = data;
 	struct hfp_data *hfp_data = ofono_modem_get_data(modem);
+	guint16 version;
 
 	if (!dbus_message_get_args(msg, NULL, DBUS_TYPE_UNIX_FD, &fd,
-				DBUS_TYPE_INVALID))
+				DBUS_TYPE_UINT16, &version, DBUS_TYPE_INVALID))
 		return __ofono_error_invalid_args(msg);
+
+	hfp_slc_info_init(&hfp_data->info, version);
 
 	err = service_level_connection(modem, fd);
 	if (err < 0 && err != -EINPROGRESS)
@@ -192,7 +195,7 @@ static DBusMessage *hfp_agent_release(DBusConnection *conn,
 }
 
 static GDBusMethodTable agent_methods[] = {
-	{ "NewConnection", "h", "", hfp_agent_new_connection,
+	{ "NewConnection", "hq", "", hfp_agent_new_connection,
 		G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Release", "", "", hfp_agent_release },
 	{ NULL, NULL, NULL, NULL }
@@ -222,8 +225,6 @@ static int hfp_hf_probe(const char *device, const char *dev_addr,
 	data = g_try_new0(struct hfp_data, 1);
 	if (data == NULL)
 		goto free;
-
-	hfp_slc_info_init(&data->info, HFP_VERSION_1_5);
 
 	data->handsfree_path = g_strdup(device);
 	if (data->handsfree_path == NULL)
