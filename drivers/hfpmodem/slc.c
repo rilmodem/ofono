@@ -52,7 +52,7 @@ struct slc_establish_data {
 	gpointer userdata;
 };
 
-void hfp_slc_info_init(struct hfp_slc_info *info)
+void hfp_slc_info_init(struct hfp_slc_info *info, guint16 version)
 {
 	info->ag_features = 0;
 	info->ag_mpty_features = 0;
@@ -60,9 +60,14 @@ void hfp_slc_info_init(struct hfp_slc_info *info)
 	info->hf_features = HFP_HF_FEATURE_3WAY;
 	info->hf_features |= HFP_HF_FEATURE_CLIP;
 	info->hf_features |= HFP_HF_FEATURE_REMOTE_VOLUME_CONTROL;
+
+	if (version < HFP_VERSION_1_5)
+		goto done;
+
 	info->hf_features |= HFP_HF_FEATURE_ENHANCED_CALL_STATUS;
 	info->hf_features |= HFP_HF_FEATURE_ENHANCED_CALL_CONTROL;
 
+done:
 	memset(info->cind_val, 0, sizeof(info->cind_val));
 	memset(info->cind_pos, 0, sizeof(info->cind_pos));
 }

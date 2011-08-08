@@ -223,7 +223,7 @@ static int hfp_hf_probe(const char *device, const char *dev_addr,
 	if (data == NULL)
 		goto free;
 
-	hfp_slc_info_init(&data->info);
+	hfp_slc_info_init(&data->info, HFP_VERSION_1_5);
 
 	data->handsfree_path = g_strdup(device);
 	if (data->handsfree_path == NULL)
