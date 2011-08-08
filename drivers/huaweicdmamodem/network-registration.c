@@ -116,6 +116,31 @@ static void mode_notify(GAtResult *result, gpointer user_data)
 				sysinfo_cb, netreg, NULL);
 }
 
+static void rssilvl_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_cdma_netreg *netreg = user_data;
+	int strength;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^RSSILVL:"))
+		goto error;
+
+	if (!g_at_result_iter_next_number(&iter, &strength))
+		goto error;
+
+	if (strength == 99)
+		strength = 100;
+
+	ofono_cdma_netreg_strength_notify(netreg, strength);
+
+	return;
+
+error:
+	ofono_error("Invalid RSSILVL value");
+}
+
 static void probe_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_cdma_netreg *netreg = user_data;
@@ -128,6 +153,9 @@ static void probe_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_chat_register(chat, "^MODE:",
 				mode_notify, FALSE, netreg, NULL);
+
+	g_at_chat_register(chat, "^RSSILVL:",
+				rssilvl_notify, FALSE, netreg, NULL);
 
 	ofono_cdma_netreg_register(netreg);
 }
