@@ -283,7 +283,8 @@ builtin_sources += drivers/cdmamodem/cdmamodem.h \
 
 builtin_modules += huaweicdmamodem
 builtin_sources += drivers/huaweicdmamodem/huaweicdmamodem.h \
-			drivers/huaweicdmamodem/huaweicdmamodem.c
+			drivers/huaweicdmamodem/huaweicdmamodem.c \
+			drivers/huaweicdmamodem/network-registration.c
 
 endif
 

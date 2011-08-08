@@ -30,11 +30,14 @@
 
 static int huaweicdmamodem_init(void)
 {
+	huaweicdma_netreg_init();
+
 	return 0;
 }
 
 static void huaweicdmamodem_exit(void)
 {
+	huaweicdma_netreg_exit();
 }
 
 OFONO_PLUGIN_DEFINE(huaweicdmamodem, "Huawei CDMA modem driver", VERSION,
