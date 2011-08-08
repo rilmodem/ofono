@@ -27,8 +27,10 @@
 #define AG_CHLD_3	0x20
 #define AG_CHLD_4	0x40
 
-#define HFP_VERSION_1_5		0x0105
-#define HFP_VERSION_LATEST	0xFFFF
+enum hfp_version {
+	HFP_VERSION_1_5 =	0x0105,
+	HFP_VERSION_LATEST =	HFP_VERSION_1_5,
+};
 
 enum hfp_indicator {
 	HFP_INDICATOR_SERVICE = 0,
