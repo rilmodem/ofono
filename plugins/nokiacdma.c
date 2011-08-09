@@ -94,6 +94,8 @@ static int nokiacdma_enable(struct ofono_modem *modem)
 	GIOChannel *channel;
 	const char *device;
 
+	DBG("%p", modem);
+
 	device = ofono_modem_get_string(modem, "Device");
 	if (device == NULL)
 		return -EINVAL;
@@ -138,12 +140,15 @@ static void nokiacdma_pre_sim(struct ofono_modem *modem)
 {
 	struct nokiacdma_data *data = ofono_modem_get_data(modem);
 
+	DBG("%p", modem);
+
 	ofono_cdma_voicecall_create(modem, 0, "cdmamodem", data->chat);
 	ofono_devinfo_create(modem, 0, "cdmamodem", data->chat);
 }
 
 static void nokiacdma_post_sim(struct ofono_modem *modem)
 {
+	DBG("%p", modem);
 }
 
 static void nokiacdma_post_online(struct ofono_modem *modem)
@@ -151,18 +156,19 @@ static void nokiacdma_post_online(struct ofono_modem *modem)
 	struct nokiacdma_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
 	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->chat);
 }
 
 static struct ofono_modem_driver nokiacdma_driver = {
-	.name			= "nokiacdma",
-	.probe			= nokiacdma_probe,
-	.remove			= nokiacdma_remove,
-	.enable			= nokiacdma_enable,
-	.disable		= nokiacdma_disable,
-	.pre_sim		= nokiacdma_pre_sim,
-	.post_sim		= nokiacdma_post_sim,
-	.post_online		= nokiacdma_post_online,
+	.name		= "nokiacdma",
+	.probe		= nokiacdma_probe,
+	.remove		= nokiacdma_remove,
+	.enable		= nokiacdma_enable,
+	.disable	= nokiacdma_disable,
+	.pre_sim	= nokiacdma_pre_sim,
+	.post_sim	= nokiacdma_post_sim,
+	.post_online	= nokiacdma_post_online,
 };
 
 static int nokiacdma_init(void)
