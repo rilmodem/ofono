@@ -45,22 +45,21 @@ struct ofono_cdma_netreg_driver {
 };
 
 void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *netreg,
-				enum cdma_netreg_status status);
+					enum cdma_netreg_status status);
 void ofono_cdma_netreg_strength_notify(struct ofono_cdma_netreg *netreg,
-				int strength);
+					int strength);
 void ofono_cdma_netreg_data_strength_notify(struct ofono_cdma_netreg *netreg,
-				int data_strength);
+						int data_strength);
 
 int ofono_cdma_netreg_driver_register(
 				const struct ofono_cdma_netreg_driver *d);
 void ofono_cdma_netreg_driver_unregister(
 				const struct ofono_cdma_netreg_driver *d);
 
-struct ofono_cdma_netreg *ofono_cdma_netreg_create(
-				struct ofono_modem *modem,
-				unsigned int vendor,
-				const char *driver,
-				void *data);
+struct ofono_cdma_netreg *ofono_cdma_netreg_create(struct ofono_modem *modem,
+							unsigned int vendor,
+							const char *driver,
+							void *data);
 
 void ofono_cdma_netreg_register(struct ofono_cdma_netreg *cdma_netreg);
 void ofono_cdma_netreg_remove(struct ofono_cdma_netreg *cdma_netreg);
