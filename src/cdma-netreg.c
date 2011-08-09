@@ -34,6 +34,7 @@ static GSList *g_drivers;
 struct ofono_cdma_netreg {
 	enum cdma_netreg_status status;
 	int strength;
+	int hdr_strength;
 	const struct ofono_cdma_netreg_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -82,6 +83,13 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 					&strength);
 	}
 
+	if (cdma_netreg->hdr_strength != -1) {
+		unsigned char strength = cdma_netreg->hdr_strength;
+
+		ofono_dbus_dict_append(&dict, "DataStrength", DBUS_TYPE_BYTE,
+					&strength);
+	}
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
@@ -121,13 +129,14 @@ void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *cdma_netreg,
 		set_registration_status(cdma_netreg, status);
 }
 
-void ofono_cdma_netreg_strength_notify(struct ofono_cdma_netreg *netreg,
-					int strength)
+static void strength_notify_common(struct ofono_cdma_netreg *netreg,
+					int strength, const char *property,
+					int *dest)
 {
 	if (netreg == NULL)
 		return;
 
-	if (netreg->strength == strength)
+	if (*dest == strength)
 		return;
 
 	/*
@@ -137,18 +146,31 @@ void ofono_cdma_netreg_strength_notify(struct ofono_cdma_netreg *netreg,
 	if (netreg->status == CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED)
 		return;
 
-	netreg->strength = strength;
+	*dest = strength;
 
 	if (strength != -1) {
 		DBusConnection *conn = ofono_dbus_get_connection();
 		const char *path = __ofono_atom_get_path(netreg->atom);
-		unsigned char strength = netreg->strength;
+		unsigned char val = strength;
 
 		ofono_dbus_signal_property_changed(conn, path,
 				OFONO_CDMA_NETWORK_REGISTRATION_INTERFACE,
-				"Strength", DBUS_TYPE_BYTE,
-				&strength);
+				property, DBUS_TYPE_BYTE, &val);
 	}
+}
+
+void ofono_cdma_netreg_strength_notify(struct ofono_cdma_netreg *netreg,
+					int strength)
+{
+	return strength_notify_common(netreg, strength,
+					"Strength", &netreg->strength);
+}
+
+void ofono_cdma_netreg_data_strength_notify(struct ofono_cdma_netreg *netreg,
+						int data_strength)
+{
+	return strength_notify_common(netreg, data_strength,
+					"DataStrength", &netreg->hdr_strength);
 }
 
 int ofono_cdma_netreg_driver_register(const struct ofono_cdma_netreg_driver *d)
