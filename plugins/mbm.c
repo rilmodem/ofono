@@ -481,10 +481,10 @@ static struct ofono_modem_driver mbm_driver = {
 	.remove		= mbm_remove,
 	.enable		= mbm_enable,
 	.disable	= mbm_disable,
-	.set_online     = mbm_set_online,
+	.set_online	= mbm_set_online,
 	.pre_sim	= mbm_pre_sim,
 	.post_sim	= mbm_post_sim,
-	.post_online    = mbm_post_online,
+	.post_online	= mbm_post_online,
 };
 
 static int mbm_init(void)
