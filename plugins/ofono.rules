@@ -14,21 +14,6 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="1bbb", ATTRS{idProduct}=="0017", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_ALCATEL_TYPE}="aux"
 ATTRS{idVendor}=="1bbb", ATTRS{idProduct}=="0017", ENV{ID_USB_INTERFACE_NUM}=="05", ENV{OFONO_ALCATEL_TYPE}="modem"
 
-# SpeedUp 9800
-ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_LABEL}="modem"
-ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_LABEL}="aux"
-
-# SpeedUp 7300
-ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{OFONO_LABEL}="modem"
-ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_LABEL}="aux"
-
-# SpeedUp
-ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1005", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_LABEL}="modem"
-ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1005", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_LABEL}="aux"
-
-ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_LABEL}="modem"
-ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_LABEL}="aux"
-
 # Olive
 ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
 ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
@@ -59,15 +44,6 @@ ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
 
 # Alcatel X220L
 ATTRS{idVendor}=="1bbb", ATTRS{idProduct}=="0017", ENV{OFONO_DRIVER}="alcatel"
-
-# Speed Up 9800
-ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{OFONO_DRIVER}="speedup"
-
-# Speed Up 7300
-ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9e00", ENV{OFONO_DRIVER}="speedupcdma"
-
-# Speed Up
-ATTRS{idVendor}=="2020", ENV{OFONO_DRIVER}="speedup"
 
 # Ericsson F3507g
 ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="1900", ENV{OFONO_DRIVER}="mbm"
