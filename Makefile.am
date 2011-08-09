@@ -351,6 +351,9 @@ builtin_sources += plugins/linktop.c
 builtin_modules += telit
 builtin_sources += plugins/telit.c
 
+builtin_modules += alcatel
+builtin_sources += plugins/alcatel.c
+
 builtin_modules += speedup
 builtin_sources += plugins/speedup.c
 
