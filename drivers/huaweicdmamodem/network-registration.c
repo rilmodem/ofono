@@ -37,7 +37,7 @@
 
 static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
 
-static int parse_sysinfo(GAtResult *result, gint *status)
+static gboolean parse_sysinfo(GAtResult *result, gint *status)
 {
 	GAtResultIter iter;
 	gint srv_status;
@@ -47,16 +47,16 @@ static int parse_sysinfo(GAtResult *result, gint *status)
 	g_at_result_iter_init(&iter, result);
 
 	if (!g_at_result_iter_next(&iter, "^SYSINFO:"))
-		return -1;
+		return FALSE;
 
 	if (!g_at_result_iter_next_number(&iter, &srv_status))
-		return -1;
+		return FALSE;
 
 	if (!g_at_result_iter_next_number(&iter, &srv_domain))
-		return -1;
+		return FALSE;
 
 	if (!g_at_result_iter_next_number(&iter, &roaming_status))
-		return -1;
+		return FALSE;
 
 	DBG("%d, %d, %d", srv_status, srv_domain, roaming_status);
 
@@ -88,7 +88,7 @@ static int parse_sysinfo(GAtResult *result, gint *status)
 		break;
 	}
 
-	return 0;
+	return TRUE;
 }
 
 static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -99,10 +99,10 @@ static void sysinfo_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!ok)
 		return;
 
-	status = CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
-
-	if (parse_sysinfo(result, &status) < 0)
+	if (parse_sysinfo(result, &status) == FALSE) {
 		ofono_error("Invalid SYSINFO values");
+		return;
+	}
 
 	ofono_cdma_netreg_status_notify(netreg, status);
 }
