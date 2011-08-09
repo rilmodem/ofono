@@ -39,7 +39,7 @@
 #include "gatchat.h"
 #include "gatresult.h"
 
-#include  "common.h"
+#include "common.h"
 
 #include "atmodem.h"
 
