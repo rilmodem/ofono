@@ -238,6 +238,7 @@ struct ofono_cdma_netreg *ofono_cdma_netreg_create(struct ofono_modem *modem,
 
 	cdma_netreg->status = CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
 	cdma_netreg->strength = -1;
+	cdma_netreg->hdr_strength = -1;
 
 	cdma_netreg->atom = __ofono_modem_add_atom(modem,
 					OFONO_ATOM_TYPE_CDMA_NETREG,
