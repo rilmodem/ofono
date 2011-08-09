@@ -572,6 +572,7 @@ static struct {
 	{ "hso",	"hso"				},
 	{ "gobi",	"qcserial"			},
 	{ "sierra",	"sierra"			},
+	{ "huawei",	"option",	"201e", "2009"	},
 	{ "huawei",	"cdc_ether",	"12d1"		},
 	{ "huawei",	"option",	"12d1"		},
 	{ "huaweicdma",	"option",	"12d1", "140b"	},

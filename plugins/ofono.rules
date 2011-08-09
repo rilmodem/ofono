@@ -10,10 +10,6 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_TELIT_TYPE}="GPS"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_TELIT_TYPE}="Data"
 
-# Olive
-ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
-ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
-
 LABEL="ofono_tty_end"
 
 # ISI/Phonet drivers
