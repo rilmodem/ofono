@@ -155,7 +155,7 @@ static gboolean setup_sierra(struct modem_info *modem)
 
 static gboolean setup_huawei(struct modem_info *modem)
 {
-	const char *mdm = NULL, *pcui = NULL;
+	const char *mdm = NULL, *pcui = NULL, *diag = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -170,13 +170,19 @@ static gboolean setup_huawei(struct modem_info *modem)
 				g_strcmp0(info->interface, "255/1/1") == 0 ||
 				g_strcmp0(info->interface, "255/2/1") == 0) {
 			mdm = info->devnode;
-			if (pcui != NULL)
+			if (pcui != NULL && diag != NULL)
 				break;
 		} else if (g_strcmp0(info->label, "pcui") == 0 ||
 				g_strcmp0(info->interface, "255/1/2") == 0 ||
 				g_strcmp0(info->interface, "255/2/2") == 0) {
 			pcui = info->devnode;
-			if (mdm != NULL)
+			if (mdm != NULL && diag != NULL)
+				break;
+		} else if (g_strcmp0(info->label, "diag") == 0 ||
+				g_strcmp0(info->interface, "255/1/3") == 0 ||
+				g_strcmp0(info->interface, "255/2/2") == 0) {
+			diag = info->devnode;
+			if (mdm != NULL && pcui != NULL)
 				break;
 		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "00") == 0)
@@ -193,10 +199,11 @@ static gboolean setup_huawei(struct modem_info *modem)
 	if (mdm == NULL || pcui == NULL)
 		return FALSE;
 
-	DBG("modem=%s pcui=%s", mdm, pcui);
+	DBG("modem=%s pcui=%s diag=%s", mdm, pcui, diag);
 
 	ofono_modem_set_string(modem->modem, "Modem", mdm);
 	ofono_modem_set_string(modem->modem, "Pcui", pcui);
+	ofono_modem_set_string(modem->modem, "Diag", diag);
 
 	return TRUE;
 }
