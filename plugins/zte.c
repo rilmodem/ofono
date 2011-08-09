@@ -90,9 +90,9 @@ static void zte_remove(struct ofono_modem *modem)
 
 static void zte_debug(const char *str, void *user_data)
 {
-        const char *prefix = user_data;
+	const char *prefix = user_data;
 
-        ofono_info("%s%s", prefix, str);
+	ofono_info("%s%s", prefix, str);
 }
 
 static GAtChat *open_device(struct ofono_modem *modem,
@@ -372,10 +372,10 @@ static struct ofono_modem_driver zte_driver = {
 	.remove		= zte_remove,
 	.enable		= zte_enable,
 	.disable	= zte_disable,
-	.set_online     = zte_set_online,
+	.set_online	= zte_set_online,
 	.pre_sim	= zte_pre_sim,
 	.post_sim	= zte_post_sim,
-	.post_online    = zte_post_online,
+	.post_online	= zte_post_online,
 };
 
 static int zte_init(void)
