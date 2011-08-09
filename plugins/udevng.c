@@ -92,7 +92,7 @@ static gboolean setup_hso(struct modem_info *modem)
 
 static gboolean setup_gobi(struct modem_info *modem)
 {
-	const char *device = NULL;
+	const char *device = NULL, *gps = NULL, *qcdm = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -103,17 +103,20 @@ static gboolean setup_gobi(struct modem_info *modem)
 		DBG("%s %s %s %s", info->devnode, info->interface,
 						info->number, info->label);
 
-		if (g_strcmp0(info->interface, "255/255/255") == 0 &&
-					g_strcmp0(info->number, "02") == 0) {
-			device = info->devnode;
-			break;
+		if (g_strcmp0(info->interface, "255/255/255") == 0) {
+			if (g_strcmp0(info->number, "01") == 0)
+				qcdm = info->devnode;
+			else if (g_strcmp0(info->number, "02") == 0)
+				device = info->devnode;
+			else if (g_strcmp0(info->number, "03") == 0)
+				gps = info->devnode;
 		}
 	}
 
 	if (device == NULL)
 		return FALSE;
 
-	DBG("device=%s", device);
+	DBG("device=%s gps=%s qcdm=%s", device, gps, qcdm);
 
 	ofono_modem_set_string(modem->modem, "Device", device);
 
