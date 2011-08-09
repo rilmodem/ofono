@@ -365,7 +365,7 @@ static gboolean setup_nokia(struct modem_info *modem)
 
 static gboolean setup_zte(struct modem_info *modem)
 {
-	const char *aux = NULL, *mdm = NULL;
+	const char *aux = NULL, *mdm = NULL, *qcdm = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -385,7 +385,9 @@ static gboolean setup_zte(struct modem_info *modem)
 			if (aux != NULL)
 				break;
 		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
-			if (g_strcmp0(info->number, "01") == 0)
+			if (g_strcmp0(info->number, "00") == 0)
+				qcdm = info->devnode;
+			else if (g_strcmp0(info->number, "01") == 0)
 				aux = info->devnode;
 			else if (g_strcmp0(info->number, "02") == 0)
 				mdm = info->devnode;
@@ -397,7 +399,7 @@ static gboolean setup_zte(struct modem_info *modem)
 	if (aux == NULL || mdm == NULL)
 		return FALSE;
 
-	DBG("aux=%s modem=%s", aux, mdm);
+	DBG("aux=%s modem=%s qcdm=%s", aux, mdm, qcdm);
 
 	ofono_modem_set_string(modem->modem, "Aux", aux);
 	ofono_modem_set_string(modem->modem, "Modem", mdm);
