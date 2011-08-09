@@ -348,11 +348,11 @@ static void phonesim_ctm_set(struct ofono_ctm *ctm, ofono_bool_t enable,
 }
 
 static struct ofono_gprs_context_driver context_driver = {
-	.name                   = "phonesim",
-	.probe                  = phonesim_context_probe,
-	.remove                 = phonesim_context_remove,
-	.activate_primary       = phonesim_activate_primary,
-	.deactivate_primary     = phonesim_deactivate_primary,
+	.name			= "phonesim",
+	.probe			= phonesim_context_probe,
+	.remove			= phonesim_context_remove,
+	.activate_primary	= phonesim_activate_primary,
+	.deactivate_primary	= phonesim_deactivate_primary,
 };
 
 static struct ofono_ctm_driver ctm_driver = {
