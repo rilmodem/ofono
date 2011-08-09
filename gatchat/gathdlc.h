@@ -55,6 +55,7 @@ void g_at_hdlc_set_recording(GAtHDLC *hdlc, const char *filename);
 
 GAtIO *g_at_hdlc_get_io(GAtHDLC *hdlc);
 
+void g_at_hdlc_set_start_frame_marker(GAtHDLC *hdlc, gboolean marker);
 void g_at_hdlc_set_no_carrier_detect(GAtHDLC *hdlc, gboolean detect);
 
 void g_at_hdlc_set_suspend_function(GAtHDLC *hdlc, GAtSuspendFunc func,
