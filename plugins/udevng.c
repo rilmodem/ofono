@@ -324,8 +324,8 @@ static gboolean setup_novatel(struct modem_info *modem)
 
 	DBG("aux=%s modem=%s", aux, mdm);
 
-	ofono_modem_set_string(modem->modem, "PrimaryDevice", aux);
-	ofono_modem_set_string(modem->modem, "SecondaryDevice", mdm);
+	ofono_modem_set_string(modem->modem, "Aux", aux);
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
 
 	return TRUE;
 }
