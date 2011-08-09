@@ -220,15 +220,15 @@ static void tc65_post_online(struct ofono_modem *modem)
 }
 
 static struct ofono_modem_driver tc65_driver = {
-	.name                   = "tc65",
-	.probe                  = tc65_probe,
-	.remove                 = tc65_remove,
-	.enable                 = tc65_enable,
-	.disable                = tc65_disable,
-	.set_online             = tc65_set_online,
-	.pre_sim                = tc65_pre_sim,
-	.post_sim               = tc65_post_sim,
-	.post_online            = tc65_post_online,
+	.name		= "tc65",
+	.probe		= tc65_probe,
+	.remove		= tc65_remove,
+	.enable		= tc65_enable,
+	.disable	= tc65_disable,
+	.set_online	= tc65_set_online,
+	.pre_sim	= tc65_pre_sim,
+	.post_sim	= tc65_post_sim,
+	.post_online	= tc65_post_online,
 };
 
 static int tc65_init(void)
