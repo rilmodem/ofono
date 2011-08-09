@@ -454,7 +454,7 @@ static void setup_internal_mux(struct ofono_modem *modem)
 			ofono_error("Failed to create channel");
 			goto error;
 		}
-        }
+	}
 
 	/* wait for DLC creation to settle */
 	data->dlc_init_source = g_timeout_add(10, dlc_setup, modem);
@@ -574,7 +574,7 @@ static int ifx_enable(struct ofono_modem *modem)
 
 	data->device = g_at_tty_open(device, NULL);
 	if (data->device == NULL)
-                return -EIO;
+		return -EIO;
 
 	syntax = g_at_syntax_new_gsmv1();
 	chat = g_at_chat_new(data->device, syntax);
@@ -582,7 +582,7 @@ static int ifx_enable(struct ofono_modem *modem)
 
 	if (chat == NULL) {
 		g_io_channel_unref(data->device);
-                return -EIO;
+		return -EIO;
 	}
 
 	if (getenv("OFONO_AT_DEBUG"))
