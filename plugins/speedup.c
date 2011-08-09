@@ -88,9 +88,9 @@ static void speedup_remove(struct ofono_modem *modem)
 
 static void speedup_debug(const char *str, void *user_data)
 {
-        const char *prefix = user_data;
+	const char *prefix = user_data;
 
-        ofono_info("%s%s", prefix, str);
+	ofono_info("%s%s", prefix, str);
 }
 
 static GAtChat *open_device(struct ofono_modem *modem,
