@@ -10,10 +10,6 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_TELIT_TYPE}="GPS"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_TELIT_TYPE}="Data"
 
-# Alcatel X220L
-ATTRS{idVendor}=="1bbb", ATTRS{idProduct}=="0017", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_ALCATEL_TYPE}="aux"
-ATTRS{idVendor}=="1bbb", ATTRS{idProduct}=="0017", ENV{ID_USB_INTERFACE_NUM}=="05", ENV{OFONO_ALCATEL_TYPE}="modem"
-
 # Olive
 ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{OFONO_HUAWEI_TYPE}="Modem"
 ATTRS{idVendor}=="201e", ATTRS{idProduct}=="2009", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_HUAWEI_TYPE}="Pcui"
@@ -41,9 +37,6 @@ ENV{DEVTYPE}!="usb_device", GOTO="ofono_end"
 
 # Ignore fake serial number
 ATTRS{serial}=="1234567890ABCDEF", ENV{ID_SERIAL_SHORT}=""
-
-# Alcatel X220L
-ATTRS{idVendor}=="1bbb", ATTRS{idProduct}=="0017", ENV{OFONO_DRIVER}="alcatel"
 
 # Ericsson F3507g
 ATTRS{idVendor}=="0bdb", ATTRS{idProduct}=="1900", ENV{OFONO_DRIVER}="mbm"
