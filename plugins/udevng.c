@@ -438,7 +438,7 @@ static struct {
 	const char *sysattr;
 } driver_list[] = {
 	{ "hso",	setup_hso,	"hsotype" },
-	{ "gobi",	setup_gobi	},
+	{ "gobi",	setup_gobi,	},
 	{ "sierra",	setup_sierra	},
 	{ "huawei",	setup_huawei	},
 	{ "huaweicdma",	setup_huawei	},
@@ -541,7 +541,7 @@ static void add_device(const char *syspath, const char *devname,
 			const char *driver, struct udev_device *device)
 {
 	struct udev_device *intf;
-	const char *devpath, *devnode, *interface, *number, *label;
+	const char *devpath, *devnode, *interface, *number, *label, *sysattr;
 	struct modem_info *modem;
 	struct device_info *info;
 
@@ -561,15 +561,6 @@ static void add_device(const char *syspath, const char *devname,
 	if (intf == NULL)
 		return;
 
-	interface = udev_device_get_property_value(intf, "INTERFACE");
-	number = udev_device_get_property_value(device, "ID_USB_INTERFACE_NUM");
-
-	label = udev_device_get_property_value(device, "OFONO_LABEL");
-
-	DBG("%s", devpath);
-	DBG("%s (%s) %s [%s] ==> %s", devnode, driver,
-					interface, number, label);
-
 	modem = g_hash_table_lookup(modem_list, syspath);
 	if (modem == NULL) {
 		modem = g_try_new0(struct modem_info, 1);
@@ -585,6 +576,20 @@ static void add_device(const char *syspath, const char *devname,
 		g_hash_table_replace(modem_list, modem->syspath, modem);
 	}
 
+	interface = udev_device_get_property_value(intf, "INTERFACE");
+	number = udev_device_get_property_value(device, "ID_USB_INTERFACE_NUM");
+
+	label = udev_device_get_property_value(device, "OFONO_LABEL");
+
+	if (modem->sysattr != NULL)
+		sysattr = udev_device_get_sysattr_value(device, modem->sysattr);
+	else
+		sysattr = NULL;
+
+	DBG("%s", devpath);
+	DBG("%s (%s) %s [%s] ==> %s %s", devnode, driver,
+					interface, number, label, sysattr);
+
 	info = g_try_new0(struct device_info, 1);
 	if (info == NULL)
 		return;
@@ -594,11 +599,7 @@ static void add_device(const char *syspath, const char *devname,
 	info->interface = g_strdup(interface);
 	info->number = g_strdup(number);
 	info->label = g_strdup(label);
-
-	if (modem->sysattr != NULL) {
-		info->sysattr = g_strdup(udev_device_get_sysattr_value(device,
-							modem->sysattr));
-	}
+	info->sysattr = g_strdup(sysattr);
 
 	modem->devices = g_slist_insert_sorted(modem->devices, info,
 							compare_device);
