@@ -249,24 +249,29 @@ static void speedup_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, OFONO_VENDOR_SPEEDUP, "atmodem", data->aux);
-
-	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-					"atmodem", data->aux);
-	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-					"atmodem", data->aux);
-
 	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
 
 	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-					"atmodem", data->aux);
+						"atmodem", data->aux);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_SPEEDUP,
-					"atmodem", data->aux);
+						"atmodem", data->aux);
 	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
 
 	if (gprs && gc)
 		ofono_gprs_add_context(gprs, gc);
+}
+
+static void speedup_post_online(struct ofono_modem *modem)
+{
+	struct speedup_data *data = ofono_modem_get_data(modem);
+
+	ofono_netreg_create(modem, OFONO_VENDOR_SPEEDUP, "atmodem", data->aux);
+
+	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+						"atmodem", data->aux);
+	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+						"atmodem", data->aux);
 }
 
 static struct ofono_modem_driver speedup_driver = {
@@ -277,6 +282,7 @@ static struct ofono_modem_driver speedup_driver = {
 	.disable	= speedup_disable,
 	.pre_sim	= speedup_pre_sim,
 	.post_sim	= speedup_post_sim,
+	.post_online	= speedup_post_online,
 };
 
 static int speedup_init(void)
