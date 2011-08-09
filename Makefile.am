@@ -360,6 +360,9 @@ builtin_sources += plugins/speedup.c
 builtin_modules += speedupcdma
 builtin_sources += plugins/speedupcdma.c
 
+builtin_modules += samsung
+builtin_sources += plugins/samsung.c
+
 if BLUETOOTH
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
