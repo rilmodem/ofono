@@ -198,34 +198,6 @@ static void add_ifx(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
-static void add_nokia(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	const char *devnode, *intfnum;
-	int registered;
-
-	DBG("modem %p", modem);
-
-	registered = ofono_modem_get_integer(modem, "Registered");
-	if (registered != 0)
-		return;
-
-	intfnum = get_property(udev_device, "ID_USB_INTERFACE_NUM");
-
-	DBG("intfnum %s", intfnum);
-
-	if (g_strcmp0(intfnum, "02") == 0) {
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Modem", devnode);
-	} else if (g_strcmp0(intfnum, "04") == 0) {
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Control", devnode);
-
-		ofono_modem_set_integer(modem, "Registered", 1);
-		ofono_modem_register(modem);
-	}
-}
-
 static void add_isi(struct ofono_modem *modem,
 					struct udev_device *udev_device)
 {
@@ -439,8 +411,6 @@ done:
 		add_mbm(modem, udev_device);
 	else if (g_strcmp0(driver, "ifx") == 0)
 		add_ifx(modem, udev_device);
-	else if (g_strcmp0(driver, "nokia") == 0)
-		add_nokia(modem, udev_device);
 	else if (g_strcmp0(driver, "isiusb") == 0)
 		add_isi(modem, udev_device);
 	else if (g_strcmp0(driver, "u8500") == 0)

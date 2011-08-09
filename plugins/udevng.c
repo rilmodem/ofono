@@ -320,6 +320,46 @@ static gboolean setup_novatel(struct modem_info *modem)
 	return TRUE;
 }
 
+static gboolean setup_nokia(struct modem_info *modem)
+{
+	const char *aux = NULL, *mdm = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s", info->devnode, info->interface,
+						info->number, info->label);
+
+		if (g_strcmp0(info->label, "aux") == 0) {
+			aux = info->devnode;
+			if (mdm != NULL)
+				break;
+		} else if (g_strcmp0(info->label, "modem") == 0) {
+			mdm = info->devnode;
+			if (aux != NULL)
+				break;
+		} else if (g_strcmp0(info->interface, "10/0/0") == 0) {
+			if (g_strcmp0(info->number, "02") == 0)
+				mdm = info->devnode;
+			else if (g_strcmp0(info->number, "04") == 0)
+				aux = info->devnode;
+		}
+	}
+
+	if (aux == NULL || mdm == NULL)
+		return FALSE;
+
+	DBG("aux=%s modem=%s", aux, mdm);
+
+	ofono_modem_set_string(modem->modem, "Aux", aux);
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+
+	return TRUE;
+}
+
 static gboolean setup_zte(struct modem_info *modem)
 {
 	const char *aux = NULL, *mdm = NULL;
@@ -406,6 +446,7 @@ static struct {
 	{ "speedup",	setup_speedup	},
 	{ "alcatel",	setup_alcatel	},
 	{ "novatel",	setup_novatel	},
+	{ "nokia",	setup_nokia	},
 	{ "zte",	setup_zte	},
 	{ "samsung",	setup_samsung	},
 	{ }
@@ -583,6 +624,8 @@ static struct {
 	{ "alcatel",	"option",	"1bbb", "0017"	},
 	{ "novatel",	"option",	"1410"		},
 	{ "zte",	"option",	"19d2"		},
+	{ "nokia",	"option",	"0421", "060e"	},
+	{ "nokia",	"option",	"0421", "0623"	},
 	{ "samsung",    "option",       "04e8", "6889"  },
 	{ "samsung",    "kalmia"			},
 	{ }
