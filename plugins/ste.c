@@ -501,10 +501,10 @@ static struct ofono_modem_driver ste_driver = {
 	.remove		= ste_remove,
 	.enable		= ste_enable,
 	.disable	= ste_disable,
-	.set_online     = ste_set_online,
+	.set_online	= ste_set_online,
 	.pre_sim	= ste_pre_sim,
 	.post_sim	= ste_post_sim,
-	.post_online    = ste_post_online,
+	.post_online	= ste_post_online,
 };
 
 static int ste_init(void)
