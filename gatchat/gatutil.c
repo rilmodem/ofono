@@ -23,8 +23,9 @@
 #include <config.h>
 #endif
 
-#include <string.h>
+#include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 
 #include <glib.h>
 
@@ -130,6 +131,45 @@ void g_at_util_debug_dump(gboolean in, const unsigned char *buf, gsize len,
 
 	debugf(str->str, user_data);
 	g_string_free(str, TRUE);
+}
+
+void g_at_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,
+				GAtDebugFunc debugf, gpointer user_data)
+{
+	static const char hexdigits[] = "0123456789abcdef";
+	char str[68];
+	gsize i;
+
+	str[0] = in ? '<' : '>';
+
+	for (i = 0; i < len; i++) {
+		str[((i % 16) * 3) + 1] = ' ';
+		str[((i % 16) * 3) + 2] = hexdigits[buf[i] >> 4];
+		str[((i % 16) * 3) + 3] = hexdigits[buf[i] & 0xf];
+		str[(i % 16) + 51] = isprint(buf[i]) ? buf[i] : '.';
+
+		if ((i + 1) % 16 == 0) {
+			str[49] = ' ';
+			str[50] = ' ';
+			str[67] = '\0';
+			debugf(str, user_data);
+			str[0] = ' ';
+		}
+	}
+
+	if ((i + 1) % 16 > 0) {
+		gsize j;
+		for (j = (i % 16); j < 16; j++) {
+			str[(j * 3) + 1] = ' ';
+			str[(j * 3) + 2] = ' ';
+			str[(j * 3) + 3] = ' ';
+			str[j + 51] = ' ';
+		}
+		str[49] = ' ';
+		str[50] = ' ';
+		str[67] = '\0';
+		debugf(str, user_data);
+	}
 }
 
 gboolean g_at_util_setup_io(GIOChannel *io, GIOFlags flags)

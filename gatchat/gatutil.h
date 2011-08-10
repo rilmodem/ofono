@@ -34,6 +34,9 @@ void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
 void g_at_util_debug_dump(gboolean in, const unsigned char *buf, gsize len,
 				GAtDebugFunc debugf, gpointer user_data);
 
+void g_at_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,
+				GAtDebugFunc debugf, gpointer user_data);
+
 gboolean g_at_util_setup_io(GIOChannel *io, GIOFlags flags);
 
 #ifdef __cplusplus
