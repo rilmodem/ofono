@@ -89,13 +89,13 @@ static inline void hdlc_record(GAtHDLC *hdlc, gboolean in,
 	unsigned char id;
 	int err;
 
-	if (len == 0)
-		return;
-
 	g_at_util_debug_hexdump(in, data, length,
 					hdlc->debugf, hdlc->debug_data);
 
 	if (hdlc->record_fd < 0)
+		return;
+
+	if (length == 0)
 		return;
 
 	gettimeofday(&now, NULL);
@@ -562,12 +562,19 @@ gboolean g_at_hdlc_send(GAtHDLC *hdlc, const unsigned char *data, gsize size)
 
 	if (hdlc->start_frame_marker == TRUE) {
 		/* Protocol requires 0x7e as start marker */
+		if (pos + 1 > avail)
+			return FALSE;
+
 		*buf++ = HDLC_FLAG;
 		pos++;
+
+		if (pos == wrap)
+			buf = ring_buffer_write_ptr(write_buffer, pos);
 	} else if (hdlc->wakeup_sent == FALSE) {
 		/* Write an initial 0x7e as wakeup character */
 		*buf++ = HDLC_FLAG;
 		pos++;
+
 		hdlc->wakeup_sent = TRUE;
 	}
 
