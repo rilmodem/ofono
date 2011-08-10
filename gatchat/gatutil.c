@@ -157,7 +157,7 @@ void g_at_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,
 		}
 	}
 
-	if ((i + 1) % 16 > 0) {
+	if (i % 16 > 0) {
 		gsize j;
 		for (j = (i % 16); j < 16; j++) {
 			str[(j * 3) + 1] = ' ';
