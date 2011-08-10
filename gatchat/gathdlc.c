@@ -89,12 +89,13 @@ static inline void hdlc_record(GAtHDLC *hdlc, gboolean in,
 	unsigned char id;
 	int err;
 
-	g_at_util_debug_dump(in, data, length, hdlc->debugf, hdlc->debug_data);
-
-	if (hdlc->record_fd < 0)
+	if (len == 0)
 		return;
 
-	if (len == 0)
+	g_at_util_debug_hexdump(in, data, length,
+					hdlc->debugf, hdlc->debug_data);
+
+	if (hdlc->record_fd < 0)
 		return;
 
 	gettimeofday(&now, NULL);
