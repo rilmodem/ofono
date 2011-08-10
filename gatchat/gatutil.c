@@ -140,6 +140,9 @@ void g_at_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,
 	char str[68];
 	gsize i;
 
+	if (debugf == NULL || !len)
+		return;
+
 	str[0] = in ? '<' : '>';
 
 	for (i = 0; i < len; i++) {
