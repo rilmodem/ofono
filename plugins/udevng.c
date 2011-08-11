@@ -453,7 +453,7 @@ static gboolean setup_nokia(struct modem_info *modem)
 
 static gboolean setup_telit(struct modem_info *modem)
 {
-	const char *mdm = NULL, *aux = NULL, *gps = NULL;
+	const char *mdm = NULL, *aux = NULL, *gps = NULL, *diag = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -475,6 +475,8 @@ static gboolean setup_telit(struct modem_info *modem)
 		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "00") == 0)
 				mdm = info->devnode;
+			else if (g_strcmp0(info->number, "01") == 0)
+				diag = info->devnode;
 			else if (g_strcmp0(info->number, "02") == 0)
 				gps = info->devnode;
 			else if (g_strcmp0(info->number, "03") == 0)
@@ -485,7 +487,7 @@ static gboolean setup_telit(struct modem_info *modem)
 	if (aux == NULL || mdm == NULL)
 		return FALSE;
 
-	DBG("modem=%s aux=%s gps=%s", mdm, aux, gps);
+	DBG("modem=%s aux=%s gps=%s diag=%s", mdm, aux, gps, diag);
 
 	ofono_modem_set_string(modem->modem, "Modem", mdm);
 	ofono_modem_set_string(modem->modem, "Data", aux);
