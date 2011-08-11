@@ -2647,42 +2647,19 @@ static gboolean handle_command_launch_browser(const struct stk_command *cmd,
 	return FALSE;
 }
 
-static void proactive_command_handled_end(struct ofono_stk *stk)
+static void setup_call_handled_cancel(struct ofono_stk *stk)
 {
-	if (stk->pending_cmd == NULL)
-		return;
+	struct ofono_voicecall *vc = NULL;
+	struct ofono_atom *vc_atom;
 
-	switch(stk->pending_cmd->type) {
-	case STK_COMMAND_TYPE_SETUP_CALL:
-	{
-		struct ofono_voicecall *vc = NULL;
-		struct ofono_atom *vc_atom;
+	vc_atom = __ofono_modem_find_atom(
+				__ofono_atom_get_modem(stk->atom),
+				OFONO_ATOM_TYPE_VOICECALL);
+	if (vc_atom)
+		vc = __ofono_atom_get_data(vc_atom);
 
-		vc_atom = __ofono_modem_find_atom(
-					__ofono_atom_get_modem(stk->atom),
-					OFONO_ATOM_TYPE_VOICECALL);
-		if (vc_atom)
-			vc = __ofono_atom_get_data(vc_atom);
-
-		if (vc != NULL)
-			__ofono_voicecall_clear_alpha_and_icon_id(vc);
-
-		break;
-	}
-	case STK_COMMAND_TYPE_SEND_SMS:
-	case STK_COMMAND_TYPE_SEND_USSD:
-	case STK_COMMAND_TYPE_SEND_SS:
-	case STK_COMMAND_TYPE_SEND_DTMF:
-		stk_alpha_id_unset(stk);
-		break;
-
-	default:
-		break;
-	}
-
-	stk_command_free(stk->pending_cmd);
-	stk->pending_cmd = NULL;
-	stk->cancel_cmd = NULL;
+	if (vc != NULL)
+		__ofono_voicecall_clear_alpha_and_icon_id(vc);
 }
 
 static gboolean handle_setup_call_confirmation_req(struct stk_command *cmd,
@@ -2707,7 +2684,7 @@ static gboolean handle_setup_call_confirmation_req(struct stk_command *cmd,
 	if (err < 0)
 		goto out;
 
-	stk->cancel_cmd = proactive_command_handled_end;
+	stk->cancel_cmd = setup_call_handled_cancel;
 
 	return TRUE;
 
@@ -2931,7 +2908,7 @@ static gboolean handled_alpha_id_set(struct ofono_stk *stk,
 	if (stk_alpha_id_set(stk, text, attr, icon) == FALSE)
 		return FALSE;
 
-	stk->cancel_cmd = proactive_command_handled_end;
+	stk->cancel_cmd = stk_alpha_id_unset;
 	return TRUE;
 }
 
@@ -2949,7 +2926,7 @@ void ofono_stk_proactive_command_handled_notify(struct ofono_stk *stk,
 	 * responses here
 	 */
 	if (length > 0 && pdu[0] == 0x81) {
-		proactive_command_handled_end(stk);
+		stk_proactive_command_cancel(stk);
 		return;
 	}
 
