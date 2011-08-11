@@ -123,7 +123,7 @@ static gboolean setup_hso(struct modem_info *modem)
 			network = info->devnode;
 	}
 
-	if (control == NULL && application == NULL)
+	if (control == NULL || application == NULL)
 		return FALSE;
 
 	DBG("control=%s application=%s network=%s",
