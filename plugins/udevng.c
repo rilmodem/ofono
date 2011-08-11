@@ -703,17 +703,10 @@ static struct {
 	{ }
 };
 
-static void check_device(struct udev_device *device)
+static void check_usb_device(struct udev_device *device)
 {
 	struct udev_device *usb_device;
-	const char *bus, *driver, *syspath, *devname;
-
-	bus = udev_device_get_property_value(device, "ID_BUS");
-	if (bus == NULL)
-		return;
-
-	if (g_str_equal(bus, "usb") == FALSE)
-		return;
+	const char *driver, *syspath, *devname;
 
 	usb_device = udev_device_get_parent_with_subsystem_devtype(device,
 							"usb", "usb_device");
@@ -775,6 +768,18 @@ static void check_device(struct udev_device *device)
 	}
 
 	add_device(syspath, devname, driver, device);
+}
+
+static void check_device(struct udev_device *device)
+{
+	const char *bus;
+
+	bus = udev_device_get_property_value(device, "ID_BUS");
+	if (bus == NULL)
+		return;
+
+	if (g_str_equal(bus, "usb") == TRUE)
+		check_usb_device(device);
 }
 
 static gboolean create_modem(gpointer key, gpointer value, gpointer user_data)
