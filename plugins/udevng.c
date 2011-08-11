@@ -55,6 +55,52 @@ struct device_info {
 	char *sysattr;
 };
 
+static gboolean setup_mbm(struct modem_info *modem)
+{
+	const char *mdm = NULL, *app = NULL, *network = NULL, *gps = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s %s", info->devnode, info->interface,
+				info->number, info->label, info->sysattr);
+
+		if (g_str_has_suffix(info->sysattr, "Modem") == TRUE ||
+				g_str_has_suffix(info->sysattr,
+							"Modem 2") == TRUE) {
+			if (mdm == NULL)
+				mdm = info->devnode;
+			else
+				app = info->devnode;
+		} else if (g_str_has_suffix(info->sysattr,
+						"GPS Port") == TRUE ||
+				g_str_has_suffix(info->sysattr,
+						"Module NMEA") == TRUE) {
+			gps = info->devnode;
+		} else if (g_str_has_suffix(info->sysattr,
+						"Network Adapter") == TRUE ||
+				g_str_has_suffix(info->sysattr,
+						"NetworkAdapter") == TRUE) {
+			network = info->devnode;
+		}
+	}
+
+	if (mdm == NULL || app == NULL)
+		return FALSE;
+
+	DBG("modem=%s data=%s network=%s gps=%s", mdm, app, network, gps);
+
+	ofono_modem_set_string(modem->modem, "ModemDevice", mdm);
+	ofono_modem_set_string(modem->modem, "DataDevice", app);
+	ofono_modem_set_string(modem->modem, "GPSDevice", gps);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", network);
+
+	return TRUE;
+}
+
 static gboolean setup_hso(struct modem_info *modem)
 {
 	const char *control = NULL, *application = NULL, *network = NULL;
@@ -451,7 +497,8 @@ static struct {
 	gboolean (*setup)(struct modem_info *modem);
 	const char *sysattr;
 } driver_list[] = {
-	{ "hso",	setup_hso,	"hsotype" },
+	{ "mbm",	setup_mbm,	"device/interface"	},
+	{ "hso",	setup_hso,	"hsotype"		},
 	{ "gobi",	setup_gobi,	},
 	{ "sierra",	setup_sierra	},
 	{ "huawei",	setup_huawei	},
@@ -625,6 +672,16 @@ static struct {
 	const char *vid;
 	const char *pid;
 } vendor_list[] = {
+	{ "mbm",	"cdc_acm",	"0bdb"		},
+	{ "mbm"		"cdc_ether",	"0bdb"		},
+	{ "mbm",	"cdc_acm",	"0fce"		},
+	{ "mbm",	"cdc_ether",	"0fce"		},
+	{ "mbm",	"cdc_acm",	"413c"		},
+	{ "mbm",	"cdc_ether",	"413c"		},
+	{ "mbm",	"cdc_acm",	"03f0"		},
+	{ "mbm",	"cdc_ether",	"03f0"		},
+	{ "mbm",	"cdc_acm",	"0930"		},
+	{ "mbm",	"cdc_ether",	"0930"		},
 	{ "hso",	"hso"				},
 	{ "gobi",	"qcserial"			},
 	{ "sierra",	"sierra"			},
