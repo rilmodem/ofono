@@ -46,102 +46,37 @@ struct stk_data {
 	unsigned int vendor;
 };
 
-static const char *csim_prefix[] = { "+CSIM:", NULL };
+static const char *none_prefix[] = { NULL };
+static const char *cusate_prefix[] = { "+CUSATER:", NULL };
 
-static void csim_fetch_cb(gboolean ok, GAtResult *result,
-		gpointer user_data)
-{
-	struct ofono_stk *stk = user_data;
-	GAtResultIter iter;
-	const guint8 *response;
-	gint rlen, len;
-
-	if (!ok)
-		return;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CSIM:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &rlen))
-		return;
-
-	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
-		return;
-
-	if (rlen != len * 2 || len < 2)
-		return;
-
-	/* Check that SW1 indicates success */
-	if (response[len - 2] != 0x90 && response[len - 2] != 0x91)
-		return;
-
-	if (response[len - 2] == 0x90 && response[len - 1] != 0)
-		return;
-
-	DBG("csim_fetch_cb: %i", len);
-
-	ofono_stk_proactive_command_notify(stk, len - 2, response);
-
-	/* Can this happen? */
-	if (response[len - 2] == 0x91)
-		at_sim_fetch_command(stk, response[len - 1]);
-}
-
-void at_sim_fetch_command(struct ofono_stk *stk, int length)
-{
-	char buf[64];
-	struct stk_data *sd = ofono_stk_get_data(stk);
-
-	snprintf(buf, sizeof(buf), "AT+CSIM=10,A0120000%02hhX", length);
-	g_at_chat_send(sd->chat, buf, csim_prefix, csim_fetch_cb, stk, NULL);
-}
-
-static void at_csim_envelope_cb(gboolean ok, GAtResult *result,
-				gpointer user_data)
+static void at_cusate_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	GAtResultIter iter;
 	ofono_stk_envelope_cb_t cb = cbd->cb;
 	struct ofono_error error;
-	const guint8 *response;
-	gint rlen, len;
+	GAtResultIter iter;
+	const guint8 *response = NULL;
+	gint len = 0;
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
-	if (!ok)
-		goto error;
+	if (ok == FALSE)
+		goto done;
 
+	/*
+	 * According to 27.007, Section 12.2.5 the envelope response is
+	 * returned in +CUSATER intermediate response
+	 */
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "+CSIM:"))
-		goto error;
-
-	if (!g_at_result_iter_next_number(&iter, &rlen))
-		goto error;
+	if (!g_at_result_iter_next(&iter, "+CUSATER:"))
+		goto done;
 
 	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
-		goto error;
+		goto done;
 
-	if (rlen != len * 2 || len < 2)
-		goto error;
-
-	if ((response[len - 2] != 0x90 && response[len - 2] != 0x91) ||
-			(response[len - 2] == 0x90 && response[len - 1] != 0)) {
-		memset(&error, 0, sizeof(error));
-
-		error.type = OFONO_ERROR_TYPE_SIM;
-		error.error = (response[len - 2] << 8) | response[len - 1];
-	}
-
-	DBG("csim_envelope_cb: %i", len);
-
-	cb(&error, response, len - 2, cbd->data);
-	return;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, NULL, 0, cbd->data);
+done:
+	cb(&error, response, len, cbd->data);
 }
 
 static void at_stk_envelope(struct ofono_stk *stk, int length,
@@ -150,80 +85,30 @@ static void at_stk_envelope(struct ofono_stk *stk, int length,
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char *buf = g_try_new(char, 64 + length * 2);
-	int len, ret;
+	char *buf = alloca(64 + length * 2);
+	int len;
 
-	if (buf == NULL)
-		goto error;
-
-	len = sprintf(buf, "AT+CSIM=%i,A0C20000%02hhX",
-			12 + length * 2, length);
+	len = sprintf(buf, "AT+CUSATE=");
 
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhX", *command++);
 
-	len += sprintf(buf + len, "FF");
-
-	ret = g_at_chat_send(sd->chat, buf, csim_prefix,
-				at_csim_envelope_cb, cbd, g_free);
-
-	g_free(buf);
-	buf = NULL;
-
-	if (ret > 0)
+	if (g_at_chat_send(sd->chat, buf, cusate_prefix,
+				at_cusate_cb, cbd, g_free) > 0)
 		return;
 
-error:
-	g_free(buf);
 	g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, NULL, 0, data);
 }
 
-static void at_csim_terminal_response_cb(gboolean ok, GAtResult *result,
-						gpointer user_data)
+static void at_cusatt_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
-	GAtResultIter iter;
 	ofono_stk_generic_cb_t cb = cbd->cb;
 	struct ofono_error error;
-	const guint8 *response;
-	gint rlen, len;
 
 	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (!ok)
-		goto error;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+CSIM:"))
-		goto error;
-
-	if (!g_at_result_iter_next_number(&iter, &rlen))
-		goto error;
-
-	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
-		goto error;
-
-	if (rlen != len * 2 || len < 2)
-		goto error;
-
-	if ((response[len - 2] != 0x90 && response[len - 2] != 0x91) ||
-			(response[len - 2] == 0x90 && response[len - 1] != 0)) {
-		memset(&error, 0, sizeof(error));
-
-		error.type = OFONO_ERROR_TYPE_SIM;
-		error.error = (response[len - 2] << 8) | response[len - 1];
-	}
-
-	DBG("csim_terminal_response_cb: %i", len);
-
 	cb(&error, cbd->data);
-	return;
-
-error:
-	CALLBACK_WITH_FAILURE(cb, cbd->data);
 }
 
 static void at_stk_terminal_response(struct ofono_stk *stk, int length,
@@ -233,51 +118,41 @@ static void at_stk_terminal_response(struct ofono_stk *stk, int length,
 {
 	struct stk_data *sd = ofono_stk_get_data(stk);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char *buf = g_try_new(char, 64 + length * 2);
-	int len, ret;
+	char *buf = alloca(64 + length * 2);
+	int len;
 
-	if (buf == NULL)
-		goto error;
-
-	len = sprintf(buf, "AT+CSIM=%i,A0140000%02hhX",
-			10 + length * 2, length);
+	len = sprintf(buf, "AT+CUSATT=");
 
 	for (; length; length--)
 		len += sprintf(buf + len, "%02hhX", *value++);
 
-	ret = g_at_chat_send(sd->chat, buf, csim_prefix,
-				at_csim_terminal_response_cb, cbd, g_free);
-
-	g_free(buf);
-	buf = NULL;
-
-	if (ret > 0)
+	if (g_at_chat_send(sd->chat, buf, none_prefix,
+				at_cusatt_cb, cbd, g_free) > 0)
 		return;
 
-error:
 	g_free(cbd);
-
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
-static void phonesim_tcmd_notify(GAtResult *result, gpointer user_data)
+static void phonesim_cusatp_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 	GAtResultIter iter;
-	int length;
+	const guint8 *response;
+	gint len;
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, "*TCMD:"))
+	if (!g_at_result_iter_next(&iter, "+CUSATP:"))
 		return;
 
-	if (!g_at_result_iter_next_number(&iter, &length))
+	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
 		return;
 
-	at_sim_fetch_command(stk, length);
+	ofono_stk_proactive_command_notify(stk, len, response);
 }
 
-static void phonesim_tend_notify(GAtResult *result, gpointer user_data)
+static void phonesim_cusatend_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
 
@@ -289,13 +164,11 @@ static gboolean at_stk_register(gpointer user)
 	struct ofono_stk *stk = user;
 	struct stk_data *sd = ofono_stk_get_data(stk);
 
-	if (sd->vendor == OFONO_VENDOR_PHONESIM) {
-		g_at_chat_register(sd->chat, "*TCMD:", phonesim_tcmd_notify,
-							FALSE, stk, NULL);
+	g_at_chat_register(sd->chat, "+CUSATP:", phonesim_cusatp_notify,
+						FALSE, stk, NULL);
 
-		g_at_chat_register(sd->chat, "*TEND", phonesim_tend_notify,
-							FALSE, stk, NULL);
-	}
+	g_at_chat_register(sd->chat, "+CUSATEND", phonesim_cusatend_notify,
+						FALSE, stk, NULL);
 
 	ofono_stk_register(stk);
 
