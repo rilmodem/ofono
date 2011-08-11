@@ -152,6 +152,24 @@ static void phonesim_cusatp_notify(GAtResult *result, gpointer user_data)
 	ofono_stk_proactive_command_notify(stk, len, response);
 }
 
+static void phonesim_hcmd_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_stk *stk = user_data;
+	GAtResultIter iter;
+	const guint8 *response;
+	gint len;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "*HCMD:"))
+		return;
+
+	if (!g_at_result_iter_next_hexstring(&iter, &response, &len))
+		return;
+
+	ofono_stk_proactive_command_handled_notify(stk, len, response);
+}
+
 static void phonesim_cusatend_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_stk *stk = user_data;
@@ -168,6 +186,10 @@ static gboolean at_stk_register(gpointer user)
 						FALSE, stk, NULL);
 
 	g_at_chat_register(sd->chat, "+CUSATEND", phonesim_cusatend_notify,
+						FALSE, stk, NULL);
+
+	if (sd->vendor == OFONO_VENDOR_PHONESIM)
+		g_at_chat_register(sd->chat, "*HCMD:", phonesim_hcmd_notify,
 						FALSE, stk, NULL);
 
 	ofono_stk_register(stk);
