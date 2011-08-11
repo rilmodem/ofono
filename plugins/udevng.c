@@ -55,6 +55,39 @@ struct device_info {
 	char *sysattr;
 };
 
+static gboolean setup_isi(struct modem_info *modem)
+{
+	const char *node = NULL;
+	int addr = 0;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s %s", info->devnode, info->interface,
+				info->number, info->label, info->sysattr);
+
+		if (g_strcmp0(info->sysattr, "820") == 0) {
+			if (g_strcmp0(info->interface, "2/254/0") == 0)
+				addr = 16;
+
+			node = info->devnode;
+		}
+	}
+
+	if (node == NULL)
+		return FALSE;
+
+	DBG("interface=%s address=%d", node, addr);
+
+	ofono_modem_set_string(modem->modem, "Interface", node);
+	ofono_modem_set_integer(modem->modem, "Address", addr);
+
+	return TRUE;
+}
+
 static gboolean setup_mbm(struct modem_info *modem)
 {
 	const char *mdm = NULL, *app = NULL, *network = NULL, *gps = NULL;
@@ -497,6 +530,7 @@ static struct {
 	gboolean (*setup)(struct modem_info *modem);
 	const char *sysattr;
 } driver_list[] = {
+	{ "isiusb",	setup_isi,	"type"			},
 	{ "mbm",	setup_mbm,	"device/interface"	},
 	{ "hso",	setup_hso,	"hsotype"		},
 	{ "gobi",	setup_gobi,	},
@@ -672,6 +706,7 @@ static struct {
 	const char *vid;
 	const char *pid;
 } vendor_list[] = {
+	{ "isiusb",	"cdc_phonet"			},
 	{ "mbm",	"cdc_acm",	"0bdb"		},
 	{ "mbm"		"cdc_ether",	"0bdb"		},
 	{ "mbm",	"cdc_acm",	"0fce"		},

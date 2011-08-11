@@ -17,9 +17,6 @@ SUBSYSTEM!="net", GOTO="ofono_isi_end"
 ATTRS{type}!="820", GOTO="ofono_isi_end"
 KERNELS=="gadget", GOTO="ofono_isi_end"
 
-# Generic USB / PC Suite mode
-SUBSYSTEMS=="usb", ENV{OFONO_DRIVER}="isiusb", ENV{OFONO_ISI_ADDRESS}="16"
-
 # Nokia N900 modem
 SUBSYSTEMS=="hsi", ENV{OFONO_DRIVER}="n900", ENV{OFONO_ISI_ADDRESS}="108"
 
