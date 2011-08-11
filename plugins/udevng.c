@@ -777,24 +777,25 @@ static void check_device(struct udev_device *device)
 	add_device(syspath, devname, driver, device);
 }
 
-static void create_modem(gpointer key, gpointer value, gpointer user_data)
+static gboolean create_modem(gpointer key, gpointer value, gpointer user_data)
 {
 	struct modem_info *modem = value;
 	const char *syspath = key;
 	unsigned int i;
 
-	if (modem->devices == NULL)
-		return;
-
 	if (modem->modem != NULL)
-		return;
+		return FALSE;
 
 	DBG("%s", syspath);
+
+	if (modem->devices == NULL)
+		return TRUE;
+
 	DBG("driver=%s", modem->driver);
 
 	modem->modem = ofono_modem_create(NULL, modem->driver);
 	if (modem->modem == NULL)
-		return;
+		return TRUE;
 
 	for (i = 0; driver_list[i].name; i++) {
 		if (g_str_equal(driver_list[i].name, modem->driver) == FALSE)
@@ -802,12 +803,11 @@ static void create_modem(gpointer key, gpointer value, gpointer user_data)
 
 		if (driver_list[i].setup(modem) == TRUE) {
 			ofono_modem_register(modem->modem);
-			return;
+			return FALSE;
 		}
 	}
 
-	ofono_modem_remove(modem->modem);
-	modem->modem = NULL;
+	return TRUE;
 }
 
 static void enumerate_devices(struct udev *context)
@@ -842,7 +842,7 @@ static void enumerate_devices(struct udev *context)
 
 	udev_enumerate_unref(enumerate);
 
-	g_hash_table_foreach(modem_list, create_modem, NULL);
+	g_hash_table_foreach_remove(modem_list, create_modem, NULL);
 }
 
 static struct udev *udev_ctx;
@@ -856,7 +856,7 @@ static gboolean check_modem_list(gpointer user_data)
 
 	DBG("");
 
-	g_hash_table_foreach(modem_list, create_modem, NULL);
+	g_hash_table_foreach_remove(modem_list, create_modem, NULL);
 
 	return FALSE;
 }
