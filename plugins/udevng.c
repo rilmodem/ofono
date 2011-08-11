@@ -331,6 +331,38 @@ static gboolean setup_speedup(struct modem_info *modem)
 	return TRUE;
 }
 
+static gboolean setup_linktop(struct modem_info *modem)
+{
+	const char *aux = NULL, *mdm = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s", info->devnode, info->interface,
+						info->number, info->label);
+
+		if (g_strcmp0(info->interface, "2/2/1") == 0) {
+			if (g_strcmp0(info->number, "01") == 0)
+				aux = info->devnode;
+			else if (g_strcmp0(info->number, "03") == 0)
+				mdm = info->devnode;
+		}
+	}
+
+	if (aux == NULL || mdm == NULL)
+		return FALSE;
+
+	DBG("aux=%s modem=%s", aux, mdm);
+
+	ofono_modem_set_string(modem->modem, "Aux", aux);
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+
+	return TRUE;
+}
+
 static gboolean setup_alcatel(struct modem_info *modem)
 {
 	const char *aux = NULL, *mdm = NULL;
@@ -584,6 +616,7 @@ static struct {
 	{ "huaweicdma",	setup_huawei	},
 	{ "speedupcdma",setup_speedup	},
 	{ "speedup",	setup_speedup	},
+	{ "linktop",	setup_linktop	},
 	{ "alcatel",	setup_alcatel	},
 	{ "novatel",	setup_novatel	},
 	{ "nokia",	setup_nokia	},
@@ -753,6 +786,7 @@ static struct {
 	const char *pid;
 } vendor_list[] = {
 	{ "isiusb",	"cdc_phonet"			},
+	{ "linktop",	"cdc_acm",	"230d"		},
 	{ "mbm",	"cdc_acm",	"0bdb"		},
 	{ "mbm"		"cdc_ether",	"0bdb"		},
 	{ "mbm",	"cdc_acm",	"0fce"		},

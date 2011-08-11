@@ -193,34 +193,6 @@ static void add_nokiacdma(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
-static void add_linktop(struct ofono_modem *modem,
-					struct udev_device *udev_device)
-{
-	const char *devnode, *intfnum;
-	int registered;
-
-	DBG("modem %p", modem);
-
-	registered = ofono_modem_get_integer(modem, "Registered");
-	if (registered != 0)
-		return;
-
-	intfnum = get_property(udev_device, "ID_USB_INTERFACE_NUM");
-
-	DBG("intfnum %s", intfnum);
-
-	if (g_strcmp0(intfnum, "01") == 0) {
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Aux", devnode);
-	} else if (g_strcmp0(intfnum, "03") == 0) {
-		devnode = udev_device_get_devnode(udev_device);
-		ofono_modem_set_string(modem, "Modem", devnode);
-
-		ofono_modem_set_integer(modem, "Registered", 1);
-		ofono_modem_register(modem);
-	}
-}
-
 static void add_modem(struct udev_device *udev_device)
 {
 	struct ofono_modem *modem;
@@ -299,8 +271,6 @@ done:
 		add_tc65(modem, udev_device);
 	else if (g_strcmp0(driver, "nokiacdma") == 0)
 		add_nokiacdma(modem, udev_device);
-	else if (g_strcmp0(driver, "linktop") == 0)
-		add_linktop(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
