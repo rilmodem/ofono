@@ -187,6 +187,8 @@ static gboolean setup_huawei(struct modem_info *modem)
 		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "00") == 0)
 				mdm = info->devnode;
+			else if (g_strcmp0(info->number, "01") == 0)
+				pcui = info->devnode;
 			else if (g_strcmp0(info->number, "02") == 0)
 				pcui = info->devnode;
 			else if (g_strcmp0(info->number, "03") == 0)
