@@ -2,16 +2,6 @@
 
 ACTION!="add|change", GOTO="ofono_end"
 
-SUBSYSTEM!="tty", GOTO="ofono_tty_end"
-KERNEL!="ttyUSB[0-9]*", GOTO="ofono_tty_end"
-
-# Telit UC864-G
-ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="00", ENV{OFONO_TELIT_TYPE}="Modem"
-ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_TELIT_TYPE}="GPS"
-ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1004", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_TELIT_TYPE}="Data"
-
-LABEL="ofono_tty_end"
-
 # ISI/Phonet drivers
 SUBSYSTEM!="net", GOTO="ofono_isi_end"
 ATTRS{type}!="820", GOTO="ofono_isi_end"
@@ -37,8 +27,5 @@ ATTRS{idVendor}=="0421", ATTRS{idProduct}=="00b6", ENV{OFONO_DRIVER}="nokiacdma"
 
 # Teracom (Linktop/LW27x) 3G Data Card
 ATTRS{idVendor}=="230d", ATTRS{idProduct}=="0001", ENV{OFONO_DRIVER}="linktop"
-
-# Telit
-ATTRS{idVendor}=="1bc7", ENV{OFONO_DRIVER}="telit"
 
 LABEL="ofono_end"

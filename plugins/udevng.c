@@ -451,6 +451,49 @@ static gboolean setup_nokia(struct modem_info *modem)
 	return TRUE;
 }
 
+static gboolean setup_telit(struct modem_info *modem)
+{
+	const char *mdm = NULL, *aux = NULL, *gps = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s", info->devnode, info->interface,
+						info->number, info->label);
+
+		if (g_strcmp0(info->label, "aux") == 0) {
+			aux = info->devnode;
+			if (mdm != NULL)
+				break;
+		} else if (g_strcmp0(info->label, "modem") == 0) {
+			mdm = info->devnode;
+			if (aux != NULL)
+				break;
+		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
+			if (g_strcmp0(info->number, "00") == 0)
+				mdm = info->devnode;
+			else if (g_strcmp0(info->number, "02") == 0)
+				gps = info->devnode;
+			else if (g_strcmp0(info->number, "03") == 0)
+				aux = info->devnode;
+		}
+	}
+
+	if (aux == NULL || mdm == NULL)
+		return FALSE;
+
+	DBG("modem=%s aux=%s gps=%s", mdm, aux, gps);
+
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+	ofono_modem_set_string(modem->modem, "Data", aux);
+	ofono_modem_set_string(modem->modem, "GPS", gps);
+
+	return TRUE;
+}
+
 static gboolean setup_zte(struct modem_info *modem)
 {
 	const char *aux = NULL, *mdm = NULL, *qcdm = NULL;
@@ -542,6 +585,7 @@ static struct {
 	{ "alcatel",	setup_alcatel	},
 	{ "novatel",	setup_novatel	},
 	{ "nokia",	setup_nokia	},
+	{ "telit",	setup_telit	},
 	{ "zte",	setup_zte	},
 	{ "samsung",	setup_samsung	},
 	{ }
@@ -731,6 +775,7 @@ static struct {
 	{ "alcatel",	"option",	"1bbb", "0017"	},
 	{ "novatel",	"option",	"1410"		},
 	{ "zte",	"option",	"19d2"		},
+	{ "telit",	"option",	"1bc7"		},
 	{ "nokia",	"option",	"0421", "060e"	},
 	{ "nokia",	"option",	"0421", "0623"	},
 	{ "samsung",	"option",	"04e8", "6889"	},
