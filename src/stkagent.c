@@ -1005,7 +1005,7 @@ int stk_agent_display_action_info(struct stk_agent *agent, const char *text,
 					DBUS_TYPE_INVALID);
 
 	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
-						0) == FALSE ||
+					DBUS_TIMEOUT_INFINITE) == FALSE ||
 			agent->call == NULL)
 		return -EIO;
 
@@ -1132,8 +1132,8 @@ int stk_agent_display_action(struct stk_agent *agent,
 					DBUS_TYPE_INVALID);
 
 	if (dbus_connection_send_with_reply(conn, agent->msg, &agent->call,
-						0) == FALSE ||
-						agent->call == NULL)
+					DBUS_TIMEOUT_INFINITE) == FALSE ||
+			agent->call == NULL)
 		return -EIO;
 
 	agent->user_cb = cb;
