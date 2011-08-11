@@ -252,13 +252,15 @@ Methods		byte RequestSelection(string title, byte icon_id,
 			Possible Errors: [service].Error.SimToolkit.EndSession
 
 		void DisplayActionInformation(string text,
-						byte icon_id) [noreply]
+						byte icon_id)
 
 			Supplies a text string and/or icon concerning the
 			current activity in the terminal and UICC.  The
 			text should be displayed to the user on screen
-			until the call is canceled using Cancel().  This
-			method should not return.
+			until the call is canceled using Cancel().  If the
+			method returns it is assumed that the user has
+			explicitly dismissed the dialog and no Cancel() is
+			sent.
 
 		boolean ConfirmLaunchBrowser(string information,
 						byte icon_id, string url)
