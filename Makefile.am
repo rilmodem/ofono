@@ -163,8 +163,6 @@ builtin_sources += $(gatchat_sources) \
 				drivers/atmodem/sim.c \
 				drivers/atmodem/stk.c \
 				drivers/atmodem/stk.h \
-				drivers/atmodem/sim-poll.c \
-				drivers/atmodem/sim-poll.h \
 				drivers/atmodem/ussd.c \
 				drivers/atmodem/voicecall.c \
 				drivers/atmodem/call-barring.c \

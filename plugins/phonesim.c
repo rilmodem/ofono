@@ -61,7 +61,6 @@
 #include <ofono/gnss.h>
 
 #include <drivers/atmodem/vendor.h>
-#include <drivers/atmodem/sim-poll.h>
 #include <drivers/atmodem/atutil.h>
 #include <drivers/hfpmodem/slc.h>
 
