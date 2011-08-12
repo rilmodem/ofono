@@ -90,8 +90,6 @@ gisi_sources = gisi/client.c gisi/client.h gisi/common.h \
 
 btio_sources = btio/btio.h btio/btio.c
 
-udev_files = plugins/ofono.rules
-
 if UDEV
 builtin_modules += udev
 builtin_sources += plugins/udev.c
@@ -100,12 +98,6 @@ builtin_libadd += @UDEV_LIBS@
 
 builtin_modules += udevng
 builtin_sources += plugins/udevng.c
-
-if DATAFILES
-rulesdir = @UDEV_DATADIR@
-
-rules_DATA = $(foreach file,$(udev_files), plugins/97-$(notdir $(file)))
-endif
 endif
 
 if ISIMODEM
@@ -566,7 +558,7 @@ testdir = $(pkglibdir)/test
 test_SCRIPTS = $(test_scripts)
 endif
 
-EXTRA_DIST = src/genbuiltin $(udev_files) $(doc_files) $(test_scripts)
+EXTRA_DIST = src/genbuiltin plugins/ofono.rules $(doc_files) $(test_scripts)
 
 dist_man_MANS = doc/ofonod.8
 

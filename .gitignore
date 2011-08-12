@@ -30,8 +30,6 @@ src/builtin.h
 src/ofonod
 src/ofono.service
 
-plugins/*-ofono.rules
-
 unit/test-common
 unit/test-util
 unit/test-idmap
