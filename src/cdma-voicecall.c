@@ -330,6 +330,58 @@ static DBusMessage *voicecall_manager_flash(DBusConnection *conn,
 	return NULL;
 }
 
+static ofono_bool_t is_valid_tones(const char *tones)
+{
+	int len;
+	int i;
+
+	if (tones == NULL)
+		return FALSE;
+
+	len = strlen(tones);
+	if (len == 0)
+		return FALSE;
+
+	for (i = 0; i < len; i++) {
+		if (g_ascii_isdigit(tones[i]) || tones[i] == '*' ||
+				tones[i] == '#')
+			continue;
+		else
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static DBusMessage *voicecall_manager_tone(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_cdma_voicecall *vc = data;
+	const char *tones;
+
+	if (vc->pending)
+		return __ofono_error_busy(msg);
+
+	if (vc->driver->send_tones == NULL)
+		return __ofono_error_not_implemented(msg);
+
+	if (vc->status != CDMA_CALL_STATUS_ACTIVE)
+		return __ofono_error_failed(msg);
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &tones,
+					DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	if (is_valid_tones(tones) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	vc->pending = dbus_message_ref(msg);
+
+	vc->driver->send_tones(vc,  tones, generic_callback, vc);
+
+	return NULL;
+}
+
 static GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",    "",    "a{sv}",
 					voicecall_manager_get_properties },
@@ -340,6 +392,8 @@ static GDBusMethodTable manager_methods[] = {
 	{ "Answer",           "",    "",         voicecall_manager_answer,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SendFlash",      "s",    "",         voicecall_manager_flash,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "SendTones",     "s",    "",        voicecall_manager_tone,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
