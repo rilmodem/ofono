@@ -286,12 +286,35 @@ static DBusMessage *voicecall_manager_hangup(DBusConnection *conn,
 	return NULL;
 }
 
+static DBusMessage *voicecall_manager_answer(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_cdma_voicecall *vc = data;
+
+	if (vc->pending)
+		return __ofono_error_busy(msg);
+
+	if (vc->driver->answer == NULL)
+		return __ofono_error_not_implemented(msg);
+
+	if (vc->status != CDMA_CALL_STATUS_INCOMING)
+		return __ofono_error_failed(msg);
+
+	vc->pending = dbus_message_ref(msg);
+
+	vc->driver->answer(vc, generic_callback, vc);
+
+	return NULL;
+}
+
 static GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",    "",    "a{sv}",
 					voicecall_manager_get_properties },
 	{ "Dial",             "s",  "o",        voicecall_manager_dial,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Hangup",           "",    "",         voicecall_manager_hangup,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "Answer",           "",    "",         voicecall_manager_answer,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
