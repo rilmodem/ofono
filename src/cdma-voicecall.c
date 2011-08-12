@@ -307,6 +307,29 @@ static DBusMessage *voicecall_manager_answer(DBusConnection *conn,
 	return NULL;
 }
 
+static DBusMessage *voicecall_manager_flash(DBusConnection *conn,
+					DBusMessage *msg, void *data)
+{
+	struct ofono_cdma_voicecall *vc = data;
+	const char *string;
+
+	if (vc->pending)
+		return __ofono_error_busy(msg);
+
+	if (vc->driver->send_flash == NULL)
+		return __ofono_error_not_implemented(msg);
+
+	if (dbus_message_get_args(msg, NULL, DBUS_TYPE_STRING, &string,
+					DBUS_TYPE_INVALID) == FALSE)
+		return __ofono_error_invalid_args(msg);
+
+	vc->pending = dbus_message_ref(msg);
+
+	vc->driver->send_flash(vc, string, generic_callback, vc);
+
+	return NULL;
+}
+
 static GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",    "",    "a{sv}",
 					voicecall_manager_get_properties },
@@ -315,6 +338,8 @@ static GDBusMethodTable manager_methods[] = {
 	{ "Hangup",           "",    "",         voicecall_manager_hangup,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Answer",           "",    "",         voicecall_manager_answer,
+						G_DBUS_METHOD_FLAG_ASYNC },
+	{ "SendFlash",      "s",    "",         voicecall_manager_flash,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
