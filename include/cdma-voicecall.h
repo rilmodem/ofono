@@ -58,6 +58,9 @@ struct ofono_cdma_voicecall_driver {
 
 	void (*answer)(struct ofono_cdma_voicecall *vc,
 			ofono_cdma_voicecall_cb_t cb, void *data);
+
+	void (*send_flash)(struct ofono_cdma_voicecall *vc, const char *string,
+			ofono_cdma_voicecall_cb_t cb, void *data);
 };
 
 void ofono_cdma_voicecall_disconnected(struct ofono_cdma_voicecall *vc,
