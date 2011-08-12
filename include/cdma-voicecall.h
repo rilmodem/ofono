@@ -55,6 +55,9 @@ struct ofono_cdma_voicecall_driver {
 	/* Hangs up active, dialing, alerting or incoming calls */
 	void (*hangup)(struct ofono_cdma_voicecall *vc,
 			ofono_cdma_voicecall_cb_t cb, void *data);
+
+	void (*answer)(struct ofono_cdma_voicecall *vc,
+			ofono_cdma_voicecall_cb_t cb, void *data);
 };
 
 void ofono_cdma_voicecall_disconnected(struct ofono_cdma_voicecall *vc,
