@@ -674,6 +674,9 @@ PPP Stack
 Modem Emulator
 ==============
 
-- Support HandsFree Profile Audio Gateway (HFP AG) emulator.
-  Supported feature are: 3-way calling, ability to reject a call, enhanced call
-  status, enhanced call control and report of extended error results code.
+- Support for Bluetooth HandsFree Profile Audio Gateway (HFP AG).  oFono
+  supports the underlying AT command protocol specified by BT HFP version 1.5.
+  Supported features include 3-way calling, ability to reject a call,
+  enhanced call status, enhanced call control and report of extended error
+  results code.  Audio management is assumed to be performed in another system
+  component, e.g. PulseAudio.
