@@ -197,9 +197,19 @@ static void send_result_common(GAtServer *server, const char *result)
 	send_common(server, buf, len);
 }
 
-void g_at_server_send_final(GAtServer *server, GAtServerResult result)
+static inline void send_numeric(GAtServer *server, GAtServerResult result)
 {
 	char buf[1024];
+	if (server->v250.is_v1)
+		sprintf(buf, "%s", server_result_to_string(result));
+	else
+		sprintf(buf, "%u", (unsigned int)result);
+
+	send_result_common(server, buf);
+}
+
+void g_at_server_send_final(GAtServer *server, GAtServerResult result)
+{
 
 	server->final_sent = TRUE;
 	server->last_result = result;
@@ -211,12 +221,7 @@ void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 		return;
 	}
 
-	if (server->v250.is_v1)
-		sprintf(buf, "%s", server_result_to_string(result));
-	else
-		sprintf(buf, "%u", (unsigned int)result);
-
-	send_result_common(server, buf);
+	send_numeric(server, result);
 }
 
 void g_at_server_send_ext_final(GAtServer *server, const char *result)
@@ -836,7 +841,7 @@ static void server_parse_line(GAtServer *server)
 			return;
 	}
 
-	g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+	send_numeric(server, G_AT_SERVER_RESULT_OK);
 }
 
 static enum ParserResult server_feed(GAtServer *server,
