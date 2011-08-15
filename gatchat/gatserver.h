@@ -69,6 +69,8 @@ typedef void (*GAtServerNotifyFunc)(GAtServer *server,
 					GAtServerRequestType type,
 					GAtResult *result, gpointer user_data);
 
+typedef void (*GAtServerFinishFunc)(GAtServer *server, gpointer user_data);
+
 GAtServer *g_at_server_new(GIOChannel *io);
 GIOChannel *g_at_server_get_channel(GAtServer *server);
 GAtIO *g_at_server_get_io(GAtServer *server);
@@ -114,6 +116,11 @@ void g_at_server_send_unsolicited(GAtServer *server, const char *result);
  * responses.
  */
 void g_at_server_send_info(GAtServer *server, const char *line, gboolean last);
+
+gboolean g_at_server_set_finish_callback(GAtServer *server,
+						GAtServerFinishFunc finishf,
+						gpointer user_data);
+gboolean g_at_server_command_pending(GAtServer *server);
 
 #ifdef __cplusplus
 }

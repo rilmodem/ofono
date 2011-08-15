@@ -126,6 +126,8 @@ struct _GAtServer {
 	gboolean final_sent;
 	gboolean final_async;
 	gboolean in_read_handler;
+	GAtServerFinishFunc finishf;		/* Callback when cmd finishes */
+	gpointer finish_data;			/* Finish func data */
 };
 
 static void server_wakeup_writer(GAtServer *server);
@@ -197,15 +199,25 @@ static void send_result_common(GAtServer *server, const char *result)
 	send_common(server, buf, len);
 }
 
-static inline void send_numeric(GAtServer *server, GAtServerResult result)
+static inline void send_final_common(GAtServer *server, const char *result)
+{
+	send_result_common(server, result);
+	server->final_async = FALSE;
+
+	if (server->finishf)
+		server->finishf(server, server->finish_data);
+}
+
+static inline void send_final_numeric(GAtServer *server, GAtServerResult result)
 {
 	char buf[1024];
+
 	if (server->v250.is_v1)
 		sprintf(buf, "%s", server_result_to_string(result));
 	else
 		sprintf(buf, "%u", (unsigned int)result);
 
-	send_result_common(server, buf);
+	send_final_common(server, buf);
 }
 
 void g_at_server_send_final(GAtServer *server, GAtServerResult result)
@@ -223,15 +235,14 @@ void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 		return;
 	}
 
-	server->final_async = FALSE;
-	send_numeric(server, result);
+	send_final_numeric(server, result);
 }
 
 void g_at_server_send_ext_final(GAtServer *server, const char *result)
 {
 	server->final_sent = TRUE;
 	server->last_result = G_AT_SERVER_RESULT_EXT_ERROR;
-	send_result_common(server, result);
+	send_final_common(server, result);
 }
 
 void g_at_server_send_intermediate(GAtServer *server, const char *result)
@@ -810,12 +821,11 @@ static void server_parse_line(GAtServer *server)
 	unsigned int pos = server->cur_pos;
 	unsigned int len = strlen(line);
 
-	server->final_async = FALSE;
-
 	while (pos < len) {
 		unsigned int consumed;
 
 		server->final_sent = FALSE;
+		server->final_async = FALSE;
 
 		if (is_extended_command_prefix(line[pos]))
 			consumed = parse_extended_command(server, line + pos);
@@ -844,7 +854,7 @@ static void server_parse_line(GAtServer *server)
 			return;
 	}
 
-	send_numeric(server, G_AT_SERVER_RESULT_OK);
+	send_final_numeric(server, G_AT_SERVER_RESULT_OK);
 }
 
 static enum ParserResult server_feed(GAtServer *server,
@@ -1459,4 +1469,25 @@ gboolean g_at_server_unregister(GAtServer *server, const char *prefix)
 	g_hash_table_remove(server->command_list, prefix);
 
 	return TRUE;
+}
+
+gboolean g_at_server_set_finish_callback(GAtServer *server,
+						GAtServerFinishFunc finishf,
+						gpointer user_data)
+{
+	if (server == NULL)
+		return FALSE;
+
+	server->finishf = finishf;
+	server->finish_data = user_data;
+
+	return TRUE;
+}
+
+gboolean g_at_server_command_pending(GAtServer *server)
+{
+	if (server == NULL)
+		return FALSE;
+
+	return server->final_async;
 }
