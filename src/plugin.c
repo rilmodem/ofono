@@ -53,8 +53,8 @@ static gboolean add_plugin(void *handle, struct ofono_plugin_desc *desc)
 		return FALSE;
 
 	if (g_str_equal(desc->version, OFONO_VERSION) == FALSE) {
-		ofono_error("Version mismatch for %s: found %s, expected %s",
-			    desc->description, desc->version, OFONO_VERSION);
+		ofono_error("Invalid version %s for %s", desc->version,
+							desc->description);
 		return FALSE;
 	}
 
