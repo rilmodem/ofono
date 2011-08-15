@@ -210,6 +210,8 @@ static inline void send_numeric(GAtServer *server, GAtServerResult result)
 
 void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 {
+	if (server->final_sent != FALSE)
+		return;
 
 	server->final_sent = TRUE;
 	server->last_result = result;
