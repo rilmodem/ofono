@@ -223,6 +223,7 @@ void g_at_server_send_final(GAtServer *server, GAtServerResult result)
 		return;
 	}
 
+	server->final_async = FALSE;
 	send_numeric(server, result);
 }
 
