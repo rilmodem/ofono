@@ -36,6 +36,8 @@ void __ofono_modem_shutdown(void);
 
 int __ofono_log_init(const char *debug, ofono_bool_t detach);
 void __ofono_log_cleanup(void);
+void __ofono_log_enable(struct ofono_debug_desc *start,
+					struct ofono_debug_desc *stop);
 
 #include <ofono/dbus.h>
 
