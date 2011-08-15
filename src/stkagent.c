@@ -38,6 +38,10 @@
 #include "stkutil.h"
 #include "stkagent.h"
 
+#ifndef DBUS_TIMEOUT_INFINITE
+#define DBUS_TIMEOUT_INFINITE ((int) 0x7fffffff)
+#endif
+
 enum allowed_error {
 	ALLOWED_ERROR_GO_BACK	= 0x1,
 	ALLOWED_ERROR_TERMINATE	= 0x2,
