@@ -73,9 +73,9 @@ struct ofono_plugin_desc {
 #else
 #define OFONO_PLUGIN_DEFINE(name, description, version, priority, init, exit) \
 		extern struct ofono_debug_desc __start___debug[] \
-				__attribute__ ((visibility("hidden"))); \
+				__attribute__ ((weak, visibility("hidden"))); \
 		extern struct ofono_debug_desc __stop___debug[] \
-				__attribute__ ((visibility("hidden"))); \
+				__attribute__ ((weak, visibility("hidden"))); \
 		extern struct ofono_plugin_desc ofono_plugin_desc \
 				__attribute__ ((visibility("default"))); \
 		struct ofono_plugin_desc ofono_plugin_desc = { \
