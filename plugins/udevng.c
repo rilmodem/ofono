@@ -259,7 +259,7 @@ static gboolean setup_huawei(struct modem_info *modem)
 				break;
 		} else if (g_strcmp0(info->label, "diag") == 0 ||
 				g_strcmp0(info->interface, "255/1/3") == 0 ||
-				g_strcmp0(info->interface, "255/2/2") == 0) {
+				g_strcmp0(info->interface, "255/2/3") == 0) {
 			diag = info->devnode;
 			if (mdm != NULL && pcui != NULL)
 				break;
