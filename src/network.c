@@ -689,6 +689,9 @@ static GSList *compress_operator_list(const struct ofono_network_operator *list,
 	for (i = 0; i < total; i++) {
 		o = NULL;
 
+		if (list[i].mcc[0] == '\0' || list[i].mnc[0] == '\0')
+			continue;
+
 		if (oplist)
 			o = g_slist_find_custom(oplist, &list[i],
 						network_operator_compare);
