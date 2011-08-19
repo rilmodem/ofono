@@ -262,6 +262,54 @@ static unsigned int voicecalls_num_connecting(struct ofono_voicecall *vc)
 	return r;
 }
 
+static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
+{
+	GSList *l;
+	struct voicecall *v;
+
+	for (l = vc->call_list; l; l = l->next) {
+		v = l->data;
+
+		if (v->call->status == CALL_STATUS_ACTIVE ||
+				v->call->status == CALL_STATUS_DIALING ||
+				v->call->status == CALL_STATUS_ALERTING)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean voicecalls_have_with_status(struct ofono_voicecall *vc,
+						int status)
+{
+	GSList *l;
+	struct voicecall *v;
+
+	for (l = vc->call_list; l; l = l->next) {
+		v = l->data;
+
+		if (v->call->status == status)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean voicecalls_have_held(struct ofono_voicecall *vc)
+{
+	return voicecalls_have_with_status(vc, CALL_STATUS_HELD);
+}
+
+static gboolean voicecalls_have_waiting(struct ofono_voicecall *vc)
+{
+	return voicecalls_have_with_status(vc, CALL_STATUS_WAITING);
+}
+
+static gboolean voicecalls_have_incoming(struct ofono_voicecall *vc)
+{
+	return voicecalls_have_with_status(vc, CALL_STATUS_INCOMING);
+}
+
 static void dial_request_finish(struct ofono_voicecall *vc)
 {
 	struct dial_request *dial_req = vc->dial_req;
@@ -1040,44 +1088,6 @@ static int voicecalls_path_list(struct ofono_voicecall *vc, GSList *call_list,
 	return 0;
 }
 
-static gboolean voicecalls_have_active(struct ofono_voicecall *vc)
-{
-	GSList *l;
-	struct voicecall *v;
-
-	for (l = vc->call_list; l; l = l->next) {
-		v = l->data;
-
-		if (v->call->status == CALL_STATUS_ACTIVE ||
-				v->call->status == CALL_STATUS_DIALING ||
-				v->call->status == CALL_STATUS_ALERTING)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-static gboolean voicecalls_have_with_status(struct ofono_voicecall *vc,
-						int status)
-{
-	GSList *l;
-	struct voicecall *v;
-
-	for (l = vc->call_list; l; l = l->next) {
-		v = l->data;
-
-		if (v->call->status == status)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-static gboolean voicecalls_have_held(struct ofono_voicecall *vc)
-{
-	return voicecalls_have_with_status(vc, CALL_STATUS_HELD);
-}
-
 static GSList *voicecalls_held_list(struct ofono_voicecall *vc)
 {
 	GSList *l;
@@ -1118,16 +1128,6 @@ static GSList *voicecalls_active_list(struct ofono_voicecall *vc)
 		r = g_slist_reverse(r);
 
 	return r;
-}
-
-static gboolean voicecalls_have_waiting(struct ofono_voicecall *vc)
-{
-	return voicecalls_have_with_status(vc, CALL_STATUS_WAITING);
-}
-
-static gboolean voicecalls_have_incoming(struct ofono_voicecall *vc)
-{
-	return voicecalls_have_with_status(vc, CALL_STATUS_INCOMING);
 }
 
 struct ofono_call *__ofono_voicecall_find_call_with_status(
