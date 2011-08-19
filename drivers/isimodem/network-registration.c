@@ -946,6 +946,97 @@ error:
 	g_free(cbd);
 }
 
+static void cs_access_config_resp_cb(const GIsiMessage *msg, void *data)
+{
+	GIsiSubBlockIter iter;
+
+	DBG("");
+
+	if (g_isi_msg_id(msg) != NET_NW_ACCESS_CONF_RESP)
+		return;
+
+	/*
+	 * TODO: Check that roaming and registration
+	 * are now enabled.
+	 */
+
+	for (g_isi_sb_iter_init(&iter, msg, 2);
+			g_isi_sb_iter_is_valid(&iter);
+			g_isi_sb_iter_next(&iter)) {
+		uint8_t id = g_isi_sb_iter_get_id(&iter);
+		uint8_t mode;
+
+		DBG("SB=%02X", id);
+
+		switch (id) {
+		case NET_REGISTRATION_CONF_INFO:
+		case NET_REGISTRATION_CONF1_INFO:
+			g_isi_sb_iter_get_byte(&iter, &mode, 2);
+			DBG("Reg %X", mode);
+			break;
+
+		case NET_ROAMING_CONF_INFO:
+		case NET_ROAMING_CONF1_INFO:
+			g_isi_sb_iter_get_byte(&iter, &mode, 2);
+			DBG("Roam %X", mode);
+			break;
+
+		default:
+			DBG("Unknown subblock");
+		}
+	}
+}
+
+static void enable_registration(struct ofono_netreg *netreg)
+{
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	const uint8_t req[] = {
+		NET_NW_ACCESS_CONF_REQ, 0, 2,
+		/* Subblock 1 */
+		0x59, 4, 1, 0,
+		/* Subblock 2 */
+		0x5A, 4, 1, 0,
+	};
+
+	DBG("");
+	g_isi_client_send(nd->client, req, sizeof(req),
+				cs_access_config_resp_cb, netreg, NULL);
+}
+
+static void activate_cs_and_enable_registration(struct ofono_netreg *netreg)
+{
+	DBG("not implemented");
+}
+
+static void cs_state_resp_cb(const GIsiMessage *msg, void *data)
+{
+	struct ofono_netreg *netreg = data;
+	uint8_t code;
+
+	DBG("");
+
+	if (g_isi_msg_id(msg) != NET_CS_STATE_RESP)
+		return;
+
+	if (!g_isi_msg_data_get_byte(msg, 0, &code))
+		return;
+
+	if (code != NET_CAUSE_OK) {
+		DBG("Failed with cause=%X", code);
+		return;
+	}
+
+	if (!g_isi_msg_data_get_byte(msg, 1, &code))
+		return;
+
+	DBG("CS STATE=%X", code);
+
+	if (code == NET_CS_INACTIVE)
+		activate_cs_and_enable_registration(netreg);
+	else
+		enable_registration(netreg);
+}
+
 static void subscribe_indications(GIsiClient *cl, void *data)
 {
 	g_isi_client_ind_subscribe(cl, NET_RSSI_IND, rssi_ind_cb, data);
@@ -994,6 +1085,11 @@ static void pn_modem_network_reachable_cb(const GIsiMessage *msg, void *data)
 	struct ofono_netreg *netreg = data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 
+	const uint8_t req[] = {
+		NET_CS_STATE_REQ,
+	};
+
+
 	if (g_isi_msg_error(msg) < 0) {
 		DBG("PN_MODEM_NETWORK not reachable, removing client");
 		g_isi_client_destroy(nd->pn_modem_network);
@@ -1017,6 +1113,9 @@ static void pn_modem_network_reachable_cb(const GIsiMessage *msg, void *data)
 	subscribe_indications(nd->client, netreg);
 
 	ofono_netreg_register(netreg);
+
+	g_isi_client_send(nd->client, req, sizeof(req), cs_state_resp_cb,
+				netreg, NULL);
 }
 
 static int isi_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
