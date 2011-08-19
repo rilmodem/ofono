@@ -50,7 +50,9 @@ const char *mce_status_info(enum mce_status_info value);
 
 const char *uicc_message_id_name(enum uicc_message_id value);
 const char *uicc_subblock_name(uint8_t value);
+const char *uicc_service_type_name(uint8_t value);
 const char *uicc_status_name(uint8_t value);
+const char *uicc_details_name(uint8_t value);
 
 const char *sms_gsm_cause_name(enum sms_gsm_cause value);
 const char *sms_isi_cause_name(enum sms_isi_cause value);
