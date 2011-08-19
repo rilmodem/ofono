@@ -587,7 +587,9 @@ static DBusMessage *voicecall_hangup(DBusConnection *conn,
 		return NULL;
 
 	case CALL_STATUS_HELD:
-		if (single_call && vc->driver->release_all_held) {
+		if (vc->driver->release_all_held &&
+				voicecalls_num_held(vc) == 1 &&
+				voicecalls_have_waiting(vc) == FALSE) {
 			vc->pending = dbus_message_ref(msg);
 			vc->driver->release_all_held(vc, generic_callback, vc);
 
