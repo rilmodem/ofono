@@ -44,6 +44,18 @@ SMS
   Priority: Low
   Complexity: C2
 
+
+CBS
+===
+
+- Support UMTS format for CBS messages.  This might be needed by some hardware
+  which does not convert UMTS-formatted cell broadcasts to GSM-formatted cell
+  broadcasts.  The UMTS CBS format can be found in 3GPP 25.324 Section 11.1.
+
+  Priority: Low
+  Complexity: C2
+
+
 SIM / SIM File system
 =====================
 
