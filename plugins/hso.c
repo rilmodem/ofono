@@ -281,8 +281,8 @@ static int hso_enable(struct ofono_modem *modem)
 	if (getenv("OFONO_AT_DEBUG"))
 		g_at_chat_set_debug(data->app, hso_debug, "App: ");
 
-	g_at_chat_send(data->control, "ATE0", none_prefix, NULL, NULL, NULL);
-	g_at_chat_send(data->app, "ATE0", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(data->control, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
+	g_at_chat_send(data->app, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 
 	g_at_chat_send(data->control, "AT+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
