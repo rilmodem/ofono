@@ -136,8 +136,9 @@ builtin_sources += $(gisi_sources) \
 				drivers/isimodem/gpds.h \
 				drivers/isimodem/audio-settings.c \
 				drivers/isimodem/uicc.h \
-				drivers/isimodem/uicc.c
-
+				drivers/isimodem/uicc.c \
+				drivers/isimodem/uicc-util.h \
+				drivers/isimodem/uicc-util.c
 
 builtin_modules += isiusb
 builtin_sources += plugins/isiusb.c
