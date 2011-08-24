@@ -34,12 +34,14 @@ Commands:
 	V	DCE Response Format
 	X	Call Progress Monitoring Control
 	Z	Reset to Default Configuration
+
 Result codes:
 	OK		Acknowledge execution of a command
 	CONNECT		Connection has been established
-	RING		The DCE has detected an incoming call signal from network
-	NO CARRIER	The connection has been terminated, or attempt to establish
-			a connection failed
+	RING		The DCE has detected an incoming call signal from the
+			network
+	NO CARRIER	The connection has been terminated, or attempt to
+			establish a connection failed
 	ERROR		Error
 	NO DIALTONE	No dial-tone detected
 	BUSY		Busy signal detected
