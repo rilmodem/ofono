@@ -681,5 +681,6 @@ Modem Emulator
   results code.  Audio management is assumed to be performed in another system
   component, e.g. PulseAudio.
 
-- Support Bluetooth DUN profile. Only mandatory AT commands are supported, see
-  dialup-command-set.txt.
+- Support for Bluetooth DUN profile.  oFono supports the Dial Up Networking
+  profile and all mandatory commands specified by BT DUN 1.1.  For a list
+  of supported commands please see doc/dialup-command-set.txt.
