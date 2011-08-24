@@ -136,12 +136,12 @@ Modem Emulator
   Priority: Low
   Complexity: C1
 
-- Implement USB DUN.
+- Support DUN networking over the USB transport.  This might require extra
+  AT commands to be implemented in order to comply with general USB DUN
+  expectations as there is no standard for the same.
 
   Complexity: C4
-  Priority: Medium
-
-  Depends: PPP Server mode
+  Priority: Low
 
 - Support Bluetooth SPP profile.
 
