@@ -680,3 +680,6 @@ Modem Emulator
   enhanced call status, enhanced call control and report of extended error
   results code.  Audio management is assumed to be performed in another system
   component, e.g. PulseAudio.
+
+- Support Bluetooth DUN profile. Only mandatory AT commands are supported, see
+  dialup-command-set.txt.

@@ -136,13 +136,6 @@ Modem Emulator
   Priority: Low
   Complexity: C1
 
-- Support DUN emulator. Implement the Bluetooth DUN profile with only mandatory
-  AT command support.
-
-  Complexity: C4
-  Priority: Medium
-  Owner: Guillaume Zajac <guillaume.zajac@linux.intel.com>
-
 - Implement USB DUN.
 
   Complexity: C4
