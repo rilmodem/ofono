@@ -675,11 +675,11 @@ Modem Emulator
 ==============
 
 - Support for Bluetooth HandsFree Profile Audio Gateway (HFP AG).  oFono
-  supports the underlying AT command protocol specified by BT HFP version 1.5.
+  supports the underlying AT command protocol specified by BT HFP version 1.6.
   Supported features include 3-way calling, ability to reject a call,
-  enhanced call status, enhanced call control and report of extended error
-  results code.  Audio management is assumed to be performed in another system
-  component, e.g. PulseAudio.
+  enhanced call status, enhanced call control, report of extended error results
+  code and indicator activation. Audio management is assumed to be performed in
+  another system component, e.g. PulseAudio.
 
 - Support for Bluetooth DUN profile.  oFono supports the Dial Up Networking
   profile and all mandatory commands specified by BT DUN 1.1.  For a list
