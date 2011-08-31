@@ -115,7 +115,7 @@ struct ofono_uuid {
 	unsigned char uuid[OFONO_SHA1_UUID_LEN];
 };
 
-/* HFP AG supported features bitmap. Bluetooth HFP 1.5 spec page 77 */
+/* HFP AG supported features bitmap. Bluetooth HFP 1.6 spec page 88 */
 enum hfp_ag_feature {
 	HFP_AG_FEATURE_3WAY =			0x1,
 	HFP_AG_FEATURE_ECNR =			0x2,
@@ -125,10 +125,11 @@ enum hfp_ag_feature {
 	HFP_AG_FEATURE_REJECT_CALL =		0x20,
 	HFP_AG_FEATURE_ENHANCED_CALL_STATUS =	0x40,
 	HFP_AG_FEATURE_ENHANCED_CALL_CONTROL =	0x80,
-	HFP_AG_FEATURE_EXTENDED_RES_CODE =	0x100
+	HFP_AG_FEATURE_EXTENDED_RES_CODE =	0x100,
+	HFP_AG_FEATURE_CODEC_NEGOTIATION =	0x200
 };
 
-/* HFP HF supported features bitmap. Bluetooth HFP 1.5 spec page 77 */
+/* HFP HF supported features bitmap. Bluetooth HFP 1.6 spec page 88 */
 enum hfp_hf_feature {
 	HFP_HF_FEATURE_ECNR =			0x1,
 	HFP_HF_FEATURE_3WAY =			0x2,
@@ -136,7 +137,8 @@ enum hfp_hf_feature {
 	HFP_HF_FEATURE_VOICE_RECOGNITION =	0x8,
 	HFP_HF_FEATURE_REMOTE_VOLUME_CONTROL =	0x10,
 	HFP_HF_FEATURE_ENHANCED_CALL_STATUS =	0x20,
-	HFP_HF_FEATURE_ENHANCED_CALL_CONTROL =	0x40
+	HFP_HF_FEATURE_ENHANCED_CALL_CONTROL =	0x40,
+	HFP_HF_FEATURE_CODEC_NEGOTIATION =	0x80
 };
 
 const char *ofono_uuid_to_str(const struct ofono_uuid *uuid);
