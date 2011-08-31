@@ -60,6 +60,8 @@ struct indicator {
 	int min;
 	int max;
 	gboolean deferred;
+	gboolean active;
+	gboolean mandatory;
 };
 
 static void emulator_debug(const char *str, void *data)
@@ -360,7 +362,8 @@ static void notify_deferred_indicators(GAtServer *server, void *user_data)
 		if (!ind->deferred)
 			continue;
 
-		if (em->events_mode == 3 && em->events_ind && em->slc) {
+		if (em->events_mode == 3 && em->events_ind && em->slc &&
+				ind->active) {
 			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
 			g_at_server_send_unsolicited(em->server, buf);
 		}
@@ -783,8 +786,60 @@ fail:
 	}
 }
 
+static void bia_cb(GAtServer *server, GAtServerRequestType type,
+			GAtResult *result, gpointer user_data)
+{
+	struct ofono_emulator *em = user_data;
+
+	switch (type) {
+	case G_AT_SERVER_REQUEST_TYPE_SET:
+	{
+		GAtResultIter iter;
+		GSList *l;
+		struct indicator *ind;
+		int val;
+
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		/* check validity of the request */
+		while (g_at_result_iter_next_number_default(&iter, 0, &val)) {
+			if (val != 0 &&  val != 1)
+				goto fail;
+		}
+
+		if (g_at_result_iter_skip_next(&iter))
+			goto fail;
+
+		/* request is valid, update the indicator activation status */
+		g_at_result_iter_init(&iter, result);
+		g_at_result_iter_next(&iter, "");
+
+		for (l = em->indicators; l; l = l->next) {
+			ind = l->data;
+
+			if (!g_at_result_iter_next_number_default(&iter,
+							ind->active, &val))
+				break;
+
+			if (!ind->mandatory)
+				ind->active = val;
+		}
+
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
+		break;
+	}
+
+	default:
+fail:
+		g_at_server_send_final(server, G_AT_SERVER_RESULT_ERROR);
+		break;
+	}
+}
+
 static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
-					int min, int max, int dflt)
+					int min, int max, int dflt,
+					gboolean mandatory)
 {
 	struct indicator *ind;
 
@@ -798,6 +853,8 @@ static void emulator_add_indicator(struct ofono_emulator *em, const char* name,
 	ind->min = min;
 	ind->max = max;
 	ind->value = dflt;
+	ind->active = TRUE;
+	ind->mandatory = mandatory;
 
 	em->indicators = g_slist_append(em->indicators, ind);
 }
@@ -860,15 +917,20 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 						em);
 
 	if (em->type == OFONO_EMULATOR_TYPE_HFP) {
-		emulator_add_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0, 1, 0);
-		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALL, 0, 1, 0);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_SERVICE, 0, 1, 0,
+									FALSE);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALL, 0, 1, 0,
+									TRUE);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALLSETUP, 0, 3,
-									0);
+								0, TRUE);
 		emulator_add_indicator(em, OFONO_EMULATOR_IND_CALLHELD, 0, 2,
-									0);
-		emulator_add_indicator(em, OFONO_EMULATOR_IND_SIGNAL, 0, 5, 0);
-		emulator_add_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0, 1, 0);
-		emulator_add_indicator(em, OFONO_EMULATOR_IND_BATTERY, 0, 5, 5);
+								0, TRUE);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_SIGNAL, 0, 5, 0,
+									FALSE);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_ROAMING, 0, 1, 0,
+									FALSE);
+		emulator_add_indicator(em, OFONO_EMULATOR_IND_BATTERY, 0, 5, 5,
+									FALSE);
 
 		g_at_server_register(em->server, "+BRSF", brsf_cb, em, NULL);
 		g_at_server_register(em->server, "+CIND", cind_cb, em, NULL);
@@ -876,6 +938,7 @@ void ofono_emulator_register(struct ofono_emulator *em, int fd)
 		g_at_server_register(em->server, "+CLIP", clip_cb, em, NULL);
 		g_at_server_register(em->server, "+CCWA", ccwa_cb, em, NULL);
 		g_at_server_register(em->server, "+CMEE", cmee_cb, em, NULL);
+		g_at_server_register(em->server, "+BIA", bia_cb, em, NULL);
 	}
 
 	__ofono_atom_register(em->atom, emulator_unregister);
@@ -1149,7 +1212,7 @@ void ofono_emulator_set_indicator(struct ofono_emulator *em,
 	if (waiting)
 		notify_ccwa(em);
 
-	if (em->events_mode == 3 && em->events_ind && em->slc) {
+	if (em->events_mode == 3 && em->events_ind && em->slc && ind->active) {
 		if (!g_at_server_command_pending(em->server)) {
 			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
 			g_at_server_send_unsolicited(em->server, buf);
