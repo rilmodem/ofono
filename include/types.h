@@ -46,7 +46,7 @@ typedef void (*ofono_destroy_func)(void *data);
 enum ofono_clir_option {
 	OFONO_CLIR_OPTION_DEFAULT = 0,
 	OFONO_CLIR_OPTION_INVOCATION,
-	OFONO_CLIR_OPTION_SUPPRESSION
+	OFONO_CLIR_OPTION_SUPPRESSION,
 };
 
 enum ofono_error_type {
@@ -55,7 +55,7 @@ enum ofono_error_type {
 	OFONO_ERROR_TYPE_CMS,
 	OFONO_ERROR_TYPE_CEER,
 	OFONO_ERROR_TYPE_SIM,
-	OFONO_ERROR_TYPE_FAILURE
+	OFONO_ERROR_TYPE_FAILURE,
 };
 
 enum ofono_disconnect_reason {
@@ -126,7 +126,7 @@ enum hfp_ag_feature {
 	HFP_AG_FEATURE_ENHANCED_CALL_STATUS =	0x40,
 	HFP_AG_FEATURE_ENHANCED_CALL_CONTROL =	0x80,
 	HFP_AG_FEATURE_EXTENDED_RES_CODE =	0x100,
-	HFP_AG_FEATURE_CODEC_NEGOTIATION =	0x200
+	HFP_AG_FEATURE_CODEC_NEGOTIATION =	0x200,
 };
 
 /* HFP HF supported features bitmap. Bluetooth HFP 1.6 spec page 88 */
@@ -138,7 +138,7 @@ enum hfp_hf_feature {
 	HFP_HF_FEATURE_REMOTE_VOLUME_CONTROL =	0x10,
 	HFP_HF_FEATURE_ENHANCED_CALL_STATUS =	0x20,
 	HFP_HF_FEATURE_ENHANCED_CALL_CONTROL =	0x40,
-	HFP_HF_FEATURE_CODEC_NEGOTIATION =	0x80
+	HFP_HF_FEATURE_CODEC_NEGOTIATION =	0x80,
 };
 
 const char *ofono_uuid_to_str(const struct ofono_uuid *uuid);
