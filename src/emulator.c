@@ -796,19 +796,18 @@ static void bia_cb(GAtServer *server, GAtServerRequestType type,
 	{
 		GAtResultIter iter;
 		GSList *l;
-		struct indicator *ind;
 		int val;
 
 		g_at_result_iter_init(&iter, result);
 		g_at_result_iter_next(&iter, "");
 
 		/* check validity of the request */
-		while (g_at_result_iter_next_number_default(&iter, 0, &val)) {
+		while (g_at_result_iter_next_number_default(&iter, 0, &val))
 			if (val != 0 &&  val != 1)
 				goto fail;
-		}
 
-		if (g_at_result_iter_skip_next(&iter))
+		/* Check that we have no non-numbers in the stream */
+		if (g_at_result_iter_skip_next(&iter) == TRUE)
 			goto fail;
 
 		/* request is valid, update the indicator activation status */
@@ -816,14 +815,16 @@ static void bia_cb(GAtServer *server, GAtServerRequestType type,
 		g_at_result_iter_next(&iter, "");
 
 		for (l = em->indicators; l; l = l->next) {
-			ind = l->data;
+			struct indicator *ind = l->data;
 
-			if (!g_at_result_iter_next_number_default(&iter,
-							ind->active, &val))
+			if (g_at_result_iter_next_number_default(&iter,
+						ind->active, &val) == FALSE)
 				break;
 
-			if (!ind->mandatory)
-				ind->active = val;
+			if (ind->mandatory == TRUE)
+				continue;
+
+			ind->active = val;
 		}
 
 		g_at_server_send_final(server, G_AT_SERVER_RESULT_OK);
