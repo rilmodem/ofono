@@ -166,7 +166,7 @@ static void sync_microphone_volume_cb(const struct ofono_error *error,
 	ofono_call_volume_set_microphone_volume(cv, vd->mic_volume);
 }
 
-static void hfp_call_volume_initialized(gpointer user_data)
+static gboolean hfp_call_volume_register(gpointer user_data)
 {
 	struct ofono_call_volume *cv = user_data;
 	struct cv_data *vd = ofono_call_volume_get_data(cv);
@@ -176,11 +176,13 @@ static void hfp_call_volume_initialized(gpointer user_data)
 	g_at_chat_register(vd->chat, "+VGS:", vgs_notify, FALSE, cv, NULL);
 	g_at_chat_register(vd->chat, "+VGM:", vgm_notify, FALSE, cv, NULL);
 
-	ofono_call_volume_register(cv);
-
 	/* set sp and mic volume at 50 percents by default */
 	hfp_speaker_volume(cv, 50, sync_speaker_volume_cb, cv);
 	hfp_microphone_volume(cv, 50, sync_microphone_volume_cb, cv);
+
+	ofono_call_volume_register(cv);
+
+	return FALSE;
 }
 
 static int hfp_call_volume_probe(struct ofono_call_volume *cv,
@@ -195,7 +197,7 @@ static int hfp_call_volume_probe(struct ofono_call_volume *cv,
 
 	ofono_call_volume_set_data(cv, vd);
 
-	hfp_call_volume_initialized(cv);
+	g_idle_add(hfp_call_volume_register, cv);
 
 	return 0;
 }
