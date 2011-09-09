@@ -351,7 +351,6 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 	struct stat st;
 	char *db;
 	int fd;
-	int ret;
 	struct gsm_data gsm;
 	GSList *l;
 
