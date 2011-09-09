@@ -631,7 +631,7 @@ tools_auto_enable_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 tools_get_location_SOURCES = tools/get-location.c
 tools_get_location_LDADD = @GLIB_LIBS@ @DBUS_LIBS@
 
-tools_lookup_apn_SOURCES = tools/lookup-apn.c
+tools_lookup_apn_SOURCES = plugins/mbpi.c plugins/mbpi.h tools/lookup-apn.c
 tools_lookup_apn_LDADD = @GLIB_LIBS@
 endif
 
