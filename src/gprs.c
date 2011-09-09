@@ -2833,7 +2833,7 @@ static void provision_context(const struct ofono_gprs_provision_data *ap,
 	if (ap == NULL)
 		return;
 
-	if (ap->name == NULL || strlen(ap->name) > MAX_CONTEXT_NAME_LENGTH)
+	if (ap->name && strlen(ap->name) > MAX_CONTEXT_NAME_LENGTH)
 		return;
 
 	if (ap->apn == NULL || strlen(ap->apn) > OFONO_GPRS_MAX_APN_LENGTH)
