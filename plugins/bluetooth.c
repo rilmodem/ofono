@@ -90,13 +90,13 @@ void bluetooth_create_path(const char *dev_addr, const char *adapter_addr,
 }
 
 int bluetooth_send_with_reply(const char *path, const char *interface,
-				const char *method,
+				const char *method, DBusPendingCall **call,
 				DBusPendingCallNotifyFunction cb,
 				void *user_data, DBusFreeFunction free_func,
 				int timeout, int type, ...)
 {
 	DBusMessage *msg;
-	DBusPendingCall *call;
+	DBusPendingCall *c;
 	va_list args;
 	int err;
 
@@ -121,14 +121,18 @@ int bluetooth_send_with_reply(const char *path, const char *interface,
 	if (timeout > 0)
 		timeout *= 1000;
 
-	if (!dbus_connection_send_with_reply(connection, msg, &call, timeout)) {
+	if (!dbus_connection_send_with_reply(connection, msg, &c, timeout)) {
 		ofono_error("Sending %s failed", method);
 		err = -EIO;
 		goto fail;
 	}
 
-	dbus_pending_call_set_notify(call, cb, user_data, free_func);
-	dbus_pending_call_unref(call);
+	if (call != NULL)
+		*call = c;
+
+	dbus_pending_call_set_notify(c, cb, user_data, free_func);
+	dbus_pending_call_unref(c);
+
 	dbus_message_unref(msg);
 
 	return 0;
@@ -380,9 +384,9 @@ static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
 		 */
 		if (uuids)
 			bluetooth_send_with_reply(path, BLUEZ_DEVICE_INTERFACE,
-					"GetProperties", device_properties_cb,
-					g_strdup(path), g_free, -1,
-					DBUS_TYPE_INVALID);
+					"GetProperties", NULL,
+					device_properties_cb, g_strdup(path),
+					g_free, -1, DBUS_TYPE_INVALID);
 	} else if (g_str_equal(property, "Alias") == TRUE) {
 		const char *path = dbus_message_get_path(msg);
 		struct bluetooth_profile *profile;
@@ -447,9 +451,9 @@ static void adapter_properties_cb(DBusPendingCall *call, gpointer user_data)
 		const char *device = l->data;
 
 		bluetooth_send_with_reply(device, BLUEZ_DEVICE_INTERFACE,
-					"GetProperties", device_properties_cb,
-					g_strdup(device), g_free, -1,
-					DBUS_TYPE_INVALID);
+					"GetProperties", NULL,
+					device_properties_cb, g_strdup(device),
+					g_free, -1, DBUS_TYPE_INVALID);
 	}
 
 done:
@@ -461,7 +465,7 @@ static void get_adapter_properties(const char *path, const char *handle,
 						gpointer user_data)
 {
 	bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
-			"GetProperties", adapter_properties_cb,
+			"GetProperties", NULL, adapter_properties_cb,
 			g_strdup(path), g_free, -1, DBUS_TYPE_INVALID);
 }
 
@@ -608,7 +612,7 @@ static void new_connection(GIOChannel *io, gpointer user_data)
 	addr = raddress;
 
 	if (bluetooth_send_with_reply(path, BLUEZ_SERVICE_INTERFACE,
-					"RequestAuthorization",
+					"RequestAuthorization", NULL,
 					auth_cb, cbd, cb_data_destroy,
 					TIMEOUT, DBUS_TYPE_STRING, &addr,
 					DBUS_TYPE_UINT32, &server->handle,
@@ -664,7 +668,7 @@ static void add_record(gpointer data, gpointer user_data)
 
 	bluetooth_send_with_reply(adapter_any_path,
 					BLUEZ_SERVICE_INTERFACE, "AddRecord",
-					add_record_cb, server, NULL, -1,
+					NULL, add_record_cb, server, NULL, -1,
 					DBUS_TYPE_STRING, &server->sdp_record,
 					DBUS_TYPE_INVALID);
 }
@@ -704,8 +708,8 @@ static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
 				DBUS_TYPE_INVALID);
 
 	bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
-			"GetProperties", adapter_properties_cb, g_strdup(path),
-			g_free, -1, DBUS_TYPE_INVALID);
+			"GetProperties", NULL, adapter_properties_cb,
+			g_strdup(path), g_free, -1, DBUS_TYPE_INVALID);
 
 	return TRUE;
 }
@@ -766,7 +770,7 @@ static void parse_adapters(DBusMessageIter *array, gpointer user_data)
 		DBG("Calling GetProperties on %s", path);
 
 		bluetooth_send_with_reply(path, BLUEZ_ADAPTER_INTERFACE,
-				"GetProperties", adapter_properties_cb,
+				"GetProperties", NULL, adapter_properties_cb,
 				g_strdup(path), g_free, -1, DBUS_TYPE_INVALID);
 
 		dbus_message_iter_next(&value);
@@ -801,11 +805,11 @@ done:
 static void bluetooth_connect(DBusConnection *connection, void *user_data)
 {
 	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
-				manager_properties_cb, NULL, NULL, -1,
+				NULL, manager_properties_cb, NULL, NULL, -1,
 				DBUS_TYPE_INVALID);
 
 	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "FindAdapter",
-				find_adapter_cb, NULL, NULL, -1,
+				NULL, find_adapter_cb, NULL, NULL, -1,
 				DBUS_TYPE_STRING, &adapter_any_name,
 				DBUS_TYPE_INVALID);
 }
