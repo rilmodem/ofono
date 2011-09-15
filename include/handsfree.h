@@ -30,11 +30,18 @@ extern "C" {
 
 struct ofono_handsfree;
 
+typedef void (*ofono_handsfree_phone_cb_t)(const struct ofono_error *error,
+					const struct ofono_phone_number *number,
+					void *data);
+
 struct ofono_handsfree_driver {
 	const char *name;
 	int (*probe)(struct ofono_handsfree *hf, unsigned int vendor,
 			void *data);
 	void (*remove)(struct ofono_handsfree *hf);
+	void (*request_phone_number) (struct ofono_handsfree *hf,
+					ofono_handsfree_phone_cb_t cb,
+					void *data);
 };
 
 void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
