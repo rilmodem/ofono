@@ -37,6 +37,9 @@ struct ofono_handsfree_driver {
 	void (*remove)(struct ofono_handsfree *hf);
 };
 
+void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
+						ofono_bool_t enabled);
+
 int ofono_handsfree_driver_register(const struct ofono_handsfree_driver *d);
 void ofono_handsfree_driver_unregister(
 			const struct ofono_handsfree_driver *d);
