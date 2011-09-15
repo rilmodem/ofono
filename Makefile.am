@@ -254,7 +254,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hfpmodem/slc.c \
 			drivers/hfpmodem/voicecall.c \
 			drivers/hfpmodem/network-registration.c \
-			drivers/hfpmodem/call-volume.c
+			drivers/hfpmodem/call-volume.c \
+			drivers/hfpmodem/handsfree.c
 
 if PHONESIM
 builtin_modules += phonesim
