@@ -138,6 +138,7 @@ enum ofono_atom_type {
 	OFONO_ATOM_TYPE_GNSS,
 	OFONO_ATOM_TYPE_CDMA_SMS,
 	OFONO_ATOM_TYPE_CDMA_NETREG,
+	OFONO_ATOM_TYPE_HANDSFREE,
 };
 
 enum ofono_atom_watch_condition {
