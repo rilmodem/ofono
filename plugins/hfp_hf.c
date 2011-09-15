@@ -41,6 +41,7 @@
 #include <ofono/netreg.h>
 #include <ofono/voicecall.h>
 #include <ofono/call-volume.h>
+#include <ofono/handsfree.h>
 
 #include <drivers/hfpmodem/slc.h>
 
@@ -469,6 +470,7 @@ static void hfp_pre_sim(struct ofono_modem *modem)
 	ofono_voicecall_create(modem, 0, "hfpmodem", &data->info);
 	ofono_netreg_create(modem, 0, "hfpmodem", &data->info);
 	ofono_call_volume_create(modem, 0, "hfpmodem", &data->info);
+	ofono_handsfree_create(modem, 0, "hfpmodem", &data->info);
 }
 
 static void hfp_post_sim(struct ofono_modem *modem)
