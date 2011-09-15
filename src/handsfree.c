@@ -43,17 +43,38 @@
 static GSList *g_drivers = NULL;
 
 struct ofono_handsfree {
+	ofono_bool_t inband_ringing;
 	const struct ofono_handsfree_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
 };
 
+void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
+						ofono_bool_t enabled)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(hf->atom);
+	dbus_bool_t dbus_enabled = enabled;
+
+	if (hf->inband_ringing == enabled)
+		return;
+
+	hf->inband_ringing = enabled;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_HANDSFREE_INTERFACE,
+					"InbandRinging", DBUS_TYPE_BOOLEAN,
+					&dbus_enabled);
+}
+
 static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
+	struct ofono_handsfree *hf = data;
 	DBusMessage *reply;
 	DBusMessageIter iter;
 	DBusMessageIter dict;
+	dbus_bool_t inband_ringing;
 
 	reply = dbus_message_new_method_return(msg);
 	if (reply == NULL)
@@ -64,6 +85,11 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 					&dict);
+
+	inband_ringing = hf->inband_ringing;
+	ofono_dbus_dict_append(&dict, "InbandRinging", DBUS_TYPE_BOOLEAN,
+				&inband_ringing);
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
