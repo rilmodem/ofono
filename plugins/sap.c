@@ -38,10 +38,13 @@
 #include <ofono/modem.h>
 
 #include "bluetooth.h"
+#include "util.h"
 
 #ifndef DBUS_TYPE_UNIX_FD
 #define DBUS_TYPE_UNIX_FD -1
 #endif
+
+#define BLUEZ_SERIAL_INTERFACE	BLUEZ_SERVICE ".Serial"
 
 static DBusConnection *connection;
 static GHashTable *modem_hash = NULL;
@@ -109,12 +112,52 @@ static void sap_remove(struct ofono_modem *modem)
 	DBG("%p", modem);
 }
 
+static void sap_connect_reply(DBusPendingCall *call, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	DBusError derr;
+	DBusMessage *reply;
+
+	DBG("");
+
+	reply = dbus_pending_call_steal_reply(call);
+
+	if (ofono_modem_get_powered(modem))
+		goto done;
+
+	dbus_error_init(&derr);
+	if (!dbus_set_error_from_message(&derr, reply))
+		goto done;
+
+	DBG("Connect reply: %s", derr.message);
+
+	ofono_modem_set_powered(modem, FALSE);
+
+	dbus_error_free(&derr);
+
+done:
+	dbus_message_unref(reply);
+}
+
 /* power up hardware */
 static int sap_enable(struct ofono_modem *modem)
 {
 	struct sap_data *data = ofono_modem_get_data(modem);
+	int status;
+	const char *str = "sap";
 
-	return data->sap_driver->enable(data->hw_modem);
+	DBG("%p", modem);
+
+	status = bluetooth_send_with_reply(data->server_path,
+					BLUEZ_SERIAL_INTERFACE, "ConnectFD",
+					NULL, sap_connect_reply, modem, NULL,
+					DBUS_TIMEOUT, DBUS_TYPE_STRING,
+					&str, DBUS_TYPE_INVALID);
+
+	if (status < 0)
+		return -EINVAL;
+
+	return -EINPROGRESS;
 }
 
 static int sap_disable(struct ofono_modem *modem)
