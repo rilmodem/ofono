@@ -58,15 +58,12 @@
 
 static const char *none_prefix[] = { NULL };
 static const char *qss_prefix[] = { "#QSS:", NULL };
+static const char *rsen_prefix[]= { "#RSEN:", NULL };
 
 struct telit_data {
 	GAtChat *chat;
 	struct ofono_sim *sim;
 	guint sim_inserted_source;
-};
-
-static struct bluetooth_sap_driver sap_driver = {
-	.name = "telit",
 };
 
 static void telit_debug(const char *str, void *user_data)
@@ -75,6 +72,78 @@ static void telit_debug(const char *str, void *user_data)
 
 	ofono_info("%s%s", prefix, str);
 }
+
+static GAtChat *open_device(struct ofono_modem *modem,
+				const char *key, char *debug)
+{
+	const char *device;
+	GAtSyntax *syntax;
+	GIOChannel *channel;
+	GAtChat *chat;
+
+	device = ofono_modem_get_string(modem, key);
+	if (device == NULL)
+		return NULL;
+
+	DBG("%s %s", key, device);
+
+	channel = g_at_tty_open(device, NULL);
+	if (channel == NULL)
+		return NULL;
+
+	syntax = g_at_syntax_new_gsmv1();
+	chat = g_at_chat_new(channel, syntax);
+	g_at_syntax_unref(syntax);
+	g_io_channel_unref(channel);
+
+	if (chat == NULL)
+		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, telit_debug, debug);
+
+	return chat;
+}
+
+static void rsen_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct telit_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	if (!ok) {
+		g_at_chat_unref(data->chat);
+		data->chat = NULL;
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+}
+
+static int telit_sap_enable(struct ofono_modem *modem)
+{
+	struct telit_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	data->chat = open_device(modem, "Data", "Aux: ");
+	if (data->chat == NULL)
+		return -EINVAL;
+
+	g_at_chat_send(data->chat, "AT#NOPT=3", NULL, NULL, NULL, NULL);
+
+	/* Set SAP functionality */
+	g_at_chat_send(data->chat, "AT#RSEN=1,1,0,2,0", rsen_prefix,
+				rsen_enable_cb, modem, NULL);
+
+	return -EINPROGRESS;
+}
+
+static struct bluetooth_sap_driver sap_driver = {
+	.name = "telit",
+	.enable = telit_sap_enable,
+};
 
 static int telit_probe(struct ofono_modem *modem)
 {
@@ -230,38 +299,6 @@ static void cfun_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	if (ok)
 		ofono_modem_set_powered(modem, FALSE);
-}
-
-static GAtChat *open_device(struct ofono_modem *modem,
-				const char *key, char *debug)
-{
-	const char *device;
-	GAtSyntax *syntax;
-	GIOChannel *channel;
-	GAtChat *chat;
-
-	device = ofono_modem_get_string(modem, key);
-	if (device == NULL)
-		return NULL;
-
-	DBG("%s %s", key, device);
-
-	channel = g_at_tty_open(device, NULL);
-	if (channel == NULL)
-		return NULL;
-
-	syntax = g_at_syntax_new_gsmv1();
-	chat = g_at_chat_new(channel, syntax);
-	g_at_syntax_unref(syntax);
-	g_io_channel_unref(channel);
-
-	if (chat == NULL)
-		return NULL;
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(chat, telit_debug, debug);
-
-	return chat;
 }
 
 static int telit_enable(struct ofono_modem *modem)

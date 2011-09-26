@@ -112,9 +112,9 @@ static void sap_remove(struct ofono_modem *modem)
 /* power up hardware */
 static int sap_enable(struct ofono_modem *modem)
 {
-	DBG("%p", modem);
+	struct sap_data *data = ofono_modem_get_data(modem);
 
-	return 0;
+	return data->sap_driver->enable(data->hw_modem);
 }
 
 static int sap_disable(struct ofono_modem *modem)
