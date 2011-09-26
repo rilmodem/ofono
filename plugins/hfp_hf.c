@@ -45,8 +45,6 @@
 
 #include <drivers/hfpmodem/slc.h>
 
-#include <ofono/dbus.h>
-
 #include "bluetooth.h"
 
 #define	BLUEZ_GATEWAY_INTERFACE		BLUEZ_SERVICE ".HandsfreeGateway"

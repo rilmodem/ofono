@@ -33,7 +33,6 @@
 #include <gdbus.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
-#include <ofono/dbus.h>
 #include <ofono/plugin.h>
 #include <ofono/log.h>
 

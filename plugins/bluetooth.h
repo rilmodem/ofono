@@ -19,6 +19,9 @@
  *
  */
 
+#include <ofono/modem.h>
+#include <ofono/dbus.h>
+
 #define	BLUEZ_SERVICE "org.bluez"
 #define	BLUEZ_MANAGER_INTERFACE		BLUEZ_SERVICE ".Manager"
 #define	BLUEZ_ADAPTER_INTERFACE		BLUEZ_SERVICE ".Adapter"
@@ -30,6 +33,7 @@
 #define DUN_GW_UUID	"00001103-0000-1000-8000-00805f9b34fb"
 #define HFP_AG_UUID	"0000111f-0000-1000-8000-00805f9b34fb"
 #define HFP_HS_UUID	"0000111e-0000-1000-8000-00805f9b34fb"
+#define SAP_UUID	"0000112d-0000-1000-8000-00805f9b34fb"
 
 struct bluetooth_profile {
 	const char *name;
@@ -37,6 +41,10 @@ struct bluetooth_profile {
 			const char *adapter_addr, const char *alias);
 	void (*remove)(const char *prefix);
 	void (*set_alias)(const char *device, const char *);
+};
+
+struct bluetooth_sap_driver {
+	const char *name;
 };
 
 struct server;
@@ -60,3 +68,7 @@ int bluetooth_send_with_reply(const char *path, const char *interface,
 				void *user_data, DBusFreeFunction free_func,
 				int timeout, int type, ...);
 void bluetooth_parse_properties(DBusMessage *reply, const char *property, ...);
+
+int bluetooth_sap_client_register(struct bluetooth_sap_driver *sap,
+					struct ofono_modem *modem);
+void bluetooth_sap_client_unregister(struct ofono_modem *modem);

@@ -54,6 +54,8 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
+#include "bluetooth.h"
+
 static const char *none_prefix[] = { NULL };
 static const char *qss_prefix[] = { "#QSS:", NULL };
 
@@ -61,6 +63,10 @@ struct telit_data {
 	GAtChat *chat;
 	struct ofono_sim *sim;
 	guint sim_inserted_source;
+};
+
+static struct bluetooth_sap_driver sap_driver = {
+	.name = "telit",
 };
 
 static void telit_debug(const char *str, void *user_data)
@@ -82,6 +88,8 @@ static int telit_probe(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, data);
 
+	bluetooth_sap_client_register(&sap_driver, modem);
+
 	return 0;
 }
 
@@ -90,6 +98,8 @@ static void telit_remove(struct ofono_modem *modem)
 	struct telit_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	bluetooth_sap_client_unregister(modem);
 
 	ofono_modem_set_data(modem, NULL);
 
