@@ -105,6 +105,22 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
+static void telit_rsen_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	int status;
+	GAtResultIter iter;
+
+	DBG("%p", modem);
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "#RSEN:"))
+		return;
+
+	g_at_result_iter_next_number(&iter, &status);
+}
+
 static void rsen_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -130,6 +146,9 @@ static int telit_sap_enable(struct ofono_modem *modem)
 	data->chat = open_device(modem, "Data", "Aux: ");
 	if (data->chat == NULL)
 		return -EINVAL;
+
+	g_at_chat_register(data->chat, "#RSEN:", telit_rsen_notify,
+				FALSE, modem, NULL);
 
 	g_at_chat_send(data->chat, "AT#NOPT=3", NULL, NULL, NULL, NULL);
 
