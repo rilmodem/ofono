@@ -89,9 +89,7 @@ void bluetooth_sap_client_unregister(struct ofono_modem *modem)
 	g_hash_table_iter_init(&iter, modem_hash);
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
-
 		g_hash_table_iter_remove(&iter);
-
 		sap_remove_modem(value);
 	}
 
@@ -143,7 +141,7 @@ static int bluetooth_sap_probe(const char *device, const char *dev_addr,
 	struct sap_data *data;
 	char buf[256];
 
-	if(sap_hw_modem == NULL)
+	if (sap_hw_modem == NULL)
 		return -ENODEV;
 
 	/* We already have this device in our hash, ignore */
@@ -197,12 +195,10 @@ static void bluetooth_sap_remove(const char *prefix)
 	g_hash_table_iter_init(&iter, modem_hash);
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
-
 		if (g_str_has_prefix((char *)key, prefix) == FALSE)
 			continue;
 
 		g_hash_table_iter_remove(&iter);
-
 		sap_remove_modem(value);
 	}
 }
