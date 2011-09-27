@@ -900,6 +900,12 @@ static void bluetooth_unref(void)
 	g_hash_table_destroy(adapter_address_hash);
 }
 
+void bluetooth_get_properties()
+{
+	g_hash_table_foreach(adapter_address_hash,
+				(GHFunc) get_adapter_properties, NULL);
+}
+
 int bluetooth_register_uuid(const char *uuid, struct bluetooth_profile *profile)
 {
 	bluetooth_ref();

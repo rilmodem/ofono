@@ -52,6 +52,7 @@ struct server;
 
 typedef void (*ConnectFunc)(GIOChannel *io, GError *err, gpointer user_data);
 
+void bluetooth_get_properties();
 int bluetooth_register_uuid(const char *uuid,
 				struct bluetooth_profile *profile);
 void bluetooth_unregister_uuid(const char *uuid);

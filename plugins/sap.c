@@ -66,6 +66,8 @@ int bluetooth_sap_client_register(struct bluetooth_sap_driver *sap,
 	sap_hw_modem = modem;
 	sap_hw_driver = sap;
 
+	bluetooth_get_properties();
+
 	return 0;
 }
 
