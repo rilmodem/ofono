@@ -234,13 +234,13 @@ static void bluetooth_sap_remove(const char *prefix)
 
 	DBG("%s", prefix);
 
-	if (modem_hash == NULL || prefix == NULL)
+	if (modem_hash == NULL)
 		return;
 
 	g_hash_table_iter_init(&iter, modem_hash);
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
-		if (g_str_has_prefix((char *)key, prefix) == FALSE)
+		if (prefix && g_str_has_prefix((char *)key, prefix) == FALSE)
 			continue;
 
 		g_hash_table_iter_remove(&iter);
