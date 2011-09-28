@@ -565,11 +565,35 @@ static void telit_post_sim(struct ofono_modem *modem)
 	ofono_sms_create(modem, 0, "atmodem", data->chat);
 }
 
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
+}
+
+static void telit_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct telit_data *data = ofono_modem_get_data(modem);
+	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+
+	DBG("modem %p %s", modem, online ? "online" : "offline");
+
+	g_at_chat_send(data->chat, command, none_prefix, set_online_cb,
+						cbd, g_free);
+}
+
 static struct bluetooth_sap_driver sap_driver = {
 	.name = "telit",
 	.enable = telit_sap_enable,
 	.pre_sim = telit_pre_sim,
 	.post_sim = telit_post_sim,
+	.set_online = telit_set_online,
 	.disable = telit_sap_disable,
 };
 
@@ -604,29 +628,6 @@ static void telit_remove(struct ofono_modem *modem)
 		g_source_remove(data->sim_inserted_source);
 
 	g_free(data);
-}
-
-static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct cb_data *cbd = user_data;
-	ofono_modem_online_cb_t cb = cbd->cb;
-	struct ofono_error error;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, cbd->data);
-}
-
-static void telit_set_online(struct ofono_modem *modem, ofono_bool_t online,
-				ofono_modem_online_cb_t cb, void *user_data)
-{
-	struct telit_data *data = ofono_modem_get_data(modem);
-	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
-
-	DBG("modem %p %s", modem, online ? "online" : "offline");
-
-	g_at_chat_send(data->chat, command, none_prefix, set_online_cb,
-						cbd, g_free);
 }
 
 static void telit_post_online(struct ofono_modem *modem)

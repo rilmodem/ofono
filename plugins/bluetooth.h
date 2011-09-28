@@ -49,6 +49,8 @@ struct bluetooth_sap_driver {
 								int bt_fd);
 	void (*pre_sim) (struct ofono_modem *modem);
 	void (*post_sim) (struct ofono_modem *modem);
+	void (*set_online) (struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data);
 	int (*disable) (struct ofono_modem *modem);
 };
 
