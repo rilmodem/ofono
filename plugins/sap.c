@@ -52,7 +52,6 @@ static struct ofono_modem *sap_hw_modem = NULL;
 static struct bluetooth_sap_driver *sap_hw_driver = NULL;
 
 struct sap_data {
-	char *server_path;
 	struct ofono_modem *hw_modem;
 	struct bluetooth_sap_driver *sap_driver;
 };
@@ -75,7 +74,6 @@ static void sap_remove_modem(struct ofono_modem *modem)
 {
 	struct sap_data *data = ofono_modem_get_data(modem);
 
-	g_free(data->server_path);
 	g_free(data);
 
 	ofono_modem_set_data(modem, NULL);
@@ -104,7 +102,15 @@ void bluetooth_sap_client_unregister(struct ofono_modem *modem)
 
 static int sap_probe(struct ofono_modem *modem)
 {
+	struct sap_data *data;
+
 	DBG("%p", modem);
+
+	data = g_try_new0(struct sap_data, 1);
+	if (data == NULL)
+		return -ENOMEM;
+
+	ofono_modem_set_data(modem, data);
 
 	return 0;
 }
@@ -144,17 +150,17 @@ done:
 /* power up hardware */
 static int sap_enable(struct ofono_modem *modem)
 {
-	struct sap_data *data = ofono_modem_get_data(modem);
 	int status;
 	const char *str = "sap";
+	const char *server_path = ofono_modem_get_string(modem, "ServerPath");
 
 	DBG("%p", modem);
 
-	status = bluetooth_send_with_reply(data->server_path,
-					BLUEZ_SERIAL_INTERFACE, "ConnectFD",
-					NULL, sap_connect_reply, modem, NULL,
-					DBUS_TIMEOUT, DBUS_TYPE_STRING,
-					&str, DBUS_TYPE_INVALID);
+	status = bluetooth_send_with_reply(server_path, BLUEZ_SERIAL_INTERFACE,
+					"ConnectFD", NULL, sap_connect_reply,
+					modem, NULL, DBUS_TIMEOUT,
+					DBUS_TYPE_STRING, &str,
+					DBUS_TYPE_INVALID);
 
 	if (status < 0)
 		return -EINVAL;
@@ -183,7 +189,6 @@ static int bluetooth_sap_probe(const char *device, const char *dev_addr,
 				const char *adapter_addr, const char *alias)
 {
 	struct ofono_modem *modem;
-	struct sap_data *data;
 	char buf[256];
 
 	if (sap_hw_modem == NULL)
@@ -204,27 +209,13 @@ static int bluetooth_sap_probe(const char *device, const char *dev_addr,
 	if (modem == NULL)
 		return -ENOMEM;
 
-	data = g_try_new0(struct sap_data, 1);
-	if (data == NULL)
-		goto free;
-
-	data->server_path = g_strdup(device);
-	if (data->server_path == NULL)
-		goto free;
-
-	ofono_modem_set_data(modem, data);
+	ofono_modem_set_string(modem, "ServerPath", device);
 	ofono_modem_set_name(modem, alias);
 	ofono_modem_register(modem);
 
 	g_hash_table_insert(modem_hash, g_strdup(device), modem);
 
 	return 0;
-
-free:
-	g_free(data);
-	ofono_modem_remove(modem);
-
-	return -ENOMEM;
 }
 
 static void bluetooth_sap_remove(const char *prefix)
