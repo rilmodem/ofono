@@ -243,6 +243,58 @@ static void rsen_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 }
 
+static void cfun_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct telit_data *data = ofono_modem_get_data(modem);
+
+	if(data->sap_modem)
+		modem = data->sap_modem;
+
+	DBG("%p", modem);
+
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
+
+	if (data->sim_inserted_source > 0)
+		g_source_remove(data->sim_inserted_source);
+
+	if (ok)
+		ofono_modem_set_powered(modem, FALSE);
+
+	data->sap_modem = NULL;
+}
+
+static int telit_disable(struct ofono_modem *modem)
+{
+	struct telit_data *data = ofono_modem_get_data(modem);
+	DBG("%p", modem);
+
+	g_at_chat_cancel_all(data->chat);
+	g_at_chat_unregister_all(data->chat);
+
+	/* Power down modem */
+	g_at_chat_send(data->chat, "AT+CFUN=0", none_prefix,
+				cfun_disable_cb, modem, NULL);
+
+	return -EINPROGRESS;
+}
+
+static void rsen_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct telit_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	g_at_chat_unref(data->aux);
+	data->aux = NULL;
+
+	sap_close_io(modem);
+
+	telit_disable(modem);
+}
+
 static int telit_sap_open()
 {
 	const char *device = "/dev/ttyUSB4";
@@ -331,9 +383,25 @@ error:
 	return -EINVAL;
 }
 
+static int telit_sap_disable(struct ofono_modem *modem)
+{
+	struct telit_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	g_at_chat_cancel_all(data->aux);
+	g_at_chat_unregister_all(data->aux);
+
+	g_at_chat_send(data->aux, "AT#RSEN=0", rsen_prefix,
+				rsen_disable_cb, modem, NULL);
+
+	return -EINPROGRESS;
+}
+
 static struct bluetooth_sap_driver sap_driver = {
 	.name = "telit",
 	.enable = telit_sap_enable,
+	.disable = telit_sap_disable,
 };
 
 static int telit_probe(struct ofono_modem *modem)
@@ -475,23 +543,6 @@ static void cfun_enable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				telit_qss_cb, modem, NULL);
 }
 
-static void cfun_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct telit_data *data = ofono_modem_get_data(modem);
-
-	DBG("%p", modem);
-
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
-
-	if (data->sim_inserted_source > 0)
-		g_source_remove(data->sim_inserted_source);
-
-	if (ok)
-		ofono_modem_set_powered(modem, FALSE);
-}
-
 static int telit_enable(struct ofono_modem *modem)
 {
 	struct telit_data *data = ofono_modem_get_data(modem);
@@ -512,21 +563,6 @@ static int telit_enable(struct ofono_modem *modem)
 	/* Set phone functionality */
 	g_at_chat_send(data->chat, "AT+CFUN=4", none_prefix,
 				cfun_enable_cb, modem, NULL);
-
-	return -EINPROGRESS;
-}
-
-static int telit_disable(struct ofono_modem *modem)
-{
-	struct telit_data *data = ofono_modem_get_data(modem);
-	DBG("%p", modem);
-
-	g_at_chat_cancel_all(data->chat);
-	g_at_chat_unregister_all(data->chat);
-
-	/* Power down modem */
-	g_at_chat_send(data->chat, "AT+CFUN=0", none_prefix,
-				cfun_disable_cb, modem, NULL);
 
 	return -EINPROGRESS;
 }
