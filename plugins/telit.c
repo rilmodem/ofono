@@ -539,9 +539,24 @@ static int telit_sap_disable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
+static void telit_pre_sim(struct ofono_modem *modem)
+{
+	struct telit_data *data = ofono_modem_get_data(modem);
+
+	if (data->sap_modem)
+		modem = data->sap_modem;
+
+	DBG("%p", modem);
+
+	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+	data->sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
+	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
+}
+
 static struct bluetooth_sap_driver sap_driver = {
 	.name = "telit",
 	.enable = telit_sap_enable,
+	.pre_sim = telit_pre_sim,
 	.disable = telit_sap_disable,
 };
 
@@ -599,17 +614,6 @@ static void telit_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 	g_at_chat_send(data->chat, command, none_prefix, set_online_cb,
 						cbd, g_free);
-}
-
-static void telit_pre_sim(struct ofono_modem *modem)
-{
-	struct telit_data *data = ofono_modem_get_data(modem);
-
-	DBG("%p", modem);
-
-	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	data->sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
-	ofono_voicecall_create(modem, 0, "atmodem", data->chat);
 }
 
 static void telit_post_sim(struct ofono_modem *modem)
