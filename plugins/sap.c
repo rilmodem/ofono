@@ -70,16 +70,6 @@ int bluetooth_sap_client_register(struct bluetooth_sap_driver *sap,
 	return 0;
 }
 
-static void sap_remove_modem(struct ofono_modem *modem)
-{
-	struct sap_data *data = ofono_modem_get_data(modem);
-
-	g_free(data);
-
-	ofono_modem_set_data(modem, NULL);
-
-	ofono_modem_remove(modem);
-}
 
 void bluetooth_sap_client_unregister(struct ofono_modem *modem)
 {
@@ -93,7 +83,8 @@ void bluetooth_sap_client_unregister(struct ofono_modem *modem)
 
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
 		g_hash_table_iter_remove(&iter);
-		sap_remove_modem(value);
+
+		ofono_modem_remove(value);
 	}
 
 	sap_hw_modem = NULL;
@@ -117,7 +108,13 @@ static int sap_probe(struct ofono_modem *modem)
 
 static void sap_remove(struct ofono_modem *modem)
 {
+	struct sap_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
+
+	g_free(data);
+
+	ofono_modem_set_data(modem, NULL);
 }
 
 static void sap_connect_reply(DBusPendingCall *call, gpointer user_data)
@@ -235,7 +232,8 @@ static void bluetooth_sap_remove(const char *prefix)
 			continue;
 
 		g_hash_table_iter_remove(&iter);
-		sap_remove_modem(value);
+
+		ofono_modem_remove(value);
 	}
 }
 
