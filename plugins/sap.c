@@ -54,6 +54,7 @@ static struct bluetooth_sap_driver *sap_hw_driver = NULL;
 struct sap_data {
 	struct ofono_modem *hw_modem;
 	struct bluetooth_sap_driver *sap_driver;
+	DBusPendingCall *call;
 };
 
 int bluetooth_sap_client_register(struct bluetooth_sap_driver *sap,
@@ -112,6 +113,9 @@ static void sap_remove(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	if (data->call != NULL)
+		dbus_pending_call_cancel(data->call);
+
 	g_free(data);
 
 	ofono_modem_set_data(modem, NULL);
@@ -120,12 +124,15 @@ static void sap_remove(struct ofono_modem *modem)
 static void sap_connect_reply(DBusPendingCall *call, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
+	struct sap_data *data = ofono_modem_get_data(modem);
 	DBusError derr;
 	DBusMessage *reply;
 
 	DBG("");
 
 	reply = dbus_pending_call_steal_reply(call);
+
+	data->call = NULL;
 
 	if (ofono_modem_get_powered(modem))
 		goto done;
@@ -147,6 +154,8 @@ done:
 /* power up hardware */
 static int sap_enable(struct ofono_modem *modem)
 {
+	struct sap_data *data = ofono_modem_get_data(modem);
+	DBusPendingCall *call;
 	int status;
 	const char *str = "sap";
 	const char *server_path = ofono_modem_get_string(modem, "ServerPath");
@@ -154,13 +163,15 @@ static int sap_enable(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	status = bluetooth_send_with_reply(server_path, BLUEZ_SERIAL_INTERFACE,
-					"ConnectFD", NULL, sap_connect_reply,
+					"ConnectFD", &call, sap_connect_reply,
 					modem, NULL, DBUS_TIMEOUT,
 					DBUS_TYPE_STRING, &str,
 					DBUS_TYPE_INVALID);
 
 	if (status < 0)
 		return -EINVAL;
+
+	data->call = call;
 
 	return -EINPROGRESS;
 }
