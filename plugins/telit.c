@@ -588,12 +588,43 @@ static void telit_set_online(struct ofono_modem *modem, ofono_bool_t online,
 						cbd, g_free);
 }
 
+static void telit_post_online(struct ofono_modem *modem)
+{
+	struct telit_data *data = ofono_modem_get_data(modem);
+	struct ofono_message_waiting *mw;
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
+
+	if(data->sap_modem)
+		modem = data->sap_modem;
+
+	DBG("%p", modem);
+
+	ofono_netreg_create(modem, OFONO_VENDOR_TELIT, "atmodem", data->chat);
+	ofono_ussd_create(modem, 0, "atmodem", data->chat);
+	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
+	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
+	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
+	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
+
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
+
+	mw = ofono_message_waiting_create(modem);
+	if (mw)
+		ofono_message_waiting_register(mw);
+}
+
 static struct bluetooth_sap_driver sap_driver = {
 	.name = "telit",
 	.enable = telit_sap_enable,
 	.pre_sim = telit_pre_sim,
 	.post_sim = telit_post_sim,
 	.set_online = telit_set_online,
+	.post_online = telit_post_online,
 	.disable = telit_sap_disable,
 };
 
@@ -628,33 +659,6 @@ static void telit_remove(struct ofono_modem *modem)
 		g_source_remove(data->sim_inserted_source);
 
 	g_free(data);
-}
-
-static void telit_post_online(struct ofono_modem *modem)
-{
-	struct telit_data *data = ofono_modem_get_data(modem);
-	struct ofono_message_waiting *mw;
-	struct ofono_gprs *gprs;
-	struct ofono_gprs_context *gc;
-
-	DBG("%p", modem);
-
-	ofono_netreg_create(modem, OFONO_VENDOR_TELIT, "atmodem", data->chat);
-	ofono_ussd_create(modem, 0, "atmodem", data->chat);
-	ofono_call_forwarding_create(modem, 0, "atmodem", data->chat);
-	ofono_call_settings_create(modem, 0, "atmodem", data->chat);
-	ofono_call_meter_create(modem, 0, "atmodem", data->chat);
-	ofono_call_barring_create(modem, 0, "atmodem", data->chat);
-
-	gprs = ofono_gprs_create(modem, 0, "atmodem", data->chat);
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
-
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
-
-	mw = ofono_message_waiting_create(modem);
-	if (mw)
-		ofono_message_waiting_register(mw);
 }
 
 static struct ofono_modem_driver telit_driver = {
