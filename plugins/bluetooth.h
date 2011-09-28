@@ -45,7 +45,8 @@ struct bluetooth_profile {
 
 struct bluetooth_sap_driver {
 	const char *name;
-	int (*enable) (struct ofono_modem *modem);
+	int (*enable) (struct ofono_modem *modem, struct ofono_modem *sap_modem,
+								int bt_fd);
 };
 
 struct server;
