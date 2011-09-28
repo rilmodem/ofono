@@ -127,6 +127,7 @@ static void sap_connect_reply(DBusPendingCall *call, gpointer user_data)
 	struct sap_data *data = ofono_modem_get_data(modem);
 	DBusError derr;
 	DBusMessage *reply;
+	int fd, err;
 
 	DBG("");
 
@@ -138,16 +139,29 @@ static void sap_connect_reply(DBusPendingCall *call, gpointer user_data)
 		goto done;
 
 	dbus_error_init(&derr);
-	if (!dbus_set_error_from_message(&derr, reply))
+	if (dbus_set_error_from_message(&derr, reply)) {
+
+		DBG("Connect reply: %s", derr.message);
+
+		dbus_error_free(&derr);
+		goto done;
+	}
+
+	if (!dbus_message_get_args(reply, NULL, DBUS_TYPE_UNIX_FD, &fd,
+				DBUS_TYPE_INVALID))
 		goto done;
 
-	DBG("Connect reply: %s", derr.message);
+	data->hw_modem = sap_hw_modem;
+	data->sap_driver = sap_hw_driver;
 
-	ofono_modem_set_powered(modem, FALSE);
-
-	dbus_error_free(&derr);
+	err = data->sap_driver->enable(data->hw_modem, modem, fd);
+	if (err == -EINPROGRESS) {
+		dbus_message_unref(reply);
+		return;
+	}
 
 done:
+	ofono_modem_set_powered(modem, FALSE);
 	dbus_message_unref(reply);
 }
 
