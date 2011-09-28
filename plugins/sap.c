@@ -199,12 +199,39 @@ static int sap_disable(struct ofono_modem *modem)
 
 static void sap_pre_sim(struct ofono_modem *modem)
 {
+	struct sap_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
+
+	data->sap_driver->pre_sim(data->hw_modem);
 }
 
 static void sap_post_sim(struct ofono_modem *modem)
 {
+	struct sap_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
+
+	data->sap_driver->post_sim(data->hw_modem);
+}
+
+static void sap_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct sap_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	data->sap_driver->set_online(data->hw_modem, online, cb, user_data);
+}
+
+static void sap_post_online(struct ofono_modem *modem)
+{
+	struct sap_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	data->sap_driver->post_online(data->hw_modem);
 }
 
 static int bluetooth_sap_probe(const char *device, const char *dev_addr,
@@ -284,6 +311,8 @@ static struct ofono_modem_driver sap_driver = {
 	.disable	= sap_disable,
 	.pre_sim	= sap_pre_sim,
 	.post_sim	= sap_post_sim,
+	.set_online	= sap_set_online,
+	.post_online	= sap_post_online,
 };
 
 static struct bluetooth_profile sap = {
