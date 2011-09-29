@@ -210,7 +210,7 @@ def stdin_handler(fd, condition, sms, value, number):
 if __name__ == "__main__":
 
 	if (len(sys.argv) < 3):
-		print "Usage: %s <phone_number> <test_message>" % (sys.argv[0])
+		print "Usage: %s  [modem] <phone_number> <test_message>" % (sys.argv[0])
 		sys.exit(1)
 
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -218,8 +218,16 @@ if __name__ == "__main__":
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 							'org.ofono.Manager')
 
-	modems = manager.GetModems()
-	path = modems[0][0]
+	if (len(sys.argv) == 4):
+		path = sys.argv[1]
+		number = sys.argv[2]
+		value  = sys.argv[3]
+	else:
+		modems = manager.GetModems()
+		path = modems[0][0]
+		number = sys.argv[1]
+		value  = sys.argv[2]
+
 	sms = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.MessageManager')
 
@@ -228,9 +236,6 @@ if __name__ == "__main__":
 	sms.connect_to_signal("IncomingMessage", incoming_message)
 	sms.connect_to_signal("MessageAdded", message_added)
 	sms.connect_to_signal("MessageRemoved", message_removed)
-
-	number = sys.argv[1]
-	value  = sys.argv[2]
 
 	clear_screen()
 	print_sms_properties(sms)
