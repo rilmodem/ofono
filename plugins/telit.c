@@ -279,10 +279,6 @@ static int telit_sap_enable(struct ofono_modem *modem,
 
 	DBG("%p", modem);
 
-	data->aux = open_device(modem, "Data", "Aux: ");
-	if (data->aux == NULL)
-		return -EINVAL;
-
 	fd = telit_sap_open();
 	if (fd < 0)
 		return fd;
@@ -297,24 +293,25 @@ static int telit_sap_enable(struct ofono_modem *modem,
 	g_io_channel_set_buffered(data->hw_io, FALSE);
 	g_io_channel_set_close_on_unref(data->hw_io, TRUE);
 
-	data->hw_watch = g_io_add_watch_full(data->hw_io, G_PRIORITY_DEFAULT,
-				G_IO_HUP | G_IO_ERR | G_IO_NVAL | G_IO_IN,
-				hw_event_cb, modem, hw_watch_remove);
+	data->aux = open_device(modem, "Data", "Aux: ");
+	if (data->aux == NULL)
+		goto error;
 
 	data->bt_io = g_io_channel_unix_new(bt_fd);
-	if (data->bt_io == NULL) {
-		sap_close_io(modem);
-		return -ENOMEM;
-	}
+	if (data->bt_io == NULL)
+		goto error;
 
 	g_io_channel_set_encoding(data->bt_io, NULL, NULL);
 	g_io_channel_set_buffered(data->bt_io, FALSE);
 	g_io_channel_set_close_on_unref(data->bt_io, TRUE);
 
+	data->hw_watch = g_io_add_watch_full(data->hw_io, G_PRIORITY_DEFAULT,
+				G_IO_HUP | G_IO_ERR | G_IO_NVAL | G_IO_IN,
+				hw_event_cb, modem, hw_watch_remove);
+
 	data->bt_watch = g_io_add_watch_full(data->bt_io, G_PRIORITY_DEFAULT,
 				G_IO_HUP | G_IO_ERR | G_IO_NVAL | G_IO_IN,
 				bt_event_cb, modem, bt_watch_remove);
-
 
 	data->sap_modem = sap_modem;
 
@@ -328,6 +325,10 @@ static int telit_sap_enable(struct ofono_modem *modem,
 				rsen_enable_cb, modem, NULL);
 
 	return -EINPROGRESS;
+
+error:
+	sap_close_io(modem);
+	return -EINVAL;
 }
 
 static struct bluetooth_sap_driver sap_driver = {
