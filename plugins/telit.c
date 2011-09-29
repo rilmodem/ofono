@@ -98,10 +98,8 @@ static void sap_close_io(struct ofono_modem *modem)
 	if (data->bt_watch > 0)
 		g_source_remove(data->bt_watch);
 
-	if (data->hw_io != NULL) {
-		g_io_channel_unref(data->hw_io);
-		data->hw_io = NULL;
-	}
+	g_io_channel_unref(data->hw_io);
+	data->hw_io = NULL;
 
 	if (data->hw_watch > 0)
 		g_source_remove(data->hw_watch);
