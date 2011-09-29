@@ -191,9 +191,11 @@ static int sap_enable(struct ofono_modem *modem)
 
 static int sap_disable(struct ofono_modem *modem)
 {
+	struct sap_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
 
-	return 0;
+	return data->sap_driver->disable(data->hw_modem);
 }
 
 static void sap_pre_sim(struct ofono_modem *modem)
