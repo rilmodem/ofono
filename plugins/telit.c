@@ -474,12 +474,12 @@ static int telit_sap_enable(struct ofono_modem *modem,
 
 	fd = telit_sap_open();
 	if (fd < 0)
-		return fd;
+		goto error;
 
 	data->hw_io = g_io_channel_unix_new(fd);
 	if (data->hw_io == NULL) {
 		close(fd);
-		return -ENOMEM;
+		goto error;
 	}
 
 	g_io_channel_set_encoding(data->hw_io, NULL, NULL);
@@ -520,6 +520,9 @@ static int telit_sap_enable(struct ofono_modem *modem,
 	return -EINPROGRESS;
 
 error:
+	shutdown(bt_fd, SHUT_RDWR);
+	close(bt_fd);
+
 	sap_close_io(modem);
 	return -EINVAL;
 }
