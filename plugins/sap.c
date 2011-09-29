@@ -154,7 +154,7 @@ static void sap_connect_reply(DBusPendingCall *call, gpointer user_data)
 	data->sap_driver = sap_hw_driver;
 
 	err = data->sap_driver->enable(data->hw_modem, modem, fd);
-	if (err == -EINPROGRESS) {
+	if (!err || err == -EINPROGRESS) {
 		dbus_message_unref(reply);
 		return;
 	}
