@@ -13,10 +13,10 @@ def network_property_changed(name, value):
 		mainloop.quit()
 
 if __name__ == "__main__":
-	if len(sys.argv) != 2:
-		print "Usage: %s <path> - Register to PLMN on <path>" %\
+	if len(sys.argv) < 2:
+		print "Usage: %s [modem] <path> - Register to PLMN on <path>" %\
 			(sys.argv[0])
-		print "Usage: %s default - Register to default PLMN" %\
+		print "Usage: %s [modem] default - Register to default PLMN" %\
 			(sys.argv[0])
 		sys.exit(1)
 
@@ -29,9 +29,15 @@ if __name__ == "__main__":
 	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
 							'org.ofono.Manager')
 
-	modems = manager.GetModems()
+	if len(sys.argv) == 3:
+		path = sys.argv[1]
+		plmn = sys.argv[2]
+	else:
+		modems = manager.GetModems()
+		path = modems[0][0]
+		plmn = sys.argv[1]
 
-	netreg = dbus.Interface(bus.get_object('org.ofono', modems[0][0]),
+	netreg = dbus.Interface(bus.get_object('org.ofono', path),
 				'org.ofono.NetworkRegistration')
 
 	netreg.connect_to_signal("PropertyChanged", network_property_changed)
@@ -49,10 +55,10 @@ if __name__ == "__main__":
 		print "Technology: '%s'" % (props['Technology'])
 
 	try:
-		if sys.argv[1] == 'default':
+		if plmn == 'default':
 			netreg.Register()
 		else:
-			obj = bus.get_object('org.ofono', sys.argv[1]);
+			obj = bus.get_object('org.ofono', plmn);
 			op = dbus.Interface(obj, 'org.ofono.NetworkOperator')
 			op.Register()
 	except dbus.DBusException, e:
