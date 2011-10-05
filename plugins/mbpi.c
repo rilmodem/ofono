@@ -90,32 +90,35 @@ static const GMarkupParser text_parser = {
 	NULL,
 };
 
-static void usage_handler(GMarkupParseContext *context,
-				const gchar *text, gsize text_len,
-				gpointer userdata, GError **error)
+static void usage_start(const gchar **attribute_names,
+			const gchar **attribute_values,
+			enum ofono_gprs_context_type *type, GError **error)
 {
-	enum ofono_gprs_context_type *type = userdata;
+	const char *text = NULL;
+	int i;
 
-	if (strncmp(text, "internet", text_len) == 0)
+	for (i = 0; attribute_names[i]; i++)
+		if (g_str_equal(attribute_names[i], "type") == TRUE)
+			text = attribute_values[i];
+
+	if (text == NULL) {
+		g_set_error(error, G_MARKUP_ERROR,
+				G_MARKUP_ERROR_MISSING_ATTRIBUTE,
+				"Missing attribute: type");
+		return;
+	}
+
+	if (strcmp(text, "internet") == 0)
 		*type = OFONO_GPRS_CONTEXT_TYPE_INTERNET;
-	else if (strncmp(text, "mms", text_len) == 0)
+	else if (strcmp(text, "mms") == 0)
 		*type = OFONO_GPRS_CONTEXT_TYPE_MMS;
-	else if (strncmp(text, "wap", text_len) == 0)
+	else if (strcmp(text, "wap") == 0)
 		*type = OFONO_GPRS_CONTEXT_TYPE_WAP;
 	else
 		g_set_error(error, G_MARKUP_ERROR,
 					G_MARKUP_ERROR_UNKNOWN_ATTRIBUTE,
-					"Unknown usage attribute: %.*s",
-					(int) text_len, text);
+					"Unknown usage attribute: %s", text);
 }
-
-static const GMarkupParser usage_parser = {
-	NULL,
-	NULL,
-	usage_handler,
-	NULL,
-	NULL,
-};
 
 static void apn_start(GMarkupParseContext *context, const gchar *element_name,
 			const gchar **attribute_names,
@@ -133,8 +136,8 @@ static void apn_start(GMarkupParseContext *context, const gchar *element_name,
 		g_markup_parse_context_push(context, &text_parser,
 						&apn->password);
 	else if (g_str_equal(element_name, "usage"))
-		g_markup_parse_context_push(context, &usage_parser,
-						&apn->type);
+		usage_start(attribute_names, attribute_values,
+				&apn->type, error);
 }
 
 static void apn_end(GMarkupParseContext *context, const gchar *element_name,
@@ -142,8 +145,7 @@ static void apn_end(GMarkupParseContext *context, const gchar *element_name,
 {
 	if (g_str_equal(element_name, "name") ||
 			g_str_equal(element_name, "username") ||
-			g_str_equal(element_name, "password") ||
-			g_str_equal(element_name, "usage"))
+			g_str_equal(element_name, "password"))
 		g_markup_parse_context_pop(context);
 }
 
