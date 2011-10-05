@@ -45,7 +45,11 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc)
 	apns = mbpi_lookup(match_mcc, match_mnc, TRUE, &error);
 
 	if (apns == NULL) {
-		g_print("Lookup failed: %s\n", error->message);
+		if (error != NULL) {
+			g_printerr("Lookup failed: %s\n", error->message);
+			g_error_free(error);
+		}
+
 		return;
 	}
 
