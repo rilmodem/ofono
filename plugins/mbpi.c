@@ -270,35 +270,37 @@ static void gsm_start(GMarkupParseContext *context, const gchar *element_name,
 static void gsm_end(GMarkupParseContext *context, const gchar *element_name,
 			gpointer userdata, GError **error)
 {
-	struct gsm_data *gsm = userdata;
+	struct gsm_data *gsm;
+	struct ofono_gprs_provision_data *apn;
 
-	if (g_str_equal(element_name, "apn")) {
-		struct ofono_gprs_provision_data *apn =
-					g_markup_parse_context_pop(context);
+	if (!g_str_equal(element_name, "apn"))
+		return;
 
-		if (apn == NULL)
+	gsm = userdata;
+
+	apn = g_markup_parse_context_pop(context);
+	if (apn == NULL)
+		return;
+
+	if (gsm->allow_duplicates == FALSE) {
+		GSList *l;
+
+		for (l = gsm->apns; l; l = l->next) {
+			struct ofono_gprs_provision_data *pd = l->data;
+
+			if (pd->type != apn->type)
+				continue;
+
+			g_set_error(error, mbpi_error_quark(),
+					MBPI_ERROR_DUPLICATE,
+					"Duplicate context detected");
+
+			mbpi_provision_data_free(apn);
 			return;
-
-		if (gsm->allow_duplicates == FALSE) {
-			GSList *l;
-
-			for (l = gsm->apns; l; l = l->next) {
-				struct ofono_gprs_provision_data *pd = l->data;
-
-				if (pd->type != apn->type)
-					continue;
-
-				g_set_error(error, mbpi_error_quark(),
-						MBPI_ERROR_DUPLICATE,
-						"Duplicate context detected");
-
-				mbpi_provision_data_free(apn);
-				return;
-			}
 		}
-
-		gsm->apns = g_slist_append(gsm->apns, apn);
 	}
+
+	gsm->apns = g_slist_append(gsm->apns, apn);
 }
 
 static const GMarkupParser gsm_parser = {
