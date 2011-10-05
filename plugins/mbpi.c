@@ -378,7 +378,8 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 	if (fd < 0) {
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"open failed: %s", g_strerror(errno));
+				"open(%s) failed: %s", MBPI_DATABASE,
+				g_strerror(errno));
 		return NULL;
 	}
 
@@ -386,7 +387,8 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 		close(fd);
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"fstat failed: %s", g_strerror(errno));
+				"fstat(%s) failed: %s", MBPI_DATABASE,
+				g_strerror(errno));
 		return NULL;
 	}
 
@@ -395,7 +397,8 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 		close(fd);
 		g_set_error(error, G_FILE_ERROR,
 				g_file_error_from_errno(errno),
-				"mmap failed: %s", g_strerror(errno));
+				"mmap(%s) failed: %s", MBPI_DATABASE,
+				g_strerror(errno));
 		return NULL;
 	}
 
