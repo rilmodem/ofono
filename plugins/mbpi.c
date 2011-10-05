@@ -174,16 +174,84 @@ static const GMarkupParser skip_parser = {
 	NULL,
 };
 
+static void network_id_handler(struct gsm_data *gsm,
+				const gchar **attribute_names,
+				const gchar **attribute_values,
+				GError **error)
+{
+	const char *mcc = NULL, *mnc = NULL;
+	int i;
+
+	for (i = 0; attribute_names[i]; i++) {
+		if (g_str_equal(attribute_names[i], "mcc") == TRUE)
+			mcc = attribute_values[i];
+		if (g_str_equal(attribute_names[i], "mnc") == TRUE)
+			mnc = attribute_values[i];
+	}
+
+	if (mcc == NULL) {
+		g_set_error(error, G_MARKUP_ERROR,
+				G_MARKUP_ERROR_MISSING_ATTRIBUTE,
+				"Missing attribute: mcc");
+		return;
+	}
+
+	if (mnc == NULL) {
+		g_set_error(error, G_MARKUP_ERROR,
+				G_MARKUP_ERROR_MISSING_ATTRIBUTE,
+				"Missing attribute: mnc");
+		return;
+	}
+
+	if (g_str_equal(mcc, gsm->match_mcc) &&
+			g_str_equal(mnc, gsm->match_mnc))
+		gsm->match_found = TRUE;
+}
+
+static void apn_handler(GMarkupParseContext *context, struct gsm_data *gsm,
+			const gchar **attribute_names,
+			const gchar **attribute_values,
+			GError **error)
+{
+	struct ofono_gprs_provision_data *pd;
+	const char *apn;
+	int i;
+
+	if (gsm->match_found == FALSE) {
+		g_markup_parse_context_push(context, &skip_parser, NULL);
+		return;
+	}
+
+	for (i = 0, apn = NULL; attribute_names[i]; i++) {
+		if (g_str_equal(attribute_names[i], "value") == FALSE)
+			continue;
+
+		apn = attribute_values[i];
+		break;
+	}
+
+	if (apn == NULL) {
+		g_set_error(error, G_MARKUP_ERROR,
+				G_MARKUP_ERROR_MISSING_ATTRIBUTE,
+				"APN attribute missing");
+		return;
+	}
+
+	pd = g_new0(struct ofono_gprs_provision_data, 1);
+	pd->apn = g_strdup(apn);
+	pd->type = OFONO_GPRS_CONTEXT_TYPE_INTERNET;
+	pd->proto = OFONO_GPRS_PROTO_IP;
+
+	g_markup_parse_context_push(context, &apn_parser, pd);
+}
+
 static void gsm_start(GMarkupParseContext *context, const gchar *element_name,
 			const gchar **attribute_names,
 			const gchar **attribute_values,
 			gpointer userdata, GError **error)
 {
-	struct gsm_data *gsm = userdata;
-
 	if (g_str_equal(element_name, "network-id")) {
-		const char *mcc = NULL, *mnc = NULL;
-		int i;
+		struct gsm_data *gsm = userdata;
 
 		/*
 		 * For entries with multiple network-id elements, don't bother
@@ -192,63 +260,11 @@ static void gsm_start(GMarkupParseContext *context, const gchar *element_name,
 		if (gsm->match_found == TRUE)
 			return;
 
-		for (i = 0; attribute_names[i]; i++) {
-			if (g_str_equal(attribute_names[i], "mcc") == TRUE)
-				mcc = attribute_values[i];
-			if (g_str_equal(attribute_names[i], "mnc") == TRUE)
-				mnc = attribute_values[i];
-		}
-
-		if (mcc == NULL) {
-			g_set_error(error, G_MARKUP_ERROR,
-					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
-					"Missing attribute: mcc");
-			return;
-		}
-
-		if (mnc == NULL) {
-			g_set_error(error, G_MARKUP_ERROR,
-					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
-					"Missing attribute: mnc");
-			return;
-		}
-
-		if (g_str_equal(mcc, gsm->match_mcc) &&
-				g_str_equal(mnc, gsm->match_mnc))
-			gsm->match_found = TRUE;
-	} else if (g_str_equal(element_name, "apn")) {
-		int i;
-		struct ofono_gprs_provision_data *pd;
-		const char *apn;
-
-		if (gsm->match_found == FALSE) {
-			g_markup_parse_context_push(context,
-							&skip_parser, NULL);
-			return;
-		}
-
-		for (i = 0, apn = NULL; attribute_names[i]; i++) {
-			if (g_str_equal(attribute_names[i], "value") == FALSE)
-				continue;
-
-			apn = attribute_values[i];
-			break;
-		}
-
-		if (apn == NULL) {
-			g_set_error(error, G_MARKUP_ERROR,
-					G_MARKUP_ERROR_MISSING_ATTRIBUTE,
-					"APN attribute missing");
-			return;
-		}
-
-		pd = g_new0(struct ofono_gprs_provision_data, 1);
-		pd->apn = g_strdup(apn);
-		pd->type = OFONO_GPRS_CONTEXT_TYPE_INTERNET;
-		pd->proto = OFONO_GPRS_PROTO_IP;
-
-		g_markup_parse_context_push(context, &apn_parser, pd);
-	}
+		network_id_handler(userdata, attribute_names, attribute_values,
+					error);
+	} else if (g_str_equal(element_name, "apn"))
+		apn_handler(context, userdata, attribute_names,
+				attribute_values, error);
 }
 
 static void gsm_end(GMarkupParseContext *context, const gchar *element_name,
