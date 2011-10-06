@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 
 	signal = setup_signalfd();
 
-	__ofono_log_init(option_debug, option_detach);
+	__ofono_log_init(argv[0], option_debug, option_detach);
 
 	dbus_error_init(&error);
 
