@@ -341,8 +341,7 @@ static void zte_post_sim(struct ofono_modem *modem)
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
 
-	ofono_sms_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-					"atmodem", data->aux);
+	ofono_sms_create(modem, OFONO_VENDOR_ZTE, "atmodem", data->aux);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_ZTE, "atmodem", data->aux);
 	gc = ofono_gprs_context_create(modem, OFONO_VENDOR_ZTE,
