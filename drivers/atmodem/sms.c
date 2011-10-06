@@ -783,6 +783,7 @@ static gboolean build_cnmi_string(char *buf, int *cnmi_opts,
 	case OFONO_VENDOR_QUALCOMM_MSM:
 	case OFONO_VENDOR_NOVATEL:
 	case OFONO_VENDOR_HUAWEI:
+	case OFONO_VENDOR_ZTE:
 		/* MSM devices advertise support for mode 2, but return an
 		 * error if we attempt to actually use it. */
 		mode = "1";
@@ -908,6 +909,7 @@ static void at_cnmi_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	switch (data->vendor) {
 	case OFONO_VENDOR_IFX:
 	case OFONO_VENDOR_GOBI:
+	case OFONO_VENDOR_ZTE:
 	case OFONO_VENDOR_HUAWEI:
 	case OFONO_VENDOR_NOVATEL:
 	case OFONO_VENDOR_OPTION_HSO:
