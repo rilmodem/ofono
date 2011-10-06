@@ -288,12 +288,13 @@ void __ofono_log_enable(struct ofono_debug_desc *start,
 	}
 }
 
-int __ofono_log_init(const char *exe, const char *debug, ofono_bool_t detach)
+int __ofono_log_init(const char *program, const char *debug,
+						ofono_bool_t detach)
 {
 	static char path[PATH_MAX];
 	int option = LOG_NDELAY | LOG_PID;
 
-	program_exec = exe;
+	program_exec = program;
 	program_path = getcwd(path, sizeof(path));
 
 	if (debug != NULL)
@@ -306,7 +307,7 @@ int __ofono_log_init(const char *exe, const char *debug, ofono_bool_t detach)
 
 	signal_setup(signal_handler);
 
-	openlog(basename(exe), option, LOG_DAEMON);
+	openlog(basename(program), option, LOG_DAEMON);
 
 	syslog(LOG_INFO, "oFono version %s", VERSION);
 
