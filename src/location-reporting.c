@@ -3,7 +3,7 @@
  *  oFono - Open Source Telephony
  *
  *  Copyright (C) 2010  Nokia Corporation and/or its subsidiary(-ies).
- *  Copyright (C) 2010  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2011  Intel Corporation. All rights reserved.
  *  Copyright (C) 2011  ProFUSION embedded systems.
  *
  *  This program is free software; you can redistribute it and/or modify
