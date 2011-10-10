@@ -2,8 +2,8 @@
  *
  *  oFono - Open Source Telephony
  *
+ *  Copyright (C) 2011  ST-Ericsson AB.
  *  Copyright (C) 2010  Nokia Corporation and/or its subsidiary(-ies).
- *  Copyright (C) ST-Ericsson SA 2011.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
