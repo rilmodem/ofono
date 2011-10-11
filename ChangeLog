@@ -1,3 +1,12 @@
+ver 1.0:
+	Fix issue with phonebook driver and SIM busy.
+	Add support for SIM Access Profile client.
+	Add support for 27.007 SIM Toolkit commands.
+	Add support for Huawei CDMA data modems.
+	Add support for Huawei GPRS bearer notifications.
+	Add support for Huawei technology reporting.
+	Add support for ZTE network time reports.
+
 ver 0.53:
 	Add support for disabling data carrier detect.
 	Add support for username/password settings for CDMA.
