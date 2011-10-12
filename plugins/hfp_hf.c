@@ -136,7 +136,7 @@ static int service_level_connection(struct ofono_modem *modem, int fd)
 		return -EIO;
 	}
 
-	syntax = g_at_syntax_new_gsmv1();
+	syntax = g_at_syntax_new_gsm_permissive();
 	chat = g_at_chat_new(io, syntax);
 	g_at_syntax_unref(syntax);
 	g_io_channel_unref(io);
