@@ -120,6 +120,7 @@ static const char *default_en_list_no_sim[] = { "119", "118", "999", "110",
 						"08", "000", NULL };
 
 static void generic_callback(const struct ofono_error *error, void *data);
+static void hangup_all_active(const struct ofono_error *error, void *data);
 static void multirelease_callback(const struct ofono_error *err, void *data);
 static gboolean tone_request_run(gpointer user_data);
 
@@ -1700,12 +1701,15 @@ static DBusMessage *manager_hangup_all(DBusConnection *conn,
 
 	vc->pending = dbus_message_ref(msg);
 
-	if (vc->driver->hangup_all == NULL) {
-		voicecalls_release_queue(vc, vc->call_list,
-						voicecalls_release_done);
-		voicecalls_release_next(vc);
-	} else
+	if (vc->driver->hangup_all) {
 		vc->driver->hangup_all(vc, generic_callback, vc);
+		return NULL;
+	}
+
+	if (voicecalls_num_held(vc) > 0)
+		vc->driver->hangup_active(vc, hangup_all_active, vc);
+	else
+		vc->driver->hangup_active(vc, generic_callback, vc);
 
 	return NULL;
 }
@@ -2289,6 +2293,35 @@ static void generic_callback(const struct ofono_error *error, void *data)
 		reply = __ofono_error_failed(vc->pending);
 
 	__ofono_dbus_pending_reply(&vc->pending, reply);
+}
+
+static void hangup_all_active(const struct ofono_error *error, void *data)
+{
+	struct ofono_voicecall *vc = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		__ofono_dbus_pending_reply(&vc->pending,
+					__ofono_error_failed(vc->pending));
+		return;
+	}
+
+	/*
+	 * If we have waiting call, we cannot use CHLD=0 due to side effects
+	 * to that call.  Instead we try to hangup all calls one by one,
+	 * which might fail if the modem / AG does not support release_specific
+	 * for held calls.  In that case the waiting call and held calls will
+	 * remain.
+	 */
+	if (vc->driver->release_all_held == NULL ||
+			voicecalls_have_waiting(vc)) {
+		GSList *held = voicecalls_held_list(vc);
+
+		voicecalls_release_queue(vc, held, voicecalls_release_done);
+		voicecalls_release_next(vc);
+
+		g_slist_free(held);
+	} else
+		vc->driver->release_all_held(vc, generic_callback, vc);
 }
 
 static void multirelease_callback(const struct ofono_error *error, void *data)
