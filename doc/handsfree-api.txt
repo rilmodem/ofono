@@ -1,0 +1,30 @@
+Handsfree hierarchy
+===================
+
+Service		org.ofono
+Interface	org.ofono.Handsfree
+Object path	[variable prefix]/{modem0,modem1,...}
+
+Methods		dict GetProperties()
+
+			Returns properties for the Handsfree Interface. See the
+			properties section for available properties.
+
+		void SetProperty(string property, variant value)
+
+			Changes the value of the specified property. Only
+			properties that are listed as readwrite are
+			changeable. On success a PropertyChanged signal
+			will be emitted.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+
+Signals		PropertyChanged(string property, variant value)
+
+			Signal is emitted whenever a property has changed.
+			The new value is passed as the signal argument.
+
+Properties	boolean InbandRinging [readonly]
+
+			Boolean representing whether inband ringing is enabled.
