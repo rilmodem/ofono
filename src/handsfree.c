@@ -165,8 +165,7 @@ static DBusMessage *handsfree_request_phone_number(DBusConnection *conn,
 }
 
 static GDBusMethodTable handsfree_methods[] = {
-	{ "GetProperties",    "",    "a{sv}", handsfree_get_properties,
-		G_DBUS_METHOD_FLAG_ASYNC },
+	{ "GetProperties",    "",    "a{sv}", handsfree_get_properties },
 	{ "SetProperty",      "sv",  "", handsfree_set_property,
 		G_DBUS_METHOD_FLAG_ASYNC },
 	{ "RequestPhoneNumber", "", "s", handsfree_request_phone_number,
