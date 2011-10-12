@@ -44,13 +44,18 @@
 
 struct hf_data {
 	GAtChat *chat;
+	unsigned int ag_features;
 };
 
 static gboolean hfp_handsfree_register(gpointer user_data)
 {
 	struct ofono_handsfree *hf = user_data;
+	struct hf_data *hd = ofono_handsfree_get_data(hf);
 
 	ofono_handsfree_register(hf);
+
+	if (hd->ag_features & HFP_AG_FEATURE_IN_BAND_RING_TONE)
+		ofono_handsfree_set_inband_ringing(hf, TRUE);
 
 	return FALSE;
 }
@@ -64,6 +69,7 @@ static int hfp_handsfree_probe(struct ofono_handsfree *hf,
 	DBG("");
 	hd = g_new0(struct hf_data, 1);
 	hd->chat = g_at_chat_clone(info->chat);
+	hd->ag_features = info->ag_features;
 
 	ofono_handsfree_set_data(hf, hd);
 
