@@ -1220,7 +1220,8 @@ static void voicecalls_emit_call_added(struct ofono_voicecall *vc,
 }
 
 static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls,
-					ofono_voicecall_cb_t cb)
+					ofono_voicecall_cb_t cb,
+					ofono_bool_t skip_held)
 {
 	GSList *l;
 	struct voicecall *call;
@@ -1232,6 +1233,9 @@ static void voicecalls_release_queue(struct ofono_voicecall *vc, GSList *calls,
 		call = l->data;
 
 		if (call->call->status == CALL_STATUS_WAITING)
+			continue;
+
+		if (skip_held && call->call->status == CALL_STATUS_HELD)
 			continue;
 
 		vc->release_list = g_slist_prepend(vc->release_list, l->data);
@@ -1957,7 +1961,7 @@ static DBusMessage *multiparty_hangup(DBusConnection *conn,
 
 	/* Fall back to the old-fashioned way */
 	voicecalls_release_queue(vc, vc->multiparty_list,
-					voicecalls_release_done);
+					voicecalls_release_done, FALSE);
 	voicecalls_release_next(vc);
 
 out:
@@ -2316,7 +2320,8 @@ static void hangup_all_active(const struct ofono_error *error, void *data)
 			voicecalls_have_waiting(vc)) {
 		GSList *held = voicecalls_held_list(vc);
 
-		voicecalls_release_queue(vc, held, voicecalls_release_done);
+		voicecalls_release_queue(vc, held,
+						voicecalls_release_done, FALSE);
 		voicecalls_release_next(vc);
 
 		g_slist_free(held);
@@ -2905,8 +2910,6 @@ static void emulator_chup_cb(struct ofono_emulator *em,
 {
 	struct ofono_voicecall *vc = userdata;
 	struct ofono_error result;
-	GSList *l;
-	struct voicecall *call;
 
 	result.error = 0;
 
@@ -2928,22 +2931,12 @@ static void emulator_chup_cb(struct ofono_emulator *em,
 			goto done;
 		}
 
-		for (l = vc->call_list; l; l = l->next) {
-			call = l->data;
-
-			if (call->call->status == CALL_STATUS_WAITING ||
-					call->call->status == CALL_STATUS_HELD)
-				continue;
-
-			vc->release_list = g_slist_prepend(vc->release_list,
-								l->data);
-		}
-
-		if (vc->release_list == NULL)
+		if (voicecalls_have_active(vc) == FALSE)
 			goto fail;
 
 		vc->pending_em = em;
-		vc->release_queue_done_cb = emulator_generic_cb;
+		voicecalls_release_queue(vc, vc->call_list,
+						emulator_generic_cb, TRUE);
 		voicecalls_release_next(vc);
 
 done:
