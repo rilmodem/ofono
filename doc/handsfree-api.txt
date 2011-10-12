@@ -20,6 +20,19 @@ Methods		dict GetProperties()
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.InvalidArguments
 
+		string RequestPhoneNumber()
+
+			Request a phone number from the AG, corresponding to the
+			last voice tag recorded in the HF. The AG may accept or
+			reject this request depending on its internal state.
+
+			This functionality is generally implemented by using
+			the +BINP=1 AT command.
+
+			Possible Errors: [service].Error.InProgress
+					 [service].Error.InvalidArguments
+					 [service].Error.Failed
+
 Signals		PropertyChanged(string property, variant value)
 
 			Signal is emitted whenever a property has changed.
