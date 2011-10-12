@@ -42,6 +42,8 @@
 #include "hfpmodem.h"
 #include "slc.h"
 
+static const char *binp_prefix[] = { "+BINP:", NULL };
+
 struct hf_data {
 	GAtChat *chat;
 	unsigned int ag_features;
@@ -88,10 +90,67 @@ static void hfp_handsfree_remove(struct ofono_handsfree *hf)
 	g_free(hd);
 }
 
+static void hfp_request_phone_number_cb(gboolean ok, GAtResult *result,
+					gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_handsfree_phone_cb_t cb = cbd->cb;
+	void *data = cbd->data;
+	GAtResultIter iter;
+	const char *num;
+	int type;
+	struct ofono_phone_number phone_number;
+
+	if (!ok)
+		goto fail;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+BINP:"))
+		goto fail;
+
+	if (!g_at_result_iter_next_string(&iter, &num))
+		goto fail;
+
+	if (!g_at_result_iter_next_number(&iter, &type))
+		goto fail;
+
+	DBG("AT+BINP=1 response: %s %d", num, type);
+
+	strncpy(phone_number.number, num,
+		OFONO_MAX_PHONE_NUMBER_LENGTH);
+	phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
+	phone_number.type = type;
+
+	CALLBACK_WITH_SUCCESS(cb, &phone_number, data);
+	return;
+
+fail:
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
+}
+
+static void hfp_request_phone_number(struct ofono_handsfree *hf,
+					ofono_handsfree_phone_cb_t cb,
+					void *data)
+{
+	struct hf_data *hd = ofono_handsfree_get_data(hf);
+	struct cb_data *cbd = cb_data_new(cb, data);
+
+	if (g_at_chat_send(hd->chat, "AT+BINP=1", binp_prefix,
+				hfp_request_phone_number_cb,
+				cbd, g_free) > 0)
+		return;
+
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, NULL, data);
+}
+
 static struct ofono_handsfree_driver driver = {
 	.name			= "hfpmodem",
 	.probe			= hfp_handsfree_probe,
 	.remove			= hfp_handsfree_remove,
+	.request_phone_number	= hfp_request_phone_number,
 };
 
 void hfp_handsfree_init(void)
