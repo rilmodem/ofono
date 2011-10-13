@@ -62,6 +62,9 @@ void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
 
 	hf->inband_ringing = enabled;
 
+	if (__ofono_atom_get_registered(hf->atom) == FALSE)
+		return;
+
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_HANDSFREE_INTERFACE,
 					"InbandRinging", DBUS_TYPE_BOOLEAN,
