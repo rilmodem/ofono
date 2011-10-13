@@ -95,14 +95,18 @@ static void hfp_request_phone_number_cb(gboolean ok, GAtResult *result,
 {
 	struct cb_data *cbd = user_data;
 	ofono_handsfree_phone_cb_t cb = cbd->cb;
-	void *data = cbd->data;
 	GAtResultIter iter;
+	struct ofono_error error;
 	const char *num;
 	int type;
 	struct ofono_phone_number phone_number;
 
-	if (!ok)
-		goto fail;
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	if (!ok) {
+		cb(&error, NULL, cbd->data);
+		return;
+	}
 
 	g_at_result_iter_init(&iter, result);
 
@@ -122,11 +126,11 @@ static void hfp_request_phone_number_cb(gboolean ok, GAtResult *result,
 	phone_number.number[OFONO_MAX_PHONE_NUMBER_LENGTH] = '\0';
 	phone_number.type = type;
 
-	CALLBACK_WITH_SUCCESS(cb, &phone_number, data);
+	cb(&error, &phone_number, cbd->data);
 	return;
 
 fail:
-	CALLBACK_WITH_FAILURE(cb, NULL, data);
+	CALLBACK_WITH_FAILURE(cb, NULL, cbd->data);
 }
 
 static void hfp_request_phone_number(struct ofono_handsfree *hf,
