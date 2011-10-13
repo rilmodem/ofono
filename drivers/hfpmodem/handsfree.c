@@ -52,10 +52,10 @@ static gboolean hfp_handsfree_register(gpointer user_data)
 	struct ofono_handsfree *hf = user_data;
 	struct hf_data *hd = ofono_handsfree_get_data(hf);
 
-	ofono_handsfree_register(hf);
-
 	if (hd->ag_features & HFP_AG_FEATURE_IN_BAND_RING_TONE)
 		ofono_handsfree_set_inband_ringing(hf, TRUE);
+
+	ofono_handsfree_register(hf);
 
 	return FALSE;
 }
