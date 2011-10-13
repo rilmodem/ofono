@@ -47,6 +47,10 @@ Methods		dict GetProperties()
 			of a held multiparty call might not be possible on some
 			implementations.
 
+			NOTE: Releasing active calls does not produce
+			side-effects.  That is the state of held or waiting
+			calls is not affected.
+
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.Failed
 					 [service].Error.NotImplemented

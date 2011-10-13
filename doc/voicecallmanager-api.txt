@@ -35,6 +35,10 @@ Methods		dict GetProperties()
 
 			This is usually implemented using the ATD AT command.
 
+			NOTE: If an active call (single or multiparty) exists,
+			then it is automatically put on hold if the dial
+			procedure is successful.
+
 			Possible Errors: [service].Error.InProgress
 					 [service].Error.InvalidArguments
 					 [service].Error.InvalidFormat
@@ -102,7 +106,8 @@ Methods		dict GetProperties()
 
 		void HangupAll()
 
-			Releases all calls.
+			Releases all calls except waiting calls. This includes
+			multiparty calls.
 
                         Possible Errors: [service].Error.InProgress
 					 [service].Error.NotImplemented
