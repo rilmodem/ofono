@@ -34,7 +34,8 @@
 
 #include "plugins/mbpi.h"
 
-static void lookup_apn(const char *match_mcc, const char *match_mnc)
+static void lookup_apn(const char *match_mcc, const char *match_mnc,
+						gboolean allow_duplicates)
 {
 	GSList *l;
 	GSList *apns;
@@ -42,7 +43,7 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc)
 
 	printf("Searching for info for network: %s%s\n", match_mcc, match_mnc);
 
-	apns = mbpi_lookup(match_mcc, match_mnc, TRUE, &error);
+	apns = mbpi_lookup(match_mcc, match_mnc, allow_duplicates, &error);
 
 	if (apns == NULL) {
 		if (error != NULL) {
@@ -70,10 +71,13 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc)
 }
 
 static gboolean option_version = FALSE;
+static gboolean option_duplicates = FALSE;
 
 static GOptionEntry options[] = {
 	{ "version", 'v', 0, G_OPTION_ARG_NONE, &option_version,
 				"Show version information and exit" },
+	{ "allow-duplicates", 0, 0, G_OPTION_ARG_NONE, &option_duplicates,
+				"Allow duplicate access point types" },
 	{ NULL },
 };
 
@@ -106,7 +110,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	lookup_apn(argv[1], argv[2]);
+	lookup_apn(argv[1], argv[2], option_duplicates);
 
 	return 0;
 }
