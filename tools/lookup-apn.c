@@ -64,7 +64,7 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc,
 		printf("Username: %s\n", apn->username);
 		printf("Password: %s\n", apn->password);
 
-		mbpi_provision_data_free(apn);
+		mbpi_ap_free(apn);
 	}
 
 	g_slist_free(apns);
