@@ -23,7 +23,6 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <glib.h>
@@ -41,7 +40,7 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc,
 	GSList *apns;
 	GError *error = NULL;
 
-	printf("Searching for info for network: %s%s\n", match_mcc, match_mnc);
+	g_print("Searching for info for network: %s%s\n", match_mcc, match_mnc);
 
 	apns = mbpi_lookup(match_mcc, match_mnc, allow_duplicates, &error);
 
@@ -55,16 +54,16 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc,
 	}
 
 	for (l = apns; l; l = l->next) {
-		struct ofono_gprs_provision_data *apn = l->data;
+		struct ofono_gprs_provision_data *ap = l->data;
 
-		printf("\n");
-		printf("Name: %s\n", apn->name);
-		printf("APN: %s\n", apn->apn);
-		printf("Type: %s\n", mbpi_ap_type(apn->type));
-		printf("Username: %s\n", apn->username);
-		printf("Password: %s\n", apn->password);
+		g_print("\n");
+		g_print("Name: %s\n", ap->name);
+		g_print("APN: %s\n", ap->apn);
+		g_print("Type: %s\n", mbpi_ap_type(ap->type));
+		g_print("Username: %s\n", ap->username);
+		g_print("Password: %s\n", ap->password);
 
-		mbpi_ap_free(apn);
+		mbpi_ap_free(ap);
 	}
 
 	g_slist_free(apns);
@@ -101,12 +100,12 @@ int main(int argc, char **argv)
 	g_option_context_free(context);
 
 	if (option_version == TRUE) {
-		printf("%s\n", VERSION);
+		g_print("%s\n", VERSION);
 		exit(0);
 	}
 
 	if (argc < 2) {
-		fprintf(stderr, "Missing parameters\n");
+		g_printerr("Missing parameters\n");
 		exit(1);
 	}
 
