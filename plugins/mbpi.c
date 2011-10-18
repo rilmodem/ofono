@@ -76,16 +76,16 @@ static GQuark mbpi_error_quark(void)
 	return g_quark_from_static_string("ofono-mbpi-error-quark");
 }
 
-void mbpi_ap_free(struct ofono_gprs_provision_data *data)
+void mbpi_ap_free(struct ofono_gprs_provision_data *ap)
 {
-	g_free(data->name);
-	g_free(data->apn);
-	g_free(data->username);
-	g_free(data->password);
-	g_free(data->message_proxy);
-	g_free(data->message_center);
+	g_free(ap->name);
+	g_free(ap->apn);
+	g_free(ap->username);
+	g_free(ap->password);
+	g_free(ap->message_proxy);
+	g_free(ap->message_center);
 
-	g_free(data);
+	g_free(ap);
 }
 
 static void mbpi_g_set_error(GMarkupParseContext *context, GError **error,
@@ -249,7 +249,7 @@ static void apn_handler(GMarkupParseContext *context, struct gsm_data *gsm,
 			const gchar **attribute_values,
 			GError **error)
 {
-	struct ofono_gprs_provision_data *pd;
+	struct ofono_gprs_provision_data *ap;
 	const char *apn;
 	int i;
 
@@ -273,12 +273,12 @@ static void apn_handler(GMarkupParseContext *context, struct gsm_data *gsm,
 		return;
 	}
 
-	pd = g_new0(struct ofono_gprs_provision_data, 1);
-	pd->apn = g_strdup(apn);
-	pd->type = OFONO_GPRS_CONTEXT_TYPE_INTERNET;
-	pd->proto = OFONO_GPRS_PROTO_IP;
+	ap = g_new0(struct ofono_gprs_provision_data, 1);
+	ap->apn = g_strdup(apn);
+	ap->type = OFONO_GPRS_CONTEXT_TYPE_INTERNET;
+	ap->proto = OFONO_GPRS_PROTO_IP;
 
-	g_markup_parse_context_push(context, &apn_parser, pd);
+	g_markup_parse_context_push(context, &apn_parser, ap);
 }
 
 static void gsm_start(GMarkupParseContext *context, const gchar *element_name,
@@ -307,15 +307,15 @@ static void gsm_end(GMarkupParseContext *context, const gchar *element_name,
 			gpointer userdata, GError **error)
 {
 	struct gsm_data *gsm;
-	struct ofono_gprs_provision_data *apn;
+	struct ofono_gprs_provision_data *ap;
 
 	if (!g_str_equal(element_name, "apn"))
 		return;
 
 	gsm = userdata;
 
-	apn = g_markup_parse_context_pop(context);
-	if (apn == NULL)
+	ap = g_markup_parse_context_pop(context);
+	if (ap == NULL)
 		return;
 
 	if (gsm->allow_duplicates == FALSE) {
@@ -324,19 +324,19 @@ static void gsm_end(GMarkupParseContext *context, const gchar *element_name,
 		for (l = gsm->apns; l; l = l->next) {
 			struct ofono_gprs_provision_data *pd = l->data;
 
-			if (pd->type != apn->type)
+			if (pd->type != ap->type)
 				continue;
 
 			mbpi_g_set_error(context, error, mbpi_error_quark(),
 						MBPI_ERROR_DUPLICATE,
 						"Duplicate context detected");
 
-			mbpi_ap_free(apn);
+			mbpi_ap_free(ap);
 			return;
 		}
 	}
 
-	gsm->apns = g_slist_append(gsm->apns, apn);
+	gsm->apns = g_slist_append(gsm->apns, ap);
 }
 
 static const GMarkupParser gsm_parser = {
