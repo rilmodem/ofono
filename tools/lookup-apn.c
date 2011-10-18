@@ -59,6 +59,7 @@ static void lookup_apn(const char *match_mcc, const char *match_mnc)
 		printf("\n");
 		printf("Name: %s\n", apn->name);
 		printf("APN: %s\n", apn->apn);
+		printf("Type: %s\n", mbpi_ap_type(apn->type));
 		printf("Username: %s\n", apn->username);
 		printf("Password: %s\n", apn->password);
 
