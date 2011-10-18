@@ -44,6 +44,8 @@
 
 #include "mbpi.h"
 
+#define _(x) case x: return (#x)
+
 enum MBPI_ERROR {
 	MBPI_ERROR_DUPLICATE,
 };
@@ -55,6 +57,19 @@ struct gsm_data {
 	gboolean match_found;
 	gboolean allow_duplicates;
 };
+
+const char *mbpi_ap_type(enum ofono_gprs_context_type type)
+{
+	switch (type) {
+		_(OFONO_GPRS_CONTEXT_TYPE_ANY);
+		_(OFONO_GPRS_CONTEXT_TYPE_INTERNET);
+		_(OFONO_GPRS_CONTEXT_TYPE_MMS);
+		_(OFONO_GPRS_CONTEXT_TYPE_WAP);
+		_(OFONO_GPRS_CONTEXT_TYPE_IMS);
+	}
+
+	return "OFONO_GPRS_CONTEXT_TYPE_<UNKNOWN>";
+}
 
 static GQuark mbpi_error_quark(void)
 {

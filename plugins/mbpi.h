@@ -19,6 +19,8 @@
  *
  */
 
+const char *mbpi_ap_type(enum ofono_gprs_context_type type);
+
 void mbpi_provision_data_free(struct ofono_gprs_provision_data *data);
 
 GSList *mbpi_lookup(const char *mcc, const char *mnc,
