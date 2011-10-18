@@ -76,7 +76,7 @@ static GQuark mbpi_error_quark(void)
 	return g_quark_from_static_string("ofono-mbpi-error-quark");
 }
 
-void mbpi_provision_data_free(struct ofono_gprs_provision_data *data)
+void mbpi_ap_free(struct ofono_gprs_provision_data *data)
 {
 	g_free(data->name);
 	g_free(data->apn);
@@ -190,7 +190,7 @@ static void apn_error(GMarkupParseContext *context, GError *error,
 	 * be called.  So we always perform cleanup of the allocated
 	 * provision data
 	 */
-	mbpi_provision_data_free(userdata);
+	mbpi_ap_free(userdata);
 }
 
 static const GMarkupParser apn_parser = {
@@ -331,7 +331,7 @@ static void gsm_end(GMarkupParseContext *context, const gchar *element_name,
 						MBPI_ERROR_DUPLICATE,
 						"Duplicate context detected");
 
-			mbpi_provision_data_free(apn);
+			mbpi_ap_free(apn);
 			return;
 		}
 	}
@@ -443,7 +443,7 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 
 	if (mbpi_parse(db, st.st_size, &gsm, error) == FALSE) {
 		for (l = gsm.apns; l; l = l->next)
-			mbpi_provision_data_free(l->data);
+			mbpi_ap_free(l->data);
 
 		g_slist_free(gsm.apns);
 		gsm.apns = NULL;

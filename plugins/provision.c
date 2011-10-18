@@ -69,7 +69,7 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 		ofono_error("Provisioning failed: %s", g_strerror(errno));
 
 		for (l = apns; l; l = l->next)
-			mbpi_provision_data_free(l->data);
+			mbpi_ap_free(l->data);
 
 		g_slist_free(apns);
 
