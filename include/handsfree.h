@@ -45,6 +45,8 @@ struct ofono_handsfree_driver {
 					void *data);
 };
 
+void ofono_handsfree_set_ag_features(struct ofono_handsfree *hf,
+					unsigned int ag_features);
 void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
 						ofono_bool_t enabled);
 
