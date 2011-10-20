@@ -49,10 +49,29 @@ struct hf_data {
 	unsigned int ag_features;
 };
 
+static void bsir_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_handsfree *hf = user_data;
+	GAtResultIter iter;
+	int value;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+BSIR:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &value))
+		return;
+
+	ofono_handsfree_set_inband_ringing(hf, (ofono_bool_t) value);
+}
+
 static gboolean hfp_handsfree_register(gpointer user_data)
 {
 	struct ofono_handsfree *hf = user_data;
 	struct hf_data *hd = ofono_handsfree_get_data(hf);
+
+	g_at_chat_register(hd->chat, "+BSIR:", bsir_notify, FALSE, hf, NULL);
 
 	if (hd->ag_features & HFP_AG_FEATURE_IN_BAND_RING_TONE)
 		ofono_handsfree_set_inband_ringing(hf, TRUE);
