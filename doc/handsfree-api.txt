@@ -41,3 +41,10 @@ Signals		PropertyChanged(string property, variant value)
 Properties	boolean InbandRinging [readonly]
 
 			Boolean representing whether inband ringing is enabled.
+
+		boolean VoiceRecognition [readwrite]
+
+			Boolean representing whether voice recognition is
+			currently active in the AG. This property may be written
+			to activate or deactivate the function from the HF, or
+			the AG could autonomously initiate it.
