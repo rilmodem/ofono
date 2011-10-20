@@ -50,6 +50,7 @@ void ofono_cdma_netreg_strength_notify(struct ofono_cdma_netreg *netreg,
 					int strength);
 void ofono_cdma_netreg_data_strength_notify(struct ofono_cdma_netreg *netreg,
 						int data_strength);
+int ofono_cdma_netreg_get_status(struct ofono_cdma_netreg *netreg);
 
 int ofono_cdma_netreg_driver_register(
 				const struct ofono_cdma_netreg_driver *d);
