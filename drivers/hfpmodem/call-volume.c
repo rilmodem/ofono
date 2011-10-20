@@ -230,4 +230,3 @@ void hfp_call_volume_exit(void)
 {
 	ofono_call_volume_driver_unregister(&driver);
 }
-
