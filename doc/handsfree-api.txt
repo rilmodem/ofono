@@ -38,7 +38,14 @@ Signals		PropertyChanged(string property, variant value)
 			Signal is emitted whenever a property has changed.
 			The new value is passed as the signal argument.
 
-Properties	boolean InbandRinging [readonly]
+Properties	array{string} Features [readonly]
+
+			List of features supported by the AG. The currently
+			supported values are:
+				"voice-recognition"
+				"attach-voice-tag"
+
+		boolean InbandRinging [readonly]
 
 			Boolean representing whether inband ringing is enabled.
 
