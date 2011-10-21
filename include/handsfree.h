@@ -31,6 +31,8 @@ extern "C" {
 
 struct ofono_handsfree;
 
+typedef void (*ofono_handsfree_cb_t)(const struct ofono_error *error,
+					void *data);
 typedef void (*ofono_handsfree_phone_cb_t)(const struct ofono_error *error,
 					const struct ofono_phone_number *number,
 					void *data);
@@ -43,11 +45,16 @@ struct ofono_handsfree_driver {
 	void (*request_phone_number) (struct ofono_handsfree *hf,
 					ofono_handsfree_phone_cb_t cb,
 					void *data);
+	void (*voice_recognition)(struct ofono_handsfree *hf,
+					ofono_bool_t enabled,
+					ofono_handsfree_cb_t cb, void *data);
 };
 
 void ofono_handsfree_set_ag_features(struct ofono_handsfree *hf,
 					unsigned int ag_features);
 void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
+						ofono_bool_t enabled);
+void ofono_handsfree_voice_recognition_notify(struct ofono_handsfree *hf,
 						ofono_bool_t enabled);
 
 int ofono_handsfree_driver_register(const struct ofono_handsfree_driver *d);
