@@ -1398,6 +1398,7 @@ static void query_model(struct ofono_devinfo *info)
 	if (info->driver->query_model == NULL) {
 		/* If model is not supported, don't bother querying revision */
 		query_serial(info);
+		return;
 	}
 
 	info->driver->query_model(info, query_model_cb, info);
