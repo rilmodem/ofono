@@ -1831,8 +1831,10 @@ static void netreg_unregister(struct ofono_atom *atom)
 	for (l = netreg->operator_list; l; l = l->next) {
 		struct network_operator_data *opd = l->data;
 
-		if (opd->mcc[0] == '\0' && opd->mnc[0] == '\0')
+		if (opd->mcc[0] == '\0' && opd->mnc[0] == '\0') {
+			g_free(opd);
 			continue;
+		}
 
 		network_operator_dbus_unregister(netreg, l->data);
 	}
