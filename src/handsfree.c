@@ -47,12 +47,29 @@ struct ofono_handsfree {
 	ofono_bool_t inband_ringing;
 	ofono_bool_t voice_recognition;
 	ofono_bool_t voice_recognition_pending;
+	unsigned int ag_features;
 
 	const struct ofono_handsfree_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
 	DBusMessage *pending;
 };
+
+static const char **ag_features_list(unsigned int features)
+{
+	static const char *list[33];
+	unsigned int i = 0;
+
+	if (features & HFP_AG_FEATURE_VOICE_RECOG)
+		list[i++] = "voice-recognition";
+
+	if (features & HFP_AG_FEATURE_ATTACH_VOICE_TAG)
+		list[i++] = "attach-voice-tag";
+
+	list[i] = NULL;
+
+	return list;
+}
 
 void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
 						ofono_bool_t enabled)
@@ -93,6 +110,15 @@ void ofono_handsfree_voice_recognition_notify(struct ofono_handsfree *hf,
 					&dbus_enabled);
 }
 
+void ofono_handsfree_set_ag_features(struct ofono_handsfree *hf,
+					unsigned int ag_features)
+{
+	if (hf == NULL)
+		return;
+
+	hf->ag_features = ag_features;
+}
+
 static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -102,6 +128,7 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	DBusMessageIter dict;
 	dbus_bool_t inband_ringing;
 	dbus_bool_t voice_recognition;
+	const char **features;
 
 	reply = dbus_message_new_method_return(msg);
 	if (reply == NULL)
@@ -120,6 +147,10 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	voice_recognition = hf->voice_recognition;
 	ofono_dbus_dict_append(&dict, "VoiceRecognition", DBUS_TYPE_BOOLEAN,
 				&voice_recognition);
+
+	features = ag_features_list(hf->ag_features);
+	ofono_dbus_dict_append_array(&dict, "Features", DBUS_TYPE_STRING,
+					&features);
 
 	dbus_message_iter_close_container(&iter, &dict);
 
