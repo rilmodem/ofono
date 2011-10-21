@@ -51,6 +51,7 @@ struct netreg_data {
 	GAtChat *chat;
 	unsigned char cind_pos[HFP_INDICATOR_LAST];
 	int cind_val[HFP_INDICATOR_LAST];
+	guint register_source;
 };
 
 static void cops_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -297,6 +298,9 @@ static void hfp_signal_strength(struct ofono_netreg *netreg,
 static gboolean hfp_netreg_register(gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	nd->register_source = 0;
 
 	ofono_netreg_register(netreg);
 
@@ -320,7 +324,7 @@ static int hfp_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 	g_at_chat_register(nd->chat, "+CIEV:", ciev_notify, FALSE,
 				netreg, NULL);
 
-	g_idle_add(hfp_netreg_register, netreg);
+	nd->register_source = g_idle_add(hfp_netreg_register, netreg);
 
 	return 0;
 }
@@ -328,6 +332,9 @@ static int hfp_netreg_probe(struct ofono_netreg *netreg, unsigned int vendor,
 static void hfp_netreg_remove(struct ofono_netreg *netreg)
 {
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+
+	if (nd->register_source != 0)
+		g_source_remove(nd->register_source);
 
 	ofono_netreg_set_data(netreg, NULL);
 
