@@ -50,6 +50,7 @@ struct cv_data {
 	GAtChat *chat;
 	unsigned char sp_volume;
 	unsigned char mic_volume;
+	guint register_source;
 };
 
 static void cv_generic_set_cb(gboolean ok, GAtResult *result,
@@ -173,6 +174,8 @@ static gboolean hfp_call_volume_register(gpointer user_data)
 
 	DBG("");
 
+	vd->register_source = 0;
+
 	g_at_chat_register(vd->chat, "+VGS:", vgs_notify, FALSE, cv, NULL);
 	g_at_chat_register(vd->chat, "+VGM:", vgm_notify, FALSE, cv, NULL);
 
@@ -197,7 +200,7 @@ static int hfp_call_volume_probe(struct ofono_call_volume *cv,
 
 	ofono_call_volume_set_data(cv, vd);
 
-	g_idle_add(hfp_call_volume_register, cv);
+	vd->register_source = g_idle_add(hfp_call_volume_register, cv);
 
 	return 0;
 }
@@ -205,6 +208,9 @@ static int hfp_call_volume_probe(struct ofono_call_volume *cv,
 static void hfp_call_volume_remove(struct ofono_call_volume *cv)
 {
 	struct cv_data *vd = ofono_call_volume_get_data(cv);
+
+	if (vd->register_source != 0)
+		g_source_remove(vd->register_source);
 
 	ofono_call_volume_set_data(cv, NULL);
 
