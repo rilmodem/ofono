@@ -43,11 +43,24 @@
 #include "slc.h"
 
 static const char *binp_prefix[] = { "+BINP:", NULL };
+static const char *bvra_prefix[] = { "+BVRA:", NULL };
 
 struct hf_data {
 	GAtChat *chat;
 	unsigned int ag_features;
 };
+
+static void hf_generic_set_cb(gboolean ok, GAtResult *result,
+				gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_handsfree_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+
+	cb(&error, cbd->data);
+}
 
 static void bsir_notify(GAtResult *result, gpointer user_data)
 {
@@ -66,12 +79,30 @@ static void bsir_notify(GAtResult *result, gpointer user_data)
 	ofono_handsfree_set_inband_ringing(hf, (ofono_bool_t) value);
 }
 
+static void bvra_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_handsfree *hf = user_data;
+	GAtResultIter iter;
+	int value;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+BVRA:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &value))
+		return;
+
+	ofono_handsfree_voice_recognition_notify(hf, (ofono_bool_t) value);
+}
+
 static gboolean hfp_handsfree_register(gpointer user_data)
 {
 	struct ofono_handsfree *hf = user_data;
 	struct hf_data *hd = ofono_handsfree_get_data(hf);
 
 	g_at_chat_register(hd->chat, "+BSIR:", bsir_notify, FALSE, hf, NULL);
+	g_at_chat_register(hd->chat, "+BVRA:", bvra_notify, FALSE, hf, NULL);
 
 	if (hd->ag_features & HFP_AG_FEATURE_IN_BAND_RING_TONE)
 		ofono_handsfree_set_inband_ringing(hf, TRUE);
@@ -169,11 +200,33 @@ static void hfp_request_phone_number(struct ofono_handsfree *hf,
 	CALLBACK_WITH_FAILURE(cb, NULL, data);
 }
 
+static void hfp_voice_recognition(struct ofono_handsfree *hf,
+					ofono_bool_t enabled,
+					ofono_handsfree_cb_t cb, void *data)
+{
+	struct hf_data *hd = ofono_handsfree_get_data(hf);
+	struct cb_data *cbd = cb_data_new(cb, data);
+	char buf[64];
+
+	snprintf(buf, sizeof(buf), "AT+BVRA=%d",
+				(int)(enabled));
+
+	if (g_at_chat_send(hd->chat, buf, bvra_prefix,
+				hf_generic_set_cb,
+				cbd, g_free) > 0)
+		return;
+
+	g_free(cbd);
+
+	CALLBACK_WITH_FAILURE(cb, data);
+}
+
 static struct ofono_handsfree_driver driver = {
 	.name			= "hfpmodem",
 	.probe			= hfp_handsfree_probe,
 	.remove			= hfp_handsfree_remove,
 	.request_phone_number	= hfp_request_phone_number,
+	.voice_recognition	= hfp_voice_recognition,
 };
 
 void hfp_handsfree_init(void)
