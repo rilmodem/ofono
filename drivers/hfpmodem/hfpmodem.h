@@ -33,3 +33,6 @@ extern void hfp_voicecall_exit(void);
 
 extern void hfp_handsfree_init(void);
 extern void hfp_handsfree_exit(void);
+
+extern void hfp_devinfo_init(void);
+extern void hfp_devinfo_exit(void);

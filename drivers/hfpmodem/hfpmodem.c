@@ -35,6 +35,7 @@
 static int hfpmodem_init(void)
 {
 	hfp_voicecall_init();
+	hfp_devinfo_init();
 	hfp_netreg_init();
 	hfp_call_volume_init();
 	hfp_handsfree_init();
@@ -45,6 +46,7 @@ static int hfpmodem_init(void)
 static void hfpmodem_exit(void)
 {
 	hfp_voicecall_exit();
+	hfp_devinfo_exit();
 	hfp_netreg_exit();
 	hfp_call_volume_exit();
 	hfp_handsfree_exit();
