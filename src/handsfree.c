@@ -45,6 +45,9 @@ static GSList *g_drivers = NULL;
 
 struct ofono_handsfree {
 	ofono_bool_t inband_ringing;
+	ofono_bool_t voice_recognition;
+	ofono_bool_t voice_recognition_pending;
+
 	const struct ofono_handsfree_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
@@ -72,6 +75,24 @@ void ofono_handsfree_set_inband_ringing(struct ofono_handsfree *hf,
 					&dbus_enabled);
 }
 
+void ofono_handsfree_voice_recognition_notify(struct ofono_handsfree *hf,
+						ofono_bool_t enabled)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(hf->atom);
+	dbus_bool_t dbus_enabled = enabled;
+
+	if (hf->voice_recognition == enabled)
+		return;
+
+	hf->voice_recognition = enabled;
+
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_HANDSFREE_INTERFACE,
+					"VoiceRecognition", DBUS_TYPE_BOOLEAN,
+					&dbus_enabled);
+}
+
 static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -80,6 +101,7 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	dbus_bool_t inband_ringing;
+	dbus_bool_t voice_recognition;
 
 	reply = dbus_message_new_method_return(msg);
 	if (reply == NULL)
@@ -95,16 +117,48 @@ static DBusMessage *handsfree_get_properties(DBusConnection *conn,
 	ofono_dbus_dict_append(&dict, "InbandRinging", DBUS_TYPE_BOOLEAN,
 				&inband_ringing);
 
+	voice_recognition = hf->voice_recognition;
+	ofono_dbus_dict_append(&dict, "VoiceRecognition", DBUS_TYPE_BOOLEAN,
+				&voice_recognition);
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
 }
 
+static void voicerec_set_cb(const struct ofono_error *error, void *data)
+{
+	struct ofono_handsfree *hf = data;
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path = __ofono_atom_get_path(hf->atom);
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		__ofono_dbus_pending_reply(&hf->pending,
+					__ofono_error_failed(hf->pending));
+		return;
+	}
+
+	hf->voice_recognition = hf->voice_recognition_pending;
+
+	__ofono_dbus_pending_reply(&hf->pending,
+				dbus_message_new_method_return(hf->pending));
+
+	ofono_dbus_signal_property_changed(conn, path,
+					OFONO_HANDSFREE_INTERFACE,
+					"VoiceRecognition",
+					DBUS_TYPE_BOOLEAN,
+					&hf->voice_recognition);
+}
+
 static DBusMessage *handsfree_set_property(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
+	struct ofono_handsfree *hf = data;
 	DBusMessageIter iter, var;
 	const char *name;
+
+	if (hf->pending)
+		return __ofono_error_busy(msg);
 
 	if (dbus_message_iter_init(msg, &iter) == FALSE)
 		return __ofono_error_invalid_args(msg);
@@ -119,6 +173,27 @@ static DBusMessage *handsfree_set_property(DBusConnection *conn,
 		return __ofono_error_invalid_args(msg);
 
 	dbus_message_iter_recurse(&iter, &var);
+
+	if (g_str_equal(name, "VoiceRecognition") == TRUE) {
+		ofono_bool_t enabled;
+
+		if (!hf->driver->voice_recognition)
+			return __ofono_error_not_implemented(msg);
+
+		if (dbus_message_iter_get_arg_type(&var) != DBUS_TYPE_BOOLEAN)
+			return __ofono_error_invalid_args(msg);
+
+		dbus_message_iter_get_basic(&var, &enabled);
+
+		if (hf->voice_recognition == enabled)
+			return dbus_message_new_method_return(msg);
+
+		hf->voice_recognition_pending = enabled;
+		hf->pending = dbus_message_ref(msg);
+		hf->driver->voice_recognition(hf, enabled, voicerec_set_cb, hf);
+
+		return NULL;
+	}
 
 	return __ofono_error_invalid_args(msg);
 }
