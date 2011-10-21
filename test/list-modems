@@ -39,7 +39,8 @@ for path, properties in modems:
 					"SubscriberNumbers",
 					"PreferredLanguages",
 					"PrimaryContexts",
-					"LockedPins"]:
+					"LockedPins",
+					"Features"]:
 				val = ""
 				for i in properties[key]:
 					val += i + " "
