@@ -110,6 +110,7 @@ static gboolean hfp_handsfree_register(gpointer user_data)
 	if (hd->ag_features & HFP_AG_FEATURE_IN_BAND_RING_TONE)
 		ofono_handsfree_set_inband_ringing(hf, TRUE);
 
+	ofono_handsfree_set_ag_features(hf, hd->ag_features);
 	ofono_handsfree_register(hf);
 
 	return FALSE;
