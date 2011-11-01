@@ -246,9 +246,8 @@ static int hfp_hf_probe(const char *device, const char *dev_addr,
 	return 0;
 
 free:
-	if (data != NULL) {
+	if (data != NULL)
 		g_free(data->handsfree_path);
-	}
 
 	g_free(data);
 	ofono_modem_remove(modem);
