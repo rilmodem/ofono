@@ -64,6 +64,8 @@ int ofono_cdma_connman_driver_register(
 void ofono_cdma_connman_driver_unregister(
 				const struct ofono_cdma_connman_driver *d);
 
+void ofono_cdma_connman_deactivated(struct ofono_cdma_connman *cm);
+
 struct ofono_cdma_connman *ofono_cdma_connman_create(
 						struct ofono_modem *modem,
 						unsigned int vendor,
