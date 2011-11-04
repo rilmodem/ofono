@@ -338,10 +338,9 @@ static void cdma_connman_settings_append_properties(
 	dbus_message_iter_close_container(dict, &entry);
 }
 
-static ofono_bool_t cdma_connman_netreg_is_registered(struct ofono_cdma_connman *cm)
+static ofono_bool_t network_registered(struct ofono_cdma_connman *cm)
 {
 	int status;
-	ofono_bool_t registered;
 	struct ofono_modem *modem = __ofono_atom_get_modem(cm->atom);
 	struct ofono_atom *atom = __ofono_modem_find_atom(modem,
 						OFONO_ATOM_TYPE_CDMA_NETREG);
@@ -351,11 +350,17 @@ static ofono_bool_t cdma_connman_netreg_is_registered(struct ofono_cdma_connman 
 		return FALSE;
 
 	cdma_netreg = __ofono_atom_get_data(atom);
-	status  = ofono_cdma_netreg_get_status(cdma_netreg);
+	status = ofono_cdma_netreg_get_status(cdma_netreg);
 
-	registered = status == NETWORK_REGISTRATION_STATUS_REGISTERED;
+	switch (status) {
+	case NETWORK_REGISTRATION_STATUS_REGISTERED:
+	case NETWORK_REGISTRATION_STATUS_ROAMING:
+		return TRUE;
+	default:
+		break;
+	}
 
-	return registered;
+	return FALSE;
 }
 
 static DBusMessage *cdma_connman_get_properties(DBusConnection *conn,
@@ -483,7 +488,7 @@ static DBusMessage *cdma_connman_set_property(DBusConnection *conn,
 				cm->driver->deactivate == NULL)
 			return __ofono_error_not_implemented(msg);
 
-		if (cdma_connman_netreg_is_registered(cm) == FALSE)
+		if (network_registered(cm) == FALSE)
 			return __ofono_error_not_registered(msg);
 
 		cm->pending = dbus_message_ref(msg);
