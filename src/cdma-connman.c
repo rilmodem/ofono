@@ -553,6 +553,25 @@ void ofono_cdma_connman_driver_unregister(
 	g_drivers = g_slist_remove(g_drivers, (void *) d);
 }
 
+void ofono_cdma_connman_deactivated(struct ofono_cdma_connman *cm)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	ofono_bool_t value;
+	const char *path;
+
+	if (cm == NULL)
+		return;
+
+	cdma_connman_settings_reset(cm);
+	cm->powered = FALSE;
+	value = cm->powered;
+	path = __ofono_atom_get_path(cm->atom);
+
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_CONNECTION_MANAGER_INTERFACE,
+				"Powered", DBUS_TYPE_BOOLEAN, &value);
+}
+
 static void cdma_connman_unregister(struct ofono_atom *atom)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
