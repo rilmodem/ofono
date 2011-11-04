@@ -116,7 +116,7 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
 		CALLBACK_WITH_SUCCESS(cd->down_cb, cd->cb_data);
 		break;
 	default:
-		/* TODO: Handle network initiated disconnection */
+		ofono_cdma_connman_deactivated(cm);
 		break;
 	}
 
