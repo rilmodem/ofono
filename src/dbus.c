@@ -353,7 +353,7 @@ DBusMessage *__ofono_error_not_registered(DBusMessage *msg)
 {
 	return g_dbus_create_error(msg,
 				OFONO_ERROR_INTERFACE ".NotRegistered",
-				"CDMA modem is not registered to the network");
+				"Modem is not registered to the network");
 }
 
 DBusMessage *__ofono_error_canceled(DBusMessage *msg)
