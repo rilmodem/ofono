@@ -349,6 +349,13 @@ DBusMessage *__ofono_error_attach_in_progress(DBusMessage *msg)
 				"GPRS Attach is in progress");
 }
 
+DBusMessage *__ofono_error_not_registered(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg,
+				OFONO_ERROR_INTERFACE ".NotRegistered",
+				"CDMA modem is not registered to the network");
+}
+
 DBusMessage *__ofono_error_canceled(DBusMessage *msg)
 {
 	return g_dbus_create_error(msg, OFONO_ERROR_INTERFACE ".Canceled",
