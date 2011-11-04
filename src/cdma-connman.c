@@ -338,6 +338,26 @@ static void cdma_connman_settings_append_properties(
 	dbus_message_iter_close_container(dict, &entry);
 }
 
+static ofono_bool_t cdma_connman_netreg_is_registered(struct ofono_cdma_connman *cm)
+{
+	int status;
+	ofono_bool_t registered;
+	struct ofono_modem *modem = __ofono_atom_get_modem(cm->atom);
+	struct ofono_atom *atom = __ofono_modem_find_atom(modem,
+						OFONO_ATOM_TYPE_CDMA_NETREG);
+	struct ofono_cdma_netreg *cdma_netreg;
+
+	if (atom == NULL)
+		return FALSE;
+
+	cdma_netreg = __ofono_atom_get_data(atom);
+	status  = ofono_cdma_netreg_get_status(cdma_netreg);
+
+	registered = status == NETWORK_REGISTRATION_STATUS_REGISTERED;
+
+	return registered;
+}
+
 static DBusMessage *cdma_connman_get_properties(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
@@ -463,9 +483,11 @@ static DBusMessage *cdma_connman_set_property(DBusConnection *conn,
 				cm->driver->deactivate == NULL)
 			return __ofono_error_not_implemented(msg);
 
+		if (cdma_connman_netreg_is_registered(cm) == FALSE)
+			return __ofono_error_not_registered(msg);
+
 		cm->pending = dbus_message_ref(msg);
 
-		/* TODO: add logic to support CDMA Network Registration */
 		if (value)
 			cm->driver->activate(cm, cm->username, cm->password,
 						activate_callback, cm);
@@ -612,8 +634,6 @@ void ofono_cdma_connman_register(struct ofono_cdma_connman *cm)
 
 	ofono_modem_add_interface(modem,
 				OFONO_CDMA_CONNECTION_MANAGER_INTERFACE);
-
-	/* TODO: add watch to support CDMA Network Registration atom */
 
 	__ofono_atom_register(cm->atom, cdma_connman_unregister);
 }
