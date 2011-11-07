@@ -396,6 +396,7 @@ static enum rcr_result ipcp_client_rcr(struct ipcp_data *ipcp,
 		switch (type) {
 		case IP_ADDRESS:
 			memcpy(&ipcp->peer_addr, data, 4);
+
 			if (ipcp->peer_addr != 0)
 				break;
 

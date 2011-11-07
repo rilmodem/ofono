@@ -186,6 +186,7 @@ static enum rcr_result ipv6cp_client_rcr(struct ipv6cp_data *ipv6cp,
 		case IPV6CP_INTERFACE_ID:
 			memcpy(&ipv6cp->peer_addr, data,
 					sizeof(ipv6cp->peer_addr));
+
 			if (ipv6cp->peer_addr != 0)
 				break;
 			/*
