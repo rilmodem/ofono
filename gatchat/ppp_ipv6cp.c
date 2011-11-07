@@ -191,7 +191,6 @@ static enum rcr_result ipv6cp_client_rcr(struct ipv6cp_data *ipv6cp,
 			/*
 			 * Fall through, reject zero Interface ID
 			 */
-			break;
 		default:
 			if (options == NULL) {
 				guint16 max_len = ntohs(packet->length) - 4;
