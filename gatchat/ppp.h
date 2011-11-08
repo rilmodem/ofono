@@ -24,7 +24,9 @@
 #define LCP_PROTOCOL	0xc021
 #define CHAP_PROTOCOL	0xc223
 #define IPCP_PROTO	0x8021
+#define IPV6CP_PROTO	0x8057
 #define PPP_IP_PROTO	0x0021
+#define PPP_IPV6_PROTO	0x0057
 #define MD5		5
 
 #define DBG(p, fmt, arg...) do {				\
@@ -94,6 +96,12 @@ struct pppcp_data *ipcp_new(GAtPPP *ppp, gboolean is_server, guint32 ip);
 void ipcp_free(struct pppcp_data *data);
 void ipcp_set_server_info(struct pppcp_data *ipcp, guint32 peer_addr,
 				guint32 dns1, guint32 dns2);
+
+/* IPv6 CP related functions */
+struct pppcp_data *ipv6cp_new(GAtPPP *ppp, gboolean is_server,
+					const char *local, const char *peer,
+					GError **error);
+void ipv6cp_free(struct pppcp_data *data);
 
 /* CHAP related functions */
 struct ppp_chap *ppp_chap_new(GAtPPP *ppp, guint8 method);

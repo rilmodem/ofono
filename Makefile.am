@@ -76,7 +76,7 @@ gatchat_sources = gatchat/gatchat.h gatchat/gatchat.c \
 				gatchat/ppp.h gatchat/ppp_cp.h \
 				gatchat/ppp_cp.c gatchat/ppp_lcp.c \
 				gatchat/ppp_auth.c gatchat/ppp_net.c \
-				gatchat/ppp_ipcp.c
+				gatchat/ppp_ipcp.c gatchat/ppp_ipv6cp.c
 
 gisi_sources = gisi/client.c gisi/client.h gisi/common.h \
 				gisi/iter.c gisi/iter.h \
