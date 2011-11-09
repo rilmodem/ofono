@@ -554,6 +554,14 @@ CDMA Network Acquisition
   Priority: Medium
   Complexity: C2
 
+- Support reporting of the current registered operator name in long alphanumeric
+  format. Based on the System Identifier (SID) broadcasted by the modem, the
+  CDMA network name is retrieved from a look-up table (aka the 'mobile
+  broadband provider info' database).
+
+  Priority: Medium
+  Complexity: C2
+
 CDMA Connection Manager
 =======================
 
