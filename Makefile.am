@@ -437,9 +437,9 @@ src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 src_ofonod_LDFLAGS = -Wl,--export-dynamic \
 				-Wl,--version-script=$(srcdir)/src/ofono.ver
 
-BUILT_SOURCES = $(local_headers)
+BUILT_SOURCES = $(local_headers) src/builtin.h
 
-CLEANFILES = src/builtin.h $(BUILT_SOURCES) $(rules_DATA)
+CLEANFILES = $(BUILT_SOURCES) $(rules_DATA)
 
 plugindir = $(pkglibdir)/plugins
 
@@ -660,8 +660,6 @@ MAINTAINERCLEANFILES = Makefile.in \
 	aclocal.m4 configure config.h.in config.sub config.guess \
 	ltmain.sh depcomp compile missing install-sh mkinstalldirs
 
-
-src/plugin.$(OBJEXT): src/builtin.h
 
 src/builtin.h: src/genbuiltin config.status
 	$(AM_V_GEN)$(srcdir)/src/genbuiltin $(builtin_modules) > $@
