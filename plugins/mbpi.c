@@ -347,7 +347,7 @@ static const GMarkupParser gsm_parser = {
 	NULL,
 };
 
-static void toplevel_start(GMarkupParseContext *context,
+static void toplevel_gsm_start(GMarkupParseContext *context,
 					const gchar *element_name,
 					const gchar **atribute_names,
 					const gchar **attribute_values,
@@ -362,7 +362,7 @@ static void toplevel_start(GMarkupParseContext *context,
 		g_markup_parse_context_push(context, &skip_parser, NULL);
 }
 
-static void toplevel_end(GMarkupParseContext *context,
+static void toplevel_gsm_end(GMarkupParseContext *context,
 					const gchar *element_name,
 					gpointer userdata, GError **error)
 {
@@ -371,42 +371,22 @@ static void toplevel_end(GMarkupParseContext *context,
 		g_markup_parse_context_pop(context);
 }
 
-static const GMarkupParser toplevel_parser = {
-	toplevel_start,
-	toplevel_end,
+static const GMarkupParser toplevel_gsm_parser = {
+	toplevel_gsm_start,
+	toplevel_gsm_end,
 	NULL,
 	NULL,
 	NULL,
 };
 
-static gboolean mbpi_parse(const char *data, ssize_t size,
-				struct gsm_data *gsm, GError **error)
-{
-	GMarkupParseContext *context;
-	gboolean ret;
-
-	context = g_markup_parse_context_new(&toplevel_parser,
-						G_MARKUP_TREAT_CDATA_AS_TEXT,
-						gsm, NULL);
-
-	ret = g_markup_parse_context_parse(context, data, size, error);
-
-	if (ret == TRUE)
-		g_markup_parse_context_end_parse(context, error);
-
-	g_markup_parse_context_free(context);
-
-	return ret;
-}
-
-GSList *mbpi_lookup(const char *mcc, const char *mnc,
-			gboolean allow_duplicates, GError **error)
+static gboolean mbpi_parse(const GMarkupParser *parser, gpointer userdata,
+				GError **error)
 {
 	struct stat st;
 	char *db;
 	int fd;
-	struct gsm_data gsm;
-	GSList *l;
+	GMarkupParseContext *context;
+	gboolean ret;
 
 	fd = open(MBPI_DATABASE, O_RDONLY);
 	if (fd < 0) {
@@ -414,7 +394,7 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 				g_file_error_from_errno(errno),
 				"open(%s) failed: %s", MBPI_DATABASE,
 				g_strerror(errno));
-		return NULL;
+		return FALSE;
 	}
 
 	if (fstat(fd, &st) < 0) {
@@ -423,7 +403,7 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 				g_file_error_from_errno(errno),
 				"fstat(%s) failed: %s", MBPI_DATABASE,
 				g_strerror(errno));
-		return NULL;
+		return FALSE;
 	}
 
 	db = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
@@ -433,24 +413,43 @@ GSList *mbpi_lookup(const char *mcc, const char *mnc,
 				g_file_error_from_errno(errno),
 				"mmap(%s) failed: %s", MBPI_DATABASE,
 				g_strerror(errno));
-		return NULL;
+		return FALSE;
 	}
+
+	context = g_markup_parse_context_new(parser,
+						G_MARKUP_TREAT_CDATA_AS_TEXT,
+						userdata, NULL);
+
+	ret = g_markup_parse_context_parse(context, db, st.st_size, error);
+
+	if (ret == TRUE)
+		g_markup_parse_context_end_parse(context, error);
+
+	munmap(db, st.st_size);
+	close(fd);
+	g_markup_parse_context_free(context);
+
+	return ret;
+}
+
+GSList *mbpi_lookup_apn(const char *mcc, const char *mnc,
+			gboolean allow_duplicates, GError **error)
+{
+	struct gsm_data gsm;
+	GSList *l;
 
 	memset(&gsm, 0, sizeof(gsm));
 	gsm.match_mcc = mcc;
 	gsm.match_mnc = mnc;
 	gsm.allow_duplicates = allow_duplicates;
 
-	if (mbpi_parse(db, st.st_size, &gsm, error) == FALSE) {
+	if (mbpi_parse(&toplevel_gsm_parser, &gsm, error) == FALSE) {
 		for (l = gsm.apns; l; l = l->next)
 			mbpi_ap_free(l->data);
 
 		g_slist_free(gsm.apns);
 		gsm.apns = NULL;
 	}
-
-	munmap(db, st.st_size);
-	close(fd);
 
 	return gsm.apns;
 }
