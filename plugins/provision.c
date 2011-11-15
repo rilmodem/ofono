@@ -50,7 +50,7 @@ static int provision_get_settings(const char *mcc, const char *mnc,
 
 	DBG("Provisioning for MCC %s, MNC %s, SPN '%s'", mcc, mnc, spn);
 
-	apns = mbpi_lookup(mcc, mnc, FALSE, &error);
+	apns = mbpi_lookup_apn(mcc, mnc, FALSE, &error);
 	if (apns == NULL) {
 		if (error != NULL) {
 			ofono_error("%s", error->message);
