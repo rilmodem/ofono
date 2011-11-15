@@ -48,7 +48,7 @@ struct	ppp_chap {
 };
 
 enum chap_code {
-	CHALLENGE=1,
+	CHALLENGE = 1,
 	RESPONSE,
 	SUCCESS,
 	FAILURE
