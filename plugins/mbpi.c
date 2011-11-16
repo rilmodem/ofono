@@ -296,11 +296,13 @@ static void sid_handler(GMarkupParseContext *context,
 	const char *sid = NULL;
 	int i;
 
-	for (i = 0; attribute_names[i]; i++)
-		if (g_str_equal(attribute_names[i], "value") == TRUE) {
-			sid = attribute_values[i];
-			break;
-		}
+	for (i = 0; attribute_names[i]; i++) {
+		if (g_str_equal(attribute_names[i], "value") == FALSE)
+			continue;
+
+		sid = attribute_values[i];
+		break;
+	}
 
 	if (sid == NULL) {
 		mbpi_g_set_error(context, error, G_MARKUP_ERROR,
@@ -484,14 +486,13 @@ static void toplevel_cdma_start(GMarkupParseContext *context,
 {
 	struct cdma_data *cdma = userdata;
 
-	if (g_str_equal(element_name, "provider")) {
-		if (cdma->match_found == TRUE)
-			g_markup_parse_context_push(context, &skip_parser,
-								NULL);
-		else
-			g_markup_parse_context_push(context, &provider_parser,
-								userdata);
-	}
+	if (g_str_equal(element_name, "provider") == FALSE)
+		return;
+
+	if (cdma->match_found == TRUE)
+		g_markup_parse_context_push(context, &skip_parser, NULL);
+	else
+		g_markup_parse_context_push(context, &provider_parser, cdma);
 }
 
 static void toplevel_cdma_end(GMarkupParseContext *context,
