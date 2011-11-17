@@ -25,3 +25,5 @@ void mbpi_ap_free(struct ofono_gprs_provision_data *data);
 
 GSList *mbpi_lookup_apn(const char *mcc, const char *mnc,
 			gboolean allow_duplicates, GError **error);
+
+char *mbpi_lookup_cdma_provider_name(const char *sid, GError **error);
