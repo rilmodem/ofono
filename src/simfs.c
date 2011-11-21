@@ -901,8 +901,10 @@ int sim_fs_read(struct ofono_sim_context *context, int id,
 	if (fs->driver == NULL)
 		return -EINVAL;
 
-	if (fs->driver->read_file_info == NULL)
+	if (fs->driver->read_file_info == NULL) {
+		cb(0, 0, 0, NULL, 0, data);
 		return -ENOSYS;
+	}
 
 	if (fs->op_q == NULL)
 		fs->op_q = g_queue_new();
