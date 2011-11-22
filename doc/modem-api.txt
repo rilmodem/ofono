@@ -98,3 +98,14 @@ Properties	boolean Powered [readwrite]
 
 			TODO: Better to split this into Status and
 			      Capabilites properties?
+
+		string Type [readonly]
+
+			Indicates whether the modem is virtual or a real
+			hardware one. This information should only be used
+			to identify which componet (e.g. ConnMan or a phone
+			dialer) should take control over the modem. It does
+			not give any hints on which Interfaces will be
+			supported by this modem.
+
+			Possible values are "hfp", "sap" and "hardware".
