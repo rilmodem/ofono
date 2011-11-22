@@ -30,6 +30,12 @@ extern "C" {
 
 struct ofono_modem;
 
+enum ofono_modem_type {
+	OFONO_MODEM_TYPE_HARDWARE = 0,
+	OFONO_MODEM_TYPE_HFP,
+	OFONO_MODEM_TYPE_SAP,
+};
+
 void ofono_modem_add_interface(struct ofono_modem *modem,
 				const char *interface);
 void ofono_modem_remove_interface(struct ofono_modem *modem,
@@ -75,6 +81,7 @@ typedef void (*ofono_modem_online_cb_t)(const struct ofono_error *error,
 
 struct ofono_modem_driver {
 	const char *name;
+	enum ofono_modem_type modem_type;
 
 	/* Detect existence of device and initialize any device-specific data
 	 * structures */
