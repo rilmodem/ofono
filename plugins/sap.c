@@ -306,6 +306,7 @@ static void bluetooth_sap_set_alias(const char *device, const char *alias)
 
 static struct ofono_modem_driver sap_driver = {
 	.name		= "sap",
+	.modem_type	= OFONO_MODEM_TYPE_SAP,
 	.probe		= sap_probe,
 	.remove		= sap_remove,
 	.enable		= sap_enable,
