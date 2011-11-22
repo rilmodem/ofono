@@ -499,6 +499,7 @@ static void hfp_post_sim(struct ofono_modem *modem)
 
 static struct ofono_modem_driver hfp_driver = {
 	.name		= "hfp",
+	.modem_type	= OFONO_MODEM_TYPE_HFP,
 	.probe		= hfp_probe,
 	.remove		= hfp_remove,
 	.enable		= hfp_enable,
