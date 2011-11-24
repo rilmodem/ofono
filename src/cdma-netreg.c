@@ -104,6 +104,24 @@ static GDBusSignalTable cdma_netreg_manager_signals[] = {
 	{ }
 };
 
+static void serving_system_callback(const struct ofono_error *error,
+					const char *sid, void *data)
+{
+	struct ofono_cdma_netreg *cdma_netreg = data;
+
+	if (cdma_netreg->status != CDMA_NETWORK_REGISTRATION_STATUS_REGISTERED
+			&& cdma_netreg->status !=
+				CDMA_NETWORK_REGISTRATION_STATUS_ROAMING)
+		return;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		DBG("Error during serving system query");
+		return;
+	}
+
+	DBG("Serving system Identifier: %s", sid);
+}
+
 static void set_registration_status(struct ofono_cdma_netreg *cdma_netreg,
 						enum cdma_netreg_status status)
 {
@@ -117,6 +135,13 @@ static void set_registration_status(struct ofono_cdma_netreg *cdma_netreg,
 				OFONO_CDMA_NETWORK_REGISTRATION_INTERFACE,
 				"Status", DBUS_TYPE_STRING,
 				&str_status);
+
+	if (cdma_netreg->status == CDMA_NETWORK_REGISTRATION_STATUS_REGISTERED
+			|| cdma_netreg->status ==
+				CDMA_NETWORK_REGISTRATION_STATUS_ROAMING)
+		if (cdma_netreg->driver->serving_system != NULL)
+			cdma_netreg->driver->serving_system(cdma_netreg,
+				serving_system_callback, cdma_netreg);
 }
 
 void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *cdma_netreg,
