@@ -45,6 +45,7 @@ tools/huawei-audio
 tools/auto-enable
 tools/get-location
 tools/lookup-apn
+tools/lookup-provider-name
 
 gatchat/gsmdial
 gatchat/test-server
