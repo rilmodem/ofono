@@ -36,12 +36,19 @@ enum cdma_netreg_status {
 
 struct ofono_cdma_netreg;
 
+typedef void (*ofono_cdma_netreg_serving_system_cb_t)(
+				const struct ofono_error *error,
+				const char *sid,
+				void *data);
+
 struct ofono_cdma_netreg_driver {
 	const char *name;
 	int (*probe)(struct ofono_cdma_netreg *cdma_netreg,
 				unsigned int vendor,
 				void *data);
 	void (*remove)(struct ofono_cdma_netreg *cdma_netreg);
+	void (*serving_system)(struct ofono_cdma_netreg *cdma_netreg,
+			ofono_cdma_netreg_serving_system_cb_t cb, void *data);
 };
 
 void ofono_cdma_netreg_status_notify(struct ofono_cdma_netreg *netreg,
