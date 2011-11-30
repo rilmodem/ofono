@@ -771,7 +771,7 @@ int main(int argc, char **argv)
 	event_loop = g_main_loop_new(NULL, FALSE);
 
 	if (option_bluetooth) {
-		g_at_chat_send(control, "ATD*99", none_prefix, connect_cb,
+		g_at_chat_send(control, "ATD*99#", none_prefix, connect_cb,
 				NULL, NULL);
 	} else {
 		g_at_chat_send(control, "ATE0Q0V1", NULL, NULL, NULL, NULL);
