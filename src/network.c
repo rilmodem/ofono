@@ -37,6 +37,9 @@
 #include "util.h"
 #include "storage.h"
 
+#define SETTINGS_STORE "netreg"
+#define SETTINGS_GROUP "Settings"
+
 #define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN 0x1
 #define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN 0x2
 
@@ -45,11 +48,6 @@ enum network_registration_mode {
 	NETWORK_REGISTRATION_MODE_MANUAL =	2,
 	NETWORK_REGISTRATION_MODE_AUTO_ONLY =	5, /* Out of range of 27.007 */
 };
-
-#define SETTINGS_STORE "netreg"
-#define SETTINGS_GROUP "Settings"
-
-static GSList *g_drivers = NULL;
 
 /* 27.007 Section 7.3 <stat> */
 enum operator_status {
@@ -95,6 +93,8 @@ struct network_operator_data {
 	const struct sim_eons_operator_info *eons_info;
 	struct ofono_netreg *netreg;
 };
+
+static GSList *g_drivers = NULL;
 
 static const char *registration_mode_to_string(int mode)
 {
