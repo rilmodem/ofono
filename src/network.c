@@ -1656,18 +1656,30 @@ static void sim_spdi_read_cb(int ok, int length, int record,
 	}
 }
 
-static void sim_spn_read_cb(int ok, int length, int record,
-				const unsigned char *data,
-				int record_length, void *user_data)
+static void ofono_netreg_operator_display_name_notify(
+						struct ofono_netreg *netreg)
 {
-	struct ofono_netreg *netreg = user_data;
-	unsigned char dcbyte;
+	const char *operator = get_operator_display_name(netreg);
+
+	ofono_dbus_signal_property_changed(ofono_dbus_get_connection(),
+					__ofono_atom_get_path(netreg->atom),
+					OFONO_NETWORK_REGISTRATION_INTERFACE,
+					"Name", DBUS_TYPE_STRING, &operator);
+}
+
+static void sim_spn_display_condition_parse(struct ofono_netreg *netreg,
+						guint8 dcbyte)
+{
+	if (dcbyte & SIM_EFSPN_DC_HOME_PLMN_BIT)
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
+
+	if (!(dcbyte & SIM_EFSPN_DC_ROAMING_SPN_BIT))
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
+}
+
+static gboolean sim_spn_parse(const void *data, int length, char **dst)
+{
 	char *spn;
-
-	if (!ok)
-		return;
-
-	dcbyte = data[0];
 
 	/*
 	 * TS 31.102 says:
@@ -1685,40 +1697,42 @@ static void sim_spn_read_cb(int ok, int length, int record,
 	 * itself which is not there either.  11.11 contains the same
 	 * paragraph as 51.101 and has an Annex B which we implement.
 	 */
-	spn = sim_string_to_utf8(data + 1, length - 1);
-	if (spn == NULL) {
-		ofono_error("EFspn read successfully, but couldn't parse");
-		return;
-	}
-
-	if (strlen(spn) == 0) {
+	spn = sim_string_to_utf8(data, length);
+	if (spn == NULL || strlen(spn) == 0) {
+		if (spn == NULL)
+			ofono_error("EFspn read successfully, "
+					"but couldn't parse");
 		g_free(spn);
-		return;
+		return FALSE;
 	}
 
-	netreg->spname = spn;
+	*dst = spn;
+	return TRUE;
+}
+
+static void sim_spn_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	unsigned char dcbyte;
+
+	if (!ok)
+		return;
+
+	dcbyte = data[0];
+
+	if (!sim_spn_parse(data + 1, length - 1, &netreg->spname))
+		return;
+
 	ofono_sim_read(netreg->sim_context, SIM_EFSPDI_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_spdi_read_cb, netreg);
 
-	if (dcbyte & SIM_EFSPN_DC_HOME_PLMN_BIT)
-		netreg->flags |= NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN;
+	sim_spn_display_condition_parse(netreg, dcbyte);
 
-	if (!(dcbyte & SIM_EFSPN_DC_ROAMING_SPN_BIT))
-		netreg->flags |= NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN;
-
-	if (netreg->current_operator) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *path = __ofono_atom_get_path(netreg->atom);
-		const char *operator;
-
-		operator = get_operator_display_name(netreg);
-
-		ofono_dbus_signal_property_changed(conn, path,
-					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Name", DBUS_TYPE_STRING,
-					&operator);
-	}
+	if (netreg->current_operator)
+		ofono_netreg_operator_display_name_notify(netreg);
 }
 
 int ofono_netreg_get_location(struct ofono_netreg *netreg)
