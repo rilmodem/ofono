@@ -1698,10 +1698,12 @@ static gboolean sim_spn_parse(const void *data, int length, char **dst)
 	 * paragraph as 51.101 and has an Annex B which we implement.
 	 */
 	spn = sim_string_to_utf8(data, length);
-	if (spn == NULL || strlen(spn) == 0) {
-		if (spn == NULL)
-			ofono_error("EFspn read successfully, "
-					"but couldn't parse");
+	if (spn == NULL) {
+		ofono_error("EFspn read successfully, but couldn't parse");
+		return FALSE;
+	}
+
+	if (strlen(spn) == 0) {
 		g_free(spn);
 		return FALSE;
 	}
