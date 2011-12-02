@@ -118,8 +118,6 @@ Properties	string Mode [readonly]
 			The possible values are: "gsm", "edge", "umts", "hspa",
 							"lte"
 
-			TODO: Values for CDMA and EVDO based networks.
-
 		string Name [readonly]
 
 			Contains the current operator name, suitable for
