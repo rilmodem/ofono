@@ -70,7 +70,7 @@ struct ofono_netreg {
 	int flags;
 	DBusMessage *pending;
 	int signal_strength;
-	char *spname;
+	char *spn;
 	struct sim_spdi *spdi;
 	struct sim_eons *eons;
 	struct ofono_sim *sim;
@@ -390,7 +390,7 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	if (opd->eons_info && opd->eons_info->longname)
 		plmn = opd->eons_info->longname;
 
-	if (netreg->spname == NULL || strlen(netreg->spname) == 0) {
+	if (netreg->spn == NULL || strlen(netreg->spn) == 0) {
 		g_strlcpy(name, plmn, len);
 		return name;
 	}
@@ -404,14 +404,14 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	if (home_or_spdi)
 		if (netreg->flags & NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN)
 			/* Case 1 */
-			snprintf(name, len, "%s (%s)", netreg->spname, plmn);
+			snprintf(name, len, "%s (%s)", netreg->spn, plmn);
 		else
 			/* Case 2 */
-			snprintf(name, len, "%s", netreg->spname);
+			snprintf(name, len, "%s", netreg->spn);
 	else
 		if (netreg->flags & NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN)
 			/* Case 3 */
-			snprintf(name, len, "%s (%s)", netreg->spname, plmn);
+			snprintf(name, len, "%s (%s)", netreg->spn, plmn);
 		else
 			/* Case 4 */
 			snprintf(name, len, "%s", plmn);
@@ -1724,7 +1724,7 @@ static void sim_spn_read_cb(int ok, int length, int record,
 
 	dcbyte = data[0];
 
-	if (!sim_spn_parse(data + 1, length - 1, &netreg->spname))
+	if (!sim_spn_parse(data + 1, length - 1, &netreg->spn))
 		return;
 
 	ofono_sim_read(netreg->sim_context, SIM_EFSPDI_FILEID,
@@ -1900,7 +1900,7 @@ static void netreg_remove(struct ofono_atom *atom)
 	sim_eons_free(netreg->eons);
 	sim_spdi_free(netreg->spdi);
 
-	g_free(netreg->spname);
+	g_free(netreg->spn);
 	g_free(netreg);
 }
 
@@ -2033,8 +2033,8 @@ static void sim_spn_spdi_changed(int id, void *userdata)
 	netreg->flags &= ~(NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN |
 			NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN);
 
-	g_free(netreg->spname);
-	netreg->spname = NULL;
+	g_free(netreg->spn);
+	netreg->spn = NULL;
 
 	sim_spdi_free(netreg->spdi);
 	netreg->spdi = NULL;
