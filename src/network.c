@@ -1656,8 +1656,7 @@ static void sim_spdi_read_cb(int ok, int length, int record,
 	}
 }
 
-static void ofono_netreg_operator_display_name_notify(
-						struct ofono_netreg *netreg)
+static void netreg_emit_operator_display_name(struct ofono_netreg *netreg)
 {
 	const char *operator = get_operator_display_name(netreg);
 
@@ -1734,7 +1733,7 @@ static void sim_spn_read_cb(int ok, int length, int record,
 	sim_spn_display_condition_parse(netreg, dcbyte);
 
 	if (netreg->current_operator)
-		ofono_netreg_operator_display_name_notify(netreg);
+		netreg_emit_operator_display_name(netreg);
 }
 
 int ofono_netreg_get_location(struct ofono_netreg *netreg)
