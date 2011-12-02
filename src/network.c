@@ -1726,10 +1726,6 @@ static void sim_spn_read_cb(int ok, int length, int record,
 	if (!sim_spn_parse(data + 1, length - 1, &netreg->spn))
 		return;
 
-	ofono_sim_read(netreg->sim_context, SIM_EFSPDI_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_spdi_read_cb, netreg);
-
 	sim_spn_display_condition_parse(netreg, dcbyte);
 
 	if (netreg->current_operator)
@@ -2025,7 +2021,7 @@ static void sim_pnn_opl_changed(int id, void *userdata)
 			sim_pnn_read_cb, netreg);
 }
 
-static void sim_spn_spdi_changed(int id, void *userdata)
+static void sim_spn_changed(int id, void *userdata)
 {
 	struct ofono_netreg *netreg = userdata;
 	gboolean had_spn = netreg->spn != NULL && strlen(netreg->spn) > 0;
@@ -2035,9 +2031,6 @@ static void sim_spn_spdi_changed(int id, void *userdata)
 
 	g_free(netreg->spn);
 	netreg->spn = NULL;
-
-	sim_spdi_free(netreg->spdi);
-	netreg->spdi = NULL;
 
 	/*
 	 * We can't determine whether the property really changed
@@ -2050,6 +2043,22 @@ static void sim_spn_spdi_changed(int id, void *userdata)
 	ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_spn_read_cb, netreg);
+}
+
+static void sim_spdi_changed(int id, void *userdata)
+{
+	struct ofono_netreg *netreg = userdata;
+
+	sim_spdi_free(netreg->spdi);
+	netreg->spdi = NULL;
+
+	if (netreg->current_operator &&
+			netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING)
+		netreg_emit_operator_display_name(netreg);
+
+	ofono_sim_read(netreg->sim_context, SIM_EFSPDI_FILEID,
+			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+			sim_spdi_read_cb, netreg);
 }
 
 static void emulator_cops_cb(struct ofono_emulator *em,
@@ -2161,12 +2170,23 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 		ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_spn_read_cb, netreg);
+
 		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFSPN_FILEID,
-						sim_spn_spdi_changed, netreg,
+						sim_spn_changed, netreg,
 						NULL);
-		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFSPDI_FILEID,
-						sim_spn_spdi_changed, netreg,
-						NULL);
+
+		if (__ofono_sim_service_available(netreg->sim,
+				SIM_UST_SERVICE_PROVIDER_DISPLAY_INFO,
+				SIM_SST_SERVICE_PROVIDER_DISPLAY_INFO)) {
+			ofono_sim_read(netreg->sim_context, SIM_EFSPDI_FILEID,
+					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+					sim_spdi_read_cb, netreg);
+
+			ofono_sim_add_file_watch(netreg->sim_context,
+							SIM_EFSPDI_FILEID,
+							sim_spdi_changed,
+							netreg, NULL);
+		}
 	}
 
 	__ofono_atom_register(netreg->atom, netreg_unregister);
