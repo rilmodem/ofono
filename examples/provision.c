@@ -49,7 +49,7 @@ static int example_provision_get_settings(const char *mcc, const char *mnc,
 			mcc, mnc, spn);
 
 	if (strcmp(mcc, "246") != 0 || strcmp(mnc, "81") != 0 ||
-						strcmp(spn, "oFono") != 0)
+						g_strcmp0(spn, "oFono") != 0)
 		return -ENOENT;
 
 	ofono_debug("Creating example settings for phonesim");
