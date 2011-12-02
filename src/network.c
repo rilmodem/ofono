@@ -2028,6 +2028,7 @@ static void sim_pnn_opl_changed(int id, void *userdata)
 static void sim_spn_spdi_changed(int id, void *userdata)
 {
 	struct ofono_netreg *netreg = userdata;
+	gboolean had_spn = netreg->spn != NULL && strlen(netreg->spn) > 0;
 
 	netreg->flags &= ~(NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN |
 			NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN);
@@ -2038,18 +2039,13 @@ static void sim_spn_spdi_changed(int id, void *userdata)
 	sim_spdi_free(netreg->spdi);
 	netreg->spdi = NULL;
 
-	if (netreg->current_operator) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *path = __ofono_atom_get_path(netreg->atom);
-		const char *operator;
-
-		operator = get_operator_display_name(netreg);
-
-		ofono_dbus_signal_property_changed(conn, path,
-					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Name", DBUS_TYPE_STRING,
-					&operator);
-	}
+	/*
+	 * We can't determine whether the property really changed
+	 * without checking the name, before and after.  Instead we use a
+	 * simple heuristic, which will not always be correct
+	 */
+	if (netreg->current_operator && had_spn)
+		netreg_emit_operator_display_name(netreg);
 
 	ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
