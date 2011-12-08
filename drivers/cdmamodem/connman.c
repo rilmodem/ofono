@@ -41,6 +41,7 @@
 #include "gatppp.h"
 
 #include "cdmamodem.h"
+#include "drivers/atmodem/vendor.h"
 
 #define TUN_SYSFS_DIR "/sys/devices/virtual/misc/tun"
 
@@ -58,6 +59,7 @@ enum state {
 struct connman_data {
 	GAtChat *chat;
 	GAtPPP *ppp;
+	unsigned int vendor;
 	enum state state;
 	char username[OFONO_CDMA_CONNMAN_MAX_USERNAME_LENGTH + 1];
 	char password[OFONO_CDMA_CONNMAN_MAX_PASSWORD_LENGTH + 1];
@@ -220,9 +222,38 @@ static void cdma_connman_deactivate(struct ofono_cdma_connman *cm,
 	g_at_ppp_shutdown(cd->ppp);
 }
 
+static void huawei_dsdormant_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_cdma_connman *cm = user_data;
+	int dormant;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^DSDORMANT:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &dormant))
+		return;
+
+	switch (dormant) {
+	case 0:
+		ofono_cdma_connman_dormant_notify(cm, FALSE);
+		break;
+	case 1:
+		ofono_cdma_connman_dormant_notify(cm, TRUE);
+		break;
+	default:
+		ofono_error("Invalid DSDORMANT value");
+		break;
+	}
+}
+
 static void at_c0_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_cdma_connman *cm = user_data;
+	struct connman_data *cd = ofono_cdma_connman_get_data(cm);
+	GAtChat *chat;
 
 	DBG("ok %d", ok);
 
@@ -230,6 +261,16 @@ static void at_c0_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		ofono_info("Unable to configure circuit 109");
 		ofono_cdma_connman_remove(cm);
 		return;
+	}
+
+	switch (cd->vendor) {
+	case OFONO_VENDOR_HUAWEI:
+		chat = g_at_chat_get_slave(cd->chat);
+		g_at_chat_register(chat, "^DSDORMANT", huawei_dsdormant_notify,
+					FALSE, cm, NULL);
+		break;
+	default:
+		break;
 	}
 
 	ofono_cdma_connman_register(cm);
@@ -254,6 +295,7 @@ static int cdma_connman_probe(struct ofono_cdma_connman *cm,
 		return -ENOMEM;
 
 	cd->chat = g_at_chat_clone(chat);
+	cd->vendor = vendor;
 
 	ofono_cdma_connman_set_data(cm, cd);
 
