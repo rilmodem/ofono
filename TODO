@@ -570,9 +570,3 @@ CDMA Connection Manager
 
   Priority: Medium
   Complexity: C4
-
-- Support Network Initiated disconnection of Packet Data Service over CDMA
-  (1xRTT and 1xEV-DO) systems.
-
-  Priority: Medium
-  Complexity: C2

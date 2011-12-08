@@ -684,3 +684,9 @@ Modem Emulator
 - Support for Bluetooth DUN profile.  oFono supports the Dial Up Networking
   profile and all mandatory commands specified by BT DUN 1.1.  For a list
   of supported commands please see doc/dialup-command-set.txt.
+
+CDMA Connection Manager
+=======================
+
+- Support Network Initiated disconnection of Packet Data Service over CDMA
+  (1xRTT and 1xEV-DO) systems.
