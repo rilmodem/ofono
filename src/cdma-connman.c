@@ -572,6 +572,23 @@ void ofono_cdma_connman_deactivated(struct ofono_cdma_connman *cm)
 				"Powered", DBUS_TYPE_BOOLEAN, &value);
 }
 
+void ofono_cdma_connman_dormant_notify(struct ofono_cdma_connman *cm,
+					ofono_bool_t dormant)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	const char *path;
+
+	if (cm == NULL)
+		return;
+
+	cm->dormant = dormant;
+	path = __ofono_atom_get_path(cm->atom);
+
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_CONNECTION_MANAGER_INTERFACE,
+				"Dormant", DBUS_TYPE_BOOLEAN, &dormant);
+}
+
 static void cdma_connman_unregister(struct ofono_atom *atom)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
