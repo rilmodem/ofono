@@ -66,6 +66,9 @@ void ofono_cdma_connman_driver_unregister(
 
 void ofono_cdma_connman_deactivated(struct ofono_cdma_connman *cm);
 
+void ofono_cdma_connman_dormant_notify(struct ofono_cdma_connman *cm,
+					ofono_bool_t dormant);
+
 struct ofono_cdma_connman *ofono_cdma_connman_create(
 						struct ofono_modem *modem,
 						unsigned int vendor,
