@@ -690,3 +690,9 @@ CDMA Connection Manager
 
 - Support Network Initiated disconnection of Packet Data Service over CDMA
   (1xRTT and 1xEV-DO) systems.
+
+CDMA Network Acquisition
+========================
+
+- Support reporting of the received signal strength indicator (RSSI)
+  measurement for the currently acquired CDMA network.

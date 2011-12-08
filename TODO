@@ -507,12 +507,6 @@ CDMA CMAS
 CDMA Network Acquisition
 ========================
 
-- Support reporting of the received signal strength indicator (RSSI)
-  measurement for the currently acquired CDMA network.
-
-  Priority: Medium
-  Complexity: C1
-
 - Support reporting of the pilot energy ratio (Ec/Io) measurement for the
   currently acquired CDMA network.
 
