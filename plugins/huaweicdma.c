@@ -215,7 +215,7 @@ static void huaweicdma_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_cdma_netreg_create(modem, 0, "huaweicdmamodem", data->modem);
+	ofono_cdma_netreg_create(modem, 0, "huaweicdmamodem", data->pcui);
 
 	ofono_cdma_connman_create(modem, OFONO_VENDOR_HUAWEI, "cdmamodem",
 					data->modem);
