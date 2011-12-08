@@ -508,7 +508,12 @@ CDMA Network Acquisition
 ========================
 
 - Support reporting of the received signal strength indicator (RSSI)
-  measurement and of the pilot energy ratio (Ec/Io) measurement, for the
+  measurement for the currently acquired CDMA network.
+
+  Priority: Medium
+  Complexity: C1
+
+- Support reporting of the pilot energy ratio (Ec/Io) measurement for the
   currently acquired CDMA network.
 
   Priority: Medium
