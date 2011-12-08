@@ -38,6 +38,8 @@
 #include <ofono/cdma-connman.h>
 #include <ofono/log.h>
 
+#include "drivers/atmodem/vendor.h"
+
 struct huaweicdma_data {
 	GAtChat *modem;
 	GAtChat *pcui;
@@ -147,6 +149,8 @@ static int huaweicdma_enable(struct ofono_modem *modem)
 		return -EIO;
 	}
 
+	g_at_chat_set_slave(data->modem, data->pcui);
+
 	g_at_chat_send(data->modem, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->pcui, "ATE0 &C0 +CMEE=1", NULL, NULL, NULL, NULL);
 
@@ -213,7 +217,8 @@ static void huaweicdma_post_online(struct ofono_modem *modem)
 
 	ofono_cdma_netreg_create(modem, 0, "huaweicdmamodem", data->modem);
 
-	ofono_cdma_connman_create(modem, 0, "cdmamodem", data->modem);
+	ofono_cdma_connman_create(modem, OFONO_VENDOR_HUAWEI, "cdmamodem",
+					data->modem);
 }
 
 static struct ofono_modem_driver huaweicdma_driver = {
