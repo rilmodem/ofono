@@ -78,13 +78,13 @@ static gboolean parse_sysinfo(GAtResult *result, gint *status)
 
 	switch (srv_domain) {
 	case 0: /* No service */
-	case 255: /* CDMA not supported */
 		*status = CDMA_NETWORK_REGISTRATION_STATUS_NOT_REGISTERED;
 		break;
 	case 1: /* Only CS */
 	case 2: /* Only PS */
 	case 3: /* CS  PS */
 	case 4: /* CS registered, PS in searching state */
+	case 255: /* CDMA not supported */
 		break;
 	}
 
