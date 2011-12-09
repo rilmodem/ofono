@@ -299,6 +299,8 @@ static int cdma_connman_probe(struct ofono_cdma_connman *cm,
 
 	ofono_cdma_connman_set_data(cm, cd);
 
+	/* Turn off any modem-initiated dormancy timeout */
+	g_at_chat_send(cd->chat, "AT+CTA=0", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(cd->chat, "AT&C0", none_prefix, at_c0_cb, cm, NULL);
 
 	return 0;
