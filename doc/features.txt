@@ -696,3 +696,6 @@ CDMA Network Acquisition
 
 - Support reporting of the received signal strength indicator (RSSI)
   measurement for the currently acquired CDMA network.
+
+- Support reporting of the received signal strength indicator (RSSI)
+  measurement for the currently acquired 1xEV-DO data network.
