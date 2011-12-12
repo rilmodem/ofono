@@ -514,8 +514,13 @@ CDMA Network Acquisition
   Complexity: C1
 
 - Support reporting of the received signal strength indicator (RSSI)
-  measurement and of the signal to interference-plus-noise ratio (SINR)
-  measurement, for the currently acquired 1xEV-DO data network.
+  measurement for the currently acquired 1xEV-DO data network.
+
+  Priority: Medium
+  Complexity: C1
+
+- Support of the signal to interference-plus-noise ratio (SINR)
+  measurement for the currently acquired 1xEV-DO data network.
 
   Priority: Medium
   Complexity: C1
