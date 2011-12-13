@@ -419,13 +419,22 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	return name;
 }
 
+static void netreg_emit_operator_display_name(struct ofono_netreg *netreg)
+{
+	const char *operator = get_operator_display_name(netreg);
+
+	ofono_dbus_signal_property_changed(ofono_dbus_get_connection(),
+					__ofono_atom_get_path(netreg->atom),
+					OFONO_NETWORK_REGISTRATION_INTERFACE,
+					"Name", DBUS_TYPE_STRING, &operator);
+}
+
 static void set_network_operator_name(struct network_operator_data *opd,
 					const char *name)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_netreg *netreg = opd->netreg;
 	const char *path;
-	const char *operator;
 
 	if (name[0] == '\0')
 		return;
@@ -443,16 +452,8 @@ static void set_network_operator_name(struct network_operator_data *opd,
 	if (opd->eons_info && opd->eons_info->longname)
 		return;
 
-	if (opd == netreg->current_operator) {
-		const char *path = __ofono_atom_get_path(netreg->atom);
-
-		operator = get_operator_display_name(netreg);
-
-		ofono_dbus_signal_property_changed(conn, path,
-					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Name", DBUS_TYPE_STRING,
-					&operator);
-	}
+	if (opd == netreg->current_operator)
+		netreg_emit_operator_display_name(netreg);
 
 	/* Don't emit when only operator name is reported */
 	if (opd->mcc[0] == '\0' && opd->mnc[0] == '\0')
@@ -498,16 +499,8 @@ static void set_network_operator_eons_info(struct network_operator_data *opd,
 					OFONO_NETWORK_OPERATOR_INTERFACE,
 					"Name", DBUS_TYPE_STRING, &newname);
 
-		if (opd == netreg->current_operator) {
-			const char *npath = __ofono_atom_get_path(netreg->atom);
-			const char *operator =
-				get_operator_display_name(netreg);
-
-			ofono_dbus_signal_property_changed(conn, npath,
-					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Name", DBUS_TYPE_STRING,
-					&operator);
-		}
+		if (opd == netreg->current_operator)
+			netreg_emit_operator_display_name(netreg);
 	}
 
 	if (old_eons_info && old_eons_info->info)
@@ -1209,7 +1202,6 @@ static void current_operator_callback(const struct ofono_error *error,
 	struct ofono_netreg *netreg = data;
 	const char *path = __ofono_atom_get_path(netreg->atom);
 	GSList *op = NULL;
-	const char *operator;
 
 	DBG("%p, %p", netreg, netreg->current_operator);
 
@@ -1279,12 +1271,7 @@ static void current_operator_callback(const struct ofono_error *error,
 	}
 
 emit:
-	operator = get_operator_display_name(netreg);
-
-	ofono_dbus_signal_property_changed(conn, path,
-					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Name", DBUS_TYPE_STRING,
-					&operator);
+	netreg_emit_operator_display_name(netreg);
 
 	if (netreg->current_operator) {
 		if (netreg->current_operator->mcc[0] != '\0') {
@@ -1628,42 +1615,23 @@ static void sim_spdi_read_cb(int ok, int length, int record,
 				int record_length, void *user_data)
 {
 	struct ofono_netreg *netreg = user_data;
-	struct network_operator_data *current = netreg->current_operator;
 
 	if (!ok)
 		return;
 
 	netreg->spdi = sim_spdi_new(data, length);
 
-	if (current == NULL)
+	if (netreg->current_operator == NULL)
 		return;
 
-	if (netreg->status == NETWORK_REGISTRATION_STATUS_ROAMING) {
-		DBusConnection *conn = ofono_dbus_get_connection();
-		const char *path = __ofono_atom_get_path(netreg->atom);
-		const char *operator;
+	if (netreg->status != NETWORK_REGISTRATION_STATUS_ROAMING)
+		return;
 
-		if (!sim_spdi_lookup(netreg->spdi,
-					current->mcc, current->mnc))
-			return;
+	if (!sim_spdi_lookup(netreg->spdi, netreg->current_operator->mcc,
+				netreg->current_operator->mnc))
+		return;
 
-		operator = get_operator_display_name(netreg);
-
-		ofono_dbus_signal_property_changed(conn, path,
-					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Name", DBUS_TYPE_STRING,
-					&operator);
-	}
-}
-
-static void netreg_emit_operator_display_name(struct ofono_netreg *netreg)
-{
-	const char *operator = get_operator_display_name(netreg);
-
-	ofono_dbus_signal_property_changed(ofono_dbus_get_connection(),
-					__ofono_atom_get_path(netreg->atom),
-					OFONO_NETWORK_REGISTRATION_INTERFACE,
-					"Name", DBUS_TYPE_STRING, &operator);
+	netreg_emit_operator_display_name(netreg);
 }
 
 static void sim_spn_display_condition_parse(struct ofono_netreg *netreg,
