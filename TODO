@@ -102,20 +102,6 @@ SIM / SIM File system
   Priority: Low
   Complexity: C4
 
-- CPHS SPN support
-
-  Support reading of the CPHS-defined SPN field from SIMs
-
-  Priority: High
-  Complexity: C1
-
-- CPHS Short SPN support
-
-  Support reading of the CPHS-defined short SPN field from SIMs
-
-  Priority: Medium
-  Complexity: C1
-
 
 Bluetooth HFP
 =============
