@@ -24,6 +24,7 @@
 #endif
 
 #include <errno.h>
+#include <string.h>
 
 #include <gdbus.h>
 
@@ -38,6 +39,8 @@ struct ofono_cdma_netreg {
 	const struct ofono_cdma_netreg_driver *driver;
 	void *driver_data;
 	struct ofono_atom *atom;
+	char *provider_name;
+	char *sid;
 };
 
 static const char *cdma_netreg_status_to_string(enum cdma_netreg_status status)
@@ -90,6 +93,15 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 					&strength);
 	}
 
+	if (cdma_netreg->sid)
+		ofono_dbus_dict_append(&dict, "SystemIdentifier",
+						DBUS_TYPE_STRING,
+						&cdma_netreg->sid);
+
+	if (cdma_netreg->provider_name)
+		ofono_dbus_dict_append(&dict, "Name", DBUS_TYPE_STRING,
+						&cdma_netreg->provider_name);
+
 	dbus_message_iter_close_container(&iter, &dict);
 
 	return reply;
@@ -108,6 +120,8 @@ static void serving_system_callback(const struct ofono_error *error,
 					const char *sid, void *data)
 {
 	struct ofono_cdma_netreg *cdma_netreg = data;
+	const char *path = __ofono_atom_get_path(cdma_netreg->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
 
 	if (cdma_netreg->status != CDMA_NETWORK_REGISTRATION_STATUS_REGISTERED
 			&& cdma_netreg->status !=
@@ -120,6 +134,30 @@ static void serving_system_callback(const struct ofono_error *error,
 	}
 
 	DBG("Serving system Identifier: %s", sid);
+
+	if (cdma_netreg->sid != NULL && !strcmp(cdma_netreg->sid, sid))
+		return;
+
+	g_free(cdma_netreg->provider_name);
+	g_free(cdma_netreg->sid);
+	cdma_netreg->provider_name = NULL;
+	cdma_netreg->sid = g_strdup(sid);
+
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_NETWORK_REGISTRATION_INTERFACE,
+				"SystemIdentifier", DBUS_TYPE_STRING,
+				&cdma_netreg->sid);
+
+	if (__ofono_cdma_provision_get_name(sid,
+				&cdma_netreg->provider_name) == FALSE) {
+		ofono_warn("Provider name not found");
+		return;
+	}
+
+	ofono_dbus_signal_property_changed(conn, path,
+				OFONO_CDMA_NETWORK_REGISTRATION_INTERFACE,
+				"Name", DBUS_TYPE_STRING,
+				&cdma_netreg->provider_name);
 }
 
 static void set_registration_status(struct ofono_cdma_netreg *cdma_netreg,
@@ -251,6 +289,8 @@ static void cdma_netreg_remove(struct ofono_atom *atom)
 	if (cdma_netreg->driver && cdma_netreg->driver->remove)
 		cdma_netreg->driver->remove(cdma_netreg);
 
+	g_free(cdma_netreg->sid);
+	g_free(cdma_netreg->provider_name);
 	g_free(cdma_netreg);
 }
 
