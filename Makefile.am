@@ -18,7 +18,7 @@ pkginclude_HEADERS = include/log.h include/plugin.h include/history.h \
 			include/location-reporting.h \
 			include/cdma-connman.h include/gnss.h \
 			include/private-network.h include/cdma-netreg.h \
-			include/handsfree.h
+			include/cdma-provision.h include/handsfree.h
 
 nodist_pkginclude_HEADERS = include/version.h
 
@@ -422,7 +422,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/gnssagent.c src/gnssagent.h \
 			src/cdma-smsutil.h src/cdma-smsutil.c \
 			src/cdma-sms.c src/private-network.c src/cdma-netreg.c \
-			src/handsfree.c
+			src/cdma-provision.c src/handsfree.c
 
 src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 
