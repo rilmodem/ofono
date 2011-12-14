@@ -489,6 +489,10 @@ void __ofono_gprs_provision_free_settings(
 #include <ofono/gnss.h>
 #include <ofono/cdma-sms.h>
 #include <ofono/cdma-netreg.h>
+
+#include <ofono/cdma-provision.h>
+ofono_bool_t __ofono_cdma_provision_get_name(const char *sid, char **name);
+
 #include <ofono/private-network.h>
 
 void __ofono_private_network_release(int id);
