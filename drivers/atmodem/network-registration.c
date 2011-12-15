@@ -1288,6 +1288,7 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	GAtResultIter iter;
 	const char *str;
+	char *signal_identifier = "signal";
 	int index;
 	int min = 0;
 	int max = 0;
@@ -1306,8 +1307,10 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	 * Telit encapsulates the CIND=? tokens with braces
 	 * so we need to skip them
 	 */
-	if (nd->vendor == OFONO_VENDOR_TELIT)
+	if (nd->vendor == OFONO_VENDOR_TELIT) {
 		g_at_result_iter_open_list(&iter);
+		signal_identifier = "rssi";
+	}
 
 	while (g_at_result_iter_open_list(&iter)) {
 		/* Reset invalid default value for every token */
@@ -1333,7 +1336,7 @@ static void cind_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		if (!g_at_result_iter_close_list(&iter))
 			goto error;
 
-		if (g_str_equal("signal", str) == TRUE) {
+		if (g_str_equal(signal_identifier, str) == TRUE) {
 			nd->signal_index = index;
 			nd->signal_min = min;
 			nd->signal_max = max;
