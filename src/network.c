@@ -1760,12 +1760,10 @@ static void sim_spn_read_cb(int ok, int length, int record,
 	struct ofono_netreg *netreg = user_data;
 
 	if (!ok) {
-		if (__ofono_sim_cphs_service_available(netreg->sim,
-						SIM_CPHS_SERVICE_SHORT_SPN))
-			ofono_sim_read(netreg->sim_context,
-					SIM_EF_CPHS_SPN_FILEID,
-					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-					sim_cphs_spn_read_cb, netreg);
+		ofono_sim_read(netreg->sim_context,
+				SIM_EF_CPHS_SPN_FILEID,
+				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
+				sim_cphs_spn_read_cb, netreg);
 
 		return;
 	}
@@ -2243,18 +2241,17 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 						sim_spn_changed, netreg,
 						NULL);
 
+		ofono_sim_add_file_watch(netreg->sim_context,
+						SIM_EF_CPHS_SPN_FILEID,
+						sim_cphs_spn_changed, netreg,
+						NULL);
+
 		if (__ofono_sim_cphs_service_available(netreg->sim,
-						SIM_CPHS_SERVICE_SHORT_SPN)) {
+						SIM_CPHS_SERVICE_SHORT_SPN))
 			ofono_sim_add_file_watch(netreg->sim_context,
 						SIM_EF_CPHS_SPN_SHORT_FILEID,
 						sim_cphs_spn_short_changed,
 						netreg, NULL);
-
-			ofono_sim_add_file_watch(netreg->sim_context,
-						SIM_EF_CPHS_SPN_FILEID,
-						sim_cphs_spn_changed, netreg,
-						NULL);
-		}
 
 		if (__ofono_sim_service_available(netreg->sim,
 				SIM_UST_SERVICE_PROVIDER_DISPLAY_INFO,
