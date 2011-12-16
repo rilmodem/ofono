@@ -2219,6 +2219,13 @@ static void sim_free_early_state(struct ofono_sim *sim)
 
 static void sim_free_main_state(struct ofono_sim *sim)
 {
+	int i;
+
+	for (i = 0; i < OFONO_SIM_PASSWORD_INVALID; i++)
+		sim->pin_retries[i] = -1;
+
+	memset(sim->locked_pins, 0, sizeof(sim->locked_pins));
+
 	if (sim->imsi) {
 		g_free(sim->imsi);
 		sim->imsi = NULL;
@@ -2259,7 +2266,10 @@ static void sim_free_main_state(struct ofono_sim *sim)
 		sim->efsst_length = 0;
 	}
 
+	sim->phase = OFONO_SIM_PHASE_UNKNOWN;
+	sim->cphs_phase = OFONO_SIM_CPHS_PHASE_NONE;
 	sim->mnc_length = 0;
+	memset(sim->cphs_service_table, 0, 2);
 
 	if (sim->efimg) {
 		g_free(sim->efimg);
