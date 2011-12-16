@@ -109,30 +109,22 @@ static void append_voicecall_properties(struct ofono_cdma_voicecall *vc,
 {
 	const char *status;
 	const char *lineid;
-	const char *waiting_call = NULL;
-	ofono_bool_t call_waiting;
+	const char *waiting_call;
+	dbus_bool_t call_waiting = FALSE;
 
 	status = cdma_call_status_to_string(vc->status);
-
 	ofono_dbus_dict_append(dict, "State", DBUS_TYPE_STRING, &status);
 
-	if (vc->status != CDMA_CALL_STATUS_DISCONNECTED) {
-		if (vc->phone_number.number[0] != '\0') {
-			lineid = cdma_phone_number_to_string(&vc->phone_number);
-			ofono_dbus_dict_append(dict, "LineIdentification",
-						DBUS_TYPE_STRING, &lineid);
-		}
+	lineid = cdma_phone_number_to_string(&vc->phone_number);
+	ofono_dbus_dict_append(dict, "LineIdentification",
+					DBUS_TYPE_STRING, &lineid);
 
-		if (vc->waiting_number.number[0] != '\0') {
-			waiting_call = cdma_phone_number_to_string(
-						&vc->waiting_number);
-
-			ofono_dbus_dict_append(dict, "CallWaitingNumber",
+	if (vc->waiting_number.number[0] != '\0') {
+		waiting_call = cdma_phone_number_to_string(&vc->waiting_number);
+		ofono_dbus_dict_append(dict, "CallWaitingNumber",
 					DBUS_TYPE_STRING, &waiting_call);
-		}
+		call_waiting = TRUE;
 	}
-
-	call_waiting = (waiting_call != NULL);
 
 	ofono_dbus_dict_append(dict, "CallWaiting",
 					DBUS_TYPE_BOOLEAN, &call_waiting);
@@ -193,6 +185,7 @@ static void voicecall_set_call_status(struct ofono_cdma_voicecall *vc,
 	enum cdma_call_status old_status;
 
 	DBG("status: %s", cdma_call_status_to_string(status));
+
 	if (vc->status == status)
 		return;
 
@@ -220,6 +213,7 @@ static void voicecall_set_call_status(struct ofono_cdma_voicecall *vc,
 					&timestr);
 	}
 
+	/* TODO: Properly signal property changes here */
 	if (status == CDMA_CALL_STATUS_DISCONNECTED) {
 		memset(&vc->phone_number, 0,
 				sizeof(struct ofono_cdma_phone_number));
