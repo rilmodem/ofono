@@ -1689,21 +1689,6 @@ static gboolean sim_spn_parse(const void *data, int length, char **dst)
 	return TRUE;
 }
 
-static inline gboolean sim_cphs_spn_enabled(struct ofono_sim *sim)
-{
-	const guint8 *st;
-
-	if (ofono_sim_get_cphs_phase(sim) != OFONO_SIM_CPHS_PHASE_2G)
-		return FALSE;
-
-	st = ofono_sim_get_cphs_service_table(sim);
-
-	/*
-	 * CPHS short SPN bits are located in byte 1, bits 7 and 8
-	 */
-	return (st && (st[0] >> 6 == 3));
-}
-
 static void ofono_netreg_spn_free(struct ofono_netreg *netreg)
 {
 	gboolean had_spn = netreg->spn != NULL && strlen(netreg->spn) > 0;
@@ -1749,7 +1734,8 @@ static void sim_cphs_spn_read_cb(int ok, int length, int record,
 		return;
 
 	if (!ok) {
-		if (sim_cphs_spn_enabled(netreg->sim))
+		if (__ofono_sim_cphs_service_available(netreg->sim,
+						SIM_CPHS_SERVICE_SHORT_SPN))
 			ofono_sim_read(netreg->sim_context,
 					SIM_EF_CPHS_SPN_SHORT_FILEID,
 					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
@@ -1774,7 +1760,8 @@ static void sim_spn_read_cb(int ok, int length, int record,
 	struct ofono_netreg *netreg = user_data;
 
 	if (!ok) {
-		if (sim_cphs_spn_enabled(netreg->sim))
+		if (__ofono_sim_cphs_service_available(netreg->sim,
+						SIM_CPHS_SERVICE_SHORT_SPN))
 			ofono_sim_read(netreg->sim_context,
 					SIM_EF_CPHS_SPN_FILEID,
 					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
@@ -2256,7 +2243,8 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 						sim_spn_changed, netreg,
 						NULL);
 
-		if (sim_cphs_spn_enabled(netreg->sim)) {
+		if (__ofono_sim_cphs_service_available(netreg->sim,
+						SIM_CPHS_SERVICE_SHORT_SPN)) {
 			ofono_sim_add_file_watch(netreg->sim_context,
 						SIM_EF_CPHS_SPN_SHORT_FILEID,
 						sim_cphs_spn_short_changed,
