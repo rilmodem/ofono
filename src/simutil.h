@@ -242,6 +242,15 @@ enum sim_sst_service {
 	SIM_SST_SERVICE_PROVIDER_DISPLAY_INFO =		55
 };
 
+/* CPHS 4.2, Section B.3.1.1 */
+enum sim_cphs_service {
+	SIM_CPHS_SERVICE_CSP =			0x0,
+	SIM_CPHS_SERVICE_SST =			0x1,
+	SIM_CPHS_SERVICE_MAILBOX_NUMBERS =	0x2,
+	SIM_CPHS_SERVICE_SHORT_SPN =		0x3,
+	SIM_CPHS_SERVICE_INFO_NUMBERS =		0x4,
+};
+
 /* CPHS 4.2, Section B4.7 CSP Service Group Codes */
 enum sim_csp_entry {
 	SIM_CSP_ENTRY_CALL_OFFERING =		0x01,
@@ -483,5 +492,7 @@ gboolean sim_sst_is_available(unsigned char *service_sst, unsigned char len,
 						enum sim_sst_service index);
 gboolean sim_sst_is_active(unsigned char *service_sst, unsigned char len,
 						enum sim_sst_service index);
+gboolean sim_cphs_is_active(unsigned char *service_cphs,
+				enum sim_cphs_service index);
 
 GSList *sim_parse_app_template_entries(const unsigned char *buffer, int len);

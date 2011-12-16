@@ -1477,6 +1477,14 @@ gboolean sim_sst_is_active(unsigned char *efsst, unsigned char len,
 	return (efsst[index / 4] >> (((index % 4) * 2) + 1)) & 1;
 }
 
+gboolean sim_cphs_is_active(unsigned char *cphs, enum sim_cphs_service index)
+{
+	if (index >= 2 * 4u)
+		return FALSE;
+
+	return ((cphs[index / 4] >> ((index % 4) * 2)) & 3) == 3;
+}
+
 GSList *sim_parse_app_template_entries(const unsigned char *buffer, int len)
 {
 	GSList *ret = NULL;
