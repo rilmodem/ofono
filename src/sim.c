@@ -2181,6 +2181,12 @@ ofono_bool_t __ofono_sim_service_available(struct ofono_sim *sim,
 	return FALSE;
 }
 
+ofono_bool_t __ofono_sim_cphs_service_available(struct ofono_sim *sim,
+						int cphs_service)
+{
+	return sim_cphs_is_active(sim->cphs_service_table, cphs_service);
+}
+
 static void sim_inserted_update(struct ofono_sim *sim)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();

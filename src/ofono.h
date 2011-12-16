@@ -351,6 +351,8 @@ unsigned short __ofono_sms_get_next_ref(struct ofono_sms *sms);
 ofono_bool_t __ofono_sim_service_available(struct ofono_sim *sim,
 						int ust_service,
 						int sst_service);
+ofono_bool_t __ofono_sim_cphs_service_available(struct ofono_sim *sim,
+						int cphs_service);
 
 ofono_bool_t __ofono_is_valid_sim_pin(const char *pin,
 					enum ofono_sim_password_type type);
