@@ -40,8 +40,9 @@
 #define SETTINGS_STORE "netreg"
 #define SETTINGS_GROUP "Settings"
 
-#define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN 0x1
-#define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN 0x2
+#define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN	0x1
+#define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN	0x2
+#define NETWORK_REGISTRATION_FLAG_READING_PNN		0x4
 
 enum network_registration_mode {
 	NETWORK_REGISTRATION_MODE_AUTO =	0,
@@ -1585,7 +1586,7 @@ static void sim_pnn_read_cb(int ok, int length, int record,
 		goto check;
 
 	if (length < 3 || record_length < 3 || length < record_length)
-		return;
+		goto check;
 
 	total = length / record_length;
 
@@ -1598,6 +1599,8 @@ static void sim_pnn_read_cb(int ok, int length, int record,
 		return;
 
 check:
+	netreg->flags &= ~NETWORK_REGISTRATION_FLAG_READING_PNN;
+
 	/*
 	 * If PNN is not present then OPL is not useful, don't
 	 * retrieve it.  If OPL is not there then PNN[1] will
@@ -1972,6 +1975,8 @@ static void sim_pnn_opl_changed(int id, void *userdata)
 	struct ofono_netreg *netreg = userdata;
 	GSList *l;
 
+	if (netreg->flags & NETWORK_REGISTRATION_FLAG_READING_PNN)
+		return;
 	/*
 	 * Free references to structures on the netreg->eons list and
 	 * update the operator info on D-bus.  If EFpnn/EFopl read succeeds,
@@ -1984,6 +1989,7 @@ static void sim_pnn_opl_changed(int id, void *userdata)
 	sim_eons_free(netreg->eons);
 	netreg->eons = NULL;
 
+	netreg->flags |= NETWORK_REGISTRATION_FLAG_READING_PNN;
 	ofono_sim_read(netreg->sim_context, SIM_EFPNN_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_FIXED,
 			sim_pnn_read_cb, netreg);
@@ -2125,6 +2131,7 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 
 		netreg_load_settings(netreg);
 
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_READING_PNN;
 		ofono_sim_read(netreg->sim_context, SIM_EFPNN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				sim_pnn_read_cb, netreg);
