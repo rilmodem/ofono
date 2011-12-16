@@ -618,7 +618,6 @@ static void mw_mbi_read_cb(int ok, int total_length, int record,
 {
 	struct ofono_message_waiting *mw = userdata;
 	int i, err;
-	const unsigned char *st;
 
 	if (!ok || record_length < 4) {
 		ofono_error("Unable to read mailbox identifies "
@@ -652,9 +651,8 @@ out:
 	 * Mailbox numbers located in Byte 1, bits 6 & 5,
 	 * Check for Activated & Allocated
 	 */
-	st = ofono_sim_get_cphs_service_table(mw->sim);
-
-	if (st && bit_field(st[0], 4, 2) == 3) {
+	if (__ofono_sim_cphs_service_available(mw->sim,
+					SIM_CPHS_SERVICE_MAILBOX_NUMBERS)) {
 		ofono_sim_read(mw->sim_context, SIM_EF_CPHS_MBDN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_FIXED,
 				mw_cphs_mbdn_read_cb, mw);
