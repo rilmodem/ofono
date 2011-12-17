@@ -658,6 +658,14 @@ Network Registration
   manual network registration is not allowed, oFono enters into 'auto-only'
   registration mode.  Updates to this file via STK Refresh is also supported.
 
+- Support for 3GPP Service Provider Name (EFspn), CPHS Operator Name
+  String (ONS) and CPHS Short Operator Name String fields.  oFono always
+  tries to read the EFspn field first.  If this is not available, then oFono
+  tries to read the CPHS variant.  If neither are available and the
+  appropriate bits are set in the CPHS Information field, oFono tries to read
+  the CPHS Short ONS field.  oFono then reports the network name via the
+  'Name' property.
+
 PPP Stack
 =========
 
