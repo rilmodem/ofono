@@ -43,6 +43,7 @@
 #define NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN	0x1
 #define NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN	0x2
 #define NETWORK_REGISTRATION_FLAG_READING_PNN		0x4
+#define NETWORK_REGISTRATION_FLAG_READING_SPN		0x8
 
 enum network_registration_mode {
 	NETWORK_REGISTRATION_MODE_AUTO =	0,
@@ -56,12 +57,6 @@ enum operator_status {
 	OPERATOR_STATUS_AVAILABLE =	1,
 	OPERATOR_STATUS_CURRENT =	2,
 	OPERATOR_STATUS_FORBIDDEN =	3,
-};
-
-enum spn_flags {
-	SPN_3GPP =		0x1,
-	SPN_CPHS =		0x2,
-	SPN_CPHS_SHORT =	0x4,
 };
 
 struct ofono_netreg {
@@ -89,7 +84,6 @@ struct ofono_netreg {
 	struct ofono_atom *atom;
 	unsigned int hfp_watch;
 	char *spn;
-	guint8 spn_flags;
 };
 
 struct network_operator_data {
@@ -1689,36 +1683,19 @@ static gboolean sim_spn_parse(const void *data, int length, char **dst)
 	return TRUE;
 }
 
-static void ofono_netreg_spn_free(struct ofono_netreg *netreg)
-{
-	gboolean had_spn = netreg->spn != NULL && strlen(netreg->spn) > 0;
-
-	g_free(netreg->spn);
-	netreg->spn = NULL;
-	netreg->spn_flags = 0;
-
-	/*
-	 * We can't determine whether the property really changed
-	 * without checking the name, before and after.  Instead we use a
-	 * simple heuristic, which will not always be correct
-	 */
-	if (had_spn && netreg->current_operator)
-		netreg_emit_operator_display_name(netreg);
-}
-
 static void sim_cphs_spn_short_read_cb(int ok, int length, int record,
 					const unsigned char *data,
 					int record_length, void *user_data)
 {
 	struct ofono_netreg *netreg = user_data;
 
-	if (netreg->spn_flags & (SPN_3GPP | SPN_CPHS) || !ok)
+	netreg->flags &= ~NETWORK_REGISTRATION_FLAG_READING_SPN;
+
+	if (!ok)
 		return;
 
 	if (!sim_spn_parse(data, length, &netreg->spn))
 		return;
-
-	netreg->spn_flags = SPN_CPHS_SHORT;
 
 	if (netreg->current_operator)
 		netreg_emit_operator_display_name(netreg);
@@ -1730,9 +1707,6 @@ static void sim_cphs_spn_read_cb(int ok, int length, int record,
 {
 	struct ofono_netreg *netreg = user_data;
 
-	if (netreg->spn_flags & SPN_3GPP)
-		return;
-
 	if (!ok) {
 		if (__ofono_sim_cphs_service_available(netreg->sim,
 						SIM_CPHS_SERVICE_SHORT_SPN))
@@ -1740,14 +1714,16 @@ static void sim_cphs_spn_read_cb(int ok, int length, int record,
 					SIM_EF_CPHS_SPN_SHORT_FILEID,
 					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 					sim_cphs_spn_short_read_cb, netreg);
+		else
+			netreg->flags &= ~NETWORK_REGISTRATION_FLAG_READING_SPN;
 
 		return;
 	}
 
+	netreg->flags &= ~NETWORK_REGISTRATION_FLAG_READING_SPN;
+
 	if (!sim_spn_parse(data, length, &netreg->spn))
 		return;
-
-	netreg->spn_flags = SPN_CPHS;
 
 	if (netreg->current_operator)
 		netreg_emit_operator_display_name(netreg);
@@ -1768,10 +1744,10 @@ static void sim_spn_read_cb(int ok, int length, int record,
 		return;
 	}
 
+	netreg->flags &= ~NETWORK_REGISTRATION_FLAG_READING_SPN;
+
 	if (!sim_spn_parse(data + 1, length - 1, &netreg->spn))
 		return;
-
-	netreg->spn_flags = SPN_3GPP;
 
 	sim_spn_display_condition_parse(netreg, data[0]);
 
@@ -1779,40 +1755,30 @@ static void sim_spn_read_cb(int ok, int length, int record,
 		netreg_emit_operator_display_name(netreg);
 }
 
-static void sim_cphs_spn_short_changed(int id, void *userdata)
-{
-	struct ofono_netreg *netreg = userdata;
-
-	if (netreg->spn_flags & (SPN_3GPP | SPN_CPHS))
-		return;
-
-	ofono_netreg_spn_free(netreg);
-
-	ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_cphs_spn_short_read_cb, netreg);
-}
-
-static void sim_cphs_spn_changed(int id, void *userdata)
-{
-	struct ofono_netreg *netreg = userdata;
-
-	if (netreg->spn_flags & SPN_3GPP)
-		return;
-
-	ofono_netreg_spn_free(netreg);
-
-	ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
-			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
-			sim_cphs_spn_read_cb, netreg);
-}
-
 static void sim_spn_changed(int id, void *userdata)
 {
 	struct ofono_netreg *netreg = userdata;
+	gboolean had_spn;
 
-	ofono_netreg_spn_free(netreg);
+	if (netreg->flags & NETWORK_REGISTRATION_FLAG_READING_SPN)
+		return;
 
+	had_spn = netreg->spn != NULL && strlen(netreg->spn) > 0;
+	netreg->flags &= ~(NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN |
+				NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN);
+
+	g_free(netreg->spn);
+	netreg->spn = NULL;
+
+	/*
+	 * We can't determine whether the property really changed
+	 * without checking the name, before and after.  Instead we use a
+	 * simple heuristic, which will not always be correct
+	 */
+	if (had_spn && netreg->current_operator)
+		netreg_emit_operator_display_name(netreg);
+
+	netreg->flags |= NETWORK_REGISTRATION_FLAG_READING_SPN;
 	ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_spn_read_cb, netreg);
@@ -2233,6 +2199,7 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 						sim_pnn_opl_changed, netreg,
 						NULL);
 
+		netreg->flags |= NETWORK_REGISTRATION_FLAG_READING_SPN;
 		ofono_sim_read(netreg->sim_context, SIM_EFSPN_FILEID,
 				OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 				sim_spn_read_cb, netreg);
@@ -2240,17 +2207,16 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 		ofono_sim_add_file_watch(netreg->sim_context, SIM_EFSPN_FILEID,
 						sim_spn_changed, netreg,
 						NULL);
-
 		ofono_sim_add_file_watch(netreg->sim_context,
 						SIM_EF_CPHS_SPN_FILEID,
-						sim_cphs_spn_changed, netreg,
+						sim_spn_changed, netreg,
 						NULL);
 
 		if (__ofono_sim_cphs_service_available(netreg->sim,
 						SIM_CPHS_SERVICE_SHORT_SPN))
 			ofono_sim_add_file_watch(netreg->sim_context,
 						SIM_EF_CPHS_SPN_SHORT_FILEID,
-						sim_cphs_spn_short_changed,
+						sim_spn_changed,
 						netreg, NULL);
 
 		if (__ofono_sim_service_available(netreg->sim,
