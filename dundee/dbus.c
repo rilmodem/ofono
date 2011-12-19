@@ -2,7 +2,6 @@
  *
  *  oFono - Open Source Telephony
  *
- *  Copyright (C) 2008-2012  Intel Corporation. All rights reserved.
  *  Copyright (C) 2012  BMW Car IT GmbH. All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,30 +19,27 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <glib.h>
+#include <gdbus.h>
 
-#define OFONO_API_SUBJECT_TO_CHANGE
+#include "dundee.h"
 
-#include <ofono/types.h>
+#define DUNDEE_ERROR_INTERFACE "org.ofono.dundee.Error"
 
-void __dundee_exit(void);
+DBusMessage *__dundee_error_invalid_args(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DUNDEE_ERROR_INTERFACE
+					".InvalidArguments",
+					"Invalid arguments in method call");
+}
 
-#include <ofono/log.h>
-
-int __ofono_log_init(const char *program, const char *debug,
-					ofono_bool_t detach);
-void __ofono_log_cleanup(void);
-void __ofono_log_enable(struct ofono_debug_desc *start,
-					struct ofono_debug_desc *stop);
-
-#include <ofono/dbus.h>
-
-#define DUNDEE_SERVICE			"org.ofono.dundee"
-
-int __ofono_dbus_init(DBusConnection *conn);
-void __ofono_dbus_cleanup(void);
-
-void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
-
-DBusMessage *__dundee_error_invalid_args(DBusMessage *msg);
-DBusMessage *__dundee_error_failed(DBusMessage *msg);
+DBusMessage *__dundee_error_failed(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, DUNDEE_ERROR_INTERFACE
+					".Failed",
+					"Operation failed");
+}
