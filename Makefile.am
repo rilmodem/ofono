@@ -693,6 +693,12 @@ dundee_dundee_SOURCES = $(gdbus_sources) \
 
 dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 
+if DATAFILES
+
+dist_dbusconf_DATA += dundee/dundee.conf
+
+endif
+
 endif
 
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm
