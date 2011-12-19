@@ -30,6 +30,26 @@
 
 #include "dundee.h"
 
+static void append_device(struct dundee_device *device, void *userdata)
+{
+	DBusMessageIter *array = userdata;
+	const char *path = __dundee_device_get_path(device);
+	DBusMessageIter entry, dict;
+
+	dbus_message_iter_open_container(array, DBUS_TYPE_STRUCT,
+						NULL, &entry);
+	dbus_message_iter_append_basic(&entry, DBUS_TYPE_OBJECT_PATH,
+					&path);
+	dbus_message_iter_open_container(&entry, DBUS_TYPE_ARRAY,
+				OFONO_PROPERTIES_ARRAY_SIGNATURE,
+				&dict);
+
+	__dundee_device_append_properties(device, &dict);
+
+	dbus_message_iter_close_container(&entry, &dict);
+	dbus_message_iter_close_container(array, &entry);
+}
+
 static DBusMessage *manager_get_devices(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -55,6 +75,8 @@ static DBusMessage *manager_get_devices(DBusConnection *conn,
 					DBUS_DICT_ENTRY_END_CHAR_AS_STRING
 					DBUS_STRUCT_END_CHAR_AS_STRING,
 					&array);
+
+	__dundee_device_foreach(append_device, &array);
 
 	dbus_message_iter_close_container(&iter, &array);
 
