@@ -310,13 +310,6 @@ static gboolean setup_speedup(struct modem_info *modem)
 			mdm = info->devnode;
 			if (aux != NULL)
 				break;
-		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
-			if (g_strcmp0(info->number, "01") == 0)
-				aux = info->devnode;
-			else if (g_strcmp0(info->number, "02") == 0)
-				mdm = info->devnode;
-			else if (g_strcmp0(info->number, "03") == 0)
-				mdm = info->devnode;
 		}
 	}
 
