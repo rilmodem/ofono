@@ -28,6 +28,50 @@
 
 void __dundee_exit(void);
 
+enum dundee_error_type {
+	DUNDEE_ERROR_TYPE_NO_ERROR = 0,
+	DUNDEE_ERROR_TYPE_FAILURE,
+};
+
+struct dundee_error {
+	enum dundee_error_type type;
+	int error;
+};
+
+struct cb_data {
+	void *cb;
+	void *data;
+	void *user;
+};
+
+static inline struct cb_data *cb_data_new(void *cb, void *data)
+{
+	struct cb_data *ret;
+
+	ret = g_new0(struct cb_data, 1);
+	ret->cb = cb;
+	ret->data = data;
+
+	return ret;
+}
+
+#define CALLBACK_WITH_FAILURE(cb, args...)		\
+	do {						\
+		struct dundee_error cb_e;		\
+		cb_e.type = DUNDEE_ERROR_TYPE_FAILURE;	\
+		cb_e.error = 0;				\
+							\
+		cb(&cb_e, ##args);			\
+	} while (0)					\
+
+#define CALLBACK_WITH_SUCCESS(f, args...)		\
+	do {						\
+		struct dundee_error e;			\
+		e.type = DUNDEE_ERROR_TYPE_NO_ERROR;	\
+		e.error = 0;				\
+		f(&e, ##args);				\
+	} while(0)					\
+
 #include <ofono/log.h>
 
 int __ofono_log_init(const char *program, const char *debug,
