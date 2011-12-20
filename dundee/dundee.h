@@ -84,6 +84,7 @@ void __ofono_log_enable(struct ofono_debug_desc *start,
 
 #define DUNDEE_SERVICE			"org.ofono.dundee"
 #define DUNDEE_MANAGER_INTERFACE	"org.ofono.dundee.Manager"
+#define DUNDEE_DEVICE_INTERFACE		"org.ofono.dundee.Device"
 #define DUNDEE_MANAGER_PATH		"/"
 
 int __ofono_dbus_init(DBusConnection *conn);
