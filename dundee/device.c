@@ -41,6 +41,7 @@ struct dundee_device {
 	struct dundee_device_driver *driver;
 	gboolean registered;
 
+	void *data;
 };
 
 const char *__dundee_device_get_path(struct dundee_device *device)
@@ -133,6 +134,23 @@ void dundee_device_unregister(struct dundee_device *device)
 	device->registered = FALSE;
 
 	g_hash_table_remove(device_hash, device->path);
+}
+
+void dundee_device_set_data(struct dundee_device *device, void *data)
+{
+	device->data = data;
+}
+
+void *dundee_device_get_data(struct dundee_device *device)
+{
+	return device->data;
+}
+
+int dundee_device_set_name(struct dundee_device *device, const char *name)
+{
+	DBG("%p name %s", device, name);
+
+	return 0;
 }
 
 static void device_shutdown(gpointer key, gpointer value, gpointer user_data)
