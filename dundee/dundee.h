@@ -105,6 +105,27 @@ int __dundee_device_init(void);
 void __dundee_device_cleanup(void);
 void __dundee_device_shutdown(void);
 
+typedef void (*dundee_device_connect_cb_t)(const struct dundee_error *error,
+						int fd, void *data);
+typedef void (*dundee_device_disconnect_cb_t)(const struct dundee_error *error,
+						void *data);
+
+struct dundee_device_driver {
+	const char *name;
+
+	/* Connect and dial */
+	void (*connect)(struct dundee_device *device,
+			dundee_device_connect_cb_t cb, void *data);
+
+	/* Hangup and disconnect */
+	void (*disconnect)(struct dundee_device *device,
+			dundee_device_disconnect_cb_t cb, void *data);
+};
+
+struct dundee_device *dundee_device_create(struct dundee_device_driver *d);
+int dundee_device_register(struct dundee_device *device);
+void dundee_device_unregister(struct dundee_device *device);
+
 typedef void (*dundee_device_foreach_func)(struct dundee_device *device,
 						void *data);
 void __dundee_device_foreach(dundee_device_foreach_func cb, void *userdata);
