@@ -564,7 +564,8 @@ testdir = $(pkglibdir)/test
 test_SCRIPTS = $(test_scripts)
 endif
 
-EXTRA_DIST = src/genbuiltin plugins/ofono.rules $(doc_files) $(test_scripts)
+EXTRA_DIST = src/genbuiltin plugins/ofono.rules plugins/ofono-speedup.rules \
+				$(doc_files) $(test_scripts)
 
 dist_man_MANS = doc/ofonod.8
 
