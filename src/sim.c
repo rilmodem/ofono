@@ -1732,6 +1732,8 @@ static void sim_efphase_read_cb(int ok, int length, int record,
 
 static void sim_initialize_after_pin(struct ofono_sim *sim)
 {
+	sim->context = ofono_sim_context_create(sim);
+
 	ofono_sim_read(sim->context, SIM_EFPHASE_FILEID,
 			OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 			sim_efphase_read_cb, sim);
@@ -1933,12 +1935,8 @@ skip_efpl:
 						&sim->language_prefs);
 
 	/* Proceed with sim initialization if we're not merely updating */
-	if (!sim->language_prefs_update) {
-		if (sim->context == NULL)
-			sim->context = ofono_sim_context_create(sim);
-
+	if (!sim->language_prefs_update)
 		__ofono_sim_recheck_pin(sim);
-	}
 
 	sim->language_prefs_update = FALSE;
 }
