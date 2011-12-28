@@ -57,9 +57,6 @@
 #define MAX_CONTEXTS 256
 #define SUSPEND_TIMEOUT 8
 
-static GSList *g_drivers = NULL;
-static GSList *g_context_drivers = NULL;
-
 /* 27.007 Section 7.29 */
 enum packet_bearer {
 	PACKET_BEARER_NONE =		0,
@@ -151,6 +148,9 @@ struct pri_context {
 
 static void gprs_netreg_update(struct ofono_gprs *gprs);
 static void gprs_deactivate_next(struct ofono_gprs *gprs);
+
+static GSList *g_drivers = NULL;
+static GSList *g_context_drivers = NULL;
 
 const char *packet_bearer_to_string(int bearer)
 {
@@ -1285,7 +1285,7 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 static GDBusMethodTable context_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	pri_get_properties },
 	{ "SetProperty",	"sv",	"",		pri_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
@@ -1404,11 +1404,11 @@ static void update_suspended_property(struct ofono_gprs *gprs,
 
 static gboolean suspend_timeout(gpointer data)
 {
-       struct ofono_gprs *gprs = data;
+	struct ofono_gprs *gprs = data;
 
-       gprs->suspend_timeout = 0;
-       update_suspended_property(gprs, TRUE);
-       return FALSE;
+	gprs->suspend_timeout = 0;
+	update_suspended_property(gprs, TRUE);
+	return FALSE;
 }
 
 void ofono_gprs_suspend_notify(struct ofono_gprs *gprs, int cause)
@@ -2253,7 +2253,8 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 	}
 }
 
-int ofono_gprs_context_driver_register(const struct ofono_gprs_context_driver *d)
+int ofono_gprs_context_driver_register(
+				const struct ofono_gprs_context_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
@@ -2265,7 +2266,8 @@ int ofono_gprs_context_driver_register(const struct ofono_gprs_context_driver *d
 	return 0;
 }
 
-void ofono_gprs_context_driver_unregister(const struct ofono_gprs_context_driver *d)
+void ofono_gprs_context_driver_unregister(
+				const struct ofono_gprs_context_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
@@ -2346,7 +2348,7 @@ struct ofono_modem *ofono_gprs_context_get_modem(struct ofono_gprs_context *gc)
 }
 
 void ofono_gprs_context_set_type(struct ofono_gprs_context *gc,
-                                        enum ofono_gprs_context_type type)
+					enum ofono_gprs_context_type type)
 {
 	DBG("type %d", type);
 
