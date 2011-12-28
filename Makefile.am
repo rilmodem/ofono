@@ -342,9 +342,6 @@ builtin_sources += plugins/nokiacdma.c
 builtin_modules += linktop
 builtin_sources += plugins/linktop.c
 
-builtin_modules += telit
-builtin_sources += plugins/telit.c
-
 builtin_modules += alcatel
 builtin_sources += plugins/alcatel.c
 
@@ -361,6 +358,12 @@ if BLUETOOTH
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
 
+builtin_modules += telit
+builtin_sources += plugins/telit.c plugins/bluetooth.h
+
+builtin_modules += sap
+builtin_sources += plugins/sap.c plugins/bluetooth.h
+
 builtin_modules += hfp
 builtin_sources += plugins/hfp_hf.c plugins/bluetooth.h
 
@@ -369,9 +372,6 @@ builtin_sources += plugins/hfp_ag.c plugins/bluetooth.h
 
 builtin_modules += dun_gw
 builtin_sources += plugins/dun_gw.c plugins/bluetooth.h
-
-builtin_modules += sap
-builtin_sources += plugins/sap.c plugins/bluetooth.h
 
 builtin_modules += connman
 builtin_sources += plugins/connman.c
