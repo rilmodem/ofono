@@ -131,5 +131,4 @@ static inline int at_util_convert_signal_strength(int strength)
 		e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
 		e.error = 0;				\
 		f(&e, ##args);				\
-	} while(0)					\
-
+	} while (0)
