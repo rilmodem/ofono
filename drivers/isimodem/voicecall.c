@@ -1793,7 +1793,7 @@ static void isi_swap_without_accept(struct ofono_voicecall *ovc,
 static void isi_send_tones(struct ofono_voicecall *ovc, const char *tones,
 				ofono_voicecall_cb_t cb, void *data)
 {
-	isi_call_dtmf_send_req(ovc, CALL_ID_ALL, tones, cb, data);;
+	isi_call_dtmf_send_req(ovc, CALL_ID_ALL, tones, cb, data);
 }
 
 static void subscribe_indications(GIsiClient *cl, void *data)
