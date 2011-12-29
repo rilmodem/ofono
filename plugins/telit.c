@@ -436,7 +436,7 @@ static void rsen_disable_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	telit_disable(modem);
 }
 
-static int telit_sap_open()
+static int telit_sap_open(void)
 {
 	const char *device = "/dev/ttyUSB4";
 	struct termios ti;
