@@ -190,7 +190,7 @@ static void call_modemwatch(struct ofono_modem *modem, void *user)
 	modem_watch(modem, TRUE, user);
 }
 
-static int hfp_ag_init()
+static int hfp_ag_init(void)
 {
 	sim_hash = g_hash_table_new(g_direct_hash, g_direct_equal);
 
@@ -200,7 +200,7 @@ static int hfp_ag_init()
 	return 0;
 }
 
-static void hfp_ag_exit()
+static void hfp_ag_exit(void)
 {
 	__ofono_modemwatch_remove(modemwatch_id);
 	g_list_free(modems);
