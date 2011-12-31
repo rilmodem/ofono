@@ -1,3 +1,17 @@
+ver 1.1:
+	Fix issue with Telit modem and signal strength indication.
+	Fix issue with Bluetooth and outstanding Connect/Disconnect.
+	Fix issue with Handsfree support and hanging up all calls.
+	Add support for more advanced Handsfree features.
+	Add support for exposing Bluetooth address information.
+	Add support for Mobile Provider Database provisioning.
+	Add support for CPHS SPN and short-SPN identifiers.
+	Add support for CDMA signal strength notification.
+	Add support for CDMA dormant notification.
+	Add support for CDMA network registration.
+	Add support for CDMA call waiting feature.
+	Add support for PPP IPv6 Control Protocol.
+
 ver 1.0:
 	Fix issue with phonebook driver and SIM busy.
 	Add support for SIM Access Profile client.
