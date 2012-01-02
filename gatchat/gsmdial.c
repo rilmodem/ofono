@@ -369,9 +369,6 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 	g_at_ppp_set_debug(ppp, gsmdial_debug, "PPP");
 
-	if (option_pppdump)
-		g_at_ppp_set_recording(ppp, option_pppdump);
-
 	g_at_ppp_set_credentials(ppp, option_username, option_password);
 
 	g_at_ppp_set_acfc_enabled(ppp, option_acfc);
@@ -383,6 +380,9 @@ static void connect_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* open the ppp connection */
 	g_at_ppp_open(ppp, io);
+
+	if (option_pppdump)
+		g_at_ppp_set_recording(ppp, option_pppdump);
 }
 
 static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
