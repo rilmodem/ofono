@@ -194,7 +194,7 @@ static enum ofono_sim_password_type puk2pin(enum ofono_sim_password_type type)
 	case OFONO_SIM_PASSWORD_SIM_PUK2:
 		return OFONO_SIM_PASSWORD_SIM_PIN2;
 	case OFONO_SIM_PASSWORD_PHNET_PUK:
-		return OFONO_SIM_PASSWORD_PHNET_PUK;
+		return OFONO_SIM_PASSWORD_PHNET_PIN;
 	case OFONO_SIM_PASSWORD_PHNETSUB_PUK:
 		return OFONO_SIM_PASSWORD_PHNETSUB_PIN;
 	case OFONO_SIM_PASSWORD_PHSP_PUK:
