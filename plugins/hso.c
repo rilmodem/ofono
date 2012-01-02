@@ -58,7 +58,7 @@ struct hso_data {
 	GAtChat *control;
 	guint sim_poll_source;
 	guint sim_poll_count;
-	gboolean have_sim;
+	ofono_bool_t have_sim;
 };
 
 static int hso_probe(struct ofono_modem *modem)
@@ -144,7 +144,8 @@ static void sim_status(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("status sim %d pb %d sms %d", sim, pb, sms);
 
-	if (sim == 0) {
+	switch (sim) {
+	case 0:		/* not ready */
 		data->have_sim = FALSE;
 
 		if (data->sim_poll_count++ < 5) {
@@ -152,12 +153,24 @@ static void sim_status(gboolean ok, GAtResult *result, gpointer user_data)
 							init_sim_check, modem);
 			return;
 		}
-	} else
+		break;
+	case 1:		/* SIM card ready */
 		data->have_sim = TRUE;
+		break;
+	case 2:		/* no SIM card */
+		data->have_sim = FALSE;
+		break;
+	default:
+		data->have_sim = FALSE;
+		break;
+	}
 
 	data->sim_poll_count = 0;
 
-	ofono_modem_set_powered(modem, TRUE);
+	ofono_modem_set_powered(modem, data->have_sim);
+
+	if (data->have_sim == FALSE)
+		return;
 
 	/*
 	 * Option has the concept of Speech Service versus
