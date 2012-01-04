@@ -689,7 +689,8 @@ sbin_PROGRAMS += dundee/dundee
 
 dundee_dundee_SOURCES = $(gdbus_sources) \
 			src/log.c src/dbus.c \
-			dundee/dundee.h dundee/main.c dundee/dbus.c
+			dundee/dundee.h dundee/main.c dundee/dbus.c \
+			dundee/manager.c
 
 dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
 

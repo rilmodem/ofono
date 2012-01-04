@@ -39,6 +39,8 @@ void __ofono_log_enable(struct ofono_debug_desc *start,
 #include <ofono/dbus.h>
 
 #define DUNDEE_SERVICE			"org.ofono.dundee"
+#define DUNDEE_MANAGER_INTERFACE	"org.ofono.dundee.Manager"
+#define DUNDEE_MANAGER_PATH		"/"
 
 int __ofono_dbus_init(DBusConnection *conn);
 void __ofono_dbus_cleanup(void);
@@ -47,3 +49,7 @@ void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply);
 
 DBusMessage *__dundee_error_invalid_args(DBusMessage *msg);
 DBusMessage *__dundee_error_failed(DBusMessage *msg);
+
+
+int __dundee_manager_init(void);
+void __dundee_manager_cleanup(void);

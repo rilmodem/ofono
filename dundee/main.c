@@ -232,14 +232,11 @@ int main(int argc, char **argv)
 
 	__ofono_dbus_init(conn);
 
-	/*
-	 * The reason why this DBG is here is that we have the __stop__debug,
-	 * __start__debug linking symbols in the object. As soon we
-	 * have real DBG we can remove this one again.
-	 */
-	DBG("");
+	__dundee_manager_init();
 
 	g_main_loop_run(event_loop);
+
+	__dundee_manager_cleanup();
 
 	__ofono_dbus_cleanup();
 	dbus_connection_unref(conn);
