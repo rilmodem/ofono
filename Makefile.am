@@ -683,6 +683,18 @@ tools_lookup_provider_name_SOURCES = plugins/mbpi.c plugins/mbpi.h \
 tools_lookup_provider_name_LDADD = @GLIB_LIBS@
 endif
 
+if DUNDEE
+
+sbin_PROGRAMS += dundee/dundee
+
+dundee_dundee_SOURCES = $(gdbus_sources) \
+			src/log.c src/dbus.c \
+			dundee/dundee.h dundee/main.c
+
+dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
+
+endif
+
 noinst_PROGRAMS += gatchat/gsmdial gatchat/test-server gatchat/test-qcdm
 
 gatchat_gsmdial_SOURCES = gatchat/gsmdial.c $(gatchat_sources)

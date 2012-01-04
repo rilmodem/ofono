@@ -152,6 +152,10 @@ if (test "${enable_tools}" = "yes"); then
 fi
 AM_CONDITIONAL(TOOLS, test "${enable_tools}" = "yes")
 
+AC_ARG_ENABLE(dundee, AC_HELP_STRING([--enable-dundee],
+		[enable DUN deamon support]), [enable_dundee=${enableval}])
+AM_CONDITIONAL(DUNDEE, test "${enable_dundee}" = "yes")
+
 AC_ARG_ENABLE(atmodem, AC_HELP_STRING([--disable-atmodem],
 				[disable ETSI AT modem support]),
 					[enable_atmodem=${enableval}])

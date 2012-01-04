@@ -14,4 +14,5 @@ fi
 		--localstatedir=/var \
 		--enable-capng \
 		--enable-tools \
+		--enable-dundee \
 		--disable-datafiles $*
