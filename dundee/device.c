@@ -30,11 +30,15 @@
 
 #include <glib.h>
 #include <gdbus.h>
+#include <gatchat.h>
+#include <gatppp.h>
 
 #include "dundee.h"
 
 static int next_device_id = 0;
 static GHashTable *device_hash;
+
+static const char *none_prefix[] = { NULL };
 
 struct ipv4_settings {
 	char *interface;
@@ -47,10 +51,14 @@ struct dundee_device {
 	struct dundee_device_driver *driver;
 	gboolean registered;
 
+	GAtPPP *ppp;
+	GAtChat *chat;
+
 	char *name;
 	gboolean active;
 	struct ipv4_settings settings;
 
+	DBusMessage *pending;
 	void *data;
 };
 
@@ -146,6 +154,27 @@ void __dundee_device_foreach(dundee_device_foreach_func func, void *userdata)
 	}
 }
 
+static void settings_changed(struct dundee_device *device)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	DBusMessage *signal;
+	DBusMessageIter iter;
+	const char *key = "Settings";
+
+	signal = dbus_message_new_signal(device->path,
+					DUNDEE_DEVICE_INTERFACE,
+					"PropertyChanged");
+
+	if (signal == NULL)
+		return;
+	dbus_message_iter_init_append(signal, &iter);
+	dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &key);
+
+	settings_append(device, &iter);
+
+	g_dbus_send_message(conn, signal);
+}
+
 static DBusMessage *device_get_properties(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
@@ -171,6 +200,213 @@ static DBusMessage *device_get_properties(DBusConnection *conn,
 	return reply;
 }
 
+
+static void debug(const char *str, void *data)
+{
+	DBG("%s: %s\n", (const char *) data, str);
+}
+
+static void ppp_connect(const char *iface, const char *local, const char *peer,
+			const char *dns1, const char *dns2,
+			gpointer user_data)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct dundee_device *device = user_data;
+	const char *dns[3] = { dns1, dns2, 0 };
+
+	DBG("%p", device);
+	DBG("Network Device: %s\n", iface);
+	DBG("IP Address: %s\n", local);
+	DBG("Peer IP Address: %s\n", peer);
+	DBG("Primary DNS Server: %s\n", dns1);
+	DBG("Secondary DNS Server: %s\n", dns2);
+
+	g_free(device->settings.interface);
+	device->settings.interface = g_strdup(iface);
+	if (device->settings.interface == NULL)
+		goto err;
+
+	g_free(device->settings.ip);
+	device->settings.ip = g_strdup(local);
+	if (device->settings.ip == NULL)
+		goto err;
+
+	g_strfreev(device->settings.nameservers);
+	device->settings.nameservers = g_strdupv((gchar **)dns);
+	if (device->settings.nameservers == NULL)
+		goto err;
+
+	__ofono_dbus_pending_reply(&device->pending,
+			dbus_message_new_method_return(device->pending));
+	device->pending = NULL;
+
+	device->active = TRUE;
+
+	settings_changed(device);
+	ofono_dbus_signal_property_changed(conn, device->path,
+					DUNDEE_DEVICE_INTERFACE, "Active",
+					DBUS_TYPE_BOOLEAN, &device->active);
+
+	return;
+
+err:
+	g_free(device->settings.interface);
+	g_free(device->settings.ip);
+	g_strfreev(device->settings.nameservers);
+	device->settings.interface = NULL;
+	device->settings.ip = NULL;
+	device->settings.nameservers = NULL;
+
+	__ofono_dbus_pending_reply(&device->pending,
+				__dundee_error_failed(device->pending));
+	device->pending = NULL;
+}
+
+static void disconnect_callback(const struct dundee_error *error, void *data)
+{
+	struct dundee_device *device = data;
+
+	DBG("%p", device);
+
+	g_at_chat_unref(device->chat);
+	device->chat = NULL;
+
+	if (device->pending == NULL)
+		return;
+
+	if (error->type != DUNDEE_ERROR_TYPE_NO_ERROR) {
+		__ofono_dbus_pending_reply(&device->pending,
+					__dundee_error_failed(device->pending));
+		goto out;
+	}
+
+	__ofono_dbus_pending_reply(&device->pending,
+		dbus_message_new_method_return(device->pending));
+
+out:
+	device->pending = NULL;
+}
+
+static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user_data)
+{
+	DBusConnection *conn = ofono_dbus_get_connection();
+	struct dundee_device *device = user_data;
+
+	DBG("%p", device);
+	DBG("PPP Link down: %d\n", reason);
+
+	g_at_ppp_unref(device->ppp);
+	device->ppp = NULL;
+
+	g_at_chat_resume(device->chat);
+
+	g_free(device->settings.interface);
+	g_free(device->settings.ip);
+	g_strfreev(device->settings.nameservers);
+	device->settings.interface = NULL;
+	device->settings.ip = NULL;
+	device->settings.nameservers = NULL;
+
+	device->active = FALSE;
+
+	settings_changed(device);
+	ofono_dbus_signal_property_changed(conn, device->path,
+					DUNDEE_DEVICE_INTERFACE, "Active",
+					DBUS_TYPE_BOOLEAN, &device->active);
+
+	device->driver->disconnect(device, disconnect_callback, device);
+}
+
+static void dial_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct dundee_device *device = user_data;
+	GAtIO *io;
+
+	if (!ok) {
+		DBG("Unable to define context\n");
+		goto err;
+	}
+
+	/* get the data IO channel */
+	io = g_at_chat_get_io(device->chat);
+
+	/*
+	 * shutdown gatchat or else it tries to take all the input
+	 * from the modem and does not let PPP get it.
+	 */
+	g_at_chat_suspend(device->chat);
+
+	/* open ppp */
+	device->ppp = g_at_ppp_new();
+	if (device->ppp == NULL) {
+		DBG("Unable to create PPP object\n");
+		goto err;
+	}
+	g_at_ppp_set_debug(device->ppp, debug, "PPP");
+
+	/* set connect and disconnect callbacks */
+	g_at_ppp_set_connect_function(device->ppp, ppp_connect, device);
+	g_at_ppp_set_disconnect_function(device->ppp, ppp_disconnect, device);
+
+	/* open the ppp connection */
+	g_at_ppp_open(device->ppp, io);
+
+	return;
+
+err:
+	__ofono_dbus_pending_reply(&device->pending,
+				__dundee_error_failed(device->pending));
+	device->pending = NULL;
+}
+
+static int device_dial_setup(struct dundee_device *device, int fd)
+{
+	GAtSyntax *syntax;
+	GIOChannel *io;
+
+	io = g_io_channel_unix_new(fd);
+	if (io == NULL)
+		return -EIO;
+
+	syntax = g_at_syntax_new_gsm_permissive();
+	device->chat = g_at_chat_new(io, syntax);
+	g_io_channel_unref(io);
+	g_at_syntax_unref(syntax);
+
+	if (device->chat == NULL)
+		return -EIO;
+
+	g_at_chat_set_debug(device->chat, debug, "Control");
+
+	g_at_chat_send(device->chat, "ATD*99#", none_prefix, dial_cb,
+			device, NULL);
+
+	return 0;
+}
+
+static void connect_callback(const struct dundee_error *error,
+				int fd, void *data)
+{
+	struct dundee_device *device = data;
+	int err;
+
+	DBG("%p", device);
+
+	if (error->type != DUNDEE_ERROR_TYPE_NO_ERROR)
+		goto err;
+
+	err = device_dial_setup(device, fd);
+	if (err < 0)
+		goto err;
+
+	return;
+
+err:
+	__ofono_dbus_pending_reply(&device->pending,
+				__dundee_error_failed(device->pending));
+	device->pending = NULL;
+}
+
 static DBusMessage *set_property_active(struct dundee_device *device,
 					DBusMessage *msg,
 					DBusMessageIter *var)
@@ -184,9 +420,14 @@ static DBusMessage *set_property_active(struct dundee_device *device,
 
 	dbus_message_iter_get_basic(var, &active);
 
-	device->active = active;
+	device->pending = dbus_message_ref(msg);
 
-	return g_dbus_create_reply(msg, DBUS_TYPE_INVALID);
+	if (active)
+		device->driver->connect(device, connect_callback, device);
+	else if (device->ppp)
+		g_at_ppp_shutdown(device->ppp);
+
+	return NULL;
 }
 
 static DBusMessage *device_set_property(DBusConnection *conn,
@@ -291,6 +532,15 @@ static int unregister_device(struct dundee_device *device)
 static void destroy_device(gpointer user)
 {
 	struct dundee_device *device = user;
+
+	if (device->chat != NULL)
+		g_at_chat_unref(device->chat);
+
+	if (device->ppp != NULL)
+		g_at_ppp_unref(device->ppp);
+
+	if (device->pending)
+		dbus_message_unref(device->pending);
 
 	g_free(device->settings.interface);
 	g_free(device->settings.ip);

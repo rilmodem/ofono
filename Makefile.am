@@ -687,7 +687,7 @@ if DUNDEE
 
 sbin_PROGRAMS += dundee/dundee
 
-dundee_dundee_SOURCES = $(gdbus_sources) \
+dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) \
 			src/log.c src/dbus.c \
 			dundee/dundee.h dundee/main.c dundee/dbus.c \
 			dundee/manager.c dundee/device.c
