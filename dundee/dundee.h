@@ -53,3 +53,18 @@ DBusMessage *__dundee_error_failed(DBusMessage *msg);
 
 int __dundee_manager_init(void);
 void __dundee_manager_cleanup(void);
+
+
+struct dundee_device;
+
+int __dundee_device_init(void);
+void __dundee_device_cleanup(void);
+void __dundee_device_shutdown(void);
+
+typedef void (*dundee_device_foreach_func)(struct dundee_device *device,
+						void *data);
+void __dundee_device_foreach(dundee_device_foreach_func cb, void *userdata);
+
+const char *__dundee_device_get_path(struct dundee_device *device);
+void __dundee_device_append_properties(struct dundee_device *device,
+					DBusMessageIter *dict);

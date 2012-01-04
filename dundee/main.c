@@ -80,7 +80,7 @@ static gboolean signal_handler(GIOChannel *channel, GIOCondition cond,
 			g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
 						quit_eventloop, NULL);
 
-			quit_eventloop(NULL);
+			__dundee_device_shutdown();
 		}
 
 		__terminated = 1;
@@ -233,9 +233,11 @@ int main(int argc, char **argv)
 	__ofono_dbus_init(conn);
 
 	__dundee_manager_init();
+	__dundee_device_init();
 
 	g_main_loop_run(event_loop);
 
+	__dundee_device_cleanup();
 	__dundee_manager_cleanup();
 
 	__ofono_dbus_cleanup();
