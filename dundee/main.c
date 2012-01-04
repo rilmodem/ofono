@@ -234,9 +234,11 @@ int main(int argc, char **argv)
 
 	__dundee_manager_init();
 	__dundee_device_init();
+	__dundee_bluetooth_init();
 
 	g_main_loop_run(event_loop);
 
+	__dundee_bluetooth_cleanup();
 	__dundee_device_cleanup();
 	__dundee_manager_cleanup();
 

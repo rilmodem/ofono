@@ -139,3 +139,6 @@ void __dundee_device_foreach(dundee_device_foreach_func cb, void *userdata);
 const char *__dundee_device_get_path(struct dundee_device *device);
 void __dundee_device_append_properties(struct dundee_device *device,
 					DBusMessageIter *dict);
+
+int __dundee_bluetooth_init(void);
+void  __dundee_bluetooth_cleanup(void);
