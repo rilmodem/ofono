@@ -78,7 +78,7 @@ struct huawei_data {
 	guint sysinfo_poll_count;
 	struct cb_data *online_cbd;
 	const char *offline_command;
-	gboolean voice;
+	gboolean have_voice;
 };
 
 static int huawei_probe(struct ofono_modem *modem)
@@ -194,7 +194,7 @@ static void cvoice_query_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next_number(&iter, &period))
 		return;
 
-	data->voice = TRUE;
+	data->have_voice = TRUE;
 
 	ofono_info("Voice channel: %d Hz, %d bits, %dms period",
 						rate, bits, period);
@@ -670,7 +670,7 @@ static void huawei_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	if (data->voice == TRUE) {
+	if (data->have_voice == TRUE) {
 		ofono_voicecall_create(modem, 0, "huaweimodem", data->pcui);
 		ofono_audio_settings_create(modem, 0,
 						"huaweimodem", data->pcui);
@@ -702,7 +702,7 @@ static void huawei_post_online(struct ofono_modem *modem)
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
 
-	if (data->voice == TRUE) {
+	if (data->have_voice == TRUE) {
 		struct ofono_message_waiting *mw;
 
 		ofono_call_forwarding_create(modem, 0, "atmodem", data->pcui);
