@@ -161,9 +161,16 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		nc = n ? n->data : NULL;
 		oc = o ? o->data : NULL;
 
-		if (nc && nc->status >= CALL_STATUS_DIALING &&
-				nc->status <= CALL_STATUS_WAITING)
+		switch (vd->vendor) {
+		case OFONO_VENDOR_QUALCOMM_MSM:
 			poll_again = TRUE;
+			break;
+		default:
+			if (nc && nc->status >= CALL_STATUS_DIALING &&
+					nc->status <= CALL_STATUS_WAITING)
+				poll_again = TRUE;
+			break;
+		}
 
 		if (oc && (nc == NULL || (nc->id > oc->id))) {
 			enum ofono_disconnect_reason reason;
