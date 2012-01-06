@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <glib.h>
 #include <gatchat.h>
@@ -55,6 +56,7 @@
 #include <drivers/atmodem/vendor.h>
 
 static const char *none_prefix[] = { NULL };
+static const char *gcap_prefix[] = { "+GCAP:", NULL };
 static const char *rfswitch_prefix[] = { "^RFSWITCH:", NULL };
 static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
 static const char *ussdmode_prefix[] = { "^USSDMODE:", NULL };
@@ -79,6 +81,7 @@ struct huawei_data {
 	struct cb_data *online_cbd;
 	const char *offline_command;
 	gboolean have_voice;
+	gboolean have_gsm;
 };
 
 static int huawei_probe(struct ofono_modem *modem)
@@ -414,6 +417,34 @@ static void rfswitch_support(gboolean ok, GAtResult *result, gpointer user_data)
 					cfun_enable, modem, NULL);
 }
 
+static void gcap_support(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct huawei_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	const char *gcap;
+
+	if (!ok)
+		goto done;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+GCAP:"))
+		goto done;
+
+	while (g_at_result_iter_next_unquoted_string(&iter, &gcap)) {
+		if (*gcap == '\0')
+			break;
+
+		if (!strcmp(gcap, "+CGSM"))
+			data->have_gsm = TRUE;
+	}
+
+done:
+	g_at_chat_send(data->pcui, "AT^RFSWITCH=?", rfswitch_prefix,
+					rfswitch_support, modem, NULL);
+}
+
 static GAtChat *open_device(struct ofono_modem *modem,
 				const char *key, char *debug)
 {
@@ -474,8 +505,9 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	data->sim_state = SIM_STATE_NOT_EXISTENT;
 
-	g_at_chat_send(data->pcui, "AT^RFSWITCH=?", rfswitch_prefix,
-					rfswitch_support, modem, NULL);
+	/* Check for GSM capabilities */
+	g_at_chat_send(data->pcui, "ATI", gcap_prefix,
+					gcap_support, modem, NULL);
 
 	return -EINPROGRESS;
 }
