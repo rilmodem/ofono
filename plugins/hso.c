@@ -44,6 +44,7 @@
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
+#include <ofono/voicecall.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -52,6 +53,7 @@
 static const char *none_prefix[] = { NULL };
 static const char *opmn_prefix[] = { "_OPMN:", NULL };
 static const char *obls_prefix[] = { "_OBLS:", NULL };
+static const char *opcm_prefix[] = { "_OPCMENABLE:", NULL };
 
 struct hso_data {
 	GAtChat *app;
@@ -59,6 +61,7 @@ struct hso_data {
 	guint sim_poll_source;
 	guint sim_poll_count;
 	ofono_bool_t have_sim;
+	ofono_bool_t have_voice;
 };
 
 static int hso_probe(struct ofono_modem *modem)
@@ -97,6 +100,48 @@ static void hso_debug(const char *str, void *user_data)
 	const char *prefix = user_data;
 
 	ofono_info("%s%s", prefix, str);
+}
+
+static void opcm_query(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct hso_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+
+	DBG("");
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OPCMENABLE:"))
+		return;
+
+	g_at_chat_send(data->app, "AT_OPCMENABLE=1", none_prefix,
+						NULL, NULL, NULL);
+}
+
+static void opcm_support(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct hso_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+
+	DBG("");
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "_OPCMENABLE:"))
+		return;
+
+	data->have_voice = TRUE;
+
+	g_at_chat_send(data->app, "AT_OPCMENABLE?", opcm_prefix,
+					opcm_query, modem, NULL);
 }
 
 static gboolean init_sim_check(gpointer user_data);
@@ -185,6 +230,9 @@ static void sim_status(gboolean ok, GAtResult *result, gpointer user_data)
 	 */
 	g_at_chat_send(data->app, "AT_ODO?", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(data->app, "AT_ODO=0", none_prefix, NULL, NULL, NULL);
+
+	g_at_chat_send(data->app, "AT_OPCMENABLE=?", opcm_prefix,
+					opcm_support, modem, NULL);
 }
 
 static gboolean init_sim_check(gpointer user_data)
@@ -376,7 +424,7 @@ static void hso_pre_sim(struct ofono_modem *modem)
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->control);
 	sim = ofono_sim_create(modem, OFONO_VENDOR_OPTION_HSO,
-				"atmodem", data->control);
+					"atmodem", data->control);
 
 	if (sim && data->have_sim == TRUE)
 		ofono_sim_inserted_notify(sim, TRUE);
@@ -387,6 +435,11 @@ static void hso_post_sim(struct ofono_modem *modem)
 	struct hso_data *data = ofono_modem_get_data(modem);
 
 	DBG("%p", modem);
+
+	if (data->have_voice == TRUE) {
+		ofono_voicecall_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+						"atmodem", data->app);
+	}
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->app);
 	ofono_radio_settings_create(modem, 0, "hsomodem", data->app);
@@ -403,12 +456,12 @@ static void hso_post_online(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, OFONO_VENDOR_OPTION_HSO,
-				"atmodem", data->app);
+					"atmodem", data->app);
 
 	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-				"atmodem", data->app);
+					"atmodem", data->app);
 	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-				"atmodem", data->app);
+					"atmodem", data->app);
 
 	gprs = ofono_gprs_create(modem, 0, "atmodem", data->app);
 	gc = ofono_gprs_context_create(modem, 0, "hsomodem", data->control);
