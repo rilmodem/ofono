@@ -682,23 +682,24 @@ static void huawei_set_online(struct ofono_modem *modem, ofono_bool_t online,
 static void huawei_pre_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
-	ofono_devinfo_create(modem, 0, "atmodem", data->pcui);
-	sim = ofono_sim_create(modem, OFONO_VENDOR_HUAWEI,
-					"atmodem", data->pcui);
+	if (data->have_gsm == TRUE) {
+		struct ofono_sim *sim;
 
-	if (sim && data->have_sim == TRUE)
-		ofono_sim_inserted_notify(sim, TRUE);
+		ofono_devinfo_create(modem, 0, "atmodem", data->pcui);
+		sim = ofono_sim_create(modem, OFONO_VENDOR_HUAWEI,
+						"atmodem", data->pcui);
+
+		if (sim && data->have_sim == TRUE)
+			ofono_sim_inserted_notify(sim, TRUE);
+	}
 }
 
 static void huawei_post_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
-	struct ofono_gprs *gprs;
-	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
@@ -708,17 +709,25 @@ static void huawei_post_sim(struct ofono_modem *modem)
 						"huaweimodem", data->pcui);
 	}
 
-	ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
-	ofono_radio_settings_create(modem, 0, "huaweimodem", data->pcui);
+	if (data->have_gsm == TRUE) {
+		struct ofono_gprs *gprs;
+		struct ofono_gprs_context *gc;
 
-	ofono_sms_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->pcui);
+		ofono_phonebook_create(modem, 0, "atmodem", data->pcui);
+		ofono_radio_settings_create(modem, 0,
+						"huaweimodem", data->pcui);
 
-	gprs = ofono_gprs_create(modem, OFONO_VENDOR_HUAWEI,
+		ofono_sms_create(modem, OFONO_VENDOR_HUAWEI,
 						"atmodem", data->pcui);
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->modem);
 
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
+		gprs = ofono_gprs_create(modem, OFONO_VENDOR_HUAWEI,
+						"atmodem", data->pcui);
+		gc = ofono_gprs_context_create(modem, 0,
+						"atmodem", data->modem);
+
+		if (gprs && gc)
+			ofono_gprs_add_context(gprs, gc);
+	}
 }
 
 static void huawei_post_online(struct ofono_modem *modem)
@@ -727,12 +736,15 @@ static void huawei_post_online(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI, "atmodem", data->pcui);
+	if (data->have_gsm == TRUE) {
+		ofono_netreg_create(modem, OFONO_VENDOR_HUAWEI,
+						"atmodem", data->pcui);
 
-	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+		ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
-	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+		ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
+	}
 
 	if (data->have_voice == TRUE) {
 		struct ofono_message_waiting *mw;
