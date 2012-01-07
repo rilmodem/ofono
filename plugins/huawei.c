@@ -50,6 +50,8 @@
 #include <ofono/call-barring.h>
 #include <ofono/phonebook.h>
 #include <ofono/message-waiting.h>
+#include <ofono/cdma-netreg.h>
+#include <ofono/cdma-connman.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -82,6 +84,7 @@ struct huawei_data {
 	const char *offline_command;
 	gboolean have_voice;
 	gboolean have_gsm;
+	gboolean have_cdma;
 };
 
 static int huawei_probe(struct ofono_modem *modem)
@@ -438,6 +441,8 @@ static void gcap_support(gboolean ok, GAtResult *result, gpointer user_data)
 
 		if (!strcmp(gcap, "+CGSM"))
 			data->have_gsm = TRUE;
+		else if (!strcmp(gcap, "+CIS707-A"))
+			data->have_cdma = TRUE;
 	}
 
 done:
@@ -694,6 +699,8 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 
 		if (sim && data->have_sim == TRUE)
 			ofono_sim_inserted_notify(sim, TRUE);
+	} else if (data->have_cdma == TRUE) {
+		ofono_devinfo_create(modem, 0, "cdmamodem", data->pcui);
 	}
 }
 
@@ -744,6 +751,12 @@ static void huawei_post_online(struct ofono_modem *modem)
 						"atmodem", data->pcui);
 		ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
+	} else if (data->have_cdma == TRUE) {
+		ofono_cdma_netreg_create(modem, 0,
+					"huaweicdmamodem", data->pcui);
+
+		ofono_cdma_connman_create(modem, OFONO_VENDOR_HUAWEI,
+						"cdmamodem", data->modem);
 	}
 
 	if (data->have_voice == TRUE) {
