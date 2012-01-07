@@ -1798,7 +1798,7 @@ struct ofono_modem *ofono_modem_create(const char *name, const char *type)
 		return NULL;
 
 	if (name == NULL)
-		snprintf(path, sizeof(path), "/%s%d", type, next_modem_id);
+		snprintf(path, sizeof(path), "/%s_%d", type, next_modem_id);
 	else
 		snprintf(path, sizeof(path), "/%s", name);
 
