@@ -70,6 +70,7 @@ enum {
 	SIM_STATE_INVALID_CS =		2,
 	SIM_STATE_INVALID_PS =		3,
 	SIM_STATE_INVALID_PS_AND_CS =	4,
+	SIM_STATE_ROMSIM =		240,
 	SIM_STATE_NOT_EXISTENT =	255,
 };
 
@@ -592,6 +593,7 @@ static void sysinfo_online_cb(gboolean ok, GAtResult *result,
 	case SIM_STATE_INVALID_CS:
 	case SIM_STATE_INVALID_PS:
 	case SIM_STATE_INVALID_PS_AND_CS:
+	case SIM_STATE_ROMSIM:
 		CALLBACK_WITH_SUCCESS(cb, data->online_cbd->data);
 		goto done;
 	}
