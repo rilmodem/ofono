@@ -760,8 +760,7 @@ static void huawei_post_online(struct ofono_modem *modem)
 		ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
 	} else if (data->have_cdma == TRUE) {
-		ofono_cdma_netreg_create(modem, 0,
-					"huaweicdmamodem", data->pcui);
+		ofono_cdma_netreg_create(modem, 0, "huaweimodem", data->pcui);
 
 		ofono_cdma_connman_create(modem, OFONO_VENDOR_HUAWEI,
 						"cdmamodem", data->modem);
