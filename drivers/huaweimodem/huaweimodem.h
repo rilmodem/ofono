@@ -32,3 +32,6 @@ extern void huawei_radio_settings_exit(void);
 
 extern void huawei_gprs_context_init(void);
 extern void huawei_gprs_context_exit(void);
+
+extern void huawei_cdma_netreg_init(void);
+extern void huawei_cdma_netreg_exit(void);

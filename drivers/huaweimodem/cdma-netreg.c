@@ -33,7 +33,7 @@
 
 #include "gatchat.h"
 
-#include "huaweicdmamodem.h"
+#include "huaweimodem.h"
 
 static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
 
@@ -188,7 +188,7 @@ static void probe_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_cdma_netreg_register(netreg);
 }
 
-static int huaweicdma_netreg_probe(struct ofono_cdma_netreg *netreg,
+static int huawei_cdma_netreg_probe(struct ofono_cdma_netreg *netreg,
 				unsigned int vendor, void *data)
 {
 	GAtChat *chat = g_at_chat_clone(data);
@@ -201,7 +201,7 @@ static int huaweicdma_netreg_probe(struct ofono_cdma_netreg *netreg,
 	return 0;
 }
 
-static void huaweicdma_netreg_remove(struct ofono_cdma_netreg *netreg)
+static void huawei_cdma_netreg_remove(struct ofono_cdma_netreg *netreg)
 {
 	GAtChat *chat = ofono_cdma_netreg_get_data(netreg);
 
@@ -211,17 +211,17 @@ static void huaweicdma_netreg_remove(struct ofono_cdma_netreg *netreg)
 }
 
 static struct ofono_cdma_netreg_driver driver = {
-	.name	= "huaweicdmamodem",
-	.probe	= huaweicdma_netreg_probe,
-	.remove	= huaweicdma_netreg_remove,
+	.name	= "huaweimodem",
+	.probe	= huawei_cdma_netreg_probe,
+	.remove	= huawei_cdma_netreg_remove,
 };
 
-void huaweicdma_netreg_init(void)
+void huawei_cdma_netreg_init(void)
 {
 	ofono_cdma_netreg_driver_register(&driver);
 }
 
-void huaweicdma_netreg_exit(void)
+void huawei_cdma_netreg_exit(void)
 {
 	ofono_cdma_netreg_driver_unregister(&driver);
 }

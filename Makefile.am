@@ -192,7 +192,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/huaweimodem/voicecall.c \
 			drivers/huaweimodem/audio-settings.c \
 			drivers/huaweimodem/gprs-context.c \
-			drivers/huaweimodem/radio-settings.c
+			drivers/huaweimodem/radio-settings.c \
+			drivers/huaweimodem/cdma-netreg.c
 
 builtin_modules += calypsomodem
 builtin_sources += drivers/atmodem/atutil.h \
@@ -274,12 +275,6 @@ builtin_sources += drivers/cdmamodem/cdmamodem.h \
 			drivers/cdmamodem/voicecall.c \
 			drivers/cdmamodem/devinfo.c \
 			drivers/cdmamodem/connman.c
-
-builtin_modules += huaweicdmamodem
-builtin_sources += drivers/huaweicdmamodem/huaweicdmamodem.h \
-			drivers/huaweicdmamodem/huaweicdmamodem.c \
-			drivers/huaweicdmamodem/network-registration.c
-
 endif
 
 builtin_modules += g1

@@ -39,11 +39,15 @@ static int huaweimodem_init(void)
 	huawei_radio_settings_init();
 	huawei_gprs_context_init();
 
+	huawei_cdma_netreg_init();
+
 	return 0;
 }
 
 static void huaweimodem_exit(void)
 {
+	huawei_cdma_netreg_exit();
+
 	huawei_gprs_context_exit();
 	huawei_radio_settings_exit();
 	huawei_audio_settings_exit();
