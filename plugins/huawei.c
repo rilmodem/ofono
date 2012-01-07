@@ -412,11 +412,17 @@ static void rfswitch_support(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_modem *modem = user_data;
 	struct huawei_data *data = ofono_modem_get_data(modem);
 
+	if (data->have_gsm == FALSE && data->have_cdma == TRUE) {
+		data->offline_command = "AT+CFUN=5";
+		goto done;
+	}
+
 	if (!ok)
 		data->offline_command = "AT+CFUN=5";
 	else
 		data->offline_command = "AT+CFUN=7";
 
+done:
 	g_at_chat_send(data->pcui, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
 }
