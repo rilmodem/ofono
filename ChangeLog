@@ -1,3 +1,11 @@
+ver 1.2:
+	Fix issue with PIN type string for network PUK.
+	Fix issue with voice dialing and Qualcomm MSM modems.
+	Fix issue with Option HSO and SIM card detection.
+	Add support for Option HSO voice call handling.
+	Add support for Huawei modem capabilities check.
+	Add support for Huawei unified GSM/UMTS and CDMA driver.
+
 ver 1.1:
 	Fix issue with Telit modem and signal strength indication.
 	Fix issue with Bluetooth and outstanding Connect/Disconnect.
