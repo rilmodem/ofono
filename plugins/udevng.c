@@ -606,7 +606,6 @@ static struct {
 	{ "gobi",	setup_gobi,	},
 	{ "sierra",	setup_sierra	},
 	{ "huawei",	setup_huawei	},
-	{ "huaweicdma",	setup_huawei	},
 	{ "speedupcdma",setup_speedup	},
 	{ "speedup",	setup_speedup	},
 	{ "linktop",	setup_linktop	},
