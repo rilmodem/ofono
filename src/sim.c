@@ -46,10 +46,6 @@
 #include "simfs.h"
 #include "stkutil.h"
 
-static GSList *g_drivers = NULL;
-
-static void sim_own_numbers_update(struct ofono_sim *sim);
-
 struct ofono_sim {
 	/* Contents of the SIM file system, in rough initialization order */
 	char *iccid;
@@ -139,6 +135,10 @@ static const char *const passwd_name[] = {
 	[OFONO_SIM_PASSWORD_PHCORP_PIN] = "corp",
 	[OFONO_SIM_PASSWORD_PHCORP_PUK] = "corppuk",
 };
+
+static void sim_own_numbers_update(struct ofono_sim *sim);
+
+static GSList *g_drivers = NULL;
 
 static const char *sim_passwd_name(enum ofono_sim_password_type type)
 {
@@ -1057,21 +1057,21 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 }
 
 static GDBusMethodTable sim_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	sim_get_properties	},
+	{ "GetProperties",	"",	"a{sv}",	sim_get_properties },
 	{ "SetProperty",	"sv",	"",		sim_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "ChangePin",		"sss",	"",		sim_change_pin,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "EnterPin",		"ss",	"",		sim_enter_pin,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "ResetPin",		"sss",	"",		sim_reset_pin,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "LockPin",		"ss",	"",		sim_lock_pin,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "UnlockPin",		"ss",	"",		sim_unlock_pin,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "GetIcon",		"y",	"ay",		sim_get_icon,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
