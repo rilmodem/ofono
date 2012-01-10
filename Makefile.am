@@ -374,6 +374,16 @@ builtin_libadd += @BLUEZ_LIBS@
 endif
 endif
 
+if PROVISION
+builtin_sources += plugins/mbpi.h plugins/mbpi.c
+
+builtin_modules += provision
+builtin_sources += plugins/provision.c
+
+builtin_modules += cdma_provision
+builtin_sources += plugins/cdma-provision.c
+endif
+
 if MAINTAINER_MODE
 builtin_modules += example_history
 builtin_sources += examples/history.c
