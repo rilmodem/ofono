@@ -87,6 +87,7 @@ struct huawei_data {
 	gboolean have_voice;
 	gboolean have_gsm;
 	gboolean have_cdma;
+	gboolean have_ndis;
 };
 
 static int huawei_probe(struct ofono_modem *modem)
@@ -177,8 +178,10 @@ static void ussdmode_support_cb(gboolean ok, GAtResult *result,
 static void dialmode_query_cb(gboolean ok, GAtResult *result,
 						gpointer user_data)
 {
-	//struct huawei_data *data = user_data;
+	struct huawei_data *data = user_data;
 	GAtResultIter iter;
+	gint dialmode, cdc_spec;
+	const char *str = "unknown";
 
 	if (!ok)
 		return;
@@ -187,6 +190,41 @@ static void dialmode_query_cb(gboolean ok, GAtResult *result,
 
 	if (!g_at_result_iter_next(&iter, "^DIALMODE:"))
 		return;
+
+	if (!g_at_result_iter_next_number(&iter, &dialmode))
+		return;
+
+	if (g_at_result_iter_next_number(&iter, &cdc_spec)) {
+		switch (cdc_spec) {
+		case 0:
+			str = "none";
+			break;
+		case 1:
+			str = "Modem port";
+			break;
+		case 2:
+			str = "NDIS port";
+			break;
+		case 3:
+			str = "Modem and NDIS port";
+			break;
+		}
+	}
+
+	switch (dialmode) {
+	case 0:
+		ofono_info("Modem support (CDC support: %s)", str);
+		data->have_ndis = FALSE;
+		break;
+	case 1:
+		ofono_info("NDIS support (CDC support: %s)", str);
+		data->have_ndis = TRUE;
+		break;
+	case 2:
+		ofono_info("Modem and NDIS support (CDC support: %s)", str);
+		data->have_ndis = TRUE;
+		break;
+	}
 }
 
 static void dialmode_support_cb(gboolean ok, GAtResult *result,
