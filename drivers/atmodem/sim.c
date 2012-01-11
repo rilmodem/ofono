@@ -1269,12 +1269,28 @@ static struct ofono_sim_driver driver = {
 	.query_locked		= at_pin_query_enabled,
 };
 
+static struct ofono_sim_driver driver_noef = {
+	.name			= "atmodem-noef",
+	.probe			= at_sim_probe,
+	.remove			= at_sim_remove,
+	.read_imsi		= at_read_imsi,
+	.query_passwd_state	= at_pin_query,
+	.query_pin_retries	= at_pin_retries_query,
+	.send_passwd		= at_pin_send,
+	.reset_passwd		= at_pin_send_puk,
+	.lock			= at_pin_enable,
+	.change_passwd		= at_change_passwd,
+	.query_locked		= at_pin_query_enabled,
+};
+
 void at_sim_init(void)
 {
 	ofono_sim_driver_register(&driver);
+	ofono_sim_driver_register(&driver_noef);
 }
 
 void at_sim_exit(void)
 {
 	ofono_sim_driver_unregister(&driver);
+	ofono_sim_driver_unregister(&driver_noef);
 }
