@@ -345,6 +345,16 @@ static int hso_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->control, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->app, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 
+	/*
+	 * Ensure that the modem is using GSM character set and not IRA,
+	 * otherwise weirdness with umlauts and other non-ASCII characters
+	 * can result
+	 */
+	g_at_chat_send(data->control, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+	g_at_chat_send(data->app, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+
 	g_at_chat_send(data->control, "AT+CFUN=4", none_prefix,
 					cfun_enable, modem, NULL);
 
