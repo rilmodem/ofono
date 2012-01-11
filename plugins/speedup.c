@@ -47,6 +47,8 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
+static const char *none_prefix[] = { NULL };
+
 struct speedup_data {
 	GAtChat *modem;
 	GAtChat *aux;
@@ -184,6 +186,16 @@ static int speedup_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->modem, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->aux, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
+
+	/*
+	 * Ensure that the modem is using GSM character set and not IRA,
+	 * otherwise weirdness with umlauts and other non-ASCII characters
+	 * can result
+	 */
+	g_at_chat_send(data->modem, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
 
 	g_at_chat_send(data->aux, "AT+CFUN=1", NULL,
 					cfun_enable, modem, NULL);
