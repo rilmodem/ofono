@@ -62,6 +62,7 @@ static const char *gcap_prefix[] = { "+GCAP:", NULL };
 static const char *rfswitch_prefix[] = { "^RFSWITCH:", NULL };
 static const char *sysinfo_prefix[] = { "^SYSINFO:", NULL };
 static const char *ussdmode_prefix[] = { "^USSDMODE:", NULL };
+static const char *dialmode_prefix[] = { "^DIALMODE:", NULL };
 static const char *cvoice_prefix[] = { "^CVOICE:", NULL };
 
 enum {
@@ -171,6 +172,40 @@ static void ussdmode_support_cb(gboolean ok, GAtResult *result,
 	/* Query current USSD mode */
 	g_at_chat_send(data->pcui, "AT^USSDMODE?", ussdmode_prefix,
 					ussdmode_query_cb, data, NULL);
+}
+
+static void dialmode_query_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	//struct huawei_data *data = user_data;
+	GAtResultIter iter;
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^DIALMODE:"))
+		return;
+}
+
+static void dialmode_support_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct huawei_data *data = user_data;
+	GAtResultIter iter;
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "^DIALMODE:"))
+		return;
+
+	/* Query current NDIS mode */
+	g_at_chat_send(data->pcui, "AT^DIALMODE?", dialmode_prefix,
+					dialmode_query_cb, data, NULL);
 }
 
 static void cvoice_query_cb(gboolean ok, GAtResult *result,
@@ -358,6 +393,10 @@ static void sysinfo_enable_cb(gboolean ok, GAtResult *result,
 	/* Check USSD mode support */
 	g_at_chat_send(data->pcui, "AT^USSDMODE=?", ussdmode_prefix,
 					ussdmode_support_cb, data, NULL);
+
+	/* Check NDIS mode support */
+	g_at_chat_send(data->pcui, "AT^DIALMODE=?", dialmode_prefix,
+					dialmode_support_cb, data, NULL);
 
 	/* Check for voice support */
 	g_at_chat_send(data->pcui, "AT^CVOICE=?", cvoice_prefix,
