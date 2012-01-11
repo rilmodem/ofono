@@ -162,6 +162,16 @@ static int nokia_enable(struct ofono_modem *modem)
 	g_at_chat_send(data->aux, "ATE0 &C0 +CMEE=1", NULL,
 						NULL, NULL, NULL);
 
+	/*
+	 * Ensure that the modem is using GSM character set and not IRA,
+	 * otherwise weirdness with umlauts and other non-ASCII characters
+	 * can result
+	 */
+	g_at_chat_send(data->modem, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+
 	g_at_chat_send(data->aux, "AT+CFUN=1", none_prefix,
 					cfun_enable, modem, NULL);
 
