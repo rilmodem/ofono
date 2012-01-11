@@ -167,6 +167,16 @@ static void zoprt_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->aux, "AT&C0", NULL, NULL, NULL, NULL);
 
+	/*
+	 * Ensure that the modem is using GSM character set and not IRA,
+	 * otherwise weirdness with umlauts and other non-ASCII characters
+	 * can result
+	 */
+	g_at_chat_send(data->modem, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+	g_at_chat_send(data->aux, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+
 	/* Read PCB information */
 	g_at_chat_send(data->aux, "AT+ZPCB?", none_prefix, NULL, NULL, NULL);
 
