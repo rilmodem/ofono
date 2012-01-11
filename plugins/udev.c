@@ -88,7 +88,7 @@ static const char *get_serial(struct udev_device *udev_device)
 		unsigned int i, len = strlen(serial);
 
 		for (i = 0; i < len; i++) {
-			if (!isalnum(serial[i]))
+			if (!g_ascii_isalnum(serial[i]))
 				return NULL;
 		}
 	}
