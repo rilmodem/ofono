@@ -49,7 +49,7 @@ void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
 	for (i = 0; i < len; i++) {
 		char c = str[i];
 
-		if (isprint(c))
+		if (g_ascii_isprint(c))
 			escaped += 1;
 		else if (c == '\r' || c == '\t' || c == '\n')
 			escaped += 2;
@@ -95,7 +95,7 @@ void g_at_util_debug_chat(gboolean in, const char *str, gsize len,
 			escaped += esc_size;
 			break;
 		default:
-			if (isprint(c))
+			if (g_ascii_isprint(c))
 				escaped_str[escaped++] = c;
 			else {
 				escaped_str[escaped++] = '\\';
@@ -149,7 +149,7 @@ void g_at_util_debug_hexdump(gboolean in, const unsigned char *buf, gsize len,
 		str[((i % 16) * 3) + 1] = ' ';
 		str[((i % 16) * 3) + 2] = hexdigits[buf[i] >> 4];
 		str[((i % 16) * 3) + 3] = hexdigits[buf[i] & 0xf];
-		str[(i % 16) + 51] = isprint(buf[i]) ? buf[i] : '.';
+		str[(i % 16) + 51] = g_ascii_isprint(buf[i]) ? buf[i] : '.';
 
 		if ((i + 1) % 16 == 0) {
 			str[49] = ' ';
