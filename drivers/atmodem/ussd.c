@@ -216,19 +216,6 @@ static void at_ussd_request(struct ofono_ussd *ussd, int dcs,
 				converted, dcs);
 	}
 
-	switch (data->vendor) {
-	case OFONO_VENDOR_QUALCOMM_MSM:
-		/* Ensure that the modem is using GSM character set. It
-		 * seems it defaults to IRA and then umlauts are not
-		 * properly encoded. The modem returns some weird from
-		 * of Latin-1, but it is not really Latin-1 either. */
-		g_at_chat_send(data->chat, "AT+CSCS=\"GSM\"", none_prefix,
-							NULL, NULL, NULL);
-		break;
-	default:
-		break;
-	}
-
 	if (g_at_chat_send(data->chat, buf, cusd_prefix,
 				cusd_request_cb, cbd, g_free) > 0)
 		return;
