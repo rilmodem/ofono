@@ -758,6 +758,18 @@ static void huawei_pre_sim(struct ofono_modem *modem)
 			ofono_sim_inserted_notify(sim, TRUE);
 	} else if (data->have_cdma == TRUE) {
 		ofono_devinfo_create(modem, 0, "cdmamodem", data->pcui);
+
+		/* Create SIM atom only if SIM is not embedded */
+		if (data->sim_state != SIM_STATE_ROMSIM) {
+			struct ofono_sim *sim;
+
+			/* Use sim drivers without Elementary File entries */
+			sim = ofono_sim_create(modem, OFONO_VENDOR_HUAWEI,
+						"atmodem-noef", data->pcui);
+
+			if (sim && data->have_sim == TRUE)
+				ofono_sim_inserted_notify(sim, TRUE);
+		}
 	}
 }
 
