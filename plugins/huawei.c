@@ -744,33 +744,25 @@ static void huawei_set_online(struct ofono_modem *modem, ofono_bool_t online,
 static void huawei_pre_sim(struct ofono_modem *modem)
 {
 	struct huawei_data *data = ofono_modem_get_data(modem);
+	struct ofono_sim *sim = NULL;
 
 	DBG("%p", modem);
 
 	if (data->have_gsm == TRUE) {
-		struct ofono_sim *sim;
-
 		ofono_devinfo_create(modem, 0, "atmodem", data->pcui);
 		sim = ofono_sim_create(modem, OFONO_VENDOR_HUAWEI,
 						"atmodem", data->pcui);
-
-		if (sim && data->have_sim == TRUE)
-			ofono_sim_inserted_notify(sim, TRUE);
 	} else if (data->have_cdma == TRUE) {
 		ofono_devinfo_create(modem, 0, "cdmamodem", data->pcui);
 
 		/* Create SIM atom only if SIM is not embedded */
-		if (data->sim_state != SIM_STATE_ROMSIM) {
-			struct ofono_sim *sim;
-
-			/* Use sim drivers without Elementary File entries */
+		if (data->sim_state != SIM_STATE_ROMSIM)
 			sim = ofono_sim_create(modem, OFONO_VENDOR_HUAWEI,
 						"atmodem-noef", data->pcui);
-
-			if (sim && data->have_sim == TRUE)
-				ofono_sim_inserted_notify(sim, TRUE);
-		}
 	}
+
+	if (sim && data->have_sim == TRUE)
+		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void huawei_post_sim(struct ofono_modem *modem)
