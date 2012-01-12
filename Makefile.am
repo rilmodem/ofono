@@ -347,6 +347,9 @@ builtin_sources += plugins/speedupcdma.c
 builtin_modules += samsung
 builtin_sources += plugins/samsung.c
 
+builtin_modules += sim900
+builtin_sources += plugins/sim900.c
+
 if BLUETOOTH
 builtin_modules += bluetooth
 builtin_sources += plugins/bluetooth.c plugins/bluetooth.h
