@@ -420,6 +420,16 @@ static void sysinfo_enable_cb(gboolean ok, GAtResult *result,
 	g_at_chat_send(data->modem, "AT&C0", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->pcui, "AT&C0", NULL, NULL, NULL, NULL);
 
+	/*
+	 * Ensure that the modem is using GSM character set and not IRA,
+	 * otherwise weirdness with umlauts and other non-ASCII characters
+	 * can result
+	 */
+	g_at_chat_send(data->modem, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+	g_at_chat_send(data->pcui, "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+
 	/* Query current device settings */
 	g_at_chat_send(data->pcui, "AT^U2DIAG?", none_prefix,
 						NULL, NULL, NULL);
@@ -591,16 +601,6 @@ static int huawei_enable(struct ofono_modem *modem)
 
 	g_at_chat_send(data->modem, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->pcui, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
-
-	/*
-	 * Ensure that the modem is using GSM character set and not IRA,
-	 * otherwise weirdness with umlauts and other non-ASCII characters
-	 * can result
-	 */
-	g_at_chat_send(data->modem, "AT+CSCS=\"GSM\"", none_prefix,
-							NULL, NULL, NULL);
-	g_at_chat_send(data->pcui, "AT+CSCS=\"GSM\"", none_prefix,
-							NULL, NULL, NULL);
 
 	data->sim_state = SIM_STATE_NOT_EXISTENT;
 
