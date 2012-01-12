@@ -123,6 +123,14 @@ static void cusd_cancel_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	decode_at_error(&error, g_at_result_final_response(result));
 
+	/*
+	 * All errors and notifications arrive unexpected and
+	 * thus just reset the state here. This is safer than
+	 * getting stuck in a dead-lock.
+	 */
+	error.type = OFONO_ERROR_TYPE_NO_ERROR;
+	error.error = 0;
+
 	cb(&error, cbd->data);
 }
 
