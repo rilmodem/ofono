@@ -130,6 +130,8 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 		goto out;
 	}
 
+	DBG("response charset %d modem charset %d", charset, data->charset);
+
 	switch (charset) {
 	case SMS_CHARSET_7BIT:
 		switch (data->charset) {
@@ -159,6 +161,8 @@ static void cusd_parse(GAtResult *result, struct ofono_ussd *ussd)
 		msg_ptr = decode_hex_own_buf(content, -1, &msg_len, 0, msg);
 		break;
 	}
+
+	DBG("msg ptr %p msg len %ld", msg_ptr, msg_len);
 
 out:
 	ofono_ussd_notify(ussd, status, dcs, msg_ptr, msg_ptr ? msg_len : 0);
