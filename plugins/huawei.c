@@ -88,6 +88,7 @@ struct huawei_data {
 	gboolean have_gsm;
 	gboolean have_cdma;
 	gboolean have_ndis;
+	gboolean have_ussdmode;
 };
 
 static int huawei_probe(struct ofono_modem *modem)
@@ -148,12 +149,8 @@ static void ussdmode_query_cb(gboolean ok, GAtResult *result,
 	if (!g_at_result_iter_next_number(&iter, &ussdmode))
 		return;
 
-	if (ussdmode == 0)
-		return;
-
-	/* Set USSD mode to text mode */
-	g_at_chat_send(data->pcui, "AT^USSDMODE=0", none_prefix,
-						NULL, NULL, NULL);
+	if (ussdmode == 1)
+		data->have_ussdmode = TRUE;
 }
 
 static void ussdmode_support_cb(gboolean ok, GAtResult *result,
@@ -848,8 +845,11 @@ static void huawei_post_online(struct ofono_modem *modem)
 
 		ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->pcui);
-		ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-						"atmodem", data->pcui);
+		if (data->have_ussdmode == TRUE)
+			ofono_ussd_create(modem, 0, "huaweimodem", data->pcui);
+		else
+			ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
+							"atmodem", data->pcui);
 	} else if (data->have_cdma == TRUE) {
 		ofono_cdma_netreg_create(modem, 0, "huaweimodem", data->pcui);
 
