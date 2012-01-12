@@ -1,0 +1,12 @@
+SIM900 modem usage
+===================
+
+To enable SIM900 module support you need to put the following
+udev rule into appropriate file in /{etc,lib}/udev/rules.d:
+
+KERNEL=="gsmtty3", ENV{OFONO_DRIVER}="sim900"
+
+On the i-Tetra tracking device, the SIM900 is accessed
+via N_GSM mux device. We use ofono as SMS message
+service and incoming voice calls service, so we
+use /dev/gsmtty1 provided by N_GSM mux.
