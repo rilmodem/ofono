@@ -34,6 +34,7 @@
 
 static int huaweimodem_init(void)
 {
+	huawei_ussd_init();
 	huawei_voicecall_init();
 	huawei_audio_settings_init();
 	huawei_radio_settings_init();
@@ -52,6 +53,7 @@ static void huaweimodem_exit(void)
 	huawei_radio_settings_exit();
 	huawei_audio_settings_exit();
 	huawei_voicecall_exit();
+	huawei_ussd_exit();
 }
 
 OFONO_PLUGIN_DEFINE(huaweimodem, "Huawei modem driver", VERSION,
