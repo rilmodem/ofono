@@ -197,19 +197,27 @@ AC_SUBST(BLUEZ_CFLAGS)
 AC_SUBST(BLUEZ_LIBS)
 AM_CONDITIONAL(BLUETOOTH, test "${enable_bluetooth}" != "no")
 
+AC_ARG_WITH([provisiondb], AC_HELP_STRING([--with-provisiondb=FILE],
+	[location of provision database]), [path_provisiondb=${withval}])
+
 AC_ARG_ENABLE(provision, AC_HELP_STRING([--disable-provision],
 				[disable provisioning suport]),
 					[enable_provision=${enableval}])
 if (test "${enable_provision}" != "no"); then
-	AC_MSG_CHECKING([for mobile-broadband-provider-info])
-	PKG_CHECK_EXISTS(mobile-broadband-provider-info,
-		_PKG_CONFIG(PROVIDER_DATABASE, [variable=database],
+	if (test -n "${path_provisiondb}"); then
+		AC_DEFINE_UNQUOTED(PROVIDER_DATABASE, "${path_provisiondb}",
+						[Mobile provider database])
+	else
+		AC_MSG_CHECKING([for mobile-broadband-provider-info])
+		PKG_CHECK_EXISTS(mobile-broadband-provider-info,
+			_PKG_CONFIG(PROVIDER_DATABASE, [variable=database],
 					[mobile-broadband-provider-info])
-		AC_DEFINE_UNQUOTED(PROVIDER_DATABASE,
-					"$pkg_cv_PROVIDER_DATABASE",
-					[Mobile provider database])
-		AC_MSG_RESULT([yes]),
-		AC_MSG_ERROR(Mobile broadband provider database is required))
+			AC_DEFINE_UNQUOTED(PROVIDER_DATABASE,
+						"$pkg_cv_PROVIDER_DATABASE",
+						[Mobile provider database])
+			AC_MSG_RESULT([yes]),
+			AC_MSG_ERROR(Mobile broadband provider database is required))
+	fi
 fi
 AM_CONDITIONAL(PROVISION, test "${enable_provision}" != "no")
 
