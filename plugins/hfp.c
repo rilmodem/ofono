@@ -411,6 +411,9 @@ static DBusMessage *hfp_agent_release(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_modem *modem = data;
+	const char *obj_path = ofono_modem_get_path(modem);
+
+	g_dbus_unregister_interface(connection, obj_path, HFP_AGENT_INTERFACE);
 
 	ofono_modem_remove(modem);
 
@@ -757,8 +760,11 @@ static int hfp_probe(struct ofono_modem *modem)
 static void hfp_remove(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
+	const char *obj_path = ofono_modem_get_path(modem);
 
-	hfp_unregister_ofono_handsfree(modem);
+	if (g_dbus_unregister_interface(connection, obj_path,
+					HFP_AGENT_INTERFACE))
+		hfp_unregister_ofono_handsfree(modem);
 
 	g_hash_table_remove(uuid_hash, data->handsfree_path);
 
