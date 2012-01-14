@@ -796,13 +796,34 @@ static int hfp_enable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
+static void hfp_power_down(DBusPendingCall *call, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	DBusMessage *reply;
+	DBusError derr;
+
+	reply = dbus_pending_call_steal_reply(call);
+
+	dbus_error_init(&derr);
+	if (dbus_set_error_from_message(&derr, reply)) {
+		ofono_debug("Disconnect reply: %s", derr.message);
+		dbus_error_free(&derr);
+		goto done;
+	}
+
+	ofono_modem_set_powered(modem, FALSE);
+
+done:
+	dbus_message_unref(reply);
+}
+
 static int hfp_disconnect_ofono_handsfree(struct ofono_modem *modem)
 {
 	struct hfp_data *data = ofono_modem_get_data(modem);
 
 	return send_method_call(BLUEZ_SERVICE, data->handsfree_path,
 				BLUEZ_GATEWAY_INTERFACE, "Disconnect",
-				NULL, NULL, DBUS_TYPE_INVALID);
+				hfp_power_down, modem, DBUS_TYPE_INVALID);
 }
 
 static int hfp_disable(struct ofono_modem *modem)
@@ -812,7 +833,8 @@ static int hfp_disable(struct ofono_modem *modem)
 	clear_data(modem);
 
 	hfp_disconnect_ofono_handsfree(modem);
-	return 0;
+
+	return -EINPROGRESS;
 }
 
 static void hfp_pre_sim(struct ofono_modem *modem)
