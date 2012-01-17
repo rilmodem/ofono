@@ -41,6 +41,8 @@ struct modem_info {
 	char *syspath;
 	char *devname;
 	char *driver;
+	char *vendor;
+	char *model;
 	GSList *devices;
 	struct ofono_modem *modem;
 	const char *sysattr;
@@ -708,6 +710,8 @@ static void destroy_modem(gpointer data)
 	g_free(modem->syspath);
 	g_free(modem->devname);
 	g_free(modem->driver);
+	g_free(modem->vendor);
+	g_free(modem->model);
 	g_free(modem);
 }
 
@@ -750,7 +754,8 @@ static gint compare_device(gconstpointer a, gconstpointer b)
 }
 
 static void add_device(const char *syspath, const char *devname,
-			const char *driver, struct udev_device *device)
+			const char *driver, const char *vendor,
+			const char *model, struct udev_device *device)
 {
 	struct udev_device *intf;
 	const char *devpath, *devnode, *interface, *number, *label, *sysattr;
@@ -782,6 +787,8 @@ static void add_device(const char *syspath, const char *devname,
 		modem->syspath = g_strdup(syspath);
 		modem->devname = g_strdup(devname);
 		modem->driver = g_strdup(driver);
+		modem->vendor = g_strdup(vendor);
+		modem->model = g_strdup(model);
 
 		modem->sysattr = get_sysattr(driver);
 
@@ -860,7 +867,8 @@ static struct {
 static void check_usb_device(struct udev_device *device)
 {
 	struct udev_device *usb_device;
-	const char *driver, *syspath, *devname;
+	const char *syspath, *devname, *driver;
+	const char *vendor = NULL, *model = NULL;
 
 	usb_device = udev_device_get_parent_with_subsystem_devtype(device,
 							"usb", "usb_device");
@@ -900,18 +908,25 @@ static void check_usb_device(struct udev_device *device)
 
 			if (vendor_list[i].vid == NULL) {
 				driver = vendor_list[i].driver;
+				vendor = vid;
+				model = pid;
 				break;
 			}
 
 			if (g_str_equal(vendor_list[i].vid, vid) == TRUE) {
 				if (vendor_list[i].pid == NULL) {
-					if (driver == NULL)
+					if (driver == NULL) {
 						driver = vendor_list[i].driver;
+						vendor = vid;
+						model = pid;
+					}
 					continue;
 				}
 
 				if (g_strcmp0(vendor_list[i].pid, pid) == 0) {
 					driver = vendor_list[i].driver;
+					vendor = vid;
+					model = pid;
 					break;
 				}
 			}
@@ -921,7 +936,7 @@ static void check_usb_device(struct udev_device *device)
 			return;
 	}
 
-	add_device(syspath, devname, driver, device);
+	add_device(syspath, devname, driver, vendor, model, device);
 }
 
 static void check_device(struct udev_device *device)
