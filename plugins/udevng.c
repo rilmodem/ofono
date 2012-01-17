@@ -571,9 +571,17 @@ static gboolean setup_simcom(struct modem_info *modem)
 static gboolean setup_zte(struct modem_info *modem)
 {
 	const char *aux = NULL, *mdm = NULL, *qcdm = NULL;
+	const char *modem_intf;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
+
+	if (g_strcmp0(modem->model, "0016") == 0 ||
+				g_strcmp0(modem->model, "0017") == 0 ||
+				g_strcmp0(modem->model, "0117") == 0)
+		modem_intf = "02";
+	else
+		modem_intf = "03";
 
 	for (list = modem->devices; list; list = list->next) {
 		struct device_info *info = list->data;
@@ -594,9 +602,7 @@ static gboolean setup_zte(struct modem_info *modem)
 				qcdm = info->devnode;
 			else if (g_strcmp0(info->number, "01") == 0)
 				aux = info->devnode;
-			else if (g_strcmp0(info->number, "02") == 0)
-				mdm = info->devnode;
-			else if (g_strcmp0(info->number, "03") == 0)
+			else if (g_strcmp0(info->number, modem_intf) == 0)
 				mdm = info->devnode;
 		}
 	}
