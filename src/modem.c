@@ -767,7 +767,7 @@ void __ofono_modem_append_properties(struct ofono_modem *modem,
 	char **features;
 	int i;
 	GSList *l;
-	struct ofono_atom *devinfo_atom;
+	struct ofono_devinfo *info;
 	dbus_bool_t emergency = ofono_modem_get_emergency_mode(modem);
 	const char *strtype;
 
@@ -783,14 +783,8 @@ void __ofono_modem_append_properties(struct ofono_modem *modem,
 	ofono_dbus_dict_append(dict, "Emergency", DBUS_TYPE_BOOLEAN,
 				&emergency);
 
-	devinfo_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_DEVINFO);
-
-	/* We cheat a little here and don't check the registered status */
-	if (devinfo_atom) {
-		struct ofono_devinfo *info;
-
-		info = __ofono_atom_get_data(devinfo_atom);
-
+	info = __ofono_atom_find(OFONO_ATOM_TYPE_DEVINFO, modem);
+	if (info) {
 		if (info->manufacturer)
 			ofono_dbus_dict_append(dict, "Manufacturer",
 						DBUS_TYPE_STRING,
