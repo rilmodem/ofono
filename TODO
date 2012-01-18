@@ -103,17 +103,6 @@ SIM / SIM File system
   Complexity: C4
 
 
-Bluetooth HFP
-=============
-
-- Support HFP-specific AT commands for the HF role, providing an appropriate
-  D-Bus API when needed. Some examples are AT+BIA, AT+BINP, AT+BLDN, AT+BVRA,
-  AT+BRSF, etc.
-
-  Priority: Medium
-  Complexity: C2
-
-
 Modem Emulator
 ==============
 

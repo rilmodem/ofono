@@ -727,3 +727,15 @@ Bluetooth Sim Access Profile
   (e.g. via SAP).  This is done transparently to the user and all of oFono's
   APIs are supported on such devices (assuming the device itself supports
   the required features).  Today the Telit UC864-G is supported in this mode.
+
+Bluetooth Handsfree Profile
+===========================
+
+- Voicecall support.  oFono supports the use of Bluetooth Handsfree capable
+  devices to make voicecalls.  All features are supported, including 3-way
+  calls, multiparty calls, call waiting, etc.
+
+- Support for Handsfree specific protocol features.  oFono clients can gain
+  access to Bluetooth HFP specific features via the oFono Handsfree interface.
+  These features include voice recognition activation, last number redial,
+  etc.
