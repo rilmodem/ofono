@@ -886,19 +886,16 @@ static gboolean handle_command_send_sms(const struct stk_command *cmd,
 					struct ofono_stk *stk)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(stk->atom);
-	struct ofono_atom *sms_atom;
 	struct ofono_sms *sms;
 	GSList msg_list;
 	struct ofono_uuid uuid;
 
-	sms_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SMS);
+	sms = __ofono_atom_find(OFONO_ATOM_TYPE_SMS, modem);
 
-	if (sms_atom == NULL || !__ofono_atom_get_registered(sms_atom)) {
+	if (sms == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 		return TRUE;
 	}
-
-	sms = __ofono_atom_get_data(sms_atom);
 
 	extern_req_start(stk);
 
@@ -1991,17 +1988,15 @@ static gboolean handle_command_send_ussd(const struct stk_command *cmd,
 	struct ofono_modem *modem = __ofono_atom_get_modem(stk->atom);
 	static unsigned char busy_on_ss_result[] = { 0x03 };
 	static unsigned char busy_on_ussd_result[] = { 0x08 };
-	struct ofono_atom *atom;
 	struct ofono_ussd *ussd;
 	int err;
 
-	atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_USSD);
-	if (atom == NULL || !__ofono_atom_get_registered(atom)) {
+	ussd = __ofono_atom_find(OFONO_ATOM_TYPE_USSD, modem);
+	if (ussd == NULL) {
 		rsp->result.type = STK_RESULT_TYPE_NOT_CAPABLE;
 		return TRUE;
 	}
 
-	ussd = __ofono_atom_get_data(atom);
 	if (__ofono_ussd_is_busy(ussd)) {
 		ADD_ERROR_RESULT(rsp->result, STK_RESULT_TYPE_TERMINAL_BUSY,
 					busy_on_ussd_result);
