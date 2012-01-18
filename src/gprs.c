@@ -2502,17 +2502,6 @@ static void free_contexts(struct ofono_gprs *gprs)
 	g_slist_free(gprs->contexts);
 }
 
-static inline struct ofono_sim *ofono_gprs_get_sim(struct ofono_gprs *gprs)
-{
-	struct ofono_atom *atom = __ofono_modem_find_atom(
-					__ofono_atom_get_modem(gprs->atom),
-					OFONO_ATOM_TYPE_SIM);
-	if (atom)
-		return __ofono_atom_get_data(atom);
-
-	return NULL;
-}
-
 static void gprs_unregister(struct ofono_atom *atom)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -2541,9 +2530,12 @@ static void gprs_unregister(struct ofono_atom *atom)
 		gprs->netreg = NULL;
 	}
 
-	if (gprs->spn_watch)
-		ofono_sim_remove_spn_watch(ofono_gprs_get_sim(gprs),
-							&gprs->spn_watch);
+	if (gprs->spn_watch) {
+		struct ofono_sim *sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM,
+								modem);
+
+		ofono_sim_remove_spn_watch(sim, &gprs->spn_watch);
+	}
 
 	ofono_modem_remove_interface(modem,
 					OFONO_CONNECTION_MANAGER_INTERFACE);
@@ -2970,7 +2962,8 @@ static void ofono_gprs_finish_register(struct ofono_gprs *gprs)
 static void spn_read_cb(const char *spn, const char *dc, void *data)
 {
 	struct ofono_gprs *gprs	= data;
-	struct ofono_sim *sim = ofono_gprs_get_sim(gprs);
+	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
+	struct ofono_sim *sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
 
 	provision_contexts(gprs, ofono_sim_get_mcc(sim),
 					ofono_sim_get_mnc(sim), spn);
@@ -2982,7 +2975,8 @@ static void spn_read_cb(const char *spn, const char *dc, void *data)
 
 void ofono_gprs_register(struct ofono_gprs *gprs)
 {
-	struct ofono_sim *sim = ofono_gprs_get_sim(gprs);
+	struct ofono_modem *modem = __ofono_atom_get_modem(gprs->atom);
+	struct ofono_sim *sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
 
 	if (sim == NULL)
 		goto finish;
