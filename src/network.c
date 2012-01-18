@@ -2040,7 +2040,6 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(netreg->atom);
 	const char *path = __ofono_atom_get_path(netreg->atom);
-	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_NETWORK_REGISTRATION_INTERFACE,
@@ -2061,11 +2060,9 @@ void ofono_netreg_register(struct ofono_netreg *netreg)
 		netreg->driver->registration_status(netreg,
 					init_registration_status, netreg);
 
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-	if (sim_atom != NULL) {
+	netreg->sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
+	if (netreg->sim != NULL) {
 		/* Assume that if sim atom exists, it is ready */
-		netreg->sim = __ofono_atom_get_data(sim_atom);
 		netreg->sim_context = ofono_sim_context_create(netreg->sim);
 
 		netreg_load_settings(netreg);
