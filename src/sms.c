@@ -75,7 +75,6 @@ struct ofono_sms {
 	struct ofono_netreg *netreg;
 	unsigned int netreg_watch;
 	unsigned int status_watch;
-	struct ofono_sim *sim;
 	GKeyFile *settings;
 	char *imsi;
 	int bearer;
@@ -1948,6 +1947,7 @@ void ofono_sms_register(struct ofono_sms *sms)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	const char *path = __ofono_atom_get_path(sms->atom);
+	struct ofono_sim *sim;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_MESSAGE_MANAGER_INTERFACE,
@@ -1969,17 +1969,17 @@ void ofono_sms_register(struct ofono_sms *sms)
 					OFONO_ATOM_TYPE_NETREG,
 					netreg_watch, sms, NULL);
 
-	sms->sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
+	sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
 
 	/*
 	 * If we have a sim atom, we can uniquely identify the SIM,
 	 * otherwise create an sms assembly which doesn't backup the fragment
 	 * store.
 	 */
-	if (sms->sim) {
+	if (sim) {
 		const char *imsi;
 
-		imsi = ofono_sim_get_imsi(sms->sim);
+		imsi = ofono_sim_get_imsi(sim);
 		sms->assembly = sms_assembly_new(imsi);
 
 		sms->sr_assembly = status_report_assembly_new(imsi);
