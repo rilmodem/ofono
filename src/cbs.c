@@ -1085,8 +1085,6 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(cbs->atom);
 	const char *path = __ofono_atom_get_path(cbs->atom);
-	struct ofono_atom *sim_atom;
-	struct ofono_atom *stk_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CELL_BROADCAST_INTERFACE,
@@ -1099,20 +1097,15 @@ void ofono_cbs_register(struct ofono_cbs *cbs)
 
 	ofono_modem_add_interface(modem, OFONO_CELL_BROADCAST_INTERFACE);
 
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-	if (sim_atom) {
-		cbs->sim = __ofono_atom_get_data(sim_atom);
+	cbs->sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
+	if (cbs->sim) {
 		cbs->sim_context = ofono_sim_context_create(cbs->sim);
 
 		if (ofono_sim_get_state(cbs->sim) == OFONO_SIM_STATE_READY)
 			cbs_got_imsi(cbs);
 	}
 
-	stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
-
-	if (stk_atom)
-		cbs->stk = __ofono_atom_get_data(stk_atom);
+	cbs->stk = __ofono_atom_find(OFONO_ATOM_TYPE_STK, modem);
 
 	cbs->netreg_watch = __ofono_modem_add_atom_watch(modem,
 					OFONO_ATOM_TYPE_NETREG,
