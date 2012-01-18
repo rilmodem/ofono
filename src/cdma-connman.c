@@ -342,14 +342,12 @@ static ofono_bool_t network_registered(struct ofono_cdma_connman *cm)
 {
 	int status;
 	struct ofono_modem *modem = __ofono_atom_get_modem(cm->atom);
-	struct ofono_atom *atom = __ofono_modem_find_atom(modem,
-						OFONO_ATOM_TYPE_CDMA_NETREG);
 	struct ofono_cdma_netreg *cdma_netreg;
 
-	if (atom == NULL)
+	cdma_netreg = __ofono_atom_find(OFONO_ATOM_TYPE_CDMA_NETREG, modem);
+	if (cdma_netreg == NULL)
 		return FALSE;
 
-	cdma_netreg = __ofono_atom_get_data(atom);
 	status = ofono_cdma_netreg_get_status(cdma_netreg);
 
 	switch (status) {
