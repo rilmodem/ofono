@@ -305,14 +305,6 @@ Sim Toolkit
 Miscellaneous
 =============
 
-- Bluetooth SAP Client support.  The Telit UC864-G devices support Bluetooth
-  SAP client mode.  This requires the use of a modem side-channel to read the
-  APDU & CPDU data and send it to the remote phone device over Bluetooth RFCOMM
-  channel.
-
-  Complexity: C4
-  Priority: Low
-
 - PolicyKit support.  Add support for PolicyKit checking of all oFono D-Bus
   interfaces.
 

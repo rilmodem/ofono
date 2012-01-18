@@ -707,3 +707,11 @@ CDMA Network Acquisition
 
 - Support reporting of the received signal strength indicator (RSSI)
   measurement for the currently acquired 1xEV-DO data network.
+
+Bluetooth Sim Access Profile
+============================
+
+- oFono supports certain modems that can utilize remote sim cards
+  (e.g. via SAP).  This is done transparently to the user and all of oFono's
+  APIs are supported on such devices (assuming the device itself supports
+  the required features).  Today the Telit UC864-G is supported in this mode.
