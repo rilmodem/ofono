@@ -2151,6 +2151,14 @@ const char *ofono_sim_get_mnc(struct ofono_sim *sim)
 	return sim->mnc;
 }
 
+const char *ofono_sim_get_spn(struct ofono_sim *sim)
+{
+	if (sim == NULL)
+		return NULL;
+
+	return sim->spn;
+}
+
 enum ofono_sim_phase ofono_sim_get_phase(struct ofono_sim *sim)
 {
 	if (sim == NULL)
