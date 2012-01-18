@@ -1022,7 +1022,6 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 	DBusConnection *conn;
 	const char *path;
 	struct ofono_modem *modem;
-	struct ofono_atom *sim_atom;
 
 	if (mw == NULL)
 		return;
@@ -1043,11 +1042,9 @@ void ofono_message_waiting_register(struct ofono_message_waiting *mw)
 
 	ofono_modem_add_interface(modem, OFONO_MESSAGE_WAITING_INTERFACE);
 
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-	if (sim_atom) {
+	mw->sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
+	if (mw->sim) {
 		/* Assume that if sim atom exists, it is ready */
-		mw->sim = __ofono_atom_get_data(sim_atom);
 		mw->sim_context = ofono_sim_context_create(mw->sim);
 
 		/* Loads MWI states and MBDN from SIM */
