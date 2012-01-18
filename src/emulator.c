@@ -336,14 +336,11 @@ static struct ofono_call *find_call_with_status(struct ofono_emulator *em,
 								int status)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(em->atom);
-	struct ofono_atom *vc_atom;
 	struct ofono_voicecall *vc;
 
-	vc_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_VOICECALL);
-	if (vc_atom == NULL)
+	vc = __ofono_atom_find(OFONO_ATOM_TYPE_VOICECALL, modem);
+	if (vc == NULL)
 		return NULL;
-
-	vc = __ofono_atom_get_data(vc_atom);
 
 	return __ofono_voicecall_find_call_with_status(vc, status);
 }
