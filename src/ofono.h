@@ -180,6 +180,14 @@ void *__ofono_atom_get_data(struct ofono_atom *atom);
 const char *__ofono_atom_get_path(struct ofono_atom *atom);
 struct ofono_modem *__ofono_atom_get_modem(struct ofono_atom *atom);
 
+#define __ofono_atom_find(enum_type, modem)			\
+({								\
+	struct ofono_atom *atom =				\
+		__ofono_modem_find_atom(modem, enum_type);	\
+								\
+	atom ? __ofono_atom_get_data(atom) : NULL;		\
+})
+
 void __ofono_atom_register(struct ofono_atom *atom,
 				void (*unregister)(struct ofono_atom *));
 void __ofono_atom_unregister(struct ofono_atom *atom);
