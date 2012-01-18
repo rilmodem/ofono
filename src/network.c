@@ -82,7 +82,6 @@ struct ofono_netreg {
 	void *driver_data;
 	struct ofono_atom *atom;
 	unsigned int hfp_watch;
-	char *spn;
 	unsigned int spn_watch;
 };
 
@@ -362,6 +361,7 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 {
 	struct network_operator_data *opd = netreg->current_operator;
 	const char *plmn;
+	const char *spn;
 	static char name[1024];
 	static char mccmnc[OFONO_MAX_MCC_LENGTH + OFONO_MAX_MNC_LENGTH + 1];
 	int len = sizeof(name);
@@ -392,7 +392,9 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	if (opd->eons_info && opd->eons_info->longname)
 		plmn = opd->eons_info->longname;
 
-	if (netreg->spn == NULL || strlen(netreg->spn) == 0) {
+	spn = ofono_sim_get_spn(netreg->sim);
+
+	if (spn == NULL || strlen(spn) == 0) {
 		g_strlcpy(name, plmn, len);
 		return name;
 	}
@@ -406,14 +408,14 @@ static char *get_operator_display_name(struct ofono_netreg *netreg)
 	if (home_or_spdi)
 		if (netreg->flags & NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN)
 			/* Case 1 */
-			snprintf(name, len, "%s (%s)", netreg->spn, plmn);
+			snprintf(name, len, "%s (%s)", spn, plmn);
 		else
 			/* Case 2 */
-			snprintf(name, len, "%s", netreg->spn);
+			snprintf(name, len, "%s", spn);
 	else
 		if (netreg->flags & NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN)
 			/* Case 3 */
-			snprintf(name, len, "%s (%s)", netreg->spn, plmn);
+			snprintf(name, len, "%s (%s)", spn, plmn);
 		else
 			/* Case 4 */
 			snprintf(name, len, "%s", plmn);
@@ -1652,9 +1654,6 @@ static void spn_read_cb(const char *spn, const char *dc, void *data)
 {
 	struct ofono_netreg *netreg = data;
 
-	g_free(netreg->spn);
-	netreg->spn = g_strdup(spn);
-
 	netreg->flags &= ~(NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN |
 				NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN);
 
@@ -1802,9 +1801,6 @@ static void netreg_unregister(struct ofono_atom *atom)
 
 	if (netreg->spn_watch)
 		ofono_sim_remove_spn_watch(netreg->sim, &netreg->spn_watch);
-
-	g_free(netreg->spn);
-	netreg->spn = NULL;
 
 	if (netreg->sim_context) {
 		ofono_sim_context_free(netreg->sim_context);
