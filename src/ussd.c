@@ -543,7 +543,7 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 {
 	struct ofono_ussd *ussd = data;
 	struct ofono_modem *modem = __ofono_atom_get_modem(ussd->atom);
-	struct ofono_atom *vca;
+	struct ofono_voicecall *vc;
 	gboolean call_in_progress;
 	const char *str;
 	int dcs = 0x0f;
@@ -564,11 +564,9 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 	if (recognized_control_string(ussd, str, msg))
 		return NULL;
 
-	vca = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_VOICECALL);
-
-	if (vca)
-		call_in_progress =
-			__ofono_voicecall_is_busy(__ofono_atom_get_data(vca),
+	vc = __ofono_atom_find(OFONO_ATOM_TYPE_VOICECALL, modem);
+	if (vc)
+		call_in_progress = __ofono_voicecall_is_busy(vc,
 					OFONO_VOICECALL_INTERACTION_NONE);
 	else
 		call_in_progress = FALSE;
