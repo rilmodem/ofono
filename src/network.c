@@ -1653,14 +1653,13 @@ static void spn_read_cb(const char *spn, const char *dc, void *data)
 	struct ofono_netreg *netreg = data;
 
 	g_free(netreg->spn);
-	netreg->spn = NULL;
+	netreg->spn = g_strdup(spn);
+
 	netreg->flags &= ~(NETWORK_REGISTRATION_FLAG_HOME_SHOW_PLMN |
 				NETWORK_REGISTRATION_FLAG_ROAMING_SHOW_SPN);
 
 	if (dc)
 		sim_spn_display_condition_parse(netreg, *dc);
-
-	netreg->spn = g_strdup(spn);
 
 	if (netreg->current_operator)
 		netreg_emit_operator_display_name(netreg);
