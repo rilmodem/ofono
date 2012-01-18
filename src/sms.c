@@ -1452,8 +1452,8 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 				int len, int tpdu_len)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
-	struct ofono_atom *stk_atom;
-	struct ofono_atom *sim_atom;
+	struct ofono_sim *sim;
+	struct ofono_stk *stk;
 	struct sms s;
 	enum sms_class cls;
 
@@ -1522,24 +1522,20 @@ void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
 		if (cls != SMS_CLASS_2)
 			break;
 
-		sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-		if (sim_atom == NULL)
+		sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
+		if (sim == NULL)
 			return;
 
-		if (!__ofono_sim_service_available(
-					__ofono_atom_get_data(sim_atom),
+		if (!__ofono_sim_service_available(sim,
 					SIM_UST_SERVICE_DATA_DOWNLOAD_SMS_PP,
 					SIM_SST_SERVICE_DATA_DOWNLOAD_SMS_PP))
 			return;
 
-		stk_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_STK);
-
-		if (stk_atom == NULL)
+		stk = __ofono_atom_find(OFONO_ATOM_TYPE_STK, modem);
+		if (stk == NULL)
 			return;
 
-		__ofono_sms_sim_download(__ofono_atom_get_data(stk_atom),
-						&s, NULL, sms);
+		__ofono_sms_sim_download(stk, &s, NULL, sms);
 
 		/*
 		 * Passing the USIM response back to network is not
@@ -1952,7 +1948,6 @@ void ofono_sms_register(struct ofono_sms *sms)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
 	const char *path = __ofono_atom_get_path(sms->atom);
-	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_MESSAGE_MANAGER_INTERFACE,
@@ -1974,17 +1969,16 @@ void ofono_sms_register(struct ofono_sms *sms)
 					OFONO_ATOM_TYPE_NETREG,
 					netreg_watch, sms, NULL);
 
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
+	sms->sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
 
 	/*
 	 * If we have a sim atom, we can uniquely identify the SIM,
 	 * otherwise create an sms assembly which doesn't backup the fragment
 	 * store.
 	 */
-	if (sim_atom) {
+	if (sms->sim) {
 		const char *imsi;
 
-		sms->sim = __ofono_atom_get_data(sim_atom);
 		imsi = ofono_sim_get_imsi(sms->sim);
 		sms->assembly = sms_assembly_new(imsi);
 
