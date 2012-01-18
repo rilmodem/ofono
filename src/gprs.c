@@ -2984,19 +2984,19 @@ void ofono_gprs_register(struct ofono_gprs *gprs)
 {
 	struct ofono_sim *sim = ofono_gprs_get_sim(gprs);
 
-	if (sim == NULL) {
-		ofono_gprs_finish_register(gprs);
-		return;
-	}
+	if (sim == NULL)
+		goto finish;
 
 	gprs_load_settings(gprs, ofono_sim_get_imsi(sim));
 
-	if (gprs->contexts) {
-		ofono_gprs_finish_register(gprs);
-		return;
-	}
+	if (gprs->contexts)
+		goto finish;
 
 	ofono_sim_add_spn_watch(sim, &gprs->spn_watch, spn_read_cb, gprs, NULL);
+	return;
+
+finish:
+	ofono_gprs_finish_register(gprs);
 }
 
 void ofono_gprs_remove(struct ofono_gprs *gprs)
