@@ -531,6 +531,18 @@ GPRS
 	- IPv6
 	- Dual Stack (IPv4 + IPv6)
 
+- GPRS provisioning support.  oFono will automatically configure GPRS contexts
+  if no prior configuration (e.g. user or provisioning) has been detected.
+  If the GPRS atom detects that provisioning is required it will query the
+  inserted sim card for the Service Provider Name and call each registered
+  provisioning plugin with the MCC, MNC, SPN of the inserted SIM card.  If the
+  provisioning information is provided, then it is used to populate the
+  initial context configuration.
+
+- GPRS provisioning via 'Mobile Broadband Provider Info'.  oFono supports
+  provisioning of GPRS contexts via Mobile Broadband Provider Info project's
+  database.
+
 Location Reporting
 ==================
 
