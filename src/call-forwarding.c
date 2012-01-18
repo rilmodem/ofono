@@ -1521,7 +1521,6 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(cf->atom);
 	struct ofono_modem *modem = __ofono_atom_get_modem(cf->atom);
-	struct ofono_atom *sim_atom;
 
 	if (!g_dbus_register_interface(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE,
@@ -1535,12 +1534,9 @@ void ofono_call_forwarding_register(struct ofono_call_forwarding *cf)
 
 	ofono_modem_add_interface(modem, OFONO_CALL_FORWARDING_INTERFACE);
 
-	sim_atom = __ofono_modem_find_atom(modem, OFONO_ATOM_TYPE_SIM);
-
-	if (sim_atom) {
-		cf->sim = __ofono_atom_get_data(sim_atom);
+	cf->sim = __ofono_atom_find(OFONO_ATOM_TYPE_SIM, modem);
+	if (cf->sim) {
 		cf->sim_context = ofono_sim_context_create(cf->sim);
-
 		sim_read_cf_indicator(cf);
 	}
 
