@@ -2398,7 +2398,14 @@ static inline void spn_watches_notify(struct ofono_sim *sim)
 static void sim_spn_set(struct ofono_sim *sim, const void *data, int length,
 						const unsigned char *dc)
 {
-	char *spn;
+	g_free(sim->spn);
+	sim->spn = NULL;
+
+	g_free(sim->spn_dc);
+	sim->spn_dc = NULL;
+
+	if (data == NULL)
+		goto notify;
 
 	/*
 	 * TS 31.102 says:
@@ -2416,18 +2423,17 @@ static void sim_spn_set(struct ofono_sim *sim, const void *data, int length,
 	 * itself which is not there either.  11.11 contains the same
 	 * paragraph as 51.101 and has an Annex B which we implement.
 	 */
-	spn = sim_string_to_utf8(data, length);
-	if (spn == NULL) {
+	sim->spn = sim_string_to_utf8(data, length);
+	if (sim->spn == NULL) {
 		ofono_error("EFspn read successfully, but couldn't parse");
 		goto notify;
 	}
 
-	if (strlen(spn) == 0) {
-		g_free(spn);
+	if (strlen(sim->spn) == 0) {
+		g_free(sim->spn);
+		sim->spn = NULL;
 		goto notify;
 	}
-
-	sim->spn = spn;
 
 	if (dc)
 		sim->spn_dc = g_memdup(dc, 1);
@@ -2443,7 +2449,7 @@ static void sim_cphs_spn_short_read_cb(int ok, int length, int record,
 	struct ofono_sim *sim = user_data;
 
 	if (!ok) {
-		spn_watches_notify(sim);
+		sim_spn_set(sim, NULL, 0, NULL);
 		return;
 	}
 
@@ -2464,7 +2470,7 @@ static void sim_cphs_spn_read_cb(int ok, int length, int record,
 					OFONO_SIM_FILE_STRUCTURE_TRANSPARENT,
 					sim_cphs_spn_short_read_cb, sim);
 		else
-			spn_watches_notify(sim);
+			sim_spn_set(sim, NULL, 0, NULL);
 
 		return;
 	}
@@ -2495,12 +2501,6 @@ static void sim_spn_changed(int id, void *userdata)
 
 	if (sim->flags & SIM_FLAG_READING_SPN)
 		return;
-
-	g_free(sim->spn);
-	sim->spn = NULL;
-
-	g_free(sim->spn_dc);
-	sim->spn_dc = NULL;
 
 	sim->flags |= SIM_FLAG_READING_SPN;
 	ofono_sim_read(sim->context, SIM_EFSPN_FILEID,
