@@ -2530,6 +2530,14 @@ static void sim_spn_close(struct ofono_sim *sim)
 	__ofono_watchlist_free(sim->spn_watches);
 	sim->spn_watches = NULL;
 
+	/*
+	 * We have not initialized SPN logic at all yet, either because
+	 * no netreg / gprs atom has been needed or we have not reached the
+	 * post_sim state
+	 */
+	if (sim->ef_spn_watch == 0)
+		return;
+
 	ofono_sim_remove_file_watch(sim->context, sim->ef_spn_watch);
 	sim->ef_spn_watch = 0;
 
