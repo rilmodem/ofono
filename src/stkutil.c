@@ -208,11 +208,11 @@ static gboolean stk_file_iter_next(struct stk_file_iter *iter)
 	unsigned int i;
 	unsigned char last_type;
 
-	/* SIM EFs always start with ROOT MF, 0x3f */
-	if (start[iter->pos] != 0x3f)
+	if (pos + 2 >= max)
 		return FALSE;
 
-	if (pos + 2 >= max)
+	/* SIM EFs always start with ROOT MF, 0x3f */
+	if (start[iter->pos] != 0x3f)
 		return FALSE;
 
 	last_type = 0x3f;
