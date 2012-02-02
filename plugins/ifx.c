@@ -81,6 +81,7 @@ static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
 static const char *none_prefix[] = { NULL };
 static const char *xdrv_prefix[] = { "+XDRV:", NULL };
 static const char *xgendata_prefix[] = { "+XGENDATA:", NULL };
+static const char *xsimstate_prefix[] = { "+XSIMSTATE:", NULL };
 
 struct ifx_data {
 	GIOChannel *device;
@@ -138,24 +139,9 @@ static void ifx_remove(struct ofono_modem *modem)
 	g_free(data);
 }
 
-static void xsim_notify(GAtResult *result, gpointer user_data)
+static void ifx_set_sim_state(struct ofono_modem *modem, int state)
 {
-	struct ofono_modem *modem = user_data;
 	struct ifx_data *data = ofono_modem_get_data(modem);
-
-	GAtResultIter iter;
-	int state;
-
-	if (data->sim == NULL)
-		return;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "+XSIM:"))
-		return;
-
-	if (!g_at_result_iter_next_number(&iter, &state))
-		return;
 
 	DBG("state %d", state);
 
@@ -184,6 +170,55 @@ static void xsim_notify(GAtResult *result, gpointer user_data)
 		ofono_warn("Unknown SIM state %d received", state);
 		break;
 	}
+}
+
+static void xsim_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+
+	GAtResultIter iter;
+	int state;
+
+	if (data->sim == NULL)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XSIM:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	ifx_set_sim_state(modem, state);
+}
+
+static void xsimstate_query(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct ifx_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int mode;
+	int state;
+
+	DBG("");
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XSIMSTATE:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &mode))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	ifx_set_sim_state(modem, state);
 }
 
 static void shutdown_device(struct ifx_data *data)
@@ -337,6 +372,9 @@ static void xgendata_query(gboolean ok, GAtResult *result, gpointer user_data)
 	/* enable XSIM and XLOCK notifications */
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XSIMSTATE=1", none_prefix,
 						NULL, NULL, NULL);
+
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XSIMSTATE?", xsimstate_prefix,
+					xsimstate_query, modem, NULL);
 
 	return;
 
