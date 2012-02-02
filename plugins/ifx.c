@@ -80,6 +80,7 @@ static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
 
 static const char *none_prefix[] = { NULL };
 static const char *xdrv_prefix[] = { "+XDRV:", NULL };
+static const char *xgendata_prefix[] = { "+XGENDATA:", NULL };
 
 struct ifx_data {
 	GIOChannel *device;
@@ -357,7 +358,7 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XGENDATA", NULL,
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XGENDATA", xgendata_prefix,
 					xgendata_query, modem, NULL);
 }
 
