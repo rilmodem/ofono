@@ -139,10 +139,8 @@ static void ifx_remove(struct ofono_modem *modem)
 	g_free(data);
 }
 
-static void ifx_set_sim_state(struct ofono_modem *modem, int state)
+static void ifx_set_sim_state(struct ifx_data *data, int state)
 {
-	struct ifx_data *data = ofono_modem_get_data(modem);
-
 	DBG("state %d", state);
 
 	switch (state) {
@@ -191,7 +189,7 @@ static void xsim_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &state))
 		return;
 
-	ifx_set_sim_state(modem, state);
+	ifx_set_sim_state(data, state);
 }
 
 static void xsimstate_query(gboolean ok, GAtResult *result, gpointer user_data)
@@ -218,7 +216,7 @@ static void xsimstate_query(gboolean ok, GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &state))
 		return;
 
-	ifx_set_sim_state(modem, state);
+	ifx_set_sim_state(data, state);
 }
 
 static void shutdown_device(struct ifx_data *data)
