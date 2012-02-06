@@ -802,6 +802,13 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (strlen(number) > 0 && !valid_phone_number_format(number))
 			return __ofono_error_invalid_format(msg);
 
+		/*
+		 * Don't set conditional cfs when cfu is active
+		 */
+		if (type != CALL_FORWARDING_TYPE_UNCONDITIONAL &&
+				number[0] != '\0' && is_cfu_enabled(cf))
+			return __ofono_error_not_available(msg);
+
 		if (number[0] != '\0')
 			string_to_phone_number(number, &ph);
 
