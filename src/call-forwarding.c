@@ -38,21 +38,19 @@
 
 #define uninitialized_var(x) x = x
 
-#define CALL_FORWARDING_FLAG_CACHED 0x1
-#define CALL_FORWARDING_FLAG_CPHS_CFF 0x2
+#define CALL_FORWARDING_FLAG_CACHED	0x1
+#define CALL_FORWARDING_FLAG_CPHS_CFF	0x2
 
 /* According to 27.007 Spec */
 #define DEFAULT_NO_REPLY_TIMEOUT 20
 
-static GSList *g_drivers = NULL;
-
 enum call_forwarding_type {
-	CALL_FORWARDING_TYPE_UNCONDITIONAL =		0,
-	CALL_FORWARDING_TYPE_BUSY =			1,
-	CALL_FORWARDING_TYPE_NO_REPLY =			2,
-	CALL_FORWARDING_TYPE_NOT_REACHABLE =		3,
-	CALL_FORWARDING_TYPE_ALL =			4,
-	CALL_FORWARDING_TYPE_ALL_CONDITIONAL =		5
+	CALL_FORWARDING_TYPE_UNCONDITIONAL =	0,
+	CALL_FORWARDING_TYPE_BUSY =		1,
+	CALL_FORWARDING_TYPE_NO_REPLY =		2,
+	CALL_FORWARDING_TYPE_NOT_REACHABLE =	3,
+	CALL_FORWARDING_TYPE_ALL =		4,
+	CALL_FORWARDING_TYPE_ALL_CONDITIONAL =	5
 };
 
 struct ofono_call_forwarding {
@@ -72,16 +70,18 @@ struct ofono_call_forwarding {
 	struct ofono_atom *atom;
 };
 
-static void get_query_next_cf_cond(struct ofono_call_forwarding *cf);
-static void set_query_next_cf_cond(struct ofono_call_forwarding *cf);
-static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf);
-
 struct cf_ss_request {
 	int ss_type;
 	int cf_type;
 	int cls;
 	GSList *cf_list[4];
 };
+
+static GSList *g_drivers = NULL;
+
+static void get_query_next_cf_cond(struct ofono_call_forwarding *cf);
+static void set_query_next_cf_cond(struct ofono_call_forwarding *cf);
+static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf);
 
 static gint cf_condition_compare(gconstpointer a, gconstpointer b)
 {
@@ -163,7 +163,8 @@ static GSList *cf_cond_list_create(int total,
 			if (list[i].status == 0)
 				continue;
 
-			cond = g_try_new0(struct ofono_call_forwarding_condition, 1);
+			cond = g_try_new0(
+				struct ofono_call_forwarding_condition, 1);
 			if (cond == NULL)
 				continue;
 
@@ -497,7 +498,7 @@ static void property_append_cf_conditions(DBusMessageIter *dict,
 }
 
 static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
-						struct ofono_call_forwarding *cf)
+					struct ofono_call_forwarding *cf)
 {
 	DBusMessage *reply;
 	DBusMessageIter iter;
@@ -891,11 +892,11 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 
 static GDBusMethodTable cf_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	cf_get_properties,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"sv",	"",		cf_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "DisableAll",		"s",	"",		cf_disable_all,
-							G_DBUS_METHOD_FLAG_ASYNC },
+						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
 };
 
@@ -1431,7 +1432,8 @@ static void sim_read_cf_indicator(struct ofono_call_forwarding *cf)
 	}
 }
 
-int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_driver *d)
+int ofono_call_forwarding_driver_register(
+				const struct ofono_call_forwarding_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
@@ -1443,7 +1445,8 @@ int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_dri
 	return 0;
 }
 
-void ofono_call_forwarding_driver_unregister(const struct ofono_call_forwarding_driver *d)
+void ofono_call_forwarding_driver_unregister(
+				const struct ofono_call_forwarding_driver *d)
 {
 	DBG("driver: %p, name: %s", d, d->name);
 
@@ -1467,10 +1470,10 @@ static void call_forwarding_remove(struct ofono_atom *atom)
 	g_free(cf);
 }
 
-struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *modem,
-							unsigned int vendor,
-							const char *driver,
-							void *data)
+struct ofono_call_forwarding *ofono_call_forwarding_create(
+						struct ofono_modem *modem,
+						unsigned int vendor,
+						const char *driver, void *data)
 {
 	struct ofono_call_forwarding *cf;
 	GSList *l;
@@ -1552,7 +1555,8 @@ void ofono_call_forwarding_remove(struct ofono_call_forwarding *cf)
 	__ofono_atom_free(cf->atom);
 }
 
-void ofono_call_forwarding_set_data(struct ofono_call_forwarding *cf, void *data)
+void ofono_call_forwarding_set_data(struct ofono_call_forwarding *cf,
+								void *data)
 {
 	cf->driver_data = data;
 }
