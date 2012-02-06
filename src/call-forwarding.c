@@ -503,6 +503,8 @@ static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
 	DBusMessageIter dict;
 	int i;
 	dbus_bool_t status;
+	gboolean cfu_enabled;
+	GSList *cf_list;
 
 	reply = dbus_message_new_method_return(msg);
 	if (reply == NULL)
@@ -514,14 +516,25 @@ static DBusMessage *cf_get_properties_reply(DBusMessage *msg,
 					OFONO_PROPERTIES_ARRAY_SIGNATURE,
 						&dict);
 
-	for (i = 0; i < 4; i++)
-		property_append_cf_conditions(&dict, cf->cf_conditions[i],
+	cfu_enabled = is_cfu_enabled(cf);
+
+	for (i = 0; i < 4; i++) {
+		/*
+		 * Report conditional cfs as empty when CFU is active
+		 */
+		if (cfu_enabled && (i != CALL_FORWARDING_TYPE_UNCONDITIONAL))
+			cf_list = NULL;
+		else
+			cf_list = cf->cf_conditions[i];
+
+		property_append_cf_conditions(&dict, cf_list,
 						BEARER_CLASS_VOICE,
 						cf_type_lut[i]);
+	}
 
 	if ((cf->flags & CALL_FORWARDING_FLAG_CPHS_CFF) ||
 			cf->cfis_record_id > 0)
-		status = is_cfu_enabled(cf);
+		status = cfu_enabled;
 	else
 		status = FALSE;
 
