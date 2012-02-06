@@ -583,11 +583,12 @@ static void get_query_cf_callback(const struct ofono_error *error, int total,
 	struct ofono_call_forwarding *cf = data;
 
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
-		GSList *l;
-		l = cf_cond_list_create(total, list);
+		GSList *l = cf_cond_list_create(total, list);
+
 		set_new_cond_list(cf, cf->query_next, l);
 
 		DBG("%s conditions:", cf_type_lut[cf->query_next]);
+
 		cf_cond_list_print(l);
 
 		if (cf->query_next == CALL_FORWARDING_TYPE_NOT_REACHABLE)
