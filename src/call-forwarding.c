@@ -436,6 +436,36 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 
 	if (new_cfu != old_cfu) {
 		ofono_bool_t status = new_cfu;
+		int i;
+
+		/*
+		 * Emit signals to mask/unmask conditional cfs on cfu change
+		 */
+		for (i = 0; i < 4; i++) {
+			if (i == CALL_FORWARDING_TYPE_UNCONDITIONAL)
+				continue;
+
+			l = g_slist_find_custom(cf->cf_conditions[i],
+					GINT_TO_POINTER(BEARER_CLASS_VOICE),
+					cf_condition_find_with_cls);
+
+			if (l == NULL)
+				continue;
+
+			if (new_cfu)
+				number = "";
+			else {
+				lc = l->data;
+
+				number = phone_number_to_string(
+							&lc->phone_number);
+			}
+
+			ofono_dbus_signal_property_changed(conn, path,
+						OFONO_CALL_FORWARDING_INTERFACE,
+						cf_type_lut[i],
+						DBUS_TYPE_STRING, &number);
+		}
 
 		ofono_dbus_signal_property_changed(conn, path,
 					OFONO_CALL_FORWARDING_INTERFACE,
