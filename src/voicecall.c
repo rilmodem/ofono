@@ -2931,7 +2931,8 @@ static void emulator_chup_cb(struct ofono_emulator *em,
 			goto done;
 		}
 
-		if (voicecalls_have_active(vc) == FALSE)
+		if (voicecalls_have_active(vc) == FALSE &&
+				voicecalls_have_incoming(vc) == FALSE)
 			goto fail;
 
 		vc->pending_em = em;
