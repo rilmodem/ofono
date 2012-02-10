@@ -794,7 +794,7 @@ static void xlema_notify(GAtResult *result, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GAtResultIter iter;
 	int index, total_cnt;
-	const char *number;
+	const char *number, *end;
 	int count = (vd->en_list == NULL) ? 0 : g_strv_length(vd->en_list);
 
 	g_at_result_iter_init(&iter, result);
@@ -814,7 +814,12 @@ static void xlema_notify(GAtResult *result, gpointer user_data)
 	if (vd->en_list == NULL)
 		vd->en_list = g_new0(char *, total_cnt + 1);
 
-	vd->en_list[count] = g_strdup(number);
+	if (g_utf8_validate(number, -1, &end) == FALSE) {
+		vd->en_list[count] = g_strndup(number, end - number);
+		ofono_warn("Malformed emergency number: %s",
+					vd->en_list[count]);
+	} else
+		vd->en_list[count] = g_strdup(number);
 
 	if (index != total_cnt)
 		return;
@@ -832,7 +837,7 @@ static void xlema_read(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int num = 0;
 	int index, total_cnt;
-	const char *number;
+	const char *number, *end;
 
 	if (!ok) {
 		DBG("Emergency number list read failed");
@@ -859,7 +864,12 @@ static void xlema_read(gboolean ok, GAtResult *result, gpointer user_data)
 		if (!g_at_result_iter_next_string(&iter, &number))
 			continue;
 
-		vd->en_list[num++] = g_strdup(number);
+		if (g_utf8_validate(number, -1, &end) == FALSE) {
+			vd->en_list[num] = g_strndup(number, end - number);
+			ofono_warn("Malformed emergency number: %s",
+						vd->en_list[num++]);
+		} else
+			vd->en_list[num++] = g_strdup(number);
 	}
 
 	ofono_voicecall_en_list_notify(vc, vd->en_list);
