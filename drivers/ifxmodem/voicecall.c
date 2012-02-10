@@ -852,7 +852,8 @@ static void xlema_read(gboolean ok, GAtResult *result, gpointer user_data)
 	GAtResultIter iter;
 	int num = 0;
 	int index, total_cnt;
-	const char *number, *end;
+	const char *number;
+	int len;
 
 	if (!ok) {
 		DBG("Emergency number list read failed");
@@ -879,12 +880,12 @@ static void xlema_read(gboolean ok, GAtResult *result, gpointer user_data)
 		if (!g_at_result_iter_next_string(&iter, &number))
 			continue;
 
-		if (g_utf8_validate(number, -1, &end) == FALSE) {
-			vd->en_list[num] = g_strndup(number, end - number);
-			ofono_warn("Malformed emergency number: %s",
-						vd->en_list[num++]);
-		} else
-			vd->en_list[num++] = g_strdup(number);
+		len = strspn(number, "0123456789");
+		vd->en_list[num++] = g_strndup(number, len);
+
+		if (number[len] != '\0')
+			ofono_warn("Malformed emergency number: %.*s",
+							len, number);
 	}
 
 	ofono_voicecall_en_list_notify(vc, vd->en_list);
