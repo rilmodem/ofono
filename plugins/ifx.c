@@ -637,7 +637,7 @@ static int ifx_disable(struct ofono_modem *modem)
 		g_at_chat_unregister_all(data->dlcs[i]);
 	}
 
-	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=4", NULL,
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CFUN=0", NULL,
 					cfun_disable, modem, NULL);
 
 	return -EINPROGRESS;
