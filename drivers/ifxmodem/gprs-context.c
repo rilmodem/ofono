@@ -64,6 +64,7 @@ struct gprs_context_data {
 	char password[OFONO_GPRS_MAX_PASSWORD_LENGTH + 1];
 	GAtRawIP *rawip;
 	enum state state;
+	enum ofono_gprs_proto proto;
 	char address[32];
 	char dns1[32];
 	char dns2[32];
@@ -301,11 +302,25 @@ static void setup_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	if (g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL) == 0)
 		goto error;
 
-	sprintf(buf, "AT+XDNS=%u,1", gcd->active_context);
+	g_at_chat_send(gcd->chat, "AT+XDNS=?", none_prefix, NULL, NULL, NULL);
+
+	switch (gcd->proto) {
+	case OFONO_GPRS_PROTO_IP:
+		sprintf(buf, "AT+XDNS=%u,1", gcd->active_context);
+		break;
+	case OFONO_GPRS_PROTO_IPV6:
+		sprintf(buf, "AT+XDNS=%u,2", gcd->active_context);
+		break;
+	case OFONO_GPRS_PROTO_IPV4V6:
+		sprintf(buf, "AT+XDNS=%u,3", gcd->active_context);
+		break;
+	}
+
 	if (g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL) == 0)
 		goto error;
 
 	sprintf(buf, "AT+CGACT=1,%u", gcd->active_context);
+
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				activate_cb, gc, NULL) > 0)
 		return;
@@ -331,6 +346,7 @@ static void ifx_gprs_activate_primary(struct ofono_gprs_context *gc,
 	memcpy(gcd->password, ctx->password, sizeof(ctx->password));
 
 	gcd->state = STATE_ENABLING;
+	gcd->proto = ctx->proto;
 
 	switch (ctx->proto) {
 	case OFONO_GPRS_PROTO_IP:
