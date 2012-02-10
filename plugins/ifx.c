@@ -308,6 +308,10 @@ static void xgendata_query(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("\n%s", gendata);
 
+	/* switch to GSM character set instead of IRA */
+	g_at_chat_send(data->dlcs[AUX_DLC], "AT+CSCS=\"GSM\"", none_prefix,
+							NULL, NULL, NULL);
+
 	/* disable UART for power saving */
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XPOW=0,0,0", none_prefix,
 							NULL, NULL, NULL);
