@@ -320,11 +320,7 @@ static void ifx_gprs_activate_primary(struct ofono_gprs_context *gc,
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	char buf[OFONO_GPRS_MAX_APN_LENGTH + 128];
-	int len;
-
-	/* IPv6 support not implemented */
-	if (ctx->proto != OFONO_GPRS_PROTO_IP)
-		goto error;
+	int len = 0;
 
 	DBG("cid %u", ctx->cid);
 
@@ -336,7 +332,20 @@ static void ifx_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	gcd->state = STATE_ENABLING;
 
-	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+	switch (ctx->proto) {
+	case OFONO_GPRS_PROTO_IP:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"",
+								ctx->cid);
+		break;
+	case OFONO_GPRS_PROTO_IPV6:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IPV6\"",
+								ctx->cid);
+		break;
+	case OFONO_GPRS_PROTO_IPV4V6:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IPV4V6\"",
+								ctx->cid);
+		break;
+	}
 
 	if (ctx->apn)
 		snprintf(buf + len, sizeof(buf) - len - 3,
@@ -346,7 +355,6 @@ static void ifx_gprs_activate_primary(struct ofono_gprs_context *gc,
 				setup_cb, gc, NULL) > 0)
 		return;
 
-error:
 	CALLBACK_WITH_FAILURE(cb, data);
 }
 
