@@ -811,6 +811,18 @@ static void xlema_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_string(&iter, &number))
 		return;
 
+	/* Skip category */
+	if (g_at_result_iter_skip_next(&iter) == FALSE)
+		goto done;
+
+	/* Skip presence */
+	if (g_at_result_iter_skip_next(&iter) == FALSE)
+		goto done;
+
+	/* If we succeed here, then the number is from NVM or NITZ */
+	if (g_at_result_iter_skip_next(&iter) == FALSE)
+		goto done;
+
 	if (vd->en_list == NULL)
 		vd->en_list = g_new0(char *, total_cnt + 1);
 
@@ -821,13 +833,16 @@ static void xlema_notify(GAtResult *result, gpointer user_data)
 	} else
 		vd->en_list[count] = g_strdup(number);
 
+done:
 	if (index != total_cnt)
 		return;
 
-	ofono_voicecall_en_list_notify(vc, vd->en_list);
+	if (vd->en_list) {
+		ofono_voicecall_en_list_notify(vc, vd->en_list);
 
-	g_strfreev(vd->en_list);
-	vd->en_list = NULL;
+		g_strfreev(vd->en_list);
+		vd->en_list = NULL;
+	}
 }
 
 static void xlema_read(gboolean ok, GAtResult *result, gpointer user_data)
