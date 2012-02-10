@@ -528,30 +528,6 @@ static gboolean mux_timeout_cb(gpointer user_data)
 	return FALSE;
 }
 
-static int connect_socket(const char *address, int port)
-{
-	struct sockaddr_in addr;
-	int sk;
-	int err;
-
-	sk = socket(PF_INET, SOCK_STREAM, 0);
-	if (sk < 0)
-		return -EINVAL;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(address);
-	addr.sin_port = htons(port);
-
-	err = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
-	if (err < 0) {
-		close(sk);
-		return -errno;
-	}
-
-	return sk;
-}
-
 static int ifx_enable(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
