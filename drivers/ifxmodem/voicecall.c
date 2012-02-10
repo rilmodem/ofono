@@ -794,7 +794,8 @@ static void xlema_notify(GAtResult *result, gpointer user_data)
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	GAtResultIter iter;
 	int index, total_cnt;
-	const char *number, *end;
+	const char *number;
+	int len;
 	int count = (vd->en_list == NULL) ? 0 : g_strv_length(vd->en_list);
 
 	g_at_result_iter_init(&iter, result);
@@ -826,12 +827,11 @@ static void xlema_notify(GAtResult *result, gpointer user_data)
 	if (vd->en_list == NULL)
 		vd->en_list = g_new0(char *, total_cnt + 1);
 
-	if (g_utf8_validate(number, -1, &end) == FALSE) {
-		vd->en_list[count] = g_strndup(number, end - number);
-		ofono_warn("Malformed emergency number: %s",
-					vd->en_list[count]);
-	} else
-		vd->en_list[count] = g_strdup(number);
+	len = strspn(number, "0123456789");
+	vd->en_list[count] = g_strndup(number, len);
+
+	if (number[len] != '\0')
+		ofono_warn("Malformed emergency number: %.*s", len, number);
 
 done:
 	if (index != total_cnt)
