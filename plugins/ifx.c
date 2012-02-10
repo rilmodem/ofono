@@ -79,7 +79,6 @@ static const char *dlc_nodes[NUM_DLC] = { "/dev/ttyGSM1", "/dev/ttyGSM2",
 					"/dev/ttyGSM5", "/dev/ttyGSM6" };
 
 static const char *none_prefix[] = { NULL };
-static const char *xdrv_prefix[] = { "+XDRV:", NULL };
 static const char *xgendata_prefix[] = { "+XGENDATA:", NULL };
 static const char *xsimstate_prefix[] = { "+XSIMSTATE:", NULL };
 
@@ -94,11 +93,6 @@ struct ifx_data {
 	guint frame_size;
 	int mux_ldisc;
 	int saved_ldisc;
-	int audio_source;
-	int audio_dest;
-	int audio_context;
-	const char *audio_setting;
-	int audio_loopback;
 	struct ofono_sim *sim;
 	gboolean have_sim;
 };
@@ -314,50 +308,9 @@ static void xgendata_query(gboolean ok, GAtResult *result, gpointer user_data)
 
 	DBG("\n%s", gendata);
 
-	if (g_str_has_prefix(gendata, "    XMM6260") == TRUE) {
-		ofono_info("Detected XMM6260 modem");
-		data->audio_source = 4;
-		data->audio_dest = 3;
-		data->audio_context = 0;
-	}
-
 	/* disable UART for power saving */
 	g_at_chat_send(data->dlcs[AUX_DLC], "AT+XPOW=0,0,0", none_prefix,
 							NULL, NULL, NULL);
-
-	if (data->audio_setting && data->audio_source && data->audio_dest) {
-		char buf[64];
-
-		/* configure source */
-		snprintf(buf, sizeof(buf), "AT+XDRV=40,4,%d,%d,%s",
-						data->audio_source,
-						data->audio_context,
-						data->audio_setting);
-		g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
-						NULL, NULL, NULL);
-
-		/* configure destination */
-		snprintf(buf, sizeof(buf), "AT+XDRV=40,5,%d,%d,%s",
-						data->audio_dest,
-						data->audio_context,
-						data->audio_setting);
-		g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
-						NULL, NULL, NULL);
-
-		if (data->audio_loopback) {
-			/* set destination for source */
-			snprintf(buf, sizeof(buf), "AT+XDRV=40,6,%d,%d",
-					data->audio_source, data->audio_dest);
-			g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
-							NULL, NULL, NULL);
-
-			/* enable source */
-			snprintf(buf, sizeof(buf), "AT+XDRV=40,2,%d",
-							data->audio_source);
-			g_at_chat_send(data->dlcs[AUX_DLC], buf, xdrv_prefix,
-							NULL, NULL, NULL);
-		}
-	}
 
 	data->have_sim = FALSE;
 
@@ -575,10 +528,34 @@ static gboolean mux_timeout_cb(gpointer user_data)
 	return FALSE;
 }
 
+static int connect_socket(const char *address, int port)
+{
+	struct sockaddr_in addr;
+	int sk;
+	int err;
+
+	sk = socket(PF_INET, SOCK_STREAM, 0);
+	if (sk < 0)
+		return -EINVAL;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(address);
+	addr.sin_port = htons(port);
+
+	err = connect(sk, (struct sockaddr *) &addr, sizeof(addr));
+	if (err < 0) {
+		close(sk);
+		return -errno;
+	}
+
+	return sk;
+}
+
 static int ifx_enable(struct ofono_modem *modem)
 {
 	struct ifx_data *data = ofono_modem_get_data(modem);
-	const char *device, *ldisc, *audio, *loopback;
+	const char *device, *ldisc;
 	GAtSyntax *syntax;
 	GAtChat *chat;
 
@@ -589,18 +566,6 @@ static int ifx_enable(struct ofono_modem *modem)
 		return -EINVAL;
 
 	DBG("%s", device);
-
-	audio = ofono_modem_get_string(modem, "AudioSetting");
-	if (g_strcmp0(audio, "FULL_DUPLEX") == 0)
-		data->audio_setting = "0,0,0,0,0,0,0,0,0";
-	else if (g_strcmp0(audio, "BURSTMODE_48KHZ") == 0)
-		data->audio_setting = "0,0,8,0,2,0,0,0,0";
-	else if (g_strcmp0(audio, "BURSTMODE_96KHZ") == 0)
-		data->audio_setting = "0,0,9,0,2,0,0,0,0";
-
-	loopback = ofono_modem_get_string(modem, "AudioLoopback");
-	if (loopback != NULL)
-		data->audio_loopback = atoi(loopback);
 
 	ldisc = ofono_modem_get_string(modem, "LineDiscipline");
 	if (ldisc != NULL) {
