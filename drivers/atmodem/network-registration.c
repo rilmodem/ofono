@@ -699,6 +699,8 @@ static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 	else
 		strength = (ind * 15);
 
+	DBG("ind %d strength %d", ind, strength);
+
 	ofono_netreg_strength_notify(netreg, strength);
 }
 
