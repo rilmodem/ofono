@@ -692,12 +692,18 @@ static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &ind))
 		return;
 
-	if (ind == 0)
+	/*
+	 * Radio signal strength indicators are defined for 0-7,
+	 * but in some cases XCIEV just returns CSQ 0-31,99 values.
+	 */
+	if (ind == 0 || ind == 99)
 		strength = -1;
 	else if (ind == 7)
 		strength = 100;
-	else
+	else if (ind < 7)
 		strength = (ind * 15);
+	else if (ind > 7)
+		strength = (ind * 100) / 31;
 
 	DBG("ind %d strength %d", ind, strength);
 
