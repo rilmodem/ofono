@@ -55,6 +55,7 @@
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
 #include <ofono/audio-settings.h>
+#include <ofono/gnss.h>
 #include <ofono/stk.h>
 #include <ofono/ctm.h>
 #include <ofono/log.h>
@@ -696,6 +697,8 @@ static void ifx_post_online(struct ofono_modem *modem)
 
 	ofono_cbs_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_ussd_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
+
+	ofono_gnss_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 
 	ofono_call_settings_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
 	ofono_call_meter_create(modem, 0, "atmodem", data->dlcs[AUX_DLC]);
