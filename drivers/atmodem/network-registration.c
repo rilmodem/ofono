@@ -702,6 +702,33 @@ static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 	 */
 }
 
+static void ifx_xcsq_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	int rssi, ber, strength;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+XCSQ:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &rssi))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &ber))
+		return;
+
+	DBG("rssi %d ber %d", rssi, ber);
+
+	if (rssi == 99)
+		strength = -1;
+	else
+		strength = (rssi * 100) / 31;
+
+	ofono_netreg_strength_notify(netreg, strength);
+}
+
 static void ciev_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1470,6 +1497,10 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		/* Register for specific signal strength reports */
 		g_at_chat_register(nd->chat, "+XCIEV:", ifx_xciev_notify,
 						FALSE, netreg, NULL);
+		g_at_chat_register(nd->chat, "+XCSQ:", ifx_xcsq_notify,
+						FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT+XCSQ=1", none_prefix,
+						NULL, NULL, NULL);
 		g_at_chat_send(nd->chat, "AT+XMER=1", none_prefix,
 						NULL, NULL, NULL);
 
