@@ -71,7 +71,7 @@ static DBusMessage *location_reporting_get_properties(DBusConnection *conn,
 	DBusMessageIter iter;
 	DBusMessageIter dict;
 	const char *type;
-	int value;
+	dbus_bool_t value;
 
 	reply = dbus_message_new_method_return(msg);
 	if (reply == NULL)
@@ -109,7 +109,7 @@ static void signal_enabled(const struct ofono_location_reporting *lr)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(lr->atom);
-	int value = lr->enabled;
+	dbus_bool_t value = lr->enabled;
 
 	ofono_dbus_signal_property_changed(conn, path,
 					OFONO_LOCATION_REPORTING_INTERFACE,
@@ -123,7 +123,6 @@ static void client_exited_disable_cb(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Disabling location-reporting failed");
-
 		return;
 	}
 
@@ -139,7 +138,7 @@ static void client_exited(DBusConnection *conn, void *data)
 
 	lr->disconnect_watch = 0;
 
-	lr->driver->disable(lr, client_exited_disable_cb , lr);
+	lr->driver->disable(lr, client_exited_disable_cb, lr);
 }
 
 static void location_reporting_disable_cb(const struct ofono_error *error,
@@ -219,7 +218,6 @@ static DBusMessage *location_reporting_release(DBusConnection *conn,
 {
 	struct ofono_location_reporting *lr = data;
 	const char *caller = dbus_message_get_sender(msg);
-
 
 	/*
 	 * Avoid a race by not trying to release the device if there is a
