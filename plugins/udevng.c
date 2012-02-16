@@ -258,6 +258,9 @@ static gboolean setup_option(struct modem_info *modem)
 
 	}
 
+	if (aux == NULL || mdm == NULL)
+		return FALSE;
+
 	DBG("aux=%s modem=%s diag=%s", aux, mdm, diag);
 
 	ofono_modem_set_string(modem->modem, "Aux", aux);
