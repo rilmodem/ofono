@@ -1524,6 +1524,8 @@ void ofono_netreg_strength_notify(struct ofono_netreg *netreg, int strength)
 			netreg->status != NETWORK_REGISTRATION_STATUS_ROAMING)
 		return;
 
+	DBG("strength %d", strength);
+
 	netreg->signal_strength = strength;
 
 	if (strength != -1) {
