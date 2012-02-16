@@ -680,8 +680,8 @@ static void ifx_xhomezr_notify(GAtResult *result, gpointer user_data)
 
 static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 {
-	struct ofono_netreg *netreg = user_data;
-	int strength, ind;
+	//struct ofono_netreg *netreg = user_data;
+	int ind;
 	GAtResultIter iter;
 
 	g_at_result_iter_init(&iter, result);
@@ -692,22 +692,14 @@ static void ifx_xciev_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &ind))
 		return;
 
+	DBG("ind %d", ind);
+
 	/*
 	 * Radio signal strength indicators are defined for 0-7,
-	 * but in some cases XCIEV just returns CSQ 0-31,99 values.
+	 * but this notification seems to return CSQ 0-31,99 values.
+	 *
+	 * Ignore this indication for now since it can not be trusted.
 	 */
-	if (ind == 0 || ind == 99)
-		strength = -1;
-	else if (ind == 7)
-		strength = 100;
-	else if (ind < 7)
-		strength = (ind * 15);
-	else if (ind > 7)
-		strength = (ind * 100) / 31;
-
-	DBG("ind %d strength %d", ind, strength);
-
-	ofono_netreg_strength_notify(netreg, strength);
 }
 
 static void ciev_notify(GAtResult *result, gpointer user_data)
