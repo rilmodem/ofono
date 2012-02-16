@@ -152,7 +152,6 @@ static void location_reporting_disable_cb(const struct ofono_error *error,
 
 		reply = __ofono_error_failed(lr->pending);
 		__ofono_dbus_pending_reply(&lr->pending, reply);
-
 		return;
 	}
 
@@ -177,7 +176,6 @@ static void location_reporting_enable_cb(const struct ofono_error *error,
 
 		reply = __ofono_error_failed(lr->pending);
 		__ofono_dbus_pending_reply(&lr->pending, reply);
-
 		return;
 	}
 
@@ -364,7 +362,6 @@ void ofono_location_reporting_register(struct ofono_location_reporting *lr)
 					NULL, lr, NULL)) {
 		ofono_error("Could not create %s interface",
 					OFONO_LOCATION_REPORTING_INTERFACE);
-
 		return;
 	}
 
