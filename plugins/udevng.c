@@ -206,7 +206,7 @@ static gboolean setup_gobi(struct modem_info *modem)
 
 static gboolean setup_sierra(struct modem_info *modem)
 {
-	const char *device = NULL;
+	const char *mdm = NULL, *app1 = NULL, *app2 = NULL, *diag = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -217,19 +217,27 @@ static gboolean setup_sierra(struct modem_info *modem)
 		DBG("%s %s %s %s", info->devnode, info->interface,
 						info->number, info->label);
 
-		if (g_strcmp0(info->interface, "255/255/255") == 0 &&
-					g_strcmp0(info->number, "03") == 0) {
-			device = info->devnode;
-			break;
+		if (g_strcmp0(info->interface, "255/255/255") == 0) {
+			if (g_strcmp0(info->number, "01") == 0)
+				diag = info->devnode;
+			if (g_strcmp0(info->number, "03") == 0)
+				mdm = info->devnode;
+			else if (g_strcmp0(info->number, "04") == 0)
+				app1 = info->devnode;
+			else if (g_strcmp0(info->number, "05") == 0)
+				app2 = info->devnode;
 		}
 	}
 
-	if (device == NULL)
+	if (mdm == NULL || app1 == NULL)
 		return FALSE;
 
-	DBG("device=%s", device);
+	DBG("modem=%s app1=%s app2=%s diag=%s", mdm, app1, app2, diag);
 
-	ofono_modem_set_string(modem->modem, "Device", device);
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+	ofono_modem_set_string(modem->modem, "App1", app1);
+	ofono_modem_set_string(modem->modem, "App2", app2);
+	ofono_modem_set_string(modem->modem, "Diag", diag);
 
 	return TRUE;
 }
