@@ -229,7 +229,6 @@ static gboolean setup_sierra(struct modem_info *modem)
 				app = info->devnode;
 			else if (g_strcmp0(info->number, "07") == 0)
 				net = info->devnode;
-
 		}
 	}
 
