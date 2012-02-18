@@ -58,6 +58,7 @@ static const char *opcm_prefix[] = { "_OPCMENABLE:", NULL };
 struct hso_data {
 	GAtChat *app;
 	GAtChat *control;
+	GAtChat *modem;
 	guint sim_poll_source;
 	guint sim_poll_count;
 	ofono_bool_t have_sim;
@@ -297,11 +298,19 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 					check_model, modem, NULL);
 }
 
-static GAtChat *create_port(const char *device)
+static GAtChat *open_device(struct ofono_modem *modem,
+				const char *key, char *debug)
 {
-	GAtSyntax *syntax;
+	const char *device;
 	GIOChannel *channel;
+	GAtSyntax *syntax;
 	GAtChat *chat;
+
+	device = ofono_modem_get_string(modem, key);
+	if (device == NULL)
+		return NULL;
+
+	DBG("%s %s", key, device);
 
 	channel = g_at_tty_open(device, NULL);
 	if (channel == NULL)
@@ -310,10 +319,14 @@ static GAtChat *create_port(const char *device)
 	syntax = g_at_syntax_new_gsm_permissive();
 	chat = g_at_chat_new(channel, syntax);
 	g_at_syntax_unref(syntax);
+
 	g_io_channel_unref(channel);
 
 	if (chat == NULL)
 		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, hso_debug, debug);
 
 	return chat;
 }
@@ -321,36 +334,21 @@ static GAtChat *create_port(const char *device)
 static int hso_enable(struct ofono_modem *modem)
 {
 	struct hso_data *data = ofono_modem_get_data(modem);
-	const char *app;
-	const char *control;
 
 	DBG("%p", modem);
 
-	control = ofono_modem_get_string(modem, "ControlPort");
-	app = ofono_modem_get_string(modem, "ApplicationPort");
-
-	if (app == NULL || control == NULL)
+	data->control = open_device(modem, "Control", "Control: ");
+	if (data->control == NULL)
 		return -EINVAL;
 
-	data->control = create_port(control);
-
-	if (data->control == NULL)
-		return -EIO;
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->control, hso_debug, "Control: ");
-
-	data->app = create_port(app);
-
+	data->app = open_device(modem, "Application", "App: ");
 	if (data->app == NULL) {
 		g_at_chat_unref(data->control);
 		data->control = NULL;
-
 		return -EIO;
 	}
 
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(data->app, hso_debug, "App: ");
+	data->modem = open_device(modem, "Modem", "Modem: ");
 
 	g_at_chat_send(data->control, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
 	g_at_chat_send(data->app, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
@@ -386,6 +384,9 @@ static int hso_disable(struct ofono_modem *modem)
 
 	g_at_chat_cancel_all(data->control);
 	g_at_chat_unregister_all(data->control);
+
+	g_at_chat_unref(data->modem);
+	data->modem = NULL;
 
 	g_at_chat_unref(data->app);
 	data->app = NULL;
