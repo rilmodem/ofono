@@ -209,7 +209,7 @@ static gboolean setup_gobi(struct modem_info *modem)
 
 static gboolean setup_sierra(struct modem_info *modem)
 {
-	const char *mdm = NULL, *app1 = NULL, *app2 = NULL, *diag = NULL;
+	const char *mdm = NULL, *app = NULL, *net = NULL, *diag = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -226,21 +226,22 @@ static gboolean setup_sierra(struct modem_info *modem)
 			if (g_strcmp0(info->number, "03") == 0)
 				mdm = info->devnode;
 			else if (g_strcmp0(info->number, "04") == 0)
-				app1 = info->devnode;
-			else if (g_strcmp0(info->number, "05") == 0)
-				app2 = info->devnode;
+				app = info->devnode;
+			else if (g_strcmp0(info->number, "07") == 0)
+				net = info->devnode;
+
 		}
 	}
 
-	if (mdm == NULL || app1 == NULL)
+	if (mdm == NULL || app == NULL)
 		return FALSE;
 
-	DBG("modem=%s app1=%s app2=%s diag=%s", mdm, app1, app2, diag);
+	DBG("modem=%s app=%s net=%s diag=%s", mdm, app, net, diag);
 
 	ofono_modem_set_string(modem->modem, "Modem", mdm);
-	ofono_modem_set_string(modem->modem, "App1", app1);
-	ofono_modem_set_string(modem->modem, "App2", app2);
+	ofono_modem_set_string(modem->modem, "App", app);
 	ofono_modem_set_string(modem->modem, "Diag", diag);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", net);
 
 	return TRUE;
 }
@@ -899,6 +900,7 @@ static struct {
 	{ "hso",	"hso"				},
 	{ "gobi",	"qcserial"			},
 	{ "sierra",	"sierra"			},
+	{ "sierra",	"sierra_net"			},
 	{ "option",	"option",	"0af0"		},
 	{ "huawei",	"option",	"201e"		},
 	{ "huawei",	"cdc_ether",	"12d1"		},
