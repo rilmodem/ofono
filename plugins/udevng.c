@@ -138,7 +138,7 @@ static gboolean setup_mbm(struct modem_info *modem)
 
 static gboolean setup_hso(struct modem_info *modem)
 {
-	const char *control = NULL, *application = NULL, *network = NULL;
+	const char *ctl = NULL, *app = NULL, *mdm = NULL, *net = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -150,23 +150,26 @@ static gboolean setup_hso(struct modem_info *modem)
 				info->number, info->label, info->sysattr);
 
 		if (g_strcmp0(info->sysattr, "Control") == 0)
-			control = info->devnode;
+			ctl = info->devnode;
 		else if (g_strcmp0(info->sysattr, "Application") == 0)
-			application = info->devnode;
+			app = info->devnode;
+		else if (g_strcmp0(info->sysattr, "Modem") == 0)
+			mdm = info->devnode;
 		else if (info->sysattr == NULL &&
 				g_str_has_prefix(info->devnode, "hso") == TRUE)
-			network = info->devnode;
+			net = info->devnode;
 	}
 
-	if (control == NULL || application == NULL)
+	if (ctl == NULL || app == NULL)
 		return FALSE;
 
-	DBG("control=%s application=%s network=%s",
-				control, application, network);
+	DBG("control=%s application=%s modem=%s network=%s",
+						ctl, app, mdm, net);
 
-	ofono_modem_set_string(modem->modem, "ControlPort", control);
-	ofono_modem_set_string(modem->modem, "ApplicationPort", application);
-	ofono_modem_set_string(modem->modem, "NetworkInterface", network);
+	ofono_modem_set_string(modem->modem, "Control", ctl);
+	ofono_modem_set_string(modem->modem, "Application", app);
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", net);
 
 	return TRUE;
 }
