@@ -210,7 +210,7 @@ static void sim900_pre_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->modem);
-	sim = ofono_sim_create(modem, 0, "atmodem", data->modem);
+	sim = ofono_sim_create(modem, OFONO_VENDOR_SIMCOM, "atmodem", data->modem);
 
 	if (sim)
 		ofono_sim_inserted_notify(sim, TRUE);
