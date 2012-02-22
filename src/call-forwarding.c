@@ -359,7 +359,7 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 			}
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
-				oc->time != lc->time)
+					oc->time != lc->time)
 				ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
@@ -380,7 +380,7 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 				update_sim = TRUE;
 
 			if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
-				lc->time != DEFAULT_NO_REPLY_TIMEOUT)
+					lc->time != DEFAULT_NO_REPLY_TIMEOUT)
 				ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
@@ -415,7 +415,7 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 			update_sim = TRUE;
 
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY &&
-			oc->time != DEFAULT_NO_REPLY_TIMEOUT)
+				oc->time != DEFAULT_NO_REPLY_TIMEOUT)
 			ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_FORWARDING_INTERFACE,
 						tattr, DBUS_TYPE_UINT16,
@@ -608,7 +608,7 @@ static void get_query_cf_callback(const struct ofono_error *error, int total,
 static void get_query_next_cf_cond(struct ofono_call_forwarding *cf)
 {
 	cf->driver->query(cf, cf->query_next, BEARER_CLASS_DEFAULT,
-			get_query_cf_callback, cf);
+				get_query_cf_callback, cf);
 }
 
 static DBusMessage *cf_get_properties(DBusConnection *conn, DBusMessage *msg,
@@ -727,7 +727,7 @@ static void set_query_cf_callback(const struct ofono_error *error, int total,
 static void set_query_next_cf_cond(struct ofono_call_forwarding *cf)
 {
 	cf->driver->query(cf, cf->query_next, BEARER_CLASS_DEFAULT,
-			set_query_cf_callback, cf);
+				set_query_cf_callback, cf);
 }
 
 static void set_property_callback(const struct ofono_error *error, void *data)
@@ -820,8 +820,8 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 			return __ofono_error_invalid_format(msg);
 
 		l = g_slist_find_custom(cf->cf_conditions[type],
-				GINT_TO_POINTER(cls),
-				cf_condition_find_with_cls);
+					GINT_TO_POINTER(cls),
+					cf_condition_find_with_cls);
 
 		if (l == NULL)
 			return __ofono_error_failed(msg);
@@ -931,10 +931,10 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 
 	if (type == CALL_FORWARDING_TYPE_ALL)
 		cf->driver->erasure(cf, type, BEARER_CLASS_DEFAULT,
-				disable_all_callback, cf);
+					disable_all_callback, cf);
 	else
 		cf->driver->erasure(cf, type, BEARER_CLASS_DEFAULT,
-				disable_conditional_callback, cf);
+					disable_conditional_callback, cf);
 
 	return NULL;
 }
@@ -1132,9 +1132,9 @@ static gboolean cf_ss_control(int type, const char *sc,
 		return FALSE;
 
 	if (strlen(sia) &&
-		(type == SS_CONTROL_TYPE_QUERY ||
-		type == SS_CONTROL_TYPE_ERASURE ||
-		type == SS_CONTROL_TYPE_DEACTIVATION))
+			(type == SS_CONTROL_TYPE_QUERY ||
+				type == SS_CONTROL_TYPE_ERASURE ||
+				type == SS_CONTROL_TYPE_DEACTIVATION))
 		goto error;
 
 	/*
@@ -1147,7 +1147,7 @@ static gboolean cf_ss_control(int type, const char *sc,
 		type = SS_CONTROL_TYPE_REGISTRATION;
 
 	if (type == SS_CONTROL_TYPE_REGISTRATION &&
-		!valid_phone_number_format(sia))
+			!valid_phone_number_format(sia))
 		goto error;
 
 	if (strlen(sib) > 0) {
