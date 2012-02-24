@@ -131,10 +131,16 @@ GSList *at_util_parse_clcc(GAtResult *result)
 		if (!g_at_result_iter_next_number(&iter, &id))
 			continue;
 
+		if (id == 0)
+			continue;
+
 		if (!g_at_result_iter_next_number(&iter, &dir))
 			continue;
 
 		if (!g_at_result_iter_next_number(&iter, &status))
+			continue;
+
+		if (status > 5)
 			continue;
 
 		if (!g_at_result_iter_next_number(&iter, &type))
