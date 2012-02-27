@@ -389,6 +389,7 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 static void at_cmt_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_sms *sms = user_data;
+	struct sms_data *data = ofono_sms_get_data(sms);
 	const char *hexpdu;
 	long pdu_len;
 	int tpdu_len;
@@ -409,7 +410,8 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 	decode_hex_own_buf(hexpdu, -1, &pdu_len, 0, pdu);
 	ofono_sms_deliver_notify(sms, pdu, pdu_len, tpdu_len);
 
-	at_ack_delivery(sms);
+	if (data->vendor != OFONO_VENDOR_SIMCOM)
+		at_ack_delivery(sms);
 }
 
 static void at_cmgr_notify(GAtResult *result, gpointer user_data)
