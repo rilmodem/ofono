@@ -1,3 +1,11 @@
+ver 1.5:
+	Fix issue with USSD handling and Infineon modem.
+	Fix issue with signal strength reporting and Infineon modem.
+	Add support for Assisted Satellite Navigation and Infineon modem.
+	Add support for IPv6/dual contexts and Infineon modem.
+	Add support for SIM retry counters and SIM Com modem.
+	Add support for SMS handling and SIM Com modem.
+
 ver 1.4:
 	Fix issue with new SPN watch semantics.
 	Fix issue with handling malformed emergency numbers.
