@@ -825,6 +825,19 @@ static void notify_emulator_call_status(struct ofono_voicecall *vc)
 		}
 	}
 
+	/*
+	 * Perform some basic sanity checks for transitionary states;
+	 * if a transitionary state is detected, then ignore it.  The call
+	 * indicators will be updated properly in the follow-on calls to
+	 * this function once the final state has been reached
+	 */
+
+	if (incoming && (held || call))
+		return;
+
+	if (waiting && (held == FALSE && call == FALSE))
+		return;
+
 	data.status = call || held ? OFONO_EMULATOR_CALL_ACTIVE :
 					OFONO_EMULATOR_CALL_INACTIVE;
 
