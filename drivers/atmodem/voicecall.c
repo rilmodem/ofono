@@ -145,8 +145,23 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	GSList *n, *o;
 	struct ofono_call *nc, *oc;
 	gboolean poll_again = FALSE;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
 
 	if (!ok) {
+		/*
+		 * On certain Option GTM modems CLCC polling can fail
+		 * with a CME ERROR: 100.  It seems to be safe to ignore
+		 * it and continue polling anyway
+		 */
+		if (vd->vendor == OFONO_VENDOR_QUALCOMM_MSM &&
+				error.type == OFONO_ERROR_TYPE_CME &&
+				error.error == 100) {
+			poll_again = TRUE;
+			goto poll_again;
+		}
+
 		ofono_error("We are polling CLCC and received an error");
 		ofono_error("All bets are off for call management");
 		return;
@@ -245,6 +260,7 @@ static void clcc_poll_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	vd->local_release = 0;
 
+poll_again:
 	if (poll_again && !vd->clcc_source)
 		vd->clcc_source = g_timeout_add(POLL_CLCC_INTERVAL,
 						poll_clcc, vc);
