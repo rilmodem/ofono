@@ -421,13 +421,6 @@ static gboolean notify_ring(void *user_data)
 
 	c = find_call_with_status(em, CALL_STATUS_INCOMING);
 
-	/*
-	 * In case of waiting call becoming an incoming call, call status
-	 * change may not have been done yet, so try to find waiting call too
-	 */
-	if (c == NULL)
-		c = find_call_with_status(em, CALL_STATUS_WAITING);
-
 	if (c == NULL)
 		return TRUE;
 
