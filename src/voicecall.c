@@ -779,6 +779,8 @@ static void notify_emulator_call_status(struct ofono_voicecall *vc)
 	unsigned int non_mpty = 0;
 	gboolean multiparty = FALSE;
 	gboolean held = FALSE;
+	unsigned int non_mpty_held = 0;
+	gboolean multiparty_held = FALSE;
 	gboolean incoming = FALSE;
 	gboolean dialing = FALSE;
 	gboolean alerting = FALSE;
@@ -805,6 +807,12 @@ static void notify_emulator_call_status(struct ofono_voicecall *vc)
 
 		case CALL_STATUS_HELD:
 			held = TRUE;
+			if (g_slist_find_custom(vc->multiparty_list,
+						GINT_TO_POINTER(v->call->id),
+						call_compare_by_id))
+				multiparty_held = TRUE;
+			else
+				non_mpty_held++;
 			break;
 
 		case CALL_STATUS_DIALING:
@@ -838,6 +846,15 @@ static void notify_emulator_call_status(struct ofono_voicecall *vc)
 	if (waiting && (held == FALSE && call == FALSE))
 		return;
 
+	if (non_mpty > 1 || (non_mpty && multiparty))
+		return;
+
+	if (non_mpty_held > 1 || (non_mpty_held && multiparty_held))
+		return;
+
+	if (multiparty && multiparty_held)
+		return;
+
 	data.status = call || held ? OFONO_EMULATOR_CALL_ACTIVE :
 					OFONO_EMULATOR_CALL_INACTIVE;
 
@@ -864,18 +881,6 @@ static void notify_emulator_call_status(struct ofono_voicecall *vc)
 	if (held)
 		data.status = call ? OFONO_EMULATOR_CALLHELD_MULTIPLE :
 					OFONO_EMULATOR_CALLHELD_ON_HOLD;
-	else if (non_mpty > 1 || (non_mpty && multiparty))
-		/*
-		 * After call swap, it is possible that all calls move
-		 * temporarily to active state (depending on call state update
-		 * order), generating an update of callheld indicator to 0.
-		 * This will fail PTS test TP/TWC/BV-03-I.
-		 *
-		 * So, in case of multiple active calls, or an active call with
-		 * an active mutiparty call, force update of callheld indicator
-		 * to 2 (intermediate state allowed).
-		 */
-		data.status = OFONO_EMULATOR_CALLHELD_ON_HOLD;
 	else
 		data.status = OFONO_EMULATOR_CALLHELD_NONE;
 
