@@ -43,6 +43,7 @@
 #include <ofono/phonebook.h>
 #include <ofono/history.h>
 #include <ofono/log.h>
+#include <ofono/voicecall.h>
 
 #include <drivers/atmodem/vendor.h>
 
@@ -235,6 +236,8 @@ static void sim900_post_online(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, OFONO_VENDOR_SIMCOM, "atmodem", data->modem);
+	ofono_ussd_create(modem, 0, "atmodem", data->modem);
+	ofono_voicecall_create(modem, 0, "atmodem", data->modem);
 }
 
 static struct ofono_modem_driver sim900_driver = {
