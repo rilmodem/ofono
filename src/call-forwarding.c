@@ -595,7 +595,7 @@ static void get_query_cf_callback(const struct ofono_error *error, int total,
 	get_query_next_cf_cond(cf);
 }
 
-static void get_query_next_cf_cond(struct ofono_call_forwarding *cf)
+static inline void get_query_next_cf_cond(struct ofono_call_forwarding *cf)
 {
 	cf->driver->query(cf, cf->query_next, BEARER_CLASS_DEFAULT,
 				get_query_cf_callback, cf);
