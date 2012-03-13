@@ -183,22 +183,12 @@ static GSList *cf_cond_list_create(int total,
 	return l;
 }
 
-static inline void cf_list_clear(GSList *cf_list)
-{
-	GSList *l;
-
-	for (l = cf_list; l; l = l->next)
-		g_free(l->data);
-
-	g_slist_free(cf_list);
-}
-
 static inline void cf_clear_all(struct ofono_call_forwarding *cf)
 {
 	int i;
 
 	for (i = 0; i < 4; i++) {
-		cf_list_clear(cf->cf_conditions[i]);
+		g_slist_free_full(cf->cf_conditions[i], g_free);
 		cf->cf_conditions[i] = NULL;
 	}
 }
@@ -422,7 +412,7 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 						&timeout);
 	}
 
-	cf_list_clear(old);
+	g_slist_free_full(old, g_free);
 	cf->cf_conditions[type] = list;
 
 	if (update_sim == TRUE)
