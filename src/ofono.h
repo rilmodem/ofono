@@ -494,6 +494,9 @@ void __ofono_gprs_provision_free_settings(
 				int count);
 
 #include <ofono/emulator.h>
+void __ofono_emulator_set_indicator_forced(struct ofono_emulator *em,
+						const char *name, int value);
+
 #include <ofono/gnss.h>
 #include <ofono/cdma-sms.h>
 #include <ofono/cdma-netreg.h>

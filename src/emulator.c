@@ -1245,3 +1245,26 @@ start_ring:
 	em->callsetup_source = g_timeout_add_seconds(RING_TIMEOUT,
 							notify_ring, em);
 }
+
+void __ofono_emulator_set_indicator_forced(struct ofono_emulator *em,
+						const char *name, int value)
+{
+	int i;
+	struct indicator *ind;
+	char buf[20];
+
+	ind = find_indicator(em, name, &i);
+
+	if (ind == NULL || value < ind->min || value > ind->max)
+		return;
+
+	ind->value = value;
+
+	if (em->events_mode == 3 && em->events_ind && em->slc && ind->active) {
+		if (!g_at_server_command_pending(em->server)) {
+			sprintf(buf, "+CIEV: %d,%d", i, ind->value);
+			g_at_server_send_unsolicited(em->server, buf);
+		} else
+			ind->deferred = TRUE;
+	}
+}
