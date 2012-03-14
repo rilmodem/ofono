@@ -119,6 +119,8 @@ static const char *default_en_list[] = { "911", "112", NULL };
 static const char *default_en_list_no_sim[] = { "119", "118", "999", "110",
 						"08", "000", NULL };
 
+static void send_ciev_after_swap_callback(const struct ofono_error *error,
+								void *data);
 static void generic_callback(const struct ofono_error *error, void *data);
 static void hangup_all_active(const struct ofono_error *error, void *data);
 static void multirelease_callback(const struct ofono_error *err, void *data);
@@ -744,6 +746,17 @@ static void voicecall_emit_multiparty(struct voicecall *call, gboolean mpty)
 						OFONO_VOICECALL_INTERFACE,
 						"Multiparty", DBUS_TYPE_BOOLEAN,
 						&val);
+}
+
+static void emulator_set_indicator_forced(struct ofono_voicecall *vc,
+						const char *name, int value)
+{
+	struct ofono_modem *modem = __ofono_atom_get_modem(vc->atom);
+	struct ofono_emulator *em;
+
+	em = __ofono_atom_find(OFONO_ATOM_TYPE_EMULATOR_HFP, modem);
+	if (em)
+		__ofono_emulator_set_indicator_forced(em, name, value);
 }
 
 static void emulator_call_status_cb(struct ofono_atom *atom, void *data)
@@ -1615,13 +1628,19 @@ static DBusMessage *manager_swap_without_accept(DBusConnection *conn,
 						DBusMessage *msg, void *data)
 {
 	struct ofono_voicecall *vc = data;
+	ofono_voicecall_cb_t cb;
 
 	if (vc->pending || vc->dial_req || vc->pending_em)
 		return __ofono_error_busy(msg);
 
 	vc->pending = dbus_message_ref(msg);
 
-	vc->driver->swap_without_accept(vc, generic_callback, vc);
+	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
+		cb = send_ciev_after_swap_callback;
+	else
+		cb = generic_callback;
+
+	vc->driver->swap_without_accept(vc, cb, vc);
 
 	return NULL;
 }
@@ -1631,6 +1650,7 @@ static DBusMessage *manager_swap_calls(DBusConnection *conn,
 					DBusMessage *msg, void *data)
 {
 	struct ofono_voicecall *vc = data;
+	ofono_voicecall_cb_t cb;
 
 	if (vc->driver->swap_without_accept)
 		return manager_swap_without_accept(conn, msg, data);
@@ -1646,7 +1666,12 @@ static DBusMessage *manager_swap_calls(DBusConnection *conn,
 
 	vc->pending = dbus_message_ref(msg);
 
-	vc->driver->hold_all_active(vc, generic_callback, vc);
+	if (voicecalls_have_active(vc) && voicecalls_have_held(vc))
+		cb = send_ciev_after_swap_callback;
+	else
+		cb = generic_callback;
+
+	vc->driver->hold_all_active(vc, cb, vc);
 
 	return NULL;
 }
@@ -2300,6 +2325,26 @@ error:
 		g_free(v);
 }
 
+static void send_ciev_after_swap_callback(const struct ofono_error *error,
+								void *data)
+{
+	struct ofono_voicecall *vc = data;
+	DBusMessage *reply;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		DBG("command failed with error: %s",
+				telephony_error_to_str(error));
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
+		reply = dbus_message_new_method_return(vc->pending);
+		emulator_set_indicator_forced(vc, OFONO_EMULATOR_IND_CALLHELD,
+					OFONO_EMULATOR_CALLHELD_MULTIPLE);
+	} else
+		reply = __ofono_error_failed(vc->pending);
+
+	__ofono_dbus_pending_reply(&vc->pending, reply);
+}
+
 static void generic_callback(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
@@ -2801,6 +2846,23 @@ static void sim_watch(struct ofono_atom *atom,
 	sim_state_watch(ofono_sim_get_state(sim), vc);
 }
 
+static void emulator_send_ciev_after_swap_cb(const struct ofono_error *error,
+								void *data)
+{
+	struct ofono_voicecall *vc = data;
+
+	if (vc->pending_em == NULL)
+		return;
+
+	ofono_emulator_send_final(vc->pending_em, error);
+
+	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
+		emulator_set_indicator_forced(vc, OFONO_EMULATOR_IND_CALLHELD,
+					OFONO_EMULATOR_CALLHELD_MULTIPLE);
+
+	vc->pending_em = NULL;
+}
+
 static void emulator_generic_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_voicecall *vc = data;
@@ -3039,6 +3101,7 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 	char buf[64];
 	char *info;
 	int chld;
+	ofono_voicecall_cb_t cb;
 
 	result.error = 0;
 
@@ -3080,9 +3143,14 @@ static void emulator_chld_cb(struct ofono_emulator *em,
 			if (vc->driver->hold_all_active == NULL)
 				goto fail;
 
+			if (voicecalls_have_active(vc) &&
+					voicecalls_have_held(vc))
+				cb = emulator_send_ciev_after_swap_cb;
+			else
+				cb = emulator_generic_cb;
+
 			vc->pending_em = em;
-			vc->driver->hold_all_active(vc,
-					emulator_generic_cb, vc);
+			vc->driver->hold_all_active(vc, cb, vc);
 			return;
 		case 3:
 			if (vc->driver->create_multiparty == NULL)
