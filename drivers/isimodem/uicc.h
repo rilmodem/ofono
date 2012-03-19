@@ -27,8 +27,6 @@
 extern "C" {
 #endif
 
-#include <glib/gtypes.h>
-
 #include <gisi/client.h>
 #include <gisi/modem.h>
 

@@ -27,7 +27,6 @@
 extern "C" {
 #endif
 
-#include <glib/gtypes.h>
 #include <gisi/client.h>
 
 struct uicc_sim_data;
