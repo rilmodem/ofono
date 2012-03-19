@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <glib/gtypes.h>
+#include <glib.h>
 
 #include "phonet.h"
 

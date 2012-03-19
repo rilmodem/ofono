@@ -23,7 +23,6 @@
 #define __GISI_MODEM_H
 
 #include <stdint.h>
-#include <glib/gtypes.h>
 
 #include "phonet.h"
 #include "message.h"

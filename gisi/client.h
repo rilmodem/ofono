@@ -27,7 +27,6 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <glib/gtypes.h>
 
 #include "modem.h"
 
