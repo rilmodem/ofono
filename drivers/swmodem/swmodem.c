@@ -34,11 +34,14 @@
 
 static int swmodem_init(void)
 {
+	sw_gprs_context_init();
+
 	return 0;
 }
 
 static void swmodem_exit(void)
 {
+	sw_gprs_context_exit();
 }
 
 OFONO_PLUGIN_DEFINE(swmodem, "Sierra modem driver", VERSION,

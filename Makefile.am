@@ -188,7 +188,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 builtin_modules += swmodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/swmodem/swmodem.h \
-			drivers/swmodem/swmodem.c
+			drivers/swmodem/swmodem.c \
+			drivers/swmodem/gprs-context.c
 
 builtin_modules += huaweimodem
 builtin_sources += drivers/atmodem/atutil.h \
