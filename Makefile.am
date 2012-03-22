@@ -185,6 +185,11 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/nwmodem/nwmodem.c \
 			drivers/nwmodem/radio-settings.c
 
+builtin_modules += swmodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/swmodem/swmodem.h \
+			drivers/swmodem/swmodem.c
+
 builtin_modules += huaweimodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/huaweimodem/huaweimodem.h \
