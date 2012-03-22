@@ -32,13 +32,14 @@
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
-#include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
 #include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 #include <ofono/phonebook.h>
+#include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
@@ -236,12 +237,18 @@ static void sierra_post_sim(struct ofono_modem *modem)
 static void sierra_post_online(struct ofono_modem *modem)
 {
 	struct sierra_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, 0, "atmodem", data->modem);
 
-	ofono_gprs_create(modem, 0, "atmodem", data->modem);
+	gprs = ofono_gprs_create(modem, 0, "atmodem", data->modem);
+	gc = ofono_gprs_context_create(modem, 0, "swmodem", data->modem);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 }
 
 static struct ofono_modem_driver sierra_driver = {
