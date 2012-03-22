@@ -232,7 +232,7 @@ static gboolean setup_sierra(struct modem_info *modem)
 		}
 	}
 
-	if (mdm == NULL || app == NULL)
+	if (mdm == NULL || net == NULL)
 		return FALSE;
 
 	DBG("modem=%s app=%s net=%s diag=%s", mdm, app, net, diag);
