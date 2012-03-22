@@ -151,8 +151,8 @@ static void sw_gprs_activate_primary(struct ofono_gprs_context *gc,
 {
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char buf[64];
-	int len;
+	char buf[OFONO_GPRS_MAX_APN_LENGTH + 128];
+	int len = 0;
 
 	DBG("cid %u", ctx->cid);
 
@@ -160,11 +160,24 @@ static void sw_gprs_activate_primary(struct ofono_gprs_context *gc,
 
 	cbd->user = gc;
 
-	len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"", ctx->cid);
+	switch (ctx->proto) {
+	case OFONO_GPRS_PROTO_IP:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IP\"",
+								ctx->cid);
+		break;
+	case OFONO_GPRS_PROTO_IPV6:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IPV6\"",
+								ctx->cid);
+		break;
+	case OFONO_GPRS_PROTO_IPV4V6:
+		len = snprintf(buf, sizeof(buf), "AT+CGDCONT=%u,\"IPV4V6\"",
+								ctx->cid);
+		break;
+	}
 
 	if (ctx->apn)
-		snprintf(buf + len, sizeof(buf) - len - 3, ",\"%s\"",
-				ctx->apn);
+		snprintf(buf + len, sizeof(buf) - len - 3,
+					",\"%s\"", ctx->apn);
 
 	if (g_at_chat_send(gcd->chat, buf, none_prefix,
 				at_cgdcont_cb, cbd, g_free) > 0)
