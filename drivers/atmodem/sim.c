@@ -298,27 +298,44 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 	cb(&error, cbd->data);
 }
 
-static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
-					int start, int length,
-					const unsigned char *value,
-					ofono_sim_write_cb_t cb, void *data)
+static void at_sim_update_file(struct ofono_sim *sim, int cmd, int fileid,
+		int p1, int p2, int p3, const unsigned char *value,
+		ofono_sim_write_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
-	char *buf = g_try_new(char, 36 + length * 2);
+	char *buf;
+	char *quote = "";
 	int len, ret;
+	int size = 36 + p3 * 2;
 
+	DBG("");
+
+	/* Add quotes */
+	switch (sd->vendor) {
+	case OFONO_VENDOR_MBM:
+	case OFONO_VENDOR_ZTE:
+	case OFONO_VENDOR_HUAWEI:
+	case OFONO_VENDOR_SPEEDUP:
+		quote = "\"";
+		size += 2;
+		break;
+	}
+
+	buf = g_try_new(char, size);
 	if (buf == NULL)
 		goto error;
 
-	len = sprintf(buf, "AT+CRSM=214,%i,%i,%i,%i,", fileid,
-			start >> 8, start & 0xff, length);
+	len = sprintf(buf, "AT+CRSM=%i,%i,%i,%i,%i,%s", cmd, fileid,
+			p1, p2, p3, quote);
 
-	for (; length; length--)
+	for (; p3; p3--)
 		len += sprintf(buf + len, "%02hhX", *value++);
 
+	sprintf(buf + len, "%s", quote);
+
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
-				at_crsm_update_cb, cbd, g_free);
+			at_crsm_update_cb, cbd, g_free);
 
 	g_free(buf);
 
@@ -329,92 +346,30 @@ error:
 	g_free(cbd);
 
 	CALLBACK_WITH_FAILURE(cb, data);
+}
+
+static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
+		int start, int length, const unsigned char *value,
+		ofono_sim_write_cb_t cb, void *data)
+{
+	at_sim_update_file(sim, 214, fileid, start >> 8, start & 0xff,
+			length, value, cb, data);
 }
 
 static void at_sim_update_record(struct ofono_sim *sim, int fileid,
-					int record, int length,
-					const unsigned char *value,
-					ofono_sim_write_cb_t cb, void *data)
+		int record, int length, const unsigned char *value,
+		ofono_sim_write_cb_t cb, void *data)
 {
-	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
-	char *buf;
-	int len, ret;
-	int size = 36 + length * 2;
-
-	if (sd->vendor == OFONO_VENDOR_MBM)
-		size += 2; /*Add quotes*/
-
-	buf = g_try_new(char, size);
-	if (buf == NULL)
-		goto error;
-
-	len = sprintf(buf, "AT+CRSM=220,%i,%i,4,%i,", fileid,
-			record, length);
-
-	if (sd->vendor == OFONO_VENDOR_MBM)
-		len += sprintf(buf + len, "\"");
-
-	for (; length; length--)
-		len += sprintf(buf + len, "%02hhX", *value++);
-
-	if (sd->vendor == OFONO_VENDOR_MBM)
-		sprintf(buf + len, "\"");
-
-	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
-				at_crsm_update_cb, cbd, g_free);
-
-	g_free(buf);
-
-	if (ret > 0)
-		return;
-
-error:
-	g_free(cbd);
-
-	CALLBACK_WITH_FAILURE(cb, data);
+	at_sim_update_file(sim, 220, fileid, record, 4,
+			length, value, cb, data);
 }
 
 static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
-					int length, const unsigned char *value,
-					ofono_sim_write_cb_t cb, void *data)
+		int length, const unsigned char *value,
+		ofono_sim_write_cb_t cb, void *data)
 {
-	struct sim_data *sd = ofono_sim_get_data(sim);
-	struct cb_data *cbd = cb_data_new(cb, data);
-	char *buf;
-	int len, ret;
-	int size = 36 + length * 2;
-
-	if (sd->vendor == OFONO_VENDOR_MBM)
-		size += 2; /* Add quotes */
-
-	buf = g_try_new(char, size);
-	if (buf == NULL)
-		goto error;
-
-	len = sprintf(buf, "AT+CRSM=220,%i,0,3,%i,", fileid, length);
-
-	if (sd->vendor == OFONO_VENDOR_MBM)
-		len += sprintf(buf + len, "\"");
-
-	for (; length; length--)
-		len += sprintf(buf + len, "%02hhX", *value++);
-
-	if (sd->vendor == OFONO_VENDOR_MBM)
-		sprintf(buf + len, "\"");
-
-	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
-				at_crsm_update_cb, cbd, g_free);
-
-	g_free(buf);
-
-	if (ret > 0)
-		return;
-
-error:
-	g_free(cbd);
-
-	CALLBACK_WITH_FAILURE(cb, data);
+	at_sim_update_file(sim, 220, fileid, 0, 3,
+			length, value, cb, data);
 }
 
 static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
