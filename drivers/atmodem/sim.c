@@ -112,8 +112,7 @@ static void at_crsm_info_cb(gboolean ok, GAtResult *result, gpointer user_data)
 						&str, access, NULL);
 
 		file_status = EF_STATUS_VALID;
-	}
-	else
+	} else
 		ok = sim_parse_2g_get_response(response, len, &flen, &rlen,
 						&str, access, &file_status);
 
@@ -172,7 +171,7 @@ static void at_sim_read_info(struct ofono_sim *sim, int fileid,
 }
 
 static void at_crsm_read_cb(gboolean ok, GAtResult *result,
-		gpointer user_data)
+				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
@@ -260,7 +259,7 @@ static void at_sim_read_record(struct ofono_sim *sim, int fileid,
 }
 
 static void at_crsm_update_cb(gboolean ok, GAtResult *result,
-		gpointer user_data)
+				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
@@ -299,8 +298,9 @@ static void at_crsm_update_cb(gboolean ok, GAtResult *result,
 }
 
 static void at_sim_update_file(struct ofono_sim *sim, int cmd, int fileid,
-		int p1, int p2, int p3, const unsigned char *value,
-		ofono_sim_write_cb_t cb, void *data)
+				int p1, int p2, int p3,
+				const unsigned char *value,
+				ofono_sim_write_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -335,7 +335,7 @@ static void at_sim_update_file(struct ofono_sim *sim, int cmd, int fileid,
 	sprintf(buf + len, "%s", quote);
 
 	ret = g_at_chat_send(sd->chat, buf, crsm_prefix,
-			at_crsm_update_cb, cbd, g_free);
+				at_crsm_update_cb, cbd, g_free);
 
 	g_free(buf);
 
@@ -349,27 +349,28 @@ error:
 }
 
 static void at_sim_update_binary(struct ofono_sim *sim, int fileid,
-		int start, int length, const unsigned char *value,
-		ofono_sim_write_cb_t cb, void *data)
+					int start, int length,
+					const unsigned char *value,
+					ofono_sim_write_cb_t cb, void *data)
 {
 	at_sim_update_file(sim, 214, fileid, start >> 8, start & 0xff,
-			length, value, cb, data);
+				length, value, cb, data);
 }
 
 static void at_sim_update_record(struct ofono_sim *sim, int fileid,
-		int record, int length, const unsigned char *value,
-		ofono_sim_write_cb_t cb, void *data)
+					int record, int length,
+					const unsigned char *value,
+					ofono_sim_write_cb_t cb, void *data)
 {
-	at_sim_update_file(sim, 220, fileid, record, 4,
-			length, value, cb, data);
+	at_sim_update_file(sim, 220, fileid, record, 4, length,
+				value, cb, data);
 }
 
 static void at_sim_update_cyclic(struct ofono_sim *sim, int fileid,
-		int length, const unsigned char *value,
-		ofono_sim_write_cb_t cb, void *data)
+					int length, const unsigned char *value,
+					ofono_sim_write_cb_t cb, void *data)
 {
-	at_sim_update_file(sim, 220, fileid, 0, 3,
-			length, value, cb, data);
+	at_sim_update_file(sim, 220, fileid, 0, 3, length, value, cb, data);
 }
 
 static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
@@ -401,7 +402,7 @@ static void at_cimi_cb(gboolean ok, GAtResult *result, gpointer user_data)
 }
 
 static void at_read_imsi(struct ofono_sim *sim, ofono_sim_imsi_cb_t cb,
-			void *data)
+				void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -1116,9 +1117,9 @@ error:
 }
 
 static void at_change_passwd(struct ofono_sim *sim,
-			enum ofono_sim_password_type passwd_type,
-			const char *old_passwd, const char *new_passwd,
-			ofono_sim_lock_unlock_cb_t cb, void *data)
+				enum ofono_sim_password_type passwd_type,
+				const char *old_passwd, const char *new_passwd,
+				ofono_sim_lock_unlock_cb_t cb, void *data)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
 	struct cb_data *cbd = cb_data_new(cb, data);
@@ -1148,7 +1149,7 @@ error:
 }
 
 static void at_lock_status_cb(gboolean ok, GAtResult *result,
-		gpointer user_data)
+				gpointer user_data)
 {
 	struct cb_data *cbd = user_data;
 	GAtResultIter iter;
