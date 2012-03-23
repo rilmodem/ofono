@@ -194,7 +194,8 @@ builtin_sources += drivers/atmodem/atutil.h \
 builtin_modules += ztemodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/ztemodem/ztemodem.h \
-			drivers/ztemodem/ztemodem.c
+			drivers/ztemodem/ztemodem.c \
+			drivers/ztemodem/radio-settings.c
 
 builtin_modules += huaweimodem
 builtin_sources += drivers/atmodem/atutil.h \

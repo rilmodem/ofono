@@ -20,3 +20,6 @@
  */
 
 #include <drivers/atmodem/atutil.h>
+
+extern void zte_radio_settings_init(void);
+extern void zte_radio_settings_exit(void);

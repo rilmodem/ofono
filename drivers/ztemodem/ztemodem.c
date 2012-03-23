@@ -34,11 +34,14 @@
 
 static int ztemodem_init(void)
 {
+	zte_radio_settings_init();
+
 	return 0;
 }
 
 static void ztemodem_exit(void)
 {
+	zte_radio_settings_exit();
 }
 
 OFONO_PLUGIN_DEFINE(ztemodem, "ZTE modem driver", VERSION,
