@@ -191,6 +191,11 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/swmodem/swmodem.c \
 			drivers/swmodem/gprs-context.c
 
+builtin_modules += ztemodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/ztemodem/ztemodem.h \
+			drivers/ztemodem/ztemodem.c
+
 builtin_modules += huaweimodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/huaweimodem/huaweimodem.h \
