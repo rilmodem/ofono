@@ -41,6 +41,7 @@
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/radio-settings.h>
 #include <ofono/phonebook.h>
 #include <ofono/log.h>
 
@@ -350,6 +351,8 @@ static void zte_post_sim(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_phonebook_create(modem, 0, "atmodem", data->aux);
+
+	ofono_radio_settings_create(modem, 0, "ztemodem", data->aux);
 
 	ofono_sms_create(modem, OFONO_VENDOR_ZTE, "atmodem", data->aux);
 
