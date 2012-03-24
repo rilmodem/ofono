@@ -78,9 +78,6 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 
 	d->calls = g_slist_insert_sorted(d->calls, call, at_util_call_compare);
 
-	g_at_chat_send(d->chat, "AT^DDSETEX=2", none_prefix,
-						NULL, NULL, NULL);
-
 	return call;
 }
 
@@ -116,6 +113,7 @@ static void huawei_dial(struct ofono_voicecall *vc,
 				enum ofono_clir_option clir,
 				ofono_voicecall_cb_t cb, void *data)
 {
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
 	char buf[256];
 
 	if (ph->type == 145)
@@ -137,12 +135,20 @@ static void huawei_dial(struct ofono_voicecall *vc,
 	strcat(buf, ";");
 
 	huawei_template(vc, buf, cb, data);
+
+	g_at_chat_send(vd->chat, "AT^DDSETEX=2", none_prefix,
+						NULL, NULL, NULL);
 }
 
 static void huawei_answer(struct ofono_voicecall *vc,
 				ofono_voicecall_cb_t cb, void *data)
 {
+	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
+
 	huawei_template(vc, "ATA", cb, data);
+
+	g_at_chat_send(vd->chat, "AT^DDSETEX=2", none_prefix,
+						NULL, NULL, NULL);
 }
 
 static void huawei_hangup(struct ofono_voicecall *vc,
