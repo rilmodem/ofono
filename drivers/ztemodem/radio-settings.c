@@ -126,7 +126,7 @@ static void zte_set_rat_mode(struct ofono_radio_settings *rs,
 	struct radio_settings_data *rsd = ofono_radio_settings_get_data(rs);
 	struct cb_data *cbd = cb_data_new(cb, data);
 	char buf[20];
-	int value;
+	int value = 0;
 
 	switch (mode) {
 	case OFONO_RADIO_ACCESS_MODE_ANY:
