@@ -157,8 +157,10 @@ static void zsnt_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_radio_settings *rs = user_data;
 
-	if (!ok)
+	if (!ok) {
+		ofono_radio_settings_remove(rs);
 		return;
+	}
 
 	ofono_radio_settings_register(rs);
 }
