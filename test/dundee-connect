@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import dbus
+import sys
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 2:
+	path = sys.argv[1]
+else:
+	manager = dbus.Interface(bus.get_object('org.ofono.dundee', '/'),
+			'org.ofono.dundee.Manager')
+	devices = manager.GetDevices()
+	path = devices[0][0]
+
+print "Connect device %s..." % path
+device = dbus.Interface(bus.get_object('org.ofono.dundee', path),
+						'org.ofono.dundee.Device')
+
+device.SetProperty("Active", True)
