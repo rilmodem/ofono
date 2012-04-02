@@ -1,0 +1,11 @@
+[Unit]
+Description=DUN service
+After=syslog.target
+
+[Service]
+Type=dbus
+BusName=org.ofono.dundee
+ExecStart=@prefix@/sbin/dundee -n
+
+[Install]
+WantedBy=multi-user.target

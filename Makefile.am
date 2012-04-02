@@ -697,6 +697,12 @@ if DATAFILES
 
 dist_dbusconf_DATA += dundee/dundee.conf
 
+if SYSTEMD
+
+systemdunit_DATA += dundee/dundee.service
+
+endif
+
 endif
 
 endif
