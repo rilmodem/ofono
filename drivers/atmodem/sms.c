@@ -319,17 +319,16 @@ static void at_cnma_cb(gboolean ok, GAtResult *result, gpointer user_data)
 				"Further SMS reception is not guaranteed");
 }
 
-static gboolean at_parse_pdu_common(GAtResult *result, const char *prefix,
-					const char **pdu, int *pdulen)
+static gboolean at_parse_cmt(GAtResult *result,	const char **pdu, int *pdulen)
 {
 	GAtResultIter iter;
 
 	g_at_result_iter_init(&iter, result);
 
-	if (!g_at_result_iter_next(&iter, prefix))
+	if (!g_at_result_iter_next(&iter, "+CMT:"))
 		return FALSE;
 
-	if (!strcmp(prefix, "+CMT:") && !g_at_result_iter_skip_next(&iter))
+	if (!g_at_result_iter_skip_next(&iter))
 		return FALSE;
 
 	if (!g_at_result_iter_next_number(&iter, pdulen))
@@ -365,11 +364,26 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 	int tpdu_len;
 	const char *hexpdu;
 	unsigned char pdu[176];
+	GAtResultIter iter;
 
-	if (!at_parse_pdu_common(result, "+CDS:", &hexpdu, &tpdu_len)) {
-		ofono_error("Unable to parse CDS notification");
-		return;
-	}
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CDS:"))
+		goto err;
+
+	/*
+	 * Quirk for ZTE firmware which is not compliant with 27.005
+	 * The +CDS syntax used by ZTE is including a comma before the length
+	 * +CDS: ,<length><CR><LF><pdu>
+	 * As a result, we need to skip this omitted subparameter
+	 */
+	if (data->vendor == OFONO_VENDOR_ZTE)
+		g_at_result_iter_skip_next(&iter);
+
+	if (!g_at_result_iter_next_number(&iter, &tpdu_len))
+		goto err;
+
+	hexpdu = g_at_result_pdu(result);
 
 	if (strlen(hexpdu) > sizeof(pdu) * 2) {
 		ofono_error("Bad PDU length in CDS notification");
@@ -384,6 +398,11 @@ static void at_cds_notify(GAtResult *result, gpointer user_data)
 
 	if (data->cnma_enabled)
 		at_ack_delivery(sms);
+
+	return;
+
+err:
+	ofono_error("Unable to parse CDS notification");
 }
 
 static void at_cmt_notify(GAtResult *result, gpointer user_data)
@@ -395,7 +414,7 @@ static void at_cmt_notify(GAtResult *result, gpointer user_data)
 	int tpdu_len;
 	unsigned char pdu[176];
 
-	if (!at_parse_pdu_common(result, "+CMT:", &hexpdu, &tpdu_len)) {
+	if (!at_parse_cmt(result, &hexpdu, &tpdu_len)) {
 		ofono_error("Unable to parse CMT notification");
 		return;
 	}
