@@ -20,4 +20,8 @@ ATTRS{idVendor}=="2020", ATTRS{idProduct}=="1008", ENV{ID_USB_INTERFACE_NUM}=="0
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_LABEL}="modem"
 ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9800", ENV{ID_USB_INTERFACE_NUM}=="02", ENV{OFONO_LABEL}="aux"
 
+# SpeedUp U3501
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9605", ENV{ID_USB_INTERFACE_NUM}=="03", ENV{OFONO_LABEL}="modem"
+ATTRS{idVendor}=="1c9e", ATTRS{idProduct}=="9605", ENV{ID_USB_INTERFACE_NUM}=="01", ENV{OFONO_LABEL}="aux"
+
 LABEL="ofono_speedup_end"
