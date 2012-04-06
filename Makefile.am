@@ -347,6 +347,9 @@ builtin_sources += plugins/nokiacdma.c
 builtin_modules += linktop
 builtin_sources += plugins/linktop.c
 
+builtin_modules += icera
+builtin_sources += plugins/icera.c
+
 builtin_modules += alcatel
 builtin_sources += plugins/alcatel.c
 
