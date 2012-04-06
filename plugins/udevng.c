@@ -405,6 +405,42 @@ static gboolean setup_linktop(struct modem_info *modem)
 	return TRUE;
 }
 
+static gboolean setup_icera(struct modem_info *modem)
+{
+	const char *aux = NULL, *mdm = NULL, *net = NULL;
+	GSList *list;
+
+	DBG("%s", modem->syspath);
+
+	for (list = modem->devices; list; list = list->next) {
+		struct device_info *info = list->data;
+
+		DBG("%s %s %s %s", info->devnode, info->interface,
+						info->number, info->label);
+
+		if (g_strcmp0(info->interface, "2/2/1") == 0) {
+			if (g_strcmp0(info->number, "01") == 0)
+				aux = info->devnode;
+			else if (g_strcmp0(info->number, "03") == 0)
+				mdm = info->devnode;
+		} else if (g_strcmp0(info->interface, "2/6/0") == 0) {
+			if (g_strcmp0(info->number, "05") == 0)
+				net = info->devnode;
+		}
+	}
+
+	if (aux == NULL || mdm == NULL)
+		return FALSE;
+
+	DBG("aux=%s modem=%s net=%s", aux, mdm, net);
+
+	ofono_modem_set_string(modem->modem, "Aux", aux);
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", net);
+
+	return TRUE;
+}
+
 static gboolean setup_alcatel(struct modem_info *modem)
 {
 	const char *aux = NULL, *mdm = NULL;
@@ -716,6 +752,7 @@ static struct {
 	{ "telit",	setup_telit	},
 	{ "simcom",	setup_simcom	},
 	{ "zte",	setup_zte	},
+	{ "icera",	setup_icera	},
 	{ "samsung",	setup_samsung	},
 	{ }
 };
@@ -886,6 +923,8 @@ static struct {
 } vendor_list[] = {
 	{ "isiusb",	"cdc_phonet"			},
 	{ "linktop",	"cdc_acm",	"230d"		},
+	{ "icera",	"cdc_acm",	"19d2"		},
+	{ "icera",	"cdc_ether",	"19d2"		},
 	{ "mbm",	"cdc_acm",	"0bdb"		},
 	{ "mbm"		"cdc_ether",	"0bdb"		},
 	{ "mbm",	"cdc_acm",	"0fce"		},
