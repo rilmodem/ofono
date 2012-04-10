@@ -94,32 +94,24 @@ static gint cf_cond_compare(gconstpointer a, gconstpointer b)
 	return ca->cls - cb->cls;
 }
 
-static gint cf_condition_find_with_cls(gconstpointer a, gconstpointer b)
+static struct ofono_call_forwarding_condition *cf_cond_find(GSList *l, int cls)
 {
-	const struct ofono_call_forwarding_condition *c = a;
-	int cls = GPOINTER_TO_INT(b);
+	for (; l; l = l->next)
+		if (((struct ofono_call_forwarding_condition *)
+				(l->data))->cls == cls)
+			return l->data;
 
-	if (c->cls < cls)
-		return -1;
-
-	if (c->cls > cls)
-		return 1;
-
-	return 0;
+	return NULL;
 }
 
 static int cf_find_timeout(GSList *cf_list, int cls)
 {
-	GSList *l;
 	struct ofono_call_forwarding_condition *c;
 
-	l = g_slist_find_custom(cf_list, GINT_TO_POINTER(cls),
-		cf_condition_find_with_cls);
+	c = cf_cond_find(cf_list, cls);
 
-	if (l == NULL)
+	if (c == NULL)
 		return DEFAULT_NO_REPLY_TIMEOUT;
-
-	c = l->data;
 
 	return c->time;
 }
@@ -323,12 +315,8 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 		if (type == CALL_FORWARDING_TYPE_NO_REPLY)
 			snprintf(tattr, sizeof(tattr), "%sTimeout", attr);
 
-		o = g_slist_find_custom(old, GINT_TO_POINTER(lc->cls),
-					cf_condition_find_with_cls);
-
-		if (o) { /* On the old list, must be active */
-			oc = o->data;
-
+		oc = cf_cond_find(old, lc->cls);
+		if (oc) { /* On the old list, must be active */
 			if (oc->phone_number.type != lc->phone_number.type ||
 				strcmp(oc->phone_number.number,
 					lc->phone_number.number)) {
@@ -349,8 +337,8 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 						&timeout);
 
 			/* Remove from the old list */
-			g_free(o->data);
-			old = g_slist_remove(old, o->data);
+			old = g_slist_remove(old, oc);
+			g_free(oc);
 		} else {
 			number = phone_number_to_string(&lc->phone_number);
 
@@ -428,21 +416,16 @@ static void set_new_cond_list(struct ofono_call_forwarding *cf,
 			if (i == CALL_FORWARDING_TYPE_UNCONDITIONAL)
 				continue;
 
-			l = g_slist_find_custom(cf->cf_conditions[i],
-					GINT_TO_POINTER(BEARER_CLASS_VOICE),
-					cf_condition_find_with_cls);
-
-			if (l == NULL)
+			lc = cf_cond_find(cf->cf_conditions[i],
+						BEARER_CLASS_VOICE);
+			if (lc == NULL)
 				continue;
 
 			if (new_cfu)
 				number = "";
-			else {
-				lc = l->data;
-
+			else
 				number = phone_number_to_string(
 							&lc->phone_number);
-			}
 
 			ofono_dbus_signal_property_changed(conn, path,
 						OFONO_CALL_FORWARDING_INTERFACE,
@@ -789,7 +772,6 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 
 	if (cf_condition_timeout_property(property, &cls)) {
 		dbus_uint16_t timeout;
-		GSList *l;
 		struct ofono_call_forwarding_condition *c;
 
 		type = CALL_FORWARDING_TYPE_NO_REPLY;
@@ -802,14 +784,10 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (timeout < 1 || timeout > 30)
 			return __ofono_error_invalid_format(msg);
 
-		l = g_slist_find_custom(cf->cf_conditions[type],
-					GINT_TO_POINTER(cls),
-					cf_condition_find_with_cls);
 
-		if (l == NULL)
+		c = cf_cond_find(cf->cf_conditions[type], cls);
+		if (c == NULL)
 			return __ofono_error_failed(msg);
-
-		c = l->data;
 
 		return set_property_request(cf, msg, type, cls,
 						&c->phone_number, timeout);
