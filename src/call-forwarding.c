@@ -197,26 +197,12 @@ static void sim_cphs_cff_update_cb(int ok, void *data)
 		ofono_info("Failed to update EFcphs-cff");
 }
 
-static struct ofono_call_forwarding_condition *cf_find_unconditional(
+static inline struct ofono_call_forwarding_condition *cf_find_unconditional(
 					struct ofono_call_forwarding *cf)
 {
-	GSList *l = cf->cf_conditions[CALL_FORWARDING_TYPE_UNCONDITIONAL];
-	struct ofono_call_forwarding_condition *cond;
-
-	/*
-	 * For now we only support Voice, although Fax & all Data
-	 * basic services are applicable as well.
-	 */
-	for (; l; l = l->next) {
-		cond = l->data;
-
-		if (cond->cls > BEARER_CLASS_VOICE)
-			continue;
-
-		return cond;
-	}
-
-	return NULL;
+	return cf_cond_find(
+		cf->cf_conditions[CALL_FORWARDING_TYPE_UNCONDITIONAL],
+		BEARER_CLASS_VOICE);
 }
 
 static void sim_set_cf_indicator(struct ofono_call_forwarding *cf)
