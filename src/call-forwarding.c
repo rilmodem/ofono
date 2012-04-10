@@ -86,18 +86,12 @@ static void get_query_next_cf_cond(struct ofono_call_forwarding *cf);
 static void set_query_next_cf_cond(struct ofono_call_forwarding *cf);
 static void ss_set_query_next_cf_cond(struct ofono_call_forwarding *cf);
 
-static gint cf_condition_compare(gconstpointer a, gconstpointer b)
+static gint cf_cond_compare(gconstpointer a, gconstpointer b)
 {
 	const struct ofono_call_forwarding_condition *ca = a;
 	const struct ofono_call_forwarding_condition *cb = b;
 
-	if (ca->cls < cb->cls)
-		return -1;
-
-	if (ca->cls > cb->cls)
-		return 1;
-
-	return 0;
+	return ca->cls - cb->cls;
 }
 
 static gint cf_condition_find_with_cls(gconstpointer a, gconstpointer b)
@@ -175,8 +169,7 @@ static GSList *cf_cond_list_create(int total,
 				sizeof(struct ofono_call_forwarding_condition));
 			cond->cls = j;
 
-			l = g_slist_insert_sorted(l, cond,
-							cf_condition_compare);
+			l = g_slist_insert_sorted(l, cond, cf_cond_compare);
 		}
 	}
 
