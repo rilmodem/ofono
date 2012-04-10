@@ -108,16 +108,11 @@ static struct ofono_call_forwarding_condition *cf_cond_find(GSList *l, int cls)
 	return NULL;
 }
 
-static int cf_find_timeout(GSList *cf_list, int cls)
+static int cf_cond_find_timeout(GSList *l, int cls)
 {
-	struct ofono_call_forwarding_condition *c;
+	struct ofono_call_forwarding_condition *cond = cf_cond_find(l, cls);
 
-	c = cf_cond_find(cf_list, cls);
-
-	if (c == NULL)
-		return DEFAULT_NO_REPLY_TIMEOUT;
-
-	return c->time;
+	return cond ? cond->time : DEFAULT_NO_REPLY_TIMEOUT;
 }
 
 static void cf_cond_list_print(GSList *l)
@@ -820,7 +815,7 @@ static DBusMessage *cf_set_property(DBusConnection *conn, DBusMessage *msg,
 		if (number[0] != '\0')
 			string_to_phone_number(number, &ph);
 
-		timeout = cf_find_timeout(cf->cf_conditions[type], cls);
+		timeout = cf_cond_find_timeout(cf->cf_conditions[type], cls);
 
 		return set_property_request(cf, msg, type, cls, &ph,
 						timeout);
