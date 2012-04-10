@@ -546,8 +546,8 @@ static void get_query_cf_callback(const struct ofono_error *error, int total,
 	}
 
 	if (cf->query_next == CALL_FORWARDING_TYPE_NOT_REACHABLE) {
-		DBusMessage *reply = cf_get_properties_reply(cf->pending, cf);
-		__ofono_dbus_pending_reply(&cf->pending, reply);
+		__ofono_dbus_pending_reply(&cf->pending,
+				cf_get_properties_reply(cf->pending, cf));
 		return;
 	}
 
