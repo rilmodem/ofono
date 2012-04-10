@@ -120,12 +120,11 @@ static int cf_find_timeout(GSList *cf_list, int cls)
 	return c->time;
 }
 
-static void cf_cond_list_print(GSList *list)
+static void cf_cond_list_print(GSList *l)
 {
-	GSList *l;
 	struct ofono_call_forwarding_condition *cond;
 
-	for (l = list; l; l = l->next) {
+	for (; l ; l = l->next) {
 		cond = l->data;
 
 		DBG("CF Condition status: %d, class: %d, number: %s,"
