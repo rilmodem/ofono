@@ -123,19 +123,6 @@ static struct ofono_call *create_call(struct ofono_voicecall *vc, int type,
 	return call;
 }
 
-static struct ofono_call *new_call_notify(struct ofono_voicecall *vc, int type,
-					int direction, int status,
-					const char *num, int num_type, int clip)
-{
-	struct ofono_call *c;
-
-	c = create_call(vc, type, direction, status, num, num_type, clip);
-
-	ofono_voicecall_notify(vc, c);
-
-	return c;
-}
-
 static void release_call(struct ofono_voicecall *vc, struct ofono_call *call)
 {
 	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
@@ -849,59 +836,6 @@ static void ciev_call_notify(struct ofono_voicecall *vc,
 	vd->cind_val[HFP_INDICATOR_CALL] = value;
 }
 
-static void sync_dialing_cb(gboolean ok, GAtResult *result, gpointer user_data)
-{
-	struct ofono_voicecall *vc = user_data;
-	struct voicecall_data *vd = ofono_voicecall_get_data(vc);
-	struct ofono_error error;
-	GSList *calls;
-	GSList *o;
-	GSList *n;
-	struct ofono_call *oc;
-	struct ofono_call *nc;
-
-	decode_at_error(&error, g_at_result_final_response(result));
-
-	if (!ok)
-		return;
-
-	calls = at_util_parse_clcc(result);
-
-	if (calls == NULL)
-		return;
-
-	/* Look for dialing or alerting calls on the new list */
-	n = find_dialing(calls);
-
-	/* Let us find if we have done the dial from HF by looking for
-	 * existing dialing or alerting calls
-	 */
-	o = find_dialing(vd->calls);
-
-	if (n == NULL && o) {
-		oc = o->data;
-		release_call(vc, oc);
-		vd->calls = g_slist_remove(vd->calls, oc);
-	} else if (n && o == NULL) {
-		nc = n->data;
-		new_call_notify(vc, nc->type, nc->direction, nc->status,
-				nc->phone_number.number, nc->phone_number.type,
-				nc->clip_validity);
-	} else if (n && o) {
-		oc = o->data;
-		nc = n->data;
-
-		memcpy(&oc->phone_number, &nc->phone_number,
-				sizeof(struct ofono_phone_number));
-		oc->status = nc->status;
-		oc->clip_validity = nc->clip_validity;
-		ofono_voicecall_notify(vc, oc);
-	}
-
-	g_slist_foreach(calls, (GFunc) g_free, NULL);
-	g_slist_free(calls);
-}
-
 static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 					unsigned int value)
 {
@@ -979,7 +913,7 @@ static void ciev_callsetup_notify(struct ofono_voicecall *vc,
 		 * from AG: query and create call.
 		 */
 		g_at_chat_send(vd->chat, "AT+CLCC", clcc_prefix,
-				sync_dialing_cb, vc, NULL);
+				clcc_poll_cb, vc, NULL);
 		break;
 
 	case 3:
