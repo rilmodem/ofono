@@ -592,6 +592,7 @@ static gboolean modem_has_sim(struct ofono_modem *modem)
 
 	return FALSE;
 }
+
 static void common_online_cb(const struct ofono_error *error, void *data)
 {
 	struct ofono_modem *modem = data;
