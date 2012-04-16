@@ -80,21 +80,8 @@ if (test "${enable_threads}" = "yes"); then
 	GLIB_LIBS="$GLIB_LIBS $GTHREAD_LIBS"
 fi
 
-PKG_CHECK_MODULES(DBUS, dbus-1 >= 1.0, dummy=yes,
-				AC_MSG_ERROR(D-Bus >= 1.0 is required))
-saved_CFLAGS="$CFLAGS"
-saved_LIBS="$LIBS"
-CFLAGS="$CFLAGS $DBUS_CFLAGS"
-LIBS="$LIBS $DBUS_LIBS"
-AC_CHECK_LIB(dbus-1, dbus_watch_get_unix_fd, dummy=yes,
-	AC_DEFINE(NEED_DBUS_WATCH_GET_UNIX_FD, 1,
-		[Define to 1 if you need the dbus_watch_get_unix_fd() function.]))
-AC_CHECK_LIB(dbus-1, dbus_connection_can_send_type, dummy=yes,
-	AC_DEFINE(NEED_DBUS_CONNECTION_CAN_SEND_TYPE, 1,
-		[Define to 1 if you need the dbus_connection_can_send_type() function.]
-))
-CFLAGS="$saved_CFLAGS"
-LIBS="$saved_LIBS"
+PKG_CHECK_MODULES(DBUS, dbus-1 >= 1.4, dummy=yes,
+				AC_MSG_ERROR(D-Bus >= 1.4 is required))
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
 
