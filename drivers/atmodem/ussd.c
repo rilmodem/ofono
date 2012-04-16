@@ -286,6 +286,7 @@ static void at_ussd_register(gboolean ok, GAtResult *result, gpointer user)
 
 	if (!ok) {
 		ofono_error("Could not enable CUSD notifications");
+		ofono_ussd_remove(ussd);
 		return;
 	}
 
