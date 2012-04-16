@@ -272,6 +272,12 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/hfpmodem/devinfo.c \
 			drivers/hfpmodem/handsfree.c
 
+builtin_modules += speedupmodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/speedupmodem/speedupmodem.h \
+			drivers/speedupmodem/speedupmodem.c \
+			drivers/speedupmodem/ussd.c
+
 if PHONESIM
 builtin_modules += phonesim
 builtin_sources += plugins/phonesim.c
