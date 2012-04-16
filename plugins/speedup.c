@@ -47,12 +47,16 @@
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
+static const char *creg_prefix[] = { "+CREG:", NULL };
 static const char *none_prefix[] = { NULL };
 
 struct speedup_data {
 	GAtChat *modem;
 	GAtChat *aux;
 	gboolean have_sim;
+	guint online_poll_source;
+	guint online_poll_count;
+	struct cb_data *online_cbd;
 	struct at_util_sim_state_query *sim_state_query;
 };
 
@@ -81,6 +85,13 @@ static void speedup_remove(struct ofono_modem *modem)
 
 	/* Cleanup potential SIM state polling */
 	at_util_sim_state_query_free(data->sim_state_query);
+
+	/* Cleanup potential online enable polling */
+	if (data->online_poll_source > 0) {
+		g_source_remove(data->online_poll_source);
+
+		g_free(data->online_cbd);
+	}
 
 	/* Cleanup after hot-unplug */
 	g_at_chat_unref(data->aux);
@@ -238,6 +249,107 @@ static int speedup_disable(struct ofono_modem *modem)
 	return -EINPROGRESS;
 }
 
+static gboolean creg_online_check(gpointer user_data);
+
+static void creg_online_cb(gboolean ok, GAtResult *result,
+						gpointer user_data)
+{
+	struct speedup_data *data = user_data;
+	ofono_modem_online_cb_t cb = data->online_cbd->cb;
+
+	if (ok) {
+		CALLBACK_WITH_SUCCESS(cb, data->online_cbd->data);
+		goto done;
+	}
+
+	data->online_poll_count++;
+
+	if (data->online_poll_count > 15)
+		goto failure;
+
+	data->online_poll_source = g_timeout_add_seconds(2,
+						creg_online_check, data);
+	return;
+
+failure:
+	CALLBACK_WITH_FAILURE(cb, data->online_cbd->data);
+
+done:
+	g_free(data->online_cbd);
+	data->online_cbd = NULL;
+}
+
+static gboolean creg_online_check(gpointer user_data)
+{
+	struct speedup_data *data = user_data;
+
+	data->online_poll_source = 0;
+
+	g_at_chat_send(data->aux, "AT+CREG=?", creg_prefix,
+					creg_online_cb, data, NULL);
+
+	return FALSE;
+}
+
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct speedup_data *data = ofono_modem_get_data(modem);
+
+	if (!ok) {
+		ofono_modem_online_cb_t cb = data->online_cbd->cb;
+
+		CALLBACK_WITH_FAILURE(cb, data->online_cbd->data);
+
+		g_free(data->online_cbd);
+		data->online_cbd = NULL;
+		return;
+	}
+
+	data->online_poll_count = 0;
+
+	creg_online_check(data);
+}
+
+static void set_offline_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
+}
+
+static void speedup_set_online(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t cb, void *user_data)
+{
+	struct speedup_data *data = ofono_modem_get_data(modem);
+
+	DBG("modem %p %s", modem, online ? "online" : "offline");
+
+	if (online == TRUE) {
+		data->online_cbd = cb_data_new(cb, user_data);
+
+		if (g_at_chat_send(data->aux, "AT+CFUN=1", none_prefix,
+					set_online_cb, modem, NULL) > 0)
+			return;
+
+		g_free(data->online_cbd);
+		data->online_cbd = NULL;
+	} else {
+		struct cb_data *cbd = cb_data_new(cb, user_data);
+
+		if (g_at_chat_send(data->aux, "AT+CFUN=4",
+				none_prefix, set_offline_cb, cbd, g_free) > 0)
+			return;
+
+		g_free(cbd);
+	}
+
+	CALLBACK_WITH_FAILURE(cb, user_data);
+}
+
 static void speedup_pre_sim(struct ofono_modem *modem)
 {
 	struct speedup_data *data = ofono_modem_get_data(modem);
@@ -291,6 +403,7 @@ static struct ofono_modem_driver speedup_driver = {
 	.remove		= speedup_remove,
 	.enable		= speedup_enable,
 	.disable	= speedup_disable,
+	.set_online	= speedup_set_online,
 	.pre_sim	= speedup_pre_sim,
 	.post_sim	= speedup_post_sim,
 	.post_online	= speedup_post_online,
