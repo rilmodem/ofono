@@ -2,7 +2,7 @@
  *
  *  oFono - Open Source Telephony
  *
- *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2008-2012  Intel Corporation. All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -282,8 +282,7 @@ static void speedup_post_online(struct ofono_modem *modem)
 
 	ofono_cbs_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
 						"atmodem", data->aux);
-	ofono_ussd_create(modem, OFONO_VENDOR_QUALCOMM_MSM,
-						"atmodem", data->aux);
+	ofono_ussd_create(modem, 0, "speedupmodem", data->aux);
 }
 
 static struct ofono_modem_driver speedup_driver = {
