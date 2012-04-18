@@ -164,7 +164,7 @@ done:
 	data->sim_state_query = at_util_sim_state_query_new(data->modem_port,
 								1, 5,
 								sim_state_cb,
-								modem);
+								modem, NULL);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
