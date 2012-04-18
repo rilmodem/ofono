@@ -218,7 +218,8 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	data->sim_state_query = at_util_sim_state_query_new(data->aux,
-						2, 20, sim_state_cb, modem);
+						2, 20, sim_state_cb, modem,
+						NULL);
 }
 
 static int zte_enable(struct ofono_modem *modem)
