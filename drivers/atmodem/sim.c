@@ -51,6 +51,7 @@ struct sim_data {
 	GAtChat *chat;
 	unsigned int vendor;
 	guint ready_id;
+	struct at_util_sim_state_query *sim_state_query;
 };
 
 static const char *crsm_prefix[] = { "+CRSM:", NULL };
@@ -972,6 +973,21 @@ static void at_epev_notify(GAtResult *result, gpointer user_data)
 	sd->ready_id = 0;
 }
 
+static void sim_state_cb(gboolean present, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	struct sim_data *sd = cbd->user;
+	ofono_sim_lock_unlock_cb_t cb = cbd->cb;
+
+	at_util_sim_state_query_free(sd->sim_state_query);
+	sd->sim_state_query = NULL;
+
+	if (present == 1)
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
+	else
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+}
+
 static void at_pin_send_cb(gboolean ok, GAtResult *result,
 				gpointer user_data)
 {
@@ -1005,6 +1021,16 @@ static void at_pin_send_cb(gboolean ok, GAtResult *result,
 		sd->ready_id = g_at_chat_register(sd->chat, "*EPEV",
 							at_epev_notify,
 							FALSE, cbd, g_free);
+		return;
+	case OFONO_VENDOR_ZTE:
+		/*
+		 * On ZTE modems, after pin is entered, SIM state is checked
+		 * by polling CPIN as their modem doesn't provide unsolicited
+		 * notification of SIM readiness.
+		 */
+		sd->sim_state_query = at_util_sim_state_query_new(sd->chat,
+						2, 20, sim_state_cb, cbd,
+						g_free);
 		return;
 	}
 
@@ -1245,6 +1271,9 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 static void at_sim_remove(struct ofono_sim *sim)
 {
 	struct sim_data *sd = ofono_sim_get_data(sim);
+
+	/* Cleanup potential SIM state polling */
+	at_util_sim_state_query_free(sd->sim_state_query);
 
 	ofono_sim_set_data(sim, NULL);
 
