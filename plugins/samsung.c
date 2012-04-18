@@ -142,7 +142,8 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	data->sim_state_query = at_util_sim_state_query_new(data->chat,
-						1, 5, sim_state_cb, modem);
+						1, 5, sim_state_cb, modem,
+						NULL);
 }
 
 static int samsung_enable(struct ofono_modem *modem)
