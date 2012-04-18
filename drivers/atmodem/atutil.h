@@ -79,7 +79,8 @@ gboolean at_util_parse_attr(GAtResult *result, const char *prefix,
 struct at_util_sim_state_query *at_util_sim_state_query_new(GAtChat *chat,
 						guint interval, guint num_times,
 						at_util_sim_inserted_cb_t cb,
-						void *userdata);
+						void *userdata,
+						GDestroyNotify destroy);
 void at_util_sim_state_query_free(struct at_util_sim_state_query *req);
 
 struct cb_data {

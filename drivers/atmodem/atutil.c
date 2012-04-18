@@ -45,6 +45,7 @@ struct at_util_sim_state_query {
 	guint num_times;
 	at_util_sim_inserted_cb_t cb;
 	void *userdata;
+	GDestroyNotify destroy;
 };
 
 static gboolean cpin_check(gpointer userdata);
@@ -574,7 +575,8 @@ static gboolean cpin_check(gpointer userdata)
 struct at_util_sim_state_query *at_util_sim_state_query_new(GAtChat *chat,
 						guint interval, guint num_times,
 						at_util_sim_inserted_cb_t cb,
-						void *userdata)
+						void *userdata,
+						GDestroyNotify destroy)
 {
 	struct at_util_sim_state_query *req;
 
@@ -585,6 +587,7 @@ struct at_util_sim_state_query *at_util_sim_state_query_new(GAtChat *chat,
 	req->num_times = num_times;
 	req->cb = cb;
 	req->userdata = userdata;
+	req->destroy = destroy;
 
 	cpin_check(req);
 
@@ -598,6 +601,9 @@ void at_util_sim_state_query_free(struct at_util_sim_state_query *req)
 
 	if (req->cpin_poll_source > 0)
 		g_source_remove(req->cpin_poll_source);
+
+	if (req->destroy)
+		req->destroy(req->userdata);
 
 	g_free(req);
 }
