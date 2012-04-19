@@ -189,6 +189,12 @@ Signals		CallAdded(object path, dict properties)
 			released.  The object path is no longer accessible
 			after this signal and only emitted for reference.
 
+			NOTE: If the VoiceCallManager interface becomes
+			unavailable, this signal is not guaranteed to be
+			emitted for remaining calls.  The applications are
+			expected to monitor changes in Modem.Interfaces
+			property.
+
 		PropertyChanged(string property, variant value)
 
 			Signal is emitted whenever a property has changed.
