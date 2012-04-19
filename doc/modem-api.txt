@@ -96,8 +96,13 @@ Properties	boolean Powered [readwrite]
 			(registration status, SIM inserted status,
 			network capabilities, device capabilities, etc.)
 
-			TODO: Better to split this into Status and
-			      Capabilites properties?
+			Please note that the set of Interfaces can and does
+			change frequently (e.g. due to change in Powered
+			and Online properties.)  If a given interface is no
+			longer available, then the application should assume
+			that all data for that interface has become invalid,
+			e.g. calls have been dropped, network registration
+			lost, etc.
 
 		string Type [readonly]
 
