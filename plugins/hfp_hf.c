@@ -192,6 +192,7 @@ static DBusMessage *hfp_agent_release(DBusConnection *conn,
 	g_dbus_unregister_interface(connection, obj_path, HFP_AGENT_INTERFACE);
 	hfp_data->agent_registered = FALSE;
 
+	g_hash_table_remove(modem_hash, hfp_data->handsfree_path);
 	ofono_modem_remove(modem);
 
 	return dbus_message_new_method_return(msg);
@@ -365,8 +366,6 @@ static void hfp_remove(struct ofono_modem *modem)
 	if (g_dbus_unregister_interface(connection, obj_path,
 					HFP_AGENT_INTERFACE))
 		hfp_unregister_ofono_handsfree(modem);
-
-	g_hash_table_remove(modem_hash, data->handsfree_path);
 
 	g_free(data->handsfree_address);
 	g_free(data->handsfree_path);
