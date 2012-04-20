@@ -1,3 +1,14 @@
+ver 1.6:
+	Fix issue with elementary files updates.
+	Fix issue with emulator ringing notification.
+	Fix issue with GTA04 modem and CLCC behavior.
+	Fix issue with Huawei modem voice call timing.
+	Fix issue with ZTE modem and SIM busy condition.
+	Add support for radio settings of ZTE modem.
+	Add support for USSD and voice calls of SIM900 modem.
+	Add support for online/offline handling of SpeedUp modem.
+	Add support for Sierra Wireless DirectIP modem.
+
 ver 1.5:
 	Fix issue with USSD handling and Infineon modem.
 	Fix issue with signal strength reporting and Infineon modem.
