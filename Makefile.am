@@ -585,7 +585,8 @@ test_scripts = test/backtrace \
 		test/cdma-connman-enable \
 		test/set-context-property \
 		test/test-gnss \
-		test/swap-calls
+		test/swap-calls \
+		test/release-and-answer
 
 if TEST
 testdir = $(pkglibdir)/test
