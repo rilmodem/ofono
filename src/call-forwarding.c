@@ -96,10 +96,14 @@ static gint cf_cond_compare(gconstpointer a, gconstpointer b)
 
 static struct ofono_call_forwarding_condition *cf_cond_find(GSList *l, int cls)
 {
-	for (; l; l = l->next)
-		if (((struct ofono_call_forwarding_condition *)
-				(l->data))->cls == cls)
-			return l->data;
+	struct ofono_call_forwarding_condition *c;
+
+	for (; l; l = l->next) {
+		c = l->data;
+
+		if (c->cls == cls)
+			return c;
+	}
 
 	return NULL;
 }
