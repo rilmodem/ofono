@@ -177,8 +177,8 @@ AC_ARG_ENABLE(bluetooth, AC_HELP_STRING([--disable-bluetooth],
 				[disable Bluetooth modem support]),
 					[enable_bluetooth=${enableval}])
 if (test "${enable_bluetooth}" != "no"); then
-	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.30, dummy=yes,
-			AC_MSG_ERROR(Bluetooth library >= 4.30 is required))
+	PKG_CHECK_MODULES(BLUEZ, bluez >= 4.99, dummy=yes,
+			AC_MSG_ERROR(Bluetooth library >= 4.99 is required))
 fi
 AC_SUBST(BLUEZ_CFLAGS)
 AC_SUBST(BLUEZ_LIBS)
