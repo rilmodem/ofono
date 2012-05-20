@@ -49,7 +49,7 @@ static const GDBusMethodTable cdma_sms_manager_methods[] = {
 };
 
 static const GDBusSignalTable cdma_sms_manager_signals[] = {
-	{ _GDBUS_SIGNAL("IncomingMessage", "sa{sv}",
+	{ GDBUS_SIGNAL("IncomingMessage",
 			GDBUS_ARGS({ "message", "s"}, { "info", "a{sv}" })) },
 	/* TODO */
 	{ }

@@ -967,30 +967,29 @@ static DBusMessage *cb_set_passwd(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable cb_methods[] = {
-	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
-			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-			      cb_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SetProperty", "svs", "",
-			      GDBUS_ARGS({ "property", "s" },
+	{ GDBUS_ASYNC_METHOD("GetProperties",
+				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+				cb_get_properties) },
+	{ GDBUS_ASYNC_METHOD("SetProperty",
+			GDBUS_ARGS({ "property", "s" },
 					{ "value", "v" }, { "pin2", "s" }),
-			      NULL, cb_set_property) },
-	{ _GDBUS_ASYNC_METHOD("DisableAll", "s", "",
-			      GDBUS_ARGS({ "password", "s" }), NULL,
-			      cb_disable_ab) },
-	{ _GDBUS_ASYNC_METHOD("DisableAllIncoming", "s", "",
-			      GDBUS_ARGS({ "password", "s" }), NULL,
-			      cb_disable_ac) },
-	{ _GDBUS_ASYNC_METHOD("DisableAllOutgoing", "s", "",
-			      GDBUS_ARGS({ "password", "s" }), NULL,
-			      cb_disable_ag) },
-	{ _GDBUS_ASYNC_METHOD("ChangePassword", "ss", "",
-			      GDBUS_ARGS({ "old", "s" }, { "new", "s" }),
-			      NULL, cb_set_passwd) },
+			NULL, cb_set_property) },
+	{ GDBUS_ASYNC_METHOD("DisableAll", GDBUS_ARGS({ "password", "s" }),
+			NULL, cb_disable_ab) },
+	{ GDBUS_ASYNC_METHOD("DisableAllIncoming",
+			GDBUS_ARGS({ "password", "s" }), NULL,
+			cb_disable_ac) },
+	{ GDBUS_ASYNC_METHOD("DisableAllOutgoing",
+			GDBUS_ARGS({ "password", "s" }), NULL,
+			cb_disable_ag) },
+	{ GDBUS_ASYNC_METHOD("ChangePassword",
+			GDBUS_ARGS({ "old", "s" }, { "new", "s" }),
+			NULL, cb_set_passwd) },
 	{ }
 };
 
 static const GDBusSignalTable cb_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

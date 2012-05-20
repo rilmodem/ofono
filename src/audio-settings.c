@@ -118,14 +118,14 @@ static DBusMessage *audio_get_properties(DBusConnection *conn,
 }
 
 static const GDBusMethodTable audio_methods[] = {
-	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
-			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-			      audio_get_properties) },
+	{ GDBUS_ASYNC_METHOD("GetProperties",
+				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+				audio_get_properties) },
 	{ }
 };
 
 static const GDBusSignalTable audio_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

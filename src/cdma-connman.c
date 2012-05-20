@@ -518,17 +518,17 @@ static DBusMessage *cdma_connman_set_property(DBusConnection *conn,
 }
 
 static const GDBusMethodTable cdma_connman_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-				cdma_connman_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
-			      GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
-			      NULL, cdma_connman_set_property) },
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			cdma_connman_get_properties) },
+	{ GDBUS_ASYNC_METHOD("SetProperty",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			NULL, cdma_connman_set_property) },
 	{ }
 };
 
 static const GDBusSignalTable cdma_connman_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "a{sv}",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

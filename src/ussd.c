@@ -729,27 +729,27 @@ static DBusMessage *ussd_get_properties(DBusConnection *conn,
 }
 
 static const GDBusMethodTable ussd_methods[] = {
-	{ _GDBUS_ASYNC_METHOD("Initiate", "s", "sv",
+	{ GDBUS_ASYNC_METHOD("Initiate",
 			GDBUS_ARGS({ "command", "s" }),
 			GDBUS_ARGS({ "result_name", "s" }, { "value", "v" }),
 			ussd_initiate) },
-	{ _GDBUS_ASYNC_METHOD("Respond", "s", "s",
+	{ GDBUS_ASYNC_METHOD("Respond",
 			GDBUS_ARGS({ "reply", "s" }),
 			GDBUS_ARGS({ "result", "s" }),
 			ussd_respond) },
-	{ _GDBUS_ASYNC_METHOD("Cancel", "", "", NULL, NULL, ussd_cancel) },
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-				ussd_get_properties) },
+	{ GDBUS_ASYNC_METHOD("Cancel", NULL, NULL, ussd_cancel) },
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			ussd_get_properties) },
 	{ }
 };
 
 static const GDBusSignalTable ussd_signals[] = {
-	{ _GDBUS_SIGNAL("NotificationReceived", "s",
+	{ GDBUS_SIGNAL("NotificationReceived",
 					GDBUS_ARGS({ "message", "s" })) },
-	{ _GDBUS_SIGNAL("RequestReceived", "s",
+	{ GDBUS_SIGNAL("RequestReceived",
 					GDBUS_ARGS({ "message", "s" })) },
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

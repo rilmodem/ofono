@@ -1104,33 +1104,33 @@ int __ofono_sms_txq_cancel(struct ofono_sms *sms, const struct ofono_uuid *uuid)
 }
 
 static const GDBusMethodTable sms_manager_methods[] = {
-	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
+	{ GDBUS_ASYNC_METHOD("GetProperties",
 				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
 				sms_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
+	{ GDBUS_ASYNC_METHOD("SetProperty",
 			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
 			NULL, sms_set_property) },
-	{ _GDBUS_ASYNC_METHOD("SendMessage", "ss", "o",
+	{ GDBUS_ASYNC_METHOD("SendMessage",
 			GDBUS_ARGS({ "to", "s" }, { "text", "s" }),
 			GDBUS_ARGS({ "path", "o" }),
 			sms_send_message) },
-	{ _GDBUS_METHOD("GetMessages", "", "a(oa{sv})",
+	{ GDBUS_METHOD("GetMessages",
 			GDBUS_ARGS({ "messages", "a(oa{sv})" }), NULL,
 			sms_get_messages) },
 	{ }
 };
 
 static const GDBusSignalTable sms_manager_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
-	{ _GDBUS_SIGNAL("IncomingMessage", "sa{sv}",
+	{ GDBUS_SIGNAL("IncomingMessage",
 			GDBUS_ARGS({ "message", "s" }, { "info", "a{sv}" })) },
-	{ _GDBUS_SIGNAL("ImmediateMessage", "sa{sv}",
+	{ GDBUS_SIGNAL("ImmediateMessage",
 			GDBUS_ARGS({ "message", "s" }, { "info", "a{sv}" })) },
-	{ _GDBUS_SIGNAL("MessageAdded", "oa{sv}",
+	{ GDBUS_SIGNAL("MessageAdded",
 			GDBUS_ARGS({ "path", "o" },
 						{ "properties", "a{sv}" })) },
-	{ _GDBUS_SIGNAL("MessageRemoved", "o",
+	{ GDBUS_SIGNAL("MessageRemoved",
 			GDBUS_ARGS({ "path", "o" })) },
 	{ }
 };

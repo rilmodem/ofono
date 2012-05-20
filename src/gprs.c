@@ -1283,17 +1283,17 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 }
 
 static const GDBusMethodTable context_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-			      pri_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
-		      GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
-		      NULL, pri_set_property) },
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			pri_get_properties) },
+	{ GDBUS_ASYNC_METHOD("SetProperty",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			NULL, pri_set_property) },
 	{ }
 };
 
 static const GDBusSignalTable context_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };
@@ -2067,34 +2067,33 @@ static DBusMessage *gprs_get_contexts(DBusConnection *conn,
 }
 
 static const GDBusMethodTable manager_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-			      gprs_get_properties) },
-	{ _GDBUS_METHOD("SetProperty", "sv", "",
-		      GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
-		      NULL, gprs_set_property) },
-	{ _GDBUS_ASYNC_METHOD("AddContext", "s", "o",
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			gprs_get_properties) },
+	{ GDBUS_METHOD("SetProperty",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			NULL, gprs_set_property) },
+	{ GDBUS_ASYNC_METHOD("AddContext",
 			GDBUS_ARGS({ "type", "s" }),
 			GDBUS_ARGS({ "path", "o" }),
 			gprs_add_context) },
-	{ _GDBUS_ASYNC_METHOD("RemoveContext", "o", "",
+	{ GDBUS_ASYNC_METHOD("RemoveContext",
 			GDBUS_ARGS({ "path", "o" }), NULL,
 			gprs_remove_context) },
-	{ _GDBUS_ASYNC_METHOD("DeactivateAll", "", "", NULL, NULL,
+	{ GDBUS_ASYNC_METHOD("DeactivateAll", NULL, NULL,
 			gprs_deactivate_all) },
-	{ _GDBUS_METHOD("GetContexts", "", "a(oa{sv})",
-			NULL,
+	{ GDBUS_METHOD("GetContexts", NULL,
 			GDBUS_ARGS({ "contexts_with_properties", "a(oa{sv})" }),
 			gprs_get_contexts) },
 	{ }
 };
 
 static const GDBusSignalTable manager_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
-	{ _GDBUS_SIGNAL("ContextAdded", "oa{sv}",
+	{ GDBUS_SIGNAL("ContextAdded",
 			GDBUS_ARGS({ "path", "o" }, { "properties", "v" })) },
-	{ _GDBUS_SIGNAL("ContextRemoved", "o", GDBUS_ARGS({ "path", "o" })) },
+	{ GDBUS_SIGNAL("ContextRemoved", GDBUS_ARGS({ "path", "o" })) },
 	{ }
 };
 

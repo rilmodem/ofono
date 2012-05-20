@@ -818,23 +818,23 @@ static DBusMessage *stk_select_item(DBusConnection *conn,
 }
 
 static const GDBusMethodTable stk_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-				stk_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SelectItem", "yo", "",
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			stk_get_properties) },
+	{ GDBUS_ASYNC_METHOD("SelectItem",
 			GDBUS_ARGS({ "item", "y" }, { "agent", "o" }), NULL,
 			stk_select_item) },
-	{ _GDBUS_METHOD("RegisterAgent", "o", "",
+	{ GDBUS_METHOD("RegisterAgent",
 			GDBUS_ARGS({ "path", "o" }), NULL,
 			stk_register_agent) },
-	{ _GDBUS_METHOD("UnregisterAgent", "o", "",
+	{ GDBUS_METHOD("UnregisterAgent",
 			GDBUS_ARGS({ "path", "o" }), NULL,
 			stk_unregister_agent) },
 	{ }
 };
 
 static const GDBusSignalTable stk_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

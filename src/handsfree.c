@@ -271,20 +271,20 @@ static DBusMessage *handsfree_request_phone_number(DBusConnection *conn,
 }
 
 static const GDBusMethodTable handsfree_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-			      handsfree_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
-		      GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
-		      NULL, handsfree_set_property) },
-	{ _GDBUS_ASYNC_METHOD("RequestPhoneNumber", "", "s",
-				NULL, GDBUS_ARGS({ "number", "s" }),
-				handsfree_request_phone_number) },
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			handsfree_get_properties) },
+	{ GDBUS_ASYNC_METHOD("SetProperty",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			NULL, handsfree_set_property) },
+	{ GDBUS_ASYNC_METHOD("RequestPhoneNumber",
+			NULL, GDBUS_ARGS({ "number", "s" }),
+			handsfree_request_phone_number) },
 	{ }
 };
 
 static const GDBusSignalTable handsfree_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

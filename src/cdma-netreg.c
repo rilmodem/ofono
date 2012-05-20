@@ -108,9 +108,9 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 }
 
 static const GDBusMethodTable cdma_netreg_manager_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-			      network_get_properties) },
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			network_get_properties) },
 	{ }
 };
 

@@ -369,17 +369,17 @@ static DBusMessage *mw_set_property(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable message_waiting_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-				mw_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			mw_get_properties) },
+	{ GDBUS_ASYNC_METHOD("SetProperty",
 			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
 			NULL, mw_set_property) },
 	{ }
 };
 
 static const GDBusSignalTable message_waiting_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

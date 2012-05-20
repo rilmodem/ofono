@@ -882,20 +882,20 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable cf_methods[] = {
-	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
+	{ GDBUS_ASYNC_METHOD("GetProperties",
 				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
 				cf_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
+	{ GDBUS_ASYNC_METHOD("SetProperty",
 			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
 			NULL, cf_set_property) },
-	{ _GDBUS_ASYNC_METHOD("DisableAll", "s", "",
-				GDBUS_ARGS({ "type", "s" }), NULL,
-				cf_disable_all) },
+	{ GDBUS_ASYNC_METHOD("DisableAll",
+			GDBUS_ARGS({ "type", "s" }), NULL,
+			cf_disable_all) },
 	{ }
 };
 
 static const GDBusSignalTable cf_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };

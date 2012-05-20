@@ -240,19 +240,19 @@ static DBusMessage *location_reporting_release(DBusConnection *conn,
 }
 
 static const GDBusMethodTable location_reporting_methods[] = {
-	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
-				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
-				location_reporting_get_properties) },
-	{ _GDBUS_ASYNC_METHOD("Request", "", "h",
-				NULL, GDBUS_ARGS({ "fd", "h" }),
-				location_reporting_request) },
-	{ _GDBUS_ASYNC_METHOD("Release", "", "", NULL, NULL,
+	{ GDBUS_METHOD("GetProperties",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			location_reporting_get_properties) },
+	{ GDBUS_ASYNC_METHOD("Request",
+			NULL, GDBUS_ARGS({ "fd", "h" }),
+			location_reporting_request) },
+	{ GDBUS_ASYNC_METHOD("Release", NULL, NULL,
 					location_reporting_release) },
 	{ }
 };
 
 static const GDBusSignalTable location_reporting_signals[] = {
-	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+	{ GDBUS_SIGNAL("PropertyChanged",
 			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };
