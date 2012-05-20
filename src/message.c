@@ -104,13 +104,16 @@ static DBusMessage *message_cancel(DBusConnection *conn,
 }
 
 static const GDBusMethodTable message_methods[] = {
-	{ "GetProperties",  "",    "a{sv}",   message_get_properties },
-	{ "Cancel",         "",    "",        message_cancel },
+	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
+				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+				message_get_properties) },
+	{ _GDBUS_METHOD("Cancel", "","", NULL, NULL, message_cancel) },
 	{ }
 };
 
 static const GDBusSignalTable message_signals[] = {
-	{ "PropertyChanged",	"sv" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };
 

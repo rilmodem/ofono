@@ -602,15 +602,18 @@ static DBusMessage *radio_set_property(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable radio_methods[] = {
-	{ "GetProperties",  "",    "a{sv}",  radio_get_properties,
-						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SetProperty",    "sv",  "",       radio_set_property,
-						G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
+				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+				radio_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			NULL, radio_set_property) },
 	{ }
 };
 
 static const GDBusSignalTable radio_signals[] = {
-	{ "PropertyChanged",	"sv" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };
 

@@ -624,14 +624,17 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 }
 
 static const GDBusMethodTable network_operator_methods[] = {
-	{ "GetProperties",  "",  "a{sv}",  network_operator_get_properties },
-	{ "Register",       "",  "",       network_operator_register,
-						G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
+				NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+				network_operator_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("Register", "", "", NULL, NULL,
+						network_operator_register) },
 	{ }
 };
 
 static const GDBusSignalTable network_operator_signals[] = {
-	{ "PropertyChanged",	"sv" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };
 
@@ -1021,17 +1024,23 @@ static DBusMessage *network_get_operators(DBusConnection *conn,
 }
 
 static const GDBusMethodTable network_registration_methods[] = {
-	{ "GetProperties",  "",  "a{sv}",	network_get_properties },
-	{ "Register",       "",  "",		network_register,
-						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "GetOperators",   "",  "a(oa{sv})",	network_get_operators },
-	{ "Scan",           "",  "a(oa{sv})",	network_scan,
-						G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			network_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("Register", "", "",
+				NULL, NULL, network_register) },
+	{ _GDBUS_METHOD("GetOperators", "", "a(oa{sv})",
+		NULL, GDBUS_ARGS({ "operators_with_properties", "a(oa{sv})" }),
+		network_get_operators) },
+	{ _GDBUS_ASYNC_METHOD("Scan", "", "a(oa{sv})",
+		NULL, GDBUS_ARGS({ "operators_with_properties", "a(oa{sv})" }),
+		network_scan) },
 	{ }
 };
 
 static const GDBusSignalTable network_registration_signals[] = {
-	{ "PropertyChanged",	"sv" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "a{sv}",
+			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };
 

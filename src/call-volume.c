@@ -302,14 +302,18 @@ static DBusMessage *cv_set_property(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable cv_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	cv_get_properties },
-	{ "SetProperty",	"sv",	"",		cv_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			cv_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
+			      GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			      NULL, cv_set_property) },
 	{ }
 };
 
 static const GDBusSignalTable cv_signals[] = {
-	{ "PropertyChanged",	"sv" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" })) },
 	{ }
 };
 

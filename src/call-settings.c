@@ -1331,15 +1331,18 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable cs_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	cs_get_properties,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SetProperty",	"sv",	"",		cs_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
+			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			      cs_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
+			      GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			      NULL, cs_set_property) },
 	{ }
 };
 
 static const GDBusSignalTable cs_signals[] = {
-	{ "PropertyChanged",	"sv" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" })) },
 	{ }
 };
 

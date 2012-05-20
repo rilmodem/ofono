@@ -152,8 +152,12 @@ static DBusMessage *push_notification_unregister_agent(DBusConnection *conn,
 }
 
 static const GDBusMethodTable push_notification_methods[] = {
-	{ "RegisterAgent",    "o",   "",  push_notification_register_agent },
-	{ "UnregisterAgent",  "o",   "",  push_notification_unregister_agent },
+	{ _GDBUS_METHOD("RegisterAgent", "o", "",
+			GDBUS_ARGS({ "path", "o" }), NULL,
+			push_notification_register_agent) },
+	{ _GDBUS_METHOD("UnregisterAgent", "o", "",
+			GDBUS_ARGS({ "path", "o" }), NULL,
+			push_notification_unregister_agent) },
 	{ }
 };
 

@@ -967,23 +967,31 @@ static DBusMessage *cb_set_passwd(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable cb_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	cb_get_properties,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SetProperty",	"svs",	"",		cb_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "DisableAll",		"s",	"",		cb_disable_ab,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "DisableAllIncoming",	"s",	"",		cb_disable_ac,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "DisableAllOutgoing",	"s",	"",		cb_disable_ag,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "ChangePassword",	"ss",	"",		cb_set_passwd,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
+			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			      cb_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("SetProperty", "svs", "",
+			      GDBUS_ARGS({ "property", "s" },
+					{ "value", "v" }, { "pin2", "s" }),
+			      NULL, cb_set_property) },
+	{ _GDBUS_ASYNC_METHOD("DisableAll", "s", "",
+			      GDBUS_ARGS({ "password", "s" }), NULL,
+			      cb_disable_ab) },
+	{ _GDBUS_ASYNC_METHOD("DisableAllIncoming", "s", "",
+			      GDBUS_ARGS({ "password", "s" }), NULL,
+			      cb_disable_ac) },
+	{ _GDBUS_ASYNC_METHOD("DisableAllOutgoing", "s", "",
+			      GDBUS_ARGS({ "password", "s" }), NULL,
+			      cb_disable_ag) },
+	{ _GDBUS_ASYNC_METHOD("ChangePassword", "ss", "",
+			      GDBUS_ARGS({ "old", "s" }, { "new", "s" }),
+			      NULL, cb_set_passwd) },
 	{ }
 };
 
 static const GDBusSignalTable cb_signals[] = {
-	{ "PropertyChanged",		"sv" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
 	{ }
 };
 

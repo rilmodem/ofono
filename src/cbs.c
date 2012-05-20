@@ -541,16 +541,22 @@ static DBusMessage *cbs_set_property(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable cbs_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	cbs_get_properties },
-	{ "SetProperty",	"sv",	"",		cbs_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
+			NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			cbs_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("SetProperty", "sv", "",
+			      GDBUS_ARGS({ "property", "s" }, { "value", "v" }),
+			      NULL, cbs_set_property) },
 	{ }
 };
 
 static const GDBusSignalTable cbs_signals[] = {
-	{ "PropertyChanged",	"sv"		},
-	{ "IncomingBroadcast",	"sq"		},
-	{ "EmergencyBroadcast", "sa{sv}"	},
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" })) },
+	{ _GDBUS_SIGNAL("IncomingBroadcast", "sq",
+			GDBUS_ARGS({ "message", "s" }, { "channel", "q" })) },
+	{ _GDBUS_SIGNAL("EmergencyBroadcast", "sa{sv}",
+			GDBUS_ARGS({ "message", "s" }, { "dict", "a{sv}" })) },
 	{ }
 };
 

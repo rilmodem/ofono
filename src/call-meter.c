@@ -647,18 +647,23 @@ static DBusMessage *cm_acm_reset(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable cm_methods[] = {
-	{ "GetProperties",	"",	"a{sv}",	cm_get_properties,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SetProperty",	"svs",	"",		cm_set_property,
-							G_DBUS_METHOD_FLAG_ASYNC },
-	{ "Reset", 		"s",	"",		cm_acm_reset,
-							G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_ASYNC_METHOD("GetProperties", "", "a{sv}",
+			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			      cm_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("SetProperty", "svs", "",
+			      GDBUS_ARGS({ "property", "s" }, { "value", "v" },
+					 { "password", "s" }),
+			      NULL, cm_set_property) },
+	{ _GDBUS_ASYNC_METHOD("Reset", "s", "",
+			      GDBUS_ARGS({ "passoword", "s" }), NULL,
+			      cm_acm_reset) },
 	{ }
 };
 
 static const GDBusSignalTable cm_signals[] = {
-	{ "PropertyChanged",	"sv" },
-	{ "NearMaximumWarning",	"" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "property", "s" }, { "value", "v" })) },
+	{ _GDBUS_SIGNAL("NearMaximumWarning", "", NULL) },
 	{ }
 };
 

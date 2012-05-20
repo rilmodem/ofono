@@ -480,8 +480,9 @@ static DBusMessage *import_entries(DBusConnection *conn, DBusMessage *msg,
 }
 
 static const GDBusMethodTable phonebook_methods[] = {
-	{ "Import",	"",	"s",	import_entries,
-					G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_ASYNC_METHOD("Import", "", "s",
+			NULL, GDBUS_ARGS({ "entries", "s" }),
+			import_entries) },
 	{ }
 };
 

@@ -406,24 +406,30 @@ static DBusMessage *voicecall_manager_tone(DBusConnection *conn,
 }
 
 static const GDBusMethodTable manager_methods[] = {
-	{ "GetProperties",    "",    "a{sv}",
-					voicecall_manager_get_properties },
-	{ "Dial",             "s",  "o",        voicecall_manager_dial,
-						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "Hangup",           "",    "",         voicecall_manager_hangup,
-						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "Answer",           "",    "",         voicecall_manager_answer,
-						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SendFlash",      "s",    "",         voicecall_manager_flash,
-						G_DBUS_METHOD_FLAG_ASYNC },
-	{ "SendTones",     "s",    "",        voicecall_manager_tone,
-						G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_METHOD("GetProperties", "", "a{sv}",
+			      NULL, GDBUS_ARGS({ "properties", "a{sv}" }),
+			      voicecall_manager_get_properties) },
+	{ _GDBUS_ASYNC_METHOD("Dial", "s", "",
+					GDBUS_ARGS({ "number", "s" }), NULL,
+					voicecall_manager_dial) },
+	{ _GDBUS_ASYNC_METHOD("Hangup", "", "", NULL, NULL,
+						voicecall_manager_hangup) },
+	{ _GDBUS_ASYNC_METHOD("Answer", "", "", NULL, NULL,
+						voicecall_manager_answer) },
+	{ _GDBUS_ASYNC_METHOD("SendFlash", "s", "",
+				GDBUS_ARGS({ "flash_string", "s" }), NULL,
+				voicecall_manager_flash) },
+	{ _GDBUS_ASYNC_METHOD("SendTones", "s", "",
+				GDBUS_ARGS({ "tones", "s" }), NULL,
+				voicecall_manager_tone) },
 	{ }
 };
 
 static const GDBusSignalTable manager_signals[] = {
-	{ "PropertyChanged",	"sv" },
-	{ "DisconnectReason",	"s" },
+	{ _GDBUS_SIGNAL("PropertyChanged", "sv",
+			GDBUS_ARGS({ "name", "s" }, { "value", "v" })) },
+	{ _GDBUS_SIGNAL("DisconnectReason", "s",
+			GDBUS_ARGS({ "reason", "s" })) },
 	{ }
 };
 

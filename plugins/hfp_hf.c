@@ -199,10 +199,11 @@ static DBusMessage *hfp_agent_release(DBusConnection *conn,
 }
 
 static const GDBusMethodTable agent_methods[] = {
-	{ "NewConnection", "hq", "", hfp_agent_new_connection,
-		G_DBUS_METHOD_FLAG_ASYNC },
-	{ "Release", "", "", hfp_agent_release },
-	{ NULL, NULL, NULL, NULL }
+	{ _GDBUS_ASYNC_METHOD("NewConnection", "hq", "",
+			      GDBUS_ARGS({ "fd", "h" }, { "version", "q" }),
+			      NULL, hfp_agent_new_connection) },
+	{ _GDBUS_METHOD("Release", "", "", NULL, NULL, hfp_agent_release) },
+	{ }
 };
 
 static int hfp_hf_probe(const char *device, const char *dev_addr,

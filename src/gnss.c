@@ -233,12 +233,15 @@ static DBusMessage *gnss_send_element(DBusConnection *conn,
 }
 
 static const GDBusMethodTable gnss_methods[] = {
-	{ "SendPositioningElement",		"s",	"",
-			gnss_send_element, G_DBUS_METHOD_FLAG_ASYNC },
-	{ "RegisterPositioningRequestAgent",	"o",	"",
-			gnss_register_agent, G_DBUS_METHOD_FLAG_ASYNC },
-	{ "UnregisterPositioningRequestAgent",	"o",	"",
-			gnss_unregister_agent, G_DBUS_METHOD_FLAG_ASYNC },
+	{ _GDBUS_ASYNC_METHOD("SendPositioningElement", "s", "",
+			GDBUS_ARGS({ "xml_element" "s" }), NULL,
+			gnss_send_element) },
+	{ _GDBUS_ASYNC_METHOD("RegisterPositioningRequestAgent", "o", "",
+			GDBUS_ARGS({ "agent", "o" }), NULL,
+			gnss_register_agent) },
+	{ _GDBUS_ASYNC_METHOD("UnregisterPositioningRequestAgent", "o", "",
+			GDBUS_ARGS({ "agent", "o" }), NULL,
+			gnss_unregister_agent) },
 	{ }
 };
 
