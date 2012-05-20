@@ -728,7 +728,7 @@ static DBusMessage *ussd_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static GDBusMethodTable ussd_methods[] = {
+static const GDBusMethodTable ussd_methods[] = {
 	{ "Initiate",		"s",	"sv",		ussd_initiate,
 					G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Respond",		"s",	"s",		ussd_respond,

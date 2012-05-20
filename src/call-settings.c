@@ -1330,7 +1330,7 @@ static DBusMessage *cs_set_property(DBusConnection *conn, DBusMessage *msg,
 	return __ofono_error_invalid_args(msg);
 }
 
-static GDBusMethodTable cs_methods[] = {
+static const GDBusMethodTable cs_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	cs_get_properties,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"sv",	"",		cs_set_property,

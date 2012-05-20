@@ -232,7 +232,7 @@ static DBusMessage *gnss_send_element(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable gnss_methods[] = {
+static const GDBusMethodTable gnss_methods[] = {
 	{ "SendPositioningElement",		"s",	"",
 			gnss_send_element, G_DBUS_METHOD_FLAG_ASYNC },
 	{ "RegisterPositioningRequestAgent",	"o",	"",

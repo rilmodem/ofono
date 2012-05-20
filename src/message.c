@@ -103,7 +103,7 @@ static DBusMessage *message_cancel(DBusConnection *conn,
 	}
 }
 
-static GDBusMethodTable message_methods[] = {
+static const GDBusMethodTable message_methods[] = {
 	{ "GetProperties",  "",    "a{sv}",   message_get_properties },
 	{ "Cancel",         "",    "",        message_cancel },
 	{ }

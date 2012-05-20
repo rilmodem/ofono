@@ -1067,7 +1067,7 @@ static DBusMessage *sim_reset_pin(DBusConnection *conn, DBusMessage *msg,
 	return NULL;
 }
 
-static GDBusMethodTable sim_methods[] = {
+static const GDBusMethodTable sim_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	sim_get_properties },
 	{ "SetProperty",	"sv",	"",		sim_set_property,
 						G_DBUS_METHOD_FLAG_ASYNC },

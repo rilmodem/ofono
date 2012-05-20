@@ -1103,7 +1103,7 @@ int __ofono_sms_txq_cancel(struct ofono_sms *sms, const struct ofono_uuid *uuid)
 	return 0;
 }
 
-static GDBusMethodTable sms_manager_methods[] = {
+static const GDBusMethodTable sms_manager_methods[] = {
 	{ "GetProperties",    "",    "a{sv}",        sms_get_properties,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",      "sv",  "",             sms_set_property,

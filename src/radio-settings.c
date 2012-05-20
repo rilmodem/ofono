@@ -601,7 +601,7 @@ static DBusMessage *radio_set_property(DBusConnection *conn, DBusMessage *msg,
 	return __ofono_error_invalid_args(msg);
 }
 
-static GDBusMethodTable radio_methods[] = {
+static const GDBusMethodTable radio_methods[] = {
 	{ "GetProperties",  "",    "a{sv}",  radio_get_properties,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",    "sv",  "",       radio_set_property,

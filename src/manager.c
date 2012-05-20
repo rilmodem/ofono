@@ -80,7 +80,7 @@ static DBusMessage *manager_get_modems(DBusConnection *conn,
 	return reply;
 }
 
-static GDBusMethodTable manager_methods[] = {
+static const GDBusMethodTable manager_methods[] = {
 	{ "GetModems",          "",    "a(oa{sv})",  manager_get_modems },
 	{ }
 };

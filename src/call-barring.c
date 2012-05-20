@@ -966,7 +966,7 @@ static DBusMessage *cb_set_passwd(DBusConnection *conn, DBusMessage *msg,
 	return NULL;
 }
 
-static GDBusMethodTable cb_methods[] = {
+static const GDBusMethodTable cb_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	cb_get_properties,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"svs",	"",		cb_set_property,

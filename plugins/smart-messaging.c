@@ -268,7 +268,7 @@ static DBusMessage *smart_messaging_send_vcal(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable smart_messaging_methods[] = {
+static const GDBusMethodTable smart_messaging_methods[] = {
 	{ "RegisterAgent",    "o",     "",  smart_messaging_register_agent },
 	{ "UnregisterAgent",  "o",     "",  smart_messaging_unregister_agent },
 	{ "SendBusinessCard", "say",   "o", smart_messaging_send_vcard,

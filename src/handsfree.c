@@ -270,7 +270,7 @@ static DBusMessage *handsfree_request_phone_number(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable handsfree_methods[] = {
+static const GDBusMethodTable handsfree_methods[] = {
 	{ "GetProperties",    "",    "a{sv}", handsfree_get_properties },
 	{ "SetProperty",      "sv",  "", handsfree_set_property,
 		G_DBUS_METHOD_FLAG_ASYNC },

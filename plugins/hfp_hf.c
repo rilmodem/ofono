@@ -198,7 +198,7 @@ static DBusMessage *hfp_agent_release(DBusConnection *conn,
 	return dbus_message_new_method_return(msg);
 }
 
-static GDBusMethodTable agent_methods[] = {
+static const GDBusMethodTable agent_methods[] = {
 	{ "NewConnection", "hq", "", hfp_agent_new_connection,
 		G_DBUS_METHOD_FLAG_ASYNC },
 	{ "Release", "", "", hfp_agent_release },

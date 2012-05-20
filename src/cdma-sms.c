@@ -43,7 +43,7 @@ struct ofono_cdma_sms {
 	struct ofono_atom *atom;
 };
 
-static GDBusMethodTable cdma_sms_manager_methods[] = {
+static const GDBusMethodTable cdma_sms_manager_methods[] = {
 	/* TODO */
 	{ }
 };

@@ -881,7 +881,7 @@ static DBusMessage *cf_disable_all(DBusConnection *conn, DBusMessage *msg,
 	return NULL;
 }
 
-static GDBusMethodTable cf_methods[] = {
+static const GDBusMethodTable cf_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	cf_get_properties,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"sv",	"",		cf_set_property,

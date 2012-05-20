@@ -1282,7 +1282,7 @@ static DBusMessage *pri_set_property(DBusConnection *conn,
 	return __ofono_error_invalid_args(msg);
 }
 
-static GDBusMethodTable context_methods[] = {
+static const GDBusMethodTable context_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	pri_get_properties },
 	{ "SetProperty",	"sv",	"",		pri_set_property,
 						G_DBUS_METHOD_FLAG_ASYNC },
@@ -2062,7 +2062,7 @@ static DBusMessage *gprs_get_contexts(DBusConnection *conn,
 	return reply;
 }
 
-static GDBusMethodTable manager_methods[] = {
+static const GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",     "",     "a{sv}",     gprs_get_properties },
 	{ "SetProperty",       "sv",   "",          gprs_set_property },
 	{ "AddContext",        "s",    "o",         gprs_add_context,

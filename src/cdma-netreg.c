@@ -107,7 +107,7 @@ static DBusMessage *network_get_properties(DBusConnection *conn,
 	return reply;
 }
 
-static GDBusMethodTable cdma_netreg_manager_methods[] = {
+static const GDBusMethodTable cdma_netreg_manager_methods[] = {
 	{ "GetProperties",  "",  "a{sv}",	network_get_properties },
 	{ }
 };

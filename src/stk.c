@@ -817,7 +817,7 @@ static DBusMessage *stk_select_item(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable stk_methods[] = {
+static const GDBusMethodTable stk_methods[] = {
 	{ "GetProperties",		"",	"a{sv}",stk_get_properties },
 	{ "SelectItem",			"yo",	"",	stk_select_item,
 					G_DBUS_METHOD_FLAG_ASYNC },

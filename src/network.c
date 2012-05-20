@@ -623,7 +623,7 @@ static DBusMessage *network_operator_register(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable network_operator_methods[] = {
+static const GDBusMethodTable network_operator_methods[] = {
 	{ "GetProperties",  "",  "a{sv}",  network_operator_get_properties },
 	{ "Register",       "",  "",       network_operator_register,
 						G_DBUS_METHOD_FLAG_ASYNC },
@@ -1020,7 +1020,7 @@ static DBusMessage *network_get_operators(DBusConnection *conn,
 	return reply;
 }
 
-static GDBusMethodTable network_registration_methods[] = {
+static const GDBusMethodTable network_registration_methods[] = {
 	{ "GetProperties",  "",  "a{sv}",	network_get_properties },
 	{ "Register",       "",  "",		network_register,
 						G_DBUS_METHOD_FLAG_ASYNC },

@@ -517,7 +517,7 @@ static DBusMessage *cdma_connman_set_property(DBusConnection *conn,
 	return __ofono_error_invalid_args(msg);
 }
 
-static GDBusMethodTable cdma_connman_methods[] = {
+static const GDBusMethodTable cdma_connman_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",
 						cdma_connman_get_properties },
 	{ "SetProperty",	"sv",	"",	cdma_connman_set_property,

@@ -1123,7 +1123,7 @@ static DBusMessage *modem_set_property(DBusConnection *conn,
 	return __ofono_error_invalid_args(msg);
 }
 
-static GDBusMethodTable modem_methods[] = {
+static const GDBusMethodTable modem_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	modem_get_properties },
 	{ "SetProperty",	"sv",	"",		modem_set_property,
 							G_DBUS_METHOD_FLAG_ASYNC },

@@ -151,7 +151,7 @@ static DBusMessage *push_notification_unregister_agent(DBusConnection *conn,
 	return dbus_message_new_method_return(msg);
 }
 
-static GDBusMethodTable push_notification_methods[] = {
+static const GDBusMethodTable push_notification_methods[] = {
 	{ "RegisterAgent",    "o",   "",  push_notification_register_agent },
 	{ "UnregisterAgent",  "o",   "",  push_notification_unregister_agent },
 	{ }

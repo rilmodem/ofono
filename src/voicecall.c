@@ -667,7 +667,7 @@ static DBusMessage *voicecall_answer(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable voicecall_methods[] = {
+static const GDBusMethodTable voicecall_methods[] = {
 	{ "GetProperties",  "",    "a{sv}",   voicecall_get_properties },
 	{ "Deflect",        "s",   "",        voicecall_deflect,
 						G_DBUS_METHOD_FLAG_ASYNC },
@@ -2117,7 +2117,7 @@ static DBusMessage *manager_get_calls(DBusConnection *conn,
 	return reply;
 }
 
-static GDBusMethodTable manager_methods[] = {
+static const GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",     "",    "a{sv}",      manager_get_properties },
 	{ "Dial",              "ss",  "o",          manager_dial,
 						G_DBUS_METHOD_FLAG_ASYNC },

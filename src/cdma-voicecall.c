@@ -405,7 +405,7 @@ static DBusMessage *voicecall_manager_tone(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable manager_methods[] = {
+static const GDBusMethodTable manager_methods[] = {
 	{ "GetProperties",    "",    "a{sv}",
 					voicecall_manager_get_properties },
 	{ "Dial",             "s",  "o",        voicecall_manager_dial,

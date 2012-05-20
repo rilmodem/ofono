@@ -239,7 +239,7 @@ static DBusMessage *location_reporting_release(DBusConnection *conn,
 	return NULL;
 }
 
-static GDBusMethodTable location_reporting_methods[] = {
+static const GDBusMethodTable location_reporting_methods[] = {
 	{ "GetProperties",  "",    "a{sv}", location_reporting_get_properties },
 	{ "Request",        "",    "h",     location_reporting_request,
 						G_DBUS_METHOD_FLAG_ASYNC },

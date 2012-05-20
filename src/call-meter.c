@@ -646,7 +646,7 @@ static DBusMessage *cm_acm_reset(DBusConnection *conn, DBusMessage *msg,
 	return NULL;
 }
 
-static GDBusMethodTable cm_methods[] = {
+static const GDBusMethodTable cm_methods[] = {
 	{ "GetProperties",	"",	"a{sv}",	cm_get_properties,
 							G_DBUS_METHOD_FLAG_ASYNC },
 	{ "SetProperty",	"svs",	"",		cm_set_property,

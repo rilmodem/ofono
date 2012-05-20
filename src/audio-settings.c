@@ -117,7 +117,7 @@ static DBusMessage *audio_get_properties(DBusConnection *conn,
 	return audio_get_properties_reply(msg, as);
 }
 
-static GDBusMethodTable audio_methods[] = {
+static const GDBusMethodTable audio_methods[] = {
 	{ "GetProperties", "", "a{sv}", audio_get_properties,
 						G_DBUS_METHOD_FLAG_ASYNC },
 	{ }
