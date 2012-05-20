@@ -248,7 +248,7 @@ static const GDBusMethodTable location_reporting_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable location_reporting_signals[] = {
+static const GDBusSignalTable location_reporting_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

@@ -1130,7 +1130,7 @@ static const GDBusMethodTable modem_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable modem_signals[] = {
+static const GDBusSignalTable modem_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

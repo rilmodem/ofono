@@ -656,7 +656,7 @@ static const GDBusMethodTable cm_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable cm_signals[] = {
+static const GDBusSignalTable cm_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ "NearMaximumWarning",	"" },
 	{ }

@@ -609,7 +609,7 @@ static const GDBusMethodTable radio_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable radio_signals[] = {
+static const GDBusSignalTable radio_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

@@ -375,7 +375,7 @@ static const GDBusMethodTable message_waiting_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable message_waiting_signals[] = {
+static const GDBusSignalTable message_waiting_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

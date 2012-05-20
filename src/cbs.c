@@ -547,7 +547,7 @@ static const GDBusMethodTable cbs_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable cbs_signals[] = {
+static const GDBusSignalTable cbs_signals[] = {
 	{ "PropertyChanged",	"sv"		},
 	{ "IncomingBroadcast",	"sq"		},
 	{ "EmergencyBroadcast", "sa{sv}"	},

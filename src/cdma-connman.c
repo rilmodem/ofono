@@ -525,7 +525,7 @@ static const GDBusMethodTable cdma_connman_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable cdma_connman_signals[] = {
+static const GDBusSignalTable cdma_connman_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

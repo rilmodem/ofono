@@ -48,7 +48,7 @@ static const GDBusMethodTable cdma_sms_manager_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable cdma_sms_manager_signals[] = {
+static const GDBusSignalTable cdma_sms_manager_signals[] = {
 	{ "IncomingMessage",	"sa{sv}"	},
 	/* TODO */
 	{ }

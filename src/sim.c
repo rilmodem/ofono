@@ -1086,7 +1086,7 @@ static const GDBusMethodTable sim_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable sim_signals[] = {
+static const GDBusSignalTable sim_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

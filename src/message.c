@@ -109,7 +109,7 @@ static const GDBusMethodTable message_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable message_signals[] = {
+static const GDBusSignalTable message_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

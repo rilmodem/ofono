@@ -1114,7 +1114,7 @@ static const GDBusMethodTable sms_manager_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable sms_manager_signals[] = {
+static const GDBusSignalTable sms_manager_signals[] = {
 	{ "PropertyChanged",	"sv"		},
 	{ "IncomingMessage",	"sa{sv}"	},
 	{ "ImmediateMessage",	"sa{sv}"	},

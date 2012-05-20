@@ -279,7 +279,7 @@ static const GDBusMethodTable handsfree_methods[] = {
 	{ NULL, NULL, NULL, NULL }
 };
 
-static GDBusSignalTable handsfree_signals[] = {
+static const GDBusSignalTable handsfree_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

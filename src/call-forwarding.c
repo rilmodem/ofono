@@ -891,7 +891,7 @@ static const GDBusMethodTable cf_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable cf_signals[] = {
+static const GDBusSignalTable cf_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

@@ -740,7 +740,7 @@ static const GDBusMethodTable ussd_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable ussd_signals[] = {
+static const GDBusSignalTable ussd_signals[] = {
 	{ "NotificationReceived",	"s" },
 	{ "RequestReceived",		"s" },
 	{ "PropertyChanged",		"sv" },

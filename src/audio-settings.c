@@ -123,7 +123,7 @@ static const GDBusMethodTable audio_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable audio_signals[] = {
+static const GDBusSignalTable audio_signals[] = {
 	{ "PropertyChanged", "sv" },
 	{ }
 };

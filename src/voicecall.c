@@ -678,7 +678,7 @@ static const GDBusMethodTable voicecall_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable voicecall_signals[] = {
+static const GDBusSignalTable voicecall_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ "DisconnectReason",	"s" },
 	{ }
@@ -2143,7 +2143,7 @@ static const GDBusMethodTable manager_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable manager_signals[] = {
+static const GDBusSignalTable manager_signals[] = {
 	{ "Forwarded",		"s" },
 	{ "BarringActive",	"s" },
 	{ "PropertyChanged",	"sv" },

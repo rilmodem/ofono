@@ -630,7 +630,7 @@ static const GDBusMethodTable network_operator_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable network_operator_signals[] = {
+static const GDBusSignalTable network_operator_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };
@@ -1030,7 +1030,7 @@ static const GDBusMethodTable network_registration_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable network_registration_signals[] = {
+static const GDBusSignalTable network_registration_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

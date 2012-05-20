@@ -210,7 +210,7 @@ static const GDBusMethodTable ctm_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable ctm_signals[] = {
+static const GDBusSignalTable ctm_signals[] = {
 	{ "PropertyChanged",	"sv" },
 	{ }
 };

@@ -112,7 +112,7 @@ static const GDBusMethodTable cdma_netreg_manager_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable cdma_netreg_manager_signals[] = {
+static const GDBusSignalTable cdma_netreg_manager_signals[] = {
 	{ }
 };
 

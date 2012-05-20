@@ -485,7 +485,7 @@ static const GDBusMethodTable phonebook_methods[] = {
 	{ }
 };
 
-static GDBusSignalTable phonebook_signals[] = {
+static const GDBusSignalTable phonebook_signals[] = {
 	{ }
 };
 
