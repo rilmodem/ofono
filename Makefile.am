@@ -197,6 +197,12 @@ builtin_sources += drivers/atmodem/atutil.h \
 			drivers/ztemodem/ztemodem.c \
 			drivers/ztemodem/radio-settings.c
 
+builtin_modules += iceramodem
+builtin_sources += drivers/atmodem/atutil.h \
+			drivers/iceramodem/iceramodem.h \
+			drivers/iceramodem/iceramodem.c \
+			drivers/iceramodem/gprs-context.c
+
 builtin_modules += huaweimodem
 builtin_sources += drivers/atmodem/atutil.h \
 			drivers/huaweimodem/huaweimodem.h \
