@@ -14,7 +14,7 @@ path = modems[0][0]
 manager = dbus.Interface(bus.get_object('org.ofono', path),
 						'org.ofono.VoiceCallManager')
 
-mpty = manager.PrivateChat(sys.argv[1])
+mpty = manager.PrivateChat(sys.argv[1], timeout=100)
 
 for path in mpty:
 	print path
