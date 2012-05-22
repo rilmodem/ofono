@@ -33,43 +33,205 @@
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
 #include <ofono/modem.h>
+#include <ofono/devinfo.h>
+#include <ofono/netreg.h>
+#include <ofono/sim.h>
+#include <ofono/gprs.h>
+#include <ofono/gprs-context.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
 #include <drivers/atmodem/vendor.h>
 
+static const char *none_prefix[] = { NULL };
+
+struct icera_data {
+	GAtChat *chat;
+	gboolean have_sim;
+	struct at_util_sim_state_query *sim_state_query;
+};
+
 static int icera_probe(struct ofono_modem *modem)
 {
+	struct icera_data *data;
+
 	DBG("%p", modem);
+
+	data = g_try_new0(struct icera_data, 1);
+	if (data == NULL)
+		return -ENOMEM;
+
+	ofono_modem_set_data(modem, data);
 
 	return 0;
 }
 
 static void icera_remove(struct ofono_modem *modem)
 {
+	struct icera_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
+
+	ofono_modem_set_data(modem, NULL);
+
+	/* Cleanup potential SIM state polling */
+	at_util_sim_state_query_free(data->sim_state_query);
+
+	/* Cleanup after hot-unplug */
+	g_at_chat_unref(data->chat);
+
+	g_free(data);
+}
+
+static void icera_debug(const char *str, void *user_data)
+{
+	const char *prefix = user_data;
+
+	ofono_info("%s%s", prefix, str);
+}
+
+static GAtChat *open_device(struct ofono_modem *modem,
+					const char *key, char *debug)
+{
+	GAtChat *chat;
+	GAtSyntax *syntax;
+	GIOChannel *channel;
+	GHashTable *options;
+	const char *device;
+
+	device = ofono_modem_get_string(modem, key);
+	if (device == NULL)
+		return NULL;
+
+	options = g_hash_table_new(g_str_hash, g_str_equal);
+	if (options == NULL)
+		return NULL;
+
+	g_hash_table_insert(options, "Baud", "115200");
+
+	channel = g_at_tty_open(device, options);
+
+	g_hash_table_destroy(options);
+
+	if (channel == NULL)
+		return NULL;
+
+	syntax = g_at_syntax_new_gsm_permissive();
+	chat = g_at_chat_new(channel, syntax);
+	g_at_syntax_unref(syntax);
+
+	g_io_channel_unref(channel);
+
+	if (chat == NULL)
+		return NULL;
+
+	if (getenv("OFONO_AT_DEBUG"))
+		g_at_chat_set_debug(chat, icera_debug, debug);
+
+	return chat;
+}
+
+static void sim_state_cb(gboolean present, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct icera_data *data = ofono_modem_get_data(modem);
+
+	at_util_sim_state_query_free(data->sim_state_query);
+	data->sim_state_query = NULL;
+
+	data->have_sim = present;
+
+	ofono_modem_set_powered(modem, TRUE);
+}
+
+static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct icera_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	if (!ok) {
+		g_at_chat_unref(data->chat);
+		data->chat = NULL;
+
+		ofono_modem_set_powered(modem, FALSE);
+		return;
+	}
+
+	data->sim_state_query = at_util_sim_state_query_new(data->chat,
+					2, 20, sim_state_cb, modem, NULL);
 }
 
 static int icera_enable(struct ofono_modem *modem)
 {
+	struct icera_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
 
-	return 0;
+	data->chat = open_device(modem, "Aux", "Aux: ");
+	if (data->chat == NULL)
+		return -EIO;
+
+	g_at_chat_send(data->chat, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
+
+	g_at_chat_send(data->chat, "AT+CFUN=4", none_prefix,
+					cfun_enable, modem, NULL);
+
+	return -EINPROGRESS;
+}
+
+static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct icera_data *data = ofono_modem_get_data(modem);
+
+	DBG("");
+
+	g_at_chat_unref(data->chat);
+	data->chat = NULL;
+
+	if (ok)
+		ofono_modem_set_powered(modem, FALSE);
 }
 
 static int icera_disable(struct ofono_modem *modem)
 {
+	struct icera_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
 
-	return 0;
+	g_at_chat_cancel_all(data->chat);
+	g_at_chat_unregister_all(data->chat);
+
+	g_at_chat_send(data->chat, "AT+CFUN=0", none_prefix,
+					cfun_disable, modem, NULL);
+
+	return -EINPROGRESS;
+}
+
+static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct cb_data *cbd = user_data;
+	ofono_modem_online_cb_t cb = cbd->cb;
+	struct ofono_error error;
+
+	decode_at_error(&error, g_at_result_final_response(result));
+	cb(&error, cbd->data);
 }
 
 static void icera_set_online(struct ofono_modem *modem, ofono_bool_t online,
 				ofono_modem_online_cb_t cb, void *user_data)
 {
+	struct icera_data *data = ofono_modem_get_data(modem);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
+	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
 
 	DBG("%p %s", modem, online ? "online" : "offline");
+
+	if (g_at_chat_send(data->chat, command, none_prefix,
+					set_online_cb, cbd, g_free) > 0)
+		return;
 
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
 
@@ -78,17 +240,42 @@ static void icera_set_online(struct ofono_modem *modem, ofono_bool_t online,
 
 static void icera_pre_sim(struct ofono_modem *modem)
 {
+	struct icera_data *data = ofono_modem_get_data(modem);
+	struct ofono_sim *sim;
+
 	DBG("%p", modem);
+
+	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
+	sim = ofono_sim_create(modem, OFONO_VENDOR_ICERA,
+					"atmodem", data->chat);
+
+	if (sim && data->have_sim == TRUE)
+		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void icera_post_sim(struct ofono_modem *modem)
 {
+	struct icera_data *data = ofono_modem_get_data(modem);
+	struct ofono_gprs *gprs;
+	struct ofono_gprs_context *gc;
+
 	DBG("%p", modem);
+
+	gprs = ofono_gprs_create(modem, OFONO_VENDOR_ICERA,
+						"atmodem", data->chat);
+	gc = ofono_gprs_context_create(modem, 0, "iceramodem", data->chat);
+
+	if (gprs && gc)
+		ofono_gprs_add_context(gprs, gc);
 }
 
 static void icera_post_online(struct ofono_modem *modem)
 {
+	struct icera_data *data = ofono_modem_get_data(modem);
+
 	DBG("%p", modem);
+
+	ofono_netreg_create(modem, OFONO_VENDOR_ICERA, "atmodem", data->chat);
 }
 
 static struct ofono_modem_driver icera_driver = {
