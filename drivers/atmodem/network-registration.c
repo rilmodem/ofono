@@ -1528,6 +1528,7 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	case OFONO_VENDOR_NOKIA:
 	case OFONO_VENDOR_SAMSUNG:
 	case OFONO_VENDOR_SIMCOM:
+	case OFONO_VENDOR_ICERA:
 		/* Signal strength reporting via CIND is not supported */
 		break;
 	default:
