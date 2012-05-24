@@ -36,6 +36,7 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
+#include <ofono/sms.h>
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
@@ -269,6 +270,8 @@ static void icera_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
+
+	ofono_sms_create(modem, OFONO_VENDOR_ICERA, "atmodem", data->chat);
 
 	gprs = ofono_gprs_create(modem, OFONO_VENDOR_ICERA,
 						"atmodem", data->chat);
