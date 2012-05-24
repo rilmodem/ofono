@@ -49,8 +49,8 @@ static const char *none_prefix[] = { NULL };
 
 struct icera_data {
 	GAtChat *chat;
+	struct ofono_sim *sim;
 	gboolean have_sim;
-	struct at_util_sim_state_query *sim_state_query;
 };
 
 static int icera_probe(struct ofono_modem *modem)
@@ -75,9 +75,6 @@ static void icera_remove(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_modem_set_data(modem, NULL);
-
-	/* Cleanup potential SIM state polling */
-	at_util_sim_state_query_free(data->sim_state_query);
 
 	/* Cleanup after hot-unplug */
 	g_at_chat_unref(data->chat);
@@ -133,25 +130,37 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
-static void sim_state_cb(gboolean present, gpointer user_data)
+static void siminit_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct icera_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int state;
 
-	at_util_sim_state_query_free(data->sim_state_query);
-	data->sim_state_query = NULL;
+	if (data->sim == NULL)
+		return;
 
-	data->have_sim = present;
+	g_at_result_iter_init(&iter, result);
 
-	/*
-	 * Ensure that the modem is using GSM character set and not IRA,
-	 * otherwise weirdness with umlauts and other non-ASCII characters
-	 * can result
-	 */
-	g_at_chat_send(data->chat, "AT+CSCS=\"GSM\"", none_prefix,
-						NULL, NULL, NULL);
+	if (!g_at_result_iter_next(&iter, "%ISIMINIT:"))
+		return;
 
-	ofono_modem_set_powered(modem, TRUE);
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	DBG("state %d", state);
+
+	if (state == 1) {
+		if (data->have_sim == FALSE) {
+			ofono_sim_inserted_notify(data->sim, TRUE);
+			data->have_sim = TRUE;
+		}
+	} else {
+		if (data->have_sim == TRUE) {
+			ofono_sim_inserted_notify(data->sim, FALSE);
+			data->have_sim = FALSE;
+		}
+	}
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -169,8 +178,23 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	data->sim_state_query = at_util_sim_state_query_new(data->chat,
-					2, 20, sim_state_cb, modem, NULL);
+	/* switch to GSM character set instead of IRA */
+	g_at_chat_send(data->chat, "AT+CSCS=\"GSM\"", none_prefix,
+						NULL, NULL, NULL);
+
+        data->have_sim = FALSE;
+
+	/* notify that the modem is ready so that pre_sim gets called */
+	ofono_modem_set_powered(modem, TRUE);
+
+	/* register for SIM init notifications */
+	g_at_chat_register(data->chat, "%ISIMINIT:", siminit_notify,
+							FALSE, modem, NULL);
+
+	g_at_chat_send(data->chat, "AT%ISIMINIT=1", none_prefix,
+						NULL, NULL, NULL);
+	g_at_chat_send(data->chat, "AT*TSIMINS=1", none_prefix,
+						NULL, NULL, NULL);
 }
 
 static int icera_enable(struct ofono_modem *modem)
@@ -251,16 +275,12 @@ static void icera_set_online(struct ofono_modem *modem, ofono_bool_t online,
 static void icera_pre_sim(struct ofono_modem *modem)
 {
 	struct icera_data *data = ofono_modem_get_data(modem);
-	struct ofono_sim *sim;
 
 	DBG("%p", modem);
 
 	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	sim = ofono_sim_create(modem, OFONO_VENDOR_ICERA,
+	data->sim = ofono_sim_create(modem, OFONO_VENDOR_ICERA,
 					"atmodem", data->chat);
-
-	if (sim && data->have_sim == TRUE)
-		ofono_sim_inserted_notify(sim, TRUE);
 }
 
 static void icera_post_sim(struct ofono_modem *modem)
