@@ -780,6 +780,41 @@ static void ctzv_notify(GAtResult *result, gpointer user_data)
 	ofono_netreg_time_notify(netreg, &nd->time);
 }
 
+static void tlts_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	int year, mon, mday, hour, min, sec;
+	char tz[4];
+	const char *time;
+	GAtResultIter iter;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "*TLTS:"))
+		return;
+
+	if (!g_at_result_iter_next_string(&iter, &time))
+		return;
+
+	DBG("time %s", time);
+
+	if (sscanf(time, "%02u/%02u/%02u,%02u:%02u:%02u%s", &year, &mon, &mday,
+						&hour, &min, &sec, tz) != 7)
+                return;
+
+        nd->time.sec = sec;
+        nd->time.min = min;
+        nd->time.hour = hour;
+        nd->time.mday = mday;
+        nd->time.mon = mon;
+        nd->time.year = 2000 + year;
+
+	nd->time.utcoff = atoi(tz) * 15 * 60;
+
+	ofono_netreg_time_notify(netreg, &nd->time);
+}
+
 static gboolean notify_time(gpointer user_data)
 {
 	struct ofono_netreg *netreg = user_data;
@@ -1525,10 +1560,16 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_send(nd->chat, "AT+CTZR=1", none_prefix,
 						NULL, NULL, NULL);
 		break;
+	case OFONO_VENDOR_ICERA:
+		/* Register for network time update reports */
+		g_at_chat_register(nd->chat, "*TLTS:", tlts_notify,
+						FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT*TLTS=1", none_prefix,
+						NULL, NULL, NULL);
+		break;
 	case OFONO_VENDOR_NOKIA:
 	case OFONO_VENDOR_SAMSUNG:
 	case OFONO_VENDOR_SIMCOM:
-	case OFONO_VENDOR_ICERA:
 		/* Signal strength reporting via CIND is not supported */
 		break;
 	default:
