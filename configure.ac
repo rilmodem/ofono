@@ -213,7 +213,7 @@ fi
 AM_CONDITIONAL(PROVISION, test "${enable_provision}" != "no")
 
 AC_ARG_ENABLE(datafiles, AC_HELP_STRING([--disable-datafiles],
-			[don't install configuration and data files]),
+			[do not install configuration and data files]),
 					[enable_datafiles=${enableval}])
 AM_CONDITIONAL(DATAFILES, test "${enable_datafiles}" != "no")
 
@@ -243,4 +243,4 @@ AC_DEFINE_UNQUOTED(CONFIGDIR, "${configdir}",
 			[Directory for the configuration files])
 
 AC_OUTPUT(Makefile include/version.h src/ofono.service ofono.pc \
-	   dundee/dundee.service)
+		dundee/dundee.service)
