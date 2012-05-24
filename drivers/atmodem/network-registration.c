@@ -1556,11 +1556,12 @@ static void at_creg_test_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	g_at_result_iter_init(&iter, result);
 
+retry:
 	if (!g_at_result_iter_next(&iter, "+CREG:"))
 		goto error;
 
 	if (!g_at_result_iter_open_list(&iter))
-		goto error;
+		goto retry;
 
 	while (g_at_result_iter_next_range(&iter, &range[0], &range[1])) {
 		if (1 >= range[0] && 1 <= range[1])

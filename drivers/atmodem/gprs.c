@@ -318,11 +318,12 @@ static void at_cgreg_test_cb(gboolean ok, GAtResult *result,
 
 	g_at_result_iter_init(&iter, result);
 
+retry:
 	if (!g_at_result_iter_next(&iter, "+CGREG:"))
 		goto error;
 
 	if (!g_at_result_iter_open_list(&iter))
-		goto error;
+		goto retry;
 
 	while (g_at_result_iter_next_range(&iter, &range[0], &range[1])) {
 		if (1 >= range[0] && 1 <= range[1])
