@@ -36,6 +36,7 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/sim.h>
+#include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/log.h>
@@ -140,6 +141,14 @@ static void sim_state_cb(gboolean present, gpointer user_data)
 	data->sim_state_query = NULL;
 
 	data->have_sim = present;
+
+	/*
+	 * Ensure that the modem is using GSM character set and not IRA,
+	 * otherwise weirdness with umlauts and other non-ASCII characters
+	 * can result
+	 */
+	g_at_chat_send(data->chat, "AT+CSCS=\"GSM\"", none_prefix,
+						NULL, NULL, NULL);
 
 	ofono_modem_set_powered(modem, TRUE);
 }
@@ -276,6 +285,8 @@ static void icera_post_online(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	ofono_netreg_create(modem, OFONO_VENDOR_ICERA, "atmodem", data->chat);
+
+	ofono_ussd_create(modem, 0, "atmodem", data->chat);
 }
 
 static struct ofono_modem_driver icera_driver = {
