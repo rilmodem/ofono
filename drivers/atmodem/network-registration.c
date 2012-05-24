@@ -1181,6 +1181,53 @@ static void mbm_erinfo_notify(GAtResult *result, gpointer user_data)
 	}
 }
 
+static void icera_nwstate_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_netreg *netreg = user_data;
+	struct netreg_data *nd = ofono_netreg_get_data(netreg);
+	GAtResultIter iter;
+	const char *mccmnc, *tech;
+	int rssi;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (g_at_result_iter_next(&iter, "%NWSTATE:") == FALSE)
+		return;
+
+	if (g_at_result_iter_next_number(&iter, &rssi) == FALSE)
+		return;
+
+	if (g_at_result_iter_next_unquoted_string(&iter, &mccmnc) == FALSE)
+		return;
+
+	if (g_at_result_iter_next_unquoted_string(&iter, &tech) == FALSE)
+		return;
+
+	DBG("rssi %d tech %s", rssi, tech);
+
+	/* small 'g' means CS, big 'G' means PS */
+	if (g_str_equal(tech, "2g") == TRUE ||
+			g_str_equal(tech, "2G-GPRS") == TRUE)
+		nd->tech = ACCESS_TECHNOLOGY_GSM;
+	else if (g_str_equal(tech, "2G-EDGE") == TRUE)
+		nd->tech = ACCESS_TECHNOLOGY_GSM_EGPRS;
+	else if (g_str_equal(tech, "3g") == TRUE ||
+			g_str_equal(tech, "3G") == TRUE ||
+			g_str_equal(tech, "R99") == TRUE)
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN;
+	else if (g_str_equal(tech, "3G-HSDPA") == TRUE ||
+			g_str_equal(tech, "HSDPA") == TRUE)
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA;
+	else if (g_str_equal(tech, "3G-HSUPA") == TRUE ||
+			g_str_equal(tech, "HSUPA") == TRUE)
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSUPA;
+	else if (g_str_equal(tech, "3G-HSDPA-HSUPA") == TRUE ||
+			g_str_equal(tech, "HSDPA-HSUPA") == TRUE)
+		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
+	else
+		nd->tech = -1;
+}
+
 static int cnti_to_tech(const char *cnti)
 {
 	if (g_str_equal(cnti, "GSM") == TRUE ||
@@ -1561,6 +1608,12 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 						NULL, NULL, NULL);
 		break;
 	case OFONO_VENDOR_ICERA:
+		/* Register for network technology updates */
+		g_at_chat_register(nd->chat, "%NWSTATE:", icera_nwstate_notify,
+						FALSE, netreg, NULL);
+		g_at_chat_send(nd->chat, "AT%NWSTATE=1", none_prefix,
+						NULL, NULL, NULL);
+
 		/* Register for network time update reports */
 		g_at_chat_register(nd->chat, "*TLTS:", tlts_notify,
 						FALSE, netreg, NULL);
