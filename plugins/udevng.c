@@ -935,6 +935,8 @@ static struct {
 	{ "icera",	"cdc_ether",	"19d2"		},
 	{ "icera",	"cdc_acm",	"04e8", "6872"	},
 	{ "icera",	"cdc_ether",	"04e8", "6872"	},
+	{ "icera",	"cdc_acm",	"0421", "0633"	},
+	{ "icera",	"cdc_ether",	"0421", "0633"	},
 	{ "mbm",	"cdc_acm",	"0bdb"		},
 	{ "mbm"		"cdc_ether",	"0bdb"		},
 	{ "mbm",	"cdc_acm",	"0fce"		},
