@@ -53,6 +53,7 @@
 #define STATIC_IP_NETMASK "255.255.255.255"
 
 static const char *none_prefix[] = { NULL };
+static const char *ipdpact_prefix[] = { "%IPDPACT", NULL };
 static const char *ipdpaddr_prefix[] = { "%IPDPADDR", NULL };
 
 enum state {
@@ -218,6 +219,8 @@ static void ipdpact_down_cb(gboolean ok, GAtResult *result,
 		gcd->state = STATE_DISABLING;
 		gcd->cb = cb;
 		gcd->cb_data = cbd->data;
+
+		ipdpact_notifier(result, gc);
 		return;
 	}
 
@@ -240,6 +243,8 @@ static void ipdpact_up_cb(gboolean ok, GAtResult *result,
 		gcd->state = STATE_ENABLING;
 		gcd->cb = cb;
 		gcd->cb_data = cbd->data;
+
+		ipdpact_notifier(result, gc);
 		return;
 	}
 
@@ -284,7 +289,7 @@ static void at_cgdcont_cb(gboolean ok, GAtResult *result, gpointer user_data)
 
 	snprintf(buf, sizeof(buf), "AT%%IPDPACT=%u,1", gcd->active_context);
 
-	if (g_at_chat_send(gcd->chat, buf, none_prefix,
+	if (g_at_chat_send(gcd->chat, buf, ipdpact_prefix,
 				ipdpact_up_cb, ncbd, g_free) > 0)
 		return;
 
@@ -355,7 +360,7 @@ static void icera_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 
 	snprintf(buf, sizeof(buf), "AT%%IPDPACT=%u,0", cid);
 
-	if (g_at_chat_send(gcd->chat, buf, none_prefix,
+	if (g_at_chat_send(gcd->chat, buf, ipdpact_prefix,
 				ipdpact_down_cb, cbd, g_free) > 0)
 		return;
 
