@@ -54,7 +54,7 @@ struct icera_data {
 	GAtChat *chat;
 	struct ofono_sim *sim;
 	gboolean have_sim;
-	int ussdmode;
+	gboolean have_ussdmode;
 };
 
 static int icera_probe(struct ofono_modem *modem)
@@ -155,7 +155,8 @@ static void ussdmode_query(gboolean ok, GAtResult *result,
 
 	DBG("mode %d", mode);
 
-	data->ussdmode = mode;
+	if (mode == 1)
+		data->have_ussdmode = TRUE;
 }
 
 static void ussdmode_support(gboolean ok, GAtResult *result,
@@ -170,11 +171,9 @@ static void ussdmode_support(gboolean ok, GAtResult *result,
 
 	g_at_result_iter_init(&iter, result);
 
-	DBG("a");
 	if (!g_at_result_iter_next(&iter, "%IUSSDMODE:"))
 		return;
 
-	DBG("b");
 	g_at_chat_send(data->chat, "AT%IUSSDMODE?", ussdmode_prefix,
 					ussdmode_query, modem, NULL);
 }
@@ -404,7 +403,10 @@ static void icera_post_online(struct ofono_modem *modem)
 
 	ofono_netreg_create(modem, OFONO_VENDOR_ICERA, "atmodem", data->chat);
 
-	ofono_ussd_create(modem, 0, "atmodem", data->chat);
+	if (data->have_ussdmode == TRUE)
+		ofono_ussd_create(modem, 0, "huaweimodem", data->chat);
+	else
+		ofono_ussd_create(modem, 0, "atmodem", data->chat);
 }
 
 static struct ofono_modem_driver icera_driver = {
