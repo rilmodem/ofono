@@ -35,6 +35,7 @@
 static int iceramodem_init(void)
 {
 	icera_gprs_context_init();
+	icera_radio_settings_init();
 
 	return 0;
 }
@@ -42,6 +43,7 @@ static int iceramodem_init(void)
 static void iceramodem_exit(void)
 {
 	icera_gprs_context_exit();
+	icera_radio_settings_exit();
 }
 
 OFONO_PLUGIN_DEFINE(iceramodem, "Icera modem driver", VERSION,
