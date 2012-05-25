@@ -419,12 +419,20 @@ static gboolean setup_icera(struct modem_info *modem)
 						info->number, info->label);
 
 		if (g_strcmp0(info->interface, "2/2/1") == 0) {
-			if (g_strcmp0(info->number, "01") == 0)
+			if (g_strcmp0(info->number, "00") == 0)
 				aux = info->devnode;
+			else if (g_strcmp0(info->number, "01") == 0)
+				aux = info->devnode;
+			else if (g_strcmp0(info->number, "02") == 0)
+				mdm = info->devnode;
 			else if (g_strcmp0(info->number, "03") == 0)
 				mdm = info->devnode;
 		} else if (g_strcmp0(info->interface, "2/6/0") == 0) {
 			if (g_strcmp0(info->number, "05") == 0)
+				net = info->devnode;
+			else if (g_strcmp0(info->number, "06") == 0)
+				net = info->devnode;
+			else if (g_strcmp0(info->number, "07") == 0)
 				net = info->devnode;
 		}
 	}
