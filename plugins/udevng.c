@@ -933,6 +933,8 @@ static struct {
 	{ "linktop",	"cdc_acm",	"230d"		},
 	{ "icera",	"cdc_acm",	"19d2"		},
 	{ "icera",	"cdc_ether",	"19d2"		},
+	{ "icera",	"cdc_acm",	"04e8", "6872"	},
+	{ "icera",	"cdc_ether",	"04e8", "6872"	},
 	{ "mbm",	"cdc_acm",	"0bdb"		},
 	{ "mbm"		"cdc_ether",	"0bdb"		},
 	{ "mbm",	"cdc_acm",	"0fce"		},
