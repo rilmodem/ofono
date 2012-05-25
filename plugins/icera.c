@@ -47,6 +47,7 @@
 #include <drivers/atmodem/vendor.h>
 
 static const char *none_prefix[] = { NULL };
+static const char *siminit_prefix[] = { "%ISIMINIT:", NULL };
 
 struct icera_data {
 	GAtChat *chat;
@@ -131,6 +132,30 @@ static GAtChat *open_device(struct ofono_modem *modem,
 	return chat;
 }
 
+static void icera_set_sim_state(struct icera_data *data, int state)
+{
+	DBG("state %d", state);
+
+	switch (state) {
+	case 1:
+		if (data->have_sim == FALSE) {
+			ofono_sim_inserted_notify(data->sim, TRUE);
+			data->have_sim = TRUE;
+		}
+		break;
+	case 0:
+	case 2:
+		if (data->have_sim == TRUE) {
+			ofono_sim_inserted_notify(data->sim, FALSE);
+			data->have_sim = FALSE;
+		}
+		break;
+	default:
+		ofono_warn("Unknown SIM state %d received", state);
+		break;
+	}
+}
+
 static void siminit_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_modem *modem = user_data;
@@ -149,19 +174,30 @@ static void siminit_notify(GAtResult *result, gpointer user_data)
 	if (!g_at_result_iter_next_number(&iter, &state))
 		return;
 
-	DBG("state %d", state);
+	icera_set_sim_state(data, state);
+}
 
-	if (state == 1) {
-		if (data->have_sim == FALSE) {
-			ofono_sim_inserted_notify(data->sim, TRUE);
-			data->have_sim = TRUE;
-		}
-	} else {
-		if (data->have_sim == TRUE) {
-			ofono_sim_inserted_notify(data->sim, FALSE);
-			data->have_sim = FALSE;
-		}
-	}
+static void siminit_query(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct icera_data *data = ofono_modem_get_data(modem);
+	GAtResultIter iter;
+	int state;
+
+	DBG("");
+
+	if (!ok)
+		return;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "%ISIMINIT:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &state))
+		return;
+
+	icera_set_sim_state(data, state);
 }
 
 static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
@@ -190,10 +226,13 @@ static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
 
 	/* register for SIM init notifications */
 	g_at_chat_register(data->chat, "%ISIMINIT:", siminit_notify,
-							FALSE, modem, NULL);
+						FALSE, modem, NULL);
 
 	g_at_chat_send(data->chat, "AT%ISIMINIT=1", none_prefix,
 						NULL, NULL, NULL);
+	g_at_chat_send(data->chat, "AT%ISIMINIT", siminit_prefix,
+					siminit_query, modem, NULL);
+
 	g_at_chat_send(data->chat, "AT*TSIMINS=1", none_prefix,
 						NULL, NULL, NULL);
 }
