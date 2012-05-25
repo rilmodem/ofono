@@ -29,6 +29,7 @@ include/version.h
 src/builtin.h
 src/ofonod
 src/ofono.service
+dundee/dundee.service
 
 unit/test-common
 unit/test-util
