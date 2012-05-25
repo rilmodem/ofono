@@ -40,6 +40,7 @@
 #include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/radio-settings.h>
 #include <ofono/log.h>
 
 #include <drivers/atmodem/atutil.h>
@@ -290,6 +291,8 @@ static void icera_post_sim(struct ofono_modem *modem)
 	struct ofono_gprs_context *gc;
 
 	DBG("%p", modem);
+
+	ofono_radio_settings_create(modem, 0, "iceramodem", data->chat);
 
 	ofono_sms_create(modem, OFONO_VENDOR_ICERA, "atmodem", data->chat);
 
