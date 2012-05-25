@@ -41,6 +41,7 @@
 #include "iceramodem.h"
 
 static const char *none_prefix[] = { NULL };
+static const char *ipbm_prefix[] = { "%IPBM:", NULL };
 static const char *ipsys_prefix[] = { "%IPSYS:", NULL };
 
 struct radio_settings_data {
@@ -155,7 +156,7 @@ error:
 	g_free(cbd);
 }
 
-static void ipsys_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void ipbm_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 {
 	struct ofono_radio_settings *rs = user_data;
 
@@ -165,6 +166,20 @@ static void ipsys_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	}
 
 	ofono_radio_settings_register(rs);
+}
+
+static void ipsys_support_cb(gboolean ok, GAtResult *result, gpointer user_data)
+{
+	struct ofono_radio_settings *rs = user_data;
+	struct radio_settings_data *rsd = ofono_radio_settings_get_data(rs);
+
+	if (!ok) {
+		ofono_radio_settings_remove(rs);
+		return;
+	}
+
+	g_at_chat_send(rsd->chat, "AT%IPBM=?", ipbm_prefix,
+					ipbm_support_cb, rs, NULL);
 }
 
 static int icera_radio_settings_probe(struct ofono_radio_settings *rs,
