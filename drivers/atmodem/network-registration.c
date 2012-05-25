@@ -1186,7 +1186,7 @@ static void icera_nwstate_notify(GAtResult *result, gpointer user_data)
 	struct ofono_netreg *netreg = user_data;
 	struct netreg_data *nd = ofono_netreg_get_data(netreg);
 	GAtResultIter iter;
-	const char *mccmnc, *tech;
+	const char *mccmnc, *tech, *state;
 	int rssi;
 
 	g_at_result_iter_init(&iter, result);
@@ -1203,28 +1203,32 @@ static void icera_nwstate_notify(GAtResult *result, gpointer user_data)
 	if (g_at_result_iter_next_unquoted_string(&iter, &tech) == FALSE)
 		return;
 
-	DBG("rssi %d tech %s", rssi, tech);
+	if (g_at_result_iter_next_unquoted_string(&iter, &state) == FALSE)
+		return;
+
+	DBG("rssi %d tech %s state %s", rssi, tech, state);
 
 	/* small 'g' means CS, big 'G' means PS */
 	if (g_str_equal(tech, "2g") == TRUE ||
-			g_str_equal(tech, "2G-GPRS") == TRUE)
+				g_str_equal(tech, "2G") == TRUE ||
+				g_str_equal(tech, "2G-GPRS") == TRUE) {
 		nd->tech = ACCESS_TECHNOLOGY_GSM;
-	else if (g_str_equal(tech, "2G-EDGE") == TRUE)
+	} else if (g_str_equal(tech, "2G-EDGE") == TRUE) {
 		nd->tech = ACCESS_TECHNOLOGY_GSM_EGPRS;
-	else if (g_str_equal(tech, "3g") == TRUE ||
-			g_str_equal(tech, "3G") == TRUE ||
-			g_str_equal(tech, "R99") == TRUE)
-		nd->tech = ACCESS_TECHNOLOGY_UTRAN;
-	else if (g_str_equal(tech, "3G-HSDPA") == TRUE ||
-			g_str_equal(tech, "HSDPA") == TRUE)
-		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA;
-	else if (g_str_equal(tech, "3G-HSUPA") == TRUE ||
-			g_str_equal(tech, "HSUPA") == TRUE)
-		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSUPA;
-	else if (g_str_equal(tech, "3G-HSDPA-HSUPA") == TRUE ||
-			g_str_equal(tech, "HSDPA-HSUPA") == TRUE)
-		nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
-	else
+	} else if (g_str_equal(tech, "3g") == TRUE ||
+				g_str_equal(tech, "3G") == TRUE ||
+				g_str_equal(tech, "R99") == TRUE) {
+		if (g_str_equal(state, "HSDPA") == TRUE)
+			nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA;
+		else if (g_str_equal(state, "HSUPA") == TRUE)
+			nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSUPA;
+		else if (g_str_equal(state, "HSDPA-HSUPA") == TRUE)
+			nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
+		else if (g_str_equal(state, "HSDPA-HSUPA-HSPA+") == TRUE)
+			nd->tech = ACCESS_TECHNOLOGY_UTRAN_HSDPA_HSUPA;
+		else
+			nd->tech = ACCESS_TECHNOLOGY_UTRAN;
+	} else
 		nd->tech = -1;
 }
 
