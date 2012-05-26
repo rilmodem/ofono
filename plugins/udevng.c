@@ -996,16 +996,23 @@ static void check_usb_device(struct udev_device *device)
 		unsigned int i;
 
 		drv = udev_device_get_property_value(device, "ID_USB_DRIVER");
-		if (drv == NULL)
-			return;
+		if (drv == NULL) {
+			drv = udev_device_get_driver(device);
+			if (drv == NULL) {
+				struct udev_device *parent;
+
+				parent = udev_device_get_parent(device);
+				if (parent == NULL)
+					return;
+
+				drv = udev_device_get_driver(parent);
+				if (drv == NULL)
+					return;
+			}
+		}
 
 		vid = udev_device_get_property_value(device, "ID_VENDOR_ID");
-		if (vid == NULL)
-			return;
-
 		pid = udev_device_get_property_value(device, "ID_MODEL_ID");
-		if (pid == NULL)
-			return;
 
 		DBG("%s [%s:%s]", drv, vid, pid);
 
@@ -1019,6 +1026,9 @@ static void check_usb_device(struct udev_device *device)
 				model = pid;
 				break;
 			}
+
+			if (vid == NULL || pid == NULL)
+				continue;
 
 			if (g_str_equal(vendor_list[i].vid, vid) == TRUE) {
 				if (vendor_list[i].pid == NULL) {
@@ -1051,8 +1061,11 @@ static void check_device(struct udev_device *device)
 	const char *bus;
 
 	bus = udev_device_get_property_value(device, "ID_BUS");
-	if (bus == NULL)
-		return;
+	if (bus == NULL) {
+		bus = udev_device_get_subsystem(device);
+		if (bus == NULL)
+			return;
+	}
 
 	if (g_str_equal(bus, "usb") == TRUE)
 		check_usb_device(device);
@@ -1103,6 +1116,7 @@ static void enumerate_devices(struct udev *context)
 		return;
 
 	udev_enumerate_add_match_subsystem(enumerate, "tty");
+	udev_enumerate_add_match_subsystem(enumerate, "usb");
 	udev_enumerate_add_match_subsystem(enumerate, "net");
 
 	udev_enumerate_scan_devices(enumerate);
@@ -1224,6 +1238,7 @@ static int detect_init(void)
 						NULL, destroy_modem);
 
 	udev_monitor_filter_add_match_subsystem_devtype(udev_mon, "tty", NULL);
+	udev_monitor_filter_add_match_subsystem_devtype(udev_mon, "usb", NULL);
 	udev_monitor_filter_add_match_subsystem_devtype(udev_mon, "net", NULL);
 
 	udev_monitor_filter_update(udev_mon);
