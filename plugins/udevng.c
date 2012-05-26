@@ -176,7 +176,8 @@ static gboolean setup_hso(struct modem_info *modem)
 
 static gboolean setup_gobi(struct modem_info *modem)
 {
-	const char *device = NULL, *gps = NULL, *qcdm = NULL;
+	const char *qmi = NULL, *mdm = NULL, *net = NULL;
+	const char *gps = NULL, *diag = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -188,21 +189,28 @@ static gboolean setup_gobi(struct modem_info *modem)
 						info->number, info->label);
 
 		if (g_strcmp0(info->interface, "255/255/255") == 0) {
-			if (g_strcmp0(info->number, "01") == 0)
-				qcdm = info->devnode;
+			if (info->number == NULL)
+				qmi = info->devnode;
+			else if (g_strcmp0(info->number, "00") == 0)
+				net = info->devnode;
+			else if (g_strcmp0(info->number, "01") == 0)
+				diag = info->devnode;
 			else if (g_strcmp0(info->number, "02") == 0)
-				device = info->devnode;
+				mdm = info->devnode;
 			else if (g_strcmp0(info->number, "03") == 0)
 				gps = info->devnode;
 		}
 	}
 
-	if (device == NULL)
+	if (qmi == NULL || mdm == NULL || net == NULL)
 		return FALSE;
 
-	DBG("device=%s gps=%s qcdm=%s", device, gps, qcdm);
+	DBG("qmi=%s net=%s mdm=%s gps=%s diag=%s", qmi, net, mdm, gps, diag);
 
-	ofono_modem_set_string(modem->modem, "Device", device);
+	ofono_modem_set_string(modem->modem, "Device", qmi);
+	ofono_modem_set_string(modem->modem, "Modem", mdm);
+	ofono_modem_set_string(modem->modem, "Diag", diag);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", net);
 
 	return TRUE;
 }
@@ -747,7 +755,7 @@ static struct {
 	{ "isiusb",	setup_isi,	"type"			},
 	{ "mbm",	setup_mbm,	"device/interface"	},
 	{ "hso",	setup_hso,	"hsotype"		},
-	{ "gobi",	setup_gobi,	},
+	{ "gobi",	setup_gobi	},
 	{ "sierra",	setup_sierra	},
 	{ "option",	setup_option	},
 	{ "huawei",	setup_huawei	},
@@ -948,6 +956,7 @@ static struct {
 	{ "mbm",	"cdc_acm",	"0930"		},
 	{ "mbm",	"cdc_ether",	"0930"		},
 	{ "hso",	"hso"				},
+	{ "gobi",	"qmi_wwan"			},
 	{ "gobi",	"qcserial"			},
 	{ "sierra",	"sierra"			},
 	{ "sierra",	"sierra_net"			},
