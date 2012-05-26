@@ -1618,6 +1618,10 @@ static void at_creg_set_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		g_at_chat_send(nd->chat, "AT%NWSTATE=1", none_prefix,
 						NULL, NULL, NULL);
 
+		/* Register for radio access technology updates */
+		g_at_chat_send(nd->chat, "AT*TRATD=1", none_prefix,
+						NULL, NULL, NULL);
+
 		/* Register for network time update reports */
 		g_at_chat_register(nd->chat, "*TLTS:", tlts_notify,
 						FALSE, netreg, NULL);
