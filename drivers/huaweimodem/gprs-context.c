@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#include <sys/stat.h>
 
 #include <glib.h>
 
@@ -41,8 +40,6 @@
 #include "gattty.h"
 
 #include "huaweimodem.h"
-
-#define TUN_SYSFS_DIR "/sys/devices/virtual/misc/tun"
 
 static const char *none_prefix[] = { NULL };
 static const char *dhcp_prefix[] = { "^DHCP:", NULL };
@@ -100,6 +97,7 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	struct ofono_gprs_context *gc = user_data;
 	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
 	GAtResultIter iter;
+	struct ofono_modem *modem;
 	const char *interface;
 	char *ip = NULL;
 	char *netmask = NULL;
@@ -136,7 +134,8 @@ static void dhcp_query_cb(gboolean ok, GAtResult *result, gpointer user_data)
 	ofono_info("IP: %s  Gateway: %s", ip, gateway);
 	ofono_info("DNS: %s, %s", dns1, dns2);
 
-	interface = "invalid";
+	modem = ofono_gprs_context_get_modem(gc);
+	interface = ofono_modem_get_string(modem, "NetworkInterface");
 
 	ofono_gprs_context_set_interface(gc, interface);
 	ofono_gprs_context_set_ipv4_address(gc, ip, TRUE);
@@ -314,14 +313,8 @@ static int huawei_gprs_context_probe(struct ofono_gprs_context *gc,
 {
 	GAtChat *chat = data;
 	struct gprs_context_data *gcd;
-	struct stat st;
 
 	DBG("");
-
-	if (stat(TUN_SYSFS_DIR, &st) < 0) {
-		ofono_error("Missing support for TUN/TAP devices");
-		return -ENODEV;
-	}
 
 	gcd = g_try_new0(struct gprs_context_data, 1);
 	if (gcd == NULL)
