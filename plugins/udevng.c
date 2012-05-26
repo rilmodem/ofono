@@ -911,6 +911,7 @@ static void add_device(const char *syspath, const char *devname,
 	else
 		sysattr = NULL;
 
+	DBG("%s", syspath);
 	DBG("%s", devpath);
 	DBG("%s (%s) %s [%s] ==> %s %s", devnode, driver,
 					interface, number, label, sysattr);
@@ -1033,7 +1034,7 @@ static void check_usb_device(struct udev_device *device)
 				driver = vendor_list[i].driver;
 				vendor = vid;
 				model = pid;
-				break;
+				continue;
 			}
 
 			if (vid == NULL || pid == NULL)
@@ -1041,11 +1042,9 @@ static void check_usb_device(struct udev_device *device)
 
 			if (g_str_equal(vendor_list[i].vid, vid) == TRUE) {
 				if (vendor_list[i].pid == NULL) {
-					if (driver == NULL) {
-						driver = vendor_list[i].driver;
-						vendor = vid;
-						model = pid;
-					}
+					driver = vendor_list[i].driver;
+					vendor = vid;
+					model = pid;
 					continue;
 				}
 
