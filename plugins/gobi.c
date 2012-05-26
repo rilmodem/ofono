@@ -216,7 +216,7 @@ static int gobi_enable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	data->chat = open_device(modem, "Device", "Device: ");
+	data->chat = open_device(modem, "Modem", "Modem: ");
 	if (data->chat == NULL)
 		return -EINVAL;
 
