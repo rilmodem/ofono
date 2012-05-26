@@ -291,7 +291,8 @@ static gboolean setup_option(struct modem_info *modem)
 
 static gboolean setup_huawei(struct modem_info *modem)
 {
-	const char *mdm = NULL, *pcui = NULL, *diag = NULL;
+	const char *qmi = NULL, *mdm = NULL, *net = NULL;
+	const char *pcui = NULL, *diag = NULL;
 	GSList *list;
 
 	DBG("%s", modem->syspath);
@@ -306,20 +307,16 @@ static gboolean setup_huawei(struct modem_info *modem)
 				g_strcmp0(info->interface, "255/1/1") == 0 ||
 				g_strcmp0(info->interface, "255/2/1") == 0) {
 			mdm = info->devnode;
-			if (pcui != NULL && diag != NULL)
-				break;
 		} else if (g_strcmp0(info->label, "pcui") == 0 ||
 				g_strcmp0(info->interface, "255/1/2") == 0 ||
 				g_strcmp0(info->interface, "255/2/2") == 0) {
 			pcui = info->devnode;
-			if (mdm != NULL && diag != NULL)
-				break;
 		} else if (g_strcmp0(info->label, "diag") == 0 ||
 				g_strcmp0(info->interface, "255/1/3") == 0 ||
 				g_strcmp0(info->interface, "255/2/3") == 0) {
 			diag = info->devnode;
-			if (mdm != NULL && pcui != NULL)
-				break;
+		} else if (g_strcmp0(info->interface, "255/1/8") == 0) {
+			net = info->devnode;
 		} else if (g_strcmp0(info->interface, "255/255/255") == 0) {
 			if (g_strcmp0(info->number, "00") == 0)
 				mdm = info->devnode;
@@ -337,11 +334,13 @@ static gboolean setup_huawei(struct modem_info *modem)
 	if (mdm == NULL || pcui == NULL)
 		return FALSE;
 
-	DBG("modem=%s pcui=%s diag=%s", mdm, pcui, diag);
+	DBG("mdm=%s pcui=%s diag=%s qmi=%s net=%s", mdm, pcui, diag, qmi, net);
 
+	ofono_modem_set_string(modem->modem, "Device", qmi);
 	ofono_modem_set_string(modem->modem, "Modem", mdm);
 	ofono_modem_set_string(modem->modem, "Pcui", pcui);
 	ofono_modem_set_string(modem->modem, "Diag", diag);
+	ofono_modem_set_string(modem->modem, "NetworkInterface", net);
 
 	return TRUE;
 }
@@ -963,6 +962,7 @@ static struct {
 	{ "option",	"option",	"0af0"		},
 	{ "huawei",	"option",	"201e"		},
 	{ "huawei",	"cdc_ether",	"12d1"		},
+	{ "huawei",	"qmi_wwan",	"12d1"		},
 	{ "huawei",	"option",	"12d1"		},
 	{ "speedupcdma","option",	"1c9e", "9e00"	},
 	{ "speedup",	"option",	"1c9e"		},
