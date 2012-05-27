@@ -690,7 +690,6 @@ tools_lookup_provider_name_LDADD = @GLIB_LIBS@
 endif
 
 if DUNDEE
-
 sbin_PROGRAMS += dundee/dundee
 
 dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) $(btio_sources) \
@@ -698,18 +697,15 @@ dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) $(btio_sources) \
 			dundee/dundee.h dundee/main.c dundee/dbus.c \
 			dundee/manager.c dundee/device.c dundee/bluetooth.c
 
-dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
+dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ \
+							@CAPNG_LIBS@ -ldl
 
 if DATAFILES
-
 dist_dbusconf_DATA += dundee/dundee.conf
 
 if SYSTEMD
-
 systemdunit_DATA += dundee/dundee.service
-
 endif
-
 endif
 
 endif
