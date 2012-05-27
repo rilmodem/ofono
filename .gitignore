@@ -47,6 +47,7 @@ tools/auto-enable
 tools/get-location
 tools/lookup-apn
 tools/lookup-provider-name
+tools/qmi
 
 gatchat/gsmdial
 gatchat/test-server

@@ -687,6 +687,13 @@ tools_lookup_apn_LDADD = @GLIB_LIBS@
 tools_lookup_provider_name_SOURCES = plugins/mbpi.c plugins/mbpi.h \
 				tools/lookup-provider-name.c
 tools_lookup_provider_name_LDADD = @GLIB_LIBS@
+
+if QMIMODEM
+noinst_PROGRAMS += tools/qmi
+
+tools_qmi_SOURCES = $(qmi_sources) tools/qmi.c
+tools_qmi_LDADD = @GLIB_LIBS@
+endif
 endif
 
 if DUNDEE
