@@ -177,6 +177,11 @@ AC_ARG_ENABLE(isimodem, AC_HELP_STRING([--disable-isimodem],
 					[enable_isimodem=${enableval}])
 AM_CONDITIONAL(ISIMODEM, test "${enable_isimodem}" != "no")
 
+AC_ARG_ENABLE(qmimodem, AC_HELP_STRING([--disable-qmimodem],
+				[disable Qualcomm QMI modem support]),
+					[enable_qmimodem=${enableval}])
+AM_CONDITIONAL(QMIMODEM, test "${enable_qmimodem}" != "no")
+
 AC_ARG_ENABLE(bluetooth, AC_HELP_STRING([--disable-bluetooth],
 				[disable Bluetooth modem support]),
 					[enable_bluetooth=${enableval}])

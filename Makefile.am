@@ -151,6 +151,14 @@ builtin_modules += u8500
 builtin_sources += plugins/u8500.c
 endif
 
+if QMIMODEM
+builtin_modules += qmimodem
+builtin_sources += drivers/qmimodem/qmimodem.h drivers/qmimodem/qmimodem.c
+
+builtin_modules += gobi
+builtin_sources += plugins/gobi.c
+endif
+
 if ATMODEM
 builtin_modules += atmodem
 builtin_sources += $(gatchat_sources) \
@@ -305,9 +313,6 @@ endif
 
 builtin_modules += g1
 builtin_sources += plugins/g1.c
-
-builtin_modules += gobi
-builtin_sources += plugins/gobi.c
 
 builtin_modules += wavecom
 builtin_sources += plugins/wavecom.c
