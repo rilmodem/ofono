@@ -104,42 +104,42 @@ endif
 if ISIMODEM
 builtin_modules += isimodem
 builtin_sources += $(gisi_sources) \
-				drivers/isimodem/isimodem.h \
-				drivers/isimodem/isimodem.c \
-				drivers/isimodem/mtc.h \
-				drivers/isimodem/debug.h \
-				drivers/isimodem/isiutil.h \
-				drivers/isimodem/debug.c \
-				drivers/isimodem/phonebook.c \
-				drivers/isimodem/devinfo.c \
-				drivers/isimodem/info.h \
-				drivers/isimodem/network-registration.c \
-				drivers/isimodem/network.h \
-				drivers/isimodem/infoserver.h \
-				drivers/isimodem/infoserver.c \
-				drivers/isimodem/voicecall.c \
-				drivers/isimodem/call.h \
-				drivers/isimodem/sms.c \
-				drivers/isimodem/sms.h \
-				drivers/isimodem/cbs.c \
-				drivers/isimodem/sim.c \
-				drivers/isimodem/sim.h \
-				drivers/isimodem/ussd.c \
-				drivers/isimodem/call-forwarding.c \
-				drivers/isimodem/call-settings.c \
-				drivers/isimodem/call-barring.c \
-				drivers/isimodem/call-meter.c \
-				drivers/isimodem/ss.h \
-				drivers/isimodem/radio-settings.c \
-				drivers/isimodem/gss.h \
-				drivers/isimodem/gprs.c \
-				drivers/isimodem/gprs-context.c \
-				drivers/isimodem/gpds.h \
-				drivers/isimodem/audio-settings.c \
-				drivers/isimodem/uicc.h \
-				drivers/isimodem/uicc.c \
-				drivers/isimodem/uicc-util.h \
-				drivers/isimodem/uicc-util.c
+			drivers/isimodem/isimodem.h \
+			drivers/isimodem/isimodem.c \
+			drivers/isimodem/mtc.h \
+			drivers/isimodem/debug.h \
+			drivers/isimodem/isiutil.h \
+			drivers/isimodem/debug.c \
+			drivers/isimodem/phonebook.c \
+			drivers/isimodem/devinfo.c \
+			drivers/isimodem/info.h \
+			drivers/isimodem/network-registration.c \
+			drivers/isimodem/network.h \
+			drivers/isimodem/infoserver.h \
+			drivers/isimodem/infoserver.c \
+			drivers/isimodem/voicecall.c \
+			drivers/isimodem/call.h \
+			drivers/isimodem/sms.c \
+			drivers/isimodem/sms.h \
+			drivers/isimodem/cbs.c \
+			drivers/isimodem/sim.c \
+			drivers/isimodem/sim.h \
+			drivers/isimodem/ussd.c \
+			drivers/isimodem/call-forwarding.c \
+			drivers/isimodem/call-settings.c \
+			drivers/isimodem/call-barring.c \
+			drivers/isimodem/call-meter.c \
+			drivers/isimodem/ss.h \
+			drivers/isimodem/radio-settings.c \
+			drivers/isimodem/gss.h \
+			drivers/isimodem/gprs.c \
+			drivers/isimodem/gprs-context.c \
+			drivers/isimodem/gpds.h \
+			drivers/isimodem/audio-settings.c \
+			drivers/isimodem/uicc.h \
+			drivers/isimodem/uicc.c \
+			drivers/isimodem/uicc-util.h \
+			drivers/isimodem/uicc-util.c
 
 builtin_modules += isiusb
 builtin_sources += plugins/isiusb.c
@@ -162,30 +162,30 @@ endif
 if ATMODEM
 builtin_modules += atmodem
 builtin_sources += $(gatchat_sources) \
-				drivers/atmodem/atmodem.h \
-				drivers/atmodem/atmodem.c \
-				drivers/atmodem/call-settings.c \
-				drivers/atmodem/sms.c \
-				drivers/atmodem/cbs.c \
-				drivers/atmodem/call-forwarding.c \
-				drivers/atmodem/call-meter.c \
-				drivers/atmodem/network-registration.c \
-				drivers/atmodem/sim.c \
-				drivers/atmodem/stk.c \
-				drivers/atmodem/stk.h \
-				drivers/atmodem/ussd.c \
-				drivers/atmodem/voicecall.c \
-				drivers/atmodem/call-barring.c \
-				drivers/atmodem/phonebook.c \
-				drivers/atmodem/devinfo.c \
-				drivers/atmodem/call-volume.c \
-				drivers/atmodem/vendor.h \
-				drivers/atmodem/atutil.h \
-				drivers/atmodem/atutil.c \
-				drivers/atmodem/gprs.c \
-				drivers/atmodem/gprs-context.c \
-				drivers/atmodem/sim-auth.c \
-				drivers/atmodem/gnss.c
+			drivers/atmodem/atmodem.h \
+			drivers/atmodem/atmodem.c \
+			drivers/atmodem/call-settings.c \
+			drivers/atmodem/sms.c \
+			drivers/atmodem/cbs.c \
+			drivers/atmodem/call-forwarding.c \
+			drivers/atmodem/call-meter.c \
+			drivers/atmodem/network-registration.c \
+			drivers/atmodem/sim.c \
+			drivers/atmodem/stk.c \
+			drivers/atmodem/stk.h \
+			drivers/atmodem/ussd.c \
+			drivers/atmodem/voicecall.c \
+			drivers/atmodem/call-barring.c \
+			drivers/atmodem/phonebook.c \
+			drivers/atmodem/devinfo.c \
+			drivers/atmodem/call-volume.c \
+			drivers/atmodem/vendor.h \
+			drivers/atmodem/atutil.h \
+			drivers/atmodem/atutil.c \
+			drivers/atmodem/gprs.c \
+			drivers/atmodem/gprs-context.c \
+			drivers/atmodem/sim-auth.c \
+			drivers/atmodem/gnss.c
 
 builtin_modules += nwmodem
 builtin_sources += drivers/atmodem/atutil.h \
