@@ -152,8 +152,12 @@ builtin_sources += plugins/u8500.c
 endif
 
 if QMIMODEM
+qmi_sources = drivers/qmimodem/qmi.h drivers/qmimodem/qmi.c
+
 builtin_modules += qmimodem
-builtin_sources += drivers/qmimodem/qmimodem.h drivers/qmimodem/qmimodem.c
+builtin_sources += $(qmi_sources) \
+			drivers/qmimodem/qmimodem.h \
+			drivers/qmimodem/qmimodem.c
 
 builtin_modules += gobi
 builtin_sources += plugins/gobi.c
@@ -471,7 +475,7 @@ src_ofonod_SOURCES = $(gdbus_sources) $(builtin_sources) src/ofono.ver \
 			src/cdma-sms.c src/private-network.c src/cdma-netreg.c \
 			src/cdma-provision.c src/handsfree.c
 
-src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ @CAPNG_LIBS@ -ldl
+src_ofonod_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
 src_ofonod_LDFLAGS = -Wl,--export-dynamic \
 				-Wl,--version-script=$(srcdir)/src/ofono.ver
@@ -488,7 +492,7 @@ else
 build_plugindir = $(plugindir)
 endif
 
-AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @CAPNG_CFLAGS@ @USB_CFLAGS@ \
+AM_CFLAGS = @DBUS_CFLAGS@ @GLIB_CFLAGS@ @USB_CFLAGS@ \
 					$(builtin_cflags) \
 					-DOFONO_PLUGIN_BUILTIN \
 					-DPLUGINDIR=\""$(build_plugindir)"\"
@@ -704,8 +708,7 @@ dundee_dundee_SOURCES = $(gdbus_sources) $(gatchat_sources) $(btio_sources) \
 			dundee/dundee.h dundee/main.c dundee/dbus.c \
 			dundee/manager.c dundee/device.c dundee/bluetooth.c
 
-dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ \
-							@CAPNG_LIBS@ -ldl
+dundee_dundee_LDADD = $(builtin_libadd) @GLIB_LIBS@ @DBUS_LIBS@ -ldl
 
 if DATAFILES
 dist_dbusconf_DATA += dundee/dundee.conf

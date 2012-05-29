@@ -12,7 +12,6 @@ fi
 		--mandir=/usr/share/man \
 		--sysconfdir=/etc \
 		--localstatedir=/var \
-		--enable-capng \
-		--enable-tools \
 		--enable-dundee \
+		--enable-tools \
 		--disable-datafiles $*
