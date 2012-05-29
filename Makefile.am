@@ -152,8 +152,6 @@ builtin_sources += plugins/u8500.c
 endif
 
 if QMIMODEM
-qmi_sources = drivers/qmimodem/qmi.h drivers/qmimodem/qmi.c
-
 builtin_modules += qmimodem
 builtin_sources += $(qmi_sources) \
 			drivers/qmimodem/qmimodem.h \
