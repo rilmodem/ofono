@@ -375,6 +375,19 @@ DBusMessage *__ofono_error_emergency_active(DBusMessage *msg)
 				"Emergency mode active");
 }
 
+DBusMessage *__ofono_error_incorrect_password(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg,
+				OFONO_ERROR_INTERFACE ".IncorrectPassword",
+				"Password is incorrect");
+}
+
+DBusMessage *__ofono_error_not_allowed(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, OFONO_ERROR_INTERFACE ".NotAllowed",
+					"Operation is not allowed");
+}
+
 void __ofono_dbus_pending_reply(DBusMessage **msg, DBusMessage *reply)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
