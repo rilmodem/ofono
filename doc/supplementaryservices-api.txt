@@ -27,6 +27,12 @@ Methods		string, variant Initiate(string command)
 					 [service].Error.NotImplemented
 					 [service].Error.InvalidArguments
 					 [service].Error.InvalidFormat
+					 [service].Error.NotSupported
+					 [service].Error.NotAllowed
+					 [service].Error.IncorrectPassword
+					 [service].Error.NotRegistered
+					 [service].Error.Timedout
+					 [service].Error.AccessDenied
 					 [service].Error.Failed
 
 		string Respond(string reply)
