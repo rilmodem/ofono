@@ -985,8 +985,11 @@ static gboolean set_cpms(gpointer user_data)
 	const char *incoming = storages[data->incoming];
 	char buf[128];
 
-	snprintf(buf, sizeof(buf), "AT+CPMS=\"%s\",\"%s\",\"%s\"",
-			store, store, incoming);
+	if (data->vendor == OFONO_VENDOR_WAVECOM_Q2XXX)
+		snprintf(buf, sizeof(buf), "AT+CPMS=\"%s\"", store);
+	else
+		snprintf(buf, sizeof(buf), "AT+CPMS=\"%s\",\"%s\",\"%s\"",
+				store, store, incoming);
 
 	g_at_chat_send(data->chat, buf, cpms_prefix,
 			at_cpms_set_cb, sms, NULL);
@@ -1038,7 +1041,7 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 	gboolean supported = FALSE;
 
 	if (ok) {
-		int mem = 0;
+		int mem = 0, mem_max;
 		GAtResultIter iter;
 		const char *store;
 		gboolean me_supported[3];
@@ -1054,7 +1057,20 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 		if (!g_at_result_iter_next(&iter, "+CPMS:"))
 			goto out;
 
-		for (mem = 0; mem < 3; mem++) {
+		if (data->vendor == OFONO_VENDOR_WAVECOM_Q2XXX) {
+			/* skip initial `(' */
+			if (!g_at_result_iter_open_list(&iter))
+				goto out;
+
+			/*
+			 * Wavecom Q2 replies: +CPMS: (("SM","BM","SR"),("SM"))
+			 * This reply is broken according to 3GPP TS 07.05.
+			 */
+			mem_max = 2;
+		} else
+			mem_max = 3;
+
+		for (mem = 0; mem < mem_max; mem++) {
 			if (!g_at_result_iter_open_list(&iter))
 				goto out;
 
@@ -1071,7 +1087,9 @@ static void at_cpms_query_cb(gboolean ok, GAtResult *result,
 				goto out;
 		}
 
-		if (!sm_supported[2] && !me_supported[2] && !mt_supported[2])
+		if (data->vendor != OFONO_VENDOR_WAVECOM_Q2XXX &&
+				!sm_supported[2] && !me_supported[2]
+				&& !mt_supported[2])
 			goto out;
 
 		if (sm_supported[0] && sm_supported[1]) {
