@@ -926,7 +926,8 @@ static void at_cpin_cb(gboolean ok, GAtResult *result, gpointer user_data)
 		return;
 	}
 
-	if (sd->vendor == OFONO_VENDOR_WAVECOM) {
+	if (sd->vendor == OFONO_VENDOR_WAVECOM ||
+			sd->vendor == OFONO_VENDOR_WAVECOM_Q2XXX) {
 		/* +CPIN: <pin> */
 		pin_required = final + 7;
 	} else {
