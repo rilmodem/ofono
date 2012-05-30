@@ -558,6 +558,7 @@ test_scripts = test/backtrace \
 		test/test-network-registration \
 		test/test-phonebook \
 		test/test-cbs \
+		test/test-ss \
 		test/test-ss-control-cb \
 		test/test-ss-control-cf \
 		test/test-ss-control-cs \

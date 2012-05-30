@@ -1,0 +1,42 @@
+#!/usr/bin/python
+
+import sys
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+						'org.ofono.Manager')
+
+modems = manager.GetModems()
+modem = modems[0][0]
+
+if (len(sys.argv) == 2):
+	ss_code = sys.argv[1]
+else:
+	modem = sys.argv[1]
+	ss_code = sys.argv[2]
+
+ss = dbus.Interface(bus.get_object('org.ofono', modem),
+				'org.ofono.SupplementaryServices')
+
+try:
+	ss_type, properties = ss.Initiate(ss_code, timeout=100)
+except dbus.DBusException, e:
+	print "Unable to perform operation: ", e
+	sys.exit(1);
+
+if (ss_type == "CallBarring"):
+	print "%s : Operation [ %s ] Service Type [ %s ]" % (ss_type, properties[0], properties[1])
+	for key in properties[2]:
+		print "%s : %s" % (key, properties[2][key])
+elif (ss_type == "CallForwarding"):
+	print "%s : Operation [ %s ] Service Type [ %s ]" % (ss_type, properties[0], properties[1])
+	for key in properties[2]:
+		print "%s : %s" % (key, properties[2][key])
+elif (ss_type == "CallWaiting"):
+	print "%s : Operation [ %s ]" % (ss_type, properties[0])
+	for key in properties[1]:
+		print "%s : %s" % (key, properties[1][key])
+else:
+	print "%s : Operation [ %s ] Status [ %s ]" % (ss_type, properties[0], properties[1])
