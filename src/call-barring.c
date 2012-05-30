@@ -323,9 +323,10 @@ static void cb_ss_set_lock_callback(const struct ofono_error *error,
 	struct ofono_call_barring *cb = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Enabling/disabling Call Barring via SS failed");
+		DBG("Enabling/disabling Call Barring via SS failed with err:%s",
+			telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&cb->pending,
-					__ofono_error_failed(cb->pending));
+			__ofono_error_from_error(error, cb->pending));
 		return;
 	}
 
@@ -485,8 +486,9 @@ static void cb_set_passwd_callback(const struct ofono_error *error, void *data)
 	if (error->type == OFONO_ERROR_TYPE_NO_ERROR)
 		reply = dbus_message_new_method_return(cb->pending);
 	else {
-		reply = __ofono_error_failed(cb->pending);
-		DBG("Changing Call Barring password via SS failed");
+		DBG("Changing Call Barring password via SS failed with err: %s",
+				telephony_error_to_str(error));
+		reply = __ofono_error_from_error(error, cb->pending);
 	}
 
 	__ofono_dbus_pending_reply(&cb->pending, reply);
