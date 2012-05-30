@@ -477,9 +477,10 @@ static void cw_ss_set_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("setting CW via SS failed");
+		DBG("setting CW via SS failed with error: %s",
+			telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&cs->pending,
-					__ofono_error_failed(cs->pending));
+			__ofono_error_from_error(error, cs->pending));
 
 		return;
 	}
@@ -614,9 +615,10 @@ static void clip_cnap_colp_colr_ss_query_cb(const struct ofono_error *error,
 	const char *value;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Error occurred during ss control query");
+		DBG("SS control query failed with error: %s",
+			telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&cs->pending,
-					__ofono_error_failed(cs->pending));
+			__ofono_error_from_error(error, cs->pending));
 
 		return;
 	}
@@ -772,9 +774,10 @@ static void clir_ss_set_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_settings *cs = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("setting clir via SS failed");
+		DBG("setting clir via SS failed with error: %s",
+			telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&cs->pending,
-					__ofono_error_failed(cs->pending));
+			__ofono_error_from_error(error, cs->pending));
 
 		return;
 	}
