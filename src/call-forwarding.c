@@ -1020,10 +1020,11 @@ static void cf_ss_control_callback(const struct ofono_error *error, void *data)
 	struct ofono_call_forwarding *cf = data;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBG("Error occurred during cf ss control set/erasure");
 
+		DBG("CF ss control set/erasure failed with error: %s",
+						telephony_error_to_str(error));
 		__ofono_dbus_pending_reply(&cf->pending,
-					__ofono_error_failed(cf->pending));
+				__ofono_error_from_error(error, cf->pending));
 		g_free(cf->ss_req);
 		cf->ss_req = NULL;
 		return;
