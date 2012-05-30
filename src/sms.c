@@ -1115,7 +1115,7 @@ static const GDBusMethodTable sms_manager_methods[] = {
 			GDBUS_ARGS({ "path", "o" }),
 			sms_send_message) },
 	{ GDBUS_METHOD("GetMessages",
-			GDBUS_ARGS({ "messages", "a(oa{sv})" }), NULL,
+			NULL, GDBUS_ARGS({ "messages", "a(oa{sv})" }),
 			sms_get_messages) },
 	{ }
 };
