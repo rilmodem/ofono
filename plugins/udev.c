@@ -167,6 +167,31 @@ static void add_calypso(struct ofono_modem *modem,
 	ofono_modem_register(modem);
 }
 
+static void add_wavecom(struct ofono_modem *modem,
+					struct udev_device *udev_device)
+{
+	const char *devnode;
+	struct udev_list_entry *entry;
+
+	DBG("modem %p", modem);
+
+	devnode = udev_device_get_devnode(udev_device);
+	ofono_modem_set_string(modem, "Device", devnode);
+
+	entry = udev_device_get_properties_list_entry(udev_device);
+	while (entry) {
+		const char *name = udev_list_entry_get_name(entry);
+		const char *value = udev_list_entry_get_value(entry);
+
+		if (g_str_equal(name, "OFONO_WAVECOM_MODEL") == TRUE)
+			ofono_modem_set_string(modem, "Model", value);
+
+		entry = udev_list_entry_get_next(entry);
+	}
+
+	ofono_modem_register(modem);
+}
+
 static void add_tc65(struct ofono_modem *modem,
 			struct udev_device *udev_device)
 {
@@ -286,6 +311,8 @@ done:
 		add_nokiacdma(modem, udev_device);
 	else if (g_strcmp0(driver, "sim900") == 0)
 		add_sim900(modem, udev_device);
+	else if (g_strcmp0(driver, "wavecom") == 0)
+		add_wavecom(modem, udev_device);
 }
 
 static gboolean devpath_remove(gpointer key, gpointer value, gpointer user_data)
