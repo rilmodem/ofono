@@ -1305,6 +1305,9 @@ static int at_sim_probe(struct ofono_sim *sim, unsigned int vendor,
 	case OFONO_VENDOR_MBM:
 		g_at_chat_send(sd->chat, "AT*EPEE=1", NULL, NULL, NULL, NULL);
 		break;
+	case OFONO_VENDOR_WAVECOM_Q2XXX:
+		g_at_chat_add_terminator(chat, "+CPIN: READY", -1, TRUE);
+		break;
 	default:
 		break;
 	}
