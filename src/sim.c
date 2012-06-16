@@ -1126,8 +1126,37 @@ static gboolean numbers_list_equal(GSList *a, GSList *b)
 	return TRUE;
 }
 
-static void sim_own_numbers_update_done(struct ofono_sim *sim)
+static void sim_msisdn_read_cb(int ok, int length, int record,
+				const unsigned char *data,
+				int record_length, void *userdata)
 {
+	struct ofono_sim *sim = userdata;
+	int total;
+	struct ofono_phone_number ph;
+
+	if (!ok)
+		goto check;
+
+	if (record_length < 14 || length < record_length)
+		return;
+
+	total = length / record_length;
+
+	sim->efmsisdn_length = record_length;
+	sim->efmsisdn_records = total;
+
+	if (sim_adn_parse(data, record_length, &ph, NULL) == TRUE) {
+		struct ofono_phone_number *own;
+
+		own = g_new(struct ofono_phone_number, 1);
+		memcpy(own, &ph, sizeof(struct ofono_phone_number));
+		sim->new_numbers = g_slist_prepend(sim->new_numbers, own);
+	}
+
+	if (record != total)
+		return;
+
+check:
 	/* All records retrieved */
 	if (sim->new_numbers)
 		sim->new_numbers = g_slist_reverse(sim->new_numbers);
@@ -1155,60 +1184,6 @@ static void sim_own_numbers_update_done(struct ofono_sim *sim)
 	}
 
 	sim->new_numbers = NULL;
-}
-
-static void sim_msisdn_cb(const struct ofono_error *error,
-			const struct ofono_phone_number *ph, void *userdata)
-{
-	struct ofono_sim *sim = userdata;
-
-	if (error->type == OFONO_ERROR_TYPE_NO_ERROR) {
-		struct ofono_phone_number *own;
-
-		own = g_new(struct ofono_phone_number, 1);
-		memcpy(own, ph, sizeof(struct ofono_phone_number));
-		sim->new_numbers = g_slist_prepend(sim->new_numbers, own);
-	}
-
-	sim_own_numbers_update_done(sim);
-}
-
-static void sim_msisdn_read_cb(int ok, int length, int record,
-				const unsigned char *data,
-				int record_length, void *userdata)
-{
-	struct ofono_sim *sim = userdata;
-	int total;
-	struct ofono_phone_number ph;
-
-	if (!ok) {
-		if (sim->driver->read_msisdn)
-			sim->driver->read_msisdn(sim, sim_msisdn_cb, sim);
-		else
-			sim_own_numbers_update_done(sim);
-		return;
-	}
-
-	if (record_length < 14 || length < record_length)
-		return;
-
-	total = length / record_length;
-
-	sim->efmsisdn_length = record_length;
-	sim->efmsisdn_records = total;
-
-	if (sim_adn_parse(data, record_length, &ph, NULL) == TRUE) {
-		struct ofono_phone_number *own;
-
-		own = g_new(struct ofono_phone_number, 1);
-		memcpy(own, &ph, sizeof(struct ofono_phone_number));
-		sim->new_numbers = g_slist_prepend(sim->new_numbers, own);
-	}
-
-	if (record != total)
-		return;
-
-	sim_own_numbers_update_done(sim);
 }
 
 static gint service_number_compare(gconstpointer a, gconstpointer b)
