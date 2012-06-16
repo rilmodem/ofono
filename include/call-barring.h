@@ -50,8 +50,10 @@ struct ofono_call_barring_driver {
 			ofono_call_barring_set_cb_t cb, void *data);
 };
 
-int ofono_call_barring_driver_register(const struct ofono_call_barring_driver *d);
-void ofono_call_barring_driver_unregister(const struct ofono_call_barring_driver *d);
+int ofono_call_barring_driver_register(
+				const struct ofono_call_barring_driver *d);
+void ofono_call_barring_driver_unregister(
+				const struct ofono_call_barring_driver *d);
 
 struct ofono_call_barring *ofono_call_barring_create(struct ofono_modem *modem,
 							unsigned int vendor,
