@@ -36,6 +36,40 @@ enum ofono_modem_type {
 	OFONO_MODEM_TYPE_SAP,
 };
 
+typedef void (*ofono_modem_online_cb_t)(const struct ofono_error *error,
+					void *data);
+
+struct ofono_modem_driver {
+	const char *name;
+	enum ofono_modem_type modem_type;
+
+	/* Detect existence of device and initialize any device-specific data
+	 * structures */
+	int (*probe)(struct ofono_modem *modem);
+
+	/* Destroy data structures allocated during probe and cleanup */
+	void (*remove)(struct ofono_modem *modem);
+
+	/* Power up device */
+	int (*enable)(struct ofono_modem *modem);
+
+	/* Power down device */
+	int (*disable)(struct ofono_modem *modem);
+
+	/* Enable or disable cellular radio */
+	void (*set_online)(struct ofono_modem *modem, ofono_bool_t online,
+				ofono_modem_online_cb_t callback, void *data);
+
+	/* Populate the atoms available without SIM / Locked SIM */
+	void (*pre_sim)(struct ofono_modem *modem);
+
+	/* Populate the atoms that are available with SIM / Unlocked SIM*/
+	void (*post_sim)(struct ofono_modem *modem);
+
+	/* Populate the atoms available online */
+	void (*post_online)(struct ofono_modem *modem);
+};
+
 void ofono_modem_add_interface(struct ofono_modem *modem,
 				const char *interface);
 void ofono_modem_remove_interface(struct ofono_modem *modem,
@@ -76,40 +110,6 @@ int ofono_modem_set_boolean(struct ofono_modem *modem,
 				const char *key, ofono_bool_t value);
 ofono_bool_t ofono_modem_get_boolean(struct ofono_modem *modem,
 					const char *key);
-
-typedef void (*ofono_modem_online_cb_t)(const struct ofono_error *error,
-					void *data);
-
-struct ofono_modem_driver {
-	const char *name;
-	enum ofono_modem_type modem_type;
-
-	/* Detect existence of device and initialize any device-specific data
-	 * structures */
-	int (*probe)(struct ofono_modem *modem);
-
-	/* Destroy data structures allocated during probe and cleanup */
-	void (*remove)(struct ofono_modem *modem);
-
-	/* Power up device */
-	int (*enable)(struct ofono_modem *modem);
-
-	/* Power down device */
-	int (*disable)(struct ofono_modem *modem);
-
-	/* Enable or disable cellular radio */
-	void (*set_online)(struct ofono_modem *modem, ofono_bool_t online,
-				ofono_modem_online_cb_t callback, void *data);
-
-	/* Populate the atoms available without SIM / Locked SIM */
-	void (*pre_sim)(struct ofono_modem *modem);
-
-	/* Populate the atoms that are available with SIM / Unlocked SIM*/
-	void (*post_sim)(struct ofono_modem *modem);
-
-	/* Populate the atoms available online */
-	void (*post_online)(struct ofono_modem *modem);
-};
 
 int ofono_modem_driver_register(const struct ofono_modem_driver *);
 void ofono_modem_driver_unregister(const struct ofono_modem_driver *);
