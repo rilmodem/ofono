@@ -210,9 +210,9 @@ err:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 }
 
-static void at_cmgs(struct ofono_sms *sms, unsigned char *pdu, int pdu_len,
-			int tpdu_len, int mms, ofono_sms_submit_cb_t cb,
-			void *user_data)
+static void at_cmgs(struct ofono_sms *sms, const unsigned char *pdu,
+			int pdu_len, int tpdu_len, int mms,
+			ofono_sms_submit_cb_t cb, void *user_data)
 {
 	struct sms_data *data = ofono_sms_get_data(sms);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
