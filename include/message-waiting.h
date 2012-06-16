@@ -30,7 +30,8 @@ extern "C" {
 
 struct ofono_message_waiting;
 
-struct ofono_message_waiting *ofono_message_waiting_create(struct ofono_modem *modem);
+struct ofono_message_waiting *ofono_message_waiting_create(
+						struct ofono_modem *modem);
 void ofono_message_waiting_register(struct ofono_message_waiting *mw);
 void ofono_message_waiting_remove(struct ofono_message_waiting *mw);
 
