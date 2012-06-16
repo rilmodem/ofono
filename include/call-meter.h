@@ -31,9 +31,10 @@ extern "C" {
 struct ofono_call_meter;
 
 typedef void (*ofono_call_meter_query_cb_t)(const struct ofono_error *error,
-					int value, void *data);
+						int value, void *data);
 
-typedef void (*ofono_call_meter_puct_query_cb_t)(const struct ofono_error *error,
+typedef void (*ofono_call_meter_puct_query_cb_t)(
+					const struct ofono_error *error,
 					const char *currency, double ppu,
 					void *data);
 
@@ -46,25 +47,26 @@ struct ofono_call_meter_driver {
 			void *data);
 	void (*remove)(struct ofono_call_meter *cm);
 	void (*call_meter_query)(struct ofono_call_meter *cm,
-			ofono_call_meter_query_cb_t cb, void *data);
+				ofono_call_meter_query_cb_t cb, void *data);
 	void (*acm_query)(struct ofono_call_meter *cm,
-			ofono_call_meter_query_cb_t cb, void *data);
+				ofono_call_meter_query_cb_t cb, void *data);
 	void (*acm_reset)(struct ofono_call_meter *cm, const char *sim_pin2,
-			ofono_call_meter_set_cb_t cb, void *data);
+				ofono_call_meter_set_cb_t cb, void *data);
 	void (*acm_max_query)(struct ofono_call_meter *cm,
-			ofono_call_meter_query_cb_t cb, void *data);
+				ofono_call_meter_query_cb_t cb, void *data);
 	void (*acm_max_set)(struct ofono_call_meter *cm, int new_value,
 				const char *sim_pin2,
 				ofono_call_meter_set_cb_t cb, void *data);
 	void (*puct_query)(struct ofono_call_meter *cm,
 			ofono_call_meter_puct_query_cb_t cb, void *data);
 	void (*puct_set)(struct ofono_call_meter *cm, const char *currency,
-			double ppu, const char *sim_pin2,
-			ofono_call_meter_set_cb_t cb, void *data);
+				double ppu, const char *sim_pin2,
+				ofono_call_meter_set_cb_t cb, void *data);
 };
 
 int ofono_call_meter_driver_register(const struct ofono_call_meter_driver *d);
-void ofono_call_meter_driver_unregister(const struct ofono_call_meter_driver *d);
+void ofono_call_meter_driver_unregister(
+				const struct ofono_call_meter_driver *d);
 
 struct ofono_call_meter *ofono_call_meter_create(struct ofono_modem *modem,
 							unsigned int vendor,
