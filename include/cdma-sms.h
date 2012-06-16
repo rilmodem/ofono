@@ -38,13 +38,14 @@ struct ofono_cdma_sms_driver {
 	int (*probe)(struct ofono_cdma_sms *cdma_sms, unsigned int vendor,
 			void *data);
 	void (*remove)(struct ofono_cdma_sms *cdma_sms);
-	void (*submit)(struct ofono_cdma_sms *cdma_sms, unsigned char *tpdu,
+	void (*submit)(struct ofono_cdma_sms *cdma_sms,
+			const unsigned char *tpdu,
 			int tpdu_len, ofono_cdma_sms_submit_cb_t cb,
 			void *data);
 };
 
 void ofono_cdma_sms_deliver_notify(struct ofono_cdma_sms *cdma_sms,
-					unsigned char *pdu, int tpdu_len);
+					const unsigned char *pdu, int tpdu_len);
 
 int ofono_cdma_sms_driver_register(const struct ofono_cdma_sms_driver *d);
 void ofono_cdma_sms_driver_unregister(const struct ofono_cdma_sms_driver *d);
