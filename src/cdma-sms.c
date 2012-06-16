@@ -170,7 +170,7 @@ static void ofono_cdma_sms_process_p2p(struct ofono_cdma_sms *cdma_sms,
 }
 
 void ofono_cdma_sms_deliver_notify(struct ofono_cdma_sms *cdma_sms,
-					unsigned char *pdu, int tpdu_len)
+					const unsigned char *pdu, int tpdu_len)
 {
 	static struct cdma_sms s;
 
