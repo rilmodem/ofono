@@ -459,8 +459,8 @@ error:
 	CALLBACK_WITH_FAILURE(cb, -1, cbd->data);
 }
 
-static gboolean submit_tpdu(GIsiClient *client, unsigned char *pdu, int pdu_len,
-				int tpdu_len, int mms, void *data,
+static gboolean submit_tpdu(GIsiClient *client, const unsigned char *pdu,
+				int pdu_len, int tpdu_len, int mms, void *data,
 				GDestroyNotify notify)
 {
 	uint8_t use_sca = (pdu_len - tpdu_len) > 1;
@@ -495,7 +495,7 @@ static gboolean submit_tpdu(GIsiClient *client, unsigned char *pdu, int pdu_len,
 	uint8_t padding[4] = { 0 };
 	struct iovec iov[4] = {
 		{ msg, sizeof(msg) },
-		{ pdu + pdu_len - tpdu_len, tpdu_len },
+		{ (void *) (pdu + pdu_len - tpdu_len), tpdu_len },
 		{ padding, tpdu_pad_len },
 		{ sca_sb, sca_sb_len },
 	};
@@ -510,7 +510,7 @@ static gboolean submit_tpdu(GIsiClient *client, unsigned char *pdu, int pdu_len,
 						notify);
 }
 
-static gboolean submit_gsm_tpdu(GIsiClient *client, unsigned char *pdu,
+static gboolean submit_gsm_tpdu(GIsiClient *client, const unsigned char *pdu,
 				int pdu_len, int tpdu_len, int mms,
 				void *data, GDestroyNotify notify)
 {
@@ -546,7 +546,7 @@ static gboolean submit_gsm_tpdu(GIsiClient *client, unsigned char *pdu,
 	uint8_t padding[4] = { 0 };
 	struct iovec iov[4] = {
 		{ msg, sizeof(msg) },
-		{ pdu + pdu_len - tpdu_len, tpdu_len },
+		{ (void *) (pdu + pdu_len - tpdu_len), tpdu_len },
 		{ padding, tpdu_pad_len },
 		{ sca_sb, sca_sb_len },
 	};
@@ -565,7 +565,7 @@ static gboolean submit_gsm_tpdu(GIsiClient *client, unsigned char *pdu,
 						notify);
 }
 
-static void isi_submit(struct ofono_sms *sms, unsigned char *pdu,
+static void isi_submit(struct ofono_sms *sms, const unsigned char *pdu,
 			int pdu_len, int tpdu_len, int mms,
 			ofono_sms_submit_cb_t cb, void *data)
 {
