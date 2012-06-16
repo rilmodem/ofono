@@ -40,8 +40,8 @@ struct ofono_call_forwarding_condition {
 
 typedef void (*ofono_call_forwarding_set_cb_t)(const struct ofono_error *error,
 						void *data);
-typedef void (*ofono_call_forwarding_query_cb_t)(const struct ofono_error *error,
-			int total,
+typedef void (*ofono_call_forwarding_query_cb_t)(
+			const struct ofono_error *error, int total,
 			const struct ofono_call_forwarding_condition *list,
 			void *data);
 
@@ -68,13 +68,15 @@ struct ofono_call_forwarding_driver {
 				void *data);
 };
 
-int ofono_call_forwarding_driver_register(const struct ofono_call_forwarding_driver *d);
-void ofono_call_forwarding_driver_unregister(const struct ofono_call_forwarding_driver *d);
+int ofono_call_forwarding_driver_register(
+				const struct ofono_call_forwarding_driver *d);
+void ofono_call_forwarding_driver_unregister(
+				const struct ofono_call_forwarding_driver *d);
 
-struct ofono_call_forwarding *ofono_call_forwarding_create(struct ofono_modem *modem,
-							unsigned int vendor,
-							const char *driver,
-							void *data);
+struct ofono_call_forwarding *ofono_call_forwarding_create(
+						struct ofono_modem *modem,
+						unsigned int vendor,
+						const char *driver, void *data);
 
 void ofono_call_forwarding_register(struct ofono_call_forwarding *cf);
 void ofono_call_forwarding_remove(struct ofono_call_forwarding *cf);
