@@ -50,7 +50,7 @@ struct ofono_call_volume_driver {
 };
 
 void ofono_call_volume_set_speaker_volume(struct ofono_call_volume *cv,
-					unsigned char percent);
+						unsigned char percent);
 void ofono_call_volume_set_microphone_volume(struct ofono_call_volume *cv,
 						unsigned char percent);
 void ofono_call_volume_set_muted(struct ofono_call_volume *cv, int muted);
