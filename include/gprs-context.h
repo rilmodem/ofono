@@ -76,8 +76,10 @@ struct ofono_gprs_context_driver {
 void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 					unsigned int id);
 
-int ofono_gprs_context_driver_register(const struct ofono_gprs_context_driver *d);
-void ofono_gprs_context_driver_unregister(const struct ofono_gprs_context_driver *d);
+int ofono_gprs_context_driver_register(
+				const struct ofono_gprs_context_driver *d);
+void ofono_gprs_context_driver_unregister(
+				const struct ofono_gprs_context_driver *d);
 
 struct ofono_gprs_context *ofono_gprs_context_create(struct ofono_modem *modem,
 						unsigned int vendor,
