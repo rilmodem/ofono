@@ -809,10 +809,11 @@ static DBusMessage *stk_select_item(DBusConnection *conn,
 
 	DBG("");
 
-	if (stk_send_envelope(stk, &e, menu_selection_envelope_cb, 0))
-		return __ofono_error_failed(msg);
-
 	stk->pending = dbus_message_ref(msg);
+
+	if (stk_send_envelope(stk, &e, menu_selection_envelope_cb, 0))
+		__ofono_dbus_pending_reply(&stk->pending,
+					__ofono_error_failed(stk->pending));
 
 	return NULL;
 }
