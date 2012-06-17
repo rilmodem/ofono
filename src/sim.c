@@ -2572,7 +2572,7 @@ static void sim_spn_close(struct ofono_sim *sim)
 	sim->spn_dc = NULL;
 }
 
-gboolean ofono_sim_add_spn_watch(struct ofono_sim *sim, unsigned int *id,
+ofono_bool_t ofono_sim_add_spn_watch(struct ofono_sim *sim, unsigned int *id,
 					ofono_sim_spn_cb_t cb, void *data,
 					ofono_destroy_func destroy)
 {
@@ -2610,7 +2610,7 @@ gboolean ofono_sim_add_spn_watch(struct ofono_sim *sim, unsigned int *id,
 	return TRUE;
 }
 
-gboolean ofono_sim_remove_spn_watch(struct ofono_sim *sim, unsigned int *id)
+ofono_bool_t ofono_sim_remove_spn_watch(struct ofono_sim *sim, unsigned int *id)
 {
 	gboolean ret;
 
