@@ -94,6 +94,10 @@ typedef void (*ofono_sim_read_cb_t)(const struct ofono_error *error,
 typedef void (*ofono_sim_write_cb_t)(const struct ofono_error *error,
 					void *data);
 
+typedef void (*ofono_sim_msisdn_cb_t)(const struct ofono_error *error,
+					const struct ofono_phone_number *ph,
+					void *data);
+
 typedef void (*ofono_sim_iccid_cb_t)(const struct ofono_error *error,
 					const char *iccid, void *data);
 
@@ -147,6 +151,8 @@ struct ofono_sim_driver {
 	void (*write_file_cyclic)(struct ofono_sim *sim, int fileid,
 			int length, const unsigned char *value,
 			ofono_sim_write_cb_t cb, void *data);
+	void (*read_msisdn)(struct ofono_sim *sim,
+			ofono_sim_msisdn_cb_t cb, void *data);
 	void (*read_iccid)(struct ofono_sim *sim,
 			ofono_sim_iccid_cb_t cb, void *data);
 	void (*read_imsi)(struct ofono_sim *sim,
