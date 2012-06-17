@@ -1409,17 +1409,10 @@ static void sim_set_ready(struct ofono_sim *sim)
 	call_state_watches(sim);
 }
 
-static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
-		void *data)
+static void sim_imsi_obtained(struct ofono_sim *sim, const char *imsi)
 {
-	struct ofono_sim *sim = data;
 	DBusConnection *conn = ofono_dbus_get_connection();
 	const char *path = __ofono_atom_get_path(sim->atom);
-
-	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		ofono_error("Unable to read IMSI, emergency calls only");
-		return;
-	}
 
 	sim->imsi = g_strdup(imsi);
 
@@ -1451,17 +1444,76 @@ static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
 	}
 
 	sim_set_ready(sim);
+
+}
+
+static void sim_imsi_cb(const struct ofono_error *error, const char *imsi,
+			void *data)
+{
+	struct ofono_sim *sim = data;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
+		ofono_error("Unable to read IMSI, emergency calls only");
+		return;
+	}
+
+	sim_imsi_obtained(sim, imsi);
+}
+
+static void sim_efimsi_cb(const struct ofono_error *error,
+				const unsigned char *data, int len, void *user)
+{
+	struct ofono_sim *sim = user;
+	char imsi[17]; /* IMSI max length is 15 + 1 for NULL + 1 waste */
+	unsigned char imsi_len;
+	unsigned char parity;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		goto error;
+
+	if (len != 9)
+		goto error;
+
+	imsi_len = data[0];
+
+	if (imsi_len == 0 || imsi_len > 8)
+		goto error;
+
+	/* The low 3 bits of the first byte should be set to binary 001 */
+	if ((data[1] & 0x7) != 0x1)
+		goto error;
+
+	/* Save off the parity bit */
+	parity = (data[1] >> 3) & 1;
+
+	extract_bcd_number(data + 1, imsi_len, imsi);
+	imsi[16] = '\0';
+
+	if ((strlen(imsi + 1) % 2) != parity)
+		goto error;
+
+	sim_imsi_obtained(sim, imsi + 1);
+	return;
+
+error:
+	ofono_error("Unable to read IMSI, emergency calls only");
 }
 
 static void sim_retrieve_imsi(struct ofono_sim *sim)
 {
-	if (sim->driver->read_imsi == NULL) {
-		ofono_error("IMSI retrieval not implemented,"
-				" only emergency calls will be available");
+	if (sim->driver->read_imsi) {
+		sim->driver->read_imsi(sim, sim_imsi_cb, sim);
 		return;
 	}
 
-	sim->driver->read_imsi(sim, sim_imsi_cb, sim);
+	if (sim->driver->read_file_transparent == NULL) {
+		ofono_error("IMSI retrieval not implemented,"
+			" only emergency calls will be available");
+		return;
+	}
+
+	sim->driver->read_file_transparent(sim, SIM_EFIMSI_FILEID, 0, 9,
+						sim_efimsi_cb, sim);
 }
 
 static void sim_fdn_enabled(struct ofono_sim *sim)
