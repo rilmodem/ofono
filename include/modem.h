@@ -62,6 +62,7 @@ ofono_bool_t ofono_modem_get_online(struct ofono_modem *modem);
 ofono_bool_t ofono_modem_get_emergency_mode(struct ofono_modem *modem);
 
 void ofono_modem_set_name(struct ofono_modem *modem, const char *name);
+void ofono_modem_set_driver(struct ofono_modem *modem, const char *type);
 
 int ofono_modem_set_string(struct ofono_modem *modem,
 				const char *key, const char *value);

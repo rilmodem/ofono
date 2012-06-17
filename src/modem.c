@@ -1783,6 +1783,20 @@ void ofono_modem_set_name(struct ofono_modem *modem, const char *name)
 	}
 }
 
+void ofono_modem_set_driver(struct ofono_modem *modem, const char *type)
+{
+	DBG("type: %s", type);
+
+	if (modem->driver)
+		return;
+
+	if (strlen(type) > 16)
+		return;
+
+	g_free(modem->driver_type);
+	modem->driver_type = g_strdup(type);
+}
+
 struct ofono_modem *ofono_modem_create(const char *name, const char *type)
 {
 	struct ofono_modem *modem;
