@@ -1965,6 +1965,25 @@ skip_efpl:
 	sim->language_prefs_update = FALSE;
 }
 
+static void sim_iccid_cb(const struct ofono_error *error, const char *iccid,
+							void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+	const char *path = __ofono_atom_get_path(sim->atom);
+	DBusConnection *conn = ofono_dbus_get_connection();
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		return;
+
+	sim->iccid = g_strdup(iccid);
+
+	ofono_dbus_signal_property_changed(conn, path,
+						OFONO_SIM_MANAGER_INTERFACE,
+						"CardIdentifier",
+						DBUS_TYPE_STRING,
+						&sim->iccid);
+}
+
 static void sim_iccid_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -1974,7 +1993,13 @@ static void sim_iccid_read_cb(int ok, int length, int record,
 	DBusConnection *conn = ofono_dbus_get_connection();
 	char iccid[21]; /* ICCID max length is 20 + 1 for NULL */
 
-	if (!ok || length < 10)
+	if (!ok) {
+		if (sim->driver->read_iccid)
+			sim->driver->read_iccid(sim, sim_iccid_cb, sim);
+		return;
+	}
+
+	if (length < 10)
 		return;
 
 	extract_bcd_number(data, length, iccid);
