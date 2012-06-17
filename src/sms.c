@@ -1459,7 +1459,7 @@ static inline gboolean handle_mwi(struct ofono_sms *sms, struct sms *s)
 	return discard;
 }
 
-void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
+void ofono_sms_deliver_notify(struct ofono_sms *sms, const unsigned char *pdu,
 				int len, int tpdu_len)
 {
 	struct ofono_modem *modem = __ofono_atom_get_modem(sms->atom);
@@ -1606,7 +1606,7 @@ out:
 	handle_deliver(sms, &s);
 }
 
-void ofono_sms_status_notify(struct ofono_sms *sms, unsigned char *pdu,
+void ofono_sms_status_notify(struct ofono_sms *sms, const unsigned char *pdu,
 				int len, int tpdu_len)
 {
 	struct sms s;

@@ -60,9 +60,9 @@ struct ofono_sms_driver {
 				ofono_sms_bearer_set_cb_t, void *data);
 };
 
-void ofono_sms_deliver_notify(struct ofono_sms *sms, unsigned char *pdu,
+void ofono_sms_deliver_notify(struct ofono_sms *sms, const unsigned char *pdu,
 				int len, int tpdu_len);
-void ofono_sms_status_notify(struct ofono_sms *sms, unsigned char *pdu,
+void ofono_sms_status_notify(struct ofono_sms *sms, const unsigned char *pdu,
 				int len, int tpdu_len);
 
 int ofono_sms_driver_register(const struct ofono_sms_driver *d);
