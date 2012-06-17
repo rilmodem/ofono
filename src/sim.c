@@ -1721,6 +1721,20 @@ static void sim_cphs_information_read_cb(int ok, int length, int record,
 	memcpy(sim->cphs_service_table, data + 1, 2);
 }
 
+static void sim_mccmnc_cb(const struct ofono_error *error,
+			const char *mcc, const char *mnc, void *userdata)
+{
+	struct ofono_sim *sim = userdata;
+
+	if (error->type != OFONO_ERROR_TYPE_NO_ERROR)
+		return;
+
+	if (!mcc || !mnc)
+		return;
+
+	sim->mnc_length = strlen(mnc);
+}
+
 static void sim_ad_read_cb(int ok, int length, int record,
 				const unsigned char *data,
 				int record_length, void *userdata)
@@ -1728,8 +1742,11 @@ static void sim_ad_read_cb(int ok, int length, int record,
 	struct ofono_sim *sim = userdata;
 	int new_mnc_length;
 
-	if (!ok)
+	if (!ok) {
+		if (sim->driver->read_mccmnc)
+			sim->driver->read_mccmnc(sim, sim_mccmnc_cb, sim);
 		return;
+	}
 
 	if (length < 4)
 		return;
