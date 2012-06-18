@@ -573,7 +573,7 @@ static DBusMessage *ussd_initiate(DBusConnection *conn, DBusMessage *msg,
 
 	DBG("No.., checking if this is a USSD string");
 	if (!valid_ussd_string(str, call_in_progress))
-		return __ofono_error_invalid_format(msg);
+		return __ofono_error_not_recognized(msg);
 
 	if (!ussd_encode(str, &num_packed, buf))
 		return __ofono_error_invalid_format(msg);
