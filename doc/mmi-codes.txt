@@ -64,7 +64,7 @@ by oFono:
 
 NOTE: ZZ is the Call Barring supplementary service code.
 
-2.3 Chane of PIN/PIN2
+2.3 Change of PIN/PIN2
 
 The following string allows the user to change the PIN:
 
