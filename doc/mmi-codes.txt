@@ -1,0 +1,108 @@
+Man-Machine Interface (MMI) Codes and oFono
+===========================================
+
+1.0 Introduction
+
+3GPP 22.030 describes the structure of MMI codes for User Equipment.  All user
+equipment that wishes to be compliant with the Global Certification Forum
+(GCF) must recognize such codes in the dialer application.  This document
+describes the basic design principles for how to handle MMI codes with oFono.
+
+
+2.0 Basic MMI structure
+
+The MMI codes fall into two broad categories: codes that are followed by
+<SEND> and standalone codes.  oFono handles all codes that are followed by
+<SEND> while the UI is expected to handle standalone codes.
+
+2.1 Supplementary Service Control Codes
+
+The following codes are followed by <SEND> and are handled by oFono.  The
+general structure of the codes is as follows:
+
+* Activation	- '*SC*SI#'
+* Registration	- '*SC*SI#' and '**SC*SI#'
+* Erasure	- '##SC*SI#'
+* Deactivation	- '#SC*SI#'
+* Interrogation	- '*#SC*SI#'
+
+Please refer to 3GPP 22.030 for detailed explanation of the structure of SI
+and SC.  oFono currently handles the following SCs:
+
+* 33 - Call Barring - All Outgoing
+* 331 - Call Barring - Outgoing International
+* 332 - Call Barring - Outgoing International except Home Country
+* 35 - Call Barring - All Incoming
+* 351 - Call Barring - All Incoming when Roaming
+* 330 - Call Barring - All Barrring Services
+* 333 - Call Barring - All Outgoing Services (e.g. 33, 331, 332)
+* 335 - Call Barring - All Incoming Services (e.g. 35, 351)
+
+* 21 - Unconditional Call Forwarding
+* 67 - Call Forwarding on Busy
+* 61 - Call Forwarding on No Reply
+* 62 - Call Forwarding on Unreachable
+* 002 - Call Forwarding All Conditional
+* 004 - Call Forwarding All
+
+* 30 - CLIP
+* 31 - CLIR
+* 76 - COLP
+* 77 - COLR
+* 43 - Call Waiting
+* 300 - CNAP
+
+2.2 Registration of a new password
+
+The following password change strings are followed by <SEND> and are recognized
+by oFono:
+
+* 03 * ZZ * OLD_PASSWORD * NEW_PASSWORD * NEW_PASSWORD #
+** 03 * ZZ * OLD_PASSWORD * NEW_PASSWORD * NEW_PASSWORD #
+* 03 ** OLD_PASSWORD * NEW_PASSWORD * NEW_PASSWORD #
+** 03 ** OLD_PASSWORD * NEW_PASSWORD * NEW_PASSWORD #
+
+NOTE: ZZ is the Call Barring supplementary service code.
+
+2.3 Chane of PIN/PIN2
+
+The following string allows the user to change the PIN:
+
+PIN1: **04*OLD_PIN*NEW_PIN*NEW_PIN#
+PIN2: **042*OLD-PIN2*NEW_PIN2*NEW_PIN2#
+
+The following string allows the user to unblock the PIN:
+
+PIN1: **05*PIN_UNBLOCKING_KEY*NEW_PIN*NEW_PIN#
+PIN2: **052*PIN2_UNBLOCKING_KEY*NEW_PIN2*NEW_PIN2#
+
+Please note that this procedure is not followed by <SEND>.  It is up to the
+dialer to recognize this string and act accordingly by using the appropriate
+method on the SimManager interface.
+
+2.4 IMEI Display
+
+The following string can be used to obtain the IMEI:
+
+*#06#
+
+Please note that this procedure is not followed by <SEND>.  It is up to the
+dialer to recognize this string and display the SerialNumber property of the
+Modem Interface.
+
+3.0 General Application Guidelines
+
+When the application is taking user input it is expected to match the input
+against all possible strings that are not to be followed by <SEND>.  At a
+minimum the PIN change or unlock and the IMEI display strings must be handled
+by the application.  Any additional manufacturer-specific strings are also to
+be handled by the application.
+
+Once the user presses <SEND> the request should be sent to the
+SupplementaryServices.Initiate() method.  If the string is recognized as a
+control string, then the return value will be interpreted according to
+structure specified in doc/supplementaryservices-api.txt.  If the error
+NotRecognized is returned, then the string is not recognized as a
+supplementary service string and should be treated as a call setup request
+instead.  In this case the application should forward the string to
+VoiceCallManager.Dial() method.
