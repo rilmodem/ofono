@@ -492,7 +492,7 @@ gboolean valid_ussd_string(const char *str, gboolean call_in_progress)
 	if (str[len-1] == '#')
 		return TRUE;
 
-	if (!call_in_progress && len == 2 && str[0] != '1')
+	if (!call_in_progress && len == 2 && str[0] == '1')
 		return FALSE;
 
 	if (len <= 2)
