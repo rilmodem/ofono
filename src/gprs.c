@@ -98,7 +98,7 @@ struct ofono_gprs {
 };
 
 struct ipv4_settings {
-	gboolean static_ip;
+	ofono_bool_t static_ip;
 	char *ip;
 	char *netmask;
 	char *gateway;
@@ -2381,7 +2381,7 @@ void ofono_gprs_context_set_interface(struct ofono_gprs_context *gc,
 
 void ofono_gprs_context_set_ipv4_address(struct ofono_gprs_context *gc,
 						const char *address,
-						gboolean static_ip)
+						ofono_bool_t static_ip)
 {
 	struct context_settings *settings = gc->settings;
 

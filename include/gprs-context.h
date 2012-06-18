@@ -97,7 +97,7 @@ void ofono_gprs_context_set_interface(struct ofono_gprs_context *gc,
 
 void ofono_gprs_context_set_ipv4_address(struct ofono_gprs_context *gc,
 						const char *address,
-						gboolean static_ip);
+						ofono_bool_t static_ip);
 void ofono_gprs_context_set_ipv4_netmask(struct ofono_gprs_context *gc,
 						const char *netmask);
 void ofono_gprs_context_set_ipv4_gateway(struct ofono_gprs_context *gc,
