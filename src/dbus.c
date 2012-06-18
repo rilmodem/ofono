@@ -403,6 +403,12 @@ DBusMessage *__ofono_error_not_allowed(DBusMessage *msg)
 					"Operation is not allowed");
 }
 
+DBusMessage *__ofono_error_not_recognized(DBusMessage *msg)
+{
+	return g_dbus_create_error(msg, OFONO_ERROR_INTERFACE ".NotRecognized",
+					"String not recognized as USSD/SS");
+}
+
 DBusMessage *__ofono_error_from_error(const struct ofono_error *error,
 						DBusMessage *msg)
 {
