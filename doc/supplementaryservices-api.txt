@@ -34,6 +34,7 @@ Methods		string, variant Initiate(string command)
 					 [service].Error.Timedout
 					 [service].Error.AccessDenied
 					 [service].Error.Failed
+					 [service].Error.NotRecognized
 
 		string Respond(string reply)
 
