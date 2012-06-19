@@ -2689,8 +2689,7 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Querying PIN authentication state failed");
-
-		goto checkdone;
+		return;
 	}
 
 	if (sim->pin_type != pin_type) {
@@ -2728,7 +2727,6 @@ static void sim_pin_query_cb(const struct ofono_error *error,
 
 	sim_pin_retries_check(sim);
 
-checkdone:
 	switch (pin_type) {
 	case OFONO_SIM_PASSWORD_SIM_PIN2:
 	case OFONO_SIM_PASSWORD_SIM_PUK2:
