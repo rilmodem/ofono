@@ -1,0 +1,29 @@
+#!/usr/bin/python
+
+import dbus
+import sys
+
+bus = dbus.SystemBus()
+
+if len(sys.argv) == 5:
+	path = sys.argv[1]
+	pin_type = sys.argv[2]
+	old_pin = sys.argv[3]
+	new_pin = sys.argv[4]
+elif len(sys.argv) == 3:
+	manager = dbus.Interface(bus.get_object('org.ofono', '/'),
+					'org.ofono.Manager')
+	modems = manager.GetModems()
+	path = modems[0][0]
+	pin_type = sys.argv[1]
+	old_pin = sys.argv[2]
+	new_pin = sys.argv[3]
+else:
+	print "%s [PATH] pin_type old_pin new_pin" % (sys.argv[0])
+	sys.exit(0)
+
+print "Change %s for modem %s..." % (pin_type, path)
+
+simmanager = dbus.Interface(bus.get_object('org.ofono', path),
+				'org.ofono.SimManager')
+simmanager.ChangePin(pin_type, old_pin, new_pin)

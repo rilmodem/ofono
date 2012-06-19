@@ -591,6 +591,7 @@ test_scripts = test/backtrace \
 		test/enable-cbs \
 		test/lock-pin \
 		test/unlock-pin \
+		test/change-pin \
 		test/enable-gprs \
 		test/disable-gprs \
 		test/get-icon \
