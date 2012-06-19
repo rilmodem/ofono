@@ -2732,11 +2732,11 @@ checkdone:
 	switch (pin_type) {
 	case OFONO_SIM_PASSWORD_SIM_PIN2:
 	case OFONO_SIM_PASSWORD_SIM_PUK2:
+	case OFONO_SIM_PASSWORD_NONE:
 		if (sim->state == OFONO_SIM_STATE_READY)
 			break;
 
 		/* Fall through */
-	case OFONO_SIM_PASSWORD_NONE:
 		sim_initialize_after_pin(sim);
 		break;
 	default:
