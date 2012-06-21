@@ -19,23 +19,39 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <glib.h>
 
-#define OFONO_API_SUBJECT_TO_CHANGE
-#include <ofono/plugin.h>
+struct cb_data {
+	void *cb;
+	void *data;
+	void *user;
+};
 
-#include "qmimodem.h"
-
-static int qmimodem_init(void)
+static inline struct cb_data *cb_data_new(void *cb, void *data)
 {
-	return 0;
+	struct cb_data *ret;
+
+	ret = g_new0(struct cb_data, 1);
+	ret->cb = cb;
+	ret->data = data;
+	ret->user = NULL;
+
+	return ret;
 }
 
-static void qmimodem_exit(void)
-{
-}
+#define CALLBACK_WITH_FAILURE(cb, args...)		\
+	do {						\
+		struct ofono_error cb_e;		\
+		cb_e.type = OFONO_ERROR_TYPE_FAILURE;	\
+		cb_e.error = 0;				\
+							\
+		cb(&cb_e, ##args);			\
+	} while (0)					\
 
-OFONO_PLUGIN_DEFINE(qmimodem, "Qualcomm QMI modem driver", VERSION,
-		OFONO_PLUGIN_PRIORITY_DEFAULT, qmimodem_init, qmimodem_exit)
+#define CALLBACK_WITH_SUCCESS(f, args...)		\
+	do {						\
+		struct ofono_error e;			\
+		e.type = OFONO_ERROR_TYPE_NO_ERROR;	\
+		e.error = 0;				\
+		f(&e, ##args);				\
+	} while (0)
