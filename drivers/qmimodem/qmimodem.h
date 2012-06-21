@@ -20,3 +20,6 @@
  */
 
 #include "util.h"
+
+extern void qmi_devinfo_init(void);
+extern void qmi_devinfo_exit(void);
