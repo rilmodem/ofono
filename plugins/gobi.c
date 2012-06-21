@@ -2,7 +2,7 @@
  *
  *  oFono - Open Source Telephony
  *
- *  Copyright (C) 2008-2011  Intel Corporation. All rights reserved.
+ *  Copyright (C) 2008-2012  Intel Corporation. All rights reserved.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -24,32 +24,44 @@
 #endif
 
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <stdlib.h>
-
-#include <glib.h>
-#include <gatchat.h>
-#include <gattty.h>
 
 #define OFONO_API_SUBJECT_TO_CHANGE
 #include <ofono/plugin.h>
-#include <ofono/log.h>
 #include <ofono/modem.h>
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
+#include <ofono/phonebook.h>
 #include <ofono/sim.h>
+#include <ofono/stk.h>
+#include <ofono/sms.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/location-reporting.h>
+#include <ofono/log.h>
 
-#include <drivers/atmodem/atutil.h>
-#include <drivers/atmodem/vendor.h>
+#include <drivers/qmimodem/qmi.h>
+#include <drivers/qmimodem/dms.h>
+#include <drivers/qmimodem/util.h>
 
-static const char *none_prefix[] = { NULL };
+#define GOBI_DMS	(1 << 0)
+#define GOBI_NAS	(1 << 1)
+#define GOBI_WMS	(1 << 2)
+#define GOBI_WDS	(1 << 3)
+#define GOBI_PDS	(1 << 4)
+#define GOBI_PBM	(1 << 5)
+#define GOBI_UIM	(1 << 6)
+#define GOBI_CAT	(1 << 7)
+#define GOBI_CAT_OLD	(1 << 8)
 
 struct gobi_data {
-	GAtChat *chat;
-	struct ofono_sim *sim;
-	gboolean have_sim;
-	guint cfun_timeout;
+	struct qmi_device *device;
+	struct qmi_service *dms;
+	unsigned long features;
+	unsigned int discover_attempts;
+	uint8_t oper_mode;
 };
 
 static void gobi_debug(const char *str, void *user_data)
@@ -66,7 +78,7 @@ static int gobi_probe(struct ofono_modem *modem)
 	DBG("%p", modem);
 
 	data = g_try_new0(struct gobi_data, 1);
-	if (data == NULL)
+	if (!data)
 		return -ENOMEM;
 
 	ofono_modem_set_data(modem, data);
@@ -82,191 +94,279 @@ static void gobi_remove(struct ofono_modem *modem)
 
 	ofono_modem_set_data(modem, NULL);
 
-	/* Cleanup after hot-unplug */
-	g_at_chat_unref(data->chat);
+	qmi_service_unref(data->dms);
+
+	qmi_device_unref(data->device);
 
 	g_free(data);
 }
 
-static GAtChat *open_device(struct ofono_modem *modem,
-				const char *key, char *debug)
-{
-	const char *device;
-	GIOChannel *channel;
-	GAtSyntax *syntax;
-	GAtChat *chat;
-
-	device = ofono_modem_get_string(modem, key);
-	if (device == NULL)
-		return NULL;
-
-	DBG("%s %s", key, device);
-
-	channel = g_at_tty_open(device, NULL);
-	if (channel == NULL)
-		return NULL;
-
-	syntax = g_at_syntax_new_gsm_permissive();
-	chat = g_at_chat_new(channel, syntax);
-	g_at_syntax_unref(syntax);
-
-	g_io_channel_unref(channel);
-
-	if (chat == NULL)
-		return NULL;
-
-	if (getenv("OFONO_AT_DEBUG"))
-		g_at_chat_set_debug(chat, gobi_debug, debug);
-
-	return chat;
-}
-
-static void simstat_notify(GAtResult *result, gpointer user_data)
-{
-	struct ofono_modem *modem = user_data;
-	struct gobi_data *data = ofono_modem_get_data(modem);
-	GAtResultIter iter;
-	const char *state, *tmp;
-
-	if (data->sim == NULL)
-		return;
-
-	g_at_result_iter_init(&iter, result);
-
-	if (!g_at_result_iter_next(&iter, "$QCSIMSTAT:"))
-		return;
-
-	if (!g_at_result_iter_next_unquoted_string(&iter, &tmp))
-		return;
-
-	/*
-	 * When receiving an unsolicited notification, the comma
-	 * is missing ($QCSIMSTAT: 1 SIM INIT COMPLETED). Handle
-	 * this gracefully.
-	 */
-	if (g_str_has_prefix(tmp, "1 ") == TRUE)
-		state = tmp + 2;
-	else if (!g_at_result_iter_next_unquoted_string(&iter, &state))
-		return;
-
-	DBG("state %s", state);
-
-	if (g_str_equal(state, "SIM INIT COMPLETED") == TRUE) {
-		if (data->have_sim == FALSE) {
-			ofono_sim_inserted_notify(data->sim, TRUE);
-			data->have_sim = TRUE;
-		}
-	}
-}
-
-static void cfun_enable(gboolean ok, GAtResult *result, gpointer user_data)
+static void shutdown_cb(void *user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct gobi_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
-	if (data->cfun_timeout > 0) {
-		g_source_remove(data->cfun_timeout);
-		data->cfun_timeout = 0;
-	}
+	data->discover_attempts = 0;
 
-	if (!ok) {
-		g_at_chat_unref(data->chat);
-		data->chat = NULL;
+	qmi_device_unref(data->device);
+	data->device = NULL;
 
-		ofono_modem_set_powered(modem, FALSE);
+	ofono_modem_set_powered(modem, FALSE);
+}
+
+static void shutdown_device(struct ofono_modem *modem)
+{
+	struct gobi_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	qmi_service_unref(data->dms);
+	data->dms = NULL;
+
+	qmi_device_shutdown(data->device, shutdown_cb, modem, NULL);
+}
+
+static void power_reset_cb(struct qmi_result *result, void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+
+	DBG("");
+
+	if (qmi_result_set_error(result, NULL)) {
+		shutdown_device(modem);
 		return;
 	}
-
-	data->have_sim = FALSE;
-
-	g_at_chat_register(data->chat, "$QCSIMSTAT:", simstat_notify,
-						FALSE, modem, NULL);
-
-	g_at_chat_send(data->chat, "AT$QCSIMSTAT=1", none_prefix,
-						NULL, NULL, NULL);
-
-	g_at_chat_send(data->chat, "AT$QCSIMSTAT?", none_prefix,
-						NULL, NULL, NULL);
 
 	ofono_modem_set_powered(modem, TRUE);
 }
 
-static gboolean cfun_timeout(gpointer user_data)
+static void get_oper_mode_cb(struct qmi_result *result, void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct gobi_data *data = ofono_modem_get_data(modem);
+	struct qmi_param *param;
+	uint8_t mode;
+
+	DBG("");
+
+	if (qmi_result_set_error(result, NULL)) {
+		shutdown_device(modem);
+		return;
+	}
+
+	if (!qmi_result_get_uint8(result, QMI_DMS_RESULT_OPER_MODE, &mode)) {
+		shutdown_device(modem);
+		return;
+	}
+
+	data->oper_mode = mode;
+
+	switch (data->oper_mode) {
+	case QMI_DMS_OPER_MODE_ONLINE:
+		param = qmi_param_new_uint8(QMI_DMS_PARAM_OPER_MODE,
+					QMI_DMS_OPER_MODE_PERSIST_LOW_POWER);
+		if (!param) {
+			shutdown_device(modem);
+			return;
+		}
+
+		if (qmi_service_send(data->dms, QMI_DMS_SET_OPER_MODE, param,
+					power_reset_cb, modem, NULL) > 0)
+			return;
+
+		shutdown_device(modem);
+		break;
+	default:
+		ofono_modem_set_powered(modem, TRUE);
+		break;
+	}
+}
+
+static void get_caps_cb(struct qmi_result *result, void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct gobi_data *data = ofono_modem_get_data(modem);
+	const struct qmi_dms_device_caps *caps;
+	uint16_t len;
+	uint8_t i;
+
+	DBG("");
+
+	if (qmi_result_set_error(result, NULL))
+		goto error;
+
+	caps = qmi_result_get(result, QMI_DMS_RESULT_DEVICE_CAPS, &len);
+	if (!caps)
+		goto error;
+
+        DBG("service capabilities %d", caps->data_capa);
+        DBG("sim supported %d", caps->sim_supported);
+
+        for (i = 0; i < caps->radio_if_count; i++)
+                DBG("radio = %d", caps->radio_if[i]);
+
+	if (qmi_service_send(data->dms, QMI_DMS_GET_OPER_MODE, NULL,
+					get_oper_mode_cb, modem, NULL) > 0)
+		return;
+
+error:
+	shutdown_device(modem);
+}
+
+static void create_dms_cb(struct qmi_service *service, void *user_data)
 {
 	struct ofono_modem *modem = user_data;
 	struct gobi_data *data = ofono_modem_get_data(modem);
 
-	ofono_error("Modem enabling timeout, RFKILL enabled?");
+	DBG("");
 
-	data->cfun_timeout = 0;
+	if (!service)
+		goto error;
 
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
+	data->dms = qmi_service_ref(service);
 
-	ofono_modem_set_powered(modem, FALSE);
+	if (qmi_service_send(data->dms, QMI_DMS_GET_CAPS, NULL,
+					get_caps_cb, modem, NULL) > 0)
+		return;
 
-	return FALSE;
+error:
+	shutdown_device(modem);
+}
+
+static void discover_cb(uint8_t count, const struct qmi_version *list,
+							void *user_data)
+{
+	struct ofono_modem *modem = user_data;
+	struct gobi_data *data = ofono_modem_get_data(modem);
+	uint8_t i;
+
+	DBG("");
+
+	for (i = 0; i < count; i++) {
+		DBG("%s %d.%d", list[i].name, list[i].major, list[i].minor);
+
+		switch (list[i].type) {
+		case QMI_SERVICE_DMS:
+			data->features |= GOBI_DMS;
+			break;
+		case QMI_SERVICE_NAS:
+			data->features |= GOBI_NAS;
+			break;
+		case QMI_SERVICE_WMS:
+			data->features |= GOBI_WMS;
+			break;
+		case QMI_SERVICE_WDS:
+			data->features |= GOBI_WDS;
+			break;
+		case QMI_SERVICE_PDS:
+			data->features |= GOBI_PDS;
+			break;
+		case QMI_SERVICE_PBM:
+			data->features |= GOBI_PBM;
+			break;
+		case QMI_SERVICE_UIM:
+			data->features |= GOBI_UIM;
+			break;
+		case QMI_SERVICE_CAT:
+			data->features |= GOBI_CAT;
+			break;
+		case QMI_SERVICE_CAT_OLD:
+			if (list[i].major > 0)
+				data->features |= GOBI_CAT_OLD;
+			break;
+		}
+	}
+
+	if (!(data->features & GOBI_DMS)) {
+		if (++data->discover_attempts < 3) {
+			qmi_device_discover(data->device, discover_cb,
+								modem, NULL);
+			return;
+		}
+
+		shutdown_device(modem);
+		return;
+	}
+
+	qmi_service_create(data->device, QMI_SERVICE_DMS,
+						create_dms_cb, modem, NULL);
 }
 
 static int gobi_enable(struct ofono_modem *modem)
 {
 	struct gobi_data *data = ofono_modem_get_data(modem);
+	const char *device;
+	int fd;
 
 	DBG("%p", modem);
 
-	data->chat = open_device(modem, "Modem", "Modem: ");
-	if (data->chat == NULL)
+	device = ofono_modem_get_string(modem, "Device");
+	if (!device)
 		return -EINVAL;
 
-	g_at_chat_send(data->chat, "ATE0 +CMEE=1", NULL, NULL, NULL, NULL);
+	fd = open(device, O_RDWR | O_NONBLOCK | O_CLOEXEC);
+	if (fd < 0)
+		return -EIO;
 
-	g_at_chat_send(data->chat, "AT+CFUN=4", none_prefix,
-					cfun_enable, modem, NULL);
+	data->device = qmi_device_new(fd);
+	if (!data->device) {
+		close(fd);
+		return -ENOMEM;
+	}
 
-	data->cfun_timeout = g_timeout_add_seconds(5, cfun_timeout, modem);
+	if (getenv("OFONO_QMI_DEBUG"))
+		qmi_device_set_debug(data->device, gobi_debug, "QMI: ");
+
+	qmi_device_set_close_on_unref(data->device, true);
+
+	qmi_device_discover(data->device, discover_cb, modem, NULL);
 
 	return -EINPROGRESS;
 }
 
-static void cfun_disable(gboolean ok, GAtResult *result, gpointer user_data)
+static void power_disable_cb(struct qmi_result *result, void *user_data)
 {
 	struct ofono_modem *modem = user_data;
-	struct gobi_data *data = ofono_modem_get_data(modem);
 
 	DBG("");
 
-	g_at_chat_unref(data->chat);
-	data->chat = NULL;
-
-	if (ok)
-		ofono_modem_set_powered(modem, FALSE);
+	shutdown_device(modem);
 }
 
 static int gobi_disable(struct ofono_modem *modem)
 {
 	struct gobi_data *data = ofono_modem_get_data(modem);
+	struct qmi_param *param;
 
 	DBG("%p", modem);
 
-	g_at_chat_cancel_all(data->chat);
-	g_at_chat_unregister_all(data->chat);
+	param = qmi_param_new_uint8(QMI_DMS_PARAM_OPER_MODE,
+					QMI_DMS_OPER_MODE_PERSIST_LOW_POWER);
+	if (!param)
+		return -ENOMEM;
 
-	g_at_chat_send(data->chat, "AT+CFUN=0", none_prefix,
-					cfun_disable, modem, NULL);
+	if (qmi_service_send(data->dms, QMI_DMS_SET_OPER_MODE, param,
+					power_disable_cb, modem, NULL) > 0)
+		return -EINPROGRESS;
+
+	shutdown_device(modem);
 
 	return -EINPROGRESS;
 }
 
-static void set_online_cb(gboolean ok, GAtResult *result, gpointer user_data)
+static void set_online_cb(struct qmi_result *result, void *user_data)
 {
 	struct cb_data *cbd = user_data;
 	ofono_modem_online_cb_t cb = cbd->cb;
-	struct ofono_error error;
 
-	decode_at_error(&error, g_at_result_final_response(result));
-	cb(&error, cbd->data);
+	DBG("");
+
+	if (qmi_result_set_error(result, NULL))
+		CALLBACK_WITH_FAILURE(cb, cbd->data);
+	else
+		CALLBACK_WITH_SUCCESS(cb, cbd->data);
 }
 
 static void gobi_set_online(struct ofono_modem *modem, ofono_bool_t online,
@@ -274,14 +374,27 @@ static void gobi_set_online(struct ofono_modem *modem, ofono_bool_t online,
 {
 	struct gobi_data *data = ofono_modem_get_data(modem);
 	struct cb_data *cbd = cb_data_new(cb, user_data);
-	char const *command = online ? "AT+CFUN=1" : "AT+CFUN=4";
+	struct qmi_param *param;
+	uint8_t mode;
 
-	DBG("modem %p %s", modem, online ? "online" : "offline");
+	DBG("%p %s", modem, online ? "online" : "offline");
 
-	if (g_at_chat_send(data->chat, command, none_prefix,
+	if (online)
+		mode = QMI_DMS_OPER_MODE_ONLINE;
+	else
+		mode = QMI_DMS_OPER_MODE_LOW_POWER;
+
+	param = qmi_param_new_uint8(QMI_DMS_PARAM_OPER_MODE, mode);
+	if (!param)
+		goto error;
+
+	if (qmi_service_send(data->dms, QMI_DMS_SET_OPER_MODE, param,
 					set_online_cb, cbd, g_free) > 0)
 		return;
 
+	qmi_param_free(param);
+
+error:
 	CALLBACK_WITH_FAILURE(cb, cbd->data);
 
 	g_free(cbd);
@@ -293,11 +406,37 @@ static void gobi_pre_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	ofono_devinfo_create(modem, 0, "atmodem", data->chat);
-	data->sim = ofono_sim_create(modem, 0, "atmodem", data->chat);
+	ofono_devinfo_create(modem, 0, "qmimodem", data->device);
+
+	if (data->features & GOBI_UIM)
+		ofono_sim_create(modem, 0, "qmimodem", data->device);
+	else if (data->features & GOBI_DMS)
+		ofono_sim_create(modem, 0, "qmimodem-legacy", data->device);
 }
 
 static void gobi_post_sim(struct ofono_modem *modem)
+{
+	struct gobi_data *data = ofono_modem_get_data(modem);
+
+	DBG("%p", modem);
+
+	if (data->features & GOBI_CAT)
+		ofono_stk_create(modem, 0, "qmimodem", data->device);
+	else if (data->features & GOBI_CAT_OLD)
+		ofono_stk_create(modem, 1, "qmimodem", data->device);
+
+	if (data->features & GOBI_PBM)
+		ofono_phonebook_create(modem, 0, "qmimodem", data->device);
+
+	if (data->features & GOBI_WMS)
+		ofono_sms_create(modem, 0, "qmimodem", data->device);
+
+	if (data->features & GOBI_PDS)
+		ofono_location_reporting_create(modem, 0, "qmimodem",
+							data->device);
+}
+
+static void gobi_post_online(struct ofono_modem *modem)
 {
 	struct gobi_data *data = ofono_modem_get_data(modem);
 	struct ofono_gprs *gprs;
@@ -305,21 +444,17 @@ static void gobi_post_sim(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
-	gprs = ofono_gprs_create(modem, OFONO_VENDOR_GOBI,
-						"atmodem", data->chat);
-	gc = ofono_gprs_context_create(modem, 0, "atmodem", data->chat);
+	if (data->features & GOBI_NAS)
+		ofono_netreg_create(modem, 0, "qmimodem", data->device);
 
-	if (gprs && gc)
-		ofono_gprs_add_context(gprs, gc);
-}
+	if (data->features & GOBI_WDS) {
+		gprs = ofono_gprs_create(modem, 0, "qmimodem", data->device);
+		gc = ofono_gprs_context_create(modem, 0, "qmimodem",
+							data->device);
 
-static void gobi_post_online(struct ofono_modem *modem)
-{
-	struct gobi_data *data = ofono_modem_get_data(modem);
-
-	DBG("%p", modem);
-
-	ofono_netreg_create(modem, 0, "dunmodem", data->chat);
+		if (gprs && gc)
+			ofono_gprs_add_context(gprs, gc);
+	}
 }
 
 static struct ofono_modem_driver gobi_driver = {
