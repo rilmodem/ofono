@@ -30,6 +30,9 @@ extern void qmi_netreg_exit(void);
 extern void qmi_sim_legacy_init(void);
 extern void qmi_sim_legacy_exit(void);
 
+extern void qmi_sms_init(void);
+extern void qmi_sms_exit(void);
+
 extern void qmi_gprs_init(void);
 extern void qmi_gprs_exit(void);
 
