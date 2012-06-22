@@ -154,14 +154,17 @@ endif
 if QMIMODEM
 qmi_sources = drivers/qmimodem/qmi.h drivers/qmimodem/qmi.c \
 					drivers/qmimodem/ctl.h \
-					drivers/qmimodem/dms.h
+					drivers/qmimodem/dms.h \
+					drivers/qmimodem/nas.h
 
 builtin_modules += qmimodem
 builtin_sources += $(qmi_sources) \
 			drivers/qmimodem/util.h \
 			drivers/qmimodem/qmimodem.h \
 			drivers/qmimodem/qmimodem.c \
-			drivers/qmimodem/devinfo.c
+			drivers/qmimodem/devinfo.c \
+			drivers/qmimodem/network-registration.c \
+			drivers/qmimodem/sim-legacy.c
 
 builtin_modules += gobi
 builtin_sources += plugins/gobi.c
