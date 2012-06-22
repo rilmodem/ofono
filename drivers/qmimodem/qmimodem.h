@@ -23,3 +23,6 @@
 
 extern void qmi_devinfo_init(void);
 extern void qmi_devinfo_exit(void);
+
+extern void qmi_sim_legacy_init(void);
+extern void qmi_sim_legacy_exit(void);

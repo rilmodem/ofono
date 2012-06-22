@@ -31,12 +31,14 @@
 static int qmimodem_init(void)
 {
 	qmi_devinfo_init();
+	qmi_sim_legacy_init();
 
 	return 0;
 }
 
 static void qmimodem_exit(void)
 {
+	qmi_sim_legacy_exit();
 	qmi_devinfo_exit();
 }
 

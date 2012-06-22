@@ -140,5 +140,11 @@ struct qmi_dms_pin_status {
 /* Set operating mode */
 #define QMI_DMS_PARAM_OPER_MODE			0x01	/* uint8 */
 
+/* Get UIM ICCID */
+#define QMI_DMS_RESULT_ICCID			0x01	/* string */
+
+/* Get IMSI */
+#define QMI_DMS_RESULT_IMSI			0x01	/* string */
+
 /* Get UIM state */
 #define QMI_DMS_RESULT_UIM_STATE		0x01	/* uint8 */
