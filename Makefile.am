@@ -156,7 +156,8 @@ qmi_sources = drivers/qmimodem/qmi.h drivers/qmimodem/qmi.c \
 					drivers/qmimodem/ctl.h \
 					drivers/qmimodem/dms.h \
 					drivers/qmimodem/nas.h \
-					drivers/qmimodem/wds.h
+					drivers/qmimodem/wds.h \
+					drivers/qmimodem/pds.h
 
 builtin_modules += qmimodem
 builtin_sources += $(qmi_sources) \
@@ -167,7 +168,8 @@ builtin_sources += $(qmi_sources) \
 			drivers/qmimodem/network-registration.c \
 			drivers/qmimodem/sim-legacy.c \
 			drivers/qmimodem/gprs.c \
-			drivers/qmimodem/gprs-context.c
+			drivers/qmimodem/gprs-context.c \
+			drivers/qmimodem/location-reporting.c
 
 builtin_modules += gobi
 builtin_sources += plugins/gobi.c

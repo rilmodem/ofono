@@ -35,3 +35,6 @@ extern void qmi_gprs_exit(void);
 
 extern void qmi_gprs_context_init(void);
 extern void qmi_gprs_context_exit(void);
+
+extern void qmi_location_reporting_init(void);
+extern void qmi_location_reporting_exit(void);
