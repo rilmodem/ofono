@@ -233,7 +233,7 @@ static void qmi_deactivate_primary(struct ofono_gprs_context *gc,
 		goto error;
 
 	if (qmi_service_send(data->wds, QMI_WDS_STOP_NET, param,
-					 stop_net_cb, cbd, NULL) > 0)
+					stop_net_cb, cbd, NULL) > 0)
 		return;
 
 	qmi_param_free(param);
