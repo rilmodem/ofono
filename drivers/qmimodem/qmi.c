@@ -1670,6 +1670,50 @@ uint16_t qmi_service_send(struct qmi_service *service,
 	return hdr->transaction;
 }
 
+bool qmi_service_cancel(struct qmi_service *service, uint16_t tid)
+{
+	struct qmi_device *device;
+	struct service_send_data *data;
+	struct qmi_request *req;
+	GList *list;
+
+	if (!service || !tid)
+		return false;
+
+	if (!service->client_id)
+		return false;
+
+	device = service->device;
+	if (!device)
+		return false;
+
+	list = g_queue_find_custom(device->req_queue,
+				GUINT_TO_POINTER(tid), __request_compare);
+	if (list) {
+		req = list->data;
+
+		g_queue_delete_link(device->req_queue, list);
+	} else {
+		list = g_queue_find_custom(device->service_queue,
+				GUINT_TO_POINTER(tid), __request_compare);
+		if (!list)
+			return false;
+
+		req = list->data;
+
+		g_queue_delete_link(device->service_queue, list);
+	}
+
+	data = req->user_data;
+
+	if (data->destroy)
+		data->destroy(data->user_data);
+
+	__request_free(req, NULL);
+
+	return true;
+}
+
 uint16_t qmi_service_register(struct qmi_service *service,
 				uint16_t message, qmi_result_func_t func,
 				void *user_data, qmi_destroy_func_t destroy)
