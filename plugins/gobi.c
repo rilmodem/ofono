@@ -421,6 +421,10 @@ static void gobi_pre_sim(struct ofono_modem *modem)
 
 	if (data->features & GOBI_VOICE)
 		ofono_voicecall_create(modem, 0, "qmimodem", data->device);
+
+	if (data->features & GOBI_PDS)
+		ofono_location_reporting_create(modem, 0, "qmimodem",
+							data->device);
 }
 
 static void gobi_post_sim(struct ofono_modem *modem)
@@ -442,10 +446,6 @@ static void gobi_post_sim(struct ofono_modem *modem)
 
 	if (data->features & GOBI_WMS)
 		ofono_sms_create(modem, 0, "qmimodem", data->device);
-
-	if (data->features & GOBI_PDS)
-		ofono_location_reporting_create(modem, 0, "qmimodem",
-							data->device);
 }
 
 static void gobi_post_online(struct ofono_modem *modem)
