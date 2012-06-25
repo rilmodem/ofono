@@ -275,7 +275,7 @@ static void bluetooth_probe(GSList *uuids, const char *path,
 			continue;
 
 		err = driver->probe(path, device, adapter, alias);
-		if (err == 0)
+		if (err == 0 || err == -EALREADY)
 			continue;
 
 		ofono_error("%s probe: %s (%d)", driver->name, strerror(-err),
