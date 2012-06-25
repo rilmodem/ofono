@@ -167,6 +167,7 @@ builtin_sources += $(qmi_sources) \
 			drivers/qmimodem/qmimodem.h \
 			drivers/qmimodem/qmimodem.c \
 			drivers/qmimodem/devinfo.c \
+			drivers/qmimodem/voicecall.c \
 			drivers/qmimodem/network-registration.c \
 			drivers/qmimodem/sim-legacy.c \
 			drivers/qmimodem/sms.c \

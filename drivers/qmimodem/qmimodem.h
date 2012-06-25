@@ -27,6 +27,9 @@ extern void qmi_devinfo_exit(void);
 extern void qmi_netreg_init(void);
 extern void qmi_netreg_exit(void);
 
+extern void qmi_voicecall_init(void);
+extern void qmi_voicecall_exit(void);
+
 extern void qmi_sim_legacy_init(void);
 extern void qmi_sim_legacy_exit(void);
 
