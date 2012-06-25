@@ -1755,6 +1755,7 @@ uint16_t qmi_service_register(struct qmi_service *service,
 
 bool qmi_service_unregister(struct qmi_service *service, uint16_t id)
 {
+	unsigned int nid = id;
 	struct qmi_notify *notify;
 	GList *list;
 
@@ -1762,7 +1763,7 @@ bool qmi_service_unregister(struct qmi_service *service, uint16_t id)
 		return false;
 
 	list = g_list_find_custom(service->notify_list,
-				GUINT_TO_POINTER(id), __notify_compare);
+				GUINT_TO_POINTER(nid), __notify_compare);
 	if (!list)
 		return false;
 
