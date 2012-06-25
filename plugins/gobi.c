@@ -288,7 +288,7 @@ static void discover_cb(uint8_t count, const struct qmi_version *list,
 		return;
 	}
 
-	qmi_service_create(data->device, QMI_SERVICE_DMS,
+	qmi_service_create_shared(data->device, QMI_SERVICE_DMS,
 						create_dms_cb, modem, NULL);
 }
 
