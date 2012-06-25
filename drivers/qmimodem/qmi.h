@@ -135,11 +135,11 @@ const char *qmi_service_get_identifier(struct qmi_service *service);
 bool qmi_service_get_version(struct qmi_service *service,
 					uint16_t *major, uint16_t *minor);
 
-unsigned int qmi_service_send(struct qmi_service *service,
+uint16_t qmi_service_send(struct qmi_service *service,
 				uint16_t message, struct qmi_param *param,
 				qmi_result_func_t func,
 				void *user_data, qmi_destroy_func_t destroy);
-unsigned int qmi_service_register(struct qmi_service *service,
+uint16_t qmi_service_register(struct qmi_service *service,
 				uint16_t message, qmi_result_func_t func,
 				void *user_data, qmi_destroy_func_t destroy);
 bool qmi_service_unregister_all(struct qmi_service *service);

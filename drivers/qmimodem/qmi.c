@@ -49,7 +49,6 @@ struct qmi_device {
 	GQueue *req_queue;
 	GQueue *control_queue;
 	GQueue *service_queue;
-	unsigned int next_id;
 	uint8_t next_control_tid;
 	uint16_t next_service_tid;
 	qmi_debug_func_t debug_func;
@@ -70,6 +69,7 @@ struct qmi_service {
 	uint16_t major;
 	uint16_t minor;
 	uint8_t client_id;
+	uint16_t next_notify_id;
 	GList *notify_list;
 };
 
@@ -87,7 +87,6 @@ struct qmi_result {
 };
 
 struct qmi_request {
-	unsigned int id;
 	uint16_t tid;
 	void *buf;
 	size_t len;
@@ -511,7 +510,6 @@ static void wakeup_writer(struct qmi_device *device)
 static void __request_submit(struct qmi_device *device,
 				struct qmi_request *req, uint16_t transaction)
 {
-	req->id = device->next_id++;
 	req->tid = transaction;
 
 	g_queue_push_tail(device->req_queue, req);
@@ -754,11 +752,6 @@ struct qmi_device *qmi_device_new(int fd)
 	device->control_queue = g_queue_new();
 	device->service_queue = g_queue_new();
 
-	device->next_id = 1;
-
-	device->next_control_tid = 1;
-	device->next_service_tid = 1;
-
 	device->service_list = g_hash_table_new_full(g_direct_hash,
 					g_direct_equal, NULL, service_destroy);
 
@@ -997,6 +990,9 @@ bool qmi_device_discover(struct qmi_device *device, qmi_discover_func_t func,
 		return false;
 	}
 
+	if (device->next_control_tid < 1)
+		device->next_control_tid = 1;
+
 	hdr->type = 0x00;
 	hdr->transaction = device->next_control_tid++;
 
@@ -1023,6 +1019,9 @@ static void release_client(struct qmi_device *device,
 		func(0x0000, 0x0000, NULL, user_data);
 		return;
 	}
+
+	if (device->next_control_tid < 1)
+		device->next_control_tid = 1;
 
 	hdr->type = 0x00;
 	hdr->transaction = device->next_control_tid++;
@@ -1460,6 +1459,9 @@ static void service_create_discover(uint8_t count,
 		return;
 	}
 
+	if (device->next_control_tid < 1)
+		device->next_control_tid = 1;
+
 	hdr->type = 0x00;
 	hdr->transaction = device->next_control_tid++;
 
@@ -1617,7 +1619,7 @@ done:
 	g_free(data);
 }
 
-unsigned int qmi_service_send(struct qmi_service *service,
+uint16_t qmi_service_send(struct qmi_service *service,
 				uint16_t message, struct qmi_param *param,
 				qmi_result_func_t func,
 				void *user_data, qmi_destroy_func_t destroy)
@@ -1657,15 +1659,18 @@ unsigned int qmi_service_send(struct qmi_service *service,
 		return 0;
 	}
 
+	if (device->next_service_tid < 256)
+		device->next_service_tid = 256;
+
 	hdr->type = 0x00;
 	hdr->transaction = device->next_service_tid++;
 
 	__request_submit(device, req, hdr->transaction);
 
-	return req->id;
+	return hdr->transaction;
 }
 
-unsigned int qmi_service_register(struct qmi_service *service,
+uint16_t qmi_service_register(struct qmi_service *service,
 				uint16_t message, qmi_result_func_t func,
 				void *user_data, qmi_destroy_func_t destroy)
 {
@@ -1678,7 +1683,10 @@ unsigned int qmi_service_register(struct qmi_service *service,
 	if (!notify)
 		return 0;
 
-	notify->id = service->device->next_id++;
+	if (service->next_notify_id < 1)
+		service->next_notify_id = 1;
+
+	notify->id = service->next_notify_id++;
 	notify->message = message;
 	notify->callback = func;
 	notify->user_data = user_data;
