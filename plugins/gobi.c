@@ -340,6 +340,9 @@ static int gobi_disable(struct ofono_modem *modem)
 
 	DBG("%p", modem);
 
+	qmi_service_cancel_all(data->dms);
+	qmi_service_unregister_all(data->dms);
+
 	param = qmi_param_new_uint8(QMI_DMS_PARAM_OPER_MODE,
 					QMI_DMS_OPER_MODE_PERSIST_LOW_POWER);
 	if (!param)
