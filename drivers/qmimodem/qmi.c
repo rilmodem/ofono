@@ -583,6 +583,7 @@ static void handle_packet(struct qmi_device *device,
 	if (hdr->service == QMI_SERVICE_CONTROL) {
 		const struct qmi_control_hdr *control = buf;
 		const struct qmi_message_hdr *msg;
+		unsigned int tid;
 		GList *list;
 
 		/* Ignore control messages with client identifier */
@@ -596,6 +597,8 @@ static void handle_packet(struct qmi_device *device,
 
 		data = buf + QMI_CONTROL_HDR_SIZE + QMI_MESSAGE_HDR_SIZE;
 
+		tid = control->transaction;
+
 		if (control->type == 0x02 && control->transaction == 0x00) {
 			handle_indication(device, hdr->service, hdr->client,
 							message, length, data);
@@ -603,8 +606,7 @@ static void handle_packet(struct qmi_device *device,
 		}
 
 		list = g_queue_find_custom(device->control_queue,
-					GUINT_TO_POINTER(control->transaction),
-					__request_compare);
+				GUINT_TO_POINTER(tid), __request_compare);
 		if (!list)
 			return;
 
@@ -614,7 +616,7 @@ static void handle_packet(struct qmi_device *device,
 	} else {
 		const struct qmi_service_hdr *service = buf;
 		const struct qmi_message_hdr *msg;
-		uint16_t tid;
+		unsigned int tid;
 		GList *list;
 
 		msg = buf + QMI_SERVICE_HDR_SIZE;
@@ -1679,8 +1681,9 @@ uint16_t qmi_service_send(struct qmi_service *service,
 	return hdr->transaction;
 }
 
-bool qmi_service_cancel(struct qmi_service *service, uint16_t tid)
+bool qmi_service_cancel(struct qmi_service *service, uint16_t id)
 {
+	unsigned int tid = id;
 	struct qmi_device *device;
 	struct service_send_data *data;
 	struct qmi_request *req;
