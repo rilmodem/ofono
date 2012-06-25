@@ -39,6 +39,7 @@
 #include <ofono/sms.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
+#include <ofono/radio-settings.h>
 #include <ofono/location-reporting.h>
 #include <ofono/log.h>
 
@@ -424,6 +425,9 @@ static void gobi_post_sim(struct ofono_modem *modem)
 
 	if (data->features & GOBI_PBM)
 		ofono_phonebook_create(modem, 0, "qmimodem", data->device);
+
+	if (data->features & GOBI_NAS)
+		ofono_radio_settings_create(modem, 0, "qmimodem", data->device);
 
 	if (data->features & GOBI_WMS)
 		ofono_sms_create(modem, 0, "qmimodem", data->device);
