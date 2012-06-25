@@ -441,7 +441,6 @@ static void sim_pin_retries_query_cb(const struct ofono_error *error,
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
 		ofono_error("Querying remaining pin retries failed");
-
 		return;
 	}
 
@@ -1137,8 +1136,10 @@ static void sim_msisdn_read_cb(int ok, int length, int record,
 	if (!ok)
 		goto check;
 
-	if (record_length < 14 || length < record_length)
+	if (record_length < 14 || length < record_length) {
+		ofono_error("EFmsidn shall at least contain 14 bytes");
 		return;
+	}
 
 	total = length / record_length;
 
@@ -1758,8 +1759,10 @@ static void sim_ad_read_cb(int ok, int length, int record,
 	if (!ok)
 		return;
 
-	if (length < 4)
+	if (length < 4) {
+		ofono_error("EFad should contain at least four bytes");
 		return;
+	}
 
 	new_mnc_length = data[3] & 0xf;
 
