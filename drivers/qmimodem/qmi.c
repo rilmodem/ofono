@@ -95,7 +95,7 @@ struct qmi_request {
 };
 
 struct qmi_notify {
-	unsigned int id;
+	uint16_t id;
 	uint16_t message;
 	qmi_result_func_t callback;
 	void *user_data;
@@ -213,6 +213,14 @@ static void __notify_free(gpointer data, gpointer user_data)
 		notify->destroy(notify->user_data);
 
 	g_free(notify);
+}
+
+static gint __notify_compare(gconstpointer a, gconstpointer b)
+{
+	const struct qmi_notify *notify = a;
+	uint16_t id = GPOINTER_TO_UINT(b);
+
+	return notify->id - id;
 }
 
 static void __hexdump(const char dir, const unsigned char *buf, size_t len,
@@ -1739,6 +1747,28 @@ uint16_t qmi_service_register(struct qmi_service *service,
 	service->notify_list = g_list_append(service->notify_list, notify);
 
 	return notify->id;
+}
+
+bool qmi_service_unregister(struct qmi_service *service, uint16_t id)
+{
+	struct qmi_notify *notify;
+	GList *list;
+
+	if (!service || !id)
+		return false;
+
+	list = g_list_find_custom(service->notify_list,
+				GUINT_TO_POINTER(id), __notify_compare);
+	if (!list)
+		return false;
+
+	notify = list->data;
+
+	service->notify_list = g_list_delete_link(service->notify_list, list);
+
+	__notify_free(notify, NULL);
+
+	return true;
 }
 
 bool qmi_service_unregister_all(struct qmi_service *service)
