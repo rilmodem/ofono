@@ -148,3 +148,7 @@ struct qmi_dms_pin_status {
 
 /* Get UIM state */
 #define QMI_DMS_RESULT_UIM_STATE		0x01	/* uint8 */
+
+/* Get device band capabilities */
+#define QMI_DMS_RESULT_BAND_CAPS		0x01	/* uint64 bitmask */
+#define QMI_DMS_RESULT_LTE_BAND_CAPS		0x10	/* uint64 bitmask */

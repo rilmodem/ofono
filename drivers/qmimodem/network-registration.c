@@ -35,7 +35,7 @@
 #include "nas.h"
 
 #include "qmimodem.h"
-#include "common.h"
+#include "src/common.h"
 
 struct netreg_data {
 	struct qmi_service *nas;
