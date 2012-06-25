@@ -34,6 +34,7 @@
 #include <ofono/devinfo.h>
 #include <ofono/netreg.h>
 #include <ofono/phonebook.h>
+#include <ofono/voicecall.h>
 #include <ofono/sim.h>
 #include <ofono/stk.h>
 #include <ofono/sms.h>
@@ -56,6 +57,7 @@
 #define GOBI_UIM	(1 << 6)
 #define GOBI_CAT	(1 << 7)
 #define GOBI_CAT_OLD	(1 << 8)
+#define GOBI_VOICE	(1 << 9)
 
 struct gobi_data {
 	struct qmi_device *device;
@@ -274,6 +276,9 @@ static void discover_cb(uint8_t count, const struct qmi_version *list,
 			if (list[i].major > 0)
 				data->features |= GOBI_CAT_OLD;
 			break;
+		case QMI_SERVICE_VOICE:
+			data->features |= GOBI_VOICE;
+			break;
 		}
 	}
 
@@ -413,6 +418,9 @@ static void gobi_pre_sim(struct ofono_modem *modem)
 		ofono_sim_create(modem, 0, "qmimodem", data->device);
 	else if (data->features & GOBI_DMS)
 		ofono_sim_create(modem, 0, "qmimodem-legacy", data->device);
+
+	if (data->features & GOBI_VOICE)
+		ofono_voicecall_create(modem, 0, "qmimodem", data->device);
 }
 
 static void gobi_post_sim(struct ofono_modem *modem)
