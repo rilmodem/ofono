@@ -114,6 +114,8 @@ bool qmi_result_get_uint16(struct qmi_result *result, uint8_t type,
 							uint16_t *value);
 bool qmi_result_get_uint32(struct qmi_result *result, uint8_t type,
 							uint32_t *value);
+bool qmi_result_get_uint64(struct qmi_result *result, uint8_t type,
+							uint64_t *value);
 
 
 struct qmi_service;

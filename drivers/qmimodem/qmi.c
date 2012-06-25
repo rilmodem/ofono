@@ -1320,6 +1320,28 @@ bool qmi_result_get_uint32(struct qmi_result *result, uint8_t type,
 	return true;
 }
 
+bool qmi_result_get_uint64(struct qmi_result *result, uint8_t type,
+							uint64_t *value)
+{
+	const unsigned char *ptr;
+	uint16_t len;
+	uint64_t tmp;
+
+	if (!result || !type)
+		return false;
+
+	ptr = tlv_get(result->data, result->length, type, &len);
+	if (!ptr)
+		return false;
+
+	memcpy(&tmp, ptr, 8);
+
+	if (value)
+		*value = GUINT64_FROM_LE(tmp);
+
+	return true;
+}
+
 struct service_create_data {
 	struct qmi_device *device;
 	uint8_t type;
