@@ -546,7 +546,7 @@ static void handle_indication(struct qmi_device *device,
 {
 	struct qmi_service *service;
 	struct qmi_result result;
-	uint16_t hash_id;
+	unsigned int hash_id;
 
 	if (service_type == QMI_SERVICE_CONTROL)
 		return;
@@ -1382,7 +1382,8 @@ static void service_create_callback(uint16_t message, uint16_t length,
 	struct qmi_service *service = NULL;
 	const struct qmi_result_code *result_code;
 	const struct qmi_client_id *client_id;
-	uint16_t len, hash_id;
+	uint16_t len;
+	unsigned int hash_id;
 
 	g_source_remove(data->timeout);
 
@@ -1539,7 +1540,7 @@ struct qmi_service *qmi_service_ref(struct qmi_service *service)
 
 void qmi_service_unref(struct qmi_service *service)
 {
-	uint16_t hash_id;
+	unsigned int hash_id;
 
 	if (!service)
                 return;
