@@ -89,6 +89,7 @@ struct qmi_result {
 
 struct qmi_request {
 	uint16_t tid;
+	uint8_t client;
 	void *buf;
 	size_t len;
 	qmi_message_func_t callback;
@@ -164,6 +165,8 @@ static struct qmi_request *__request_alloc(uint8_t service,
 		g_free(req);
 		return NULL;
 	}
+
+	req->client = client;
 
 	hdr = req->buf;
 
@@ -1683,6 +1686,16 @@ struct service_send_data {
 	qmi_destroy_func_t destroy;
 };
 
+static void service_send_free(struct service_send_data *data)
+{
+	if (data->destroy)
+		data->destroy(data->user_data);
+
+	qmi_param_free(data->param);
+
+	g_free(data);
+}
+
 static void service_send_callback(uint16_t message, uint16_t length,
 					const void *buffer, void *user_data)
 {
@@ -1709,11 +1722,7 @@ done:
 	if (data->func)
 		data->func(&result, data->user_data);
 
-	if (data->destroy)
-		data->destroy(data->user_data);
-
-	qmi_param_free(data->param);
-	g_free(data);
+	service_send_free(data);
 }
 
 uint16_t qmi_service_send(struct qmi_service *service,
@@ -1771,7 +1780,6 @@ bool qmi_service_cancel(struct qmi_service *service, uint16_t id)
 {
 	unsigned int tid = id;
 	struct qmi_device *device;
-	struct service_send_data *data;
 	struct qmi_request *req;
 	GList *list;
 
@@ -1802,12 +1810,63 @@ bool qmi_service_cancel(struct qmi_service *service, uint16_t id)
 		g_queue_delete_link(device->service_queue, list);
 	}
 
-	data = req->user_data;
-
-	if (data->destroy)
-		data->destroy(data->user_data);
+	service_send_free(req->user_data);
 
 	__request_free(req, NULL);
+
+	return true;
+}
+
+static GQueue *remove_client(GQueue *queue, uint8_t client)
+{
+	GQueue *new_queue;
+	GList *list;
+
+	new_queue = g_queue_new();
+
+	while (1) {
+		struct qmi_request *req;
+
+		list = g_queue_pop_head_link(queue);
+		if (!list)
+			break;
+
+		req = list->data;
+
+		if (!req->client || req->client != client) {
+			g_queue_push_tail_link(new_queue, list);
+			continue;
+		}
+
+		service_send_free(req->user_data);
+
+		__request_free(req, NULL);
+	}
+
+	g_queue_free(queue);
+
+	return new_queue;
+}
+
+bool qmi_service_cancel_all(struct qmi_service *service)
+{
+	struct qmi_device *device;
+
+	if (!service)
+		return false;
+
+	if (!service->client_id)
+		return false;
+
+	device = service->device;
+	if (!device)
+		return false;
+
+	device->req_queue = remove_client(device->req_queue,
+						service->client_id);
+
+	device->service_queue = remove_client(device->service_queue,
+							service->client_id);
 
 	return true;
 }

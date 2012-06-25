@@ -143,6 +143,7 @@ uint16_t qmi_service_send(struct qmi_service *service,
 				qmi_result_func_t func,
 				void *user_data, qmi_destroy_func_t destroy);
 bool qmi_service_cancel(struct qmi_service *service, uint16_t id);
+bool qmi_service_cancel_all(struct qmi_service *service);
 
 uint16_t qmi_service_register(struct qmi_service *service,
 				uint16_t message, qmi_result_func_t func,
