@@ -1644,6 +1644,9 @@ void qmi_service_unref(struct qmi_service *service)
 		return;
 	}
 
+	qmi_service_cancel_all(service);
+	qmi_service_unregister_all(service);
+
 	hash_id = service->type | (service->client_id << 8);
 
 	g_hash_table_steal(service->device->service_list,
