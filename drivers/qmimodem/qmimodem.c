@@ -36,6 +36,7 @@ static int qmimodem_init(void)
 	qmi_sms_init();
 	qmi_gprs_init();
 	qmi_gprs_context_init();
+	qmi_radio_settings_init();
 	qmi_location_reporting_init();
 
 	return 0;
@@ -44,6 +45,7 @@ static int qmimodem_init(void)
 static void qmimodem_exit(void)
 {
 	qmi_location_reporting_exit();
+	qmi_radio_settings_exit();
 	qmi_gprs_context_exit();
 	qmi_gprs_exit();
 	qmi_sms_exit();

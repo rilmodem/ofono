@@ -172,6 +172,7 @@ builtin_sources += $(qmi_sources) \
 			drivers/qmimodem/sms.c \
 			drivers/qmimodem/gprs.c \
 			drivers/qmimodem/gprs-context.c \
+			drivers/qmimodem/radio-settings.c \
 			drivers/qmimodem/location-reporting.c
 
 builtin_modules += gobi
