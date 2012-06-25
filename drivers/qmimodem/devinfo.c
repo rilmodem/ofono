@@ -185,7 +185,7 @@ static int qmi_devinfo_probe(struct ofono_devinfo *devinfo,
 
 	ofono_devinfo_set_data(devinfo, data);
 
-	qmi_service_create(device, QMI_SERVICE_DMS,
+	qmi_service_create_shared(device, QMI_SERVICE_DMS,
 					create_dms_cb, devinfo, NULL);
 
 	return 0;

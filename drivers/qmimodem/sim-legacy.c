@@ -354,7 +354,8 @@ static int qmi_sim_probe(struct ofono_sim *sim,
 
 	ofono_sim_set_data(sim, data);
 
-	qmi_service_create(device, QMI_SERVICE_DMS, create_dms_cb, sim, NULL);
+	qmi_service_create_shared(device, QMI_SERVICE_DMS,
+						create_dms_cb, sim, NULL);
 
 	return 0;
 }
