@@ -100,6 +100,9 @@ static void at_scact_up_cb(gboolean ok, GAtResult *result,
 	snprintf(buf, sizeof(buf), "AT!SCPADDR=%u", gcd->active_context);
 	g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL);
 
+	snprintf(buf, sizeof(buf), "AT+CGCONTRDP=%u", gcd->active_context);
+	g_at_chat_send(gcd->chat, buf, none_prefix, NULL, NULL, NULL);
+
 	modem = ofono_gprs_context_get_modem(gc);
 	interface = ofono_modem_get_string(modem, "NetworkInterface");
 
