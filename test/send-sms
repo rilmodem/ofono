@@ -25,10 +25,10 @@ mm = dbus.Interface(bus.get_object('org.ofono', path),
 					'org.ofono.MessageManager')
 
 if len(sys.argv) == 5:
-	mm.SetProperty("UseDeliveryReports",
-					dbus.Boolean(int(sys.argv[4])))
+	mm.SetProperty("UseDeliveryReports", dbus.Boolean(int(sys.argv[4])))
 	path = mm.SendMessage(sys.argv[2], sys.argv[3])
 else:
+	mm.SetProperty("UseDeliveryReports", dbus.Boolean(int(sys.argv[3])))
 	path = mm.SendMessage(sys.argv[1], sys.argv[2])
 
 print path
