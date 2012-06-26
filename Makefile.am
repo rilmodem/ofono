@@ -171,6 +171,7 @@ builtin_sources += $(qmi_sources) \
 			drivers/qmimodem/network-registration.c \
 			drivers/qmimodem/sim-legacy.c \
 			drivers/qmimodem/sms.c \
+			drivers/qmimodem/ussd.c \
 			drivers/qmimodem/gprs.c \
 			drivers/qmimodem/gprs-context.c \
 			drivers/qmimodem/radio-settings.c \
