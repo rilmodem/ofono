@@ -100,9 +100,6 @@ static void cleanup_ppp(struct ofono_emulator *em)
 	__ofono_private_network_release(em->pns_id);
 	em->pns_id = 0;
 
-	if (em->server == NULL)
-		return;
-
 	g_at_server_resume(em->server);
 	g_at_server_send_final(em->server, G_AT_SERVER_RESULT_NO_CARRIER);
 }
