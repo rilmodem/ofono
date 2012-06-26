@@ -38,6 +38,7 @@
 #include <ofono/sim.h>
 #include <ofono/stk.h>
 #include <ofono/sms.h>
+#include <ofono/ussd.h>
 #include <ofono/gprs.h>
 #include <ofono/gprs-context.h>
 #include <ofono/radio-settings.h>
@@ -458,6 +459,9 @@ static void gobi_post_online(struct ofono_modem *modem)
 
 	if (data->features & GOBI_NAS)
 		ofono_netreg_create(modem, 0, "qmimodem", data->device);
+
+	if (data->features & GOBI_VOICE)
+		ofono_ussd_create(modem, 0, "qmimodem", data->device);
 
 	if (data->features & GOBI_WDS) {
 		gprs = ofono_gprs_create(modem, 0, "qmimodem", data->device);
