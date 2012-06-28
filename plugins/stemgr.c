@@ -337,8 +337,8 @@ static gboolean property_changed(DBusConnection *connection,
 
 static void mgr_connect(DBusConnection *connection, void *user_data)
 {
-	property_changed_watch = g_dbus_add_signal_watch(connection, NULL,
-						NULL,
+	property_changed_watch = g_dbus_add_signal_watch(connection,
+						MGR_SERVICE, NULL,
 						MGR_MODEM_INTERFACE,
 						PROPERTY_CHANGED,
 						property_changed,
