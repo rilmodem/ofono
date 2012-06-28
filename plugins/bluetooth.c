@@ -840,22 +840,25 @@ static void bluetooth_ref(void)
 					bluetooth_connect,
 					bluetooth_disconnect, NULL, NULL);
 
-	adapter_added_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
-						BLUEZ_MANAGER_INTERFACE,
+	adapter_added_watch = g_dbus_add_signal_watch(connection, BLUEZ_SERVICE,
+						NULL, BLUEZ_MANAGER_INTERFACE,
 						"AdapterAdded",
 						adapter_added, NULL, NULL);
 
-	adapter_removed_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+	adapter_removed_watch = g_dbus_add_signal_watch(connection,
+						BLUEZ_SERVICE, NULL,
 						BLUEZ_MANAGER_INTERFACE,
 						"AdapterRemoved",
 						adapter_removed, NULL, NULL);
 
-	device_removed_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+	device_removed_watch = g_dbus_add_signal_watch(connection,
+						BLUEZ_SERVICE, NULL,
 						BLUEZ_ADAPTER_INTERFACE,
 						"DeviceRemoved",
 						device_removed, NULL, NULL);
 
-	property_watch = g_dbus_add_signal_watch(connection, NULL, NULL,
+	property_watch = g_dbus_add_signal_watch(connection,
+						BLUEZ_SERVICE, NULL,
 						BLUEZ_DEVICE_INTERFACE,
 						"PropertyChanged",
 						property_changed, NULL, NULL);
