@@ -514,17 +514,18 @@ static void create_modem(DBusConnection *conn,
 
 	modem->conn = conn;
 
-	modem->call_added_watch = g_dbus_add_signal_watch(conn, NULL,
+	modem->call_added_watch = g_dbus_add_signal_watch(conn, OFONO_SERVICE,
 				modem->path, OFONO_CALLMANAGER_INTERFACE,
 				"CallAdded", call_added, modem, NULL);
-	modem->call_removed_watch = g_dbus_add_signal_watch(conn, NULL,
-				modem->path, OFONO_CALLMANAGER_INTERFACE,
-				"CallRemoved", call_removed, modem, NULL);
-	modem->call_changed_watch = g_dbus_add_signal_watch(conn, NULL,
-				NULL, OFONO_CALL_INTERFACE,
+	modem->call_removed_watch = g_dbus_add_signal_watch(conn,
+				OFONO_SERVICE, modem->path,
+				OFONO_CALLMANAGER_INTERFACE, "CallRemoved",
+				call_removed, modem, NULL);
+	modem->call_changed_watch = g_dbus_add_signal_watch(conn,
+				OFONO_SERVICE, NULL, OFONO_CALL_INTERFACE,
 				"PropertyChanged", call_changed, modem, NULL);
-	modem->audio_changed_watch = g_dbus_add_signal_watch(conn, NULL,
-				NULL, OFONO_AUDIO_INTERFACE,
+	modem->audio_changed_watch = g_dbus_add_signal_watch(conn,
+				OFONO_SERVICE, NULL, OFONO_AUDIO_INTERFACE,
 				"PropertyChanged", audio_changed, modem, NULL);
 
 	g_hash_table_replace(modem_list, modem->path, modem);

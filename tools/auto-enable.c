@@ -246,7 +246,7 @@ static void create_modem(DBusConnection *conn,
 	modem->conn = dbus_connection_ref(conn);
 
 	modem->sim_changed_watch = g_dbus_add_signal_watch(conn,
-				NULL, NULL, OFONO_SIM_INTERFACE,
+				OFONO_SERVICE, NULL, OFONO_SIM_INTERFACE,
 				"PropertyChanged", sim_changed, modem, NULL);
 
 	g_hash_table_replace(modem_list, modem->path, modem);
@@ -420,15 +420,15 @@ static void ofono_connect(DBusConnection *conn, void *user_data)
 	modem_list = g_hash_table_new_full(g_str_hash, g_str_equal,
 						NULL, destroy_modem);
 
-	modem_added_watch = g_dbus_add_signal_watch(conn, NULL, NULL,
-				OFONO_MANAGER_INTERFACE, "ModemAdded",
-						modem_added, NULL, NULL);
-	modem_removed_watch = g_dbus_add_signal_watch(conn, NULL, NULL,
-				OFONO_MANAGER_INTERFACE, "ModemRemoved",
-						modem_removed, NULL, NULL);
-	modem_changed_watch = g_dbus_add_signal_watch(conn, NULL, NULL,
-				OFONO_MODEM_INTERFACE, "PropertyChanged",
-						modem_changed, NULL, NULL);
+	modem_added_watch = g_dbus_add_signal_watch(conn, OFONO_SERVICE,
+				NULL, OFONO_MANAGER_INTERFACE, "ModemAdded",
+				modem_added, NULL, NULL);
+	modem_removed_watch = g_dbus_add_signal_watch(conn, OFONO_SERVICE,
+				NULL, OFONO_MANAGER_INTERFACE, "ModemRemoved",
+				modem_removed, NULL, NULL);
+	modem_changed_watch = g_dbus_add_signal_watch(conn, OFONO_SERVICE,
+				NULL, OFONO_MODEM_INTERFACE, "PropertyChanged",
+				modem_changed, NULL, NULL);
 
 	get_modems(conn);
 }
