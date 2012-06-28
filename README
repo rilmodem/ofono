@@ -27,3 +27,12 @@ Kernel Dependencies
 
 In order to have the PPP stack working in oFono you need to enable CONFIG_TUN
 (Universal TUN/TAP device driver support) in your kernel .config.
+
+Information
+===========
+
+Mailing list:
+	ofono@ofono.org
+
+For additional information about the project visit oFono web site:
+	http://www.ofono.org
