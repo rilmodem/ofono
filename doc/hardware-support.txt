@@ -84,9 +84,10 @@ Data only modems
 
  - Qualcomm Gobi
 
-	No support for GPRS connections.
+	Fully supported data only modem with extra support for
+	text messaging and GPS location reporting.
 
-	Limited support for text messaging and USSD.
+	Support for voice calls, USSD and SS is work in progress.
 
 
 Other modems
