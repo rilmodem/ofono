@@ -82,6 +82,11 @@ Data only modems
 
 	Limited support for text messaging and USSD.
 
+ - Nvidia Icera
+
+	Fully support data only modem with extra support for
+	text messaging and USSD.
+
  - Qualcomm Gobi
 
 	Fully supported data only modem with extra support for
