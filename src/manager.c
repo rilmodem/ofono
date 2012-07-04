@@ -89,9 +89,9 @@ static const GDBusMethodTable manager_methods[] = {
 
 static const GDBusSignalTable manager_signals[] = {
 	{ GDBUS_SIGNAL("ModemAdded",
-				GDBUS_ARGS({ "modems", "a(oa{sv})" })) },
+		GDBUS_ARGS({ "path", "o" }, { "properties", "a{sv}" })) },
 	{ GDBUS_SIGNAL("ModemRemoved",
-				GDBUS_ARGS({ "path", "o" })) },
+		GDBUS_ARGS({ "path", "o" })) },
 	{ }
 };
 
