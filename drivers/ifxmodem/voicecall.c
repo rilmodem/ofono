@@ -894,6 +894,61 @@ static void xlema_read(gboolean ok, GAtResult *result, gpointer user_data)
 	vd->en_list = NULL;
 }
 
+static void cssi_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	GAtResultIter iter;
+	int code, index;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSSI:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &code))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &index))
+		index = 0;
+
+	ofono_voicecall_ssn_mo_notify(vc, 0, code, index);
+}
+
+static void cssu_notify(GAtResult *result, gpointer user_data)
+{
+	struct ofono_voicecall *vc = user_data;
+	GAtResultIter iter;
+	int code;
+	int index;
+	const char *num;
+	struct ofono_phone_number ph;
+
+	ph.number[0] = '\0';
+	ph.type = 129;
+
+	g_at_result_iter_init(&iter, result);
+
+	if (!g_at_result_iter_next(&iter, "+CSSU:"))
+		return;
+
+	if (!g_at_result_iter_next_number(&iter, &code))
+		return;
+
+	if (!g_at_result_iter_next_number_default(&iter, -1, &index))
+		goto out;
+
+	if (!g_at_result_iter_next_string(&iter, &num))
+		goto out;
+
+	strncpy(ph.number, num, OFONO_MAX_PHONE_NUMBER_LENGTH);
+
+	if (!g_at_result_iter_next_number(&iter, &ph.type))
+		return;
+
+out:
+	ofono_voicecall_ssn_mt_notify(vc, 0, code, index, &ph);
+}
+
 static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 					gpointer user_data)
 {
@@ -911,6 +966,8 @@ static void ifx_voicecall_initialized(gboolean ok, GAtResult *result,
 							FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+XCOLP:", xcolp_notify, FALSE, vc, NULL);
 	g_at_chat_register(vd->chat, "+XLEMA:", xlema_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+CSSI:", cssi_notify, FALSE, vc, NULL);
+	g_at_chat_register(vd->chat, "+CSSU:", cssu_notify, FALSE, vc, NULL);
 	/* Enable emergency number list notification */
 	g_at_chat_send(vd->chat, "AT+XLEMA=1", xlema_prefix, xlema_read, vc,
 									NULL);
@@ -940,6 +997,7 @@ static int ifx_voicecall_probe(struct ofono_voicecall *vc, unsigned int vendor,
 	g_at_chat_send(vd->chat, "AT+CRC=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CLIP=1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CNAP=1", none_prefix, NULL, NULL, NULL);
+	g_at_chat_send(vd->chat, "AT+CSSN=1,1", none_prefix, NULL, NULL, NULL);
 	g_at_chat_send(vd->chat, "AT+CCWA=1", none_prefix,
 				ifx_voicecall_initialized, vc, NULL);
 
