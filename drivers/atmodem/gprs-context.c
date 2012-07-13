@@ -291,6 +291,16 @@ static void at_gprs_deactivate_primary(struct ofono_gprs_context *gc,
 	g_at_ppp_shutdown(gcd->ppp);
 }
 
+static void at_gprs_detach_shutdown(struct ofono_gprs_context *gc,
+					unsigned int cid)
+{
+	struct gprs_context_data *gcd = ofono_gprs_context_get_data(gc);
+
+	DBG("cid %u", cid);
+
+	g_at_ppp_shutdown(gcd->ppp);
+}
+
 static void cgev_notify(GAtResult *result, gpointer user_data)
 {
 	struct ofono_gprs_context *gc = user_data;
@@ -380,6 +390,7 @@ static struct ofono_gprs_context_driver driver = {
 	.remove			= at_gprs_context_remove,
 	.activate_primary	= at_gprs_activate_primary,
 	.deactivate_primary	= at_gprs_deactivate_primary,
+	.detach_shutdown	= at_gprs_detach_shutdown,
 };
 
 void at_gprs_context_init(void)
