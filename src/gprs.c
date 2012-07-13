@@ -48,6 +48,7 @@
 
 #define GPRS_FLAG_ATTACHING 0x1
 #define GPRS_FLAG_RECHECK 0x2
+#define GPRS_FLAG_ATTACHED_UPDATE 0x4
 
 #define SETTINGS_STORE "gprs"
 #define SETTINGS_GROUP "Settings"
@@ -1440,6 +1441,45 @@ void ofono_gprs_resume_notify(struct ofono_gprs *gprs)
 	update_suspended_property(gprs, FALSE);
 }
 
+static gboolean have_active_contexts(struct ofono_gprs *gprs)
+{
+	GSList *l;
+	struct pri_context *ctx;
+
+	for (l = gprs->contexts; l; l = l->next) {
+		ctx = l->data;
+
+		if (ctx->active == TRUE)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static void release_active_contexts(struct ofono_gprs *gprs)
+{
+	GSList *l;
+	struct pri_context *ctx;
+
+	for (l = gprs->contexts; l; l = l->next) {
+		struct ofono_gprs_context *gc;
+
+		ctx = l->data;
+
+		if (ctx->active == FALSE)
+			continue;
+
+		/* This context is already being messed with */
+		if (ctx->pending)
+			continue;
+
+		gc = ctx->context_driver;
+
+		if (gc->driver->detach_shutdown != NULL)
+			gc->driver->detach_shutdown(gc, ctx->context.cid);
+	}
+}
+
 static void gprs_attached_update(struct ofono_gprs *gprs)
 {
 	DBusConnection *conn = ofono_dbus_get_connection();
@@ -1454,29 +1494,21 @@ static void gprs_attached_update(struct ofono_gprs *gprs)
 	if (attached == gprs->attached)
 		return;
 
-	gprs->attached = attached;
-
-	if (gprs->attached == FALSE) {
-		GSList *l;
-		struct pri_context *ctx;
-
-		for (l = gprs->contexts; l; l = l->next) {
-			ctx = l->data;
-
-			if (ctx->active == FALSE)
-				continue;
-
-			pri_reset_context_settings(ctx);
-			release_context(ctx);
-
-			value = FALSE;
-			ofono_dbus_signal_property_changed(conn, ctx->path,
-					OFONO_CONNECTION_CONTEXT_INTERFACE,
-					"Active", DBUS_TYPE_BOOLEAN, &value);
-		}
-
+	/*
+	 * If an active context is found, a PPP session might be still active
+	 * at driver level. "Attached" = TRUE property can't be signalled to
+	 * the applications registered on GPRS properties.
+	 * Active contexts have to be release at driver level.
+	 */
+	if (attached == FALSE) {
+		release_active_contexts(gprs);
 		gprs->bearer = -1;
+	} else if (have_active_contexts(gprs) == TRUE) {
+		gprs->flags |= GPRS_FLAG_ATTACHED_UPDATE;
+		return;
 	}
+
+	gprs->attached = attached;
 
 	path = __ofono_atom_get_path(gprs->atom);
 	value = attached;
@@ -2265,6 +2297,16 @@ void ofono_gprs_context_deactivated(struct ofono_gprs_context *gc,
 		ofono_dbus_signal_property_changed(conn, ctx->path,
 					OFONO_CONNECTION_CONTEXT_INTERFACE,
 					"Active", DBUS_TYPE_BOOLEAN, &value);
+	}
+
+	/*
+	 * If "Attached" property was about to be signalled as TRUE but there
+	 * were still active contexts, try again to signal "Attached" property
+	 * to registered applications after active contexts have been released.
+	 */
+	if (gc->gprs->flags & GPRS_FLAG_ATTACHED_UPDATE) {
+		gc->gprs->flags &= ~GPRS_FLAG_ATTACHED_UPDATE;
+		gprs_attached_update(gc->gprs);
 	}
 }
 
