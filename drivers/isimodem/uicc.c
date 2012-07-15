@@ -1324,15 +1324,15 @@ static void uicc_application_list_resp(const GIsiMessage *msg, void *data)
 	}
 
 	if (!sd->uicc_app_started) {
-		GHashTableIter iter;
+		GHashTableIter app_iter;
 		struct uicc_sim_application *app;
 
 		gpointer key;
 		gpointer value;
 
-		g_hash_table_iter_init(&iter, sd->app_table);
+		g_hash_table_iter_init(&app_iter, sd->app_table);
 
-		if (!g_hash_table_iter_next(&iter, &key, &value))
+		if (!g_hash_table_iter_next(&app_iter, &key, &value))
 			return;
 
 		app = value;
@@ -1398,7 +1398,7 @@ static void uicc_card_status_resp(const GIsiMessage *msg, void *data)
 
 		/* Check if card is ready */
 		if (card_status == 0x21) {
-			const uint8_t msg[] = {
+			const uint8_t req[] = {
 				UICC_APPLICATION_REQ,
 				UICC_APPL_LIST,
 				0,	/* Number of subblocks */
@@ -1407,7 +1407,7 @@ static void uicc_card_status_resp(const GIsiMessage *msg, void *data)
 			DBG("card is ready");
 			ofono_sim_inserted_notify(sim, TRUE);
 
-			if (g_isi_client_send(sd->client, msg, sizeof(msg),
+			if (g_isi_client_send(sd->client, req, sizeof(req),
 						uicc_application_list_resp,
 						data, NULL))
 				return;
