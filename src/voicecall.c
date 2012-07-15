@@ -2281,9 +2281,9 @@ void ofono_voicecall_notify(struct ofono_voicecall *vc,
 
 	if (vc->flags & VOICECALL_FLAG_STK_MODEM_CALLSETUP) {
 		struct dial_request *req = vc->dial_req;
-		const char *number = phone_number_to_string(&req->ph);
+		const char *phone_number = phone_number_to_string(&req->ph);
 
-		if (!strcmp(number, "112"))
+		if (!strcmp(phone_number, "112"))
 			__ofono_modem_inc_emergency_mode(modem);
 
 		if (v->call->clip_validity == CLIP_VALIDITY_NOT_AVAILABLE) {
