@@ -1516,12 +1516,12 @@ static void gprs_attach_callback(const struct ofono_error *error, void *data)
 		gprs->driver_attached = !gprs->driver_attached;
 
 	if (gprs->driver->attached_status == NULL) {
-		struct ofono_error error;
+		struct ofono_error status_error;
 
-		error.type = OFONO_ERROR_TYPE_FAILURE;
-		error.error = 0;
+		status_error.type = OFONO_ERROR_TYPE_FAILURE;
+		status_error.error = 0;
 
-		registration_status_cb(&error, -1, gprs);
+		registration_status_cb(&status_error, -1, gprs);
 		return;
 	}
 
