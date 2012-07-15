@@ -850,13 +850,13 @@ static void test_ems_udh(gconstpointer data)
 	for (i = 0; test->formats[i].len; i++) {
 		if (g_test_verbose()) {
 			int j;
-			unsigned char data[4];
+			unsigned char ie_data[4];
 
-			sms_udh_iter_get_ie_data(&iter, data);
+			sms_udh_iter_get_ie_data(&iter, ie_data);
 
 			g_print("Header:\n");
 			for (j = 0; j < sms_udh_iter_get_ie_length(&iter); j++)
-				g_print("0x%02x ", data[j]);
+				g_print("0x%02x ", ie_data[j]);
 
 			g_print("\n");
 		}
