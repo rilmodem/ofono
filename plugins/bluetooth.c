@@ -350,7 +350,7 @@ static void parse_devices(DBusMessageIter *array, gpointer user_data)
 	}
 }
 
-static gboolean property_changed(DBusConnection *connection, DBusMessage *msg,
+static gboolean property_changed(DBusConnection *conn, DBusMessage *msg,
 				void *user_data)
 {
 	const char *property;
@@ -698,7 +698,7 @@ done:
 	dbus_message_unref(reply);
 }
 
-static gboolean adapter_added(DBusConnection *connection, DBusMessage *message,
+static gboolean adapter_added(DBusConnection *conn, DBusMessage *message,
 				void *user_data)
 {
 	const char *path;
@@ -720,7 +720,7 @@ static void bluetooth_remove(gpointer key, gpointer value, gpointer user_data)
 	profile->remove(user_data);
 }
 
-static gboolean adapter_removed(DBusConnection *connection,
+static gboolean adapter_removed(DBusConnection *conn,
 				DBusMessage *message, void *user_data)
 {
 	const char *path;
@@ -735,7 +735,7 @@ static gboolean adapter_removed(DBusConnection *connection,
 	return TRUE;
 }
 
-static gboolean device_removed(DBusConnection *connection,
+static gboolean device_removed(DBusConnection *conn,
 				DBusMessage *message, void *user_data)
 {
 	const char *path;
@@ -801,7 +801,7 @@ done:
 	dbus_message_unref(reply);
 }
 
-static void bluetooth_connect(DBusConnection *connection, void *user_data)
+static void bluetooth_connect(DBusConnection *conn, void *user_data)
 {
 	bluetooth_send_with_reply("/", BLUEZ_MANAGER_INTERFACE, "GetProperties",
 				NULL, manager_properties_cb, NULL, NULL, -1,
@@ -813,7 +813,7 @@ static void bluetooth_connect(DBusConnection *connection, void *user_data)
 				DBUS_TYPE_INVALID);
 }
 
-static void bluetooth_disconnect(DBusConnection *connection, void *user_data)
+static void bluetooth_disconnect(DBusConnection *conn, void *user_data)
 {
 	if (uuid_hash == NULL)
 		return;
