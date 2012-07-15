@@ -508,7 +508,7 @@ static void test_valid_turkish(void)
 	}
 }
 
-static const char hex_packed[] = "493A283D0795C3F33C88FE06C9CB6132885EC6D34"
+static const char hex_packed_sms[] = "493A283D0795C3F33C88FE06C9CB6132885EC6D34"
 					"1EDF27C1E3E97E7207B3A0C0A5241E377BB1D"
 					"7693E72E";
 static const char expected[] = "It is easy to read text messages via AT "
@@ -517,7 +517,7 @@ static int reported_text_size = 49;
 
 static void test_decode_encode(void)
 {
-	const char *sms = hex_packed;
+	const char *sms = hex_packed_sms;
 	unsigned char *decoded, *packed;
 	char *utf8, *hex_packed;
 	unsigned char *gsm, *gsm_encoded;
