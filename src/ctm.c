@@ -114,8 +114,6 @@ static void ctm_query_enabled_callback(const struct ofono_error *error,
 	ofono_bool_t enabled_old;
 
 	if (error->type != OFONO_ERROR_TYPE_NO_ERROR) {
-		DBusMessage *reply;
-
 		DBG("Error during ctm enabled query");
 
 		reply = __ofono_error_failed(ctm->pending);
