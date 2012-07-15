@@ -64,7 +64,7 @@ struct sock_server{
 };
 
 static GMainLoop *mainloop;
-static GAtServer *server;
+static GAtServer *main_server;
 static GAtPPP *ppp;
 unsigned int server_watch;
 
@@ -78,8 +78,8 @@ static gboolean server_cleanup(void)
 		ppp = NULL;
 	}
 
-	g_at_server_unref(server);
-	server = NULL;
+	g_at_server_unref(main_server);
+	main_server = NULL;
 
 	unlink(DEFAULT_SOCK_PATH);
 
@@ -153,9 +153,9 @@ static void ppp_disconnect(GAtPPPDisconnectReason reason, gpointer user)
 
 static void open_ppp(gpointer user)
 {
-	GAtIO *io = g_at_server_get_io(server);
+	GAtIO *io = g_at_server_get_io(main_server);
 
-	g_at_server_suspend(server);
+	g_at_server_suspend(main_server);
 	g_at_ppp_listen(ppp, io);
 }
 
@@ -863,8 +863,8 @@ static gboolean create_tty(const char *modem_path)
 
 	server_io = g_io_channel_unix_new(master);
 
-	server = g_at_server_new(server_io);
-	if (server == NULL) {
+	main_server = g_at_server_new(server_io);
+	if (main_server == NULL) {
 		g_io_channel_shutdown(server_io, FALSE, NULL);
 		g_io_channel_unref(server_io);
 
@@ -894,13 +894,13 @@ static gboolean on_socket_connected(GIOChannel *chan, GIOCondition cond,
 
 	client_io = g_io_channel_unix_new(fd);
 
-	server = g_at_server_new(client_io);
+	main_server = g_at_server_new(client_io);
 	g_io_channel_unref(client_io);
 
-	if (server == NULL)
+	if (main_server == NULL)
 		goto error;
 
-	add_handler(server);
+	add_handler(main_server);
 
 	return TRUE;
 
@@ -1040,7 +1040,7 @@ static void test_server(int type)
 		if (create_tty("/phonesim1") == FALSE)
 			exit(1);
 
-		add_handler(server);
+		add_handler(main_server);
 		break;
 	case 1:
 		if (create_tcp("/phonesim1", DEFAULT_TCP_PORT) == FALSE)
